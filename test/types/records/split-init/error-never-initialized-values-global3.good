@@ -1,0 +1,4 @@
+error-never-initialized-values-global3.chpl:3: error: Cannot default-initialize a variable with generic type
+error-never-initialized-values-global3.chpl:3: note: 'cc' has generic type 'C'
+error-never-initialized-values-global3.chpl:3: note: 'C' indicates a non-nilable class with any management
+error-never-initialized-values-global3.chpl:3: note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'

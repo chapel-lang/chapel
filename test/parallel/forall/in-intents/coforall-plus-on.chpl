@@ -10,7 +10,7 @@ var sy$: sync int;
 proc update() {
   ARR = [777, 888];
   DOM = {777..888};
-  sy$ = 1;
+  sy$.writeEF(1);
 }
 
 proc main {  test(ARR, DOM);  }
@@ -18,7 +18,7 @@ proc main {  test(ARR, DOM);  }
 proc test(const ref ARR, const ref DOM) {
   forall myiter() with (const in ARR, const in DOM) {
     update();
-    sy$;
+    sy$.readFE();
     writeln(ARR, " ", DOM);
   }
   writeln("done ", ARR, " ", DOM);

@@ -1,3 +1,5 @@
 default-init-generic2.chpl:12: In function 'main':
-default-init-generic2.chpl:13: error: Cannot default-initialize a variable with generic type
+default-init-generic2.chpl:13: error: cannot default-initialize a variable with generic type
 default-init-generic2.chpl:13: note: 'B' has generic type 'R(real(64))'
+default-init-generic2.chpl:13: note: cannot find initialization point to split-init this variable
+default-init-generic2.chpl:14: note: 'B' is used here before it is initialized

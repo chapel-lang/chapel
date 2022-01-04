@@ -1,0 +1,5 @@
+perfkeys: unordered map elapsed time:, Chapel map elapsed time:
+files: moby-perf-cpp.dat, moby-perf.dat
+graphkeys: C++ unordered_map, Chapel map
+ylabel: Time (seconds)
+graphtitle: Storing Words in Moby Dick into a Map

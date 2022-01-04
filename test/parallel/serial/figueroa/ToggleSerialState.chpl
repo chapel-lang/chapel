@@ -12,10 +12,10 @@ for i in 1..runs {
   serial i % 2 > 0 do
     coforall j in 1..n with (ref in_order) {
       sleep((n-j) / 10.0);
-      var t = s + 1;
+      var t = s.readFE() + 1;
       if in_order then
         in_order = t == j;
-      s = j;
+      s.writeEF(j);
     }
   writeln("Run ", i, " was executed ",
           if in_order then "in" else "out of", " order");

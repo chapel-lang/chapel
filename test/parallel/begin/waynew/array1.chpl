@@ -16,8 +16,8 @@ for i in 1..N/2 do
 begin {
   for j in (N/2+1)..N do
     a[j] = N+j-(N/2);
-  done = true;
+  done.writeEF(true);
 }
 
-var bogus = done;
+var bogus = done.readFF();
 writeln( a);

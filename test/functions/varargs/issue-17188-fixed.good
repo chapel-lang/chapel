@@ -1,0 +1,4 @@
+issue-17188-fixed.chpl:8: In function 'main':
+issue-17188-fixed.chpl:12: error: ambiguous call 'g(int(64), int(64), int(64))'
+issue-17188-fixed.chpl:1: note: candidates are: g(x: int ...2, named: int)
+issue-17188-fixed.chpl:4: note:                 g(x: int ...3)

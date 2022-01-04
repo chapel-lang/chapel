@@ -1,5 +1,5 @@
 interface I(T) {
-  proc inc(x:T):bool;
+  proc inc(x:T):T;
 }
 
 proc inc(x:int):int {

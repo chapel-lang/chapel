@@ -1,0 +1,9 @@
+ # UsageTest.bad.empty
+subCmd1 # UsageTest.bad.nopos
+posArg -o # UsageTest.bad.noVal
+posArg --myConfigVar configVal -q tVal # UsageTest.bad.shadow
+posArg --no-flagOn=false # UsageTest.bad.bool
+posArg --option 1 2 3 4 5 6 7 8 9 10 11 # UsageTest.bad.overVal
+posArg subCmd1 subArgVal ++ --anotherArg --passAlong # UsageTest.bad.pt-delim-pos
+posArg subCmd1 subArgVal ++ --ver --passAlong 10 # UsageTest.bad.pt-delim-val
+--myConfigVar configVarValue posArg subCmd1 pos1 pos2 # UsageTest.bad.arg.count

@@ -1,0 +1,6 @@
+castErrors.chpl:7: error: cast operator should have two formals, not 3
+castErrors.chpl:11: error: cast operator should have two formals, not 1
+castErrors.chpl:15: error: second formal for cast should have type intent
+castErrors.chpl:20: error: cast operator should have two formals, not 3
+castErrors.chpl:24: error: cast operator should have two formals, not 1
+castErrors.chpl:28: error: second formal for cast should have type intent

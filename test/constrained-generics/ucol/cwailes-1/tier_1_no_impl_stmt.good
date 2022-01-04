@@ -1,1 +1,3 @@
-Error: No implements statement
+tier_1_no_impl_stmt.chpl:19: error: unresolved call 'minFn(3, 4)'
+tier_1_no_impl_stmt.chpl:9: note: this candidate did not match: minFn(x: ?T, y: T)
+tier_1_no_impl_stmt.chpl:9: note: because interface constraint(s) were not satisfied

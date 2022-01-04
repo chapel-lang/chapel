@@ -1,4 +1,5 @@
-bug: Should not be refering to tyvar in the error messages to user
+error message: need more details
 
-The error message points to the unique types (tyvar) created by the compiler.
-The message should be changed to something user friendly.
+In this test, the compiler correctly indicates that the interface constraint
+was not satisfied. However, it also should explain what constraint it was and
+why it was not satisfied.

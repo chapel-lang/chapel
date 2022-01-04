@@ -12,14 +12,14 @@ proc foo(x: color) {
   return true;
 }
 
-if (foo(c$)) then
+if (foo(c$.readFE())) then
   writeln("correct");
 else
   writeln("incorrect");
 
 var c2$: sync color = color.purple;
 
-if (c2$ == color.yellow) then
+if (c2$.readFE() == color.yellow) then
   writeln("c2$ was yellow!");
 else
   writeln("c2$ was purple!");

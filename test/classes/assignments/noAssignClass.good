@@ -11,3 +11,14 @@ noAssignClass.chpl:81: error: Can't overload assignments for class types
 noAssignClass.chpl:85: error: Can't overload assignments for class types
 noAssignClass.chpl:89: error: Can't overload assignments for class types
 noAssignClass.chpl:93: error: Can't overload assignments for class types
+noAssignClass.chpl:141: error: Can't overload assignments for class types
+noAssignClass.chpl:145: error: Can't overload assignments for class types
+noAssignClass.chpl:149: error: Can't overload assignments for class types
+noAssignClass.chpl:153: error: Can't overload assignments for class types
+noAssignClass.chpl:157: error: Can't overload assignments for class types
+noAssignClass.chpl:161: error: Can't overload assignments for class types
+noAssignClass.chpl:165: error: Can't overload assignments for class types
+noAssignClass.chpl:169: error: Can't overload assignments for class types
+noAssignClass.chpl:173: error: Can't overload assignments for class types
+noAssignClass.chpl:177: error: Can't overload assignments for class types
+noAssignClass.chpl:181: error: Can't overload assignments for class types

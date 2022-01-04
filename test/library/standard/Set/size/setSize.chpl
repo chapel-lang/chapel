@@ -7,7 +7,7 @@ record testRecord {
   proc init(dummy: int=0) { this.dummy = dummy; }
 }
 
-proc _cast(type t: testRecord, x: int) {
+operator :(x: int, type t: testRecord) {
   return new testRecord(x);
 }
 

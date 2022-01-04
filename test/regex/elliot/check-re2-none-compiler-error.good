@@ -1,0 +1,1 @@
+check-re2-none-compiler-error.chpl:2: error: Cannot use Regex with CHPL_RE2=none

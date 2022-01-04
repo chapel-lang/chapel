@@ -18,7 +18,7 @@ if errorCase == 1 {
 
 proc g(s) {  checkType(s.type); }
 proc gi(in s) { checkType(s.type); }
-proc go(out s) { checkType(s.type); }
+proc go(out s:string) { checkType(s.type); }
 proc gio(inout s) { checkType(s.type); }
 proc gr(ref s) { checkType(s.type); }
 

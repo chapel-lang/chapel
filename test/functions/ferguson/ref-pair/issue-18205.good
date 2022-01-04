@@ -1,0 +1,24 @@
+T1: store in var
+proc makeRec(): rec
+
+T1a: store in var
+proc makeRecVal(): rec
+
+T2: store in ref
+proc makeRec() ref: rec
+
+T3: store in const ref
+proc makeRec() const ref: rec
+
+T4: store in const
+proc makeRec(): rec
+
+T5: call without assignment
+proc makeRec(): rec
+
+T6: split-init store in var
+proc makeRec(): rec
+
+T7: assign
+proc makeRec() const ref: rec
+

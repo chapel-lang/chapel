@@ -21,6 +21,8 @@ Base Language Features
    Including Sub-Modules from Separate Files <module_include>
    main() Functions <main>
    Module Search Paths <module_search>
+   Operator Methods <operatorMethods>
+   The 'manage' Statement <manage>
 
 
 Initializers and Generic Programming
@@ -46,6 +48,8 @@ Parallel Language Features
    Querying a Local Subdomain <subquery>
    Reduce Intents <reduceIntents>
    Runtime Support for Atomics <atomics>
+   The 'foreach' Loop <foreach>
+   Prototyped Support for GPU-Targeted code <gpu>
 
 Interoperability
 ----------------

@@ -1,0 +1,2 @@
+bug: formal's type that is a type method on a class does not work
+#17777

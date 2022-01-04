@@ -32,7 +32,7 @@ class FnSymbol;
 class ModuleSymbol;
 class Symbol;
 
-class AstDumpToHtml : public AstLogger {
+class AstDumpToHtml final : public AstLogger {
 public:
   //
   // This is the User interface to the logger.
@@ -56,58 +56,58 @@ public:
   // declared public so that they can be invoked by the AST nodes
   // themselves
   //
-  virtual bool     enterCallExpr    (CallExpr*          node);
-  virtual void     exitCallExpr     (CallExpr*          node);
+  bool     enterCallExpr    (CallExpr*          node) override;
+  void     exitCallExpr     (CallExpr*          node) override;
 
-  virtual bool     enterDefExpr     (DefExpr*           node);
-  virtual void     exitDefExpr      (DefExpr*           node);
+  bool     enterDefExpr     (DefExpr*           node) override;
+  void     exitDefExpr      (DefExpr*           node) override;
 
-  virtual bool     enterNamedExpr   (NamedExpr*         node);
-  virtual void     exitNamedExpr    (NamedExpr*         node);
+  bool     enterNamedExpr   (NamedExpr*         node) override;
+  void     exitNamedExpr    (NamedExpr*         node) override;
 
-  virtual bool     enterIfExpr      (IfExpr*            node);
-  virtual void     exitIfExpr       (IfExpr*            node);
+  bool     enterIfExpr      (IfExpr*            node) override;
+  void     exitIfExpr       (IfExpr*            node) override;
 
-  virtual void     visitSymExpr     (SymExpr*           node);
+  void     visitSymExpr     (SymExpr*           node) override;
 
-  virtual void     visitUsymExpr    (UnresolvedSymExpr* node);
+  void     visitUsymExpr    (UnresolvedSymExpr* node) override;
 
-  virtual bool     enterLoopExpr  (LoopExpr*        node);
-  virtual void     exitLoopExpr   (LoopExpr*        node);
+  bool     enterLoopExpr  (LoopExpr*        node) override;
+  void     exitLoopExpr   (LoopExpr*        node) override;
 
-  virtual void     visitUseStmt     (UseStmt*           node);
+  void     visitUseStmt     (UseStmt*           node) override;
 
-  virtual void     visitImportStmt  (ImportStmt*        node);
+  void     visitImportStmt  (ImportStmt*        node) override;
 
-  virtual bool     enterBlockStmt   (BlockStmt*         node);
-  virtual void     exitBlockStmt    (BlockStmt*         node);
+  bool     enterBlockStmt   (BlockStmt*         node) override;
+  void     exitBlockStmt    (BlockStmt*         node) override;
 
-  virtual bool     enterWhileDoStmt (WhileDoStmt*       node);
-  virtual void     exitWhileDoStmt  (WhileDoStmt*       node);
+  bool     enterWhileDoStmt (WhileDoStmt*       node) override;
+  void     exitWhileDoStmt  (WhileDoStmt*       node) override;
 
-  virtual bool     enterDoWhileStmt (DoWhileStmt*       node);
-  virtual void     exitDoWhileStmt  (DoWhileStmt*       node);
+  bool     enterDoWhileStmt (DoWhileStmt*       node) override;
+  void     exitDoWhileStmt  (DoWhileStmt*       node) override;
 
-  virtual bool     enterCForLoop    (CForLoop*          node);
-  virtual void     exitCForLoop     (CForLoop*          node);
+  bool     enterCForLoop    (CForLoop*          node) override;
+  void     exitCForLoop     (CForLoop*          node) override;
 
-  virtual bool     enterForLoop     (ForLoop*           node);
-  virtual void     exitForLoop      (ForLoop*           node);
+  bool     enterForLoop     (ForLoop*           node) override;
+  void     exitForLoop      (ForLoop*           node) override;
 
-  virtual bool     enterParamForLoop(ParamForLoop*      node);
-  virtual void     exitParamForLoop (ParamForLoop*      node);
+  bool     enterParamForLoop(ParamForLoop*      node) override;
+  void     exitParamForLoop (ParamForLoop*      node) override;
 
-  virtual bool     enterCondStmt    (CondStmt*          node);
-  virtual void     exitCondStmt     (CondStmt*          node);
+  bool     enterCondStmt    (CondStmt*          node) override;
+  void     exitCondStmt     (CondStmt*          node) override;
 
-  virtual void     visitEblockStmt  (ExternBlockStmt*   node);
+  void     visitEblockStmt  (ExternBlockStmt*   node) override;
 
-  virtual bool     enterGotoStmt    (GotoStmt*          node);
-  virtual void     exitGotoStmt     (GotoStmt*          node);
+  bool     enterGotoStmt    (GotoStmt*          node) override;
+  void     exitGotoStmt     (GotoStmt*          node) override;
 
 private:
                    AstDumpToHtml();
-                  ~AstDumpToHtml();
+                  ~AstDumpToHtml() override;
 
   bool             open(ModuleSymbol* module, const char* passName);
   bool             close();

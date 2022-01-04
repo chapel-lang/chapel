@@ -60,9 +60,13 @@ module ChapelAutoAggregation {
     return nil;  // return type signals that we shouldn't aggregate
   }
 
+  private proc elemTypeSupportsAggregation(type t) param {
+    return isPODType(t);
+  }
+
   proc chpl__arrayIteratorYieldsLocalElements(x) param {
     if isArray(x) {
-      if !isClass(x.eltType) { // I have no idea if we can do this for wide pointers
+      if elemTypeSupportsAggregation(x.eltType) { // I have no idea if we can do this for wide pointers
         return x.iteratorYieldsLocalElements();
       }
     }
@@ -81,11 +85,12 @@ module ChapelAutoAggregation {
   module CopyAggregation {
     use SysCTypes;
     use CPtr;
-    use AggregationPrimitives;
+    use super.AggregationPrimitives;
 
+    param defaultBuffSize = if CHPL_COMM == "ugni" then 4096 else 8096;
     private const yieldFrequency = getEnvInt("CHPL_AGGREGATION_YIELD_FREQUENCY", 1024);
-    private const dstBuffSize = getEnvInt("CHPL_AGGREGATION_DST_BUFF_SIZE", 4096);
-    private const srcBuffSize = getEnvInt("CHPL_AGGREGATION_SRC_BUFF_SIZE", 4096);
+    private const dstBuffSize = getEnvInt("CHPL_AGGREGATION_DST_BUFF_SIZE", defaultBuffSize);
+    private const srcBuffSize = getEnvInt("CHPL_AGGREGATION_SRC_BUFF_SIZE", defaultBuffSize);
 
     /*
      * Aggregates copy(ref dst, src). Optimized for when src is local.
@@ -98,18 +103,27 @@ module ChapelAutoAggregation {
       const bufferSize = dstBuffSize;
       const myLocaleSpace = LocaleSpace;
       var opsUntilYield = yieldFrequency;
-      var lBuffers: [myLocaleSpace] [0..#bufferSize] aggType;
+      var lBuffers: c_ptr(c_ptr(aggType));
       var rBuffers: [myLocaleSpace] remoteBuffer(aggType);
-      var bufferIdxs: [myLocaleSpace] int;
+      var bufferIdxs: c_ptr(int);
 
       proc postinit() {
+        lBuffers = c_malloc(c_ptr(aggType), numLocales);
+        bufferIdxs = bufferIdxAlloc();
         for loc in myLocaleSpace {
+          lBuffers[loc] = c_malloc(aggType, bufferSize);
+          bufferIdxs[loc] = 0;
           rBuffers[loc] = new remoteBuffer(aggType, bufferSize, loc);
         }
       }
 
       proc deinit() {
         flush();
+        for loc in myLocaleSpace {
+          c_free(lBuffers[loc]);
+        }
+        c_free(lBuffers);
+        c_free(bufferIdxs);
       }
 
       proc flush() {
@@ -186,16 +200,22 @@ module ChapelAutoAggregation {
       const bufferSize = srcBuffSize;
       const myLocaleSpace = LocaleSpace;
       var opsUntilYield = yieldFrequency;
-      var dstAddrs: [myLocaleSpace][0..#bufferSize] aggType;
-      var lSrcAddrs: [myLocaleSpace][0..#bufferSize] aggType;
+      var dstAddrs: c_ptr(c_ptr(aggType));
+      var lSrcAddrs: c_ptr(c_ptr(aggType));
       var lSrcVals: [myLocaleSpace][0..#bufferSize] elemType;
       var rSrcAddrs: [myLocaleSpace] remoteBuffer(aggType);
       var rSrcVals: [myLocaleSpace] remoteBuffer(elemType);
 
-      var bufferIdxs: [myLocaleSpace] int;
+      var bufferIdxs: c_ptr(int);
 
       proc postinit() {
+        dstAddrs = c_malloc(c_ptr(aggType), numLocales);
+        lSrcAddrs = c_malloc(c_ptr(aggType), numLocales);
+        bufferIdxs = bufferIdxAlloc();
         for loc in myLocaleSpace {
+          dstAddrs[loc] = c_malloc(aggType, bufferSize);
+          lSrcAddrs[loc] = c_malloc(aggType, bufferSize);
+          bufferIdxs[loc] = 0;
           rSrcAddrs[loc] = new remoteBuffer(aggType, bufferSize, loc);
           rSrcVals[loc] = new remoteBuffer(elemType, bufferSize, loc);
         }
@@ -203,6 +223,13 @@ module ChapelAutoAggregation {
 
       proc deinit() {
         flush();
+        for loc in myLocaleSpace {
+          c_free(dstAddrs[loc]);
+          c_free(lSrcAddrs[loc]);
+        }
+        c_free(dstAddrs);
+        c_free(lSrcAddrs);
+        c_free(bufferIdxs);
       }
 
       proc flush() {
@@ -215,7 +242,9 @@ module ChapelAutoAggregation {
         if verboseAggregation {
           writeln("SrcAggregator.copy is called");
         }
-        assert(dst.locale.id == here.id);
+        if boundsChecking {
+          assert(dst.locale.id == here.id);
+        }
         const dstAddr = getAddr(dst);
 
         const loc = src.locale.id;
@@ -299,6 +328,12 @@ module ChapelAutoAggregation {
       __primitive("chpl_comm_put", addr, node, rAddr, size);
     }
 
+    // Cacheline aligned and padded allocation to avoid false-sharing
+    inline proc bufferIdxAlloc() {
+      const cachePaddedLocales = (numLocales + 7) & ~7;
+      return c_aligned_alloc(int, 64, cachePaddedLocales);
+    }
+
     proc getEnvInt(name: string, default: int): int {
       extern proc getenv(name : c_string) : c_string;
       var strval = getenv(name.localize().c_str()): string;
@@ -306,6 +341,7 @@ module ChapelAutoAggregation {
       return try! strval: int;
     }
 
+    // A remote buffer with lazy allocation
     record remoteBuffer {
       type elemType;
       var size: int;
@@ -326,14 +362,13 @@ module ChapelAutoAggregation {
 
       // Iterate through buffer elements, must be running on loc. data is passed
       // in to avoid communication.
-      pragma "order independent yielding loops"
       iter localIter(data: c_ptr(elemType), size: int) ref : elemType {
         if boundsChecking {
           assert(this.loc == here.id);
           assert(this.data == data);
           assert(data != c_nil);
         }
-        for i in 0..<size {
+        foreach i in 0..<size {
           yield data[i];
         }
       }
@@ -371,6 +406,14 @@ module ChapelAutoAggregation {
         }
         const byte_size = size:size_t * c_sizeof(elemType);
         AggregationPrimitives.PUT(c_ptrTo(lArr[0]), loc, data, byte_size);
+      }
+
+      proc PUT(lArr: c_ptr(elemType), size: int) {
+        if boundsChecking {
+          assert(size <= this.size);
+        }
+        const byte_size = size:size_t * c_sizeof(elemType);
+        AggregationPrimitives.PUT(lArr, loc, data, byte_size);
       }
 
       proc GET(lArr: [] elemType, size: int) where lArr.isDefaultRectangular() {

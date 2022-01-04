@@ -16,11 +16,11 @@ export proc parallelProg(numTasksToRun: int) {
 
 export proc threadring(passes: int, tasks: int) {
   var mailbox$: [1..tasks] sync int;
-  mailbox$[1] = 0;
+  mailbox$[1].writeEF(0);
   proc passTokens(tid) {
     do {
-      const numPasses = mailbox$[tid];
-      mailbox$[tid%tasks+1] = numPasses+1;
+      const numPasses = mailbox$[tid].readFE();
+      mailbox$[tid%tasks+1].writeEF(numPasses+1);
       if numPasses == passes then
         writeln(tid);
     } while (numPasses < passes);

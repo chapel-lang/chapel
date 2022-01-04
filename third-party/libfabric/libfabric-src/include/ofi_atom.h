@@ -38,6 +38,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include <ofi_lock.h>
 #include <ofi_osd.h>
@@ -123,6 +124,41 @@ typedef atomic_long	ofi_atomic_int64_t;
 		ATOMIC_IS_INITIALIZED(atomic);								\
 		return (int##radix##_t)atomic_fetch_sub_explicit(&atomic->val, val,			\
 								 memory_order_acq_rel) - val;		\
+	}												\
+	/**												\
+	 *  Compare and swap, strong version								\
+	 *												\
+	 *  @return true if atomic matches expected and the change is done, false			\
+	 *   otherwise.											\
+	 */												\
+	static inline											\
+	bool ofi_atomic_cas_bool_strong##radix(ofi_atomic##radix##_t *atomic, 				\
+						      int##radix##_t expected, 				\
+						      int##radix##_t desired)				\
+	{												\
+		ATOMIC_IS_INITIALIZED(atomic);								\
+		return atomic_compare_exchange_strong_explicit(&atomic->val, &expected, desired,	\
+							       memory_order_acq_rel,			\
+							       memory_order_relaxed);			\
+	}												\
+	/**												\
+	 *  Compare and swap, weak version								\
+	 *												\
+	 *  @return true if atomic matches expected and the change is done, false			\
+	 *   otherwise.											\
+	 *   This is the weak version and may incorrectly report a failed match.			\
+	 *   As a result it is most useful in loops that wait until the check succeeds.			\
+	 */												\
+	 static inline											\
+	 bool ofi_atomic_cas_bool_weak##radix(ofi_atomic##radix##_t *atomic, 				\
+					      int##radix##_t expected, 					\
+					      int##radix##_t desired)					\
+	{												\
+		ATOMIC_IS_INITIALIZED(atomic);								\
+		return atomic_compare_exchange_weak_explicit(&atomic->val, 				\
+							     &expected, desired,			\
+							     memory_order_acq_rel,			\
+							     memory_order_relaxed);			\
 	}
 
 #elif defined HAVE_BUILTIN_ATOMICS
@@ -184,8 +220,30 @@ typedef atomic_long	ofi_atomic_int64_t;
 	{												\
 		*(ofi_atomic_ptr(atomic)) = value;							\
 		ATOMIC_INIT(atomic);									\
+	}												\
+	static inline											\
+	bool ofi_atomic_cas_bool##radix(ofi_atomic##radix##_t *atomic, 					\
+					int##radix##_t expected,					\
+					int##radix##_t desired)						\
+	{												\
+		 ATOMIC_IS_INITIALIZED(atomic);								\
+		 return ofi_atomic_cas_bool(radix, ofi_atomic_ptr(atomic), expected, desired);		\
+	}												\
+	static inline											\
+	bool ofi_atomic_cas_bool_strong##radix(ofi_atomic##radix##_t *atomic, 				\
+					       int##radix##_t expected,					\
+					       int##radix##_t desired)					\
+	{												\
+		return ofi_atomic_cas_bool##radix(atomic, expected, desired);				\
+	}												\
+	static inline											\
+	bool ofi_atomic_cas_bool_weak##radix(ofi_atomic##radix##_t *atomic, 				\
+					     int##radix##_t expected,					\
+					     int##radix##_t desired)					\
+	{												\
+		return ofi_atomic_cas_bool##radix(atomic, expected, desired);				\
 	}
-	
+
 #else /* HAVE_ATOMICS */
 
 #define OFI_ATOMIC_DEFINE(radix)								\
@@ -261,7 +319,37 @@ typedef atomic_long	ofi_atomic_int64_t;
 		v = atomic->val;								\
 		fastlock_release(&atomic->lock);						\
 		return v;									\
+	}											\
+	static inline										\
+	bool ofi_atomic_cas_bool##radix(ofi_atomic##radix##_t *atomic,				\
+					int##radix##_t expected,				\
+					int##radix##_t desired)					\
+	{											\
+		bool ret = false;								\
+		ATOMIC_IS_INITIALIZED(atomic);							\
+		fastlock_acquire(&atomic->lock);						\
+		if (atomic->val == expected) {							\
+			atomic->val = desired;							\
+			ret = true;								\
+		}										\
+		fastlock_release(&atomic->lock);						\
+		return ret;									\
+	}											\
+	static inline										\
+	bool ofi_atomic_cas_bool_strong##radix(ofi_atomic##radix##_t *atomic,			\
+							 int##radix##_t expected,		\
+							 int##radix##_t desired)		\
+	{											\
+		return ofi_atomic_cas_bool##radix(atomic, expected, desired);			\
+	}											\
+	static inline										\
+	bool ofi_atomic_cas_bool_weak##radix(ofi_atomic##radix##_t *atomic,			\
+							 int##radix##_t expected,		\
+							 int##radix##_t desired)		\
+	{											\
+		return ofi_atomic_cas_bool##radix(atomic, expected, desired);			\
 	}
+
 #endif // HAVE_ATOMICS
 
 OFI_ATOMIC_DEFINE(32)

@@ -6,10 +6,6 @@ exit c_function_malloc
 Freeing in C
 enter c_function_free
 exit c_function_free
-Allocating in Chapel
-Freeing in C
-enter c_function_free
-exit c_function_free
 Allocating with malloc in C
 enter c_function_malloc
 exit c_function_malloc
@@ -22,4 +18,15 @@ Allocating with strdup in C
 enter c_function_strdup
 exit c_function_strdup
 Freeing in Chapel
+Allocating in Chapel
+Freeing in C
+enter c_function_free
+exit c_function_free
 DONE
+
+================================================= Memory Leaks ==================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+test1.chpl:65                    1        8        8        array elements                   prediffed  
+=================================================================================================================
+

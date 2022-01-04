@@ -1,0 +1,2 @@
+sync-to-this-of-underlying-type-noread.chpl:15: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+sync-to-this-of-underlying-type-noread.chpl:16: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual

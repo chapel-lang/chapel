@@ -1,0 +1,5 @@
+ # handleConfig.unset.good
+--y=true # handleConfig.unset.good
+--x=true # handleConfig.set.good
+--x=true --y=true # handleConfig.set.good
+--y=true --x=true # handleConfig.set2.good

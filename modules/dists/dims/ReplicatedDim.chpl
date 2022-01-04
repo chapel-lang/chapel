@@ -279,7 +279,7 @@ proc Replicated1dom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
 iter Replicated1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD)
   : dsiMyDensifiedRangeType1d(globDD)
 {
-  yield 0:globDD.idxType..#locWholeR.size;
+  yield 0:globDD.idxType..#locWholeR.sizeAs(int);
 }
 
 // REQ whether this distribution can handle only a single task per locale.
@@ -334,9 +334,8 @@ iter Replicated1dom.dsiSerialArrayIterator1d() {
 // The latter is chosen to simplify dsiFollowerArrayIterator1d implementations.
 // It also eliminates one loop nest per dimension in DimensionalArr follower.
 //
-pragma "order independent yielding loops"
 iter Replicated1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   assert(localLocIDlegit);
-  for i in undensRange do
+  foreach i in undensRange do
     yield (localLocID, i);
 }

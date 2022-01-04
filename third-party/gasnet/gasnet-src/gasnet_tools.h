@@ -157,6 +157,19 @@ GASNETI_BEGIN_NOWARN
 
 #define gasnett_unreachable             gasneti_unreachable
 
+#define gasnett_assume                  gasneti_assume
+
+/* ------------------------------------------------------------------------------------ */
+/* discard macro aguments w/ compiler-specific warning supression */
+#define GASNETT_UNUSED_ARGS1            GASNETI_UNUSED_ARGS1
+#define GASNETT_UNUSED_ARGS2            GASNETI_UNUSED_ARGS2
+#define GASNETT_UNUSED_ARGS3            GASNETI_UNUSED_ARGS3
+#define GASNETT_UNUSED_ARGS4            GASNETI_UNUSED_ARGS4
+#define GASNETT_UNUSED_ARGS5            GASNETI_UNUSED_ARGS5
+#define GASNETT_UNUSED_ARGS6            GASNETI_UNUSED_ARGS6
+#define GASNETT_UNUSED_ARGS7            GASNETI_UNUSED_ARGS7
+#define GASNETT_UNUSED_ARGS8            GASNETI_UNUSED_ARGS8
+
 /* ------------------------------------------------------------------------------------ */
 /* portable memory barriers */
 
@@ -480,7 +493,7 @@ gasnett_backtrace_type_t gasnett_backtrace_user;
 #endif
 GASNETI_FORMAT_PRINTF(_gasnett_trace_printf_noop,1,2,
 static void _gasnett_trace_printf_noop(const char *_format, ...)) {
-  #if PLATFORM_COMPILER_PGI
+  #if PLATFORM_COMPILER_PGI // Not reproducible with NVHPC compilers
     va_list _ap; va_start(_ap,_format); va_end(_ap); /* avoid a silly warning */
   #endif
   return; 
@@ -491,6 +504,7 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
   GASNETT_FORMAT_PRINTF_FUNCPTR(_gasnett_trace_printf_force,1,2,
   GASNETI_TENTATIVE_CLIENT void (*_gasnett_trace_printf_force)(const char *_format, ...));
   #if PLATFORM_COMPILER_PGI /* bug 1703 - workaround a PGI bug using Gnu-style variadic macros which PGI supports */
+    // The PGI issue was fixed some time ago, probably late 2006, and does not impact NVHPC-branded releases
     #define GASNETT_TRACE_PRINTF(args...) \
             (_gasnett_trace_printf ? _gasnett_trace_printf(args) : _gasnett_trace_printf_noop(args))
     #define GASNETT_TRACE_PRINTF_FORCE(args...) \
@@ -535,10 +549,21 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
     (gasnett_stats_callback = (callbackfn), GASNETI_STATS_ENABLED(H))
   #define GASNETT_STATS_GETMASK()     GASNETI_STATS_GETMASK()
   #define GASNETT_STATS_SETMASK(mask) GASNETI_STATS_SETMASK(mask)
+  #define GASNETT_STATS_DUMP(reset)   gasneti_stats_dump(reset)
+  extern void gasneti_stats_dump(int _reset);
+  GASNETI_FORMAT_PRINTF(_gasnett_stats_printf,1,2,
+  extern void _gasnett_stats_printf(const char *format, ...));
+  GASNETI_FORMAT_PRINTF(_gasnett_stats_printf_force,1,2,
+  extern void _gasnett_stats_printf_force(const char *format, ...));
+  #define GASNETT_STATS_PRINTF        _gasnett_stats_printf
+  #define GASNETT_STATS_PRINTF_FORCE  _gasnett_stats_printf_force
 #else
   #define GASNETT_STATS_INIT(callbackfn) 0
   #define GASNETT_STATS_GETMASK()     ""
   #define GASNETT_STATS_SETMASK(mask) ((void)0)
+  #define GASNETT_STATS_DUMP(reset)   ((void)0)
+  #define GASNETT_STATS_PRINTF        _gasnett_trace_printf_noop
+  #define GASNETT_STATS_PRINTF_FORCE  _gasnett_trace_printf_noop
 #endif
 
 /* ------------------------------------------------------------------------------------ */

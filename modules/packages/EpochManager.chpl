@@ -19,6 +19,20 @@
  */
 
 /*
+  .. warning::
+
+    This module relies on the :mod:`AtomicObjects` package module, which
+    has several platform restrictions in its current state:
+
+      - It relies on Chapel ``extern`` code blocks and so requires that
+        the Chapel compiler is built with LLVM enabled.
+      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
+        the x86-64 instruction: CMPXCHG16B_.
+      - The implementation relies on ``GCC`` style inline assembly, and so
+        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
+        ``clang``, or ``llvm``.
+
+    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
 
   Epoch-Based Memory Reclamation
   ------------------------------
@@ -150,7 +164,6 @@ module EpochManager {
         } while(!_head.compareAndSwapABA(oldHead, _node));
       }
 
-      pragma "not order independent yielding loops"
       iter these() : objType {
         var ptr = _head.read();
         while (ptr != nil) {
@@ -479,7 +492,7 @@ module EpochManager {
         forall a in this.arr[0..#sz] do yield a;
       }
 
-      proc size return sz;
+      proc size: int return sz;
 
       proc clear() {
         this.sz = 0;

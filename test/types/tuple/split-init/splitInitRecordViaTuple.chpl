@@ -12,11 +12,11 @@ record R {
   }
 }
 
-proc =(ref lhs: R, rhs: int) {
+operator =(ref lhs: R, rhs: int) {
   lhs.x = rhs;
 }
 
-proc _cast(type t:R, from: int) {
+operator :(from: int, type t:R) {
   var tmp: R = from;
   return tmp;
 }

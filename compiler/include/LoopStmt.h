@@ -33,7 +33,8 @@ public:
   static Stmt*           findEnclosingLoopOrForall(Expr* expr);
 
 public:
-  virtual bool           isLoopStmt()                                    const;
+  bool                   isLoopStmt()                                    const override
+                         { return true; }
 
   LabelSymbol*           breakLabelGet()                                 const;
   void                   breakLabelSet(LabelSymbol* sym);
@@ -56,9 +57,10 @@ public:
   bool                   isVectorizable()                               const;
   // for llvm.loop.parallel_accesses (and C pragmas)
   bool                   isParallelAccessVectorizable()                 const;
+
 protected:
                          LoopStmt(BlockStmt* initBody);
-  virtual               ~LoopStmt();
+                        ~LoopStmt() override = default;
 
   LabelSymbol*           mBreakLabel;
   LabelSymbol*           mContinueLabel;

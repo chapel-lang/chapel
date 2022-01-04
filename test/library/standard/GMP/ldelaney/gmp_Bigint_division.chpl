@@ -6,51 +6,51 @@ var b = new bigint( 10);
 var c = new bigint(-27);
 var d = new bigint();
 
-d.div_q(c, a, Round.UP);
-b.div_r(c, a, Round.UP);
+d.divQ(c, a, round.up);
+b.divR(c, a, round.up);
 writeln(d, " ", b);
 
-d.div_q(c, a, Round.DOWN);
-b.div_r(c, a, Round.DOWN);
+d.divQ(c, a, round.down);
+b.divR(c, a, round.down);
 writeln(d, " ", b);
 
-d.div_q(c, a, Round.ZERO); // same as UP   for negative integers
-b.div_r(c, a, Round.ZERO); // same as DOWN for positive integers
+d.divQ(c, a, round.zero); // same as up   for negative integers
+b.divR(c, a, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
 c.neg(c);
-d.div_qr(b, c, a, Round.UP);
+d.divQR(b, c, a, round.up);
 writeln(d, " ", b);
 
-d.div_qr(b, c, a, Round.DOWN);
+d.divQR(b, c, a, round.down);
 writeln(d, " ", b);
 
-d.div_qr(b, c, a, Round.ZERO); // same as DOWN for positive integers
+d.divQR(b, c, a, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
 writeln();
 
 c.neg(c);
-d.div_q(c, 8, Round.UP);
-b.div_r(c, 8, Round.UP);
+d.divQ(c, 8, round.up);
+b.divR(c, 8, round.up);
 writeln(d, " ", b);
 
-d.div_q(c, 8, Round.DOWN);
-b.div_r(c, 8, Round.DOWN);
+d.divQ(c, 8, round.down);
+b.divR(c, 8, round.down);
 writeln(d, " ", b);
 
-d.div_q(c, 8, Round.ZERO); // same as DOWN for positive integers
-b.div_r(c, 8, Round.ZERO); // same as DOWN for positive integers
+d.divQ(c, 8, round.zero); // same as down for positive integers
+b.divR(c, 8, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
 c.neg(c);
-d.div_qr(b, c, 8, Round.UP);
+d.divQR(b, c, 8, round.up);
 writeln(d, " ", b);
 
-d.div_qr(b, c, 8, Round.DOWN);
+d.divQR(b, c, 8, round.down);
 writeln(d, " ", b);
 
-d.div_qr(b, c, 8, Round.ZERO); // same as DOWN for positive integers
+d.divQR(b, c, 8, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
 c.neg(c);
@@ -58,16 +58,16 @@ writeln();
 
 
 // q = (n / 2^d)
-d.div_q_2exp(c, 3, Round.UP);
-b.div_r_2exp(c, 3, Round.UP);
+d.divQ2Exp(c, 3, round.up);
+b.divR2Exp(c, 3, round.up);
 writeln(d, " ", b);
 
-d.div_q_2exp(c, 3, Round.DOWN);
-b.div_r_2exp(c, 3, Round.DOWN);
+d.divQ2Exp(c, 3, round.down);
+b.divR2Exp(c, 3, round.down);
 writeln(d, " ", b);
 
-d.div_q_2exp(c, 3, Round.ZERO);
-b.div_r_2exp(c, 3, Round.ZERO);
+d.divQ2Exp(c, 3, round.zero);
+b.divR2Exp(c, 3, round.zero);
 writeln(d, " ", b);
 
 writeln();
@@ -87,23 +87,23 @@ writeln(d);
 d.divexact(b, 4);
 writeln(d);
 
-var d3 : int = b.divisible_p(a);
+var d3 : bool = b.isDivisible(a);
 writeln(d3);
 
-d3 = b.divisible_p(3);
+d3 = b.isDivisible(3);
 writeln(d3, " ");
-writeln(b.divisible_2exp_p(3)); // divisble by 2^3
+writeln(b.isDivisibleBy2Pow(3)); // divisble by 2^3
 
 a.set(25);
 b.set(20);
 c.set(5);
 
-d3 = a.congruent_p(c, b); // 25 congruent to 5 mod 20
+d3 = a.isCongruent(c, b); // 25 congruent to 5 mod 20
 writeln(d3);
 
-d3 = a.congruent_p(10, 20); //25 not congruent to 10 mod 20
+d3 = a.isCongruent(10, 20); //25 not congruent to 10 mod 20
 writeln(d3);
 
 a.set(45);
-d3 = a.congruent_2exp_p(c, 3); //45 congruent to 5 mod 8
+d3 = a.isCongruentBy2Pow(c, 3); //45 congruent to 5 mod 8
 writeln(d3);

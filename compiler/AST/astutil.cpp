@@ -815,7 +815,7 @@ bool isTypeExpr(Expr* expr) {
           retval = true;
 
         } else if (var->immediate != NULL) {
-          const char* name = var->immediate->v_string;
+          const char* name = var->immediate->v_string.c_str();
           Symbol*     field = ct->getField(name);
 
           retval = field->hasFlag(FLAG_TYPE_VARIABLE);

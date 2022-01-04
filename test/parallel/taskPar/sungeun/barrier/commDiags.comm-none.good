@@ -6,3 +6,5 @@ sync remote test basic
 (<no communication>)
 sync remote test split phase
 (<no communication>)
+allLocalesBarrier test basic
+(<no communication>)

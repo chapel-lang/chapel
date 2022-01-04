@@ -243,7 +243,7 @@ module Random {
     if X.rank != 1 {
       compilerError('choice() argument x must be 1 dimensional');
     }
-    if X.size < 1 {
+    if X.sizeAs(X.idxType) < 1 {
       throw new owned IllegalArgumentError('choice() x.size must be greater than 0');
     }
 
@@ -256,7 +256,7 @@ module Random {
       if prob.rank != 1 {
         compilerError('choice() prob array must be 1 dimensional');
       }
-      if prob.size != X.size {
+      if prob.size != X.sizeAs(X.idxType) {
         throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
       }
     }
@@ -265,12 +265,12 @@ module Random {
       if isIntegralType(sizeType) {
         if size <= 0 then
           throw new owned IllegalArgumentError('choice() size must be greater than 0');
-        if !replace && size > X.size then
+        if !replace && size > X.sizeAs(X.idxType) then
           throw new owned IllegalArgumentError('choice() size must be smaller than x.size when replace=false');
       } else if isDomainType(sizeType) {
         if size.size <= 0 then
           throw new owned IllegalArgumentError('choice() size domain can not be empty');
-        if !replace && size.size > X.size then
+        if !replace && size.size > X.sizeAs(idxType) then
           throw new owned IllegalArgumentError('choice() size must be smaller than x.size when replace=false');
       } else {
         compilerError('choice() size must be integral or domain');
@@ -294,7 +294,7 @@ module Random {
 
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randVal = stream.getNext(resultType=int, 0, X.size-1);
+      var randVal = stream.getNext(resultType=int, 0, X.sizeAs(idxType)-1);
       var randIdx = X.dim(0).orderToIndex(randVal);
       return randIdx;
     } else {
@@ -313,16 +313,16 @@ module Random {
 
       if replace {
         for sample in samples {
-          var randVal = stream.getNext(resultType=int, 0, X.size-1);
+          var randVal = stream.getNext(resultType=int, 0, X.sizeAs(idxType)-1);
           var randIdx = X.dim(0).orderToIndex(randVal);
           sample = randIdx;
         }
       } else {
-        if numElements < log2(X.size) {
+        if numElements < log2(X.sizeAs(idxType)) {
           var indices: set(int);
           var i: int = 0;
           while i < numElements {
-            var randVal = stream.getNext(resultType=int, 0, X.size-1);
+            var randVal = stream.getNext(resultType=int, 0, X.sizeAs(idxType)-1);
             if !indices.contains(randVal) {
               var randIdx = X.dim(0).orderToIndex(randVal);
               samples[i] = randIdx;
@@ -353,7 +353,7 @@ module Random {
     import Search;
     import Sort;
     
-    if prob.size != X.size {
+    if prob.size != X.sizeAs(idxType) {
       throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
     }
     
@@ -362,7 +362,7 @@ module Random {
 
     const low = X.alignedLow,
           stride = abs(X.stride);
-    ref P = prob.reindex(0..<X.size);
+    ref P = prob.reindex(0..<X.sizeAs(idxType));
 
     // Construct cumulative sum array
     var cumulativeArr = (+ scan P): real;
@@ -389,7 +389,7 @@ module Random {
 
       // Compute numElements for tuple case
       var m = 1;
-      if isDomainType(sizeType) then m = size.size;
+      if isDomainType(sizeType) then m = size.sizeAs(size.idxType);
 
       var numElements = if isDomainType(sizeType) then m
                         else if isIntegralType(sizeType) then size:int
@@ -407,17 +407,17 @@ module Random {
       } else {
         var indicesChosen: domain(int);
         var i = 0;
-        while indicesChosen.size < samples.size {
+        while indicesChosen.sizeAs(int) < samples.sizeAs(int) {
 
           // Recalculate normalized cumulativeArr
-          if indicesChosen.size > 0 {
+          if indicesChosen.sizeAs(int) > 0 {
             cumulativeArr = (+ scan P): real;
             total = cumulativeArr[P.domain.last];
             cumulativeArr /= total;
           }
 
-          var remainingSamples = samples.size - indicesChosen.size;
-          for randNum in stream.iterate({1..(samples.size - indicesChosen.size)}, resultType=real) {
+          var remainingSamples = samples.sizeAs(int) - indicesChosen.sizeAs(int);
+          for randNum in stream.iterate({1..(samples.sizeAs(int) - indicesChosen.sizeAs(int))}, resultType=real) {
             // A potential optimization: Generate rand nums ahead of time
             // and do a multi-target binary search to find all of their positions
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
@@ -1048,7 +1048,7 @@ module Random {
         :type arr: [] :type:`eltType`
       */
       proc fillRandom(arr: [] eltType) {
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
@@ -1170,7 +1170,7 @@ module Random {
       /* Randomly shuffle a 1-D array. */
       proc shuffle(arr: [?D] ?eltType ) {
 
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("shuffle does not support non-rectangular arrays");
 
         if D.rank != 1 then
@@ -1182,7 +1182,7 @@ module Random {
         _lock();
 
         // Fisher-Yates shuffle
-        for i in 0..#D.size by -1 {
+        for i in 0..#D.sizeAs(D.idxType) by -1 {
           var k = randlc_bounded(D.idxType,
                                  PCGRandomStreamPrivate_rngs,
                                  seed, PCGRandomStreamPrivate_count,
@@ -1203,7 +1203,7 @@ module Random {
           arr[k] <=> arr[j];
         }
 
-        PCGRandomStreamPrivate_count += D.size;
+        PCGRandomStreamPrivate_count += D.sizeAs(D.idxType);
 
         _unlock();
       }
@@ -1214,7 +1214,7 @@ module Random {
          */
       proc permutation(arr: [] eltType) {
 
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("permutation does not support non-rectangular arrays");
 
         var low = arr.domain.dim(0).low;
@@ -1267,7 +1267,7 @@ module Random {
       proc iterate(D: domain, type resultType=eltType) {
         _lock();
         const start = PCGRandomStreamPrivate_count;
-        PCGRandomStreamPrivate_count += D.size.safeCast(int(64));
+        PCGRandomStreamPrivate_count += D.sizeAs(int);
         PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count-1);
         _unlock();
         return PCGRandomPrivate_iterate(resultType, D, seed, start);
@@ -1555,14 +1555,13 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    pragma "order independent yielding loops"
     private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
-        for i in ranges(dim) do
+        foreach i in ranges(dim) do
           yield (i,);
       } else if dim + 2 < ranges.size {
-        for i in ranges(dim) do
-          for j in outer(ranges, dim+1) do
+        foreach i in ranges(dim) do
+          foreach j in outer(ranges, dim+1) do
             yield (i, (...j));
       } else {
         yield 0; // 1D case is a noop
@@ -1573,7 +1572,6 @@ module Random {
     // PCGRandomStream iterator implementation
     //
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                                start: int(64)) {
       var cursor = randlc_skipto(resultType, seed, start);
@@ -1590,7 +1588,6 @@ module Random {
     }
 
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
@@ -2645,7 +2642,7 @@ module Random {
         :type arr: [] :type:`eltType`
       */
       proc fillRandom(arr: [] eltType) {
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
@@ -2698,7 +2695,7 @@ module Random {
       proc iterate(D: domain, type resultType=real) {
         _lock();
         const start = NPBRandomStreamPrivate_count;
-        NPBRandomStreamPrivate_count += D.size.safeCast(int(64));
+        NPBRandomStreamPrivate_count += D.sizeAs(int);
         NPBRandomStreamPrivate_skipToNth_noLock(NPBRandomStreamPrivate_count-1);
         _unlock();
         return NPBRandomPrivate_iterate(resultType, D, seed, start);
@@ -2830,14 +2827,13 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    pragma "order independent yielding loops"
     private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
-        for i in ranges(dim) do
+        foreach i in ranges(dim) do
           yield (i,);
       } else if dim + 2 < ranges.size {
-        for i in ranges(dim) do
-          for j in outer(ranges, dim+1) do
+        foreach i in ranges(dim) do
+          foreach j in outer(ranges, dim+1) do
             yield (i, (...j));
       } else {
         yield 0; // 1D case is a noop
@@ -2848,7 +2844,6 @@ module Random {
     // RandomStream iterator implementation
     //
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                          start: int(64)) {
       var cursor = randlc_skipto(seed, start);
@@ -2866,7 +2861,6 @@ module Random {
     }
 
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {

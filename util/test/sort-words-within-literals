@@ -5,10 +5,8 @@
 # and sorts them by the values.
 
 $testname = $ARGV[0];
-$goodfile = $ARGV[1];
+$tmp_file = $ARGV[1];
 $comp = $ARGV[2];
-
-$tmp_file = "$testname.exec.out.tmp";
 
 open TMPFILE, "$tmp_file" or die "can't open $tmp_file $!";
 my @lines = <TMPFILE>;

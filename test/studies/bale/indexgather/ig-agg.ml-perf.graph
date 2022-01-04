@@ -1,5 +1,5 @@
-perfkeys: MB/s per node:
-files: bale-ig-aggregated.dat
-graphkeys: MB/s per node (aggregated)
+perfkeys: MB/s per node:, MB/s per node:
+files: bale-ig-aggregated.dat, bale-ig-auto-aggregated.dat
+graphkeys: MB/s per node (aggregated), MB/s per node (auto-aggregated)
 graphtitle: Bale: Aggregated Indexgather Perf (MB/s per node)
 ylabel: Performance (MB/s per node)

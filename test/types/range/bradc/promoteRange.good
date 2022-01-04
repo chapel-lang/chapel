@@ -1,1 +1,1 @@
-promoteRange.chpl:1: error: Bounds of 'low..high' must be integers of compatible types.
+promoteRange.chpl:1: error: Ranges defined using bounds of type 'int(64)..range(int(64),bounded,false)' are not currently supported

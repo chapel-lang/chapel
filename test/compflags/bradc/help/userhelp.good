@@ -158,7 +158,7 @@ Compiler Configuration Options:
       --locale-model <locale-model>   Specify locale model to use
       --make <make utility>           Make utility for generated code
       --mem <mem-impl>                Specify the memory manager
-      --regexp <regexp>               Specify whether to use regexp support
+      --re2 <re2-version>             Specify RE2 library
       --target-arch <architecture>    Target architecture / machine type
       --target-compiler <compiler>    Compiler for generated code
       --target-cpu <cpu>              Target cpu model for specialization

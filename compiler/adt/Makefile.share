@@ -18,7 +18,6 @@
 
 ADT_SRCS = \
 	bitVec.cpp \
-	map.cpp \
 	vec.cpp
 
 SRCS = $(ADT_SRCS)

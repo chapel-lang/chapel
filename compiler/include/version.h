@@ -27,8 +27,10 @@ void get_version(char * buf);
 void get_major_minor_version(char * buf);
 const char* get_configured_prefix();
 
-std::string get_clang_cc();
-std::string get_clang_cxx();
-std::string get_clang_sysroot_args();
+int get_major_version();
+int get_minor_version();
+int get_update_version();
+const char* get_build_version();
+bool get_is_official_release();
 
 #endif

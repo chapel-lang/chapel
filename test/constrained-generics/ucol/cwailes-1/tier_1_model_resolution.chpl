@@ -1,5 +1,5 @@
 interface I(T) {
-  proc foo(T):T;
+  proc foo(x:T):T;
 }
 
 implements I(int);

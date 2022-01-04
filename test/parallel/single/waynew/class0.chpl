@@ -17,5 +17,5 @@ f = 4.0;
 writeln( "1: going to sleep with ", f);
 sleep( 3);
 writeln( "1: woke up. writing ", f);
-d.s = f;
+d.s.writeEF(f);
 

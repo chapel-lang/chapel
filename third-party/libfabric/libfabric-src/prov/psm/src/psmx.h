@@ -287,7 +287,7 @@ struct psmx_fid_domain {
 	 * purpose. The tag-matching functions automatically treat these bits
 	 * as 0. This field is a bit mask, with reserved bits valued as "1".
 	 */
-	uint64_t		reserved_tag_bits; 
+	uint64_t		reserved_tag_bits;
 
 	/* lock to prevent the sequence of psm_mq_ipeek and psm_mq_test be
 	 * interleaved in a multithreaded environment.
@@ -534,7 +534,7 @@ struct psmx_fid_mr {
 	uint64_t		flags;
 	uint64_t		offset;
 	size_t			iov_count;
-	struct iovec		iov[0];	/* must be the last field */
+	struct iovec		iov[];	/* must be the last field */
 };
 
 struct psmx_epaddr_context {

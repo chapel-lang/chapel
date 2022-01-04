@@ -6,8 +6,8 @@ var other_set_A$: sync bool;
 proc byinout(inout args ...?k, error:int)
 {
   args[0] = 5;
-  byinout_set_A$ = true; 
-  var x = other_set_A$; // wait for A = 0
+  byinout_set_A$.writeEF(true); 
+  var x = other_set_A$.readFE(); // wait for A = 0
   // args[1] should have different storage than A
   writeln(args[0]);
   // now since args is inout, I expect this function
@@ -16,10 +16,10 @@ proc byinout(inout args ...?k, error:int)
 
 proc sametime()
 {
-  var x = byinout_set_A$; // wait for A = 5
+  var x = byinout_set_A$.readFE(); // wait for A = 5
   A = 0;
   writeln(A);
-  other_set_A$ = true;
+  other_set_A$.writeEF(true);
 }
 
 proc byref(ref args ...?k)

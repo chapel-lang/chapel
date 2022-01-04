@@ -1,12 +1,12 @@
 GASNet ofi-conduit documentation
 Copyright 2015-2017, Intel Corporation
-Portions copyright 2018-2020, The Regents of the University of California.
-$Revision: 1.1 $
+Portions copyright 2018-2021, The Regents of the University of California.
 
 **** NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE ****
 *                                                               *
 *  This version of ofi-conduit is a work-in-progress port from  *
-*  GASNet-1 to GASNet-EX and is currently disabled by default.  *
+*  GASNet-1 to GASNet-EX and is currently EXPERIMENTAL.         *
+*                                                               * 
 *  Various aspects of this README are either out-of-date or     *
 *  have not been reverified against the current version.        *
 *                                                               *
@@ -21,6 +21,15 @@ communication services to applications. OFI is best described as a collection of
 libraries and applications used to export fabric services. 
 
 See more details at: http://ofiwg.github.io/libfabric/
+
+This conduit is currently being re-implemented for GASNet-EX and is
+considered to be EXPERIMENTAL.  Therefore, it is disabled by default.
+It can be enabled at GASNet configure time using the `--enable-ofi` option.
+
+The re-implementation work completed to date is believed to be functionally
+complete and correct when run with OFI's sockets provider and default settings,
+but it is not performant.  In particular, GASNet-EX RMA is implemented via a
+reference implementation over Active Messages, rather than OFI's RMA APIs.
 
 Where this conduit runs:
 -----------------------

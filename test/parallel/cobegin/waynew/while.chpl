@@ -4,14 +4,14 @@ var b = 0;
 cobegin with (ref b) {
   {
     b = 1;
-    while (a < 3) {
+    while (a.readFE() < 3) {
       b = 2;
     }
   }
   {
-    a = 1;
-    a = 2;
-    a = 3;
+    a.writeEF(1);
+    a.writeEF(2);
+    a.writeEF(3);
   }
 }
 

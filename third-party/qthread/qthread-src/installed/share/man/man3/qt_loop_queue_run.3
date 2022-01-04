@@ -1,0 +1,44 @@
+.TH qt_loop_queue_run 3 "JUNE 2010" libqthread "libqthread"
+.SH NAME
+.BR qt_loop_queue_run ,
+.B qt_loop_queue_run_there
+\- an intelligent implementation of a threaded loop
+.SH SYNOPSIS
+.B #include <qthread/qloop.h>
+
+.I void
+.br
+.B qt_loop_queue_run
+.RI "(qqloop_handle_t *" loop );
+.PP
+.I void
+.br
+.B qt_loop_queue_run_there
+.RI "(qqloop_handle_t *" loop ,
+.br
+.ti +25
+.RI "qthread_shepherd_id_t " shep );
+.SH DESCRIPTION
+These functions provide an adaptive implementation of a threaded loop. In the case of
+.BR qt_loop_queue_run (),
+the number of threads used depends upon the number of shepherds available (and active). The
+.BR qt_loop_queue_run_there ()
+function spawns a single worker thread on the specified shepherd. Iterations of the loop are processed in chunks, where the size of each chunk is variable and is determined by the style of adaptivity selection when creating the loop handle
+.IR loop .
+If a shepherd is deactivated while processing the loop, the worker thread
+assigned to that shepherd will exit and the remaining worker threads will
+automatically adapt. Otherwise, these functions behave somewhat similarly to
+.BR qt_loop_balance ()
+in that they will not return until all iterations of the loop have been completed.
+.PP
+The
+.I loop
+handle must be allocated by
+.BR qt_loop_queue_create (),
+and will be deallocated by these functions.
+.SH SEE ALSO
+.BR qt_loop (3),
+.BR qt_loop_balance (3),
+.BR qt_loopaccum_balance (3),
+.BR qt_loop_queue_create (3),
+.BR qt_loop_queue_addworker (3)

@@ -1,5 +1,6 @@
 #include "stringpiece.h"
 #include "re2.h"
+#include "re2/prog.h"
 #include <cstdio>
 
 namespace re2 {
@@ -189,10 +190,12 @@ int compare_FileSearchPtr(FileSearchPtr a, FileSearchPtr b)
 }
 
 
-FileSearchPtr FilePiece::find_c(ReadingFileSearchPtr s, FileSearchPtr end, int c) const
+FileSearchPtr FilePiece::prefix_accel(Prog* prog, ReadingFileSearchPtr s, ssize_t len) const
 {
+  int c = prog->first_byte();
+
   FileSearchPtr begin = s;
-  for( ; s < end; s++ ) {
+  for( ssize_t i = 0; i < len; s++,i++ ) {
     if( ( (*s) & 0xff ) == c ) return s;
     if( this->can_discard(s - begin) ) {
       this->discard(false, s, s, s);

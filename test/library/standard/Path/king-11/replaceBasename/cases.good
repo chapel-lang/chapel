@@ -1,0 +1,15 @@
+/foo/bar/baz
+
+/
+foo/
+foo/
+foo
+foo/baz
+d.chpl
+/foo/d.chpl
+foo/d.chpl
+d.chpl
+baz/d.chpl
+../d.chpl
+d.chpl
+bar/foo.c/d.chpl/

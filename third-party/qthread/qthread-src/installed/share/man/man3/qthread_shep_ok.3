@@ -1,0 +1,17 @@
+.TH qthread_shep_ok 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_shep_ok
+\- check on whether a thread's shepherd is disabled
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_shep_ok
+(void);
+.SH DESCRIPTION
+This function returns zero if the current thread's shepherd has been disabled,
+and non-zero if the current thread's shepherd is enabled.
+.SH SEE ALSO
+.BR qthread_disable_shepherd (3),
+.BR qthread_enable_shepherd (3)

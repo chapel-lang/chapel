@@ -1,0 +1,4 @@
+recursive-ifc-1-error.chpl:13: In 'implements IFC' statement:
+recursive-ifc-1-error.chpl:13: error: when checking this implements statement
+recursive-ifc-1-error.chpl:13: note: the required function reqFun is not implemented
+recursive-ifc-1-error.chpl:10: note: the required function reqFun in the interface IFC is declared here

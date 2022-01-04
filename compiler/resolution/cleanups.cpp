@@ -113,6 +113,9 @@ static void removeUnusedFunctions() {
               fatalErrorsEncountered() == false) {
             removeUnusedFunction(fn);
           }
+        } else if (fn->isConstrainedGeneric()) {
+          INT_ASSERT(fn->firstSymExpr() == nullptr);  // these better be unused
+          removeUnusedFunction(fn);
         }
       }
     }
@@ -235,7 +238,20 @@ static void removeRandomPrimitives() {
 }
 
 
-static void removeInterfaceCode() {
+// remove ASTs that supported CG (constrained generics / interfaces)
+// see also finishInterfaceChecking()
+static void cleanupConstrainedGenerics() {
+  // This should be done before removing InterfaceSymbols
+  // so we can get at and remove refTypes.
+  for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
+    ct->symbol->defPoint->remove();
+    if (Type* ctRef = ct->refType)
+    {
+      if (ctRef->symbol->defPoint->inTree())
+        ctRef->symbol->defPoint->remove();
+    }
+  }
+
   for_alive_in_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
     isym->defPoint->remove();
 
@@ -247,12 +263,6 @@ static void removeInterfaceCode() {
     for_alist(impl, istm->implBody->body)
       wrapFnDef->insertBefore(impl->remove());
     wrapFnDef->remove();
-  }
-
-  for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
-    ct->symbol->defPoint->remove();
-    if (Type* ctRef = ct->refType)
-      ctRef->symbol->defPoint->remove();
   }
 }
 
@@ -392,12 +402,13 @@ static void removeAggTypeFieldInfo() {
 
 // Remove module level variables if they are not defined or used
 // With the exception of variables that are defined in the rootModule
+// or in the string literals module.
 static void removeUnusedModuleVariables() {
   forv_Vec(DefExpr, def, gDefExprs) {
     if (VarSymbol* var = toVarSymbol(def->sym)) {
       if (ModuleSymbol* module = toModuleSymbol(def->parentSymbol)) {
         if (var->isDefined() == false && var->isUsed() == false) {
-          if (module != rootModule) {
+          if (module != rootModule && module != stringLiteralModule) {
             def->remove();
           }
         }
@@ -475,9 +486,11 @@ bool isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
   //  unmanaged class types can have borrow/canonical class type used
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      for (int i = 0; i < NUM_DECORATED_CLASS_TYPES; i++) {
-        ClassTypeDecorator decorator = (ClassTypeDecorator)i;
-        if (Type* dt = at->getDecoratedClass(decorator))
+      for (int i = 0;
+           i < ClassTypeDecorator::NUM_DECORATORS;
+           i++) {
+        ClassTypeDecoratorEnum d = ClassTypeDecorator::getIthDecorator(i);
+        if (Type* dt = at->getDecoratedClass(d))
           retval &= do_isUnusedClass(dt, wellknown);
       }
     }
@@ -605,9 +618,9 @@ static void removeTypedefParts() {
       bool removeIt = true;
       if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
         if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
-          ClassTypeDecorator d = dt->getDecorator();
+          ClassTypeDecoratorEnum d = dt->getDecorator();
           if ((isDecoratorUnknownNilability(d) ||
-              isDecoratorUnknownManagement(d)) &&
+               isDecoratorUnknownManagement(d)) &&
               dt->getCanonicalClass()->inTree()) {
             // After resolution, can't consider it generic anymore...
             // The generic-ness will be moot though because later
@@ -744,6 +757,7 @@ static void cleanupNothingVarsAndFields() {
      if (call->isPrimitive())
       switch (call->primitive->tag) {
       case PRIM_MOVE:
+      case PRIM_ASSIGN:
         if (isNothingType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtNothing->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
@@ -914,10 +928,11 @@ void saveGenericSubstitutions() {
         // This case is a workaround for patterns that
         // come up with compiler-generated tuple functions
         INT_ASSERT(fn->hasFlag(FLAG_INIT_TUPLE));
-        form_Map(SymbolMapElem, e, fn->substitutions) {
+
+        for (auto elem: sortedSymbolMapElts(fn->substitutions)) {
           NameAndSymbol ns;
-          ns.name = e->key->name;
-          ns.value = e->value;
+          ns.name = elem.key->name;
+          ns.value = elem.value;
           ns.isParam = false;
           ns.isType = false;
           fn->substitutionsPostResolve.push_back(ns);
@@ -969,7 +984,7 @@ void saveGenericSubstitutions() {
 }
 
 void pruneResolvedTree() {
-  removeInterfaceCode();
+  cleanupConstrainedGenerics();
 
   removeTiMarks();
 

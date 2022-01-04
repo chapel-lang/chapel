@@ -216,7 +216,7 @@ if version >= 508 || !exists("did_c_syn_inits")
   HiLink cOctalError		cError
   HiLink cParenError		cError
   HiLink cErrInParen		cError
-" Hack: avoid range errors of the form [1..M) .. allows other bracket errors 
+" Hack: avoid range errors of the form [1..M) .. allows other bracket errors
 "  HiLink cErrInBracket		cError
   HiLink cCommentError		cError
   HiLink cCommentStartError	cError
@@ -260,6 +260,7 @@ endif
 syn keyword chplStatement	break return continue compilerWarning delete
 syn keyword chplStatement	new delete this these use except only require import
 syn keyword chplStatement	noinit init
+syn keyword chplStatement	manage
 syn keyword chplStatement	as module yield compilerError zip
 syn keyword chplIntent		param type in out inout ref
 syn keyword chplStorageClass    const config export extern var
@@ -270,7 +271,7 @@ syn keyword chplType            owned shared borrowed unmanaged
 syn keyword chplType            nothing void
 syn keyword chplOperator	on reduce scan by align
 syn keyword chplStructure	class record union enum
-syn keyword chplStructure	proc iter cobegin begin local sync let select where
+syn keyword chplStructure	proc iter cobegin begin local sync let select where operator lambda
 syn keyword chplStructure	pragma inline with private public forwarding
 syn keyword chplStructure	prototype override lifetime
 syn keyword chplBoolean		true false

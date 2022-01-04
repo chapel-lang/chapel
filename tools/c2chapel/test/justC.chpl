@@ -3,6 +3,8 @@
 // Note: Generated with fake std headers
 
 use CPtr;
+use SysCTypes;
+use SysBasic;
 extern proc foobar(x : c_int) : c_int;
 
 extern proc main() : c_int;
@@ -10,6 +12,37 @@ extern proc main() : c_int;
 // c2chapel thinks these typedefs are from the fake headers:
 /*
 extern type FILE = c_int;
+
+// Opaque struct?
+extern record MirBlob {};
+
+// Opaque struct?
+extern record MirBufferStream {};
+
+// Opaque struct?
+extern record MirConnection {};
+
+// Opaque struct?
+extern record MirDisplayConfig {};
+
+extern type MirEGLNativeDisplayType = c_void_ptr;
+
+extern type MirEGLNativeWindowType = c_void_ptr;
+
+// Opaque struct?
+extern record MirPersistentId {};
+
+// Opaque struct?
+extern record MirPromptSession {};
+
+// Opaque struct?
+extern record MirScreencast {};
+
+// Opaque struct?
+extern record MirSurface {};
+
+// Opaque struct?
+extern record MirSurfaceSpec {};
 
 extern type _LOCK_RECURSIVE_T = c_int;
 
@@ -280,6 +313,13 @@ extern type va_list = c_int;
 extern type wchar_t = c_int;
 
 extern type wint_t = c_int;
+
+// Opaque struct?
+extern record xcb_connection_t {};
+
+extern type xcb_visualid_t = uint(32);
+
+extern type xcb_window_t = uint(32);
 
 extern type z_stream = c_int;
 

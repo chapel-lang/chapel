@@ -1,3 +1,6 @@
+pidigits2.chpl:30: In iterator 'genDigits':
+pidigits2.chpl:60: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+  pidigits2.chpl:18: called as genDigits(numDigits: int(64))
 3141592653	:10
 5897932384	:20
 6264338   	:27

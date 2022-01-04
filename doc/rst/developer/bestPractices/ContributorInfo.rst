@@ -1,3 +1,5 @@
+.. _best-practices-contributor-info:
+
 Contributor Info
 ================
 
@@ -10,7 +12,7 @@ Chapel workflow recommendations.
 Below are instructions for setting up a GitHub account, developing a
 feature, and submitting pull requests.
 
-.. note:: All commits must be signed according to the DCO (see below) in order to be merged.
+.. note:: All commits must be signed according to the DCO (see below) to be merged.
 
 Overview:
 
@@ -112,7 +114,9 @@ decisions. Here are some strategies to make a good design issue:
   * Use a prefix of ``[Design]`` in the subject header.
   * Include a short summary of the topic, potentially including motivation
     and/or an example.
+
       - This should not be a copy/paste of the issue contents.
+
   * Include a link to your issue.
   * Ask for people to volunteer to be involved in design discussions.
 
@@ -183,17 +187,16 @@ grow).
    also `Fork the repo`_).
 
 #. Make sure you have configured your environment to work with
-   git. See `Git tips for Chapel developers`_ for details,
+   git. See :ref:`best-practices-git` for details,
    particularly if you are new to git.
 
 #. Make sure you understand how to sign your commits with respect to the DCO.
 
-   Chapel enforces the Developer Certificate of Origin (DCO) on all
-   pull requests.  This requires all commits you make to be signed to
-   indicate that they adhere to the DCO policy.  If you're not already
-   familiar with DCOs, read `Getting started with Chapel and the
-   Developer Certificate of Origin`_ to learn more about them and how
-   to sign your commits.
+   Chapel enforces the Developer Certificate of Origin (DCO) on all pull
+   requests.  This requires all commits you make to be signed to indicate
+   that they adhere to the DCO policy.  If you're not already familiar
+   with DCOs, read :ref:`best-practices-dco` to learn more about them and
+   how to sign your commits.
 
 #. If you're working on a long-term effort, announce it in the
    `Chapel Developers`_ Discourse category to make sure toes are not being stepped on,
@@ -231,18 +234,17 @@ named branch is encouraged.
 Develop and test contributions locally
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Your contribution will take the form of a series of commits.  While including
-sensible commit messages is a good idea, it is more important to have a good
-merge message once the pull request is going in. Likewise, it is OK to have many
-small commits that reflect the history of development rather than commits for
-the feature.  Review git `Development commands`_ for how to perform some common
-operations during development.
+Your contribution will take the form of a series of commits.  While
+including sensible commit messages is a good idea, it is more important
+to have a good merge message once the pull request is going in. Likewise,
+it is OK to have many small commits that reflect the history of
+development rather than commits for the feature.  Review git
+:ref:`Development commands` for how to perform some common operations
+during development.
 
-As you work, you will want to periodically bring in changes from the main Chapel
-project to your feature branch (described in `Development commands`_), to avoid
-code drift.
-
-.. _Development commands: git.rst#development-commands
+As you work, you will want to periodically bring in changes from the main
+Chapel project to your feature branch (described in :ref:`Development
+commands`), to avoid code drift.
 
 .. _Add new tests:
 
@@ -250,17 +252,13 @@ Add new tests
 +++++++++++++
 
 You will probably need to create new tests for your feature. See
-`Creating a Simple Test`_ in `Test System`_ for more information on this
-process.
+:ref:`readme-testsystem` for more information on this process.
 
 Any addition/change to the Chapel test system should pass testing when that
 test/directory is run with ``start_test`` (and performance tests should also
 pass testing for ``start_test -performance``).
 
-.. _Creating a Simple Test: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#creating-a-simple-test
-
-
-.. _Contributing changes
+.. _Contributing changes:
 
 Contributing changes
 --------------------
@@ -270,12 +268,10 @@ Contributing changes
 Push your work to your feature branch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Push your changes to your feature branch on GitHub to enable others to see your
-work (see `How to push`_ for command details).  Note that if you have already
-created a pull request from a feature branch, pushing your work to that feature
-branch will update the pull request.
-
-.. _How to push: git.rst#how-to-push
+Push your changes to your feature branch on GitHub to enable others to
+see your work (see :ref:`How to push` for command details).  Note that if
+you have already created a pull request from a feature branch, pushing
+your work to that feature branch will update the pull request.
 
 .. _Ask for feedback on your branch early (optional):
 
@@ -304,7 +300,7 @@ Discussion can take place in:
 Submit pull request
 ~~~~~~~~~~~~~~~~~~~
 
-See `How to open a PR`_ for the sequence of steps necessary.
+See :ref:`How to open a PR` for the sequence of steps necessary.
 
 Contributors should be reasonably confident in the testing done on their code
 before asking for a final review.  Should additional testing resources be
@@ -316,8 +312,6 @@ Just do your local development and then update your feature branch as in
 `Push your work to your feature branch`_
 
 Please follow the `Pull request guidance`_ and keep PRs reasonably sized.
-
-.. _How to open a PR: git.rst#how-to-open-a-pr
 
 .. _Find a reviewer:
 
@@ -363,7 +357,8 @@ Before the change can be merged, go through this checklist to ensure:
 
 - all design changes have been discussed
 - all commits contain the required "Signed-off-by:" line to indicate
-  compliance with the `Developer Certificate of Origin`_ (DCO)
+  compliance with the Developer Certificate of Origin (DCO -- see
+  :ref:`best-practices-dco`)
 - the PR has been reviewed
 - the `Git history is clear`_ of anything that should not be in the repo
 - relevant configurations pass testing
@@ -377,19 +372,16 @@ Details on how to run tests may be found at `Test System`_, and details on the
 appropriate amount of testing before merging the final PR may be found at
 `Testing your patch`_.
 
-* Once the pull request is approved, it can be merged. This can be done by
-  either the reviewer or developer (given sufficient permissions), as decided
-  between the two of them.  See `How to merge a PR`_ for steps to perform this.
+* Once the pull request is approved, it can be merged. This can be done
+  by either the reviewer or developer (given sufficient permissions), as
+  decided between the two of them.  See :ref:`How to merge a PR` for
+  steps to perform this.
 
 * If you are reviewing code from an external contributor without push
   privileges, go through the checklist once more before merging the change.
 
 After the final version of the change has been agreed upon, the person making
-the merge should follow the steps for `How to merge a PR`_.
-
-.. _Developer Certificate of Origin: DCO.rst
-.. _How to merge a PR: git.rst#how-to-merge-a-pr
-
+the merge should follow the steps for :ref:`How to merge a PR`.
 
 .. _After merging:
 
@@ -525,7 +517,7 @@ Testing your patch
   across a large number of workstations.  If you have limited testing resources
   available to you, you can request that a member of the core Chapel team help.
 
-.. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst
+.. _Test System: https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/TestSystem.rst
 
 .. _Work-in-progress pull request:
 
@@ -629,16 +621,13 @@ non-meaningful commits:
 .. code-block:: bash
 
     git fetch upstream
-    git rebase -i upstream/master
+    git rebase -i upstream/main
 
 Note that this can be particularly cumbersome when there has been significant
-conflicting changes made on upstream master, so it is not a hard requirement.
-
-An alternative approach is to use the "squash and merge" option on the GitHub
-merge button which will reduce all commits to a single commit.
+conflicting changes made on upstream main, so it is not a hard requirement.
 
 It's not generally possible to completely remove a commit from git by the time
-it makes it in to the master branch. So be very careful not to commit anything
+it makes it in to the main branch. So be very careful not to commit anything
 that you might regret later (e.g., sensitive code, code owned by anyone other
 than yourself). Ideally, the review will catch such issues, but the ultimate
 responsibility is on the developer.
@@ -649,40 +638,28 @@ responsibility is on the developer.
 Reviewer responsibilities
 +++++++++++++++++++++++++
 
+* Test the PR you are reviewing.  Follow the instructions next to the
+  "Merge pull request" button in the "command-line instructions" link
+  to check out a local copy of the PR for testing.  They will look something
+  like the following:
+
+.. code-block:: bash
+
+  git checkout -b contribusername-prbranchname main
+  git pull https://github.com/contribusername/chapel.git prbranchname
+  # don't forget to recompile before you test
+
+
 * If you're reviewing a commit from a developer outside the Chapel core
   team, be sure their commits are signed via the DCO bot (one of several
   github action checks that will run on each PR).  If they're not, help
   the developer understand the requirement.
 
-  Note that using GitHub's "squash and merge" feature will effectively
-  drop all DCO signature lines from the pull request, and so should
-  not be used on external commits (or potentially even for commits
-  from the core team?) in order to preserve the signed nature of the
-  commits.
-
-  Care may need to be taken when committing third-party code that
-  originates from a different git[hub] repository.  As an example, in
-  one case in the past we brought in a copy of an outside commit that
-  had originally been made in the git repository belonging to one of our
-  third-party packages.  We did that by using git-am to commit a copy of
-  their raw commit (in git-send-mail format) to the appropriate
-  third-party directory in the Chapel repository.  For the commit in our
-  repo, their developer was listed as the author, but the Chapel core
-  team member who did the Chapel commit was listed as the contributor.
-  Had we instead split the original commit apart into its constituent
-  meta-information and patch parts and committed just the patch using
-  git-apply, the Chapel core team member would have been listed as both
-  author and contributor.  In the end it didn't matter because although
-  the outside developer couldn't sign our contributor's agreement, their
-  IP attorneys decided that given their license (which was BSD), their
-  commit constituted publishing the work rather than contributing it,
-  and what Chapel did with it afterward was not their concern.  Also, we
-  would have picked up the same commit the next time we updated our
-  third-party release of that package.  Nevertheless, this gives an
-  example of how tricky this kind of situation can be, and shows why
-  decisions may need to be made (or at least understood) at a high
-  level.
-
+* Care may need to be taken when committing third-party code that
+  originates from a different git[hub] repository.  There is a 
+  contributor's agreement that might be needed.  We may also need to do a 
+  licensing review.  Have a discussion with core developers before doing this.
+ 
 .. _Chapel Developers: https://chapel.discourse.group/c/developers
 .. _Chapel Users: https://chapel.discourse.group/c/users
 .. _chapel-lang/chapel: https://github.com/chapel-lang/chapel
@@ -713,7 +690,7 @@ After feature freeze, only bug fixes and documentation updates will be accepted
 for the upcoming release. After code/doc freeze, no contributions will be
 accepted for the upcoming release, barring critical bug fixes. At some point
 between code/doc freeze and the release, a release branch will be "cut", and
-the master branch will begin accepting all contributions again.
+the main branch will begin accepting all contributions again.
 
 The dates for these freezes will be posted on the `Chapel events page`_
 sometime close to each release.

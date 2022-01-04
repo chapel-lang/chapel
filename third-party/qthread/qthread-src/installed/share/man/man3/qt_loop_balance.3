@@ -1,0 +1,66 @@
+.TH qt_loop_balance 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qt_loop_balance
+\- a slightly intelligent implementation of a threaded loop
+.SH SYNOPSIS
+.B #include <qthread/qloop.h>
+
+.I void
+.br
+.B qt_loop_balance
+.RI "(const size_t " start ", const size_t " stop ,
+.ti +17
+.RI "const qt_loop_f " func ", void *" argptr );
+.PP
+.I void
+.br
+.B qt_loop_balance_simple
+.RI "(const size_t " start ", const size_t " stop ,
+.ti +24
+.RI "const qt_loop_f " func ", void *" argptr );
+.SH DESCRIPTION
+These functions provide a simple C implementation of a threaded loop. Rather than using a fixed number of threads, however, the number of threads generated depends directly upon the number of shepherds available. The
+.BR qt_loop_balance_simple ()
+variant uses simple qthreads, which cannot block or yield, but receive full-size stacks and execute as function-calls from the worker threads, thereby avoiding most context-swap overheads.
+.PP
+One qthread is spawned for each shepherd. The set of values of
+.I i
+(iterations) is divided evenly among the shepherds, and each qthread is
+assigned a set of iterations to perform.
+.PP
+The
+.I func
+argument must be a function pointer with a
+.B qt_loop_f
+prototype. Its basic code structure is expected to look like this:
+.RS
+.PP
+void
+.I func
+(const size_t startat, const size_t stopat, void 
+.RI * arg )
+.br
+{
+.RS
+for (size_t i = startat; i < stopat; ++i) {
+.RS
+/* do work */
+.RE
+}
+.RE
+}
+.RE
+.PP
+The arguments
+.I startat
+and
+.I stopat
+are determined by the library, and tell the function what range of
+.I i
+values (iterations) it is responsible for.
+.BR qt_loop_balance ()
+will not return until all of the qthreads it spawned have exited.
+.SH SEE ALSO
+.BR qt_loop (3),
+.BR qt_loopaccum_balance (3),
+.BR qthread_spawn (3)

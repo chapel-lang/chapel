@@ -25,6 +25,8 @@
 #include "stringutil.h"
 
 #include "baseAST.h"
+#include "chpl/queries/Context.h"
+#include "driver.h"
 #include "map.h"
 #include "misc.h"
 #include "symbol.h"
@@ -33,86 +35,29 @@
 #include <climits>
 #include <functional>
 #include <sstream>
+#include <unordered_map>
 
 #include <inttypes.h>
-
-static ChainHashMap<const char*, StringHashFns, const char*> chapelStringsTable;
-
-static const char*
-canonicalize_string(const char *s) {
-  const char* ss = chapelStringsTable.get(s);
-  if (!ss) {
-    chapelStringsTable.put(s, s);
-    return s;
-  }
-  return ss;
-}
 
 const char*
 astr(const char* s1, const char* s2, const char* s3, const char* s4,
      const char* s5, const char* s6, const char* s7, const char* s8,
      const char* s9) {
-  int len;
-  len = strlen(s1);
-  if (s2)
-    len += strlen(s2);
-  if (s3)
-    len += strlen(s3);
-  if (s4)
-    len += strlen(s4);
-  if (s5)
-    len += strlen(s5);
-  if (s6)
-    len += strlen(s6);
-  if (s7)
-    len += strlen(s7);
-  if (s8)
-    len += strlen(s8);
-  if (s9)
-    len += strlen(s9);
-  char* s = (char*)malloc(len+1);
-  strcpy(s, s1);
-  if (s2)
-    strcat(s, s2);
-  if (s3)
-    strcat(s, s3);
-  if (s4)
-    strcat(s, s4);
-  if (s5)
-    strcat(s, s5);
-  if (s6)
-    strcat(s, s6);
-  if (s7)
-    strcat(s, s7);
-  if (s8)
-    strcat(s, s8);
-  if (s9)
-    strcat(s, s9);
-  const char* t = canonicalize_string(s);
-  if (s != t)
-    free(s);
-  return t;
+  return gContext->uniqueCStringConcat(s1, s2, s3, s4, s5, s6, s7, s8, s9);
 }
 
 const char* astr(const char* s1)
 {
-  const char* ss = chapelStringsTable.get(s1);
-  if (ss)
-    // return an existing entry
-    return ss;
-
-  // add a new entry - always a fresh malloc
-  int len;
-  len = strlen(s1);
-  char* s = (char*)malloc(len+1);
-  strcpy(s, s1);
-  chapelStringsTable.put(s,s);
-  return s;
+  return gContext->uniqueCString(s1);
 }
 
 const char* astr(const std::string& s)
 {
   return astr(s.c_str());
+}
+const char* astr(UniqueString s)
+{
+  return s.astr(gContext);
 }
 
 const char*
@@ -126,25 +71,14 @@ istr(int i) {
 //
 // returns a canonicalized substring that contains the first part of
 // 's' up to 'e'
-// note: e must be in s
+// note: e must be a pointer that points within s
 //
 const char* asubstr(const char* s, const char* e) {
-  char* ss = (char*)malloc(e-s+1);
-  strncpy(ss, s, e-s);
-  ss[e-s] = '\0';
-  const char* t = canonicalize_string(ss);
-  if (ss != t)
-    free(ss);
-  return t;
-}
-
-
-void deleteStrings() {
-  Vec<const char*> keys;
-  chapelStringsTable.get_keys(keys);
-  forv_Vec(const char, key, keys) {
-    free(const_cast<char*>(key));
-  }
+  ssize_t uselen = e-s;
+  assert(0 <= uselen && (size_t)uselen <= strlen(s));
+  if (uselen < 0)
+    return astr("");
+  return gContext->uniqueCString(s, uselen);
 }
 
 
@@ -456,6 +390,10 @@ void splitString(const std::string& s, std::vector<std::string>& vec, const char
  */
 void splitStringWhitespace(const std::string& s, std::vector<std::string>& vec) {
   splitString(s, vec, " \t\n\r\f\v");
+}
+
+void splitStringWhitespace(const char* s, std::vector<std::string>& vec) {
+  splitStringWhitespace(std::string(s), vec);
 }
 
 void removeTrailingNewlines(std::string& str) {

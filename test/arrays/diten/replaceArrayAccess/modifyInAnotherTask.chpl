@@ -7,12 +7,12 @@ proc f(i)
 begin {
   for i in 1..4 {
     A[i] = i;
-    s$ = true;
+    s$.writeEF(true);
   }
 }
 
 for i in 1..4 {
-  s$;
+  s$.readFE();
   A[i] = A[i] * A[i];
   B[i] += A[i] + f(A[i]);
 }

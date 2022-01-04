@@ -101,7 +101,11 @@ testprograms_seq =      \
         testimm         \
         testsplit       \
         testacc         \
+        testsegment     \
+        testtmpair      \
         testreadonly    \
+        testcudauva     \
+        testhip         \
         $(CONDUIT_TESTS) \
         $(MPI_TESTS_SEQ)
 
@@ -152,6 +156,10 @@ TEST_ENV=$(DEBUG_MALLOC)
 
 TEST_INOUT=
 
+# max lines (per test) of "ERROR" output to present in the final summary from run-tests
+# setting to 0 means unbounded, but that (or very large) may crash the shell
+TEST_MAX_FAILURE_LINES=16
+
 # default node count
 TEST_NODES=2
 # provide args, env and node counts for specific tests, user can override with MANUAL_TESTPARAMS
@@ -181,8 +189,12 @@ TEST_PARAMS=                    					\
    $(MANUAL_TESTPARAMS) dummy=1 ;
 
 # omit tests that are supposed to fail or known to cause failures
+# testexit: requires special handling, provided by run-testexit
+# testreadonly: known to fail on multiple system (at least bugs 4008, 4009, 4046 and 4179)
+# MPI_TESTS_*: lack infrastructure here to launch via mpirun vs $(CONDUIT_RUNCMD)
 testprograms_err =      \
         testexit        \
+        testreadonly    \
 	$(MPI_TESTS_SEQ) \
 	$(MPI_TESTS_PAR)
 
@@ -278,7 +290,7 @@ run-tests: force
 	    ( eval env $$env $(TEST_ENV)                                                \
 	    $$TIMECMD $$cmd || echo "ERROR: Test exited with failure code=$$?" )        \
                              2>&1 | tee .test-output ;                                  \
-            failure=`@PERL@ -ne 'print if ((/ERROR/ || /fatal signal/) && !(/Retrying allocation/ || /GASNET_FREEZE_ON_ERROR/));' .test-output` ; \
+            failure=`@PERL@ -ne 'if ((/ERROR/ || /fatal signal/) && !(/Retrying allocation/ || /GASNET_FREEZE_ON_ERROR/)) { print; if (++$$lines == $(TEST_MAX_FAILURE_LINES)) { print "ERROR OUTPUT TRUNCATED AT $(TEST_MAX_FAILURE_LINES) LINES\n"; exit 0; }}' .test-output` ; \
             if test "$$failure" != "" ; then                                            \
                echo " " >> $(TESTLOG) ;                                                 \
                echo " *-* $$faildesc *-*" >> $(TESTLOG) ;                               \
@@ -394,6 +406,12 @@ testlegacy_extraincs    = $(AMX_INC)
 testcxx_extraincs       = $(AMX_INC)
 testlegacycxx_extraincs = $(AMX_INC)
 
+# some tests need cuda.h and other related options
+testcudauva_extracflags = @CUDA_UVA_CFLAGS@
+
+# some tests need hip_runtime.h other related options
+testhip_extracflags = @HIP_CFLAGS@
+
 # delay function, used by multiple tests
 # need to deliberately exclude and disable optimization for this object file to prevent breaking delay
 NOOPT_FLAG=-O0
@@ -427,13 +445,13 @@ testcxx testlegacycxx: force
 		echo "ERROR: $@ target requested, but no c++ compiler is configured"; \
 		exit 1; \
 	 fi
-	$(GASNET_CXX) -I$(srcdir) $($@_extraincs) $(GASNET_CXXCPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CXXFLAGS) $(GASNET_CXXFLAGS) -c -o $@.o $(srcdir)/$@.cc
+	$(GASNET_CXX) -I$(srcdir) $($@_extraincs) $(GASNET_CXXCPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CXXFLAGS) $(GASNET_CXXFLAGS) $($@_extracxxflags) -c -o $@.o $(srcdir)/$@.cc
 	$(GASNET_CXX) $(GASNET_CXXFLAGS) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 
 # This is a model for how GASNet clients should be built:
 test% : force
-	$(GASNET_CC) -I$(srcdir) $($@_extraincs) $(GASNET_CPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CFLAGS) $(GASNET_CFLAGS) -c -o $@.o $(srcdir)/$@.c
+	$(GASNET_CC) -I$(srcdir) $($@_extraincs) $(GASNET_CPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CFLAGS) $(GASNET_CFLAGS) $($@_extracflags) -c -o $@.o $(srcdir)/$@.c
 	$(GASNET_LD) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 

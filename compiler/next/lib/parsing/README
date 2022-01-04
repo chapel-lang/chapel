@@ -1,0 +1,54 @@
+This directory contains the parser for Chapel which is implemented
+using the bison/flex tool set. The sources for the parser are
+
+chapel.lex
+chapel.ypp
+
+and the generated files are
+
+flex-chapel.cpp,  ../include/flex-chapel.h
+bison-chapel.cpp, ../include/bison-chapel.h
+
+respectively.  The location for the generated files is
+defined using appropriate directives within the parser
+sources.
+
+
+
+
+
+Historically we included only the parser sources in the repository
+and relied on the target platform to construct the generated C files
+while the compiler is being installed.
+
+This policy was revised when we began to rely on features that were
+included starting in bison 2.5.  Although bison had already advanced
+to 3.*, some machines that we relied on still had bison 2.3 installed
+by default.  We judged that some potential users might have the same
+constraint. We addressed this by including the generated parser in the
+repository.
+
+Further we were required to disable the Makefile rule to rebuild the
+parser from the sources whenever the sources were changed as we could
+not control the date-stamp on the sources relative to the generated files
+when a user updates their repository.
+
+
+This means that we require that developers who work on the parser:
+
+1) have the following versions installed: Bison 2.5 or later; Flex 2.6 or later
+
+2) explicitly build the generated parser when they alter the parser
+sources.  One way to do this is to run "make parser" in this
+directory.
+
+
+3) when submitting a pull request to modify the parser sources, also include
+the generated parser.  We find it helpful to add the sources and the
+generated files as separate commits within the same pull request.
+This enables the reviewer to more easily ignore the extensive diffs
+that may appear in the generated parser.
+
+
+Note that if there is ever a case in which the generated parser becomes
+corrupted it can be restored using "git checkout".

@@ -19,7 +19,11 @@
 #
 # settings for the build
 #
+
+ifneq ($(NO_DEPEND), 1)
 DEPEND=1
+endif
+
 ifdef CHPL_DEVELOPER
 DEBUG=1
 WARNINGS=1
@@ -38,7 +42,15 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 RUNTIME_ROOT = $(COMPILER_ROOT)/../runtime
 
-INCL_CFLAGS = -I. -I$(COMPILER_ROOT)/include/$(CHPL_MAKE_HOST_PLATFORM) -I$(COMPILER_ROOT)/include $(LLVM_INCLUDES) -I$(COMPILER_BUILD) -I$(RUNTIME_ROOT)/include/encoding -I$(THIRD_PARTY_DIR)/utf8-decoder
+INCL_CFLAGS = -I. \
+              -I$(COMPILER_ROOT)/include/$(CHPL_MAKE_HOST_PLATFORM) \
+              -I$(COMPILER_ROOT)/include $(LLVM_INCLUDES) \
+              -I$(COMPILER_BUILD) \
+              -I$(RUNTIME_ROOT)/include/encoding \
+              -I$(THIRD_PARTY_DIR)/utf8-decoder \
+              -I$(COMPILER_ROOT)/next/include \
+
+
 COMP_CXXFLAGS += $(INCL_CFLAGS)
 
 #

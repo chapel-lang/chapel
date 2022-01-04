@@ -3,7 +3,7 @@ record point {
   var y : int;
 }
 
-proc +(p1 : point, p2 : point) : point {
+operator point.+(p1 : point, p2 : point) : point {
   var p3 : point = new point();
   p3.x = p1.x + p2.x;
   p3.y = p1.y + p2.y;

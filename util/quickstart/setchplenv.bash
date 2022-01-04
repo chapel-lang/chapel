@@ -61,8 +61,8 @@ export CHPL_MEM=cstdlib
 echo "Setting CHPL_GMP to none"
 export CHPL_GMP=none
 
-echo "Setting CHPL_REGEXP to none"
-export CHPL_REGEXP=none
+echo "Setting CHPL_RE2 to none"
+export CHPL_RE2=none
 
 echo "Setting CHPL_LLVM to none"
 export CHPL_LLVM=none

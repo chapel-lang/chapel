@@ -169,7 +169,7 @@ proc updatePositions()
 
     forall i in atomsDist
     {
-	locks[here.id]=true;
+	locks[here.id].writeEF(true);
 	for m in 0..membcounts[i]-1
 	{
 	    var j:int=neighbors[i,m];
@@ -179,7 +179,7 @@ proc updatePositions()
 		needsUpdate[here.id,j]=false;
 	    }
 	}
-	locks[here.id];
+	locks[here.id].readFE();
     }
 }
 

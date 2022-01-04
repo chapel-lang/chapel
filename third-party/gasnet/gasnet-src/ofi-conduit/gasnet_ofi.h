@@ -50,7 +50,6 @@ extern struct fid_av*        gasnetc_ofi_avfd;
 extern struct fid_cq*        gasnetc_ofi_tx_cqfd; /* CQ for both AM and RDMA tx ops */
 
 extern struct fid_ep*        gasnetc_ofi_rdma_epfd;
-extern struct fid_mr*        gasnetc_ofi_rdma_mrfd;
 
 extern struct fid_ep*        gasnetc_ofi_request_epfd;
 extern struct fid_ep*        gasnetc_ofi_reply_epfd;
@@ -146,9 +145,20 @@ typedef struct gasnetc_ofi_bounce_op_ctxt {
     gasnetc_paratomic_t cntr;
 } gasnetc_ofi_bounce_op_ctxt_t;
 
+// Conduit-specific Segment type
+typedef struct gasnetc_Segment_t_ {
+  GASNETI_SEGMENT_COMMON // conduit-indep part as prefix
+
+  // conduit-specific fields
+  struct fid_mr*        mrfd;
+} *gasnetc_Segment_t;
+
+void gasnetc_auxseg_register(gasnet_seginfo_t si);
+int gasnetc_segment_register(gasnetc_Segment_t segment);
+void gasnetc_segment_exchange(gex_TM_t tm, gex_EP_t *eps, size_t num_eps);
+
 int gasnetc_ofi_init(void);
 void gasnetc_ofi_poll(void);
-void gasnetc_ofi_attach(void *segbase, uintptr_t segsize);
 void gasnetc_ofi_exit(void);
 
 /* Active Messages Send Functions */

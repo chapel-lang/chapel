@@ -42,6 +42,36 @@ enum TagGenericResult {
   TGR_TAGGING_ABORTED
 };
 
+//
+// This helper class holds mappings for the interface representatives
+// that are used while resolving interface-constrained functions.
+//
+// Each IfcConstraint in 'interfaceConstraints' has its own InterfaceReps
+// instance. A single instance for all constraints in a CG function is not
+// sufficient because it does not handle this case:
+//   proc icFun(arg1: ?Q1, arg2: ?Q2) where
+//     Q1 implements IFC && Q2 implements IFC { ... }
+//
+// Given a constraint Q implements IFC:
+//
+// 'symReps' maps each FnSymbol for IFC's required function and each TypeSymbol
+//           for IFC's associated type to their representatives;
+//
+// 'conReps' implements recursion due to IFC's associated constraints, if any.
+//
+struct InterfaceReps {
+  // for interface's required fns / assoc types
+  SymbolMap symReps;
+
+  // one for each assoc constraint
+  std::vector<InterfaceReps*> conReps;
+
+  int  numAssocCons() const { return conReps.size(); }
+  bool empty()        const { return symReps.n == 0 && conReps.empty(); }
+
+  ~InterfaceReps() { for (InterfaceReps* ar: conReps) delete ar; }
+};
+
 // Additional data for interface constraints / constrained generics / CG.
 // Stored in a FnSymbol for a constrained-generic function.
 class InterfaceInfo {
@@ -58,17 +88,15 @@ public:
   // an interface constraint of this function
   AList interfaceConstraints;
 
-  // contains one SymbolMap per IfcConstraint in 'interfaceConstraints'
-  // with mapping: the FnSymbol for a required function in the interface def
-  //   -> the FnSymbol used to represent calls to that required function
-  //      throughout the body of this function
-  //
-  // a single SymbolMap for all constraints in a CG function is not sufficient
-  // when the same interface is implemented by different ConstrainedTypes
-  std::vector<SymbolMap> repsForRequiredFns;
+  // one InterfaceReps instance per IfcConstraint in 'interfaceConstraints'
+  std::vector<InterfaceReps> ifcReps;
+
+  // "interim instantiation" copies of CG functions invoked from this function
+  // for those calls that rely on this function's interfaceConstraints
+  std::set<FnSymbol*> invokedCGfns;
 };
 
-class FnSymbol : public Symbol {
+class FnSymbol final : public Symbol {
 public:
   // each formal is an ArgSymbol, but the elements are DefExprs
   AList                      formals;
@@ -129,15 +157,16 @@ public:
 
 
                              FnSymbol(const char* initName);
-                            ~FnSymbol();
+                            ~FnSymbol() override;
 
-  void                       verify();
-  virtual void               accept(AstVisitor* visitor);
+  void                       verify() override;
+  void                       accept(AstVisitor* visitor) override;
 
   DECLARE_SYMBOL_COPY(FnSymbol);
+  FnSymbol* copyInner(SymbolMap* map) override;
 
   FnSymbol*                  copyInnerCore(SymbolMap* map);
-  void                       replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  void                       replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
 
   FnSymbol*                  partialCopy(SymbolMap* map);
   void                       finalizeCopy();
@@ -146,10 +175,10 @@ public:
   GenRet                     codegenFunctionType(bool forHeader);
   GenRet                     codegenCast(GenRet fnPtr);
 
-  GenRet                     codegen();
+  GenRet                     codegen() override;
   void                       codegenHeaderC();
-  void                       codegenPrototype();
-  void                       codegenDef();
+  void                       codegenPrototype() override;
+  void                       codegenDef() override;
   void                       codegenFortran(int indent);
   void                       codegenPython(PythonFileType pxd);
   GenRet                     codegenPXDType();
@@ -237,7 +266,7 @@ public:
 
   QualifiedType              getReturnQualType()                         const;
 
-  virtual void               printDocs(std::ostream* file,
+  void                       printDocs(std::ostream* file,
                                        unsigned int  tabs);
 
   void                       throwsErrorInit();
@@ -252,7 +281,7 @@ public:
                                                  bool& printedUnderline) const;
 
 private:
-  virtual std::string        docsDirective();
+  std::string                docsDirective();
 
   bool                       hasGenericFormals(SymbolMap* map)           const;
 

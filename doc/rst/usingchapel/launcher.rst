@@ -52,8 +52,9 @@ amudprun             GASNet launcher for programs running over UDP
 aprun                Cray application launcher using aprun                
 gasnetrun_ibv        GASNet launcher for programs running over Infiniband 
 gasnetrun_mpi        GASNet launcher for programs using the MPI conduit   
-mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray X* systems
+mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray systems
 lsf-gasnetrun_ibv    GASNet launcher using LSF (bsub) over Infiniband
+pals                 Cray application launcher using PALS on HPE Cray EX systems
 pbs-aprun            Cray application launcher using PBS (qsub) + aprun   
 pbs-gasnetrun_ibv    GASNet launcher using PBS (qsub) over Infiniband     
 slurm-gasnetrun_ibv  GASNet launcher using SLURM over Infiniband          
@@ -70,7 +71,10 @@ A specific launcher can be explicitly requested by setting the
 If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
 
 
-* if ``CHPL_PLATFORM`` is cray-xc:
+* if ``CHPL_COMM`` is gasnet and ``CHPL_COMM_SUBSTRATE`` is udp
+  ``CHPL_LAUNCHER`` is set to amudprun
+
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-xc or hpe-cray-ex:
 
   ==================================  ===================================
   If                                  CHPL_LAUNCHER
@@ -81,6 +85,19 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   otherwise                           none
   ==================================  ===================================
 
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-cs and ``CHPL_COMM`` is gasnet and
+  salloc is in the user's path:
+
+  =======================  ==============================================
+  If                       CHPL_LAUNCHER
+  =======================  ==============================================
+  CHPL_COMM_SUBSTRATE=ibv  slurm-gasnetrun_ibv
+  CHPL_COMM_SUBSTRATE=mpi  slurm-gasnetrun_mpi
+  =======================  ==============================================
+
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-cs and srun is in the users path
+  ``CHPL_LAUNCHER`` is set to slurm-srun
+
 * otherwise, if ``CHPL_COMM`` is gasnet:
 
   =======================  ==============================================
@@ -88,9 +105,7 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   =======================  ==============================================
   CHPL_COMM_SUBSTRATE=ibv  gasnetrun_ibv
   CHPL_COMM_SUBSTRATE=mpi  gasnetrun_mpi
-  CHPL_COMM_SUBSTRATE=mxm  gasnetrun_ibv
   CHPL_COMM_SUBSTRATE=smp  smp
-  CHPL_COMM_SUBSTRATE=udp  amudprun
   otherwise                none
   =======================  ==============================================
 
@@ -155,8 +170,6 @@ UDP or InfiniBand conduits. So, for these configurations please see:
 
   * :ref:`readme-infiniband` for information about using Slurm with
     InfiniBand.
-  * :ref:`readme-omnipath` for information about using Slurm with
-    OmniPath.
   * :ref:`using-udp-slurm` for information about using Slurm with the UDP
     conduit
 
@@ -185,6 +198,13 @@ Common Slurm Settings
 
     export CHPL_LAUNCHER_PARTITION=debug
 
+* Optionally, you can specify a slurm nodelist by setting the environment
+  variable ``CHPL_LAUNCHER_NODELIST``. For example, to use node nid00001, set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_NODELIST=nid00001
+
 * Optionally, you can specify a slurm constraint by setting the environment
   variable ``CHPL_LAUNCHER_CONSTRAINT``. For example, to use nodes with the
   'cal' feature (as defined in the slurm.conf file), set:
@@ -192,6 +212,14 @@ Common Slurm Settings
   .. code-block:: bash
 
     export CHPL_LAUNCHER_CONSTRAINT=cal
+
+* Optionally, you can specify a slurm account by setting the environment
+  variable ``CHPL_LAUNCHER_ACCOUNT``. For example, to use the account 'acct',
+  set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_ACCOUNT=acct
 
 * If the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` is defined then
   sbatch is used to launch the job to the queue system, rather than

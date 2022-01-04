@@ -1,1 +1,1 @@
--Llib/ -lexportFuncWithExternType `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lexportFuncWithExternType `$CHPL_HOME/util/config/compileline --libraries` -lexportFuncWithExternType

@@ -35,6 +35,7 @@
 #include "llvmVer.h"
 #include "library.h"
 #include "misc.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "stlUtil.h"
 #include "stringutil.h"
@@ -71,8 +72,6 @@ std::vector<const char*>   libFiles;
 
 // directory for intermediates; tmpdir or saveCDir
 static const char* intDirName        = NULL;
-
-static const int   MAX_CHARS_PER_PID = 32;
 
 static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   char* dirString = strdup(pathVar);
@@ -161,15 +160,7 @@ static const char* getTempDir() {
 
 const char* makeTempDir(const char* dirPrefix) {
   const char* tmpdirprefix = astr(getTempDir(), "/", dirPrefix);
-  const char* tmpdirsuffix = ".deleteme";
-
-  pid_t mypid = getpid();
-#ifdef DEBUGTMPDIR
-  mypid = 0;
-#endif
-
-  char mypidstr[MAX_CHARS_PER_PID];
-  snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", (int)mypid);
+  const char* tmpdirsuffix = ".deleteme-XXXXXX";
 
   struct passwd* passwdinfo = getpwuid(geteuid());
   const char* userid;
@@ -181,15 +172,23 @@ const char* makeTempDir(const char* dirPrefix) {
   char* myuserid = strdup(userid);
   removeSpacesBackslashesFromString(myuserid);
 
-  const char* tmpDir = astr(tmpdirprefix, myuserid, mypidstr, tmpdirsuffix);
-  ensureDirExists(tmpDir, "making temporary directory");
+  const char* tmpDir = astr(tmpdirprefix, myuserid, tmpdirsuffix);
+  char* tmpDirMut = strdup(tmpDir);
+  char* dirRes = mkdtemp(tmpDirMut);
+
+  if (dirRes == NULL) {
+    USR_FATAL("unable to create temporary directory at %s\n", tmpDir);
+  }
 
   free(myuserid); myuserid = NULL;
 
-  return tmpDir;
+  const char* ret = astr(dirRes);
+  free(tmpDirMut);
+
+  return ret;
 }
 
-static void ensureTmpDirExists() {
+void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
     if (tmpdirname == NULL) {
       tmpdirname = makeTempDir("chpl-");
@@ -254,6 +253,15 @@ void deleteTmpDir() {
     deleteDir(tmpdirname);
     tmpdirname = NULL;
   }
+  if (doctmpdirname != NULL) {
+    if (strlen(doctmpdirname) < 1 ||
+        strchr(doctmpdirname, '*') != NULL ||
+        strcmp(doctmpdirname, "//") == 0) {
+      INT_FATAL("doc tmp directory name looks fishy");
+    }
+    deleteDir(doctmpdirname);
+    doctmpdirname = NULL;
+  }
 #endif
 
   inDeleteTmpDir = 0;
@@ -316,7 +324,10 @@ FILE* openfile(const char* filename,
 
 
 void closefile(FILE* thefile) {
-  if (fclose(thefile) != 0) {
+  if (thefile == nullptr) return;
+
+  int rc = fclose(thefile);
+  if (rc != 0) {
     USR_FATAL("closing file: %s", strerror(errno));
   }
 }
@@ -329,6 +340,7 @@ void openfile(fileinfo* thefile, const char* mode) {
 
 void closefile(fileinfo* thefile) {
   closefile(thefile->fptr);
+  thefile->fptr = nullptr;
 }
 
 
@@ -343,7 +355,7 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
 }
 
 void closeCFile(fileinfo* fi, bool beautifyIt) {
-  closefile(fi->fptr);
+  closefile(fi);
   //
   // We should beautify if (1) we were asked to and (2) either (a) we
   // were asked to save the C code or (b) we were asked to codegen cpp
@@ -539,7 +551,7 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
 
   fprintf(dbgfile, "\n");
   closefile(dbgfile);
-  mysystem(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
+  myshell(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
                 dbgfilename),
            astr("appending ", debugger, " commands"),
            false);
@@ -547,18 +559,16 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   return dbgfilename;
 }
 
-std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
+std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
   // Run printchplenv script, passing currently known CHPL_vars as well
-  std::string command = "";
+  std::string command;
 
-  // Pass known variables in varMap into printchplenv by appending to command
-  for (std::map<std::string, const char*>::iterator ii=varMap.begin(); ii!=varMap.end(); ++ii)
-  {
-    command += ii->first + "=" + std::string(ii->second) + " ";
-  }
+  // Pass known variables in varMap into printchplenv by prepending to command
+  for (auto& ii : varMap)
+    command += ii.first + "=" + ii.second + " ";
 
-  // Toss stderr away until printchplenv supports a '--suppresswarnings' flag
-  command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple 2> /dev/null";
+  command += "CHPLENV_SUPPRESS_WARNINGS=true ";
+  command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple";
 
   return runCommand(command);
 }
@@ -566,8 +576,8 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
 std::string getChplDepsApp() {
   // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
 
-  std::string command = "CHPL_HOME=" + std::string(CHPL_HOME) + " python3 ";
-  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps 2> /dev/null";
+  std::string command = "CHPLENV_SUPPRESS_WARNINGS=true CHPL_HOME=" + std::string(CHPL_HOME) + " python3 ";
+  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps";
 
   std::string venvDir = runCommand(command);
   venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
@@ -576,7 +586,7 @@ std::string getChplDepsApp() {
 }
 
 bool compilingWithPrgEnv() {
-  return (strstr(CHPL_ORIG_TARGET_COMPILER, "cray-prgenv") != NULL);
+  return 0 != strcmp(CHPL_TARGET_COMPILER_PRGENV, "none");
 }
 
 std::string runCommand(std::string& command) {
@@ -598,7 +608,7 @@ std::string runCommand(std::string& command) {
   }
 
   if (pclose(pipe)) {
-    USR_FATAL("%s did not run successfully", command.c_str());
+    USR_FATAL("'%s' did not run successfully", command.c_str());
   }
 
   return result;
@@ -675,8 +685,7 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
   }
 }
 
-std::string genMakefileEnvCache(void);
-std::string genMakefileEnvCache(void) {
+static std::string genMakefileEnvCache() {
   std::string result;
   std::map<std::string, const char*>::iterator env;
 
@@ -694,6 +703,7 @@ std::string genMakefileEnvCache(void) {
 }
 
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
+                      const char** tmpservername,
                       bool skip_compile_link,
                       const std::vector<const char*>& splitFiles) {
   const char* tmpDirName = intDirName;
@@ -772,6 +782,9 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Write out the temporary filename to the caller if necessary.
   if (tmpbinname) { *tmpbinname = tmpbin; }
+
+  // Ditto for the server.
+  if (tmpservername) { *tmpservername = tmpserver; }
 
   //
   // BLC: We generate a TMPBINNAME which is the name that will be used
@@ -859,16 +872,16 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // List source files needed to compile this deliverable.
   if (fMultiLocaleInterop) {
 
-    const char* mli_client = astr(intDirName, "/", "chpl_mli_client.c");
-    const char* mli_server = astr(intDirName, "/", "chpl_mli_server.c");
+    const char* client = astr(intDirName, "/", gMultiLocaleLibClientFile);
+    const char* server = astr(intDirName, "/", gMultiLocaleLibServerFile);
 
     // Only one source file for client (for now).
     fprintf(makefile.fptr, "CHPLSRC = \\\n");
-    fprintf(makefile.fptr, "\t%s \n", mli_client);
+    fprintf(makefile.fptr, "\t%s \n", client);
 
     // The server bundle includes "_main.c", bypassing the need to include it.
     fprintf(makefile.fptr, "CHPLSERVERSRC = \\\n");
-    fprintf(makefile.fptr, "\t%s \n", mli_server);
+    fprintf(makefile.fptr, "\t%s \n", server);
 
   } else {
     fprintf(makefile.fptr, "CHPLSRC = \\\n");
@@ -945,7 +958,7 @@ void readArgsFromCommand(std::string cmd, std::vector<std::string>& args) {
       // First argument is the clang install directory...
       args.push_back(arg);
     }
-    fclose(fd);
+    pclose(fd);
   }
 }
 
@@ -1115,12 +1128,14 @@ static int sys_getcwd(char** path_out)
  * sys_getcwd() if you need error reports.
  */
 const char* getCwd() {
-  const char* result = getcwd(NULL, PATH_MAX);
-  if (result) {
-    return result;
-  } else {
+  char* ret = nullptr;;
+  int rc;
+
+  rc = sys_getcwd(&ret);
+  if (rc == 0)
+    return ret;
+  else
     return "";
-  }
 }
 
 

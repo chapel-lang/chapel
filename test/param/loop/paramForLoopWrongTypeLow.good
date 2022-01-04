@@ -1,1 +1,1 @@
-paramForLoopWrongTypeLow.chpl:1: error: Range bounds and counts must be integers of compatible types in param for-loops
+paramForLoopWrongTypeLow.chpl:1: error: Ranges defined using bounds of type 'string..int(64)' are not currently supported

@@ -109,4 +109,18 @@
 #define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_FLT 1
 #define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_DBL 1
 
+// 3. Hooks for conduit-specific extension to create and destroy
+//
+// These hooks are analogous to the following:
+//     GASNETC_CLIENT_EXTRA_DECLS
+//     GASNETC_CLIENT_INIT_HOOK
+//     GASNETC_CLIENT_FINI_HOOK
+//     GASNETC_SIZEOF_CLIENT_T
+// which are documented in template-conduit/gasnet_core_fwd.h
+
+//#define GASNETC_AD_EXTRA_DECLS (###)
+//#define GASNETC_AD_INIT_HOOK(i_ad) (###)
+//#define GASNETC_AD_FINI_HOOK(i_ad) (###)
+//#define GASNETC_SIZEOF_AD_T() (###)
+
 #endif // _GASNET_RATOMIC_FWD_H

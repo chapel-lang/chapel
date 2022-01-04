@@ -31,57 +31,59 @@ or
 
 .. data:: var negDefault = -x
 
+.. data:: var plusDefault = +x
+
 .. data:: var bitwiseNegDefault = ~x
 
 .. data:: var notNilDefault = c!
 
 .. data:: var isNilDefault: nilable C = nil
 
-.. data:: var plusDefault = x+y
+.. data:: var plusDefault = x + y
 
-.. data:: var minusDefault = x-y
+.. data:: var minusDefault = x - y
 
-.. data:: var multDefault = x*y
+.. data:: var multDefault = x * y
 
-.. data:: var divDefault = x/y
+.. data:: var divDefault = x / y
 
-.. data:: var modDefault = x%y
+.. data:: var modDefault = x % y
 
-.. data:: var orDefault = x||y
+.. data:: var orDefault = x || y
 
-.. data:: var binOrDefault = x|y
+.. data:: var binOrDefault = x | y
 
-.. data:: var andDefault = x&&y
+.. data:: var andDefault = x && y
 
-.. data:: var binAndDefault = x&y
+.. data:: var binAndDefault = x & y
 
-.. data:: var binXorDefault = x^y
+.. data:: var binXorDefault = x ^ y
 
-.. data:: var threeOrDefault = x||y||z
+.. data:: var threeOrDefault = x || y || z
 
-.. data:: var threeBinOrDefault = x|y|z
+.. data:: var threeBinOrDefault = x | y | z
 
-.. data:: var threeAndDefault = x&&y&&z
+.. data:: var threeAndDefault = x && y && z
 
-.. data:: var threeBinAndDefault = x&y&z
+.. data:: var threeBinAndDefault = x & y & z
 
 .. data:: var powDefault = x**y
 
-.. data:: var lshiftDefault = x<<y
+.. data:: var lshiftDefault = x << y
 
-.. data:: var rshiftDefault = x>>y
+.. data:: var rshiftDefault = x >> y
 
-.. data:: var eqDefault = x==y
+.. data:: var eqDefault = x == y
 
-.. data:: var neqDefault = x!=y
+.. data:: var neqDefault = x != y
 
-.. data:: var lessDefault = x<y
+.. data:: var lessDefault = x < y
 
-.. data:: var gtDefault = x>y
+.. data:: var gtDefault = x > y
 
-.. data:: var lessEqDefault = x<=y
+.. data:: var lessEqDefault = x <= y
 
-.. data:: var gtEqDefault = x>=y
+.. data:: var gtEqDefault = x >= y
 
 .. data:: var minDefault = min(int)
 
@@ -152,4 +154,28 @@ or
 .. data:: var R2TypedArgDefault: R2(1, 2) = new R2(1, 2)
 
 .. data:: var R3TypedArgDefault: R3(1, 2, 3) = new R3(1, 2, 3)
+
+.. data:: var boundedRange = 1..10
+
+.. data:: var lowBoundedRange = 1..
+
+.. data:: var highBoundedRange = ..10
+
+.. data:: var unboundedRange = ..
+
+.. data:: var boundedRangeBy = 1..10 by 2
+
+.. data:: var lowBoundedRangeBy = 1.. by 2
+
+.. data:: var highBoundedRangeBy = ..10 by 2
+
+.. data:: var unboundedRangeBy = .. by 2
+
+.. data:: var boundedRangeByAlign = 1..10 by 2 align 1
+
+.. data:: var lowBoundedRangeByAlign = 1.. by 2 align 1
+
+.. data:: var highBoundedRangeByAlign = ..10 by 2 align 1
+
+.. data:: var unboundedRangeByAlign = .. by 2 align 1
 

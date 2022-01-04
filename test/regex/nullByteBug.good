@@ -1,0 +1,6 @@
+(b"one\x00two", 1)
+b"\x00"
+b"a\x00"
+b"\x00a"
+b"\x00+"
+b"aAbAcA"

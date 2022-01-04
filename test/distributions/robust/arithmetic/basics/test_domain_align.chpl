@@ -15,7 +15,7 @@ proc compare(D, R, a, s=2) {
   type yieldType = if rr.rank == 1 then rr.idxType else rr.rank*rr.idxType;
   var tracker : domain(yieldType);
 
-  forall i in rr do tracker.add(i);
+  forall i in rr with(ref tracker) do tracker.add(i);
   assert(tracker.size == rr.size);
 
   {
@@ -29,7 +29,7 @@ proc compare(D, R, a, s=2) {
 
   {
     var failures : atomic int;
-    forall i in dd do if !tracker.contains(i) then failures.add(1);
+    forall i in dd with(ref failures) do if !tracker.contains(i) then failures.add(1);
 
     const f = failures.read();
     write("\tleader/follower: ");

@@ -20,13 +20,13 @@
 
 // ChapelHashing.chpl
 //
-// chpl__defaultHash and related functions
+// hash and related functions
 module ChapelHashing {
 
   use ChapelBase;
 
   proc chpl__defaultHashWrapper(x): int {
-    const hash = chpl__defaultHash(x);
+    const hash = x.hash();
     return (hash & max(int)): int;
   }
 
@@ -58,73 +58,73 @@ module ChapelHashing {
     return _gen_key(a ^ chpl_bitops_rotl_64(b, n));
   }
 
-  inline proc chpl__defaultHash(b: bool): uint {
-    if (b) then
+  inline proc bool.hash(): uint {
+    if (this) then
       return 0;
     else
       return 1;
   }
 
-  inline proc chpl__defaultHash(i: int(64)): uint {
-    return _gen_key(i);
+  inline proc int.hash(): uint {
+    return _gen_key(this);
   }
 
-  inline proc chpl__defaultHash(u: uint(64)): uint {
-    return _gen_key(u);
+  inline proc uint.hash(): uint {
+    return _gen_key(this);
   }
 
-  inline proc chpl__defaultHash(e) where isEnum(e) {
-    return _gen_key(chpl__enumToOrder(e));
+  inline proc enum.hash(): uint {
+    return _gen_key(chpl__enumToOrder(this));
   }
 
-  inline proc chpl__defaultHash(f: real): uint {
-    return _gen_key(__primitive( "real2int", f));
+  inline proc real.hash(): uint {
+    return _gen_key(__primitive( "real2int", this));
   }
 
-  inline proc chpl__defaultHash(c: complex): uint {
-    return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im));
+  inline proc complex.hash(): uint {
+    return _gen_key(__primitive("real2int", this.re) ^ __primitive("real2int", this.im));
   }
 
-  inline proc chpl__defaultHash(a: imag): uint {
-    return _gen_key(__primitive( "real2int", _i2r(a)));
+  inline proc imag.hash(): uint {
+    return _gen_key(__primitive( "real2int", _i2r(this)));
   }
 
-  inline proc chpl__defaultHash(u: chpl_taskID_t): uint {
-    return _gen_key(u:int(64));
+  inline proc chpl_taskID_t.hash(): uint {
+    return _gen_key(this:int);
   }
 
-  inline proc chpl__defaultHash(l : []): uint {
+  inline proc _array.hash(): uint {
     var hash : uint = 0;
     var i = 1;
-    for obj in l {
-      hash = chpl__defaultHashCombine(chpl__defaultHash(obj), hash, i);
+    for obj in this {
+      hash = chpl__defaultHashCombine(obj.hash(), hash, i);
       i += 1;
     }
     return hash;
   }
 
   // Nilable and non-nilable classes will coerce to this.
-  inline proc chpl__defaultHash(o: borrowed object?): uint {
-    return _gen_key(__primitive( "object2int", o));
+  inline proc (borrowed object?).hash(): uint {
+    return _gen_key(__primitive( "object2int", this));
   }
 
-  inline proc chpl__defaultHash(l: locale): uint {
-    return _gen_key(__primitive( "object2int", l._value));
+  inline proc locale.hash(): uint {
+    return _gen_key(__primitive( "object2int", this._value));
   }
 
   //
-  // Implementation of chpl__defaultHash for ranges, in case the 'keyType'
+  // Implementation of hash for ranges, in case the 'keyType'
   // contains a range in some way (e.g. tuple of ranges).
   //
-  inline proc chpl__defaultHash(r : range): uint {
+  inline proc range.hash(): uint {
     use Reflection;
     var ret : uint;
-    for param i in 1..numImplementationFields(r.type) {
-      if isParam(getImplementationField(r, i)) == false &&
-         isType(getImplementationField(r, i)) == false &&
-         isNothingType(getImplementationField(r, i).type) == false {
-        const ref field = getImplementationField(r, i);
-        const fieldHash = chpl__defaultHash(field);
+    for param i in 1..numImplementationFields(this.type) {
+      if isParam(getImplementationField(this, i)) == false &&
+         isType(getImplementationField(this, i)) == false &&
+         isNothingType(getImplementationField(this, i).type) == false {
+        const ref field = getImplementationField(this, i);
+        const fieldHash = field.hash();
         if i == 1 then
           ret = fieldHash;
         else
@@ -135,13 +135,13 @@ module ChapelHashing {
   }
 
   // Is 'idxType' legal to create a default associative domain with?
-  // Currently based on the availability of chpl__defaultHash().
+  // Currently based on the availability of hash().
   // Enumerated and sparse domains are handled separately.
   // Tuples and records also work, somehow.
   proc chpl__validDefaultAssocDomIdxType(type idxType) param return false;
 
   proc chpl__validDefaultAssocDomIdxType(type idxType) param where
-      // one check per an implementation of chpl__defaultHash() above
+      // one check per an implementation of hash() above
       isBoolType(idxType)     ||
       isIntType(idxType)      ||
       isUintType(idxType)    ||

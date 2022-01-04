@@ -7,7 +7,7 @@ for i in 1..3 {
   j = i;
   begin with (ref j) {
     if (i < 3) then while a(i+1).readXX() == 0 do;
-    a(i) = i + j;
+    a(i).writeEF(i + j);
   }
 }
 
@@ -21,7 +21,7 @@ for i in 1..3 {
   j = i;
   begin {
     if (i < 3) then while a(i+1).readXX() == 0 do;
-    a(i) = i + j;
+    a(i).writeEF(i + j);
   }
 }
 

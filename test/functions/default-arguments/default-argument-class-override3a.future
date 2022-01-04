@@ -1,0 +1,11 @@
+bug: dynamically dispatched methods with default param arguments wrong
+
+#15164
+
+This test demonstrates that when methods are dynamically dispatched
+and have param arguments with defaults, the compiler doesn't use the
+default from the method that was chosen dynamically, but the one based
+on the static type.  This is because we implement default arguments
+as methods currently, and can't dynamically dispatch param methods.
+Yet we have to statically invoke the default arguments in order to
+fulfill the `param` nature of the arguments.

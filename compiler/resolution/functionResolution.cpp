@@ -38,6 +38,7 @@
 #include "DeferStmt.h"
 #include "driver.h"
 #include "fixupExports.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "ImportStmt.h"
@@ -56,8 +57,10 @@
 #include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "scopeResolve.h"
+#include "splitInit.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "symbol.h"
 #include "TryStmt.h"
 #include "typeSpecifier.h"
 #include "view.h"
@@ -67,7 +70,7 @@
 #include "WhileStmt.h"
 #include "wrappers.h"
 
-#include "../ifa/prim_data.h"
+#include "../next/lib/immediates/prim_data.h"
 
 #include <algorithm>
 #include <cmath>
@@ -195,7 +198,6 @@ static void resolveDestructors();
 static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
-static void ensureAndResolveInitStringLiterals();
 static void handleRuntimeTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
@@ -236,12 +238,10 @@ static bool useLegacyNilability(Symbol* at) {
   return false;
 }
 
-/************************************* | **************************************
-*                                                                             *
-* Invoke resolveFunction(fn) with 'call' on top of 'callStack'.               *
-*                                                                             *
-************************************** | *************************************/
 
+//
+// Invoke resolveFunction(fn) with 'call' on top of 'callStack'.
+//
 void resolveFnForCall(FnSymbol* fn, CallExpr* call) {
   // If 'call' is already on the call stack, do not add it.
   // If this assertion fails, change it to 'if'.
@@ -280,6 +280,29 @@ void resolveCallAndCallee(CallExpr* call, bool allowUnresolved) {
   }
 }
 
+//
+// Resolve 'fn' and return it upon success.
+// If there are errors, DO NOT report then, just return NULL.
+//
+FnSymbol* tryResolveFunction(FnSymbol* fn) {
+  inTryResolve++;
+  tryResolveStates.push_back(CHECK_BODY_RESOLVES);
+  tryResolveFunctions.push_back(fn);
+
+  resolveFunction(fn);
+
+  check_state_t state = tryResolveStates.back();
+
+  tryResolveFunctions.pop_back();
+  tryResolveStates.pop_back();
+  inTryResolve--;
+
+  if (state == CHECK_FAILED)
+    return nullptr;
+  else
+    return fn;
+}
+
 
 // Fills in the refType field of a type
 // with the type's corresponding reference type.
@@ -295,6 +318,7 @@ void makeRefType(Type* type) {
 
   if (type == dtMethodToken ||
       type == dtUnknown ||
+      type == dtSplitInitType ||
       type->symbol->hasFlag(FLAG_REF) ||
       type->symbol->hasFlag(FLAG_GENERIC)) {
 
@@ -729,6 +753,45 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
   return retval;
 }
 
+// For when getConcreteParentForGenericFormal wouldn't return but there's
+// still a valid relationship between the types.
+Type* getMoreInstantiatedParentForGenericFormal(Type* actualType,
+                                                Type* formalType) {
+  Type* retval = NULL;
+
+  if (AggregateType* at = toAggregateType(actualType)) {
+    forv_Vec(AggregateType, parent, at->dispatchParents) {
+      if (isInstantiation(parent, formalType) == true) {
+        retval = parent;
+        break;
+
+      } else if (parent == formalType) {
+        // There might be a better match, so don't break, but it's still a
+        // match
+        retval = parent;
+
+      } else if (Type* t = getMoreInstantiatedParentForGenericFormal(parent, formalType)) {
+        retval = t;
+        break;
+      }
+    }
+
+    if (retval == NULL) {
+      if (isClass(formalType)) {
+        // Handle e.g. Owned(GenericClass) passed to a formal : GenericClass
+        if (isManagedPtrType(at)) {
+          Type* classType = getManagedPtrBorrowType(actualType);
+          if (canInstantiate(classType, formalType)) {
+            retval = classType;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
 static bool instantiatedFieldsMatch(Type* actualType, Type* formalType) {
 
   AggregateType* actual = toAggregateType(actualType);
@@ -837,10 +900,6 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtString && actualType == dtStringC) {
-    return true;
-  }
-
   if (formalType                                        == dtIteratorRecord &&
       actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
     return true;
@@ -861,10 +920,10 @@ bool canInstantiate(Type* actualType, Type* formalType) {
 
   if (isClassLikeOrManaged(actualType) && isClassLike(formalType)) {
     Type* actualC = canonicalClassType(actualType);
-    ClassTypeDecorator actualDec = classTypeDecorator(actualType);
+    ClassTypeDecoratorEnum actualDec = classTypeDecorator(actualType);
 
     Type* formalC = canonicalClassType(formalType);
-    ClassTypeDecorator formalDec = classTypeDecorator(formalType);
+    ClassTypeDecoratorEnum formalDec = classTypeDecorator(formalType);
 
     if (canInstantiateDecorators(actualDec, formalDec)) {
       // Now that the decorators are checked, verify that the
@@ -961,28 +1020,13 @@ static bool canParamCoerce(Type*   actualType,
         }
       }
     }
-
-    //
-    // For smaller integer types, if the argument is a param, does it
-    // store a value that's small enough that it could dispatch to
-    // this argument?
-    //
-    if (get_width(formalType) < 64) {
-      if (VarSymbol* var = toVarSymbol(actualSym)) {
-        if (var->immediate) {
-          if (fits_in_uint(get_width(formalType), var->immediate)) {
-            *paramNarrows = true;
-            return true;
-          }
-        }
-      }
-    }
   }
 
   // param strings can coerce between string and c_string
   if ((formalType == dtString || formalType == dtStringC) &&
       (actualType == dtString || actualType == dtStringC)) {
     if (actualSym && actualSym->isImmediate()) {
+      *paramNarrows = true;
       return true;
     }
   }
@@ -1034,6 +1078,11 @@ static bool canParamCoerce(Type*   actualType,
 
   if (is_imag_type(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
+
+    // coerce imag from smaller size
+    if (is_imag_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
 
     // coerce literal/param imag that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
@@ -1197,24 +1246,25 @@ bool canCoerceTuples(Type*     actualType,
 
 
 static
-ClassTypeDecorator removeGenericNilability(ClassTypeDecorator actual) {
+ClassTypeDecoratorEnum removeGenericNilability(ClassTypeDecoratorEnum actual) {
   // Normalize actuals to remove generic-ness
-  if (actual == CLASS_TYPE_BORROWED)
-    actual = CLASS_TYPE_BORROWED_NONNIL;
-  if (actual == CLASS_TYPE_UNMANAGED)
-    actual = CLASS_TYPE_UNMANAGED_NONNIL;
-  if (actual == CLASS_TYPE_MANAGED)
-    actual = CLASS_TYPE_MANAGED_NONNIL;
+  if (actual == ClassTypeDecorator::BORROWED)
+    actual = ClassTypeDecorator::BORROWED_NONNIL;
+  if (actual == ClassTypeDecorator::UNMANAGED)
+    actual = ClassTypeDecorator::UNMANAGED_NONNIL;
+  if (actual == ClassTypeDecorator::MANAGED)
+    actual = ClassTypeDecorator::MANAGED_NONNIL;
 
   return actual;
 }
 
-/* CLASS_TYPE_BORROWED e.g. can represent any nilability,
-   but this function assumes that an actual with type CLASS_TYPE_BORROWED
-   is actually the same as CLASS_TYPE_BORROWED_NONNIL.
+/* ClassTypeDecorator::BORROWED e.g. can represent any nilability,
+   but this function assumes that an actual with type
+   ClassTypeDecorator::BORROWED
+   is actually the same as ClassTypeDecorator::BORROWED_NONNIL.
  */
-bool canCoerceDecorators(ClassTypeDecorator actual,
-                         ClassTypeDecorator formal,
+bool canCoerceDecorators(ClassTypeDecoratorEnum actual,
+                         ClassTypeDecoratorEnum formal,
                          bool allowNonSubtypes,
                          bool implicitBang) {
 
@@ -1232,49 +1282,49 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
     implicitBang = false;
 
   switch (formal) {
-    case CLASS_TYPE_BORROWED:
+    case ClassTypeDecorator::BORROWED:
       // borrowed but generic nilability
       // This would be instantiation
       return false;
-    case CLASS_TYPE_BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NONNIL:
       // Can't coerce away nilable
       return isDecoratorNonNilable(actual) || implicitBang;
-    case CLASS_TYPE_BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       // Everything can coerce to a nilable borrowed
       // but only subtypes if the actual is already nilable.
       return allowNonSubtypes || isDecoratorNilable(actual);
-    case CLASS_TYPE_UNMANAGED:
+    case ClassTypeDecorator::UNMANAGED:
       // unmanaged but generic nilability
       // This would be instantiation
       return false;
-    case CLASS_TYPE_UNMANAGED_NONNIL:
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to unmanaged
-      return (implicitBang && actual == CLASS_TYPE_UNMANAGED_NILABLE);
-    case CLASS_TYPE_UNMANAGED_NILABLE:
+      return (implicitBang && actual == ClassTypeDecorator::UNMANAGED_NILABLE);
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
       // Can't coerce borrowed to unmanaged
-      return (allowNonSubtypes && actual == CLASS_TYPE_UNMANAGED_NONNIL);
+      return (allowNonSubtypes && actual == ClassTypeDecorator::UNMANAGED_NONNIL);
 
-    case CLASS_TYPE_MANAGED:
+    case ClassTypeDecorator::MANAGED:
       // managed but generic nilability
       // this would be instantiation
       return false;
-    case CLASS_TYPE_MANAGED_NONNIL:
+    case ClassTypeDecorator::MANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to managed
-      return (implicitBang && actual == CLASS_TYPE_MANAGED_NILABLE);
-    case CLASS_TYPE_MANAGED_NILABLE:
+      return (implicitBang && actual == ClassTypeDecorator::MANAGED_NILABLE);
+    case ClassTypeDecorator::MANAGED_NILABLE:
       // Can't coerce borrowed to managed
-      return (allowNonSubtypes && actual == CLASS_TYPE_MANAGED_NONNIL);
+      return (allowNonSubtypes && actual == ClassTypeDecorator::MANAGED_NONNIL);
 
-    case CLASS_TYPE_GENERIC:
+    case ClassTypeDecorator::GENERIC:
       return false; // instantiation not coercion
-    case CLASS_TYPE_GENERIC_NONNIL:
+    case ClassTypeDecorator::GENERIC_NONNIL:
       // generally instantiation
-      return implicitBang && actual == CLASS_TYPE_GENERIC_NILABLE;
-    case CLASS_TYPE_GENERIC_NILABLE:
+      return implicitBang && actual == ClassTypeDecorator::GENERIC_NILABLE;
+    case ClassTypeDecorator::GENERIC_NILABLE:
       // generally instantiation
-      return allowNonSubtypes && actual == CLASS_TYPE_GENERIC_NONNIL;
+      return allowNonSubtypes && actual == ClassTypeDecorator::GENERIC_NONNIL;
 
     // no default for compiler warnings to know when to update it
   }
@@ -1284,8 +1334,8 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
 
 // Returns true if actual has the same meaning as formal or
 // if passing actual to formal should result in instantiation.
-bool canInstantiateDecorators(ClassTypeDecorator actual,
-                              ClassTypeDecorator formal) {
+bool canInstantiateDecorators(ClassTypeDecoratorEnum actual,
+                              ClassTypeDecoratorEnum formal) {
 
   if (actual == formal)
     return true;
@@ -1297,39 +1347,39 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
     return true;
 
   switch (formal) {
-    case CLASS_TYPE_BORROWED:
-      return actual == CLASS_TYPE_BORROWED_NONNIL ||
-             actual == CLASS_TYPE_BORROWED_NILABLE;
-    case CLASS_TYPE_BORROWED_NONNIL:
-    case CLASS_TYPE_BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED:
+      return actual == ClassTypeDecorator::BORROWED_NONNIL ||
+             actual == ClassTypeDecorator::BORROWED_NILABLE;
+    case ClassTypeDecorator::BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       return false;
 
-    case CLASS_TYPE_UNMANAGED:
-      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NILABLE;
-    case CLASS_TYPE_UNMANAGED_NONNIL:
-    case CLASS_TYPE_UNMANAGED_NILABLE:
+    case ClassTypeDecorator::UNMANAGED:
+      return actual == ClassTypeDecorator::UNMANAGED_NONNIL ||
+             actual == ClassTypeDecorator::UNMANAGED_NILABLE;
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
       return false;
 
-    case CLASS_TYPE_MANAGED:
-      return actual == CLASS_TYPE_MANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NILABLE;
-    case CLASS_TYPE_MANAGED_NONNIL:
-    case CLASS_TYPE_MANAGED_NILABLE:
+    case ClassTypeDecorator::MANAGED:
+      return actual == ClassTypeDecorator::MANAGED_NONNIL ||
+             actual == ClassTypeDecorator::MANAGED_NILABLE;
+    case ClassTypeDecorator::MANAGED_NONNIL:
+    case ClassTypeDecorator::MANAGED_NILABLE:
       return false;
 
-    case CLASS_TYPE_GENERIC:
+    case ClassTypeDecorator::GENERIC:
       return true;
-    case CLASS_TYPE_GENERIC_NONNIL:
-      return actual == CLASS_TYPE_GENERIC_NONNIL ||
-             actual == CLASS_TYPE_BORROWED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NONNIL;
-    case CLASS_TYPE_GENERIC_NILABLE:
-      return actual == CLASS_TYPE_GENERIC_NILABLE ||
-             actual == CLASS_TYPE_BORROWED_NILABLE||
-             actual == CLASS_TYPE_UNMANAGED_NILABLE||
-             actual == CLASS_TYPE_MANAGED_NILABLE;
+    case ClassTypeDecorator::GENERIC_NONNIL:
+      return actual == ClassTypeDecorator::GENERIC_NONNIL ||
+             actual == ClassTypeDecorator::BORROWED_NONNIL ||
+             actual == ClassTypeDecorator::UNMANAGED_NONNIL ||
+             actual == ClassTypeDecorator::MANAGED_NONNIL;
+    case ClassTypeDecorator::GENERIC_NILABLE:
+      return actual == ClassTypeDecorator::GENERIC_NILABLE ||
+             actual == ClassTypeDecorator::BORROWED_NILABLE||
+             actual == ClassTypeDecorator::UNMANAGED_NILABLE||
+             actual == ClassTypeDecorator::MANAGED_NILABLE;
 
     // no default for compiler warnings to know when to update it
   }
@@ -1338,8 +1388,8 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
 }
 
 // Can we instantiate or coerce or both?
-bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
-                                      ClassTypeDecorator formal,
+bool canInstantiateOrCoerceDecorators(ClassTypeDecoratorEnum actual,
+                                      ClassTypeDecoratorEnum formal,
                                       bool allowNonSubtypes,
                                       bool implicitBang) {
   if (actual == formal)
@@ -1356,40 +1406,40 @@ bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
     implicitBang = false;
 
   switch (formal) {
-    case CLASS_TYPE_BORROWED:
+    case ClassTypeDecorator::BORROWED:
       // can borrow from anything, could instantiate as borrowed?
       return true;
-    case CLASS_TYPE_BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NONNIL:
       // can borrow from anything, but can't coerce away nilability
       return isDecoratorNonNilable(actual) || implicitBang;
-    case CLASS_TYPE_BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       // can borrow from anything, can always coerce to nilable
       return allowNonSubtypes || isDecoratorNilable(actual);;
 
-    case CLASS_TYPE_UNMANAGED:
+    case ClassTypeDecorator::UNMANAGED:
       // no coercions to unmanaged
-      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NILABLE;
-    case CLASS_TYPE_UNMANAGED_NONNIL:
-      return (implicitBang && actual == CLASS_TYPE_UNMANAGED_NILABLE);
-    case CLASS_TYPE_UNMANAGED_NILABLE:
-      return (allowNonSubtypes && actual == CLASS_TYPE_UNMANAGED_NONNIL);
+      return actual == ClassTypeDecorator::UNMANAGED_NONNIL ||
+             actual == ClassTypeDecorator::UNMANAGED_NILABLE;
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
+      return (implicitBang && actual == ClassTypeDecorator::UNMANAGED_NILABLE);
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
+      return (allowNonSubtypes && actual == ClassTypeDecorator::UNMANAGED_NONNIL);
 
-    case CLASS_TYPE_MANAGED:
-      return actual == CLASS_TYPE_MANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NILABLE;
-    case CLASS_TYPE_MANAGED_NONNIL:
-      return (implicitBang && actual == CLASS_TYPE_MANAGED_NILABLE);
-    case CLASS_TYPE_MANAGED_NILABLE:
-      return (allowNonSubtypes && actual == CLASS_TYPE_MANAGED_NONNIL);
+    case ClassTypeDecorator::MANAGED:
+      return actual == ClassTypeDecorator::MANAGED_NONNIL ||
+             actual == ClassTypeDecorator::MANAGED_NILABLE;
+    case ClassTypeDecorator::MANAGED_NONNIL:
+      return (implicitBang && actual == ClassTypeDecorator::MANAGED_NILABLE);
+    case ClassTypeDecorator::MANAGED_NILABLE:
+      return (allowNonSubtypes && actual == ClassTypeDecorator::MANAGED_NONNIL);
 
-    case CLASS_TYPE_GENERIC:
+    case ClassTypeDecorator::GENERIC:
       // accepts anything
       return true;
-    case CLASS_TYPE_GENERIC_NONNIL:
+    case ClassTypeDecorator::GENERIC_NONNIL:
       // accepts anything nonnil
       return isDecoratorNonNilable(actual) || implicitBang;
-    case CLASS_TYPE_GENERIC_NILABLE:
+    case ClassTypeDecorator::GENERIC_NILABLE:
       return allowNonSubtypes || isDecoratorNilable(actual);
 
     // no default for compiler warnings to know when to update it
@@ -1486,10 +1536,10 @@ bool canCoerceAsSubtype(Type*     actualType,
   if (isClassLike(actualType) && isClassLike(formalType)) {
     AggregateType* actualC =
       toAggregateType(canonicalDecoratedClassType(actualType));
-    ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
+    ClassTypeDecoratorEnum actualDecorator = classTypeDecorator(actualType);
     AggregateType* formalC =
       toAggregateType(canonicalDecoratedClassType(formalType));
-    ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
+    ClassTypeDecoratorEnum formalDecorator = classTypeDecorator(formalType);
 
     // Check that the decorators allow coercion
     if (canCoerceDecorators(actualDecorator, formalDecorator,
@@ -1566,10 +1616,10 @@ bool canCoerce(Type*     actualType,
   if (isClassLike(actualType) && isClassLike(formalType)) {
     AggregateType* actualC =
       toAggregateType(canonicalDecoratedClassType(actualType));
-    ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
+    ClassTypeDecoratorEnum actualDecorator = classTypeDecorator(actualType);
     AggregateType* formalC =
       toAggregateType(canonicalDecoratedClassType(formalType));
-    ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
+    ClassTypeDecoratorEnum formalDecorator = classTypeDecorator(formalType);
 
     bool implicitBang = allowImplicitNilabilityRemoval(actualType, actualSym,
                                                        formalType, formalSym);
@@ -1580,10 +1630,11 @@ bool canCoerce(Type*     actualType,
       // are the decorated class types the same?
       if (actualC == formalC)
         return true;
+      else if (isBuiltinGenericClassType(formalType))
+        return true; // only decorators matter, other type is generic
       else if (formalC->symbol->hasFlag(FLAG_GENERIC) &&
-               instantiatedFieldsMatch(actualC, formalC)) {
+               instantiatedFieldsMatch(actualC, formalC))
         return true;
-      }
 
       // are we passing a subclass?
       AggregateType* actualParent = actualC;
@@ -1648,6 +1699,13 @@ bool doCanDispatch(Type*     actualType,
         fn->hasFlag(FLAG_BUILD_TUPLE) &&
         fn->hasFlag(FLAG_ALLOW_REF)))
     return true;
+
+  if (formalSym != NULL &&
+      formalSym->originalIntent == INTENT_INOUT &&
+      formalType->symbol->hasFlag(FLAG_REF)) {
+    actualType = actualType->getValType();
+    formalType = formalType->getValType();
+  }
 
   if (paramCoerce == false &&
       canCoerce(actualType, actualSym,
@@ -2263,49 +2321,13 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
   if (fn->name == astrSassign) {
     if (fn->hasFlag(FLAG_COMPILER_GENERATED)) {
-      Type* desttype = fn->getFormal(1)->type->getValType();
+      Type* desttype = fn->getFormal(3)->type->getValType();
       INT_ASSERT(desttype != dtUnknown); // otherwise this test is unreliable
       if (isRecord(desttype) || isUnion(desttype))
         return desttype->symbol->name;
     }
   }
   return NULL;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-/************************************* | **************************************
-*                                                                             *
-* Checks that types match.                                                    *
-* Note - does not currently check that instantiated params match.             *
-*                                                                             *
-************************************** | *************************************/
-
-bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
-  bool retval = true;
-
-  if (fn->name != gn->name) {
-    retval = false;
-
-  } else if (fn->numFormals() != gn->numFormals()) {
-    retval = false;
-
-  } else {
-    for (int i = 3; i <= fn->numFormals() && retval == true; i++) {
-      ArgSymbol* fa = fn->getFormal(i);
-      ArgSymbol* ga = gn->getFormal(i);
-
-      if (fa->type != ga->type || strcmp(fa->name, ga->name) != 0) {
-        retval = false;
-      }
-    }
-  }
-
-  return retval;
 }
 
 /************************************* | **************************************
@@ -2717,7 +2739,7 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
 }
 
 Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
-                                  ClassTypeDecorator useDec,
+                                  ClassTypeDecoratorEnum useDec,
                                   AggregateType* manager,
                                   Expr* ctx) {
   SET_LINENO(ctx);
@@ -2726,7 +2748,7 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
   INT_ASSERT(isClass(canonicalClassType));
 
   // Now type-construct it with appropriate nilability
-  ClassTypeDecorator d = combineDecorators(CLASS_TYPE_BORROWED, useDec);
+  ClassTypeDecoratorEnum d = combineDecorators(ClassTypeDecorator::BORROWED, useDec);
   Type* borrowType = canonicalClassType->getDecoratedClass(d);
 
   CallExpr* typeCall = new CallExpr(manager->symbol, borrowType->symbol);
@@ -2746,8 +2768,8 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
 
 static void adjustClassCastCall(CallExpr* call)
 {
-  SymExpr* targetTypeSe = toSymExpr(call->get(1));
-  SymExpr* valueSe = toSymExpr(call->get(2));
+  SymExpr* valueSe = toSymExpr(call->get(1));
+  SymExpr* targetTypeSe = toSymExpr(call->get(2));
   bool valueIsType = isTypeExpr(valueSe);
   Type* targetType = targetTypeSe->symbol()->getValType();
   Type* valueType = valueSe->symbol()->getValType();
@@ -2763,10 +2785,10 @@ static void adjustClassCastCall(CallExpr* call)
   // Down-casting is handled in the module code as well.
   if (isClassLikeOrManaged(valueType) && isClassLikeOrManaged(targetType)) {
     Type* canonicalValue = canonicalClassType(valueType);
-    ClassTypeDecorator valueD = classTypeDecorator(valueType);
+    ClassTypeDecoratorEnum valueD = classTypeDecorator(valueType);
 
     Type* canonicalTarget = canonicalClassType(targetType);
-    ClassTypeDecorator targetD = classTypeDecorator(targetType);
+    ClassTypeDecoratorEnum targetD = classTypeDecorator(targetType);
 
     AggregateType* at = NULL;
 
@@ -2781,7 +2803,7 @@ static void adjustClassCastCall(CallExpr* call)
       at = toAggregateType(canonicalTarget);
 
     // Compute the decorator combining generic properties
-    ClassTypeDecorator d = combineDecorators(targetD, valueD);
+    ClassTypeDecoratorEnum d = combineDecorators(targetD, valueD);
 
     // Compute the type based upon the decorators
     Type* t = NULL;
@@ -2851,11 +2873,11 @@ static bool resolveBuiltinCastCall(CallExpr* call)
   if (urse == NULL)
     return false;
 
-  if (urse->unresolved != astr_cast || call->numActuals() != 2)
+  if (urse->unresolved != astrScolon || call->numActuals() != 2)
     return false;
 
-  SymExpr* targetTypeSe = toSymExpr(call->get(1));
-  SymExpr* valueSe = toSymExpr(call->get(2));
+  SymExpr* valueSe = toSymExpr(call->get(1));
+  SymExpr* targetTypeSe = toSymExpr(call->get(2));
 
   if (targetTypeSe && valueSe &&
       targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
@@ -2934,6 +2956,12 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       call->baseExpr->remove();
       call->primitive = primitives[PRIM_CAST];
 
+      // swap the order of the two arguments
+      //  have: val, type
+      //  want: type, val
+      valueSe->remove();
+      targetTypeSe->insertAfter(valueSe);
+
       // Add a dereference for references to avoid confusing the compiler.
       if (valueSe->symbol()->isRef()) {
         if (targetTypeSe->symbol()->isRef())
@@ -2970,9 +2998,9 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
           INT_ASSERT(call->methodTag && pe && pe->baseExpr == call);
 
           // if the class is nilable the borrow should be too
-          ClassTypeDecorator d = CLASS_TYPE_BORROWED_NONNIL;
+          ClassTypeDecoratorEnum d = ClassTypeDecorator::BORROWED_NONNIL;
           if (isDecoratorNilable(classTypeDecorator(t))) {
-            d = CLASS_TYPE_BORROWED_NILABLE;
+            d = ClassTypeDecorator::BORROWED_NILABLE;
           }
 
           // this works around a compiler bug
@@ -3135,7 +3163,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   SymExpr* ts = toSymExpr(call->baseExpr);
   Type* tsType = ts->typeInfo();
   AggregateType* at = toAggregateType(canonicalClassType(tsType));
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
   bool decorated = false;
   if (DecoratedClassType* dt = toDecoratedClassType(ts->typeInfo())) {
     decorated = true;
@@ -3144,17 +3172,19 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     // type will be wrapped with 'owned' e.g. after borrowed type is computed.
     if (isDecoratorManaged(decorator)) {
       if (isDecoratorNonNilable(decorator))
-        decorator = CLASS_TYPE_GENERIC_NONNIL;
+        decorator = ClassTypeDecorator::GENERIC_NONNIL;
       else if (isDecoratorNilable(decorator))
-        decorator = CLASS_TYPE_GENERIC_NILABLE;
+        decorator = ClassTypeDecorator::GENERIC_NILABLE;
       else
-        decorator = CLASS_TYPE_GENERIC;
+        decorator = ClassTypeDecorator::GENERIC;
     }
   }
 
-  if (isPrimitiveType(tsType)) {
+  if (at == NULL) {
     USR_FATAL_CONT(info.call, "illegal type index expression '%s'", info.toString());
-    USR_PRINT(info.call, "primitive type '%s' cannot be used in an index expression", tsType->symbol->name);
+    const char* typeclass = (isPrimitiveType(tsType) ? "primitive type" :
+                             (isEnumType(tsType) ? "enum type" : "type"));
+    USR_PRINT(info.call, "%s '%s' cannot be used in an index expression", typeclass, tsType->symbol->name);
     USR_STOP();
   } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
     SymbolMap subs;
@@ -3201,6 +3231,60 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
 }
 
 static
+void resolveNormalCallAdjustAssign(CallExpr* call) {
+  if (call->isNamedAstr(astrSassign)) {
+    int i = 1;
+    if (call->get(1)->typeInfo() == dtMethodToken) {
+      i += 2; // pass method token and (type) this arg
+    }
+    if (i <= call->numActuals()) {
+      Expr* lhsExpr = call->get(i);
+      Expr* rhsExpr = call->get(i+1);
+      Type* targetType = lhsExpr->typeInfo();
+      Type* srcType = rhsExpr->getValType();
+
+      // Adjust the type for formal_temp_out before trying to resolve '='
+      if (SymExpr* lhsSe = toSymExpr(lhsExpr)) {
+        if (targetType == dtSplitInitType) {
+          targetType = srcType;
+        } else if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+          targetType = getInstantiationType(srcType, NULL, targetType, NULL,
+                                            call,
+                                            /* allowCoercion */ true,
+                                            /* implicitBang */ false,
+                                            /* inOrOtherValue */ true);
+        }
+        lhsSe->symbol()->type = targetType;
+      }
+
+      // This is a workaround to avoid deprecation warnings for sync/single
+      // variables within compiler-generated assignment functions.
+      FnSymbol* inFn = call->getFunction();
+      if (isUnresolvedSymExpr(call->baseExpr) &&
+          inFn->name == astrSassign &&
+          inFn->hasFlag(FLAG_COMPILER_GENERATED) &&
+          (isSyncType(srcType) || isSingleType(srcType)) &&
+          targetType->getValType() == srcType) {
+
+        // if we are in a compiler-generated assign, rewrite sync/single
+        // assignment to avoid deprecation warnings.
+
+        // remove this and method token if this was a method invocation of =
+        for (int j = 1; j < i; j++) {
+          call->get(1)->remove();
+        }
+        INT_ASSERT(call->numActuals() == 2);
+
+        Expr* newBase =
+          new UnresolvedSymExpr("chpl__compilerGeneratedAssignSyncSingle");
+        call->baseExpr->replace(newBase);
+      }
+    }
+  }
+}
+
+
+static
 FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   CallInfo  info;
   FnSymbol* retval = NULL;
@@ -3217,6 +3301,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   }
 
   resolveGenericActuals(call);
+
+  resolveNormalCallAdjustAssign(call);
 
   if (isGenericRecordInit(call) == true) {
     retval = resolveInitializer(call);
@@ -3314,6 +3400,21 @@ static bool bestModulesAreConsistent(CallExpr* call, check_state_t checkState,
   return true;
 }
 
+static bool isAcceptableArgOverloadSets (CallExpr* call, FnSymbol* bestFn,
+                                         int argNum) {
+  // Should this be a public utility function ex. canonicalClassTypeOrNull() ?
+  Type* actualType = canonicalClassType(call->get(argNum)->getValType());
+  AggregateType* actualClass = toAggregateType(actualType);
+  if (actualClass == NULL || ! actualClass->isClass())
+    return false;  // the arg was not a class, so we shouldn't check
+
+  ModuleSymbol* actualMod = actualClass->getModule();
+  if (actualMod == bestFn->getModule())
+    return true;  // bestFn and the arg's class are in the same module
+
+  return false;
+}
+
 // If 'call' is a method call on a class, accept it if 'bestFn' is
 // in the same module as the class of the receiver actual of 'call'.
 //
@@ -3323,20 +3424,25 @@ static bool isAcceptableMethodChoice(CallExpr* call,
                                  FnSymbol* bestFn, FnSymbol* candFn,
                                  Vec<ResolutionCandidate*>& candidates)
 {
-  if (call->numActuals() < 2 || call->get(1)->getValType() != dtMethodToken)
-    return false;  // not a method call
+  if (!bestFn->hasFlag(FLAG_OPERATOR) && !candFn->hasFlag(FLAG_OPERATOR)) {
+    if (call->numActuals() < 2 || call->get(1)->getValType() != dtMethodToken)
+      return false;  // not a method call
 
-  // Should this be a public utility function ex. canonicalClassTypeOrNull() ?
-  Type* actualType = canonicalClassType(call->get(2)->getValType());
-  AggregateType* actualClass = toAggregateType(actualType);
-  if (actualClass == NULL || ! actualClass->isClass())
-    return false;  // a method not on a class
+  } else if (call->get(1)->getValType() != dtMethodToken) {
+    // At least one of these was an operator function (hopefully both), but the
+    // call wasn't set up as a method call originally.  We should still treat it
+    // somewhat like a method call just in case.
+    bool firstArgRes = isAcceptableArgOverloadSets(call, bestFn, 1);
+    if (firstArgRes)
+      return firstArgRes;
 
-  ModuleSymbol* actualMod = actualClass->getModule();
-  if (actualMod == bestFn->getModule())
-    return true;  // bestFn and the receiver's class are in the same module
+    if (call->numActuals() < 2)
+      // This was a unary operator, don't check for a second argument, just
+      // return since the only argument didn't fulfill the conditions
+      return false;
+  }
 
-  return false;
+  return isAcceptableArgOverloadSets(call, bestFn, 2);
 }
 
 static void reportHijackingError(CallExpr* call,
@@ -3459,9 +3565,12 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
     }
   }
 
-  if (! overloadSetsOK(info.call, checkState, candidates,
-                       bestRef, bestCref, bestVal)) {
-    return NULL; // overloadSetsOK() found an error
+  if (numMatches > 0) {
+    if (! overloadSetsOK(info.call, checkState, candidates,
+                         bestRef, bestCref, bestVal))
+      return NULL; // overloadSetsOK() found an error
+
+    recordCGInterimInstantiations(info.call, bestRef, bestCref, bestVal);
   }
 
   if (numMatches == 0) {
@@ -3516,6 +3625,10 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
     delete candidate;
   }
 
+  if (retval && retval->hasFlag(FLAG_DEPRECATED)) {
+    retval->generateDeprecationWarning(info.call);
+  }
+
   return retval;
 }
 
@@ -3536,26 +3649,36 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     retval = wrapAndCleanUpActuals(best, info, true);
 
     if (checkState == CHECK_NORMAL_CALL &&
-        retval->name                         == astrSassign &&
-        isRecord(retval->getFormal(1)->type) == true        &&
-        retval->getFormal(2)->type           == dtNil) {
-      USR_FATAL(userCall(call),
-                "type mismatch in assignment from nil to %s",
-                toString(retval->getFormal(1)->type));
-    } else {
-      SET_LINENO(call);
+        retval->name == astrSassign) {
+      int lhsNum = 1;
+      int rhsNum = 2;
 
-      if (call->partialTag == true) {
-        call->partialTag = false;
+      if (retval->hasFlag(FLAG_METHOD)) {
+        // Adjust check for operator methods, when necessary
+        lhsNum += 2;
+        rhsNum += 2;
       }
 
-      call->baseExpr->replace(new SymExpr(retval));
-
-      resolveNormalCallConstRef(call);
-
-      if (checkState == CHECK_NORMAL_CALL) {
-        resolveNormalCallFinalChecks(call);
+      if (isRecord(retval->getFormal(lhsNum)->type) == true &&
+          retval->getFormal(rhsNum)->type == dtNil) {
+        USR_FATAL(userCall(call),
+                  "type mismatch in assignment from nil to %s",
+                  toString(retval->getFormal(lhsNum)->type));
       }
+    }
+
+    SET_LINENO(call);
+
+    if (call->partialTag == true) {
+      call->partialTag = false;
+    }
+
+    call->baseExpr->replace(new SymExpr(retval));
+
+    resolveNormalCallConstRef(call);
+
+    if (checkState == CHECK_NORMAL_CALL) {
+      resolveNormalCallFinalChecks(call);
     }
   }
 
@@ -3962,11 +4085,11 @@ void printResolutionErrorUnresolved(CallInfo&       info,
     CallExpr* call = userCall(info.call);
 
     if (call->isCast() == true) {
-      if (info.actuals.head()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+      if (info.actuals.tail()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
         USR_FATAL_CONT(call, "illegal cast to non-type");
       } else {
-        Type* dstType = info.actuals.v[0]->type;
-        Type* srcType = info.actuals.v[1]->type;
+        Type* srcType = info.actuals.v[0]->type;
+        Type* dstType = info.actuals.v[1]->type;
         EnumType* dstEnumType = toEnumType(dstType);
         EnumType* srcEnumType = toEnumType(srcType);
         if (srcEnumType && srcEnumType->isAbstract()) {
@@ -4201,6 +4324,7 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
     }
   }
 
+  int nFnsWithOutIntentFormals = 0;
   forv_Vec(ResolutionCandidate, cand, candidates) {
     if (printedOne == false) {
       USR_PRINT(cand->fn, "candidates are: %s", toString(cand->fn));
@@ -4209,6 +4333,21 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
     } else {
       USR_PRINT(cand->fn, "                %s", toString(cand->fn));
     }
+
+    bool hasOutFormal = false;
+    for_formals(arg, cand->fn) {
+      if (arg->originalIntent == INTENT_OUT)
+        hasOutFormal = true;
+    }
+    if (hasOutFormal)
+      nFnsWithOutIntentFormals++;
+  }
+
+
+  // This condition is not exact
+  // (the ambiguity could be due to something other than the out formals).
+  if (nFnsWithOutIntentFormals == candidates.n) {
+    USR_PRINT(call, "out-intent formals do not participate in overload resolution");
   }
 
   if (developer == true) {
@@ -4251,9 +4390,55 @@ static bool obviousMismatch(CallExpr* call, FnSymbol* fn) {
   return (isMethodCall != isMethodFn);
 }
 
+// returns true if the error was issued
+static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
+                                                Vec<FnSymbol*>& visibleFns) {
+  // Check for uninitialized values (with type dtSplitInitType)
+  bool foundUnknownTypeActual = false;
+  for_actuals(actual, info.call) {
+    Type* t = actual->getValType();
+    if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
+      foundUnknownTypeActual = true;
+    }
+  }
+
+  if (foundUnknownTypeActual) {
+    // Are all of the failures due to not having an established type?
+    bool anyTypeNotEstablished = false;
+    forv_Vec(FnSymbol, fn, visibleFns) {
+      ResolutionCandidate* rc = new ResolutionCandidate(fn);
+      rc->isApplicable(info, NULL);
+
+      if (rc->reason == RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED) {
+        anyTypeNotEstablished = true;
+      }
+      delete rc;
+    }
+
+    if (anyTypeNotEstablished) {
+      for_actuals(actual, info.call) {
+        Type* t = actual->getValType();
+        if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
+          if (SymExpr* se = toSymExpr(actual)) {
+            CallExpr* call = userCall(info.call);
+            splitInitMissingTypeError(se->symbol(), call, false);
+            return true; // don't print out candidates - probably irrelevant
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
+
+  if (maybeIssueSplitInitMissingTypeError(info, visibleFns)) {
+    // don't show additional unresolved error in addition to missing init
+    return;
+  }
 
   if (info.scope != NULL) {
     ModuleSymbol* mod = toModuleSymbol(info.scope->parentSymbol);
@@ -5460,6 +5645,14 @@ static void testArgMapping(FnSymbol*                    fn1,
                            int                          i,
                            int                          j,
                            DisambiguationState&         DS) {
+
+  // Give up early for out intent arguments
+  // (these don't impact candidate selection)
+  if (formal1->originalIntent == INTENT_OUT ||
+      formal2->originalIntent == INTENT_OUT) {
+    return;
+  }
+
   // We only want to deal with the value types here, avoiding odd overloads
   // working (or not) due to _ref.
   Type* f1Type          = formal1->type->getValType();
@@ -6346,7 +6539,7 @@ static Symbol* resolveFieldSymbol(Type* base, Expr* fieldExpr) {
   }
 
   // Get the field name.
-  const char* name = var->immediate->v_string;
+  const char* name = var->immediate->v_string.c_str();
 
   // Special case: An integer field name is actually a tuple member index.
   {
@@ -6465,7 +6658,7 @@ static void resolveInitField(CallExpr* call) {
   VarSymbol* var = toVarSymbol(sym->symbol());
   if (!var || !var->immediate)
     INT_FATAL(call, "bad initializer set field primitive");
-  const char* name = var->immediate->v_string;
+  const char* name = astr(var->immediate->v_string.c_str());
 
   // Get the type
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
@@ -6868,12 +7061,43 @@ void resolveInitVar(CallExpr* call) {
     targetType = srcType;
   }
 
+  bool srcSyncSingle = isSyncType(srcType->getValType()) ||
+                       isSingleType(srcType->getValType());
+
+  // This is a workaround to avoid deprecation warnings for sync/single
+  // variables within compiler-generated initializers.
+  FnSymbol* inFn = call->getFunction();
+  if (srcSyncSingle &&
+      inFn->hasFlag(FLAG_COMPILER_GENERATED) &&
+      (inFn->name == astrInit || inFn->name == astrInitEquals) &&
+      targetType->getValType() == srcType->getValType()) {
+
+    targetType = targetType->getValType();
+
+    // change
+    //   PRIM_INIT_VAR lhsSync, rhsSync
+    // to
+    //   PRIM_MOVE lhsSync, chpl__compilerGeneratedCopySyncSingle(rhsSync)
+
+    call->primitive = primitives[PRIM_MOVE];
+    srcExpr->remove();
+    CallExpr* clone = new CallExpr("chpl__compilerGeneratedCopySyncSingle",
+                                   srcExpr);
+    call->insertAtTail(clone);
+    resolveExpr(clone);
+    resolveMove(call);
+
+    return;
+  }
+
+
+
   // 'var x = new _domain(...)' should not bother going through chpl__initCopy
   // logic so that the result of the 'new' is MOVE'd and not copy-initialized,
   // which is handled in the 'init=' branch.
   bool isDomainWithoutNew = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN) &&
                             src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
-  bool initCopySyncSingle = inferType && (isSyncType(srcType->getValType()) || isSingleType(srcType->getValType()));
+  bool initCopySyncSingle = inferType && srcSyncSingle;
   bool initCopyIter = inferType && srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD);
 
   if (dst->hasFlag(FLAG_NO_COPY) ||
@@ -6895,7 +7119,8 @@ void resolveInitVar(CallExpr* call) {
              targetType->getValType()->symbol->hasFlag(FLAG_ARRAY) ||
              isDomainWithoutNew ||
              initCopySyncSingle ||
-             srcType->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
+             (targetType->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+              srcType->getValType()->symbol->hasFlag(FLAG_TUPLE)) ||
              initCopyIter) {
     // These cases require an initCopy to implement special initialization
     // semantics (e.g. reading a sync for variable initialization).
@@ -6945,6 +7170,50 @@ void resolveInitVar(CallExpr* call) {
 
   } else if (isRecord(targetType->getValType())) {
     AggregateType* at = toAggregateType(targetType->getValType());
+
+    // If the RHS is a temp that is the result of a ContextCallExpr,
+    // make the choice now about which ContextCallExpr to use
+    // (and prefer a value if available, and const ref if not).
+    // Update 'src' and 'srcType' so that the below logic about
+    // whether or not to copy applies.
+    if (src->hasFlag(FLAG_TEMP)) {
+      ContextCallExpr* ccRhs = nullptr;
+      int nLhsDefsFound = 0;
+
+      for_SymbolSymExprs(se, src) {
+        if (CallExpr* inCall = toCallExpr(se->parentExpr)) {
+          if (inCall->isPrimitive(PRIM_MOVE) ||
+              inCall->isPrimitive(PRIM_ASSIGN)) {
+            if (SymExpr* inCallLhs = toSymExpr(inCall->get(1))) {
+              if (inCallLhs->symbol() == src) {
+                nLhsDefsFound++;
+                if (ContextCallExpr* cc = toContextCallExpr(inCall->get(2))) {
+                  ccRhs = cc;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (nLhsDefsFound == 1 && ccRhs != nullptr) {
+        CallExpr* refCall = nullptr;
+        CallExpr* valueCall = nullptr;
+        CallExpr* constRefCall = nullptr;
+        ccRhs->getCalls(refCall, valueCall, constRefCall);
+
+        if (valueCall) {
+          // replace the ContextCallExpr with the valueCall
+          // and adjust the type of src
+          valueCall->remove();
+          ccRhs->replace(valueCall);
+          srcType = valueCall->getValType();
+          src->type = srcType;
+        }
+        // Other situations will be handled later in cullOverReferences.
+      }
+    }
+
 
     // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
     // since the result of the 'new' will "move" into
@@ -7893,8 +8162,9 @@ static void checkManagerType(Type* t) {
   }
 
   if (isManagedPtrType(t)) {
-    ClassTypeDecorator d = classTypeDecorator(t);
-    INT_ASSERT(d == CLASS_TYPE_MANAGED || d == CLASS_TYPE_MANAGED_NILABLE);
+    ClassTypeDecoratorEnum d = classTypeDecorator(t);
+    INT_ASSERT(d == ClassTypeDecorator::MANAGED || d ==
+        ClassTypeDecorator::MANAGED_NILABLE);
     // check that it's not an instantiation
     INT_ASSERT(getDecoratedClass(t, d) == t);
   }
@@ -7953,7 +8223,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         // if needed, make the manager nilable
         if (makeNilable) {
           if (isManagedPtrType(manager))
-            manager = getDecoratedClass(manager, CLASS_TYPE_MANAGED_NILABLE);
+            manager = getDecoratedClass(manager,
+                ClassTypeDecorator::MANAGED_NILABLE);
           else if (manager == dtUnmanaged)
             manager = dtUnmanagedNilable;
           else if (manager == dtBorrowed)
@@ -8187,7 +8458,7 @@ static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
 static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
   bool isDecoratedGeneric = false;
   if (DecoratedClassType* dt = toDecoratedClassType(type)) {
     type = dt->getCanonicalClass();
@@ -8206,8 +8477,8 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
 
       Type* retType = cc->typeInfo();
 
-      if (decorator != CLASS_TYPE_BORROWED &&
-          decorator != CLASS_TYPE_BORROWED_NONNIL) {
+      if (decorator != ClassTypeDecorator::BORROWED &&
+          decorator != ClassTypeDecorator::BORROWED_NONNIL) {
         AggregateType* gotAt = toAggregateType(retType);
         INT_ASSERT(gotAt);
         retType = gotAt->getDecoratedClass(decorator);
@@ -8912,7 +9183,7 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
         USR_FATAL(from, "arguments to compilerWarning() and compilerError(),"
           " except for the optional depth argument, must be cast to string");
        else
-        str = astr(str, var->immediate->v_string);
+        str = astr(str, var->immediate->v_string.c_str());
       }
     }
 
@@ -9042,6 +9313,8 @@ static void adjustInternalSymbols() {
   gDummyRef->qual = QUAL_REF;
   gDummyRef->addFlag(FLAG_REF);
   gDummyRef->removeFlag(FLAG_CONST);
+
+  startInterfaceChecking();
 }
 
 
@@ -9142,6 +9415,8 @@ void resolve() {
 
   USR_STOP();
 
+  finishInterfaceChecking();  // should happen before resolveAutoCopies
+
   resolveExports();
 
   resolveEnumTypes();
@@ -9172,10 +9447,6 @@ void resolve() {
 
   handleRuntimeTypes();
 
-  // Resolve the string literal constructors after everything else since new
-  // ones may be created during postFold
-  ensureAndResolveInitStringLiterals();
-
   if (fPrintCallGraph) {
     // This needs to go after resolution is complete, but before
     // pruneResolvedTree() removes unused functions (like the uninstantiated
@@ -9193,6 +9464,8 @@ void resolve() {
   pruneResolvedTree();
 
   resolveForallStmts2();
+
+  finalizeForallOptimizationsResolution();
 
   freeCache(genericsCache);
   freeCache(promotionsCache);
@@ -9638,7 +9911,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 
   // resolve autoDestroy
   if (autoDestroyMap.get(at) == NULL) {
-    FnSymbol* fn = autoMemoryFunction(at, "chpl__autoDestroy");
+    FnSymbol* fn = autoMemoryFunction(at, astr_autoDestroy);
     // If --minimal-modules is used, `chpl_autoDestroy` won't be defined
     if (fn)
       fn->addFlag(FLAG_AUTO_DESTROY_FN);
@@ -9826,9 +10099,14 @@ static void resolveOther() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
+    // resolve the argument types
     resolveSignature(fn);
     fn->tagIfGeneric();
-    if (! fn->isGeneric())
+    // resolve the return type if specified
+    if (fn->retExprType)
+      resolveSpecifiedReturnType(fn);
+    // resolve the function body if it is not generic
+    if (!fn->isGeneric())
       resolveFunction(fn);
   }
 }
@@ -10004,15 +10282,6 @@ initializeClass(Expr* stmt, Symbol* sym) {
       }
     }
   }
-}
-
-
-static void ensureAndResolveInitStringLiterals() {
-  if (!initStringLiterals) {
-    INT_ASSERT(fMinimalModules);
-    createInitStringLiterals();
-  }
-  resolveFunction(initStringLiterals);
 }
 
 
@@ -10264,8 +10533,7 @@ Symbol* getPrimGetRuntimeTypeField_Field(CallExpr* call) {
   Symbol* field = NULL;
   if (Immediate* imm = fieldName->immediate) {
     INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
-    const char* name = imm->v_string;
-    field = rtt->getField(name);
+    field = rtt->getField(imm->v_string.c_str());
   } else {
     field = fieldName;
   }
@@ -10639,7 +10907,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     INT_ASSERT(false);
   // Generate a more specific USR_FATAL if resolution would fail
   } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
-    primInitHaltForUnacceptableGeneric(call, type, val);
+    // ignore this case for now
 
   // These types default to nil
   } else if (isClassLikeOrPtr(type) || type == dtNil) {
@@ -10657,7 +10925,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // than in lowerPrimInit.
 
     // note: error for bad param initialization checked for in resolving move
-    if ((val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter())) {
+    if (val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter()) {
       if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         Expr* defaultExpr = NULL;
         SymExpr* typeSe = NULL;
@@ -10691,8 +10959,32 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // These will be handled in lowerPrimInit.
     errorInvalidParamInit(call, val, at);
 
-    if (call->numActuals() >= 2)
-      call->get(2)->replace(new SymExpr(type->symbol));
+    if ((type == dtStringC || type == dtString || type == dtBytes) &&
+        (val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter())) {
+      // Initialize a param string
+      if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+        VarSymbol* empty = nullptr;
+        if (type == dtStringC) {
+          empty = new_CStringSymbol("");
+        } else if (type == dtString) {
+          empty = new_StringSymbol("");
+        } else if (type == dtBytes) {
+          empty = new_BytesSymbol("");
+        } else {
+          INT_FATAL("case not handled");
+        }
+        CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, empty);
+        call->insertBefore(moveDefault);
+        resolveExpr(moveDefault);
+        call->convertToNoop();
+
+      } else {
+        call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
+      }
+    } else {
+      if (call->numActuals() >= 2)
+        call->get(2)->replace(new SymExpr(type->symbol));
+    }
   }
 }
 
@@ -10767,7 +11059,7 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
 
     if (Immediate* imm = var->immediate) {
       if (imm->const_kind == CONST_KIND_STRING) {
-        retval = ct->getField(var->immediate->v_string);
+        retval = ct->getField(var->immediate->v_string.c_str());
 
       } else if (imm->const_kind == NUM_KIND_INT) {
         int64_t i = imm->int_value();
@@ -10848,15 +11140,17 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
     uCall = userCall(call);
   }
 
-  USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
+  USR_FATAL_CONT(uCall, "cannot default-initialize %s", descr);
   if (preventingSplitInit != NULL && !val->hasFlag(FLAG_TEMP))
     USR_FATAL_CONT(preventingSplitInit, "use here prevents split-init");
 
   if (isNonNilableClassType(typeToCheck)) {
-    USR_PRINT("non-nil class types do not support default initialization");
+    USR_PRINT("non-nilable class type '%s' "
+              "does not support default initialization",
+              toString(typeToCheck));
 
     AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-    ClassTypeDecorator d = classTypeDecorator(type);
+    ClassTypeDecoratorEnum d = classTypeDecorator(type);
     Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
     USR_PRINT("Consider using the type %s instead", toString(suggestedType));
   }
@@ -10971,9 +11265,17 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
   } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
              !type->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) {
 
-    // Just let the memory be uninitialized
     errorInvalidParamInit(call, val, at);
-    call->convertToNoop();
+
+    if (!val->hasFlag(FLAG_NO_INIT) &&
+        !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      // Zero-initialize the memory
+      call->insertBefore(new CallExpr(PRIM_ZERO_VARIABLE, val));
+      call->convertToNoop();
+    } else {
+      // Just let the memory be uninitialized
+      call->convertToNoop();
+    }
 
   // generic records with initializers
   } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&
@@ -11022,7 +11324,7 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
           Type* cdc = canonicalDecoratedClassType(field->type);
           AggregateType* atc = toAggregateType(cdc);
-          ClassTypeDecorator d = classTypeDecorator(field->type);
+          ClassTypeDecoratorEnum d = classTypeDecorator(field->type);
           Type* rec = atc->getDecoratedClass(addNilableToDecorator(d));
 
           USR_PRINT("because it is a non-nilable class - consider the "
@@ -11109,16 +11411,20 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
   val->type = root;
 
   CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(val)));
-  form_Map(SymbolMapElem, e, at->substitutions) {
-    Symbol* field = root->getField(e->key->name);
+
+  for (auto elem: sortedSymbolMapElts(at->substitutions)) {
+    const char* keyName = elem.key->name;
+    Symbol*     value   = elem.value;
+
+    Symbol* field = root->getField(keyName);
     bool hasDefault = false;
     bool isGenericField = root->fieldIsGeneric(field, hasDefault);
 
     Expr* appendExpr = NULL;
     if (field->isParameter()) {
-      appendExpr = new SymExpr(e->value);
+      appendExpr = new SymExpr(value);
     } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
-      if (e->value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+      if (value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         // BHARSH 2018-11-02: This technically generates code that would
         // crash at runtime because aggregate types don't contain the runtime
         // type information for their fields, so this temporary will go
@@ -11126,7 +11432,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         // fields for default-initialized records, and avoid crashing.
         VarSymbol* tmp = newTemp("default_runtime_temp");
         tmp->addFlag(FLAG_TYPE_VARIABLE);
-        CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(e->key->name));
+        CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(keyName));
         CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
 
         call->insertBefore(new DefExpr(tmp));
@@ -11137,7 +11443,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
 
         appendExpr = new SymExpr(tmp);
       } else {
-        appendExpr = new SymExpr(e->value);
+        appendExpr = new SymExpr(value);
       }
     } else if (isGenericField) {
 
@@ -11151,8 +11457,8 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         // convert the  default initialization into
         //   var default_field_tmp: int;
         //   var myR = new R(x=default_field_tmp)
-        VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
-        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, e->value);
+        VarSymbol* temp = newTemp("default_field_temp", value->typeInfo());
+        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, value);
 
         call->insertBefore(new DefExpr(temp));
         call->insertBefore(tempCall);
@@ -11174,7 +11480,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
       INT_FATAL("Unhandled case for default-init");
     }
 
-    appendExpr = new NamedExpr(e->key->name, appendExpr);
+    appendExpr = new NamedExpr(keyName, appendExpr);
 
     initCall->insertAtTail(appendExpr);
   }
@@ -11257,17 +11563,15 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
         if (isDecoratorUnknownManagement(dt->getDecorator())) {
           if (isDecoratorNilable(dt->getDecorator())) {
             USR_PRINT(ctx, "'%s?' "
-                           "now means nilable class with any management",
-                      at->symbol->name);
-            USR_PRINT(ctx, "to migrate old code, change it to 'borrowed %s?'",
+                           "indicates a nilable class with any management",
                       at->symbol->name);
           } else {
             USR_PRINT(ctx, "'%s' "
-                            "now means non-nilable class with any management",
-                      at->symbol->name);
-            USR_PRINT(ctx, "to migrate old code, change it to 'borrowed %s'",
+                            "indicates a non-nilable class with any management",
                       at->symbol->name);
           }
+          USR_PRINT(ctx, "consider adding a management decorator such as "
+                         "'owned', 'shared', 'borrowed', or 'unmanaged'");
         }
       }
     }
@@ -11277,7 +11581,7 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
 
 void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
   if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
-    ClassTypeDecorator d = classTypeDecorator(decorated);
+    ClassTypeDecoratorEnum d = classTypeDecorator(decorated);
 
     if (!isDecoratorUnknownManagement(d))
       USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",

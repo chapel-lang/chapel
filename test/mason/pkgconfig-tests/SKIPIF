@@ -1,9 +1,15 @@
 #!/bin/bash
 
-
 has_zlib="False"
 has_ssl="False"
 correct_config="False"
+
+# skip the test if pkg-config is not found
+if ! command -v pkg-config &> /dev/null
+then
+    echo "True"
+    exit
+fi
 
 # Check for zlib via pkg-config
 # Skip test if not found
@@ -26,7 +32,7 @@ else
     has_ssl="False"
 fi
 
-if [ "$CHPL_COMM" = 'none' ] && [ "$CHPL_REGEXP" = 're2' ] ; then
+if [ "$CHPL_COMM" = 'none' ] && [ "$CHPL_RE2" != 'none' ] ; then
     correct_config="True"
 else
     correct_config="False"
@@ -37,5 +43,3 @@ if [ "$has_zlib" = 'True' ] && [ "$has_ssl" = 'True' ] && [ "$correct_config" = 
 else
     echo "True"
 fi
-
-

@@ -641,7 +641,6 @@ proc Stencil.targetLocsIdx(ind: rank*idxType) {
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
-pragma "order independent yielding loops"
 iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
@@ -663,7 +662,7 @@ iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
   //   L3: 9..max(int)
   //
   // The subset {1..10 by 4} will involve locales 0, 1, and 3.
-  for i in {(...dims)} {
+  foreach i in {(...dims)} {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
     // TODO: Want 'contains' for a domain. Slicing is a workaround.
     if locSpace[(...chunk)].size > 0 then
@@ -1252,8 +1251,7 @@ where shouldReturnRvalueByValue(eltType) {
   return do_dsiAccess(false, i);
 }
 // const ref version for types with copy-ctor
-inline proc StencilArr.dsiAccess(i: rank*idxType) const ref
-where shouldReturnRvalueByConstRef(eltType) {
+inline proc StencilArr.dsiAccess(i: rank*idxType) const ref {
   return do_dsiAccess(false, i);
 }
 
@@ -1267,16 +1265,14 @@ where shouldReturnRvalueByValue(eltType)
   return dsiAccess(i);
 // const ref version for types with copy-ctor
 inline proc StencilArr.dsiAccess(i: idxType...rank) const ref
-where shouldReturnRvalueByConstRef(eltType)
   return dsiAccess(i);
 
 inline proc StencilArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.wholeFluff.contains(i);
 }
 
-pragma "order independent yielding loops"
 iter StencilArr.these() ref {
-  for i in dom do
+  foreach i in dom do
     yield dsiAccess(i);
 }
 
@@ -1306,7 +1302,6 @@ proc StencilArr.dsiDynamicFastFollowCheck(lead: domain) {
   return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
-pragma "order independent yielding loops"
 iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 0) param
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
@@ -1356,13 +1351,13 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
       const narrowArrSection =
         __primitive("_wide_get_addr", arrSection):(arrSection.type?);
       ref myElems = _to_nonnil(narrowArrSection).myElems;
-      for i in myFollowThisDom do yield myElems[i];
+      foreach i in myFollowThisDom do yield myElems[i];
     }
   } else {
     //
     // we don't necessarily own all the elements we're following
     //
-    for i in myFollowThisDom {
+    foreach i in myFollowThisDom {
       yield dsiAccess(i);
     }
   }
@@ -1458,7 +1453,6 @@ iter _array.boundaries(param tag : iterKind) where tag == iterKind.standalone {
   forall d in _value.dsiBoundaries() do yield d;
 }
 
-pragma "order independent yielding loops"
 iter StencilArr.dsiBoundaries() {
   for i in dom.dist.targetLocDom {
     var LSA = locArr[i];
@@ -1480,7 +1474,7 @@ iter StencilArr.dsiBoundaries() {
           }
         }
 
-        for el in LSA.myElems[D] do yield (el, translated);
+        foreach el in LSA.myElems[D] do yield (el, translated);
       }
     }
   }
@@ -1490,7 +1484,6 @@ iter StencilArr.dsiBoundaries() {
 // Yields any 'fluff' boundary chunks in the StencilArr along with a global coordinate of
 // where the chunk lives relative to the core.
 //
-pragma "order independent yielding loops"
 iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standalone {
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
@@ -1532,7 +1525,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
           }
 
           // TODO: should we 'forall' over this instead?
-          for el in LSA.myElems[D] do yield (el, translated);
+          foreach el in LSA.myElems[D] do yield (el, translated);
         }
       }
     }

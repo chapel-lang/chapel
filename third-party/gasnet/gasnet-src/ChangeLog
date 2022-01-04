@@ -14,8 +14,264 @@ GASNet-EX ChangeLog
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
   - Unified Communication X (ucx-conduit) [EXPERIMENTAL]
+  - Libfabric (ofi-conduit) [EXPERIMENTAL]
   Users wishing to use other retired conduits may need to download 
   the GASNet v1.x distribution from https://gasnet.lbl.gov.
+
+----------------------------------------------------------------------
+2021-09-30: GASNet-EX 2021.9.0 Release
+
+* General and Misc.
+  - Improved latency for shared-memory RMA operations in all conduits.
+  - Improved performance of the conduit-independent RDMA-based barrier,
+    used by default by ucx-conduit.
+  - NEW: configure options `--enable-rpath` and `--enable-[pkg]-rpath` can
+    request addition of directories containing required libraries to the
+    runtime library search path (a.k.a. "rpath") via `$(GASNET_LDFLAGS)`.
+  - Environment variable GASNET_BACKTRACE_MT is now available to force
+    multi-threaded or single-threaded backtraces (where supported).
+  - Improved code factorization to ease addition of new network conduits.
+
+* Memory Kinds (support for non-host memory)
+  - This release adds Memory Kinds support for AMD GPUs via the HIP API.
+  - This release adds ucx-conduit support for `GEX_MK_CLASS_CUDA_UVA` and
+    `GEX_MK_CLASS_HIP` on supported hardware and software.
+  - Fixed bugs 4148 and 4150, which had significant impact of the usability
+    of RMA Put operations involving device memory.
+  See docs/memory_kinds.md for more information on the status of Memory Kinds.
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - Performance improvement for RMA Put and AM Long utilizing asynchronous
+    local completion and payloads in (roughly) the 4KiB to 64KiB range.
+  - Improved memory utilization at large scale.
+  - SEQ and PARSYNC builds now set MLX{4,5}_SINGLE_THREADED under
+    appropriate conditions to elide locking overheads in libibverbs.
+  - Improved scaling with large thread counts by serializing CQ polling.
+  - NEW: configure option --with-ibv-fenced-puts=... can be used to set the
+    default value for the GASNET_USE_FENCED_PUTS environment variable.
+  - Added feature macros to advertise multi-rail configuration to clients.
+
+* Cray XC uGNI (details in aries-conduit README)
+  - Fix leak of gex_Event_t for explicit-event local completion of AM Long (bug 4292)
+
+* Unified Communication X framework (details in ucx-conduit README) [EXPERIMENTAL]
+  - New support for Memory kinds: `GEX_MK_CLASS_CUDA_UVA` and `GEX_MK_CLASS_HIP`
+  - Improvements to AM Long payload handling
+    + Fix corruption when using UCX-level shared memory communication (bug 4155)
+    + Fix crashes when using synchronous local completion (bug 4277)
+    + Fix leak of gex_Event_t for explicit-event local completion (bug 4292)
+  - Improved handing of non-collective exits
+  - Support for multiple endpoints
+
+* Shared-memory without a network (details in smp-conduit README)
+  - Performance improvements to remote (inter-process) atomics
+
+* Platform support/portability
+  - Made Cray PMI support conduit-independent, allowing it to function on
+    non-aries Cray systems like the new "HPE Cray EX" (aka Shasta).
+  - This release adds Intel oneAPI as a supported compiler family.
+  - This release adds NVHPC (NVIDIA HPC SDK) as a supported compiler family
+    on x86-64 and ppc64le, starting at version 20.9.
+  - Improved support for GCC 11 by suppressing spurious warnings.
+
+* GASNet-EX Spec v0.14: (details in docs/GASNet-EX.txt)
+  - Allow mixing of root and leaf events in array-based NB event APIs.
+  - Add GEX_FLAG_PEER_NEVER_{SELF,NBRHD}
+  - Add gex_System_QueryHiddenAMConcurrencyLevel()
+
+* GASNet tools (spec v1.18): (details in README-tools)
+  - Add gasnett_assume, for exposing annotations to guide optimization
+  - gasnett_spinloop_hint() now includes a compiler fence on all CPU
+    architectures, not just those with a "pause" instruction (or similar).
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug3420: use -rpath when linking
+  - bug3535: additional restrictions for coding standards
+  - bug3936: Problems with multi-rail and GASNET_{AM_CREDITS,NETWORKDEPTH}_PP
+  - bug4053: ibv: Default to setting MLX5_SINGLE_THREADED=1 for SEQ builds
+  - bug4148: ibv/GDR completion issues with multiple communication paths
+  - bug4150: ibv/GDR premature local completion of Puts from device memory
+  - bug4155: ucx: AM Long test failures when PSHM is disabled
+  - bug4162: incorrect return value from gasnet_get_nbi on ucx-conduit
+  - bug4178: ofi: testsegment crash with MR_BASIC
+  - bug4209: ibv: improve ALC with respect to bounce buffer use
+  - bug4212: build failure for ibv conduit with "--with-ibv-max-hcas=1"
+  - bug4213: trace AM handler registration
+  - bug4215: testslice enhancements to test cross-nbrhd RMA
+  - bug4218: Support root/leaf mixing in array-based NB event APIs 
+  - bug4223: Problems in VIS PSHM handling with non-primordial segments
+  - bug4228: Bogus stringop-overflow warnings from GCC-11.1 LTO
+  - bug4230: ssh-spawer de-duplication logic is flawed
+  - bug4232: Bogus array-bounds warning from GCC 11.1 on ILP32/NDEBUG
+  - bug4237: Option for backtrace to provide the stack on all threads even in threadmode=seq
+  - bug4240: ibv: optimize layout of gasnetc_cep_t
+  - bug4246: ibv: better behavior of single-rail build on multi-rail system
+  - bug4255: Intel 2021.2.0+ erroneous __has_{,cpp_}attribute(__fallthrough__)
+  - bug4259/4260/4261/4262: update spinloop constructs in native conduits
+  - bug4263: remove "AD_MY_NBRHD" check on smp-conduit
+  - bug4264: simplify implementation of GEX_FLAG_AD_{ACQ,REL}
+  - bug4265: Collective scratch management is not thread safe
+  - bug4266: gex_Coll_ReduceToAllNB is not thread safe
+  - bug4277: ucx testam hang with Cray and AMD compilers
+  - bug4278: improvements to RDMADISSEM barrier
+  - bug4281: Display glitch in VERBOSEENV console reporting
+  - bug4291: Configure barfs on balanced double-quotes in arguments
+  - bug4292: ucx and aries can leak events from AM Long
+  - bug4298: ucx persona_example hang w/o PSHM
+  - bug4299: Non-fatal error on BAR1 resource exhaustion in gex_Segment_Create
+  - bug4303: Inaccurate expectations regarding GASNET_IBV_PORTS
+  - bug4310: use of deprecated Intel compiler options
+  - bug4328: ucx: erroneous loop in gasnetc_poll_sndrcv()
+  - bug4330: ibv conduit incorrectly implements HIDDEN_AM_CONCURRENCY_LEVEL
+
+----------------------------------------------------------------------
+2021-03-31: GASNet-EX 2021.3.0 Release
+
+* General and Misc.
+  - Performance improvement for Negotiated-Payload Active Message (NPAM) Long 
+    with GASNet-allocated buffer over shared-memory (PSHM) and the reference
+    implementation of NPAM (Medium and Long) used by ucx, udp and mpi conduits.
+  - Calls to gex_EP_Create() which would exceed GASNET_MAXEPS now return
+    GASNET_ERR_RESOURCE rather than aborting.
+  - NEW: configure option `--with-maxeps=N` permits setting GASNET_MAXEPS,
+    subject to per-conduit limits.
+  - Additional debug checks for use of calls which are prohibited in an
+    AM handler context, and in the NPAM Prepare/Commit interval.
+  - The `GASNetGitHash` ident string is now available in most development builds,
+    and `pkg-config --modversion` installed from a development build should
+    include the GASNet git hash.
+
+* Memory Kinds (support for non-host memory)
+  - This is the first production release to include "Memory Kinds", the GASNet
+    feature supporting communication using non-host memory (such as GPU memory).
+    See docs/memory_kinds.md for more information.
+  - Users of the "GASNet-2020.11.0-memory_kinds_prototype" release should be
+    aware that the behavior of configure in this release differs in that one
+    must enable memory kinds explicitly using `--enable-memory-kinds` or an
+    `--enable-kind-[...]` option for a specific kind.
+  - New preprocessor identifer 'GASNET_HAVE_MK_CLASS_MULTIPLE' (undefined or
+    defined to '1') indicates whether kinds support for anything other than
+    host memory has been compiled-in.
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - NPAM Long is implemented natively for ibv-conduit in the default FAST
+    segment mode, replacing use of the portable reference implementation.
+  - Add support for ODP APIs from the Linux "RDMA Core" distribution, where
+    previously only the Mellanox variant was supported (bug 4122).
+  - Improved startup times on jobs larger than a few tens of nodes with
+    multiple processes per-node (bug 4194).
+  - A new family of `GASNET_IBV_PORTS_*` environment variables provides more
+    control over which InfiniBand ports are used by which processes.
+    Support is conditional on configure finding hwloc lib, which is optional.
+  - NEW: configure option --with-ibv-ports=... can be used to set a default
+    value for the GASNET_IBV_PORTS environment variable.
+  - GASNET_DISABLE_MUNMAP=1 is now the ibv-conduit default on 64-bit platforms, 
+    regardless of whether ODP is enabled or not.  Previously, enabling ODP
+    would change the default to 0.
+  - Improved handling of non-default parameter settings for the firehose
+    dynamic memory registration library.  Corner cases with default settings
+    are also handled better.  See GASNET_FIREHOSE_* in ibv-conduit README.
+  - Significantly increase the default firehose resources on modern InfiniBand
+    HCAs, leading to improved performance in various circumstances.
+  - A new GASNET_PINNED_REGIONS_MAX environment variable allows control over
+    the host-wide number of pinned regions (a bounded HCA resource) which may
+    be used by ibv-conduit.
+
+* Cray XC uGNI (details in aries-conduit README)
+  - A new environment variable GASNET_GNI_MAX_MEDIUM enables selecting the
+    size of AM Medium buffers at job launch, and the existing configure
+    option `--with-aries-max-medium` now sets the default value.
+
+* Libfabric [EXPERIMENTAL] (details in ofi-conduit README)
+  - NEW ofi-conduit, previously available only in GASNet-1, has been partially
+    ported to GASNet-EX where it now holds "experimental" status.
+  - The work completed to date is believed to be functionally complete and
+    correct when run with OFI's sockets provider and default settings.
+
+* Portable UDP support (details in udp-conduit README)
+  - udp-conduit now defaults to grouping co-located processes into
+    contiguous rank ids. 
+  - Interfaces have been added for explicit control over rank assignment 
+
+* Platform support/portability
+  - This release adds support for macOS on AARCH64 (aka ARM64, "Apple M1" and
+    "Apple Silicon").
+
+* GASNet-EX Spec v0.13: (details in docs/GASNet-EX.txt)
+  - Add GASNET_NATIVE_NP_ALLOC_{REQ,REP}_{MEDIUM,LONG} defines
+  - Add gex_System_{Get,Set}VerboseErrors()
+  - Add gex_System_QueryMaxThreads()
+  - Add gex_EP_QueryBoundSegmentNB()
+
+* GASNet tools (spec v1.17): (details in README-tools)
+  - Add GASNETT_UNUSED_ARGS*() family of macros
+  - Added documentation for an interface providing programmatic control
+    of stats/trace features in conduit-mode libraries.
+  - Add GASNETT_STATS_DUMP() to allow dumping and optionally resetting stats
+    counters at runtime. 
+  - Add GASNETT_STATS_PRINTF(_FORCE)() to generate stats output.
+
+* GASNet-1 legacy API
+  - Calls to the legacy gasnet_attach() requesting a zero-length segment are
+    now silently rounded up to one page.
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug2036: Teach AMUDP to respect externally-imposed node ids
+  - bug4122: ODP support broken with recent libibverbs releases
+  - bug4126: ibv: debug-only exit timeout for large multi-rail jobs on Summit
+  - bug4141: SRQ-specific test failures
+  - bug4145: Vector/Indexed incorrect with non-primordial teams and loopback/PSHM
+  - bug4159: AM max-payload queries do not evaluate arguments
+  - bug4166: ibv: debug-only crash at exit from an MPI hybrid application
+  - bug4173: ibv: race in firehose on powerpc
+  - bug4175: thread-safety of gex_EP_RegisterHandlers()
+  - bug4193: Firehose env var "misbehavior"
+  - bug4194: ibv: unnecessarily slow startup
+  - bug4195: ibv dynamic connection support broken
+  - bug4203: Improve error message when passwordless ssh isn't set up
+  - bug4208: unfortunate multi-rail interactions with PSHM and XRC
+
+* Removal of unmaintained platform support
+  - This release no longer supports the following platforms:
+    + IA-64 (aka Itanium)
+
+----------------------------------------------------------------------
+2020-10-30: GASNet-EX 2020.11.0 "Memory Kinds" Prototype Release
+
+* General and Misc.
+  - Initial implementation of "Memory Kinds": support for GASNet-EX remote
+    segments comprised of non-host memory.  This initial version supports only
+    UVA-based CUDA device memory and the GASNet-EX RMA APIs.  The file
+    docs/memory_kinds.txt provides an up-to-date summary of the status of the
+    memory kinds implementation.
+  - New GASNet trace/stats tracemask categories:
+    + O - Object creation, modification and destruction
+    + X - AMPoll
+
+* GASNet-EX Spec v0.11:
+  - Deprecate GEX_FLAG_TM_SCRATCH_SIZE_MIN flag and remove the corresponding
+    GASNET_COLL_MIN_SCRATCH_SIZE environment variable.
+  - Add GEX_FLAG_TM_NO_SCRATCH support in gex_TM_{Split,Create}(), eliminating
+    the requirement that a client always provide a collectives scratch space.
+
+* GASNet-EX Spec v0.12:
+  - Add the following APIs, types and constants as documented in "GASNet-EX API
+    Proposal: Memory Kinds, Revision 2020.11.0" (available on request):
+    + gex_TM_Pair()
+    + gex_Segment_Create()
+    + gex_EP_Create()
+    + gex_EP_BindSegment()
+    + gex_EP_PublishBoundSegment()
+    + gex_MK_t
+    + gex_MK_Class_t
+    + gex_MK_Create_args_t
+    + gex_MK_Create()
+    + gex_MK_Destroy()
+    + GEX_MK_HOST
+  - Add the following constants (zero values of the appropriate types)
+    + GEX_CLIENT_INVALID
+    + GEX_EP_INVALID
+    + GEX_MK_INVALID
 
 ----------------------------------------------------------------------
 2020-10-30: GASNet-EX 2020.10.0 Release
@@ -102,7 +358,7 @@ GASNet-EX ChangeLog
   - bug3630/3828/3842: Various failures on testvis, testratomic, testslice
 
 ----------------------------------------------------------------------
-03-12-2020: GASNet-EX 2020.3.0 Release
+2020-03-12: GASNet-EX 2020.3.0 Release
 
 * InfiniBand Verbs (ibv-conduit)
   - Negotiated-Payload Active Messages are implemented natively for ibv-conduit,
@@ -168,7 +424,7 @@ GASNet-EX ChangeLog
   - bug4042: errors when configured using --with-aries-max-medium=65472
 
 ----------------------------------------------------------------------
-09-14-2019: GASNet-EX 2019.9.0 Release
+2019-09-14: GASNet-EX 2019.9.0 Release
 
 * Cray XE/XK uGNI gemini-conduit
   - This conduit, deprecated since 2019.6.0, has been removed.
@@ -207,7 +463,7 @@ GASNet-EX ChangeLog
   - bug4002: ibv-conduit: XRC and ODP are mutually exclusive
 
 ----------------------------------------------------------------------
-06-14-2019: GASNet-EX 2019.6.0 Release
+2019-06-14: GASNet-EX 2019.6.0 Release
 
 * InfiniBand Verbs (ibv-conduit)
   - NEW: Improved support for correct operation on multi-rail InfiniBand systems
@@ -234,13 +490,13 @@ GASNet-EX ChangeLog
   - bug3946: Improve gasnetrun support for CPU binding esp with Open MPI
 
 ----------------------------------------------------------------------
-05-27-2019: GASNet-EX 2019.3.2 Release (bug fix release)
+2019-05-27: GASNet-EX 2019.3.2 Release (bug fix release)
 
 * Notable bugs fixed in this release:
   - bug3943: infrequent startup hang with PSHM and over 62 PPN
 
 ----------------------------------------------------------------------
-03-15-2019: GASNet-EX 2019.3.0 Release
+2019-03-15: GASNet-EX 2019.3.0 Release
 
 * Legacy backward-compatibility layer:
   - gasnet.h now implements gasnet_memset{,_nb,_nbi}
@@ -278,7 +534,7 @@ GASNet-EX ChangeLog
   - bug3873: gasnetrun w/mpi-spawner losing exit code in some configs
 
 ----------------------------------------------------------------------
-12-17-2018: GASNet-EX 2018.12.0 Beta release
+2018-12-17: GASNet-EX 2018.12.0 Beta release
 
 * InfiniBand Verbs (ibv-conduit)
   - Mellanox On-Demand Pinning (ODP) feature now replaces explicit out-of-segment 
@@ -327,7 +583,7 @@ GASNet-EX ChangeLog
   - bug3790: ibv-conduit AM flow-control hangs with multiple HCAs
 
 ----------------------------------------------------------------------
-09-26-2018: GASNet-EX 2018.9.0 Release
+2018-09-26: GASNet-EX 2018.9.0 Release
 
 * GASNet-EX copyright notice and license agreement updated (see license.txt)
 
@@ -370,7 +626,7 @@ GASNet-EX ChangeLog
   - bug3788: aries-conduit offloaded atomics defect with sub-teams
 
 ----------------------------------------------------------------------
-06-28-2018: GASNet-EX 2018.6.0 Beta release
+2018-06-28: GASNet-EX 2018.6.0 Beta release
 
 * GASNet-EX Spec v0.5:
   - Specified Teams and Collectives APIs [EXPERIMENTAL]
@@ -416,7 +672,7 @@ GASNet-EX ChangeLog
 
 
 ----------------------------------------------------------------------
-03-28-2018: GASNet-EX 2018.3.0 Release
+2018-03-28: GASNet-EX 2018.3.0 Release
 
 * GASNet-EX Spec v0.4:
   - Renamed gex_System_QueryNeighborhoodInfo() and associated
@@ -456,7 +712,7 @@ GASNet-EX ChangeLog
     atomics do not yet utilize them.
 
 ----------------------------------------------------------------------
-12-20-2017: GASNet-EX 2017.12.0 Beta release
+2017-12-20: GASNet-EX 2017.12.0 Beta release
 
 * GASNet-EX Spec v0.3:
   - Specified Remote Atomics API, and corresponding types [EXPERIMENTAL]
@@ -479,7 +735,7 @@ GASNet-EX ChangeLog
   - See fixes listed in the GASNet-1 1.32.0 ChangeLog below
 
 ----------------------------------------------------------------------
-09-28-2017: GASNet-EX 2017.9.0 Release
+2017-09-28: GASNet-EX 2017.9.0 Release
 
 * GASNet-EX Spec v0.2:
   - Specified gex_System_QueryJob{Rank,Size}() [EXPERIMENTAL]
@@ -508,7 +764,7 @@ GASNet-EX ChangeLog
     Details: https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3588
 
 ----------------------------------------------------------------------
-06-30-2017: GASNet-EX 2017.6.0 Beta release
+2017-06-30: GASNet-EX 2017.6.0 Beta release
 
 * Major new features implemented this release: (mostly reference implementation)
   - Explicit Local Completion capability for Active Message and RMA Put APIs

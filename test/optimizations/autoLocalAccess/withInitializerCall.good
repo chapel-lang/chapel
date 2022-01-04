@@ -42,7 +42,7 @@ Start analyzing forall (withInitializerCall.chpl:36)
 |
 End analyzing forall (withInitializerCall.chpl:36)
 
-Static check successful. Using localAccess (withInitializerCall.chpl:14)
-Static check successful. Using localAccess (withInitializerCall.chpl:21)
-Static check successful. Using localAccess (withInitializerCall.chpl:30)
-Static check successful. Using localAccess (withInitializerCall.chpl:37)
+Static check successful. Using localAccess [static only ALA clone]  (withInitializerCall.chpl:14)
+Static check successful. Using localAccess [static only ALA clone]  (withInitializerCall.chpl:21)
+Static check successful. Using localAccess [static only ALA clone]  (withInitializerCall.chpl:30)
+Static check successful. Using localAccess [static only ALA clone]  (withInitializerCall.chpl:37)

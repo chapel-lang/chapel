@@ -132,7 +132,7 @@ class BoundedBuffer {
   proc produce(item: eltType) {
     if noisy then sleep(rng.getNext() / prodNoiseScale);
 
-    buff$[advance(head)] = item;
+    buff$[advance(head)].writeEF(item);
   }
 
   //
@@ -154,7 +154,7 @@ class BoundedBuffer {
   proc consume(): (eltType, bool) {
     if noisy then sleep(rng.getNext() / consNoiseScale);
 
-    const val = buff$[advance(tail)];
+    const val = buff$[advance(tail)].readFE();
     return (val, val != sentinel);
   }
 

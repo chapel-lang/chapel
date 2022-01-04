@@ -2,6 +2,8 @@ use assocArrayAPItest;
 use HashedDist;
 use IO;
 
+config const testSlice = false;
+
 record MyMapper {
   proc this(ind, targetLocs: [] locale) {
     if ind == "zero" || ind == "pointone" || ind == "half" || ind == "one" {
@@ -41,5 +43,16 @@ proc main() {
   D += "nine";
   D += "ten";
 
-  testAssocArrayAPI(A);
+  if !testSlice {
+    testAssocArrayAPI(A);
+  } else {
+    const DGood = D;
+    D += "eleven";
+    D += "twelve";
+    D += "thirteen";
+    D += "gogol";
+    D += "infinity";
+
+    testAssocArrayAPI(A[DGood]);
+  }
 }

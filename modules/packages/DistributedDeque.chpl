@@ -599,10 +599,9 @@ module DistributedDeque {
     /*
       Iterate over all elements in the deque in the order specified.
     */
-    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.NONE {
       for slot in slots {
-        slot.lock$ = true;
+        slot.lock$.writeEF(true);
         var node = slot.head;
 
         while node != nil {
@@ -618,11 +617,10 @@ module DistributedDeque {
           node = node!.next;
         }
 
-        slot.lock$;
+        slot.lock$.readFE();
       }
     }
 
-    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.FIFO {
       // Fill our slots to visit in FIFO order.
       var head = globalHead!.read();
@@ -635,7 +633,7 @@ module DistributedDeque {
       }
 
       // Acquire in locking order...
-      for slot in slots do slot.lock$ = true;
+      for slot in slots do slot.lock$.writeEF(true);
 
       // We iterate directly over the heads of each slot, so we capture them in advance.
       var nodes : [{0..#nSlots}] (int, int, unmanaged LocalDequeNode(eltType)?);
@@ -683,10 +681,9 @@ module DistributedDeque {
       }
 
       // Release in locking order...
-      for slot in slots do slot.lock$;
+      for slot in slots do slot.lock$.readFE();
     }
 
-    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.LIFO {
       // Fill our slots to visit in FIFO order.
       var head = globalHead!.read();
@@ -699,7 +696,7 @@ module DistributedDeque {
       }
 
       // Acquire in locking order...
-      for slot in slots do slot.lock$ = true;
+      for slot in slots do slot.lock$.writeEF(true);
 
       // We iterate directly over the heads of each slot, so we capture them in advance.
       var nodes : [{0..#nSlots}] (int, int, unmanaged LocalDequeNode(eltType)?);
@@ -746,7 +743,7 @@ module DistributedDeque {
       }
 
       // Release in locking order...
-      for slot in slots do slot.lock$;
+      for slot in slots do slot.lock$.readFE();
     }
 
     iter these(param order : Ordering = Ordering.NONE, param tag : iterKind) where tag == iterKind.leader {
@@ -756,13 +753,12 @@ module DistributedDeque {
       coforall slot in slots do on slot do yield slot;
     }
 
-    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE, param tag : iterKind, followThis) where tag == iterKind.follower {
       if order != Ordering.NONE {
         compilerWarning("Parallel iteration only supports ordering of type: ", Ordering.NONE);
       }
 
-      followThis.lock$ = true;
+      followThis.lock$.writeEF(true);
       var node = followThis.head;
 
       while node != nil {
@@ -778,7 +774,7 @@ module DistributedDeque {
         node = node!.next;
       }
 
-      followThis.lock$;
+      followThis.lock$.readFE();
     }
 
     pragma "no doc"
@@ -908,7 +904,7 @@ module DistributedDeque {
       on this {
         var _elt = elt;
         local {
-          lock$ = true;
+          lock$.writeEF(true);
 
           // Its empty...
           if tail == nil {
@@ -927,7 +923,7 @@ module DistributedDeque {
           tail!.pushBack(_elt);
           size.add(1);
 
-          lock$;
+          lock$.readFE();
         }
       }
     }
@@ -945,11 +941,11 @@ module DistributedDeque {
               }
             }
 
-            lock$ = true;
+            lock$.writeEF(true);
 
             // Someone else came in and took a value, wait for the next one...
             if size.read() == 0 {
-              lock$;
+              lock$.readFE();
               continue;
             }
 
@@ -971,7 +967,7 @@ module DistributedDeque {
             }
 
             size.sub(1);
-            lock$;
+            lock$.readFE();
             break;
           }
         }
@@ -985,7 +981,7 @@ module DistributedDeque {
       on this {
         var _elt = elt;
         local {
-          lock$ = true;
+          lock$.writeEF(true);
 
           // Its empty...
           if head == nil {
@@ -1004,7 +1000,7 @@ module DistributedDeque {
           head!.pushFront(_elt);
           size.add(1);
 
-          lock$;
+          lock$.readFE();
         }
       }
     }
@@ -1022,11 +1018,11 @@ module DistributedDeque {
               }
             }
 
-            lock$ = true;
+            lock$.writeEF(true);
 
             // Someone else came in and took a value, wait for the next one...
             if size.read() == 0 {
-              lock$;
+              lock$.readFE();
               continue;
             }
 
@@ -1048,7 +1044,7 @@ module DistributedDeque {
             }
 
             size.sub(1);
-            lock$;
+            lock$.readFE();
             break;
           }
         }

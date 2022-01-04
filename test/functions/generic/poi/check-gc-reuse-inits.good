@@ -12,12 +12,12 @@ check-gc-reuse-inits.chpl:22: warning: User.workAS
 check-gc-reuse-inits.chpl:23: In function '<':
 check-gc-reuse-inits.chpl:23: warning: User.workLT
   check-gc-reuse-inits.chpl:44: called as <(lhs: MyRecord(0), rhs: MyRecord(0))
-check-gc-reuse-inits.chpl:24: In function '_cast':
+check-gc-reuse-inits.chpl:24: In function ':':
 check-gc-reuse-inits.chpl:24: warning: User.workCF
-  check-gc-reuse-inits.chpl:45: called as _cast(type t = int(64), rhs: MyRecord(0))
-check-gc-reuse-inits.chpl:25: In function '_cast':
+  check-gc-reuse-inits.chpl:45: called as :(rhs: MyRecord(0), type t = int(64))
+check-gc-reuse-inits.chpl:25: In function ':':
 check-gc-reuse-inits.chpl:25: warning: User.workCT
-  check-gc-reuse-inits.chpl:46: called as _cast(type t = MyRecord, rhs: int(64))
+  check-gc-reuse-inits.chpl:46: called as :(rhs: int(64), type t = MyRecord)
 check-gc-reuse-inits.chpl:48: In function 'u2':
 check-gc-reuse-inits.chpl:50: warning: User.u2
 check-gc-reuse-inits.chpl:60: In function 'u3':
@@ -31,12 +31,12 @@ check-gc-reuse-inits.chpl:22: warning: u3.workAS
 check-gc-reuse-inits.chpl:23: In function '<':
 check-gc-reuse-inits.chpl:23: warning: u3.workLT
   check-gc-reuse-inits.chpl:74: called as <(lhs: MyRecord(0), rhs: MyRecord(0))
-check-gc-reuse-inits.chpl:24: In function '_cast':
+check-gc-reuse-inits.chpl:24: In function ':':
 check-gc-reuse-inits.chpl:24: warning: u3.workCF
-  check-gc-reuse-inits.chpl:75: called as _cast(type t = int(64), rhs: MyRecord(0))
-check-gc-reuse-inits.chpl:25: In function '_cast':
+  check-gc-reuse-inits.chpl:75: called as :(rhs: MyRecord(0), type t = int(64))
+check-gc-reuse-inits.chpl:25: In function ':':
 check-gc-reuse-inits.chpl:25: warning: u3.workCT
-  check-gc-reuse-inits.chpl:76: called as _cast(type t = MyRecord, rhs: int(64))
+  check-gc-reuse-inits.chpl:76: called as :(rhs: int(64), type t = MyRecord)
 check-gc-reuse-inits.chpl:115: In function 'm1con':
 check-gc-reuse-inits.chpl:116: warning: More1.m1con
 check-gc-reuse-inits.chpl:20: In method 'init=':
@@ -48,12 +48,12 @@ check-gc-reuse-inits.chpl:22: warning: More1.workAS
 check-gc-reuse-inits.chpl:23: In function '<':
 check-gc-reuse-inits.chpl:23: warning: More1.workLT
   check-gc-reuse-inits.chpl:121: called as <(lhs: MyRecord(0), rhs: MyRecord(0))
-check-gc-reuse-inits.chpl:24: In function '_cast':
+check-gc-reuse-inits.chpl:24: In function ':':
 check-gc-reuse-inits.chpl:24: warning: More1.workCF
-  check-gc-reuse-inits.chpl:122: called as _cast(type t = int(64), rhs: MyRecord(0))
-check-gc-reuse-inits.chpl:25: In function '_cast':
+  check-gc-reuse-inits.chpl:122: called as :(rhs: MyRecord(0), type t = int(64))
+check-gc-reuse-inits.chpl:25: In function ':':
 check-gc-reuse-inits.chpl:25: warning: More1.workCT
-  check-gc-reuse-inits.chpl:123: called as _cast(type t = MyRecord, rhs: int(64))
+  check-gc-reuse-inits.chpl:123: called as :(rhs: int(64), type t = MyRecord)
 check-gc-reuse-inits.chpl:125: In function 'm1gen':
 check-gc-reuse-inits.chpl:126: warning: More1.m1gen
   check-gc-reuse-inits.chpl:86: called as m1gen(param p = 0)
@@ -77,13 +77,13 @@ check-gc-reuse-inits.chpl:23: In function '<':
 check-gc-reuse-inits.chpl:23: warning: Combo1.workLT
   check-gc-reuse-inits.chpl:191: called as <(lhs: MyRecord(0), rhs: MyRecord(0)) from function 'combo2a'
   check-gc-reuse-inits.chpl:168: called as combo2a(param p = 0)
-check-gc-reuse-inits.chpl:24: In function '_cast':
+check-gc-reuse-inits.chpl:24: In function ':':
 check-gc-reuse-inits.chpl:24: warning: Combo1.workCF
-  check-gc-reuse-inits.chpl:192: called as _cast(type t = int(64), rhs: MyRecord(0)) from function 'combo2a'
+  check-gc-reuse-inits.chpl:192: called as :(rhs: MyRecord(0), type t = int(64)) from function 'combo2a'
   check-gc-reuse-inits.chpl:168: called as combo2a(param p = 0)
-check-gc-reuse-inits.chpl:25: In function '_cast':
+check-gc-reuse-inits.chpl:25: In function ':':
 check-gc-reuse-inits.chpl:25: warning: Combo1.workCT
-  check-gc-reuse-inits.chpl:193: called as _cast(type t = MyRecord, rhs: int(64)) from function 'combo2a'
+  check-gc-reuse-inits.chpl:193: called as :(rhs: int(64), type t = MyRecord) from function 'combo2a'
   check-gc-reuse-inits.chpl:168: called as combo2a(param p = 0)
 check-gc-reuse-inits.chpl:170: In function 'combo1b':
 check-gc-reuse-inits.chpl:171: warning: Combo1.combo1b

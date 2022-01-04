@@ -1,0 +1,12 @@
+test100
+init 1
+(x = 1, ptr = {})
+test101
+init 1
+(x = 1, ptr = {})
+test200
+init 1
+(x = 1, ptr = {})
+test201
+init 1
+(x = 1, ptr = {})

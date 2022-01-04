@@ -3,9 +3,9 @@ var y: sync int;
 
 var z: int;
 
-z = x;
+z = x.readFE();
 writeln("z is: ", z);
 
 y = z;
-z = y;
+z = y.readFE();
 writeln("z is: ", z);

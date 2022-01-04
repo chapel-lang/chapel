@@ -14,6 +14,6 @@ Start analyzing forall (unalignedSameDist.chpl:24)
 End analyzing forall (unalignedSameDist.chpl:24)
 
 Static check successful. Using localAccess with dynamic check (unalignedSameDist.chpl:25)
-Static check successful. Using localAccess (unalignedSameDist.chpl:26)
-Static check successful. Using localAccess (unalignedSameDist.chpl:26)
+Static check successful. Using localAccess [static and dynamic ALA clone]  (unalignedSameDist.chpl:26)
+Static check successful. Using localAccess [static only ALA clone]  (unalignedSameDist.chpl:26)
 2 2 2 2 2 2 2 2 2 2

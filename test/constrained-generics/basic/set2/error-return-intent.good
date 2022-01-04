@@ -1,0 +1,18 @@
+error-return-intent.chpl:19: error: interface functions with 'param' or 'type' return intent are currently not allowed
+error-return-intent.chpl:20: error: interface functions with 'param' or 'type' return intent are currently not allowed
+error-return-intent.chpl:26: In 'implements IFC' statement:
+error-return-intent.chpl:26: error: when checking this implements statement
+error-return-intent.chpl:28: note: this implementation of the required function ftype
+error-return-intent.chpl:28: note: has return type 'string'
+error-return-intent.chpl:20: note: which does not match the expected return type 'int(64)'
+error-return-intent.chpl:20: note: the required function ftype in the interface IFC is declared here
+error-return-intent.chpl:26: error: when checking this implements statement
+error-return-intent.chpl:29: note: this implementation of the required function fref
+error-return-intent.chpl:29: note: has return intent 'value'
+error-return-intent.chpl:21: note: which does not match the required intent 'ref'
+error-return-intent.chpl:21: note: the required function fref in the interface IFC is declared here
+error-return-intent.chpl:26: error: when checking this implements statement
+error-return-intent.chpl:30: note: this implementation of the required function fconstref
+error-return-intent.chpl:30: note: has return intent 'value'
+error-return-intent.chpl:22: note: which does not match the required intent 'const ref'
+error-return-intent.chpl:22: note: the required function fconstref in the interface IFC is declared here

@@ -31,6 +31,7 @@ static Map<const char*, Expr*> configMap; // map from configs to vals
 static Map<const char*, VarSymbol*> usedConfigParams; // map from configs to uses
 
 bool                           mainHasArgs;
+bool                           mainPreserveDelimiter;
 
 void checkConfigs() {
   if (fMinimalModules == false) {

@@ -1,2 +1,0 @@
-# Tests in this directory assume regexp support
-CHPL_REGEXP != re2

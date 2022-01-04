@@ -9,3 +9,19 @@ convenience and was obtained from:
 
 Any Chapel issues that seem to be related to libunwind should be
 directed to the Chapel team at https://chapel-lang.org/bugs.html.
+
+
+Upgrading libunwind versions
+========================
+
+The directory $CHPL_HOME/third-party/libunwind/libunwind-src/ contains the
+un-tarballed libunwind package contents. Version updates should be done as
+follows, assuming the CWD is $CHPL_HOME/third-party/libunwind/:
+
+1. download and untar the latest libunwind 1.X version: e.g. libunwind-1.5.0
+2. `rm -rf libunwind-src`
+3. `mv libunwind-1.5.0 libunwind-src`
+4. `git add --force libunwind-src` (--force to ignore our .gitignore)
+5. update the version number mentioned above
+6. make sure these instructions are up to date :)
+7. commit, PR, merge, etc

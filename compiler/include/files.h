@@ -45,10 +45,15 @@ struct fileinfo {
   const char* pathname;
 };
 
-void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false, const std::vector<const char *>& splitFiles = std::vector<const char*>());
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
+                      const char** tmpservername=NULL,
+                      bool skip_compile_link=false,
+                      const std::vector<const char *>& splitFiles
+                        = std::vector<const char*>());
 
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 const char* getCwd();
+void ensureTmpDirExists();
 const char* makeTempDir(const char* dirPrefix);
 void deleteDir(const char* dirname);
 void deleteTmpDir();
@@ -90,7 +95,7 @@ void genIncludeCommandLineHeaders(FILE* outfile);
 
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
-std::string runPrintChplEnv(std::map<std::string, const char*> varMap);
+std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap);
 std::string getChplDepsApp();
 bool compilingWithPrgEnv();
 std::string runCommand(std::string& command);

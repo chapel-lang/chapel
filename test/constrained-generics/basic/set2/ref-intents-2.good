@@ -1,0 +1,4 @@
+ref-intents-2.chpl:6: In 'implements IFC' statement:
+ref-intents-2.chpl:6: error: the argument intent is not suitable for an implementation of a required function
+ref-intents-2.chpl:3: note: the required function 'req' in the interface 'IFC' has a formal 'arg' with 'const ref' intent
+ref-intents-2.chpl:8: note: whereas its implementation has a formal 'arg' with 'ref' intent

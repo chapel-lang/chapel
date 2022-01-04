@@ -1,0 +1,1 @@
+singleValEnum-errors.chpl:9: error: can't apply '.translate()' to a range whose 'idxType' only has one value

@@ -48,6 +48,7 @@ D == intDom = false
 D(intDom) == intDom(D) = true
 D != intDom = true
 D(intDom) != intDom(D) = false
+D:string = {orange..green, yellow..blue}
 Copying...
 {orange..green, yellow..blue}
 Clearing...
@@ -109,6 +110,7 @@ D == intDom = false
 D(intDom) == intDom(D) = true
 D != intDom = true
 D(intDom) != intDom(D) = false
+D:string = {orange..green by 2, yellow..blue by 2}
 Copying...
 {orange..green by 2, yellow..blue by 2}
 Clearing...

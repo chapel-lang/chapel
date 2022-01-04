@@ -946,7 +946,7 @@ static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
           var                                    != NULL &&
           var->immediate                         != NULL &&
           var->immediate->const_kind             == CONST_KIND_STRING) {
-        retval = fieldByName(at, var->immediate->v_string);
+        retval = fieldByName(at, var->immediate->v_string.c_str());
       }
     }
   }
@@ -1117,7 +1117,7 @@ static bool isStringLiteral(Expr* expr, const char* name) {
   if (SymExpr* sym = toSymExpr(expr)) {
     if (VarSymbol* var = toVarSymbol(sym->symbol())) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
-        retval = strcmp(var->immediate->v_string, name) == 0;
+        retval = strcmp(var->immediate->v_string.c_str(), name) == 0;
       }
     }
   }
@@ -1216,22 +1216,22 @@ static bool isSuperPostInit(CallExpr* stmt) {
   return retval;
 }
 
-class PostinitVisitor : public AstVisitorTraverse {
+class PostinitVisitor final : public AstVisitorTraverse {
   public:
-    PostinitVisitor() : found(false) { }
-    virtual ~PostinitVisitor() { }
+    PostinitVisitor()          = default;
+   ~PostinitVisitor() override = default;
 
-    bool found;
+    bool found = false;
 
-    virtual bool enterCondStmt(CondStmt* node);
-    virtual bool enterCallExpr(CallExpr* node);
+    bool enterCondStmt(CondStmt* node) override;
+    bool enterCallExpr(CallExpr* node) override;
 
-    virtual bool enterForallStmt(ForallStmt* node);
-    virtual bool enterWhileDoStmt(WhileDoStmt* node);
-    virtual bool enterDoWhileStmt(DoWhileStmt* node);
-    virtual bool enterForLoop(ForLoop* node);
-    virtual bool enterParamForLoop(ParamForLoop* node);
-    virtual bool enterBlockStmt(BlockStmt* node);
+    bool enterForallStmt(ForallStmt* node) override;
+    bool enterWhileDoStmt(WhileDoStmt* node) override;
+    bool enterDoWhileStmt(DoWhileStmt* node) override;
+    bool enterForLoop(ForLoop* node) override;
+    bool enterParamForLoop(ParamForLoop* node) override;
+    bool enterBlockStmt(BlockStmt* node) override;
 
     void enterLoopStmt(BlockStmt* node);
 };

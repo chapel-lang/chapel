@@ -20,14 +20,14 @@ proc R.init=(rhs: R) {
   this.x = rhs.x;
 }
 
-proc =(ref lhs:R, const ref rhs:R) {
+operator R.=(ref lhs:R, const ref rhs:R) {
   if lhs.fixed != rhs.fixed {
     compilerError("cannot change fixed field in assignment");
   }
   lhs.x = rhs.x;
 }
 
-proc _cast(type t: R, rhs: R) {
+operator :(rhs: R, type t: R) {
   var tmp: t = rhs;
   return tmp;
 }

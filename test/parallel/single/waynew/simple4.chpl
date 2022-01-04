@@ -10,14 +10,14 @@ proc jam( i: int) {
 }
 
 begin cobegin {
-  jam( go);
-  jam( go);
-  jam( go);
-  jam( go);
-  jam( go);
+  jam( go.readFF());
+  jam( go.readFF());
+  jam( go.readFF());
+  jam( go.readFF());
+  jam( go.readFF());
 }
 
 writeln( "I'm sleepy");
 sleep( 3);
 writeln( "I'm awake");
-go = 9;
+go.writeEF(9);

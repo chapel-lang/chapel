@@ -261,7 +261,8 @@ writeln("B[ProbSpaceSlice] is:\n", B[ProbSpaceSlice], "\n");
 //
 // Forall loops over domains and arrays can be written using the
 // syntax ``[<ind> in <Dom>] ...`` which is shorthand for
-// ``forall <ind> in <Dom> do ...``
+// ``forall <ind> in <Dom> do ...`` Forall loops are discussed
+// in the :ref:`foralls primer (forallLoops.chpl)<primers-forallLoops>`.
 //
 
 const offset = (1,1); // a 2-tuple offset

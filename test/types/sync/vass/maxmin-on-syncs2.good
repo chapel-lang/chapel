@@ -1,0 +1,12 @@
+maxmin-on-syncs2.chpl:6: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:6: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:7: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:7: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:12: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:12: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:13: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:13: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+1
+1
+2
+2

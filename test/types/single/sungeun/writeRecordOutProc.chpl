@@ -17,7 +17,7 @@ foo(r);
 writeln(r); // This is a read of r.sx
 
 proc foo(out r: myR) {
-  r.sx = 2*initval;
+  r.sx.writeEF(2*initval);
   writeln(r); // This is a read of r.sx
   r.x = initval;
 }

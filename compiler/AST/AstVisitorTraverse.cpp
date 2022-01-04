@@ -22,16 +22,6 @@
 
 #include "ImportStmt.h"
 
-AstVisitorTraverse::AstVisitorTraverse()
-{
-
-}
-
-AstVisitorTraverse::~AstVisitorTraverse()
-{
-
-}
-
 bool AstVisitorTraverse::enterAggrType(AggregateType* node)
 {
   return true;

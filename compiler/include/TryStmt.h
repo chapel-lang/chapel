@@ -23,7 +23,7 @@
 
 #include "stmt.h"
 
-class TryStmt : public Stmt
+class TryStmt final : public Stmt
 {
 
 public:
@@ -35,18 +35,21 @@ public:
 
   TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches,
           bool isSyncTry = false);
-                      ~TryStmt();
+ ~TryStmt() override = default;
+
   BlockStmt*          body() const;
   bool                tryBang() const;
   bool                isSyncTry() const;
 
-  void                accept(AstVisitor* visitor);
-  void                replaceChild(Expr* old_ast, Expr* new_ast);
-  Expr*               getFirstExpr();
-  Expr*               getNextExpr(Expr* expr);
-  void                verify();
-  GenRet              codegen();
+  void                accept(AstVisitor* visitor) override;
+  void                replaceChild(Expr* old_ast, Expr* new_ast) override;
+  Expr*               getFirstExpr() override;
+  Expr*               getNextExpr(Expr* expr) override;
+  void                verify() override;
+  GenRet              codegen() override;
   DECLARE_COPY(TryStmt);
+  TryStmt* copyInner(SymbolMap* map) override;
+
 
   // intended to be private, but astutil.h macros need public access
   BlockStmt*          _body;

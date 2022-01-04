@@ -279,10 +279,10 @@ proc t18() {
 
   begin {
     writeln("task one ", r);
-    done = 1;
+    done.writeEF(1);
   }
 
-  done;
+  done.readFE();
 
   writeln("end outer");
 }
@@ -295,10 +295,10 @@ proc t18o() {
 
   begin on Locales[numLocales-1] {
     writeln("task one ", r);
-    done = 1;
+    done.writeEF(1);
   }
 
-  done;
+  done.readFE();
 
   writeln("end outer");
 }
@@ -311,17 +311,17 @@ proc t20() {
   var step2:sync int;
 
   begin {
-    step1; // wait for 1st task
+    step1.readFE(); // wait for 1st task
     writeln("task one ", r);
-    step2 = 1;
+    step2.writeEF(1);
   }
 
   begin {
     writeln("task two ", r);
-    step1 = 1;
+    step1.writeEF(1);
   }
 
-  step2;
+  step2.readFE();
 
   writeln("end outer");
 }

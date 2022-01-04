@@ -10,12 +10,12 @@ proc work() {
   var b = 2;
 
   begin with (in b, ref c) {
-    go;
+    go.readFE();
     b = 2 * c;
     writeln("b is ", b);
     c = 2 * b;
-    a = 2 * b;
-    go = true;
+    a.writeEF(2 * b);
+    go.writeEF(true);
   }
 }
 
@@ -24,7 +24,7 @@ proc jam_records() {
   cobegin {
     work();
     begin {
-      a;
+      a.readFE();
       work();
     }
   }
@@ -32,4 +32,4 @@ proc jam_records() {
 
 
 jam_records();
-go = true;
+go.writeEF(true);

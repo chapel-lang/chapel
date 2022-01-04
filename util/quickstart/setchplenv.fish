@@ -54,8 +54,8 @@ set -x CHPL_MEM cstdlib
 echo "Setting CHPL_GMP to none"
 set -x CHPL_GMP none
 
-echo "Setting CHPL_REGEXP to none"
-set -x CHPL_REGEXP none
+echo "Setting CHPL_RE2 to none"
+set -x CHPL_RE2 none
 
 echo "Setting CHPL_LLVM to none"
 set -x CHPL_LLVM none

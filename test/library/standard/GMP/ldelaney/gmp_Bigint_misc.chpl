@@ -22,16 +22,16 @@ writeln(a, parse_fit(a.fits_sshort_p()), " in a signed short integer");
 writeln(b, parse_fit(b.fits_sshort_p()), " in a signed short integer");
 writeln();
 
-if a.odd_p() then writeln("a is odd");
-else if a.even_p() then writeln("a is even");
+if a.isOdd() then writeln("a is odd");
+else if a.isEven() then writeln("a is even");
 
-if b.odd_p() then writeln("b is odd");
-else if b.even_p() then writeln("b is even");
+if b.isOdd() then writeln("b is odd");
+else if b.isEven() then writeln("b is even");
 
-writeln(a, " is ", a.sizeinbase(10), " digits in base 10");
-writeln(a, " is ", a.sizeinbase(2), " digits in base 2");
-writeln(b, " is ", b.sizeinbase(10), " digits in base 10");
-writeln(b, " is ", b.sizeinbase(2), " digits in base 2");
+writeln(a, " is ", a.sizeInBase(10), " digits in base 10");
+writeln(a, " is ", a.sizeInBase(2), " digits in base 2");
+writeln(b, " is ", b.sizeInBase(10), " digits in base 10");
+writeln(b, " is ", b.sizeInBase(2), " digits in base 2");
 
 a.set(35);
 b.set(9);

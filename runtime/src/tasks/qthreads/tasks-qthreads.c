@@ -74,8 +74,7 @@
 
 /* Tasks */
 static aligned_t profile_task_yield = 0;
-static aligned_t profile_task_addToTaskList = 0;
-static aligned_t profile_task_executeTasksInList = 0;
+static aligned_t profile_task_addTask = 0;
 static aligned_t profile_task_taskCallFTable = 0;
 static aligned_t profile_task_startMovedTask = 0;
 static aligned_t profile_task_getId = 0;
@@ -98,8 +97,7 @@ static void profile_print(void)
 {
     /* Tasks */
     fprintf(stderr, "task yield: %lu\n", (unsigned long)profile_task_yield);
-    fprintf(stderr, "task addToTaskList: %lu\n", (unsigned long)profile_task_addToTaskList);
-    fprintf(stderr, "task executeTasksInList: %lu\n", (unsigned long)profile_task_executeTasksInList);
+    fprintf(stderr, "task addTask: %lu\n", (unsigned long)profile_task_addTask);
     fprintf(stderr, "task taskCallFTable: %lu\n", (unsigned long)profile_task_taskCallFTable);
     fprintf(stderr, "task startMovedTask: %lu\n", (unsigned long)profile_task_startMovedTask);
     fprintf(stderr, "task getId: %lu\n", (unsigned long)profile_task_getId);
@@ -132,15 +130,6 @@ static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Make qt env sizes uniform. Same as qt, but they use the literal everywhere
 #define QT_ENV_S 100
-
-// aka chpl_task_list_p
-struct chpl_task_list {
-    chpl_fn_p        fun;
-    void            *arg;
-    int32_t          filename;
-    int              lineno;
-    chpl_task_list_p next;
-};
 
 static aligned_t next_task_id = 1;
 
@@ -275,23 +264,6 @@ void chpl_sync_initAux(chpl_sync_aux_t *s)
 void chpl_sync_destroyAux(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_destroyAux, 1);
-}
-
-static void SIGINT_handler(int sig)
-{
-    signal(sig, SIG_IGN);
-
-    if (blockreport) {
-        fprintf(stderr,
-                "Blockreport is currently unsupported by the qthreads "
-                "tasking layer.\n");
-    }
-
-    if (taskreport) {
-        fprintf(stderr, "Taskreport is currently unsupported by the qthreads tasking layer.\n");
-    }
-
-    chpl_exit_any(1);
 }
 
 // We call this routine in a separate pthread for 2 main reasons:
@@ -672,7 +644,7 @@ static void setupWorkStealing(void) {
 
 static void setupSpinWaiting(void) {
   const char *crayPlatform = "cray-x";
-  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+  if (chpl_get_oversubscribed()) {
     chpl_qt_setenv("SPINCOUNT", "300", 0);
   } else if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
     chpl_qt_setenv("SPINCOUNT", "3000000", 0);
@@ -680,9 +652,13 @@ static void setupSpinWaiting(void) {
 }
 
 static void setupAffinity(void) {
-  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+  if (chpl_get_oversubscribed()) {
     chpl_qt_setenv("AFFINITY", "no", 0);
   }
+
+  // For the binders topo spread threads across sockets instead of packing.
+  // Only impacts binders, but it doesn't hurt to set it for other configs.
+  chpl_qt_setenv("LAYOUT", "BALANCED", 0);
 }
 
 void chpl_task_init(void)
@@ -716,12 +692,6 @@ void chpl_task_init(void)
     // QT_NUM_WORKERS_PER_SHEPHERD in which case we don't impose any limits on
     // the number of threads qthreads creates beforehand
     assert(0 == commMaxThreads || qthread_num_workers() < commMaxThreads);
-
-    if (blockreport || taskreport) {
-        if (signal(SIGINT, SIGINT_handler) == SIG_ERR) {
-            perror("Could not register SIGINT handler");
-        }
-    }
 }
 
 void chpl_task_exit(void)
@@ -830,21 +800,18 @@ int chpl_task_createCommTask(chpl_fn_p fn,
                           NULL, comm_task_wrapper, &wrapper_info);
 }
 
-void chpl_task_addToTaskList(chpl_fn_int_t       fid,
-                             chpl_task_bundle_t *arg,
-                             size_t              arg_size,
-                             c_sublocid_t        full_subloc,
-                             void              **task_list,
-                             int32_t             task_list_locale,
-                             chpl_bool           is_begin_stmt,
-                             int                 lineno,
-                             int32_t             filename)
+void chpl_task_addTask(chpl_fn_int_t       fid,
+                       chpl_task_bundle_t *arg,
+                       size_t              arg_size,
+                       c_sublocid_t        full_subloc,
+                       int                 lineno,
+                       int32_t             filename)
 {
     chpl_fn_p requested_fn = chpl_ftable[fid];
 
     assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any);
 
-    PROFILE_INCR(profile_task_addToTaskList,1);
+    PROFILE_INCR(profile_task_addTask,1);
 
     c_sublocid_t execution_subloc =
       chpl_localeModel_sublocToExecutionSubloc(full_subloc);
@@ -869,11 +836,6 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
         qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size, NULL,
                                  (qthread_shepherd_id_t) execution_subloc);
     }
-}
-
-void chpl_task_executeTasksInList(void **task_list)
-{
-    PROFILE_INCR(profile_task_executeTasksInList,1);
 }
 
 static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,

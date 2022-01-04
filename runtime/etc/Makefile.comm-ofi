@@ -17,7 +17,7 @@
 # limitations under the License.
 
 #
-# Conservatively use CXX as the linker, in case regexp (or other C++
+# Conservatively use CXX as the linker, in case regex (or other C++
 # code) is being linked in.
 #
 LD = $(CXX)
@@ -41,11 +41,11 @@ ifneq (, $(findstring mpi, $(CHPL_MAKE_LAUNCHER) $(CHPL_COMM_OFI_OOB)))
 endif
 
 #
-# If we're using the slurm PMI2 out-of-band support we have to
-# reference that library explicitly.
+# If we're using the PMI2 out-of-band support we have to reference
+# libpmi2 explicitly, except on Cray XC systems.
 #
-ifneq (, $(findstring hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM), hpe-cray-ex)
   LIBS += -lpmi2
-else ifneq (, $(findstring slurm-pmi2, $(CHPL_COMM_OFI_OOB)))
+else ifeq ($(CHPL_COMM_OFI_OOB), pmi2)
   LIBS += -lpmi2
 endif

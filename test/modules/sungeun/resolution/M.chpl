@@ -5,7 +5,7 @@ module M {
     var x: t;
   }
 
-  inline proc _cast(type t, x: int) where t==R {
+  inline operator :(x: int, type t:R) {
     var ret: R;
     ret.x = x;
     return ret;

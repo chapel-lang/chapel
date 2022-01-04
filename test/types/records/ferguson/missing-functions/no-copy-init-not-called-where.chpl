@@ -4,7 +4,7 @@ record R {
 // record opts out of being copyable
 proc R.init=(other: R) where false {
 }
-proc =(ref lhs: R, const ref rhs: R) {
+operator R.=(ref lhs: R, const ref rhs: R) {
   lhs.x = rhs.x;
 }
 

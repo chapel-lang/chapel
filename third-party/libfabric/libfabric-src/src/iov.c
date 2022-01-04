@@ -129,7 +129,7 @@ int ofi_truncate_iov(struct iovec *iov, size_t *iov_count, size_t new_size)
 		}
 		new_size -= iov[i].iov_len;
 	}
-	return -FI_ETRUNC;
+	return new_size ? -FI_ETRUNC : FI_SUCCESS;
 }
 
 /* Copy 'len' bytes worth of src iovec to dst */

@@ -67,11 +67,14 @@ bool       isTupleContainingAnyReferences(Type* t);
 void       ensureEnumTypeResolved(EnumType* etype);
 
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
+FnSymbol*  tryResolveFunction(FnSymbol* fn);
 
 bool       canInstantiate(Type* actualType, Type* formalType);
 
 Type*      getConcreteParentForGenericFormal(Type* actualType,
                                              Type* formalType);
+Type*      getMoreInstantiatedParentForGenericFormal(Type* actualType,
+                                                     Type* formalType);
 
 bool       isInstantiation(Type* sub, Type* super);
 
@@ -107,14 +110,14 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
                                     Type* formalType,
                                     Symbol* formalSym);
 
-bool canCoerceDecorators(ClassTypeDecorator actual,
-                         ClassTypeDecorator formal,
+bool canCoerceDecorators(ClassTypeDecoratorEnum actual,
+                         ClassTypeDecoratorEnum formal,
                          bool allowNonSubtypes,
                          bool implicitBang);
-bool canInstantiateDecorators(ClassTypeDecorator actual,
-                              ClassTypeDecorator formal);
-bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
-                                      ClassTypeDecorator formal,
+bool canInstantiateDecorators(ClassTypeDecoratorEnum actual,
+                              ClassTypeDecoratorEnum formal);
+bool canInstantiateOrCoerceDecorators(ClassTypeDecoratorEnum actual,
+                                      ClassTypeDecoratorEnum formal,
                                       bool allowNonSubtypes,
                                       bool implicitBang);
 
@@ -171,16 +174,34 @@ Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
-// interface constraints
+// constrained generics
 void resolveInterfaceSymbol(InterfaceSymbol* isym);
 void resolveImplementsStmt(ImplementsStmt* istm);
 void resolveConstrainedGenericFun(FnSymbol* fn);
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
-ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* call,
-                                                IfcConstraint* constraint,
-                                                SymbolMap& substitutions);
-void cleanupInstantiatedCGfun(FnSymbol* fn,
-                              std::vector<ImplementsStmt*>& witnesses);
+Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
+struct ConstraintSat { ImplementsStmt* istm; IfcConstraint* icon; int indx;
+  ConstraintSat(ImplementsStmt* s): istm(s), icon(0), indx(0) { }
+  ConstraintSat(IfcConstraint* c, int i): istm(0), icon(c), indx(i) { } };
+ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call, Expr* addlSite,
+                                              IfcConstraint* constraint,
+                                              SymbolMap& substitutions);
+void cgAddRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
+                              ImplementsStmt* istm, int indx);
+void cgAddInterimRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
+                                     IfcConstraint* tgtIcon,  int tgtIndx,
+                                     IfcConstraint* callIcon, int callIndx);
+
+void cgConvertAggregateTypes(FnSymbol* fn, Expr* anchor,
+                             SymbolMap& substitutions);
+void recordCGInterimInstantiations(CallExpr* call, ResolutionCandidate* best1,
+                       ResolutionCandidate* best2, ResolutionCandidate* best3);
+void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
+                              bool isInterimInstantiation);
+bool cgActualCanMatch(FnSymbol* fn, Type* formalT, ConstrainedType* actualCT);
+bool cgFormalCanMatch(FnSymbol* fn, Type* formalT);
+void startInterfaceChecking();
+void finishInterfaceChecking();
 
 FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
@@ -188,7 +209,6 @@ FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
 void      instantiateBody(FnSymbol* fn);
 
 // generics support
-TypeSymbol* getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS);
 void checkInfiniteWhereInstantiation(FnSymbol* fn);
 void popInstantiationLimit(FnSymbol* fn);
 void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var);
@@ -276,8 +296,6 @@ void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
-bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
-
 bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
@@ -351,7 +369,7 @@ void trimVisibleCandidates(CallInfo& call,
 void resolveGenericActuals(CallExpr* call);
 
 Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
-                                  ClassTypeDecorator useDec,
+                                  ClassTypeDecoratorEnum useDec,
                                   AggregateType* manager,
                                   Expr* ctx);
 

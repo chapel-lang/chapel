@@ -111,7 +111,7 @@ static ssize_t tcpx_rma_readmsg(struct fid_ep *ep, const struct fi_msg_rma *msg,
 
 	recv_entry = tcpx_xfer_entry_alloc(tcpx_cq, TCPX_OP_READ_RSP);
 	if (!recv_entry) {
-		tcpx_xfer_entry_release(tcpx_cq, send_entry);
+		tcpx_xfer_entry_free(tcpx_cq, send_entry);
 		return -FI_EAGAIN;
 	}
 	tcpx_rma_read_send_entry_fill(send_entry, tcpx_ep, msg);
@@ -389,8 +389,8 @@ static ssize_t tcpx_rma_inject_common(struct fid_ep *ep, const void *buf,
 static ssize_t tcpx_rma_inject(struct fid_ep *ep, const void *buf, size_t len,
 			       fi_addr_t dest_addr, uint64_t addr, uint64_t key)
 {
-	return tcpx_rma_inject_common(ep, buf, len, dest_addr,
-				      0, addr, key, FI_INJECT);
+	return tcpx_rma_inject_common(ep, buf, len, 0 ,dest_addr,
+				      addr, key, FI_INJECT);
 }
 
 static ssize_t
@@ -398,7 +398,7 @@ tcpx_rma_injectdata(struct fid_ep *ep, const void *buf, size_t len,
 		    uint64_t data, fi_addr_t dest_addr, uint64_t addr,
 		    uint64_t key)
 {
-	return tcpx_rma_inject_common(ep, buf, len, dest_addr, data, addr, key,
+	return tcpx_rma_inject_common(ep, buf, len, data, dest_addr, addr, key,
 				      FI_INJECT | FI_REMOTE_CQ_DATA);
 }
 

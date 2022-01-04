@@ -7,7 +7,7 @@ record testRecord {
   proc init(dummy: int=0) { this.dummy = dummy; }
 }
 
-proc _cast(type t: testRecord, x: int) {
+operator :(x: int, type t: testRecord) {
   return new testRecord(x);
 }
 
@@ -43,9 +43,9 @@ proc doTest(type eltType) {
   var lk$: sync int = 0;
 
   forall x in s1 with (ref parcount) {
-    var rd = lk$;
+    var rd = lk$.readFE();
     parcount += 1;
-    lk$ = 0;
+    lk$.writeEF(0);
   }
 
   assert(parcount == s1.size);

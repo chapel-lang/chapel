@@ -34,7 +34,7 @@ class Symbol;
 class Type;
 
 
-class AstDumpToNode : public AstLogger
+class AstDumpToNode final : public AstLogger
 {
   //
   // Static interface
@@ -67,10 +67,10 @@ public:
   // Instance interface
   //
 public:
-                   AstDumpToNode(FILE* fp, int offset = 0);
-  virtual         ~AstDumpToNode();
+   AstDumpToNode(FILE* fp, int offset = 0);
+  ~AstDumpToNode() override;
 
-  void             offsetSet(int offset);
+  void offsetSet(int offset);
 
   //
   // These functions are the "implementation" interface for the
@@ -81,84 +81,84 @@ public:
   // themselves
   //
 
-  virtual bool     enterAggrType       (AggregateType*     node);
-  virtual void     exitAggrType        (AggregateType*     node);
+  bool   enterAggrType       (AggregateType*     node) override;
+  void   exitAggrType        (AggregateType*     node) override;
 
-  virtual bool     enterEnumType       (EnumType*          node);
-  virtual void     visitConstrainedType(ConstrainedType*   node);
-  virtual void     visitPrimType       (PrimitiveType*     node);
+  bool   enterEnumType       (EnumType*          node) override;
+  void   visitConstrainedType(ConstrainedType*   node) override;
+  void   visitPrimType       (PrimitiveType*     node) override;
 
-  virtual bool     enterArgSym         (ArgSymbol*         node);
+  bool   enterArgSym         (ArgSymbol*         node) override;
 
-  virtual void     visitEnumSym        (EnumSymbol*        node);
+  void   visitEnumSym        (EnumSymbol*        node) override;
 
-  virtual bool     enterFnSym          (FnSymbol*          node);
-  virtual bool     enterInterfaceSym   (InterfaceSymbol*   node);
+  bool   enterFnSym          (FnSymbol*          node) override;
+  bool   enterInterfaceSym   (InterfaceSymbol*   node) override;
 
-  virtual void     visitLabelSym       (LabelSymbol*       node);
+  void   visitLabelSym       (LabelSymbol*       node) override;
 
-  virtual bool     enterModSym         (ModuleSymbol*      node);
-  virtual void     exitModSym          (ModuleSymbol*      node);
+  bool   enterModSym         (ModuleSymbol*      node) override;
+  void   exitModSym          (ModuleSymbol*      node) override;
 
-  virtual bool     enterTypeSym        (TypeSymbol*        node);
+  bool   enterTypeSym        (TypeSymbol*        node) override;
 
-  virtual void     visitVarSym         (VarSymbol*         node);
+  void   visitVarSym         (VarSymbol*         node) override;
 
-  virtual bool     enterCallExpr       (CallExpr*          node);
+  bool   enterCallExpr       (CallExpr*          node) override;
 
-  virtual bool     enterContextCallExpr(ContextCallExpr*   node);
+  bool   enterContextCallExpr(ContextCallExpr*   node) override;
 
-  virtual bool     enterDefExpr        (DefExpr*           node);
+  bool   enterDefExpr        (DefExpr*           node) override;
 
-  virtual bool     enterNamedExpr      (NamedExpr*         node);
-  virtual void     exitNamedExpr       (NamedExpr*         node);
+  bool   enterNamedExpr      (NamedExpr*         node) override;
+  void   exitNamedExpr       (NamedExpr*         node) override;
 
-  virtual bool     enterIfcConstraint  (IfcConstraint*     node);
+  bool   enterIfcConstraint  (IfcConstraint*     node) override;
 
-  virtual bool     enterIfExpr         (IfExpr*            node);
-  virtual void     exitIfExpr          (IfExpr*            node);
+  bool   enterIfExpr         (IfExpr*            node) override;
+  void   exitIfExpr          (IfExpr*            node) override;
 
-  virtual void     visitSymExpr        (SymExpr*           node);
+  void   visitSymExpr        (SymExpr*           node) override;
 
-  virtual void     visitUsymExpr       (UnresolvedSymExpr* node);
+  void   visitUsymExpr       (UnresolvedSymExpr* node) override;
 
-  virtual bool     enterLoopExpr  (LoopExpr*        node);
-  virtual void     exitLoopExpr   (LoopExpr*        node);
+  bool   enterLoopExpr       (LoopExpr*          node) override;
+  void   exitLoopExpr        (LoopExpr*          node) override;
 
-  virtual void     visitUseStmt        (UseStmt*           node);
+  void   visitUseStmt        (UseStmt*           node) override;
 
-  virtual void     visitImportStmt     (ImportStmt*        node);
+  void   visitImportStmt     (ImportStmt*        node) override;
 
-  virtual bool     enterBlockStmt      (BlockStmt*         node);
+  bool   enterBlockStmt      (BlockStmt*         node) override;
 
-  virtual bool     enterForallStmt     (ForallStmt*        node);
+  bool   enterForallStmt     (ForallStmt*        node) override;
 
-  virtual bool     enterWhileDoStmt    (WhileDoStmt*       node);
+  bool   enterWhileDoStmt    (WhileDoStmt*       node) override;
 
-  virtual bool     enterDoWhileStmt    (DoWhileStmt*       node);
+  bool   enterDoWhileStmt    (DoWhileStmt*       node) override;
 
-  virtual bool     enterCForLoop       (CForLoop*          node);
+  bool   enterCForLoop       (CForLoop*          node) override;
 
-  virtual bool     enterForLoop        (ForLoop*           node);
+  bool   enterForLoop        (ForLoop*           node) override;
 
-  virtual bool     enterParamForLoop   (ParamForLoop*      node);
+  bool   enterParamForLoop   (ParamForLoop*      node) override;
 
-  virtual bool     enterCondStmt       (CondStmt*          node);
+  bool   enterCondStmt       (CondStmt*          node) override;
 
-  virtual void     visitEblockStmt     (ExternBlockStmt*   node);
+  void   visitEblockStmt     (ExternBlockStmt*   node) override;
 
-  virtual bool     enterGotoStmt       (GotoStmt*          node);
+  bool   enterGotoStmt       (GotoStmt*          node) override;
 
-  virtual bool     enterTryStmt        (TryStmt*           node);
+  bool   enterTryStmt        (TryStmt*           node) override;
 
-  virtual bool     enterCatchStmt      (CatchStmt*         node);
+  bool   enterCatchStmt      (CatchStmt*         node) override;
 
-  virtual bool     enterDeferStmt      (DeferStmt*         node);
+  bool   enterDeferStmt      (DeferStmt*         node) override;
 
-  virtual bool     enterImplementsStmt (ImplementsStmt*    node);
+  bool   enterImplementsStmt (ImplementsStmt*    node) override;
 
 private:
-                   AstDumpToNode();
+  AstDumpToNode();
 
   bool             open(ModuleSymbol* mod, const char* passName, int passNum);
   bool             close();

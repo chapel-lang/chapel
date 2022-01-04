@@ -24,16 +24,6 @@ extern proc c_function_free(x:c_ptr(uint(64)));
   c_function_free(ptr);
 }
 
-// chapel allocate -> c free
-{
-  var ptr: c_ptr(uint(64));
-  writeln("Allocating in Chapel");
-  ptr = c_calloc(uint(64), 1);
-  ptr[0] = 55;
-  writeln("Freeing in C");
-  c_function_free(ptr);
-}
-
 // c malloc -> chapel free
 {
   var ptr: c_ptr(uint(64));
@@ -62,6 +52,20 @@ extern proc c_function_free(x:c_ptr(uint(64)));
   ptr[0] = 55;
   writeln("Freeing in Chapel");
   c_free(ptr);
+}
+
+// NOTE: this block needs to appear last, because we want to capture this
+// operation as leak. However, cstdlib allocators can interfere with our memory
+// allocators and tracking in a way that prevents that.
+// See: https://github.com/Cray/chapel-private/issues/1896
+// chapel allocate -> c free
+{
+  var ptr: c_ptr(uint(64));
+  writeln("Allocating in Chapel");
+  ptr = c_calloc(uint(64), 1);
+  ptr[0] = 55;
+  writeln("Freeing in C");
+  c_function_free(ptr);
 }
 
 

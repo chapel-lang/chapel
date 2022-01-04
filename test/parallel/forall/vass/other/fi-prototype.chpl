@@ -149,14 +149,14 @@ proc nocapture() {
 
   cobegin with (ref i) {
     {
-      s$;
+      s$.readFE();
       i = 5;
-      q$ = true;
+      q$.writeEF(true);
     }
     {
       forall j in ITR(3) with (ref i) {
         s$.writeXF(true);
-        q$;
+        q$.readFF();
         writeln("A-", j, "  i=", i);
       }
     }
@@ -172,15 +172,15 @@ proc captureManually() {
 
   cobegin with (ref i) {
     {
-      s$;
+      s$.readFE();
       i = 5;
-      q$ = true;
+      q$.writeEF(true);
     }
     {
       var iCapture = i;
       forall j in ITR(3) {
         s$.writeXF(true);
-        q$;
+        q$.readFF();
         writeln("B-", j, "  i=", iCapture);
       }
     }
@@ -196,9 +196,9 @@ proc noCaptureWithIntent() {
 
   cobegin with (ref i) {
     {
-      s$;
+      s$.readFE();
       i = 5;
-      q$ = true;
+      q$.writeEF(true);
     }
     {
       // Convert 'forall' into leader+follower, like what the parser does.
@@ -206,7 +206,7 @@ proc noCaptureWithIntent() {
         for j in ITR(3, tag=iterKind.follower, followThis) {
 
           s$.writeXF(true);
-          q$;
+          q$.readFF();
           writeln("C-", j, "  i=", i);
 
         }  // follower
@@ -224,9 +224,9 @@ proc captureWithIntent() {
 
   cobegin with (ref i) {
     {
-      s$;
+      s$.readFE();
       i = 5;
-      q$ = true;
+      q$.writeEF(true);
     }
     {
       // Convert 'forall' into leader+follower, like what the parser does.
@@ -237,7 +237,7 @@ proc captureWithIntent() {
         for j in ITR(3, tag=iterKind.follower, followThis) {
 
           s$.writeXF(true);
-          q$;
+          q$.readFF();
           writeln("D-", j, "  i=", iCapture);
 
         }  // follower

@@ -48,27 +48,7 @@ Vec<LabelSymbol*> removedIterResumeLabels;
 *                                                                             *
 ************************************** | *************************************/
 
-Stmt::Stmt(AstTag astTag) : Expr(astTag) {
-
-}
-Stmt::~Stmt() {
-
-}
-
-bool Stmt::isStmt() const {
-  return true;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
 VisibilityStmt::VisibilityStmt(AstTag astTag): Stmt(astTag) {
-}
-
-VisibilityStmt::~VisibilityStmt() {
 }
 
 // Specifically for when the module being used or imported is renamed
@@ -176,6 +156,10 @@ void VisibilityStmt::validateRenamed() {
         USR_FATAL_CONT(this,
                        "Bad identifier in rename, '%s' is private",
                        it->second);
+      }
+
+      if (sym->hasFlag(FLAG_DEPRECATED)) {
+        sym->generateDeprecationWarning(this);
       }
 
     } else {

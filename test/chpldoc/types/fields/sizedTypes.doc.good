@@ -1,0 +1,37 @@
+.. default-domain:: chpl
+
+.. module:: sizedTypes
+
+sizedTypes
+==========
+**Usage**
+
+.. code-block:: chapel
+
+   use sizedTypes;
+
+
+or
+
+.. code-block:: chapel
+
+   import sizedTypes;
+
+.. data:: config param w: int
+
+.. data:: var fullInt: int(w)
+
+.. data:: var halfInt: int(w/2)
+
+.. data:: var fullReal: real(w)
+
+.. data:: var halfReal: real(w/2)
+
+.. data:: var fullImag: imag(w)
+
+.. data:: var halfImag: imag(w/2)
+
+.. data:: var fullComp: complex(w)
+
+.. data:: var halfComp: complex(w/2)
+

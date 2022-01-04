@@ -547,17 +547,21 @@ int main(int argc, char **argv)
     BARRIER();
 
 #if GASNET_PAR
-    MSG("Forking %d gasnet threads (%d active, %d polling)", threads+pollers, threads, pollers);
+    int total_threads = threads+pollers;
+    MSG("Forking %d gasnet threads (%d active, %d polling)", total_threads, threads, pollers);
     {
-        int i;
-	thread_data_t* tt_thread_data = test_malloc(threads*sizeof(thread_data_t));
-        for (i = 0; i < threads; i++) {
+	thread_data_t* tt_thread_data = test_malloc(total_threads*sizeof(thread_data_t));
+        for (int i = 0; i < threads; i++) {
 	    tt_thread_data[i].myproc = myproc;
 	    tt_thread_data[i].local_id = i;
 	    tt_thread_data[i].mythread = i + threads * myproc;
 	    tt_thread_data[i].peerthread = i + threads * (((myproc ^ 1) == numprocs) ? myproc : (myproc ^ 1));
         }
-        test_createandjoin_pthreads(threads, &thread_main, tt_thread_data, sizeof(tt_thread_data[0]));
+        for (int i = threads; i < total_threads; ++i) {
+            // polling threads only read the local_id
+            tt_thread_data[i].local_id = i;
+        }
+        test_createandjoin_pthreads(total_threads, &thread_main, tt_thread_data, sizeof(tt_thread_data[0]));
         test_free(tt_thread_data);
     }
 #else

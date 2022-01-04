@@ -1,0 +1,2 @@
+deprecateProbabPrimeP.chpl:7: warning: bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead
+11 is prime since return value is 2

@@ -1,0 +1,4 @@
+0: verboseComm.chpl:5: remote executeOn, node 1
+1
+1: :-1: remote put_nb, node 0, 8 bytes, commid #
+1: verboseComm.chpl:6: remote cache-put, node 0, 8 bytes, commid #

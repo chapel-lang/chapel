@@ -30,6 +30,7 @@
 #include "chpl-tasks.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-comm-locales.h"
+#include "chpl-mem-consistency.h"
 #include "chpl-mem-desc.h"
 
 #ifdef __cplusplus
@@ -55,7 +56,7 @@ static inline c_nodeid_t get_chpl_nodeID(void) {
 
 extern int32_t chpl_numNodes; // number of nodes
 
-size_t chpl_comm_getenvMaxHeapSize(void);
+ssize_t chpl_comm_getenvMaxHeapSize(void);
 
 
 //
@@ -167,6 +168,12 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 // this function always returns 0 since although any address is in the
 // segment, not all addresses are readable without causing a segmentation
 // violation on the remote locale.
+//
+// Note that this call is asking if a future GET will be safe, so in cases
+// where memory is registered dynamically or on-demand it's possible that
+// another task might deregister memory between this call and the GET so it
+// should also return 0 in such configurations.
+//
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len);
 
 //
@@ -237,6 +244,11 @@ void chpl_comm_rollcall(void);
 //   This returns the page size for the comm layer registered heap,
 //   either the size of a system page or some hugepage size.
 //
+// chpl_comm_regMemHeapTouch():
+//   For configurations that use a static/fixed heap, this attempts to
+//   touch the heap in an interleaved and parallel manner to improve
+//   NUMA affinity and speed up faulting in the memory.
+//
 // chpl_comm_regMemAllocThreshold():
 //   Allocations smaller than this should be done normally, by the
 //   memory layer.  Those at least this size may be done through this
@@ -278,6 +290,8 @@ static inline
 size_t chpl_comm_regMemHeapPageSize(void) {
   return CHPL_COMM_IMPL_REG_MEM_HEAP_PAGE_SIZE();
 }
+
+void chpl_comm_regMemHeapTouch(void* start, size_t size);
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD
   #define CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD() SIZE_MAX
@@ -390,7 +404,20 @@ void chpl_comm_broadcast_private(int id, size_t size);
 // resources and prevent making progress. This barrier must be available
 // for use in module code, so it cannot be tied up in the runtime
 //
-void chpl_comm_barrier(const char *msg);
+void chpl_comm_impl_barrier(const char *msg);
+static inline void chpl_comm_barrier(const char *msg) {
+
+#ifdef CHPL_COMM_DEBUG
+  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
+#endif
+
+  if (chpl_numNodes == 1) {
+    return;
+  }
+
+  chpl_rmem_consist_fence(memory_order_seq_cst, 0, 0);
+  chpl_comm_impl_barrier(msg);
+}
 
 //
 // Do exit processing that has to occur before the tasking layer is
@@ -553,6 +580,18 @@ void* chpl_get_global_serialize_table(int64_t idx);
 // Used to park and wake up the main process
 void chpl_signal_shutdown(void);
 void chpl_wait_for_shutdown(void);
+
+// Sets the number of locales on the local node and determines if the node is 
+// oversubscribed. 
+void chpl_set_num_locales_on_node(int32_t count);
+
+// Returns the number of locales on the local node.
+
+int32_t chpl_get_num_locales_on_node(void);
+
+// Returns true if node is oversubscribed, false otherwise.
+
+chpl_bool chpl_get_oversubscribed(void);
 
 #ifdef __cplusplus
 }

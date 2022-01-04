@@ -192,6 +192,7 @@ Similarly, one can use the srun command in SLURM:
 
 $ setenv GASNET_SPAWNFN 'C'
 $ setenv GASNET_CSPAWN_CMD 'srun -n %N %C'  
+$ setenv GASNET_WORKER_RANK "SLURM_PROCID"    // optional, see docs below
 
 Recognized environment variables:
 ---------------------------------
@@ -278,6 +279,16 @@ Recognized environment variables:
   hostnames and IP addresses (which must both match) would mistakenly
   identify such entries as ineligible for shared-memory communication.
   Default is "0" (hostnames and IP addresses are used).
+
+* GASNET_WORKER_RANK
+  May be set to force a particular rank assignment for worker processes.
+  If set by any process, then it must be set by all worker processes before
+  init to a disjoint set of integers in the range [0..numprocs).
+  It may alternatively be set to the name of another environment variable in the
+  worker environment from which to retrieve the assignment (e.g. "SLURM_PROCID",
+  "PMIX_RANK", "OMPI_COMM_WORLD_RANK", etc).
+  Default behavior is arbitrary rank assignment that groups co-located processes.
+
 
 Known problems:
 ---------------

@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 var sub = spawn(["cat"], stdin=BUFFERED_PIPE, stdout=PIPE, stderr=FORWARD);
 
@@ -19,7 +19,7 @@ while sub.stdout.read(x) {
 }
 
 assert(sub.running == false);
-assert(sub.exit_status == 0);
+assert(sub.exitCode == 0);
 
 sub.close();
 

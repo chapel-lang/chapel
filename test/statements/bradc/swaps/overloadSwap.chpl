@@ -11,7 +11,7 @@ R1<=>R2;
 
 writeln(R1,R2);
 
-proc <=>(ref x: R, ref y: R) {
+operator R.<=>(ref x: R, ref y: R) {
   x.x <=> y.y;
   x.y <=> y.x;
 }

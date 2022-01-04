@@ -6,3 +6,5 @@ Because chpldoc uses 'docs' as a special directory, the --save-sphinx
 option doesn't work when 'docs' is supplied as a directory name,
 resulting in a confusing error message.  We should replace this with a
 better user-facing message.
+
+When this is done, we probably can remove the .prediff file on this test

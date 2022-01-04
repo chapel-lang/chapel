@@ -1,0 +1,9 @@
+in cgFun#2
+reqFunS((xx = 55): RR(int(64)))
+reqFun123(66, 77, true)
+RR(55): RR(int(64))).reqMeth1(66: int(64))
+RR(55): RR(int(64))).reqMeth23(77, true: bool)
+IFC.dfltFunS
+IFC.dfltFun123
+IFC.dfltMeth1
+IFC.dfltMeth23

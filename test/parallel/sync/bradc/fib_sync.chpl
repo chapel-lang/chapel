@@ -12,16 +12,16 @@ var result: sync int;
 proc arg1supplier() {
   var newval: int;
   do {
-    newval = arg1in;
-    arg1out = newval;
+    newval = arg1in.readFE();
+    arg1out.writeEF(newval);
   } while (newval != -1);
 }
 
 proc arg2supplier() {
   var newval: int;
   do {
-    newval = result;
-    arg2out = newval;
+    newval = result.readFE();
+    arg2out.writeEF(newval);
   } while (newval != -1);
 }
 
@@ -33,16 +33,16 @@ proc fibcomputer() {
     }
   }
   for i in 3..n do {
-    var arg1val: int = arg1out;
-    var arg2val: int = arg2out;
+    var arg1val: int = arg1out.readFE();
+    var arg2val: int = arg2out.readFE();
     var resultval = arg1val + arg2val;
     output(i, resultval);
     if (i == n) {
-      arg1in = -1;
-      result = -1;
+      arg1in.writeEF(-1);
+      result.writeEF(-1);
     } else {
-      arg1in = arg2val;
-      result = resultval;
+      arg1in.writeEF(arg2val);
+      result.writeEF(resultval);
     }
   }
 }

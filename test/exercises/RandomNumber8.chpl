@@ -5,12 +5,12 @@ const multipliers: [randNumDom] int = (16807, 397204094, 950706376),
 
 proc RandomNumber (x_n, multiplier) {
   // The following calculation must be done in at least 46-bit arithmetic!
-  return (x_n:int(64) * multiplier % modulus) : int(32);
+  return (x_n.readFE() * multiplier % modulus) : int(32);
 }
 
 proc RealRandomNumber (i) {
   var n = RandomNumber(seed[i], multipliers[i]);
-  seed[i] = n;
+  seed[i].writeEF(n);
   return (n-1) / (modulus-2) : real;
 }
 

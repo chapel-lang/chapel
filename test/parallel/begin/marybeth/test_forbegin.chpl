@@ -8,10 +8,10 @@ var a,b: [1..3] int;
 a = 0;
 
 for i in 1..3 {
-  j = i;
+  j.writeEF(i);
   var k = i;
   begin {
-    a(i) = j;
+    a(i) = j.readFE();
     b(i) = k;
     var tmp = count.readFE();
     count.writeXF(tmp+1);

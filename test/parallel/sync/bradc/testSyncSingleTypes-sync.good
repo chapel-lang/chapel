@@ -1,0 +1,2 @@
+testSyncSingleTypes.chpl:4: In function 'main':
+testSyncSingleTypes.chpl:5: error: sync/single types cannot contain type 'sync int(64)'

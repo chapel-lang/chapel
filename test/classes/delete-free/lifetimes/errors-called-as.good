@@ -1,0 +1,4 @@
+errors-called-as.chpl:8: In function 'showU1':
+errors-called-as.chpl:13: error: Scoped variable curr would outlive the value it is set to
+errors-called-as.chpl:11: note: consider scope of cur
+  errors-called-as.chpl:19: called as showU1(name: string, list: owned clist?)

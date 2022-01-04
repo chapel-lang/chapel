@@ -80,6 +80,8 @@ void map_view(SymbolMap& map);
 
 void set_view(std::set<BlockStmt*>* bss);
 void set_view(std::set<BlockStmt*>& bss);
+void set_view(std::set<FnSymbol*>& bss);
+void set_view(std::set<FnSymbol*>* bss);
 
 void vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>* v);
 void vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>& v);

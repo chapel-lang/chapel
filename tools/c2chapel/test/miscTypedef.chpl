@@ -6,7 +6,9 @@ require "miscTypedef.h";
 // Note: Generated with fake std headers
 
 use CPtr;
-extern record simpleStruct {
+use SysCTypes;
+use SysBasic;
+extern "struct simpleStruct" record simpleStruct {
   var a : c_int;
   var b : c_char;
   var c : c_void_ptr;
@@ -22,7 +24,7 @@ extern proc tdPointer(a : c_ptr(fancyStruct), b : c_ptr(c_ptr(renamedStruct))) :
 
 
 
-extern record forwardStruct {
+extern "struct forwardStruct" record forwardStruct {
   var a : c_int;
   var b : c_int;
 }

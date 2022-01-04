@@ -1,1 +1,1 @@
---no-llvm --ccflags -Wincompatible-pointer-types
+--ccflags -Wincompatible-pointer-types

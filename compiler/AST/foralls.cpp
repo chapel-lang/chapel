@@ -22,6 +22,7 @@
 #include "AstVisitor.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -32,6 +33,7 @@
 #include "resolveFunction.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "TransformLogicalShortCircuit.h"
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
@@ -276,6 +278,69 @@ static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
          pfs->requireSerialIterator();
 }
 
+// We use this in writing promotion wrappers and foralls to generate calls to:
+//   - chpl__canHaveFastFollowers
+//   - chpl__staticFastFollowerCheck
+//   - chpl__dynamicFastFollowerCheck
+//
+// lead can be NULL, in which case it won't be added to the arg list of the call
+// boolOp can be `||` or `&&` and determines the operation between calls
+CallExpr *buildFastFollowerCheckCallForZipOrProm(std::vector<SymExpr *> exprs,
+                                                 const char *fnName,
+                                                 const char *boolOp,
+                                                 Symbol *lead) {
+  CallExpr *ret = new CallExpr(boolOp);
+
+  for_vector(SymExpr, se, exprs) {
+    if (ret->numActuals() == 2) {
+      ret = new CallExpr(boolOp, ret);
+    }
+    CallExpr *newCall = new CallExpr(fnName, se->copy());
+    if (lead != NULL) {
+      newCall->insertAtTail(new SymExpr(lead));
+    }
+    ret->insertAtTail(newCall);
+  }
+
+  return ret;
+}
+
+static CallExpr *generateFollowersForZipHelp(CallExpr *iterCall,
+                                             Symbol *leadIdxCopy,
+                                             SymbolMap *map,
+                                             bool getIterator,
+                                             const char *fnName) {
+  INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+
+  CallExpr *tupler = new CallExpr("_build_tuple");
+
+  for_actuals(actual, iterCall) {
+    if (getIterator) {
+      tupler->insertAtTail(new CallExpr("_getIterator", new CallExpr(fnName, actual->copy(map), leadIdxCopy)));
+    }
+    else {
+      tupler->insertAtTail(new CallExpr(fnName, actual->copy(map), leadIdxCopy));
+    }
+  }
+
+  return tupler;
+}
+
+CallExpr *generateFastFollowersForZip(CallExpr *iterCall,
+                                             Symbol *leadIdxCopy,
+                                             SymbolMap *map,
+                                             bool getIterator) {
+  return generateFollowersForZipHelp(iterCall, leadIdxCopy, map, getIterator,
+                                     "_toFastFollower");
+}
+
+CallExpr *generateRegularFollowersForZip(CallExpr *iterCall,
+                                                Symbol *leadIdxCopy,
+                                                SymbolMap *map,
+                                                bool getIterator) {
+  return generateFollowersForZipHelp(iterCall, leadIdxCopy, map, getIterator,
+                                     "_toFollower");
+}
 
 // Like in build.cpp, here for ForallStmt.
 static BlockStmt*
@@ -287,7 +352,8 @@ buildFollowLoop(VarSymbol* iter,
                 Expr*      ref,
                 bool       fast,
                 bool       zippered,
-                bool       forallExpr) {
+                bool       forallExpr,
+                Expr*      iterExpr) {
   BlockStmt* followBlock = new BlockStmt();
   ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody,
                                        zippered,
@@ -301,18 +367,33 @@ buildFollowLoop(VarSymbol* iter,
   followBlock->insertAtTail(new DefExpr(followIter));
 
   followIdx->addFlag(FLAG_FOLLOWER_INDEX);
+  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
 
   if (fast) {
 
     if (zippered) {
-      followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFastFollowerZip(%S, %S)))", followIter, iter, leadIdxCopy);
+      CallExpr *iterCall = toCallExpr(iterExpr);
+      INT_ASSERT(iterCall);
+      INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+
+      CallExpr *genIterTuple = generateFastFollowersForZip(iterCall, leadIdxCopy);
+      CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, genIterTuple);
+
+      followBlock->insertAtTail(moveCall);
     } else {
       followBlock->insertAtTail("'move'(%S, _getIterator(_toFastFollower(%S, %S)))",       followIter, iter, leadIdxCopy);
     }
   } else {
 
     if (zippered) {
-      followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFollowerZip(%S, %S)))",     followIter, iter, leadIdxCopy);
+      CallExpr *iterCall = toCallExpr(iterExpr);
+      INT_ASSERT(iterCall);
+      INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+
+      CallExpr *genIterTuple = generateRegularFollowersForZip(iterCall, leadIdxCopy);
+      CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, genIterTuple);
+
+      followBlock->insertAtTail(moveCall);
     } else {
       followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))",           followIter, iter, leadIdxCopy);
     }
@@ -897,7 +978,8 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
     return origExprFlw;
   }
 
-  CallExpr* result = new CallExpr("_build_tuple", origExprFlw);
+  CallExpr *result = new CallExpr(PRIM_ZIP, origExprFlw);
+
   while (Expr* curr = iterCall->next)
     result->insertAtTail(curr->remove());
 
@@ -906,12 +988,78 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
   return result;
 }
 
+static CallExpr *generateFastFollowCheckHelp(CallExpr *iterCall,
+                                             const char *fnName,
+                                             bool addLead) {
+
+  Symbol *leadSym = NULL;
+
+  if (addLead) {
+    SymExpr *leadSE = toSymExpr(iterCall->get(1));
+    INT_ASSERT(leadSE);
+
+    leadSym = leadSE->symbol();
+  }
+  
+  const char *zipOp = NULL;
+  if (strcmp(fnName, "chpl__canHaveFastFollowers") == 0) {
+    zipOp = "||";
+  }
+  else {
+    zipOp = "&&";
+  }
+
+  std::vector<SymExpr *> zippedExprs;
+  for_actuals(actual, iterCall) {
+    SymExpr *actualSE = toSymExpr(actual);
+    INT_ASSERT(actualSE);
+
+    zippedExprs.push_back(actualSE);
+  }
+
+  return buildFastFollowerCheckCallForZipOrProm(zippedExprs,
+                                                fnName,
+                                                zipOp,
+                                                leadSym);
+}
+
+static CallExpr *generateFastFollowCheck(Expr *e, bool isStatic) {
+
+  CallExpr *iterCall = toCallExpr(e);
+  INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+  INT_ASSERT(iterCall->numActuals() > 1);
+
+  const char *fnName = isStatic ? "chpl__staticFastFollowCheck" :
+                                  "chpl__dynamicFastFollowCheck";
+
+  CallExpr *checkCall = generateFastFollowCheckHelp(iterCall, fnName,
+                                                    /*addLead=*/true);
+  CallExpr *retCall = NULL;
+  if (isStatic) {
+     //we also need to check whether any of the iterands can actually have fast
+     //followers
+    CallExpr *canHave = generateFastFollowCheckHelp(iterCall,
+                                                    "chpl__canHaveFastFollowers",
+                                                    /*addLead=*/false);
+
+    retCall = new CallExpr("&&", canHave, checkCall);
+    //retCall = checkCall;
+  }
+  else {
+    retCall = checkCall;
+  }
+
+  return retCall;
+}
+
 static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* leadIdxCopy = parIdxVar(pfs);
   bool       zippered    = false;
-  if (CallExpr* buildTup = toCallExpr(iterExpr)) {
-    INT_ASSERT(buildTup->isNamed("_build_tuple"));
-    if (buildTup->numActuals() > 1)
+  CallExpr*  iterCall = toCallExpr(iterExpr);
+
+  if (iterCall) {
+    INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+    if (iterCall->numActuals() > 1)
       zippered = true;
   }
 
@@ -932,8 +1080,14 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   iterRec->addFlag(FLAG_CHPL__ITER);
   iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
 
-  preFS->insertAtTail(new DefExpr(iterRec));
-  preFS->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
+  if (zippered) {
+    pfs->setZipCall(iterCall->copy());
+  }
+  else {
+    preFS->insertAtTail(new DefExpr(iterRec));
+    preFS->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
+  }
+
   Expr* toNormalize = preFS->body.tail;
 
   followBlock = buildFollowLoop(iterRec,
@@ -944,48 +1098,65 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                 pfs,
                                 /* fast */ false,
                                 zippered,
-                                pfs->isForallExpr());
+                                pfs->isForallExpr(),
+                                iterExpr);
 
   if (fNoFastFollowers == false) {
-    Symbol* T1 = newTemp();
-    Symbol* T2 = newTemp();
+    Symbol* staticCheckFlag = newTemp();
+    Symbol* overallCheckFlag = newTemp();
 
     VarSymbol* fastFollowIdx   = newTemp("chpl__fastFollowIdx");
     VarSymbol* fastFollowIter  = newTemp("chpl__fastFollowIter");
     BlockStmt* fastFollowBlock = NULL;
 
 
-    T1->addFlag(FLAG_EXPR_TEMP);
-    T1->addFlag(FLAG_MAYBE_PARAM);
+    staticCheckFlag->addFlag(FLAG_EXPR_TEMP);
+    staticCheckFlag->addFlag(FLAG_MAYBE_PARAM);
 
-    T2->addFlag(FLAG_EXPR_TEMP);
-    T2->addFlag(FLAG_MAYBE_PARAM);
+    overallCheckFlag->addFlag(FLAG_EXPR_TEMP);
+    overallCheckFlag->addFlag(FLAG_MAYBE_PARAM);
 
-    leadForLoop->insertAtTail(new DefExpr(T1));
-    leadForLoop->insertAtTail(new DefExpr(T2));
+    leadForLoop->insertAtTail(new DefExpr(staticCheckFlag));
+    leadForLoop->insertAtTail(new DefExpr(overallCheckFlag));
 
     if (zippered == false) {
-      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))",    T1, iterRec);
-      leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))",    T2, iterRec),
-                                          new_Expr("'move'(%S, %S)", T2, gFalse)));
+      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))",
+                                overallCheckFlag, iterRec);
     } else {
-      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
+      CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/true);
+      CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, staticCheckFlag, checkCall);
+      leadForLoop->insertAtTail(moveToFlag);
+
+      TransformLogicalShortCircuit handleAndsOrs;
+      moveToFlag->getStmtExpr()->accept(&handleAndsOrs);
+      normalize(leadForLoop);
 
       // override the dynamic check if the compiler can prove it's safe
       if (pfs->optInfo.hasAlignedFollowers) {
-        leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", T2, T1));
+        leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", overallCheckFlag,
+                                           staticCheckFlag));
       }
       else {
-        leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                            new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
-                                            new_Expr("'move'(%S, %S)", T2, gFalse)));
+        CallExpr *checkCall = generateFastFollowCheck(iterExpr,
+                                                      /*isStatic=*/false);
+        CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, overallCheckFlag,
+                                            checkCall);
+        leadForLoop->insertAtTail(new CondStmt(new SymExpr(staticCheckFlag),
+                                               moveToFlag,
+                                               new CallExpr(PRIM_MOVE,
+                                                            overallCheckFlag,
+                                                            gFalse)));
+
+        moveToFlag->getStmtExpr()->accept(&handleAndsOrs);
+        normalize(leadForLoop);
       }
     }
 
     SymbolMap map;
     map.put(followIdx, fastFollowIdx);
     BlockStmt* userBodyForFast = userBody->copy(&map);
+
+    adjustPrimsInFastFollowerBody(userBodyForFast);
 
     fastFollowBlock = buildFollowLoop(iterRec,
                                       leadIdxCopy,
@@ -995,17 +1166,23 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                       pfs,
                                       /* fast */ true,
                                       zippered,
-                                      pfs->isForallExpr());
+                                      pfs->isForallExpr(),
+                                      iterExpr);
 
-    leadForLoop->insertAtTail(new CondStmt(new SymExpr(T2), fastFollowBlock, followBlock));
+    leadForLoop->insertAtTail(new CondStmt(new SymExpr(overallCheckFlag),
+                                           fastFollowBlock,
+                                           followBlock));
   } else {
     leadForLoop->insertAtTail(followBlock);
   }
 
   pfs->insertBefore(preFS);
-  normalize(toNormalize); // requires inTree()
+  if (toNormalize) {
+    normalize(toNormalize); // requires inTree()
+  }
   resolveBlockStmt(preFS);
   preFS->flattenAndRemove();
+
 }
 
 void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall);

@@ -92,13 +92,13 @@ c_free(hostname_ptr);
 
 // allow casts from c_ptr(c_char) to c_string
 pragma "no doc"
-inline proc _cast(type t, x) where isSubtype(t,c_string) && isSubtype(x.type,c_ptr(c_char)) {
+inline operator :(x, type t) where isSubtype(t,c_string) && isSubtype(x.type,c_ptr(c_char)) {
     return __primitive("cast", t, x);
 }
 
 // allow casts from c_string to c_ptr(c_char)
 pragma "no doc"
-inline proc _cast(type t, x) where isSubtype(t,c_ptr(c_char)) && isSubtype(x.type,c_string) {
+inline operator :(x, type t) where isSubtype(t,c_ptr(c_char)) && isSubtype(x.type,c_string) {
     return __primitive("cast", t, x);
 }
 

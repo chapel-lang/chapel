@@ -43,7 +43,7 @@ var P: domain(1) = {1..N};
 proc main() {
   var maxflips: sync int;
 
-  begin maxflips = fannkuch();
+  begin maxflips.writeEF(fannkuch());
 
   writeln("Pfannkuchen(", N, ") = ", maxflips.readFF());
 }

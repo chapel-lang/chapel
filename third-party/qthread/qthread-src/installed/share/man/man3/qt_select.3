@@ -1,0 +1,45 @@
+.TH qt_select 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_select
+\- synchronous I/O multiplexing
+.SH SYNOPSIS
+.B #include <qthread/qt_syscalls.h>
+
+.I int
+.br
+.B qt_select
+.RI "(int " nfds ,
+.br
+.ti +11
+.RI "fd_set *restrict " readfds ,
+.br
+.ti +11
+.RI "fd_set *restrict " writefds ,
+.br
+.ti +11
+.RI "fd_set *restrict " errorfds ,
+.br
+.ti +11
+.RI "struct timeval *restrict " timeout );
+
+.SH DESCRIPTION
+This is a wrapper around the standard
+.BR select ()
+system call function. Instead of executing this blocking system call directly, the operation is enqueued in the internal system call queue to be handled.
+.PP
+The system call queue provides a way to perform blocking system calls without impeding parallel computation. Operations are enqueued in an internal queue which is serviced by a dynamic number of dedicated system call threads. This set of threads is capped at a user-configurable limit, specified with the
+.B QT_MAX_IO_WORKERS
+environment variable at initialization time. When there are no more operations in the system call queue, these workers are persistent for a configurable amount of time, specified with the
+.B QT_IO_TIMEOUT
+environment variable at initialization time, before they exit. This is to reduce the overhead involved in scaling up the number of worker threads to respond to newly enqueued system calls.
+.SH SEE ALSO
+.BR select (2),
+.BR qt_accept (3),
+.BR qt_connect (3),
+.BR qt_poll (3),
+.BR qt_pread (3),
+.BR qt_pwrite (3),
+.BR qt_read (3),
+.BR qt_system (3),
+.BR qt_wait4 (3),
+.BR qt_write (3)

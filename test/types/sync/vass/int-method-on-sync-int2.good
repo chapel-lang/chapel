@@ -1,0 +1,2 @@
+int-method-on-sync-int2.chpl:12: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+in methodOnInt: 55

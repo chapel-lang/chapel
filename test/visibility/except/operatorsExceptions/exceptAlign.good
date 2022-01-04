@@ -1,0 +1,2 @@
+exceptAlign.chpl:5: In function 'main':
+exceptAlign.chpl:8: error: can't align a range with idxType int(64) using a value of type owned Foo

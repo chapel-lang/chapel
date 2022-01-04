@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 var sub = spawn(["cat", "test.txt"], stdout=PIPE);
 
@@ -11,6 +11,6 @@ sub.stdout.close();
 
 sub.wait();
 assert(sub.running == false);
-assert(sub.exit_status == 0);
+assert(sub.exitCode == 0);
 
 sub.close();

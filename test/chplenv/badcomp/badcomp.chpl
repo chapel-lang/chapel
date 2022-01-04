@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 param printchplenv = CHPL_HOME + "/util/printchplenv";
 

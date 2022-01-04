@@ -1,0 +1,59 @@
+single-direct-access.chpl:4: In function 'test1':
+single-direct-access.chpl:9: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+single-direct-access.chpl:9: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+single-direct-access.chpl:25: In function 'test3':
+single-direct-access.chpl:29: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+single-direct-access.chpl:35: In function 'test4':
+single-direct-access.chpl:39: warning: Initializing a type-inferred variable from a 'single' is deprecated; apply '.readFF()' to the right-hand side
+single-direct-access.chpl:45: In function 'test5':
+single-direct-access.chpl:52: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+single-direct-access.chpl:52: warning: Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one
+single-direct-access.chpl:59: In function 'test6':
+single-direct-access.chpl:63: warning: Initializing a type-inferred variable from a 'single' is deprecated; apply '.readFF()' to the right-hand side
+single-direct-access.chpl:70: In function 'test7':
+single-direct-access.chpl:74: warning: Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side
+single-direct-access.chpl:85: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+single-direct-access.chpl:97: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+single-direct-access.chpl:104: In function 'test10':
+single-direct-access.chpl:109: warning: Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one
+single-direct-access.chpl:115: In function 'test11':
+single-direct-access.chpl:119: warning: implicitly reading from a single is deprecated; apply a '.read??()' method
+single-direct-access.chpl:123: In function 'test12':
+single-direct-access.chpl:128: warning: Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one
+single-direct-access.chpl:138: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+single-direct-access.chpl:142: In function 'test15':
+single-direct-access.chpl:146: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+single-direct-access.chpl:138: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+test2
+a = 2 : int(64)
+test3
+in f arg = 1 : int(64)
+x$ = 1 : single int(64)
+test4
+b = 1 : int(64)
+test5
+a$ = 1 : single int(64)
+b$ = 1 : single int(64)
+test6
+a$ = 1 : single int(64)
+b = 1 : int(64)
+test7
+a$ = 1 : single int(64)
+b$ = 1 : single int(64)
+test8
+a$ = 1 : single int(64)
+b = 1 : int(64)
+test9
+a$ = 1 : single int(64)
+b = 1 : int(64)
+test10
+a$ = 1 : single int(64)
+test11
+test12
+{1..2}
+test14
+in f arg = 1 : int(64)
+in f arg = 1 : int(64)
+test15
+foo
+1

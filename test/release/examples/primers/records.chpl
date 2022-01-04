@@ -109,7 +109,7 @@ writeln(myPoint); // outputs: (x = 1.0, y = 2.0, z = 2.0)
 // the compiler will add calls to the record assignment operator.
 // The function below defines the assignment operator for Point.
 
-proc = (ref lhs: Point, rhs: Point) {
+operator Point.= (ref lhs: Point, rhs: Point) {
   writeln("Point assignment");
   lhs.x = rhs.x;
   lhs.y = rhs.y;

@@ -46,14 +46,16 @@ pragma2flag(const char* str) {
 
 void
 initFlags() {
-# define symbolFlag(NAME,PRAGMA,MAPNAME,COMMENT) \
-    flagMap.put(astr(MAPNAME), NAME); \
-    flagNames[NAME] = #NAME; \
-    flagShortNames[NAME] = astr(MAPNAME); \
-    flagComments[NAME] = COMMENT; \
-    flagPragma[NAME] = PRAGMA;
-# include "flags_list.h"
-# undef symbolFlag
+#define STRINGIFY(x__) #x__
+#define PRAGMA(name__, canParse__, parseStr__, desc__) \
+    flagMap.put(astr(parseStr__), FLAG_ ## name__); \
+    flagNames[FLAG_ ## name__] = STRINGIFY(FLAG_ ## name__); \
+    flagShortNames[FLAG_ ## name__] = astr(parseStr__); \
+    flagComments[FLAG_ ## name__] = desc__; \
+    flagPragma[FLAG_ ## name__] = canParse__;
+#include "chpl/uast/PragmaList.h"
+#undef STRINGIFY
+#undef PRAGMA
 
   // FLAG_UNKNOWN - limited representation; NUM_FLAGS - no representation
   flagNames[FLAG_UNKNOWN] = "FLAG_UNKNOWN";
@@ -81,22 +83,18 @@ bool viewFlagsExtras  = true;
 static void viewSymbolFlags(Symbol* sym) {
     for (int flagNum = FLAG_FIRST; flagNum <= FLAG_LAST; flagNum++) {
       if (sym->flags[flagNum]) {
-        if (viewFlagsName) {
+        if (viewFlagsName)
           printf("%s ", flagNames[flagNum]);
-        }
 
-        if (viewFlagsPragma) {
+        if (viewFlagsPragma)
           printf("%s", flagPragma[flagNum] ? "ypr " : "npr ");
-        }
 
-        if (viewFlagsShort) {
+        if (viewFlagsShort)
           printf("\"%s\" ", flagShortNames[flagNum]);
-        }
 
-        if (viewFlagsComment) {
+        if (viewFlagsComment)
           printf("// %s",
                  *flagComments[flagNum] ? flagComments[flagNum] : "ncm");
-        }
 
         printf("\n");
       }
@@ -118,8 +116,17 @@ static void viewSymbolFlags(Symbol* sym) {
         printf("%s arg  qual %s\n",
                as->intentDescrString(), qualifierToStr(as->qual));
 
-      } else if (toTypeSymbol(sym)) {
-        printf("a TypeSymbol\n");
+      } else if (TypeSymbol* ts = toTypeSymbol(sym)) {
+        if (Type* tp = ts->type) {
+          printf("TypeSymbol  %s", tp->astTagAsString());
+          if (AggregateType* at = toAggregateType(tp))
+            printf(" %s", at->aggregateString());
+          else if (ConstrainedType* ct = toConstrainedType(tp))
+            printf(" %s", ct->useString());
+          printf("\n");
+        } else {
+          printf("TypeSymbol  type=NULL\n");
+        }
 
       } else if (FnSymbol* fs = toFnSymbol(sym)) {
         printf("isGeneric %s\n", fs->isGenericIsValid() ?
@@ -141,6 +148,9 @@ static void viewSymbolFlags(Symbol* sym) {
 
       } else if (toLabelSymbol(sym)) {
         printf("a LabelSymbol\n");
+
+      } else if (toInterfaceSymbol(sym)) {
+        printf("an InterfaceSymbol\n");
 
       } else {
         printf("unknown symbol kind\n");

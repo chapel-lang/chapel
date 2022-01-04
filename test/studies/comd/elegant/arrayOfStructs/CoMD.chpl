@@ -68,11 +68,11 @@ proc printSystemInfo() {
     const gn_ibv = CHPL_COMM == "gasnet" && CHPL_COMM_SUBSTRATE == "ibv";
     if ugni || gn_ibv then return "unknown";
 
-    use Spawn;
+    use Subprocess;
     var sub = spawn(["uname", cmd], stdout=PIPE);
     sub.wait();
 
-    if sub.exit_status == 0 {
+    if sub.exitCode == 0 {
       var ret, buf : string;
       while sub.stdout.readline(buf) do ret += buf;
       return ret.strip();

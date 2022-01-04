@@ -249,7 +249,7 @@ void usage(const ArgumentState* state,
 static void print_n_spaces(int n)
 {
   for (int i = 0; i < n; i++)
-    fprintf(stdout, " ");
+    putchar(' ');
 }
 
 static void word_wrap_print(const char* text, int startCol, int endCol)

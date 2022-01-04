@@ -2,6 +2,7 @@
 
 .. _Chapter-Lexical_Structure:
 
+=================
 Lexical Structure
 =================
 
@@ -129,7 +130,7 @@ The following identifiers are reserved as keywords:
 
 
 
-.. code-block:: chapel
+.. code-block:: text
 
    _
    align
@@ -162,26 +163,31 @@ The following identifiers are reserved as keywords:
    false
    for
    forall
+   foreach
    forwarding
    if
    imag
+   implements
    in
    index
    inline
    inout
    int
+   interface
    iter
    label
    let
    lifetime
    local
    locale
+   manage
    module
    new
    nil
    noinit
    on
    only
+   operator
    otherwise
    out
    override
@@ -229,7 +235,7 @@ The following identifiers are keywords reserved for future use:
 
 
 
-.. code-block:: chapel
+.. code-block:: text
 
    lambda
    pragma

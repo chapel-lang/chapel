@@ -19,17 +19,17 @@ class BoundedBuffer {
   // Add a value to the circular buffer. If it is full, wait until a
   // value has been consumed
   proc add(i: eltType) {
-    var c = producerPos$;
-    producerPos$ = (c + 1) % bufSize;
-    buffer$(c) = i;
+    var c = producerPos$.readFE();
+    producerPos$.writeEF((c + 1) % bufSize);
+    buffer$(c).writeEF(i);
   }
 
   // Remove a value from the buffer. If it is empty, wait until a
   // value has been produced
   proc remove(): eltType {
-    var c = consumerPos$;
-    consumerPos$ = (c + 1) % bufSize;
-    return buffer$(c);
+    var c = consumerPos$.readFE();
+    consumerPos$.writeEF((c + 1) % bufSize);
+    return buffer$(c).readFE();
   }
 
   // Yield all values in the buffer until the -1 sentinel value is found

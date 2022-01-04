@@ -1,0 +1,64 @@
+sizeType.chpl:1: In function 'testit':
+sizeType.chpl:3: warning: 'range(int(8)).size' is changing to return 'int' values rather than 'int(8)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+sizeType.chpl:3: warning: 'range(int(8)).size' is changing to return 'int' values rather than 'int(8)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+  sizeType.chpl:7: called as testit(type t = int(8))
+sizeType.chpl:1: In function 'testit':
+sizeType.chpl:3: warning: 'range(uint(8)).size' is changing to return 'int' values rather than 'uint(8)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+sizeType.chpl:3: warning: 'range(uint(8)).size' is changing to return 'int' values rather than 'uint(8)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+  sizeType.chpl:8: called as testit(type t = uint(8))
+sizeType.chpl:1: In function 'testit':
+sizeType.chpl:3: warning: 'range(int(16)).size' is changing to return 'int' values rather than 'int(16)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+sizeType.chpl:3: warning: 'range(int(16)).size' is changing to return 'int' values rather than 'int(16)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+  sizeType.chpl:7: called as testit(type t = int(16))
+sizeType.chpl:1: In function 'testit':
+sizeType.chpl:3: warning: 'range(uint(16)).size' is changing to return 'int' values rather than 'uint(16)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+sizeType.chpl:3: warning: 'range(uint(16)).size' is changing to return 'int' values rather than 'uint(16)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+  sizeType.chpl:8: called as testit(type t = uint(16))
+sizeType.chpl:1: In function 'testit':
+sizeType.chpl:3: warning: 'range(int(32)).size' is changing to return 'int' values rather than 'int(32)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+sizeType.chpl:3: warning: 'range(int(32)).size' is changing to return 'int' values rather than 'int(32)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+  sizeType.chpl:7: called as testit(type t = int(32))
+sizeType.chpl:1: In function 'testit':
+sizeType.chpl:3: warning: 'range(uint(32)).size' is changing to return 'int' values rather than 'uint(32)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+sizeType.chpl:3: warning: 'range(uint(32)).size' is changing to return 'int' values rather than 'uint(32)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+  sizeType.chpl:8: called as testit(type t = uint(32))
+sizeType.chpl:1: In function 'testit':
+sizeType.chpl:3: warning: 'range(uint(64)).size' is changing to return 'int' values rather than 'uint(64)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+sizeType.chpl:3: warning: 'range(uint(64)).size' is changing to return 'int' values rather than 'uint(64)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+  sizeType.chpl:8: called as testit(type t = uint(64))
+10: int(8)
+10: uint(8)
+10: int(16)
+10: uint(16)
+10: int(32)
+10: uint(32)
+10: int(64)
+10: uint(64)

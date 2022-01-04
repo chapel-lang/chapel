@@ -1,0 +1,4 @@
+error-never-initialized-values-not-mentioned2.chpl:3: In function 'error':
+error-never-initialized-values-not-mentioned2.chpl:5: error: cannot default-initialize b1: borrowed C
+note: non-nilable class type 'borrowed C' does not support default initialization
+note: Consider using the type borrowed C? instead

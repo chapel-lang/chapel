@@ -1,0 +1,9 @@
+feature request: allow promotion when implementing a required function
+
+In this example, the implementation of 'inc' for the array type
+is the promoted version of 'inc' on an int.
+However, the compiler currently is not recognizing that.
+
+see also:
+  test/constrained-generics/ucol/jturner/min_concept_auto_promote.chpl
+  test/constrained-generics/ucol/jturner/min_concept_void_promote.chpl

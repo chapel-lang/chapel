@@ -1,0 +1,2 @@
+exceptCast.chpl:5: In function 'main':
+exceptCast.chpl:7: error: illegal cast from owned Foo to Bar

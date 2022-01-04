@@ -253,6 +253,7 @@ Caucasian_Albanian
 Chakma
 Cham
 Cherokee
+Chorasmian
 Common
 Coptic
 Cuneiform
@@ -260,10 +261,12 @@ Cypriot
 Cyrillic
 Deseret
 Devanagari
+Dives_Akuru
 Dogra
 Duployan
 Egyptian_Hieroglyphs
 Elbasan
+Elymaic
 Ethiopic
 Georgian
 Glagolitic
@@ -290,6 +293,7 @@ Kannada
 Katakana
 Kayah_Li
 Kharoshthi
+Khitan_Small_Script
 Khmer
 Khojki
 Khudawadi
@@ -321,10 +325,12 @@ Mro
 Multani
 Myanmar
 Nabataean
+Nandinagari
 New_Tai_Lue
 Newa
 Nko
 Nushu
+Nyiakeng_Puachue_Hmong
 Ogham
 Ol_Chiki
 Old_Hungarian
@@ -375,7 +381,9 @@ Tifinagh
 Tirhuta
 Ugaritic
 Vai
+Wancho
 Warang_Citi
+Yezidi
 Yi
 Zanabazar_Square
 

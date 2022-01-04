@@ -1,0 +1,42 @@
+.TH qthread_lock/unlock 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR qthread_lock ,
+.B qthread_unlock
+\- lock or unlock an address
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_lock
+.RI "(aligned_t *" addr );
+.PP
+.I int
+.br
+.B qthread_unlock
+.RI "(aligned_t *" addr );
+.SH DESCRIPTION
+These functions are designed to implement FEB-like locking and unlocking that
+behaves much more like a mutex.
+.PP
+These are atomic and functional, but do not have the same semantics as full FEB
+locking/unlocking (namely, unlocking cannot block), however because of this,
+they have lower overhead.
+.SH RETURN VALUE
+On success, the memory address
+.I addr
+is marked locked or unlocked appropriately and 0 is returned. If unlocking an
+address that is already unlocked,
+.B QTHREAD_SUCCESS
+will be returned. On error, a non-zero error code is returned.
+.SH ERRORS
+.TP 12
+.B ENOMEM
+Not enough memory could be allocated for bookkeeping structures.
+.SH SEE ALSO
+.BR qthread_empty (3),
+.BR qthread_fill (3),
+.BR qthread_writeEF (3),
+.BR qthread_writeF (3),
+.BR qthread_readFF (3),
+.BR qthread_readFE (3)

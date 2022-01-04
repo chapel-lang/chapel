@@ -13,6 +13,7 @@ import compiler_utils
 # re2 requires c++11 for std atomics (and possibly other features). Use whether
 # std atomics are supported as a rough proxy for whether re2 should build
 compiler_val = chpl_compiler.get('target')
-std_atomics = compiler_utils.has_std_atomics(compiler_val)
+std_atomics = compiler_utils.has_std_atomics()
 
-sys.stdout.write('re2' if std_atomics else 'none')
+sys.stdout.write('bundled' if std_atomics else 'none')
+sys.stdout.write('\n')

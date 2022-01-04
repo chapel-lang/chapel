@@ -69,7 +69,7 @@ proc verify(oddphase: bool) {
       abs( (if oddphase then dat.A[i,j] else dat.B[i,j]) -
 	   (if oddphase then refdataA[work2ref(i,j,gi,gj)]
 	                else refdataB[work2ref(i,j,gi,gj)]) );
-    globdiff$ = max(globdiff$.readFE(), locdiff);
+    globdiff$.writeEF(max(globdiff$.readFE(), locdiff));
   } // forall
 
   if globdiff$.readXX() > 0.000001 {

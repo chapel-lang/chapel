@@ -168,7 +168,6 @@ module ChapelDistribution {
     proc deinit() {
     }
 
-    pragma "order independent yielding loops"
     iter _arrs: unmanaged BaseArr {
       var tmp = _arrs_head;
       while tmp != nil {
@@ -193,8 +192,10 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc remove() : (unmanaged BaseDom?, unmanaged BaseDist?) {
 
-      // TODO -- remove dsiLinksDistribution
-      assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
+      if boundsChecking {
+        // TODO -- remove dsiLinksDistribution
+        assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
+      }
 
       var ret_dom:unmanaged BaseDom? = nil;
       var ret_dist:unmanaged BaseDist? = nil;
@@ -419,7 +420,7 @@ module ChapelDistribution {
       const oldNNZDomSize = nnzDom.size;
       if (size > oldNNZDomSize) {
         const _newNNZDomSize = if (oldNNZDomSize) then ceil(factor*oldNNZDomSize):int else 1;
-        nnzDom = {1..#_newNNZDomSize};
+        nnzDom = {0..#_newNNZDomSize};
       }
     }
 
@@ -434,7 +435,7 @@ module ChapelDistribution {
         const shrinkThreshold = (nnzDom.size / (factor**2)): int;
         if (size < shrinkThreshold) {
           const _newNNZDomSize = (nnzDom.size / factor): int;
-          nnzDom = {1.._newNNZDomSize};
+          nnzDom = {0..#_newNNZDomSize};
         }
       }
     }
@@ -448,7 +449,7 @@ module ChapelDistribution {
       if (nnz > nnzDom.size) {
         const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
 
-        nnzDom = {1.._newNNZDomSize};
+        nnzDom = {0..#_newNNZDomSize};
       }
     }
 
@@ -495,7 +496,8 @@ module ChapelDistribution {
       }
     }
 
-    // this is a helper function for bulkAdd functions in sparse subdomains.
+    // this is a helper function for bulkAdd functions in sparse subdomains, which
+    // store the nonzeros in order based on their major and minor index
     // NOTE:it assumes that nnz array of the sparse domain has non-negative
     // indices. If, for some reason it changes, this function and bulkAdds have to
     // be refactored. (I think it is a safe assumption at this point and keeps the
@@ -620,8 +622,8 @@ module ChapelDistribution {
     }
 
     proc canDoDirectAssignment(rhs: domain) {
-      if isRectangularDom(this.parentDom) &&
-         isRectangularDom(rhs.parentDom) {
+      if this.parentDom.isRectangular() &&
+         rhs.parentDom.isRectangular() {
         if this.dsiNumIndices == 0 {
           if rhs.parentDom.isSubset(this.parentDom) {
             return true;
@@ -674,6 +676,9 @@ module ChapelDistribution {
       return 0;
     }
 
+    proc rank param {
+      return 1;
+    }
   }
 
   //
@@ -848,6 +853,10 @@ module ChapelDistribution {
         chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
       }
     }
+
+    proc rank param {
+      return 1;
+    }
   }
 
   /* BaseArrOverRectangularDom has this signature so that dsiReallocate
@@ -973,12 +982,12 @@ module ChapelDistribution {
     // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
     override proc sparseBulkShiftArray(shiftMap, oldnnz){
       var newIdx: int;
-      var prevNewIdx = 1;
+      var prevNewIdx = 0;
 
       // fill all new indices i s.t. i > indices[oldnnz]
       forall i in shiftMap.domain.high+1..dom.nnzDom.high do data[i] = irv;
 
-      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(0) by -1) {
+      for (i, _newIdx) in zip(0..#oldnnz by -1, shiftMap.domain.dim(0) by -1) {
         newIdx = shiftMap[_newIdx];
         data[newIdx] = data[i];
 
@@ -987,7 +996,7 @@ module ChapelDistribution {
         prevNewIdx = newIdx;
       }
       //fill the initial added space with IRV
-      for i in 1..prevNewIdx-1 do data[i] = irv;
+      for i in 0..prevNewIdx-1 do data[i] = irv;
     }
 
     // shift data array after single index addition. Fills the new index with irv

@@ -5,7 +5,7 @@ proc test(space) {
   const dom = space dmapped Block(boundingBox=space);
   var spsdom: sparse subdomain(dom);
 
-  coforall l in Locales do on l {
+  coforall l in Locales with(ref spsdom) do on l {
     const locSubDom = dom.localSubdomain();
     var myIndices: [0..1] idxType;
 

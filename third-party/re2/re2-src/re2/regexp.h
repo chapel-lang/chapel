@@ -86,6 +86,7 @@
 // form accessible to clients, so that client code can analyze the
 // parsed regular expressions.
 
+#include <stddef.h>
 #include <stdint.h>
 #include <map>
 #include <set>
@@ -177,6 +178,7 @@ enum RegexpStatusCode {
   kRegexpBadCharRange,       // bad character class range
   kRegexpMissingBracket,     // missing closing ]
   kRegexpMissingParen,       // missing closing )
+  kRegexpUnexpectedParen,    // unexpected closing )
   kRegexpTrailingBackslash,  // at end of regexp
   kRegexpRepeatArgument,     // repeat argument missing, e.g. "*"
   kRegexpRepeatSize,         // bad repetition argument
@@ -194,7 +196,7 @@ class RegexpStatus {
 
   void set_code(RegexpStatusCode code) { code_ = code; }
   void set_error_arg(const StringPiece& error_arg) { error_arg_ = error_arg; }
-  void set_tmp(string* tmp) { delete tmp_; tmp_ = tmp; }
+  void set_tmp(std::string* tmp) { delete tmp_; tmp_ = tmp; }
   RegexpStatusCode code() const { return code_; }
   const StringPiece& error_arg() const { return error_arg_; }
   bool ok() const { return code() == kRegexpSuccess; }
@@ -204,16 +206,16 @@ class RegexpStatus {
 
   // Returns text equivalent of code, e.g.:
   //   "Bad character class"
-  static string CodeText(RegexpStatusCode code);
+  static std::string CodeText(RegexpStatusCode code);
 
   // Returns text describing error, e.g.:
   //   "Bad character class: [z-a]"
-  string Text() const;
+  std::string Text() const;
 
  private:
   RegexpStatusCode code_;  // Kind of error
-  StringPiece error_arg_;       // Piece of regexp containing syntax error.
-  string* tmp_;                 // Temporary storage, possibly where error_arg_ is.
+  StringPiece error_arg_;  // Piece of regexp containing syntax error.
+  std::string* tmp_;       // Temporary storage, possibly where error_arg_ is.
 
   RegexpStatus(const RegexpStatus&) = delete;
   RegexpStatus& operator=(const RegexpStatus&) = delete;
@@ -258,7 +260,7 @@ class CharClass {
  private:
   CharClass();  // not implemented
   ~CharClass();  // not implemented
-  static CharClass* New(int maxranges);
+  static CharClass* New(size_t maxranges);
 
   friend class CharClassBuilder;
 
@@ -336,7 +338,7 @@ class Regexp {
   Rune rune() { DCHECK_EQ(op_, kRegexpLiteral); return rune_; }
   CharClass* cc() { DCHECK_EQ(op_, kRegexpCharClass); return cc_; }
   int cap() { DCHECK_EQ(op_, kRegexpCapture); return cap_; }
-  const string* name() { DCHECK_EQ(op_, kRegexpCapture); return name_; }
+  const std::string* name() { DCHECK_EQ(op_, kRegexpCapture); return name_; }
   Rune* runes() { DCHECK_EQ(op_, kRegexpLiteralString); return runes_; }
   int nrunes() { DCHECK_EQ(op_, kRegexpLiteralString); return nrunes_; }
   int match_id() { DCHECK_EQ(op_, kRegexpHaveMatch); return match_id_; }
@@ -368,8 +370,7 @@ class Regexp {
   // string representation of the simplified form.  Returns true on success.
   // Returns false and sets *status (if status != NULL) on parse error.
   static bool SimplifyRegexp(const StringPiece& src, ParseFlags flags,
-                             string* dst,
-                             RegexpStatus* status);
+                             std::string* dst, RegexpStatus* status);
 
   // Returns the number of capturing groups in the regexp.
   int NumCaptures();
@@ -378,16 +379,16 @@ class Regexp {
   // Returns a map from names to capturing group indices,
   // or NULL if the regexp contains no named capture groups.
   // The caller is responsible for deleting the map.
-  std::map<string, int>* NamedCaptures();
+  std::map<std::string, int>* NamedCaptures();
 
   // Returns a map from capturing group indices to capturing group
   // names or NULL if the regexp contains no named capture groups. The
   // caller is responsible for deleting the map.
-  std::map<int, string>* CaptureNames();
+  std::map<int, std::string>* CaptureNames();
 
   // Returns a string representation of the current regexp,
   // using as few parentheses as possible.
-  string ToString();
+  std::string ToString();
 
   // Convenience functions.  They consume the passed reference,
   // so in many cases you should use, e.g., Plus(re->Incref(), flags).
@@ -409,7 +410,7 @@ class Regexp {
 
   // Debugging function.  Returns string format for regexp
   // that makes structure clear.  Does NOT use regexp syntax.
-  string Dump();
+  std::string Dump();
 
   // Helper traversal class, defined fully in walker-inl.h.
   template<typename T> class Walker;
@@ -438,7 +439,15 @@ class Regexp {
   // follows it.
   // Callers should expect *prefix, *foldcase and *suffix to be "zeroed"
   // regardless of the return value.
-  bool RequiredPrefix(string* prefix, bool* foldcase, Regexp** suffix);
+  bool RequiredPrefix(std::string* prefix, bool* foldcase,
+                      Regexp** suffix);
+
+  // Whether every match of this regexp must be unanchored and
+  // begin with a non-empty fixed string (perhaps after ASCII
+  // case-folding).  If so, returns the prefix.
+  // Callers should expect *prefix and *foldcase to be "zeroed"
+  // regardless of the return value.
+  bool RequiredPrefixForAccel(std::string* prefix, bool* foldcase);
 
   // Computes the minimum and maximum match length.
   // -1 to mean unbounded, and min might be 0.
@@ -567,7 +576,7 @@ class Regexp {
     };
     struct {  // Capture
       int cap_;
-      string* name_;
+      std::string* name_;
     };
     struct {  // LiteralString
       int nrunes_;

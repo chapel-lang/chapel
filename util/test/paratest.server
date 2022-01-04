@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# See print_help for usage instructions 
+# See print_help for usage instructions
 #
 # Creating a file name PARAHALT in the root test directory halts the
 # distribution of more work.
@@ -10,8 +10,8 @@
 #  - $CHPL_HOME environment variable is set
 #  - paratest.server is run from $CHPL_HOME/test.
 #  - Chapel compiler bin as $CHPL_HOME/bin/"chpl_bin_path"/chpl.
-#  - Scripts start_test in $CHPL_HOME/util and paratest.client in the same 
-#      directory as paratest.server. It will create a temporary directory 
+#  - Scripts start_test in $CHPL_HOME/util and paratest.client in the same
+#      directory as paratest.server. It will create a temporary directory
 #     .synch to synchronize the distribution of work to the client processes.
 #  - Be able to run start_test remotely. This may include the following:
 #    - Chapel built without node-specific local temporary directories.
@@ -19,7 +19,7 @@
 #        start_test script may invoke the compiler as ../bin/linux64/chpl.
 #        If Chapel is built with CHPLDEVTMP defined to a machine-specific local
 #        tmp directory (e.g., /ptmp), the script may not be able to execute
-#        chpl on a different machine. A good check is to run start_test with 
+#        chpl on a different machine. A good check is to run start_test with
 #        a different machine to see if it can run successfully.
 #    - To run jobs remotely over a secured network without having to
 #      type a password each time, use ssh-agent and ssh-add. See
@@ -44,18 +44,18 @@ $filedist = 0;
 $dirs = "";
 $node_para = 1;                        # the number of tasks to run on each node
 $valgrind = 0;
-$memleaks = 0;
-$memleakslog = "/dev/null";
 $memleaksflag = 0;
+$memleakslog = 0;
+$memleakslogfile = "/dev/null";
 $show_all_errors = 0;
 $junit_xml = 0;
 $junit_xml_file = "";
 $junit_remove_prefix = "";
-# Once a node has timed out, we don't send it any more work, so this timeout 
+# Once a node has timed out, we don't send it any more work, so this timeout
 # should be set higher than the time needed to process the largest directory.
 # -1 means "never time out".
 $timeout = -1;
-if (exists $ENV{CHPL_PARATEST_TIMEOUT}) { $timeout = $ENV{CHPL_PARATEST_TIMEOUT}; } 
+if (exists $ENV{CHPL_PARATEST_TIMEOUT}) { $timeout = $ENV{CHPL_PARATEST_TIMEOUT}; }
 
 # updated if -valgrind options are given
 $ENV{'CHPL_TEST_VGRND_COMP'} = "off";
@@ -214,7 +214,7 @@ sub feed_nodes {
     $| = 1;    # autoflush stdout
 
     print "about to start distributing work\n" if $debug;
-   
+
     $activate_venv_output = `$venv_check`;
     if ($? != 0) {
       print $activate_venv_output;
@@ -277,7 +277,7 @@ sub feed_nodes {
                       $execopts = "\\\"$execopts\\\"";
                   }
                   # If the command line gets too long, consider using xargs
-                  $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $futures_mode $valgrind $memleaksflag $compopts $execopts";
+                  $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $futures_mode $valgrind $memleaksflag $memleakslog $compopts $execopts";
                   if ($verbose) {
                       systemd ($rem_cmd);
                   } else {
@@ -302,7 +302,7 @@ sub feed_nodes {
           }
 
           # wait before checking for free workers
-          sleep $sleep_time;                          
+          sleep $sleep_time;
       }
 
       # wait for everyone to finish;
@@ -349,15 +349,15 @@ sub feed_nodes {
       }
 
       if ($#testdir_list >= 0) {
-         print $#testdir_list+1; 
+         print $#testdir_list+1;
          print " directory(s) left untested: @testdir_list\n";
       }
 
       $endtime = `date`; chomp $endtime;
       print "\n";
-      if ($memleaksflag == 2) {
-          print "Collecting memleaks logs to $memleakslog\n";
-          systemd("cat $logdir/tmp.*.memleaks > $memleakslog");
+      if ($memleakslog == 1) {
+          print "Collecting memleaks logs to $memleakslogfile\n";
+          systemd("cat $logdir/tmp.*.memleaks > $memleakslogfile");
           # Keep the individual logs upon failure.
           !$? or die "Could not collect memleaks logs: $?\n";
           systemd("rm -f $logdir/tmp.*.memleaks");
@@ -418,9 +418,9 @@ sub chpl_files {
         if ($fname =~ /\.chpl$/     ||
             $fname =~ /\.test\.c$/  ||
             $fname =~ /\.ml-test\.c$/ ||
-	    $fname eq "sub_test"
-	) {
-	    # still a NOTEST would override
+            $fname eq "sub_test"
+        ) {
+            # still a NOTEST would override
             $found = 1;
         }
     }
@@ -439,8 +439,8 @@ sub find_subdirs {
     closedir CURRDIR;
 
     if (chpl_files (@cdir)) {                         # if *.chpl files in dir
-	push @founddirs, $targetdir;
-	print "$targetdir\n" if $debug;
+        push @founddirs, $targetdir;
+        print "$targetdir\n" if $debug;
     }
     foreach $filen (@cdir) {
         if (-d "$targetdir/$filen") {                 # if dir
@@ -480,29 +480,29 @@ sub find_files {
     closedir CURRDIR;
 
     foreach $filen (@cdir) {
-	$filepath = "$targetdir/$filen";
-	unless (-e "$targetdir/NOTEST") {             # do not ignore this dir?
-	    if ($filepath =~ /\.chpl$/) {
-		$futuref = $filepath;
-		$futuref =~ s/\.chpl$/.future/;
-		next if ((-e $futuref) && $no_futures);
-		push @foundfiles, $filepath;
-	    } elsif ($filepath =~ /\.test\.c$/) {
-		$futuref = $filepath;
-		$futuref =~ s/\.test\.c$/.future/;
-		next if ((-e $futuref) && $no_futures);
-		push @foundfiles, $filepath;
-	    } elsif ($filepath =~ /\.ml-test\.c$/) {
-		$futuref = $filepath;
-		$futuref =~ s/\.ml-test\.c$/.future/;
-		next if ((-e $futuref) && $no_futures);
-		push @foundfiles, $filepath;
-	    }
-	}
+        $filepath = "$targetdir/$filen";
+        unless (-e "$targetdir/NOTEST") {             # do not ignore this dir?
+            if ($filepath =~ /\.chpl$/) {
+                $futuref = $filepath;
+                $futuref =~ s/\.chpl$/.future/;
+                next if ((-e $futuref) && $no_futures);
+                push @foundfiles, $filepath;
+            } elsif ($filepath =~ /\.test\.c$/) {
+                $futuref = $filepath;
+                $futuref =~ s/\.test\.c$/.future/;
+                next if ((-e $futuref) && $no_futures);
+                push @foundfiles, $filepath;
+            } elsif ($filepath =~ /\.ml-test\.c$/) {
+                $futuref = $filepath;
+                $futuref =~ s/\.ml-test\.c$/.future/;
+                next if ((-e $futuref) && $no_futures);
+                push @foundfiles, $filepath;
+            }
+        }
 
-	if ((-d $filepath) && $recursive) {           # if dir and recursive
-	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
-	    push @foundfiles, find_files ($filepath, $level+1, $no_futures, $recursive);
+        if ((-d $filepath) && $recursive) {           # if dir and recursive
+            if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
+            push @foundfiles, find_files ($filepath, $level+1, $no_futures, $recursive);
         }
     }
     return @foundfiles;
@@ -535,7 +535,7 @@ sub print_help {
 
 sub main {
     local ($id, $synchfile);
-    
+
     $user = `whoami`; chomp $user;
     $platform = `../util/chplenv/chpl_platform.py`; chomp $platform;
     $fin_logfile = "$logdir/$user.$platform.log";      # final log file name
@@ -638,8 +638,8 @@ sub main {
         } elsif (/^-memleakslog$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $memleakslog = $ARGV[0];
-                $memleaksflag = 2;
+                $memleakslogfile = $ARGV[0];
+                $memleakslog = 1;
             } else {
                 print "missing -memleakslog arg\n";
                 exit (8);
@@ -694,7 +694,7 @@ sub main {
     if ($valgrind > 0) {
       $tasks = `$ENV{CHPL_HOME}/util/chplenv/chpl_tasks.py`; chomp $tasks;
       $mem = `$ENV{CHPL_HOME}/util/chplenv/chpl_mem.py --target`; chomp $mem;
-      $regexp = `$ENV{CHPL_HOME}/util/chplenv/chpl_regexp.py`; chomp $regexp;
+      $re2 = `$ENV{CHPL_HOME}/util/chplenv/chpl_re2.py`; chomp $re2;
       $re2_valgrind = `$ENV{CHPL_HOME}/util/test/re2_supports_valgrind.py`; chomp $re2_valgrind;
 
       if ($tasks ne "fifo") {
@@ -703,8 +703,8 @@ sub main {
       if ($mem ne "cstdlib") {
         die "Error: valgrind requires mem=cstdlib - try quickstart";
       }
-      if ($regexp eq "re2" && $re2_valgrind eq "False") {
-        die "Error: valgrind requires regexp=none or re2 built with CHPL_RE2_VALGRIND_SUPPORT";
+      if ($re2 ne "none" && $re2_valgrind eq "False") {
+        die "Error: valgrind requires re2=none or re2 built with CHPL_RE2_VALGRIND_SUPPORT";
       }
     }
 
@@ -791,8 +791,8 @@ sub main {
         print "Error: log directory $logdir does not exist\n";
         exit (2);
     }
-    unless (-e "$synchdir") { 
-        systemd ("mkdir $synchdir"); 
+    unless (-e "$synchdir") {
+        systemd ("mkdir $synchdir");
     }
 
     # Package up the environment
@@ -822,4 +822,3 @@ sub main {
 
 
 main ();
-

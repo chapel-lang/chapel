@@ -18,16 +18,16 @@
  * limitations under the License.
  */
 
-private use List;
-private use Map;
-
-use TOML;
 use FileSystem;
-use MasonUtils;
+use List;
+use Map;
+use ArgumentParser;
 use MasonEnv;
-use MasonSystem;
 use MasonExternal;
 use MasonHelp;
+use MasonSystem;
+use MasonUtils;
+use TOML;
 
 
 /*
@@ -52,26 +52,16 @@ proc masonUpdate(args: [?d] string) {
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
 
-  var listArgs: list(string);
-  for arg in args {
-    listArgs.append(arg);
-    select (arg) {
-      when '-h' {
-        masonUpdateHelp();
-        exit(0);
-      }
-      when '--help' {
-        masonUpdateHelp();
-        exit(0);
-      }
-      when '--no-update' {
-        skipUpdate = true;
-      }
-      when '--update' {
-        skipUpdate = false;
-      }
-    }
+  var parser = new argumentParser(helpHandler=new MasonUpdateHelpHandler());
+
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+
+  parser.parseArgs(args);
+
+  if updateFlag.hasValue() {
+    skipUpdate = !updateFlag.valueAsBool();
   }
+
   return updateLock(skipUpdate, tf, lf);
 }
 
@@ -99,7 +89,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
       }
     }
     if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
-      if getSpackVersion != spackVersion then
+      if getSpackVersion < spackVersion then
       throw new owned MasonError("Mason has been updated. " +
                   "To install Spack, call: mason external --setup.");
     }
@@ -168,7 +158,6 @@ proc checkRegistryChanged() {
 
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(skipUpdate: bool) {
-
   if skipUpdate then return;
 
   checkRegistryChanged();
@@ -192,7 +181,7 @@ proc updateRegistry(skipUpdate: bool) {
 }
 
 proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
-  use Regexp;
+  use Regex;
 
   if brick == nil {
     stderr.writeln("Error: Unable to parse manifest file");
@@ -229,7 +218,7 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
 }
 
 proc checkChplVersion(chplVersion, low, high) throws {
-  use Regexp;
+  use Regex;
   var lo, hi : VersionInfo;
   const formatMessage = "\n\n" +
     "chplVersion format must be '<version>..<version>' or '<version>'\n" +

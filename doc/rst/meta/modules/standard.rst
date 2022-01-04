@@ -16,8 +16,8 @@ default:
 .. toctree::
    :maxdepth: 1
 
-   Builtins <standard/Builtins>
    Chapel Environment Variables <standard/ChapelEnv>
+   Errors <standard/Errors>
    IO Support <standard/ChapelIO>
    Math <standard/Math>
    Types <standard/Types>
@@ -97,6 +97,7 @@ System/Interoperability
 
    CPtr <standard/CPtr>
    Spawn <standard/Spawn>
+   Subprocess <standard/Subprocess>
    Sys <standard/Sys>
    SysBasic <standard/SysBasic>
    SysCTypes <standard/SysCTypes>
@@ -110,19 +111,9 @@ Utilities
 
    DateTime <standard/DateTime>
    Help <standard/Help>
-   Regexp <standard/Regexp>
+   Regex <standard/Regex>
    Time <standard/Time>
    Version <standard/Version>
-
-
-Deprecated Modules
-------------------
-
-.. toctree::
-   :maxdepth: 1
-
-   Assert <standard/Assert>
-
 
 
 

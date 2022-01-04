@@ -1,0 +1,4 @@
+ambiguous-out-intent1.chpl:10: error: ambiguous call 'foo(int(64))'
+ambiguous-out-intent1.chpl:1: note: candidates are: foo(out a: int)
+ambiguous-out-intent1.chpl:5: note:                 foo(out a: uint)
+ambiguous-out-intent1.chpl:10: note: out-intent formals do not participate in overload resolution

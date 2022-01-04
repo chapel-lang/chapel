@@ -113,6 +113,15 @@ module DifferentArguments {
   }
 } // end of DifferentArguments module
 
+module RecMoreMethods {
+  private use modToUse;
+
+  /* ``method3`` is a tertiary method defined on ``Rec`` */
+  proc Rec.method3() {
+    writeln("In Rec.method3()");
+  }
+} // end of RecMoreMethods module
+
 module MainModule {
   proc main() {
     writeln("Access from outside a module");
@@ -526,20 +535,10 @@ module MainModule {
     }
 
     /* You can also ``use`` a module without making any symbols
-       available in an unqualified manner using an asterisk after
-       ``except``...
+       available in an unqualified manner using an empty identifier list after
+       ``only``.  This form is typically used by programmers who prefer to
+       always fully qualify accesses to their modules' symbols.
     */
-    {
-      use modToUse except *;
-      use Conflict except *;
-      writeln(modToUse.bar);  // Outputs modToUse.bar ('2')
-      writeln(Conflict.bar);  // Outputs Conflict.bar ('5')
-      // writeln(bar);        // this won't resolve since bar isn't available
-    }
-
-    /* ...or equivalently, an empty identifier list after ``only``.
-       These forms are typically used by programmers who prefer to
-       always fully qualify accesses to their modules' symbols. */
     {
       use modToUse only;
       use Conflict only;
@@ -548,7 +547,7 @@ module MainModule {
       // writeln(bar);        // this won't resolve since bar isn't available
     }
 
-    /* Again, these are similar to an ``import`` of just the module itself.
+    /* Again, this is similar to an ``import`` of just the module itself.
      */
     {
       import modToUse;
@@ -558,8 +557,14 @@ module MainModule {
       // writeln(bar);        // this won't resolve since bar isn't available
     }
 
-    /* When any of these are present, any instances of classes or records
-       will be able to access their symbols defined in that module.
+    /* Class and record instances obtained in scopes where their type is not
+       otherwise visible can still access any fields and any methods defined in
+       their type's original scope.
+
+       To impact the visibility of methods defined in modules other than where
+       the type was defined, known as "tertiary methods", the type itself can be
+       listed in an ``only`` or ``except`` list for ``use`` statements, or as
+       one of the symbols listed in an ``import`` statement.
     */
     {
       use modToUse only;
@@ -567,6 +572,9 @@ module MainModule {
       writeln(rec.field);            // Accessible because we have an instance
       rec.method1();                 // Ditto to the field case
       rec.method2();
+
+      use RecMoreMethods only Rec;
+      rec.method3();                 // Enabled by previous use statement
     }
 
     writeln();

@@ -14,8 +14,8 @@ begin {
   sleep( 2);
   for j in (N/2+1)..N do
     a[j] = N+j-(N/2);
-  done = true;
+  done.writeEF(true);
 }
 
-if done then
+if done.readFE() then
   writeln( a);

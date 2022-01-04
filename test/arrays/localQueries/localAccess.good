@@ -1,0 +1,26 @@
+index = 1 arr.localAccess[i] = 1
+index = 2 arr.localAccess[i] = 2
+index = 3 arr.localAccess[i] = 3
+index = 4 arr.localAccess[i] = 4
+index = 5 arr.localAccess[i] = 5
+index = 6 arr.localAccess[i] = 6
+index = 7 arr.localAccess[i] = 7
+index = 8 arr.localAccess[i] = 8
+index = 9 arr.localAccess[i] = 9
+index = 10 arr.localAccess[i] = 10
+
+index = 3 arr.localAccess[i] = 3
+index = 4 arr.localAccess[i] = 4
+index = 5 arr.localAccess[i] = 5
+
+index = (3, 3) arr.localAccess[i] = 3
+index = (4, 4) arr.localAccess[i] = 4
+index = (5, 5) arr.localAccess[i] = 5
+
+index = (3, 3) arr.localAccess[i] = 3
+index = (4, 4) arr.localAccess[i] = 4
+index = (5, 5) arr.localAccess[i] = 5
+
+index = foo arr.localAccess[i] = 102
+index = bar arr.localAccess[i] = 98
+

@@ -25,10 +25,8 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-gl \
                           --disable-pci
 
-# Libnuma requires dynamic linking, so for the flat locale model where
-# we have no need for NUMA info, disable it so we can link statically.
-ifeq ($(CHPL_MAKE_LOCALE_MODEL),flat)
-CHPL_HWLOC_CFG_OPTIONS += --disable-libnuma
+ifdef CHPL_HWLOC_PREFIX
+   CHPL_HWLOC_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)
 endif
 
 ifeq ($(CHPL_LIB_PIC),pic)

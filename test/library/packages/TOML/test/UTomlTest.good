@@ -3,8 +3,8 @@ Before Mutation:
 
 [A.B]
 name = "sam"
-number = 7
 job = "programmer"
+number = 7
 
 [A.C]
 name = "Ben"
@@ -16,8 +16,8 @@ After Mutation:
 
 [A.B]
 name = "sam"
-number = 7
 job = "programmer"
+number = 7
 
 [A.B.C]
 new-key-added = true
@@ -37,8 +37,8 @@ job = "programmer"
 
 [B]
 name = "sam"
-number = 7
 job = "programmer"
+number = 7
 
 [B.C]
 new-key-added = true
@@ -52,8 +52,8 @@ Should be the same as
 
 [B]
 name = "sam"
-number = 7
 job = "programmer"
+number = 7
 
 [B.C]
 new-key-added = true

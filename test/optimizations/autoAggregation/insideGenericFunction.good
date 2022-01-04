@@ -13,8 +13,10 @@ End analyzing forall for automatic aggregation [no ALA clone]  (insideGenericFun
 
 Aggregation candidate has confirmed local child [static only ALA clone] (insideGenericFunction.chpl:15)
 LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (insideGenericFunction.chpl:15)
+Confirmed that this symbol is a local array element (insideGenericFunction.chpl:25)
 Aggregation candidate has confirmed local child  (insideGenericFunction.chpl:25)
 LHS is local, RHS is nonlocal. Will use source aggregation  (insideGenericFunction.chpl:25)
+Confirmed that this symbol is a local array element (insideGenericFunction.chpl:25)
 Aggregation candidate has confirmed local child  (insideGenericFunction.chpl:25)
 LHS is local, RHS is nonlocal. Will use source aggregation  (insideGenericFunction.chpl:25)
 Replaced assignment with aggregation (insideGenericFunction.chpl:25)

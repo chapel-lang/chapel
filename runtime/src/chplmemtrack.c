@@ -157,7 +157,7 @@ void chpl_setMemFlags(void) {
                                     &memLog,
                                     &memLeaksLog);
 
-  chpl_memTrack = (local_memTrack
+  local_memTrack = (local_memTrack
                    || memStats
                    || memLeaksByType
                    || (memLeaksByDesc && strcmp(memLeaksByDesc, ""))
@@ -179,10 +179,13 @@ void chpl_setMemFlags(void) {
     }
   }
 
-  if (chpl_memTrack) {
+  if (local_memTrack) {
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
     memTable = sys_calloc(hashSize, sizeof(memTableEntry*));
+    chpl_atomic_thread_fence(memory_order_release);
+    chpl_memTrack = local_memTrack;
+    chpl_atomic_thread_fence(memory_order_release);
   }
 }
 
@@ -681,26 +684,38 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 }
 
 
-void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename) {
-  memTableEntry* memEntry = NULL;
-  if (chpl_memTrack) {
-    memTrack_lock();
-    memEntry = removeMemTableEntry(memAlloc);
-    if (memEntry) {
-      if (chpl_verbose_mem) {
-        fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
-                            ": free %zuB of %s at %p\n",
-                chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
-                lineno, memEntry->number * memEntry->size,
-                chpl_mem_descString(memEntry->description), memAlloc);
+
+// Since it's subtle -- approximateSize is used as an optimization to skip the
+// table lock when an allocation is below the tracking threshold. However, we
+// don't always know the exact size since we don't store the size of all
+// allocations. Since we can't always know the exact size, it can be 0 if the
+// size is unknown and otherwise it must be at least as large as the initial
+// allocation size. This allows us to pass the initial size if we have it, but
+// otherwise we can ask the allocator for the size of a pointer if it supports
+// that query, which isn't free but is much cheaper than grabbing a lock.
+void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
+                     int32_t filename) {
+  if (approximateSize == 0 || approximateSize > memThreshold) {
+    memTableEntry* memEntry = NULL;
+    if (chpl_memTrack) {
+      memTrack_lock();
+      memEntry = removeMemTableEntry(memAlloc);
+      if (memEntry) {
+        if (chpl_verbose_mem) {
+          fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
+                              ": free %zuB of %s at %p\n",
+                  chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+                  lineno, memEntry->number * memEntry->size,
+                  chpl_mem_descString(memEntry->description), memAlloc);
+        }
+        sys_free(memEntry);
       }
-      sys_free(memEntry);
+      memTrack_unlock();
+    } else if (chpl_verbose_mem && !memEntry) {
+      fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32 ": free at %p\n",
+              chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+              lineno, memAlloc);
     }
-    memTrack_unlock();
-  } else if (chpl_verbose_mem && !memEntry) {
-    fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32 ": free at %p\n",
-            chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
-            lineno, memAlloc);
   }
 }
 

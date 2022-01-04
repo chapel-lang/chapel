@@ -27,7 +27,7 @@ record Point {
 }
 
 
-proc = (ref lhs: Point, rhs: Point) {
+operator Point.= (ref lhs: Point, rhs: Point) {
   writeln("Point assignment");
   lhs.x = rhs.x;
   lhs.y = rhs.y;

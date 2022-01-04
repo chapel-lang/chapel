@@ -1,0 +1,1 @@
+while-var-error-type.chpl:3: error: "while var/const" construct cannot be invoked on a type

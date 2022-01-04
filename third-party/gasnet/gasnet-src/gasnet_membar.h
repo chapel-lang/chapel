@@ -140,37 +140,6 @@
    #define GASNETI_RMB_IS_MB
    #define GASNETI_WMB_IS_MB
 /* ------------------------------------------------------------------------------------ */
-#elif PLATFORM_ARCH_IA64 /* Itanium */
-    /* Empirically observed that IA64 requires a full "mf" for both wmb and rmb (see bug 1000).
-     * The reason is that the Itanium memory model only ensures ordering in one direction when
-     * using st.rel or ld.acq.  In particular, they implement the minimum required for proper
-     * mutex implementation.  While preventing loads and stores from moving OUT of the critical
-     * section, this still allows for loads before the lock and stores after the unlock to reorder
-     * INTO the critical section.  We need more than that.
-     */
-   #if PLATFORM_COMPILER_INTEL
-      /* Intel compiler's inline assembly broken on Itanium (bug 384) - use intrinsics instead */
-      #include <ia64intrin.h>
-      #define gasneti_compiler_fence() \
-             __memory_barrier() /* compiler optimization barrier */
-      #define gasneti_local_wmb() do {      \
-        gasneti_compiler_fence();           \
-        __mf();  /* memory fence instruction */  \
-      } while (0)
-      #define gasneti_local_rmb() gasneti_local_wmb()
-      #define gasneti_local_mb()  gasneti_local_wmb()
-      #define GASNETI_RMB_IS_MB
-      #define GASNETI_WMB_IS_MB
-   #elif GASNETI_HAVE_GCC_ASM
-      #define gasneti_local_wmb() GASNETI_ASM("mf")
-      #define gasneti_local_rmb() gasneti_local_wmb()
-      #define gasneti_local_mb()  gasneti_local_wmb()
-      #define GASNETI_RMB_IS_MB
-      #define GASNETI_WMB_IS_MB
-   #else
-      #define GASNETI_USING_SLOW_MEMBARS 1
-   #endif
-/* ------------------------------------------------------------------------------------ */
 #elif PLATFORM_ARCH_POWERPC
  #if GASNETI_HAVE_GCC_ASM
    /* "lwsync" = "sync 1", executed as "sync" on older CPUs */
@@ -220,7 +189,7 @@
    #define GASNETI_RMB_IS_MB
    #define GASNETI_WMB_IS_MB
 /* ------------------------------------------------------------------------------------ */
-#elif PLATFORM_ARCH_AARCH64 && PLATFORM_OS_LINUX
+#elif PLATFORM_ARCH_AARCH64
  #if GASNETI_HAVE_GCC_ASM
    #define gasneti_local_wmb() GASNETI_ASM("dmb ishst")
    #define gasneti_local_rmb() GASNETI_ASM("dmb ishld")
@@ -430,20 +399,17 @@
 
 #ifndef gasneti_spinloop_hint
  #if defined(GASNETI_PAUSE_INSTRUCTION) && GASNETI_ASM_AVAILABLE
-   /* Pentium 4 processors get measurably better performance when a "pause" instruction
-    * is inserted in spin-loops - this instruction is documented as a "spin-loop hint"
-    * which avoids a memory hazard stall on spin loop exit and reduces power consumption
-    * Other Intel CPU's treat this instruction as a no-op
-    *
-    * IA64 includes a "hint" for use in spinloops
-   */
+   // Modern Intel architectures get measurably better performance when a
+   // "pause" instruction is inserted in spin-loops.  This instruction is
+   // documented as a "spin-loop hint" which avoids a memory hazard stall on
+   // spin loop exit and reduces power consumption.  However, it also adds
+   // a non-trivial delay and disables speculation.  Proper usage is to place
+   // this hint immediately following the branch which exits the spin loop.
+   // For example usage, see comments for GASNETI_WAITHOOK() in gasnet_help.h.
+   // Ancient Intel CPU's treat this instruction as a no-op.
    #define gasneti_spinloop_hint() GASNETI_ASM(GASNETI_PAUSE_INSTRUCTION)
- #elif PLATFORM_ARCH_IA64 && PLATFORM_COMPILER_INTEL && 0 /* DISABLED */
-   /* Intel compiler's inline assembly broken on Itanium (bug 384) - use intrinsics instead */
-   #include <ia64intrin.h>
-   #define gasneti_spinloop_hint() __hint(__hint_pause)
  #else
-   #define gasneti_spinloop_hint() ((void)0)
+   #define gasneti_spinloop_hint() gasneti_compiler_fence()
  #endif
 #endif
 

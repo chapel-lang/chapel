@@ -1,0 +1,4 @@
+allGenericsDefaulted.chpl:33: error: unresolved call 'foo(R(int(64),3))'
+allGenericsDefaulted.chpl:9: note: this candidate did not match: foo(r: R)
+allGenericsDefaulted.chpl:33: note: because actual argument #1 with type 'R(int(64),3)'
+allGenericsDefaulted.chpl:9: note: is passed to formal 'r: R(int(64),2)'

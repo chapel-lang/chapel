@@ -23,9 +23,9 @@
 
 #include "files.h"
 
-extern const char* out_mli_type_marshalling;
-extern const char* out_mli_client_bundle;
-extern const char* out_mli_server_bundle;
+extern const char* gMultiLocaleLibMarshallingFile;
+extern const char* gMultiLocaleLibClientFile;
+extern const char* gMultiLocaleLibServerFile;
 
 void codegenMultiLocaleInteropWrappers(void);
 

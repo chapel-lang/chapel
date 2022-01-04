@@ -1,0 +1,35 @@
+.TH qt_dictionary_get 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_dictionary_get
+\- retrieve a value from the dictionary
+.SH SYNOPSIS
+.B #include <qthread/dictionary.h>
+
+.I qt_dictionary *
+.br
+.B qt_dictionary_get
+.RI "(qt_dictionary *" dict ,
+.br
+.ti +19
+.RI "void *" key );
+
+.SH DESCRIPTION
+This function retrieves the value stored in the dictionary that is associated with the specified
+.IR key .
+.SH RETURN VALUES
+Returns the associated item if the
+.I key
+was present in the dictionary, or NULL otherwise.
+.SH SEE ALSO
+.BR qt_dictionary_create (3),
+.BR qt_dictionary_delete (3),
+.BR qt_dictionary_destroy (3),
+.BR qt_dictionary_end (3),
+.BR qt_dictionary_iterator_copy (3),
+.BR qt_dictionary_iterator_create (3),
+.BR qt_dictionary_iterator_destroy (3),
+.BR qt_dictionary_iterator_equals (3),
+.BR qt_dictionary_iterator_get (3),
+.BR qt_dictionary_iterator_next (3),
+.BR qt_dictionary_put (3),
+.BR qt_dictionary_put_if_absent (3)

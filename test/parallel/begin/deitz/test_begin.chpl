@@ -7,11 +7,11 @@ var B$: [1..n] sync bool;
 
 for i in 1..n do begin {
   a[i] = foo(i);
-  B$[i] = true;
+  B$[i].writeEF(true);
 }
 
 for i in 1..n {
-  B$[i];
+  B$[i].readFE();
   assert(a[i] != 0);
 
   writeln(a[i]);

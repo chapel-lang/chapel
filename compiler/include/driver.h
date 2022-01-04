@@ -54,6 +54,7 @@ extern bool fNoCastChecks;
 extern bool fNoDivZeroChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
+extern bool fEnableMemInterleaving;
 extern bool fLLVMWideOpt;
 
 extern bool fAutoLocalAccess;
@@ -109,7 +110,7 @@ extern const char* CHPL_RUNTIME_CPU;
 extern const char* CHPL_TARGET_BACKEND_CPU;
 extern const char* CHPL_TARGET_CPU_FLAG;
 extern const char* CHPL_TARGET_COMPILER;
-extern const char* CHPL_ORIG_TARGET_COMPILER;
+extern const char* CHPL_TARGET_COMPILER_PRGENV;
 extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
@@ -124,14 +125,19 @@ extern const char* CHPL_ATOMICS;
 extern const char* CHPL_NETWORK_ATOMICS;
 extern const char* CHPL_GMP;
 extern const char* CHPL_HWLOC;
-extern const char* CHPL_REGEXP;
+extern const char* CHPL_RE2;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
 extern const char* CHPL_UNWIND;
 extern const char* CHPL_LIB_PIC;
 extern const char* CHPL_RUNTIME_SUBDIR;
 extern const char* CHPL_LAUNCHER_SUBDIR;
+extern const char* CHPL_SYS_MODULES_SUBDIR;
 extern const char* CHPL_LLVM_UNIQ_CFG_PATH;
+extern const char* CHPL_LLVM_CLANG_C;
+extern const char* CHPL_LLVM_CLANG_CXX;
+extern const char* CHPL_LLVM_CLANG_COMPILE_ARGS;
+extern const char* CHPL_LLVM_CLANG_LINK_ARGS;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
@@ -239,6 +245,9 @@ extern bool preserveInlinedLineNumbers;
 extern int breakOnID;
 extern int breakOnRemoveID;
 
+extern int fGPUBlockSize;
+extern char fCUDAArch[16];
+
 extern char stopAfterPass[128];
 
 // code generation strings
@@ -256,5 +265,13 @@ extern bool fIncrementalCompilation;
 extern std::string llvmFlags;
 
 extern bool fPrintAdditionalErrors;
+
+extern bool fCompilerLibraryParser;
+
+namespace chpl {
+  class Context;
+}
+
+extern chpl::Context* gContext;
 
 #endif

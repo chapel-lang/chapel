@@ -1,0 +1,6 @@
+deprecatedOuterMod.chpl:11: In function 'main':
+deprecatedOuterMod.chpl:13: warning: Outer is deprecated
+deprecatedOuterMod.chpl:20: warning: Outer is deprecated
+deprecatedOuterMod.chpl:22: warning: Outer is deprecated
+0
+false

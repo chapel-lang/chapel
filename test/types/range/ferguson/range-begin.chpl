@@ -13,9 +13,9 @@ var start2$:sync int;
 var end2$:sync int;
 
 proc inner1(range_arg) {
-  start1$; // wait for run to finish
+  start1$.readFE(); // wait for run to finish
   writeln("inner1: ", range_arg);
-  end1$ = 1; // signal done
+  end1$.writeEF(1); // signal done
 }
 
 proc outer1(range_arg) {
@@ -25,9 +25,9 @@ proc outer1(range_arg) {
 }
 
 proc inner2(range_arg) {
-  start2$; // wait for run to finish
+  start2$.readFE(); // wait for run to finish
   writeln("inner2: ", range_arg);
-  end2$ = 2; // signal done
+  end2$.writeEF(2); // signal done
 }
 
 proc outer2(range_arg) {
@@ -42,9 +42,9 @@ proc run() {
   var s$:sync int;
   begin with (ref r) {
     r = 2..200;
-    s$ = 0;
+    s$.writeEF(0);
   }
-  s$; // wait for begin
+  s$.readFE(); // wait for begin
   writeln(r);
   outer1(r);
   outer2(r);
@@ -55,10 +55,10 @@ proc run() {
 proc test() {
   run();
   // now that r is destroyed, let the tasks start
-  start1$ = 1; // let inner1 continue
-  end1$; // wait for inner1 to finish
-  start2$ = 2; // let inner2 continue
-  end2$; // wait for inner2 to finish
+  start1$.writeEF(1); // let inner1 continue
+  end1$.readFE(); // wait for inner1 to finish
+  start2$.writeEF(2); // let inner2 continue
+  end2$.readFE(); // wait for inner2 to finish
 }
 
 test();

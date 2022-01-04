@@ -1,0 +1,1 @@
+out-array-domain-mismatch.chpl:3: error: halt reached - assigning between arrays of different shapes in dimension 0: 2 vs. 1

@@ -11,6 +11,7 @@ proc varDefault(arg=x) {}
 
 proc notDefault(arg=!x) {}
 proc negDefault(arg=-x) {}
+proc plusDefault(arg=+x) {}
 proc bitwiseNegDefault(arg=~x) {}
 
 proc notNilDefault(arg=c!) {}
@@ -86,3 +87,18 @@ proc R0TypedArgDefault(arg:R0 = new R0()) {}
 proc R1TypedArgDefault(arg:R1(1) = new R1(1)) {}
 proc R2TypedArgDefault(arg:R2(1,2) = new R2(1,2)) {}
 proc R3TypedArgDefault(arg:R3(1,2,3) = new R3(1,2,3)) {}
+
+proc boundedRange( arg = 1..10) {}
+proc lowBoundedRange(arg = 1..) {}
+proc highBoundedRange(arg = ..10) {}
+proc unboundedRange(arg = ..) {}
+
+proc boundedRangeBy(arg = 1..10 by 2) {}
+proc lowBoundedRangeBy(arg = 1.. by 2) {}
+proc highBoundedRangeBy(arg = ..10 by 2) {}
+proc unboundedRangeBy(arg = .. by 2) {}
+
+proc boundedRangeByAlign(arg = 1..10 by 2 align 1) {}
+proc lowBoundedRangeByAlign(arg = 1.. by 2 align 1) {}
+proc highBoundedRangeByAlign(arg = ..10 by 2 align 1) {}
+proc unboundedRangeByAlign(arg = .. by 2 align 1) {}

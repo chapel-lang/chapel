@@ -37,10 +37,13 @@ Start analyzing forall for automatic aggregation [static only ALA clone]  (domEl
 |  Potential destination aggregation (domElemFromAlignedFollower.chpl:53)
 End analyzing forall for automatic aggregation [static only ALA clone]  (domElemFromAlignedFollower.chpl:52)
 
+Confirmed that this symbol is a local array element (domElemFromAlignedFollower.chpl:17)
 Aggregation candidate has confirmed local child  (domElemFromAlignedFollower.chpl:17)
 LHS is nonlocal, RHS is local. Will use destination aggregation  (domElemFromAlignedFollower.chpl:17)
+Confirmed that this symbol is a local array element (domElemFromAlignedFollower.chpl:41)
 Aggregation candidate has confirmed local child  (domElemFromAlignedFollower.chpl:41)
 LHS is nonlocal, RHS is local. Will use destination aggregation  (domElemFromAlignedFollower.chpl:41)
+Confirmed that this symbol is a local array element (domElemFromAlignedFollower.chpl:53)
 Aggregation candidate has confirmed local child  (domElemFromAlignedFollower.chpl:53)
 LHS is nonlocal, RHS is local. Will use destination aggregation  (domElemFromAlignedFollower.chpl:53)
 Replaced assignment with aggregation (domElemFromAlignedFollower.chpl:17)

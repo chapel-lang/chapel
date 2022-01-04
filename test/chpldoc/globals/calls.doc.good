@@ -28,7 +28,7 @@ or
 
 .. data:: var variable: int(64) = 5
 
-.. data:: var hello0: string = greet(Tony)
+.. data:: var hello0: string = greet("Tony")
 
 .. data:: var hello1: int = Hello.writeSomething()
 

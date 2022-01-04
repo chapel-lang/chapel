@@ -137,11 +137,15 @@ module ChapelEnv {
   pragma "no doc"
   /* See :ref:`readme-chplenv.CHPL_JEMALLOC` for more information. */
   param CHPL_JEMALLOC:string;
-  CHPL_JEMALLOC = __primitive("get compiler variable", "CHPL_JEMALLOC");
+  CHPL_JEMALLOC = __primitive("get compiler variable", "CHPL_TARGET_JEMALLOC");
 
-  /* See :ref:`readme-chplenv.CHPL_REGEXP` for more information. */
-  param CHPL_REGEXP:string;
-  CHPL_REGEXP = __primitive("get compiler variable", "CHPL_REGEXP");
+  pragma "no doc"
+  deprecated "CHPL_REGEXP is deprecated, please use CHPL_RE2 instead"
+  param CHPL_REGEXP:string = __primitive("get compiler variable", "CHPL_RE2");
+
+  /* See :ref:`readme-chplenv.CHPL_RE2` for more information. */
+  param CHPL_RE2:string;
+  CHPL_RE2 = __primitive("get compiler variable", "CHPL_RE2");
 
   /* See :ref:`readme-chplenv.CHPL_LLVM` for more information. */
   param CHPL_LLVM:string;

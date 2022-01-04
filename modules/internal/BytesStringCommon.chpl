@@ -25,6 +25,26 @@ module BytesStringCommon {
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
 
+  extern const CHPL_SHORT_STRING_SIZE : c_int;
+
+  extern record chpl__inPlaceBuffer {};
+
+  // Signal to the Chapel compiler that the actual argument may be modified.
+  pragma "fn synchronization free"
+  extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : bufferType;
+
+  pragma "fn synchronization free"
+  extern proc chpl__getInPlaceBufferDataForWrite(ref data : chpl__inPlaceBuffer) : bufferType;
+
+  record __serializeHelper {
+    var buffLen: int;
+    var buff: bufferType;
+    var size: int;
+    var locale_id: chpl_nodeID.type;
+    var shortData: chpl__inPlaceBuffer;
+    var cachedNumCodepoints: int;
+  }
+
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
      when decoding a :mod:`Bytes` into a UTF-8 :record:`~String.string`.
@@ -69,14 +89,12 @@ module BytesStringCommon {
   // issue (#448 chapel-private)
   inline proc getCStr(const ref x: ?t): c_string {
     assertArgType(t, "getCStr");
-    inline proc _cast(type t:c_string, b:bufferType) {
-      return __primitive("cast", t, b);
-    }
-
     if _local == false && x.locale_id != chpl_nodeID then
       halt("Cannot call .c_str() on a remote " + t:string);
 
-    return x.buff:c_string;
+    var buff: bufferType = x.buff;
+    var asCString = __primitive("cast", c_string, buff);
+    return asCString;
   }
 
   /*
@@ -555,7 +573,6 @@ module BytesStringCommon {
     return chunk;
   }
 
-  pragma "not order independent yielding loops"
   iter doSplit(const ref x: ?t, sep: t, maxsplit: int = -1,
                ignoreEmpty: bool = false): t {
     assertArgType(t, "doSplit");
@@ -651,7 +668,6 @@ module BytesStringCommon {
   }
 
   // split iterator over whitespace
-  pragma "not order independent yielding loops"
   iter doSplitWSNoEnc(const ref x: ?t, maxsplit: int = -1): t {
     assertArgType(t, "doSplitWSNoEnc");
 

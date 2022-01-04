@@ -1,0 +1,26 @@
+.TH qt_loop_queue_setchunk 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qt_loop_queue_setchunk
+\- a funciton to specify a loop chunk size
+.SH SYNOPSIS
+.B #include <qthread/qloop.h>
+
+.I void
+.br
+.B qt_loop_queue_setchunk
+.RI "(qqloop_handle_t *" loop ,
+.RI size_t chunk );
+
+.SH DESCRIPTION
+This function provides a way to specify the chunk size for a self-scheduled loop using the CHUNK scheduling pattern. This may only be safely used
+.I before
+.BR qt_loop_queue_run ()
+or
+.BR qt_loop_queue_run_there ()
+have been executed.
+.SH SEE ALSO
+.BR qt_loop (3),
+.BR qt_loop_balance (3),
+.BR qt_loopaccum_balance (3),
+.BR qt_loop_queue_create (3),
+.BR qt_loop_queue_addworker (3)

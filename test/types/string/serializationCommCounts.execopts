@@ -1,0 +1,2 @@
+--numChars=4   # serializationCommCounts-4char.good
+--numChars=16  # serializationCommCounts-16char.good

@@ -1,0 +1,5 @@
+error-never-initialized-types.chpl:3: In function 'error':
+error-never-initialized-types.chpl:5: error: type alias 't1' is not initialized
+error-never-initialized-types.chpl:8: error: type alias 't2' is not initialized
+error-never-initialized-types.chpl:10: note: 't2' use here prevents split-init from establishing the type
+error-never-initialized-types.chpl:16: error: type alias 'tt' is not initialized

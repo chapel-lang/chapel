@@ -5,6 +5,7 @@
 #ifndef RE2_SET_H_
 #define RE2_SET_H_
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -36,13 +37,20 @@ class RE2::Set {
   Set(const RE2::Options& options, RE2::Anchor anchor);
   ~Set();
 
+  // Not copyable.
+  Set(const Set&) = delete;
+  Set& operator=(const Set&) = delete;
+  // Movable.
+  Set(Set&& other);
+  Set& operator=(Set&& other);
+
   // Adds pattern to the set using the options passed to the constructor.
   // Returns the index that will identify the regexp in the output of Match(),
   // or -1 if the regexp cannot be parsed.
   // Indices are assigned in sequential order starting from 0.
   // Errors do not increment the index; if error is not NULL, *error will hold
   // the error message from the parser.
-  int Add(const StringPiece& pattern, string* error);
+  int Add(const StringPiece& pattern, std::string* error);
 
   // Compiles the set in preparation for matching.
   // Returns false if the compiler runs out of memory.
@@ -62,17 +70,14 @@ class RE2::Set {
              ErrorInfo* error_info) const;
 
  private:
-  typedef std::pair<string, re2::Regexp*> Elem;
+  typedef std::pair<std::string, re2::Regexp*> Elem;
 
   RE2::Options options_;
   RE2::Anchor anchor_;
   std::vector<Elem> elem_;
-  re2::Prog* prog_;
   bool compiled_;
   int size_;
-
-  Set(const Set&) = delete;
-  Set& operator=(const Set&) = delete;
+  std::unique_ptr<re2::Prog> prog_;
 };
 
 }  // namespace re2

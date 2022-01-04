@@ -7,8 +7,8 @@ export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $CWD/common-perf.bash
 
-source /data/cf/chapel/setup_clang38.bash
 export CHPL_HOST_COMPILER=clang
+export CHPL_TARGET_COMPILER=clang
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.clang"
 

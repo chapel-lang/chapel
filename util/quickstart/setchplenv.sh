@@ -69,9 +69,9 @@ export CHPL_GMP
 echo "                           ...none"
 echo " "
 
-echo "Setting CHPL_REGEXP to..."
-CHPL_REGEXP=none
-export CHPL_REGEXP
+echo "Setting CHPL_RE2 to..."
+CHPL_RE2=none
+export CHPL_RE2
 echo "                           ...none"
 echo " "
 

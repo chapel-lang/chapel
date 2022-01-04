@@ -9,9 +9,9 @@ proc foo(type t, v: t, s) {
     begin {
       writeln("2: got ", d.readFF());
       writeln("2: got ", d.readFF());
-      done = true;
+      done.writeEF(true);
     }
-    if done then // wait until all prior invocations have finished
+    if done.readFE() then // wait until all prior invocations have finished
       writeln("1: going to sleep with ", v, " of type ", s);
     sleep(1);
     writeln("1: woke up. writing ", v);
@@ -31,6 +31,6 @@ foo(real(32), 8.0: real(32), "real(32)");
 foo(real(64), 9.0, "real(64)");
 //foo(complex(64), 10.0: complex(64), "complex(64)");
 //foo(complex(128), 11.0: complex(128), "complex(128)");
-foo(string, "Hello!", "string");
+//foo(string, "Hello!", "string");
 //type r = range;
 //foo(r, 1..3, "range");

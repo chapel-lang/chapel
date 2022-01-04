@@ -16,5 +16,6 @@ proc f(x:?T):int where implements I(T) {
   return g(x);
 }
 
+// Infers 'implements I(borrowed D);'
 // Prints 42
-writeln(f(new D(42)));
+writeln(f(new borrowed D(42)));

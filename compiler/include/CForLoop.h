@@ -25,7 +25,7 @@
 
 class ForLoop;
 
-class CForLoop : public LoopStmt
+class CForLoop final : public LoopStmt
 {
   //
   // Class interface
@@ -42,20 +42,21 @@ public:
   // Instance Interface
   //
 public:
-  virtual               ~CForLoop();
+  ~CForLoop() override = default;
 
-  virtual CForLoop*      copy(SymbolMap* map = NULL, bool internal = false);
+  DECLARE_COPY(CForLoop);
+  CForLoop* copyInner(SymbolMap* map) override;
 
-  virtual GenRet         codegen();
-  virtual void           verify();
-  virtual void           accept(AstVisitor* visitor);
+  GenRet         codegen()                                          override;
+  void           verify()                                           override;
+  void           accept(AstVisitor* visitor)                        override;
 
-  virtual Expr*          getFirstExpr();
-  virtual Expr*          getNextExpr(Expr* expr);
+  Expr*          getFirstExpr()                                     override;
+  Expr*          getNextExpr(Expr* expr)                            override;
 
-  virtual bool           isCForLoop()                                 const;
+  bool           isCForLoop()                                 const override;
 
-  virtual bool           deadBlockCleanup();
+  bool           deadBlockCleanup()                                 override;
 
   void                   loopHeaderSet(BlockStmt* initBlock,
                                        BlockStmt* testBlock,
@@ -65,8 +66,8 @@ public:
   BlockStmt*             testBlockGet()                               const;
   BlockStmt*             incrBlockGet()                               const;
 
-  virtual CallExpr*      blockInfoGet()                               const;
-  virtual CallExpr*      blockInfoSet(CallExpr* expr);
+  CallExpr*      blockInfoGet()                               const override;
+  CallExpr*      blockInfoSet(CallExpr* expr)                       override;
 
 private:
                          CForLoop();
@@ -82,4 +83,3 @@ private:
 };
 
 #endif
-

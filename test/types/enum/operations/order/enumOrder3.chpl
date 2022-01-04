@@ -1,5 +1,5 @@
 enum color { red=42, green=22, blue=32};
-
+config const negOne = -1;
 proc test(c: color) {
   const order = chpl__enumToOrder(c);
   writeln(c, " = ", order, " = ", chpl__orderToEnum(order, color));
@@ -17,4 +17,4 @@ test(color.green, 1);
 test(color.blue, 2);
 
 // try an illegal case:
-writeln(chpl__orderToEnum(4, color));
+writeln(chpl__orderToEnum(negOne, color));

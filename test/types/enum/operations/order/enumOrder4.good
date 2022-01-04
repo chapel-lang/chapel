@@ -1,0 +1,1 @@
+enumOrder4.chpl:20: error: enumerated type out of bounds in chpl__orderToEnum()

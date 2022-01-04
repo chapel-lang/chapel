@@ -3,15 +3,15 @@ class mysumreduce {
   var state: sync t;
 
   proc initState() {
-    state = 0;
+    state.writeEF(0);
   }
 
   proc combine(x: t) {
-    state += x;
+    state.writeEF(state.readFE() + x);
   }
 
   proc finalize(): t {
-    return state;
+    return state.readFE();
   }
 }
 

@@ -1,4 +1,3 @@
-test_scan1.chpl:8: warning: scan has been serialized (see issue #12482)
 test_scan1.chpl:9: warning: scan has been serialized (see issue #12482)
 test_scan1.chpl:10: warning: scan has been serialized (see issue #12482)
 test_scan1.chpl:11: warning: scan has been serialized (see issue #12482)

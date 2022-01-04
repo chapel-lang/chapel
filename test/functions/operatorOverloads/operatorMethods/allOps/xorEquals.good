@@ -1,0 +1,4 @@
+(x = true)
+(x = false)
+In Foo.^=
+(x = true)

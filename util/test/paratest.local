@@ -8,7 +8,7 @@ To use this script:
   ../util/test/paratest.local
 
 start_test options can be passed as additional command-line arguments
-(e.g. -compopts --llvm).
+(e.g. -compopts --fast).
 """
 
 import os.path

@@ -2,7 +2,7 @@ record R {
   var x: int;
 }
 // same-type = and init=
-proc =(ref lhs: R, const ref rhs: R) {
+operator R.=(ref lhs: R, const ref rhs: R) {
   lhs.x = rhs.x;
 }
 proc R.init=(other: R) {
@@ -10,7 +10,7 @@ proc R.init=(other: R) {
 }
 
 // cross-type init= and =
-proc =(ref lhs: R, rhs: int) {
+operator =(ref lhs: R, rhs: int) {
   lhs.x = rhs;
 }
 proc R.init=(other: int) {

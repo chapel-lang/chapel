@@ -67,8 +67,8 @@ class ExternBlockStmt;
 class AstVisitor
 {
 public:
-                 AstVisitor();
-  virtual       ~AstVisitor();
+                 AstVisitor() = default;
+  virtual       ~AstVisitor() = default;
 
   // Generally an AST visitor has one or two routine per type of AST node.
   // For nodes that can contain other nodes, it has 2 routines:

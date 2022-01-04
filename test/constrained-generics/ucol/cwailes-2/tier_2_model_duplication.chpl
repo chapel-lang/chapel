@@ -1,13 +1,13 @@
 // UCol original version did not have the Addable interface
 // so the `+` within g() did not typecheck.
-
+// Correspondingly, need to add Addable requirement on h().
 
 interface I(T) {
   proc f(x:T):T;
 }
 
 interface Addable(U,V) {
-  proc +(arg1: U, arg2: V): U;
+  operator +(arg1: U, arg2: V): U;
 }
 
 proc g(x:?U, y:?V):U
@@ -17,7 +17,7 @@ proc g(x:?U, y:?V):U
   return f(x) + f(y);
 }
 
-proc h(x:?T):T where implements I(T) {
+proc h(x:?T):T where implements I(T) && implements Addable(T, T) {
   // Calling g from here would be incorrect if we used any other pair of
   // parameters than (x, x) because it would place additional constraints on
   // the types.  You are not allowed to call more generics that are more

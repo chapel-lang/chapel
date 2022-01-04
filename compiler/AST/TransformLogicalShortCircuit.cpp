@@ -31,15 +31,6 @@
 #include "IfExpr.h"
 #include "stmt.h"
 
-TransformLogicalShortCircuit::TransformLogicalShortCircuit()
-{
-}
-
-TransformLogicalShortCircuit::~TransformLogicalShortCircuit()
-{
-
-}
-
 bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
 {
   // Lowering of LoopExprs will handle short-circuits itself

@@ -5,7 +5,7 @@ proc R.init=(other: R) {
   this.x = other.x;
 }
 // record opts out of being assignable
-proc =(ref lhs: R, const ref rhs: R) where false{
+operator R.=(ref lhs: R, const ref rhs: R) where false{
 }
 
 proc main() {

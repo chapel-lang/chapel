@@ -1,0 +1,9 @@
+{x = 1} : unmanaged C
+{x = 2, y = 3} : unmanaged D
+{x = 4, y = 5} : unmanaged C
+{x = 1} : unmanaged C
+{x = 2, y = 3} : unmanaged C
+{x = 4, y = 5} : unmanaged C
+{x = 1} : unmanaged C
+{x = 2, y = 3} : unmanaged D
+{x = 4, y = 5} : unmanaged C

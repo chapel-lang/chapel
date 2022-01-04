@@ -1,6 +1,8 @@
 // Should the value of a sync/single variable be read
 // when it is the receiver calling a method on the underlying type?
-// This test requires "yes". The compiler has a special case that says "no".
+// This test historically required "yes". The compiler has a special
+// case that says "no".  With the change to require explicit read/write
+// methods on sync, we have to add them explicitly.
 
 use Time;
 
@@ -10,7 +12,7 @@ var intSync: sync int;
 var intSingle: single int;
 
 cobegin {
-  intSync.showme();
-  intSingle.showme();
+  intSync.readFE().showme();
+  intSingle.readFF().showme();
   { sleep(3); exit(0); }  // quit after 3 seconds
 }

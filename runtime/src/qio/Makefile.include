@@ -17,7 +17,7 @@
 # limitations under the License.
 
 
-include src/qio/regexp/$(CHPL_MAKE_REGEXP)/Makefile.include
+include src/qio/regex/$(CHPL_MAKE_RE2)/Makefile.include
 
 QIO_OBJDIR = $(RUNTIME_BUILD)/$(COMMON_SUBDIR)/qio
 

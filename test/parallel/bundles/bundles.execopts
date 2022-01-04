@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+import os
+
+# Drop the problem size for valgrin
+if os.getenv('CHPL_TEST_VGRND_EXE') == 'on':
+    print('--niters=10')

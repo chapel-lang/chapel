@@ -83,8 +83,8 @@ module ChapelTaskTable {
     }
   }
 
-  extern var taskreport: int(32);
-  if taskreport then chpldev_taskTable_init();
+  extern proc chpl_task_doTaskReport(): bool;
+  if chpl_task_doTaskReport() then chpldev_taskTable_init();
 
   //-
   //----------------------------------------------------------------------}

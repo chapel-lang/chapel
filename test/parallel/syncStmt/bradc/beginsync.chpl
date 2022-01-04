@@ -5,11 +5,11 @@ var readyToGoOn$: sync bool;
 begin sync {
   sleep(1);
   writeln("A print me second");
-  readyToGoOn$ = true;
+  readyToGoOn$.writeEF(true);
 }
 writeln("A print me first");
 
-readyToGoOn$;
+readyToGoOn$.readFE();
 
 sync begin {
   sleep(1);

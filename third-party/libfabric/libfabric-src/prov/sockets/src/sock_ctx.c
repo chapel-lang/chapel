@@ -57,6 +57,8 @@ struct sock_rx_ctx *sock_rx_ctx_alloc(const struct fi_rx_attr *attr,
 	dlist_init(&rx_ctx->rx_buffered_list);
 	dlist_init(&rx_ctx->ep_list);
 
+	rx_ctx->progress_start = &rx_ctx->rx_buffered_list;
+
 	fastlock_init(&rx_ctx->lock);
 
 	rx_ctx->ctx.fid.fclass = FI_CLASS_RX_CTX;
@@ -69,6 +71,15 @@ struct sock_rx_ctx *sock_rx_ctx_alloc(const struct fi_rx_attr *attr,
 
 void sock_rx_ctx_free(struct sock_rx_ctx *rx_ctx)
 {
+	struct sock_rx_entry *rx_buffered;
+
+	/* free any remaining buffered entries */
+	while (!dlist_empty(&rx_ctx->rx_buffered_list)) {
+		dlist_pop_front(&rx_ctx->rx_buffered_list,
+		                struct sock_rx_entry, rx_buffered, entry);
+		free(rx_buffered);
+	}
+
 	fastlock_destroy(&rx_ctx->lock);
 	free(rx_ctx->rx_entry_pool);
 	free(rx_ctx);

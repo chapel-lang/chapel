@@ -188,11 +188,10 @@ module ArrayViewSlice {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       const ref myarr = arr;
-      for i in privDom.these(tag, followThis) {
+      foreach i in privDom.these(tag, followThis) {
         yield myarr.dsiAccess[i];
       }
     }
@@ -203,11 +202,17 @@ module ArrayViewSlice {
     //
 
     proc dsiSerialWrite(f) throws {
-      chpl_serialReadWriteRectangular(f, arr, privDom);
+      if chpl_isAssociativeDomClass(privDom) then
+        chpl_serialReadWriteAssociativeHelper(f, arr, privDom);
+      else
+        chpl_serialReadWriteRectangular(f, arr, privDom);
     }
 
     proc dsiSerialRead(f) throws {
-      chpl_serialReadWriteRectangular(f, arr, privDom);
+      if chpl_isAssociativeDomClass(privDom) then
+        chpl_serialReadWriteAssociativeHelper(f, arr, privDom);
+      else
+        chpl_serialReadWriteRectangular(f, arr, privDom);
     }
 
     override proc dsiDisplayRepresentation() {
@@ -234,8 +239,7 @@ module ArrayViewSlice {
       return dsiAccess(i);
     }
 
-    inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i: idxType ...rank) const ref {
       return dsiAccess(i);
     }
 
@@ -258,8 +262,7 @@ module ArrayViewSlice {
       }
     }
 
-    inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i) const ref {
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -281,6 +284,11 @@ module ArrayViewSlice {
 
     proc dsiLocalSubdomain(loc: locale) {
       return privDom.dsiLocalSubdomain(loc);
+    }
+
+    iter dsiLocalSubdomains(loc: locale) {
+      for l in privDom.dsiLocalSubdomains(loc) do
+        yield l;
     }
 
 

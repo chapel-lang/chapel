@@ -110,6 +110,7 @@ int32_t chpl_comm_getMaxThreads(void) {
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_numNodes = 1;
   chpl_nodeID = 0;
+  chpl_set_num_locales_on_node(1);
 }
 
 void chpl_comm_post_mem_init(void) { }
@@ -152,7 +153,7 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) { return NULL; }
 
 void chpl_comm_broadcast_private(int id, size_t size) { }
 
-void chpl_comm_barrier(const char *msg) { }
+void chpl_comm_impl_barrier(const char *msg) { }
 
 void chpl_comm_pre_task_exit(int all) { }
 

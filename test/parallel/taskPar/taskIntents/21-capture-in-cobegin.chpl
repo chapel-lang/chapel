@@ -196,10 +196,10 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$ = 1;
+    s$.writeEF(1);
   }
   {
-    s$;
+    s$.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -430,10 +430,10 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$ = 1;
+    s$.writeEF(1);
   }
   {
-    s$;
+    s$.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -667,10 +667,10 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$ = 1;
+    s$.writeEF(1);
   }
   {
-    s$;
+    s$.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -736,9 +736,9 @@ writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("done");
-  sbegin$ = 1;
+  sbegin$.writeEF(1);
 }
-sbegin$;
+sbegin$.readFE();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {
@@ -906,10 +906,10 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$ = 1;
+    s$.writeEF(1);
   }
   {
-    s$;
+    s$.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -1143,10 +1143,10 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$ = 1;
+    s$.writeEF(1);
   }
   {
-    s$;
+    s$.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);

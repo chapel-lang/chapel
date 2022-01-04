@@ -21,8 +21,148 @@
 
 /* A help module for the mason package manager */
 
+use ArgumentParser;
 use Help;
 use MasonUtils;
+
+
+class MasonHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonHelp();
+  }
+}
+
+class MasonRunHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonRunHelp();
+  }
+}
+
+class MasonBuildHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonBuildHelp();
+  }
+}
+
+class MasonNewHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonNewHelp();
+  }
+}
+
+class MasonInitHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonInitHelp();
+  }
+}
+
+class MasonSearchHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonSearchHelp();
+  }
+}
+
+class MasonModifyHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonModifyHelp();
+  }
+}
+
+class MasonUpdateHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonUpdateHelp();
+  }
+}
+
+class MasonEnvHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonEnvHelp();
+  }
+}
+
+class MasonExternalHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonExternalHelp();
+  }
+}
+
+class MasonExternalFindHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonExternalFindHelp();
+  }
+}
+
+class MasonExternalInfoHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonExternalInfoHelp();
+  }
+}
+
+class MasonExternalSearchHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonExternalSearchHelp();
+  }
+}
+
+class MasonInstallHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonInstallHelp();
+  }
+}
+
+class MasonUninstallHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonUninstallHelp();
+  }
+}
+
+class MasonCompilerHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonCompilerHelp();
+  }
+}
+
+class MasonTestHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonTestHelp();
+  }
+}
+
+class MasonSystemHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonSystemHelp();
+  }
+}
+
+class MasonSystemSearchHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonSystemSearchHelp();
+  }
+}
+
+class MasonSystemPcHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonSystemPcHelp();
+  }
+}
+
+class MasonCleanHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonCleanHelp();
+  }
+}
+
+class MasonPublishHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonPublishHelp();
+  }
+}
+
+class MasonDocHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonDocHelp();
+  }
+}
 
 
 proc masonHelp() {
@@ -74,8 +214,8 @@ proc masonRunHelp() {
   writeln();
   writeln('Runtime arguments can be included after mason arguments.');
   writeln('To ensure that runtime arguments and mason arguments do not conflict, separate them');
-  writeln('with a single dash(`-`). For example');
-  writeln('   e.g. mason run --build - --runtimeArg=true');
+  writeln('with a double dash(`--`). For example');
+  writeln('   e.g. mason run --build -- --runtimeArg=true');
 }
 
 proc masonBuildHelp() {
@@ -98,8 +238,8 @@ proc masonBuildHelp() {
   writeln();
   writeln('Compilation flags and arguments can be included after mason arguments.');
   writeln('To ensure compilation flags and mason arguments to not conflict, separate them with a');
-  writeln('single dash(`-`). For example');
-  writeln('   e.g. mason build --force - --savec tmpdir');
+  writeln('double dash(`--`). For example');
+  writeln('   e.g. mason build --force -- --savec tmpdir');
 }
 
 proc masonNewHelp() {
@@ -124,7 +264,7 @@ proc masonInitHelp(){
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('    --name <legalName>           Specify package name different from directory name');
-  writeln('    -d, --default                Override interactive session and initialise project');
+  writeln('    -d, --default                Override interactive session and initialize project');
 }
 
 proc masonSearchHelp() {
@@ -275,7 +415,7 @@ proc masonInstallHelp() {
   writeln("Install external packages onto your system");
   writeln();
   writeln("Usage:");
-  writeln("    mason external install [options] <package> ");
+  writeln("    mason external install [options] <package>");
   writeln();
   writeln("    <package>: a Spack spec expression indicating the package to install");
   writeln();
@@ -320,7 +460,7 @@ proc masonUninstallHelp() {
   writeln("Uninstall external packages on your system");
   writeln();
   writeln("Usage:");
-  writeln("    mason external uninstall [options] <package> ");
+  writeln("    mason external uninstall [options] <package>");
   writeln();
   writeln("    <package>: a Spack spec expression indicating the package to install");
   writeln();
@@ -383,7 +523,7 @@ proc masonSystemHelp() {
   writeln("    search                      Search all packages available on the system");
   writeln("    -h, --help                  Display this message");
   writeln();
-  writeln("The pc command sometimes has trouble finding a .pc file if the file is named ");
+  writeln("The pc command sometimes has trouble finding a .pc file if the file is named");
   writeln("something other than <package name>.pc  Use -i to ensure package exists");
   writeln("For more information on using system dependencies see Mason documentation");
 }
@@ -392,7 +532,7 @@ proc masonSystemSearchHelp() {
   writeln("Search for packages on system found via pkg-config");
   writeln();
   writeln("Usage:");
-  writeln("    mason search [options]");
+  writeln("    mason system search [options]");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
@@ -405,7 +545,7 @@ proc masonSystemPcHelp() {
   writeln("Print a package's .pc file (pkg-config file)");
   writeln();
   writeln("Usage:");
-  writeln("    mason pc [options]");
+  writeln("    mason system pc [options]");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");

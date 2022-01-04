@@ -1,0 +1,44 @@
+myInst1 = (myVar = 11)
+myInst2 = (myVar = hi)
+myInst3 = (myVar = by)
+
+cgFun.IFC1
+  reqFun.MyRec
+    reqArg  = (myVar = 11) : MyRec(int(64),real(64),111)
+  MyRec.reqMethod
+    this    = (myVar = 11) : MyRec(int(64),real(64),111)
+
+cgFun.IFC1
+  reqFun.MyRec
+    reqArg  = (myVar = hi) : MyRec(string,int(64),false)
+  MyRec.reqMethod
+    this    = (myVar = hi) : MyRec(string,int(64),false)
+
+cgFun.IFC2
+  reqFun.MyRec.MyRec
+    reqArg1 = (myVar = 11) : MyRec(int(64),real(64),111)
+    reqArg2 = (myVar = hi) : MyRec(string,int(64),false)
+  MyRec.reqMethod
+    this    = (myVar = 11) : MyRec(int(64),real(64),111)
+  MyRec.reqMethod
+    this    = (myVar = hi) : MyRec(string,int(64),false)
+
+cgFun.IFC2
+  reqFun.MyRec.NotherRec
+    reqArg1 = (myVar = hi) : MyRec(string,int(64),false)
+    reqArg2 = (myVar = by) : NotherRec(1.78,string,string)
+  MyRec.reqMethod
+    this    = (myVar = hi) : MyRec(string,int(64),false)
+  NotherRec.reqMethod
+    this    = (myVar = by) : NotherRec(1.78,string,string)
+
+cgFun.IFC2
+  reqFun.NotherRec.MyRec
+    reqArg1 = (myVar = by) : NotherRec(1.78,string,string)
+    reqArg2 = (myVar = 11) : MyRec(int(64),real(64),111)
+  NotherRec.reqMethod
+    this    = (myVar = by) : NotherRec(1.78,string,string)
+  MyRec.reqMethod
+    this    = (myVar = 11) : MyRec(int(64),real(64),111)
+
+done

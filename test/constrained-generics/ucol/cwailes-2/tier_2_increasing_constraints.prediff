@@ -1,0 +1,4 @@
+#!/bin/bash
+
+grep -v 'CHPL_HOME/modules/standard/.*chpl:[0-9]*: note: ' $2 > $2.tmp
+mv $2.tmp $2

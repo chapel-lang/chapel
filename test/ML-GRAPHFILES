@@ -155,3 +155,4 @@ performance/array/distCreate-large-init.ml-perf.graph
 performance/array/distCreate-large-deinit.ml-perf.graph
 library/packages/Sort/performance/dist-performance.ml-perf.graph
 runtime/ferguson/cache-remote-mock-tests/mock-ra-perf.ml-time.graph
+optimizations/autoAggregation/perf/autoAggNegativeImpact.ml-perf.graph

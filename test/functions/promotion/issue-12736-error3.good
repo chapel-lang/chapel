@@ -1,0 +1,1 @@
+issue-12736-error3.chpl:3: error: unresolved access of 'int(64)' by '()'

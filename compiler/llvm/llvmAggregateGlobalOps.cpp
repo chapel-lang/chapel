@@ -56,6 +56,7 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
+#include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/InstIterator.h"
 
 #if HAVE_LLVM_VER < 90
@@ -434,7 +435,7 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
 
 // END stolen from MemCpyOptimizer.
 
-  struct AggregateGlobalOpsOpt : public FunctionPass {
+  struct AggregateGlobalOpsOpt final : public FunctionPass {
     const DataLayout *DL;
     unsigned globalSpace;
 
@@ -451,10 +452,10 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
     }
 
 
-    bool runOnFunction(Function &F);
+    bool runOnFunction(Function &F) override;
 
   private:
-    virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
       // TODO -- update these better
       AU.setPreservesCFG();
       /*AU.addRequired<DominatorTree>();

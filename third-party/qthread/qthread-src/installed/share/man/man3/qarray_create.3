@@ -1,0 +1,102 @@
+.TH qarray_create 3 "MAY 2009" libqthread "libqthread"
+.SH NAME
+.BR qarray_create " \- allocate a runtime distributed array"
+.SH SYNOPSIS
+.B #include <qthread/qarray.h>
+
+.I qarray *
+.br
+.B qarray_create
+.RI "(const size_t " count ", const size_t " unit_size );
+.PP
+.I qarray *
+.br
+.B qarray_create_tight
+.RI "(const size_t " count ", const size_t " unit_size );
+.PP
+.I qarray *
+.br
+.B qarray_create_configured
+.RI "(const size_t " count ", const size_t " unit_size ,
+.ti +26
+.RI "const distribution_t " d ", const char " tight ,
+.ti +26
+.RI "const int " seg_pages );
+.SH DESCRIPTION
+These functions initialize qarray distributed array objects. All three
+functions create an array containing at least
+.I count
+elements that are at least
+.I unit_size
+bytes long each. The
+.BR qarray_create ()
+function may round the element size up to the next-largest multiple of eight,
+but the
+.BR qarray_create_tight ()
+is guaranteed not to do that, so that elements are packed tightly in the array.
+The
+.BR qarray_create_configured ()
+function provides greater control over the array implementation, allowing the
+distribution pattern
+.RI ( d ),
+and the length of the distributed array segments
+.RI ( seg_pages )
+to be specified. The
+.I seg_pages
+argument specifies the number of memory pages in a single segment; memory
+cannot be distributed in units smaller than a single page. If
+.I seg_pages
+is zero, a default value is chosen.
+.PP
+The possible values for
+.I d
+are:
+.TP 4
+.B FIXED_HASH
+Distributes the memory across the available shepherds evenly, using a basic
+round-robin assignment mechanism based on the address of the initial page of
+each segment. Array segments cannot be relocated.
+.TP
+.B FIXED_FIELDS
+Distributes the memory evenly across all shepherds, maintaining long contiguous
+sets of segments on each shepherd. Segment locations are defined by a simple
+math operation on the index, so array segments cannot be relocated.
+.TP
+.B ALL_LOCAL
+Assigns the entire array to the local shepherd. Array segments cannot be
+relocated.
+.TP
+.B ALL_RAND
+Assigns the entire array to a random shepherd. Array segments cannot be
+relocated.
+.TP
+.B ALL_LEAST
+Assigns the entire array to the shepherd with the least qarray segments
+currently assigned to it. Array segments cannot be relocated.
+.TP
+.B DIST_STRIPES
+Assigns array segments with a round-robin mechanism. Segment location is stored
+in the segment, so segments can be relocated, but finding a segment requires
+extra memory operations.
+.TP
+.B DIST_FIELDS
+Assigns array segments evenly across all shepherds, attempting to maintain long
+contiguous sets of segments on each shepherd. Segment location is stored in the
+segment, so segments can be relocated, but finding a segment requires extra
+memory operations.
+.TP
+.B DIST_RAND
+Assigns array segments randomly to shepherds. Segment location is stored in the
+segment, so segments can be relocated, but finding a segment requires extra
+memory operations.
+.TP
+.B DIST_LEAST
+Assigns each array segment to whichever shepherd has the fewest array segments
+assigned to it at creation time. Segment location is stored in the segment, so
+segments can be relocated, but finding a segment requires extra memory
+operations.
+.SH SEE ALSO
+.BR qarray_destroy (3),
+.BR qarray_iter (3),
+.BR qarray_shepof (3),
+.BR qarray_elem (3)

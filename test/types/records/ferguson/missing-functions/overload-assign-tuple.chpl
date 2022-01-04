@@ -3,7 +3,7 @@ record Point {
   var y: real;
 }
 
-proc =(ref lhs: 2*real, rhs: Point) {
+operator =(ref lhs: 2*real, rhs: Point) {
   lhs[0] = rhs.x;
   lhs[1] = rhs.y;
 }

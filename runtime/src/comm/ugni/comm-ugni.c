@@ -1857,6 +1857,13 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
       CHPL_INTERNAL_ERROR("too many locales for internal encoding");
   }
 
+  int count = -1;
+  int rc = PMI_Get_numpes_in_app_on_smp(&count);
+  if (rc != PMI_SUCCESS) {
+    CHPL_INTERNAL_ERROR("PMI_Get_numpes_in_app_on_smp() failed");
+  }
+  chpl_set_num_locales_on_node((int32_t) count);
+
   {
     GNI_CHECK(GNI_GetDeviceType(&nic_type));
     if (nic_type != GNI_DEVICE_ARIES)
@@ -1955,7 +1962,7 @@ void chpl_comm_post_task_init(void)
       chpl_warning("without hugepages, communication performance will suffer",
                    0, 0);
     }
-  } else if (chpl_comm_getenvMaxHeapSize() == 0) {
+  } else if (chpl_comm_getenvMaxHeapSize() <= 0) {
     if (chpl_nodeID == 0) {
       if (getenv("HUGETLB_NO_RESERVE") == NULL) {
         chpl_warning("dynamic heap on hugepages "
@@ -2665,10 +2672,10 @@ chpl_bool get_next_rw_memory_range(uint64_t* addr, uint64_t* len,
         ;
 
       for (p_idx = 0; ch != EOF && ch != '\n'; ch = fgetc(f)) {
-        if (p_idx < pathname_size)
+        if (p_idx < pathname_size - 1)
           pathname[p_idx++] = ch;
       }
-      pathname[p_idx++] = '\0';
+      pathname[p_idx] = '\0';
     }
 
     *addr = lo_addr;
@@ -2985,11 +2992,11 @@ static
 void make_registered_heap(void)
 {
   size_t page_size = get_hugepage_size();
-  size_t size_from_env;
+  ssize_t size_from_env;
 
   if (page_size == 0
       || getenv("HUGETLB_MORECORE") == NULL
-      || (size_from_env = chpl_comm_getenvMaxHeapSize()) == 0) {
+      || (size_from_env = chpl_comm_getenvMaxHeapSize()) <= 0) {
     registered_heap_size  = 0;
     registered_heap_start = NULL;
     registered_heap_info_set = 1;
@@ -3077,17 +3084,18 @@ void make_registered_heap(void)
   if (size > max_heap_size) {
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
-      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
-      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
-      chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
       (void) snprintf(msg, sizeof(msg),
                       "Aries TLB cache can cover %s with %s pages; "
                       "with %s heap,\n"
                       "         cache refills may reduce performance",
-                      buf1, buf2, buf3);
+                      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem),
+                      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size),
+                      chpl_snprintf_KMG_f(buf3, sizeof(buf3), size));
       chpl_warning(msg, 0, 0);
     }
   }
+
+  chpl_comm_regMemHeapTouch(start, size);
 
   registered_heap_size  = size;
   registered_heap_start = start;
@@ -3907,16 +3915,9 @@ void chpl_comm_broadcast_private(int id, size_t size)
 }
 
 
-void chpl_comm_barrier(const char *msg)
+void chpl_comm_impl_barrier(const char *msg)
 {
   DBG_P_L(DBGF_IFACE, "IFACE chpl_comm_barrier(\"%s\")", msg);
-
-#ifdef CHPL_COMM_DEBUG
-  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
-#endif
-
-  if (chpl_numNodes == 1)
-    return;
 
   //
   // If we can't communicate yet, just do a PMI barrier.
@@ -6141,11 +6142,10 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
-  //
-  // We assume here that no object can span a boundary between mapped
-  // and unmapped memory, so we only have to check the start address.
-  //
-  return mreg_for_remote_addr(start, node) != NULL;
+  // This call asks if a future GET is safe, but we can't know that in the case
+  // of dynamic registration. We could support it for a static/fixed heap, but
+  // that's not a very common configuration.
+  return 0;
 }
 
 

@@ -260,8 +260,8 @@ class DimensionalDist2D : BaseDist {
   // implementation note: 'rank' is not a real param; it's just that having
   // 'proc rank param return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(0).size: locCntT;
-  proc numLocs2: locCntT  return targetIds.dim(1).size: locCntT;
+  proc numLocs1: locCntT  return targetIds.dim(0).sizeAs(locCntT);
+  proc numLocs2: locCntT  return targetIds.dim(1).sizeAs(locCntT);
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -614,9 +614,9 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
     if loc == here {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
-      gotresult$;
+      gotresult$.readFE();
       result = lls;
-      gotresult$ = true;
+      gotresult$.writeEF(true);
     }
   // instead of crashing right away, return a flag
   //if !gotresult$.readXX() then halt("DimensionalDist2D: the current locale ", here, " is not among the target locales ", targetLocales);
@@ -757,7 +757,7 @@ proc DimensionalDom.dsiDim(param d)       return whole.dim(d);
 proc DimensionalDom.dsiLow                return whole.low;
 proc DimensionalDom.dsiHigh               return whole.high;
 proc DimensionalDom.dsiStride             return whole.stride;
-proc DimensionalDom.dsiNumIndices         return whole.size;
+proc DimensionalDom.dsiNumIndices         return whole.sizeAs(uint);
 proc DimensionalDom.dsiMember(indexx)     return whole.contains(indexx);
 proc DimensionalDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
 
@@ -1028,21 +1028,20 @@ proc DimensionalArr.dsiSerialWrite(f): void {
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
 
-  pragma "order independent yielding loops"
   iter iHelp(param d) {
     if this.isAlias {
        // Go to the original array and invoke the follower iterator on it,
        // giving the alias's entire domain as the index set to follow.
        // (NB dsiFollowerArrayIterator1d's argument is not densified.)
       const dom1d = if d == 0 then this.allocDom.dom1 else this.allocDom.dom2;
-      for l_i in dom1d.dsiFollowerArrayIterator1d(this.dom.whole.dim(d)) do
+      foreach l_i in dom1d.dsiFollowerArrayIterator1d(this.dom.whole.dim(d)) do
         yield l_i;
 
     } else {
       const alDom = this.dom;
       const dom1d = if d == 0 then alDom.dom1 else alDom.dom2;
-      for (l,r) in dom1d.dsiSerialArrayIterator1d() do
-        for i in r do
+      foreach (l,r) in dom1d.dsiSerialArrayIterator1d() do
+        foreach i in r do
           yield (l,i);
     }
   }
@@ -1077,8 +1076,8 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
   // todo: cache (l1, l2) in privatized copies when possible
   // (i.e. if privatization is supported and there is no oversubscription)
   // Assuming dsiLocalSlice is guaranteed to be local to 'here'.
-  const l1 = dist.di1.dsiIndexToLocale1d(sliceDim1.low),
-        l2 = dist.di2.dsiIndexToLocale1d(sliceDim2.low),
+  const l1 = dist.di1.dsiIndexToLocale1d(if sliceDim1.hasLowBound() then sliceDim1.low else chpl__intToIdx(sliceDim1.idxType, 1)),
+        l2 = dist.di2.dsiIndexToLocale1d(if sliceDim2.hasLowBound() then sliceDim2.low else chpl__intToIdx(sliceDim2.idxType, 1)),
         locAdesc = this.localAdescs[l1, l2],
         r1 = if dom.dom1.dsiStorageUsesUserIndices()
              then dom.whole.dim(0)(sliceDim1)
@@ -1185,10 +1184,10 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
       // when we know which dimension should be the parallel one
       proc compute1dNTPD(param parDim): (int,int) {
-        const myNumIndices = myDims(0).size * myDims(1).size;
+        const myNumIndices = myDims(0).sizeAs(int) * myDims(1).sizeAs(int);
         const cnc:int =
           _computeNumChunks(maxTasks, ignoreRunning, minSize, myNumIndices);
-        return ( min(cnc, myDims(parDim).size:int), parDim );
+        return ( min(cnc, myDims(parDim).sizeAs(int)), parDim );
       }
 
       const (numTasks, parDim) =
@@ -1247,7 +1246,6 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
           // produce, collectively, all the indices in this dimension.
           // For 'parDim' - only the 'taskid'-th share of all indices.
           //
-          pragma "order independent yielding loops"
           iter iter1d(param dd, dom1d, loc1d) {
             const dummy: followT;
             type resultT = dummy(dd).type;
@@ -1256,16 +1254,15 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
               yield loc1d.dsiMyDensifiedRangeForTaskID1d
                 (dom1d, taskid, numTasks) : resultT;
             } else {
-              for r in loc1d.dsiMyDensifiedRangeForSingleTask1d(dom1d) do
+              foreach r in loc1d.dsiMyDensifiedRangeForSingleTask1d(dom1d) do
                 yield r: resultT;
             }
           }
 
           // Bug note: computing 'myDims(dd)' instead of passing 'myDim'
           // would trip an assertion in the compiler.
-          pragma "order independent yielding loops"
           iter iter1dCheck(param dd, dom1d, loc1d, myDim) {
-            for myPiece in iter1d(dd, dom1d, loc1d) {
+            foreach myPiece in iter1d(dd, dom1d, loc1d) {
 
               // ensure we got a subset, if applicable
               if dom1d.dsiStorageUsesUserIndices() then
@@ -1279,7 +1276,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
               //   if myPiece.size == 0 then do not yield anything
 // TODO: can it be enabled for test_strided_slice1.chpl with 1d block-cyclic?
 //              assert(myPiece.size > 0);
-              if myPiece.size > 0 then
+              if myPiece.sizeAs(uint) > 0 then
                 yield myPiece;
             }
           }
@@ -1316,7 +1313,6 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
 //== serial iterator - array
 
 // note: no 'on' clauses - they not allowed by the compiler
-pragma "order independent yielding loops"
 iter DimensionalArr.these() ref {
   _traceddd(this, ".serial iterator",
             if this.isAlias then "  (alias)" else "");
@@ -1326,7 +1322,7 @@ iter DimensionalArr.these() ref {
      // Go to the original array and invoke the follower iterator on it,
      // giving the alias's entire domain as the index set to follow.
      // (NB dsiFollowerArrayIterator1d's argument is not densified.)
-    for v in this._dsiIteratorHelper(this.allocDom, this.dom.whole.dims()) do
+    foreach v in this._dsiIteratorHelper(this.allocDom, this.dom.whole.dims()) do
       yield v;
 
     return;
@@ -1356,7 +1352,7 @@ iter DimensionalArr.these() ref {
           const locAdesc = this.localAdescs[l1,l2];
           _traceddc(traceDimensionalDistIterators,
                     "  locAdesc", (l1,l2), " on ", locAdesc.locale);
-          for i2 in r2 do
+          foreach i2 in r2 do
             yield locAdesc.myStorageArr(i1, i2);
         }
 }
@@ -1392,7 +1388,6 @@ iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iter
 }
 
 // factor our some common code
-pragma "not order independent yielding loops"
 iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
   // single-element cache of localAdescs[l1,l2]
   var lastl1 = invalidLocID, lastl2 = invalidLocID;

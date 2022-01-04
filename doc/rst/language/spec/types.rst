@@ -2,6 +2,7 @@
 
 .. _Chapter-Types:
 
+=====
 Types
 =====
 
@@ -65,7 +66,7 @@ The concrete primitive types are: ``void``, ``nothing``, ``bool``,
 In addition, there are several generic primitive types that are
 described in :ref:`Built_in_Generic_types`.
 
-The primitive types are summarized by the following syntax: 
+The primitive types are summarized by the following syntax:
 
 .. code-block:: syntax
 
@@ -221,7 +222,7 @@ machine-dependent, but usually include ``complex(64)`` and
 ``complex(128)``.
 
 The real and imaginary components can be accessed via the methods ``re``
-and ``im``. The type of these components is real. The standard :mod:`Math`
+and ``im``. The type of these components is a ``real``. The standard :mod:`Math`
 module provides some functions on complex types. See the :mod:`Math`
 module documentation.
 
@@ -230,6 +231,35 @@ module documentation.
    Given a complex number ``c`` with the value ``3.14+2.72i``, the
    expressions ``c.re`` and ``c.im`` refer to ``3.14`` and ``2.72``
    respectively.
+
+complex is defined as if it were a record with two fields.
+Note that both of these fields are of type *real*.
+Specifically the imaginary component is not of type *imag*.
+This is important when using the getter/setter for the
+field *im*.
+
+.. method:: proc complex.bits: param int
+
+   Returns the number of bits used to represent this complex number.
+
+.. method:: proc complex.re ref
+
+
+   When used as a value, this returns the real component of
+   the complex number as a *real*.
+
+   When used as an lvalue, this is a setter that assigns the
+   real component.
+
+
+.. method:: proc complex.im ref
+
+
+   When used as a value, this returns the imaginary component of
+   the complex number as a *real*.
+
+   When used as an lvalue, this is a setter that assigns the
+   imaginary component.
 
 .. _The_String_Type:
 
@@ -240,10 +270,6 @@ Strings are a primitive type designated by the symbol ``string``
 comprised of Unicode characters in UTF-8 encoding. Their length is
 unbounded.
 
-   *Open issue*.
-
-   There is an expectation of future support for fixed-length strings.
-
 .. _The_Bytes_Type:
 
 The Bytes Type
@@ -252,10 +278,6 @@ The Bytes Type
 Bytes is a primitive type designated by the symbol ``bytes`` comprised
 of arbitrary bytes. Bytes are immutable in-place and their length is
 unbounded.
-
-   *Open issue*.
-
-   There is an expectation of future support for mutable bytes.
 
 .. _Enumerated_Types:
 
@@ -312,14 +334,14 @@ concrete or semi-concrete
 
    *Example (enum-statesmen.chpl)*.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
       enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
 
    defines an abstract enumerated type with four constants. The function
-   
+
 
    .. code-block:: chapel
 
@@ -335,16 +357,16 @@ concrete or semi-concrete
              { write("No one will ever win the battle of the sexes; ");
                writeln("there's too much fraternizing with the enemy."); }
         }
-      } 
+      }
 
-   
+
 
    .. BLOCK-test-chapelnoprint
 
       for s in statesman do
         quote(s:statesman);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 

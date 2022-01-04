@@ -4,7 +4,7 @@ record Y {
   var value = 0;
 }
 
-proc <(left: Y, right: Y) {
+operator Y.<(left: Y, right: Y) {
   return left.value < right.value;
 }
 

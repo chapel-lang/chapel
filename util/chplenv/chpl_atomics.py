@@ -28,8 +28,8 @@ def get(flag='target'):
             # atomics, but have buggy or missing parts of the implementation,
             # so we do not try to use cstdlib with gcc < 5. If support is
             # detected for clang (via preprocessor checks) we also default to
-            # cstdlib atomics. For llvm/clang-included we always default to
-            # cstdlib atomics. We know our clang-included will have compiler
+            # cstdlib atomics. For llvm-clang we always default to
+            # cstdlib atomics. We know the llvm-clang will have compiler
             # support for atomics and llvm requires gcc 4.8 (or a compiler with
             # equivalent features) to be built so we know we'll have system
             # header support too.
@@ -43,7 +43,7 @@ def get(flag='target'):
             # For pgi or 32-bit platforms with an older gcc, we fall back to
             # locks
             if compiler_val in ['gnu', 'cray-prgenv-gnu', 'mpi-gnu']:
-                version = get_compiler_version('gnu')
+                version = get_compiler_version(flag)
                 if version >= CompVersion('5.0'):
                     atomics_val = 'cstdlib'
                 elif version >= CompVersion('4.8'):
@@ -57,11 +57,11 @@ def get(flag='target'):
             elif compiler_val in ['allinea', 'cray-prgenv-allinea']:
                 atomics_val = 'cstdlib'
             elif compiler_val == 'clang':
-                if has_std_atomics(compiler_val):
+                if has_std_atomics():
                     atomics_val = 'cstdlib'
                 else:
                     atomics_val = 'intrinsics'
-            elif compiler_val == 'clang-included':
+            elif compiler_val == 'llvm':
                 atomics_val = 'cstdlib'
 
             # we can't use intrinsics, fall back to locks

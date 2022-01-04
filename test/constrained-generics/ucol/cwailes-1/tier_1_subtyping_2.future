@@ -1,0 +1,22 @@
+unimplemented feature: subtype conversion for const ref arguments
+#8489
+
+This test is a variation of tier_1_subtyping_0.chpl
+changing the desired implements statement to be for an owned type
+instead of a borrowed type.
+
+This ought to work with 'owned' or 'shared', however at present it does not
+due to:
+     https://github.com/chapel-lang/chapel/issues/8489
+
+In detail: in order for the call 'f(new owned D(...))' to resolve,
+we need to find a witness implements statement to satisfy
+f's interface constraint 'implements I(owned D)'.
+
+This constraint is satisfied because the required function g is implemented
+with 'proc g(x:C)', relying on the subtype conversion `owned D` -> `owned C`
+that is legal for const ref arguments. However, due to #8489, this currently
+does not work.
+
+In terms of compiler implementation, this error is detected
+when creating a conversion wrapper, see PR #17832.

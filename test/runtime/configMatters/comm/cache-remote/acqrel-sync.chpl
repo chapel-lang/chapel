@@ -20,19 +20,19 @@ proc doit(a:locale, b:locale, c:locale)
     sync {
       begin with (ref x) on b {
         for i in 0..max by 2 {
-          var z = stopgob; // wait for it
+          var z = stopgob.readFE(); // wait for it
           assert( x == i );
           x = i + 1;
-          stopgoc = true; // signal
+          stopgoc.writeEF(true); // signal
         }
       }
 
       begin with (ref x) on c {
         for i in 1..max by 2 {
-          var z = stopgoc; // wait for it
+          var z = stopgoc.readFE(); // wait for it
           assert( x == i );
           x = i + 1;
-          stopgob = true; // signal
+          stopgob.writeEF(true); // signal
         }
       }
     }

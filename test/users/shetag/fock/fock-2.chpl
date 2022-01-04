@@ -42,7 +42,7 @@ proc buildjk() {
 					}
 				}
 			}
-			numLocsDone = numLocsDone+1;
+			numLocsDone.writeEF(numLocsDone.readFE()+1);
 		}
 
 	while (numLocsDone.readXX() < numLocs) {
@@ -111,21 +111,21 @@ proc buildjk_atom4(bI) {
 		}
 	}
 	
-	var tmp = oneAtATime;	
+	var tmp = oneAtATime.readFE();	
 	jmat2(ijD) += jij;
 	jmat2(klD) += jkl;
 	kmat2(ikD) += kik;
 	kmat2(ilD) += kil;
 	kmat2(jkD) += kjk;
 	kmat2(jlD) += kjl;
-	oneAtATime = tmp;
+	oneAtATime.writeEF(tmp);
 
         delete bI;
 }
 
 proc read_and_increment_G() {
-	const myG : int = G;
-	G = myG+1;
+	const myG : int = G.readFE();
+	G.writeEF(myG+1);
 	return myG;
 }
 

@@ -11,13 +11,13 @@ proc test() {
 
   sync{
     begin{
-      x$; 
+      x$.readFE(); 
       writeln("Begin 1");
     }
 
     begin{
       writeln("Begin 2");
-      x$ = 1;
+      x$.writeEF(1);
     }
   }
 }

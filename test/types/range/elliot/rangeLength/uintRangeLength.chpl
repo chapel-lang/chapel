@@ -16,8 +16,15 @@ proc writeLength(type t) {
   writeln((min_t..min_t).size);      // low end length 1 ok
   writeln((max_t..max_t).size);      // high end length 1 ok
 
-  writeln((min_t..near_max_t).size); // low end near maximal ok
-  writeln((near_min_t..max_t).size); // high end near maximal ok
+  if (t == uint) {
+    writeln((min_t..near_max_t).sizeAs(uint)); // low end near maximal ok
+    writeln((near_min_t..max_t).sizeAs(uint)); // high end near maximal ok
+
+    writeln((min_t..max_t).sizeAs(uint));      // maximal overflows :(
+  }
+  
+  writeln((min_t..near_max_t).size); // low end near maximal ok for non-uint
+  writeln((near_min_t..max_t).size); // high end near maximal ok for non-uint
 
   writeln((min_t..max_t).size);      // maximal overflows :(
   writeln();

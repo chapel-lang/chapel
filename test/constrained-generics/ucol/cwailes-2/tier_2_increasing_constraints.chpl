@@ -28,7 +28,7 @@ proc minFnPrime(x:?T, y:T, ifeq:T)
 
 proc minFn(x:?T, y:T, ifeq:T) where implements LessThan(T) {
   // Error: minFnPrime places more constraints on type T than minFn
-  minFnPrime(x, y, ifeq);
+  return minFnPrime(x, y, ifeq);
 }
 
 implements LessThan(int);

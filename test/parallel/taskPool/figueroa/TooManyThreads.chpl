@@ -30,11 +30,11 @@ proc ensureDefaultInit(arg) { }
 
 proc foo (x) {
 
-  if ready {
+  if ready.readFE() {
     total += x;
     count -= 1;
-    if count == 0 then done = true;
-    ready = true;
+    if count == 0 then done.writeEF(true);
+    ready.writeEF(true);
   }
     
 }
@@ -49,5 +49,5 @@ begin
   coforall i in 1..numThreads do
     foo (i);
 sleep (10);
-ready = true;
-if done then writeln ("total is ", total);
+ready.writeEF(true);
+if done.readFE() then writeln ("total is ", total);

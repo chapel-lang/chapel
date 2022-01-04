@@ -64,6 +64,7 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
   return c_sublocid_any;
 }
 
+void chpl_topo_interleaveMemLocality(void* p, size_t size) { }
 
 void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
                               c_sublocid_t subloc) { }

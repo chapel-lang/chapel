@@ -6,7 +6,7 @@ iter f(n) {
 
 var x: sync int = 0;
 for (i, j) in zip(f(4), f(4)) {
-  x += i + j;
+  x.writeEF(x.readFE() + i + j);
 }
 
 writeln(x.readFF());

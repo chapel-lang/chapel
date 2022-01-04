@@ -1,1 +1,20 @@
-../SKIPIF
+#!/usr/bin/env python3
+
+"""
+mason requires CHPL_COMM=none (local)
+"""
+
+from __future__ import print_function
+from os import environ
+import sys
+
+# chpldoc, which this test directory relies on, requires Python version 3.6 or
+# greater
+version_is_good = True
+if sys.version_info[0] < 3:
+    version_is_good = False
+else:
+    if sys.version_info[0] == 3 and sys.version_info[1] <= 5:
+        version_is_good = False
+
+print(environ['CHPL_COMM'] != 'none' or environ['CHPL_RE2'] == 'none' or environ['CHPL_LAUNCHER'] != 'none' or not version_is_good)

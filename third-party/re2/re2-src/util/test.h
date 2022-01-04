@@ -6,8 +6,11 @@
 #define UTIL_TEST_H_
 
 #include "util/util.h"
-#include "util/flags.h"
 #include "util/logging.h"
+
+namespace testing {
+std::string TempDir();
+}  // namespace testing
 
 #define TEST(x, y) \
 	void x##y(void); \
@@ -43,16 +46,5 @@ class TestRegisterer {
 #define EXPECT_LE CHECK_LE
 #define EXPECT_GT CHECK_GT
 #define EXPECT_GE CHECK_GE
-
-namespace testing {
-class MallocCounter {
- public:
-  MallocCounter(int x) {}
-  static const int THIS_THREAD_ONLY = 0;
-  long long HeapGrowth() { return 0; }
-  long long PeakHeapGrowth() { return 0; }
-  void Reset() {}
-};
-}  // namespace testing
 
 #endif  // UTIL_TEST_H_

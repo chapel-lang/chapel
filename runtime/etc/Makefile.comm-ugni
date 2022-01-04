@@ -17,7 +17,7 @@
 # limitations under the License.
 
 #
-# Conservatively use CXX as the linker, in case regexp (or other C++
+# Conservatively use CXX as the linker, in case regex (or other C++
 # code) is being linked in.
 #
 LD = $(CXX)

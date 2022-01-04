@@ -1,0 +1,80 @@
+Start analyzing forall for automatic aggregation [static only ALA clone]  (localArrays.chpl:50)
+| Found an aggregation candidate (localArrays.chpl:51)
+|  Potential source aggregation (localArrays.chpl:51)
+End analyzing forall for automatic aggregation [static only ALA clone]  (localArrays.chpl:50)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (localArrays.chpl:50)
+End analyzing forall for automatic aggregation [no ALA clone]  (localArrays.chpl:50)
+
+Aggregation candidate has confirmed local child [static only ALA clone] (localArrays.chpl:51)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (localArrays.chpl:51)
+Aggregation candidate has confirmed local child [static only ALA clone] (localArrays.chpl:51)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (localArrays.chpl:51)
+Aggregation candidate has confirmed local child [static only ALA clone] (localArrays.chpl:51)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (localArrays.chpl:51)
+Aggregation candidate has confirmed local child [static only ALA clone] (localArrays.chpl:51)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (localArrays.chpl:51)
+Aggregation candidate has confirmed local child [static only ALA clone] (localArrays.chpl:51)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (localArrays.chpl:51)
+Aggregation candidate has confirmed local child [static only ALA clone] (localArrays.chpl:51)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (localArrays.chpl:51)
+Aggregation candidate has confirmed local child [static only ALA clone] (localArrays.chpl:51)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (localArrays.chpl:51)
+Replaced assignment with aggregation [static only ALA clone]  (localArrays.chpl:51)
+Replaced assignment with aggregation [static only ALA clone]  (localArrays.chpl:51)
+Replaced assignment with aggregation [static only ALA clone]  (localArrays.chpl:51)
+Testing 1D DR
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+0 0 0 0 0 0 0 0 0 0
+End testing 1D DR
+
+Testing 2D DR
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+End testing 2D DR
+
+Testing 1D COO
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+0 0
+End testing 1D COO
+
+Testing 2D COO
+0
+0
+
+End testing 2D COO
+
+Testing CSR
+0
+0
+
+End testing CSR
+
+Testing CSC
+0
+0
+
+End testing CSC
+
+Testing associative domain with string keys
+0 0
+End testing associative domain with string keys
+

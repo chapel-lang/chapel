@@ -4,9 +4,9 @@ var x$: sync int = 0;
 
 forall i in 1..n do
   for j in 1..m do
-    x$ = x$ + 1;
+    x$.writeEF(x$.readFE() + 1);
 
-tempvar = x$;
+tempvar = x$.readFE();
 if (tempvar == (n * m))
   then writeln("PASSED");
   else writeln("FAILED: x$ is ", tempvar);

@@ -1,0 +1,15 @@
+.TH qthread_num_workers 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_num_workers
+\- returns the number of workers
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I qthread_worker_id_t
+.br
+.B qthread_num_workers
+();
+.SH DESCRIPTION
+This function returns the number of workers. This value is one larger than the largest valid worker id.
+.SH SEE ALSO
+.BR qthread_worker (3)

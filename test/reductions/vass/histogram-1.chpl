@@ -34,7 +34,7 @@ writeln("dosto is fine");
 record RR {
   var xx: int;
 }
-proc +(a1:RR, a2:RR) {
+operator RR.+(a1:RR, a2:RR) {
   return new RR(xx=a1.xx+a2.xx);
 }
 

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+nvccDir=$(which nvcc)
+nvccLib=${nvccDir%/bin/nvcc}/lib64
+nvccInc=${nvccDir%/bin/nvcc}/include
+
+echo "-M../ -L$nvccLib -I$nvccInc -lcudart -lcublas"

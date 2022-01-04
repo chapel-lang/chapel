@@ -39,23 +39,29 @@ static const size_t GiB = (size_t) (1UL << 30);
 // snprintf() a size as nnn[KMG]
 //
 
-int chpl_snprintf_KMG_z(char* buf, int bufSize, size_t val) {
-  if (val >= GiB)
-    return snprintf(buf, bufSize, "%zdG", val / GiB);
-  else if (val >= MiB)
-    return snprintf(buf, bufSize, "%zdM", val / MiB);
-  else if (val >= KiB)
-    return snprintf(buf, bufSize, "%zdK", val / KiB);
-  return snprintf(buf, bufSize, "%zd", val);
+char* chpl_snprintf_KMG_z(char* buf, int bufSize, size_t val) {
+  if (val >= GiB) {
+    (void) snprintf(buf, bufSize, "%zdG", val / GiB);
+  } else if (val >= MiB) {
+    (void) snprintf(buf, bufSize, "%zdM", val / MiB);
+  } else if (val >= KiB) {
+    (void) snprintf(buf, bufSize, "%zdK", val / KiB);
+  } else {
+    (void) snprintf(buf, bufSize, "%zd", val);
+  }
+  return buf;
 }
 
 
-int chpl_snprintf_KMG_f(char* buf, int bufSize, double val) {
-  if (val >= GiB)
-    return snprintf(buf, bufSize, "%.1fG", val / GiB);
-  else if (val >= MiB)
-    return snprintf(buf, bufSize, "%.1fM", val / MiB);
-  else if (val >= KiB)
-    return snprintf(buf, bufSize, "%.1fK", val / KiB);
-  return snprintf(buf, bufSize, "%.1f", val);
+char* chpl_snprintf_KMG_f(char* buf, int bufSize, double val) {
+  if (val >= GiB) {
+    (void) snprintf(buf, bufSize, "%.1fG", val / GiB);
+  } else if (val >= MiB) {
+    (void) snprintf(buf, bufSize, "%.1fM", val / MiB);
+  } else if (val >= KiB) {
+    (void) snprintf(buf, bufSize, "%.1fK", val / KiB);
+  } else {
+    (void) snprintf(buf, bufSize, "%.1f", val);
+  }
+  return buf;
 }

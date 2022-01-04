@@ -64,10 +64,6 @@ Expr::Expr(AstTag astTag) :
   next(NULL)
 { }
 
-Expr::~Expr() {
-
-}
-
 bool Expr::isStmt() const {
   return false;
 }
@@ -623,8 +619,11 @@ void SymExpr::prettyPrint(std::ostream *o) {
   if (strcmp(var->name, "nil") != 0) {
     if (var->isImmediate()) {
       if (VarSymbol *sym = toVarSymbol(var)) {
-        if (sym->immediate->const_kind == CONST_KIND_STRING)
-          *o << "\"" << sym->immediate->v_string << "\"";
+        if (sym->immediate->const_kind == CONST_KIND_STRING) {
+          *o << "\"";
+          *o << sym->immediate->v_string.str();
+          *o << "\"";
+        }
         else if (sym->immediate->const_kind == NUM_KIND_BOOL)
           *o << sym->immediate->bool_value();
         else if (sym->immediate->const_kind == NUM_KIND_INT)
@@ -1137,7 +1136,7 @@ get_string(Expr *e, const char **s) {
   }
 
   if (imm && imm->const_kind == CONST_KIND_STRING) {
-    *s = imm->v_string;
+    *s = astr(imm->v_string.c_str());
     return true;
   }
 

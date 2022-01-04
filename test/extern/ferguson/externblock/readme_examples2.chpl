@@ -36,7 +36,7 @@ module OuterModule {
       *x = space;
     }
     // translates automatically into
-    //  extern proc returnSpace( x:c_ptr(c_ptr(c_int)) );
+    //  extern proc setSpace( x:c_ptr(c_ptr(c_int)) );
 
     static void setString(const char** x) { *x = "My String"; }
   }

@@ -1,1 +1,1 @@
-class-new-error.chpl:4: error: invalid use of 'new' (did you forget to add parentheses?)
+class-new-error.chpl:4: error: type in 'new' expression is missing its argument list

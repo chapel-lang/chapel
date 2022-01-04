@@ -33,7 +33,7 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_ARCH)-$(CHPL_MAKE_COMPILER)
+SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
 SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
@@ -68,17 +68,16 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
 MODULES_TO_DOCUMENT = \
-	standard/Assert.chpl \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
-	standard/Builtins.chpl \
 	standard/ChapelEnv.chpl \
 	standard/ChapelIO.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/CPtr.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
+	standard/Errors.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
 	standard/Heap.chpl \
@@ -89,12 +88,14 @@ MODULES_TO_DOCUMENT = \
 	standard/Math.chpl \
 	standard/Memory.chpl \
 	standard/Memory/Diagnostics.chpl \
+	standard/Memory/Initialization.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Reflection.chpl \
-	standard/Regexp.chpl \
+	standard/Regex.chpl \
 	standard/Set.chpl \
 	standard/Spawn.chpl \
+	standard/Subprocess.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
 	standard/SysError.chpl \
@@ -105,10 +106,12 @@ MODULES_TO_DOCUMENT = \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
+	packages/ArgumentParser.chpl \
 	packages/AllLocalesBarriers.chpl \
 	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
+	packages/ConcurrentMap.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/EpochManager.chpl \
@@ -124,8 +127,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
-	packages/Norm.chpl \
-	packages/OrderedSet.chpl \
+	packages/SortedMap.chpl \
+	packages/SortedSet.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
@@ -143,7 +146,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnitTest.chpl \
 	packages/UnorderedAtomics.chpl \
 	packages/UnorderedCopy.chpl \
-	packages/URL.chpl
+	packages/URL.chpl \
+
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -159,19 +163,19 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCS.chpl \
 
+
 INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/Atomics.chpl                 \
+	internal/Bytes.chpl                   \
 	internal/ChapelArray.chpl             \
-	internal/ChapelComplex_forDocs.chpl   \
-	internal/ChapelError.chpl             \
+	internal/ChapelDomain.chpl            \
 	internal/ChapelLocale.chpl            \
 	internal/ChapelRange.chpl             \
-	internal/Bytes.chpl                   \
-	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
 	internal/OwnedObject.chpl             \
-	internal/SharedObject.chpl
+	internal/SharedObject.chpl            \
+	internal/String.chpl                  \
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)

@@ -50,7 +50,3 @@ Strings
 (string number one, differently sized string number two)
 End of swap(string)
 (differently sized string number two, string number one)
-sync ints
-(1, 2)
-End of swap(sync int(64))
-(2, 1)

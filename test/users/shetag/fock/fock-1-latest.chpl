@@ -41,12 +41,12 @@ proc buildjk() {
 }
 
 proc consumer() {
-  var bI = task!;
+  var bI = task.readFE()!;
   while (bI.ilo != 0) {
     const copyofbI = bI;
     cobegin with (ref bI) {
       buildjk_atom4(copyofbI);
-      bI = task!;
+      bI = task.readFE()!;
     }
   }
   delete bI;
@@ -54,7 +54,7 @@ proc consumer() {
 
 proc producer() {
   for bI in genBlocks() do // sjd: changed forall to for
-    task = bI;
+    task.writeEF(bI);
 }
 
 iter genBlocks() {
@@ -124,14 +124,14 @@ proc buildjk_atom4(bI) {
     }
   }
 
-  var tmp = oneAtATime;
+  var tmp = oneAtATime.readFE();
   jmat2(ijD) += jij;
   jmat2(klD) += jkl;
   kmat2(ikD) += kik;
   kmat2(ilD) += kil;
   kmat2(jkD) += kjk;
   kmat2(jlD) += kjl;
-  oneAtATime = tmp;
+  oneAtATime.writeEF(tmp);
 
   delete bI;
 }

@@ -1,1 +1,1 @@
-badHighBoundedRange.chpl:3: error: Bound of '..high' must be an integer.
+badHighBoundedRange.chpl:3: error: Ranges defined using bounds of type 'real(64)' are not currently supported

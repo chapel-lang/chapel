@@ -6,6 +6,7 @@
 #include <gasnetex.h>
 #include <gasnet_vis.h>
 #include <gasnet_coll.h>
+#include <gasnet_mk.h>
 
 #include "testgasnet.c"
 

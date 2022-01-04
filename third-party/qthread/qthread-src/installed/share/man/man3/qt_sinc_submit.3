@@ -1,0 +1,31 @@
+.TH qt_sinc_submit 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_sinc_submit
+\- submit to a sinc
+.SH SYNOPSIS
+.B #include <qthread/sinc.h>
+
+.I void
+.br
+.B qt_sinc_submit
+.RI "(qt_sinc_t *restrict " sinc,
+.br
+.ti +15
+.RI " const void *restrict " value);
+
+.SH DESCRIPTION
+This function sends a submission to the specified
+.IR sinc .
+The submission may have a
+.I value
+associated with it, if the sinc was initialized to support a reduction operation. If so, the number of bytes read from the
+.I value
+address is the number configured when the sinc was initialized.
+.SH SEE ALSO
+.BR qt_sinc_create (3),
+.BR qt_sinc_destroy (3),
+.BR qt_sinc_expect (3),
+.BR qt_sinc_fini (3),
+.BR qt_sinc_init (3),
+.BR qt_sinc_reset (3),
+.BR qt_sinc_wait (3)

@@ -505,10 +505,8 @@ firehose_get_params(uintptr_t max_pinnable_memory,
 
     fh_MaxPinnableMemory = max_pinnable_memory;
 
-    nM = fh_getenv("GASNET_FIREHOSE_M", (1<<20));
-    dfltM = !nM;
-    nMaxvictim   = fh_getenv("GASNET_FIREHOSE_MAXVICTIM_M", (1<<20));
-    dfltMaxvictim = !nMaxvictim;
+    nM = fh_getenv("GASNET_FIREHOSE_M", (1<<20), &dfltM);
+    nMaxvictim   = fh_getenv("GASNET_FIREHOSE_MAXVICTIM_M", (1<<20), &dfltMaxvictim);
 
     /* First assign values based on either what the user passed or what
      * is determined to be the best M and maxvictim parameters based on

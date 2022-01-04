@@ -1,0 +1,5 @@
+error-never-initialized-refs.chpl:3: In function 'error':
+error-never-initialized-refs.chpl:5: error: reference 'r1' is not initialized
+error-never-initialized-refs.chpl:8: error: reference 'r2' is not initialized
+error-never-initialized-refs.chpl:10: note: 'r2' use here prevents split-init from establishing the type
+error-never-initialized-refs.chpl:17: error: reference 'rr' is not initialized

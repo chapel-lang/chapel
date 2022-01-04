@@ -23,8 +23,8 @@
 #
 # Tools
 #
-CXX = icpc
-CC = icc
+CXX = $(CHPL_MAKE_CXX) # normally icpc
+CC = $(CHPL_MAKE_CC)   # normally icc
 
 ifeq (, $(MPI_CC))
 MPI_CC = mpiicc

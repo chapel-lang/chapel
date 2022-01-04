@@ -1,0 +1,2 @@
+constDomain9.chpl:2: error: const actual is passed to 'ref' formal 'this' of requestCapacity()
+note: to formal of type DefaultAssociativeDom(int(64),true)

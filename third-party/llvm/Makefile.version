@@ -1,5 +1,5 @@
 ifndef LLVM_VERSION
-  export LLVM_VERSION:=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --version)
+  export LLVM_VERSION:=$(shell $(LLVM_CONFIG) --version 2>&1)
 endif
 
 ifneq ($(LLVM_VERSION),)
@@ -9,7 +9,3 @@ ifneq ($(LLVM_VERSION),)
 else
   export LLVM_MAJOR_VERSION:=0
 endif
-
-# LLVM_MAJOR_VERSION_9PLUS will store 9 if the version is >= 9 or
-# be the empty string otherwise.
-export LLVM_MAJOR_VERSION_9PLUS := $(shell test $(LLVM_MAJOR_VERSION) -ge 9 && echo 9)

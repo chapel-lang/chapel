@@ -9,18 +9,18 @@ dnl -*- m4 -*-
 define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
-define([GASNET_RELEASE_VERSION_MAJOR_D],[2020])
-define([GASNET_RELEASE_VERSION_MINOR_D],[10])
+define([GASNET_RELEASE_VERSION_MAJOR_D],[2021])
+define([GASNET_RELEASE_VERSION_MINOR_D],[9])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
-define([GASNETEX_SPEC_VERSION_MINOR_D],[10])
+define([GASNETEX_SPEC_VERSION_MINOR_D],[14])
 dnl GASNet-1 spec version:
 define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet tools spec version:
 define([GASNETT_SPEC_VERSION_MAJOR_D],[1])
-define([GASNETT_SPEC_VERSION_MINOR_D],[16])
+define([GASNETT_SPEC_VERSION_MINOR_D],[18])
 
 define([GASNET_RELEASE_VERSION_D],
          [GASNET_RELEASE_VERSION_MAJOR_D.GASNET_RELEASE_VERSION_MINOR_D.GASNET_RELEASE_VERSION_PATCH_D])
@@ -227,7 +227,6 @@ AC_SUBST(GASNETI_PTR_BITS)
 # Allow user forced ARCH and/or ISA settings w/o the corresponding probes
 # XXX: Incomplete...
 
-GASNET_IF_ENABLED_NOHELP(arch-altix, [force_arch_altix=yes])
 GASNET_IF_ENABLED_NOHELP(arch-ibmpe, [force_arch_ibmpe=yes])
 GASNET_IF_ENABLED_NOHELP(arch-wsl,   [force_arch_wsl=yes])
 
@@ -330,6 +329,26 @@ AC_DEFUN([GASNET_GET_GNUWARNINGFLAGS],[
         # Open64 strict aliasing complains about (void **)/(T **) aliasing, which we use in places
         GASNET_TRY_WNO_FLAG([$1],[$3-Wno-strict-aliasing],
                               [[$1]FLAGS="$[$1]FLAGS $3-Wno-strict-aliasing"])
+    ;;
+    GNU) # GCC 11 appears to have analysis problems which yield bogus warnings (bugs 4228,4231,4232)
+        dnl We do not use AC_CACHE_CHECK() here since doing so w/o additional changes
+        dnl would conflate CC and MPI_CC (and this is not a terribly expensive check).
+        AC_MSG_CHECKING(whether ifelse([$1],[CXX],[C++ compiler is g++],[C compiler is gcc]) 11 or higher)
+        GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS -I$TOP_SRCDIR/other")
+        GASNET_TRY_COMPILE_WITHWARN(GASNETI_C_OR_CXX([$1]),[
+          #include "gasnet_portable_platform.h"
+          #if PLATFORM_COMPILER_VERSION_LT(11,0,0)
+          #error
+          #endif
+        ],[],[ is_gcc11_or_higher=yes ],[ is_gcc11_or_higher=yes ],[ is_gcc11_or_higher=no ])
+        GASNET_POPVAR(CPPFLAGS)
+        AC_MSG_RESULT($is_gcc11_or_higher)
+        if test "$is_gcc11_or_higher" = yes; then
+          GASNET_TRY_WNO_FLAG([$1],[$3-Wno-array-bounds],
+                              [[$1]FLAGS="$[$1]FLAGS $3-Wno-array-bounds"])
+          GASNET_TRY_WNO_FLAG([$1],[$3-Wno-stringop-overflow],
+                              [[$1]FLAGS="$[$1]FLAGS $3-Wno-stringop-overflow"])
+        fi
     ;;
   esac
          # disable -Wformat if unsure we can support it for the printf implementation in use
@@ -497,6 +516,8 @@ case "$CC_FAMILY" in
     done
   ;;
   Intel) CCOPTFLAGS="-O3" ;;
+  NVHPC)
+    CCOPTFLAGS="-O1" ;; # TODO: restore -O2 if/when bugs are resolved? (see bug 4158)
   PGI)
     CCOPTFLAGS="-O2"  # Default
     # Work-aroung bug 2842: bad code gen by pgcc 10.5-0 through 10.7-0 at -O2
@@ -731,7 +752,6 @@ case "$CC_FAMILY" in
     case "$target_cpu" in
       sparc) GASNET_GET_ULTRASPARC_FLAGS(C,["-mcpu=ultrasparc3 -mtune=ultrasparc3" "-mcpu=ultrasparc -mtune=ultrasparc"]);;
       rs6000|powerpc*) GASNET_GET_PPC64_FLAGS(C,["-force_cpusubtype_ALL" "-Wa,-mppc64"]);;
-      ia64) GASNET_TRY_CFLAG([-mtls-size=64], [MISC_CFLAGS="$MISC_CFLAGS -mtls-size=64"]);;
     esac
     case "$target_os" in
       darwin*) 
@@ -760,11 +780,22 @@ case "$CC_FAMILY" in
     esac 
     AC_MSG_RESULT([$MISC_CFLAGS])
     ;;
-  Intel) MISC_CFLAGS="-wd177 -wd279"
-         GASNET_TRY_CFLAG([-wd1572],
-                          [MISC_CFLAGS="$MISC_CFLAGS -wd1572"])
+  Intel) # Note we need to support both older -wd and newer -diag-disable
+         # Setting (CC|MPI_CC)_WDFLAG simplifes doing so in later tests
+         pushdef([wdflag],$1[]_WDFLAG)
+         GASNET_TRY_CFLAG([-diag-disable=177], [wdflag='-diag-disable='], [wdflag='-wd'])
+         MISC_CFLAGS="${wdflag}177 ${wdflag}279"
+         GASNET_TRY_CFLAG([${wdflag}1572],
+                          [MISC_CFLAGS="$MISC_CFLAGS ${wdflag}1572"])
+         popdef([wdflag])
          ;;
-  PGI) MISC_CFLAGS="-Masmkeyword -Msignextend" # get inline assembly and sign-extended narrowing
+  NVHPC)
+       # TODO: are either `-M` options, inherited from PGI, still required?
+       # suppress large number of useless default warnings
+       # get inline assembly and sign-extended widening
+       MISC_CFLAGS="-w -Masmkeyword -Msignextend"
+       ;;
+  PGI) MISC_CFLAGS="-Masmkeyword -Msignextend" # get inline assembly and sign-extended widening
        # The following looks backwards, but is not.
        # PGI 20.1 introduced fine-grained warning control at the same time as
        # default-enabling a large number of useless warnings (on the level of
@@ -827,6 +858,7 @@ case "$CC_FAMILY" in
    Sun) gasnet_c99_flags="-xc99=all";;
   Cray) gasnet_c99_flags="'-h c99'";;
    PGI) gasnet_c99_flags="-c99 -c9x" ;;
+ NVHPC) gasnet_c99_flags="-c99" ;;
   # One of these should work for the rest:
   # std=c99 requests strict C99 conformance from gcc and look-alikes, whereas
   # std=gnu99 additionally requests GNU-specific language extensions.
@@ -1006,13 +1038,70 @@ case "$CC_FAMILY" in
   Pathscale) KEEPTMP_CFLAGS="-keep" ;;
   Open64) KEEPTMP_CFLAGS="-keep" ;;
   XLC) KEEPTMP_CFLAGS="-qlist" ;; # XXX: generates .lst w/ asm.  Can't find a way to preserve .i
-  PGI) KEEPTMP_CFLAGS="-Mkeepasm" ;; # XXX: only keeps .s.  Can't find a way to preserve .i
+  PGI|NVHPC) KEEPTMP_CFLAGS="-Mkeepasm" ;; # XXX: only keeps .s.  Can't find a way to preserve .i
   Intel) KEEPTMP_CFLAGS="-save-temps" ;; # XXX: only keeps .s.  Can't find a way to preserve .i
   Sun) KEEPTMP_CFLAGS="-keeptmp" ;;
   Cray) KEEPTMP_CFLAGS="-hkeepfiles" ;; # XXX: only keeps .s.  Can't find a way to preserve .i
   *) KEEPTMP_CFLAGS="" ;;
 esac
 AC_SUBST(KEEPTMP_CFLAGS)      # flags to preserve intermediate file (,i, .s, etc.)
+
+# Global opt-in to (semi-)automatic RPATH support
+GASNET_IF_ENABLED(rpath,
+  [Build GASNet libraries using RPATH for dependent libraries (disabled by default)],
+  enabled_rpath=yes, enabled_rpath=no)
+warn_missing_rpath=''
+
+# Probe(s) of compiler/linker support for RPATH
+#
+# TODO: warning-sensitive linker probe prior to making this ON-by-default
+#   The logic below current uses `AC_TRY_LINK()` to test for support for
+#   linker flags.  However, this is not capable of rejecting flags which
+#   induce warnings rather than failure.  The most straight-forward approach
+#   to checking for warnings is susceptible to persistent warnings (such as
+#   for impending license expiration).  Therefore, before RPATH support can be
+#   ON by default, this probe should use `GASNET_TRY_LDFLAG()`, which does not
+#   *yet* exist, but would be analogous to `GASNET_TRY_CFLAG()`.
+#   Example scenarios where this would improve our behavior:
+#   + Compilers/linkers which don't recognize flags we attempt, but only warn.
+#     This would fail the probe, possibly allowing a later flag to be chosen.
+#   + Conflicts (such as hypothetically with `-static`) which generate
+#     warnings that an otherwise supported behavior is unavailable.
+#     This would probably fail *all* the probes, resulting in disabling a
+#     "non-feature" that only generates warnings.
+#   + Might check if multiple instances of the same directory generates a warning.
+#     However, we don't have a good solution in mind if this is ever the case.
+#
+pushdef([cache_var],cv_prefix[]cc_rpath_option)
+AC_MSG_CHECKING([for rpath option to \$CC])
+AC_CACHE_VAL(cache_var, [
+  cache_var='unknown'
+  if test "$CC_FAMILY$CC_SUBFAMILY" = 'GNUNVIDIA'; then
+    wl='-Xlinker '
+  else
+    wl='-Wl,'
+  fi
+  for opt in "${wl}-rpath," "${wl}-rpath=" "${wl}-rpath ${wl}"; do
+    GASNET_PUSHVAR(LDFLAGS,"$opt${TMPDIR:-/tmp}")
+    AC_TRY_LINK([ #include <stdio.h> ],
+                [ puts("hello"); ],
+                [ cache_var="$opt" ],
+               )
+    GASNET_POPVAR(LDFLAGS)
+    if test x"$cache_var" != xunknown; then
+      break
+    fi
+  done
+  unset wl
+])
+if test x"$cache_var" = 'xunknown'; then
+  AC_MSG_RESULT(unknown)
+  unset cc_rpath_option
+else
+  AC_MSG_RESULT("${cache_var}DIR") # explicit (visible) quotes are intentional
+  cc_rpath_option="$cache_var"
+fi
+popdef([cache_var])
 
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
 segconfig=""
@@ -1144,7 +1233,7 @@ Sun)
 XLC)
     GASNET_CHECK_GCC_ASM($1, $2)
   ;;
-GNU|Intel|Pathscale|Open64|Clang|PGI|TINY)
+GNU|Intel|Pathscale|Open64|Clang|NVHPC|PGI|TINY)
     # Currently believe all of these support GCC-style inline ASM on all CPUs
     # where we use it.  If that is ever *not* the case then one should split
     # off the case for the relevant compiler and apply banlists or probes.
@@ -1546,7 +1635,8 @@ AC_DEFUN([GASNET_PACKAGE_CFLAGS],[
 
 dnl GASNET_PACKAGE_LDFLAGS(PREFIX, libnames, [extra flags], [noenv])
 dnl   Construct [PREFIX]_LDFLAGS to contain the proper "-L$[PREFIX]_HOME/lib{,32,64}" plus [extra flags]
-dnl   Special cases $[PREFIX]_HOME = "/usr" or "/" to omit the "-L..."
+dnl   Optionally includes an RPATH option, based on --enable-rpath and --(en|dis)able-[PREFIX]-rpath.
+dnl   Special cases $[PREFIX]_HOME = "/usr" or "/" to omit the "-L..." and rpath
 dnl The libnames arg is like AC_CHECK_LIB: just "foo" and "bar", not libfoo.a or libbar.so
 dnl If the optional [noenv] argument is non-empty then GASNET_ENV_DEFAULT in NOT used
 AC_DEFUN([GASNET_PACKAGE_LDFLAGS],[
@@ -1555,22 +1645,63 @@ AC_DEFUN([GASNET_PACKAGE_LDFLAGS],[
   pushdef([the_var],$1[]_LDFLAGS)
   pushdef([the_guess],$1[]_ldflags_guess)
   pushdef([extra_flags],ifelse(len([$3]),[0],[],[ $3]))  dnl prepends space only if non-empty
+  pushdef([rpath_opt],translit($1,'A-Z_','a-z-')-rpath)
+  pushdef([rpath_var],enable_[]translit($1,'A-Z-','a-z_')_rpath)
   dnl TODO - strengthen this if we can determine linker's default search path:
   case "$the_home" in
     /usr|/) the_guess='$3';;
-         *) for the_guess in "$the_home/lib${GASNETI_PTR_BITS}" "$the_home/lib"; do
+         *) for the_guess[]_dir in "$the_home/lib${GASNETI_PTR_BITS}" "$the_home/lib" ''; do
+              test -z "$the_guess[]_dir[]" && break
               for the_guess[]_lib in $2; do
                 for the_guess[]_suff in a so sl dylib la dll; do
-                  if test -r "$the_guess/lib$the_guess[]_lib.$the_guess[]_suff"; then break 3; fi
+                  if test -r "$the_guess[]_dir/lib$the_guess[]_lib.$the_guess[]_suff"; then break 3; fi
                 done
               done
             done
-            the_guess="-L$the_guess[]extra_flags";;
+          if test -n "$the_guess[]_dir[]"; then
+            the_guess="-L$the_guess[]_dir[]"
+            pushdef([GASNET_SUPPRESSHELP],1) # deferred to appear after help for [PREFIX]_LDFLAGS
+            GASNET_IF_ENABLED_WITH_AUTO(rpath_opt, [N/A],
+              [rpath_var="$the_guess[]_dir"],
+              [rpath_var=''],
+              [if test -z "$rpath_var"; then
+                 if test "x$enabled_rpath" = xyes; then
+                   rpath_var="$the_guess[]_dir"
+                 else
+                   rpath_var=''
+                 fi
+               fi])
+            popdef([GASNET_SUPPRESSHELP])
+            if test -n "$rpath_var"; then
+              if test "${cc_rpath_option:+set}" = set; then
+                the_guess="$the_guess $cc_rpath_option$rpath_var"
+              else
+                warn_missing_rpath="$warn_missing_rpath translit($1,'A-Z-','a-z_')"
+              fi
+            fi
+            the_guess="${the_guess}extra_flags"
+          else
+            the_guess='$3'
+          fi
+            ;;
   esac
+  dnl show_rpath_help captures whether with_expanded_[PKG]_LDFLAGS is defined
+  dnl prior to us (optionally) calling GASNET_ENV_DEFAULT, which *will* set it.
+  dnl This allows us to display the help for --enable-[pkg]-rpath immediately
+  dnl following the help (if any) for [PKG]_LDFLAGS, while ensuring that
+  dnl with_expanded_[PKG]_LDFLAGS will suppress both.
+  pushdef([show_rpath_help],ifdef(with_expanded_[]the_var,no,yes))
   ifelse(len([$4]),[0],[GASNET_ENV_DEFAULT(the_var, $the_guess)],[the_var=$the_guess])
+  ifelse(show_rpath_help,[yes],[
+    AC_ARG_ENABLE(rpath_opt,GASNET_OPTION_HELP((en|dis)able-rpath_opt,
+                  [Use RPATH in default the_var if appropriate (enabled by default with --enable-rpath)]))])
+  popdef([show_rpath_help])
   unset the_guess
+  unset the_guess[]_dir
   unset the_guess[]_lib
   unset the_guess[]_suff
+  popdef([rpath_var])
+  popdef([rpath_opt])
   popdef([extra_flags])
   popdef([the_guess])
   popdef([the_var])
@@ -1580,13 +1711,19 @@ AC_DEFUN([GASNET_PACKAGE_LDFLAGS],[
 
 ########################################################################
 ##
-## Modify CRAY_[LIB]_POST_LINK_OPTS envvars to reference the 'default'
+## GASNET_CRAY_FIX_LINK_OPTS(lib [, envvar])
 ##
-AC_DEFUN([GASNET_CRAY_POST_LINK_OPTS],[
-  pushdef([varname],CRAY_[]translit($1,'a-z','A-Z')[]_POST_LINK_OPTS)
+## Modify CRAY_[LIB]_POST_LINK_OPTS envvars to reference the 'default'
+## rather than the versioned directory normally set by environment modules
+##    lib: short name ('foo', not 'libfoo')
+## envvar: defaults to CRAY_[upcase(lib)]_POST_LINK_OPTS
+##
+AC_DEFUN([GASNET_CRAY_FIX_LINK_OPTS],[
+  GASNET_FUN_BEGIN([$0($@)])
+  pushdef([varname],ifelse(len([$2]),[0],[CRAY_[]translit($1,'a-z','A-Z')[]_POST_LINK_OPTS],[$2]))
   if test -n x"$varname"; then
-    cplo_tmp=`$PERL -e "\\\$_='$varname'; s,/$1/[[^/]]*/lib,/$1/default/lib,; print;"`
-    cplo_dir=`$PERL -e "\\\$_='$cplo_tmp'; m,-L(/opt/cray/$1/[[^ ]]*),; print \\\$[]1;"`
+    cplo_tmp=`$PERL -e "\\\$_='$varname'; s,/$1/[[^/]]*/lib,/$1/default/lib,g; print;"`
+    cplo_dir=`$PERL -e "\\\$_='$cplo_tmp'; m,-L([[^ ]]*/$1/[[^ ]]*),; print \\\$[]1;"`
     if test -d "$cplo_dir/."; then
       varname="$cplo_tmp"
     else
@@ -1594,12 +1731,14 @@ AC_DEFUN([GASNET_CRAY_POST_LINK_OPTS],[
     fi
   fi
   popdef([varname])
+  GASNET_FUN_END([$0])
 ])
+# Fix the POST_LINK_OPTS for libs required by aries-conduit
 GASNET_IF_DISABLED_NOHELP(cray-post-link-rewrite,[],[
-  GASNET_CRAY_POST_LINK_OPTS([pmi])
-  GASNET_CRAY_POST_LINK_OPTS([udreg])
-  GASNET_CRAY_POST_LINK_OPTS([ugni])
-  GASNET_CRAY_POST_LINK_OPTS([xpmem])
+  GASNET_CRAY_FIX_LINK_OPTS([pmi])
+  GASNET_CRAY_FIX_LINK_OPTS([udreg])
+  GASNET_CRAY_FIX_LINK_OPTS([ugni])
+  GASNET_CRAY_FIX_LINK_OPTS([xpmem])
 ])
 
 ########################################################################
@@ -1725,7 +1864,6 @@ case "$target_cpu" in # when chip revs differ, we should err on the larger size
   aarch64)  cache_line_guess=64 ;;
   rs6000)   cache_line_guess=32 ;;  # https://www.csee.umbc.edu/portal/help/architecture/rs6000_arch.ps
   powerpc*) cache_line_guess=128 ;; # https://www.7-cpu.com/cpu/Power8.html
-  ia64)     cache_line_guess=128 ;; # https://www.7-cpu.com/cpu/Itanium2.html
   sparc)    cache_line_guess=128 ;; # https://en.wikipedia.org/wiki/SPARC64_V
   *)        cache_line_guess=128 ;; # the default when we have no other info
 esac
@@ -2113,53 +2251,6 @@ if test "$target_cpu" = "aarch64" ; then
   ], [AC_DEFINE(GASNETI_HAVE_AARCH64_CNTVCT_EL0)])
 fi
 
-## Do toolchain and CPU support ia64 "cmp8xchg16"?
-GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS -I$TOP_SRCDIR/other") dnl for gasnet_portable_platform.h
-AC_MSG_CHECKING(for ia64 cmp8xchg16 support)
-AC_TRY_RUN([
-  #include "gasnet_portable_platform.h" /* For PLATFORM_{ARCH,COMPILER}_* */
-
-  #if !PLATFORM_ARCH_IA64
-    #error wrong CPU architecture
-  #elif PLATFORM_COMPILER_INTEL
-    #include <ia64intrin.h>
-    int cmp8xchg16(void volatile *ptr, unsigned long oldlo, unsigned long newlo, unsigned long newhi) {
-      return oldlo == _InterlockedCompare64Exchange128_acq(ptr, newhi, newlo, oldlo);
-    }
-  #elif PLATFORM_COMPILER_GNU
-    int cmp8xchg16(void volatile *ptr, unsigned long oldlo, unsigned long newlo, unsigned long newhi) {
-      register unsigned long tmp = newlo;
-      __asm__ __volatile__ (
-	"mov		ar.ccv=%1			\n\t"
-	"mov		ar.csd=%2;;			\n\t"
-	"cmp8xchg16.acq	%0=[%3],%0,ar.csd,ar.ccv	\n"
-	: "+r"(tmp) : "rO"(oldlo), "rO"(newhi), "r"(ptr) : "memory" );
-      return tmp == oldlo;
-    }
-  #else
-    #error compiler is unsupported
-  #endif
-
-  int main(void) {
-	unsigned long *array[3];
-	unsigned long *p = (void *)(((unsigned long)array + 15) & ~(unsigned long)15);
-	int swapped;
-
-	p[0] = 1234;
-	p[1] = 0;
-
-	swapped = cmp8xchg16(p, 1234, 5678, 0xabcdef);
-
-	/* Want SUCCESS and changed X */
-	return (!swapped || (p[0] != 5678) || (p[1] != 0xabcdef));
-  }
-], [AC_DEFINE(GASNETI_HAVE_IA64_CMP8XCHG16)
-    AC_MSG_RESULT(yes)
-], [AC_MSG_RESULT(no)
-], [ : # For now we assume "NO" when cross compiling
-    AC_MSG_RESULT(no)])
-GASNET_POPVAR(CPPFLAGS)
-
 ## Do CC/gas and CPU support "cmpxchg16b"?
 if test "$cross_compiling" = "yes" ; then
   GASNET_CROSS_VAR(GASNETI_HAVE_X86_CMPXCHG16B,HAVE_X86_CMPXCHG16B,[probe])
@@ -2175,7 +2266,8 @@ if test "$cross_compiling" = 'no' -o "$GASNETI_HAVE_X86_CMPXCHG16B" = 'probe' ; 
   #if PLATFORM_ARCH_X86_64
     #if PLATFORM_COMPILER_GNU || PLATFORM_COMPILER_INTEL || \
         PLATFORM_COMPILER_PATHSCALE || PLATFORM_COMPILER_PGI || \
-        PLATFORM_COMPILER_OPEN64 || PLATFORM_COMPILER_CLANG
+        PLATFORM_COMPILER_OPEN64 || PLATFORM_COMPILER_CLANG || \
+        PLATFORM_COMPILER_NVHPC
 
 	unsigned long *array[3];
 	volatile unsigned long *p = (void *)(((unsigned long)array + 15) & ~(unsigned long)15);
@@ -2224,6 +2316,7 @@ GASNET_TRY_CACHE_CHECK(for x86 EBX register, x86_ebx, [
     #if PLATFORM_COMPILER_GNU || PLATFORM_COMPILER_INTEL || \
         PLATFORM_COMPILER_PATHSCALE || PLATFORM_COMPILER_PGI || \
         PLATFORM_COMPILER_OPEN64 || \
+        PLATFORM_COMPILER_NVHPC || \
         PLATFORM_COMPILER_CLANG
       __asm__ __volatile__ ("push %0" : : "b" (0));
     #else
@@ -2358,6 +2451,15 @@ GASNET_IF_ENABLED(loopback-memsync, Force memory barriers for GASNet local (loop
   [AC_DEFINE(GASNETI_MEMSYNC_ON_LOOPBACK)])
 GASNET_IF_ENABLED(throttle-poll, throttle polling threads in multi-threaded configurations to reduce contention (experimental, only implemented in some conduits),
   [AC_DEFINE(GASNETI_THROTTLE_FEATURE_ENABLED)])
+
+GASNET_WITH(maxeps,
+       [Maximum number of endpoints per-process, subject to per-conduit limits (default is conduit-dependent)],
+       [if expr "${withval}" : "[[1-9]][[0-9]]*" >/dev/null; then
+          AC_DEFINE_UNQUOTED(GASNETI_MAXEPS_CONFIGURE, $withval)
+        else
+          AC_MSG_ERROR([--with-maxeps requires a positive integer argument])
+        fi],
+       [AC_MSG_ERROR([--with-maxeps requires a positive integer argument])])
 dnl GASNET_TOOLSONLY_FALSE_END
 
 # FORCED non-default implementations - used mainly for debugging
@@ -2822,7 +2924,7 @@ AC_DEFUN([GASNET_FH_CFLAGS],[
                ;;
         Intel) fh_cflags_default="-no-ansi-alias";;
           Sun) fh_cflags_default="-xalias_level=any";;
-          PGI) fh_cflags_default="-alias=traditional";;
+    NVHPC|PGI) fh_cflags_default="-alias=traditional";;
   esac
   GASNET_ENV_DEFAULT(FH_CFLAGS, [$fh_cflags_default], [C flags for building the Firehose memory registration library])
   AC_SUBST(FH_CFLAGS)
@@ -2971,7 +3073,6 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
        case "$target_cpu" in
          sparc) GASNET_GET_ULTRASPARC_FLAGS(CXX,["-mcpu=ultrasparc3 -mtune=ultrasparc3" "-mcpu=ultrasparc -mtune=ultrasparc"]);;
          rs6000|powerpc*) GASNET_GET_PPC64_FLAGS(CXX,["-force_cpusubtype_ALL" "-Wa,-mppc64"]);;
-         ia64) GASNET_TRY_CXXFLAG([-mtls-size=64], [MISC_CXXFLAGS="$MISC_CXXFLAGS -mtls-size=64"]);;
        esac
        # set CXXDEBUGFLAGS
        GASNET_PUSHVAR(CXXFLAGS,"${gxx_flag_prefix}-g3")
@@ -2983,6 +3084,13 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
        CXXDEBUGFLAGS="$CXXFLAGS"
        GASNET_POPVAR(CXXFLAGS)
     ;;
+  NVHPC)
+       # TODO: are either `-M` options, inherited from PGI, still required?
+       # suppress large number of useless default warnings
+       # get inline assembly and sign-extended widening
+       MISC_CXXFLAGS="-w -Masmkeyword -Msignextend"
+       CXXOPTFLAGS="-O1" # TODO: restore -O2 if/when bugs are resolved? (see bug 4158)
+       ;;
     PGI)   MISC_CXXFLAGS="-Masmkeyword -Msignextend"
            case "$GASNETI_PTR_BITS$target_os" in
              64darwin*) # PGI seems to have a different ABI
@@ -3000,9 +3108,12 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
              MISC_CXXFLAGS="-w $MISC_CXXFLAGS" # old versions of pgc++ have no way to indep control warnings
            ])
            ;;
-    Intel) MISC_CXXFLAGS="-wd654 -wd1125 -wd279"
-           GASNET_TRY_CXXFLAG([-wd1572],
-                          [MISC_CXXFLAGS="$MISC_CXXFLAGS -wd1572"])
+    Intel) # Note we need to support both older -wd and newer -diag-disable
+           # Setting CXX_WDFLAG simplifes doing so in later tests
+           GASNET_TRY_CXXFLAG([-diag-disable=654], [CXX_WDFLAG='-diag-disable='], [CXX_WDFLAG='-wd'])
+           MISC_CXXFLAGS="${CXX_WDFLAG}654 ${CXX_WDFLAG}1125 ${CXX_WDFLAG}279"
+           GASNET_TRY_CXXFLAG([${CXX_WDFLAG}1572],
+                          [MISC_CXXFLAGS="$MISC_CXXFLAGS ${CXX_WDFLAG}1572"])
            ;;
     XLC)
      GASNET_GET_PPC64_FLAGS(CXX)
@@ -3559,7 +3670,7 @@ else
     CONDUIT_HOME([UCX library], [ucx_info], [/opt/mellanox/ucx], [include/ucp/api/ucp.h])
     CONDUIT_CFLAGS
     GASNET_ENV_DEFAULT(UCX_LIBS, -lucp -lucs -luct -lucm)
-    CONDUIT_LDFLAGS(ucx)
+    CONDUIT_LDFLAGS(ucp)
     GASNET_SPLIT_LINKER_OPTS(UCX_LDFLAGS,UCX_LIBS)
 
     # Try to compile and link a basic UCX program
@@ -3690,20 +3801,48 @@ if test "$enabled_ibv" = yes; then
 
     CONDUIT_SPAWNER
 
+    # Multirail support options
+    # ibv-conduit/README explains the interactions
     gasnetc_ibv_max_hcas=2
-    GASNET_IF_ENABLED(ibv-multirail, [Enable IBV over multiple HCAs, see ibv-conduit/README (disabled by default)], enabled_ibv_multirail=yes, enabled_ibv_multirail=no)
+    enabled_ibv_multirail=no
     GASNET_WITH(ibv-max-hcas,
-       [maximum number of IBV HCAs to open for multi-rail support (default is 2)],
+       [Maximum number of IBV HCAs to open (default is 1)],
        [if expr "${withval}" : "[[1-9]][[0-9]]*" >/dev/null; then
           gasnetc_ibv_max_hcas="$withval"
+          enabled_ibv_multirail=yes
         else
           AC_MSG_ERROR([--with-ibv-max-hcas requires a positive integer argument])
         fi],
        [AC_MSG_ERROR([--with-ibv-max-hcas requires a positive integer argument])],
        [:])
+    GASNET_IF_ENABLED_WITH_AUTO(ibv-multirail,
+            [Enable IBV over multiple HCAs. Use of --with-ibv-max-hcas=N is prefered (see ibv-conduit/README for more info).],
+            enabled_ibv_multirail=yes, enabled_ibv_multirail=no)
     if test "$enabled_ibv_multirail" = yes; then
-      AC_DEFINE_UNQUOTED(GASNETC_IBV_MAX_HCAS, $gasnetc_ibv_max_hcas)
+      AC_DEFINE_UNQUOTED(GASNETC_IBV_MAX_HCAS_CONFIGURE, $gasnetc_ibv_max_hcas)
     fi
+
+    ibv_fenced_puts=0
+    GASNET_WITH(ibv-fenced-puts,
+      [Default value of GASNET_USE_FENCED_PUTS environment variable for ibv-conduit (default is 0)],
+      [
+       case $withval in
+         yes) ibv_fenced_puts=1;;
+         0|1) ibv_fenced_puts=$withval;;
+         *) AC_MSG_ERROR([Optional argument to --with-ibv-fenced-puts must be 0 or 1]);;
+       esac],
+      [ibv_fenced_puts=0],
+      [ibv_fenced_puts=1])
+    AC_DEFINE_UNQUOTED(GASNETC_IBV_FENCED_PUTS_CONFIGURE, $ibv_fenced_puts)
+
+    # Default GASNET_IBV_PORTS
+    GASNET_WITH(ibv-ports,
+        [Default value of GASNET_IBV_PORTS environment variable (default is empty)],
+        [if test "$withval" = 'yes'; then
+             AC_MSG_ERROR([--with-ibv-ports requires an argument])
+         else
+             AC_DEFINE_UNQUOTED(GASNETC_IBV_PORTS_CONFIGURE, "$withval")
+         fi])
 
     CONDUIT_PHYSMEM("2/3")
 
@@ -3739,11 +3878,11 @@ if test "$enabled_ibv" = yes; then
           [enabled_ibv_odp="no"; AC_DEFINE(GASNETC_IBV_ODP_DISABLED)],
           [enabled_ibv_odp="yes"])
       if test "$enabled_ibv_odp" = yes; then
+        have_ibv_odp=no
         GASNET_PUSHVAR(CFLAGS,"$CFLAGS $IBV_CFLAGS $GASNET_THREAD_DEFINES")
         GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $IBV_LDFLAGS")
         GASNET_PUSHVAR(LIBS,"$LIBS $IBV_LIBS $GASNET_THREAD_LIBS")
-        GASNET_TRY_CACHE_LINK(for ibv ODP support, ibv_odp_support, [
-          #include <infiniband/verbs.h>
+        GASNET_TRY_CACHE_LINK([for ibv ODP support (Mellanox)], ibv_odp_support_mlnx, [
           #include <infiniband/verbs_exp.h>
         ], [
           struct ibv_exp_device_attr attr;
@@ -3757,7 +3896,25 @@ if test "$enabled_ibv" = yes; then
           x.exp_access = IBV_EXP_ACCESS_ON_DEMAND | IBV_EXP_ACCESS_LOCAL_WRITE;
           x.length = IBV_EXP_IMPLICIT_MR_SIZE;
           struct ibv_mr *mr = ibv_exp_reg_mr(&x);
-        ], [have_ibv_odp=yes], [have_ibv_odp=no])
+        ], [
+          have_ibv_odp=yes
+          AC_DEFINE(GASNETC_IBV_ODP_MLNX)
+        ])
+        GASNET_TRY_CACHE_LINK(for ibv ODP support (RDMA Core), ibv_odp_support_core, [
+          #include <infiniband/verbs.h>
+        ], [
+          struct ibv_device_attr_ex attr;
+          attr.comp_mask = 0;
+          int ret = ibv_query_device_ex(NULL, NULL, &attr);
+          int ok = (attr.odp_caps.general_caps & IBV_ODP_SUPPORT) &&
+                   (attr.odp_caps.general_caps & IBV_ODP_SUPPORT_IMPLICIT) &&
+                   (attr.odp_caps.per_transport_caps.rc_odp_caps & IBV_ODP_SUPPORT_READ) &&
+                   (attr.odp_caps.per_transport_caps.rc_odp_caps & IBV_ODP_SUPPORT_WRITE);
+          struct ibv_mr *mr = ibv_reg_mr(NULL, NULL, SIZE_MAX, IBV_ACCESS_ON_DEMAND | IBV_ACCESS_LOCAL_WRITE);
+        ], [
+          have_ibv_odp=yes
+          AC_DEFINE(GASNETC_IBV_ODP_CORE)
+        ])
         GASNET_POPVAR(CFLAGS)
         GASNET_POPVAR(LDFLAGS)
         GASNET_POPVAR(LIBS)
@@ -3768,19 +3925,21 @@ if test "$enabled_ibv" = yes; then
         fi
       fi
 
+    GASNET_IF_DISABLED([ibv-serialize-poll-cq],
+                       [Disable serialization of CQ polling in ibv-conduit (enabled by default)],
+                       [:], [AC_DEFINE(GASNETC_IBV_SERIALIZE_POLL_CQ_CONFIGURE)])
+
     GASNET_WITH(ibv-max-medium,
        [Specify gasnet_AMMaxMedium() for ibv-conduit (default 65536)],
        [case "$withval" in
           1024|2048|4096|8192|16384|32768|65536|131072|262144)
              ibv_max_medium="$withval";;
           *)
-             GASNET_ERR_SAVE()
              AC_MSG_ERROR([--with-ibv-max-medium="$withval" is not legal.  Value must be a power-of-two between 1024 and 262144, inclusive.])
              ;;
         esac
        ],
-       [GASNET_ERR_SAVE()
-        AC_MSG_ERROR([--with-ibv-max-medium must be a power-of-two between 1024 and 262144, inclusive.])],
+       [AC_MSG_ERROR([--with-ibv-max-medium must be a power-of-two between 1024 and 262144, inclusive.])],
        [ibv_max_medium=65536])
     AC_DEFINE_UNQUOTED(GASNETC_IBV_MAX_MEDIUM, [$ibv_max_medium])
   fi
@@ -3828,38 +3987,9 @@ if test "$enabled_aries" = yes; then
   GNI_LDFLAGS=
   GNI_LIBS=
 
-  # Look for pmi_cray.h, allowing for the possibility we are not using the wrapper compiler
-  # Setting $have_pmi_cray squashes a later probe for pmi.h.
-  # Therefore we perform the equivalent (but not quite identical) work here
-  pushdef([with_expanded_PMI_HOME],1)    dnl suppress help here, but permit later
-  pushdef([with_expanded_PMI_LDFLAGS],1)
-  pushdef([with_expanded_PMI_LIBS],1)
-  GASNET_ENV_DEFAULT(PMI_HOME, )
-  if test -n "$PMI_HOME"; then
-    GASNET_PACKAGE_CFLAGS(PMI, [], noenv)
-    GASNET_PACKAGE_LDFLAGS(PMI, pmi, [], noenv)
-  else
-    GASNET_ENV_DEFAULT(PMI_LDFLAGS, "$CRAY_PMI_POST_LINK_OPTS")
-  fi
-  GASNET_ENV_DEFAULT(PMI_LIBS, "-lpmi")
-  popdef([with_expanded_PMI_LIBS])
-  popdef([with_expanded_PMI_LDFLAGS])
-  popdef([with_expanded_PMI_HOME])
-
-  PMI_SPAWNER_CFLAGS=$PMI_CFLAGS;    unset PMI_CFLAGS
-  PMI_SPAWNER_LDFLAGS=$PMI_LDFLAGS;  unset PMI_LDFLAGS
-  PMI_SPAWNER_LIBS=$PMI_LIBS;        unset PMI_LIBS
-  GASNET_SPLIT_LINKER_OPTS(PMI_SPAWNER_LDFLAGS, PMI_SPAWNER_LIBS)
-
-  GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $PMI_SPAWNER_CFLAGS")
-  GASNET_CHECK_CRAY_HEADER([pmi_cray.h],[CRAY_PMI_INCLUDE_OPTS],[
-      have_pmi_cray_h=yes
-      # Found in header search path (possibly due to PMI_SPAWNER_CFLAGS)
-    ],[
-      have_pmi_cray_h=yes
-      PMI_SPAWNER_CFLAGS="$PMI_SPAWNER_CFLAGS $CRAY_PMI_INCLUDE_OPTS"
-    ])
-  GASNET_POPVAR(CPPFLAGS)
+  # We previously setup PMI spawning here, but now the probe for Cray PMI
+  # support has been unified with the generic pmi-spawner probe.
+  # That logic will still ensure lack of Cray PMI will be fatal.
 
   # Look for gni_pub.h, allowing for the possibility we are not using the wrapper compiler
   GASNET_CHECK_CRAY_HEADER([gni_pub.h],[CRAY_GNI_HEADERS_INCLUDE_OPTS],[:],[
@@ -3891,24 +4021,25 @@ if test "$enabled_aries" = yes; then
 
   if test $have_aries = yes; then
     GASNET_SPLIT_LINKER_OPTS(GNI_LDFLAGS,GNI_LIBS)
-    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS ${GNI_LDFLAGS} $PMI_SPAWNER_LDFLAGS")
-    GASNET_PUSHVAR(LIBS,"$LIBS ${GNI_LIBS} $PMI_SPAWNER_LIBS")
-    GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $GNI_CFLAGS $PMI_SPAWNER_CFLAGS")
+    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS ${GNI_LDFLAGS}")
+    GASNET_PUSHVAR(LIBS,"$LIBS ${GNI_LIBS}")
+    GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $GNI_CFLAGS")
     GASNET_TRY_CACHE_LINK(for working Aries configuration, aries_works, [
       #include <stddef.h>
       #include <stdint.h>
       #include <gni_pub.h>
-      #include <pmi_cray.h>
     ], [
       gni_cdm_handle_t cdm_hndl;
       gni_return_t rc = GNI_CdmDestroy(cdm_hndl);
-
-      int localranks;
-      int ret = PMI_Get_numpes_on_smp(&localranks); /* Cray extension */
     ], [ : ], [ have_aries=no; GASNET_ERR_SAVE() ] )
     GASNET_POPVAR(LDFLAGS)
     GASNET_POPVAR(LIBS)
     GASNET_POPVAR(CPPFLAGS)
+  fi
+
+  if test $have_aries = yes; then
+    # require PMI spawner probe to find Cray's version
+    force_pmi=yes
   fi
 
   GASNET_IF_ENABLED_WITH_AUTO(aries-udreg,
@@ -3923,7 +4054,6 @@ if test "$enabled_aries" = yes; then
         GNI_CFLAGS="$GNI_CFLAGS $CRAY_UDREG_INCLUDE_OPTS"
       ],[
         if test "$gni_udreg" = yes; then
-          GASNET_ERR_SAVE()
           AC_MSG_ERROR([--enable-aries-udreg was passed but udreg_pub.h header was not found])
         fi
       ])
@@ -3931,21 +4061,20 @@ if test "$enabled_aries" = yes; then
   fi
 
   GASNET_WITH(aries-max-medium,
-     [specify gasnet_AMMaxMedium() (default 4032)],
-     [if expr "$withval" : '[[0-9]]*$' >/dev/null 2>&1 && \
-         expr \( "$withval" / 64 \) \* 64 = "$withval" >/dev/null 2>&1 &&
-         expr "$withval" '>=' 512  >/dev/null 2>&1 &&
-         expr "$withval" '<' 65536  >/dev/null 2>&1 ; then
+     [specify default value of gasnet_AMMaxMedium() (default 4032)],
+     [tmpval=`echo "$withval" | $AWK '{sub(/^\+/,"");}1'` # strip leading '+'
+      if expr "$tmpval" : '[[0-9]]*$' >/dev/null 2>&1 && \
+         expr \( "$tmpval" / 64 \) \* 64 = "$tmpval" >/dev/null 2>&1 &&
+         expr "$tmpval" '>=' 512  >/dev/null 2>&1 &&
+         expr "$tmpval" '<=' 65408  >/dev/null 2>&1 ; then
         gni_max_medium="$withval"
       else
-        GASNET_ERR_SAVE()
-        AC_MSG_ERROR([--with-aries-max-medium="$withval" is not legal.  Value must be a multiple of 64, between 512 and 65472, inclusive.])
+        AC_MSG_ERROR([--with-aries-max-medium="$withval" is invalid.  Value must be a multiple of 64, between 512 and 65408, inclusive. Unless prefixed with '+', the value will be rounded-down to the next recommended value. See the aries-conduit README for additional details.])
       fi
      ],
-     [GASNET_ERR_SAVE()
-      AC_MSG_ERROR([--with-aries-max-medium must be a multiple of 64 and no smaller than 512])],
+     [AC_MSG_ERROR([--with-aries-max-medium must be a multiple of 64 and no smaller than 512])],
      [gni_max_medium=4032])
-  AC_DEFINE_UNQUOTED(GASNETC_GNI_MAX_MEDIUM, [$gni_max_medium])
+  AC_DEFINE_UNQUOTED(GASNETC_GNI_MAX_MEDIUM_DFLT, ["$gni_max_medium"])
 
   GASNET_IF_ENABLED(aries-multi-domain, [Use experimental multi-domain support in PAR builds], [AC_DEFINE(GASNETC_GNI_MULTI_DOMAIN)])
 
@@ -3960,7 +4089,7 @@ AM_CONDITIONAL(USE_ARIES_CONDUIT, test "$enabled_aries$have_aries" = yesyes)
 #--------------------------------------------------------------------------------------------------------
 # Libfabric Conduit
 
-CONDUIT_BEGIN(ofi,g1,[Portable OpenFabrics Interfaces conduit (ofi)])
+CONDUIT_BEGIN(ofi,exp,[Portable OpenFabrics Interfaces conduit (ofi)])
 if test "$enabled_ofi" = yes; then
   have_ofi=yes
 
@@ -3981,9 +4110,24 @@ if test "$enabled_ofi" = yes; then
               rc = fi_getinfo(FI_VERSION(FI_MAJOR_VERSION,FI_MINOR_VERSION),
                               0, 0, 0, 0, 0);
             }], [ : ], [ have_ofi=no; GASNET_ERR_SAVE() ] )
+
     GASNET_POPVAR(CFLAGS)
     GASNET_POPVAR(LDFLAGS)
     GASNET_POPVAR(LIBS)
+  fi
+
+  if test "$have_ofi" = yes; then
+    # What we actually care about is GASNETI_HAVE_SPINLOCK, which is available
+    # whenever !GASNETI_ATOMICOPS_NOT_SIGNALSAFE
+    # For all platforms of likely interest, checking (compiler||native) is sufficient.
+    AC_MSG_CHECKING(for appropriate atomics support required by ofi-conduit)
+    CHECK_ATOMICS([native compiler],[
+      AC_MSG_RESULT(yes)
+    ],[
+      AC_MSG_RESULT(no)
+      GASNET_MSG_WARN([ofi-conduit requires native atomicops, but $check_atomics_msg])
+      have_ofi=no
+    ])
   fi
 
   if test "$have_ofi" = yes; then
@@ -4292,60 +4436,110 @@ AM_CONDITIONAL(HAVE_BOOTSTRAP_SSH, test "$have_fork" = yes)
 GASNET_IF_ENABLED_WITH_AUTO(pmi, [Enable/disable PMI support for job spawning],
   [enable_pmi=yes; force_pmi=yes], [enable_pmi=no], [enable_pmi=probe])
 
+# If user specifies a PMI version, then we will not probe for others
+unset using_pmi_version
+GASNET_WITH(pmi-version, [PMI version (x, 1, 2 or cray)] , [
+    case "$withval" in
+      1|2|x|cray) using_pmi_version="$withval";;
+      *) GASNET_MSG_ERROR([Argument to --with-pmi-version must be 'x', '1', '2', or 'cray']);;
+    esac
+], [
+    GASNET_MSG_WARN([Ignoring --without-pmi-version])
+])
+if test "$enabled_aries$have_aries" = yesyes; then
+  if test -n "$using_pmi_version" && test "$using_pmi_version" != 'cray'; then
+    GASNET_MSG_WARN([Ignoring --with-pmi-version=$using_pmi_version in favor of Cray PMI required by aries-conduit])
+  fi
+  using_pmi_version=cray
+fi
+
 # Check for header matching the selected lib
 # TODO: fragile if multiple PMI libs are installed
 AC_DEFUN([GASNET_PMI_SPAWNER_CFLAGS], [
-    for pmi_headers in "$PMI_HOME/include/slurm" "$PMI_HOME/include/portals4" "$PMI_HOME/include" 'no'; do
+    GASNET_FUN_BEGIN([$0($@)])
+    AC_MSG_CHECKING(for location of $1)
+    for pmi_headers in "$PMI_HOME/include/slurm" "$PMI_HOME/include/portals4" "$PMI_HOME/include" ''; do
+      test -z "${pmi_headers}" && break
       test -f "${pmi_headers}/$1" && break
     done
-    if test "${pmi_headers}" = no; then
+    if test -z "${pmi_headers}"; then
       have_pmi=no
+      pmi_headers='not found'
     elif test "${pmi_headers}" != '/usr/include'; then
       PMI_SPAWNER_CFLAGS="-I${pmi_headers}"
     fi
+    AC_MSG_RESULT(${pmi_headers})
+    GASNET_FUN_END([$0])
 ])
 
 have_pmi=no
-if test -n "$have_pmi_cray_h"; then
-  with_pmi='no'
-  have_pmi='yes'
-  pmi_version=' (Cray)'
-elif test "$enable_pmi" != 'no'; then
-  pmi_guess=/usr
+if test "$enable_pmi" != 'no'; then
+  # On a Cray EX the module is named 'cray-pmi', which is sufficiently unique:
+  expr ":${LOADEDMODULES}" : ".*:cray-pmi/" >/dev/null 2>&1
+  loaded_cray_pmi=$?  # 0 is success
+  # On a Cray XC the module is named 'pmi', which is insufficiently unique, so we look for
+  # both 'pmi' and 'craype'.
+  ( expr ":${LOADEDMODULES}" : ".*:pmi/" && \
+    expr ":${LOADEDMODULES}" : ".*:craype/" ) >/dev/null 2>&1
+  loaded_pmi_plus_craype=$?  # 0 is success
+  # Auto-detect Cray PMI prefix if either environment module loaded, *unless* non-Cray version requested
+  if ( test "$loaded_cray_pmi" = 0 || test "$loaded_pmi_plus_craype" = 0 ) && \
+     ( test "$using_pmi_version" = 'cray' || test -z "$using_pmi_version" ); then
+    # Several places to look.
+    for dir in `expr "x${CRAY_PMI_INCLUDE_OPTS}" : 'x-I\([[^ ]]*\)' 2>/dev/null` \
+               `expr "x${CRAY_PMI_POST_LINK_OPTS}" : 'x-L\([[^ ]]*\)' 2>/dev/null` \
+               "$CRAY_PMI_PREFIX/dummy" '/opt/cray/pe/pmi/default/dummy'; do
+      if test -n "$dir"; then
+        pmi_guess=`dirname "$dir" 2>/dev/null`
+        if test -e "$pmi_guess/include/pmi_cray.h"; then
+          break
+        fi
+      fi
+    done
+  else
+    pmi_guess='/usr'
+  fi
   GASNET_ENV_DEFAULT(PMI_HOME, $pmi_guess, [Install prefix of PMI library])
 
-  case "$PMI_HOME" in
-    /usr|/) pmi_ldflags_guess='' ;;
-    *)
-      if test -d "$PMI_HOME/lib${GASNETI_PTR_BITS}"; then
-        pmi_ldflags_guess="-L$PMI_HOME/lib${GASNETI_PTR_BITS}"
-      else
-        pmi_ldflags_guess="-L$PMI_HOME/lib"
-      fi
-    ;;
-  esac
+  GASNET_PACKAGE_LDFLAGS(PMI, [pmi pmi2 pmix])
+  PMI_SPAWNER_LDFLAGS=$PMI_LDFLAGS; unset PMI_LDFLAGS
 
-  GASNET_ENV_DEFAULT(PMI_LDFLAGS, $pmi_ldflags_guess)
-  PMI_SPAWNER_LDFLAGS=$PMI_LDFLAGS
-  unset PMI_LDFLAGS
-
-  # If user specifies one PMI version then disqualify the other
-  GASNET_WITH(pmi-version, [PMI version (x, 1, or 2)] , [
-    case "$withval" in
-      1) use_pmi1=yes;;
-      2) use_pmi2=yes;;
-      x) use_pmix=yes;;
-      *) GASNET_MSG_ERROR([Argument to --with-pmi-version must be 'x', '1' or '2']);;
-    esac
-    with_pmi_version="$withval"
-  ], [
-    GASNET_MSG_WARN([Ignoring --without-pmi-version])
-  ])
-
-  # Check for libs unless disqualifed by --with-pmi-version=
+  # Check for various implementations' libs unless disqualifed by --with-pmi-version=
   GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $PMI_SPAWNER_LDFLAGS")
   GASNET_ENV_DEFAULT(PMI_LIBS, probe)
-  if test -z "${use_pmi1+set}" && test -z "${use_pmi2+set}"; then
+  ## Cray PMI
+  if test "$using_pmi_version" = 'cray' || test -z "$using_pmi_version"; then
+    GASNET_PUSHVAR(LIBS,"")
+    if test "$PMI_LIBS" = 'probe'; then
+      # At the time of writting, XC systems use libpmi and EX systems use libpmi2.
+      # Use of AC_SEARCH_LIBS() will yield a "none required" result when using
+      # Cray's `cc` wrapper, which could then require pmi environment module to
+      # be loaded at application link time.  The following "just works" because,
+      # when using the wrapper, it reduces to checking if the library exists.
+      AC_CHECK_LIB(pmi2, PMI_Get_nidlist_ptr,
+                   [have_pmi=yes; LIBS="-lpmi2"],
+                   [AC_CHECK_LIB(pmi, PMI_Get_nidlist_ptr,
+                                 [have_pmi=yes; LIBS="-lpmi"])])
+    else
+      LIBS="$PMI_LIBS"
+      AC_CHECK_FUNC(PMI_Get_nidlist_ptr, [have_pmi=yes])
+    fi
+    if test "$have_pmi" = 'yes'; then
+      GASNET_PMI_SPAWNER_CFLAGS([pmi_cray.h])
+    fi
+    if test "$have_pmi" = 'yes'; then
+      using_pmi_version=cray
+      pretty_pmi_version=' (Cray)'
+      AC_DEFINE(HAVE_PMI_CRAY_H)
+      PMI_SPAWNER_LIBS="$LIBS"
+      GASNET_IF_DISABLED_NOHELP(cray-post-link-rewrite,[],
+        [GASNET_CRAY_FIX_LINK_OPTS([pmi],[PMI_SPAWNER_LDFLAGS])]
+      )
+    fi
+    GASNET_POPVAR(LIBS)
+  fi
+  ## PMIx
+  if test "$using_pmi_version" = 'x' || test -z "$using_pmi_version"; then
     GASNET_PUSHVAR(LIBS,"")
     if test "$PMI_LIBS" = 'probe'; then
       AC_SEARCH_LIBS(PMIx_Init, [pmix], [have_pmi=yes])
@@ -4381,14 +4575,15 @@ elif test "$enable_pmi" != 'no'; then
       GASNET_POPVAR(CFLAGS)
     fi
     if test "$have_pmi" = 'yes'; then
-      use_pmix=yes
-      pmi_version=' (version=x)'
+      using_pmi_version=x
+      pretty_pmi_version=' (version=x)'
       AC_DEFINE(HAVE_PMIX_H)
       PMI_SPAWNER_LIBS="$LIBS"
     fi
     GASNET_POPVAR(LIBS)
   fi
-  if test -z "${use_pmi1+set}" && test -z "${use_pmix+set}"; then
+  ## PMI2
+  if test "$using_pmi_version" = '2' || test -z "$using_pmi_version"; then
     GASNET_PUSHVAR(LIBS,"")
     if test "$PMI_LIBS" = 'probe'; then
       AC_SEARCH_LIBS(PMI2_Init, [pmi2 mpich], [have_pmi=yes])
@@ -4400,8 +4595,8 @@ elif test "$enable_pmi" != 'no'; then
       GASNET_PMI_SPAWNER_CFLAGS([pmi2.h])
     fi
     if test "$have_pmi" = 'yes'; then
-      use_pmi2=yes
-      pmi_version=' (version=2)'
+      using_pmi_version=2
+      pretty_pmi_version=' (version=2)'
       AC_DEFINE(HAVE_PMI2_H)
       PMI_SPAWNER_LIBS="$LIBS"
       GASNET_IF_ENABLED(pmi2-fast-barrier, Use PMI2_KVS_fence as barrier. This may not work with all PMI2 implementations,
@@ -4409,7 +4604,8 @@ elif test "$enable_pmi" != 'no'; then
     fi
     GASNET_POPVAR(LIBS)
   fi
-  if test -z "${use_pmi2+set}" && test -z "${use_pmix+set}"; then
+  ## PMI (aka PMI1)
+  if test "$using_pmi_version" = '1' || test -z "$using_pmi_version"; then
     GASNET_PUSHVAR(LIBS,"")
     if test "$PMI_LIBS" = 'probe'; then
       AC_SEARCH_LIBS(PMI_Init, [pmi mpich portals_runtime], [have_pmi=yes])
@@ -4421,8 +4617,8 @@ elif test "$enable_pmi" != 'no'; then
       GASNET_PMI_SPAWNER_CFLAGS([pmi.h])
     fi
     if test "$have_pmi" = 'yes'; then
-      use_pmi1=yes
-      pmi_version=' (version=1)'
+      using_pmi_version=1
+      pretty_pmi_version=' (version=1)'
       AC_DEFINE(HAVE_PMI_H)
       PMI_SPAWNER_LIBS="$LIBS"
     fi
@@ -4469,9 +4665,12 @@ elif test -z "$force_pmi"; then
   PMI_SPAWNER_LIBS=""
   PMI_SPAWNER_LDFLAGS=""
   PMI_SPAWNER_CFLAGS=""
-elif test -n "${with_pmi_version+set}"; then
+elif test "$enabled_aries$have_aries" = yesyes; then
   AC_MSG_RESULT(no)
-  GASNET_MSG_ERROR([Requested PMI version $with_pmi_version could not be found])
+  GASNET_MSG_ERROR([Cray PMI could not be found, but is required by aries-conduit])
+elif test -n "${using_pmi_version+set}"; then
+  AC_MSG_RESULT(no)
+  GASNET_MSG_ERROR([Requested PMI version $using_pmi_version could not be found])
 else
   AC_MSG_RESULT(no)
   GASNET_MSG_ERROR([Requested PMI support could not be found])
@@ -4689,6 +4888,290 @@ if test "$use_printstack" != no; then
   fi
 fi
 
+########################################################################
+dnl GASNET_TOOLSONLY_FALSE_BEGIN
+GASNET_HELP_OUTPUT([
+Memory-kinds options:])
+
+GASNET_IF_ENABLED(memory-kinds,
+        [Prototype support for memory kinds (transfers to/from device memory).  Enables default auto-detection of all device type applicable to the target platform.  Individual --enable-kind-* options have precedence.],
+        [enable_mk_default=probe], [enable_mk_default=no])
+
+# This is potentially used CUDA_UVA and by HIP
+# So we'll factor it to avoid repeats in ouptut
+unset checked_pkg_cuda
+AC_DEFUN([CHECK_PKG_CUDA],[
+  if test "${checked_pkg_cuda-unset}" = unset; then
+    checked_pkg_cuda=y
+    GASNET_PACKAGE_HOME(CUDA, [CUDA toolkit], [nvcc], [/usr/local/cuda], [include/cuda.h])
+    GASNET_PACKAGE_CFLAGS(CUDA)
+    GASNET_ENV_DEFAULT(CUDA_LIBS, -lcuda)
+    GASNET_PACKAGE_LDFLAGS(CUDA, cuda)
+    GASNET_SPLIT_LINKER_OPTS(CUDA_LDFLAGS,CUDA_LIBS)
+  fi
+])
+
+# GEX_MK_CLASS_CUDA_UVA
+enable_mk_cuda_uva_implicit=no
+GASNET_IF_ENABLED_WITH_AUTO(kind-cuda-uva,
+        [Support for memory kinds on UVA-capable CUDA devices (auto-detected with --enable-memory-kinds, otherwise disabled)],
+        [enable_mk_cuda_uva="yes"; force_mk_cuda_uva="yes"],
+        [enable_mk_cuda_uva="no"], [
+         if test "x$enable_kind_cuda_uva" = 'xprobe'; then
+           enable_mk_cuda_uva="probe"
+         elif test "$GASNETI_PTR_BITS" = 32; then
+           enable_mk_cuda_uva="no"
+         else
+           enable_mk_cuda_uva="$enable_mk_default"
+           enable_mk_cuda_uva_implicit=yes
+         fi
+        ])
+unset have_mk_cuda_uva
+if test "$enable_mk_cuda_uva" != "no"; then
+  AC_MSG_CHECKING(for target having CUDA UVA memory kinds support)
+  if test "$GASNETI_PTR_BITS" = 32; then
+    AC_MSG_RESULT([no (32-bit targets are not supported)])
+    have_mk_cuda_uva=no
+  else
+    have_mk_cuda_uva=no
+    case "$target_cpu:$target_os" in
+      x86_64:linux*)    have_mk_cuda_uva='yes';;
+      powerpc*:linux*)  if test "$WORDS_BIGENDIAN" = '0'; then have_mk_cuda_uva='yes'; fi;;
+      aarch64:linux*)   have_mk_cuda_uva='maybe';;
+    esac
+    if test "$have_mk_cuda_uva" = 'no'; then
+      AC_MSG_RESULT([no (unsupported or unrecognized target $target)])
+    else
+      AC_MSG_RESULT([$have_mk_cuda_uva])
+    fi
+  fi
+
+  if test "$have_mk_cuda_uva" != "no"; then
+    # TODO: Can/should we scrape nvcc as UPC++ does?
+    CHECK_PKG_CUDA()
+
+    # Try to compile and link a basic program using the CUDA Driver API
+    GASNET_PUSHVAR(CFLAGS,"$CFLAGS $CUDA_CFLAGS")
+    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $CUDA_LDFLAGS")
+    GASNET_PUSHVAR(LIBS,"$LIBS $CUDA_LIBS")
+
+    GASNET_TRY_CACHE_LINK(for working CUDA configuration, libcuda_works, [
+      #include <cuda.h>
+    ], [
+      cuInit(0);
+      CUdevice dev = 0;
+      CUcontext ctx;
+      CUresult res = cuDevicePrimaryCtxRetain(&ctx, dev);
+      int isUVA;
+      cuDeviceGetAttribute(&isUVA, CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING, dev);
+      CUpointer_attribute attrs[[3]] = { CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+                                       CU_POINTER_ATTRIBUTE_IS_MANAGED,
+                                       CU_POINTER_ATTRIBUTE_CONTEXT };
+    ], [ : ], [ have_mk_cuda_uva=no; GASNET_ERR_SAVE() ])
+
+    GASNET_POPVAR(LIBS)
+    GASNET_POPVAR(LDFLAGS)
+    GASNET_POPVAR(CFLAGS)
+  fi
+
+  # If the probe(s) above passed on a target identified as "maybe" having
+  # support, then upgrade to "yes" with a warning.
+  if test "$have_mk_cuda_uva" = "maybe"; then
+      have_mk_cuda_uva=yes
+      GASNET_MSG_WARN([CUDA UVA memory kinds support enabled for $target, which may not be officially supported])
+  fi
+
+  if test "$have_mk_cuda_uva" = "yes"; then
+    AC_DEFINE(GASNETI_MK_CLASS_CUDA_UVA_ENABLED)
+    CUDA_UVA_CFLAGS="$CUDA_CFLAGS"
+    CUDA_UVA_LDFLAGS="$CUDA_LDFLAGS"
+    CUDA_UVA_LIBS="$CUDA_LIBS"
+  elif test "$force_mk_cuda_uva" = "yes"; then
+    GASNET_MSG_ERROR([CUDA UVA memory kinds support was requested with --enable-kind-cuda-uva but is not available])
+  else
+    unset CUDA_UVA_CFLAGS
+    unset CUDA_UVA_LDFLAGS
+    unset CUDA_UVA_LIBS
+  fi
+fi
+AC_SUBST(CUDA_UVA_CFLAGS)
+AC_SUBST(CUDA_UVA_LDFLAGS)
+AC_SUBST(CUDA_UVA_LIBS)
+AM_CONDITIONAL(HAVE_MK_CLASS_CUDA_UVA, test "$have_mk_cuda_uva" = "yes")
+
+# GEX_MK_CLASS_HIP
+enable_mk_hip_implicit=no
+GASNET_IF_ENABLED_WITH_AUTO(kind-hip,
+        [support for memory kinds on HIP-compatible devices (auto-detected with --enable-memory-kinds, otherwise disabled)],
+        [enable_mk_hip="yes"; force_mk_hip="yes"],
+        [enable_mk_hip="no"], [
+         if test "x$enable_kind_hip" = 'xprobe'; then
+           enable_mk_hip="probe"
+         elif test "$GASNETI_PTR_BITS" = 32; then
+           enable_mk_hip="no"
+         else
+           enable_mk_hip="$enable_mk_default"
+           enable_mk_hip_implicit=yes
+         fi
+        ])
+unset have_mk_hip
+if test "$enable_mk_hip" != "no"; then
+  AC_MSG_CHECKING(for target having HIP memory kinds support)
+  if test "$GASNETI_PTR_BITS" = 32; then
+    AC_MSG_RESULT([no (32-bit targets are not supported)])
+    have_mk_hip=no
+  else
+    have_mk_hip=no
+    case "$target_cpu:$target_os" in
+      x86_64:linux*)    have_mk_hip='yes';;
+      powerpc*:linux*)  have_mk_hip='maybe';;
+      aarch64:linux*)   have_mk_hip='maybe';;
+    esac
+    if test "$have_mk_hip" = 'no'; then
+      AC_MSG_RESULT([no (unsupported or unrecognized target $target)])
+    else
+      AC_MSG_RESULT([$have_mk_hip])
+    fi
+  fi
+
+  if test "$have_mk_hip" != "no"; then
+    GASNET_PACKAGE_HOME(HIP, [HIP developer tools], [hipcc], [/opt/rocm], [include/hip/hip_runtime.h])
+    GASNET_PACKAGE_CFLAGS(HIP)
+    GASNET_ENV_DEFAULT(HIP_LIBS, -lamdhip64)
+    GASNET_PACKAGE_LDFLAGS(HIP, amdhip64)
+
+    # UNDOCUMENTED option to enable use of HIP over CUDA *by GASNet maintainers*.
+    # TODO:  Eventually we should REMOVE or DOCUMENT
+    hip_platform=amd
+    GASNET_WITH_NOHELP(hip-platform, [
+      case "$withval" in
+        amd|hcc)      hip_platform='amd';;
+        nvidia|nvcc)  hip_platform='nvidia';;
+           *) AC_MSG_ERROR([--with-hip-platform requires an argument (amd or nvidia)]) ;;
+      esac
+    ])
+    case "$hip_platform" in
+      amd)  AC_DEFINE(GASNETI_HIP_PLATFORM_AMD)
+            ;;
+      nvidia)
+            CHECK_PKG_CUDA()
+            # Suppress warnings when compiling gasnet_hip.c and testhip.c
+            # due to "issues" in hip_runtime.h when parsed by a C compiler in
+            # __HIP_PLATFORM_NVCC__ mode.
+            unset HIP_NVCC_WARNFLAGS
+            case "$CC_FAMILY" in
+              Intel)
+                # Deprecated decls:
+                GASNET_TRY_CFLAG([${CC_WDFLAG}1478],
+                        [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS ${CC_WDFLAG}1478"])
+                # "auto" becomes implicit int:
+                GASNET_TRY_CFLAG([${CC_WDFLAG}303],
+                        [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS ${CC_WDFLAG}303"])
+                ;;
+              PGI|NVHPC)
+                : # Currently warning-free, so avoid the noise of the -Wno probes
+                ;;
+              *)
+                # GCC and Clang, plus their derivatives and work-alikes
+                GASNET_TRY_WNO_FLAG([C],[-Wno-deprecated-declarations],
+                        [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS -Wno-deprecated-declarations"])
+                GASNET_TRY_WNO_FLAG([C],[-Wno-implicit-int],
+                        [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS -Wno-implicit-int"])
+                GASNET_TRY_WNO_FLAG([C],[-Wno-return-type],
+                        [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS -Wno-return-type"])
+                ;;
+            esac
+            HIP_LIBS="$HIP_LIBS -lcudart $CUDA_LIBS"
+            HIP_LDFLAGS="$HIP_LDFLAGS $CUDA_LDFLAGS"
+            HIP_CFLAGS="$HIP_CFLAGS $CUDA_CFLAGS $HIP_NVCC_WARNFLAGS"
+            AC_DEFINE(GASNETI_HIP_PLATFORM_NVIDIA)
+            ;;
+    esac
+
+    GASNET_SPLIT_LINKER_OPTS(HIP_LDFLAGS,HIP_LIBS)
+
+    # Try to compile and link a basic program using the HIP Driver API
+    GASNET_PUSHVAR(CFLAGS,"$CFLAGS $HIP_CFLAGS")
+    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $HIP_LDFLAGS")
+    GASNET_PUSHVAR(LIBS,"$LIBS $HIP_LIBS")
+
+    GASNET_TRY_CACHE_LINK(for working HIP configuration, libamdhip64_works, [
+      #if GASNETI_HIP_PLATFORM_NVIDIA
+        #define __HIP_PLATFORM_NVCC__ // legacy
+        #define __HIP_PLATFORM_NVIDIA__
+      #else
+        #define __HIP_PLATFORM_HCC__ // legacy
+        #define __HIP_PLATFORM_AMD__
+      #endif
+      #include <hip/hip_runtime_api.h>
+    ], [
+      void *addr;
+      hipInit(0);
+      hipDevice_t dev = 0;
+      hipPointerAttribute_t attr;
+      hipError_t res;
+      res = hipMalloc(&addr, 1024);
+      res = hipPointerGetAttributes(&attr, addr);
+      int bad = (attr.memoryType != hipMemoryTypeDevice) || attr.isManaged;
+    ], [ : ], [ have_mk_hip=no; GASNET_ERR_SAVE() ])
+
+    GASNET_POPVAR(LIBS)
+    GASNET_POPVAR(LDFLAGS)
+    GASNET_POPVAR(CFLAGS)
+  fi
+
+  # If the probe(s) above passed on a target identified as "maybe" having
+  # support, then upgrade to "yes" with a warning.
+  if test "$have_mk_hip" = "maybe"; then
+      have_mk_hip=yes
+      GASNET_MSG_WARN([HIP memory kinds support enabled for $target, which may not be officially supported])
+  fi
+
+  if test "$have_mk_hip" = "yes"; then
+    AC_DEFINE(GASNETI_MK_CLASS_HIP_ENABLED)
+  elif test "$force_mk_hip" = "yes"; then
+    GASNET_MSG_ERROR([HIP memory kinds support was requested with --enable-kind-hip but is not available])
+  else
+    unset HIP_CFLAGS
+    unset HIP_LDFLAGS
+    unset HIP_LIBS
+  fi
+fi
+AC_SUBST(HIP_CFLAGS)
+AC_SUBST(HIP_LDFLAGS)
+AC_SUBST(HIP_LIBS)
+AM_CONDITIONAL(HAVE_MK_CLASS_HIP, test "$have_mk_hip" = "yes")
+
+AC_DEFUN([MK_OUTPUT],[
+  pushdef([lowername],translit($1,'A-Z','a-z'))
+  if test "$have_mk_[]lowername" = "yes"; then
+    if test "$force_mk_[]lowername" = "yes"; then
+      _mk_flagstr="ON     (enabled)"
+    else
+      _mk_flagstr="ON     (auto)"
+    fi
+  elif test "$enable_mk_[]lowername" = "probe"; then
+    _mk_flagstr="OFF    (not found)"
+  elif test "$enable_mk_[]lowername[]_implicit" = "yes"; then
+    _mk_flagstr="OFF    (not enabled)"
+  else
+    _mk_flagstr="OFF    (disabled)"
+  fi
+  echo "  $2 m4_substr([                                                  ],len($2))$_mk_flagstr" >> $CONDUIT_LIST
+  popdef([lowername])
+])
+
+cat >>$CONDUIT_LIST <<EOF
+
+ Memory kinds:
+ ------------
+EOF
+MK_OUTPUT(cuda_uva, GPUs with NVIDIA CUDA API (cuda-uva))
+MK_OUTPUT(hip,      GPUs with AMD HIP API (hip))
+
+dnl GASNET_TOOLSONLY_FALSE_END
+########################################################################
+
 GASNET_HELP_OUTPUT([
 Misc options:])
 
@@ -4768,6 +5251,7 @@ case "$target_os" in
   ;;
 esac
 
+# PLPA
 enabled_plpa="no"
 if test "$cross_compiling" = "no" ; then
   case "$target_os" in
@@ -4802,6 +5286,110 @@ if test "$enabled_plpa" = "yes"; then
       fi
 fi
 AM_CONDITIONAL(USE_PLPA,test "$enabled_plpa" = "yes")
+
+# HWLOC header and library
+GASNET_IF_ENABLED_WITH_AUTO(hwloc, hwloc library (auto-detected),
+            enabled_hwloc_lib=yes, enabled_hwloc_lib=no, enabled_hwloc_lib=probe)
+have_hwloc_lib=no
+if test "$enabled_hwloc_lib" != no; then
+  GASNET_PACKAGE_HOME(HWLOC, [hwloc], [hwloc-info], [/usr/local], [include/hwloc.h])
+  GASNET_PACKAGE_CFLAGS(HWLOC)
+  GASNET_ENV_DEFAULT(HWLOC_LIBS, -lhwloc)
+  GASNET_PACKAGE_LDFLAGS(HWLOC, hwloc)
+  GASNET_SPLIT_LINKER_OPTS(HWLOC_LDFLAGS,HWLOC_LIBS)
+
+  # Try to compile and link a basic program using hwloc
+  GASNET_PUSHVAR(CFLAGS,"$CFLAGS $HWLOC_CFLAGS")
+  GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $HWLOC_LDFLAGS")
+  GASNET_PUSHVAR(LIBS,"$LIBS $HWLOC_LIBS")
+
+    GASNET_TRY_CACHE_LINK(for libhwloc with API v1.0 or newer, libhwloc_works, [
+      #include <hwloc.h>
+      #if HWLOC_API_VERSION < 0x010000
+        #error No support for 0.9 series
+      #endif
+    ], [
+      hwloc_topology_t topology;
+      hwloc_topology_init(&topology);
+      hwloc_topology_load(topology);
+    ], [
+      have_hwloc_lib=yes
+    ],[
+      HWLOC_CFLAGS=""
+      HWLOC_LDFLAGS=""
+      HWLOC_LIBS=""
+    ])
+
+  GASNET_POPVAR(LIBS)
+  GASNET_POPVAR(LDFLAGS)
+  GASNET_POPVAR(CFLAGS)
+
+  if test "$have_hwloc_lib" = yes; then
+    AC_DEFINE(GASNETI_HAVE_HWLOC_LIB)
+  elif test "$enabled_hwloc_lib" = yes; then
+    AC_MSG_ERROR(User requested --enable-hwloc but the required hwloc header or library were not found.)
+  fi
+fi
+AC_SUBST(HWLOC_CFLAGS)
+AC_SUBST(HWLOC_LDFLAGS)
+AC_SUBST(HWLOC_LIBS)
+
+# HWLOC utilies: hwloc-{bind,calc}
+# Used as fallback if !have_hwloc_lib
+GASNET_IF_ENABLED_WITH_AUTO(hwloc-utils, hwloc utilities (auto-detected),
+            enabled_hwloc_utils=yes, enabled_hwloc_utils=no,
+            [ if test "$cross_compiling" = "no" || test "x$enable_hwloc_utils" = 'xprobe'; then
+                enabled_hwloc_utils=probe
+              else
+                # utils on build system unlikely to represent the target
+                enabled_hwloc_utils=no
+              fi ])
+have_hwloc_utils=no
+if test "$enabled_hwloc_utils" != no; then
+  if test "$have_fork" = yes; then
+    GASNET_ENV_DEFAULT(HWLOC_UTILS_HOME, , [Install prefix of hwloc command-line utilities (auto-detected from PATH)])
+    if test -n "$HWLOC_UTILS_HOME"; then
+      hwloc_utils_path="$HWLOC_UTILS_HOME/bin"
+    else
+      hwloc_utils_path="$PATH"
+    fi
+    AC_PATH_PROGS(GASNETI_HWLOC_BIND_PATH, hwloc-bind, , $hwloc_utils_path)
+    if test -n "$GASNETI_HWLOC_BIND_PATH" && test "$cross_compiling" = "no"; then
+      # Require --get, added in hwloc 1.0
+      AC_MSG_CHECKING(for required features in hwloc-bind)
+      if expr `$GASNETI_HWLOC_BIND_PATH --get 2>&1` : 0x >/dev/null 2>&1; then
+        AC_MSG_RESULT(yes)
+        AC_DEFINE_UNQUOTED(GASNETI_HWLOC_BIND_PATH,"$GASNETI_HWLOC_BIND_PATH")
+      else
+        AC_MSG_RESULT(no)
+        unset GASNETI_HWLOC_BIND_PATH
+      fi
+    fi
+    AC_PATH_PROGS(GASNETI_HWLOC_CALC_PATH, hwloc-calc, , $hwloc_utils_path)
+    if test -n "$GASNETI_HWLOC_CALC_PATH" && test "$cross_compiling" = "no"; then
+      # Require --intersect, added in hwloc 1.1
+      AC_MSG_CHECKING(for required features in hwloc-calc)
+      if $GASNETI_HWLOC_CALC_PATH --intersect Socket 0x0 </dev/null >/dev/null 2>&1; then
+        AC_MSG_RESULT(yes)
+        AC_DEFINE_UNQUOTED(GASNETI_HWLOC_CALC_PATH,"$GASNETI_HWLOC_CALC_PATH")
+      else
+        AC_MSG_RESULT(no)
+        unset GASNETI_HWLOC_CALC_PATH
+      fi
+    fi
+    if test -n "$GASNETI_HWLOC_BIND_PATH" && test -n "$GASNETI_HWLOC_CALC_PATH"; then
+      have_hwloc_utils=yes  # Have both
+      AC_DEFINE(GASNETI_HAVE_HWLOC_UTILS)
+      if test "$cross_compiling" = "yes"; then
+        GASNET_MSG_WARN([Utilities hwloc-bind and hwloc-calc have been located, as show above.  However, their validation has been skipped due to cross-compilation.])
+      fi
+    elif test "$enabled_hwloc_utils" = yes; then
+      AC_MSG_ERROR(User requested --with-hwloc-utils but one or both of hwloc-calc or hwloc-bind was not found.)
+    fi
+  elif test "$enabled_hwloc_utils" = yes; then
+    AC_MSG_ERROR(User requested --with-hwloc-utils but this option requires popen which $fork_reason.)
+  fi
+fi
 
 #  AC_FUNC_MMAP
 # Check for mmap functionality we actually use
@@ -5095,8 +5683,9 @@ case "$target_os" in
     LDFLAGS="$LDFLAGS ${dash_Wl}-multiply_defined,suppress"
 
     # Darwin 11 (MacOSX Lion) and newer use address-space randomization by default
+    # But -no_pie is ignored (with a warning) on aarch64
     tmp_ver=`expr "$target_os" : 'darwin\([[0-9]]*\)' 2>/dev/null`
-    if expr $tmp_ver \>= 11 >/dev/null; then
+    if test $target_cpu != aarch64 && expr $tmp_ver \>= 11 >/dev/null; then
       NOASLR_LDFLAGS="${dash_Wl}-no_pie"
     fi
   ;;
@@ -5140,6 +5729,12 @@ dnl GASNET_TOOLSONLY_FALSE_END
 ##  Final Output
 ##
 
+# TODO: exclude platforms where RPATH is "not a thing"
+if test -n "$warn_missing_rpath"; then
+  GASNET_MSG_WARN([I do not know how to encode an RPATH for your system.
+Had support been present, the following conduits or packages would have used an RPATH:$warn_missing_rpath.])
+fi
+
 GASNET_FIX_EXEC(mpi-conduit/contrib/gasnetrun_mpi)
 GASNET_FIX_EXEC(ibv-conduit/contrib/gasnetrun_ibv)
 GASNET_FIX_EXEC(aries-conduit/contrib/gasnetrun_aries)
@@ -5150,8 +5745,8 @@ GASNET_FIX_EXEC(other/contrib/gasnet_trace)
 if test "$gasnet_toolsonly_mode" = "no" ; then
 cat >>$CONDUIT_LIST <<EOF
 
- Some conduits require --enable-XXX configure flags and/or additional
- variables providing the install location of vendor drivers.
+ Some conduits and memory kinds require --enable-XXX configure flags and/or
+ additional variables providing the install location of vendor drivers.
  See the GASNet documentation for details.
 
  Misc Settings
@@ -5161,7 +5756,7 @@ cat >>$CONDUIT_LIST <<EOF
   Segment config:         $segconfig
   PSHM support:           $with_pshm
   Atomics support:        $atomics_config
-  PMI support:            $have_pmi$pmi_version
+  PMI support:            $have_pmi$pretty_pmi_version
 EOF
 else
 cat >>$CONDUIT_LIST <<EOF

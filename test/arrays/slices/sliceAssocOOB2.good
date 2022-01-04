@@ -1,0 +1,1 @@
+sliceAssocOOB2.chpl:6: error: halt reached - index '9' is out-of-bounds

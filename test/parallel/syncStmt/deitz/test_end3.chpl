@@ -7,7 +7,7 @@ proc foo() {
     }
     begin {
       writeln("1. hello, world");
-      s = 1;
+      s.writeEF(1);
     }
   }
 }

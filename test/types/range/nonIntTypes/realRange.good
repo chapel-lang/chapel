@@ -1,1 +1,1 @@
-realRange.chpl:1: error: Bounds of 'low..high' must be integers of compatible types.
+realRange.chpl:1: error: Ranges defined using bounds of type 'real(64)' are not currently supported

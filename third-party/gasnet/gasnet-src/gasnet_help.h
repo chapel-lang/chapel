@@ -24,7 +24,7 @@ typedef struct {
 } gasneti_heapstats_t;
 
 #if GASNET_DEBUGMALLOC
-  /* curloc is passed to debug mallocator as "file:line",
+  /* _curloc is passed to debug mallocator as "file:line",
      or the special constant "SRCPOS" to retrieve the info from gasnet_srclines 
      To enable use of srcpos for a compilation unit, client should: 
        #undef GASNETT_MALLOC_USE_SRCPOS
@@ -33,20 +33,20 @@ typedef struct {
   #ifndef GASNETT_MALLOC_USE_SRCPOS
   #define GASNETT_MALLOC_USE_SRCPOS 0 /* off by default */
   #endif
-  #define GASNETI_CURLOCFARG , const char *curloc
+  #define GASNETI_CURLOCFARG , const char *_curloc
   #define GASNETI_CURLOCAARG , (GASNETT_MALLOC_USE_SRCPOS ? \
                                "SRCPOS" :                   \
                                 __FILE__ ":" _STRINGIFY(__LINE__))
-  #define GASNETI_CURLOCPARG , curloc
-  extern size_t _gasneti_memcheck(void *ptr, const char *curloc, int checktype);
-  extern void _gasneti_memcheck_one(const char *curloc);
-  extern void _gasneti_memcheck_all(const char *curloc);
+  #define GASNETI_CURLOCPARG , _curloc
+  extern size_t _gasneti_memcheck(void *_ptr, const char *_curloc, int _checktype);
+  extern void _gasneti_memcheck_one(const char *_curloc);
+  extern void _gasneti_memcheck_all(const char *_curloc);
   #define gasneti_memcheck(ptr)  (gasneti_assert(ptr != NULL), \
          (void)_gasneti_memcheck(ptr, __FILE__ ":" _STRINGIFY(__LINE__), 0)) 
   #define gasneti_memcheck_one() _gasneti_memcheck_one(__FILE__ ":" _STRINGIFY(__LINE__))
   #define gasneti_memcheck_all() _gasneti_memcheck_all(__FILE__ ":" _STRINGIFY(__LINE__))
-  extern int gasneti_getheapstats(gasneti_heapstats_t *pstat);
-  extern void gasneti_heapinfo_dump(const char *filename, int show_live_objects);
+  extern int gasneti_getheapstats(gasneti_heapstats_t *_pstat);
+  extern void gasneti_heapinfo_dump(const char *_filename, int _show_live_objects);
 #else
   #define GASNETI_CURLOCFARG 
   #define GASNETI_CURLOCAARG 
@@ -59,16 +59,16 @@ typedef struct {
 #endif
 
 /* extern versions of gasnet malloc fns for use in public headers */
-extern void *_gasneti_extern_malloc(size_t sz GASNETI_CURLOCFARG) GASNETI_MALLOC;
+extern void *_gasneti_extern_malloc(size_t _sz GASNETI_CURLOCFARG) GASNETI_MALLOC;
 GASNETI_MALLOCP(_gasneti_extern_malloc)
-extern void *_gasneti_extern_realloc(void *ptr, size_t sz GASNETI_CURLOCFARG);
-extern void *_gasneti_extern_calloc(size_t N, size_t S GASNETI_CURLOCFARG) GASNETI_MALLOC;
+extern void *_gasneti_extern_realloc(void *_ptr, size_t _sz GASNETI_CURLOCFARG);
+extern void *_gasneti_extern_calloc(size_t _n, size_t _s GASNETI_CURLOCFARG) GASNETI_MALLOC;
 GASNETI_MALLOCP(_gasneti_extern_calloc)
-extern void _gasneti_extern_free(void *ptr GASNETI_CURLOCFARG);
-extern void _gasneti_extern_leak(void *ptr GASNETI_CURLOCFARG);
-extern char *_gasneti_extern_strdup(const char *s GASNETI_CURLOCFARG) GASNETI_MALLOC;
+extern void _gasneti_extern_free(void *_ptr GASNETI_CURLOCFARG);
+extern void _gasneti_extern_leak(void *_ptr GASNETI_CURLOCFARG);
+extern char *_gasneti_extern_strdup(const char *_s GASNETI_CURLOCFARG) GASNETI_MALLOC;
 GASNETI_MALLOCP(_gasneti_extern_strdup)
-extern char *_gasneti_extern_strndup(const char *s, size_t n GASNETI_CURLOCFARG) GASNETI_MALLOC;
+extern char *_gasneti_extern_strndup(const char *_s, size_t _n GASNETI_CURLOCFARG) GASNETI_MALLOC;
 GASNETI_MALLOCP(_gasneti_extern_strndup)
 
 #define gasneti_extern_malloc(sz)      _gasneti_extern_malloc((sz) GASNETI_CURLOCAARG)
@@ -87,49 +87,49 @@ GASNETI_MALLOCP(_gasneti_extern_strndup)
   #define GASNETI_USE_POSIX_MEMALIGN 1
 #endif
 GASNETI_INLINE(_gasneti_malloc_aligned) GASNETI_MALLOC
-void * _gasneti_malloc_aligned(size_t alignment, size_t size GASNETI_CURLOCFARG) {
-  gasneti_assert(GASNETI_POWEROFTWO(alignment));
-  gasneti_assert(alignment <= GASNET_PAGESIZE);
+void * _gasneti_malloc_aligned(size_t _alignment, size_t _size GASNETI_CURLOCFARG) {
+  gasneti_assert(GASNETI_POWEROFTWO(_alignment));
+  gasneti_assert(_alignment <= GASNET_PAGESIZE);
 #if GASNETI_USE_POSIX_MEMALIGN
-  if_pf(alignment < sizeof(void*)) alignment = sizeof(void*);
-  void *result = NULL; // init to avoid -Wmaybe-uninitialized warnings
-  int _return_code = posix_memalign(&result, alignment, size);
+  if_pf(_alignment < sizeof(void*)) _alignment = sizeof(void*);
+  void *_result = NULL; // init to avoid -Wmaybe-uninitialized warnings
+  int _return_code = posix_memalign(&_result, _alignment, _size);
   gasneti_assert_zeroret(_return_code);
 #else
-  size_t alloc_size = size + sizeof(void *) + alignment;
-  void *base = _gasneti_extern_malloc(alloc_size GASNETI_CURLOCPARG);
-  void **result = (void **)GASNETI_ALIGNUP((uintptr_t)base + sizeof(void *), alignment);
-  *(result - 1) = base; /* hidden base ptr for free() */
-  gasneti_assert_ptr((void *)(result - 1) ,>=, base);
-  gasneti_assert_ptr(((uint8_t *)result + size) ,<=, ((uint8_t *)base + alloc_size));
+  size_t _alloc_size = _size + sizeof(void *) + _alignment;
+  void *_base = _gasneti_extern_malloc(_alloc_size GASNETI_CURLOCPARG);
+  void **_result = (void **)GASNETI_ALIGNUP((uintptr_t)_base + sizeof(void *), _alignment);
+  *(_result - 1) = _base; /* hidden base ptr for free() */
+  gasneti_assert_ptr((void *)(_result - 1) ,>=, _base);
+  gasneti_assert_ptr(((uint8_t *)_result + _size) ,<=, ((uint8_t *)_base + _alloc_size));
 #endif
-  gasneti_assume(result);
-  gasneti_assert_ptr(result ,==, (void **)GASNETI_ALIGNUP(result, alignment));
-  return (void *)result;
+  gasneti_assume(_result);
+  gasneti_assert_ptr(_result ,==, (void **)GASNETI_ALIGNUP(_result, _alignment));
+  return (void *)_result;
 }
 GASNETI_MALLOCP(_gasneti_malloc_aligned)
 #define gasneti_malloc_aligned(align,sz) _gasneti_malloc_aligned((align), (sz) GASNETI_CURLOCAARG)
 
 GASNETI_INLINE(_gasneti_free_aligned)
-void _gasneti_free_aligned(void *ptr GASNETI_CURLOCFARG) {
-  gasneti_assert(ptr);
+void _gasneti_free_aligned(void *_ptr GASNETI_CURLOCFARG) {
+  gasneti_assert(_ptr);
 #if GASNETI_USE_POSIX_MEMALIGN
-  free(ptr);
+  free(_ptr);
 #else
-  void *base = *((void **)ptr - 1);
-  gasneti_assert(base);
-  _gasneti_extern_free(base GASNETI_CURLOCPARG);
+  void *_base = *((void **)_ptr - 1);
+  gasneti_assert(_base);
+  _gasneti_extern_free(_base GASNETI_CURLOCPARG);
 #endif
 }
 #define gasneti_free_aligned(ptr) _gasneti_free_aligned((ptr) GASNETI_CURLOCAARG)
 
 GASNETI_INLINE(_gasneti_leak_aligned)
-void _gasneti_leak_aligned(void *ptr GASNETI_CURLOCFARG) {
-  gasneti_assert(ptr);
+void _gasneti_leak_aligned(void *_ptr GASNETI_CURLOCFARG) {
+  gasneti_assert(_ptr);
 #if !GASNETI_USE_POSIX_MEMALIGN
-  void *base = *((void **)ptr - 1);
-  gasneti_assert(base);
-  _gasneti_extern_leak(base GASNETI_CURLOCPARG);
+  void *_base = *((void **)_ptr - 1);
+  gasneti_assert(_base);
+  _gasneti_extern_leak(_base GASNETI_CURLOCPARG);
 #endif
 }
 #define gasneti_leak_aligned(ptr) _gasneti_leak_aligned((ptr) GASNETI_CURLOCAARG)
@@ -153,7 +153,16 @@ extern gex_Rank_t gasneti_mynode;
 extern gex_Rank_t gasneti_nodes;
 #define gex_System_QueryJobSize() (GASNETI_CHECKINIT(), (gex_Rank_t)gasneti_nodes)
 
+/* ------------------------------------------------------------------------------------ */
+extern int gasneti_VerboseErrors;
+#define gex_System_GetVerboseErrors() ((int)gasneti_VerboseErrors)
+GASNETI_INLINE(gex_System_SetVerboseErrors)
+void gex_System_SetVerboseErrors(int _enable) {
+  gasneti_assert(_enable == 1 || _enable == 0);
+  gasneti_VerboseErrors = _enable;
+}
 
+/* ------------------------------------------------------------------------------------ */
 #if GASNETI_TM0_ALIGN
 // We can detect TM0 by its better alignment than other tm's
 GASNETI_INLINE(gasneti_is_tm0)
@@ -168,26 +177,192 @@ extern gasneti_TM_t gasneti_thing_that_goes_thunk_in_the_dark;
 #define gasneti_is_tm0(_i_tm) ((_i_tm) == gasneti_thing_that_goes_thunk_in_the_dark)
 #endif
 
+// "TM-pair"
+//
+// We have one external handle type `gex_TM_t`, but two corresponding internal
+// types: `gasneti_TM_t` and `gasneti_TM_Pair_t`.  A `gasneti_TM_t` can be
+// either an actual pointer to a `struct gasneti_team_member_internal_s` (with
+// fields describing the TM) OR it can be just a 32-bit inline representation
+// of a TM-pair (with fields accessed via `gasneti_tm_pair_{loc,rem}_idx()`).
+//
+// Use of the query `gasneti_e_tm_is_pair()` reports whether a `gex_TM_t`, once
+// imported, will have the TM-pair representation.
+// Use of the query `gasneti_i_tm_is_pair()` reports whether a `gasneti_TM_t`
+// has the TM-pair representation.
+//
+// Code not needing to access any fields may pass `gex_TM_t` or `gasneti_TM_t`
+// values transparently, though the latter is preferred so that the debug check
+// for the "MAGIC" signature upon import occurs early in the call stack.  Such
+// code does not require any explicit handling of TM-pairs.
+//
+// For code which does access fields, there are three approaches illustrated
+// by the following examples in which
+//   + `e_tm` is a `gex_TM_t`
+//   + `i_tm` is a `gasneti_TM_t` without certainty of contents
+//   + `my_tm` is a `gasneti_TM_t` certain to point to a structure
+//   + `my_pair` is a `gasneti_TM_Pair_t` certain to hold a 32-bit inline pair
+//
+// 1.  "import excluding pair" - for code paths where TM-pair is prohibited:
+//     my_tm = gasneti_import_tm_nonpair(e_tm);
+//
+// 2.  "check then import"
+//     if (gasneti_e_tm_is_pair(e_tm))
+//       my_pair = gasneti_import_tm_pair(e_tm);
+//     else
+//       my_tm = gasneti_import_tm(e_tm);
+//
+// 3.  "import then check before use"
+//     i_tm = gasneti_import_tm(e_tm)
+//     [...]
+//     if (gasneti_i_tm_is_pair(i_tm))
+//       my_pair = gasneti_i_tm_to_pair(i_tm);
+//     else
+//       my_tm = i_tm;
+//
+// The four type-conversion functions used in the examples above:
+//   + gasneti_TM_t gasneti_import_tm(gex_TM_t);
+//     Does not check if the argument is a TM-pair
+//   + gasneti_TM_t gasneti_import_tm_nonpair(gex_TM_t);
+//     Asserts that the argument is NOT a TM-pair
+//   + gasneti_TM_Pair_t gasneti_import_tm_pair(gex_TM_t);
+//     Asserts that the argument is a TM-pair
+//   + gasneti_TM_Pair_t gasneti_i_tm_to_pair(gasneti_TM_t);
+//     Asserts that the argument is a TM-pair
+//
+// -OR-
+//
+// At least the following internal functions operate an `e_tm` or `i_tm`, with
+// transparent support for both encodings and may be sufficient to keep much
+// code independent of TM-pairness:
+//   + gasneti_[ei]_tm_rank_to_jobrank()
+//   + gasneti_[ei]_tm_rank_to_ep_index()
+//   + gasneti_[ei]_tm_rank_to_location()
+//   + gasneti_[ei]_tm_jobrank_to_rank()
+//   + gasneti_[ei]_tm_size()
+//     Returns gex_System_QueryJobSize() for TM-pair, suitable for range checking a rank
+//     Generalize/replace the following idioms which do not accept a TM-pair:
+//        `gex_TM_QuerySize(e_tm)`
+//        `gasneti_import_tm(e_tm)->_size`
+//        `i_tm->_size`
+//   + gasneti_[ei]_tm_to_i_ep()
+//     Generalize/replace the following idioms which do not accept a TM-pair:
+//        `gex_TM_QueryEP(e_tm)`
+//        `gasneti_import_tm(e_tm)->_ep`
+//        `i_tm->_ep`
+//   + gasneti_[ei]_tm_to_ep_index()
+//     More efficient replacement for `gasneti_[ei]_tm_to_i_ep()->_index`,
+//     replacing multiple alternatives which do not accept a TM-pair
+//   + gasneti_boundscheck()
+//   + gasneti_boundscheck_allowoutseg()
+//   + gasneti_formattm()
+//   + gasneti_pshm_local_rank()
+//   + gasneti_pshm_in_supernode()
+//   + gasneti_pshm_addr2local()
+//   + GASNETI_NBRHD_MAPPED()
+//   + GASNETI_NBRHD_MAPPED_ADDR()
+//   + GASNETI_NBRHD_MAPPED_ADDR_OR_NULL()
+//   + gasneti_jobrank_if_mappable()
+//   + gasnete_mapped_at()
+
+#if GASNET_DEBUG
+  GASNETI_INLINE(gasneti_assertvalid_tm_pair)
+  void gasneti_assertvalid_tm_pair(gasneti_TM_Pair_t _tm_pair) {
+    // TODO: check that client index (currently always zero) is in range
+    gasneti_assert_uint((_tm_pair & 0xff) ,==, 1);
+  }
+#else
+  #define gasneti_assertvalid_tm_pair(_tm_pair) ((void)0)
+#endif
+
+// Detect a TM generated by gex_TM_Pair
+GASNETI_INLINE(gasneti_i_tm_is_pair)
+int gasneti_i_tm_is_pair(gasneti_TM_t _i_tm)
+{
+  gasneti_TM_Pair_t _tm_pair = (gasneti_TM_Pair_t) _i_tm;
+  int _result = (_tm_pair & 1);
+  if (_result) gasneti_assertvalid_tm_pair(_tm_pair);
+  return _result;
+}
+#define gasneti_e_tm_is_pair(_e_tm) gasneti_i_tm_is_pair(gasneti_import_tm(_e_tm))
+
+// Assertion-checking conversions from {gex,gasneti}_TM_t to gasneti_TM_Pair_t
+GASNETI_INLINE(gasneti_i_tm_to_pair)
+gasneti_TM_Pair_t gasneti_i_tm_to_pair(gasneti_TM_t _i_tm)
+{
+  gasneti_TM_Pair_t _tm_pair = (gasneti_TM_Pair_t) _i_tm;
+  gasneti_assertvalid_tm_pair(_tm_pair);
+  return _tm_pair;
+}
+#define gasneti_e_tm_to_pair(_e_tm) gasneti_i_tm_to_pair(gasneti_import_tm(_e_tm))
+
+// Extract EP indices from a known TM_Pair
+GASNETI_INLINE(gasneti_tm_pair_loc_idx)
+gex_EP_Index_t gasneti_tm_pair_loc_idx(gasneti_TM_Pair_t _tm_pair)
+{
+  gasneti_assertvalid_tm_pair(_tm_pair);
+  return (_tm_pair >> GASNETI_TM_PAIR_LOC_IDX_SHIFT) & GASNETI_TM_PAIR_IDX_MASK;
+}
+GASNETI_INLINE(gasneti_tm_pair_rem_idx)
+gex_EP_Index_t gasneti_tm_pair_rem_idx(gasneti_TM_Pair_t _tm_pair)
+{
+  gasneti_assertvalid_tm_pair(_tm_pair);
+  return (_tm_pair >> GASNETI_TM_PAIR_REM_IDX_SHIFT) & GASNETI_TM_PAIR_IDX_MASK;
+}
+
+
 // Given (tm,rank) return the jobrank or ep_location
-extern GASNETI_PURE gex_Rank_t        gasneti_tm_fwd_rank(gasneti_TM_t tm, gex_Rank_t rank);
+extern GASNETI_PURE gex_Rank_t        gasneti_tm_fwd_rank(gasneti_TM_t _tm, gex_Rank_t _rank);
 GASNETI_PUREP(gasneti_tm_fwd_rank)
-extern GASNETI_PURE gex_EP_Location_t gasneti_tm_fwd_location(gasneti_TM_t tm, gex_Rank_t rank, gex_Flags_t flags);
+extern GASNETI_PURE gex_EP_Location_t gasneti_tm_fwd_location(gasneti_TM_t _tm, gex_Rank_t _rank, gex_Flags_t _flags);
 GASNETI_PUREP(gasneti_tm_fwd_location)
 
 // Given (tm,jobrank) return the rank of jobrank in tm, or GEX_RANK_INVALID
-extern gex_Rank_t gasneti_tm_rev_rank(gasneti_TM_t tm, gex_Rank_t jobrank);
+extern gex_Rank_t gasneti_tm_rev_rank(gasneti_TM_t _tm, gex_Rank_t _jobrank);
+
+// Helpers which deal correctly/transparently with TM-pair
+GASNETI_INLINE(gasneti_e_tm_size)
+gex_Rank_t gasneti_e_tm_size(gex_TM_t _e_tm) {
+  gasneti_assert(_e_tm);
+  return gasneti_e_tm_is_pair(_e_tm) ? gex_System_QueryJobSize() : gex_TM_QuerySize(_e_tm);
+}
+GASNETI_INLINE(gasneti_i_tm_size)
+gex_Rank_t gasneti_i_tm_size(gasneti_TM_t _i_tm) {
+  gasneti_assert(_i_tm);
+  return gasneti_i_tm_is_pair(_i_tm) ? gex_System_QueryJobSize() : _i_tm->_size;
+}
+
+GASNETI_INLINE(gasneti_i_tm_to_ep_index)
+gex_EP_Index_t gasneti_i_tm_to_ep_index(gasneti_TM_t _i_tm) {
+  gasneti_assert(_i_tm);
+  if (gasneti_is_tm0(_i_tm)) {
+    return 0; // fast path
+  } else if (gasneti_i_tm_is_pair(_i_tm)) {
+    return gasneti_tm_pair_loc_idx(gasneti_i_tm_to_pair(_i_tm));
+  } else {
+    return _i_tm->_ep->_index;
+  }
+}
+#define gasneti_e_tm_to_ep_index(_e_tm) gasneti_i_tm_to_ep_index(gasneti_import_tm(_e_tm))
 
 #if GASNET_DEBUG
-GASNETI_INLINE(gasneti_check_tm_rank)
-void gasneti_check_tm_rank(gex_TM_t _e_tm, gex_Rank_t _rank) {
-  gasneti_assert(_e_tm);
-  gasneti_assert_uint(_rank ,<, gex_TM_QuerySize(_e_tm));
-}
-#define gasneti_check_jobrank(jobrank) \
-  gasneti_assert_uint(jobrank ,<, gex_System_QuerySize());
+  GASNETI_INLINE(gasneti_check_jobrank)
+  void gasneti_check_jobrank(gex_Rank_t _jobrank) {
+    gasneti_assert_uint(_jobrank ,<, gex_System_QueryJobSize());
+  }
+  GASNETI_INLINE(gasneti_check_e_tm_rank)
+  void gasneti_check_e_tm_rank(gex_TM_t _e_tm, gex_Rank_t _rank) {
+    gasneti_assert(_e_tm);
+    gasneti_assert_uint(_rank ,<, gasneti_e_tm_size(_e_tm));
+  }
+  GASNETI_INLINE(gasneti_check_i_tm_rank)
+  void gasneti_check_i_tm_rank(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
+    gasneti_assert(_i_tm);
+    gasneti_assert_uint(_rank ,<, gasneti_i_tm_size(_i_tm));
+  }
 #else
-  #define gasneti_check_tm_rank(tm,rank) ((void)0)
   #define gasneti_check_jobrank(jobrank) ((void)0)
+  #define gasneti_check_i_tm_rank(tm,rank) ((void)0)
+  #define gasneti_check_e_tm_rank(tm,rank) ((void)0)
 #endif
 
 // TODO-EX: remove when a runtime branch on tm->_rank_map is necessary
@@ -195,9 +370,8 @@ void gasneti_check_tm_rank(gex_TM_t _e_tm, gex_Rank_t _rank) {
 
 GASNETI_INLINE(gasneti_i_tm_rank_to_jobrank)
 gex_Rank_t gasneti_i_tm_rank_to_jobrank(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
-  gasneti_assert(_i_tm);
-  gasneti_assert_uint(_rank ,<, _i_tm->_size);
-  if (gasneti_is_tm0(_i_tm)) return _rank;
+  gasneti_check_i_tm_rank(_i_tm, _rank);
+  if (gasneti_is_tm0(_i_tm) || gasneti_i_tm_is_pair(_i_tm)) return _rank;
   if (!GASNETI_ALLOW_SPARSE_TEAMREP || _i_tm->_rank_map) {
     gasneti_assert(_i_tm->_rank_map);
     return _i_tm->_rank_map[_rank];
@@ -207,19 +381,51 @@ gex_Rank_t gasneti_i_tm_rank_to_jobrank(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
 #define gasneti_e_tm_rank_to_jobrank(e_tm,rank) \
         gasneti_i_tm_rank_to_jobrank(gasneti_import_tm(e_tm),rank)
 
+GASNETI_INLINE(gasneti_i_tm_rank_to_ep_index)
+gex_EP_Index_t gasneti_i_tm_rank_to_ep_index(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
+  gasneti_check_i_tm_rank(_i_tm, _rank);
+  gex_EP_Index_t _result;
+  if (gasneti_is_tm0(_i_tm)) {
+    _result = 0;
+  } else if (gasneti_i_tm_is_pair(_i_tm)) {
+    _result = gasneti_tm_pair_rem_idx(gasneti_i_tm_to_pair(_i_tm));
+  } else if (!GASNETI_ALLOW_SPARSE_TEAMREP || _i_tm->_rank_map) {
+    // NULL _index_map indicates all members of TM are primordial EPs (idx==0)
+    _result = _i_tm->_index_map ? _i_tm->_index_map[_rank] : 0;
+  } else {
+    gex_EP_Location_t _loc = gasneti_tm_fwd_location(_i_tm, _rank, 0);
+    _result = _loc.gex_ep_index;
+  }
+  gasneti_assert(_result < GASNET_MAXEPS);
+  return _result;
+}
+#define gasneti_e_tm_rank_to_ep_index(e_tm,rank) \
+        gasneti_i_tm_rank_to_ep_index(gasneti_import_tm(e_tm),rank)
+
 GASNETI_INLINE(gasneti_i_tm_rank_to_location)
 gex_EP_Location_t gasneti_i_tm_rank_to_location(gasneti_TM_t _i_tm, gex_Rank_t _rank, gex_Flags_t _flags) {
-  gasneti_assert(_i_tm);
-  gasneti_assert_uint(_rank ,<, _i_tm->_size);
+  gasneti_check_i_tm_rank(_i_tm, _rank);
   gex_EP_Location_t _result;
+#if (GASNET_MAXEPS == 1)
+  _result.gex_ep_index = 0;
+#endif
   if (gasneti_is_tm0(_i_tm)) {
     _result.gex_rank = _rank;
+  #if (GASNET_MAXEPS > 1)
     _result.gex_ep_index = 0;
+  #endif
+  } else if (gasneti_i_tm_is_pair(_i_tm)) {
+    _result.gex_rank = _rank;
+  #if (GASNET_MAXEPS > 1)
+    _result.gex_ep_index = gasneti_tm_pair_rem_idx(gasneti_i_tm_to_pair(_i_tm));
+  #endif
   } else if (!GASNETI_ALLOW_SPARSE_TEAMREP || _i_tm->_rank_map) {
     gasneti_assert(_i_tm->_rank_map);
     _result.gex_rank = _i_tm->_rank_map[_rank];
+  #if (GASNET_MAXEPS > 1)
     // NULL _index_map indicates all members of TM are primordial EPs (idx==0)
     _result.gex_ep_index = _i_tm->_index_map ? _i_tm->_index_map[_rank] : 0;
+  #endif
   } else {
     _result = gasneti_tm_fwd_location(_i_tm, _rank, _flags);
   }
@@ -232,7 +438,7 @@ GASNETI_INLINE(gasneti_i_tm_jobrank_to_rank)
 gex_Rank_t gasneti_i_tm_jobrank_to_rank(gasneti_TM_t _i_tm, gex_Rank_t _jobrank) {
   gasneti_assert(_i_tm);
   gasneti_assert_uint(_jobrank ,<, gex_System_QueryJobSize());
-  if (gasneti_is_tm0(_i_tm)) return _jobrank;
+  if (gasneti_is_tm0(_i_tm) || gasneti_i_tm_is_pair(_i_tm)) return _jobrank;
   return gasneti_tm_rev_rank(_i_tm, _jobrank);
 }
 #define gasneti_e_tm_jobrank_to_rank(e_tm,jobrank) \
@@ -240,12 +446,17 @@ gex_Rank_t gasneti_i_tm_jobrank_to_rank(gasneti_TM_t _i_tm, gex_Rank_t _jobrank)
 
 extern gasnet_seginfo_t *gasneti_seginfo;
 extern gasnet_seginfo_t *gasneti_seginfo_aux;
+extern gasnet_seginfo_t *gasneti_seginfo_tbl[GASNET_MAXEPS];
 
-// TODO: generalize for multi-{EP,segment} support
 // TODO: work towards dropping non-scalable seginfo tables
 GASNETI_INLINE(gasneti_client_seginfo)
 const gasnet_seginfo_t *gasneti_client_seginfo(gex_TM_t _e_tm, gex_Rank_t _rank) {
-  return gasneti_seginfo + gasneti_e_tm_rank_to_jobrank(_e_tm,_rank);
+  gex_EP_Location_t _loc = gasneti_e_tm_rank_to_location(_e_tm, _rank, 0);
+  gex_Rank_t _jobrank = _loc.gex_rank;
+  gex_EP_Index_t _idx = _loc.gex_ep_index;
+  gasnet_seginfo_t *_si_array = gasneti_seginfo_tbl[_idx];
+  gasneti_assert(_si_array);
+  return _si_array + _jobrank;
 }
 GASNETI_INLINE(gasneti_aux_seginfo)
 const gasnet_seginfo_t *gasneti_aux_seginfo(gex_Rank_t _jobrank) {
@@ -277,11 +488,11 @@ int _gasneti_in_segment_t(const void *_ptr, size_t _nbytes, const gex_Segment_t 
     gasneti_assert(_ptr);
   }
   #define gasneti_in_clientsegment(e_tm,rank,ptr,nbytes) \
-          (gasneti_inseg_helper(ptr,nbytes),gasneti_check_tm_rank(e_tm,rank), 1)
+          (gasneti_inseg_helper(ptr,nbytes),gasneti_check_e_tm_rank(e_tm,rank), 1)
   #define gasneti_in_auxsegment(jobrank,ptr,nbytes) \
           (gasneti_inseg_helper(ptr,nbytes),gasneti_check_jobrank(jobrank), 1)
   #define gasneti_in_fullsegment(e_tm,rank,ptr,nbytes) \
-          (gasneti_inseg_helper(ptr,nbytes), gasneti_check_tm_rank(e_tm,rank), 1)
+          (gasneti_inseg_helper(ptr,nbytes), gasneti_check_e_tm_rank(e_tm,rank), 1)
 #else
   #define gasneti_in_clientsegment(e_tm,rank,ptr,nbytes) \
           _gasneti_in_seginfo_t(ptr,nbytes,gasneti_client_seginfo(e_tm,rank))
@@ -330,7 +541,7 @@ int _gasneti_in_segment_t(const void *_ptr, size_t _nbytes, const gex_Segment_t 
 #ifdef GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET
   /* in-segment check for internal put/gets that may exploit outofseg support */
   #define gasneti_in_segment_allowoutseg(e_tm,rank,ptr,nbytes) \
-          (gasneti_check_tm_rank(e_tm,rank), 1)
+          (gasneti_check_e_tm_rank(e_tm,rank), 1)
 #else
   #define gasneti_in_segment_allowoutseg  gasneti_in_segment
 #endif
@@ -339,7 +550,7 @@ int _gasneti_in_segment_t(const void *_ptr, size_t _nbytes, const gex_Segment_t 
     gex_TM_t _gex_bc_tm = (e_tm);                                              \
     gasneti_assert(_gex_bc_tm);                                                \
     gex_Rank_t _gex_bc_rank = (rank);                                          \
-    gex_Rank_t _gex_bc_size = gex_TM_QuerySize(_gex_bc_tm);                    \
+    gex_Rank_t _gex_bc_size = gasneti_e_tm_size(_gex_bc_tm);                   \
     const void *_gex_bc_ptr = (const void *)(ptr);                             \
     size_t _gex_bc_nbytes = (size_t)(nbytes);                                  \
     gasneti_assert(_gex_bc_nbytes); /* avoids "fence post" error */            \
@@ -399,17 +610,32 @@ int _gasneti_in_segment_t(const void *_ptr, size_t _nbytes, const gex_Segment_t 
 // TODO-EX: move to gasnet_event_internal.h
 #ifndef _GEX_EVENT_T
 GASNETI_INLINE(gasneti_leaf_is_pointer) GASNETI_PURE
-int gasneti_leaf_is_pointer(const gex_Event_t *opt_val) {
-  gasneti_assert(opt_val != NULL);
-  return ((uintptr_t)(opt_val) >= (uintptr_t)4);
+int gasneti_leaf_is_pointer(const gex_Event_t *_opt_val) {
+  gasneti_assert(_opt_val != NULL);
+  return ((uintptr_t)(_opt_val) >= (uintptr_t)4);
 }
 GASNETI_PUREP(gasneti_leaf_is_pointer)
 
 GASNETI_INLINE(gasneti_leaf_finish)
-void gasneti_leaf_finish(gex_Event_t *opt_val) {
-  if (gasneti_leaf_is_pointer(opt_val)) *opt_val = GEX_EVENT_INVALID;
+void gasneti_leaf_finish(gex_Event_t *_opt_val) {
+  if (gasneti_leaf_is_pointer(_opt_val)) *_opt_val = GEX_EVENT_INVALID;
 }
+
+#if (PLATFORM_COMPILER_INTEL && PLATFORM_COMPILER_VERSION_LT(19,0,20180800))
+  // Some Intel C prior to 2019.0.117 (builddate 20180804) issue a buggy warning
+  // about side effects in an __assume(), and these versions predate Intel's
+  // support for __builtin_assume, which avoids the warning.
+  #define gasneti_assume_leaf_is_pointer(lc_opt) do { \
+    GASNETI_PRAGMA(warning push);                     \
+    GASNETI_PRAGMA(warning disable 2261);             \
+    gasneti_assume(gasneti_leaf_is_pointer(lc_opt));  \
+    GASNETI_PRAGMA(warning pop);                      \
+  } while (0)
+#else
+  #define gasneti_assume_leaf_is_pointer(lc_opt) \
+          gasneti_assume(gasneti_leaf_is_pointer(lc_opt))
 #endif
+#endif // _GEX_EVENT_T
 
 /* ------------------------------------------------------------------------------------ */
 /* semi-portable spinlocks using gasneti_atomic_t
@@ -447,18 +673,18 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
     #define GASNETI_SPINLOCK_UNLOCKED	0xaa55
     #define GASNETI_SPINLOCK_DESTROYED	0xDEAD
     GASNETI_INLINE(gasneti_spinlock_is_valid)
-    int gasneti_spinlock_is_valid(gasneti_atomic_t *plock) {
-      uint32_t tmp = gasneti_atomic_read(plock, GASNETI_ATOMIC_RMB_PRE);
-      if_pf (tmp == GASNETI_SPINLOCK_DESTROYED)
+    int gasneti_spinlock_is_valid(gasneti_atomic_t *_plock) {
+      uint32_t _tmp = gasneti_atomic_read(_plock, GASNETI_ATOMIC_RMB_PRE);
+      if_pf (_tmp == GASNETI_SPINLOCK_DESTROYED)
         gasneti_fatalerror("Detected use of destroyed spinlock");
-      if_pf (!((tmp == GASNETI_SPINLOCK_LOCKED) || (tmp == GASNETI_SPINLOCK_UNLOCKED)))
+      if_pf (!((_tmp == GASNETI_SPINLOCK_LOCKED) || (_tmp == GASNETI_SPINLOCK_UNLOCKED)))
         gasneti_fatalerror("Detected use of uninitialized or corrupted spinlock");
       return 1;
     }
     GASNETI_INLINE(gasneti_spinlock_is_locked)
-    int gasneti_spinlock_is_locked(gasneti_atomic_t *plock) {
-      uint32_t tmp = gasneti_atomic_read(plock, GASNETI_ATOMIC_RMB_PRE);
-      return (tmp == GASNETI_SPINLOCK_LOCKED);
+    int gasneti_spinlock_is_locked(gasneti_atomic_t *_plock) {
+      uint32_t _tmp = gasneti_atomic_read(_plock, GASNETI_ATOMIC_RMB_PRE);
+      return (_tmp == GASNETI_SPINLOCK_LOCKED);
     }
   #else
     #define GASNETI_SPINLOCK_LOCKED	1
@@ -479,22 +705,22 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
       gasneti_assert(gasneti_spinlock_is_locked(plock));                        \
   } while (0)
   GASNETI_INLINE(gasneti_spinlock_unlock)
-  int gasneti_spinlock_unlock(gasneti_atomic_t *plock) {
+  int gasneti_spinlock_unlock(gasneti_atomic_t *_plock) {
       #if GASNET_DEBUG
         /* Using CAS for release is more costly, but adds validation */
-        gasneti_assert(gasneti_atomic_compare_and_swap(plock, GASNETI_SPINLOCK_LOCKED, GASNETI_SPINLOCK_UNLOCKED, GASNETI_ATOMIC_REL));
+        gasneti_assert(gasneti_atomic_compare_and_swap(_plock, GASNETI_SPINLOCK_LOCKED, GASNETI_SPINLOCK_UNLOCKED, GASNETI_ATOMIC_REL));
       #else
-        gasneti_atomic_set(plock, GASNETI_SPINLOCK_UNLOCKED, GASNETI_ATOMIC_REL);
+        gasneti_atomic_set(_plock, GASNETI_SPINLOCK_UNLOCKED, GASNETI_ATOMIC_REL);
       #endif
       return 0;
   }
   /* return 0/EBUSY on success/failure to match pthreads */
   GASNETI_INLINE(gasneti_spinlock_trylock) GASNETI_WARN_UNUSED_RESULT
-  int gasneti_spinlock_trylock(gasneti_atomic_t *plock) {
-      gasneti_assert(gasneti_spinlock_is_valid(plock));
-      if ((GASNETI_SPINLOCK_UNLOCKED == gasneti_atomic_read(plock, 0)) &&
-          gasneti_atomic_compare_and_swap(plock, GASNETI_SPINLOCK_UNLOCKED, GASNETI_SPINLOCK_LOCKED, GASNETI_ATOMIC_ACQ_IF_TRUE)) {
-	  gasneti_assert(gasneti_spinlock_is_locked(plock));
+  int gasneti_spinlock_trylock(gasneti_atomic_t *_plock) {
+      gasneti_assert(gasneti_spinlock_is_valid(_plock));
+      if ((GASNETI_SPINLOCK_UNLOCKED == gasneti_atomic_read(_plock, 0)) &&
+          gasneti_atomic_compare_and_swap(_plock, GASNETI_SPINLOCK_UNLOCKED, GASNETI_SPINLOCK_LOCKED, GASNETI_ATOMIC_ACQ_IF_TRUE)) {
+	  gasneti_assert(gasneti_spinlock_is_locked(_plock));
 	  return 0;
       } else {
 	  return EBUSY;
@@ -507,16 +733,16 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
   #define GASNETI_SPINLOCK_DESTROYED	2
   #if GASNET_DEBUG
     GASNETI_INLINE(gasneti_spinlock_is_valid)
-    int gasneti_spinlock_is_valid(gasneti_atomic_t *plock) {
-      uint32_t tmp = gasneti_atomic_read(plock, GASNETI_ATOMIC_RMB_PRE);
-      if_pf (tmp == GASNETI_SPINLOCK_DESTROYED)
+    int gasneti_spinlock_is_valid(gasneti_atomic_t *_plock) {
+      uint32_t _tmp = gasneti_atomic_read(_plock, GASNETI_ATOMIC_RMB_PRE);
+      if_pf (_tmp == GASNETI_SPINLOCK_DESTROYED)
         gasneti_fatalerror("Detected use of destroyed spinlock");
       return 1;
     }
     GASNETI_INLINE(gasneti_spinlock_is_locked)
-    int gasneti_spinlock_is_locked(gasneti_atomic_t *plock) {
-      gasneti_atomic_val_t tmp = gasneti_atomic_read(plock, GASNETI_ATOMIC_RMB_PRE);
-      return (tmp != GASNETI_SPINLOCK_UNLOCKED);
+    int gasneti_spinlock_is_locked(gasneti_atomic_t *_plock) {
+      gasneti_atomic_val_t _tmp = gasneti_atomic_read(_plock, GASNETI_ATOMIC_RMB_PRE);
+      return (_tmp != GASNETI_SPINLOCK_UNLOCKED);
     }
   #else
     #define gasneti_spinlock_is_valid(plock) 1
@@ -529,10 +755,10 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
       gasneti_atomic_set((plock), GASNETI_SPINLOCK_DESTROYED, GASNETI_ATOMIC_WMB_POST); \
   } while (0)
   GASNETI_INLINE(_gasneti_spinlock_try) GASNETI_WARN_UNUSED_RESULT
-  int _gasneti_spinlock_try(gasneti_atomic_t *plock) {
-    gasneti_assert(gasneti_spinlock_is_valid(plock));
-    return (gasneti_atomic_read(plock, 0) == GASNETI_SPINLOCK_UNLOCKED) &&
-           gasneti_atomic_decrement_and_test(plock, GASNETI_ATOMIC_ACQ_IF_TRUE);
+  int _gasneti_spinlock_try(gasneti_atomic_t *_plock) {
+    gasneti_assert(gasneti_spinlock_is_valid(_plock));
+    return (gasneti_atomic_read(_plock, 0) == GASNETI_SPINLOCK_UNLOCKED) &&
+           gasneti_atomic_decrement_and_test(_plock, GASNETI_ATOMIC_ACQ_IF_TRUE);
   }
   /* Ick: forward reference to GASNETI_WAITHOOK only works because this is a macro */
   #define gasneti_spinlock_lock(plock) do { \
@@ -541,15 +767,15 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
     }                                       \
   } while (0)
   GASNETI_INLINE(gasneti_spinlock_unlock)
-  int gasneti_spinlock_unlock(gasneti_atomic_t *plock) {
-    gasneti_assert(gasneti_spinlock_is_locked(plock));
-    gasneti_atomic_set(plock, GASNETI_SPINLOCK_UNLOCKED, GASNETI_ATOMIC_REL);
+  int gasneti_spinlock_unlock(gasneti_atomic_t *_plock) {
+    gasneti_assert(gasneti_spinlock_is_locked(_plock));
+    gasneti_atomic_set(_plock, GASNETI_SPINLOCK_UNLOCKED, GASNETI_ATOMIC_REL);
     return 0;
   }
   /* return 0/EBUSY on success/failure to match pthreads */
   GASNETI_INLINE(gasneti_spinlock_trylock) GASNETI_WARN_UNUSED_RESULT
-  int gasneti_spinlock_trylock(gasneti_atomic_t *plock) {
-    return _gasneti_spinlock_try(plock) ? 0 : EBUSY;
+  int gasneti_spinlock_trylock(gasneti_atomic_t *_plock) {
+    return _gasneti_spinlock_try(_plock) ? 0 : EBUSY;
   }
   #define GASNETI_HAVE_SPINLOCK 1
 #endif
@@ -593,6 +819,7 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
    */
   #if PLATFORM_COMPILER_PGI_CXX
     // Add a redundant value use to avoid a 550 set-but-not-used warning 
+    // Not needed with NVHPC-branded releases
     #define _GASNETI_THREAD_POSTED (sizeof(_gasneti_threadinfo_available) > 1 \
                                     && !_gasneti_threadinfo_available)
   #else
@@ -603,8 +830,12 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
     sizeof(_gasneti_threadinfo_cache) + sizeof(_gasneti_threadinfo_available);
     /* silly little trick to prevent unused variable warning on gcc -Wall */
 
+  // tmp variable below solves scoping problems on cache for expressions like:
+  //   GASNET_POST_THREADINFO(GASNET_GET_THREADINFO())
+  // where the cache from an enclosing scope is consulted by that GET
   #define GASNET_POST_THREADINFO(info)                      \
-    gasnet_threadinfo_t _gasneti_threadinfo_cache = (info); \
+    gasnet_threadinfo_t const _gasneti_threadinfo_tmp = (info); \
+    gasnet_threadinfo_t _gasneti_threadinfo_cache = _gasneti_threadinfo_tmp; \
     uint32_t _gasneti_threadinfo_available = 0
     /* if you get an unused variable warning on _gasneti_threadinfo_available, 
        it means you POST'ed in a function which made no GASNet calls that needed it
@@ -726,7 +957,12 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
   // GASNETI_MYTHREAD_GET_OR_LOOKUP: force retrieve my (gasneti_threaddata_t *) from one of:
   //     a prior GASNET_POST_THREADINFO, an FARG to the enclosing function, or dynamic lookup
   //  This is essentially GASNETI_MYTHREAD without requiring FARG/POST'd context (allows lookup)
-  //  Only valid known use is macros that expand threaddata field access directly into client code
+  //  Only valid known use is macros that expand threaddata field access directly into an
+  //  "unknown" context, such as in client code or certain cases of internal code with callers
+  //  in multiple conduits and/or subsystems.
+  //  This is NOT suitable for internal code in which the macro definition and its callers fall
+  //  within a single conduit or subsystem.  Such cases should instead establish FARG/POST'd
+  //  context and use GASNETI_MYTHREAD.
   #define GASNETI_MYTHREAD_GET_OR_LOOKUP ((struct _gasneti_threaddata_t *)GASNET_GET_THREADINFO())
 
 #else
@@ -797,6 +1033,19 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
 #endif
 /* returns the runtime size of the thread table (always <= GASNETI_MAX_THREADS) */
 extern uint64_t gasneti_max_threads(void);
+// same as above, except reduced by conduit-internal threads, if any
+#if GASNET_SEQ
+  #define gex_System_QueryMaxThreads() ((uint64_t)1)
+#elif GASNETE_CONDUIT_THREADS_USING_TD
+  GASNETI_INLINE(gex_System_QueryMaxThreads)
+  uint64_t gex_System_QueryMaxThreads(void) {
+    // This is conservative.
+    // A conduit may spawn _up to_ GASNETE_CONDUIT_THREADS_USING_TD, but could spawn fewer.
+    return gasneti_max_threads() - GASNETE_CONDUIT_THREADS_USING_TD;
+  }
+#else
+  #define gex_System_QueryMaxThreads() gasneti_max_threads()
+#endif
 extern void gasneti_fatal_threadoverflow(const char *_subsystem);
 
 #ifndef _GASNETI_MYTHREAD_SLOW
@@ -864,6 +1113,23 @@ extern int gasnete_maxthreadidx;
     gasneti_assert(gasnete_threadtable[_thid] != NULL); \
     gasneti_memcheck(gasnete_threadtable[_thid]);       \
 } while (0)
+
+// ------------------------------------------------------------------------------------
+// Checks for communication calls in invalid contexts
+//
+// TODO: should be expanded to check handler and HSL contexts as well (not just NPAM)
+
+#if GASNET_DEBUG
+  extern void gasneti_check_inject(int _for_reply GASNETI_THREAD_FARG);
+  #define GASNETI_CHECK_INJECT()        gasneti_check_inject(0 GASNETI_THREAD_GET)
+  #define GASNETI_CHECK_INJECT_REPLY()  gasneti_check_inject(1 GASNETI_THREAD_GET)
+  extern void gasneti_check_inject_reset(GASNETI_THREAD_FARG_ALONE);
+  #define GASNETI_CHECK_INJECT_RESET()  gasneti_check_inject_reset(GASNETI_THREAD_GET_ALONE)
+#else
+  #define GASNETI_CHECK_INJECT()        ((void)0)
+  #define GASNETI_CHECK_INJECT_REPLY()  ((void)0)
+  #define GASNETI_CHECK_INJECT_RESET()  ((void)0)
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 /* GASNet progressfn support
@@ -1038,12 +1304,12 @@ typedef void (*gasneti_progressfn_t)(void);
   #if !GASNETI_THROTTLE_POLLERS 
     GASNETI_INLINE(_gasneti_AMPoll)
     int _gasneti_AMPoll(GASNETI_THREAD_FARG_ALONE) {
-       int retval;
+       int _retval;
        gasneti_AMPoll_spinpollers_check();
        gasneti_memcheck_one();
-       retval = gasnetc_AMPoll(GASNETI_THREAD_PASS_ALONE);
+       _retval = gasnetc_AMPoll(GASNETI_THREAD_PASS_ALONE);
        GASNETI_PROGRESSFNS_RUN();
-       return retval;
+       return _retval;
     }
     #define gasneti_suspend_spinpollers() gasneti_suspend_spinpollers_check()
     #define gasneti_resume_spinpollers()  gasneti_resume_spinpollers_check()
@@ -1080,18 +1346,18 @@ typedef void (*gasneti_progressfn_t)(void);
     /* and finally, the throttled poll implementation */
     GASNETI_INLINE(_gasneti_AMPoll)
     int _gasneti_AMPoll(GASNETI_THREAD_FARG_ALONE) {
-       int retval = GASNET_OK;
+       int _retval = GASNET_OK;
        gasneti_AMPoll_spinpollers_check();
        gasneti_memcheck_one();
        /* if another thread is spin-polling then skip both the poll and progress fns: */
        if_pt (!gasneti_mutex_trylock(&gasneti_throttle_spinpoller)) {
           /* if another thread is sending then skip the poll: */
           if_pt (!gasneti_atomic_read(&gasneti_throttle_haveusefulwork,0))
-             retval = gasnetc_AMPoll(GASNETI_THREAD_PASS_ALONE);
+             _retval = gasnetc_AMPoll(GASNETI_THREAD_PASS_ALONE);
           gasneti_mutex_unlock(&gasneti_throttle_spinpoller);
           GASNETI_PROGRESSFNS_RUN();
        }
-       return retval;
+       return _retval;
     }
   #endif
   #define gasneti_AMPoll() _gasneti_AMPoll(GASNETI_THREAD_GET_ALONE)
@@ -1113,47 +1379,127 @@ typedef void (*gasneti_progressfn_t)(void);
 #define GASNETC_IMMEDIATE_MAYBE_POLL(flag) \
     do { if (GASNETC_IMMEDIATE_WOULD_POLL(flag)) gasneti_AMPoll(); } while (0)
 
-/* Blocking functions
- * Note the _rmb at the end loop of each is required to ensure that subsequent
- * reads will not observe values that were prefeteched or are otherwise out
- * of date.
- */
+/* ------------------------------------------------------------------------------------ */
+// Blocking functions
+
+// In general, an RMB is required on exit from a spinloop to ensure that
+// subsequent reads will not observe values that were prefeteched or are
+// otherwise out of date.  However, such a fence would be redundant in cases
+// where evaluating the loop body and/or termination condition includes such
+// a fence (or stronger).
+// The `gasneti_{poll,wait}*()` macros include an RMB on loop exit.
+// The `GASNETI_SPIN_*()` macros do NOT include any RMB.
+
 extern int gasneti_wait_mode; /* current waitmode hint */
+
+// GASNETI_WAITHOOK is used to improve performance of various spinloop
+// constructs, implementing the policy selected using `gasnet_set_waitmode()`
+// and invoking `gasneti_spinloop_hint()`.  Since one or both of these can
+// result in non-trivial delay, this hook should only be used after the loop
+// termination condition is known to be false.  This is typically ensured by
+// "peeling" the first iteration of the loop.
+// Additionally, since the implementation of `gasneti_spinloop_hint()` via the
+// x86 `pause` instruction disables speculative execution, this hook should
+// immediately follow the conditional which continues the spin.
+//
+// See the `GASNETI_SPIN_*()` family of macros for example uses.
+//
+// Here is another example:
+//
+//   p = pop(&freelist);
+//   if (!p) {
+//     while (1) {
+//       progress(); // Can refill the freelist
+//       p = pop(&freelist);
+//       if (p) break;
+//       GASNETI_WAITHOOK();
+//     }
+//   }
+//
+// In this example note that `GASNETI_WAITHOOK()` is only reached if `pop()`
+// fails a second time with a `progress` between the first and second attempts
+// (the "loop peeling" recommendation.)  Also note that `GASNETI_WAITHOOK()`
+// immediately follows the conditional `break` that eventually terminates the
+// loop.
+//
+// It should be noted that this example assumes that `pop()` includes an RMB in
+// (at least) any multi-threaded execution which returns a non-NULL value.
+//
+// This example can be written more concisely as:
+//   GASNETI_SPIN_UNTIL((p = pop(&freelist)), progress());
+//
 #define GASNETI_WAITHOOK() do {                                       \
-    if (gasneti_wait_mode != GASNET_WAIT_SPIN) gasneti_sched_yield(); \
     /* prevent optimizer from hoisting the condition check out of */  \
     /* the enclosing spin loop - this is our way of telling the */    \
     /* optimizer "the whole world could change here" */               \
-    gasneti_compiler_fence();                                         \
-    gasneti_spinloop_hint();                                          \
+    gasneti_spinloop_hint(); /* pause instruction or compiler fence */\
+    if_pf (gasneti_wait_mode != GASNET_WAIT_SPIN) gasneti_sched_yield(); \
   } while (0)
 
-/* busy-waits, with no implicit polling (cnd should include an embedded poll)
-   differs from GASNET_BLOCKUNTIL because it may be waiting for an event
-     caused by the receipt of a non-AM message
- */
-#ifndef gasneti_waitwhile
-  #define gasneti_waitwhile(cnd) do { \
-    while (cnd) GASNETI_WAITHOOK();   \
+// Approximately `do { body } while (cnd)`, with the addition of `GASNETI_WAITHOOK()`.
+// Will always execute `body` at least once.
+// No RMB or similar on loop exit.
+#define GASNETI_SPIN_DOWHILE(cnd, body) \
+  do {                   \
+     body;               \
+     if (!(cnd)) break;  \
+     GASNETI_WAITHOOK(); \
+  } while (1)
+
+// Approximately `while (cnd) {body}`, with the addition of `GASNETI_WAITHOOK()`.
+// Will not execute `body` if `cnd` is initially false.
+// No RMB or similar on loop exit.
+#define GASNETI_SPIN_WHILE(cnd, body) \
+  do {                                 \
+    if (cnd) {                         \
+      GASNETI_SPIN_DOWHILE(cnd, body); \
+    }                                  \
+  } while (0)
+
+// Variant on `GASNETI_SPIN_WHILE()` which additionally traces a stalled
+// interval if (and only if) `cnd` is initially true.
+// No RMB or similar on loop exit.
+#if GASNETI_STATS_OR_TRACE
+  #define GASNETI_SPIN_WHILE_TRACE(cnd, type, name, body) \
+    do {                                                                    \
+      if (cnd) {                                                            \
+        gasneti_tick_t _waitstart = GASNETI_TICKS_NOW_IFENABLED(type);      \
+        GASNETI_SPIN_DOWHILE(cnd, body);                                    \
+        GASNETI_TRACE_EVENT_TIME(type,name,gasneti_ticks_now()-_waitstart); \
+      }                                                                     \
+    } while (0)
+#else
+  #define GASNETI_SPIN_WHILE_TRACE(cnd, type, name, body) \
+          GASNETI_SPIN_WHILE(cnd, body)
+#endif
+
+// As above, but negating the condition to yield "UNTIL" instead of "WHILE"
+// No RMB or similar on loop exit.
+#define GASNETI_SPIN_DOUNTIL(cnd, body) \
+        GASNETI_SPIN_DOWHILE(!(cnd), body)
+#define GASNETI_SPIN_UNTIL(cnd, body) \
+        GASNETI_SPIN_WHILE(!(cnd), body)
+#define GASNETI_SPIN_UNTIL_TRACE(cnd, type, name, body) \
+        GASNETI_SPIN_WHILE_TRACE(!(cnd), type, name, body)
+
+// busy-waits, *without* implicit polling (thus `cnd` should include any
+// necessary polling for progress)
+// Differs from GASNET_BLOCKUNTIL because it may be waiting for an event caused
+// by the receipt of a non-AM message
+// Differs from use of GASNETI_SPIN_DO{WHILE,UNTIL}() by addition of an RMB on loop exit.
+#define gasneti_waitwhile(cnd) do { \
+    GASNETI_SPIN_DOWHILE((cnd), ((void)0)); \
     gasneti_local_rmb();              \
   } while (0)
-#endif
 #define gasneti_waituntil(cnd) gasneti_waitwhile(!(cnd)) 
 
-/* busy-wait, with implicit polling */
-/* Note no poll if the condition is already satisfied */
-#ifndef gasneti_pollwhile
-  #define gasneti_pollwhile(cnd) do { \
-    if (cnd) {                        \
-      gasneti_AMPoll();               \
-      while (cnd) {                   \
-        GASNETI_WAITHOOK();           \
-        gasneti_AMPoll();             \
-      }                               \
-    }                                 \
+// busy-wait, *with* implicit polling
+// Note no poll if the condition is already satisfied
+// Differs from use of GASNETI_SPIN_{WHILE,UNTIL}() by addition of an RMB on loop exit.
+#define gasneti_pollwhile(cnd) do { \
+    GASNETI_SPIN_WHILE((cnd), gasneti_AMPoll()); \
     gasneti_local_rmb();              \
   } while (0)
-#endif
 #define gasneti_polluntil(cnd) gasneti_pollwhile(!(cnd)) 
 
 /* ------------------------------------------------------------------------------------ */
@@ -1173,6 +1519,7 @@ extern int gasneti_wait_mode; /* current waitmode hint */
   GASNETI_INLINE(_gasnet_AMPoll)
   int _gasnet_AMPoll(GASNETI_THREAD_FARG_ALONE) {
     GASNETI_TRACE_EVENT(X, AMPOLL);
+    GASNETI_CHECK_INJECT();
     return _gasneti_AMPoll(GASNETI_THREAD_PASS_ALONE);
   }
   #define gasnet_AMPoll() _gasnet_AMPoll(GASNETI_THREAD_GET_ALONE)
@@ -1181,9 +1528,9 @@ extern int gasneti_wait_mode; /* current waitmode hint */
 #ifndef _GASNET_GETENV
 #define _GASNET_GETENV
   GASNETI_INLINE(gasnet_getenv)
-  char *gasnet_getenv(const char *s) {
+  char *gasnet_getenv(const char *_s) {
     GASNETI_CHECKINIT();
-    return gasneti_getenv(s);
+    return gasneti_getenv(_s);
   }
 #endif
 
@@ -1192,7 +1539,7 @@ extern int gasneti_wait_mode; /* current waitmode hint */
   #define GASNET_WAIT_SPIN      0 /* contend aggressively for CPU resources while waiting (spin) */
   #define GASNET_WAIT_BLOCK     1 /* yield CPU resources immediately while waiting (block) */
   #define GASNET_WAIT_SPINBLOCK 2 /* spin for an implementation-dependent period, then block */
-  extern int gasneti_set_waitmode(int wait_mode);
+  extern int gasneti_set_waitmode(int _wait_mode);
   #define gasnet_set_waitmode(wait_mode) gasneti_set_waitmode(wait_mode)
 #endif
 
@@ -1214,29 +1561,18 @@ extern int gasneti_wait_mode; /* current waitmode hint */
 
 #ifndef _GASNET_GETSEGMENTINFO
 #define _GASNET_GETSEGMENTINFO
-  extern int gasneti_getSegmentInfo(gasnet_seginfo_t *seginfo_table, int numentries);
+  extern int gasneti_getSegmentInfo(gasnet_seginfo_t *_seginfo_table, int _numentries);
   #define gasnet_getSegmentInfo(seginfo_table, numentries) \
           gasneti_getSegmentInfo(seginfo_table, numentries)
 #endif
 
 #ifndef _GASNET_GETNODEINFO
 #define _GASNET_GETNODEINFO
-  extern int gasneti_getNodeInfo(gasnet_nodeinfo_t *nodeinfo_table, int numentries);
+  extern int gasneti_getNodeInfo(gasnet_nodeinfo_t *_nodeinfo_table, int _numentries);
   #define gasnet_getNodeInfo(nodeinfo_table, numentries) \
           gasneti_getNodeInfo(nodeinfo_table, numentries)
 #endif
 extern gasnet_nodeinfo_t *gasneti_nodeinfo;
-
-// TODO-EX: override?
-#if 1
-  extern int gasneti_Segment_QueryBound( gex_TM_t tm,
-                                         gex_Rank_t rank,
-                                         void **owneraddr_p,
-                                         void **localaddr_p,
-                                         uintptr_t *size_p);
-  #define gex_Segment_QueryBound(tm,rank,o_p,l_p,s_p) \
-          gasneti_Segment_QueryBound(tm,rank,o_p,l_p,s_p)
-#endif
 
 #ifdef GASNETI_RECORD_DYNAMIC_THREADLOOKUP
   GASNETI_INLINE(gasneti_record_dynamic_threadlookup)
@@ -1250,12 +1586,12 @@ extern gasnet_nodeinfo_t *gasneti_nodeinfo;
 #if defined(PTHREAD_MUTEX_INITIALIZER) /* only if pthread.h available */ && !GASNET_SEQ
   /* gasneti_pthread_create() available on all non-SEQ builds w/ pthreads */
   typedef int (gasneti_pthread_create_fn_t)(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
-  extern int gasneti_pthread_create(gasneti_pthread_create_fn_t *create_fn, pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+  extern int gasneti_pthread_create(gasneti_pthread_create_fn_t *_create_fn, pthread_t *_thread, const pthread_attr_t *_attr, void *(*_start_routine)(void *), void *_arg);
 
   #if defined(GASNETC_PTHREAD_CREATE_OVERRIDE)
     /* Capture existing defn, which could be another library's override */
-    static int gasneti_pthread_create_system(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) {
-      return pthread_create(thread,attr,start_routine,arg);
+    static int gasneti_pthread_create_system(pthread_t *_thread, const pthread_attr_t *_attr, void *(*_start_routine)(void *), void *_arg) {
+      return pthread_create(_thread,_attr,_start_routine,_arg);
     }
     /* Install our override */
     #undef pthread_create
@@ -1265,7 +1601,57 @@ extern gasnet_nodeinfo_t *gasneti_nodeinfo;
 #endif
 
 /* ------------------------------------------------------------------------------------ */
-/* PSHM support */
+// Memory Kinds
+
+// The following GASNET_HAVE_MK_CLASS_* identifiers are either `1` or unset
+
+#define GASNET_HAVE_MK_CLASS_HOST 1 // For consistency - always available
+
+#if GASNET_HAVE_MK_CLASS_CUDA_UVA
+  #undef GASNET_HAVE_MK_CLASS_CUDA_UVA
+  #define GASNET_HAVE_MK_CLASS_CUDA_UVA 1
+  #define GASNETI_MK_CLASS_CUDA_UVA_CONFIG mk_class_cuda_uva
+#else
+  #undef GASNET_HAVE_MK_CLASS_CUDA_UVA
+  #define GASNETI_MK_CLASS_CUDA_UVA_CONFIG nomk_class_cuda_uva
+#endif
+
+#if GASNET_HAVE_MK_CLASS_HIP
+  #undef GASNET_HAVE_MK_CLASS_HIP
+  #define GASNET_HAVE_MK_CLASS_HIP 1
+  #if GASNETI_HIP_PLATFORM_AMD
+    #define GASNETI_MK_CLASS_HIP_CONFIG mk_class_hip_amd
+  #elif GASNETI_HIP_PLATFORM_NVIDIA
+    #define GASNETI_MK_CLASS_HIP_CONFIG mk_class_hip_nvidia
+  #else
+    #error Unknown HIP Platform
+  #endif
+#else
+  #undef GASNET_HAVE_MK_CLASS_HIP
+  #define GASNETI_MK_CLASS_HIP_CONFIG nomk_class_hip
+#endif
+
+#if GASNET_HAVE_MK_CLASS_CUDA_UVA || \
+    GASNET_HAVE_MK_CLASS_HIP   // || GASNET_HAVE_MK_CLASS_[FOO]
+  #define GASNET_HAVE_MK_CLASS_MULTIPLE 1
+#endif
+
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+  GASNETI_INLINE(gasneti_i_segment_kind_is_host)
+  int gasneti_i_segment_kind_is_host(gasneti_Segment_t _segment) {
+    // Either NULL (such as for no bound segment, which is just fine for
+    // out-of-segment or in-aux-seg local addrs) OR the kind is GEX_MK_HOST.
+    return !_segment || (_segment->_kind == GEX_MK_HOST);
+  }
+  #define gasneti_e_segment_kind_is_host(segment) \
+          gasneti_i_segment_kind_is_host(gasneti_import_segment(segment))
+#else
+  #define gasneti_i_segment_kind_is_host(segment) 1
+  #define gasneti_e_segment_kind_is_host(segment) 1
+#endif
+
+/* ------------------------------------------------------------------------------------ */
+// PSHM support - part 1 of 2
 #if GASNET_PSHM
 
 /* Max number of processes supported per node */
@@ -1316,15 +1702,26 @@ unsigned int gasneti_pshm_jobrank_to_local_rank(gex_Rank_t _jobrank) {
 }
 GASNETI_PUREP(gasneti_pshm_jobrank_to_local_rank)
 
-/* Returns 1 if given node is in the caller's supernode, or 0 if it's not.
- * NOTE: result is false before vnet initialization.
- */
+// gasneti_pshm_jobrank_in_supernode()
+//
+// Returns 1 if given node is in the caller's supernode, or 0 if it's not.
+// NOTE: result is false before vnet initialization.
+//
+// For contiguous nbrhd (gasneti_pshm_rankmap == NULL), the following two are
+// equal to gasneti_pshm_firstnode and gasneti_pshm_nodes, respectively.
+// Otherwise, they are gasneti_mynode and 1, respectively.
+// This ensures that regardless of contiguous or not, the case of _jobrank
+// equal to gasneti_mynode will always satisfy the first condition.
+extern gex_Rank_t gasneti_pshm_first_or_self;
+extern gasneti_pshm_rank_t gasneti_pshm_nodes_or_one;
 GASNETI_INLINE(gasneti_pshm_jobrank_in_supernode) GASNETI_PURE
 int gasneti_pshm_jobrank_in_supernode(gex_Rank_t _jobrank) {
 #if GASNET_CONDUIT_SMP
   return 1;
 #else
-  return (gasneti_pshm_jobrank_to_local_rank(_jobrank) < gasneti_pshm_nodes);
+  // Note use of unsigned type gex_Rank_t below means negative => huge
+  if ((_jobrank - gasneti_pshm_first_or_self) < gasneti_pshm_nodes_or_one) return 1;
+  return gasneti_pshm_rankmap && (gasneti_pshm_rankmap[_jobrank] < gasneti_pshm_nodes);
 #endif
 }
 GASNETI_PUREP(gasneti_pshm_jobrank_in_supernode)
@@ -1335,40 +1732,196 @@ GASNETI_PUREP(gasneti_pshm_jobrank_in_supernode)
 // + Relies on dense array of nodeinfo even though only supernode-local are non-zero
 // + Was designed for single segment and even auxseg is currently a hack
 GASNETI_INLINE(gasneti_pshm_jobrank_addr2local) GASNETI_PURE
-void *gasneti_pshm_jobrank_addr2local(gex_Rank_t _jobrank, const void *_addr) {
-#if 1 // TODO-EX: this is a hack!
-  // Properties of unsigned subtraction make the following oblivous to order of client vs aux segment
-  if_pf (((uintptr_t)_addr - (uintptr_t)gasneti_seginfo[_jobrank].addr) >= gasneti_seginfo[_jobrank].size)
-    return (void*)((uintptr_t)_addr + (uintptr_t)gasneti_nodeinfo[_jobrank].auxoffset);
-#endif
-  return  (void*)((uintptr_t)_addr
-                   + (uintptr_t)gasneti_nodeinfo[_jobrank].offset);
+void *gasneti_pshm_jobrank_addr2local(gex_Rank_t _jobrank, const void *_addr, int _is_aux) {
+  if (_is_aux) {
+    gasneti_assert(gasneti_in_auxsegment(_jobrank, _addr, 1));
+    return (void*)((uintptr_t)_addr + gasneti_nodeinfo[_jobrank].auxoffset);
+  } else {
+    // Any local address is OK, else must be in the primordial segment
+    gasneti_assert((_jobrank == gasneti_mynode) ||
+                   _gasneti_in_seginfo_t(_addr, 1, &gasneti_seginfo[_jobrank]));
+    return (void*)((uintptr_t)_addr + gasneti_nodeinfo[_jobrank].offset);
+  }
 } 
 GASNETI_PUREP(gasneti_pshm_jobrank_addr2local)
+#endif // GASNET_PSHM
 
-// Same as the three functions above, but taking (tm,rank) in place of jobrank
+/* ------------------------------------------------------------------------------------ */
+
+#if GASNET_CONDUIT_SMP
+  #define GASNETI_MAPPABLE_JOBRANK_P(jobrank) 1
+#elif GASNET_PSHM
+  #define GASNETI_MAPPABLE_JOBRANK_P(jobrank) gasneti_pshm_jobrank_in_supernode(jobrank)
+#else
+  #define GASNETI_MAPPABLE_JOBRANK_P(jobrank) ((jobrank) == gasneti_mynode)
+#endif
+
+// Helper for other queries (both with PSHM and without)
+// Returns a jobrank or GEX_RANK_INVALID depending on whether the target
+// endpoint named by (tm,rank) is a cross-mapped primordial segment.
+// Erroneous to call for a (tm,rank) naming an endpoint which does not
+// exist or has no a bound segment.
+GASNETI_INLINE(gasneti_nbrhd_mapped_helper) GASNETI_PURE
+gex_Rank_t gasneti_nbrhd_mapped_helper(gex_TM_t _e_tm, gex_Rank_t _rank) {
+  gasneti_TM_t _i_tm = gasneti_import_tm(_e_tm);
+  gasneti_check_i_tm_rank(_i_tm, _rank);
+
+  if (gasneti_is_tm0(_i_tm)) {
+    // fast path for TM0, which can only include primordial segments
+  #if !(GASNET_SEGMENT_EVERYTHING || GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
+    // Check that target segment exists by looking for non-NULL addr in seginfo table
+    // TODO-EX: update if/when scalable storage replaces gasneti_seginfo[]
+    // TODO-EX: update if/when it is possible to have a primordial segment which is NOT cross-mapped
+    gasneti_assert(gasneti_seginfo[_rank].addr);
+  #endif
+    gasneti_assume(_rank != GEX_RANK_INVALID); // may improve codegen in caller
+    return GASNETI_MAPPABLE_JOBRANK_P(_rank) ? _rank : GEX_RANK_INVALID;
+  }
+
+  gex_EP_Location_t _loc = gasneti_i_tm_rank_to_location(_i_tm, _rank, 0);
+  gex_Rank_t _jobrank = _loc.gex_rank;
+
+#if !(GASNET_SEGMENT_EVERYTHING || GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
+  // Regardless whether this query will eventually succeed or fail,
+  // it is erroneous to query a target endpoint that does not yet
+  // have a bound segment made known to us via gex_Segment_Attach()
+  // or gex_EP_PublishBoundSegment().
+  // TODO-EX: update for scalable storage
+  gasneti_assert(gasneti_seginfo_tbl[_loc.gex_ep_index]);
+  gasneti_assert(gasneti_seginfo_tbl[_loc.gex_ep_index][_jobrank].addr);
+#endif
+
+  // Fail unless target rank is in-nbrhd or self, as appropriate
+  if (! GASNETI_MAPPABLE_JOBRANK_P(_jobrank)) return GEX_RANK_INVALID;
+
+  // Fail unless target ep is primordial
+  if (_loc.gex_ep_index != 0) return GEX_RANK_INVALID;
+
+  gasneti_assume(_jobrank != GEX_RANK_INVALID); // may improve codegen in caller
+  return _jobrank;
+}
+GASNETI_PUREP(gasneti_nbrhd_mapped_helper)
+
+// Helper for other queries (both with PSHM and without)
+// Returns a jobrank or GEX_RANK_INVALID depending on whether the initiator and
+// target endpoints named by (tm,rank) are both "eligible" to be mapped for
+// load/store access.  This is inclusive of the check on the jobrank being
+// in-nbrhd (PSHM) or self (non-PSHM).
+// The eligibility criteria are:
+//   1a. Target endpoint must be primordial (have EP index 0)
+//   1b. OR target endpoint is actually self with a host memory segment
+//   2. Initiator endpoint must be host memory (but need not be primordial)
+// However, checking these efficiently is not as simple as it sounds.
+extern gasneti_Segment_t gasneti_epidx_to_segment(gasneti_TM_t i_tm, gex_EP_Index_t ep_idx);
+GASNETI_INLINE(gasneti_jobrank_if_mappable) GASNETI_PURE
+gex_Rank_t gasneti_jobrank_if_mappable(gex_TM_t _e_tm, gex_Rank_t _rank) {
+  gasneti_TM_t _i_tm = gasneti_import_tm(_e_tm);
+  gasneti_check_i_tm_rank(_i_tm, _rank);
+
+  if (gasneti_is_tm0(_i_tm)) {
+    // fast path for TM0, which can only include primordial segments
+    gasneti_assume(_rank != GEX_RANK_INVALID); // may improve codegen in caller
+    return GASNETI_MAPPABLE_JOBRANK_P(_rank) ? _rank : GEX_RANK_INVALID;
+  }
+
+  gex_EP_Location_t _loc = gasneti_i_tm_rank_to_location(_i_tm, _rank, 0);
+  gex_Rank_t _jobrank = _loc.gex_rank;
+  gasneti_assume(_jobrank != GEX_RANK_INVALID); // may improve codegen in caller
+
+  // Fail unless target rank is in-nbrhd or self, as appropriate
+  if (! GASNETI_MAPPABLE_JOBRANK_P(_jobrank)) return GEX_RANK_INVALID;
+
+  // If we get this far then the target process is one that *could*.
+  // be mapped.  Further checks on the two endpoints may be needed.
+
+  // Check that initiator ep is host memory.
+  //
+  // Trivial true if !GASNET_HAVE_MK_CLASS_MULTIPLE
+  // Also true if primordial (ep_idx == 0)
+  // Otherwise requires checking the segment
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+  gex_EP_Index_t _init_ep_idx = gasneti_i_tm_to_ep_index(_i_tm);
+  if (_init_ep_idx) { // non-primordial initiator ep
+    // Fail unless segment is host memory
+    gasneti_Segment_t _seg = gasneti_epidx_to_segment(_i_tm, _init_ep_idx);
+    if (!gasneti_i_segment_kind_is_host(_seg)) return GEX_RANK_INVALID;
+  }
+#endif
+
+  // Check that target ep is host memory and mappable.
+  //
+  // A primordial endpoint's segment is (currently) guaranteed to be
+  // both cross-mapped and host-memory.
+  // If non-primordial and target==self, then we can accept any
+  // host memory segment.
+  gex_EP_Index_t _targ_ep_idx = _loc.gex_ep_index;
+  if (_targ_ep_idx) { // non-primordial target ep
+#if GASNET_PSHM
+    // Fail unless the target is "self"
+    if (_jobrank != gasneti_mynode) return GEX_RANK_INVALID;
+#else
+    gasneti_assert(_jobrank == gasneti_mynode);
+#endif
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+    // Target ep is self.  So fail unless segment is host memory
+    gasneti_Segment_t _seg = gasneti_epidx_to_segment(_i_tm, _targ_ep_idx);
+    if (!gasneti_i_segment_kind_is_host(_seg)) return GEX_RANK_INVALID;
+#endif
+  }
+
+  return _jobrank;
+}
+GASNETI_PUREP(gasneti_jobrank_if_mappable)
+
+#undef GASNETI_MAPPABLE_JOBRANK_P
+
+/* ------------------------------------------------------------------------------------ */
+// PSHM support - part 2 of 2
+
+#if GASNET_PSHM
+// Same as the three gasneti_pshm_jobrank_* functions in part 1, above, but taking
+// (tm,rank) in place of jobrank
+// All are TM-pair aware, and the first two are multi-EP aware
 
 GASNETI_INLINE(gasneti_pshm_local_rank) GASNETI_PURE
 unsigned int gasneti_pshm_local_rank(gex_TM_t _e_tm, gex_Rank_t _rank) {
-  gex_Rank_t _jobrank = gasneti_e_tm_rank_to_jobrank(_e_tm,_rank);
-  return gasneti_pshm_jobrank_to_local_rank(_jobrank);
+  gex_Rank_t _jobrank = gasneti_jobrank_if_mappable(_e_tm, _rank);
+  return (_jobrank == GEX_RANK_INVALID)
+         ? (unsigned int)(-1)
+         : gasneti_pshm_jobrank_to_local_rank(_jobrank);
 }
 GASNETI_PUREP(gasneti_pshm_local_rank)
 
 GASNETI_INLINE(gasneti_pshm_in_supernode) GASNETI_PURE
 int gasneti_pshm_in_supernode(gex_TM_t _e_tm, gex_Rank_t _rank) {
-  gex_Rank_t _jobrank = gasneti_e_tm_rank_to_jobrank(_e_tm,_rank);
-  return gasneti_pshm_jobrank_in_supernode(_jobrank);
+  return (GEX_RANK_INVALID != gasneti_jobrank_if_mappable(_e_tm, _rank));
 }
 GASNETI_PUREP(gasneti_pshm_in_supernode)
 
+// Valid only for primordial segment
 GASNETI_INLINE(gasneti_pshm_addr2local) GASNETI_PURE
 void *gasneti_pshm_addr2local(gex_TM_t _e_tm, gex_Rank_t _rank, const void *_addr) {
+#if GASNET_DEBUG
+  gex_EP_Location_t _loc = gasneti_e_tm_rank_to_location(_e_tm, _rank, 0);
+  gex_Rank_t _jobrank = _loc.gex_rank;
+  gasneti_assert_uint(_loc.gex_ep_index ,==, 0); // primordial
+#else
   gex_Rank_t _jobrank = gasneti_e_tm_rank_to_jobrank(_e_tm,_rank);
-  return gasneti_pshm_jobrank_addr2local(_jobrank, _addr);
+#endif
+  gasneti_assert(! gasneti_in_auxsegment(_jobrank, _addr, 1));
+  return gasneti_pshm_jobrank_addr2local(_jobrank, _addr, 0);
 } 
 GASNETI_PUREP(gasneti_pshm_addr2local)
-#endif /* GASNET_PSHM */
+
+// Valid only for an aux segment
+GASNETI_INLINE(gasneti_pshm_aux2local) GASNETI_PURE
+void *gasneti_pshm_aux2local(gex_Rank_t _jobrank, const void *_addr) {
+  gasneti_assert(gasneti_in_auxsegment(_jobrank, _addr, 1));
+  return gasneti_pshm_jobrank_addr2local(_jobrank, _addr, 1);
+}
+GASNETI_PUREP(gasneti_pshm_aux2local)
+
+#endif // GASNET_PSHM
 
 /* ------------------------------------------------------------------------------------ */
 // Wrappers for memcpy()
@@ -1515,12 +2068,12 @@ GASNETI_PUREP(gasneti_pshm_addr2local)
 
 // Is the argument a *single* valid data type?
 GASNETI_INLINE(gasneti_dt_valid) GASNETI_PURE
-int gasneti_dt_valid(gex_DT_t dt) {
-  return (((dt) & _GEX_DT_VALID) && GASNETI_POWEROFTWO(dt));
+int gasneti_dt_valid(gex_DT_t _dt) {
+  return (((_dt) & _GEX_DT_VALID) && GASNETI_POWEROFTWO(_dt));
 }
 GASNETI_INLINE(gasneti_dt_valid_atomic) GASNETI_PURE
-int gasneti_dt_valid_atomic(gex_DT_t dt) {
-  return gasneti_dt_valid(dt) && (dt != GEX_DT_USER);
+int gasneti_dt_valid_atomic(gex_DT_t _dt) {
+  return gasneti_dt_valid(_dt) && (_dt != GEX_DT_USER);
 }
 #define gasneti_dt_valid_reduce gasneti_dt_valid
 
@@ -1541,9 +2094,9 @@ int gasneti_dt_valid_atomic(gex_DT_t dt) {
 // What is the size of the type?
 // TODO: might be made cheaper by encoding size into the GEX_DT_* constants
 GASNETI_INLINE(gasneti_dt_size) GASNETI_PURE
-size_t gasneti_dt_size(gex_DT_t dt) {
-  gasneti_assert(!gasneti_dt_4byte(dt) ^ !gasneti_dt_8byte(dt));
-  return (size_t) (gasneti_dt_4byte(dt) ? 4 : 8);
+size_t gasneti_dt_size(gex_DT_t _dt) {
+  gasneti_assert(!gasneti_dt_4byte(_dt) ^ !gasneti_dt_8byte(_dt));
+  return (size_t) (gasneti_dt_4byte(_dt) ? 4 : 8);
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -1626,16 +2179,16 @@ size_t gasneti_dt_size(gex_DT_t dt) {
 
 // Is the argument a *single* valid operation?
 GASNETI_INLINE(gasneti_op_valid) GASNETI_PURE
-int gasneti_op_valid(gex_OP_t op) {
-  return (((op) & _GEX_OP_VALID) && GASNETI_POWEROFTWO(op));
+int gasneti_op_valid(gex_OP_t _op) {
+  return (((_op) & _GEX_OP_VALID) && GASNETI_POWEROFTWO(_op));
 }
 GASNETI_INLINE(gasneti_op_valid_atomic) GASNETI_PURE
-int gasneti_op_valid_atomic(gex_OP_t op) {
-  return gasneti_op_valid(op) && gasneti_op_atomic(op);
+int gasneti_op_valid_atomic(gex_OP_t _op) {
+  return gasneti_op_valid(_op) && gasneti_op_atomic(_op);
 }
 GASNETI_INLINE(gasneti_op_valid_reduce) GASNETI_PURE
-int gasneti_op_valid_reduce(gex_OP_t op) {
-  return gasneti_op_valid(op) && gasneti_op_reduce(op);
+int gasneti_op_valid_reduce(gex_OP_t _op) {
+  return gasneti_op_valid(_op) && gasneti_op_reduce(_op);
 }
 
 // Predicates on masks:

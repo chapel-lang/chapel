@@ -7,7 +7,7 @@ proc TupleType.init=(const ref other: TupleType) {
   this.t = other.t;
   this.f = other.f;
 }
-proc =(ref lhs: TupleType, const ref rhs: TupleType) {
+operator TupleType.=(ref lhs: TupleType, const ref rhs: TupleType) {
   lhs.f = rhs.f;
 }
 
@@ -15,7 +15,7 @@ record AnonTuple {
   var f;
 }
 
-proc =(ref a:TupleType, b:AnonTuple) {
+operator =(ref a:TupleType, b:AnonTuple) {
   a.f = b.f;
 }
 proc TupleType.init=(from: AnonTuple) {
@@ -23,7 +23,7 @@ proc TupleType.init=(from: AnonTuple) {
   this.f = from.f;
   this.complete();
 }
-proc _cast(type t: TupleType, from: AnonTuple) {
+operator :(from: AnonTuple, type t: TupleType) {
   var tmp: t = from;
   return tmp;
 }

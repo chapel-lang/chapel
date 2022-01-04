@@ -351,7 +351,8 @@
 /* Define to use a lock-free hash table for FEB metadata. */
 #undef LOCK_FREE_FEBS
 
-/* Define to the sub-directory where libtool stores uninstalled libraries. */
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
 #undef LT_OBJDIR
 
 /* if the compiler supports __sync_synchronize (fallback to COMPILER_FENCE) */
@@ -359,6 +360,9 @@
 
 /* Whether the library should use get/set rlimit functions */
 #undef NEED_RLIMIT
+
+/* Define to 1 if your C compiler doesn't accept -c and -o together. */
+#undef NO_MINUS_C_MINUS_O
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT

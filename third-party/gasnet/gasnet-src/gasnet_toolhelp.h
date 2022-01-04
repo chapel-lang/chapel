@@ -357,7 +357,7 @@ const char *gasnett_signame_fromval(int _sigval);
 extern void gasneti_registerExitHandler(void (*_exitfn)(int));
 
 GASNETI_COLD
-extern int gasneti_raise(int sig); // portability wrapper around POSIX raise(3)
+extern int gasneti_raise(int _sig); // portability wrapper around POSIX raise(3)
 
 extern int gasneti_blocksig(int _sig);
 extern int gasneti_unblocksig(int _sig);
@@ -1086,6 +1086,10 @@ extern int gasneti_parse_dbl(const char *_str, double *_result_ptr);
 extern void gasneti_setenv(const char *_key, const char *_value);
 extern void gasneti_unsetenv(const char *_key);
 
+// Environment variable queries should use gasneti_getenv_*_withdefault() whereever
+// practical, to ensure proper verboseenv console reporting of settings/units/defaults.
+// Any calls to bare gasneti_getenv() should be followed by a call to the
+// appropriate gasneti_env*_display() function to ensure proper reporting.
 extern char *gasneti_getenv(const char *_keyname);
 extern char *gasneti_getenv_withdefault(const char *_keyname, const char *_defaultval);
 extern int gasneti_getenv_yesno_withdefault(const char *_keyname, int _defaultval);

@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "chpl-comm.h"
+#include "chpl-gpu.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-hook.h"
@@ -54,6 +55,16 @@ static inline
 void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
                            c_sublocid_t subloc, chpl_bool* callPostAlloc,
                            int32_t lineno, int32_t filename) {
+  void* p = NULL;
+  const size_t size = nmemb * eltSize;
+#ifdef HAS_GPU_LOCALE
+  if (chpl_gpu_running_on_gpu_locale()) {
+    *callPostAlloc = false;
+    p = chpl_gpu_mem_alloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
+                           lineno, filename);
+  }
+  else {
+#endif
   //
   // To support dynamic array registration by comm layers, in addition
   // to the address to the allocated memory this returns either true or
@@ -69,8 +80,6 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
   chpl_memhook_malloc_pre(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                           lineno, filename);
 
-  const size_t size = nmemb * eltSize;
-  void* p = NULL;
   *callPostAlloc = false;
   if (chpl_mem_size_justifies_comm_alloc(size)) {
     p = chpl_comm_regMemAlloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
@@ -81,12 +90,14 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
   }
 
   if (p == NULL) {
-    p = chpl_malloc(nmemb * eltSize);
+    p = chpl_malloc(size);
   }
 
   chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                            lineno, filename);
-
+#ifdef HAS_GPU_LOCALE
+  }
+#endif
   return p;
 }
 
@@ -103,21 +114,39 @@ void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,
 
 
 static inline
+chpl_bool chpl_mem_array_supports_realloc(void* p, size_t oldNmemb, size_t newNmemb,
+                                          size_t eltSize, int32_t lineno,
+                                          int32_t filename) {
+  const size_t oldSize = oldNmemb * eltSize;
+  const size_t newSize = newNmemb * eltSize;
+  return chpl_mem_size_justifies_comm_alloc(oldSize) == chpl_mem_size_justifies_comm_alloc(newSize);
+}
+
+static inline
 void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
                              size_t eltSize,
                              c_sublocid_t subloc, chpl_bool* callPostAlloc,
                              int32_t lineno, int32_t filename) {
+  void* newp = NULL;
+  const size_t newSize = newNmemb * eltSize;
+#ifdef HAS_GPU_LOCALE
+  if (chpl_gpu_running_on_gpu_locale()) {
+    *callPostAlloc = false;
+    newp = chpl_gpu_mem_realloc(p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                                lineno, filename);
+  }
+  else {
+#endif
+
   //
   // Support for dynamic array registration by comm layers is done here
   // via *callPostAlloc, the same as for chpl_mem_array_alloc().  See
   // there for further information.
 
-  const size_t newSize = newNmemb * eltSize;
   chpl_memhook_realloc_pre(p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                            lineno, filename);
 
   const size_t oldSize = oldNmemb * eltSize;
-  void* newp = NULL;
   *callPostAlloc = false;
   if (chpl_mem_size_justifies_comm_alloc(oldSize)) {
     newp = chpl_comm_regMemRealloc(p, oldSize, newSize,
@@ -134,7 +163,9 @@ void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
 
   chpl_memhook_realloc_post(newp, p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                            lineno, filename);
-
+#ifdef HAS_GPU_LOCALE
+  }
+#endif
   return newp;
 }
 
@@ -155,23 +186,32 @@ void chpl_mem_array_postRealloc(void* oldp, size_t oldNmemb,
 
 static inline
 void chpl_mem_array_free(void* p,
-                         size_t nmemb, size_t eltSize,
+                         size_t nmemb, size_t eltSize, c_sublocid_t subloc,
                          int32_t lineno, int32_t filename) {
+#ifdef HAS_GPU_LOCALE
+  if (subloc > 0) {
+    chpl_gpu_mem_free(p, lineno, filename);
+  }
+  else {
+#endif
   //
   // If the size indicates we might have gotten this memory from the
   // comm layer then try to free it there.  If not, or if so but the
   // comm layer says it didn't come from there, free it in the memory
   // layer.
   //
-  chpl_memhook_free_pre(p, lineno, filename);
-
   const size_t size = nmemb * eltSize;
+  chpl_memhook_free_pre(p, size, lineno, filename);
+
   if (chpl_mem_size_justifies_comm_alloc(size)
       && chpl_comm_regMemFree(p, size)) {
     return;
   }
 
   chpl_free(p);
+#ifdef HAS_GPU_LOCALE
+  }
+#endif
 }
 
 #ifdef __cplusplus

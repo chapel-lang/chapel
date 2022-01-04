@@ -1,0 +1,2 @@
+in-conversion-inout-error.chpl:19: In function 'test2':
+in-conversion-inout-error.chpl:22: error: Cannot assign to int(8) from int(64)

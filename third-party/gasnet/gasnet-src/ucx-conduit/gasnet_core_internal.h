@@ -17,7 +17,7 @@
 #define GASNETC_HSL_SPINLOCK 1
 
 /* ------------------------------------------------------------------------------------ */
-#define _hidx_gasnetc_exchg_reqh              (GASNETC_HANDLER_BASE+0)
+#define _hidx_gasnetc_hbarr_reqh              (GASNETC_HANDLER_BASE+0)
 #define _hidx_gasnetc_exit_reduce_reqh        (GASNETC_HANDLER_BASE+1)
 #define _hidx_gasnetc_exit_role_reqh          (GASNETC_HANDLER_BASE+2)
 #define _hidx_gasnetc_exit_role_reph          (GASNETC_HANDLER_BASE+3)
@@ -288,6 +288,17 @@ typedef struct {
 #endif
 } gasnetc_token_t;
 
+// Conduit-specific Segment type
+typedef struct gasnetc_Segment_t_ {
+  GASNETI_SEGMENT_COMMON // conduit-indep part as prefix
+
+#if GASNETC_PIN_SEGMENT
+  // memory registation info
+  gasnetc_mem_info_t *mem_info;
+#endif
+} *gasnetc_Segment_t;
+
+
 typedef enum {
   gasnetc_rdma_op_put,
   gasnetc_rdma_op_get,
@@ -391,8 +402,7 @@ int gasnetc_am_reqrep_inner(gasnetc_ucx_am_type_t am_type,
            uint32_t nbytes,
            void *dst_addr,
            gasnetc_atomic_val_t *local_cnt,
-           gasnetc_cbfunc_t local_cb,
-           gasnetc_counter_t *counter
+           gasnetc_cbfunc_t local_cb
            GASNETI_THREAD_FARG);
 extern int gasnetc_RequestSysShort(gex_Rank_t jobrank,
                                    gasnetc_counter_t *counter,

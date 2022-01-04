@@ -54,10 +54,6 @@ CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body)
   gCatchStmts.add(this);
 }
 
-CatchStmt::~CatchStmt() {
-
-}
-
 const char* CatchStmt::name() const {
   return _name;
 }

@@ -1,0 +1,4 @@
+error-generic-implements-6.chpl:28: In 'implements IFC2' statement:
+error-generic-implements-6.chpl:28: error: when checking this implements statement
+error-generic-implements-6.chpl:28: note: the required function reqFun is not implemented
+error-generic-implements-6.chpl:6: note: the required function reqFun in the interface IFC2 is declared here

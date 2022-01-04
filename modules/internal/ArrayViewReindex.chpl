@@ -199,18 +199,16 @@ module ArrayViewReindex {
       ownsDownDomInst = true;
     }
 
-    pragma "order independent yielding loops"
     iter these() {
       if chpl__isDROrDRView(downdom) {
-        for i in updom do
+        foreach i in updom do
           yield i;
       } else {
-        for i in downdom do
+        foreach i in downdom do
           yield downIdxToUpIdx(i);
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && chpl__isDROrDRView(downdom)
       && __primitive("method call resolves", updom, "these", tag)
@@ -219,7 +217,6 @@ module ArrayViewReindex {
           yield i;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !chpl__isDROrDRView(downdom)
       && __primitive("method call resolves", downdom, "these", tag)
@@ -451,7 +448,6 @@ module ArrayViewReindex {
         yield elem;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
            __primitive("method call resolves", privDom, "these", tag) {
@@ -471,10 +467,9 @@ module ArrayViewReindex {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
-      for i in privDom.these(tag, followThis) {
+      foreach i in privDom.these(tag, followThis) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getDataIndex(i);
           yield indexCache.getDataElem(dataIdx);
@@ -520,8 +515,7 @@ module ArrayViewReindex {
       return dsiAccess(i);
     }
 
-    inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i: idxType ...rank) const ref {
       return dsiAccess(i);
     }
 
@@ -544,8 +538,7 @@ module ArrayViewReindex {
       }
     }
 
-    inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i) const ref {
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -562,7 +555,6 @@ module ArrayViewReindex {
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiLocalAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiBoundsCheck(i) {
@@ -735,7 +727,7 @@ module ArrayViewReindex {
     var ranges : downdom.dsiDims().type;
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
     for param d in 0..dims.size-1 {
-      if (dims(d).size == 0) {
+      if (dims(d).sizeAs(int) == 0) {
         actualLow(d) = downdom.dsiDim(d).low;
         actualHigh(d) = downdom.dsiDim(d).high;
       } else {
@@ -767,7 +759,7 @@ module ArrayViewReindex {
     var ranges : downdom.rank * range(downdom.idxType, stridable=downdom.stridable || dims(0).stridable);
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
     for param d in 0..dims.size-1 {
-      if (dims(d).size == 0) {
+      if (dims(d).sizeAs(int) == 0) {
         actualLow(d) = downdom.dsiDim(d).low;
         actualHigh(d) = downdom.dsiDim(d).high;
       } else {

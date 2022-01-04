@@ -2,7 +2,7 @@
 import sys
 
 import chpl_platform, overrides, third_party_utils
-from utils import error, memoize
+from utils import error, memoize, warning
 
 
 @memoize
@@ -11,11 +11,6 @@ def get():
     linux = platform_val.startswith('linux64')
     osx = platform_val.startswith('darwin')
     val = overrides.get('CHPL_UNWIND')
-
-    if val == 'libunwind':
-        sys.stderr.write("Warning: CHPL_UNWIND=libunwind is deprecated. "
-                         "Use CHPL_UNWIND=bundled instead\n")
-        val = 'bundled'
 
     if linux:
         if val == 'bundled':

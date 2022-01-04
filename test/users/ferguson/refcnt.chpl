@@ -39,7 +39,7 @@ proc R.init=(x: R) {
 }
 
 
-proc =(ref ret:R, x:R) {
+operator R.=(ref ret:R, x:R) {
   // retain then release.
   writeln("Starting R assign ", ret.refcnt, x.refcnt);
   x.retain();

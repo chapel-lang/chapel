@@ -1,0 +1,43 @@
+.TH qt_dictionary_put_if_absent 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_dictionary_put_if_absent
+\- insert a key/value pair into a dictionary
+.SH SYNOPSIS
+.B #include <qthread/dictionary.h>
+
+.I void *
+.br
+.B qt_dictionary_put_if_absent
+.RI "(qt_dictionary *" dict ,
+.br
+.ti +29
+.RI "void *" key ,
+.br
+.ti +29
+.RI "void *" value );
+
+.SH DESCRIPTION
+This function inserts a key/value pair, consisting of the
+.I key
+and
+.I value
+specified, into the dictionary
+.IR dict .
+The insertion will fail if the
+.I key
+is already present in the dictionary.
+.SH RETURN VALUES
+Returns the address of the item in the dictionary after the put or NULL if the insert failed.
+.SH SEE ALSO
+.BR qt_dictionary_create (3),
+.BR qt_dictionary_delete (3),
+.BR qt_dictionary_destroy (3),
+.BR qt_dictionary_end (3),
+.BR qt_dictionary_get (3),
+.BR qt_dictionary_iterator_copy (3),
+.BR qt_dictionary_iterator_create (3),
+.BR qt_dictionary_iterator_destroy (3),
+.BR qt_dictionary_iterator_equals (3),
+.BR qt_dictionary_iterator_get (3),
+.BR qt_dictionary_iterator_next (3),
+.BR qt_dictionary_put (3)

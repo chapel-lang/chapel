@@ -1,5 +1,5 @@
 perfkeys: GETs:, GETs:
-files: remote-record-read-copy-c.dat, remote-record-read-copy-c-cache.dat
-graphkeys: c GETs, c-cache GETs
+files: remote-record-read-copy-no-wideopt-no-cache.dat, remote-record-read-copy-no-wideopt-cache.dat
+graphkeys: no-cache GETs, cache GETs
 ylabel: Count
 graphtitle: remote-record-read-copy

@@ -107,6 +107,61 @@ static void computeClassHierarchy() {
   }
 }
 
+// Here we record method names on interface types, that is, T1, ... and
+// AT1, ..., given 'interface IFC(T1, ...) { type AT1; ... }'
+// so that we know when we can insert an implicit 'this' actual arg.
+static std::map<Symbol*, std::set<const char*> > interfaceMethodNames;
+
+// 'interfaceMethodNames' records a 'proc IFC.someMethod...' as a method on T1.
+// 'thisTypeToIfcFormal' maps the type of 'this' in the former to T1.
+static SymbolMap thisTypeToIfcFormal;
+
+static bool isInterfaceMethodName(const char* name, Type* thisType) {
+  if (ConstrainedType* ct = toConstrainedType(thisType)) {
+    Symbol* thisTS = ct->symbol;
+    INT_ASSERT(ct->ctUse != CT_CGFUN_ASSOC_TYPE);
+    if (ct->ctUse == CT_CGFUN_FORMAL)
+      thisTS = thisTypeToIfcFormal.get(thisTS);
+
+    auto it = interfaceMethodNames.find(thisTS);
+    if (it != interfaceMethodNames.end())
+      return it->second.count(name);
+  }
+
+  return false;
+}
+
+static void recordIfcMethod(FnSymbol* fn, Symbol* thisType) {
+  interfaceMethodNames[thisType].insert(fn->name);
+}
+
+static void recordIfcThis(InterfaceSymbol* isym, FnSymbol* fn,
+                          TypeSymbol* thisType) {
+  INT_ASSERT(isConstrainedTypeSymbol(thisType, CT_CGFUN_FORMAL));
+  Symbol* ifcFormal = toDefExpr(isym->ifcFormals.head)->sym;
+  INT_ASSERT(isConstrainedTypeSymbol(ifcFormal, CT_IFC_FORMAL));
+  thisTypeToIfcFormal.put(thisType, ifcFormal);
+  recordIfcMethod(fn, ifcFormal);
+}
+
+static void recordMethodsOnInterfaceFormalsAndATs() {
+  forv_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
+    for_alist(stmt, isym->ifcBody->body)
+      if (DefExpr* def = toDefExpr(stmt))
+       if (FnSymbol* fn = toFnSymbol(def->sym))
+        if (Symbol* _this = fn->_this)
+         if (ConstrainedType* ct = toConstrainedType(_this->type)) {
+           if (ct->ctUse == CT_IFC_FORMAL)
+             INT_ASSERT(ct->symbol->defPoint->list == &(isym->ifcFormals));
+           else if (ct->ctUse == CT_IFC_ASSOC_TYPE)
+             INT_ASSERT(ct->symbol->defPoint->parentExpr == isym->ifcBody);
+           else
+             continue; // otherwise proceed to the next stmt in isym->ifcBody
+
+           recordIfcMethod(fn, ct->symbol);
+         }
+}
+
 static void handleReceiverFormals() {
   //
   // resolve type of this for methods
@@ -121,13 +176,23 @@ static void handleReceiverFormals() {
       if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(stmt)) {
         SET_LINENO(fn->_this);
 
-        if (TypeSymbol* ts = toTypeSymbol(lookup(sym->unresolved, sym))) {
+        Symbol* rsym = lookup(sym->unresolved, sym);
+        if (TypeSymbol* ts = toTypeSymbol(rsym)) {
           sym->replace(new SymExpr(ts));
 
           fn->_this->type = ts->type;
           fn->_this->type->methods.add(fn);
 
           AggregateType::setCreationStyle(ts, fn);
+
+        } else if (InterfaceSymbol* isym = toInterfaceSymbol(rsym)) {
+          // Convert fn(this: IFC, ...) to
+          //   fn(this: ?t_IFC, ...) where t_IFC implements IFC
+          TypeSymbol* ctSym = desugarInterfaceAsType(fn,
+                                toArgSymbol(fn->_this), sym, isym);
+          sym->replace(new SymExpr(ctSym));
+          fn->_this->type = ctSym->type;
+          recordIfcThis(isym, fn, ctSym);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {
@@ -141,6 +206,8 @@ static void handleReceiverFormals() {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
+
+  recordMethodsOnInterfaceFormalsAndATs();
 }
 
 static void markGenerics() {
@@ -547,7 +614,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
                isSymExpr(stmt)           == true ||
                isGotoStmt(stmt)          == true) {
 
-    // May occur in --llvm runs
+    // May occur with LLVM backend
     } else if (isExternBlockStmt(stmt)   == true) {
 
     } else {
@@ -835,16 +902,20 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
         // e.g. 'owned' becomes 'owned with any nilability'
         AggregateType* at = toAggregateType(sym->type);
         INT_ASSERT(at);
-        Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
+        Type* t = at->getDecoratedClass(ClassTypeDecorator::MANAGED);
         INT_ASSERT(t);
         sym = t->symbol;
       } else if (isClass(sym->type)) {
         // Make 'MyClass' mean generic-management.
-        // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
-        ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+        // Switch to the ClassTypeDecorator::GENERIC_NONNIL decorated class type.
+        ClassTypeDecoratorEnum d = ClassTypeDecorator::GENERIC_NONNIL;
         Type* t = getDecoratedClass(sym->type, d);
         sym = t->symbol;
       }
+    }
+
+    if (sym->hasFlag(FLAG_DEPRECATED)) {
+      sym->generateDeprecationWarning(usymExpr);
     }
 
     symExpr = new SymExpr(sym);
@@ -859,7 +930,18 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
   // sjd: stopgap to avoid shadowing variables or functions by methods
   } else if (fn->isMethod() == true) {
-    updateMethod(usymExpr);
+    BlockStmt* block = usymExpr->getScopeBlock();
+    FnSymbol* containingFn = usymExpr->getFunction();
+    bool convert = true;
+    if (block != NULL && containingFn != NULL) {
+      if (block == containingFn->lifetimeConstraints) {
+        // This is in a lifetime constraint clause.  Don't make this a method
+        // call
+        convert = false;
+      }
+    }
+    if (convert)
+      updateMethod(usymExpr);
 
   // handle function call without parentheses
   } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
@@ -932,7 +1014,16 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
           const char* name = usymExpr->unresolved;
           Type*       type = method->_this->type;
 
-          if (isAggr == true || isMethodName(name, type) == true) {
+          if ((method->name == astrInit || method->name == astrInitEquals) &&
+              isAstrOpName(name)) {
+            break;
+          }
+
+          if (isAstrOpName(name))
+            break;
+
+          if (isAggr == true || isMethodName(name, type) == true ||
+              (sym == nullptr && isInterfaceMethodName(name, type))) {
             if (isFunctionNameWithExplicitScope(expr) == false) {
               insertFieldAccess(method, usymExpr, sym, expr);
             }
@@ -1112,8 +1203,8 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
   // As of this writing, a with-clause can be duplicated in the AST.
   // This code avoids multiple error messages for the same symbol.
 
-  std::pair<const char*, int> markLoc(origUSE->astloc.filename,
-                                      origUSE->astloc.lineno);
+  std::pair<const char*, int> markLoc(origUSE->astloc.filename(),
+                                      origUSE->astloc.lineno());
 
   WFDIWmark                   mark(markLoc, origUSE->unresolved);
 
@@ -1347,8 +1438,8 @@ static void resolveModuleCall(CallExpr* call) {
 
         // Adjust class types to undecorated
         if (sym && isClass(sym->type)) {
-          // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
-          ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+          // Switch to the ClassTypeDecorator::GENERIC_NONNIL decorated class type.
+          ClassTypeDecoratorEnum d = ClassTypeDecorator::GENERIC_NONNIL;
           Type* t = getDecoratedClass(sym->type, d);
           sym = t->symbol;
         }
@@ -1409,8 +1500,8 @@ static void resolveModuleCall(CallExpr* call) {
                              mbrName,
                              uSE->unresolved);
               USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
-                        uSE->unresolved, mod->name, renameLoc->filename,
-                        renameLoc->lineno);
+                        uSE->unresolved, mod->name, renameLoc->filename(),
+                        renameLoc->lineno());
 
             }
           }
@@ -1434,8 +1525,8 @@ static void resolveModuleCall(CallExpr* call) {
                              mbrName,
                              uSE->unresolved);
               USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
-                        uSE->unresolved, mod->name, renameLoc->filename,
-                        renameLoc->lineno);
+                        uSE->unresolved, mod->name, renameLoc->filename(),
+                        renameLoc->lineno());
             }
           }
         }
@@ -1488,6 +1579,10 @@ static void resolveEnumeratedTypes() {
 
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
+                if (constant->sym->hasFlag(FLAG_DEPRECATED)) {
+                  constant->sym->generateDeprecationWarning(call);
+                }
+
                 call->replace(new SymExpr(constant->sym));
               }
             }
@@ -1516,7 +1611,7 @@ static void adjustTypeMethodsOnClasses() {
 
     ArgSymbol* thisArg = toArgSymbol(fn->_this);
     Type*      thisType = thisArg->type;
-    if (! isClass(thisType)) continue; // handle only undecorated classes
+    if (! isClassLikeOrManaged(thisType)) continue;
 
     if (BlockStmt* typeBlock = thisArg->typeExpr) {
       // Remove the type block, ensuring that its information is preserved.
@@ -1526,7 +1621,8 @@ static void adjustTypeMethodsOnClasses() {
     }
 
     // Update the type of 'this'.
-    thisArg->type = getDecoratedClass(thisType, CLASS_TYPE_GENERIC);
+    thisArg->type = getDecoratedClass(thisType,
+        ClassTypeDecorator::GENERIC);
   }
 }
 
@@ -1594,15 +1690,15 @@ printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
       if (VisibilityStmt* reexport = reexportPts[another]) {
         USR_PRINT(another,
                   "symbol '%s', defined here, was last reexported at %s:%d",
-                  another->name, reexport->astloc.filename,
-                  reexport->astloc.lineno);
+                  another->name, reexport->astloc.filename(),
+                  reexport->astloc.lineno());
       }
       astlocT* renameLoc = renameLocs[another];
       if (storeRenames && renameLoc != NULL) {
         USR_PRINT(another,
                   "symbol '%s', defined here, was renamed to '%s' at %s:%d",
-                  another->name, nameUsed, renameLoc->filename,
-                  renameLoc->lineno);
+                  another->name, nameUsed, renameLoc->filename(),
+                  renameLoc->lineno());
       } else {
         USR_PRINT(another, "also defined here");
       }
@@ -1634,12 +1730,12 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
 
         if (VisibilityStmt* reexport = reexportPts[sym]) {
           USR_PRINT("'%s' was last reexported at %s:%d", name,
-                    reexport->astloc.filename, reexport->astloc.lineno);
+                    reexport->astloc.filename(), reexport->astloc.lineno());
         }
         astlocT* symRenameLoc = renameLocs[sym];
         if (storeRenames && symRenameLoc != NULL) {
           USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
-                    name, symRenameLoc->filename, symRenameLoc->lineno);
+                    name, symRenameLoc->filename(), symRenameLoc->lineno());
         }
         printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs,
                                 reexportPts);
@@ -1763,7 +1859,7 @@ static void lookup(const char*           name,
           lookup(name, context, standardModule->block, visited, symbols,
                  renameLocs, storeRenames, reexportPts);
           if (symbols.size() == 0) {
-            
+
             lookup(name, context, theProgram->block, visited, symbols,
                    renameLocs, storeRenames, reexportPts);
           }
@@ -2541,18 +2637,19 @@ static ModuleSymbol* definesModuleSymbol(Expr* expr) {
 // Find 'unmanaged SomeClass' and 'borrowed SomeClass' and replace these
 // with the compiler's simpler representation (canonical type or unmanaged type)
 void resolveUnmanagedBorrows(CallExpr* call) {
-  if (isClassDecoratorPrimitive(call)) {
 
-    // Give up now if the actual is missing.
-    if (call->numActuals() < 1)
-      return;
+  // Give up now if the actual is missing.
+  if (call->numActuals() < 1)
+    return;
 
-    // Make sure to handle nested calls appropriately
-    if (CallExpr* sub = toCallExpr(call->get(1))) {
-      if (isClassDecoratorPrimitive(sub)) {
-        resolveUnmanagedBorrows(sub);
-      }
+  // Make sure to handle nested calls appropriately
+  if (CallExpr* sub = toCallExpr(call->get(1))) {
+    if (isClassDecoratorPrimitive(sub)) {
+      resolveUnmanagedBorrows(sub);
     }
+  }
+
+  if (isClassDecoratorPrimitive(call)) {
 
     SymExpr* typeSymbolSe = NULL;
     if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2569,13 +2666,13 @@ void resolveUnmanagedBorrows(CallExpr* call) {
       if (TypeSymbol* ts = toTypeSymbol(typeSymbolSe->symbol())) {
         AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type));
 
-        ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+        ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED;
         if (isClassLike(ts->type)) {
           decorator = classTypeDecorator(ts->type);
         } else if (isManagedPtrType(ts->type) &&
                    (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))) {
-          decorator = CLASS_TYPE_MANAGED;
+          decorator = ClassTypeDecorator::MANAGED;
         } else {
           const char* type = NULL;
           if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
@@ -2599,14 +2696,14 @@ void resolveUnmanagedBorrows(CallExpr* call) {
         // Compute the decorated class type
         if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
-          int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
-          tmp |= CLASS_TYPE_UNMANAGED;
-          decorator = (ClassTypeDecorator) tmp;
+          int tmp = decorator & ClassTypeDecorator::NILABILITY_MASK;
+          tmp |= ClassTypeDecorator::UNMANAGED;
+          decorator = (ClassTypeDecoratorEnum) tmp;
         } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
                    call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
-          int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
-          tmp |= CLASS_TYPE_BORROWED;
-          decorator = (ClassTypeDecorator) tmp;
+          int tmp = decorator & ClassTypeDecorator::NILABILITY_MASK;
+          tmp |= ClassTypeDecorator::BORROWED;
+          decorator = (ClassTypeDecoratorEnum) tmp;
         } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
                    call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
           decorator = addNilableToDecorator(decorator);
@@ -2620,36 +2717,36 @@ void resolveUnmanagedBorrows(CallExpr* call) {
         } else {
           // e.g. for borrowed?
           switch (decorator) {
-            case CLASS_TYPE_BORROWED:
+            case ClassTypeDecorator::BORROWED:
               dt = dtBorrowed;
               break;
-            case CLASS_TYPE_BORROWED_NONNIL:
+            case ClassTypeDecorator::BORROWED_NONNIL:
               dt = dtBorrowedNonNilable;
               break;
-            case CLASS_TYPE_BORROWED_NILABLE:
+            case ClassTypeDecorator::BORROWED_NILABLE:
               dt = dtBorrowedNilable;
               break;
-            case CLASS_TYPE_UNMANAGED:
+            case ClassTypeDecorator::UNMANAGED:
               dt = dtUnmanaged;
               break;
-            case CLASS_TYPE_UNMANAGED_NILABLE:
+            case ClassTypeDecorator::UNMANAGED_NILABLE:
               dt = dtUnmanagedNilable;
               break;
-            case CLASS_TYPE_UNMANAGED_NONNIL:
+            case ClassTypeDecorator::UNMANAGED_NONNIL:
               dt = dtUnmanagedNonNilable;
               break;
-            case CLASS_TYPE_MANAGED:
-            case CLASS_TYPE_MANAGED_NONNIL:
-            case CLASS_TYPE_MANAGED_NILABLE:
+            case ClassTypeDecorator::MANAGED:
+            case ClassTypeDecorator::MANAGED_NONNIL:
+            case ClassTypeDecorator::MANAGED_NILABLE:
               INT_FATAL("case not handled");
               break;
-            case CLASS_TYPE_GENERIC:
+            case ClassTypeDecorator::GENERIC:
               dt = dtAnyManagementAnyNilable;
               break;
-            case CLASS_TYPE_GENERIC_NONNIL:
+            case ClassTypeDecorator::GENERIC_NONNIL:
               dt = dtAnyManagementNonNilable;
               break;
-            case CLASS_TYPE_GENERIC_NILABLE:
+            case ClassTypeDecorator::GENERIC_NILABLE:
               dt = dtAnyManagementNilable;
               break;
             // no default intentionally
@@ -2682,9 +2779,9 @@ void resolveUnmanagedBorrows(CallExpr* call) {
         if (t2 == dtAnyManagementAnyNilable)
           useType = mgmt; // e.g. just _owned
         else if (t2 == dtAnyManagementNonNilable)
-          useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+          useType = mgmt->getDecoratedClass(ClassTypeDecorator::MANAGED_NONNIL);
         else if (t2 == dtAnyManagementNilable)
-          useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NILABLE);
+          useType = mgmt->getDecoratedClass(ClassTypeDecorator::MANAGED_NILABLE);
 
         if (useType != NULL) {
           SET_LINENO(call);
@@ -2692,7 +2789,8 @@ void resolveUnmanagedBorrows(CallExpr* call) {
         } else if (isClassLike(t2)) {
           Type* canonical = canonicalClassType(t2);
           if (isNilableClassType(t2))
-            useType = getDecoratedClass(canonical, CLASS_TYPE_BORROWED_NILABLE);
+            useType = getDecoratedClass(canonical,
+                ClassTypeDecorator::BORROWED_NILABLE);
           else
             useType = canonical;
 
@@ -2813,7 +2911,7 @@ static bool readNamedArgument(CallExpr* call, const char* name,
   bool ret = defaultValue;
   expectedNames.push_back((std::string)name);
 
-  for (int i = 1; i<= call->numActuals(); i++) { 
+  for (int i = 1; i<= call->numActuals(); i++) {
     NamedExpr* ne = toNamedExpr(call->get(i));
     if (ne && !strcmp(ne->name, name)) {
       SymExpr* se = toSymExpr(ne->actual);
@@ -2919,7 +3017,7 @@ static void processGetVisibleSymbols() {
             continue;
 
           printf("  %s:%d: %s\n", sym->defPoint->fname(),
-                 sym->defPoint->linenum(), sym->name); 
+                 sym->defPoint->linenum(), sym->name);
         }
 
         delete visibleMap[it->c_str()];
@@ -2962,6 +3060,8 @@ void scopeResolve() {
   destroyModuleUsesCaches();
 
   warnedForDotInsideWith.clear();
+  interfaceMethodNames.clear();
+  thisTypeToIfcFormal.clear();
 
   renameDefaultTypesToReflectWidths();
 

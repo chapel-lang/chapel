@@ -69,13 +69,17 @@ extern "C" {
   m(AMO_UNORD,              "AMOs: unordered operations")               \
   m(ACK,                    "tx acknowledgements")                      \
   m(ORDER,                  "ops done only for ordering")               \
+  m(HEAP,                   "layer-provided fixed heap")                \
+  m(MEMMAP,                 "process memory map")                       \
   m(MR,                     "mem reg: regions")                         \
   m(MR_DESC,                "mem reg: local region descs")              \
   m(MR_KEY,                 "mem reg: remote region keys")              \
+  m(MR_BB,                  "mem reg: bounce buffers")                  \
   m(HUGEPAGES,              "hugepages")                                \
   m(TCIPS,                  "tx context alloc/free")                    \
   m(OOB,                    "out-of-band calls")                        \
   m(BARRIER,                "barriers")                                 \
+  m(SLINGSHOT,              "Slingshot")                                \
   m(TSTAMP,                 "timestamp output")
 
 //
@@ -118,12 +122,21 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
     }                                                                   \
   } while (0)
 
+#define DBG_PRINTF_NODE0(mask, fmt, ...)                                \
+    do {                                                                \
+      if (chpl_nodeID == 0) {                                           \
+        DBG_PRINTF(mask, fmt, ## __VA_ARGS__);                          \
+      }                                                                 \
+    } while (0)
+
 #define DBG_VAL(pV, typ) chpl_comm_ofi_dbg_val(pV, typ)
 
-//#define DEBUG_CRC_MSGS
-#ifdef DEBUG_CRC_MSGS
-#include <libiberty.h>
-#endif
+#define DBG_CATFILE(mask, fname, match)                                 \
+  do {                                                                  \
+    if (DBG_TEST_MASK(mask)) {                                          \
+      dbg_catfile(fname, match);                                        \
+    }                                                                   \
+  } while (0)
 
 #else // CHPL_COMM_DEBUG
 
@@ -131,6 +144,8 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 #define DBG_DO_PRINTF(fmt, ...) do { } while (0)
 #define DBG_TEST_MASK(mask) 0
 #define DBG_PRINTF(mask, fmt, ...) do { } while (0)
+#define DBG_PRINTF_NODE0(mask, fmt, ...) do { } while (0)
+#define DBG_CATFILE(mask, fname, match) do { } while (0)
 
 #endif // CHPL_COMM_DEBUG
 
@@ -151,6 +166,16 @@ extern int chpl_comm_ofi_abort_on_error;
                             __FILE__, (int) __LINE__, ## __VA_ARGS__);  \
     }                                                                   \
   } while (0)
+
+#define INTERNAL_ERROR_V_NODE0(fmt, ...)                                \
+    do {                                                                \
+      if (chpl_nodeID == 0) {                                           \
+        INTERNAL_ERROR_V(fmt, ## __VA_ARGS__);                          \
+      } else {                                                          \
+        chpl_comm_ofi_oob_fini();                                       \
+        chpl_exit_any(0);                                               \
+      }                                                                 \
+    } while (0)
 
 #define CHK_TRUE(expr)                                                  \
     do {                                                                \
@@ -211,6 +236,12 @@ extern int chpl_comm_ofi_abort_on_error;
       }                                                                 \
     } while (0)
 
+#define CHK_SYS_FREE(p)                                                 \
+  do {                                                                  \
+    sys_free(p);                                                        \
+    p = NULL;                                                           \
+  } while (0)
+
 #define CHPL_CALLOC_SZ(p, n, s)                                         \
   do {                                                                  \
     p = chpl_mem_calloc((n), (s), CHPL_RT_MD_COMM_UTIL, 0, 0);          \
@@ -224,6 +255,9 @@ extern int chpl_comm_ofi_abort_on_error;
     p = NULL;                                                           \
   } while (0)
 
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+#endif
 
 //
 // Out-of-band support
@@ -239,6 +273,7 @@ void chpl_comm_ofi_oob_fini(void);
 void chpl_comm_ofi_oob_barrier(void);
 void chpl_comm_ofi_oob_allgather(const void*, void*, size_t);
 void chpl_comm_ofi_oob_bcast(void*, size_t);
+int  chpl_comm_ofi_oob_locales_on_node(void);
 
 
 //

@@ -23,18 +23,24 @@
 
 #include "astutil.h"
 #include "bb.h"
+#include "CForLoop.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "LoopStmt.h"
 #include "ModuleSymbol.h"
 #include "passes.h"
+#include "resolveFunction.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "WhileStmt.h"
 #include "DoWhileStmt.h"
+#include "view.h"
 
 #include <queue>
 #include <set>
+#include <algorithm>
+#include <cstdio>
 
 typedef std::set<BasicBlock*> BasicBlockSet;
 
@@ -42,12 +48,9 @@ static void deadBlockElimination(FnSymbol* fn);
 static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
 static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
 static bool         isInCForLoopHeader(Expr* expr);
-static void         cleanupLoopBlocks(FnSymbol* fn);
 
 static unsigned int deadBlockCount;
 static unsigned int deadModuleCount;
-
-
 
 //
 //
@@ -118,7 +121,8 @@ void deadVariableElimination(FnSymbol* fn) {
 
         rhs->remove();
         CallExpr* rhsCall = toCallExpr(rhs);
-        if (rhsCall && (rhsCall->isResolved() || rhsCall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))) {
+        if (rhsCall && (rhsCall->isResolved() || rhsCall->isPrimitive(
+          PRIM_VIRTUAL_METHOD_CALL))) {
           // RHS might have side-effects, leave it alone
           call->replace(rhs);
         } else {
@@ -267,7 +271,7 @@ static bool isInCForLoopHeader(Expr* expr) {
 ************************************** | *************************************/
 
 static bool isDeadStringOrBytesLiteral(VarSymbol* string);
-static void removeDeadStringLiteral(DefExpr* defExpr);
+static void removeDeadStringLiteral(DefExpr* def);
 
 static void deadStringLiteralElimination() {
   // Noakes 2017/03/09
@@ -311,7 +315,6 @@ static void deadStringLiteralElimination() {
   }
 }
 
-// Noakes 2017/03/04: All literals have 1 def. Dead literals have 0 uses.
 static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
   bool retval = false;
 
@@ -320,40 +323,15 @@ static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
     int numDefs = string->countDefs();
     int numUses = string->countUses();
 
-    retval = numDefs == 1 && numUses == 0;
+    INT_ASSERT(numDefs == 0);
 
-    INT_ASSERT(numDefs == 1);
+    retval = numUses == 0;
   }
 
   return retval;
 }
 
-// The current pattern to initialize a string literal,
-// a VarSymbol _str_literal_NNN, is approximately
-//
-//   def  new_temp  : string; // defTemp
-//
-//   call createStringWithBorrowedBuffer(new_temp,c"literal",...); //factoryCall
-//
-//   move _str_literal_NNN, new_temp;  // this is 'defn' - the single def
-//
 static void removeDeadStringLiteral(DefExpr* defExpr) {
-  SymExpr*   defn  = toVarSymbol(defExpr->sym)->getSingleDef();
-
-  // Step backwards from 'defn'
-  Expr* lastMove = defn->getStmtExpr();
-  Expr* factoryCall = lastMove->prev;
-  Expr* defTemp = factoryCall->prev;
-
-  // Simple sanity checks
-  INT_ASSERT(isDefExpr(defTemp));
-  INT_ASSERT(isCallExpr(factoryCall));
-  INT_ASSERT(isCallExpr(lastMove));
-
-  lastMove->remove();
-  factoryCall->remove();
-  defTemp->remove();
-
   defExpr->remove();
 }
 
@@ -369,66 +347,49 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
 
 static bool isDeadModule(ModuleSymbol* mod) {
   AList body   = mod->block->body;
-  bool  retval = false;
 
   // The main module should never be considered dead; the init function
   // can be explicitly called from the runtime or other c code
-  if (mod == ModuleSymbol::mainModule()) {
-    retval = false;
+  if (mod == ModuleSymbol::mainModule())
+    return false;
+
+  // Ditto for the string literals module
+  if (mod == stringLiteralModule)
+    return false;
 
   // Ditto for an exported module
-  } else if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
-    retval = false;
+  if (mod->hasFlag(FLAG_EXPORT_INIT))
+    return false;
 
   // Because of the way modules are initialized, we never consider a nested
   // module to be dead.
-  } else if (mod->defPoint->getModule() != rootModule &&
-             mod->defPoint->getModule() != theProgram) {
-    retval = false;
+  if (mod->defPoint->getModule() != rootModule &&
+      mod->defPoint->getModule() != theProgram)
+    return false;
 
-  // Any module with more than 1 module-level statement is assumed to be live
-  } else if (body.length >= 2) {
-    retval = false;
+  // Now go through the module evaluating module-level statements.
+  for_alist(expr, body) {
+    if (DefExpr* defExpr = toDefExpr(expr)) {
+      // A 1-stmt module init function doesn't prevent the module being dead
+      if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
+        if (mod->initFn == NULL)
+          INT_FATAL("Expected initFn for module '%s', but was null", mod->name);
 
-  // A module might be considered to be dead if it has exactly 1 defExpr
-  } else if (body.length == 1) {
-    Expr* item = body.only();
-
-    if (DefExpr* defExpr = toDefExpr(item)) {
-      // A module is not dead if the sole definition is a type declaration
-      if (isTypeSymbol(defExpr->sym) == true) {
-        retval = false;
-
-      // A module is dead if the sole definition is an "empty" init function
-      } else if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
-        if (mod->initFn == NULL) {
-          INT_FATAL("Expected initFn for module '%s', but was null",
-                    mod->name);
-
-        } else if (mod->initFn == fn) {
-          retval = mod->initFn->body->body.length == 1;
-
-        } else {
-          INT_ASSERT(false);
-        }
-
-      // The single definition is a nested module.  This module is not dead.
-      } else if (isModuleSymbol(defExpr->sym) == true) {
-        retval = false;
-
-      } else {
-        INT_ASSERT(false);
+        // ignore the init function
+        if (mod->initFn == fn)
+          if (mod->initFn->body->body.length == 1)
+            continue;
       }
 
-    } else {
-      INT_ASSERT(false);
-    }
+      // Any other DefExpr means the module is not dead
+      return false;
 
-  } else {
-    retval = false;
+    } else {
+      INT_FATAL("unexpected AST");
+    }
   }
 
-  return retval;
+  return true;
 }
 
 
@@ -454,6 +415,7 @@ static void deadModuleElimination() {
     }
   }
 }
+
 
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
@@ -487,6 +449,13 @@ void deadCodeElimination() {
 
     cleanupAfterTypeRemoval();
   }
+
+  gpuTransforms();
+
+  // Emit string literals. This too could be its own pass but
+  // for now it is convenient to do it here. It could happen any time
+  // after dead string literal elimination and code generation.
+  createInitStringLiterals();
 }
 
 void deadBlockElimination()
@@ -572,8 +541,10 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
       // In some cases (associated with iterator code), defs appear in dead
       // blocks but are used in later blocks, so removing the defs results
       // in a verify error.
-      // TODO: Perhaps this reformulation of unreachable block removal does a better
-      // job and those blocks are now removed as well.  If so, this IF can be removed.
+      //
+      // TODO: Perhaps this reformulation of unreachable block removal does a
+      // better job and those blocks are now removed as well.  If so, this IF
+      // can be removed.
       if (toDefExpr(expr))
         continue;
 
@@ -632,7 +603,8 @@ void removeDeadIterResumeGotos() {
 void verifyRemovedIterResumeGotos() {
   forv_Vec(LabelSymbol, labsym, removedIterResumeLabels) {
     if (!isAlive(labsym) && isAlive(labsym->iterResumeGoto))
-      INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label - missing a call to removeDeadIterResumeGotos?");
+      INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label "
+        "- missing a call to removeDeadIterResumeGotos?");
   }
 }
 
@@ -664,7 +636,7 @@ void verifyRemovedIterResumeGotos() {
 // case during DeadVariableElimination
 //
 
-static void cleanupLoopBlocks(FnSymbol* fn) {
+void cleanupLoopBlocks(FnSymbol* fn) {
   std::vector<Expr*> stmts;
 
   collect_stmts(fn->body, stmts);

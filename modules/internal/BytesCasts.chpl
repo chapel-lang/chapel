@@ -28,7 +28,7 @@ module BytesCasts {
   //
   // Bool
   //
-  proc _cast(type t:bytes, x: bool) {
+  operator :(x: bool, type t:bytes) {
     if (x) {
       return b"true";
     } else {
@@ -36,7 +36,7 @@ module BytesCasts {
     }
   }
 
-  proc _cast(type t:chpl_anybool, x: bytes) throws {
+  operator :(x: bytes, type t:chpl_anybool) throws {
     var b = x.strip();
     if b.isEmpty() {
       // TODO engin: do we really need this check?
@@ -56,7 +56,7 @@ module BytesCasts {
   //
   // int
   //
-  proc _cast(type t:bytes, x: integral) {
+  operator :(x: integral, type t:bytes) {
     //TODO: switch to using qio's writef somehow
     pragma "fn synchronization free"
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool,
@@ -84,7 +84,7 @@ module BytesCasts {
     return ret;
   }
 
-  proc _cast(type t:integral, x: bytes) throws {
+  operator :(x: bytes, type t:integral) throws {
     //TODO: switch to using qio's readf somehow
     pragma "fn synchronization free"
     pragma "insert line file info"
@@ -173,12 +173,12 @@ module BytesCasts {
     return ret;
   }
 
-  inline proc _cast(type t:bytes, x:chpl_anyreal) {
+  inline operator :(x:chpl_anyreal, type t:bytes) {
     //TODO: switch to using qio's writef somehow
     return _real_cast_helper(x:real(64), false);
   }
 
-  proc _cast(type t:bytes, x:chpl_anyimag) {
+  operator :(x:chpl_anyimag, type t:bytes) {
     //TODO: switch to using qio's writef somehow
     // The Chapel version of the imag --> real cast smashes it flat rather than
     // just stripping off the "i".  See the cast in ChapelBase.
@@ -186,7 +186,7 @@ module BytesCasts {
     return _real_cast_helper(r, true);
   }
 
-  proc _cast(type t:chpl_anyreal, x: bytes) throws {
+  operator :(x: bytes, type t:chpl_anyreal) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
@@ -215,7 +215,7 @@ module BytesCasts {
     return retVal;
   }
 
-  proc _cast(type t:chpl_anyimag, x: bytes) throws {
+  operator :(x: bytes, type t:chpl_anyimag) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
@@ -247,7 +247,7 @@ module BytesCasts {
   //
   // complex
   //
-  proc _cast(type t:bytes, x: chpl_anycomplex) {
+  operator :(x: chpl_anycomplex, type t:bytes) {
     if isnan(x.re) || isnan(x.im) then
       return b"nan";
     var re = (x.re):bytes;
@@ -270,7 +270,7 @@ module BytesCasts {
   }
 
 
-  proc _cast(type t:chpl_anycomplex, x: bytes) throws {
+  operator :(x: bytes, type t:chpl_anycomplex) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);

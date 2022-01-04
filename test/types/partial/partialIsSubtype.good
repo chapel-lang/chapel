@@ -1,0 +1,12 @@
+QuiteGeneric(int(64))
+true
+QuiteGeneric(int(64),3)
+true
+true
+false
+QuiteGeneric(int(64),3,real(64))
+true
+true
+true
+false
+false

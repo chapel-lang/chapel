@@ -70,9 +70,9 @@ proc randomAccessUpdate() {
     for i in BigStepDomain by littleStep{
       for k in LittleStepDomain{
         ranvec(k) = (ranvec(k) << 1) ^ (if (ranvec(k):int(64) < 0) then POLY else 0);
-        lock;
+        lock.readFE();
         atomic {Table(ranvec(k) & (tableSize-1)) ^= ranvec(k);}
-        lock = true;
+        lock.writeEF(true);
       }
     }
   }

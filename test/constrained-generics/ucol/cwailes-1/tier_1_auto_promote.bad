@@ -1,0 +1,6 @@
+tier_1_auto_promote.chpl:13: In 'implements I' statement:
+tier_1_auto_promote.chpl:13: error: when checking this implements statement
+note: the implementation of the required function inc
+note: has a non-void return type and needs to be promoted
+note: which is currently not implemented
+tier_1_auto_promote.chpl:2: note: the required function inc in the interface I is declared here

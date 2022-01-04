@@ -1,0 +1,3 @@
+typeWithTertiaryMethod.chpl:17: In function 'main':
+typeWithTertiaryMethod.chpl:18: error: unresolved call 'type Rec.typeMethod()'
+typeWithTertiaryMethod.chpl:18: note: because no functions named typeMethod found in scope

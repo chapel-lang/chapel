@@ -1,0 +1,26 @@
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (aggWithLocalAccess.chpl:8)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (aggWithLocalAccess.chpl:8)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (aggWithLocalAccess.chpl:8)
+| Found an aggregation candidate (aggWithLocalAccess.chpl:9)
+|  Potential source aggregation (aggWithLocalAccess.chpl:9)
+End analyzing forall for automatic aggregation [no ALA clone]  (aggWithLocalAccess.chpl:8)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (aggWithLocalAccess.chpl:8)
+| Found an aggregation candidate (aggWithLocalAccess.chpl:9)
+|  Potential source aggregation (aggWithLocalAccess.chpl:9)
+End analyzing forall for automatic aggregation [static only ALA clone]  (aggWithLocalAccess.chpl:8)
+
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (aggWithLocalAccess.chpl:9)
+Replaced assignment with aggregation [static only ALA clone]  (aggWithLocalAccess.chpl:9)
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+3 3 3 3 3 3 3 3 3 3

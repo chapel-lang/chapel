@@ -18,52 +18,10 @@
  * limitations under the License.
  */
 
+// NOTE: the docs below are intended to be included
+// in the relevant spec section
+
 /*
-  A *locale* is a Chapel abstraction for a piece of a target
-  architecture that has processing and storage capabilities.
-  Generally speaking, the tasks running within a locale have
-  roughly uniform access to values stored in the locale's local
-  memory and longer latencies for accessing the memories of other
-  locales.  As examples, a single shared memory machine would be
-  defined as a single locale, while in a system consisting of a
-  group of network-connected multicore nodes or SMPs each node
-  would be defined as a locale.
-
-  Chapel provides several predefined methods on locales, as well as
-  a few variables that describe the locales upon which a program is
-  running.
-
-  In addition to what is documented below, ``numLocales``, ``LocaleSpace``,
-  and ``Locales`` are available as global variables.
-
-  ``numLocales`` is the number of top-level (network connected) locales.
-
-  .. code-block:: chapel
-
-    config const numLocales: int;
-
-  ``LocaleSpace`` is the domain over which the global ``Locales`` array is
-  defined.
-
-  .. code-block:: chapel
-
-    const LocaleSpace = {0..numLocales-1};
-
-  The global ``Locales`` array contains an entry for each top-level locale.
-
-  .. code-block:: chapel
-
-    const Locales: [LocaleSpace] locale;
-
-
-  One common code idiom in Chapel is the following, which spreads parallel
-  tasks across the network-connected locales upon which the program is running:
-
-    .. code-block:: chapel
-
-      coforall loc in Locales { on loc { ... } }
-
-  The default value for a ``locale`` variable is ``Locales[0]``
 
  */
 module ChapelLocale {
@@ -71,6 +29,11 @@ module ChapelLocale {
   public use LocaleModel;
   import HaltWrappers;
   use SysCTypes, CPtr;
+
+  compilerAssert(!(!localeModelHasSublocales &&
+   localeModelPartitionsIterationOnSublocales),
+   "Locale model without sublocales can not have " +
+   "localeModelPartitionsIterationOnSublocales set to true.");
 
   //
   // Node and sublocale types and special sublocale values.
@@ -211,6 +174,7 @@ module ChapelLocale {
     :return: current locale
     :rtype: locale
   */
+  pragma "no doc" // because the spec covers it in a different section
   inline proc here {
     return chpl_localeID_to_locale(here_id);
   }
@@ -240,7 +204,7 @@ module ChapelLocale {
   }
 
   /*
-    Get the integer identifier for this locale.
+    Get the unique integer identifier for this locale.
 
     :returns: locale number, in the range ``0..numLocales-1``
     :rtype: int
@@ -304,8 +268,33 @@ module ChapelLocale {
   */
   inline proc locale.callStackSize { return this._value.callStackSize; }
 
+  /*
+    :returns: the number of tasks that have begun executing, but have not yet finished
+    :rtype: `int`
+
+    Note that this number can exceed the number of non-idle threads
+    because there are cases in which a thread is working on more than
+    one task. As one example, in fifo tasking, when a parent task
+    creates child tasks to execute the iterations of a coforall
+    construct, the thread the parent is running on may temporarily
+    suspend executing the parent task in order to help with the child
+    tasks, until the construct completes. When this occurs the count
+    of running tasks can include both the parent task and a child,
+    although strictly speaking only the child is executing
+    instructions.
+
+    As another example, any tasking implementation in which threads
+    can switch from running one task to running another, such as
+    qthreads, can have more tasks running than threads on which to run
+    them.
+  */
+  pragma "fn synchronization free"
+  proc locale.runningTasks() {
+    return this.runningTaskCnt();
+  }
+
   pragma "no doc"
-  proc =(ref l1: locale, const ref l2: locale) {
+  operator locale.=(ref l1: locale, const ref l2: locale) {
     l1._instance = l2._instance;
   }
 
@@ -533,7 +522,7 @@ module ChapelLocale {
   // Returns a reference to a singleton array (stored in AbstractLocaleModel)
   // storing this locale.
   //
-  // This singleton array is useful for some array/domain implementaitons
+  // This singleton array is useful for some array/domain implementations
   // (such as DefaultRectangular) to help the targetLocales call return
   // by 'const ref' without requiring the array/domain implementation
   // to store another array.
@@ -621,7 +610,6 @@ module ChapelLocale {
     // initialize the LocaleModel.  The calling loop body cannot
     // contain any non-local code, since the rootLocale is not yet
     // initialized.
-    pragma "not order independent yielding loops"
     iter chpl_initOnLocales() {
       if numLocales > 1 then
         halt("The locales must be initialized in parallel");
@@ -636,7 +624,6 @@ module ChapelLocale {
     // opportunity to initialize any global private variables we
     // either need (e.g., defaultDist) or can do at this point in
     // initialization (e.g., rootLocale).
-    pragma "not order independent yielding loops"
     iter chpl_initOnLocales(param tag: iterKind)
       where tag==iterKind.standalone {
       // Simple locales barrier, see implementation below for notes
@@ -690,6 +677,13 @@ module ChapelLocale {
   pragma "no doc"
   class localesSignal {
     var s: atomic bool;
+
+    // Override default initializer; this could go away when the
+    // compiler's default initializer creates a version that takes a
+    // bool rather than an 'atomic bool' (which generates a
+    // '--warn-unstable' warning otherwise)
+    proc init() {
+    }
   }
   pragma "no doc"
   record localesBarrier {
@@ -863,6 +857,7 @@ module ChapelLocale {
 //#
 
   pragma "no doc"
+  deprecated "locale.totalThreads() is deprecated; please let us know if this is a problem for you"
   proc locale.totalThreads() {
     var totalThreads: int;
     extern proc chpl_task_getNumThreads() : uint(32);
@@ -871,6 +866,7 @@ module ChapelLocale {
   }
   
   pragma "no doc"
+  deprecated "locale.idleThreads() is deprecated; please let us know if this is a problem for you"
   proc locale.idleThreads() {
     var idleThreads: int;
     extern proc chpl_task_getNumIdleThreads() : uint(32);
@@ -879,6 +875,7 @@ module ChapelLocale {
   }
   
   pragma "no doc"
+  deprecated "locale.queuedTasks() is deprecated; please let us know if this is a problem for you"
   proc locale.queuedTasks() {
     var queuedTasks: int;
     extern proc chpl_task_getNumQueuedTasks() : uint(32);
@@ -886,13 +883,8 @@ module ChapelLocale {
     return queuedTasks;
   }
 
-  pragma "fn synchronization free"
   pragma "no doc"
-  proc locale.runningTasks() {
-    return this.runningTaskCnt();
-  }
-  
-  pragma "no doc"
+  deprecated "locale.blockedTasks() is deprecated; please let us know if this is a problem for you"
   proc locale.blockedTasks() {
     var blockedTasks: int;
     extern proc chpl_task_getNumBlockedTasks() : int(32);

@@ -11,6 +11,6 @@ proc bar(s: int) {
   writeln(s);
 }
 
-s = 2; // second write
-bar(s); // second read
+s.writeEF(2); // second write
+bar(s.readFE()); // second read
 

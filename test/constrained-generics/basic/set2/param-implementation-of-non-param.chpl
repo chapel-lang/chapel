@@ -2,16 +2,14 @@
 This test checks the situation where
 - a required function is non-param
 - its implementation is a param function
-
-We should update this test when possible
-to remove the default implementation, 'return 1' here.
 */
 
 interface MyArray {
-  proc Self.rank: int return 1;
+  proc Self.rank: int;
 }
 
 implements MyArray(Locales.type);
+// array.rank param fulfills the Self.rank requirement
 
 proc cgFun(arg: MyArray) {
   writeln(arg.rank);

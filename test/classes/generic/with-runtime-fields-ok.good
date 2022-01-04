@@ -1,3 +1,4 @@
+with-runtime-fields-ok.chpl:2: In module 'w':
 with-runtime-fields-ok.chpl:27: warning: ==== owned CC("default",int(64),[domain(1,int(64),false)] int(64))
 with-runtime-fields-ok.chpl:27: warning: default
 with-runtime-fields-ok.chpl:27: warning: default

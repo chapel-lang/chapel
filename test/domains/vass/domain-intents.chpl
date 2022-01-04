@@ -24,11 +24,10 @@ writeln("4-out");
 var d4 = {11..111};
 writeln("4a ", d4);
 x4(d4);
-writeln("4d ", d4);
+writeln("4c ", d4);
 proc x4(out a4) {
-  writeln("4b ", a4);
   a4 = {1111..11111};
-  writeln("4c ", a4);
+  writeln("4b ", a4);
 }
 
 writeln("5-inout");

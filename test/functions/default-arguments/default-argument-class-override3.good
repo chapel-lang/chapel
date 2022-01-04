@@ -1,0 +1,3 @@
+in Child.method arg=1
+in Child.method arg=1
+in Parent.method arg=0

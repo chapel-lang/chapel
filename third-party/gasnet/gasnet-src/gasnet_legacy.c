@@ -51,7 +51,7 @@ extern void gasneti_legacy_alloc_tm_hook(gasneti_TM_t _tm) {
       int len = 0;
       int numreg = 0;
       while (gasneti_legacy_handlers[len].gex_fnptr) len++; /* calc len */
-      if (gasneti_amregister(gasneti_import_ep(gasneti_thunk_endpoint)->_amtbl, gasneti_legacy_handlers, len, 
+      if (gasneti_amregister(gasneti_import_ep(gasneti_thunk_endpoint), gasneti_legacy_handlers, len, 
                               GASNETI_LEGACY_HANDLER_BASE, GASNETI_CLIENT_HANDLER_BASE, 0, &numreg) != GASNET_OK)
          gasneti_fatalerror("Error registering g2ex legacy AM handlers");
       gasneti_assert(numreg == len);
@@ -83,6 +83,63 @@ extern void gasneti_legacy_segment_attach_hook(gasneti_EP_t ep) {
      ep->_segment->_flags |= GEX_FLAG_USES_GASNET1;
      gasneti_thunk_segment = gasneti_export_segment(ep->_segment);
   }
+}
+
+/* ------------------------------------------------------------------------------------ */
+// Legacy gasnet_attach()
+
+extern int gasnetc_attach_primary(void);
+
+extern int gasneti_attach( gex_TM_t               _tm,
+                           gasnet_handlerentry_t  *table,
+                           int                    numentries,
+                           uintptr_t              segsize)
+{
+  GASNETI_TRACE_PRINTF(O,("gasnet_attach(table (%i entries), segsize=%"PRIuPTR")",
+                          numentries, segsize));
+  gasneti_TM_t tm = gasneti_import_tm_nonpair(_tm);
+  gasneti_EP_t ep = tm->_ep;
+
+  if (!gasneti_init_done) 
+    GASNETI_RETURN_ERRR(NOT_INIT, "GASNet attach called before init");
+  if (gasneti_attach_done) 
+    GASNETI_RETURN_ERRR(NOT_INIT, "GASNet already attached");
+
+  /*  check argument sanity */
+  #if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+    if ((segsize % GASNET_PAGESIZE) != 0) 
+      GASNETI_RETURN_ERRR(BAD_ARG, "segsize not page-aligned");
+    if (segsize > gasneti_MaxLocalSegmentSize) 
+      GASNETI_RETURN_ERRR(BAD_ARG, "segsize too large");
+  #else
+    segsize = 0;
+  #endif
+
+  /*  primary attach  */
+  if (GASNET_OK != gasnetc_attach_primary())
+    GASNETI_RETURN_ERRR(RESOURCE,"Error in primary attach");
+
+  #if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+    /*  register client segment  */
+    gex_Segment_t seg; // g2ex segment is automatically saved by a hook
+    if (GASNET_OK != gasneti_segmentAttach(&seg, _tm, segsize, GASNETI_FLAG_INIT_LEGACY))
+      GASNETI_RETURN_ERRR(RESOURCE,"Error attaching segment");
+  #elif GASNETC_SEGMENT_ATTACH_HOOK
+    gex_Segment_t seg = GEX_SEGMENT_INVALID; // Everything + hook
+  #endif
+  #if GASNETC_SEGMENT_ATTACH_HOOK
+    if (GASNET_OK != gasnetc_segment_attach_hook(seg, _tm))
+      GASNETI_RETURN_ERRR(RESOURCE,"Error attaching segment (conduit hook)");
+  #endif
+
+  /*  register client handlers */
+  if (table && gasneti_amregister_legacy(ep, table, numentries) != GASNET_OK) 
+    GASNETI_RETURN_ERRR(RESOURCE,"Error registering handlers");
+
+  /* ensure everything is initialized across all nodes */
+  gasnet_barrier(0, GASNET_BARRIERFLAG_UNNAMED);
+
+  return GASNET_OK;
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -120,12 +177,20 @@ SHORT_HANDLER(gasneti_legacy_memset_reqreph,4,7,
                           (uintptr_t)(nbytes)));                                         \
   } while(0)
 
+#define GASNETI_CHECKLOCAL_MEMSET(tm,node,dest,val,nbytes) do { \
+  void *mapped_dest = gasnete_mapped_at(tm,node,dest);          \
+  if (mapped_dest) {                                            \
+    memset(mapped_dest,val,nbytes);                             \
+    gasnete_loopbackput_memsync();                              \
+    return 0;                                                   \
+  }} while(0)
+
 extern gex_Event_t gasneti_legacy_memset_nb(gex_Rank_t node, void *dest, int val, size_t nbytes GASNETI_THREAD_FARG) {
   GASNETI_TRACE_MEMSET(node,dest,val,nbytes); 
   gasneti_assert_reason(gasneti_legacy_handlers_registered, "gasnet_memset* requires gasnet_attach() or GEX_FLAG_USES_GASNET1");
   if_pf (!nbytes) return 0;
   gasneti_boundscheck(gasneti_thunk_tm,node,dest,nbytes);
-  GASNETI_CHECKPSHM_MEMSET(gasneti_thunk_tm,node,dest,val,nbytes);
+  GASNETI_CHECKLOCAL_MEMSET(gasneti_thunk_tm,node,dest,val,nbytes);
   gasneti_eop_t *eop = gasneti_eop_create(GASNETI_THREAD_PASS_ALONE);
 
   gex_AM_RequestShort(gasneti_thunk_tm, node, gasneti_handleridx(gasneti_legacy_memset_reqreph), 0,
@@ -139,7 +204,7 @@ extern int gasneti_legacy_memset_nbi(gex_Rank_t node, void *dest, int val, size_
   gasneti_assert_reason(gasneti_legacy_handlers_registered, "gasnet_memset* requires gasnet_attach() or GEX_FLAG_USES_GASNET1");
   if_pf (!nbytes) return 0;
   gasneti_boundscheck(gasneti_thunk_tm,node,dest,nbytes);
-  GASNETI_CHECKPSHM_MEMSET(gasneti_thunk_tm,node,dest,val,nbytes);
+  GASNETI_CHECKLOCAL_MEMSET(gasneti_thunk_tm,node,dest,val,nbytes);
   gasneti_iop_t *iop = gasneti_iop_register(1, 0 GASNETI_THREAD_PASS);
 
   gex_AM_RequestShort(gasneti_thunk_tm, node, gasneti_handleridx(gasneti_legacy_memset_reqreph), 0,

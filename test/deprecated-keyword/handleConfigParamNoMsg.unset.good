@@ -1,0 +1,3 @@
+handleConfigParamNoMsg.chpl:5: In function 'main':
+handleConfigParamNoMsg.chpl:6: warning: x is deprecated
+false

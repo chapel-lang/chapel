@@ -30,9 +30,13 @@ extern "C" {
 //
 // When defining a new allocation type (for new instances of
 // chpl_mem_allocMany or chpl_mem_realloc in the runtime), add an
-// entry to the macro below giving both its enumeration constant
-// (without the leading CHPL_MD_RT_) and its string description.
-// Then you can use your enumeration in a call to chpl_mem_*().
+// entry to the macro below giving:
+//   * its enumeration constant (without the leading CHPL_RT_MD_)
+//   * its enumeration constant
+//   * true/false to indicate if memory tracking should occur for it
+//
+// Then you can use your enumeration in a call to chpl_mem_*()
+// (with the CHPL_RT_MD_ prefix).
 //
 // The macro CHPL_MD_ALL_MEMDESCS defines applies some other given
 // macro (its argument) to all of the enum constant + desc string
@@ -65,6 +69,7 @@ extern "C" {
   m(COMM_PRV_BCAST_DATA,  "comm layer private broadcast data",        false), \
   m(MEM_HEAP_SPACE,       "mem layer heap expansion space",           false), \
   m(GLOM_STRINGS_DATA,    "glom strings data",                        true ), \
+  m(STRING_LITERALS_BUF,  "string literals buffer",                   true ), \
   m(STR_COPY_DATA,        "string copy data",                         true ), \
   m(STR_COPY_REMOTE,      "remote string copy",                       true ), \
   m(STR_CONCAT_DATA,      "string concat data",                       true ), \
@@ -81,7 +86,6 @@ extern "C" {
   m(LOCK_REPORT_DATA,     "lock report data",                         false), \
   m(TASK_POOL_DESC,       "task pool descriptor",                     false), \
   m(TASK_ARG_AND_POOL_DESC, "task body argument and pool descriptor", false), \
-  m(TASK_LIST_DESC,       "task list descriptor",                     false), \
   m(TASK_LAYER_UNSPEC,    "tasking layer unspecified data",           false), \
   m(THREAD_PRV_DATA,      "thread private data",                      false), \
   m(THREAD_LIST_DESC,     "thread list descriptor",                   false), \

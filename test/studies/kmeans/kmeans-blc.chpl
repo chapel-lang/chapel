@@ -185,7 +185,7 @@ proc initCenters(data) {
 //
 // a helper function to divide a coordinate by a floating point value
 //
-proc /(x: coord, y: real) {
+operator /(x: coord, y: real) {
   var result: coord;
   for param d in 0..numdims-1 do
     result(d) = x(d) / y;

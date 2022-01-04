@@ -28,10 +28,11 @@ extern "C" {
 #endif
 
 //
-// snprintf() a size as nnn[KMG]
+// These snprintf() a size as nnn[KMG] into the given buffer, but
+// unlike snprintf() itself, they return the buffer.
 //
-int chpl_snprintf_KMG_z(char* buf, int bufSize, size_t val);
-int chpl_snprintf_KMG_f(char* buf, int bufSize, double val);
+char* chpl_snprintf_KMG_z(char* buf, int bufSize, size_t val);
+char* chpl_snprintf_KMG_f(char* buf, int bufSize, double val);
 
 #ifdef __cplusplus
 }

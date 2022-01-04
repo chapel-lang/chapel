@@ -18,18 +18,19 @@
  * limitations under the License.
  */
 
-
-private use FileSystem;
-private use MasonHelp;
-private use IO;
-private use MasonUtils;
+use ArgumentParser;
+use FileSystem;
+use IO;
+use MasonHelp;
+use MasonUtils;
 
 proc masonDoc(args: [] string) throws {
+
+  var parser = new argumentParser(helpHandler=new MasonDocHelpHandler());
+
+  parser.parseArgs(args);
+
   try! {
-    if args.size > 2 {
-      masonDocHelp();
-      exit(0);
-    }
     const tomlName = 'Mason.toml';
     const cwd = here.cwd();
 

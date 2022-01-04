@@ -1,0 +1,6 @@
+include $(THIRD_PARTY_DIR)/llvm/Makefile.share
+
+LLVM_CXXFLAGS=
+LLVM_CFLAGS=
+LLVM_INCLUDES=
+LLVM_LIBS=

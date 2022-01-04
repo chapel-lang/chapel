@@ -1,0 +1,2 @@
+while-var-error-scope.chpl:14: In function 'showCs':
+while-var-error-scope.chpl:16: error: 'Cnn' undeclared (first use this function)

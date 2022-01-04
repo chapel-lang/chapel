@@ -938,8 +938,9 @@ static Symbol* isFieldAccess(AggregateType* recType, Expr* arg) {
 static VarSymbol* createFieldRef(Expr* anchor, Symbol* thisSym,
                                  Symbol* fieldSym, bool isConst)
 {
+  makeRefType(fieldSym->type);
   VarSymbol* fieldRef = newTemp(astr(fieldSym->name, "_ref"),
-                                fieldSym->type->getRefType());
+                                fieldSym->type->refType);
   fieldRef->qual = isConst ? QUAL_CONST_REF : QUAL_REF;
   if (isConst) fieldRef->addFlag(FLAG_CONST);
   anchor->insertBefore(new DefExpr(fieldRef));

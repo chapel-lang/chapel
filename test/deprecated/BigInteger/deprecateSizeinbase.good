@@ -1,0 +1,8 @@
+deprecateSizeinbase.chpl:7: warning: bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
+deprecateSizeinbase.chpl:8: warning: bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
+deprecateSizeinbase.chpl:9: warning: bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
+deprecateSizeinbase.chpl:10: warning: bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
+-65536 is 6 digits in base 10
+-65536 is 17 digits in base 2
+129 is 3 digits in base 10
+129 is 8 digits in base 2

@@ -93,7 +93,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # Default Chapel build config values may be defined here
 
-    export CHPL_REGEXP=re2  # to support mason
+    export CHPL_RE2=bundled  # to support mason
 
     substrates=smp,udp  # desired gasnet substrate(s).
 

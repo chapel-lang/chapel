@@ -16,4 +16,4 @@ begin {
 
 sleep(2);
 
-c.x = 2;
+c.x.writeEF(2);

@@ -1,0 +1,15 @@
+ic   arg1 345  arg2 345  equal
+543
+ic   arg1 hi  arg2 there  different
+take string hi
+hi
+ic   arg1 false  arg2 true  different
+take bool false
+false
+ic   arg1 {x = 1}  arg2 {x = 2}  different
+take {x = 1} : borrowed MyClass
+ic   arg1 {x = 2}  arg2 {x = 2}  equal
+take {x = 2} : borrowed MyClass
+ic   arg1 (xx = 55)  arg2 (xx = 66)  different
+take RR (xx = 55)
+qq (xx = 55)

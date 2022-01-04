@@ -349,7 +349,6 @@ module Heap {
       Iterate over the elements of this heap in order, 
       while removing the yielded elements.
     */
-    pragma "not order independent yielding loops"
     iter consume() {
       var h = this;
       while !h.isEmpty() {
@@ -392,7 +391,7 @@ module Heap {
     :arg lhs: The heap to assign to.
     :arg rhs: The heap to assign from.
   */
-  proc =(ref lhs: heap(?t, ?), ref rhs: heap(t, ?)) {
+  operator heap.=(ref lhs: heap(?t, ?), ref rhs: heap(t, ?)) {
     lhs.comparator = rhs.comparator;
     lhs._data = rhs._data;
   }

@@ -4,7 +4,7 @@
 
 use Path;
 use IO;
-use Regexp;
+use Regex;
 use FileSystem;
 use SysBasic;
 use Time;

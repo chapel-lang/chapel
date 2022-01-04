@@ -22,6 +22,11 @@
 #define _PRIMITIVE_H_
 
 #include "chpl.h"
+#include "chpl/uast/PrimOp.h"
+
+// make the PRIM_MOVE etc values available without scoping
+// as well as PrimitiveTag
+using namespace chpl::uast::primtags;
 
 class CallExpr;
 class Expr;
@@ -30,14 +35,30 @@ class VarSymbol;
 class QualifiedType;
 class GenRet;
 
-#define PRIMITIVE_G(NAME) NAME,
-#define PRIMITIVE_R(NAME) NAME,
-enum PrimitiveTag {
-#include "primitive_list.h"
-  NUM_KNOWN_PRIMS
+// There are two questions:
+// 1- is the primitive/function eligible to run in a fast block?
+//    any blocking or system call disqualifies it since a fast
+//    AM handler can be run in a signal handler
+// 2- is the primitive/function communication free?
+
+// Any function containing communication can't run in a fast block.
+
+enum {
+  // The primitive is ineligible for a fast (e.g. uses a lock or allocator)
+  // AND it causes communication
+  NOT_FAST_NOT_LOCAL,
+  // Is the primitive ineligible for a fast (e.g. uses a lock or allocator)
+  // but communication free?
+  LOCAL_NOT_FAST,
+  // Does the primitive communicate?
+  // This implies NOT_FAST, unless it is in a local block
+  // if it is in a local block, this means IS_FAST.
+  FAST_NOT_LOCAL,
+  // Is the primitive function fast (ie, could it be run in a signal handler)
+  // IS_FAST implies IS_LOCAL.
+  FAST_AND_LOCAL
 };
-#undef PRIMITIVE_G
-#undef PRIMITIVE_R
+
 
 class PrimitiveOp { public:
   PrimitiveTag  tag;

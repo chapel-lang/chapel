@@ -47,7 +47,7 @@ Besides the functions below, some other modules provide routines that are
 useful for working with strings. The :mod:`IO` module provides
 `IO.string.format` which creates a string that is the result of
 formatting. It also includes functions for reading and writing strings.
-The :mod:`Regexp` module also provides some routines for searching
+The :mod:`Regex` module also provides some routines for searching
 within strings.
 
 Casts from String to a Numeric Type
@@ -231,32 +231,10 @@ module String {
   pragma "fn synchronization free"
   private extern proc qio_nbytes_char(chr:int(32)):c_int;
 
-  pragma "no doc"
-  extern const CHPL_SHORT_STRING_SIZE : c_int;
-
-  pragma "no doc"
-  extern record chpl__inPlaceBuffer {};
-
-  pragma "fn synchronization free"
-  pragma "no doc"
-  extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : bufferType;
-
-  // Signal to the Chapel compiler that the actual argument may be modified.
-  pragma "fn synchronization free"
-  pragma "no doc"
-  extern proc chpl__getInPlaceBufferDataForWrite(ref data : chpl__inPlaceBuffer) : bufferType;
-
   private config param debugStrings = false;
 
   pragma "no doc"
-  record __serializeHelper {
-    var buffLen: int;
-    var buff: bufferType;
-    var size: int;
-    var locale_id: chpl_nodeID.type;
-    var shortData: chpl__inPlaceBuffer;
-    var cachedNumCodepoints: int;
-  }
+  config param useCachedNumCodepoints = true;
 
   pragma "plain old data"
   pragma "no doc"
@@ -273,6 +251,10 @@ module String {
 
     proc writeThis(f) throws {
       f <~> _bindex;
+    }
+
+    operator :(val: byteIndex, type t:string) {
+      return val._bindex: string;
     }
   }
 
@@ -293,23 +275,27 @@ module String {
     proc writeThis(f) throws {
       f <~> _cpindex;
     }
-  }
+
+    operator :(val: codepointIndex, type t:string) {
+      return val._cpindex: string;
+    }
+}
 
   // Helper routines in support of being able to use ranges of indices
   pragma "no doc"
   proc chpl_build_bounded_range(low: ?t, high: t)
     where t == byteIndex || t == codepointIndex
-    return new range(t, _low=low, _high=high);
+    return new range(t, low=low, high=high);
 
   pragma "no doc"
   proc chpl_build_low_bounded_range(low: ?t)
     where t == byteIndex || t == codepointIndex
-    return new range(t, BoundedRangeType.boundedLow, _low=low);
+  return new range(low=low);
 
   pragma "no doc"
   proc chpl_build_high_bounded_range(high: ?t)
     where t == byteIndex || t == codepointIndex
-    return new range(t, BoundedRangeType.boundedHigh, _high=high);
+  return new range(high=high);
 
   pragma "no doc"
   proc chpl__rangeStrideType(type idxType: byteIndex) type
@@ -348,83 +334,191 @@ module String {
   proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type
     return int;
 
-  pragma "no doc" inline proc >(x: byteIndex, y: byteIndex)           return x: int > y: int;
-  pragma "no doc" inline proc >(x: codepointIndex, y: codepointIndex) return x: int > y: int;
+  pragma "no doc" inline operator byteIndex.>(x: byteIndex, y: byteIndex) {
+    return x: int > y: int;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.>(x: codepointIndex, y: codepointIndex) {
+    return x: int > y: int;
+  }
 
-  pragma "no doc" inline proc >(x: byteIndex,      y: int) return x: int > y;
-  pragma "no doc" inline proc >(x: codepointIndex, y: int) return x: int > y;
+  pragma "no doc" inline operator byteIndex.>(x: byteIndex, y: int) {
+    return x: int > y;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.>(x: codepointIndex, y: int) return x: int > y;
 
-  pragma "no doc" inline proc >(x: int, y: byteIndex)      return x > y: int;
-  pragma "no doc" inline proc >(x: int, y: codepointIndex) return x > y: int;
+  pragma "no doc"
+  inline operator byteIndex.>(x: int, y: byteIndex) return x > y: int;
+  pragma "no doc"
+  inline operator codepointIndex.>(x: int, y: codepointIndex) return x > y: int;
   // End range helper support
 
   // Index arithmetic support
 
   // index + int or int + index --> index
-  pragma "no doc" inline proc +(x: byteIndex,      y: int) return (x: int + y): byteIndex;
-  pragma "no doc" inline proc +(x: codepointIndex, y: int) return (x: int + y): codepointIndex;
+  pragma "no doc"
+  inline operator byteIndex.+(x: byteIndex, y: int) {
+    return (x: int + y): byteIndex;
+  }
 
-  pragma "no doc" inline proc +(x: int, y: byteIndex)      return (x + y: int): byteIndex;
-  pragma "no doc" inline proc +(x: int, y: codepointIndex) return (x + y: int): codepointIndex;
+  pragma "no doc" inline operator codepointIndex.+(x: codepointIndex, y: int) {
+    return (x: int + y): codepointIndex;
+  }
 
-  pragma "no doc" inline proc +(x: bufferType, y: byteIndex) return x+(y:int);
+  pragma "no doc" inline operator byteIndex.+(x: int, y: byteIndex) {
+    return (x + y: int): byteIndex;
+  }
+
+  pragma "no doc" inline operator codepointIndex.+(x: int, y: codepointIndex) {
+    return (x + y: int): codepointIndex;
+  }
+
+  pragma "no doc" inline operator +(x: bufferType, y: byteIndex) return x+(y:int);
 
   // index - int --> index
-  pragma "no doc" inline proc -(x: byteIndex,      y: int) return (x: int - y): byteIndex;
-  pragma "no doc" inline proc -(x: codepointIndex, y: int) return (x: int - y): codepointIndex;
+  pragma "no doc" inline operator byteIndex.-(x: byteIndex, y: int) {
+    return (x: int - y): byteIndex;
+  }
+
+  pragma "no doc" inline operator codepointIndex.-(x: codepointIndex, y: int) {
+    return (x: int - y): codepointIndex;
+  }
 
   // index - index --> int
-  pragma "no doc" inline proc -(x: byteIndex, y: byteIndex)           return x: int - y: int;
-  pragma "no doc" inline proc -(x: codepointIndex, y: codepointIndex) return x: int - y: int;
+  pragma "no doc" inline operator byteIndex.-(x: byteIndex, y: byteIndex) {
+    return x: int - y: int;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.-(x: codepointIndex, y: codepointIndex) {
+    return x: int - y: int;
+  }
 
   // other relationals
-  pragma "no doc" inline proc <(x: byteIndex, y: byteIndex)           return x: int < y: int;
-  pragma "no doc" inline proc <(x: codepointIndex, y: codepointIndex) return x: int < y: int;
+  pragma "no doc" inline operator byteIndex.<(x: byteIndex, y: byteIndex) {
+    return x: int < y: int;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.<(x: codepointIndex, y: codepointIndex) {
+    return x: int < y: int;
+  }
 
-  pragma "no doc" inline proc <(x: byteIndex,      y: int) return x: int < y;
-  pragma "no doc" inline proc <(x: codepointIndex, y: int) return x: int < y;
+  pragma "no doc" inline operator byteIndex.<(x: byteIndex, y: int) {
+    return x: int < y;
+  }
 
-  pragma "no doc" inline proc <(x: int, y: byteIndex)      return x < y: int;
-  pragma "no doc" inline proc <(x: int, y: codepointIndex) return x < y: int;
+  pragma "no doc" inline operator codepointIndex.<(x: codepointIndex, y: int) {
+    return x: int < y;
+  }
 
-  pragma "no doc" inline proc >=(x: byteIndex, y: byteIndex)           return x: int >= y: int;
-  pragma "no doc" inline proc >=(x: codepointIndex, y: codepointIndex) return x: int >= y: int;
+  pragma "no doc" inline operator byteIndex.<(x: int, y: byteIndex) {
+    return x < y: int;
+  }
 
-  pragma "no doc" inline proc >=(x: byteIndex, y: int)      return x: int >= y;
-  pragma "no doc" inline proc >=(x: codepointIndex, y: int) return x: int >= y;
+  pragma "no doc" inline operator codepointIndex.<(x: int, y: codepointIndex) {
+    return x < y: int;
+  }
 
-  pragma "no doc" inline proc >=(x: int, y: byteIndex)      return x >= y: int;
-  pragma "no doc" inline proc >=(x: int, y: codepointIndex) return x >= y: int;
+  pragma "no doc" inline operator byteIndex.>=(x: byteIndex, y: byteIndex) {
+    return x: int >= y: int;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.>=(x: codepointIndex, y: codepointIndex) {
+    return x: int >= y: int;
+  }
 
-  pragma "no doc" inline proc <=(x: byteIndex, y: byteIndex)           return x: int <= y: int;
-  pragma "no doc" inline proc <=(x: codepointIndex, y: codepointIndex) return x: int <= y: int;
+  pragma "no doc" inline operator byteIndex.>=(x: byteIndex, y: int) {
+    return x: int >= y;
+  }
 
-  pragma "no doc" inline proc <=(x: byteIndex, y: int)      return x: int <= y;
-  pragma "no doc" inline proc <=(x: codepointIndex, y: int) return x: int <= y;
+  pragma "no doc" inline operator codepointIndex.>=(x: codepointIndex, y: int) {
+    return x: int >= y;
+  }
 
-  pragma "no doc" inline proc <=(x: int, y: byteIndex)      return x <= y: int;
-  pragma "no doc" inline proc <=(x: int, y: codepointIndex) return x <= y: int;
+  pragma "no doc" inline operator byteIndex.>=(x: int, y: byteIndex) {
+    return x >= y: int;
+  }
 
-  pragma "no doc" inline proc ==(x: byteIndex, y: byteIndex)           return (x:int) == (y:int);
-  pragma "no doc" inline proc ==(x: codepointIndex, y: codepointIndex) return (x:int) == (y:int);
+  pragma "no doc" inline operator codepointIndex.>=(x: int, y: codepointIndex) {
+    return x >= y: int;
+  }
 
-  pragma "no doc" inline proc ==(x: byteIndex,      y: int) return (x:int) == y;
-  pragma "no doc" inline proc ==(x: codepointIndex, y: int) return (x:int) == y;
+  pragma "no doc" inline operator byteIndex.<=(x: byteIndex, y: byteIndex) {
+    return x: int <= y: int;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.<=(x: codepointIndex, y: codepointIndex) {
+    return x: int <= y: int;
+  }
 
-  pragma "no doc" inline proc ==(x: int, y: byteIndex)      return x == (y:int);
-  pragma "no doc" inline proc ==(x: int, y: codepointIndex) return x == (y:int);
+  pragma "no doc" inline operator byteIndex.<=(x: byteIndex, y: int) {
+    return x: int <= y;
+  }
 
-  pragma "no doc" inline proc !=(x: byteIndex, y: byteIndex)           return (x:int) != (y:int);
-  pragma "no doc" inline proc !=(x: codepointIndex, y: codepointIndex) return (x:int) != (y:int);
+  pragma "no doc" inline operator codepointIndex.<=(x: codepointIndex, y: int) {
+    return x: int <= y;
+  }
 
-  pragma "no doc" inline proc !=(x: byteIndex, y: int)      return (x:int) != y;
-  pragma "no doc" inline proc !=(x: codepointIndex, y: int) return (x:int) != y;
+  pragma "no doc" inline operator byteIndex.<=(x: int, y: byteIndex) {
+    return x <= y: int;
+  }
 
-  pragma "no doc" inline proc !=(x: int, y: byteIndex)      return x != (y:int);
-  pragma "no doc" inline proc !=(x: int, y: codepointIndex) return x != (y:int);
+  pragma "no doc" inline operator codepointIndex.<=(x: int, y: codepointIndex) {
+    return x <= y: int;
+  }
 
-  pragma "no doc" inline proc !(x: byteIndex)      return !(x:int);
-  pragma "no doc" inline proc !(x: codepointIndex) return !(x:int);
+  pragma "no doc" inline operator byteIndex.==(x: byteIndex, y: byteIndex) {
+    return (x:int) == (y:int);
+  }
+  pragma "no doc"
+  inline operator codepointIndex.==(x: codepointIndex, y: codepointIndex) {
+    return (x:int) == (y:int);
+  }
+
+  pragma "no doc" inline operator byteIndex.==(x: byteIndex, y: int) {
+    return (x:int) == y;
+  }
+
+  pragma "no doc" inline operator codepointIndex.==(x: codepointIndex, y: int) {
+    return (x:int) == y;
+  }
+
+  pragma "no doc" inline operator byteIndex.==(x: int, y: byteIndex) {
+    return x == (y:int);
+  }
+
+  pragma "no doc" inline operator codepointIndex.==(x: int, y: codepointIndex) {
+    return x == (y:int);
+  }
+
+  pragma "no doc" inline operator byteIndex.!=(x: byteIndex, y: byteIndex) {
+    return (x:int) != (y:int);
+  }
+  pragma "no doc"
+  inline operator codepointIndex.!=(x: codepointIndex, y: codepointIndex) {
+    return (x:int) != (y:int);
+  }
+
+  pragma "no doc" inline operator byteIndex.!=(x: byteIndex, y: int) {
+    return (x:int) != y;
+  }
+
+  pragma "no doc" inline operator codepointIndex.!=(x: codepointIndex, y: int) {
+    return (x:int) != y;
+  }
+
+  pragma "no doc" inline operator byteIndex.!=(x: int, y: byteIndex) {
+    return x != (y:int);
+  }
+
+  pragma "no doc" inline operator codepointIndex.!=(x: int, y: codepointIndex) {
+    return x != (y:int);
+  }
+
+  pragma "no doc" inline operator byteIndex.!(x: byteIndex) return !(x:int);
+  pragma "no doc" inline operator codepointIndex.!(x: codepointIndex) {
+    return !(x:int);
+  }
 
   pragma "no doc" inline proc _cond_test(x: byteIndex)      return x != 0;
   pragma "no doc" inline proc _cond_test(x: codepointIndex) return x != 0;
@@ -432,13 +526,13 @@ module String {
 
   private proc validateEncoding(buf, len): int throws {
     extern proc chpl_enc_validate_buf(buf, len, ref numCodepoints) : c_int;
-    
+
     var numCodepoints: int;
-    
+
     if chpl_enc_validate_buf(buf, len, numCodepoints) != 0 {
       throw new DecodeError();
     }
-    
+
     return numCodepoints;
   }
 
@@ -456,7 +550,7 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(x: string) {
+  inline proc createStringWithBorrowedBuffer(x: string) : string {
     // we don't validate here because `x` must have been validated already
     var ret: string;
     ret.cachedNumCodepoints = x.cachedNumCodepoints;
@@ -480,17 +574,29 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(x: c_string, length=x.size) throws {
+  inline proc createStringWithBorrowedBuffer(x: c_string,
+                                             length=x.size) : string throws {
     return createStringWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
                                                             size=length+1);
   }
 
   pragma "no doc"
-  proc chpl_createStringWithLiteral(x: c_string, length: int, numCodepoints: int) {
+  proc chpl_createStringWithLiteral(buffer: c_string,
+                                    offset: int,
+                                    x: c_string,
+                                    length: int,
+                                    numCodepoints: int) : string {
+    // copy the string to the combined buffer
+    var buf = buffer:c_void_ptr:c_ptr(uint(8));
+    buf = buf + offset;
+    c_memcpy(buf:c_void_ptr, x:c_void_ptr, length);
+    // add null byte
+    buf[length] = 0;
+
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
-    return chpl_createStringWithBorrowedBufferNV(x:c_ptr(uint(8)),
+    return chpl_createStringWithBorrowedBufferNV(buf,
                                                  length=length,
                                                  size=length+1,
                                                  numCodepoints=numCodepoints);
@@ -516,7 +622,8 @@ module String {
      :returns: A new `string`
   */
   inline proc createStringWithBorrowedBuffer(x: c_ptr(?t),
-                                             length: int, size: int) throws {
+                                             length: int,
+                                             size: int) : string throws {
     if t != byteType && t != c_char {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
@@ -527,7 +634,7 @@ module String {
   }
 
   pragma "no doc"
-  inline proc createStringWithOwnedBuffer(x: string) {
+  inline proc createStringWithOwnedBuffer(x: string) : string {
     // should we allow stealing ownership?
     compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
   }
@@ -547,7 +654,8 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(x: c_string, length=x.size) throws {
+  inline proc createStringWithOwnedBuffer(x: c_string,
+                                          length=x.size) : string throws {
     return createStringWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
   }
@@ -571,7 +679,8 @@ module String {
      :returns: A new `string`
   */
   inline proc createStringWithOwnedBuffer(x: c_ptr(?t),
-                                          length: int, size: int) throws {
+                                          length: int,
+                                          size: int) : string throws {
     if t != byteType && t != c_char {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
@@ -589,7 +698,7 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(x: string) {
+  inline proc createStringWithNewBuffer(x: string) : string {
     // we don't validate here because `x` must have been validated already
     var ret: string;
     ret.cachedNumCodepoints = x.numCodepoints;
@@ -620,7 +729,7 @@ module String {
     :returns: A new `string`
   */
   inline proc createStringWithNewBuffer(x: c_string, length=x.size,
-                                        policy=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) : string throws {
     return createStringWithNewBuffer(x: bufferType, length=length,
                                      size=length+1, policy);
   }
@@ -651,7 +760,7 @@ module String {
   */
   inline proc createStringWithNewBuffer(x: c_ptr(?t),
                                         length: int, size=length+1,
-                                        policy=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) : string throws {
     if t != byteType && t != c_char {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
@@ -703,11 +812,6 @@ module String {
     }
   }
 
-  proc cStrAssignmentDeprWarn() {
-    compilerWarning("Assigning to a string from a c_string is deprecated. ",
-                    "Use createStringWith*Buffer functions instead.");
-  }
-
   //
   // String Implementation
   //
@@ -737,15 +841,6 @@ module String {
       initWithNewBuffer(this, s);
     }
 
-    proc init=(cs: c_string) {
-      this.complete();
-      cStrAssignmentDeprWarn();
-      try! {
-        this.cachedNumCodepoints = validateEncoding(cs:bufferType, cs.size);
-      }
-      initWithNewBuffer(this, cs:bufferType, length=cs.size, size=cs.size+1);
-    }
-
     proc ref deinit() {
       // Checking for size here isn't sufficient. A string may have been
       // initialized from a c_string allocated from memory but beginning with
@@ -757,7 +852,7 @@ module String {
         }
       }
     }
-    
+
     proc chpl__serialize() {
       var data : chpl__inPlaceBuffer;
       if buffLen <= CHPL_SHORT_STRING_SIZE {
@@ -766,7 +861,7 @@ module String {
       return new __serializeHelper(buffLen, buff, buffSize, locale_id, data,
                                    cachedNumCodepoints);
     }
-    
+
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.buffLen <= CHPL_SHORT_STRING_SIZE {
@@ -801,18 +896,24 @@ module String {
     }
 
 
+    // assumes that 'this' is already localized
     proc _cpIndexLenHelpNoAdjustment(ref start: int) {
-      const localThis: string = this.localize();
+      if boundsChecking {
+        if !_local && this.locale_id != chpl_nodeID {
+          halt("internal error -- method requires localized string");
+        }
+      }
+
       const i = start;
 
-      if localThis.isASCII() {
+      if this.isASCII() {
         start += 1;
         return (this.buff[i]:int(32), i:byteIndex, 1:int);
 
       }
       else {
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                   buffLen=localThis.buffLen,
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=this.buff,
+                                                   buffLen=this.buffLen,
                                                    offset=i,
                                                    allowEsc=true);
         start += nBytes;
@@ -827,12 +928,11 @@ module String {
       Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
-    pragma "not order independent yielding loops"
     iter _cpIndexLen(start = 0:byteIndex) {
       const localThis = this.localize();
-      var i = _findStartOfNextCodepointFromByte(this, start);
+      var i = _findStartOfNextCodepointFromByte(localThis, start);
       while i < localThis.buffLen {
-        yield _cpIndexLenHelpNoAdjustment(i);  // this increments i
+        yield localThis._cpIndexLenHelpNoAdjustment(i);  // this increments i
       }
     }
 
@@ -843,7 +943,6 @@ module String {
       Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
-    pragma "not order independent yielding loops"
     iter _indexLen(start = 0:byteIndex) {
       var localThis: string = this.localize();
 
@@ -859,7 +958,7 @@ module String {
         i = j;
       }
     }
-    
+
     inline proc substring(i: int) {
       compilerError("substring removed: use string[index]");
     }
@@ -877,9 +976,16 @@ module String {
       compilerError("not implemented: readThis");
     }
 
-    proc doSplitWSUTF8Help(const ref localThis, maxsplit: int, ref i: int,
+    // assumes that 'this' is already local
+    proc doSplitWSUTF8Help(maxsplit: int, ref i: int,
                            const splitCount: int, const noSplits: bool,
                            const limitSplits: bool, const iEnd: byteIndex) {
+      if boundsChecking {
+        if !_local && this.locale_id != chpl_nodeID {
+          halt("internal error -- method requires localized string");
+        }
+      }
+
       // note: to improve performance, this code collapses several cases into a
       //       single yield statement, which makes it confusing to read
       var done : bool = false;
@@ -891,16 +997,16 @@ module String {
 
       i = _findStartOfNextCodepointFromByte(this, i:byteIndex);
 
-      while i < localThis.buffLen {
-        const (decodeRet, c, nBytes) = decodeHelp(buff=localThis.buff,
-                                                  buffLen=localThis.buffLen,
+      while i < this.buffLen {
+        const (decodeRet, c, nBytes) = decodeHelp(buff=this.buff,
+                                                  buffLen=this.buffLen,
                                                   offset=i,
                                                   allowEsc=true);
         // emit whole string, unless all whitespace
         if noSplits {
           done = true;
-          if !localThis.isSpace() then {
-            chunk = localThis;
+          if !this.isSpace() then {
+            chunk = this;
             yieldChunk = true;
           }
         } else {
@@ -910,7 +1016,7 @@ module String {
             chunkStart = i;
             inChunk = true;
             if i - 1 + nBytes > iEnd {
-              chunk = localThis[chunkStart..];
+              chunk = this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -919,18 +1025,18 @@ module String {
             if cSpace {
               // last split under limit
               if limitSplits && splitCount >= maxsplit {
-                chunk = localThis[chunkStart..];
+                chunk = this[chunkStart..];
                 yieldChunk = true;
                 done = true;
               // no limit
               } else {
-                chunk = localThis[chunkStart..(i-1):byteIndex];
+                chunk = this[chunkStart..(i-1):byteIndex];
                 yieldChunk = true;
                 inChunk = false;
               }
             // out of chars
             } else if i - 1 + nBytes > iEnd {
-              chunk = localThis[chunkStart..];
+              chunk = this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -938,7 +1044,7 @@ module String {
         }
 
         if done {
-          i = localThis.buffLen;
+          i = this.buffLen;
         }
         else {
           i += nBytes;
@@ -950,7 +1056,6 @@ module String {
       return "";
     }
 
-    pragma "not order independent yielding loops"
     iter doSplitWSUTF8(maxsplit: int) {
       if !this.isEmpty() {
         const localThis = this.localize();
@@ -960,10 +1065,11 @@ module String {
         var i = 0;
 
         while i < localThis.buffLen {
-          const chunk =  doSplitWSUTF8Help(localThis, maxsplit, i, splitCount,
-                                           noSplits=(maxsplit==0),
-                                           limitSplits=(maxsplit>0),
-                                           iEnd=(localThis.buffLen-2):byteIndex);
+          const chunk =  localThis.doSplitWSUTF8Help(
+                                  maxsplit, i, splitCount,
+                                  noSplits=(maxsplit==0),
+                                  limitSplits=(maxsplit>0),
+                                  iEnd=(localThis.buffLen-2):byteIndex);
           if !chunk.isEmpty() {
             yield chunk;
             splitCount += 1;
@@ -1063,13 +1169,18 @@ module String {
       return ret;
     }
 
-    inline proc join(ir: _iteratorRecord): string {
-      return doJoinIterator(this, ir);
+    inline proc join(const ref x : [] string) : string {
+      return doJoin(this, x);
     }
 
-    // TODO: we don't need this
-    inline proc _join(const ref S) : string where isTuple(S) || isArray(S) {
-      return doJoin(this, S);
+    inline proc join(const ref x) where isTuple(x) {
+      if !isHomogeneousTuple(x) || !isString(x[0]) then
+        compilerError("join() on tuples only handles homogeneous tuples of strings");
+      return doJoin(this, x);
+    }
+
+    inline proc join(ir: _iteratorRecord): string {
+      return doJoinIterator(this, ir);
     }
 
     /*
@@ -1084,7 +1195,7 @@ module String {
                                                  buffLen=result.buffLen,
                                                  offset=0,
                                                  allowEsc=false);
-      
+
       var upCodepoint = codepoint_toUpper(cp);
       if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
         // Use the MacOS approach everywhere:  only change the case if
@@ -1095,37 +1206,36 @@ module String {
     }
 
   } // end record string
-                                        
+
   /*
     :returns: The number of codepoints in the string.
   */
-  inline proc const string.size return numCodepoints;
+  inline proc const string.size : int return numCodepoints;
 
   /*
     :returns: The indices that can be used to index into the string
               (i.e., the range ``0..<this.size``)
   */
-  inline proc string.indices return 0..<size;
+  inline proc string.indices : range return 0..<size;
 
   /*
     :returns: The number of bytes in the string.
   */
-  inline proc string.numBytes return buffLen;
+  inline proc string.numBytes : int return buffLen;
 
   /*
     :returns: The number of codepoints in the string, assuming the
               string is correctly-encoded UTF-8.
   */
-  inline proc const string.numCodepoints {
-    const n = this.cachedNumCodepoints;
-    if boundsChecking {
-      if n != countNumCodepoints(this) {
-        halt("Encountered corrupt string metadata");
-      }
+  inline proc const string.numCodepoints : int {
+    if useCachedNumCodepoints {
+      return this.cachedNumCodepoints;
     }
-    return n;
+    else {
+      return countNumCodepoints(this);
+    }
   }
-  
+
   /*
      Gets a version of the :mod:`string <String>` that is on the currently
      executing locale.
@@ -1156,39 +1266,39 @@ module String {
 
     .. code-block:: chapel
 
-        var my_string = "Hello!";
-        on different_locale {
-          printf("%s", my_string.localize().c_str());
-        }
+      var my_string = "Hello!";
+      on different_locale {
+        printf("%s", my_string.localize().c_str());
+      }
 
     :returns:
         A `c_string` that points to the underlying buffer used by this
         :mod:`string <String>`. The returned `c_string` is only valid when used
         on the same locale as the string.
    */
-  inline proc string.c_str(): c_string {
+  inline proc string.c_str() : c_string {
     return getCStr(this);
   }
-  
+
   /*
     Returns a :mod:`bytes <Bytes>` from the given :mod:`string <String>`. If the
     string contains some escaped non-UTF8 bytes, `policy` argument determines
     the action.
-        
+
     :arg policy: `encodePolicy.pass` directly copies the (potentially escaped)
                   data, `encodePolicy.unescape` recovers the escaped bytes
                   back.
 
     :returns: :mod:`bytes <Bytes>`
   */
-  proc string.encode(policy=encodePolicy.pass): bytes {
+  proc string.encode(policy=encodePolicy.pass) : bytes {
     var localThis: string = this.localize();
 
     if policy == encodePolicy.pass || this.isASCII() {  // just copy
       return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
     }
     else {  // see if there is escaped data in the string
-      var (buff, size) = bufferAlloc(this.buffLen+1);
+      var (buff, size) = bufferAlloc(localThis.buffLen+1);
 
       var readIdx = 0;
       var writeIdx = 0;
@@ -1240,12 +1350,11 @@ module String {
       c
       d
    */
-  pragma "not order independent yielding loops"
   iter string.items() : string {
     var localThis: string = this.localize();
 
     if localThis.isASCII() {
-      for i in this.byteIndices {
+      for i in localThis.byteIndices {
         var (newBuff, allocSize) = bufferCopyLocal(localThis.buff+i, len=1);
         yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
       }
@@ -1294,11 +1403,10 @@ module String {
   /*
     Iterates over the string byte by byte.
   */
-  pragma "order independent yielding loops"
-  iter string.chpl_bytes(): byteType {
+  iter string.chpl_bytes() : uint(8) {
     var localThis: string = this.localize();
 
-    for i in 0..#localThis.buffLen {
+    foreach i in 0..#localThis.buffLen {
       yield localThis.buff[i];
     }
   }
@@ -1306,19 +1414,18 @@ module String {
   /*
     Iterates over the string Unicode character by Unicode character.
   */
-  pragma "not order independent yielding loops"
-  iter string.codepoints(): int(32) {
+  iter string.codepoints() : int(32) {
     const localThis = this.localize();
     var i = 0;
     while i < localThis.buffLen {
-      yield _cpIndexLenHelpNoAdjustment(i)[0];  // this increments i
+      yield localThis._cpIndexLenHelpNoAdjustment(i)[0];  // this increments i
     }
   }
 
   /*
     :returns: The value of a single-byte string as an integer.
   */
-  proc string.toByte(): uint(8) {
+  proc string.toByte() : uint(8) {
     if this.buffLen != 1 then
       halt("string.toByte() only accepts single-byte strings");
     return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
@@ -1327,7 +1434,7 @@ module String {
   /*
     :returns: The value of the `i` th byte as an integer.
   */
-  proc string.byte(i: int): uint(8) {
+  proc string.byte(i: int) : uint(8) {
     if boundsChecking && (i < 0 || i >= this.buffLen)
       then halt("index ", i, " out of bounds for string with ", this.numBytes, " bytes");
     return bufferGetByte(buf=this.buff, off=i, loc=this.locale_id);
@@ -1336,7 +1443,7 @@ module String {
   /*
     :returns: The value of a single-codepoint string as an integer.
    */
-  proc string.toCodepoint(): int(32) {
+  proc string.toCodepoint() : int(32) {
     // TODO: Engin: at least we can check whether the length is less than 4
     // bytes before localizing?
     var localThis: string = this.localize();
@@ -1365,7 +1472,7 @@ module String {
   /*
     :returns: The value of the `i` th multibyte character as an integer.
    */
-  proc string.codepoint(i: int): int(32) {
+  proc string.codepoint(i: int) : int(32) {
     // TODO: Engin we may need localize here
     const idx = i: int;
     if boundsChecking && idx < 0 then
@@ -1608,7 +1715,7 @@ module String {
                                         `sep` occurs multiple times in a row.
    */
   iter string.split(sep: string, maxsplit: int = -1,
-                    ignoreEmpty: bool = false) /* : string */ {
+                    ignoreEmpty: bool = false) : string {
     // TODO: specifying return type leads to un-inited string?
     for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
   }
@@ -1619,8 +1726,7 @@ module String {
     :arg maxsplit: The number of times to split the string, negative values
                    indicate no limit.
    */
-  pragma "not order independent yielding loops"
-  iter string.split(maxsplit: int = -1) /* : string */ {
+  iter string.split(maxsplit: int = -1) : string {
     // TODO: specifying return type leads to un-inited string?
     if this.isASCII() {
       for s in doSplitWSNoEnc(this, maxsplit) do yield s;
@@ -1630,400 +1736,407 @@ module String {
   }
 
   /*
-    Returns a new string, which is the concatenation of all of the strings
-    passed in with the receiving string inserted between them.
+    Returns a new :mod:`string <String>`, which is the concatenation of all of
+    the :mod:`string <String>` passed in with the contents of the method
+    receiver inserted between them.
 
     .. code-block:: chapel
 
-        var x = "|".join("a","10","d");
-        writeln(x); // prints: "a|10|d"
-   */
+        var myString = "|".join("a","10","d");
+        writeln(myString); // prints: "a|10|d"
+
+    :arg x: :mod:`string <String>` values to be joined
+
+    :returns: A :mod:`string <String>`
+  */
   inline proc string.join(const ref x: string ...) : string {
-    return _join(x);
+    return doJoin(this, x);
   }
 
   /*
-    Same as the varargs version, but with a homogeneous tuple of strings.
+    Returns a new :mod:`string <String>`, which is the concatenation of all of
+    the :mod:`string <String>` passed in with the contents of the method
+    receiver inserted between them.
 
     .. code-block:: chapel
 
-        var x = "|".join("a","10","d");
-        writeln(x); // prints: "a|10|d"
-   */
-  inline proc string.join(const ref x) : string where isTuple(x) {
-    if !isHomogeneousTuple(x) || !isString(x[1]) then
-      compilerError("join() on tuples only handles homogeneous tuples of strings");
-    return _join(x);
+        var tup = ("a","10","d");
+        var myJoinedTuple = "|".join(tup);
+        writeln(myJoinedTuple); // prints: "a|10|d"
+
+        var myJoinedArray = "|".join(["a","10","d"]);
+        writeln(myJoinedArray); // prints: "a|10|d"
+
+    :arg x: An array or tuple of :mod:`string <String>` values to be joined
+
+    :returns: A :mod:`string <String>`
+  */
+  inline proc string.join(const ref x) : string {
+    // this overload serves as a catch-all for unsupported types.
+    // for the implementation of array and tuple overloads, see
+    // join() methods in the _string record.
+    compilerError("string.join() accepts any number of strings, homogenous "
+                  + "tuple of strings, or array of strings as an argument");
   }
+
 
   /*
-    Same as the varargs version, but with all the strings in an array.
-
-    .. code-block:: chapel
-
-        var x = "|".join(["a","10","d"]);
-        writeln(x); // prints: "a|10|d"
-   */
-  inline proc string.join(const ref S: [] string) : string {
-    return _join(S);
-  }
-
-    /*
-      :arg chars: A string containing each character to remove.
-                  Defaults to `" \\t\\r\\n"`.
-      :arg leading: Indicates if leading occurrences should be removed.
+    :arg chars: A string containing each character to remove.
+                Defaults to `" \\t\\r\\n"`.
+    :arg leading: Indicates if leading occurrences should be removed.
+                  Defaults to `true`.
+    :arg trailing: Indicates if trailing occurrences should be removed.
                     Defaults to `true`.
-      :arg trailing: Indicates if trailing occurrences should be removed.
-                     Defaults to `true`.
 
-      :returns: A new string with `leading` and/or `trailing` occurrences of
-                characters in `chars` removed as appropriate.
-    */
-    proc string.strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
-      if this.isASCII() {
-        return doStripNoEnc(this, chars, leading, trailing);
-      } else {
-        if this.isEmpty() then return "";
-        if chars.isEmpty() then return this;
+    :returns: A new string with `leading` and/or `trailing` occurrences of
+              characters in `chars` removed as appropriate.
+  */
+  proc string.strip(chars: string = " \t\r\n", leading=true,
+                    trailing=true) : string {
+    if this.isASCII() {
+      return doStripNoEnc(this, chars, leading, trailing);
+    } else {
+      if this.isEmpty() then return "";
+      if chars.isEmpty() then return this;
 
-        const localThis: string = this.localize();
-        const localChars: string = chars.localize();
+      const localThis: string = this.localize();
+      const localChars: string = chars.localize();
 
-        var start: byteIndex = 0;
-        var end: byteIndex = localThis.buffLen-1;
+      var start: byteIndex = 0;
+      var end: byteIndex = localThis.buffLen-1;
 
-        if leading {
-          label outer for (thisChar, i, nBytes) in localThis._cpIndexLen() {
-            for removeChar in localChars.codepoints() {
-              if thisChar == removeChar {
-                start = i + nBytes;
-                continue outer;
-              }
-            }
-            break;
-          }
-        }
-
-        if trailing {
-          // Because we are working with codepoints whose starting byte index
-          // is not initially known, it is faster to work forward, assuming we
-          // are already past the end of the string, and then update the end
-          // point as we are proven wrong.
-          end = -1;
-          label outer for (thisChar, i, nBytes) in localThis._cpIndexLen(start) {
-            for removeChar in localChars.codepoints() {
-              if thisChar == removeChar {
-                continue outer;
-              }
-            }
-            // This was not a character to be removed, so update tentative end.
-            end = i + nBytes-1;
-          }
-        }
-
-        return localThis[start..end];
-      }
-    }
-
-    /*
-      Splits the string on `sep` into a `3*string` consisting of the section
-      before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
-      the tuple will contain the whole string, and then two empty strings.
-    */
-    inline proc const string.partition(sep: string) : 3*string {
-      return doPartition(this, sep);
-    }
-
-
-    /* Remove indentation from each line of string.
-
-       This can be useful when applied to multi-line strings that are indented
-       in the source code, but should not be indented in the output.
-
-       When ``columns == 0``, determine the level of indentation to remove from
-       all lines by finding the common leading whitespace across all non-empty
-       lines. Empty lines are lines containing only whitespace. Tabs and spaces
-       are the only whitespaces that are considered, but are not treated as
-       the same characters when determining common whitespace.
-
-       When ``columns > 0``, remove ``columns`` leading whitespace characters
-       from each line. Tabs are not considered whitespace when ``columns > 0``,
-       so only leading spaces are removed.
-
-       :arg columns: The number of columns of indentation to remove. Infer
-                     common leading whitespace if ``columns == 0``.
-
-       :arg ignoreFirst: When ``true``, ignore first line when determining the
-                         common leading whitespace, and make no changes to the
-                         first line.
-
-       :returns: A new `string` with indentation removed.
-
-       .. warning::
-
-          ``string.dedent`` is not considered stable and is subject to change in
-          future Chapel releases.
-    */
-    proc string.dedent(columns=0, ignoreFirst=true): string {
-      if chpl_warnUnstable then
-        compilerWarning("string.dedent is subject to change in the future.");
-      return doDedent(this, columns, ignoreFirst);
-    }
-
-    /*
-     Checks if all the characters in the string are either uppercase (A-Z) or
-     uncased (not a letter).
-
-      :returns: * `true`  -- if the string contains at least one uppercase
-                             character and no lowercase characters, ignoring
-                             uncased characters.
-                * `false` -- otherwise
-     */
-    proc string.isUpper() : bool {
-      if this.isEmpty() then return false;
-
-      var result: bool;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        var locale_result = false;
-        for cp in this.codepoints() {
-          if codepoint_isLower(cp) {
-            locale_result = false;
-            break;
-          } else if !locale_result && codepoint_isUpper(cp) {
-            locale_result = true;
-          }
-        }
-        result = locale_result;
-      }
-      return result;
-    }
-
-    /*
-     Checks if all the characters in the string are either lowercase (a-z) or
-     uncased (not a letter).
-
-      :returns: * `true`  -- when there are no uppercase characters in the string.
-                * `false` -- otherwise
-     */
-    proc string.isLower() : bool {
-      if this.isEmpty() then return false;
-
-      var result: bool;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        var locale_result = false;
-        for cp in this.codepoints() {
-          if codepoint_isUpper(cp) {
-            locale_result = false;
-            break;
-          } else if !locale_result && codepoint_isLower(cp) {
-            locale_result = true;
-          }
-        }
-        result = locale_result;
-      }
-      return result;
-    }
-
-    /*
-     Checks if all the characters in the string are whitespace (' ', '\t',
-     '\n', '\v', '\f', '\r').
-
-      :returns: * `true`  -- when all the characters are whitespace.
-                * `false` -- otherwise
-     */
-    proc string.isSpace() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for cp in this.codepoints() {
-          if !(codepoint_isWhitespace(cp)) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-     Checks if all the characters in the string are alphabetic (a-zA-Z).
-
-      :returns: * `true`  -- when the characters are alphabetic.
-                * `false` -- otherwise
-     */
-    proc string.isAlpha() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for cp in this.codepoints() {
-          if !codepoint_isAlpha(cp) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-     Checks if all the characters in the string are digits (0-9).
-
-      :returns: * `true`  -- when the characters are digits.
-                * `false` -- otherwise
-     */
-    proc string.isDigit() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for cp in this.codepoints() {
-          if !codepoint_isDigit(cp) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-     Checks if all the characters in the string are alphanumeric (a-zA-Z0-9).
-
-      :returns: * `true`  -- when the characters are alphanumeric.
-                * `false` -- otherwise
-     */
-    proc string.isAlnum() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for cp in this.codepoints() {
-          if !(codepoint_isAlpha(cp) || codepoint_isDigit(cp)) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-     Checks if all the characters in the string are printable.
-
-      :returns: * `true`  -- when the characters are printable.
-                * `false` -- otherwise
-     */
-    proc string.isPrintable() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for cp in this.codepoints() {
-          if !codepoint_isPrintable(cp) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-      Checks if all uppercase characters are preceded by uncased characters,
-      and if all lowercase characters are preceded by cased characters.
-
-      :returns: * `true`  -- when the condition described above is met.
-                * `false` -- otherwise
-     */
-    proc string.isTitle() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        param UN = 0, UPPER = 1, LOWER = 2;
-        var last = UN;
-        for cp in this.codepoints() {
-          if codepoint_isLower(cp) {
-            if last == UPPER || last == LOWER {
-              last = LOWER;
-            } else { // last == UN
-              result = false;
-              break;
+      if leading {
+        label outer for (thisChar, i, nBytes) in localThis._cpIndexLen() {
+          for removeChar in localChars.codepoints() {
+            if thisChar == removeChar {
+              start = i + nBytes;
+              continue outer;
             }
           }
-          else if codepoint_isUpper(cp) {
-            if last == UN {
-              last = UPPER;
-            } else { // last == UPPER || last == LOWER
-              result = false;
-              break;
+          break;
+        }
+      }
+
+      if trailing {
+        // Because we are working with codepoints whose starting byte index
+        // is not initially known, it is faster to work forward, assuming we
+        // are already past the end of the string, and then update the end
+        // point as we are proven wrong.
+        end = -1;
+        label outer for (thisChar, i, nBytes) in localThis._cpIndexLen(start) {
+          for removeChar in localChars.codepoints() {
+            if thisChar == removeChar {
+              continue outer;
             }
-          } else {
-            // Uncased elements
-            last = UN;
+          }
+          // This was not a character to be removed, so update tentative end.
+          end = i + nBytes-1;
+        }
+      }
+
+      return localThis[start..end];
+    }
+  }
+
+  /*
+    Splits the string on `sep` into a `3*string` consisting of the section
+    before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
+    the tuple will contain the whole string, and then two empty strings.
+  */
+  inline proc const string.partition(sep: string) : 3*string {
+    return doPartition(this, sep);
+  }
+
+
+  /* Remove indentation from each line of string.
+
+      This can be useful when applied to multi-line strings that are indented
+      in the source code, but should not be indented in the output.
+
+      When ``columns == 0``, determine the level of indentation to remove from
+      all lines by finding the common leading whitespace across all non-empty
+      lines. Empty lines are lines containing only whitespace. Tabs and spaces
+      are the only whitespaces that are considered, but are not treated as
+      the same characters when determining common whitespace.
+
+      When ``columns > 0``, remove ``columns`` leading whitespace characters
+      from each line. Tabs are not considered whitespace when ``columns > 0``,
+      so only leading spaces are removed.
+
+      :arg columns: The number of columns of indentation to remove. Infer
+                    common leading whitespace if ``columns == 0``.
+
+      :arg ignoreFirst: When ``true``, ignore first line when determining the
+                        common leading whitespace, and make no changes to the
+                        first line.
+
+      :returns: A new `string` with indentation removed.
+
+      .. warning::
+
+        ``string.dedent`` is not considered stable and is subject to change in
+        future Chapel releases.
+  */
+  proc string.dedent(columns=0, ignoreFirst=true) : string {
+    if chpl_warnUnstable then
+      compilerWarning("string.dedent is subject to change in the future.");
+    return doDedent(this, columns, ignoreFirst);
+  }
+
+  /*
+    Checks if all the characters in the string are either uppercase (A-Z) or
+    uncased (not a letter).
+
+    :returns: * `true`  -- if the string contains at least one uppercase
+                            character and no lowercase characters, ignoring
+                            uncased characters.
+              * `false` -- otherwise
+    */
+  proc string.isUpper() : bool {
+    if this.isEmpty() then return false;
+
+    var result: bool;
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      var locale_result = false;
+      for cp in this.codepoints() {
+        if codepoint_isLower(cp) {
+          locale_result = false;
+          break;
+        } else if !locale_result && codepoint_isUpper(cp) {
+          locale_result = true;
+        }
+      }
+      result = locale_result;
+    }
+    return result;
+  }
+
+  /*
+    Checks if all the characters in the string are either lowercase (a-z) or
+    uncased (not a letter).
+
+    :returns: * `true`  -- when there are no uppercase characters in the string.
+              * `false` -- otherwise
+    */
+  proc string.isLower() : bool {
+    if this.isEmpty() then return false;
+
+    var result: bool;
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      var locale_result = false;
+      for cp in this.codepoints() {
+        if codepoint_isUpper(cp) {
+          locale_result = false;
+          break;
+        } else if !locale_result && codepoint_isLower(cp) {
+          locale_result = true;
+        }
+      }
+      result = locale_result;
+    }
+    return result;
+  }
+
+  /*
+    Checks if all the characters in the string are whitespace (' ', '\t',
+    '\n', '\v', '\f', '\r').
+
+    :returns: * `true`  -- when all the characters are whitespace.
+              * `false` -- otherwise
+    */
+  proc string.isSpace() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for cp in this.codepoints() {
+        if !(codepoint_isWhitespace(cp)) {
+          result = false;
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  /*
+    Checks if all the characters in the string are alphabetic (a-zA-Z).
+
+    :returns: * `true`  -- when the characters are alphabetic.
+              * `false` -- otherwise
+    */
+  proc string.isAlpha() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for cp in this.codepoints() {
+        if !codepoint_isAlpha(cp) {
+          result = false;
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  /*
+    Checks if all the characters in the string are digits (0-9).
+
+    :returns: * `true`  -- when the characters are digits.
+              * `false` -- otherwise
+    */
+  proc string.isDigit() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for cp in this.codepoints() {
+        if !codepoint_isDigit(cp) {
+          result = false;
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  /*
+    Checks if all the characters in the string are alphanumeric (a-zA-Z0-9).
+
+    :returns: * `true`  -- when the characters are alphanumeric.
+              * `false` -- otherwise
+    */
+  proc string.isAlnum() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for cp in this.codepoints() {
+        if !(codepoint_isAlpha(cp) || codepoint_isDigit(cp)) {
+          result = false;
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  /*
+    Checks if all the characters in the string are printable.
+
+    :returns: * `true`  -- when the characters are printable.
+              * `false` -- otherwise
+    */
+  proc string.isPrintable() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for cp in this.codepoints() {
+        if !codepoint_isPrintable(cp) {
+          result = false;
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  /*
+    Checks if all uppercase characters are preceded by uncased characters,
+    and if all lowercase characters are preceded by cased characters.
+
+    :returns: * `true`  -- when the condition described above is met.
+              * `false` -- otherwise
+    */
+  proc string.isTitle() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      param UN = 0, UPPER = 1, LOWER = 2;
+      var last = UN;
+      for cp in this.codepoints() {
+        if codepoint_isLower(cp) {
+          if last == UPPER || last == LOWER {
+            last = LOWER;
+          } else { // last == UN
+            result = false;
+            break;
           }
         }
-      }
-      return result;
-    }
-
-    /*
-      :returns: A new string with all uppercase characters replaced with their
-                lowercase counterpart.
-
-      .. note::
-        
-        The case change operation is not currently performed on characters whose
-        cases take different number of bytes to represent in Unicode mapping.
-    */
-    proc string.toLower() : string {
-      var result: string = this;
-      if result.isEmpty() then return result;
-
-      for (cp, i, nBytes) in this._cpIndexLen() {
-        var lowCodepoint = codepoint_toLower(cp);
-        if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nBytes {
-          // Use the MacOS approach everywhere:  only change the case if
-          // the result does not change the number of encoded bytes.
-          qio_encode_char_buf(result.buff + i, lowCodepoint);
+        else if codepoint_isUpper(cp) {
+          if last == UN {
+            last = UPPER;
+          } else { // last == UPPER || last == LOWER
+            result = false;
+            break;
+          }
+        } else {
+          // Uncased elements
+          last = UN;
         }
       }
-      return result;
     }
+    return result;
+  }
 
-    /*
-      :returns: A new string with all lowercase characters replaced with their
-                uppercase counterpart.
+  /*
+    :returns: A new string with all uppercase characters replaced with their
+              lowercase counterpart.
 
-      .. note::
-        
-        The case change operation is not currently performed on characters whose
-        cases take different number of bytes to represent in Unicode mapping.
-    */
-    proc string.toUpper() : string {
-      var result: string = this;
-      if result.isEmpty() then return result;
+    .. note::
 
-      for (cp, i, nBytes) in this._cpIndexLen() {
-        var upCodepoint = codepoint_toUpper(cp);
-        if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
-          // Use the MacOS approach everywhere:  only change the case if
-          // the result does not change the number of encoded bytes.
-          qio_encode_char_buf(result.buff + i, upCodepoint);
-        }
+      The case change operation is not currently performed on characters whose
+      cases take different number of bytes to represent in Unicode mapping.
+  */
+  proc string.toLower() : string {
+    var result: string = this;
+    if result.isEmpty() then return result;
+
+    for (cp, i, nBytes) in this._cpIndexLen() {
+      var lowCodepoint = codepoint_toLower(cp);
+      if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nBytes {
+        // Use the MacOS approach everywhere:  only change the case if
+        // the result does not change the number of encoded bytes.
+        qio_encode_char_buf(result.buff + i, lowCodepoint);
       }
-      return result;
     }
+    return result;
+  }
+
+  /*
+    :returns: A new string with all lowercase characters replaced with their
+              uppercase counterpart.
+
+    .. note::
+
+      The case change operation is not currently performed on characters whose
+      cases take different number of bytes to represent in Unicode mapping.
+  */
+  proc string.toUpper() : string {
+    var result: string = this;
+    if result.isEmpty() then return result;
+
+    for (cp, i, nBytes) in this._cpIndexLen() {
+      var upCodepoint = codepoint_toUpper(cp);
+      if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
+        // Use the MacOS approach everywhere:  only change the case if
+        // the result does not change the number of encoded bytes.
+        qio_encode_char_buf(result.buff + i, upCodepoint);
+      }
+    }
+    return result;
+  }
 
   /*
     :returns: A new string with all cased characters following an uncased
@@ -2074,11 +2187,11 @@ module String {
      Copies the int `rhs` into the byteIndex `lhs`.
   */
   pragma "no doc"
-  proc =(ref lhs: byteIndex, rhs: int) {
+  operator byteIndex.=(ref lhs: byteIndex, rhs: int) {
     lhs._bindex = rhs: int;
   }
   pragma "no doc"
-  proc =(ref lhs: byteIndex, const ref rhs: byteIndex) {
+  operator byteIndex.=(ref lhs: byteIndex, const ref rhs: byteIndex) {
     lhs._bindex = rhs._bindex;
   }
 
@@ -2086,11 +2199,12 @@ module String {
      Copies the int `rhs` into the codepointIndex `lhs`.
   */
   pragma "no doc"
-  proc =(ref lhs: codepointIndex, rhs: int) {
+  operator codepointIndex.=(ref lhs: codepointIndex, rhs: int) {
     lhs._cpindex = rhs: int;
   }
   pragma "no doc"
-  proc =(ref lhs: codepointIndex, const ref rhs: codepointIndex) {
+  operator codepointIndex.=(ref lhs: codepointIndex,
+                            const ref rhs: codepointIndex) {
     lhs._cpindex = rhs._cpindex;
   }
 
@@ -2098,24 +2212,8 @@ module String {
   /*
      Copies the string `rhs` into the string `lhs`.
   */
-  proc =(ref lhs: string, rhs: string) {
+  operator =(ref lhs: string, rhs: string) : void {
     doAssign(lhs, rhs);
-  }
-
-  /*
-     Copies the c_string `rhs_c` into the string `lhs`.
-
-     Halts if `lhs` is a remote string.
-  */
-  proc =(ref lhs: string, rhs_c: c_string) {
-    cStrAssignmentDeprWarn();
-    // I want to use try! but got tripped over by #14465
-    try {
-      lhs = createStringWithNewBuffer(rhs_c);
-    }
-    catch {
-      halt("Assigning a c_string with non-UTF-8 data");
-    }
   }
 
   //
@@ -2124,7 +2222,7 @@ module String {
   /*
      :returns: A new string which is the result of concatenating `s0` and `s1`
   */
-  proc +(s0: string, s1: string) {
+  operator string.+(s0: string, s1: string) : string {
     return doConcat(s0, s1);
   }
 
@@ -2132,17 +2230,25 @@ module String {
      :returns: A new string which is the result of repeating `s` `n` times.
                If `n` is less than or equal to 0, an empty string is returned.
 
+     The operation is commutative.
      For example:
 
      .. code-block:: chapel
 
         writeln("Hello! " * 3);
+        or
+        writeln(3 * "Hello! ");
 
      Results in::
 
        Hello! Hello! Hello!
   */
-  proc *(s: string, n: integral) {
+  operator *(s: string, n: integral) : string {
+    return doMultiply(s, n);
+  }
+
+  pragma "no doc"
+  operator *(n: integral, s: string) {
     return doMultiply(s, n);
   }
 
@@ -2151,37 +2257,37 @@ module String {
   //
 
   pragma "no doc"
-  inline proc ==(param s0: string, param s1: string) param  {
+  inline operator string.==(param s0: string, param s1: string) param  {
     return __primitive("string_compare", s0, s1) == 0;
   }
 
   pragma "no doc"
-  inline proc !=(param s0: string, param s1: string) param {
+  inline operator string.!=(param s0: string, param s1: string) param {
     return __primitive("string_compare", s0, s1) != 0;
   }
 
   pragma "no doc"
-  inline proc <=(param a: string, param b: string) param {
+  inline operator string.<=(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) <= 0);
   }
 
   pragma "no doc"
-  inline proc >=(param a: string, param b: string) param {
+  inline operator string.>=(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) >= 0);
   }
 
   pragma "no doc"
-  inline proc <(param a: string, param b: string) param {
+  inline operator string.<(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) < 0);
   }
 
   pragma "no doc"
-  inline proc >(param a: string, param b: string) param {
+  inline operator string.>(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) > 0);
   }
 
   pragma "no doc"
-  inline proc +(param a: string, param b: string) param
+  inline operator string.+(param a: string, param b: string) param
     return __primitive("string_concat", a, b);
 
   pragma "no doc"
@@ -2221,7 +2327,7 @@ module String {
   /*
      Appends the string `rhs` to the string `lhs`.
   */
-  proc +=(ref lhs: string, const ref rhs: string) : void {
+  operator string.+=(ref lhs: string, const ref rhs: string) : void {
     doAppend(lhs, rhs);
   }
 
@@ -2242,7 +2348,7 @@ module String {
   //
 
   pragma "no doc"
-  proc ==(a: string, b: string) : bool {
+  operator string.==(a: string, b: string) : bool {
     // At the moment, this commented out section will not work correctly. If a
     // and b are on the same locale, we will go to that locale, but an autoCopy
     // will localize a and b, before they are placed into the on bundle,
@@ -2261,26 +2367,26 @@ module String {
   }
 
   pragma "no doc"
-  inline proc !=(a: string, b: string) : bool {
+  inline operator string.!=(a: string, b: string) : bool {
     return !doEq(a,b);
   }
 
   pragma "no doc"
-  inline proc <(a: string, b: string) : bool {
+  inline operator string.<(a: string, b: string) : bool {
     return doLessThan(a, b);
   }
 
   pragma "no doc"
-  inline proc >(a: string, b: string) : bool {
+  inline operator string.>(a: string, b: string) : bool {
     return doGreaterThan(a, b);
   }
 
   pragma "no doc"
-  inline proc <=(a: string, b: string) : bool {
+  inline operator string.<=(a: string, b: string) : bool {
     return doLessThanOrEq(a, b);
   }
   pragma "no doc"
-  inline proc >=(a: string, b: string) : bool {
+  inline operator string.>=(a: string, b: string) : bool {
     return doGreaterThanOrEq(a, b);
   }
 
@@ -2349,7 +2455,7 @@ module String {
      :returns: A string storing the complete multibyte character sequence
                that corresponds to the codepoint value `i`.
   */
-  inline proc codepointToString(i: int(32)) {
+  inline proc codepointToString(i: int(32)) : string {
     const mblength = qio_nbytes_char(i): int;
     var (buffer, mbsize) = bufferAlloc(mblength+1);
     qio_encode_char_buf(buffer, i);
@@ -2364,13 +2470,13 @@ module String {
   //
 
   pragma "no doc"
-  inline proc _cast(type t: bufferType, cs: c_string) {
+  inline operator :(cs: c_string, type t: bufferType)  {
     return __primitive("cast", t, cs);
   }
 
   // Cast from c_string to string
   pragma "no doc"
-  proc _cast(type t: string, cs: c_string) {
+  operator :(cs: c_string, type t: string)  {
     try {
       return createStringWithNewBuffer(cs);
     }
@@ -2381,13 +2487,13 @@ module String {
 
   // Cast from byteIndex to int
   pragma "no doc"
-  inline proc _cast(type t: int, cpi: byteIndex) {
+  inline operator :(cpi: byteIndex, type t: int)  {
     return cpi._bindex;
   }
 
   // Cast from int to byteIndex
   pragma "no doc"
-  inline proc _cast(type t: byteIndex, i: int) {
+  inline operator :(i: int, type t: byteIndex)  {
     var cpi: byteIndex;
     cpi._bindex = i;
     return cpi;
@@ -2395,13 +2501,13 @@ module String {
 
   // Cast from codepointIndex to int
   pragma "no doc"
-  inline proc _cast(type t: int, cpi: codepointIndex) {
+  inline operator :(cpi: codepointIndex, type t: int)  {
     return cpi._cpindex;
   }
 
   // Cast from int to codepointIndex
   pragma "no doc"
-  inline proc _cast(type t: codepointIndex, i: int) {
+  inline operator :(i: int, type t: codepointIndex) {
     var cpi: codepointIndex;
     cpi._cpindex = i;
     return cpi;
@@ -2412,7 +2518,7 @@ module String {
   //
 
   pragma "no doc"
-  inline proc chpl__defaultHash(x : string): uint {
-    return getHash(x);
+  inline proc string.hash(): uint {
+    return getHash(this);
   }
 }

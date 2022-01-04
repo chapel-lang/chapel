@@ -25,16 +25,14 @@ COMM_SRCS = \
 	comm-ofi.c
 
 #
-# By default, use PMI out-of-band support on Cray X* systems, else MPI
-# on other Cray systems or with an MPI-based launcher, else "sockets".
-# Use hugepages only on Cray X* systems.
+# By default, use PMI2 out-of-band support on Cray X* and HPE Cray EX
+# systems, MPI on other Cray systems or with an MPI-based launcher,
+# and "sockets" otherwise.
 #
-ifneq (, $(findstring $(CHPL_COMM_OFI_OOB), mpi pmi sockets slurm-pmi2))
+ifneq (, $(findstring $(CHPL_COMM_OFI_OOB), mpi pmi2 sockets))
   COMM_SRCS += comm-ofi-oob-$(CHPL_COMM_OFI_OOB).c
-else ifneq (, $(findstring cray-x,$(CHPL_MAKE_TARGET_PLATFORM)))
-  COMM_SRCS += comm-ofi-oob-pmi.c
-else ifneq (, $(findstring hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
-  COMM_SRCS += comm-ofi-oob-slurm-pmi2.c
+else ifneq (, $(findstring $(CHPL_MAKE_TARGET_PLATFORM), cray-xc hpe-cray-ex))
+  COMM_SRCS += comm-ofi-oob-pmi2.c
 else ifneq (, $(filter cray-% hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
   COMM_SRCS += comm-ofi-oob-mpi.c
 else ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
@@ -43,6 +41,15 @@ else
   COMM_SRCS += comm-ofi-oob-sockets.c
 endif
 
+ifneq (, $(findstring pmi2, $(COMM_SRCS)))
+  ifeq ($(MAKE_LAUNCHER),1)
+    RUNTIME_DEFS += -DCOMM_OFI_OOB_PMI2
+  endif
+endif
+
+#
+# Use hugepages only on Cray XC systems.
+#
 ifneq (, $(findstring cray-x,$(CHPL_MAKE_TARGET_PLATFORM)))
   COMM_SRCS += comm-ofi-hugepages.c
 else

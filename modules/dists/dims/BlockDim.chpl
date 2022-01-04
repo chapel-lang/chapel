@@ -107,7 +107,7 @@ proc BlockDim.init(numLocales: int, boundingBox: range(?),
 
   this.numLocales = numLocales;
   this.bbStart = boundingBox.low;
-  this.bbLength = boundingBox.size;
+  this.bbLength = boundingBox.sizeAs(idxType);
 }
 
 /////////// privatization - start
@@ -259,7 +259,7 @@ proc Block1dom.dsiSingleTaskPerLocaleOnly1d() param return false;
 proc Block1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
   const locRange = densify(myRange, globDD.wholeR, userErrors=false);
   // Copied straight from BlockDom leader - replace locBlock(parDim)->locRange.
-  const (lo, hi) = _computeBlock(locRange.size, numTasks, taskid,
+  const (lo, hi) = _computeBlock(locRange.sizeAs(locRange.idxType), numTasks, taskid,
                                  locRange.high, locRange.low, locRange.low);
 
   // If this can occasionally be an empty range, add a check to Dimensional
@@ -270,7 +270,6 @@ proc Block1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:in
 proc Block1locdom.dsiMyDensifiedRangeType1d(globDD) type
   return range(globDD.idxType);
 
-pragma "order independent yielding loops"
 iter Block1dom.dsiSerialArrayIterator1d() {
   // The Block distribution assigns indices to locales contiguously and
   // so that (i1<i2) => (locId1<=locId2). This is defined by the domain map.
@@ -279,7 +278,7 @@ iter Block1dom.dsiSerialArrayIterator1d() {
   // On a single locale, Block1locdom.myRange (aka this._dsiComputeMyRange())
   // already happens to reflect the desired direction.
 
-  for locId in (0..#pdist.numLocales) by sgn(wholeR.stride) {
+  foreach locId in (0..#pdist.numLocales) by sgn(wholeR.stride) {
     // We do not go to Block1locdom for myRange because (a) recomputing it
     // is probably cheaper than going to a remote locale, and
     // (b) we do not store Block1locdom objects in Block1dom.
@@ -289,7 +288,6 @@ iter Block1dom.dsiSerialArrayIterator1d() {
   }
 }
 
-pragma "order independent yielding loops"
 iter Block1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
 //writeln("Block1dom.dsiFollowerArrayIterator1d  undensRange ", undensRange);
 
@@ -301,7 +299,7 @@ iter Block1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   {
 //writeln("Block1dom.dsiFollowerArrayIterator1d case A");
     // (a) no benefit to factor out computations for a particular locale
-    for ix in undensRange do
+    foreach ix in undensRange do
       yield dsiAccess1d(ix);
 
   } else {
@@ -312,7 +310,7 @@ iter Block1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
     // check for a supposedly more common case of following our own leader
     if lowLocId == highLocId {
 //writeln("Block1dom.dsiFollowerArrayIterator1d case B1  lowLocId ", lowLocId);
-      for i in undensRange do
+      foreach i in undensRange do
         yield (lowLocId, i);
 
     } else {
@@ -322,7 +320,7 @@ iter Block1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
         const thisLocaleRange = _dsiComputeMyRange(locId);
         const localRangeToFollow = undensRange(thisLocaleRange);
 //writeln("Block1dom.dsiFollowerArrayIterator1d case B2  locId ", locId, "  localRangeToFollow ", localRangeToFollow);
-        for i in localRangeToFollow do
+        foreach i in localRangeToFollow do
           yield (locId, i);
       }
     }

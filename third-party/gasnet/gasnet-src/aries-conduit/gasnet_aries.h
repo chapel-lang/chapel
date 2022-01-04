@@ -360,6 +360,14 @@ struct gasnetc_post_descriptor {
 #endif
 };
 
+// Conduit-specific Segment type
+typedef struct gasnetc_Segment_t_ {
+  GASNETI_SEGMENT_COMMON // conduit-indep part as prefix
+
+  // memory registation info
+  gni_mem_handle_t mem_handle;
+} *gasnetc_Segment_t;
+
 gasnetc_post_descriptor_t *
 gasnetc_alloc_post_descriptor(gex_Flags_t flags GASNETC_DIDX_FARG) GASNETI_MALLOC;
 
@@ -368,18 +376,20 @@ void gasnetc_free_post_descriptor(gasnetc_post_descriptor_t *pd);
 int gasnetc_try_pin(void *addr, uintptr_t size);
 
 /* exit related */
-volatile int gasnetc_shutdownInProgress;
-double gasnetc_shutdown_seconds; /* number of seconds to poll before forceful shutdown */
+extern volatile int gasnetc_shutdownInProgress;
+extern double gasnetc_shutdown_seconds; /* number of seconds to poll before forceful shutdown */
 int gasnetc_sys_exit(int *exitcode);
 void gasnetc_sys_fini(void);
 
 #if GASNETC_USE_MULTI_DOMAIN
 void gasnetc_create_parallel_domain(gasnete_threadidx_t tidx);
 int gasnetc_get_domain_idx(gasnete_threadidx_t tidx);
+void gasnetc_init_md(void);
 #endif
 
 void gasnetc_init_gni(gasnet_seginfo_t seginfo);
-void gasnetc_init_segment(gasnet_seginfo_t seginfo);
+void gasnetc_segment_register(gasnetc_Segment_t segment);
+void gasnetc_segment_exchange(gex_TM_t tm, gex_EP_t *eps, size_t num_eps);
 uintptr_t gasnetc_init_messaging(void);
 void gasnetc_shutdown(void); /* clean up all gni state */
 

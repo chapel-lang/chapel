@@ -1,10 +1,23 @@
-Start analyzing forall for automatic aggregation (removeAggCondInFastFollowers.chpl:29)
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (removeAggCondInFastFollowers.chpl:29)
 | Found an aggregation candidate (removeAggCondInFastFollowers.chpl:30)
 |  Potential source aggregation (removeAggCondInFastFollowers.chpl:30)
-End analyzing forall for automatic aggregation (removeAggCondInFastFollowers.chpl:29)
+|  Potential destination aggregation (removeAggCondInFastFollowers.chpl:30)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (removeAggCondInFastFollowers.chpl:29)
 
+Start analyzing forall for automatic aggregation [no ALA clone]  (removeAggCondInFastFollowers.chpl:29)
+| Found an aggregation candidate (removeAggCondInFastFollowers.chpl:30)
+|  Potential source aggregation (removeAggCondInFastFollowers.chpl:30)
+End analyzing forall for automatic aggregation [no ALA clone]  (removeAggCondInFastFollowers.chpl:29)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (removeAggCondInFastFollowers.chpl:29)
+| Found an aggregation candidate (removeAggCondInFastFollowers.chpl:30)
+|  Potential source aggregation (removeAggCondInFastFollowers.chpl:30)
+End analyzing forall for automatic aggregation [static only ALA clone]  (removeAggCondInFastFollowers.chpl:29)
+
+Confirmed that this symbol is a local array element (removeAggCondInFastFollowers.chpl:30)
 Aggregation candidate has confirmed local child  (removeAggCondInFastFollowers.chpl:30)
 LHS is local, RHS is nonlocal. Will use source aggregation  (removeAggCondInFastFollowers.chpl:30)
+Confirmed that this symbol is a local array element (removeAggCondInFastFollowers.chpl:30)
 Aggregation candidate has confirmed local child  (removeAggCondInFastFollowers.chpl:30)
 LHS is local, RHS is nonlocal. Will use source aggregation  (removeAggCondInFastFollowers.chpl:30)
 Done

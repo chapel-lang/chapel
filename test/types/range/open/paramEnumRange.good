@@ -1,0 +1,10 @@
+paramEnumRange.chpl:4: warning: red
+paramEnumRange.chpl:4: warning: green
+paramEnumRange.chpl:4: warning: blue
+paramEnumRange.chpl:9: warning: red
+paramEnumRange.chpl:9: warning: green
+red
+green
+blue
+red
+green

@@ -37,7 +37,7 @@ proc R.init=(other:R) {
   this.isowned = true;
 }
 
-proc =(ref lhs: R, rhs: R) {
+operator R.=(ref lhs: R, rhs: R) {
   if debug then writeln("  assign lhs = rhs ", getNum(rhs.c));
 
   lhs.c!.x = rhs.c!.x;

@@ -20,7 +20,7 @@ proc R.init=(rhs: R) {
   this.x = rhs.x;
 }
 
-proc =(ref lhs:R, const ref rhs:R) {
+operator R.=(ref lhs:R, const ref rhs:R) {
   if lhs.fixed != rhs.fixed {
     compilerError("cannot change fixed field in assignment");
   }

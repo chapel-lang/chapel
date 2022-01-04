@@ -693,8 +693,11 @@ module List {
 
       :arg x: An element to append.
       :type x: `eltType`
+
+      :return: List index where element was inserted.
+      :rtype: `int`
     */
-    proc ref append(pragma "no auto destroy" in x: this.eltType)
+    proc ref append(pragma "no auto destroy" in x: this.eltType) : int
     lifetime this < x {
       _enter();
 
@@ -703,7 +706,9 @@ module List {
       // gasnet/multilocale configurations.
       //
       _appendByRef(x);
+      var result = _size - 1;
       _leave();
+      return result;
     }
 
     /*
@@ -899,8 +904,7 @@ module List {
          lifetime this < x {
       var result = false;
 
-      on this {
-        _enter();
+      _enter();
 
       // Handle special case of `a.insert((a.size), x)` here.
       if idx == _size {
@@ -915,8 +919,7 @@ module List {
         result = true;
       }
 
-        _leave();
-      }
+      _leave();
 
       // Destroy our copy if it was never used.
       if !result then
@@ -1246,6 +1249,18 @@ module List {
       return;
     }
 
+    pragma "no doc"
+    proc _clearLocked() {
+      _fireAllDestructors();
+      _freeAllArrays();
+      _sanity(_totalCapacity == 0);
+      _sanity(_size == 0);
+      _sanity(_arrays == nil);
+
+      // All array operations assume a consistent initial state.
+      _firstTimeInitializeArrays();
+    }
+
     /*
       Clear the contents of this list.
 
@@ -1257,16 +1272,7 @@ module List {
     proc ref clear() {
       on this {
         _enter();
-
-        _fireAllDestructors();
-        _freeAllArrays();
-        _sanity(_totalCapacity == 0);
-        _sanity(_size == 0);
-        _sanity(_arrays == nil);
-
-        // All array operations assume a consistent initial state.
-        _firstTimeInitializeArrays();
-
+        _clearLocked();
         _leave();
       }
     }
@@ -1297,6 +1303,12 @@ module List {
       :rtype: `int`
     */
     proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
+
+      param error = -1;
+
+      if _size == 0 then
+        return error;
+
       if boundsChecking {
         const msg = " index for \"list.indexOf\" out of bounds: ";
 
@@ -1306,8 +1318,6 @@ module List {
         if !_withinBounds(start) then
           boundsCheckHalt("Start" + msg + start:string);
       }
-
-      param error = -1;
 
       if end >= 0 && end < start then
         return error;
@@ -1579,15 +1589,13 @@ module List {
 
       :yields: A reference to one of the elements contained in this list.
     */
-    pragma "order independent yielding loops"
     iter these() ref {
       // TODO: We can just iterate through the _ddata directly here.
-      for i in 0..#_size do
+      foreach i in 0..#_size do
         yield _getRef(i);
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 64;
@@ -1598,7 +1606,7 @@ module List {
 
       coforall tid in 0..#numTasks {
         var chunk = _computeChunk(tid, chunkSize, trailing);
-        for i in chunk(0) {
+        foreach i in chunk(0) {
           ref result = _getRef(i);
           yield result;
         }
@@ -1637,14 +1645,13 @@ module List {
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter these(param tag, followThis) ref where tag == iterKind.follower {
 
       //
       // TODO: A faster scheme would access the _ddata directly to avoid
       // the penalty of logarithmic indexing over and over again.
       //
-      for i in followThis(0) do
+      foreach i in followThis(0) do
         yield _getRef(i);
     }
 
@@ -1653,18 +1660,100 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) throws {
+    proc writeThis(ch: channel) throws {
+      var isBinary = ch.binary();
+
       _enter();
 
-      ch <~> "[";
+      if isBinary {
+        // Write the number of elements
+        ch <~> _size;
+      } else {
+        ch <~> new ioLiteral("[");
+      }
 
-      for i in 0..(_size - 2) do
-        ch <~> _getRef(i) <~> ", ";
+      for i in 0..(_size - 2) {
+        ch <~> _getRef(i);
+        if !isBinary {
+          ch <~> new ioLiteral(", ");
+        }
+      }
 
       if _size > 0 then
         ch <~> _getRef(_size-1);
 
-      ch <~> "]";
+      if !isBinary {
+        ch <~> new ioLiteral("]");
+      }
+
+      _leave();
+    }
+
+    /*
+     Read the contents of this list from a channel.
+
+     :arg ch: A channel to read from.
+     */
+    proc readThis(ch: channel) throws {
+      //
+      // Special handling for reading in order to handle reading an arbitrary
+      // size.
+      //
+      const isBinary = ch.binary();
+
+      _enter();
+
+      _clearLocked();
+
+      if isBinary {
+        // How many elements should we read (for binary mode)?
+        var num = 0;
+        ch <~> num;
+        for i in 0..#num {
+          pragma "no auto destroy"
+          var elt: eltType;
+          ch <~> elt;
+          _appendByRef(elt);
+        }
+      } else {
+        var isFirst = true;
+        var hasReadEnd = false;
+
+        ch <~> new ioLiteral("[");
+
+        while !hasReadEnd {
+          if isFirst {
+            isFirst = false;
+
+            // Try reading an end bracket. If we don't, then continue on.
+            try {
+              ch <~> new ioLiteral("]");
+              hasReadEnd = true;
+              break;
+            } catch err: BadFormatError {
+              // Continue on if we didn't read an end bracket.
+            }
+          } else {
+
+            // Try to read a comma. Break if we don't.
+            try {
+              ch <~> new ioLiteral(",");
+            } catch err: BadFormatError {
+              break;
+            }
+          }
+
+          // read an element
+          pragma "no auto destroy"
+          var elt: eltType;
+          ch <~> elt;
+          _appendByRef(elt);
+        }
+
+        if !hasReadEnd {
+          ch <~> new ioLiteral("]");
+        }
+      }
 
       _leave();
     }
@@ -1760,7 +1849,7 @@ module List {
     :arg lhs: The list to assign to.
     :arg rhs: The list to assign from.
   */
-  proc =(ref lhs: list(?t, ?), rhs: list(t, ?)) {
+  operator list.=(ref lhs: list(?t, ?), rhs: list(t, ?)) {
     lhs.clear();
     lhs.extend(rhs);
   }
@@ -1774,7 +1863,7 @@ module List {
     :return: `true` if the contents of two lists are equal.
     :rtype: `bool`
   */
-  proc ==(a: list(?t, ?), b: list(t, ?)): bool {
+  operator list.==(a: list(?t, ?), b: list(t, ?)): bool {
     if a.size != b.size then
       return false;
 
@@ -1798,23 +1887,23 @@ module List {
     :return: `true` if the contents of two lists are not equal.
     :rtype: `bool`
   */
-  proc !=(a: list(?t, ?), b: list(t, ?)): bool {
+  operator list.!=(a: list(?t, ?), b: list(t, ?)): bool {
     return !(a == b);
   }
 
-  proc _cast(type t:list, rhs:list) {
+  operator :(rhs:list, type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
-  proc _cast(type t:list, rhs:[]) {
+  operator :(rhs:[], type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
-  proc _cast(type t:list, rhs:range(?)) {
+  operator :(rhs:range(?), type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
-  proc _cast(type t:list, rhs:_iteratorRecord) {
+  operator :(rhs:_iteratorRecord, type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }

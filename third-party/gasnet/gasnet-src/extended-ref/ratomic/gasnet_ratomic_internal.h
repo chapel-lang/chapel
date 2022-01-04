@@ -19,18 +19,8 @@ extern gasneti_AD_t gasneti_alloc_ad(
                        gasneti_TM_t tm,
                        gex_DT_t dt,
                        gex_OP_t ops,
-                       gex_Flags_t flags,
-                       size_t alloc_size);
+                       gex_Flags_t flags);
 void gasneti_free_ad(gasneti_AD_t ad);
-
-#ifdef GASNETI_AD_CREATE_HOOK
-  extern void GASNETI_AD_CREATE_HOOK(
-        gasneti_AD_t               real_ad,
-        gasneti_TM_t               real_tm,
-        gex_DT_t                   dt,
-        gex_OP_t                   ops,
-        gex_Flags_t                flags);
-#endif 
 
 //
 // Initalizer for gasnete_ratomic[dtcode]_fn_tbl_t
@@ -76,16 +66,11 @@ void gasneti_free_ad(gasneti_AD_t ad);
 #endif
 
 #if GASNETE_BUILD_AMRATOMIC
-  extern void gasnete_amratomic_create_hook(
-        gasneti_AD_t               real_ad,
-        gasneti_TM_t               real_tm,
-        gex_DT_t                   dt,
-        gex_OP_t                   ops,
-        gex_Flags_t                flags);
-
-  #ifndef GASNETI_AD_CREATE_HOOK
-    #define GASNETI_AD_CREATE_HOOK gasnete_amratomic_create_hook
-  #endif
+  // This is effectively the default GASNETC_AD_INIT_HOOK, which is invoked
+  // implicitly for conduits lacking ratomics, and also explicitly from
+  // GASNETC_AD_INIT_HOOK when a conduit decides to use AM fallback for a
+  // given AD
+  extern void gasnete_amratomic_init_hook(gasneti_AD_t real_ad);
 
   // Force use of default "no" if tools are not suited to mixing
   // with RMA Put and Get.

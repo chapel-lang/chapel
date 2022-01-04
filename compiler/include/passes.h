@@ -116,13 +116,18 @@ void checkTypeParamTaskIntent(SymExpr* outerSE);
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
-// interfaces.cpp
+// interfaces.cpp, interfaceResolution.cpp
 void  introduceConstrainedTypes(FnSymbol* fn);
+void  insertResolutionPoint(Expr* ref, Symbol* sym);
+TypeSymbol* desugarInterfaceAsType(FnSymbol* parentFn, ArgSymbol* arg,
+                                   Expr* ref, InterfaceSymbol* isym);
 Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
                              InterfaceSymbol* isym);
 void  markImplStmtWrapFnAsFailure(FnSymbol* wrapFn);
 void  wrapImplementsStatements();
 FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm);
+void  handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
+                               SymbolMap& copyMap, FnSymbol* newFn);
 
 // iterator.cpp
 CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,

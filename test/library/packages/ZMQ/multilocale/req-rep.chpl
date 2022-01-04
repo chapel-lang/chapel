@@ -19,7 +19,7 @@ enum Baz {
 proc Master() {
   var context: Context;
   var socket = context.socket(ZMQ.REP);
-  socket.bind("tcp://*:5555");
+  socket.bind("tcp://*:5556");
 
   // Numeric Types
   {
@@ -56,7 +56,7 @@ proc Master() {
 proc Worker() {
   var context: Context;
   var socket = context.socket(ZMQ.REQ);
-  socket.connect("tcp://localhost:5555");
+  socket.connect("tcp://localhost:5556");
 
   // Numeric Types
   {

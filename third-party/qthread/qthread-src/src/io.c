@@ -357,6 +357,8 @@ int INTERNAL qt_process_blocking_call(void)
             break;
         }
     }
+    /* preserve errno in item */
+    item->err = errno;
     /* and now, re-queue */
     qt_threadqueue_enqueue(item->thread->rdata->shepherd_ptr->ready, item->thread);
     FREE_SYSCALLJOB(item);

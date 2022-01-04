@@ -27,7 +27,7 @@ def getAuthToken():
 
 def requestPackageInfo():
     """Contacts Github API to parse Mason.tomls of packages in Mason-Registry"""
-    base_url = "https://api.github.com/repos/chapel-lang/mason-registry/contents/Bricks?ref=master"
+    base_url = "https://api.github.com/repos/chapel-lang/mason-registry/contents/Bricks?ref=main"
 
     user, token = getAuthToken()
     req = requests.get(base_url, auth=(user, token))

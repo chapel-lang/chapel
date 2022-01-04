@@ -1,0 +1,53 @@
+deprecateRound.chpl:3: warning: The enum Round is deprecated, please use the enum round instead
+deprecateRound.chpl:4: warning: The enum Round is deprecated, please use the enum round instead
+deprecateRound.chpl:5: warning: The enum Round is deprecated, please use the enum round instead
+deprecateRound.chpl:13: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+deprecateRound.chpl:14: warning: bigint.div_r using Round is deprecated, use bigint.divR with round instead
+deprecateRound.chpl:17: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+deprecateRound.chpl:18: warning: bigint.div_r using Round is deprecated, use bigint.divR with round instead
+deprecateRound.chpl:21: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+deprecateRound.chpl:22: warning: bigint.div_r using Round is deprecated, use bigint.divR with round instead
+deprecateRound.chpl:26: warning: bigint.div_qr using Round is deprecated, use bigint.divQR with round instead
+deprecateRound.chpl:29: warning: bigint.div_qr using Round is deprecated, use bigint.divQR with round instead
+deprecateRound.chpl:32: warning: bigint.div_qr using Round is deprecated, use bigint.divQR with round instead
+deprecateRound.chpl:38: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+deprecateRound.chpl:39: warning: bigint.div_r using Round is deprecated, use bigint.divR with round instead
+deprecateRound.chpl:42: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+deprecateRound.chpl:43: warning: bigint.div_r using Round is deprecated, use bigint.divR with round instead
+deprecateRound.chpl:46: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+deprecateRound.chpl:47: warning: bigint.div_r using Round is deprecated, use bigint.divR with round instead
+deprecateRound.chpl:51: warning: bigint.div_qr using Round is deprecated, use bigint.divQR with round instead
+deprecateRound.chpl:54: warning: bigint.div_qr using Round is deprecated, use bigint.divQR with round instead
+deprecateRound.chpl:57: warning: bigint.div_qr using Round is deprecated, use bigint.divQR with round instead
+deprecateRound.chpl:65: warning: bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead
+deprecateRound.chpl:66: warning: bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead
+deprecateRound.chpl:69: warning: bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead
+deprecateRound.chpl:70: warning: bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead
+deprecateRound.chpl:73: warning: bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead
+deprecateRound.chpl:74: warning: bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead
+deprecateRound.chpl:79: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+deprecateRound.chpl:80: warning: bigint.div_r using Round is deprecated, use bigint.divR with round instead
+deprecateRound.chpl:84: warning: bigint.div_qr using Round is deprecated, use bigint.divQR with round instead
+deprecateRound.chpl:88: warning: bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead
+deprecateRound.chpl:89: warning: bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead
+-3 -3
+-4 5
+-3 -3
+4 -5
+3 3
+3 3
+
+-3 -3
+-4 5
+-3 -3
+4 -5
+3 3
+3 3
+
+-3 -3
+-4 5
+-3 -3
+
+-3 -3
+3 3
+-3 -3

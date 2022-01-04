@@ -139,6 +139,7 @@ const            return processToken(yyscanner, TCONST);
 continue         return processToken(yyscanner, TCONTINUE);
 defer            return processToken(yyscanner, TDEFER);
 delete           return processToken(yyscanner, TDELETE);
+deprecated       return processToken(yyscanner, TDEPRECATED);
 dmapped          return processToken(yyscanner, TDMAPPED);
 do               return processToken(yyscanner, TDO);
 domain           return processToken(yyscanner, TDOMAIN);
@@ -150,6 +151,7 @@ extern           return processExtern(yyscanner);
 false            return processToken(yyscanner, TFALSE);
 for              return processToken(yyscanner, TFOR);
 forall           return processToken(yyscanner, TFORALL);
+foreach          return processToken(yyscanner, TFOREACH);
 forwarding       return processToken(yyscanner, TFORWARDING);
 if               return processToken(yyscanner, TIF);
 imag             return processToken(yyscanner, TIMAG);
@@ -169,6 +171,7 @@ let              return processToken(yyscanner, TLET);
 lifetime         return processToken(yyscanner, TLIFETIME);
 local            return processToken(yyscanner, TLOCAL);
 locale           return processToken(yyscanner, TLOCALE);
+manage           return processToken(yyscanner, TMANAGE);
 module           return processToken(yyscanner, TMODULE);
 new              return processToken(yyscanner, TNEW);
 nil              return processToken(yyscanner, TNIL);
@@ -406,7 +409,7 @@ static int processToken(yyscan_t scanner, int t) {
       captureString.push_back(' ');
     }
 
-    if (t != TLCBR) {
+    if (t != TLCBR && t != TRETURN) {
       captureString.append(yyget_text(scanner));
     }
 

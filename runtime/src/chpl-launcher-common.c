@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,7 +44,7 @@ chpl_main_argument chpl_gen_main_arg;
 // This variable is normally declared in config.h
 // and comes from the generated code.
 extern const int mainHasArgs;
-
+extern const int mainPreserveDelimiter;
 extern const int launcher_is_mli;
 extern const char* launcher_mli_real_name;
 
@@ -319,7 +319,7 @@ void get_debugger_wrapper(int* argc, char*** argv) {
     dbg_term = "xterm";
   }
 
-  // hopefully big enough; PATH_MAX is problematic, but what's better?  
+  // hopefully big enough; PATH_MAX is problematic, but what's better?
   const size_t term_path_size = PATH_MAX;
   char *term_path = chpl_mem_alloc(term_path_size,
                                    CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
@@ -328,7 +328,7 @@ void get_debugger_wrapper(int* argc, char*** argv) {
   snprintf(cmd, sizeof(cmd), "which %s", dbg_term);
   if (chpl_run_cmdstr(cmd, term_path, term_path_size) <= 0) {
     static char err_msg[128] = "";
-    snprintf(err_msg, sizeof(err_msg), 
+    snprintf(err_msg, sizeof(err_msg),
              "CHPL_COMM_USE_(G|LL)DB ignored because no %s", dbg_term);
     chpl_warning(err_msg, 0, 0);
     return;
@@ -585,9 +585,9 @@ int chpl_get_charset_env_args(char *argv[])
   return charset_env_nargs;
 }
 
-int handleNonstandardArg(int* argc, char* argv[], int argNum, 
+int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
-  int numHandled = chpl_launch_handle_arg(*argc, argv, argNum, 
+  int numHandled = chpl_launch_handle_arg(*argc, argv, argNum,
                                           lineno, filename);
   if (numHandled == 0) {
     if (mainHasArgs) {
@@ -723,7 +723,7 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
   // Let the comm layer do any last-minute pre-launch activities it
   // needs to.
   //
-  CHPL_COMM_PRELAUNCH();
+  CHPL_COMM_PRELAUNCH(execNumLocales);
 
   *c_execNumLocales = execNumLocales;
   *c_argc = argc;

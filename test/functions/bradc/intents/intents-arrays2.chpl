@@ -12,6 +12,8 @@ proc callin(in x) {
 
 
 proc callout(out x) {
+  var tmp: [D] real;
+  x = tmp;
   forall i in D {
     x(i) = i;
   }

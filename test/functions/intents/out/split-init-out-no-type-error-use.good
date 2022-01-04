@@ -1,0 +1,4 @@
+split-init-out-no-type-error-use.chpl:8: In function 'main':
+split-init-out-no-type-error-use.chpl:9: error: 'x' is not initialized and has no type
+split-init-out-no-type-error-use.chpl:9: note: cannot find initialization point to split-init this variable
+split-init-out-no-type-error-use.chpl:10: note: 'x' is used here before it is initialized

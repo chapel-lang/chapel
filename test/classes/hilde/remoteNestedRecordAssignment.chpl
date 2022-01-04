@@ -15,7 +15,7 @@ proc R.init=(other:R) {
   this.i = other.i;
 }
 
-proc =(ref lhs:R, rhs:R) {
+operator R.=(ref lhs:R, rhs:R) {
   lhs.i = rhs.i;
   writeln("overwrote lhs.i with ", rhs.i);
 }

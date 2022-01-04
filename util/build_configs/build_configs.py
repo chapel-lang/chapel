@@ -102,7 +102,7 @@ known_dimensions = [
     ( 'network_atomics',    'CHPL_NETWORK_ATOMICS', ),
     ( 'gmp',                'CHPL_GMP', ),
     ( 'hwloc',              'CHPL_HWLOC', ),
-    ( 'regexp',             'CHPL_REGEXP', ),
+    ( 're2',                'CHPL_RE2', ),
     ( 'llvm',               'CHPL_LLVM', ),
     ( 'auxfs',              'CHPL_AUX_FILESYS', ),
     ( 'lib_pic',            'CHPL_LIB_PIC', ),

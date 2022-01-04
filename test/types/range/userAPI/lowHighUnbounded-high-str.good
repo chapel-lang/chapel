@@ -1,0 +1,3 @@
+lowHighUnbounded.chpl:3: In function 'testit':
+lowHighUnbounded.chpl:4: error: can't query the low bound of a range without one
+  lowHighUnbounded.chpl:19: called as testit(r: range(int(64),boundedHigh,true))

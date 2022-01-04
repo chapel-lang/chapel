@@ -36,30 +36,8 @@
 
 #include <vector>
 
-
-// There are two questions:
-// 1- is the primitive/function eligible to run in a fast block?
-//    any blocking or system call disqualifies it since a fast
-//    AM handler can be run in a signal handler
-// 2- is the primitive/function communication free?
-
-// Any function containing communication can't run in a fast block.
-
-enum {
-  // The primitive is ineligible for a fast (e.g. uses a lock or allocator)
-  // AND it causes communication
-  NOT_FAST_NOT_LOCAL,
-  // Is the primitive ineligible for a fast (e.g. uses a lock or allocator)
-  // but communication free?
-  LOCAL_NOT_FAST,
-  // Does the primitive communicate?
-  // This implies NOT_FAST, unless it is in a local block
-  // if it is in a local block, this means IS_FAST.
-  FAST_NOT_LOCAL,
-  // Is the primitive function fast (ie, could it be run in a signal handler)
-  // IS_FAST implies IS_LOCAL.
-  FAST_AND_LOCAL
-};
+int classifyPrimitive(CallExpr *call, bool inLocal);
+bool inLocalBlock(CallExpr *call);
 
 //
 // Return NOT_FAST, NOT_LOCAL, IS_LOCAL, or IS_FAST.
@@ -78,9 +56,9 @@ classifyPrimitive(CallExpr *call) {
   //
   // case PRIM_NEW:
   // ...
-  #define PRIMITIVE_G(NAME)
-  #define PRIMITIVE_R(NAME) case NAME:
-  #include "primitive_list.h"
+  #define PRIMITIVE_G(NAME, str)
+  #define PRIMITIVE_R(NAME, str) case PRIM_ ## NAME:
+  #include "chpl/uast/PrimOpsList.h"
   #undef PRIMITIVE_R
   #undef PRIMITIVE_G
     switch (call->primitive->tag) {
@@ -102,7 +80,19 @@ classifyPrimitive(CallExpr *call) {
     break;
 
   case PRIM_UNKNOWN:
-    // TODO: Return FAST_AND_LOCAL for PRIM_UNKNOWNs that are side-effect free
+  case PRIM_STRING_COMPARE:
+  case PRIM_STRING_CONTAINS:
+  case PRIM_STRING_CONCAT:
+  case PRIM_STRING_LENGTH_BYTES:
+  case PRIM_STRING_LENGTH_CODEPOINTS:
+  case PRIM_ASCII:
+  case PRIM_STRING_INDEX:
+  case PRIM_STRING_SELECT:
+  case PRIM_SLEEP:
+  case PRIM_REAL_TO_INT:
+  case PRIM_OBJECT_TO_INT:
+  case PRIM_CHPL_EXIT_ANY:
+    // TODO: Return FAST_AND_LOCAL for these that are side-effect free
     return NOT_FAST_NOT_LOCAL;
 
   case PRIM_NOOP:
@@ -162,6 +152,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_LOOKUP_FILENAME:
 
   case PRIM_STACK_ALLOCATE_CLASS:
+
+  case PRIM_ZERO_VARIABLE:
 
   case PRIM_CLASS_NAME_BY_ID:
 
@@ -289,6 +281,19 @@ classifyPrimitive(CallExpr *call) {
 
   case PRIM_GET_DYNAMIC_END_COUNT:
   case PRIM_SET_DYNAMIC_END_COUNT:
+  case PRIM_GPU_THREADIDX_X:
+  case PRIM_GPU_THREADIDX_Y:
+  case PRIM_GPU_THREADIDX_Z:
+  case PRIM_GPU_BLOCKIDX_X:
+  case PRIM_GPU_BLOCKIDX_Y:
+  case PRIM_GPU_BLOCKIDX_Z:
+  case PRIM_GPU_BLOCKDIM_X:
+  case PRIM_GPU_BLOCKDIM_Y:
+  case PRIM_GPU_BLOCKDIM_Z:
+  case PRIM_GPU_GRIDDIM_X:
+  case PRIM_GPU_GRIDDIM_Y:
+  case PRIM_GPU_GRIDDIM_Z:
+  case PRIM_GET_REQUESTED_SUBLOC:
     return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.
@@ -303,6 +308,10 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_VIRTUAL_METHOD_CALL:
   case PRIM_INT_ERROR:
     return NOT_FAST_NOT_LOCAL;
+
+  case PRIM_GPU_KERNEL_LAUNCH:
+  case PRIM_GPU_KERNEL_LAUNCH_FLAT:
+   return LOCAL_NOT_FAST;
 
   // no default, so that it is usually a C compilation
   // error when a primitive is added but not included here.
@@ -342,7 +351,7 @@ isLocal(int is)
 
 
 
-static int
+int
 classifyPrimitive(CallExpr *call, bool inLocal)
 {
   int is = classifyPrimitive(call);
@@ -353,7 +362,7 @@ classifyPrimitive(CallExpr *call, bool inLocal)
   return is;
 }
 
-static bool
+bool
 inLocalBlock(CallExpr *call) {
   for (Expr* parent = call->parentExpr; parent; parent = parent->parentExpr) {
     if (BlockStmt* blk = toBlockStmt(parent)) {

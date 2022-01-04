@@ -14,7 +14,7 @@ Start analyzing forall (oneStaticFailOtherDynamicSuccess.chpl:23)
 End analyzing forall (oneStaticFailOtherDynamicSuccess.chpl:23)
 
 Static check successful. Using localAccess with dynamic check (oneStaticFailOtherDynamicSuccess.chpl:24)
-Static check failed. Reverting optimization (oneStaticFailOtherDynamicSuccess.chpl:24)
+Static check failed. Reverting optimization [static and dynamic ALA clone]  (oneStaticFailOtherDynamicSuccess.chpl:24)
 Custom localAccess was called
 Custom localAccess was called
 Custom localAccess was called

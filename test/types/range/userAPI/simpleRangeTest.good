@@ -1,6 +1,6 @@
 ./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:43: warning: invoking 'offset' on an unstrided range has no effect.
-  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),bounded,false), idx: int(64), subr: range(int(64),bounded,false))
+./rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
+  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),bounded,false), idx: int(64), subr: range(int(64),bounded,false), offset: int(64), count: int(64))
 basic range
 ------------
 1..10
@@ -23,14 +23,13 @@ alignedLow       = 1
 alignedHigh      = 10
 isEmpty()        = false
 size             = 10
+sizeAs(uint)     = 10
 hasFirst()       = true
 hasLast()        = true
 isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-ident(self)      = true
-ident(other)     = false
 boundsCheck(4) = true
 boundsCheck(3..6) = true
 indexOrder(4) = 3
@@ -51,6 +50,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = 1..10
 Copying...        = 1..10
 
 strided range
@@ -75,14 +75,13 @@ alignedLow       = 1
 alignedHigh      = 19
 isEmpty()        = false
 size             = 10
+sizeAs(uint)     = 10
 hasFirst()       = true
 hasLast()        = true
 isNat.Algned()   = true
 isAmbiguous      = false
 contains(7) = true
 contains(5..13 by 2) = true
-ident(self)      = true
-ident(other)     = false
 boundsCheck(7) = true
 boundsCheck(5..13 by 2) = true
 indexOrder(7) = 3
@@ -103,6 +102,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 5..13 by 2
 r[subr] == subr[r]= true
+r:string          = 1..20 by 2
 Copying...        = 1..20 by 2
 
 neg. str. range
@@ -127,14 +127,13 @@ alignedLow       = 2
 alignedHigh      = 20
 isEmpty()        = false
 size             = 10
+sizeAs(uint)     = 10
 hasFirst()       = true
 hasLast()        = true
 isNat.Algned()   = true
 isAmbiguous      = false
 contains(14) = true
 contains(16..8 by -2) = true
-ident(self)      = true
-ident(other)     = false
 boundsCheck(14) = true
 boundsCheck(16..8 by -2) = true
 indexOrder(14) = 3
@@ -155,6 +154,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 16..8 by -2
 r[subr] == subr[r]= true
+r:string          = 1..20 by -2
 Copying...        = 1..20 by -2
 
 unbounded range
@@ -172,11 +172,11 @@ stride           = 1
 alignment        = 1
 aligned          = true
 first            = 1
-last             = 0
+last             = undefined
 low              = 1
-high             = 0
+high             = undefined
 alignedLow       = 1
-alignedHigh      = 0
+alignedHigh      = undefined
 isEmpty()        = false
 hasFirst()       = true
 hasLast()        = false
@@ -184,8 +184,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-ident(self)      = true
-ident(other)     = false
 boundsCheck(4) = true
 boundsCheck(3..6) = true
 indexOrder(4) = 3
@@ -203,6 +201,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = 1..
 Copying...        = 1..
 
 upper unbnd range
@@ -219,11 +218,11 @@ hasHighBound()   = true
 stride           = 1
 alignment        = 0
 aligned          = false
-first            = 1
+first            = undefined
 last             = 10
-low              = 1
+low              = undefined
 high             = 10
-alignedLow       = 1
+alignedLow       = undefined
 alignedHigh      = 10
 isEmpty()        = false
 hasFirst()       = false
@@ -232,8 +231,6 @@ isNat.Algned()   = false
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-ident(self)      = true
-ident(other)     = false
 boundsCheck(4) = true
 boundsCheck(3..6) = true
 indexOrder(4) = -1
@@ -247,6 +244,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = ..10
 Copying...        = ..10
 
 neg upper unbnd range
@@ -264,10 +262,10 @@ stride           = -1
 alignment        = 10
 aligned          = true
 first            = 10
-last             = 1
-low              = 1
+last             = undefined
+low              = undefined
 high             = 10
-alignedLow       = 1
+alignedLow       = undefined
 alignedHigh      = 10
 isEmpty()        = false
 hasFirst()       = true
@@ -276,8 +274,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6 by -1) = true
-ident(self)      = true
-ident(other)     = false
 boundsCheck(4) = true
 boundsCheck(3..6 by -1) = true
 indexOrder(4) = 6
@@ -295,6 +291,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6 by -1
 r[subr] == subr[r]= true
+r:string          = ..10 by -1
 Copying...        = ..10 by -1
 
 unbounded range
@@ -311,12 +308,12 @@ hasHighBound()   = false
 stride           = 1
 alignment        = 0
 aligned          = false
-first            = 1
-last             = 0
-low              = 1
-high             = 0
-alignedLow       = 1
-alignedHigh      = 0
+first            = undefined
+last             = undefined
+low              = undefined
+high             = undefined
+alignedLow       = undefined
+alignedHigh      = undefined
 isEmpty()        = false
 hasFirst()       = false
 hasLast()        = false
@@ -324,8 +321,6 @@ isNat.Algned()   = false
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-ident(self)      = true
-ident(other)     = false
 boundsCheck(4) = true
 boundsCheck(3..6) = true
 indexOrder(4) = -1
@@ -338,5 +333,6 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = ..
 Copying...        = ..
 

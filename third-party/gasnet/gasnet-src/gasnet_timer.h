@@ -66,7 +66,7 @@
 /* ------------------------------------------------------------------------------------ */
 #elif (PLATFORM_OS_LINUX || PLATFORM_OS_CNL || PLATFORM_OS_WSL || PLATFORM_OS_OPENBSD || \
        GASNETI_HAVE_SYSCTL_MACHDEP_TSC_FREQ) && \
-     (PLATFORM_ARCH_X86 || PLATFORM_ARCH_X86_64 || PLATFORM_ARCH_MIC || PLATFORM_ARCH_IA64)
+     (PLATFORM_ARCH_X86 || PLATFORM_ARCH_X86_64 || PLATFORM_ARCH_MIC)
   typedef uint64_t gasneti_tick_t;
  #if GASNETI_HAVE_GCC_ASM
     GASNETI_INLINE(gasneti_ticks_now)
@@ -82,10 +82,6 @@
       __asm__ __volatile__("rdtsc"
                            : "=A" (_ret)
                            /* no inputs */); 
-    #elif PLATFORM_ARCH_IA64
-      __asm__ __volatile__("mov %0=ar.itc" 
-                           : "=r"(_ret) 
-                           /* no inputs */);
     #else
       #error Unreachable
     #endif
@@ -114,21 +110,11 @@
 			     "\trdtsc		\n" \
 			     "\tshlq $32, %rdx	\n" \
 			     "\torq %rdx, %rax" );
-   #elif PLATFORM_ARCH_IA64
-     /* For completeness. */
-     #define GASNETI_TICKS_NOW_BODY \
-		GASNETI_ASM_SPECIAL( "mov.m r8=ar.itc;" );
    #endif
  #elif PLATFORM_COMPILER_CRAY
     GASNETI_INLINE(gasneti_ticks_now)
     uint64_t gasneti_ticks_now (void) {
       return (uint64_t) _rtc();
-    }
- #elif PLATFORM_COMPILER_INTEL && PLATFORM_ARCH_IA64
-    #include <ia64intrin.h>
-    GASNETI_INLINE(gasneti_ticks_now)
-    uint64_t gasneti_ticks_now (void) {
-      return (uint64_t)__getReg(_IA64_REG_AR_ITC);
     }
  #else
     #define GASNETI_USING_SLOW_TIMERS 1

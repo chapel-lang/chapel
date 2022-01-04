@@ -1,0 +1,4 @@
+0.0
+foo(out a) ; a.type is int(64)
+bar(in a, out b) ; b.type is real(32)
+baz(in a, out b) ; b.type is real(32)

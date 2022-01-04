@@ -1,3 +1,6 @@
+single-copy-init.chpl:2: warning: Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side
+single-copy-init.chpl:7: warning: Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side
+single-copy-init.chpl:7: warning: Casting single variables is deprecated
 single int(64)
 true
 true

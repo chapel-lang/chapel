@@ -4,8 +4,8 @@
 #include <errno.h>                     /* for ENOMEM */
 
 #include <limits.h>                    /* for UINT_MAX (C89) */
-#include <qthread/qthread-int.h>       /* for uint32_t and uint64_t */
-#include <qthread/common.h>            /* important configuration options */
+#include "qthread-int.h"               /* for uint32_t and uint64_t */
+#include "common.h"                    /* important configuration options */
 
 #include <string.h>                    /* for memcpy() */
 
@@ -53,7 +53,7 @@
 
 #define QTHREAD_VERSION 1010001
 
-#include <qthread/macros.h>
+#include "macros.h"
 
 #ifdef QTHREAD_ALIGNEDDATA_ALLOWED
 # define Q_ALIGNED(x) __attribute__((aligned(x)))
@@ -1641,7 +1641,7 @@ Q_ENDCXX /* */
 
 #else  /* ifdef __cplusplus */
 extern "C++" {
-# include <qthread/qthread.hpp>
+# include "qthread.hpp"
 }
 #endif  /* __cplusplus */
 

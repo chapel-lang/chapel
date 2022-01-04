@@ -27,6 +27,7 @@
 #include "baseAST.h"
 
 #include "astlocs.h"
+#include "chpl/util/break.h"
 
 #ifdef HAVE_LLVM
 #define exit(x) clean_exit(x)
@@ -88,6 +89,7 @@ class BaseAST;
 bool        forceWidePtrsForLocal();
 bool        requireWideReferences();
 bool        requireOutlinedOn();
+bool        localeUsesGPU();
 
 const char* cleanFilename(const BaseAST* ast);
 const char* cleanFilename(const char*    name);
@@ -122,9 +124,6 @@ astlocT getUserInstantiationLocation(const BaseAST* ast);
 // (e.g. with USR_FATAL(ast, ...)) would print out
 // a user line number.
 bool        printsUserLocation(const BaseAST* ast);
-
-// must be exported to avoid dead-code elimination by C++ compiler
-void        gdbShouldBreakHere();
 
 // Supporting bold / colorful output to terminals
 // These are "" if stderr is not a tty we think supports them

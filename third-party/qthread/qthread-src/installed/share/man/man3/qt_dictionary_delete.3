@@ -1,0 +1,37 @@
+.TH qt_dictionary_delete 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_dictionary_delete
+\- remove a key/value pair from the dictionary
+.SH SYNOPSIS
+.B #include <qthread/dictionary.h>
+
+.I void *
+.br
+.B qt_dictionary_delete
+.RI "(qt_dictionary *" dict ,
+.br
+.ti +22
+.RI "void *" key );
+
+.SH DESCRIPTION
+This function removes a key/value pair, identified by the 
+.IR key ,
+from the dictionary data structure
+.IR dict .
+.SH RETURN VALUES
+Returns a pointer to the value associated with the
+.IR key ,
+if the key was present in the dictionary, and NULL otherwise.
+.SH SEE ALSO
+.BR qt_dictionary_create (3),
+.BR qt_dictionary_destroy (3),
+.BR qt_dictionary_end (3),
+.BR qt_dictionary_get (3),
+.BR qt_dictionary_iterator_copy (3),
+.BR qt_dictionary_iterator_create (3),
+.BR qt_dictionary_iterator_destroy (3),
+.BR qt_dictionary_iterator_equals (3),
+.BR qt_dictionary_iterator_get (3),
+.BR qt_dictionary_iterator_next (3),
+.BR qt_dictionary_put (3),
+.BR qt_dictionary_put_if_absent (3)

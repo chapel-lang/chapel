@@ -68,6 +68,21 @@ function fixTitle() {
   perl -0777 -i -pe "s/$base\n=+\n/$1\n$header\n/g" $2
 }
 
+# removes the title entirely (for internal module docs embedded in the spec)
+function removeTitle() {
+  if [ $# -ne 1 ] || [ ! -f $1 ]; then
+    echo "Bad call to removeTitle."
+    exit 1
+  fi
+  local base="$(basename $1 .rst)"
+
+  # Replace the section header so the internal modules don't show up like this:
+  # Module: ChapelFoo
+  local titleLen=${#1}
+  perl -0777 -i -pe "s/$base\n=+\n//g" $1
+}
+
+
 # Remove unwanted functions:
 #  - remove all procs/iters that start with chpl_ (they're internal)
 #  - remove all procs/iters that don't start with letters (to remove operator
@@ -128,7 +143,7 @@ removeUsage $file
 ## ChapelLocale ##
 
 file="./ChapelLocale.rst"
-fixTitle "Locales" $file
+removeTitle $file
 replace "LocaleSpace = chpl__buildDomainExpr(0..numLocales-1)" \
         "LocaleSpace = {0..numLocales-1}" $file
 removeUsage $file
@@ -151,18 +166,27 @@ removeUsage $file
 
 ## ChapelArray ##
 file="./ChapelArray.rst"
-replace "_domain" "domain" $file
 replace "_array" "array" $file
 replace "record" "type" $file
 
 removePrefixFunctions $file
 removePrefixVariables $file
 
-fixTitle "Domain and Array Operations" $file
+fixTitle "Array Operations" $file
 removeUsage $file
-
 ## End ChapelArray ##
 
+## ChapelDomain ##
+file="./ChapelDomain.rst"
+replace "_domain" "domain" $file
+replace "record" "type" $file
+
+removePrefixFunctions $file
+removePrefixVariables $file
+
+fixTitle "Domain Operations" $file
+removeUsage $file
+## End ChapelArray ##
 
 ## Atomics ##
 
@@ -173,7 +197,7 @@ removePrefixFunctions $file
 replace "record:: AtomicBool" "type:: atomic \(bool\)" $file
 replace "record:: AtomicT"    "type:: atomic \(T\)" $file
 
-fixTitle "Atomics" $file
+removeTitle $file
 removeUsage $file
 
 ## End Atomics ##
@@ -187,17 +211,6 @@ fixTitle "Ranges" $file
 removeUsage $file
 
 # End ChapelRange ##
-
-## ChapelComplex_forDocs ##
-
-file="./ChapelComplex_forDocs.rst"
-
-removePrefixFunctions $file
-fixTitle "Complex" $file
-removeUsage $file
-replace "_complex" "complex" $file
-
-# End ChapelComplex_forDocs ##
 
 ## String ##
 
@@ -216,14 +229,6 @@ removeUsage $file
 replace "chpl_bytes" "bytes" $file
 
 ## End of Bytes ##
-
-## ChapelError ##
-
-file=ChapelError.rst
-fixTitle "Errors" $file
-removeUsage $file
-
-## End of ChapelError ##
 
 ## OwnedObject ##
 file=OwnedObject.rst

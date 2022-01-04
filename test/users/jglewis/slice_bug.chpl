@@ -20,7 +20,8 @@ module slice_bug
     var end   = 1: int; 
   }
     
-  proc +(l: directed_vertex_pair, r: directed_vertex_pair) 
+  operator directed_vertex_pair.+(l: directed_vertex_pair,
+                                  r: directed_vertex_pair)
       return new directed_vertex_pair (l.start + r.start, l.end + r.end);
 
 

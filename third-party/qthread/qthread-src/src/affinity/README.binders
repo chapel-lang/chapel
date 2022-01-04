@@ -1,0 +1,12 @@
+Binders is a low level affinity layer for precise control over where workers and
+shepherds are allocated. It is implemented as a colon-seperated list of
+cpustrings, where each cpustring is a shepherd. It is controlled by the
+environment variable QT_CPUBIND.
+
+Example usages:
+
+  Two shepherds, first has workers on cpus 0-3, second has workers on cpus 4-7.
+  QT_CPUBIND=0-3:4-7
+
+  One shepherd, workers on cpus 0,4,8,12
+  QT_CPUBIND=0,4,8,12

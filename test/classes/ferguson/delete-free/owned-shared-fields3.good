@@ -1,42 +1,42 @@
 owned-shared-fields3.chpl:11: In initializer:
-owned-shared-fields3.chpl:11: error: Cannot default-initialize field fo: owned MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:11: error: cannot default-initialize field fo: owned MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type owned MyClass? instead
-owned-shared-fields3.chpl:11: error: Cannot default-initialize field fs: shared MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:11: error: cannot default-initialize field fs: shared MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type shared MyClass? instead
 owned-shared-fields3.chpl:28: In initializer:
-owned-shared-fields3.chpl:28: error: Cannot default-initialize field fo: owned MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:28: error: cannot default-initialize field fo: owned MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type owned MyClass? instead
-owned-shared-fields3.chpl:28: error: Cannot default-initialize field fs: shared MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:28: error: cannot default-initialize field fs: shared MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type shared MyClass? instead
 owned-shared-fields3.chpl:18: In initializer:
-owned-shared-fields3.chpl:19: error: Cannot default-initialize field fo: owned MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:19: error: cannot default-initialize field fo: owned MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type owned MyClass? instead
-owned-shared-fields3.chpl:19: error: Cannot default-initialize field fs: shared MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:19: error: cannot default-initialize field fs: shared MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type shared MyClass? instead
 owned-shared-fields3.chpl:35: In initializer:
-owned-shared-fields3.chpl:36: error: Cannot default-initialize field fo: owned MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:36: error: cannot default-initialize field fo: owned MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type owned MyClass? instead
-owned-shared-fields3.chpl:36: error: Cannot default-initialize field fs: shared MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:36: error: cannot default-initialize field fs: shared MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type shared MyClass? instead
-owned-shared-fields3.chpl:67: error: Cannot default-initialize fo: owned MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:67: error: cannot default-initialize fo: owned MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type owned MyClass? instead
-owned-shared-fields3.chpl:68: error: Cannot default-initialize fs: shared MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:68: error: cannot default-initialize fs: shared MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type shared MyClass? instead
-owned-shared-fields3.chpl:77: error: Cannot default-initialize fo: owned MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:77: error: cannot default-initialize fo: owned MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type owned MyClass? instead
-owned-shared-fields3.chpl:78: error: Cannot default-initialize fs: shared MyClass
-note: non-nil class types do not support default initialization
+owned-shared-fields3.chpl:78: error: cannot default-initialize fs: shared MyClass
+note: non-nilable class type 'borrowed MyClass' does not support default initialization
 note: Consider using the type shared MyClass? instead
 owned-shared-fields3.chpl:97: error: cannot default initialize the tuple xxx
 note: element 1 of type owned MyClass has no default value

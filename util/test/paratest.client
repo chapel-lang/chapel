@@ -3,7 +3,7 @@
 # Client-side of the parallel testing script, paratest.server.
 # Used remotely by paratest.server to run start_test locally.
 #
-# Usage: paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks [compopts [execopts]]
+# Usage: paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks memleakslog [compopts [execopts]]
 #  
 #  id - used to create a file to synchronize with paratest.server
 #  chapeltestdir - root dir of Chapel test infrastructure
@@ -11,7 +11,8 @@
 #  chplenv - Chapel environment variables
 #  futures-mode - include .futures (0=no, 1=all, 2=futures only, 3=futures with skipifs)
 #  valgrind - run valgrind (0=no, 1=both compiler and executable, 2=executable only)
-#  memleaks - check for memleaks (0=no, 1=use -memleaks, 2=use -memleakslog)
+#  memleaks    - check for memleaks (0=no, 1=yes)
+#  memleakslog - check for memleaks creating a log file (0=no, 1=yes)
 #  compopts - optional Chapel compiler options
 #  execopts - optional test execution options
 #
@@ -51,9 +52,9 @@ sub main {
     chomp $node;
     ($node) = split (/\./, $node);
 
-    if ($#ARGV < 6) {
+    if ($#ARGV < 7) {
         fatal("insufficient arguments: '@ARGV'\n" .
-	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks [compopts [execopts]]");
+	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks memleakslog [compopts [execopts]]");
     }
 
     $id = $ARGV[0];
@@ -68,11 +69,11 @@ sub main {
     $valgrind = "-valgrindexe" if ($ARGV[5] == 2);
 
     print "$id $workingdir $testdir $futures_mode $valgrind" if $debug;
-    if ($#ARGV>=7) {
-        $compopts = "-compopts \"" . $ARGV[7] . "\"";
-    }
     if ($#ARGV>=8) {
-        $execopts = "-execopts \"" . $ARGV[8] . "\"";
+        $compopts = "-compopts \"" . $ARGV[8] . "\"";
+    }
+    if ($#ARGV>=9) {
+        $execopts = "-execopts \"" . $ARGV[9] . "\"";
     }
 
     $synchfile = "$synchdir/$node.$id";
@@ -101,9 +102,11 @@ sub main {
 
     $memleaks = "";
     $memleaks = "-memleaks" if ($ARGV[6] == 1);
-    $memleaks = "-memleakslog $logdir/tmp.$dirfname.$node.memleaks" if ($ARGV[6] == 2);
 
-    $testarg = "-compiler $compiler -logfile $logfile $futures_mode $valgrind $compopts $execopts $memleaks";
+    $memleakslog = "";
+    $memleakslog = "-memleakslog $logdir/tmp.$dirfname.$node.memleaks" if ($ARGV[7] == 1);
+
+    $testarg = "-compiler $compiler -logfile $logfile $futures_mode $valgrind $compopts $execopts $memleaks $memleakslog";
     $testarg = "$testarg $testdir -norecurse";
 
     # Set up the Chapel environment passed in by paratest.server

@@ -1,0 +1,12 @@
+In foo, r is: (x = (0, 0))
+
+In bar, r is: (x = (0, 0))
+In bar, r is: (x = (0.0, 0.0))
+In bar, r is: (x = (0, 0, 0))
+
+In baz, r is: (x = (0, 0))
+In baz, r is: (x = (0, 0, 0))
+
+In boo, r is: (x = (0, 0))
+In boo, r is: (x = (0.0, 0.0))
+

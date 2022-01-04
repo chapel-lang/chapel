@@ -33,7 +33,7 @@
 class ArgSymbol;
 class FnSymbol;
 
-class PartialCopyData {
+class PartialCopyData final {
 public:
                           PartialCopyData();
                          ~PartialCopyData();

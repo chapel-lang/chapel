@@ -7,9 +7,9 @@ proc main() {
     var i = 0;
     var r: sync int;
     cobegin with (ref i, ref s) {
-      { r; while (s != "done") { i += 1; } }
+      { r.readFE(); while (s != "done") { i += 1; } }
       on s.locale {
-        s = "done"; r = 1;
+        s = "done"; r.writeEF(1);
       }
     }
     s = "another string";

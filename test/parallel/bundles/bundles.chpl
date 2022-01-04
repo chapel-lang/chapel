@@ -43,7 +43,7 @@ proc dobegin(param n) {
 
       begin {
         if debug then writeln("task 1 before wait");
-        order$; // wait for order to be set below
+        order$.readFE(); // wait for order to be set below
         if debug then writeln("task 1 after wait");
         assert(x == capture_i);
         assert(tup[0] == capture_i);
@@ -56,7 +56,7 @@ proc dobegin(param n) {
 
       begin {
         if debug then writeln("task 2 before wait");
-        order$; // wait for order to be set below
+        order$.readFE(); // wait for order to be set below
         if debug then writeln("task 2 after wait");
         assert(x == capture_i+1);
         assert(tup[0] == capture_i+1);
@@ -71,10 +71,10 @@ proc dobegin(param n) {
 
       if debug then writeln("first write");
       // Run a begin
-      order$ = true;
+      order$.writeEF(true);
       if debug then writeln("second write");
       // Run another begin
-      order$ = true;
+      order$.writeEF(true);
       if debug then writeln("after writes");
     }
     if debug then writeln("end of loop");
@@ -100,7 +100,7 @@ proc dobeginon(param n) {
 
       begin on Locales[numLocales-1] {
         if debug then writeln("task 1 before wait");
-        order$; // wait for order to be set below
+        order$.readFE(); // wait for order to be set below
         if debug then writeln("task 1 after wait");
         assert(x == capture_i);
         assert(tup[0] == capture_i);
@@ -113,7 +113,7 @@ proc dobeginon(param n) {
 
       begin on Locales[numLocales-1] {
         if debug then writeln("task 2 before wait");
-        order$; // wait for order to be set below
+        order$.readFE(); // wait for order to be set below
         if debug then writeln("task 2 after wait");
         assert(x == capture_i+1);
         assert(tup[0] == capture_i+1);
@@ -128,10 +128,10 @@ proc dobeginon(param n) {
 
       if debug then writeln("first write");
       // Run a begin
-      order$ = true;
+      order$.writeEF(true);
       if debug then writeln("second write");
       // Run another begin
-      order$ = true;
+      order$.writeEF(true);
       if debug then writeln("after writes");
     }
     if debug then writeln("end of loop");

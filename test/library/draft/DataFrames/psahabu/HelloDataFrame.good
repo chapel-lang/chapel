@@ -1,0 +1,20 @@
+         columnOne   columnThree   columnTwo   
+rowOne           a          10.0           1   
+rowTwo        None          20.0        None   
+rowThree         c          30.0           3   
+rowFour       None          40.0        None   
+rowFive          e          50.0           5   
+
+rowOne      10.0
+rowTwo      20.0
+rowThree    30.0
+rowFour     40.0
+rowFive     50.0
+dtype: real(64)
+
+  columnOne   columnThree   columnTwo   
+0         a          10.0           1   
+1      None          20.0        None   
+2         c          30.0           3   
+3      None          40.0        None   
+4         e          50.0           5   

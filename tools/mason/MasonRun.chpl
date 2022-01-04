@@ -18,63 +18,49 @@
  * limitations under the License.
  */
 
-private use List;
+use ArgumentParser;
+use FileSystem;
+use List;
 use MasonBuild;
+use MasonExample;
 use MasonHelp;
 use MasonUtils;
-use MasonExample;
-use FileSystem;
 use TOML;
+
 
 proc masonRun(args: [] string) throws {
 
-  var show = false;
-  var example = false;
-  var release = false;
-  var exec = false;
-  var execopts: list(string);
+  var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
 
-  if args.size > 2 {
-    for arg in args[2..] {
-      if exec == true {
-        execopts.append(arg);
-      }
-      else if arg == '-h' || arg == '--help' {
-        masonRunHelp();
-        exit(0);
-      }
-      else if arg == '--build' {
-        masonBuildRun(args);
-        exit(1);
-      }
-      else if arg == '--' {
-        exec = true;
-      }
-      else if arg == '--show' {
-        show=true;
-      }
-      else if arg == 'run' {
-        continue;
-      }
-      else if arg == '--release' {
-        release=true;
-      }
-      else if arg.startsWith('--example=') {
-        masonBuildRun(args);
-        exit(0);
-      }
-      else if arg == '--example' {
-        if args.size > 3 {
-          masonBuildRun(args);
-        }
-        // mason run --example
-        else printAvailableExamples();
-        exit(0);
-      }
-      else {
-        execopts.append(arg);
-      }
-    }
+  var showFlag = parser.addFlag(name="show", defaultValue=false);
+  var releaseFlag = parser.addFlag(name="release", defaultValue=false);
+  var buildFlag = parser.addFlag(name="build", defaultValue=false);
+
+  // not actually flags for Run, but rather for build
+  var forceFlag = parser.addFlag(name="force", defaultValue=false);
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+
+  var exampleOpts = parser.addOption(name="example",
+                                     numArgs=0..);
+
+  var passArgs = parser.addPassThrough();
+
+  parser.parseArgs(args);
+
+  var show = showFlag.valueAsBool();
+  var release = releaseFlag.valueAsBool();
+  var execopts = new list(passArgs.values());
+
+
+  if exampleOpts._present && !exampleOpts.hasValue()
+    && args.size == 2 {
+    // when mason run --example called
+    printAvailableExamples();
+    exit(0);
+  } else if exampleOpts._present || buildFlag.valueAsBool() {
+    // --example with value or build flag
+    masonBuildRun(args);
+    exit(0);
   }
   runProjectBinary(show, release, execopts);
 }
@@ -145,56 +131,49 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
 /* Builds program before running. */
 private proc masonBuildRun(args: [?d] string) {
 
+  var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
+
+  var showFlag = parser.addFlag(name="show", defaultValue=false);
+  var releaseFlag = parser.addFlag(name="release", defaultValue=false);
+  var buildFlag = parser.addFlag(name="build", defaultValue=false);
+
+  // not actually flags for Run, but rather for build
+  var forceFlag = parser.addFlag(name="force", defaultValue=false);
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+
+  var exampleOpts = parser.addOption(name="example",
+                                     numArgs=0..);
+
+  var passArgs = parser.addPassThrough();
+
+  parser.parseArgs(args);
+
   try! {
     var example = false;
-    var show = false;
-    var release = false;
-    var force = false;
+    var show = showFlag.valueAsBool();
+    var release = releaseFlag.valueAsBool();
+    var force = forceFlag.valueAsBool();
     var exec = false;
     var buildExample = false;
     var skipUpdate = MASON_OFFLINE;
     var execopts: list(string);
     var exampleProgram='';
-    for arg in args[2..] {
-      if exec == true {
-        execopts.append(arg);
-      }
-      else if arg == "--" {
-        if example then
-          throw new owned MasonError("Examples do not support `--` syntax");
-        exec = true;
-      }
-      else if arg.startsWith("--example=") {
-        execopts.append(arg);
-        example = true;
-      }
-      else if arg == "--example" {
-        example = true;
-      }
-      else if arg == "--show" {
-        show = true;
-      }
-      else if arg == "--build" {
-        buildExample = true;
-      }
-      else if arg == "--force" {
-        force = true;
-      }
-      else if arg == "--release" {
-        release = true;
-      }
-      else if arg == '--no-update' {
-        skipUpdate = true;
-      }
-      else if arg == '--update' {
-        skipUpdate = false;
-      }
-      else {
-        // could be examples or execopts
-        execopts.append(arg);
-      }
+
+    if exampleOpts._present then example = true;
+
+    if passArgs.hasValue() && example {
+      throw new owned MasonError("Examples do not support `--` syntax");
     }
+
+    if updateFlag.hasValue() {
+      if updateFlag.valueAsBool() then skipUpdate = false;
+      else skipUpdate = true;
+    }
+
     if example {
+      // add expected arguments for masonExample
+      execopts.insert(0,["example", "--example"]);
+      for val in exampleOpts.values() do execopts.append(val);
       if !buildExample then execopts.append("--no-build");
       if release then execopts.append("--release");
       if force then execopts.append("--force");
@@ -203,15 +182,14 @@ private proc masonBuildRun(args: [?d] string) {
     }
     else {
       var buildArgs: list(string);
-      buildArgs.append("mason");
       buildArgs.append("build");
       if skipUpdate then buildArgs.append("--no-update");
                     else buildArgs.append("--update");
       if release then buildArgs.append("--release");
       if force then buildArgs.append("--force");
       if show then buildArgs.append("--show");
-
       masonBuild(buildArgs.toArray());
+      for val in passArgs.values() do execopts.append(val);
       runProjectBinary(show, release, execopts);
     }
   }

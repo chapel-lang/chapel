@@ -46,11 +46,6 @@ DeferStmt::DeferStmt(CallExpr* call)
   gDeferStmts.add(this);
 }
 
-
-DeferStmt::~DeferStmt() {
-
-}
-
 BlockStmt* DeferStmt::body() const {
   return _body;
 }
@@ -106,33 +101,33 @@ GenRet DeferStmt::codegen() {
 // local to this file.
 
 namespace {
-  class CheckDeferVisitor : public AstVisitorTraverse {
+  class CheckDeferVisitor final : public AstVisitorTraverse {
 
   public:
     CheckDeferVisitor();
 
     // We are checking for 'break' or 'return'
-    virtual bool   enterCallExpr       (CallExpr*          node);
-    virtual bool   enterGotoStmt       (GotoStmt*          node);
+    bool   enterCallExpr       (CallExpr*          node) override;
+    bool   enterGotoStmt       (GotoStmt*          node) override;
 
     // We don't want to enter inner functions
-    virtual bool   enterFnSym          (FnSymbol*          node);
+    bool   enterFnSym          (FnSymbol*          node) override;
 
     // Track loops, so we can know if a 'break' is inside a loop or not
-    virtual bool   enterWhileDoStmt    (WhileDoStmt*       node);
-    virtual void   exitWhileDoStmt     (WhileDoStmt*       node);
+    bool   enterWhileDoStmt    (WhileDoStmt*       node) override;
+    void   exitWhileDoStmt     (WhileDoStmt*       node) override;
 
-    virtual bool   enterDoWhileStmt    (DoWhileStmt*       node);
-    virtual void   exitDoWhileStmt     (DoWhileStmt*       node);
+    bool   enterDoWhileStmt    (DoWhileStmt*       node) override;
+    void   exitDoWhileStmt     (DoWhileStmt*       node) override;
 
-    virtual bool   enterCForLoop       (CForLoop*          node);
-    virtual void   exitCForLoop        (CForLoop*          node);
+    bool   enterCForLoop       (CForLoop*          node) override;
+    void   exitCForLoop        (CForLoop*          node) override;
 
-    virtual bool   enterForLoop        (ForLoop*           node);
-    virtual void   exitForLoop         (ForLoop*           node);
+    bool   enterForLoop        (ForLoop*           node) override;
+    void   exitForLoop         (ForLoop*           node) override;
 
-    virtual bool   enterParamForLoop   (ParamForLoop*      node);
-    virtual void   exitParamForLoop    (ParamForLoop*      node);
+    bool   enterParamForLoop   (ParamForLoop*      node) override;
+    void   exitParamForLoop    (ParamForLoop*      node) override;
 
   private:
     int loopDepth;
@@ -205,7 +200,7 @@ namespace {
 void checkDefersAfterParsing()
 {
   forv_Vec(DeferStmt, defer, gDeferStmts) {
-  
+
     // Check that there are no top-level defers;
     // each defer must be in a function (other than module init).
     ModuleSymbol* mod = toModuleSymbol(defer->parentSymbol);

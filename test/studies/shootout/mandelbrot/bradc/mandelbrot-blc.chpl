@@ -71,7 +71,7 @@ proc main() {
 //
 // Helper function to compare an 8-tuple and a singleton
 //
-inline proc >(xs, y) {
+inline operator >(xs, y) {
   for x in xs do
     if x <= y then
       return false;

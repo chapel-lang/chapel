@@ -512,7 +512,7 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
     FnSymbol* accessor = build_accessor(iRecord, field, false, false);
     accessor->setGeneric(false);
     // This sidesteps the visibility issue in the presence of nested
-    // LoopExprs. Ex. test/expressions/loop-expr/scoping.chpl
+    // LoopExprs. Ex. test/expressions/loop-expr/scoping-1.chpl
     theProgram->block->insertAtTail(accessor->defPoint->remove());
     if (fromForExpr)
       addIteratorFromForExpr(ref, ir);

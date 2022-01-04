@@ -21,8 +21,12 @@ ARKOUDA_DEP_DIR=$CSS_DIR/arkouda-deps
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
   export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
   export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
+  export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
   export PATH="$ARKOUDA_HDF5_PATH/bin:$PATH"
 fi
+
+# enable arrow/parquet support
+export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
 # Arkouda requires Python >= 3.7
 SETUP_PYTHON=$CSS_DIR/setup_python37.bash
@@ -32,18 +36,14 @@ fi
 
 # test against Chapel release (checking our current test/cron directories)
 function test_release() {
-  # Need to use a pre-built test-venv with 1.23 (uses python2 and doesn't build
-  # anymore, so have to use pre-built version)
-  export CHPL_DONT_BUILD_TEST_VENV=yes
-  export CHPL_TEST_VENV_DIR=$CSS_DIR/chapel-python2-test-venv/install/chpl-virtualenv/
-
   export CHPL_TEST_PERF_DESCRIPTION=release
   export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
   currentSha=`git rev-parse HEAD`
-  git checkout 1.23.0
+  git checkout 1.25.0
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   git checkout $currentSha -- $CHPL_HOME/util/test/perf/
+  git checkout $currentSha -- $CHPL_HOME/util/test/computePerfStats
   $CWD/nightly -cron ${nightly_args}
 }
 

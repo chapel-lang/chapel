@@ -25,4 +25,4 @@ record I {
 
 }
 
-proc =(ref lhs: I, const ref rhs: I) { }
+operator I.=(ref lhs: I, const ref rhs: I) { }

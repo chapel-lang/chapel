@@ -495,6 +495,14 @@ bool AstDump::enterForallStmt(ForallStmt* node) {
   }
   --mIndent;
   newline();
+  if (node->zipCall()) {
+    write("zip call");
+    ++mIndent;
+    newline();
+    node->zipCall()->accept(this);
+    --mIndent;
+    newline();
+  }
   write("shadow variables:");
   ++mIndent;
   for_alist(expr, node->shadowVariables()) {

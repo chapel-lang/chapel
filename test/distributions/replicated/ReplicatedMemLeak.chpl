@@ -32,7 +32,7 @@ record r {
   }
 }
 
-proc =(ref lhs: r, const ref rhs: r) {
+operator r.=(ref lhs: r, const ref rhs: r) {
   writeln('assigning ' + lhs:string + ' to ' + rhs:string);
   lhs.ptr.x -= 1;
   lhs.ptr = rhs.ptr;

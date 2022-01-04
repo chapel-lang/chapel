@@ -82,7 +82,8 @@ proc Block.changeBoundingBox(newBB) {
   coforall locid in targetLocDom do
     on targetLocales(locid) {
       delete locDist(locid);
-      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
+      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid,
+                                              boundingBox, boundingBox.dims(),
                                               targetLocDom);
     }
   // NB at this point privatized copies of 'this' on other locales, if any,

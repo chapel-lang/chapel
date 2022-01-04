@@ -1,1 +1,1 @@
---llvm --fast --llvm-print-ir f --llvm-print-ir-stage none
+--fast --llvm-print-ir f --llvm-print-ir-stage none

@@ -308,7 +308,7 @@ tasks only for data parallelism it may be unnecessarily large.  Stacks
 that are unnecessarily large are typically only a problem for programs
 in which many tasks (thus their stacks) exist at once, when using a comm
 layer that has to pre-register memory.  For the particular case of using
-the native runtime communication and tasking layers on Cray X* systems,
+the native runtime communication layers on Cray XC and HPE Cray EX systems,
 further discussion about this can be found in :ref:`readme-cray`.
 
 The following environment variable can be used to change the task call
@@ -383,6 +383,47 @@ running oversubscribed:
 
 This causes various software components, from launchers to the
 runtime, to be more considerate in how they use node resources.
+
+
+----------------
+Stack Traces
+----------------
+
+When compiled with unwind support (``CHPL_UNWIND=bundled`` or
+``CHPL_UNWIND=system``), Chapel can print a stacktrace when it halts due to an
+error. For example, when compiling and running the following program:
+
+   .. code-block:: chapel
+
+       // outofbounds.chpl
+       var A: [1..3] real;
+       A[5] = 1.0;
+
+   .. code-block:: sh
+
+        ./outofbounds
+
+   .. code-block:: sh
+
+        test/outofbounds.chpl:2: error: halt reached - array index out of bounds
+        note: index was 5 but array bounds are 1..3
+        Stacktrace
+
+        halt() at $CHPL_HOME/modules/standard/Errors.chpl:741
+        checkAccess() at $CHPL_HOME/modules/internal/ChapelArray.chpl:2675
+        chpl__init_outofbounds() at test/outofbounds.chpl:1
+
+The stacktrace will be printed. This behavior can also be disabled at runtime
+with the environment variable
+
+    .. code-block:: sh
+
+        export CHPL_RT_UNWIND=no
+
+Note that compiling programs with ``--fast`` effectively forces
+``CHPL_RT_UNWIND=no`` so that no stacktrace will be printed even if the Chapel
+compiler was built with unwind support. And in the above example, ``--fast``
+also omits the bounds check.
 
 
 ----------------

@@ -75,6 +75,13 @@ AC_DEFUN([FI_EFA_CONFIGURE],[
 			      [],
 			      [[#include <infiniband/efadv.h>]])
 	      ])
+
+	AS_IF([test x"$enable_efa" != x"no"],
+	      [AC_CHECK_DECL(EFADV_DEVICE_ATTR_CAPS_RNR_RETRY,
+			    [AC_DEFINE([HAVE_CAPS_RNR_RETRY], [1], [EFADV_DEVICE_ATTR_CAPS_RNR_RETRY is defined])],
+			    [],
+			    [[#include <infiniband/efadv.h>]])
+	      ])
 	CPPFLAGS=$save_CPPFLAGS
 
 	AS_IF([test $efa_happy -eq 1 ], [$1], [$2])

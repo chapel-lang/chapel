@@ -1,0 +1,5 @@
+$CHPL_HOME/modules/standard/Regexp.chpl:23: warning: 'Regexp' module is deprecated; please use 'Regex' module instead.
+RegexpModule.chpl:7: warning: Regex: 'regexp' is deprecated; please use 'regex' instead
+RegexpModule.chpl:8: warning: Regex: 'reMatch' is deprecated; please use 'regexMatch' instead
+no argument for repetition operator: * when compiling regex '*'
+true

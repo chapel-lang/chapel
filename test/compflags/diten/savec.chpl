@@ -2,15 +2,15 @@ const outdir = "savec_output";
 const filename = "savec.chpl";
 
 proc mysystem(cmd: string): int {
-  use Spawn;
+  use Subprocess;
   var sub = spawnshell(cmd);
   sub.wait();
-  return sub.exit_status;
+  return sub.exitCode;
 }
 
 var binpath = CHPL_HOST_PLATFORM + "-" + CHPL_HOST_ARCH;
 var ret = mysystem(CHPL_HOME + "/bin/" + binpath + "/" +
-                   "chpl -o a.out --no-llvm --savec " + outdir + " " + filename);
+                   "chpl -o a.out --savec " + outdir + " " + filename);
 if ret != 0 then
   halt("Error compiling Chapel code");
 

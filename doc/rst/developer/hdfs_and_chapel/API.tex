@@ -347,13 +347,14 @@ on Locales[1] {
 \subsection{Record parser API}
 The API for the record parser works with the IO interface in Chapel and
 \emph{is not} dependent upon using HDFS or anything else except for the
-functions provided in {\tt IO.chpl} and regexp support. The API is as follows:
+functions provided in {\tt IO.chpl} and regular expression support. The
+API is as follows:
 \begin{lstlisting}
 new recordReader(type recordType, reader: channel, 
                  regex: string): recordReader;
 \end{lstlisting}
 Creates a record reader that parses into the record of type {\tt recordType}
-from the channel {\tt reader} using the regexp {\tt regex}
+from the channel {\tt reader} using the regular expression {\tt regex}
 \begin{lstlisting}
 new recordReader(type recordType, 
                  reader: channel): recordReader;

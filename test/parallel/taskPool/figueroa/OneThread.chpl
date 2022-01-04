@@ -2,7 +2,7 @@ config const n = 10;
 var total: sync int = 0;
 
 proc foo (x) {
-    total += x;
+  total.writeEF(total.readFE() + x);
 }
 
 coforall i in 1..n do

@@ -22,6 +22,7 @@
 #define CODEGEN_H
 
 #include "baseAST.h"
+#include "LayeredValueTable.h"
 
 #include <list>
 #include <map>
@@ -50,7 +51,6 @@ namespace clang {
 #include "llvm/Target/TargetMachine.h"
 
 struct ClangInfo;
-class LayeredValueTable;
 #include "llvmGlobalToWide.h"
 
 #endif
@@ -99,9 +99,11 @@ struct GenInfo {
   int lineno;
   const char* filename;
 
+  std::map<const char*, FnSymbol*> functionCNameAstrToSymbol;
+
 #ifdef HAVE_LLVM
   // stores parsed C stuff for extern blocks
-  LayeredValueTable *lvt;
+  std::unique_ptr<LayeredValueTable> lvt;
 
   // Once we get to code generation....
   llvm::Module *module;
@@ -114,6 +116,8 @@ struct GenInfo {
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
 
   llvm::LLVMContext llvmContext;
+
+  // tbaa information
   llvm::MDNode* tbaaRootNode;
   llvm::MDNode* tbaaUnionsNode;
 
@@ -144,6 +148,7 @@ struct GenInfo {
 extern GenInfo* gGenInfo;
 extern int      gMaxVMT;
 extern int      gStmtCount;
+extern bool     gCodegenGPU;
 
 // Map from filename to an integer that will represent an unique ID for each
 // generated GET/PUT
@@ -154,6 +159,8 @@ void setupClang(GenInfo* info, std::string rtmain);
 #endif
 
 bool isBuiltinExternCFunction(const char* cname);
+
+const char* legalizeName(const char* name);
 
 std::string numToString(int64_t num);
 std::string int64_to_string(int64_t i);
@@ -172,5 +179,7 @@ Type* getNamedTypeDuringCodegen(const char* name);
 void gatherTypesForCodegen(void);
 
 void registerPrimitiveCodegens();
+
+void closeCodegenFiles();
 
 #endif //CODEGEN_H

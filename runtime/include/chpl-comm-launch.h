@@ -27,7 +27,7 @@
 // there is a layer-specific chpl-comm-launch.h that #defines this.
 //
 #ifndef CHPL_COMM_PRELAUNCH
-#define CHPL_COMM_PRELAUNCH()
+#define CHPL_COMM_PRELAUNCH(numLocales)
 #endif
 
 #endif

@@ -34,12 +34,12 @@ proc setupTerminationDetection() {
     endCount = new unmanaged MyEndCount();
     wakeup = new unmanaged WakeupSyncVarHack();
     if here.id == 0 {
-      endCount!.count = 1;
-      endCount!.localColor = TerminationColor.white;
-      endCount!.token = TerminationColor.white;
+      endCount!.count.writeEF(1);
+      endCount!.localColor.writeEF(TerminationColor.white);
+      endCount!.token.writeEF(TerminationColor.white);
     } else {
-      endCount!.count = 0;
-      endCount!.localColor = TerminationColor.white;
+      endCount!.count.writeEF(0);
+      endCount!.localColor.writeEF(TerminationColor.white);
     }
     begin tokenWaiter();
   }
@@ -47,25 +47,25 @@ proc setupTerminationDetection() {
 
 proc passToken(wakeupType) {
   var next = if here.id == 0 then numLocales-1 else here.id-1;
-  var token = endCount!.token;
-  if endCount!.localColor == TerminationColor.black then
+  var token = endCount!.token.readFE();
+  if endCount!.localColor.readFE() == TerminationColor.black then
     token = TerminationColor.black;
   if debug then
     writeln(here, ": Passing ", token, " token");
   on Locales(next) {
-    endCount!.token = token;
+    endCount!.token.writeEF(token);
     if wakeupType != WakeupType.die then
-      wakeup!.wakeup = WakeupType.tokenPass;
+      wakeup!.wakeup.writeEF(WakeupType.tokenPass);
     else
-      wakeup!.wakeup = WakeupType.die;
+      wakeup!.wakeup.writeEF(WakeupType.die);
   }
-  endCount!.localColor = TerminationColor.white;
+  endCount!.localColor.writeEF(TerminationColor.white);
 }
 
 var finishedProg: single bool;
 
 proc tokenWaiter() {
-  var wakeupType = wakeup!.wakeup;
+  var wakeupType = wakeup!.wakeup.readFE();
   while wakeupType != WakeupType.die {
     var nextWakeupType = wakeupType;
     if endCount!.token.isFull {
@@ -75,8 +75,8 @@ proc tokenWaiter() {
             endCount!.localColor.writeXF(TerminationColor.white);
             endCount!.token.writeXF(TerminationColor.white);
           } else if wakeupType == WakeupType.tokenPass {
-            if endCount!.token == TerminationColor.white {
-              finishedProg = true;
+            if endCount!.token.readFE() == TerminationColor.white {
+              finishedProg.writeEF(true);
               nextWakeupType = WakeupType.die;
               endCount!.localColor.writeXF(TerminationColor.white);
               endCount!.token.writeXF(TerminationColor.white);
@@ -89,22 +89,22 @@ proc tokenWaiter() {
         passToken(nextWakeupType);
       }
     }
-    wakeupType = wakeup!.wakeup;
+    wakeupType = wakeup!.wakeup.readFE();
   }
   if here.id != 0 then
     passToken(WakeupType.die);
 }
 
 proc decEndCount {
-  endCount!.count -= 1;
+  endCount!.count.writeEF(endCount!.count.readFE() - 1);
   if debug then
     writeln(here, ": decEndCount: It is now: ", endCount!.count.readFF());
   if endCount!.count.readFF() == 0 then
-    wakeup!.wakeup = WakeupType.beginFinish;
+    wakeup!.wakeup.writeEF(WakeupType.beginFinish);
 }
 
 proc incEndCount {
-  endCount!.count += 1;
+  endCount!.count.writeEF(endCount!.count.readFE() + 1);
   if debug then
     writeln(here, ": incEndCount: It is now: ", endCount!.count.readFF());
 }
@@ -127,12 +127,12 @@ proc foo() {
     incEndCount;
     begin {
       // doWork4();
-      a += 1;
+      a.writeEF(a.readFE() + 1);
       decEndCount;
     }
   }
   // doWork5();
-  a += 1;
+  a.writeEF(a.readFE() + 1);
 }
 
 //
@@ -146,14 +146,14 @@ proc main {
     turnBlack;
     on Locales(1) {
       // doWork1();
-      a += 1;
+      a.writeEF(a.readFE() + 1);
     }
     decEndCount;
   }
   incEndCount;
   begin {
     // doWork2();
-    a += 1;
+    a.writeEF(a.readFE() + 1);
     decEndCount;
   }
   incEndCount;
@@ -163,7 +163,7 @@ proc main {
       incEndCount;
       begin {
         foo();
-        a += 1;
+        a.writeEF(a.readFE() + 1);
         decEndCount;
       }
     }
@@ -171,9 +171,9 @@ proc main {
   }
 
   decEndCount;
-  finishedProg;
+  finishedProg.readFF();
   write("program finished ");
-  var aa = a;
+  var aa = a.readFE();
   if aa == 5 then
     writeln("successfully");
   else

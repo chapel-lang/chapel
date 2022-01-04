@@ -1,0 +1,40 @@
+.TH qt_pwrite 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_pwrite
+\- write output
+.SH SYNOPSIS
+.B #include <qthread/qt_syscalls.h>
+
+.I ssize_t
+.br
+.B qt_pwrite
+.RI "(int " filedes ", const void *" buf ", size_t " nbyte ", off_t " offset );
+.PP
+.I ssize_t
+.br
+.B qt_write
+.RI "(int " filedes ", const void *" buf ", size_t " nbyte );
+
+.SH DESCRIPTION
+These are wrappers around the standard
+.BR pwrite ()
+and
+.BR write ()
+system call functions. Instead of executing these blocking system calls directly, the operations are enqueued in the internal system call queue to be handled.
+.PP
+The system call queue provides a way to perform blocking system calls without impeding parallel computation. Operations are enqueued in an internal queue which is serviced by a dynamic number of dedicated system call threads. This set of threads is capped at a user-configurable limit, specified with the
+.B QT_MAX_IO_WORKERS
+environment variable at initialization time. When there are no more operations in the system call queue, these workers are persistent for a configurable amount of time, specified with the
+.B QT_IO_TIMEOUT
+environment variable at initialization time, before they exit. This is to reduce the overhead involved in scaling up the number of worker threads to respond to newly enqueued system calls.
+.SH SEE ALSO
+.BR pwrite (2),
+.BR write (2),
+.BR qt_accept (3),
+.BR qt_connect (3),
+.BR qt_poll (3),
+.BR qt_pread (3),
+.BR qt_read (3),
+.BR qt_select (3),
+.BR qt_system (3),
+.BR qt_wait4 (3)

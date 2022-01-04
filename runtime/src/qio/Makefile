@@ -31,7 +31,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 QIO_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
-SUBDIRS = regexp/$(CHPL_MAKE_REGEXP)
+SUBDIRS = regex/$(CHPL_MAKE_RE2)
 TARGETS = $(QIO_OBJS)
 
 ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))

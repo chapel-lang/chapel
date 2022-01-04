@@ -14,6 +14,10 @@ int maxsz = 0;
 #endif
 #include "test.h"
 
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+  #include <gasnet_mk.h>
+#endif
+
 #define GASNET_HEADNODE 0
 #define PRINT_LATENCY 0
 #define PRINT_THROUGHPUT 1
@@ -426,6 +430,8 @@ int main(int argc, char **argv)
     int fullduplexmode = 0;
     int crossmachinemode = 0;
     int skipwarmup = 0;
+    int use_cuda_uva = 0;
+    int use_hip = 0;
     int help = 0;   
    
     /* call startup */
@@ -460,6 +466,20 @@ int main(int argc, char **argv)
       } else if (!strcmp(argv[arg], "-s")) {
         skipwarmup = 1;
         ++arg;
+#if GASNET_HAVE_MK_CLASS_CUDA_UVA
+      // UNDOCUMENTED
+      } else if (!strcmp(argv[arg], "-cuda-uva")) {
+        use_cuda_uva = 1;
+        use_hip = 0;
+        ++arg;
+#endif
+#if GASNET_HAVE_MK_CLASS_HIP
+      // UNDOCUMENTED
+      } else if (!strcmp(argv[arg], "-hip")) {
+        use_hip = 1;
+        use_cuda_uva = 0;
+        ++arg;
+#endif
       } else if (argv[arg][0] == '-') {
         help = 1;
         ++arg;
@@ -531,6 +551,48 @@ int main(int argc, char **argv)
     
     myseg = TEST_SEG(myproc);
     tgtmem = (void*)(alignup(maxsz,PAGESZ) + (uintptr_t)TEST_SEG(peerproc));
+
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+    test_static_assert(GASNET_MAXEPS >= 2);
+
+    gex_EP_t gpu_ep;
+    gex_MK_t kind;
+    gex_Segment_t d_segment = GEX_SEGMENT_INVALID;
+    gex_MK_Create_args_t args;
+    args.gex_flags = 0;
+    int use_device = 0;
+
+    if (use_cuda_uva) {
+      MSG0("***NOTICE***: Using EXPERIMENTAL support for CUDA UVA remote memory");
+      args.gex_class = GEX_MK_CLASS_CUDA_UVA;
+      args.gex_args.gex_class_cuda_uva.gex_CUdevice = 0;
+      use_device = 1;
+    }
+    if (use_hip) {
+      MSG0("***NOTICE***: Using EXPERIMENTAL support for HIP remote memory");
+      args.gex_class = GEX_MK_CLASS_HIP;
+      args.gex_args.gex_class_hip.gex_hipDevice = 0;
+      use_device = 1;
+    }
+
+    if (use_device) {
+      // Due to bug 4149, single-process + use_device is currently unsupported
+      if (numprocs == 1) {
+        MSG0("WARNING: Device memory mode requires more than one process. Test skipped.\n");
+        gasnet_exit(0);
+      }
+
+      GASNET_Safe( gex_MK_Create(&kind, myclient, &args, 0) );
+      GASNET_Safe( gex_Segment_Create(&d_segment, myclient, NULL, TEST_SEGSZ_REQUEST, kind, 0) );
+      GASNET_Safe( gex_EP_Create(&gpu_ep, myclient, GEX_EP_CAPABILITY_RMA, 0) );
+      gex_EP_BindSegment(gpu_ep, d_segment, 0);
+      gex_EP_PublishBoundSegment(myteam, &gpu_ep, 1, 0);
+
+      // The "trick" to diverting RMA operation to the remote GPU memory
+      myteam = gex_TM_Pair(myep, gex_EP_QueryIndex(gpu_ep));
+      gex_Event_Wait( gex_EP_QueryBoundSegmentNB(myteam, peerproc, (void**)&tgtmem, NULL, NULL, 0) );
+    }
+#endif
 
         if (insegment) {
 	    msgbuf = (void *) myseg;

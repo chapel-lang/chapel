@@ -455,16 +455,15 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
-  pragma "order independent yielding loops"
   iter these() ref {
-    for locI in dom.dist.targetLocDom {
+    foreach locI in dom.dist.targetLocDom {
       // TODO Would want to do something like:
       //on locDom do
       // But can't currently have yields in on clauses:
       // invalid use of 'yield' within 'on' in serial iterator
       var locDom = dom.locDoms[locI]!;
       var locArrI = locArr[locI]!;
-      for x in locDom.mySparseBlock {
+      foreach x in locDom.mySparseBlock {
         yield locArrI.myElems(x);
       }
     }
@@ -475,15 +474,13 @@ class SparseBlockArr: BaseSparseArr {
       yield followThis;
   }
 
-  pragma "order independent yielding loops"
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
-    for i in locFollowThis(0).these(tag, locFollowThis) {
+    foreach i in locFollowThis(0).these(tag, locFollowThis) {
       yield locArr[localeIndex]!.dsiAccess(i);
     }
   }
 
-  pragma "order independent yielding loops"
   iter these(param tag: iterKind) ref where tag == iterKind.standalone &&
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
@@ -517,8 +514,7 @@ class SparseBlockArr: BaseSparseArr {
     }
     return locArr[dom.dist.targetLocsIdx(i)]!.dsiAccess(i);
   }
-  proc dsiAccess(i: rank*idxType) const ref
-  where shouldReturnRvalueByConstRef(eltType) {
+  proc dsiAccess(i: rank*idxType) const ref {
     local {
       if myLocArr != nil && myLocArr!.locDom.parentDom.contains(i) {
         return myLocArr!.dsiAccess(i);
@@ -536,7 +532,6 @@ class SparseBlockArr: BaseSparseArr {
   where shouldReturnRvalueByValue(eltType)
     return dsiAccess(i);
   proc dsiAccess(i: idxType...rank) const ref
-  where shouldReturnRvalueByConstRef(eltType)
     return dsiAccess(i);
 
 
@@ -598,8 +593,7 @@ class LocSparseBlockArr {
   where shouldReturnRvalueByValue(eltType) {
     return myElems[i];
   }
-  proc dsiAccess(i) const ref
-  where shouldReturnRvalueByConstRef(eltType) {
+  proc dsiAccess(i) const ref {
     return myElems[i];
   }
 

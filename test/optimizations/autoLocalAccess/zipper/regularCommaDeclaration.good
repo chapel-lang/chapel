@@ -41,11 +41,11 @@ Start analyzing forall (regularCommaDeclaration.chpl:27)
 |
 End analyzing forall (regularCommaDeclaration.chpl:27)
 
-Static check successful. Using localAccess (regularCommaDeclaration.chpl:13)
-Static check successful. Using localAccess (regularCommaDeclaration.chpl:13)
-Static check successful. Using localAccess (regularCommaDeclaration.chpl:13)
-Static check successful. Using localAccess (regularCommaDeclaration.chpl:28)
-Static check successful. Using localAccess (regularCommaDeclaration.chpl:28)
-Static check successful. Using localAccess (regularCommaDeclaration.chpl:28)
+Static check successful. Using localAccess [static only ALA clone]  (regularCommaDeclaration.chpl:13)
+Static check successful. Using localAccess [static only ALA clone]  (regularCommaDeclaration.chpl:13)
+Static check successful. Using localAccess [static only ALA clone]  (regularCommaDeclaration.chpl:13)
+Static check successful. Using localAccess [static only ALA clone]  (regularCommaDeclaration.chpl:28)
+Static check successful. Using localAccess [static only ALA clone]  (regularCommaDeclaration.chpl:28)
+Static check successful. Using localAccess [static only ALA clone]  (regularCommaDeclaration.chpl:28)
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
 10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0

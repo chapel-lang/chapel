@@ -1,4 +1,4 @@
-proc +(a: uint(64), b: int(64)) {
+operator +(a: uint(64), b: int(64)) {
   writeln("Found my plus");
   return a + b:uint(64);
 }
@@ -17,7 +17,7 @@ proc +(a: uint(64), b: int(64)) {
 // this test, though.  Particularly since I'm not convinced
 // that it's a good idea for users to be overloading ==.
 //
-proc ==(a: int, b: int) {
+operator int.==(a: int, b: int) {
   writeln("Found my ==, but it's going to give != instead");
   return a != b;
 } 

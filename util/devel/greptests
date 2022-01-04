@@ -1,13 +1,93 @@
 #!/usr/bin/env bash
 
+if [ $# -eq 0 ]
+then
+      echo "No arguments supplied, see -help"
+      exit 1
+fi
+
+if [ $# -gt 3 ]
+then
+      echo "Only usable with single strings, please encapsulate your pattern with quotes, see -help"
+      exit 2
+fi
+
 if [ ! -z "$CHPL_HOME" ] ; then
     chapelDir="$CHPL_HOME"
 else
     chapelDir="./"
 fi
 
-pushd $chapelDir > /dev/null
+if [ $# -eq 1 ] && [ "$1" != "-help" ]
+then    
+    pushd $chapelDir > /dev/null
 
-find test -wholename "*/.svn" -prune -o -name \*.chpl -print0 | xargs -0 grep -H "$@"
+    find test -wholename "*/.git" -prune -o -name \*.chpl -print0 | xargs -0 grep -H "$@"
 
-popd > /dev/null
+    popd > /dev/null
+
+    exit 0
+fi
+
+case "$1" in
+    -t)
+	type="$2"
+	shift
+	shift
+	case $type in
+	    tests)
+		filetypes=( -name \*.chpl )
+		;;
+	    futures)
+		filetypes=( -name \*.future )
+		;;
+	    perfgraphs)
+		filetypes=( -name \*.perfkeys -o -name \*.graph )
+		;;
+	    testenv)
+		filetypes=( -name \*.execenv -o -name EXECENV -o -name \*.skipif  -o -name SKIPIF -o -name \*.suppressif -o -name \*.perfexecenv -o -name PERFEXECENV )
+		;;
+	    testopts)
+		filetypes=( -name \*.compopts -o -name COMPOPTS -o -name \*.execopts  -o -name EXECOPTS -o -name \*.perfcompopts -o -name PERFCOMPOPTS -o -name \*.perfexecopts -o -name PERFEXECOPTS )
+		;;
+	    outputs)
+		filetypes=( -name \*.good -o -name \*.bad )
+		;;
+	    scripts)
+		filetypes=( -name \*.prediff -o -name PREDIFF -o -name \*.precomp  -o -name PRECOMP -o -name \*.preexec -o -name PREEXEC )
+		;;
+	    *)
+		echo "Option $type not recognized, see -help"
+		exit 3
+		;;
+	esac
+
+	if [ ${#@} -eq 0 ]
+	then
+	    echo "No search term supplied, see -help"
+	    exit 4
+	fi
+	
+	pushd $chapelDir > /dev/null
+
+	find test -wholename "*/.git" -prune -o \( "${filetypes[@]}" \) -print0 | xargs -0 grep -H "$@"
+
+	popd > /dev/null
+	;;
+    -help)
+	echo "Usage: greptests [-t] pattern"
+	echo "-t [type] - the file types to search"
+	echo "    tests - .chpl"
+	echo "    futures - .future"
+	echo "    perfgraphs - .perfkeys, .graph"
+	echo "    testenv - .execenv, EXECENV, .skipif, SKIPIF, .suppressif, .perfexecenv, PERFEXECENV"
+	echo "    testopts - .compopts, COMPOPTS, .execopts, EXECOPTS, .perfcompopts, PERFCOMPOPTS, .perfexecopts, PERFEXECOPTS"
+	echo "    outputs - .good, .bad"
+	echo "    scripts - .prediff, PREDIFF, .precomp, PRECOMP, .preexec, PREEXEC"
+	echo " pattern - the text to search, please enclose any multi-word search in quotes"
+	;;
+    *)
+	echo "Option $1 not recognized, see -help"
+	exit 5
+	;;
+esac

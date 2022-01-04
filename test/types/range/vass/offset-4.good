@@ -1,3 +1,1 @@
-offset-4.chpl:3: warning: invoking 'offset' on an unstrided range has no effect.
-..0
-offset-4.chpl:3: error: halt reached - invoking 'offset' on a range without the first index
+offset-4.chpl:3: error: can't invoke 'offset' on an unstrided range with no low bound

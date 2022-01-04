@@ -1,9 +1,6 @@
 use MasonTest;
 
-
-
-
 proc main() {
-  const args = ["mason", "test"];
+  const args = ["test"];
   masonTest(args);
 }

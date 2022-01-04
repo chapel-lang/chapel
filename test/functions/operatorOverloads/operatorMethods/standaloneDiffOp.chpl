@@ -5,7 +5,7 @@ operator Foo.+(lhs: Foo, rhs: Foo) {
   writeln("In Foo.+");
   return new Foo(lhs.x + rhs.x);
 }
-proc -(lhs: Foo, rhs: Foo) {
+operator -(lhs: Foo, rhs: Foo) {
   writeln("In standalone -");
   return new Foo(lhs.x - rhs.x);
 }

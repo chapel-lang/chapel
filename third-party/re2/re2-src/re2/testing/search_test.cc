@@ -307,11 +307,12 @@ RegexpTest simple_tests[] = {
 
   // Former bugs.
   { "a\\C*|ba\\C", "baba" },
+  { "\\w*I\\w*", "Inc." },
 };
 
 TEST(Regexp, SearchTests) {
   int failures = 0;
-  for (int i = 0; i < arraysize(simple_tests); i++) {
+  for (size_t i = 0; i < arraysize(simple_tests); i++) {
     const RegexpTest& t = simple_tests[i];
     if (!TestRegexpOnText(t.regexp, t.text))
       failures++;
@@ -319,7 +320,7 @@ TEST(Regexp, SearchTests) {
     if (LOGGING) {
       // Build a dummy ExhaustiveTest call that will trigger just
       // this one test, so that we log the test case.
-      std::vector<string> atom, alpha, ops;
+      std::vector<std::string> atom, alpha, ops;
       atom.push_back(t.regexp);
       alpha.push_back(t.text);
       ExhaustiveTest(1, 0, atom, ops, 1, alpha, "", "");

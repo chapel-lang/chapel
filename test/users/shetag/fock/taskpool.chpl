@@ -9,15 +9,15 @@ class taskpool {
   var head, tail : sync int = 0;
 
   proc add(bI) {
-    const pos = tail;
-    tail = (pos+1)%poolSize;
-    taskarr(pos) = bI;
+    const pos = tail.readFE();
+    tail.writeEF((pos+1)%poolSize);
+    taskarr(pos).writeEF(bI);
   }
 
   proc remove() {
-    const pos = head;
-    head = (pos+1)%poolSize;
-    const bI = taskarr(pos);
+    const pos = head.readFE();
+    head.writeEF((pos+1)%poolSize);
+    const bI = taskarr(pos).readFE();
     return bI;
   }
 }

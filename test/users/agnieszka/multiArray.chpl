@@ -28,7 +28,7 @@ proc multi_array(P: int=100) {
       for i in 1..P {
         // put product in all array elements
         forall k in D do
-          A$(k) = put;
+          A$(k).writeEF(put);
 
           // writeln("Put: ",put);
           // create new product
@@ -40,7 +40,7 @@ proc multi_array(P: int=100) {
       var  get: int;
       for i in 1..P {
         // read the product
-        get = A$(j);
+        get = A$(j).readFE();
       }
     }
   }

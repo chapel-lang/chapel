@@ -74,20 +74,20 @@ class Chameneos {
      returns the color of the chameneos who arrives 2nd,
      otherwise returns the color of the chameneos who arrives 1st */
   proc meet(place : unmanaged MeetingPlace) {
-    var spotsLeft = place.spotsLeft$;
+    var spotsLeft = place.spotsLeft$.readFE();
 
     if (spotsLeft == 0) {
-      place.spotsLeft$ = 0;
+      place.spotsLeft$.writeEF(0);
       return true;
     }
 
     if (spotsLeft % 2 == 0) {
       place.partner = _to_unmanaged(this);
-      place.spotsLeft$ = spotsLeft - 1;
-      meetingCompleted$;
+      place.spotsLeft$.writeEF(spotsLeft - 1);
+      meetingCompleted$.readFE();
     } else if (spotsLeft % 2 == 1) {
       const partner = place.partner!;
-      place.spotsLeft$ = spotsLeft - 1;
+      place.spotsLeft$.writeEF(spotsLeft - 1);
 
       if (id == partner.id) {
         meetingsWithSelf += 1;
@@ -98,7 +98,7 @@ class Chameneos {
       partner.color = newColor;
       meetings += 1;
       partner.meetings += 1;
-      partner.meetingCompleted$ = true;
+      partner.meetingCompleted$.writeEF(true);
     }
     return false;
   }

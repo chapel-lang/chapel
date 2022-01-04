@@ -13,3 +13,4 @@ Start analyzing forall (nonDomainIter.chpl:27)
 |
 End analyzing forall (nonDomainIter.chpl:27)
 
+Local access attempt reverted. All static checks failed or code is unreachable.(nonDomainIter.chpl:28)

@@ -9,9 +9,9 @@ int main(int argc, char* argv[]) {
   int64_t a = 3;
   int64_t b = 4;
   take2(a, b);
-  const char* strarg = "blah blah";
+  double realarg = 8.5;
   int64_t c = 2;
-  take2Diff(c, strarg);
+  take2Diff(c, realarg);
   int64_t d = 5;
   int64_t e = take2AndReturn(c, d);
   take2(c + d, e);

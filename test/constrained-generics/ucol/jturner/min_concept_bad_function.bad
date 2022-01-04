@@ -1,0 +1,3 @@
+min_concept_bad_function.chpl:25: error: unresolved call 'minFn(3, 4)'
+min_concept_bad_function.chpl:15: note: this candidate did not match: minFn(x: ?T, y: T)
+min_concept_bad_function.chpl:15: note: because interface constraint(s) were not satisfied

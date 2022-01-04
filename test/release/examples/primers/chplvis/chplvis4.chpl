@@ -19,10 +19,10 @@ var done$: [Dspace] single bool;
 coforall loc in Locales do
   on loc do begin { // start a async task
 
-              go$[here.id]; // Block until ready!
+              go$[here.id].readFF(); // Block until ready!
               writeln ("Finishing running the 'begin' statement on locale "
                        , here.id, ".");
-              done$[here.id] = true;
+              done$[here.id].writeEF(true);
            }
 
 tagVdebug("loc");
@@ -33,10 +33,10 @@ coforall loc in Locales do
 tagVdebug("finish");
 
 // Let all tasks go
-go$ = true;
+go$.writeEF(true);
 
 // Wait until all tasks are finished
-done$;
+done$.readFF();
 
 stopVdebug();
 

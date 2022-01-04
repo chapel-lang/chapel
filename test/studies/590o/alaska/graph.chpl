@@ -35,11 +35,11 @@ class Node {
   }
 }
 
-proc <(x: borrowed Node, y: borrowed Node) {
+operator Node.<(x: borrowed Node, y: borrowed Node) {
   return x.name < y.name;
 }
 
-proc <(x: borrowed Node?, y: borrowed Node?) {
+operator Node.<(x: borrowed Node?, y: borrowed Node?) {
   return x!.name < y!.name;
 }
 
@@ -73,7 +73,7 @@ class Edge {
   }
 }
 
-proc <(x: borrowed Edge, y: borrowed Edge) {
+operator Edge.<(x: borrowed Edge, y: borrowed Edge) {
   if (x.src.name == y.src.name) {
     return (x.dst.name < y.dst.name);
   } else {
@@ -81,7 +81,7 @@ proc <(x: borrowed Edge, y: borrowed Edge) {
   }
 }
 
-proc <(x: borrowed Edge?, y: borrowed Edge?) {
+operator Edge.<(x: borrowed Edge?, y: borrowed Edge?) {
   return x! < y!;
 }
 

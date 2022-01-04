@@ -223,13 +223,12 @@ module ArrayViewRankChange {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    pragma "order independent yielding loops"
     iter these() {
       if chpl__isDROrDRView(downDom) {
-        for i in upDom do
+        foreach i in upDom do
           yield i;
       } else {
-        for i in downDom do
+        foreach i in downDom do
           yield downIdxToUpIdx(i);
       }
     }
@@ -243,7 +242,6 @@ module ArrayViewRankChange {
         yield i;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !localeModelHasSublocales
       && !chpl__isDROrDRView(downDom)
@@ -265,15 +263,14 @@ module ArrayViewRankChange {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis)
       where tag == iterKind.follower {
       if chpl__isDROrDRView(downDom) {
-        for i in upDom.these(tag, followThis) do
+        foreach i in upDom.these(tag, followThis) do
           yield i;
       } else {
         const followThisHiD = chpl_rankChangeConvertLoDTupleToHiD(followThis);
-        for i in downDom.these(tag, followThisHiD) {
+        foreach i in downDom.these(tag, followThisHiD) {
           yield chpl_rankChangeConvertIdxHiDToLoD(i, collapsedDim, idx, rank);
         }
       }
@@ -562,7 +559,6 @@ module ArrayViewRankChange {
 
     // TODO: We seem to run into compile-time bugs when using multiple yields.
     // For now, work around them by using an if-expr
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
            __primitive("method call resolves", privDom, "these", tag) {
@@ -579,10 +575,9 @@ module ArrayViewRankChange {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
-      for i in privDom.these(tag, followThis) {
+      foreach i in privDom.these(tag, followThis) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getDataIndex(i);
           yield indexCache.getDataElem(dataIdx);
@@ -632,8 +627,7 @@ module ArrayViewRankChange {
       return dsiAccess(i);
     }
 
-    inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i: idxType ...rank) const ref {
       return dsiAccess(i);
     }
 
@@ -656,8 +650,7 @@ module ArrayViewRankChange {
       }
     }
 
-    inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i) const ref {
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -674,7 +667,6 @@ module ArrayViewRankChange {
       return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
 
     inline proc dsiLocalAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
 
     inline proc dsiBoundsCheck(i) {

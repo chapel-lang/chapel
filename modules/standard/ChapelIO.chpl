@@ -26,7 +26,7 @@ Most of Chapel's I/O support is within the :mod:`IO` module.  This section
 describes automatically included basic types and routines that support the
 :mod:`IO` module.
 
-Writing and Reading
+Writing
 ~~~~~~~~~~~~~~~~~~~
 
 The :proc:`writeln` function allows for a simple implementation
@@ -37,26 +37,6 @@ of a Hello World program:
  writeln("Hello, World!");
  // outputs
  // Hello, World!
-
-The :proc:`~IO.read` functions allow one to read values into variables as
-the following example demonstrates. It shows three ways to read values into
-a pair of variables ``x`` and ``y``.
-
-.. code-block:: chapel
-
-  var x: int;
-  var y: real;
-
-  /* reading into variable expressions, returning
-     true if the values were read, false on EOF */
-  var ok:bool = read(x, y);
-
-  /* reading via a single type argument */
-  x = read(int);
-  y = read(real);
-
-  /* reading via multiple type arguments */
-  (x, y) = read(int, real);
 
 .. _readThis-writeThis-readWriteThis:
 
@@ -240,6 +220,7 @@ module ChapelIO {
         return new ioLiteral(__primitive("field num to name", t, i) + " = ");
       }
     }
+
     private
     proc ioFieldNameLiteral(ch, type t, param i) {
       var st = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
@@ -251,9 +232,6 @@ module ChapelIO {
         return new ioLiteral(__primitive("field num to name", t, i));
       }
     }
-
-
-
 
     pragma "no doc"
     proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) throws {
@@ -268,7 +246,10 @@ module ChapelIO {
         }
       }
 
-      if !isUnionType(t) {
+      if isExternUnionType(t) {
+        compilerError("Cannot write extern union");
+
+      } else if !isUnionType(t) {
         // print out all fields for classes and records
         for param i in 1..num_fields {
           if isIoField(x, i) {
@@ -523,7 +504,7 @@ module ChapelIO {
     pragma "no doc"
     proc readThisFieldsDefaultImpl(reader, type t, ref x,
                                    inout needsComma: bool) throws
-        where isUnionType(t) {
+        where isUnionType(t) && !isExternUnionType(t) {
 
       param numFields = __primitive("num fields", t);
       var isBinary = reader.binary();
@@ -642,59 +623,6 @@ module ChapelIO {
       }
     }
 
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
-  pragma "function terminates program"
-  pragma "always propagate line file info"
-  proc halt() {
-    __primitive("chpl_error", c"halt reached");
-  }
-
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
-  pragma "function terminates program"
-  pragma "always propagate line file info"
-  proc halt(s:string) {
-    halt(s.localize().c_str());
-  }
-
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
-  pragma "function terminates program"
-  pragma "always propagate line file info"
-  proc halt(args ...?numArgs) {
-    var tmpstring = "halt reached - " + stringify((...args));
-    __primitive("chpl_error", tmpstring.c_str());
-  }
-
-  /*
-    Prints a warning to stderr giving the location of the call to ``warning``
-    in the Chapel source, followed by the argument(s) to the call.
-  */
-  pragma "always propagate line file info"
-  proc warning(s:string) {
-    __primitive("chpl_warning", s.localize().c_str());
-  }
-
-  /*
-    Prints a warning to stderr giving the location of the call to ``warning``
-    in the Chapel source, followed by the argument(s) to the call.
-  */
-  pragma "always propagate line file info"
-  proc warning(args ...?numArgs) {
-    var tmpstring = stringify((...args));
-    warning(tmpstring);
-  }
-
   pragma "no doc"
   proc locale.writeThis(f) throws {
     // FIXME this doesn't resolve without `this`
@@ -778,8 +706,13 @@ module ChapelIO {
     if hasLowBound() then
       f <~> low;
     f <~> new ioLiteral("..");
-    if hasHighBound() then
-      f <~> high;
+    if hasHighBound() {
+      if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
+        f <~> new ioLiteral("<") <~> low;
+      } else {
+        f <~> high;
+      }
+    }
     if stride != 1 then
       f <~> new ioLiteral(" by ") <~> stride;
 
@@ -867,6 +800,12 @@ module ChapelIO {
     }
   }
 
+  pragma "no doc"
+  proc chpl_stringify_wrapper(const args ...):string {
+    use IO only stringify;
+    return stringify((...args));
+  }
+
   //
   // Catch all
   //
@@ -879,7 +818,7 @@ module ChapelIO {
   // (primitive types should support :string directly)
   pragma "no doc"
   pragma "last resort"
-  proc _cast(type t, x) where t == string && ! isPrimitiveType(x.type) {
+  operator :(x, type t:string) where !isPrimitiveType(x.type) {
     return stringify(x);
   }
 }

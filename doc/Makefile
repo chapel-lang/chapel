@@ -37,6 +37,9 @@ CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPL_DOC_HELLO_BUILD_DIR) --link=$(
 SPEC_BUILD_DIR = ../build/doc/language/spec
 SPEC_RST_DIR = $(SOURCEDIR)/language/spec
 
+COMPILER_INTERNALS_DOXYGEN = ../build/doc/doxygen
+COMPILER_INTERNALS = $(SOURCEDIR)/developer/compiler-internals
+
 help: help-sphinx help-source
 
 help-source:
@@ -55,14 +58,23 @@ help-source:
 
 
 docs: FORCE
-	@$(MAKE) html-release || $(MAKE) error_docs
+	@COMP_DOCS_ERROR=0 ; \
+	(cd ../compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs) || \
+	 COMP_DOCS_ERROR=1 ; \
+	$(MAKE) html-release && \
+	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
+	  then \
+	  echo ; \
+	  echo " This docs build does not include compiler library API docs" ; \
+	  echo " Try 'make clobber-libchplcomp && make libchplcomp-docs'" ; \
+	fi
 
 
 man-chapel: FORCE
 	$(MAKE) man
 
 
-source: collect-syntax module-docs primers examples symlinks
+source: collect-syntax module-docs primers examples symlinks compiler-internals
 
 
 collect-syntax:
@@ -93,7 +105,6 @@ primers:
 	@cp -f $(SOURCEDIR)/meta/primers/* $(CHPL_DOC_PRIMERS_BUILD_DIR)
 	@$(COPY_IF_DIFFERENT) $(CHPL_DOC_PRIMERS_BUILD_DIR) $(CHPL_DOC_PRIMERS_RST_DIR)
 
-
 examples:
 	@echo
 	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/examples"
@@ -115,6 +126,15 @@ symlinks:
 	@if [ ! -e $(SOURCEDIR)/users-guide/datapar/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/datapar/examples; fi
 	@if [ ! -e $(SOURCEDIR)/users-guide/locality/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/locality/examples; fi
 
+compiler-internals: FORCE
+	@echo "Updating compiler-internals"
+	rm -rf "$(COMPILER_INTERNALS)"
+	@if [ -d $(COMPILER_INTERNALS_DOXYGEN) ]; then \
+	  ln -s ../meta/compiler-internals-doxygen "$(COMPILER_INTERNALS)" ; \
+	else \
+	  ln -s ../meta/compiler-internals-no-doxygen "$(COMPILER_INTERNALS)" ; \
+	fi
+
 checkdocs: FORCE
 	$(MAKE) check
 
@@ -130,16 +150,21 @@ prunedocs: FORCE
 	fi
 
 
-clean: clean-source clean-build clean-build-dir
+clean: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-cleanall: clean-source clean-build clean-build-dir
+cleanall: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-clobber: clean-source clean-build clean-build-dir
+clobber: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax
+clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals FORCE
 
 clean-build-dir: FORCE
 	rm -rf ../build/doc
+
+clean-compiler-internals: FORCE
+	@echo
+	@echo "Removing compiler-internals .rst files"
+	rm -rf "$(COMPILER_INTERNALS)"
 
 clean-collect-syntax: FORCE
 	@echo
@@ -167,9 +192,8 @@ clean-symlinks: FORCE
 	@echo "Removing all symbolic links"
 	find $(SOURCEDIR) -type l -delete
 
-error_docs: FORCE
-	@exit 1 # Note that 'make' will return exit code of 2, despite exit 1
-
+clean-doxygen: FORCE
+	cd ../compiler/next && $(MAKE) -f Makefile.help clean-libchplcomp-docs
 
 FORCE:
 

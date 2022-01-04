@@ -1,0 +1,4 @@
+cgFun
+makeRR.int.string
+reqFn.int.string
+result = (xx = from reqFn.int.string) : RR(string)

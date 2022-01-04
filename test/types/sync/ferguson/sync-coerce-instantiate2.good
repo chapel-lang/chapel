@@ -1,0 +1,4 @@
+sync-coerce-instantiate2.chpl:8: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+sync-coerce-instantiate2.chpl:15: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+a
+1

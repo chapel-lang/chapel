@@ -18,13 +18,17 @@ record taskPrivateData {
   }
 };
 
-inline proc =(ref a: chpl_taskID_t, b: chpl_taskID_t) { __primitive("=", a, b); }
-inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
+inline operator chpl_taskID_t.=(ref a: chpl_taskID_t, b: chpl_taskID_t) {
+  __primitive("=", a, b);
+}
+inline operator chpl_taskID_t.!=(a: chpl_taskID_t, b: chpl_taskID_t) {
+  return __primitive("!=", a, b);
+}
 class localePrivateData {
   type myStuff;
   // assumes maxTaskPar is the same across all locales
   const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
-    else dataParTasksPerLocale;
+  else dataParTasksPerLocale;
   var slot: sync bool;
   var r = {0..#numTasks};
   var temps: [r] myStuff;
@@ -33,13 +37,13 @@ class localePrivateData {
     var mytid = chpl_task_getId();
     var slot = (mytid:uint % (numTasks:uint)):int;
     // Would be nice to have CAS
-    var tid: chpl_taskID_t = temps[slot].tid$; // lock
+    var tid: chpl_taskID_t = temps[slot].tid$.readFE(); // lock
     while ((tid != chpl_nullTaskID) && (tid != mytid)) {
-      temps[slot].tid$ = tid;                  // unlock
+      temps[slot].tid$.writeEF(tid);                   // unlock
       slot = (slot+1)%numTasks;
-      tid = temps[slot].tid$;                  // lock
+      tid = temps[slot].tid$.readFE();                 // lock
     }
-    temps[slot].tid$ = mytid;                  // unlock
+    temps[slot].tid$.writeEF(mytid);                   // unlock
     return slot;
   }
 }
@@ -69,7 +73,7 @@ forall d in D {
 if printTemps then writeln(localePrivate!.temps);
 
 const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
-  else dataParTasksPerLocale;
+else dataParTasksPerLocale;
 
 for l in 0..#numLocales {
   var lp = localePrivate[l]!;

@@ -35,7 +35,7 @@ module StringCasts {
   // Bool
   //
 
-  proc _cast(type t:string, x: bool) {
+  operator :(x: bool, type t:string) {
     if (x) {
       return "true";
     } else {
@@ -43,7 +43,7 @@ module StringCasts {
     }
   }
 
-  proc _cast(type t:chpl_anybool, x: string) throws {
+  operator :(x: string, type t:chpl_anybool) throws {
     var str = x.strip();
     if str.isEmpty() {
       throw new owned IllegalArgumentError("bad cast from empty string to bool");
@@ -60,7 +60,7 @@ module StringCasts {
   //
   // int
   //
-  proc _cast(type t:string, x: integral) {
+  operator :(x: integral, type t:string) {
     //TODO: switch to using qio's writef somehow
     pragma "fn synchronization free"
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
@@ -84,7 +84,7 @@ module StringCasts {
                                               numCodepoints=len);
   }
 
-  proc _cast(type t:integral, x: string) throws {
+  operator :(x: string, type t:integral) throws {
     //TODO: switch to using qio's readf somehow
     pragma "fn synchronization free"
     pragma "insert line file info"
@@ -167,12 +167,12 @@ module StringCasts {
                                               numCodepoints=len);
   }
 
-  inline proc _cast(type t:string, x:chpl_anyreal) {
+  inline operator :(x:chpl_anyreal, type t:string) {
     //TODO: switch to using qio's writef somehow
     return _real_cast_helper(x:real(64), false);
   }
 
-  proc _cast(type t:string, x:chpl_anyimag) {
+  operator :(x:chpl_anyimag, type t:string) {
     //TODO: switch to using qio's writef somehow
     // The Chapel version of the imag --> real cast smashes it flat rather than
     // just stripping off the "i".  See the cast in ChapelBase.
@@ -180,7 +180,7 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
-  proc _cast(type t:chpl_anyreal, x: string) throws {
+  operator :(x: string, type t:chpl_anyreal) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
@@ -210,7 +210,7 @@ module StringCasts {
     return retVal;
   }
 
-  proc _cast(type t:chpl_anyimag, x: string) throws {
+  operator :(x: string, type t:chpl_anyimag) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
@@ -244,7 +244,7 @@ module StringCasts {
   //
   // complex
   //
-  proc _cast(type t:string, x: chpl_anycomplex) {
+  operator :(x: chpl_anycomplex, type t:string) {
     if isnan(x.re) || isnan(x.im) then
       return "nan";
     var re = (x.re):string;
@@ -267,7 +267,7 @@ module StringCasts {
   }
 
 
-  proc _cast(type t:chpl_anycomplex, x: string) throws {
+operator :(x: string, type t:chpl_anycomplex) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);

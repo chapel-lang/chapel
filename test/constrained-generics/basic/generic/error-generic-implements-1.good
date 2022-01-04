@@ -1,0 +1,4 @@
+error-generic-implements-1.chpl:91: In 'implements IFC1' statement:
+error-generic-implements-1.chpl:91: error: when checking this implements statement
+error-generic-implements-1.chpl:91: note: the required function reqFun is not implemented
+error-generic-implements-1.chpl:74: note: the required function reqFun in the interface IFC1 is declared here

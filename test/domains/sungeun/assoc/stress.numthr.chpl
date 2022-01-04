@@ -41,7 +41,7 @@ sync serial doSerial || (!doSerial && !parSafe) {
         if inserted[removeOrder[i]] == true {
           D -= elems[removeOrder[i]];
           inserted[removeOrder[i]] = false;
-          begin totalRemoved = totalRemoved + 1;
+          begin totalRemoved.writeEF(totalRemoved.readFE() + 1);
         }
       }
     }

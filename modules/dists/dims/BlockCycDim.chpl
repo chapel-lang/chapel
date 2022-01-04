@@ -579,7 +579,6 @@ proc BlockCyclic1dom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
 
 proc _bcddb(args...) { /* writeln((...args)); */ }
 
-pragma "not order independent yielding loops"
 iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   param zbased = isUintType(idxType);
 // todo: for the special case handled in dsiMyDensifiedRangeForTaskID1d,
@@ -616,7 +615,7 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
 
   // Right now explicit cast range(64) to range(32) is not implemented.
   // We are doing it by hand here. Cf. proc =(range, range).
-  proc rangecast(out r1: range(?), r2: range(?)): void {
+  proc rangecast(ref r1: range(?), r2: range(?)): void {
     compilerAssert(r1.boundedType == r2.boundedType);
     if !r1.stridable && r2.stridable && r2._stride != 1 then
       halt("range with non-unit stride is cast to non-stridable range");
@@ -713,7 +712,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   const AL = this.locId :resultIdxType + (nLocs - firstLoc);
 
   // Here is the densified range for all indices on this locale.
-  const hereDenseInds = 0:resultIdxType..#wholeR.size by nLocs align AL;
+  const hereDenseInds = 0:resultIdxType..#wholeR.sizeAs(resultIdxType) by nLocs align AL;
 
   // This is our chunk of hereDenseInds
   return RangeChunk.chunk(hereDenseInds, numTasks, taskid);
@@ -729,13 +728,19 @@ proc BlockCyclic1locdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
     // to be done: figure out sliceRange's stride vs. globDD.wholeR.stride
     compilerError("localSlice is not implemented for the Dimensional distribution with a block-cyclic dimension specifier when the slice is stridable");
   } else {
-    const lowSid = if sliceRange.hasLowBound()
-      then globDD._dsiStorageIdx(sliceRange.low)
-      else 0: stoIndexT;
-    const highSid = if sliceRange.hasHighBound()
-      then globDD._dsiStorageIdx(sliceRange.high)
-      else 0: stoIndexT;
-    return new range(stoIndexT, sliceRange.boundedType, false, lowSid, highSid);
+    if sliceRange.hasLowBound() {
+      if sliceRange.hasHighBound() {
+        return globDD._dsiStorageIdx(sliceRange.low)..globDD._dsiStorageIdx(sliceRange.high);
+      } else {
+        return globDD._dsiStorageIdx(sliceRange.low)..;
+      }
+    } else {
+      if sliceRange.hasHighBound() {
+        return ..globDD._dsiStorageIdx(sliceRange.high);
+      } else {
+        return ..;
+      }
+    }
   }
 }
 
@@ -749,7 +754,6 @@ iter BlockCyclic1dom.dsiSerialArrayIterator1d() {
       yield result;
 }
 
-pragma "not order independent yielding loops"
 iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   assert(!rangeToIterateOver.stridable);
 
@@ -801,27 +805,25 @@ iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   yield spec(locOff, lastLocOff);
 }
 
-pragma "order independent yielding loops"
 iter BlockCyclic1dom._dsiSerialArrayIterator1dStridable() {
   assert(stridable);
  if BlockCyclicDim_enableArrayIterWarning then
   compilerWarning("array iterator over stridable block-cyclic-dim arrays is presently not efficient", 4);
 
   // the simplest way out
-  for ind in wholeR do
+  foreach ind in wholeR do
     yield (_dsiLocNo_formula(ind), _dsiStorageIdx(ind)..#(1:stoIndexT));
 }
 
-pragma "order independent yielding loops"
 iter BlockCyclic1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   if undensRange.stridable {
     // the simplest way out
-    for ix in undensRange do
+    foreach ix in undensRange do
       yield dsiAccess1d(ix);
 
   } else {
-    for (locNo, stoIxs) in _dsiSerialArrayIterator1dUnitstride(undensRange) do
-      for stoIdx in stoIxs do
+    foreach (locNo, stoIxs) in _dsiSerialArrayIterator1dUnitstride(undensRange) do
+      foreach stoIdx in stoIxs do
         yield (locNo, stoIdx);
   }
 }

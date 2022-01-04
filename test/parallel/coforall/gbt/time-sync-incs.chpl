@@ -10,7 +10,7 @@ t.start();
 
 coforall j in 1..numTasks do
   for i in 1..numIncsPerTask do
-    count$ = count$ + 1;
+    count$.writeEF(count$.readFE() + 1);
 
 t.stop();
 

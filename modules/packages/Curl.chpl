@@ -70,7 +70,9 @@ More complex uses of Curl can make use of the extern types provided in this
 module. In that event, please see the libcurl documentation for how to use
 these functions. Note that it is possible to use :proc:`setopt` to adjust the
 settings for a the result of :proc:`URL.openUrlReader` or
-:proc:`URL.openUrlWriter` before starting the connection.
+:proc:`URL.openUrlWriter` before starting the connection.  The Curl module
+also exposes the basic libcurl API.  This can be used to make an HTTP
+POST or PATCH request as shown below.
 
 Many times when we are connecting to a URL (FTP, IMAP, SMTP, HTTP) we have to
 give extra information to the Curl handle. This is done via the setopt()
@@ -105,6 +107,48 @@ Here is a full program enabling verbose output from Curl while downloading:
   reader.readbytes(str);
   writeln(str);
   reader.close();
+
+
+Here is an example program using lower-level libcurl functions to
+issue a POST request:
+
+.. code-block:: chapel
+
+    // This example uses the curl_easy_ interface from libcurl
+    // to POST some json data.
+    use SysCTypes, CPtr;
+    import Curl;
+
+    extern const CURLOPT_CUSTOMREQUEST: Curl.CURLoption;
+    extern const CURLOPT_HTTPHEADER: Curl.CURLoption;
+    extern const CURLOPT_POSTFIELDS: Curl.CURLoption;
+    extern const CURLOPT_URL: Curl.CURLoption;
+    extern const CURLOPT_WRITEFUNCTION: Curl.CURLoption;
+
+    // Called with the contents of the server's response; does nothing with it.
+    // Else libcurl writes it to stdout.
+    proc null_write_callback(ptr: c_ptr(c_char), size: size_t, nmemb: size_t, userdata: c_void_ptr) {
+      return size * nmemb;
+    }
+
+    var curl = Curl.curl_easy_init();
+
+    var args = new Curl.slist();
+    args.append("Accept: application/json");
+    args.append("Content-Type: application/json");
+    Curl.curl_easy_setopt(curl, CURLOPT_HTTPHEADER, args);
+
+    var jsonPayload = '{"foo": "bar"}';
+    Curl.curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonPayload);
+
+    Curl.curl_easy_setopt(curl, CURLOPT_URL, 'http://localhost:3000/posts');
+    Curl.curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, 'POST');
+    Curl.curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, c_ptrTo(null_write_callback):c_void_ptr);
+
+    var ret = Curl.curl_easy_perform(curl);
+
+    args.free();
+    Curl.curl_easy_cleanup(curl);
 
 
 Curl Support Types and Functions
@@ -150,15 +194,11 @@ module Curl {
   proc setopt(ch:channel, opt:c_int, arg):bool throws {
     use CurlQioIntegration;
 
-    var err:syserr = ENOERR;
+    var err:CURLcode = CURLE_OK;
 
-    if (arg.type == slist) && (slist.home != ch.home) {
+    if (arg.type == slist) && (arg.home != ch.home) {
       throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
     }
-
-    // Invalid argument type for option if the below conditionals
-    // don't handle it.
-    err = EINVAL;
 
     on ch.home {
       var plugin = ch.channelPlugin():CurlChannel?;
@@ -166,31 +206,67 @@ module Curl {
         throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): not a curl channel");
 
       var curl = plugin!.curl;
-
-      // This reasoning is pulled from the libcurl source
-      if (opt < CURLOPTTYPE_OBJECTPOINT) {
-        if isIntegralType(arg.type) || isBoolType(arg.type) {
-          var tmp:c_long = arg:c_long;
-          err = qio_int_to_err(curl_easy_setopt_long(curl, opt:CURLoption, tmp));
-        }
-      } else if (opt < CURLOPTTYPE_OFF_T) {
-        if isAnyCPtr(arg.type) {
-          var tmp:c_void_ptr = arg:c_void_ptr;
-          err = qio_int_to_err(curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
-        } else if arg.type == slist {
-          var tmp:c_void_ptr = arg.list:c_void_ptr;
-          err = qio_int_to_err(curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
-        }
-      } else {
-        if isIntegralType(arg.type) {
-          var tmp:curl_off_t = arg:curl_off_t;
-          err = qio_int_to_err(curl_easy_setopt_offset(curl, opt:CURLoption, tmp));
-        }
-      }
+      err = setopt(curl, opt, arg);
     }
 
-    if err then try ioerror(err, "in file.setopt(opt:c_int, arg)");
+    if err then try ioerror(qio_int_to_err(err),
+                            "in Curl.setopt(" + opt:string + ", arg: " +
+                            arg.type:string + ")");
     return true;
+  }
+
+  // We can't do a compile-time check that checks the arg type against
+  // the option, since the option isn't presently available as a
+  // param. Here's a compile-time check that t is at least a type that
+  // we accept for some option.
+  private proc check_setopt_argtype(type t) {
+    if !isIntegralType(t) && !isBoolType(t) && !isAnyCPtr(t) && t != slist &&
+       t != string && t != bytes then
+      compilerError("setopt() doesn't accept arguments of type ", t:string);
+  }
+
+  // setopt on the curl_easy object, for sharing with easy_setopt below.
+  // Returns libcurl-native error codes.
+  private proc setopt(curl: c_ptr(CURL), opt:c_int, arg) {
+    check_setopt_argtype(arg.type);
+
+    // Prepare invalid argument ret in case the below conditionals
+    // don't handle arg.type for this opt.
+    extern const CURLE_BAD_FUNCTION_ARGUMENT: c_int;
+    var err: CURLcode = CURLE_BAD_FUNCTION_ARGUMENT;
+
+    // This reasoning is pulled from the libcurl source
+    if (opt < CURLOPTTYPE_OBJECTPOINT) {
+      // < OBJECTPOINT means CURLOPTTYPE_LONG; libcurl wants a "long" arg.
+      if isIntegralType(arg.type) || isBoolType(arg.type) {
+        var tmp:c_long = arg:c_long;
+        err = curl_easy_setopt_long(curl, opt:CURLoption, tmp);
+      }
+    } else if (opt < CURLOPTTYPE_OFF_T) {
+      // CURLOPTTYPE_OBJECTPOINT
+      // (alias CURLOPTTYPE_STRINGPOINT, alias CURLOPTTYPE_SLISTPOINT
+      //  alias CURLOPTTYPE_CBPOINT)
+      // arg to libcurl should be a pointer to an object, or to a
+      // slist, or a char*, or a void* (CBPOINT).
+      // CURLOPTTYPE_FUNCTIONPOINT is also in this range.
+      if isAnyCPtr(arg.type) {
+        var tmp:c_void_ptr = arg:c_void_ptr;
+        err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
+      } else if arg.type == slist {
+        var tmp:c_void_ptr = arg.list:c_void_ptr;
+        err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
+      } else if arg.type == string || arg.type == bytes {
+        var tmp = arg.localize().c_str():c_void_ptr;
+        err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
+      }
+    } else {
+      // Must be CURLOPTTYPE_OFF_T or CURLOPTTYPE_BLOB
+      if isIntegralType(arg.type) {
+        var tmp:curl_off_t = arg:curl_off_t;
+        err = curl_easy_setopt_offset(curl, opt:CURLoption, tmp);
+      }
+    }
+    return err;
   }
 
   /* Set curl options on a curl file attached to a channel.
@@ -202,8 +278,8 @@ module Curl {
        extern const CURLOPT_USERNAME:CURLoption;
        extern const CURLOPT_PASSWORD:CURLoption;
 
-       curlfile.setopt((CURLOPT_USERNAME, username),
-                       (CURLOPT_PASSWORD, password));
+       setopt(curlfile, (CURLOPT_USERNAME, username),
+                        (CURLOPT_PASSWORD, password));
 
      :arg args: any number of tuples of the form (curl_option, value).
                 This function will call ``setopt`` on each pair in turn.
@@ -285,7 +361,7 @@ module Curl {
   /* Successful result for CURL multi API calls */
   extern const CURLM_OK: c_int;
 
-  // These constants are used for type checking curl_easy_setopt 
+  // These constants are used for type checking curl_easy_setopt
   private extern const CURLOPTTYPE_OBJECTPOINT: c_int;
   private extern const CURLOPTTYPE_OFF_T: c_int;
 
@@ -323,9 +399,9 @@ module Curl {
   /* CURLoption identifies options for ``curl_easy_setopt``.
    */
   extern type CURLoption=c_int;
-  /* The return type of CURL easy API functions */ 
+  /* The return type of CURL easy API functions */
   extern type CURLcode=c_int;
-  /* The return type of CURL multi API functions */ 
+  /* The return type of CURL multi API functions */
   extern type CURLMcode=c_int;
   /* CURLINFO identifies info to get with ``curl_easy_getinfo`` */
   extern type CURLINFO=c_int;
@@ -334,7 +410,7 @@ module Curl {
 
   // extern curl functions
 
-  /* See https://curl.haxx.se/libcurl/c/curl_easy_init.html */ 
+  /* See https://curl.haxx.se/libcurl/c/curl_easy_init.html */
   extern proc curl_easy_init():c_ptr(CURL);
 
   // setopt and getinfo are actual varargs functions in C that
@@ -342,25 +418,49 @@ module Curl {
 
   /* See https://curl.haxx.se/libcurl/c/curl_easy_getinfo.html */
   extern proc curl_easy_getinfo(handle:c_ptr(CURL), info:CURLINFO, arg):CURLcode;
-  /* See https://curl.haxx.se/libcurl/c/curl_easy_setopt.html */
-  extern proc curl_easy_setopt(handle:c_ptr(CURL), option:CURLoption, arg):CURLcode;
+
+  /* Give libcurl-native curl_easy_setopt a different Chapel name so
+     we can provide a function with that name that handles different
+     types of args. */
+  private extern "curl_easy_setopt" proc c_curl_easy_setopt(handle:c_ptr(CURL), option:CURLoption, arg):CURLcode;
+  /*
+    See https://curl.haxx.se/libcurl/c/curl_easy_setopt.html
+
+    Handles Chapel arg types appropriate to each option:
+      For options accepting a C long, accepts integral and boolean types.
+
+      For options accepting a C pointer, accepts c_ptr and c_void_ptr.
+
+      For options accepting a C string, accepts string and bytes and c_ptr(char).
+
+      For options accepting a libcurl slist, accepts Curl.slist and c_ptr(slist).
+
+      For options accepting a callback function, accepts c_void_ptr.
+
+      For options accepting an offset, accepts integral types.
+
+    Returns the libcurl error code CURLE_OK on success, other codes on error.
+  */
+  proc curl_easy_setopt(handle:c_ptr(CURL), option:CURLoption, arg):CURLcode {
+    return setopt(handle, option, arg);
+  }
 
   // setopt helpers for specific types
   /* Helper function for ``curl_easy_setopt`` when passing a numeric argument */
   proc curl_easy_setopt_long(curl:c_ptr(CURL), option:CURLoption, arg:c_long):CURLcode {
-    return curl_easy_setopt(curl, option, arg);
+    return c_curl_easy_setopt(curl, option, arg);
   }
 
   /* Helper function for ``curl_easy_setopt`` when passing a pointer argument */
   proc curl_easy_setopt_ptr(curl:c_ptr(CURL), option:CURLoption,
       arg:c_void_ptr):CURLcode {
-    return curl_easy_setopt(curl, option, arg);
+    return c_curl_easy_setopt(curl, option, arg);
   }
 
   /* Helper function for ``curl_easy_setopt`` when passing an offset argument */
   proc curl_easy_setopt_offset(curl:c_ptr(CURL), option:CURLoption, offset:int(64)):CURLcode {
     var tmp:curl_off_t = offset;
-    return curl_easy_setopt(curl, option, tmp);
+    return c_curl_easy_setopt(curl, option, tmp);
   }
 
   /* Helper function for ``curl_easy_getinfo`` when passing a pointer argument.
@@ -390,6 +490,12 @@ module Curl {
   extern proc curl_multi_remove_handle(curlm:c_ptr(CURLM), curl:c_ptr(CURL)):CURLMcode;
   /* See https://curl.haxx.se/libcurl/c/curl_multi_cleanup.html */
   extern proc curl_multi_cleanup(curlm:c_ptr(CURLM)):CURLcode;
+
+  /* See https://curl.haxx.se/libcurl/c/curl_slist_append.html */
+  extern proc curl_slist_append(csl: c_ptr(curl_slist), char: c_string)
+    : c_ptr(curl_slist);
+  /* See https://curl.haxx.se/libcurl/c/curl_slist_free_all.html */
+  extern proc curl_slist_free_all(csl: c_ptr(curl_slist));
 
   pragma "no doc"
   module CurlQioIntegration {
@@ -750,7 +856,7 @@ module Curl {
 
       var amt = realsize.safeCast(ssize_t);
 
-      //writeln("curl_write_received offset=", qio_channel_offset_unlocked(cc.qio_ch), " len=", amt);
+      //writeln("curl_write_received offset=", qio_channel_offset_unlocked(cc!.qio_ch), " len=", amt);
 
       // make sure the channel has room in the buffer for the data
       // copy the data to the channel's buffer
@@ -1061,5 +1167,4 @@ module Curl {
       return ret;
     }
   } // end of module CurlQioIntegration
-
 } /* end of module */

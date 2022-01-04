@@ -5,8 +5,8 @@ proc fibonacci(n: int): int {
     return 1;
   } else {
     var s: sync int;
-    begin { s = fibonacci(n-1); }
-    return fibonacci(n-2) + s;
+    begin { s.writeEF(fibonacci(n-1)); }
+    return fibonacci(n-2) + s.readFE();
   }
 }
 

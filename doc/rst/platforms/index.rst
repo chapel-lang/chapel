@@ -23,7 +23,6 @@ Networks
 
    infiniband
    libfabric
-   omnipath
    udp
 
 

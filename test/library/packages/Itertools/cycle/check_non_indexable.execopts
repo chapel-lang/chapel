@@ -1,0 +1,5 @@
+                           # check_non_indexable.good
+--dataParTasksPerLocale=1
+--dataParTasksPerLocale=8
+--dataParTasksPerLocale=4
+--dataParTasksPerLocale=3

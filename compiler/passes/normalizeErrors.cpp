@@ -28,13 +28,13 @@
 
 namespace {
 
-class NormalizeTryExprsVisitor : public AstVisitorTraverse {
+class NormalizeTryExprsVisitor final : public AstVisitorTraverse {
 
 public:
   NormalizeTryExprsVisitor();
 
-  virtual bool enterCallExpr  (CallExpr*   call);
-  virtual void exitCallExpr   (CallExpr*   call);
+  bool enterCallExpr  (CallExpr*   call) override;
+  void exitCallExpr   (CallExpr*   call) override;
 
 private:
 
@@ -92,12 +92,12 @@ void NormalizeTryExprsVisitor::exitCallExpr(CallExpr* call) {
 
 }
 
-class NormalizeThrowsVisitor : public AstVisitorTraverse {
+class NormalizeThrowsVisitor final : public AstVisitorTraverse {
 
 public:
   NormalizeThrowsVisitor();
 
-  virtual bool enterCallExpr   (CallExpr*   call);
+  bool enterCallExpr   (CallExpr*   call) override;
 };
 
 NormalizeThrowsVisitor::NormalizeThrowsVisitor()

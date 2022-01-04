@@ -641,6 +641,14 @@ as an indication of what procedure(s) need to be defined.
   these two methods should be defined to return `false`;
   Also in this case ``dsiMyDist()`` does not need to be defined.
 
+.. method:: proc GlobalDomain.doiToString()
+
+  This is an optional method that defines how the domain should be cast to
+  a string.  It can be useful for reducing the size of the generated code
+  in the event that the domain representation is fairly straightforward
+  (say, a dense rectangular domain) in order to avoid the more general
+  stringify() routine, which is used otherwise.
+
 
 =================================
 Phase 3: Privatization

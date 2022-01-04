@@ -44,7 +44,7 @@ This strategy enables other parts of the compiler to use the same
 scoping rules without needing to know about CatchStmt
 */
 
-class CatchStmt : public Stmt {
+class CatchStmt final : public Stmt {
 
 public:
   static CatchStmt* build(DefExpr* def, BlockStmt* body);
@@ -52,8 +52,8 @@ public:
   static CatchStmt* build(const char* name, BlockStmt* body);
   static CatchStmt* build(BlockStmt* body);
 
-  CatchStmt(const char* name, Expr* type, BlockStmt* body);
-  ~CatchStmt();
+   CatchStmt(const char* name, Expr* type, BlockStmt* body);
+  ~CatchStmt() override = default;
 
   const char* name() const;
   Expr*       type() const;
@@ -68,15 +68,17 @@ public:
 
   bool        isCatchall() const;
 
-  void                accept(AstVisitor* visitor);
-  void                replaceChild(Expr* old_ast, Expr* new_ast);
-  Expr*               getFirstExpr();
-  Expr*               getNextExpr(Expr* expr);
-  void                verify();
+  void                accept(AstVisitor* visitor) override;
+  void                replaceChild(Expr* old_ast, Expr* new_ast) override;
+  Expr*               getFirstExpr() override;
+  Expr*               getNextExpr(Expr* expr) override;
+  void                verify() override;
+
   void                cleanup();
 
-  GenRet              codegen();
+  GenRet              codegen() override;
   DECLARE_COPY(CatchStmt);
+  CatchStmt* copyInner(SymbolMap* map) override;
 
   const char* _name;
   Expr*       _type;

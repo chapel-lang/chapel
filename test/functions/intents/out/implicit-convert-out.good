@@ -1,0 +1,13 @@
+test1
+in int8Out arg=0
+2
+test2
+In init=
+In assign
+(x = 33)
+(x = 33)
+test3
+In init=
+In assign
+(x = 45)
+(x = 45)

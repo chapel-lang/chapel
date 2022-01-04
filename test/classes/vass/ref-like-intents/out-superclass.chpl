@@ -3,14 +3,17 @@ class D:C {
   proc procInD() { writeln("got a D"); }
 }
 
-proc procOutD(out arg: borrowed D?) {
-  arg = new D();
+proc procOutD(out arg: unmanaged D?) {
+  arg = new unmanaged D();
 }
 
-var c: borrowed C?;
-var d: borrowed D?;
+var c: unmanaged C?;
+var d: unmanaged D?;
 
 procOutD(d); // OK
-procOutD(c); // works; disallowed by the current implementation
-c.procInD(); // disallowed; happens to work in this case if it were allowed
-d.procInD(); // OK
+procOutD(c); // allowed; c stores a D
+(c:borrowed D?)!.procInD(); // OK
+d!.procInD(); // OK
+
+delete c;
+delete d;

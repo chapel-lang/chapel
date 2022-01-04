@@ -13,7 +13,7 @@ export CHPL_LIBFABRIC=bundled
 # system this will just fall out automatically.  On a slurm-based system
 # where slurm was configured with the PMI2 or PMIx server-side plugin
 # and we can find a matching client-side library, then we can use
-# slurm-srun directly, along with the comm=ofi slurm-pmi2 out-of-band
+# slurm-srun directly, along with the comm=ofi pmi2 out-of-band
 # support.  This is seen on Cray CS systems, for example.  Otherwise,
 # our only option is the stopgap mpirun4ofi launcher, in which case we
 # also need MPI and the MPI-based out-of-band support.
@@ -51,7 +51,7 @@ elif [[ "$($CHPL_HOME/util/chplenv/chpl_launcher.py)" == slurm-srun ]] ; then
   fi
   if [ -n "$lchOK" ] ; then
     export CHPL_LAUNCHER=slurm-srun
-    export CHPL_COMM_OFI_OOB=slurm-pmi2
+    export CHPL_COMM_OFI_OOB=pmi2
   fi
 fi
 

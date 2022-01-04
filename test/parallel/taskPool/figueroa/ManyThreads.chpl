@@ -22,7 +22,7 @@ proc foo (x) {
   if delay < 2.0 then sleep (delay : uint);
   else for i in 1..(delay*10000.0) : int do
     delay = RandomNumber (x) * 4.0;
-  total += x;
+  total.writeEF(total.readFE() + x);
 }
 
 coforall i in 1..numThreads do

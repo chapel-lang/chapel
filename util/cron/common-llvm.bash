@@ -42,13 +42,13 @@ if test "$CHPL_LLVM" = bundled; then
         echo "[Warning: llvm may not build correctly with python: $(which python)]"
     fi
 
-    # 2017-08-10 : Developer-installed cmake version required by LLVM 4
-    cmake_setup=/data/cf/chapel/setup_cmake39.bash
+    # 2021-10-26: Developer-installed cmake version required by LLVM 12
+    cmake_setup=/data/cf/chapel/setup_cmake_nightly.bash
     if [ -f "${cmake_setup}" ] ; then
         source ${cmake_setup}
     else
         # This is the path to look for on CS systems we have
-        cmake_setup=/cray/css/users/chapelu/setup_cmake39.bash
+        cmake_setup=/cray/css/users/chapelu/setup_cmake_nightly.bash
         if [ -f "${cmake_setup}" ] ; then
             source ${cmake_setup}
         else
@@ -60,4 +60,4 @@ fi
 # Run examples and test/extern/ferguson/.
 export CHPL_NIGHTLY_TEST_DIRS="extern/ferguson"
 
-nightly_args="${nightly_args} -llvm"
+export CHPL_TARGET_COMPILER=llvm

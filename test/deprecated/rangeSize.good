@@ -1,0 +1,4 @@
+rangeSize.chpl:2: warning: 'range(int(8)).size' is changing to return 'int' values rather than 'int(8)'
+  (to get the value as a different type, call the new method '.sizeAs(type t)')
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')
+0

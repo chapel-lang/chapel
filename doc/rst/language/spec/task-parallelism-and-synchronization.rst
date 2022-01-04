@@ -2,6 +2,7 @@
 
 .. _Chapter-Task_Parallelism_and_Synchronization:
 
+====================================
 Task Parallelism and Synchronization
 ====================================
 
@@ -83,7 +84,7 @@ The Begin Statement
 -------------------
 
 The begin statement creates a task to execute a statement. The syntax
-for the begin statement is given by 
+for the begin statement is given by
 
 .. code-block:: syntax
 
@@ -95,14 +96,14 @@ statement.
 
    *Example (beginUnordered.chpl)*.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
       begin writeln("output from spawned task");
       writeln("output from main task");
 
-   
+
 
    .. BLOCK-test-chapelprediff
 
@@ -112,7 +113,7 @@ statement.
       sort $outfile > $outfile.2
       mv $outfile.2 $outfile
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -145,44 +146,34 @@ reads of a synchronization variable cannot proceed until the variable’s
 state is full. Normal writes of a synchronization variable cannot
 proceed until the variable’s state is empty.
 
-Chapel supports two types of synchronization variables: sync and single.
-Both types behave similarly, except that a single variable may only be
-written once. Consequently, when a sync variable is read, its state
-transitions to empty, whereas when a single variable is read, its state
+Chapel supports two types of synchronization variables: ``sync`` and ``single``.
+Both types behave similarly, except that a ``single`` variable may only be
+written once. Consequently, when a ``sync`` variable is read, its state
+transitions to empty, whereas when a ``single`` variable is read, its state
 does not change. When either type of synchronization variable is
 written, its state transitions to full.
 
 ``sync`` and ``single`` are type qualifiers and precede the type of the
-variable’s value in the declaration. Sync and single are supported for
-all Chapel primitive types ( :ref:`Primitive_Types`) except
-complex. They are also supported for enumerated types
-( :ref:`Enumerated_Types`) and variables of class type
-( :ref:`Class_Types`). For sync variables of class type, the
-full/empty state applies to the reference to the class object, not to
-its member fields.
-
-   *Rationale*.
-
-   It is only well-formed to apply full-empty semantics to types that
-   have no more than a single logical value. Booleans, integers, real
-   and imaginary numbers, enums, and class references all meet this
-   criteria. Since it is possible to read/write the individual elements
-   of a complex value, it’s not obvious how the full-empty semantics
-   would interact with such operations. While one could argue that
-   record types with a single field could also be included, the user can
-   more directly express such cases by declaring the field itself to be
-   of sync type.
+variable’s value in the declaration. ``sync`` and ``single`` are
+supported for the primitive types ``nothing``, ``bool``, ``int``,
+``uint``, ``real``, ``imag``, ``complex``, ``range``, ``bytes``, and
+``string`` ( :ref:`Primitive_Types`); for enumerated types
+( :ref:`Enumerated_Types`); and for class types (:ref:`Class_Types`) and
+record types (:ref:`Record_Types`). For sync variables of class type, the
+full/empty state applies to the reference to the class object, not to its
+member fields.
 
 If a task attempts to read or write a synchronization variable that is
 not in the correct state, the task is suspended. When the variable
 transitions to the correct state, the task is resumed. If there are
-multiple tasks blocked waiting for the state transition, one is
-non-deterministically selected to proceed and the others continue to
-wait if it is a sync variable; all tasks are selected to proceed if it
-is a single variable.
+multiple tasks blocked waiting for the state transition:
 
-A synchronization variable is specified with a sync or single type given
-by the following syntax: 
+ * for a ``sync`` variable, one task is non-deterministically selected to
+   proceed and the others continue to wait
+ * for a ``single`` variable, all tasks are selected to proceed.
+
+A synchronization variable is specified with a ``sync`` or ``single``
+type given by the following syntax:
 
 .. code-block:: syntax
 
@@ -198,7 +189,7 @@ full and store the value from that expression.
 
    *Example (beginWithSyncVar.chpl)*.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
@@ -212,13 +203,13 @@ full and store the value from that expression.
              return value;
 
           var x$: sync int;
-          begin x$ = left!.sum();
+          begin x$.writeEF(left!.sum());
           var y = right!.sum();
-          return x$ + y;
+          return x$.readFE() + y;
         }
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -234,7 +225,7 @@ full and store the value from that expression.
       }
       delete tree;
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -249,47 +240,10 @@ full and store the value from that expression.
 
 ..
 
-   *Example (syncCounter.chpl)*.
-
-   Sync variables are useful for tallying data from multiple tasks as
-   well. If all updates to an initialized sync variable are via compound
-   assignment operators (or equivalently, traditional assignments that
-   read and write the variable once), the full/empty state of the sync
-   variable guarantees that the reads and writes will be interleaved in
-   a manner that makes the updates atomic. For example, the code:
-   
-
-   .. code-block:: chapel
-
-      var count$: sync int = 0;
-      cobegin {
-        count$ += 1;
-        count$ += 1;
-        count$ += 1;
-      }
-
-   
-
-   .. BLOCK-test-chapelpost
-
-      writeln("count is: ", count$.readFF());
-
-   
-
-   .. BLOCK-test-chapeloutput
-
-      count is: 3
-
-   creates three tasks that increment ``count$``. If
-   ``count$`` were not a sync variable, this code
-   would be unsafe because two tasks could then read the same value
-   before either had written its updated value, causing one of the
-   increments to be lost.
-
    *Example (singleVar.chpl)*.
 
    The following code implements a simple split-phase barrier using a
-   single variable. 
+   single variable.
 
    .. BLOCK-test-chapelpre
 
@@ -298,7 +252,7 @@ full and store the value from that expression.
         // do nothing
       }
 
-   
+
 
    .. code-block:: chapel
 
@@ -307,19 +261,19 @@ full and store the value from that expression.
 
       forall t in 1..n do begin {
         work(t);
-        var myc = count$;  // read the count, set state to empty
+        var myc = count$.readFE();  // read the count, set state to empty
         if myc!=1 {
           write(".");
-          count$ = myc-1;  // update the count, set state to full
+          count$.writeEF(myc-1);   // update the count, set state to full
           // we could also do some work here before blocking
-          release$;
+          release$.readFF();
         } else {
-          release$ = true;  // last one here, release everyone
+          release$.writeEF(true);  // last one here, release everyone
           writeln("done");
         }
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -353,8 +307,8 @@ the call is made, and the read value is passed to the formal.
 Predefined Single and Sync Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following methods are defined for variables of sync and single type.
-
+The following methods are defined for variables of ``sync`` and
+``single`` type.
 
 
    .. code-block:: chapel
@@ -373,22 +327,26 @@ when this method completes. This method implements the normal read of a
       proc (sync t).readFF(): t
       proc (single t).readFF(): t
 
-Returns the value of the sync or single variable. This method blocks
-until the sync or single variable is full. The state of the sync or
-single variable remains full when this method completes. This method
-implements the normal read of a ``single`` variable.
-
-
+Returns a copy of the value of the ``sync`` or ``single`` variable. This
+method blocks until the ``sync`` or ``single`` variable is full. The
+state of the ``sync`` or ``single`` variable remains full when this
+method completes. This method implements the normal read of a ``single``
+variable.
 
    .. code-block:: chapel
 
       proc (sync t).readXX(): t
       proc (single t).readXX(): t
 
-Returns the value of the sync or single variable. This method is
-non-blocking and the state of the sync or single variable is unchanged
-when this method completes.
+This method does not block and the state of the ``sync`` or ``single``
+variable is unchanged when this method completes.
 
+This function returns:
+
+  * for a full ``sync`` or ``single``, a copy of the value stored
+  * for an empty ``sync`` or ``single``, the implementation will return
+    either a new default-initialzed value of type ``t`` or the last value
+    stored.
 
 
    .. code-block:: chapel
@@ -442,248 +400,23 @@ Returns ``true`` if the sync or single variable is full and ``false``
 otherwise. This method is non-blocking and the state of the sync or
 single variable is unchanged when this method completes.
 
-Note that ``writeEF`` and ``readFE``/``readFF`` methods (for ``sync``
-and ``single`` variables, respectively) are implicitly invoked for
-normal writes and reads of synchronization variables.
-
-   *Example (syncMethods.chpl)*.
-
-   Given the following declarations 
-
-   .. BLOCK-test-chapelpre
-
-      { // }
-
-   
-
-   .. code-block:: chapel
-
-      var x$: sync int;
-      var y$: single int;
-      var z: int;
-
-   the code 
-
-   .. code-block:: chapel
-
-      x$ = 5;
-      y$ = 6;
-      z = x$ + y$;
-
-   
-
-   .. BLOCK-test-chapelnoprint
-
-      writeln((x$.readXX(), y$.readFF(), z));
-      // {
-      }
-      { // }
-      var x$: sync int;
-      var y$: single int;
-      var z: int;
-
-   is equivalent to 
-
-   .. code-block:: chapel
-
-      x$.writeEF(5);
-      y$.writeEF(6);
-      z = x$.readFE() + y$.readFF();
-
-   
-
-   .. BLOCK-test-chapelpost
-
-      writeln((x$.readXX(), y$.readFF(), z));
-      // {
-      }
-
-   
-
-   .. BLOCK-test-chapeloutput
-
-      (5, 6, 11)
-      (5, 6, 11)
-
 .. _Atomic_Variables:
+.. _Functions_on_Atomic_Variables:
 
 Atomic Variables
 ----------------
 
-Atomic variables are variables that support atomic operations. Chapel
-currently supports atomic operations for bools, all supported sizes of
-signed and unsigned integers, as well as all supported sizes of reals.
-
-   *Rationale*.
-
-   The choice of supported atomic variable types as well as the atomic
-   operations was strongly influenced by the C11 standard.
-
-Atomic is a type qualifier that precedes the variable’s type in the
-declaration. Atomic operations are supported for bools, and all sizes of
-ints, uints, and reals.
-
-An atomic variable is specified with an atomic type given by the
-following syntax:
-
-
+``atomic`` is a type qualifier that precedes the variable’s type in the
+declaration.  An atomic variable is specified with an atomic type given
+by the following syntax:
 
 .. code-block:: syntax
 
    atomic-type:
      'atomic' type-expression
 
-.. _Functions_on_Atomic_Variables:
 
-Predefined Atomic Methods
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The following methods are defined for variables of atomic type. Note
-that not all operations are supported for all atomic types. The
-supported types are listed for each method.
-
-Most of the predefined atomic methods accept an optional argument named
-``order`` of type memoryOrder. The ``order`` argument is used to specify
-the ordering constraints of atomic operations. The supported memoryOrder
-values are:
-
--  memoryOrder.relaxed
-
--  memoryOrder.acquire
-
--  memoryOrder.release
-
--  memoryOrder.acqRel
-
--  memoryOrder.seqCst
-
-See also :ref:`Chapter-Memory_Consistency_Model` and in particular
-:ref:`non_sc_atomics` for more information on the meaning of these memory
-orders.
-
-Unless specified, the default for the memoryOrder parameter is
-memoryOrder.seqCst.
-
-   *Implementors’ note*.
-
-   Not all architectures or implementations may support all memoryOrder
-   values. In these cases, the implementation should default to a more
-   conservative ordering than specified.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).read(param order:memoryOrder = memoryOrder.seqCst): T
-
-Reads and returns the stored value. Defined for all atomic types.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).write(v: T, param order:memoryOrder = memoryOrder.seqCst)
-
-Stores ``v`` as the new value. Defined for all atomic types.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).exchange(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-
-Stores ``v`` as the new value and returns the original value. Defined
-for all atomic types.
-
-   .. code-block:: chapel
-
-      proc (atomic T).compareExchange(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
-      proc (atomic T).compareExchange(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
-      proc (atomic T).compareExchangeWeak(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
-      proc (atomic T).compareExchangeWeak(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
-
-Stores ``v`` as the new value, if and only if the original value is
-equal to ``e``. Returns ``true`` if ``v`` was stored, otherwise
-returns ``false`` and updates ``e`` to the old value.  The weak
-version is allowed to spuriously fail, but when using
-``compareExchange`` in a loop anyways, it can can offer better
-performance on some platforms. Defined for all atomic types.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).compareAndSwap(e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
-
-Stores ``v`` as the new value, if and only if the original value is
-equal to ``e``. Returns ``true`` if ``v`` was stored, ``false``
-otherwise. Defined for all atomic types.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).add(v: T, param order:memoryOrder = memoryOrder.seqCst)
-      proc (atomic T).sub(v: T, param order:memoryOrder = memoryOrder.seqCst)
-      proc (atomic T).or(v: T, param order:memoryOrder = memoryOrder.seqCst)
-      proc (atomic T).and(v: T, param order:memoryOrder = memoryOrder.seqCst)
-      proc (atomic T).xor(v: T, param order:memoryOrder = memoryOrder.seqCst)
-
-Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
-the original value and ``v`` and stores the result. All of the methods
-are defined for integral atomic types. Only add and sub (``+``, ``-``)
-are defined for ``real`` atomic types. None of the methods are defined
-for the ``bool`` atomic type.
-
-   .. note::
-   
-      *Future*.
-
-      In the future we may overload certain operations such as ``+=`` to call
-      the above methods automatically for atomic variables.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).fetchAdd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-      proc (atomic T).fetchSub(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-      proc (atomic T).fetchOr(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-      proc (atomic T).fetchAnd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-      proc (atomic T).fetchXor(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-
-Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
-the original value and ``v``, stores the result, and returns the original
-value. All of the methods are defined for integral atomic types. Only add
-and sub (``+``, ``-``) are defined for ``real`` atomic types. None of the
-methods are defined for the ``bool`` atomic type.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic bool).testAndSet(param order:memoryOrder = memoryOrder.seqCst): bool
-
-Stores ``true`` as the new value and returns the old value. Equivalent
-to ``exchange(true)``. Only defined for the ``bool`` atomic type.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic bool).clear(param order:memoryOrder = memoryOrder.seqCst)
-
-Stores ``false`` as the new value. Equivalent to ``write(false)``. Only
-defined for the ``bool`` atomic type.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).waitFor(v: T)
-
-Waits until the stored value is equal to ``v``. The implementation may
-yield the running task while waiting. Defined for all atomic types.
+.. include:: /builtins/Atomics.rst
 
 .. _Cobegin:
 
@@ -691,7 +424,7 @@ The Cobegin Statement
 ---------------------
 
 The cobegin statement is used to introduce concurrency within a block.
-The ``cobegin`` statement syntax is 
+The ``cobegin`` statement syntax is
 
 .. code-block:: syntax
 
@@ -711,16 +444,16 @@ statements may not be used to exit a cobegin block.
 
    *Example (cobeginAndEquivalent.chpl)*.
 
-   The cobegin statement 
+   The cobegin statement
 
    .. BLOCK-test-chapelpre
 
       var s1, s2: sync int;
-      proc stmt1() { s1; }
-      proc stmt2() { s2; s1 = 1; }
-      proc stmt3() { s2 = 1; }
+      proc stmt1() { s1.readFE(); }
+      proc stmt2() { s2.readFE(); s1.writeEF(1); }
+      proc stmt3() { s2.writeEF(1); }
 
-   
+
 
    .. code-block:: chapel
 
@@ -732,15 +465,15 @@ statements may not be used to exit a cobegin block.
 
    is equivalent to the following code that uses only begin statements
    and single variables to introduce concurrency and synchronize:
-   
+
 
    .. code-block:: chapel
 
       var s1$, s2$, s3$: single bool;
-      begin { stmt1(); s1$ = true; }
-      begin { stmt2(); s2$ = true; }
-      begin { stmt3(); s3$ = true; }
-      s1$; s2$; s3$;
+      begin { stmt1(); s1$.writeEF(true); }
+      begin { stmt2(); s2$.writeEF(true); }
+      begin { stmt3(); s3$.writeEF(true); }
+      s1$.readFF(); s2$.readFF(); s3$.readFF();
 
    Each begin statement is executed concurrently but control does not
    continue past the final line above until each of the single variables
@@ -752,7 +485,7 @@ The Coforall Loop
 -----------------
 
 The coforall loop is a variant of the cobegin statement in loop form.
-The syntax for the coforall loop is given by 
+The syntax for the coforall loop is given by
 
 .. code-block:: syntax
 
@@ -779,14 +512,14 @@ statements may not be used to exit a coforall block.
 
    *Example (coforallAndEquivalent.chpl)*.
 
-   The coforall statement 
+   The coforall statement
 
    .. BLOCK-test-chapelpre
 
       iter iterator() { for i in 1..3 do yield i; }
       proc body() { }
 
-   
+
 
    .. code-block:: chapel
 
@@ -796,25 +529,25 @@ statements may not be used to exit a coforall block.
 
    is equivalent to the following code that uses only begin statements
    and sync and single variables to introduce concurrency and
-   synchronize: 
+   synchronize:
 
    .. code-block:: chapel
 
       var runningCount$: sync int = 1;
       var finished$: single bool;
       for i in iterator() {
-        runningCount$ += 1;
+        runningCount$.writeEF(runningCount$.readFE() + 1);
         begin {
           body();
-          var tmp = runningCount$;
-          runningCount$ = tmp-1;
-          if tmp == 1 then finished$ = true;
+          var tmp = runningCount$.readFE();
+          runningCount$.writeEF(tmp-1);
+          if tmp == 1 then finished$.writeEF(true);
         }
       }
-      var tmp = runningCount$;
-      runningCount$ = tmp-1;
-      if tmp == 1 then finished$ = true;
-      finished$;
+      var tmp = runningCount$.readFE();
+      runningCount$.writeEF(tmp-1);
+      if tmp == 1 then finished$.writeEF(true);
+      finished$.readFF();
 
    Each call to ``body()`` executes concurrently because it is in a
    begin statement. The sync variable
@@ -918,7 +651,7 @@ subject to such treatment within nested task constructs, if any.
    example, it would be easy to introduce and overlook a bug illustrated
    by this simplified example:
 
-   
+
 
    .. code-block:: chapel
 
@@ -1010,7 +743,7 @@ continue statements may not be used to exit a sync statement block.
    *Example (syncStmt1.chpl)*.
 
    The sync statement can be used to wait for many dynamically created
-   tasks. 
+   tasks.
 
    .. BLOCK-test-chapelpre
 
@@ -1019,19 +752,19 @@ continue statements may not be used to exit a sync statement block.
         write(".");
       }
 
-   
+
 
    .. code-block:: chapel
 
       sync for i in 1..n do begin work();
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln("done");
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -1045,14 +778,14 @@ continue statements may not be used to exit a sync statement block.
 
    *Example (syncStmt2.chpl)*.
 
-   The sync statement 
+   The sync statement
 
    .. BLOCK-test-chapelpre
 
       proc stmt1() { }
       proc stmt2() { }
 
-   
+
 
    .. code-block:: chapel
 
@@ -1061,7 +794,7 @@ continue statements may not be used to exit a sync statement block.
         begin stmt2();
       }
 
-   is similar to the following cobegin statement 
+   is similar to the following cobegin statement
 
    .. code-block:: chapel
 
@@ -1081,7 +814,7 @@ The Serial Statement
 --------------------
 
 The ``serial`` statement can be used to dynamically disable parallelism.
-The syntax is: 
+The syntax is:
 
 .. code-block:: syntax
 
@@ -1100,7 +833,7 @@ generates task according to normal Chapel rules.
 
    *Example (serialStmt1.chpl)*.
 
-   In the code 
+   In the code
 
    .. BLOCK-test-chapelpre
 
@@ -1111,7 +844,7 @@ generates task according to normal Chapel rules.
           writeln("serial ", i);
       }
 
-   
+
 
    .. code-block:: chapel
 
@@ -1128,7 +861,7 @@ generates task according to normal Chapel rules.
         f(i);
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -1148,7 +881,7 @@ generates task according to normal Chapel rules.
 
    *Example (serialStmt2.chpl)*.
 
-   The code 
+   The code
 
    .. BLOCK-test-chapelpre
 
@@ -1158,7 +891,7 @@ generates task according to normal Chapel rules.
       proc stmt4() { write(4); }
       var n = 3;
 
-   
+
 
    .. code-block:: chapel
 
@@ -1171,7 +904,7 @@ generates task according to normal Chapel rules.
         coforall i in 1..n do stmt4();
       }
 
-   is equivalent to 
+   is equivalent to
 
    .. code-block:: chapel
 
@@ -1182,13 +915,13 @@ generates task according to normal Chapel rules.
       }
       for i in 1..n do stmt4();
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln();
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -1223,7 +956,7 @@ statement had begun executing but had not yet completed.
    data that should be accessed atomically inside or outside an atomic
    section.
 
-The syntax for the atomic statement is given by: 
+The syntax for the atomic statement is given by:
 
 .. code-block:: syntax
 
@@ -1237,7 +970,7 @@ The syntax for the atomic statement is given by:
    The following code illustrates the use of an atomic statement to
    perform an insertion into a doubly-linked list:
 
-   
+
 
    .. BLOCK-test-chapelpre
 
@@ -1253,7 +986,7 @@ The syntax for the atomic statement is given by:
       var obj = new Node(3);
       head.next.insertAfter(obj);
 
-   
+
 
    .. code-block:: chapel
 
@@ -1266,7 +999,7 @@ The syntax for the atomic statement is given by:
         }
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -1282,7 +1015,7 @@ The syntax for the atomic statement is given by:
         head = next;
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 

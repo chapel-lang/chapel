@@ -1,0 +1,8 @@
+handleRecord.chpl:18: In function 'main':
+handleRecord.chpl:19: warning: Record C is deprecated, please use D
+handleRecord.chpl:20: warning: Record C is deprecated, please use D
+handleRecord.chpl:20: warning: Record C is deprecated, please use D
+handleRecord.chpl:21: warning: Record C is deprecated, please use D
+(x = 1)
+2
+In C.foo()

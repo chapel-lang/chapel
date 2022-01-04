@@ -12,7 +12,7 @@ Chapel Documentation
    platforms/index
    technotes/index
    tools/index
-
+   developer/index
 
 .. toctree::
    :caption: Writing Chapel Programs
@@ -35,6 +35,8 @@ Chapel Documentation
 
    Chapel Evolution <language/evolution>
    Documentation Archives <language/archivedSpecs>
+
+
 
 Index
 -----

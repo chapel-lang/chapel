@@ -270,12 +270,12 @@ static bool forallNoTaskPrivate(ForallStmt* forall) {
   return true;
 }
 
-class MarkOptimizableForallLastStmts : public AstVisitorTraverse {
+class MarkOptimizableForallLastStmts final : public AstVisitorTraverse {
 
   public:
     LifetimeInformation* lifetimeInfo;
 
-    virtual bool enterForallStmt(ForallStmt* forall);
+    bool enterForallStmt(ForallStmt* forall) override;
     void markLoopsInForall(ForallStmt* forall);
 };
 
@@ -367,11 +367,11 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
             rhs = toSymExpr(call->get(2));
         }
         if (lhs && addLhsOutlivesForall)
-          addOptimizationFlag(stmt, OPT_INFO_LHS_OUTLIVES_FORALL);
+          addOptimizationFlag(stmt, FLAG_OPT_INFO_LHS_OUTLIVES_FORALL);
         if (rhs && addRhsOutlivesForall)
-          addOptimizationFlag(stmt, OPT_INFO_RHS_OUTLIVES_FORALL);
+          addOptimizationFlag(stmt, FLAG_OPT_INFO_RHS_OUTLIVES_FORALL);
         if (addNoTaskPrivate)
-          addOptimizationFlag(stmt, OPT_INFO_FLAG_NO_TASK_PRIVATE);
+          addOptimizationFlag(stmt, FLAG_OPT_INFO_NO_TASK_PRIVATE);
       }
 
       loopNum++;
@@ -445,7 +445,7 @@ static const char* blockStateString(MayBlockState state) {
 
 static std::map<FnSymbol*, MayBlockState> fnMayBlock;
 
-class GatherBlockingFunctions : public AstVisitorTraverse {
+class GatherBlockingFunctions final : public AstVisitorTraverse {
 
   public:
     std::stack<MayBlockState> blockingLoopStack;
@@ -458,17 +458,17 @@ class GatherBlockingFunctions : public AstVisitorTraverse {
     void beginLoop();
     void endLoop();
 
-    virtual bool enterCallExpr(CallExpr* node);
-    virtual void exitCallExpr(CallExpr* node);
+    bool enterCallExpr(CallExpr* node) override;
+    void exitCallExpr(CallExpr* node) override;
 
-    virtual bool enterWhileDoStmt(WhileDoStmt* node);
-    virtual void exitWhileDoStmt(WhileDoStmt* node);
-    virtual bool enterDoWhileStmt(DoWhileStmt* node);
-    virtual void exitDoWhileStmt(DoWhileStmt* node);
-    virtual bool enterCForLoop(CForLoop* node);
-    virtual void exitCForLoop(CForLoop* node);
-    virtual bool enterForLoop(ForLoop* node);
-    virtual void exitForLoop(ForLoop* node);
+    bool enterWhileDoStmt(WhileDoStmt* node) override;
+    void exitWhileDoStmt(WhileDoStmt* node) override;
+    bool enterDoWhileStmt(DoWhileStmt* node) override;
+    void exitDoWhileStmt(DoWhileStmt* node) override;
+    bool enterCForLoop(CForLoop* node) override;
+    void exitCForLoop(CForLoop* node) override;
+    bool enterForLoop(ForLoop* node) override;
+    void exitForLoop(ForLoop* node) override;
 };
 
 static bool loopContainsBlocking(BlockStmt* block) {
@@ -753,8 +753,8 @@ static bool isOptimizableAtomicStmt(Expr* stmt, BlockStmt* loop) {
     if (BlockStmt* defInBlock = toBlockStmt(refAtomic->defPoint->parentExpr))
       if (isBlockWithinBlock(defInBlock, loop))
         if (CallExpr* marker = findMarkerNear(stmt))
-          if (hasOptimizationFlag(marker, OPT_INFO_LHS_OUTLIVES_FORALL) &&
-              hasOptimizationFlag(marker, OPT_INFO_FLAG_NO_TASK_PRIVATE))
+          if (hasOptimizationFlag(marker, FLAG_OPT_INFO_LHS_OUTLIVES_FORALL) &&
+              hasOptimizationFlag(marker, FLAG_OPT_INFO_NO_TASK_PRIVATE))
             if (loopContainsBlocking(loop) == false)
               return true;
 
@@ -894,8 +894,8 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
     if (BlockStmt* defInBlock = toBlockStmt(lhs->defPoint->parentExpr))
       if (isBlockWithinBlock(defInBlock, loop))
         if (CallExpr* marker = findMarkerNear(stmt))
-          if (hasOptimizationFlag(marker, OPT_INFO_LHS_OUTLIVES_FORALL) &&
-              hasOptimizationFlag(marker, OPT_INFO_FLAG_NO_TASK_PRIVATE))
+          if (hasOptimizationFlag(marker, FLAG_OPT_INFO_LHS_OUTLIVES_FORALL) &&
+              hasOptimizationFlag(marker, FLAG_OPT_INFO_NO_TASK_PRIVATE))
             return true;
 
   return false;

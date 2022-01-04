@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 use URL;
 use Time;
 use FileSystem;
@@ -14,7 +14,7 @@ proc startServer() {
                      stdin=CLOSE, stdout=PIPE, stderr=PIPE);
   check.communicate();
 
-  if check.exit_status == 0 {
+  if check.exitCode == 0 {
     // Server already running, so nothing to do.
     return;
   }
@@ -33,7 +33,7 @@ proc startServer() {
                        stdin=CLOSE, stdout=PIPE, stderr=PIPE);
     check.communicate();
 
-    if check.exit_status == 0 {
+    if check.exitCode == 0 {
       ok = true;
       break;
     }

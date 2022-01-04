@@ -9,7 +9,7 @@ record R {
   }
 }
 
-proc =(ref lhs: R, rhs: R) {
+operator R.=(ref lhs: R, rhs: R) {
   writeln("In assignment");
   lhs.x = rhs.x + 5;
 }

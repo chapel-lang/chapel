@@ -84,16 +84,6 @@
 #include "ImportStmt.h"
 #include "stmt.h"
 
-CollapseBlocks::CollapseBlocks()
-{
-
-}
-
-CollapseBlocks::~CollapseBlocks()
-{
-
-}
-
 bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
 {
   AList shuffle;

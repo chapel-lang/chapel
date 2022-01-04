@@ -223,13 +223,13 @@ static void sock_ep_cm_monitor_handle(struct sock_ep_cm_head *cm_head,
 {
 	int ret;
 
-	fastlock_acquire(&cm_head->signal_lock);
+	pthread_mutex_lock(&cm_head->signal_lock);
 	if (handle->monitored)
 		goto unlock;
 
 	/* Mark the handle as monitored before adding it to the pollset */
 	handle->monitored = 1;
-	ret = ofi_epoll_add(cm_head->emap, handle->sock_fd,
+	ret = ofi_epoll_add(cm_head->epollfd, handle->sock_fd,
 	                   events, handle);
 	if (ret) {
 		SOCK_LOG_ERROR("failed to monitor fd %d: %d\n",
@@ -239,7 +239,7 @@ static void sock_ep_cm_monitor_handle(struct sock_ep_cm_head *cm_head,
 		fd_signal_set(&cm_head->signal);
 	}
 unlock:
-	fastlock_release(&cm_head->signal_lock);
+	pthread_mutex_unlock(&cm_head->signal_lock);
 }
 
 static void
@@ -250,11 +250,12 @@ sock_ep_cm_unmonitor_handle_locked(struct sock_ep_cm_head *cm_head,
 	int ret;
 
 	if (handle->monitored) {
-		ret = ofi_epoll_del(cm_head->emap, handle->sock_fd);
+		ret = ofi_epoll_del(cm_head->epollfd, handle->sock_fd);
 		if (ret)
 			SOCK_LOG_ERROR("failed to unmonitor fd %d: %d\n",
 			               handle->sock_fd, ret);
 		handle->monitored = 0;
+		cm_head->removed_from_epollfd = true;
 	}
 
 	/* Multiple threads might call sock_ep_cm_unmonitor_handle() at the
@@ -271,9 +272,9 @@ static void sock_ep_cm_unmonitor_handle(struct sock_ep_cm_head *cm_head,
                                        struct sock_conn_req_handle *handle,
                                        int close_socket)
 {
-	fastlock_acquire(&cm_head->signal_lock);
+	pthread_mutex_lock(&cm_head->signal_lock);
 	sock_ep_cm_unmonitor_handle_locked(cm_head, handle, close_socket);
-	fastlock_release(&cm_head->signal_lock);
+	pthread_mutex_unlock(&cm_head->signal_lock);
 }
 
 static void sock_ep_cm_shutdown_report(struct sock_ep *ep, int send_shutdown)
@@ -381,10 +382,15 @@ static void sock_ep_cm_connect_handler(struct sock_ep_cm_head *cm_head,
 	struct fi_eq_cm_entry *cm_entry = NULL;
 	int cm_data_sz, response_port;
 
-	assert(hdr->type == SOCK_CONN_ACCEPT
-	       || hdr->type == SOCK_CONN_REJECT);
+	assert(hdr->type == SOCK_CONN_ACCEPT ||
+	       hdr->type == SOCK_CONN_REJECT);
 
 	cm_data_sz = ntohs(hdr->cm_data_sz);
+	if (cm_data_sz > SOCK_EP_MAX_CM_DATA_SZ) {
+		SOCK_LOG_ERROR("CM data size too large\n");
+		goto err;
+	}
+
 	response_port = ntohs(hdr->port);
 	if (cm_data_sz) {
 		param = calloc(1, cm_data_sz);
@@ -728,9 +734,9 @@ static struct fi_info *sock_ep_msg_get_info(struct sock_pep *pep,
 
 void sock_ep_cm_signal(struct sock_ep_cm_head *cm_head)
 {
-	fastlock_acquire(&cm_head->signal_lock);
+	pthread_mutex_lock(&cm_head->signal_lock);
 	fd_signal_set(&cm_head->signal);
-	fastlock_release(&cm_head->signal_lock);
+	pthread_mutex_unlock(&cm_head->signal_lock);
 }
 
 static void sock_ep_cm_process_rejected(struct sock_ep_cm_head *cm_head,
@@ -783,13 +789,13 @@ sock_ep_cm_pop_from_msg_list(struct sock_ep_cm_head *cm_head)
 	struct dlist_entry *entry;
 	struct sock_conn_req_handle *hreq = NULL;
 
-	fastlock_acquire(&cm_head->signal_lock);
+	pthread_mutex_lock(&cm_head->signal_lock);
 	if (!dlist_empty(&cm_head->msg_list)) {
 		entry = cm_head->msg_list.next;
 		dlist_remove(entry);
 		hreq = container_of(entry, struct sock_conn_req_handle, entry);
 	}
-	fastlock_release(&cm_head->signal_lock);
+	pthread_mutex_unlock(&cm_head->signal_lock);
 	return hreq;
 }
 
@@ -845,6 +851,11 @@ static void sock_pep_req_handler(struct sock_ep_cm_head *cm_head,
 	}
 
 	req_cm_data_sz = ntohs(conn_req->hdr.cm_data_sz);
+	if (req_cm_data_sz > SOCK_EP_MAX_CM_DATA_SZ) {
+		SOCK_LOG_ERROR("CM data size is too large\n");
+		goto err;
+	}
+
 	if (req_cm_data_sz) {
 		ret = sock_cm_recv(handle->sock_fd, conn_req->cm_data,
 				   req_cm_data_sz);
@@ -1001,9 +1012,9 @@ static int sock_pep_reject(struct fid_pep *pep, fid_t handle,
 
 	cm_head = &_pep->cm_head;
 	hreq->state = SOCK_CONN_HANDLE_REJECTED;
-	fastlock_acquire(&cm_head->signal_lock);
+	pthread_mutex_lock(&cm_head->signal_lock);
 	sock_ep_cm_add_to_msg_list(cm_head, hreq);
-	fastlock_release(&cm_head->signal_lock);
+	pthread_mutex_unlock(&cm_head->signal_lock);
 	return 0;
 }
 
@@ -1166,14 +1177,23 @@ static void *sock_ep_cm_thread(void *arg)
 	while (cm_head->do_listen) {
 		sock_ep_cm_check_closing_rejected_list(cm_head);
 
-		num_fds = ofi_epoll_wait(cm_head->emap, ep_contexts,
+		num_fds = ofi_epoll_wait(cm_head->epollfd, ep_contexts,
 		                        SOCK_EPOLL_WAIT_EVENTS, -1);
 		if (num_fds < 0) {
 			SOCK_LOG_ERROR("poll failed : %s\n", strerror(errno));
 			continue;
 		}
 
-		fastlock_acquire(&cm_head->signal_lock);
+		pthread_mutex_lock(&cm_head->signal_lock);
+		if (cm_head->removed_from_epollfd) {
+			/* If we removed a socket from the epollfd after
+			 * ofi_epoll_wait returned, we can hit a use after
+			 * free error.  If a change was made, we skip processing
+			 * and recheck for events.
+			 */
+			cm_head->removed_from_epollfd = false;
+			goto skip;
+		}
 		for (i = 0; i < num_fds; i++) {
 			handle = ep_contexts[i];
 
@@ -1195,7 +1215,8 @@ static void *sock_ep_cm_thread(void *arg)
 			assert(handle->sock_fd != INVALID_SOCKET);
 			sock_ep_cm_handle_rx(cm_head, handle);
 		}
-		fastlock_release(&cm_head->signal_lock);
+skip:
+		pthread_mutex_unlock(&cm_head->signal_lock);
 	}
 	return NULL;
 }
@@ -1205,10 +1226,10 @@ int sock_ep_cm_start_thread(struct sock_ep_cm_head *cm_head)
 {
 	assert(cm_head->do_listen == 0);
 
-	fastlock_init(&cm_head->signal_lock);
+	pthread_mutex_init(&cm_head->signal_lock, NULL);
 	dlist_init(&cm_head->msg_list);
 
-	int ret = ofi_epoll_create(&cm_head->emap);
+	int ret = ofi_epoll_create(&cm_head->epollfd);
 	if (ret < 0) {
 		SOCK_LOG_ERROR("failed to create epoll set\n");
 		goto err1;
@@ -1221,7 +1242,7 @@ int sock_ep_cm_start_thread(struct sock_ep_cm_head *cm_head)
 		goto err2;
 	}
 
-	ret = ofi_epoll_add(cm_head->emap,
+	ret = ofi_epoll_add(cm_head->epollfd,
 	                   cm_head->signal.fd[FI_READ_FD],
 	                   OFI_EPOLL_IN, NULL);
 	if (ret != 0){
@@ -1230,6 +1251,7 @@ int sock_ep_cm_start_thread(struct sock_ep_cm_head *cm_head)
 	}
 
 	cm_head->do_listen = 1;
+	cm_head->removed_from_epollfd = false;
 	ret = pthread_create(&cm_head->listener_thread, 0,
 	                     sock_ep_cm_thread, cm_head);
 	if (ret) {
@@ -1242,7 +1264,7 @@ err3:
 	cm_head->do_listen = 0;
 	fd_signal_free(&cm_head->signal);
 err2:
-	ofi_epoll_close(cm_head->emap);
+	ofi_epoll_close(cm_head->epollfd);
 err1:
 	return ret;
 }
@@ -1251,9 +1273,9 @@ void sock_ep_cm_wait_handle_finalized(struct sock_ep_cm_head *cm_head,
                                       struct sock_conn_req_handle *handle)
 {
 	handle->state = SOCK_CONN_HANDLE_FINALIZING;
-	fastlock_acquire(&cm_head->signal_lock);
+	pthread_mutex_lock(&cm_head->signal_lock);
 	sock_ep_cm_add_to_msg_list(cm_head, handle);
-	fastlock_release(&cm_head->signal_lock);
+	pthread_mutex_unlock(&cm_head->signal_lock);
 
 	pthread_mutex_lock(&handle->finalized_mutex);
 	while (handle->state != SOCK_CONN_HANDLE_FINALIZED)
@@ -1272,10 +1294,10 @@ void sock_ep_cm_stop_thread(struct sock_ep_cm_head *cm_head)
 	sock_ep_cm_signal(cm_head);
 
 	if (cm_head->listener_thread &&
-			pthread_join(cm_head->listener_thread, NULL)) {
+	    pthread_join(cm_head->listener_thread, NULL)) {
 		SOCK_LOG_DBG("pthread join failed\n");
 	}
-	ofi_epoll_close(cm_head->emap);
+	ofi_epoll_close(cm_head->epollfd);
 	fd_signal_free(&cm_head->signal);
-	fastlock_destroy(&cm_head->signal_lock);
+	pthread_mutex_destroy(&cm_head->signal_lock);
 }

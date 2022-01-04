@@ -10,6 +10,8 @@ unset CHPL_HOME
 export CHPL_CHECK_HOME=`pwd`
 wd=`pwd`
 
+export CHPL_LLVM=bundled
+
 mytmpdir=`mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'`
 myprefix="$mytmpdir/prefix"
 myhome="$mytmpdir/chplhome"

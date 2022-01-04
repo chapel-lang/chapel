@@ -1,0 +1,68 @@
+Adding local element int(64) remotely
+{0}
+Adding remote element int(64) remotely
+{0}
+Adding remote element int(64) locally
+{0}
+Adding local element int(64) locally
+{0}
+Adding local element real(64) remotely
+{0.0}
+Adding remote element real(64) remotely
+{0.0}
+Adding remote element real(64) locally
+{0.0}
+Adding local element real(64) locally
+{0.0}
+Adding local element string remotely
+{0}
+Adding remote element string remotely
+{0}
+Adding remote element string locally
+{0}
+Adding local element string locally
+{0}
+Adding local element bytes remotely
+{0}
+Adding remote element bytes remotely
+{0}
+Adding remote element bytes locally
+{0}
+Adding local element bytes locally
+{0}
+Adding local element r remotely
+default init
+init=
+{(x = {x = 0})}
+deinit
+deinit
+Adding remote element r remotely
+default init
+{(x = {x = 0})}
+deinit
+Adding remote element r locally
+default init
+init=
+deinit
+{(x = {x = 0})}
+deinit
+Adding local element r locally
+default init
+{(x = {x = 0})}
+deinit
+Adding local element shared C remotely
+{{x = 0}}
+Adding remote element shared C remotely
+{{x = 0}}
+Adding remote element shared C locally
+{{x = 0}}
+Adding local element shared C locally
+{{x = 0}}
+Adding local element owned C? remotely
+{{x = 0}}
+Adding remote element owned C? remotely
+{{x = 0}}
+Adding remote element owned C? locally
+{{x = 0}}
+Adding local element owned C? locally
+{{x = 0}}

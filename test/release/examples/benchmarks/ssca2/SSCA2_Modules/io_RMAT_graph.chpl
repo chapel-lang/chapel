@@ -299,7 +299,7 @@ iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
                      dON, dRow, dEdge, dstyle, myIDs)
 {
-  if IOgate then IOgate$ = true;
+  if IOgate then IOgate$.writeEF(true);
 
   compilerAssert(!myIDs.stridable); // for efficiency, also for v1,v2
   // start/end IDs
@@ -376,7 +376,7 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   ww.close();
   sta.close();
 
-  if IOgate then IOgate$;
+  if IOgate then IOgate$.readFE();
 } // graphReaderReal
 
 proc readOneVertex(GRow, type VType, vCount, u, dON, dRow, dEdge, dstyle,

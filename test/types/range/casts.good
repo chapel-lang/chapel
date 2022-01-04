@@ -1,0 +1,20 @@
+1..3 as: 
+range(uint(64),bounded,false): 1..3
+range(int(8),bounded,false): 1..3
+
+1..3 by 2 as: 
+range(uint(64),bounded,true): 1..3 by 2
+range(int(8),bounded,true): 1..3 by 2
+
+1.. as: 
+range(uint(64),boundedLow,false): 1..
+range(int(8),boundedLow,false): 1..
+
+..10 as: 
+range(uint(64),boundedHigh,false): ..10
+range(int(8),boundedHigh,false): ..10
+
+.. as: 
+range(uint(64),boundedNone,false): ..
+range(int(8),boundedNone,false): ..
+

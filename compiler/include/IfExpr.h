@@ -27,7 +27,7 @@
 #include <ostream>
 
 
-class IfExpr : public Expr {
+class IfExpr final : public Expr {
 public:
 
   IfExpr(Expr* condition, Expr* thenExpr, Expr* elseExpr);
@@ -36,17 +36,18 @@ public:
   BlockStmt* getThenStmt();
   BlockStmt* getElseStmt();
 
-  virtual void verify();
+  void verify() override;
 
   DECLARE_COPY(IfExpr);
+  IfExpr* copyInner(SymbolMap* map) override;
 
-  virtual Expr*         getFirstExpr();
-  virtual void          replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual QualifiedType qualType();
+  Expr*         getFirstExpr() override;
+  void          replaceChild(Expr* old_ast, Expr* new_ast) override;
+  QualifiedType qualType() override;
 
-  virtual void   accept(AstVisitor* visitor);
-  virtual GenRet codegen();
-  virtual void   prettyPrint(std::ostream* o);
+  void   accept(AstVisitor* visitor) override;
+  GenRet codegen() override;
+  void   prettyPrint(std::ostream* o) override;
 
 private:
   Expr* condition;

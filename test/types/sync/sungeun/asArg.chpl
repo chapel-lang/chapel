@@ -5,11 +5,11 @@ var sx: sync myType;
 var x: myType;
 
 proc readme(sx: sync myType) {
-  var x = sx;
+  var x = sx.readFE();
 }
 
 proc writeme(sx: sync myType) {
-  sx = initval;
+  sx.writeEF(initval);
   if !sx.isFull then writeln("invalid state (empty)");
   if sx.readXX() != initval then writeln("incorrect value: ", sx.readXX());
 }

@@ -6,6 +6,7 @@
 
 #include <ostream>
 
+#include "re2/prog.h"
 #include "util/util.h"
 
 namespace re2 {
@@ -60,6 +61,10 @@ StringPiece::size_type StringPiece::rfind(char c, size_type pos) const {
 std::ostream& operator<<(std::ostream& o, const StringPiece& p) {
   o.write(p.data(), p.size());
   return o;
+}
+
+const char* StringPiece::prefix_accel(Prog* prog, const char* s, ssize_t len) const {
+  return reinterpret_cast<const char*>(prog->PrefixAccel(s, len));
 }
 
 }  // namespace re2

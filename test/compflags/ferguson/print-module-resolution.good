@@ -39,13 +39,13 @@ startInitCommDiags
 OwnedObject
   from print-module-resolution.ChapelStandard.OwnedObject
 MemConsistency
-  from print-module-resolution.ChapelStandard.SharedObject.ChapelError.ChapelLocks.Atomics.MemConsistency
+  from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks.Atomics.MemConsistency
 Atomics
-  from print-module-resolution.ChapelStandard.SharedObject.ChapelError.ChapelLocks.Atomics
+  from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks.Atomics
 ChapelLocks
-  from print-module-resolution.ChapelStandard.SharedObject.ChapelError.ChapelLocks
-ChapelError
-  from print-module-resolution.ChapelStandard.SharedObject.ChapelError
+  from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks
+Errors
+  from print-module-resolution.ChapelStandard.SharedObject.Errors
 SharedObject
   from print-module-resolution.ChapelStandard.SharedObject
 NetworkAtomics
@@ -90,12 +90,14 @@ ArrayViewReindex
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ArrayViewReindex
 ChapelPrivatization
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelPrivatization
-Regexp
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List.IO.FormattedIO.Regexp
+Regex
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.IO.FormattedIO.Regex
 FormattedIO
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List.IO.FormattedIO
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.IO.FormattedIO
 IO
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List.IO
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.IO
+ChapelDomain
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain
 List
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List
 RadixSortHelp
@@ -114,6 +116,10 @@ Sort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort
 ChapelArray
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray
+Memory
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelDistribution.ChapelHashtable.Initialization.Memory
+Initialization
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelDistribution.ChapelHashtable.Initialization
 ChapelHashtable
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelDistribution.ChapelHashtable
 ChapelDistribution
@@ -172,8 +178,6 @@ CopyAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation.CopyAggregation
 ChapelAutoAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation
-Builtins
-  from print-module-resolution.ChapelStandard.Builtins
 Types
   from print-module-resolution.ChapelStandard.Types
 VectorizingIterator

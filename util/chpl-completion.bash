@@ -43,6 +43,7 @@ _chpl ()
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
+--compiler-library-parser \
 --copy-elision \
 --copy-propagation \
 --copyright \
@@ -70,6 +71,8 @@ _chpl ()
 --gdb \
 --gen-ids \
 --gmp \
+--gpu-arch \
+--gpu-block-size \
 --hdr-search-path \
 --help \
 --help-env \
@@ -95,6 +98,7 @@ _chpl ()
 --inline-iterators \
 --inline-iterators-yield-limit \
 --instantiate-max \
+--interleave-memory \
 --interprocedural-alias-analysis \
 --launcher \
 --ldflags \
@@ -151,6 +155,7 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
+--no-compiler-library-parser \
 --no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
@@ -182,6 +187,7 @@ _chpl ()
 --no-infer-local-fields \
 --no-inline \
 --no-inline-iterators \
+--no-interleave-memory \
 --no-interprocedural-alias-analysis \
 --no-library-ml-debug \
 --no-lifetime-checking \
@@ -280,7 +286,7 @@ _chpl ()
 --print-unused-functions \
 --print-unused-internal-functions \
 --privatization \
---regexp \
+--re2 \
 --region-vectorizer \
 --remote-serialization \
 --remote-value-forwarding \
@@ -483,7 +489,7 @@ _chpl ()
 --print-search-dirs \
 --print-unused-functions \
 --privatization \
---regexp \
+--re2 \
 --remote-serialization \
 --remote-value-forwarding \
 --remove-copy-calls \

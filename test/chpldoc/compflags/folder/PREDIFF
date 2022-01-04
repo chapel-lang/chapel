@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-sed -i -e '/^Running Sphinx v/,/^HTML files are at:/d' $2
+sed -e '/^Running Sphinx v/,/^HTML files are at:/d' $2 > $2.tmp
+mv $2.tmp $2

@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -67,7 +67,7 @@ extern const char* CHPL_ATOMICS;
 extern const char* CHPL_NETWORK_ATOMICS;
 extern const char* CHPL_GMP;
 extern const char* CHPL_HWLOC;
-extern const char* CHPL_REGEXP;
+extern const char* CHPL_RE2;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
 extern const char* CHPL_UNWIND;
@@ -76,6 +76,7 @@ extern const char* CHPL_RUNTIME_INCL;
 extern const char* CHPL_THIRD_PARTY;
 extern const int CHPL_STACK_CHECKS;
 extern const int CHPL_CACHE_REMOTE;
+extern const int CHPL_INTERLEAVE_MEM;
 
 // Sorted lookup table of filenames used with insertLineNumbers for error
 // messages and logging. Defined in chpl_compilation_config.c (needed by launchers)

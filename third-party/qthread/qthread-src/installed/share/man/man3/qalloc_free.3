@@ -1,0 +1,37 @@
+.TH qalloc_free 3 "NOVEMBER 2006" libqthread "libqthread"
+.SH NAME
+.BR qalloc_free ,
+.BR qalloc_dynfree ,
+.B qalloc_statfree
+\- return an allocated block to the map
+.SH SYNOPSIS
+.B #include <qthread/qalloc.h>
+
+.I void
+.br
+.B qalloc_free
+.RI "(void *" block ", void *" map );
+.PP
+.I void
+.br
+.B qalloc_statfree
+.RI "(void *" block ", struct mapinfo_s *" map );
+.PP
+.I void
+.br
+.B qalloc_dynfree
+.RI "(void *" block ", struct dynmapinfo_s *" map );
+.SH DESCRIPTION
+These are the deallocation functions. They return an allocated memory
+.I block
+to the specified qalloc
+.IR map .
+The
+.BR qalloc_free ()
+function will use whichever of the other two functions is appropriate for the given
+.IR map .
+.SH SEE ALSO
+.BR qalloc_cleanup (3),
+.BR qalloc_checkpoint (3),
+.BR qalloc_loadmap (3),
+.BR qalloc_malloc (3)

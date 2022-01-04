@@ -1,0 +1,8 @@
+icFun()
+reqFn1.int(1)
+reqFn2.int(10)
+reqFn3.int(200)
+icFun()
+reqFn1.real(2.2)
+reqFn2.complex(2.2 - 2.2i)
+reqFn3.string(2.2 - 2.2i)

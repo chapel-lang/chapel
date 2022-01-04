@@ -25,6 +25,10 @@ record ExampleRecord2 {
 }
 proc ExampleRecord2.secondaryMethod() { }
 
+// Methods declared outside of a class or record and outside of the scope where
+// the type is defined are called tertiary methods.  Tertiary methods follow the
+// same declaration syntax as secondary methods.
+
 // This primer will use the secondary method form, but all of the special
 // methods can also be written as primary methods.
 
@@ -104,6 +108,29 @@ writeln(r.vals);
 // Classes and records can also define parallel iterators including
 // leader/follower iterator pairs and standalone parallel iterators. For
 // more information on parallel iterators, see the :doc:`parIters` primer.
+
+/*
+  Custom Hashing
+  --------------
+*/
+
+use Map;
+
+proc R.hash() {
+  writeln("In custom hash function");
+  return vals[0];
+}
+
+// Now that the record R has a ``hash`` method defined, Chapel's map
+// and associative domain will call this custom ``hash`` instead of
+// the compiler generated method for ``hash``. Note that this only works
+// for records and will not apply to defining a ``int.hash`` for example.
+var myMap = new map(R, int);
+var myD: domain(R);
+var myR = new R();
+
+myMap[myR] = 5;
+myD += myR;
 
 /*
   IO Methods
@@ -190,5 +217,4 @@ proc R.readWriteThis(ch: channel) throws {
 // Operators can be overloaded for record types to support
 // assignment (``=``), comparisons, (``<``, ``<=``, ``>``, ``>=``, ``==``,
 // ``!=``), and other general operators (``+``, ``-``, ``*``, ``/``, ...).
-// These are declared as regular functions with two arguments, not as methods
-// on the record.
+// These are declared as regular functions using the ``operator`` keyword.

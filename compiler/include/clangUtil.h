@@ -45,6 +45,8 @@ namespace clang {
   class Decl;
   class FunctionDecl;
   class QualType;
+  class RecordType;
+  class Type;
   class TypeDecl;
   class ValueDecl;
 
@@ -75,6 +77,8 @@ clang::FunctionDecl* getFunctionDeclClang(const char* name);
 
 llvm::Type* getTypeLLVM(const char* name);
 int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCArrayField);
+
+bool isCTypeUnion(const char* name);
 
 #if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace);
@@ -112,10 +116,14 @@ bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
 void checkAdjustedDataLayout();
 
 extern fileinfo gAllExternCode;
+extern std::string ggpuFatbinPath;
 
-void print_clang(clang::Decl* d);
-void print_clang(clang::TypeDecl* td);
-void print_clang(clang::ValueDecl* vd);
+void print_clang(const clang::Type* d);
+void print_clang(const clang::Decl* d);
+void print_clang(const clang::TypeDecl* td);
+void print_clang(const clang::ValueDecl* vd);
+
+const char* getGeneratedAnonTypeName(const clang::RecordType* structType);
 
 #endif // HAVE_LLVM
 

@@ -1,0 +1,4 @@
+operatorNoKeyword.chpl:4: warning: Operators declared without the operator keyword are deprecated
+operatorNoKeyword.chpl:8: warning: Operators declared without the operator keyword are deprecated
+(x = 4)
+(x = 3)

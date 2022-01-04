@@ -1,0 +1,12 @@
+bug: instantiating a CG type multiple times
+
+When invoking this CG function:
+
+    proc minFn(x:?T, y:T):T where implements LessThan(T) {...}
+
+on (real, int), T gets instantiated to `int` whereas it should
+be instantiated to `real`. This is likely because in the implementation,
+ResolutionCandidate::isApplicableGeneric --> computeSubstitutions,
+it does not distinguish between `?T` and `T` where T is a CG type,
+so the substitution map ends up with the later instantiation,
+which is `int`, instead of the one with `?`, which is `real`.

@@ -1440,7 +1440,7 @@ void adjustSignatureForNilChecking(FnSymbol* fn) {
 
 typedef std::map<Symbol*,Expr*> SymbolToNilMap;
 
-class FindInvalidNonNilables : public AstVisitorTraverse {
+class FindInvalidNonNilables final : public AstVisitorTraverse {
   public:
     // key - a variable of interest
     // value - NULL if that variable isn't possibly nil now
@@ -1448,10 +1448,11 @@ class FindInvalidNonNilables : public AstVisitorTraverse {
     SymbolToNilMap varsToNil;
     // Only present errors once per symbol
     std::set<Symbol*> erroredSymbols;
-    virtual bool enterDefExpr(DefExpr* def);
-    virtual bool enterCallExpr(CallExpr* call);
-    virtual void exitCallExpr(CallExpr* call);
-    virtual void visitSymExpr(SymExpr* se);
+
+    bool enterDefExpr(DefExpr* def) override;
+    bool enterCallExpr(CallExpr* call) override;
+    void exitCallExpr(CallExpr* call) override;
+    void visitSymExpr(SymExpr* se) override;
 };
 
 static bool isNonNilableTypeOrRecordContaining(Type* t) {
@@ -1533,7 +1534,7 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
             Expr* astPoint = findLocationIgnoringInternalInlining(call);
             FnSymbol* inFn = astPoint->getFunction();
             astlocT point = astPoint->astloc;
-            if (inFn->userInstantiationPointLoc.filename != NULL)
+            if (!inFn->userInstantiationPointLoc.isEmpty())
               point = inFn->userInstantiationPointLoc;
 
             const char* error = NULL;

@@ -19,12 +19,17 @@
  */
 
 /*
-  .. note:: 
+  .. warning::
 
-    This package relies on Chapel ``extern`` code blocks and so requires that
-    ``CHPL_LLVM=bundled`` or ``CHPL_LLVM=system`` and that the Chapel compiler is
-    built with LLVM enabled. As well, currently only ``CHPL_TARGET_ARCH=x86_64``
-    is supported as we make use of the x86-64 instruction: CMPXCHG16B_.
+    This module has several platform restrictions in its current state:
+
+      - It relies on Chapel ``extern`` code blocks and so requires that
+        the Chapel compiler is built with LLVM enabled.
+      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
+        the x86-64 instruction: CMPXCHG16B_.
+      - The implementation relies on ``GCC`` style inline assembly, and so
+        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
+        ``clang``, or ``llvm``.
 
     .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
     
@@ -315,13 +320,16 @@ prototype module AtomicObjects {
     // faster compression method so we need to decompress it in the same way...
     var locId = descr >> compressedLocIdOffset;
     var addr = descr & compressedAddrMask;
-    if locId == here.id then return castToObj(objType, addr);
+    if _local || locId == here.id then return castToObj(objType, addr);
 
     // We've created the wide pointer, but unfortunately Chapel does not support
     // the ability to cast it to the actual object, so we have to do some
     // trickery to get it to work. What we do is we allocate a wide pointer on
     // the stack and memcpy our wideptr into the other. This is needed so we
     // have the same type.
+    //
+    // It would be better if we could write something like
+    //    return wideptr: objType?;
     var wideptr = chpl_return_wide_ptr_node(locId, uintToCVoidPtr(addr));
     var newObj : objType?;
     // Ensure that newObj is a wide pointer
@@ -382,7 +390,7 @@ prototype module AtomicObjects {
 
     forwarding this.getObject()!;
   }
-  proc =(ref lhs: ABA, const ref rhs: lhs.type) {
+  operator ABA.=(ref lhs: ABA, const ref rhs: lhs.type) {
     lhs.__ABA_ptr = rhs.__ABA_ptr;
     lhs.__ABA_cnt = rhs.__ABA_cnt;
   }
@@ -416,11 +424,11 @@ prototype module AtomicObjects {
   /*
     Special case operator that compares two ``ABA`` wrappers.
   */
-  proc ==(const ref aba1 : ABA, const ref aba2 : ABA) {
+  operator ABA.==(const ref aba1 : ABA, const ref aba2 : ABA) {
     return aba1.__ABA_cnt == aba2.__ABA_cnt && aba1.__ABA_ptr == aba2.__ABA_ptr;
   }
 
-  proc !=(const ref aba1 : ABA, const ref aba2 : ABA) {
+  operator ABA.!=(const ref aba1 : ABA, const ref aba2 : ABA) {
     return aba1.__ABA_cnt != aba2.__ABA_cnt || aba1.__ABA_ptr != aba2.__ABA_ptr;
   }
 

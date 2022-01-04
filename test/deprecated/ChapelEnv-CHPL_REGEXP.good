@@ -1,0 +1,2 @@
+ChapelEnv-CHPL_REGEXP.chpl:3: warning: CHPL_REGEXP is deprecated, please use CHPL_RE2 instead
+bundled

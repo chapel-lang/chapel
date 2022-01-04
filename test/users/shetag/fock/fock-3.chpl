@@ -117,14 +117,14 @@ proc buildjk_atom4(bI) {
     }
   }
 
-  var tmp = oneAtATime;
+  var tmp = oneAtATime.readFE();
   jmat2(ijD) += jij;
   jmat2(klD) += jkl;
   kmat2(ikD) += kik;
   kmat2(ilD) += kil;
   kmat2(jkD) += kjk;
   kmat2(jlD) += kjl;
-  oneAtATime = tmp;
+  oneAtATime.writeEF(tmp);
 
   delete bI;
 }

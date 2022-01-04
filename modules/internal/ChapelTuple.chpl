@@ -97,12 +97,12 @@ module ChapelTuple {
   pragma "build tuple"
   pragma "build tuple type"
   pragma "star tuple"
-  proc *(param p: int, type t) type {
+  operator *(param p: int, type t) type {
     // body inserted during generic instantiation
   }
 
   pragma "no doc"
-  proc *(param p: uint, type t) type {
+  operator *(param p: uint, type t) type {
     if p > max(int) then
       compilerError("Tuples of size >" + max(int):string + " are not currently supported");
     param pAsInt = p: int;
@@ -111,13 +111,13 @@ module ChapelTuple {
 
   pragma "no doc"
   pragma "last resort"
-  proc *(param p: bool, type t) type {
+  operator *(param p: bool, type t) type {
     compilerError("Tuple types cannot be defined using boolean sizes");
   }
 
   pragma "no doc"
   pragma "last resort"
-  proc *(p: bool, type t) type {
+  operator *(p: bool, type t) type {
     compilerError("Tuple types cannot be defined using boolean sizes");
   }
 
@@ -130,13 +130,13 @@ module ChapelTuple {
   }
 
   pragma "last resort"
-  proc *(type t, param p: int) {
+  operator *(type t, param p: int) {
     compilerError("<type>*<param int> not supported.  If you're trying to specify a homogeneous tuple type, use <param int>*<type>.");
   }
 
   // last resort since if this resolves some other way, OK
   pragma "last resort"
-  proc *(p: integral, type t) type {
+  operator *(p: integral, type t) type {
     compilerError("tuple size must be known at compile-time");
   }
 
@@ -195,7 +195,9 @@ module ChapelTuple {
   //
   pragma "compiler generated"
   pragma "last resort"
-  inline proc =(ref x: _tuple, y: _tuple) where x.size == y.size {
+  inline operator =(ref x: _tuple,
+                    pragma "intent ref maybe const formal" y: _tuple)
+  where x.size == y.size {
     for param i in 0..x.size-1 do
       x(i) = y(i);
   }
@@ -247,7 +249,6 @@ module ChapelTuple {
   //
   pragma "no doc"
   pragma "reference to const when const this"
-  pragma "order independent yielding loops"
   iter _tuple.these() ref
   {
 
@@ -264,7 +265,7 @@ module ChapelTuple {
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
 
-    for i in 0..#this.size {
+    foreach i in 0..#this.size {
       yield(this(i));
     }
   }
@@ -294,7 +295,6 @@ module ChapelTuple {
 
   pragma "no doc"
   pragma "reference to const when const this"
-  pragma "order independent yielding loops"
   iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {
@@ -303,7 +303,7 @@ module ChapelTuple {
 
     var fThis = followThis(0);
 
-    for i in fThis {
+    foreach i in fThis {
       yield this(i);
     }
   }
@@ -324,13 +324,13 @@ module ChapelTuple {
   // Note: statically inlining the _chpl_complex runtime functions is necessary
   // for good performance
   //
-  inline proc _cast(type t: complex(64), x: (?,?)) {
+  inline operator :(x: (?,?), type t: complex(64)) {
     pragma "fn synchronization free"
     extern proc _chpl_complex64(re:real(32),im:real(32)) : complex(64);
     return _chpl_complex64(x(0):real(32),x(1):real(32));
   }
 
-  inline proc _cast(type t: complex(128), x: (?,?)) {
+  inline operator :(x: (?,?), type t: complex(128)) {
     pragma "fn synchronization free"
     extern proc _chpl_complex128(re:real(64),im:real(64)):complex(128);
     return _chpl_complex128(x(0):real(64),x(1):real(64));
@@ -341,7 +341,7 @@ module ChapelTuple {
   //
   pragma "tuple cast fn"
   pragma "unsafe"
-  inline proc _cast(type t:_tuple, x: _tuple) {
+  inline operator :(x: _tuple, type t:_tuple) {
     // body filled in during resolution
   }
 
@@ -358,28 +358,28 @@ module ChapelTuple {
   //
   // standard overloaded unary operators on tuples.
   //
-  inline proc +(a: _tuple) {
+  inline operator +(a: _tuple) {
     var result: a.type;
     for param d in 0..a.size-1 do
       result(d) = +a(d);
     return result;
   }
 
-  inline proc -(a: _tuple) {
+  inline operator -(a: _tuple) {
     var result: a.type;
     for param d in 0..a.size-1 do
       result(d) = -a(d);
     return result;
   }
 
-  inline proc ~(a: _tuple) {
+  inline operator ~(a: _tuple) {
     var result: a.type;
     for param d in 0..a.size-1 do
       result(d) = ~a(d);
     return result;
   }
 
-  inline proc !(a: _tuple) {
+  inline operator !(a: _tuple) {
     var result: a.type;
     for param d in 0..a.size-1 do
       result(d) = !a(d);
@@ -418,7 +418,7 @@ module ChapelTuple {
   // standard overloaded binary operators on tuples.  Each pair starts
   // with a case optimized for homogeneous tuples (because the result
   // type is easy to express)...
-  inline proc +(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator +(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to + have different sizes");
 
@@ -432,7 +432,7 @@ module ChapelTuple {
   // ...followed by a more complicated/general case for heterogeneous
   // tuples because the result type is more complex to describe.
   //
-  inline proc +(a: _tuple, b: _tuple) {
+  inline operator +(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to + have different sizes");
     if a.size == 1 then
@@ -442,7 +442,7 @@ module ChapelTuple {
   }
 
 
-  inline proc -(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator -(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to - have different sizes");
 
@@ -453,7 +453,7 @@ module ChapelTuple {
     return result;
   }
 
-  inline proc -(a: _tuple, b: _tuple) {
+  inline operator -(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to - have different sizes");
     if a.size == 1 then
@@ -463,7 +463,7 @@ module ChapelTuple {
   }
 
 
-  inline proc *(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator *(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to * have different sizes");
 
@@ -474,7 +474,7 @@ module ChapelTuple {
     return result;
   }
 
-  inline proc *(a: _tuple, b: _tuple) {
+  inline operator *(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to * have different sizes");
     if a.size == 1 then
@@ -483,7 +483,7 @@ module ChapelTuple {
       return (a(0)*b(0), (...chpl__tupleRest(a)*chpl__tupleRest(b)));
   }
 
-  inline proc /(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator /(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to / have different sizes");
 
@@ -494,7 +494,7 @@ module ChapelTuple {
     return result;
   }
 
-  inline proc /(a: _tuple, b: _tuple) {
+  inline operator /(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to / have different sizes");
     if a.size == 1 then
@@ -503,7 +503,7 @@ module ChapelTuple {
       return (a(0)/b(0), (...chpl__tupleRest(a)/chpl__tupleRest(b)));
   }
 
-  inline proc %(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator %(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to % have different sizes");
 
@@ -514,7 +514,7 @@ module ChapelTuple {
     return result;
   }
 
-  inline proc %(a: _tuple, b: _tuple) {
+  inline operator %(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to % have different sizes");
     if a.size == 1 then
@@ -523,7 +523,7 @@ module ChapelTuple {
       return (a(0)%b(0), (...chpl__tupleRest(a)%chpl__tupleRest(b)));
   }
 
-  inline proc **(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator **(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to ** have different sizes");
 
@@ -534,7 +534,7 @@ module ChapelTuple {
     return result;
   }
 
-  inline proc **(a: _tuple, b: _tuple) {
+  inline operator **(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to ** have different sizes");
     if a.size == 1 then
@@ -543,7 +543,7 @@ module ChapelTuple {
       return (a(0)**b(0), (...chpl__tupleRest(a)**chpl__tupleRest(b)));
   }
 
-  inline proc &(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator &(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to & have different sizes");
 
@@ -554,7 +554,7 @@ module ChapelTuple {
     return result;
   }
 
-  inline proc &(a: _tuple, b: _tuple) {
+  inline operator &(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to & have different sizes");
     if a.size == 1 then
@@ -563,7 +563,7 @@ module ChapelTuple {
       return (a(0)&b(0), (...chpl__tupleRest(a)&chpl__tupleRest(b)));
   }
 
-  inline proc |(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator |(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to | have different sizes");
 
@@ -574,7 +574,7 @@ module ChapelTuple {
     return result;
   }
 
-  inline proc |(a: _tuple, b: _tuple) {
+  inline operator |(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to | have different sizes");
     if a.size == 1 then
@@ -583,7 +583,7 @@ module ChapelTuple {
       return (a(0)|b(0), (...chpl__tupleRest(a)|chpl__tupleRest(b)));
   }
 
-  inline proc ^(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator ^(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to ^ have different sizes");
 
@@ -594,7 +594,7 @@ module ChapelTuple {
     return result;
   }
 
-  inline proc ^(a: _tuple, b: _tuple) {
+  inline operator ^(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to ^ have different sizes");
     if a.size == 1 then
@@ -603,7 +603,7 @@ module ChapelTuple {
       return (a(0)^b(0), (...chpl__tupleRest(a)^chpl__tupleRest(b)));
   }
 
-  inline proc <<(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator <<(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to << have different sizes");
 
@@ -614,7 +614,7 @@ module ChapelTuple {
     return result;
   }
 
-  inline proc <<(a: _tuple, b: _tuple) {
+  inline operator <<(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to << have different sizes");
     if a.size == 1 then
@@ -623,7 +623,7 @@ module ChapelTuple {
       return (a(0)<<b(0), (...chpl__tupleRest(a)<<chpl__tupleRest(b)));
   }
 
-  inline proc >>(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
+  inline operator >>(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to >> have different sizes");
 
@@ -634,7 +634,7 @@ module ChapelTuple {
     return result;
   }
 
-  inline proc >>(a: _tuple, b: _tuple) {
+  inline operator >>(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to >> have different sizes");
     if a.size == 1 then
@@ -646,7 +646,7 @@ module ChapelTuple {
   //
   // standard overloaded relational operators on tuples
   //
-  inline proc >(a: _tuple, b: _tuple) {
+  inline operator >(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to > have different sizes");
     for param i in 0..a.size-1 do
@@ -657,7 +657,7 @@ module ChapelTuple {
     return false;
   }
 
-  inline proc >=(a: _tuple, b: _tuple) {
+  inline operator >=(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to >= have different sizes");
     for param i in 0..a.size-1 do
@@ -668,7 +668,7 @@ module ChapelTuple {
     return true;
   }
 
-  inline proc <(a: _tuple, b: _tuple) {
+  inline operator <(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to < have different sizes");
     for param i in 0..a.size-1 do
@@ -679,7 +679,7 @@ module ChapelTuple {
     return false;
   }
 
-  inline proc <=(a: _tuple, b: _tuple) {
+  inline operator <=(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to <= have different sizes");
     for param i in 0..a.size-1 do
@@ -690,7 +690,7 @@ module ChapelTuple {
     return true;
   }
 
-  inline proc ==(a: _tuple, b: _tuple) {
+  inline operator ==(a: _tuple, b: _tuple) {
     if a.size != b.size {
       return false;
     } else {
@@ -701,7 +701,7 @@ module ChapelTuple {
     return true;
   }
 
-  inline proc !=(a: _tuple, b: _tuple) {
+  inline operator !=(a: _tuple, b: _tuple) {
     if a.size != b.size {
       return true;
     } else {
@@ -716,165 +716,165 @@ module ChapelTuple {
   // standard overloaded binary operators on homog tuple / scalar
   // pairs.
   //
-  inline proc +(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator +(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) + y;
     return result;
   }
 
-  inline proc +(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+  inline operator +(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x + y(d);
     return result;
   }
 
-  inline proc -(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator -(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) - y;
     return result;
   }
 
-  inline proc -(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+  inline operator -(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x - y(d);
     return result;
   }
 
-  inline proc *(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator *(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) * y;
     return result;
   }
 
-  inline proc *(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+  inline operator *(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x * y(d);
     return result;
   }
 
-  inline proc /(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator /(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) / y;
     return result;
   }
 
-  inline proc /(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+  inline operator /(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x / y(d);
     return result;
   }
 
-  inline proc %(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator %(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) % y;
     return result;
   }
 
-  inline proc %(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+  inline operator %(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x % y(d);
     return result;
   }
 
-  inline proc **(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator **(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) ** y;
     return result;
   }
 
-  inline proc **(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                         isSubtype(t, (y(0).type)) {
+  inline operator **(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x ** y(d);
     return result;
   }
 
-  inline proc &(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator &(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) & y;
     return result;
   }
 
-  inline proc &(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+  inline operator &(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x & y(d);
     return result;
   }
 
-  inline proc |(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator |(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) | y;
     return result;
   }
 
-  inline proc |(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+  inline operator |(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x | y(d);
     return result;
   }
 
-  inline proc ^(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator ^(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) ^ y;
     return result;
   }
 
-  inline proc ^(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+  inline operator ^(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x ^ y(d);
     return result;
   }
 
-  inline proc <<(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator <<(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) << y;
     return result;
   }
 
-  inline proc <<(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                         isSubtype(t, (y(0).type)) {
+  inline operator <<(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x << y(d);
     return result;
   }
 
-  inline proc >>(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
+  inline operator >>(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
       result(d) = x(d) >> y;
     return result;
   }
 
-  inline proc >>(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                         isSubtype(t, (y(0).type)) {
+  inline operator >>(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x >> y(d);

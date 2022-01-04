@@ -14,7 +14,7 @@ proc main {
   test_const(A111, 72);
   test_in(A111, i222);
   test_const_in(A111, 73);
-  test_out(A111, i222);
+  //test_out(A111, i222);
   test_inout(A111, i222);
   test_ref(A111, i222);
   test_const_ref(A111, i222);
@@ -69,12 +69,12 @@ proc test_const_in(const in xxx...) {
   show(4001, xxx(0), xxx(1));
 }
 
-proc test_out(out xxx...) {
+/*proc test_out(out xxx...) {
   show(5001, xxx(0), xxx(1));
   xxx(0) = 501;
   xxx(1) = 502;
   show(5009, xxx(0), xxx(1));
-}
+}*/
 
 proc test_inout(inout xxx...) {
   show(6001, xxx(0), xxx(1));

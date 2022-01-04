@@ -287,6 +287,16 @@ static void efa_post_send_sgl(struct efa_ep *ep, const struct fi_msg *msg,
 	}
 }
 
+ssize_t efa_post_flush(struct efa_ep *ep, struct ibv_send_wr **bad_wr)
+{
+	ssize_t ret;
+
+	ret = ibv_post_send(ep->qp->ibv_qp, ep->xmit_more_wr_head.next, bad_wr);
+	free_send_wr_list(ep->xmit_more_wr_head.next);
+	ep->xmit_more_wr_tail = &ep->xmit_more_wr_head;
+	return ret;
+}
+
 static ssize_t efa_post_send(struct efa_ep *ep, const struct fi_msg *msg, uint64_t flags)
 {
 	struct efa_qp *qp = ep->qp;
@@ -330,10 +340,7 @@ static ssize_t efa_post_send(struct efa_ep *ep, const struct fi_msg *msg, uint64
 	if (flags & FI_MORE)
 		return 0;
 
-	ret = ibv_post_send(qp->ibv_qp, ep->xmit_more_wr_head.next, &bad_wr);
-
-	free_send_wr_list(ep->xmit_more_wr_head.next);
-	ep->xmit_more_wr_tail = &ep->xmit_more_wr_head;
+	ret = efa_post_flush(ep, &bad_wr);
 
 	return ret;
 

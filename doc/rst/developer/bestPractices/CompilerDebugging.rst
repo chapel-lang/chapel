@@ -1,9 +1,11 @@
+.. _best-practices-compiler-debugging:
+
 ===============================
 Tips On Debugging The Compiler
 ===============================
 
 ``~/.gdbinit``: ``CompilerIRTricks.rst``, ``GeneratedCode.rst``.
-``~/.gdbinit``: compiler overview in ``$CHPL_HOME/doc/rst/developer/compilerOverview``.
+``~/.gdbinit``: compiler overview in ``$CHPL_HOME/doc/rst/developer/implementation/compilerOverview``.
 
 With ``--print-passes``, the compiler prints individual passes as they progress.
 

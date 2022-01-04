@@ -203,6 +203,10 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
         validateList();
 
+        if (modSym->hasFlag(FLAG_DEPRECATED)) {
+          modSym->generateDeprecationWarning(this);
+        }
+
       } else {
         if (symAndName.second[0] != '\0') {
           if (isCallExpr(src) == false) {
@@ -302,7 +306,9 @@ bool ImportStmt::checkValid(Expr* expr) const {
     }
 
   } else {
-    INT_FATAL(this, "Unexpected import stmt");
+    USR_FATAL_CONT(this, "Illegal expression in 'import' statement");
+    USR_PRINT(this, "only identifiers and 'dot' expressions are supported");
+    USR_STOP();
   }
 
   return retval;
@@ -380,6 +386,10 @@ void ImportStmt::validateUnqualified() {
             USR_FATAL_CONT(this,
                            "Bad identifier, '%s' is private",
                            name);
+          }
+
+          if (sym->hasFlag(FLAG_DEPRECATED)) {
+            sym->generateDeprecationWarning(this);
           }
         }
       }

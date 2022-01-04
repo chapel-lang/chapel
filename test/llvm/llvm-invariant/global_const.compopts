@@ -1,1 +1,1 @@
---llvm --fast --llvm-print-ir chpl__init_global_const --llvm-print-ir-stage none
+--fast --llvm-print-ir chpl__init_global_const --llvm-print-ir-stage none

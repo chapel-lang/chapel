@@ -1,0 +1,67 @@
+.TH qthread_readstate 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_readstate
+\- returns status information from the runtime
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I size_t
+.br
+.B qthread_readstate
+.RI "(const enum introspective_state " type );
+.SH DESCRIPTION
+This function is for querying the runtime about itself. The
+.I type
+argument specifies what information is desired. The valid values of
+.I type
+include:
+.TP 4
+STACK_SIZE
+This causes the function to return the size stack, measured in bytes, that all
+spawned qthreads receive.
+.TP
+RUNTIME_DATA_SIZE
+This causes the function to return the size of the runtime data structure that
+all spawned qthreads require.
+.TP
+BUSYNESS
+This causes the function to return the approximate number of threads available
+in the run queue of the current shepherd.
+.TP
+ACTIVE_SHEPHERDS
+This causes the function to return the number of shepherds currently active and
+scheduling threads. This is equivalent to the function
+.BR qthread_num_shepherds ().
+.TP
+TOTAL_SHEPHERDS
+This causes the funciton to return the total number of shepherds that exist,
+whether active or inactive.
+.TP
+ACTIVE_WORKERS
+This causes the function to return the number of worker threads currently
+active and scheduling threads. This is equivalent to the function
+.BR qthread_num_workers ().
+.TP
+TOTAL_WORKERS
+This causes the function to return the total number of worker threads that
+exist, whether active or inactive.
+.TP
+CURRENT_WORKER
+This causes the function to return the ID of the current worker on which the
+task is executing. This is equivalent to the function
+.BR qthread_worker ().
+.TP
+CURRENT_TEAM
+This causes the function to return the ID of the calling task's team. This is
+equivalent to the function
+.BR qt_team_id ().
+.TP
+PARENT_TEAM
+This causes the function to return the ID of the calling task's team's
+parent-team, if it had one. This is equivalent to the function
+.BR qt_team_parent_id ().
+.SH SEE ALSO
+.BR qthread_id (3),
+.BR qthread_num_shepherds (3),
+.BR qthread_retloc (3),
+.BR qthread_stackleft (3)

@@ -13,7 +13,7 @@
 #define GASNETC_HSL_SPINLOCK 1
 
 /* ------------------------------------------------------------------------------------ */
-#define _hidx_gasnetc_exchg_reqh              (GASNETC_HANDLER_BASE+0)
+#define _hidx_gasnetc_hbarr_reqh              (GASNETC_HANDLER_BASE+0)
 #define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+1)
 #define _hidx_gasnetc_sys_barrier_reqh        (GASNETC_HANDLER_BASE+2)
 #define _hidx_gasnetc_sys_exchange_reqh       (GASNETC_HANDLER_BASE+3)

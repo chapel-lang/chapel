@@ -20,5 +20,7 @@ class Foo {
 implements LessThan(Foo);
 
 // Writes 3
-writeln(minFn(new Foo(3), new Foo(4)).n);
+writeln(minFn(new shared Foo(3), new shared Foo(4)).n);
+
+writeln(minFn(new borrowed Foo(3), new borrowed Foo(4)).n);
 

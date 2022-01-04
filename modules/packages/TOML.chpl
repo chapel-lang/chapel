@@ -121,7 +121,7 @@ Parser module with the Toml class for the Chapel TOML library.
 */
 module TomlParser {
 
-  private use Regexp;
+  private use Regex;
   use DateTime;
   use Map, List;
   import IO.channel;
@@ -453,7 +453,7 @@ pragma "no doc"
  private use fieldtag;
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, s: string) {
+ operator Toml.=(ref t: unmanaged Toml, s: string) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(s);
@@ -464,7 +464,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, i: int) {
+ operator Toml.=(ref t: unmanaged Toml, i: int) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(i);
@@ -475,7 +475,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, b: bool) {
+ operator Toml.=(ref t: unmanaged Toml, b: bool) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(b);
@@ -486,7 +486,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, r: real) {
+ operator Toml.=(ref t: unmanaged Toml, r: real) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(r);
@@ -497,7 +497,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, ld: date) {
+ operator Toml.=(ref t: unmanaged Toml, ld: date) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(ld);
@@ -508,7 +508,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, ti: time) {
+ operator Toml.=(ref t: unmanaged Toml, ti: time) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(ti);
@@ -519,7 +519,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, dt: datetime) {
+ operator Toml.=(ref t: unmanaged Toml, dt: datetime) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(dt);
@@ -530,12 +530,13 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+ operator Toml.=(ref t: unmanaged Toml,
+                 A: [?D] unmanaged Toml) where D.isAssociative() {
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, A);
  }
  pragma "no doc"
- proc setupToml(ref t: unmanaged Toml, A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+ proc setupToml(ref t: unmanaged Toml, A: [?D] unmanaged Toml) where D.isAssociative() {
    if t == nil {
      t = new unmanaged Toml(A);
    } else {
@@ -546,7 +547,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc setupToml(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom){
+ proc setupToml(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !dom.isAssociative(){
    if t == nil {
      t = new unmanaged Toml(arr);
    } else {
@@ -558,7 +559,7 @@ pragma "no doc"
 
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom){
+ operator Toml.=(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !dom.isAssociative(){
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, arr);
  }
@@ -595,14 +596,14 @@ used to recursively hold tables and respective values
     }
 
     // Toml
-    proc init(A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+    proc init(A: [?D] unmanaged Toml) where D.isAssociative() {
       this.complete();
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
 
     pragma "no doc"
-    proc init(A: [?D] unmanaged Toml?) where isAssociativeDom(D) {
+    proc init(A: [?D] unmanaged Toml?) where D.isAssociative() {
       this.complete();
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
@@ -645,14 +646,14 @@ used to recursively hold tables and respective values
     }
 
     // Array
-    proc init(arr: [?dom] unmanaged Toml) where isAssociativeDom(dom) == false  {
+    proc init(arr: [?dom] unmanaged Toml) where dom.isAssociative() == false  {
       this.dom = dom;
       this.arr = arr;
       this.tag = fieldArr;
     }
 
     pragma "no doc"
-    proc init(arr: [?dom] unmanaged Toml?) where isAssociativeDom(dom) == false  {
+    proc init(arr: [?dom] unmanaged Toml?) where dom.isAssociative() == false  {
       this.dom = dom;
       this.arr = arr;
       this.tag = fieldArr;
@@ -814,7 +815,7 @@ used to recursively hold tables and respective values
         t!.dt = dt;
       }
     }
-    proc set(tbl: string, A: [?D] unmanaged Toml?) where isAssociativeDom(D) {
+    proc set(tbl: string, A: [?D] unmanaged Toml?) where D.isAssociative() {
       ref t = this(tbl);
       if t == nil {
         t = new unmanaged Toml(A);
@@ -823,7 +824,7 @@ used to recursively hold tables and respective values
         for i in D do t!.A[i] = A[i];
       }
     }
-    proc set(tbl: string, arr: [?dom] unmanaged Toml?) where !isAssociativeDom(dom) {
+    proc set(tbl: string, arr: [?dom] unmanaged Toml?) where !dom.isAssociative() {
       ref t = this(tbl);
       if t == nil {
         t = new unmanaged Toml(arr);
@@ -1125,7 +1126,7 @@ module TomlReader {
  use List;
  import TOML.TomlError;
 
- private use Regexp;
+ private use Regex;
 
  config const debugTomlReader = false;
 

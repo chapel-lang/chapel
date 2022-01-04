@@ -7,21 +7,21 @@ var y = 2*initval;
 
 sync {
   begin with (ref x) {
-    x = sx;
+    x = sx.readFE();
     if sx.isFull then writeln("invalid state (full)");
     if x != initval then writeln("incorrect value: ", x);
   }
 
-  sx = initval;
+  sx.writeEF(initval);
 }
 if sx.isFull then writeln("invalid state (full)");
 
 begin {
-  sx = y;
+  sx.writeEF(y);
   if sx.readXX() != 2*initval then writeln("incorrect value: ", sx.readXX());
 }
 
-x = sx;
+x = sx.readFE();
 if sx.isFull then writeln("invalid state (full)");
 if x != 2*initval then writeln("incorrect value: ", x);
 

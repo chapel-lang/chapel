@@ -5,6 +5,9 @@ idxType is: int(64)
 rank is: 2
 
 size is: 100
+dims are: (0..9, 1..20 by 2)
+dim(0) is: 0..9
+dim(1) is: 1..20 by 2
 shape is: (10, 10)
 
 X is:

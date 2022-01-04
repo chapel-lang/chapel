@@ -33,7 +33,7 @@ class LoopStmt;
 class ModuleSymbol;
 class Symbol;
 
-class AstDump : public AstLogger {
+class AstDump final : public AstLogger {
 public:
   //
   // This is the User interface to the logger.
@@ -46,7 +46,7 @@ public:
   static  void     view(const char* passName, int passNum);
 
                    AstDump(FILE* fp);
-                  ~AstDump();
+                  ~AstDump() override;
 
   //
   // These functions are the "implementation" interface for the
@@ -56,68 +56,68 @@ public:
   // declared public so that they can be invoked by the AST nodes
   // themselves
   //
-  virtual bool     enterArgSym      (ArgSymbol*         node);
+  bool     enterArgSym      (ArgSymbol*         node) override;
 
-  virtual bool     enterCallExpr    (CallExpr*          node);
-  virtual void     exitCallExpr     (CallExpr*          node);
+  bool     enterCallExpr    (CallExpr*          node) override;
+  void     exitCallExpr     (CallExpr*          node) override;
 
-  virtual bool     enterDefExpr     (DefExpr*           node);
+  bool     enterDefExpr     (DefExpr*           node) override;
 
-  virtual bool     enterNamedExpr   (NamedExpr*         node);
-  virtual void     exitNamedExpr    (NamedExpr*         node);
+  bool     enterNamedExpr   (NamedExpr*         node) override;
+  void     exitNamedExpr    (NamedExpr*         node) override;
 
-  virtual bool     enterIfExpr      (IfExpr*            node);
-  virtual void     exitIfExpr       (IfExpr*            node);
+  bool     enterIfExpr      (IfExpr*            node) override;
+  void     exitIfExpr       (IfExpr*            node) override;
 
-  virtual void     visitSymExpr     (SymExpr*           node);
+  void     visitSymExpr     (SymExpr*           node) override;
 
-  virtual void     visitUsymExpr    (UnresolvedSymExpr* node);
+  void     visitUsymExpr    (UnresolvedSymExpr* node) override;
 
-  virtual bool     enterLoopExpr  (LoopExpr*        node);
-  virtual void     exitLoopExpr   (LoopExpr*        node);
+  bool     enterLoopExpr    (LoopExpr*        node) override;
+  void     exitLoopExpr     (LoopExpr*        node) override;
 
-  virtual void     visitUseStmt     (UseStmt*           node);
+  void     visitUseStmt     (UseStmt*           node) override;
 
-  virtual void     visitImportStmt  (ImportStmt*        node);
+  void     visitImportStmt  (ImportStmt*        node) override;
 
-  virtual bool     enterBlockStmt   (BlockStmt*         node);
-  virtual void     exitBlockStmt    (BlockStmt*         node);
+  bool     enterBlockStmt   (BlockStmt*         node) override;
+  void     exitBlockStmt    (BlockStmt*         node) override;
 
-  virtual bool     enterForallStmt  (ForallStmt*        node);
-  virtual void     exitForallStmt   (ForallStmt*        node);
+  bool     enterForallStmt  (ForallStmt*        node) override;
+  void     exitForallStmt   (ForallStmt*        node) override;
 
-  virtual bool     enterWhileDoStmt (WhileDoStmt*       node);
-  virtual void     exitWhileDoStmt  (WhileDoStmt*       node);
+  bool     enterWhileDoStmt (WhileDoStmt*       node) override;
+  void     exitWhileDoStmt  (WhileDoStmt*       node) override;
 
-  virtual bool     enterDoWhileStmt (DoWhileStmt*       node);
-  virtual void     exitDoWhileStmt  (DoWhileStmt*       node);
+  bool     enterDoWhileStmt (DoWhileStmt*       node) override;
+  void     exitDoWhileStmt  (DoWhileStmt*       node) override;
 
-  virtual bool     enterCForLoop    (CForLoop*          node);
-  virtual void     exitCForLoop     (CForLoop*          node);
+  bool     enterCForLoop    (CForLoop*          node) override;
+  void     exitCForLoop     (CForLoop*          node) override;
 
-  virtual bool     enterForLoop     (ForLoop*           node);
-  virtual void     exitForLoop      (ForLoop*           node);
+  bool     enterForLoop     (ForLoop*           node) override;
+  void     exitForLoop      (ForLoop*           node) override;
 
-  virtual bool     enterParamForLoop(ParamForLoop*      node);
-  virtual void     exitParamForLoop (ParamForLoop*      node);
+  bool     enterParamForLoop(ParamForLoop*      node) override;
+  void     exitParamForLoop (ParamForLoop*      node) override;
 
-  virtual bool     enterCondStmt    (CondStmt*          node);
+  bool     enterCondStmt    (CondStmt*          node) override;
 
-  virtual void     visitEblockStmt  (ExternBlockStmt*   node);
+  void     visitEblockStmt  (ExternBlockStmt*   node) override;
 
-  virtual bool     enterGotoStmt    (GotoStmt*          node);
+  bool     enterGotoStmt    (GotoStmt*          node) override;
 
-  virtual bool     enterForwardingStmt (ForwardingStmt*     node);
-  virtual void     exitForwardingStmt  (ForwardingStmt*     node);
+  bool     enterForwardingStmt (ForwardingStmt*     node) override;
+  void     exitForwardingStmt  (ForwardingStmt*     node) override;
 
-  virtual bool     enterDeferStmt   (DeferStmt*         node);
-  virtual void     exitDeferStmt    (DeferStmt*         node);
+  bool     enterDeferStmt   (DeferStmt*         node) override;
+  void     exitDeferStmt    (DeferStmt*         node) override;
 
-  virtual bool     enterTryStmt     (TryStmt*           node);
-  virtual void     exitTryStmt      (TryStmt*           node);
+  bool     enterTryStmt     (TryStmt*           node) override;
+  void     exitTryStmt      (TryStmt*           node) override;
 
-  virtual bool     enterCatchStmt   (CatchStmt*         node);
-  virtual void     exitCatchStmt    (CatchStmt*         node);
+  bool     enterCatchStmt   (CatchStmt*         node) override;
+  void     exitCatchStmt    (CatchStmt*         node) override;
 
 private:
                    AstDump();

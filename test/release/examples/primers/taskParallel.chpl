@@ -97,3 +97,79 @@ coforall i in 1..n {
 // The order of output is undefined.
 writeln("5: output from main task");
 
+/*
+.. _primers-taskparallel-task-intents:
+
+Task Intents
+------------
+
+The body of a task construct may refer to some variables declared
+outside its lexical scope, known as "outer variables". When it does,
+"shadow variables" are introduced. Each task created by the task
+construct gets its own set of shadow variables, one per outer variable.
+
+ - Each shadow variable behaves as if it were a formal argument
+   of a function that implements the task's work. (These "task
+   functions" are described in :ref:`the language spec
+   <Chapter-Task_Parallelism_and_Synchronization>`).
+   The outer variable is passed to this formal argument according to
+   the :ref:`argument intent <Argument_Intents>` associated with
+   the shadow variable, which is called a "task intent".
+
+ - References within a task that seem to refer to an outer variable
+   will actually be referring to the corresponding shadow variable
+   owned by the task.
+
+ - Each shadow variable is deallocated at the end of its task.
+
+The default argument intent (:ref:`The_Default_Intent`) is used by default.
+For numeric types, this implies capturing the value of the outer
+variable by the time the task starts executing. Arrays are passed by
+reference, as are sync, single, and atomic variables
+(:ref:`primers-syncsingle`, :ref:`primers-atomics`).
+For ``begin`` statements, for example, this means that the captured
+value of an outer numeric variable can be accessed even after its
+scope exits, while an outer array variable cannot.
+*/
+var outerIntVariable = 2;  
+begin assert(outerIntVariable == 2);
+
+// The task intents ``in``, ``const in``, ``ref``, ``const ref``,
+// and ``reduce`` can be specified explicitly using a ``with`` clause.
+//
+// An ``in`` or ``const in`` intent creates a copy of the outer variable
+// for each task. A ``ref`` or ``const ref`` makes the
+// shadow variable an alias for the outer variable.
+var outerArray = [10, 11, 12];
+begin with (in outerArray) assert(outerArray[0] == 10);
+
+var outerRealVariable = 1.0;
+
+coforall i in 1..n with (ref outerRealVariable) {
+  if i == 1 then            // ensure only one task updates outerIntVariable
+    outerRealVariable *= 2; // to avoid the risk of a data race
+}
+
+// A reduce intent can be used to compute reductions with ``coforall`` loops.
+// The values of each reduce-intent shadow variable at the end of its task
+// is combined onto its outer variable according to the specified reduction
+// operation.
+
+ // The values of the outer variables before the loop will be included
+ // in the reduction result.
+var outerMaxVariable = 0;
+var outerMinVariable = 0;
+
+coforall i in 1..n with (+ reduce outerIntVariable,
+                         max reduce outerMaxVariable,
+                         min reduce outerMinVariable) {
+  outerIntVariable = i;
+
+  if i % 2 == 0 then
+    outerMaxVariable = i;  // compute the max of even indices
+  else
+    outerMinVariable = -i; // ... and the min of negated odd ones
+
+  // The loop body can contain other code
+  // regardless of reduce-related operations.
+}

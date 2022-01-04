@@ -1,0 +1,4 @@
+confused-arg-error.chpl:8: In 'implements I' statement:
+confused-arg-error.chpl:8: error: when checking this implements statement
+confused-arg-error.chpl:8: note: the required function foo is not implemented
+confused-arg-error.chpl:3: note: the required function foo in the interface I is declared here

@@ -2309,7 +2309,7 @@ redirectee
 reenable
 refcnt
 refness
-regexps
+regexes
 reindexee
 reldiff
 replicand
@@ -2595,6 +2595,8 @@ stylesheet
 
 FILEID: 3f2e197e-1d0a-11e6-a3a6-10ddb1d4c3d5
 fptr
+innerprec
+outerprec
 symi
 
 FILEID: 77ab2706-1d0a-11e6-a3a6-10ddb1d4c3d5
@@ -2729,6 +2731,7 @@ strconfig
 vfns
 
 FILEID: 98c778e4-1d83-11e6-a3a6-10ddb1d4c3d5
+doctmpdirname
 rfind
 
 FILEID: 9c85c382-1d83-11e6-a3a6-10ddb1d4c3d5
@@ -2744,6 +2747,7 @@ FILEID: e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5
 formalname
 gparent
 hashset
+ifvar
 instype
 outervar
 urse
@@ -2752,6 +2756,7 @@ wout
 yret
 
 FILEID: 0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5
+ifvar
 itexpr
 pblock
 ppne
@@ -2948,6 +2953,7 @@ FILEID: 47cb0e3c-1f14-11e6-a3a6-10ddb1d4c3d5
 almt
 dptpl
 flwlen
+upcasting
 
 FILEID: c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5
 chaoticmind
@@ -3163,6 +3169,7 @@ FILEID: 55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5
 abzoo
 azgx
 bbbb
+cwrx
 isopen
 takz
 xzob
@@ -3182,6 +3189,7 @@ bufit
 
 FILEID: f8d11ee0-1f2f-11e6-a3a6-10ddb1d4c3d5
 ffff
+fullmatch
 splitted
 
 FILEID: e9347814-1f30-11e6-a3a6-10ddb1d4c3d5
@@ -3204,8 +3212,11 @@ bavail
 bfree
 blkcnt
 bsize
+getsockaddr
+hostlen
 mtim
 nlink
+numericport
 rdev
 takz
 
@@ -3230,8 +3241,15 @@ setstart
 
 FILEID: 74ec0768-2405-11e6-a3a6-10ddb1d4c3d5
 atim
+hostlen
+htonl
+htons
 mtim
 nlink
+numerichost
+numericport
+numericserv
+pton
 rdev
 winerr
 
@@ -3244,6 +3262,7 @@ FILEID: 8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5
 localt
 
 FILEID: 0ebaef5a-2409-11e6-a3a6-10ddb1d4c3d5
+ctxv
 kout
 subslots
 
@@ -3331,6 +3350,7 @@ chpldocumentation
 circularities
 desync
 eigvalsh
+geany
 gengraphs
 getcid
 globalvars
@@ -3342,6 +3362,7 @@ libmvec
 librt
 libtool
 lmod
+lstlisting
 memkind
 memleakslog
 nodbg
@@ -3355,6 +3376,7 @@ readwritethis
 schpl
 senable
 spack
+sserialize
 stdinredirect
 stripdirectories
 structors
@@ -3704,6 +3726,7 @@ vdebugstarted
 FILEID: 390fbcc4-4e3c-11e6-907f-843835579daa
 chplserversrc
 chpluserobj
+doctmpdirname
 incpath
 libmvec
 lmode
@@ -3720,11 +3743,13 @@ parenthesesless
 FILEID: b4520e6e-5076-11e6-b83e-bc5ff4765d0d
 adaptative
 afee
+argsort
 binarytrees
 chapcs
 chplgmp
 coargsort
 dclass
+groupby
 kace
 linkedlist
 paircount
@@ -3844,6 +3869,8 @@ FILEID: c6d25ce8-a183-11e6-91b8-10ddb1d4c3d5
 atype
 bdce
 ccfbb
+rtemp
+rtemps
 urse
 uscore
 
@@ -3904,6 +3931,7 @@ disubprogram
 dtype
 inalloca
 isinstance
+mynum
 ndarray
 nfor
 optos
@@ -4425,6 +4453,7 @@ newsec
 newsecond
 pytz
 resultp
+strftok
 uspms
 usps
 utcoff
@@ -4461,13 +4490,16 @@ rview
 FILEID: 40d00fe6-1a82-11e7-980e-10ddb1d4c3d5
 adim
 adom
+approxd
 arange
 aref
 athbf
 atype
+awad
 azero
 bdim
 bdom
+bpos
 brange
 bulu
 bzero
@@ -4479,21 +4511,26 @@ csrmatvec
 czero
 eigvals
 eigvalsh
+exactd
 extbf
 geev
 gelsd
 gemm
 gemv
 gesdd
+gesv
 gesvd
 getrf
 getri
 heev
+higham
 igma
 indptr
 ipiv
+issn
 itern
 jobz
+jpos
 lapacke
 lblas
 ldom
@@ -4503,12 +4540,18 @@ llapacke
 lrefblas
 matmat
 maxiter
+mohy
 nzcur
 nznew
+onenorm
+pade
 pdet
 pinv
 potrf
 rcond
+siam
+sincos
+sinm
 smmp
 superdiagonal
 superdiagonals
@@ -4521,6 +4564,7 @@ vandermonde
 vlcplx
 vrcplx
 xdom
+xref
 ydom
 
 FILEID: 0e29860c-1a83-11e7-980e-10ddb1d4c3d5
@@ -4536,9 +4580,11 @@ enumcomp
 rhsv
 
 FILEID: e95fef8a-2015-11e7-980e-10ddb1d4c3d5
+cformal
 cthis
 icts
 parg
+pformal
 pthis
 ptype
 
@@ -4588,6 +4634,7 @@ inddef
 svdef
 tcall
 tpvs
+tupler
 wmikanik
 xtra
 
@@ -4608,6 +4655,9 @@ subnext
 todelete
 
 FILEID: a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5
+csat
+indx
+istms
 multipledestructor
 
 FILEID: 733029d2-8aba-11e7-b3f1-10ddb1d4c3d5
@@ -4737,9 +4787,11 @@ cfgav
 cfgfab
 cfgfabhints
 cfgfabsall
+chapcs
 cmpl
 cmpls
 cmplt
+cmpr
 commprogress
 comparand
 configmore
@@ -4747,6 +4799,7 @@ cqes
 cswap
 ctok
 ctxs
+dlvr
 dsrd
 dupinfo
 enocq
@@ -4759,6 +4812,7 @@ hmem
 lcpus
 libiberty
 librdmacm
+mcmm
 mrdesc
 mrkey
 ofichkerr
@@ -4768,6 +4822,7 @@ ofiwg
 olen
 opnd
 pkey
+pmem
 pmichkret
 pmichksuccess
 procid
@@ -4782,6 +4837,7 @@ rmaunord
 rmawrite
 rxed
 schpl
+sdesirable
 spages
 sread
 statsnodes
@@ -4944,6 +5000,7 @@ maxiters
 FILEID: f765ca54-d1a9-11e8-954d-10ddb1d4c3d5
 bdynamic
 casttype
+dndebug
 ffast
 fsin
 fsyntax
@@ -4954,8 +5011,11 @@ ipra
 isysroot
 lessless
 maino
+mfile
 mpicxx
+outbin
 ploc
+ptxas
 qunused
 srcm
 tlii
@@ -5058,6 +5118,7 @@ ememory
 enofunc
 mtpull
 mtpush
+nofunc
 sdispatch
 serverside
 swrapper
@@ -5095,6 +5156,7 @@ whereami
 
 FILEID: c0ac0568-bd81-11e9-8464-10ddb1d4c3d5
 ilroy
+listsort
 ninther
 sortit
 
@@ -5351,6 +5413,200 @@ lcudart
 FILEID: fe77e30e-2e9f-11eb-adc5-acbc32c4f96b
 developercertificate
 
+FILEID: 5000dfe8-62e2-11eb-a43d-6f93f4244f4b
+ifor
+istmt
+
+FILEID: 7356b18e-62e2-11eb-a43d-6f93f4244f4b
+logln
+
+FILEID: 94331c44-62e2-11eb-a43d-6f93f4244f4b
+acopy
+arglist
+atgen
+atype
+constemp
+csat
+dups
+gtype
+idstring
+ifcs
+impls
+indx
+istms
+needto
+reresolved
+simplements
+smth
+symstring
+tdefs
+tsub
+
+FILEID: b89daf54-62e2-11eb-a43d-6f93f4244f4b
+lmod
+
+FILEID: c05642c4-62e2-11eb-a43d-6f93f4244f4b
+cgreen
+creset
+
+FILEID: 69d46c90-62e3-11eb-a43d-6f93f4244f4b
+strval
+
+FILEID: 87c9eef0-62e3-11eb-a43d-6f93f4244f4b
+elemsper
+
+FILEID: a8be55e8-7b38-11eb-91c9-15da80cfac4b
+ginstantiation
+indx
+
+FILEID: 5853ce2a-7b39-11eb-91c9-15da80cfac4b
+xnext
+xprev
+
+FILEID: 622c50fc-7b39-11eb-91c9-15da80cfac4b
+maxlargc
+
+FILEID: bfdd8b4e-f55f-11eb-bb15-35b7469d4b43
+doctmpdirname
+
+FILEID: ca2e1636-f55f-11eb-bb15-35b7469d4b43
+blockdim
+blockidx
+ctaid
+griddim
+inalloca
+irgen
+isget
+nctaid
+negbv
+ntid
+nvvm
+sreg
+threadidx
+
+FILEID: 65cc59e0-f560-11eb-bb15-35b7469d4b43
+allocas
+dtype
+inalloca
+isinstance
+ndarray
+optos
+origt
+simport
+strname
+
+FILEID: 9431bc08-f560-11eb-bb15-35b7469d4b43
+blockdim
+blockidx
+griddim
+threadidx
+
+FILEID: 9ae97fd6-f560-11eb-bb15-35b7469d4b43
+doctmpdirname
+
+FILEID: a4a99de4-f560-11eb-bb15-35b7469d4b43
+istms
+
+FILEID: a7eb801c-f560-11eb-bb15-35b7469d4b43
+oast
+
+FILEID: dbcaace6-f560-11eb-bb15-35b7469d4b43
+blockdim
+blockidx
+griddim
+threadidx
+
+FILEID: e1c3d7ee-f560-11eb-bb15-35b7469d4b43
+strcount
+
+FILEID: e818580e-f560-11eb-bb15-35b7469d4b43
+parenless
+
+FILEID: ec0917b4-f560-11eb-bb15-35b7469d4b43
+blockdim
+blockidx
+griddim
+threadidx
+
+FILEID: 2e841d3c-f561-11eb-bb15-35b7469d4b43
+doxygennamespace
+
+FILEID: 324bcc62-f561-11eb-bb15-35b7469d4b43
+cfun
+cfuns
+istms
+reqfn
+tinst
+
+FILEID: 69462c94-f561-11eb-bb15-35b7469d4b43
+cfun
+cfuns
+istms
+
+FILEID: 83e8f86a-f561-11eb-bb15-35b7469d4b43
+acceptconn
+addrlen
+addrstrlen
+getfd
+getfl
+getsockaddr
+hostlen
+inaddr
+loopback
+maxhost
+maxserv
+oobinline
+rcvtimeo
+reuseaddr
+secinfo
+setfd
+setfl
+sndtimeo
+
+FILEID: b6ed298e-f561-11eb-bb15-35b7469d4b43
+curnext
+getcid
+
+FILEID: ceac0ff8-f562-11eb-bb15-35b7469d4b43
+sdispatch
+
+FILEID: d0707fc2-f562-11eb-bb15-35b7469d4b43
+nofunc
+
+FILEID: 14aecce8-f563-11eb-bb15-35b7469d4b43
+ucontext
+udevice
+udeviceptr
+ufunction
+umodule
+
+FILEID: 2fe4a316-f563-11eb-bb15-35b7469d4b43
+abday
+abmon
+ampm
+ctloc
+daysperlyear
+dayspernyear
+hhmm
+llim
+nadt
+relyear
+rulim
+ulim
+zulu
+
+FILEID: 77a59142-f563-11eb-bb15-35b7469d4b43
+allgthr
+appnum
+
+FILEID: 7d741f12-f563-11eb-bb15-35b7469d4b43
+libinterop
+
+FILEID: 80a8005e-f563-11eb-bb15-35b7469d4b43
+betweenpasses
+pruneagain
+tutils
+
 NATURAL:
 aarch
 abcd
@@ -5359,6 +5615,7 @@ ablock
 accumgen
 achtung
 acknowledgements
+acons
 acosh
 acqs
 actuals
@@ -5371,6 +5628,7 @@ addrs
 adjoint
 afaik
 afterwards
+aggregatable
 aggregator
 aggregators
 akash
@@ -5394,6 +5652,7 @@ allocs
 alnum
 altix
 alvis
+american
 amos
 amudprun
 analyses
@@ -5443,6 +5702,7 @@ arounds
 arpa
 arrayness
 arrayview
+asan
 asciiz
 ascontiguousarray
 asenjo
@@ -5575,6 +5835,7 @@ bswap
 bucketize
 bucketized
 bucketizer
+bucketizing
 buettner
 bufcnt
 buffersize
@@ -5631,6 +5892,8 @@ celsius
 certinfo
 cfgfile
 cflags
+cgfun
+cgprint
 chad
 chameneos
 chameneosredux
@@ -5654,6 +5917,8 @@ chikara
 chiki
 childnum
 childstate
+chinmay
+chiuw
 chksum
 chmod
 cholesky
@@ -5747,6 +6012,7 @@ copyleft
 copyout
 copypostfields
 cory
+covariant
 coverity
 cppflags
 cppreference
@@ -5808,6 +6074,7 @@ datetime
 datetimes
 david
 davis
+daysperweek
 daystr
 dbase
 dbgstat
@@ -5831,6 +6098,7 @@ dedent
 deepak
 defexpr
 defn
+defpoint
 defs
 degli
 deinit
@@ -5848,6 +6116,7 @@ delaney
 delhi
 delims
 demangle
+demunge
 denests
 dennis
 denny
@@ -5885,6 +6154,7 @@ destructure
 destructured
 destructures
 destructuring
+desugar
 detupled
 detupling
 devanagari
@@ -5916,6 +6186,7 @@ divceilpos
 divexact
 divfloor
 divfloorpos
+divye
 dlang
 dlmalloc
 dlongnecke
@@ -5958,6 +6229,7 @@ dubois
 ducournau
 dumler
 duncan
+duvvuri
 dwords
 dygraphs
 dylan
@@ -6149,6 +6421,8 @@ fannkuch
 fannkuchredux
 fasta
 fastaredux
+fatbin
+fatbinary
 faux
 fbody
 fcntl
@@ -6204,6 +6478,7 @@ fopen
 forall
 forallexpr
 foralls
+foreach
 forexpr
 forloop
 formatters
@@ -6277,6 +6552,7 @@ getpath
 getpeername
 getput
 getrlimit
+getsockaddr
 getsockname
 getsockopt
 getticks
@@ -6285,8 +6561,13 @@ gettimeofday
 gettimer
 getvalid
 gflop
+gfns
+gfun
+gfuns
+ggpu
 ghangas
 gilbert
+ginstantiation
 github
 gitignore
 gitter
@@ -6329,6 +6610,7 @@ guckin
 gujarati
 gunzip
 gups
+gupta
 gurmukhi
 hacky
 hadoop
@@ -6391,6 +6673,7 @@ hoser
 hostname
 hostnames
 hotpar
+hoursperday
 howard
 howto
 hpcc
@@ -6424,8 +6707,10 @@ iface
 ifdefs
 ified
 ifneq
+ifun
 ignorecase
 igroup
+iifc
 illinois
 imap
 imaps
@@ -6533,11 +6818,13 @@ isopen
 isoweekday
 isowned
 isprint
+isprivate
 isset
 isshared
 isslice
 issubtype
 issuercert
+istm
 istr
 isuid
 isunmanaged
@@ -6548,6 +6835,7 @@ iswlower
 iswprint
 iswspace
 iswupper
+isym
 iten
 iterables
 iterand
@@ -6641,7 +6929,10 @@ khatri
 khmer
 khronos
 kieee
+killough
 kissinger
+klaus
+klein
 klib
 kludge
 kmeans
@@ -6884,6 +7175,7 @@ mferguson
 mgmt
 mhmerrill
 michael
+michelle
 microsoft
 milano
 miniapp
@@ -6892,6 +7184,7 @@ minlen
 minloc
 minmax
 minnesota
+minsperhour
 misassumption
 miscompiles
 misconfigured
@@ -6920,6 +7213,7 @@ monday
 mongolian
 monoid
 monomorphization
+monsperyear
 monte
 monthstr
 morecore
@@ -6964,6 +7258,7 @@ myaccountid
 myadjust
 myanmar
 mycolor
+mycroft
 myers
 myfield
 myflag
@@ -7000,6 +7295,7 @@ narratively
 narrays
 natively
 navarro
+nayyar
 nbigsubs
 nbits
 nbodies
@@ -7043,6 +7339,7 @@ nikhil
 nilability
 nilable
 nilables
+nilpotent
 nimit
 nist
 nixos
@@ -7118,6 +7415,7 @@ nsecs
 nset
 nsync
 nthreads
+nullptr
 numa
 numanode
 numberofcells
@@ -7211,6 +7509,7 @@ paolo
 parallelization
 parallelize
 parallelized
+parallelly
 parameterizable
 parameterization
 parameterized
@@ -7256,6 +7555,7 @@ pidigits
 pids
 pipermail
 pittsburgh
+piyush
 pkgconf
 pkgs
 pktinfo
@@ -7291,6 +7591,7 @@ pozo
 prabhanjan
 pragmas
 prasad
+prashanth
 prasun
 preadv
 preallocated
@@ -7566,6 +7867,7 @@ schneier
 schubert
 schur
 sclean
+scolon
 sconfig
 scontrol
 scopeless
@@ -7580,12 +7882,16 @@ seander
 seattle
 sebastien
 secretkey
+secsperday
+secsperhour
+secspermin
 sedgewick
 seekable
 seekamp
 seekdata
 seekfunction
 segfault
+segfaulted
 segfaulting
 segfaults
 segsize
@@ -7673,6 +7979,7 @@ sigxcpu
 sigxfsz
 silva
 simd
+simt
 singh
 singlecls
 singlevar
@@ -7682,6 +7989,7 @@ siterator
 sizeinbase
 skipdirs
 skipif
+skippable
 skylake
 sles
 slicee
@@ -7744,6 +8052,7 @@ stackoverflow
 stacksize
 stacktrace
 stallman
+standins
 stanford
 starkey
 startbit
@@ -7775,6 +8084,7 @@ stridable
 strided
 stringify
 strncmp
+strout
 strptime
 strrchr
 strs
@@ -7818,6 +8128,7 @@ subsequence
 substrings
 substrs
 subtable
+subtask
 subtest
 subtime
 subtree
@@ -7970,6 +8281,8 @@ treap
 treiber
 tridiagonal
 trigraphs
+trinary
+trustable
 trybang
 tshimanga
 tsiombikas
@@ -7979,6 +8292,7 @@ tuesday
 tupled
 tuples
 tupling
+tursi
 twofish
 typdef
 typecheck
@@ -7992,6 +8306,7 @@ typesymbol
 tzakian
 tzinfo
 tzname
+uast
 ubin
 ubits
 ubuntu
@@ -8008,6 +8323,7 @@ ulong
 ulonglong
 umask
 umontreal
+unaggregatable
 unalias
 unaliasing
 unanchored
@@ -8087,6 +8403,7 @@ usernames
 userpwd
 ushort
 usingchapel
+ustr
 utcfromtimestamp
 utcnow
 utctimetuple
@@ -8094,6 +8411,7 @@ utmp
 valgrind
 valgrindexe
 valgrinds
+vallen
 valloc
 vals
 varargs
@@ -8189,6 +8507,7 @@ writeinfo
 writeln
 writeout
 writerange
+writeups
 writev
 wroclaw
 wronly
@@ -8237,4 +8556,3 @@ zypper
 øbenhavns
 ławski
 śniak
-

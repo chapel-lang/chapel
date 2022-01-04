@@ -60,10 +60,9 @@ module RangeChunk {
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a range. The remainders will be distributed according to ``remPol``.
   */
-  pragma "order independent yielding loops"
   iter chunks(r: range(?RT, bounded, ?S), numChunks: integral,
               remPol: RemElems = Thru): range(RT, bounded, S) {
-    for (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
+    foreach (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
       const start = r.orderToIndex(startOrder);
       const end = r.orderToIndex(endOrder);
       yield if S
@@ -139,12 +138,11 @@ module RangeChunk {
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a 0-based order tuple. The remainders will be distributed according to ``remPol``.
   */
-  pragma "order independent yielding loops"
   iter chunksOrder(r: range(?RT, bounded, ?), numChunks: integral,
                    remPol: RemElems = Thru): 2*RT {
-    if r.size == 0 || numChunks <= 0 then
+    if r.sizeAs(RT) == 0 || numChunks <= 0 then
       return;
-    const nElems = r.size;
+    const nElems = r.sizeAs(RT);
     var nChunks = min(numChunks, nElems): RT;
 
     var chunkSize, rem: RT;
@@ -162,7 +160,7 @@ module RangeChunk {
       }
     }
 
-    for i in 0..#nChunks {
+    foreach i in 0..#nChunks {
       var chunk: 2*RT;
       select (remPol) {
         when Thru do chunk = chunkOrderThru(nElems, nChunks, i);
@@ -180,10 +178,10 @@ module RangeChunk {
   */
   proc chunkOrder(r: range(?RT, bounded, ?), numChunks: integral, idx: integral,
                   remPol: RemElems = Thru): 2*RT {
-    if r.size == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
+    if r.sizeAs(RT) == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
       return (1: RT, 0: RT);
 
-    const nElems = r.size;
+    const nElems = r.sizeAs(RT);
     const nChunks = min(numChunks, nElems): RT;
     const i = idx: RT;
 

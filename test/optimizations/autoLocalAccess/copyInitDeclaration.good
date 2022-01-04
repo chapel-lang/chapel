@@ -19,9 +19,9 @@ Start analyzing forall (copyInitDeclaration.chpl:14)
 |
 End analyzing forall (copyInitDeclaration.chpl:14)
 
-Static check successful. Using localAccess (copyInitDeclaration.chpl:15)
-Static check successful. Using localAccess (copyInitDeclaration.chpl:15)
+Static check successful. Using localAccess [static and dynamic ALA clone]  (copyInitDeclaration.chpl:15)
+Static check successful. Using localAccess [static and dynamic ALA clone]  (copyInitDeclaration.chpl:15)
 Static check successful. Using localAccess with dynamic check (copyInitDeclaration.chpl:15)
-Static check successful. Using localAccess (copyInitDeclaration.chpl:15)
-Static check successful. Using localAccess (copyInitDeclaration.chpl:15)
+Static check successful. Using localAccess [static only ALA clone]  (copyInitDeclaration.chpl:15)
+Static check successful. Using localAccess [static only ALA clone]  (copyInitDeclaration.chpl:15)
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0

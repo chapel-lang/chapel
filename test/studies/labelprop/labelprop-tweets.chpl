@@ -50,7 +50,7 @@ config const parallel = true;
 config param distributed = false; // NOTE - could default to CHPL_COMM != none
 
 use FileSystem;
-use Spawn;
+use Subprocess;
 use Time;
 use IO;
 use Graph;
@@ -268,7 +268,7 @@ record Triple {
 }
 
 
-proc create_and_analyze_graph(Pairs)
+proc create_and_analyze_graph(ref Pairs)
 {
   if progress {
     writeln("finding mutual mentions");
@@ -362,9 +362,6 @@ proc create_and_analyze_graph(Pairs)
 
   // TODO - performance - merge graph element updates
   var G = buildUndirectedGraph(triples, false, {1..max_nid} );
-
-  // Clear out memory used by triples.
-  triples.domain.clear();
 
   createGraphTime.stop();
 

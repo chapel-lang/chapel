@@ -27,12 +27,22 @@
 #include <string.h>
 
 #include "chpl-comm.h"
+#include "chpl-env.h"
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
+#include "chpl-topo.h"
+#include "chplcgfns.h"
 #include "chplmemtrack.h"
 #include "chpltypes.h"
 #include "error.h"
+
+static chpl_bool interleave_mem = false;
+static chpl_bool merge_split_chunks = false;
+
+// The dedicated arena to use for large allocations (this is important to
+// minimize contention for large allocations)
+unsigned CHPL_JE_LG_ARENA;
 
 // Decide whether or not to try to use jemalloc's chunk hooks interface
 //   jemalloc < 4.0 didn't support chunk_hooks_t
@@ -118,7 +128,20 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
     // now that cur_heap_offset is updated, we can unlock
     pthread_mutex_unlock(&heap.alloc_lock);
+
+    if (interleave_mem && arena_ind == CHPL_JE_LG_ARENA) {
+      chpl_topo_interleaveMemLocality(cur_chunk_base, size);
+    }
   } else if (heap.type == DYNAMIC) {
+    // jemalloc 4.5.0 man: "If chunk is not NULL, the returned pointer must be
+    // chunk on success or NULL on error". This is used to grab new chunks in a
+    // specific location so they can be merged with old ones for in-place
+    // reallocation. It's unlikely our allocation will happen to get the right
+    // address so don't waste time allocating/freeing in the common case.
+    if (chunk != NULL) {
+      return NULL;
+    }
+
     //
     // Get a dynamic extension chunk.
     //
@@ -128,6 +151,8 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
     if (cur_chunk_base == NULL) {
       return NULL;
     }
+
+    assert(((uintptr_t)cur_chunk_base & (alignment-1)) == 0);
 
     //
     // Localize the new memory via first-touch, by storing to each page.
@@ -178,11 +203,17 @@ static bool null_decommit(void *chunk, size_t size, size_t offset, size_t length
 static bool null_purge(void *chunk, size_t size, size_t offset, size_t length, unsigned arena_ind) {
   return true;
 }
-static bool null_split(void *chunk, size_t size, size_t size_a, size_t size_b, bool committed, unsigned arena_ind) {
-  return true;
+
+
+// Since we opt-out of dalloc hooks, jemalloc is free to merge/split existing
+// chunks (this is important for fragmentation avoidance.) If we support dalloc
+// we'll have to do more to update how we track backing memory regions. Note
+// that returning false means splitting/merging is allowed.
+static bool chunk_split(void *chunk, size_t size, size_t size_a, size_t size_b, bool committed, unsigned arena_ind) {
+  return !merge_split_chunks;
 }
-static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b, bool committed, unsigned arena_ind) {
-  return true;
+static bool chunk_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b, bool committed, unsigned arena_ind) {
+  return !merge_split_chunks;
 }
 
 #endif // ifdef USE_JE_CHUNK_HOOKS
@@ -257,8 +288,8 @@ static void replaceChunkHooks(void) {
     null_commit,
     null_decommit,
     null_purge,
-    null_split,
-    null_merge
+    chunk_split,
+    chunk_merge
   };
 
   // for each arena, change the chunk hooks
@@ -366,14 +397,12 @@ static void initializeSharedHeap(void) {
   useUpMemNotInHeap();
 }
 
-
-// The dedicated arena to use for large allocations (this is important to
-// minimize contention for large allocations)
-unsigned CHPL_JE_LG_ARENA;
-
 void chpl_mem_layerInit(void) {
   void* heap_base;
   size_t heap_size;
+
+  interleave_mem = chpl_env_rt_get_bool("INTERLEAVE_MEMORY", CHPL_INTERLEAVE_MEM);
+  CHPL_JE_LG_ARENA = get_num_arenas()-1;
 
   chpl_comm_regMemHeapInfo(&heap_base, &heap_size);
   if (heap_base != NULL && heap_size == 0) {
@@ -389,6 +418,7 @@ void chpl_mem_layerInit(void) {
   //   memory allocation routines, the allocator initializes its internals"
   if (heap_base != NULL) {
     heap.type = FIXED;
+    merge_split_chunks = chpl_env_rt_get_bool("MERGE_SPLIT_CHUNKS", true);
     heap.base = heap_base;
     heap.size = heap_size;
     heap.cur_offset = 0;
@@ -398,6 +428,7 @@ void chpl_mem_layerInit(void) {
     initializeSharedHeap();
   } else if (chpl_comm_regMemAllocThreshold() < SIZE_MAX) {
     heap.type = DYNAMIC;
+    merge_split_chunks = chpl_env_rt_get_bool("MERGE_SPLIT_CHUNKS", false);
     initializeSharedHeap();
   } else {
     void* p;
@@ -407,7 +438,6 @@ void chpl_mem_layerInit(void) {
     }
     CHPL_JE_DALLOCX(p, MALLOCX_NO_FLAGS);
   }
-  CHPL_JE_LG_ARENA = get_num_arenas()-1;
 }
 
 

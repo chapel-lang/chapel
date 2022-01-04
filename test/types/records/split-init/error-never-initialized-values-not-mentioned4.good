@@ -1,0 +1,5 @@
+error-never-initialized-values-not-mentioned4.chpl:3: In function 'error':
+error-never-initialized-values-not-mentioned4.chpl:5: error: Cannot default-initialize a variable with generic type
+error-never-initialized-values-not-mentioned4.chpl:5: note: 'q1' has generic type 'C?'
+error-never-initialized-values-not-mentioned4.chpl:5: note: 'C?' indicates a nilable class with any management
+error-never-initialized-values-not-mentioned4.chpl:5: note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'

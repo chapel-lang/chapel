@@ -1,16 +1,23 @@
 include $(THIRD_PARTY_DIR)/llvm/Makefile.share-system
 
-ifndef LLVM_LLVM_LIBS
-  export LLVM_LLVM_LIBS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
-endif
-
-ifeq ($(LLVM_MAJOR_VERSION_9PLUS),9)
-  # -lclangASTMatchers needed for LLVM 9 but not earlier
-  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangASTMatchers -lclangAST -lclangLex -lclangBasic
+# Decide whether to try to link statically or dynamically.
+# Future work: consider using 'llvm-config --shared-mode'
+# to make this choice.
+ifeq ($(CHPL_MAKE_PLATFORM),darwin)
+CHPL_LLVM_DYNAMIC := 0
 else
-  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
+CHPL_LLVM_DYNAMIC := 1
 endif
 
+ifndef LLVM_LLVM_LIBS
+  export LLVM_LLVM_LIBS=$(shell $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
+endif
+
+ifeq ($(CHPL_LLVM_DYNAMIC),1)
+  LLVM_CLANG_LIBS=-lclang-cpp
+else
+  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangASTMatchers -lclangAST -lclangLex -lclangBasic
+endif
 
 # Ubuntu 16.04 needed -fno-rtti for LLVM 3.7
 # tested on that system after installing

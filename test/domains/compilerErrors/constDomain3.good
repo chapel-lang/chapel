@@ -1,0 +1,3 @@
+constDomain3.chpl:3: error: const actual is passed to 'ref' formal 'this' of add()
+note: to formal of type DefaultAssociativeDom(int(64),true)
+constDomain3.chpl:2: note: The shadow variable 'd' is constant due to forall intents in this loop

@@ -14,4 +14,5 @@ Start analyzing forall (allDynamicsFailStatic.chpl:17)
 |
 End analyzing forall (allDynamicsFailStatic.chpl:17)
 
-Static check successful. Using localAccess (allDynamicsFailStatic.chpl:18)
+Static check successful. Using localAccess [static only ALA clone]  (allDynamicsFailStatic.chpl:18)
+Local access attempt reverted. All static checks failed or code is unreachable.(allDynamicsFailStatic.chpl:19)

@@ -3,7 +3,7 @@
 # Copyright (c)      2008  Sandia Corporation
 #
 
-include_HEADERS = qthread.h
+include_HEADERS = top/qthread.h
 pkginclude_HEADERS = \
 	allpairs.h \
 	barrier.h \

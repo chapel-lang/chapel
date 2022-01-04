@@ -1,0 +1,2 @@
+iterator-in-ifc.chpl:5: error: iterators at present are not allowed in an interface
+iterator-in-ifc.chpl:6: error: iterators at present are not allowed in an interface

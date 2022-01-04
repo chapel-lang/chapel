@@ -142,9 +142,10 @@
   #define ALLAM_DONE(iters) ((int)NUMREP() == (int)(NUMHANDLERS_PER_TYPE*3*(iters)))
 #endif
 
-typedef struct {
+typedef struct testam_payload_s {
   double doublevar;
   uint64_t int64var;
+  struct testam_payload_s* partnerseg;
   int idx;
 } testam_payload_t;
 #define TESTAM_DOUBLEVAR_VAL  (2.5f)
@@ -422,7 +423,7 @@ typedef struct {
     ReplyLong(num,(token, (NUMHANDLERS_PER_TYPE+num)*sizeof(testam_payload_t),                \
                    LONG_##num##REP_HANDLER, &mybuf, nbytes aa##num),                          \
                   (token, LONG_##num##REP_HANDLER, &mybuf, nbytes,                            \
-                   ((testam_payload_t*)TEST_SEG(partner))+NUMHANDLERS_PER_TYPE+num            \
+                   payload->partnerseg+NUMHANDLERS_PER_TYPE+num                               \
                    EXTRA_ML aa##num));                                                        \
     memset(&mybuf, 0xBB, sizeof(testam_payload_t));                                           \
   }                                                                                           \
@@ -540,6 +541,7 @@ HANDLERS(16)
   static testam_payload_t medbuf, longbuf;                                                         \
   asyncbuf.doublevar = TESTAM_DOUBLEVAR_VAL;                                                       \
   asyncbuf.int64var = TESTAM_INT64VAR_VAL;                                                         \
+  asyncbuf.partnerseg = (testam_payload_t*)MYSEG;                                                  \
   asyncbuf.idx = num;                                                                              \
   RequestShort(num,(ENDPOINT partner,  SHORT_##num##REQ_HANDLER EXTRA_S AA##num));                 \
   memcpy(&medbuf, &asyncbuf, sizeof(testam_payload_t));                                            \

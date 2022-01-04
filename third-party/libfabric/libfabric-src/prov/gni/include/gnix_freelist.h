@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2015-2016 Cray Inc.  All rights reserved.
  * Copyright (c) 2015 Los Alamos National Security, LLC. All rights reserved.
+ * Copyright (c) 2020 Triad National Security, LLC. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -128,7 +129,7 @@ static inline int _gnix_fl_alloc(struct dlist_entry **e, struct gnix_freelist *f
         if (fl->refill_size == 0) {
                 ret = -FI_ECANCELED;
 
-                GNIX_DEBUG(FI_LOG_DEBUG, "Freelist not growable (refill "
+                GNIX_DEBUG(FI_LOG_EP_CTRL, "Freelist not growable (refill "
                                    "size is 0\n");
 
                 goto err;

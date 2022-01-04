@@ -1,0 +1,10 @@
+(x = 3)
+(x = 0)
+In Foo.>=
+true
+In Foo.>=
+true
+In Foo.>=
+true
+In Foo.>=
+false

@@ -1,7 +1,7 @@
 use IO;
 
 
-proc testText(seeds: domain(int)) {
+proc testText(ref seeds: domain(int)) {
   writeln("in testText ", seeds.sorted());
   var lf = open('test.log' : string, iomode.cwr);
   var delta: [seeds] real;
@@ -18,7 +18,7 @@ proc testText(seeds: domain(int)) {
   assert(ok);
   writeln("Read: ", po.sorted());
 }
-proc testBinary(seeds: domain(int)) {
+proc testBinary(ref seeds: domain(int)) {
   writeln("in testBinary ", seeds.sorted());
   var lf = open('test.log' : string, iomode.cwr);
   var delta: [seeds] real;
@@ -36,7 +36,7 @@ proc testBinary(seeds: domain(int)) {
   writeln("Read: ", po.sorted());
 }
 
-proc test(seeds: domain(int)) {
+proc test(in seeds) {
   testText(seeds);
   testBinary(seeds);
 }

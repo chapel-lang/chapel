@@ -449,26 +449,14 @@ checkFunction(FnSymbol* fn) {
 
 static void checkOperator(FnSymbol* fn) {
   if (!fn->hasFlag(FLAG_OPERATOR) && !fn->hasFlag(FLAG_METHOD)) {
-    if (fn->name == astrSassign || fn->name == astrSeq || fn->name == astrSne ||
-        fn->name == astrSgt || fn->name == astrSgte || fn->name == astrSlt ||
-        fn->name == astrSlte || fn->name == astrSswap ||
-        strcmp(fn->name, "&") == 0 || strcmp(fn->name, "|") == 0 ||
-        strcmp(fn->name, "^") == 0 || strcmp(fn->name, "~") == 0 ||
-        strcmp(fn->name, "+") == 0 || strcmp(fn->name, "-") == 0 ||
-        strcmp(fn->name, "*") == 0 || strcmp(fn->name, "/") == 0 ||
-        strcmp(fn->name, "<<") == 0 || strcmp(fn->name, ">>") == 0 ||
-        strcmp(fn->name, "%") == 0 || strcmp(fn->name, "**") == 0 ||
-        strcmp(fn->name, "!") == 0 || strcmp(fn->name, "<~>") == 0 ||
-        strcmp(fn->name, "+=") == 0 || strcmp(fn->name, "-=") == 0 ||
-        strcmp(fn->name, "*=") == 0 || strcmp(fn->name, "/=") == 0 ||
-        strcmp(fn->name, "%=") == 0 || strcmp(fn->name, "**=") == 0 ||
-        strcmp(fn->name, "&=") == 0 || strcmp(fn->name, "|=") == 0 ||
-        strcmp(fn->name, "^=") == 0 || strcmp(fn->name, ">>=") == 0 ||
-        strcmp(fn->name, "<<=") == 0 || strcmp(fn->name, "#") == 0 ||
-        strcmp(fn->name, "by") == 0 || strcmp(fn->name, "align") == 0) {
-      // When deprecate non-operator keyword declarations, add deprecation
-      // warning here.
+    if (isAstrOpName(fn->name)) {
+      USR_WARN(fn,
+               "Operators declared without the operator keyword are deprecated");
       fn->addFlag(FLAG_OPERATOR);
+    }
+  } else if (fn->hasFlag(FLAG_OPERATOR)) {
+    if (!isAstrOpName(fn->name)) {
+      USR_FATAL_CONT(fn, "'%s' is not a legal operator name", fn->name);
     }
   }
 }
@@ -498,7 +486,7 @@ static void includedStrictNames(ModuleSymbol* mod) {
     ModuleSymbol* parent = mod->defPoint->getModule();
 
     // module name should match file name
-    const char* fname = filenameToModulename(parent->astloc.filename);
+    const char* fname = filenameToModulename(parent->astloc.filename());
     if (fname != parent->name) {
       USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
     }
@@ -509,7 +497,7 @@ static void includedStrictNames(ModuleSymbol* mod) {
     for (ModuleSymbol* cur = parent;
          cur != NULL && cur->defPoint != NULL;
          cur = cur->defPoint->getModule()) {
-      if (parent->astloc.filename == cur->astloc.filename) {
+      if (parent->astloc.filename() == cur->astloc.filename()) {
         lastParentSameFile = cur;
       } else {
         break;

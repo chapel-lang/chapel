@@ -57,13 +57,13 @@ parser: FORCE flex_version_check
 
 # Require that the flex version is at least 2.6.0
 flex_version_check:
-	@if python -c "import sys;                                        \
-                       from distutils.version import LooseVersion as LV;  \
-                       sys.exit(LV(sys.argv[1]) >= LV(sys.argv[2]))"      \
-                   `flex --version | sed -e 's/flex //' -e 's/ .*//'`     \
-                   "2.6.0";                                               \
-		then echo "PROBLEM: flex version must be at least 2.6.0"; \
-		exit 1;                                                   \
+	@if $(CHPL_MAKE_PYTHON) -c "import sys;                           \
+	               from distutils.version import LooseVersion as LV;  \
+	               sys.exit(LV(sys.argv[1]) >= LV(sys.argv[2]))"      \
+	           `flex --version | sed -e 's/flex //' -e 's/ .*//'`     \
+	           "2.6.0";                                               \
+	then echo "PROBLEM: flex version must be at least 2.6.0";         \
+	  exit 1;                                                         \
 	fi
 
 #
@@ -82,4 +82,4 @@ $(OBJ_SUBDIR)/flex-chapel.o: ../include/bison-chapel.h ../include/flex-chapel.h 
 	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CXXFLAGS_NONCHPL) -o $@ flex-chapel.cpp
 
 $(OBJ_SUBDIR)/parser.o:  ../include/bison-chapel.h ../include/flex-chapel.h parser.cpp $(OBJ_SUBDIR_MADE)
-	$(CXX) -c $(COMP_CXXFLAGS) -o $@ parser.cpp
+	$(CXX) -c $(COMP_CXXFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ parser.cpp

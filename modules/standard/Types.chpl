@@ -209,32 +209,37 @@ proc chpl__maxIntTypeSameSign(type t) type {
 // due to lack of consensus for the name.
 //
 
-pragma "no doc"
+/* Returns `true` if the argument is a `bool` value. */
 proc isBoolValue(e)      param  return isBoolType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `int` value. */
 proc isIntValue(e)       param  return isIntType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `uint` value. */
 proc isUintValue(e)      param  return isUintType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `real` value. */
 proc isRealValue(e)      param  return isRealType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `imag` value. */
 proc isImagValue(e)      param  return isImagType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `complex` value. */
 proc isComplexValue(e)   param  return isComplexType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `string` value. */
 proc isStringValue(e)    param  return isStringType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `bytes` value. */
 proc isBytesValue(e)     param  return isBytesType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of one the following types: 
+`int`, `uint`. */
 proc isIntegralValue(e)  param  return isIntegralType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of one the following types: 
+`real`, `imag`. */
 proc isFloatValue(e)     param  return isFloatType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of one the following types: 
+`int`, `uint`, `real`, `imag`, `complex`. */
 proc isNumericValue(e)   param  return isNumericType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of primitive type. */
 proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `enum` value. */
 proc isEnumValue(e)      param  return isEnumType(e.type);
+/* Returns `true` if the argument is a `nothing` value (i.e., `none`) */
+proc isNothingValue(e)   param return isNothingType(e.type);
 //Defined elsewhere:
 // isTupleValue
 // isHomogeneousTupleValue
@@ -390,6 +395,12 @@ pragma "no doc"
 proc isConstAssignable(type t) param  return isConstAssignableType(t);
 pragma "no doc"
 proc isDefaultInitializable(type t) param return isDefaultInitializableType(t);
+
+/* Returns `true` if the argument is `none` or the `nothing` type.
+ as defined by the language specification.*/
+proc isNothing(type t)  param return isNothingType(t);
+proc isNothing(e)   param return isNothingType(e.type);
+
 
 // Set 2 - values.
 /*
@@ -750,16 +761,9 @@ proc max(type t) where isComplexType(t) {
 }
 
 pragma "no doc"
-pragma "order independent yielding loops"
-iter chpl_enumerate(type t: enum) {
-  const enumTuple = chpl_enum_enumerate(t);
-  for i in 0..enumTuple.size-1 do
-    yield enumTuple(i);
-}
-pragma "no doc"
 iter type enum.these(){
-  for i in chpl_enumerate(this) do
-    yield i;
+  foreach i in 0..<this.size do
+    yield chpl__orderToEnum(i, this);
 }
 
 pragma "no doc"
@@ -799,48 +803,53 @@ For example, when casting from `uint(8)` to `uint(64)`,
 no checks at all will be done.
 */
 inline proc integral.safeCast(type T: integral) : T {
-  if castChecking && isUintType(T) {
-    if isIntType(this.type) {
-      // int(?) -> uint(?)
-      if this < 0 then // runtime check
-        HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
-            " less than 0 to "+T:string);
-    }
-
-    if max(this.type):uint > max(T):uint {
-      // [u]int(?) -> uint(?)
-      if (this:uint > max(T):uint) then // runtime check
-        HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
-            " with a value greater than the maximum of "+ T:string+" to "+T:string);
-    }
-  }
-
-  if castChecking && isIntType(T) {
-    if max(this.type):uint > max(T):uint {
-      // this isUintType check lets us avoid a runtime check for this < 0
-      if isUintType(this.type) {
-        // uint(?) -> int(?)
-        if this:uint > max(T):uint then // runtime check
-          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
-              " with a value greater than the maximum of "+ T:string+" to "+T:string);
-      } else {
-        // int(?) -> int(?)
-        // max(T) <= max(int), so cast to int is safe
-        if this:int > max(T):int then // runtime check
-          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
-              " with a value greater than the maximum of "+ T:string+" to "+T:string);
-      }
-    }
-    if isIntType(this.type) {
-      if min(this.type):int < min(T):int {
-        // int(?) -> int(?)
-        if this:int < min(T):int then // runtime check
-          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
-              " with a value less than the minimum of "+ T:string+" to "+T:string);
-      }
-    }
-  }
+  if castChecking then
+    checkValue();
   return this:T;
+
+  proc checkValue() {
+    if isUintType(T) {
+      if isIntType(this.type) {
+        // int(?) -> uint(?)
+        if this < 0 then // runtime check
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+                                         " less than 0 to "+T:string);
+      }
+
+      if max(this.type):uint > max(T):uint {
+        // [u]int(?) -> uint(?)
+        if (this:uint > max(T):uint) then // runtime check
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+                                         " with a value greater than the maximum of "+ T:string+" to "+T:string);
+      }
+    }
+
+    if isIntType(T) {
+      if max(this.type):uint > max(T):uint {
+        // this isUintType check lets us avoid a runtime check for this < 0
+        if isUintType(this.type) {
+          // uint(?) -> int(?)
+          if this:uint > max(T):uint then // runtime check
+            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+                                           " with a value greater than the maximum of "+ T:string+" to "+T:string);
+        } else {
+          // int(?) -> int(?)
+          // max(T) <= max(int), so cast to int is safe
+          if this:int > max(T):int then // runtime check
+            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+                                           " with a value greater than the maximum of "+ T:string+" to "+T:string);
+        }
+      }
+      if isIntType(this.type) {
+        if min(this.type):int < min(T):int {
+          // int(?) -> int(?)
+          if this:int < min(T):int then // runtime check
+            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+                                           " with a value less than the minimum of "+ T:string+" to "+T:string);
+        }
+      }
+    }
+  }
 }
 
 pragma "no doc" // documented with the other safeCast above
@@ -930,22 +939,22 @@ proc isProperSubtype(type sub, type super) param {
 
 /* :returns: isProperSubtype(a,b) */
 pragma "docs only"
-proc <(type a, type b) param {
+operator <(type a, type b) param {
   return isProperSubtype(a,b);
 }
 /* :returns: isSubtype(a,b) */
 pragma "docs only"
-proc <=(type a, type b) param {
+operator <=(type a, type b) param {
   return isSubtype(a,b);
 }
 /* :returns: isProperSubtype(b,a) */
 pragma "docs only"
-proc >(type a, type b) param {
+operator >(type a, type b) param {
   return isProperSubtype(b,a);
 }
 /* :returns: isSubtype(b,a) */
 pragma "docs only"
-proc >=(type a, type b) param {
+operator >=(type a, type b) param {
   return isSubtype(b,a);
 }
 

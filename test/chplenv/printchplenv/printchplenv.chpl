@@ -21,6 +21,6 @@ if CHPL_COMM != 'none' then
   writeln('  CHPL_NETWORK_ATOMICS: ', CHPL_NETWORK_ATOMICS);
 writeln('CHPL_GMP: ', CHPL_GMP);
 writeln('CHPL_HWLOC: ', CHPL_HWLOC);
-writeln('CHPL_REGEXP: ', CHPL_REGEXP);
+writeln('CHPL_RE2: ', CHPL_RE2);
 writeln('CHPL_LLVM: ', CHPL_LLVM);
 writeln('CHPL_AUX_FILESYS: ', CHPL_AUX_FILESYS);

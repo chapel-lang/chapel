@@ -1,0 +1,31 @@
+.TH qthread_id 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_id
+\- returns the qthread's unique ID number
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I unsigned int
+.br
+.B qthread_id
+(void);
+.SH DESCRIPTION
+This function returns the unique identifier associated with the qthread
+.IR me .
+This is used mostly for debugging, as obtaining a global identifier requires
+synchronization. Unless otherwise configured, the qthread library assigns
+thread ids only when they are asked for. Generally they are monotonically
+increasing values, but the value can wrap around after
+.BR UINT_MAX -2
+threads.
+.SH RETURN VALUE
+On success, the thread's identifying number is returned. If called from outside
+the Qthreads library,
+.B QTHREAD_NON_TASK_ID
+is returned. The special value
+.B QTHREAD_NULL_TASK_ID
+will never be returned.
+.SH SEE ALSO
+.BR qthread_retloc (3),
+.BR qthread_shep (3),
+.BR qthread_stackleft (3)

@@ -15,18 +15,12 @@ def get():
         if comm_val == 'gasnet':
             if platform_val == 'cray-xc':
                 substrate_val = 'aries'
-            elif platform_val == 'cray-cs':
+            elif platform_val in ('cray-cs', 'hpe-apollo'):
                 substrate_val = 'ibv'
             elif platform_val == 'pwr6':
                 substrate_val = 'ibv'
             else:
                 substrate_val = 'udp'
-        elif comm_val == 'ofi':
-            if platform_val == 'cray-xc':
-                substrate_val = 'sockets'
-                # substrate_val = 'gni'
-            else:
-                substrate_val = 'sockets'
         else:
             substrate_val = 'none'
     return substrate_val

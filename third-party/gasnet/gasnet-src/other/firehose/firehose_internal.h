@@ -446,7 +446,7 @@ int	fh_region_partial(gex_Rank_t node, uintptr_t *addr_p, size_t *len_p);
 /* ##################################################################### */
 /* Misc functions (COMMON, firehose.c)                                   */
 /* ##################################################################### */
-int64_t fh_getenv(const char *var, unsigned long multiplier);
+int64_t fh_getenv(const char *var, unsigned long multiplier, int *is_dflt);
 
 /* Common Queue Macros for Firehose FIFO and Local Bucket FIFO */
 #define FH_TAILQ_HEAD(name, type)	\

@@ -5,4 +5,3 @@ y = 2;
 
 writeln(x.readFE());
 writeln(y.readFF());
-

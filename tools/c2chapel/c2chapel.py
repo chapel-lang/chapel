@@ -41,6 +41,7 @@ import sys
 
 try:
     from pycparser import c_parser, c_ast, parse_file
+    from pycparserext import ext_c_parser
 except ImportError as e:
     sys.exit("Unable to import pycparser: " + str(e));
 
@@ -84,6 +85,11 @@ c2chapel["uintptr_t"]          = "c_uintptr"
 c2chapel["ptrdiff_t"]          = "c_ptrdiff"
 c2chapel["ssize_t"]            = "ssize_t"
 c2chapel["size_t"]             = "size_t"
+c2chapel["long double"]        = "c_longlong"
+c2chapel["signed short"]       = "c_short"
+c2chapel["signed int"]         = "c_int"
+c2chapel["signed long long"]   = "c_longlong"
+c2chapel["signed long"]        = "c_long"
 
 # Note: this mapping is defined by the compiler, not the SysCTypes file
 c2chapel["FILE"] = "_file"
@@ -116,7 +122,7 @@ chapelKeywords = set(["align","as","atomic","begin","break","by","class",
     "nil","noinit","on","only","otherwise","out","param","private","proc",
     "public","record","reduce","ref","require","return","scan","select",
     "serial","single","sparse","subdomain","sync","then","type","union","use",
-    "var","when","where","while","with","yield","zip"])
+    "var","when","where","while","with","yield","zip", "string", "bytes", "locale"])
 
 
 def getArgs():
@@ -136,6 +142,9 @@ def getArgs():
                         action="store_true")
     parser.add_argument("-V", "--version", action="version", version="%(prog)s " + __version__)
     parser.add_argument("cppFlags", nargs="*", help="flags forwarded to the C preprocessor (invoked with cc -E)")
+    parser.add_argument("--gnu-extensions",
+                        help="allow GNU extensions in C99 files",
+                        action="store_true")
     return parser.parse_known_args()
 
 # s - string to print out.
@@ -153,13 +162,14 @@ def commentNode(node):
 
 def getDeclName(decl):
     inner = decl
-    if type(inner) == c_ast.TypeDecl:
+    if type(inner) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt):
         inner = inner.type
 
     name = ""
     if type(inner) == c_ast.IdentifierType:
         name = " ".join(inner.names)
-    elif type(inner) == c_ast.Struct:
+    elif type(inner) == c_ast.Struct or type(inner) == c_ast.Union:
+        # Because Unions and Structs should be handled in the same way
         name = inner.name
     elif type(inner) == c_ast.Decl:
         name = inner.name
@@ -181,18 +191,18 @@ def computeArgName(decl):
         decl.show()
         raise c_parser.ParseError("Unhandled Node type")
 
-def isStructType(ast):
+def isStructOrUnionType(ast):
     inner = ast
 
-    if type(inner) == c_ast.TypeDecl:
+    if type(inner) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt):
         inner = inner.type
 
     if type(inner) == c_ast.IdentifierType:
         name = " ".join(inner.names)
         if name in typeDefs:
-            return isStructType(typeDefs[name].type)
+            return isStructOrUnionType(typeDefs[name].type)
 
-    if type(inner) == c_ast.Struct:
+    if type(inner) == c_ast.Struct or type(inner) == c_ast.Union:
         return True
 
     return False
@@ -233,7 +243,7 @@ def computeArgs(pl):
             argName = computeArgName(arg)
             if typeName != "":
                 if intent == "":
-                    if isStructType(arg.type):
+                    if isStructOrUnionType(arg.type):
                         intent = "in "
                 else:
                     intent += " "
@@ -250,7 +260,7 @@ def computeArgs(pl):
 
 def isPointerTo(ty, text):
     if type(ty) == c_ast.PtrDecl:
-        if type(ty.type) == c_ast.TypeDecl:
+        if type(ty.type) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt):
             name = getDeclName(ty.type)
             if name == text:
                 return True
@@ -261,14 +271,18 @@ def toChapelType(ty):
         return "c_string"
     elif isPointerTo(ty, "void"):
         return "c_void_ptr"
-    elif type(ty) == c_ast.ArrayDecl:
-        return "c_ptr(" + toChapelType(ty.type) + ")"
+    elif type(ty) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
+        eltType = toChapelType(ty.type)
+        if eltType is not None:
+            return "c_ptr(" + eltType + ")"
+        else:
+            return None
     elif type(ty) == c_ast.PtrDecl:
-        if type(ty.type) == c_ast.FuncDecl:
+        if type(ty.type) in (c_ast.FuncDecl, ext_c_parser.FuncDeclExt):
             return "c_fn_ptr"
         else:
             return "c_ptr(" + toChapelType(ty.type) + ")"
-    elif type(ty) == c_ast.TypeDecl:
+    elif type(ty) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt):
         inner = ty.type
         name = ""
         try:
@@ -280,7 +294,7 @@ def toChapelType(ty):
             return c2chapel[name]
 
         return name
-    elif type(ty) == c_ast.FuncDecl:
+    elif type(ty) in (c_ast.FuncDecl, ext_c_parser.FuncDeclExt):
         return "c_fn_ptr"
     else:
         ty.show()
@@ -290,10 +304,10 @@ def toChapelType(ty):
 def getFunctionName(ty):
     if type(ty) == c_ast.PtrDecl:
         return getFunctionName(ty.type)
-    elif type(ty) == c_ast.FuncDecl:
+    elif type(ty) in (c_ast.FuncDecl, ext_c_parser.FuncDeclExt):
         return getFunctionName(ty.type)
     else:
-        if type(ty) != c_ast.TypeDecl:
+        if type(ty) not in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt):
             ty.show()
             raise c_parser.ParseError("Expecting TypeDecl...")
         return ty.declname
@@ -328,59 +342,83 @@ def genFuncDecl(fn):
         genComment("Overload for empty varargs")
         print("extern proc " + fnName + "(" + newArgs + ") : " + retType + ";\n")
 
-def isStructDef(decl):
-    if type(decl) == c_ast.Struct:
+def getStructOrUnionDef(decl):
+    if type(decl) == c_ast.Struct or type(decl) == c_ast.Union:
         if decl.decls is not None:
             return decl
         else:
             return None
-    elif type(decl) == c_ast.Decl or type(decl) == c_ast.TypeDecl or type(decl) == c_ast.PtrDecl:
-        return isStructDef(decl.type)
+    elif type(decl) == c_ast.Decl or type(decl) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt) or type(decl) == c_ast.PtrDecl:
+        return getStructOrUnionDef(decl.type)
     else:
         return None
 
 
-def genStruct(struct, name=""):
+def genStructOrUnion(structOrUnion, name="", isAnon=False):
     if name == "":
-        name = struct.name
+        if structOrUnion.name is not None:
+            name = structOrUnion.name
+        else:
+            return
+
+    innerDef = getStructOrUnionDef(structOrUnion)
+    isUnion = isinstance(innerDef, c_ast.Union)
 
     if name in chapelKeywords:
-        genComment("Unable to generate struct '" + name + "' because its name is a Chapel keyword")
+        structOrUnion = "union" if isUnion else "struct"
+        genComment("Unable to generate " + structOrUnion + " '" + name + "' " + "because its name is a Chapel keyword")
         print()
         return
 
-    ret = "extern record " + name + " {"
+    ret = ""
+    if isAnon:
+        ret = "extern union " if isUnion else "extern record "
+    else:
+        ret = "extern \"union " + name + "\" union " if isUnion else "extern \"struct " + name + "\" record "
+    ret += name + " {"
     foundTypes.add(name)
 
     # Forward Declaration
-    if not struct.decls:
+    if not structOrUnion.decls:
         print()
         return
 
     members = ""
     warnKeyword = False
-    for decl in struct.decls:
-        innerStruct = isStructDef(decl)
-        if innerStruct is not None:
-            genStruct(innerStruct)
+    warnSkippingAnonymousType = False
+    for decl in structOrUnion.decls:
+        innerStructOrUnion = getStructOrUnionDef(decl)
+        if innerStructOrUnion is not None:
+            genStructOrUnion(innerStructOrUnion, isAnon=False)
 
+        if type(decl) == c_ast.Pragma:
+            break
         fieldName = getDeclName(decl)
         if fieldName in chapelKeywords:
             members = ""
             warnKeyword = True
             break
         else:
-            members += "  var " + fieldName + " : " + toChapelType(decl.type) + ";\n"
+            chapelType = toChapelType(decl.type)
+            if chapelType is None:
+                warnSkippingAnonymousType = True
+                break
+            members += "  var " + fieldName + " : " + chapelType + ";\n"
 
     if members != "":
         members = "\n" + members
     ret += members + "}\n"
     if warnKeyword:
         genComment("Fields omitted because one or more of the identifiers is a Chapel keyword")
+    if warnSkippingAnonymousType:
+        genComment("Anonymous union or struct was encountered within and skipped.")
     print(ret)
 
 def genVar(decl):
     name = decl.name
+    if name in chapelKeywords:
+        name = 'c2chapel_' + name
+    
     ty   = toChapelType(decl.type)
     print("extern var " + name + " : " + ty + ";")
     print()
@@ -406,9 +444,9 @@ def genTypeEnum(decl):
 
 # Simple visitor to all function declarations
 class ChapelVisitor(c_ast.NodeVisitor):
-    def visit_Struct(self, node):
+    def visit_StructOrUnion(self, node):
         typeDefs[node.name] = None
-        genStruct(node)
+        genStructOrUnion(node, isAnon=False)
 
     def visit_Typedef(self, node):
         if node.name not in typeDefs:
@@ -428,13 +466,13 @@ class ChapelVisitor(c_ast.NodeVisitor):
             genComment("Evaluating node:")
             commentNode(node)
         for c_name, c in node.children():
-            if type(c) == c_ast.Struct:
-                self.visit_Struct(c)
-            elif type(c) == c_ast.FuncDecl:
+            if type(c) == c_ast.Struct or type(c) == c_ast.Union:
+                self.visit_StructOrUnion(c)
+            elif type(c) in (c_ast.FuncDecl, ext_c_parser.FuncDeclExt):
                 self.visit_FuncDecl(c)
             elif type(c) == c_ast.Enum:
                 genEnum(c)
-            elif type(c) == c_ast.TypeDecl or type(c) == c_ast.PtrDecl or type(c) == c_ast.ArrayDecl:
+            elif type(c) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt) or type(c) == c_ast.PtrDecl or type(c) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
                 genVar(node)
             else:
                 node.show()
@@ -444,35 +482,54 @@ class ChapelVisitor(c_ast.NodeVisitor):
 
 def genTypeAlias(node):
     alias = node.name
-    if type(node.type) == c_ast.PtrDecl or type(node.type) == c_ast.TypeDecl:
+    if type(node.type) == c_ast.PtrDecl or type(node.type) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt):
         typeName = toChapelType(node.type)
+        # let compiler handle void typedefs
+        if typeName == '':
+            print("extern type " + alias + ";")
+        else:
+            print("extern type " + alias + " = " + typeName + ";")
         foundTypes.add(alias);
-        print("extern type " + alias + " = " + typeName + ";")
         print()
 
 def isPointerToStruct(node):
     if type(node) == c_ast.PtrDecl:
-        if type(node.type) == c_ast.TypeDecl and type(node.type.type) == c_ast.Struct:
+        if type(node.type) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt) and type(node.type.type) == c_ast.Struct:
             return node.type.type
         else:
             return isPointerToStruct(node.type)
+    return None
+
+def isPointerToUnion(node):
+    if type(node) == c_ast.PtrDecl:
+        if type(node.type) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt) and type(node.type.type) == c_ast.Union:
+            return node.type.type
+        else:
+            return isPointerToUnion(node.type)
     return None
 
 def genTypedefs(defs):
     for name in sorted(defs):
         node = defs[name]
         if node is not None:
-            if type(node.type.type) == c_ast.Struct:
+            if type(node.type.type) == c_ast.Struct or type(node.type.type) == c_ast.Union:
                 sn = node.type.type
                 if sn.decls is not None:
-                    genStruct(sn, name=node.name)
+                    genStructOrUnion(sn, name=node.name, isAnon=True)
                 elif sn.name not in foundTypes:
-                    genComment("Opaque struct?")
-                    print("extern record " + node.name + " {};\n")
+                    isUnion = isinstance(node.type.type, c_ast.Union)
+                    structOrUnion = "union" if isUnion else "struct"
+                    genComment("Opaque " + structOrUnion + "?")
+                    gen = "extern union " if isUnion else "extern record ";
+                    gen += name + " {};\n"
+                    print(gen)
                 else:
                     genTypeAlias(node)
             elif isPointerToStruct(node.type):
                 genComment("Typedef'd pointer to struct")
+                print("extern type " + node.name + ";\n")
+            elif isPointerToUnion(node.type):
+                genComment("Typedef'd pointer to union")
                 print("extern type " + node.name + ";\n")
             elif type(node.type.type) == c_ast.Enum:
                 genComment(node.name + " enum")
@@ -550,7 +607,11 @@ def findIgnores():
                     if line.startswith("typedef"):
                         rhs = line.replace(";", "")
                         rhs = rhs.replace("typedef int ", "")
+                        rhs = rhs.replace("typedef uint32_t ", "")
                         rhs = rhs.replace("typedef _Bool ", "")
+                        rhs = rhs.replace("typedef void* ", "")
+                        if "typedef struct" in rhs:
+                            rhs = rhs.split()[-1]
 
                         ret.add(rhs.strip())
 
@@ -581,12 +642,17 @@ def preamble(args, fakes):
     # generate, but for now this is good enough
     print("use CPtr;")
 
+    # Needed for C types
+    print("use SysCTypes;")
+    print("use SysBasic;")
+
 # TODO: accept file from stdin?
 if __name__=="__main__":
     (args, unknowns)  = getArgs()
     fname      = args.file
     noComments = args.no_comments
     DEBUG      = args.debug
+    useGnu     = args.gnu_extensions
 
     if not os.path.isfile(fname):
         sys.exit("No such file: '" + fname + "'")
@@ -598,7 +664,10 @@ if __name__=="__main__":
         ignores = findIgnores()
 
     try:
-        ast = parse_file(fname, use_cpp=True, cpp_path="cc", cpp_args=["-E"] + fakes + unknowns)
+        if useGnu:
+            ast = parse_file(fname, use_cpp=True, cpp_path="cc", cpp_args=["-E"] + fakes + unknowns, parser=ext_c_parser.GnuCParser())
+        else:
+            ast = parse_file(fname, use_cpp=True, cpp_path="cc", cpp_args=["-E"] + fakes + unknowns)
     except c_parser.ParseError as e:
         sys.exit("Unable to parse file: " + str(e))
 

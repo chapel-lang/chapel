@@ -256,20 +256,20 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
     switch (synctype) {                                                             \
       case gasnete_synctype_nb: {                                                   \
         gex_Event_t _lc_dummy;                                                      \
-        (retval) = _gex_RMA_PutNB ((tm), (rank), (dstaddr), (srcaddr), (nbytes),    \
+        (retval) = gex_RMA_PutNB ((tm), (rank), (dstaddr), (srcaddr), (nbytes),     \
                     (((flags) & GEX_FLAG_ENABLE_LEAF_LC) ? &_lc_dummy : GEX_EVENT_DEFER), \
-                    (flags) GASNETI_THREAD_PASS);                                   \
+                    (flags));                                                       \
         break; }                                                                    \
       case gasnete_synctype_nbi:                                                    \
         (retval) = (gex_Event_t)(intptr_t)                                          \
-                   _gex_RMA_PutNBI((tm), (rank), (dstaddr), (srcaddr), (nbytes),    \
+                   gex_RMA_PutNBI((tm), (rank), (dstaddr), (srcaddr), (nbytes),     \
                     (((flags) & GEX_FLAG_ENABLE_LEAF_LC) ? GEX_EVENT_GROUP : GEX_EVENT_DEFER),\
-                    (flags) GASNETI_THREAD_PASS);                                   \
+                    (flags));                                                       \
         break;                                                                      \
       case gasnete_synctype_b:                                                      \
         (retval) = (gex_Event_t)(intptr_t)                                          \
-              _gex_RMA_PutBlocking((tm), (rank), (dstaddr), (srcaddr), (nbytes),    \
-                                          (flags) GASNETI_THREAD_PASS);             \
+              gex_RMA_PutBlocking((tm), (rank), (dstaddr), (srcaddr), (nbytes),     \
+                                          (flags));                                 \
         break;                                                                      \
       default: gasneti_unreachable_error(("Invalid synctype=%i",(int)(synctype)));  \
     }                                                                               \
@@ -280,18 +280,18 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
     gasneti_boundscheck_allowoutseg((tm), (rank), (srcaddr), (nbytes));             \
     switch (synctype) {                                                             \
       case gasnete_synctype_nb:                                                     \
-        (retval) = _gex_RMA_GetNB ((tm), (dstaddr), (rank), (srcaddr), (nbytes),    \
-                                          (flags) GASNETI_THREAD_PASS);             \
+        (retval) = gex_RMA_GetNB ((tm), (dstaddr), (rank), (srcaddr), (nbytes),     \
+                                          (flags));                                 \
         break;                                                                      \
       case gasnete_synctype_nbi:                                                    \
         (retval) = (gex_Event_t)(intptr_t)                                          \
-                   _gex_RMA_GetNBI((tm), (dstaddr), (rank), (srcaddr), (nbytes),    \
-                                          (flags) GASNETI_THREAD_PASS);             \
+                   gex_RMA_GetNBI((tm), (dstaddr), (rank), (srcaddr), (nbytes),     \
+                                          (flags));                                 \
         break;                                                                      \
       case gasnete_synctype_b:                                                      \
         (retval) = (gex_Event_t)(intptr_t)                                          \
-              _gex_RMA_GetBlocking((tm), (dstaddr), (rank), (srcaddr), (nbytes),    \
-                                          (flags) GASNETI_THREAD_PASS);             \
+              gex_RMA_GetBlocking((tm), (dstaddr), (rank), (srcaddr), (nbytes),     \
+                                          (flags));                                 \
         break;                                                                      \
       default: gasneti_unreachable_error(("Invalid synctype=%i",(int)(synctype)));  \
     }                                                                               \
@@ -339,7 +339,7 @@ extern void gasnete_packetize_verify(gasnete_packetdesc_t *pt, size_t ptidx, int
 // 2 = Use NP AM with a negotiated-payload size
 // Default is 1 for conduits with a "real" NP AM implementation, and 0 elsewhere
 #ifndef GASNETE_VIS_NPAM
-  #if GASNETC_HAVE_NP_REQ_MEDIUM && GASNETC_HAVE_NP_REP_MEDIUM
+  #if GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM && GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
     #define GASNETE_VIS_NPAM 1
   #else
     #define GASNETE_VIS_NPAM 0

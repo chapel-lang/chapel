@@ -49,6 +49,13 @@ module LocaleModelHelpSetup {
     var nPUsLogAll: atomic int;
     var maxTaskPar: atomic int;
 
+    // override compiler-generated default initializer for now because
+    // we don't rely on it, and it generates a --warn-unstable error
+    // for the time being (due to taking 'atomic int' formals rather
+    // than 'int' formals)
+    proc init() {
+    }
+
     proc accum(loc:locale) {
       nPUsPhysAcc.add(loc.nPUsPhysAcc);
       nPUsPhysAll.add(loc.nPUsPhysAll);
@@ -231,10 +238,13 @@ module LocaleModelHelpSetup {
 
     for i in childSpace {
       chpl_task_setSubloc(i:chpl_sublocID_t);
-      if i == 0 then
+      if i == 0 {
         dst.childLocales[i] = new unmanaged CPULocale(i:chpl_sublocID_t, dst);
-      else
+      }
+      else {
         dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
+        dst.childLocales[i].maxTaskPar = 1;
+      }
     }
     chpl_task_setSubloc(origSubloc);
   }

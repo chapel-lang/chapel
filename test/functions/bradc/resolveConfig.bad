@@ -1,1 +1,2 @@
+resolveConfig.chpl:10: In module 'B':
 resolveConfig.chpl:13: error: use of 'n' before encountering its definition, type unknown

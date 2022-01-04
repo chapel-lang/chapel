@@ -32,6 +32,8 @@ module DefaultAssociative {
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
 
+  config param defaultAssociativeSupportsAutoLocalAccess = true;
+
   // helps to move around array elements when rehashing the domain
   class DefaultAssociativeDomRehashHelper : chpl__rehashHelpers {
     var dom: unmanaged DefaultAssociativeDom;
@@ -206,9 +208,8 @@ module DefaultAssociative {
       return table.table[slot].isFull();
     }
 
-    pragma "order independent yielding loops"
     iter these() {
-      for slot in table.allSlots() {
+      foreach slot in table.allSlots() {
         ref aSlot = table.table[slot];
         if aSlot.status == chpl__hash_status.full {
           yield aSlot.key;
@@ -216,13 +217,12 @@ module DefaultAssociative {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone {
       if debugDefaultAssoc {
         writeln("*** In associative domain standalone iterator");
       }
 
-      for slot in table.allSlots(tag=tag) {
+      foreach slot in table.allSlots(tag=tag) {
         ref aSlot = table.table[slot];
         if aSlot.status == chpl__hash_status.full {
           yield aSlot.key;
@@ -238,7 +238,6 @@ module DefaultAssociative {
         yield (chunk, this);
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
 
@@ -252,7 +251,7 @@ module DefaultAssociative {
           halt("zippered associative domains do not match");
 
       const otherTable = followThisDom.table.table;
-      for slot in chunk {
+      foreach slot in chunk {
         const ref aSlot = otherTable[slot];
         if aSlot.isFull() {
           var idx = slot;
@@ -405,7 +404,6 @@ module DefaultAssociative {
       }
     }
 
-    pragma "order independent yielding loops"
     iter dsiSorted(comparator) {
       use Sort;
 
@@ -414,13 +412,12 @@ module DefaultAssociative {
 
       sort(tableCopy, comparator=comparator);
 
-      for ind in tableCopy do
+      foreach ind in tableCopy do
         yield ind;
     }
 
-    pragma "order independent yielding loops"
     iter _fullSlots() {
-      for slot in table.allSlots() {
+      foreach slot in table.allSlots() {
         if table.isSlotFull(slot) {
           yield slot;
         }
@@ -438,6 +435,9 @@ module DefaultAssociative {
       }
     }
 
+    override proc dsiSupportsAutoLocalAccess() param {
+      return defaultAssociativeSupportsAutoLocalAccess;
+    }
   }
 
   class DefaultAssociativeArr: AbsBaseArr {
@@ -542,6 +542,10 @@ module DefaultAssociative {
       }
     }
 
+    proc dsiAccess(idx: 1*idxType) ref {
+      return dsiAccess(idx(0));
+    }
+
     // value version for POD types
     proc dsiAccess(idx : idxType)
     where shouldReturnRvalueByValue(eltType) {
@@ -554,9 +558,14 @@ module DefaultAssociative {
         return data(0);
       }
     }
+
+    proc dsiAccess(idx : 1*idxType) ref
+    where shouldReturnRvalueByValue(eltType) {
+      return dsiAccess(idx(0));
+    }
+
     // const ref version for strings, records with copy ctor
-    proc dsiAccess(idx : idxType) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+    proc dsiAccess(idx : idxType) const ref {
       // no lock needed
       var (found, slotNum) = dom.table.findFullSlot(idx);
       if found {
@@ -567,6 +576,10 @@ module DefaultAssociative {
       }
     }
 
+    proc dsiAccess(idx : 1*idxType) const ref {
+      return dsiAccess(idx(0));
+    }
+
     inline proc dsiLocalAccess(i) ref
       return dsiAccess(i);
 
@@ -575,26 +588,23 @@ module DefaultAssociative {
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i) const ref
-    where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
 
 
-    pragma "order independent yielding loops"
     iter these() ref {
-      for slot in dom.table.allSlots() {
+      foreach slot in dom.table.allSlots() {
         if dom._isSlotFull(slot) {
           yield data[slot];
         }
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       if debugDefaultAssoc {
         writeln("*** In associative array standalone iterator");
       }
 
-      for slot in dom.table.allSlots(tag=tag) {
+      foreach slot in dom.table.allSlots(tag=tag) {
         if dom._isSlotFull(slot) {
           yield data[slot];
         }
@@ -606,7 +616,6 @@ module DefaultAssociative {
         yield followThis;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
 
@@ -620,7 +629,7 @@ module DefaultAssociative {
           halt("zippered associative array does not match the iterated domain");
 
       const otherTable = followThisDom.table.table;
-      for slot in chunk {
+      foreach slot in chunk {
         const ref aSlot = otherTable[slot];
         if aSlot.isFull() {
           var idx = slot;
@@ -634,7 +643,7 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiSerialReadWrite(f /*: channel*/) throws {
+    proc dsiSerialReadWrite(f /*: channel*/, in printBraces=true, inout first = true) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -646,9 +655,9 @@ module DefaultAssociative {
         return;
       }
 
-      if isjson || ischpl then f <~> new ioLiteral("[");
+      printBraces &&= (isjson || ischpl);
 
-      var first = true;
+      if printBraces then f <~> new ioLiteral("[");
 
       for (key, val) in zip(this.dom, this) {
         if first then first = false;
@@ -663,7 +672,7 @@ module DefaultAssociative {
         f <~> val;
       }
 
-      if isjson || ischpl then f <~> new ioLiteral("]");
+      if printBraces then f <~> new ioLiteral("]");
     }
 
     proc readChapelStyleAssocArray(f) throws {
@@ -716,7 +725,6 @@ module DefaultAssociative {
     // Associative array interface
     //
 
-    pragma "order independent yielding loops"
     iter dsiSorted(comparator) {
       use Sort;
 
@@ -725,7 +733,7 @@ module DefaultAssociative {
 
       sort(tableCopy, comparator=comparator);
 
-      for elem in tableCopy do
+      foreach elem in tableCopy do
         yield elem;
     }
 
@@ -836,5 +844,37 @@ module DefaultAssociative {
       }
       this.eltsNeedDeinit = false;
     }
+  }
+
+  proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws {
+    var binary = f.binary();
+    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+    var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
+    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
+    if !f.writing && ischpl {
+      halt("This form of I/O on a default array slice is not yet supported");
+      return;
+    }
+
+    if isjson || ischpl then f <~> new ioLiteral("[");
+
+    var first = true;
+
+    for key in dom {
+      if first then first = false;
+      else if isspace then f <~> new ioLiteral(" ");
+      else if isjson || ischpl then f <~> new ioLiteral(", ");
+
+      if f.writing && ischpl {
+        f <~> key;
+        f <~> new ioLiteral(" => ");
+      }
+
+      f <~> arr.dsiAccess(key);
+    }
+
+    if isjson || ischpl then f <~> new ioLiteral("]");
   }
 }

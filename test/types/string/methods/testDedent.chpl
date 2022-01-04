@@ -184,7 +184,7 @@ var testStrings = [
 
 proc main() {
   // Test driver loop
-  for i in testStrings.indices {
+  for i in testStrings.domain {
     writeln(testStrings[i]);
     writeln('---');
   }

@@ -14,12 +14,12 @@ proc main {
   tcb_install_callbacks_2();
 
   cobegin {
-    counter = counter + 1;
-    counter = counter + 1;
+    counter.writeEF(counter.readFE() + 1);
+    counter.writeEF(counter.readFE() + 1);
   }
 
   on Locales(numLocales-1) {
-    counter = counter + 1;
+    counter.writeEF(counter.readFE() + 1);
   }
 
   tcb_wait_for_nCallbacks((if numLocales == 1 then 12 else 24): c_int);

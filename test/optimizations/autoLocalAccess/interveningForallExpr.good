@@ -1,0 +1,15 @@
+
+Start analyzing forall (interveningForallExpr.chpl:9)
+| Found loop domain (interveningForallExpr.chpl:4)
+| Will attempt static and dynamic optimizations (interveningForallExpr.chpl:9)
+|
+|  Start analyzing call (interveningForallExpr.chpl:10)
+|   Cannot optimize: call base is in a nested on and/or forall (interveningForallExpr.chpl:10)
+|  Start analyzing call (interveningForallExpr.chpl:11)
+|   Can't determine the domain of access base (interveningForallExpr.chpl:7)
+|  This call is a dynamic optimization candidate (interveningForallExpr.chpl:11)
+|
+End analyzing forall (interveningForallExpr.chpl:9)
+
+Local access attempt reverted. All static checks failed or code is unreachable.(interveningForallExpr.chpl:11)
+0 0 0 0 0 0 0 0 0 0

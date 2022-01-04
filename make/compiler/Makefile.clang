@@ -24,19 +24,8 @@
 # Tools
 #
 
-ifeq ($(CHPL_MAKE_COMPILER), clang-included)
-# handle using the included clang compiler
-ifndef CLANG_SYSROOT_ARGS
-  export CLANG_SYSROOT_ARGS=$(shell cat $(LLVM_CLANG_ARGUMENTS_FILE))
-endif
-CXX = $(CLANG_CXX) $(CLANG_SYSROOT_ARGS)
-CC = $(CLANG_CC) $(CLANG_SYSROOT_ARGS)
-else
-CXX = clang++
-CC = clang
-endif
-
-
+CXX = $(CHPL_MAKE_CXX) # normally clang++
+CC = $(CHPL_MAKE_CC)   # normally clang
 
 RANLIB = ranlib
 
@@ -69,16 +58,27 @@ OPT_CFLAGS += $(SANITIZER_OPT_CFLAGS)
 # If the default C version is at least C11, force the C++ version to
 # be at least C++11 to match.
 #
+ifneq ($(CHPL_MAKE_COMPILER), llvm)
 DEF_C_VER := $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__STDC_VERSION__/0/')
 DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/')
 C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
 CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+CXX14_STD := $(shell test $(DEF_CXX_VER) -lt 201402 && echo -std=gnu++14)
+else
+# when CHPL_MAKE_COMPILER=llvm, we are using at least LLVM/clang 11,
+# which defaults to supporting C17 and C++14.
+C_STD :=
+CXX_STD :=
+CXX11_STD :=
+CXX14_STD :=
+endif
 
 #
 # Flags for compiler, runtime, and generated code
 #
-COMP_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
+COMP_CFLAGS = $(C_STD) $(CPPFLAGS) $(FLAGS)
+COMP_CXXFLAGS = $(CXX14_STD) $(CPPFLAGS) $(CXXFLAGS)
 COMP_CXXFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS)
 RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
@@ -151,6 +151,7 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
+COMP_CFLAGS += $(WARN_CFLAGS)
 COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)

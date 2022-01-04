@@ -1,0 +1,47 @@
+
+Start analyzing forall (callRejectReason.chpl:8)
+| Found loop domain (callRejectReason.chpl:3)
+| Will attempt static and dynamic optimizations (callRejectReason.chpl:8)
+|
+|  Start analyzing call (callRejectReason.chpl:9)
+|   Cannot optimize: call arguments don't match loop indices cleanly (callRejectReason.chpl:9)
+End analyzing forall (callRejectReason.chpl:8)
+
+
+Start analyzing forall (callRejectReason.chpl:17)
+| Found loop domain (callRejectReason.chpl:15)
+| Will attempt static and dynamic optimizations (callRejectReason.chpl:17)
+|
+|  Start analyzing call (callRejectReason.chpl:19)
+|   Cannot optimize: call base is yielded by forall iterator (callRejectReason.chpl:19)
+End analyzing forall (callRejectReason.chpl:17)
+
+
+Start analyzing forall (callRejectReason.chpl:26)
+| Found loop domain (callRejectReason.chpl:3)
+| Will attempt static and dynamic optimizations (callRejectReason.chpl:26)
+|
+|  Start analyzing call (callRejectReason.chpl:29)
+|   Cannot optimize: call base is defined within the loop body (callRejectReason.chpl:29)
+End analyzing forall (callRejectReason.chpl:26)
+
+
+Start analyzing forall (callRejectReason.chpl:36)
+| Found loop domain (callRejectReason.chpl:3)
+| Will attempt static and dynamic optimizations (callRejectReason.chpl:36)
+|
+|  Start analyzing call (callRejectReason.chpl:37)
+|   Cannot optimize: call base is a defined in a forall intent (callRejectReason.chpl:37)
+End analyzing forall (callRejectReason.chpl:36)
+
+
+Start analyzing forall (callRejectReason.chpl:44)
+| Found loop domain (callRejectReason.chpl:3)
+| Will attempt static and dynamic optimizations (callRejectReason.chpl:44)
+|
+|  Start analyzing call (callRejectReason.chpl:45)
+|   Cannot optimize: call arguments don't match loop indices cleanly (callRejectReason.chpl:45)
+|  Start analyzing call (callRejectReason.chpl:46)
+|   Cannot optimize: call base is in a nested on and/or forall (callRejectReason.chpl:46)
+End analyzing forall (callRejectReason.chpl:44)
+

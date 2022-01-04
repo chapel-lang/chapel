@@ -1,0 +1,5 @@
+genericChannelInInit1.chpl:9: In initializer:
+genericChannelInInit1.chpl:4: error: cannot default-initialize a variable with generic type
+genericChannelInInit1.chpl:4: note: 'this' has generic type 'borrowed C'
+genericChannelInInit1.chpl:4: note: cannot find initialization point to split-init this variable
+genericChannelInInit1.chpl:11: note: 'this' is used here before it is initialized

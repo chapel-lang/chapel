@@ -1,0 +1,4 @@
+issue-17188.chpl:8: In function 'main':
+issue-17188.chpl:12: error: ambiguous call 'f(int(64), int(64), int(64))'
+issue-17188.chpl:1: note: candidates are: f(x: int(64) ..., named: int(64))
+issue-17188.chpl:4: note:                 f(x: int(64) ...)

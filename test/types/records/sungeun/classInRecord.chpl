@@ -10,7 +10,7 @@ record myR {
   proc deinit() { }
 }
 
-proc =(ref a: myR, b: myR) {
+operator myR.=(ref a: myR, b: myR) {
   a.c = new shared myC();
   a.c.i = b.c.i;
 }

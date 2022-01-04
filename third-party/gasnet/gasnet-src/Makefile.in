@@ -303,6 +303,10 @@ CONFIGURE_ARGS = @CONFIGURE_ARGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CROSS_COMPILING = @CROSS_COMPILING@
+CUDA_UVA_CFLAGS = @CUDA_UVA_CFLAGS@
+CUDA_UVA_LDFLAGS = @CUDA_UVA_LDFLAGS@
+CUDA_UVA_LIBS = @CUDA_UVA_LIBS@
+CUDA_guess_prog = @CUDA_guess_prog@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -328,6 +332,8 @@ ENVCMD = @ENVCMD@
 EXEEXT = @EXEEXT@
 EXESUFFIX = @EXESUFFIX@
 FH_CFLAGS = @FH_CFLAGS@
+GASNETI_HWLOC_BIND_PATH = @GASNETI_HWLOC_BIND_PATH@
+GASNETI_HWLOC_CALC_PATH = @GASNETI_HWLOC_CALC_PATH@
 GASNETI_PTR_BITS = @GASNETI_PTR_BITS@
 GASNET_EXTRA_DEFINES = @GASNET_EXTRA_DEFINES@
 GASNET_IBV_SPAWNER_CONF = @GASNET_IBV_SPAWNER_CONF@
@@ -356,6 +362,14 @@ GSTACK_PATH = @GSTACK_PATH@
 HAVE_INTTYPES_H = @HAVE_INTTYPES_H@
 HAVE_STDINT_H = @HAVE_STDINT_H@
 HAVE_SYS_TYPES_H = @HAVE_SYS_TYPES_H@
+HIP_CFLAGS = @HIP_CFLAGS@
+HIP_LDFLAGS = @HIP_LDFLAGS@
+HIP_LIBS = @HIP_LIBS@
+HIP_guess_prog = @HIP_guess_prog@
+HWLOC_CFLAGS = @HWLOC_CFLAGS@
+HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
+HWLOC_LIBS = @HWLOC_LIBS@
+HWLOC_guess_prog = @HWLOC_guess_prog@
 IBV_CFLAGS = @IBV_CFLAGS@
 IBV_LDFLAGS = @IBV_LDFLAGS@
 IBV_LIBS = @IBV_LIBS@
@@ -532,6 +546,7 @@ CONDUITMODE_headers = \
 	gasnet_ammacros.h  	\
 	gasnet_trace.h     	\
 	gasnet_fwd.h    	\
+	other/kinds/gasnet_mk.h \
 	extended-ref/coll/gasnet_coll.h \
 	extended-ref/ratomic/gasnet_ratomic.h \
 	extended-ref/vis/gasnet_vis.h      
@@ -556,6 +571,7 @@ CONDUITMODE_EXTRA_DIST = \
 	gasnet_trace.c
 
 CONDUITMODE_INSTALL_DOCS = \
+	docs/memory_kinds.md  \
 	docs/GASNet-EX.txt
 
 # GASNET_TOOLSONLY_FALSE_END
@@ -639,6 +655,10 @@ recurse_local = $(CONDUITS:%=%-recurse) recurse_local_dummy
 SPECIAL_SUBDIRS = mpi-conduit/contrib
 @TOOLSONLY_MODE_FALSE@TESTDIST = `find . -print | grep -v ^./mpi`
 @TOOLSONLY_MODE_TRUE@TESTDIST = README testtools.c test.h Makefile.in
+@TOOLSONLY_MODE_FALSE@GIT_DESCRIBE_DIRTY = --dirty
+# A tools-only git clone is *always* dirty, but we don't want to see the
+# string '-dirty' in version info of distributed tarballs and resuting installs.
+@TOOLSONLY_MODE_TRUE@GIT_DESCRIBE_DIRTY = 
 @USE_PSHM_FALSE@PSHM_CONFIG_FLAG = 
 
 # If we've enabled PSHM, also enabled for 'make distcheck'
@@ -1434,8 +1454,12 @@ dist-hook:
            exit 1 ; \
         fi
 	if test -d $(srcdir)/.git ; then \
-	  GASNET_DESC=`$${GIT=git} --git-dir=$(srcdir)/.git describe` || exit $$? ; \
-	  $(PERL) -pi -e "s:no-version-control-info:$$GASNET_DESC:;" -- $(distdir)/configure $(distdir)/gasnet_tools.c || exit $$? ; \
+	  GASNET_DESC=`( cd $(srcdir) && $${GIT=git} describe --long --always $(GIT_DESCRIBE_DIRTY) ) 2>/dev/null | head -n 1`; \
+	  if test -z "$$GASNET_DESC"; then \
+	    echo 'Use of git describe failed even though .git exists' 1>&2; \
+	    exit 1;                        \
+	  fi;                              \
+	  $(PERL) -pi -e "s:no-version-control-info:$$GASNET_DESC:;" -- $(distdir)/configure || exit $$? ; \
 	  echo $$GASNET_DESC > $(distdir)/version.git || exit $$? ; \
 	fi
 	if test -f $(distdir)/docs/Makefile ; then \

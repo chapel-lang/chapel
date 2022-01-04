@@ -21,7 +21,7 @@ proc dit (A, param ttype: testTypes) {
       var B: [1..n,1..m] real;
       if ttype != testTypes.init then B = loc.id+1;
       if loc.id != 0 then
-        l[loc.id];
+        l[loc.id].readFE();
       if doCommDiag then startCommDiagnostics();
       var st = getCurrentTime();
       select ttype {
@@ -50,7 +50,7 @@ proc dit (A, param ttype: testTypes) {
         writeln("Remote ", ttype:string, " (Locale ", loc.id, "): ", dt);
       }
       if loc.id != numLocales-1 then
-        l[loc.id+1] = true;
+        l[loc.id+1].writeEF(true);
     }
 }
 

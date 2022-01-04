@@ -42,27 +42,29 @@ enum AggregateResolved {
   RESOLVED
 };
 
-class AggregateType : public Type {
+class AggregateType final : public Type {
 public:
   static void                 setCreationStyle(TypeSymbol* t, FnSymbol* fn);
 
 public:
                               AggregateType(AggregateTag initTag);
-                             ~AggregateType();
+                             ~AggregateType() override;
 
   DECLARE_COPY(AggregateType);
+  AggregateType*      copyInner(SymbolMap* map) override;
 
-  virtual void                replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  void                replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
 
-  virtual void                verify();
+  void                verify() override;
 
-  virtual void                accept(AstVisitor* visitor);
+  void                accept(AstVisitor* visitor) override;
 
-  virtual void                printDocs(std::ostream* file, unsigned int tabs);
+  void                printDocs(std::ostream* file, unsigned int tabs);
 
   bool                        isClass()                                  const;
   bool                        isRecord()                                 const;
   bool                        isUnion()                                  const;
+  const char*                 aggregateString()                          const;
 
   // is it a generic type (e.g. contains a type field with or without default)
   // e.g. this would return true for
@@ -89,7 +91,7 @@ public:
   Symbol*                     getField(int i)                            const;
 
   Symbol*                     getField(const char* name,
-                                       bool        fatal = true)         const;
+                                       bool        fatal = true) const override;
 
   int                         getFieldPosition(const char* name,
                                                bool        fatal = true);
@@ -105,9 +107,9 @@ public:
 
   bool                        mayHaveInstances()                         const;
 
-  void                        codegenDef();
+  void                        codegenDef() override;
 
-  void                        codegenPrototype();
+  void                        codegenPrototype() override;
 
   GenRet                      codegenClassStructType();
 
@@ -157,13 +159,12 @@ public:
 
   Symbol*                     getSubstitution(const char* name)          const;
 
-  Type*                       getDecoratedClass(ClassTypeDecorator d);
+  Type*                       getDecoratedClass(ClassTypeDecoratorEnum d);
 
   // Returns true if a field is considered generic
   // (i.e. it needs a type constructor argument)
   bool                        fieldIsGeneric(Symbol* field,
                                              bool &hasDefault);
-
 
   Type*                       cArrayElementType()                        const;
   int64_t                     cArrayLength()                             const;
@@ -228,7 +229,7 @@ private:
                                                  Vec<const char*>& names) const;
 
 private:
-  virtual std::string         docsDirective();
+  std::string                 docsDirective();
 
   std::string                 docsSuperClass();
 

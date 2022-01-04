@@ -1,0 +1,4 @@
+recursive-ifc-3-error2.chpl:27: In 'implements Ifc3' statement:
+recursive-ifc-3-error2.chpl:27: error: when checking this implements statement
+recursive-ifc-3-error2.chpl:27: note: the required function reqFun3 is not implemented
+recursive-ifc-3-error2.chpl:22: note: the required function reqFun3 in the interface Ifc3 is declared here

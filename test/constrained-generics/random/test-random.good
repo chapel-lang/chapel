@@ -1,0 +1,7 @@
+testOps true :bool
+testOps 5.0i :imag(64)
+testOps STRING :string
+created three of borrowed PCGRandomStream(int(64),true)
+starting testGetNth()
+finished testGetNth()
+fillRandom() check passed

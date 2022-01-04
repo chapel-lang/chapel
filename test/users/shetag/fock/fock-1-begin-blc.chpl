@@ -37,17 +37,17 @@ proc buildjk() {
     for l in 1..nlocales do
       begin  
         {	      	
-          var bI = task!;
+          var bI = task.readFE()!;
           while (bI.ilo != 0) {
             const copyofbI = bI;
             cobegin with (ref bI) {
               buildjk_atom4(copyofbI);
-              bI = task!;
+              bI = task.readFE()!;
             }
           }
-          task = bI;
-          const numDone = numTasksDone + 1;
-          numTasksDone = numDone;
+          task.writeEF(bI);
+          const numDone = numTasksDone.readFE() + 1;
+          numTasksDone.writeEF(numDone);
           if numDone == nlocales then
             delete bI;
         //task = new unmanaged blockIndices(0,0,0,0,0,0,0,0);
@@ -61,12 +61,12 @@ proc buildjk() {
           forall kat in 1..iat {
             const lattop = if (kat==iat) then jat else kat;  
             forall lat in 1..lattop {
-              task = new unmanaged blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2));
+              task.writeEF(new unmanaged blockIndices(bas_info(iat,1), bas_info(iat,2), bas_info(jat,1), bas_info(jat,2), bas_info(kat,1), bas_info(kat,2), bas_info(lat,1), bas_info(lat,2)));
             }
           }
         }
       }
-      task = new unmanaged blockIndices(0,0,0,0,0,0,0,0);
+      task.writeEF(new unmanaged blockIndices(0,0,0,0,0,0,0,0));
     }
   }
   
@@ -143,7 +143,7 @@ proc buildjk_atom4(bI) {
     }
   }
 
-  var tmp = oneAtATime;
+  var tmp = oneAtATime.readFE();
   //  writeln("Updating: ", (ijD, klD, ikD, ilD, jkD, jlD));
   //  writeln("With: ", (jij, jkl, kik, kil, kjk, kjl));
 
@@ -153,7 +153,7 @@ proc buildjk_atom4(bI) {
   kmat2(ilD) += kil;
   kmat2(jkD) += kjk;
   kmat2(jlD) += kjl;
-  oneAtATime = tmp;
+  oneAtATime.writeEF(tmp);
 
   delete bI;
 }

@@ -34,16 +34,16 @@ var parsedElements: [AllPairs] single unmanaged XmlElement?;
 proc main {
   forall z in AllIndices with (ref StartIndices, ref EndIndices) do {
     if sourceText[z] == '<' then {
-      lock;
+      lock.readFE();
       StartIndices += z;
       if z > 0 && sourceText[z-1] != ">" then EndIndices += z-1;
-      lock = 0;
+      lock.writeEF(0);
     }
     else if sourceText[z] == '>' then {
-      lock;
+      lock.readFE();
       EndIndices += z;
       if z < (sourceText.size-1) && sourceText[z+1] != "<" then StartIndices += z+1;
-      lock = 0;
+      lock.writeEF(0);
     }
   }
   coforall x in StartIndices do {
@@ -56,16 +56,16 @@ proc main {
   var minindex = min reduce ([i in StartIndices] i);
   var maxindex = max reduce ([j in EndIndices] j);
   writeln("[", minindex, ",", maxindex, "] = ");
-  if (parsedElements(minindex,maxindex) == nil) then
+  if (parsedElements(minindex,maxindex).readFF() == nil) then
     writeln("Parse failed");
   else {
     writeln("Parse succeeded!");
-    parsedElements(minindex,maxindex)!.print;
+    parsedElements(minindex,maxindex).readFF()!.print;
   }
 
   for i in AllPairs do
     if parsedElements(i).readXX() {
-      var pe = parsedElements(i);
+      var pe = parsedElements(i).readFF();
       delete pe;
     }
 }
@@ -83,7 +83,7 @@ proc hasSpace(str) {
 proc processTag(i,j) {
   if (i > j) then {
     /* invalid range */
-    parsedElements(i,j) = nil;
+    parsedElements(i,j).writeEF(nil);
     writeln("\t[", i, "--", j, "] = Invalid range!");
     return;
   }
@@ -92,13 +92,13 @@ proc processTag(i,j) {
       (sourceText[i] != "<" && sourceText[j] != ">")) then {
     /* all text? assumes all entities are escaped*/
     var elt = new unmanaged XmlPCData(j-i+1, sourceText[i..j]);
-    parsedElements(i,j) = elt;
+    parsedElements(i,j).writeEF(elt);
     writeln("PCData : ", elt.data);
     return;
   }
   if (sourceText[i] != "<" || sourceText[j] != ">") {
     /* can't be PCData, and isn't a tag */
-    parsedElements(i,j) = nil;
+    parsedElements(i,j).writeEF(nil);
     writeln("Not a legitimate tag or PCdata");
     return;
   }
@@ -112,26 +112,26 @@ proc processTag(i,j) {
         break;
       }
     var elt = new unmanaged XmlTag(j-i+1, name);
-    parsedElements(i,j) = elt;
+    parsedElements(i,j).writeEF(elt);
     writeln("Self-closed : ", elt.name);
     return;
   }
   if (sourceText[stop+1] != "/") then {
     /* are we at an end tag? */
-    parsedElements(i,j) = nil;
+    parsedElements(i,j).writeEF(nil);
     writeln("Not ending with end tag");
     return;
   }
   if (j - stop < 3) {
     /* is this an empty tag? */
-    parsedElements(i,j) = nil;
+    parsedElements(i,j).writeEF(nil);
     writeln("Empty tag");
     return;
   }
   var tagName = sourceText[stop+2..j-1];
   var tagLen = tagName.size;
   if (hasSpace(tagName)) {
-    parsedElements(i,j) = nil;
+    parsedElements(i,j).writeEF(nil);
     writeln("End tag has spaces in it");
     return;
   }
@@ -139,7 +139,7 @@ proc processTag(i,j) {
         (sourceText[i+1 + tagLen] == " " ||
          sourceText[i+1 + tagLen] == ">"))) {
     writeln("Start and end tags disagree : '", sourceText[i+1..(i+tagLen)], "' <=> '", tagName, "'");
-    parsedElements(i,j) = nil;
+    parsedElements(i,j).writeEF(nil);
     return;
   }
   var start = min reduce ([x in EndIndices] if x > i then x);
@@ -149,13 +149,13 @@ proc processTag(i,j) {
     var item : unmanaged XmlElement? = nil;
     for e in EndIndices do
       if e > start && e < stop &&
-        item == nil && parsedElements(start, e) != nil {
-        item = parsedElements(start,e);
+        item == nil && parsedElements(start, e).readFF() != nil {
+        item = parsedElements(start,e).readFF();
         break;
       }
     if item == nil {
       writeln("Couldn't find a consistent parse at index ", start);
-      parsedElements(i,j) = nil;
+      parsedElements(i,j).writeEF(nil);
       return;
     } else {
       var curSize = elt.childrenValues.size;
@@ -166,7 +166,7 @@ proc processTag(i,j) {
       start += item!.size;
     }     
   }
-  parsedElements(i,j) = elt;
+  parsedElements(i,j).writeEF(elt);
   writeln("[", i, "-", j, "] = ELEMENT(", tagName, ")");
   /*
     writeln("(", i, ", ", j, ") => ", sourceText[i..j]);

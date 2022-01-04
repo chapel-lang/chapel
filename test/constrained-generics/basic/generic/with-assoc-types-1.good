@@ -1,0 +1,98 @@
+cgFun.IFC1
+  reqFun.RT1
+    cgArg   = (xx = 101) : RT1(real(64))
+cgFun.IFC1.AT
+  reqFun.RT1.int
+    cgArg   = (xx = 101) : RT1(real(64))
+    atArg   = 11 : int(64)
+cgFun.IFC1
+  reqFun.RT2
+    cgArg   = (xx = 102) : RT2(bool)
+cgFun.IFC1.AT
+  reqFun.RT2.AT
+    cgArg   = (xx = 102) : RT2(bool)
+    atArg   = true : bool
+cgFun.IFC1
+  reqFun.RT3
+    cgArg   = (xx = 103) : RT3(string)
+cgFun.IFC1.AT
+  reqFun.RT3.GT
+    cgArg   = (xx = 103) : RT3(string)
+    atArg   = rt03 : string
+cgFun.IFC1
+  reqFun.RT4
+    cgArg   = (xx = 104) : RT4(locale)
+cgFun.IFC1.AT
+  reqFun.RT4.self
+    cgArg   = (xx = 104) : RT4(locale)
+    atArg   = (xx = 104) : RT4(locale)
+cgFun.IFC1
+  reqFun.RV1
+    cgArg   = (xx = 2.01) : RV1(real(64))
+cgFun.IFC1.AT
+  reqFun.RV1.int
+    cgArg   = (xx = 2.01) : RV1(real(64))
+    atArg   = 21 : int(64)
+cgFun.IFC1
+  reqFun.RV3
+    cgArg   = (xx = rv03) : RV3(string)
+cgFun.IFC1.AT
+  reqFun.RV3.AT
+    cgArg   = (xx = rv03) : RV3(string)
+    atArg   = bis03 : string
+cgFun.IFC1
+  reqFun.RV4
+    cgArg   = (xx = LOCALE0) : RV4(locale)
+cgFun.IFC1.AT
+  reqFun.RV4.self
+    cgArg   = (xx = LOCALE0) : RV4(locale)
+    atArg   = (xx = LOCALE0) : RV4(locale)
+cgFun.IFC1
+  reqFun.RTX1
+    cgArg   = (xx = 301) : RTX1(real(64),"PP31")
+cgFun.IFC1.AT
+  reqFun.RTX1.int
+    cgArg   = (xx = 301) : RTX1(real(64),"PP31")
+    atArg   = 31 : int(64)
+cgFun.IFC1
+  reqFun.RTX2
+    cgArg   = (xx = 302) : RTX2(bool,3.02)
+cgFun.IFC1.AT
+  reqFun.RTX2.AT
+    cgArg   = (xx = 302) : RTX2(bool,3.02)
+    atArg   = true : bool
+cgFun.IFC1
+  reqFun.RTX3
+    cgArg   = (xx = 303) : RTX3(string,false)
+cgFun.IFC1.AT
+  reqFun.RTX3.GT
+    cgArg   = (xx = 303) : RTX3(string,false)
+    atArg   = rtx03 : string
+cgFun.IFC1
+  reqFun.RTX4
+    cgArg   = (xx = 304) : RTX4(locale,3.04)
+cgFun.IFC1.AT
+  reqFun.RTX4.self
+    cgArg   = (xx = 304) : RTX4(locale,3.04)
+    atArg   = (xx = 304) : RTX4(locale,3.04)
+cgFun.IFC1
+  reqFun.RVX1
+    cgArg   = (xx = 4.01) : RVX1(real(64),true)
+cgFun.IFC1.AT
+  reqFun.RVX1.int
+    cgArg   = (xx = 4.01) : RVX1(real(64),true)
+    atArg   = 41 : int(64)
+cgFun.IFC1
+  reqFun.RVX3
+    cgArg   = (xx = rvx03) : RVX3(string,4.03)
+cgFun.IFC1.AT
+  reqFun.RVX3.AT
+    cgArg   = (xx = rvx03) : RVX3(string,4.03)
+    atArg   = bis03 : string
+cgFun.IFC1
+  reqFun.RVX4
+    cgArg   = (xx = LOCALE0) : RVX4(locale,"there")
+cgFun.IFC1.AT
+  reqFun.RVX4.self
+    cgArg   = (xx = LOCALE0) : RVX4(locale,"there")
+    atArg   = (xx = LOCALE0) : RVX4(locale,"there")

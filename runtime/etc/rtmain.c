@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-// This file is used in --llvm compiles to compile the header
+// This file is used in LLVM backend compiles to compile the header
 // declarations for the Chapel runtime into an LLVM module.
 
 #include "stdchpl.h"

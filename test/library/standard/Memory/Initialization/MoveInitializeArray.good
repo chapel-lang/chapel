@@ -1,0 +1,19 @@
+T1
+0 0 3 4
+3 4 3 4
+
+T2
+0 0 0 0
+1 2 3 4
+1 2 3 4
+1 2 3 4
+
+T3
+(ptr = {x = 0}) (ptr = {x = 1}) (ptr = {x = 2}) (ptr = {x = 3})
+(ptr = {x = 2}) (ptr = {x = 3}) (ptr = {x = 0}) (ptr = {x = 0})
+
+T4
+(ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 0})
+(ptr = {x = 1}) (ptr = {x = 2}) (ptr = {x = 3}) (ptr = {x = 4})
+(ptr = {x = 1}) (ptr = {x = 2}) (ptr = {x = 3}) (ptr = {x = 4})
+(ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 0})

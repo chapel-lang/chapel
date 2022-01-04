@@ -5,11 +5,11 @@ proc f(x:enum) {
 enum e {a=1};
 
 var a:sync e = e.a;
-f(a);
+f(a.readFE());
 
 proc g(x:integral) {
   writeln(x);
 }
 
 var b:single int = 1;
-g(b);
+g(b.readFF());

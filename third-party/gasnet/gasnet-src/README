@@ -427,9 +427,10 @@ ucx-conduit: Unified Communication X framework [EXPERIMENTAL]
  This conduit is currently experimental, and is not yet carefully tuned for performance.
  It has only been validated on Mellanox InfiniBand devices starting from ConnectX-5.
 
-ofi-conduit: Open Fabrics Interfaces (*TEMPORARILY DISABLED*)
+ofi-conduit: Open Fabrics Interfaces [EXPERIMENTAL]
  GASNet over the Open Fabrics Interface framework (libfabric).
  This conduit is currently being re-implemented for GASNet-EX.
+ Work to date is believed to be functionally complete and correct, but not performant.
  Until that rewrite is complete, users are advised to use other conduits compatible
  with their hardware, or to use the legacy GASNet-1 release (if EX-specific features are not required).
 
@@ -493,13 +494,13 @@ Platforms where GASNet and Berkeley UPC have been successfully tested include:
     * Linux/x86/IntelC/32:           smp, mpi, udp
     * Linux/x86/PortlandGroupC/32:   smp, mpi, udp
     * Linux/x86_64-Ethernet/{gcc,clang,PGI}/{32,64}: smp, mpi, udp, ofi
-    * Linux/x86_64-Mellanox/{gcc,clang,PathScale,IntelC}/64: smp, mpi, udp, ibv
+    * Linux/x86_64-Mellanox/{gcc,clang,PathScale,NVHPC,IntelC,Intel oneAPI}/64: smp, mpi, udp, ibv
     * Linux/x86_64-OmniPath/gcc/64: smp, mpi, udp, ofi
     * Linux/x86_64/x86-Open64/64:   smp, udp, #
 
     * Linux/PowerPC-Ethernet/{gcc,clang}/{32,64}: smp, mpi, udp
     * Linux/PowerPC-HFI/gcc/32: smp, mpi, udp &
-    * Linux/PPC64le/{gcc,clang,pgi,xlc}/64:     smp, mpi, udp, ibv #
+    * Linux/PPC64le/{gcc,clang,pgi,NVHPC,xlc}/64:     smp, mpi, udp, ibv #
 
     * Linux/MIPS/gcc/{32,n32,64}:       smp, udp, #
     * Linux/MIPS64el/gcc/{32,n32,64}:   smp, udp, #
@@ -520,6 +521,7 @@ Platforms where GASNet and Berkeley UPC have been successfully tested include:
     * macOS/{x86,x86_64}/icc/{32,64}: smp, udp, mpi &
     * macOS/{x86,x86_64}/{gcc,clang}/{32,64}: smp, udp, mpi
     * macOS/{x86,x86_64}/PGI/{32,64}: smp, udp, #
+    * macOS/AARCH64/{gcc,clang}/64:   smp, udp, #
 
     * CNL/Cray-XT/{gcc,PGI,PathScale,Intel}/64: smp, mpi &
 
@@ -549,8 +551,9 @@ although we generally recommend the vendor C compiler for performance reasons.
 
 The following compilers are believed to work on platforms listed above, 
 with the provided minimum version:
-Gnu (gcc 3.0+), LLVM (clang 3.6+), Apple (Xcode 7.1+), Intel (icc 16+), 
-PGI (pgcc 10.9+), IBM XL (xlc 13+), Cray (CCE 8.6+)
+Gnu (gcc 3.0+), LLVM (clang 3.6+), Apple (Xcode 7.1+), PGI (pgcc 10.9 to 20.4),
+NVHPC (20.9+), Intel (icc 16+), Intel oneAPI (icx 21+), IBM XL (xlc 13+),
+Cray (CCE 8.6+)
 
 Recognized Environment Variables
 ================================
@@ -560,14 +563,19 @@ consult the wrapper's documentation.  Such wrappers often have options to set
 these environment variables while also enabling any corresponding language- or
 application-specific support.
 
-* GASNET_VERBOSEENV: set to 1 to output information about environment variable settings
- read by the conduit that affect conduit behavior.
+In the following descriptions, a "Boolean" setting is one which accepts "1",
+"y" and "yes" as TRUE and "0", "n" and "no" as FALSE (all case-insensitive).
+While the descriptions use "0" or "1" to be concrete, one may substitute any of
+these aliases.
 
-* GASNET_FREEZE: set to 1 to make GASNet pause and wait for a debugger to attach on
- startup
+* GASNET_VERBOSEENV: Boolean setting to output information about environment
+ variable settings read by the conduit that affect conduit behavior.
 
-* GASNET_FREEZE_ON_ERROR: set to 1 to make GASNet pause and wait for a debugger
- to attach on any fatal errors or fatal signals
+* GASNET_FREEZE: Boolean setting to make GASNet pause and wait for a debugger
+ to attach on startup
+
+* GASNET_FREEZE_ON_ERROR: Boolean setting to make GASNet pause and wait for a
+ debugger to attach on any fatal errors or fatal signals
 
 * GASNET_FREEZE_SIGNAL: set to a signal name (e.g. "SIGINT" or "SIGUSR1") to
  specify a signal that will cause the process to freeze and await debugger attach.
@@ -577,7 +585,7 @@ application-specific support.
    control tracing & statistical features, if enabled at configure time.
    See usage information below.
 
-* GASNET_TEST_POLITE_SYNC: set to 1 to enable polite-mode synchronization
+* GASNET_TEST_POLITE_SYNC: Boolean setting to enable polite-mode synchronization
   for the GASNet tests (only), for running with overcommitted CPUs.
 
 * GASNET_MALLOC_* : control the GASNet debug malloc features, if enabled at configure time.
@@ -602,14 +610,15 @@ application-specific support.
  The default behavior of this option has grown considerably smarter over time, so
  it's anticipated that most clients will never need to set this.
 
-* GASNET_DISABLE_MUNMAP - requests the use of mallopt() on glibc systems to disable
- mmap-based allocation for satisfying malloc. This can be used to work-around a
- known bug in firehose (bug 495) that could lead to incorrect behavior after 
- free()ing out-of-segment memory areas previously used for communication. Note that
- on some systems (32-bit Linux in particular) the disable is only partly effective
- because once the sbrk()-controlled heap reaches the bottom of shared libraries,
- glibc will use mmap() used to obtain memory regardless of any options one can
- control. The default is conduit-dependent.
+* GASNET_DISABLE_MUNMAP - Boolean setting to request the use of mallopt() on
+ glibc systems to disable mmap-based allocation for satisfying malloc. This
+ can be used to work-around a known bug in firehose (bug 495) that could lead
+ to incorrect behavior after free()ing out-of-segment memory areas previously
+ used for communication. Note that on some systems (32-bit Linux in
+ particular) the disable is only partly effective because once the
+ sbrk()-controlled heap reaches the bottom of shared libraries, glibc will use
+ mmap() used to obtain memory regardless of any options one can control.
+ The default is conduit-dependent.
 
 * GASNET_MAX_THREADS - per-node limit on the number of GASNet client pthreads 
   (in PAR and PARSYNC modes) that can simultaneously be live on each GASNet node.
@@ -621,19 +630,21 @@ application-specific support.
  into a shared-memory "supernode", as reported by gasnet_getNodeInfo() and used
  by shared-memory communication (PSHM).  A value of zero means no limit.
 
-* GASNET_PSHM_BARRIER_HIER - enable/disable hierarchical shared-memory barrier.
- When shared-memory communication (PSHM) is enabled, the default behavior of
- most of GASNet's barrier implementations is to use a two-stage barrier which
- coordinates within each supernode before communicating across the network.
- This variable can be set to 0 to disable this optimization.
+* GASNET_PSHM_BARRIER_HIER - Boolean setting to enable/disable hierarchical
+ shared-memory barrier.  When shared-memory communication (PSHM) is enabled,
+ the default behavior of most of GASNet's barrier implementations is to use a
+ two-stage barrier which coordinates within each supernode before
+ communicating across the network.
+ This variable can be set to "0" to disable this optimization.
 
-* GASNET_CATCH_EXIT - set to 0 to prevent GASNet from forcing global job
- termination (via atexit() or on_exit()) when a process calls exit() or returns
- from main().  GASNet's default behavior helps prevent orphaned processes that
- can occur in some systems after an incomplete job termination, but may interfere 
- with some profiling tools that write output inside atexit handlers. Setting this
- variable may allow those tools to operate, but the client code (or other entity) 
- must assume responsibility for ensuring no orphan processes are left behind.
+* GASNET_CATCH_EXIT - Boolean setting, where a "0" prevents GASNet from forcing
+ global job termination (via atexit() or on_exit()) when a process calls
+ exit() or returns from main().  GASNet's default behavior helps prevent
+ orphaned processes that can occur in some systems after an incomplete job
+ termination, but may interfere with some profiling tools that write output
+ inside atexit handlers.  Setting this variable may allow those tools to
+ operate, but the client code (or other entity) must assume responsibility for
+ ensuring no orphan processes are left behind.
 
  Note this variable does not affect the behavior of explicit calls to gasnet_exit() 
  (either directly or indirectly via calls like upc_global_exit(), returning from 
@@ -653,11 +664,12 @@ application-specific support.
  allow use of other tools for debugging of signals, but is not intended
  for production use.
 
-* GASNET_BACKTRACE - requests the generation of stack backtraces on most fatal
- errors.  The format/content of these backtraces varies by platform.  On some
- platforms no backtrace support is available and this variable will be
- ignored.  Backtraces are sent to stderr and to the trace file if tracing is
- active (see below).
+* GASNET_BACKTRACE - Boolean setting to request the generation of stack
+ backtraces on most fatal errors.  The format/content of these backtraces
+ varies by platform.  On some platforms no backtrace support is available and
+ this variable will be ignored.  Backtraces are sent to stderr and to the
+ trace file if tracing is active (see below).
+
  WARNING: Some fatal errors may involve memory corruption or other abnormal
  conditions that could cause the backtrace code to hang. For this reason we
  do not recommend setting GASNET_BACKTRACE by default (though there is no
@@ -684,10 +696,16 @@ application-specific support.
  GASNET_BACKTRACE. The default value (visible via GASNET_VERBOSEENV) includes
  all mechanisms detected as supported on the current platform.
 
-* GASNET_DISABLE_ENVDECODE/GASNET_DISABLE_ARGDECODE - disable the automatic decoding 
- of environment variable values/command-line arguments. Some GASNet spawners 
- automatically encode shell meta-characters passing through non-GASNet spawn scripts, 
- in to order to ensure their safe delivery to the GASNet client program.
+* GASNET_BACKTRACE_MT - Boolean setting requesting multi-threaded backtraces
+ when supported by the backtrace mechanism. This overrides the default, which
+ is generally "1" for thread-safe builds and SEQ builds with conduit-internal
+ threads. Otherwise, the default is "0".
+
+* GASNET_DISABLE_ENVDECODE/GASNET_DISABLE_ARGDECODE - Boolean setting to disable
+ the automatic decoding of environment variable values/command-line arguments.
+ Some GASNet spawners automatically encode shell meta-characters passing
+ through non-GASNet spawn scripts, in to order to ensure their safe delivery
+ to the GASNet client program.
 
 * GASNET_BARRIER - select the communication algorithm for use in GASNet barriers.
  The following values are available on all conduits:
@@ -727,23 +745,23 @@ application-specific support.
  must be capable of buffering before possibly stalling.
  The default is 32 and the minimum is 4.
 
-* GASNET_NODEMAP_EXACT - enables exact algorithm for discovery of shared memory nodes.
+* GASNET_NODEMAP_EXACT - Boolean setting to enable an exact algorithm for
+ discovery of shared memory nodes.
  Several GASNet conduits use mmap() and/or conduit-specific memory registration
  resources to establish the GASNet segment.  When multiple GASNet nodes (processes)
  run on the same O/S node, there is a potential for competition for resources which
  can be managed by coordinating among the processes.
  When PSHM support is enabled, multiple processes on the same O/S node must be
  identified so they can cross-mmap() their GASNet segments.
- By default processes sharing the same O/S node are discovered using an algorithm
+ Processes sharing the same O/S node can be discovered using an algorithm
  that runs in time linear in the number of GASNet nodes, and which is sufficient
- for all common process layout patterns.  However, the default may fail to discover
- sharing in unusual cases.  Setting this variable to 1 enables an algorithm that is
- certain to find all sharing of memory, but has an expected running time
- proportional to N*log(N).
- The default is currently 0 for all but udp-conduit, which has an unpredictable
- process layout.
+ for all common process layout patterns.  However, this approach may fail to
+ discover sharing in unusual cases.  Setting this variable to "1" enables an
+ algorithm that is certain to find all sharing of memory, but has an expected
+ running time proportional to N*log(N).
+ The default is currently "1": use of the slower, but safer, exact algorithm.
 
-* GASNET_VIS_AMPIPE - set to 1 to enable packing of most non-contiguous
+* GASNET_VIS_AMPIPE - Boolean setting to enable packing of most non-contiguous
  put/gets into AMMediums, with each packet of size approx MaxMedium (the only
  exception being cases where both sides happen to be fully contiguous, in
  which case we skip packing). The default is conduit-dependent.
@@ -756,9 +774,9 @@ application-specific support.
 * GASNET_VIS_MAXCHUNK - Provides a default value for GASNET_VIS_{PUT,GET}_MAXCHUNK,
  to be used when the more specific knob is unset.
 
-* GASNET_VIS_REMOTECONTIG - enables a pack & RDMA algorithm for gather puts and
- scatter gets - i.e. cases that are locally non-contiguous but remotely
- contiguous. The default is conduit-dependent.
+* GASNET_VIS_REMOTECONTIG - Boolean setting to enable a pack & RDMA algorithm for
+ gather puts and scatter gets - i.e. cases that are locally non-contiguous but
+ remotely contiguous. The default is conduit-dependent.
 
 * GASNET_COLL_SCRATCH_SIZE - Specifies the size of the scratch space allocated
  on each rank for internal use in collective communications.  This is the
@@ -766,21 +784,17 @@ application-specific support.
  a query using GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED.
  If the size is set too low, then the performance of collectives may suffer.
  This parameter must be single-valued (same value on all processes).
+ A value of zero is permitted, but any value below some implementation-specific
+ minimum value will be silently increased to that minimum.
  Defaults to 2MB per rank.
 
-* GASNET_COLL_MIN_SCRATCH_SIZE - Specifies the minimum size of the scratch
- space allocated on each rank for internal use in collective communications.
- This is the minimum size permitted for the initial team (or job startup will
- fail), and is the value returned from a query using GEX_FLAG_TM_SCRATCH_SIZE_MIN.
- This parameter must be single-valued (same value on all processes).
- Defaults to 1KB per rank.
-
-* GASNET_COLL_ENABLE_SEARCH - enable autotuning of collectives
+* GASNET_COLL_ENABLE_SEARCH - Boolean setting to enable autotuning of collectives
 * GASNET_COLL_TUNING_FILE - file to read and/or write collective autotuning data
  For usage information, see the file autotuner.txt in the docs directory.
 
-* GASNET_FS_SYNC - set to 1 enable a sync() call (or equivalent) at exit time.
- Default is 0.  Try this setting if you experience truncated output.
+* GASNET_FS_SYNC - Boolean setting to enable a sync() call (or equivalent) at
+ exit time.  Default is "0".  Try this setting if you experience truncated
+ output.
 
 * GASNET_TMPDIR: if set to a valid directory name this is used instead of TMPDIR
  or "/tmp" as a location for creating temporary files.
@@ -795,8 +809,9 @@ application-specific support.
  this length must be sufficiently long to make the probability of matching the
  client data very low.
 
- GASNET_SD_INIT - Defaults to 1 in debug builds (and is effectively 0 otherwise)
-   Setting to 0 disables the initialization and checking
+ GASNET_SD_INIT - Boolean setting which defaults to "1" in debug builds (and is
+   effectively "0" otherwise)
+   Setting to a "0" disables the initialization and checking
  GASNET_SD_INITVAL - Defaults to "NAN"
    Specifies the initialization pattern.
    See GASNET_MALLOC_INITVAL for more info.
@@ -906,6 +921,7 @@ Optional environment variable settings:
      A - AM requests/replies (and handler execution, if conduit-supported)
      X - AMPoll
      I - informational messages about system status or performance alerts
+     O - Object creation, modification and destruction
      C - conduit-specific (low-level) messages
      D - Detailed message data for gets/puts/AMreqrep
      N - Line number information from client source files

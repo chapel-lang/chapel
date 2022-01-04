@@ -34,7 +34,7 @@ proc R.deinit() {
   this.ptr = nil;
 }
 
-proc =(ref lhs: R, rhs: R) {
+operator R.=(ref lhs: R, rhs: R) {
   writeln("    assign");
   lhs.x = rhs.x;
   delete lhs.ptr;

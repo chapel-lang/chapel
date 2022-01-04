@@ -1279,11 +1279,28 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 	gex_Rank_t num_nodes = gasneti_nodes;
 	int dflt_M, dflt_VM;
 	int dflt_R, dflt_VR;
-	int dflt_RS;
+	int dflt_RS, auto_RS;
 
-        /* Initialize the Bucket tables */
-        fh_BucketTable1 = fh_hash_create(1<<16); /* 64k */
-        fh_BucketTable2 = fh_hash_create(1<<17); /* 128k */
+        // Minimum permissible values
+        uintptr_t   M_min, VM_min;
+        int         R_min, VR_min;
+        if ((fhi_InitFlags & FIREHOSE_INIT_FLAG_LOCAL_ONLY)) {
+                // Want at least 16MB worth of buckets in victim FIFO
+                VM_min = (16*1024*1024) / FH_BUCKET_SIZE;
+                // Want at least 32 regions of victim FIFO
+                VR_min = 32;
+                // Other two are unused
+                M_min = R_min = 0;
+        } else {
+                // Want at least 32 buckets per node
+                M_min = FH_BUCKET_SIZE * num_nodes * 32;
+                // Want at least 256 buckets of victim FIFO
+                VM_min = FH_BUCKET_SIZE * 256;
+                // Want at least 1 region per node -- XXX/PHH THIS IS REALLY A BARE MINIMUM
+                R_min = num_nodes;
+                // Want at least 2 regions of FIFO -- XXX/PHH THIS IS REALLY A BARE MINIMUM
+                VR_min = 2;
+        }
 
 #if 0  /* UNUSED - see param_RS computation for explanation */
 	/* Count how many regions fit into an AM Medium payload */
@@ -1306,16 +1323,12 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 	m_prepinned = FH_BUCKET_SIZE * b_prepinned;
 
 	/* Get limits from the environment */
-	param_M  = fh_getenv("GASNET_FIREHOSE_M", (1<<20));
-	dflt_M   = !param_M;
-	param_VM = fh_getenv("GASNET_FIREHOSE_MAXVICTIM_M", (1<<20));
-	dflt_VM  = !param_VM;
-	param_R  = fh_getenv("GASNET_FIREHOSE_R", 1);
-	dflt_R   = !param_R;
-	param_VR = fh_getenv("GASNET_FIREHOSE_MAXVICTIM_R", 1);
-	dflt_VR  = !param_VR;
-	param_RS = fh_getenv("GASNET_FIREHOSE_MAXREGION_SIZE", (1<<20));
-	dflt_RS  = !param_RS;
+	param_M  = fh_getenv("GASNET_FIREHOSE_M", (1<<20), &dflt_M);
+	param_VM = fh_getenv("GASNET_FIREHOSE_MAXVICTIM_M", (1<<20), &dflt_VM);
+	param_R  = fh_getenv("GASNET_FIREHOSE_R", 1, &dflt_R);
+	param_VR = fh_getenv("GASNET_FIREHOSE_MAXVICTIM_R", 1, &dflt_VR);
+	param_RS = fh_getenv("GASNET_FIREHOSE_MAXREGION_SIZE", (1<<20), &dflt_RS);
+        auto_RS = !param_RS && !dflt_RS; // explicit zero
 	GASNETI_TRACE_PRINTF(C, 
 	    ("ENV: Firehose M=%"PRIuPTR", MAXVICTIM_M=%"PRIuPTR, param_M, param_VM));
 	GASNETI_TRACE_PRINTF(C, 
@@ -1324,7 +1337,7 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 	    ("ENV: Firehose max region size=%"PRIuPTR, (uintptr_t)param_RS));
 
 	/* Now assign decent "M" defaults based on physical memory */
-	if (param_M == 0 && param_VM == 0) {
+	if (dflt_M && dflt_VM) {
 		if ((fhi_InitFlags & FIREHOSE_INIT_FLAG_LOCAL_ONLY)) {
 			param_M  = m_prepinned;
 			param_VM = max_pinnable_memory - param_M;
@@ -1335,12 +1348,43 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 				    FH_MAXVICTIM_TO_PHYSMEM_RATIO;
 		}
 	}
-	else if (param_M == 0)
+	else if (dflt_M) {
+                uintptr_t limit = max_pinnable_memory - M_min;
+                if (param_VM > limit) {
+                        char str0[24], str1[24];
+                        gasneti_fatalerror("GASNET_FIREHOSE_MAXVICTIM_M (%s) is larger than the maximum"
+                                           "(%s) permitted without also setting GASNET_FIREHOSE_M.",
+                                            gasneti_format_number(param_VM, str0, 24, 1),
+                                            gasneti_format_number(limit, str1, 24, 1));
+                }
 		param_M = max_pinnable_memory - param_VM;
-	else if (param_VM == 0)
+        }
+        else if (dflt_VM) {
+                uintptr_t limit = max_pinnable_memory - VM_min;
+                if (param_M > limit) {
+                        char str0[24], str1[24];
+                        gasneti_fatalerror("GASNET_FIREHOSE_M (%s) is larger than the maximum (%s) "
+                                           "permitted without also setting GASNET_FIREHOSE_MAXVICTIM_M.",
+                                            gasneti_format_number(param_M, str0, 24, 1),
+                                            gasneti_format_number(limit, str1, 24, 1));
+                }
 		param_VM = max_pinnable_memory - param_M;
+        }
+        else if (param_M + param_VM > max_pinnable_memory) {
+                if (!gasneti_mynode) {
+                        char str0[24], str1[24], str2[24];
+                        gasneti_console_message("WARNING",
+                                "GASNET_FIREHOSE_M (%s) and GASNET_FIREHOSE_MAXVICTIM_M (%s) together "
+                                "are more than the maximum of %s recommended based on GASNET_PHYSMEM_MAX.",
+                                gasneti_format_number(param_M, str0, 24, 1),
+                                gasneti_format_number(param_VM, str1, 24, 1),
+                                gasneti_format_number(max_pinnable_memory, str2, 24, 1));
+                }
+        }
+        uintptr_t orig_M = param_M;
+        uintptr_t orig_VM = param_VM;
 
-	if (param_RS == 0) {
+	if (!param_RS) { // default or explicit zero for "auto"
 		if ((fhi_InitFlags & FIREHOSE_INIT_FLAG_LOCAL_ONLY)) {
 			param_RS = max_region_size;
 		} else {
@@ -1364,44 +1408,106 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 	}
 	/* Round down to multiple of FH_BUCKET_SIZE for sanity */
 	param_RS &= ~FH_PAGE_MASK;
-	/* Ensure max size fits in available bits of fh_key_t */
-	param_RS = MIN(param_RS, ((FH_BUCKET_SIZE - 1) << FH_BUCKET_SHIFT));
+#if FH_KEY_PACKED
+        // Ensure max size fits in available bits of fh_key_t
+        uintptr_t RS_max = ((uintptr_t)(FH_BUCKET_SIZE - 1) << FH_BUCKET_SHIFT);
+        if (param_RS > RS_max) {
+                if (!gasneti_mynode) {
+                        char str0[24], str1[24];
+                        gasneti_console_message("WARNING",
+                                                "GASNET_FIREHOSE_MAXREGION_SIZE (%s) has been "
+                                                "reduced to the largest supported value (%s).",
+                                                gasneti_format_number(param_RS, str0, 24, 1),
+                                                gasneti_format_number(RS_max, str1, 24, 1));
+                }
+                param_RS = RS_max;
+        }
+#endif
 
-
-	/* Try to work it all out with the given RS
- 	 * The goal is (currently) to honor the given region size and
-         * reduce the number of available regions as needed.
-	 */
-	if (param_R == 0 && param_VR == 0) {
+        // Try to "work it all out" to address the requested volume of memory.
+        // Normally we try to keep fixed RS, reducing the number of regions if needed.
+        // However, with "auto" RS, we first attempt to enlarge RS
+        const int avail_regions = max_regions - num_prepinned;
+        int rescaled = 0;
+	if (dflt_R && dflt_VR) {
 		if ((fhi_InitFlags & FIREHOSE_INIT_FLAG_LOCAL_ONLY)) {
 			param_R  = num_prepinned;
 			param_VR = max_regions - param_R;
 		} else {
-			double ratio;
-
 			/* try naively... */
 			param_R  = (param_M - m_prepinned)  / param_RS;
 			param_VR = param_VM / param_RS;
 			
-			/* then rescale if needed */
-			ratio = (max_regions - num_prepinned) /
-					(double)(param_R + param_VR);
+                        // Two approaches to rescaling if needed:
+                        double ratio = avail_regions / (double)(param_R + param_VR);
+                        // 1. try to scale up region size IFF user-provided vaule was 0
+                        if (ratio < 1. && auto_RS) {
+                                param_RS = GASNETI_ALIGNUP(param_RS / ratio, FH_BUCKET_SIZE);
+                                #if FH_KEY_PACKED
+                                param_RS = MIN(param_RS, RS_max);
+                                #endif
+                                param_R  = (param_M - m_prepinned)  / param_RS;
+                                param_VR = param_VM / param_RS;
+                                ratio = avail_regions / (double)(param_R + param_VR);
+                        }
+                        // 2. reduce R parameters if neccessary (possibly after auto-scaling RS)
 			if (ratio < 1.) {
 				param_R  *= ratio;
 				param_VR *= ratio;
+                                rescaled = 1;
 			}
 		}
 	}
-	else if (param_R == 0)
-		param_R  = max_regions - num_prepinned - param_VR;
-	else if (param_VR == 0)
-		param_VR = max_regions - num_prepinned - param_R;
+        else if (dflt_R) {
+                int limit = avail_regions - R_min;
+                if (param_VR > limit) {
+                        gasneti_fatalerror("GASNET_FIREHOSE_MAXVICTIM_R (%d) is larger than the "
+                                           "maximum permited (%d) without also setting GASNET_FIREHOSE_R.",
+                                            param_VR, limit);
+                }
+                param_R  = avail_regions - param_VR;
+        }
+        else if (dflt_VR) {
+                int limit = avail_regions - VR_min;
+                if (param_R > limit) {
+                        gasneti_fatalerror("GASNET_FIREHOSE_R (%d) is larger than the maximum permitted "
+                                           "(%d) without also setting GASNET_FIREHOSE_MAXVICTIM_R.",
+                                            param_R, limit);
+                }
+                param_VR = avail_regions - param_R;
+        }
+        else if (param_R + param_VR > avail_regions) {
+                if (!gasneti_mynode) {
+                        char str0[24], str1[24];
+                        gasneti_console_message("WARNING",
+                                "GASNET_FIREHOSE_R (%d) and GASNET_FIREHOSE_MAXVICTIM_R (%d) together "
+                                "are more than the maximum of %d recommended based on GASNET_PINNED_REGIONS_MAX.",
+                                param_R, param_VR, avail_regions);
+                }
+        }
 
 	/* Trim and eliminate round-off so that limits are self-consistent */
 	param_R  = MIN(param_R,  num_prepinned + ((param_M - m_prepinned) / param_RS));
 	param_VR = MIN(param_VR, param_VM / param_RS);
 	param_M  = param_RS * (param_R - num_prepinned) + m_prepinned;
 	param_VM = param_RS * param_VR;
+
+        // If truncation occurred, report it
+        if (rescaled && !gasneti_mynode) {
+            char str0[24], str1[24], str2[24], str3[24], str4[24], str5[24];
+            uintptr_t max_space = param_RS * avail_regions;
+            gasneti_console_message("WARNING",
+                                    "GASNET_FIREHOSE_M (%s) and GASNET_FIREHOSE_MAXVICTIM_M (%s) together "
+                                    "are more than the %s addressable with %d firehose regions of length %s.  "
+                                    "M and MAXVICTIM_M have been reduced to %s and %s, respectively.",
+                                    gasneti_format_number(orig_M, str0, 24, 1),
+                                    gasneti_format_number(orig_VM, str1, 24, 1),
+                                    gasneti_format_number(max_space, str2, 24, 1),
+                                    avail_regions,
+                                    gasneti_format_number(param_RS, str3, 24, 1),
+                                    gasneti_format_number(param_M, str4, 24, 1),
+                                    gasneti_format_number(param_VM, str5, 24, 1));
+	}
 
 	/* Report final values */
 	GASNETI_TRACE_PRINTF(C, ("param_M=%"PRIuPTR" param_VM=%"PRIuPTR, param_M, param_VM));
@@ -1415,14 +1521,9 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 
 	/* 
 	 * Validate firehose parameters parameters 
+	 * NOTE: some of these check may be redundant, but better safe than sorry
 	 */ 
 	if ((fhi_InitFlags & FIREHOSE_INIT_FLAG_LOCAL_ONLY)) {
-		/* Want at least 16MB worth of buckets in victim FIFO */
-		uintptr_t	VM_min = (16*1024*1024) / FH_BUCKET_SIZE;
-
-		/* Want at least 32 regions of FIFO */
-		int		VR_min = 32;
-
 		if_pf (param_RS < FH_BUCKET_SIZE)
 			gasneti_fatalerror("GASNET_FIREHOSE_MAXREGION_SIZE (%d) "
 			    "is less than the minimum %d",
@@ -1449,20 +1550,6 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 			    "GASNET_FIREHOSE_R parameter (%d)", 
 			    (uintptr_t)num_prepinned, param_R);
 	} else {
-		/* Want at least 32 buckets per node */
-		uintptr_t	M_min = FH_BUCKET_SIZE * num_nodes * 32;
-
-		/* Want at least 256 buckets of victim FIFO */
-		uintptr_t	VM_min = FH_BUCKET_SIZE * 256;
-
-		/* Want at least 1 region per node */
-		/* XXX/PHH THIS IS REALLY A BARE MINIMUM */
-		int		R_min = num_nodes;
-
-		/* Want at least 2 regions of FIFO */
-		/* XXX/PHH THIS IS REALLY A BARE MINIMUM */
-		int		VR_min = 2;
-
 		if_pf (param_RS < FH_BUCKET_SIZE)
 			gasneti_fatalerror("GASNET_FIREHOSE_MAXREGION_SIZE (%d) "
 			    "is less than the minimum %d",
@@ -1537,8 +1624,21 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 						<= max_pinnable_memory);
 
 
-	/* Allocate hash table for region tracking */
-	i = 1.2 * (param_R + param_VR + num_prepinned);	/* factor 1.2 is arbitrary */
+        // Initialize hash tables for buckets (per-page mapping to regions)
+        // See "BUCKET TABLE HANDLING" for more onfo on these tables
+        {
+          i = b_prepinned + (param_R + param_VR) * (param_RS >> FH_BUCKET_SHIFT);
+          double scale = gasneti_getenv_dbl_withdefault("GASNET_FIREHOSE_TABLE_SCALE", 1.);
+          i *= (scale / 16.); // default to 16:1, subject to adjustment by env var
+          i = MAX(65536, i);  // subject to minimum of 64k
+        }
+        for (j = 1; j < i; j *= 2) { /* nothing */ } // next power of two
+        fh_BucketTable1 = fh_hash_create(j);
+        fh_BucketTable2 = fh_hash_create(j/2);
+
+        // Allocate hash table for region tracking
+        // TODO: replace the arbitrary factor 1.2 with an env var?
+	i = 1.2 * (param_R + param_VR + num_prepinned);
 	/* round 'i' up to a power of two: */
 	for (j = 1; j < i; j *= 2) { /* nothing */ }
        	fh_PrivTable = fh_hash_create(j);

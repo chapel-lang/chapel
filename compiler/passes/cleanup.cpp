@@ -223,6 +223,26 @@ static void cleanup(ModuleSymbol* module) {
         if (fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) == true) {
           normalizeNestedFunctionExpressions(fn);
         }
+
+        if (fn->name == astrScolon) {
+          int extraMethodArgs = 2*fn->isMethod(); // 2 extra args: this & _mt
+          int numFormals = fn->numFormals() - extraMethodArgs;
+          if (numFormals != 2) {
+            USR_FATAL_CONT(fn, "cast operator should have two formals, not %d",
+                           numFormals);
+          } else {
+            // skip 'this' argument, if method
+            ArgSymbol* arg2 = fn->getFormal(2 + extraMethodArgs);
+            if (arg2->intent != INTENT_TYPE &&
+                !arg2->hasFlag(FLAG_TYPE_VARIABLE)) {
+              USR_FATAL_CONT(arg2, "second formal for cast should have type intent");
+            }
+            if (arg2->typeExpr == NULL &&
+                fn->getModule()->modTag != MOD_USER) {
+              USR_WARN(arg2, "cast type formal should be constrained");
+            }
+          }
+        }
       }
     }
   }
@@ -258,27 +278,6 @@ static void cleanup(ModuleSymbol* module) {
       catchStmt->cleanup();
     } else if (ArgSymbol* arg = toArgSymbol(ast)) {
       addIntentRefMaybeConst(arg);
-    }
-  }
-
-  if (module == stringLiteralModule && !fMinimalModules) {
-    // Fix calls to chpl_createStringWithLiteral to use resolved expression.
-    // For compiler performance reasons, we'd like to have new_StringSymbol
-    // emit calls to a resolved function; however new_StringSymbol might
-    // run before that function is parsed. So fix up any literals created
-    // during parsing here.
-    INT_ASSERT(gChplCreateStringWithLiteral != NULL);
-    const char* name = gChplCreateStringWithLiteral->name;
-
-    for_vector(BaseAST, ast, asts) {
-      if (CallExpr* call = toCallExpr(ast)) {
-        if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
-          if (urse->unresolved == name) {
-            SET_LINENO(urse);
-            urse->replace(new SymExpr(gChplCreateStringWithLiteral));
-          }
-        }
-      }
     }
   }
 }
