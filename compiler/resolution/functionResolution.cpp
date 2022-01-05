@@ -2691,6 +2691,9 @@ static void resolveRefDeserialization(CallExpr* call) {
   Serializers ser = serializeMap[t];
   INT_ASSERT(ser.deserializer);
 
+  // we need to set the resolved function to the deserializer, so that the move
+  // can resolve. Otherwise, the ref deserialization primitive has return type
+  // c_void_ptr, which is surely not the type of the LHS here.
   call->setResolvedFunction(ser.deserializer);
 
   lhsSE->symbol()->type = typeSE->symbol()->getRefType();
