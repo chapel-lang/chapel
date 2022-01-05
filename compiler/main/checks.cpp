@@ -819,6 +819,43 @@ static void checkInitEqAssignCast()
   }
 }
 
+// There are some compiler-generated chpl__deserialize calls that we pretend to
+// be resolved, however, they have formal-actual type mismatches. We want to
+// ignore them. They will be removed later in compilation.
+//
+// They must be inside a CondStmt's else block, where the condExpr has
+// FLAG_DESERIALIZATION_BLOCK_MARKER.
+static bool
+isTemporaryDeserializeCall(CallExpr* call) {
+  if (! call->isNamed("chpl__deserialize")) {
+    return false;
+  }
+
+  Expr* parent = call->parentExpr;
+  BlockStmt* parentBlock = NULL;
+  do {
+    if (parentBlock == NULL) {  // first note the parent block
+      if (BlockStmt* block = toBlockStmt(parent)) {
+        parentBlock = block;
+      }
+    }
+    else {  // we have it, now find the conditional
+      if (CondStmt* cond = toCondStmt(parent)) {
+        if (cond->elseStmt == parentBlock) {
+          if (SymExpr* condSE = toSymExpr(cond->condExpr)) {
+            if (condSE->symbol()->hasFlag(FLAG_DESERIALIZATION_BLOCK_MARKER)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    parent = parent->parentExpr;
+  } while (parent != NULL);
+
+  return false;
+}
+
 
 // TODO: Can this be merged with checkFormalActualTypesMatch()?
 static void
@@ -832,6 +869,10 @@ checkFormalActualBaseTypesMatch()
 
     // Only look at calls in functions that have been resolved.
     if (! call->parentSymbol->hasFlag(FLAG_RESOLVED))
+      continue;
+
+    // Skip verifying some degenerate chpl__deserialize calls
+    if (isTemporaryDeserializeCall(call))
       continue;
 
     if (FnSymbol* fn = call->resolvedFunction())
@@ -894,6 +935,10 @@ checkFormalActualTypesMatch()
 {
   for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
+    // Skip verifying some degenerate chpl__deserialize calls
+    if (isTemporaryDeserializeCall(call)) 
+      continue;
+
     if (FnSymbol* fn = call->resolvedFunction())
     {
       if (fn->hasFlag(FLAG_EXTERN))
