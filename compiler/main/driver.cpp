@@ -1598,6 +1598,11 @@ static void checkUnsupportedConfigs(void) {
 }
 
 static void checkRuntimeBuilt(void) {
+  // no need for a runtime to be built for chpldoc
+  if (fDocs) {
+    return;
+  }
+
   std::string runtime_dir(CHPL_RUNTIME_LIB);
   runtime_dir += "/";
   runtime_dir += CHPL_RUNTIME_SUBDIR;
