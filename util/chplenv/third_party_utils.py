@@ -208,8 +208,24 @@ def apply_subs(s, d):
 # Handles comments, variable escapes with ${variable},
 # and literal $${variable} (which is not an escape).
 # Assumes that the variables are defined before they are used
-def read_pkg_config_file(pcfile):
+#
+# If find_third_party and replace_third_party are provided,
+# they should be e.g.
+#   find_third_party=third-party/gasnet/install/some-ucp
+#   replace_third_party=/path/to/chpl-home/third-party/gasnet/install/some-ucp
+# and this code will replace
+#   /*/$find_third_party
+# with
+#  $replace_third_party
+#
+def read_pkg_config_file(pcfile,
+                         find_third_party=None,
+                         replace_third_party=None):
     ret = { }
+
+    pattern = None
+    if find_third_party and replace_third_party:
+        pattern = re.compile(r'/[^ ]*/' + find_third_party)
 
     with open(pcfile) as file:
         for line in file:
@@ -224,7 +240,12 @@ def read_pkg_config_file(pcfile):
             key = key.strip()
             val = val.strip()
             if sep == '=' and not " " in key:
+                # substitute pkg-config file variables
                 val = apply_subs(val, ret)
+                # fix up paths to third-party/ subdirs
+                if pattern:
+                    val = re.sub(pattern, replace_third_party, val)
+
                 #val = chpl_home_utils.add_vars_to_paths(val)
                 ret[key] = val
             else:
@@ -233,8 +254,11 @@ def read_pkg_config_file(pcfile):
                 key = key.strip()
                 val = val.strip()
                 if sep == ':' and not " " in key:
+                    # substitute pkg-config file variables
                     val = apply_subs(val, ret)
-                    #val = chpl_home_utils.add_vars_to_paths(val)
+                    # fix up paths to third-party/ subdirs
+                    if pattern:
+                        val = re.sub(pattern, replace_third_party, val)
                     ret[key] = val
 
     return ret

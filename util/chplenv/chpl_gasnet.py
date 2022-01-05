@@ -24,7 +24,10 @@ def get_gasnet_pc_dict():
 
     # assume we haven't built gasnet yet if the install dir doesn't exist
     if os.path.exists(install_path):
-        return third_party_utils.read_pkg_config_file(pcfile)
+        return third_party_utils.read_pkg_config_file(
+                    pcfile,
+                    'third-party/gasnet/install/' + ucp,
+                    install_path)
     else:
         warning("gasnet path {0} missing".format(install_path))
 
@@ -39,7 +42,7 @@ def get_compile_args():
 
     d = get_gasnet_pc_dict()
 
-    if 'Cflags' in d: 
+    if 'Cflags' in d:
         bundled.extend(d['Cflags'].split())
 
     return (bundled, system)
