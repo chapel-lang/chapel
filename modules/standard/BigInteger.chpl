@@ -3086,6 +3086,15 @@ module BigInteger {
     return this.isPerfectPower();
   }
 
+  /*
+    Return ``true`` if ``this`` is a perfect power, i.e., if there exist
+    integers ``a`` and ``b`` with ``b > 1``, such that ``this = a^b``.
+
+    Under this definition both 0 and 1 are considered to be perfect powers.
+    Negative values can only be odd perfect powers.
+
+    :return: ``true`` if ``this`` is a perfect power, ``false`` otherwise.
+   */
   proc bigint.isPerfectPower () : bool {
     var ret: c_int;
 
