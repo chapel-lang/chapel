@@ -3178,8 +3178,27 @@ module BigInteger {
     maybePrime,
     isPrime
   };
-  // returns 2 if definitely prime, 0 if not prime, 1 if likely prime
-  // reasonable number of reps is 15-50
+
+  /*
+    Determine whether ``this`` is prime.  Returns one of the :enum:`primality`
+    constants - ``primality.isPrime``, ``primality.maybePrime``, or
+    ``primality.notPrime``.
+
+    Performs some trial divisions, a Baillie-PSW probable prime test, and
+    reps-24 Miller-Rabin probabilistic primality tests.  A higher ``reps`` value
+    will reduce the chances of a non-prime being identified as "probably prime".
+    A composite number will be identified as a prime with an asymptotic
+    probability of less than ``4^(-reps)``.  Reasonable values of ``reps`` are
+    between 15 and 50.
+
+    :arg reps: number of attempts before returning ``primality.maybePrime`` if
+               a definitive answer can't be found before then.
+    :type reps: ``int``
+
+    :returns: ``primality.isPrime``, ``primality.maybePrime`` or
+              ``primality.notPrime``.
+    :rtype: :enum:`primality`
+   */
   proc bigint.probablyPrime(reps: int) : primality {
     var reps_ = reps.safeCast(c_int);
     var ret: c_int;
