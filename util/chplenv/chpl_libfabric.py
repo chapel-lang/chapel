@@ -57,15 +57,11 @@ def get_compile_args():
         # without pkg-config.
         libfab_dir_val = overrides.get('LIBFABRIC_DIR')
         if libfab_dir_val:
-            flags.append('-I' + libfab_dir_val + '/include')
+            args[1].append('-I' + libfab_dir_val + '/include')
         else:
             # Try using pkg-config to get the compile-time flags.
-            pcflags = third_party_utils.pkgconfig_get_compile_args('libfabric',
-                                                                   system=True)
-            for pcl in pcflags:
-                flags.append(pcl)
-
-        args[1].extend(flags)
+            args = third_party_utils.pkgconfig_get_compile_args('libfabric',
+                                                                system=True)
 
     if libfabric_val == 'system' or libfabric_val == 'bundled':
         flags = [ ]
@@ -103,8 +99,13 @@ def get_link_args():
         else:
             # Try using pkg-config to get the libraries to link
             # libfabric with.
-            pclibs = third_party_utils.pkgconfig_get_link_args('libfabric',
-                                                               system=True)
+            tup = third_party_utils.pkgconfig_get_link_args('libfabric',
+                                                             system=True)
+            # put the two lists together (but expect tup[0] to be empty)
+            pclibs = tup[0] + tup[1]
+
+            # add -Wl,-rpath for the -L options
+            # this was a workaround and is probably not needed anymore
             for pcl in pclibs:
                 libs.append(pcl)
                 if pcl.startswith('-L'):

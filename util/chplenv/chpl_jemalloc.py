@@ -79,8 +79,8 @@ def get_uniq_cfg_path(flag):
 @memoize
 def get_jemalloc_config_file(flag):
     ucp = get_uniq_cfg_path(flag)
-    install_path = third_party_utils.get_cfg_install_path('jemalloc',
-                                                          ucp=ucp)
+    install_path = third_party_utils.get_install_path('jemalloc',
+                                                       ucp=ucp)
     config_file = os.path.join(install_path, 'bin', 'jemalloc-config')
     return config_file
 
@@ -105,8 +105,8 @@ def get_link_args(flag):
     if jemalloc_val == 'bundled':
         ucp = get_uniq_cfg_path(flag)
         jemalloc_config = get_jemalloc_config_file(flag)
-        install_path = third_party_utils.get_cfg_install_path('jemalloc',
-                                                              ucp=ucp)
+        install_path = third_party_utils.get_install_path('jemalloc',
+                                                          ucp=ucp)
         lib_path = os.path.join(install_path, 'lib')
         libs = ['-L{}'.format(lib_path), '-ljemalloc']
 

@@ -17,7 +17,7 @@ def get_uniq_cfg_path():
 def get_gasnet_pc_dict():
     substrate = chpl_comm_substrate.get()
     ucp = get_uniq_cfg_path()
-    install_path = third_party_utils.get_cfg_install_path('gasnet', ucp=ucp)
+    install_path = third_party_utils.get_install_path('gasnet', ucp=ucp)
     pcname = "gasnet-{0}-par.pc".format(substrate)
     pcfile = os.path.join(install_path, 'lib', 'pkgconfig', pcname)
     ret = { }
