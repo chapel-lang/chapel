@@ -257,6 +257,10 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_PE_CHPL_PKGCONFIG_LIBS'] = chpl_llvm.gather_pe_chpl_pkgconfig_libs()
 
+    # fill in ENV_VALS['  CHPL_HOST_BUNDLED_COMPILE_ARGS'] etc
+    compute_internal_compile_link_args()
+
+def compute_internal_compile_link_args():
     # compute the compiler / link args
     # each of these is bundled, system
     host_compile = ([ ], [ ])
