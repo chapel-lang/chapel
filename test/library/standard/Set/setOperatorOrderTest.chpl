@@ -37,12 +37,23 @@ s2.add(b);
 s1.add(c);
 s2.add(d);
 
-writeln(s1 | s2);
-writeln(s1 + s2);
-writeln(s1 - s2);
-writeln(s1 & s2);
-writeln(s1 ^ s2);
+printSortedSet(s1 | s2);
+printSortedSet(s1 + s2);
+printSortedSet(s1 - s2);
+printSortedSet(s1 & s2);
+printSortedSet(s1 ^ s2);
 writeln(s1 <= s2);
 writeln(s2 <= s1);
 writeln(s1 >= s2);
 writeln(s2 >= s1);
+
+proc printSortedSet(s) {
+  if s.size > 0 {
+    var a: [0..#s.size] int;
+    var i = 0;
+    for val in s {
+      a[i] = val.a; i+=1;
+    }
+    writeln(a.sorted());
+  }
+}
