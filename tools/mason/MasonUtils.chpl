@@ -494,7 +494,7 @@ iter allFields(tomlTbl: unmanaged Toml) {
 }
 
 /* Recursively finds the files & directories and adds
-   the candidate files to the `paths` set. Exludes all
+   the candidate files to the `paths` set. Excludes all
    the files in /target subdirectory.
  */
 proc getPathExcludingTargetFolder(dirName: string, ref paths: domain(string)) {
@@ -521,13 +521,9 @@ proc computeHash(ref paths: domain(string)){
     str = path;
   }
   sort(sortedPaths);
-  //writeln(sortedPaths);
-
-  //var s = datetime.gettimestamp():string;
-  //var fout = open("temp_" + s + ".txt", iomode.cwr);
   var fout = openmem();
   var wout = fout.writer();
-  for path in sortedPaths{
+  for path in sortedPaths {
     var f = open(path, iomode.r);
     var r = f.reader();
     var line = "";
@@ -538,15 +534,12 @@ proc computeHash(ref paths: domain(string)){
     r.close();
     f.close();
   }
-  //var absPath = fout.absPath();
   wout.close();
-  //fout.close();
   var hash = computeFileHash(fout);
   var hash_string = "";
   for component in hash.hash {
     hash_string += try! "%08xu".format(component);
   }
-  //remove(absPath);
   fout.close();
   return hash_string;
 }
