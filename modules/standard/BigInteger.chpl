@@ -2624,6 +2624,24 @@ module BigInteger {
       return false;
   }
 
+  /*
+    Return ``true`` if ``this`` is congruent to ``con`` modulo ``mod``.
+    ``this`` is congruent to ``con % mod`` if there exists an integer ``q``
+    satisfying ``this = con + q*mod``.  Unlike the other division functions,
+    ``d = 0`` is accepted.  As a result ``this`` and ``con`` are considered
+    congruent modulo ``0`` only when exactly equal.
+
+    :arg con: number to determine if ``this`` is congruent to, modulo ``mod``
+    :type con: :record:`bigint` or ``integral``
+
+    :arg mod: divisor of ``con`` when determining if ``con`` is congruent to
+              ``this``
+    :type mod: :record:`bigint` or ``integral``
+
+    :return: ``true`` if ``this`` is congruent to ``con`` modulo ``mod``,
+             ``false`` otherwise
+    :rtype: ``bool``
+   */
   proc bigint.isCongruent(con: integral, mod: integral) : bool {
     const con_ = con.safeCast(c_ulong);
     const mod_ = mod.safeCast(c_ulong);
