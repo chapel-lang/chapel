@@ -2542,6 +2542,18 @@ module BigInteger {
     return this.isDivisibleBy2Pow(b);
   }
 
+  /*
+    Return ``true`` if ``this`` is exactly divisible by ``2^exp``.  ``this`` is
+    divisible by ``2^exp`` if there exists an integer ``q`` satisfying ``this =
+    q*2^exp``.
+
+    :arg exp: power of 2 to check if ``this`` is divisible by
+    :type exp: ``integral``
+
+    :return: ``true`` if ``this`` is exactly divisible by ``2^exp``, ``false``
+             otherwise
+    :rtype: ``bool``
+   */
   proc bigint.isDivisibleBy2Pow(exp: integral) : bool {
     const exp_ = exp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
