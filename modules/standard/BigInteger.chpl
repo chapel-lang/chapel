@@ -3446,6 +3446,19 @@ module BigInteger {
     return 0;
   }
 
+  /*
+    Remove all occurrences of the factor ``fac`` from ``x`` and store the result
+    in ``this``.  Return the number of occurrences removed.
+
+    :arg x: The value to remove all occurrences of ``fac`` from
+    :type x: :record:`bigint`
+
+    :arg fac: The factor to remove from ``x``.
+    :type fac: :record:`bigint`
+
+    :return: The number of occurrences of ``fac`` found in ``x``.
+    :rtype: ``uint``
+   */
   proc bigint.removeFactor(const ref x: bigint, const ref fac: bigint) : uint {
     var ret: c_ulong;
     if(fac!=0){
