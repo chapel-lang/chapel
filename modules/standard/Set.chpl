@@ -274,15 +274,8 @@ module Set {
       var result = false;
 
       on this {
-
-        // TODO: The following variation gets lifetime errors in
-        // '.../Set/types/testNilableTuple.chpl':
-        //
-        // var moved = moveToValue(elem);
-        // var (isFullSlot, idx) = _htb.findAvailableSlot(moved);
-        //
-        var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
         var moved = moveToValue(elem);
+        var (isFullSlot, idx) = _htb.findAvailableSlot(moved);
 
         if !isFullSlot {
           _htb.fillSlot(idx, moved, none);
