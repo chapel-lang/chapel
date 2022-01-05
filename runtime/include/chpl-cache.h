@@ -23,7 +23,7 @@
 
 #include "chpltypes.h"
 #include "chpl-atomics.h"
-#include "chpl-comm.h" // to get HAS_CHPL_CACHE_FNS via chpl-comm-task-decls.h
+#include "chpl-comm-task-decls.h"
 #include "chpl-env.h"
 #include "chpl-tasks.h"
 #include "error.h"
@@ -55,8 +55,7 @@ extern const int CHPL_CACHE_REMOTE;
 static inline
 void chpl_cache_warn_if_disabled(void)
 {
-  if (CHPL_CACHE_REMOTE && chpl_nodeID == 0 &&
-      !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
+  if (CHPL_CACHE_REMOTE && !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
     if (CHPL_ASAN) {
       chpl_warning("Disabling --cache-remote due to incompatibility with "
                    "AddressSanitizer (quiet with CHPL_RT_CACHE_QUIET=true)", 0, 0);

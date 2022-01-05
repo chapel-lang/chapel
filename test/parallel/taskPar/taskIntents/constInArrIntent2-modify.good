@@ -1,0 +1,4 @@
+constInArrIntent2.chpl:3: In function 'main':
+constInArrIntent2.chpl:12: error: const actual is passed to 'ref' formal 'a' of +=
+note: to formal of type [domain(1,int(64),false)] int(64)
+constInArrIntent2.chpl:1: note: The shadow variable 'xs' is constant due to task intents in this parallel statement

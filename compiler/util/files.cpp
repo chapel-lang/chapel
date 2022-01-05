@@ -173,11 +173,19 @@ const char* makeTempDir(const char* dirPrefix) {
   removeSpacesBackslashesFromString(myuserid);
 
   const char* tmpDir = astr(tmpdirprefix, myuserid, tmpdirsuffix);
-  const char* dirRes = mkdtemp((char*) tmpDir);
+  char* tmpDirMut = strdup(tmpDir);
+  char* dirRes = mkdtemp(tmpDirMut);
+
+  if (dirRes == NULL) {
+    USR_FATAL("unable to create temporary directory at %s\n", tmpDir);
+  }
 
   free(myuserid); myuserid = NULL;
 
-  return dirRes;
+  const char* ret = astr(dirRes);
+  free(tmpDirMut);
+
+  return ret;
 }
 
 void ensureTmpDirExists() {

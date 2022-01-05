@@ -20,7 +20,9 @@
 #ifndef CHPL_UAST_ASTTAG_H
 #define CHPL_UAST_ASTTAG_H
 
+#include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
+#include "chpl/queries/stringify-functions.h"
 
 namespace chpl {
 namespace uast {
@@ -108,7 +110,15 @@ template<> struct update<uast::ASTTag> {
     return defaultUpdateBasic(keep, addin);
   }
 };
+
+template<> struct mark<uast::ASTTag> {
+  void operator()(Context* context, const uast::ASTTag& keep) const {
+    // nothing to do for enum
+  }
+};
+
 /// \endcond
+
 
 } // end namespace chpl
 

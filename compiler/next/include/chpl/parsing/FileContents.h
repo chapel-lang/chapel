@@ -22,6 +22,7 @@
 
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/update-functions.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <string>
 
@@ -65,19 +66,20 @@ class FileContents {
     text_.swap(other.text_);
     error_.swap(other.error_);
   }
+  static bool update(FileContents& keep, FileContents& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    error_.mark(context);
+  }
 };
 
 
 } // end namespace parsing
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<parsing::FileContents> {
-  bool operator()(parsing::FileContents& keep,
-                  parsing::FileContents& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
 /// \endcond
+
 
 } // end namespace chpl
 #endif

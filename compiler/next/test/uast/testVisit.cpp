@@ -71,9 +71,10 @@ static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
 static void logAction(std::vector<std::string>& actionsLog,
                       const char* note,
                       const uast::ASTNode* ast) {
-  actionsLog.push_back(std::string(note) + " " +
-                       asttags::tagToString(ast->tag()) + " " +
-                       ast->id().toString());
+  std::ostringstream ss;
+  ss << note << " " << asttags::tagToString(ast->tag()) << " ";
+  ast->id().stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  actionsLog.push_back(ss.str());
 }
 
 struct Visitor1 {

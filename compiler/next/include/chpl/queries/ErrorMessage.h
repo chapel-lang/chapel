@@ -21,6 +21,7 @@
 #define CHPL_QUERIES_ERRORMESSAGE_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/queries/ID.h"
 
 #include <cstdarg>
 #include <string>
@@ -39,6 +40,7 @@ class ErrorMessage final {
   int level_; // error? warning? performance hint?
   Location location_;
   std::string message_;
+  ID id_;
 
   // sometimes an error message wants to point to a bunch of
   // related line numbers. That can go here.
@@ -48,15 +50,15 @@ class ErrorMessage final {
 
  public:
   ErrorMessage();
-  ErrorMessage(Location location, std::string message);
-  ErrorMessage(Location location, const char* message);
+  ErrorMessage(ID id, Location location, std::string message);
+  ErrorMessage(ID id, Location location, const char* message);
 
-  static ErrorMessage vbuild(Location loc, const char* fmt, va_list vl);
-  static ErrorMessage build(Location loc, const char* fmt, ...)
+  static ErrorMessage vbuild(ID id, Location loc, const char* fmt, va_list vl);
+  static ErrorMessage build(ID id, Location loc, const char* fmt, ...)
 #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 2, 3)))
+    __attribute__ ((format (printf, 3, 4)))
 #endif
   ;
 
@@ -87,7 +89,8 @@ class ErrorMessage final {
 
   void swap(ErrorMessage& other);
 
-  void markUniqueStrings(Context* context) const;
+  void mark(Context* context) const;
+  void updateLocation(Context *context);
 };
 
 

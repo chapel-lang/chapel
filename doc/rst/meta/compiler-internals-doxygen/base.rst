@@ -11,6 +11,10 @@ namespace. The entries may not be exhaustive.
 .. comment:
    See entries in '$CHPL_HOME/compiler/next/include/chpl/queries'
 
+.. doxygenclass:: chpl::CommentID
+   :members:
+   :undoc-members:
+
 .. doxygenclass:: chpl::Context
    :members:
    :undoc-members:
@@ -36,3 +40,5 @@ namespace. The entries may not be exhaustive.
    :undoc-members:
 
 .. doxygentypedef:: chpl::owned
+
+.. doxygenenum:: chpl::StringifyKind

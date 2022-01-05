@@ -22,9 +22,11 @@
 
 #include "chpl/queries/Context-detail.h"
 #include "chpl/queries/ID.h"
+#include "chpl/queries/CommentID.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
+#include "chpl/util/break.h"
 
 #include <memory>
 #include <tuple>
@@ -48,153 +50,14 @@ namespace resolution {
 
 \rst
 
-This class stores the compilation-wide context. Another name for this
+This Context class stores the compilation-wide context. Another name for this
 compilation-wide context is *program database*. It handles unique'd strings and
 also stores the results of queries (so that they are are memoized). It tracks
 dependencies of queries in order to update them appropriately when a dependency
 changes.
 
-Queries are functions that are written in a stylized manner to interact with the
-context (aka program database). For example, a ``parse`` query might accept as
-an argument a ``UniqueString path`` and return a vector of owned AST nodes.
-Another example is a query to determine the location of an AST node; it would
-accept as an argument a ``BaseAST*`` and it would return a Location.
-
-When running a query, the query system will manage:
- * checking to see if the query result is already saved and available for reuse
- * recording the queries called by that query as dependencies
-
-To write a query, create a function that uses the ``QUERY_`` macros defined in
-query-impl.h. The arguments to the function need to be efficient to copy (so
-``UniqueString``, ``ID``, ``Location``, and pointers are OK, but e.g.
-``std::vector`` is not).  The function will return a result, which need not be
-POD and can include AST pointers (but see below). The function needs to be
-written in a stylized way to interact with the context.
-
-Queries should not have side effects. They should not manipulate global state.
-Instead, they should return a result that includes all of the output.
-
-For example, here is a query that computes MyResultType from myArg1 and
-myArg2:
-
-.. code-block:: c++
-
-    #include "chpl/queries/query-impl.h"
-
-    const MyResultType& myQueryFunction(Context* context,
-                                        MyArgType MyArg1,
-                                        MyOtherArgType MyArg2) {
-      QUERY_BEGIN(myQueryFunction, context, myKey1, myKey2)
-
-      // do steps to compute the result
-      MyResultType result = ...;
-      // if an error is encountered, it can be saved with QUERY_ERROR(error)
-
-      return QUERY_END(result);
-    }
-
-To call the query, just write e.g. ``myQueryFunction(context, arg1, arg2)``.
-
-The query function will check for a result already stored in the program
-database that can be reused. If a result is reused, QUERY_BEGIN will return that
-result. If not, the query proceeds to compute the result. When doing so, any
-queries called will be automatically recorded as dependencies. It will then
-compare the computed result with the saved result, if any, and in some cases
-combine the results. Finally, the saved result (which might have been updated)
-is returned.
-
-Note that a query must currently return a const-reference to the result to be
-stored in the program database.
-
-There are some requirements on query argument/key types and on result types:
-
- * argument/key types must have ``std::hash<KeyType>``
- * argument/key types must have ``std::equal_to<KeyType>``
- * result types must have ``chpl::update<MyResultType>`` implemented
- * result types must be default constructable
- * If the result contains or refers to any UniqueString, the result type
-   must have ``chpl::mark<MyResultType>`` implemented to call ``mark``
-   on the UniqueString(s).
-
-.. code-block:: c++
-
-    namespace std {
-      template<> struct hash<chpl::MyArgType> {
-        size_t operator()(const chpl::MyArgType key) const {
-          return doSomethingToComputeHash...;
-        }
-      };
-      template<> struct equal_to<chpl::MyArgType> {
-        bool operator()(const chpl::MyArgType lhs,
-                        const chpl::MyArgType rhs) const {
-          return doSomethingToCheckIfEqual...;
-        }
-      };
-    }
-
-The process of computing a query and checking to see if it matches a saved
-result requires that the result type implement ``chpl::update`` and
-possible ``chpl::mark``:
-
-.. code-block:: c++
-
-    namespace chpl {
-      template<> struct update<MyResultType> {
-        bool operator()(chpl::MyResultType& keep,
-                        chpl::MyResultType& addin) const {
-          return doSomethingToCombine...;
-        }
-        template<> struct mark<MyResultType> {
-        void operator()(Context* context,
-                        chpl::MyResultType& keep) const {
-          keep.markUniqueStrings(context);
-        }
-      };
-
-On entry to the ``update`` function, ``keep`` is the current value in the
-program database and ``addin`` is the newly computed value. The ``update``
-function needs to:
-
-  * store the current, updated result in ``keep``
-  * store the unused result in ``addin``
-  * return ``false`` if ``keep`` matched ``addin`` -- that is, ``keep`` did not
-    need to be updated; and ``true`` otherwise.
-
-For most result types, ``return defaultCombine(keep, addin);`` should be
-sufficient. In the event that a result is actually a collection of results
-that *owns* the elements (for example, when parsing, the result is
-conceptually a vector of top-level symbol), the ``combine`` function
-should try to update only those elements of ``keep`` that changed by swapping
-in the appropriate elements from ``addin``. This strategy allows later queries
-that depend on such a result to use pointers to the owned elements and to
-avoid updating everything if just one element changed.
-
-Queries *can* return results that contain non-owning pointers to ``owned``
-results from other queries. However, it is not sufficient to simply use the
-address of the `const &` result of the query - that is a location in the map
-that will not change as the result is updated. Instead, such patterns should
-use `owned` to make sure a new heap-allocated value is created.
-
-When working with results containing pointers, the update function should not
-rely on the contents of these pointers from the ``keep`` value. The system will
-make sure that they refer to valid memory but they might be a combination of old
-results.  Additionally, the system will ensure that any old results being
-replaced will remain allocated until the garbage collection runs outside of any
-query.
-
-For example, a ``parse`` query might result in a list of ``owned`` AST element
-pointers. A follow-on query, ``listSymbols``, can result in something containing
-these AST element pointers, but not owning them. In that event, the
-``listSymbols`` query needs to use a ``update`` function that does not look
-into the AST element pointers. However it can compare the pointers themselves
-because the ``parse`` query will update the pointer if the contents change.
-
-In some situations, the query framework can reuse a result without running the
-``update`` function for it. That can happen when all dependencies have been
-checked in this revision and the dependencies are all reused. In that event, the
-UniqueStrings that are contianed in or referred to by the result need to be
-marked so that any UniqueStrings not used can be garbage collected. This is
-accomplished by calling the ``mark`` function.
+Please see :ref:`Chapter-next-chpl-queries` for more information about how to
+implement queries and how the query framework functions.
 
 \endrst
 
@@ -219,8 +82,23 @@ class Context {
 
   std::vector<const querydetail::QueryMapResultBase*> queryStack;
 
+  // for avoiding infinite loops in markPointer assertion checking
+  std::unordered_set<const void*> ptrsMarkedThisRevision;
+
+  // queries can return an owned pointer and then other queries
+  // can depend on the value. this set tracks owned pointers returned
+  // by queries. markPointer can check, when asserting is on, that
+  // its argument is always in this set.
+  // (otherwise, it would be potentially a memory error, because
+  //  the owned pointer could be deleted if it is not expressed as
+  //  a dependency).
+  std::unordered_set<const void*> ownedPtrsForThisRevision;
+
   querydetail::RevisionNumber currentRevisionNumber = 1;
+  bool checkStringsAlreadyMarked = false;
   bool enableDebugTracing = false;
+  bool breakSet = false;
+  size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
 
   static void defaultReportError(const ErrorMessage& err);
@@ -235,6 +113,9 @@ class Context {
                                                     const char* str,
                                                     size_t len);
   const char* getOrCreateUniqueString(const char* str, size_t len);
+
+  bool shouldMarkUnownedPointer(const void* ptr);
+  bool shouldMarkOwnedPointer(const void* ptr);
 
   // saves the dependency in the parent query, which is assumed
   // to be at queryStack.back().
@@ -305,6 +186,8 @@ class Context {
             const void* queryFunction,
             const querydetail::QueryMapResultBase* resultEntry);
 
+  void doNotCollectUniqueCString(const char *s);
+
   // Future Work: make the context thread-safe
 
   // Future Work: allow moving some AST to a different context
@@ -328,7 +211,7 @@ class Context {
   /**
     Create a new AST Context.
    */
-  Context() = default;
+  Context();
   ~Context();
 
   /**
@@ -405,6 +288,66 @@ class Context {
    is not the result of one of the uniqueCString calls.
    */
   static size_t lengthForUniqueString(const char* s);
+
+  /**
+
+   This function can be called by a mark method to perform checking on
+   pointers and any UniqueStrings that they contain when asserts are enabled.
+
+   Pointers available to a mark method should have already
+   been returned by previous queries as owned objects and
+   so markOwnedPointer should have been called on them if
+   they have been reused.
+   */
+  template<typename T>
+  void markUnownedPointer(const T* ptr) {
+    #ifndef NDEBUG
+      if (shouldMarkUnownedPointer(ptr)) {
+        // run mark on the pointer contents while checking
+        // all unique strings are already marked
+        auto saveCheckStringsAlreadyMarked = checkStringsAlreadyMarked;
+        checkStringsAlreadyMarked = true;
+        ptr->mark(this);
+        // restore the previous setting for checkStringsAlreadyMarked
+        checkStringsAlreadyMarked = saveCheckStringsAlreadyMarked;
+      }
+    #endif
+  }
+
+  /**
+   This function can be called by a mark method to mark UniqueStrings
+   within an owned pointer.
+   */
+  template<typename T>
+  void markOwnedPointer(const T* ptr) {
+    if (shouldMarkOwnedPointer(ptr)) {
+      // run mark on the object
+      ptr->mark(this);
+    }
+  }
+
+  /**
+   markPointer can be used to mark a pointer, where
+   it is considered owned if the type is owned.
+
+   This overload just calls markOwnedPointer.
+   */
+  template<typename T>
+  void markPointer(const owned<T>& ptr) {
+    markOwnedPointer(ptr.get());
+  }
+
+  /**
+   markPointer can be used to mark a pointer, where
+   it is considered owned if the type is owned.
+
+   This overload just calls markPointer.
+   */
+  template<typename T>
+  void markPointer(const T* ptr) {
+    markUnownedPointer(ptr);
+  }
+
 
   /**
     Return the file path for the file containing this ID.

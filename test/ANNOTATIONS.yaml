@@ -474,6 +474,8 @@ all:
   08/19/21:
     - text: Upgrade to GASNet-EX 2021.8.0 snapshot (#18243)
       config: 16-node-cs, 16-node-cs-hdr
+  09/28/21:
+    - Change ChapelHashtable to use power-of-2 table size (#18427)
 
 # End all
 
@@ -573,8 +575,6 @@ arr-forall:
 array_iter:
   06/19/17:
     - Reduce amount of locking in associative array dsiAccess (#6244)
-  09/28/21:
-    - Change ChapelHashtable to use power-of-2 table size (#18427)
 
 arguments:
   03/10/17:
@@ -645,8 +645,6 @@ build-associative:
     - Extend parallel array initialization to POD arrays (#6675)
   06/03/20:
     - Factor hashtable used by DefaultAssociative out of it (#15739)
-  09/28/21:
-    - Change ChapelHashtable to use power-of-2 table size (#18427)
   11/02/21:
     - Add an initialCapacity keyword argument to map initializers (#18634)
 
@@ -1067,8 +1065,6 @@ knucleotide: &knucleotide-base
     - Optimize ASCII strings (#16092)
   09/03/21:
     - Two little string optimizations (#18323)
-  09/28/21:
-    - Change ChapelHashtable to use power-of-2 table size (#18427)
 knucleotide-submitted:
   <<: *knucleotide-base
 
@@ -1442,6 +1438,8 @@ memleaksfull:
     - Two fixes in OrderedMap (#17463)
   03/27/21:
     - CG Adjust in-intent handling to fix a memleak (#17480)
+  11/24/21:
+    - Add module ConcurrentMap (#16704)
 # End memleaksfull
 
 meteor:
@@ -1579,8 +1577,6 @@ pidigits-submitted:
 primes:
   07/01/20:
     - Optimize repeated insertions/deletions from chpl__hashtable (#15982)
-  09/28/21:
-    - Change ChapelHashtable to use power-of-2 table size (#18427)
 
 prk-stencil:
   02/14/16:
@@ -2117,6 +2113,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Translate uAST to old AST (#17919)
   09/01/21:
     - Heap allocate string literals (#18307)
+  11/03/21:
+    - buildDefaultFunctions perf improvement (#18624)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2207,6 +2205,12 @@ arkouda: &arkouda-base
     - Optimize memory tracking with a memThreshold (#18465)
   10/05/21:
     - Optimize how segmented array slices are interpreted as strings/bytes (mhmerrill/arkouda#931)
+  10/28/21:
+    - Upgrade Arkouda release testing from 1.24.1 to 1.25.0 (#18613)
+  11/03/21:
+    - Closes 957 Mimic re library functionality applied to SegStrings (mhmerrill/arkouda#958)
+  11/17/21:
+    - Closes 963 Performance drop in substring search methods (mhmerrill/arkouda#965)
 
 
 arkouda-string:

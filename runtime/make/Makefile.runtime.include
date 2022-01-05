@@ -64,6 +64,8 @@ RUNTIME_INCLS += \
         -I. \
         -I$(RUNTIME_INCLUDE_ROOT)/localeModels/$(CHPL_MAKE_LOCALE_MODEL) \
         -I$(RUNTIME_INCLUDE_ROOT)/localeModels \
+        -I$(RUNTIME_INCLUDE_ROOT)/gpu/$(CHPL_MAKE_GPU_CODEGEN) \
+        -I$(RUNTIME_INCLUDE_ROOT)/gpu \
         -I$(RUNTIME_INCLUDE_ROOT)/comm/$(CHPL_MAKE_COMM) \
         -I$(RUNTIME_INCLUDE_ROOT)/comm \
         -I$(RUNTIME_INCLUDE_ROOT)/tasks/$(CHPL_MAKE_TASKS) \

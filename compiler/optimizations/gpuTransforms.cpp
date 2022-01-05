@@ -386,7 +386,8 @@ static void outlineGPUKernels() {
                 }
                 else {
                   if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
-                    if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                    if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                        parent->isPrimitive(PRIM_GET_MEMBER)) {
                       if (symExpr == parent->get(2)) {  // this is a field
                         // do nothing
                       }
@@ -394,7 +395,7 @@ static void outlineGPUKernels() {
                         addKernelArgument(info, sym);
                       }
                       else {
-                        INT_FATAL("Malformed PRIM_GET_MEMBER_VALUE");
+                        INT_FATAL("Malformed PRIM_GET_MEMBER_*");
                       }
                     }
                     else if (parent->isPrimitive()) {
@@ -444,7 +445,7 @@ static void outlineGPUKernels() {
 }
 
 static bool shouldOutlineLoop(BlockStmt* blk, bool allowFnCalls) {
-  if (!blk->inTree() || blk->getModule()->modTag != MOD_USER)
+  if (!blk->inTree())
     return false;
 
   if (CForLoop* cfl = toCForLoop(blk))

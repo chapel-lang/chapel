@@ -2,7 +2,6 @@
 
 .. _Chapter-Domains:
 
-=======
 Domains
 =======
 
@@ -1143,3 +1142,6 @@ a member of that domain, it is ignored.
 
 .. [3]
    This is also known as row-major ordering.
+
+.. include:: ../../builtins/ChapelDomain.rst
+

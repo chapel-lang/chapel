@@ -163,14 +163,17 @@ var x9003 = 9003;
 deprecated "Lorem ipsum :proc:`abc$def$ghi` dolor sit amet"
 var x9004 = 9004;
 
+// Proc lead with ! (should filter)
+deprecated "--- Identifier is led with ! (should filter) ---"
+var x1101 = 1101;
+deprecated "Lorem ipsum :proc:`!abc` dolor sit amet"
+var x1102 = 1102;
+
 // Currently filters, but ideally wouldn't (see #18549):
 deprecated "--- Currently filters, but ideally wouldn't (see #18549) ---"
-var x1101 = 1101;
+var x1200 = 1200;
 deprecated "Lorem ipsum :proc:`~abc.def` dolor sit amet"
-var x1102 = 1102;
-deprecated "Lorem ipsum :proc:`!abc` dolor sit amet"
-var x1103 = 1103;
-
+var x1201 = 1201;
 
 // I purposefully access each variable on a separate line so the produced warning messages
 // will also have unique lines:
@@ -258,5 +261,6 @@ writeln(x9004);
 
 writeln(x1101);
 writeln(x1102);
-writeln(x1103);
 
+writeln(x1200);
+writeln(x1201);

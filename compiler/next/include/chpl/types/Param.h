@@ -97,7 +97,7 @@ class Param {
 
   // helper function to convert a value to a string
   static std::string valueToString(UniqueString v) {
-    return v.toString();
+    return v.str();
   }
   static std::string valueToString(ComplexDouble v) {
     return std::to_string(v.re) + "+" + std::to_string(v.im) + "i";
@@ -129,18 +129,15 @@ class Param {
   bool operator!=(const Param& other) const {
     return !(*this == other);
   }
+  template<typename T>
+  static bool update(owned<T>& keep, owned<T>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    return markUniqueStringsInner(context);
+  }
 
   bool completeMatch(const Param* other) const;
-
-  // 'keep' is some old Param
-  // 'addin' is some new Param we wish to combine with it
-  //
-  // on exit, 'keep' stores the Param we need to keep, and anything
-  // not kept is stored in 'addin'.
-  // the function returns 'true' if anything changed in 'keep'.
-  static bool updateParam(owned<Param>& keep, owned<Param>& addin);
-
-  static void markParam(Context* context, const Param* keep);
 
   static bool isParamOpFoldable(chpl::uast::PrimitiveTag op);
 
@@ -149,7 +146,7 @@ class Param {
                             QualifiedType a,
                             QualifiedType b);
 
-  std::string toString() const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   static uint64_t binStr2uint64(const char* str, size_t len, std::string& err);
   static uint64_t octStr2uint64(const char* str, size_t len, std::string& err);
@@ -228,6 +225,23 @@ class Param {
 
 
 } // end namespace types
+/// \cond DO_NOT_DOCUMENT
+template<> struct stringify<chpl::types::Param::ComplexDouble> {
+  void operator()(std::ostream &stringOut,
+                  chpl::StringifyKind stringKind,
+                  const chpl::types::Param::ComplexDouble& stringMe) const {
+    stringOut << "types::Param::ComplexDouble is not stringified";
+  }
+};
+
+template<> struct stringify<chpl::types::Param::NoneValue> {
+  void operator()(std::ostream &stringOut,
+                  chpl::StringifyKind stringKind,
+                  const chpl::types::Param::NoneValue& stringMe) const {
+    stringOut << "types::Param::NoneValue is not stringified";
+  }
+};
+/// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
 
 // TODO: is there a reasonable way to define std::less on Param*?

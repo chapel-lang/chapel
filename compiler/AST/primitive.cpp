@@ -327,7 +327,10 @@ returnInfoGetMember(CallExpr* call) {
 static QualifiedType
 returnInfoGetTupleMember(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->getValType());
-  INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
+  INT_ASSERT(ct);
+  if (!ct->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    USR_FATAL(call, "invalid access of non-homogeneous tuple by runtime value");
+  }
   return ct->getField("x0")->qualType();
 }
 
@@ -847,6 +850,13 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_X, "gpu gridDim x", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
+
+  // allocate data into shared memory (takes one paremter: number of bytes to allocate)
+  // and returns a c_void_ptr
+  prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
+
+  // synchronize threads in a GPU kernel (equivalent to CUDA __syncThreads)
+  prim_def(PRIM_GPU_SYNC_THREADS, "gpu syncThreads", returnInfoVoid, true);
 
   // task primitives
   // get serial state

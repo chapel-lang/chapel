@@ -1,0 +1,2 @@
+deprecateOddP.chpl:6: warning: bigint.odd_p is deprecated, use bigint.isOdd instead
+5 is Odd, as 1 was returned

@@ -400,7 +400,7 @@ static void test3() {
   auto mGenericCallFunc = M->stmt(2)->toFunction();
   assert(mGenericCallFunc);
   auto mGenericCallFuncGCall = mGenericCallFunc->stmt(0)->toCall();
-  assert(mCallFuncGCall);
+  assert(mGenericCallFuncGCall);
   auto mHelper1 = M->stmt(3)->toFunction();
   assert(mHelper1);
   auto mHelper3 = M->stmt(4)->toFunction();

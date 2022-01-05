@@ -177,7 +177,7 @@ static void test3() {
     setFileText(context, path, contents);
     const ModuleVec& vec = parse(context, path);
     for (const Module* mod : vec) {
-      ASTNode::dump(mod);
+      mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     }
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
@@ -209,7 +209,7 @@ static void test3() {
     setFileText(context, path, contents);
     const ModuleVec& vec = parse(context, path);
     for (const Module* mod : vec) {
-      ASTNode::dump(mod);
+      mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     }
 
     assert(vec.size() == 1);
@@ -237,10 +237,51 @@ static void test3() {
   }
 }
 
+// this test combines several ideas and is a more challenging
+// case for instantiation, conversions, and type construction
+static void test4() {
+  printf("test4\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "input.chpl");
+  std::string contents = R""""(
+                           module M {
+                             class Parent { }
+                             class C : Parent { type t; var x: t; }
+
+                             proc f(arg: Parent) { }
+                             var x: owned C(int);
+                             f(x);
+                          }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 5);
+  const Call* call = m->stmt(4)->toCall();
+  assert(call);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(call);
+
+  assert(re.type().type()->isVoidType());
+
+  const TypedFnSignature* fn = re.mostSpecific().only();
+  assert(fn != nullptr);
+  assert(fn->untyped()->name() == "f");
+}
+
+
 int main() {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }

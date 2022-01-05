@@ -41,6 +41,8 @@ namespace chpl {
 namespace types {
 
 
+using namespace uast;
+
 Param::~Param() {
 }
 
@@ -53,23 +55,6 @@ bool Param::completeMatch(const Param* other) const {
     return false;
 
   return true;
-}
-
-bool Param::updateParam(owned<Param>& keep, owned<Param>& addin) {
-  if (keep->completeMatch(addin.get())) {
-    // no changes are necessary
-    return false;
-  } else {
-    // swap the Param
-    keep.swap(addin);
-    return true;
-  }
-}
-
-void Param::markParam(Context* context, const Param* keep) {
-  if (keep == nullptr) return;
-  // run markUniqueStrings on the node
-  keep->markUniqueStringsInner(context);
 }
 
 bool Param::isParamOpFoldable(chpl::uast::PrimitiveTag op) {
@@ -337,8 +322,8 @@ QualifiedType Param::fold(Context* context,
                           chpl::uast::PrimitiveTag op,
                           QualifiedType a,
                           QualifiedType b) {
-  assert(a.hasType() && a.hasParam());
-  assert(b.hasType() && b.hasParam());
+  assert(a.hasTypePtr() && a.hasParamPtr());
+  assert(b.hasTypePtr() && b.hasParamPtr());
 
   // convert Param to Immediate
   Immediate aImm = paramToImmediate(a.param(), a.type());
@@ -356,18 +341,18 @@ QualifiedType Param::fold(Context* context,
 
   // convert from Immediate
   std::pair<const Param*, const Type*> pair = immediateToParam(context, result);
-  return QualifiedType(QualifiedType::PARAM, pair.second, pair.first);
+  return QualifiedType(IntentList::PARAM, pair.second, pair.first);
 }
 
-std::string Param::toString() const {
-  std::string ret;
+void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+
 
   switch (tag_) {
 #define PARAM_NODE(NAME, VALTYPE) \
     case paramtags::NAME: { \
       const NAME* casted = (const NAME*) this; \
       auto value = casted->value(); \
-      ret += Param::valueToString(value); \
+      ss << Param::valueToString(value); \
       break; \
     }
 // Apply the above macros to ParamClassesList.h
@@ -376,7 +361,6 @@ std::string Param::toString() const {
 #undef PARAM_NODE
   }
 
-  return ret;
 }
 
 uint64_t Param::binStr2uint64(const char* str, size_t len, std::string& err) {
