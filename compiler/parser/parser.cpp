@@ -367,13 +367,12 @@ static void parseChplSourceFile(const char* inputFileName) {
   */
   const size_t maxFileName = NAME_MAX - reductionMaxLength;
   const char* baseName = stripdirectories(inputFileName);
-  if (strlen(baseName) > maxFileName)
-    {
-      // error message to print placeholders for fileName and maxLength
-      const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
-      // throw error with concatenated message
-      USR_FATAL(errorMessage, baseName, maxFileName);
-    }
+  if (strlen(baseName) > maxFileName) {
+    // error message to print placeholders for fileName and maxLength
+    const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
+    // throw error with concatenated message
+    USR_FATAL(errorMessage, baseName, maxFileName);
+  }
 
   if (fCompilerLibraryParser == false) {
     parseFile(inputFileName, MOD_USER, true, false);
