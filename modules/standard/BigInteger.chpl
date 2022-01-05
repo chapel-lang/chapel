@@ -2676,6 +2676,23 @@ module BigInteger {
     return this.isCongruentBy2Pow(c,b);
   }
 
+  /*
+    Return ``true`` if ``this`` is congruent to ``con`` modulo ``2^modExp``.
+    ``this`` is congruent to ``con % 2^modExp`` if there exists an integer ``q``
+    satisfying ``this = con + q*2^modExp``.
+
+    :arg con: number to determine if ``this`` is congruent to, modulo
+              ``2^modExp``.
+    :type con: :record:`bigint` or ``integral``
+
+    :arg modExp: power of 2 to use as the divisor of ``con`` when determining if
+                 ``con`` is congruent to ``this``.
+    :type modExp: ``integral``
+
+    :return: ``true`` if ``this`` is congruent to ``con`` modulo ``2^modExp``,
+             ``false`` otherwise.
+    :rtype: ``bool``
+   */
   proc bigint.isCongruentBy2Pow(const ref con: bigint, modExp: integral) : bool {
     const modExp_ = modExp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
