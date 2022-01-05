@@ -2496,6 +2496,19 @@ module BigInteger {
       return false;
   }
 
+  /*
+    Return ``true`` if ``this`` is exactly divisible by ``div``.  ``this`` is
+    divisible by ``div`` if there exists an integer ``q`` satisfying ``this =
+    q*div``.  Unlike the other division functions, ``div = 0`` is accepted and
+    only ``0`` is considered divisible by ``0``.
+
+    :arg div: number to check if ``this`` is divisible by
+    :type div: :record:`bigint`, ``int`` or ``uint``
+
+    :return: ``true`` if ``this`` is exactly divisible by ``div``, ``false``
+             otherwise
+    :rtype: ``bool``
+   */
   proc bigint.isDivisible(div: uint) : bool {
     const div_ = div.safeCast(c_ulong);
     var   ret: c_int;
