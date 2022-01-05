@@ -3124,6 +3124,14 @@ module BigInteger {
     return this.isPerfectSquare();
   }
 
+  /*
+    Return ``true`` if ``this`` is a perfect square, i.e., if the square root of
+    ``this`` is an integer.  Under this definition both ``0`` and ``1`` are
+    considered to be perfect squares.
+
+    :return: ``true`` if ``this`` is a perfect square, ``false`` otherwise.
+    :rtype: ``bool``
+   */
   proc bigint.isPerfectSquare() : bool {
     var ret: c_int;
 
