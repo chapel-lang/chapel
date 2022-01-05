@@ -2406,6 +2406,9 @@ void runClang(const char* just_parse_filename) {
     }
   }
 
+  // add a -I. so we can find headers named on command line in same dir
+  clangCCArgs.push_back("-I.");
+
   // add a -I for the generated code directory
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
 
