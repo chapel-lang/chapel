@@ -3917,6 +3917,9 @@ module BigInteger {
     return this.isEven();
   }
 
+  /*
+    Returns ``true`` if ``this`` is an even number, ``false`` otherwise.
+   */
   proc bigint.isEven() : bool {
     var ret: c_int;
 
@@ -3949,6 +3952,9 @@ module BigInteger {
     return this.isOdd();
   }
 
+  /*
+    Returns ``true`` if ``this`` is an odd number, ``false`` otherwise.
+   */
   proc bigint.isOdd() : bool {
     var ret: c_int;
 
