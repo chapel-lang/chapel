@@ -553,7 +553,7 @@ proc updateTomlWithChecksum(path: string, tf="Mason.toml") {
   var tomlPath = path+ "/" + tf;
   const toParse = open(tomlPath, iomode.r);
   const tomlFile = owned.create(parseToml(toParse));
-  tomlFile["brick"]!.set("CheckSum", hash);
+  tomlFile["brick"]!.set("checksum", hash);
   generateToml(tomlFile, tomlPath);
   return hash;
 }
@@ -565,4 +565,24 @@ proc generateToml(toml: borrowed Toml, tomlPath: string) {
   tomlWriter.writeln(toml);
   tomlWriter.close();
   tomlFile.close();
+}
+
+/*
+Given a project Directory, this method removes the
+checksum field from the project's toml and regenerates
+a toml without the checksum field.
+*/
+proc removeHash(projectHome: string, tf: string){
+  var hash = "";
+  var tomlPath = projectHome + "/" + tf;
+  if isFile(tomlPath) {
+    const toParse = open(tomlPath, iomode.r);
+    const tomlFile = owned.create(parseToml(toParse));
+    if tomlFile.pathExists("brick.checksum") {
+      hash = tomlFile["brick"]!["checksum"]!.s;
+      tomlFile["brick"]!.A.remove("checksum");
+      generateToml(tomlFile, tomlPath);
+    }
+  }
+  return hash;
 }

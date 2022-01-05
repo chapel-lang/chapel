@@ -3,7 +3,7 @@ Created new library project: newTest
 [brick]
 name = "newTest"
 chplVersion = "1.26.0"
-CheckSum = "13e58d26bf72c89b2b96e21110a668ca15f80a93b611a1ca85dd1bb200306934"
+checksum = "13e58d26bf72c89b2b96e21110a668ca15f80a93b611a1ca85dd1bb200306934"
 license = "None"
 version = "0.1.0"
 

@@ -69,25 +69,6 @@ proc masonUpdate(args: [?d] string) {
   return updateLock(skipUpdate, checksum, tf, lf);
 }
 
-/*
-Given a project Directory, this method removes the
-checksum field from the project's toml and regenerates
-a toml without the checksum field.
-*/
-proc removeHash(projectHome: string, tf: string){
-  var hash = "";
-  var tomlPath = projectHome + "/" + tf;
-  if isFile(tomlPath) {
-    const toParse = open(tomlPath, iomode.r);
-    const tomlFile = owned.create(parseToml(toParse));
-    if tomlFile.pathExists("brick.CheckSum") {
-      hash = tomlFile["brick"]!["CheckSum"]!.s;
-      tomlFile["brick"]!.A.remove("CheckSum");
-      generateToml(tomlFile, tomlPath);
-    }
-  }
-  return hash;
-}
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */

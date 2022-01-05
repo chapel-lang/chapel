@@ -23,13 +23,13 @@ use ArgumentParser;
 use FileSystem;
 use List;
 use Map;
-use MasonUtils;
-use MasonHelp;
 use MasonEnv;
-use MasonUpdate;
-use MasonSystem;
-use MasonExternal;
 use MasonExample;
+use MasonExternal;
+use MasonHelp;
+use MasonSystem;
+use MasonUpdate;
+use MasonUtils;
 use Subprocess;
 use TOML;
 
@@ -104,25 +104,6 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
   }
 }
 
-/*
-Given a project Directory, this method removes the
-checksum field from the project's toml and regenerates
-a toml without the checksum field.
-*/
-proc removeHash(projectHome: string, tf: string){
-  var hash = "";
-  var tomlPath = projectHome + "/" + tf;
-  if isFile(tomlPath) {
-    const toParse = open(tomlPath, iomode.r);
-    const tomlFile = owned.create(parseToml(toParse));
-    if tomlFile.pathExists("brick.CheckSum") {
-      hash = tomlFile["brick"]!["CheckSum"]!.s;
-      tomlFile["brick"]!.A.remove("CheckSum");
-      generateToml(tomlFile, tomlPath);
-    }
-  }
-  return hash;
-}
 
 proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: list(string),
                   checksum: bool, tomlName="Mason.toml", lockName="Mason.lock") throws {
