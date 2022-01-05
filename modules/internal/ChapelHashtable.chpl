@@ -235,8 +235,8 @@ module ChapelHashtable {
 
     const startingSize: int;
 
-    proc init(type keyType, type valType, resizeThreshold = 0.5,
-              initialCapacity = 32,
+    proc init(type keyType, type valType, resizeThreshold=0.5,
+              initialCapacity=16,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       this.keyType = keyType;
       this.valType = valType;
