@@ -1,0 +1,5 @@
+$CHPL_HOME/modules/packages/SortedMap.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/packages/SortedMap.chpl:nnnn: warning: creating a sortedMap with key type C
+$CHPL_HOME/modules/packages/SortedMap.chpl:nnnn: warning: which now means class type with generic management
+$CHPL_HOME/modules/packages/SortedMap.chpl:nnnn: error: sortedMap key type cannot currently be generic
+  testInitGenericError.chpl:9: called as sortedMap.init(type keyType = C, type valType = int(64), param parSafe = false, comparator: DefaultComparator)

@@ -26,15 +26,22 @@ namespace uast {
 
 
 owned<Record> Record::build(Builder* builder, Location loc,
+                            owned<Attributes> attributes,
                             Decl::Visibility vis,
                             Decl::Linkage linkage,
                             owned<Expression> linkageName,
                             UniqueString name,
                             ASTList contents) {
   ASTList lst;
+  int attributesChildNum = -1;
   int elementsChildNum = -1;
   int numElements = contents.size();
   int linkageNameChildNum = -1;
+
+  if (attributes.get()) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
 
   if (linkageName.get()) {
     linkageNameChildNum = lst.size();
@@ -46,7 +53,8 @@ owned<Record> Record::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-  Record* ret = new Record(std::move(lst), vis, linkage,
+  Record* ret = new Record(std::move(lst), attributesChildNum, vis,
+                           linkage,
                            linkageNameChildNum,
                            name,
                            elementsChildNum,

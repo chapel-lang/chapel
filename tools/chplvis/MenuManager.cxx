@@ -19,12 +19,9 @@
  */
 
 #include "chplvis.h"
-#include <sstream>
+#include <string>
 #include <FL/Fl_File_Chooser.H>
 #include <FL/fl_ask.H>
-
-#define SSTR( x ) dynamic_cast< std::ostringstream & >( \
-                    ( std::ostringstream() << std::dec << x ) ).str()
 
 // Utility routine
 
@@ -315,7 +312,7 @@ void MenuManager::toggleUTags ()
 void MenuManager::makeLocaleMenu (void)
 {
   for (long ix = 0; ix < VisData.NumLocales(); ix++) {
-    std::string entryName = "Locale/" + SSTR(ix);
+    std::string entryName = "Locale/" + std::to_string(ix);
     MainMenuBar->add(entryName.c_str(), 0, cb_selectLocale, (void *)ix);
     popup->add(entryName.c_str(), 0, cb_selectLocale, (void *)ix);
   }
@@ -397,7 +394,7 @@ void MenuManager::makeTagsMenu(void)
       if (VisData.hasUniqueTags() || useUTags)
         menuName = "Tags/" + std::string(tagName);
       else
-        menuName = "Tags/tag " + SSTR(ix) + " (" + tagName + ")";
+        menuName = "Tags/tag " + std::to_string(ix) + " (" + tagName + ")";
       MainMenuBar->add(menuName.c_str(), 0, cb_selTag, (void *)ix, 0);
       popup->add(menuName.c_str(), 0, cb_selTag, (void *)ix, 0);
     }

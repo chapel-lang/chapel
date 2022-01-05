@@ -43,6 +43,7 @@
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
 #include "llvmUtil.h"
+#include "llvm/IR/IntrinsicsNVPTX.h"
 #include "clang/CodeGen/CGFunctionInfo.h"
 #endif
 
@@ -3064,6 +3065,25 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
   }
 }
 #ifdef HAVE_LLVM
+
+static
+llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
+{
+  // This used to use llvm::ConstantExpr::getSizeOf(type);
+  // but that seems not to be constant folded.
+
+  GenInfo *info = gGenInfo;
+  const llvm::DataLayout& dl = info->module->getDataLayout();
+  llvm::LLVMContext& ctx = info->module->getContext();
+
+  INT_ASSERT(type->isSized());
+  llvm::TypeSize ret = dl.getTypeAllocSize(type);
+  auto intValue = ret.getKnownMinSize();
+  llvm::Type* sizeTy = dl.getIntPtrType(ctx);
+
+  return llvm::ConstantInt::get(sizeTy, intValue);
+}
+
 static
 GenRet codegenSizeof(llvm::Type* type)
 {
@@ -4867,6 +4887,45 @@ DEFINE_PRIM(GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.rea
 DEFINE_PRIM(GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
 DEFINE_PRIM(GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
 DEFINE_PRIM(GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
+
+DEFINE_PRIM(GPU_ALLOC_SHARED) {
+#ifdef HAVE_LLVM
+  int bytesToAlloc =
+    toVarSymbol(toSymExpr(call->get(1))->symbol())->immediate->int_value();
+
+  GenInfo* info = gGenInfo;
+  llvm::ArrayType* arrayTy = llvm::ArrayType::get(
+    llvm::IntegerType::get(gGenInfo->llvmContext, 8), bytesToAlloc);
+  // Allocate global variable in "shared memory space" (3)
+  llvm::GlobalVariable* glob = new llvm::GlobalVariable(
+    *info->module, arrayTy, false, llvm::GlobalValue::InternalLinkage,
+    llvm::Constant::getNullValue(arrayTy),
+    "gpuSharedMemory", nullptr, llvm::GlobalValue::NotThreadLocal, 3, false); 
+  llvm::Type* pointerToArrayTy = arrayTy->getPointerTo();
+  //We want to return a void* in the "generic" address space to we need to cast
+  llvm::Value* castedValue = gGenInfo->irBuilder->CreateAddrSpaceCast(
+    glob, pointerToArrayTy, "gpuSharedMemoryCasted");
+
+  ret.val = castedValue;
+  ret.isLVPtr = GEN_VAL;
+  ret.chplType = dtCVoidPtr;
+#endif
+}
+
+DEFINE_PRIM(GPU_SYNC_THREADS) {
+  if(!gCodegenGPU) {
+    return;
+  }
+#ifdef HAVE_LLVM
+  Type *chplReturnType = dtVoid;
+  llvm::Function *fun = llvm::Intrinsic::getDeclaration(gGenInfo->module,
+    llvm::Intrinsic::nvvm_barrier0);
+  ret.val = gGenInfo->irBuilder->CreateCall(fun);
+  ret.isLVPtr = GEN_VAL;
+  ret.chplType = chplReturnType;
+#endif
+}
+
 DEFINE_PRIM(GET_REQUESTED_SUBLOC) { ret = codegenCallExpr("chpl_task_getRequestedSubloc"); }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
@@ -5277,6 +5336,38 @@ DEFINE_PRIM(STACK_ALLOCATE_CLASS) {
     GenRet tmp = createTempVar(struct_name);
 
     ret = codegenCast(at, codegenAddrOf(tmp));
+}
+
+static
+void codegenCallMemset(GenRet dest, Type* type) {
+  GenInfo *info = gGenInfo;
+
+  GenRet size = codegenSizeof(type);
+
+  // Must call with real pointer arguments (not lvalue)
+  INT_ASSERT(dest.isLVPtr == GEN_VAL);
+  // And also above call should generate a value
+  INT_ASSERT(size.isLVPtr == GEN_VAL);
+
+  if (info->cfile) {
+    GenRet zero = codegenZero32();
+    codegenCall("memset", dest, zero, size);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::ConstantInt* zero = info->irBuilder->getIntN(8, 0);
+    info->irBuilder->CreateMemSet(dest.val, zero, size.val, llvm::Align(1));
+#endif
+  }
+}
+
+DEFINE_PRIM(ZERO_VARIABLE) {
+    SymExpr* se = toSymExpr(call->get(1));
+    INT_ASSERT(se);
+    Symbol* sym = se->symbol();
+    Type* type = sym->getValType();
+    GenRet dest = codegenAddrOf(se);
+
+    codegenCallMemset(dest, type);
 }
 
 DEFINE_PRIM(REGISTER_GLOBAL_VAR) {
@@ -6220,17 +6311,13 @@ void CallExpr::codegenInvokeTaskFun(const char* name) {
 
   // We would like to remove this conditional and always do the true branch,
   // but wanted to limit the impact of this near the release date.
-  if (localeUsesGPU()) {
-    GenRet outerLocale = codegenCallExpr("chpl_task_getRequestedSubloc");
-    args[0]    = outerLocale;
-  } else {
-    args[0]      = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
-  }
-  args[1]      = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
-  args[2]      = codegenCast("chpl_task_bundle_p", taskBundle);
-  args[3]      = bundleSize;
-  args[4]      = fn->linenum();
-  args[5]      = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
+  GenRet outerLocale = codegenCallExpr("chpl_task_getRequestedSubloc");
+  args[0] = outerLocale;
+  args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
+  args[2] = codegenCast("chpl_task_bundle_p", taskBundle);
+  args[3] = bundleSize;
+  args[4] = fn->linenum();
+  args[5] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
   genComment(fn->cname, true);
 

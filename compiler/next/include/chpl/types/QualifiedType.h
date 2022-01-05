@@ -20,8 +20,10 @@
 #ifndef CHPL_TYPES_QUALIFIEDTYPE_H
 #define CHPL_TYPES_QUALIFIEDTYPE_H
 
-#include "chpl/util/hash.h"
 #include "chpl/queries/update-functions.h"
+#include "chpl/uast/IntentList.h"
+#include "chpl/util/hash.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <cstddef>
 #include <string>
@@ -41,18 +43,26 @@ class Type;
  */
 class QualifiedType final {
  public:
-  enum Kind {
-    UNKNOWN,
-    CONST,
-    REF,
-    CONST_REF,
-    VALUE,
-    CONST_VALUE,
-    TYPE,
-    PARAM,
-    FUNCTION,
-    MODULE,
-  };
+  using Kind = uast::IntentList;
+
+  // instead of the below,
+  // could use 'using enum uast::IntentList' in C++20
+  static const Kind UNKNOWN = uast::IntentList::UNKNOWN;
+  static const Kind DEFAULT_INTENT = uast::IntentList::DEFAULT_INTENT;
+  static const Kind CONST_INTENT = uast::IntentList::CONST_INTENT;
+  static const Kind VAR = uast::IntentList::VAR;
+  static const Kind CONST_VAR = uast::IntentList::CONST_VAR;
+  static const Kind CONST_REF = uast::IntentList::CONST_REF;
+  static const Kind REF = uast::IntentList::REF;
+  static const Kind IN = uast::IntentList::IN;
+  static const Kind CONST_IN = uast::IntentList::CONST_IN;
+  static const Kind OUT = uast::IntentList::OUT;
+  static const Kind INOUT = uast::IntentList::INOUT;
+  static const Kind PARAM = uast::IntentList::PARAM;
+  static const Kind TYPE = uast::IntentList::TYPE;
+  static const Kind INDEX = uast::IntentList::INDEX;
+  static const Kind FUNCTION = uast::IntentList::FUNCTION;
+  static const Kind MODULE = uast::IntentList::MODULE;
 
  private:
   Kind kind_ = UNKNOWN;
@@ -70,7 +80,7 @@ class QualifiedType final {
     : kind_(kind), type_(type), param_(param)
   {
     // should only set param_ for kind_ == PARAM
-    assert(param_ == nullptr || kind_ == PARAM);
+    assert(param_ == nullptr || kind_ == Kind::PARAM);
   }
 
   /** Returns the kind of the expression this QualifiedType represents */
@@ -86,14 +96,59 @@ class QualifiedType final {
     yet have a param value. */
   const Param* param() const { return param_; }
 
-  bool hasType() const {
+  bool hasTypePtr() const {
     return type_ != nullptr;
   }
-  bool hasParam() const {
+  bool hasParamPtr() const {
     return param_ != nullptr;
   }
 
-  bool isGenericOrUnknown() const;
+  // these are not defined here so we don't have to #include Type.h, Param.h
+  bool isGenericType() const;
+  bool isUnknownType() const;
+
+  bool isGeneric() const {
+    bool genericParam = kind_ == PARAM && !hasParamPtr();
+    return genericParam || isGenericType();
+  }
+
+  bool isUnknown() const {
+    return kind_ == UNKNOWN || !hasTypePtr() || isUnknownType();
+  }
+
+  bool isGenericOrUnknown() const { return isUnknown() || isGeneric(); }
+
+  /** Returns true if kind is TYPE */
+  bool isType() const { return kind_ == Kind::TYPE; }
+
+  /** Returns true if kind is PARAM */
+  bool isParam() const { return kind_ == Kind::PARAM; }
+
+  /**
+    Returns true if the value cannot be modified directly (but might
+    be modified by some other aliasing variable).
+    In particular, returns true for all kinds other than REF and VALUE.
+   */
+  bool isConst() const {
+    return kind_ == Kind::CONST_INTENT ||
+           kind_ == Kind::CONST_VAR ||
+           kind_ == Kind::CONST_REF ||
+           kind_ == Kind::CONST_IN ||
+           kind_ == Kind::PARAM ||
+           kind_ == Kind::TYPE ||
+           kind_ == Kind::FUNCTION ||
+           kind_ == Kind::MODULE;
+  }
+  /** Returns true if the type refers to something immutable
+      (that cannot be modified by any task / other reference to it). */
+  bool isImmutable() const {
+    return kind_ == Kind::CONST_VAR ||
+           kind_ == Kind::CONST_IN ||
+           kind_ == Kind::PARAM ||
+           kind_ == Kind::TYPE ||
+           kind_ == Kind::FUNCTION ||
+           kind_ == Kind::MODULE;
+  }
 
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&
@@ -109,7 +164,7 @@ class QualifiedType final {
     std::swap(this->param_, other.param_);
   }
   size_t hash() const {
-    size_t h1 = chpl::hash((unsigned) kind_);
+    size_t h1 = (size_t) kind_;
     size_t h2 = chpl::hash(type_);
     size_t h3 = chpl::hash(param_);
 
@@ -119,8 +174,10 @@ class QualifiedType final {
     ret = hash_combine(ret, h3);
     return ret;
   }
+  static bool update(QualifiedType& keep, QualifiedType& addin);
+  void mark(Context* context) const;
 
-  std::string toString() const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 
@@ -128,12 +185,8 @@ class QualifiedType final {
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::types::QualifiedType> {
-  bool operator()(chpl::types::QualifiedType& keep,
-                  chpl::types::QualifiedType& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
+
+
 /// \endcond
 
 } // end namespace chpl

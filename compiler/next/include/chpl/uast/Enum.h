@@ -44,15 +44,26 @@ namespace uast {
  */
 class Enum final : public TypeDecl {
  private:
-  Enum(ASTList children, Decl::Visibility vis, UniqueString name)
-    : TypeDecl(asttags::Enum, std::move(children), vis,
+  Enum(ASTList children, int attributesChildNum, Decl::Visibility vis,
+       UniqueString name)
+    : TypeDecl(asttags::Enum, std::move(children), attributesChildNum,
+               vis,
                Decl::DEFAULT_LINKAGE,
                /*linkageNameChildNum*/ -1,
                name) {
 
-    assert(isEnumElementAndCommentList(children_));
+    for (auto ast : declOrComments()) {
+      assert(ast->isEnumElement() || ast->isComment());
+    }
+
+    if (attributes()) {
+      assert(declOrCommentChildNum() > 0);
+    }
   }
-  static bool isEnumElementAndCommentList(const ASTList& list);
+
+  int declOrCommentChildNum() const {
+    return attributes() ? 1 : 0;
+  }
 
   bool contentsMatchInner(const ASTNode* other) const override {
     const Enum* lhs = this;
@@ -68,28 +79,35 @@ class Enum final : public TypeDecl {
   ~Enum() override = default;
 
   static owned<Enum> build(Builder* builder, Location loc,
-                           UniqueString name, Decl::Visibility vis,
+                           owned<Attributes> attributes,
+                           Decl::Visibility vis,
+                           UniqueString name,
                            ASTList stmts);
 
   /**
     Return a way to iterate over the EnumElements and Comments.
    */
   ASTListIteratorPair<Expression> declOrComments() const {
-    return ASTListIteratorPair<Expression>(children_.begin(), children_.end());
+    auto begin = declOrCommentChildNum() >= 0
+          ? children_.begin() + declOrCommentChildNum()
+          : children_.end();
+    auto end = begin + numDeclOrComments();
+    return ASTListIteratorPair<Expression>(begin, end);
   }
 
   /**
    Return the number of EnumElements and Comments contained in this Enum.
    */
   int numDeclOrComments() const {
-    return this->numChildren();
+    return attributes() ? numChildren() - 1 : numChildren();
   }
   /**
    Return the i'th EnumElement or Comment in this Enum.
    */
   const Expression* declOrComment(int i) const {
-    const ASTNode* ast = this->child(i);
-    assert(ast->isExpression());
+    assert(0 <= i && i < numDeclOrComments());
+    const ASTNode* ast = this->child(declOrCommentChildNum() + i);
+    assert(ast->isDecl() || ast->isComment());
     return (const Expression*)ast;
   }
 
@@ -97,8 +115,11 @@ class Enum final : public TypeDecl {
    Return a way to iterate over the EnumElements (ignoring Comments)
    */
   ASTListNoCommentsIteratorPair<EnumElement> enumElements() const {
-    return ASTListNoCommentsIteratorPair<EnumElement>(children_.begin(),
-                                                      children_.end());
+    auto begin = declOrCommentChildNum() >= 0
+          ? children_.begin() + declOrCommentChildNum()
+          : children_.end();
+    auto end = begin + numDeclOrComments();
+    return ASTListNoCommentsIteratorPair<EnumElement>(begin, end);
   }
 };
 

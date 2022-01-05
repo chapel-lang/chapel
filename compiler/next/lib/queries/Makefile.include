@@ -24,6 +24,7 @@ NEXT_QUERIES_SRCS =                                 \
            Context.cpp                              \
            ErrorMessage.cpp                         \
            ID.cpp                                   \
+           Location.cpp                             \
            UniqueString.cpp                         \
 
 

@@ -25,6 +25,7 @@
 #include "chpl/uast/ASTTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/util/memory.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <cassert>
 #include <functional>
@@ -146,11 +147,11 @@ class ASTNode {
   // on exit, 'keep' stores the AST we need to keep, and anything
   // not kept is stored in 'addin'.
   // the function returns 'true' if anything changed in 'keep'.
-  static bool updateAST(owned<ASTNode>& keep, owned<ASTNode>& addin);
+  static bool update(owned<ASTNode>& keep, owned<ASTNode>& addin);
 
-  static void markAST(Context* context, const ASTNode* keep);
+  void mark(Context* context) const;
 
-  static void dump(const ASTNode* ast, int leadingSpaces=0);
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h
@@ -394,8 +395,6 @@ class ASTNode {
     }
   }
 };
-
-
 } // end namespace uast
 } // end namespace chpl
 

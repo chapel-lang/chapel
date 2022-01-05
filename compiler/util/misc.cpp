@@ -66,11 +66,6 @@ astlocT            last_error_loc(0, NULL);
 
 static bool forceWidePtrs();
 
-// must be non-static to avoid dead-code elim. when compiling -O3
-void gdbShouldBreakHere() {
-
-}
-
 void setupError(const char* subdir, const char* filename, int lineno, int tag) {
   err_subdir        = subdir;
   err_filename      = filename;

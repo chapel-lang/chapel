@@ -50,6 +50,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_NODE(As)                         //
   AST_NODE(Array)                      //
+  AST_LEAF(Attributes)                 //
   //AST_NODE(AssociativeArray)         //
   AST_NODE(Break)                      // old AST: GotoStmt
   AST_NODE(Catch)                      // old AST: CatchStmt
@@ -115,7 +116,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_LEAF(UintLiteral)
     //AST_END_SUBCLASSES(NumericLiteral)
 
-    AST_BEGIN_SUBCLASSES(StringLikeLiteral) 
+    AST_BEGIN_SUBCLASSES(StringLikeLiteral)
       AST_LEAF(BytesLiteral)
       AST_LEAF(CStringLiteral)
       AST_LEAF(StringLiteral)
@@ -136,11 +137,9 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_BEGIN_SUBCLASSES(Decl)           // old AST: Symbol or DefExpr
     AST_NODE(MultiDecl)
     AST_NODE(TupleDecl)
+    AST_NODE(ForwardingDecl)
 
     AST_BEGIN_SUBCLASSES(NamedDecl)
-      //AST_NODE(ForwardingDecl)
-      //AST_NODE(TypeDecl)
-
       AST_NODE(EnumElement)                // old AST: EnumSymbol
       AST_NODE(Function)                   // old AST: FnSymbol
       //AST_NODE(Interface)                  // old AST: InterfaceSymbol

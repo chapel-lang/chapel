@@ -873,6 +873,11 @@ void doit(int partner, int *partnerseg) {
   assert_always(gex_System_QueryMaxThreads() > 1);
 #endif
 
+  // Hidden AM concurrency query
+  assert_always(gex_System_QueryHiddenAMConcurrencyLevel() >= 0);
+  assert_always(gex_System_QueryHiddenAMConcurrencyLevel()
+                <= GASNET_HIDDEN_AM_CONCURRENCY_LEVEL);
+
   /* ep_index/ep_location tests */
   assert_unsigned(gex_EP_Index_t);
   for (gex_Rank_t i = 0; i < numranks; ++i) {
@@ -1025,6 +1030,15 @@ void doit(int partner, int *partnerseg) {
 void doit0(int partner, int *partnerseg) {
 #endif
 
+
+  // GEX_FLAG_PEER_NEVER_SELF *might* alias GEX_FLAG_PEER_NEVER_NBRHD
+  #if (GEX_FLAG_PEER_NEVER_SELF == GEX_FLAG_PEER_NEVER_NBRHD)
+    #define MAYBE_GEX_FLAG_PEER_NEVER_SELF /*empty*/
+  #else
+    // Note the trailing comma in this defn
+    #define MAYBE_GEX_FLAG_PEER_NEVER_SELF GEX_FLAG_PEER_NEVER_SELF,
+  #endif
+
   /* misc type tests */
   assert_inttype(gex_Flags_t);
   // flags used in calls to initiate communication
@@ -1039,6 +1053,8 @@ void doit0(int partner, int *partnerseg) {
     GEX_FLAG_PEER_SEG_SOME,        \
     GEX_FLAG_PEER_SEG_BOUND,       \
     GEX_FLAG_PEER_SEG_OFFSET,      \
+    MAYBE_GEX_FLAG_PEER_NEVER_SELF \
+    GEX_FLAG_PEER_NEVER_NBRHD,     \
     /*GEX_FLAG_LC_COPY_YES, */     \
     /*GEX_FLAG_LC_COPY_NO,  */
 
@@ -1681,6 +1697,102 @@ void doit7(int partner, int *partnerseg) {
 }
 void doit8(int partner, int *partnerseg) {
 #endif
+
+  BARRIER();
+
+  //  check that RMA calls evaluate arguments exactly once
+#if !PLATFORM_COMPILER_XLC // Skip due to external bug 4205
+  #if PLATFORM_COMPILER_GNU_CXX && GASNETI_HAVE_CC_PRAGMA_GCC_DIAGNOSTIC
+  // DO NOT emulate the following warning suppression behavior!
+  // These warnings are often an indication of genuine undefined behavior.
+  //
+  // The code in this test may (at least with g++) generate warnings about
+  // sequence points.  They are safe to suppress/ignore here *ONLY* because
+  // (a) they are necessary/intrinsic to the property being tested AND
+  // (b) the test includes assertions that the "right" behavior occurs.
+  //
+  // Any "reasonable" client can/should use a temporary variable to hold any
+  // parameter(s) which are the subject of such warnings.
+  // See also: Bug 4313
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wsequence-point"
+  #endif
+
+  { int val = 0, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+    gex_RMA_PutBlocking((++a,myteam), (++b,partner), (++c,partnerseg), (++d,&val),
+                        (++e,sizeof(val)), (f++,0));
+    assert_always(a==1); assert_always(b==1); assert_always(c==1);
+    assert_always(d==1); assert_always(e==1); assert_always(f==1);
+  }
+  { int val = 0, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0;
+    gex_Event_Wait(
+      gex_RMA_PutNB((++a,myteam), (++b,partner), (++c,partnerseg), (++d,&val),
+                    (++e,sizeof(val)), (++f,GEX_EVENT_NOW), (g++,0)) );
+    assert_always(a==1); assert_always(b==1); assert_always(c==1);
+    assert_always(d==1); assert_always(e==1); assert_always(f==1);
+    assert_always(g==1);
+  }
+  { int val = 0, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0;
+    gex_RMA_PutNBI((++a,myteam), (++b,partner), (++c,partnerseg), (++d,&val),
+                   (++e,sizeof(val)), (++f,GEX_EVENT_NOW), (g++,0));
+    gex_NBI_Wait(GEX_EC_PUT,0);
+    assert_always(a==1); assert_always(b==1); assert_always(c==1);
+    assert_always(d==1); assert_always(e==1); assert_always(f==1);
+    assert_always(g==1);
+  }
+  { int val = 0, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+    gex_RMA_PutBlockingVal((++a,myteam), (++b,partner), (++c,partnerseg),
+                           (++d,val), (++e,sizeof(val)), (++f,0));
+    assert_always(a==1); assert_always(b==1); assert_always(c==1);
+    assert_always(d==1); assert_always(e==1); assert_always(f==1);
+  }
+  { int val = 0, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+    gex_Event_Wait(
+      gex_RMA_PutNBVal((++a,myteam), (++b,partner), (++c,partnerseg),
+                       (++d,val), (++e,sizeof(val)), (++f,0)));
+    assert_always(a==1); assert_always(b==1); assert_always(c==1);
+    assert_always(d==1); assert_always(e==1); assert_always(f==1);
+  }
+  { int val = 0, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+    gex_RMA_PutNBIVal((++a,myteam), (++b,partner), (++c,partnerseg),
+                      (++d,val), (++e,sizeof(val)), (++f,0));
+    gex_NBI_Wait(GEX_EC_PUT,0);
+    assert_always(a==1); assert_always(b==1); assert_always(c==1);
+    assert_always(d==1); assert_always(e==1);
+  }
+  { int val = 0, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+    gex_RMA_GetBlocking((++a,myteam), (++b,&val), (++c,partner),
+                        (++d,partnerseg), (++e,sizeof(val)), (f++,0));
+    assert_always(a==1); assert_always(b==1); assert_always(c==1);
+    assert_always(d==1); assert_always(e==1); assert_always(f==1);
+  }
+  { int val = 0, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+    gex_Event_Wait(
+      gex_RMA_GetNB((++a,myteam), (++b,&val), (++c,partner),
+                    (++d,partnerseg), (++e,sizeof(val)), (f++,0)));
+    assert_always(a==1); assert_always(b==1); assert_always(c==1);
+    assert_always(d==1); assert_always(e==1); assert_always(f==1);
+  }
+  { int val = 0, a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+    gex_RMA_GetNBI((++a,myteam), (++b,&val), (++c,partner),
+                   (++d,partnerseg), (++e,sizeof(val)), (f++,0));
+    gex_NBI_Wait(GEX_EC_GET,0);
+    assert_always(a==1); assert_always(b==1); assert_always(c==1);
+    assert_always(d==1); assert_always(e==1); assert_always(f==1);
+  }
+  { int a = 0, b = 0, c = 0, d = 0, e = 0;
+    int val =
+      gex_RMA_GetBlockingVal((++a,myteam), (++b,partner), (++c,partnerseg),
+                             (++d,sizeof(val)), (++e,0));
+    assert_always(a==1); assert_always(b==1); assert_always(c==1);
+    assert_always(d==1); assert_always(e==1);
+  }
+
+  #if PLATFORM_COMPILER_GNU_CXX && GASNETI_HAVE_CC_PRAGMA_GCC_DIAGNOSTIC
+  #pragma GCC diagnostic pop
+  #endif
+#endif
+
   BARRIER();
 
   // Checks for graceful degradation where support is missing or limited.

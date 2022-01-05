@@ -19,6 +19,7 @@
 
 #include "chpl/uast/ASTTypes.h"
 
+#include "chpl/queries/Context.h"
 #include "chpl/uast/ASTNode.h"
 
 namespace chpl {
@@ -55,7 +56,7 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
     keep.swap(addin);
     return true;
   } else if (keepSize == 1 && addinSize == 1) {
-    return ASTNode::updateAST(keep[0], addin[0]);
+    return ASTNode::update(keep[0], addin[0]);
   }
 
   ASTList newList;
@@ -78,7 +79,7 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
       keepElt.swap(keep[keepIdx]);
       addinElt.swap(addin[addinIdx]);
       // it seems like a close enough match, so update it
-      eltChanged = ASTNode::updateAST(keepElt, addinElt);
+      eltChanged = ASTNode::update(keepElt, addinElt);
       // updateAST might have swapped the elements but
       // now keepElt is the one to put in newList.
       newList.push_back(std::move(keepElt));
@@ -98,7 +99,7 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
       addinEltTwo.swap(addin[addinIdx+1]);
 
       // keepElt matched addinEltTwo so try to update them
-      ASTNode::updateAST(keepElt, addinEltTwo);
+      ASTNode::update(keepElt, addinEltTwo);
       // now keepElt is the one to keep and addinEltTwo is junk
       newList.push_back(std::move(addinEltOne));
       newList.push_back(std::move(keepElt));
@@ -117,7 +118,7 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
       keepEltTwo.swap(keep[keepIdx+1]);
 
       // keepEltTwo matched addinElt so try to update them
-      ASTNode::updateAST(keepEltTwo, addinElt);
+      ASTNode::update(keepEltTwo, addinElt);
       // now keepEltTwo is the one to keep and addinElt is junk
       newList.push_back(std::move(keepEltTwo));
       junkList.push_back(std::move(keepEltOne));
@@ -138,7 +139,7 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
       keepEltTwo.swap(keep[keepIdx+1]);
 
       // keepEltTwo matched addinEltTwo so try to update them
-      ASTNode::updateAST(keepEltTwo, addinEltTwo);
+      ASTNode::update(keepEltTwo, addinEltTwo);
       // now keepEltTwo is the one to keep and addinEltTwo is junk
       newList.push_back(std::move(addinEltOne));
       newList.push_back(std::move(keepEltTwo));
@@ -179,7 +180,7 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
 
 void markASTList(Context* context, const ASTList& keep) {
   for (const auto& elt: keep) {
-    ASTNode::markAST(context, elt.get());
+    context->markPointer(elt);
   }
 }
 

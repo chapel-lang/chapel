@@ -46,11 +46,14 @@ class Class final : public AggregateDecl {
  private:
   int parentClassChildNum_;
 
-  Class(ASTList children, Decl::Visibility vis, UniqueString name,
+  Class(ASTList children, int attributesChildNum, Decl::Visibility vis,
+        UniqueString name,
         int elementsChildNum,
         int numElements,
         int parentClassChildNum)
-    : AggregateDecl(asttags::Class, std::move(children), vis,
+    : AggregateDecl(asttags::Class, std::move(children),
+                    attributesChildNum,
+                    vis,
                     Decl::DEFAULT_LINKAGE,
                     /*linkageNameChildNum*/ -1,
                     name,
@@ -76,6 +79,7 @@ class Class final : public AggregateDecl {
   ~Class() override = default;
 
   static owned<Class> build(Builder* builder, Location loc,
+                            owned<Attributes> attributes,
                             Decl::Visibility vis,
                             UniqueString name,
                             owned<Expression> parentClass,

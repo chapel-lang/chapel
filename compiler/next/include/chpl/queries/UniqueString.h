@@ -26,8 +26,7 @@
 #define CHPL_QUERIES_UNIQUE_STRING_H
 
 #include "chpl/queries/UniqueString-detail.h"
-#include "chpl/queries/mark-functions.h"
-#include "chpl/queries/update-functions.h"
+#include "chpl/queries/stringify-functions.h"
 #include "chpl/util/hash.h"
 
 #include <cassert>
@@ -139,9 +138,14 @@ class UniqueString final {
   }
 
   /** return a std::string containing the string */
-  std::string toString() const {
+  // diffs from stringify, converts the uniquestring into a string
+  // representation similar to std::ostream.str()
+  std::string str() const {
     return std::string(c_str(), length());
   }
+
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   bool isEmpty() const {
     return s.i.c_str()[0] == '\0';
@@ -234,26 +238,15 @@ class UniqueString final {
     other = oldThis;
   }
 
+  static bool update(UniqueString& keep, UniqueString& addin);
+
   void mark(Context* context) const {
     s.i.mark(context);
   }
 };
 
-
-// docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::UniqueString> {
-  bool operator()(chpl::UniqueString& keep,
-                  chpl::UniqueString& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-template<> struct mark<chpl::UniqueString> {
-  void operator()(Context* context,
-                  const chpl::UniqueString& keep) const {
-    keep.mark(context);
-  }
-};
+
 /// \endcond
 
 

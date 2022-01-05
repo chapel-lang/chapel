@@ -18,8 +18,9 @@
  */
 
 #include "chpl/uast/ASTNode.h"
-#include "chpl/uast/As.h"
 #include "chpl/uast/Array.h"
+#include "chpl/uast/As.h"
+#include "chpl/uast/Attributes.h"
 #include "chpl/uast/Begin.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BoolLiteral.h"
@@ -51,6 +52,7 @@
 #include "chpl/uast/Forall.h"
 #include "chpl/uast/Foreach.h"
 #include "chpl/uast/Formal.h"
+#include "chpl/uast/ForwardingDecl.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/ImagLiteral.h"

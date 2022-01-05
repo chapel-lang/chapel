@@ -47,10 +47,12 @@ class VarArgFormal final : public VarLikeDecl {
  private:
   int countChildNum_;
 
-  VarArgFormal(ASTList children, UniqueString name, Formal::Intent intent,
+  VarArgFormal(ASTList children, int attributesChildNum, UniqueString name,
+               Formal::Intent intent,
                int8_t typeExpressionChildNum,
                int8_t countChildNum)
     : VarLikeDecl(asttags::VarArgFormal, std::move(children),
+                  attributesChildNum,
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
                   // Use -1 to indicate so such child exists.
@@ -77,6 +79,7 @@ class VarArgFormal final : public VarLikeDecl {
   ~VarArgFormal() override = default;
 
   static owned<VarArgFormal> build(Builder* builder, Location loc,
+                                   owned<Attributes> attributes,
                                    UniqueString name,
                                    Formal::Intent intent,
                                    owned<Expression> typeExpression,

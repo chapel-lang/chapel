@@ -24,6 +24,7 @@
 #include "chpl/queries/Context.h"
 #include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
+#include "chpl/queries/stringify-functions.h"
 
 /**
   This file should be included by .cpp files implementing queries.
@@ -118,10 +119,19 @@ QueryMapResult<ResultType,ArgTs...>::markUniqueStringsInResult(Context* context)
 template<typename... ArgTs>
 void Context::queryBeginTrace(const char* traceQueryName,
                               const std::tuple<ArgTs...>& tupleOfArg) {
-  if (enableDebugTracing) {
-    printf("QUERY BEGIN     %s (", traceQueryName);
-    queryArgsPrint(tupleOfArg);
-    printf(")\n");
+
+  if (breakSet || enableDebugTracing) {
+    auto args = queryArgsToStrings(tupleOfArg);
+    size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
+    if (enableDebugTracing) {
+      printf("QUERY BEGIN     %s (", traceQueryName);
+      queryArgsPrint(tupleOfArg);
+      printf(")\n");
+      printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
+    }
+    if (breakSet && queryAndArgsHash == breakOnHash) {
+      debuggerBreakHere();
+    }
   }
 }
 
@@ -264,7 +274,7 @@ const ResultType* Context::queryGetRunningQueryPartialResult(
   }
 
   // query is currently running so return the partial result
-  return &search2->result;
+  return &search2->partialResult;
 }
 
 template<typename ResultType,
@@ -331,6 +341,27 @@ Context::queryEnd(
 
   return ret->result;
 }
+
+template<typename ResultType,
+         typename... ArgTs>
+const ResultType&
+Context::queryEndCurrentResult(
+              const ResultType& (*queryFunction)(Context* context, ArgTs...),
+              QueryMap<ResultType, ArgTs...>* queryMap,
+              const QueryMapResult<ResultType, ArgTs...>* r,
+              const std::tuple<ArgTs...>& tupleOfArgs,
+              const char* traceQueryName) {
+
+  // swap the partial result to a variable
+  ResultType partialResultVar;
+  chpl::update<ResultType> updater;
+  updater(partialResultVar, r->partialResult);
+
+  return queryEnd(queryFunction, queryMap, r, tupleOfArgs,
+                  std::move(partialResultVar),
+                  traceQueryName);
+}
+
 
 template<typename ResultType,
          typename... ArgTs>
@@ -485,7 +516,7 @@ Context::querySetterUpdateResult(
   it.
 
   Pass the name of the enclosing function as func, context is the
-  class Contex, and then pass any arguments to the query.
+  class Context, and then pass any arguments to the query.
  */
 #define QUERY_BEGIN(func, context, ...) \
   QUERY_BEGIN_INNER(false, func, context, __VA_ARGS__); \
@@ -517,9 +548,10 @@ Context::querySetterUpdateResult(
 /**
   Get the current partial result for the current query
   (for use in recursive queries). The result is an lvalue that can be set.
+  Queries that use this need to end with return QUERY_END_CURRENT_RESULT()
  */
 #define QUERY_CURRENT_RESULT \
-  (BEGIN_QUERY_FOUND->result)
+  (BEGIN_QUERY_FOUND->partialResult)
 
 /**
   Write
@@ -542,6 +574,17 @@ Context::querySetterUpdateResult(
                                  BEGIN_QUERY_FUNC_NAME))
 
 
+/**
+  For a query working with QUERY_CURRENT_RESULT,
+  return the current result.
+ */
+#define QUERY_END_CURRENT_RESULT() \
+  /* must not use BEGIN_QUERY_SEARCH1 (iterator could be invalidated) */ \
+  (BEGIN_QUERY_CONTEXT->queryEndCurrentResult(BEGIN_QUERY_FUNCTION, \
+                                              BEGIN_QUERY_MAP, \
+                                              BEGIN_QUERY_FOUND, \
+                                              BEGIN_QUERY_ARGS, \
+                                              BEGIN_QUERY_FUNC_NAME))
 /**
   Use QUERY_STORE_RESULT to implement a setter for a non-input query.
   Arguments are:

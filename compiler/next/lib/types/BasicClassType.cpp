@@ -19,8 +19,79 @@
 
 #include "chpl/types/BasicClassType.h"
 
+#include "chpl/queries/query-impl.h"
+
 namespace chpl {
 namespace types {
+
+
+const owned<BasicClassType>&
+BasicClassType::getBasicClassType(
+    Context* context, ID id, UniqueString name,
+    const BasicClassType* parentType,
+    std::vector<CompositeType::FieldDetail> fields,
+    const BasicClassType* instantiatedFrom) {
+  QUERY_BEGIN(getBasicClassType, context, id, name, parentType, fields,
+              instantiatedFrom);
+
+  auto result = toOwned(new BasicClassType(id, name,
+                                           parentType, std::move(fields),
+                                           instantiatedFrom));
+
+  return QUERY_END(result);
+}
+
+const BasicClassType*
+BasicClassType::get(Context* context, ID id, UniqueString name,
+                    const BasicClassType* parentType,
+                    std::vector<CompositeType::FieldDetail> fields,
+                    const BasicClassType* instantiatedFrom) {
+  // getObjectType should be used to construct object
+  // everything else should have a parent type.
+  assert(parentType != nullptr);
+  return getBasicClassType(context, id, name,
+                           parentType, std::move(fields),
+                           instantiatedFrom).get();
+}
+
+const BasicClassType*
+BasicClassType::getObjectType(Context* context) {
+  ID emptyId;
+  auto name = UniqueString::build(context, "object");
+  std::vector<CompositeType::FieldDetail> emptyFields;
+
+  return getBasicClassType(context, emptyId, name,
+                           /* parentType */ nullptr,
+                           std::move(emptyFields),
+                           /* instantiatedFrom */ nullptr).get();
+}
+
+bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
+                                 bool& converts,
+                                 bool& instantiates) const {
+
+  assert(parentType != nullptr); // code below assumes this
+
+  for (const BasicClassType* t = this;
+       t != nullptr; // note: ObjectType has no parent
+       t = t->parentClassType()) {
+
+    // check if t is parentType indicating use of subclass
+    if (t == parentType) {
+      if (t != this) converts = true;
+      return true;
+    }
+
+    // check also if t is an instantiation of parentType
+    if (t->instantiatedFrom() == parentType) {
+      if (t != this) converts = true;
+      instantiates = true;
+      return true;
+    }
+  }
+
+  return false;
+}
 
 
 } // end namespace types

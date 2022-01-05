@@ -53,7 +53,7 @@ class Variable final : public VarLikeDecl {
   enum Kind {
     // Use IntentList here for consistent enum values.
     VAR         = (int) IntentList::VAR,
-    CONST       = (int) IntentList::CONST,
+    CONST       = (int) IntentList::CONST_VAR,
     CONST_REF   = (int) IntentList::CONST_REF,
     REF         = (int) IntentList::REF,
     PARAM       = (int) IntentList::PARAM,
@@ -62,7 +62,8 @@ class Variable final : public VarLikeDecl {
   };
 
  private:
-  Variable(ASTList children, Decl::Visibility vis, Decl::Linkage linkage,
+  Variable(ASTList children, int attributesChildNum, Decl::Visibility vis,
+           Decl::Linkage linkage,
            int linkageNameChildNum,
            UniqueString name,
            Variable::Kind kind,
@@ -70,7 +71,10 @@ class Variable final : public VarLikeDecl {
            bool isField,
            int8_t typeExpressionChildNum,
            int8_t initExpressionChildNum)
-      : VarLikeDecl(asttags::Variable, std::move(children), vis, linkage,
+      : VarLikeDecl(asttags::Variable, std::move(children),
+                    attributesChildNum,
+                    vis,
+                    linkage,
                     linkageNameChildNum,
                     name,
                     (IntentList)((int)kind),
@@ -98,10 +102,11 @@ class Variable final : public VarLikeDecl {
   ~Variable() override = default;
 
   static owned<Variable> build(Builder* builder, Location loc,
-                               UniqueString name,
+                               owned<Attributes> attributes,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
                                owned<Expression> linkageName,
+                               UniqueString name,
                                Variable::Kind kind,
                                bool isConfig,
                                bool isField,
@@ -119,7 +124,7 @@ class Variable final : public VarLikeDecl {
   bool isConfig() const { return this->isConfig_; }
 
   /**
-    Returns true if this Variable reperesents a field.
+    Returns true if this Variable represents a field.
   */
   bool isField() const { return this->isField_; }
 

@@ -17,12 +17,13 @@ Initializing Modules:
        DefaultRectangular
         ChapelArray
          ChapelPrivatization
+         ChapelDomain
+          IO
+           FormattedIO
+            Regex
          Sort
           List
            ChapelLocks
-           IO
-            FormattedIO
-             Regex
           MSBRadixSort
            RadixSortHelp
            ShellSort

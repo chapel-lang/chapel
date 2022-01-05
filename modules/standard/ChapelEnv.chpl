@@ -137,7 +137,7 @@ module ChapelEnv {
   pragma "no doc"
   /* See :ref:`readme-chplenv.CHPL_JEMALLOC` for more information. */
   param CHPL_JEMALLOC:string;
-  CHPL_JEMALLOC = __primitive("get compiler variable", "CHPL_JEMALLOC");
+  CHPL_JEMALLOC = __primitive("get compiler variable", "CHPL_TARGET_JEMALLOC");
 
   pragma "no doc"
   deprecated "CHPL_REGEXP is deprecated, please use CHPL_RE2 instead"

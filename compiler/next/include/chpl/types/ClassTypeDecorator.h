@@ -20,6 +20,9 @@
 #ifndef CHPL_TYPES_CLASS_TYPE_DECORATOR_H
 #define CHPL_TYPES_CLASS_TYPE_DECORATOR_H
 
+#include "chpl/util/hash.h"
+#include "chpl/queries/stringify-functions.h"
+
 #include <cassert>
 #include <utility>
 
@@ -27,9 +30,15 @@ namespace chpl {
 namespace types {
 
 
+/** This class stores a class type decorator that describes a memory
+    management strategy.
+
+    It wraps a ClassTypeDecoratorEnum value
+    so that it is easy to call methods on it.
+ */
 class ClassTypeDecorator final {
  public:
-  typedef enum {
+  enum ClassTypeDecoratorEnum {
     // When updating, make sure that these numbers work with the masks below
     // (last two bits are 0=generic nilable / 1=non-nilable / 2=nilable)
     BORROWED          = 0,
@@ -44,7 +53,7 @@ class ClassTypeDecorator final {
     GENERIC           = 12,
     GENERIC_NONNIL    = 13,
     GENERIC_NILABLE   = 14,
-  } ClassTypeDecoratorEnum;
+  };
   enum {
     NUM_DECORATORS = 12,
     MANAGEMENT_MASK = 0xfc,
@@ -143,6 +152,15 @@ class ClassTypeDecorator final {
   ClassTypeDecorator addNilable() const {
     return ClassTypeDecorator(addNilableToDecorator(val_));
   }
+
+  /** Returns a decorator based on this one but with borrowed management
+      (preserving nilability) */
+  ClassTypeDecorator toBorrowed() const {
+    int val = (int) val_;
+    int tmp = BORROWED | (val & NILABILITY_MASK);
+    return ClassTypeDecorator((ClassTypeDecoratorEnum)tmp);
+  }
+
   /** Returns true if this decorator has unknown nilability */
   bool isUnknownNilability() const {
     return isDecoratorUnknownNilability(val_);
@@ -187,6 +205,9 @@ class ClassTypeDecorator final {
   bool operator!=(ClassTypeDecorator other) const {
     return !(*this == other);
   }
+  size_t hash() const {
+    return (unsigned) val_;
+  }
   void swap(ClassTypeDecorator other) {
     std::swap(this->val_, other.val_);
   }
@@ -194,6 +215,26 @@ class ClassTypeDecorator final {
 
 
 } // end namespace uast
+/// \cond DO_NOT_DOCUMENT
+template<> struct stringify<chpl::types::ClassTypeDecorator> {
+  void operator()(std::ostream &stringOut,
+                  chpl::StringifyKind stringKind,
+                  const chpl::types::ClassTypeDecorator& stringMe) const {
+    stringOut << "types::ClassTypeDecorator is not stringified";
+  }
+};
+/// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
+
+namespace std {
+
+template<> struct hash<chpl::types::ClassTypeDecorator>
+{
+  size_t operator()(const chpl::types::ClassTypeDecorator& key) const {
+    return key.hash();
+  }
+};
+
+} // end namespace std
 
 #endif

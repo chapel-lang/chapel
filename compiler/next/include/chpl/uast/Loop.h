@@ -71,6 +71,9 @@ class Loop: public Expression {
  public:
   virtual ~Loop() override = 0; // this is an abstract base class
 
+  /**
+    Returns the block containing the body of this loop.
+  */
   const Block* body() const {
     auto ret = child(loopBodyChildNum_);
     return (const Block*) ret;

@@ -1,5 +1,5 @@
 perfkeys: GETs:, GETs:
-files: remote-record-read-licm-c.dat, remote-record-read-licm-c-cache.dat
-graphkeys: c GETs, c-cache GETs
+files: remote-record-read-licm-no-wideopt-no-cache.dat, remote-record-read-licm-no-wideopt-cache.dat
+graphkeys: no-cache GETs, cache GETs
 ylabel: Count
 graphtitle: remote-record-read-licm

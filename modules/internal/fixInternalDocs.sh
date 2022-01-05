@@ -166,18 +166,27 @@ removeUsage $file
 
 ## ChapelArray ##
 file="./ChapelArray.rst"
-replace "_domain" "domain" $file
 replace "_array" "array" $file
 replace "record" "type" $file
 
 removePrefixFunctions $file
 removePrefixVariables $file
 
-fixTitle "Domain and Array Operations" $file
+fixTitle "Array Operations" $file
 removeUsage $file
-
 ## End ChapelArray ##
 
+## ChapelDomain ##
+file="./ChapelDomain.rst"
+replace "_domain" "domain" $file
+replace "record" "type" $file
+
+removePrefixFunctions $file
+removePrefixVariables $file
+
+fixTitle "Domain Operations" $file
+removeUsage $file
+## End ChapelArray ##
 
 ## Atomics ##
 
@@ -202,17 +211,6 @@ fixTitle "Ranges" $file
 removeUsage $file
 
 # End ChapelRange ##
-
-## ChapelComplex_forDocs ##
-
-file="./ChapelComplex_forDocs.rst"
-
-removePrefixFunctions $file
-removeTitle $file
-removeUsage $file
-replace "_complex" "complex" $file
-
-# End ChapelComplex_forDocs ##
 
 ## String ##
 

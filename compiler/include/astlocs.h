@@ -25,6 +25,7 @@
 #include <cstring>
 
 #include "chpl/queries/ID.h"
+#include "chpl/queries/Location.h"
 #include "stringutil.h"
 
 class BaseAST;
@@ -131,6 +132,7 @@ class astlocMarker {
 public:
   astlocMarker(astlocT newAstLoc);
   astlocMarker(int lineno, const char* filename);
+  astlocMarker(chpl::Location location);
   ~astlocMarker();
 
   astlocT previousAstLoc;

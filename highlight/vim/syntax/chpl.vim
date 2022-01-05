@@ -216,7 +216,7 @@ if version >= 508 || !exists("did_c_syn_inits")
   HiLink cOctalError		cError
   HiLink cParenError		cError
   HiLink cErrInParen		cError
-" Hack: avoid range errors of the form [1..M) .. allows other bracket errors 
+" Hack: avoid range errors of the form [1..M) .. allows other bracket errors
 "  HiLink cErrInBracket		cError
   HiLink cCommentError		cError
   HiLink cCommentStartError	cError
@@ -271,7 +271,7 @@ syn keyword chplType            owned shared borrowed unmanaged
 syn keyword chplType            nothing void
 syn keyword chplOperator	on reduce scan by align
 syn keyword chplStructure	class record union enum
-syn keyword chplStructure	proc iter cobegin begin local sync let select where operator
+syn keyword chplStructure	proc iter cobegin begin local sync let select where operator lambda
 syn keyword chplStructure	pragma inline with private public forwarding
 syn keyword chplStructure	prototype override lifetime
 syn keyword chplBoolean		true false

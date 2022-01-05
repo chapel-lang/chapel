@@ -44,8 +44,8 @@ class Formal final : public VarLikeDecl {
  public:
   enum Intent {
     // Use IntentList here for consistent enum values.
-    DEFAULT_INTENT    = (int) IntentList::DEFAULT,
-    CONST             = (int) IntentList::CONST,
+    DEFAULT_INTENT    = (int) IntentList::DEFAULT_INTENT,
+    CONST             = (int) IntentList::CONST_INTENT,
     CONST_REF         = (int) IntentList::CONST_REF,
     REF               = (int) IntentList::REF,
     IN                = (int) IntentList::IN,
@@ -57,10 +57,12 @@ class Formal final : public VarLikeDecl {
   };
 
  private:
-  Formal(ASTList children, UniqueString name, Formal::Intent intent,
+  Formal(ASTList children, int attributesChildNum, UniqueString name,
+         Formal::Intent intent,
          int8_t typeExpressionChildNum,
          int8_t initExpressionChildNum)
     : VarLikeDecl(asttags::Formal, std::move(children),
+                  attributesChildNum,
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
                   /*linkageNameChildNum*/ -1,
@@ -84,6 +86,7 @@ class Formal final : public VarLikeDecl {
   ~Formal() override = default;
 
   static owned<Formal> build(Builder* builder, Location loc,
+                             owned<Attributes> attributes,
                              UniqueString name,
                              Formal::Intent intent,
                              owned<Expression> typeExpression,

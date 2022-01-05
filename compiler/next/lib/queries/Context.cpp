@@ -20,7 +20,9 @@
 #include "chpl/queries/Context.h"
 
 #include "chpl/queries/query-impl.h"
+#include "chpl/queries/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <cassert>
 #include <cstdarg>
@@ -31,6 +33,30 @@
 #include "../util/my_aligned_alloc.h" // assumes size_t defined
 
 namespace chpl {
+
+  namespace detail {
+    GlobalStrings globalStrings;
+    Context rootContext;
+
+    static void initGlobalStrings() {
+#define X(field, str) globalStrings.field = UniqueString::build(&rootContext, str);
+#include "chpl/queries/all-global-strings.h"
+#undef X
+    }
+  } // namespace detail
+
+  Context::Context() {
+    if (this == &detail::rootContext) {
+      detail::initGlobalStrings();
+      for (auto& v : uniqueStringsTable) {
+        doNotCollectUniqueCString(v.str);
+      }
+    } else {
+      for (const auto& v : detail::rootContext.uniqueStringsTable) {
+        uniqueStringsTable.insert(v);
+      }
+    }
+  }
 
 using namespace chpl::querydetail;
 
@@ -61,17 +87,22 @@ void Context::defaultReportError(const ErrorMessage& err) {
   defaultReportErrorPrintDetail(err, "", "error");
 }
 
-// unique'd strings are preceeded by 4 bytes of length, gcMark and 0x02
+// unique'd strings are preceded by 4 bytes of length, gcMark and doNotCollectMark
 // this number must be even
 #define UNIQUED_STRING_METADATA_BYTES 6
 #define UNIQUED_STRING_METADATA_LEN 4
 
 Context::~Context() {
-  // free all of the unique'd strings
+  // free all the unique'd strings
   for (auto& item: uniqueStringsTable) {
     char* buf = (char*) item.str;
     buf -= UNIQUED_STRING_METADATA_BYTES;
-    free(buf);
+    char doNotCollect = buf[UNIQUED_STRING_METADATA_LEN + 1];
+    // Root context  : Free all strings
+    // Other contexts: Free all that aren't doNotCollect
+    if (this == &detail::rootContext || !doNotCollect) {
+      free(buf);
+    }
   }
 }
 
@@ -81,7 +112,7 @@ Context::~Context() {
 static char* allocateEvenAligned(size_t amt) {
   char* buf = (char*) malloc(amt);
   // UNIQUED_STRING_METADATA_BYTES must be even
-  assert((UNIQUED_STRING_METADATA_BYTES & 1) == 0);
+  static_assert((UNIQUED_STRING_METADATA_BYTES & 1) == 0, "UniquedString metadata bytes not even");
   // Normally, malloc returns something that is aligned to 16 bytes,
   // but it's technically possible that a platform library
   // could not do so. So, here we check.
@@ -108,9 +139,9 @@ char* Context::setupStringMetadata(char* buf, size_t len) {
   assert(len <= INT32_MAX);
 
   int32_t len32 = len;
-  // this assert should fail if the below code needs to change
-  assert(sizeof(len32) + 2 == UNIQUED_STRING_METADATA_BYTES);
-  assert(sizeof(len32) == UNIQUED_STRING_METADATA_LEN);
+  // these assert should fail if the below code needs to change
+  static_assert(sizeof(len32) + 2 == UNIQUED_STRING_METADATA_BYTES, "Size mismatch");
+  static_assert(sizeof(len32) == UNIQUED_STRING_METADATA_LEN, "Size mismatch");
 
   // copy the length
   memcpy(buf, &len32, sizeof(len32));
@@ -118,8 +149,8 @@ char* Context::setupStringMetadata(char* buf, size_t len) {
   // set the GC mark
   *buf = gcMark;
   buf++;
-  // set the unused metadata (need to still have even alignment)
-  *buf = 0x02;
+  // set the doNotcollectMark
+  *buf = 0;
   buf++;
   return buf;
 }
@@ -270,16 +301,41 @@ const char* Context::uniqueCStringConcat(const char* s1,
 }
 
 void Context::markUniqueCString(const char* s) {
-  // Performance: Would it be better to do this store unconditionally?
-  if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber &&
-      s != nullptr) {
-    char gcMark = this->gcCounter & 0xff;
-    char* buf = (char*) s;
-    buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
-    buf += UNIQUED_STRING_METADATA_LEN; // pass the length
-    buf[0] = gcMark;
-    assert(buf[1] == 0x02);
+  if (s == nullptr) {
+    return; // nothing to do
   }
+
+  bool checkMarked = false;
+  bool doMark = (currentRevisionNumber == lastPrepareToGCRevisionNumber);
+  char gcMark = this->gcCounter & 0xff;
+  char* buf = (char*) s;
+  buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
+  buf += UNIQUED_STRING_METADATA_LEN;   // pass the length
+
+  #ifndef NDEBUG
+    // assertions are enabled, so consider logic about
+    // whether or not current values should already be marked
+    checkMarked = checkStringsAlreadyMarked;
+  #endif
+
+  if (checkMarked) {
+    assert(buf[0] == gcMark && "string should already be marked");
+  }
+
+  // write the mark if needed
+  if (doMark) {
+    buf[0] = gcMark;
+  }
+
+  assert(0 <= buf[1] && buf[1] <= 1);   // doNotCollectMark bit is 0 or 1
+}
+
+void Context::doNotCollectUniqueCString(const char* s) {
+  char* buf = (char*)s;
+  buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
+  buf += UNIQUED_STRING_METADATA_LEN;   // pass the length
+  buf += 1;                             // pass the gc mark
+  *buf = 1;                             // set doNotCollectMark
 }
 
 size_t Context::lengthForUniqueString(const char* s) {
@@ -289,6 +345,37 @@ size_t Context::lengthForUniqueString(const char* s) {
   memcpy(&len32, buf, sizeof(len32));
   assert(len32 >= 0);
   return len32;
+}
+
+bool Context::shouldMarkUnownedPointer(const void* ptr) {
+  // don't bother for nullptr
+  if (ptr == nullptr)
+    return false;
+
+  // shouldn't run any mark code if the revision is not doing GC
+  assert(this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber);
+
+  // check that the unowned pointer refers to an owned
+  // pointer that we have already marked
+  assert(ownedPtrsForThisRevision.count(ptr) != 0);
+
+  // add the pointer to the map
+  auto pair = ptrsMarkedThisRevision.insert(ptr);
+  // pair.second is 'true' if the insertion took place
+  // or 'false' if there already was an element
+  return pair.second;
+}
+bool Context::shouldMarkOwnedPointer(const void* ptr) {
+  // don't bother for nullptr
+  if (ptr == nullptr)
+    return false;
+
+  #ifndef NDEBUG
+    // note the pointer value for checking with markUnownedPointer
+    ownedPtrsForThisRevision.insert(ptr);
+  #endif
+
+  return true;
 }
 
 static
@@ -373,6 +460,8 @@ bool Context::hasFilePathForId(ID id) {
 void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
   this->numQueriesRunThisRevision_ = 0;
+  ptrsMarkedThisRevision.clear();
+  ownedPtrsForThisRevision.clear();
 
   if (prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
@@ -417,7 +506,8 @@ void Context::collectGarbage() {
       buf -= UNIQUED_STRING_METADATA_BYTES; // find start of allocation
       char* allocation = buf;
       buf += UNIQUED_STRING_METADATA_LEN; // pass the length
-      if (buf[0] == gcMark) {
+      // buf[1] is the doNotCollectMark
+      if (buf[1] || buf[0] == gcMark) {
         newTable.insert(e);
         if (enableDebugTracing) {
           printf("COPYING OVER UNIQUESTRING %s\n", key);
@@ -469,10 +559,11 @@ void Context::error(ErrorMessage error) {
 }
 
 void Context::error(Location loc, const char* fmt, ...) {
+  ID id;
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(id, loc, fmt, vl);
   va_end(vl);
   Context::error(err);
 }
@@ -482,7 +573,7 @@ void Context::error(ID id, const char* fmt, ...) {
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(id, loc, fmt, vl);
   va_end(vl);
   Context::error(err);
 }
@@ -492,7 +583,7 @@ void Context::error(const uast::ASTNode* ast, const char* fmt, ...) {
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(ast->id(), loc, fmt, vl);
   va_end(vl);
   Context::error(err);
 }
@@ -504,7 +595,7 @@ void Context::error(const resolution::TypedFnSignature* inFn,
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(ast->id(), loc, fmt, vl);
   va_end(vl);
   Context::error(err);
   // TODO: add note about instantiation & POI stack
@@ -542,7 +633,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
       useSaved = false;
       break;
     } else if (this->currentRevisionNumber == dependency->lastChecked) {
-      // No need to check the dependency again; already did and it was OK
+      // No need to check the dependency again; already did, and it was OK
     } else {
       recomputeIfNeeded(dependency);
       // we might have recomputed the dependency, so check its lastChanged
@@ -580,13 +671,14 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
     resultEntry->markUniqueStringsInResult(this);
     // and also mark unique strings in the errors
     for (const auto& err: resultEntry->errors) {
-      err.markUniqueStrings(this);
+      err.mark(this);
     }
   }
   resultEntry->lastChecked = this->currentRevisionNumber;
 
-  // Re-report any errors in the query
-  for (const auto& err: resultEntry->errors) {
+  // Update error locations if needed and re-report the error
+  for (auto& err: resultEntry->errors) {
+    err.updateLocation(this);
     reportError(err);
   }
 }
@@ -664,7 +756,7 @@ void Context::endQueryHandleDependency(const QueryMapResultBase* resultEntry) {
 
 void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
   // If an old element present has lastChecked == -1, that means that
-  // we trying to compute it when a recursive call was made. In that event
+  // we are trying to compute it when a recursive call was made. In that event
   // it is a severe error with the compiler implementation.
   // This is a severe internal error and compilation cannot proceed.
   // This uses 'exit' so that it can be tested but in the future we could
@@ -680,17 +772,6 @@ namespace querydetail {
 
 void queryArgsPrintSep() {
   printf(", ");
-}
-
-void queryArgsPrintUnknown() {
-  printf("?");
-}
-
-void queryArgsPrintOne(const ID& v) {
-  printf("ID(%s)", v.toString().c_str());
-}
-void queryArgsPrintOne(const UniqueString& v) {
-  printf("\"%s\"", v.c_str());
 }
 
 QueryMapResultBase::~QueryMapResultBase() {

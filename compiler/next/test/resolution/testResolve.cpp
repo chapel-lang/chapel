@@ -21,6 +21,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Comment.h"
+#include "chpl/uast/FnCall.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
@@ -62,9 +63,9 @@ static void test1() {
 
     const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-    assert(rr.byAst(x).type.type()->isIntType());
-    assert(rr.byAst(xIdent).type.type()->isIntType());
-    assert(rr.byAst(xIdent).toId == x->id());
+    assert(rr.byAst(x).type().type()->isIntType());
+    assert(rr.byAst(xIdent).type().type()->isIntType());
+    assert(rr.byAst(xIdent).toId() == x->id());
 
     context->collectGarbage();
   }
@@ -124,7 +125,7 @@ static void test2() {
     assert(x);
 
     const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-    assert(rr.byAst(x).type.type()->isIntType());
+    assert(rr.byAst(x).type().type()->isIntType());
 
     context->collectGarbage();
   }
@@ -152,17 +153,135 @@ static void test2() {
 
     const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-    assert(rr.byAst(x).type.type()->isIntType());
-    assert(rr.byAst(xIdent).type.type()->isIntType());
-    assert(rr.byAst(xIdent).toId == x->id());
+    assert(rr.byAst(x).type().type()->isIntType());
+    assert(rr.byAst(xIdent).type().type()->isIntType());
+    assert(rr.byAst(xIdent).toId() == x->id());
 
     context->collectGarbage();
   }
 }
 
+static void test3() {
+  printf("test3\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "input.chpl");
+
+  {
+    context->advanceToNextRevision(true);
+    std::string contents = "proc foo(arg: int) {\n"
+                           "  return arg;\n"
+                           "}\n"
+                           "var y = foo(1);";
+    setFileText(context, path, contents);
+    const ModuleVec& vec = parse(context, path);
+    for (const Module* mod : vec) {
+      mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
+    }
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    const Function* procfoo = m->stmt(0)->toFunction();
+    assert(procfoo && procfoo->name() == "foo");
+    const Variable* y = m->stmt(1)->toVariable();
+    assert(y);
+    const Expression* rhs = y->initExpression();
+    assert(rhs);
+    const FnCall* fnc = rhs->toFnCall();
+    assert(fnc);
+    const Identifier* foo = fnc->calledExpression()->toIdentifier();
+    assert(foo && foo->name() == "foo");
+
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    auto rrfoo = rr.byAst(foo);
+    assert(rrfoo.toId() == procfoo->id());
+
+    auto yt = rr.byAst(y).type().type();
+    assert(yt->isIntType());
+
+    context->collectGarbage();
+  }
+
+  {
+    context->advanceToNextRevision(true);
+    std::string contents = "var y = foo(1);";
+    setFileText(context, path, contents);
+    const ModuleVec& vec = parse(context, path);
+    for (const Module* mod : vec) {
+      mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
+    }
+
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    const Variable* y = m->stmt(0)->toVariable();
+    assert(y);
+    const Expression* rhs = y->initExpression();
+    assert(rhs);
+    const FnCall* fnc = rhs->toFnCall();
+    assert(fnc);
+    const Identifier* foo = fnc->calledExpression()->toIdentifier();
+    assert(foo && foo->name() == "foo");
+
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    auto rrfoo = rr.byAst(foo);
+    assert(rrfoo.toId().isEmpty());
+
+    auto rry = rr.byAst(y);
+    auto yt = rry.type().type();
+    assert(yt);
+    assert(yt->isErroneousType());
+
+    context->collectGarbage();
+  }
+}
+
+// this test combines several ideas and is a more challenging
+// case for instantiation, conversions, and type construction
+static void test4() {
+  printf("test4\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "input.chpl");
+  std::string contents = R""""(
+                           module M {
+                             class Parent { }
+                             class C : Parent { type t; var x: t; }
+
+                             proc f(arg: Parent) { }
+                             var x: owned C(int);
+                             f(x);
+                          }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 5);
+  const Call* call = m->stmt(4)->toCall();
+  assert(call);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(call);
+
+  assert(re.type().type()->isVoidType());
+
+  const TypedFnSignature* fn = re.mostSpecific().only();
+  assert(fn != nullptr);
+  assert(fn->untyped()->name() == "f");
+}
+
+
 int main() {
   test1();
   test2();
+  test3();
+  test4();
 
   return 0;
 }

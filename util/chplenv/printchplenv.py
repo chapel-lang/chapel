@@ -74,11 +74,12 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_TARGET_CXX', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_TARGET_COMPILER_PRGENV', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'arch'),
+    ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'cpu'),
     ChapelEnv('CHPL_RUNTIME_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
+    ChapelEnv('  CHPL_GPU_CODEGEN', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_CUDA_PATH', RUNTIME | NOPATH),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
@@ -88,16 +89,17 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_LAUNCHER', LAUNCHER | DEFAULT, 'launch'),
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
     ChapelEnv('CHPL_UNWIND', RUNTIME | LAUNCHER | DEFAULT, 'unwind'),
-    ChapelEnv('CHPL_HOST_MEM', INTERNAL, 'hostmem'),
-    ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'tgtmem'),
+    ChapelEnv('CHPL_HOST_MEM', COMPILER, 'hostmem'),
+    ChapelEnv('  CHPL_HOST_JEMALLOC', INTERNAL, 'jemalloc'),
     ChapelEnv('CHPL_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
-    ChapelEnv('  CHPL_JEMALLOC', INTERNAL, 'jemalloc'),
+    ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'mem'),
+    ChapelEnv('  CHPL_TARGET_JEMALLOC', INTERNAL, 'jemalloc'),
     ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
-    ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT),
+    ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT, 'hwloc'),
+    ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT, 're2'),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
     ChapelEnv('  CHPL_LLVM_CONFIG', COMPILER | NOPATH),
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
@@ -106,8 +108,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LLVM_CLANG_LINK_ARGS', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
-    ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER),
-    ChapelEnv('CHPL_SANITIZE_EXE', RUNTIME, 'sanitizers'),
+    ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER, 'san'),
+    ChapelEnv('CHPL_SANITIZE_EXE', RUNTIME, 'san'),
     ChapelEnv('CHPL_RUNTIME_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_LAUNCHER_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_COMPILER_SUBDIR', INTERNAL),
@@ -125,7 +127,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_COMPILE_ARGS', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS', INTERNAL),
-    ChapelEnv('  CHPL_PE_CHPL_PKGCONFIG_LIBS', INTERNAL)
+    ChapelEnv('  CHPL_PE_CHPL_PKGCONFIG_LIBS', INTERNAL),
+    ChapelEnv('  CHPL_THIRD_PARTY_HOST_LINK_ARGS', INTERNAL),
 ]
 
 # Global map of environment variable names to values
@@ -142,8 +145,8 @@ def compute_all_values():
     host_compiler_c = chpl_compiler.get_compiler_command('host', 'c')
     host_compiler_cpp = chpl_compiler.get_compiler_command('host', 'c++')
     ENV_VALS['CHPL_HOST_COMPILER'] = host_compiler
-    ENV_VALS['  CHPL_HOST_CC'] = host_compiler_c
-    ENV_VALS['  CHPL_HOST_CXX'] = host_compiler_cpp
+    ENV_VALS['  CHPL_HOST_CC'] = " ".join(host_compiler_c)
+    ENV_VALS['  CHPL_HOST_CXX'] = " ".join(host_compiler_cpp)
 
     ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host')
     ENV_VALS['CHPL_HOST_CPU'] = chpl_cpu.get('host').cpu
@@ -154,8 +157,8 @@ def compute_all_values():
     target_compiler_cpp = chpl_compiler.get_compiler_command('target', 'c++')
     target_compiler_prgenv = chpl_compiler.get_prgenv_compiler()
     ENV_VALS['CHPL_TARGET_COMPILER'] = target_compiler
-    ENV_VALS['  CHPL_TARGET_CC'] = target_compiler_c
-    ENV_VALS['  CHPL_TARGET_CXX'] = target_compiler_cpp
+    ENV_VALS['  CHPL_TARGET_CC'] = " ".join(target_compiler_c)
+    ENV_VALS['  CHPL_TARGET_CXX'] = " ".join(target_compiler_cpp)
     ENV_VALS['  CHPL_TARGET_COMPILER_PRGENV'] = target_compiler_prgenv
 
     ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
@@ -167,6 +170,7 @@ def compute_all_values():
             get_lcd=chpl_home_utils.using_chapel_module()).cpu
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
+    ENV_VALS['  CHPL_GPU_CODEGEN'] = chpl_gpu.get()
     ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_cuda_path()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
@@ -176,8 +180,10 @@ def compute_all_values():
     ENV_VALS['CHPL_LAUNCHER'] = chpl_launcher.get()
     ENV_VALS['CHPL_TIMERS'] = chpl_timers.get()
     ENV_VALS['CHPL_UNWIND'] = chpl_unwind.get()
+    ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
     ENV_VALS['CHPL_MEM'] = chpl_mem.get('target')
-    ENV_VALS['  CHPL_JEMALLOC'] = chpl_jemalloc.get()
+    ENV_VALS['  CHPL_HOST_JEMALLOC'] = chpl_jemalloc.get('host')
+    ENV_VALS['  CHPL_TARGET_JEMALLOC'] = chpl_jemalloc.get('target')
     ENV_VALS['CHPL_MAKE'] = chpl_make.get()
     ENV_VALS['CHPL_ATOMICS'] = chpl_atomics.get()
     ENV_VALS['  CHPL_NETWORK_ATOMICS'] = chpl_atomics.get('network')
@@ -186,8 +192,10 @@ def compute_all_values():
     ENV_VALS['CHPL_RE2'] = chpl_re2.get()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
     ENV_VALS['  CHPL_LLVM_CONFIG'] = chpl_llvm.get_llvm_config()
-    ENV_VALS['  CHPL_LLVM_CLANG_C'] = chpl_llvm.get_llvm_clang('c')
-    ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = chpl_llvm.get_llvm_clang('c++')
+    llvm_clang_c = chpl_llvm.get_llvm_clang('c')
+    llvm_clang_cxx = chpl_llvm.get_llvm_clang('c++')
+    ENV_VALS['  CHPL_LLVM_CLANG_C'] = " ".join(llvm_clang_c)
+    ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = " ".join(llvm_clang_cxx)
     ENV_VALS['  CHPL_LLVM_CLANG_COMPILE_ARGS'] = chpl_llvm.get_clang_compile_args()
     ENV_VALS['  CHPL_LLVM_CLANG_LINK_ARGS'] = chpl_llvm.get_clang_link_args()
     aux_filesys = chpl_aux_filesys.get()
@@ -213,7 +221,6 @@ def compute_internal_values():
     ENV_VALS['CHPL_TARGET_CPU_FLAG'] = backend_info.flag
     ENV_VALS['CHPL_TARGET_BACKEND_CPU'] = backend_info.cpu
 
-    ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
     ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
     ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_LAUNCHER_SUBDIR'] = printchplenv(set(['launcher']), print_format='path').rstrip('\n')
@@ -223,13 +230,14 @@ def compute_internal_values():
 
     sys_modules_subdir = (chpl_platform.get('target') + "-" +
                           chpl_arch.get('target') + "-" +
-                          chpl_compiler.get_path_component('target'));
+                          chpl_compiler.get_path_component('target'))
     ENV_VALS['CHPL_SYS_MODULES_SUBDIR'] = sys_modules_subdir
 
     ENV_VALS['  CHPL_LLVM_UNIQ_CFG_PATH'] = chpl_llvm.get_uniq_cfg_path()
 
     compile_args_3p = []
     link_args_3p = []
+    host_link_args_3p = []
 
     ENV_VALS['  CHPL_GASNET_UNIQ_CFG_PATH'] = chpl_gasnet.get_uniq_cfg_path()
 
@@ -240,7 +248,8 @@ def compute_internal_values():
     link_args_3p.extend(chpl_hwloc.get_link_args(chpl_hwloc.get()))
 
     ENV_VALS['  CHPL_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path()
-    link_args_3p.extend(chpl_jemalloc.get_link_args(chpl_jemalloc.get()))
+    link_args_3p.extend(chpl_jemalloc.get_link_args('target', chpl_jemalloc.get('target')))
+    host_link_args_3p.extend(chpl_jemalloc.get_link_args('host', chpl_jemalloc.get('host')))
 
     ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_libfabric.get_uniq_cfg_path()
     if chpl_comm.get() == 'ofi':
@@ -258,19 +267,21 @@ def compute_internal_values():
     if chpl_re2.get() != 'none':
         link_args_3p.extend(chpl_re2.get_link_args())
 
-    # Remove duplicates, keeping last occurrence and preserving order
-    # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ..."
-    seen = set()
-    compile_args_3p_dedup = [arg for arg in reversed(compile_args_3p)
-                             if not (arg in seen or seen.add(arg))]
-    ENV_VALS['  CHPL_THIRD_PARTY_COMPILE_ARGS'] = ' '.join(reversed(compile_args_3p_dedup))
+    ENV_VALS['  CHPL_THIRD_PARTY_COMPILE_ARGS'] = ' '.join(dedup(compile_args_3p))
 
-    seen = set()
-    link_args_3p_dedup = [arg for arg in reversed(link_args_3p)
-                          if not (arg in seen or seen.add(arg))]
-    ENV_VALS['  CHPL_THIRD_PARTY_LINK_ARGS'] = ' '.join(reversed(link_args_3p_dedup))
+    ENV_VALS['  CHPL_THIRD_PARTY_LINK_ARGS'] = ' '.join(dedup(link_args_3p))
+
+    ENV_VALS['  CHPL_THIRD_PARTY_HOST_LINK_ARGS'] = ' '.join(dedup(host_link_args_3p))
 
     ENV_VALS['  CHPL_PE_CHPL_PKGCONFIG_LIBS'] = chpl_llvm.gather_pe_chpl_pkgconfig_libs()
+
+""" Remove duplicates, keeping last occurrence and preserving order
+e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ..."""
+def dedup(args):
+    seen = set()
+    ret = [arg for arg in reversed(args)
+           if not (arg in seen or seen.add(arg))]
+    return reversed(ret)
 
 """Return non-empty string if var is set via environment or chplconfig"""
 def user_set(env):

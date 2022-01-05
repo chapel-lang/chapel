@@ -1,0 +1,2 @@
+exceptCount.chpl:5: In function 'main':
+exceptCount.chpl:8: error: can't apply '#' to a range with idxType int(64) using a count of type owned Foo

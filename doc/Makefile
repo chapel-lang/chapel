@@ -38,8 +38,6 @@ SPEC_BUILD_DIR = ../build/doc/language/spec
 SPEC_RST_DIR = $(SOURCEDIR)/language/spec
 
 COMPILER_INTERNALS_DOXYGEN = ../build/doc/doxygen
-COMPILER_INTERNALS_SRC_DOXYGEN = $(SOURCEDIR)/meta/compiler-internals-doxygen
-COMPILER_INTERNALS_SRC_NO_DOXYGEN = $(SOURCEDIR)/meta/compiler-internals-no-doxygen
 COMPILER_INTERNALS = $(SOURCEDIR)/developer/compiler-internals
 
 help: help-sphinx help-source
@@ -130,10 +128,11 @@ symlinks:
 
 compiler-internals: FORCE
 	@echo "Updating compiler-internals"
+	rm -rf "$(COMPILER_INTERNALS)"
 	@if [ -d $(COMPILER_INTERNALS_DOXYGEN) ]; then \
-	  $(COPY_IF_DIFFERENT) "$(COMPILER_INTERNALS_SRC_DOXYGEN)" "$(COMPILER_INTERNALS)" ; \
+	  ln -s ../meta/compiler-internals-doxygen "$(COMPILER_INTERNALS)" ; \
 	else \
-	  $(COPY_IF_DIFFERENT) "$(COMPILER_INTERNALS_SRC_NO_DOXYGEN)" "$(COMPILER_INTERNALS)" ; \
+	  ln -s ../meta/compiler-internals-no-doxygen "$(COMPILER_INTERNALS)" ; \
 	fi
 
 checkdocs: FORCE

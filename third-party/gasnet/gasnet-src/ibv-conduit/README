@@ -5,6 +5,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 @ TOC: @
 @ Section: Overview @
 @ Section: Where this conduit runs @
+@ Section: Terminology @
 @ Section: Build-time Configuration @
 @ Section: Job Spawning @
 @ Section: Runtime Configuration @
@@ -66,6 +67,39 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   configures GASNet to use PSHM-over-POSIX on Solaris, then be advised
   that ibv-conduit will lack PSHM support and thus perform all communication
   within a compute node via the InfiniBand HCA instead of shared memory.
+
+@ Section: Terminology @
+
+   This document will use "NIC" (short for Network Interface Card) to refer to
+   the physical object installed in a host and "connector" to refer to the
+   external connections from the NIC to a network.
+
+   The term "HCA" (short for Host Channel Adapter) will be used to refer to a
+   device as enumerated by `ibv_get_device_list()` or the command-line utility
+   `ibv_devices`.  The HCA is the device driver's logical representation of
+   the NIC, but there is not always a one-to-one correspondence, as described
+   next.
+
+   When a NIC has multiple connectors, the driver may present these either as
+   a single HCA with multiple "ports" or as multiple single-port HCAs.
+   Additionally, some systems will present more than one HCA per connector.
+   This is typically done on systems where the NIC is connected to multiple
+   I/O buses.  On a compute node of the Summit system at OLCF, there are two
+   external network cable connectors on a single NIC which is connected
+   internally to two I/O buses.  The driver presents four HCAs, one for each
+   combination of external connector and internal I/O bus.  So, for a single
+   NIC with two connectors there are at least three ways the system may
+   present the same resources: with 1, 2 or 4 HCAs.
+
+   See the end of the description of the `GASNET_IBV_PORTS` environment
+   variable for information on multiple ways to get a listing of HCAs and
+   ports which ibv-conduit detects as available.
+
+   The term "rail" is used in place of "HCA" in some contexts, but has the
+   same meaning.  In particular, one must enable multi-rail support in
+   ibv-conduit if one is to use multiple HCAs (as defined above) in a given
+   process.  However, one can use multiple ports of a single multi-port HCA
+   without enabling multi-rail.
 
 @ Section: Build-time Configuration @
 
@@ -221,7 +255,9 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   multiple adapters or multiple active ports on a single adapter, you may
   wish to set environment variables to identify the correct HCAs and Ports.
   Or, you may wish to use non-default values for configuring connections.
-  These parameters may legally take different values on each node.
+  These parameters are permitted to take different values on each process.
+  However, please see bug 4314 if process-specifc values are needed.
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4314
 
   See "Build-time Configuration", above, for information on enabling
   use of multiple HCAs in GASNet ibv-conduit.
@@ -536,8 +572,11 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   Software configuration settings:
   -------------------------------
   There are some optional behaviors in ibv-conduit that can be turned
-  ON or OFF.  These parameters may legally take different values on each
-  node, but doing so may not be useful.
+  ON or OFF.
+  These parameters are permitted to take different values on each process,
+  though doing so may not be useful.
+  However, please see bug 4314 if process-specifc values are needed.
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4314
 
   + GASNET_RCV_THREAD
     This gives a boolean: "0" to disable, or "1" to enable, the use of an
@@ -1374,6 +1413,13 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4009 (Solaris)
   Those bug reports provide more details, and will provide the most current
   information regarding any recommended work-around(s).
+
++ Bug 4314
+  While this file documents several environment variables as permitting
+  different values on different processes, it is not always possible to
+  achieve such a scenario.
+  The most up-to-date information on this issue is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4314
 
 + See the GASNet Bugzilla server for details on other known bugs:
   https://gasnet-bugs.lbl.gov/

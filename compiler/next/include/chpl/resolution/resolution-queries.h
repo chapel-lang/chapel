@@ -27,138 +27,149 @@ namespace chpl {
 namespace resolution {
 
 
-  ////// resolution basics
+////// resolution basics
 
-  /**
-    Resolve the contents of a Module
-   */
-  const ResolutionResultByPostorderID& resolveModule(Context* context, ID id);
+/**
+  Resolve the contents of a Module
+ */
+const ResolutionResultByPostorderID& resolveModule(Context* context, ID id);
 
-  /**
-    Compute the type for a NamedDecl with a particular id.
-   */
-  const types::QualifiedType& typeForModuleLevelSymbol(Context* context, ID id);
+/**
+  Compute the type for a NamedDecl with a particular id.
+ */
+const types::QualifiedType& typeForModuleLevelSymbol(Context* context, ID id);
 
-  /**
-    Compute the type for a Builtin type using just its name
-   */
-  const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
+/**
+  Compute the type for a Builtin type using just its name
+ */
+const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
 
-  /////// function resolution
+/////// function resolution
 
-  /**
-    Compute an UntypedFnSignature for a Function, or return
-    nullptr if the passed ID is not a Function.
-    The pointer result is unique'd and safe to use as a query argument.
-   */
-  const UntypedFnSignature* untypedSignature(Context* context, ID id);
+/**
+  Compute a TypedFnSignature from an UntypedFnSignature.
+  The TypedFnSignature will represent generic and potentially unknown
+  types if the function is generic.
+ */
+const TypedFnSignature*
+typedSignatureInitial(Context* context,
+                      const UntypedFnSignature* untypedSig);
 
+/**
+  Returns a Type that represents the initial type provided by a TypeDecl
+  (e.g. Class, Record, etc). This can have unknown or generic fields.
+  The useGenericFormalDefaults argument indicates if the type should be
+  non-generic if all generic fields have default values. This is the
+  case in many uses of a type name but not the case when calling a type
+  constructor or when inheriting.
+ */
+const types::Type* initialTypeForTypeDecl(Context* context,
+                                          const uast::TypeDecl* d,
+                                          bool useGenericFormalDefaults);
 
-  /**
-    Compute a TypedFnSignature from an UntypedFnSignature.
-    The TypedFnSignature will represent generic and potentially unknown
-    types if the function is generic.
+/**
+  Compute an initial TypedFnSignature for a type constructor for a
+  particular type. If some fields of t are still generic,
+  it will be necessary to call instantiateSignature on it.
+ */
+const TypedFnSignature* typeConstructorInitial(Context* context,
+                                               const types::Type* t);
 
-    The pointer result is unique'd and safe to use as a query argument.
-   */
-  const TypedFnSignature*
-  typedSignatureInitial(Context* context,
-                        const UntypedFnSignature* untypedSig);
+/**
+  Instantiate a TypedFnSignature from
+   * the result of typedSignatureInitial,
+   * a CallInfo describing the types at the call site, and
+   * a point-of-instantiation scope representing the POI scope of the call
 
-  /**
-    Instantiate a TypedFnSignature from
-     * the result of typedSignatureInitial,
-     * a CallInfo describing the types at the call site, and
-     * a point-of-instantiation scope representing the POI scope of the call
+  Returns nullptr if the instantiation failed.
+ */
+const TypedFnSignature* instantiateSignature(Context* context,
+                                             const TypedFnSignature* sig,
+                                             const CallInfo& call,
+                                             const PoiScope* poiScope);
 
-    Returns nullptr if the instantiation failed.
-   */
-  const TypedFnSignature* instantiateSignature(Context* context,
-                                               const TypedFnSignature* sig,
-                                               const CallInfo& call,
-                                               const PoiScope* poiScope);
-
-  /**
-    Compute a ResolvedFunction given a TypedFnSignature.
-    Checks the generic cache for potential for reuse. When reuse occurs,
-    the ResolvedFunction might point to a different TypedFnSignature.
-   */
-  const ResolvedFunction* resolveFunction(Context* context,
-                                          const TypedFnSignature* sig,
-                                          const PoiScope* poiScope);
-
-
-  /**
-    Resolves a concrete function using the above queries.
-    */
-  const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
-
-  /**
-    Returns the ResolvedFunction called by a particular
-    ResolvedExpression, if there was exactly one candidate.
-    Otherwise, it returns nullptr.
-
-    This function does not handle return intent overloading.
-   */
-  const ResolvedFunction* resolveOnlyCandidate(Context* context,
-                                               const ResolvedExpression& r);
-  /**
-    Compute the return/yield type for a function.
-   */
-  const types::QualifiedType& returnType(Context* context,
-                                         const TypedFnSignature* sig,
-                                         const PoiScope* poiScope);
-
-  /////// call resolution
-
-  /**
-    Compute the (potentially generic) TypedFnSignatures of possibly applicable
-    candidate functions from a list of visible functions.
-   */
-  const std::vector<const TypedFnSignature*>&
-  filterCandidatesInitial(Context* context,
-                          std::vector<BorrowedIdsWithName> lst,
-                          CallInfo call);
-
-  /**
-    Further filter the result of filterCandidatesInitial down by doing
-    instantiations. After this, all of the resulting TypedFnSignatures
-    are actually candidates.
-
-    If instantiation occurs, gets/creates the new POI scope for
-    inScope/inPoiScope.
-
-   */
-  void
-  filterCandidatesInstantiating(Context* context,
-                                std::vector<const TypedFnSignature*> lst,
-                                const CallInfo& call,
-                                const Scope* inScope,
-                                const PoiScope* inPoiScope,
-                                std::vector<const TypedFnSignature*>& result);
-
-  /**
-    Given the result of filterCandidatesInstantiating, run
-    overload resolution aka disambiguation
-    to determine the most specific functions.
-   */
-  const MostSpecificCandidates&
-  findMostSpecificCandidates(Context* context,
-                             std::vector<const TypedFnSignature*> lst,
-                             CallInfo call);
+/**
+  Compute a ResolvedFunction given a TypedFnSignature.
+  Checks the generic cache for potential for reuse. When reuse occurs,
+  the ResolvedFunction might point to a different TypedFnSignature.
+ */
+const ResolvedFunction* resolveFunction(Context* context,
+                                        const TypedFnSignature* sig,
+                                        const PoiScope* poiScope);
 
 
-  /**
-    Given a CallInfo representing a call, a Scope representing the
-    scope of that call, and a PoiScope representing the point-of-instantiation
-    scope of that call, find the most specific candidates as well
-    as the point-of-instantiation scopes that were used when resolving them.
-   */
-  CallResolutionResult resolveCall(Context* context,
-                                   const uast::Call* call,
-                                   const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope);
+/**
+  Resolves a concrete function using the above queries.
+  */
+const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
+
+/**
+  Returns the ResolvedFunction called by a particular
+  ResolvedExpression, if there was exactly one candidate.
+  Otherwise, it returns nullptr.
+
+  This function does not handle return intent overloading.
+ */
+const ResolvedFunction* resolveOnlyCandidate(Context* context,
+                                             const ResolvedExpression& r);
+/**
+  Compute the return/yield type for a function.
+ */
+const types::QualifiedType& returnType(Context* context,
+                                       const TypedFnSignature* sig,
+                                       const PoiScope* poiScope);
+
+/////// call resolution
+
+/**
+  Compute the (potentially generic) TypedFnSignatures of possibly applicable
+  candidate functions from a list of visible functions.
+ */
+const std::vector<const TypedFnSignature*>&
+filterCandidatesInitial(Context* context,
+                        std::vector<BorrowedIdsWithName> lst,
+                        CallInfo call);
+
+/**
+  Further filter the result of filterCandidatesInitial down by doing
+  instantiations. After this, all of the resulting TypedFnSignatures
+  are actually candidates.
+
+  If instantiation occurs, gets/creates the new POI scope for
+  inScope/inPoiScope.
+
+ */
+void
+filterCandidatesInstantiating(Context* context,
+                              const std::vector<const TypedFnSignature*>& lst,
+                              const CallInfo& call,
+                              const Scope* inScope,
+                              const PoiScope* inPoiScope,
+                              std::vector<const TypedFnSignature*>& result);
+
+/**
+  Given the result of filterCandidatesInstantiating, run
+  overload resolution aka disambiguation
+  to determine the most specific functions.
+ */
+const MostSpecificCandidates&
+findMostSpecificCandidates(Context* context,
+                           std::vector<const TypedFnSignature*> lst,
+                           CallInfo call);
+
+
+/**
+  Given a CallInfo representing a call, a Scope representing the
+  scope of that call, and a PoiScope representing the point-of-instantiation
+  scope of that call, find the most specific candidates as well
+  as the point-of-instantiation scopes that were used when resolving them.
+ */
+CallResolutionResult resolveCall(Context* context,
+                                 const uast::Call* call,
+                                 const CallInfo& ci,
+                                 const Scope* inScope,
+                                 const PoiScope* inPoiScope);
+
 
 } // end namespace resolution
 } // end namespace chpl

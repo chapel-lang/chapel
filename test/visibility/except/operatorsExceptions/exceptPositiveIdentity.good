@@ -1,0 +1,9 @@
+exceptPositiveIdentity.chpl:6: In function 'main':
+exceptPositiveIdentity.chpl:8: error: unresolved call '+(owned Foo)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: +(a: int(8))
+exceptPositiveIdentity.chpl:8: note: because actual argument #1 with type 'owned Foo'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: int(8)'
+exceptPositiveIdentity.chpl:8: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(16))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(32))
+note: and 95 other candidates, use --print-all-candidates to see them

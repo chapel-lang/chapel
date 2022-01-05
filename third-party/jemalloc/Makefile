@@ -2,7 +2,7 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/../..
 endif
 
-CHPL_MAKE_HOST_TARGET = --target
+CHPL_MAKE_HOST_TARGET ?= --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 #
@@ -39,9 +39,17 @@ endif
 
 CHPL_JEMALLOC_CFG_OPTIONS += $(CHPL_JEMALLOC_MORE_CFG_OPTIONS)
 
-default: all
+ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
+default: $(CHPL_MAKE_HOST_JEMALLOC)
+all: $(CHPL_MAKE_HOST_JEMALLOC)
+else
+default: $(CHPL_MAKE_TARGET_JEMALLOC)
+all: $(CHPL_MAKE_TARGET_JEMALLOC)
+endif
 
-all: jemalloc
+none:
+
+bundled: jemalloc
 
 clean: FORCE
 	rm -rf $(JEMALLOC_BUILD_SUBDIR)

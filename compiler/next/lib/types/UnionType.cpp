@@ -19,8 +19,31 @@
 
 #include "chpl/types/UnionType.h"
 
+#include "chpl/queries/query-impl.h"
+
 namespace chpl {
 namespace types {
+
+
+const owned<UnionType>&
+UnionType::getUnionType(Context* context, ID id, UniqueString name,
+                        std::vector<CompositeType::FieldDetail> fields,
+                        const UnionType* instantiatedFrom) {
+  QUERY_BEGIN(getUnionType, context, id, name, fields, instantiatedFrom);
+
+  auto result = toOwned(new UnionType(id, name, std::move(fields),
+                                      instantiatedFrom));
+
+  return QUERY_END(result);
+}
+
+const UnionType*
+UnionType::get(Context* context, ID id, UniqueString name,
+               std::vector<CompositeType::FieldDetail> fields,
+               const UnionType* instantiatedFrom) {
+  return getUnionType(context, id, name, std::move(fields),
+                      instantiatedFrom).get();
+}
 
 
 } // end namespace types

@@ -790,13 +790,20 @@ int gasnetc_segment_create_hook(gex_Segment_t e_segment)
   // Register client segment with NIC
   gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_segment(e_segment);
   gasnetc_segment_register(segment);
+
+  // TODO: non-fatal error handling:
+  // If/when gasnetc_segment_register() has non-fatal failure modes, either it
+  // or this hook must cleanup the conduit-specific state prior to returning any
+  // value other than GASNET_OK.
+
   return GASNET_OK;
 }
 
 int gasnetc_segment_attach_hook(gex_Segment_t e_segment, gex_TM_t e_tm)
 {
   // Register client segment with NIC
-  gasneti_assert_zeroret( gasnetc_segment_create_hook(e_segment) );
+  int rc = gasnetc_segment_create_hook(e_segment);
+  if (rc) return rc;
 
   // Exchange registration info
   gex_EP_t ep = gex_TM_QueryEP(e_tm);
@@ -1415,10 +1422,9 @@ int gasnetc_AMRequestLong(  gex_TM_t tm, gex_Rank_t rank, gex_AM_Index_t handler
       uint32_t gpd_flags;
       void *completion;
       if (gasneti_leaf_is_pointer(lc_opt)) {
-        gasnete_eop_t *eop = gasnete_eop_new(mythread);
-        GASNETE_EOP_LC_START(eop);
+        gasnete_eop_t *eop = gasnete_eop_new_alc(mythread);
         eop->initiated_alc += 1;
-        *lc_opt = gasneti_op_event(eop, gasnete_eop_event_alc);
+        *lc_opt = (gex_Event_t) eop;
         gpd_flags = GC_POST_COMPLETION_EAM;
         completion = (void *) eop;
       } else if (lc_opt == GEX_EVENT_GROUP) {
@@ -1663,10 +1669,9 @@ int gasnetc_AMReplyLong(    gex_Token_t token, gex_AM_Index_t handler,
       uint32_t gpd_flags;
       void *completion;
       if (gasneti_leaf_is_pointer(lc_opt)) {
-        gasnete_eop_t *eop = gasnete_eop_new(mythread);
-        GASNETE_EOP_LC_START(eop);
+        gasnete_eop_t *eop = gasnete_eop_new_alc(mythread);
         eop->initiated_alc += 1;
-        *lc_opt = gasneti_op_event(eop, gasnete_eop_event_alc);
+        *lc_opt = (gex_Event_t) eop;
         gpd_flags = GC_POST_COMPLETION_EAM;
         completion = (void *) eop;
       } else {

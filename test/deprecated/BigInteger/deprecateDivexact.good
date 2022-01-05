@@ -1,0 +1,2 @@
+deprecateDivexact.chpl:7: warning: n and d are deprecated - please use numer and denom respectively
+4/2 = 2

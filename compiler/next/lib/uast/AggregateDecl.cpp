@@ -30,8 +30,10 @@ bool AggregateDecl::validAggregateChildren(ASTListIteratorPair<Expression> it) {
     if (elt->isComment() || elt->isErroneousExpression()) {
       // OK
     } else if (elt->isDecl()) {
-      if (elt->isVariable() || elt->isFunction() ||
-          elt->isTupleDecl() || elt->isMultiDecl()) {
+      if (elt->isVariable() || elt->isFunction() || elt->isTupleDecl() ||
+          elt->isMultiDecl() ||
+          elt->isAggregateDecl() ||
+          elt->isForwardingDecl()) {
         // OK
       } else {
         return false;

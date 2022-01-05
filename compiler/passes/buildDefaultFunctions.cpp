@@ -51,7 +51,6 @@ static void buildUnionAssignmentFunction(AggregateType* ct);
 
 static void buildEnumIntegerCastFunctions(EnumType* et);
 static void buildEnumFirstFunction(EnumType* et);
-static void buildEnumEnumerateFunction(EnumType* et);
 static void buildEnumSizeFunction(EnumType* et);
 static void buildEnumOrderFunctions(EnumType* et);
 static void buildEnumStringOrBytesCastFunctions(EnumType* type,
@@ -1112,7 +1111,6 @@ void buildEnumFunctions(EnumType* et) {
   buildEnumStringOrBytesCastFunctions(et, dtString);
 
   buildEnumIntegerCastFunctions(et);
-  buildEnumEnumerateFunction(et);
   buildEnumFirstFunction(et);
   buildEnumSizeFunction(et);
   buildEnumOrderFunctions(et);
@@ -1187,30 +1185,6 @@ static void buildEnumFirstFunction(EnumType* et) {
   // they are automatically inserted
   baseModule->block->insertAtTail(fnDef);
   reset_ast_loc(fnDef, et->symbol);
-
-  normalize(fn);
-  fn->tagIfGeneric();
-}
-
-static void buildEnumEnumerateFunction(EnumType* et) {
-  // Build a function that returns a tuple of the enum's values
-  // Each enum type has its own chpl_enum_enumerate function.
-  FnSymbol* fn = new FnSymbol("chpl_enum_enumerate");
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", et);
-  arg->addFlag(FLAG_TYPE_VARIABLE);
-  fn->insertFormalAtTail(arg);
-
-  baseModule->block->insertAtTail(new DefExpr(fn));
-
-  // Generate the tuple of enum values for the given enum type
-  CallExpr* call = new CallExpr("_build_tuple");
-  for_enums(constant, et) {
-    call->insertAtTail(constant->sym);
-  }
-
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
 
   normalize(fn);
   fn->tagIfGeneric();

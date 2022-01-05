@@ -16,21 +16,22 @@ var e   = new bigint(375);
 // Prime tester
 //
 
-var val = a.probab_prime_p(15);
+var val = a.probablyPrime(15);
 prime_parse(a, val);
 
-val = b.probab_prime_p(15);
+val = b.probablyPrime(15);
 prime_parse(b, val);
 
-val = c.probab_prime_p(50);
+val = c.probablyPrime(50);
 prime_parse(c, val);
 
 writeln();
 
 proc prime_parse(val, isProbPrime) {
-  if isProbPrime == 0 then
+  use primality;
+  if isProbPrime == notPrime then
     writeln(val, " not prime");
-  if isProbPrime == 1 || isProbPrime == 2 then
+  if isProbPrime == maybePrime || isProbPrime == isPrime then
     writeln(val, " prime or probably prime");
 }
 
@@ -95,7 +96,7 @@ writeln();
 // Inverse
 //
 c.set(23);
-val = a.invert(b, c);
+var val2 = a.invert(b, c);
 writeln("the inverse of ", b, " mod ", c, " is ", a);
 
 writeln();
@@ -108,7 +109,7 @@ writeln();
 
 c.set(36);
 b.set(2);
-a.remove(c, b);
+a.removeFactor(c, b);
 writeln(c, " without factors of ", b, " is ", a);
 
 writeln();

@@ -20,6 +20,7 @@
 #ifndef CHPL_RESOLUTION_RESOLUTION_TYPES_H
 #define CHPL_RESOLUTION_RESOLUTION_TYPES_H
 
+#include "chpl/queries/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
@@ -33,93 +34,280 @@
 namespace chpl {
 namespace resolution {
 
-// TODO: Should some/all of these structs be classes
-// with getters etc? That would be appropriate for
-// use as part of the library API.
-
 /**
   An untyped function signature. This is really just the part of a function
   including the formals. It exists so that the process of identifying
   candidates does not need to depend on the bodies of the function
   (in terms of incremental recomputation).
  */
-struct UntypedFnSignature {
-  ID functionId;
-  UniqueString name;
-  bool isMethod; // in that case, formals[0] is the receiver
-  uast::Function::Kind kind;
-  std::vector<const uast::Decl*> formals;
-  const uast::Expression* whereClause;
+class UntypedFnSignature {
+ public:
+  struct FormalDetail {
+    UniqueString name;
+    bool hasDefaultValue = false;
+    const uast::Decl* decl = nullptr;
 
-  UntypedFnSignature(const uast::Function* fn)
-    : functionId(fn->id()),
-      name(fn->name()),
-      isMethod(fn->isMethod()),
-      kind(fn->kind()),
-      whereClause(fn->whereClause()) {
-    for (auto formal : fn->formals()) {
-      formals.push_back(formal);
+    FormalDetail(UniqueString name, bool hasDefault, const uast::Decl* decl)
+      : name(name), hasDefaultValue(hasDefault), decl(decl) { }
+
+    bool operator==(const FormalDetail& other) const {
+      return name == other.name &&
+             hasDefaultValue == other.hasDefaultValue &&
+             decl == other.decl;
     }
+    bool operator!=(const FormalDetail& other) const {
+      return !(*this == other);
+    }
+
+    size_t hash() const {
+      return chpl::hash(name, hasDefaultValue, decl);
+    }
+
+    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      name.stringify(ss, stringKind);
+      if (decl != nullptr) {
+        decl->stringify(ss, stringKind);
+        ss << " ";
+      }
+    }
+  };
+
+ private:
+  // the ID of a uAST Function, if there is one for this signature;
+  // or, for compiler-generated functions/methods, the ID of the record/class
+  // declaration
+  ID id_;
+  UniqueString name_;
+  bool isMethod_; // in that case, formals[0] is the receiver
+  bool idIsFunction_; // whether the ID is of a function
+  bool isTypeConstructor_;
+  uast::Function::Kind kind_;
+  std::vector<FormalDetail> formals_;
+
+  // this will not be present for compiler-generated functions
+  const uast::Expression* whereClause_;
+
+  UntypedFnSignature(ID id,
+                     UniqueString name,
+                     bool isMethod,
+                     bool idIsFunction,
+                     bool isTypeConstructor,
+                     uast::Function::Kind kind,
+                     std::vector<FormalDetail> formals,
+                     const uast::Expression* whereClause)
+    : id_(id),
+      name_(name),
+      isMethod_(isMethod),
+      idIsFunction_(idIsFunction),
+      isTypeConstructor_(isTypeConstructor),
+      kind_(kind),
+      formals_(std::move(formals)),
+      whereClause_(whereClause) {
   }
 
+  static const owned<UntypedFnSignature>&
+  getUntypedFnSignature(Context* context, ID id,
+                        UniqueString name,
+                        bool isMethod,
+                        bool idIsFunction,
+                        bool isTypeConstructor,
+                        uast::Function::Kind kind,
+                        std::vector<FormalDetail> formals,
+                        const uast::Expression* whereClause);
+
+ public:
+  /** Get the unique UntypedFnSignature containing these components */
+  static const UntypedFnSignature* get(Context* context, ID id,
+                                       UniqueString name,
+                                       bool isMethod,
+                                       bool idIsFunction,
+                                       bool isTypeConstructor,
+                                       uast::Function::Kind kind,
+                                       std::vector<FormalDetail> formals,
+                                       const uast::Expression* whereClause);
+
+  /** Get the unique UntypedFnSignature representing a Function's
+      signature. */
+  static const UntypedFnSignature* get(Context* context,
+                                       const uast::Function* function);
+
+
   bool operator==(const UntypedFnSignature& other) const {
-    return functionId == other.functionId &&
-           name == other.name &&
-           isMethod == other.isMethod &&
-           kind == other.kind &&
-           formals == other.formals &&
-           whereClause == other.whereClause;
+    return id_ == other.id_ &&
+           name_ == other.name_ &&
+           isMethod_ == other.isMethod_ &&
+           idIsFunction_ == other.idIsFunction_ &&
+           isTypeConstructor_ == other.isTypeConstructor_ &&
+           kind_ == other.kind_ &&
+           formals_ == other.formals_ &&
+           whereClause_ == other.whereClause_;
   }
   bool operator!=(const UntypedFnSignature& other) const {
     return !(*this == other);
+  }
+  static bool update(owned<UntypedFnSignature>& keep,
+                     owned<UntypedFnSignature>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    id_.mark(context);
+    name_.mark(context);
+    for (auto const& elt : formals_) {
+      elt.name.mark(context);
+      context->markPointer(elt.decl);
+    }
+    context->markPointer(whereClause_);
+  }
+
+
+  /** Returns the id of the relevant uast node (usually a Function
+      but it can be a Record or Class for compiler-generated functions) */
+  const ID& id() const {
+    return id_;
+  }
+
+  /** Returns the name of the function this signature represents */
+  UniqueString name() const {
+    return name_;
+  }
+
+  /** Returns true if id() refers to a Function */
+  bool idIsFunction() const {
+    return idIsFunction_;
+  }
+
+  /** Returns true if this is a type constructor */
+  bool isTypeConstructor() const {
+    return isTypeConstructor_;
+  }
+
+  /** Returns the number of formals */
+  int numFormals() const {
+    return formals_.size();
+  }
+  /** Returns the name of the i'th formal. */
+  UniqueString formalName(int i) const {
+    assert(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].name;
+  }
+
+  /** Return whether the i'th formal has a default value. */
+  bool formalHasDefault(int i) const {
+    assert(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].hasDefaultValue;
+  }
+
+  /** Returns the Decl for the i'th formal / field.
+      This will return nullptr for compiler-generated functions. */
+  const uast::Decl* formalDecl(int i) const {
+    assert(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].decl;
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    name().stringify(ss, stringKind);
+    ss << " ";
+    id().stringify(ss, stringKind);
+    ss << " ";
+    ss << std::to_string(numFormals());
+    ss << " ";
   }
 };
 
 using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
 
-struct CallInfoActual {
-  types::QualifiedType type;
-  UniqueString byName;
+/** CallInfoActual */
+class CallInfoActual {
+ private:
+  types::QualifiedType type_;
+  UniqueString byName_;
 
-  bool operator==(const CallInfoActual& other) const {
-    return type == other.type &&
-           byName == other.byName;
+ public:
+  CallInfoActual(types::QualifiedType type, UniqueString byName)
+      : type_(type), byName_(byName) {}
+
+  /** return the qualified type */
+  const types::QualifiedType& type() const { return type_; }
+
+  /** return the name, if any, that the argument was passed with.
+      Ex: in f(number=3), byName() would be "number"
+   */
+  UniqueString byName() const { return byName_; }
+
+  bool operator==(const CallInfoActual &other) const {
+    return type_ == other.type_ && byName_ == other.byName_;
   }
   bool operator!=(const CallInfoActual& other) const {
     return !(*this == other);
   }
   size_t hash() const {
-    size_t h1 = chpl::hash(type);
-    size_t h2 = chpl::hash(byName);
-    size_t ret = 0;
-    ret = hash_combine(ret, h1);
-    ret = hash_combine(ret, h2);
-    return ret;
+    return chpl::hash(type_, byName_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) {
+    byName().stringify(ss, stringKind);
+    ss << " ";
+    type().stringify(ss, stringKind);
+    ss << " ";
   }
 };
 
-struct CallInfo {
-  UniqueString name;                   // the name of the called thing
-  bool isMethod = false;               // in that case, actuals[0] is receiver
-  std::vector<CallInfoActual> actuals; // types/params/names of actuals 
+/** CallInfo */
+class CallInfo {
+ private:
+  UniqueString name_;                   // the name of the called thing
+  bool isMethod_ = false;               // in that case, actuals[0] is receiver
+  bool hasQuestionArg_ = false;         // includes ? arg for type constructor
+  std::vector<CallInfoActual> actuals_; // types/params/names of actuals
+
+ public:
+  using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
+
+  CallInfo(UniqueString name, bool hasQuestionArg,
+           std::vector<CallInfoActual> actuals)
+      : name_(name), hasQuestionArg_(hasQuestionArg),
+        actuals_(std::move(actuals)) {}
+
+  /** return the name of the called thing */
+  UniqueString name() const { return name_; }
+
+  /** check if the call is a method call */
+  bool isMethod() const { return isMethod_; }
+
+  /** check if the call includes ? arg for type constructor */
+  bool hasQuestionArg() const { return hasQuestionArg_; }
+
+  /** return the actuals */
+  CallInfoActualIterable actuals() const {
+    return CallInfoActualIterable(actuals_);
+  }
+
+  /** return the i'th actual */
+  const CallInfoActual& actuals(size_t i) const {
+    assert(i < actuals_.size());
+    return actuals_[i];
+  }
+
+  /** return the number of actuals */
+  size_t numActuals() const { return actuals_.size(); }
 
   bool operator==(const CallInfo& other) const {
-    return name == other.name &&
-           isMethod == other.isMethod &&
-           actuals == other.actuals;
+    return name_ == other.name_ &&
+           isMethod_ == other.isMethod_ &&
+           hasQuestionArg_ == other.hasQuestionArg_ &&
+           actuals_ == other.actuals_;
   }
   bool operator!=(const CallInfo& other) const {
     return !(*this == other);
   }
   size_t hash() const {
-    size_t h1 = chpl::hash(name);
-    size_t h2 = isMethod;
-    size_t h3 = chpl::hash(actuals);
-    size_t ret = 0;
-    ret = hash_combine(ret, h1);
-    ret = hash_combine(ret, h2);
-    ret = hash_combine(ret, h3);
-    return ret;
+    return chpl::hash(name_, isMethod_, hasQuestionArg_, actuals_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      ss << "CallInfo: ";
+      name().stringify(ss, stringKind);
+      ss << " ";
   }
 };
 
@@ -128,13 +316,14 @@ struct CallInfo {
   Contains information about symbols available from point-of-instantiation
   in order to implement caching of instantiations.
  */
-struct PoiInfo {
+class PoiInfo {
+ private:
   // is this PoiInfo for a function that has been resolved, or
   // for a function we are about to resolve?
-  bool resolved = false;
+  bool resolved_ = false;
 
   // For a not-yet-resolved instantiation
-  const PoiScope* poiScope = nullptr;
+  const PoiScope* poiScope_ = nullptr;
 
   // TODO: add VisibilityInfo etc -- names of calls.
   // see PR #16261
@@ -145,32 +334,53 @@ struct PoiInfo {
   // This is a set of pairs of (Call ID, Function ID).
   // This includes POI calls from functions called in this Function,
   // transitively
-  std::set<std::pair<ID, ID>> poiFnIdsUsed;
+  std::set<std::pair<ID, ID>> poiFnIdsUsed_;
 
+ public:
   // default construct a PoiInfo
   PoiInfo() { }
 
   // construct a PoiInfo for a not-yet-resolved instantiation
   PoiInfo(const PoiScope* poiScope)
-    : resolved(false), poiScope(poiScope) {
+    : resolved_(false), poiScope_(poiScope) {
   }
   // construct a PoiInfo for a resolved instantiation
   PoiInfo(std::set<std::pair<ID, ID>> poiFnIdsUsed)
-    : resolved(true), poiFnIdsUsed(std::move(poiFnIdsUsed)) {
+    : resolved_(true), poiFnIdsUsed_(std::move(poiFnIdsUsed)) {
+  }
+
+  /** return the poiScope */
+  const PoiScope* poiScope() const { return poiScope_; }
+
+  /** set the poiScope */
+  void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
+
+  /** set resolved */
+  void setResolved(bool resolved) { resolved_ = resolved; }
+
+  // TODO callers copy and store this elsewhere, do we return as is? change the
+  // getter to poiFnIdsUsedAsSet? make callers do std::set(poiFnIdsUsed.begin(),
+  // poiFnidsUsed.end()) ?
+  const std::set<std::pair<ID, ID>> &poiFnIdsUsed() const {
+    return poiFnIdsUsed_;
+  }
+
+  void addIds(ID a, ID b) {
+    poiFnIdsUsed_.emplace(a, b);
   }
 
   // return true if the two passed PoiInfos represent the same information
   // (for use in an update function)
   static bool updateEquals(const PoiInfo& a, const PoiInfo& b) {
-    return a.resolved == b.resolved &&
-           a.poiScope == b.poiScope &&
-           a.poiFnIdsUsed == b.poiFnIdsUsed;
+    return a.resolved_ == b.resolved_ &&
+           a.poiScope_ == b.poiScope_ &&
+           a.poiFnIdsUsed_ == b.poiFnIdsUsed_;
   }
 
   void swap(PoiInfo& other) {
-    std::swap(resolved, other.resolved);
-    std::swap(poiScope, other.poiScope);
-    poiFnIdsUsed.swap(other.poiFnIdsUsed);
+    std::swap(resolved_, other.resolved_);
+    std::swap(poiScope_, other.poiScope_);
+    poiFnIdsUsed_.swap(other.poiFnIdsUsed_);
   }
 
   // accumulate PoiInfo from a call into this PoiInfo
@@ -183,10 +393,10 @@ struct PoiInfo {
   // return true if one of the PoiInfos is a resolved function that
   // can be reused given PoiInfo for a not-yet-resolved function.
   static bool reuseEquals(const PoiInfo& a, const PoiInfo& b) {
-    if (a.resolved && !b.resolved) {
+    if (a.resolved_ && !b.resolved_) {
       return a.canReuse(b);
     }
-    if (b.resolved && !a.resolved) {
+    if (b.resolved_ && !a.resolved_) {
       return b.canReuse(a);
     }
     return updateEquals(a, b);
@@ -205,13 +415,26 @@ struct PoiInfo {
   bool operator!=(const PoiInfo& other) const {
     return !(*this == other);
   }
+  void mark(Context* context) const {
+    context->markPointer(poiScope_);
+    for (auto const &elt : poiFnIdsUsed_) {
+      elt.first.mark(context);
+      elt.second.mark(context);
+    }
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "PoiInfo: ";
+    poiScope()->stringify(ss, stringKind);
+  }
 };
 
 // TODO: should this actually be types::FunctionType?
 /**
   This represents a typed function signature.
 */
-struct TypedFnSignature {
+class TypedFnSignature {
+ public:
   typedef enum {
     WHERE_NONE,  // no where clause
     WHERE_TBD,   // where clause not resolved yet
@@ -219,43 +442,125 @@ struct TypedFnSignature {
     WHERE_FALSE, // where resulted in false
   } WhereClauseResult;
 
+ private:
   // What is the untyped function signature?
-  const UntypedFnSignature* untypedSignature;
+  const UntypedFnSignature* untypedSignature_;
   // What is the type of each of the formals?
-  std::vector<types::QualifiedType> formalTypes;
+  std::vector<types::QualifiedType> formalTypes_;
   // If there was a where clause, what was the result of evaluating it?
-  WhereClauseResult whereClauseResult = WHERE_TBD;
+  WhereClauseResult whereClauseResult_ = WHERE_TBD;
 
   // Are any of the formals generic or unknown at this point?
-  bool needsInstantiation = true;
+  bool needsInstantiation_ = true;
 
   // Is this TypedFnSignature representing an instantiation?
   // If so, what is the generic TypedFnSignature that was instantiated?
-  const TypedFnSignature* instantiatedFrom = nullptr;
+  const TypedFnSignature* instantiatedFrom_ = nullptr;
 
   // Is this for an inner Function? If so, what is the parent
   // function signature?
-  const TypedFnSignature* parentFn = nullptr;
+  const TypedFnSignature* parentFn_ = nullptr;
 
   // TODO: This could include a substitutions map, if we need it.
   // The formalTypes above might be enough, though.
 
+ public:
+  TypedFnSignature(const UntypedFnSignature* untypedSignature,
+                   std::vector<types::QualifiedType> formalTypes,
+                   WhereClauseResult whereClauseResult,
+                   bool needsInstantiation,
+                   const TypedFnSignature* instantiatedFrom,
+                   const TypedFnSignature* parentFn)
+    : untypedSignature_(untypedSignature),
+      formalTypes_(std::move(formalTypes)),
+      whereClauseResult_(whereClauseResult),
+      needsInstantiation_(needsInstantiation),
+      instantiatedFrom_(instantiatedFrom),
+      parentFn_(parentFn) { }
+
   bool operator==(const TypedFnSignature& other) const {
-    return untypedSignature == other.untypedSignature &&
-           formalTypes == other.formalTypes &&
-           whereClauseResult == other.whereClauseResult &&
-           needsInstantiation == other.needsInstantiation &&
-           instantiatedFrom == other.instantiatedFrom &&
-           parentFn == other.parentFn;
+    return untypedSignature_ == other.untypedSignature_ &&
+           formalTypes_ == other.formalTypes_ &&
+           whereClauseResult_ == other.whereClauseResult_ &&
+           needsInstantiation_ == other.needsInstantiation_ &&
+           instantiatedFrom_ == other.instantiatedFrom_ &&
+           parentFn_ == other.parentFn_;
   }
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
   }
+  static bool update(owned<TypedFnSignature>& keep,
+                     owned<TypedFnSignature>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(untypedSignature_);
+    for (auto const &elt : formalTypes_) {
+      elt.mark(context);
+    }
+    context->markPointer(instantiatedFrom_);
+    context->markPointer(parentFn_);
+  }
 
-  std::string toString() const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  const ID& functionId() const {
-    return untypedSignature->functionId;
+  /** Returns the id of the relevant uast node (usually a Function
+      but it can be a Record or Class for compiler-generated functions) */
+  const ID& id() const {
+    return untypedSignature_->id();
+  }
+
+  /** Returns the UntypedFnSignature */
+  const UntypedFnSignature* untyped() const {
+    return untypedSignature_;
+  }
+
+  /** Returns the result of evaluating the where clause */
+  WhereClauseResult whereClauseResult() const {
+    return whereClauseResult_;
+  }
+
+  /** Returns if any of the formals are generic or unknown */
+  bool needsInstantiation() const {
+    return needsInstantiation_;
+  }
+
+  /**
+    Is this TypedFnSignature representing an instantiation?  If so, returns the
+    generic TypedFnSignature that was instantiated.  Otherwise, returns nullptr.
+
+    This function always returns the signature for the fully generic
+    function and never a partial instantiation. That is, the result
+    will either be nullptr or result->instantiatedFrom() will be nullptr.
+   */
+  const TypedFnSignature* instantiatedFrom() const {
+    assert(instantiatedFrom_ == nullptr ||
+           instantiatedFrom_->instantiatedFrom_ == nullptr);
+    return instantiatedFrom_;
+  }
+
+  /**
+     Is this for an inner Function? If so, what is the parent
+     function signature?
+   */
+  const TypedFnSignature* parentFn() const {
+    return parentFn_;
+  }
+
+  /** Returns the number of formals */
+  int numFormals() const {
+    int ret = formalTypes_.size();
+    assert(untypedSignature_ && ret == untypedSignature_->numFormals());
+    return ret;
+  }
+  /** Returns the name of the i'th formal */
+  UniqueString formalName(int i) const {
+    return untypedSignature_->formalName(i);
+  }
+  /** Returns the type of the i'th formal */
+  const types::QualifiedType& formalType(int i) const {
+    assert(0 <= i && (size_t) i < formalTypes_.size());
+    return formalTypes_[i];
   }
 };
 
@@ -312,8 +617,7 @@ class MostSpecificCandidates {
   const TypedFnSignature* only() const {
     const TypedFnSignature* ret = nullptr;
     int nPresent = 0;
-    for (int i = 0; i < NUM_INTENTS; i++) {
-      const TypedFnSignature* sig = candidates[i];
+    for (const TypedFnSignature* sig : *this) {
       if (sig != nullptr) {
         ret = sig;
         nPresent++;
@@ -340,79 +644,146 @@ class MostSpecificCandidates {
       std::swap(candidates[i], other.candidates[i]);
     }
   }
+  static bool update(MostSpecificCandidates& keep,
+                     MostSpecificCandidates& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    for (const TypedFnSignature* sig : *this) {
+      context->markPointer(sig);
+    }
+  }
 };
 
-struct CallResolutionResult {
+/** CallResolutionResult */
+class CallResolutionResult {
+ private:
   // what are the candidates for return-intent overloading?
-  MostSpecificCandidates mostSpecific;
+  MostSpecificCandidates mostSpecific_;
   // what is the type of the call expression?
-  types::QualifiedType exprType;
+  types::QualifiedType exprType_;
   // if any of the candidates were instantiated, what point-of-instantiation
   // scopes were used when resolving their signature or body?
-  PoiInfo poiInfo;
+  PoiInfo poiInfo_;
+
+ public:
+  // for simple cases where mostSpecific and poiInfo are irrelevant
+  CallResolutionResult(types::QualifiedType exprType)
+    : exprType_(std::move(exprType)) {
+  }
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
                        types::QualifiedType exprType,
                        PoiInfo poiInfo)
-    : mostSpecific(std::move(mostSpecific)),
-      exprType(std::move(exprType)),
-      poiInfo(std::move(poiInfo)) {
+    : mostSpecific_(std::move(mostSpecific)),
+      exprType_(std::move(exprType)),
+      poiInfo_(std::move(poiInfo)) {
   }
 
+  /** get the most specific candidates for return-intent overloading */
+  const MostSpecificCandidates& mostSpecific() const { return mostSpecific_; }
+
+  /** type of the call expression */
+  const types::QualifiedType& exprType() const { return exprType_; }
+
+  /** point-of-instantiation scopes used when resolving signature or body */
+  const PoiInfo& poiInfo() const { return poiInfo_; }
+
   bool operator==(const CallResolutionResult& other) const {
-    return mostSpecific == other.mostSpecific &&
-           exprType == other.exprType &&
-           PoiInfo::updateEquals(poiInfo, other.poiInfo);
+    return mostSpecific_ == other.mostSpecific_ &&
+           exprType_ == other.exprType_ &&
+           PoiInfo::updateEquals(poiInfo_, other.poiInfo_);
   }
   bool operator!=(const CallResolutionResult& other) const {
     return !(*this == other);
   }
   void swap(CallResolutionResult& other) {
-    mostSpecific.swap(other.mostSpecific);
-    exprType.swap(other.exprType);
-    poiInfo.swap(other.poiInfo);
+    mostSpecific_.swap(other.mostSpecific_);
+    exprType_.swap(other.exprType_);
+    poiInfo_.swap(other.poiInfo_);
   }
 };
 
 /**
   This type represents a resolved expression.
 */
-struct ResolvedExpression {
+class ResolvedExpression {
+ private:
   // What is its type and param value?
-  types::QualifiedType type;
+  types::QualifiedType type_;
   // For simple (non-function Identifier) cases,
   // the ID of a NamedDecl it refers to
-  ID toId;
+  ID toId_;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
   // candidates?
   // The choice between these needs to happen
   // later than the main function resolution.
-  MostSpecificCandidates mostSpecific;
+  MostSpecificCandidates mostSpecific_;
   // What point of instantiation scope should be used when
   // resolving functions in mostSpecific?
-  const PoiScope* poiScope = nullptr;
+  const PoiScope *poiScope_ = nullptr;
 
+ public:
   ResolvedExpression() { }
 
+  /** get the qualified type */
+  const types::QualifiedType& type() const { return type_; }
+
+  /** for simple (non-function Identifier) cases, the ID of a NamedDecl it
+   * refers to */
+  ID toId() const { return toId_; }
+
+  /** For a function call, what is the most specific candidate, or when using
+   * return intent overloading, what are the most specific candidates? The
+   * choice between these needs to happen later than the main function
+   * resolution.
+   */
+  const MostSpecificCandidates& mostSpecific() const { return mostSpecific_; }
+
+  const PoiScope* poiScope() const { return poiScope_; }
+
+  /** set the toId */
+  void setToId(ID toId) { toId_ = toId; }
+
+  /** set the type */
+  void setType(const types::QualifiedType& type) { type_ = type; }
+
+  /** set the most specific */
+  void setMostSpecific(const MostSpecificCandidates& mostSpecific) {
+    mostSpecific_ = mostSpecific;
+  }
+
+  /** set the point-of-instantiation scope */
+  void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
+
   bool operator==(const ResolvedExpression& other) const {
-    return type == other.type &&
-           toId == other.toId &&
-           mostSpecific == other.mostSpecific &&
-           poiScope == other.poiScope;
+    return type_ == other.type_ &&
+           toId_ == other.toId_ &&
+           mostSpecific_ == other.mostSpecific_ &&
+           poiScope_ == other.poiScope_;
   }
   bool operator!=(const ResolvedExpression& other) const {
     return !(*this == other);
   }
   void swap(ResolvedExpression& other) {
-    type.swap(other.type);
-    toId.swap(other.toId);
-    mostSpecific.swap(other.mostSpecific);
-    std::swap(poiScope, other.poiScope);
+    type_.swap(other.type_);
+    toId_.swap(other.toId_);
+    mostSpecific_.swap(other.mostSpecific_);
+    std::swap(poiScope_, other.poiScope_);
+  }
+  static bool update(ResolvedExpression& keep, ResolvedExpression& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    type_.mark(context);
+    toId_.mark(context);
+    mostSpecific_.mark(context);
+    context->markPointer(poiScope_);
   }
 
-  std::string toString() const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 /**
@@ -467,62 +838,102 @@ class ResolutionResultByPostorderID {
   }
 
   bool operator==(const ResolutionResultByPostorderID& other) const {
-    return vec == other.vec;
+    return symbolId == other.symbolId &&
+           vec == other.vec;
   }
   bool operator!=(const ResolutionResultByPostorderID& other) const {
     return !(*this == other);
   }
   void swap(ResolutionResultByPostorderID& other) {
+    symbolId.swap(other.symbolId);
     vec.swap(other.vec);
   }
-
   static bool update(ResolutionResultByPostorderID& keep,
                      ResolutionResultByPostorderID& addin);
+  void mark(Context* context) const {
+    symbolId.mark(context);
+    for (auto const &elt : vec) {
+      elt.mark(context);
+    }
+  }
 };
 
 /**
   This type represents a resolved function.
 */
-struct ResolvedFunction {
-  const TypedFnSignature* signature = nullptr;
+class ResolvedFunction {
+ private:
+  const TypedFnSignature* signature_ = nullptr;
 
-  uast::Function::ReturnIntent returnIntent =
-    uast::Function::DEFAULT_RETURN_INTENT;
+  uast::Function::ReturnIntent returnIntent_ =
+      uast::Function::DEFAULT_RETURN_INTENT;
 
   // this is the output of the resolution process
-  ResolutionResultByPostorderID resolutionById;
+  ResolutionResultByPostorderID resolutionById_;
 
   // the set of point-of-instantiation scopes used by the instantiation
-  PoiInfo poiInfo;
+  PoiInfo poiInfo_;
+
+ public:
+  ResolvedFunction(const TypedFnSignature *signature,
+                   uast::Function::ReturnIntent returnIntent,
+                   ResolutionResultByPostorderID resolutionById,
+                   PoiInfo poiInfo)
+      : signature_(signature), returnIntent_(returnIntent),
+        resolutionById_(resolutionById), poiInfo_(poiInfo) {}
+
+  /** The type signature */
+  const TypedFnSignature* signature() const { return signature_; }
+
+  /** the return intent */
+  uast::Function::ReturnIntent returnIntent() const { return returnIntent_; }
+
+  /** this is the output of the resolution process */
+  const ResolutionResultByPostorderID& resolutionById() const {
+    return resolutionById_;
+  }
+
+  /** the set of point-of-instantiations used by the instantiation */
+  const PoiInfo& poiInfo() const { return poiInfo_; }
 
   bool operator==(const ResolvedFunction& other) const {
-    return signature == other.signature &&
-           returnIntent == other.returnIntent &&
-           resolutionById == other.resolutionById &&
-           PoiInfo::updateEquals(poiInfo, other.poiInfo);
+    return signature_ == other.signature_ &&
+           returnIntent_ == other.returnIntent_ &&
+           resolutionById_ == other.resolutionById_ &&
+           PoiInfo::updateEquals(poiInfo_, other.poiInfo_);
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
   }
   void swap(ResolvedFunction& other) {
-    std::swap(signature, other.signature);
-    std::swap(returnIntent, other.returnIntent);
-    resolutionById.swap(other.resolutionById);
-    poiInfo.swap(other.poiInfo);
+    std::swap(signature_, other.signature_);
+    std::swap(returnIntent_, other.returnIntent_);
+    resolutionById_.swap(other.resolutionById_);
+    poiInfo_.swap(other.poiInfo_);
+  }
+  static bool update(owned<ResolvedFunction>& keep,
+                     owned<ResolvedFunction>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(signature_);
+    resolutionById_.mark(context);
+    poiInfo_.mark(context);
   }
 
   const ResolvedExpression& byId(const ID& id) const {
-    return resolutionById.byId(id);
+    return resolutionById_.byId(id);
   }
   const ResolvedExpression& byAst(const uast::ASTNode* ast) const {
-    return resolutionById.byAst(ast);
+    return resolutionById_.byAst(ast);
   }
 
-  const ID& functionId() const {
-    return signature->functionId();
+  const ID& id() const {
+    return signature_->id();
   }
 };
 
+/** FormalActual holds information on a function formal and its binding (if any) */
 struct FormalActual {
   const uast::Decl* formal = nullptr;
   types::QualifiedType formalType;
@@ -531,63 +942,79 @@ struct FormalActual {
   types::QualifiedType actualType;
 };
 
-struct FormalActualMap {
-  std::vector<FormalActual> byFormalIdx;
-  std::vector<int> actualIdxToFormalIdx;
-  bool mappingIsValid = false;
-  int failingActualIdx = -1;
-  int failingFormalIdx = -1;
+/** FormalActualMap maps formals to actuals */
+class FormalActualMap {
+ private:
+  std::vector<FormalActual> byFormalIdx_;
+  std::vector<int> actualIdxToFormalIdx_;
+  bool mappingIsValid_ = false;
+  int failingActualIdx_ = -1;
+  int failingFormalIdx_ = -1;
 
+ public:
+
+  using FormalActualIterable = Iterable<std::vector<FormalActual>>;
+
+  FormalActualMap(const UntypedFnSignature* sig, const CallInfo& call) {
+    mappingIsValid_ = computeAlignment(sig, nullptr, call);
+  }
+  FormalActualMap(const TypedFnSignature* sig, const CallInfo& call) {
+    mappingIsValid_ = computeAlignment(sig->untyped(), sig, call);
+  }
+
+  /** check if mapping is valid */
+  bool isValid() const { return mappingIsValid_; }
+
+  /** get the FormalActuals */
+  FormalActualIterable byFormalIdx() const {
+    return FormalActualIterable(byFormalIdx_);
+  }
+
+ private:
   bool computeAlignment(const UntypedFnSignature* untyped,
-                        const TypedFnSignature* typed,
-                        const CallInfo& call);
-
-  static FormalActualMap build(const UntypedFnSignature* untyped,
-                               const CallInfo& call);
-  static FormalActualMap build(const TypedFnSignature* typed,
-                               const CallInfo& call);
+                        const TypedFnSignature* typed, const CallInfo& call);
 };
-
-
 
 } // end namespace resolution
 
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<resolution::ResolvedExpression> {
-  bool operator()(resolution::ResolvedExpression& keep,
-                  resolution::ResolvedExpression& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
 
-template<> struct update<resolution::MostSpecificCandidates> {
-  bool operator()(resolution::MostSpecificCandidates& keep,
-                  resolution::MostSpecificCandidates& addin) const {
-    return defaultUpdate(keep, addin);
-  }
+template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
+{
+  void operator()(std::ostream &stringOut,
+                  chpl::StringifyKind stringKind,
+                  const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
+    switch(stringMe) {
+      case 0:
+        stringOut << "WHERE_NONE";
+        break;
+      case 1:
+        stringOut <<  "WHERE_TBD";
+        break;
+      case 2:
+        stringOut <<  "WHERE_TRUE";
+        break;
+      case 3:
+        stringOut <<  "WHERE_FALSE";
+        break;
+    }
+}
 };
+/// \endcond DO_NOT_DOCUMENT
 
-template<> struct update<resolution::ResolutionResultByPostorderID> {
-  bool operator()(resolution::ResolutionResultByPostorderID& keep,
-                  resolution::ResolutionResultByPostorderID& addin) const {
-    return resolution::ResolutionResultByPostorderID::update(keep, addin);
-  }
-};
-
-template<> struct update<owned<resolution::ResolvedFunction>> {
-  bool operator()(owned<resolution::ResolvedFunction>& keep,
-                  owned<resolution::ResolvedFunction>& addin) const {
-    // this function is just here to make debugging easier
-    return defaultUpdateOwned(keep, addin);
-  }
-};
-/// \endcond
 
 } // end namespace chpl
 
 
 namespace std {
+
+template<> struct hash<chpl::resolution::UntypedFnSignature::FormalDetail>
+{
+  size_t operator()(const chpl::resolution::UntypedFnSignature::FormalDetail& key) const {
+    return key.hash();
+  }
+};
 
 template<> struct hash<chpl::resolution::CallInfoActual>
 {

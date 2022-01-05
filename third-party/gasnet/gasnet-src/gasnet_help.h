@@ -258,9 +258,11 @@ extern gasneti_TM_t gasneti_thing_that_goes_thunk_in_the_dark;
 //   + gasneti_pshm_local_rank()
 //   + gasneti_pshm_in_supernode()
 //   + gasneti_pshm_addr2local()
-//   + GASNETI_NBRHD_LOCAL()
-//   + GASNETI_NBRHD_LOCAL_ADDR()
-//   + GASNETI_NBRHD_LOCAL_ADDR_OR_NULL()
+//   + GASNETI_NBRHD_MAPPED()
+//   + GASNETI_NBRHD_MAPPED_ADDR()
+//   + GASNETI_NBRHD_MAPPED_ADDR_OR_NULL()
+//   + gasneti_jobrank_if_mappable()
+//   + gasnete_mapped_at()
 
 #if GASNET_DEBUG
   GASNETI_INLINE(gasneti_assertvalid_tm_pair)
@@ -330,7 +332,7 @@ gex_Rank_t gasneti_i_tm_size(gasneti_TM_t _i_tm) {
 }
 
 GASNETI_INLINE(gasneti_i_tm_to_ep_index)
-gex_Rank_t gasneti_i_tm_to_ep_index(gasneti_TM_t _i_tm) {
+gex_EP_Index_t gasneti_i_tm_to_ep_index(gasneti_TM_t _i_tm) {
   gasneti_assert(_i_tm);
   if (gasneti_is_tm0(_i_tm)) {
     return 0; // fast path
@@ -343,8 +345,10 @@ gex_Rank_t gasneti_i_tm_to_ep_index(gasneti_TM_t _i_tm) {
 #define gasneti_e_tm_to_ep_index(_e_tm) gasneti_i_tm_to_ep_index(gasneti_import_tm(_e_tm))
 
 #if GASNET_DEBUG
-  #define gasneti_check_jobrank(jobrank) \
-    gasneti_assert_uint(jobrank ,<, gex_System_QueryJobSize());
+  GASNETI_INLINE(gasneti_check_jobrank)
+  void gasneti_check_jobrank(gex_Rank_t _jobrank) {
+    gasneti_assert_uint(_jobrank ,<, gex_System_QueryJobSize());
+  }
   GASNETI_INLINE(gasneti_check_e_tm_rank)
   void gasneti_check_e_tm_rank(gex_TM_t _e_tm, gex_Rank_t _rank) {
     gasneti_assert(_e_tm);
@@ -378,7 +382,7 @@ gex_Rank_t gasneti_i_tm_rank_to_jobrank(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
         gasneti_i_tm_rank_to_jobrank(gasneti_import_tm(e_tm),rank)
 
 GASNETI_INLINE(gasneti_i_tm_rank_to_ep_index)
-gex_Rank_t gasneti_i_tm_rank_to_ep_index(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
+gex_EP_Index_t gasneti_i_tm_rank_to_ep_index(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
   gasneti_check_i_tm_rank(_i_tm, _rank);
   gex_EP_Index_t _result;
   if (gasneti_is_tm0(_i_tm)) {
@@ -1612,7 +1616,23 @@ extern gasnet_nodeinfo_t *gasneti_nodeinfo;
   #define GASNETI_MK_CLASS_CUDA_UVA_CONFIG nomk_class_cuda_uva
 #endif
 
-#if GASNET_HAVE_MK_CLASS_CUDA_UVA // || GASNET_HAVE_MK_CLASS_[FOO]
+#if GASNET_HAVE_MK_CLASS_HIP
+  #undef GASNET_HAVE_MK_CLASS_HIP
+  #define GASNET_HAVE_MK_CLASS_HIP 1
+  #if GASNETI_HIP_PLATFORM_AMD
+    #define GASNETI_MK_CLASS_HIP_CONFIG mk_class_hip_amd
+  #elif GASNETI_HIP_PLATFORM_NVIDIA
+    #define GASNETI_MK_CLASS_HIP_CONFIG mk_class_hip_nvidia
+  #else
+    #error Unknown HIP Platform
+  #endif
+#else
+  #undef GASNET_HAVE_MK_CLASS_HIP
+  #define GASNETI_MK_CLASS_HIP_CONFIG nomk_class_hip
+#endif
+
+#if GASNET_HAVE_MK_CLASS_CUDA_UVA || \
+    GASNET_HAVE_MK_CLASS_HIP   // || GASNET_HAVE_MK_CLASS_[FOO]
   #define GASNET_HAVE_MK_CLASS_MULTIPLE 1
 #endif
 
@@ -1631,7 +1651,7 @@ extern gasnet_nodeinfo_t *gasneti_nodeinfo;
 #endif
 
 /* ------------------------------------------------------------------------------------ */
-/* PSHM support */
+// PSHM support - part 1 of 2
 #if GASNET_PSHM
 
 /* Max number of processes supported per node */
@@ -1682,15 +1702,26 @@ unsigned int gasneti_pshm_jobrank_to_local_rank(gex_Rank_t _jobrank) {
 }
 GASNETI_PUREP(gasneti_pshm_jobrank_to_local_rank)
 
-/* Returns 1 if given node is in the caller's supernode, or 0 if it's not.
- * NOTE: result is false before vnet initialization.
- */
+// gasneti_pshm_jobrank_in_supernode()
+//
+// Returns 1 if given node is in the caller's supernode, or 0 if it's not.
+// NOTE: result is false before vnet initialization.
+//
+// For contiguous nbrhd (gasneti_pshm_rankmap == NULL), the following two are
+// equal to gasneti_pshm_firstnode and gasneti_pshm_nodes, respectively.
+// Otherwise, they are gasneti_mynode and 1, respectively.
+// This ensures that regardless of contiguous or not, the case of _jobrank
+// equal to gasneti_mynode will always satisfy the first condition.
+extern gex_Rank_t gasneti_pshm_first_or_self;
+extern gasneti_pshm_rank_t gasneti_pshm_nodes_or_one;
 GASNETI_INLINE(gasneti_pshm_jobrank_in_supernode) GASNETI_PURE
 int gasneti_pshm_jobrank_in_supernode(gex_Rank_t _jobrank) {
 #if GASNET_CONDUIT_SMP
   return 1;
 #else
-  return (gasneti_pshm_jobrank_to_local_rank(_jobrank) < gasneti_pshm_nodes);
+  // Note use of unsigned type gex_Rank_t below means negative => huge
+  if ((_jobrank - gasneti_pshm_first_or_self) < gasneti_pshm_nodes_or_one) return 1;
+  return gasneti_pshm_rankmap && (gasneti_pshm_rankmap[_jobrank] < gasneti_pshm_nodes);
 #endif
 }
 GASNETI_PUREP(gasneti_pshm_jobrank_in_supernode)
@@ -1701,65 +1732,160 @@ GASNETI_PUREP(gasneti_pshm_jobrank_in_supernode)
 // + Relies on dense array of nodeinfo even though only supernode-local are non-zero
 // + Was designed for single segment and even auxseg is currently a hack
 GASNETI_INLINE(gasneti_pshm_jobrank_addr2local) GASNETI_PURE
-void *gasneti_pshm_jobrank_addr2local(gex_Rank_t _jobrank, const void *_addr) {
-#if 1 // TODO-EX: this is a hack!
-  // Properties of unsigned subtraction make the following oblivous to order of client vs aux segment
-  if_pf (((uintptr_t)_addr - (uintptr_t)gasneti_seginfo[_jobrank].addr) >= gasneti_seginfo[_jobrank].size)
-    return (void*)((uintptr_t)_addr + (uintptr_t)gasneti_nodeinfo[_jobrank].auxoffset);
-#endif
-  return  (void*)((uintptr_t)_addr
-                   + (uintptr_t)gasneti_nodeinfo[_jobrank].offset);
+void *gasneti_pshm_jobrank_addr2local(gex_Rank_t _jobrank, const void *_addr, int _is_aux) {
+  if (_is_aux) {
+    gasneti_assert(gasneti_in_auxsegment(_jobrank, _addr, 1));
+    return (void*)((uintptr_t)_addr + gasneti_nodeinfo[_jobrank].auxoffset);
+  } else {
+    // Any local address is OK, else must be in the primordial segment
+    gasneti_assert((_jobrank == gasneti_mynode) ||
+                   _gasneti_in_seginfo_t(_addr, 1, &gasneti_seginfo[_jobrank]));
+    return (void*)((uintptr_t)_addr + gasneti_nodeinfo[_jobrank].offset);
+  }
 } 
 GASNETI_PUREP(gasneti_pshm_jobrank_addr2local)
+#endif // GASNET_PSHM
 
-// Helper for what follows
-// Returns a jobrank or GEX_RANK_INVALID depending on whether the local and
-// remote endpoints named by (tm,rank) are both "eligible" for PSHM, exclusive
-// of the check on the jobrank being in-nbrhd.  The eligibility criteria are:
-//   1. Remote endpoint must be primordial (have EP index 0)
-//   2. Local endpoint must be host memory
-// However, checking these efficiently is not as simple as it sounds.
-extern gasneti_Segment_t gasneti_tm_pair_to_segment(gasneti_TM_Pair_t _tm_pair);
-GASNETI_INLINE(gasneti_pshm_jobrank_if_eligible) GASNETI_PURE
-gex_Rank_t gasneti_pshm_jobrank_if_eligible(gex_TM_t _e_tm, gex_Rank_t _rank) {
-  gasneti_TM_t _i_tm = gasneti_import_tm(_e_tm);
-  if (gasneti_is_tm0(_i_tm)) {
-    // fast path for TM0
-    return _rank;
-  }
-  gex_EP_Location_t _loc = gasneti_i_tm_rank_to_location(_i_tm, _rank, 0);
-  if (_loc.gex_ep_index) {
-    // not eligible due to non-primordial remote EP
-    return GEX_RANK_INVALID;
-  }
-  // If we've made it this far, the (tm,rank) is eligible only and only if
-  // the local ep is host memory (which can take some work to determine).
-  gex_Rank_t _jobrank = _loc.gex_rank;
-#if !GASNET_HAVE_MK_CLASS_MULTIPLE
-  return _jobrank; // Trivial host memory when no device kinds are supported
+/* ------------------------------------------------------------------------------------ */
+
+#if GASNET_CONDUIT_SMP
+  #define GASNETI_MAPPABLE_JOBRANK_P(jobrank) 1
+#elif GASNET_PSHM
+  #define GASNETI_MAPPABLE_JOBRANK_P(jobrank) gasneti_pshm_jobrank_in_supernode(jobrank)
 #else
-  gasneti_Segment_t _segment;
-  if (! gasneti_i_tm_is_pair(_i_tm)) {
-    // Full TM object - can check objects directly
-    gasneti_EP_t _ep = _i_tm->_ep;
-    if (_ep->_index == 0) return _jobrank; // EP index 0 is primordial
-    _segment = _i_tm->_ep->_segment;
-  } else {
-    gasneti_TM_Pair_t _tm_pair = gasneti_i_tm_to_pair(_i_tm);
-    gex_EP_Index_t _idx = gasneti_tm_pair_loc_idx(_tm_pair);
-    if (_idx == 0) return _jobrank; // EP index 0 is primordial
-    _segment = gasneti_tm_pair_to_segment(_tm_pair);
-  }
-  return gasneti_i_segment_kind_is_host(_segment) ? _jobrank : GEX_RANK_INVALID;
+  #define GASNETI_MAPPABLE_JOBRANK_P(jobrank) ((jobrank) == gasneti_mynode)
 #endif
-}
 
-// Same as the three functions above, but taking (tm,rank) in place of jobrank
+// Helper for other queries (both with PSHM and without)
+// Returns a jobrank or GEX_RANK_INVALID depending on whether the target
+// endpoint named by (tm,rank) is a cross-mapped primordial segment.
+// Erroneous to call for a (tm,rank) naming an endpoint which does not
+// exist or has no a bound segment.
+GASNETI_INLINE(gasneti_nbrhd_mapped_helper) GASNETI_PURE
+gex_Rank_t gasneti_nbrhd_mapped_helper(gex_TM_t _e_tm, gex_Rank_t _rank) {
+  gasneti_TM_t _i_tm = gasneti_import_tm(_e_tm);
+  gasneti_check_i_tm_rank(_i_tm, _rank);
+
+  if (gasneti_is_tm0(_i_tm)) {
+    // fast path for TM0, which can only include primordial segments
+  #if !(GASNET_SEGMENT_EVERYTHING || GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
+    // Check that target segment exists by looking for non-NULL addr in seginfo table
+    // TODO-EX: update if/when scalable storage replaces gasneti_seginfo[]
+    // TODO-EX: update if/when it is possible to have a primordial segment which is NOT cross-mapped
+    gasneti_assert(gasneti_seginfo[_rank].addr);
+  #endif
+    gasneti_assume(_rank != GEX_RANK_INVALID); // may improve codegen in caller
+    return GASNETI_MAPPABLE_JOBRANK_P(_rank) ? _rank : GEX_RANK_INVALID;
+  }
+
+  gex_EP_Location_t _loc = gasneti_i_tm_rank_to_location(_i_tm, _rank, 0);
+  gex_Rank_t _jobrank = _loc.gex_rank;
+
+#if !(GASNET_SEGMENT_EVERYTHING || GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
+  // Regardless whether this query will eventually succeed or fail,
+  // it is erroneous to query a target endpoint that does not yet
+  // have a bound segment made known to us via gex_Segment_Attach()
+  // or gex_EP_PublishBoundSegment().
+  // TODO-EX: update for scalable storage
+  gasneti_assert(gasneti_seginfo_tbl[_loc.gex_ep_index]);
+  gasneti_assert(gasneti_seginfo_tbl[_loc.gex_ep_index][_jobrank].addr);
+#endif
+
+  // Fail unless target rank is in-nbrhd or self, as appropriate
+  if (! GASNETI_MAPPABLE_JOBRANK_P(_jobrank)) return GEX_RANK_INVALID;
+
+  // Fail unless target ep is primordial
+  if (_loc.gex_ep_index != 0) return GEX_RANK_INVALID;
+
+  gasneti_assume(_jobrank != GEX_RANK_INVALID); // may improve codegen in caller
+  return _jobrank;
+}
+GASNETI_PUREP(gasneti_nbrhd_mapped_helper)
+
+// Helper for other queries (both with PSHM and without)
+// Returns a jobrank or GEX_RANK_INVALID depending on whether the initiator and
+// target endpoints named by (tm,rank) are both "eligible" to be mapped for
+// load/store access.  This is inclusive of the check on the jobrank being
+// in-nbrhd (PSHM) or self (non-PSHM).
+// The eligibility criteria are:
+//   1a. Target endpoint must be primordial (have EP index 0)
+//   1b. OR target endpoint is actually self with a host memory segment
+//   2. Initiator endpoint must be host memory (but need not be primordial)
+// However, checking these efficiently is not as simple as it sounds.
+extern gasneti_Segment_t gasneti_epidx_to_segment(gasneti_TM_t i_tm, gex_EP_Index_t ep_idx);
+GASNETI_INLINE(gasneti_jobrank_if_mappable) GASNETI_PURE
+gex_Rank_t gasneti_jobrank_if_mappable(gex_TM_t _e_tm, gex_Rank_t _rank) {
+  gasneti_TM_t _i_tm = gasneti_import_tm(_e_tm);
+  gasneti_check_i_tm_rank(_i_tm, _rank);
+
+  if (gasneti_is_tm0(_i_tm)) {
+    // fast path for TM0, which can only include primordial segments
+    gasneti_assume(_rank != GEX_RANK_INVALID); // may improve codegen in caller
+    return GASNETI_MAPPABLE_JOBRANK_P(_rank) ? _rank : GEX_RANK_INVALID;
+  }
+
+  gex_EP_Location_t _loc = gasneti_i_tm_rank_to_location(_i_tm, _rank, 0);
+  gex_Rank_t _jobrank = _loc.gex_rank;
+  gasneti_assume(_jobrank != GEX_RANK_INVALID); // may improve codegen in caller
+
+  // Fail unless target rank is in-nbrhd or self, as appropriate
+  if (! GASNETI_MAPPABLE_JOBRANK_P(_jobrank)) return GEX_RANK_INVALID;
+
+  // If we get this far then the target process is one that *could*.
+  // be mapped.  Further checks on the two endpoints may be needed.
+
+  // Check that initiator ep is host memory.
+  //
+  // Trivial true if !GASNET_HAVE_MK_CLASS_MULTIPLE
+  // Also true if primordial (ep_idx == 0)
+  // Otherwise requires checking the segment
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+  gex_EP_Index_t _init_ep_idx = gasneti_i_tm_to_ep_index(_i_tm);
+  if (_init_ep_idx) { // non-primordial initiator ep
+    // Fail unless segment is host memory
+    gasneti_Segment_t _seg = gasneti_epidx_to_segment(_i_tm, _init_ep_idx);
+    if (!gasneti_i_segment_kind_is_host(_seg)) return GEX_RANK_INVALID;
+  }
+#endif
+
+  // Check that target ep is host memory and mappable.
+  //
+  // A primordial endpoint's segment is (currently) guaranteed to be
+  // both cross-mapped and host-memory.
+  // If non-primordial and target==self, then we can accept any
+  // host memory segment.
+  gex_EP_Index_t _targ_ep_idx = _loc.gex_ep_index;
+  if (_targ_ep_idx) { // non-primordial target ep
+#if GASNET_PSHM
+    // Fail unless the target is "self"
+    if (_jobrank != gasneti_mynode) return GEX_RANK_INVALID;
+#else
+    gasneti_assert(_jobrank == gasneti_mynode);
+#endif
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+    // Target ep is self.  So fail unless segment is host memory
+    gasneti_Segment_t _seg = gasneti_epidx_to_segment(_i_tm, _targ_ep_idx);
+    if (!gasneti_i_segment_kind_is_host(_seg)) return GEX_RANK_INVALID;
+#endif
+  }
+
+  return _jobrank;
+}
+GASNETI_PUREP(gasneti_jobrank_if_mappable)
+
+#undef GASNETI_MAPPABLE_JOBRANK_P
+
+/* ------------------------------------------------------------------------------------ */
+// PSHM support - part 2 of 2
+
+#if GASNET_PSHM
+// Same as the three gasneti_pshm_jobrank_* functions in part 1, above, but taking
+// (tm,rank) in place of jobrank
 // All are TM-pair aware, and the first two are multi-EP aware
 
 GASNETI_INLINE(gasneti_pshm_local_rank) GASNETI_PURE
 unsigned int gasneti_pshm_local_rank(gex_TM_t _e_tm, gex_Rank_t _rank) {
-  gex_Rank_t _jobrank = gasneti_pshm_jobrank_if_eligible(_e_tm, _rank);
+  gex_Rank_t _jobrank = gasneti_jobrank_if_mappable(_e_tm, _rank);
   return (_jobrank == GEX_RANK_INVALID)
          ? (unsigned int)(-1)
          : gasneti_pshm_jobrank_to_local_rank(_jobrank);
@@ -1768,18 +1894,34 @@ GASNETI_PUREP(gasneti_pshm_local_rank)
 
 GASNETI_INLINE(gasneti_pshm_in_supernode) GASNETI_PURE
 int gasneti_pshm_in_supernode(gex_TM_t _e_tm, gex_Rank_t _rank) {
-  gex_Rank_t _jobrank = gasneti_pshm_jobrank_if_eligible(_e_tm, _rank);
-  return (_jobrank != GEX_RANK_INVALID) && gasneti_pshm_jobrank_in_supernode(_jobrank);
+  return (GEX_RANK_INVALID != gasneti_jobrank_if_mappable(_e_tm, _rank));
 }
 GASNETI_PUREP(gasneti_pshm_in_supernode)
 
+// Valid only for primordial segment
 GASNETI_INLINE(gasneti_pshm_addr2local) GASNETI_PURE
 void *gasneti_pshm_addr2local(gex_TM_t _e_tm, gex_Rank_t _rank, const void *_addr) {
+#if GASNET_DEBUG
+  gex_EP_Location_t _loc = gasneti_e_tm_rank_to_location(_e_tm, _rank, 0);
+  gex_Rank_t _jobrank = _loc.gex_rank;
+  gasneti_assert_uint(_loc.gex_ep_index ,==, 0); // primordial
+#else
   gex_Rank_t _jobrank = gasneti_e_tm_rank_to_jobrank(_e_tm,_rank);
-  return gasneti_pshm_jobrank_addr2local(_jobrank, _addr);
+#endif
+  gasneti_assert(! gasneti_in_auxsegment(_jobrank, _addr, 1));
+  return gasneti_pshm_jobrank_addr2local(_jobrank, _addr, 0);
 } 
 GASNETI_PUREP(gasneti_pshm_addr2local)
-#endif /* GASNET_PSHM */
+
+// Valid only for an aux segment
+GASNETI_INLINE(gasneti_pshm_aux2local) GASNETI_PURE
+void *gasneti_pshm_aux2local(gex_Rank_t _jobrank, const void *_addr) {
+  gasneti_assert(gasneti_in_auxsegment(_jobrank, _addr, 1));
+  return gasneti_pshm_jobrank_addr2local(_jobrank, _addr, 1);
+}
+GASNETI_PUREP(gasneti_pshm_aux2local)
+
+#endif // GASNET_PSHM
 
 /* ------------------------------------------------------------------------------------ */
 // Wrappers for memcpy()

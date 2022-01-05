@@ -212,7 +212,54 @@ include ``imag(32)`` and ``imag(64)``.
 Complex Types
 ~~~~~~~~~~~~~
 
-.. include:: /builtins/ChapelComplex_forDocs.rst
+Like the integral and real types, the complex types can be parameterized
+by the number of bits used to represent them. A complex number is
+composed of two real numbers so the number of bits used to represent a
+complex is twice the number of bits used to represent the real numbers.
+The default complex type, ``complex``, is 128 bits; it consists of two
+64-bit real numbers. The complex types that are supported are
+machine-dependent, but usually include ``complex(64)`` and
+``complex(128)``.
+
+The real and imaginary components can be accessed via the methods ``re``
+and ``im``. The type of these components is a ``real``. The standard :mod:`Math`
+module provides some functions on complex types. See the :mod:`Math`
+module documentation.
+
+   *Example*.
+
+   Given a complex number ``c`` with the value ``3.14+2.72i``, the
+   expressions ``c.re`` and ``c.im`` refer to ``3.14`` and ``2.72``
+   respectively.
+
+complex is defined as if it were a record with two fields.
+Note that both of these fields are of type *real*.
+Specifically the imaginary component is not of type *imag*.
+This is important when using the getter/setter for the
+field *im*.
+
+.. method:: proc complex.bits: param int
+
+   Returns the number of bits used to represent this complex number.
+
+.. method:: proc complex.re ref
+
+
+   When used as a value, this returns the real component of
+   the complex number as a *real*.
+
+   When used as an lvalue, this is a setter that assigns the
+   real component.
+
+
+.. method:: proc complex.im ref
+
+
+   When used as a value, this returns the imaginary component of
+   the complex number as a *real*.
+
+   When used as an lvalue, this is a setter that assigns the
+   imaginary component.
 
 .. _The_String_Type:
 

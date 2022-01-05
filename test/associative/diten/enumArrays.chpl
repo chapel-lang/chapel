@@ -13,7 +13,7 @@ for i in A.sorted() {
 }
 
 writeln(A.sorted());
-writeln(D);
+writeln(D.sorted());
 
 D.remove(E.c);
 
@@ -28,7 +28,6 @@ for i in D2.sorted() {
   writeln(i);
 }
 
-writeln(D2);
 writeln(D2.sorted());
 
 var A2: [D2] int;
@@ -36,7 +35,6 @@ for (a,i) in zip(A2, D2) {
   a = chpl__enumToOrder(i) + 1;
 }
 
-writeln(A2);
 writeln(A2.sorted());
 
 for d in D2.sorted() {

@@ -304,7 +304,7 @@ inline std::string Immediate::to_string(void) const {
   case NUM_KIND_INT: ss << int_value(); break;
   case NUM_KIND_BOOL: ss << bool_value(); break;
   case NUM_KIND_UINT: ss << uint_value(); break;
-  case CONST_KIND_STRING: return v_string.toString();
+  case CONST_KIND_STRING: return v_string.str();
   case NUM_KIND_REAL: {
     if (num_index == FLOAT_SIZE_32) {
       ss << v_float32;

@@ -7,7 +7,7 @@ from string import punctuation
 import sys
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
-from compiler_utils import CompVersion, target_compiler_is_prgenv, get_compiler_version
+from compiler_utils import CompVersion, target_compiler_is_prgenv
 from utils import memoize, run_command, warning
 
 # This map has a key as a synonym and the value as the LLVM arch/cpu

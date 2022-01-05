@@ -37,7 +37,10 @@ namespace chpl {
 class Context;
 
 template<typename T> struct update {
-  bool operator()(T& keep, T& addin) const = 0;
+  bool operator()(T& keep, T& addin) const {
+    // run update static method
+    return T::update(keep, addin);
+  }
 };
 
 template<typename T>
@@ -77,18 +80,29 @@ static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
     return true; // updated
   }
 }
+
 template<typename T>
 static inline bool defaultUpdateOwned(owned<T>& keep, owned<T>& addin) {
-  bool match = ((keep.get() == nullptr) == (addin.get() == nullptr)) &&
-               // call == on the values
-               (*keep.get() == *addin.get());
-  if (match) {
+  // are they both null?
+  if (keep.get() == nullptr && addin.get() == nullptr)
     return false;
-  } else {
-    // call swap on the owned pointers (not the values)
+
+  // is one null but not the other?
+  if (keep.get() == nullptr || addin.get() == nullptr) {
     keep.swap(addin);
     return true;
   }
+
+  // at this point they both are not null, so
+  // call == on the values.
+  bool match = (*keep.get() == *addin.get());
+  if (match) {
+    return false;
+  }
+
+  // call swap on the owned pointers (not the values)
+  keep.swap(addin);
+  return true;
 }
 
 template<typename A, typename B>
@@ -119,7 +133,8 @@ template<typename T> struct update<T*> {
 
 template<typename T> struct update<owned<T>> {
   bool operator()(owned<T>& keep, owned<T>& addin) const {
-    return defaultUpdateOwned(keep, addin);
+    // call the static update method will usually use updateEqSwap
+    return T::update(keep, addin);
   }
 };
 

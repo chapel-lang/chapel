@@ -299,6 +299,7 @@ struct gasnete_coll_team_t_ {
   size_t scratch_size;             // (symmetric) scratch size, indep of segs-v-addrs
   size_t symmetric_scratch_offset; // added to scratch_segs[*].addr or scratch_addrs
   void *myscratch;                 // local scratch address
+  gex_Flags_t aux_seg_flag;        // GASNETI_FLAG_PEER_SEG_AUX or 0
   
   /*scratch space management*/
   gasnete_coll_scratch_status_t* scratch_status;
@@ -536,6 +537,7 @@ int gasnete_tm_p2p_signalling_put(
                         GASNETI_THREAD_FARG)
 {
   // TODO-EX: flags |= INTERNAL to prevent tracing
+  flags |= op->team->aux_seg_flag;
   return gex_AM_RequestLong5(op->e_tm, rank, gasneti_handleridx(gasnete_coll_p2p_long_reqh),
                              (void*)src, nbytes, dst, lc_opt, flags,
                              op->team->team_id, op->sequence, 1, offset, state);

@@ -244,10 +244,12 @@ void qio_regex_get_options(const qio_regex_t* regex, qio_regex_options_t* option
   re2_options_to_qio_re_options(&opts, options);
 }
 
-void qio_regex_get_pattern(const qio_regex_t* regex, const char** pattern)
+void qio_regex_borrow_pattern(const qio_regex_t* regex, const char** pattern, int64_t* len_out)
 {
   RE2* re2 = (RE2*) regex->regex;
-  *pattern = qio_strdup(re2->pattern().c_str());
+  const std::string &s = re2->pattern();
+  *pattern = s.c_str();
+  *len_out = s.length();
 }
 
 int64_t qio_regex_get_ncaptures(const qio_regex_t* regex)

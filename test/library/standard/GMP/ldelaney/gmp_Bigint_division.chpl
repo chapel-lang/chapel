@@ -87,23 +87,23 @@ writeln(d);
 d.divexact(b, 4);
 writeln(d);
 
-var d3 : int = b.divisible_p(a);
+var d3 : bool = b.isDivisible(a);
 writeln(d3);
 
-d3 = b.divisible_p(3);
+d3 = b.isDivisible(3);
 writeln(d3, " ");
-writeln(b.divisible_2exp_p(3)); // divisble by 2^3
+writeln(b.isDivisibleBy2Pow(3)); // divisble by 2^3
 
 a.set(25);
 b.set(20);
 c.set(5);
 
-d3 = a.congruent_p(c, b); // 25 congruent to 5 mod 20
+d3 = a.isCongruent(c, b); // 25 congruent to 5 mod 20
 writeln(d3);
 
-d3 = a.congruent_p(10, 20); //25 not congruent to 10 mod 20
+d3 = a.isCongruent(10, 20); //25 not congruent to 10 mod 20
 writeln(d3);
 
 a.set(45);
-d3 = a.congruent_2exp_p(c, 3); //45 congruent to 5 mod 8
+d3 = a.isCongruentBy2Pow(c, 3); //45 congruent to 5 mod 8
 writeln(d3);

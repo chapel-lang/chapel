@@ -3915,16 +3915,9 @@ void chpl_comm_broadcast_private(int id, size_t size)
 }
 
 
-void chpl_comm_barrier(const char *msg)
+void chpl_comm_impl_barrier(const char *msg)
 {
   DBG_P_L(DBGF_IFACE, "IFACE chpl_comm_barrier(\"%s\")", msg);
-
-#ifdef CHPL_COMM_DEBUG
-  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
-#endif
-
-  if (chpl_numNodes == 1)
-    return;
 
   //
   // If we can't communicate yet, just do a PMI barrier.

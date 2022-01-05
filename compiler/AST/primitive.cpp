@@ -327,7 +327,10 @@ returnInfoGetMember(CallExpr* call) {
 static QualifiedType
 returnInfoGetTupleMember(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->getValType());
-  INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
+  INT_ASSERT(ct);
+  if (!ct->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    USR_FATAL(call, "invalid access of non-homogeneous tuple by runtime value");
+  }
   return ct->getField("x0")->qualType();
 }
 
@@ -848,6 +851,13 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
+  // allocate data into shared memory (takes one paremter: number of bytes to allocate)
+  // and returns a c_void_ptr
+  prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
+
+  // synchronize threads in a GPU kernel (equivalent to CUDA __syncThreads)
+  prim_def(PRIM_GPU_SYNC_THREADS, "gpu syncThreads", returnInfoVoid, true);
+
   // task primitives
   // get serial state
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
@@ -1125,6 +1135,10 @@ initPrimitive() {
   // Allocate a class instance on the stack (where normally it
   // would be allocated on the heap). The only argument is the class type.
   prim_def(PRIM_STACK_ALLOCATE_CLASS, "stack allocate class", returnInfoFirst);
+
+  // zero the memory a variable points to. only argument is the variable
+  prim_def(PRIM_ZERO_VARIABLE, "zero variable", returnInfoVoid, true);
+
   prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
   prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 
@@ -1190,7 +1204,7 @@ initPrimitive() {
 
   // Argument is a symbol and we attach flags to that symbol to
   // indicate optimization information.
-  // That symbol includes OPT_INFO_... flags.
+  // That symbol includes FLAG_OPT_INFO_... flags.
   prim_def(PRIM_OPTIMIZATION_INFO, "optimization info", returnInfoVoid, true, false);
 
   prim_def(PRIM_GATHER_TESTS, "gather tests", returnInfoDefaultInt);

@@ -110,10 +110,16 @@ def check_llvm_config(llvm_config):
 
 @memoize
 def find_system_llvm_config():
+    llvm_config = overrides.get('CHPL_LLVM_CONFIG', 'none')
+    if llvm_config != 'none':
+        return llvm_config
+
     paths = [ ]
     for vers in llvm_versions():
         paths.append("llvm-config-" + vers + ".0")
         paths.append("llvm-config-" + vers)
+        # this format used by freebsd
+        paths.append("llvm-config" + vers)
         # next ones are for Homebrew
         paths.append("/usr/local/opt/llvm@" + vers + ".0/bin/llvm-config")
         paths.append("/usr/local/opt/llvm@" + vers + "/bin/llvm-config")
@@ -165,17 +171,27 @@ def get_llvm_config():
     return llvm_config
 
 @memoize
-def validate_llvm_config(llvm_config=None):
+def validate_llvm_config():
     llvm_val = get()
-    # We pass in llvm_config if has already been computed (so we don't
-    # end up in an infinite loop).
-    if llvm_config is None:
-      llvm_config = get_llvm_config()
+    llvm_config = get_llvm_config()
+
     if llvm_val == 'system':
         if llvm_config == '' or llvm_config == 'none':
             error("CHPL_LLVM=system but could not find an installed LLVM"
                   " with one of the supported versions: {0}".format(
                   llvm_versions_string()))
+
+        else:
+            bindir = get_system_llvm_config_bindir()
+            if not (bindir and os.path.isdir(bindir)):
+                error("llvm-config command {0} provides missing bin dir {0}"
+                      .format(llvm_config, bindir))
+            clang_c = get_llvm_clang('c')[0]
+            clang_cxx = get_llvm_clang('c++')[0]
+            if not os.path.exists(clang_c):
+                error("Missing clang command at {0}".format(clang_c))
+            if not os.path.exists(clang_cxx):
+                error("Missing clang++ command at {0}".format(clang_cxx))
 
     if (llvm_val == 'system' or
         (llvm_val == 'bundled' and os.path.exists(llvm_config))):
@@ -187,15 +203,14 @@ def validate_llvm_config(llvm_config=None):
 
 @memoize
 def get_system_llvm_config_bindir():
-    llvm_config = get_llvm_config()
-    validate_llvm_config(llvm_config)
-    bindir = run_command([llvm_config, '--bindir']).strip()
+    llvm_config = find_system_llvm_config()
+    found_version, found_config_err = check_llvm_config(llvm_config)
 
-    if os.path.isdir(bindir):
-        pass
-    else:
-        error("llvm-config command {0} provides missing bin directory {0}"
-              .format(llvm_config, bindir))
+    bindir = None
+
+    if llvm_config and found_version and not found_config_err:
+        bindir = run_command([llvm_config, '--bindir']).strip()
+
     return bindir
 
 def get_llvm_clang_command_name(lang):
@@ -209,37 +224,51 @@ def get_llvm_clang_command_name(lang):
     else:
         return 'clang'
 
-# lang should be C or CXX
-@memoize
-def get_llvm_clang(lang):
+def get_system_llvm_clang(lang):
     clang_name = get_llvm_clang_command_name(lang)
-
-    llvm_val = get()
-    if llvm_val == 'system':
-        bindir = get_system_llvm_config_bindir()
+    bindir = get_system_llvm_config_bindir()
+    clang = ''
+    if bindir:
         clang = os.path.join(bindir, clang_name)
-    elif llvm_val == 'bundled':
-        llvm_subdir = get_bundled_llvm_dir()
-        clang = os.path.join(llvm_subdir, 'bin', clang_name)
-    else:
-        return ''
-
-    # tack on arguments that control clang's function
-    clang_args = get_clang_basic_args()
-    if clang_args:
-        args = ' '.join(clang_args)
-        if args:
-            clang += ' ' + args
 
     return clang
+
+# lang should be C or CXX
+# returns [] list with the first element the clang command,
+# then necessary arguments
+@memoize
+def get_llvm_clang(lang):
+
+    clang = None
+    llvm_val = get()
+    if llvm_val == 'system':
+        clang = get_system_llvm_clang(lang)
+    elif llvm_val == 'bundled':
+        clang_name = get_llvm_clang_command_name(lang)
+        llvm_subdir = get_bundled_llvm_dir()
+        clang = os.path.join(llvm_subdir, 'bin', clang_name)
+
+    if not clang:
+        return ['']
+
+    # tack on arguments that control clang's function
+    result = [clang] + get_clang_basic_args()
+    return result
 
 
 def has_compatible_installed_llvm():
     llvm_config = find_system_llvm_config()
+
     if llvm_config:
-        return True
-    else:
-        return False
+        clang_c_command = get_system_llvm_clang('c')
+        clang_cxx_command = get_system_llvm_clang('c++')
+
+        if (os.path.exists(clang_c_command) and
+            os.path.exists(clang_cxx_command)):
+            return True
+
+    # otherwise, something went wrong, so return False
+    return False
 
 @memoize
 def get():
@@ -276,7 +305,14 @@ def llvm_enabled():
 def get_gcc_prefix():
     gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
 
+
     if not gcc_prefix:
+        # darwin and FreeBSD default to clang
+        # so shouldn't need GCC prefix
+        host_platform = chpl_platform.get('host')
+        if host_platform == "darwin" or host_platform == "freebsd":
+            return ''
+
         # When 'gcc' is a command other than '/usr/bin/gcc',
         # compute the 'gcc' prefix that LLVM should use.
         gcc_path = find_executable('gcc')
@@ -316,15 +352,32 @@ def get_gcc_prefix():
                         if os.path.isdir(inc):
                             gcc_prefix = mydir
 
-    return gcc_prefix.strip()
+        gcc_prefix = gcc_prefix.strip()
+        if gcc_prefix == '/usr':
+            # clang will be able to figure this out so don't
+            # bother with the argument here.
+            gcc_prefix = ''
 
+    return gcc_prefix
+
+# The bundled LLVM does not currently know to look in a particular Mac OS X SDK
+# so we provide a -isysroot arg to indicate which is used.
+#
+# Potential alternatives to -isysroot here include:
+#  * using the environment variable SDKROOT
+#  * providing a cmake argument to adjust the clang build
+#  * using -mmacosx-version-min=11.2 e.g.
+#
+# Additionally the -resource-dir arg indicates where to find some clang
+# dependencies.
+#
 # Returns a [ ] list of args
 @memoize
 def get_sysroot_resource_dir_args():
     args = [ ]
     target_platform = chpl_platform.get('target')
     llvm_val = get()
-    if target_platform == "darwin" and llvm_val == "bundled":
+    if (target_platform == "darwin" and llvm_val == "bundled"):
         # Add -isysroot and -resourcedir based upon what 'clang' uses
         cfile = os.path.join(get_chpl_home(),
                              "runtime", "include", "sys_basic.h")
@@ -353,7 +406,12 @@ def get_clang_additional_args():
     link_args = [ ]
     basic_args = get_clang_basic_args()
     has_sysroot = False
+    sysroot_arg = ""
     for arg in basic_args:
+        # if we set has_sysroot on last iteration, get the arg
+        if has_sysroot:
+            sysroot_arg = arg
+            break
         if arg == '-isysroot':
             has_sysroot = True
 

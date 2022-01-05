@@ -19,8 +19,67 @@
 
 #include "chpl/types/ClassType.h"
 
+#include "chpl/queries/query-impl.h"
+
 namespace chpl {
 namespace types {
+
+void ClassType::stringify(std::ostream& ss,
+                          chpl::StringifyKind stringKind) const {
+  long startPos = ss.tellp();
+  if (decorator_.isManaged()) {
+    assert(manager_);
+    if (manager_->isAnyOwnedType())
+      ss << "owned";
+    else if (manager_->isAnySharedType())
+      ss << "shared";
+    else
+      manager_->stringify(ss, stringKind);
+  } else if (decorator_.isBorrowed()) {
+    ss << "borrowed";
+  } else if (decorator_.isUnmanaged()) {
+    ss << "unmanaged";
+  }
+
+  if (startPos != ss.tellp()) {
+    ss << " ";
+  }
+
+  assert(basicType_);
+  basicType_->stringify(ss, stringKind);
+
+  if (decorator_.isNilable()) {
+    ss << "?";
+  } else if (decorator_.isUnknownNilability()) {
+    ss << " <unknown-nilablity>";
+  }
+
+}
+
+const owned<ClassType>&
+ClassType::getClassType(Context* context,
+                        const BasicClassType* basicType,
+                        const Type* manager,
+                        ClassTypeDecorator decorator) {
+  QUERY_BEGIN(getClassType, context, basicType, manager, decorator);
+
+  auto result = toOwned(new ClassType(basicType, manager, decorator));
+
+  return QUERY_END(result);
+}
+
+const ClassType* ClassType::get(Context* context,
+                                const BasicClassType* basicType,
+                                const Type* manager,
+                                ClassTypeDecorator decorator) {
+  return getClassType(context, basicType, manager, decorator).get();
+}
+
+
+const ClassType* ClassType::withDecorator(Context* context,
+                                          ClassTypeDecorator decorator) const {
+  return ClassType::get(context, basicClassType(), manager(), decorator);
+}
 
 
 } // end namespace types

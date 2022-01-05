@@ -79,10 +79,7 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
     uast::BuilderResult tmpResult = parser->parseString(pathc, textc);
     result.swap(tmpResult);
     // raise any errors encountered
-    // TODO: add something to BuilderResult to iterate over the errors
-    int nErrors = result.numErrors();
-    for (int i = 0; i < nErrors; i++) {
-      const ErrorMessage& e = result.error(i);
+    for (const ErrorMessage& e : result.errors()) {
       if (!e.isEmpty()) {
         // report the error and save it for this query
         context->error(e);
@@ -114,6 +111,7 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const ASTNode* ast) {
+  assert(!ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
 
@@ -182,6 +180,11 @@ static const ASTNode* const& astForIDQuery(Context* context, ID id) {
 }
 
 const ASTNode* idToAst(Context* context, ID id) {
+  if (id.isEmpty()) {
+    assert(false && "bad query of uAST for empty ID");
+    return nullptr;
+  }
+
   return astForIDQuery(context, id);
 }
 

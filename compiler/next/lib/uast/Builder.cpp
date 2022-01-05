@@ -23,6 +23,7 @@
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Module.h"
+#include "chpl/uast/Comment.h"
 
 #include <cstring>
 #include <string>
@@ -79,7 +80,8 @@ BuilderResult Builder::result() {
   ret.topLevelExpressions_.swap(topLevelExpressions_);
   ret.errors_.swap(errors_);
   ret.idToAst_.swap(idToAst_);
-  ret.astToLocation_.swap(astToLocation_);
+  ret.idToLocation_.swap(idToLocation_);
+  ret.commentIdToLocation_.swap(commentToLocation_);
 
   return ret;
 }
@@ -115,8 +117,9 @@ void Builder::createImplicitModuleIfNeeded() {
     ASTList stmts;
     stmts.swap(topLevelExpressions_);
     auto implicitModule = Module::build(this, Location(filepath_),
-                                        inferredModuleName,
+                                        /*attributes*/ nullptr,
                                         Decl::DEFAULT_VISIBILITY,
+                                        inferredModuleName,
                                         Module::IMPLICIT,
                                         std::move(stmts));
     topLevelExpressions_.push_back(std::move(implicitModule));
@@ -127,12 +130,13 @@ void Builder::assignIDs() {
   pathVecT pathVec;
   declaredHereT duplicates;
   int i = 0;
+  int commentIndex = 0;
 
   for (auto const& ownedExpression: topLevelExpressions_) {
     ASTNode* ast = ownedExpression.get();
     if (ast->isModule() || ast->isComment()) {
       UniqueString emptyString;
-      doAssignIDs(ast, emptyString, i, pathVec, duplicates);
+      doAssignIDs(ast, emptyString, i, commentIndex, pathVec, duplicates);
     } else {
       assert(false && "topLevelExpressions should only be module decls or comments");
     }
@@ -169,26 +173,27 @@ void Builder::assignIDs() {
   M@0         x;
             }
 
-  Comments are not included in ID assignment.
-  That means that comments don't have IDs and as a result it's not
-  possible to go from a Comment to the file. We think this is acceptable
-  because a documentation tool processing Comments can work with the
-  parse result and make its own tables of these things.
+
+  Comments are assigned a separate incrementing ID, but they don't
+  store any information that lets them map back to their module or file.
+  We think this is acceptable because a documentation tool processing
+  Comments can work with the parse result and look up comments with
+  BuilderResult::commentToLocation
  */
 void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
-                          pathVecT& pathVec, declaredHereT& duplicates) {
+                          int& commentIndex, pathVecT& pathVec,
+                          declaredHereT& duplicates) {
+  if (Comment* comment = ast->toComment()) {
+    comment->setCommentId(commentIndex);
+    commentIndex += 1;
 
-  // update locations_ for the visited ast
-  auto search = notedLocations_.find(ast);
-  if (search != notedLocations_.end()) {
-    assert(!search->second.isEmpty());
-    astToLocation_[search->first] = search->second;
-  } else {
-    assert(false && "Location for all ast should be set by noteLocation");
-  }
-
-  if (ast->isComment()) {
-    // comments don't have IDs
+    auto search = notedLocations_.find(ast);
+    if (search != notedLocations_.end()) {
+      assert(!search->second.isEmpty());
+      commentToLocation_.push_back(search->second);
+    } else {
+      assert(false && "Location for all ast should be set by noteLocation");
+    }
     return;
   }
 
@@ -237,7 +242,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     declaredHereT freshMap;
     for (auto & child : ast->children_) {
       ASTNode* ptr = child.get();
-      this->doAssignIDs(ptr, newSymbolPath, freshId, pathVec, freshMap);
+      this->doAssignIDs(ptr, newSymbolPath, freshId, commentIndex, pathVec, freshMap);
     }
 
     int numContainedIds = freshId;
@@ -257,7 +262,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     // visit the children now to get integer part of ids in postorder
     for (auto & child : ast->children_) {
       ASTNode* ptr = child.get();
-      this->doAssignIDs(ptr, symbolPath, i, pathVec, duplicates);
+      this->doAssignIDs(ptr, symbolPath, i, commentIndex, pathVec, duplicates);
     }
 
     int afterChildID = i;
@@ -269,6 +274,15 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
 
   // update idToAst_ for the visited AST node
   idToAst_[ast->id()] = ast;
+
+  // update locations_ for the visited ast
+  auto search = notedLocations_.find(ast);
+  if (search != notedLocations_.end()) {
+    assert(!search->second.isEmpty());
+    idToLocation_[ast->id()] = search->second;
+  } else {
+    assert(false && "Location for all ast should be set by noteLocation");
+  }
 }
 
 ASTList Builder::flattenTopLevelBlocks(ASTList lst) {

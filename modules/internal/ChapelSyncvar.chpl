@@ -489,6 +489,7 @@ module ChapelSyncvar {
       }
     }
 
+    pragma "unsafe"
     proc readFE() {
       pragma "no init"
       pragma "no auto destroy"
@@ -513,6 +514,7 @@ module ChapelSyncvar {
       return ret;
     }
 
+    pragma "unsafe"
     proc const readFF() {
       if !isConstCopyableType(valType) ||
          !isConstAssignableType(valType) {
@@ -1030,6 +1032,7 @@ module ChapelSyncvar {
       }
     }
 
+    pragma "unsafe"
     proc readFF() {
       if !isConstCopyableType(valType) ||
          !isConstAssignableType(valType) {

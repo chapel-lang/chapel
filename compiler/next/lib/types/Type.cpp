@@ -22,13 +22,20 @@
 #include "chpl/types/AnyType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
+#include "chpl/types/BytesType.h"
+#include "chpl/types/CStringType.h"
+#include "chpl/types/ClassType.h"
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
+#include "chpl/types/NilType.h"
+#include "chpl/types/NothingType.h"
 #include "chpl/types/PrimitiveType.h"
 #include "chpl/types/RealType.h"
+#include "chpl/types/StringType.h"
 #include "chpl/types/UintType.h"
 #include "chpl/types/UnknownType.h"
+#include "chpl/types/VoidType.h"
 
 namespace chpl {
 namespace types {
@@ -88,10 +95,18 @@ void Type::gatherBuiltins(Context* context,
   gatherPrimitiveType(context, map, ComplexType::get(context, 64));
   gatherPrimitiveType(context, map, ComplexType::get(context, 128));
   // and 'complex' as an alias for 'complex(128)'
-  gatherType(context, map, "imag", ImagType::get(context, 0));
+  gatherType(context, map, "complex", ComplexType::get(context, 0));
 
   gatherType(context, map, "_any", AnyType::get(context));
+  gatherType(context, map, "_nilType", NilType::get(context));
   gatherType(context, map, "_unknown", UnknownType::get(context));
+  gatherType(context, map, "bytes", BytesType::get(context));
+  gatherType(context, map, "c_string", CStringType::get(context));
+  gatherType(context, map, "nothing", NothingType::get(context));
+  gatherType(context, map, "string", StringType::get(context));
+  gatherType(context, map, "void", VoidType::get(context));
+
+  gatherType(context, map, "object", BasicClassType::getObjectType(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }
@@ -107,34 +122,52 @@ bool Type::completeMatch(const Type* other) const {
   return true;
 }
 
-bool Type::updateType(owned<Type>& keep, owned<Type>& addin) {
-  if (keep->completeMatch(addin.get())) {
-    // no changes are necessary
-    return false;
-  } else {
-    // swap the Type
-    keep.swap(addin);
+void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+  int leadingSpaces = 0;
+  for (int i = 0; i < leadingSpaces; i++) {
+    ss << "  ";
+  }
+  ss << "type ";
+  ss << typetags::tagToString(this->tag());
+  ss << " \n";
+}
+
+bool Type::isNilablePtrType() const {
+  if (isPtrType()) {
+
+    if (auto ct = toClassType()) {
+      if (!ct->decorator().isNilable())
+        return false;
+    }
+
     return true;
   }
+
+  return false;
 }
 
-void Type::markType(Context* context, const Type* keep) {
-  if (keep == nullptr) return;
-  // run markUniqueStrings on the node
-  keep->markUniqueStringsInner(context);
+bool Type::isUserRecordType() const {
+  if (!isRecordType())
+    return false;
+
+  // TODO: add exceptions in here
+  // for types implemented as records but where that
+  // isn't the user's view -- e.g.
+  //  * string, bytes, distribution, domain, array, range
+  //    tuple, sync, single, atomic, managed pointer
+
+  return true;
 }
 
-void Type::dump(const Type* type, int leadingSpaces) {
-  for (int i = 0; i < leadingSpaces; i++) {
-    printf("  ");
-  }
 
-  printf("type %s \n", typetags::tagToString(type->tag()));
-}
+const CompositeType* Type::getCompositeType() const {
+  if (auto at = toCompositeType())
+    return at;
 
-std::string Type::toString() const {
-  std::string ret = typetags::tagToString(tag());
-  return ret;
+  if (auto ct = toClassType())
+    return ct->basicClassType();
+
+  return nullptr;
 }
 
 

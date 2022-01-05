@@ -21,10 +21,14 @@
 #define CHPL_TYPES_TYPE_H
 
 #include "chpl/queries/Context.h"
+#include "chpl/queries/update-functions.h"
 #include "chpl/types/TypeClasses.h"
 #include "chpl/types/TypeTag.h"
 
 namespace chpl {
+namespace uast {
+  class Decl;
+}
 namespace types {
 
 
@@ -83,25 +87,20 @@ class Type {
   bool operator!=(const Type& other) const {
     return !(*this == other);
   }
+  template<typename T>
+  static bool update(owned<T>& keep, owned<T>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    return markUniqueStringsInner(context);
+  }
 
   static void gatherBuiltins(Context* context,
                              std::unordered_map<UniqueString,const Type*>& map);
 
   bool completeMatch(const Type* other) const;
 
-  // 'keep' is some old Type
-  // 'addin' is some new Type we wish to combine with it
-  //
-  // on exit, 'keep' stores the Type we need to keep, and anything
-  // not kept is stored in 'addin'.
-  // the function returns 'true' if anything changed in 'keep'.
-  static bool updateType(owned<Type>& keep, owned<Type>& addin);
-
-  static void markType(Context* context, const Type* keep);
-
-  static void dump(const Type* type, int leadingSpaces=0);
-
-  virtual std::string toString() const;
+  virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // define is__ methods for the various Type subclasses
   // using macros and TypeClassesList.h
@@ -125,6 +124,12 @@ class Type {
   #undef TYPE_IS
 
   // Additional helper functions
+  // Don't name these queries 'isAny...'.
+  // Why? Consider an example.
+  // AnyNumericType is a builtin type called 'numeric' in the source code.
+  // So, isAnyNumericType checks if the type is that builtin type 'numeric'.
+  // In contrast, isNumericType checks to see if the type is one of the
+  // numeric types.
 
   /** returns true if it's string, bytes, or c_string type */
   bool isStringLikeType() const {
@@ -149,9 +154,24 @@ class Type {
   }
 
   /** returns true for a type that is a kind of pointer */
-  bool isAnyPtrType() const {
+  bool isPtrType() const {
     return isClassType() || isCFnPtrType() || isCVoidPtrType();
   }
+
+  /** returns true for a pointer type that can store nil */
+  bool isNilablePtrType() const;
+
+  /** Returns true for a type that is a user-defined record.
+      The compiler treats some internal types as records
+      but the language design does not insist that they are.
+   */
+  bool isUserRecordType() const;
+
+  /** If 'this' is a CompositeType, return it.
+      If 'this' is a ClassType, return the basicClassType.
+      Otherwise, returns nullptr.
+   */
+  const CompositeType* getCompositeType() const;
 
   // define to__ methods for the various Type subclasses
   // using macros and TypeClassesList.h
@@ -181,6 +201,8 @@ class Type {
 
 
 } // end namespace types
+
+
 } // end namespace chpl
 
 // TODO: is there a reasonable way to define std::less on Type*?

@@ -381,9 +381,6 @@ module Bytes {
       return this.byte(i:int);
     }
 
-
-
-
     inline proc param toByte() param : uint(8) {
       if this.numBytes != 1 then
         compilerError("bytes.toByte() only accepts single-byte bytes");
@@ -397,17 +394,19 @@ module Bytes {
     }
 
     inline proc join(const ref x: [] bytes) : bytes {
-      return _join(x);
+      return doJoin(this, x);
+    }
+
+    inline proc join(const ref x) where isTuple(x) {
+      if !isHomogeneousTuple(x) || !isBytes(x[0]) then
+        compilerError("join() on tuples only handles homogeneous tuples of bytes");
+      return doJoin(this, x);
     }
 
     inline proc join(ir: _iteratorRecord): bytes {
       return doJoinIterator(this, ir);
     }
 
-    // TODO: we don't need this
-    inline proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
-      return doJoin(this, S);
-    }
   } // end of record bytes
 
   /*
@@ -705,405 +704,409 @@ module Bytes {
     for s in doSplitWSNoEnc(this, maxsplit) do yield s;
   }
 
-    /*
-      Returns a new :mod:`bytes <Bytes>`, which is the concatenation of all of
-      the :mod:`bytes <Bytes>` passed in with the contents of the method
-      receiver inserted between them.
+  /*
+    Returns a new :mod:`bytes <Bytes>`, which is the concatenation of all of
+    the :mod:`bytes <Bytes>` passed in with the contents of the method
+    receiver inserted between them.
 
-      .. code-block:: chapel
+    .. code-block:: chapel
 
-          var myBytes = b"|".join(b"a",b"10",b"d");
-          writeln(myBytes); // prints: "a|10|d"
+        var myBytes = b"|".join(b"a",b"10",b"d");
+        writeln(myBytes); // prints: "a|10|d"
 
-      :arg x: :mod:`bytes <Bytes>` values to be joined
+    :arg x: :mod:`bytes <Bytes>` values to be joined
 
-      :returns: A :mod:`bytes <Bytes>`
-    */
-    inline proc bytes.join(const ref x: bytes ...) : bytes {
-      return _join(x);
-    }
+    :returns: A :mod:`bytes <Bytes>`
+  */
+  inline proc bytes.join(const ref x: bytes ...) : bytes {
+    return doJoin(this, x);
+  }
 
-    /*
-      Returns a new :mod:`bytes <Bytes>`, which is the concatenation of all of
-      the :mod:`bytes <Bytes>` passed in with the contents of the method
-      receiver inserted between them.
+  /*
+    Returns a new :mod:`bytes <Bytes>`, which is the concatenation of all of
+    the :mod:`bytes <Bytes>` passed in with the contents of the method
+    receiver inserted between them.
 
-      .. code-block:: chapel
+    .. code-block:: chapel
 
-          var tup = (b"a",b"10",b"d");
-          var myBytes = b"|".join(tup);
-          writeln(myBytes); // prints: "a|10|d"
+        var tup = (b"a",b"10",b"d");
+        var myJoinedTuple = b"|".join(tup);
+        writeln(myJoinedTuple); // prints: "a|10|d"
 
-      :arg x: :mod:`bytes <Bytes>` values to be joined
-      :type x: tuple or array of :mod:`bytes <Bytes>`
+        var myJoinedArray = b"|".join([b"a",b"10",b"d"]);
+        writeln(myJoinedArray); // prints: "a|10|d"
 
-      :returns: A :mod:`bytes <Bytes>`
-    */
-    inline proc bytes.join(const ref x) : bytes where isTuple(x) {
-      if !isHomogeneousTuple(x) || !isBytes(x[1]) then
-        compilerError("join() on tuples only handles homogeneous tuples of bytes");
-      return _join(x);
-    }
+    :arg x: An array or tuple of :mod:`bytes <Bytes>` values to be joined
 
-    /*
-      Strips given set of leading and/or trailing characters.
+    :returns: A :mod:`bytes <Bytes>`
+  */
+  inline proc bytes.join(const ref x) : bytes  {
+    // this overload serves as a catch-all for unsupported types.
+    // for the implementation of array and tuple overloads, see
+    // join() methods in the _bytes record.
+    compilerError("bytes.join() accepts any number of bytes, homogenous "
+                    + "tuple of bytes, or array of bytes as an argument");
+  }
 
-      :arg chars: Characters to remove.  Defaults to `b" \\t\\r\\n"`.
+  /*
+    Strips given set of leading and/or trailing characters.
 
-      :arg leading: Indicates if leading occurrences should be removed.
+    :arg chars: Characters to remove.  Defaults to `b" \\t\\r\\n"`.
+
+    :arg leading: Indicates if leading occurrences should be removed.
+                  Defaults to `true`.
+
+    :arg trailing: Indicates if trailing occurrences should be removed.
                     Defaults to `true`.
 
-      :arg trailing: Indicates if trailing occurrences should be removed.
-                     Defaults to `true`.
+    :returns: A new :mod:`bytes <Bytes>` with `leading` and/or `trailing`
+              occurrences of characters in `chars` removed as appropriate.
+  */
+  proc bytes.strip(chars = b" \t\r\n", leading=true, trailing=true) : bytes {
+    return doStripNoEnc(this, chars, leading, trailing);
+  }
 
-      :returns: A new :mod:`bytes <Bytes>` with `leading` and/or `trailing`
-                occurrences of characters in `chars` removed as appropriate.
+  /*
+    Splits the :mod:`bytes <Bytes>` on a given separator
+
+    :arg sep: The separator
+
+    :returns: a `3*bytes` consisting of the section before `sep`,
+              `sep`, and the section after `sep`. If `sep` is not found, the
+              tuple will contain the whole :mod:`bytes <Bytes>`, and then two
+              empty :mod:`bytes <Bytes>`.
+  */
+  inline proc const bytes.partition(sep: bytes) : 3*bytes {
+    return doPartition(this, sep);
+  }
+
+  /* Remove indentation from each line of bytes.
+
+      This can be useful when applied to multi-line bytes that are indented
+      in the source code, but should not be indented in the output.
+
+      When ``columns == 0``, determine the level of indentation to remove from
+      all lines by finding the common leading whitespace across all non-empty
+      lines. Empty lines are lines containing only whitespace. Tabs and spaces
+      are the only whitespaces that are considered, but are not treated as
+      the same characters when determining common whitespace.
+
+      When ``columns > 0``, remove ``columns`` leading whitespace characters
+      from each line. Tabs are not considered whitespace when ``columns > 0``,
+      so only leading spaces are removed.
+
+      :arg columns: The number of columns of indentation to remove. Infer
+                    common leading whitespace if ``columns == 0``.
+
+      :arg ignoreFirst: When ``true``, ignore first line when determining the
+                        common leading whitespace, and make no changes to the
+                        first line.
+
+      :returns: A new :mod:`bytes <Bytes>` with indentation removed.
+
+      .. warning::
+
+        ``bytes.dedent`` is not considered stable and is subject to change in
+        future Chapel releases.
+  */
+  proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
+    if chpl_warnUnstable then
+      compilerWarning("bytes.dedent is subject to change in the future.");
+    return doDedent(this, columns, ignoreFirst);
+  }
+
+  /*
+    Returns a UTF-8 string from the given :mod:`bytes <Bytes>`. If the data is
+    malformed for UTF-8, `policy` argument determines the action.
+
+    :arg policy: - `decodePolicy.strict` raises an error
+                  - `decodePolicy.replace` replaces the malformed character
+                    with UTF-8 replacement character
+                  - `decodePolicy.drop` drops the data silently
+                  - `decodePolicy.escape` escapes each illegal byte with
+                    private use codepoints
+
+    :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
+              argument and the :mod:`bytes <Bytes>` contains non-UTF-8 characters.
+
+    :returns: A UTF-8 string.
+  */
+  proc bytes.decode(policy=decodePolicy.strict) : string throws {
+    // NOTE: In the future this method could support more encodings.
+    var localThis: bytes = this.localize();
+    return decodeByteBuffer(localThis.buff, localThis.buffLen, policy);
+  }
+
+  /*
+    Checks if all the characters in the :mod:`bytes <Bytes>` are uppercase
+    (A-Z) in ASCII.  Ignores uncased (not a letter) and extended ASCII
+    characters (decimal value larger than 127)
+
+    :returns: * `true`--there is at least one uppercase and no lowercase characters
+              * `false`--otherwise
     */
-    proc bytes.strip(chars = b" \t\r\n", leading=true, trailing=true) : bytes {
-      return doStripNoEnc(this, chars, leading, trailing);
+  proc bytes.isUpper() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for b in this.bytes() {
+        if !(byte_isUpper(b)) {
+          result = false;
+          break;
+        }
+      }
     }
+    return result;
+  }
 
-    /*
-      Splits the :mod:`bytes <Bytes>` on a given separator
+  /*
+    Checks if all the characters in the :mod:`bytes <Bytes>` are lowercase
+    (a-z) in ASCII.  Ignores uncased (not a letter) and extended ASCII
+    characters (decimal value larger than 127)
 
-      :arg sep: The separator
-
-      :returns: a `3*bytes` consisting of the section before `sep`,
-                `sep`, and the section after `sep`. If `sep` is not found, the
-                tuple will contain the whole :mod:`bytes <Bytes>`, and then two
-                empty :mod:`bytes <Bytes>`.
+    :returns: * `true`--there is at least one lowercase and no uppercase characters
+              * `false`--otherwise
     */
-    inline proc const bytes.partition(sep: bytes) : 3*bytes {
-      return doPartition(this, sep);
+  proc bytes.isLower() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for b in this.bytes() {
+        if !(byte_isLower(b)) {
+          result = false;
+          break;
+        }
+      }
     }
+    return result;
 
-    /* Remove indentation from each line of bytes.
+  }
 
-       This can be useful when applied to multi-line bytes that are indented
-       in the source code, but should not be indented in the output.
+  /*
+    Checks if all the characters in the :mod:`bytes <Bytes>` are whitespace
+    (' ', '\\t', '\\n', '\\v', '\\f', '\\r') in ASCII.
 
-       When ``columns == 0``, determine the level of indentation to remove from
-       all lines by finding the common leading whitespace across all non-empty
-       lines. Empty lines are lines containing only whitespace. Tabs and spaces
-       are the only whitespaces that are considered, but are not treated as
-       the same characters when determining common whitespace.
-
-       When ``columns > 0``, remove ``columns`` leading whitespace characters
-       from each line. Tabs are not considered whitespace when ``columns > 0``,
-       so only leading spaces are removed.
-
-       :arg columns: The number of columns of indentation to remove. Infer
-                     common leading whitespace if ``columns == 0``.
-
-       :arg ignoreFirst: When ``true``, ignore first line when determining the
-                         common leading whitespace, and make no changes to the
-                         first line.
-
-       :returns: A new :mod:`bytes <Bytes>` with indentation removed.
-
-       .. warning::
-
-          ``bytes.dedent`` is not considered stable and is subject to change in
-          future Chapel releases.
+    :returns: * `true`  -- when all the characters are whitespace.
+              * `false` -- otherwise
     */
-    proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
-      if chpl_warnUnstable then
-        compilerWarning("bytes.dedent is subject to change in the future.");
-      return doDedent(this, columns, ignoreFirst);
+  proc bytes.isSpace() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for b in this.bytes() {
+        if !(byte_isWhitespace(b)) {
+          result = false;
+          break;
+        }
+      }
     }
+    return result;
+  }
 
-    /*
-      Returns a UTF-8 string from the given :mod:`bytes <Bytes>`. If the data is
-      malformed for UTF-8, `policy` argument determines the action.
+  /*
+    Checks if all the characters in the :mod:`bytes <Bytes>` are alphabetic
+    (a-zA-Z) in ASCII.
 
-      :arg policy: - `decodePolicy.strict` raises an error
-                   - `decodePolicy.replace` replaces the malformed character
-                     with UTF-8 replacement character
-                   - `decodePolicy.drop` drops the data silently
-                   - `decodePolicy.escape` escapes each illegal byte with
-                     private use codepoints
-
-      :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
-               argument and the :mod:`bytes <Bytes>` contains non-UTF-8 characters.
-
-      :returns: A UTF-8 string.
+    :returns: * `true`  -- when the characters are alphabetic.
+              * `false` -- otherwise
     */
-    proc bytes.decode(policy=decodePolicy.strict) : string throws {
-      // NOTE: In the future this method could support more encodings.
-      var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.buffLen, policy);
-    }
+  proc bytes.isAlpha() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
 
-    /*
-     Checks if all the characters in the :mod:`bytes <Bytes>` are uppercase
-     (A-Z) in ASCII.  Ignores uncased (not a letter) and extended ASCII
-     characters (decimal value larger than 127)
-
-      :returns: * `true`--there is at least one uppercase and no lowercase characters
-                * `false`--otherwise
-     */
-    proc bytes.isUpper() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.bytes() {
-          if !(byte_isUpper(b)) {
-            result = false;
-            break;
-          }
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for b in this.bytes() {
+        if !byte_isAlpha(b) {
+          result = false;
+          break;
         }
       }
-      return result;
     }
+    return result;
+  }
 
-    /*
-     Checks if all the characters in the :mod:`bytes <Bytes>` are lowercase
-     (a-z) in ASCII.  Ignores uncased (not a letter) and extended ASCII
-     characters (decimal value larger than 127)
+  /*
+    Checks if all the characters in the :mod:`bytes <Bytes>` are digits (0-9)
+    in ASCII.
 
-      :returns: * `true`--there is at least one lowercase and no uppercase characters
-                * `false`--otherwise
-     */
-    proc bytes.isLower() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.bytes() {
-          if !(byte_isLower(b)) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-
-    }
-
-    /*
-     Checks if all the characters in the :mod:`bytes <Bytes>` are whitespace
-     (' ', '\\t', '\\n', '\\v', '\\f', '\\r') in ASCII.
-
-      :returns: * `true`  -- when all the characters are whitespace.
-                * `false` -- otherwise
-     */
-    proc bytes.isSpace() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.bytes() {
-          if !(byte_isWhitespace(b)) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-     Checks if all the characters in the :mod:`bytes <Bytes>` are alphabetic
-     (a-zA-Z) in ASCII.
-
-      :returns: * `true`  -- when the characters are alphabetic.
-                * `false` -- otherwise
-     */
-    proc bytes.isAlpha() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.bytes() {
-          if !byte_isAlpha(b) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-     Checks if all the characters in the :mod:`bytes <Bytes>` are digits (0-9)
-     in ASCII.
-
-      :returns: * `true`  -- when the characters are digits.
-                * `false` -- otherwise
-     */
-    proc bytes.isDigit() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.bytes() {
-          if !byte_isDigit(b) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-     Checks if all the characters in the :mod:`bytes <Bytes>` are alphanumeric
-     (a-zA-Z0-9) in ASCII.
-
-      :returns: * `true`  -- when the characters are alphanumeric.
-                * `false` -- otherwise
-     */
-    proc bytes.isAlnum() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.bytes() {
-          if !byte_isAlnum(b) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-
-    }
-
-    /*
-     Checks if all the characters in the :mod:`bytes <Bytes>` are printable in
-     ASCII.
-
-      :returns: * `true`  -- when the characters are printable.
-                * `false` -- otherwise
-     */
-    proc bytes.isPrintable() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for b in this.bytes() {
-          if !byte_isPrintable(b) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-
-    }
-
-    /*
-      Checks if all uppercase characters are preceded by uncased characters,
-      and if all lowercase characters are preceded by cased characters in ASCII.
-
-      :returns: * `true`  -- when the condition described above is met.
-                * `false` -- otherwise
-     */
-    proc bytes.isTitle() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        param UN = 0, UPPER = 1, LOWER = 2;
-        var last = UN;
-        for b in this.bytes() {
-          if byte_isLower(b) {
-            if last == UPPER || last == LOWER {
-              last = LOWER;
-            } else { // last == UN
-              result = false;
-              break;
-            }
-          }
-          else if byte_isUpper(b) {
-            if last == UN {
-              last = UPPER;
-            } else { // last == UPPER || last == LOWER
-              result = false;
-              break;
-            }
-          } else {
-            // Uncased elements
-            last = UN;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-      Creates a new :mod:`bytes <Bytes>` with all applicable characters
-      converted to lowercase.
-
-      :returns: A new :mod:`bytes <Bytes>` with all uppercase characters (A-Z)
-                replaced with their lowercase counterpart in ASCII. Other
-                characters remain untouched.
+    :returns: * `true`  -- when the characters are digits.
+              * `false` -- otherwise
     */
-    proc bytes.toLower() : bytes {
-      var result: bytes = this;
-      if result.isEmpty() then return result;
-      for (i,b) in zip(0.., result.bytes()) {
-        result.buff[i] = byte_toLower(b); //check is done by byte_toLower
+  proc bytes.isDigit() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for b in this.bytes() {
+        if !byte_isDigit(b) {
+          result = false;
+          break;
+        }
       }
-      return result;
     }
+    return result;
+  }
 
-    /*
-      Creates a new :mod:`bytes <Bytes>` with all applicable characters
-      converted to uppercase.
+  /*
+    Checks if all the characters in the :mod:`bytes <Bytes>` are alphanumeric
+    (a-zA-Z0-9) in ASCII.
 
-      :returns: A new :mod:`bytes <Bytes>` with all lowercase characters (a-z)
-                replaced with their uppercase counterpart in ASCII. Other
-                characters remain untouched.
+    :returns: * `true`  -- when the characters are alphanumeric.
+              * `false` -- otherwise
     */
-    proc bytes.toUpper() : bytes {
-      var result: bytes = this;
-      if result.isEmpty() then return result;
-      for (i,b) in zip(0.., result.bytes()) {
-        result.buff[i] = byte_toUpper(b); //check is done by byte_toUpper
+  proc bytes.isAlnum() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for b in this.bytes() {
+        if !byte_isAlnum(b) {
+          result = false;
+          break;
+        }
       }
-      return result;
     }
+    return result;
 
-    /*
-      Creates a new :mod:`bytes <Bytes>` with all applicable characters
-      converted to title capitalization.
+  }
 
-      :returns: A new :mod:`bytes <Bytes>` with all cased characters(a-zA-Z)
-                following an uncased character converted to uppercase, and all
-                cased characters following another cased character converted to
-                lowercase.
-     */
-    proc bytes.toTitle() : bytes {
-      var result: bytes = this;
-      if result.isEmpty() then return result;
+  /*
+    Checks if all the characters in the :mod:`bytes <Bytes>` are printable in
+    ASCII.
 
-      param UN = 0, LETTER = 1;
+    :returns: * `true`  -- when the characters are printable.
+              * `false` -- otherwise
+    */
+  proc bytes.isPrintable() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for b in this.bytes() {
+        if !byte_isPrintable(b) {
+          result = false;
+          break;
+        }
+      }
+    }
+    return result;
+
+  }
+
+  /*
+    Checks if all uppercase characters are preceded by uncased characters,
+    and if all lowercase characters are preceded by cased characters in ASCII.
+
+    :returns: * `true`  -- when the condition described above is met.
+              * `false` -- otherwise
+    */
+  proc bytes.isTitle() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      param UN = 0, UPPER = 1, LOWER = 2;
       var last = UN;
-      for (i,b) in zip(0.., result.bytes()) {
-        if byte_isAlpha(b) {
+      for b in this.bytes() {
+        if byte_isLower(b) {
+          if last == UPPER || last == LOWER {
+            last = LOWER;
+          } else { // last == UN
+            result = false;
+            break;
+          }
+        }
+        else if byte_isUpper(b) {
           if last == UN {
-            last = LETTER;
-            result.buff[i] = byte_toUpper(b);
-          } else { // last == LETTER
-            result.buff[i] = byte_toLower(b);
+            last = UPPER;
+          } else { // last == UPPER || last == LOWER
+            result = false;
+            break;
           }
         } else {
           // Uncased elements
           last = UN;
         }
       }
-      return result;
     }
+    return result;
+  }
+
+  /*
+    Creates a new :mod:`bytes <Bytes>` with all applicable characters
+    converted to lowercase.
+
+    :returns: A new :mod:`bytes <Bytes>` with all uppercase characters (A-Z)
+              replaced with their lowercase counterpart in ASCII. Other
+              characters remain untouched.
+  */
+  proc bytes.toLower() : bytes {
+    var result: bytes = this;
+    if result.isEmpty() then return result;
+    for (i,b) in zip(0.., result.bytes()) {
+      result.buff[i] = byte_toLower(b); //check is done by byte_toLower
+    }
+    return result;
+  }
+
+  /*
+    Creates a new :mod:`bytes <Bytes>` with all applicable characters
+    converted to uppercase.
+
+    :returns: A new :mod:`bytes <Bytes>` with all lowercase characters (a-z)
+              replaced with their uppercase counterpart in ASCII. Other
+              characters remain untouched.
+  */
+  proc bytes.toUpper() : bytes {
+    var result: bytes = this;
+    if result.isEmpty() then return result;
+    for (i,b) in zip(0.., result.bytes()) {
+      result.buff[i] = byte_toUpper(b); //check is done by byte_toUpper
+    }
+    return result;
+  }
+
+  /*
+    Creates a new :mod:`bytes <Bytes>` with all applicable characters
+    converted to title capitalization.
+
+    :returns: A new :mod:`bytes <Bytes>` with all cased characters(a-zA-Z)
+              following an uncased character converted to uppercase, and all
+              cased characters following another cased character converted to
+              lowercase.
+    */
+  proc bytes.toTitle() : bytes {
+    var result: bytes = this;
+    if result.isEmpty() then return result;
+
+    param UN = 0, LETTER = 1;
+    var last = UN;
+    for (i,b) in zip(0.., result.bytes()) {
+      if byte_isAlpha(b) {
+        if last == UN {
+          last = LETTER;
+          result.buff[i] = byte_toUpper(b);
+        } else { // last == LETTER
+          result.buff[i] = byte_toLower(b);
+        }
+      } else {
+        // Uncased elements
+        last = UN;
+      }
+    }
+    return result;
+  }
 
   pragma "no doc"
   inline operator :(x: string, type t: bytes) {

@@ -153,7 +153,7 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) { return NULL; }
 
 void chpl_comm_broadcast_private(int id, size_t size) { }
 
-void chpl_comm_barrier(const char *msg) { }
+void chpl_comm_impl_barrier(const char *msg) { }
 
 void chpl_comm_pre_task_exit(int all) { }
 

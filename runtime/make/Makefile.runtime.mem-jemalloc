@@ -17,5 +17,5 @@
 # limitations under the License.
 
 # Add any further includes for JEMALLOC.
-JEMALLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.jemalloc-$(CHPL_MAKE_JEMALLOC)
+JEMALLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.jemalloc-$(CHPL_MAKE_TARGET_JEMALLOC)
 -include $(JEMALLOC_INCLUDE)

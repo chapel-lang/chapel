@@ -49,6 +49,14 @@ TYPE_NODE(StringType)
 TYPE_NODE(UnknownType)
 TYPE_NODE(VoidType)
 
+// TODO:
+// migrate BytesType / StringType to something backed by the modules
+// (if the modules are parsed) and also do the same for array, domain,
+// distribution.
+//
+// c_ptr
+// c_array
+
 TYPE_BEGIN_SUBCLASSES(BuiltinType)
   // concrete builtin types
   BUILTIN_TYPE_NODE(CFileType, "_cfile")
@@ -59,37 +67,42 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(TaskIdType, "chpl_nullTaskID")
 
   // generic builtin types. AnyBoolType must be the first of these
-  // (or else BuiltinType::isGeneric and this comment)
+  // (or else adjust BuiltinType::isGeneric and this comment)
   BUILTIN_TYPE_NODE(AnyBoolType, "chpl_anybool")
-  BUILTIN_TYPE_NODE(AnyComplexType, "chpl_anycomplex")
-  BUILTIN_TYPE_NODE(AnyImagType, "chpl_anyimag")
-  BUILTIN_TYPE_NODE(AnyMaganementAnyNilableType, "_anyManagementAnyNilable")
-  BUILTIN_TYPE_NODE(AnyManagementNilableType, "_anyManagementNilable")
-  BUILTIN_TYPE_NODE(AnyPodType, "chpl_anyPOD")
-  BUILTIN_TYPE_NODE(AnyRealType, "chpl_anyreal")
-  BUILTIN_TYPE_NODE(AnyBorrowedType, "borrowed")
+  BUILTIN_TYPE_NODE(AnyBorrowedNilableType, "_borrowedNilable")
   BUILTIN_TYPE_NODE(AnyBorrowedNonNilableType, "_borrowedNonNilable")
-  BUILTIN_TYPE_NODE(AnyClassType, "class")
+  BUILTIN_TYPE_NODE(AnyBorrowedType, "borrowed")
+  BUILTIN_TYPE_NODE(AnyComplexType, "chpl_anycomplex")
   BUILTIN_TYPE_NODE(AnyEnumType, "enum")
+  BUILTIN_TYPE_NODE(AnyImagType, "chpl_anyimag")
+  BUILTIN_TYPE_NODE(AnyIntType, "chpl_anyint")
   BUILTIN_TYPE_NODE(AnyIntegralType, "integral")
   BUILTIN_TYPE_NODE(AnyIteratorClassType, "_iteratorClass")
   BUILTIN_TYPE_NODE(AnyIteratorRecordType, "_iteratorRecord")
+  BUILTIN_TYPE_NODE(AnyManagementAnyNilableType, "_anyManagementAnyNilable")
+  BUILTIN_TYPE_NODE(AnyManagementNilableType, "_anyManagementNilable")
+  BUILTIN_TYPE_NODE(AnyManagementNonNilableType, "class")
   BUILTIN_TYPE_NODE(AnyNumericType, "numeric")
+  BUILTIN_TYPE_NODE(AnyOwnedType, "owned")
+  BUILTIN_TYPE_NODE(AnyPodType, "chpl_anyPOD")
+  BUILTIN_TYPE_NODE(AnyRealType, "chpl_anyreal")
   BUILTIN_TYPE_NODE(AnyRecordType, "record")
-  BUILTIN_TYPE_NODE(AnyUninstantiatedType, "_uninstantiated")
+  BUILTIN_TYPE_NODE(AnySharedType, "shared")
+  BUILTIN_TYPE_NODE(AnyUintType, "chpl_anyuint")
+  BUILTIN_TYPE_NODE(AnyUninstantiatedType, "?")
   BUILTIN_TYPE_NODE(AnyUnionType, "union")
-  BUILTIN_TYPE_NODE(AnyUnmanagedType, "unmanaged")
   BUILTIN_TYPE_NODE(AnyUnmanagedNilableType, "_unmanagedNilable")
   BUILTIN_TYPE_NODE(AnyUnmanagedNonNilableType, "_unmanagedNonNilable")
+  BUILTIN_TYPE_NODE(AnyUnmanagedType, "unmanaged")
 TYPE_END_SUBCLASSES(BuiltinType)
 
 TYPE_BEGIN_SUBCLASSES(DeclaredType)
+  TYPE_NODE(ClassType)
   TYPE_NODE(EnumType)
   TYPE_NODE(FunctionType)
 
   TYPE_BEGIN_SUBCLASSES(CompositeType)
     TYPE_NODE(BasicClassType)
-    TYPE_NODE(ClassType)
     TYPE_NODE(RecordType)
     TYPE_NODE(TupleType)
     TYPE_NODE(UnionType)

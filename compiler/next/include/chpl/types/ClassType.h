@@ -20,27 +20,28 @@
 #ifndef CHPL_TYPES_CLASS_TYPE_H
 #define CHPL_TYPES_CLASS_TYPE_H
 
-#include "chpl/types/CompositeType.h"
+#include "chpl/types/BasicClassType.h"
 #include "chpl/types/ClassTypeDecorator.h"
+#include "chpl/types/Type.h"
 
 namespace chpl {
 namespace types {
 
 
 /**
-  This class represents an class type including a decorator.
+  This class represents an class type including a memory management decorator.
   E.g. if we have `class C`, then `borrowed C?` or `shared C` are ClassTypes.
  */
-class ClassType final : public CompositeType {
+class ClassType final : public Type {
  private:
   const BasicClassType* basicType_;
-  const RecordType* manager_;
+  const Type* manager_;
   ClassTypeDecorator decorator_;
 
   ClassType(const BasicClassType* basicType,
-            const RecordType* manager,
+            const Type* manager,
             ClassTypeDecorator decorator)
-    : CompositeType(typetags::ClassType),
+    : Type(typetags::ClassType),
       basicType_(basicType),
       manager_(manager),
       decorator_(decorator)
@@ -49,39 +50,58 @@ class ClassType final : public CompositeType {
   bool contentsMatchInner(const Type* other) const override {
     const ClassType* lhs = this;
     const ClassType* rhs = (const ClassType*) other;
-    return lhs->compositeTypeContentsMatchInner(rhs) &&
-           lhs->basicType_ == rhs->basicType_ &&
+    return lhs->basicType_ == rhs->basicType_ &&
            lhs->manager_ == rhs->manager_ &&
            lhs->decorator_ == rhs->decorator_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    compositeTypeMarkUniqueStringsInner(context);
   }
+
+
+  static const owned<ClassType>&
+  getClassType(Context* context,
+               const BasicClassType* basicType,
+               const Type* manager,
+               ClassTypeDecorator decorator);
 
  public:
   ~ClassType() = default;
+  void stringify(std::ostream& ss,
+                 chpl::StringifyKind stringKind) const override;
 
   static const ClassType* get(Context* context,
                               const BasicClassType* basicType,
-                              const RecordType* manager,
+                              const Type* manager,
                               ClassTypeDecorator decorator);
 
-  /** Returns the ClassTypeDecorator for this ClassType */
-  ClassTypeDecorator decorator() const { return decorator_; } 
+  /** Returns the ClassTypeDecorator for this ClassType.
+      This decorator indicates the memory management strategy. */
+  ClassTypeDecorator decorator() const { return decorator_; }
 
   /** Returns the manager for this ClassType, or nullptr
-      if the decorator does not indicate a managed type. */
-  const RecordType* manager() const {
+      if the decorator does not indicate a managed type.
+      This can return a record type or AnyOwnedType / AnySharedType. */
+  const Type* manager() const {
     if (!decorator_.isManaged())
       return nullptr;
     return manager_;
-  } 
+  }
 
   /** Returns the basic class type */
   const BasicClassType* basicClassType() const {
     return basicType_;
   }
+
+  /** Returns true if this is a generic type */
+  bool isGeneric() const override {
+    return decorator_.isUnknownManagement() ||
+           basicType_->isGeneric();
+  }
+
+  /** Returns the verison this ClassType with the passed decorator */
+  const ClassType* withDecorator(Context* context,
+                                 ClassTypeDecorator decorator) const;
 };
 
 
