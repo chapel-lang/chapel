@@ -351,7 +351,7 @@ static void helpPrintPath(Vec<const char*> path);
 static void ensureRequiredStandardModulesAreParsed();
 
 
-void parseChplSourceFile(const char* inputFileName) {
+static void parseChplSourceFile(const char* inputFileName) {
   /*
     The selection of 16 here was chosen to provide enough space for
     generating files like .tmp.obj (whose length is 8) from the
