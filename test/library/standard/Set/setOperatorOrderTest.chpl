@@ -48,12 +48,5 @@ writeln(s1 >= s2);
 writeln(s2 >= s1);
 
 proc printSortedSet(s) {
-  if s.size > 0 {
-    var a: [0..#s.size] int;
-    var i = 0;
-    for val in s {
-      a[i] = val.a; i+=1;
-    }
-    writeln(a.sorted());
-  }
+  writeln(s.toArray().sorted());
 }
