@@ -2371,6 +2371,7 @@ module BigInteger {
     this.divexact(numer=n,denom=new bigint(d));
   }
 
+  // documented in bigint, integral version
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
     if _local {
       mpz_divexact(this.mpz, numer.mpz, denom.mpz);
@@ -2447,6 +2448,7 @@ module BigInteger {
   }
 
   // divisible_p
+  // documented in uint version
   proc bigint.isDivisible(const ref div: bigint) : bool {
     var ret: c_int;
 
@@ -2469,6 +2471,7 @@ module BigInteger {
       return false;
   }
 
+  // documented in uint version
   proc bigint.isDivisible(div: int) : bool {
     var div_ = 0 : c_ulong;
     var ret: c_int;
@@ -2599,6 +2602,7 @@ module BigInteger {
   }
 
   // congruent_p
+  // documented in integral, integral version
   proc bigint.isCongruent(const ref con: bigint, const ref mod: bigint) : bool {
     var ret: c_int;
 
