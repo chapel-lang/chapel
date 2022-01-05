@@ -6,4 +6,4 @@ docutils==0.16.0
 sphinx-rtd-theme==0.5.2
 sphinxcontrib-chapeldomain==0.0.20
 babel==2.9.1
-breathe==4.30.0
+breathe==4.31.0
