@@ -1032,6 +1032,15 @@ void expandInstallationPaths(std::vector<std::string>& args) {
   }
 }
 
+bool isDirectory(const char* path)
+{
+  struct stat stats;
+  if (stat(path, &stats) == 0 && (stats.st_mode & S_IFMT) == S_IFDIR)
+    return true;
+
+  return false;
+}
+
 // would just use realpath, but it is not supported on all platforms.
 char* chplRealPath(const char* path)
 {

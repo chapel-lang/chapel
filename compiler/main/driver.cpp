@@ -1597,6 +1597,30 @@ static void checkUnsupportedConfigs(void) {
   }
 }
 
+static void checkRuntimeBuilt(void) {
+  std::string runtime_dir(CHPL_RUNTIME_LIB);
+  runtime_dir += "/";
+  runtime_dir += CHPL_RUNTIME_SUBDIR;
+
+  if (!isDirectory(runtime_dir.c_str())) {
+    const char* module_home = getenv("CHPL_MODULE_HOME");
+    if (module_home) {
+      USR_FATAL("The requested configuration is not included in the module. "
+                "Please send the package maintainer the output of "
+                "$CHPL_HOME/util/printchplenv and request support for this "
+                "configuration.");
+    } else {
+      USR_FATAL_CONT("The runtime has not been built for this configuration. "
+                     "Check $CHPL_HOME/util/printchplenv and try rebuilding "
+                     "with $CHPL_MAKE from $CHPL_HOME.");
+    }
+    if (developer) {
+      USR_PRINT("Expected runtime library in %s", runtime_dir.c_str());
+    }
+    USR_STOP();
+  }
+}
+
 static void checkMLDebugAndLibmode(void) {
   if (!fMultiLocaleLibraryDebug) { return; }
 
@@ -1701,6 +1725,8 @@ static void validateSettings() {
   checkIncrementalAndOptimized();
 
   checkUnsupportedConfigs();
+
+  checkRuntimeBuilt();
 }
 
 int main(int argc, char* argv[]) {
