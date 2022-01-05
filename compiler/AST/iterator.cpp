@@ -1982,8 +1982,8 @@ void cleanupPrimIRFieldValByFormal() {
   formalToPrimMap.clear();
 }
 
-static void fixPromotionProtoFields(AggregateType* at, Symbol* locSym,
-                                    VarSymbol* newField) {
+static void fixPromotionProtoField(AggregateType* at, Symbol* locSym,
+                                   VarSymbol* newField) {
 
   if ((at->numFields() == 0 || !at->isSerializeable())) {
     return;
@@ -1997,8 +1997,7 @@ static void fixPromotionProtoFields(AggregateType* at, Symbol* locSym,
 
   for_fields(field, at) {
     if (field->hasFlag(FLAG_PROMOTION_PROTO_FIELD)) {
-      if ((strcmp(field->name, locSym->name) == 0) &&
-          field->type == locSym->type) {
+      if (field->name == locSym->name && field->type == locSym->type) {
         field->defPoint->remove();
         updateMap.put(field, newField);
         break;
@@ -2058,7 +2057,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
       VarSymbol* rfield = new VarSymbol(field->name, field->type);
       rfield->qual = field->qual;
       local2rfield.put(local, rfield);
-      fixPromotionProtoFields(ii->irecord, local, rfield);
+      fixPromotionProtoField(ii->irecord, local, rfield);
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
 
       // while we're creating the iterator record fields based on the original

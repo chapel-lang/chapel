@@ -2669,7 +2669,6 @@ void resolveCall(CallExpr* call) {
 }
 
 static void resolveRefDeserialization(CallExpr* call) {
-  //call->baseExpr
   CallExpr* parentCall = toCallExpr(call->parentExpr);
   INT_ASSERT(parentCall && parentCall->isPrimitive(PRIM_MOVE));
 
@@ -7753,6 +7752,7 @@ static Type* moveDetermineRhsType(CallExpr* call) {
 
   // TODO do we still need this
   if (retval == dtUnknown) {
+    INT_FATAL("We need this");
     if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
       if (rhsCall->isPrimitive(PRIM_REF_DESERIALIZE)) {
         SymExpr* typeSymExpr = toSymExpr(rhsCall->get(1));
@@ -9948,7 +9948,8 @@ static bool createSerializeDeserialize(AggregateType* at) {
   FnSymbol* serializer = createMethodStub(at, "chpl__serialize",
                                           /*isType=*/false);
 
-  ArgSymbol* _this = serializer->getFormal(2);
+  ArgSymbol* _this = toArgSymbol(serializer->_this);
+  INT_ASSERT(_this);
 
   CallExpr* buildTuple = new CallExpr("_build_tuple");
 
@@ -9984,8 +9985,8 @@ static bool createSerializeDeserialize(AggregateType* at) {
       }
     }
     else if (isPOD(field->type)) {
-      buildTuple->insertAtTail(new CallExpr(PRIM_GET_MEMBER, _this,
-                                          new_CStringSymbol(field->name)));
+      buildTuple->insertAtTail(new CallExpr(PRIM_GET_MEMBER_VALUE, _this,
+                                            new_CStringSymbol(field->name)));
       deserializers.push_back(NULL);
     }
     else {
@@ -10013,11 +10014,6 @@ static bool createSerializeDeserialize(AggregateType* at) {
   deserializer->insertFormalAtTail(deserializerFormal);
   VarSymbol* deserializerRet = new VarSymbol("deserializer_return", at);
 
-  // TODO do we need any of these? Maybe no_copy_return?
-  //deserializerRet->addFlag(FLAG_NO_COPY);
-  //deserializerRet->addFlag(FLAG_NO_COPY_RETURN);
-  //deserializerRet->addFlag(FLAG_NO_AUTO_DESTROY);
-  
   deserializer->insertAtTail(new DefExpr(deserializerRet));
 
   int fieldNum = 0;
