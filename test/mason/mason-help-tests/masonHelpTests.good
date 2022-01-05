@@ -7,7 +7,8 @@ Options:
     -h, --help                   Display this message
         --show                   Increase verbosity
         --no-vcs                 Do not initialize a git repository
-    --name <legalName>           Specify package name different from directory name
+        --name <legalName>       Specify package name different from directory name
+        --[no-]checksum          [Do not] store a checksum of the source in the TOML file
 ********************************************************************************
 $ mason init -h
 Initializes a library project inside a given directory or path.
@@ -68,6 +69,7 @@ Options:
         --force                  Force Mason to build the project
         --example <example>      Build an example from the example/ directory
         --[no-]update            [Do not] update the mason registry before building
+        --[no-]checksum          [Do not] store a checksum of the source in the TOML file
 
 When --example is thrown without an example, all examples will be built
 When no options are provided, the following will take place:
@@ -89,6 +91,7 @@ Options:
         --build                  Compile before running binary
         --show                   Increase verbosity
         --example <example>      Run an example
+        --[no-]checksum          [Do not] store a checksum of the source in the TOML file
 
 When --example is thrown without an example, all available examples will be listed
 
@@ -208,6 +211,7 @@ Options:
         --parallel              Run tests in parallel(sequential by default)
         --[no]-update           [Do not] update the mason-registry when testing
         --setComm               Set the CHPL_COMM value for running the tests,  e.g. none, gasnet, ugni
+        --[no-]checksum         [Do not] store a checksum of the source in the TOML file
 
 Test configuration is up to the user
 Tests pass if they exit with status code 0

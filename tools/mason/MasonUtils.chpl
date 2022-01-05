@@ -514,8 +514,12 @@ proc getPathExcludingTargetFolder(dirName: string, ref paths: domain(string)) {
    combined and returns the hash.
  */
 proc computeHash(ref paths: domain(string)){
-  // Preprocess and generate a file.. use this file to compute hash
-  // output of paths {example-files/c2, example-files/all-bytes1, example-files/all-bytes2, example-files/all-bytes-twice, example-files/d1, example-files/a3, example-files/a2, example-files/a1, example-files/b1, example-files/c1}
+  /* Preprocess and generate a file.. use this file to compute hash
+     output of paths {example-files/c2, example-files/all-bytes1,
+                      example-files/all-bytes2, example-files/all-bytes-twice,
+                      example-files/d1, example-files/a3, example-files/a2,
+                      example-files/a1, example-files/b1, example-files/c1}
+  */
   var sortedPaths:[0..<paths.size] string;
   for (str, path) in zip(sortedPaths, paths) {
     str = path;
