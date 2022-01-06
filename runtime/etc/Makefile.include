@@ -104,10 +104,15 @@ x:
 	@echo $(CHPL_MAKE_RUNTIME_LIB)
 
 printincludesanddefines:
-	@echo $(CHPL_MAKE_BASE_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS)
+	@echo $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) \
+	      -I. \
+	      $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS)
 
 printcompileline:
-	@echo $(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
+	@echo $(CC) \
+	      $(CHPL_MAKE_BASE_CFLAGS) $(COMP_GEN_CFLAGS) \
+	      $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) \
+	      -I.
 
 printcxxcompileline:
 	@echo $(CXX) $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS) $(CHPL_RT_INC_DIR)
@@ -116,28 +121,29 @@ printccompiler:
 	@echo $(CC)
 
 printcflags:
-	@echo $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS)
+	@echo $(CHPL_MAKE_BASE_CFLAGS) $(COMP_GEN_CFLAGS)
 
 printcxxflags:
-	@echo $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS)
+	@echo $(CHPL_MAKE_BASE_CXXFLAGS) $(COMP_GEN_CXXFLAGS)
 
 printlinkershared:
 	@echo $(LD) $(LIB_DYNAMIC_FLAG)
 
 printlibraries:
-	@echo $(CHPL_MAKE_BASE_LFLAGS) \
-	      $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-	      -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
-	      $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+	@echo $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS)
 
 printlinker:
 	@echo $(LD)
 
 printlinkline:
 	@echo $(LD) $(CHPL_MAKE_BASE_LFLAGS) \
-              $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-              -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
-              $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+              $(COMP_GEN_USER_LDFLAGS) $(COMP_GEN_LFLAGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS) \
+	      $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS)
+
+
 
 printoverrideld:
 	@echo $(LD)
