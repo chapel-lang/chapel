@@ -2289,7 +2289,47 @@ static bool isTargetCpuValid(const char* targetCpu) {
   }
 }
 
+// If we are parsing an extern block with clang, we might
+// be configured to use a target compiler that is not clang.
+// In that event, filter out everything but the -D and -I arguments,
+// since other arguments might not be understood by clang.
+//
+// This could filter out more agressively but we do need the
+// paths and defines for the runtime headers to work.
+static void addFilteredArgs(std::vector<std::string>& dst,
+                            std::vector<std::string>& src,
+                            bool parseOnly) {
+  bool clang = 0 == strcmp(CHPL_TARGET_COMPILER, "llvm") ||
+               0 == strcmp(CHPL_TARGET_COMPILER, "clang");
+  bool filter = parseOnly && !clang;
+
+  if (filter) {
+    for (size_t i = 0; i < src.size(); i++) {
+      const auto& arg = src[i];
+      const char* s = arg.c_str();
+      if (startsWith(s, "-D") || startsWith(s, "-I")) {
+        dst.push_back(arg);
+        if (arg.size() == 2 && i+1 < src.size()) {
+          // if it was just "-D" or "-I", add the next argument too
+          i++;
+          dst.push_back(src[i]);
+        }
+      }
+    }
+
+  } else {
+    // add all of the arguments without filtering
+    for (size_t i = 0; i < src.size(); i++) {
+      dst.push_back(src[i]);
+    }
+  }
+}
+
+// if just_parse_filename != NULL, it is a file
+// containing an extern block to parse only
+// (and in that setting there is no need to work with the runtime).
 void runClang(const char* just_parse_filename) {
+  bool parseOnly = (just_parse_filename != NULL);
   static bool is_installed_fatal_error_handler = false;
 
   const char* clang_warn[] = {"-Wall", "-Werror", "-Wpointer-arith",
@@ -2336,74 +2376,20 @@ void runClang(const char* just_parse_filename) {
   // add include paths to anything builtin or in CHPL_HOME
   {
     std::vector<std::string> args;
-
-    // TODO: move this to printchplenv
-#if 0
-    // add includes from runtime Makefiles
-    // e.g. -Iruntime/include ...
-    std::string runtime_includes(CHPL_RUNTIME_LIB);
-    runtime_includes += "/";
-    runtime_includes += CHPL_RUNTIME_SUBDIR;
-    runtime_includes += "/list-includes-and-defines";
-
-    bool rtOk = readArgsFromFile(runtime_includes, args, /*errFatal*/ false);
-    if (rtOk == false) {
-      std::string runtime_dir(CHPL_RUNTIME_LIB);
-      runtime_dir += "/";
-      runtime_dir += CHPL_RUNTIME_SUBDIR;
-
-      if (developer)
-        USR_FATAL_CONT("Expected runtime library in %s", runtime_dir.c_str());
-
-      const char* module_home = getenv("CHPL_MODULE_HOME");
-      if (module_home) {
-        USR_FATAL("The requested configuration is not included in the module. "
-                  "Please send the package maintainer the output of "
-                  "$CHPL_HOME/util/printchplenv and request support for this "
-                  "configuration.");
-      } else {
-        USR_FATAL("The runtime has not been built for this configuration. "
-                  "Check $CHPL_HOME/util/printchplenv and try rebuilding "
-                  "with $CHPL_MAKE from $CHPL_HOME.");
-      }
-    }
-
-    // Remove -DCHPL_DEBUG, -DCHPL_OPTIMIZE, -DNDEBUG from the args
-    // They are settings from the runtime build and we want to
-    // use flags appropriate to the compilation instead of the runtime build
-    std::vector<std::string>::iterator pos =
-      std::find(args.begin(), args.end(), "-DCHPL_DEBUG");
-    if (pos != args.end())
-      args.erase(pos);
-
-    pos = std::find(args.begin(), args.end(), "-DCHPL_OPTIMIZE");
-    if (pos != args.end())
-      args.erase(pos);
-
-
-    pos = std::find(args.begin(), args.end(), "-DNDEBUG");
-    if (pos != args.end())
-      args.erase(pos);
-#endif
+    std::string dashI = "-I";
 
     // add -I$CHPL_HOME/modules/standard/
     // add -I$CHPL_HOME/modules/packages/
-    std::string dashImodules = "-I";
-    dashImodules += CHPL_HOME;
-    dashImodules += "/modules";
-
-    args.push_back(dashImodules + "/standard");
-    args.push_back(dashImodules + "/packages");
+    args.push_back(dashI + CHPL_HOME + "/modules/standard");
+    args.push_back(dashI + CHPL_HOME + "/modules/packages");
 
     // add arguments from CHPL_TARGET_BUNDLED_COMPILE_ARGS
     splitStringWhitespace(CHPL_TARGET_BUNDLED_COMPILE_ARGS, args);
-
     // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
     expandInstallationPaths(args);
 
-    for( size_t i = 0; i < args.size(); ++i ) {
-      clangCCArgs.push_back(args[i]);
-    }
+    // add the arguments, filtering if parsing an extern block
+    addFilteredArgs(clangCCArgs, args, parseOnly);
   }
 
   // add a -I. so we can find headers named on command line in same dir
@@ -2487,7 +2473,12 @@ void runClang(const char* just_parse_filename) {
   clangCCArgs.push_back("-pthread");
 
   // add system compiler args from printchplenv
-  splitStringWhitespace(CHPL_TARGET_SYSTEM_COMPILE_ARGS, clangCCArgs);
+  {
+    std::vector<std::string> args;
+    splitStringWhitespace(CHPL_TARGET_SYSTEM_COMPILE_ARGS, args);
+    // add the arguments, filtering if parsing an extern block
+    addFilteredArgs(clangCCArgs, args, parseOnly);
+  }
 
   // tell clang to use CUDA support
   if (localeUsesGPU()) {
@@ -2507,8 +2498,7 @@ void runClang(const char* just_parse_filename) {
   clangOtherArgs.push_back("-include");
   clangOtherArgs.push_back("sys_basic.h");
 
-  if (!just_parse_filename) {
-
+  if (!parseOnly) {
     if (localeUsesGPU()) {
       //create a header file to include header files from the command line
       std::string genHeaderFilename;
@@ -2580,7 +2570,7 @@ void runClang(const char* just_parse_filename) {
   }
 
   if( printSystemCommands ) {
-    if (just_parse_filename != NULL)
+    if (parseOnly)
       printf("<internal clang parsing %s> ", just_parse_filename);
     else
       printf("<internal clang code generation> ");
@@ -2594,7 +2584,6 @@ void runClang(const char* just_parse_filename) {
     printf("\n");
   }
 
-  bool parseOnly = (just_parse_filename != NULL);
 
   // Initialize gGenInfo
   // Toggle LLVM code generation in our clang run;
@@ -2641,7 +2630,7 @@ void runClang(const char* just_parse_filename) {
     // and does the code generation.
     clangInfo->cCodeGenAction = new CCodeGenAction();
     if (!clangInfo->Clang->ExecuteAction(*clangInfo->cCodeGenAction)) {
-      if (just_parse_filename) {
+      if (parseOnly) {
         USR_FATAL("error running clang on extern block");
       } else {
         USR_FATAL("error running clang during code generation");
@@ -4192,13 +4181,6 @@ void makeBinaryLLVM(void) {
   maino += CHPL_RUNTIME_SUBDIR;
   maino += "/main.o";
 
-  // TODO: move this to printchplenv
-  /*std::string runtime_libs(CHPL_RUNTIME_LIB);
-  runtime_libs += "/";
-  runtime_libs += CHPL_RUNTIME_SUBDIR;
-  runtime_libs += "/list-libraries";
-   */
-
   // TODO: move this logic to printchplenv
   std::string runtime_ld_override(CHPL_RUNTIME_LIB);
   runtime_ld_override += "/";
@@ -4283,11 +4265,6 @@ void makeBinaryLLVM(void) {
 
   // We used to supply link args here *and* later on
   // in the link line. I think the later position is sufficient.
-  /*
-  for( size_t i = 0; i < clangLDArgs.size(); ++i ) {
-    options += " ";
-    options += clangLDArgs[i].c_str();
-  }*/
 
   // note: currently ldflags are not stored into clangLDArgs.
   // If they were, these lines would need to be removed.
