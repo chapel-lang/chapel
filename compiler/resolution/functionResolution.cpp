@@ -7750,19 +7750,6 @@ static Type* moveDetermineRhsType(CallExpr* call) {
     }
   }
 
-  // TODO do we still need this
-  if (retval == dtUnknown) {
-    INT_FATAL("We need this");
-    if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-      if (rhsCall->isPrimitive(PRIM_REF_DESERIALIZE)) {
-        SymExpr* typeSymExpr = toSymExpr(rhsCall->get(1));
-        INT_ASSERT(typeSymExpr);
-
-        retval = typeSymExpr->symbol()->type->getRefType();
-      }
-    }
-  }
-
   return retval;
 }
 
