@@ -18,7 +18,7 @@ Parallel Safety with respect to Arrays (and Domains)
 ----------------------------------------------------
 
 Users must take care when applying operations to arrays and domains
-concurrently from distinct tasks. For more information see the paralle safety
+concurrently from distinct tasks. For more information see the parallel safety
 section for domains (:ref:`Domain_and_Array_Parallel_Safety`).
 
 .. _Array_Types:
@@ -636,9 +636,8 @@ case, each element in the array is assigned this value.
 Array Comparison
 ----------------
 
-Arrays are promoted, so the result of the equality operators is
-an array of booleans.  To get a single result use the ``equals``
-method instead.
+With arrays, the equality operator (i.e. ==) is promoted, so the result is an
+array of booleans.  To get a single result use the ``equals`` method instead.
 
 .. code-block:: chapel
 
