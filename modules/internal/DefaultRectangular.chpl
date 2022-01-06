@@ -1083,6 +1083,13 @@ module DefaultRectangular {
       deinitElts = false;
     }
 
+    // This small kernel must be implemented by different array shapes due
+    // to 'BaseArr' having no notion of indexing scheme.
+    override proc chpl_unsafeAssignIsClassElementNil(ref manager, idx) {
+      ref elem = this.dsiAccess(idx);
+      return manager.isClassReferenceNil(elem);
+    }
+
     override proc dsiDestroyArr(deinitElts:bool) {
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
@@ -1403,10 +1410,12 @@ module DefaultRectangular {
       if !actuallyResizing then
         return;
 
-      if !isDefaultInitializable(eltType) {
-        halt("Can't resize domains whose arrays' elements don't " +
-             "have default values");
-      } else if this.locale != here {
+      if _resizePolicy == chpl_DdataResizePolicy.Normal then
+        if !isDefaultInitializable(eltType) then
+          halt("Can't resize domains whose arrays' elements don't " +
+               "have default values");
+
+      if this.locale != here {
         halt("internal error: dsiReallocate() can only be called " +
              "from an array's home locale");
       } else {
@@ -1427,7 +1436,8 @@ module DefaultRectangular {
             writeln("reallocating in-place");
 
           sizesPerDim(0) = reallocD.dsiDim(0).sizeAs(int);
-          data = _ddata_reallocate(data, eltType, oldSize, newSize);
+          data = _ddata_reallocate(data, eltType, oldSize, newSize,
+                                   policy=_resizePolicy);
           initShiftedData();
         } else {
           var copy = new unmanaged DefaultRectangularArr(eltType=eltType,

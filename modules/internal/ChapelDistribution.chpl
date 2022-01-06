@@ -689,8 +689,9 @@ module ChapelDistribution {
     var prev: unmanaged BaseArr?;
     var next: unmanaged BaseArr?;
 
-    var pid:int = nullPid; // privatized ID, if privatization is supported
+    var pid: int = nullPid; // privatized ID, if privatization is supported
     var _decEltRefCounts : bool = false;
+    var _resizePolicy = chpl_DdataResizePolicy.Normal;
 
     proc chpl__rvfMe() param {
       return false;
@@ -741,6 +742,29 @@ module ChapelDistribution {
         ret_dom = dom;
 
       return (ret_arr, ret_dom);
+    }
+
+    proc chpl_setResizePolicy(policy: chpl_DdataResizePolicy) {
+      _resizePolicy = policy;
+    }
+
+    proc chpl_isElementTypeDefaultInitializable(): bool {
+      halt("chpl_isElementTypeDefaultInitializable must be defined");
+      return false;
+    }
+
+    proc chpl_isElementTypeNonNilableClass(): bool {
+      halt("chpl_isElementTypeNonNilableClass must be defined");
+      return false;
+    }
+
+    proc chpl_unsafeAssignIsClassElementNil(ref manager, idx) {
+      halt("chpl_unsafeAssignIsClassElementNil must be defined");
+      return false;
+    }
+
+    proc chpl_unsafeAssignHaltUninitializedElement(idx) {
+      halt("chpl_haltUnsafeAssignmentUninitializedElement must be defined");
     }
 
     proc dsiElementInitializationComplete() {
@@ -857,6 +881,8 @@ module ChapelDistribution {
     proc rank param {
       return 1;
     }
+
+
   }
 
   /* BaseArrOverRectangularDom has this signature so that dsiReallocate
@@ -899,6 +925,22 @@ module ChapelDistribution {
 
     proc deinit() {
       // this is a bug workaround
+    }
+
+    override proc chpl_isElementTypeDefaultInitializable(): bool {
+      return isDefaultInitializable(eltType);
+    }
+
+    override proc chpl_isElementTypeNonNilableClass(): bool {
+      return isNonNilableClass(eltType);
+    }
+
+    // TODO: Consult 'chpl_do_fix_thrown_error' for help pinning location.
+    override proc chpl_unsafeAssignHaltUninitializedElement(idx) {
+      var msg = 'Upon finishing unsafe assignment, one or more elements ' +
+                'of a non-default-initializable array of type ' +
+                eltType:string + ' remain uninitialized';
+      halt(msg);
     }
 
     override proc decEltCountsIfNeeded() {

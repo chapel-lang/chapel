@@ -917,6 +917,9 @@ module ChapelBase {
   pragma "no doc"
   extern type chpl_mem_descInt_t = int(16);
 
+  pragma "no doc"
+  enum chpl_DdataResizePolicy { Normal, SkipInit, ClearMem }
+
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
   //  and defined in SysBasic.chpl)
@@ -995,15 +998,13 @@ module ChapelBase {
   }
 
   inline proc _ddata_allocate(type eltType, size: integral,
-                              subloc = c_sublocid_none,
-                              param initElts: bool=true) {
+                              subloc = c_sublocid_none) {
     var callPostAlloc: bool;
     var ret: _ddata(eltType);
 
     ret = _ddata_allocate_noinit(eltType, size, callPostAlloc, subloc);
 
-    if initElts then
-      init_elts(ret, size, eltType);
+    init_elts(ret, size, eltType);
 
     if callPostAlloc {
       _ddata_allocate_postalloc(ret, size);
@@ -1031,7 +1032,8 @@ module ChapelBase {
                                 type eltType,
                                 oldSize: integral,
                                 newSize: integral,
-                                subloc = c_sublocid_none) {
+                                subloc = c_sublocid_none,
+                                policy = chpl_DdataResizePolicy.Normal) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
@@ -1054,12 +1056,27 @@ module ChapelBase {
       }
     }
 
-    const newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr, oldSize.safeCast(size_t),
-                                   newSize.safeCast(size_t),
-                                   _ddata_sizeof_element(oldDdata),
-                                   subloc, callPostAlloc): oldDdata.type;
+    const alloc = chpl_mem_array_realloc(oldDdata: c_void_ptr,
+                                         oldSize.safeCast(size_t),
+                                         newSize.safeCast(size_t),
+                                         _ddata_sizeof_element(oldDdata),
+                                         subloc,
+                                         callPostAlloc);
+    const newDdata = alloc:oldDdata.type;
 
-    init_elts(newDdata, newSize, eltType, lo=oldSize);
+    // The resize policy dictates whether or not we should default-init,
+    // skip initializing, or zero out the memory of new slots.
+    select policy {
+      when chpl_DdataResizePolicy.Normal do
+        init_elts(newDdata, newSize, eltType, lo=oldSize);
+      when chpl_DdataResizePolicy.SkipInit do;
+      when chpl_DdataResizePolicy.ClearMem {
+        forall i in oldSize..<newSize {
+          ref slot = newDdata[i];
+          c_memset(c_ptrTo(slot), 0, c_sizeof(slot.type));
+        }
+      }
+    }
 
     if (callPostAlloc) {
       pragma "fn synchronization free"
