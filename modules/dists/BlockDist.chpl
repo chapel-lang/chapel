@@ -1431,7 +1431,8 @@ proc BlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
-proc BlockArr.chpl__serialize() {
+proc BlockArr.chpl__serialize()
+      where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 

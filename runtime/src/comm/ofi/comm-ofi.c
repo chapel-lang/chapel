@@ -25,6 +25,7 @@
 #include "chplrt.h"
 #include "chpl-env-gen.h"
 
+#include "chpl-atomics.h"
 #include "chpl-comm.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"

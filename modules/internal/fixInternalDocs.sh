@@ -172,7 +172,7 @@ replace "record" "type" $file
 removePrefixFunctions $file
 removePrefixVariables $file
 
-fixTitle "Array Operations" $file
+removeTitle $file
 removeUsage $file
 ## End ChapelArray ##
 
@@ -184,7 +184,7 @@ replace "record" "type" $file
 removePrefixFunctions $file
 removePrefixVariables $file
 
-fixTitle "Domain Operations" $file
+removeTitle $file
 removeUsage $file
 ## End ChapelArray ##
 

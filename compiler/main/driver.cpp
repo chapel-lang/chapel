@@ -1671,6 +1671,10 @@ static void postprocess_args() {
 // errors rather than doing what the user said (for which these
 // checks don't apply because we're not going to compile anything).
 //
+// NOTE: Before adding something here consider whether you should add it into
+// printchplenv.py instead. If placed there then you'll get the check
+// both at runtime (because we end up calling printchplenv) but also when
+// building the Chapel compiler itself.
 static void validateSettings() {
   checkNotLibraryAndMinimalModules();
 

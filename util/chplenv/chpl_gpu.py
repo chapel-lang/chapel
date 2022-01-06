@@ -1,6 +1,7 @@
 import utils
 import os
 import chpl_locale_model
+from utils import error
 
 def get():
     if chpl_locale_model.get() == 'gpu':
@@ -21,3 +22,8 @@ def get_cuda_path():
         return chpl_cuda_path
     else:
         return ""
+
+def validate(chplLocaleModel, chplComm):
+    if chplLocaleModel == 'gpu' and chplComm != "none":
+        error("The prototype GPU support does not work when CHPL_COMM is not set to\n\"none\".");
+

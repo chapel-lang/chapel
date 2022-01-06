@@ -1720,7 +1720,8 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
+    if ((fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) ||
+        fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
       functions.push_back(fn);
     }
   }
@@ -2692,6 +2693,11 @@ void codegen() {
       int status = 0;
       while (wait(&status) != pid) {
         // wait for child process
+      }
+      // If there was an error in GPU code generation then the .fatbin file (containing
+      // the generated GPU code) was not created and we won't be able to continue.
+      if(status != 0) {
+        clean_exit(status);
       }
     }
   }

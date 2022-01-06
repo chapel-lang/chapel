@@ -1,0 +1,2 @@
+Error: The prototype GPU support does not work when CHPL_COMM is not set to
+"none".

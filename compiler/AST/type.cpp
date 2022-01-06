@@ -36,6 +36,7 @@
 #include "iterator.h"
 #include "misc.h"
 #include "passes.h"
+#include "resolution.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -119,6 +120,14 @@ FnSymbol* Type::getDestructor() const {
 
 void Type::setDestructor(FnSymbol* fn) {
   destructor = fn;
+}
+
+bool Type::isSerializeable() {
+  if (isAggregateType(this)) {
+    return serializeMap.find(this->getValType()) != serializeMap.end();
+  }
+
+  return false;
 }
 
 Symbol* Type::getSubstitutionWithName(const char* name) const {

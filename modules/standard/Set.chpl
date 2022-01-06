@@ -170,15 +170,18 @@ module Set {
                             attempting to resize.
     */
     proc init(type eltType, param parSafe=false, resizeThreshold=0.5,
-              initialCapacity=32) {
+              initialCapacity=16) {
       _checkElementType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      if boundsChecking then
-        if resizeThreshold <= 0 || resizeThreshold >= 1 then
-          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
-      this.resizeThreshold = resizeThreshold;
-      this._htb = new chpl__hashtable(eltType, nothing, resizeThreshold,
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
     }
 
@@ -197,17 +200,20 @@ module Set {
                             attempting to resize.
     */
     proc init(type eltType, iterable, param parSafe=false,
-              resizeThreshold=0.5, initialCapacity=32)
+              resizeThreshold=0.5, initialCapacity=16)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       _checkElementType(eltType); 
 
       this.eltType = eltType;
       this.parSafe = parSafe;
-      if boundsChecking then
-        if resizeThreshold <= 0 || resizeThreshold >= 1 then
-          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
-      this.resizeThreshold = resizeThreshold;
-      this._htb = new chpl__hashtable(eltType, nothing, resizeThreshold,
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
       this.complete();
 

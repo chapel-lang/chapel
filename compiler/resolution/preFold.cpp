@@ -101,6 +101,7 @@ static FnSymbol*      createAndInsertFunParentMethod(CallExpr*      call,
                                                      AggregateType* parent,
                                                      AList&         argList,
                                                      bool           isFormal,
+                                                     RetTag         retTag,
                                                      Type*          retType,
                                                      bool           throws);
 
@@ -2818,7 +2819,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   } else {
     parent = createAndInsertFunParentClass(call, parent_name.c_str());
     thisParentMethod = createAndInsertFunParentMethod(call, parent,
-        captured_fn->formals, true, captured_fn->retType,
+        captured_fn->formals, true, captured_fn->retTag, captured_fn->retType,
         captured_fn->throwsError());
     functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, thisParentMethod);
   }
@@ -2874,6 +2875,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   CallExpr* innerCall = new CallExpr(captured_fn);
   int       skip      = 2;
 
+  thisMethod->retTag = captured_fn->retTag;
   for_alist(formalExpr, thisParentMethod->formals) {
     //Skip the first two arguments from the parent, which are _mt and this
     if (skip) {
@@ -3055,6 +3057,7 @@ static Type* createOrFindFunTypeFromAnnotation(AList& argList,
                                                   parent,
                                                   argList,
                                                   false,
+                                                  RET_VALUE,
                                                   retType,
                                                   throws);
 
@@ -3246,6 +3249,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
                                                 AggregateType* parent,
                                                 AList&         arg_list,
                                                 bool           isFormal,
+                                                RetTag         retTag,
                                                 Type*          retType,
                                                 bool           throws) {
 
@@ -3352,6 +3356,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
   }
 
   FnSymbol* parent_method = new FnSymbol("this");
+  parent_method->retTag = retTag;
 
   parent_method->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   parent_method->addFlag(FLAG_COMPILER_GENERATED);
