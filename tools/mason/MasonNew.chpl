@@ -337,19 +337,6 @@ proc makeBasicToml(dirName: string, path: string, version: string,
   tomlWriter.close();
 }
 
-/* Updates the Mason.toml with checksum */
-proc updateTomlWithChecksum(path: string) {
-  var paths: domain(string);
-  // Find files based on arguments and store them in paths
-  getPaths(dirName=path, paths);
-  var hash = computeHash(paths);
-  var tomlPath = path+"/Mason.toml";
-  const toParse = open(tomlPath, iomode.r);
-  const tomlFile = owned.create(parseToml(toParse));
-  tomlFile["brick"]!.set("CheckSum", hash);
-  generateToml(tomlFile, tomlPath);
-}
-
 /* Creates the src directory */
 proc makeSrcDir(path:string) {
   mkdir(path + "/src");

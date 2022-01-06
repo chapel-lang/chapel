@@ -50,6 +50,8 @@ proc masonExample(args: [] string) {
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var exampleOpts = parser.addOption(name="example", numArgs=0..);
+  var checksumFlag = parser.addFlag(name="checksum", flagInversion=true,
+                                    defaultValue=true);
 
   try! {
     parser.parseArgs(args);
@@ -68,7 +70,7 @@ proc masonExample(args: [] string) {
     skipUpdate = !updateFlag.valueAsBool();
   }
   var examples = new list(exampleOpts.values());
-  updateLock(skipUpdate, checksum=false);
+  updateLock(skipUpdate, checksumFlag.valueAsBool());
   runExamples(show, run, build, release, force, examples);
 }
 
