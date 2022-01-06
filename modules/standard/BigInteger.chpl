@@ -2502,8 +2502,8 @@ module BigInteger {
   /*
     Return ``true`` if ``this`` is exactly divisible by ``div``.  ``this`` is
     divisible by ``div`` if there exists an integer ``q`` satisfying ``this =
-    q*div``.  Unlike the other division functions, ``div = 0`` is accepted and
-    only ``0`` is considered divisible by ``0``.
+    q*div``.  Unlike the other division functions, ``0`` is an acceptable value
+    for ``div`` and only ``0`` is considered divisible by ``0``.
 
     :arg div: number to check if ``this`` is divisible by
     :type div: :record:`bigint`, ``int`` or ``uint``
@@ -2629,11 +2629,11 @@ module BigInteger {
   }
 
   /*
-    Return ``true`` if ``this`` is congruent to ``con`` modulo ``mod``.
-    ``this`` is congruent to ``con % mod`` if there exists an integer ``q``
-    satisfying ``this = con + q*mod``.  Unlike the other division functions,
-    ``d = 0`` is accepted.  As a result ``this`` and ``con`` are considered
-    congruent modulo ``0`` only when exactly equal.
+    Return ``true`` if ``this`` is congruent to ``con % mod``.  ``this`` is
+    congruent to ``con % mod`` if there exists an integer ``q`` satisfying
+    ``this = con + q*mod``.  Unlike the other division functions, ``0`` is an
+    acceptable value for ``mod``.  As a result ``this`` and ``con`` are
+    considered congruent modulo ``0`` only when exactly equal.
 
     :arg con: number to determine if ``this`` is congruent to, modulo ``mod``
     :type con: :record:`bigint` or ``integral``
@@ -2681,9 +2681,9 @@ module BigInteger {
   }
 
   /*
-    Return ``true`` if ``this`` is congruent to ``con`` modulo ``2^modExp``.
-    ``this`` is congruent to ``con % 2^modExp`` if there exists an integer ``q``
-    satisfying ``this = con + q*2^modExp``.
+    Return ``true`` if ``this`` is congruent to ``con % 2^modExp``.  ``this`` is
+    congruent to ``con % 2^modExp`` if there exists an integer ``q`` satisfying
+    ``this = con + q*2^modExp``.
 
     :arg con: number to determine if ``this`` is congruent to, modulo
               ``2^modExp``.
