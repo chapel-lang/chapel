@@ -5,8 +5,7 @@ import chpl_cpu, chpl_arch, chpl_compiler
 import chpl_lib_pic, chpl_locale_model, chpl_platform
 import chpl_home_utils
 from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
-from utils import error, memoize, run_command
-
+from utils import error, memoize, run_command, warning
 
 #
 # This is the default unique configuration path which
@@ -117,6 +116,10 @@ def pkgconfig_get_compile_args(pkg, ucp='', system=True, pcfile=None):
                              os.path.join('third-party', pkg, 'install', ucp),
                              install_path)
 
+    if 'Requires' in d and d['Requires']:
+        warning("Simple pkg-config parser does not handle Requires")
+        warning("in {0}".format(pcfile))
+
     cflags = [ ]
 
     if 'Cflags' in d:
@@ -198,6 +201,14 @@ def pkgconfig_get_link_args(pkg, ucp='', system=True,
                              os.path.join('third-party', pkg, 'install', ucp),
                              install_path)
 
+    if 'Requires' in d and d['Requires']:
+        warning("Simple pkg-config parser does not handle Requires")
+        warning("in {0}".format(pcfile))
+
+    if static and 'Requires.private' in d and d['Requires.private']:
+        warning("Simple pkg-config parser does not handle Requires.private")
+        warning("in {0}".format(pcfile))
+
     libs = [ ]
     libs_private = [ ]
 
@@ -208,7 +219,7 @@ def pkgconfig_get_link_args(pkg, ucp='', system=True,
       libs_private = d['Libs.private'].split()
 
     if system:
-        return (libs + libs_private)
+        return ([ ], libs + libs_private)
 
     # assuming libs_private stores system libs, like -lpthread
     return (libs, libs_private)
