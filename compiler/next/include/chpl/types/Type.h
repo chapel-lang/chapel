@@ -82,6 +82,7 @@ class Type {
   }
 
   bool operator==(const Type& other) const {
+    (void)tag_;  // quiet nextLinter
     return completeMatch(&other);
   }
   bool operator!=(const Type& other) const {
