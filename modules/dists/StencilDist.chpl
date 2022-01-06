@@ -1847,7 +1847,8 @@ proc type StencilDom.chpl__deserialize(data) {
            data);
 }
 
-proc StencilArr.chpl__serialize() {
+proc StencilArr.chpl__serialize()
+    where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 

@@ -37,6 +37,7 @@
 #include "ParamForLoop.h"
 #include "parser.h"
 #include "passes.h"
+#include "resolution.h"
 #include "runpasses.h"
 #include "scopeResolve.h"
 #include "stmt.h"
@@ -228,6 +229,19 @@ static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
 }
 
 void cleanAst() {
+
+  std::vector<Type*> keysToRm;
+
+  for (auto it = serializeMap.begin() ; it != serializeMap.end() ; it++) {
+    if (!isAlive(it->first)) {
+      keysToRm.push_back(it->first);
+    }
+  }
+
+  for_vector (Type, key, keysToRm) {
+    serializeMap.erase(key);
+  }
+
   // Important: Sometimes scopeResolve will create dummy UseStmts that are
   // never inserted into the tree, and will be deleted in between passes.
   //

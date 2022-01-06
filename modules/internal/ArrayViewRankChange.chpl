@@ -141,7 +141,7 @@ module ArrayViewRankChange {
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
     var upDomInst: unmanaged DefaultRectangularDom(rank, idxType, stridable)?;
-    forwarding upDom except these;
+    forwarding upDom except these, chpl__serialize, chpl__deserialize;
 
     // the collapsed dimensions and indices in those dimensions
     //

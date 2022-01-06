@@ -837,7 +837,8 @@ override proc CyclicArr.dsiDestroyArr(deinitElts:bool) {
   }
 }
 
-proc CyclicArr.chpl__serialize() {
+proc CyclicArr.chpl__serialize() 
+    where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 

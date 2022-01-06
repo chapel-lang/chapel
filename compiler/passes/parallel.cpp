@@ -1185,6 +1185,9 @@ static void replaceRecordWrappedRefs() {
     if (aggType->symbol->hasFlag(FLAG_REF)) {
       // ignore the reference type itself
     } else {
+      if (aggType->isSerializeable()) {
+        continue; // this type will be serialized and RVF'ed
+      }
       for_fields(field, aggType) {
         if (field->isRef() && isRecordWrappedType(field->getValType())) {
           field->type = field->getValType();
