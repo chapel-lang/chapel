@@ -2,9 +2,10 @@
 import sys
 import glob
 
-import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, overrides, third_party_utils
-from utils import error, memoize, try_run_command, warning
+import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform
+import overrides, third_party_utils
 
+from utils import error, memoize, try_run_command, warning
 
 @memoize
 def get():
@@ -60,8 +61,8 @@ def get_compile_args():
             args[1].append('-I' + libfab_dir_val + '/include')
         else:
             # Try using pkg-config to get the compile-time flags.
-            args = third_party_utils.pkgconfig_get_compile_args('libfabric',
-                                                                system=True)
+            x = third_party_utils.pkgconfig_get_system_compile_args('libfabric')
+            args = x
 
     if libfabric_val == 'system' or libfabric_val == 'bundled':
         flags = [ ]
@@ -99,8 +100,7 @@ def get_link_args():
         else:
             # Try using pkg-config to get the libraries to link
             # libfabric with.
-            tup = third_party_utils.pkgconfig_get_link_args('libfabric',
-                                                             system=True)
+            tup = third_party_utils.pkgconfig_get_system_link_args('libfabric')
             # put the two lists together (but expect tup[0] to be empty)
             pclibs = tup[0] + tup[1]
 

@@ -67,9 +67,8 @@ def get_link_args():
     elif unwind_val == 'system':
       # Try using pkg-config to get the libraries to link
       # libunwind with.
-      args = third_party_utils.pkgconfig_get_link_args('libunwind',
-                                                       system=True,
-                                                       static=True)
+      args = third_party_utils.pkgconfig_get_system_link_args('libunwind',
+                                                              static=True)
 
     if unwind_val == 'system' or unwind_val == 'bundled':
         # add -ldl so that we can call dladdr

@@ -26,7 +26,7 @@ def default_uniq_cfg_path():
 # Returns the path to the packages install directory
 #
 @memoize
-def get_install_path(pkg, ucp=default_uniq_cfg_path()):
+def get_bundled_install_path(pkg, ucp=default_uniq_cfg_path()):
     return os.path.join(get_chpl_third_party(), pkg, 'install', ucp)
 
 #
@@ -60,154 +60,140 @@ def handle_la(la_path):
     return args
 
 #
-# Return compiler arguments required to use a library known to
-# pkgconfig. The pkg can be a path to a .pc file or the name of a
-# system-installed package or the name of a third-party package.
-#
-# Even though pkg-config is not available by default on Mac OS X,
-# many third-party packages create .pc files. This function can
-# parse them.
-#
-# pkg is the name of the package:
-#   * for system=True, the name used when calling pkg-config
-#   * for system=False, the subdir in third-party/
-#
-# ucp is the unique config path, used only when system=False
-#
-# if system=True, searches for a system-installed package using pkg-configa.
-# if system=False, finds a .pc file and parses it to get the result.
+# Return compiler arguments required to use a system library known to
+# pkg-config. The pkg argument should be the name of a system-installed
+# package.
 #
 # Returns a 2-tuple of lists
 #  (compiler_bundled_args, compiler_system_args)
 @memoize
-def pkgconfig_get_compile_args(pkg, ucp='', system=True, pcfile=None):
-    install_path = None
-    if not system:
-        install_path = get_install_path(pkg, ucp)
+def pkgconfig_get_system_compile_args(pkg):
+    # check that pkg-config knows about the package in question
+    run_command(['pkg-config', '--exists', pkg])
+    # run pkg-config to get the cflags
+    cflags_line = run_command(['pkg-config', '--cflags'] + [pkg]);
+    cflags = cflags_line.split()
+    return ([ ], cflags)
 
-    if not pcfile:
-        pcfile = pkg
+#
+# Return compiler arguments required to use a bundled library
+# based on a pkg-config .pc file.
+#
+# Even though pkg-config is not available by default on Mac OS X,
+# many third-party packages create .pc files. This function can
+# parse them. Additionally, it adjusts the output to replace
+# paths to a previous third-party install directory with the current one.
+#
+# pkg is the name of the subdir in third-party
+# ucp is the unique config path
+# pcfile is the name of the .pc file
+#
+# This function looks for
+#   third-party/<pkg>/install/<ucp>/lib/pkgconfig/<pcfile>
+#
+# Returns a 2-tuple of lists
+#  (compiler_bundled_args, compiler_system_args)
+def pkgconfig_get_bundled_compile_args(pkg, ucp, pcfile):
+    install_path = get_bundled_install_path(pkg, ucp)
 
-    if not pcfile.endswith('.pc'):
-        if system:
-            # check that pkg-config knows about the package in question
-            run_command(['pkg-config', '--exists', pkg])
-            # run pkg-config to get the cflags
-            cflags_line = run_command(['pkg-config', '--cflags'] + [pkg]);
-            cflags = cflags_line.split()
-            return ([ ], cflags)
+    # give up early if the 3rd party package hasn't been built
+    if not os.path.exists(install_path):
+        return ([ ], [ ])
 
-        else:
-          # bundled, need to find .pc file
-          if ucp == '':
-              ucp = default_uniq_cfg_path()
+    pcpath = os.path.join(install_path, 'lib', 'pkgconfig', pcfile)
 
-          pcfile = os.path.join(install_path, 'lib', 'pkgconfig', pkg + '.pc')
+    # if we get this far, we should have a .pc file. check that it exists.
+    if not os.access(pcpath, os.R_OK):
+        error("Could not find '{0}'".format(pcpath), ValueError)
 
-          # give up early if the 3rd party package hasn't been built
-          if not os.path.exists(install_path):
-              return ([ ], [ ])
-
-    # if we get this far, we have a .pc file. check that it exists.
-    if not os.access(pcfile, os.R_OK):
-        error("Could not find '{0}'".format(pcfile), ValueError)
-
-    d = read_pkg_config_file(pcfile,
+    d = read_pkg_config_file(pcpath,
                              os.path.join('third-party', pkg, 'install', ucp),
                              install_path)
 
     if 'Requires' in d and d['Requires']:
         warning("Simple pkg-config parser does not handle Requires")
-        warning("in {0}".format(pcfile))
+        warning("in {0}".format(pcpath))
 
     cflags = [ ]
 
     if 'Cflags' in d:
       cflags = d['Cflags'].split()
 
-    if system:
-        return ([ ], cflags)
-
     return (cflags, [ ])
 
-
+# default static value for pkgconfig_get_system_link_args
+# and pkgconfig_get_bundled_link_args
 def pkgconfig_default_static():
     static = chpl_platform.get('target')!='hpe-cray-ex'
     return static
 
 #
-# Return linker arguments required to link with a library
-# known to pkgconfig. The pkg can be a path to a .pc file or
-# the name of a system-installed package or the name of
-# a third-party package.
+# Return linker arguments required to link with a system library
+# known to pkg-config. The pkg argument should be the name of a
+# system-installed package.
 #
-# Even though pkg-config is not available by default on Mac OS X,
-# many third-party packages create .pc files. This function can
-# parse them.
-#
-# pkg is the name of the package:
-#   * for system=True, the name used when calling pkg-config
-#   * for system=False, the subdir in third-party/
-#
-# ucp is the unique config path, used only when system=False
-#
-# if system=True, searches for a system-installed package.
 # if static=True, uses --static (suitable for static linking)
 #
 # Returns a 2-tuple of lists
 #  (link_bundled_args, link_system_args)
 @memoize
-def pkgconfig_get_link_args(pkg, ucp='', system=True,
-                            pcfile=None,
-                            static=pkgconfig_default_static()):
-    install_path = None
-    if not system:
-        install_path = get_install_path(pkg, ucp)
+def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
+    # check that pkg-config knows about the package in question
+    run_command(['pkg-config', '--exists', pkg])
+    # run pkg-config to get the link flags
+    static_arg = [ ]
+    if static:
+      static_arg = ['--static']
 
-    if not pcfile:
-        pcfile = pkg
+    libs_line = run_command(['pkg-config', '--libs'] + static_arg + [pkg]);
+    libs = libs_line.split()
+    return ([ ], libs)
 
-    if not pcfile.endswith('.pc'):
-        if system:
-            # check that pkg-config knows about the package in question
-            run_command(['pkg-config', '--exists', pkg])
-            # run pkg-config to get the link flags
-            static_arg = [ ]
-            if static:
-              static_arg = ['--static']
+#
+# Return linker arguments required to use a bundled library
+# based on a pkg-config .pc file.
+#
+# Even though pkg-config is not available by default on Mac OS X,
+# many third-party packages create .pc files. This function can
+# parse them. Additionally, it adjusts the output to replace
+# paths to a previous third-party install directory with the current one.
+#
+# pkg is the name of the subdir in third-party
+# ucp is the unique config path
+# pcfile is the name of the .pc file
+# static indicates if Libs.private should be included for static linking.
+#
+# This function looks for
+#   third-party/<pkg>/install/<ucp>/lib/pkgconfig/<pcfile>
+#
+# Returns a 2-tuple of lists
+#  (link_bundled_args, link_system_args)
+@memoize
+def pkgconfig_get_bundled_link_args(pkg, ucp, pcfile,
+                                    static=pkgconfig_default_static()):
+    install_path = get_bundled_install_path(pkg, ucp)
 
-            libs_line = run_command(['pkg-config', '--libs'] +
-                                    static_arg +
-                                    [pkg]);
-            libs = libs_line.split()
-            return ([ ], libs)
+    # give up early if the 3rd party package hasn't been built
+    if not os.path.exists(install_path):
+        return ([ ], [ ])
 
-        else:
-          # bundled, need to find .pc file
-          if ucp == '':
-            ucp = default_uniq_cfg_path()
+    pcpath = os.path.join(install_path, 'lib', 'pkgconfig', pcfile)
 
-          pcfile = os.path.join(install_path, 'lib', 'pkgconfig', pkg + '.pc')
+    # if we get this far, we should have a .pc file. check that it exists.
+    if not os.access(pcpath, os.R_OK):
+        error("Could not find '{0}'".format(pcpath), ValueError)
 
-          # give up early if the 3rd party package hasn't been built
-          if not os.path.exists(install_path):
-              return ([ ], [ ])
-
-    # if we get this far, we have a .pc file. check that it exists.
-    if not os.access(pcfile, os.R_OK):
-      error("Could not find '{0}'".format(pcfile), ValueError)
-
-    d = read_pkg_config_file(pcfile,
+    d = read_pkg_config_file(pcpath,
                              os.path.join('third-party', pkg, 'install', ucp),
                              install_path)
 
     if 'Requires' in d and d['Requires']:
         warning("Simple pkg-config parser does not handle Requires")
-        warning("in {0}".format(pcfile))
+        warning("in {0}".format(pcpath))
 
     if static and 'Requires.private' in d and d['Requires.private']:
         warning("Simple pkg-config parser does not handle Requires.private")
-        warning("in {0}".format(pcfile))
+        warning("in {0}".format(pcpath))
 
     libs = [ ]
     libs_private = [ ]
@@ -217,9 +203,6 @@ def pkgconfig_get_link_args(pkg, ucp='', system=True,
 
     if 'Libs.private' in d:
       libs_private = d['Libs.private'].split()
-
-    if system:
-        return ([ ], libs + libs_private)
 
     # assuming libs_private stores system libs, like -lpthread
     return (libs, libs_private)
@@ -244,7 +227,7 @@ def pkgconfig_get_system_version(pkg):
 def get_bundled_compile_args(pkg, ucp=''):
     if ucp == '':
         ucp = default_uniq_cfg_path()
-    inc_dir = os.path.join(get_install_path(pkg, ucp), 'include')
+    inc_dir = os.path.join(get_bundled_install_path(pkg, ucp), 'include')
     return (['-I' + inc_dir], [ ])
 
 
@@ -260,7 +243,7 @@ def get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=True):
     if libs == []:
         libs = [ 'lib' + pkg + '.la' ]
     all_args = []
-    lib_dir = os.path.join(get_install_path(pkg, ucp), 'lib')
+    lib_dir = os.path.join(get_bundled_install_path(pkg, ucp), 'lib')
     if add_L_opt:
         all_args.append('-L' + lib_dir)
         all_args.append('-Wl,-rpath,' + lib_dir)
@@ -300,7 +283,7 @@ def apply_pkgconfig_subs(s, d):
 
     return s
 
-# Read a pkg-config .pc file at path pcfile into a dictionary
+# Read a pkg-config .pc file at path pcpath into a dictionary
 # Handles comments, variable escapes with ${variable},
 # and literal $${variable} (which is not an escape).
 # Assumes that the variables are defined before they are used
@@ -319,7 +302,7 @@ def apply_pkgconfig_subs(s, d):
 #  $replace_third_party
 #
 @memoize
-def read_pkg_config_file(pcfile,
+def read_pkg_config_file(pcpath,
                          find_third_party=None,
                          replace_third_party=None):
     ret = { }
@@ -328,7 +311,7 @@ def read_pkg_config_file(pcfile,
     if find_third_party and replace_third_party:
         pattern = re.compile(r'/[^ ]*/' + find_third_party)
 
-    with open(pcfile) as file:
+    with open(pcpath) as file:
         for line in file:
             line = line.strip()
 
