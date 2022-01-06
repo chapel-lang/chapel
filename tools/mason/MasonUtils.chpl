@@ -513,7 +513,7 @@ proc getPathExcludingTargetFolder(dirName: string, ref paths: domain(string)) {
    lexicographically, computes hash of all the files & its path
    combined and returns the hash.
  */
-proc computeHash(ref paths: domain(string)){
+proc computeHash(ref paths: domain(string)) {
   /* Preprocess and generate a file.. use this file to compute hash
      output of paths {example-files/c2, example-files/all-bytes1,
                       example-files/all-bytes2, example-files/all-bytes-twice,
@@ -576,7 +576,9 @@ Given a project Directory, this method removes the
 checksum field from the project's toml and regenerates
 a toml without the checksum field.
 */
-proc removeHash(projectHome: string, tf: string){
+proc removeHash(projectHome: string, tf: string) {
+  // TODO: Avoid rewriting the .toml file just to remove
+  // the checksum value prior to rehashing
   var hash = "";
   var tomlPath = projectHome + "/" + tf;
   if isFile(tomlPath) {
