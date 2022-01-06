@@ -2694,6 +2694,11 @@ void codegen() {
       while (wait(&status) != pid) {
         // wait for child process
       }
+      // If there was an error in GPU code generation then the .fatbin file (containing
+      // the generated GPU code) was not created and we won't be able to continue.
+      if(status != 0) {
+        clean_exit(status);
+      }
     }
   }
 

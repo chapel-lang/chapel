@@ -210,6 +210,7 @@ def compute_all_values():
     chpl_arch.validate('target')
     chpl_llvm.validate_llvm_config()
     chpl_compiler.validate_compiler_settings()
+    chpl_gpu.validate(ENV_VALS['CHPL_LOCALE_MODEL'], ENV_VALS['CHPL_COMM'])
 
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
 def compute_internal_values():
