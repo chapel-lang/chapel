@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019 Amazon.com, Inc. or its affiliates.
- * Copyright (c) 2020-2022 Intel Corporation.
+ * Copyright (c) 2020-2021 Intel Corporation.
  * All rights reserved.
  *
  * This software is available to you under a choice of one of two
