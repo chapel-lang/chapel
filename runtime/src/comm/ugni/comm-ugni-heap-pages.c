@@ -83,8 +83,7 @@ void set_hps(void)
 
 
 size_t chpl_comm_ugni_getHeapPageSize(void) {
-  if (hps == 0
-      && pthread_once(&hps_once, set_hps) != 0) {
+  if (pthread_once(&hps_once, set_hps) != 0) {
     chpl_internal_error("pthread_once(&hps_once) failed");
   }
 
