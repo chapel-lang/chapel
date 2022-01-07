@@ -766,12 +766,6 @@ struct Converter {
         !node->stmt(0)->isConditional();
   }
 
-  // TODO: Use for BracketLoop/Forall...
-  BlockStmt* convertCommonIndexableLoop(const uast::IndexableLoop* node) {
-    INT_FATAL("TODO");
-    return nullptr;
-  }
-
   Expr* convertBracketLoopExpr(const uast::BracketLoop* node) {
     assert(node->isExpressionLevel());
     assert(node->numStmts() == 1);
