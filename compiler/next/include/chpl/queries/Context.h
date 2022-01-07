@@ -35,6 +35,8 @@
 #include <utility>
 #include <vector>
 
+extern bool fDebugTrace;
+
 namespace chpl {
 
 namespace uast {
@@ -96,7 +98,6 @@ class Context {
 
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool checkStringsAlreadyMarked = false;
-  bool enableDebugTracing = false;
   bool breakSet = false;
   size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;

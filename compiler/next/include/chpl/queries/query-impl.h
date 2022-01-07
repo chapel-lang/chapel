@@ -120,10 +120,10 @@ template<typename... ArgTs>
 void Context::queryBeginTrace(const char* traceQueryName,
                               const std::tuple<ArgTs...>& tupleOfArg) {
 
-  if (breakSet || enableDebugTracing) {
+  if (breakSet || fDebugTrace) {
     auto args = queryArgsToStrings(tupleOfArg);
     size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
-    if (enableDebugTracing) {
+    if (fDebugTrace) {
       printf("QUERY BEGIN     %s (", traceQueryName);
       queryArgsPrint(tupleOfArg);
       printf(")\n");
@@ -193,7 +193,7 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
   auto savedElement = &(*pair.first); // pointer to element in map (added/not)
   bool newElementWasAdded = pair.second;
 
-  if (enableDebugTracing) {
+  if (fDebugTrace) {
     if (newElementWasAdded)
       printf("Added new result %p %s\n", savedElement, queryMap->queryName);
     else
@@ -225,7 +225,7 @@ Context::queryUseSaved(
   const void* queryFuncV = (const void*) queryFunction;
   bool useSaved = queryCanUseSavedResultAndPushIfNot(queryFuncV, r);
 
-  if (enableDebugTracing) {
+  if (fDebugTrace) {
     if (useSaved) {
       printf("QUERY END       %s (...) REUSING BASED ON DEPS %p\n",
              traceQueryName, r);
@@ -326,7 +326,7 @@ Context::queryEnd(
     this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
                                    std::move(result), /* forSetter */ false);
 
-  if (enableDebugTracing) {
+  if (fDebugTrace) {
     bool changed = ret->lastChanged == this->currentRevisionNumber;
     printf("QUERY END       %s (", traceQueryName);
     queryArgsPrint(tupleOfArgs);

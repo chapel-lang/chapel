@@ -467,7 +467,7 @@ void Context::advanceToNextRevision(bool prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
     gcCounter++;
   }
-  if (enableDebugTracing) {
+  if (fDebugTrace) {
     printf("CURRENT REVISION NUMBER IS NOW %i %s\n",
            (int) this->currentRevisionNumber,
            prepareToGC?"PREPARING GC":"");
@@ -478,7 +478,7 @@ void Context::collectGarbage() {
   // if there are no parent queries, collect some garbage
   assert(queryStack.size() == 0);
 
-  if (enableDebugTracing) {
+  if (fDebugTrace) {
     printf("COLLECTING GARBAGE\n");
   }
 
@@ -509,12 +509,12 @@ void Context::collectGarbage() {
       // buf[1] is the doNotCollectMark
       if (buf[1] || buf[0] == gcMark) {
         newTable.insert(e);
-        if (enableDebugTracing) {
+        if (fDebugTrace) {
           printf("COPYING OVER UNIQUESTRING %s\n", key);
         }
       } else {
         toFree.push_back(allocation);
-        if (enableDebugTracing) {
+        if (fDebugTrace) {
           printf("WILL FREE UNIQUESTRING %s\n", key);
         }
       }
@@ -524,7 +524,7 @@ void Context::collectGarbage() {
     }
     uniqueStringsTable.swap(newTable);
 
-    if (enableDebugTracing) {
+    if (fDebugTrace) {
       size_t nUniqueStringsAfter = uniqueStringsTable.size();
       printf("COLLECTED %i UniqueStrings\n",
              (int)(nUniqueStringsBefore-nUniqueStringsAfter));
@@ -542,7 +542,7 @@ void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
                        /* isInputQuery */ false,
                        /* forSetter */ true);
 
-  if (enableDebugTracing) {
+  if (fDebugTrace) {
     printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
            moduleIdSymbolPath.c_str(), path.c_str());
   }
@@ -604,7 +604,7 @@ void Context::error(const resolution::TypedFnSignature* inFn,
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
-  if (enableDebugTracing) {
+  if (fDebugTrace) {
     printf("RECOMPUTING IF NEEDED FOR %p %s\n", resultEntry,
            resultEntry->parentQueryMap->queryName);
   }
@@ -647,14 +647,14 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   if (useSaved == false) {
     resultEntry->recompute(this);
     assert(resultEntry->lastChecked == this->currentRevisionNumber);
-    if (enableDebugTracing) {
+    if (fDebugTrace) {
       printf("DONE RECOMPUTING IF NEEDED -- RECOMPUTED FOR %s\n",
              resultEntry->parentQueryMap->queryName);
     }
     return;
   } else {
     updateForReuse(resultEntry);
-    if (enableDebugTracing) {
+    if (fDebugTrace) {
       printf("DONE RECOMPUTING IF NEEDED -- REUSED FOR %s\n",
              resultEntry->parentQueryMap->queryName);
     }
