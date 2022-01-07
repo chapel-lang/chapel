@@ -439,7 +439,7 @@
 
 %type <pblockstmt> class_level_stmt_ls
 
-%type <pblockstmt> stmt executable_stmt
+%type <pblockstmt> stmt tryable_stmt
 %type <pblockstmt> do_stmt
 %type <pblockstmt> if_stmt loop_stmt
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
@@ -542,7 +542,7 @@ stmt:
   deprecated_decl_stmt
 | include_module_stmt
 | block_stmt
-| executable_stmt
+| tryable_stmt
 | use_stmt
 | import_stmt
 | require_stmt
@@ -551,7 +551,6 @@ stmt:
 | interface_stmt
 | defer_stmt
 | try_stmt
-| throw_stmt
 | return_stmt
 | TATOMIC stmt                         { $$ = buildAtomicStmt($2); }
 | TBREAK opt_label_ident TSEMI         { $$ = buildGotoStmt(GOTO_BREAK, $2); }
@@ -561,12 +560,13 @@ stmt:
 | error TSEMI                          { $$ = buildErrorStandin(); }
 ;
 
-executable_stmt:
+tryable_stmt:
   assignment_stmt
 | if_stmt
 | loop_stmt
-| select_stmt
 | manage_stmt
+| select_stmt
+| throw_stmt
 | stmt_level_expr TSEMI                { $$ = buildChapelStmt($1); }
 | TBEGIN opt_task_intent_ls stmt       { $$ = buildBeginStmt($2, $3); }
 | TCOBEGIN opt_task_intent_ls block_stmt { $$ = buildCobeginStmt($2, $3);  }
@@ -1282,8 +1282,8 @@ try_token:
 | TTRYBANG { $$ = true; }
 
 try_stmt:
-  try_token executable_stmt { $$ = TryStmt::build($1, $2); }
-| try_token block_stmt      catch_stmt_ls { $$ = TryStmt::build($1, $2, $3); }
+  try_token tryable_stmt { $$ = TryStmt::build($1, $2); }
+| try_token block_stmt   catch_stmt_ls { $$ = TryStmt::build($1, $2, $3); }
 ;
 
 catch_stmt_ls:

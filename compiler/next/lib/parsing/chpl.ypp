@@ -547,7 +547,7 @@
 
 %type <exprList> class_level_stmt_ls
 
-%type <commentsAndStmt> stmt executable_stmt
+%type <commentsAndStmt> stmt tryable_stmt
 %type <blockOrDo> do_stmt
 %type <commentsAndStmt> if_stmt loop_stmt
 %type <commentsAndStmt> select_stmt
@@ -667,10 +667,10 @@ pragma_ls:
 ;
 
 stmt:
-  deprecated_decl_stmt      { $$ = context->finishStmt($1); }
+  tryable_stmt      // (no '->finishStmt()' required b/c 'tryable_stmt' did it)
+| deprecated_decl_stmt      { $$ = context->finishStmt($1); }
 | include_module_stmt       { $$ = context->finishStmt($1); }
 | block_stmt                { $$ = context->finishStmt($1); }
-| executable_stmt
 | use_stmt                  { $$ = context->finishStmt($1); }
 | import_stmt               { $$ = context->finishStmt($1); }
 | require_stmt              { $$ = context->finishStmt($1); }
@@ -691,7 +691,6 @@ stmt:
     $$ = context->finishStmt(ret);
   }
 | try_stmt                  { $$ = context->finishStmt(@$, $1); }
-| throw_stmt                { $$ = context->finishStmt($1); }
 | return_stmt               { $$ = context->finishStmt($1); }
 | TATOMIC stmt              { $$ = TODOSTMT(@$); }
 | TBREAK opt_label_ident TSEMI
@@ -748,12 +747,13 @@ stmt:
   }
 ;
 
-executable_stmt:
+tryable_stmt:
   assignment_stmt           { $$ = context->finishStmt($1); }
 | if_stmt                   { $$ = $1; } // Don't clear stored comments.
 | loop_stmt                 { $$ = $1; } // Don't clear stored comments.
 | select_stmt               { $$ = context->finishStmt($1); }
 | stmt_level_expr TSEMI     { $$ = context->finishStmt(STMT(@$,$1)); }
+| throw_stmt                { $$ = context->finishStmt($1); }
 | TBEGIN opt_task_intent_ls stmt
   {
     std::vector<ParserComment>* comments;
@@ -1866,11 +1866,11 @@ ifc_constraint:
 ;
 
 try_stmt:
-  TTRY     executable_stmt
+  TTRY     tryable_stmt
   {
     $$ = context->buildTryExprStmt(@$, $2, false);
   }
-| TTRYBANG executable_stmt
+| TTRYBANG tryable_stmt
   {
     $$ = context->buildTryExprStmt(@$, $2, true);
   }
