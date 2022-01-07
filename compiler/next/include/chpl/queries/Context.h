@@ -35,7 +35,6 @@
 #include <utility>
 #include <vector>
 
-extern bool fDebugTrace;
 
 namespace chpl {
 
@@ -98,6 +97,7 @@ class Context {
 
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool checkStringsAlreadyMarked = false;
+  bool enableDebugTrace = false;
   bool breakSet = false;
   size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
@@ -462,6 +462,12 @@ class Context {
     __attribute__ ((format (printf, 4, 5)))
   #endif
   ;
+
+  /*
+    Sets the enableDebugTrace flag. This was needed because the context
+    in main gets created before the arguments to the compiler are parsed.
+  */
+  void setDebugTraceFlag(const bool enable);
 
   typedef enum {
     NOT_CHECKED_NOT_CHANGED = 0,

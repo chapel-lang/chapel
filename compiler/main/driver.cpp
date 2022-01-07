@@ -1787,6 +1787,10 @@ int main(int argc, char* argv[]) {
 
     process_args(&sArgState, argc, argv);
 
+    if (gContext != nullptr) {
+      gContext->setDebugTraceFlag(fDebugTrace);
+    }
+
     setupChplGlobals(argv[0]);
 
     postprocess_args();
