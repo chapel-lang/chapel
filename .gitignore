@@ -16,7 +16,8 @@ tags
 *.DS_Store
 *.vagrant
 .vscode/
-
+.idea/
+cmake-build-debug/
 
 # Top level ignores.
 /BUILD_VERSION
