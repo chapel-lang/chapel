@@ -1671,10 +1671,13 @@ static void postprocess_args() {
 // errors rather than doing what the user said (for which these
 // checks don't apply because we're not going to compile anything).
 //
-// NOTE: Before adding something here consider whether you should add it into
-// printchplenv.py instead. If placed there then you'll get the check
-// both at runtime (because we end up calling printchplenv) but also when
-// building the Chapel compiler itself.
+// NOTE: Before adding something here consider whether you should instead add
+// it to printchplenv.py (or one of its associated chplenv scripts).  If
+// placed there then you'll get the check both at runtime (because we end up
+// calling printchplenv) but also when building the Chapel compiler itself.
+// Generally speaking, if the checks are about environment and standard
+// chplconfig-style environment variables checks could/should be done in the
+// chplenv scripts; otherwise put the checks here.
 static void validateSettings() {
   checkNotLibraryAndMinimalModules();
 
