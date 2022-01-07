@@ -56,7 +56,7 @@ case "$1" in
 	;;
 
     --help)
-	echo "Usage: greptests [-t type] pattern..."
+	echo "Usage: greptests [-t type] patternOrOption..."
 	echo "-t type - the file types to search (the default is tests):"
 	echo "    tests - .chpl"
 	echo "    futures - .future"
@@ -65,7 +65,7 @@ case "$1" in
 	echo "    testopts - .compopts, COMPOPTS, .execopts, EXECOPTS, .perfcompopts, PERFCOMPOPTS, .perfexecopts, PERFEXECOPTS"
 	echo "    outputs - .good, .bad"
 	echo "    scripts - .prediff, PREDIFF, .precomp, PRECOMP, .preexec, PREEXEC"
-	echo "pattern - the text to search and other options to pass to grep"
+	echo "patternOrOption - the text to search or an option, passed through to grep"
 	exit
 	;;
 esac
