@@ -5,8 +5,9 @@ set(LLVM_LINK_COMPONENTS
 add_clang_unittest(BasicTests
   CharInfoTest.cpp
   DiagnosticTest.cpp
+  FileEntryTest.cpp
   FileManagerTest.cpp
-  FixedPointTest.cpp
+  LineOffsetMappingTest.cpp
   SourceManagerTest.cpp
   )
 

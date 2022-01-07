@@ -51,10 +51,7 @@ target(libclang_target_type, "libclang") {
   }
 
   if (host_os == "win") {
-    defines += [
-      "CINDEX_EXPORTS",
-      "_CINDEX_LIB_",
-    ]
+    defines += [ "_CINDEX_LIB_" ]
   }
 
   sources = [
@@ -89,6 +86,7 @@ target(libclang_target_type, "libclang") {
     "FatalErrorHandler.cpp",
     "Index_Internal.h",
     "Indexing.cpp",
+    "Rewrite.cpp",
   ]
   if (host_os == "mac") {
     ldflags = [

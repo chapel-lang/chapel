@@ -55,6 +55,7 @@ syn keyword llvmKeyword
       \ available_externally
       \ blockaddress
       \ builtin
+      \ byref
       \ byval
       \ c
       \ catch
@@ -106,6 +107,7 @@ syn keyword llvmKeyword
       \ module
       \ monotonic
       \ msp430_intrcc
+      \ mustprogress
       \ musttail
       \ naked
       \ nest
@@ -119,6 +121,7 @@ syn keyword llvmKeyword
       \ norecurse
       \ noredzone
       \ noreturn
+      \ noundef
       \ nounwind
       \ optnone
       \ optsize

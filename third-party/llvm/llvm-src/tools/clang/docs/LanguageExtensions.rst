@@ -1719,6 +1719,86 @@ This extension also works in C++ mode, as far as that goes, but does not apply
 to the C++ ``std::complex``.  (In C++11, list initialization allows the same
 syntax to be used with ``std::complex`` with the same meaning.)
 
+For GCC compatibility, ``__builtin_complex(re, im)`` can also be used to
+construct a complex number from the given real and imaginary components.
+
+OpenCL Features
+===============
+
+Clang supports internal OpenCL extensions documented below.
+
+``__cl_clang_function_pointers``
+--------------------------------
+
+With this extension it is possible to enable various language features that
+are relying on function pointers using regular OpenCL extension pragma
+mechanism detailed in `the OpenCL Extension Specification,
+section 1.2
+<https://www.khronos.org/registry/OpenCL/specs/3.0-unified/html/OpenCL_Ext.html#extensions-overview>`_.
+
+In C++ for OpenCL this also enables:
+
+- Use of member function pointers;
+
+- Unrestricted use of references to functions;
+
+- Virtual member functions.
+
+Such functionality is not conformant and does not guarantee to compile
+correctly in any circumstances. It can be used if:
+
+- the kernel source does not contain call expressions to (member-) function
+  pointers, or virtual functions. For example this extension can be used in
+  metaprogramming algorithms to be able to specify/detect types generically.
+
+- the generated kernel binary does not contain indirect calls because they
+  are eliminated using compiler optimizations e.g. devirtualization. 
+
+- the selected target supports the function pointer like functionality e.g.
+  most CPU targets.
+
+**Example of Use**:
+
+.. code-block:: c++
+
+  #pragma OPENCL EXTENSION __cl_clang_function_pointers : enable
+  void foo()
+  {
+    void (*fp)(); // compiled - no diagnostic generated
+  }
+
+  #pragma OPENCL EXTENSION __cl_clang_function_pointers : disable
+  void bar()
+  {
+    void (*fp)(); // error - pointers to function are not allowed
+  }
+
+``__cl_clang_variadic_functions``
+---------------------------------
+
+With this extension it is possible to enable variadic arguments in functions
+using regular OpenCL extension pragma mechanism detailed in `the OpenCL
+Extension Specification, section 1.2
+<https://www.khronos.org/registry/OpenCL/specs/3.0-unified/html/OpenCL_Ext.html#extensions-overview>`_.
+
+This is not conformant behavior and it can only be used portably when the
+functions with variadic prototypes do not get generated in binary e.g. the
+variadic prototype is used to spesify a function type with any number of
+arguments in metaprogramming algorithms in C++ for OpenCL.
+
+This extensions can also be used when the kernel code is intended for targets
+supporting the variadic arguments e.g. majority of CPU targets.
+
+**Example of Use**:
+
+.. code-block:: c++
+
+  #pragma OPENCL EXTENSION __cl_clang_variadic_functions : enable
+  void foo(int a, ...); // compiled - no diagnostic generated
+
+  #pragma OPENCL EXTENSION __cl_clang_variadic_functions : disable
+  void bar(int a, ...); // error - variadic prototype is not allowed
+
 Builtin Functions
 =================
 
@@ -1736,6 +1816,8 @@ portable wrappers for these.  Many of the Clang versions of these functions are
 implemented directly in terms of :ref:`extended vector support
 <langext-vectors>` instead of builtins, in order to reduce the number of
 builtins that we need to implement.
+
+.. _langext-__builtin_assume:
 
 ``__builtin_assume``
 ------------------------------
@@ -1807,8 +1889,6 @@ Query for this feature with ``__has_builtin(__builtin_readcyclecounter)``. Note
 that even if present, its use may depend on run-time privilege or other OS
 controlled state.
 
-.. _langext-__builtin_shufflevector:
-
 ``__builtin_dump_struct``
 -------------------------
 
@@ -1854,6 +1934,8 @@ structure and their values for debugging purposes. The builtin accepts a pointer
 to a structure to dump the fields of, and a pointer to a formatted output
 function whose signature must be: ``int (*)(const char *, ...)`` and must
 support the format specifiers used by ``printf()``.
+
+.. _langext-__builtin_shufflevector:
 
 ``__builtin_shufflevector``
 ---------------------------
@@ -1981,7 +2063,7 @@ Query for this feature with ``__has_builtin(__builtin_convertvector)``.
 
 The '``__builtin_bitreverse``' family of builtins is used to reverse
 the bitpattern of an integer value; for example ``0b10110110`` becomes
-``0b01101101``.
+``0b01101101``. These builtins can be used within constant expressions.
 
 ``__builtin_rotateleft``
 ------------------------
@@ -2013,7 +2095,8 @@ the bits in the first argument by the amount in the second argument.
 For example, ``0b10000110`` rotated left by 11 becomes ``0b00110100``.
 The shift value is treated as an unsigned amount modulo the size of
 the arguments. Both arguments and the result have the bitwidth specified
-by the name of the builtin.
+by the name of the builtin. These builtins can be used within constant
+expressions.
 
 ``__builtin_rotateright``
 -------------------------
@@ -2045,7 +2128,8 @@ the bits in the first argument by the amount in the second argument.
 For example, ``0b10000110`` rotated right by 3 becomes ``0b11010000``.
 The shift value is treated as an unsigned amount modulo the size of
 the arguments. Both arguments and the result have the bitwidth specified
-by the name of the builtin.
+by the name of the builtin. These builtins can be used within constant
+expressions.
 
 ``__builtin_unreachable``
 -------------------------
@@ -2213,30 +2297,6 @@ argument.
   int *pb =__builtin_preserve_access_index(&v->c[3].b);
   __builtin_preserve_access_index(v->j);
 
-``__builtin_unique_stable_name``
---------------------------------
-
-``__builtin_unique_stable_name()`` is a builtin that takes a type or expression and
-produces a string literal containing a unique name for the type (or type of the
-expression) that is stable across split compilations.
-
-In cases where the split compilation needs to share a unique token for a type
-across the boundary (such as in an offloading situation), this name can be used
-for lookup purposes.
-
-This builtin is superior to RTTI for this purpose for two reasons.  First, this
-value is computed entirely at compile time, so it can be used in constant
-expressions. Second, this value encodes lambda functions based on line-number
-rather than the order in which it appears in a function. This is valuable
-because it is stable in cases where an unrelated lambda is introduced
-conditionally in the same function.
-
-The current implementation of this builtin uses a slightly modified Itanium
-Mangler to produce the unique name. The lambda ordinal is replaced with one or
-more line/column pairs in the format ``LINE->COL``, separated with a ``~``
-character. Typically, only one pair will be included, however in the case of
-macro expansions the entire macro expansion stack is expressed.
-
 Multiprecision Arithmetic Builtins
 ----------------------------------
 
@@ -2403,20 +2463,6 @@ with ``__has_feature(cxx_constexpr_string_builtins)``.
 Memory builtins
 ---------------
 
- * ``__builtin_memcpy_inline``
-
-.. code-block:: c
-
-  void __builtin_memcpy_inline(void *dst, const void *src, size_t size);
-
-``__builtin_memcpy_inline(dst, src, size)`` is identical to
-``__builtin_memcpy(dst, src, size)`` except that the generated code is
-guaranteed not to call any external functions. See [LLVM IR ‘llvm.memcpy.inline’
-Intrinsic](https://llvm.org/docs/LangRef.html#llvm-memcpy-inline-intrinsic) for
-more information.
-
-Note that the `size` argument must be a compile time constant.
-
 Clang provides constant expression evaluation support for builtin forms of the
 following functions from the C standard library headers
 ``<string.h>`` and ``<wchar.h>``:
@@ -2434,7 +2480,27 @@ are pointers to arrays with the same trivially copyable element type, and the
 given size is an exact multiple of the element size that is no greater than
 the number of elements accessible through the source and destination operands.
 
-Constant evaluation support is not yet provided for ``__builtin_memcpy_inline``.
+Guaranteed inlined copy
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: c
+
+  void __builtin_memcpy_inline(void *dst, const void *src, size_t size);
+
+
+``__builtin_memcpy_inline`` has been designed as a building block for efficient
+``memcpy`` implementations. It is identical to ``__builtin_memcpy`` but also
+guarantees not to call any external functions. See LLVM IR `llvm.memcpy.inline
+<https://llvm.org/docs/LangRef.html#llvm-memcpy-inline-intrinsic>`_ intrinsic 
+for more information.
+
+This is useful to implement a custom version of ``memcpy``, implemement a
+``libc`` memcpy or work around the absence of a ``libc``.
+
+Note that the `size` argument must be a compile time constant.
+
+Note that this intrinsic cannot yet be called in a ``constexpr`` context.
+
 
 Atomic Min/Max builtins with memory ordering
 --------------------------------------------
@@ -3041,8 +3107,18 @@ manually enable vectorization or interleaving.
     ...
   }
 
-The vector width is specified by ``vectorize_width(_value_)`` and the interleave
-count is specified by ``interleave_count(_value_)``, where
+The vector width is specified by
+``vectorize_width(_value_[, fixed|scalable])``, where _value_ is a positive
+integer and the type of vectorization can be specified with an optional
+second parameter. The default for the second parameter is 'fixed' and
+refers to fixed width vectorization, whereas 'scalable' indicates the
+compiler should use scalable vectors instead. Another use of vectorize_width
+is ``vectorize_width(fixed|scalable)`` where the user can hint at the type
+of vectorization to use without specifying the exact width. In both variants
+of the pragma the vectorizer may decide to fall back on fixed width
+vectorization if the target does not support scalable vectors.
+
+The interleave count is specified by ``interleave_count(_value_)``, where
 _value_ is a positive integer. This is useful for specifying the optimal
 width/count of the set of target architectures supported by your application.
 
@@ -3195,7 +3271,7 @@ The pragma can take two values: ``on`` and ``off``.
   float f(float x, float y, float z)
   {
     // Enable floating point reassociation across statements
-    #pragma fp reassociate(on)
+    #pragma clang fp reassociate(on)
     float t = x + y;
     float v = t + z;
   }
@@ -3222,7 +3298,33 @@ statements in C).
 
 The pragma can also be used with ``off`` which turns FP contraction off for a
 section of the code. This can be useful when fast contraction is otherwise
-enabled for the translation unit with the ``-ffp-contract=fast`` flag.
+enabled for the translation unit with the ``-ffp-contract=fast-honor-pragmas`` flag.
+Note that ``-ffp-contract=fast`` will override pragmas to fuse multiply and
+addition across statements regardless of any controlling pragmas.
+
+``#pragma clang fp exceptions`` specifies floating point exception behavior. It
+may take one the the values: ``ignore``, ``maytrap`` or ``strict``. Meaning of
+these values is same as for `constrained floating point intrinsics <http://llvm.org/docs/LangRef.html#constrained-floating-point-intrinsics>`_.
+
+.. code-block:: c++
+
+  {
+    // Preserve floating point exceptions
+    #pragma clang fp exceptions(strict)
+    z = x + y;
+    if (fetestexcept(FE_OVERFLOW))
+	  ...
+  }
+
+A ``#pragma clang fp`` pragma may contain any number of options:
+
+.. code-block:: c++
+
+  void func(float *dest, float a, float b) {
+    #pragma clang fp exceptions(maytrap) contract(fast) reassociate(on)
+    ...
+  }
+
 
 The ``#pragma float_control`` pragma allows precise floating-point
 semantics and floating-point exception behavior to be specified
@@ -3598,3 +3700,90 @@ and alignment as the smallest basic type that can contain them. Types that are l
 than 64 bits are handled in the same way as _int128 is handled; they are conceptually
 treated as struct of register size chunks. They number of chunks are the smallest
 number that can contain the types which does not necessarily mean a power-of-2 size.
+
+Intrinsics Support within Constant Expressions
+==============================================
+
+The following builtin intrinsics can be used in constant expressions:
+
+* ``__builtin_bitreverse8``
+* ``__builtin_bitreverse16``
+* ``__builtin_bitreverse32``
+* ``__builtin_bitreverse64``
+* ``__builtin_bswap16``
+* ``__builtin_bswap32``
+* ``__builtin_bswap64``
+* ``__builtin_clrsb``
+* ``__builtin_clrsbl``
+* ``__builtin_clrsbll``
+* ``__builtin_clz``
+* ``__builtin_clzl``
+* ``__builtin_clzll``
+* ``__builtin_clzs``
+* ``__builtin_ctz``
+* ``__builtin_ctzl``
+* ``__builtin_ctzll``
+* ``__builtin_ctzs``
+* ``__builtin_ffs``
+* ``__builtin_ffsl``
+* ``__builtin_ffsll``
+* ``__builtin_fpclassify``
+* ``__builtin_inf``
+* ``__builtin_isinf``
+* ``__builtin_isinf_sign``
+* ``__builtin_isfinite``
+* ``__builtin_isnan``
+* ``__builtin_isnormal``
+* ``__builtin_nan``
+* ``__builtin_nans``
+* ``__builtin_parity``
+* ``__builtin_parityl``
+* ``__builtin_parityll``
+* ``__builtin_popcount``
+* ``__builtin_popcountl``
+* ``__builtin_popcountll``
+* ``__builtin_rotateleft8``
+* ``__builtin_rotateleft16``
+* ``__builtin_rotateleft32``
+* ``__builtin_rotateleft64``
+* ``__builtin_rotateright8``
+* ``__builtin_rotateright16``
+* ``__builtin_rotateright32``
+* ``__builtin_rotateright64``
+
+The following x86-specific intrinsics can be used in constant expressions:
+
+* ``_bit_scan_forward``
+* ``_bit_scan_reverse``
+* ``__bsfd``
+* ``__bsfq``
+* ``__bsrd``
+* ``__bsrq``
+* ``__bswap``
+* ``__bswapd``
+* ``__bswap64``
+* ``__bswapq``
+* ``_castf32_u32``
+* ``_castf64_u64``
+* ``_castu32_f32``
+* ``_castu64_f64``
+* ``_mm_popcnt_u32``
+* ``_mm_popcnt_u64``
+* ``_popcnt32``
+* ``_popcnt64``
+* ``__popcntd``
+* ``__popcntq``
+* ``__rolb``
+* ``__rolw``
+* ``__rold``
+* ``__rolq``
+* ``__rorb``
+* ``__rorw``
+* ``__rord``
+* ``__rorq``
+* ``_rotl``
+* ``_rotr``
+* ``_rotwl``
+* ``_rotwr``
+* ``_lrotl``
+* ``_lrotr``
