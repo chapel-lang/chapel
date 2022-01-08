@@ -179,8 +179,7 @@ proc verifyResults() {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   //
-  // Reverse the updates by recomputing them, this time using an
-  // atomic statement to ensure no conflicting updates
+  // Reverse the updates by recomputing them
   //
   forall (_, r) in zip(Updates, RAStream()) do
     on T.domain.dist.idxToLocale(r & indexMask) do
