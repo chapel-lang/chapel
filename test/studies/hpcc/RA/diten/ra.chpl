@@ -184,7 +184,7 @@ proc verifyResults() {
   //
   forall (_, r) in zip(Updates, RAStream()) do
     on T.domain.dist.idxToLocale(r & indexMask) do
-      atomic T(r & indexMask) ^= r;
+      T(r & indexMask) ^= r;
 
   //
   // Print the table again after the updates have been reversed
