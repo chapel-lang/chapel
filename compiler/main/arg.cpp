@@ -147,6 +147,9 @@ void usage(const ArgumentState* state,
           {
             const char* setting = get_envvar_setting(desc[i]);
 
+            if (*envvar == '_') {
+              envvar++;
+            }
             printf("%s", envvar);
 
             if (setting)
