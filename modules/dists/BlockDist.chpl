@@ -806,6 +806,41 @@ iter BlockDom.these() {
     yield i;
 }
 
+iter BlockDom.these(param tag: iterKind) where tag == iterKind.standalone {
+//  writeln("In BlockDom.these()");
+  const maxTasks = dist.dataParTasksPerLocale;
+  const ignoreRunning = dist.dataParIgnoreRunningTasks;
+  const minSize = dist.dataParMinGranularity;
+
+  // If this is the only task running on this locale, we don't want to
+  // count it when we try to determine how many tasks to use.  Here we
+  // check if we are the only one running, and if so, use
+  // ignoreRunning=true for this locale only.  Obviously there's a bit
+  // of a race condition if some other task starts after we check, but
+  // in that case there is no correct answer anyways.
+  //
+  // Note that this code assumes that any locale will only be in the
+  // targetLocales array once.  If this is not the case, then the
+  // tasks on this locale will *all* ignoreRunning, which may have
+  // performance implications.
+  const hereId = here.id;
+  const hereIgnoreRunning = if here.runningTasks() == 1 then true
+                            else ignoreRunning;
+  coforall locDom in locDoms do on locDom {
+//    writeln(here.id, ": in coforall");
+    const myIgnoreRunning = if here.id == hereId then hereIgnoreRunning
+      else ignoreRunning;
+    // Use the internal function for untranslate to avoid having to do
+    // extra work to negate the offset
+//    writeln(here.id, ": entering for");
+    for i in locDom.myBlock._value.these(tag, tasksPerLocale=maxTasks, myIgnoreRunning, minSize) {
+//      writeln(here.id, ": yielding ", i);
+      yield i;
+    }
+  }
+}
+
+
 iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
@@ -1103,10 +1138,18 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 // fast/local path and get better performance.
 //
 inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
+//  writeln(here.id, ": in dsiAccess(", idx, ")");
+//  const print = here.id == 1;
   local {
-    if const myLocArrNN = myLocArr then
-      if myLocArrNN.locDom.contains(idx) then
+//    extern proc printf(x...);
+    //    if print then printf("In local block\n");
+    if const myLocArrNN = myLocArr then {
+//      if print then printf("In myLocArrNN cond\n");
+      if myLocArrNN.locDom.contains(idx) then {
+//        if print then printf("In inner cond\n");
         return myLocArrNN.this(idx);
+      }
+    }
   }
   return nonLocalAccess(idx);
 }
@@ -1157,6 +1200,43 @@ proc BlockArr.dsiAccess(i: idxType...rank) ref
 iter BlockArr.these() ref {
   foreach i in dom do
     yield dsiAccess(i);
+}
+
+//
+// TODO: Rewrite this to reuse more of the global domain iterator
+// logic?  (e.g., can we forward the forall to the global domain
+// somehow?
+//
+iter BlockArr.these(param tag: iterKind) ref where tag == iterKind.standalone {
+  const maxTasks = dom.dist.dataParTasksPerLocale;
+  const ignoreRunning = dom.dist.dataParIgnoreRunningTasks;
+  const minSize = dom.dist.dataParMinGranularity;
+
+  // If this is the only task running on this locale, we don't want to
+  // count it when we try to determine how many tasks to use.  Here we
+  // check if we are the only one running, and if so, use
+  // ignoreRunning=true for this locale only.  Obviously there's a bit
+  // of a race condition if some other task starts after we check, but
+  // in that case there is no correct answer anyways.
+  //
+  // Note that this code assumes that any locale will only be in the
+  // targetLocales array once.  If this is not the case, then the
+  // tasks on this locale will *all* ignoreRunning, which may have
+  // performance implications.
+  const hereId = here.id;
+  const hereIgnoreRunning = if here.runningTasks() == 1 then true else ignoreRunning;
+//  writeln("In standalone iterator");
+  coforall locArr in this.locArr do on locArr {
+//    writeln(here.id, ": In coforall");
+    const myIgnoreRunning = if here.id == hereId then hereIgnoreRunning
+      else ignoreRunning;
+    // Use the internal function for untranslate to avoid having to do
+    // extra work to negate the offset
+    for i in locArr.locDom.myBlock._value.these(tag, tasksPerLocale=maxTasks, myIgnoreRunning, minSize) {
+//      writeln(here.id, ": working on index ", i);
+      yield locArr.this(i); // was .myElems._value.dsiAccess(i);
+    }
+  }
 }
 
 //
