@@ -1,0 +1,13 @@
+C200B40A82
+1 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 1 1 0 1 0 0 0 0 0 0 1 0 1 0 1 0 0 0 0 0 1 0
+version = 6
+packet type = 0
+numSubPackets = 2
+version = 6
+packet type = 4
+Value = 1
+version = 2
+packet type = 4
+Value = 2
+subPackets: 1 2
+Final result = 3
