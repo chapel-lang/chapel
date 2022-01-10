@@ -21,6 +21,12 @@ if [ -z "${OFFICIAL_SYSTEM_LLVM}" ] ; then
   fi
 fi
 
+if [ -f /data/cf/chapel/setup_cmake_nightly.bash ] ; then
+  source /data/cf/chapel/setup_cmake_nightly.bash
+elif [ -f /cray/css/users/chapelu/setup_cmake_nightly.bash ] ; then
+  source /cray/css/users/chapelu/setup_cmake_nightly.bash
+fi
+
 log_info "gcc version: $(which gcc)"
 gcc --version
 
