@@ -21,3 +21,6 @@
 # code) is being linked in.
 #
 LD = $(CXX)
+
+# include -lpthread for the launcher
+LAUNCH_LIBS += -lpthread
