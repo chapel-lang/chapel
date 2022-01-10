@@ -1520,10 +1520,8 @@ struct Converter {
     } else if (node->expr()->isVariable()) {
         auto child = node->expr()->toVariable();
         return buildForwardingDeclStmt((BlockStmt*)visit(child));
-    } else if (node->expr()->isFnCall()) {
-      auto child = node->expr()->toFnCall();
-
-      return buildForwardingStmt(convertExprOrNull(child));
+    } else if (node->expr()->isIdentifier() || node->expr()->isFnCall()) {
+      return buildForwardingStmt(convertExprOrNull(node->expr()));
     }
 
     INT_FATAL("Failed to convert ForwardingDecl");

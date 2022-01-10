@@ -2495,7 +2495,7 @@ lifetime_expr:
 | lifetime_ident TGREATEREQUAL lifetime_ident
     { $$ = context->buildBinOp(@$, $1, $2, $3); }
 | TRETURN lifetime_ident
-    { $$ = TODOEXPR(@$); }
+    { $$ = Return::build(BUILDER, LOC(@$), toOwned($2)).release(); } // TLIFETIME //build return uast node with lifetime_ident
 ;
 
 lifetime_ident:
