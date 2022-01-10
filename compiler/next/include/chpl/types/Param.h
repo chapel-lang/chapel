@@ -124,6 +124,7 @@ class Param {
   }
 
   bool operator==(const Param& other) const {
+    (void)tag_;  // quiet nextLinter
     return completeMatch(&other);
   }
   bool operator!=(const Param& other) const {
