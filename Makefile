@@ -91,10 +91,6 @@ runtime: FORCE
 	@echo "Making the runtime..."
 	@cd runtime && $(MAKE)
 
-third-party: FORCE
-	@echo "Making the third-party libraries..."
-	@cd third-party && $(MAKE)
-
 third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
 third-party-try-re2: FORCE
