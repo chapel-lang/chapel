@@ -358,7 +358,7 @@ class VisibilitySymbols {
     symbolId_.swap(other.symbolId_);
     std::swap(kind_, other.kind_);
     names_.swap(other.names_);
-    std::swap(isPrivate_, isPrivate_);
+    std::swap(isPrivate_, other.isPrivate_);
   }
 
   void mark(Context* context) const {
