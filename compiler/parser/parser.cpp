@@ -595,8 +595,8 @@ static std::set<std::string> blockedInternalModules = {
   "ChapelArray",             // Prim call with named args.
   "ChapelDomain",            // Prim call with named args.
   "ChapelDistribution",      // Segfault somewhere...
-  "ChapelSyncvar",         // Lifetimes.
-  "MemConsistency"         // Redefinition of a function...
+  "ChapelSyncvar",           // Lifetimes.
+  "MemConsistency"           // Redefinition of a function...
 };
 
 // TODO: Adjust me over time as more internal modules parse.
