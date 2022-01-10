@@ -70,5 +70,4 @@ endif
 endif
 endif
 
-LIBS += $(GASNET_LIBS)
 endif

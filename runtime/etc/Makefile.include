@@ -57,17 +57,9 @@ endif
 
 COMP_GEN_CFLAGS = $(MAKE_COMP_GEN_CFLAGS) $(COMP_GEN_USER_CFLAGS)
 
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.locModel-$(CHPL_MAKE_LOCALE_MODEL)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.tasks-$(CHPL_MAKE_TASKS)
+# Makefile.comm-* can set LD which ends up in override-ld
+# TODO: move this logic to printchplenv
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.unwind-$(CHPL_MAKE_UNWIND)
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.gmp-$(CHPL_MAKE_GMP)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.hwloc-$(CHPL_MAKE_HWLOC)
-# Makefile.jemalloc-$(CHPL_MAKE_JEMALLOC) is included in Makefile.mem-jemalloc
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.re2-$(CHPL_MAKE_RE2)
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.auxFilesys
 
 # Get runtime headers and required -D flags.
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
