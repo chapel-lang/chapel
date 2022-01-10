@@ -1,5 +1,5 @@
 CHPL_LLVM==none
-CHPL_LLVM==system # Our system llvm is version 11 and this test assumes 12
+CHPL_LLVM==system
 CHPL_LIB_PIC==pic
 CHPL_TARGET_ARCH!=x86_64
 COMPOPTS <= --baseline
