@@ -15,10 +15,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-#ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))
-#	GEN_LFLAGS += \
-#		$(CHPL_AUXIO_INCLUDE) \
-#		$(CHPL_AUXIO_LIBS)
-#	LIBS += -DSYS_HAS_LLAPI -llustreapi
-#endif

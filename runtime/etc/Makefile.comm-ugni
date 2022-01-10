@@ -21,13 +21,3 @@
 # code) is being linked in.
 #
 LD = $(CXX)
-
-##
-## If there isn't a hugepage module loaded, we need to request
-## libhugetlbfs ourselves.
-##
-#ifeq (,$(findstring HUGETLB,$(PE_PRODUCT_LIST)))
-#GEN_LFLAGS += -lhugetlbfs
-#endif
-#
-#GEN_LFLAGS += -lpthread
