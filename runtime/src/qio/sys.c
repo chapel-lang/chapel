@@ -712,6 +712,11 @@ err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
 
   return err;
 }
+#else
+err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
+{
+  return ENOSYS;
+}
 #endif
 
 // TAKZ - on Mac, the types in the statfs structure become signed or unsigned
