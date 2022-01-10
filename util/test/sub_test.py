@@ -1613,6 +1613,8 @@ for testname in testsrc:
             if valgrindcomp:
                 cmd = valgrindcomp
                 args = valgrindcompopts+[compiler]+args
+            elif 'CHPL_CHPLDOC_NEXT' in os.environ:
+                cmd = os.environ['CHPL_CHPLDOC_NEXT']
             else:
                 cmd = compiler
 
