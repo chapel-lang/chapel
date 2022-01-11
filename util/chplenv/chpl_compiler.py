@@ -362,6 +362,100 @@ def get_compiler_command(flag, lang):
 
     return command
 
+# Returns any -I options needed to find bundled headers
+#
+# Can include other compiler args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -I flags
+@memoize
+def get_bundled_compile_args(flag):
+    paths = [ ]
+
+    # TODO - port over third-party arg gathering
+    return paths
+
+# Returns any -I options needed for this compiler / system
+# to find headers
+#
+# Can include other compiler args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -I flags
+@memoize
+def get_system_compile_args(flag):
+    platform_val = chpl_platform.get(flag)
+    compiler_val = get(flag)
+
+    paths = [ ]
+
+    # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
+    if compiler_val == 'llvm' and flag == 'target':
+        import chpl_llvm
+        (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
+        paths.extend(comp_args)
+
+    # FreeBSD uses /usr/local but compilers don't search there by default
+    if platform_val == 'freebsd':
+        paths.append('-I/usr/local/include')
+
+    # Add Homebrew include directory if Homebrew is installed
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    if homebrew_prefix:
+        paths.append('-I' + homebrew_prefix + '/include')
+
+    return paths
+
+# Returns any -L options needed to find bundled libraries
+#
+# Can include other link args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -L flags
+@memoize
+def get_bundled_link_args(flag):
+    paths = [ ]
+
+    # TODO - port over third-party arg gathering
+    return paths
+
+# Returns any -L options needed for this compiler / system
+# to find libraries
+#
+# Can include other link args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -L flags
+@memoize
+def get_system_link_args(flag):
+    platform_val = chpl_platform.get(flag)
+    compiler_val = get(flag)
+
+    paths = [ ]
+
+    # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
+    if compiler_val == 'llvm' and flag == 'target':
+        import chpl_llvm
+        (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
+        paths.extend(link_args)
+
+    # FreeBSD uses /usr/local but compilers don't search there by default
+    if platform_val == 'freebsd':
+        paths.append('-L/usr/local/lib')
+
+    # Add Homebrew lib directory if Homebrew is installed
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    if homebrew_prefix:
+        paths.append('-L' + homebrew_prefix + '/lib')
+
+    return paths
+
+
+
 def validate_inference_matches(flag, lang):
     flag_upper = flag.upper()
     lang_upper = lang.upper()

@@ -44,7 +44,7 @@ RUNTIME_ROOT = $(COMPILER_ROOT)/../runtime
 
 INCL_CFLAGS = -I. \
               -I$(COMPILER_ROOT)/include/$(CHPL_MAKE_HOST_PLATFORM) \
-              -I$(COMPILER_ROOT)/include $(LLVM_INCLUDES) \
+              -I$(COMPILER_ROOT)/include \
               -I$(COMPILER_BUILD) \
               -I$(RUNTIME_ROOT)/include/encoding \
               -I$(THIRD_PARTY_DIR)/utf8-decoder \
@@ -74,7 +74,11 @@ endif
 endif
 
 
-COMP_CXXFLAGS := $(COMP_CXXFLAGS) $(ONLYCXXFLAGS) $(LLVM_CXXFLAGS)
+COMP_CXXFLAGS := $(COMP_CXXFLAGS) \
+                 $(ONLYCXXFLAGS) \
+                 $(CHPL_MAKE_HOST_BUNDLED_COMPILE_ARGS) \
+                 $(LLVM_EXTRA_CFLAGS) \
+                 $(CHPL_MAKE_HOST_SYSTEM_COMPILE_ARGS) \
 
 
 #
