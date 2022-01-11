@@ -110,7 +110,7 @@ struct TypeCloner {
         LLVMTypeRef S = nullptr;
         const char *Name = LLVMGetStructName(Src);
         if (Name) {
-          S = LLVMGetTypeByName(M, Name);
+          S = LLVMGetTypeByName2(Ctx, Name);
           if (S)
             return S;
           S = LLVMStructCreateNamed(Ctx, Name);
@@ -139,16 +139,18 @@ struct TypeCloner {
           Clone(LLVMGetElementType(Src)),
           LLVMGetPointerAddressSpace(Src)
         );
-      case LLVMScalableVectorTypeKind:
-        // FIXME: scalable vectors unsupported
-        break;
       case LLVMVectorTypeKind:
         return LLVMVectorType(
           Clone(LLVMGetElementType(Src)),
           LLVMGetVectorSize(Src)
         );
+      case LLVMScalableVectorTypeKind:
+        return LLVMScalableVectorType(Clone(LLVMGetElementType(Src)),
+                                      LLVMGetVectorSize(Src));
       case LLVMMetadataTypeKind:
         return LLVMMetadataTypeInContext(Ctx);
+      case LLVMX86_AMXTypeKind:
+        return LLVMX86AMXTypeInContext(Ctx);
       case LLVMX86_MMXTypeKind:
         return LLVMX86MMXTypeInContext(Ctx);
       case LLVMTokenTypeKind:
@@ -342,6 +344,12 @@ static LLVMValueRef clone_constant_impl(LLVMValueRef Cst, LLVMModuleRef M) {
   if (LLVMIsUndef(Cst)) {
     check_value_kind(Cst, LLVMUndefValueValueKind);
     return LLVMGetUndef(TypeCloner(M).Clone(Cst));
+  }
+
+  // Try poison
+  if (LLVMIsPoison(Cst)) {
+    check_value_kind(Cst, LLVMPoisonValueValueKind);
+    return LLVMGetPoison(TypeCloner(M).Clone(Cst));
   }
 
   // Try null

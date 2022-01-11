@@ -5,7 +5,7 @@ import sys
 
 from distutils.spawn import find_executable
 
-import chpl_platform, overrides
+import chpl_platform, chpl_locale_model, overrides
 from utils import error, memoize, warning
 
 
@@ -184,6 +184,7 @@ def get(flag='host'):
 
     else:
         platform_val = chpl_platform.get(flag)
+        locale_model_val = chpl_locale_model.get()
         # Normal compilation (not "cross-compiling")
         # inherit the host compiler if the target compiler is not set and
         # the host and target platforms are the same
@@ -197,6 +198,12 @@ def get(flag='host'):
                 compiler_val = 'clang'
             else:
                 compiler_val = 'gnu'
+        elif locale_model_val == 'gpu':
+            if find_executable('clang'):
+                compiler_val = 'clang'
+            else:
+                error("clang not found. The 'gpu' locale model is supported "
+                      "with clang only.")
         else:
             compiler_val = 'gnu'
 
@@ -340,6 +347,8 @@ def get_compiler_command(flag, lang):
     if compiler_val == 'clang' or compiler_val == 'llvm':
         import chpl_llvm
         llvm_val = chpl_llvm.get()
+        if llvm_val == 'none' and compiler_val == 'llvm':
+            error("Cannot use CHPL_TARGET_COMPILER=llvm when CHPL_LLVM=none")
         if llvm_val == 'bundled' or compiler_val == 'llvm':
             if (flag == 'host' and
                 llvm_val == 'bundled' and
@@ -352,6 +361,100 @@ def get_compiler_command(flag, lang):
                 command = chpl_llvm.get_llvm_clang(lang_upper)
 
     return command
+
+# Returns any -I options needed to find bundled headers
+#
+# Can include other compiler args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -I flags
+@memoize
+def get_bundled_compile_args(flag):
+    paths = [ ]
+
+    # TODO - port over third-party arg gathering
+    return paths
+
+# Returns any -I options needed for this compiler / system
+# to find headers
+#
+# Can include other compiler args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -I flags
+@memoize
+def get_system_compile_args(flag):
+    platform_val = chpl_platform.get(flag)
+    compiler_val = get(flag)
+
+    paths = [ ]
+
+    # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
+    if compiler_val == 'llvm' and flag == 'target':
+        import chpl_llvm
+        (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
+        paths.extend(comp_args)
+
+    # FreeBSD uses /usr/local but compilers don't search there by default
+    if platform_val == 'freebsd':
+        paths.append('-I/usr/local/include')
+
+    # Add Homebrew include directory if Homebrew is installed
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    if homebrew_prefix:
+        paths.append('-I' + homebrew_prefix + '/include')
+
+    return paths
+
+# Returns any -L options needed to find bundled libraries
+#
+# Can include other link args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -L flags
+@memoize
+def get_bundled_link_args(flag):
+    paths = [ ]
+
+    # TODO - port over third-party arg gathering
+    return paths
+
+# Returns any -L options needed for this compiler / system
+# to find libraries
+#
+# Can include other link args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -L flags
+@memoize
+def get_system_link_args(flag):
+    platform_val = chpl_platform.get(flag)
+    compiler_val = get(flag)
+
+    paths = [ ]
+
+    # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
+    if compiler_val == 'llvm' and flag == 'target':
+        import chpl_llvm
+        (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
+        paths.extend(link_args)
+
+    # FreeBSD uses /usr/local but compilers don't search there by default
+    if platform_val == 'freebsd':
+        paths.append('-L/usr/local/lib')
+
+    # Add Homebrew lib directory if Homebrew is installed
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    if homebrew_prefix:
+        paths.append('-L' + homebrew_prefix + '/lib')
+
+    return paths
+
+
 
 def validate_inference_matches(flag, lang):
     flag_upper = flag.upper()

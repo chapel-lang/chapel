@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -518,12 +518,10 @@ static gni_nic_device_t nic_type;
 // and from other areas by bouncing them through buffers in registered
 // memory.
 //
-static int registered_heap_info_set;
 static pthread_once_t registered_heap_once_flag = PTHREAD_ONCE_INIT;
 static size_t registered_heap_size;
 static void*  registered_heap_start;
 
-static int hugepage_info_set;
 static pthread_once_t hugepage_once_flag = PTHREAD_ONCE_INIT;
 static size_t hugepage_size;
 
@@ -2981,8 +2979,7 @@ void chpl_comm_rollcall(void)
 static
 void ensure_registered_heap_info_set(void)
 {
-  if (!registered_heap_info_set
-      && pthread_once(&registered_heap_once_flag, make_registered_heap) != 0) {
+  if (pthread_once(&registered_heap_once_flag, make_registered_heap) != 0) {
     CHPL_INTERNAL_ERROR("pthread_once(&registered_heap_once_flag) failed");
   }
 }
@@ -2999,8 +2996,6 @@ void make_registered_heap(void)
       || (size_from_env = chpl_comm_getenvMaxHeapSize()) <= 0) {
     registered_heap_size  = 0;
     registered_heap_start = NULL;
-    registered_heap_info_set = 1;
-    chpl_atomic_thread_fence(memory_order_release);
     return;
   }
 
@@ -3099,16 +3094,13 @@ void make_registered_heap(void)
 
   registered_heap_size  = size;
   registered_heap_start = start;
-  registered_heap_info_set = 1;
-  chpl_atomic_thread_fence(memory_order_release);
 }
 
 
 static inline
 size_t get_hugepage_size(void)
 {
-  if (!hugepage_info_set
-      && pthread_once(&hugepage_once_flag, set_hugepage_info) != 0) {
+  if (pthread_once(&hugepage_once_flag, set_hugepage_info) != 0) {
     CHPL_INTERNAL_ERROR("pthread_once(&hugepage_once_flag) failed");
   }
 
@@ -3138,9 +3130,6 @@ void set_hugepage_info(void)
       install_SIGBUS_handler();
     }
   }
-
-  hugepage_info_set = 1;
-  chpl_atomic_thread_fence(memory_order_release);
 
   DBG_P_L(DBGF_HUGEPAGES,
           "setting hugepage info: use hugepages %s, sz %#zx",
@@ -3915,16 +3904,9 @@ void chpl_comm_broadcast_private(int id, size_t size)
 }
 
 
-void chpl_comm_barrier(const char *msg)
+void chpl_comm_impl_barrier(const char *msg)
 {
   DBG_P_L(DBGF_IFACE, "IFACE chpl_comm_barrier(\"%s\")", msg);
-
-#ifdef CHPL_COMM_DEBUG
-  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
-#endif
-
-  if (chpl_numNodes == 1)
-    return;
 
   //
   // If we can't communicate yet, just do a PMI barrier.

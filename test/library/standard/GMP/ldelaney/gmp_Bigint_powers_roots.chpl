@@ -39,14 +39,14 @@ writeln("sqrt ", b, " = ", d, " remainder ", a);
 
 c.set(81);
 
-var d2 = c.perfect_power_p();
+var d2 = c.isPerfectPower();
 writeln(d2);
 
-d2 = b.perfect_power_p();
+d2 = b.isPerfectPower();
 writeln(d2);
 
-d2 = c.perfect_square_p();
+d2 = c.isPerfectSquare();
 writeln(d2);
 
-d2 = b.perfect_square_p();
+d2 = b.isPerfectSquare();
 writeln(d2);

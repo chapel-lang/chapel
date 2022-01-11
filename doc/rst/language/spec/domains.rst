@@ -2,7 +2,6 @@
 
 .. _Chapter-Domains:
 
-=======
 Domains
 =======
 
@@ -77,6 +76,47 @@ arrays (:ref:`Association_of_Arrays_to_Domains`).
 
 The runtime representation of a domain is controlled by its domain map.
 Domain maps are presented in :ref:`Chapter-Domain_Maps`.
+
+.. _Domain_and_Array_Parallel_Safety:
+
+Parallel Safety with respect to Domains (and Arrays)
+----------------------------------------------------
+
+Users must take care when applying operations to arrays and domains
+concurrently from distinct tasks.  For instance, if one task is
+modifying the index set of a domain while another task is operating
+on either the domain itself or an array declared over that domain,
+this represents a race and could have arbitrary consequences
+including incorrect results and program crashes.  While making
+domains and arrays safe with respect to such concurrent operations
+would be appealing, Chapel's current position is that such safety
+guarantees would be prohibitively expensive.
+
+Chapel arrays do support concurrent reads, writes, iterations, and
+operations as long as their domains are not being modified
+simultaneously.  Such operations are subject to Chapel's memory
+consistency model like any other memory accesses.  Similarly, tasks
+may make concurrent queries and iterations on a domain as long as
+another task is not simultaneously modifying the domain's index
+set.
+
+By default, associative domains permit multiple tasks
+to modify their index sets concurrently.  This adds some amount of
+overhead to these operations.  If the user knows that all such
+modifications will be done serially or in a parallel-safe context,
+the overheads can be avoided by setting ``parSafe`` to ``false`` in
+the domain's type declaration.  For example, the following
+declaration creates an associative domain of strings where the
+implementation will do nothing to ensure that simultaneous
+modifications to the domain are parallel-safe:
+
+  .. code-block:: chapel
+
+    var D: domain(string, parSafe=false);
+
+As with any other domain type, it is not safe to access an
+associative array while its domain is changing, regardless of
+whether ``parSafe`` is set to ``true`` or ``false``.
 
 .. _Base_Domain_Types_and_Values:
 
@@ -634,8 +674,6 @@ Domain Assignment
 
 All domain types support domain assignment.
 
-
-
 .. code-block:: syntax
 
    domain-expression:
@@ -683,6 +721,24 @@ without an explicit conversion.
       SpsD = ((1,1), (n,n));
       SpsD = [i in 1..n] (i,i);
       SpsD = readIndicesFromFile("inds.dat");
+
+Domain Comparison
+~~~~~~~~~~~~~~~~~
+
+   Equality operators are defined to test if two distributions
+   are equivalent or not:
+
+   .. code-block:: chapel
+
+     dist1 == dist2
+     dist1 != dist2
+
+   Or to test if two domains are equivalent or not:
+
+   .. code-block:: chapel
+
+     dom1 == dom2
+     dom1 != dom2
 
 .. _Domain_Striding:
 
@@ -854,292 +910,25 @@ As with normal domain assignments, arrays declared in terms of a domain
 being modified in this way will be reallocated as discussed
 in :ref:`Association_of_Arrays_to_Domains`.
 
+Set Operations on Associative Domains
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Associative domains (and arrays) support a number of operators for
+set manipulations.  The supported set operators are:
+
+  =======  ====================
+  \+ , \|  Union
+  &        Intersection
+  \-       Difference
+  ^        Symmetric Difference
+  =======  ====================
+
+
 Predefined Methods on Domains
 -----------------------------
 
-This section gives a brief description of the library functions provided
-for Domains. These are categorized by the type of domain to which they
-apply: all, regular or irregular. Within each subsection, entries are
-listed in alphabetical order.
-
-Methods on All Domain Types
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The methods in this subsection can be applied to any domain.
-
-
-
-.. function:: proc domain.clear()
-
-   Resets this domain’s index set to the empty set.
-
-*Example (clearAssociativeDomain)*.
-
-   This function provides a way to produce an empty associative domain.
-
-   When run, the code 
-
-   .. code-block:: chapel
-
-      enum Counter { one, two, three };
-      var D : domain ( Counter ) = {Counter.one, Counter.two};
-      writeln("D has ", D.size, " indices.");
-      D.clear();
-      writeln("D has ", D.size, " indices.");
-
-   prints out 
-
-   .. code-block:: printoutput
-
-      D has 2 indices.
-      D has 0 indices.
-
-
-
-.. function:: proc domain.dist : dmap
-
-	 Returns the domain map that implements this domain
-
-*Example (getDomainMap)*.
-
-   In the code 
-
-   .. code-block:: chapel
-
-      use BlockDist;
-      proc foo(d : domain) where isSubtype(d.dist.type, Block) {
-        writeln("Block-distributed domain");
-      }
-      proc foo(d : domain) {
-        writeln("Unknown distribution");
-      }
-      var D = {1..10} dmapped Block({1..10});
-      foo(D);
-
-   ``dist`` is used in a where-clause to determine the type of the
-   argument’s distribution. The output is: 
-
-   .. code-block:: printoutput
-
-      Block-distributed domain
-
-
-
-.. function:: proc domain.idxType type
-
-   Returns the domain type’s ``idxType``.
-
-
-
-.. function:: proc domain.indexOrder(i: index(domain)): idxType
-
-   If ``i`` is a member of the domain, returns the ordinal value of ``i``
-   using a total ordering of the domain’s indices using 0-based indexing.
-   Otherwise, it returns ``(-1):idxType``. For rectangular domains, this
-   ordering will be based on a row-major ordering of the indices; for other
-   domains, the ordering may be implementation-defined and unstable as
-   indices are added and removed from the domain.
-
-
-
-.. function:: proc isIrregularDom(d: domain) param
-
-   Returns a param ``true`` if the given domain is irregular, false
-   otherwise.
-
-
-
-.. function:: proc isRectangularDom(d: domain) param
-
-   Returns a param ``true`` if the given domain is rectangular, false
-   otherwise.
-
-
-
-.. function:: proc isSparseDom(d: domain) param
-
-   Returns a param ``true`` if the given domain is sparse, false otherwise.
-
-
-
-.. function:: proc domain.contains(i)
-
-      Returns true if the given index ``i`` is a member of this domain’s index
-      set, and false otherwise.
-
-*Open issue*.
-
-   We would like to call the type of i above idxType, but it’s not true
-   for rectangular domains. That observation provides some motivation to
-   normalize the behavior.
-
-
-
-
-Methods on Regular Domains
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The methods described in this subsection can be applied to regular
-domains only.
-
-
-
-.. function:: proc domain.dim(d: int): range
-
-   Returns the range of indices described by dimension ``d`` of the domain,
-   where ``d`` is a value from ``0`` to ``rank-1``.
-
-*Example*.
-
-The code:
-
-.. code-block:: chapel
-
-   for i in D.dim(0) do
-      for j in D.dim(1) do
-         writeln(A(i,j));
-
-iterates over the indices of a dense 2D domain ``D`` using two
-nested loops, one per dimension.
-
-
-
-
-.. function:: proc domain.dims(): rank*range
-
-   Returns a tuple of ranges describing the dimensions of the domain.
-
-
-
-.. code-block:: chapel
-
-   proc domain.expand(off: integral): domain
-   proc domain.expand(off: rank*integral): domain
-
-Returns a new domain that is the current domain expanded in dimension
-``d`` if ``off`` or ``off(d)`` is positive or contracted in dimension
-``d`` if ``off`` or ``off(d)`` is negative.
-
-
-
-.. code-block:: chapel
-
-   proc domain.exterior(off: integral): domain
-   proc domain.exterior(off: rank*integral): domain
-
-Returns a new domain that is the exterior portion of the current domain
-with ``off`` or ``off(d)`` indices for each dimension ``d``. If ``off``
-or ``off(d)`` is negative, compute the exterior from the low bound of
-the dimension; if positive, compute the exterior from the high bound.
-
-
-
-.. code-block:: chapel
-
-   proc domain.high: index(domain)
-
-Returns the high index of the domain as a value of the domain’s index
-type.
-
-
-
-.. code-block:: chapel
-
-   proc domain.interior(off: integral): domain
-   proc domain.interior(off: rank*integral): domain
-
-Returns a new domain that is the interior portion of the current domain
-with ``off`` or ``off(d)`` indices for each dimension ``d``. If ``off``
-or ``off(d)`` is negative, compute the interior from the low bound of
-the dimension; if positive, compute the interior from the high bound.
-
-
-
-.. function:: proc domain.low: index(domain)
-
-   Returns the low index of the domain as a value of the domain’s index
-   type.
-
-
-
-.. function:: proc domain.rank param : int
-
-   Returns the rank of the domain.
-
-
-
-.. function:: proc domain.size: capType
-
-   Returns the number of indices in the domain as a value of the capacity
-   type.
-
-
-
-.. function:: proc domain.stridable param : bool
-
-   Returns whether or not the domain is stridable.
-
-
-
-.. code-block:: chapel
-
-   proc domain.stride: int(numBits(idxType)) where rank == 1
-   proc domain.stride: rank*int(numBits(idxType))
-
-Returns the stride of the domain as the domain’s stride type (for 1D
-domains) or a tuple of the domain’s stride type (for multidimensional
-domains).
-
-
-
-.. code-block:: chapel
-
-   proc domain.translate(off: integral): domain
-   proc domain.translate(off: rank*integral): domain
-
-Returns a new domain that is the current domain translated by ``off`` or
-``off(d)`` for each dimension ``d``.
-
-Methods on Irregular Domains
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The following methods are available only on irregular domain types.
-
-
-
-.. code-block:: chapel
-
-   proc +(d: domain, i: index(d))
-   proc +(i, d: domain) where i: index(d)
-
-Adds the given index to the given domain. If the given index is already
-a member of that domain, it is ignored.
-
-
-
-.. function:: proc +(d1: domain, d2: domain)
-
-   Merges the index sets of the two domain arguments.
-
-
-
-.. function:: proc -(d: domain, i: index(d))
-
-   Removes the given index from the given domain. It is an error if the
-   domain does not contain the given index.
-
-
-
-.. function:: proc -(d1: domain, d2: domain)
-
-   Removes the indices in domain ``d2`` from those in ``d1``. It is an
-   error if ``d2`` contains indices which are not also in ``d1``.
-
-
-
-.. function:: proc requestCapacity(s: int)
-
-   Resizes the domain internal storage to hold at least ``s`` indices.
+.. include:: ../../builtins/ChapelDomain.rst
 
 .. [3]
    This is also known as row-major ordering.
+

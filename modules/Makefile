@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -168,7 +168,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/Atomics.chpl                 \
 	internal/Bytes.chpl                   \
 	internal/ChapelArray.chpl             \
-	internal/ChapelComplex_forDocs.chpl   \
+	internal/ChapelDomain.chpl            \
 	internal/ChapelLocale.chpl            \
 	internal/ChapelRange.chpl             \
 	internal/ChapelSyncvar.chpl           \

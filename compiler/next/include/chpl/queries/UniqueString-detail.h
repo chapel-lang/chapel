@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,7 +27,7 @@
 
 #include "chpl/util/memory.h"
 #include "chpl/util/string-escapes.h"
-
+#include "chpl/queries/stringify-functions.h"
 #include <cassert>
 #include <cstring>
 #include <functional>
@@ -194,7 +194,7 @@ struct InlinedString {
   // return a long-lived pointer
   const char* astr(Context* context) const;
 
-  std::string toString() const {
+  std::string str() const {
     return std::string(c_str(), length());
   }
 
@@ -247,7 +247,7 @@ struct PODUniqueString {
     return i.astr(context);
   }
 
-  std::string toString() const {
+  std::string str() const {
     return std::string(c_str(), length());
   }
 

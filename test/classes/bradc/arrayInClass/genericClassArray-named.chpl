@@ -1,11 +1,22 @@
+iter sortedAssoc(arr) {
+  for k in arr.domain.sorted() {
+    yield arr[k];
+  }
+}
+
 class C {
   type t;
 
   var x: t;
 
   proc foo() {
-    writeln("x.domain is: ", x.domain);
-    writeln("x is: ", x);
+    if (x.domain.isAssociative()) {
+      writeln("x.domain is: ", x.domain.sorted());
+      writeln("x is: ", sortedAssoc(x));
+    } else {
+      writeln("x.domain is: ", x.domain);
+      writeln("x is: ", x);
+    }
     writeln();
   }
 }

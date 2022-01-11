@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -64,8 +64,8 @@ static void test1() {
 
   QualifiedType qt = getTypeForFirstStmt(&ctx,
                                          "__primitive('+', 1, 2);\n");
-  assert(qt.hasType());
-  assert(qt.hasParam());
+  assert(qt.hasTypePtr());
+  assert(qt.hasParamPtr());
 
   assert(qt.type() == IntType::get(&ctx, 0));
   assert(qt.param() == IntParam::get(&ctx, 3));
@@ -77,8 +77,8 @@ static void test2() {
 
   QualifiedType qt = getTypeForFirstStmt(&ctx,
                                          "__primitive('*', 2.25, 4.25);\n");
-  assert(qt.hasType());
-  assert(qt.hasParam());
+  assert(qt.hasTypePtr());
+  assert(qt.hasParamPtr());
 
   assert(qt.type() == RealType::get(&ctx, 0));
   assert(qt.param() == RealParam::get(&ctx, 9.5625));
@@ -90,8 +90,8 @@ static void test3() {
 
   QualifiedType qt = getTypeForFirstStmt(&ctx,
                                          "__primitive('+', 3.0, 2.0i);\n");
-  assert(qt.hasType());
-  assert(qt.hasParam());
+  assert(qt.hasTypePtr());
+  assert(qt.hasParamPtr());
 
   assert(qt.type() == ComplexType::get(&ctx, 0));
   assert(qt.param() == ComplexParam::get(&ctx, {3.0, 2.0}));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2348,197 +2348,378 @@ module BigInteger {
 
   // divexact
 
-/*
-Computes ``n/d`` and stores the result in ``bigint`` instance.
+  /*
+    .. warning::
 
-``divexact`` is optimized to handle cases where ``n/d`` results in an integer.
-When ``n/d`` does not produce an integer, this method may produce incorrect results.
-
-:arg n: numerator
-
-:type n: bigint
-
-:arg d: denominator
-
-:type d: bigint
-*/
-
-
+       n and d are deprecated - please use numer and denom respectively
+  */
+  pragma "last resort"
+  deprecated
+  "n and d are deprecated - please use numer and denom respectively"
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
+    this.divexact(numer=n, denom=d);
+  }
+  /*
+    .. warning::
+
+       n and d are deprecated - please use numer and denom respectively
+  */
+  pragma "last resort"
+  deprecated
+  "n and d are deprecated - please use numer and denom respectively"
+  proc bigint.divexact(const ref n: bigint, d: integral) {
+    this.divexact(numer=n,denom=new bigint(d));
+  }
+
+  // documented in bigint, integral version
+  proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
     if _local {
-      mpz_divexact(this.mpz, n.mpz, d.mpz);
+      mpz_divexact(this.mpz, numer.mpz, denom.mpz);
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
-      mpz_divexact(this.mpz, n.mpz, d.mpz);
+              numer.localeId    == chpl_nodeID &&
+              denom.localeId    == chpl_nodeID {
+      mpz_divexact(this.mpz, numer.mpz, denom.mpz);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-        const d_ = d;
+        const numer_ = numer;
+        const denom_ = denom;
 
-        mpz_divexact(this.mpz, n_.mpz, d_.mpz);
+        mpz_divexact(this.mpz, numer_.mpz, denom_.mpz);
       }
     }
   }
 
-  proc bigint.divexact(const ref n: bigint, d: integral) {
-    this.divexact(n, new bigint(d));
+  /*
+    Computes ``numer/denom`` and stores the result in ``this``, which is a
+    :record:`bigint` instance.
+
+    .. warning::
+
+       ``divexact`` is optimized to handle cases where ``numer/denom`` results
+       in an integer.  When ``numer/denom`` does not produce an integer, this
+       method may produce incorrect results.
+
+    :arg numer: numerator
+
+    :type numer: :record:`bigint`
+
+    :arg denom: denominator
+
+    :type denom: :record:`bigint` or ``integral``
+  */
+  proc bigint.divexact(const ref numer: bigint, denom: integral) {
+    this.divexact(numer, new bigint(denom));
   }
-
-
 
   // divisible_p
+  /*
+    .. warning::
+
+       bigint.divisible_p is deprecated, use bigint.isDivisible instead
+  */
+  deprecated
+  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
   proc bigint.divisible_p(const ref d: bigint) : int {
-    var ret: c_int;
-
-    if _local {
-      ret = mpz_divisible_p(this.mpz, d.mpz);
-
-    } else if this.localeId == chpl_nodeID && d.localeId == chpl_nodeID {
-      ret = mpz_divisible_p(this.mpz, d.mpz);
-
-    } else {
-      const t_ = this;
-      const d_ = d;
-
-      ret = mpz_divisible_p(this.mpz, d.mpz);
-    }
-
-    return ret.safeCast(int);
+    return this.isDivisible(d);
   }
+  /*
+    .. warning::
 
+       bigint.divisible_p is deprecated, use bigint.isDivisible instead
+  */
+  deprecated
+  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
   proc bigint.divisible_p(d: int) : int {
-    var d_ = 0 : c_ulong;
+    return this.isDivisible(d);
+  }
+  /*
+    .. warning::
+
+       bigint.divisible_p is deprecated, use bigint.isDivisible instead
+  */
+  deprecated
+  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  proc bigint.divisible_p(d: uint) : int {
+    return this.isDivisible(d);
+  }
+
+  // divisible_p
+  // documented in uint version
+  proc bigint.isDivisible(const ref div: bigint) : bool {
     var ret: c_int;
 
-    if d >= 0 then
-      d_ = d.safeCast(c_ulong);
+    if _local {
+      ret = mpz_divisible_p(this.mpz, div.mpz);
+
+    } else if this.localeId == chpl_nodeID && div.localeId == chpl_nodeID {
+      ret = mpz_divisible_p(this.mpz, div.mpz);
+
+    } else {
+      const t_ = this;
+      const div_ = div;
+
+      ret = mpz_divisible_p(this.mpz, div.mpz);
+    }
+
+    if ret then 
+      return true;
+    else 
+      return false;
+  }
+
+  // documented in uint version
+  proc bigint.isDivisible(div: int) : bool {
+    var div_ = 0 : c_ulong;
+    var ret: c_int;
+
+    if div >= 0 then
+      div_ = div.safeCast(c_ulong);
     else
-      d_ = (0 - d).safeCast(c_ulong);
+      div_ = (0 - div).safeCast(c_ulong);
 
     if _local {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
+      ret = mpz_divisible_ui_p(this.mpz, div_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
+      ret = mpz_divisible_ui_p(this.mpz, div_);
 
     } else {
       const t_ = this;
 
-      ret = mpz_divisible_ui_p(t_.mpz,   d_);
+      ret = mpz_divisible_ui_p(t_.mpz,   div_);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
-  proc bigint.divisible_p(d: uint) : int {
-    const d_ = d.safeCast(c_ulong);
+  /*
+    Return ``true`` if ``this`` is exactly divisible by ``div``.  ``this`` is
+    divisible by ``div`` if there exists an integer ``q`` satisfying ``this =
+    q*div``.  Unlike the other division functions, ``0`` is an acceptable value
+    for ``div`` and only ``0`` is considered divisible by ``0``.
+
+    :arg div: number to check if ``this`` is divisible by
+    :type div: :record:`bigint`, ``int`` or ``uint``
+
+    :return: ``true`` if ``this`` is exactly divisible by ``div``, ``false``
+             otherwise
+    :rtype: ``bool``
+   */
+  proc bigint.isDivisible(div: uint) : bool {
+    const div_ = div.safeCast(c_ulong);
     var   ret: c_int;
 
     if _local {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
+      ret = mpz_divisible_ui_p(this.mpz, div_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
+      ret = mpz_divisible_ui_p(this.mpz, div_);
 
     } else {
       const t_ = this;
 
-      ret = mpz_divisible_ui_p(t_.mpz,   d_);
+      ret = mpz_divisible_ui_p(t_.mpz,   div_);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
+  /*
+    .. warning::
+
+       bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead
+  */
+  deprecated
+  "bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead"
   proc bigint.divisible_2exp_p(b: integral) : int {
-    const b_ = b.safeCast(mp_bitcnt_t);
+    return this.isDivisibleBy2Pow(b);
+  }
+
+  /*
+    Return ``true`` if ``this`` is exactly divisible by ``2^exp``.  ``this`` is
+    divisible by ``2^exp`` if there exists an integer ``q`` satisfying ``this =
+    q*2^exp``.
+
+    :arg exp: power of 2 to check if ``this`` is divisible by
+    :type exp: ``integral``
+
+    :return: ``true`` if ``this`` is exactly divisible by ``2^exp``, ``false``
+             otherwise
+    :rtype: ``bool``
+   */
+  proc bigint.isDivisibleBy2Pow(exp: integral) : bool {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
     if _local {
-      ret = mpz_divisible_2exp_p(this.mpz, b_);
+      ret = mpz_divisible_2exp_p(this.mpz, exp_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_2exp_p(this.mpz, b_);
+      ret = mpz_divisible_2exp_p(this.mpz, exp_);
 
     } else {
       const t_ = this;
 
-      ret = mpz_divisible_2exp_p(t_.mpz,   b_);
+      ret = mpz_divisible_2exp_p(t_.mpz,   exp_);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
-
-
 
   // congruent_p
+  /*
+    .. warning::
+
+       bigint.congruent_p is deprecated, use bigint.isCongruent instead
+  */
+  deprecated
+  "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
   proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
+    return this.isCongruent(c,d);
+  }
+  /*
+    .. warning::
+
+       bigint.congruent_p is deprecated, use bigint.isCongruent instead
+  */
+  deprecated
+  "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
+  proc bigint.congruent_p(c: integral, d: integral) : int {
+    return this.isCongruent(c,d);
+  }
+
+  // congruent_p
+  // documented in integral, integral version
+  proc bigint.isCongruent(const ref con: bigint, const ref mod: bigint) : bool {
     var ret: c_int;
 
     if _local {
-      ret = mpz_congruent_p(this.mpz, c.mpz, d.mpz);
+      ret = mpz_congruent_p(this.mpz, con.mpz, mod.mpz);
 
     } else if this.localeId == chpl_nodeID &&
-              c.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
-      ret = mpz_congruent_p(this.mpz, c.mpz, d.mpz);
+              con.localeId    == chpl_nodeID &&
+              mod.localeId    == chpl_nodeID {
+      ret = mpz_congruent_p(this.mpz, con.mpz, mod.mpz);
 
     } else {
       const t_ = this;
-      const c_ = c;
-      const d_ = d;
+      const con_ = con;
+      const mod_ = mod;
 
-      ret = mpz_congruent_p(t_.mpz, c_.mpz, d_.mpz);
+      ret = mpz_congruent_p(t_.mpz, con_.mpz, mod_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
-  proc bigint.congruent_p(c: integral, d: integral) : int {
-    const c_ = c.safeCast(c_ulong);
-    const d_ = d.safeCast(c_ulong);
+  /*
+    Return ``true`` if ``this`` is congruent to ``con % mod``.  ``this`` is
+    congruent to ``con % mod`` if there exists an integer ``q`` satisfying
+    ``this = con + q*mod``.  Unlike the other division functions, ``0`` is an
+    acceptable value for ``mod``.  As a result ``this`` and ``con`` are
+    considered congruent modulo ``0`` only when exactly equal.
+
+    :arg con: number to determine if ``this`` is congruent to, modulo ``mod``
+    :type con: :record:`bigint` or ``integral``
+
+    :arg mod: divisor of ``con`` when determining if ``con`` is congruent to
+              ``this``
+    :type mod: :record:`bigint` or ``integral``
+
+    :return: ``true`` if ``this`` is congruent to ``con`` modulo ``mod``,
+             ``false`` otherwise
+    :rtype: ``bool``
+   */
+  proc bigint.isCongruent(con: integral, mod: integral) : bool {
+    const con_ = con.safeCast(c_ulong);
+    const mod_ = mod.safeCast(c_ulong);
     var   ret: c_int;
 
     if _local {
-      ret = mpz_congruent_ui_p(this.mpz, c_, d_);
+      ret = mpz_congruent_ui_p(this.mpz, con_, mod_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_congruent_ui_p(this.mpz, c_, d_);
+      ret = mpz_congruent_ui_p(this.mpz, con_, mod_);
 
     } else {
       const t_ = this;
 
-      ret = mpz_congruent_ui_p(t_.mpz,   c_, d_);
+      ret = mpz_congruent_ui_p(t_.mpz,   con_, mod_);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
+  /*
+    .. warning::
+
+       bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead
+  */
+  deprecated
+  "bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead"
   proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
-    const b_ = b.safeCast(mp_bitcnt_t);
+    return this.isCongruentBy2Pow(c,b);
+  }
+
+  /*
+    Return ``true`` if ``this`` is congruent to ``con % 2^modExp``.  ``this`` is
+    congruent to ``con % 2^modExp`` if there exists an integer ``q`` satisfying
+    ``this = con + q*2^modExp``.
+
+    :arg con: number to determine if ``this`` is congruent to, modulo
+              ``2^modExp``.
+    :type con: :record:`bigint` or ``integral``
+
+    :arg modExp: power of 2 to use as the divisor of ``con`` when determining if
+                 ``con`` is congruent to ``this``.
+    :type modExp: ``integral``
+
+    :return: ``true`` if ``this`` is congruent to ``con`` modulo ``2^modExp``,
+             ``false`` otherwise.
+    :rtype: ``bool``
+   */
+  proc bigint.isCongruentBy2Pow(const ref con: bigint, modExp: integral) : bool {
+    const modExp_ = modExp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
     if _local {
-      ret = mpz_congruent_2exp_p(this.mpz, c.mpz, b_);
+      ret = mpz_congruent_2exp_p(this.mpz, con.mpz, modExp_);
 
     } else if this.localeId == chpl_nodeID &&
-              c.localeId    == chpl_nodeID {
-      ret = mpz_congruent_2exp_p(this.mpz, c.mpz, b_);
+              con.localeId    == chpl_nodeID {
+      ret = mpz_congruent_2exp_p(this.mpz, con.mpz, modExp_);
 
     } else {
       const t_ = this;
-      const c_ = c;
+      const con_ = con;
 
-      ret = mpz_congruent_2exp_p(t_.mpz, c_.mpz, b_);
+      ret = mpz_congruent_2exp_p(t_.mpz, con_.mpz, modExp_);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
-
 
   /*
     .. warning::
@@ -2894,7 +3075,27 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  /*
+    .. warning::
+
+       bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead
+  */
+  deprecated
+  "bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead"
   proc bigint.perfect_power_p() : int {
+    return this.isPerfectPower();
+  }
+
+  /*
+    Return ``true`` if ``this`` is a perfect power, i.e., if there exist
+    integers ``a`` and ``b`` with ``b > 1``, such that ``this = a^b``.
+
+    Under this definition both 0 and 1 are considered to be perfect powers.
+    Negative values can only be odd perfect powers.
+
+    :return: ``true`` if ``this`` is a perfect power, ``false`` otherwise.
+   */
+  proc bigint.isPerfectPower () : bool {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2906,10 +3107,32 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_perfect_power_p(t_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
+  /*
+    .. warning::
+
+       bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead
+  */
+  deprecated
+  "bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead"
   proc bigint.perfect_square_p() : int {
+    return this.isPerfectSquare();
+  }
+
+  /*
+    Return ``true`` if ``this`` is a perfect square, i.e., if the square root of
+    ``this`` is an integer.  Under this definition both ``0`` and ``1`` are
+    considered to be perfect squares.
+
+    :return: ``true`` if ``this`` is a perfect square, ``false`` otherwise.
+    :rtype: ``bool``
+   */
+  proc bigint.isPerfectSquare() : bool {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2921,17 +3144,62 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_perfect_square_p(t_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
-
 
 
 
   // Number Theoretic Functions
 
-  // returns 2 if definitely prime, 0 if not prime, 1 if likely prime
-  // reasonable number of reps is 15-50
+  /*
+    .. warning::
+
+       bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead
+  */
+  deprecated
+  "bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead"
   proc bigint.probab_prime_p(reps: int) : int {
+    var ret = this.probablyPrime(reps):int;
+    return ret;
+  }
+
+  /* An enumeration of the different possibilitites of a number being prime, for use with e.g.
+     :proc:`~bigint.probablyPrime` to determine if a number is prime or not.
+
+     - ``primality.notPrime`` indicates that the number is not a prime.
+     - ``primality.maybePrime`` indicates that the number may or may not be a prime.
+     - ``primality.isPrime`` indicates that the number is a prime.
+   */
+  enum primality {
+    notPrime=0,
+    maybePrime,
+    isPrime
+  };
+
+  /*
+    Determine whether ``this`` is prime.  Returns one of the :enum:`primality`
+    constants - ``primality.isPrime``, ``primality.maybePrime``, or
+    ``primality.notPrime``.
+
+    Performs some trial divisions, a Baillie-PSW probable prime test, and
+    reps-24 Miller-Rabin probabilistic primality tests.  A higher ``reps`` value
+    will reduce the chances of a non-prime being identified as "probably prime".
+    A composite number will be identified as a prime with an asymptotic
+    probability of less than ``4^(-reps)``.  Reasonable values of ``reps`` are
+    between 15 and 50.
+
+    :arg reps: number of attempts before returning ``primality.maybePrime`` if
+               a definitive answer can't be found before then.
+    :type reps: ``int``
+
+    :returns: ``primality.isPrime``, ``primality.maybePrime`` or
+              ``primality.notPrime``.
+    :rtype: :enum:`primality`
+   */
+  proc bigint.probablyPrime(reps: int) : primality {
     var reps_ = reps.safeCast(c_int);
     var ret: c_int;
 
@@ -2943,8 +3211,13 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
       ret = mpz_probab_prime_p(t_.mpz, reps_);
     }
-
-    return ret.safeCast(int);
+    use primality;
+    if ret==0 then
+      return notPrime;
+    else if ret==1 then
+      return maybePrime;
+    else
+      return isPrime;
   }
 
   proc bigint.nextprime(const ref a: bigint) {
@@ -3153,29 +3426,67 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
 
   // remove
+    /*
+    .. warning::
+
+       bigint.remove is deprecated, use bigint.removeFactor instead
+  */
+  deprecated
+  "bigint.remove is deprecated, use bigint.removeFactor instead"
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
+    return this.removeFactor(a,f);
+  }
+  
+  // This helper is intended for use only when the factor is 0
+  // Division by 0 is undefined and it results in a
+  // Floating point exception error.
+  pragma "no doc"
+  proc bigint.removeFactorZeroHelper(const ref x: bigint, const ref fac: bigint) : uint {
+    this = 0;
+    return 0;
+  }
+
+  /*
+    Remove all occurrences of the factor ``fac`` from ``x`` and store the result
+    in ``this``.  Return the number of occurrences removed.
+
+    :arg x: The value to remove all occurrences of ``fac`` from
+    :type x: :record:`bigint`
+
+    :arg fac: The factor to remove from ``x``.
+    :type fac: :record:`bigint`
+
+    :return: The number of occurrences of ``fac`` found in ``x``.
+    :rtype: ``uint``
+   */
+  proc bigint.removeFactor(const ref x: bigint, const ref fac: bigint) : uint {
     var ret: c_ulong;
+    if(fac!=0){
+      if _local {
+        ret = mpz_remove(this.mpz, x.mpz, fac.mpz);
 
-    if _local {
-      ret = mpz_remove(this.mpz, a.mpz, f.mpz);
+      } else if this.localeId == chpl_nodeID &&
+              x.localeId    == chpl_nodeID &&
+              fac.localeId    == chpl_nodeID {
+          ret = mpz_remove(this.mpz, x.mpz, fac.mpz);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              f.localeId    == chpl_nodeID {
-      ret = mpz_remove(this.mpz, a.mpz, f.mpz);
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          var x_ = x;
+          var fac_ = fac;
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-        var f_ = f;
-
-        ret = mpz_remove(this.mpz, a_.mpz, f_.mpz);
+          ret = mpz_remove(this.mpz, x_.mpz, fac_.mpz);
+        }
       }
+
+      return ret.safeCast(uint);
+
+    }else{
+      return this.removeFactorZeroHelper(x,fac);
     }
 
-    return ret.safeCast(uint);
   }
 
 
@@ -3595,7 +3906,21 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     return ret.safeCast(int);
   }
 
+  /*
+    .. warning::
+
+       bigint.even_p is deprecated, use bigint.isEven instead
+  */
+  deprecated
+  "bigint.even_p is deprecated, use bigint.isEven instead"
   proc bigint.even_p() : int {
+    return this.isEven();
+  }
+
+  /*
+    Returns ``true`` if ``this`` is an even number, ``false`` otherwise.
+   */
+  proc bigint.isEven() : bool {
     var ret: c_int;
 
     if _local {
@@ -3610,10 +3935,27 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_even_p(t_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
+  /*
+    .. warning::
+
+       bigint.odd_p is deprecated, use bigint.isOdd instead
+  */
+  deprecated
+  "bigint.odd_p is deprecated, use bigint.isOdd instead"
   proc bigint.odd_p() : int {
+    return this.isOdd();
+  }
+
+  /*
+    Returns ``true`` if ``this`` is an odd number, ``false`` otherwise.
+   */
+  proc bigint.isOdd() : bool {
     var ret: c_int;
 
     if _local {
@@ -3628,7 +3970,10 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_odd_p(t_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
 

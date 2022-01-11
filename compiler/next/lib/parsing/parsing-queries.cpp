@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -111,6 +111,7 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const ASTNode* ast) {
+  assert(!ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
 

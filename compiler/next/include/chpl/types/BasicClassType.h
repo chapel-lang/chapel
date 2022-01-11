@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define CHPL_TYPES_BASIC_CLASS_TYPE_H
 
 #include "chpl/types/CompositeType.h"
+#include "chpl/queries/global-strings.h"
 
 namespace chpl {
 namespace types {
@@ -32,13 +33,28 @@ namespace types {
  */
 class BasicClassType final : public CompositeType {
  private:
+  const BasicClassType* parentType_ = nullptr;
+
   BasicClassType(ID id, UniqueString name,
-                 std::vector<CompositeType::FieldDetail> fields)
-    : CompositeType(typetags::BasicClassType, id, name, std::move(fields))
-  { }
+                 const BasicClassType* parentType,
+                 std::vector<CompositeType::FieldDetail> fields,
+                 const BasicClassType* instantiatedFrom)
+    : CompositeType(typetags::BasicClassType, id, name, std::move(fields),
+                    instantiatedFrom),
+      parentType_(parentType)
+  {
+    // all classes should have a parent type, except for object
+    // which doesn't.
+    assert(parentType_ || name == USTR("object"));
+
+    // compute the summary information, including the parent type
+    computeSummaryInformation();
+  }
 
   bool contentsMatchInner(const Type* other) const override {
-    return compositeTypeContentsMatchInner((const CompositeType*) other);
+    const BasicClassType* rhs = (const BasicClassType*) other;
+    return compositeTypeContentsMatchInner(rhs) &&
+           parentType_ == rhs->parentType_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -47,17 +63,60 @@ class BasicClassType final : public CompositeType {
 
   static const owned<BasicClassType>&
   getBasicClassType(Context* context, ID id, UniqueString name,
-                    std::vector<CompositeType::FieldDetail> fields);
+                    const BasicClassType* parentType,
+                    std::vector<CompositeType::FieldDetail> fields,
+                    const BasicClassType* instantiatedFrom);
  public:
   ~BasicClassType() = default;
 
   static const BasicClassType*
   get(Context* context, ID id, UniqueString name,
-      std::vector<CompositeType::FieldDetail> fields);
+      const BasicClassType* parentType,
+      std::vector<CompositeType::FieldDetail> fields,
+      const BasicClassType* instantiatedFrom);
+
+  static const BasicClassType* getObjectType(Context* context);
+
+  /** Return the parent class type, or nullptr if this is the 'object' type. */
+  const BasicClassType* parentClassType() const {
+    return parentType_;
+  }
+
+  /** Return true if this type is the 'object' type. */
+  bool isObjectType() const {
+    return parentType_ == nullptr;
+  }
+
+  /** Returns true if this class type is a subclass of the passed
+      parent class type or an instantiaton of a passed generic
+      class type or a combination of the two.
+
+      The argument 'convert' is set to true if passing required
+      using a parent type and 'instantiates' is set to true if
+      it requires instantiation.
+   */
+  bool isSubtypeOf(const BasicClassType* parentType,
+                   bool& converts,
+                   bool& instantiates) const;
+
+  /** If this type represents an instantiated type,
+      returns the type it was instantiated from.
+
+      This is just instantiatedFromCompositeType() with the
+      result cast to BasicClassType.
+   */
+  const BasicClassType* instantiatedFrom() const {
+    const CompositeType* ret = instantiatedFromCompositeType();
+    assert(ret == nullptr || ret->tag() == typetags::BasicClassType);
+    return (const BasicClassType*) ret;
+  }
+
 };
 
 
-} // end namespace uast
+} // end namespace types
+
+
 } // end namespace chpl
 
 #endif

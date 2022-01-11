@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -69,7 +69,8 @@ class PrimitiveType : public Type {
   /**
    Compute a string representing this type.
    */
-  std::string toString() const override;
+  void stringify(std::ostream& ss,
+                 chpl::StringifyKind stringKind) const override;
 
   /**
    Get the PrimitiveType according to name and bitwidth,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1953,7 +1953,7 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   // Propagate the Qualifier (e.g. field is ref if local is ref)
   // This is especially important if local is an ArgSymbol
   QualifiedType qt(QUAL_VAL, type);
-  if (local)
+  if (local)   // can we change how we handle promotion records here?
     qt = local->qualType();
   // Workaround: use a ref type here
   // In the future, the Qualifier should be sufficient
@@ -1982,6 +1982,50 @@ void cleanupPrimIRFieldValByFormal() {
   formalToPrimMap.clear();
 }
 
+static void fixPromotionProtoField(AggregateType* at, Symbol* locSym,
+                                   VarSymbol* newField) {
+
+  if ((at->numFields() == 0 || !at->isSerializeable())) {
+    return;
+  }
+
+  Serializers serializers = serializeMap[at];
+  FnSymbol* serializer = serializers.serializer;
+  FnSymbol* deserializer = serializers.deserializer;
+
+  SymbolMap updateMap;
+
+  for_fields(field, at) {
+    if (field->hasFlag(FLAG_PROMOTION_PROTO_FIELD)) {
+      if (field->name == locSym->name && field->type == locSym->type) {
+        field->defPoint->remove();
+        updateMap.put(field, newField);
+        break;
+      }
+    }
+  }
+
+  if (serializer) {
+    INT_ASSERT(deserializer);
+    update_symbols(serializer, &updateMap);
+    update_symbols(deserializer, &updateMap);
+  }
+}
+
+static void cleanupProtoFields(AggregateType* at) {
+  if ((!isAlive(at->symbol) || at->numFields() == 0)) {
+    return;
+  }
+
+  if (!at->isSerializeable()) {
+    for_fields (field, at) {
+      if (field->hasFlag(FLAG_PROMOTION_PROTO_FIELD)) {
+        field->defPoint->remove();
+      }
+    }
+  }
+}
+
 // Fills in the iterator class and record types with fields corresponding to the
 // local variables defined in the iterator function (or its static context)
 // and live at any yield.
@@ -1992,6 +2036,8 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
 {
   IteratorInfo* ii = fn->iteratorInfo;
   Symbol* valField = NULL;
+
+  cleanupProtoFields(ii->irecord);
 
   int i = 0;    // This numbers the fields.
   forv_Vec(Symbol, local, locals) {
@@ -2011,6 +2057,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
       VarSymbol* rfield = new VarSymbol(field->name, field->type);
       rfield->qual = field->qual;
       local2rfield.put(local, rfield);
+      fixPromotionProtoField(ii->irecord, local, rfield);
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
 
       // while we're creating the iterator record fields based on the original

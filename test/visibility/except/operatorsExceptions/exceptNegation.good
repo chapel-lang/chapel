@@ -1,0 +1,9 @@
+exceptNegation.chpl:6: In function 'main':
+exceptNegation.chpl:8: error: unresolved call '-(owned Foo)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: -(a: uint(64))
+exceptNegation.chpl:8: note: because actual argument #1 with type 'owned Foo'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: uint(64)'
+exceptNegation.chpl:8: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   -(a: int(8))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   -(a: int(16))
+note: and 85 other candidates, use --print-all-candidates to see them

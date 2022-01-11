@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,8 +63,9 @@ typedSignatureInitial(Context* context,
   case in many uses of a type name but not the case when calling a type
   constructor or when inheriting.
  */
-const types::Type* typeForTypeDecl(Context* context, const uast::TypeDecl* d,
-                                   bool useGenericFormalDefaults);
+const types::Type* initialTypeForTypeDecl(Context* context,
+                                          const uast::TypeDecl* d,
+                                          bool useGenericFormalDefaults);
 
 /**
   Compute an initial TypedFnSignature for a type constructor for a

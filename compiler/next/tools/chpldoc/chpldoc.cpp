@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
       std::cout << stripComment(comment->str()) << "\n";
     } else {
       // TODO this should print the original text I think and not an AST dump
-      ASTNode::dump(mod->child(i));
+      mod->child(i)->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     }
   }
 

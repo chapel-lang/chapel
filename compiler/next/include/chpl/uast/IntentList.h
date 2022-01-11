@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,23 +23,73 @@
 namespace chpl {
 namespace uast {
 
+
 /**
   A centralized list containing all intent and storage specifiers.
 */
 enum struct IntentList {
-  DEFAULT,
+  /** Represents an unknown intent / variable type. This
+      is only used within the compiler. */
+  UNKNOWN,
+
+  // 'generic' intents
+
+  /** Represents the default intent for a type */
+  DEFAULT_INTENT,
+
+  /** Represents a const in / const ref depending on the type */
+  CONST_INTENT,
+
+  // 'concrete' intents
+
+  /** Represents a mutable variable declared with 'var' */
   VAR,
-  CONST,
+
+  /** Represents a variable declared with 'const' which
+      means that the variable is immutable for its lifetime
+      (but note: contained pointers can still point to mutable memory). */
+  CONST_VAR,
+
+  /** Represents a const reference - the pointed-to value
+      can't be changed through this reference (but it could
+      be changed by code referring to it in another way). */
   CONST_REF,
+
+  /** Represents a mutable reference - the pointed-to value
+      can be changed through this reference. */
   REF,
+
+  /** Represents an 'in' intent formal that is a mutable value */
   IN,
+
+  /** Represents an 'const in' intent formal that is an immutable value */
   CONST_IN,
+
+  /** Represents an 'out' intent formal that is mutable */
   OUT,
+
+  /** Represents an 'inout' intent formal that is mutable */
   INOUT,
-  INDEX,
+
+  /** A 'param' variable or formal */
   PARAM,
-  TYPE
+
+  /** A 'type' variable or formal */
+  TYPE,
+
+  // intents used within the compiler that aren't
+  // directly represented in the syntax
+
+  /** A loop index variable */
+  INDEX,
+
+  /** A function */
+  FUNCTION,
+
+  /** A module */
+  MODULE,
 };
+
 
 } // end namespace uast
 } // end namespace chpl

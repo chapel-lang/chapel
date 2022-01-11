@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,7 +37,10 @@ namespace chpl {
 class Context;
 
 template<typename T> struct update {
-  bool operator()(T& keep, T& addin) const = 0;
+  bool operator()(T& keep, T& addin) const {
+    // run update static method
+    return T::update(keep, addin);
+  }
 };
 
 template<typename T>
@@ -77,6 +80,7 @@ static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
     return true; // updated
   }
 }
+
 template<typename T>
 static inline bool defaultUpdateOwned(owned<T>& keep, owned<T>& addin) {
   // are they both null?
@@ -89,16 +93,16 @@ static inline bool defaultUpdateOwned(owned<T>& keep, owned<T>& addin) {
     return true;
   }
 
-  // at this point they both are not null, so check if their values match
-  // by calling == on the values.
+  // at this point they both are not null, so
+  // call == on the values.
   bool match = (*keep.get() == *addin.get());
   if (match) {
     return false;
-  } else {
-    // call swap on the owned pointers (not the values)
-    keep.swap(addin);
-    return true;
   }
+
+  // call swap on the owned pointers (not the values)
+  keep.swap(addin);
+  return true;
 }
 
 template<typename A, typename B>
@@ -129,7 +133,8 @@ template<typename T> struct update<T*> {
 
 template<typename T> struct update<owned<T>> {
   bool operator()(owned<T>& keep, owned<T>& addin) const {
-    return defaultUpdateOwned(keep, addin);
+    // call the static update method will usually use updateEqSwap
+    return T::update(keep, addin);
   }
 };
 

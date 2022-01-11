@@ -1,0 +1,2 @@
+exceptBy.chpl:5: In function 'main':
+exceptBy.chpl:8: error: can't apply 'by' using step of a non-integral type owned Foo

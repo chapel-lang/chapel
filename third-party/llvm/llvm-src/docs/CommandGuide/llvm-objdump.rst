@@ -156,7 +156,7 @@ OPTIONS
 
 .. option:: --mattr=<a1,+a2,-a3,...>
 
-  Enable/disable target-specific attributes. Specify ``--mcpu=help`` to display
+  Enable/disable target-specific attributes. Specify ``--mattr=help`` to display
   the available attributes.
 
 .. option:: --no-leading-addr
@@ -166,6 +166,11 @@ OPTIONS
 .. option:: --no-show-raw-insn
 
   When disassembling, do not print the raw bytes of each instruction.
+
+.. option:: --prefix=<prefix>
+
+  When disassembling with the :option:`--source` option, prepend ``prefix`` to
+  absolute paths.
 
 .. option:: --print-imm-hex
 
@@ -196,6 +201,30 @@ OPTIONS
   When printing relocations, only print the relocations patching offsets up to ``address``.
 
   When printing symbols, only print symbols with a value up to ``address``.
+
+.. option:: --symbolize-operands
+
+  When disassembling, symbolize a branch target operand to print a label instead of a real address.
+
+  When printing a PC-relative global symbol reference, print it as an offset from the leading symbol.
+
+  Only works with an X86 linked image.
+
+  Example:
+    A non-symbolized branch instruction with a local target and pc-relative memory access like
+
+  .. code-block:: none
+
+      cmp eax, dword ptr [rip + 4112]
+      jge 0x20117e <_start+0x25>
+
+  might become
+
+  .. code-block:: none
+
+     <L0>:
+       cmp eax, dword ptr <g>
+       jge	<L0>
 
 .. option:: --triple=<string>
 

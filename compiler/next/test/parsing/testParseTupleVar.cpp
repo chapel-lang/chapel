@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -70,7 +70,7 @@ static void test2(Parser* parser) {
   assert(mod);
   assert(mod->numStmts() == 1);
   auto tup = mod->stmt(0)->toTupleDecl();
-  assert(tup->intentOrKind() == TupleDecl::CONST);
+  assert(tup->intentOrKind() == TupleDecl::CONST_VAR);
 
   assert(tup->numDecls() == 2);
   auto x = tup->decl(0)->toVariable();

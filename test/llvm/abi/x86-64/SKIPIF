@@ -1,4 +1,5 @@
 CHPL_LLVM==none
+CHPL_LLVM==system
 CHPL_LIB_PIC==pic
 CHPL_TARGET_ARCH!=x86_64
 COMPOPTS <= --baseline

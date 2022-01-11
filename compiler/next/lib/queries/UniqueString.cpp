@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "chpl/queries/UniqueString.h"
 
 #include "chpl/queries/Context.h"
+#include "chpl/queries/update-functions.h"
 #include "chpl/util/string-escapes.h"
 
 #include <cassert>
@@ -180,5 +181,14 @@ UniqueString UniqueString::build(Context* context,
   }
 }
 
+bool UniqueString::update(UniqueString& keep, UniqueString& addin) {
+  return defaultUpdate(keep, addin);
+}
+
+
+void UniqueString::stringify(std::ostream& ss,
+                             chpl::StringifyKind stringKind) const {
+  ss.write(c_str(),length());
+}
 
 } // end namespace chpl

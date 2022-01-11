@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,7 +50,7 @@ class TaskVar final : public VarLikeDecl {
   enum Intent {
     // Use IntentList here for consistent enum values.
     VAR           = (int) IntentList::VAR,
-    CONST         = (int) IntentList::CONST,
+    CONST         = (int) IntentList::CONST_VAR,
     CONST_REF     = (int) IntentList::CONST_REF,
     REF           = (int) IntentList::REF,
     IN            = (int) IntentList::IN,

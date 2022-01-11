@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -129,18 +129,19 @@ struct QueryMapArgTupleEqual final {
 
 // define a way to debug-print out a tuple
 void queryArgsPrintSep();
-void queryArgsPrintUnknown();
 
 template<typename T>
 static void queryArgsPrintOne(const T& v) {
-  queryArgsPrintUnknown();
+  stringify<T> tString;
+  std::ostringstream ss;
+  tString(ss, chpl::StringifyKind::DEBUG_SUMMARY, v);
+  printf("%s", ss.str().c_str() );
 }
 
-void queryArgsPrintOne(const ID& v);
-void queryArgsPrintOne(const UniqueString& v);
 
 template<typename TUP, size_t... I>
-static inline void queryArgsPrintImpl(const TUP& tuple, std::index_sequence<I...>) {
+static inline void queryArgsPrintImpl(const TUP& tuple,
+                                      std::index_sequence<I...>) {
   // lambda to optionally print separator, then print element
   auto print = [](bool printsep, const auto& elem) {
       if(printsep)
@@ -157,6 +158,44 @@ static inline void queryArgsPrintImpl(const TUP& tuple, std::index_sequence<I...
   // The compiler optimizes away the dummy variable and list of 0s.
   auto dummy = { (print(I != 0, std::get<I>(tuple)), 0) ... };
   (void) dummy; // avoid unused variable warning
+}
+
+// taken from https://codereview.stackexchange.com/questions/193420/apply-a-function-to-each-element-of-a-tuple-map-a-tuple
+// when the queryArgsToStringsImpl is dropped we can remove these too
+template <class F, typename Tuple, size_t... Is>
+auto applyToEachImpl(Tuple t, F f, std::index_sequence<Is...>) {
+  return std::make_tuple(f(std::get<Is>(t) )...
+  );
+}
+
+template <class F, typename... Args>
+auto applyToEach(F f, const std::tuple<Args...>& t) {
+  return applyToEachImpl(t, f, std::make_index_sequence<sizeof...(Args)>{});
+}
+
+template<typename TUP, size_t... I>
+static inline const auto queryArgsToStringsImpl(const TUP& tuple,
+                                                std::index_sequence<I...>) {
+  // lambda to convert
+  auto convert = [](auto& elem) {
+    chpl::stringify<std::decay_t<decltype(elem)>> stringifier;
+    std::ostringstream ss;
+    stringifier(ss, chpl::StringifyKind::DEBUG_DETAIL, elem);
+    return ss.str();
+  };
+
+  return applyToEach(convert, tuple);
+}
+
+template<typename... Ts>
+auto queryArgsToStrings(const std::tuple<Ts...>& tuple) {
+  return queryArgsToStringsImpl(tuple, std::index_sequence_for<Ts...>{});
+  // TODO: Should be able to replace the Impl with the code below, but it
+  //  fails to compile as written
+  // chpl::stringify<std::tuple<Ts...>> stringifier;
+  // std::ostringstream ss;
+  // stringifier(ss, chpl::StringifyKind::DEBUG_SUMMARY, tuple);
+  // return ss.str();
 }
 
 template<typename... Ts>

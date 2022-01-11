@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,7 @@
 
 #include "chpl/uast/Expression.h"
 #include "chpl/queries/Location.h"
+#include "chpl/queries/CommentID.h"
 
 #include <string>
 
@@ -38,11 +39,14 @@ class Builder;
   are at a statement level will be represented with this type.
  */
 class Comment final : public Expression {
+  friend Builder;
+
  private:
   std::string comment_;
+  CommentID commentId_;
 
   Comment(std::string s)
-   : Expression(asttags::Comment), comment_(std::move(s)) {
+    : Expression(asttags::Comment), comment_(std::move(s)) {
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -52,7 +56,7 @@ class Comment final : public Expression {
            lhs->comment_ == rhs->comment_ ;
   }
   void markUniqueStringsInner(Context* context) const override {
-    return expressionMarkUniqueStringsInner(context);
+    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -69,6 +73,21 @@ class Comment final : public Expression {
    characters (e.g. `//`) as a C++ string.
    */
   const std::string& str() const { return comment_; }
+
+  /**
+     Returns the id of this comment, which is unique in
+     its BuilderResult
+  */
+  CommentID commentId() const { return commentId_; }
+
+ protected:
+  /**
+     Set the comment's ID
+   */
+  void setCommentId(int index) {
+    commentId_ = CommentID(index);
+  }
+
 };
 
 /**

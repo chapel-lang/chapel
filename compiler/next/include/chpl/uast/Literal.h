@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,7 +47,7 @@ class Literal : public Expression {
   }
   void literalMarkUniqueStringsInner(Context* context) const {
     expressionMarkUniqueStringsInner(context);
-    types::Param::markParam(context, value_);
+    value_->mark(context);
   }
 
  public:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,8 +32,10 @@ namespace types {
 class TupleType final : public CompositeType {
  private:
   TupleType(ID id, UniqueString name,
-            std::vector<CompositeType::FieldDetail> fields)
-    : CompositeType(typetags::TupleType, id, name, std::move(fields))
+            std::vector<CompositeType::FieldDetail> fields,
+            const TupleType* instantiatedFrom)
+    : CompositeType(typetags::TupleType, id, name, std::move(fields),
+                    instantiatedFrom)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -46,18 +48,35 @@ class TupleType final : public CompositeType {
 
   static const owned<TupleType>&
   getTupleType(Context* context, ID id, UniqueString name,
-               std::vector<CompositeType::FieldDetail> fields);
+               std::vector<CompositeType::FieldDetail> fields,
+               const TupleType* instantiatedFrom);
 
  public:
   ~TupleType() = default;
 
   static const TupleType*
   get(Context* context, ID id, UniqueString name,
-      std::vector<CompositeType::FieldDetail> fields);
+      std::vector<CompositeType::FieldDetail> fields,
+      const TupleType* instantiatedFrom);
+
+  /** If this type represents an instantiated type,
+      returns the type it was instantiated from.
+
+      This is just instantiatedFromCompositeType() with the
+      result cast to TupleType.
+   */
+  const TupleType* instantiatedFrom() const {
+    const CompositeType* ret = instantiatedFromCompositeType();
+    assert(ret == nullptr || ret->tag() == typetags::TupleType);
+    return (const TupleType*) ret;
+  }
 };
 
 
 } // end namespace uast
+
+
+
 } // end namespace chpl
 
 #endif

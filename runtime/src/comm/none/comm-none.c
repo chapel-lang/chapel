@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -153,7 +153,7 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) { return NULL; }
 
 void chpl_comm_broadcast_private(int id, size_t size) { }
 
-void chpl_comm_barrier(const char *msg) { }
+void chpl_comm_impl_barrier(const char *msg) { }
 
 void chpl_comm_pre_task_exit(int all) { }
 

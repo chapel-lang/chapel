@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -400,7 +400,7 @@ static void test3() {
   auto mGenericCallFunc = M->stmt(2)->toFunction();
   assert(mGenericCallFunc);
   auto mGenericCallFuncGCall = mGenericCallFunc->stmt(0)->toCall();
-  assert(mCallFuncGCall);
+  assert(mGenericCallFuncGCall);
   auto mHelper1 = M->stmt(3)->toFunction();
   assert(mHelper1);
   auto mHelper3 = M->stmt(4)->toFunction();

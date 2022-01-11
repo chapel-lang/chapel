@@ -73,14 +73,7 @@ To measure the latency of all instructions for the host architecture, run:
 
 .. code-block:: bash
 
-  #!/bin/bash
-  readonly INSTRUCTIONS=$(($(grep INSTRUCTION_LIST_END build/lib/Target/X86/X86GenInstrInfo.inc | cut -f2 -d=) - 1))
-  for INSTRUCTION in $(seq 1 ${INSTRUCTIONS});
-  do
-    ./build/bin/llvm-exegesis -mode=latency -opcode-index=${INSTRUCTION} | sed -n '/---/,$p'
-  done
-
-FIXME: Provide an :program:`llvm-exegesis` option to test all instructions.
+    $ llvm-exegesis -mode=latency -opcode-index=-1
 
 
 EXAMPLE 2: benchmarking a custom code snippet
@@ -192,10 +185,24 @@ OPTIONS
 
 .. option:: -mode=[latency|uops|inverse_throughput|analysis]
 
- Specify the run mode. Note that if you pick `analysis` mode, you also need
- to specify at least one of the `-analysis-clusters-output-file=` and
- `-analysis-inconsistencies-output-file=`.
+ Specify the run mode. Note that some modes have additional requirements and options.
 
+ `latency` mode can be  make use of either RDTSC or LBR.
+ `latency[LBR]` is only available on X86 (at least `Skylake`).
+ To run in `latency` mode, a positive value must be specified for `x86-lbr-sample-period` and `--repetition-mode=loop`.
+
+ In `analysis` mode, you also need to specify at least one of the
+ `-analysis-clusters-output-file=` and `-analysis-inconsistencies-output-file=`.
+
+.. option:: -x86-lbr-sample-period=<nBranches/sample>
+
+  Specify the LBR sampling period - how many branches before we take a sample.
+  When a positive value is specified for this option and when the mode is `latency`,
+  we will use LBRs for measuring.
+  On choosing the "right" sampling period, a small value is preferred, but throttling
+  could occur if the sampling is too frequent. A prime number should be used to
+  avoid consistently skipping certain blocks.
+  
 .. option:: -repetition-mode=[duplicate|loop|min]
 
  Specify the repetition mode. `duplicate` will create a large, straight line

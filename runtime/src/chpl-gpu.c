@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  * 
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,7 @@
 #include "chplcgfns.h"
 
 #ifdef HAS_GPU_LOCALE
+
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -289,10 +290,15 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
   CHPL_GPU_LOG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
 
-  CUdeviceptr ptr;
-  CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
+  CUdeviceptr ptr = 0;
+  if (size > 0) {
+    CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
+    CHPL_GPU_LOG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
+  }
+  else {
+    CHPL_GPU_LOG("chpl_gpu_mem_alloc returning NULL (size was 0)\n");
+  }
 
-  CHPL_GPU_LOG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
 
   return (void*)ptr;
 
@@ -357,11 +363,14 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   chpl_gpu_ensure_context();
 
-  CHPL_GPU_LOG("chpl_gpu_mem_free called. Ptr=%p\n", memAlloc);
+  CHPL_GPU_LOG("chpl_gpu_mem_free called. Ptr:%p file:%s line:%d\n", memAlloc,
+               chpl_lookupFilename(filename), lineno);
 
-  assert(chpl_gpu_is_device_ptr(memAlloc));
+  if (memAlloc != NULL) {
+    assert(chpl_gpu_is_device_ptr(memAlloc));
 
-  CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
+    CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
+  }
 }
 
 #endif // HAS_GPU_LOCALE

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -79,6 +79,7 @@ extern "C" {
   m(TCIPS,                  "tx context alloc/free")                    \
   m(OOB,                    "out-of-band calls")                        \
   m(BARRIER,                "barriers")                                 \
+  m(SLINGSHOT,              "Slingshot")                                \
   m(TSTAMP,                 "timestamp output")
 
 //

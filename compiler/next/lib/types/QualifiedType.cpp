@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,49 +26,63 @@ namespace chpl {
 namespace types {
 
 
-bool QualifiedType::isGenericOrUnknown() const {
-  bool genericKind = kind_ == UNKNOWN;
-  bool genericParam = kind_ == PARAM && !hasParam();
-  bool genericType = !hasType() || type_->isGeneric() ||
-                     type_->isUnknownType();
-  return genericKind || genericParam || genericType;
+bool QualifiedType::isGenericType() const {
+  return type_->isGeneric();
+}
+
+bool QualifiedType::isUnknownType() const {
+  return type_->isUnknownType();
+}
+
+bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
+  return defaultUpdate(keep, addin);
+}
+
+void QualifiedType::mark(Context* context) const {
+  context->markPointer(type_);
+  context->markPointer(param_);
 }
 
 static const char* kindToString(QualifiedType::Kind kind) {
   switch (kind) {
-    case QualifiedType::UNKNOWN:     return "unknown";
-    case QualifiedType::CONST:       return "const";
-    case QualifiedType::REF:         return "ref";
-    case QualifiedType::CONST_REF:   return "const ref";
-    case QualifiedType::VALUE:       return "val";
-    case QualifiedType::CONST_VALUE: return "const val";
-    case QualifiedType::TYPE:        return "type";
-    case QualifiedType::PARAM:       return "param";
-    case QualifiedType::FUNCTION:    return "function";
-    case QualifiedType::MODULE:      return "module";
+    case QualifiedType::UNKNOWN:        return "unknown";
+    case QualifiedType::DEFAULT_INTENT: return "default intent";
+    case QualifiedType::CONST_INTENT:   return "const intent";
+    case QualifiedType::VAR:            return "var";
+    case QualifiedType::CONST_VAR:      return "const";
+    case QualifiedType::CONST_REF:      return "const ref";
+    case QualifiedType::REF:            return "ref";
+    case QualifiedType::IN:             return "in";
+    case QualifiedType::CONST_IN:       return "const in";
+    case QualifiedType::OUT:            return "out";
+    case QualifiedType::INOUT:          return "inout";
+    case QualifiedType::PARAM:          return "param";
+    case QualifiedType::TYPE:           return "type";
+    case QualifiedType::INDEX:          return "index";
+    case QualifiedType::FUNCTION:       return "function";
+    case QualifiedType::MODULE:         return "module";
   }
 
   assert(false && "should not be reachable");
   return "unknown";
 }
 
-std::string QualifiedType::toString() const {
+void QualifiedType::stringify(std::ostream& ss,
+                              chpl::StringifyKind stringKind) const {
   const char* kindStr = kindToString(kind_);
-  std::string typeStr = (type_)?(type_->toString()):(std::string("nullptr"));
+  std::ostringstream strstream;
 
-  std::string ret = kindStr;
+  ss << kindStr;
 
   if (type_ != nullptr) {
-    ret += " ";
-    ret += type_->toString();
+    ss << " ";
+    type_->stringify(ss, stringKind);
   }
 
-  if (kind_ == QualifiedType::PARAM) {
-    ret += " = ";
-    ret += param_->toString();
+  if (kind_ == QualifiedType::PARAM && param_ != nullptr) {
+    ss << " = ";
+    param_->stringify(ss, stringKind);
   }
-
-  return ret;
 }
 
 

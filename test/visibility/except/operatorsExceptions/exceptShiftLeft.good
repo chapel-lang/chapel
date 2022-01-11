@@ -1,0 +1,9 @@
+exceptShiftLeft.chpl:5: In function 'main':
+exceptShiftLeft.chpl:8: error: unresolved call '<<(owned Foo, owned Foo)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: <<(a: int(8), b: integral)
+exceptShiftLeft.chpl:8: note: because actual argument #1 with type 'owned Foo'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: int(8)'
+exceptShiftLeft.chpl:8: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   <<(a: int(16), b: integral)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   <<(a: int(32), b: integral)
+note: and 17 other candidates, use --print-all-candidates to see them

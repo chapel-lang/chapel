@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Module.h"
+#include "chpl/uast/Comment.h"
 
 #include <cstring>
 #include <string>
@@ -41,47 +42,27 @@ BuilderResult::BuilderResult(UniqueString filePath)
 {
 }
 
-// Recomputes idToAst / astToLocation maps by visiting all uAST nodes
-// and combining information from the provided maps.
+// Computes idToAst and idToParent maps by visiting all uAST nodes
 static
-void recomputeIdAndLocMaps(
+void computeIdMaps(
     const ASTNode* ast,
     const ASTNode* parentAst,
-    std::unordered_map<ID, const ASTNode*>& dstIdToAst,
-    std::unordered_map<ID, ID>& dstIdToParent,
-    std::unordered_map<const ASTNode*, Location>& dstAstToLoc,
-    const std::unordered_map<const ASTNode*, Location>& astToLocA,
-    const std::unordered_map<const ASTNode*, Location>& astToLocB) {
+    std::unordered_map<ID, const ASTNode*>& idToAst,
+    std::unordered_map<ID, ID>& idToParentId) {
 
   for (const ASTNode* child : ast->children()) {
-    recomputeIdAndLocMaps(child, ast, dstIdToAst, dstIdToParent,
-                          dstAstToLoc, astToLocA, astToLocB);
+    computeIdMaps(child, ast, idToAst, idToParentId);
   }
 
   if (!ast->id().isEmpty()) {
-    dstIdToAst[ast->id()] = ast;
+    idToAst[ast->id()] = ast;
 
     if (parentAst != nullptr) {
       if (!parentAst->id().isEmpty()) {
-        dstIdToParent[ast->id()] = parentAst->id();
+        idToParentId[ast->id()] = parentAst->id();
       } else {
         assert(false && "parentAst does not have valid ID");
       }
-    }
-  }
-
-  auto searchA = astToLocA.find(ast);
-  if (searchA != astToLocA.end()) {
-    // found a location in mapA so use it
-    dstAstToLoc[ast] = searchA->second;
-  } else {
-    // check in mapB
-    auto searchB = astToLocB.find(ast);
-    if (searchB != astToLocB.end()) {
-      // found a location in mapB so use it
-      dstAstToLoc[ast] = searchB->second;
-    } else {
-      assert(false && "Could not find location");
     }
   }
 }
@@ -91,7 +72,8 @@ void BuilderResult::swap(BuilderResult& other) {
   topLevelExpressions_.swap(other.topLevelExpressions_);
   errors_.swap(other.errors_);
   idToAst_.swap(other.idToAst_);
-  astToLocation_.swap(other.astToLocation_);
+  idToLocation_.swap(other.idToLocation_);
+  commentIdToLocation_.swap(other.commentIdToLocation_);
 }
 
 bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
@@ -109,41 +91,42 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
 
   std::unordered_map<ID, const ASTNode*> newIdToAst;
   std::unordered_map<ID, ID> newIdToParent;
-  std::unordered_map<const ASTNode*, Location> newAstToLoc;
 
   // recompute locationsVec by traversing the AST and using the maps
   for (const auto& ast : keep.topLevelExpressions_) {
-    recomputeIdAndLocMaps(ast.get(), nullptr,
-                          newIdToAst, newIdToParent,
-                          newAstToLoc,
-                          keep.astToLocation_, addin.astToLocation_);
+    computeIdMaps(ast.get(), nullptr, newIdToAst, newIdToParent);
   }
 
   // now update the ID and Locations maps in keep
   changed |= defaultUpdate(keep.idToAst_, newIdToAst);
   changed |= defaultUpdate(keep.idToParentId_, newIdToParent);
-  changed |= defaultUpdate(keep.astToLocation_, newAstToLoc);
+  changed |= defaultUpdate(keep.idToLocation_, addin.idToLocation_);
+  changed |= defaultUpdate(keep.commentIdToLocation_, addin.commentIdToLocation_);
 
   return changed;
 }
 
-void BuilderResult::mark(Context* context, const BuilderResult& keep) {
+void BuilderResult::mark(Context* context) const {
 
   // mark the UniqueString file path
-  keep.filePath_.mark(context);
+  filePath_.mark(context);
 
   // UniqueStrings in the AST IDs will be marked in markASTList below
 
   // mark UniqueStrings in the Locations
-  for (const auto& pair : keep.astToLocation_) {
-    pair.second.markUniqueStrings(context);
+  for (const auto& pair : idToLocation_) {
+    pair.second.mark(context);
+  }
+
+  for (const Location& loc : commentIdToLocation_) {
+    loc.mark(context);
   }
 
   // mark UniqueStrings in the ASTs
-  markASTList(context, keep.topLevelExpressions_);
+  markASTList(context, topLevelExpressions_);
 
   // update the filePathForModuleName query
-  BuilderResult::updateFilePaths(context, keep);
+  BuilderResult::updateFilePaths(context, *this);
 }
 
 static void updateFilePathsForModulesRecursively(Context* context,
@@ -177,13 +160,21 @@ const ASTNode* BuilderResult::idToAst(ID id) const {
 }
 
 Location BuilderResult::idToLocation(ID id, UniqueString path) const {
-  const ASTNode* ast = idToAst(id);
   // Look in astToLocation
-  auto search = astToLocation_.find(ast);
-  if (search != astToLocation_.end()) {
+  auto search = idToLocation_.find(id);
+  if (search != idToLocation_.end()) {
     return search->second;
   }
   return Location(path);
+}
+
+Location BuilderResult::commentToLocation(const Comment *c) const {
+  int idx = c->commentId().index();
+  assert(idx >= 0 && "Cant lookup comment that has -1 id");
+  if (idx < 0 || (size_t)idx >= commentIdToLocation_.size()) {
+    return Location();
+  }
+  return commentIdToLocation_[idx];
 }
 
 ID BuilderResult::idToParentId(ID id) const {

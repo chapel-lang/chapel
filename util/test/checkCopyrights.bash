@@ -18,6 +18,15 @@
 #  Make*
 #
 
+todate=`date "+%m%d"`
+#This hardcoding is intentional. Date accepts a full date like this, but %m%d cuts off the year so it only compares 0107 to the current date
+cond=`date -d 2022-01-07 "+%m%d"`
+
+if [ $todate -le $cond ];
+then
+ exit 0;
+fi
+
 CWD=$(cd $(dirname $0) ; pwd)
 CHPL_HOME=${CHPL_HOME:-$CWD/../..}
 

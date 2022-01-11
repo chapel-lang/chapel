@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define CHPL_RESOLUTION_CAN_PASS_H
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/types/ClassTypeDecorator.h"
 
 namespace chpl {
 namespace uast {
@@ -28,6 +29,7 @@ namespace uast {
 }
 namespace types {
   class QualifiedType;
+  class ClassType;
 }
 namespace resolution {
 
@@ -87,12 +89,27 @@ class CanPassResult {
   static bool
   canConvertNumeric(const types::Type* actualT,
                     const types::Type* formalT);
-  static bool
-  canConvertParamNarrowing(const types::QualifiedType& actualType,
-                           const types::QualifiedType& formalType);
-  static CanPassResult
-  canConvertClassesOrPtrs(const types::QualifiedType& actualType,
-                          const types::QualifiedType& formalType);
+
+  static bool canConvertParamNarrowing(const types::QualifiedType& actualType,
+                                       const types::QualifiedType& formalType);
+
+  static CanPassResult canPassDecorators(types::ClassTypeDecorator actual,
+                                         types::ClassTypeDecorator formal);
+
+  static CanPassResult canPassClassTypes(const types::ClassType* actualCt,
+                                         const types::ClassType* formalCt);
+
+  static CanPassResult canPassSubtype(const types::Type* actualT,
+                                      const types::Type* formalT);
+
+  static CanPassResult canConvert(const types::QualifiedType& actualType,
+                                  const types::QualifiedType& formalType);
+
+  static bool canInstantiateBuiltin(const types::Type* actualT,
+                                    const types::Type* formalT);
+
+  static CanPassResult canInstantiate(const types::QualifiedType& actualType,
+                                      const types::QualifiedType& formalType);
 
  public:
   CanPassResult() { }
@@ -113,14 +130,19 @@ class CanPassResult {
   /** What type of implicit conversion, if any, is needed? */
   ConversionKind conversionKind() { return conversionKind_; }
 
-  // implementation of canPass to make it easier to access private fields
+  // implementation of canPass to allow use of private fields
   static CanPassResult canPass(const types::QualifiedType& actualType,
                                const types::QualifiedType& formalType);
+
 };
 
 /**
   Given an argument with QualifiedType actualType,
   can that argument be passed to a formal with QualifiedType formalType?
+
+  Note that a result with passes() and instantiates() indicates
+  that the compiler should try instantiating. Once instantiation occurs,
+  the compiler may figure out that the argument cannot be passed.
  */
 static inline
 CanPassResult canPass(const types::QualifiedType& actualType,

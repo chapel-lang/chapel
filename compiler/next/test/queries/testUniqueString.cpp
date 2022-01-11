@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,7 @@
 
 #include "chpl/queries/Context.h"
 #include "chpl/queries/UniqueString.h"
+#include "chpl/queries/global-strings.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -300,6 +301,51 @@ static void test1() {
   assert(t1.hash() != h1.hash());
 }
 
+// Global Strings are created once and identical between
+// contexts. Global strings also don't get deleted
+static void test2() {
+  Context context1;
+  Context* ctx1 = &context1;
+
+  Context context2;
+  Context* ctx2 = &context2;
+
+  // We need to test a string that actually gets saved in the table
+  // so something longer than a smallstring
+  UniqueString s1 = UniqueString::build(ctx1, "borrowed");
+  UniqueString s2 = UniqueString::build(ctx2, "borrowed");
+
+  // For use with debug tracing
+  UniqueString::build(ctx1, "i will get garbage collected");
+  UniqueString::build(ctx2, "i will get garbage collected");
+
+  assert(s1.c_str() == USTR("borrowed").c_str());
+  assert(s2.c_str() == USTR("borrowed").c_str());
+  assert(s1.c_str() == s2.c_str());
+
+  context1.advanceToNextRevision(true);
+  context1.collectGarbage();
+
+  context2.advanceToNextRevision(true);
+  context2.collectGarbage();
+
+  // Global string doesn't get collected, should get same pointer
+  UniqueString s3 = UniqueString::build(ctx1, "borrowed");
+  UniqueString s4 = UniqueString::build(ctx2, "borrowed");
+
+  assert(s1.c_str() == s3.c_str());
+  assert(s2.c_str() == s4.c_str());
+
+  // Small string should still be equal (even though inlined)
+  UniqueString s5 = UniqueString::build(ctx1, "align");
+  UniqueString s6 = UniqueString::build(ctx2, "align");
+
+  assert(s5 == USTR("align"));
+  assert(s6 == USTR("align"));
+
+  // Typo in "align" is a compile time error
+  // UniqueString s7 = USTR("algin");
+}
 
 int main(int argc, char** argv) {
   const char* inputFile = "moby.txt";
@@ -314,6 +360,7 @@ int main(int argc, char** argv) {
 
   test0();
   test1();
+  test2();
 
   Context context;
   Context* ctx = &context;

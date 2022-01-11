@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,7 @@
 #include "baseAST.h"
 
 #include "astlocs.h"
+#include "chpl/util/break.h"
 
 #ifdef HAVE_LLVM
 #define exit(x) clean_exit(x)
@@ -123,9 +124,6 @@ astlocT getUserInstantiationLocation(const BaseAST* ast);
 // (e.g. with USR_FATAL(ast, ...)) would print out
 // a user line number.
 bool        printsUserLocation(const BaseAST* ast);
-
-// must be exported to avoid dead-code elimination by C++ compiler
-void        gdbShouldBreakHere();
 
 // Supporting bold / colorful output to terminals
 // These are "" if stderr is not a tty we think supports them

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,8 +33,10 @@ namespace types {
 class RecordType final : public CompositeType {
  private:
   RecordType(ID id, UniqueString name,
-             std::vector<CompositeType::FieldDetail> fields)
-    : CompositeType(typetags::RecordType, id, name, std::move(fields))
+             std::vector<CompositeType::FieldDetail> fields,
+             const RecordType* instantiatedFrom)
+    : CompositeType(typetags::RecordType, id, name, std::move(fields),
+                    instantiatedFrom)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -47,17 +49,34 @@ class RecordType final : public CompositeType {
 
   static const owned<RecordType>&
   getRecordType(Context* context, ID id, UniqueString name,
-                std::vector<CompositeType::FieldDetail> fields);
+                std::vector<CompositeType::FieldDetail> fields,
+                const RecordType* instantiatedFrom);
 
  public:
   ~RecordType() = default;
 
   static const RecordType* get(Context* context, ID id, UniqueString name,
-                               std::vector<CompositeType::FieldDetail> fields); 
+                               std::vector<CompositeType::FieldDetail> fields,
+                               const RecordType* instantiatedFrom);
+
+  /** If this type represents an instantiated type,
+      returns the type it was instantiated from.
+
+      This is just instantiatedFromCompositeType() with the
+      result cast to RecordType.
+   */
+  const RecordType* instantiatedFrom() const {
+    const CompositeType* ret = instantiatedFromCompositeType();
+    assert(ret == nullptr || ret->tag() == typetags::RecordType);
+    return (const RecordType*) ret;
+  }
+
 };
 
 
 } // end namespace uast
+
+
 } // end namespace chpl
 
 #endif

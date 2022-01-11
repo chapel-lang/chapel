@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -359,7 +359,7 @@ module DefaultRectangular {
 
       const numSublocs = here.getChildCount();
 
-      if localeModelHasSublocales && numSublocs != 0 {
+      if localeModelPartitionsIterationOnSublocales && numSublocs != 0 {
         var dptpl = if tasksPerLocale==0 then here.maxTaskPar
                     else tasksPerLocale;
         if !ignoreRunning {
@@ -1244,7 +1244,7 @@ module DefaultRectangular {
           chpl_debug_writeln("*** DR alloc ", eltType:string, " ", size);
         }
 
-        if !localeModelHasSublocales {
+        if !localeModelPartitionsIterationOnSublocales {
           data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
         } else {
           data = _ddata_allocate_noinit(eltType, size,

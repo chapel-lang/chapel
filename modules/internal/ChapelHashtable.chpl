@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -235,8 +235,8 @@ module ChapelHashtable {
 
     const startingSize: int;
 
-    proc init(type keyType, type valType, resizeThreshold = 0.5,
-              initialCapacity = 32,
+    proc init(type keyType, type valType, resizeThreshold=0.5,
+              initialCapacity=16,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       this.keyType = keyType;
       this.valType = valType;

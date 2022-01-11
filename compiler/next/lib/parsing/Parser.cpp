@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -71,7 +71,7 @@ static void updateParseResult(ParserContext* parserContext) {
   for (ParserError & parserError : parserContext->errors) {
     // Need to convert the error to a regular ErrorMessage
     Location loc = parserContext->convertLocation(parserError.location);
-    builder->addError(ErrorMessage(loc, parserError.message));
+    builder->addError(ErrorMessage(ID(), loc, parserError.message));
   }
 }
 

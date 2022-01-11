@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -107,8 +107,11 @@ const char* CHPL_SYS_MODULES_SUBDIR = NULL;
 const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 const char* CHPL_LLVM_CLANG_C = NULL;
 const char* CHPL_LLVM_CLANG_CXX = NULL;
-const char* CHPL_LLVM_CLANG_COMPILE_ARGS = NULL;
-const char* CHPL_LLVM_CLANG_LINK_ARGS = NULL;
+
+const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS = NULL;
+const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS = NULL;
+const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
+const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -1320,7 +1323,14 @@ bool useDefaultEnv(std::string key) {
   }
 
   // Always use default env for internal variables that could include spaces
-  if (key == "CHPL_THIRD_PARTY_LINK_ARGS") {
+  if (key == "CHPL_HOST_BUNDLED_COMPILE_ARGS" ||
+      key == "CHPL_HOST_SYSTEM_COMPILE_ARGS" ||
+      key == "CHPL_HOST_BUNDLED_LINK_ARGS" ||
+      key == "CHPL_HOST_SYSTEM_LINK_ARGS" ||
+      key == "CHPL_TARGET_BUNDLED_COMPILE_ARGS" ||
+      key == "CHPL_TARGET_SYSTEM_COMPILE_ARGS" ||
+      key == "CHPL_TARGET_BUNDLED_LINK_ARGS" ||
+      key == "CHPL_TARGET_SYSTEM_LINK_ARGS") {
     return true;
   }
 
@@ -1413,8 +1423,11 @@ static void setChapelEnvs() {
   CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];
   CHPL_LLVM_CLANG_C = envMap["CHPL_LLVM_CLANG_C"];
   CHPL_LLVM_CLANG_CXX = envMap["CHPL_LLVM_CLANG_CXX"];
-  CHPL_LLVM_CLANG_COMPILE_ARGS = envMap["CHPL_LLVM_CLANG_COMPILE_ARGS"];
-  CHPL_LLVM_CLANG_LINK_ARGS = envMap["CHPL_LLVM_CLANG_LINK_ARGS"];
+
+  CHPL_TARGET_BUNDLED_COMPILE_ARGS = envMap["CHPL_TARGET_BUNDLED_COMPILE_ARGS"];
+  CHPL_TARGET_SYSTEM_COMPILE_ARGS = envMap["CHPL_TARGET_SYSTEM_COMPILE_ARGS"];
+  CHPL_TARGET_BUNDLED_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_LINK_ARGS"];
+  CHPL_TARGET_SYSTEM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_LINK_ARGS"];
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
@@ -1584,6 +1597,47 @@ static void checkUnsupportedConfigs(void) {
   }
 }
 
+static void checkRuntimeBuilt(void) {
+  // no need for a runtime to be built for chpldoc,
+  // or if we stop before codegen with --stop-after-pass or --no-codegen
+  bool stopBeforeCodegen = false;
+  if (stopAfterPass[0] != '\0') {
+    if (0 == strcmp(stopAfterPass, "codegen") ||
+        0 == strcmp(stopAfterPass, "makeBinary")) {
+      // it doesn't stop before codegen - codegen will run, might need hdrs
+      stopBeforeCodegen = false;
+    } else {
+      // stop before codegen
+      stopBeforeCodegen = true;
+    }
+  }
+  if (fDocs || no_codegen || stopBeforeCodegen) {
+    return;
+  }
+
+  std::string runtime_dir(CHPL_RUNTIME_LIB);
+  runtime_dir += "/";
+  runtime_dir += CHPL_RUNTIME_SUBDIR;
+
+  if (!isDirectory(runtime_dir.c_str())) {
+    const char* module_home = getenv("CHPL_MODULE_HOME");
+    if (module_home) {
+      USR_FATAL("The requested configuration is not included in the module. "
+                "Please send the package maintainer the output of "
+                "$CHPL_HOME/util/printchplenv and request support for this "
+                "configuration.");
+    } else {
+      USR_FATAL_CONT("The runtime has not been built for this configuration. "
+                     "Check $CHPL_HOME/util/printchplenv and try rebuilding "
+                     "with $CHPL_MAKE from $CHPL_HOME.");
+    }
+    if (developer) {
+      USR_PRINT("Expected runtime library in %s", runtime_dir.c_str());
+    }
+    USR_STOP();
+  }
+}
+
 static void checkMLDebugAndLibmode(void) {
   if (!fMultiLocaleLibraryDebug) { return; }
 
@@ -1671,6 +1725,13 @@ static void postprocess_args() {
 // errors rather than doing what the user said (for which these
 // checks don't apply because we're not going to compile anything).
 //
+// NOTE: Before adding something here consider whether you should instead add
+// it to printchplenv.py (or one of its associated chplenv scripts).  If
+// placed there then you'll get the check both at runtime (because we end up
+// calling printchplenv) but also when building the Chapel compiler itself.
+// Generally speaking, if the checks are about environment and standard
+// chplconfig-style environment variables checks could/should be done in the
+// chplenv scripts; otherwise put the checks here.
 static void validateSettings() {
   checkNotLibraryAndMinimalModules();
 
@@ -1681,6 +1742,8 @@ static void validateSettings() {
   checkIncrementalAndOptimized();
 
   checkUnsupportedConfigs();
+
+  checkRuntimeBuilt();
 }
 
 int main(int argc, char* argv[]) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,18 +27,22 @@ namespace types {
 
 const owned<TupleType>&
 TupleType::getTupleType(Context* context, ID id, UniqueString name,
-                        std::vector<CompositeType::FieldDetail> fields) {
-  QUERY_BEGIN(getTupleType, context, id, name, fields);
+                        std::vector<CompositeType::FieldDetail> fields,
+                        const TupleType* instantiatedFrom) {
+  QUERY_BEGIN(getTupleType, context, id, name, fields, instantiatedFrom);
 
-  auto result = toOwned(new TupleType(id, name, std::move(fields)));
+  auto result = toOwned(new TupleType(id, name, std::move(fields),
+                                      instantiatedFrom));
 
   return QUERY_END(result);
 }
 
 const TupleType*
 TupleType::get(Context* context, ID id, UniqueString name,
-               std::vector<CompositeType::FieldDetail> fields) {
-  return getTupleType(context, id, name, std::move(fields)).get();
+               std::vector<CompositeType::FieldDetail> fields,
+               const TupleType* instantiatedFrom) {
+  return getTupleType(context, id, name, std::move(fields),
+                      instantiatedFrom).get();
 }
 
 

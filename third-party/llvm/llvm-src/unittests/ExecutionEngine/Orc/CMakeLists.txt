@@ -3,8 +3,9 @@ set(LLVM_LINK_COMPONENTS
   Core
   ExecutionEngine
   Object
-  OrcError
   OrcJIT
+  OrcShared
+  OrcTargetProcess
   Passes
   RuntimeDyld
   Support
@@ -14,18 +15,11 @@ set(LLVM_LINK_COMPONENTS
 add_llvm_unittest(OrcJITTests
   CoreAPIsTest.cpp
   IndirectionUtilsTest.cpp
-  GlobalMappingLayerTest.cpp
   JITTargetMachineBuilderTest.cpp
   LazyCallThroughAndReexportsTest.cpp
-  LazyEmittingLayerTest.cpp
-  LegacyAPIInteropTest.cpp
-  LegacyCompileOnDemandLayerTest.cpp
-  LegacyRTDyldObjectLinkingLayerTest.cpp
-  ObjectTransformLayerTest.cpp
-  OrcCAPITest.cpp
   OrcTestCommon.cpp
   QueueChannel.cpp
-  RemoteObjectLayerTest.cpp
+  ResourceTrackerTest.cpp
   RPCUtilsTest.cpp
   RTDyldObjectLinkingLayerTest.cpp
   SymbolStringPoolTest.cpp

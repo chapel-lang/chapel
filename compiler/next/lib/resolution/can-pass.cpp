@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -413,32 +413,323 @@ CanPassResult::canConvertParamNarrowing(const QualifiedType& actualQT,
   return false;
 }
 
-CanPassResult
-CanPassResult::canConvertClassesOrPtrs(const QualifiedType& actualQT,
-                                       const QualifiedType& formalQT) {
+CanPassResult CanPassResult::canPassDecorators(ClassTypeDecorator actual,
+                                               ClassTypeDecorator formal) {
+  if (actual == formal) {
+    return passAsIs();
+  }
+
+  bool instantiates = false;
+  bool converts = false;
+  bool fails = false;
+
+  ClassTypeDecorator actualNily = actual.toBorrowed();
+  ClassTypeDecorator formalNily = formal.toBorrowed();
+
+  ClassTypeDecorator actualMgmt = actual.removeNilable();
+  ClassTypeDecorator formalMgmt = formal.removeNilable();
+
+  // consider nilability.
+  if (actualNily != formalNily) {
+    if (formalNily.isUnknownNilability())
+      instantiates = true; // instantiating with passed nilability
+    else if (actualNily.isNonNilable() && formalNily.isNilable())
+      converts = true; // non-nil to nil conversion
+    else
+      fails = true; // all other nilability cases
+  }
+
+  // consider management.
+  if (actualMgmt != formalMgmt) {
+    if (formalMgmt.isUnknownManagement())
+      instantiates = true; // instantiating with passed management
+    else if (formalMgmt.isBorrowed())
+      converts = true; // management can convert to borrowed
+    else
+      fails = true;
+  }
+
+  if (fails)
+    return fail();
+
+  // all class conversions are subtype conversions
+  ConversionKind conversion = converts ? SUBTYPE : NONE;
+
+  return CanPassResult(/*passes*/ true,
+                       instantiates,
+                       /*promotes*/ false,
+                       conversion);
+}
+
+CanPassResult CanPassResult::canPassClassTypes(const ClassType* actualCt,
+                                               const ClassType* formalCt) {
+  // owned Child -> owned Parent
+  // owned Child -> owned Parent?
+  // ditto borrowed, etc
+
+  // check decorators allow passing
+  CanPassResult decResult = canPassDecorators(actualCt->decorator(),
+                                              formalCt->decorator());
+
+  if (!decResult.passes())
+    return fail();
+
+  if (actualCt->decorator().isManaged() &&
+      formalCt->decorator().isManaged() &&
+      actualCt->manager() != formalCt->manager()) {
+    // disallow e.g. owned C -> shared C
+    return fail();
+  }
+
+  auto actualBct = actualCt->basicClassType();
+  auto formalBct = formalCt->basicClassType();
+
+  // code below assumes this
+  assert(decResult.passes_);
+  assert(decResult.conversionKind_ == NONE ||
+         decResult.conversionKind_ == SUBTYPE);
+  assert(!decResult.promotes_);
+
+  bool converts = decResult.conversionKind_ != NONE;
+  bool instantiates = decResult.instantiates_;
+
+  if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
+    // the basic class types are the same
+    // or there was a subclass relationship
+    // or there was instantiation
+
+    // all class conversions are subtype conversions
+    ConversionKind conversion = converts ? SUBTYPE : NONE;
+
+    return CanPassResult(/*passes*/ true,
+                         instantiates,
+                         /*promotes*/ false,
+                         conversion);
+  }
+
+  return fail();
+}
+
+
+// The compiler considers many patterns of "subtyping" as things that require
+// implicit conversions (they often require implicit conversions in the
+// generated C).  However not all implicit conversions are created equal.
+// Some of them are implementing subtyping.
+//
+// Here we consider an implicit conversion to be implementing "subtyping" if,
+// in an ideal implementation, the actual could be passed to a `const ref`
+// argument of the formal type.
+//
+// This function returns CanPassResult which always has conversion
+// kind of NONE or SUBTYPE.
+// It's returning CanPassResult in order to also reflect if instantiation
+// was necessary.
+CanPassResult CanPassResult::canPassSubtype(const Type* actualT,
+                                            const Type* formalT) {
+  // nil -> pointers and class types
+  if (actualT->isNilType() && formalT->isNilablePtrType() &&
+      !formalT->isCStringType())
+    return convert(SUBTYPE);
+
+  if (auto actualCt = actualT->toClassType()) {
+    if (auto formalCt = formalT->toClassType()) {
+      CanPassResult result = canPassClassTypes(actualCt, formalCt);
+      if (result.passes_ && (result.conversionKind_ == NONE ||
+                             result.conversionKind_ == SUBTYPE)) {
+        return result;
+      }
+    }
+  }
+
+  // TODO: c_ptr -> c_void_ptr
+  // TODO: c_array -> c_void_ptr, c_array(t) -> c_ptr(t)
+
+  return fail();
+}
+
+CanPassResult CanPassResult::canConvert(const QualifiedType& actualQT,
+                                        const QualifiedType& formalQT) {
   const Type* actualT = actualQT.type();
   const Type* formalT = formalQT.type();
 
-  // The compiler considers many patterns of "subtyping" as things that require
-  // implicit conversions (they often require implicit conversions in the
-  // generated C).  However not all implicit conversions are created equal. Some
-  // of them are implementing subtyping.  Here we consider an implicit
-  // conversion to be implementing "subtyping" if, in an ideal implementation,
-  // the actual could be passed to a `const ref` argument of the formal type.
-
-  if (actualT->isNilType() && formalT->isAnyPtrType())
-    return convert(SUBTYPE);
-
-
-  if (actualT->isClassType() || formalT->isClassType()) {
-    // TODO: port canCoerceAsSubtype
-    assert(false && "not implemented yet");
+  // can we convert with a subtype conversion, including class subtyping?
+  {
+    auto got = canPassSubtype(actualT, formalT);
+    if (got.passes()) {
+      // canPassSubtype should always return NONE or SUBTYPE conversion.
+      assert(got.conversionKind_ == NONE || got.conversionKind_ == SUBTYPE);
+      return got;
+    }
   }
 
-  // TODO: implement c_ptr, c_array conversions
+  // can we convert with a numeric conversion?
+  if (canConvertNumeric(actualT, formalT))
+    return convert(NUMERIC);
 
-  // Check for other class subtyping
-  // Class subtyping needs conversions in order to generate C code.
+  // can we convert with param narrowing?
+  if (canConvertParamNarrowing(actualQT, formalQT))
+    return convert(PARAM_NARROWING);
+
+  // can we convert tuples?
+  if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
+    assert(false && "not implemented yet");
+    // TODO: port canCoerceTuples from production compiler
+  }
+
+  // TODO: check for conversion to copy type
+  // (relevant for array slices and iterator records)
+  // TODO: port canCoerceToCopyType
+
+  return fail();
+}
+
+// handles formalT being a builtin generic type like integral
+bool CanPassResult::canInstantiateBuiltin(const types::Type* actualT,
+                                          const types::Type* formalT) {
+  if (formalT->isAnyType())
+    return true;
+
+  if (formalT->isAnyBoolType() && actualT->isBoolType())
+      return true;
+
+  if (formalT->isAnyBorrowedNilableType())
+    if (auto ct = actualT->toClassType())
+      if (ct->decorator().val() == ClassTypeDecorator::BORROWED_NILABLE)
+        return true;
+
+  if (formalT->isAnyBorrowedNonNilableType())
+    if (auto ct = actualT->toClassType())
+      if (ct->decorator().val() == ClassTypeDecorator::BORROWED_NONNIL)
+        return true;
+
+  if (formalT->isAnyBorrowedType())
+    if (auto ct = actualT->toClassType())
+      if (ct->decorator().isBorrowed())
+        return true;
+
+  if (formalT->isAnyComplexType() && actualT->isComplexType())
+    return true;
+
+  if (formalT->isAnyEnumType())
+    assert(false && "Not implemented yet"); // TODO: enumerated types
+
+  if (formalT->isAnyImagType() && actualT->isImagType())
+    return true;
+
+  if (formalT->isAnyIntType() && actualT->isIntType())
+    return true;
+
+  if (formalT->isAnyIntegralType() && actualT->isIntegralType())
+    return true;
+
+  if (formalT->isAnyIteratorClassType())
+    assert(false && "Not implemented yet"); // TODO: represent iterators
+
+  if (formalT->isAnyIteratorRecordType())
+    assert(false && "Not implemented yet"); // TODO: represent iterators
+
+  if (formalT->isAnyManagementAnyNilableType())
+    if (actualT->isClassType())
+      return true;
+
+  if (formalT->isAnyManagementNilableType())
+    if (auto ct = actualT->toClassType())
+      if (ct->decorator().isNilable())
+        return true;
+
+  if (formalT->isAnyManagementNonNilableType())
+    if (auto ct = actualT->toClassType())
+      if (ct->decorator().isNonNilable())
+        return true;
+
+  if (formalT->isAnyNumericType() && actualT->isNumericType())
+    return true;
+
+  if (formalT->isAnyOwnedType())
+    if (auto ct = actualT->toClassType())
+      if (ct->decorator().isManaged())
+        if (auto manager = ct->manager())
+          if (manager->isAnyOwnedType())
+            return true;
+
+  if (formalT->isAnyPodType())
+    assert(false && "Not implemented yet"); // TODO: compute POD-ness
+
+  if (formalT->isAnyRealType() && actualT->isRealType())
+    return true;
+
+  if (formalT->isAnyRecordType() && actualT->isUserRecordType())
+    return true;
+
+  if (formalT->isAnySharedType())
+    if (auto ct = actualT->toClassType())
+      if (ct->decorator().isManaged())
+        if (auto manager = ct->manager())
+          if (manager->isAnySharedType())
+            return true;
+
+  if (formalT->isAnyUintType() && actualT->isUintType())
+    return true;
+
+  if (formalT->isAnyUninstantiatedType())
+    if (actualT->isGeneric() || actualT->isUnknownType())
+      return true;
+
+
+  if (formalT->isAnyUnionType() && actualT->isUnionType())
+    return true;
+
+  if (formalT->isAnyUnmanagedNilableType())
+    if (auto ct = actualT->toClassType())
+      if (ct->decorator().val() == ClassTypeDecorator::UNMANAGED_NILABLE)
+        return true;
+
+  if (formalT->isAnyUnmanagedNonNilableType())
+    if (auto ct = actualT->toClassType())
+      if (ct->decorator().val() == ClassTypeDecorator::UNMANAGED_NONNIL)
+        return true;
+
+  if (formalT->isAnyUnmanagedType())
+    if (auto ct = actualT->toClassType())
+      if (ct->decorator().isUnmanaged())
+        return true;
+
+  return false;
+}
+
+CanPassResult CanPassResult::canInstantiate(const QualifiedType& actualQT,
+                                            const QualifiedType& formalQT) {
+  // Should we proceed with instantiation?
+  // Further checking will occur after the instantiation occurs,
+  // so checking here just rules out predictable situations.
+
+  const Type* actualT = actualQT.type();
+  const Type* formalT = formalQT.type();
+  assert(actualT && formalT);
+
+  // check for builtin generic types
+  if (canInstantiateBuiltin(actualT, formalT)) {
+    return instantiate();
+  }
+
+  // TODO: check for constrained generic types
+
+  if (auto actualCt = actualT->toClassType()) {
+    // check for instantiating classes
+    if (auto formalCt = formalT->toClassType()) {
+      CanPassResult got = canPassClassTypes(actualCt, formalCt);
+      if (got.passes() && got.instantiates()) {
+        return got;
+      }
+    }
+  } else if (auto actualAt = actualT->toCompositeType()) {
+    // check for instantiating records/unions/tuples
+    if (auto formalAt = formalT->toCompositeType()) {
+      if (actualAt->isInstantiationOf(formalAt)) {
+        return instantiate();
+      }
+    }
+  }
 
   return fail();
 }
@@ -450,52 +741,122 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
   const Type* formalT = formalQT.type();
   assert(actualT && formalT);
 
-  // TODO: check that kinds are compatible
+  // check that the kinds are compatible
+
+  // type formal, type actual -> OK
+  // non-type formal, non-type actual -> OK
+  // type formal, non-type actual -> error, can't pass value to type
+  // non-type formal, type actual -> error, can't pass type to value
+  if (formalQT.isType() != actualQT.isType())
+    return fail();
+
+  // param actuals can pass to non-param formals
+  if (formalQT.isParam() && !actualQT.isParam())
+    return fail();
 
   // check params
-  if (formalQT.hasParam()) {
-    const Param* actualParam = actualQT.param();
-    const Param* formalParam = formalQT.param();
-    if (actualParam && formalParam) {
-      if (actualParam != formalParam) {
-        // passing different param values won't do
-        return fail();
-      } // otherwise continue with type information
-    } else if (formalParam && !actualParam) {
-      // this case doesn't make sense
-      assert(false && "case not expected");
+  const Param* actualParam = actualQT.param();
+  const Param* formalParam = formalQT.param();
+  if (actualParam && formalParam) {
+    if (actualParam != formalParam) {
+      // passing different param values won't do
       return fail();
-    }
-    // otherwise the param passing is OK
+    } // otherwise continue with type information
+  } else if (formalParam && !actualParam) {
+    // this case doesn't make sense
+    assert(false && "case not expected");
+    return fail();
   }
 
   if (actualT == formalT) {
+    if (formalQT.kind() == QualifiedType::PARAM &&
+        formalQT.param() == nullptr) {
+      // if the formal parameter value is unknown, we need to instantiate
+      return instantiate();
+    }
+
+    // otherwise we can pass as-is
     return passAsIs();
   }
 
-  // can we convert with a numeric conversion?
-  if (canConvertNumeric(actualT, formalT))
-    return convert(NUMERIC);
-
-  // can we convert with param narrowing?
-  if (canConvertParamNarrowing(actualQT, formalQT))
-    return convert(PARAM_NARROWING);
-
-  {
-    CanPassResult ret = canConvertClassesOrPtrs(actualQT, formalQT);
-    if (ret.passes())
-      return ret;
+  if (formalQT.kind() == QualifiedType::OUT) {
+    // 'out' intent is unusual:
+    // type information for out intent will be inferred from the called function
+    return passAsIs();
   }
 
-  // can we convert tuples?
-  if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
-    assert(false && "not implemented yet");
-    // TODO: port canCoerceTuples from production compiler
+  if (actualQT.isUnknown()) {
+    return fail(); // actual type not established
   }
 
-  // TODO: check for conversion to copy type
-  // (relevant for array slices and iterator records)
-  // TODO: port canCoerceToCopyType
+  if (formalQT.isUnknown()) {
+    return fail(); // unknown formal type, can't resolve
+  }
+
+  if (formalQT.isGeneric()) {
+    // Check to see if we should proceed with instantiation.
+    // Further checking will occur after the instantiation occurs,
+    // so checking here just rules out predictable situations.
+
+    if (formalQT.kind() != QualifiedType::TYPE && actualQT.isGeneric())
+      return fail(); // generic types can only be passed to type actuals
+
+    return canInstantiate(actualQT, formalQT);
+
+  } else {
+    // if the formal type is concrete, do additional checking
+    // (if it is generic, we will do this checking after instantiation)
+    switch (formalQT.kind()) {
+      case QualifiedType::UNKNOWN:
+      case QualifiedType::FUNCTION:
+      case QualifiedType::MODULE:
+      case QualifiedType::INDEX:
+      case QualifiedType::DEFAULT_INTENT:
+      case QualifiedType::CONST_INTENT:
+      case QualifiedType::OUT: // handled above
+        // no additional checking for these
+        break;
+
+      case QualifiedType::REF:
+        return fail(); // ref type requires same time which is ruled out above
+
+      case QualifiedType::CONST_REF:
+      case QualifiedType::TYPE:
+        {
+          auto got = canPassSubtype(actualT, formalT);
+          if (got.passes()) {
+            return got;
+          }
+          break;
+        }
+
+      case QualifiedType::PARAM:
+        {
+          auto got = canConvert(actualQT, formalQT);
+          if (got.passes()) {
+            // if the formal parameter value is unknown, we need
+            // to instantiate as well.
+            if (formalQT.param() == nullptr) {
+              got.instantiates_ = true;
+            }
+            return got;
+          }
+          break;
+        }
+
+      case QualifiedType::IN:
+      case QualifiedType::CONST_IN:
+      case QualifiedType::INOUT:
+      case QualifiedType::VAR:       // var/const var don't really make sense
+      case QualifiedType::CONST_VAR: // as formals but we allow it for testing
+        {
+          auto got = canConvert(actualQT, formalQT);
+          if (got.passes())
+            return got;
+          break;
+        }
+    }
+  }
 
   // can we promote?
   // TODO: implement promotion check

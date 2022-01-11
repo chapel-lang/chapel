@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,8 +30,9 @@ bool AggregateDecl::validAggregateChildren(ASTListIteratorPair<Expression> it) {
     if (elt->isComment() || elt->isErroneousExpression()) {
       // OK
     } else if (elt->isDecl()) {
-      if (elt->isVariable() || elt->isFunction() ||
-          elt->isTupleDecl() || elt->isMultiDecl() ||
+      if (elt->isVariable() || elt->isFunction() || elt->isTupleDecl() ||
+          elt->isMultiDecl() ||
+          elt->isAggregateDecl() ||
           elt->isForwardingDecl()) {
         // OK
       } else {

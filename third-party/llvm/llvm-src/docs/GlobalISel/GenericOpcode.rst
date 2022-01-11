@@ -153,7 +153,7 @@ G_BITCAST
 ^^^^^^^^^
 
 Reinterpret a value as a new type. This is usually done without
-changing any bits but this is not always the case due a sublety in the
+changing any bits but this is not always the case due a subtlety in the
 definition of the :ref:`LLVM-IR Bitcast Instruction <i_bitcast>`. It
 is allowed to bitcast between pointers with the same size, but
 different address spaces.
@@ -245,10 +245,10 @@ These each perform their respective integer arithmetic on a scalar.
 
   %2:_(s32) = G_ADD %0:_(s32), %1:_(s32)
 
-G_SADDSAT, G_UADDSAT, G_SSUBSAT, G_USUBSAT
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+G_SADDSAT, G_UADDSAT, G_SSUBSAT, G_USUBSAT, G_SSHLSAT, G_USHLSAT
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Signed and unsigned addition and subtraction with saturation.
+Signed and unsigned addition, subtraction and left shift with saturation.
 
 .. code-block:: none
 
@@ -308,6 +308,16 @@ Take the minimum/maximum of two values.
 .. code-block:: none
 
   %5:_(s32) = G_SMIN %6, %2
+
+G_ABS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Take the absolute value of a signed integer. The absolute value of the minimum
+negative value (e.g. the 8-bit value `0x80`) is defined to be itself.
+
+.. code-block:: none
+
+  %1:_(s32) = G_ABS %0
 
 G_UADDO, G_SADDO, G_USUBO, G_SSUBO, G_SMULO, G_UMULO
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -534,6 +544,45 @@ G_SHUFFLE_VECTOR
 Concatenate two vectors and shuffle the elements according to the mask operand.
 The mask operand should be an IR Constant which exactly matches the
 corresponding mask for the IR shufflevector instruction.
+
+Vector Reduction Operations
+---------------------------
+
+These operations represent horizontal vector reduction, producing a scalar result.
+
+G_VECREDUCE_SEQ_FADD, G_VECREDUCE_SEQ_FMUL
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The SEQ variants perform reductions in sequential order. The first operand is
+an initial scalar accumulator value, and the second operand is the vector to reduce.
+
+G_VECREDUCE_FADD, G_VECREDUCE_FMUL
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These reductions are relaxed variants which may reduce the elements in any order.
+
+G_VECREDUCE_FMAX, G_VECREDUCE_FMIN
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+FMIN/FMAX nodes can have flags, for NaN/NoNaN variants.
+
+
+Integer/bitwise reductions
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* G_VECREDUCE_ADD
+* G_VECREDUCE_MUL
+* G_VECREDUCE_AND
+* G_VECREDUCE_OR
+* G_VECREDUCE_XOR
+* G_VECREDUCE_SMAX
+* G_VECREDUCE_SMIN
+* G_VECREDUCE_UMAX
+* G_VECREDUCE_UMIN
+
+Integer reductions may have a result type larger than the vector element type.
+However, the reduction is performed using the vector element type and the value
+in the top bits is unspecified.
 
 Memory Operations
 -----------------

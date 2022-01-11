@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -71,6 +71,9 @@ class Loop: public Expression {
  public:
   virtual ~Loop() override = 0; // this is an abstract base class
 
+  /**
+    Returns the block containing the body of this loop.
+  */
   const Block* body() const {
     auto ret = child(loopBodyChildNum_);
     return (const Block*) ret;

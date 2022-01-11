@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -158,7 +158,7 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	echo $(CHPL_MAKE_COMPILER_SUBDIR) > $(CHPL_CONFIG_CHECK)
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
-	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(CHPL_MAKE_THIRD_PARTY_HOST_LINK_ARGS) $(LIBS) $(LLVM_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(CHPL_MAKE_HOST_BUNDLED_LINK_ARGS) $(LIBS) $(LLVM_EXTRA_LIBS) $(CHPL_MAKE_HOST_SYSTEM_LINK_ARGS)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 

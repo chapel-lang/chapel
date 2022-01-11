@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,11 +76,19 @@ class OwnedIdsWithName {
     if (moreIds_.get()==nullptr && other.moreIds_.get()==nullptr)
       return true;
 
-    // otherwise check the vector elements
+    // otherwise, check the vector elements
     return *moreIds_.get() == *other.moreIds_.get();
   }
   bool operator!=(const OwnedIdsWithName& other) const {
     return !(*this == other);
+  }
+  void mark(Context* context) const {
+    id_.mark(context);
+    if (auto ptr = moreIds_.get()) {
+      for (auto const& elt : *ptr) {
+        context->markOwnedPointer(&elt);
+      }
+    }
   }
 };
 
@@ -163,6 +171,9 @@ class BorrowedIdsWithName {
     return ret;
   }
 
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ID().stringify(ss, stringKind);
+  }
 };
 
 // DeclMap: key - string name,  value - vector of ID of a NamedDecl
@@ -242,10 +253,33 @@ class Scope {
            containsUseImport_ == other.containsUseImport_ &&
            containsFunctionDecls_ == other.containsFunctionDecls_ &&
            id_ == other.id_ &&
-           declared_ == other.declared_;
+           declared_ == other.declared_ &&
+           name_ == other.name_;
   }
   bool operator!=(const Scope& other) const {
     return !(*this == other);
+  }
+  static bool update(owned<Scope>& keep,
+                     owned<Scope>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(parentScope_);
+    id_.mark(context);
+    name_.mark(context);
+    for (const auto& pair: declared_) {
+      pair.first.mark(context);
+      pair.second.mark(context);
+    }
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "Scope ";
+    ss << tagToString(tag());
+    ss << " ";
+    id().stringify(ss, stringKind);
+    ss << " ";
+    ss << std::to_string(numDeclared());
   }
 };
 
@@ -313,7 +347,8 @@ class VisibilitySymbols {
   bool operator==(const VisibilitySymbols &other) const {
     return symbolId_ == other.symbolId_ &&
            kind_ == other.kind_ &&
-           names_ == other.names_;
+           names_ == other.names_ &&
+           isPrivate_ == other.isPrivate_;
   }
   bool operator!=(const VisibilitySymbols& other) const {
     return !(*this == other);
@@ -323,6 +358,15 @@ class VisibilitySymbols {
     symbolId_.swap(other.symbolId_);
     std::swap(kind_, other.kind_);
     names_.swap(other.names_);
+    std::swap(isPrivate_, other.isPrivate_);
+  }
+
+  void mark(Context* context) const {
+    symbolId_.mark(context);
+    for (auto p : names_) {
+      p.first.mark(context);
+      p.second.mark(context);
+    }
   }
 };
 
@@ -366,6 +410,16 @@ class ResolvedVisibilityScope {
   }
   bool operator!=(const ResolvedVisibilityScope& other) const {
     return !(*this == other);
+  }
+  static bool update(owned<ResolvedVisibilityScope>& keep,
+                     owned<ResolvedVisibilityScope>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(scope_);
+    for (auto sym : visibilityClauses_) {
+      sym.mark(context);
+    }
   }
 };
 
@@ -417,6 +471,23 @@ class PoiScope {
   bool operator!=(const PoiScope& other) const {
     return !(*this == other);
   }
+  static bool update(owned<PoiScope>& keep,
+                     owned<PoiScope>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(inScope_);
+    context->markPointer(inFnPoi_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "PoiScope ";
+    inScope()->stringify(ss,stringKind);
+    ss << " ";
+    if (inFnPoi() != this) {
+      inFnPoi()->stringify(ss, stringKind);
+    }
+  }
 };
 
 /**
@@ -457,28 +528,30 @@ class InnermostMatch {
     id_.swap(other.id_);
     std::swap(found_, other.found_);
   }
+  static bool update(InnermostMatch& keep, InnermostMatch& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    id_.mark(context);
+  }
+
+  void stringify(std::ostream &ss, chpl::StringifyKind stringKind) const;
+
 };
+
 
 } // end namespace resolution
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<resolution::InnermostMatch> {
-  bool operator()(resolution::InnermostMatch& keep,
-                  resolution::InnermostMatch& addin) const {
-    bool match = (keep == addin);
-    if (match) {
-      return false;
-    } else {
-      keep.swap(addin);
-      return true;
-    }
-  }
-};
+
 /// \endcond
+
 
 } // end namespace chpl
 
+
 namespace std {
+
 
 /// \cond DO_NOT_DOCUMENT
 template<> struct hash<chpl::resolution::BorrowedIdsWithName>

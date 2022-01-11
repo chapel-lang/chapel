@@ -1,0 +1,24 @@
+  0 NUM LOCALES: 0
+  1 CHILD COUNT: 2
+  2 -------------
+  3 Range iteration:
+  4   i = 1	LOCALE0.ND0	0
+  4   i = 2	LOCALE0.ND0	0
+  4   i = 3	LOCALE0.ND1	1
+  4   i = 4	LOCALE0.ND1	1
+  4 Default rectangular domain zippered iteration:
+  5   i = ((1, 1), (1, 1))	here	0
+  5   i = ((1, 2), (1, 2))	here	0
+  5   i = ((2, 1), (2, 1))	here	1
+  5   i = ((2, 2), (2, 2))	here	1
+  5 Array view slice iteration:
+  6   i = 3	LOCALE0.ND0	0
+  6   i = 4	LOCALE0.ND0	0
+  6   i = 5	LOCALE0.ND1	1
+  6   i = 6	LOCALE0.ND1	1
+  6 Array view reindex iteration:
+  7   i = 1	LOCALE0.ND0	0
+  7   i = 2	LOCALE0.ND1	1
+  7 Array view rank change iteration:
+  8   i = 1	LOCALE0.ND0	0
+  8   i = 2	LOCALE0.ND1	1

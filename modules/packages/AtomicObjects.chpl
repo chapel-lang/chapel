@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,12 +19,17 @@
  */
 
 /*
-  .. note:: 
+  .. warning::
 
-    This package relies on Chapel ``extern`` code blocks and so requires that
-    ``CHPL_LLVM=bundled`` or ``CHPL_LLVM=system`` and that the Chapel compiler is
-    built with LLVM enabled. As well, currently only ``CHPL_TARGET_ARCH=x86_64``
-    is supported as we make use of the x86-64 instruction: CMPXCHG16B_.
+    This module has several platform restrictions in its current state:
+
+      - It relies on Chapel ``extern`` code blocks and so requires that
+        the Chapel compiler is built with LLVM enabled.
+      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
+        the x86-64 instruction: CMPXCHG16B_.
+      - The implementation relies on ``GCC`` style inline assembly, and so
+        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
+        ``clang``, or ``llvm``.
 
     .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
     

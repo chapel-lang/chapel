@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,9 @@
 namespace chpl {
 namespace types {
 
-ClassTypeDecorator::ClassTypeDecoratorEnum
+using ClassTypeDecoratorEnum = ClassTypeDecorator::ClassTypeDecoratorEnum;
+
+ClassTypeDecoratorEnum
 ClassTypeDecorator::combineDecorators(ClassTypeDecoratorEnum formalDecorator,
                                       ClassTypeDecoratorEnum actualDecorator) {
   ClassTypeDecoratorEnum d = formalDecorator;

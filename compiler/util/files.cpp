@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -173,11 +173,19 @@ const char* makeTempDir(const char* dirPrefix) {
   removeSpacesBackslashesFromString(myuserid);
 
   const char* tmpDir = astr(tmpdirprefix, myuserid, tmpdirsuffix);
-  const char* dirRes = mkdtemp((char*) tmpDir);
+  char* tmpDirMut = strdup(tmpDir);
+  char* dirRes = mkdtemp(tmpDirMut);
+
+  if (dirRes == NULL) {
+    USR_FATAL("unable to create temporary directory at %s\n", tmpDir);
+  }
 
   free(myuserid); myuserid = NULL;
 
-  return dirRes;
+  const char* ret = astr(dirRes);
+  free(tmpDirMut);
+
+  return ret;
 }
 
 void ensureTmpDirExists() {
@@ -559,6 +567,7 @@ std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
   for (auto& ii : varMap)
     command += ii.first + "=" + ii.second + " ";
 
+  command += "CHPLENV_SKIP_HOST=true ";
   command += "CHPLENV_SUPPRESS_WARNINGS=true ";
   command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple";
 
@@ -1021,6 +1030,15 @@ void expandInstallationPaths(std::vector<std::string>& args) {
     expandInstallationPaths(s);
     args[i] = s;
   }
+}
+
+bool isDirectory(const char* path)
+{
+  struct stat stats;
+  if (stat(path, &stats) == 0 && (stats.st_mode & S_IFMT) == S_IFDIR)
+    return true;
+
+  return false;
 }
 
 // would just use realpath, but it is not supported on all platforms.

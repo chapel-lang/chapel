@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,7 @@
 #include "chpl/queries/Context.h"
 #include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
+#include "chpl/queries/stringify-functions.h"
 
 /**
   This file should be included by .cpp files implementing queries.
@@ -118,10 +119,19 @@ QueryMapResult<ResultType,ArgTs...>::markUniqueStringsInResult(Context* context)
 template<typename... ArgTs>
 void Context::queryBeginTrace(const char* traceQueryName,
                               const std::tuple<ArgTs...>& tupleOfArg) {
-  if (enableDebugTracing) {
-    printf("QUERY BEGIN     %s (", traceQueryName);
-    queryArgsPrint(tupleOfArg);
-    printf(")\n");
+
+  if (breakSet || enableDebugTracing) {
+    auto args = queryArgsToStrings(tupleOfArg);
+    size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
+    if (enableDebugTracing) {
+      printf("QUERY BEGIN     %s (", traceQueryName);
+      queryArgsPrint(tupleOfArg);
+      printf(")\n");
+      printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
+    }
+    if (breakSet && queryAndArgsHash == breakOnHash) {
+      debuggerBreakHere();
+    }
   }
 }
 
@@ -506,7 +516,7 @@ Context::querySetterUpdateResult(
   it.
 
   Pass the name of the enclosing function as func, context is the
-  class Contex, and then pass any arguments to the query.
+  class Context, and then pass any arguments to the query.
  */
 #define QUERY_BEGIN(func, context, ...) \
   QUERY_BEGIN_INNER(false, func, context, __VA_ARGS__); \

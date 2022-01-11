@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -130,6 +130,7 @@ class ID final {
   int compare(const ID& other) const;
 
   bool operator==(const ID& other) const {
+    (void)numChildIds_; // quiet nextLinter
     return symbolPath_ == other.symbolPath_ &&
           postOrderId_ == other.postOrderId_;
   }
@@ -156,37 +157,31 @@ class ID final {
   }
 
   size_t hash() const {
+    (void)numChildIds_; // quiet nextLinter
     std::hash<int> hasher;
     return hash_combine(symbolPath_.hash(), hasher(postOrderId_));
   }
 
   void swap(ID& other) {
-    ID oldThis = *this;
-    *this = other;
-    other = oldThis;
+    std::swap(symbolPath_, other.symbolPath_);
+    std::swap(postOrderId_, other.postOrderId_);
+    std::swap(numChildIds_, other.numChildIds_);
   }
 
-  void markUniqueStrings(Context* context) const {
+  void mark(Context* context) const {
     this->symbolPath_.mark(context);
   }
 
-  std::string toString() const;
+  static bool update(chpl::ID& keep, chpl::ID& addin);
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::ID> {
-  bool operator()(chpl::ID& keep,
-                  chpl::ID& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-template<> struct mark<chpl::ID> {
-  void operator()(Context* context, const chpl::ID& keep) const {
-    keep.markUniqueStrings(context);
-  }
-};
+
 /// \endcond
+
 
 } // end namespace chpl
 

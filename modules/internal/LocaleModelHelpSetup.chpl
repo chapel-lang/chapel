@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -238,10 +238,13 @@ module LocaleModelHelpSetup {
 
     for i in childSpace {
       chpl_task_setSubloc(i:chpl_sublocID_t);
-      if i == 0 then
+      if i == 0 {
         dst.childLocales[i] = new unmanaged CPULocale(i:chpl_sublocID_t, dst);
-      else
+      }
+      else {
         dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
+        dst.childLocales[i].maxTaskPar = 1;
+      }
     }
     chpl_task_setSubloc(origSubloc);
   }

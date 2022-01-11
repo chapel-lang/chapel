@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -57,17 +57,9 @@ endif
 
 COMP_GEN_CFLAGS = $(MAKE_COMP_GEN_CFLAGS) $(COMP_GEN_USER_CFLAGS)
 
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.locModel-$(CHPL_MAKE_LOCALE_MODEL)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.tasks-$(CHPL_MAKE_TASKS)
+# Makefile.comm-* can set LD which ends up in override-ld
+# TODO: move this logic to printchplenv
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.unwind-$(CHPL_MAKE_UNWIND)
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.gmp-$(CHPL_MAKE_GMP)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.hwloc-$(CHPL_MAKE_HWLOC)
-# Makefile.jemalloc-$(CHPL_MAKE_JEMALLOC) is included in Makefile.mem-jemalloc
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.re2-$(CHPL_MAKE_RE2)
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.auxFilesys
 
 # Get runtime headers and required -D flags.
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
@@ -104,10 +96,15 @@ x:
 	@echo $(CHPL_MAKE_RUNTIME_LIB)
 
 printincludesanddefines:
-	@echo $(CHPL_MAKE_BASE_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS)
+	@echo $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) \
+	      -I. \
+	      $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS)
 
 printcompileline:
-	@echo $(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
+	@echo $(CC) \
+	      $(CHPL_MAKE_BASE_CFLAGS) $(COMP_GEN_CFLAGS) \
+	      $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) \
+	      -I.
 
 printcxxcompileline:
 	@echo $(CXX) $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS) $(CHPL_RT_INC_DIR)
@@ -116,28 +113,29 @@ printccompiler:
 	@echo $(CC)
 
 printcflags:
-	@echo $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS)
+	@echo $(CHPL_MAKE_BASE_CFLAGS) $(COMP_GEN_CFLAGS)
 
 printcxxflags:
-	@echo $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS)
+	@echo $(CHPL_MAKE_BASE_CXXFLAGS) $(COMP_GEN_CXXFLAGS)
 
 printlinkershared:
 	@echo $(LD) $(LIB_DYNAMIC_FLAG)
 
 printlibraries:
-	@echo $(CHPL_MAKE_BASE_LFLAGS) \
-	      $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-	      -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
-	      $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+	@echo $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS)
 
 printlinker:
 	@echo $(LD)
 
 printlinkline:
 	@echo $(LD) $(CHPL_MAKE_BASE_LFLAGS) \
-              $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-              -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
-              $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+              $(COMP_GEN_USER_LDFLAGS) $(COMP_GEN_LFLAGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS) \
+	      $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS)
+
+
 
 printoverrideld:
 	@echo $(LD)

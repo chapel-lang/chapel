@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -65,11 +65,6 @@ static bool        handle_erroneous_fns = true;
 astlocT            last_error_loc(0, NULL);
 
 static bool forceWidePtrs();
-
-// must be non-static to avoid dead-code elim. when compiling -O3
-void gdbShouldBreakHere() {
-
-}
 
 void setupError(const char* subdir, const char* filename, int lineno, int tag) {
   err_subdir        = subdir;

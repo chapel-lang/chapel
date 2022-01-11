@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,7 +141,7 @@ module ArrayViewRankChange {
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
     var upDomInst: unmanaged DefaultRectangularDom(rank, idxType, stridable)?;
-    forwarding upDom except these;
+    forwarding upDom except these, chpl__serialize, chpl__deserialize;
 
     // the collapsed dimensions and indices in those dimensions
     //

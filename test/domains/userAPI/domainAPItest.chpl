@@ -51,7 +51,7 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   writeln("D[",intDom," (as ranges)] = ", D[intDom.dim(0), intDom.dim(1)]);
 
   writeln("D.localSlice(",intDom,") = ", D.localSlice[intDom]);
-  writeln("D.targetLocales() = ", D.targetLocales());
+  writeln("D.targetLocales = ", D.targetLocales);
   writeln("D.hasSingleLocalSubdomain() = ", D.hasSingleLocalSubdomain());
   writeln("D.localSubdomain() = ", D.localSubdomain());
 

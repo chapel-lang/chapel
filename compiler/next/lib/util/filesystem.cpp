@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,9 +42,8 @@ FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut) {
   FILE* fp = fopen(path, mode);
   if (fp == nullptr) {
     std::string strerr = my_strerror(errno);
-    auto emptyLocation = Location();
     // set errorOut. NULL will be returned.
-    errorOut = ErrorMessage::build(emptyLocation, "opening %s: %s",
+    errorOut = ErrorMessage::build(ID(), Location(), "opening %s: %s",
                                    path, strerr.c_str());
   }
 
@@ -55,8 +54,7 @@ bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut) {
   int rc = fclose(fp);
   if (rc != 0) {
     std::string strerr = my_strerror(errno);
-    auto emptyLocation = Location();
-    errorOut = ErrorMessage::build(emptyLocation, "closing %s: %s",
+    errorOut = ErrorMessage::build(ID(), Location(), "closing %s: %s",
                                    path, strerr.c_str());
     return false;
   }
@@ -86,8 +84,7 @@ bool readfile(const char* path,
       strOut.append(buf, got);
     } else {
       if (ferror(fp)) {
-        auto emptyLocation = Location();
-        errorOut = ErrorMessage::build(emptyLocation, "reading %s", path);
+        errorOut = ErrorMessage::build(ID(), Location(), "reading %s", path);
         ErrorMessage ignored;
         closefile(fp, path, ignored);
         return false;

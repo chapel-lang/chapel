@@ -28,7 +28,7 @@ enum EscapeTag { kEscapeCsv, kEscapeHtml, kEscapeHtmlString };
 template <EscapeTag Tag> void writeEscaped(raw_ostream &OS, const StringRef S);
 
 template <> void writeEscaped<kEscapeCsv>(raw_ostream &OS, const StringRef S) {
-  if (std::find(S.begin(), S.end(), kCsvSep) == S.end()) {
+  if (!llvm::is_contained(S, kCsvSep)) {
     OS << S;
   } else {
     // Needs escaping.
@@ -555,11 +555,10 @@ Error Analysis::run<Analysis::PrintSchedClassInconsistencies>(
         continue; // Ignore noise and errors. FIXME: take noise into account ?
       if (ClusterId.isUnstable() ^ AnalysisDisplayUnstableOpcodes_)
         continue; // Either display stable or unstable clusters only.
-      auto SchedClassClusterIt =
-          std::find_if(SchedClassClusters.begin(), SchedClassClusters.end(),
-                       [ClusterId](const SchedClassCluster &C) {
-                         return C.id() == ClusterId;
-                       });
+      auto SchedClassClusterIt = llvm::find_if(
+          SchedClassClusters, [ClusterId](const SchedClassCluster &C) {
+            return C.id() == ClusterId;
+          });
       if (SchedClassClusterIt == SchedClassClusters.end()) {
         SchedClassClusters.emplace_back();
         SchedClassClusterIt = std::prev(SchedClassClusters.end());

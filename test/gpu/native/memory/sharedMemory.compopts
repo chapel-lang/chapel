@@ -1,0 +1,1 @@
+-s BLOCK_SIZE=4 --gpu-block-size=4

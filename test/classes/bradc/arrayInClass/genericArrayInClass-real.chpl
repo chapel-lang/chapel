@@ -29,11 +29,22 @@ class EnumC {
   var x: [enumDom] t;
 }
 
+iter sortedAssoc(arr) {
+  for k in arr.domain.sorted() {
+    yield arr[k];
+  }
+}
+
 // generic print routine
 
 proc foo(C) {
-  writeln("C.x.domain is: ", C.x.domain);
-  writeln("x is: ", C.x);
+  if (C.x.domain.isAssociative()) {
+    writeln("C.x.domain is: ", C.x.domain.sorted());
+    writeln("x is: ", sortedAssoc(C.x));
+  } else {
+    writeln("C.x.domain is: ", C.x.domain);
+    writeln("x is: ", C.x);
+  }
   writeln();
 }
 

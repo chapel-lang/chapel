@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -251,6 +251,27 @@ static void test5(Parser* parser) {
   assert(mod->stmt(2)->isComment());
 }
 
+static void test6(Parser* parser) {
+  auto parseResult = parser->parseString("test6.chpl",
+      "/*c1*/\n"
+      "private import /*c2*/ B.{+};\n"
+      "/*c7*/\n");
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isImport());
+  assert(mod->stmt(2)->isComment());
+  const Import* imp = mod->stmt(1)->toImport();
+  assert(imp->visibility() == Decl::PRIVATE);
+  assert(imp->numVisibilityClauses() == 1);
+  auto vc = imp->visibilityClause(0);
+  assert(vc->limitationKind() == VisibilityClause::BRACES);
+  assert(vc->numLimitations() == 1);
+  assert(vc->limitation(0)->isIdentifier());
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -264,6 +285,7 @@ int main() {
   test3(p);
   test4(p);
   test5(p);
+  test6(p);
 
   return 0;
 }
