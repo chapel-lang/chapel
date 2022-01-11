@@ -1589,6 +1589,40 @@ struct Converter {
     return ret;
   }
 
+  Expr* convertLifetimeClause(const uast::Expression* node) {
+    assert(node->isOpCall() || node->isReturn());
+    if (auto opCall = node->toOpCall()) {
+      assert(opCall->numActuals()==2);
+      auto lhsIdent = opCall->actual(0)->toIdentifier();
+      auto rhsIdent = opCall->actual(1)->toIdentifier();
+      assert(lhsIdent && rhsIdent);
+      assert(opCall->op() == "=" || opCall->op() == "<" || opCall->op() == "<="
+             || opCall->op() == "==" || opCall->op() == ">" || opCall->op() == ">=");
+      Expr* lhs = convertLifetimeIdent(lhsIdent);
+      Expr* rhs = convertLifetimeIdent(rhsIdent);
+      return new CallExpr(opCall->op().c_str(), lhs, rhs);
+    } else if (auto ret = node->toReturn()) {
+      assert(ret->value() && ret->value()->isIdentifier());
+      auto ident = ret->value()->toIdentifier();
+
+      Expr* val = convertLifetimeIdent(ident);
+      return new CallExpr(PRIM_RETURN, val);
+
+    } else {
+      assert(false); // should not arrive here, or else we missed something
+    }
+
+  }
+
+  CallExpr* convertLifetimeIdent(const uast::Identifier* node) {
+    astlocMarker markAstLoc(node->id());
+    auto ident = node->toIdentifier();
+    assert(ident);
+    CallExpr* callExpr = new CallExpr(PRIM_LIFETIME_OF,
+                                      convertExprOrNull(node));
+    return callExpr;
+  }
+
   Expr* visit(const uast::Function* node) {
     FnSymbol* fn = new FnSymbol("_");
 
@@ -1716,7 +1750,7 @@ struct Converter {
     Expr* lifetimeConstraints = nullptr;
     if (node->numLifetimeClauses() > 0) {
       for (auto clause : node->lifetimeClauses()) {
-        Expr* convertedClause = convertAST(clause);
+        Expr* convertedClause = convertLifetimeClause(clause);
         INT_ASSERT(convertedClause);
 
         if (lifetimeConstraints == nullptr) {

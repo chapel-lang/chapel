@@ -595,8 +595,7 @@ static std::set<std::string> blockedInternalModules = {
   "ChapelArray",             // Prim call with named args.
   "ChapelDomain",            // Prim call with named args.
   "ChapelDistribution",      // Segfault somewhere...
-  "ChapelSyncvar",           // Lifetimes.
-  "MemConsistency"           // Redefinition of a function...
+  "MemConsistency"           // error: conflicting types for ‘chpl_rmem_consist_fence’
 };
 
 // TODO: Adjust me over time as more internal modules parse.
