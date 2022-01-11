@@ -51,17 +51,45 @@ proc numFields(type t) param : int
   return __primitive("num fields", checkQueryT(t));
 
 /* Get the name of the ith field in a class or record.
+   Causes a compilation error if `idx` is not in 0..<numFields(t).
+
+   :arg t: a class or record type
+   :arg idx: which field to get the name of
+   :returns: the name of the field, as a param string
+ */
+proc getFieldName(type t, param idx:int) param : string
+  return __primitive("field num to name", checkQueryT(t), idx+1);
+
+/* Get the name of the ith field in a class or record.
    Causes a compilation error if `i` is not in 0..<numFields(t).
 
    :arg t: a class or record type
    :arg i: which field to get the name of
    :returns: the name of the field, as a param string
  */
-proc getFieldName(type t, param i:int) param : string
+pragma "last resort"
+deprecated "Formal 'i' is deprecated, please use 'idx' instead"
+proc getFieldName(type t, param i:int) param : string {
   return __primitive("field num to name", checkQueryT(t), i+1);
+}
 
 // Note, since this version has a where clause, it is preferred
 // over the const ref one.
+/* Get the ith field in a class or record. When the ith field is
+   a `param` this overload will be chosen to return a `param`.
+   Causes a compilation error if `idx` is not in 0..<numFields(t).
+
+   :arg obj: a class or record
+   :arg idx: which field to get
+   :returns: the `param` that field represents
+*/
+proc getField(const ref obj:?t, param idx: int) param
+  where idx >= 0 && idx < numFields(t) &&
+        isParam(__primitive("field by num", obj, idx+1)) {
+
+  return __primitive("field by num", obj, idx+1);
+}
+
 /* Get the ith field in a class or record. When the ith field is
    a `param` this overload will be chosen to return a `param`.
    Causes a compilation error if `i` is not in 0..<numFields(t).
@@ -70,6 +98,8 @@ proc getFieldName(type t, param i:int) param : string
    :arg i: which field to get
    :returns: the `param` that field represents
 */
+pragma "last resort"
+deprecated "The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead"
 proc getField(const ref x:?t, param i: int) param
   where i >= 0 && i < numFields(t) &&
         isParam(__primitive("field by num", x, i+1)) {
@@ -81,12 +111,29 @@ proc getField(const ref x:?t, param i: int) param
 // over the const ref one.
 /* Get the ith field in a class or record. When the ith field is
    a `type` variable this overload will be chosen to return a type.
+   Causes a compilation error if `idx` is not in 0..<numFields(t).
+
+   :arg obj: a class or record
+   :arg idx: which field to get
+   :returns: the type that field represents
+*/
+proc getField(const ref obj:?t, param idx: int) type
+  where idx >= 0 && idx < numFields(t) &&
+        isType(__primitive("field by num", obj, idx+1)) {
+
+  return __primitive("field by num", obj, idx+1);
+}
+
+/* Get the ith field in a class or record. When the ith field is
+   a `type` variable this overload will be chosen to return a type.
    Causes a compilation error if `i` is not in 0..<numFields(t).
 
    :arg x: a class or record
    :arg i: which field to get
    :returns: the type that field represents
 */
+pragma "last resort"
+deprecated "The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead"
 proc getField(const ref x:?t, param i: int) type
   where i >= 0 && i < numFields(t) &&
         isType(__primitive("field by num", x, i+1)) {
@@ -95,16 +142,44 @@ proc getField(const ref x:?t, param i: int) type
 }
 
 /* Get the ith field in a class or record.
+   Causes a compilation error if `idx` is not in 0..<numFields(t).
+
+   :arg obj: a class or record
+   :arg idx: which field to get
+   :returns: an rvalue referring to that field.
+ */
+pragma "unsafe"
+inline proc getField(const ref obj:?t, param idx:int) const ref
+  return __primitive("field by num", obj, idx+1);
+
+/* Get the ith field in a class or record.
    Causes a compilation error if `i` is not in 0..<numFields(t).
 
    :arg x: a class or record
    :arg i: which field to get
    :returns: an rvalue referring to that field.
  */
+pragma "last resort"
 pragma "unsafe"
-inline
-proc getField(const ref x:?t, param i:int) const ref
+deprecated "The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead"
+inline proc getField(const ref x:?t, param i:int) const ref
   return __primitive("field by num", x, i+1);
+
+/* Get a field in a class or record by name. When the named
+   field is a `param` this overload will be chosen to return a
+   `param`. Will generate a compilation error if a field with
+   that name is not found.
+
+   :arg obj: a class or record
+   :arg name: the name of a field
+   :returns: the `param` that field represents
+ */
+proc getField(const ref obj:?t, param name: string) param
+
+  where getFieldIndex(t, name) != -1 && isParam(getField(obj, getFieldIndex(t, name))) {
+
+  return getField(obj, getFieldIndex(t, name));
+}
 
 /* Get a field in a class or record by name. When the named
    field is a `param` this overload will be chosen to return a
@@ -115,6 +190,8 @@ proc getField(const ref x:?t, param i:int) const ref
    :arg s: the name of a field
    :returns: the `param` that field represents
  */
+pragma "last resort"
+deprecated "The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead"
 proc getField(const ref x:?t, param s: string) param
   where getFieldIndex(t, s) != -1 && isParam(getField(x, getFieldIndex(t, s))) {
 
@@ -126,14 +203,47 @@ proc getField(const ref x:?t, param s: string) param
    return a type. Will generate a compilation error if a field
    with that name is not found.
 
+   :arg obj: a class or record
+   :arg name: the name of a field
+   :returns: the type that field represents
+ */
+proc getField(const ref obj:?t, param name: string) type
+  where getFieldIndex(t, name) != -1 && isType(getField(obj, getFieldIndex(t, name))) {
+
+  return getField(obj, getFieldIndex(t, name));
+}
+
+/* Get a field in a class or record by name. When the named
+   field is a `type` variable this overload will be chosen to
+   return a type. Will generate a compilation error if a field
+   with that name is not found.
+
    :arg x: a class or record
    :arg s: the name of a field
    :returns: the type that field represents
  */
+pragma "last resort"
+deprecated "The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead"
 proc getField(const ref x:?t, param s: string) type
   where getFieldIndex(t, s) != -1 && isType(getField(x, getFieldIndex(t, s))) {
 
   return getField(x, getFieldIndex(t, s));
+}
+
+/* Get a field in a class or record by name.
+   Will generate a compilation error if a field with that name
+   is not found.
+
+   :arg obj: a class or record
+   :arg name: the name of a field
+   :returns: an rvalue referring to that field.
+ */
+pragma "unsafe"
+inline proc getField(const ref obj:?t, param name:string) const ref {
+  param i = __primitive("field name to num", t, name);
+  if i == 0 then
+    compilerError("field ", name, " not found in ", t:string);
+  return __primitive("field by num", obj, i);
 }
 
 /* Get a field in a class or record by name.
@@ -145,8 +255,9 @@ proc getField(const ref x:?t, param s: string) type
    :returns: an rvalue referring to that field.
  */
 pragma "unsafe"
-inline
-proc getField(const ref x:?t, param s:string) const ref {
+pragma "last resort"
+deprecated "The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead"
+inline proc getField(const ref x:?t, param s:string) const ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
     compilerError("field ", s, " not found in ", t:string);
@@ -224,11 +335,33 @@ proc getFieldRef(ref x:?t, param s:string) ref {
    the field is not found.
 
    :arg t: a class or record type
+   :arg name: the name of a field
+   :returns: an index `i` usable in getField, or -1 if the field was not found.
+ */
+proc getFieldIndex(type t, param name:string) param : int
+  return __primitive("field name to num", checkQueryT(t), name)-1;
+
+/* Get a field index in a class or record, or -1 if
+   the field is not found.
+
+   :arg t: a class or record type
    :arg s: the name of a field
    :returns: an index `i` usable in getField, or -1 if the field was not found.
  */
+pragma "last resort"
+deprecated "The formal 's' is deprecated, please use 'name' instead"
 proc getFieldIndex(type t, param s:string) param : int
   return __primitive("field name to num", checkQueryT(t), s)-1;
+
+/* Returns `true` if a class or record has a field named `name`,
+   or `false` otherwise.
+
+   :arg t: a class or record type
+   :arg name: the name of a field
+   :returns: `true` if the field is present.
+ */
+proc hasField(type t, param name:string) param : bool
+  return getFieldIndex(t, name) >= 0;
 
 /* Returns `true` if a class or record has a field named `s`,
    or `false` otherwise.
@@ -237,9 +370,22 @@ proc getFieldIndex(type t, param s:string) param : int
    :arg s: the name of a field
    :returns: `true` if the field is present.
  */
-
+pragma "last resort"
+deprecated "The formal 's' is deprecated, please use 'name' instead"
 proc hasField(type t, param s:string) param : bool
   return getFieldIndex(t, s) >= 0;
+
+/* Returns `true` if the given class or record's ith field
+   has been instantiated.
+
+   :arg t: a class or record type
+   :arg idx: which field to query
+   :returns: `true` if the field is instantiated
+*/
+proc isFieldBound(type t, param idx: int) param : bool {
+  return __primitive("is bound", checkQueryT(t),
+                     getFieldName(checkQueryT(t), idx));
+}
 
 /* Returns `true` if the given class or record's ith field
    has been instantiated.
@@ -248,9 +394,22 @@ proc hasField(type t, param s:string) param : bool
    :arg i: which field to query
    :returns: `true` if the field is instantiated
 */
+pragma "last resort"
+deprecated "The formal 'i' is deprecated, please use 'idx' instead"
 proc isFieldBound(type t, param i: int) param : bool {
   return __primitive("is bound", checkQueryT(t),
                      getFieldName(checkQueryT(t), i));
+}
+
+/* Returns `true` if the given class or record's field named `name`
+   has been instantiated.
+
+   :arg t: a class or record type
+   :arg name: the name of a field
+   :returns: `true` if the field is instantiated
+*/
+proc isFieldBound(type t, param name : string) param : bool {
+  return __primitive("is bound", checkQueryT(t), name);
 }
 
 /* Returns `true` if the given class or record's field named `s`
@@ -260,6 +419,8 @@ proc isFieldBound(type t, param i: int) param : bool {
    :arg s: the name of a field
    :returns: `true` if the field is instantiated
 */
+pragma "last resort"
+deprecated "The formal 's' is deprecated, please use 'name' instead"
 proc isFieldBound(type t, param s : string) param : bool {
   return __primitive("is bound", checkQueryT(t), s);
 }
