@@ -30,7 +30,7 @@ module ChapelDebugPrint {
   private use ChapelStandard, SysCTypes;
   private use ChapelIOStringifyHelper;
 
-  proc chpl_debug_stringify(args...) : string {
+  proc chpl_debug_stringify(const ref args...) : string {
     var str = "";
     for param i in 0..args.size-1 {
       var tmp = args(i);
@@ -47,7 +47,7 @@ module ChapelDebugPrint {
   // this function allows DefaultRectangular to perform
   // debug output without using stdout/writeln. It is a
   // work around for module ordering issues in resolution.
-  proc chpl_debug_writeln(args...) {
+  proc chpl_debug_writeln(const ref args...) {
     extern proc printf(fmt:c_string, f:c_string);
     var str = chpl_debug_stringify((...args));
     printf("%s\n", str.c_str());
