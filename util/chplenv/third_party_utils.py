@@ -3,7 +3,6 @@ import re
 
 import chpl_cpu, chpl_arch, chpl_compiler
 import chpl_lib_pic, chpl_locale_model, chpl_platform
-import chpl_home_utils
 from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
 from utils import error, memoize, run_command, warning
 
@@ -330,7 +329,6 @@ def read_pkg_config_file(pcpath,
                 if pattern:
                     val = re.sub(pattern, replace_third_party, val)
 
-                #val = chpl_home_utils.add_vars_to_paths(val)
                 ret[key] = val
             else:
                 # look for a line like KEY: VALUE
