@@ -1598,8 +1598,20 @@ static void checkUnsupportedConfigs(void) {
 }
 
 static void checkRuntimeBuilt(void) {
-  // no need for a runtime to be built for chpldoc
-  if (fDocs) {
+  // no need for a runtime to be built for chpldoc,
+  // or if we stop before codegen with --stop-after-pass or --no-codegen
+  bool stopBeforeCodegen = false;
+  if (stopAfterPass[0] != '\0') {
+    if (0 == strcmp(stopAfterPass, "codegen") ||
+        0 == strcmp(stopAfterPass, "makeBinary")) {
+      // it doesn't stop before codegen - codegen will run, might need hdrs
+      stopBeforeCodegen = false;
+    } else {
+      // stop before codegen
+      stopBeforeCodegen = true;
+    }
+  }
+  if (fDocs || no_codegen || stopBeforeCodegen) {
     return;
   }
 
