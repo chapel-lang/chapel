@@ -178,6 +178,30 @@ inline bool CallExpr::isResolved() const {
   return resolvedFunction() != NULL;
 }
 
+inline bool CallExpr::isEmpty() const {
+  return primitive == NULL && baseExpr == NULL;
+}
+
+inline bool CallExpr::isPrimitive() const {
+  return primitive != NULL;
+}
+
+inline bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
+  return primitive && primitive->tag == primitiveTag;
+}
+
+inline bool CallExpr::isPrimitive(const char* primitiveName) const {
+  return primitive && !strcmp(primitive->name, primitiveName);
+}
+
+inline int CallExpr::numActuals() const {
+  return argList.length;
+}
+
+inline Expr* CallExpr::get(int index) const {
+  return argList.get(index);
+}
+
 // TODO: rename these
 bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor);
 bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor);

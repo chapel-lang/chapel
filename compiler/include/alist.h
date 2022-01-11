@@ -188,4 +188,64 @@ class AList {
        field = _alist_prev,                                             \
          _alist_prev = (field && field->defPoint->prev) ? toDefExpr(field->defPoint->prev)->sym : NULL)
 
+inline AList::AList() :
+  head(NULL),
+  tail(NULL),
+  parent(NULL),
+  length(0)
+{ }
+
+
+inline Expr* AList::first(void) {
+  return head;
+}
+
+
+inline Expr* AList::last(void) {
+  return tail;
+}
+
+
+inline Expr* AList::only(void) {
+  if (!head)
+    INT_FATAL("only() called on empty list");
+
+  if (head == tail)
+    return first();
+  else
+    INT_FATAL("only() called on list with more than one element");
+
+  return NULL;
+}
+
+// Yikes! This header has to go here because we want ::get to be inlined
+// Since we access expr->next we need the full defintion of Expr
+// but since  Expr includes an AList by value inside of itself,
+// it needs the full definition of AList
+#include "expr-class-def.h"
+
+inline Expr* AList::get(int index) const {
+  if (index <=0) {
+    INT_FATAL("Indexing list must use positive integer");
+  }
+
+  int i = 0;
+
+  for_alist(node, *this) {
+    i++;
+
+    if (i == index) {
+      return node;
+    }
+  }
+
+  INT_FATAL("Indexing list out of bounds");
+
+  return NULL;
+}
+
+inline bool AList::empty() const {
+  return length == 0;
+}
+
 #endif
