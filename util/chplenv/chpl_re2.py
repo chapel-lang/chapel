@@ -44,6 +44,10 @@ def get_uniq_cfg_path():
 #  (compiler_bundled_args, compiler_system_args)
 @memoize
 def get_compile_args():
+    re2_val = get()
+    if re2_val == 'bundled':
+        return third_party_utils.get_bundled_compile_args('re2')
+
     return ([ ], [ ])
 
 # returns 2-tuple of lists
