@@ -111,41 +111,6 @@ TEST(TripleTest, ParsedIDs) {
   EXPECT_EQ(Triple::Linux, T.getOS());
   EXPECT_EQ(Triple::Musl, T.getEnvironment());
 
-  T = Triple("powerpc-bgp-linux");
-  EXPECT_EQ(Triple::ppc, T.getArch());
-  EXPECT_EQ(Triple::BGP, T.getVendor());
-  EXPECT_EQ(Triple::Linux, T.getOS());
-  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
-
-  T = Triple("powerpc-bgp-cnk");
-  EXPECT_EQ(Triple::ppc, T.getArch());
-  EXPECT_EQ(Triple::BGP, T.getVendor());
-  EXPECT_EQ(Triple::CNK, T.getOS());
-  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
-
-  T = Triple("ppc-bgp-linux");
-  EXPECT_EQ(Triple::ppc, T.getArch());
-  EXPECT_EQ(Triple::BGP, T.getVendor());
-  EXPECT_EQ(Triple::Linux, T.getOS());
-  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
-
-  T = Triple("ppc32-bgp-linux");
-  EXPECT_EQ(Triple::ppc, T.getArch());
-  EXPECT_EQ(Triple::BGP, T.getVendor());
-  EXPECT_EQ(Triple::Linux, T.getOS());
-  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
-
-  T = Triple("powerpc64-bgq-linux");
-  EXPECT_EQ(Triple::ppc64, T.getArch());
-  EXPECT_EQ(Triple::BGQ, T.getVendor());
-  EXPECT_EQ(Triple::Linux, T.getOS());
-  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
-
-  T = Triple("ppc64-bgq-linux");
-  EXPECT_EQ(Triple::ppc64, T.getArch());
-  EXPECT_EQ(Triple::BGQ, T.getVendor());
-  EXPECT_EQ(Triple::Linux, T.getOS());
-
   T = Triple("powerpc-ibm-aix");
   EXPECT_EQ(Triple::ppc, T.getArch());
   EXPECT_EQ(Triple::IBM, T.getVendor());
@@ -169,6 +134,18 @@ TEST(TripleTest, ParsedIDs) {
   EXPECT_EQ(Triple::PPCSubArch_spe, T.getSubArch());
   EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
   EXPECT_EQ(Triple::FreeBSD, T.getOS());
+  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
+
+  T = Triple("s390x-ibm-zos");
+  EXPECT_EQ(Triple::systemz, T.getArch());
+  EXPECT_EQ(Triple::IBM, T.getVendor());
+  EXPECT_EQ(Triple::ZOS, T.getOS());
+  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
+
+  T = Triple("systemz-ibm-zos");
+  EXPECT_EQ(Triple::systemz, T.getArch());
+  EXPECT_EQ(Triple::IBM, T.getVendor());
+  EXPECT_EQ(Triple::ZOS, T.getOS());
   EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
 
   T = Triple("arm-none-none-eabi");
@@ -322,6 +299,18 @@ TEST(TripleTest, ParsedIDs) {
 
   T = Triple("ve-unknown-linux");
   EXPECT_EQ(Triple::ve, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
+
+  T = Triple("csky-unknown-unknown");
+  EXPECT_EQ(Triple::csky, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::UnknownOS, T.getOS());
+  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
+
+  T = Triple("csky-unknown-linux");
+  EXPECT_EQ(Triple::csky, T.getArch());
   EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
   EXPECT_EQ(Triple::Linux, T.getOS());
   EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
@@ -905,6 +894,12 @@ TEST(TripleTest, BitWidthPredicates) {
   EXPECT_FALSE(T.isArch32Bit());
   EXPECT_TRUE(T.isArch64Bit());
   EXPECT_TRUE(T.isRISCV());
+
+  T.setArch(Triple::csky);
+  EXPECT_FALSE(T.isArch16Bit());
+  EXPECT_TRUE(T.isArch32Bit());
+  EXPECT_FALSE(T.isArch64Bit());
+  EXPECT_TRUE(T.isCSKY());
 }
 
 TEST(TripleTest, BitWidthArchVariants) {
@@ -1003,6 +998,10 @@ TEST(TripleTest, BitWidthArchVariants) {
   T.setArch(Triple::riscv64);
   EXPECT_EQ(Triple::riscv32, T.get32BitArchVariant().getArch());
   EXPECT_EQ(Triple::riscv64, T.get64BitArchVariant().getArch());
+
+  T.setArch(Triple::csky);
+  EXPECT_EQ(Triple::csky, T.get32BitArchVariant().getArch());
+  EXPECT_EQ(Triple::UnknownArch, T.get64BitArchVariant().getArch());
 
   T.setArch(Triple::thumbeb);
   EXPECT_EQ(Triple::thumbeb, T.get32BitArchVariant().getArch());
@@ -1112,7 +1111,7 @@ TEST(TripleTest, EndianArchVariants) {
 
   T.setArch(Triple::ppc);
   EXPECT_EQ(Triple::ppc, T.getBigEndianArchVariant().getArch());
-  EXPECT_EQ(Triple::UnknownArch, T.getLittleEndianArchVariant().getArch());
+  EXPECT_EQ(Triple::ppcle, T.getLittleEndianArchVariant().getArch());
 
   T.setArch(Triple::ppc64);
   EXPECT_EQ(Triple::ppc64, T.getBigEndianArchVariant().getArch());
@@ -1157,6 +1156,10 @@ TEST(TripleTest, EndianArchVariants) {
   T.setArch(Triple::le64);
   EXPECT_EQ(Triple::UnknownArch, T.getBigEndianArchVariant().getArch());
   EXPECT_EQ(Triple::le64, T.getLittleEndianArchVariant().getArch());
+
+  T.setArch(Triple::csky);
+  EXPECT_EQ(Triple::UnknownArch, T.getBigEndianArchVariant().getArch());
+  EXPECT_EQ(Triple::csky, T.getLittleEndianArchVariant().getArch());
 }
 
 TEST(TripleTest, getOSVersion) {
@@ -1261,6 +1264,14 @@ TEST(TripleTest, getOSVersion) {
   EXPECT_EQ((unsigned)0, Minor);
   EXPECT_EQ((unsigned)0, Micro);
 
+  // For darwin triples on macOS 11, only compare the major version.
+  T = Triple("x86_64-apple-darwin20.2");
+  EXPECT_TRUE(T.isMacOSX());
+  T.getMacOSXVersion(Major, Minor, Micro);
+  EXPECT_EQ((unsigned)11, Major);
+  EXPECT_EQ((unsigned)0, Minor);
+  EXPECT_EQ((unsigned)0, Micro);
+
   T = Triple("armv7-apple-ios");
   EXPECT_FALSE(T.isMacOSX());
   EXPECT_TRUE(T.isiOS());
@@ -1349,6 +1360,15 @@ TEST(TripleTest, FileFormat) {
   EXPECT_EQ(Triple::ELF, Triple("i686-pc-windows-msvc-elf").getObjectFormat());
   EXPECT_EQ(Triple::ELF, Triple("i686-pc-cygwin-elf").getObjectFormat());
 
+  EXPECT_EQ(Triple::ELF, Triple("systemz-ibm-linux").getObjectFormat());
+  EXPECT_EQ(Triple::ELF, Triple("systemz-ibm-unknown").getObjectFormat());
+
+  EXPECT_EQ(Triple::GOFF, Triple("s390x-ibm-zos").getObjectFormat());
+  EXPECT_EQ(Triple::GOFF, Triple("systemz-ibm-zos").getObjectFormat());
+  EXPECT_EQ(Triple::GOFF, Triple("s390x-ibm-zos-goff").getObjectFormat());
+  EXPECT_EQ(Triple::GOFF, Triple("s390x-unknown-zos-goff").getObjectFormat());
+  EXPECT_EQ(Triple::GOFF, Triple("s390x---goff").getObjectFormat());
+
   EXPECT_EQ(Triple::Wasm, Triple("wasm32-unknown-unknown").getObjectFormat());
   EXPECT_EQ(Triple::Wasm, Triple("wasm64-unknown-unknown").getObjectFormat());
   EXPECT_EQ(Triple::Wasm, Triple("wasm32-wasi").getObjectFormat());
@@ -1374,6 +1394,9 @@ TEST(TripleTest, FileFormat) {
   EXPECT_EQ(Triple::XCOFF, Triple("powerpc---xcoff").getObjectFormat());
   EXPECT_EQ(Triple::XCOFF, Triple("powerpc64---xcoff").getObjectFormat());
 
+  EXPECT_EQ(Triple::ELF, Triple("csky-unknown-unknown").getObjectFormat());
+  EXPECT_EQ(Triple::ELF, Triple("csky-unknown-linux").getObjectFormat());
+
   Triple MSVCNormalized(Triple::normalize("i686-pc-windows-msvc-elf"));
   EXPECT_EQ(Triple::ELF, MSVCNormalized.getObjectFormat());
 
@@ -1395,6 +1418,9 @@ TEST(TripleTest, FileFormat) {
 
   T.setObjectFormat(Triple::XCOFF);
   EXPECT_EQ(Triple::XCOFF, T.getObjectFormat());
+
+  T.setObjectFormat(Triple::GOFF);
+  EXPECT_EQ(Triple::GOFF, T.getObjectFormat());
 }
 
 TEST(TripleTest, NormalizeWindows) {
@@ -1571,6 +1597,11 @@ TEST(TripleTest, ParseARMArch) {
   {
     Triple T = Triple("aarch64_be");
     EXPECT_EQ(Triple::aarch64_be, T.getArch());
+  }
+  {
+    Triple T = Triple("arm64e");
+    EXPECT_EQ(Triple::aarch64, T.getArch());
+    EXPECT_EQ(Triple::AArch64SubArch_arm64e, T.getSubArch());
   }
 }
 } // end anonymous namespace

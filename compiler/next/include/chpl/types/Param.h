@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -124,6 +124,7 @@ class Param {
   }
 
   bool operator==(const Param& other) const {
+    (void)tag_;  // quiet nextLinter
     return completeMatch(&other);
   }
   bool operator!=(const Param& other) const {

@@ -216,9 +216,10 @@ TEST(ConstantsTest, AsInstructionsTest) {
   Constant *Two = ConstantInt::get(Int64Ty, 2);
   Constant *Big = ConstantInt::get(Context, APInt{256, uint64_t(-1), true});
   Constant *Elt = ConstantInt::get(Int16Ty, 2015);
-  Constant *Undef16  = UndefValue::get(Int16Ty);
+  Constant *Poison16 = PoisonValue::get(Int16Ty);
   Constant *Undef64  = UndefValue::get(Int64Ty);
   Constant *UndefV16 = UndefValue::get(P6->getType());
+  Constant *PoisonV16 = PoisonValue::get(P6->getType());
 
   #define P0STR "ptrtoint (i32** @dummy to i32)"
   #define P1STR "uitofp (i32 ptrtoint (i32** @dummy to i32) to float)"
@@ -288,15 +289,15 @@ TEST(ConstantsTest, AsInstructionsTest) {
   CHECK(ConstantExpr::getExtractElement(P6, One), "extractelement <2 x i16> "
         P6STR ", i32 1");
 
-  EXPECT_EQ(Undef16, ConstantExpr::getExtractElement(P6, Two));
-  EXPECT_EQ(Undef16, ConstantExpr::getExtractElement(P6, Big));
-  EXPECT_EQ(Undef16, ConstantExpr::getExtractElement(P6, Undef64));
+  EXPECT_EQ(Poison16, ConstantExpr::getExtractElement(P6, Two));
+  EXPECT_EQ(Poison16, ConstantExpr::getExtractElement(P6, Big));
+  EXPECT_EQ(Poison16, ConstantExpr::getExtractElement(P6, Undef64));
 
   EXPECT_EQ(Elt, ConstantExpr::getExtractElement(
                  ConstantExpr::getInsertElement(P6, Elt, One), One));
   EXPECT_EQ(UndefV16, ConstantExpr::getInsertElement(P6, Elt, Two));
   EXPECT_EQ(UndefV16, ConstantExpr::getInsertElement(P6, Elt, Big));
-  EXPECT_EQ(UndefV16, ConstantExpr::getInsertElement(P6, Elt, Undef64));
+  EXPECT_EQ(PoisonV16, ConstantExpr::getInsertElement(P6, Elt, Undef64));
 }
 
 #ifdef GTEST_HAS_DEATH_TEST
@@ -585,6 +586,43 @@ TEST(ConstantsTest, FoldGlobalVariablePtr) {
       Instruction::And, TheConstantExpr, TheConstant)->isNullValue());
 }
 
+// Check that containsUndefOrPoisonElement and containsPoisonElement is working
+// great
+
+TEST(ConstantsTest, containsUndefElemTest) {
+  LLVMContext Context;
+
+  Type *Int32Ty = Type::getInt32Ty(Context);
+  Constant *CU = UndefValue::get(Int32Ty);
+  Constant *CP = PoisonValue::get(Int32Ty);
+  Constant *C1 = ConstantInt::get(Int32Ty, 1);
+  Constant *C2 = ConstantInt::get(Int32Ty, 2);
+
+  {
+    Constant *V1 = ConstantVector::get({C1, C2});
+    EXPECT_FALSE(V1->containsUndefOrPoisonElement());
+    EXPECT_FALSE(V1->containsPoisonElement());
+  }
+
+  {
+    Constant *V2 = ConstantVector::get({C1, CU});
+    EXPECT_TRUE(V2->containsUndefOrPoisonElement());
+    EXPECT_FALSE(V2->containsPoisonElement());
+  }
+
+  {
+    Constant *V3 = ConstantVector::get({C1, CP});
+    EXPECT_TRUE(V3->containsUndefOrPoisonElement());
+    EXPECT_TRUE(V3->containsPoisonElement());
+  }
+
+  {
+    Constant *V4 = ConstantVector::get({CU, CP});
+    EXPECT_TRUE(V4->containsUndefOrPoisonElement());
+    EXPECT_TRUE(V4->containsPoisonElement());
+  }
+}
+
 // Check that undefined elements in vector constants are matched
 // correctly for both integer and floating-point types. Just don't
 // crash on vectors of pointers (could be handled?).
@@ -594,8 +632,16 @@ TEST(ConstantsTest, isElementWiseEqual) {
 
   Type *Int32Ty = Type::getInt32Ty(Context);
   Constant *CU = UndefValue::get(Int32Ty);
+  Constant *CP = PoisonValue::get(Int32Ty);
   Constant *C1 = ConstantInt::get(Int32Ty, 1);
   Constant *C2 = ConstantInt::get(Int32Ty, 2);
+
+  Constant *CUU = ConstantVector::get({CU, CU});
+  Constant *CPP = ConstantVector::get({CP, CP});
+  Constant *CUP = ConstantVector::get({CU, CP});
+  EXPECT_EQ(CUU, UndefValue::get(CUU->getType()));
+  EXPECT_EQ(CPP, PoisonValue::get(CPP->getType()));
+  EXPECT_NE(CUP, UndefValue::get(CUP->getType()));
 
   Constant *C1211 = ConstantVector::get({C1, C2, C1, C1});
   Constant *C12U1 = ConstantVector::get({C1, C2, CU, C1});
@@ -646,8 +692,8 @@ TEST(ConstantsTest, GetSplatValueRoundTrip) {
   Type *Int8Ty = Type::getInt8Ty(Context);
 
   for (unsigned Min : {1, 2, 8}) {
-    ElementCount ScalableEC = {Min, true};
-    ElementCount FixedEC = {Min, false};
+    auto ScalableEC = ElementCount::getScalable(Min);
+    auto FixedEC = ElementCount::getFixed(Min);
 
     for (auto EC : {ScalableEC, FixedEC}) {
       for (auto *Ty : {FloatTy, Int32Ty, Int8Ty}) {

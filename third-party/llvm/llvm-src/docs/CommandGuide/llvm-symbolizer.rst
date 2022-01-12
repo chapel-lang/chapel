@@ -182,12 +182,6 @@ OPTIONS
 
   Print just the file's name without any directories, instead of the
   absolute path.
-
-.. option:: --relativenames
-
-  Print the file's path relative to the compilation directory, instead
-  of the absolute path. If the command-line to the compiler included
-  the full path, this will be the same as the default.
   
 .. _llvm-symbolizer-opt-C:
 
@@ -220,16 +214,16 @@ OPTIONS
 
   Show help and usage for this command.
 
-.. option:: --help-list
-
-  Show help and usage for this command without grouping the options into categories.
-
 .. _llvm-symbolizer-opt-i:
 
 .. option:: --inlining, --inlines, -i
 
   If a source code location is in an inlined function, prints all the inlined
-  frames. Defaults to true.
+  frames. This is the default.
+
+.. option:: --no-inlines
+
+  Don't print inlined frames.
 
 .. option:: --no-demangle
 
@@ -267,17 +261,17 @@ OPTIONS
 
     foo() at /tmp/test.cpp:6:3
 
-    $ llvm-symbolizer --output-style=LLVM --obj=inlined.elf 0x4004be 0x400486 -p -i=0
+    $ llvm-symbolizer --output-style=LLVM --obj=inlined.elf 0x4004be 0x400486 -p --no-inlines
     main at /tmp/test.cpp:11:18
 
     foo() at /tmp/test.cpp:6:3
 
-    $ llvm-symbolizer --output-style=GNU --obj=inlined.elf 0x4004be 0x400486 -p -i=0
+    $ llvm-symbolizer --output-style=GNU --obj=inlined.elf 0x4004be 0x400486 -p --no-inlines
     baz() at /tmp/test.cpp:11
     foo() at /tmp/test.cpp:6
 
     $ clang -g -fdebug-info-for-profiling test.cpp -o profiling.elf
-    $ llvm-symbolizer --output-style=GNU --obj=profiling.elf 0x401167 -p -i=0
+    $ llvm-symbolizer --output-style=GNU --obj=profiling.elf 0x401167 -p --no-inlines
     main at /tmp/test.cpp:15 (discriminator 2)
 
 .. option:: --pretty-print, -p
@@ -321,6 +315,12 @@ OPTIONS
     11 >:   return foz() + k;
     12  : }
 
+.. option:: --relativenames
+
+  Print the file's path relative to the compilation directory, instead
+  of the absolute path. If the command-line to the compiler included
+  the full path, this will be the same as the default.
+
 .. _llvm-symbolizer-opt-use-symbol-table:
 
 .. option:: --use-symbol-table
@@ -346,13 +346,21 @@ OPTIONS
       Line: 15
       Column: 0
 
-.. option:: --version
+.. option:: --version, -v
 
   Print version information for the tool.
 
 .. option:: @<FILE>
 
   Read command-line options from response file `<FILE>`.
+
+WINDOWS/PDB SPECIFIC OPTIONS
+-----------------------------
+
+.. option:: --dia
+
+  Use the Windows DIA SDK for symbolization. If the DIA SDK is not found,
+  llvm-symbolizer will fall back to the native implementation.
 
 MACH-O SPECIFIC OPTIONS
 -----------------------

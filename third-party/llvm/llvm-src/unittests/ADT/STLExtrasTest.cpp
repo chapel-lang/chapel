@@ -323,6 +323,15 @@ TEST(STLExtrasTest, EraseIf) {
   EXPECT_EQ(7, V[3]);
 }
 
+TEST(STLExtrasTest, AppendRange) {
+  auto AppendVals = {3};
+  std::vector<int> V = {1, 2};
+  append_range(V, AppendVals);
+  EXPECT_EQ(1, V[0]);
+  EXPECT_EQ(2, V[1]);
+  EXPECT_EQ(3, V[2]);
+}
+
 namespace some_namespace {
 struct some_struct {
   std::vector<int> data;
@@ -391,6 +400,17 @@ TEST(STLExtrasTest, DropBeginTest) {
   }
 }
 
+TEST(STLExtrasTest, DropBeginDefaultTest) {
+  SmallVector<int, 5> vec{0, 1, 2, 3, 4};
+
+  int i = 1;
+  for (auto &v : drop_begin(vec)) {
+    EXPECT_EQ(v, i);
+    i += 1;
+  }
+  EXPECT_EQ(i, 5);
+}
+
 TEST(STLExtrasTest, EarlyIncrementTest) {
   std::list<int> L = {1, 2, 3, 4};
 
@@ -442,6 +462,79 @@ TEST(STLExtrasTest, EarlyIncrementTest) {
   EXPECT_EQ(EIR.end(), I);
 }
 
+// A custom iterator that returns a pointer when dereferenced. This is used to
+// test make_early_inc_range with iterators that do not return a reference on
+// dereferencing.
+struct CustomPointerIterator
+    : public iterator_adaptor_base<CustomPointerIterator,
+                                   std::list<int>::iterator,
+                                   std::forward_iterator_tag> {
+  using base_type =
+      iterator_adaptor_base<CustomPointerIterator, std::list<int>::iterator,
+                            std::forward_iterator_tag>;
+
+  explicit CustomPointerIterator(std::list<int>::iterator I) : base_type(I) {}
+
+  // Retrieve a pointer to the current int.
+  int *operator*() const { return &*base_type::wrapped(); }
+};
+
+// Make sure make_early_inc_range works with iterators that do not return a
+// reference on dereferencing. The test is similar to EarlyIncrementTest, but
+// uses CustomPointerIterator.
+TEST(STLExtrasTest, EarlyIncrementTestCustomPointerIterator) {
+  std::list<int> L = {1, 2, 3, 4};
+
+  auto CustomRange = make_range(CustomPointerIterator(L.begin()),
+                                CustomPointerIterator(L.end()));
+  auto EIR = make_early_inc_range(CustomRange);
+
+  auto I = EIR.begin();
+  auto EI = EIR.end();
+  EXPECT_NE(I, EI);
+
+  EXPECT_EQ(&*L.begin(), *I);
+#if LLVM_ENABLE_ABI_BREAKING_CHECKS
+#ifndef NDEBUG
+  // Repeated dereferences are not allowed.
+  EXPECT_DEATH(*I, "Cannot dereference");
+  // Comparison after dereference is not allowed.
+  EXPECT_DEATH((void)(I == EI), "Cannot compare");
+  EXPECT_DEATH((void)(I != EI), "Cannot compare");
+#endif
+#endif
+
+  ++I;
+  EXPECT_NE(I, EI);
+#if LLVM_ENABLE_ABI_BREAKING_CHECKS
+#ifndef NDEBUG
+  // You cannot increment prior to dereference.
+  EXPECT_DEATH(++I, "Cannot increment");
+#endif
+#endif
+  EXPECT_EQ(&*std::next(L.begin()), *I);
+#if LLVM_ENABLE_ABI_BREAKING_CHECKS
+#ifndef NDEBUG
+  // Repeated dereferences are not allowed.
+  EXPECT_DEATH(*I, "Cannot dereference");
+#endif
+#endif
+
+  // Inserting shouldn't break anything. We should be able to keep dereferencing
+  // the currrent iterator and increment. The increment to go to the "next"
+  // iterator from before we inserted.
+  L.insert(std::next(L.begin(), 2), -1);
+  ++I;
+  EXPECT_EQ(&*std::next(L.begin(), 3), *I);
+
+  // Erasing the front including the current doesn't break incrementing.
+  L.erase(L.begin(), std::prev(L.end()));
+  ++I;
+  EXPECT_EQ(&*L.begin(), *I);
+  ++I;
+  EXPECT_EQ(EIR.end(), I);
+}
+
 TEST(STLExtrasTest, splat) {
   std::vector<int> V;
   EXPECT_FALSE(is_splat(V));
@@ -463,21 +556,21 @@ TEST(STLExtrasTest, to_address) {
 
   // Check fancy pointer overload for unique_ptr
   std::unique_ptr<int> V2 = std::make_unique<int>(0);
-  EXPECT_EQ(V2.get(), to_address(V2));
+  EXPECT_EQ(V2.get(), llvm::to_address(V2));
 
   V2.reset(V1);
-  EXPECT_EQ(V1, to_address(V2));
+  EXPECT_EQ(V1, llvm::to_address(V2));
   V2.release();
 
   // Check fancy pointer overload for shared_ptr
   std::shared_ptr<int> V3 = std::make_shared<int>(0);
   std::shared_ptr<int> V4 = V3;
   EXPECT_EQ(V3.get(), V4.get());
-  EXPECT_EQ(V3.get(), to_address(V3));
-  EXPECT_EQ(V4.get(), to_address(V4));
+  EXPECT_EQ(V3.get(), llvm::to_address(V3));
+  EXPECT_EQ(V4.get(), llvm::to_address(V4));
 
   V3.reset(V1);
-  EXPECT_EQ(V1, to_address(V3));
+  EXPECT_EQ(V1, llvm::to_address(V3));
 }
 
 TEST(STLExtrasTest, partition_point) {
@@ -567,5 +660,55 @@ TEST(STLExtras, hasNItemsOrLess) {
       hasNItemsOrLess(V3.begin(), V3.end(), 5, [](int x) { return x < 5; }));
   EXPECT_FALSE(
       hasNItemsOrLess(V3.begin(), V3.end(), 2, [](int x) { return x < 10; }));
+}
+
+TEST(STLExtras, MoveRange) {
+  class Foo {
+    bool A;
+
+  public:
+    Foo() : A(true) {}
+    Foo(const Foo &) = delete;
+    Foo(Foo &&Other) : A(Other.A) { Other.A = false; }
+    Foo &operator=(const Foo &) = delete;
+    Foo &operator=(Foo &&Other) {
+      if (this != &Other) {
+        A = Other.A;
+        Other.A = false;
+      }
+      return *this;
+    }
+    operator bool() const { return A; }
+  };
+  SmallVector<Foo, 4U> V1, V2, V3, V4;
+  auto HasVal = [](const Foo &Item) { return static_cast<bool>(Item); };
+  auto Build = [&] {
+    SmallVector<Foo, 4U> Foos;
+    Foos.resize(4U);
+    return Foos;
+  };
+
+  V1.resize(4U);
+  EXPECT_TRUE(llvm::all_of(V1, HasVal));
+
+  llvm::move(V1, std::back_inserter(V2));
+
+  // Ensure input container is same size, but its contents were moved out.
+  EXPECT_EQ(V1.size(), 4U);
+  EXPECT_TRUE(llvm::none_of(V1, HasVal));
+
+  // Ensure output container has the contents of the input container.
+  EXPECT_EQ(V2.size(), 4U);
+  EXPECT_TRUE(llvm::all_of(V2, HasVal));
+
+  llvm::move(std::move(V2), std::back_inserter(V3));
+
+  EXPECT_TRUE(llvm::none_of(V2, HasVal));
+  EXPECT_EQ(V3.size(), 4U);
+  EXPECT_TRUE(llvm::all_of(V3, HasVal));
+
+  llvm::move(Build(), std::back_inserter(V4));
+  EXPECT_EQ(V4.size(), 4U);
+  EXPECT_TRUE(llvm::all_of(V4, HasVal));
 }
 } // namespace

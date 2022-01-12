@@ -62,7 +62,7 @@ enum class IFSSymbolType {
   Unknown = 16,
 };
 
-std::string getTypeName(IFSSymbolType Type) {
+static std::string getTypeName(IFSSymbolType Type) {
   switch (Type) {
   case IFSSymbolType::NoType:
     return "NoType";
@@ -102,27 +102,6 @@ template <> struct ScalarEnumerationTraits<IFSSymbolType> {
     if (!IO.outputting() && IO.matchEnumFallback())
       SymbolType = IFSSymbolType::Unknown;
   }
-};
-
-template <> struct ScalarTraits<VersionTuple> {
-  static void output(const VersionTuple &Value, void *,
-                     llvm::raw_ostream &Out) {
-    Out << Value.getAsString();
-  }
-
-  static StringRef input(StringRef Scalar, void *, VersionTuple &Value) {
-    if (Value.tryParse(Scalar))
-      return StringRef("Can't parse version: invalid version format.");
-
-    if (Value > IFSVersionCurrent)
-      return StringRef("Unsupported IFS version.");
-
-    // Returning empty StringRef indicates successful parse.
-    return StringRef();
-  }
-
-  // Don't place quotation marks around version value.
-  static QuotingType mustQuote(StringRef) { return QuotingType::None; }
 };
 
 /// YAML traits for IFSSymbol.
@@ -210,11 +189,16 @@ static Expected<std::unique_ptr<IFSStub>> readInputFile(StringRef FilePath) {
   if (std::error_code Err = YamlIn.error())
     return createStringError(Err, "Failed reading Interface Stub File.");
 
+  if (Stub->IfsVersion > IFSVersionCurrent)
+    return make_error<StringError>(
+        "IFS version " + Stub->IfsVersion.getAsString() + " is unsupported.",
+        std::make_error_code(std::errc::invalid_argument));
+
   return std::move(Stub);
 }
 
-int writeTbdStub(const llvm::Triple &T, const std::vector<IFSSymbol> &Symbols,
-                 const StringRef Format, raw_ostream &Out) {
+static int writeTbdStub(const Triple &T, const std::vector<IFSSymbol> &Symbols,
+                        const StringRef Format, raw_ostream &Out) {
 
   auto PlatformKindOrError =
       [](const llvm::Triple &T) -> llvm::Expected<llvm::MachO::PlatformKind> {
@@ -275,8 +259,8 @@ int writeTbdStub(const llvm::Triple &T, const std::vector<IFSSymbol> &Symbols,
   return 0;
 }
 
-int writeElfStub(const llvm::Triple &T, const std::vector<IFSSymbol> &Symbols,
-                 const StringRef Format, raw_ostream &Out) {
+static int writeElfStub(const Triple &T, const std::vector<IFSSymbol> &Symbols,
+                        const StringRef Format, raw_ostream &Out) {
   SmallString<0> Storage;
   Storage.clear();
   raw_svector_ostream OS(Storage);
@@ -358,7 +342,7 @@ int writeElfStub(const llvm::Triple &T, const std::vector<IFSSymbol> &Symbols,
   return convertYAML(YIn, Out, ErrHandler) ? 0 : 1;
 }
 
-int writeIfso(const IFSStub &Stub, bool IsWriteIfs, raw_ostream &Out) {
+static int writeIfso(const IFSStub &Stub, bool IsWriteIfs, raw_ostream &Out) {
   if (IsWriteIfs) {
     yaml::Output YamlOut(Out, NULL, /*WrapColumn =*/0);
     YamlOut << const_cast<IFSStub &>(Stub);
@@ -400,7 +384,7 @@ int main(int argc, char *argv[]) {
   IFSStub Stub;
   std::map<std::string, IFSSymbol> SymbolMap;
 
-  std::string PreviousInputFilePath = "";
+  std::string PreviousInputFilePath;
   for (const std::string &InputFilePath : InputFilenames) {
     Expected<std::unique_ptr<IFSStub>> StubOrErr = readInputFile(InputFilePath);
     if (!StubOrErr) {

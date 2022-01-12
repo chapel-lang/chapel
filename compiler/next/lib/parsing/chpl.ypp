@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -547,7 +547,7 @@
 
 %type <exprList> class_level_stmt_ls
 
-%type <commentsAndStmt> stmt
+%type <commentsAndStmt> stmt tryable_stmt
 %type <blockOrDo> do_stmt
 %type <commentsAndStmt> if_stmt loop_stmt
 %type <commentsAndStmt> select_stmt
@@ -667,19 +667,16 @@ pragma_ls:
 ;
 
 stmt:
-  deprecated_decl_stmt      { $$ = context->finishStmt($1); }
+  tryable_stmt      // (no '->finishStmt()' required b/c 'tryable_stmt' did it)
+| deprecated_decl_stmt      { $$ = context->finishStmt($1); }
 | include_module_stmt       { $$ = context->finishStmt($1); }
 | block_stmt                { $$ = context->finishStmt($1); }
 | use_stmt                  { $$ = context->finishStmt($1); }
 | import_stmt               { $$ = context->finishStmt($1); }
 | require_stmt              { $$ = context->finishStmt($1); }
-| assignment_stmt           { $$ = context->finishStmt($1); }
 | extern_block_stmt         { $$ = context->finishStmt($1); }
-| if_stmt                   { $$ = $1; } // Don't clear stored comments.
 | implements_stmt           { $$ = context->finishStmt($1); }
 | interface_stmt            { $$ = context->finishStmt($1); }
-| loop_stmt                 { $$ = $1; } // Don't clear stored comments.
-| select_stmt               { $$ = context->finishStmt($1); }
 | TDEFER stmt
   {
     std::vector<ParserComment>* comments;
@@ -694,24 +691,8 @@ stmt:
     $$ = context->finishStmt(ret);
   }
 | try_stmt                  { $$ = context->finishStmt(@$, $1); }
-| throw_stmt                { $$ = context->finishStmt($1); }
 | return_stmt               { $$ = context->finishStmt($1); }
-| stmt_level_expr TSEMI     { $$ = context->finishStmt(STMT(@$,$1)); }
 | TATOMIC stmt              { $$ = TODOSTMT(@$); }
-| TBEGIN opt_task_intent_ls stmt
-  {
-    std::vector<ParserComment>* comments;
-    ParserExprList* exprLst;
-    BlockStyle blockStyle;
-    YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
-    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
-                               false, locBodyAnchor, $3);
-    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
-    auto node = Begin::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
-                             std::move(stmts));
-    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
-    $$ = context->finishStmt(ret);
-  }
 | TBREAK opt_label_ident TSEMI
   {
     auto comments = context->gatherComments(@1);
@@ -721,35 +702,12 @@ stmt:
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
-| TCOBEGIN opt_task_intent_ls block_stmt
-  {
-    std::vector<ParserComment>* comments;
-    ParserExprList* exprLst;
-    BlockStyle blockStyle;
-    YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
-    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
-                               false, locBodyAnchor, $3);
-    assert(blockStyle == BlockStyle::EXPLICIT);
-    auto taskBodies = context->consumeAndFlattenTopLevelBlocks(exprLst);
-    auto node = Cobegin::build(BUILDER, LOC(@$), toOwned($2),
-                               std::move(taskBodies));
-    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
-    $$ = context->finishStmt(ret);
-  }
 | TCONTINUE opt_label_ident TSEMI
   {
     auto comments = context->gatherComments(@1);
     auto ident = !$2.isEmpty() ? Identifier::build(BUILDER, LOC(@2), $2)
                                : nullptr;
     auto node = Continue::build(BUILDER, LOC(@$), std::move(ident));
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
-    $$ = context->finishStmt(cs);
-  }
-| TDELETE simple_expr_ls TSEMI
-  {
-    auto comments = context->gatherComments(@1);
-    auto exprs = context->consumeList($2);
-    auto node = Delete::build(BUILDER, LOC(@$), std::move(exprs));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -775,6 +733,63 @@ stmt:
       auto err = context->raiseError(@$, msg);
       $$ = context->finishStmt(err);
     }
+  }
+| TYIELD expr TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Yield::build(BUILDER, LOC(@$), toOwned($2));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| error TSEMI
+  {
+    $$ = STMT(@$, ErroneousExpression::build(BUILDER, LOC(@1)));
+  }
+;
+
+tryable_stmt:
+  assignment_stmt           { $$ = context->finishStmt($1); }
+| if_stmt                   { $$ = $1; } // Don't clear stored comments.
+| loop_stmt                 { $$ = $1; } // Don't clear stored comments.
+| select_stmt               { $$ = context->finishStmt($1); }
+| stmt_level_expr TSEMI     { $$ = context->finishStmt(STMT(@$,$1)); }
+| throw_stmt                { $$ = context->finishStmt($1); }
+| TBEGIN opt_task_intent_ls stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, locBodyAnchor, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Begin::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
+                             std::move(stmts));
+    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(ret);
+  }
+| TCOBEGIN opt_task_intent_ls block_stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, locBodyAnchor, $3);
+    assert(blockStyle == BlockStyle::EXPLICIT);
+    auto taskBodies = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Cobegin::build(BUILDER, LOC(@$), toOwned($2),
+                               std::move(taskBodies));
+    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(ret);
+  }
+| TDELETE simple_expr_ls TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto exprs = context->consumeList($2);
+    auto node = Delete::build(BUILDER, LOC(@$), std::move(exprs));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TLOCAL expr do_stmt
   {
@@ -846,17 +861,6 @@ stmt:
                             std::move(stmts));
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
-  }
-| TYIELD expr TSEMI
-  {
-    auto comments = context->gatherComments(@1);
-    auto node = Yield::build(BUILDER, LOC(@$), toOwned($2));
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
-    $$ = context->finishStmt(cs);
-  }
-| error TSEMI
-  {
-    $$ = STMT(@$, ErroneousExpression::build(BUILDER, LOC(@1)));
   }
 ;
 
@@ -1862,19 +1866,11 @@ ifc_constraint:
 ;
 
 try_stmt:
-  TTRY     expr            TSEMI
+  TTRY     tryable_stmt
   {
     $$ = context->buildTryExprStmt(@$, $2, false);
   }
-| TTRYBANG expr            TSEMI
-  {
-    $$ = context->buildTryExprStmt(@$, $2, true);
-  }
-| TTRY     assignment_stmt
-  {
-    $$ = context->buildTryExprStmt(@$, $2, false);
-  }
-| TTRYBANG assignment_stmt
+| TTRYBANG tryable_stmt
   {
     $$ = context->buildTryExprStmt(@$, $2, true);
   }

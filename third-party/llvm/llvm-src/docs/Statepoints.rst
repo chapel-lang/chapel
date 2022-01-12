@@ -449,9 +449,7 @@ Syntax:
                        func_type <target>, 
                        i64 <#call args>, i64 <flags>,
                        ... (call parameters),
-                       i64 <# transition args>, ... (transition parameters),
-                       i64 <# deopt args>, ... (deopt parameters),
-                       ... (gc parameters))
+                       i64 0, i64 0)
 
 Overview:
 """""""""
@@ -515,26 +513,11 @@ instruction.  The number of arguments must exactly match what is
 specified in '# call args'.  The types must match the signature of
 'target'.
 
-The 'transition parameters' arguments contain an arbitrary list of
-Values which need to be passed to GC transition code. They will be
-lowered and passed as operands to the appropriate GC_TRANSITION nodes
-in the selection DAG. It is assumed that these arguments must be
-available before and after (but not necessarily during) the execution
-of the callee. The '# transition args' field indicates how many operands
-are to be interpreted as 'transition parameters'.
-
-The 'deopt parameters' arguments contain an arbitrary list of Values
-which is meaningful to the runtime.  The '# deopt args' field
-indicates how many operands are to be interpreted as 'deopt parameters'.
-
-The 'gc parameters' arguments contain every pointer to a garbage
-collector object which potentially needs to be updated by the garbage
-collector.  Note that the argument list must explicitly contain a base
-pointer for every derived pointer listed.  The order of arguments is
-unimportant.  Unlike the other variable length parameter sets, this
-list is not length prefixed.  Use of the 'gc parameters' list is
-deprecated and will eventually be replaced entirely with the
-:ref:`gc-live <ob_gc_live>` operand bundle.
+The 'call parameter' attributes must be followed by two 'i64 0' constants.
+These were originally the length prefixes for 'gc transition parameter' and
+'deopt parameter' arguments, but the role of these parameter sets have been
+entirely replaced with the corresponding operand bundles.  In a future
+revision, these now redundant arguments will be removed.
 
 Semantics:
 """"""""""
@@ -676,13 +659,12 @@ Each statepoint generates the following Locations:
   these identifiers.
 * Constant which describes the flags passed to the statepoint intrinsic
 * Constant which describes number of following deopt *Locations* (not
-  operands)
-* Variable number of Locations, one for each deopt parameter listed in
-  the IR statepoint (same number as described by previous Constant).  At 
-  the moment, only deopt parameters with a bitwidth of 64 bits or less 
-  are supported.  Values of a type larger than 64 bits can be specified 
-  and reported only if a) the value is constant at the call site, and b) 
-  the constant can be represented with less than 64 bits (assuming zero 
+  operands).  Will be 0 if no "deopt" bundle is provided.
+* Variable number of Locations, one for each deopt parameter listed in the
+  "deopt" operand bundle.  At the moment, only deopt parameters with a bitwidth
+  of 64 bits or less are supported.  Values of a type larger than 64 bits can be
+  specified and reported only if a) the value is constant at the call site, and
+  b) the constant can be represented with less than 64 bits (assuming zero 
   extension to the original bitwidth).
 * Variable number of relocation records, each of which consists of 
   exactly two Locations.  Relocation records are described in detail
@@ -834,6 +816,50 @@ could be successfully parsed.
 In practice, RewriteStatepointsForGC should be run much later in the pass 
 pipeline, after most optimization is already done.  This helps to improve 
 the quality of the generated code when compiled with garbage collection support.
+
+.. _RewriteStatepointsForGC_intrinsic_lowering:
+
+RewriteStatepointsForGC intrinsic lowering
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As a part of lowering to the explicit model of relocations
+RewriteStatepointsForGC performs GC specific lowering for
+'``llvm.memcpy.element.unordered.atomic.*``',
+'``llvm.memmove.element.unordered.atomic.*``' intrinsics.
+
+There are two possible lowerings for these copy operations: GC leaf lowering
+and GC parseable lowering. If a call is explicitly marked with
+"gc-leaf-function" attribute the call is lowered to a GC leaf call to
+'``__llvm_memcpy_element_unordered_atomic_*``' or
+'``__llvm_memmove_element_unordered_atomic_*``' symbol. Such a call can not
+take a safepoint. Otherwise, the call is made GC parseable by wrapping the
+call into a statepoint. This makes it possible to take a safepoint during
+copy operation. Note that a GC parseable copy operation is not required to
+take a safepoint. For example, a short copy operation may be performed without
+taking a safepoint.
+
+GC parseable calls to '``llvm.memcpy.element.unordered.atomic.*``',
+'``llvm.memmove.element.unordered.atomic.*``' intrinsics are lowered to calls
+to '``__llvm_memcpy_element_unordered_atomic_safepoint_*``',
+'``__llvm_memmove_element_unordered_atomic_safepoint_*``' symbols respectively.
+This way the runtime can provide implementations of copy operations with and
+without safepoints.
+
+GC parseable lowering also involves adjusting the arguments for the call.
+Memcpy and memmove intrinsics take derived pointers as source and destination
+arguments. If a copy operation takes a safepoint it might need to relocate the
+underlying source and destination objects. This requires the corresponding base
+pointers to be available in the copy operation. In order to make the base
+pointers available RewriteStatepointsForGC replaces derived pointers with base
+pointer and offset pairs. For example:
+
+.. code-block:: llvm
+
+  declare void @__llvm_memcpy_element_unordered_atomic_safepoint_1(
+    i8 addrspace(1)*  %dest_base, i64 %dest_offset,
+    i8 addrspace(1)*  %src_base, i64 %src_offset,
+    i64 %length)
+
 
 .. _PlaceSafepoints:
 

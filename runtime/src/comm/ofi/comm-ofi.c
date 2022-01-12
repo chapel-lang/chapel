@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -6728,15 +6728,23 @@ void amCheckRxTxCmpls(chpl_bool* pHadRxEvent, chpl_bool* pHadTxEvent,
       }
     }
   } else {
-    //
+    
     // The provider can't do poll sets.  Consume transmit completions,
-    // and just assume that there may be some inbound operations which
-    // the main loop will handle.  Also, avoid CPU monopolization even
-    // if we had events, because we can't actually tell.
-    //
-    sched_yield();
-    if (pHadRxEvent != NULL) {
-      *pHadRxEvent = true;
+    // and progress the receive endpoint as required by some providers
+    // (e.g. EFA, which may exhange handshake messages in the background
+    // during a transmit and therefore requires progressing the receive
+    // checkpoint so that handshakes are received). Inbound operations
+    // will be handled by the main loop. Also, avoid CPU monopolization
+    // even if we had events, because we can't actually tell.
+    
+    sched_yield(); 
+    int rc = fi_cq_read(ofi_rxCQ, NULL, 0); 
+    if (rc == 0) { 
+      if (pHadRxEvent != NULL) {
+        *pHadRxEvent = true;
+      }
+    } else if (rc != -FI_EAGAIN) {
+      INTERNAL_ERROR_V("fi_cq_read failed: %s", fi_strerror(rc));
     }
     (*tcip->checkTxCmplsFn)(tcip);
     if (pHadTxEvent != NULL) {

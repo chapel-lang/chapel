@@ -9,7 +9,10 @@
 #include "llvm/Transforms/Scalar/LoopPassManager.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/AssumptionCache.h"
+#include "llvm/Analysis/BlockFrequencyInfo.h"
+#include "llvm/Analysis/BranchProbabilityInfo.h"
 #include "llvm/Analysis/MemorySSA.h"
+#include "llvm/Analysis/PostDominators.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
@@ -190,6 +193,16 @@ struct MockLoopPassHandle
   MockLoopPassHandle() { setDefaults(); }
 };
 
+struct MockLoopNestPassHandle
+    : MockPassHandleBase<MockLoopNestPassHandle, LoopNest, LoopAnalysisManager,
+                         LoopStandardAnalysisResults &, LPMUpdater &> {
+  MOCK_METHOD4(run,
+               PreservedAnalyses(LoopNest &, LoopAnalysisManager &,
+                                 LoopStandardAnalysisResults &, LPMUpdater &));
+
+  MockLoopNestPassHandle() { setDefaults(); }
+};
+
 struct MockFunctionPassHandle
     : MockPassHandleBase<MockFunctionPassHandle, Function> {
   MOCK_METHOD2(run, PreservedAnalyses(Function &, FunctionAnalysisManager &));
@@ -239,6 +252,7 @@ protected:
 
   MockLoopAnalysisHandle MLAHandle;
   MockLoopPassHandle MLPHandle;
+  MockLoopNestPassHandle MLNPHandle;
   MockFunctionPassHandle MFPHandle;
   MockModulePassHandle MMPHandle;
 
@@ -294,6 +308,9 @@ public:
     // those.
     FAM.registerPass([&] { return AAManager(); });
     FAM.registerPass([&] { return AssumptionAnalysis(); });
+    FAM.registerPass([&] { return BlockFrequencyAnalysis(); });
+    FAM.registerPass([&] { return BranchProbabilityAnalysis(); });
+    FAM.registerPass([&] { return PostDominatorTreeAnalysis(); });
     FAM.registerPass([&] { return MemorySSAAnalysis(); });
     FAM.registerPass([&] { return ScalarEvolutionAnalysis(); });
     FAM.registerPass([&] { return TargetLibraryAnalysis(); });
@@ -1384,7 +1401,7 @@ TEST_F(LoopPassManagerTest, LoopDeletion) {
   // have no PHI nodes and there is always a single i-dom.
   auto EraseLoop = [](Loop &L, BasicBlock &IDomBB,
                       LoopStandardAnalysisResults &AR, LPMUpdater &Updater) {
-    assert(L.empty() && "Can only delete leaf loops with this routine!");
+    assert(L.isInnermost() && "Can only delete leaf loops with this routine!");
     SmallVector<BasicBlock *, 4> LoopBBs(L.block_begin(), L.block_end());
     Updater.markLoopAsDeleted(L, L.getName());
     IDomBB.getTerminator()->replaceUsesOfWith(L.getHeader(),
@@ -1584,4 +1601,72 @@ TEST_F(LoopPassManagerTest, LoopDeletion) {
   MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
   MPM.run(*M, MAM);
 }
+
+TEST_F(LoopPassManagerTest, HandleLoopNestPass) {
+  ::testing::Sequence FSequence, GSequence;
+
+  EXPECT_CALL(MLPHandle, run(HasName("loop.0.0"), _, _, _))
+      .Times(2)
+      .InSequence(FSequence);
+  EXPECT_CALL(MLPHandle, run(HasName("loop.0.1"), _, _, _))
+      .Times(2)
+      .InSequence(FSequence);
+  EXPECT_CALL(MLPHandle, run(HasName("loop.0"), _, _, _)).InSequence(FSequence);
+  EXPECT_CALL(MLNPHandle, run(HasName("loop.0"), _, _, _))
+      .InSequence(FSequence);
+  EXPECT_CALL(MLPHandle, run(HasName("loop.0"), _, _, _)).InSequence(FSequence);
+  EXPECT_CALL(MLNPHandle, run(HasName("loop.0"), _, _, _))
+      .InSequence(FSequence);
+  EXPECT_CALL(MLPHandle, run(HasName("loop.g.0"), _, _, _))
+      .InSequence(GSequence);
+  EXPECT_CALL(MLNPHandle, run(HasName("loop.g.0"), _, _, _))
+      .InSequence(GSequence);
+  EXPECT_CALL(MLPHandle, run(HasName("loop.g.0"), _, _, _))
+      .InSequence(GSequence);
+  EXPECT_CALL(MLNPHandle, run(HasName("loop.g.0"), _, _, _))
+      .InSequence(GSequence);
+
+  EXPECT_CALL(MLNPHandle, run(HasName("loop.0"), _, _, _))
+      .InSequence(FSequence);
+  EXPECT_CALL(MLNPHandle, run(HasName("loop.g.0"), _, _, _))
+      .InSequence(GSequence);
+
+  EXPECT_CALL(MLNPHandle, run(HasName("loop.0"), _, _, _))
+      .InSequence(FSequence);
+  EXPECT_CALL(MLNPHandle, run(HasName("loop.g.0"), _, _, _))
+      .InSequence(GSequence);
+
+  ModulePassManager MPM(true);
+  FunctionPassManager FPM(true);
+
+  {
+    LoopPassManager LPM(true);
+    LPM.addPass(MLPHandle.getPass());
+    LPM.addPass(MLNPHandle.getPass());
+    LPM.addPass(MLPHandle.getPass());
+    LPM.addPass(MLNPHandle.getPass());
+
+    auto Adaptor = createFunctionToLoopPassAdaptor(std::move(LPM));
+    ASSERT_FALSE(Adaptor.isLoopNestMode());
+    FPM.addPass(std::move(Adaptor));
+  }
+
+  {
+    auto Adaptor = createFunctionToLoopPassAdaptor(MLNPHandle.getPass());
+    ASSERT_TRUE(Adaptor.isLoopNestMode());
+    FPM.addPass(std::move(Adaptor));
+  }
+
+  {
+    LoopPassManager LPM(true);
+    LPM.addPass(MLNPHandle.getPass());
+    auto Adaptor = createFunctionToLoopPassAdaptor(MLNPHandle.getPass());
+    ASSERT_TRUE(Adaptor.isLoopNestMode());
+    FPM.addPass(std::move(Adaptor));
+  }
+
+  MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
+  MPM.run(*M, MAM);
 }
+
+} // namespace

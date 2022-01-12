@@ -18,7 +18,15 @@ if [ -z "${OFFICIAL_SYSTEM_LLVM}" ] ; then
     source /data/cf/chapel/setup_system_llvm.bash
   elif [ -f /cray/css/users/chapelu/setup_system_llvm.bash ] ; then
     source /cray/css/users/chapelu/setup_system_llvm.bash
+  elif [ -f /cy/users/chapelu/setup_system_llvm.bash ] ; then
+    source /cy/users/chapelu/setup_system_llvm.bash
   fi
+fi
+
+if [ -f /data/cf/chapel/setup_cmake_nightly.bash ] ; then
+  source /data/cf/chapel/setup_cmake_nightly.bash
+elif [ -f /cray/css/users/chapelu/setup_cmake_nightly.bash ] ; then
+  source /cray/css/users/chapelu/setup_cmake_nightly.bash
 fi
 
 log_info "gcc version: $(which gcc)"
@@ -106,7 +114,13 @@ else
     log_info "Using default dir for chapel logs. These are not permanent! Location: ${LOGDIR_PREFIX}"
 fi
 export LOGDIR_PREFIX
-export PERF_LOGDIR_PREFIX=${CHPL_NIGHTLY_PERF_LOG_PREFIX:-/cray/css/users/chapelu}
+
+default_perf_prefix=/cray/css/users/chapelu
+if [ ! -d $default_perf_prefix ] ; then
+  default_perf_prefix=/cy/users/chapelu
+fi
+
+export PERF_LOGDIR_PREFIX=${CHPL_NIGHTLY_PERF_LOG_PREFIX:-$default_perf_prefix}
 
 export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-$LOGDIR_PREFIX/Nightly}
 export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
