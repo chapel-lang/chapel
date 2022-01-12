@@ -3,7 +3,7 @@ import os
 import sys
 import optparse
 
-import chpl_bin_subdir, chpl_mem, chpl_platform, overrides, third_party_utils
+import chpl_bin_subdir, chpl_compiler, chpl_mem, chpl_platform, overrides, third_party_utils
 from utils import error, memoize, run_command, warning
 
 

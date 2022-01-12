@@ -128,7 +128,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_GASNET_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
-    ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH',INTERNAL),
+    ChapelEnv('  CHPL_HOST_JEMALLOC_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_JEMALLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_LIBFABRIC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
@@ -247,7 +248,8 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_HWLOC_UNIQ_CFG_PATH'] = chpl_hwloc.get_uniq_cfg_path()
 
-    ENV_VALS['  CHPL_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path('target')
+    ENV_VALS['  CHPL_HOST_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path('host')
+    ENV_VALS['  CHPL_TARGET_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path('target')
     ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_libfabric.get_uniq_cfg_path()
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_unwind.get_uniq_cfg_path()
 
