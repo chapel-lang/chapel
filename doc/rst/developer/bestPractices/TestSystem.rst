@@ -346,7 +346,12 @@ explicitly in the ``.compopts`` or ``.execopts`` file for the test.
   will then apply for CHPL_COMM != none)
 - ``.no-local.good``: used with ``--no-local`` testing
 - ``.lm-numa.good``: used with CHPL_LOCALE_MODEL=numa
+- ``.na-ofi.good``: used with CHPL_NETWORK_ATOMICS=ofi
+- ``.tasks-fifo.good``: used with CHPL_TASKS=fifo
 - ``.doc.good``: used when testing ``chpldoc`` instead of ``chpl``
+
+Note that ``.comm-``, ``.na-``, and ``lm-`` can be combined, in that order.
+For instance ``mytest.comm-none.lm-numa.good``.
 
 Requests can be made for supporting additional formats if a common format
 does not appear to be covered automatically.

@@ -906,7 +906,7 @@ static void maybe_add_thread(void) {
                 "max threads per locale is unbounded"
                 ", but unable to create more than %d threads",
                 num_threads);
-      chpl_warning(msg, 0, 0);
+      chpl_task_warnNumThreadsPerLocale(msg);
       warning_issued = true;
     }
   }

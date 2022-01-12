@@ -81,7 +81,7 @@ int32_t chpl_task_getenvNumThreadsPerLocale(void)
                    "CHPL_RT_NUM_THREADS_PER_LOCALE = %" PRIi32 " is too large; "
                    "limit is %" PRIi32,
                    num, lim);
-          chpl_warning(msg, 0, 0);
+          chpl_task_warnNumThreadsPerLocale(msg);
           num = lim;
         }
       }

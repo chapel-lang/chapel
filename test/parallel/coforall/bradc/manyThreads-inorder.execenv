@@ -1,3 +1,4 @@
 CHPL_RT_NUM_THREADS_PER_LOCALE=254
+CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET=yes
 # Limit stack size for systems that have limited memory.
 CHPL_RT_CALL_STACK_SIZE=1M
