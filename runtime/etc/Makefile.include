@@ -19,7 +19,10 @@
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-
+# When compling a program with the C backend,
+# the compiler generates a Makefile that sets COMP_GEN_WARN,
+# COMP_GEN_USER_CFLAGS, etc,
+# and we combine these in to COMP_GEN_CFLAGS
 MAKE_COMP_GEN_CFLAGS =
 
 # These Make ifdefs are used for printcompileline and printcflags
@@ -57,6 +60,11 @@ endif
 
 COMP_GEN_CFLAGS = $(MAKE_COMP_GEN_CFLAGS) $(COMP_GEN_USER_CFLAGS)
 
+# Note the related GEN_CFLAGS and GEN_LFLAGS.
+# These are also used when compiling the generated code, but
+# unlike the above, they come from the Makefiles here
+# rather than anything in the chpl invocation.
+
 # Makefile.comm-* can set LD which ends up in override-ld
 # TODO: move this logic to printchplenv
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
@@ -64,25 +72,6 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 # Get runtime headers and required -D flags.
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
 include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include
-
-# RUNTIME_CFLAGS e.g. -DCHPL_DEBUG
-#
-# TODO (bradc): Note that the following results in all of our
-# compiler-specific warning flags getting listed as part of GEN_FLAGS
-# for the second time.  Ideally, we could separate all the aspects of
-# the RUNTIME_CFLAGS that we need here (presumably, the -D's based on
-# the above comment) from the overall RUNTIME_CFLAGS -- call it
-# CHPL_DEFINE_FLAGS, say -- and only include those here.  I noticed
-# this just before the release and it felt like too big a change to
-# try and wedge in in the name of shorter compiler lines.
-#
-HEADER_CFLAGS = $(RUNTIME_CFLAGS)
-HEADER_CFLAGS += -I$(CHPL_MAKE_HOME)/modules/standard
-HEADER_CFLAGS += -I$(CHPL_MAKE_HOME)/modules/packages
-
-GEN_CFLAGS += $(HEADER_CFLAGS)
-
-GEN_LFLAGS += $(RUNTIME_LFLAGS)
 
 CHPL_RT_INC_DIR = $(RUNTIME_INCLS)
 
