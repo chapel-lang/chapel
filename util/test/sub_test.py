@@ -1613,6 +1613,7 @@ for testname in testsrc:
             if valgrindcomp:
                 cmd = valgrindcomp
                 args = valgrindcompopts+[compiler]+args
+            # TODO: temporary way to plugin chpldoc next for testing
             elif 'CHPL_CHPLDOC_NEXT' in os.environ:
                 cmd = os.environ['CHPL_CHPLDOC_NEXT']
             else:
