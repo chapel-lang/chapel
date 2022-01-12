@@ -67,7 +67,7 @@ def get_compile_args():
     if libfabric_val == 'system' or libfabric_val == 'bundled':
         flags = [ ]
         launcher_val = chpl_launcher.get()
-        ofi_oob_val = overrides.get_environ('CHPL_RT_COMM_OFI_OOB')
+        ofi_oob_val = overrides.get_environ('CHPL_COMM_OFI_OOB')
         if 'mpi' in launcher_val or ( ofi_oob_val and 'mpi' in ofi_oob_val ):
             mpi_dir_val = overrides.get_environ('MPI_DIR')
             if mpi_dir_val:
@@ -116,7 +116,7 @@ def get_link_args():
     if libfabric_val == 'system' or libfabric_val == 'bundled':
         libs = [ ]
         launcher_val = chpl_launcher.get()
-        ofi_oob_val = overrides.get_environ('CHPL_RT_COMM_OFI_OOB')
+        ofi_oob_val = overrides.get_environ('CHPL_COMM_OFI_OOB')
         if 'mpi' in launcher_val or ( ofi_oob_val and 'mpi' in ofi_oob_val ):
             mpi_dir_val = overrides.get_environ('MPI_DIR')
             if mpi_dir_val:
