@@ -719,6 +719,8 @@ struct CommentVisitor {
   DEF_ENTER(Function, false)
   DEF_ENTER(Variable, false)
 
+#undef DEF_ENTER
+
   bool enter(const ASTNode* ast) {
     return false;
   }
@@ -758,41 +760,6 @@ static const Comment* const& previousComment(Context* context, ID id) {
   }
   return QUERY_END(result);
 }
-
-// NOTE: linear search
-// TODO: can't handle top level module currently
-// static const ASTNode* const& previousSibling(Context* context, ID id) {
-//   QUERY_BEGIN(previousSibling, context, id);
-//   const ASTNode* result = nullptr;
-//   const ASTNode* cur = idToAst(context, id);
-//   ID maybeParentId = idToParentId(context, id);
-//   if (!maybeParentId.isEmpty()) {
-//     const ASTNode* parent = idToAst(context, maybeParentId);
-//     const ASTNode* prev = nullptr;
-//     // bool matched = false;
-//     for (const ASTNode* x : parent->children()) {
-//       if (cur == x) {
-//         // matched = true;
-//         result = prev;
-//         break;
-//       } else {
-//         prev = x;
-//       }
-//     }
-//   }
-//   return QUERY_END(result);
-// }
-
-// static const Comment* const& previousComment(Context* context, ID id) {
-//   QUERY_BEGIN(previousComment, context, id);
-//   const Comment* result = nullptr;
-//   if (const ASTNode* prev = previousSibling(context, id)) {
-//     result = prev->toComment();
-//   }
-//   return QUERY_END(result);
-// }
-
-// static const std::string rstDoc()
 
 static const owned<RstResult>& rstDoc(Context* context, ID id) {
   QUERY_BEGIN(rstDoc, context, id);
