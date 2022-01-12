@@ -27,6 +27,9 @@ MAKE_COMP_GEN_CFLAGS =
 
 # These Make ifdefs are used for printcompileline and printcflags
 # in order to correctly set COMP_GEN_CFLAGS.
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
+  MAKE_COMP_GEN_CFLAGS += $(SHARED_LIB_CFLAGS)
+endif
 ifeq ($(COMP_GEN_WARN), 1)
   MAKE_COMP_GEN_CFLAGS += $(WARN_GEN_CFLAGS)
 endif
