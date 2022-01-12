@@ -27,6 +27,7 @@ Options:
   --anonymize   Omit machine specific details, script location, and CHPL_HOME
   --overrides   Omit variables that have not been user supplied via environment
                  or chplconfig
+  --only-path   Omit variables that do not contibute to the build path
 
   [format]
   --pretty      (default) Print variables in format: CHPL_KEY: VALUE
@@ -57,7 +58,7 @@ COMPILER = set(['compiler'])
 LAUNCHER = set(['launcher'])
 RUNTIME = set(['runtime'])
 INTERNAL = set(['internal'])
-NOPATH = set(['nopath'])     # for variables to be skipped for --path
+NOPATH = set(['nopath'])     # for variables to be skipped for --path or --only-path
 DEFAULT = set(['default'])
 
 # Global ordered list that stores names, content-categories, and shortnames
@@ -371,8 +372,8 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
 
     envs = filter(filter_content, CHPL_ENVS)
 
-    # --path -- skip variables marked NOPATH
-    if print_format == 'path':
+    # --path or --only-path -- skip variables marked NOPATH
+    if print_format == 'path' or 'only-path' in print_filters:
         envs = filter(filter_path, envs)
 
     # --overrides
@@ -445,6 +446,7 @@ def parse_args():
     parser.add_option('--no-tidy', action='store_false', dest='tidy')
     parser.add_option('--anonymize', action='append_const', dest='filter', const='anonymize')
     parser.add_option('--overrides', action='append_const', dest='filter', const='overrides')
+    parser.add_option('--only-path', action='append_const', dest='filter', const='only-path')
 
     #[format]
     parser.set_defaults(format='pretty')
