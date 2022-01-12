@@ -29,9 +29,10 @@ def get_gasnet_pc_file():
 def filter_compile_args(args):
     compiler = chpl_compiler.get('target')
     is_prgenv = compiler_utils.target_compiler_is_prgenv(bypass_llvm=True)
+
+    ret = [ ]
     if compiler == 'llvm' and is_prgenv:
         # filter out compile arguments not starting with -D or -I
-        ret = [ ]
         n = len(args)
         i = 0
         while i < n:
@@ -46,7 +47,19 @@ def filter_compile_args(args):
         return ret
     else:
         # otherwise, just return the args the way they were
-        return args
+        ret = args
+
+    # subsequently, filter away a few gasnet flags we don't want
+    # an alternative to this filtering would be to only grab
+    # certain flags from the gasnet .pc file
+    more_filtered = [ ]
+    for arg in ret:
+        if arg == '-O3' or arg == '-Winline':
+            pass # leave out this flag
+        else:
+            more_filtered.append(arg)
+
+    return more_filtered
 
 # returns 2-tuple of lists
 #  (compiler_bundled_args, compiler_system_args)
