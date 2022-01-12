@@ -18,7 +18,9 @@
  * limitations under the License.
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 // needed for dlfcn.h on linux
 
 #include "chplrt.h"
