@@ -52,6 +52,7 @@ _chpl ()
 --dead-code-elimination \
 --debug \
 --debug-short-loc \
+--debug-trace \
 --default-dist \
 --denormalize \
 --devel \
@@ -163,6 +164,7 @@ _chpl ()
 --no-dead-code-elimination \
 --no-debug \
 --no-debug-short-loc \
+--no-debug-trace \
 --no-denormalize \
 --no-devel \
 --no-div-by-zero-checks \
