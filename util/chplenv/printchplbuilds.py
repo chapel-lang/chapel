@@ -146,8 +146,7 @@ def Parse(path):
 
 def GetConfig(all=False):
     config = OrderedDict()
-    excludes = ['CHPL_HOME', 'CHPL_TARGET_CC', 'CHPL_TARGET_CXX', 'CHPL_GPU_CODEGEN']
-    #excludes = ['CHPL_HOME', 'CHPL_TARGET_CC', 'CHPL_TARGET_CXX', 'CHPL_GPU_CODEGEN']
+    excludes = ['CHPL_HOME']
     filters = ['no-tidy'] if all else ['tidy']
     filters.append('only-path')
     lines = printchplenv.printchplenv(['runtime'], print_filters=filters, 
