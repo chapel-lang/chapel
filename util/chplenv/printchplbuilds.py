@@ -153,7 +153,6 @@ def GetConfig(all=False):
     lines = printchplenv.printchplenv(['runtime'], print_filters=filters, 
                                       print_format='simple').split('\n')
     for line in lines:
-        print(line);
         if len(line) == 0:
             continue
         (var, value) = line.split('=', 1)
