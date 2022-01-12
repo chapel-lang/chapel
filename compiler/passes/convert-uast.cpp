@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -764,12 +764,6 @@ struct Converter {
     return node->isBracketLoop() && node->index() &&
         !node->iterand()->isZip() &&
         !node->stmt(0)->isConditional();
-  }
-
-  // TODO: Use for BracketLoop/Forall...
-  BlockStmt* convertCommonIndexableLoop(const uast::IndexableLoop* node) {
-    INT_FATAL("TODO");
-    return nullptr;
   }
 
   Expr* convertBracketLoopExpr(const uast::BracketLoop* node) {

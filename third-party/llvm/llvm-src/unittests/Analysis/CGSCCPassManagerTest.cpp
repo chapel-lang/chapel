@@ -16,6 +16,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
+#include "llvm/IR/Verifier.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Transforms/Utils/CallGraphUpdater.h"
 #include "gtest/gtest.h"
@@ -219,21 +220,13 @@ public:
             // |/
             // x
             //
-            "define void @f() {\n"
+            "define void @x() {\n"
             "entry:\n"
-            "  call void @g()\n"
+            "  ret void\n"
+            "}\n"
+            "define void @h3() {\n"
+            "entry:\n"
             "  call void @h1()\n"
-            "  ret void\n"
-            "}\n"
-            "define void @g() {\n"
-            "entry:\n"
-            "  call void @g()\n"
-            "  call void @x()\n"
-            "  ret void\n"
-            "}\n"
-            "define void @h1() {\n"
-            "entry:\n"
-            "  call void @h2()\n"
             "  ret void\n"
             "}\n"
             "define void @h2() {\n"
@@ -242,13 +235,21 @@ public:
             "  call void @x()\n"
             "  ret void\n"
             "}\n"
-            "define void @h3() {\n"
+            "define void @h1() {\n"
             "entry:\n"
-            "  call void @h1()\n"
+            "  call void @h2()\n"
             "  ret void\n"
             "}\n"
-            "define void @x() {\n"
+            "define void @g() {\n"
             "entry:\n"
+            "  call void @g()\n"
+            "  call void @x()\n"
+            "  ret void\n"
+            "}\n"
+            "define void @f() {\n"
+            "entry:\n"
+            "  call void @g()\n"
+            "  call void @h1()\n"
             "  ret void\n"
             "}\n")) {
     FAM.registerPass([&] { return TargetLibraryAnalysis(); });
@@ -1489,15 +1490,15 @@ TEST_F(CGSCCPassManagerTest, TestUpdateCGAndAnalysisManagerForPasses4) {
         BasicBlock *BB = BasicBlock::Create(FnewF->getContext(), "", FnewF);
         ReturnInst::Create(FnewF->getContext(), BB);
 
+        // And insert a call to `newF`
+        Instruction *IP = &FnF->getEntryBlock().front();
+        (void)CallInst::Create(FnewF, {}, "", IP);
+
         // Use the CallGraphUpdater to update the call graph for the new
         // function.
         CallGraphUpdater CGU;
         CGU.initialize(CG, C, AM, UR);
-        CGU.registerOutlinedFunction(*FnewF);
-
-        // And insert a call to `newF`
-        Instruction *IP = &FnF->getEntryBlock().front();
-        (void)CallInst::Create(FnewF, {}, "", IP);
+        CGU.registerOutlinedFunction(*FnF, *FnewF);
 
         auto &FN = *llvm::find_if(
             C, [](LazyCallGraph::Node &N) { return N.getName() == "f"; });
@@ -1532,7 +1533,6 @@ TEST_F(CGSCCPassManagerTest, TestUpdateCGAndAnalysisManagerForPasses5) {
     // function.
     CallGraphUpdater CGU;
     CGU.initialize(CG, C, AM, UR);
-    CGU.registerOutlinedFunction(*FnewF);
 
     // And insert a call to `newF`
     Instruction *IP = &FnF->getEntryBlock().front();
@@ -1541,9 +1541,8 @@ TEST_F(CGSCCPassManagerTest, TestUpdateCGAndAnalysisManagerForPasses5) {
     auto &FN = *llvm::find_if(
         C, [](LazyCallGraph::Node &N) { return N.getName() == "f"; });
 
-    ASSERT_DEATH(
-        updateCGAndAnalysisManagerForFunctionPass(CG, C, FN, AM, UR, FAM),
-        "Any new calls should be modeled as");
+    ASSERT_DEATH(updateCGAndAnalysisManagerForCGSCCPass(CG, C, FN, AM, UR, FAM),
+                 "should already have an associated node");
   }));
 
   ModulePassManager MPM(/*DebugLogging*/ true);
@@ -1713,57 +1712,234 @@ TEST_F(CGSCCPassManagerTest, TestUpdateCGAndAnalysisManagerForPasses10) {
   MPM.run(*M, MAM);
 }
 
-TEST_F(CGSCCPassManagerTest, TestInsertionOfNewRefSCC) {
+// Returns a vector containing the SCC's nodes. Useful for not iterating over an
+// SCC while mutating it.
+static SmallVector<LazyCallGraph::Node *> SCCNodes(LazyCallGraph::SCC &C) {
+  SmallVector<LazyCallGraph::Node *> Nodes;
+  for (auto &N : C)
+    Nodes.push_back(&N);
+
+  return Nodes;
+}
+
+// Start with call recursive f, create f -> g and ref recursive f.
+TEST_F(CGSCCPassManagerTest, TestInsertionOfNewFunctions1) {
   std::unique_ptr<Module> M = parseIR("define void @f() {\n"
                                       "entry:\n"
                                       "  call void @f()\n"
                                       "  ret void\n"
                                       "}\n");
 
+  bool Ran = false;
+
   CGSCCPassManager CGPM(/*DebugLogging*/ true);
   CGPM.addPass(LambdaSCCPassNoPreserve(
       [&](LazyCallGraph::SCC &C, CGSCCAnalysisManager &AM, LazyCallGraph &CG,
           CGSCCUpdateResult &UR) {
+        if (Ran)
+          return;
+
         auto &FAM =
             AM.getResult<FunctionAnalysisManagerCGSCCProxy>(C, CG).getManager();
 
-        for (auto &N : C) {
-          auto &F = N.getFunction();
+        for (LazyCallGraph::Node *N : SCCNodes(C)) {
+          Function &F = N->getFunction();
           if (F.getName() != "f")
-            continue;
-          auto *Call = dyn_cast<CallInst>(F.begin()->begin());
-          if (!Call || Call->getCalledFunction()->getName() != "f")
             continue;
 
           // Create a new function 'g'.
           auto *G = Function::Create(F.getFunctionType(), F.getLinkage(),
                                      F.getAddressSpace(), "g", F.getParent());
-          BasicBlock::Create(F.getParent()->getContext(), "entry", G);
+          auto *GBB =
+              BasicBlock::Create(F.getParent()->getContext(), "entry", G);
+          (void)ReturnInst::Create(G->getContext(), GBB);
           // Instruct the LazyCallGraph to create a new node for 'g', as the
           // single node in a new SCC, into the call graph. As a result
           // the call graph is composed of a single RefSCC with two SCCs:
           // [(f), (g)].
-          CG.addNewFunctionIntoRefSCC(*G, C.getOuterRefSCC());
 
-          // "Demote" the 'f -> f' call egde to a ref edge.
+          // "Demote" the 'f -> f' call edge to a ref edge.
           // 1. Erase the call edge from 'f' to 'f'.
-          Call->eraseFromParent();
+          F.getEntryBlock().front().eraseFromParent();
           // 2. Insert a ref edge from 'f' to 'f'.
-          (void)CastInst::CreatePointerCast(&F,
-                                            Type::getInt8PtrTy(F.getContext()),
-                                            "f.ref", &*F.begin()->begin());
+          (void)CastInst::CreatePointerCast(
+              &F, Type::getInt8PtrTy(F.getContext()), "f.ref",
+              &F.getEntryBlock().front());
+          // 3. Insert a ref edge from 'f' to 'g'.
+          (void)CastInst::CreatePointerCast(
+              G, Type::getInt8PtrTy(F.getContext()), "g.ref",
+              &F.getEntryBlock().front());
+
+          CG.addSplitFunction(F, *G);
+
+          ASSERT_FALSE(verifyModule(*F.getParent(), &errs()));
 
           ASSERT_NO_FATAL_FAILURE(
-              updateCGAndAnalysisManagerForCGSCCPass(CG, C, N, AM, UR, FAM))
+              updateCGAndAnalysisManagerForCGSCCPass(CG, C, *N, AM, UR, FAM))
               << "Updating the call graph with a demoted, self-referential "
                  "call edge 'f -> f', and a newly inserted ref edge 'f -> g', "
                  "caused a fatal failure";
+
+          Ran = true;
         }
       }));
 
   ModulePassManager MPM(/*DebugLogging*/ true);
   MPM.addPass(createModuleToPostOrderCGSCCPassAdaptor(std::move(CGPM)));
   MPM.run(*M, MAM);
+  ASSERT_TRUE(Ran);
+}
+
+// Start with f, end with f -> g1, f -> g2, and f -ref-> (h1 <-ref-> h2).
+TEST_F(CGSCCPassManagerTest, TestInsertionOfNewFunctions2) {
+  std::unique_ptr<Module> M = parseIR("define void @f() {\n"
+                                      "entry:\n"
+                                      "  ret void\n"
+                                      "}\n");
+
+  bool Ran = false;
+
+  CGSCCPassManager CGPM(/*DebugLogging*/ true);
+  CGPM.addPass(LambdaSCCPassNoPreserve([&](LazyCallGraph::SCC &C,
+                                           CGSCCAnalysisManager &AM,
+                                           LazyCallGraph &CG,
+                                           CGSCCUpdateResult &UR) {
+    if (Ran)
+      return;
+
+    auto &FAM =
+        AM.getResult<FunctionAnalysisManagerCGSCCProxy>(C, CG).getManager();
+
+    for (LazyCallGraph::Node *N : SCCNodes(C)) {
+      Function &F = N->getFunction();
+      if (F.getName() != "f")
+        continue;
+
+      // Create g1 and g2.
+      auto *G1 = Function::Create(F.getFunctionType(), F.getLinkage(),
+                                  F.getAddressSpace(), "g1", F.getParent());
+      auto *G2 = Function::Create(F.getFunctionType(), F.getLinkage(),
+                                  F.getAddressSpace(), "g2", F.getParent());
+      BasicBlock *G1BB =
+          BasicBlock::Create(F.getParent()->getContext(), "entry", G1);
+      BasicBlock *G2BB =
+          BasicBlock::Create(F.getParent()->getContext(), "entry", G2);
+      (void)ReturnInst::Create(G1->getContext(), G1BB);
+      (void)ReturnInst::Create(G2->getContext(), G2BB);
+
+      // Add 'f -> g1' call edge.
+      (void)CallInst::Create(G1, {}, "", &F.getEntryBlock().front());
+      // Add 'f -> g2' call edge.
+      (void)CallInst::Create(G2, {}, "", &F.getEntryBlock().front());
+
+      CG.addSplitFunction(F, *G1);
+      CG.addSplitFunction(F, *G2);
+
+      // Create mutually recursive functions (ref only) 'h1' and 'h2'.
+      auto *H1 = Function::Create(F.getFunctionType(), F.getLinkage(),
+                                  F.getAddressSpace(), "h1", F.getParent());
+      auto *H2 = Function::Create(F.getFunctionType(), F.getLinkage(),
+                                  F.getAddressSpace(), "h2", F.getParent());
+      BasicBlock *H1BB =
+          BasicBlock::Create(F.getParent()->getContext(), "entry", H1);
+      BasicBlock *H2BB =
+          BasicBlock::Create(F.getParent()->getContext(), "entry", H2);
+      (void)CastInst::CreatePointerCast(H2, Type::getInt8PtrTy(F.getContext()),
+                                        "h2.ref", H1BB);
+      (void)ReturnInst::Create(H1->getContext(), H1BB);
+      (void)CastInst::CreatePointerCast(H1, Type::getInt8PtrTy(F.getContext()),
+                                        "h1.ref", H2BB);
+      (void)ReturnInst::Create(H2->getContext(), H2BB);
+
+      // Add 'f -> h1' ref edge.
+      (void)CastInst::CreatePointerCast(H1, Type::getInt8PtrTy(F.getContext()),
+                                        "h1.ref", &F.getEntryBlock().front());
+      // Add 'f -> h2' ref edge.
+      (void)CastInst::CreatePointerCast(H2, Type::getInt8PtrTy(F.getContext()),
+                                        "h2.ref", &F.getEntryBlock().front());
+
+      CG.addSplitRefRecursiveFunctions(F, SmallVector<Function *, 2>({H1, H2}));
+
+      ASSERT_FALSE(verifyModule(*F.getParent(), &errs()));
+
+      ASSERT_NO_FATAL_FAILURE(
+          updateCGAndAnalysisManagerForCGSCCPass(CG, C, *N, AM, UR, FAM))
+          << "Updating the call graph with mutually recursive g1 <-> g2, h1 "
+             "<-> h2 caused a fatal failure";
+
+      Ran = true;
+    }
+  }));
+
+  ModulePassManager MPM(/*DebugLogging*/ true);
+  MPM.addPass(createModuleToPostOrderCGSCCPassAdaptor(std::move(CGPM)));
+  MPM.run(*M, MAM);
+  ASSERT_TRUE(Ran);
+}
+
+TEST_F(CGSCCPassManagerTest, TestInsertionOfNewNonTrivialCallEdge) {
+  std::unique_ptr<Module> M = parseIR("define void @f1() {\n"
+                                      "entry:\n"
+                                      "  %a = bitcast void ()* @f4 to i8*\n"
+                                      "  %b = bitcast void ()* @f2 to i8*\n"
+                                      "  ret void\n"
+                                      "}\n"
+                                      "define void @f2() {\n"
+                                      "entry:\n"
+                                      "  %a = bitcast void ()* @f1 to i8*\n"
+                                      "  %b = bitcast void ()* @f3 to i8*\n"
+                                      "  ret void\n"
+                                      "}\n"
+                                      "define void @f3() {\n"
+                                      "entry:\n"
+                                      "  %a = bitcast void ()* @f2 to i8*\n"
+                                      "  %b = bitcast void ()* @f4 to i8*\n"
+                                      "  ret void\n"
+                                      "}\n"
+                                      "define void @f4() {\n"
+                                      "entry:\n"
+                                      "  %a = bitcast void ()* @f3 to i8*\n"
+                                      "  %b = bitcast void ()* @f1 to i8*\n"
+                                      "  ret void\n"
+                                      "}\n");
+
+  bool Ran = false;
+  CGSCCPassManager CGPM(/*DebugLogging*/ true);
+  CGPM.addPass(LambdaSCCPassNoPreserve([&](LazyCallGraph::SCC &C,
+                                           CGSCCAnalysisManager &AM,
+                                           LazyCallGraph &CG,
+                                           CGSCCUpdateResult &UR) {
+    if (Ran)
+      return;
+
+    auto &FAM =
+        AM.getResult<FunctionAnalysisManagerCGSCCProxy>(C, CG).getManager();
+
+    for (LazyCallGraph::Node *N : SCCNodes(C)) {
+      Function &F = N->getFunction();
+      if (F.getName() != "f1")
+        continue;
+
+      Function *F3 = F.getParent()->getFunction("f3");
+      ASSERT_TRUE(F3 != nullptr);
+
+      // Create call from f1 to f3.
+      (void)CallInst::Create(F3, {}, "", F.getEntryBlock().getTerminator());
+
+      ASSERT_NO_FATAL_FAILURE(
+          updateCGAndAnalysisManagerForCGSCCPass(CG, C, *N, AM, UR, FAM))
+          << "Updating the call graph with mutually recursive g1 <-> g2, h1 "
+             "<-> h2 caused a fatal failure";
+
+      Ran = true;
+    }
+  }));
+
+  ModulePassManager MPM(/*DebugLogging*/ true);
+  MPM.addPass(createModuleToPostOrderCGSCCPassAdaptor(std::move(CGPM)));
+  MPM.run(*M, MAM);
+
+  ASSERT_TRUE(Ran);
 }
 
 #endif

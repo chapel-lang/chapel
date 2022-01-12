@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -79,9 +79,11 @@ class ErrorMessage final {
   const std::vector<ErrorMessage>& details() const { return details_; }
 
   inline bool operator==(const ErrorMessage& other) const {
-    return this->level_ == other.level_ &&
-           this->location_ == other.location_ &&
-           this->message_ == other.message_;
+    return level_ == other.level_ &&
+           location_ == other.location_ &&
+           message_ == other.message_ &&
+           details_ == other.details_ &&
+           id_ == other.id_;
   }
   inline bool operator!=(const ErrorMessage& other) const {
     return !(*this == other);

@@ -300,8 +300,8 @@ TEST_F(AArch64GISelMITest, TestKnownBits) {
   GISelKnownBits Info(*MF);
   KnownBits Known = Info.getKnownBits(SrcReg);
   EXPECT_FALSE(Known.hasConflict());
-  EXPECT_EQ(0u, Known.One.getZExtValue());
-  EXPECT_EQ(31u, Known.Zero.getZExtValue());
+  EXPECT_EQ(32u, Known.One.getZExtValue());
+  EXPECT_EQ(95u, Known.Zero.getZExtValue());
   APInt Zeroes = Info.getKnownZeroes(SrcReg);
   EXPECT_EQ(Known.Zero, Zeroes);
 }
@@ -371,6 +371,70 @@ TEST_F(AArch64GISelMITest, TestNumSignBitsSext) {
   GISelKnownBits Info(*MF);
   EXPECT_EQ(25u, Info.computeNumSignBits(CopySextLoad));
   EXPECT_EQ(32u, Info.computeNumSignBits(CopySextNeg1));
+}
+
+TEST_F(AArch64GISelMITest, TestNumSignBitsSextInReg) {
+  StringRef MIRString = R"(
+   %ptr:_(p0) = G_IMPLICIT_DEF
+   %load4:_(s32) = G_LOAD %ptr :: (load 4)
+
+   %inreg7:_(s32) = G_SEXT_INREG %load4, 7
+   %copy_inreg7:_(s32) = COPY %inreg7
+
+   %inreg8:_(s32) = G_SEXT_INREG %load4, 8
+   %copy_inreg8:_(s32) = COPY %inreg8
+
+   %inreg9:_(s32) = G_SEXT_INREG %load4, 9
+   %copy_inreg9:_(s32) = COPY %inreg9
+
+   %inreg31:_(s32) = G_SEXT_INREG %load4, 31
+   %copy_inreg31:_(s32) = COPY %inreg31
+
+   %load1:_(s8) = G_LOAD %ptr :: (load 1)
+   %sext_load1:_(s32) = G_SEXT %load1
+
+   %inreg6_sext:_(s32) = G_SEXT_INREG %sext_load1, 6
+   %copy_inreg6_sext:_(s32) = COPY %inreg6_sext
+
+   %inreg7_sext:_(s32) = G_SEXT_INREG %sext_load1, 7
+   %copy_inreg7_sext:_(s32) = COPY %inreg7_sext
+
+   %inreg8_sext:_(s32) = G_SEXT_INREG %sext_load1, 8
+   %copy_inreg8_sext:_(s32) = COPY %inreg8_sext
+
+   %inreg9_sext:_(s32) = G_SEXT_INREG %sext_load1, 9
+   %copy_inreg9_sext:_(s32) = COPY %inreg9_sext
+
+   %inreg31_sext:_(s32) = G_SEXT_INREG %sext_load1, 31
+   %copy_inreg31_sext:_(s32) = COPY %inreg31_sext
+)";
+
+  setUp(MIRString);
+  if (!TM)
+    return;
+
+  Register CopyInReg7 = Copies[Copies.size() - 9];
+  Register CopyInReg8 = Copies[Copies.size() - 8];
+  Register CopyInReg9 = Copies[Copies.size() - 7];
+  Register CopyInReg31 = Copies[Copies.size() - 6];
+
+  Register CopyInReg6Sext = Copies[Copies.size() - 5];
+  Register CopyInReg7Sext = Copies[Copies.size() - 4];
+  Register CopyInReg8Sext = Copies[Copies.size() - 3];
+  Register CopyInReg9Sext = Copies[Copies.size() - 2];
+  Register CopyInReg31Sext = Copies[Copies.size() - 1];
+
+  GISelKnownBits Info(*MF);
+  EXPECT_EQ(26u, Info.computeNumSignBits(CopyInReg7));
+  EXPECT_EQ(25u, Info.computeNumSignBits(CopyInReg8));
+  EXPECT_EQ(24u, Info.computeNumSignBits(CopyInReg9));
+  EXPECT_EQ(2u, Info.computeNumSignBits(CopyInReg31));
+
+  EXPECT_EQ(27u, Info.computeNumSignBits(CopyInReg6Sext));
+  EXPECT_EQ(26u, Info.computeNumSignBits(CopyInReg7Sext));
+  EXPECT_EQ(25u, Info.computeNumSignBits(CopyInReg8Sext));
+  EXPECT_EQ(25u, Info.computeNumSignBits(CopyInReg9Sext));
+  EXPECT_EQ(25u, Info.computeNumSignBits(CopyInReg31Sext));
 }
 
 TEST_F(AArch64GISelMITest, TestNumSignBitsTrunc) {
@@ -462,4 +526,390 @@ TEST_F(AMDGPUGISelMITest, TestTargetKnownAlign) {
   EXPECT_EQ(Align(4), Info.computeKnownAlignment(CopyKernargSegmentPtr));
   EXPECT_EQ(Align(4), Info.computeKnownAlignment(CopyImplicitArgPtr));
   EXPECT_EQ(Align(4), Info.computeKnownAlignment(CopyImplicitBufferPtr));
+}
+
+TEST_F(AMDGPUGISelMITest, TestIsKnownToBeAPowerOfTwo) {
+
+  StringRef MIRString = R"MIR(
+  %zero:_(s32) = G_CONSTANT i32 0
+  %one:_(s32) = G_CONSTANT i32 1
+  %two:_(s32) = G_CONSTANT i32 2
+  %three:_(s32) = G_CONSTANT i32 3
+  %five:_(s32) = G_CONSTANT i32 5
+  %copy_zero:_(s32) = COPY %zero
+  %copy_one:_(s32) = COPY %one
+  %copy_two:_(s32) = COPY %two
+  %copy_three:_(s32) = COPY %three
+
+  %trunc_two:_(s1) = G_TRUNC %two
+  %trunc_three:_(s1) = G_TRUNC %three
+  %trunc_five:_(s1) = G_TRUNC %five
+
+  %copy_trunc_two:_(s1) = COPY %trunc_two
+  %copy_trunc_three:_(s1) = COPY %trunc_three
+  %copy_trunc_five:_(s1) = COPY %trunc_five
+
+  %ptr:_(p1) = G_IMPLICIT_DEF
+  %shift_amt:_(s32) = G_LOAD %ptr :: (load 4, addrspace 1)
+
+  %shl_1:_(s32) = G_SHL %one, %shift_amt
+  %copy_shl_1:_(s32) = COPY %shl_1
+
+  %shl_2:_(s32) = G_SHL %two, %shift_amt
+  %copy_shl_2:_(s32) = COPY %shl_2
+
+  %not_sign_mask:_(s32) = G_LOAD %ptr :: (load 4, addrspace 1)
+  %sign_mask:_(s32) = G_CONSTANT i32 -2147483648
+
+  %lshr_not_sign_mask:_(s32) = G_LSHR %not_sign_mask, %shift_amt
+  %copy_lshr_not_sign_mask:_(s32) = COPY %lshr_not_sign_mask
+
+  %lshr_sign_mask:_(s32) = G_LSHR %sign_mask, %shift_amt
+  %copy_lshr_sign_mask:_(s32) = COPY %lshr_sign_mask
+
+  %or_pow2:_(s32) = G_OR %zero, %two
+  %copy_or_pow2:_(s32) = COPY %or_pow2
+
+)MIR";
+  setUp(MIRString);
+  if (!TM)
+    return;
+
+  GISelKnownBits KB(*MF);
+
+  Register CopyZero = Copies[Copies.size() - 12];
+  Register CopyOne = Copies[Copies.size() - 11];
+  Register CopyTwo = Copies[Copies.size() - 10];
+  Register CopyThree = Copies[Copies.size() - 9];
+  Register CopyTruncTwo = Copies[Copies.size() - 8];
+  Register CopyTruncThree = Copies[Copies.size() - 7];
+  Register CopyTruncFive = Copies[Copies.size() - 6];
+
+  Register CopyShl1 = Copies[Copies.size() - 5];
+  Register CopyShl2 = Copies[Copies.size() - 4];
+
+  Register CopyLShrNotSignMask = Copies[Copies.size() - 3];
+  Register CopyLShrSignMask = Copies[Copies.size() - 2];
+  Register CopyOrPow2 = Copies[Copies.size() - 1];
+
+  EXPECT_FALSE(isKnownToBeAPowerOfTwo(CopyZero, *MRI, &KB));
+  EXPECT_TRUE(isKnownToBeAPowerOfTwo(CopyOne, *MRI, &KB));
+  EXPECT_TRUE(isKnownToBeAPowerOfTwo(CopyTwo, *MRI, &KB));
+  EXPECT_FALSE(isKnownToBeAPowerOfTwo(CopyThree, *MRI, &KB));
+
+  EXPECT_FALSE(isKnownToBeAPowerOfTwo(CopyTruncTwo, *MRI, &KB));
+  EXPECT_TRUE(isKnownToBeAPowerOfTwo(CopyTruncThree, *MRI, &KB));
+  EXPECT_TRUE(isKnownToBeAPowerOfTwo(CopyTruncFive, *MRI, &KB));
+
+  EXPECT_TRUE(isKnownToBeAPowerOfTwo(CopyShl1, *MRI, &KB));
+  EXPECT_FALSE(isKnownToBeAPowerOfTwo(CopyShl2, *MRI, &KB));
+
+  EXPECT_FALSE(isKnownToBeAPowerOfTwo(CopyLShrNotSignMask, *MRI, &KB));
+  EXPECT_TRUE(isKnownToBeAPowerOfTwo(CopyLShrSignMask, *MRI, &KB));
+  EXPECT_TRUE(isKnownToBeAPowerOfTwo(CopyOrPow2, *MRI, &KB));
+}
+
+TEST_F(AArch64GISelMITest, TestMetadata) {
+  StringRef MIRString = "  %imp:_(p0) = G_IMPLICIT_DEF\n"
+                        "  %load:_(s8) = G_LOAD %imp(p0) :: (load 1)\n"
+                        "  %ext:_(s32) = G_ZEXT %load(s8)\n"
+                        "  %cst:_(s32) = G_CONSTANT i32 1\n"
+                        "  %and:_(s32) = G_AND %ext, %cst\n"
+                        "  %copy:_(s32) = COPY %and(s32)\n";
+  setUp(MIRString);
+  if (!TM)
+    return;
+
+  Register CopyReg = Copies[Copies.size() - 1];
+  MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
+  Register SrcReg = FinalCopy->getOperand(1).getReg();
+
+  // We need a load with a metadata range for this to break. Fudge the load in
+  // the string and replace it with something we can work with.
+  MachineInstr *And = MRI->getVRegDef(SrcReg);
+  MachineInstr *Ext = MRI->getVRegDef(And->getOperand(1).getReg());
+  MachineInstr *Load = MRI->getVRegDef(Ext->getOperand(1).getReg());
+  IntegerType *Int8Ty = Type::getInt8Ty(Context);
+
+  // Value must be in [0, 2)
+  Metadata *LowAndHigh[] = {
+      ConstantAsMetadata::get(ConstantInt::get(Int8Ty, 0)),
+      ConstantAsMetadata::get(ConstantInt::get(Int8Ty, 2))};
+  auto NewMDNode = MDNode::get(Context, LowAndHigh);
+  const MachineMemOperand *OldMMO = *Load->memoperands_begin();
+  MachineMemOperand NewMMO(OldMMO->getPointerInfo(), OldMMO->getFlags(),
+                           OldMMO->getSizeInBits(), OldMMO->getAlign(),
+                           OldMMO->getAAInfo(), NewMDNode);
+  MachineIRBuilder MIB(*Load);
+  MIB.buildLoad(Load->getOperand(0), Load->getOperand(1), NewMMO);
+  Load->eraseFromParent();
+
+  GISelKnownBits Info(*MF);
+  KnownBits Res = Info.getKnownBits(And->getOperand(1).getReg());
+
+  // We don't know what the result of the load is, so we don't know any ones.
+  EXPECT_TRUE(Res.One.isNullValue());
+
+  // We know that the value is in [0, 2). So, we don't know if the first bit
+  // is 0 or not. However, we do know that every other bit must be 0.
+  APInt Mask(Res.getBitWidth(), 1);
+  Mask.flipAllBits();
+  EXPECT_EQ(Mask.getZExtValue(), Res.Zero.getZExtValue());
+}
+
+TEST_F(AArch64GISelMITest, TestKnownBitsExt) {
+  StringRef MIRString = "  %c1:_(s16) = G_CONSTANT i16 1\n"
+                        "  %x:_(s16) = G_IMPLICIT_DEF\n"
+                        "  %y:_(s16) = G_AND %x, %c1\n"
+                        "  %anyext:_(s32) = G_ANYEXT %y(s16)\n"
+                        "  %r1:_(s32) = COPY %anyext\n"
+                        "  %zext:_(s32) = G_ZEXT %y(s16)\n"
+                        "  %r2:_(s32) = COPY %zext\n"
+                        "  %sext:_(s32) = G_SEXT %y(s16)\n"
+                        "  %r3:_(s32) = COPY %sext\n";
+  setUp(MIRString);
+  if (!TM)
+    return;
+  Register CopyRegAny = Copies[Copies.size() - 3];
+  Register CopyRegZ = Copies[Copies.size() - 2];
+  Register CopyRegS = Copies[Copies.size() - 1];
+
+  GISelKnownBits Info(*MF);
+  MachineInstr *Copy;
+  Register SrcReg;
+  KnownBits Res;
+
+  Copy = MRI->getVRegDef(CopyRegAny);
+  SrcReg = Copy->getOperand(1).getReg();
+  Res = Info.getKnownBits(SrcReg);
+  EXPECT_EQ((uint64_t)32, Res.getBitWidth());
+  EXPECT_EQ((uint64_t)0, Res.One.getZExtValue());
+  EXPECT_EQ((uint64_t)0x0000fffe, Res.Zero.getZExtValue());
+
+  Copy = MRI->getVRegDef(CopyRegZ);
+  SrcReg = Copy->getOperand(1).getReg();
+  Res = Info.getKnownBits(SrcReg);
+  EXPECT_EQ((uint64_t)32, Res.getBitWidth());
+  EXPECT_EQ((uint64_t)0, Res.One.getZExtValue());
+  EXPECT_EQ((uint64_t)0xfffffffe, Res.Zero.getZExtValue());
+
+  Copy = MRI->getVRegDef(CopyRegS);
+  SrcReg = Copy->getOperand(1).getReg();
+  Res = Info.getKnownBits(SrcReg);
+  EXPECT_EQ((uint64_t)32, Res.getBitWidth());
+  EXPECT_EQ((uint64_t)0, Res.One.getZExtValue());
+  EXPECT_EQ((uint64_t)0xfffffffe, Res.Zero.getZExtValue());
+}
+
+TEST_F(AArch64GISelMITest, TestKnownBitsSextInReg) {
+  StringRef MIRString = R"(
+   ; 000...0001
+   %one:_(s32) = G_CONSTANT i32 1
+
+   ; 000...0010
+   %two:_(s32) = G_CONSTANT i32 2
+
+   ; 000...1010
+   %ten:_(s32) = G_CONSTANT i32 10
+
+   ; ???...????
+   %w0:_(s32) = COPY $w0
+
+   ; ???...?1?
+   %or:_(s32) = G_OR %w0, %two
+
+   ; All bits are known.
+   %inreg1:_(s32) = G_SEXT_INREG %one, 1
+   %copy_inreg1:_(s32) = COPY %inreg1
+
+   ; All bits unknown
+   %inreg2:_(s32) = G_SEXT_INREG %or, 1
+   %copy_inreg2:_(s32) = COPY %inreg2
+
+   ; Extending from the only (known) set bit
+   ; 111...11?
+   %inreg3:_(s32) = G_SEXT_INREG %or, 2
+   %copy_inreg3:_(s32) = COPY %inreg3
+
+   ; Extending from a known set bit, overwriting all of the high set bits.
+   ; 111...1110
+   %inreg4:_(s32) = G_SEXT_INREG %ten, 2
+   %copy_inreg4:_(s32) = COPY %inreg4
+
+)";
+  setUp(MIRString);
+  if (!TM)
+    return;
+  GISelKnownBits Info(*MF);
+  KnownBits Res;
+  auto GetKB = [&](unsigned Idx) {
+    Register CopyReg = Copies[Idx];
+    auto *Copy = MRI->getVRegDef(CopyReg);
+    return Info.getKnownBits(Copy->getOperand(1).getReg());
+  };
+
+  // Every bit is known to be a 1.
+  Res = GetKB(Copies.size() - 4);
+  EXPECT_EQ(32u, Res.getBitWidth());
+  EXPECT_TRUE(Res.isAllOnes());
+
+  // All bits are unknown
+  Res = GetKB(Copies.size() - 3);
+  EXPECT_EQ(32u, Res.getBitWidth());
+  EXPECT_TRUE(Res.isUnknown());
+
+  // Extending from the only known set bit
+  // 111...11?
+  Res = GetKB(Copies.size() - 2);
+  EXPECT_EQ(32u, Res.getBitWidth());
+  EXPECT_EQ(0xFFFFFFFEu, Res.One.getZExtValue());
+  EXPECT_EQ(0u, Res.Zero.getZExtValue());
+
+  // Extending from a known set bit, overwriting all of the high set bits.
+  // 111...1110
+  Res = GetKB(Copies.size() - 1);
+  EXPECT_EQ(32u, Res.getBitWidth());
+  EXPECT_EQ(0xFFFFFFFEu, Res.One.getZExtValue());
+  EXPECT_EQ(1u, Res.Zero.getZExtValue());
+}
+
+TEST_F(AArch64GISelMITest, TestKnownBitsMergeValues) {
+  StringRef MIRString = R"(
+   %val0:_(s16) = G_CONSTANT i16 35224
+   %val1:_(s16) = G_CONSTANT i16 17494
+   %val2:_(s16) = G_CONSTANT i16 4659
+   %val3:_(s16) = G_CONSTANT i16 43981
+   %merge:_(s64) = G_MERGE_VALUES %val0, %val1, %val2, %val3
+   %mergecopy:_(s64) = COPY %merge
+)";
+  setUp(MIRString);
+  if (!TM)
+    return;
+
+  const uint64_t TestVal = UINT64_C(0xabcd123344568998);
+  Register CopyMerge = Copies[Copies.size() - 1];
+
+  GISelKnownBits Info(*MF);
+  KnownBits Res = Info.getKnownBits(CopyMerge);
+  EXPECT_EQ(64u, Res.getBitWidth());
+  EXPECT_EQ(TestVal, Res.One.getZExtValue());
+  EXPECT_EQ(~TestVal, Res.Zero.getZExtValue());
+}
+
+TEST_F(AArch64GISelMITest, TestKnownBitsUnmergeValues) {
+  StringRef MIRString = R"(
+   %val:_(s64) = G_CONSTANT i64 12379570962110515608
+   %val0:_(s16), %val1:_(s16), %val2:_(s16), %val3:_(s16) = G_UNMERGE_VALUES %val
+   %part0:_(s16) = COPY %val0
+   %part1:_(s16) = COPY %val1
+   %part2:_(s16) = COPY %val2
+   %part3:_(s16) = COPY %val3
+
+)";
+  setUp(MIRString);
+  if (!TM)
+    return;
+
+  const uint64_t TestVal = UINT64_C(0xabcd123344568998);
+  GISelKnownBits Info(*MF);
+
+  int Offset = -4;
+  for (unsigned BitOffset = 0; BitOffset != 64; BitOffset += 16, ++Offset) {
+    Register Part = Copies[Copies.size() + Offset];
+    KnownBits PartKnown = Info.getKnownBits(Part);
+    EXPECT_EQ(16u, PartKnown.getBitWidth());
+
+    uint16_t PartTestVal = static_cast<uint16_t>(TestVal >> BitOffset);
+    EXPECT_EQ(PartTestVal, PartKnown.One.getZExtValue());
+    EXPECT_EQ(static_cast<uint16_t>(~PartTestVal), PartKnown.Zero.getZExtValue());
+  }
+}
+
+TEST_F(AArch64GISelMITest, TestKnownBitsBSwapBitReverse) {
+  StringRef MIRString = R"(
+   %const:_(s32) = G_CONSTANT i32 287454020
+   %bswap:_(s32) = G_BSWAP %const
+   %bitreverse:_(s32) = G_BITREVERSE %const
+   %copy_bswap:_(s32) = COPY %bswap
+   %copy_bitreverse:_(s32) = COPY %bitreverse
+)";
+  setUp(MIRString);
+  if (!TM)
+    return;
+
+  const uint32_t TestVal = 0x11223344;
+
+  Register CopyBSwap = Copies[Copies.size() - 2];
+  Register CopyBitReverse = Copies[Copies.size() - 1];
+
+  GISelKnownBits Info(*MF);
+
+  KnownBits BSwapKnown = Info.getKnownBits(CopyBSwap);
+  EXPECT_EQ(32u, BSwapKnown.getBitWidth());
+  EXPECT_EQ(TestVal, BSwapKnown.One.getZExtValue());
+  EXPECT_EQ(~TestVal, BSwapKnown.Zero.getZExtValue());
+
+  KnownBits BitReverseKnown = Info.getKnownBits(CopyBitReverse);
+  EXPECT_EQ(32u, BitReverseKnown.getBitWidth());
+  EXPECT_EQ(TestVal, BitReverseKnown.One.getZExtValue());
+  EXPECT_EQ(~TestVal, BitReverseKnown.Zero.getZExtValue());
+}
+
+TEST_F(AArch64GISelMITest, TestKnownBitsUMax) {
+  StringRef MIRString = R"(
+   %val:_(s32) = COPY $w0
+   %zext:_(s64) = G_ZEXT %val
+   %const:_(s64) = G_CONSTANT i64 -256
+   %umax:_(s64) = G_UMAX %zext, %const
+   %copy_umax:_(s64) = COPY %umax
+)";
+  setUp(MIRString);
+  if (!TM)
+    return;
+
+  Register CopyUMax = Copies[Copies.size() - 1];
+  GISelKnownBits Info(*MF);
+
+  KnownBits KnownUmax = Info.getKnownBits(CopyUMax);
+  EXPECT_EQ(64u, KnownUmax.getBitWidth());
+  EXPECT_EQ(0xffu, KnownUmax.Zero.getZExtValue());
+  EXPECT_EQ(0xffffffffffffff00, KnownUmax.One.getZExtValue());
+
+  EXPECT_EQ(0xffu, KnownUmax.Zero.getZExtValue());
+  EXPECT_EQ(0xffffffffffffff00, KnownUmax.One.getZExtValue());
+}
+
+TEST_F(AArch64GISelMITest, TestInvalidQueries) {
+  StringRef MIRString = R"(
+   %src:_(s32) = COPY $w0
+   %thirty2:_(s32) = G_CONSTANT i32 32
+   %equalSized:_(s32) = G_SHL %src, %thirty2
+   %copy1:_(s32) = COPY %equalSized
+   %thirty3:_(s32) = G_CONSTANT i32 33
+   %biggerSized:_(s32) = G_SHL %src, %thirty3
+   %copy2:_(s32) = COPY %biggerSized
+)";
+  setUp(MIRString);
+  if (!TM)
+    return;
+
+  Register EqSizedCopyReg = Copies[Copies.size() - 2];
+  MachineInstr *EqSizedCopy = MRI->getVRegDef(EqSizedCopyReg);
+  Register EqSizedShl = EqSizedCopy->getOperand(1).getReg();
+
+  Register BiggerSizedCopyReg = Copies[Copies.size() - 1];
+  MachineInstr *BiggerSizedCopy = MRI->getVRegDef(BiggerSizedCopyReg);
+  Register BiggerSizedShl = BiggerSizedCopy->getOperand(1).getReg();
+
+  GISelKnownBits Info(*MF);
+  KnownBits EqSizeRes = Info.getKnownBits(EqSizedShl);
+  KnownBits BiggerSizeRes = Info.getKnownBits(BiggerSizedShl);
+
+
+  // We don't know what the result of the shift is, but we should not crash
+  EXPECT_TRUE(EqSizeRes.One.isNullValue());
+  EXPECT_TRUE(EqSizeRes.Zero.isNullValue());
+
+  EXPECT_TRUE(BiggerSizeRes.One.isNullValue());
+  EXPECT_TRUE(BiggerSizeRes.Zero.isNullValue());
 }

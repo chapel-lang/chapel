@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -89,8 +89,8 @@ template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
     for (auto const &pair : keep) {
       chpl::mark<K> keyMarker;
       chpl::mark<V> valMarker;
-      keyMarker(context, keep.first);
-      valMarker(context, keep.second);
+      keyMarker(context, pair.first);
+      valMarker(context, pair.second);
     }
   }
 };

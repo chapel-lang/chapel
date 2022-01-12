@@ -23,6 +23,7 @@ add_llvm_component_library(LLVMObject
   SymbolSize.cpp
   TapiFile.cpp
   TapiUniversal.cpp
+  MachOUniversalWriter.cpp
   WasmObjectFile.cpp
   WindowsMachineFlag.cpp
   WindowsResource.cpp
@@ -34,4 +35,13 @@ add_llvm_component_library(LLVMObject
   DEPENDS
   intrinsics_gen
   llvm_vcsrevision_h
+
+  LINK_COMPONENTS
+  BitReader
+  Core
+  MC
+  BinaryFormat
+  MCParser
+  Support
+  TextAPI
   )

@@ -1,7 +1,0 @@
-bug: this test leaks memory
-
-Backing issue: https://github.com/Cray/chapel-private/issues/2871
-
-Once this bug is fixed, this test should be moved up a directory so that
-the expected, non-leaking behavior is captured and the issue should be
-closed.

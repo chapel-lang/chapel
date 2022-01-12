@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1921,7 +1921,7 @@ module ChapelDomain {
     /*
        Return an array of locales over which this domain has been distributed.
     */
-    proc targetLocales() const ref {
+    proc targetLocales const ref {
       return _value.dsiTargetLocales();
     }
 

@@ -85,6 +85,31 @@ TEST(is_separator, Works) {
 #endif
 }
 
+TEST(is_absolute_gnu, Works) {
+  // Test tuple <Path, ExpectedPosixValue, ExpectedWindowsValue>.
+  const std::tuple<StringRef, bool, bool> Paths[] = {
+      std::make_tuple("", false, false),
+      std::make_tuple("/", true, true),
+      std::make_tuple("/foo", true, true),
+      std::make_tuple("\\", false, true),
+      std::make_tuple("\\foo", false, true),
+      std::make_tuple("foo", false, false),
+      std::make_tuple("c", false, false),
+      std::make_tuple("c:", false, true),
+      std::make_tuple("c:\\", false, true),
+      std::make_tuple("!:", false, true),
+      std::make_tuple("xx:", false, false),
+      std::make_tuple("c:abc\\", false, true),
+      std::make_tuple(":", false, false)};
+
+  for (const auto &Path : Paths) {
+    EXPECT_EQ(path::is_absolute_gnu(std::get<0>(Path), path::Style::posix),
+              std::get<1>(Path));
+    EXPECT_EQ(path::is_absolute_gnu(std::get<0>(Path), path::Style::windows),
+              std::get<2>(Path));
+  }
+}
+
 TEST(Support, Path) {
   SmallVector<StringRef, 40> paths;
   paths.push_back("");
@@ -171,6 +196,7 @@ TEST(Support, Path) {
     (void)path::has_extension(*i);
     (void)path::extension(*i);
     (void)path::is_absolute(*i);
+    (void)path::is_absolute_gnu(*i);
     (void)path::is_relative(*i);
 
     SmallString<128> temp_store;
@@ -2176,6 +2202,53 @@ TEST_F(FileSystemTest, widenPath) {
   Input = ShareName + DirName + "\\.\\foo\\.\\.." + FileName;
   ASSERT_NO_ERROR(windows::widenPath(Input, Result));
   EXPECT_EQ(Result, Expected);
+}
+#endif
+
+#ifdef _WIN32
+// Windows refuses lock request if file region is already locked by the same
+// process. POSIX system in this case updates the existing lock.
+TEST_F(FileSystemTest, FileLocker) {
+  using namespace std::chrono;
+  int FD;
+  std::error_code EC;
+  SmallString<64> TempPath;
+  EC = fs::createTemporaryFile("test", "temp", FD, TempPath);
+  ASSERT_NO_ERROR(EC);
+  FileRemover Cleanup(TempPath);
+  raw_fd_ostream Stream(TempPath, EC);
+
+  EC = fs::tryLockFile(FD);
+  ASSERT_NO_ERROR(EC);
+  EC = fs::unlockFile(FD);
+  ASSERT_NO_ERROR(EC);
+
+  if (auto L = Stream.lock()) {
+    ASSERT_ERROR(fs::tryLockFile(FD));
+    ASSERT_NO_ERROR(L->unlock());
+    ASSERT_NO_ERROR(fs::tryLockFile(FD));
+    ASSERT_NO_ERROR(fs::unlockFile(FD));
+  } else {
+    ADD_FAILURE();
+    handleAllErrors(L.takeError(), [&](ErrorInfoBase &EIB) {});
+  }
+
+  ASSERT_NO_ERROR(fs::tryLockFile(FD));
+  ASSERT_NO_ERROR(fs::unlockFile(FD));
+
+  {
+    Expected<fs::FileLocker> L1 = Stream.lock();
+    ASSERT_THAT_EXPECTED(L1, Succeeded());
+    raw_fd_ostream Stream2(FD, false);
+    Expected<fs::FileLocker> L2 = Stream2.tryLockFor(250ms);
+    ASSERT_THAT_EXPECTED(L2, Failed());
+    ASSERT_NO_ERROR(L1->unlock());
+    Expected<fs::FileLocker> L3 = Stream.tryLockFor(0ms);
+    ASSERT_THAT_EXPECTED(L3, Succeeded());
+  }
+
+  ASSERT_NO_ERROR(fs::tryLockFile(FD));
+  ASSERT_NO_ERROR(fs::unlockFile(FD));
 }
 #endif
 

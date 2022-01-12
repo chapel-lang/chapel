@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -253,7 +253,8 @@ class Scope {
            containsUseImport_ == other.containsUseImport_ &&
            containsFunctionDecls_ == other.containsFunctionDecls_ &&
            id_ == other.id_ &&
-           declared_ == other.declared_;
+           declared_ == other.declared_ &&
+           name_ == other.name_;
   }
   bool operator!=(const Scope& other) const {
     return !(*this == other);
@@ -346,7 +347,8 @@ class VisibilitySymbols {
   bool operator==(const VisibilitySymbols &other) const {
     return symbolId_ == other.symbolId_ &&
            kind_ == other.kind_ &&
-           names_ == other.names_;
+           names_ == other.names_ &&
+           isPrivate_ == other.isPrivate_;
   }
   bool operator!=(const VisibilitySymbols& other) const {
     return !(*this == other);
@@ -356,9 +358,11 @@ class VisibilitySymbols {
     symbolId_.swap(other.symbolId_);
     std::swap(kind_, other.kind_);
     names_.swap(other.names_);
+    std::swap(isPrivate_, other.isPrivate_);
   }
 
   void mark(Context* context) const {
+    symbolId_.mark(context);
     for (auto p : names_) {
       p.first.mark(context);
       p.second.mark(context);

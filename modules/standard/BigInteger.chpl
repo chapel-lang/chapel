@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2371,20 +2371,7 @@ module BigInteger {
     this.divexact(numer=n,denom=new bigint(d));
   }
 
-/*
-Computes ``numer/denom`` and stores the result in ``bigint`` instance.
-
-``divexact`` is optimized to handle cases where ``numer/denom`` results in an integer.
-When ``numer/denom`` does not produce an integer, this method may produce incorrect results.
-
-:arg numer: numerator
-
-:type numer: bigint
-
-:arg denom: denominator
-
-:type denom: bigint
-*/
+  // documented in bigint, integral version
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
     if _local {
       mpz_divexact(this.mpz, numer.mpz, denom.mpz);
@@ -2406,6 +2393,24 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     }
   }
 
+  /*
+    Computes ``numer/denom`` and stores the result in ``this``, which is a
+    :record:`bigint` instance.
+
+    .. warning::
+
+       ``divexact`` is optimized to handle cases where ``numer/denom`` results
+       in an integer.  When ``numer/denom`` does not produce an integer, this
+       method may produce incorrect results.
+
+    :arg numer: numerator
+
+    :type numer: :record:`bigint`
+
+    :arg denom: denominator
+
+    :type denom: :record:`bigint` or ``integral``
+  */
   proc bigint.divexact(const ref numer: bigint, denom: integral) {
     this.divexact(numer, new bigint(denom));
   }
@@ -2443,6 +2448,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   }
 
   // divisible_p
+  // documented in uint version
   proc bigint.isDivisible(const ref div: bigint) : bool {
     var ret: c_int;
 
@@ -2465,6 +2471,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       return false;
   }
 
+  // documented in uint version
   proc bigint.isDivisible(div: int) : bool {
     var div_ = 0 : c_ulong;
     var ret: c_int;
@@ -2492,6 +2499,19 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       return false;
   }
 
+  /*
+    Return ``true`` if ``this`` is exactly divisible by ``div``.  ``this`` is
+    divisible by ``div`` if there exists an integer ``q`` satisfying ``this =
+    q*div``.  Unlike the other division functions, ``0`` is an acceptable value
+    for ``div`` and only ``0`` is considered divisible by ``0``.
+
+    :arg div: number to check if ``this`` is divisible by
+    :type div: :record:`bigint`, ``int`` or ``uint``
+
+    :return: ``true`` if ``this`` is exactly divisible by ``div``, ``false``
+             otherwise
+    :rtype: ``bool``
+   */
   proc bigint.isDivisible(div: uint) : bool {
     const div_ = div.safeCast(c_ulong);
     var   ret: c_int;
@@ -2525,6 +2545,18 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     return this.isDivisibleBy2Pow(b);
   }
 
+  /*
+    Return ``true`` if ``this`` is exactly divisible by ``2^exp``.  ``this`` is
+    divisible by ``2^exp`` if there exists an integer ``q`` satisfying ``this =
+    q*2^exp``.
+
+    :arg exp: power of 2 to check if ``this`` is divisible by
+    :type exp: ``integral``
+
+    :return: ``true`` if ``this`` is exactly divisible by ``2^exp``, ``false``
+             otherwise
+    :rtype: ``bool``
+   */
   proc bigint.isDivisibleBy2Pow(exp: integral) : bool {
     const exp_ = exp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
@@ -2570,6 +2602,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   }
 
   // congruent_p
+  // documented in integral, integral version
   proc bigint.isCongruent(const ref con: bigint, const ref mod: bigint) : bool {
     var ret: c_int;
 
@@ -2595,6 +2628,24 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       return false;
   }
 
+  /*
+    Return ``true`` if ``this`` is congruent to ``con % mod``.  ``this`` is
+    congruent to ``con % mod`` if there exists an integer ``q`` satisfying
+    ``this = con + q*mod``.  Unlike the other division functions, ``0`` is an
+    acceptable value for ``mod``.  As a result ``this`` and ``con`` are
+    considered congruent modulo ``0`` only when exactly equal.
+
+    :arg con: number to determine if ``this`` is congruent to, modulo ``mod``
+    :type con: :record:`bigint` or ``integral``
+
+    :arg mod: divisor of ``con`` when determining if ``con`` is congruent to
+              ``this``
+    :type mod: :record:`bigint` or ``integral``
+
+    :return: ``true`` if ``this`` is congruent to ``con`` modulo ``mod``,
+             ``false`` otherwise
+    :rtype: ``bool``
+   */
   proc bigint.isCongruent(con: integral, mod: integral) : bool {
     const con_ = con.safeCast(c_ulong);
     const mod_ = mod.safeCast(c_ulong);
@@ -2629,6 +2680,23 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     return this.isCongruentBy2Pow(c,b);
   }
 
+  /*
+    Return ``true`` if ``this`` is congruent to ``con % 2^modExp``.  ``this`` is
+    congruent to ``con % 2^modExp`` if there exists an integer ``q`` satisfying
+    ``this = con + q*2^modExp``.
+
+    :arg con: number to determine if ``this`` is congruent to, modulo
+              ``2^modExp``.
+    :type con: :record:`bigint` or ``integral``
+
+    :arg modExp: power of 2 to use as the divisor of ``con`` when determining if
+                 ``con`` is congruent to ``this``.
+    :type modExp: ``integral``
+
+    :return: ``true`` if ``this`` is congruent to ``con`` modulo ``2^modExp``,
+             ``false`` otherwise.
+    :rtype: ``bool``
+   */
   proc bigint.isCongruentBy2Pow(const ref con: bigint, modExp: integral) : bool {
     const modExp_ = modExp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
@@ -3018,6 +3086,15 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     return this.isPerfectPower();
   }
 
+  /*
+    Return ``true`` if ``this`` is a perfect power, i.e., if there exist
+    integers ``a`` and ``b`` with ``b > 1``, such that ``this = a^b``.
+
+    Under this definition both 0 and 1 are considered to be perfect powers.
+    Negative values can only be odd perfect powers.
+
+    :return: ``true`` if ``this`` is a perfect power, ``false`` otherwise.
+   */
   proc bigint.isPerfectPower () : bool {
     var ret: c_int;
 
@@ -3047,6 +3124,14 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     return this.isPerfectSquare();
   }
 
+  /*
+    Return ``true`` if ``this`` is a perfect square, i.e., if the square root of
+    ``this`` is an integer.  Under this definition both ``0`` and ``1`` are
+    considered to be perfect squares.
+
+    :return: ``true`` if ``this`` is a perfect square, ``false`` otherwise.
+    :rtype: ``bool``
+   */
   proc bigint.isPerfectSquare() : bool {
     var ret: c_int;
 
@@ -3093,8 +3178,27 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     maybePrime,
     isPrime
   };
-  // returns 2 if definitely prime, 0 if not prime, 1 if likely prime
-  // reasonable number of reps is 15-50
+
+  /*
+    Determine whether ``this`` is prime.  Returns one of the :enum:`primality`
+    constants - ``primality.isPrime``, ``primality.maybePrime``, or
+    ``primality.notPrime``.
+
+    Performs some trial divisions, a Baillie-PSW probable prime test, and
+    reps-24 Miller-Rabin probabilistic primality tests.  A higher ``reps`` value
+    will reduce the chances of a non-prime being identified as "probably prime".
+    A composite number will be identified as a prime with an asymptotic
+    probability of less than ``4^(-reps)``.  Reasonable values of ``reps`` are
+    between 15 and 50.
+
+    :arg reps: number of attempts before returning ``primality.maybePrime`` if
+               a definitive answer can't be found before then.
+    :type reps: ``int``
+
+    :returns: ``primality.isPrime``, ``primality.maybePrime`` or
+              ``primality.notPrime``.
+    :rtype: :enum:`primality`
+   */
   proc bigint.probablyPrime(reps: int) : primality {
     var reps_ = reps.safeCast(c_int);
     var ret: c_int;
@@ -3342,6 +3446,19 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     return 0;
   }
 
+  /*
+    Remove all occurrences of the factor ``fac`` from ``x`` and store the result
+    in ``this``.  Return the number of occurrences removed.
+
+    :arg x: The value to remove all occurrences of ``fac`` from
+    :type x: :record:`bigint`
+
+    :arg fac: The factor to remove from ``x``.
+    :type fac: :record:`bigint`
+
+    :return: The number of occurrences of ``fac`` found in ``x``.
+    :rtype: ``uint``
+   */
   proc bigint.removeFactor(const ref x: bigint, const ref fac: bigint) : uint {
     var ret: c_ulong;
     if(fac!=0){
@@ -3800,6 +3917,9 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     return this.isEven();
   }
 
+  /*
+    Returns ``true`` if ``this`` is an even number, ``false`` otherwise.
+   */
   proc bigint.isEven() : bool {
     var ret: c_int;
 
@@ -3832,6 +3952,9 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     return this.isOdd();
   }
 
+  /*
+    Returns ``true`` if ``this`` is an odd number, ``false`` otherwise.
+   */
   proc bigint.isOdd() : bool {
     var ret: c_int;
 

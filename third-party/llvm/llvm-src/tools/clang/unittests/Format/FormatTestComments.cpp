@@ -11,7 +11,6 @@
 #include "../Tooling/ReplacementTest.h"
 #include "FormatTestUtils.h"
 
-#include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "gtest/gtest.h"
@@ -703,6 +702,12 @@ TEST_F(FormatTestComments, SplitsLongCxxComments) {
                    "  // long 1 2 3 4 5 6\n"
                    "}",
                    getLLVMStyleWithColumns(20)));
+
+  EXPECT_EQ("//: A comment that\n"
+            "//: doesn't fit on\n"
+            "//: one line",
+            format("//: A comment that doesn't fit on one line",
+                   getLLVMStyleWithColumns(20)));
 }
 
 TEST_F(FormatTestComments, PreservesHangingIndentInCxxComments) {
@@ -744,6 +749,24 @@ TEST_F(FormatTestComments, DontSplitLineCommentsWithEscapedNewlines) {
                    "          // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\\\n"
                    "          // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                    getLLVMStyleWithColumns(49)));
+}
+
+TEST_F(FormatTestComments, DontIntroduceMultilineComments) {
+  // Avoid introducing a multiline comment by breaking after `\`.
+  for (int ColumnLimit = 15; ColumnLimit <= 17; ++ColumnLimit) {
+    EXPECT_EQ(
+        "// aaaaaaaaaa\n"
+        "// \\ bb",
+        format("// aaaaaaaaaa \\ bb", getLLVMStyleWithColumns(ColumnLimit)));
+    EXPECT_EQ(
+        "// aaaaaaaaa\n"
+        "// \\  bb",
+        format("// aaaaaaaaa \\  bb", getLLVMStyleWithColumns(ColumnLimit)));
+    EXPECT_EQ(
+        "// aaaaaaaaa\n"
+        "// \\  \\ bb",
+        format("// aaaaaaaaa \\  \\ bb", getLLVMStyleWithColumns(ColumnLimit)));
+  }
 }
 
 TEST_F(FormatTestComments, DontSplitLineCommentsWithPragmas) {
@@ -2780,6 +2803,45 @@ TEST_F(FormatTestComments, AlignTrailingComments) {
                    "       // line 2 about b\n"
                    "       long b;",
                    getLLVMStyleWithColumns(80)));
+
+  // Checks an edge case in preprocessor handling.
+  // These comments should *not* be aligned
+  EXPECT_NE( // change for EQ when fixed
+      "#if FOO\n"
+      "#else\n"
+      "long a; // Line about a\n"
+      "#endif\n"
+      "#if BAR\n"
+      "#else\n"
+      "long b_long_name; // Line about b\n"
+      "#endif\n",
+      format("#if FOO\n"
+             "#else\n"
+             "long a;           // Line about a\n" // Previous (bad) behavior
+             "#endif\n"
+             "#if BAR\n"
+             "#else\n"
+             "long b_long_name; // Line about b\n"
+             "#endif\n",
+             getLLVMStyleWithColumns(80)));
+
+  // bug 47589
+  EXPECT_EQ(
+      "namespace m {\n\n"
+      "#define FOO_GLOBAL 0      // Global scope.\n"
+      "#define FOO_LINKLOCAL 1   // Link-local scope.\n"
+      "#define FOO_SITELOCAL 2   // Site-local scope (deprecated).\n"
+      "#define FOO_UNIQUELOCAL 3 // Unique local\n"
+      "#define FOO_NODELOCAL 4   // Loopback\n\n"
+      "} // namespace m\n",
+      format("namespace m {\n\n"
+             "#define FOO_GLOBAL 0   // Global scope.\n"
+             "#define FOO_LINKLOCAL 1  // Link-local scope.\n"
+             "#define FOO_SITELOCAL 2  // Site-local scope (deprecated).\n"
+             "#define FOO_UNIQUELOCAL 3 // Unique local\n"
+             "#define FOO_NODELOCAL 4  // Loopback\n\n"
+             "} // namespace m\n",
+             getLLVMStyleWithColumns(80)));
 }
 
 TEST_F(FormatTestComments, AlignsBlockCommentDecorations) {

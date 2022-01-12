@@ -296,6 +296,10 @@ void benchmarkMain() {
 
   const LLVMState State(CpuName);
 
+  // Preliminary check to ensure features needed for requested
+  // benchmark mode are present on target CPU and/or OS.
+  ExitOnErr(State.getExegesisTarget().checkFeatureSupport());
+
   const std::unique_ptr<BenchmarkRunner> Runner =
       ExitOnErr(State.getExegesisTarget().createBenchmarkRunner(
           BenchmarkMode, State, ResultAggMode));
@@ -393,7 +397,7 @@ static void analysisMain() {
   if (AnalysisClustersOutputFile.empty() &&
       AnalysisInconsistenciesOutputFile.empty()) {
     ExitWithError(
-        "for --mode=analysis: At least one of --analysis-clusters-output-file"
+        "for --mode=analysis: At least one of --analysis-clusters-output-file "
         "and --analysis-inconsistencies-output-file must be specified");
   }
 
@@ -423,6 +427,7 @@ static void analysisMain() {
   }
 
   std::unique_ptr<MCInstrInfo> InstrInfo(TheTarget->createMCInstrInfo());
+  assert(InstrInfo && "Unable to create instruction info!");
 
   const auto Clustering = ExitOnErr(InstructionBenchmarkClustering::create(
       Points, AnalysisClusteringAlgorithm, AnalysisDbscanNumPoints,

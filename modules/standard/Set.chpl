@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -257,7 +257,7 @@ module Set {
     pragma "no doc"
     proc _addElem(in elem: eltType): bool
     where _isSerializable(eltType) {
-        var result = true;
+        var result = false;
 
         on this {
           var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
@@ -290,9 +290,15 @@ module Set {
         var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
 
         if !isFullSlot {
+
+          // This line moves the bits over, 'elem' is dead past this point.
           var moved = moveToValue(elem);
           _htb.fillSlot(idx, moved, none);
           result = true;
+        } else {
+
+          // The set contains the value of 'elem', so clean 'elem' up.
+          chpl__autoDestroy(elem);
         }
       }
 

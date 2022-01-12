@@ -90,7 +90,7 @@ module elemental_cholesky_symmetric_index_ranges_alt {
     // processor grid from A's distribution
     // --------------------------------------------
 
-    const A_locale_grid = A.domain.dist.targetLocales();
+    const A_locale_grid = A.domain.dist.targetLocales;
     const A_grid_domain = A_locale_grid.domain;
 
     assert ( A_grid_domain.low == (0,0) );

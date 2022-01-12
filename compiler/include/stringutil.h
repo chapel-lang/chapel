@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -79,6 +79,7 @@ inline std::string ltrim(std::string s);
        std::string ltrimAllLines(std::string s);
        int         minimumPrefix(const std::string& s);
 
+// these string split functions always append to the passed vector
 void splitString(const std::string& s, std::vector<std::string>& vec,
                  const char* delimiters);
 void splitStringWhitespace(const std::string& s, std::vector<std::string>& vec);

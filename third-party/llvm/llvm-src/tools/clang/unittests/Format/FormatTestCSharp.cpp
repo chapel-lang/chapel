@@ -721,7 +721,7 @@ class TimePeriod {
   }
 })",
                Style);
- 
+
   // Microsoft style trivial property accessors have no line break before the
   // opening brace.
   auto MicrosoftStyle = getMicrosoftStyle(FormatStyle::LK_CSharp);
@@ -731,7 +731,6 @@ public class SaleItem
     public decimal Price { get; set; }
 })",
                MicrosoftStyle);
-
 }
 
 TEST_F(FormatTestCSharp, CSharpSpaces) {
@@ -777,6 +776,20 @@ foreach ((A a, B b) in someList) {
   verifyFormat(R"(private float[ , ] Values;)", Style);
   verifyFormat(R"(string dirPath = args?[ 0 ];)", Style);
   verifyFormat(R"(char[ ,, ] rawCharArray = MakeCharacterGrid();)", Style);
+
+  // Method returning tuple
+  verifyFormat(R"(public (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(private (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(protected (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(virtual (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(extern (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(static (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(internal (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(abstract (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(sealed (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(override (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(async (string name, int age) methodTuple() {})", Style);
+  verifyFormat(R"(unsafe (string name, int age) methodTuple() {})", Style);
 }
 
 TEST_F(FormatTestCSharp, CSharpNullableTypes) {
@@ -822,25 +835,27 @@ if (someThings[i][j][k].Contains(myThing)) {
 TEST_F(FormatTestCSharp, CSharpGenericTypeConstraints) {
   FormatStyle Style = getGoogleStyle(FormatStyle::LK_CSharp);
 
-  verifyFormat(R"(//
-class ItemFactory<T>
-    where T : new() {})",
+  EXPECT_TRUE(Style.BraceWrapping.SplitEmptyRecord);
+
+  verifyFormat("class ItemFactory<T>\n"
+               "    where T : new() {\n"
+               "}",
                Style);
 
-  verifyFormat(R"(//
-class Dictionary<TKey, TVal>
-    where TKey : IComparable<TKey>
-    where TVal : IMyInterface {
-  public void MyMethod<T>(T t)
-      where T : IMyInterface {
-    doThing();
-  }
-})",
+  verifyFormat("class Dictionary<TKey, TVal>\n"
+               "    where TKey : IComparable<TKey>\n"
+               "    where TVal : IMyInterface {\n"
+               "  public void MyMethod<T>(T t)\n"
+               "      where T : IMyInterface {\n"
+               "    doThing();\n"
+               "  }\n"
+               "}",
                Style);
 
-  verifyFormat(R"(//
-class ItemFactory<T>
-    where T : new(), IAnInterface<T>, IAnotherInterface<T>, IAnotherInterfaceStill<T> {})",
+  verifyFormat("class ItemFactory<T>\n"
+               "    where T : new(), IAnInterface<T>, IAnotherInterface<T>, "
+               "IAnotherInterfaceStill<T> {\n"
+               "}",
                Style);
 
   Style.ColumnLimit = 50; // Force lines to be wrapped.
@@ -849,7 +864,8 @@ class ItemFactory<T, U>
     where T : new(),
               IAnInterface<T>,
               IAnotherInterface<T, U>,
-              IAnotherInterfaceStill<T, U> {})",
+              IAnotherInterfaceStill<T, U> {
+})",
                Style);
 
   // In other languages `where` can be used as a normal identifier.

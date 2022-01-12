@@ -476,6 +476,10 @@ all:
       config: 16-node-cs, 16-node-cs-hdr
   09/28/21:
     - Change ChapelHashtable to use power-of-2 table size (#18427)
+  12/17/21:
+    - Set memory leak found due to not calling chpl__autoDestroy (#18842)
+  12/22/21:
+    - Set tests that were leaking memory moved to future tests (#18889)
 
 # End all
 
