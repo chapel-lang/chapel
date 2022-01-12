@@ -1,0 +1,17 @@
+# Regex patterns of tests to exclude in runfabtests.sh
+
+# Feature not supported by udp provider
+cq_data
+inj_complete -e dgram
+
+# No utility provider available for MSG EP support
+^fi_msg
+-e msg
+cm_data
+
+# Not supported by ofi_rxd provider
+scalable_ep
+shared_ctx
+shared_av
+multi_mr
+trigger

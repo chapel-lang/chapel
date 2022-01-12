@@ -1,0 +1,157 @@
+#: "Suite of tests for the verbs provider"
+#: "
+# TODO
+#  - Disable INJECT, INJECTDATA for verbs until the failure is debugged
+#    In pingpong test, we get a FLUSH error on recv CQ but no error on send
+#    queue when we don't read send completions for ibv_post_sends."
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+		FT_FUNC_SENDDATA,
+		FT_FUNC_SENDV,
+		FT_FUNC_SENDMSG,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	mode: [FI_CONTEXT, FI_RX_CQ_DATA],
+	mr_mode: [FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY],
+},
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SENDMSG,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	mode: [FI_CONTEXT, FI_RX_CQ_DATA],
+	mr_mode: [FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY],
+	msg_flags: FI_REMOTE_CQ_DATA,
+},
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_WRITE,
+		FT_FUNC_WRITEV,
+		FT_FUNC_WRITEDATA,
+		FT_FUNC_READ,
+		FT_FUNC_READV,
+		FT_FUNC_READMSG,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_RMA,
+	],
+	mode: [FI_CONTEXT, FI_RX_CQ_DATA],
+	mr_mode: [FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY],
+},
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_WRITEMSG,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_RMA,
+	],
+	mode: [FI_CONTEXT, FI_RX_CQ_DATA],
+	mr_mode: [FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY],
+	msg_flags: FI_REMOTE_CQ_DATA,
+},
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	mode: [FI_CONTEXT, FI_RX_CQ_DATA],
+	mr_mode: [FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY],
+},
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	mode: [FI_CONTEXT, FI_RX_CQ_DATA],
+	mr_mode: [FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY],
+},

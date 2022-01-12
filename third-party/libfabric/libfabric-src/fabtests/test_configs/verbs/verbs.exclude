@@ -1,0 +1,19 @@
+# Regex patterns of tests to exclude in runfabtests.sh
+
+# Exclude all prefix tests
+-k
+
+rdm
+dgram
+
+trigger
+
+# Verbs supports only shared receive context
+shared_ctx$|shared_ctx --no|shared_ctx -e msg$|shared_ctx -e msg --no-rx
+
+scalable_ep
+multi_mr
+multi_recv
+recv_cancel
+unexpected_msg
+inj_complete

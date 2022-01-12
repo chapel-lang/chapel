@@ -1,0 +1,9 @@
+# Regex patterns of tests to exclude in runfabtests.sh
+
+# Exclude msg_epoll test as OSX doesn't have epoll system call
+msg_epoll
+
+# Does not work with utility providers because of epoll limitations
+rdm_cntr_pingpong
+unexpected_msg
+rdm_tagged_peek

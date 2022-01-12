@@ -1,0 +1,120 @@
+#: "Tests different wait objects for EQ and CQ across tcp and verbs providers"
+{
+	prov_name: tcp,
+	test_type: [
+		FT_TEST_LATENCY,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	av_type: [
+		FI_AV_TABLE,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+		FI_WAIT_MUTEX_COND,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: tcp,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_MSG,
+		FI_EP_DGRAM,
+	],
+	av_type: [
+		FI_AV_TABLE,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+		FI_WAIT_MUTEX_COND,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},

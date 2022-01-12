@@ -1,0 +1,119 @@
+Updated: May 17, 2019
+
+This document describes the general policies and procedures that
+are followed by the libfabric development community.  It is best
+viewed as a guideline, and is not a formal or legal document.
+
+
+DEVELOPER GUIDELINES
+====================
+The following guidelines are helpful for developers new to the
+libfabric community and open source development.
+
+Code Contributions
+------------------
+Any developers wishing to contribute to libfabric may do so,
+provided that they adhere to the CONTRIBUTORS agreement in the root
+of the source tree.  There are no separate membership requirements
+or documents that must be signed prior to submitting code.  Developers
+need the rights to submit the code being introduced, and the code
+must meet the license requirements of the project.
+
+Patch Submission
+----------------
+Patches should be submitted directly to github as part of a pull request.
+For patches that touch the external API or introduce or modify core
+functionality significantly, an email should be sent to the ofiwg mail
+list with a link to the pull request.
+
+Patches should include a clear description of the problem that the patch
+is addressing, and how it does so.  One or two line descriptions are
+almost never sufficient, except for the most trivial code changes.
+The description should stand on its own, and provide enough context
+for someone to determine what the patch does, without needing to read
+the accompanying code changes.  Often times, the purpose of a patch is
+made clearer as part of a review discussion.  When this occurs, the
+portion of the discussion clarifying the purpose of a change should be
+folded into the patch description.
+
+Each patch should address a single problem.  When a patch description
+indicates that a patch does A, B, and C, that's usually the indication
+that the patch should have been split into three separate patches.
+An exception may be made if an unrelated change occurs in the code that
+surrounds the patch, provided that the change is trivial.  For example,
+white space cleanup or fixing typos in comments may be allowed to slip
+through the review process, even though those changes are unrelated to
+the patch.
+
+No single patch should ever break the build or result in incorrect operation.
+That is, arbitrarily breaking up a patch into two or more pieces, which all
+need to be applied to bring the repository back into a stable state is not
+allowed.
+
+One of the most common reasons that a patch is rejected is that it is
+trying to change too many things at once.  The standard argument back is
+that developer viewed the entire set of changes as one entity.  The
+best chance of having code accepted with minimal changes requested is
+to keep patches small.  If a large set of changes requires restructuring
+the existing code, then separate out the restructuring into its own set
+of patches.  It's okay for a patch to do nothing significant other than
+prepare the code for a follow on patch.  In fact, it's often preferred,
+as that can help identify alternatives that weren't considered.
+
+For help on how to write a good patch and patch description, search the
+web.  There are plenty of helpful tutorials out there.
+
+Pull Requests
+-------------
+A number of continuous integration tests run against all pull requests.
+Some CI testing involves access to special hardware, so is hosted
+directly by various vendors.  Pull requests should not be merged until
+after all CI completes.  In some cases, CI may fail, either because of
+known issues, CI test node problems, or as a result of race conditions.
+For CI failures that are unrelated to the pull request, the failures
+may be ignored, and the pull request merged.  It is the responsibility
+of the person committing the request to the repo to confirm that any
+CI failures are unrelated to the changes in the pull request.
+
+Core Changes
+------------
+Updates to the libfabric core should be reviewed by at least one other
+developer.  Changes to the API should be brought to the attention of
+the OFIWG mailing list, with significant changes discussed prior to
+being implemented.
+
+API Changes
+-----------
+All files under the include/rdma subdirectory are maintained as part of
+the stable libfabric API.  Any changes to those files will receive a
+strongly scrutinized review, as changes there have a much broader impact
+across not just the project, but the entire libfabric software ecosystem.
+For additional details, see include/ofi_abi.h before deciding that you
+really don't need that API change. :)
+
+
+PROJECT ADMINISTRATION
+======================
+
+Git Repository Admin
+--------------------
+The number of people with administrative access to the github repo
+will be limited.  Traditionally, this has been around three developers who
+are active in the project, and are from different companies.  Admins
+will typically have the same limitations as those with write access to
+the repo, such as no forced updates.
+
+Git Write Access
+----------------
+Because of the scope of the project, there may be several people (more
+than 10) with write access.  Most writers are maintainers for a
+specific provider in the project.  As a general rule, writers should only
+commit changes to the subdirectory that corresponds with the provider
+that they are maintaining.  Changes made to other providers or the
+libfabric core must be approved prior by the relevant owners prior to
+being merged.
+
+Releases
+--------
+A wiki page maintained on github with the repo provides a full checklist
+of the release process.

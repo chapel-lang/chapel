@@ -1,0 +1,190 @@
+{
+	prov_name: tcp;ofi_rxm,
+	test_type: [
+		FT_TEST_UNIT,
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+		FT_FUNC_SENDV,
+		FT_FUNC_SENDMSG,
+		FT_FUNC_INJECT,
+		FT_FUNC_INJECTDATA,
+		FT_FUNC_SENDDATA,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	mr_mode: [],
+	progress: [
+		FI_PROGRESS_MANUAL,
+		FI_PROGRESS_AUTO
+	],
+	test_flags: [
+		FT_FLAG_QUICKTEST
+	],
+},
+{
+	prov_name: tcp;ofi_rxm,
+	test_type: [
+		FT_TEST_UNIT,
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH
+	],
+	test_class: [
+		FT_CAP_RMA,
+	],
+	class_function: [
+		FT_FUNC_WRITE,
+		FT_FUNC_WRITEV,
+		FT_FUNC_WRITEMSG,
+		FT_FUNC_WRITEDATA,
+		FT_FUNC_INJECT_WRITE,
+		FT_FUNC_INJECT_WRITEDATA,
+		FT_FUNC_READ,
+		FT_FUNC_READV,
+		FT_FUNC_READMSG,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	mr_mode: [],
+	progress: [
+		FI_PROGRESS_MANUAL,
+		FI_PROGRESS_AUTO
+	],
+	test_flags: [
+		FT_FLAG_QUICKTEST
+	],
+},
+{
+	prov_name: tcp;ofi_rxm,
+	test_type: [
+		FT_TEST_UNIT,
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH
+	],
+	test_class: [
+		FT_CAP_ATOMIC,
+	],
+	class_function: [
+		FT_FUNC_ATOMIC,
+		FT_FUNC_ATOMICV,
+		FT_FUNC_ATOMICMSG,
+		FT_FUNC_INJECT_ATOMIC,
+		FT_FUNC_FETCH_ATOMIC,
+		FT_FUNC_FETCH_ATOMICV,
+		FT_FUNC_FETCH_ATOMICMSG,
+		FT_FUNC_COMPARE_ATOMIC,
+		FT_FUNC_COMPARE_ATOMICV,
+		FT_FUNC_COMPARE_ATOMICMSG
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	mr_mode: [],
+	progress: [
+		FI_PROGRESS_MANUAL,
+		FI_PROGRESS_AUTO
+	],
+	test_flags: [
+		FT_FLAG_QUICKTEST
+	],
+},
+{
+	prov_name: tcp;ofi_rxm,
+	test_type: [
+		FT_TEST_LATENCY,
+	],
+	test_class: [
+		FT_CAP_TAGGED,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD
+	],
+	mr_mode: [],
+	progress: [
+		FI_PROGRESS_MANUAL
+	],
+	test_flags: [
+		FT_FLAG_QUICKTEST
+	],
+},
+{
+	prov_name: tcp;ofi_rxm,
+	test_type: [
+		FT_TEST_LATENCY,
+	],
+	test_class: [
+		FT_CAP_TAGGED,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD
+	],
+	mr_mode: [],
+	progress: [
+		FI_PROGRESS_MANUAL
+	],
+	test_flags: [
+		FT_FLAG_QUICKTEST
+	],
+},
+{
+	prov_name: tcp;ofi_rxm,
+	test_type: [
+		FT_TEST_LATENCY,
+	],
+	test_class: [
+		FT_CAP_TAGGED,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_CNTR,
+	],
+	cntr_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD
+	],
+	mr_mode: [],
+	progress: [
+		FI_PROGRESS_MANUAL
+	],
+	test_flags: [
+		FT_FLAG_QUICKTEST
+	],
+},

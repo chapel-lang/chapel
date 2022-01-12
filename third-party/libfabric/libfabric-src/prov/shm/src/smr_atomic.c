@@ -252,6 +252,7 @@ static ssize_t smr_generic_atomic(struct smr_ep *ep,
 	smr_format_rma_ioc(cmd, rma_ioc, rma_count);
 	ofi_cirque_commit(smr_cmd_queue(peer_smr));
 	peer_smr->cmd_cnt--;
+	smr_signal(peer_smr);
 unlock_cq:
 	fastlock_release(&ep->util_ep.tx_cq->cq_lock);
 unlock_region:
@@ -373,6 +374,7 @@ static ssize_t smr_atomic_inject(struct fid_ep *ep_fid, const void *buf,
 	smr_format_rma_ioc(cmd, &rma_ioc, 1);
 	ofi_cirque_commit(smr_cmd_queue(peer_smr));
 	peer_smr->cmd_cnt--;
+	smr_signal(peer_smr);
 
 	ofi_ep_tx_cntr_inc_func(&ep->util_ep, ofi_op_atomic);
 unlock_region:

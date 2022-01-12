@@ -1,0 +1,581 @@
+// Copyright (c) 2018. Cray Inc. All rights reserved.
+// Libfabric Verbs provider Jenkins Pipeline file
+
+@Library(['CrayNetworkCI@master', 'dst-shared@master']) _
+
+if (!isBuildable()) {
+    echo "build request is not valid, skipping build"
+    currentBuild.result = 'SUCCESS'
+    return
+}
+
+pipeline {
+    options {
+        // Generic build options
+        timeout (time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '15'))
+
+        // Build options
+        disableConcurrentBuilds()
+        timestamps()
+        skipStagesAfterUnstable()
+    }
+    agent {
+        node {
+            label 'wham'
+        }
+    }
+    stages {
+        stage('Prologue') {
+            steps {
+                // creating git short hash
+                script {
+                    GIT_DESCRIPTION = sh(returnStdout: true, script: "git describe --tags").trim()
+                    LIBFABRIC_INSTALL = pwd tmp: true
+                    if (changeRequest()) {
+                        SFT_PR_ENV_VAR = 'SFT_PR=1'
+                    }
+                }
+
+                dir ('contrib/cray/bin') {
+                    // verify requirements
+                    sh './verify_requirements.sh'
+
+                    // install python environment if necessary
+                    sh './setup.sh'
+                }
+            }
+        }
+        stage('Build CUDA and ROCR') {
+            options {
+                timeout (time: 5, unit: 'MINUTES')
+            }
+            environment {
+                LD_LIBRARY_PATH = "$ROCR_INSTALL_PATH/lib:$CUDA_INSTALL_PATH/lib64:$LD_LIBRARY_PATH"
+            }
+            steps {
+                sh './autogen.sh'
+                sh """./configure --prefix=$LIBFABRIC_INSTALL --disable-memhooks-monitor \
+                   --with-cuda=$CUDA_INSTALL_PATH --with-rocr=$ROCR_INSTALL_PATH"""
+                sh "make -j 12"
+                sh "make install"
+                dir ("fabtests") {
+                    sh './autogen.sh'
+                    sh "./configure --with-libfabric=$LIBFABRIC_INSTALL --prefix=$FABTEST_PATH"
+                    sh "make -j12"
+                    sh "make -j12 install"
+                }
+            }
+        }
+        stage("Verify CUDA and ROCR Build") {
+            steps {
+                script {
+                    cuda_link_count = sh(returnStdout: true,
+                                         script: """objdump -a -x $LIBFABRIC_INSTALL/lib/libfabric.so |
+                                                 grep NEED | grep cuda | wc -l""").trim()
+                    if (cuda_link_count != "2") {
+                        error("libfabric failed to link to CUDA")
+                    }
+                    rocr_link_count = sh(returnStdout: true,
+                                         script: """objdump -a -x $LIBFABRIC_INSTALL/lib/libfabric.so |
+                                                 grep NEED | grep hsa | wc -l""").trim()
+                    if (rocr_link_count != "1") {
+                        error("libfabric failed to link to ROCR")
+                    }
+                }
+            }
+        }
+        stage('Build CUDA and ROCR dlopen') {
+            options {
+                timeout (time: 5, unit: 'MINUTES')
+            }
+            steps {
+                sh './autogen.sh'
+                sh """./configure --prefix=$LIBFABRIC_INSTALL --disable-memhooks-monitor \
+                   --with-cuda=$CUDA_INSTALL_PATH --enable-cuda-dlopen \
+                   --with-rocr=$ROCR_INSTALL_PATH --enable-rocr-dlopen"""
+                sh "make -j 12"
+                sh "make install"
+                dir ("fabtests") {
+                    sh './autogen.sh'
+                    sh "./configure --with-libfabric=$LIBFABRIC_INSTALL --prefix=$FABTEST_PATH"
+                    sh "make -j12"
+                    sh "make -j12 install"
+                }
+            }
+        }
+        stage("Verify CUDA and ROCR Build dlopen") {
+            steps {
+                script {
+                    cuda_link_count = sh(returnStdout: true,
+                                         script: """objdump -a -x $LIBFABRIC_INSTALL/lib/libfabric.so |
+                                                 grep NEED | grep cuda | wc -l""").trim()
+                    if (cuda_link_count != "0") {
+                        error("libfabric failed to link to CUDA")
+                    }
+                    rocr_link_count = sh(returnStdout: true,
+                                         script: """objdump -a -x $LIBFABRIC_INSTALL/lib/libfabric.so |
+                                                 grep NEED | grep hsa | wc -l""").trim()
+                    if (rocr_link_count != "0") {
+                        error("libfabric failed to link to ROCR")
+                    }
+                }
+            }
+        }
+        stage('Build LTU') {
+            options {
+                timeout (time: 5, unit: 'MINUTES')
+            }
+            steps {
+                dir ('libfabric-test-utils') {
+                    deleteDir ()
+                }
+                dir ('libfabric-test-utils') {
+                    git url: "ssh://${env.LTU_GIT_REPO}", credentialsId: 'jenkins-nw-cje2-sshkey', branch: "${env.SRC_GIT_BRANCH}"
+                    sh "git remote -v"
+                    script {
+                        LTU_VERSION = sh(returnStdout: true, script: "cat .version").trim()
+                        GIT_SHORT_COMMIT = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
+                        LTU_VERSION = "${LTU_VERSION}" + "_${GIT_SHORT_COMMIT}"
+                    }
+                    echo "*** Building libfabric-test-utils, Version: ${LTU_VERSION} ***"
+                    sh "./autogen.sh"
+                    sh """./configure --prefix=${LIBFABRIC_INSTALL} --with-libfabric=${LIBFABRIC_INSTALL} \
+                                      --with-nvidia=${CUDA_INSTALL_PATH} --with-amd=${ROCR_INSTALL_PATH} \
+                                      --with-pmi=${PMI_INSTALL_PATH} --with-pmi_include=${PMI_INCLUDE_PATH} \
+                                      --with-ltu-build-string=\"libfabric-test-utils-${LTU_VERSION}\""""
+                    sh "make -j 10"
+                    sh "make install"
+                }
+            }
+        }
+        stage('Build SFT') {
+            options {
+                timeout (time: 5, unit: 'MINUTES')
+            }
+            steps {
+                dir ('libfabric-sft') {
+                    deleteDir ()
+                }
+                dir ('libfabric-sft') {
+                    git url: "ssh://${env.SFT_GIT_REPO}", credentialsId: 'jenkins-nw-cje2-sshkey', branch: "${env.SRC_GIT_BRANCH}"
+                    sh "git remote -v"
+                    script {
+                        SFT_VERSION = sh(returnStdout: true, script: "cat .version").trim()
+                        GIT_SHORT_COMMIT = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
+                        SFT_VERSION = "${SFT_VERSION}" + "_${GIT_SHORT_COMMIT}"
+                    }
+                    echo "*** Building libfabric-sft, Version: ${SFT_VERSION} ***"
+                    sh "./autogen.sh"
+                    sh """./configure --prefix=${LIBFABRIC_INSTALL} --with-libfabric=${LIBFABRIC_INSTALL} \
+                                      --with-libltu=${LIBFABRIC_INSTALL} \
+                                      --with-sft-build-string=\"libfabric-sft-${LTU_VERSION}\""""
+                    sh "make -j 10"
+                    sh "make install"
+                }
+            }
+        }
+        stage('Test') {
+            environment {
+                LD_LIBRARY_PATH = "$LIBFABRIC_INSTALL/lib:$LD_LIBRARY_PATH"
+                MPIR_CVAR_OFI_USE_PROVIDER = 'verbs;ofi_rxm'
+                LIBFABRIC_INSTALL_PATH = "$LIBFABRIC_INSTALL"
+                SFT_BIN = "${LIBFABRIC_INSTALL + '/bin'}"
+                SFT_MAX_JOB_TIME = '3'
+                SFT_NUM_JOBS = '6'
+                SFT_PROVIDER = 'verbs;ofi_rxm'
+                SFT_BASELINE_DIR = "contrib/cray"
+                SFT_BASELINE_RESULTS_FILE = 'sft_test_results_baseline.txt'
+                SFT_PREVIOUS_BASELINE_RESULTS = 'sft_test_results_baseline.txt'
+                SFT_TEST_CMDS = 'sft_test_commands'
+                SFT_TEST_RESULTS = '_test_results.xml'
+                SFT_TEST_RESULTS_EXPECTED = 'expected_'
+                SFT_TEST_RESULTS_PREFIX = 'BUILD_'
+                SFT_TEST_RESULTS_CI = 'sft_ci_results.yaml'
+                FI_VERBS_MIN_RNR_TIMER= '4'
+            }
+            options {
+                timeout (time: 22, unit: 'MINUTES')
+            }
+            parallel {
+                stage('Unit tests') {
+                    steps {
+                        echo 'placeholder'
+                    }
+                }
+                stage('Smoke tests') {
+                    steps {
+                        tee ('smoketests.tap') {
+                            sh '${BATS_INSTALL_PATH}/bats -t contrib/cray/bats/smoketests.bats'
+                        }
+                    }
+                    post {
+                        always {
+                            sh """contrib/cray/bin/parse_logfiles.sh \\
+                                    -r smoketests.tap \\
+                                    -w smoketests.xml \\
+                                    tap simple.smoketests simple"""
+                        }
+                    }
+                }
+                stage('Functional Tests: RC') {
+                    steps {
+                        tee ('fabtests-rc.log') {
+                            sh 'srun -n 2 --ntasks-per-node=1 contrib/cray/bin/fabtest_wrapper.sh -p ${FABTEST_PATH}/bin -v -T 120'
+                        }
+                        tee ('ubertests-rc.log') {
+                            sh 'srun -n 2 --ntasks-per-node=1 contrib/cray/bin/fabtest_wrapper.sh -p ${FABTEST_PATH}/bin -vvv -T 120 -t complex -u all'
+                        }
+                    }
+                    post {
+                        always {
+                            sh """contrib/cray/bin/parse_logfiles.sh \\
+                                    -r fabtests-rc.log \\
+                                    -w fabtests-rc.xml \\
+                                    fabtests \\
+                                    functional.fabtests.rc.quick \\
+                                    functional"""
+
+                            sh """contrib/cray/bin/parse_logfiles.sh \\
+                                    -r ubertests-rc.log \\
+                                    -w ubertests-rc.xml \\
+                                    fabtests \\
+                                    functional.fabtests.rc.uber \\
+                                    functional"""
+                        }
+                    }
+		}
+                stage('Functional Tests: XRC') {
+                    steps {
+                        tee ('fabtests-xrc.log') {
+                            sh 'srun -n 2 --ntasks-per-node=1 contrib/cray/bin/fabtest_wrapper.sh -p ${FABTEST_PATH}/bin -v -T 120 -e FI_VERBS_PREFER_XRC=1 -e FI_OFI_RXM_USE_SRX=1'
+                        }
+                        tee ('ubertests-xrc.log') {
+                            sh 'srun -n 2 --ntasks-per-node=1 contrib/cray/bin/fabtest_wrapper.sh -p ${FABTEST_PATH}/bin -vvv -T 120 -t complex -u all -e FI_VERBS_PREFER_XRC=1 -e FI_OFI_RXM_USE_SRX=1'
+                        }
+                    }
+                    post {
+                        always {
+                            sh """contrib/cray/bin/parse_logfiles.sh \\
+                                    -r fabtests-xrc.log \\
+                                    -w fabtests-xrc.xml \\
+                                    fabtests \\
+                                    functional.fabtests.xrc.quick \\
+                                    functional"""
+
+                            sh """contrib/cray/bin/parse_logfiles.sh \\
+                                    -r ubertests-xrc.log \\
+                                    -w ubertests-xrc.xml \\
+                                    fabtests \\
+                                    functional.fabtests.xrc.uber \\
+                                    functional"""
+                        }
+                    }
+                }
+                stage('SFT tests: RC') {
+                    environment {
+                        SFT_ADD_ARGS = "--additional-args ' '"
+                        SFT_TEST_RESULTS_SUBDIR = "sft_test_results/RC"
+                        SFT_TEST_RESULTS_DIR = "${env.WORKSPACE}" + "/" + "${env.SFT_TEST_RESULTS_SUBDIR}"
+                    }
+                    steps {
+                        sh "mkdir -p ${SFT_TEST_RESULTS_DIR}"
+                        timeout (time: 20, unit: 'MINUTES') {
+                            // run the test
+                            script {
+                                try {
+                                    dir ("${SFT_BIN}") {
+                                        sh """
+                                            ${SFT_PR_ENV_VAR} ./ci-all.sh \\
+                                                --provider '${SFT_PROVIDER}' \\
+                                                -L ${SFT_TEST_RESULTS_DIR} \\
+                                                --num-jobs ${SFT_NUM_JOBS} \\
+                                                --max-job-time ${SFT_MAX_JOB_TIME} \\
+                                                --output-cmds ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_CMDS} \\
+                                                --results-file ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_RESULTS_CI} \\
+                                                ${SFT_ADD_ARGS}
+                                        """
+                                    }
+                                } catch (exc) {
+                                    echo 'failed test, ignore result for now'
+                                }
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            sh """
+                                cp  ./${SFT_BASELINE_DIR}/${SFT_BASELINE_RESULTS_FILE} ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE}
+                                ${SFT_BIN}/sft_parse_test_results.pm -b ${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE} -d ${SFT_TEST_RESULTS_DIR} -o sft_RMA${SFT_TEST_RESULTS} -p "TR_RMA"
+                                ${SFT_BIN}/sft_parse_test_results.pm -b ${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE} -d ${SFT_TEST_RESULTS_DIR} -o sft_TAGGED${SFT_TEST_RESULTS} -p "TR_TAGGED"
+                                ${SFT_BIN}/sft_parse_test_results.pm -b ${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE} -d ${SFT_TEST_RESULTS_DIR} -o sft_MESSAGE${SFT_TEST_RESULTS} -p "TR_MESSAGE"
+                                ${SFT_BIN}/sft_parse_test_results.pm -b ${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE} -d ${SFT_TEST_RESULTS_DIR} -o sft_AMO${SFT_TEST_RESULTS} -p "TR_AMO"
+                                gzip -r ${SFT_TEST_RESULTS_DIR}
+                                gunzip ${SFT_TEST_RESULTS_DIR}/sft_*${SFT_TEST_RESULTS}.gz
+                                gunzip ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE}
+                            """
+                            // archive the results
+                            archiveArtifacts artifacts: "${env.SFT_TEST_RESULTS_SUBDIR}/*"
+                        }
+                    }
+                }
+                stage('SFT tests: XRC') {
+                    environment {
+                        SFT_ADD_ARGS = "--additional-args '--use-xrc'"
+                        SFT_TEST_RESULTS_SUBDIR = "sft_test_results/XRC"
+                        SFT_TEST_RESULTS_DIR = "${env.WORKSPACE}" + "/" + "${env.SFT_TEST_RESULTS_SUBDIR}"
+                    }
+                    steps {
+                        sh "mkdir -p ${SFT_TEST_RESULTS_DIR}"
+                        timeout (time: 20, unit: 'MINUTES') {
+                            // run the test
+                            script {
+                                try {
+                                    dir ("${SFT_BIN}") {
+                                        sh """
+                                            ${SFT_PR_ENV_VAR} ./ci-all.sh \\
+                                                --provider '${SFT_PROVIDER}' \\
+                                                -L ${SFT_TEST_RESULTS_DIR} \\
+                                                --num-jobs ${SFT_NUM_JOBS} \\
+                                                --max-job-time ${SFT_MAX_JOB_TIME} \\
+                                                --output-cmds ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_CMDS} \\
+                                                --results-file ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_RESULTS_CI} \\
+                                                ${SFT_ADD_ARGS}
+                                        """
+                                    }
+                                } catch (exc) {
+                                    echo 'failed test, ignore result for now'
+                                }
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            sh """
+                                cp  ./${SFT_BASELINE_DIR}/${SFT_BASELINE_RESULTS_FILE} ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE}
+                                ${SFT_BIN}/sft_parse_test_results.pm -b ${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE} -d ${SFT_TEST_RESULTS_DIR} -o sft_RMA${SFT_TEST_RESULTS} -p "TR_RMA"
+                                ${SFT_BIN}/sft_parse_test_results.pm -b ${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE} -d ${SFT_TEST_RESULTS_DIR} -o sft_TAGGED${SFT_TEST_RESULTS}  -p "TR_TAGGED"
+                                ${SFT_BIN}/sft_parse_test_results.pm -b ${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE} -d ${SFT_TEST_RESULTS_DIR} -o sft_MESSAGE${SFT_TEST_RESULTS} -p "TR_MESSAGE"
+                                ${SFT_BIN}/sft_parse_test_results.pm -b ${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE} -d ${SFT_TEST_RESULTS_DIR} -o sft_AMO${SFT_TEST_RESULTS} -p "TR_AMO"
+                                gzip -r ${SFT_TEST_RESULTS_DIR}
+                                gunzip ${SFT_TEST_RESULTS_DIR}/sft_*${SFT_TEST_RESULTS}.gz
+                                gunzip ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE}
+                            """
+                            // archive the results
+                            archiveArtifacts artifacts: "${env.SFT_TEST_RESULTS_SUBDIR}/*"
+                        }
+                    }
+                }
+                stage("System tests") {
+                    steps {
+                        echo 'placeholder'
+                    }
+                }
+                stage("Applications") {
+                    steps {
+                        tee ('omb.tap') {
+                            timeout(time: 10, unit: 'MINUTES') {
+                                sh '${BATS_INSTALL_PATH}/bats -t contrib/cray/bats/omb.bats'
+                            }
+                        }
+                        tee ('imb.tap') {
+                            timeout(time: 20, unit: 'MINUTES') {
+                                sh '${BATS_INSTALL_PATH}/bats -t contrib/cray/bats/imb.bats'
+			    }
+			}
+                    }
+                    post {
+                        always {
+                            sh """contrib/cray/bin/parse_logfiles.sh \\
+                                    -r omb.tap \\
+                                    -w omb.xml \\
+                                    tap applications.mpi applications"""
+
+                            sh """contrib/cray/bin/parse_logfiles.sh \\
+                                    -r imb.tap \\
+                                    -w imb.xml \\
+                                    tap applications.mpi applications"""
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    step ([$class: 'XUnitPublisher',
+                       thresholds: [
+                            [$class: 'FailedThreshold', unstableThreshold: '0']],
+                            tools: [[$class: 'JUnitType', pattern: "smoketests.xml"]]])
+                    step ([$class: 'XUnitPublisher',
+                       thresholds: [
+                            [$class: 'FailedThreshold', unstableThreshold: '0']],
+                            tools: [[$class: 'JUnitType', pattern: "*-rc.xml"]]])
+                    step ([$class: 'XUnitPublisher',
+                       thresholds: [
+                            [$class: 'FailedThreshold', unstableThreshold: '0']],
+                            tools: [[$class: 'JUnitType', pattern: "*-xrc.xml"]]])
+                    step ([$class: 'XUnitPublisher',
+                       thresholds: [
+                            [$class: 'FailedThreshold', unstableThreshold: '0']],
+                            tools: [[$class: 'JUnitType', pattern: "sft_test_results/RC/sft_*_test_results.xml"]]])
+                    step ([$class: 'XUnitPublisher',
+                       thresholds: [
+                            [$class: 'FailedThreshold', unstableThreshold: '0']],
+                            tools: [[$class: 'JUnitType', pattern: "sft_test_results/XRC/sft_*_test_results.xml"]]])
+                    step ([$class: 'XUnitPublisher',
+                       thresholds: [
+                            [$class: 'FailedThreshold', unstableThreshold: '0']],
+                            tools: [[$class: 'JUnitType', pattern: "omb.xml"]]])
+                    step ([$class: 'XUnitPublisher',
+                       thresholds: [
+                            [$class: 'FailedThreshold', unstableThreshold: '0']],
+                            tools: [[$class: 'JUnitType', pattern: "imb.xml"]]])
+                }
+                cleanup {
+                    echo "*** Test: Post: Cleanup: env.BRANCH_NAME: ${env.BRANCH_NAME} ***"
+                    echo "*** Test: Post: Cleanup: isOfiwgBuild: " + isOfiwgBuild() + " ***"
+                    script {
+                        if ( isInternalBuild() ) {
+                            echo "*** Test: Post: Cleanup: isInternalBuild: TRUE ***"
+                        } else {
+                            echo "*** Test: Post: Cleanup: isInternalBuild: FALSE ***"
+                        }
+                    }
+                    echo "*** Test: Post: Cleanup: currentBuild.currentResult: ${currentBuild.currentResult} ***"
+                }
+            }
+        }
+        stage("Install Libfabric Build") {
+            when {
+                allOf {
+                    expression { currentBuild.currentResult == 'SUCCESS' } ;
+                }
+            }
+            environment {
+                LIBFABRIC_INSTALL_PATH="${LIBFABRIC_BUILD_PATH + '/' + GIT_DESCRIPTION}"
+            }
+            steps {
+                script {
+                    BUILD_LIBFABRIC = 'false'
+                    if ( isInternalBuild &&
+                        (( env.BRANCH_NAME == 'master' ) || buildingTag())) {
+                        BUILD_LIBFABRIC = 'true'
+                    } else if ( isOfiwgBuild() && ( env.BRANCH_NAME == 'master' )) {
+                        LIBFABRIC_INSTALL_PATH="${LIBFABRIC_BUILD_PATH + '/' + 'OFIWG_' + GIT_DESCRIPTION}"
+                        BUILD_LIBFABRIC = 'true'
+                    }
+                    echo "*** Install Libfabric Build: BUILD_LIBFABRIC: $BUILD_LIBFABRIC ***"
+                    if ( BUILD_LIBFABRIC == 'true' ) {
+                        sh "./autogen.sh"
+                        sh "./configure --prefix=$LIBFABRIC_INSTALL_PATH --disable-memhooks-monitor"
+                        sh "make -j 12"
+                        sh "make install"
+                    }
+                }
+            }
+        }
+        stage("Deploy") {
+            when {
+                allOf {
+                    expression { currentBuild.currentResult == 'SUCCESS' } ;
+                }
+            }
+            options {
+                timeout (time: 5, unit: 'MINUTES')
+            }
+            environment {
+                TAG_DIRECTORY = "${LIBFABRIC_BUILD_PATH + '/tags'}"
+            }
+            failFast true
+            parallel {
+                stage("Create nightly link") {
+                    when {
+                        allOf {
+                            expression { isInternalBuild() } ;
+                            expression { env.BRANCH_NAME == 'master' }
+                        }
+                    }
+                    steps {
+                        dir (env.TAG_DIRECTORY) {
+                            sh "rm -f nightly || true"
+                            sh "ln -s ../$GIT_DESCRIPTION nightly"
+                        }
+                    }
+                }
+                stage("Create tagged link") {
+                    when {
+                        allOf {
+                            expression { isInternalBuild() } ;
+                            buildingTag()
+                        }
+                    }
+                    steps {
+                        dir (env.TAG_DIRECTORY) {
+                            sh "rm -f $BRANCH_NAME || true"
+                            sh "ln -s ../$GIT_DESCRIPTION $BRANCH_NAME"
+                        }
+                    }
+                }
+                stage("Create upstream link") {
+                    when {
+                        allOf {
+                            expression { isOfiwgBuild() } ;
+                            expression { env.BRANCH_NAME == 'master' }
+                        }
+                    }
+                    steps {
+                        dir (env.TAG_DIRECTORY) {
+                            sh "rm -f upstream || true"
+                            sh "ln -s ../OFIWG_$GIT_DESCRIPTION upstream"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    post {
+        changed {
+            script {
+                // send email when the state of the pipeline changes
+                // only sends email to @cray.com
+
+                def emailBody = createEmail(build : currentBuild)
+                def providers = []
+                def defaultMailer = ''
+
+                if (env.BRANCH_NAME == 'master') {
+                    defaultMailer = mailingList()
+                } else {
+                    providers.add ( [$class: 'CulpritsRecipientProvider'] )
+                    providers.add ( [$class: 'RequesterRecipientProvider'] )
+                    providers.add ( [$class: 'DevelopersRecipientProvider'] )
+                }
+                emailext subject: '$DEFAULT_SUBJECT',
+                    body: emailBody,
+                    mimeType: 'text/html',
+                    recipientProviders: providers,
+                    replyTo: '$DEFAULT_REPLYTO',
+                    to: defaultMailer
+             }
+        }
+    }
+    environment {
+        ROOT_BUILD_PATH = "/scratch/jenkins/builds"
+        FABTEST_PATH = "${WORKSPACE + '/installs/fabtests'}"
+        LIBFABRIC_BUILD_PATH = "${ROOT_BUILD_PATH + '/libfabric'}"
+        OMB_BUILD_PATH = "${ROOT_BUILD_PATH + '/osu-micro-benchmarks/stable/libexec/osu-micro-benchmarks/mpi'}"
+        IMB_BUILD_PATH = "${ROOT_BUILD_PATH + '/imb/v2019.6'}"
+        MPICH_PATH = "${ROOT_BUILD_PATH + '/mpich/stable'}"
+        SFT_INSTALL_PATH = "${ROOT_BUILD_PATH + '/libfabric-sft/stable'}"
+        SFT_PR_ENV_VAR = 'SFT_PR=0'
+        BATS_INSTALL_PATH = "${ROOT_BUILD_PATH + '/bats/stable/bin'}"
+        CUDA_INSTALL_PATH = "/scratch/opt/cuda"
+        ROCR_INSTALL_PATH = "/opt/rocm"
+        PMI_INCLUDE_PATH = "/usr/include/slurm"
+        PMI_INSTALL_PATH = "/usr/lib64"
+        LTU_VERSION = "0.0.0"
+        SFT_VERSION = "0.0.0"
+        LTU_GIT_REPO = 'git@stash.us.cray.com:7999/ofi-cray/libfabric-test-utils.git'
+        SFT_GIT_REPO = 'git@stash.us.cray.com:7999/ofi-cray/libfabric-sft.git'
+        SRC_GIT_BRANCH = 'master'
+    }
+}

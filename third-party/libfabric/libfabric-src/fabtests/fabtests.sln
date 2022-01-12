@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fabtests", "fabtests.vcxproj", "{076F757A-8827-4D3C-A87F-6E49623C16E1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug-v140|x64 = Debug-v140|x64
+		Debug-v141|x64 = Debug-v141|x64
+		Debug-v142|x64 = Debug-v142|x64
+		Release-v140|x64 = Release-v140|x64
+		Release-v141|x64 = Release-v141|x64
+		Release-v142|x64 = Release-v142|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Debug-v140|x64.ActiveCfg = Debug-v140|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Debug-v140|x64.Build.0 = Debug-v140|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Debug-v141|x64.ActiveCfg = Debug-v141|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Debug-v141|x64.Build.0 = Debug-v141|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Debug-v142|x64.ActiveCfg = Debug-v142|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Debug-v142|x64.Build.0 = Debug-v142|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Release-v140|x64.ActiveCfg = Release-v140|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Release-v140|x64.Build.0 = Release-v140|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Release-v141|x64.ActiveCfg = Release-v141|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Release-v141|x64.Build.0 = Release-v141|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Release-v142|x64.ActiveCfg = Release-v142|x64
+		{076F757A-8827-4D3C-A87F-6E49623C16E1}.Release-v142|x64.Build.0 = Release-v142|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -98,6 +98,10 @@
 #define IPS_FAULTINJ_REG_MR	100	/* 1 every X reg_mr ENOMEM */
 #define IPS_FAULTINJ_NONPRI_REG_MR 50	/* 1 every X non-pri reg_mr ENOMEM */
 #define IPS_FAULTINJ_PRI_REG_MR	1000	/* 1 every X pri reg_mr ENOMEM */
+#ifdef PSM_CUDA
+#define IPS_FAULTINJ_GDRMMAP	100	/* 1 every X GPU pin and mmap ENOMEM */
+#define IPS_FAULTINJ_GPU_REG_MR	100	/* 1 every X GPU reg_mr */
+#endif
 
 #endif /* #ifdef PSM_FI */
 

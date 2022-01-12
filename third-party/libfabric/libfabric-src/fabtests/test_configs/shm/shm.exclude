@@ -1,0 +1,23 @@
+# Regex patterns of tests to exclude in runfabtests.sh
+
+^fi_msg
+-e msg
+^fi_dgram
+-e dgram
+
+# Exclude tests that use sread/polling
+-S
+rdm_cntr_pingpong
+poll
+cq_data
+
+# Exclude tests with unsupported capabilities
+-k
+rdm_tagged_peek
+cm_data
+trigger
+shared_ctx
+scalable_ep
+shared_av
+multi_mr
+av_test

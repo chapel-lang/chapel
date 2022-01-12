@@ -1,0 +1,17 @@
+# Regex patterns of tests to exclude in runfabtests.sh
+
+# Exclude all prefix tests
+-k
+
+# av_test supports only FI_SOCKADDR
+av_test
+
+^fi_msg
+-e msg
+
+cm_data
+shared_ctx
+scalable_ep
+shared_av
+rdm_cntr_pingpong
+multi_recv

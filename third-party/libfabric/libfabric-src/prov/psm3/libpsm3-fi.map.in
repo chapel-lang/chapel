@@ -1,0 +1,6 @@
+PSM3_FI_1.0 {
+	global:
+		fi_prov_ini;
+		@PSM3_ADDITIONAL_GLOBALS@
+	local: *;
+};

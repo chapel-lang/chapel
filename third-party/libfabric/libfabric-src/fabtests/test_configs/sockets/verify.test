@@ -1,0 +1,258 @@
+{
+	prov_name: sockets,
+	test_type: [
+		FT_TEST_UNIT,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+		FT_FUNC_SENDV,
+		FT_FUNC_SENDMSG,
+		FT_FUNC_SENDDATA,
+		FT_FUNC_INJECT,
+		FT_FUNC_INJECTDATA,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	av_type: [
+		FI_AV_MAP,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: sockets,
+	test_type: [
+		FT_TEST_UNIT,
+	],
+	class_function: [
+		FT_FUNC_WRITE,
+		FT_FUNC_WRITEV,
+		FT_FUNC_WRITEMSG,
+		FT_FUNC_INJECT_WRITE,
+		FT_FUNC_WRITEDATA,
+		FT_FUNC_INJECT_WRITEDATA,
+		FT_FUNC_READ,
+		FT_FUNC_READV,
+		FT_FUNC_READMSG,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	av_type: [
+		FI_AV_TABLE,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_RMA,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: sockets,
+	test_type: [
+		FT_TEST_UNIT,
+	],
+	class_function: [
+		FT_FUNC_ATOMIC,
+		FT_FUNC_ATOMICV,
+		FT_FUNC_ATOMICMSG,
+		FT_FUNC_FETCH_ATOMIC,
+		FT_FUNC_FETCH_ATOMICV,
+		FT_FUNC_FETCH_ATOMICMSG,
+		FT_FUNC_INJECT_ATOMIC,
+	],
+	op:[
+		FI_MIN,
+		FI_MAX,
+		FI_SUM,
+		FI_PROD,
+		FI_LOR,
+		FI_LAND,
+		FI_BOR,
+		FI_BAND,
+		FI_LXOR,
+		FI_BXOR,
+		FI_ATOMIC_WRITE,
+	],
+	datatype:[
+		FI_INT8,
+		FI_UINT8,
+		FI_INT16,
+		FI_UINT16,
+		FI_INT32,
+		FI_UINT32,
+		FI_INT64,
+		FI_UINT64,
+		FI_FLOAT,
+		FI_DOUBLE,
+		FI_LONG_DOUBLE,
+		FI_FLOAT_COMPLEX,
+		FI_DOUBLE_COMPLEX,
+		FI_LONG_DOUBLE_COMPLEX,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	av_type: [
+		FI_AV_TABLE,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_ATOMIC,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: sockets,
+	test_type: [
+		FT_TEST_UNIT,
+	],
+	class_function: [
+		FT_FUNC_FETCH_ATOMIC,
+		FT_FUNC_FETCH_ATOMICV,
+		FT_FUNC_FETCH_ATOMICMSG,
+	],
+	op:[
+		FI_ATOMIC_READ,
+	],
+	datatype:[
+		FI_INT8,
+		FI_UINT8,
+		FI_INT16,
+		FI_UINT16,
+		FI_INT32,
+		FI_UINT32,
+		FI_INT64,
+		FI_UINT64,
+		FI_FLOAT,
+		FI_DOUBLE,
+		FI_LONG_DOUBLE,
+		FI_FLOAT_COMPLEX,
+		FI_DOUBLE_COMPLEX,
+		FI_LONG_DOUBLE_COMPLEX,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	av_type: [
+		FI_AV_TABLE,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_ATOMIC,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: sockets,
+	test_type: [
+		FT_TEST_UNIT,
+	],
+	class_function: [
+		FT_FUNC_COMPARE_ATOMIC,
+		FT_FUNC_COMPARE_ATOMICV,
+		FT_FUNC_COMPARE_ATOMICMSG,
+	],
+	op:[
+		FI_CSWAP,
+		FI_CSWAP_NE,
+		FI_CSWAP_LE,
+		FI_CSWAP_LT,
+		FI_CSWAP_GE,
+		FI_CSWAP_GT,
+		FI_MSWAP,
+	],
+	datatype:[
+		FI_INT8,
+		FI_UINT8,
+		FI_INT16,
+		FI_UINT16,
+		FI_INT32,
+		FI_UINT32,
+		FI_INT64,
+		FI_UINT64,
+		FI_FLOAT,
+		FI_DOUBLE,
+		FI_LONG_DOUBLE,
+		FI_FLOAT_COMPLEX,
+		FI_DOUBLE_COMPLEX,
+		FI_LONG_DOUBLE_COMPLEX,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	av_type: [
+		FI_AV_TABLE,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_ATOMIC,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: sockets,
+	test_type: [
+		FT_TEST_UNIT,
+	],
+	class_function: [
+		FT_FUNC_SENDMSG,
+		FT_FUNC_SENDDATA,
+		FT_FUNC_INJECTDATA,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	av_type: [
+		FI_AV_MAP,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+	msg_flags: FI_REMOTE_CQ_DATA,
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: sockets,
+	test_type: [
+		FT_TEST_UNIT,
+	],
+	class_function: [
+		FT_FUNC_WRITEMSG,
+		FT_FUNC_WRITEDATA,
+		FT_FUNC_INJECT_WRITEDATA,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	av_type: [
+		FI_AV_MAP,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_RMA,
+	],
+	msg_flags: FI_REMOTE_CQ_DATA,
+	test_flags: FT_FLAG_QUICKTEST
+},

@@ -1,0 +1,91 @@
+
+# Copyright (c) 2016-2017   Cisco Systems, Inc.  All rights reserved.
+#
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+=================================================================
+
+Script "buildrpmLibfabric.sh" can be used to build RPM from the
+stable Libfabric source tarball.
+
+You need to supply one mandatory parameter to the script:
+filename of the Libfabric tarball.
+There are several voluntary parameters available:
+
+Provider parameters:
+-i provider_name
+    Include 'provider_name' provider support to the build.
+
+-e provider_name
+    Exclude 'provider_name' provider support from the build.
+
+
+General parameters:
+-b
+    Build binary packages only
+    By default, build binary and source packages
+
+-n
+    Do nothing, useful with -v option. If used with -v option,
+    it will just print what would have been done.
+
+-o
+    Install path of the RPM would be changed to
+    /opt/libfabric/_VERSION_. Default install
+    path of the RPM is /usr.
+
+-m
+    Modulefile will be installed during RPM installation.
+    By default, modulefile is not installed.
+
+-d
+    Build with debugging support. By default,
+    RPM is build without debugging support.
+
+-c parameter
+    Add custom configure parameter.
+
+-r parameter
+    Add custom RPM build parameter.
+
+-s
+    Try to unpack libfabric.spec file from source tarball.
+    By default, script will look for libfabric.spec in
+    current directory. This option will overwrite
+    libfabric.spec file in current directory, if it exists.
+
+-v
+    Be verbose.
+
+-h
+    Print usage message and exit.
+
+Example usages of the script:
+  buildrpmLibfabric.sh -omsv -i usnic -e sockets -e verbs -e psm libfabric-1.4.1.tar.bz2
+  buildrpmLibfabric.sh -omsv -c "--disable-silent-rules" libfabric-1.4.1.tar.bz2

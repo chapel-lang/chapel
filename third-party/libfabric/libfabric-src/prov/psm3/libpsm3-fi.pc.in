@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libpsm3-fi
+Description: OFI-WG libfabric PSM3 provider
+URL: https://github.com/ofiwg/libfabric.git
+Version: @VERSION@
+Requires: libfabric
+Cflags: -I${includedir}
+Libs: -L${libdir} -lpsm3-fi
+Libs.private:
+Requires.private:

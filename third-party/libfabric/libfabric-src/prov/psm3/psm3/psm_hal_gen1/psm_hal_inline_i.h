@@ -239,7 +239,7 @@ static PSMI_HAL_INLINE int hfp_gen1_context_open(int unit,
 		cpu_set_t mycpuset, andcpuset;
 
 		if (hfi_get_unit_cpumask(unit, &mycpuset)) {
-			_HFI_ERROR( "Failed to get unit %d's cpu set\n", unit);
+			_HFI_ERROR( "Failed to get %s (unit %d) cpu set\n", ep->dev_name, unit);
 			//err = -PSM_HAL_ERROR_GENERAL_ERROR;
 			goto bail;
 		}
@@ -254,7 +254,7 @@ static PSMI_HAL_INLINE int hfp_gen1_context_open(int unit,
 		int cpu_and_count = CPU_COUNT(&andcpuset);
 
 		if (cpu_and_count > 0 && pthread_setaffinity_np(mythread, sizeof(andcpuset), &andcpuset)) {
-			_HFI_ERROR( "Failed to set unit %d's cpu set: %s\n", unit, strerror(errno));
+			_HFI_ERROR( "Failed to set %s (unit %d) cpu set: %s\n", ep->dev_name,  unit, strerror(errno));
 			//err = -PSM_HAL_ERROR_GENERAL_ERROR;
 			goto bail;
 		} else if (cpu_and_count == 0 && _HFI_DBG_ON) {
@@ -290,6 +290,12 @@ bail:
 	}
 
 	return -PSM_HAL_ERROR_GENERAL_ERROR;
+}
+
+/* hfp_gen1_context_initstats */
+static PSMI_HAL_INLINE void hfp_gen1_context_initstats(psm2_ep_t ep)
+{
+	__psm2_ep_initstats_verbs(ep);
 }
 
 

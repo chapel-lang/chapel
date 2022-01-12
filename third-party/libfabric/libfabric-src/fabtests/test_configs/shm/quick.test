@@ -1,0 +1,411 @@
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+		FT_FUNC_SENDV,
+		FT_FUNC_SENDMSG,
+		FT_FUNC_SENDDATA,
+		FT_FUNC_INJECT,
+		FT_FUNC_INJECTDATA,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	mr_mode: [
+		FI_MR_VIRT_ADDR,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SENDMSG,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	tx_cq_bind_flags: [
+		FI_SELECTIVE_COMPLETION,
+	],
+	tx_op_flags: [
+		FI_COMPLETION,
+	],
+	msg_flags: [
+		FI_COMPLETION,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SENDMSG,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	tx_cq_bind_flags: [
+		FI_SELECTIVE_COMPLETION,
+	],
+	msg_flags: [
+		FI_COMPLETION,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SENDMSG,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	tx_cq_bind_flags: [
+		FI_SELECTIVE_COMPLETION,
+	],
+	tx_op_flags: [
+		FI_COMPLETION,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_WRITE,
+		FT_FUNC_WRITEV,
+		FT_FUNC_WRITEMSG,
+		FT_FUNC_INJECT_WRITE,
+		FT_FUNC_WRITEDATA,
+		FT_FUNC_INJECT_WRITEDATA,
+		FT_FUNC_READ,
+		FT_FUNC_READV,
+		FT_FUNC_READMSG,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	test_class: [
+		FT_CAP_RMA,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	mr_mode: [
+		FI_MR_VIRT_ADDR,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_WRITE,
+		FT_FUNC_WRITEV,
+		FT_FUNC_WRITEMSG,
+		FT_FUNC_INJECT_WRITE,
+		FT_FUNC_WRITEDATA,
+		FT_FUNC_INJECT_WRITEDATA,
+		FT_FUNC_READ,
+		FT_FUNC_READV,
+		FT_FUNC_READMSG,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	test_class: [
+		FT_CAP_RMA,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_ATOMIC,
+		FT_FUNC_FETCH_ATOMIC,
+	],
+	op:[
+		FI_MIN,
+		FI_SUM,
+		FI_LOR,
+		FI_BAND,
+		FI_LXOR,
+		FI_ATOMIC_WRITE,
+	],
+	datatype:[
+		FI_INT8,
+		FI_INT16,
+		FI_INT32,
+		FI_INT64,
+		FI_FLOAT,
+		FI_LONG_DOUBLE,
+		FI_DOUBLE_COMPLEX,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	test_class: [
+		FT_CAP_ATOMIC,
+	],
+	mr_mode: [
+		FI_MR_VIRT_ADDR,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_FETCH_ATOMIC,
+		FT_FUNC_FETCH_ATOMICV,
+		FT_FUNC_FETCH_ATOMICMSG,
+	],
+	op:[
+		FI_ATOMIC_READ,
+	],
+	datatype:[
+		FI_INT8,
+		FI_INT16,
+		FI_INT32,
+		FI_INT64,
+		FI_FLOAT,
+		FI_LONG_DOUBLE,
+		FI_DOUBLE_COMPLEX,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	test_class: [
+		FT_CAP_ATOMIC,
+	],
+	mr_mode: [
+		FI_MR_VIRT_ADDR,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_COMPARE_ATOMIC,
+	],
+	op:[
+		FI_CSWAP,
+		FI_CSWAP_NE,
+		FI_CSWAP_LE,
+		FI_CSWAP_LT,
+		FI_CSWAP_GE,
+		FI_CSWAP_GT,
+		FI_MSWAP,
+	],
+	datatype:[
+		FI_INT8,
+		FI_INT16,
+		FI_INT32,
+		FI_INT64,
+		FI_FLOAT,
+		FI_LONG_DOUBLE,
+		FI_DOUBLE_COMPLEX,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	test_class: [
+		FT_CAP_ATOMIC,
+	],
+	mr_mode: [
+		FI_MR_VIRT_ADDR,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_ATOMIC,
+		FT_FUNC_FETCH_ATOMIC,
+	],
+	op:[
+		FI_MIN,
+		FI_SUM,
+		FI_LOR,
+		FI_BAND,
+		FI_LXOR,
+		FI_ATOMIC_WRITE,
+	],
+	datatype:[
+		FI_INT8,
+		FI_INT16,
+		FI_INT32,
+		FI_INT64,
+		FI_FLOAT,
+		FI_LONG_DOUBLE,
+		FI_DOUBLE_COMPLEX,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	test_class: [
+		FT_CAP_ATOMIC,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_FETCH_ATOMIC,
+	],
+	op:[
+		FI_ATOMIC_READ,
+	],
+	datatype:[
+		FI_INT8,
+		FI_INT16,
+		FI_INT32,
+		FI_INT64,
+		FI_FLOAT,
+		FI_LONG_DOUBLE,
+		FI_DOUBLE_COMPLEX,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	test_class: [
+		FT_CAP_ATOMIC,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: shm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_COMPARE_ATOMIC,
+	],
+	op:[
+		FI_CSWAP,
+		FI_CSWAP_NE,
+		FI_CSWAP_LE,
+		FI_CSWAP_LT,
+		FI_CSWAP_GE,
+		FI_CSWAP_GT,
+		FI_MSWAP,
+	],
+	datatype:[
+		FI_INT8,
+		FI_INT16,
+		FI_INT32,
+		FI_INT64,
+		FI_FLOAT,
+		FI_LONG_DOUBLE,
+		FI_DOUBLE_COMPLEX,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+		FT_COMP_CNTR,
+	],
+	test_class: [
+		FT_CAP_ATOMIC,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},

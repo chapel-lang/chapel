@@ -1,0 +1,12 @@
+Network Direct SDK/DDK may be obtained as a nuget package (preferred) from:
+
+https://www.nuget.org/packages/NetworkDirect
+
+or downloaded from:
+
+https://www.microsoft.com/en-us/download/details.aspx?id=36043
+on page press Download button and select NetworkDirect_DDK.zip.
+
+Extract header files from downloaded
+NetworkDirect_DDK.zip:\NetDirect\include\ file into this directory,
+or add path to NetDirect headers into VS include paths

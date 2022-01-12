@@ -1,0 +1,264 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\common">
+      <UniqueIdentifier>{506aaadf-53cc-4344-941b-011008029037}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\functional">
+      <UniqueIdentifier>{660dbead-4d8e-4589-8eb4-43dfab9566bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ubertest">
+      <UniqueIdentifier>{401b54c2-4a43-40a2-b707-50b5f6ebb556}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\test_configs">
+      <UniqueIdentifier>{b3a8fe06-b4cf-48f9-b123-60cb55a123a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\unit">
+      <UniqueIdentifier>{02aa369d-fd9a-47f4-8fd3-583dcb953179}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\osd">
+      <UniqueIdentifier>{fba45a64-c3ed-4d15-827b-ab11ee5e9439}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\osd\netinet">
+      <UniqueIdentifier>{49185c64-a450-46e4-a685-870b48b52533}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\osd\sys">
+      <UniqueIdentifier>{6860bc78-04ef-4ab3-8e81-5c6a0ef80954}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\osd\getopt">
+      <UniqueIdentifier>{41b0d676-ab4e-4ba1-aeae-ee73272ae273}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\benchmarks">
+      <UniqueIdentifier>{f1716194-5311-4a40-a1f3-d4e96c93639f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="common\jsmn.c">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\hmem.c">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\hmem_cuda.c">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\hmem_rocr.c">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\hmem_ze.c">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\shared.c">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\cq_data.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\dgram.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\dgram_waitset.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\msg.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\msg_epoll.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\msg_sockets.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\poll.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\rdm.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\rdm_rma_event.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\rdm_rma_trigger.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\rdm_shared_ctx.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\rdm_tagged_peek.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\scalable_ep.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\inj_complete.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="ubertest\connect.c">
+      <Filter>Source Files\ubertest</Filter>
+    </ClCompile>
+    <ClCompile Include="ubertest\cq.c">
+      <Filter>Source Files\ubertest</Filter>
+    </ClCompile>
+    <ClCompile Include="ubertest\config.c">
+      <Filter>Source Files\ubertest</Filter>
+    </ClCompile>
+    <ClCompile Include="ubertest\domain.c">
+      <Filter>Source Files\ubertest</Filter>
+    </ClCompile>
+    <ClCompile Include="ubertest\ep.c">
+      <Filter>Source Files\ubertest</Filter>
+    </ClCompile>
+    <ClCompile Include="ubertest\uber.c">
+      <Filter>Source Files\ubertest</Filter>
+    </ClCompile>
+    <ClCompile Include="ubertest\xfer.c">
+      <Filter>Source Files\ubertest</Filter>
+    </ClCompile>
+    <ClCompile Include="ubertest\test_ctrl.c">
+      <Filter>Source Files\ubertest</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\av_test.c">
+      <Filter>Source Files\unit</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\common.c">
+      <Filter>Source Files\unit</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\dom_test.c">
+      <Filter>Source Files\unit</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\eq_test.c">
+      <Filter>Source Files\unit</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\msg_netdir.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="common\windows\getopt.c">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\windows\osd.c">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarks\benchmark_shared.c">
+      <Filter>Source Files\benchmarks</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarks\dgram_pingpong.c">
+      <Filter>Source Files\benchmarks</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarks\msg_bw.c">
+      <Filter>Source Files\benchmarks</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarks\msg_pingpong.c">
+      <Filter>Source Files\benchmarks</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarks\rdm_cntr_pingpong.c">
+      <Filter>Source Files\benchmarks</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarks\rdm_pingpong.c">
+      <Filter>Source Files\benchmarks</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarks\rdm_tagged_bw.c">
+      <Filter>Source Files\benchmarks</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarks\rdm_tagged_pingpong.c">
+      <Filter>Source Files\benchmarks</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmarks\rma_bw.c">
+      <Filter>Source Files\benchmarks</Filter>
+    </ClCompile>
+    <ClCompile Include="functional\rdm_netdir.c">
+      <Filter>Source Files\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\cq_test.c">
+      <Filter>Source Files\unit</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\getinfo_test.c">
+      <Filter>Source Files\unit</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\mr_test.c">
+      <Filter>Source Files\unit</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\cntr_test.c">
+      <Filter>Source Files\unit</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\jsmn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\hmem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\unit_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ubertest\fabtest.h">
+      <Filter>Source Files\ubertest</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\netdb.h">
+      <Filter>Header Files\osd</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\osd.h">
+      <Filter>Header Files\osd</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\poll.h">
+      <Filter>Header Files\osd</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\unistd.h">
+      <Filter>Header Files\osd</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\socket.h">
+      <Filter>Header Files\osd\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\uio.h">
+      <Filter>Header Files\osd\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\wait.h">
+      <Filter>Header Files\osd\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\netinet\tcp.h">
+      <Filter>Header Files\osd\netinet</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\netinet\in.h">
+      <Filter>Header Files\osd\netinet</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\getopt\getopt.h">
+      <Filter>Header Files\osd\getopt</Filter>
+    </ClInclude>
+    <ClInclude Include="benchmarks\benchmark_shared.h">
+      <Filter>Source Files\benchmarks</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ft_osd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile.win" />
+    <None Include="test_configs\eq_cq.json">
+      <Filter>Source Files\test_configs</Filter>
+    </None>
+    <None Include="test_configs\lat_bw.json">
+      <Filter>Source Files\test_configs</Filter>
+    </None>
+    <None Include="test_configs\sockets.json">
+      <Filter>Source Files\test_configs</Filter>
+    </None>
+    <None Include="test_configs\verbs.json">
+      <Filter>Source Files\test_configs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

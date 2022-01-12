@@ -1,0 +1,24 @@
+#: "Latency and bandwidth tests for the udp provider"
+{
+	prov_name: udp,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_DGRAM,
+	],
+	av_type: [
+		FI_AV_TABLE,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},

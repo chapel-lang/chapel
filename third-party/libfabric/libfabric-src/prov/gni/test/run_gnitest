@@ -1,0 +1,85 @@
+#!/bin/bash
+#
+# Copyright (c) 2015 Cray Inc.  All rights reserved.
+# Copyright (c) 2019 Triad National Security, LLC.
+#                    All rights reserved.
+#
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AWV
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+#
+# disable use of xpmem bypass for criterion tests
+#
+export GNIX_DISABLE_XPMEM=1
+
+#
+# disable fma sharing for criterion tests
+#
+export UGNI_FMA_SHARED=0
+
+#
+# Check for srun or aprun
+#
+srun=`command -v srun`
+if [ $? == 0 ]; then
+    launcher="srun"
+else
+    aprun=`command -v aprun`
+    if [ $? == 0 ]; then
+        launcher="aprun"
+    else
+        echo "Cannot find a supported job launcher (srun, aprun).  Please load the appropriate module"
+        exit -1
+    fi
+fi
+
+gnitest_bin="$(cd "$(dirname "$0")" && pwd)/gnitest"
+if [ ! -f "$gnitest_bin" ]; then
+    echo "Could not find gnitest executable"
+    exit -1
+fi
+
+#
+# for srun need to have multiple cores per task to insure we get enough
+# GNI resources assiged for tests to pass
+#
+if [ $launcher = "srun" ]; then
+    args="-N1 --exclusive --cpu_bind=none -t00:20:00 --ntasks=1 --cpus-per-task=12"
+else
+    args="-n1 -N1 -j0 -cc none -t1200"
+fi
+
+# As of Criterion 2.3, it seems that the PRE_ALL hook is being run
+# more than once.  These two environment variables insure we never
+# fork and never initialize more than once.
+export PMI_NO_PREINITIALIZE=1
+export PMI_NO_FORK=1
+
+# pass all command line args to gnitest
+$launcher $args $gnitest_bin -j1 "$@"

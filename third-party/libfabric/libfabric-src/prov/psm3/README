@@ -1,0 +1,11 @@
+This is derived from libfabric source.  See libfabric for README, AUTHORS, COPYING
+and other notices.
+
+
+To Build PSM3 OFI Provider:
+1. ./configure
+2. make -j
+
+To Build PSM3 OFI Provider RPM:
+1. ./configure
+2. make rpm

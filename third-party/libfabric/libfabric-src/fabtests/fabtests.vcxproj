@@ -1,0 +1,223 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug-v140|x64">
+      <Configuration>Debug-v140</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-v141|x64">
+      <Configuration>Debug-v141</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-v142|x64">
+      <Configuration>Debug-v142</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release-v140|x64">
+      <Configuration>Release-v140</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release-v141|x64">
+      <Configuration>Release-v141</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release-v142|x64">
+      <Configuration>Release-v142</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{076F757A-8827-4D3C-A87F-6E49623C16E1}</ProjectGuid>
+    <Keyword>MakeFileProj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-v140|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-v141|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-v142|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-v140|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-v141|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-v142|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug-v140|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug-v141|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug-v142|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release-v140|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release-v141|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release-v142|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-v140|x64'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <ExecutablePath>$(ProjectDir)Include;$(ExecutablePath)</ExecutablePath>
+    <NMakeBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) all</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean all</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean</NMakeCleanCommandLine>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-v141|x64'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <ExecutablePath>$(ProjectDir)Include;$(ExecutablePath)</ExecutablePath>
+    <NMakeBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) all</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean all</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean</NMakeCleanCommandLine>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-v142|x64'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <ExecutablePath>$(ProjectDir)Include;$(ExecutablePath)</ExecutablePath>
+    <NMakeBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) all</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean all</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean</NMakeCleanCommandLine>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-v140|x64'">
+    <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <ExecutablePath>$(ProjectDir)Include;$(ExecutablePath)</ExecutablePath>
+    <NMakeBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) all</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean all</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean</NMakeCleanCommandLine>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-v141|x64'">
+    <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <ExecutablePath>$(ProjectDir)Include;$(ExecutablePath)</ExecutablePath>
+    <NMakeBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) all</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean all</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean</NMakeCleanCommandLine>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-v142|x64'">
+    <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <ExecutablePath>$(ProjectDir)Include;$(ExecutablePath)</ExecutablePath>
+    <NMakeBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) all</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean all</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>nmake /F Makefile.win config=$(Configuration) arch=x$(PlatformArchitecture) clean</NMakeCleanCommandLine>
+  </PropertyGroup>
+  <ItemGroup>
+    <ClCompile Include="benchmarks\benchmark_shared.c" />
+    <ClCompile Include="benchmarks\dgram_pingpong.c" />
+    <ClCompile Include="benchmarks\msg_bw.c" />
+    <ClCompile Include="benchmarks\msg_pingpong.c" />
+    <ClCompile Include="benchmarks\rdm_cntr_pingpong.c" />
+    <ClCompile Include="benchmarks\rdm_pingpong.c" />
+    <ClCompile Include="benchmarks\rdm_tagged_bw.c" />
+    <ClCompile Include="benchmarks\rdm_tagged_pingpong.c" />
+    <ClCompile Include="benchmarks\rma_bw.c" />
+    <ClCompile Include="common\jsmn.c" />
+    <ClCompile Include="common\hmem.c" />
+    <ClCompile Include="common\hmem_cuda.c" />
+    <ClCompile Include="common\hmem_rocr.c" />
+    <ClCompile Include="common\hmem_ze.c" />
+    <ClCompile Include="common\shared.c" />
+    <ClCompile Include="common\windows\getopt.c" />
+    <ClCompile Include="common\windows\osd.c" />
+    <ClCompile Include="ubertest\connect.c" />
+    <ClCompile Include="ubertest\cq.c" />
+    <ClCompile Include="ubertest\config.c" />
+    <ClCompile Include="ubertest\domain.c" />
+    <ClCompile Include="ubertest\ep.c" />
+    <ClCompile Include="ubertest\uber.c" />
+    <ClCompile Include="ubertest\xfer.c" />
+    <ClCompile Include="ubertest\test_ctrl.c" />
+    <ClCompile Include="functional\cq_data.c" />
+    <ClCompile Include="functional\dgram.c" />
+    <ClCompile Include="functional\dgram_waitset.c" />
+    <ClCompile Include="functional\msg.c" />
+    <ClCompile Include="functional\msg_epoll.c" />
+    <ClCompile Include="functional\msg_netdir.c" />
+    <ClCompile Include="functional\msg_sockets.c" />
+    <ClCompile Include="functional\poll.c" />
+    <ClCompile Include="functional\rdm.c" />
+    <ClCompile Include="functional\rdm_rma_event.c" />
+    <ClCompile Include="functional\rdm_rma_trigger.c" />
+    <ClCompile Include="functional\rdm_shared_ctx.c" />
+    <ClCompile Include="functional\rdm_tagged_peek.c" />
+    <ClCompile Include="functional\rdm_netdir.c" />
+    <ClCompile Include="functional\scalable_ep.c" />
+    <ClCompile Include="functional\inj_complete.c" />
+    <ClCompile Include="functional\bw.c" />
+    <ClCompile Include="unit\av_test.c" />
+    <ClCompile Include="unit\cntr_test.c" />
+    <ClCompile Include="unit\common.c" />
+    <ClCompile Include="unit\cq_test.c" />
+    <ClCompile Include="unit\dom_test.c" />
+    <ClCompile Include="unit\eq_test.c" />
+    <ClCompile Include="unit\getinfo_test.c" />
+    <ClCompile Include="unit\mr_test.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="benchmarks\benchmark_shared.h" />
+    <ClInclude Include="ubertest\fabtest.h" />
+    <ClInclude Include="include\ft_osd.h" />
+    <ClInclude Include="include\jsmn.h" />
+    <ClInclude Include="include\hmem.h" />
+    <ClInclude Include="include\shared.h" />
+    <ClInclude Include="include\unit_common.h" />
+    <ClInclude Include="include\windows\getopt\getopt.h" />
+    <ClInclude Include="include\windows\netdb.h" />
+    <ClInclude Include="include\windows\netinet\in.h" />
+    <ClInclude Include="include\windows\netinet\tcp.h" />
+    <ClInclude Include="include\windows\osd.h" />
+    <ClInclude Include="include\windows\poll.h" />
+    <ClInclude Include="include\windows\sys\socket.h" />
+    <ClInclude Include="include\windows\sys\uio.h" />
+    <ClInclude Include="include\windows\sys\wait.h" />
+    <ClInclude Include="include\windows\unistd.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test_configs\eq_cq.json" />
+    <None Include="test_configs\lat_bw.json" />
+    <None Include="test_configs\sockets.json" />
+    <None Include="test_configs\verbs.json" />
+    <None Include="Makefile.win" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -43,6 +43,24 @@ void rxr_msg_multi_recv_handle_completion(struct rxr_ep *ep,
 void rxr_msg_multi_recv_free_posted_entry(struct rxr_ep *ep,
 					  struct rxr_rx_entry *rx_entry);
 
+/**
+ * functions to allocate rx_entry for two sided operations
+ */
+struct rxr_rx_entry *rxr_msg_alloc_rx_entry(struct rxr_ep *ep,
+					    const struct fi_msg *msg,
+					    uint32_t op, uint64_t flags,
+					    uint64_t tag, uint64_t ignore);
+
+struct rxr_rx_entry *rxr_msg_alloc_unexp_rx_entry_for_msgrtm(struct rxr_ep *ep,
+							     struct rxr_pkt_entry **pkt_entry);
+
+struct rxr_rx_entry *rxr_msg_alloc_unexp_rx_entry_for_tagrtm(struct rxr_ep *ep,
+							     struct rxr_pkt_entry **pkt_entry);
+
+struct rxr_rx_entry *rxr_msg_split_rx_entry(struct rxr_ep *ep,
+					    struct rxr_rx_entry *posted_entry,
+					    struct rxr_rx_entry *consumer_entry,
+					    struct rxr_pkt_entry *pkt_entry);
 /*
  * The following 2 OP structures are defined in rxr_msg.c and is
  * used by rxr_endpoint()

@@ -73,6 +73,7 @@
  */
 #define RXR_REQ_FEATURE_RDMA_READ	BIT_ULL(0)
 #define RXR_REQ_FEATURE_DELIVERY_COMPLETE BIT_ULL(1)
+#define RXR_REQ_FEATURE_ZERO_COPY_RECEIVE BIT_ULL(2)
 
 /*
  *     Utility struct and functions for
@@ -431,8 +432,8 @@ void rxr_pkt_handle_read_rtm_send_completion(struct rxr_ep *ep,
 /*
  *   proc() functions for RTM packet types
  */
-void rxr_pkt_rtm_init_rx_entry(struct rxr_pkt_entry *pkt_entry,
-			       struct rxr_rx_entry *rx_entry);
+void rxr_pkt_rtm_update_rx_entry(struct rxr_pkt_entry *pkt_entry,
+				 struct rxr_rx_entry *rx_entry);
 
 /*         This function is called by both
  *            rxr_pkt_handle_rtm_recv() and

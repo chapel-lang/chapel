@@ -1,0 +1,23 @@
+All patches submitted for inclusion must adhere to the OpenFabric
+bylaws for code submission.  The OpenFabric bylaws are available at:
+https://www.openfabrics.org/images/membership/ofa_bylaws_march_2011.pdf
+
+In brief, these bylaws require:
+
+That all contributions be under a license that grants users of
+the contributions perpetual, irrevocable, worldwide, non-exclusive, royalty-
+free copyright license to reproduce, display, perform, prepare, and have
+prepared derivative works.
+
+All contributions are submitted under dual BSD and GPLv2 licenses.
+
+All contributions must be encumbrance free.  Any intellectual property
+included as part of any contribution is granted royalty free in
+perpetuity.
+
+All contributions must contain a sign-off tag in each commit message
+indicating agreement to the above terms, otherwise the contribution
+cannot be accepted.  An example sign-off tag looks like:
+"""
+Signed-off-by: Some Developer <developer@example.org>
+"""

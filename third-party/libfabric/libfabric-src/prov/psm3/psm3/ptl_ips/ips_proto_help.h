@@ -252,7 +252,8 @@ void
 ips_scb_prepare_flow_inner(struct ips_proto *proto, struct ips_epaddr *ipsaddr,
 			   struct ips_flow *flow, ips_scb_t *scb))
 {
-	psmi_assert((scb->payload_size & 3) == 0);
+	// ips_ptl_mq_rndv can allow small odd sized payload in RTS
+	psmi_assert(scb->payload_size <= 3 || ! (scb->payload_size & 3));
 	ips_proto_hdr(proto, ipsaddr, flow, scb,
 		      ips_flow_gen_ackflags(scb, flow));
 
@@ -470,13 +471,13 @@ ips_proto_process_packet(const struct ips_recvhdrq_event *rcv_ev))
 	if_pf(PSMI_FAULTINJ_ENABLED_EP(rcv_ev->proto->ep)) {
 		PSMI_FAULTINJ_STATIC_DECL(fi_recv, "recvlost",
 					  "drop "
-					  "RC eager or any "
-					  "UD packet at recv",
+					  "RC eager or any UD "
+					  "packet at recv",
 					   1, IPS_FAULTINJ_RECVLOST);
-		if (psmi_faultinj_is_fault(fi_recv))
+		if_pf(PSMI_FAULTINJ_IS_FAULT(fi_recv, ""))
 			return IPS_RECVHDRQ_CONTINUE;
 	}
-#endif /* #ifdef PSM_FI */
+#endif // PSM_FI
 	/* see file ips_proto_header.h for details */
 	index = _get_proto_hfi_opcode(rcv_ev->p_hdr) - OPCODE_RESERVED;
 	if (index >= (OPCODE_FUTURE_FROM - OPCODE_RESERVED))

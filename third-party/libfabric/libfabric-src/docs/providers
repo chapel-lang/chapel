@@ -1,0 +1,112 @@
+Provider Helper Routines
+========================
+In tree providers are strongly encouraged to take advantage of available
+common functionality supplied by the framework.  This includes extending
+functionality where needed.  Common functionality is defined by header
+files under the include directory, with source code available under src.
+
+
+// include/fi_enosys.h
+// src/enosys.c
+
+Providers that do not implement a specific interface should set their
+function pointers to one of the functions defined by these files.  For
+example:
+
+static struct fi_ops prov_obj_ops = {
+	.size = sizeof(struct fi_ops),
+	.close = prov_obj_close, /* defined by provider */
+	.bind = fi_no_bind,
+	.control = fi_no_control,
+	.ops_open = fi_no_ops_open,
+};
+
+Providers may find it helpful to copy the structures from fi_enosys.h into
+their source files, then modify them to reference their own implementations.
+If an 'enosys' version of a function (e.g. fi_no_xxx) is not defined in
+fi_enosys.h, then that function must be defined by the provider.
+
+
+// include/fi_indexer.h
+// src/indexer.c
+
+The indexer files provider routines for quickly converting between a pointer
+and an integer index.
+
+struct indexer:
+This converts a pointer into a integer, with integer values starting at 0.
+The returned value is selected by the indexer from a free list of available
+values.  The indexer storage grows dynamically.  It is useful for providers
+that must return an integer value to the application, but need to retrieve
+the pointer for use.  This allows the provider to validate a value given
+by an application before the pointer is dereferenced.
+
+struct index_map:
+The index map is similar to the indexer, except that the caller selects the
+index location which to store the original pointer.  An example use case is
+to associate a pointer with a file descriptor.
+
+
+// include/fi_list.h
+
+This provides inline implementations of single and double linked lists.
+
+dlist:
+This defines a double linked list.
+
+slist:
+This defines a single linked list.  It may be used to implement variable
+sized software queues.
+
+dlistfd:
+This is a double linked list that is associated with a socketpair.  It
+may be used when a thread should wait until an item is inserted onto the
+list.  An example use of a dlistfd object is to communicate with a thread
+that handles progress or timeout/retries.
+
+
+// include/fi_rbuf.h
+
+This provides inline implementations of ring buffers.
+
+ringbuf:
+This defines a fixed-sized ring buffer that supports variable-sized
+reads and writes.  It may be used to implement a pre-allocated software
+queue.
+
+ringbuffd:
+This is a ring buffer that is associated with a socketpair.  It may be
+used when a thread should wait until data has been inserted into the ring
+buffer.  An example use is to store requests into a pre-allocated software
+queue, followed by a notification to a waiting thread that work is pending.
+
+
+// include/fi_signal.h
+
+This provides an inline implementation of a thread signaling object based
+on a socketpair.  It only writes to the socketpair if a signal is not
+already pending.
+
+
+// include/fi.h
+// src/common.c
+
+This header file provides several helper functions and abstractions.  The
+following are of note:
+
+mem_dup() - memdup equivalent
+htonll() / ntohll()
+sizeof_field()
+MIN / MAX - simple (i.e. potentially unsafe) min/max macros
+roundup_power_of_two()
+fastlock_t - lock object (spinlock or mutex based on availability)
+atomic operations - implementation based on availability
+fi_read_file() - read a value from a file
+fi_poll_fd() - call poll() on an fd
+fi_wait_cond() - wait on a mutex
+fi_datatype_size() - return size of an atomic datatype
+fi_[capability]_allowed() - routines to check caps bits
+ofi_gettime_ns() - return current time in nanoseconds
+ofi_gettime_us() - return current time in microseconds
+ofi_gettime_ms() - return current time in milliseconds
+fi_fd_nonblock() - set fd to nonblocking

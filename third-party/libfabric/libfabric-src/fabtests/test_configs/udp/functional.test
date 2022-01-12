@@ -1,0 +1,29 @@
+#: "Simple test for the udp provider"
+{
+	prov_name: udp,
+	test_type: [
+		FT_TEST_LATENCY,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_DGRAM,
+	],
+	av_type: [
+		FI_AV_TABLE,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},

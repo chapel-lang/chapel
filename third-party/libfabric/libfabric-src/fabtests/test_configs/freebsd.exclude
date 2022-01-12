@@ -1,0 +1,4 @@
+# Regex patterns of tests to exclude in runfabtests.sh
+
+# Exclude msg_epoll test as FreeBSD doesn't have epoll system call
+msg_epoll

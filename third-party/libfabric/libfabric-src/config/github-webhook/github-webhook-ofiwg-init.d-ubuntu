@@ -1,0 +1,85 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          github-webhook-ofiwg
+# Required-Start:
+# Required-Stop:
+# Default-Start:
+# Default-Stop:      0
+# Short-Description: Run the Github webhook for ofiwg
+# Description:
+### END INIT INFO
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+[ -f /etc/default/github-webhook-ofiwg ] && . /etc/default/github-webhook-ofiwg
+
+. /lib/lsb/init-functions
+
+RETVAL=0
+prog="/var/www/html/github-webhooks/ofiwg/verify-signed-off.rb"
+desc="Github webhook listener for ofiwg"
+pidfile="/var/run/github-webhook-ofiwg.pid"
+
+do_start() {
+    [ -x $prog ] || exit 5
+
+    log_action_msg "Starting $desc"
+
+    pid=`ps -eadf | grep "ruby $prog" | grep -v grep | awk '{ print $2 }'`
+    if test -z "$pid"; then
+	$prog > /dev/null 2>&1 &
+	RETVAL=$?
+    else
+	RETVAL=1
+    fi
+    [ $RETVAL -eq 0 ] && log_success_msg
+    [ $RETVAL -ne 0 ] && log_failure_msg
+    log_end_msg $RETVAL
+    return $RETVAL
+}
+
+do_stop() {
+    [ -x $prog ] || exit 5
+
+    log_action_msg "Stopping $desc"
+    pid=`ps -eadf | grep "ruby $prog" | grep -v grep | awk '{ print $2 }'`
+    if test -n "$pid"; then
+	kill $pid > /dev/null 2>&1
+	RETVAL=$?
+    else
+	RETVAL=1
+    fi
+    [ $RETVAL -eq 0 ] && log_success_msg
+    [ $RETVAL -ne 0 ] && log_failure_msg
+    log_end_msg $RETVAL
+    return $RETVAL
+}
+
+do_restart() {
+    do_stop
+    sleep 1
+    do_start
+}
+
+case "$1" in
+  start)
+        do_start
+	;;
+  restart)
+	do_restart
+	;;
+  reload|force-reload)
+	log_action_msg "Error: argument '$1' not supported"
+        log_action_end_msg 7
+	exit 7
+	;;
+  stop)
+	do_stop
+	;;
+  *)
+	log_action_msg "Usage: $0 start|stop|restart"
+        log_action_end_msg 3
+	exit 3
+	;;
+esac
+
+exit $RETVAL

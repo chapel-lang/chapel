@@ -1,0 +1,328 @@
+#!/bin/bash
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null && pwd )"
+
+# Variables
+HELP=false
+VERBOSE=false
+DEBUG=false
+CLEAN=false
+WORKSPACE=$(pwd)
+SECTIONS='all'
+LIBFABRIC=""
+
+BUILD=true
+TEST=true
+UNITTEST=true
+SMOKETEST=true
+IMBTEST=true
+OMBTEST=true
+FABTEST=true
+SFT=true
+
+function usage {
+    echo \
+"
+Usage: $(basename $SOURCE) [-dhv]
+"
+
+}
+
+function set_sections_to_run {
+    BUILD=false
+    TEST=false
+    UNITTEST=false
+    SMOKETEST=false
+    IMBTEST=false
+    OMBTEST=false
+    FABTEST=false
+    SFT=false
+
+    sections=$(echo $@ | tr ',' ' ')
+    for section in $sections ; do
+        section_name=$(echo $section | awk '{print toupper($0)}')
+        case $section_name in
+            'UNITTEST'|'SMOKETEST'|'IMBTEST'|'OMBTEST'|'FABTEST'|'SFT')
+                TEST=true
+                eval ${section_name}=true
+                ;;
+            'ALL')
+                BUILD=true
+                TEST=true
+                UNITTEST=true
+                SMOKETEST=true
+                IMBTEST=true
+                OMBTEST=true
+                FABTEST=true
+                SFT=true
+                ;;
+            'TEST')
+                TEST=true
+                UNITTEST=true
+                SMOKETEST=true
+                IMBTEST=true
+                OMBTEST=true
+                FABTEST=true
+                SFT=true
+                ;;
+             'BUILD')
+                BUILD=true
+                ;;
+            *)
+                ;;
+        esac
+    done
+
+    for each in BUILD TEST UNITTEST SMOKETEST IMBTEST OMBTEST SFT ; do
+        if $DEBUG ; then echo ${each} = $(eval echo \$$each) ; fi
+    done
+}
+
+OPTS=`getopt -o hdvcs:w:l: --long help,debug,verbose,clean,sections,workspace,libfabric -n 'parse-options' -- "$@"`
+
+if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; usage ; exit 1 ; fi
+
+eval set -- "$OPTS"
+set -e
+
+while true; do
+  case "$1" in
+    -h | --help ) HELP=true ; shift ;;
+    -v | --verbose ) VERBOSE=true ; shift ;;
+    -d | --debug ) DEBUG=true ; shift ;;
+    -c | --clean ) CLEAN=true ; shift ;;
+    -s | --sections ) SECTIONS="$2" ; shift ; shift ;;
+    -w | --workspace ) WORKSPACE="$2" ; shift ; shift ;;
+    -l | --libfabric ) LIBFABRIC="$2" ; shift ; shift ;;
+    * ) break ;;
+  esac
+done
+
+shift
+
+if $HELP ; then
+    usage
+    exit
+fi
+
+function verbose {
+    if $VERBOSE ; then
+        echo $@
+    fi
+}
+
+function debug {
+    if $DEBUG ; then
+        echo $0
+    fi
+}
+
+set_sections_to_run "$SECTIONS"
+verbose "HELP:      $HELP"
+verbose "VERBOSE:   $VERBOSE"
+verbose "DEBUG:     $DEBUG"
+verbose "CLEAN:     $CLEAN"
+verbose "SECTIONS:  $SECTIONS"
+verbose "WORKSPACE: $WORKSPACE"
+
+for each in BUILD TEST UNITTEST SMOKETEST IMBTEST OMBTEST FABTEST SFT ; do
+    verbose "$each: $(eval echo \$$each)"
+done
+
+function section_start {
+    echo \
+"
+##############################################################################
+Start of \"$1\"
+##############################################################################
+"
+}
+
+function section_end {
+    echo \
+"
+##############################################################################
+End of \"$1\"
+##############################################################################
+"
+}
+if $CLEAN ; then
+    if [[ -d $WORKSPACE ]] ; then
+        rm -rf $WORKSPACE
+    fi
+fi
+
+if [[ ! -d $WORKSPACE ]] ; then
+    mkdir -p $WORKSPACE
+fi
+
+SOURCE_DIR=$DIR/../../..
+pushd $SOURCE_DIR
+
+# Start Pipeline variables
+export GIT_SHORT_COMMIT="$GIT_COMMIT"
+export LIBFABRIC_INSTALL_PATH=""
+export ROOT_BUILD_PATH="/scratch/jenkins/builds"
+export FABTEST_PATH="${WORKSPACE}/fabtests"
+export LIBFABRIC_BUILD_PATH="${ROOT_BUILD_PATH}/libfabric"
+export OMB_BUILD_PATH="${ROOT_BUILD_PATH}/osu-micro-benchmarks/5.4.2/libexec/osu-micro-benchmarks/mpi"
+export MPICH_PATH="${ROOT_BUILD_PATH}/mpich/stable"
+export SFT_INSTALL_PATH="${ROOT_BUILD_PATH}/libfabric-sft/stable"
+export BATS_INSTALL_PATH="${ROOT_BUILD_PATH}/bats/stable/bin"
+export BATS_LOG_DIRECTORY="$WORKSPACE/logs"
+export IMB_BUILD_PATH="${ROOT_BUILD_PATH}/imb/v2019.6"
+# End pipeline variables
+
+# Start Prologue
+GIT_SHORT_COMMIT=$(git log -n 1 --pretty=format:'%h')
+
+contrib/cray/bin/verify_requirements.sh
+contrib/cray/bin/setup.sh
+# End Prologue
+
+if [[ -z $LIBFABRIC ]] ; then
+    LIBFABRIC_INSTALL_PATH="${WORKSPACE}/builds/libfabric/${GIT_SHORT_COMMIT}"
+else
+    LIBFABRIC_INSTALL_PATH="$LIBFABRIC"
+fi
+echo using installed libfabric @ ${LIBFABRIC_INSTALL_PATH}
+
+if $BUILD ; then
+section_start 'build'
+# Start Build
+./autogen.sh
+./configure --prefix=$LIBFABRIC_INSTALL_PATH
+make -j12
+make install
+# End Build
+section_end 'build'
+fi
+
+LF_LIBRARY=${LIBFABRIC_INSTALL_PATH}/lib/libfabric.so
+if [[ ! -f ${LF_LIBRARY} ]] ; then
+    echo could not find libfabric library
+    echo expected file: ${LF_LIBRARY}
+    exit
+fi
+
+if $TEST ; then
+section_start 'test'
+# Start Test Phase
+export LD_LIBRARY_PATH=$LIBFABRIC_INSTALL_PATH/lib:$LD_LIBRARY_PATH
+export MPIR_CVAR_OFI_USE_PROVIDER='verbs;ofi_rxm'
+
+if $UNITTEST ; then
+section_start 'unit tests'
+## Start Unit Tests
+sleep 1
+## End Unit Tests
+section_end 'unit tests'
+fi
+
+if $SMOKETEST ; then
+section_start 'smoke tests'
+## Start Smoke Tests
+$BATS_INSTALL_PATH/bats $@ -t contrib/cray/bats/smoketests.bats | tee smoketests.tap
+## End Smoke Tests
+section_end 'smoke tests'
+fi
+
+if $IMBTEST ; then
+section_start 'imb tests'
+## Start IMB Tests
+$BATS_INSTALL_PATH/bats $@ -t contrib/cray/bats/imb.bats | tee imb.tap
+## End IMB Tests
+section_end 'imb tests'
+fi
+
+if $OMBTEST ; then
+section_start 'omb tests'
+## Start OMB Tests
+$BATS_INSTALL_PATH/bats $@ -t contrib/cray/bats/omb.bats | tee omb.tap
+## End OMB Tests
+section_end 'omb tests'
+fi
+
+if $FABTEST ; then
+section_start 'fabtests'
+## Start Fabtests
+if [[ ! -f $FABTEST_PATH/compile-target || "$(cat $FABTEST_PATH/compile-target)" != "$LIBFABRIC_INSTALL_PATH" ]] ; then
+    pushd $SOURCE_DIR/fabtests
+    ./autogen.sh
+    ./configure --with-libfabric=$LIBFABRIC_INSTALL_PATH --prefix=$FABTEST_PATH
+    make -j12
+    make -j12 install
+    echo $LIBFABRIC_INSTALL_PATH > $FABTEST_PATH/compile-target
+    popd
+fi
+
+if [[ ! -f $FABTEST_PATH/bin/runfabtests.sh ]] ; then
+    echo run the build step to install a version of fabtests for the current build
+else
+    srun -n 2 --ntasks-per-node=1 contrib/cray/bin/fabtest_wrapper.sh -p ${FABTEST_PATH}/bin -v -T 60 | tee fabtests.log
+fi
+## End Fabtests
+section_end 'fabtests'
+fi
+
+if $SFT ; then
+section_start 'sft'
+## Start SFT
+export SFT_BIN="${SFT_INSTALL_PATH}/bin"
+export SFT_ADD_ARGS="--additional-args ' '"
+export SFT_MAX_JOB_TIME='3'
+export SFT_NUM_JOBS='4'
+export SFT_PROVIDER='verbs;ofi_rxm'
+export SFT_BASELINE_DIR="contrib/cray"
+export SFT_BASELINE_RESULTS_FILE='sft_test_results_baseline.txt'
+export SFT_PREVIOUS_BASELINE_RESULTS='sft_test_results_baseline.txt'
+export SFT_TEST_CMDS='sft_test_commands'
+export SFT_TEST_RESULTS='sft_test_results.xml'
+export SFT_TEST_RESULTS_EXPECTED='expected_'
+export SFT_TEST_RESULTS_PREFIX='BUILD_'
+export SFT_TEST_RESULTS_CI='sft_ci_results.yaml'
+export SFT_TEST_RESULTS_BASE_DIR="${ROOT_BUILD_PATH}/sft_test_results/"
+export SFT_TEST_RESULTS_DIR=""
+
+export SFT_TEST_RESULTS_SUBDIR="${SFT_TEST_RESULTS_PREFIX}_${GIT_SHORT_COMMIT}_DATE_$(date +%Y_%m_%d_%H_%M_%S)"
+export SFT_TEST_RESULTS_DIR="${SFT_TEST_RESULTS_BASE_DIR}${SFT_TEST_RESULTS_SUBDIR}"
+
+rm -f ${SFT_BIN}/core*
+rm -rf ${SFT_TEST_RESULTS_DIR}
+mkdir -p ${SFT_TEST_RESULTS_DIR}
+
+pushd ${SFT_BIN}
+timeout 900 ./ci-all.sh \
+    --provider 'verbs;ofi_rxm' \
+    -L ${SFT_TEST_RESULTS_DIR} \
+    --num-jobs ${SFT_NUM_JOBS} \
+    --max-job-time ${SFT_MAX_JOB_TIME} \
+    --output-cmds ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_CMDS} \
+    --results-file ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_RESULTS_CI}
+popd
+
+cp  ./${SFT_BASELINE_DIR}/${SFT_BASELINE_RESULTS_FILE} \
+    ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE}
+${SFT_BIN}/sft_parse_test_results.pm \
+    -b ${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE} \
+    -d ${SFT_TEST_RESULTS_DIR} \
+    -o ${SFT_TEST_RESULTS} \
+    -r ${SFT_BASELINE_RESULTS_FILE}
+gzip -r ${SFT_TEST_RESULTS_DIR}
+gunzip ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_RESULTS}
+gunzip ${SFT_TEST_RESULTS_DIR}/${SFT_BASELINE_RESULTS_FILE}
+gunzip ${SFT_TEST_RESULTS_DIR}/${SFT_TEST_RESULTS_EXPECTED}${SFT_BASELINE_RESULTS_FILE}
+cp -r ${SFT_TEST_RESULTS_DIR} .
+
+rm -rf ${SFT_TEST_RESULTS_DIR} || true
+## End SFT
+section_end 'sft'
+fi
+
+fi

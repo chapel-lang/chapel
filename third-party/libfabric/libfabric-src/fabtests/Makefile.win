@@ -1,0 +1,131 @@
+
+
+!if "$(arch)" == ""
+arch = x64
+!endif
+
+!if "$(config)" == ""
+config = Debug-v140
+!endif
+
+output_root = .\\
+
+!if "$(config)" == "Debug-v140"
+outdir = $(output_root)$(arch)\debug-v140
+CFLAGS = $(CFLAGS) /Zi /Od /MTd
+!endif
+!if "$(config)" == "Debug-v141"
+outdir = $(output_root)$(arch)\debug-v141
+CFLAGS = $(CFLAGS) /Zi /Od /MTd
+!endif
+!if "$(config)" == "Debug-v142"
+outdir = $(output_root)$(arch)\debug-v142
+CFLAGS = $(CFLAGS) /Zi /Od /MTd
+!endif
+!if "$(config)" == "Release-v140"
+outdir = $(output_root)$(arch)\release-v140
+CFLAGS = $(CFLAGS) /O2 /MT
+!endif
+!if "$(config)" == "Release-v141"
+outdir = $(output_root)$(arch)\release-v141
+CFLAGS = $(CFLAGS) /O2 /MT
+!endif
+!if "$(config)" == "Release-v142"
+outdir = $(output_root)$(arch)\release-v142
+CFLAGS = $(CFLAGS) /O2 /MT
+!endif
+
+basedeps = common\hmem.c common\shared.c common\jsmn.c \
+	common\windows\getopt.c common\windows\osd.c \
+	common\hmem_cuda.c common\hmem_rocr.c common\hmem_ze.c
+
+includes = /Iinclude /Iinclude\windows /I..\include /FIft_osd.h \
+	/Iinclude\windows\getopt
+defines = /DGETOPT_STATIC
+libs = ..\$(arch)\$(config)\libfabric.lib Ws2_32.lib
+
+CFLAGS = $(CFLAGS) $(includes) $(defines)
+
+#all: complex functional
+
+all: benchmarks functional unit
+
+{benchmarks}.c{$(outdir)}.exe:
+	if not exist $(@D) mkdir $(@D)
+	$(CC) /Fe$@ $** $(baseincludes) $(CFLAGS) $(libs)
+
+{functional}.c{$(outdir)}.exe:
+	if not exist $(@D) mkdir $(@D)
+	$(CC) /Fe$@ $** $(baseincludes) $(CFLAGS) $(libs)
+
+{unit}.c{$(outdir)}.exe:
+	if not exist $(@D) mkdir $(@D)
+	$(CC) /Fe$@ $** $(baseincludes) $(CFLAGS) $(libs)
+
+
+benchmarks: $(outdir)\msg_pingpong.exe $(outdir)\rdm_cntr_pingpong.exe \
+	$(outdir)\rdm_pingpong.exe $(outdir)\rdm_tagged_pingpong.exe
+
+functional: $(outdir)\cq_data.exe $(outdir)\dgram.exe $(outdir)\dgram_waitset.exe $(outdir)\msg.exe \
+	$(outdir)\msg_epoll.exe $(outdir)\msg_sockets.exe \
+	$(outdir)\poll.exe $(outdir)\rdm.exe $(outdir)\rdm_rma_event.exe $(outdir)\rdm_rma_trigger.exe \
+	$(outdir)\rdm_tagged_peek.exe $(outdir)\scalable_ep.exe $(outdir)\inj_complete.exe $(outdir)\bw.exe
+
+unit: $(outdir)\av_test.exe $(outdir)\dom_test.exe $(outdir)\eq_test.exe
+
+complex: $(outdir)\complex.exe
+
+clean:
+	if exist $(outdir) rmdir /s /q $(outdir)
+	del *.obj
+
+$(outdir)\msg_pingpong.exe: {benchmarks}msg_pingpong.c $(basedeps) {benchmarks}benchmark_shared.c
+
+$(outdir)\rdm_cntr_pingpong.exe: {benchmarks}rdm_cntr_pingpong.c $(basedeps) {benchmarks}benchmark_shared.c
+
+$(outdir)\rdm_pingpong.exe: {benchmarks}rdm_pingpong.c $(basedeps) {benchmarks}benchmark_shared.c
+
+$(outdir)\rdm_tagged_pingpong.exe: {benchmarks}rdm_tagged_pingpong.c $(basedeps) {benchmarks}benchmark_shared.c
+
+
+$(outdir)\cq_data.exe: {functional}cq_data.c $(basedeps)
+
+$(outdir)\dgram.exe: {functional}dgram.c $(basedeps)
+
+$(outdir)\dgram_waitset.exe: {functional}dgram_waitset.c $(basedeps)
+
+$(outdir)\msg.exe: {functional}msg.c $(basedeps)
+
+$(outdir)\msg_epoll.exe: {functional}msg_epoll.c $(basedeps)
+
+$(outdir)\msg_sockets.exe: {functional}msg_sockets.c $(basedeps)
+
+$(outdir)\poll.exe: {functional}poll.c $(basedeps)
+
+$(outdir)\rdm.exe: {functional}rdm.c $(basedeps)
+
+$(outdir)\rdm_rma_event.exe: {functional}rdm_rma_event.c $(basedeps)
+
+$(outdir)\rdm_rma_trigger.exe: {functional}rdm_rma_trigger.c $(basedeps)
+
+$(outdir)\rdm_tagged_peek.exe: {functional}rdm_tagged_peek.c $(basedeps)
+
+$(outdir)\scalable_ep.exe: {functional}scalable_ep.c $(basedeps)
+
+$(outdir)\inj_complete.exe: {functional}inj_complete.c $(basedeps)
+
+$(outdir)\bw.exe: {functional}bw.c $(basedeps)
+
+$(outdir)\av_test.exe: {unit}av_test.c $(basedeps) {unit}common.c
+
+$(outdir)\dom_test.exe: {unit}dom_test.c $(basedeps) {unit}common.c
+
+$(outdir)\eq_test.exe: {unit}eq_test.c $(basedeps) {unit}common.c
+
+$(outdir)\complex.exe: {complex}ft_comm.c {complex}ft_comp.c {complex}ft_config.c {complex}ft_domain.c {complex}ft_endpoint.c {complex}ft_main.c {complex}ft_msg.c {complex}ft_test.c $(basedeps)
+	if not exist $(@D) mkdir $(@D)
+	$(CC) /Fe$@ $** $(baseincludes) $(CFLAGS) $(libs)
+
+
+
+

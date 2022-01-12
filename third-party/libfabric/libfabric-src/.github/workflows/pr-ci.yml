@@ -1,0 +1,74 @@
+name: OS Matrix Build Checks
+on: [push, pull_request]
+jobs:
+  linux:
+    runs-on: '${{ matrix.os }}'
+    strategy:
+      matrix:
+        os:
+          - ubuntu-18.04
+          - ubuntu-20.04
+        cc:
+          - gcc
+          - clang
+      fail-fast: false
+    steps:
+      - name: Install dependencies (Linux OS)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y abi-compliance-checker \
+                                  abi-dumper \
+                                  build-essential \
+                                  debhelper \
+                                  dh-systemd \
+                                  fakeroot \
+                                  gcc \
+                                  git \
+                                  libnl-3-200 libnl-3-dev libnl-route-3-200 libnl-route-3-dev \
+                                  libnuma-dev \
+                                  libudev-dev \
+                                  uuid-dev \
+                                  make \
+                                  ninja-build \
+                                  pandoc \
+                                  pkg-config \
+                                  python \
+                                  rpm \
+                                  sparse \
+                                  valgrind \
+                                  wget
+      - uses: actions/checkout@v2
+      - name: Build Check
+        run: |
+          git clone --depth 1 -b v34.1 https://github.com/linux-rdma/rdma-core.git
+          pushd rdma-core; bash build.sh; popd
+          export RDMA_CORE_PATH="rdma-core/build"
+          export LD_LIBRARY_PATH="$RDMA_CORE_PATH/lib:$LD_LIBRARY_PATH"
+          ./autogen.sh
+          ./configure --prefix=$PWD/install --enable-efa=${RDMA_CORE_PATH} \
+                                            --enable-mrail \
+                                            --enable-psm3=${RDMA_CORE_PATH} \
+                                            --enable-rxd \
+                                            --enable-rxm \
+                                            --enable-shm \
+                                            --enable-tcp \
+                                            --enable-udp \
+                                            --enable-usnic \
+                                            --enable-verbs=${RDMA_CORE_PATH} \
+                                            CC=${{ matrix.cc }}
+          make -j 4; make install
+          $PWD/install/bin/fi_info -l
+  macos:
+    runs-on: macos-10.15
+    steps:
+      - name: Install dependencies (Mac OS)
+        run: |
+           brew install automake
+           brew install libtool
+      - uses: actions/checkout@v2
+      - name: Build Check
+        run: |
+          ./autogen.sh
+          ./configure --prefix=$PWD/install
+          make -j 4; make install
+          $PWD/install/bin/fi_info -l

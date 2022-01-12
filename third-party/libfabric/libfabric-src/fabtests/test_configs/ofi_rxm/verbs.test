@@ -1,0 +1,110 @@
+#: "Suite of tests for the verbs provider"
+#: "
+# TODO
+#  - Debug WRITEDATA, WRITEMSG, READMSG for RxM before enabling
+#  - Test without FI_MR_LOCAL for RxM
+#  - disable quick test for some configs (takes long time on some fabric)
+#  - Adding more tests results in timeout in runfabtests.sh - fix the script"
+{
+	prov_name: verbs;ofi_rxm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	mr_mode: [FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY],
+	progress: [FI_PROGRESS_MANUAL, FI_PROGRESS_AUTO],
+},
+{
+	prov_name: verbs;ofi_rxm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+		FT_FUNC_SENDV,
+		FT_FUNC_SENDDATA,
+		FT_FUNC_INJECT,
+		FT_FUNC_INJECTDATA,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+	mr_mode: [FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY],
+	progress: [FI_PROGRESS_MANUAL, FI_PROGRESS_AUTO],
+},
+{
+	prov_name: verbs;ofi_rxm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SENDMSG,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+	mr_mode: [FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY],
+	progress: [FI_PROGRESS_MANUAL, FI_PROGRESS_AUTO],
+	msg_flags: FI_REMOTE_CQ_DATA,
+},
+{
+	prov_name: verbs;ofi_rxm,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_WRITE,
+		FT_FUNC_WRITEV,
+		FT_FUNC_READ,
+		FT_FUNC_READV,
+	],
+	ep_type: [
+		FI_EP_RDM,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_RMA,
+	],
+	mr_mode: [FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY],
+	progress: [FI_PROGRESS_MANUAL, FI_PROGRESS_AUTO],
+	test_flags: FT_FLAG_QUICKTEST,
+},

@@ -1,0 +1,86 @@
+#: "Suite of tests for the verbs provider"
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+		FT_FUNC_SENDV,
+		FT_FUNC_SENDMSG,
+		FT_FUNC_INJECT,
+		FT_FUNC_INJECTDATA,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE
+	],
+	mr_mode: [ FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY ],
+	mode: [ FI_CONTEXT, FI_RX_CQ_DATA ],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE
+	],
+	mr_mode: [ FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY ],
+	mode: [ FI_CONTEXT, FI_RX_CQ_DATA ],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},
+{
+	prov_name: verbs,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	comp_type: [
+		FT_COMP_QUEUE
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+	],
+	mr_mode: [ FI_MR_LOCAL, FI_MR_VIRT_ADDR, FI_MR_ALLOCATED, FI_MR_PROV_KEY ],
+	mode: [ FI_CONTEXT, FI_RX_CQ_DATA ],
+	test_class: [
+		FT_CAP_MSG,
+	],
+	test_flags: FT_FLAG_QUICKTEST
+},

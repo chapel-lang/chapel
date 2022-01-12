@@ -81,27 +81,30 @@ static int psmi_refcount = PSMI_NOT_INITIALIZED;
  * will not work on an endpoint which is in a middle of closing). */
 psmi_lock_t psmi_creation_lock;
 
-sem_t *sem_affinity_shm_rw = NULL;
-int psmi_affinity_shared_file_opened = 0;
 int psmi_affinity_semaphore_open = 0;
-uint64_t *shared_affinity_ptr;
 char *sem_affinity_shm_rw_name;
+sem_t *sem_affinity_shm_rw = NULL;
+
+int psmi_affinity_shared_file_opened = 0;
 char *affinity_shm_name;
+uint64_t *shared_affinity_ptr;
 
 uint32_t psmi_cpu_model;
 
 #ifdef PSM_CUDA
 int is_cuda_enabled;
 int is_gdr_copy_enabled;
-int device_support_gpudirect;
-int gpu_p2p_supported = 0;
+int is_gpudirect_enabled = 0;
+int _device_support_unified_addr = -1; // -1 indicates "unchecked". See verify_device_support_unified_addr().
+int _device_support_gpudirect = -1; // -1 indicates "unset". See device_support_gpudirect().
+int _gpu_p2p_supported = -1; // -1 indicates "unset". see gpu_p2p_supported().
 int my_gpu_device = 0;
 int cuda_lib_version;
 int is_driver_gpudirect_enabled;
-int is_cuda_primary_context_retain = 0;
 uint32_t cuda_thresh_rndv;
-uint32_t gdr_copy_threshold_send;
-uint32_t gdr_copy_threshold_recv;
+uint32_t gdr_copy_limit_send;
+uint32_t gdr_copy_limit_recv;
+uint64_t gpu_cache_evict;	// in bytes
 
 void *psmi_cuda_lib;
 CUresult (*psmi_cuInit)(unsigned int  Flags );
@@ -117,6 +120,7 @@ CUresult (*psmi_cuDriverGetVersion)(int* driverVersion);
 CUresult (*psmi_cuDeviceGetCount)(int* count);
 CUresult (*psmi_cuStreamCreate)(CUstream* phStream, unsigned int Flags);
 CUresult (*psmi_cuStreamDestroy)(CUstream phStream);
+CUresult (*psmi_cuStreamSynchronize)(CUstream phStream);
 CUresult (*psmi_cuEventCreate)(CUevent* phEvent, unsigned int Flags);
 CUresult (*psmi_cuEventDestroy)(CUevent hEvent);
 CUresult (*psmi_cuEventQuery)(CUevent hEvent);
@@ -138,6 +142,42 @@ CUresult (*psmi_cuDevicePrimaryCtxGetState)(CUdevice dev, unsigned int* flags, i
 CUresult (*psmi_cuDevicePrimaryCtxRetain)(CUcontext* pctx, CUdevice dev);
 CUresult (*psmi_cuCtxGetDevice)(CUdevice* device);
 CUresult (*psmi_cuDevicePrimaryCtxRelease)(CUdevice device);
+
+uint64_t psmi_count_cuInit;
+uint64_t psmi_count_cuCtxDetach;
+uint64_t psmi_count_cuCtxGetCurrent;
+uint64_t psmi_count_cuCtxSetCurrent;
+uint64_t psmi_count_cuPointerGetAttribute;
+uint64_t psmi_count_cuPointerSetAttribute;
+uint64_t psmi_count_cuDeviceCanAccessPeer;
+uint64_t psmi_count_cuDeviceGet;
+uint64_t psmi_count_cuDeviceGetAttribute;
+uint64_t psmi_count_cuDriverGetVersion;
+uint64_t psmi_count_cuDeviceGetCount;
+uint64_t psmi_count_cuStreamCreate;
+uint64_t psmi_count_cuStreamDestroy;
+uint64_t psmi_count_cuStreamSynchronize;
+uint64_t psmi_count_cuEventCreate;
+uint64_t psmi_count_cuEventDestroy;
+uint64_t psmi_count_cuEventQuery;
+uint64_t psmi_count_cuEventRecord;
+uint64_t psmi_count_cuEventSynchronize;
+uint64_t psmi_count_cuMemHostAlloc;
+uint64_t psmi_count_cuMemFreeHost;
+uint64_t psmi_count_cuMemcpy;
+uint64_t psmi_count_cuMemcpyDtoD;
+uint64_t psmi_count_cuMemcpyDtoH;
+uint64_t psmi_count_cuMemcpyHtoD;
+uint64_t psmi_count_cuMemcpyDtoHAsync;
+uint64_t psmi_count_cuMemcpyHtoDAsync;
+uint64_t psmi_count_cuIpcGetMemHandle;
+uint64_t psmi_count_cuIpcOpenMemHandle;
+uint64_t psmi_count_cuIpcCloseMemHandle;
+uint64_t psmi_count_cuMemGetAddressRange;
+uint64_t psmi_count_cuDevicePrimaryCtxGetState;
+uint64_t psmi_count_cuDevicePrimaryCtxRetain;
+uint64_t psmi_count_cuCtxGetDevice;
+uint64_t psmi_count_cuDevicePrimaryCtxRelease;
 #endif
 
 /*
@@ -192,6 +232,7 @@ int psmi_cuda_lib_load()
 		goto fail;
 	}
 
+	psmi_count_cuDriverGetVersion++;
 	psmi_cuDriverGetVersion = dlsym(psmi_cuda_lib, "cuDriverGetVersion");
 
 	if (!psmi_cuDriverGetVersion) {
@@ -218,6 +259,7 @@ int psmi_cuda_lib_load()
 	PSMI_CUDA_DLSYM(psmi_cuda_lib, cuDeviceGetCount);
 	PSMI_CUDA_DLSYM(psmi_cuda_lib, cuStreamCreate);
 	PSMI_CUDA_DLSYM(psmi_cuda_lib, cuStreamDestroy);
+	PSMI_CUDA_DLSYM(psmi_cuda_lib, cuStreamSynchronize);
 	PSMI_CUDA_DLSYM(psmi_cuda_lib, cuEventCreate);
 	PSMI_CUDA_DLSYM(psmi_cuda_lib, cuEventDestroy);
 	PSMI_CUDA_DLSYM(psmi_cuda_lib, cuEventQuery);
@@ -249,13 +291,64 @@ fail:
 	return err;
 }
 
+static void psmi_cuda_stats_register()
+{
+#define PSMI_CUDA_COUNT_DECLU64(func) \
+	PSMI_STATS_DECLU64(#func, &psmi_count_##func)
+
+	struct psmi_stats_entry entries[] = {
+		PSMI_CUDA_COUNT_DECLU64(cuInit),
+		PSMI_CUDA_COUNT_DECLU64(cuCtxDetach),
+		PSMI_CUDA_COUNT_DECLU64(cuCtxGetCurrent),
+		PSMI_CUDA_COUNT_DECLU64(cuCtxSetCurrent),
+		PSMI_CUDA_COUNT_DECLU64(cuPointerGetAttribute),
+		PSMI_CUDA_COUNT_DECLU64(cuPointerSetAttribute),
+		PSMI_CUDA_COUNT_DECLU64(cuDeviceCanAccessPeer),
+		PSMI_CUDA_COUNT_DECLU64(cuDeviceGet),
+		PSMI_CUDA_COUNT_DECLU64(cuDeviceGetAttribute),
+		PSMI_CUDA_COUNT_DECLU64(cuDriverGetVersion),
+		PSMI_CUDA_COUNT_DECLU64(cuDeviceGetCount),
+		PSMI_CUDA_COUNT_DECLU64(cuStreamCreate),
+		PSMI_CUDA_COUNT_DECLU64(cuStreamDestroy),
+		PSMI_CUDA_COUNT_DECLU64(cuStreamSynchronize),
+		PSMI_CUDA_COUNT_DECLU64(cuEventCreate),
+		PSMI_CUDA_COUNT_DECLU64(cuEventDestroy),
+		PSMI_CUDA_COUNT_DECLU64(cuEventQuery),
+		PSMI_CUDA_COUNT_DECLU64(cuEventRecord),
+		PSMI_CUDA_COUNT_DECLU64(cuEventSynchronize),
+		PSMI_CUDA_COUNT_DECLU64(cuMemHostAlloc),
+		PSMI_CUDA_COUNT_DECLU64(cuMemFreeHost),
+		PSMI_CUDA_COUNT_DECLU64(cuMemcpy),
+		PSMI_CUDA_COUNT_DECLU64(cuMemcpyDtoD),
+		PSMI_CUDA_COUNT_DECLU64(cuMemcpyDtoH),
+		PSMI_CUDA_COUNT_DECLU64(cuMemcpyHtoD),
+		PSMI_CUDA_COUNT_DECLU64(cuMemcpyDtoHAsync),
+		PSMI_CUDA_COUNT_DECLU64(cuMemcpyHtoDAsync),
+		PSMI_CUDA_COUNT_DECLU64(cuIpcGetMemHandle),
+		PSMI_CUDA_COUNT_DECLU64(cuIpcOpenMemHandle),
+		PSMI_CUDA_COUNT_DECLU64(cuIpcCloseMemHandle),
+		PSMI_CUDA_COUNT_DECLU64(cuMemGetAddressRange),
+		PSMI_CUDA_COUNT_DECLU64(cuDevicePrimaryCtxGetState),
+		PSMI_CUDA_COUNT_DECLU64(cuDevicePrimaryCtxRetain),
+		PSMI_CUDA_COUNT_DECLU64(cuCtxGetDevice),
+		PSMI_CUDA_COUNT_DECLU64(cuDevicePrimaryCtxRelease),
+	};
+#undef PSMI_CUDA_COUNT_DECLU64
+
+	psmi_stats_register_type("PSM_Cuda_call_statistics",
+			PSMI_STATSTYPE_CUDA,
+			entries, PSMI_STATS_HOWMANY(entries), 0,
+			&is_cuda_enabled, NULL); /* context must != NULL */
+}
+
 int psmi_cuda_initialize()
 {
 	psm2_error_t err = PSM2_OK;
-	int num_devices, dev;
 
 	PSM2_LOG_MSG("entering");
 	_HFI_VDBG("Enabling CUDA support.\n");
+
+	psmi_cuda_stats_register();
 
 	err = psmi_cuda_lib_load();
 	if (err != PSM2_OK)
@@ -263,115 +356,56 @@ int psmi_cuda_initialize()
 
 	PSMI_CUDA_CALL(cuInit, 0);
 
-	/* Check if CUDA context is available. If not, we are not allowed to
-	 * launch any CUDA API calls */
-	PSMI_CUDA_CALL(cuCtxGetCurrent, &ctxt);
-	if (ctxt == NULL) {
-		_HFI_INFO("Unable to find active CUDA context\n");
-		is_cuda_enabled = 0;
-		err = PSM2_OK;
-		return err;
-	}
-
-	CUdevice current_device;
-	CUcontext primary_ctx;
-	PSMI_CUDA_CALL(cuCtxGetDevice, &current_device);
-	int is_ctx_active;
-	unsigned ctx_flags;
-	PSMI_CUDA_CALL(cuDevicePrimaryCtxGetState, current_device, &ctx_flags,
-			&is_ctx_active);
-	if (!is_ctx_active) {
-		/* There is an issue where certain CUDA API calls create
-		 * contexts but does not make it active which cause the
-		 * driver API call to fail with error 709 */
-		PSMI_CUDA_CALL(cuDevicePrimaryCtxRetain, &primary_ctx,
-				current_device);
-		is_cuda_primary_context_retain = 1;
-	}
-
-	/* Check if all devices support Unified Virtual Addressing. */
-	PSMI_CUDA_CALL(cuDeviceGetCount, &num_devices);
-
-	device_support_gpudirect = 1;
-
-	for (dev = 0; dev < num_devices; dev++) {
-		CUdevice device;
-		PSMI_CUDA_CALL(cuDeviceGet, &device, dev);
-		int unifiedAddressing;
-		PSMI_CUDA_CALL(cuDeviceGetAttribute,
-				&unifiedAddressing,
-				CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING,
-				device);
-
-		if (unifiedAddressing !=1) {
-			_HFI_ERROR("CUDA device %d does not support Unified Virtual Addressing.\n", dev);
-			goto fail;
-		}
-
-		int major;
-		PSMI_CUDA_CALL(cuDeviceGetAttribute,
-				&major,
-				CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR,
-				device);
-		if (major < 3) {
-			device_support_gpudirect = 0;
-			_HFI_INFO("CUDA device %d does not support GPUDirect RDMA (Non-fatal error)\n", dev);
-		}
-
-		if (device != current_device) {
-			int canAccessPeer = 0;
-			PSMI_CUDA_CALL(cuDeviceCanAccessPeer, &canAccessPeer,
-					current_device, device);
-
-			if (canAccessPeer != 1)
-				_HFI_DBG("CUDA device %d does not support P2P from current device (Non-fatal error)\n", dev);
-			else
-				gpu_p2p_supported |= (1 << device);
-		} else {
-			/* Always support p2p on the same GPU */
-			my_gpu_device = device;
-			gpu_p2p_supported |= (1 << device);
-		}
-	}
-
+#ifdef RNDV_MOD
+	psm2_get_gpu_bars();
+#endif
 	union psmi_envvar_val env_enable_gdr_copy;
 	psmi_getenv("PSM3_GDRCOPY",
 				"Enable (set envvar to 1) for gdr copy support in PSM (Enabled by default)",
-				PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_INT,
+				PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_INT,
 				(union psmi_envvar_val)1, &env_enable_gdr_copy);
 	is_gdr_copy_enabled = env_enable_gdr_copy.e_int;
 
 	union psmi_envvar_val env_cuda_thresh_rndv;
 	psmi_getenv("PSM3_CUDA_THRESH_RNDV",
-				"RNDV protocol is used for message sizes greater than the threshold \n",
-				PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_INT,
+				"RNDV protocol is used for GPU send message sizes greater than the threshold",
+				PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_INT,
 				(union psmi_envvar_val)CUDA_THRESH_RNDV, &env_cuda_thresh_rndv);
 	cuda_thresh_rndv = env_cuda_thresh_rndv.e_int;
 
-	if (cuda_thresh_rndv < 0 || cuda_thresh_rndv > CUDA_THRESH_RNDV)
+	if (cuda_thresh_rndv < 0
+		)
 	    cuda_thresh_rndv = CUDA_THRESH_RNDV;
 
-	union psmi_envvar_val env_gdr_copy_thresh_send;
-	psmi_getenv("PSM3_GDRCOPY_THRESH_SEND",
+	union psmi_envvar_val env_gdr_copy_limit_send;
+	psmi_getenv("PSM3_GDRCOPY_LIMIT_SEND",
 				"GDR Copy is turned off on the send side"
-				" for message sizes greater than the threshold \n",
+				" for message sizes greater than the limit"
+#ifndef OPA
+				" or larger than 1 MTU\n",
+#else
+				"\n",
+#endif
 				PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_INT,
-				(union psmi_envvar_val)GDR_COPY_THRESH_SEND, &env_gdr_copy_thresh_send);
-	gdr_copy_threshold_send = env_gdr_copy_thresh_send.e_int;
+				(union psmi_envvar_val)GDR_COPY_LIMIT_SEND, &env_gdr_copy_limit_send);
+	gdr_copy_limit_send = env_gdr_copy_limit_send.e_int;
 
-	if (gdr_copy_threshold_send < 8 || gdr_copy_threshold_send > cuda_thresh_rndv)
-		gdr_copy_threshold_send = GDR_COPY_THRESH_SEND;
+	if (gdr_copy_limit_send < 8 || gdr_copy_limit_send > cuda_thresh_rndv)
+		gdr_copy_limit_send = max(GDR_COPY_LIMIT_SEND, cuda_thresh_rndv);
 
-	union psmi_envvar_val env_gdr_copy_thresh_recv;
-	psmi_getenv("PSM3_GDRCOPY_THRESH_RECV",
+	union psmi_envvar_val env_gdr_copy_limit_recv;
+	psmi_getenv("PSM3_GDRCOPY_LIMIT_RECV",
 				"GDR Copy is turned off on the recv side"
-				" for message sizes greater than the threshold \n",
+				" for message sizes greater than the limit\n",
 				PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_INT,
-				(union psmi_envvar_val)GDR_COPY_THRESH_RECV, &env_gdr_copy_thresh_recv);
-	gdr_copy_threshold_recv = env_gdr_copy_thresh_recv.e_int;
+				(union psmi_envvar_val)GDR_COPY_LIMIT_RECV, &env_gdr_copy_limit_recv);
+	gdr_copy_limit_recv = env_gdr_copy_limit_recv.e_int;
 
-	if (gdr_copy_threshold_recv < 8)
-		gdr_copy_threshold_recv = GDR_COPY_THRESH_RECV;
+	if (gdr_copy_limit_recv < 8)
+		gdr_copy_limit_recv = GDR_COPY_LIMIT_RECV;
+
+	if (!is_gdr_copy_enabled)
+		gdr_copy_limit_send = gdr_copy_limit_recv = 0;
 
 	PSM2_LOG_MSG("leaving");
 	return err;
@@ -487,9 +521,10 @@ psm2_error_t __psm2_init(int *major, int *minor)
 	psmi_getenv("PSM3_TRACEMASK",
 		    "Mask flags for tracing",
 		    PSMI_ENVVAR_LEVEL_USER,
-		    PSMI_ENVVAR_TYPE_ULONG_FLAGS,
-		    (union psmi_envvar_val)hfi_debug, &env_tmask);
-	hfi_debug = (long)env_tmask.e_ulong;
+		    PSMI_ENVVAR_TYPE_STR,
+		    (union psmi_envvar_val)__HFI_DEBUG_DEFAULT_STR, &env_tmask);
+	hfi_debug = psmi_parse_val_pattern(env_tmask.e_str, __HFI_DEBUG_DEFAULT,
+			__HFI_DEBUG_DEFAULT);
 
 	/* The "real thing" is done in hfi_proto.c as a constructor function, but
 	 * we getenv it here to report what we're doing with the setting */
@@ -566,7 +601,8 @@ psm2_error_t __psm2_init(int *major, int *minor)
 			"Enable (set envvar to 1) for cuda support in PSM (Disabled by default)",
 			PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_INT,
 			(union psmi_envvar_val)0, &env_enable_cuda);
-	is_cuda_enabled = env_enable_cuda.e_int;
+	// order important, always parse gpudirect
+	is_cuda_enabled = psmi_parse_gpudirect() || env_enable_cuda.e_int;
 
 	if (PSMI_IS_CUDA_ENABLED) {
 		err = psmi_cuda_initialize();
@@ -579,40 +615,56 @@ update:
 	if (psmi_parse_identify()) {
                 Dl_info info_psm;
 		char ofed_delta[100] = "";
-		strcat(strcat(ofed_delta," built for IFS OFA DELTA "),psmi_hfi_IFS_version);
-                printf("%s %s PSM3 v%d.%d%s\n"
+		strcat(strcat(ofed_delta," built for IEFS "),psmi_hfi_IFS_version);
+                printf("%s %s PSM3 v%d.%d%s%s\n"
 		       "%s %s location %s\n"
 		       "%s %s build date %s\n"
 		       "%s %s src checksum %s\n"
                        "%s %s git checksum %s\n"
 #ifdef RNDV_MOD
+#ifdef NVIDIA_GPU_DIRECT
+                       "%s %s built against rv interface v%d.%d gpu v%d.%d cuda\n"
+#else
                        "%s %s built against rv interface v%d.%d\n"
 #endif
-                       "%s %s Global Rank %d (%d total) Local Rank %d (%d total)\n"
-		       , hfi_get_mylabel(), hfi_ident_tag,
-		       PSM2_VERNO_MAJOR,PSM2_VERNO_MINOR,
-		       (strcmp(psmi_hfi_IFS_version,"") != 0) ? ofed_delta
-#ifdef PSM_CUDA
-		       : "-cuda",
-#else
-		       : "",
 #endif
-		       hfi_get_mylabel(), hfi_ident_tag, dladdr(psm2_init, &info_psm) ?
-		       info_psm.dli_fname : "PSM3 path not available",
+                       "%s %s Global Rank %d (%d total) Local Rank %d (%d total)\n"
+                       "%s %s CPU Core %d NUMA %d\n",
+		       hfi_get_mylabel(), hfi_ident_tag,
+				PSM2_VERNO_MAJOR,PSM2_VERNO_MINOR,
+#ifdef PSM_CUDA
+				"-cuda",
+#else
+				"",
+#endif
+				(strcmp(psmi_hfi_IFS_version,"") != 0) ? ofed_delta : "",
+		       hfi_get_mylabel(), hfi_ident_tag,
+				dladdr(psm2_init, &info_psm) ?
+					info_psm.dli_fname : "PSM3 path not available",
 		       hfi_get_mylabel(), hfi_ident_tag, psmi_hfi_build_timestamp,
 		       hfi_get_mylabel(), hfi_ident_tag, psmi_hfi_sources_checksum,
 		       hfi_get_mylabel(), hfi_ident_tag,
-		       (strcmp(psmi_hfi_git_checksum,"") != 0) ?
-		       psmi_hfi_git_checksum : "<not available>",
+				(strcmp(psmi_hfi_git_checksum,"") != 0) ?
+					psmi_hfi_git_checksum : "<not available>",
 #ifdef RNDV_MOD
+#ifdef NVIDIA_GPU_DIRECT
+		       hfi_get_mylabel(), hfi_ident_tag,
+				psm2_rv_get_user_major_bldtime_version(),
+				psm2_rv_get_user_minor_bldtime_version(),
+				psm2_rv_get_gpu_user_major_bldtime_version(),
+				psm2_rv_get_gpu_user_minor_bldtime_version(),
+#else
 		       hfi_get_mylabel(), hfi_ident_tag,
 				psm2_rv_get_user_major_bldtime_version(),
 				psm2_rv_get_user_minor_bldtime_version(),
 #endif
+#endif
 		       hfi_get_mylabel(), hfi_ident_tag,
 				hfi_get_myrank(), hfi_get_myrank_count(),
 				hfi_get_mylocalrank(),
-				hfi_get_mylocalrank_count()
+				hfi_get_mylocalrank_count(),
+		       hfi_get_mylabel(), hfi_ident_tag,
+				sched_getcpu(), psmi_get_current_proc_location()
 		       );
 	}
 
@@ -921,6 +973,7 @@ psm2_error_t __psm2_finalize(void)
 		psmi_sem_post(sem_affinity_shm_rw, sem_affinity_shm_rw_name);
 
 		munmap(shared_affinity_ptr, AFFINITY_SHMEMSIZE);
+		shared_affinity_ptr = NULL;
 		psmi_free(affinity_shm_name);
 		affinity_shm_name = NULL;
 		psmi_affinity_shared_file_opened = 0;
@@ -929,6 +982,7 @@ psm2_error_t __psm2_finalize(void)
 	if (psmi_affinity_semaphore_open) {
 		_HFI_VDBG("Closing and Unlinking Semaphore: %s.\n", sem_affinity_shm_rw_name);
 		sem_close(sem_affinity_shm_rw);
+		sem_affinity_shm_rw = NULL;
 		sem_unlink(sem_affinity_shm_rw_name);
 		psmi_free(sem_affinity_shm_rw_name);
 		sem_affinity_shm_rw_name = NULL;
@@ -937,16 +991,8 @@ psm2_error_t __psm2_finalize(void)
 
 	psmi_hal_finalize();
 #ifdef PSM_CUDA
-	if (is_cuda_primary_context_retain) {
-		/*
-		 * This code will be called during deinitialization, and if
-		 * CUDA is deinitialized before PSM, then
-		 * CUDA_ERROR_DEINITIALIZED will happen here
-		 */
-		CUdevice device;
-		if (psmi_cuCtxGetDevice(&device) == CUDA_SUCCESS)
-			PSMI_CUDA_CALL(cuDevicePrimaryCtxRelease, device);
-	}
+	if (PSMI_IS_CUDA_ENABLED)
+		psmi_stats_deregister_type(PSMI_STATSTYPE_CUDA, &is_cuda_enabled);
 #endif
 
 	psmi_refcount = PSMI_FINALIZED;

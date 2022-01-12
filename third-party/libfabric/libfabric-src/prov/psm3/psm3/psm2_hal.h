@@ -113,6 +113,8 @@ typedef enum
 typedef enum
 {
 	PSM_HAL_CAP_GPUDIRECT_OT		= (1UL << 16),
+	PSM_HAL_CAP_USER_MR			= (1UL << 17),
+	PSM_HAL_CAP_EVICT			= (1UL << 18),
 } psmi_hal_capability_bits;
 
 /* The following enum constants correspond to the bits in the
@@ -229,6 +231,9 @@ struct _psmi_hal_instance
 				uint32_t cap_mask,
 				unsigned retryCnt);
 
+	/* Initialize PSM3_PRINT_STATS stats for given ep */
+	void (*hfp_context_initstats)(psm2_ep_t ep);
+
 	/* Close the context, including the device file. */
 	int (*hfp_close_context)(psmi_hal_hw_context *);
 
@@ -320,6 +325,7 @@ int psmi_hal_pre_init_cache_func(enum psmi_hal_pre_init_cache_func_krnls k, ...)
 #define psmi_hal_get_default_pkey(...)			       PSMI_HAL_DISPATCH_PI(get_default_pkey,##__VA_ARGS__)
 #define psmi_hal_get_port_subnet(...)				PSMI_HAL_DISPATCH_PI(get_port_subnet,__VA_ARGS__)
 #define psmi_hal_context_open(...)				PSMI_HAL_DISPATCH(context_open,__VA_ARGS__)
+#define psmi_hal_context_initstats(...)				PSMI_HAL_DISPATCH(context_initstats,__VA_ARGS__)
 #define psmi_hal_close_context(...)				PSMI_HAL_DISPATCH(close_context,__VA_ARGS__)
 
 

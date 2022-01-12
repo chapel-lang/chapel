@@ -1,0 +1,755 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\src">
+      <UniqueIdentifier>{277c9422-ee0f-40a0-8109-5252cfd412e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\rdma">
+      <UniqueIdentifier>{930792a2-0113-44f5-83ec-d6929fb1e1d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\windows">
+      <UniqueIdentifier>{83645fd8-9739-4c5e-b339-e67feafd473c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov">
+      <UniqueIdentifier>{ec212b69-2bcc-482c-8553-310e20942080}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\sockets">
+      <UniqueIdentifier>{87c89076-58b2-45b2-a92f-f83911949b06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\util">
+      <UniqueIdentifier>{02f3b800-de85-4324-b5e2-21818e485da4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\windows\sys">
+      <UniqueIdentifier>{e4623869-e1b9-4a45-9b73-6ca27dd363a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\windows\arpa">
+      <UniqueIdentifier>{bda63abe-0d83-4a30-8b86-2011cb648848}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\windows\net">
+      <UniqueIdentifier>{5e9b2677-99aa-4ec9-8c65-867ed7051ce1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\windows\netinet">
+      <UniqueIdentifier>{340e5f5c-3c01-4700-8e92-8a049812a4fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\src\windows">
+      <UniqueIdentifier>{873977f2-5032-4efb-a766-b707ebe2f92e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\sockets\src">
+      <UniqueIdentifier>{3458ec4f-718d-4517-8602-ac471fd7628a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\sockets\include">
+      <UniqueIdentifier>{53ba7405-75a4-408e-9ac8-e6802ba33d58}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\udp">
+      <UniqueIdentifier>{e8d08af7-8c3f-4e28-adbf-b6800d101dbf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\udp\src">
+      <UniqueIdentifier>{79bf7ef8-c8f8-48fb-b264-5861ca5aa517}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\udp\include">
+      <UniqueIdentifier>{ca21a98b-b971-46f1-b692-cee827c88d9d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\rxm">
+      <UniqueIdentifier>{45ed8650-0d98-472a-912b-f21f3baeca8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\rxm\include">
+      <UniqueIdentifier>{a769a36c-7e46-45f4-ab54-f804608d7fbc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\rxm\src">
+      <UniqueIdentifier>{2d3aeb95-125a-45dd-bc88-d83c1c8e9231}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\rxd">
+      <UniqueIdentifier>{937f824e-0920-433f-87a7-eff40b271a14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\rxd\src">
+      <UniqueIdentifier>{7b02f380-3d31-4ff5-846e-534138818dd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\rxd\include">
+      <UniqueIdentifier>{e89f94da-f0f0-4e62-aad4-d738963d7dd9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\netdir">
+      <UniqueIdentifier>{bbe0be7c-1187-45ab-bd2e-5c1f61095a9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\netdir\include">
+      <UniqueIdentifier>{9ba21998-278b-4f63-9ff2-8fb533eeee84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\netdir\src">
+      <UniqueIdentifier>{b3471da7-1f83-4d3f-b31c-89b197aa6327}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\tcp">
+      <UniqueIdentifier>{aed54cba-a4cd-4598-8bfc-1ece52f387ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\tcp\include">
+      <UniqueIdentifier>{fbbd77cd-55de-4bf7-903e-89c3019b69d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\tcp\src">
+      <UniqueIdentifier>{8c151366-dd08-48d5-aa21-50a500cbde73}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\hook">
+      <UniqueIdentifier>{b85ecf6c-fb76-4d65-a7f0-cba470a0adee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\hook\src">
+      <UniqueIdentifier>{b4689956-b61f-4c5b-b827-9af0797ea087}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\hook\perf">
+      <UniqueIdentifier>{06bbf944-2165-474f-a574-2e61ec0bec25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prov\hook\perf\src">
+      <UniqueIdentifier>{be316a01-6bff-4203-b070-ffaa66bb398e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\common.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\enosys.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fabric.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fasthash.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fi_tostr.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\indexer.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\log.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\perf.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mem.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\hmem.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\hmem_cuda.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\hmem_rocr.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rbtree.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tree.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\var.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_attr.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_av.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_buf.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_cq.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_domain.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_eq.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_fabric.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_main.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_poll.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_wait.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_mem_monitor.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_mem_hooks.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_mr_cache.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\cuda_mem_monitor.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\rocr_mem_monitor.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\ze_mem_monitor.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="src\windows\osd.c">
+      <Filter>Source Files\src\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_atomic.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_av.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_cntr.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_comm.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_conn.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_cq.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_ctx.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_dom.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_ep.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_ep_dgram.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_ep_msg.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_ep_rdm.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_eq.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_fabric.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_msg.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_poll.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_progress.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_rma.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_rx_entry.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_trigger.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_wait.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\sockets\src\sock_mr.c">
+      <Filter>Source Files\prov\sockets\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_ep.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\udp\src\udpx_attr.c">
+      <Filter>Source Files\prov\udp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\udp\src\udpx_cq.c">
+      <Filter>Source Files\prov\udp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\udp\src\udpx_domain.c">
+      <Filter>Source Files\prov\udp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\udp\src\udpx_ep.c">
+      <Filter>Source Files\prov\udp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\udp\src\udpx_fabric.c">
+      <Filter>Source Files\prov\udp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\udp\src\udpx_init.c">
+      <Filter>Source Files\prov\udp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_attr.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_av.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_cq.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_cntr.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_domain.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_ep.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_msg.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_tagged.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_rma.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_atomic.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_fabric.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxd\src\rxd_init.c">
+      <Filter>Source Files\prov\rxd\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxm\src\rxm_attr.c">
+      <Filter>Source Files\prov\rxm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxm\src\rxm_conn.c">
+      <Filter>Source Files\prov\rxm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxm\src\rxm_cq.c">
+      <Filter>Source Files\prov\rxm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxm\src\rxm_av.c">
+      <Filter>Source Files\prov\rxm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxm\src\rxm_domain.c">
+      <Filter>Source Files\prov\rxm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxm\src\rxm_ep.c">
+      <Filter>Source Files\prov\rxm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxm\src\rxm_fabric.c">
+      <Filter>Source Files\prov\rxm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxm\src\rxm_atomic.c">
+      <Filter>Source Files\prov\rxm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxm\src\rxm_init.c">
+      <Filter>Source Files\prov\rxm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\rxm\src\rxm_rma.c">
+      <Filter>Source Files\prov\rxm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\iov.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_addr.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_cq.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_domain.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_ep.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_fabric.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_fs.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_init.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_pep.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_eq.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_ov.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_mr.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_cntr.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_ep_msg.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_ep_rma.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_ep_srx.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_unexp.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\netdir\src\netdir_ndinit.c">
+      <Filter>Source Files\prov\netdir\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_ns.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_cntr.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_coll.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_atomic.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_mr_map.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_attr.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_conn_mgr.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_shared_ctx.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_cq.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_domain.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_rma.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_msg.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_ep.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_fabric.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_eq.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_init.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\tcp\src\tcpx_progress.c">
+      <Filter>Source Files\prov\tcp\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\util\src\util_pep.c">
+      <Filter>Source Files\prov\util</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\src\hook.c">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\src\hook_av.c">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\src\hook_cm.c">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\src\hook_cntr.c">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\src\hook_cq.c">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\src\hook_domain.c">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\src\hook_ep.c">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\src\hook_eq.c">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\src\hook_wait.c">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\src\hook_xfer.c">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="prov\hook\perf\src\hook_perf.c">
+      <Filter>Source Files\prov\hook\perf\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\shared\ofi_str.c">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\fasthash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_coll.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_enosys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_hmem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_indexer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shared\ofi_str.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_rbuf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_signal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_prov.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rbtree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_tree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fabric.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_atomic.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_cm.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_domain.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_endpoint.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_eq.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_errno.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_ext.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_rma.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_tagged.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_trigger.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\fi_collective.h">
+      <Filter>Header Files\rdma</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\osd.h">
+      <Filter>Header Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\config.h">
+      <Filter>Header Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_abi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_atom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_file.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_iov.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_lock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_mem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_perf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_osd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_proto.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\poll.h">
+      <Filter>Header Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\pthread.h">
+      <Filter>Header Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\unistd.h">
+      <Filter>Header Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\socket.h">
+      <Filter>Header Files\windows\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\time.h">
+      <Filter>Header Files\windows\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\ipc.h">
+      <Filter>Header Files\windows\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\mman.h">
+      <Filter>Header Files\windows\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\select.h">
+      <Filter>Header Files\windows\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\arpa\inet.h">
+      <Filter>Header Files\windows\arpa</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\net\if.h">
+      <Filter>Header Files\windows\net</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\netinet\in.h">
+      <Filter>Header Files\windows\netinet</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\netinet\ip.h">
+      <Filter>Header Files\windows\netinet</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\netinet\tcp.h">
+      <Filter>Header Files\windows\netinet</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\param.h">
+      <Filter>Header Files\windows\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\sockets\include\sock.h">
+      <Filter>Source Files\prov\sockets\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\sockets\include\sock_util.h">
+      <Filter>Source Files\prov\sockets\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\providers\fi_log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rdma\providers\fi_prov.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\udp\src\udpx.h">
+      <Filter>Source Files\prov\udp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\rxd\src\rxd.h">
+      <Filter>Source Files\prov\rxd\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\rxd\src\rxd_proto.h">
+      <Filter>Source Files\prov\rxd\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\rxm\src\rxm.h">
+      <Filter>Source Files\prov\rxm\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\netdir\src\netdir.h">
+      <Filter>Source Files\prov\netdir\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\netdir\src\netdir_log.h">
+      <Filter>Source Files\prov\netdir\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\netdir\src\netdir_iface.h">
+      <Filter>Source Files\prov\netdir\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\netdir\src\netdir_ov.h">
+      <Filter>Source Files\prov\netdir\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\netdir\src\netdir_util.h">
+      <Filter>Source Files\prov\netdir\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\netdir\src\netdir_queue.h">
+      <Filter>Source Files\prov\netdir\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\netdir\src\netdir_cq.h">
+      <Filter>Source Files\prov\netdir\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\netdir\src\netdir_unexp.h">
+      <Filter>Source Files\prov\netdir\include</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\netdir\src\netdir_buf.h">
+      <Filter>Source Files\prov\netdir\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\wait.h">
+      <Filter>Header Files\windows\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\ifaddrs.h">
+      <Filter>Header Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_atomic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_mr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_net.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\uthash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\tcp\src\tcpx.h">
+      <Filter>Source Files\prov\tcp\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\sys\uio.h">
+      <Filter>Header Files\windows\sys</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\dirent.h">
+      <Filter>Header Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="include\windows\netdb.h">
+      <Filter>Header Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="prov\hook\src\hook.h">
+      <Filter>Source Files\prov\hook\src</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ofi_hook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="libfabric.def">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>

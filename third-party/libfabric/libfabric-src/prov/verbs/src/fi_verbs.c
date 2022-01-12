@@ -424,7 +424,7 @@ fn:
 }
 
 #if ENABLE_DEBUG
-static int vrb_dbg_query_qp_attr(struct ibv_qp *qp)
+static void vrb_dbg_query_qp_attr(struct ibv_qp *qp)
 {
 	struct ibv_qp_init_attr attr = { 0 };
 	struct ibv_qp_attr qp_attr = { 0 };
@@ -434,8 +434,9 @@ static int vrb_dbg_query_qp_attr(struct ibv_qp *qp)
 			   IBV_QP_RNR_RETRY | IBV_QP_MIN_RNR_TIMER, &attr);
 	if (ret) {
 		VERBS_WARN(FI_LOG_EP_CTRL, "Unable to query QP\n");
-		return ret;
+		return;
 	}
+
 	FI_DBG(&vrb_prov, FI_LOG_EP_CTRL, "QP attributes: "
 	       "min_rnr_timer"	": %" PRIu8 ", "
 	       "timeout"	": %" PRIu8 ", "
@@ -443,16 +444,14 @@ static int vrb_dbg_query_qp_attr(struct ibv_qp *qp)
 	       "rnr_retry"	": %" PRIu8 "\n",
 	       qp_attr.min_rnr_timer, qp_attr.timeout, qp_attr.retry_cnt,
 	       qp_attr.rnr_retry);
-	return 0;
 }
 #else
-static int vrb_dbg_query_qp_attr(struct ibv_qp *qp)
+static void vrb_dbg_query_qp_attr(struct ibv_qp *qp)
 {
-	return 0;
 }
 #endif
 
-int vrb_set_rnr_timer(struct ibv_qp *qp)
+void vrb_set_rnr_timer(struct ibv_qp *qp)
 {
 	struct ibv_qp_attr attr = { 0 };
 	int ret;
@@ -468,17 +467,13 @@ int vrb_set_rnr_timer(struct ibv_qp *qp)
 
 	/* XRC initiator QP do not have responder logic */
 	if (qp->qp_type == IBV_QPT_XRC_SEND)
-		return 0;
+		return;
 
 	ret = ibv_modify_qp(qp, &attr, IBV_QP_MIN_RNR_TIMER);
-	if (ret) {
-		VERBS_WARN(FI_LOG_EQ, "Unable to modify QP attribute\n");
-		return ret;
-	}
-	ret = vrb_dbg_query_qp_attr(qp);
 	if (ret)
-		return ret;
-	return 0;
+		VERBS_WARN(FI_LOG_EQ, "Unable to modify QP attribute\n");
+
+	vrb_dbg_query_qp_attr(qp);
 }
 
 int vrb_find_max_inline(struct ibv_pd *pd, struct ibv_context *context,
@@ -781,6 +776,28 @@ static void vrb_set_peer_mem_support(void)
 	fclose(kallsyms_fd);
 }
 
+static void vrb_set_dmabuf_support(void)
+{
+	char *line = NULL;
+	size_t line_size = 0;
+	ssize_t bytes;
+	FILE *kallsyms_fd;
+
+	kallsyms_fd = fopen("/proc/kallsyms", "r");
+	if (!kallsyms_fd)
+		return;
+
+	while ((bytes = getline(&line, &line_size, kallsyms_fd)) != -1) {
+		if (strstr(line, "ib_umem_dmabuf_get")) {
+			vrb_gl_data.dmabuf_support = true;
+			break;
+		}
+	}
+
+	free(line);
+	fclose(kallsyms_fd);
+}
+
 static void vrb_fini(void)
 {
 #if HAVE_VERBS_DL
@@ -801,6 +818,7 @@ VERBS_INI
 	ofi_monitors_init();
 #endif
 	vrb_set_peer_mem_support();
+	vrb_set_dmabuf_support();
 
 	if (vrb_read_params()|| vrb_init_info(&vrb_util_prov.info))
 		return NULL;

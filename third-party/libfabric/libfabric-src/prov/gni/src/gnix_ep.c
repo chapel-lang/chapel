@@ -800,7 +800,7 @@ gnix_ep_readv(struct fid_ep *ep, const struct iovec *iov, void **desc,
 	struct gnix_fid_ep *gnix_ep;
 	uint64_t flags;
 
-	if (!ep || !iov || !desc || count > GNIX_MAX_RMA_IOV_LIMIT) {
+	if (!ep || !iov || count > GNIX_MAX_RMA_IOV_LIMIT) {
 		return -FI_EINVAL;
 	}
 
@@ -810,7 +810,7 @@ gnix_ep_readv(struct fid_ep *ep, const struct iovec *iov, void **desc,
 	flags = gnix_ep->op_flags | GNIX_RMA_READ_FLAGS_DEF;
 
 	return _gnix_rma(gnix_ep, GNIX_FAB_RQ_RDMA_READ,
-			 (uint64_t)iov[0].iov_base, iov[0].iov_len, desc[0],
+			 (uint64_t)iov[0].iov_base, iov[0].iov_len, desc? desc[0] : NULL,
 			 src_addr, addr, key,
 			 context, flags, 0);
 }
@@ -820,7 +820,7 @@ gnix_ep_readmsg(struct fid_ep *ep, const struct fi_msg_rma *msg, uint64_t flags)
 {
 	struct gnix_fid_ep *gnix_ep;
 
-	if (!ep || !msg || !msg->msg_iov || !msg->rma_iov || !msg->desc ||
+	if (!ep || !msg || !msg->msg_iov || !msg->rma_iov ||
 	    msg->iov_count != 1 || msg->rma_iov_count != 1 ||
 	    msg->rma_iov[0].len > msg->msg_iov[0].iov_len) {
 		return -FI_EINVAL;
@@ -833,7 +833,7 @@ gnix_ep_readmsg(struct fid_ep *ep, const struct fi_msg_rma *msg, uint64_t flags)
 
 	return _gnix_rma(gnix_ep, GNIX_FAB_RQ_RDMA_READ,
 			 (uint64_t)msg->msg_iov[0].iov_base,
-			 msg->msg_iov[0].iov_len, msg->desc[0],
+			 msg->msg_iov[0].iov_len, msg->desc? msg->desc[0] : NULL,
 			 msg->addr, msg->rma_iov[0].addr, msg->rma_iov[0].key,
 			 msg->context, flags, msg->data);
 }
@@ -867,7 +867,7 @@ gnix_ep_writev(struct fid_ep *ep, const struct iovec *iov, void **desc,
 	struct gnix_fid_ep *gnix_ep;
 	uint64_t flags;
 
-	if (!ep || !iov || !desc || count > GNIX_MAX_RMA_IOV_LIMIT) {
+	if (!ep || !iov || count > GNIX_MAX_RMA_IOV_LIMIT) {
 		return -FI_EINVAL;
 	}
 
@@ -877,7 +877,7 @@ gnix_ep_writev(struct fid_ep *ep, const struct iovec *iov, void **desc,
 	flags = gnix_ep->op_flags | GNIX_RMA_WRITE_FLAGS_DEF;
 
 	return _gnix_rma(gnix_ep, GNIX_FAB_RQ_RDMA_WRITE,
-			 (uint64_t)iov[0].iov_base, iov[0].iov_len, desc[0],
+			 (uint64_t)iov[0].iov_base, iov[0].iov_len, desc? desc[0] : NULL,
 			 dest_addr, addr, key, context, flags, 0);
 }
 

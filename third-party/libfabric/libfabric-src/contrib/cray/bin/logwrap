@@ -1,0 +1,39 @@
+#!/bin/bash
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+OUTFILE="log"
+OPTS=`getopt -o hw: --long help,outfile -n 'parse-options' -- "$@"`
+HELP=false
+
+if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; exit 1 ; fi
+
+eval set -- "$OPTS"
+
+while true; do
+  case "$1" in
+    -h | --help ) HELP=true; shift ;;
+    -w | --outfile ) OUTFILE="$2" ; shift ; shift ;;
+    * ) break ;;
+  esac
+done
+
+shift
+
+if $HELP ; then
+    echo "Usage: logwrap [-hw] command"
+    exit
+fi
+
+if [[ $# -eq 0 ]] ; then
+    echo failed to provide script to wrap
+    exit 1
+fi
+
+$@ 2>&1 | tee $OUTFILE
+exit ${PIPESTATUS[0]}

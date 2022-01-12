@@ -1,0 +1,22 @@
+Libfabric for Windows
+============================
+
+Dependencies:
+- MS Visual Studio 2015. Older Visual Studio's (2010 - 2013) may be used
+  as well, but not recommended
+- Intel Compiler XE 2015
+
+Limitations:
+- Supported only 64-bit achitectures
+- Supported Windows Vista or newer Windows version
+- Supported 'sockets' provider only
+
+Build:
+- Open libfabric.sln file using Visual Studio
+- Select appropriate configuration: debug/release
+- Launch build procedure
+- After build complete target binaries are located at x64/<your-configuration>
+  directory
+
+
+

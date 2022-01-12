@@ -1,0 +1,23 @@
+{
+	prov_name: UDP;ofi_rxd,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+		FT_FUNC_SENDV,
+		FT_FUNC_SENDMSG,
+		FT_FUNC_SENDDATA,
+	],
+	ep_type: [
+		FI_EP_RDM
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+},

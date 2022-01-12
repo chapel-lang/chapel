@@ -1,0 +1,91 @@
+#: "Suite of tests for the sockets provider"
+{
+	prov_name: sockets,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+		FT_FUNC_SENDV,
+		FT_FUNC_SENDMSG,
+		FT_FUNC_INJECT,
+		FT_FUNC_INJECTDATA,
+	],
+	ep_type: [
+		FI_EP_MSG,
+		FI_EP_RDM,
+	],
+	av_type: [
+		FI_AV_TABLE,
+		FI_AV_MAP,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+		FT_CAP_TAGGED,
+	],
+},
+{
+	prov_name: sockets,
+	test_type: [
+		FT_TEST_LATENCY,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	av_type: [
+		FI_AV_TABLE,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+		FI_WAIT_MUTEX_COND,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+},
+{
+	prov_name: sockets,
+	test_type: [
+		FT_TEST_LATENCY,
+		FT_TEST_BANDWIDTH,
+	],
+	class_function: [
+		FT_FUNC_SEND,
+	],
+	ep_type: [
+		FI_EP_MSG,
+	],
+	av_type: [
+		FI_AV_TABLE,
+	],
+	comp_type: [
+		FT_COMP_QUEUE,
+	],
+	eq_wait_obj: [
+		FI_WAIT_NONE,
+	],
+	cq_wait_obj: [
+		FI_WAIT_NONE,
+		FI_WAIT_UNSPEC,
+		FI_WAIT_FD,
+		FI_WAIT_MUTEX_COND,
+	],
+	test_class: [
+		FT_CAP_MSG,
+	],
+},

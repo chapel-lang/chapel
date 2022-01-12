@@ -1,0 +1,97 @@
+#!/usr/bin/env ruby
+
+# Copyright (c) 2015 Cisco Systems, Inc.  All rights reserved.
+#
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AWV
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# Transform YAML-formatted runfabtests.sh output on STDIN into jUnit-formatted
+# XML on STDOUT.
+
+require 'yaml'
+
+results = YAML.load(ARGF);
+
+suite_duration = 0.0
+num_tests = 0
+failures = 0  # jUnit considers failures/errors to be different, we only use
+errors = 0    # failures for right now
+skipped = 0
+
+# make an initial pass so we can fill out the <testsuite> tag's attributes
+results.each do |tcase|
+  num_tests += 1
+
+  case tcase['result']
+  when 'Notrun'
+    skipped += 1
+  when 'Fail'
+    failures += 1
+  end
+
+  suite_duration += tcase['time']
+end
+
+printf %Q{<testsuite name="fabtests" tests="%d" failures="%d" errors="%d" skipped="%d" time="%.3f">\n},
+  num_tests, failures, errors, skipped, suite_duration
+
+# now emit each <testcase>
+results.each do |tcase|
+  if tcase.has_key?('client_stdout')
+    output = "SERVER OUTPUT:\n"
+    output += tcase['server_stdout']
+    output += "\n"
+    output += "CLIENT OUTPUT:\n"
+    output += tcase['client_stdout']
+  else
+    output = tcase['server_stdout']
+  end
+
+  puts <<-EOT
+  <testcase name="#{tcase['name']}" time="#{tcase['time']}">
+  EOT
+  case tcase['result']
+  when 'Notrun'
+    puts <<-EOT
+    <skipped />
+    EOT
+  when 'Fail'
+    puts <<-EOT
+    <failure message="Fail">"#{tcase['name']}" failed</failure>
+    EOT
+  end
+  puts <<-EOT
+    <system-out>
+<![CDATA[#{output}]]>
+    </system-out>
+  </testcase>
+
+  EOT
+end
+
+puts "</testsuite>"

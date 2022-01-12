@@ -67,6 +67,7 @@
 #include <infiniband/verbs.h>
 #include "psm_user.h"	// get psmi_calloc and free
 #include "psm_rndv_mod.h"
+#include "ips_config.h"
 
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -97,6 +98,130 @@ struct irdma_mem_reg_req {
 //#define my_calloc(nmemb, size) (psmi_calloc(PSMI_EP_NONE, NETWORK_BUFFERS, (nmemb), (size)))
 #define my_free(p) (psmi_free(p))
 
+#ifdef PSM_CUDA
+static int gpu_pin_check;	// PSM3_GPU_PIN_CHECK
+static uint64_t *gpu_bars;
+static int num_gpu_bars = 0;
+static uint64_t min_gpu_bar_size;
+
+// The second BAR address is where the GPU will map GPUDirect memory.
+// The beginning of this BAR is reserved for non-GPUDirect uses.
+// However, it has been observed that in some multi-process
+// pinning failures, HED-2035, the nvidia_p2p_get_pages can foul up
+// it's IOMMU after which the next successful pin will incorrectly
+// return the 1st physical address of the BAR for the pinned pages.
+// In this case it will report this same physical address for other GPU virtual
+// addresses and cause RDMA to use the wrong memory.
+// As a workaround, we gather the Region 1 BAR address start for each
+// GPU and if we see this address returned as the phys_addr of a mmapped
+// GPUDirect Copy or the iova of a GPU MR we fail the job before it can
+// corrupt any more application data.
+static uint64_t get_nvidia_bar_addr(int domain, int bus, int slot)
+{
+	char sysfs[100];
+	int ret;
+	FILE *f;
+	unsigned long long start_addr, end_addr, bar_size;
+
+	ret = snprintf(sysfs, sizeof(sysfs),
+		"/sys/class/pci_bus/%04x:%02x/device/%04x:%02x:%02x.0/resource",
+		domain, bus, domain, bus, slot);
+	psmi_assert_always(ret < sizeof(sysfs));
+	f = fopen(sysfs, "r");
+	if (! f) {
+		if (gpu_pin_check) {
+			_HFI_ERROR("Unable to open %s for GPU BAR Address: %s\n",
+				sysfs, strerror(errno));
+			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+				"Unable to get GPU BAR address\n");
+		}
+		return 0;
+	}
+	// for each BAR region, start, end and flags are listed in hex
+	// nVidia uses the 2nd BAR region (aka Region #1) to map peer to peer
+	// accesses into it's potentially larger GPU local memory space
+	ret = fscanf(f, "%*x %*x %*x %llx %llx", &start_addr, &end_addr);
+	if (ret != 2) {
+		if (gpu_pin_check) {
+			_HFI_ERROR("Unable to get GPU BAR Address from %s: %s\n",
+				sysfs, strerror(errno));
+			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+				"Unable to get GPU BAR address\n");
+		}
+		fclose(f);
+		return 0;
+	}
+	fclose(f);
+
+	bar_size = (end_addr - start_addr) + 1;
+	_HFI_DBG("GPU BAR Addr from %s is 0x%llx - 0x%llx (size 0x%llx)\n", sysfs, start_addr, end_addr, bar_size);
+	if (! min_gpu_bar_size || bar_size < min_gpu_bar_size)
+		min_gpu_bar_size = bar_size;
+	return start_addr;
+}
+
+void psm2_get_gpu_bars(void)
+{
+	int num_devices, dev;
+	union psmi_envvar_val env;
+
+	psmi_getenv("PSM3_GPU_PIN_CHECK",
+			"Enable sanity check of physical addresses mapped into GPU BAR space (Enabled by default)",
+			PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_INT,
+			(union psmi_envvar_val)1, &env);
+	gpu_pin_check = env.e_int;
+
+	PSMI_CUDA_CALL(cuDeviceGetCount, &num_devices);
+	gpu_bars = psmi_calloc(PSMI_EP_NONE, UNDEFINED, num_devices, sizeof(gpu_bars[0]));
+	if (! gpu_bars)
+		return;	// psmi_calloc will have exited for Out of Memory
+
+	if (gpu_pin_check)
+		num_gpu_bars = num_devices;
+
+	for (dev = 0; dev < num_devices; dev++) {
+		CUdevice device;
+		int domain, bus, slot;
+
+		PSMI_CUDA_CALL(cuDeviceGet, &device, dev);
+		PSMI_CUDA_CALL(cuDeviceGetAttribute,
+				&domain,
+				CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID,
+				device);
+		PSMI_CUDA_CALL(cuDeviceGetAttribute,
+				&bus,
+				CU_DEVICE_ATTRIBUTE_PCI_BUS_ID,
+				device);
+		PSMI_CUDA_CALL(cuDeviceGetAttribute,
+				&slot,
+				CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID,
+				device);
+		gpu_bars[dev] = get_nvidia_bar_addr(domain, bus, slot);
+	}
+}
+
+static psm2_error_t psm2_check_phys_addr(uint64_t phys_addr)
+{
+	int i;
+	for (i=0; i < num_gpu_bars; i++) {
+		if (phys_addr == gpu_bars[i]) {
+			_HFI_ERROR("Incorrect Physical Address (0x%"PRIx64") returned by nVidia driver.  PSM3 exiting to avoid data corruption.  Job may be rerun with PSM3_GPUDIRECT=0 to avoid this issue.\n",
+				phys_addr);
+			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+				"Incorrect Physical Address returned by nVidia driver\n");
+			psmi_assert_always(0);
+			return PSM2_INTERNAL_ERR;
+		}
+	}
+	return PSM2_OK;
+}
+
+uint64_t __psm2_min_gpu_bar_size(void)
+{
+	return min_gpu_bar_size;
+}
+#endif
+
 static int rv_map_event_ring(psm2_rv_t rv, struct rv_event_ring* ring,
 				int entries, int offset)
 {
@@ -125,7 +250,7 @@ static void rv_unmap_event_ring(psm2_rv_t rv, struct rv_event_ring* ring)
 {
 	if (ring->hdr)
 		if(munmap(ring->hdr, ring->len))
-			printf("munmap event ring failed:%s (%d)\n", strerror(errno),errno);
+			_HFI_ERROR("rv munmap event ring failed:%s (%d)\n", strerror(errno),errno);
 	ring->hdr = NULL;
 	ring->len = 0;
 	ring->num = 0;
@@ -151,22 +276,47 @@ psm2_rv_t __psm2_rv_open(const char *devname, struct local_info *loc_info)
 	rv->fd = open(RV_FILE_NAME, O_RDWR);
 	if (rv->fd == -1) {
 		save_errno = errno;
-		printf("fd open failed %s: %s\n", RV_FILE_NAME, strerror(errno));
+		_HFI_ERROR("fd open failed %s: %s\n", RV_FILE_NAME, strerror(errno));
 		goto fail;
 	}
 
 	if ((ret = ioctl(rv->fd, RV_IOCTL_QUERY, &qparams)) != 0) {
 		save_errno = errno;
-		printf("query ioctl failed ret:%s (%d)\n", strerror(errno), ret);
+		_HFI_ERROR("rv query ioctl failed ret:%s (%d)\n", strerror(errno), ret);
 		goto fail;
 	}
 	loc_info->major_rev = qparams.major_rev;
 	loc_info->minor_rev = qparams.minor_rev;
 	loc_info->capability = qparams.capability;
 
+#ifdef PSM_CUDA
+	loc_info->gpu_major_rev = qparams.gpu_major_rev;
+	loc_info->gpu_minor_rev = qparams.gpu_minor_rev;
+	if (loc_info->rdma_mode & RV_RDMA_MODE_GPU) {
+		if (!(qparams.capability & RV_CAP_GPU_DIRECT)) {
+			// caller will warn and avoid GPUDirect use
+			loc_info->rdma_mode &= ~(RV_RDMA_MODE_GPU|RV_RDMA_MODE_UPSIZE_GPU);
+		}
+		if (!(qparams.capability & RV_CAP_EVICT)) {
+			save_errno = ENOTSUP;
+			_HFI_ERROR("Error: rv lacks EVICT ioctl, needed for GPU Support\n");
+			goto fail;
+		}
+	}
+#endif
+	if ((loc_info->rdma_mode & RV_RDMA_MODE_MASK) == RV_RDMA_MODE_USER
+		&& !(qparams.capability & RV_CAP_USER_MR)) {
+		save_errno = ENOTSUP;
+		_HFI_ERROR("Error: rv lacks enable_user_mr capability\n");
+		goto fail;
+	}
+
 	memset(&aparams, 0, sizeof(aparams));
 	snprintf(aparams.in.dev_name, RV_MAX_DEV_NAME_LEN, "%s", devname);
 	aparams.in.mr_cache_size = loc_info->mr_cache_size;
+#ifdef PSM_CUDA
+	aparams.in.gpu_cache_size = loc_info->gpu_cache_size;
+#endif
 	aparams.in.rdma_mode = loc_info->rdma_mode;
 	aparams.in.port_num = loc_info->port_num;
 	aparams.in.num_conn = loc_info->num_conn;
@@ -177,7 +327,7 @@ psm2_rv_t __psm2_rv_open(const char *devname, struct local_info *loc_info)
 
 	if (loc_info->job_key_len > sizeof(aparams.in.job_key)) {
 		save_errno = EINVAL;
-		printf("job_key_len too long\n");
+		_HFI_ERROR("Error: job_key_len too long\n");
 		goto fail;
 	}
 	aparams.in.job_key_len = loc_info->job_key_len;
@@ -196,20 +346,32 @@ psm2_rv_t __psm2_rv_open(const char *devname, struct local_info *loc_info)
 
 	if ((ret = ioctl(rv->fd, RV_IOCTL_ATTACH, &aparams)) != 0) {
 		save_errno = errno;
-		printf("attach ioctl failed ret:%s (%d)\n", strerror(errno), ret);
+		_HFI_ERROR("rv attach ioctl failed (mode 0x%x) ret:%s (%d)\n", loc_info->rdma_mode, strerror(errno), ret);
 		goto fail;
 	}
 
-	loc_info->rv_index = aparams.out.rv_index;
-	loc_info->mr_cache_size = aparams.out.mr_cache_size;
-	loc_info->q_depth = aparams.out.q_depth;
-	loc_info->reconnect_timeout = aparams.out.reconnect_timeout;
+#ifdef PSM_CUDA
+	if (loc_info->rdma_mode & RV_RDMA_MODE_GPU) {
+		loc_info->rv_index = aparams.out_gpu.rv_index;
+		loc_info->mr_cache_size = aparams.out_gpu.mr_cache_size;
+		loc_info->q_depth = aparams.out_gpu.q_depth;
+		loc_info->reconnect_timeout = aparams.out_gpu.reconnect_timeout;
+		loc_info->gpu_cache_size = aparams.out_gpu.gpu_cache_size;
+	} else {
+#endif
+		loc_info->rv_index = aparams.out.rv_index;
+		loc_info->mr_cache_size = aparams.out.mr_cache_size;
+		loc_info->q_depth = aparams.out.q_depth;
+		loc_info->reconnect_timeout = aparams.out.reconnect_timeout;
+#ifdef PSM_CUDA
+	}
+#endif
 
 	//printf("XXXX 0x%lx %s fd:%d\n", pthread_self(), __FUNCTION__, rv->fd);
 	if (loc_info->cq_entries) {
 		if (rv_map_event_ring(rv, &rv->events, loc_info->cq_entries, 0)) {
 			save_errno = errno;
-			printf("mmap event ring failed:%s (%d)\n", strerror(errno), errno);
+			_HFI_ERROR("rv mmap event ring failed:%s (%d)\n", strerror(errno), errno);
 			goto fail;
 		}
 	}
@@ -256,7 +418,7 @@ int __psm2_rv_get_cache_stats(psm2_rv_t rv, struct psm2_rv_cache_stats *stats)
 	memset(&sparams, 0, sizeof(sparams));
 	if ((ret = ioctl(rv->fd, RV_IOCTL_GET_CACHE_STATS, &sparams)) != 0) {
 		save_errno = errno;
-		printf("get_cache_stats failed ret:%d: %s\n", ret, strerror(errno));
+		_HFI_ERROR("rv get_cache_stats failed ret:%d: %s\n", ret, strerror(errno));
 		goto fail;
 	}
 	stats->cache_size = sparams.cache_size;
@@ -266,6 +428,8 @@ int __psm2_rv_get_cache_stats(psm2_rv_t rv, struct psm2_rv_cache_stats *stats)
 	stats->max_count = sparams.max_count;
 	stats->inuse = sparams.inuse;
 	stats->max_inuse = sparams.max_inuse;
+	stats->inuse_bytes = sparams.inuse_bytes;
+	stats->max_inuse_bytes = sparams.max_inuse_bytes;
 	stats->max_refcount = sparams.max_refcount;
 	stats->hit = sparams.hit;
 	stats->miss = sparams.miss;
@@ -278,6 +442,90 @@ fail:
 	errno = save_errno;
 	return -1;
 }
+
+#ifdef PSM_CUDA
+int __psm2_rv_gpu_get_cache_stats(psm2_rv_t rv, struct psm2_rv_gpu_cache_stats *stats)
+{
+	struct rv_gpu_cache_stats_params_out sparams;
+	int ret;
+	int save_errno;
+
+	memset(&sparams, 0, sizeof(sparams));
+	if ((ret = ioctl(rv->fd, RV_IOCTL_GPU_GET_CACHE_STATS, &sparams)) != 0) {
+		save_errno = errno;
+		_HFI_ERROR("rv gpu_get_cache_stats failed ret:%d: %s\n", ret, strerror(errno));
+		goto fail;
+	}
+	stats->cache_size = sparams.cache_size;
+	stats->cache_size_reg = sparams.cache_size_reg;
+	stats->cache_size_mmap = sparams.cache_size_mmap;
+	stats->cache_size_both = sparams.cache_size_both;
+	stats->max_cache_size = sparams.max_cache_size;
+	stats->max_cache_size_reg = sparams.max_cache_size_reg;
+	stats->max_cache_size_mmap = sparams.max_cache_size_mmap;
+	stats->max_cache_size_both = sparams.max_cache_size_both;
+	stats->limit_cache_size = sparams.limit_cache_size;
+	stats->count = sparams.count;
+	stats->count_reg = sparams.count_reg;
+	stats->count_mmap = sparams.count_mmap;
+	stats->count_both = sparams.count_both;
+	stats->max_count = sparams.max_count;
+	stats->max_count_reg = sparams.max_count_reg;
+	stats->max_count_mmap = sparams.max_count_mmap;
+	stats->max_count_both = sparams.max_count_both;
+	stats->inuse = sparams.inuse;
+	stats->inuse_reg = sparams.inuse_reg;
+	stats->inuse_mmap = sparams.inuse_mmap;
+	stats->inuse_both = sparams.inuse_both;
+	stats->max_inuse = sparams.max_inuse;
+	stats->max_inuse_reg = sparams.max_inuse_reg;
+	stats->max_inuse_mmap = sparams.max_inuse_mmap;
+	stats->max_inuse_both = sparams.max_inuse_both;
+	stats->max_refcount = sparams.max_refcount;
+	stats->max_refcount_reg = sparams.max_refcount_reg;
+	stats->max_refcount_mmap = sparams.max_refcount_mmap;
+	stats->max_refcount_both = sparams.max_refcount_both;
+	stats->inuse_bytes = sparams.inuse_bytes;
+	stats->inuse_bytes_reg = sparams.inuse_bytes_reg;
+	stats->inuse_bytes_mmap = sparams.inuse_bytes_mmap;
+	stats->inuse_bytes_both = sparams.inuse_bytes_both;
+	stats->max_inuse_bytes = sparams.max_inuse_bytes;
+	stats->max_inuse_bytes_reg = sparams.max_inuse_bytes_reg;
+	stats->max_inuse_bytes_mmap = sparams.max_inuse_bytes_mmap;
+	stats->max_inuse_bytes_both = sparams.max_inuse_bytes_both;
+	stats->hit = sparams.hit;
+	stats->hit_reg = sparams.hit_reg;
+	stats->hit_add_reg = sparams.hit_add_reg;
+	stats->hit_mmap = sparams.hit_mmap;
+	stats->hit_add_mmap = sparams.hit_add_mmap;
+	stats->miss = sparams.miss;
+	stats->miss_reg = sparams.miss_reg;
+	stats->miss_mmap = sparams.miss_mmap;
+	stats->full = sparams.full;
+	stats->full_reg = sparams.full_reg;
+	stats->full_mmap = sparams.full_mmap;
+	stats->failed_pin = sparams.failed_pin;
+	stats->failed_reg = sparams.failed_reg;
+	stats->failed_mmap = sparams.failed_mmap;
+	stats->remove = sparams.remove;
+	stats->remove_reg = sparams.remove_reg;
+	stats->remove_mmap = sparams.remove_mmap;
+	stats->remove_both = sparams.remove_both;
+	stats->evict = sparams.evict;
+	stats->evict_reg = sparams.evict_reg;
+	stats->evict_mmap = sparams.evict_mmap;
+	stats->evict_both = sparams.evict_both;
+	stats->inval_mr = sparams.inval_mr;
+	stats->post_write = sparams.post_write;
+	stats->post_write_bytes = sparams.post_write_bytes;
+	stats->gpu_post_write = sparams.gpu_post_write;
+	stats->gpu_post_write_bytes = sparams.gpu_post_write_bytes;
+	return 0;
+fail:
+	errno = save_errno;
+	return -1;
+}
+#endif
 
 // we have a little dance here to hide the RV connect REQ and RSP from PSM
 // without needing a callback into PSM.
@@ -447,7 +695,7 @@ int __psm2_rv_get_conn_count(psm2_rv_t rv, psm2_rv_conn_t conn,
 
 	if ((ret = ioctl(rv->fd, RV_IOCTL_CONN_GET_CONN_COUNT, &params)) != 0) {
 		save_errno = errno;
-		printf("get_conn_count failed ret:%d: %s\n", ret, strerror(errno));
+		_HFI_ERROR("rv get_conn_count failed ret:%d: %s\n", ret, strerror(errno));
 		goto fail;
 	}
 	*count = params.out.count;
@@ -470,7 +718,7 @@ int __psm2_rv_get_conn_stats(psm2_rv_t rv, psm2_rv_conn_t conn,
 	sparams.in.index = index;
 	if ((ret = ioctl(rv->fd, RV_IOCTL_CONN_GET_STATS, &sparams)) != 0) {
 		save_errno = errno;
-		printf("get_conn_stats failed ret:%d: %s\n", ret, strerror(errno));
+		_HFI_ERROR("rv get_conn_stats failed ret:%d: %s\n", ret, strerror(errno));
 		goto fail;
 	}
 	stats->index = sparams.out.index;
@@ -546,7 +794,7 @@ int __psm2_rv_get_event_stats(psm2_rv_t rv, struct psm2_rv_event_stats *stats)
 	memset(&sparams, 0, sizeof(sparams));
 	if ((ret = ioctl(rv->fd, RV_IOCTL_GET_EVENT_STATS, &sparams)) != 0) {
 		save_errno = errno;
-		printf("get_event_stats failed ret:%d: %s\n", ret, strerror(errno));
+		_HFI_ERROR("rv get_event_stats failed ret:%d: %s\n", ret, strerror(errno));
 		goto fail;
 	}
 	stats->send_write_cqe = sparams.send_write_cqe;
@@ -607,6 +855,20 @@ psm2_rv_mr_t __psm2_rv_reg_mem(psm2_rv_t rv, int cmd_fd_int, struct ibv_pd *pd,
 		goto fail;
 	}
 
+#ifdef PSM_CUDA
+#ifdef PSM_FI
+	if_pf((access & IBV_ACCESS_IS_GPU_ADDR) && PSMI_FAULTINJ_ENABLED()) {
+                PSMI_FAULTINJ_STATIC_DECL(fi_gpu_reg_mr, "gpu_reg_mr",
+                                          "fail GPU reg_mr",
+                                           1, IPS_FAULTINJ_GPU_REG_MR);
+                if_pf(PSMI_FAULTINJ_IS_FAULT(fi_gpu_reg_mr, "")) {
+                        errno = ENOMEM;
+                        return NULL;
+                }
+        }
+#endif
+#endif
+
 	mr = (psm2_rv_mr_t)my_calloc(1, sizeof(struct psm2_rv_mr));
 	if (! mr) {
 		save_errno = ENOMEM;
@@ -630,6 +892,14 @@ psm2_rv_mr_t __psm2_rv_reg_mem(psm2_rv_t rv, int cmd_fd_int, struct ibv_pd *pd,
 		save_errno = errno;
 		goto fail;
 	}
+#ifdef PSM_CUDA
+	if ((access & IBV_ACCESS_IS_GPU_ADDR)
+		&& PSM2_OK != psm2_check_phys_addr(mparams.out.iova)) {
+		(void)__psm2_rv_dereg_mem(rv, mr);
+		errno = EFAULT;
+		return NULL;
+	}
+#endif
 	mr->addr = (uint64_t)addr;
 	mr->length = length;
 	mr->access = access;
@@ -671,58 +941,217 @@ int __psm2_rv_dereg_mem(psm2_rv_t rv, psm2_rv_mr_t mr)
 
 #ifdef PSM_CUDA
 
-void * __psm2_rv_pin_and_mmap(psm2_rv_t rv, uintptr_t pageaddr, uint32_t pagelen)
+void * __psm2_rv_pin_and_mmap(psm2_rv_t rv, uintptr_t pageaddr,
+				uint64_t pagelen, int access)
 {
 	struct rv_gpu_mem_params params;
 	int ret;
-	int save_errno;
+
+#ifdef PSM_FI
+	if_pf(PSMI_FAULTINJ_ENABLED()) {
+                PSMI_FAULTINJ_STATIC_DECL(fi_gdrmmap, "gdrmmap",
+                                          "fail GPU gdrcopy mmap",
+                                           1, IPS_FAULTINJ_GDRMMAP);
+                if_pf(PSMI_FAULTINJ_IS_FAULT(fi_gdrmmap, "")) {
+                        errno = ENOMEM;
+                        return NULL;
+                }
+        }
+#endif
 
 	memset(&params, 0, sizeof(params));
-	/* XXX: Add the version field once it is restored */
 	params.in.gpu_buf_addr = pageaddr;
 	params.in.gpu_buf_size = pagelen;
+	params.in.access = access;
 
-	if ((ret = ioctl(rv->fd, RV_IOCTL_GPU_PIN_MMAP, &params)) != 0) {
-		save_errno = errno;
-		perror("gpu_pin_mmap failed\n");
-		errno = save_errno;
+	if ((ret = ioctl(rv->fd, RV_IOCTL_GPU_PIN_MMAP, &params)) != 0)
+		return NULL;
+
+	if (PSM2_OK != psm2_check_phys_addr(params.out.phys_addr)) {
+		(void)__psm2_rv_evict_exact(rv, (void*)pageaddr, pagelen, access);
+		errno = EFAULT;
 		return NULL;
 	}
-
 	// return mapped host address or NULL with errno set
 	return (void*)(uintptr_t)params.out.host_buf_addr;
 }
+#endif /* PSM_CUDA */
 
-int __psm2_rv_munmap_and_unpin(psm2_rv_t rv, const void *buf, uint32_t size)
+// addr, length, access are what was used in a previous call to
+// __psm_rv_reg_mem or __psm2_rv_pin_and_mmap
+// this will remove from the cache the matching entry if it's
+// refcount is 0.  In the case of reg_mem, a matching call
+// to dereg_mem is required for this to be able to evict the entry
+// return number of bytes evicted (> 0) on success or -1 with errno
+// Reports ENOENT if entry not found in cache (may already be evicted)
+int64_t __psm2_rv_evict_exact(psm2_rv_t rv, void *addr, uint64_t length, int access)
 {
-	struct rv_gpu_mem_params params;
+#ifdef RV_IOCTL_EVICT
+	struct rv_evict_params params;
 	int ret;
 	int save_errno;
 
 	memset(&params, 0, sizeof(params));
-	/* XXX: Add the version field once it is restored */
-	params.in.gpu_buf_addr = (uintptr_t)buf;
-	params.in.gpu_buf_size = size;
+	params.in.type = RV_EVICT_TYPE_SEARCH_EXACT;
+	params.in.search.addr = (uint64_t)addr;
+	params.in.search.length = length;
+	params.in.search.access = access;
 
-	// buf is what was returned from a previous call to __psm2_rv_pin_and_mmap
-	// size is app buffer size, not rounded up to page size (could do that in caller if needed)
-	// this should reduce reference count but continue to cache the mmap & pin
-	// pages for future use in a later pin_and_mmap call (or perhaps even a
-	// later reg_mr?).  Note we can even keep the pages mmaped still as caller
-	// should not use the pointer again until after a future pin_and_mmap call
-	// return 0 on success or -1 with errno
-
-	if ((ret = ioctl(rv->fd, RV_IOCTL_GPU_MUNMAP_UNPIN, &params)) != 0) {
-		save_errno = errno;
-		perror("gpu_unpin_munmap failed\n");
-		errno = save_errno;
+	if ((ret = ioctl(rv->fd, RV_IOCTL_EVICT, &params)) != 0) {
+		if (errno != ENOENT) {
+			save_errno = errno;
+			perror("rv_evict_exact failed\n");
+			errno = save_errno;
+		}
 		return ret;
 	}
 
-	return 0;
+	return params.out.bytes;
+#else
+	errno = EINVAL;
+	return -1;
+#endif
 }
 
-#endif /* PSM_CUDA */
+// this will remove from the cache all entries which include
+// addresses between addr and addr+length-1 inclusive if it's
+// refcount is 0.  In the case of reg_mem, a matching call
+// to dereg_mem is required for this to be able to evict the entry
+// return number of bytes evicted (> 0) on success or -1 with errno
+// Reports ENOENT if no matching entries found in cache (may already be evicted)
+int64_t __psm2_rv_evict_range(psm2_rv_t rv, void *addr, uint64_t length)
+{
+#ifdef RV_IOCTL_EVICT
+	struct rv_evict_params params;
+	int ret;
+	int save_errno;
+
+	memset(&params, 0, sizeof(params));
+	params.in.type = RV_EVICT_TYPE_SEARCH_RANGE;
+	params.in.search.addr = (uint64_t)addr;
+	params.in.search.length = length;
+
+	if ((ret = ioctl(rv->fd, RV_IOCTL_EVICT, &params)) != 0) {
+		if (errno != ENOENT) {
+			save_errno = errno;
+			perror("rv_evict_range failed\n");
+			errno = save_errno;
+		}
+		return ret;
+	}
+
+	return params.out.bytes;
+#else
+	errno = EINVAL;
+	return -1;
+#endif
+}
+
+#ifdef PSM_CUDA
+// this will remove from the GPU cache all entries which include
+// addresses between addr and addr+length-1 inclusive if it's
+// refcount is 0.  In the case of reg_mem, a matching call
+// to dereg_mem is required for this to be able to evict the entry
+// return number of bytes evicted (> 0) on success or -1 with errno
+// Reports ENOENT if no matching entries found in cache (may already be evicted)
+int64_t __psm2_rv_evict_gpu_range(psm2_rv_t rv, uintptr_t addr, uint64_t length)
+{
+#ifdef RV_IOCTL_EVICT
+	struct rv_evict_params params;
+	int ret;
+	int save_errno;
+
+	memset(&params, 0, sizeof(params));
+	params.in.type = RV_EVICT_TYPE_GPU_SEARCH_RANGE;
+	params.in.search.addr = addr;
+	params.in.search.length = length;
+
+	if ((ret = ioctl(rv->fd, RV_IOCTL_EVICT, &params)) != 0) {
+		if (errno != ENOENT) {
+			save_errno = errno;
+			perror("rv_evict_gpu_range failed\n");
+			errno = save_errno;
+		}
+		return ret;
+	}
+
+	return params.out.bytes;
+#else
+	errno = EINVAL;
+	return -1;
+#endif
+}
+#endif // PSM_CUDA
+
+// this will remove from the cache up to the amount specified
+// Only entries with a refcount of 0 are removed.
+// In the case of reg_mem, a matching call
+// to dereg_mem is required for this to be able to evict the entry
+// return number of bytes evicted (> 0) on success or -1 with errno
+// Reports ENOENT if no entries could be evicted
+int64_t __psm2_rv_evict_amount(psm2_rv_t rv, uint64_t bytes, uint32_t count)
+{
+#ifdef RV_IOCTL_EVICT
+	struct rv_evict_params params;
+	int ret;
+	int save_errno;
+
+	memset(&params, 0, sizeof(params));
+	params.in.type = RV_EVICT_TYPE_AMOUNT;
+	params.in.amount.bytes = bytes;
+	params.in.amount.count = count;
+
+	if ((ret = ioctl(rv->fd, RV_IOCTL_EVICT, &params)) != 0) {
+		if (errno != ENOENT) {
+			save_errno = errno;
+			perror("rv_evict_amount failed\n");
+			errno = save_errno;
+		}
+		return ret;
+	}
+
+	return params.out.bytes;
+#else
+	errno = EINVAL;
+	return -1;
+#endif
+}
+
+#ifdef PSM_CUDA
+// this will remove from the GPU cache up to the amount specified
+// Only entries with a refcount of 0 are removed.
+// In the case of reg_mem, a matching call
+// to dereg_mem is required for this to be able to evict the entry
+// return number of bytes evicted (> 0) on success or -1 with errno
+// Reports ENOENT if no entries could be evicted
+int64_t __psm2_rv_evict_gpu_amount(psm2_rv_t rv, uint64_t bytes, uint32_t count)
+{
+#ifdef RV_IOCTL_EVICT
+	struct rv_evict_params params;
+	int ret;
+	int save_errno;
+
+	memset(&params, 0, sizeof(params));
+	params.in.type = RV_EVICT_TYPE_GPU_AMOUNT;
+	params.in.amount.bytes = bytes;
+	params.in.amount.count = count;
+
+	if ((ret = ioctl(rv->fd, RV_IOCTL_EVICT, &params)) != 0) {
+		if (errno != ENOENT) {
+			save_errno = errno;
+			perror("rv_evict_gpu_amount failed\n");
+			errno = save_errno;
+		}
+		return ret;
+	}
+
+	return params.out.bytes;
+#else
+	errno = EINVAL;
+	return -1;
+#endif
+}
+#endif // PSM_CUDA
 
 int __psm2_rv_post_rdma_write_immed(psm2_rv_t rv, psm2_rv_conn_t conn,
 				void *loc_buf, psm2_rv_mr_t loc_mr,

@@ -314,12 +314,14 @@ void psmi_profile_reblock(int did_no_progress) __attribute__ ((weak));
 
 extern int is_cuda_enabled;
 extern int is_gdr_copy_enabled;
-extern int device_support_gpudirect;
-extern int gpu_p2p_supported;
+extern int is_gpudirect_enabled; // only for use during parsing of other params
+extern int _device_support_unified_addr;
+extern int _device_support_gpudirect;
+extern int _gpu_p2p_supported;
 extern int my_gpu_device;
 extern int cuda_lib_version;
 
-extern CUcontext ctxt;
+extern CUcontext cu_ctxt;
 extern void *psmi_cuda_lib;
 
 extern CUresult (*psmi_cuInit)(unsigned int  Flags );
@@ -335,6 +337,7 @@ extern CUresult (*psmi_cuDriverGetVersion)(int* driverVersion);
 extern CUresult (*psmi_cuDeviceGetCount)(int* count);
 extern CUresult (*psmi_cuStreamCreate)(CUstream* phStream, unsigned int Flags);
 extern CUresult (*psmi_cuStreamDestroy)(CUstream phStream);
+extern CUresult (*psmi_cuStreamSynchronize)(CUstream phStream);
 extern CUresult (*psmi_cuEventCreate)(CUevent* phEvent, unsigned int Flags);
 extern CUresult (*psmi_cuEventDestroy)(CUevent hEvent);
 extern CUresult (*psmi_cuEventQuery)(CUevent hEvent);
@@ -357,14 +360,73 @@ extern CUresult (*psmi_cuDevicePrimaryCtxRetain)(CUcontext* pctx, CUdevice dev);
 extern CUresult (*psmi_cuCtxGetDevice)(CUdevice* device);
 extern CUresult (*psmi_cuDevicePrimaryCtxRelease)(CUdevice device);
 
+extern uint64_t psmi_count_cuInit;
+extern uint64_t psmi_count_cuCtxDetach;
+extern uint64_t psmi_count_cuCtxGetCurrent;
+extern uint64_t psmi_count_cuCtxSetCurrent;
+extern uint64_t psmi_count_cuPointerGetAttribute;
+extern uint64_t psmi_count_cuPointerSetAttribute;
+extern uint64_t psmi_count_cuDeviceCanAccessPeer;
+extern uint64_t psmi_count_cuDeviceGet;
+extern uint64_t psmi_count_cuDeviceGetAttribute;
+extern uint64_t psmi_count_cuDriverGetVersion;
+extern uint64_t psmi_count_cuDeviceGetCount;
+extern uint64_t psmi_count_cuStreamCreate;
+extern uint64_t psmi_count_cuStreamDestroy;
+extern uint64_t psmi_count_cuStreamSynchronize;
+extern uint64_t psmi_count_cuEventCreate;
+extern uint64_t psmi_count_cuEventDestroy;
+extern uint64_t psmi_count_cuEventQuery;
+extern uint64_t psmi_count_cuEventRecord;
+extern uint64_t psmi_count_cuEventSynchronize;
+extern uint64_t psmi_count_cuMemHostAlloc;
+extern uint64_t psmi_count_cuMemFreeHost;
+extern uint64_t psmi_count_cuMemcpy;
+extern uint64_t psmi_count_cuMemcpyDtoD;
+extern uint64_t psmi_count_cuMemcpyDtoH;
+extern uint64_t psmi_count_cuMemcpyHtoD;
+extern uint64_t psmi_count_cuMemcpyDtoHAsync;
+extern uint64_t psmi_count_cuMemcpyHtoDAsync;
+extern uint64_t psmi_count_cuIpcGetMemHandle;
+extern uint64_t psmi_count_cuIpcOpenMemHandle;
+extern uint64_t psmi_count_cuIpcCloseMemHandle;
+extern uint64_t psmi_count_cuMemGetAddressRange;
+extern uint64_t psmi_count_cuDevicePrimaryCtxGetState;
+extern uint64_t psmi_count_cuDevicePrimaryCtxRetain;
+extern uint64_t psmi_count_cuCtxGetDevice;
+extern uint64_t psmi_count_cuDevicePrimaryCtxRelease;
+
+static int check_set_cuda_ctxt(void)
+{
+	CUresult err;
+	CUcontext tmpctxt = {0};
+
+	if (unlikely(!psmi_cuCtxGetCurrent || !psmi_cuCtxSetCurrent))
+		return 0;
+
+	err = psmi_cuCtxGetCurrent(&tmpctxt);
+	if (likely(!err)) {
+		if (unlikely(!tmpctxt && cu_ctxt)) {
+			err = psmi_cuCtxSetCurrent(cu_ctxt);
+			return !!err;
+		} else if (unlikely(tmpctxt && !cu_ctxt)) {
+			cu_ctxt = tmpctxt;
+		}
+	}
+	return 0;
+}
+
+
 #define PSMI_CUDA_CALL(func, args...) do {				\
 		CUresult cudaerr;					\
+		if (unlikely(check_set_cuda_ctxt())) {			\
+			psmi_handle_error(PSMI_EP_NORETURN,		\
+			PSM2_INTERNAL_ERR, "Failed to set/synchronize"	\
+			" CUDA context.\n");				\
+		}							\
+		psmi_count_##func++;					\
 		cudaerr = psmi_##func(args);				\
 		if (cudaerr != CUDA_SUCCESS) {				\
-			if (ctxt == NULL)				\
-				_HFI_ERROR(				\
-				"Check if CUDA is initialized"	\
-				"before psm2_ep_open call \n");		\
 			_HFI_ERROR(					\
 				"CUDA failure: %s() (at %s:%d)"		\
 				"returned %d\n",			\
@@ -374,6 +436,117 @@ extern CUresult (*psmi_cuDevicePrimaryCtxRelease)(CUdevice device);
 				"Error returned from CUDA function.\n");\
 		}							\
 	} while (0)
+
+PSMI_ALWAYS_INLINE(
+void verify_device_support_unified_addr())
+{
+	if (likely(_device_support_unified_addr > -1)) return;
+
+	int num_devices, dev;
+
+	/* Check if all devices support Unified Virtual Addressing. */
+	PSMI_CUDA_CALL(cuDeviceGetCount, &num_devices);
+
+	_device_support_unified_addr = 1;
+
+	for (dev = 0; dev < num_devices; dev++) {
+		CUdevice device;
+		PSMI_CUDA_CALL(cuDeviceGet, &device, dev);
+		int unifiedAddressing;
+		PSMI_CUDA_CALL(cuDeviceGetAttribute,
+				&unifiedAddressing,
+				CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING,
+				device);
+
+		if (unifiedAddressing !=1) {
+			psmi_handle_error(PSMI_EP_NORETURN, PSM2_EP_DEVICE_FAILURE,
+				"CUDA device %d does not support Unified Virtual Addressing.\n",
+				dev);
+		}
+	}
+
+	return;
+}
+
+PSMI_ALWAYS_INLINE(
+int device_support_gpudirect())
+{
+	if (likely(_device_support_gpudirect > -1)) return _device_support_gpudirect;
+
+	int num_devices, dev;
+
+	/* Check if all devices support Unified Virtual Addressing. */
+	PSMI_CUDA_CALL(cuDeviceGetCount, &num_devices);
+
+	_device_support_gpudirect = 1;
+
+	for (dev = 0; dev < num_devices; dev++) {
+		CUdevice device;
+		PSMI_CUDA_CALL(cuDeviceGet, &device, dev);
+
+		int major;
+		PSMI_CUDA_CALL(cuDeviceGetAttribute,
+				&major,
+				CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR,
+				device);
+		if (major < 3) {
+			_device_support_gpudirect = 0;
+			_HFI_INFO("CUDA device %d does not support GPUDirect RDMA (Non-fatal error)\n", dev);
+		}
+	}
+
+	return _device_support_gpudirect;
+}
+
+PSMI_ALWAYS_INLINE(
+int gpu_p2p_supported())
+{
+	if (likely(_gpu_p2p_supported > -1)) return _gpu_p2p_supported;
+
+	if (unlikely(!is_cuda_enabled)) {
+		_gpu_p2p_supported=0;
+		return 0;
+	}
+
+	int num_devices, dev;
+	CUcontext c;
+
+	/* Check which devices the current device has p2p access to. */
+	CUdevice current_device;
+	PSMI_CUDA_CALL(cuDeviceGetCount, &num_devices);
+	_gpu_p2p_supported = 0;
+
+	if (num_devices > 1) {
+		PSMI_CUDA_CALL(cuCtxGetCurrent, &c);
+		if (c == NULL) {
+			_HFI_INFO("Unable to find active CUDA context, assuming P2P not supported\n");
+			return 0;
+		}
+		PSMI_CUDA_CALL(cuCtxGetDevice, &current_device);
+	}
+
+	for (dev = 0; dev < num_devices; dev++) {
+		CUdevice device;
+		PSMI_CUDA_CALL(cuDeviceGet, &device, dev);
+
+		if (num_devices > 1 && device != current_device) {
+			int canAccessPeer = 0;
+			PSMI_CUDA_CALL(cuDeviceCanAccessPeer, &canAccessPeer,
+					current_device, device);
+
+			if (canAccessPeer != 1)
+				_HFI_DBG("CUDA device %d does not support P2P from current device (Non-fatal error)\n", dev);
+			else
+				_gpu_p2p_supported |= (1 << device);
+		} else {
+			/* Always support p2p on the same GPU */
+			my_gpu_device = device;
+			_gpu_p2p_supported |= (1 << device);
+		}
+	}
+
+	return _gpu_p2p_supported;
+}
 
 /**
  * Similar to PSMI_CUDA_CALL() except does not error out
@@ -386,10 +559,16 @@ extern CUresult (*psmi_cuDevicePrimaryCtxRelease)(CUdevice device);
  * As except_err is an allowed value, message is printed at
  * DBG level.
  */
-#define PSMI_CUDA_CALL_EXCEPT(except_err, func, args...) do { \
+#define PSMI_CUDA_CALL_EXCEPT(except_err, func, args...) do {		\
+		if (unlikely(check_set_cuda_ctxt())) {			\
+			psmi_handle_error(PSMI_EP_NORETURN,		\
+				PSM2_INTERNAL_ERR, "Failed to "		\
+				"set/synchronize CUDA context.\n");	\
+		}							\
+		psmi_count_##func++;					\
 		cudaerr = psmi_##func(args);				\
 		if (cudaerr != CUDA_SUCCESS && cudaerr != except_err) {	\
-			if (ctxt == NULL)				\
+			if (cu_ctxt == NULL)				\
 				_HFI_ERROR(				\
 				"Check if CUDA is initialized"	\
 				"before psm2_ep_open call \n");		\
@@ -409,6 +588,7 @@ extern CUresult (*psmi_cuDevicePrimaryCtxRelease)(CUdevice device);
 	} while (0)
 
 #define PSMI_CUDA_CHECK_EVENT(event, cudaerr) do {			\
+		psmi_count_cuEventQuery++;				\
 		cudaerr = psmi_cuEventQuery(event);			\
 		if ((cudaerr != CUDA_SUCCESS) &&			\
 		    (cudaerr != CUDA_ERROR_NOT_READY)) {		\
@@ -438,9 +618,11 @@ _psmi_is_cuda_mem(const void *ptr))
 	CUresult cres;
 	CUmemorytype mt;
 	unsigned uvm = 0;
+	psmi_count_cuPointerGetAttribute++;
 	cres = psmi_cuPointerGetAttribute(
 		&mt, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, (CUdeviceptr) ptr);
 	if ((cres == CUDA_SUCCESS) && (mt == CU_MEMORYTYPE_DEVICE)) {
+		psmi_count_cuPointerGetAttribute++;
 		cres = psmi_cuPointerGetAttribute(
 			&uvm, CU_POINTER_ATTRIBUTE_IS_MANAGED, (CUdeviceptr) ptr);
 		if ((cres == CUDA_SUCCESS) && (uvm == 0))
@@ -464,6 +646,7 @@ _psmi_is_gdr_copy_enabled())
 #define PSMI_IS_GDR_COPY_ENABLED _psmi_is_gdr_copy_enabled()
 
 #define PSMI_IS_CUDA_MEM(p) _psmi_is_cuda_mem(p)
+extern void psm2_get_gpu_bars(void);
 
 struct ips_cuda_hostbuf {
 	STAILQ_ENTRY(ips_cuda_hostbuf) req_next;
@@ -495,23 +678,26 @@ void psmi_cuda_hostbuf_alloc_func(int is_alloc, void *context, void *obj);
 	    .mode[PSMI_MEMMODE_LARGE]   = {  32, 512 }		\
 	}
 
-extern uint32_t gpudirect_send_threshold;
-extern uint32_t gpudirect_recv_threshold;
+extern uint32_t gpudirect_send_limit;
+extern uint32_t gpudirect_recv_limit;
 extern uint32_t cuda_thresh_rndv;
-/* This threshold dictates when the sender turns off
- * GDR Copy. The threshold needs to be less than
+/* This limit dictates when the sender turns off
+ * GDR Copy and uses SDMA. The limit needs to be less than equal
  * CUDA RNDV threshold.
+ * set to 0 if GDR Copy disabled
  */
-extern uint32_t gdr_copy_threshold_send;
-/* This threshold dictates when the reciever turns off
- * GDR Copy. The threshold needs to be less than
+extern uint32_t gdr_copy_limit_send;
+/* This limit dictates when the reciever turns off
+ * GDR Copy. The limit needs to be less than equal
  * CUDA RNDV threshold.
+ * set to 0 if GDR Copy disabled
  */
-extern uint32_t gdr_copy_threshold_recv;
+extern uint32_t gdr_copy_limit_recv;
 
-#define PSMI_USE_GDR_COPY(req, len) req->is_buf_gpu_mem &&       \
-				    PSMI_IS_GDR_COPY_ENABLED  && \
-				    len >=1 && len <= gdr_copy_threshold_recv
+uint64_t gpu_cache_evict;
+
+// Only valid if called for a GPU buffer
+#define PSMI_USE_GDR_COPY_RECV(len) ((len) >=1 && (len) <= gdr_copy_limit_recv)
 
 enum psm2_chb_match_type {
 	/* Complete data found in a single chb */

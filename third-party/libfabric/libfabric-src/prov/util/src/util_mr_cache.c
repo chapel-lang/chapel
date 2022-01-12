@@ -41,12 +41,14 @@
 #include <ofi_mr.h>
 #include <ofi_list.h>
 #include <ofi_tree.h>
+#include <ofi_enosys.h>
 
 
 struct ofi_mr_cache_params cache_params = {
 	.max_cnt = 1024,
 	.cuda_monitor_enabled = true,
 	.rocr_monitor_enabled = true,
+	.ze_monitor_enabled = true,
 };
 
 static int util_mr_find_within(struct ofi_rbmap *map, void *key, void *data)
@@ -133,7 +135,7 @@ static void util_mr_uncache_entry(struct ofi_mr_cache *cache,
 
 	if (entry->use_cnt == 0) {
 		dlist_remove(&entry->list_entry);
-		dlist_insert_tail(&entry->list_entry, &cache->flush_list);
+		dlist_insert_tail(&entry->list_entry, &cache->dead_region_list);
 	} else {
 		cache->uncached_cnt++;
 		cache->uncached_size += entry->info.iov.iov_len;
@@ -180,46 +182,44 @@ void ofi_mr_cache_notify(struct ofi_mr_cache *cache, const void *addr, size_t le
 		util_mr_uncache_entry(cache, entry);
 }
 
+/* Function to remove dead regions and prune MR cache size.
+ * Returns true if any entries were flushed from the cache.
+ */
 bool ofi_mr_cache_flush(struct ofi_mr_cache *cache, bool flush_lru)
 {
+	struct dlist_entry free_list;
 	struct ofi_mr_entry *entry;
+	bool entries_freed;
+
+	dlist_init(&free_list);
 
 	pthread_mutex_lock(&mm_lock);
-	while (!dlist_empty(&cache->flush_list)) {
-		dlist_pop_front(&cache->flush_list, struct ofi_mr_entry,
-				entry, list_entry);
-		FI_DBG(cache->domain->prov, FI_LOG_MR, "flush %p (len: %zu)\n",
-		       entry->info.iov.iov_base, entry->info.iov.iov_len);
-		pthread_mutex_unlock(&mm_lock);
 
-		util_mr_free_entry(cache, entry);
-		pthread_mutex_lock(&mm_lock);
-	}
+	dlist_splice_tail(&free_list, &cache->dead_region_list);
 
-	if (!flush_lru || dlist_empty(&cache->lru_list)) {
-		pthread_mutex_unlock(&mm_lock);
-		return false;
-	}
-
-	do {
+	while (flush_lru && !dlist_empty(&cache->lru_list)) {
 		dlist_pop_front(&cache->lru_list, struct ofi_mr_entry,
 				entry, list_entry);
 		dlist_init(&entry->list_entry);
-		FI_DBG(cache->domain->prov, FI_LOG_MR, "flush %p (len: %zu)\n",
-		       entry->info.iov.iov_base, entry->info.iov.iov_len);
-
 		util_mr_uncache_entry_storage(cache, entry);
-		pthread_mutex_unlock(&mm_lock);
+		dlist_insert_tail(&entry->list_entry, &free_list);
 
-		util_mr_free_entry(cache, entry);
-		pthread_mutex_lock(&mm_lock);
+		flush_lru = ofi_mr_cache_full(cache);
+	}
 
-	} while (!dlist_empty(&cache->lru_list) &&
-		 ((cache->cached_cnt >= cache_params.max_cnt) ||
-		  (cache->cached_size >= cache_params.max_size)));
 	pthread_mutex_unlock(&mm_lock);
 
-	return true;
+	entries_freed = !dlist_empty(&free_list);
+
+	while(!dlist_empty(&free_list)) {
+		dlist_pop_front(&free_list, struct ofi_mr_entry,
+				entry, list_entry);
+		FI_DBG(cache->domain->prov, FI_LOG_MR, "flush %p (len: %zu)\n",
+			entry->info.iov.iov_base, entry->info.iov.iov_len);
+		util_mr_free_entry(cache, entry);
+	}
+
+	return entries_freed;
 }
 
 void ofi_mr_cache_delete(struct ofi_mr_cache *cache, struct ofi_mr_entry *entry)
@@ -285,8 +285,7 @@ util_mr_cache_create(struct ofi_mr_cache *cache, const struct ofi_mr_info *info,
 		goto unlock;
 	}
 
-	if ((cache->cached_cnt >= cache_params.max_cnt) ||
-	    (cache->cached_size >= cache_params.max_size)) {
+	if (ofi_mr_cache_full(cache)) {
 		cache->uncached_cnt++;
 		cache->uncached_size += info->iov.iov_len;
 	} else {
@@ -321,9 +320,11 @@ int ofi_mr_cache_search(struct ofi_mr_cache *cache, const struct fi_mr_attr *att
 			struct ofi_mr_entry **entry)
 {
 	struct ofi_mr_info info;
+	struct ofi_mem_monitor *monitor;
+	bool flush_lru;
 	int ret;
-	struct ofi_mem_monitor *monitor = cache->monitors[attr->iface];
 
+	monitor = cache->monitors[attr->iface];
 	if (!monitor) {
 		FI_WARN(&core_prov, FI_LOG_MR,
 			"MR cache disabled for %s memory\n",
@@ -341,11 +342,10 @@ int ofi_mr_cache_search(struct ofi_mr_cache *cache, const struct fi_mr_attr *att
 
 	do {
 		pthread_mutex_lock(&mm_lock);
-
-		if ((cache->cached_cnt >= cache_params.max_cnt) ||
-		    (cache->cached_size >= cache_params.max_size)) {
+		flush_lru = ofi_mr_cache_full(cache);
+		if (flush_lru || !dlist_empty(&cache->dead_region_list)) {
 			pthread_mutex_unlock(&mm_lock);
-			ofi_mr_cache_flush(cache, true);
+			ofi_mr_cache_flush(cache, flush_lru);
 			pthread_mutex_lock(&mm_lock);
 		}
 
@@ -492,7 +492,7 @@ int ofi_mr_cache_init(struct util_domain *domain,
 
 	pthread_mutex_init(&cache->lock, NULL);
 	dlist_init(&cache->lru_list);
-	dlist_init(&cache->flush_list);
+	dlist_init(&cache->dead_region_list);
 	cache->cached_cnt = 0;
 	cache->cached_size = 0;
 	cache->uncached_cnt = 0;
@@ -525,4 +525,53 @@ destroy:
 	pthread_mutex_destroy(&cache->lock);
 	cache->domain = NULL;
 	return ret;
+}
+
+
+
+static int ofi_close_cache_fid(struct fid *fid)
+{
+	free(fid);
+	return 0;
+}
+
+static int ofi_bind_cache_fid(struct fid *fid, struct fid *bfid,
+			      uint64_t flags)
+{
+	if (flags || bfid->fclass != FI_CLASS_MEM_MONITOR)
+		return -FI_EINVAL;
+
+	return ofi_monitor_import(bfid);
+}
+
+static struct fi_ops ofi_mr_cache_ops = {
+	.size = sizeof(struct fi_ops),
+	.close = ofi_close_cache_fid,
+	.bind = ofi_bind_cache_fid,
+	.control = fi_no_control,
+	.ops_open = fi_no_ops_open,
+	.tostr = fi_no_tostr,
+	.ops_set = fi_no_ops_set,
+};
+
+int ofi_open_mr_cache(uint32_t version, void *attr, size_t attr_len,
+		      uint64_t flags, struct fid **fid, void *context)
+{
+	struct fid *cache_fid;
+
+	if (FI_VERSION_LT(version, FI_VERSION(1, 13)) || attr_len)
+		return -FI_EINVAL;
+
+	if (flags)
+		return -FI_EBADFLAGS;
+
+	cache_fid = calloc(1, sizeof(*cache_fid));
+	if (!cache_fid)
+		return -FI_ENOMEM;
+
+	cache_fid->fclass = FI_CLASS_MR_CACHE;
+	cache_fid->context = context;
+	cache_fid->ops = &ofi_mr_cache_ops;
+	*fid = cache_fid;
+	return 0;
 }
