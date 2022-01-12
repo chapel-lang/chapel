@@ -3,8 +3,8 @@ use Channel;
 var chan1 = new channel(int);
 
 begin {
-    chan1.send(1);
-    chan1.close();
+  chan1.send(1);
+  chan1.close();
 }
 var x1 : int;
 var x = chan1.recv(x1);

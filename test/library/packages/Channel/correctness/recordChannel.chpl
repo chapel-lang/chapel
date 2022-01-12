@@ -1,13 +1,13 @@
 use Channel;
 
 record r1 {
-    var x, y : int;
+  var x, y : int;
 }
 
 var chan1 = new channel(r1);
 
 begin {
-    chan1.send(new r1(1, 2));
+  chan1.send(new r1(1, 2));
 }
 var r3 : r1;
 chan1.recv(r3);

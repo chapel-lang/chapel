@@ -6,9 +6,9 @@ var chan2 = new channel(int, 1);
 var x1, x2 : int;
 
 var arr : [0..#2] shared SelectBaseClass = [
-        new shared SelectCase(x1, chan1, selectOperation.recv, 0) : SelectBaseClass,
-        new shared SelectCase(x2, chan2, selectOperation.recv, 1) : SelectBaseClass
-    ];
+    new shared SelectCase(x1, chan1, selectOperation.recv, 0) : SelectBaseClass,
+    new shared SelectCase(x2, chan2, selectOperation.recv, 1) : SelectBaseClass
+  ];
 
 chan1.send(5);
 chan2.send(4);
