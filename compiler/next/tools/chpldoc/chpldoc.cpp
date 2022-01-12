@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/*
+/**
   To test this today, you can force sub_test to use this version by doing:
   > CHPL_CHPLDOC_NEXT=$(find $(pwd) -name chpldoc -type f) ./util/test/start_test.py test/chpldoc/enum.doc.chpl
   You'll want to make sure that the find command finds a single chpldoc executable
@@ -33,6 +33,7 @@
 #include <limits>
 #include <regex>
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
 #include <filesystem>
 
@@ -40,7 +41,12 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/Context.h"
 #include "chpl/queries/UniqueString.h"
+#include "chpl/queries/query-impl.h"
 #include "chpl/queries/stringify-functions.h"
+#include "chpl/queries/update-functions.h"
+#include "chpl/uast/ASTTag.h"
+#include "chpl/uast/ASTTypes.h"
+#include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
 
@@ -48,7 +54,10 @@ using namespace chpl;
 using namespace uast;
 using namespace parsing;
 
+using CommentMap = std::unordered_map<ID, const Comment*>;
+
 std::unordered_set<asttags::ASTTag> gUnhandled;
+static const int indentPerDepth = 3;
 
 const std::string templateUsage = R"RAW(**Usage**
 
@@ -84,6 +93,12 @@ static std::string templateReplace(const std::string& templ,
   return std::regex_replace(templ, std::regex(std::string("\\$") + key), value);
 }
 
+static std::string indentLines(const std::string& s, int count) {
+  std::string replacement = "\n" + std::string(count, ' ');
+  std::string head = std::string(count, ' ');
+  return head + std::regex_replace(s, std::regex("\n"), replacement);
+}
+
 static size_t countLeadingSpaces(const std::string& s) {
   size_t i = 0;
   while (std::isspace(s[i])) {i += 1;}
@@ -103,10 +118,9 @@ static std::ostream& indentStream(std::ostream& os, size_t num) {
   return os;
 }
 
-
 // Remove the leading+trailing // or /* (*/)
 // Dedent by the least amount of leading whitespace
-// Replace leading whitespace with `indent` spaces
+// Return is a list of strings which have no newline chars
 static std::vector<std::string> prettifyComment(const std::string& s) {
   std::string ret = s;
 
@@ -243,10 +257,24 @@ static bool isNoDoc(const Decl* e) {
   return false;
 }
 
-// This actually works okay and the formatting we have to do is pretty specific to RST anyways so I'm happy with this solution
-struct PrettyPrintVisitor {
+/**
+ Converts an ASTNode into an RST format that is suitable for the RHS of
+something like:
+
+Function:
+.. function:: proc foo(arg1: int): bool
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+Enum:
+.. enum:: enum Foo { a = 0, b = 2 }
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+etc.
+ */
+struct RstSignatureVisitor {
   std::ostream& os_;
 
+  /** traverse each elt of begin..end, outputting `separator` between each.
+   * `surroundBegin` and `surroundEnd` are output before and after respectively
+   * if not null */
   template<typename It>
   void interpose(It begin, It end, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
     bool first = true;
@@ -355,7 +383,7 @@ struct PrettyPrintVisitor {
     }
     os_ << f->name().c_str();
     if (const Expression* te = f->typeExpression()) {
-      os_ << ":";
+      os_ << ": ";
       te->traverse(*this);
     }
     if (const Expression* ie = f->initExpression()) {
@@ -375,11 +403,21 @@ struct PrettyPrintVisitor {
     os_ << kindToString(f->kind()) << " " << f->name().c_str();
 
     // Formals
-    // TODO this prints all 0-arity as paren-less
     int numThisFormal = f->thisFormal() ? 1 : 0;
-    if (f->numFormals() - numThisFormal) {
+    int nFormals = f->numFormals() - numThisFormal;
+    if (nFormals == 0 && f->isParenless()) {
+      // pass
+    } else if (nFormals == 0) {
+      os_ << "()";
+    } else {
       auto it = f->formals();
       interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
+    }
+
+    // Return type
+    if (const Expression* e = f->returnType()) {
+      os_ << ": ";
+      e->traverse(*this);
     }
 
     // Return Intent
@@ -471,20 +509,85 @@ struct PrettyPrintVisitor {
   void exit(const ASTNode* a) {}
 };
 
-struct ChpldocVisitor {
-  const BuilderResult& br_;
-  std::ostream& os_;
-  const Comment* lastComment_ = nullptr;
-  std::vector<const Module*> moduleStack_;
-  int depth = 0;
+/**
+ Stores the rst docs result of an ASTNode and its children.
+ `doc` looks like: (using Python's triple quote syntax)
+'''.. function:: proc procName(arg1: int): bool
 
-  static const int indentPerDepth = 3; // 3????
+I am a doc comment'''
 
-  void showComment(bool indent) {
-    if (!lastComment_) return;
+ `children` is a vector of non-owning, non-null pointers to its children.
 
-    int indentChars = indent ? ((depth + 1) * indentPerDepth) : 0;
-    auto lines = prettifyComment(lastComment_->str());
+ Another option would be to store the full std::string in rstResult, including
+your children. This ends up with a quadratic time and space. Neither is
+particularly concerning for this application. Between the two, space is more of
+a concern because some doc comments might be quite large-ish. Remember that the
+n here is the depth of nesting, which won't be very large and if you concatenate
+with a stringstream, that would be plenty fast in time.
+ */
+struct RstResult {
+  std::string doc;
+  // The child pointers are non-owning. The query framework owns them.
+  std::vector<RstResult*> children;
+
+  bool indentChildren;
+
+  RstResult(std::string doc, std::vector<RstResult*> children,
+            bool indentChildren)
+      : doc(doc), children(children), indentChildren(indentChildren) {}
+
+  // TODO which one of these do I want?
+  static bool update(owned<RstResult>& keep, owned<RstResult>& addin) {
+    // return update(*keep, *addin);
+    return chpl::defaultUpdateOwned(keep, addin);
+  }
+  // static bool update(rstResult& keep, rstResult& addin) {
+  //   bool changed = false;
+  //   changed |= chpl::update<std::string>{}(keep.doc, addin.doc);
+  //   changed |= chpl::update<decltype(children)>{}(keep.children, addin.children);
+  //   changed |= chpl::update<bool>{}(keep.indentChildren, addin.indentChildren);
+  //   return changed;
+  // }
+  bool operator==(const RstResult& other) {
+    return doc == other.doc && children == other.children &&
+           indentChildren == other.indentChildren;
+  }
+
+  void mark(const Context *c) const {}
+
+  void output(std::ostream& os, int indentPerDepth) {
+    output(os, indentPerDepth, 0);
+  }
+
+  private: void output(std::ostream& os, int indentPerDepth, int depth) {
+    os << indentLines(doc, indentPerDepth * depth);
+    if (indentChildren) depth += 1;
+    for (auto& child : children) {
+      child->output(os, indentPerDepth, depth);
+    }
+  }
+};
+
+
+static const owned<RstResult>& rstDoc(Context * context, ID id);
+static const Comment* const& previousComment(Context* context, ID id);
+
+struct RstResultBuilder {
+  Context* context_;
+  std::stringstream os_;
+  std::vector<RstResult*> children_;
+
+  static const int commentIndent = 3;
+
+  void showComment(const Comment* comment, bool indent=true) {
+    if (!comment) {
+      os_ << '\n';
+      return;
+    }
+
+    int indentChars = indent ? commentIndent : 0;
+    auto lines = prettifyComment(comment->str());
+    os_ << '\n';
     for (const auto& line : lines) {
       if (line.empty()) {
         os_ << '\n';
@@ -492,26 +595,109 @@ struct ChpldocVisitor {
         indentStream(os_, indentChars) << line << '\n';
       }
     }
+    os_ << '\n';
+  }
+  void showComment(const ASTNode* node, bool indent=true) {
+    showComment(previousComment(context_, node->id()), indent);
   }
 
   template<typename T>
-  void show(const std::string& kind, const T* node) {
+  void show(const std::string& kind, const T* node, bool indentComment=true) {
     if (isNoDoc(node)) return;
 
-    indentStream(os_, depth * indentPerDepth) << ".. " << kind << ":: ";
-    PrettyPrintVisitor ppv{os_};
+    os_ << ".. " << kind << ":: ";
+    RstSignatureVisitor ppv{os_};
     node->traverse(ppv);
-    os_ << "\n\n";
-
-    showComment(true);
     os_ << "\n";
+
+    showComment(node, indentComment);
 
     if (auto attrs = node->attributes()) {
       if (attrs->isDeprecated()) {
-        indentStream(os_, (depth + 1) * indentPerDepth) << ".. warning::\n";
-        indentStream(os_, (depth + 2) * indentPerDepth) << attrs->deprecationMessage().c_str();
+        indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
+        indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage().c_str();
         os_ << "\n\n";
       }
+    }
+  }
+
+  void visitChildren(const ASTNode* n) {
+    for (auto child : n->children()) {
+      if (auto &r = rstDoc(context_, child->id())) {
+        children_.push_back(r.get());
+      }
+    }
+  }
+
+  owned<RstResult> visit(const Module* m) {
+    // header
+    os_ << ".. default-domain:: chpl\n\n";
+    os_ << ".. module:: " << m->name().c_str() << '\n';
+    const Comment* lastComment = previousComment(context_, m->id());
+    if (lastComment) {
+      os_ << "    :synopsis: " << commentSynopsis(lastComment) << '\n';
+    }
+    os_ << '\n';
+
+    // module title
+    os_ << m->name().c_str() << "\n";
+    os_ << std::string(m->name().length(), '=') << "\n";
+
+    // usage
+    // TODO branch on whether FLAG_MODULE_INCLUDED_BY_DEFAULT or equivalent
+    os_ << templateReplace(templateUsage, "MODULE", m->name().c_str()) << "\n";
+
+    showComment(lastComment, false);
+
+    visitChildren(m);
+
+    return getResult();
+  }
+
+  owned<RstResult> visit(const Function* f) {
+    // TODO this doesn't fire on privateProc either
+    if (f->visibility() == Decl::Visibility::PRIVATE)
+      return {};
+    show(kindToRstString(f->isMethod(), f->kind()), f);
+    return getResult();
+  }
+  owned<RstResult> visit(const Variable* v) {
+    show("data", v);
+    return getResult();
+  }
+  owned<RstResult> visit(const Record* r) {
+    show("record", r);
+    visitChildren(r);
+    return getResult(true);
+  }
+  owned<RstResult> visit(const Enum* e) {
+    show("enum", e);
+    return getResult();
+  }
+
+  // TODO all these nullptr gets stored in the query map... can we avoid that?
+  owned<RstResult> visit(const ASTNode* n) { return {}; }
+
+  owned<RstResult> getResult(bool indentChildren = false) {
+    return std::make_unique<RstResult>(os_.str(), children_, indentChildren);
+  }
+};
+
+/**
+ Visitor that collects a mapping from ID -> comment
+ Note that we only store this info for comments that we think we might
+ need in the future (since not all nodes get doc comments)
+ This is more efficient than answering a query like getPreviousComment, which
+ would have to goto parent, linear search, and check if previousSibling is a
+ Comment
+*/
+struct CommentVisitor {
+  CommentMap& map;
+  const Comment* lastComment_ = nullptr;
+
+  void put(const ASTNode* n) {
+    if (lastComment_) {
+      map.emplace(n->id(), lastComment_);
     }
   }
 
@@ -522,62 +708,104 @@ struct ChpldocVisitor {
   void exit(const Comment* ast) {}
   void exit(const ASTNode* ast) { lastComment_ = nullptr; }
 
-  bool enter(const Module* m) {
-    if (isNoDoc(m)) return false;
-
-    moduleStack_.push_back(m);
-    // header
-    os_ << ".. default-domain:: chpl\n\n";
-    os_ << ".. module:: " << m->name().c_str() << '\n';
-    if (lastComment_) {
-      os_ << "    :synopsis: " << commentSynopsis(lastComment_) << '\n';
-    }
-    os_ << '\n';
-
-    // module title
-    os_ << m->name().c_str() << "\n";
-    os_ << std::string(m->name().length(), '=') << "\n";
-
-    // usage
-    // TODO branch on whether FLAG_MODULE_INCLUDED_BY_DEFAULT or equivalent
-    os_ << templateReplace(templateUsage, "MODULE", m->name().c_str()) << '\n';
-
-    showComment(false);
-    os_ << '\n';
-    return true;
+#define DEF_ENTER(type, recurse)                                               \
+  bool enter(const type* node) {                                               \
+    put(node);                                                                 \
+    return recurse;                                                            \
   }
-  void exit(const Module* m) { moduleStack_.pop_back();}
 
-  bool enter(const Function* f) {
-    // TODO this doesn't fire on privateProc either
-    if (f->visibility() == Decl::Visibility::PRIVATE)
-      return false;
-    show(kindToRstString(f->isMethod(), f->kind()), f);
-    return false;
-  }
-  bool enter(const Variable* v) {
-    show("data", v);
-    return false;
-  }
-  bool enter(const Record* r) {
-    show("record", r);
-    depth += 1;
-    return true;
-  }
-  bool enter(const Enum* e) {
-    show("enum", e);
-    return false;
-  }
-  void exit(const Record* r) { depth -= 1; }
+  DEF_ENTER(Module, true)
+  DEF_ENTER(TypeDecl, true)
+  DEF_ENTER(Function, false)
+  DEF_ENTER(Variable, false)
 
   bool enter(const ASTNode* ast) {
-    // printf("Skipping %s\n", asttags::tagToString(ast->tag()));
-    // std::cerr << "\n===";
-    // ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-    // std::cerr << "===\n";
     return false;
   }
 };
+
+/**
+ Get a mapping from ID -> doc comment for an entire file. This mapping is only
+ populated for IDs that can have a doc comment. We work at a file level here
+ because the doc comment for a Module is its previous sibling
+ */
+static const CommentMap&
+commentMap(Context* context, UniqueString path) {
+  QUERY_BEGIN(commentMap, context, path);
+  CommentMap result;
+
+  const auto& builderResult = parseFile(context, path);
+
+  CommentVisitor cv{result};
+  for (const auto& ast : builderResult.topLevelExpressions()) {
+    ast->traverse(cv);
+  }
+
+  return QUERY_END(result);
+}
+
+/**
+ This is a "projection query" of commentMap to get the doc comment for an id.
+ This insulates a specific id from irrelevant changes.
+ */
+static const Comment* const& previousComment(Context* context, ID id) {
+  QUERY_BEGIN(previousComment, context, id);
+  const Comment* result = nullptr;
+  const auto& map = commentMap(context, context->filePathForId(id));
+  auto it = map.find(id);
+  if (it != map.end()) {
+    result = it->second;
+  }
+  return QUERY_END(result);
+}
+
+// NOTE: linear search
+// TODO: can't handle top level module currently
+// static const ASTNode* const& previousSibling(Context* context, ID id) {
+//   QUERY_BEGIN(previousSibling, context, id);
+//   const ASTNode* result = nullptr;
+//   const ASTNode* cur = idToAst(context, id);
+//   ID maybeParentId = idToParentId(context, id);
+//   if (!maybeParentId.isEmpty()) {
+//     const ASTNode* parent = idToAst(context, maybeParentId);
+//     const ASTNode* prev = nullptr;
+//     // bool matched = false;
+//     for (const ASTNode* x : parent->children()) {
+//       if (cur == x) {
+//         // matched = true;
+//         result = prev;
+//         break;
+//       } else {
+//         prev = x;
+//       }
+//     }
+//   }
+//   return QUERY_END(result);
+// }
+
+// static const Comment* const& previousComment(Context* context, ID id) {
+//   QUERY_BEGIN(previousComment, context, id);
+//   const Comment* result = nullptr;
+//   if (const ASTNode* prev = previousSibling(context, id)) {
+//     result = prev->toComment();
+//   }
+//   return QUERY_END(result);
+// }
+
+// static const std::string rstDoc()
+
+static const owned<RstResult>& rstDoc(Context* context, ID id) {
+  QUERY_BEGIN(rstDoc, context, id);
+  owned<RstResult> result;
+  // Comments have empty id
+  if (!id.isEmpty()) {
+    const ASTNode* node = idToAst(context, id);
+    RstResultBuilder cqv{context};
+    result = node->dispatch<owned<RstResult>>(cqv);
+  }
+
+  return QUERY_END(result);
+}
 
 const std::string testString = R"RAW(
 /*
@@ -633,7 +861,7 @@ module M {
     proc foo(a:real, b:int=37) { return 10; }
 
     // paren-less proc
-    proc bar { return 10; }
+    proc bar: int { return 10; }
   }
 
   proc R.secondaryMethod() const { return 42; }
@@ -747,14 +975,23 @@ int main(int argc, char** argv) {
       ofs = std::ofstream(outpath, std::ios::out);
     }
     std::ostream& os = args.stdout ? std::cout : ofs;
-    ChpldocVisitor v{builderResult, os};
+
     for (const auto& ast : builderResult.topLevelExpressions()) {
       if (args.dump) {
         ast->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
       }
-      ast->traverse(v);
+      if (auto& r = rstDoc(ctx, ast->id())) {
+        r->output(os, indentPerDepth);
+      }
     }
-    os << "\n";
+
+    if (args.dump) {
+      const auto& map = commentMap(ctx, path);
+      for (const auto& pair : map) {
+        std::cerr << pair.first.symbolPath().c_str() << " "
+                  << (pair.second ? pair.second->str() : "<nullptr>") << "\n";
+      }
+    }
   }
 
   if (!gUnhandled.empty()) {

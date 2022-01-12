@@ -89,8 +89,8 @@ template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
     for (auto const &pair : keep) {
       chpl::mark<K> keyMarker;
       chpl::mark<V> valMarker;
-      keyMarker(context, keep.first);
-      valMarker(context, keep.second);
+      keyMarker(context, pair.first);
+      valMarker(context, pair.second);
     }
   }
 };
