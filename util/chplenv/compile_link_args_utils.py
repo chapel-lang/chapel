@@ -51,7 +51,7 @@ def get_runtime_includes_and_defines():
         bundled.append("-DHAS_GPU_LOCALE")
         # If compiling for GPU locales, add CUDA runtime headers to include path
         cuda_path = chpl_gpu.get_cuda_path()
-        system.append("-I", os.path.join(cuda_path, "include"))
+        system.append("-I" + os.path.join(cuda_path, "include"))
 
     if mem == "jemalloc":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
@@ -77,7 +77,7 @@ def get_runtime_link_args(runtime_subdir):
         # If compiling for GPU locales, add CUDA to link path,
         # and add cuda libraries
         cuda_path = chpl_gpu.get_cuda_path()
-        system.append("-L", os.path.join(cuda_path, "lib64"))
+        system.append("-L" + os.path.join(cuda_path, "lib64"))
         system.append("-lcuda")
         system.append("-lcudart")
 
