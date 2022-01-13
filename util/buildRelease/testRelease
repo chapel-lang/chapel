@@ -9,7 +9,7 @@ $chplhomedir = abs_path("$cwd/../..");
 
 # Mailing lists.
 $failuremail = "chapel+tests\@discoursemail.com";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net";
+$allmail = "";
 $replymail = "";
 
 $printusage = 1;
@@ -169,10 +169,12 @@ if ($debug == 1) {
 if ($debug == 1) {
     $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
 } else {
-    $mailcommand = "| $mailer -s \"$mailsubject \" $successmail";
+    if ($successmail ne "") {
+        $mailcommand = "| $mailer -s \"$mailsubject \" $successmail";
+    }
 }
-    
-if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+
+if ($mailcommand ne "" and (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?'))) {
     open(MAIL, $mailcommand);
 
     print MAIL "=== Results - testRelease =================================================\n";

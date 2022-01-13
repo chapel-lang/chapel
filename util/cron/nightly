@@ -24,7 +24,7 @@ use nightlysubs;
 
 # Mailing lists.
 $failuremail = "chapel+tests\@discoursemail.com";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net";
+$allmail = "";
 $replymail = "";
 
 $valgrind = 0;
@@ -543,7 +543,7 @@ if ($python2 == 0) {
   mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
 }
 
-if ($buildruntime == 0) {
+if ($buildruntime == 0 and $nochangerecipient ne "") {
     $endtime = localtime;
 
     $mailsubject = "$subjectid $config_name";
