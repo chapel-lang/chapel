@@ -590,70 +590,10 @@ static void parseDependentModules(bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
-// Internal modules that are currently able to be parsed by the new parser.
-static std::set<std::string> allowedInternalModules = {
-  "ArrayViewRankChange",
-  "ArrayViewReindex",
-  "ArrayViewSlice",
-  "Atomics",
-  "AtomicsCommon",
-  "ByteBufferHelpers",
-  "Bytes",
-  "BytesCasts",
-  "BytesStringCommon",
-  /*"ChapelArray",*/             // Prim call with named args.
-  "ChapelAutoAggregation",
-  "ChapelAutoLocalAccess",
-  "ChapelBase",
-  "ChapelComplex_forDocs",
-  "ChapelDebugPrint",
-  /*"ChapelDistribution",*/      // Segfault somewhere...
-  "ChapelHashing",
-  "ChapelHashtable",
-  "ChapelIOStringifyHelper",
-  "ChapelIteratorSupport",
-  /*"ChapelLocale",*/            //ChapelLocale.chpl:531 not implemented yet
-  "ChapelLocks",
-  "ChapelNumLocales",
-  "ChapelPrivatization",
-  "ChapelRange",
-  "ChapelReduce",
-  "ChapelSerializedBroadcast",
-  "ChapelStandard",
-  /*"ChapelSyncvar",*/           // Lifetimes.
-  "ChapelTaskData",
-  "ChapelTaskDataHelp",
-  "ChapelTaskID",
-  "ChapelThreads",
-  "ChapelTuple",
-  "ChapelUtil",
-  "CString",
-  "DefaultAssociative",
-  "DefaultRectangular",
-  "DefaultSparse",
-  "ExportWrappers",
-  "ExternalArray",
-  "ISO_Fortran_binding",
-  "LocaleModelHelpAPU",
-  "LocaleModelHelpFlat",
-  "LocaleModelHelpGPU",
-  "LocaleModelHelpMem",
-  "LocaleModelHelpNUMA",
-  "LocaleModelHelpRuntime",
-  "LocaleModelHelpSetup",
-  "LocalesArray",
-  "LocaleTree",
-  /*"MemConsistency",*/          // Redefinition of a function...
-  "MemTracking",
-  "NetworkAtomics",
-  "NetworkAtomicTypes",
-  "OwnedObject",
-  "PrintModuleInitOrder",
-  "SharedObject",
-  "startInitCommDiags",
-  "stopInitCommDiags",
-  "String",
-  "StringCasts"
+// Internal modules that are currently NOT able to be parsed by the new parser.
+static std::set<std::string> blockedInternalModules = {
+  "ChapelArray",             // Prim call with named args.
+  "ChapelDomain"            // Prim call with named args.
 };
 
 // TODO: Adjust me over time as more internal modules parse.
@@ -675,13 +615,13 @@ static bool uASTCanParseMod(const char* modName, ModTag modTag) {
 
   switch (modTag) {
     case MOD_INTERNAL:
-      ret = allowedInternalModules.count(modName);
+      ret = blockedInternalModules.count(modName);
       break;
     default:
       break;
   }
 
-  return ret;
+  return !ret;
 }
 
 static bool uASTAttemptToParseMod(const char* modName,

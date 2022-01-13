@@ -9216,7 +9216,7 @@ yyreduce:
 
   case 433: /* lifetime_expr: TRETURN lifetime_ident  */
 #line 2498 "chpl.ypp"
-    { (yyval.expr) = TODOEXPR((yyloc)); }
+    { (yyval.expr) = Return::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[0].expr))).release(); }
 #line 9221 "bison-chpl-lib.cpp"
     break;
 

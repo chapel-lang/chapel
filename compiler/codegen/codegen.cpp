@@ -975,6 +975,16 @@ compareSymbol(const void* v1, const void* v2) {
     return strcmp(m1->cname, m2->cname) < 0;
   }
 
+  // prefer to place externs earlier in the function list (vector)
+  // this was necessary because in the new parser the order in which
+  // extern and non-externs are identified does not match the old parser.
+  // this keeps things consistent between the old and new parser
+  if (s1->hasFlag(FLAG_EXTERN) != s2->hasFlag(FLAG_EXTERN)) {
+    if (s1->hasFlag(FLAG_EXTERN))
+      return 1;
+    return 0;
+  }
+
   if (s1->linenum() != s2->linenum())
     return s1->linenum() < s2->linenum();
 
