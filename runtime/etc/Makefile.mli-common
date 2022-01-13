@@ -87,29 +87,20 @@ endif
 #
 # Compile and link the Chapel runtime and the ZMQ library together into a
 # multi-locale executable. This will be the multi-locale library server.
-#
-#   - $(LIBS) contains gasnet libraries when CHPL_COMM=gasnet, and nothing
-#     otherwise.
-#   - $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) is every third party library.
-#   ^ With the exception of gasnet!
-#
 $(TMPSERVERNAME): $(CHPL_CL_OBJS)
 ifneq ($(SKIP_COMPILE_LINK),skip)
 # Compile the server bundle.
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+	$(CC) $(GEN_CFLAGS) $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) $(COMP_GEN_CFLAGS) -I. $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS) \
 		-c -o $(TMPSERVERNAME).o \
 		$(CHPLSERVERSRC) \
-		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INC_DIRS) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES)
 # Link the server, the runtime, and ZMQ together.
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
-	        $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-		$(GEN_DYNAMIC_FLAG) \
+	$(LD) $(GEN_LFLAGS) $(GEN_DYNAMIC_FLAG) \
 		-o $(TMPSERVERNAME) $(TMPSERVERNAME).o $(CHPLUSEROBJ) \
 		$(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) \
-		-L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
-		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
+	        $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
+	        $(COMP_GEN_USER_LDFLAGS) $(COMP_GEN_LFLAGS) $(LIBS) \
 		$(CHPL_MLI_LIB_DIRS) \
 		-lzmq
 endif
