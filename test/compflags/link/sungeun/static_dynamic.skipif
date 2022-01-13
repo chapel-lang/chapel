@@ -26,7 +26,7 @@ elif [[ $CHPL_TARGET_COMPILER == *pgi* ]] ; then
   #
   echo True
 elif $CHPL_HOME/util/printchplenv --make --all --internal \
-     | grep CHPL_MAKE_THIRD_PARTY_LINK_ARGS \
+     | grep CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS \
      | grep -q -e '-lnuma' ; then
   #
   # If user programs will be linked with libnuma then skip this test,
