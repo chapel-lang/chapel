@@ -31,6 +31,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
+#include "optimizations.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
@@ -2100,6 +2101,11 @@ struct Converter {
         ret->init = commandLineInit;
       }
     }
+
+    // If the init expression of this variable is a domain and this
+    // variable is not const, propagate that information by setting
+    // 'definedConst' in the domain to false.
+    setDefinedConstForDefExprIfApplicable(ret, &ret->sym->flags);
 
     return ret;
   }
