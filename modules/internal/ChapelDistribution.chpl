@@ -182,6 +182,47 @@ module ChapelDistribution {
       return ret;
     }
 
+    // default overloads to provide clear compile-time error messages
+
+    proc dnsError(param op: string) {
+      compilerError("this domain type does not support '", op, "'");
+    }
+
+    pragma "no doc" pragma "last resort"
+    proc parSafe                  { dnsError("parSafe"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiLow                   { dnsError("low"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiHigh                  { dnsError("high"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiStride                { dnsError("stride"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiAlignment             { dnsError("alignment"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiFirst                 { dnsError("first"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiLast                  { dnsError("last"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiAlignedlow            { dnsError("alignedLow"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiAlignedhigh           { dnsError("alignedHigh"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiIndexOrder(i)         { dnsError("indexOrder"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiMakeIndexBuffer(size) { dnsError("makeIndexBuffer"); }
+
+    // end of default overloads to provide clear compile-time error messages
+
     inline proc trackArrays() {
       return disableConstDomainOpt || !this.definedConst;
     }
@@ -655,7 +696,7 @@ module ChapelDistribution {
     proc dsiAlignedLow { return parentDom.alignedLow; }
     proc dsiAlignedHigh { return parentDom.alignedHigh; }
 
-    proc dsiMakeIndexBuffer(size) {
+    override proc dsiMakeIndexBuffer(size) {
       return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);
     }
 

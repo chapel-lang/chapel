@@ -1,0 +1,1 @@
+orderIndex-non-int.chpl:3: error: the order argument of 'orderToIndex' on this domain must be an integer, excluding uint(64)

@@ -1008,7 +1008,7 @@ proc BlockDom.dsiMember(i) {
   return whole.contains(i);
 }
 
-proc BlockDom.dsiIndexOrder(i) {
+override proc BlockDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 

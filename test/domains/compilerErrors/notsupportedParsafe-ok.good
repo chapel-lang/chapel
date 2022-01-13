@@ -1,0 +1,3 @@
+notsupportedParsafe-ok.chpl:4: warning: true
+notsupportedParsafe-ok.chpl:7: warning: true
+notsupportedParsafe-ok.chpl:12: error: done
