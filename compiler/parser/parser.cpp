@@ -593,9 +593,7 @@ static void parseDependentModules(bool isInternal) {
 // Internal modules that are currently NOT able to be parsed by the new parser.
 static std::set<std::string> blockedInternalModules = {
   "ChapelArray",             // Prim call with named args.
-  "ChapelDomain",            // Prim call with named args.
-  "ChapelDistribution",      // Segfault somewhere...
-  "MemConsistency"           // error: conflicting types for ‘chpl_rmem_consist_fence’
+  "ChapelDomain"            // Prim call with named args.
 };
 
 // TODO: Adjust me over time as more internal modules parse.
