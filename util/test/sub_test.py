@@ -515,11 +515,15 @@ def FindGoodFile(basename, commExecNums=['']):
         # Else try comm-, networkAtomics-, and localeModel-specific .good
         # files.  All 3, any 2, or just 1 of these may be used, but if more
         # then 1 they must be in the above order.
+        # Also tries tasks- by itself. If this grows any larger, we should probably
+        # list all files with basename prefix and parse them out to avoid the combination
+        # blowup and large number of stat calls
         if not os.path.isfile(goodfile):
             for specstr in [ chplcommstr+chplnastr+chpllmstr,
                              chplcommstr+chplnastr,
                              chplcommstr+chpllmstr,
                              chplnastr+chpllmstr,
+                             chpltasksstr,
                              chplcommstr,
                              chplnastr,
                              chpllmstr ]:
@@ -841,6 +845,10 @@ chpllauncher=os.getenv('CHPL_LAUNCHER','none').strip()
 chpllm=os.getenv('CHPL_LOCALE_MODEL','flat').strip()
 chpllmstr='.lm-'+chpllm
 #sys.stdout.write('lm=%s\n'%(chpllm))
+
+# CHPL_TASKS
+chpltasks=os.getenv('CHPL_TASKS', 'none').strip()
+chpltasksstr='.tasks-'+chpltasks
 
 #
 # Test options for all tests in this directory

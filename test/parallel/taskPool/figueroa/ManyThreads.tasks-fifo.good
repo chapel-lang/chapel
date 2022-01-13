@@ -1,0 +1,2 @@
+total is 4501500
+warning: Setting number of threads in CHPL_TASKS=fifo can lead to deadlock

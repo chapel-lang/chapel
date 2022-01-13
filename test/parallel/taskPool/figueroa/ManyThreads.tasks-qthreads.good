@@ -1,0 +1,3 @@
+total is 4501500
+warning: QTHREADS: Reduced numThreadsPerLocale=300 to NNNN to prevent oversubscription of the system.
+
