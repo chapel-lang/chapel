@@ -346,7 +346,7 @@ explicitly in the ``.compopts`` or ``.execopts`` file for the test.
   will then apply for CHPL_COMM != none)
 - ``.no-local.good``: used with ``--no-local`` testing
 - ``.lm-numa.good``: used with CHPL_LOCALE_MODEL=numa
-- ``.na-ofi.good``: used with CHPL_NETWORK_ATOMICS=ofi
+- ``.na-none.good``: used with CHPL_NETWORK_ATOMICS=none
 - ``.tasks-fifo.good``: used with CHPL_TASKS=fifo
 - ``.doc.good``: used when testing ``chpldoc`` instead of ``chpl``
 
