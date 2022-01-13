@@ -83,6 +83,11 @@ X(logicalAnd     , "&&")
 X(logicalOr      , "||")
 X(plus           , "+")
 X(times          , "*")
+X(compareEqual   , "==")
+X(greaterOrEqual , ">=" )
+X(greaterThan    , ">")
+X(lessThan       , "<")
+X(lessOrEqual    , "<=")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */

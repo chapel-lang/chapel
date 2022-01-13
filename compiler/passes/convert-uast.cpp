@@ -1596,8 +1596,12 @@ struct Converter {
       auto lhsIdent = opCall->actual(0)->toIdentifier();
       auto rhsIdent = opCall->actual(1)->toIdentifier();
       assert(lhsIdent && rhsIdent);
-      assert(opCall->op() == "=" || opCall->op() == "<" || opCall->op() == "<="
-             || opCall->op() == "==" || opCall->op() == ">" || opCall->op() == ">=");
+      assert(opCall->op() == USTR("=") ||
+             opCall->op() == USTR("<") ||
+             opCall->op() == USTR(">") ||
+             opCall->op() == USTR("==")||
+             opCall->op() == USTR("<=")||
+             opCall->op() == USTR(">="));
       Expr* lhs = convertLifetimeIdent(lhsIdent);
       Expr* rhs = convertLifetimeIdent(rhsIdent);
       return new CallExpr(opCall->op().c_str(), lhs, rhs);
