@@ -54,7 +54,7 @@ def filter_compile_args(args):
     # certain flags from the gasnet .pc file
     more_filtered = [ ]
     for arg in ret:
-        if arg == '-O3' or arg == '-Winline':
+        if arg.startswith('-O') or arg == '-Winline':
             pass # leave out this flag
         else:
             more_filtered.append(arg)
@@ -69,9 +69,22 @@ def get_compile_args():
                        'gasnet', get_uniq_cfg_path(), get_gasnet_pc_file())
     return (filter_compile_args(tup[0]), filter_compile_args(tup[1]))
 
+# Filter link args to avoid -W arguments that can't be handled by ld
+# and also to avoid -O arguments.
+def filter_link_args(args):
+    ret = [ ]
+    for arg in args:
+        if arg.startswith('-O') or arg.startswith('-W'):
+            pass # leave out this flag
+        else:
+            ret.append(arg)
+
+    return ret
+
 # returns 2-tuple of lists
 #  (linker_bundled_args, linker_system_args)
 @memoize
 def get_link_args():
-    return third_party_utils.pkgconfig_get_bundled_link_args(
+    tup = third_party_utils.pkgconfig_get_bundled_link_args(
                        'gasnet', get_uniq_cfg_path(), get_gasnet_pc_file())
+    return (filter_link_args(tup[0]), filter_link_args(tup[1]))

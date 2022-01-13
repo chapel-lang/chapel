@@ -74,7 +74,6 @@ endif
 # CHPL_MAKE_RUNTIME_SUBDIR=linux64/gnu/loc-flat/udp/everything/tasks-fifo/pthreads/tmr-generic/mem-default/atomics-intrinsics/none/gmp-none/hwloc-none/re-none/wide-struct/fs-none/lib_pic-none/
 # CHPL_MAKE_LAUNCHER_SUBDIR=linux64/gnu/loc-flat/udp/everything/tasks-fifo/pthreads/launch-amudprun/tmr-generic/mem-default/atomics-intrinsics/none/wide-struct
 # CHPL_MAKE_JEMALLOC_UNIQ_CFG_PATH etc
-# CHPL_MAKE_THIRD_PARTY_LINK_ARGS
 # Don't recompute the settings every time!
 ifndef CHPL_MAKE_CHPLENV_CACHE
 # ... but it involves a little bit of Make-craziness because
