@@ -3682,6 +3682,7 @@ typedef enum {
   am_opFree,                               // free some memory
   am_opNop,                                // do nothing; for MCM & liveness
   am_opShutdown,                           // signal main process for shutdown
+  am_opFAMOResult,                         // return result of fetching AMO
 } amOp_t;
 
 static inline
@@ -3735,6 +3736,15 @@ struct amRequest_AMO_t {
   void* result;                 // result address on initiator's node
 };
 
+struct amRequest_FAMO_result_t {
+  struct amRequest_base_t b;
+  int8_t size;                  // object size (bytes)
+  chpl_amo_datum_t object;      // the object
+  enum fi_datatype ofiType;     // ofi object type
+  void* obj;                    // object address on target node
+};
+
+
 struct amRequest_free_t {
   struct amRequest_base_t b;
   void* p;                      // address to free, on AM target node
@@ -3747,6 +3757,7 @@ typedef union {
   struct amRequest_RMA_t rma;
   struct amRequest_AMO_t amo;
   struct amRequest_free_t free;
+  struct amRequest_FAMO_result_t famo_result;
 } amRequest_t;
 
 struct taskArg_RMA_t {
@@ -3773,6 +3784,8 @@ static void amRequestRmaPut(c_nodeid_t, void*, void*, size_t);
 static void amRequestRmaGet(c_nodeid_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
+static void amRequestFAMOResult(c_nodeid_t, chpl_amo_datum_t*, 
+                                enum fi_datatype, void*, size_t, amDone_t*);
 static void amRequestFree(c_nodeid_t, void*);
 static void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
@@ -4040,6 +4053,8 @@ void amRequestAMO(c_nodeid_t node, void* object,
 }
 
 
+
+
 static inline
 void amRequestFree(c_nodeid_t node, void* p) {
   amRequest_t req = { .free = { .b = { .op = am_opFree,
@@ -4066,6 +4081,39 @@ void amRequestShutdown(c_nodeid_t node) {
   amRequestCommon(node, &req, sizeof(req.b), false, NULL);
 }
 
+// amRequestFAMOResult
+//
+// This function is invoked by a fetching AMO handler to return the result
+// back to the initiating locale. The scenario is that locale A has sent a
+// fetching AMO to locale B via an AM. The AM handler on B invokes this
+// function to send an AM back to A that causes A to store the result of the
+// fetching AMO and set the pAmDone flag.
+
+static inline
+void amRequestFAMOResult(c_nodeid_t node,
+                  chpl_amo_datum_t *result,
+                  enum fi_datatype ofiType, // type of the result
+                  void *targetAddr, // address of result on remote node
+                  size_t size,       // size of the result
+                  amDone_t *pAmDone) // address of pAmDone on remote node
+{
+
+  DBG_PRINTF(DBG_AM | DBG_AM_SEND, "amRequestFAMOResult");
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  amRequest_t req = { .famo_result = { .b = { .op = am_opFAMOResult,
+                                      .node = chpl_nodeID,
+                                      .pAmDone = pAmDone, },
+                               .size = size,
+                               .ofiType = ofiType,
+                               .obj = targetAddr,}, };
+
+  memcpy(&req.famo_result.object, result, size);
+
+  amRequestCommon(node, &req, sizeof(req.amo), false /* blocking */, tcip);
+  tciFree(tcip);
+}
 
 typedef void (amReqFn_t)(c_nodeid_t node,
                          amRequest_t* req, size_t reqSize, void* mrDesc,
@@ -4193,6 +4241,8 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     haveAmosOut = (tcip->amoVisBitmap != NULL
                    && bitmapTest(tcip->amoVisBitmap, node));
     break;
+
+  // XXX anything to do here for FAMO result?
   case am_opAMO:
     {
       chpl_bool amoHasMemFx = (req->amo.ofiOp != FI_ATOMIC_READ);
@@ -4277,6 +4327,8 @@ void amReqFn_msgOrd(c_nodeid_t node,
     forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
                           -1 /*skipNode*/, tcip);
     break;
+
+  // XXX anything to do for FAMO result?
   case am_opAMO:
     if (req->amo.ofiOp != FI_ATOMIC_READ) {
       forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
@@ -4443,6 +4495,7 @@ static void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t*);
 static void amWrapGet(struct taskArg_RMA_t*);
 static void amWrapPut(struct taskArg_RMA_t*);
 static void amHandleAMO(struct amRequest_AMO_t*);
+static void amHandleFAMOResult(struct amRequest_FAMO_result_t*);
 static void amPutDone(c_nodeid_t, amDone_t*);
 static void amCheckLiveness(void);
 
@@ -4598,6 +4651,11 @@ size_t handleAmReq(amRequest_t *req) {
     case am_opAMO:
       amHandleAMO(&req->amo);
       size = sizeof(req->amo);
+      break;
+
+    case am_opFAMOResult:
+      amHandleFAMOResult(&req->famo_result);
+      size = sizeof(req->famo_result);
       break;
 
     case am_opFree:
@@ -4877,6 +4935,7 @@ void amWrapPut(struct taskArg_RMA_t* tsk_rma) {
 
 static
 void amHandleAMO(struct amRequest_AMO_t* amo) {
+  DBG_PRINTF(DBG_AM | DBG_AM_RECV, "amHandleAMO result %p", amo->result);
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqStartStr((amRequest_t*) amo));
   assert(amo->b.node != chpl_nodeID);    // should be handled on initiator
 
@@ -4885,18 +4944,25 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
   doCpuAMO(amo->obj, &amo->opnd, &amo->cmpr, &result,
            amo->ofiOp, amo->ofiType, amo->size);
 
+  bool putDone = true;
   if (amo->result != NULL) {
-    CHK_TRUE(mrGetKey(NULL, NULL, amo->b.node, amo->result, resSize));
-    (void) ofi_put(&result, amo->b.node, amo->result, resSize);
+    if (true) {
+      // Use a non-blocking AMO to return the result and set pAmDone.
+      amRequestFAMOResult(amo->b.node, &result, amo->ofiType, amo->result, resSize, amo->b.pAmDone);
+      putDone = false;
+    } else {
+      CHK_TRUE(mrGetKey(NULL, NULL, amo->b.node, amo->result, resSize));
+      (void) ofi_put(&result, amo->b.node, amo->result, resSize);
 
-    //
-    // Note: the result must be visible in target memory before the
-    // 'done' indicator is.
-    //
+      //
+      // Note: the result must be visible in target memory before the
+      // 'done' indicator is.
+      //
+    }
   }
 
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) amo));
-  if (amo->b.pAmDone != NULL) {
+  if (amo->b.pAmDone != NULL && putDone) {
     amPutDone(amo->b.node, amo->b.pAmDone);
   }
 }
@@ -4945,6 +5011,26 @@ void amPutDone(c_nodeid_t node, amDone_t* pAmDone) {
   if (amTcip == NULL) {
     tciFree(tcip);
   }
+}
+
+
+// amHandleFAMOResult
+
+// This function is invoked to handle the result of a fetching AMO
+// implemented via an AM. The scenario is that locale A has sent a
+// fetching AMO to locale B via an AM. The AM handler on B sends back an
+// AM to locale A that invokes this function to store the result of the
+// fetching AMO and set the pAmDone flag.
+
+static
+void amHandleFAMOResult(struct amRequest_FAMO_result_t* famo) {
+  DBG_PRINTF(DBG_AM | DBG_AM_RECV, "FAMO result");
+  assert(famo->b.node != chpl_nodeID);    // should be handled on initiator
+
+  memcpy(famo->obj, &famo->object, famo->size);
+  // make sure the object is written before pAmDone is set
+  chpl_atomic_thread_fence(memory_order_release);
+  *(famo->b.pAmDone) = 1;
 }
 
 
@@ -8020,6 +8106,7 @@ const char* am_opName(amOp_t op) {
   case am_opFree: return "opFree";
   case am_opNop: return "opNop";
   case am_opShutdown: return "opShutdown";
+  case am_opFAMOResult: return "opFAMOResult";
   default: return "op???";
   }
 }
@@ -8140,10 +8227,21 @@ const char* am_reqStr(c_nodeid_t tgtNode, amRequest_t* req, size_t reqSize) {
     }
     break;
 
+  case am_opFAMOResult:
+    len += snprintf(buf + len, sizeof(buf) - len,
+                    ", obj %p, object %s"
+                    ", ofiType %s, sz %d",
+                    req->famo_result.obj,
+                    DBG_VAL(&req->famo_result.object, req->famo_result.ofiType),
+                    amo_typeName(req->famo_result.ofiType), 
+                    req->famo_result.size);
+    break;
+
   case am_opFree:
     len += snprintf(buf + len, sizeof(buf) - len, ", %p",
                     req->free.p);
     break;
+
 
   default:
     break;
