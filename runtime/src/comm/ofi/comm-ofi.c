@@ -3682,6 +3682,7 @@ typedef enum {
   am_opFree,                               // free some memory
   am_opNop,                                // do nothing; for MCM & liveness
   am_opShutdown,                           // signal main process for shutdown
+  am_opFAMOResult,                         // return result of fetching AMO
 } amOp_t;
 
 static inline
@@ -3735,6 +3736,15 @@ struct amRequest_AMO_t {
   void* result;                 // result address on initiator's node
 };
 
+struct amRequest_FAMO_result_t {
+  struct amRequest_base_t b;
+  int8_t size;                  // result size (bytes)
+  chpl_amo_datum_t result;      // the result
+  enum fi_datatype ofiType;     // result ofi type
+  void* res;                    // result's address on the node that initiated
+                                // the fetching AMO
+};
+
 struct amRequest_free_t {
   struct amRequest_base_t b;
   void* p;                      // address to free, on AM target node
@@ -3747,6 +3757,7 @@ typedef union {
   struct amRequest_RMA_t rma;
   struct amRequest_AMO_t amo;
   struct amRequest_free_t free;
+  struct amRequest_FAMO_result_t famo_result;
 } amRequest_t;
 
 struct taskArg_RMA_t {
@@ -3773,6 +3784,8 @@ static void amRequestRmaPut(c_nodeid_t, void*, void*, size_t);
 static void amRequestRmaGet(c_nodeid_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
+static void amRequestFAMOResult(c_nodeid_t, chpl_amo_datum_t*, 
+                                enum fi_datatype, void*, size_t, amDone_t*);
 static void amRequestFree(c_nodeid_t, void*);
 static void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
@@ -4066,6 +4079,41 @@ void amRequestShutdown(c_nodeid_t node) {
   amRequestCommon(node, &req, sizeof(req.b), false, NULL);
 }
 
+/*
+amRequestFAMOResult
+
+This function is invoked by a fetching AMO handler to return the result
+back to the locale that initiated the fetching AMO. The scenario is
+that locale A has sent a fetching AMO to locale B via an AM. The AM
+handler on B invokes this function to send an AM back to A that causes
+A to store the result of the fetching AMO and set the pAmDone flag.
+*/
+
+static inline
+void amRequestFAMOResult(c_nodeid_t node,
+                  chpl_amo_datum_t *result,
+                  enum fi_datatype ofiType, // type of the result
+                  void *targetAddr, // address of result on remote node
+                  size_t size,       // size of the result
+                  amDone_t *pAmDone) // address of pAmDone on remote node
+{
+
+  DBG_PRINTF(DBG_AM | DBG_AM_SEND, "amRequestFAMOResult");
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  amRequest_t req = { .famo_result = { .b = { .op = am_opFAMOResult,
+                                      .node = chpl_nodeID,
+                                      .pAmDone = pAmDone, },
+                               .size = size,
+                               .ofiType = ofiType,
+                               .res = targetAddr,
+                               .result = *result}, };
+
+  amRequestCommon(node, &req, sizeof(req.famo_result), false /* blocking */,
+                  tcip);
+  tciFree(tcip);
+}
 
 typedef void (amReqFn_t)(c_nodeid_t node,
                          amRequest_t* req, size_t reqSize, void* mrDesc,
@@ -4321,11 +4369,30 @@ static
 void amReqFn_dlvrCmplt(c_nodeid_t node,
                        amRequest_t* req, size_t reqSize, void* mrDesc,
                        chpl_bool blocking, struct perTxCtxInfo_t* tcip) {
-  atomic_bool txnDone;
-  void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
-  (void) wrap_fi_send(node, req, reqSize, mrDesc, ctx, tcip);
-  waitForTxnComplete(tcip, ctx);
-  txCtxCleanup(ctx);
+  if (!blocking && (reqSize <= ofi_info->tx_attr->inject_size) &&
+      (ofi_info->tx_attr->msg_order & FI_ORDER_SAS)) {
+    
+    /*    
+    Special case: injection is the quickest.  We use that if this is a
+    non-blocking AM, the size doesn't exceed the injection size limit,
+    and the provider supports send-after-send (SAS) message ordering so
+    that AMs are not reordered by the network.  (We could even inject a
+    small-enough AM request if this were a blocking AM, but there's no
+    point because we're going to wait for it to get done on the target
+    anyway.)
+    */
+    
+    (void) wrap_fi_inject(node, req, reqSize, tcip);
+  } else {
+    //
+    // General case.
+    //
+    atomic_bool txnDone;
+    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
+    (void) wrap_fi_send(node, req, reqSize, mrDesc, ctx, tcip);
+    waitForTxnComplete(tcip, ctx);
+    txCtxCleanup(ctx);
+  }
 }
 
 
@@ -4443,6 +4510,7 @@ static void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t*);
 static void amWrapGet(struct taskArg_RMA_t*);
 static void amWrapPut(struct taskArg_RMA_t*);
 static void amHandleAMO(struct amRequest_AMO_t*);
+static void amHandleFAMOResult(struct amRequest_FAMO_result_t*);
 static void amPutDone(c_nodeid_t, amDone_t*);
 static void amCheckLiveness(void);
 
@@ -4598,6 +4666,11 @@ size_t handleAmReq(amRequest_t *req) {
     case am_opAMO:
       amHandleAMO(&req->amo);
       size = sizeof(req->amo);
+      break;
+
+    case am_opFAMOResult:
+      amHandleFAMOResult(&req->famo_result);
+      size = sizeof(req->famo_result);
       break;
 
     case am_opFree:
@@ -4886,19 +4959,27 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
            amo->ofiOp, amo->ofiType, amo->size);
 
   if (amo->result != NULL) {
-    CHK_TRUE(mrGetKey(NULL, NULL, amo->b.node, amo->result, resSize));
-    (void) ofi_put(&result, amo->b.node, amo->result, resSize);
-
-    //
-    // Note: the result must be visible in target memory before the
-    // 'done' indicator is.
-    //
+    if (ofi_info->tx_attr->msg_order & FI_ORDER_SAS) {
+      // Use a non-blocking AMO to return the result and set pAmDone.
+      DBG_PRINTF(DBG_AM | DBG_AM_RECV, "sending FAMO result via AM");
+      amRequestFAMOResult(amo->b.node, &result, amo->ofiType, amo->result, resSize, amo->b.pAmDone);
+    } else {
+      // do a blocking PUT of the result
+      DBG_PRINTF(DBG_AM | DBG_AM_RECV, 
+                 "writing FAMO result via blocking PUT");
+      CHK_TRUE(mrGetKey(NULL, NULL, amo->b.node, amo->result, resSize));
+      (void) ofi_put(&result, amo->b.node, amo->result, resSize);
+    }
   }
 
-  DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) amo));
-  if (amo->b.pAmDone != NULL) {
+  // PUT the "done" flag if necessary
+  if ((amo->b.pAmDone != NULL) && ((amo->result == NULL) ||
+      ((ofi_info->tx_attr->msg_order & FI_ORDER_SAS) == 0))) {
+      DBG_PRINTF(DBG_AM | DBG_AM_RECV, 
+                 "writing FAMO done flag via non-blocking PUT");
     amPutDone(amo->b.node, amo->b.pAmDone);
   }
+  DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) amo));
 }
 
 
@@ -4945,6 +5026,27 @@ void amPutDone(c_nodeid_t node, amDone_t* pAmDone) {
   if (amTcip == NULL) {
     tciFree(tcip);
   }
+}
+
+
+// amHandleFAMOResult
+
+// This function is invoked to handle the result of a fetching AMO
+// implemented via an AM. The scenario is that locale A has sent a
+// fetching AMO to locale B via an AM. The AM handler on B sends back an
+// AM to locale A that invokes this function to store the result of the
+// fetching AMO and set the pAmDone flag.
+
+static
+void amHandleFAMOResult(struct amRequest_FAMO_result_t* famo) {
+  DBG_PRINTF(DBG_AM | DBG_AM_RECV, "FAMO result");
+  assert(famo->b.node != chpl_nodeID);    // should be handled on initiator
+
+  memcpy(famo->res, &famo->result, famo->size);
+  assert(famo->b.pAmDone != NULL);
+  // make sure the object is written before pAmDone is set
+  chpl_atomic_thread_fence(memory_order_release);
+  *(famo->b.pAmDone) = 1;
 }
 
 
@@ -6571,7 +6673,7 @@ ssize_t wrap_fi_atomicmsg(struct amoBundle_t* ab, uint64_t flags,
                DBG_VAL(ab->iovOpnd.addr, ab->m.datatype),
                amo_opName(ab->m.op), amo_typeName(ab->m.datatype), ab->size,
                ab->m.context, flags);
-    OFI_CHK(fi_atomicmsg(tcip->txCtx, &ab->m, flags));
+    OFI_RIDE_OUT_EAGAIN(tcip, fi_atomicmsg(tcip->txCtx, &ab->m, flags));
   } else {
     // Fetching.
     if (ab->m.op == FI_CSWAP) {
@@ -6584,7 +6686,7 @@ ssize_t wrap_fi_atomicmsg(struct amoBundle_t* ab, uint64_t flags,
                  DBG_VAL(ab->iovCmpr.addr, ab->m.datatype),
                  amo_opName(ab->m.op), amo_typeName(ab->m.datatype),
                  ab->iovRes.addr, ab->size, ab->m.context, flags);
-      OFI_CHK(fi_compare_atomicmsg(tcip->txCtx, &ab->m,
+      OFI_RIDE_OUT_EAGAIN(tcip, fi_compare_atomicmsg(tcip->txCtx, &ab->m,
                                    &ab->iovCmpr, &ab->mrDescCmpr, 1,
                                    &ab->iovRes, &ab->mrDescRes, 1, 0));
     } else {
@@ -6605,7 +6707,7 @@ ssize_t wrap_fi_atomicmsg(struct amoBundle_t* ab, uint64_t flags,
                    amo_opName(ab->m.op), amo_typeName(ab->m.datatype),
                    ab->iovRes.addr, ab->size, ab->m.context, flags);
       }
-      OFI_CHK(fi_fetch_atomicmsg(tcip->txCtx, &ab->m,
+      OFI_RIDE_OUT_EAGAIN(tcip, fi_fetch_atomicmsg(tcip->txCtx, &ab->m,
                                  &ab->iovRes, &ab->mrDescRes, 1, 0));
     }
   }
@@ -7271,7 +7373,6 @@ int computeAtomicValid(enum fi_datatype ofiType) {
 #undef my_fetch_valid
 #undef my_compare_valid
 }
-
 
 static
 int isAtomicValid(enum fi_datatype ofiType) {
@@ -8020,6 +8121,7 @@ const char* am_opName(amOp_t op) {
   case am_opFree: return "opFree";
   case am_opNop: return "opNop";
   case am_opShutdown: return "opShutdown";
+  case am_opFAMOResult: return "opFAMOResult";
   default: return "op???";
   }
 }
@@ -8043,12 +8145,20 @@ const char* amo_opName(enum fi_op ofiOp) {
 static
 const char* amo_typeName(enum fi_datatype ofiType) {
   switch (ofiType) {
+  case FI_INT8: return "char";
+  case FI_UINT8: return "uchar";
+  case FI_INT16: return "int16";
+  case FI_UINT16: return "uint16";
   case FI_INT32: return "int32";
   case FI_UINT32: return "uint32";
   case FI_INT64: return "int64";
   case FI_UINT64: return "uint64";
   case FI_FLOAT: return "real32";
   case FI_DOUBLE: return "real64";
+  case FI_FLOAT_COMPLEX: return "float-complex";
+  case FI_DOUBLE_COMPLEX: return "float-complex";
+  case FI_LONG_DOUBLE: return "long-double";
+  case FI_LONG_DOUBLE_COMPLEX: return "long-double-complex";
   default: return "amoType???";
   }
 }
@@ -8138,6 +8248,16 @@ const char* am_reqStr(c_nodeid_t tgtNode, amRequest_t* req, size_t reqSize) {
                       amo_opName(req->amo.ofiOp),
                       amo_typeName(req->amo.ofiType), req->amo.size);
     }
+    break;
+
+  case am_opFAMOResult:
+    len += snprintf(buf + len, sizeof(buf) - len,
+                    ", res %p, result %s"
+                    ", ofiType %s, sz %d",
+                    req->famo_result.res,
+                    DBG_VAL(&req->famo_result.result, req->famo_result.ofiType),
+                    amo_typeName(req->famo_result.ofiType), 
+                    req->famo_result.size);
     break;
 
   case am_opFree:
