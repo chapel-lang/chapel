@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import glob
+import os
 
 import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform
 import overrides, third_party_utils
