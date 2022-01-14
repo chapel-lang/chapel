@@ -9835,6 +9835,9 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
     retval = true;
   }
 
+  // remove the temporary used in resolving
+  tmp->defPoint->remove();
+
   return retval;
 }
 
@@ -9875,6 +9878,9 @@ static void resolveBroadcasters(AggregateType* at) {
 
   ser.broadcaster = broadcastFn;
   ser.destroyer   = destroyFn;
+
+  // remove the temporary used to resolve
+  tmp->defPoint->remove();
 }
 
 static FnSymbol* createMethodStub(AggregateType* at, const char* methodName,
