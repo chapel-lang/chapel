@@ -982,21 +982,21 @@ class FormalActualMap {
 
 template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
 {
-  void operator()(std::ostream &stringOut,
+  void operator()(std::ostream& streamOut,
                   chpl::StringifyKind stringKind,
                   const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
     switch(stringMe) {
       case 0:
-        stringOut << "WHERE_NONE";
+        streamOut << "WHERE_NONE";
         break;
       case 1:
-        stringOut <<  "WHERE_TBD";
+        streamOut <<  "WHERE_TBD";
         break;
       case 2:
-        stringOut <<  "WHERE_TRUE";
+        streamOut <<  "WHERE_TRUE";
         break;
       case 3:
-        stringOut <<  "WHERE_FALSE";
+        streamOut <<  "WHERE_FALSE";
         break;
     }
 }
