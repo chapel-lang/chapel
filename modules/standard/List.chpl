@@ -1320,7 +1320,7 @@ module List {
         return error;
 
       if boundsChecking {
-        const msg = " index for \"list.indexOf\" out of bounds: ";
+        const msg = " index for \"list.find\" out of bounds: ";
 
         if end >= 0 && !_withinBounds(end) then
           boundsCheckHalt("End" + msg + end:string);
