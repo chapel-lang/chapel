@@ -980,22 +980,23 @@ class FormalActualMap {
 
 /// \cond DO_NOT_DOCUMENT
 
-template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
+template<> struct stringify<resolution::TypedFnSignature::WhereClauseResult>
 {
   void operator()(std::ostream& streamOut,
-                  chpl::StringifyKind stringKind,
-                  const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
+                  StringifyKind stringKind,
+                  const resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
+    using WhereClauseResult = resolution::TypedFnSignature::WhereClauseResult;
     switch(stringMe) {
-      case 0:
+      case WhereClauseResult::WHERE_NONE:
         streamOut << "WHERE_NONE";
         break;
-      case 1:
+      case WhereClauseResult::WHERE_TBD:
         streamOut <<  "WHERE_TBD";
         break;
-      case 2:
+      case WhereClauseResult::WHERE_TRUE:
         streamOut <<  "WHERE_TRUE";
         break;
-      case 3:
+      case WhereClauseResult::WHERE_FALSE:
         streamOut <<  "WHERE_FALSE";
         break;
     }
