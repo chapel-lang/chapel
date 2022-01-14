@@ -218,10 +218,9 @@ inline Expr* AList::only(void) {
   return NULL;
 }
 
-// Yikes! This header has to go here because we want ::get to be inlined
-// Since we access expr->next we need the full defintion of Expr
-// but since  Expr includes an AList by value inside of itself,
-// it needs the full definition of AList
+// This header has to go here because we want AList::get to be inlined.
+// AList::get accesses expr->next, so it needs the full defintion of Expr.
+// Expr has methods with AList formals so needs the full definition of AList.
 #include "expr-class-def.h"
 
 inline Expr* AList::get(int index) const {
