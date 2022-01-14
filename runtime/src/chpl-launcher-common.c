@@ -95,7 +95,6 @@ void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
 int
 chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int outbuflen) {
   const int buflen = 1024;
-  int curlen;
   char buf[buflen];
   char *cur;
   int fdo[2], outfd;
@@ -149,7 +148,6 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     close(fdo[1]);
     close(fde[1]);
     numRead = 0;
-    curlen = buflen > outbuflen ? outbuflen : buflen;
     cur = buf;
     while (numRead < buflen) {
       struct timeval tv = { 1, 0 };
@@ -165,7 +163,6 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
         } else if (rv > 0) {
           cur += rv;
           numRead += rv;
-          curlen -= rv;
         } else {
           sprintf(buf, "Unable to run '%s' (read failed): %s",
                   command, strerror(errno));
@@ -181,7 +178,6 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
         } else if (rv > 0) {
           cur += rv;
           numRead += rv;
-          curlen -= rv;
         } else {
           sprintf(buf, "Unable to run '%s' (read failed): %s",
                   command, strerror(errno));
