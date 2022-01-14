@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+import os
+
+# These are combinations of comm + tasks that we want to test
+# We skip testing gasnet+fifo because the coverage is redundant
+to_test = {
+    # comm       tasks
+    ('none'   , 'fifo'),
+    ('none'   , 'qthreads'),
+    ('gasnet' , 'qthreads'),
+}
+
+comm = os.getenv('CHPL_COMM', 'none')
+task = os.getenv('CHPL_TASKS', 'none')
+
+print(not (comm, task) in to_test)
