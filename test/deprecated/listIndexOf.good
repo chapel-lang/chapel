@@ -1,0 +1,2 @@
+listIndexOf.chpl:11: warning: indexOf on lists is deprecated, use find instead; please let us know if this is problematic for you.
+

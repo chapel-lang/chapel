@@ -1278,6 +1278,17 @@ module List {
     }
 
     /*
+    .. warning::
+
+    indexOf on lists is deprecated, use :proc:`find` instead.
+    */
+
+    deprecated "indexOf on lists is deprecated, use :proc:`find` instead; please let us know if this is problematic for you."
+    proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
+      return find(x, start, end);
+    }
+
+    /*
       Return a zero-based index into this list of the first item whose value
       is equal to `x`. If no such element can be found this method returns
       the value `-1`.
@@ -1302,8 +1313,7 @@ module List {
       :return: The index of the element to search for, or `-1` on error.
       :rtype: `int`
     */
-    proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
-
+    proc const find(x: eltType, start: int=0, end: int=-1): int {
       param error = -1;
 
       if _size == 0 then
