@@ -1,0 +1,7 @@
+feature request/error message: 'ref' arguments with defaults
+
+It seems as though we should support 'ref' arguments that have default
+intents, which can be useful in recursive settings.  Otherwise, either
+the callee must pass in a variable they may not care about, or the
+routine must create a bootstrapping overload of itself that doesn't
+take the additional arg.

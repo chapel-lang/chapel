@@ -1,0 +1,5 @@
+$CHPL_HOME/modules/internal/OwnedObject.chpl:167: In initializer:
+$CHPL_HOME/modules/internal/OwnedObject.chpl:172: error: Could not coerce 'nil' to 'borrowed Node?' in initialization
+  $CHPL_HOME/modules/internal/OwnedObject.chpl:247: called as owned.init(type chpl_t = borrowed Node?)
+  within internal functions (use --print-callstack-on-error to see)
+  day18-bug2.chpl:20: called as lineToTree(line: string, pos: int(64))
