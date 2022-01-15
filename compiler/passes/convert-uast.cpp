@@ -616,7 +616,9 @@ struct Converter {
         assert(ifVar->kind() == uast::Variable::CONST ||
                ifVar->kind() == uast::Variable::VAR);
         assert(ifVar->initExpression());
-        auto varNameStr = ifVar->name().c_str();
+        // astr() varNameStr so it doesn't go out of scope when passed to
+        // buildIfVar
+        auto varNameStr = astr(ifVar->name().c_str());
         auto initExpr = toExpr(convertAST(ifVar->initExpression()));
         bool isConst = ifVar->kind() == uast::Variable::CONST;
         cond = buildIfVar(varNameStr, initExpr, isConst);
