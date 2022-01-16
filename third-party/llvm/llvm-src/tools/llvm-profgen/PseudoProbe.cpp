@@ -88,12 +88,7 @@ void PseudoProbe::print(raw_ostream &OS,
   }
   OS << "Index: " << Index << "  ";
   OS << "Type: " << PseudoProbeTypeStr[static_cast<uint8_t>(Type)] << "  ";
-  if (isDangling()) {
-    OS << "Dangling  ";
-  }
-  if (isTailCall()) {
-    OS << "TailCall  ";
-  }
+
   std::string InlineContextStr = getInlineContextStr(GUID2FuncMAP, ShowName);
   if (InlineContextStr.size()) {
     OS << "Inlined: @ ";
@@ -162,7 +157,7 @@ void PseudoProbeDecoder::buildGUID2FuncDescMap(const uint8_t *Start,
     uint64_t GUID = readUnencodedNumber<uint64_t>();
     uint64_t Hash = readUnencodedNumber<uint64_t>();
     uint32_t NameSize = readUnsignedNumber<uint32_t>();
-    StringRef Name = readString(NameSize);
+    StringRef Name = FunctionSamples::getCanonicalFnName(readString(NameSize));
 
     // Initialize PseudoProbeFuncDesc and populate it into GUID2FuncDescMap
     GUID2FuncDescMap.emplace(GUID, PseudoProbeFuncDesc(GUID, Hash, Name));
@@ -189,7 +184,7 @@ void PseudoProbeDecoder::buildAddress2ProbeMap(const uint8_t *Start,
   //           TYPE (uint4)
   //             0 - block probe, 1 - indirect call, 2 - direct call
   //           ATTRIBUTE (uint3)
-  //             1 - tail call, 2 - dangling
+  //             1 - reserved
   //           ADDRESS_TYPE (uint1)
   //             0 - code address, 1 - address delta
   //           CODE_ADDRESS (uint64 or ULEB128)
@@ -198,7 +193,6 @@ void PseudoProbeDecoder::buildAddress2ProbeMap(const uint8_t *Start,
   //         A list of NUM_INLINED_FUNCTIONS entries describing each of the
   //         inlined callees.  Each record contains:
   //           INLINE SITE
-  //             GUID of the inlinee (uint64)
   //             Index of the callsite probe (ULEB128)
   //           FUNCTION BODY
   //             A FUNCTION BODY entry describing the inlined function.
@@ -214,8 +208,11 @@ void PseudoProbeDecoder::buildAddress2ProbeMap(const uint8_t *Start,
   uint32_t Index = 0;
   // A DFS-based decoding
   while (Data < End) {
-    // Read inline site for inlinees
-    if (Root != Cur) {
+    if (Root == Cur) {
+      // Use a sequential id for top level inliner.
+      Index = Root->getChildren().size();
+    } else {
+      // Read inline site for inlinees
       Index = readUnsignedNumber<uint32_t>();
     }
     // Switch/add to a new tree node(inlinee)
@@ -243,10 +240,10 @@ void PseudoProbeDecoder::buildAddress2ProbeMap(const uint8_t *Start,
         Addr = readUnencodedNumber<int64_t>();
       }
       // Populate Address2ProbesMap
-      std::vector<PseudoProbe> &ProbeVec = Address2ProbesMap[Addr];
-      ProbeVec.emplace_back(Addr, Cur->GUID, Index, PseudoProbeType(Kind), Attr,
-                            Cur);
-      Cur->addProbes(&ProbeVec.back());
+      auto &Probes = Address2ProbesMap[Addr];
+      Probes.emplace_back(Addr, Cur->GUID, Index, PseudoProbeType(Kind), Attr,
+                          Cur);
+      Cur->addProbes(&Probes.back());
       LastAddr = Addr;
     }
 
@@ -298,7 +295,7 @@ PseudoProbeDecoder::getCallProbeForAddr(uint64_t Address) const {
   auto It = Address2ProbesMap.find(Address);
   if (It == Address2ProbesMap.end())
     return nullptr;
-  const std::vector<PseudoProbe> &Probes = It->second;
+  const auto &Probes = It->second;
 
   const PseudoProbe *CallProbe = nullptr;
   for (const auto &Probe : Probes) {

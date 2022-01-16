@@ -7,7 +7,7 @@
 # build, see runtimes/CMakeLists.txt, except that we currently check whether
 # compiler-rt is being built to determine whether to first build builtins
 # or not so we need that information in this file as well.
-set(LLVM_ALL_RUNTIMES "compiler-rt;libcxx;libcxxabi;libunwind;openmp")
+set(LLVM_ALL_RUNTIMES "compiler-rt;libc;libcxx;libcxxabi;libunwind;openmp")
 set(LLVM_ENABLE_RUNTIMES "" CACHE STRING
   "Semicolon-separated list of runtimes to build (${LLVM_ALL_RUNTIMES}), or \"all\".")
 if(LLVM_ENABLE_RUNTIMES STREQUAL "all" )
@@ -85,13 +85,12 @@ function(builtin_default_target compiler_rt_path)
                                       -DLLVM_RUNTIME_OUTPUT_INTDIR=${LLVM_TOOLS_BINARY_DIR}
                                       -DLLVM_DEFAULT_TARGET_TRIPLE=${TARGET_TRIPLE}
                                       -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=${LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default}
-                                      -DCMAKE_C_COMPILER_TARGET=${TARGET_TRIPLE}
-                                      -DCMAKE_ASM_COMPILER_TARGET=${TARGET_TRIPLE}
                                       -DCMAKE_C_COMPILER_WORKS=ON
                                       -DCMAKE_ASM_COMPILER_WORKS=ON
                                       ${BUILTINS_CMAKE_ARGS}
                            PASSTHROUGH_PREFIXES COMPILER_RT
                            USE_TOOLCHAIN
+                           TARGET_TRIPLE ${TARGET_TRIPLE}
                            ${EXTRA_ARGS})
 endfunction()
 
@@ -117,13 +116,12 @@ function(builtin_register_target compiler_rt_path target)
                                       -DLLVM_RUNTIME_OUTPUT_INTDIR=${LLVM_TOOLS_BINARY_DIR}
                                       -DLLVM_DEFAULT_TARGET_TRIPLE=${target}
                                       -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
-                                      -DCMAKE_C_COMPILER_TARGET=${target}
-                                      -DCMAKE_ASM_COMPILER_TARGET=${target}
                                       -DCMAKE_C_COMPILER_WORKS=ON
                                       -DCMAKE_ASM_COMPILER_WORKS=ON
                                       -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
                                       ${${target}_extra_args}
                            USE_TOOLCHAIN
+                           TARGET_TRIPLE ${target}
                            ${EXTRA_ARGS})
 endfunction()
 
@@ -168,6 +166,12 @@ endif()
 # for all variables that will apply to runtimes.
 foreach(entry ${runtimes})
   get_filename_component(projName ${entry} NAME)
+  if(projName STREQUAL "libc")
+    # For now, we will use the name "llvmlibc" for the libc project as it is
+    # not a full libc yet. Also, if we leave it as is, the "lib" prefix gets
+    # stripped below and the targets endup having the name "c", "check-c" etc.
+    set(projName "llvmlibc")
+  endif()
   string(REPLACE "-" "_" canon_name ${projName})
   string(TOUPPER ${canon_name} canon_name)
   list(APPEND prefixes ${canon_name})
@@ -186,14 +190,6 @@ foreach(entry ${runtimes})
   endif()
   list(APPEND runtime_names ${projName})
 endforeach()
-
-if(LLVM_RUNTIME_BUILD_ID_LINK_TARGETS)
-  configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/llvm-strip-link.in
-    ${CMAKE_CURRENT_BINARY_DIR}/llvm-strip-link
-    @ONLY
-  )
-endif()
 
 function(runtime_default_target)
   cmake_parse_arguments(ARG "" "" "DEPENDS;PREFIXES" ${ARGN})
@@ -236,9 +232,7 @@ function(runtime_default_target)
                                       -DLLVM_DEFAULT_TARGET_TRIPLE=${TARGET_TRIPLE}
                                       -DLLVM_ENABLE_PROJECTS_USED=${LLVM_ENABLE_PROJECTS_USED}
                                       -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=${LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default}
-                                      -DCMAKE_C_COMPILER_TARGET=${TARGET_TRIPLE}
-                                      -DCMAKE_CXX_COMPILER_TARGET=${TARGET_TRIPLE}
-                                      -DCMAKE_ASM_COMPILER_TARGET=${TARGET_TRIPLE}
+                                      -DLLVM_BUILD_TOOLS=${LLVM_BUILD_TOOLS}
                                       -DCMAKE_C_COMPILER_WORKS=ON
                                       -DCMAKE_CXX_COMPILER_WORKS=ON
                                       -DCMAKE_ASM_COMPILER_WORKS=ON
@@ -251,6 +245,7 @@ function(runtime_default_target)
                                          ${SUB_CHECK_TARGETS}
                                          ${SUB_INSTALL_TARGETS}
                            USE_TOOLCHAIN
+                           TARGET_TRIPLE ${TARGET_TRIPLE}
                            ${EXTRA_ARGS})
 endfunction()
 
@@ -329,10 +324,6 @@ function(runtime_register_target name target)
     list(APPEND ${name}_extra_args -DLLVM_ENABLE_RUNTIMES=${LLVM_ENABLE_RUNTIMES_PASSTHROUGH})
   endif()
 
-  if(target IN_LIST LLVM_RUNTIME_BUILD_ID_LINK_TARGETS)
-    list(APPEND EXTRA_ARGS STRIP_TOOL ${CMAKE_CURRENT_BINARY_DIR}/llvm-strip-link)
-  endif()
-
   llvm_ExternalProject_Add(runtimes-${name}
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../runtimes
                            DEPENDS ${${name}_deps}
@@ -342,9 +333,6 @@ function(runtime_register_target name target)
                                       -DLLVM_DEFAULT_TARGET_TRIPLE=${target}
                                       -DLLVM_ENABLE_PROJECTS_USED=${LLVM_ENABLE_PROJECTS_USED}
                                       -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
-                                      -DCMAKE_C_COMPILER_TARGET=${target}
-                                      -DCMAKE_CXX_COMPILER_TARGET=${target}
-                                      -DCMAKE_ASM_COMPILER_TARGET=${target}
                                       -DCMAKE_C_COMPILER_WORKS=ON
                                       -DCMAKE_CXX_COMPILER_WORKS=ON
                                       -DCMAKE_ASM_COMPILER_WORKS=ON
@@ -354,6 +342,7 @@ function(runtime_register_target name target)
                            EXTRA_TARGETS ${${name}_extra_targets}
                                          ${${name}_test_targets}
                            USE_TOOLCHAIN
+                           TARGET_TRIPLE ${target}
                            ${EXTRA_ARGS})
 endfunction()
 
@@ -361,15 +350,24 @@ if(runtimes)
   # Create a runtimes target that uses this file as its top-level CMake file.
   # The runtimes target is a configuration of all the runtime libraries
   # together in a single CMake invocaiton.
+  set(extra_deps "")
+  if("openmp" IN_LIST LLVM_ENABLE_RUNTIMES)
+    if(TARGET opt)
+      list(APPEND extra_deps opt)
+    endif()
+    if(TARGET llvm-link)
+      list(APPEND extra_deps llvm-link)
+    endif()
+  endif()
   if(NOT LLVM_RUNTIME_TARGETS)
     runtime_default_target(
-      DEPENDS ${deps}
+      DEPENDS ${deps} ${extra_deps}
       PREFIXES ${prefixes})
     set(test_targets check-runtimes)
   else()
     if("default" IN_LIST LLVM_RUNTIME_TARGETS)
       runtime_default_target(
-        DEPENDS ${deps}
+        DEPENDS ${deps} ${extra_deps}
         PREFIXES ${prefixes})
       list(REMOVE_ITEM LLVM_RUNTIME_TARGETS "default")
     else()
@@ -413,6 +411,11 @@ if(runtimes)
         add_dependencies(install-${runtime_name} install-${runtime_name}-${name})
         add_dependencies(install-${runtime_name}-stripped install-${runtime_name}-${name}-stripped)
       endforeach()
+      foreach(component ${LLVM_RUNTIME_DISTRIBUTION_COMPONENTS})
+        add_dependencies(${component} ${component}-${name})
+        add_dependencies(install-${component} install-${component}-${name})
+        add_dependencies(install-${component}-stripped install-${component}-${name}-stripped)
+      endforeach()
     endforeach()
 
     foreach(multilib ${LLVM_RUNTIME_MULTILIBS})
@@ -429,6 +432,11 @@ if(runtimes)
           add_dependencies(${runtime_name} ${runtime_name}-${name}+${multilib})
           add_dependencies(install-${runtime_name} install-${runtime_name}-${name}+${multilib})
           add_dependencies(install-${runtime_name}-stripped install-${runtime_name}-${name}+${multilib}-stripped)
+        endforeach()
+        foreach(component ${LLVM_RUNTIME_DISTRIBUTION_COMPONENTS})
+          add_dependencies(${component} ${component}-${name}+${multilib})
+          add_dependencies(install-${component} install-${component}-${name}+${multilib})
+          add_dependencies(install-${component}-stripped install-${component}-${name}+${multilib}-stripped)
         endforeach()
       endforeach()
     endforeach()

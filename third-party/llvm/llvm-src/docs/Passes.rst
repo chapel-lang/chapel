@@ -127,6 +127,9 @@ postscript or some other suitable format.
 This pass, only available in ``opt``, prints the control flow graph into a
 ``.dot`` graph.  This graph can then be processed with the :program:`dot` tool
 to convert it to postscript or some other suitable format.
+Additionally the ``-cfg-func-name=<substring>`` option can be used to filter the
+functions that are printed. All functions that contain the specified substring
+will be printed.
 
 ``-dot-cfg-only``: Print CFG of function to "dot" file (with no function bodies)
 --------------------------------------------------------------------------------
@@ -135,6 +138,9 @@ This pass, only available in ``opt``, prints the control flow graph into a
 ``.dot`` graph, omitting the function bodies.  This graph can then be processed
 with the :program:`dot` tool to convert it to postscript or some other suitable
 format.
+Additionally the ``-cfg-func-name=<substring>`` option can be used to filter the
+functions that are printed. All functions that contain the specified substring
+will be printed.
 
 ``-dot-dom``: Print dominance tree of function to "dot" file
 ------------------------------------------------------------
@@ -336,7 +342,7 @@ graph at only two spots.  Furthermore, a hierarchical region tree is built.
 ``-scalar-evolution``: Scalar Evolution Analysis
 ------------------------------------------------
 
-The ``ScalarEvolution`` analysis can be used to analyze and catagorize scalar
+The ``ScalarEvolution`` analysis can be used to analyze and categorize scalar
 expressions in loops.  It specializes in recognizing general induction
 variables, representing them with the abstract and opaque ``SCEV`` class.
 Given this analysis, trip counts of loops and other important properties can be
@@ -973,6 +979,11 @@ corresponding to the reverse post order traversal of current function (starting
 at 2), which effectively gives values in deep loops higher rank than values not
 in loops.
 
+``-rel-lookup-table-converter``: Relative lookup table converter
+----------------------------------------------------------------
+
+This pass converts lookup tables to PIC-friendly relative lookup tables.
+
 ``-reg2mem``: Demote all values to stack slots
 ----------------------------------------------
 
@@ -1114,7 +1125,7 @@ algorithm:
    return returns something else (like constant 0), and can still be TRE'd.  It
    can be TRE'd if *all other* return instructions in the function return the
    exact same value.
-#. If it can prove that callees do not access theier caller stack frame, they
+#. If it can prove that callees do not access their caller stack frame, they
    are marked as eligible for tail call elimination (by the code generator).
 
 Utility Passes
@@ -1187,12 +1198,18 @@ instead just tries to ensure that code is well-formed.
 -----------------------------------
 
 Displays the control flow graph using the GraphViz tool.
+Additionally the ``-cfg-func-name=<substring>`` option can be used to filter the
+functions that are displayed. All functions that contain the specified substring
+will be displayed.
 
 ``-view-cfg-only``: View CFG of function (with no function bodies)
 ------------------------------------------------------------------
 
 Displays the control flow graph using the GraphViz tool, but omitting function
 bodies.
+Additionally the ``-cfg-func-name=<substring>`` option can be used to filter the
+functions that are displayed. All functions that contain the specified substring
+will be displayed.
 
 ``-view-dom``: View dominance tree of function
 ----------------------------------------------

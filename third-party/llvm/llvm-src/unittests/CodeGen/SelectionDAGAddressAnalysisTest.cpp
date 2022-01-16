@@ -42,14 +42,14 @@ protected:
     // initialize a target. A skeleton Target for unittests would allow us to
     // always run these tests.
     if (!T)
-      return;
+      GTEST_SKIP();
 
     TargetOptions Options;
     TM = std::unique_ptr<LLVMTargetMachine>(static_cast<LLVMTargetMachine *>(
         T->createTargetMachine("AArch64", "", "+sve", Options, None, None,
                                CodeGenOpt::Aggressive)));
     if (!TM)
-      return;
+      GTEST_SKIP();
 
     SMDiagnostic SMError;
     M = parseAssemblyString(Assembly, SMError, Context);
@@ -94,8 +94,6 @@ protected:
 };
 
 TEST_F(SelectionDAGAddressAnalysisTest, sameFrameObject) {
-  if (!TM)
-    return;
   SDLoc Loc;
   auto Int8VT = EVT::getIntegerVT(Context, 8);
   auto VecVT = EVT::getVectorVT(Context, Int8VT, 4);
@@ -119,8 +117,6 @@ TEST_F(SelectionDAGAddressAnalysisTest, sameFrameObject) {
 }
 
 TEST_F(SelectionDAGAddressAnalysisTest, noAliasingFrameObjects) {
-  if (!TM)
-    return;
   SDLoc Loc;
   auto Int8VT = EVT::getIntegerVT(Context, 8);
   // <4 x i8>
@@ -153,8 +149,6 @@ TEST_F(SelectionDAGAddressAnalysisTest, noAliasingFrameObjects) {
 }
 
 TEST_F(SelectionDAGAddressAnalysisTest, unknownSizeFrameObjects) {
-  if (!TM)
-    return;
   SDLoc Loc;
   auto Int8VT = EVT::getIntegerVT(Context, 8);
   // <vscale x 4 x i8>
@@ -165,14 +159,12 @@ TEST_F(SelectionDAGAddressAnalysisTest, unknownSizeFrameObjects) {
   int FI = cast<FrameIndexSDNode>(FIPtr.getNode())->getIndex();
   MachinePointerInfo PtrInfo = MachinePointerInfo::getFixedStack(*MF, FI);
   SDValue Value = DAG->getConstant(0, Loc, SubVecVT);
-  TypeSize Offset0 = TypeSize::Fixed(0);
   TypeSize Offset1 = SubVecVT.getStoreSize();
-  SDValue Index0 = DAG->getMemBasePlusOffset(FIPtr, Offset0, Loc);
   SDValue Index1 = DAG->getMemBasePlusOffset(FIPtr, Offset1, Loc);
-  SDValue Store0 = DAG->getStore(DAG->getEntryNode(), Loc, Value, Index0,
-                                 PtrInfo.getWithOffset(Offset0));
+  SDValue Store0 =
+      DAG->getStore(DAG->getEntryNode(), Loc, Value, FIPtr, PtrInfo);
   SDValue Store1 = DAG->getStore(DAG->getEntryNode(), Loc, Value, Index1,
-                                 PtrInfo.getWithOffset(Offset1));
+                                 MachinePointerInfo(PtrInfo.getAddrSpace()));
   Optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store0)->getMemoryVT().getStoreSize());
   Optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
@@ -186,8 +178,6 @@ TEST_F(SelectionDAGAddressAnalysisTest, unknownSizeFrameObjects) {
 }
 
 TEST_F(SelectionDAGAddressAnalysisTest, globalWithFrameObject) {
-  if (!TM)
-    return;
   SDLoc Loc;
   auto Int8VT = EVT::getIntegerVT(Context, 8);
   // <vscale x 4 x i8>
@@ -220,8 +210,6 @@ TEST_F(SelectionDAGAddressAnalysisTest, globalWithFrameObject) {
 }
 
 TEST_F(SelectionDAGAddressAnalysisTest, fixedSizeFrameObjectsWithinDiff) {
-  if (!TM)
-    return;
   SDLoc Loc;
   auto Int8VT = EVT::getIntegerVT(Context, 8);
   // <vscale x 4 x i8>
@@ -261,8 +249,6 @@ TEST_F(SelectionDAGAddressAnalysisTest, fixedSizeFrameObjectsWithinDiff) {
 }
 
 TEST_F(SelectionDAGAddressAnalysisTest, fixedSizeFrameObjectsOutOfDiff) {
-  if (!TM)
-    return;
   SDLoc Loc;
   auto Int8VT = EVT::getIntegerVT(Context, 8);
   // <vscale x 4 x i8>
@@ -299,8 +285,6 @@ TEST_F(SelectionDAGAddressAnalysisTest, fixedSizeFrameObjectsOutOfDiff) {
 }
 
 TEST_F(SelectionDAGAddressAnalysisTest, twoFixedStackObjects) {
-  if (!TM)
-    return;
   SDLoc Loc;
   auto Int8VT = EVT::getIntegerVT(Context, 8);
   // <vscale x 2 x i8>

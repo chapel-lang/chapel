@@ -482,3 +482,176 @@ Sections:
   DoCheck(0xFFFFFFFF, "can't read an entry at 0x17ffffffe8: it goes past the "
                       "end of the section (0x18)");
 }
+
+// Tests for error paths of the ELFFile::decodeBBAddrMap API.
+TEST(ELFObjectFileTest, InvalidBBAddrMap) {
+  StringRef CommonYamlString(R"(
+--- !ELF
+FileHeader:
+  Class: ELFCLASS64
+  Data:  ELFDATA2LSB
+  Type:  ET_EXEC
+Sections:
+  - Name: .llvm_bb_addr_map
+    Type: SHT_LLVM_BB_ADDR_MAP
+    Entries:
+      - Address: 0x11111
+        BBEntries:
+          - AddressOffset: 0x0
+            Size:          0x1
+            Metadata:      0x2
+)");
+
+  auto DoCheck = [&](StringRef YamlString, const char *ErrMsg) {
+    SmallString<0> Storage;
+    Expected<ELFObjectFile<ELF64LE>> ElfOrErr =
+        toBinary<ELF64LE>(Storage, YamlString);
+    ASSERT_THAT_EXPECTED(ElfOrErr, Succeeded());
+    const ELFFile<ELF64LE> &Elf = ElfOrErr->getELFFile();
+
+    Expected<const typename ELF64LE::Shdr *> BBAddrMapSecOrErr =
+        Elf.getSection(1);
+    ASSERT_THAT_EXPECTED(BBAddrMapSecOrErr, Succeeded());
+    EXPECT_THAT_ERROR(Elf.decodeBBAddrMap(**BBAddrMapSecOrErr).takeError(),
+                      FailedWithMessage(ErrMsg));
+  };
+
+  // Check that we can detect the malformed encoding when the section is
+  // truncated.
+  SmallString<128> TruncatedYamlString(CommonYamlString);
+  TruncatedYamlString += R"(
+    ShSize: 0x8
+)";
+  DoCheck(TruncatedYamlString, "unable to decode LEB128 at offset 0x00000008: "
+                               "malformed uleb128, extends past end");
+
+  // Check that we can detect when the encoded BB entry fields exceed the UINT32
+  // limit.
+  SmallVector<SmallString<128>, 3> OverInt32LimitYamlStrings(3,
+                                                             CommonYamlString);
+  OverInt32LimitYamlStrings[0] += R"(
+          - AddressOffset: 0x100000000
+            Size:          0xFFFFFFFF
+            Metadata:      0xFFFFFFFF
+)";
+
+  OverInt32LimitYamlStrings[1] += R"(
+          - AddressOffset: 0xFFFFFFFF
+            Size:          0x100000000
+            Metadata:      0xFFFFFFFF
+)";
+
+  OverInt32LimitYamlStrings[2] += R"(
+          - AddressOffset: 0xFFFFFFFF
+            Size:          0xFFFFFFFF
+            Metadata:      0x100000000
+)";
+
+  DoCheck(OverInt32LimitYamlStrings[0],
+          "ULEB128 value at offset 0xc exceeds UINT32_MAX (0x100000000)");
+  DoCheck(OverInt32LimitYamlStrings[1],
+          "ULEB128 value at offset 0x11 exceeds UINT32_MAX (0x100000000)");
+  DoCheck(OverInt32LimitYamlStrings[2],
+          "ULEB128 value at offset 0x16 exceeds UINT32_MAX (0x100000000)");
+
+  // Check the proper error handling when the section has fields exceeding
+  // UINT32 and is also truncated. This is for checking that we don't generate
+  // unhandled errors.
+  SmallVector<SmallString<128>, 3> OverInt32LimitAndTruncated(
+      3, OverInt32LimitYamlStrings[1]);
+  // Truncate before the end of the 5-byte field.
+  OverInt32LimitAndTruncated[0] += R"(
+    ShSize: 0x15
+)";
+  // Truncate at the end of the 5-byte field.
+  OverInt32LimitAndTruncated[1] += R"(
+    ShSize: 0x16
+)";
+  // Truncate after the end of the 5-byte field.
+  OverInt32LimitAndTruncated[2] += R"(
+    ShSize: 0x17
+)";
+
+  DoCheck(OverInt32LimitAndTruncated[0],
+          "unable to decode LEB128 at offset 0x00000011: malformed uleb128, "
+          "extends past end");
+  DoCheck(OverInt32LimitAndTruncated[1],
+          "ULEB128 value at offset 0x11 exceeds UINT32_MAX (0x100000000)");
+  DoCheck(OverInt32LimitAndTruncated[2],
+          "ULEB128 value at offset 0x11 exceeds UINT32_MAX (0x100000000)");
+
+  // Check for proper error handling when the 'NumBlocks' field is overridden
+  // with an out-of-range value.
+  SmallString<128> OverLimitNumBlocks(CommonYamlString);
+  OverLimitNumBlocks += R"(
+        NumBlocks: 0x100000000
+)";
+
+  DoCheck(OverLimitNumBlocks,
+          "ULEB128 value at offset 0x8 exceeds UINT32_MAX (0x100000000)");
+}
+
+// Test for ObjectFile::getRelocatedSection: check that it returns a relocated
+// section for executable and relocatable files.
+TEST(ELFObjectFileTest, ExecutableWithRelocs) {
+  StringRef HeaderString(R"(
+--- !ELF
+FileHeader:
+  Class: ELFCLASS64
+  Data:  ELFDATA2LSB
+)");
+  StringRef ContentsString(R"(
+Sections:
+  - Name:  .text
+    Type:  SHT_PROGBITS
+    Flags: [ SHF_ALLOC, SHF_EXECINSTR ]
+  - Name:  .rela.text
+    Type:  SHT_RELA
+    Flags: [ SHF_INFO_LINK ]
+    Info:  .text
+)");
+
+  auto DoCheck = [&](StringRef YamlString) {
+    SmallString<0> Storage;
+    Expected<ELFObjectFile<ELF64LE>> ElfOrErr =
+        toBinary<ELF64LE>(Storage, YamlString);
+    ASSERT_THAT_EXPECTED(ElfOrErr, Succeeded());
+    const ELFObjectFile<ELF64LE> &Obj = *ElfOrErr;
+
+    bool FoundRela;
+
+    for (SectionRef Sec : Obj.sections()) {
+      Expected<StringRef> SecNameOrErr = Sec.getName();
+      ASSERT_THAT_EXPECTED(SecNameOrErr, Succeeded());
+      StringRef SecName = *SecNameOrErr;
+      if (SecName != ".rela.text")
+        continue;
+      FoundRela = true;
+      Expected<section_iterator> RelSecOrErr = Sec.getRelocatedSection();
+      ASSERT_THAT_EXPECTED(RelSecOrErr, Succeeded());
+      section_iterator RelSec = *RelSecOrErr;
+      ASSERT_NE(RelSec, Obj.section_end());
+      Expected<StringRef> TextSecNameOrErr = RelSec->getName();
+      ASSERT_THAT_EXPECTED(TextSecNameOrErr, Succeeded());
+      StringRef TextSecName = *TextSecNameOrErr;
+      EXPECT_EQ(TextSecName, ".text");
+    }
+    ASSERT_TRUE(FoundRela);
+  };
+
+  // Check ET_EXEC file (`ld --emit-relocs` use-case).
+  SmallString<128> ExecFileYamlString(HeaderString);
+  ExecFileYamlString += R"(
+  Type:  ET_EXEC
+)";
+  ExecFileYamlString += ContentsString;
+  DoCheck(ExecFileYamlString);
+
+  // Check ET_REL file.
+  SmallString<128> RelocatableFileYamlString(HeaderString);
+  RelocatableFileYamlString += R"(
+  Type:  ET_REL
+)";
+  RelocatableFileYamlString += ContentsString;
+  DoCheck(RelocatableFileYamlString);
+}

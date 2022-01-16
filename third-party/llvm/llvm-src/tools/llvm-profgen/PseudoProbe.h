@@ -24,7 +24,7 @@
 namespace llvm {
 namespace sampleprof {
 
-enum PseudoProbeAttributes { TAILCALL = 1, DANGLING = 2 };
+enum PseudoProbeAttributes { RESERVED = 1 };
 
 // Use func GUID and index as the location info of the inline site
 using InlineSite = std::tuple<uint64_t, uint32_t>;
@@ -45,9 +45,10 @@ class PseudoProbeInlineTree {
       return std::get<0>(Site) ^ std::get<1>(Site);
     }
   };
-  std::unordered_map<InlineSite, std::unique_ptr<PseudoProbeInlineTree>,
-                     InlineSiteHash>
-      Children;
+  using InlinedProbeTreeMap =
+      std::unordered_map<InlineSite, std::unique_ptr<PseudoProbeInlineTree>,
+                         InlineSiteHash>;
+  InlinedProbeTreeMap Children;
 
 public:
   // Inlinee function GUID
@@ -71,6 +72,8 @@ public:
     return Ret.first->second.get();
   }
 
+  InlinedProbeTreeMap &getChildren() { return Children; }
+  std::vector<PseudoProbe *> &getProbes() { return ProbeVector; }
   void addProbes(PseudoProbe *Probe) { ProbeVector.push_back(Probe); }
   // Return false if it's a dummy inline site
   bool hasInlineSite() const { return std::get<0>(ISite) != 0; }
@@ -91,7 +94,7 @@ struct PseudoProbeFuncDesc {
 // GUID to PseudoProbeFuncDesc map
 using GUIDProbeFunctionMap = std::unordered_map<uint64_t, PseudoProbeFuncDesc>;
 // Address to pseudo probes map.
-using AddressProbesMap = std::unordered_map<uint64_t, std::vector<PseudoProbe>>;
+using AddressProbesMap = std::unordered_map<uint64_t, std::list<PseudoProbe>>;
 
 /*
 A pseudo probe has the format like below:
@@ -99,7 +102,7 @@ A pseudo probe has the format like below:
   TYPE (uint4)
     0 - block probe, 1 - indirect call, 2 - direct call
   ATTRIBUTE (uint3)
-    1 - tail call, 2 - dangling
+    1 - reserved
   ADDRESS_TYPE (uint1)
     0 - code address, 1 - address delta
   CODE_ADDRESS (uint64 or ULEB128)
@@ -121,19 +124,12 @@ struct PseudoProbe {
         InlineTree(Tree){};
 
   bool isEntry() const { return Index == PseudoProbeFirstId; }
-
-  bool isDangling() const {
-    return Attribute & static_cast<uint8_t>(PseudoProbeAttributes::DANGLING);
-  }
-
-  bool isTailCall() const {
-    return Attribute & static_cast<uint8_t>(PseudoProbeAttributes::TAILCALL);
-  }
-
   bool isBlock() const { return Type == PseudoProbeType::Block; }
   bool isIndirectCall() const { return Type == PseudoProbeType::IndirectCall; }
   bool isDirectCall() const { return Type == PseudoProbeType::DirectCall; }
   bool isCall() const { return isIndirectCall() || isDirectCall(); }
+
+  PseudoProbeInlineTree *getInlineTreeNode() const { return InlineTree; }
 
   // Get the inlined context by traversing current inline tree backwards,
   // each tree node has its InlineSite which is taken as the context.

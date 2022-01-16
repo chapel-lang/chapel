@@ -1428,6 +1428,22 @@ TEST_P(ASTMatchersTest, UsingDecl_MatchesShadowUsingDelcarations) {
                       usingDecl(hasAnyUsingShadowDecl(hasName("a")))));
 }
 
+TEST_P(ASTMatchersTest, UsingEnumDecl_MatchesUsingEnumDeclarations) {
+  if (!GetParam().isCXX20OrLater()) {
+    return;
+  }
+  EXPECT_TRUE(
+      matches("namespace X { enum x {}; } using enum X::x;", usingEnumDecl()));
+}
+
+TEST_P(ASTMatchersTest, UsingEnumDecl_MatchesShadowUsingDeclarations) {
+  if (!GetParam().isCXX20OrLater()) {
+    return;
+  }
+  EXPECT_TRUE(matches("namespace f { enum a {b}; } using enum f::a;",
+                      usingEnumDecl(hasAnyUsingShadowDecl(hasName("b")))));
+}
+
 TEST_P(ASTMatchersTest, UsingDirectiveDecl_MatchesUsingNamespace) {
   if (!GetParam().isCXX()) {
     return;
@@ -2129,6 +2145,37 @@ TEST(ASTMatchersTestObjC, ObjCExceptionStmts) {
   EXPECT_TRUE(matchesObjC(ObjCString, objcFinallyStmt()));
 }
 
+TEST(ASTMatchersTest, DecompositionDecl) {
+  StringRef Code = R"cpp(
+void foo()
+{
+    int arr[3];
+    auto &[f, s, t] = arr;
+
+    f = 42;
+}
+  )cpp";
+  EXPECT_TRUE(matchesConditionally(
+      Code, decompositionDecl(hasBinding(0, bindingDecl(hasName("f")))), true,
+      {"-std=c++17"}));
+  EXPECT_FALSE(matchesConditionally(
+      Code, decompositionDecl(hasBinding(42, bindingDecl(hasName("f")))), true,
+      {"-std=c++17"}));
+  EXPECT_FALSE(matchesConditionally(
+      Code, decompositionDecl(hasBinding(0, bindingDecl(hasName("s")))), true,
+      {"-std=c++17"}));
+  EXPECT_TRUE(matchesConditionally(
+      Code, decompositionDecl(hasBinding(1, bindingDecl(hasName("s")))), true,
+      {"-std=c++17"}));
+
+  EXPECT_TRUE(matchesConditionally(
+      Code,
+      bindingDecl(decl().bind("self"), hasName("f"),
+                  forDecomposition(decompositionDecl(
+                      hasAnyBinding(bindingDecl(equalsBoundNode("self")))))),
+      true, {"-std=c++17"}));
+}
+
 TEST(ASTMatchersTestObjC, ObjCAutoreleasePoolStmt) {
   StringRef ObjCString = "void f() {"
                          "@autoreleasepool {"
@@ -2271,8 +2318,8 @@ static std::vector<TestClangConfig> allTestClangConfigs() {
   return all_configs;
 }
 
-INSTANTIATE_TEST_CASE_P(ASTMatchersTests, ASTMatchersTest,
-                        testing::ValuesIn(allTestClangConfigs()), );
+INSTANTIATE_TEST_SUITE_P(ASTMatchersTests, ASTMatchersTest,
+                         testing::ValuesIn(allTestClangConfigs()));
 
 } // namespace ast_matchers
 } // namespace clang

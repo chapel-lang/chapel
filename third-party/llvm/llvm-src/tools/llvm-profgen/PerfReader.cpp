@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 #include "PerfReader.h"
 #include "ProfileGenerator.h"
+#include "llvm/Support/FileSystem.h"
 
 static cl::opt<bool> ShowMmapEvents("show-mmap-events", cl::ReallyHidden,
                                     cl::init(false), cl::ZeroOrMore,
@@ -92,7 +93,8 @@ void VirtualUnwinder::unwindBranchWithinFrame(UnwindState &State) {
 std::shared_ptr<StringBasedCtxKey> FrameStack::getContextKey() {
   std::shared_ptr<StringBasedCtxKey> KeyStr =
       std::make_shared<StringBasedCtxKey>();
-  KeyStr->Context = Binary->getExpandedContextStr(Stack);
+  KeyStr->Context =
+      Binary->getExpandedContextStr(Stack, KeyStr->WasLeafInlined);
   if (KeyStr->Context.empty())
     return nullptr;
   KeyStr->genHashCode();
@@ -141,9 +143,11 @@ void VirtualUnwinder::collectSamplesFromFrameTrie(
   if (!Cur->isDummyRoot()) {
     if (!Stack.pushFrame(Cur)) {
       // Process truncated context
+      // Start a new traversal ignoring its bottom context
+      T EmptyStack(Binary);
+      collectSamplesFromFrame(Cur, EmptyStack);
       for (const auto &Item : Cur->Children) {
-        // Start a new traversal ignoring its bottom context
-        collectSamplesFromFrameTrie(Item.second.get());
+        collectSamplesFromFrameTrie(Item.second.get(), EmptyStack);
       }
       return;
     }
@@ -307,18 +311,46 @@ void PerfReader::updateBinaryAddress(const MMapEvent &Event) {
   auto I = BinaryTable.find(BinaryName);
   // Drop the event which doesn't belong to user-provided binaries
   // or if its image is loaded at the same address
-  if (I == BinaryTable.end() || Event.BaseAddress == I->second.getBaseAddress())
+  if (I == BinaryTable.end() || Event.Address == I->second.getBaseAddress())
     return;
 
   ProfiledBinary &Binary = I->second;
 
-  // A binary image could be uploaded and then reloaded at different
-  // place, so update the address map here
-  AddrToBinaryMap.erase(Binary.getBaseAddress());
-  AddrToBinaryMap[Event.BaseAddress] = &Binary;
+  if (Event.Offset == Binary.getTextSegmentOffset()) {
+    // A binary image could be unloaded and then reloaded at different
+    // place, so update the address map here.
+    // Only update for the first executable segment and assume all other
+    // segments are loaded at consecutive memory addresses, which is the case on
+    // X64.
+    AddrToBinaryMap.erase(Binary.getBaseAddress());
+    AddrToBinaryMap[Event.Address] = &Binary;
 
-  // Update binary load address.
-  Binary.setBaseAddress(Event.BaseAddress);
+    // Update binary load address.
+    Binary.setBaseAddress(Event.Address);
+  } else {
+    // Verify segments are loaded consecutively.
+    const auto &Offsets = Binary.getTextSegmentOffsets();
+    auto It = std::lower_bound(Offsets.begin(), Offsets.end(), Event.Offset);
+    if (It != Offsets.end() && *It == Event.Offset) {
+      // The event is for loading a separate executable segment.
+      auto I = std::distance(Offsets.begin(), It);
+      const auto &PreferredAddrs = Binary.getPreferredTextSegmentAddresses();
+      if (PreferredAddrs[I] - Binary.getPreferredBaseAddress() !=
+          Event.Address - Binary.getBaseAddress())
+        exitWithError("Executable segments not loaded consecutively");
+    } else {
+      if (It == Offsets.begin())
+        exitWithError("File offset not found");
+      else {
+        // Find the segment the event falls in. A large segment could be loaded
+        // via multiple mmap calls with consecutive memory addresses.
+        --It;
+        assert(*It < Event.Offset);
+        if (Event.Offset - *It != Event.Address - Binary.getBaseAddress())
+          exitWithError("Segment not loaded by consecutive mmaps");
+      }
+    }
+  }
 }
 
 ProfiledBinary *PerfReader::getBinary(uint64_t Address) {
@@ -440,27 +472,57 @@ bool PerfReader::extractLBRStack(TraceStream &TraceIt,
 
     bool SrcIsInternal = Binary->addressIsCode(Src);
     bool DstIsInternal = Binary->addressIsCode(Dst);
+    bool IsExternal = !SrcIsInternal && !DstIsInternal;
+    bool IsIncoming = !SrcIsInternal && DstIsInternal;
+    bool IsOutgoing = SrcIsInternal && !DstIsInternal;
     bool IsArtificial = false;
+
     // Ignore branches outside the current binary.
-    if (!SrcIsInternal && !DstIsInternal)
+    if (IsExternal)
       continue;
-    if (!SrcIsInternal && DstIsInternal) {
-      // For transition from external code (such as dynamic libraries) to
-      // the current binary, keep track of the branch target which will be
-      // grouped with the Source of the last transition from the current
-      // binary.
-      PrevTrDst = Dst;
-      continue;
-    }
-    if (SrcIsInternal && !DstIsInternal) {
+
+    if (IsOutgoing) {
+      if (!PrevTrDst) {
+        // This is unpaired outgoing jump which is likely due to interrupt or
+        // incomplete LBR trace. Ignore current and subsequent entries since
+        // they are likely in different contexts.
+        break;
+      }
+
+      if (Binary->addressIsReturn(Src)) {
+        // In a callback case, a return from internal code, say A, to external
+        // runtime can happen. The external runtime can then call back to
+        // another internal routine, say B. Making an artificial branch that
+        // looks like a return from A to B can confuse the unwinder to treat
+        // the instruction before B as the call instruction.
+        break;
+      }
+
       // For transition to external code, group the Source with the next
       // availabe transition target.
-      if (!PrevTrDst)
-        continue;
       Dst = PrevTrDst;
       PrevTrDst = 0;
       IsArtificial = true;
+    } else {
+      if (PrevTrDst) {
+        // If we have seen an incoming transition from external code to internal
+        // code, but not a following outgoing transition, the incoming
+        // transition is likely due to interrupt which is usually unpaired.
+        // Ignore current and subsequent entries since they are likely in
+        // different contexts.
+        break;
+      }
+
+      if (IsIncoming) {
+        // For transition from external code (such as dynamic libraries) to
+        // the current binary, keep track of the branch target which will be
+        // grouped with the Source of the last transition from the current
+        // binary.
+        PrevTrDst = Dst;
+        continue;
+      }
     }
+
     // TODO: filter out buggy duplicate branches on Skylake
 
     LBRStack.emplace_back(LBREntry(Src, Dst, IsArtificial));
@@ -586,7 +648,7 @@ void PerfReader::parseMMap2Event(TraceStream &TraceIt) {
   enum EventIndex {
     WHOLE_LINE = 0,
     PID = 1,
-    BASE_ADDRESS = 2,
+    MMAPPED_ADDRESS = 2,
     MMAPPED_SIZE = 3,
     PAGE_OFFSET = 4,
     BINARY_PATH = 5
@@ -603,14 +665,14 @@ void PerfReader::parseMMap2Event(TraceStream &TraceIt) {
   }
   MMapEvent Event;
   Fields[PID].getAsInteger(10, Event.PID);
-  Fields[BASE_ADDRESS].getAsInteger(0, Event.BaseAddress);
+  Fields[MMAPPED_ADDRESS].getAsInteger(0, Event.Address);
   Fields[MMAPPED_SIZE].getAsInteger(0, Event.Size);
   Fields[PAGE_OFFSET].getAsInteger(0, Event.Offset);
   Event.BinaryPath = Fields[BINARY_PATH];
   updateBinaryAddress(Event);
   if (ShowMmapEvents) {
     outs() << "Mmap: Binary " << Event.BinaryPath << " loaded at "
-           << format("0x%" PRIx64 ":", Event.BaseAddress) << " \n";
+           << format("0x%" PRIx64 ":", Event.Address) << " \n";
   }
   TraceIt.advance();
 }

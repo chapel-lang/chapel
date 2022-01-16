@@ -7,12 +7,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "MinGW.h"
-#include "InputInfo.h"
 #include "CommonArgs.h"
 #include "clang/Config/config.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/DriverDiagnostic.h"
+#include "clang/Driver/InputInfo.h"
 #include "clang/Driver/Options.h"
 #include "clang/Driver/SanitizerArgs.h"
 #include "llvm/Option/ArgList.h"
@@ -136,10 +136,13 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     llvm_unreachable("Unsupported target architecture.");
   }
 
-  if (Args.hasArg(options::OPT_mwindows)) {
+  Arg *SubsysArg =
+      Args.getLastArg(options::OPT_mwindows, options::OPT_mconsole);
+  if (SubsysArg && SubsysArg->getOption().matches(options::OPT_mwindows)) {
     CmdArgs.push_back("--subsystem");
     CmdArgs.push_back("windows");
-  } else if (Args.hasArg(options::OPT_mconsole)) {
+  } else if (SubsysArg &&
+             SubsysArg->getOption().matches(options::OPT_mconsole)) {
     CmdArgs.push_back("--subsystem");
     CmdArgs.push_back("console");
   }
@@ -338,6 +341,7 @@ static bool findGccVersion(StringRef LibDir, std::string &GccLibDir,
       continue;
     if (CandidateVersion <= Version)
       continue;
+    Version = CandidateVersion;
     Ver = std::string(VersionText);
     GccLibDir = LI->path();
   }
@@ -426,7 +430,7 @@ toolchains::MinGW::MinGW(const Driver &D, const llvm::Triple &Triple,
 
   NativeLLVMSupport =
       Args.getLastArgValue(options::OPT_fuse_ld_EQ, CLANG_DEFAULT_LINKER)
-          .equals_lower("lld");
+          .equals_insensitive("lld");
 }
 
 bool toolchains::MinGW::IsIntegratedAssemblerDefault() const { return true; }

@@ -27,8 +27,8 @@ for using Chapel:
     while not required, will enable faster atomic operations.
 
   * The LLVM backend is now the default and it is easiest to use it with
-    a system-wide installation of LLVM. Only LLVM 11/12 are currently
-    supported. If a system-wide installation of LLVM 11/12 is not available,
+    a system-wide installation of LLVM. Only LLVM 11/12/13 are currently
+    supported. If a system-wide installation of LLVM 11/12/13 is not available,
     you can use the bundled LLVM or disable LLVM support (see
     :ref:`readme-chplenv.CHPL_LLVM`). Please note that building the
     bundled LLVM requires cmake version 3.13.4 or later.
