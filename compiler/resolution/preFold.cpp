@@ -25,12 +25,13 @@
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
-#include "forallOptimizations.h"
+#include "preFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
@@ -1883,6 +1884,81 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = lowerPrimReduce(call);
     break;
   }
+
+  case PRIM_RESOLVES: {
+    if (call->id == breakOnResolveID) gdbShouldBreakHere();
+
+    // This primitive should only have one actual.
+    INT_ASSERT(call && call->numActuals() == 1);
+
+    auto exprToResolve = call->get(1);
+
+    // TODO: To resolve an arbitrary expression, we need a way to back out
+    // of resolving any expression without emitting errors. This is
+    // probably easier to do in a new compiler world.
+    if (!isCallExpr(exprToResolve)) {
+      INT_FATAL("PRIM_RESOLVES can only resolve CallExpr for now");
+    }
+
+    // Insert a temporary block into the AST to use as a workspace.
+    auto tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
+    call->getStmtExpr()->insertAfter(tmpBlock);
+
+    // Remove the expression to resolve and insert it into the block.
+    exprToResolve->remove();
+    tmpBlock->insertAtTail(exprToResolve);
+
+    // Resolution depends on normalized AST (and the expression is not).
+    normalize(tmpBlock);
+
+    bool didResolveExpr = true;
+
+    // Now that the block is normalized, we need to do a postorder traversal
+    // and resolve sub-expressions in a manner similar to normal resolution.
+    // However, calls should use 'tryResolveCall' so that we can back out
+    // if a particular call should fail to resolve.
+    for_exprs_postorder(expr, tmpBlock) {
+
+      CallExpr* call = toCallExpr(expr);
+
+      // Start by prefolding all calls (e.g. to eliminate partial calls
+      // in sub-expressions).
+      expr = call ? preFold(call) : expr;
+      INT_ASSERT(expr);
+      call = toCallExpr(expr);
+
+      if (call && !call->isPrimitive()) {
+
+        // Partial calls will not be resolved in the current iteration.
+        const bool isPartialCall = call->partialTag;
+
+        // TODO: Might want to set this later, not sure yet.
+        const bool doResolveCalledFns = false;
+
+        FnSymbol* resolvedFn = tryResolveCall(call, doResolveCalledFns);
+
+        if (!resolvedFn && !isPartialCall) {
+          didResolveExpr = false;
+          break;
+        }
+
+      // TODO: Way to keep type checking from issuing errors?
+      } else {
+        expr = resolveExpr(expr);
+        INT_ASSERT(expr);
+      }
+    }
+
+    // We're done with the block, so remove it.
+    tmpBlock->remove();
+
+    // The output is a 'true' or 'false' expression.
+    auto output = didResolveExpr ? new SymExpr(gTrue) : new SymExpr(gFalse);
+
+    call->replace(output);
+    retval = output;
+
+  } break;
 
   case PRIM_STEAL: {
     SymExpr* se = toSymExpr(call->get(1));

@@ -177,7 +177,7 @@ module ArrayViewSlice {
 
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
-           __primitive("method call resolves", privDom, "these", tag) {
+           __primitive("resolves", privDom.these(tag)) {
       const ref myarr = arr;
       forall i in privDom do yield myarr.dsiAccess(i);
     }
