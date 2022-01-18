@@ -1,0 +1,1 @@
+depDefaultIostyle.chpl:3: warning: This function is deprecated due to returning a deprecated type, please don't call it
