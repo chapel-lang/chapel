@@ -2545,7 +2545,7 @@ inline proc channel._commit() {
    called on a locked channel.
 
  */
-deprecated "This method is deprecated because it returns a type that is deprecated"
+deprecated "channel._style is deprecated because it returns a type that is deprecated"
 proc channel._style():iostyle {
   var ret:iostyle;
   on this.home {
@@ -2575,7 +2575,7 @@ proc channel._styleInternal(): iostyleInternal {
    be called on a locked channel.
 
  */
-deprecated "This method is deprecated because its purpose involves a deprecated type"
+deprecated "channel._set_style is deprecated because its purpose involves a deprecated type"
 proc channel._set_style(style:iostyle) {
   on this.home {
     var local_style:iostyle = style;
