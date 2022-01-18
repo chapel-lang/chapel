@@ -35,7 +35,6 @@
 #include <utility>
 #include <vector>
 
-
 namespace chpl {
 
 namespace uast {
@@ -468,6 +467,12 @@ class Context {
     in main gets created before the arguments to the compiler are parsed.
   */
   void setDebugTraceFlag(const bool enable);
+
+  /*
+    Set the hash value of a query and its arguments to break on. Needed because
+    context in main is created before arguments to the compiler are parsed.
+  */
+  void setBreakOnHash(const size_t hashVal);
 
   typedef enum {
     NOT_CHECKED_NOT_CHANGED = 0,

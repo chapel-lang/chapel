@@ -347,6 +347,7 @@ Flag types:
   + = increment
   T = toggle
   L = int64 (long)
+  U = unsigned long
   N = --no-... flag, --no version sets to false
   n = --no-... flag, --no version sets to true
 */
@@ -480,6 +481,9 @@ static void ApplyValue(const ArgumentState*       state,
 
         break;
       }
+      case 'U':
+        *((size_t*) location) = str2uint64(value);
+        break;
     }
   }
 
@@ -695,6 +699,10 @@ static void process_arg(const ArgumentState*       state,
             }
             strncpy((char*) desc->location, arg, maxlen);
           }
+          break;
+
+        case 'U':
+          *((size_t*) desc->location) = std::stoull(arg);
           break;
 
         default:

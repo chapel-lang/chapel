@@ -478,6 +478,11 @@ void Context::setDebugTraceFlag(bool enable)  {
   enableDebugTrace = enable;
 }
 
+void Context::setBreakOnHash(size_t hashVal) {
+  breakSet = true;
+  breakOnHash = hashVal;
+}
+
 void Context::collectGarbage() {
   // if there are no parent queries, collect some garbage
   assert(queryStack.size() == 0);
