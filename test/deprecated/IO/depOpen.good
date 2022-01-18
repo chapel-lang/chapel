@@ -1,0 +1,1 @@
+depOpen.chpl:5: warning: open with a style argument is deprecated, please rely on the default value for the argument
