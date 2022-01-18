@@ -165,20 +165,19 @@ static inline void defaultStringifyTuple(std::ostream& streamOut,
                                          const TUP& tuple,
                                          std::index_sequence<I...>) {
   // lambda to convert
-  auto convert = [](bool printsep, StringifyKind stringKind, auto& elem) {
+  auto convert = [&streamOut, stringKind](bool printsep, auto& elem) {
     // we don't know what the type of `elem` is going to be, so we use
     // std::decay_t<decltype(x)> to get the type, so we can instantiate
     // the proper stringify struct
     chpl::stringify<std::decay_t<decltype(elem)>> stringifier;
-    std::ostringstream ss;
-    stringifier(ss, stringKind, elem);
+    stringifier(streamOut, stringKind, elem);
     if (printsep) {
-      ss << ", ";
+      streamOut << ", ";
     }
-    return ss.str();
   };
+
   streamOut << "(";
-  auto dummy = {(streamOut << convert(I!=0, stringKind, std::get<I>(tuple)),0)...};
+  auto dummy = {(convert(I!=0, std::get<I>(tuple)),0)...};
   (void) dummy; // avoid unused variable warning
   streamOut << ")";
 }
