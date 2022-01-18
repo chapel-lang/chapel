@@ -101,6 +101,7 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 		$(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) \
 	        $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
 	        $(COMP_GEN_USER_LDFLAGS) $(COMP_GEN_LFLAGS) $(LIBS) \
+	        $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS) \
 		$(CHPL_MLI_LIB_DIRS) \
 		-lzmq
 endif
