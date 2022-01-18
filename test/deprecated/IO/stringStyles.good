@@ -1,0 +1,5 @@
+stringStyles.chpl:3: warning: This function is deprecated due to returning a deprecated type, please don't call it
+stringStyles.chpl:4: warning: This function is deprecated due to returning a deprecated type, please don't call it
+stringStyles.chpl:5: warning: This function is deprecated due to returning a deprecated type, please don't call it
+stringStyles.chpl:6: warning: This function is deprecated due to returning a deprecated type, please don't call it
+stringStyles.chpl:7: warning: This function is deprecated due to returning a deprecated type, please don't call it
