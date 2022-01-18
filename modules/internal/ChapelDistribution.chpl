@@ -758,7 +758,7 @@ module ChapelDistribution {
       return false;
     }
 
-    proc chpl_unsafeAssignIsClassElementNil(ref manager, idx) {
+    proc chpl_unsafeAssignIsClassElementNil(manager, idx) {
       halt("chpl_unsafeAssignIsClassElementNil must be defined");
       return false;
     }
@@ -938,8 +938,8 @@ module ChapelDistribution {
     // TODO: Consult 'chpl_do_fix_thrown_error' for help pinning location.
     override proc chpl_unsafeAssignHaltUninitializedElement(idx) {
       var msg = 'Upon finishing unsafe assignment, one or more elements ' +
-                'of a non-default-initializable array of type ' +
-                eltType:string + ' remain uninitialized';
+                'of a non-default-initializable array of type \'' +
+                eltType:string + '\' remain uninitialized';
       halt(msg);
     }
 

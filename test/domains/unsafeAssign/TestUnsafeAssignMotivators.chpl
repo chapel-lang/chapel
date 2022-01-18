@@ -24,11 +24,10 @@ proc test2() {
   var A: [D] shared C = [new shared C()];
 
   for i in 0..#count {
-    manage D.unsafeAssign({0..i}, checks=true) as mgr {
-      for idx in mgr.newIndices() {
+    manage D.unsafeAssign({0..i}, checks=true) as mgr do
+      for idx in mgr.newIndices() do
         mgr.initialize(A, idx, new shared C(idx));
-      }
-    }
+
     writeln(A);
   }
 }

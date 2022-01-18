@@ -1284,8 +1284,9 @@ module ChapelDomain {
     }
 
     /*
-
-
+      This manager is returned by ``unsafeAssign()`` and can be used in
+      managed blocks to help resize arrays of non-default-initializable
+      elements.
     */
     record unsafeAssignManager {
       pragma "no doc"
@@ -1320,10 +1321,8 @@ module ChapelDomain {
       inline proc checks return _checks;
 
       /*
-        Returns 'true' if a given class reference is 'nil'. When performing
-        an unsafe assignment, it is possible for non-nilable class elements
-        to be 'nil' within the managed scope. This method can be used to
-        check if that is so without triggering nilability checks.
+        Check if a given class reference is ``nil`` without triggering
+        runtime nilability checks.
       */
       proc isClassReferenceNil(const ref x) {
         if isClassType(x.type) {
@@ -1336,10 +1335,10 @@ module ChapelDomain {
       }
 
       /*
-        Return 'true' if the value at a given index in an array has
+        Return ``true`` if the value at a given index in an array has
         been initialized.
       */
-      proc isElementInitialized(arr, idx) {
+      proc isElementInitialized(arr: [?d], idx) {
         if _checks {
           type T = arr.eltType;
           if isNonNilableClassType(T) {
@@ -1368,7 +1367,7 @@ module ChapelDomain {
         // Arrays of non-nilable classes.
         if baseArr.chpl_isElementTypeNonNilableClass() {
           for idx in newIndices() {
-            if !baseArr.chpl_unsafeAssignIsClassElementNil(this, idx) {
+            if baseArr.chpl_unsafeAssignIsClassElementNil(this, idx) {
               baseArr.chpl_unsafeAssignHaltUninitializedElement(idx);
               halt();
             }
@@ -1419,19 +1418,26 @@ module ChapelDomain {
         moveInitialize(elem, value);
       }
 
+      pragma "no doc"
+      proc _checkThatIndexMatchesArrayShape(arr, idx) {
+      }
+
       /*
         Initialize a newly added array element at an index with a new value.
         If the array element at `idx` has already been initialized, this
         method will silently perform assignment instead. This method will
         error if `idx` is not a valid indice in `arr`.
       */
-      proc initialize(arr: [], idx: arr.idxType, in value: arr.eltType) {
+      proc initialize(arr: [?d], idx, in value: arr.eltType) {
 
         // Check to make sure value and array element types match.
         if arr.eltType != value.type then
           compilerError('Initialization value type \'' + value:string +
                         '\' does not match array element type \'' +
                         arr.eltType:string + '\'');
+
+        // Only certain forms of index are permissable.
+        _checkThatIndexMatchesArrayShape(arr, idx);
 
         // TODO: Is this even worth checking? It's O(n) number of arrays.
         if !_isArrayOwnedByLhsDomain(arr) then
@@ -1455,8 +1461,11 @@ module ChapelDomain {
       proc enterThis() ref {
 
         // TODO: Is it possible to nest unsafe assignments? Future work...
-        if _isActiveManager then
+        if _isActiveManager {
           halt('Cannot nest a manager for unsafe domain assignment');
+        } else {
+          _isActiveManager = true;
+        }
 
         for baseArr in _lhsBaseArrays() {
 
@@ -1479,8 +1488,7 @@ module ChapelDomain {
             // TODO: Future work could handle this case by using a bitvector
             // to mark slot initialization status. Initialization calls
             // would have to go through the 'initialize' method in order
-            // for this approach to work. Is it worth it when the interface
-            // is so fragile?
+            // for this approach to work.
             if _checks {
               halt('Runtime checks are currently only supported for ' +
                    'arrays of non-nilable classes');

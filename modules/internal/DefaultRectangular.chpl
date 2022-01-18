@@ -1085,7 +1085,8 @@ module DefaultRectangular {
 
     // This small kernel must be implemented by different array shapes due
     // to 'BaseArr' having no notion of indexing scheme.
-    override proc chpl_unsafeAssignIsClassElementNil(ref manager, idx) {
+    override
+    proc chpl_unsafeAssignIsClassElementNil(manager, idx) {
       ref elem = this.dsiAccess(idx);
       return manager.isClassReferenceNil(elem);
     }
