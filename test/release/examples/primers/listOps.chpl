@@ -204,7 +204,7 @@ writeln("List 1 after correction: ", lst1);
 
 /*
   If you need to get the specific index of a value contained in a list, you
-  can use the ``list.indexOf()`` operator.
+  can use the ``list.find()`` operator.
 
   .. warning::
 
@@ -213,12 +213,12 @@ writeln("List 1 after correction: ", lst1);
 */
 
 for x in lst2 {
-  const idx = lst1.indexOf(x);
+  const idx = lst1.find(x);
   assert(x == idx+1);
 }
 
 for x in lst3 {
-  const idx = lst1.indexOf(x);
+  const idx = lst1.find(x);
   assert(x == idx+1);
 }
 
