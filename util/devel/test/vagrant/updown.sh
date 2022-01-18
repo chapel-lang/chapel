@@ -11,7 +11,7 @@ do
     echo "------------ $name ---- vagrant up"
     vagrant up
     vagrant halt
-    cd ..
+    cd ../..
   fi
 done
 

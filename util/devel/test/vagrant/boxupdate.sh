@@ -10,7 +10,7 @@ do
     cd $name
     echo "------------ $name ---- vagrant box update"
     vagrant box update
-    cd ..
+    cd ../..
   fi
 done
 

@@ -9,7 +9,7 @@ do
     cd $name
     echo "------------ $name ---- vagrant up"
     vagrant up
-    cd ..
+    cd ../..
   fi
 done
 
