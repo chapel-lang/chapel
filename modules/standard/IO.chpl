@@ -1887,9 +1887,9 @@ private proc openfpHelper(fp: _file, hints:iohints=IOHINT_NONE,
   return ret;
 }
 
-deprecated "opentmp with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "opentmp with a style argument is deprecated, please rely on the default value for the argument"
 proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle):file throws {
-  return opentmp(hints, style: iostyleInternal);
+  return opentmpHelper(hints, style: iostyleInternal);
 }
 
 /*
@@ -1911,22 +1911,16 @@ that is, a new file is created that supports both writing and reading.
 
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg style: optional argument to specify I/O style associated with this file.
-            The provided style will be the default for any channels created for
-            on this file, and that in turn will be the default for all I/O
-            operations performed with those channels.
 :returns: an open temporary file.
 
 :throws SystemError: Thrown if the temporary file could not be opened.
-
-.. warning::
-
-   iostyleInternal is an internal type.  We do not recommend relying on it, as
-   it will likely be replaced in the future.
-
 */
-proc opentmp(hints:iohints=IOHINT_NONE,
-             style:iostyleInternal = defaultIOStyleInternal()):file throws {
+proc opentmp(hints:iohints=IOHINT_NONE):file throws {
+  return opentmpHelper(hints);
+}
+
+private proc opentmpHelper(hints:iohints=IOHINT_NONE,
+                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
@@ -1937,9 +1931,9 @@ proc opentmp(hints:iohints=IOHINT_NONE,
   return ret;
 }
 
-deprecated "openmem with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "openmem with a style argument is deprecated, please rely on the default value for the argument"
 proc openmem(style:iostyle):file throws {
-  return openmem(style: iostyleInternal);
+  return openmemHelper(style: iostyleInternal);
 }
 /*
 
@@ -1950,21 +1944,16 @@ perform I/O operations.
 
 The resulting file supports both reading and writing.
 
-:arg style: optional argument to specify internal I/O style associated with this
-            file.  The provided style will be the default for any channels
-            created on this file, and that in turn will be the default for all
-            I/O operations performed with those channels.
 :returns: an open memory file.
 
 :throws SystemError: Thrown if the memory buffered file could not be opened.
-
-.. warning::
-
-   iostyleInternal is an internal type.  We do not recommend relying on it, as
-   it will likely be replaced in the future.
-
 */
-proc openmem(style:iostyleInternal = defaultIOStyleInternal()):file throws {
+proc openmem():file throws {
+  return openmemHelper();
+}
+
+private
+proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
