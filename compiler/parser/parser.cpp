@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -350,6 +350,37 @@ static void printModuleSearchPath();
 static void helpPrintPath(Vec<const char*> path);
 static void ensureRequiredStandardModulesAreParsed();
 
+
+static void parseChplSourceFile(const char* inputFileName) {
+  /*
+    The selection of 16 here was chosen to provide enough space for
+    generating files like .tmp.obj (whose length is 8) from the
+    input filename; we doubled the value to ensure some breathing
+    room, and under an assumption that most files won't be this long
+    anyway.
+  */
+  const size_t reductionMaxLength = 16;
+  /*
+    Ensure that all the files parsed don't exceed
+    (NAME_MAX - reductionMaxLength) e.g. 239 bytes on
+    unix and linux system.
+  */
+  const size_t maxFileName = NAME_MAX - reductionMaxLength;
+  const char* baseName = stripdirectories(inputFileName);
+  if (strlen(baseName) > maxFileName) {
+    // error message to print placeholders for fileName and maxLength
+    const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
+    // throw error with concatenated message
+    USR_FATAL(errorMessage, baseName, maxFileName);
+  }
+
+  if (fCompilerLibraryParser == false) {
+    parseFile(inputFileName, MOD_USER, true, false);
+  } else {
+    uASTParseFile(inputFileName, MOD_USER, true, false);
+  }
+}
+
 static void parseCommandLineFiles() {
   int         fileNum       =    0;
   const char* inputFileName = NULL;
@@ -365,39 +396,25 @@ static void parseCommandLineFiles() {
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName))
     {
-      /*
-      The selection of 16 here was chosen to provide enough space for
-      generating files like .tmp.obj (whose length is 8) from the
-      input filename; we doubled the value to ensure some breathing
-      room, and under an assumption that most files won't be this long
-      anyway.
-      */
-      const size_t reductionMaxLength = 16;
-      /*
-      Ensure that all the files parsed don't exceed
-      (NAME_MAX - reductionMaxLength) e.g. 239 bytes on
-      unix and linux system.
-      */
-      const size_t maxFileName = NAME_MAX - reductionMaxLength;
-      const char* baseName = stripdirectories(inputFileName);
-      if (strlen(baseName) > maxFileName)
-      {
-        // error message to print placeholders for fileName and maxLength
-        const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
-        // throw error with concatenated message
-        USR_FATAL(errorMessage, baseName, maxFileName);
-      }
-
-      if (fCompilerLibraryParser == false) {
-        parseFile(inputFileName, MOD_USER, true, false);
-      } else {
-        uASTParseFile(inputFileName, MOD_USER, true, false);
-      }
+      parseChplSourceFile(inputFileName);
     }
   }
 
   if (fDocs == false || fDocsProcessUsedModules == true) {
-    parseDependentModules(false);
+    bool foundSomethingNew = false;
+    do {
+      foundSomethingNew = false;
+
+      parseDependentModules(false);
+
+      fileNum--;  // back up from previous NULL
+      while ((inputFileName = nthFilename(fileNum++))) {
+        if (isChplSource(inputFileName)) {
+          parseChplSourceFile(inputFileName);
+          foundSomethingNew=true;
+        }
+      }
+    } while (foundSomethingNew);
 
     ensureRequiredStandardModulesAreParsed();
 
@@ -573,70 +590,10 @@ static void parseDependentModules(bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
-// Internal modules that are currently able to be parsed by the new parser.
-static std::set<std::string> allowedInternalModules = {
-  "ArrayViewRankChange",
-  "ArrayViewReindex",
-  "ArrayViewSlice",
-  "Atomics",
-  "AtomicsCommon",
-  "ByteBufferHelpers",
-  "Bytes",
-  "BytesCasts",
-  "BytesStringCommon",
-  /*"ChapelArray",*/             // Prim call with named args.
-  "ChapelAutoAggregation",
-  "ChapelAutoLocalAccess",
-  "ChapelBase",
-  "ChapelComplex_forDocs",
-  "ChapelDebugPrint",
-  /*"ChapelDistribution",*/      // Segfault somewhere...
-  "ChapelHashing",
-  "ChapelHashtable",
-  "ChapelIOStringifyHelper",
-  "ChapelIteratorSupport",
-  /*"ChapelLocale",*/            //ChapelLocale.chpl:531 not implemented yet
-  "ChapelLocks",
-  "ChapelNumLocales",
-  "ChapelPrivatization",
-  "ChapelRange",
-  "ChapelReduce",
-  "ChapelSerializedBroadcast",
-  "ChapelStandard",
-  /*"ChapelSyncvar",*/           // Lifetimes.
-  "ChapelTaskData",
-  "ChapelTaskDataHelp",
-  "ChapelTaskID",
-  "ChapelThreads",
-  "ChapelTuple",
-  "ChapelUtil",
-  "CString",
-  "DefaultAssociative",
-  "DefaultRectangular",
-  "DefaultSparse",
-  "ExportWrappers",
-  "ExternalArray",
-  "ISO_Fortran_binding",
-  "LocaleModelHelpAPU",
-  "LocaleModelHelpFlat",
-  "LocaleModelHelpGPU",
-  "LocaleModelHelpMem",
-  "LocaleModelHelpNUMA",
-  "LocaleModelHelpRuntime",
-  "LocaleModelHelpSetup",
-  "LocalesArray",
-  "LocaleTree",
-  /*"MemConsistency",*/          // Redefinition of a function...
-  "MemTracking",
-  "NetworkAtomics",
-  "NetworkAtomicTypes",
-  "OwnedObject",
-  "PrintModuleInitOrder",
-  "SharedObject",
-  "startInitCommDiags",
-  "stopInitCommDiags",
-  "String",
-  "StringCasts"
+// Internal modules that are currently NOT able to be parsed by the new parser.
+static std::set<std::string> blockedInternalModules = {
+  "ChapelArray",             // Prim call with named args.
+  "ChapelDomain"            // Prim call with named args.
 };
 
 // TODO: Adjust me over time as more internal modules parse.
@@ -658,13 +615,13 @@ static bool uASTCanParseMod(const char* modName, ModTag modTag) {
 
   switch (modTag) {
     case MOD_INTERNAL:
-      ret = allowedInternalModules.count(modName);
+      ret = blockedInternalModules.count(modName);
       break;
     default:
       break;
   }
 
-  return ret;
+  return !ret;
 }
 
 static bool uASTAttemptToParseMod(const char* modName,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -921,7 +921,8 @@ override proc BlockCyclicArr.dsiDestroyArr(deinitElts:bool) {
 
 override proc BlockCyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
 
-proc BlockCyclicArr.chpl__serialize() {
+proc BlockCyclicArr.chpl__serialize() 
+    where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 

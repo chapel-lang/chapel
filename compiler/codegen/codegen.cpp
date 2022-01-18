@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -975,6 +975,16 @@ compareSymbol(const void* v1, const void* v2) {
     return strcmp(m1->cname, m2->cname) < 0;
   }
 
+  // prefer to place externs earlier in the function list (vector)
+  // this was necessary because in the new parser the order in which
+  // extern and non-externs are identified does not match the old parser.
+  // this keeps things consistent between the old and new parser
+  if (s1->hasFlag(FLAG_EXTERN) != s2->hasFlag(FLAG_EXTERN)) {
+    if (s1->hasFlag(FLAG_EXTERN))
+      return 1;
+    return 0;
+  }
+
   if (s1->linenum() != s2->linenum())
     return s1->linenum() < s2->linenum();
 
@@ -1720,7 +1730,8 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
+    if ((fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) ||
+        fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
       functions.push_back(fn);
     }
   }
@@ -2692,6 +2703,11 @@ void codegen() {
       int status = 0;
       while (wait(&status) != pid) {
         // wait for child process
+      }
+      // If there was an error in GPU code generation then the .fatbin file (containing
+      // the generated GPU code) was not created and we won't be able to continue.
+      if(status != 0) {
+        clean_exit(status);
       }
     }
   }

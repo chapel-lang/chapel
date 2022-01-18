@@ -28,30 +28,39 @@
 
 using namespace llvm;
 
-static cl::opt<bool> Help("h", cl::desc("Alias for -help"), cl::Hidden);
-static cl::opt<bool> Version("v", cl::desc("Alias for -version"), cl::Hidden);
+static cl::OptionCategory Options("llvm-reduce options");
+
+static cl::opt<bool> Help("h", cl::desc("Alias for -help"), cl::Hidden,
+                          cl::cat(Options));
+static cl::opt<bool> Version("v", cl::desc("Alias for -version"), cl::Hidden,
+                             cl::cat(Options));
 
 static cl::opt<std::string> InputFilename(cl::Positional, cl::Required,
-                                          cl::desc("<input llvm ll/bc file>"));
+                                          cl::desc("<input llvm ll/bc file>"),
+                                          cl::cat(Options));
 
 static cl::opt<std::string>
     TestFilename("test", cl::Required,
-                 cl::desc("Name of the interesting-ness test to be run"));
+                 cl::desc("Name of the interesting-ness test to be run"),
+                 cl::cat(Options));
 
 static cl::list<std::string>
     TestArguments("test-arg", cl::ZeroOrMore,
-                  cl::desc("Arguments passed onto the interesting-ness test"));
+                  cl::desc("Arguments passed onto the interesting-ness test"),
+                  cl::cat(Options));
 
 static cl::opt<std::string>
     OutputFilename("output",
                    cl::desc("Specify the output file. default: reduced.ll"));
 static cl::alias OutputFileAlias("o", cl::desc("Alias for -output"),
-                                 cl::aliasopt(OutputFilename));
+                                 cl::aliasopt(OutputFilename),
+                                 cl::cat(Options));
 
 static cl::opt<bool>
     ReplaceInput("in-place",
                  cl::desc("WARNING: This option will replace your input file "
-                          "with the reduced version!"));
+                          "with the reduced version!"),
+                 cl::cat(Options));
 
 // Parses IR into a Module and verifies it
 static std::unique_ptr<Module> parseInputFile(StringRef Filename,
@@ -69,6 +78,22 @@ static std::unique_ptr<Module> parseInputFile(StringRef Filename,
   }
 
   return Result;
+}
+
+void writeOutput(Module *M, StringRef Message) {
+  if (ReplaceInput) // In-place
+    OutputFilename = InputFilename.c_str();
+  else if (OutputFilename.empty() || OutputFilename == "-")
+    OutputFilename = "reduced.ll";
+
+  std::error_code EC;
+  raw_fd_ostream Out(OutputFilename, EC);
+  if (EC) {
+    errs() << "Error opening output file: " << EC.message() << "!\n";
+    exit(1);
+  }
+  M->print(Out, /*AnnotationWriter=*/nullptr);
+  errs() << Message << OutputFilename << "\n";
 }
 
 int main(int argc, char **argv) {
@@ -93,21 +118,8 @@ int main(int argc, char **argv) {
     // Print reduced file to STDOUT
     if (OutputFilename == "-")
       Tester.getProgram()->print(outs(), nullptr);
-    else {
-      if (ReplaceInput) // In-place
-        OutputFilename = InputFilename.c_str();
-      else if (OutputFilename.empty())
-        OutputFilename = "reduced.ll";
-
-      std::error_code EC;
-      raw_fd_ostream Out(OutputFilename, EC);
-      if (EC) {
-        errs() << "Error opening output file: " << EC.message() << "!\n";
-        exit(1);
-      }
-      Tester.getProgram()->print(Out, /*AnnotationWriter=*/nullptr);
-      errs() << "\nDone reducing! Reduced testcase: " << OutputFilename << "\n";
-    }
+    else
+      writeOutput(Tester.getProgram(), "\nDone reducing! Reduced testcase: ");
   }
 
   return 0;

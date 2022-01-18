@@ -211,7 +211,7 @@ TEST(TBDv3, ReadMultipleDocuments) {
 
   // Check Second Document
   Exports.clear();
-  auto Document = File->documents().front();
+  TBDReexportFile Document = File->documents().front();
   EXPECT_EQ(FileType::TBD_V3, Document->getFileType());
   EXPECT_EQ(Archs, Document->getArchitectures());
   EXPECT_EQ(Uuids, Document->uuids());
@@ -831,8 +831,8 @@ TEST(TBDv3, MalformedFile2) {
   EXPECT_FALSE(!!Result);
   std::string ErrorMessage = toString(Result.takeError());
   ASSERT_EQ(
-      "malformed file\nTest.tbd:5:9: error: unknown key 'foobar'\nfoobar: "
-      "\"Unsupported key\"\n        ^~~~~~~~~~~~~~~~~\n",
+      "malformed file\nTest.tbd:5:1: error: unknown key 'foobar'\nfoobar: "
+      "\"Unsupported key\"\n^~~~~~\n",
       ErrorMessage);
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,81 +39,7 @@ namespace llvm
 
 class PrimitiveOp;
 
-
-class Expr : public BaseAST {
-public:
-   Expr(AstTag astTag);
-  ~Expr() override = default;
-
-  // Interface for BaseAST
-          bool    inTree()                                        override;
-  virtual bool    isStmt()                                           const;
-          QualifiedType qualType()                                override;
-          void    verify()                                        override;
-
-  void verify(AstTag expectedTag); // ensure tag is as expected, then verify()
-  void verifyParent(const Expr* child); // verify proper child->parentExpr
-
-  // New interface
-  virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
-
-  virtual Expr*   getFirstExpr()                                       = 0;
-  virtual Expr*   getNextExpr(Expr* expr);
-
-  virtual bool    isNoInitExpr()                                     const;
-
-  virtual void    prettyPrint(std::ostream* o);
-
-
-  bool            isRef();
-  bool            isWideRef();
-  bool            isRefOrWideRef();
-
-  /* Returns true if the given expression is contained by this one. */
-  bool            contains(const Expr* expr)                         const;
-
-  bool            isModuleDefinition();
-
-  void            insertBefore(Expr* new_ast);
-  void            insertAfter(Expr* new_ast);
-  void            replace(Expr* new_ast);
-
-  // Insert multiple ASTs in the order of the arguments.
-  // Todo: replace with a single varargs version.
-  void            insertAfter(Expr* e1, Expr* e2);
-  void            insertAfter(Expr* e1, Expr* e2, Expr* e3);
-  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4);
-  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
-                              Expr* e5);
-  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
-                              Expr* e5, Expr* e6);
-
-  void            insertBefore(AList exprs);
-  void            insertAfter(AList exprs);
-
-  void            insertBefore(const char* format, ...);
-  void            insertAfter(const char* format, ...);
-  void            replace(const char* format, ...);
-
-  Expr*           remove();
-
-  bool            isStmtExpr()                                       const;
-  Expr*           getStmtExpr();
-
-  BlockStmt*      getScopeBlock();
-
-  Symbol*         parentSymbol;
-  Expr*           parentExpr;
-
-  AList*          list;           // alist pointer
-  Expr*           prev;           // alist previous pointer
-  Expr*           next;           // alist next     pointer
-
-private:
-  virtual Expr*   copyInner(SymbolMap* map) = 0;
-};
-
+#include "expr-class-def.h"
 
 class DefExpr final : public Expr {
 public:
@@ -330,6 +256,9 @@ inline InterfaceSymbol* IfcConstraint::ifcSymbol() const {
   return toInterfaceSymbol(toSymExpr(interfaceExpr)->symbol());
 }
 
+inline bool Expr::inTree() {
+  return parentSymbol != nullptr;
+}
 
 // Determines whether a node is in the AST (vs. has been removed
 // from the AST). Used e.g. by cleanAst().

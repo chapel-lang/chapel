@@ -1,0 +1,2 @@
+callHalts.chpl:5: error: halt reached - i is too big!
+"Some way to indicate this ran on the GPU"

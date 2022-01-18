@@ -63,6 +63,11 @@ tablegen("AMDGPUGenRegisterBank") {
   td_file = "AMDGPU.td"
 }
 
+tablegen("InstCombineTables") {
+  visibility = [ ":LLVMAMDGPUCodeGen" ]
+  args = [ "-gen-searchable-tables" ]
+}
+
 tablegen("R600GenCallingConv") {
   visibility = [ ":LLVMAMDGPUCodeGen" ]
   args = [ "-gen-callingconv" ]
@@ -92,6 +97,7 @@ static_library("LLVMAMDGPUCodeGen") {
     ":AMDGPUGenPreLegalizeGICombiner",
     ":AMDGPUGenRegBankGICombiner",
     ":AMDGPUGenRegisterBank",
+    ":InstCombineTables",
     ":R600GenCallingConv",
     ":R600GenDAGISel",
     ":R600GenDFAPacketizer",
@@ -106,6 +112,7 @@ static_library("LLVMAMDGPUCodeGen") {
     "//llvm/lib/CodeGen/SelectionDAG",
     "//llvm/lib/IR",
     "//llvm/lib/MC",
+    "//llvm/lib/Passes",
     "//llvm/lib/Support",
     "//llvm/lib/Target",
     "//llvm/lib/Transforms/IPO",
@@ -130,9 +137,10 @@ static_library("LLVMAMDGPUCodeGen") {
     "AMDGPUHSAMetadataStreamer.cpp",
     "AMDGPUISelDAGToDAG.cpp",
     "AMDGPUISelLowering.cpp",
-    "AMDGPUInline.cpp",
+    "AMDGPUInstCombineIntrinsic.cpp",
     "AMDGPUInstrInfo.cpp",
     "AMDGPUInstructionSelector.cpp",
+    "AMDGPULateCodeGenPrepare.cpp",
     "AMDGPULegalizerInfo.cpp",
     "AMDGPULibCalls.cpp",
     "AMDGPULibFunc.cpp",
@@ -140,6 +148,7 @@ static_library("LLVMAMDGPUCodeGen") {
     "AMDGPULowerKernelArguments.cpp",
     "AMDGPULowerKernelAttributes.cpp",
     "AMDGPUMCInstLower.cpp",
+    "AMDGPUMIRFormatter.cpp",
     "AMDGPUMachineCFGStructurizer.cpp",
     "AMDGPUMachineFunction.cpp",
     "AMDGPUMachineModuleInfo.cpp",
@@ -188,7 +197,6 @@ static_library("LLVMAMDGPUCodeGen") {
     "SIAnnotateControlFlow.cpp",
     "SIFixSGPRCopies.cpp",
     "SIFixVGPRCopies.cpp",
-    "SIFixupVectorISel.cpp",
     "SIFoldOperands.cpp",
     "SIFormMemoryClauses.cpp",
     "SIFrameLowering.cpp",
@@ -211,6 +219,7 @@ static_library("LLVMAMDGPUCodeGen") {
     "SIPostRABundler.cpp",
     "SIPreAllocateWWMRegs.cpp",
     "SIPreEmitPeephole.cpp",
+    "SIProgramInfo.cpp",
     "SIRegisterInfo.cpp",
     "SIRemoveShortExecBranches.cpp",
     "SIShrinkInstructions.cpp",

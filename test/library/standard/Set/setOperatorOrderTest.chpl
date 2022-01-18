@@ -37,12 +37,16 @@ s2.add(b);
 s1.add(c);
 s2.add(d);
 
-writeln(s1 | s2);
-writeln(s1 + s2);
-writeln(s1 - s2);
-writeln(s1 & s2);
-writeln(s1 ^ s2);
+printSortedSet(s1 | s2);
+printSortedSet(s1 + s2);
+printSortedSet(s1 - s2);
+printSortedSet(s1 & s2);
+printSortedSet(s1 ^ s2);
 writeln(s1 <= s2);
 writeln(s2 <= s1);
 writeln(s1 >= s2);
 writeln(s2 >= s1);
+
+proc printSortedSet(s) {
+  writeln(s.toArray().sorted());
+}

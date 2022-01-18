@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -467,18 +467,22 @@ void Context::advanceToNextRevision(bool prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
     gcCounter++;
   }
-  if (enableDebugTracing) {
+  if (enableDebugTrace) {
     printf("CURRENT REVISION NUMBER IS NOW %i %s\n",
            (int) this->currentRevisionNumber,
            prepareToGC?"PREPARING GC":"");
   }
 }
 
+void Context::setDebugTraceFlag(bool enable)  {
+  enableDebugTrace = enable;
+}
+
 void Context::collectGarbage() {
   // if there are no parent queries, collect some garbage
   assert(queryStack.size() == 0);
 
-  if (enableDebugTracing) {
+  if (enableDebugTrace) {
     printf("COLLECTING GARBAGE\n");
   }
 
@@ -509,12 +513,12 @@ void Context::collectGarbage() {
       // buf[1] is the doNotCollectMark
       if (buf[1] || buf[0] == gcMark) {
         newTable.insert(e);
-        if (enableDebugTracing) {
+        if (enableDebugTrace) {
           printf("COPYING OVER UNIQUESTRING %s\n", key);
         }
       } else {
         toFree.push_back(allocation);
-        if (enableDebugTracing) {
+        if (enableDebugTrace) {
           printf("WILL FREE UNIQUESTRING %s\n", key);
         }
       }
@@ -524,7 +528,7 @@ void Context::collectGarbage() {
     }
     uniqueStringsTable.swap(newTable);
 
-    if (enableDebugTracing) {
+    if (enableDebugTrace) {
       size_t nUniqueStringsAfter = uniqueStringsTable.size();
       printf("COLLECTED %i UniqueStrings\n",
              (int)(nUniqueStringsBefore-nUniqueStringsAfter));
@@ -542,7 +546,7 @@ void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
                        /* isInputQuery */ false,
                        /* forSetter */ true);
 
-  if (enableDebugTracing) {
+  if (enableDebugTrace) {
     printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
            moduleIdSymbolPath.c_str(), path.c_str());
   }
@@ -604,7 +608,7 @@ void Context::error(const resolution::TypedFnSignature* inFn,
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
-  if (enableDebugTracing) {
+  if (enableDebugTrace) {
     printf("RECOMPUTING IF NEEDED FOR %p %s\n", resultEntry,
            resultEntry->parentQueryMap->queryName);
   }
@@ -647,14 +651,14 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   if (useSaved == false) {
     resultEntry->recompute(this);
     assert(resultEntry->lastChecked == this->currentRevisionNumber);
-    if (enableDebugTracing) {
+    if (enableDebugTrace) {
       printf("DONE RECOMPUTING IF NEEDED -- RECOMPUTED FOR %s\n",
              resultEntry->parentQueryMap->queryName);
     }
     return;
   } else {
     updateForReuse(resultEntry);
-    if (enableDebugTracing) {
+    if (enableDebugTrace) {
       printf("DONE RECOMPUTING IF NEEDED -- REUSED FOR %s\n",
              resultEntry->parentQueryMap->queryName);
     }

@@ -6,6 +6,16 @@ import chpl_compiler, chpl_platform, overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
 from utils import memoize, warning
 
+# returns True if CHPL_GMP was set by the user
+# (i.e. not inferred to be the default)
+@memoize
+def is_overridden():
+    gmp_val = overrides.get('CHPL_GMP')
+
+    if gmp_val:
+        return True
+
+    return False
 
 @memoize
 def get():
@@ -34,15 +44,28 @@ def get():
 def get_uniq_cfg_path():
     return third_party_utils.default_uniq_cfg_path()
 
-
+# returns 2-tuple of lists
+#  (compiler_bundled_args, compiler_system_args)
 @memoize
-def get_link_args(gmp):
-    if gmp == 'bundled':
-        return third_party_utils.default_get_link_args('gmp')
-    elif gmp == 'system':
-        return ['-lgmp']
-    return []
+def get_compile_args():
+    gmp_val = get()
+    if gmp_val == 'bundled':
+         return third_party_utils.get_bundled_compile_args('gmp')
 
+    return ([ ], [ ])
+
+# returns 2-tuple of lists
+#  (linker_bundled_args, linker_system_args)
+@memoize
+def get_link_args():
+    gmp_val = get()
+    if gmp_val == 'bundled':
+         return third_party_utils.get_bundled_link_args('gmp')
+
+    elif gmp_val == 'system':
+        return ([ ], ['-lgmp'])
+
+    return ([ ], [ ])
 
 def _main():
     gmp_val = get()

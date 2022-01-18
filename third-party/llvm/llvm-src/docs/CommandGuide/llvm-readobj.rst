@@ -14,7 +14,7 @@ DESCRIPTION
 The :program:`llvm-readobj` tool displays low-level format-specific information
 about one or more object files.
 
-If ``input`` is "``-``" or omitted, :program:`llvm-readobj` reads from standard
+If ``input`` is "``-``", :program:`llvm-readobj` reads from standard
 input. Otherwise, it will read from the specified ``filenames``.
 
 DIFFERENCES TO LLVM-READELF
@@ -285,6 +285,10 @@ The following options are implemented only for the PE/COFF file format.
 .. option:: --coff-debug-directory
 
  Display the debug directory.
+
+.. option:: --coff-tls-directory
+
+ Display the TLS directory.
 
 .. option:: --coff-directives
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -399,7 +399,7 @@
 
 %type <b> access_control use_access_control include_access_control
 %type <b> opt_prototype
-%type <b> opt_throws_error
+%type <b> opt_throws_error try_token
 
 %type <pt> required_intent_tag opt_intent_tag opt_this_intent_tag
 
@@ -439,7 +439,7 @@
 
 %type <pblockstmt> class_level_stmt_ls
 
-%type <pblockstmt> stmt
+%type <pblockstmt> stmt tryable_stmt
 %type <pblockstmt> do_stmt
 %type <pblockstmt> if_stmt loop_stmt
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
@@ -542,37 +542,41 @@ stmt:
   deprecated_decl_stmt
 | include_module_stmt
 | block_stmt
+| tryable_stmt
 | use_stmt
 | import_stmt
 | require_stmt
-| assignment_stmt
 | extern_block_stmt
-| if_stmt
 | implements_stmt
 | interface_stmt
-| loop_stmt
-| select_stmt
 | defer_stmt
 | try_stmt
-| throw_stmt
 | return_stmt
-| manage_stmt
-| stmt_level_expr TSEMI                { $$ = buildChapelStmt($1); }
 | TATOMIC stmt                         { $$ = buildAtomicStmt($2); }
-| TBEGIN opt_task_intent_ls stmt       { $$ = buildBeginStmt($2, $3); }
 | TBREAK opt_label_ident TSEMI         { $$ = buildGotoStmt(GOTO_BREAK, $2); }
-| TCOBEGIN opt_task_intent_ls block_stmt { $$ = buildCobeginStmt($2, $3);  }
 | TCONTINUE opt_label_ident TSEMI      { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
-| TDELETE simple_expr_ls TSEMI         { $$ = buildDeleteStmt($2); }
 | TLABEL ident_def stmt                { $$ = buildLabelStmt($2, $3); }
+| TYIELD expr TSEMI                    { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
+| error TSEMI                          { $$ = buildErrorStandin(); }
+;
+
+tryable_stmt:
+  assignment_stmt
+| if_stmt
+| loop_stmt
+| manage_stmt
+| select_stmt
+| throw_stmt
+| stmt_level_expr TSEMI                { $$ = buildChapelStmt($1); }
+| TBEGIN opt_task_intent_ls stmt       { $$ = buildBeginStmt($2, $3); }
+| TCOBEGIN opt_task_intent_ls block_stmt { $$ = buildCobeginStmt($2, $3);  }
+| TDELETE simple_expr_ls TSEMI         { $$ = buildDeleteStmt($2); }
 | TLOCAL expr do_stmt                  { $$ = buildLocalStmt($2, $3); }
 | TLOCAL do_stmt                       { $$ = buildLocalStmt($2); }
 | TON expr do_stmt                     { $$ = buildOnStmt($2, $3); }
 | TSERIAL expr do_stmt                 { $$ = buildSerialStmt($2, $3); }
 | TSERIAL do_stmt                      { $$ = buildSerialStmt(new SymExpr(gTrue), $2); }
 | TSYNC stmt                           { $$ = buildSyncStmt($2); }
-| TYIELD expr TSEMI                    { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
-| error TSEMI                          { $$ = buildErrorStandin(); }
 ;
 
 deprecated_decl_stmt:
@@ -1273,13 +1277,13 @@ ifc_constraint:
 defer_stmt:
   TDEFER stmt             { $$ = DeferStmt::build($2); }
 
+try_token:
+  TTRY     { $$ = false; }
+| TTRYBANG { $$ = true; }
+
 try_stmt:
-  TTRY     expr            TSEMI         { $$ = TryStmt::build(false, $2); }
-| TTRYBANG expr            TSEMI         { $$ = TryStmt::build(true,  $2); }
-| TTRY     assignment_stmt               { $$ = TryStmt::build(false, $2); }
-| TTRYBANG assignment_stmt               { $$ = TryStmt::build(true,  $2); }
-| TTRY     block_stmt      catch_stmt_ls { $$ = TryStmt::build(false, $2, $3); }
-| TTRYBANG block_stmt      catch_stmt_ls { $$ = TryStmt::build(true,  $2, $3); }
+  try_token tryable_stmt { $$ = TryStmt::build($1, $2); }
+| try_token block_stmt   catch_stmt_ls { $$ = TryStmt::build($1, $2, $3); }
 ;
 
 catch_stmt_ls:

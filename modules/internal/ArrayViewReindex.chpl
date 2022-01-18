@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -107,7 +107,7 @@ module ArrayViewReindex {
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
     var updomInst: unmanaged DefaultRectangularDom(rank, idxType, stridable)?;
-    forwarding updom except these;
+    forwarding updom except these, chpl__serialize, chpl__deserialize;
 
     // the old original index set that we're equivalent to
     var downdomPid;

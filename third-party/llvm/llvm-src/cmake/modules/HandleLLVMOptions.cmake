@@ -145,6 +145,10 @@ else(WIN32)
   endif(FUCHSIA OR UNIX)
 endif(WIN32)
 
+if (CMAKE_SYSTEM_NAME MATCHES "OS390")
+  set(LLVM_HAVE_LINK_VERSION_SCRIPT 0)
+endif()
+
 set(EXEEXT ${CMAKE_EXECUTABLE_SUFFIX})
 set(LTDL_SHLIB_EXT ${CMAKE_SHARED_LIBRARY_SUFFIX})
 
@@ -191,7 +195,7 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "AIX")
   # -fPIC does not enable the large code model for GCC on AIX but does for XL.
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     append("-mcmodel=large" CMAKE_CXX_FLAGS CMAKE_C_FLAGS)
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "XL")
     # XL generates a small number of relocations not of the large model, -bbigtoc is needed.
@@ -208,7 +212,7 @@ endif()
 
 # Pass -Wl,-z,defs. This makes sure all symbols are defined. Otherwise a DSO
 # build might work on ELF but fail on MachO/COFF.
-if(NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin|FreeBSD|OpenBSD|DragonFly|AIX|SunOS" OR
+if(NOT (CMAKE_SYSTEM_NAME MATCHES "Darwin|FreeBSD|OpenBSD|DragonFly|AIX|SunOS|OS390" OR
         WIN32 OR CYGWIN) AND
    NOT LLVM_USE_SANITIZER)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs")
@@ -262,7 +266,12 @@ if( LLVM_ENABLE_LLD )
   if ( LLVM_USE_LINKER )
     message(FATAL_ERROR "LLVM_ENABLE_LLD and LLVM_USE_LINKER can't be set at the same time")
   endif()
-  set(LLVM_USE_LINKER "lld")
+  # In case of MSVC cmake always invokes the linker directly, so the linker
+  # should be specified by CMAKE_LINKER cmake variable instead of by -fuse-ld
+  # compiler option.
+  if ( NOT MSVC )
+    set(LLVM_USE_LINKER "lld")
+  endif()
 endif()
 
 if( LLVM_USE_LINKER )
@@ -400,6 +409,8 @@ elseif(MINGW) # FIXME: Also cygwin?
   endif()
 endif()
 
+option(LLVM_ENABLE_WARNINGS "Enable compiler warnings." ON)
+
 if( MSVC )
   include(ChooseMSVCCRT)
 
@@ -425,6 +436,12 @@ if( MSVC )
   endif (LLVM_ENABLE_WERROR)
 
   append("/Zc:inline" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+
+  # Some projects use the __cplusplus preprocessor macro to check support for
+  # a particular version of the C++ standard. When this option is not specified
+  # explicitly, macro's value is "199711L" that implies C++98 Standard.
+  # https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
+  append("/Zc:__cplusplus" CMAKE_CXX_FLAGS)
 
   # Allow users to request PDBs in release mode. CMake offeres the
   # RelWithDebInfo configuration, but it uses different optimization settings
@@ -478,6 +495,10 @@ if( MSVC )
       endif()
     endif()
   endif()
+  # By default MSVC has a 2^16 limit on the number of sections in an object file,
+  # but in many objects files need more than that. This flag is to increase the
+  # number of sections.
+  append("/bigobj" CMAKE_CXX_FLAGS)
 endif( MSVC )
 
 # Warnings-as-errors handling for GCC-compatible compilers:
@@ -682,6 +703,21 @@ if (LLVM_ENABLE_WARNINGS AND (LLVM_COMPILER_IS_GCC_COMPATIBLE OR CLANG_CL))
   # Enable -Wdelete-non-virtual-dtor if available.
   add_flag_if_supported("-Wdelete-non-virtual-dtor" DELETE_NON_VIRTUAL_DTOR_FLAG)
 
+  # Enable -Wsuggest-override if it's available, and only if it doesn't
+  # suggest adding 'override' to functions that are already marked 'final'
+  # (which means it is disabled for GCC < 9.2).
+  check_cxx_compiler_flag("-Wsuggest-override" CXX_SUPPORTS_SUGGEST_OVERRIDE_FLAG)
+  if (CXX_SUPPORTS_SUGGEST_OVERRIDE_FLAG)
+    set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=suggest-override")
+    CHECK_CXX_SOURCE_COMPILES("class base {public: virtual void anchor();};
+                               class derived : base {public: void anchor() final;};
+                               int main() { return 0; }"
+                              CXX_WSUGGEST_OVERRIDE_ALLOWS_ONLY_FINAL)
+    set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
+    append_if(CXX_WSUGGEST_OVERRIDE_ALLOWS_ONLY_FINAL "-Wsuggest-override" CMAKE_CXX_FLAGS)
+  endif()
+
   # Check if -Wcomment is OK with an // comment ending with '\' if the next
   # line is also a // comment.
   set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
@@ -740,8 +776,7 @@ if(LLVM_USE_SANITIZER)
       endif()
     elseif (LLVM_USE_SANITIZER STREQUAL "Undefined")
       append_common_sanitizer_flags()
-      append("-fsanitize=undefined -fno-sanitize=vptr,function -fno-sanitize-recover=all"
-              CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+      append("${LLVM_UBSAN_FLAGS}" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
     elseif (LLVM_USE_SANITIZER STREQUAL "Thread")
       append_common_sanitizer_flags()
       append("-fsanitize=thread" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
@@ -750,8 +785,8 @@ if(LLVM_USE_SANITIZER)
     elseif (LLVM_USE_SANITIZER STREQUAL "Address;Undefined" OR
             LLVM_USE_SANITIZER STREQUAL "Undefined;Address")
       append_common_sanitizer_flags()
-      append("-fsanitize=address,undefined -fno-sanitize=vptr,function -fno-sanitize-recover=all"
-              CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+      append("-fsanitize=address" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+      append("${LLVM_UBSAN_FLAGS}" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
     elseif (LLVM_USE_SANITIZER STREQUAL "Leaks")
       append_common_sanitizer_flags()
       append("-fsanitize=leak" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
@@ -869,7 +904,8 @@ option(LLVM_ENABLE_IR_PGO "Build LLVM and tools with IR PGO instrumentation (dep
 mark_as_advanced(LLVM_ENABLE_IR_PGO)
 
 set(LLVM_BUILD_INSTRUMENTED OFF CACHE STRING "Build LLVM and tools with PGO instrumentation. May be specified as IR or Frontend")
-mark_as_advanced(LLVM_BUILD_INSTRUMENTED)
+set(LLVM_VP_COUNTERS_PER_SITE "1.5" CACHE STRING "Value profile counters to use per site for IR PGO with Clang")
+mark_as_advanced(LLVM_BUILD_INSTRUMENTED LLVM_VP_COUNTERS_PER_SITE)
 string(TOUPPER "${LLVM_BUILD_INSTRUMENTED}" uppercase_LLVM_BUILD_INSTRUMENTED)
 
 if (LLVM_BUILD_INSTRUMENTED)
@@ -881,6 +917,15 @@ if (LLVM_BUILD_INSTRUMENTED)
         append("-fprofile-generate=\"${LLVM_PROFILE_DATA_DIR}\""
           CMAKE_EXE_LINKER_FLAGS
           CMAKE_SHARED_LINKER_FLAGS)
+    endif()
+    # Set this to avoid running out of the value profile node section
+    # under clang in dynamic linking mode.
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND
+        CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11 AND
+        LLVM_LINK_LLVM_DYLIB)
+      append("-Xclang -mllvm -Xclang -vp-counters-per-site=${LLVM_VP_COUNTERS_PER_SITE}"
+        CMAKE_CXX_FLAGS
+        CMAKE_C_FLAGS)
     endif()
   elseif(uppercase_LLVM_BUILD_INSTRUMENTED STREQUAL "CSIR")
     append("-fcs-profile-generate=\"${LLVM_CSPROFILE_DATA_DIR}\""

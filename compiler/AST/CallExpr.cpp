@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -142,22 +142,6 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
       INT_FATAL(call, "Bad argList in CallExpr constructor");
     }
   }
-}
-
-bool CallExpr::isEmpty() const {
-  return primitive == NULL && baseExpr == NULL;
-}
-
-bool CallExpr::isPrimitive() const {
-  return primitive != NULL;
-}
-
-bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
-  return primitive && primitive->tag == primitiveTag;
-}
-
-bool CallExpr::isPrimitive(const char* primitiveName) const {
-  return primitive && !strcmp(primitive->name, primitiveName);
 }
 
 Expr* CallExpr::getFirstExpr() {
@@ -425,15 +409,6 @@ bool CallExpr::isNamedAstr(const char* name) const {
   }
 
   return retval;
-}
-
-int CallExpr::numActuals() const {
-  return argList.length;
-}
-
-
-Expr* CallExpr::get(int index) const {
-  return argList.get(index);
 }
 
 

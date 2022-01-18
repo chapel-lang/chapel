@@ -4,9 +4,14 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
+COMMON_DIR=/cray/css/users/chapelu
+if [ ! -d "$COMMON_DIR" ]; then
+  COMMON_DIR=/cy/users/chapelu
+fi
+
 # Perf configuration
 source $CWD/common-perf.bash
-ARKOUDA_PERF_DIR=${ARKOUDA_PERF_DIR:-/cray/css/users/chapelu/NightlyPerformance/arkouda}
+ARKOUDA_PERF_DIR=${ARKOUDA_PERF_DIR:-$COMMON_DIR/NightlyPerformance/arkouda}
 export CHPL_TEST_PERF_DIR=$ARKOUDA_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
 export CHPL_TEST_NUM_TRIALS=3
 export CHPL_TEST_PERF_START_DATE=04/01/20
@@ -16,8 +21,7 @@ export CHPL_NIGHTLY_TEST_DIRS=studies/arkouda/
 export CHPL_TEST_ARKOUDA=true
 export CHPL_TEST_ARKOUDA_PERF=true
 
-CSS_DIR=/cray/css/users/chapelu
-ARKOUDA_DEP_DIR=$CSS_DIR/arkouda-deps
+ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
   export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
   export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
@@ -29,7 +33,7 @@ fi
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
 # Arkouda requires Python >= 3.7
-SETUP_PYTHON=$CSS_DIR/setup_python37.bash
+SETUP_PYTHON=$COMMON_DIR/setup_python37.bash
 if [ -f "$SETUP_PYTHON" ]; then
   source $SETUP_PYTHON
 fi
@@ -39,7 +43,7 @@ function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
   export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
   currentSha=`git rev-parse HEAD`
-  git checkout 1.25.0
+  git checkout 1.25.1
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   git checkout $currentSha -- $CHPL_HOME/util/test/perf/

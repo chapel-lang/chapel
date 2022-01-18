@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2217,7 +2217,9 @@ void FnSymbol::codegenPrototype() {
 
     if (generatingGPUKernel) {
       func->setConvergent();
-      func->setCallingConv(llvm::CallingConv::PTX_Kernel);
+      if (!hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+        func->setCallingConv(llvm::CallingConv::PTX_Kernel);
+      }
     }
 
     func->setDSOLocal(true);
@@ -2361,7 +2363,8 @@ void FnSymbol::codegenDef() {
 
   if( hasFlag(FLAG_NO_CODEGEN) ) return;
 
-  if( hasFlag(FLAG_GPU_CODEGEN) != gCodegenGPU ) return;
+  if( (hasFlag(FLAG_GPU_CODEGEN) != gCodegenGPU) &&
+      !hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) return;
 
   info->cStatements.clear();
   info->cLocalDecls.clear();

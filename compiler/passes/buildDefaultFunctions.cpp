@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -301,7 +301,7 @@ static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  functionExistsKind kind=FIND_EITHER)
 {
-  return functionExists<1>(name, {formalType1}, kind);
+  return functionExists<1>(name, {{formalType1}}, kind);
 }
 
 static FnSymbol* functionExists(const char* name,
@@ -309,7 +309,7 @@ static FnSymbol* functionExists(const char* name,
                                  Type* formalType2,
                                  functionExistsKind kind=FIND_EITHER)
 {
-  return functionExists<2>(name, {formalType1, formalType2}, kind);
+  return functionExists<2>(name, {{formalType1, formalType2}}, kind);
 }
 
 static FnSymbol* functionExists(const char* name,
@@ -318,7 +318,7 @@ static FnSymbol* functionExists(const char* name,
                                  Type* formalType3,
                                  functionExistsKind kind=FIND_EITHER)
 {
-  return functionExists<3>(name, {formalType1, formalType2, formalType3}, kind);
+  return functionExists<3>(name, {{formalType1, formalType2, formalType3}}, kind);
 }
 
 static FnSymbol* functionExists(const char* name,
@@ -327,7 +327,7 @@ static FnSymbol* functionExists(const char* name,
                                 Type* formalType3,
                                 Type* formalType4,
                                 functionExistsKind kind=FIND_EITHER) {
-  return functionExists<4>(name, {formalType1, formalType2, formalType3, formalType4}, kind);
+  return functionExists<4>(name, {{formalType1, formalType2, formalType3, formalType4}}, kind);
 }
 
 static void fixupAccessor(AggregateType* ct, Symbol *field,

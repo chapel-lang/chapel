@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,9 @@
  * limitations under the License.
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 // needed for dlfcn.h on linux
 
 #include "chplrt.h"

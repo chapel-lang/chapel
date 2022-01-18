@@ -7,8 +7,10 @@
 //===----------------------------------------------------------------------===//
 #include "llvm/Analysis/MemorySSA.h"
 #include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/Analysis/BasicAliasAnalysis.h"
 #include "llvm/Analysis/MemorySSAUpdater.h"
+#include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Dominators.h"
@@ -1066,7 +1068,7 @@ TEST_F(MemorySSATest, TestStoreMustAlias) {
     MemoryDef *MemDef = dyn_cast_or_null<MemoryDef>(MSSA.getMemoryAccess(V));
     EXPECT_EQ(MemDef->isOptimized(), false)
         << "Store " << I << " is optimized from the start?";
-    EXPECT_EQ(MemDef->getOptimizedAccessType(), MayAlias)
+    EXPECT_EQ(MemDef->getOptimizedAccessType(), None)
         << "Store " << I
         << " has correct alias information before being optimized?";
     if (V == SA1)
@@ -1170,7 +1172,7 @@ TEST_F(MemorySSATest, TestStoreMayAlias) {
     MemoryDef *MemDef = dyn_cast_or_null<MemoryDef>(MSSA.getMemoryAccess(V));
     EXPECT_EQ(MemDef->isOptimized(), false)
         << "Store " << I << " is optimized from the start?";
-    EXPECT_EQ(MemDef->getOptimizedAccessType(), MayAlias)
+    EXPECT_EQ(MemDef->getOptimizedAccessType(), None)
         << "Store " << I
         << " has correct alias information before being optimized?";
     ++I;
@@ -1203,12 +1205,14 @@ TEST_F(MemorySSATest, LifetimeMarkersAreClobbers) {
   // Example code:
   // define void @a(i8* %foo) {
   //   %bar = getelementptr i8, i8* %foo, i64 1
+  //   %baz = getelementptr i8, i8* %foo, i64 2
   //   store i8 0, i8* %foo
   //   store i8 0, i8* %bar
-  //   call void @llvm.lifetime.end.p0i8(i64 8, i32* %p)
-  //   call void @llvm.lifetime.start.p0i8(i64 8, i32* %p)
+  //   call void @llvm.lifetime.end.p0i8(i64 3, i8* %foo)
+  //   call void @llvm.lifetime.start.p0i8(i64 3, i8* %foo)
   //   store i8 0, i8* %foo
   //   store i8 0, i8* %bar
+  //   call void @llvm.memset.p0i8(i8* %baz, i8 0, i64 1)
   //   ret void
   // }
   //
@@ -1228,6 +1232,7 @@ TEST_F(MemorySSATest, LifetimeMarkersAreClobbers) {
   Value *Foo = &*F->arg_begin();
 
   Value *Bar = B.CreateGEP(B.getInt8Ty(), Foo, B.getInt64(1), "bar");
+  Value *Baz = B.CreateGEP(B.getInt8Ty(), Foo, B.getInt64(2), "baz");
 
   B.CreateStore(B.getInt8(0), Foo);
   B.CreateStore(B.getInt8(0), Bar);
@@ -1237,12 +1242,13 @@ TEST_F(MemorySSATest, LifetimeMarkersAreClobbers) {
   };
 
   B.CreateCall(GetLifetimeIntrinsic(Intrinsic::lifetime_end),
-               {B.getInt64(2), Foo});
+               {B.getInt64(3), Foo});
   Instruction *LifetimeStart = B.CreateCall(
-      GetLifetimeIntrinsic(Intrinsic::lifetime_start), {B.getInt64(2), Foo});
+      GetLifetimeIntrinsic(Intrinsic::lifetime_start), {B.getInt64(3), Foo});
 
   Instruction *FooStore = B.CreateStore(B.getInt8(0), Foo);
   Instruction *BarStore = B.CreateStore(B.getInt8(0), Bar);
+  Instruction *BazMemSet = B.CreateMemSet(Baz, B.getInt8(0), 1, Align(1));
 
   setupAnalyses();
   MemorySSA &MSSA = *Analyses->MSSA;
@@ -1256,6 +1262,9 @@ TEST_F(MemorySSATest, LifetimeMarkersAreClobbers) {
   MemoryAccess *BarAccess = MSSA.getMemoryAccess(BarStore);
   ASSERT_NE(BarAccess, nullptr);
 
+  MemoryAccess *BazAccess = MSSA.getMemoryAccess(BazMemSet);
+  ASSERT_NE(BazAccess, nullptr);
+
   MemoryAccess *FooClobber =
       MSSA.getWalker()->getClobberingMemoryAccess(FooAccess);
   EXPECT_EQ(FooClobber, LifetimeStartAccess);
@@ -1263,6 +1272,15 @@ TEST_F(MemorySSATest, LifetimeMarkersAreClobbers) {
   MemoryAccess *BarClobber =
       MSSA.getWalker()->getClobberingMemoryAccess(BarAccess);
   EXPECT_EQ(BarClobber, LifetimeStartAccess);
+
+  MemoryAccess *BazClobber =
+      MSSA.getWalker()->getClobberingMemoryAccess(BazAccess);
+  EXPECT_EQ(BazClobber, LifetimeStartAccess);
+
+  MemoryAccess *LifetimeStartClobber =
+      MSSA.getWalker()->getClobberingMemoryAccess(
+          LifetimeStartAccess, MemoryLocation::getAfter(Foo));
+  EXPECT_EQ(LifetimeStartClobber, LifetimeStartAccess);
 }
 
 TEST_F(MemorySSATest, DefOptimizationsAreInvalidatedOnMoving) {
@@ -1582,4 +1600,72 @@ TEST_F(MemorySSATest, TestAddedEdgeToBlockWithNoPhiAddNewPhis) {
   EXPECT_NE(MPD, nullptr);
   MemoryPhi *MPE = MSSA.getMemoryAccess(EBlock);
   EXPECT_EQ(MPD, MPE->getIncomingValueForBlock(DBlock));
+}
+
+TEST_F(MemorySSATest, TestCallClobber) {
+  F = Function::Create(
+      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
+      GlobalValue::ExternalLinkage, "F", &M);
+
+  Value *Pointer1 = &*F->arg_begin();
+  BasicBlock *Entry(BasicBlock::Create(C, "", F));
+  B.SetInsertPoint(Entry);
+  Value *Pointer2 = B.CreateGEP(B.getInt8Ty(), Pointer1, B.getInt64(1));
+  Instruction *StorePointer1 = B.CreateStore(B.getInt8(0), Pointer1);
+  Instruction *StorePointer2 = B.CreateStore(B.getInt8(0), Pointer2);
+  Instruction *MemSet = B.CreateMemSet(Pointer2, B.getInt8(0), 1, Align(1));
+
+  setupAnalyses();
+  MemorySSA &MSSA = *Analyses->MSSA;
+  MemorySSAWalker *Walker = Analyses->Walker;
+
+  MemoryUseOrDef *Store1Access = MSSA.getMemoryAccess(StorePointer1);
+  MemoryUseOrDef *Store2Access = MSSA.getMemoryAccess(StorePointer2);
+  MemoryUseOrDef *MemSetAccess = MSSA.getMemoryAccess(MemSet);
+
+  MemoryAccess *Pointer1Clobber = Walker->getClobberingMemoryAccess(
+      MemSetAccess, MemoryLocation(Pointer1, LocationSize::precise(1)));
+  EXPECT_EQ(Pointer1Clobber, Store1Access);
+
+  MemoryAccess *Pointer2Clobber = Walker->getClobberingMemoryAccess(
+      MemSetAccess, MemoryLocation(Pointer2, LocationSize::precise(1)));
+  EXPECT_EQ(Pointer2Clobber, MemSetAccess);
+
+  MemoryAccess *MemSetClobber = Walker->getClobberingMemoryAccess(MemSetAccess);
+  EXPECT_EQ(MemSetClobber, Store2Access);
+}
+
+TEST_F(MemorySSATest, TestLoadClobber) {
+  F = Function::Create(
+      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
+      GlobalValue::ExternalLinkage, "F", &M);
+
+  Value *Pointer1 = &*F->arg_begin();
+  BasicBlock *Entry(BasicBlock::Create(C, "", F));
+  B.SetInsertPoint(Entry);
+  Value *Pointer2 = B.CreateGEP(B.getInt8Ty(), Pointer1, B.getInt64(1));
+  Instruction *LoadPointer1 =
+      B.CreateLoad(B.getInt8Ty(), Pointer1, /* Volatile */ true);
+  Instruction *LoadPointer2 =
+      B.CreateLoad(B.getInt8Ty(), Pointer2, /* Volatile */ true);
+
+  setupAnalyses();
+  MemorySSA &MSSA = *Analyses->MSSA;
+  MemorySSAWalker *Walker = Analyses->Walker;
+
+  MemoryUseOrDef *Load1Access = MSSA.getMemoryAccess(LoadPointer1);
+  MemoryUseOrDef *Load2Access = MSSA.getMemoryAccess(LoadPointer2);
+
+  // When providing a memory location, we should never return a load as the
+  // clobber.
+  MemoryAccess *Pointer1Clobber = Walker->getClobberingMemoryAccess(
+      Load2Access, MemoryLocation(Pointer1, LocationSize::precise(1)));
+  EXPECT_TRUE(MSSA.isLiveOnEntryDef(Pointer1Clobber));
+
+  MemoryAccess *Pointer2Clobber = Walker->getClobberingMemoryAccess(
+      Load2Access, MemoryLocation(Pointer2, LocationSize::precise(1)));
+  EXPECT_TRUE(MSSA.isLiveOnEntryDef(Pointer2Clobber));
+
+  MemoryAccess *Load2Clobber = Walker->getClobberingMemoryAccess(Load2Access);
+  EXPECT_EQ(Load2Clobber, Load1Access);
 }

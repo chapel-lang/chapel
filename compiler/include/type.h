@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -110,6 +110,11 @@ public:
 
   SymbolMap              substitutions;
   SymbolNameVec          substitutionsPostResolve;
+
+  // whether the type has chpl__serialize and chpl__deserialize
+  // this should be called after resolution (or after serializeMap is populated)
+  bool                   isSerializeable();
+
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;

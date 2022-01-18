@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -180,9 +180,7 @@ err_t sys_fstat(fd_t fd, struct stat* buf);
 err_t sys_lstat(const char* path, struct stat* buf);
 err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf);
 
-#ifdef SYS_HAS_LLAPI
 err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out);
-#endif
 
 err_t sys_mkstemp(char* template_, fd_t* fd_out);
 

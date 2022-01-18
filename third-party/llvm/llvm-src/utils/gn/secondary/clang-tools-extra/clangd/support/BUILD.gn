@@ -11,8 +11,10 @@ static_library("support") {
   sources = [
     "Cancellation.cpp",
     "Context.cpp",
+    "FileCache.cpp",
     "Logger.cpp",
     "Markup.cpp",
+    "MemoryTree.cpp",
     "Shutdown.cpp",
     "Threading.cpp",
     "ThreadsafeFS.cpp",

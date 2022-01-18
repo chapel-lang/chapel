@@ -489,7 +489,7 @@ struct SalvageDebugInfoTest : ::testing::Test {
   std::unique_ptr<Module> M;
   Function *F = nullptr;
 
-  void SetUp() {
+  void SetUp() override {
     M = parseIR(C,
                 R"(
       define void @f() !dbg !8 {
@@ -998,8 +998,12 @@ TEST(Local, SimplifyCFGWithNullAC) {
   }
   ASSERT_TRUE(TestBB);
 
+  DominatorTree DT(F);
+  DomTreeUpdater DTU(DT, DomTreeUpdater::UpdateStrategy::Eager);
+
   // %test.bb is expected to be simplified by FoldCondBranchOnPHI.
-  EXPECT_TRUE(simplifyCFG(TestBB, TTI, Options));
+  EXPECT_TRUE(simplifyCFG(TestBB, TTI,
+                          RequireAndPreserveDomTree ? &DTU : nullptr, Options));
 }
 
 TEST(Local, CanReplaceOperandWithVariable) {

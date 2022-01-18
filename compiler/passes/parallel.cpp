@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1078,7 +1078,8 @@ makeHeapAllocations() {
           } else {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->symbol(), heapType->getField(1)));
           }
-        } else if (call->isResolved()) {
+        } else if (call->isResolved() ||
+                   call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
           ArgSymbol* formal = actual_to_formal(use);
           if (formal->type != heapType) {
 
@@ -1185,6 +1186,9 @@ static void replaceRecordWrappedRefs() {
     if (aggType->symbol->hasFlag(FLAG_REF)) {
       // ignore the reference type itself
     } else {
+      if (aggType->isSerializeable()) {
+        continue; // this type will be serialized and RVF'ed
+      }
       for_fields(field, aggType) {
         if (field->isRef() && isRecordWrappedType(field->getValType())) {
           field->type = field->getValType();

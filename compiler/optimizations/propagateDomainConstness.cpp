@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,6 +51,16 @@ void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
                                            std::set<Flag>* flags) {
   if (defExpr->init != NULL) {
     if (flags->count(FLAG_CONST) == 0) {
+      setDefinedConstForDefExprWithIfExprs(defExpr->init);
+    }
+  }
+}
+
+void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
+                                           FlagSet* flags) {
+  if (defExpr->init != NULL) {
+    // check for the FLAG_CONST bit in the FlagSet
+    if (!flags->test(FLAG_CONST)) {
       setDefinedConstForDefExprWithIfExprs(defExpr->init);
     }
   }

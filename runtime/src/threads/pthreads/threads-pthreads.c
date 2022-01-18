@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -343,8 +343,11 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
   {
     uint32_t lim;
 
-    if ((lim = chpl_task_getenvNumThreadsPerLocale()) > 0)
+    if ((lim = chpl_task_getenvNumThreadsPerLocale()) > 0) {
+      chpl_task_warnNumThreadsPerLocale(
+          "Setting number of threads in CHPL_TASKS=fifo can lead to deadlock");
       maxThreads = lim;
+    }
     else if ((lim = chpl_comm_getMaxThreads()) > 0)
       maxThreads = lim;
   }

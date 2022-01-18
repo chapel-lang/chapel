@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1608,6 +1608,22 @@ static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType) {
   }
 
   retval->scalarPromotionType = yieldedType;
+
+  if (fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    sym->addFlag(FLAG_PROMOTION_ITERATOR_RECORD);
+    for_formals (formal, fn) {
+      if (formal->type != gMethodToken->type &&
+          formal->type != gFollowerTag->type) {
+        if (isAggregateType(formal->type)) {
+          VarSymbol* protoField = new VarSymbol(formal->name, formal->type);
+          protoField->addFlag(FLAG_PROMOTION_PROTO_FIELD);
+
+          retval->fields.insertAtTail(new DefExpr(protoField));
+        }
+      }
+    }
+  }
+
 
   return retval;
 }

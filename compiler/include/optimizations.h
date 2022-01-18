@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,7 @@
 #include "vec.h"
 
 #include "flags.h"
+#include "symbol.h"
 
 #include <set>
 #include <map>
@@ -86,6 +87,8 @@ void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
                                     Symbol *isConst);
 void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
                                            std::set<Flag>* flags);
+void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
+                                           FlagSet* flags);
 void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
 void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,61 +24,6 @@
 #include "misc.h"
 #include "stmt.h"
 #include "stringutil.h"
-
-AList::AList() :
-  head(NULL),
-  tail(NULL),
-  parent(NULL),
-  length(0)
-{ }
-
-
-Expr* AList::first(void) {
-  return head;
-}
-
-
-Expr* AList::last(void) {
-  return tail;
-}
-
-
-Expr* AList::only(void) {
-  if (!head)
-    INT_FATAL("only() called on empty list");
-
-  if (head == tail)
-    return first();
-  else
-    INT_FATAL("only() called on list with more than one element");
-
-  return NULL;
-}
-
-
-Expr* AList::get(int index) const {
-  if (index <=0) {
-    INT_FATAL("Indexing list must use positive integer");
-  }
-
-  int i = 0;
-
-  for_alist(node, *this) {
-    i++;
-
-    if (i == index) {
-      return node;
-    }
-  }
-
-  INT_FATAL("Indexing list out of bounds");
-
-  return NULL;
-}
-
-bool AList::empty() const {
-  return length == 0;
-}
 
 void AList::insertAtHead(Expr* new_ast) {
   if (new_ast->parentSymbol || new_ast->parentExpr)

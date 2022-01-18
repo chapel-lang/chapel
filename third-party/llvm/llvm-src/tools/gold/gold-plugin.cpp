@@ -16,11 +16,13 @@
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/CodeGen/CommandFlags.h"
 #include "llvm/Config/config.h" // plugin-api.h requires HAVE_STDINT_H
+#include "llvm/Config/llvm-config.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/LTO/Caching.h"
 #include "llvm/LTO/LTO.h"
 #include "llvm/Object/Error.h"
+#include "llvm/Remarks/HotnessThresholdParser.h"
 #include "llvm/Support/CachePruning.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
@@ -199,7 +201,7 @@ namespace options {
   // Sample profile file path
   static std::string sample_profile;
   // New pass manager
-  static bool new_pass_manager = false;
+  static bool new_pass_manager = LLVM_ENABLE_NEW_PASS_MANAGER;
   // Debug new pass manager
   static bool debug_pass_manager = false;
   // Directory to store the .dwo files.
@@ -213,6 +215,7 @@ namespace options {
   static std::string RemarksFilename;
   static std::string RemarksPasses;
   static bool RemarksWithHotness = false;
+  static Optional<uint64_t> RemarksHotnessThreshold = 0;
   static std::string RemarksFormat;
 
   // Context sensitive PGO options.
@@ -285,6 +288,8 @@ namespace options {
       cs_profile_path = std::string(opt);
     } else if (opt == "new-pass-manager") {
       new_pass_manager = true;
+    } else if (opt == "legacy-pass-manager") {
+      new_pass_manager = false;
     } else if (opt == "debug-pass-manager") {
       debug_pass_manager = true;
     } else if (opt == "whole-program-visibility") {
@@ -297,6 +302,12 @@ namespace options {
       RemarksPasses = std::string(opt);
     } else if (opt == "opt-remarks-with-hotness") {
       RemarksWithHotness = true;
+    } else if (opt.consume_front("opt-remarks-hotness-threshold=")) {
+      auto ResultOrErr = remarks::parseHotnessThresholdOption(opt);
+      if (!ResultOrErr)
+        message(LDPL_FATAL, "Invalid remarks hotness threshold: %s", opt);
+      else
+        RemarksHotnessThreshold = *ResultOrErr;
     } else if (opt.consume_front("opt-remarks-format=")) {
       RemarksFormat = std::string(opt);
     } else if (opt.consume_front("stats-file=")) {
@@ -680,7 +691,7 @@ static const void *getSymbolsAndView(claimed_file &F) {
 static void getThinLTOOldAndNewSuffix(std::string &OldSuffix,
                                       std::string &NewSuffix) {
   assert(options::thinlto_object_suffix_replace.empty() ||
-         options::thinlto_object_suffix_replace.find(";") != StringRef::npos);
+         options::thinlto_object_suffix_replace.find(';') != StringRef::npos);
   StringRef SuffixReplace = options::thinlto_object_suffix_replace;
   auto Split = SuffixReplace.split(';');
   OldSuffix = std::string(Split.first);
@@ -836,7 +847,7 @@ static CodeGenOpt::Level getCGOptLevel() {
 static void getThinLTOOldAndNewPrefix(std::string &OldPrefix,
                                       std::string &NewPrefix) {
   StringRef PrefixReplace = options::thinlto_prefix_replace;
-  assert(PrefixReplace.empty() || PrefixReplace.find(";") != StringRef::npos);
+  assert(PrefixReplace.empty() || PrefixReplace.find(';') != StringRef::npos);
   auto Split = PrefixReplace.split(';');
   OldPrefix = std::string(Split.first);
   NewPrefix = std::string(Split.second);
@@ -852,7 +863,7 @@ static std::unique_ptr<LTO> createLTO(IndexWriteCallback OnIndexWrite,
   ThinBackend Backend;
 
   Conf.CPU = options::mcpu;
-  Conf.Options = codegen::InitTargetOptionsFromCodeGenFlags();
+  Conf.Options = codegen::InitTargetOptionsFromCodeGenFlags(Triple());
 
   // Disable the new X86 relax relocations since gold might not support them.
   // FIXME: Check the gold version or add a new option to enable them.
@@ -931,6 +942,7 @@ static std::unique_ptr<LTO> createLTO(IndexWriteCallback OnIndexWrite,
   Conf.RemarksFilename = options::RemarksFilename;
   Conf.RemarksPasses = options::RemarksPasses;
   Conf.RemarksWithHotness = options::RemarksWithHotness;
+  Conf.RemarksHotnessThreshold = options::RemarksHotnessThreshold;
   Conf.RemarksFormat = options::RemarksFormat;
 
   // Use new pass manager if set in driver

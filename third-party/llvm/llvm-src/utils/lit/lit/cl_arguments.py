@@ -23,7 +23,7 @@ def parse_args():
             metavar="N",
             help="Number of workers used for testing",
             type=_positive_int,
-            default=lit.util.detectCPUs())
+            default=lit.util.usable_core_count())
     parser.add_argument("--config-prefix",
             dest="configPrefix",
             metavar="NAME",
@@ -42,7 +42,9 @@ def parse_args():
             help="Suppress no error output",
             action="store_true")
     format_group.add_argument("-s", "--succinct",
-            help="Reduce amount of output",
+            help="Reduce amount of output."
+                 " Additionally, show a progress bar,"
+                 " unless --no-progress-bar is specified.",
             action="store_true")
     format_group.add_argument("-v", "--verbose",
             dest="showOutput",
@@ -107,32 +109,41 @@ def parse_args():
     execution_group.add_argument("--xunit-xml-output",
             type=lit.reports.XunitReport,
             help="Write XUnit-compatible XML test reports to the specified file")
+    execution_group.add_argument("--time-trace-output",
+            type=lit.reports.TimeTraceReport,
+            help="Write Chrome tracing compatible JSON to the specified file")
     execution_group.add_argument("--timeout",
             dest="maxIndividualTestTime",
             help="Maximum time to spend running a single test (in seconds). "
                  "0 means no time limit. [Default: 0]",
-            type=_non_negative_int) # TODO(yln): --[no-]test-timeout, instead of 0 allowed
+            type=_non_negative_int)
     execution_group.add_argument("--max-failures",
             help="Stop execution after the given number of failures.",
             type=_positive_int)
     execution_group.add_argument("--allow-empty-runs",
             help="Do not fail the run if all tests are filtered out",
             action="store_true")
+    execution_group.add_argument("--no-indirectly-run-check",
+            dest="indirectlyRunCheck",
+            help="Do not error if a test would not be run if the user had "
+                 "specified the containing directory instead of naming the "
+                 "test directly.",
+            action="store_false")
 
     selection_group = parser.add_argument_group("Test Selection")
     selection_group.add_argument("--max-tests",
             metavar="N",
             help="Maximum number of tests to run",
             type=_positive_int)
-    selection_group.add_argument("--max-time", #TODO(yln): --timeout
+    selection_group.add_argument("--max-time",
             dest="timeout",
             metavar="N",
             help="Maximum time to spend testing (in seconds)",
             type=_positive_int)
-    selection_group.add_argument("--shuffle",   # TODO(yln): --order=random
-            help="Run tests in random order",   # default or 'by-path' (+ isEarlyTest())
+    selection_group.add_argument("--shuffle",
+            help="Run tests in random order",
             action="store_true")
-    selection_group.add_argument("-i", "--incremental",  # TODO(yln): --order=failing-first
+    selection_group.add_argument("-i", "--incremental",
             help="Run modified and failing tests first (updates mtimes)",
             action="store_true")
     selection_group.add_argument("--filter",
@@ -140,7 +151,7 @@ def parse_args():
             type=_case_insensitive_regex,
             help="Only run tests with paths matching the given regular expression",
             default=os.environ.get("LIT_FILTER", ".*"))
-    selection_group.add_argument("--num-shards", # TODO(yln): --shards N/M
+    selection_group.add_argument("--num-shards",
             dest="numShards",
             metavar="M",
             help="Split testsuite into M pieces and only run one",
@@ -193,7 +204,7 @@ def parse_args():
     else:
         opts.shard = None
 
-    opts.reports = filter(None, [opts.output, opts.xunit_xml_output])
+    opts.reports = filter(None, [opts.output, opts.xunit_xml_output, opts.time_trace_output])
 
     return opts
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
 
 namespace chpl {
 
@@ -96,7 +97,7 @@ class Context {
 
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool checkStringsAlreadyMarked = false;
-  bool enableDebugTracing = false;
+  bool enableDebugTrace = false;
   bool breakSet = false;
   size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
@@ -461,6 +462,12 @@ class Context {
     __attribute__ ((format (printf, 4, 5)))
   #endif
   ;
+
+  /*
+    Sets the enableDebugTrace flag. This was needed because the context
+    in main gets created before the arguments to the compiler are parsed.
+  */
+  void setDebugTraceFlag(const bool enable);
 
   typedef enum {
     NOT_CHECKED_NOT_CHANGED = 0,
