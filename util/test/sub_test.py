@@ -522,9 +522,10 @@ def FindGoodFile(basename, commExecNums=['']):
             for specstr in [ chplcommstr+chplnastr+chpllmstr,
                              chplcommstr+chplnastr,
                              chplcommstr+chpllmstr,
+                             chplcommstr+chpltasksstr,
                              chplnastr+chpllmstr,
-                             chpltasksstr,
                              chplcommstr,
+                             chpltasksstr,
                              chplnastr,
                              chpllmstr ]:
                 goodfile=basename+specstr+commExecNum+'.good'
