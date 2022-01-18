@@ -1,3 +1,4 @@
+depOpenWithStyle.chpl:6: In function 'main':
 depOpenWithStyle.chpl:14: warning: open with a style argument is deprecated, please rely on the default value for the argument (a new strategy is being developed)
 depOpenWithStyle.chpl:22: warning: open with a style argument is deprecated, please rely on the default value for the argument (a new strategy is being developed)
 Test file matches, OK
