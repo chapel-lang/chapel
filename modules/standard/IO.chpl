@@ -1838,9 +1838,9 @@ private proc openfdHelper(fd: fd_t, hints:iohints=IOHINT_NONE,
   return ret;
 }
 
-deprecated "openfp with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "openfp with a style argument is deprecated, please rely on the default value for the argument"
 proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle):file throws {
-  return openfp(fp, hints, style: iostyleInternal);
+  return openfpHelper(fp, hints, style: iostyleInternal);
 }
 /*
 
@@ -1858,21 +1858,16 @@ that once the file is open, you will need to use a :proc:`file.reader` or
 :arg fp: a C ``FILE*`` to work with
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg style: optional argument to specify internal I/O style associated with this
-            file.  The provided style will be the default for any channels
-            created on this file, and that in turn will be the default for all
-            I/O operations performed with those channels.
 :returns: an open :record:`file` that uses the underlying FILE* argument.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
-
-.. warning::
-
-   iostyleInternal is an internal type.  We do not recommend relying on it, as
-   it will likely be replaced in the future.
-
  */
-proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyleInternal = defaultIOStyleInternal()):file throws {
+proc openfp(fp: _file, hints:iohints=IOHINT_NONE):file throws {
+  return openfpHelper(fp, hints);
+}
+
+private proc openfpHelper(fp: _file, hints:iohints=IOHINT_NONE,
+                          style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
