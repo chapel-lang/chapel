@@ -24,6 +24,10 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/stringify-functions.h"
 
+#include <chrono>
+#include <fstream>
+#include <iomanip>
+
 #include <cassert>
 #include <cstdarg>
 #include <cstddef>
@@ -774,6 +778,51 @@ void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
   fprintf(stderr, "Error: recursion encountered in query %s\n",
           r->parentQueryMap->queryName);
   exit(-1);
+}
+
+void Context::queryTimingReport(std::ostream& os) {
+  auto elapsed = [](QueryTimingDuration d) {
+    double ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
+    return ms;
+  };
+
+  os << "query timings\n";
+
+  auto w1 = 40;
+  auto w2 = 14;
+
+  os << std::setw(w1) << "name"  << std::setw(w2) << "query (ms)"
+     << std::setw(w2) << "calls" << std::setw(w2) << "getMap (ms)"
+     << std::setw(w2) << "calls" << std::setw(w2) << "getResult (ms)"
+     << std::setw(w2) << "calls" << "\n";
+
+  for (const auto& it : queryDB) {
+    QueryMapBase* base = it.second.get();
+    const auto& timings = base->timings;
+
+    os << std::setw(w1) << base->queryName
+      // query
+       << std::setw(w2) << elapsed(timings.query.elapsed)
+       << std::setw(w2) << timings.query.count
+      // getMap
+       << std::setw(w2) << elapsed(timings.systemGetMap.elapsed)
+       << std::setw(w2) << timings.systemGetMap.count
+      // getResult
+       << std::setw(w2) << elapsed(timings.systemGetResult.elapsed)
+       << std::setw(w2) << base->timings.systemGetResult.count << "\n";
+    }
+}
+
+// TODO should these be ifdef'd away if !QUERY_TIMING_ENABLED? Or just warn?
+void Context::beginQueryTimingTrace(const std::string& outname) {
+  queryTimingTraceOutput = std::make_unique<std::ofstream>(outname);
+  enableQueryTimingTrace = true;
+}
+
+void Context::endQueryTimingTrace() {
+  queryTimingTraceOutput.reset();
+  enableQueryTimingTrace = false;
 }
 
 namespace querydetail {
