@@ -1782,9 +1782,9 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
   return ret;
 }
 
-deprecated "openfd with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "openfd with a style argument is deprecated, please rely on the default value for the argument"
 proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle):file throws {
-  return openfd(fd, hints, style: iostyleInternal);
+  return openfdHelper(fd, hints, style: iostyleInternal);
 }
 
 /*
@@ -1810,21 +1810,16 @@ The system file descriptor will be closed when the Chapel file is closed.
          :proc:`Sys.sys_connect` for example).
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg style: optional argument to specify internal I/O style associated with this
-            file.  The provided style will be the default for any channels
-            created on this file, and that in turn will be the default for all
-            I/O operations performed with those channels.
 :returns: an open :record:`file` using the specified file descriptor.
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
-
-.. warning::
-
-   iostyleInternal is an internal type.  We do not recommend relying on it, as
-   it will likely be replaced in the future.
-
 */
-proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyleInternal = defaultIOStyleInternal()):file throws {
+proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE):file throws {
+  return openfdHelper(fd, hints);
+}
+
+private proc openfdHelper(fd: fd_t, hints:iohints=IOHINT_NONE,
+                          style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
