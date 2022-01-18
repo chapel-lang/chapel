@@ -8,14 +8,14 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "generic/gentoo"
 
-  #config.vm.provision "shell",
-  #  path: "../../provision-scripts/dnf-deps.sh"
+  config.vm.provision "shell",
+    path: "../../provision-scripts/emerge-deps.sh"
 
-  #config.vm.provision "shell", privileged: false,
-  #  path: "../../provision-scripts/git-clone-chapel.sh"
+  config.vm.provision "shell", privileged: false,
+    path: "../../provision-scripts/git-clone-chapel.sh"
 
-  #config.vm.provision "shell", privileged: false,
-  #  path: "../../provision-scripts/make-chapel-quick.sh"
+  config.vm.provision "shell", privileged: false,
+    path: "../../provision-scripts/make-chapel-quick.sh"
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 4096
