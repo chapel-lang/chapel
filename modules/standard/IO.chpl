@@ -2690,7 +2690,7 @@ private proc openreaderHelper(path:string,
   : channel(false, kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
-  return try fl.reader(kind, locking, start, end, hints, style);
+  return try fl.readerHelper(kind, locking, start, end, hints, style);
 }
 
 deprecated "openwriter with a style argument is deprecated, please rely on the default value for the argument"
