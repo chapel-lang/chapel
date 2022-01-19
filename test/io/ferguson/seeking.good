@@ -1,0 +1,21 @@
+seeking.chpl:15: In function 'test1':
+seeking.chpl:17: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:32: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:54: In function 'test2':
+seeking.chpl:57: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:68: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:80: In function 'test3':
+seeking.chpl:83: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:93: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:106: In function 'test4':
+seeking.chpl:109: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:120: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:132: In function 'test5':
+seeking.chpl:135: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:145: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:158: In function 'test6':
+seeking.chpl:165: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:176: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:188: In function 'test7':
+seeking.chpl:194: warning: open with a style argument is deprecated, please rely on the default value for the argument
+seeking.chpl:203: warning: open with a style argument is deprecated, please rely on the default value for the argument
