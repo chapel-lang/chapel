@@ -919,8 +919,11 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValues(f: channel, v: borrowed Toml) throws {
-      for (key, val) in v.A.items() {
-        var value = val!;
+      for key in v.A.keysToArray().sorted() {
+        var value = v.A[key]!;
+
+      // for (key, val) in v.A.items() {
+      //   var value = val!;
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
