@@ -2750,13 +2750,13 @@ private proc openwriterHelper(path:string,
 }
 
  pragma "last resort"
-deprecated "reader with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "reader with a style argument is deprecated, please rely on the default value for the argument"
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints:iohints = IOHINT_NONE,
                  style:iostyle): channel(false, kind, locking)
                  throws {
-  return this.reader(kind, locking, start, end, hints, style: iostyleInternal);
+  return this.readerHelper(kind, locking, start, end, hints, style: iostyleInternal);
 }
 
 /*
@@ -2792,21 +2792,19 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                :type:`iohints`. The default value of :const:`IOHINT_NONE`
                will cause the channel to use the hints provided when opening
                the file.
-   :arg style: provide a :record:`iostyle` to use with this channel. The
-               default value will be the :record:`iostyle` associated with
-               this file.
 
    :throws SystemError: Thrown if a file reader channel could not be returned.
-
-   .. warning::
-
-      iostyleInternal is an internal type.  We do not recommend relying on it,
-      as it will likely be replaced in the future.
-
  */
 proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
-                 end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyleInternal = this._style): channel(false, kind, locking) throws {
+                 end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE): channel(false, kind, locking) throws {
+  return this.readerHelper(kind, locking, start, end, hints);
+}
+
+pragma "no doc"
+proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
+                       start:int(64) = 0, end:int(64) = max(int(64)),
+                       hints:iohints = IOHINT_NONE,
+                       style:iostyleInternal = this._style): channel(false, kind, locking) throws {
   // It is the responsibility of the caller to release the returned channel
   // if the error code is nonzero.
   // The return error code should be checked to avoid double-deletion errors.
@@ -2860,12 +2858,12 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
 }
 
  pragma "last resort"
-deprecated "writer with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "writer with a style argument is deprecated, please rely on the default value for the argument"
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints:c_int = 0, style:iostyle):
                  channel(true,kind,locking) throws {
-  return this.writer(kind, locking, start, end, hints, style: iostyleInternal);
+  return this.writerHelper(kind, locking, start, end, hints, style: iostyleInternal);
 }
 
 /*
@@ -2906,22 +2904,21 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                :type:`iohints`. The default value of :const:`IOHINT_NONE`
                will cause the channel to use the hints provided when opening
                the file.
-   :arg style: provide a :record:`iostyle` to use with this channel. The
-               default value will be the :record:`iostyle` associated with
-               this file.
 
    :throws SystemError: Thrown if a file writer channel could not be returned.
-
-   .. warning::
-
-      iostyleInternal is an internal type.  We do not recommend relying on it,
-      as it will likely be replaced in the future.
-
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
-                 hints:c_int = 0, style:iostyleInternal = this._style):
+                 hints:c_int = 0):
                  channel(true,kind,locking) throws {
+  return this.writerHelper(kind, locking, start, end, hints);
+}
+
+pragma "no doc"
+proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
+                       start:int(64) = 0, end:int(64) = max(int(64)),
+                       hints:c_int = 0, style:iostyleInternal = this._style):
+  channel(true,kind,locking) throws {
   // It is the responsibility of the caller to retain and release the returned
   // channel.
   // If the return error code is nonzero, the ref count will be 0 not 1.
