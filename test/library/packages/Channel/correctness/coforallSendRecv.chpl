@@ -1,5 +1,5 @@
 use Channel;
-config const n = 100;
+config const n = 1000;
 
 var chan1 = new channel(int, 5);
 

@@ -1,6 +1,6 @@
 use Channel;
 
-config const n = 4000;
+config const n = 1000;
 config const size = 3;
 var a, b, c, d : atomic int;
 
