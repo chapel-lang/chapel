@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
-"""Usage: printchplenv [options]
+"""Usage: printchplenv [subcommand] [options]
 
 Print the current Chapel configuration. Arguments allow selection of
 what gets printed [content], how it gets printed [format], and what gets
-filtered [filter].
+filtered [filter]. 
 
 The default [content] provides user-facing variables.
+
+The "builds" subcommand displays information about available runtime builds.
 
 Options:
   -h, --help    Show this help message and exit
@@ -42,11 +44,12 @@ Options:
 
 from collections import namedtuple
 from functools import partial
-import optparse
+import argparse
 import os
 from sys import stdout, path
 
 from chplenv import *
+import printchplbuilds
 
 ChapelEnv = namedtuple('ChapelEnv', ['name', 'content', 'shortname'])
 
@@ -415,8 +418,8 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
 
 """Define argument to parse"""
 def parse_args():
-    parser = optparse.OptionParser(
-        usage='usage: %prog [options]',
+    parser = argparse.ArgumentParser(
+        usage='usage: %(prog)s [options]',
         description = 'Print the current Chapel configuration. '
                       '[content] arguments determine what gets printed. '
                       '[filter] arguments determine what gets omitted. '
@@ -424,71 +427,80 @@ def parse_args():
                       '[shortcut] arguments are for convenience.')
 
     #[shortcut]
-    parser.add_option('--all', action='store_true', dest='all')
+    parser.add_argument('--all', action='store_true', dest='all')
 
     #[content]
     parser.set_defaults(content=[])
-    parser.add_option('--compiler', action='append_const', dest='content', const='compiler')
-    parser.add_option('--runtime', action='append_const', dest='content', const='runtime')
-    parser.add_option('--launcher', action='append_const', dest='content', const='launcher')
-    parser.add_option('--internal', action='append_const', dest='content', const='internal')
+    parser.add_argument('--compiler', action='append_const', dest='content', const='compiler')
+    parser.add_argument('--runtime', action='append_const', dest='content', const='runtime')
+    parser.add_argument('--launcher', action='append_const', dest='content', const='launcher')
+    parser.add_argument('--internal', action='append_const', dest='content', const='internal')
 
     #[filter]
     parser.set_defaults(tidy=True)
     parser.set_defaults(filter=[])
-    parser.add_option('--tidy', action='store_true', dest='tidy')
-    parser.add_option('--no-tidy', action='store_false', dest='tidy')
-    parser.add_option('--anonymize', action='append_const', dest='filter', const='anonymize')
-    parser.add_option('--overrides', action='append_const', dest='filter', const='overrides')
-    parser.add_option('--only-path', action='append_const', dest='filter', const='only-path')
+    parser.add_argument('--tidy', action='store_true', dest='tidy')
+    parser.add_argument('--no-tidy', action='store_false', dest='tidy')
+    parser.add_argument('--anonymize', action='append_const', dest='filter', const='anonymize')
+    parser.add_argument('--overrides', action='append_const', dest='filter', const='overrides')
+    parser.add_argument('--only-path', action='append_const', dest='filter', const='only-path')
 
     #[format]
     parser.set_defaults(format='pretty')
-    parser.add_option('--pretty', action='store_const', dest='format', const='pretty')
-    parser.add_option('--simple', action='store_const', dest='format', const='simple')
-    parser.add_option('--make',   action='store_const', dest='format', const='make')
-    parser.add_option('--path',   action='store_const', dest='format', const='path')
+    parser.add_argument('--pretty', action='store_const', dest='format', const='pretty')
+    parser.add_argument('--simple', action='store_const', dest='format', const='simple')
+    parser.add_argument('--make',   action='store_const', dest='format', const='make')
+    parser.add_argument('--path',   action='store_const', dest='format', const='path')
+
+    subparsers = parser.add_subparsers(dest='subparser')
+
+    build_parser = subparsers.add_parser('builds', usage="builds [options]")
+    printchplbuilds.addArgs(build_parser)
 
     # Hijack the help message to use the module docstring
-    # optparse is not robust enough to support help msg sections for args.
+    # argparse is not robust enough to support help msg sections for args.
     parser.print_help = lambda: stdout.write(__doc__)
-
-    return parser.parse_args()
+    return (parser.parse_args(), parser)
 
 
 def main():
-    (options, args) = parse_args()
+    (args, parser) = parse_args()
 
-    # Handle --all flag
-    if options.all:
-        options.content.extend(['runtime', 'launcher', 'compiler', 'default'])
+    if args.subparser == 'builds':
+        printchplbuilds.validateArgs(parser, args)
+        printchplbuilds.printchplbuilds(args.sort, args.current, args.summary, args.width,
+                                        args.bash, args.csh, args.path, args.check)
+    else:
+        # Handle --all flag
+        if args.all:
+            args.content.extend(['runtime', 'launcher', 'compiler', 'default'])
 
-    # Handle --tidy / --no-tidy flags
-    if options.tidy:
-        options.filter.append('tidy')
+        # Handle --tidy / --no-tidy flags
+        if args.tidy:
+            args.filter.append('tidy')
 
-    # Set default [content]
-    if not options.content:
-        options.content = ['default']
+        # Set default [content]
+        if not args.content:
+            args.content = ['default']
 
-    # Convert lists to sets to pass to printchplenv
-    contents = set(options.content)
-    filters = set(options.filter)
+        # Convert lists to sets to pass to printchplenv
+        contents = set(args.content)
+        filters = set(args.filter)
 
-    # Prevent --internal --path, because it's useless
-    if options.format == 'path' and 'internal' in contents:
-        stdout.write('--path and --internal are incompatible flags\n')
-        exit(1)
+        # Prevent --internal --path, because it's useless
+        if args.format == 'path' and 'internal' in contents:
+            stdout.write('--path and --internal are incompatible flags\n')
+            exit(1)
 
-    # Populate ENV_VALS
-    compute_all_values()
+        # Populate ENV_VALS
+        compute_all_values()
 
-    # Don't populate internal ENV_VALS unless specified
-    if 'internal' in contents:
-        compute_internal_values()
+        # Don't populate internal ENV_VALS unless specified
+        if 'internal' in contents:
+            compute_internal_values()
 
-    ret = printchplenv(contents, filters, options.format)
-    stdout.write(ret)
+        ret = printchplenv(contents, filters, args.format)
+        stdout.write(ret)
 
 
 if __name__ == '__main__':
