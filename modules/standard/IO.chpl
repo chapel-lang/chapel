@@ -2633,15 +2633,15 @@ proc channel.filePlugin() : borrowed QioPluginFile? {
   return vptr:borrowed QioPluginFile?;
 }
 
-deprecated "openreader with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "openreader with a style argument is deprecated, please rely on the default value for the argument"
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints = IOHINT_NONE,
                 style:iostyle)
     : channel(false, kind, locking) throws {
-  return openreader(path, kind, locking, start, end, hints,
-                    style: iostyleInternal);
+  return openreaderHelper(path, kind, locking, start, end, hints,
+                          style: iostyleInternal);
 }
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
@@ -2673,32 +2673,34 @@ This function is equivalent to calling :proc:`open` and then
 :returns: an open reading channel to the requested resource.
 
 :throws SystemError: Thrown if a reading channel could not be returned.
-
-.. warning::
-
-   iostyleInternal is an internal type.  We do not recommend relying on it, as
-   it will likely be replaced in the future.
-
  */
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE,
-                style:iostyleInternal = defaultIOStyleInternal())
+                hints:iohints = IOHINT_NONE)
     : channel(false, kind, locking) throws {
+  return openreaderHelper(path, kind, locking, start, end, hints);
+}
+
+private proc openreaderHelper(path:string,
+                              param kind=iokind.dynamic, param locking=true,
+                              start:int(64) = 0, end:int(64) = max(int(64)),
+                              hints:iohints = IOHINT_NONE,
+                              style:iostyleInternal = defaultIOStyleInternal())
+  : channel(false, kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
   return try fl.reader(kind, locking, start, end, hints, style);
 }
 
-deprecated "openwriter with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "openwriter with a style argument is deprecated, please rely on the default value for the argument"
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints = IOHINT_NONE,
                 style:iostyle)
     : channel(true, kind, locking) throws {
-  return openwriter(path, kind, locking, start, end, hints,
+  return openwriterHelper(path, kind, locking, start, end, hints,
                     style: iostyleInternal);
 }
 /*
@@ -2727,19 +2729,21 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 :returns: an open writing channel to the requested resource.
 
 :throws SystemError: Thrown if a writing channel could not be returned.
-
-.. warning::
-
-   iostyleInternal is an internal type.  We do not recommend relying on it, as
-   it will likely be replaced in the future.
-
 */
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE,
-                style:iostyleInternal = defaultIOStyleInternal())
+                hints:iohints = IOHINT_NONE)
     : channel(true, kind, locking) throws {
+  openwriterHelper(path, kind, locking, start, end, hints);
+}
+
+private proc openwriterHelper(path:string,
+                              param kind=iokind.dynamic, param locking=true,
+                              start:int(64) = 0, end:int(64) = max(int(64)),
+                              hints:iohints = IOHINT_NONE,
+                              style:iostyleInternal = defaultIOStyleInternal())
+  : channel(true, kind, locking) throws {
 
   var fl:file = try open(path, iomode.cw);
   return try fl.writer(kind, locking, start, end, hints, style);
