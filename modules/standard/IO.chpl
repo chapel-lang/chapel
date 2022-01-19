@@ -2820,27 +2820,29 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
 }
 
 pragma "last resort"
-deprecated "lines with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "lines with a local_style argument is deprecated, please rely on the default value for the argument"
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
                 in local_style:iostyle) throws {
-  return this.lines(locking, start, end, hints, local_style: iostyleInternal);
+  return this.linesHelper(locking, start, end, hints,
+                          local_style: iostyleInternal);
 }
 /* Iterate over all of the lines in a file.
 
    :returns: an object which yields strings read from the file
 
    :throws SystemError: Thrown if an ItemReader could not be returned.
-
-   .. warning::
-
-      iostyleInternal is an internal type.  We do not recommend relying on it,
-      as it will likely be replaced in the future.
-
  */
 proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                in local_style:iostyleInternal = this._style) throws {
+                end:int(64) = max(int(64)),
+                hints:iohints = IOHINT_NONE) throws {
+  return this.linesHelper(locking, start, end, hints);
+}
+
+pragma "no doc"
+proc file.linesHelper(param locking:bool = true, start:int(64) = 0,
+                      end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                      in local_style:iostyleInternal = this._style) throws {
   local_style.string_format = QIO_STRING_FORMAT_TOEND;
   local_style.string_end = 0x0a; // '\n'
   param kind = iokind.dynamic;
