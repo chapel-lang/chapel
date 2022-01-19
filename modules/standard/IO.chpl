@@ -2746,7 +2746,7 @@ private proc openwriterHelper(path:string,
   : channel(true, kind, locking) throws {
 
   var fl:file = try open(path, iomode.cw);
-  return try fl.writer(kind, locking, start, end, hints, style);
+  return try fl.writerHelper(kind, locking, start, end, hints, style);
 }
 
  pragma "last resort"
