@@ -4080,25 +4080,14 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
   return try this.write(new ioBits(v:uint(64), nbits:int(8)));
 }
 
-// documented in the style= error= version
+// Documented in the varargs version
 pragma "no doc"
 proc channel.readln():bool throws {
   var nl = new ioNewline();
   return try this.read(nl);
 }
 
-// documented in the style= error= version
-pragma "no doc"
-proc channel.readln(ref args ...?k):bool throws {
-  var nl = new ioNewline();
-  return try this.read((...args), nl);
-}
 
-deprecated "readln with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
-proc channel.readln(ref args ...?k,
-                    style:iostyle):bool throws {
-  return this.readln((...args), style: iostyleInternal);
-}
 /*
 
    Read values from a channel and then consume any bytes until
@@ -4110,22 +4099,26 @@ proc channel.readln(ref args ...?k,
               internally, but for other types this function will call
               value.readThis() with a ``Reader`` argument as described
               in :ref:`readThis-writeThis-readWriteThis`.
-   :arg style: optional argument to provide an :type:`iostyle` for this read.
-               If this argument is not provided, use the current style
-               associated with this channel.
    :returns: `true` if the read succeeded, and `false` upon end of file.
 
    :throws SystemError: Thrown if a line could not be read from the channel.
-
-   .. warning::
-
-      iostyleInternal is an internal type and should not be relied on, as it
-      will likely be replaced in the future.
  */
-proc channel.readln(ref args ...?k,
-                    style:iostyleInternal):bool throws {
+proc channel.readln(ref args ...?k):bool throws {
   var nl = new ioNewline();
-  return try this.read((...args), nl, style=style);
+  return try this.read((...args), nl);
+}
+
+deprecated "readln with a style argument is deprecated"
+proc channel.readln(ref args ...?k,
+                    style:iostyle):bool throws {
+  return this.readlnHelper((...args), style: iostyleInternal);
+}
+
+pragma "no doc"
+proc channel.readlnHelper(ref args ...?k,
+                          style:iostyleInternal):bool throws {
+  var nl = new ioNewline();
+  return try this.readHelper((...args), nl, style=style);
 }
 
 /*
