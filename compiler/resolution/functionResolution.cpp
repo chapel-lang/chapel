@@ -8741,6 +8741,9 @@ static Expr* handleNonNormalizableExpr(Expr* expr) {
   if (Expr* nonNormalRoot = partOfNonNormalizableExpr(expr)) {
     if (CallExpr* call = toCallExpr(nonNormalRoot)) {
       if (call->isPrimitive(PRIM_RESOLVES)) {
+
+        // Prefolding will completely replace PRIM_RESOLVES calls, so
+        // further action is not needed here.
         return preFold(call);
       }
     } else {

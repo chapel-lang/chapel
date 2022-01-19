@@ -1893,9 +1893,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     auto exprToResolve = call->get(1);
 
-    // TODO: To resolve an arbitrary expression, we need a way to back out
-    // of resolving any expression without emitting errors. This is
-    // probably easier to do in a new compiler world.
+    // TODO: To resolve an arbitrary expression (e.g. the UnresolvedSymExpr
+    // for 'foo'), we need a way to back out of resolving any expression
+    // without emitting errors. We'd also need to interact with
+    // scopeResolve as well. This might be easier to do in a new
+    // compiler world.
     if (!isCallExpr(exprToResolve)) {
       INT_FATAL("PRIM_RESOLVES can only resolve CallExpr for now");
     }
@@ -1942,7 +1944,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           break;
         }
 
-      // TODO: Way to keep type checking from issuing errors?
+      // TODO: Ways to keep type checking from issuing errors? E.g. we could
+      // have code here to handle PRIM_MOVE setting the type of the LHS.
       } else {
         expr = resolveExpr(expr);
         INT_ASSERT(expr);

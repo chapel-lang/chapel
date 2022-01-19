@@ -346,7 +346,7 @@ module ArrayViewSlice {
     // routines relating to the underlying domains and arrays
     //
 
-    inline proc privDom {
+    inline proc privDom: dom.type {
       if _isPrivatized(dom) {
         return chpl_getPrivatizedCopy(dom.type, _DomPid);
       } else {
