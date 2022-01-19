@@ -2735,7 +2735,7 @@ proc openwriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints = IOHINT_NONE)
     : channel(true, kind, locking) throws {
-  openwriterHelper(path, kind, locking, start, end, hints);
+  return openwriterHelper(path, kind, locking, start, end, hints);
 }
 
 private proc openwriterHelper(path:string,
