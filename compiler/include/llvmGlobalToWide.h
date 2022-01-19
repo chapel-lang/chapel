@@ -33,6 +33,7 @@ namespace llvm {
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/IR/ValueHandle.h"
+#include <vector>
 
 /* The LLVM Global to Wide transformation allows the Chapel code generator
  * to emit multi-locale global pointer code that can be optimized by existing
