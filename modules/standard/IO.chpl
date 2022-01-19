@@ -4265,23 +4265,12 @@ proc channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
   return true;
 }
 
-// documented in style= error= version
+// documented in varargs version
 pragma "no doc"
 proc channel.writeln():bool throws {
   return try this.write(new ioNewline());
 }
 
-// documented in style= error= version
-pragma "no doc"
-proc channel.writeln(const args ...?k):bool throws {
-  return try this.write((...args), new ioNewline());
-}
-
-pragma "last resort"
-deprecated "write with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
-proc channel.writeln(const args ...?k, style:iostyle):bool throws {
-  return this.writeln((...args), style: iostyleInternal);
-}
 /*
 
    Write values to a channel followed by a newline.  The output will be
@@ -4292,20 +4281,22 @@ proc channel.writeln(const args ...?k, style:iostyle):bool throws {
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
               value.writeThis() with the channel as an argument.
-   :arg style: optional argument to provide an :type:`iostyle` for this write.
-               If this argument is not provided, use the current style
-               associated with this channel.
    :returns: `true` if the write succeeded
 
    :throws SystemError: Thrown if the values could not be written to the channel.
-
-   .. warning::
-
-      iostyleInternal is an internal type and should not be relied on, as it
-      will likely be replaced in the future.
  */
-proc channel.writeln(const args ...?k, style:iostyleInternal):bool throws {
-  return try this.write((...args), new ioNewline(), style=style);
+proc channel.writeln(const args ...?k):bool throws {
+  return try this.write((...args), new ioNewline());
+}
+
+deprecated "writeln with a style argument is deprecated"
+proc channel.writeln(const args ...?k, style:iostyle):bool throws {
+  return this.writelnHelper((...args), style: iostyleInternal);
+}
+
+pragma "no doc"
+proc channel.writelnHelper(const args ...?k, style:iostyleInternal):bool throws {
+  return try this.writeHelper((...args), new ioNewline(), style=style);
 }
 
 /*
