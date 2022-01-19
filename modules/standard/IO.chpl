@@ -4201,8 +4201,18 @@ proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
   return tupleVal;
 }
 
-// documented in style= error= version
-pragma "no doc"
+/*
+   Write values to a channel. The output will be produced atomically -
+   the channel lock will be held while writing all of the passed
+   values.
+
+   :arg args: a list of arguments to write. Basic types are handled
+              internally, but for other types this function will call
+              value.writeThis() with the channel as an argument.
+   :returns: `true` if the write succeeded
+
+   :throws SystemError: Thrown if the values could not be written to the channel.
+ */
 inline proc channel.write(const args ...?k):bool throws {
   if !writing then compilerError("write on read-only channel");
 
@@ -4217,32 +4227,13 @@ inline proc channel.write(const args ...?k):bool throws {
   return true;
 }
 
-pragma "last resort"
-deprecated "write with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "write with a style argument is deprecated"
 proc channel.write(const args ...?k, style:iostyle):bool throws {
-  return this.write((...args), style: iostyleInternal);
+  return this.writeHelper((...args), style: iostyleInternal);
 }
-/*
-   Write values to a channel. The output will be produced atomically -
-   the channel lock will be held while writing all of the passed
-   values.
 
-   :arg args: a list of arguments to write. Basic types are handled
-              internally, but for other types this function will call
-              value.writeThis() with the channel as an argument.
-   :arg style: optional argument to provide an :type:`iostyle` for this write.
-               If this argument is not provided, use the current style
-               associated with this channel.
-   :returns: `true` if the write succeeded
-
-   :throws SystemError: Thrown if the values could not be written to the channel.
-
-   .. warning::
-
-      iostyleInternal is an internal type and should not be relied on, as it
-      will likely be replaced in the future.
- */
-proc channel.write(const args ...?k, style:iostyleInternal):bool throws {
+pragma "no doc"
+proc channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
