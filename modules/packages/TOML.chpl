@@ -921,9 +921,6 @@ used to recursively hold tables and respective values
     proc printValues(f: channel, v: borrowed Toml) throws {
       for key in v.A.keysToArray().sorted() {
         var value = v.A[key]!;
-
-      // for (key, val) in v.A.items() {
-      //   var value = val!;
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
@@ -977,8 +974,8 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValuesJSON(f: channel, v: borrowed Toml, in indent=0) throws {
-      for ((key, val), i) in zip(v.A.items(), 1..v.A.size) {
-        var value = val!;
+      for (key, i) in zip(v.A.keysToArray().sorted(), 1..v.A.size) {
+        var value = v.A[key]!;
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
