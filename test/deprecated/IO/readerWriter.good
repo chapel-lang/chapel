@@ -1,0 +1,2 @@
+readerWriter.chpl:6: warning: writer with a style argument is deprecated, please rely on the default value for the argument
+readerWriter.chpl:8: warning: reader with a style argument is deprecated, please rely on the default value for the argument
