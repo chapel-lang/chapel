@@ -3739,8 +3739,19 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
   return err_args;
 }
 
-// better documented in the style= version
-/* returns true if read successfully, false if we encountered EOF */
+/*
+
+   Read values from a channel. The input will be consumed atomically - the
+   channel lock will be held while reading all of the passed values.
+
+   :arg args: a list of arguments to read. Basic types are handled
+              internally, but for other types this function will call
+              value.readThis() with a ``Reader`` argument as described
+              in :ref:`readThis-writeThis-readWriteThis`.
+   :returns: `true` if the read succeeded, and `false` on end of file.
+
+   :throws SystemError: Thrown if the channel could not be read.
+ */
 inline proc channel.read(ref args ...?k):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
@@ -3760,33 +3771,13 @@ inline proc channel.read(ref args ...?k):bool throws {
   return true;
 }
 
-pragma "last resort"
-deprecated "read with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+deprecated "read with a style argument is deprecated"
 proc channel.read(ref args ...?k, style:iostyle):bool throws {
-  return channel.read((...args), style: iostyleInternal);
+  return this.readHelper((...args), style: iostyleInternal);
 }
-/*
 
-   Read values from a channel. The input will be consumed atomically - the
-   channel lock will be held while reading all of the passed values.
-
-   :arg args: a list of arguments to read. Basic types are handled
-              internally, but for other types this function will call
-              value.readThis() with a ``Reader`` argument as described
-              in :ref:`readThis-writeThis-readWriteThis`.
-   :arg style: optional argument to provide an :type:`iostyleInternal` for this
-               read.  If this argument is not provided, use the current style
-               associated with this channel.
-   :returns: `true` if the read succeeded, and `false` on end of file.
-
-   :throws SystemError: Thrown if the channel could not be read.
-
-   .. warning::
-
-      iostyleInternal is an internal type and should not be relied on, as it
-      will likely be replaced in the future.
- */
-proc channel.read(ref args ...?k, style:iostyleInternal):bool throws {
+pragma "no doc"
+proc channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
