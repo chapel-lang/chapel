@@ -1675,7 +1675,7 @@ module ArgumentParser {
         if arrElt.startsWith("-") && arrElt.find("=") > 0 {
           var elems = new list(arrElt.split("=", 1));
           // replace this opt=val with opt val
-          var idx = argsList.indexOf(arrElt);
+          var idx = argsList.find(arrElt);
           argsList.pop(idx);
           argsList.insert(idx, elems.toArray());
         }
