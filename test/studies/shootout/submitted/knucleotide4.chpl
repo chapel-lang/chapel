@@ -53,7 +53,7 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // create an array of (frequency, sequence) tuples
-  var arr = for (s,f) in freqs.items() do (f,s);
+  var arr = for (s,f) in freqs.items() do (f,s.val);
 
   // print the array, sorted by decreasing frequency
   for (f, s) in arr.sorted(reverseComparator) do
@@ -68,7 +68,7 @@ proc writeCount(data, param str) {
         freqs = calculate(data, str.numBytes),
         d = hash(strBytes, strBytes.domain.low, str.numBytes);
 
-  writeln(freqs[d], "\t", decode(d, str.numBytes));
+  writeln(freqs[d], "\t", decode(d.val, str.numBytes));
 }
 
 
@@ -104,8 +104,8 @@ inline proc decode(in data, param nclSize) {
   var ret: string;
 
   for i in 1..nclSize {
-    ret = toChar[(data.val & 3)] + ret;
-    data.val >>= 2;
+    ret = toChar[(data & 3)] + ret;
+    data >>= 2;
   }
 
   return ret;
