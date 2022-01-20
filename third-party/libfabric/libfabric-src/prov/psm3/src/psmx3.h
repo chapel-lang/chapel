@@ -85,7 +85,6 @@ extern "C" {
 
 extern struct fi_provider psmx3_prov;
 
-
 #define PSMX3_OP_FLAGS	(FI_INJECT | FI_MULTI_RECV | FI_COMPLETION | \
 			 FI_TRIGGER | FI_INJECT_COMPLETE | \
 			 FI_TRANSMIT_COMPLETE | FI_DELIVERY_COMPLETE)
@@ -938,7 +937,6 @@ void	psmx3_alter_prov_info(uint32_t api_version, const struct fi_info *hints,
 			      struct fi_info *info);
 
 void	psmx3_init_tag_layout(struct fi_info *info);
-int	psmx3_get_round_robin_unit(int idx);
 
 int	psmx3_fabric(struct fi_fabric_attr *attr,
 		     struct fid_fabric **fabric, void *context);

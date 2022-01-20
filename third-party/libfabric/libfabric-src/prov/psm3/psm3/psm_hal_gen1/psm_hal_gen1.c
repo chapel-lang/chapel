@@ -79,6 +79,7 @@ static hfp_gen1_t psm_gen1_hi = {
 
 		.hfp_close_context			  = hfp_gen1_close_context,
 		.hfp_context_open			  = hfp_gen1_context_open,
+		.hfp_context_initstats			  = hfp_gen1_context_initstats,
 
 
 		.hfp_finalize_				  = hfp_gen1_finalize_,

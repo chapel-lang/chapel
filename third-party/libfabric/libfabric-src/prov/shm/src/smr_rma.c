@@ -181,7 +181,9 @@ ssize_t smr_generic_rma(struct smr_ep *ep, const struct iovec *iov,
 			smr_format_iov(cmd, iov, iov_count, total_len, ep->region,
 				       resp);
 		} else {
-			if (iface == FI_HMEM_ZE && iov_count == 1 &&
+			if (iface == FI_HMEM_ZE &&
+			    (smr_get_mr_flags(desc) & FI_HMEM_DEVICE_ONLY) &&
+			    iov_count == 1 &&
 			    smr_ze_ipc_enabled(ep->region, peer_smr)) {
 				ret = smr_format_ze_ipc(ep, id, cmd, iov,
 					device, total_len, ep->region,
@@ -224,6 +226,7 @@ ssize_t smr_generic_rma(struct smr_ep *ep, const struct iovec *iov,
 commit_comp:
 	ofi_cirque_commit(smr_cmd_queue(peer_smr));
 	peer_smr->cmd_cnt--;
+	smr_signal(peer_smr);
 
 	if (!comp)
 		goto unlock_cq;
@@ -415,6 +418,7 @@ ssize_t smr_generic_rma_inject(struct fid_ep *ep_fid, const void *buf,
 commit:
 	ofi_cirque_commit(smr_cmd_queue(peer_smr));
 	peer_smr->cmd_cnt--;
+	smr_signal(peer_smr);
 	ofi_ep_tx_cntr_inc_func(&ep->util_ep, ofi_op_write);
 unlock_region:
 	fastlock_release(&peer_smr->lock);

@@ -25,6 +25,9 @@
 /* Define to 1 to enable uffd memory monitor */
 #undef ENABLE_UFFD_MONITOR
 
+/* dlopen ZE libraries */
+#undef ENABLE_ZE_DLOPEN
+
 /* define when building with FABRIC_DIRECT support */
 #undef FABRIC_DIRECT_ENABLED
 
@@ -79,6 +82,9 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
+/* i915 DRM header */
+#undef HAVE_DRM
+
 /* efa provider is built */
 #undef HAVE_EFA
 
@@ -123,6 +129,9 @@
 
 /* Define to 1 if you have the <hsa/hsa_ext_amd.h> header file. */
 #undef HAVE_HSA_HSA_EXT_AMD_H
+
+/* Define to 1 if libibverbs has ibv_is_fork_initialized */
+#undef HAVE_IBV_IS_FORK_INITIALIZED
 
 /* Define to 1 if you have the <infiniband/efadv.h> header file. */
 #undef HAVE_INFINIBAND_EFADV_H
@@ -332,6 +341,9 @@
 /* usnic provider is built as DSO */
 #undef HAVE_USNIC_DL
 
+/* Define to 1 if you have the <uuid/uuid.h> header file. */
+#undef HAVE_UUID_UUID_H
+
 /* verbs provider is built */
 #undef HAVE_VERBS
 
@@ -377,6 +389,9 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* Whether we have CUDA runtime or not */
+#undef PSM3_CUDA
+
 /* Define to 1 if pthread_spin_init is available. */
 #undef PT_LOCK_SPIN
 
@@ -385,6 +400,9 @@
 
 /* Whether to build the fake usNIC verbs provider or not */
 #undef USNIC_BUILD_FAKE_VERBS_DRIVER
+
+/* Whether infiniband/verbs.h has ibv_reg_dmabuf_mr() support or not */
+#undef VERBS_HAVE_DMABUF_MR
 
 /* Whether infiniband/verbs.h has ibv_query_device_ex() support or not */
 #undef VERBS_HAVE_QUERY_EX

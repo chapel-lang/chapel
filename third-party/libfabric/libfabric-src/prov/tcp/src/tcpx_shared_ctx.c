@@ -38,33 +38,6 @@
 #include <unistd.h>
 #include <ofi_iov.h>
 
-void tcpx_srx_entry_free(struct tcpx_rx_ctx *srx_ctx,
-			 struct tcpx_xfer_entry *xfer_entry)
-{
-	if (xfer_entry->ep->cur_rx_entry == xfer_entry)
-		xfer_entry->ep->cur_rx_entry = NULL;
-
-	fastlock_acquire(&srx_ctx->lock);
-	ofi_buf_free(xfer_entry);
-	fastlock_release(&srx_ctx->lock);
-}
-
-struct tcpx_xfer_entry *
-tcpx_srx_entry_alloc(struct tcpx_rx_ctx *srx_ctx, struct tcpx_ep *ep)
-{
-	struct tcpx_xfer_entry *rx_entry = NULL;
-
-	fastlock_acquire(&srx_ctx->lock);
-	if (slist_empty(&srx_ctx->rx_queue))
-		goto out;
-
-	rx_entry = container_of(srx_ctx->rx_queue.head,
-				struct tcpx_xfer_entry, entry);
-	slist_remove_head(&srx_ctx->rx_queue);
-out:
-	fastlock_release(&srx_ctx->lock);
-	return rx_entry;
-}
 
 static ssize_t tcpx_srx_recvmsg(struct fid_ep *ep, const struct fi_msg *msg,
 				uint64_t flags)

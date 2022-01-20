@@ -133,7 +133,7 @@ ssize_t sock_ep_tx_atomic(struct fid_ep *ep,
 
 		total_len = src_len + cmp_len;
 	} else {
-		total_len = msg->iov_count * sizeof(union sock_iov);
+		total_len = (msg->iov_count + compare_count) * sizeof(union sock_iov);
 	}
 
 	total_len += (sizeof(struct sock_op_send) +

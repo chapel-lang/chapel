@@ -58,6 +58,7 @@ static int vrb_create_ini_qp(struct vrb_xrc_ep *ep)
 	attr_ex.comp_mask = IBV_QP_INIT_ATTR_PD;
 	attr_ex.pd = domain->pd;
 	attr_ex.qp_context = domain;
+	attr_ex.srq = NULL;
 
 	ret = rdma_create_qp_ex(ep->base_ep.id, &attr_ex);
 	if (ret) {
@@ -80,15 +81,15 @@ static inline void vrb_set_ini_conn_key(struct vrb_xrc_ep *ep,
 				  struct vrb_cq, util_cq);
 }
 
-/* Caller must hold domain:xrc.ini_lock */
 int vrb_get_shared_ini_conn(struct vrb_xrc_ep *ep,
-			       struct vrb_ini_shared_conn **ini_conn) {
+			    struct vrb_ini_shared_conn **ini_conn) {
 	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
 	struct vrb_ini_conn_key key;
 	struct vrb_ini_shared_conn *conn;
 	struct ofi_rbnode *node;
 	int ret;
 
+	assert(fastlock_held(&domain->xrc.ini_lock));
 	vrb_set_ini_conn_key(ep, &key);
 	node = ofi_rbmap_find(domain->xrc.ini_conn_rbmap, &key);
 	if (node) {
@@ -136,13 +137,13 @@ insert_err:
 	return ret;
 }
 
-/* Caller must hold domain:xrc.ini_lock */
 void _vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 {
 	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
 	struct vrb_ini_shared_conn *ini_conn;
 	struct vrb_ini_conn_key key;
 
+	assert(fastlock_held(&domain->xrc.ini_lock));
 	if (!ep->ini_conn)
 		return;
 
@@ -190,10 +191,11 @@ void vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 	domain->xrc.lock_release(&domain->xrc.ini_lock);
 }
 
-/* Caller must hold domain:xrc.ini_lock */
 void vrb_add_pending_ini_conn(struct vrb_xrc_ep *ep, int reciprocal,
-				 void *conn_param, size_t conn_paramlen)
+			      void *conn_param, size_t conn_paramlen)
 {
+	assert(fastlock_held(&vrb_ep_to_domain(&ep->base_ep)->xrc.ini_lock));
+
 	ep->conn_setup->pending_recip = reciprocal;
 	ep->conn_setup->pending_paramlen = MIN(conn_paramlen,
 				sizeof(ep->conn_setup->pending_param));
@@ -428,9 +430,9 @@ static int vrb_put_tgt_qp(struct vrb_xrc_ep *ep)
 	return FI_SUCCESS;
 }
 
-/* Caller must hold eq:lock */
 int vrb_ep_destroy_xrc_qp(struct vrb_xrc_ep *ep)
 {
+	assert(fastlock_held(&ep->base_ep.eq->lock));
 	vrb_put_shared_ini_conn(ep);
 
 	if (ep->base_ep.id) {
@@ -540,7 +542,7 @@ int vrb_domain_xrc_init(struct vrb_domain *domain)
 		domain->xrc.lock_acquire = ofi_fastlock_acquire;
 		domain->xrc.lock_release = ofi_fastlock_release;
 	}
-	domain->flags |= VRB_USE_XRC;
+	domain->ext_flags |= VRB_USE_XRC;
 	return FI_SUCCESS;
 
 rbmap_err:

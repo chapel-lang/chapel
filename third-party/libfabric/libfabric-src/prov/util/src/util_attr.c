@@ -398,7 +398,7 @@ int ofi_check_fabric_attr(const struct fi_provider *prov,
 	 * user's hints, if one is specified.
 	 */
 	if (prov_attr->prov_name && user_attr->prov_name &&
-	    !strcasestr(user_attr->prov_name, prov_attr->prov_name)) {
+	    strcasestr(user_attr->prov_name, prov_attr->prov_name)) {
 		FI_INFO(prov, FI_LOG_CORE,
 			"Requesting provider %s, skipping %s\n",
 			prov_attr->prov_name, user_attr->prov_name);
@@ -989,10 +989,18 @@ int ofi_prov_check_dup_info(const struct util_prov *util_prov,
 				     api_version, user_info);
 	    	if (ret)
 			continue;
+
 		if (!(fi = fi_dupinfo(prov_info))) {
 			ret = -FI_ENOMEM;
 			goto err;
 		}
+
+		if (util_prov->alter_defaults) {
+			ret = util_prov->alter_defaults(api_version, user_info,
+							prov_info, fi);
+			assert(ret == FI_SUCCESS);
+		}
+
 		if (!*info)
 			*info = fi;
 		else

@@ -93,14 +93,8 @@ static int efa_ep_modify_qp_state(struct efa_qp *qp, enum ibv_qp_state qp_state,
 	if (attr_mask & IBV_QP_QKEY)
 		attr.qkey = qp->qkey;
 
-	/*
-	 * You can set how many times the firmware retries here.
-	 * Valid values are from 0(included) to 7(included).
-	 * 0 stands for no firmware level retries.
-	 * 7 means firmware retries infinitely.
-	 */
 	if (attr_mask & IBV_QP_RNR_RETRY)
-		attr.rnr_retry = 7;
+		attr.rnr_retry = rxr_env.rnr_retry;
 
 	return -ibv_modify_qp(qp->ibv_qp, &attr, attr_mask);
 
@@ -306,6 +300,15 @@ static int efa_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 		break;
 	case FI_CLASS_AV:
 		av = container_of(bfid, struct efa_av, util_av.av_fid.fid);
+		/*
+		 * Binding multiple endpoints to a single AV is currently not
+		 * supported.
+		 */
+		if (av->ep) {
+			EFA_WARN(FI_LOG_EP_CTRL,
+				 "Address vector already has endpoint bound to it.\n");
+			return -FI_ENOSYS;
+		}
 		if (ep->domain != av->domain) {
 			EFA_WARN(FI_LOG_EP_CTRL,
 				 "Address vector doesn't belong to same domain as EP.\n");

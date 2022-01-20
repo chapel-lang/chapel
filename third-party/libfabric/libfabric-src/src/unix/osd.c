@@ -296,3 +296,45 @@ int ofi_set_thread_affinity(const char *s)
 	return -FI_ENOSYS;
 #endif
 }
+
+
+void ofi_pollfds_do_add(struct ofi_pollfds *pfds,
+			struct ofi_pollfds_work_item *item)
+{
+	if (item->fd >= pfds->size) {
+		if (ofi_pollfds_grow(pfds, item->fd))
+			return;
+	}
+
+	pfds->fds[item->fd].fd = item->fd;
+	pfds->fds[item->fd].events = item->events;
+	pfds->fds[item->fd].revents = 0;
+	pfds->context[item->fd] = item->context;
+	if (item->fd >= pfds->nfds)
+		pfds->nfds = item->fd + 1;
+}
+
+int ofi_pollfds_do_mod(struct ofi_pollfds *pfds, int fd, uint32_t events,
+		       void *context)
+{
+	if ((fd < pfds->nfds) && (pfds->fds[fd].fd == fd)) {
+		pfds->fds[fd].events = events;
+		pfds->context[fd] = context;
+		return FI_SUCCESS;
+	}
+
+	return -FI_ENOENT;
+}
+
+void ofi_pollfds_do_del(struct ofi_pollfds *pfds,
+			struct ofi_pollfds_work_item *item)
+{
+	if (item->fd >= pfds->nfds)
+		return;
+
+	pfds->fds[item->fd].fd = INVALID_SOCKET;
+	pfds->fds[item->fd].events = 0;
+	pfds->fds[item->fd].revents = 0;
+	while (pfds->nfds && pfds->fds[pfds->nfds - 1].fd == INVALID_SOCKET)
+		pfds->nfds--;
+}

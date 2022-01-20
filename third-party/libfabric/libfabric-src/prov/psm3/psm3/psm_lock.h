@@ -207,7 +207,8 @@ PSMI_ALWAYS_INLINE(int psmi_sem_timedwait(sem_t *sem, const char *name))
 	ts.tv_sec += 5;
 
 	if (sem_timedwait(sem, &ts) == -1) {
-		_HFI_VDBG("Semaphore %s: Timedwait failed\n", name ? name : "NULL" );
+		_HFI_VDBG("Semaphore %s: Timedwait failed: %s (%d)\n",
+				name ? name : "NULL", strerror(errno), errno );
 		return -1;
 	}
 

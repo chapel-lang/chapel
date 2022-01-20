@@ -74,71 +74,39 @@ int get_gdr_fd(){
 
 
 
+// flags=0 for send, 1 for recv
 void *
 gdr_convert_gpu_to_host_addr(int gdr_fd, unsigned long buf,
 							 size_t size, int flags,
-							 struct ips_proto* proto)
+							 psm2_ep_t ep)
 {
 	void *host_addr_buf;
 
 	uintptr_t pageaddr = buf & GPU_PAGE_MASK;
-// TBD - is this comment correct?  Callers may be calling for a whole
-// app buffer, especially when RECV RDMA is disabled
-	/* As size is guarenteed to be in the range of 0-8kB
-	 * there is a guarentee that buf+size-1 does not overflow
-	 * 64 bits.
-	 */
-	uint32_t pagelen = (uint32_t) (PSMI_GPU_PAGESIZE +
+	uint64_t pagelen = (uint64_t) (PSMI_GPU_PAGESIZE +
 					   ((buf + size - 1) & GPU_PAGE_MASK) -
 					   pageaddr);
 
-	_HFI_VDBG("buf=%p size=%zu pageaddr=%p pagelen=%u flags=0x%x proto=%p\n",
-		(void *)buf, size, (void *)pageaddr, pagelen, flags, proto);
+	_HFI_VDBG("buf=%p size=%zu pageaddr=%p pagelen=%"PRIu64" flags=0x%x ep=%p\n",
+		(void *)buf, size, (void *)pageaddr, pagelen, flags, ep);
 #ifdef RNDV_MOD
-	host_addr_buf = __psm2_rv_pin_and_mmap(proto->ep->verbs_ep.rv, pageaddr, pagelen);
-	if (! host_addr_buf) {
-		if (errno == ENOMEM || errno == EINVAL) {
-			/* Fatal error */
-			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-					  "Unable to PIN GPU pages(Out of BAR1 space) (errno: %d)\n", errno);
-			return NULL;
-		} else {
-			/* Fatal error */
-			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-							  "PIN/MMAP ioctl failed errno %d\n",
-							  errno);
-			return NULL;
+	ep = ep->mctxt_master;
+	host_addr_buf = __psm2_rv_pin_and_mmap(ep->verbs_ep.rv, pageaddr, pagelen, IBV_ACCESS_IS_GPU_ADDR);
+	if_pf (! host_addr_buf) {
+		if (errno == ENOMEM) {
+			if (psm2_verbs_evict_some(ep, pagelen, IBV_ACCESS_IS_GPU_ADDR) > 0)
+				host_addr_buf = __psm2_rv_pin_and_mmap(ep->verbs_ep.rv, pageaddr, pagelen, IBV_ACCESS_IS_GPU_ADDR);
 		}
+		if_pf (! host_addr_buf)
+			return NULL;
 	}
+//_HFI_ERROR("pinned buf=%p size=%zu pageaddr=%p pagelen=%u flags=0x%x ep=%p, @ %p\n", (void *)buf, size, (void *)pageaddr, pagelen, flags, ep, host_addr_buf);
 #else
 	psmi_assert_always(0);	// unimplemented, should not get here
 	host_addr_buf = NULL;
 #endif /* RNDV_MOD */
 	return host_addr_buf + (buf & GPU_PAGE_OFFSET_MASK);
 }
-
-// keep this symmetrical with other functions, even though gdr_fd not used
-int
-gdr_unmap_gpu_host_addr(int gdr_fd, const void *buf,
-							 size_t size, struct ips_proto* proto)
-{
-#ifdef RNDV_MOD
-	// TBD - will we need to round size up to pagelen?
-	if (0 != __psm2_rv_munmap_and_unpin(proto->ep->verbs_ep.rv, buf, size)) {
-		/* Fatal error */
-		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-						  "UNMMAP/UNPIN ioctl failed errno %d\n",
-						  errno);
-		return -1;
-	}
-	return 0;
-#else
-	psmi_assert_always(0);	// unimplemented, should not get here
-	errno = EINVAL;
-	return -1;
-#endif
-}
-
 
 void hfi_gdr_open(){
 	return;

@@ -169,7 +169,7 @@ static int vrb_domain_close(fid_t fid)
 			ofi_ns_stop_server(&fab->name_server);
 		break;
 	case FI_EP_MSG:
-		if (domain->flags & VRB_USE_XRC) {
+		if (domain->ext_flags & VRB_USE_XRC) {
 			ret = vrb_domain_xrc_cleanup(domain);
 			if (ret)
 				return ret;
@@ -215,7 +215,7 @@ static int vrb_open_device_by_name(struct vrb_domain *domain, const char *name)
 		const char *rdma_name = ibv_get_device_name(dev_list[i]->device);
 		switch (domain->ep_type) {
 		case FI_EP_MSG:
-			ret = domain->flags & VRB_USE_XRC ?
+			ret = domain->ext_flags & VRB_USE_XRC ?
 				vrb_cmp_xrc_domain_name(name, rdma_name) :
 				strcmp(name, rdma_name);
 			break;
@@ -283,6 +283,7 @@ vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 		[FI_HMEM_SYSTEM] = default_monitor,
 		[FI_HMEM_CUDA] = default_cuda_monitor,
 		[FI_HMEM_ROCR] = default_rocr_monitor,
+		[FI_HMEM_ZE] = default_ze_monitor,
 	};
 	enum fi_hmem_iface iface;
 	struct vrb_domain *_domain;
@@ -313,7 +314,7 @@ vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 		goto err2;
 
 	_domain->ep_type = VRB_EP_TYPE(info);
-	_domain->flags |= vrb_is_xrc_info(info) ? VRB_USE_XRC : 0;
+	_domain->ext_flags |= vrb_is_xrc_info(info) ? VRB_USE_XRC : 0;
 
 	ret = vrb_open_device_by_name(_domain, info->domain_attr->name);
 	if (ret)
@@ -325,7 +326,7 @@ vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 		goto err3;
 	}
 
-	_domain->flags |= vrb_odp_flag(_domain->verbs);
+	_domain->ext_flags |= vrb_odp_flag(_domain->verbs);
 	_domain->util_domain.domain_fid.fid.fclass = FI_CLASS_DOMAIN;
 	_domain->util_domain.domain_fid.fid.context = context;
 	_domain->util_domain.domain_fid.fid.ops = &vrb_fid_ops;
@@ -369,7 +370,7 @@ vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 		_domain->util_domain.domain_fid.ops = &vrb_dgram_domain_ops;
 		break;
 	case FI_EP_MSG:
-		if (_domain->flags & VRB_USE_XRC) {
+		if (_domain->ext_flags & VRB_USE_XRC) {
 			ret = vrb_domain_xrc_init(_domain);
 			if (ret)
 				goto err4;

@@ -45,6 +45,12 @@
 #include <ofi_signal.h>
 #include <ofi_lock.h>
 
+
+enum ofi_list_end {
+	OFI_LIST_TAIL,
+	OFI_LIST_HEAD
+};
+
 /*
  * Double-linked list
  */

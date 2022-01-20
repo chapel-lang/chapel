@@ -380,29 +380,29 @@ static struct fi_ops_mr rxm_domain_mr_ops = {
 
 static ssize_t rxm_send_credits(struct fid_ep *ep, size_t credits)
 {
-	struct rxm_conn *rxm_conn =
-		container_of(ep->fid.context, struct rxm_conn, handle);
-	struct rxm_ep *rxm_ep = rxm_conn->handle.cmap->ep;
+	struct rxm_conn *rxm_conn = ep->fid.context;
+	struct rxm_ep *rxm_ep = rxm_conn->ep;
 	struct rxm_deferred_tx_entry *def_tx_entry;
-	struct rxm_tx_base_buf *tx_buf;
+	struct rxm_tx_buf *tx_buf;
 	struct iovec iov;
 	struct fi_msg msg;
 	ssize_t ret;
 
-	tx_buf = rxm_tx_buf_alloc(rxm_ep, RXM_BUF_POOL_TX_CREDIT);
+	tx_buf = ofi_buf_alloc(rxm_ep->tx_pool);
 	if (!tx_buf) {
 		FI_WARN(&rxm_prov, FI_LOG_EP_DATA,
 			"Ran out of buffers from TX credit buffer pool.\n");
 		return -FI_ENOMEM;
 	}
 
+	tx_buf->hdr.state = RXM_CREDIT_TX;
 	rxm_ep_format_tx_buf_pkt(rxm_conn, 0, rxm_ctrl_credit, 0, 0, FI_SEND,
 				 &tx_buf->pkt);
 	tx_buf->pkt.ctrl_hdr.type = rxm_ctrl_credit;
 	tx_buf->pkt.ctrl_hdr.msg_id = ofi_buf_index(tx_buf);
 	tx_buf->pkt.ctrl_hdr.ctrl_data = credits;
 
-	if (rxm_conn->handle.state != RXM_CMAP_CONNECTED)
+	if (rxm_conn->state != RXM_CM_CONNECTED)
 		goto defer;
 
 	iov.iov_base = &tx_buf->pkt;
@@ -427,7 +427,7 @@ defer:
 	}
 
 	def_tx_entry->credit_msg.tx_buf = tx_buf;
-	rxm_ep_enqueue_deferred_tx_queue_priority(def_tx_entry);
+	rxm_queue_deferred_tx(def_tx_entry, OFI_LIST_HEAD);
 	return FI_SUCCESS;
 }
 
@@ -484,7 +484,7 @@ struct ofi_ops_dynamic_rbuf rxm_dynamic_rbuf = {
 static void rxm_config_dyn_rbuf(struct rxm_domain *domain, struct fi_info *info,
 				struct fi_info *msg_info)
 {
-	int ret = 0;
+	int ret = 1;
 
 	/* Collective support requires rxm generated and consumed messages.
 	 * Although we could update the code to handle receiving collective
@@ -547,7 +547,7 @@ int rxm_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	rxm_domain->util_domain.mr_map.mode &= ~FI_MR_PROV_KEY;
 
 	rxm_domain->max_atomic_size = rxm_ep_max_atomic_size(info);
-	rxm_domain->rx_post_size = rxm_buffer_size;
+	rxm_domain->rx_post_size = rxm_packet_size;
 
 	*domain = &rxm_domain->util_domain.domain_fid;
 	(*domain)->fid.ops = &rxm_domain_fi_ops;

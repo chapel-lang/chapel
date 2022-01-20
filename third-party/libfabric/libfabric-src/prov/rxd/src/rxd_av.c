@@ -294,42 +294,21 @@ static int rxd_av_remove(struct fid_av *av_fid, fi_addr_t *fi_addr, size_t count
 			uint64_t flags)
 {
 	int ret = 0;
-	size_t i, addrlen;
+	size_t i;
 	fi_addr_t rxd_addr;
-	fi_addr_t dg_addr;
 	struct rxd_av *av;
-	uint8_t addr[RXD_NAME_LENGTH];
 
 	av = container_of(av_fid, struct rxd_av, util_av.av_fid);
 	fastlock_acquire(&av->util_av.lock);
 	for (i = 0; i < count; i++) {
-
-		addrlen = RXD_NAME_LENGTH;
 		rxd_addr = (intptr_t)ofi_idx_lookup(&av->fi_addr_idx,
 						    RXD_IDX_OFFSET(fi_addr[i]));
 		if (!rxd_addr)
 			goto err;
 
-		dg_addr = (intptr_t)ofi_idx_lookup(&av->rxdaddr_dg_idx, rxd_addr);
-
-		ret = fi_av_lookup(av->dg_av, dg_addr, addr, &addrlen);
-		if (ret)
-			goto err;
-
-		ret = ofi_rbmap_find_delete(&av->rbmap, (void *) addr);
-		if (ret)
-			goto err;
-
-		ret = fi_av_remove(av->dg_av, &dg_addr, 1, flags);
-
-		if (ret)
-			goto err;
-
 		ofi_idx_remove_ordered(&(av->fi_addr_idx),
 				       RXD_IDX_OFFSET(fi_addr[i]));
-		ofi_idx_remove_ordered(&(av->rxdaddr_dg_idx), rxd_addr);
 		ofi_idm_clear(&(av->rxdaddr_fi_idm), rxd_addr);
-		av->dg_av_used--;
 	}
 
 err:
@@ -375,16 +354,33 @@ static struct fi_ops_av rxd_av_ops = {
 static int rxd_av_close(struct fid *fid)
 {
 	struct rxd_av *av;
+	struct ofi_rbnode *node;
+	fi_addr_t dg_addr, rxd_addr;
 	int ret;
 
-
 	av = container_of(fid, struct rxd_av, util_av.av_fid);
-	ret = fi_close(&av->dg_av->fid);
+
+	ret = ofi_av_close(&av->util_av);
 	if (ret)
 		return ret;
 
+	while ((node = ofi_rbmap_get_root(&av->rbmap))) {
+		rxd_addr = (fi_addr_t) node->data;
+		dg_addr = (intptr_t)ofi_idx_lookup(&av->rxdaddr_dg_idx,
+						   rxd_addr);
+
+		ret = fi_av_remove(av->dg_av, &dg_addr, 1, 0);
+		if (ret)
+			FI_WARN(&rxd_prov, FI_LOG_AV,
+				"failed to remove dg addr: %d (%s)\n",
+				-ret, fi_strerror(-ret));
+
+		ofi_idx_remove_ordered(&(av->rxdaddr_dg_idx), rxd_addr);
+		ofi_rbmap_delete(&av->rbmap, node);
+	}
 	ofi_rbmap_cleanup(&av->rbmap);
-	ret = ofi_av_close(&av->util_av);
+
+	ret = fi_close(&av->dg_av->fid);
 	if (ret)
 		return ret;
 

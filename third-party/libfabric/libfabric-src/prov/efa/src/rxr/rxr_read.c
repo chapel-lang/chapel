@@ -110,14 +110,15 @@ ssize_t rxr_read_prepare_pkt_entry_mr(struct rxr_ep *ep, struct rxr_read_entry *
 	}
 
 	/* only ooo and unexp packet entry's memory is not registered with device */
-	assert(pkt_entry->type == RXR_PKT_ENTRY_OOO ||
-	       pkt_entry->type == RXR_PKT_ENTRY_UNEXP);
+	assert(pkt_entry->alloc_type == RXR_PKT_FROM_OOO_POOL ||
+	       pkt_entry->alloc_type == RXR_PKT_FROM_UNEXP_POOL);
 
 	pkt_offset = (char *)read_entry->rma_iov[0].addr - (char *)pkt_entry->pkt;
 	assert(pkt_offset > sizeof(struct rxr_base_hdr));
 
 	pkt_entry_copy = rxr_pkt_entry_clone(ep, ep->rx_readcopy_pkt_pool,
-					     pkt_entry, RXR_PKT_ENTRY_READ_COPY);
+					     RXR_PKT_FROM_READ_COPY_POOL,
+					     pkt_entry);
 	if (!pkt_entry_copy) {
 		FI_WARN(&rxr_prov, FI_LOG_CQ,
 			"readcopy pkt pool exhausted! Set FI_EFA_READCOPY_POOL_SIZE to a higher value!");
@@ -179,6 +180,35 @@ ssize_t rxr_read_mr_reg(struct rxr_ep *ep, struct rxr_read_entry *read_entry)
 	return 0;
 }
 
+/**
+ * @brief convert descriptor from application for lower provider to use
+ *
+ * Each provider define its descriptors format. The descriptor provided
+ * by application is in EFA provider format.
+ * This function convert it to descriptors for lower provider according
+ * to lower provider type. It also handle the case application does not
+ * provider descriptors.
+ *
+ * @param lower_ep_type[in] lower efa type, can be EFA_EP or SHM_EP.
+ * @param numdesc[in]       number of descriptors in the array
+ * @param desc_in[in]       descriptors provided by application
+ * @param desc_out[out]     descriptors for lower provider.
+ */
+static inline
+void rxr_read_copy_desc(enum rxr_lower_ep_type lower_ep_type,
+			int numdesc, void **desc_in, void **desc_out)
+{
+	if (!desc_in) {
+		memset(desc_out, 0, numdesc * sizeof(void *));
+		return;
+	}
+
+	memcpy(desc_out, desc_in, numdesc * sizeof(void *));
+	if (lower_ep_type == SHM_EP) {
+		rxr_convert_desc_for_shm(numdesc, desc_out);
+	}
+}
+
 /* rxr_read_alloc_entry allocates a read entry.
  * It is called by rxr_read_post_or_queue().
  * Input:
@@ -229,10 +259,7 @@ struct rxr_read_entry *rxr_read_alloc_entry(struct rxr_ep *ep, int entry_type, v
 		total_rma_iov_len = ofi_total_rma_iov_len(tx_entry->rma_iov, tx_entry->rma_iov_count);
 		read_entry->total_len = MIN(total_iov_len, total_rma_iov_len);
 
-		if (tx_entry->desc) {
-			memcpy(read_entry->mr_desc, tx_entry->desc,
-			       read_entry->iov_count * sizeof(void *));
-		}
+		rxr_read_copy_desc(lower_ep_type, read_entry->iov_count, tx_entry->desc, read_entry->mr_desc);
 
 	} else {
 		rx_entry = (struct rxr_rx_entry *)x_entry;
@@ -255,10 +282,7 @@ struct rxr_read_entry *rxr_read_alloc_entry(struct rxr_ep *ep, int entry_type, v
 		total_rma_iov_len = ofi_total_rma_iov_len(rx_entry->rma_iov, rx_entry->rma_iov_count);
 		read_entry->total_len = MIN(total_iov_len, total_rma_iov_len);
 
-		if (rx_entry->desc) {
-			memcpy(read_entry->mr_desc, rx_entry->desc,
-			       read_entry->iov_count * sizeof(void *));
-		}
+		rxr_read_copy_desc(lower_ep_type, read_entry->iov_count, rx_entry->desc, read_entry->mr_desc);
 	}
 
 	memset(read_entry->mr, 0, read_entry->iov_count * sizeof(struct fid_mr *));
@@ -287,7 +311,7 @@ void rxr_read_release_entry(struct rxr_ep *ep, struct rxr_read_entry *read_entry
 			err = fi_close((struct fid *)read_entry->mr[i]);
 			if (err) {
 				FI_WARN(&rxr_prov, FI_LOG_MR, "Unable to close mr\n");
-				rxr_read_handle_error(ep, read_entry, err);
+				rxr_read_write_error(ep, read_entry, -err, -err);
 			}
 		}
 	}
@@ -320,7 +344,7 @@ int rxr_read_post_or_queue(struct rxr_ep *ep, struct rxr_read_entry *read_entry)
 
 int rxr_read_post_remote_read_or_queue(struct rxr_ep *ep, int entry_type, void *x_entry)
 {
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 	struct rxr_read_entry *read_entry;
 	int lower_ep_type;
 
@@ -330,6 +354,7 @@ int rxr_read_post_remote_read_or_queue(struct rxr_ep *ep, int entry_type, void *
 		assert(entry_type == RXR_RX_ENTRY);
 		peer = rxr_ep_get_peer(ep, ((struct rxr_rx_entry *)x_entry)->addr);
 	}
+	assert(peer);
 
 	lower_ep_type = (peer->is_local) ? SHM_EP : EFA_EP;
 	read_entry = rxr_read_alloc_entry(ep, entry_type, x_entry, lower_ep_type);
@@ -377,8 +402,9 @@ int rxr_read_post_local_read_or_queue(struct rxr_ep *ep,
 	assert(pkt_entry->x_entry == rx_entry);
 	assert(rx_entry->desc && efa_ep_is_cuda_mr(rx_entry->desc[0]));
 	read_entry->iov_count = rx_entry->iov_count;
+	memset(read_entry->mr, 0, sizeof(*read_entry->mr) * read_entry->iov_count);
 	memcpy(read_entry->iov, rx_entry->iov, rx_entry->iov_count * sizeof(struct iovec));
-	memcpy(read_entry->mr_desc, rx_entry->desc, rx_entry->iov_count * sizeof(void *));
+	rxr_read_copy_desc(EFA_EP, rx_entry->iov_count, rx_entry->desc, read_entry->mr_desc);
 	ofi_consume_iov_desc(read_entry->iov, read_entry->mr_desc, &read_entry->iov_count, data_offset);
 	if (read_entry->iov_count == 0) {
 		FI_WARN(&rxr_prov, FI_LOG_CQ,
@@ -389,7 +415,7 @@ int rxr_read_post_local_read_or_queue(struct rxr_ep *ep,
 	}
 
 	assert(efa_ep_is_cuda_mr(read_entry->mr_desc[0]));
-	err = ofi_truncate_iov(read_entry->iov, &read_entry->iov_count, data_size);
+	err = ofi_truncate_iov(read_entry->iov, &read_entry->iov_count, data_size + ep->msg_prefix_size);
 	if (err) {
 		FI_WARN(&rxr_prov, FI_LOG_CQ,
 			"data_offset %ld data_size %ld out of range\n",
@@ -407,7 +433,7 @@ int rxr_read_init_iov(struct rxr_ep *ep,
 {
 	int i, err;
 	struct fid_mr *mr;
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 
 	peer = rxr_ep_get_peer(ep, tx_entry->addr);
 
@@ -426,6 +452,7 @@ int rxr_read_init_iov(struct rxr_ep *ep,
 		if (!tx_entry->mr[0]) {
 			for (i = 0; i < tx_entry->iov_count; ++i) {
 				assert(!tx_entry->mr[i]);
+				assert(peer);
 
 				if (peer->is_local)
 					err = efa_mr_reg_shm(rxr_ep_domain(ep)->rdm_domain,
@@ -466,7 +493,7 @@ int rxr_read_post(struct rxr_ep *ep, struct rxr_read_entry *read_entry)
 	struct fi_rma_iov rma_iov;
 	struct fi_msg_rma msg;
 	struct efa_ep *efa_ep;
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 	fi_addr_t shm_fiaddr = FI_ADDR_NOTAVAIL;
 
 	assert(read_entry->iov_count > 0);
@@ -486,17 +513,18 @@ int rxr_read_post(struct rxr_ep *ep, struct rxr_read_entry *read_entry)
 			return ret;
 	}
 
-	peer = rxr_ep_get_peer(ep, read_entry->addr);
-
-	if (read_entry->lower_ep_type == SHM_EP)
+	if (read_entry->lower_ep_type == SHM_EP) {
+		peer = rxr_ep_get_peer(ep, read_entry->addr);
+		assert(peer);
 		shm_fiaddr = peer->shm_fiaddr;
+	}
 
 	max_read_size = (read_entry->lower_ep_type == EFA_EP) ?
 				efa_max_rdma_size(ep->rdm_ep) : SIZE_MAX;
 	assert(max_read_size > 0);
 
 	ret = rxr_locate_iov_pos(read_entry->iov, read_entry->iov_count,
-				 read_entry->bytes_submitted,
+				 read_entry->bytes_submitted + ep->msg_prefix_size,
 				 &iov_idx, &iov_offset);
 	assert(ret == 0);
 
@@ -511,7 +539,7 @@ int rxr_read_post(struct rxr_ep *ep, struct rxr_read_entry *read_entry)
 
 	while (read_entry->bytes_submitted < read_entry->total_len) {
 
-		if (ep->tx_pending == ep->max_outstanding_tx)
+		if (read_entry->lower_ep_type == EFA_EP && ep->efa_outstanding_tx_ops == ep->efa_max_outstanding_tx_ops)
 			return -FI_EAGAIN;
 
 		assert(iov_idx < read_entry->iov_count);
@@ -536,9 +564,9 @@ int rxr_read_post(struct rxr_ep *ep, struct rxr_read_entry *read_entry)
 		 * we had to use a pkt_entry as context too
 		 */
 		if (read_entry->lower_ep_type == SHM_EP)
-			pkt_entry = rxr_pkt_entry_alloc(ep, ep->tx_pkt_shm_pool);
+			pkt_entry = rxr_pkt_entry_alloc(ep, ep->shm_tx_pkt_pool, RXR_PKT_FROM_SHM_TX_POOL);
 		else
-			pkt_entry = rxr_pkt_entry_alloc(ep, ep->tx_pkt_efa_pool);
+			pkt_entry = rxr_pkt_entry_alloc(ep, ep->efa_tx_pkt_pool, RXR_PKT_FROM_EFA_TX_POOL);
 
 		if (OFI_UNLIKELY(!pkt_entry))
 			return -FI_EAGAIN;
@@ -560,6 +588,8 @@ int rxr_read_post(struct rxr_ep *ep, struct rxr_read_entry *read_entry)
 			efa_ep = container_of(ep->rdm_ep, struct efa_ep, util_ep.ep_fid);
 			msg.addr = read_entry->addr;
 			self_comm = (read_entry->context_type == RXR_READ_CONTEXT_PKT_ENTRY);
+			if (self_comm)
+				pkt_entry->flags |= RXR_PKT_ENTRY_LOCAL_READ;
 			ret = efa_rma_post_read(efa_ep, &msg, 0, self_comm);
 		}
 
@@ -568,13 +598,7 @@ int rxr_read_post(struct rxr_ep *ep, struct rxr_read_entry *read_entry)
 			return ret;
 		}
 
-		if (read_entry->context_type == RXR_READ_CONTEXT_PKT_ENTRY) {
-			assert(read_entry->lower_ep_type == EFA_EP);
-			/* read from self, no peer */
-			ep->tx_pending++;
-		} else if (read_entry->lower_ep_type == EFA_EP) {
-			rxr_ep_inc_tx_pending(ep, peer);
-		}
+		rxr_ep_record_tx_op_submitted(ep, pkt_entry);
 
 		read_entry->bytes_submitted += iov.iov_len;
 
@@ -606,22 +630,22 @@ int rxr_read_post(struct rxr_ep *ep, struct rxr_read_entry *read_entry)
 	return 0;
 }
 
-int rxr_read_handle_error(struct rxr_ep *ep, struct rxr_read_entry *read_entry, int ret)
+void rxr_read_write_error(struct rxr_ep *ep, struct rxr_read_entry *read_entry,
+			  int err, int prov_errno)
 {
 	struct rxr_tx_entry *tx_entry;
 	struct rxr_rx_entry *rx_entry;
 
 	if (read_entry->context_type == RXR_READ_CONTEXT_TX_ENTRY) {
 		tx_entry = read_entry->context;
-		ret = rxr_cq_handle_tx_error(ep, tx_entry, ret);
+		rxr_cq_write_tx_error(ep, tx_entry, err, prov_errno);
 	} else {
 		assert(read_entry->context_type == RXR_READ_CONTEXT_RX_ENTRY);
 		rx_entry = read_entry->context;
-		ret = rxr_cq_handle_rx_error(ep, rx_entry, ret);
+		rxr_cq_write_rx_error(ep, rx_entry, err, prov_errno);
 	}
 
 	if (read_entry->state == RXR_RDMA_ENTRY_PENDING)
 		dlist_remove(&read_entry->pending_entry);
-	return ret;
 }
 

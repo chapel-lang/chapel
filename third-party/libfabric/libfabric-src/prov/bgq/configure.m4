@@ -72,7 +72,7 @@ AC_DEFUN([FI_BGQ_CONFIGURE],[
 				],
 				[bgq_external_source=$with_bgq_src])
 
-			AS_IF([test x"$bgq_external_source" == x"auto"], [
+			AS_IF([test x"$bgq_external_source" = x"auto"], [
 				for bgq_dir in `ls -r /bgsys/source`; do
 					AC_MSG_CHECKING([for bgq opensource distribution])
 					AS_IF([test -f /bgsys/source/$bgq_dir/spi/src/kernel/cnk/memory_impl.c],
@@ -80,7 +80,7 @@ AC_DEFUN([FI_BGQ_CONFIGURE],[
 						AC_MSG_RESULT([$bgq_external_source])
 						break)
 				done
-				AS_IF([test x"$bgq_external_source" == x"auto"], [
+				AS_IF([test x"$bgq_external_source" = x"auto"], [
 					bgq_happy=0
 					AC_MSG_RESULT([no])])
 			])

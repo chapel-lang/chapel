@@ -7,7 +7,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.60])
-AC_INIT([libfabric], [1.12.1], [ofiwg@lists.openfabrics.org])
+AC_INIT([libfabric], [1.13.2], [ofiwg@lists.openfabrics.org])
 AC_CONFIG_SRCDIR([src/fabric.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR(config)
@@ -86,6 +86,12 @@ AC_ARG_ENABLE([direct],
 	[],
 	[enable_direct=no])
 
+AC_ARG_ENABLE([only],
+	[AS_HELP_STRING([--enable-only],
+		[Only build explicitly specified fabric providers])
+	],
+	[],
+	[enable_only=no])
 
 AC_ARG_ENABLE([atomics],
 	[AS_HELP_STRING([--enable-atomics],
@@ -158,7 +164,7 @@ AC_ARG_WITH([dlopen],
 		       [dl-loadable provider support @<:@default=yes@:>@]),
 	)
 
-if test "$freebsd" == "0"; then
+if test "$freebsd" = "0"; then
 AS_IF([test x"$with_dlopen" != x"no"], [
 AC_CHECK_LIB(dl, dlopen, [],
     AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.]))
@@ -521,7 +527,7 @@ AC_ARG_ENABLE([cuda-dlopen],
         [Enable dlopen of CUDA libraries @<:@default=no@:>@])
     ],
     [
-        AS_IF([test "$freebsd" == "0"], [
+        AS_IF([test "$freebsd" = "0"], [
             AC_CHECK_LIB(dl, dlopen, [],
                 [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
         ])
@@ -534,6 +540,7 @@ AC_ARG_WITH([ze],
 					 libraries and headers are installed.]),
 	[], [])
 
+have_ze=0
 AS_IF([test x"$with_ze" != x"no"],
       [FI_CHECK_PACKAGE([ze],
 			[level_zero/ze_api.h],
@@ -542,12 +549,39 @@ AS_IF([test x"$with_ze" != x"no"],
 			[],
 			[$with_ze],
 			[],
-			[AC_DEFINE([HAVE_LIBZE], [1],[ZE support])],
-			[], [])
-       CPPFLAGS="$CPPFLAGS $ze_CPPFLAGS"
-       LDFLAGS="$LDFLAGS $ze_LDFLAGS"
-       LIBS="$LIBS $ze_LIBS"],
+			[have_ze=1],
+			[], [])],
       [])
+
+have_drm=0
+AS_IF([test "$have_ze" = "1"],
+      [AC_CHECK_HEADER(drm/i915_drm.h, [have_drm=1], [])]
+      [])
+
+AS_IF([test x"$with_ze" != x"no" && test -n "$with_ze" && test "$have_ze" = "0" ],
+	[AC_MSG_ERROR([ZE support requested but ZE runtime not available.])],
+	[])
+
+AC_DEFINE_UNQUOTED([HAVE_LIBZE], [$have_ze], [ZE support])
+AC_DEFINE_UNQUOTED([HAVE_DRM], [$have_drm], [i915 DRM header])
+
+AC_ARG_ENABLE([ze-dlopen],
+    [AS_HELP_STRING([--enable-ze-dlopen],
+        [Enable dlopen of ZE libraries @<:@default=no@:>@])
+    ],
+    [
+        AS_IF([test "$freebsd" = "0"], [
+            AC_CHECK_LIB(dl, dlopen, [],
+                [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
+        ])
+        AC_DEFINE([ENABLE_ZE_DLOPEN], [1], [dlopen ZE libraries])
+    ],
+    [enable_ze_dlopen=no])
+
+AS_IF([test x"$enable_ze_dlopen" != x"yes"], [LIBS="$LIBS $ze_LIBS"])
+AS_IF([test "$have_ze" = "1" && test x"$with_ze" != x"yes"],
+      [CPPFLAGS="$CPPFLAGS $ze_CPPFLAGS"
+       LDFLAGS="$LDFLAGS $ze_LDFLAGS"])
 
 enable_memhooks=1
 AC_ARG_ENABLE([memhooks-monitor],
@@ -559,7 +593,7 @@ AC_ARG_ENABLE([memhooks-monitor],
 AC_DEFINE_UNQUOTED(ENABLE_MEMHOOKS_MONITOR, [$enable_memhooks],
 	[Define to 1 to enable memhooks memory monitor])
 
-AS_IF([test "$enable_memhooks" == "1"], [
+AS_IF([test "$enable_memhooks" = "1"], [
 	AC_CHECK_FUNCS([__curbrk __clear_cache])
 	AC_CHECK_HEADERS([linux/mman.h sys/syscall.h])
 	AC_CHECK_DECLS([__syscall], [], [], [#include <sys/syscall.h>])
@@ -603,13 +637,13 @@ AC_ARG_WITH([gdrcopy],
 			    and runtime libraries are installed.])],
 	    [], [])
 
-AS_IF([test -n "$with_gdrcopy" && test x"$with_gdrcopy" != x"no" && test "$have_libcuda" == "0"],
+AS_IF([test -n "$with_gdrcopy" && test x"$with_gdrcopy" != x"no" && test "$have_libcuda" = "0"],
 	[AC_MSG_ERROR([gdrcopy is requested but cuda is not requested or cuda runtime is not available.])],
 	[])
 
 have_gdrcopy=0
-AS_IF([test "$have_libcuda" == "1" && test x"$with_gdrcopy" != x"no"],
-	[AS_IF([test x"$with_gdrcopy" == x"yes"],[gdrcopy_dir=""],[gdrcopy_dir=$with_gdrcopy])
+AS_IF([test "$have_libcuda" = "1" && test x"$with_gdrcopy" != x"no"],
+	[AS_IF([test x"$with_gdrcopy" = x"yes"],[gdrcopy_dir=""],[gdrcopy_dir=$with_gdrcopy])
 	 FI_CHECK_PACKAGE([gdrcopy],
 			  [gdrapi.h],
 			  [gdrapi],
@@ -633,7 +667,7 @@ AC_ARG_ENABLE([gdrcopy-dlopen],
         [Enable dlopen of gdrcopy libraries @<:@default=no@:>@])
     ],
     [
-        AS_IF([test "$freebsd" == "0"], [
+        AS_IF([test "$freebsd" = "0"], [
             AC_CHECK_LIB(dl, dlopen, [],
                 [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
         ])
@@ -658,7 +692,7 @@ AC_ARG_ENABLE([rocr-dlopen],
         [Enable dlopen of ROCR libraries @<:@default=no@:>@])
     ],
     [
-        AS_IF([test "$freebsd" == "0"], [
+        AS_IF([test "$freebsd" = "0"], [
             AC_CHECK_LIB(dl, dlopen, [],
                 [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
         ])
@@ -740,7 +774,7 @@ fi
 
 for i in $PROVIDERS_TO_BUILD; do
 	v=${i}_dl
-	if test `eval echo \\$${v}` == "1"; then
+	if test `eval echo \\$${v}` = "1"; then
 		dso="$i ${dso}"
 	else
 		builtin="$i ${builtin}"

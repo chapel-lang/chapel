@@ -1171,13 +1171,13 @@ static void *sock_ep_cm_thread(void *arg)
 {
 	int num_fds, i;
 	struct sock_ep_cm_head *cm_head = arg;
-	void *ep_contexts[SOCK_EPOLL_WAIT_EVENTS];
+	struct ofi_epollfds_event events[SOCK_EPOLL_WAIT_EVENTS];
 	struct sock_conn_req_handle *handle;
 
 	while (cm_head->do_listen) {
 		sock_ep_cm_check_closing_rejected_list(cm_head);
 
-		num_fds = ofi_epoll_wait(cm_head->epollfd, ep_contexts,
+		num_fds = ofi_epoll_wait(cm_head->epollfd, events,
 		                        SOCK_EPOLL_WAIT_EVENTS, -1);
 		if (num_fds < 0) {
 			SOCK_LOG_ERROR("poll failed : %s\n", strerror(errno));
@@ -1195,7 +1195,7 @@ static void *sock_ep_cm_thread(void *arg)
 			goto skip;
 		}
 		for (i = 0; i < num_fds; i++) {
-			handle = ep_contexts[i];
+			handle = events[i].data.ptr;
 
 			if (handle == NULL) { /* Signal event */
 				fd_signal_reset(&cm_head->signal);

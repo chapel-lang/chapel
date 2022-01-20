@@ -97,12 +97,13 @@ int sock_conn_map_init(struct sock_ep *ep, int init_size)
 {
 	struct sock_conn_map *map = &ep->attr->cmap;
 	int ret;
+
 	map->table = calloc(init_size, sizeof(*map->table));
 	if (!map->table)
 		return -FI_ENOMEM;
 
-	map->epoll_ctxs = calloc(init_size, sizeof(*map->epoll_ctxs));
-	if (!map->epoll_ctxs)
+	map->epoll_events = calloc(init_size, sizeof(*map->epoll_events));
+	if (!map->epoll_events)
 		goto err1;
 
 	ret = ofi_epoll_create(&map->epoll_set);
@@ -116,10 +117,11 @@ int sock_conn_map_init(struct sock_ep *ep, int init_size)
 	fastlock_init(&map->lock);
 	map->used = 0;
 	map->size = init_size;
+	map->epoll_size = init_size;
 	return 0;
 
 err2:
-	free(map->epoll_ctxs);
+	free(map->epoll_events);
 err1:
 	free(map->table);
 	return -FI_ENOMEM;
@@ -153,9 +155,9 @@ void sock_conn_map_destroy(struct sock_ep_attr *ep_attr)
 	}
 	free(cmap->table);
 	cmap->table = NULL;
-	free(cmap->epoll_ctxs);
-	cmap->epoll_ctxs = NULL;
-	cmap->epoll_ctxs_sz = 0;
+	free(cmap->epoll_events);
+	cmap->epoll_events = NULL;
+	cmap->epoll_size = 0;
 	cmap->used = cmap->size = 0;
 	ofi_epoll_close(cmap->epoll_set);
 	fastlock_destroy(&cmap->lock);
@@ -317,14 +319,14 @@ static void *sock_conn_listener_thread(void *arg)
 {
 	struct sock_conn_listener *conn_listener = arg;
 	struct sock_conn_handle *conn_handle;
-	void *ep_contexts[SOCK_EPOLL_WAIT_EVENTS];
+	struct ofi_epollfds_event events[SOCK_EPOLL_WAIT_EVENTS];
 	struct sock_ep_attr *ep_attr;
 	int num_fds, i, conn_fd;
 	union ofi_sock_ip remote;
 	socklen_t addr_size;
 
 	while (conn_listener->do_listen) {
-		num_fds = ofi_epoll_wait(conn_listener->epollfd, ep_contexts,
+		num_fds = ofi_epoll_wait(conn_listener->epollfd, events,
 		                        SOCK_EPOLL_WAIT_EVENTS, -1);
 		if (num_fds < 0) {
 			SOCK_LOG_ERROR("poll failed : %s\n", strerror(errno));
@@ -342,7 +344,7 @@ static void *sock_conn_listener_thread(void *arg)
 		}
 
 		for (i = 0; i < num_fds; i++) {
-			conn_handle = ep_contexts[i];
+			conn_handle = events[i].data.ptr;
 
 			if (conn_handle == NULL) { /* signal event */
 				fd_signal_reset(&conn_listener->signal);

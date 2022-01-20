@@ -83,7 +83,6 @@
 int efa_mr_cache_enable		= EFA_DEF_MR_CACHE_ENABLE;
 size_t efa_mr_max_cached_count;
 size_t efa_mr_max_cached_size;
-int efa_set_rdmav_hugepages_safe = 0;
 
 static void efa_addr_to_str(const uint8_t *raw_addr, char *str);
 static int efa_get_addr(struct efa_context *ctx, void *src_addr);
@@ -950,62 +949,12 @@ static struct fi_ops_fabric efa_ops_fabric = {
 	.trywait = ofi_trywait
 };
 
-static
-void efa_atfork_callback()
-{
-	static int visited = 0;
-
-	if (visited)
-		return;
-
-	visited = 1;
-	if (getenv("RDMAV_FORK_SAFE") || getenv("IBV_FORK_SAFE") )
-		return;
-
-	fprintf(stderr,
-		"A process has executed an operation involving a call\n"
-		"to the fork() system call to create a child process.\n"
-		"\n"
-		"As a result, the libfabric EFA provider is operating in\n"
-		"a condition that could result in memory corruption or\n"
-		"other system errors.\n"
-		"\n"
-		"For the libfabric EFA provider to work safely when fork()\n"
-		"is called, the application must handle memory registrations\n"
-		"(FI_MR_LOCAL) and you will need to set the following environment\n"
-		"variables:\n"
-		"          RDMAV_FORK_SAFE=1\n"
-		"MPI applications do not support this mode.\n"
-		"\n"
-		"However, this setting can result in signficant performance\n"
-		"impact to your application due to increased cost of memory\n"
-		"registration.\n"
-		"\n"
-		"You may want to check with your application vendor to see\n"
-		"if an application-level alternative (of not using fork)\n"
-		"exists.\n"
-		"\n"
-		"Please refer to https://github.com/ofiwg/libfabric/issues/6332\n"
-		"for more information.\n"
-		"\n"
-		"Your job will now abort.\n");
-	abort();
-}
-
 int efa_fabric(struct fi_fabric_attr *attr, struct fid_fabric **fabric_fid,
 	       void *context)
 {
 	const struct fi_info *info;
 	struct efa_fabric *fab;
 	int ret = 0;
-
-	ret = pthread_atfork(efa_atfork_callback, NULL, NULL);
-	if (ret) {
-		EFA_WARN(FI_LOG_FABRIC,
-			 "Unable to register atfork callback: %s\n",
-			 strerror(-ret));
-		return -ret;
-	}
 
 	fab = calloc(1, sizeof(*fab));
 	if (!fab)
@@ -1035,9 +984,6 @@ static void fi_efa_fini(void)
 {
 	struct efa_context **ctx_list;
 	int num_devices;
-
-	if (efa_set_rdmav_hugepages_safe)
-		unsetenv("RDMAV_HUGEPAGES_SAFE");
 
 	fi_freeinfo((void *)efa_util_prov.info);
 	efa_util_prov.info = NULL;
@@ -1109,25 +1055,6 @@ static int efa_init_info(const struct fi_info **all_infos)
 
 struct fi_provider *init_lower_efa_prov()
 {
-	int err;
-
-	if (!getenv("RDMAV_HUGEPAGES_SAFE")) {
-		/*
-		 * Setting RDMAV_HUGEPAGES_SAFE alone will not impact
-		 * application performance, because rdma-core will only
-		 * check this environment variable when either
-		 * RDMAV_FORK_SAFE or IBV_FORK_SAFE is set.
-		 */
-		err = setenv("RDMAV_HUGEPAGES_SAFE", "1", 1);
-		if (err) {
-			EFA_WARN(FI_LOG_FABRIC,
-				 "Unable to set environment variable RDMAV_HUGEPAGES_SAFE\n");
-			return NULL;
-		}
-
-		efa_set_rdmav_hugepages_safe = 1;
-	}
-
 	if (efa_init_info(&efa_util_prov.info))
 		return NULL;
 

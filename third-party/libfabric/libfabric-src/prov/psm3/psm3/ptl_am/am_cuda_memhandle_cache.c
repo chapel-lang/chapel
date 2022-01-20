@@ -126,8 +126,8 @@ static int cuda_cache_key_cmp(const cuda_cache_item *a, const cuda_cache_item *b
 #define RBTREE_MAP_COUNT(PAYLOAD_PTR)     ((PAYLOAD_PTR)->nelems)
 #define RBTREE_NO_EMIT_IPS_CL_QMAP_PREDECESSOR
 
-#include "rbtree.h"
-#include "rbtree.c"
+#include "psm3_rbtree.h"
+#include "psm3_rbtree.c"
 
 /*
  * Convenience rbtree cruft
