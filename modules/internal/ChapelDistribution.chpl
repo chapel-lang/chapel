@@ -328,6 +328,10 @@ module ChapelDistribution {
       return false;
     }
 
+    proc isRectangular() param return false;
+    proc isAssociative() param return false;
+    proc isSparse()      param return false;
+
     proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
 
@@ -365,6 +369,8 @@ module ChapelDistribution {
     param rank : int;
     type idxType;
     param stridable: bool;
+
+    override proc isRectangular() param return true;
 
     proc getBaseArrType() type {
       var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
@@ -594,6 +600,8 @@ module ChapelDistribution {
 
     /*var nnz = 0; //: int;*/
 
+    override proc isSparse() param return true;
+
     proc getNNZ(): int {
       halt("nnz queried on base class");
     }
@@ -663,6 +671,8 @@ module ChapelDistribution {
 
 
   class BaseAssociativeDom : BaseDom {
+    override proc isAssociative() param return true;
+
     proc deinit() {
       // this is a bug workaround
     }

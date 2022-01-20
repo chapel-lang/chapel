@@ -62,9 +62,21 @@ module ChapelDomain {
     return new _domain(dist, idxType, parSafe);
   }
 
+  private proc isUltimatelyRectangularParent(parentDom: domain) param {
+    if parentDom.isRectangular() then
+      return true;
+    else if parentDom.isSparse() then
+      return isUltimatelyRectangularParent(parentDom._value.parentDom);
+    else
+      return false;
+  }
+
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(dist: _distribution,
                                           parentDom: domain) {
+    if ! isUltimatelyRectangularParent(parentDom) then
+      compilerError("sparse subdomains are currently supported only for rectangular domains");
+
     return new _domain(dist, parentDom);
   }
 
@@ -2018,7 +2030,7 @@ module ChapelDomain {
     /* Return true if this domain is a rectangular.
        Otherwise return false.  */
     proc isRectangular() param {
-      return isSubtype(_to_borrowed(_value.type), BaseRectangularDom);
+      return this._value.isRectangular();
     }
 
     /* Return true if ``d`` is an irregular domain; e.g. is not rectangular.
@@ -2029,15 +2041,14 @@ module ChapelDomain {
 
     /* Return true if ``d`` is an associative domain. Otherwise return false. */
     proc isAssociative() param {
-      return chpl_isAssociativeDomClass(_to_borrowed(this._value));
+      return this._value.isAssociative();
     }
 
     /* Return true if ``d`` is a sparse domain. Otherwise return false. */
     proc isSparse() param {
-      proc isSparseDomClass(dc: BaseSparseDom) param return true;
-      proc isSparseDomClass(dc) param return false;
-      return isSparseDomClass(this._value);
+      return this._value.isSparse();
     }
+
   }  // record _domain
 
 }
