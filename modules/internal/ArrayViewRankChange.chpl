@@ -171,11 +171,11 @@ module ArrayViewRankChange {
       return collapsedDim.size;
     }
 
-    inline proc upDom {
+    inline proc upDom: upDomInst!.type {
       return upDomInst!;
     }
 
-    inline proc downDom {
+    inline proc downDom: downDomInst!.type {
       if _isPrivatized(downDomInst!) then
         return chpl_getPrivatizedCopy(downDomInst!.type, downDomPid);
       else
@@ -741,7 +741,7 @@ module ArrayViewRankChange {
     // routines relating to the underlying domains and arrays
     //
 
-    inline proc privDom {
+    inline proc privDom: dom.type {
       if _isPrivatized(dom) {
         return chpl_getPrivatizedCopy(dom.type, _DomPid);
       } else {

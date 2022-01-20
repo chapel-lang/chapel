@@ -125,7 +125,7 @@ module ArrayViewReindex {
         return distInst;
     }
     
-    inline proc updom {
+    inline proc updom: updomInst.type {
       return updomInst!;
     }
 
@@ -400,7 +400,7 @@ module ArrayViewReindex {
                       doiBulkTransferFromAny,  doiBulkTransferToAny, doiScan,
                       chpl__serialize, chpl__deserialize;
 
-    proc downdom {
+    proc downdom: arr.dom.type {
       // TODO: This routine may get a remote domain if this is a view
       // of a view and is called on a locale other than the
       // originating one for the domain.  Relax the requirement that
@@ -625,7 +625,7 @@ module ArrayViewReindex {
     // routines relating to the underlying domains and arrays
     //
 
-    inline proc privDom {
+    inline proc privDom: dom.type {
       if _isPrivatized(dom) {
         return chpl_getPrivatizedCopy(dom.type, _DomPid);
       } else {
