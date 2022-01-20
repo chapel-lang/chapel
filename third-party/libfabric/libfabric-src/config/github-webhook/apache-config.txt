@@ -1,9 +1,0 @@
-# Github webhooks for the ofiwg project.
-# This is a reverse proxy to a trivial Ruby Sinatra server running on
-# the localhost (and is not otherwise accessible to the outside
-# world).
-ProxyPass /github-webhooks/ofiwg/ http://127.0.0.1:5000/
-<Location /github-webhooks/ofiwg/>
-    ProxyPassReverse http://127.0.0.1:5000/
-    RequestHeader unset Accept-Encoding
-</Location>
