@@ -1,28 +1,28 @@
 ----- lock file -----
 
 [root]
-name = "ivrsChooses"
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 dependencies = ["usesBad 0.1.0 foo", "usesGood 0.1.0 foo"]
+name = "ivrsChooses"
 version = "0.1.0"
 
 [badThenGood]
-name = "badThenGood"
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
+name = "badThenGood"
 source = "foo"
 version = "0.2.0"
 
 [usesBad]
-name = "usesBad"
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 dependencies = ["badThenGood 0.2.0 foo"]
+name = "usesBad"
 source = "foo"
 version = "0.1.0"
 
 [usesGood]
-name = "usesGood"
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 dependencies = ["badThenGood 0.2.0 foo"]
+name = "usesGood"
 source = "foo"
 version = "0.1.0"
 
