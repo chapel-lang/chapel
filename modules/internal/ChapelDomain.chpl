@@ -68,6 +68,20 @@ module ChapelDomain {
     return new _domain(dist, parentDom);
   }
 
+  proc chpl__buildSparseDomainRuntimeTypeForParentDomain(parentDom) type {
+    if ! isDomain(parentDom) then
+      compilerError("building a sparse subdomain of a non-domain value",
+                    " of type ", parentDom.type: string);
+
+    return chpl__buildSparseDomainRuntimeType(parentDom.defaultSparseDist,
+                                              parentDom);
+  }
+
+  proc chpl__buildSparseDomainRuntimeTypeForParentDomain(type parentDom) {
+    compilerError("building a sparse subdomain of a type;",
+                  " please supply a domain value instead");
+  }
+
   proc chpl__convertRuntimeTypeToValue(dist: _distribution,
                                        param rank: int,
                                        type idxType = int,
