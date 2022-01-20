@@ -150,10 +150,14 @@ module DefaultSparse {
     }
 
     proc dsiFirst {
+      if boundsChecking && _indices.isEmpty() then
+        halt("'first' is invoked on an empty sparse domain");
       return _indices[_indices.domain.first];
     }
 
     proc dsiLast {
+      if boundsChecking && _indices.isEmpty() then
+        halt("'last' is invoked on an empty sparse domain");
       return _indices[_nnz-1];
     }
 
