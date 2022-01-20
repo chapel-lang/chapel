@@ -1,65 +1,65 @@
-Before Mutation: 
+Before Mutation:
 [A]
 
 [A.B]
-name = "sam"
 job = "programmer"
+name = "sam"
 number = 7
 
 [A.C]
-name = "Ben"
 job = "programmer"
+name = "Ben"
 
 
-After Mutation: 
+After Mutation:
 [A]
 
 [A.B]
-name = "sam"
 job = "programmer"
+name = "sam"
 number = 7
 
 [A.B.C]
 new-key-added = true
 
 [A.C]
-name = "Ben"
 job = "programmer"
+name = "Ben"
 
 
 A.B.number = 7
 
 KV pairs in table A.C
-name = "Ben"
 job = "programmer"
+name = "Ben"
 
 
 
 [B]
-name = "sam"
 job = "programmer"
+name = "sam"
 number = 7
 
 [B.C]
 new-key-added = true
 
 [C]
-name = "Ben"
 job = "programmer"
+name = "Ben"
 
 
 Should be the same as
 
 [B]
-name = "sam"
 job = "programmer"
+name = "sam"
 number = 7
 
 [B.C]
 new-key-added = true
 
 [C]
-name = "Ben"
 job = "programmer"
+name = "Ben"
 
 
