@@ -1920,14 +1920,15 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     // However, calls should use 'tryResolveCall' so that we can back out
     // if a particular call should fail to resolve.
     for_exprs_postorder(expr, tmpBlock) {
-
       CallExpr* call = toCallExpr(expr);
 
-      // Start by prefolding all calls (e.g. to eliminate partial calls
-      // in sub-expressions).
-      expr = call ? preFold(call) : expr;
+      // Start by prefolding all calls (e.g. to eliminate partial calls).
+      expr = call && !isContextCallExpr(expr) ? preFold(call) : expr;
       INT_ASSERT(expr);
       call = toCallExpr(expr);
+
+      // Go ahead and skip over context calls right away.
+      if (isContextCallExpr(expr)) continue;
 
       if (call && !call->isPrimitive()) {
 
@@ -1942,6 +1943,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
         if (!resolvedFn && !isPartialCall) {
           didResolveExpr = false;
           break;
+        } else {
+
+          // Go ahead and eagerly resolve field accessors.
+          if (resolvedFn && !resolvedFn->isResolved()) {
+            if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)) {
+              resolveFunction(resolvedFn);
+            }
+          }
         }
 
       // TODO: Ways to keep type checking from issuing errors? E.g. we could

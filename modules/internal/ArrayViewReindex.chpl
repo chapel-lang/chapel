@@ -125,7 +125,7 @@ module ArrayViewReindex {
         return distInst;
     }
     
-    inline proc updom: updomInst.type {
+    inline proc updom: updomInst!.type {
       return updomInst!;
     }
 
@@ -140,7 +140,7 @@ module ArrayViewReindex {
       return a.type;
     }
 
-    inline proc downdom {
+    inline proc downdom: downdomInst.type {
       if _isPrivatized(downdomInst) then
         return chpl_getPrivatizedCopy(downdomInst.type, downdomPid);
       else
