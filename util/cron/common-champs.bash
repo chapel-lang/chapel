@@ -22,9 +22,6 @@ loadCSModule cray-mvapich2_nogpu
 
 module list
 
-export CPATH=$CPATH:$MPIROOT/include
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HDF5ROOT/lib
-
 # Perf configuration
 source $CWD/common-perf.bash
 CHAMPS_PERF_DIR=${CHAMPS_PERF_DIR:-$COMMON_DIR/NightlyPerformance/champs} # TODO
@@ -44,6 +41,9 @@ if [ -d "$CHAMPS_DEP_DIR" ]; then
   export METISROOT=${METISROOT:-$CHAMPS_DEP_DIR}
   export CGNSROOT=${CGNSROOT:-$CHAMPS_DEP_DIR}
 fi
+
+export CPATH=$CPATH:$MPIROOT/include
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HDF5ROOT/lib
 
 
 # these may be unnecessary
