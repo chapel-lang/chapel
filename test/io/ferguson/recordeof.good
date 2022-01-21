@@ -1,2 +1,2 @@
-recordeof.chpl:22: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+recordeof.chpl:22: warning: reader with a style argument is deprecated
 Done

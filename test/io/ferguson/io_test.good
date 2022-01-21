@@ -1,382 +1,382 @@
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: bool) from function 'testio'
   io_test.chpl:119: called as testio(x: bool)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: bool) from function 'testio'
   io_test.chpl:119: called as testio(x: bool)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: bool) from function 'testio'
   io_test.chpl:119: called as testio(x: bool)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: bool) from function 'testio'
   io_test.chpl:119: called as testio(x: bool)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: int(8)) from function 'testio'
   io_test.chpl:122: called as testio(x: int(8))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: int(8)) from function 'testio'
   io_test.chpl:122: called as testio(x: int(8))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: int(8)) from function 'testio'
   io_test.chpl:122: called as testio(x: int(8))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: int(8)) from function 'testio'
   io_test.chpl:122: called as testio(x: int(8))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: uint(8)) from function 'testio'
   io_test.chpl:124: called as testio(x: uint(8))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: uint(8)) from function 'testio'
   io_test.chpl:124: called as testio(x: uint(8))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: uint(8)) from function 'testio'
   io_test.chpl:124: called as testio(x: uint(8))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: uint(8)) from function 'testio'
   io_test.chpl:124: called as testio(x: uint(8))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: int(16)) from function 'testio'
   io_test.chpl:125: called as testio(x: int(16))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: int(16)) from function 'testio'
   io_test.chpl:125: called as testio(x: int(16))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: int(16)) from function 'testio'
   io_test.chpl:125: called as testio(x: int(16))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: int(16)) from function 'testio'
   io_test.chpl:125: called as testio(x: int(16))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: uint(16)) from function 'testio'
   io_test.chpl:127: called as testio(x: uint(16))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: uint(16)) from function 'testio'
   io_test.chpl:127: called as testio(x: uint(16))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: uint(16)) from function 'testio'
   io_test.chpl:127: called as testio(x: uint(16))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: uint(16)) from function 'testio'
   io_test.chpl:127: called as testio(x: uint(16))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: int(32)) from function 'testio'
   io_test.chpl:128: called as testio(x: int(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: int(32)) from function 'testio'
   io_test.chpl:128: called as testio(x: int(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: int(32)) from function 'testio'
   io_test.chpl:128: called as testio(x: int(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: int(32)) from function 'testio'
   io_test.chpl:128: called as testio(x: int(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: uint(32)) from function 'testio'
   io_test.chpl:130: called as testio(x: uint(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: uint(32)) from function 'testio'
   io_test.chpl:130: called as testio(x: uint(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: uint(32)) from function 'testio'
   io_test.chpl:130: called as testio(x: uint(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: uint(32)) from function 'testio'
   io_test.chpl:130: called as testio(x: uint(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: int(64)) from function 'testio'
   io_test.chpl:131: called as testio(x: int(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: int(64)) from function 'testio'
   io_test.chpl:131: called as testio(x: int(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: int(64)) from function 'testio'
   io_test.chpl:131: called as testio(x: int(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: int(64)) from function 'testio'
   io_test.chpl:131: called as testio(x: int(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: uint(64)) from function 'testio'
   io_test.chpl:133: called as testio(x: uint(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: uint(64)) from function 'testio'
   io_test.chpl:133: called as testio(x: uint(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: uint(64)) from function 'testio'
   io_test.chpl:133: called as testio(x: uint(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: uint(64)) from function 'testio'
   io_test.chpl:133: called as testio(x: uint(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: real(32)) from function 'testio'
   io_test.chpl:134: called as testio(x: real(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: real(32)) from function 'testio'
   io_test.chpl:134: called as testio(x: real(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: real(32)) from function 'testio'
   io_test.chpl:134: called as testio(x: real(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: real(32)) from function 'testio'
   io_test.chpl:134: called as testio(x: real(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: real(64)) from function 'testio'
   io_test.chpl:135: called as testio(x: real(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: real(64)) from function 'testio'
   io_test.chpl:135: called as testio(x: real(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: real(64)) from function 'testio'
   io_test.chpl:135: called as testio(x: real(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: real(64)) from function 'testio'
   io_test.chpl:135: called as testio(x: real(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: string) from function 'testio'
   io_test.chpl:142: called as testio(x: string)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: string) from function 'testio'
   io_test.chpl:142: called as testio(x: string)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: string) from function 'testio'
   io_test.chpl:142: called as testio(x: string)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: string) from function 'testio'
   io_test.chpl:142: called as testio(x: string)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: complex(128)) from function 'testio'
   io_test.chpl:143: called as testio(x: complex(128))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: complex(128)) from function 'testio'
   io_test.chpl:143: called as testio(x: complex(128))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: complex(128)) from function 'testio'
   io_test.chpl:143: called as testio(x: complex(128))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: complex(128)) from function 'testio'
   io_test.chpl:143: called as testio(x: complex(128))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: imag(32)) from function 'testio'
   io_test.chpl:145: called as testio(x: imag(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: imag(32)) from function 'testio'
   io_test.chpl:145: called as testio(x: imag(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: imag(32)) from function 'testio'
   io_test.chpl:145: called as testio(x: imag(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: imag(32)) from function 'testio'
   io_test.chpl:145: called as testio(x: imag(32))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: imag(64)) from function 'testio'
   io_test.chpl:146: called as testio(x: imag(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: imag(64)) from function 'testio'
   io_test.chpl:146: called as testio(x: imag(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: imag(64)) from function 'testio'
   io_test.chpl:146: called as testio(x: imag(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: imag(64)) from function 'testio'
   io_test.chpl:146: called as testio(x: imag(64))
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: ioChar) from function 'testio'
   io_test.chpl:149: called as testio(x: ioChar)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: ioChar) from function 'testio'
   io_test.chpl:149: called as testio(x: ioChar)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: ioChar) from function 'testio'
   io_test.chpl:149: called as testio(x: ioChar)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: ioChar) from function 'testio'
   io_test.chpl:149: called as testio(x: ioChar)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: ioNewline) from function 'testio'
   io_test.chpl:150: called as testio(x: ioNewline)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: ioNewline) from function 'testio'
   io_test.chpl:150: called as testio(x: ioNewline)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: ioNewline) from function 'testio'
   io_test.chpl:150: called as testio(x: ioNewline)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: ioNewline) from function 'testio'
   io_test.chpl:150: called as testio(x: ioNewline)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: ioLiteral) from function 'testio'
   io_test.chpl:151: called as testio(x: ioLiteral)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: ioLiteral) from function 'testio'
   io_test.chpl:151: called as testio(x: ioLiteral)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: ioLiteral) from function 'testio'
   io_test.chpl:151: called as testio(x: ioLiteral)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: ioLiteral) from function 'testio'
   io_test.chpl:151: called as testio(x: ioLiteral)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:44: called as testio(param typ = 0: iokind, style: iostyleInternal, x: ioBits) from function 'testio'
   io_test.chpl:152: called as testio(x: ioBits)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:46: called as testio(param typ = 1: iokind, style: iostyleInternal, x: ioBits) from function 'testio'
   io_test.chpl:152: called as testio(x: ioBits)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:48: called as testio(param typ = 2: iokind, style: iostyleInternal, x: ioBits) from function 'testio'
   io_test.chpl:152: called as testio(x: ioBits)
 io_test.chpl:6: In function 'testio':
-io_test.chpl:11: warning: writer with a style argument is deprecated, please rely on the default value for the argument
-io_test.chpl:17: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:11: warning: writer with a style argument is deprecated
+io_test.chpl:17: warning: reader with a style argument is deprecated
   io_test.chpl:50: called as testio(param typ = 3: iokind, style: iostyleInternal, x: ioBits) from function 'testio'
   io_test.chpl:152: called as testio(x: ioBits)
 io_test.chpl:54: In function 'test_readlines':
-io_test.chpl:87: warning: reader with a style argument is deprecated, please rely on the default value for the argument
+io_test.chpl:87: warning: reader with a style argument is deprecated
