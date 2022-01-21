@@ -5,7 +5,7 @@
 CWD=$(cd $(dirname $0) ; pwd)
 
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-cs-hdr'
-export CHPL_NIGHTLY_TEST_CONFIG_NAME='perf.cray-cs-hdr.champs-c'
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs-hdr.champs-c"
 export CHPL_TEST_PERF_DESCRIPTION='c'
 
 source $CWD/common-champs.bash
