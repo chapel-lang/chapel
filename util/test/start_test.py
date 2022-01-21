@@ -1057,6 +1057,7 @@ def set_up_executables():
     os.environ["CHPL_LOCALE_MODEL"] = locale_model
 
     os.environ["CHPL_LLVM"] = chpl_llvm.get()
+    os.environ["CHPL_TASKS"] = chpl_tasks.get()
 
     # skip stdin tests for most custom launchers, except for amdprun and slurm
     if (launcher != "none" and launcher != "amudprun" and launcher !=

@@ -1,7 +1,7 @@
 outside = [true]
 
 [intable]
-outside = [false]
 int = [6]
+outside = [false]
 
 

@@ -6,7 +6,7 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "freebsd/FreeBSD-13.0-STABLE"
+  config.vm.box = "freebsd/FreeBSD-12.1-STABLE"
 
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-deps.sh"
@@ -16,5 +16,10 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/gmake-chapel-quick.sh"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    #vb.cpus = 2
+  end
 
 end

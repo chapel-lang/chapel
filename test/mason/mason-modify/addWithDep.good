@@ -1,8 +1,8 @@
 Adding Mason dependency test version 1.2.3
 
 [brick]
-name = "Tester"
 author = "Sam Partee"
+name = "Tester"
 version = "0.1.0"
 
 [dependencies]
