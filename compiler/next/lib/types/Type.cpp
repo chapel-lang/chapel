@@ -129,7 +129,6 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   }
   ss << "type ";
   ss << typetags::tagToString(this->tag());
-  ss << " \n";
 }
 
 IMPLEMENT_DUMP(Type);
