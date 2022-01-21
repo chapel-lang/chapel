@@ -1753,11 +1753,14 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
       return QualifiedType::CONST_IN;
   }
 
-  assert(false && "case not yet handled");
-  return QualifiedType::UNKNOWN;
+  // Otherwise, it should be a generic type that we will
+  // instantiate before computing the final intent.
+  assert(t->isGeneric());
+  return QualifiedType::CONST_INTENT; // leave the intent generic
 }
 
 static QualifiedType::Kind defaultIntentForType(const Type* t) {
+
   // anything we don't know the type of has to have unknown intent
   if (t == nullptr || t->isUnknownType() || t->isErroneousType())
     return QualifiedType::UNKNOWN;
@@ -1775,8 +1778,10 @@ static QualifiedType::Kind defaultIntentForType(const Type* t) {
       return QualifiedType::CONST_IN;
   }
 
-  assert(false && "case not yet handled");
-  return QualifiedType::UNKNOWN;
+  // Otherwise, it should be a generic type that we will
+  // instantiate before computing the final intent.
+  assert(t->isGeneric());
+  return QualifiedType::DEFAULT_INTENT; // leave the intent generic
 }
 
 static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
