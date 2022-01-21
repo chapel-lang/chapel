@@ -56,7 +56,7 @@ function apply_patch() {
   fi
 }
 
-function test_compile_exec() {
+function test_compile() {
   local kind=$@
 
   test_start "make $kind"
@@ -75,7 +75,7 @@ function test_compile_exec() {
   $CHPL_HOME/util/test/computePerfStats emitted-code-size-$kind $CHPL_TEST_PERF_DIR $CHAMPS_GRAPH_PATH/emitted-code-size.perfkeys $kind.comp.out.tmp
 }
 
-function test_run_exec() {
+function test_run() {
   local kind=$1
   local nl=$2
 

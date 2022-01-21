@@ -33,8 +33,7 @@ cd ${CHAMPS_HOME}
 CHAMPS_VERSION=$(git describe --tags --abbrev=0)
 
 # Apply patches
-for p in $CHAMPS_PATCH_PATH/*patch;
-do
+for p in $CHAMPS_PATCH_PATH/*patch; do
   apply_patch $p
 done
 
@@ -44,19 +43,19 @@ fi
 
 
 # Compile CHAMPS executables
-test_compile_exec prep
-test_compile_exec flow
-test_compile_exec icing
+test_compile prp
+test_compile flow
+test_compile icing
 
 # copy the input data to the filesystem we're running on
 
 # I can't tell whether prep is running too slow or just freezing, for now don't run it
 # cp $CHAMPS_DATA_PATH/CRMHL_coarse.cgns $CHAMPS_HOME/
-# test_run_exec prep 1
+# test_run prep 1
 
 # as a temporary workaround, copy the prepartitoned grid for 16 locales
 cp $CHAMPS_DATA_PATH/CRMHL_coarse_768B.cgns $CHAMPS_HOME/
-test_run_exec flow 16
+test_run flow 16
 
 $CHPL_HOME/util/test/genGraphs --perfdir $CHPL_TEST_PERF_DIR --outdir $CHPL_TEST_PERF_DIR/html --graphlist $CHAMPS_GRAPH_PATH/GRAPHLIST --testdir $CHAMPS_GRAPH_PATH --alttitle "CHAMPS Performance Graphs"
 
