@@ -26,44 +26,24 @@ namespace types {
 
 
 const owned<BasicClassType>&
-BasicClassType::getBasicClassType(
-    Context* context, ID id, UniqueString name,
-    const BasicClassType* parentType,
-    std::vector<CompositeType::FieldDetail> fields,
-    const BasicClassType* instantiatedFrom) {
-  QUERY_BEGIN(getBasicClassType, context, id, name, parentType, fields,
-              instantiatedFrom);
+BasicClassType::getObjectTypeQuery(Context* context) {
+  QUERY_BEGIN(getObjectTypeQuery, context);
 
-  auto result = toOwned(new BasicClassType(id, name,
-                                           parentType, std::move(fields),
-                                           instantiatedFrom));
+  ID emptyId;
+  auto name = UniqueString::build(context, "object");
+  std::vector<CompositeType::FieldDetail> emptyFields;
+
+  auto result = toOwned(new BasicClassType(emptyId, name,
+                                           std::move(emptyFields),
+                                           /* instantiatedFrom */ nullptr,
+                                           SubstitutionsMap()));
 
   return QUERY_END(result);
 }
 
 const BasicClassType*
-BasicClassType::get(Context* context, ID id, UniqueString name,
-                    const BasicClassType* parentType,
-                    std::vector<CompositeType::FieldDetail> fields,
-                    const BasicClassType* instantiatedFrom) {
-  // getObjectType should be used to construct object
-  // everything else should have a parent type.
-  assert(parentType != nullptr);
-  return getBasicClassType(context, id, name,
-                           parentType, std::move(fields),
-                           instantiatedFrom).get();
-}
-
-const BasicClassType*
 BasicClassType::getObjectType(Context* context) {
-  ID emptyId;
-  auto name = UniqueString::build(context, "object");
-  std::vector<CompositeType::FieldDetail> emptyFields;
-
-  return getBasicClassType(context, emptyId, name,
-                           /* parentType */ nullptr,
-                           std::move(emptyFields),
-                           /* instantiatedFrom */ nullptr).get();
+  return getObjectTypeQuery(context).get();
 }
 
 bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,

@@ -20,6 +20,8 @@
 #include "chpl/types/CompositeType.h"
 
 #include "chpl/types/BasicClassType.h"
+#include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/Decl.h"
 
 namespace chpl {
 namespace types {
@@ -28,7 +30,7 @@ namespace types {
 CompositeType::~CompositeType() {
 }
 
-void CompositeType::computeSummaryInformation() {
+void CompositeType::finalizeFieldTypes() {
   isGeneric_ = false;
   allGenericFieldsHaveDefaultValues_ = true;
   for (auto field : fields_) {
@@ -84,6 +86,48 @@ void CompositeType::stringify(std::ostream& ss,
       emittedField = true;
     }
     ss << ")";
+  }
+}
+
+using SubstitutionPair = std::pair<const uast::Decl*,QualifiedType>;
+
+struct SubstitutionsMapCmp {
+  bool operator()(const SubstitutionPair& x, const SubstitutionPair& y) {
+    return x.first->id() < y.first->id();
+  }
+};
+
+void stringifySubstitutionsMap(std::ostream& streamOut,
+                               StringifyKind stringKind,
+                               const CompositeType::SubstitutionsMap& subs) {
+  // since it's an unordered map, iteration will occur in a
+  // nondeterministic order.
+  // it's important to sort the keys / iterate in a deterministic order here,
+  // so we create a vector of pair<K,V> and sort that instead
+  std::vector<std::pair<const uast::Decl*,QualifiedType>> v(subs.begin(), subs.end());
+  SubstitutionsMapCmp cmp;
+  std::sort(v.begin(), v.end(), cmp);
+  bool first = true;
+  for (auto const& x : v)
+  {
+    const uast::Decl* decl = x.first;
+    const uast::NamedDecl* namedDecl = decl->toNamedDecl();
+    QualifiedType qt = x.second;
+
+    if (first) {
+      first = false;
+    } else {
+      streamOut << ", ";
+    }
+
+    if (namedDecl != nullptr && stringKind == StringifyKind::CHPL_SYNTAX)
+      namedDecl->name().stringify(streamOut, stringKind);
+    else
+      decl->id().stringify(streamOut, stringKind);
+
+    streamOut << "= ";
+
+    qt.stringify(streamOut, stringKind);
   }
 }
 

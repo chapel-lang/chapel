@@ -35,23 +35,10 @@ class BasicClassType final : public CompositeType {
  private:
   const BasicClassType* parentType_ = nullptr;
 
-  BasicClassType(ID id, UniqueString name,
-                 const BasicClassType* parentType,
-                 std::vector<CompositeType::FieldDetail> fields,
-                 const BasicClassType* instantiatedFrom)
-    : CompositeType(typetags::BasicClassType, id, name, std::move(fields),
-                    instantiatedFrom),
-      parentType_(parentType)
-  {
-    // all classes should have a parent type, except for object
-    // which doesn't.
-    assert(parentType_ || name == USTR("object"));
-
-    // compute the summary information, including the parent type
-    computeSummaryInformation();
-  }
-
   bool contentsMatchInner(const Type* other) const override {
+    // by the time this runs, parentType_ should be set
+    assert(parentType_ != nullptr);
+
     const BasicClassType* rhs = (const BasicClassType*) other;
     return compositeTypeContentsMatchInner(rhs) &&
            parentType_ == rhs->parentType_;
@@ -61,19 +48,30 @@ class BasicClassType final : public CompositeType {
     compositeTypeMarkUniqueStringsInner(context);
   }
 
-  static const owned<BasicClassType>&
-  getBasicClassType(Context* context, ID id, UniqueString name,
-                    const BasicClassType* parentType,
-                    std::vector<CompositeType::FieldDetail> fields,
-                    const BasicClassType* instantiatedFrom);
+  static const owned<BasicClassType>& getObjectTypeQuery(Context* context);
+
  public:
+  /** Construct a BasicClassType.
+      Note: we expect the field types to be nullptr when this is called
+   */
+  BasicClassType(ID id, UniqueString name,
+                 std::vector<CompositeType::FieldDetail> fields,
+                 const BasicClassType* instantiatedFrom,
+                 SubstitutionsMap subs)
+    : CompositeType(typetags::BasicClassType, id, name, std::move(fields),
+                    instantiatedFrom, std::move(subs)),
+      parentType_(nullptr)
+  {
+  }
+
   ~BasicClassType() = default;
 
-  static const BasicClassType*
-  get(Context* context, ID id, UniqueString name,
-      const BasicClassType* parentType,
-      std::vector<CompositeType::FieldDetail> fields,
-      const BasicClassType* instantiatedFrom);
+  /** Set the parent type. For use only during resolution while the type is
+      still being constructed. Be sure to call
+      finalizeFieldTypes after changing this and any other fields. */
+  void setParentType(const BasicClassType* parentType) {
+    parentType_ = parentType;
+  }
 
   static const BasicClassType* getObjectType(Context* context);
 

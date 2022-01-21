@@ -94,6 +94,9 @@ UntypedFnSignature::get(Context* context, const uast::Function* fn) {
   return result;
 }
 
+void UntypedFnSignature::dump() const {
+  stringify(std::cerr, DEBUG_DETAIL);
+}
 
 void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
@@ -258,6 +261,9 @@ void TypedFnSignature::stringify(std::ostream& ss,
   ss << ")";
 }
 
+void TypedFnSignature::dump() const {
+  stringify(std::cerr, DEBUG_DETAIL);
+}
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
   poiFnIdsUsed_.insert(addPoiInfo.poiFnIdsUsed_.begin(),

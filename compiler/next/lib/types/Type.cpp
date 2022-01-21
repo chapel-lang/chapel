@@ -44,6 +44,10 @@ namespace types {
 Type::~Type() {
 }
 
+void Type::dump() const {
+  stringify(std::cerr, DEBUG_DETAIL);
+}
+
 static void gatherType(Context* context,
                        std::unordered_map<UniqueString,const Type*>& map,
                        const char* c_str,

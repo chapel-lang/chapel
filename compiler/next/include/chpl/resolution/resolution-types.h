@@ -22,6 +22,7 @@
 
 #include "chpl/queries/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
+#include "chpl/types/CompositeType.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
@@ -39,6 +40,9 @@ namespace resolution {
   including the formals. It exists so that the process of identifying
   candidates does not need to depend on the bodies of the function
   (in terms of incremental recomputation).
+
+  For type constructors for generic types, the formal decls
+  are actually field decls.
  */
 class UntypedFnSignature {
  public:
@@ -221,7 +225,7 @@ class UntypedFnSignature {
   /// \endcond DO_NOT_DOCUMENT
 };
 
-using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
+using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
 /** CallInfoActual */
 class CallInfoActual {
@@ -522,6 +526,7 @@ class TypedFnSignature {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+  void dump() const;
 
   /** Returns the id of the relevant uast node (usually a Function
       but it can be a Record or Class for compiler-generated functions) */

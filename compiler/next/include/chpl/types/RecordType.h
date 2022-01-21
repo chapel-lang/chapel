@@ -32,12 +32,6 @@ namespace types {
  */
 class RecordType final : public CompositeType {
  private:
-  RecordType(ID id, UniqueString name,
-             std::vector<CompositeType::FieldDetail> fields,
-             const RecordType* instantiatedFrom)
-    : CompositeType(typetags::RecordType, id, name, std::move(fields),
-                    instantiatedFrom)
-  { }
 
   bool contentsMatchInner(const Type* other) const override {
     return compositeTypeContentsMatchInner((const CompositeType*) other);
@@ -47,17 +41,19 @@ class RecordType final : public CompositeType {
     compositeTypeMarkUniqueStringsInner(context);
   }
 
-  static const owned<RecordType>&
-  getRecordType(Context* context, ID id, UniqueString name,
-                std::vector<CompositeType::FieldDetail> fields,
-                const RecordType* instantiatedFrom);
-
  public:
-  ~RecordType() = default;
+  /** Construct a RecordType.
+      Note: we expect the field types to be nullptr when this is called
+   */
+  RecordType(ID id, UniqueString name,
+             std::vector<CompositeType::FieldDetail> fields,
+             const RecordType* instantiatedFrom,
+             SubstitutionsMap subs)
+    : CompositeType(typetags::RecordType, id, name, std::move(fields),
+                    instantiatedFrom, std::move(subs))
+  { }
 
-  static const RecordType* get(Context* context, ID id, UniqueString name,
-                               std::vector<CompositeType::FieldDetail> fields,
-                               const RecordType* instantiatedFrom);
+  ~RecordType() = default;
 
   /** If this type represents an instantiated type,
       returns the type it was instantiated from.

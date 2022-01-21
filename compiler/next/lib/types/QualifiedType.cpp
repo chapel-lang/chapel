@@ -87,5 +87,6 @@ void QualifiedType::stringify(std::ostream& ss,
 
 IMPLEMENT_DUMP(QualifiedType);
 
+
 } // end namespace types
 } // end namespace chpl

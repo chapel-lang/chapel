@@ -39,6 +39,9 @@ namespace types {
  */
 class CompositeType : public Type {
  public:
+  using SubstitutionsMap =
+    std::unordered_map<const uast::Decl*, types::QualifiedType>;
+
   struct FieldDetail {
     UniqueString name;
     bool hasDefaultValue = false;
@@ -89,25 +92,36 @@ class CompositeType : public Type {
   bool isGeneric_ = false;
   bool allGenericFieldsHaveDefaultValues_ = false;
 
-  void computeSummaryInformation();
-
   CompositeType(typetags::TypeTag tag,
                 ID id, UniqueString name,
                 std::vector<FieldDetail> fields,
-                const CompositeType* instantiatedFrom)
+                const CompositeType* instantiatedFrom,
+                SubstitutionsMap subs)
     : Type(tag), id_(id), name_(name), fields_(std::move(fields)),
       instantiatedFrom_(instantiatedFrom) {
 
     // check instantiated only from same type of object
     assert(instantiatedFrom_ == nullptr || instantiatedFrom_->tag() == tag);
 
-    if (tag != typetags::BasicClassType)
-      computeSummaryInformation();
-    // BasicClassType constructor calls computeSummaryInformation
-    // so that the parentType_ field will be set when it runs.
+    // check instantiatedFrom_ is a root
+    assert(instantiatedFrom_ == nullptr ||
+           instantiatedFrom_->instantiatedFrom_ == nullptr);
+
+    // check that subs is consistent with instantiatedFrom
+    assert((instantiatedFrom_ == nullptr) == subs.empty());
+
+    // check that types are not established yet
+    for (auto field : fields_) {
+      assert(field.type.type() == nullptr);
+    }
   }
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {
+    // by the time this runs, the field types should be set
+    for (auto field : fields_) {
+      assert(field.type.type() != nullptr);
+    }
+
     return id_ == other->id_ &&
            name_ == other->name_ &&
            fields_ == other->fields_ &&
@@ -127,6 +141,14 @@ class CompositeType : public Type {
 
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;
+
+  /** Set a field type. For use only during resolution while the type is still
+      being constructed. */
+  void setFieldType(int i, QualifiedType type);
+
+  /** Called during resolution after all field types (and parent type)
+      are set. */
+  void finalizeFieldTypes();
 
   /** Returns true if this is a generic type */
   bool isGeneric() const override { return isGeneric_; }
@@ -194,9 +216,25 @@ class CompositeType : public Type {
   }
 };
 
+size_t hashSubstitutionsMap(const CompositeType::SubstitutionsMap& subs);
 
-} // end namespace uast
+void stringifySubstitutionsMap(std::ostream& streamOut,
+                               StringifyKind stringKind,
+                               const CompositeType::SubstitutionsMap& subs);
 
+
+} // end namespace types
+
+
+// for CompositeType::SubstitutionsMap
+template<> struct stringify<types::CompositeType::SubstitutionsMap> {
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
+                  const types::CompositeType::SubstitutionsMap& subs) const {
+
+    stringifySubstitutionsMap(streamOut, stringKind, subs);
+  }
+};
 
 
 } // end namespace chpl
@@ -210,6 +248,13 @@ template<> struct hash<chpl::types::CompositeType::FieldDetail>
     return key.hash();
   }
 };
+template<> struct hash<chpl::types::CompositeType::SubstitutionsMap>
+{
+  size_t operator()(const chpl::types::CompositeType::SubstitutionsMap& x) const {
+    return hashSubstitutionsMap(x);
+  }
+};
+
 
 } // end namespace std
 
