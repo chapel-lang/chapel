@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import glob
+import os
 
 import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform
 import overrides, third_party_utils
@@ -111,7 +112,7 @@ def get_link_args():
                 if pcl.startswith('-L'):
                     libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
 
-        args(1).extend(libs)
+        args[1].extend(libs)
 
     if libfabric_val == 'system' or libfabric_val == 'bundled':
         libs = [ ]

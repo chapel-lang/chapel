@@ -270,6 +270,7 @@ extern std::string llvmFlags;
 extern bool fPrintAdditionalErrors;
 
 extern bool fCompilerLibraryParser;
+extern bool fDebugTrace;
 
 namespace chpl {
   class Context;

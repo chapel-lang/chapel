@@ -300,6 +300,14 @@ CHPL_TASKS == fifo
   can result in deadlock if there are not enough threads to implement
   all of the required tasks.
 
+  When ``CHPL_RT_NUM_THREADS_PER_LOCALE`` is set, a warning is issued like:
+
+  .. code-block:: text
+
+    warning: Setting number of threads in CHPL_TASKS=fifo can lead to deadlock
+
+  and can be suppressed with ``CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET=yes``
+
 CHPL_TASKS == qthreads
 ----------------------
   In the Qthreads tasking layer, ``CHPL_RT_NUM_THREADS_PER_LOCALE``

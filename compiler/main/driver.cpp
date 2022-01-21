@@ -300,6 +300,7 @@ static
 bool fPrintChplSettings = false;
 
 bool fCompilerLibraryParser = false;
+bool fDebugTrace = false;
 
 int fGPUBlockSize = 0;
 char fCUDAArch[16] = "sm_60";
@@ -1198,6 +1199,7 @@ static ArgumentDescription arg_desc[] = {
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
 
  {"compiler-library-parser", ' ', NULL, "Enable [disable] using compiler library parser", "N", &fCompilerLibraryParser, "CHPL_COMPILER_LIBRARY_PARSER", NULL},
+ {"debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using compiler library parser", "N", &fDebugTrace, "CHPL_DEBUG_TRACE", NULL},
 
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
@@ -1784,6 +1786,10 @@ int main(int argc, char* argv[]) {
     initStringLiteralModule();
 
     process_args(&sArgState, argc, argv);
+
+    if (gContext != nullptr) {
+      gContext->setDebugTraceFlag(fDebugTrace);
+    }
 
     setupChplGlobals(argv[0]);
 

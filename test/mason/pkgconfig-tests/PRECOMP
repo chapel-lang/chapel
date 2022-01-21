@@ -19,16 +19,16 @@ pkgincs="$(echo -e "${pkgincs}" | sed -e 's/[[:space:]]*$//')"
 echo Skipping registry update since no dependency found in manifest file. >$good
 echo>>$good
 echo [root]>>$good
-echo name = \"$pkg\">>$good
 echo chplVersion = \"$chplver..$chplver\">>$good
+echo name = \"$pkg\">>$good
 echo version = \"0.1.0\">>$good
 echo>>$good
 echo [system]>>$good
 echo>>$good
 echo [system.$pkg]>>$good
-echo name = \"$pkg\">>$good
-echo libs = \"$pkglibs\">>$good
 echo include = \"$pkgincs\">>$good
+echo libs = \"$pkglibs\">>$good
+echo name = \"$pkg\">>$good
 echo version = \"$pkgver\">>$good
 echo>>$good
 echo>>$good

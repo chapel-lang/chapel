@@ -9,12 +9,17 @@ Vagrant.configure("2") do |config|
   config.vm.box = "bento/amazonlinux-2"
 
   config.vm.provision "shell",
-    path: "../../provision-scripts/yum-deps.sh"
+    path: "../../provision-scripts/yum-deps-amazonlinux-2.sh"
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/make-chapel-quick.sh"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    #vb.cpus = 2
+  end
 
 end

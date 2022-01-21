@@ -114,7 +114,7 @@ HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
 
 # For use with library-mode. Position independent code is required by shared
 # objects that want to bring in our static runtime/third-party libraries
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 RUNTIME_DEFS += $(SHARED_LIB_CFLAGS)
 endif
 

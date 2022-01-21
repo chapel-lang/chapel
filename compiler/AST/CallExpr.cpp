@@ -144,22 +144,6 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
   }
 }
 
-bool CallExpr::isEmpty() const {
-  return primitive == NULL && baseExpr == NULL;
-}
-
-bool CallExpr::isPrimitive() const {
-  return primitive != NULL;
-}
-
-bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
-  return primitive && primitive->tag == primitiveTag;
-}
-
-bool CallExpr::isPrimitive(const char* primitiveName) const {
-  return primitive && !strcmp(primitive->name, primitiveName);
-}
-
 Expr* CallExpr::getFirstExpr() {
   Expr* retval = NULL;
 
@@ -426,15 +410,6 @@ bool CallExpr::isNamedAstr(const char* name) const {
   }
 
   return retval;
-}
-
-int CallExpr::numActuals() const {
-  return argList.length;
-}
-
-
-Expr* CallExpr::get(int index) const {
-  return argList.get(index);
 }
 
 

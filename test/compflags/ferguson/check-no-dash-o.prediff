@@ -1,0 +1,9 @@
+#!/bin/bash
+
+TEST=$1
+LOG=$2
+# PREDIFF: Script to execute before diff'ing output (arguments: <test
+#    executable>, <log>, <compiler executable>)
+
+cat $LOG | awk '/ -O/{ print "-O found: "; print } /hello/{ print $0 }' > $LOG.tmp
+mv $LOG.tmp $LOG

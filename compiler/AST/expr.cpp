@@ -287,14 +287,6 @@ void Expr::verifyParent(const Expr* child) {
     INT_FATAL(this, "bad parent of a child node");
 }
 
-bool Expr::inTree() {
-  if (parentSymbol)
-    return true;
-  else
-    return false;
-}
-
-
 QualifiedType Expr::qualType() {
   INT_FATAL(this, "Illegal call to Expr::qualType()");
   return QualifiedType(NULL);

@@ -2372,6 +2372,11 @@ void runClang(const char* just_parse_filename) {
   }
 
 
+  // add -fPIC if CHPL_LIB_PIC indicates we should
+  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
+    clangCCArgs.push_back("-fPIC");
+  }
+
   // after arguments provided in CC/CXX
   // add include paths to anything builtin or in CHPL_HOME
   {

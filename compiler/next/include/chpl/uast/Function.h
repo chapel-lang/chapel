@@ -379,10 +379,10 @@ class Function final : public NamedDecl {
 } // end namespace uast
 /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<chpl::uast::Function::Kind> {
-  void operator()(std::ostream &stringOut,
+  void operator()(std::ostream& streamOut,
                   chpl::StringifyKind stringKind,
                   const chpl::uast::Function::Kind& stringMe) const {
-    stringOut << "uast:Function::Kind is not stringified";
+    streamOut << "uast:Function::Kind is not stringified";
   }
 };
 /// \endcond DO_NOT_DOCUMENT
