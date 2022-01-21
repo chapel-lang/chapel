@@ -691,7 +691,7 @@ module ChapelDistribution {
 
     var pid: int = nullPid; // privatized ID, if privatization is supported
     var _decEltRefCounts : bool = false;
-    var _resizePolicy = chpl_DdataResizePolicy.Normal;
+    var _resizePolicy = chpl_ddataResizePolicy.normalInit;
 
     proc chpl__rvfMe() param {
       return false;
@@ -744,7 +744,7 @@ module ChapelDistribution {
       return (ret_arr, ret_dom);
     }
 
-    proc chpl_setResizePolicy(policy: chpl_DdataResizePolicy) {
+    proc chpl_setResizePolicy(policy: chpl_ddataResizePolicy) {
       _resizePolicy = policy;
     }
 

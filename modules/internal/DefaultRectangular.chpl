@@ -1083,10 +1083,17 @@ module DefaultRectangular {
       deinitElts = false;
     }
 
+    //
     // This small kernel must be implemented by different array shapes due
     // to 'BaseArr' having no notion of indexing scheme.
-    override
-    proc chpl_unsafeAssignIsClassElementNil(manager, idx) {
+    //
+    // TODO: Without this where clause any code using `unsafeAssign` to
+    // resize a 2D+ array will explode, because the 'locales' array tries
+    // to reuse an existing instantiation. Comment this out and run
+    // 'test/domains/unsafeAssign/TestUnsafeAssign2D.chpl' to see.
+    //
+    override proc chpl_unsafeAssignIsClassElementNil(manager, idx)
+    where idx.type == (rank*idxType) {
       ref elem = this.dsiAccess(idx);
       return manager.isClassReferenceNil(elem);
     }
@@ -1411,7 +1418,7 @@ module DefaultRectangular {
       if !actuallyResizing then
         return;
 
-      if _resizePolicy == chpl_DdataResizePolicy.Normal then
+      if _resizePolicy == chpl_ddataResizePolicy.normalInit then
         if !isDefaultInitializable(eltType) then
           halt("Can't resize domains whose arrays' elements don't " +
                "have default values");

@@ -1,2 +1,0 @@
-The implementation of `unsafeAssign` needs some work before it can
-handle 2D+ rectangular arrays.

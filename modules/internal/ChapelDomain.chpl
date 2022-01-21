@@ -1311,8 +1311,10 @@ module ChapelDomain {
       var _isActiveManager: bool;
 
       pragma "no doc"
-      iter _lhsBaseArrays() {
-        for arr in _lhsInstance._arrs do yield arr;
+      iter _arraysOverLhsDom() {
+        for baseArr in _lhsInstance._arrs do
+          if !chpl__isArrayView(baseArr) then
+            yield baseArr;
       }
 
       /*
@@ -1334,18 +1336,52 @@ module ChapelDomain {
         }
       }
 
+      pragma "no doc"
+      proc _checkThatArrayShapeIsSupported(arr) param {
+
+        // TODO: Test associative, ND rectangular with rank 2+.
+        if !arr.isDefaultRectangular() {
+          compilerError('The array shape ' + arr.type:string +
+                        'is not supported');
+        }
+      }
+
+      pragma "no doc"
+      proc _checkThatIndexMatchesArrayShape(arr, idx) param {
+        if arr.rank > 1 || idx.type != arr.idxType {
+          if idx.type != (arr.rank*arr.idxType) {
+            compilerError('Index type ' + idx.type + ' not valid for ' +
+                          'array with rank ' + arr.rank:string);
+          }
+        }
+      }
+
+      pragma "no doc"
+      proc _isBaseArrClassElementNil(baseArr: BaseArr, idx) {
+        var idxTup = if isTuple(idx) then idx else (idx,);
+        return baseArr.chpl_unsafeAssignIsClassElementNil(this, idxTup);
+      }
+
       /*
         Return ``true`` if the value at a given index in an array has
         been initialized.
       */
       proc isElementInitialized(arr: [?d], idx) {
+
+        // E.g., default rectangular...
+        _checkThatArrayShapeIsSupported(arr);
+
+        // Only certain forms of index are permissable.
+        _checkThatIndexMatchesArrayShape(arr, idx);
+
         if _checks {
           type T = arr.eltType;
           if isNonNilableClassType(T) {
-            var actualArr = chpl__getActualArray(arr);
-            return !actualArr.chpl_unsafeAssignIsClassElementNil(this, idx);
+            var baseArr = chpl__getActualArray(arr);
+            return !_isBaseArrClassElementNil(baseArr, idx);
           } else if !isDefaultInitializable(T) {
-            halt('Not implemented yet!');
+            halt('Checking if a non-default-initializable element is ' +
+                 'initialized is not supported yet');
             return false;
           } else {
             return true;
@@ -1367,9 +1403,8 @@ module ChapelDomain {
         // Arrays of non-nilable classes.
         if baseArr.chpl_isElementTypeNonNilableClass() {
           for idx in newIndices() {
-            if baseArr.chpl_unsafeAssignIsClassElementNil(this, idx) {
+            if _isBaseArrClassElementNil(baseArr, idx) {
               baseArr.chpl_unsafeAssignHaltUninitializedElement(idx);
-              halt();
             }
           }
 
@@ -1378,7 +1413,10 @@ module ChapelDomain {
 
           // TODO: For non-default-initializable elements, we'd iterate
           // through a bitvector mapped to newly added slots.
-          halt('Not implemented yet!');
+          param msg = 'Checks in \'unsafeAssign\' for arrays of non-' +
+                      'default-initializable elements are not ' +
+                      'supported yet';
+          halt(msg);
 
         // Should never reach here.
         } else {
@@ -1391,10 +1429,10 @@ module ChapelDomain {
         if !_isActiveManager then return; else _isActiveManager = false;
 
         // Possible runtime checks, reset the resize policy of owned arrays.
-        for baseArr in _lhsBaseArrays() {
+        for baseArr in _arraysOverLhsDom() {
           if !baseArr.chpl_isElementTypeDefaultInitializable() {
             if _checks then _checkIfAllElementsAreInitialized(baseArr);
-            const policy = chpl_DdataResizePolicy.Normal;
+            const policy = chpl_ddataResizePolicy.normalInit;
             baseArr.chpl_setResizePolicy(policy);
           }
         }
@@ -1406,9 +1444,7 @@ module ChapelDomain {
 
       pragma "no doc"
       proc _isArrayOwnedByLhsDomain(arr) {
-        for baseArr in _lhsBaseArrays() do
-          if baseArr == chpl__getActualArray(arr) then return true;
-        return false;
+        return arr.dsiGetBaseDom() == _lhsInstance;
       }
 
       pragma "no doc"
@@ -1416,10 +1452,6 @@ module ChapelDomain {
         import Memory.Initialization.moveInitialize;
         ref elem = arr[idx];
         moveInitialize(elem, value);
-      }
-
-      pragma "no doc"
-      proc _checkThatIndexMatchesArrayShape(arr, idx) {
       }
 
       /*
@@ -1436,6 +1468,9 @@ module ChapelDomain {
                         '\' does not match array element type \'' +
                         arr.eltType:string + '\'');
 
+        // E.g., default rectangular...
+        _checkThatArrayShapeIsSupported(arr);
+
         // Only certain forms of index are permissable.
         _checkThatIndexMatchesArrayShape(arr, idx);
 
@@ -1445,15 +1480,24 @@ module ChapelDomain {
                'the domain being resized');
 
         if !arr.domain.contains(idx) then
-          halt('Domain index out of bounds: ' + idx:string);
+          halt('Array index out of bounds: ' + idx:string);
 
         // Get a reference to the array slot.
         ref elem = arr[idx];
 
-        if !isElementInitialized(arr, idx) {
-          _moveInitializeElement(arr, idx, value);
+        // If there are checks, we can fall back on assignment should a slot
+        // already be move-initialized.
+        if _checks {
+          if !isElementInitialized(arr, idx) {
+            _moveInitializeElement(arr, idx, value);
+          } else {
+            elem = value;
+          }
+
+        // If there are no checks, all we can do is destructively
+        // move-initialize.
         } else {
-          elem = value;
+          _moveInitializeElement(arr, idx, value);
         }
       }
 
@@ -1467,7 +1511,7 @@ module ChapelDomain {
           _isActiveManager = true;
         }
 
-        for baseArr in _lhsBaseArrays() {
+        for baseArr in _arraysOverLhsDom() {
 
           // Don't care about arrays with default-initializable elements.
           if baseArr.chpl_isElementTypeDefaultInitializable() then
@@ -1477,8 +1521,9 @@ module ChapelDomain {
           // the array to clear new slots when resizing by setting the
           // resize policy. We can use 'nil' slots as sentinel values.
           if baseArr.chpl_isElementTypeNonNilableClass() {
-            const policy = if _checks then chpl_DdataResizePolicy.ClearMem
-                                      else chpl_DdataResizePolicy.SkipInit;
+            const policy = if _checks
+              then chpl_ddataResizePolicy.skipInitButClearMem
+              else chpl_ddataResizePolicy.SkipInit;
             baseArr.chpl_setResizePolicy(policy);
 
           // The array element type is non-default-initializable (but it is
@@ -1493,13 +1538,14 @@ module ChapelDomain {
               halt('Runtime checks are currently only supported for ' +
                    'arrays of non-nilable classes');
             } else {
-              const policy = chpl_DdataResizePolicy.SkipInit;
+              const policy = chpl_ddataResizePolicy.skipInitButClearMem;
               baseArr.chpl_setResizePolicy(policy);
             }
           }
         }
 
-        // Create temporary shells for the LHS and RHS domains.
+        // Create temporary shells for the LHS and RHS domains so that we
+        // can perform domain assignment.
         var lhsTmpDom = new _domain(_lhsPid, _lhsInstance, _unowned=true);
         var rhsTmpDom = new _domain(_rhsPid, _rhsInstance, _unowned=true);
 

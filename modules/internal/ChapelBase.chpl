@@ -918,7 +918,7 @@ module ChapelBase {
   extern type chpl_mem_descInt_t = int(16);
 
   pragma "no doc"
-  enum chpl_DdataResizePolicy { Normal, SkipInit, ClearMem }
+  enum chpl_ddataResizePolicy { normalInit, skipInit, skipInitButClearMem }
 
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
@@ -1033,7 +1033,7 @@ module ChapelBase {
                                 oldSize: integral,
                                 newSize: integral,
                                 subloc = c_sublocid_none,
-                                policy = chpl_DdataResizePolicy.Normal) {
+                                policy = chpl_ddataResizePolicy.normalInit) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
@@ -1067,10 +1067,10 @@ module ChapelBase {
     // The resize policy dictates whether or not we should default-init,
     // skip initializing, or zero out the memory of new slots.
     select policy {
-      when chpl_DdataResizePolicy.Normal do
+      when chpl_ddataResizePolicy.normalInit do
         init_elts(newDdata, newSize, eltType, lo=oldSize);
-      when chpl_DdataResizePolicy.SkipInit do;
-      when chpl_DdataResizePolicy.ClearMem {
+      when chpl_ddataResizePolicy.skipInit do;
+      when chpl_ddataResizePolicy.skipInitButClearMem {
         forall i in oldSize..<newSize {
           ref slot = newDdata[i];
           c_memset(c_ptrTo(slot), 0, c_sizeof(slot.type));

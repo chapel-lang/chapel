@@ -7,7 +7,7 @@ iter fill(dom) {
   for (i, j) in dom do yield new shared C(j);
 }
 
-// Single element array, no looping.
+// 2D rectangular array with some looping.
 proc test1() {
   var D = {0..1, 0..1};
   var A: [D] shared C = fill(D);
