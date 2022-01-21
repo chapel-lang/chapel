@@ -337,17 +337,12 @@ module CPtr {
     return __primitive("cast", t, x);
   }
 
+  // casts from c pointer to c_intptr / c_uintptr
   pragma "no doc"
   inline operator :(x:c_void_ptr, type t:c_intptr)
     return __primitive("cast", t, x);
   pragma "no doc"
   inline operator :(x:c_void_ptr, type t:c_uintptr)
-    return __primitive("cast", t, x);
-  pragma "no doc"
-  inline operator :(x:c_void_ptr, type t:int(64)) where c_uintptr != int(64)
-    return __primitive("cast", t, x);
-  pragma "no doc"
-  inline operator :(x:c_void_ptr, type t:uint(64)) where c_uintptr != uint(64)
     return __primitive("cast", t, x);
 
   pragma "no doc"
@@ -356,11 +351,39 @@ module CPtr {
   pragma "no doc"
   inline operator :(x:c_ptr, type t:c_uintptr)
     return __primitive("cast", t, x);
+
+
+  // casts from c pointer to int / uint
+  // note that these are only used if c_intptr != int / c_uintptr != uint
   pragma "no doc"
-  inline operator :(x:c_ptr, type t:int(64)) where c_intptr != int(64)
+  inline operator :(x:c_void_ptr, type t:int) where c_uintptr != int
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline operator :(x:c_ptr, type t:uint(64)) where c_uintptr != int(64)
+  inline operator :(x:c_void_ptr, type t:uint) where c_uintptr != uint
+    return __primitive("cast", t, x);
+
+  pragma "no doc"
+  inline operator :(x:c_ptr, type t:int) where c_intptr != int
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline operator :(x:c_ptr, type t:uint) where c_uintptr != uint
+    return __primitive("cast", t, x);
+
+  // casts from c_intptr / c_uintptr to c_void_ptr
+  pragma "no doc"
+  inline operator :(x:c_intptr, type t:c_void_ptr)
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline operator :(x:c_uintptr, type t:c_void_ptr)
+    return __primitive("cast", t, x);
+
+  // casts from int / uint to c_void_ptr
+  // note that these are only used if c_intptr != int / c_uintptr != uint
+  pragma "no doc"
+  inline operator :(x:int, type t:c_void_ptr) where c_intptr != int
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline operator :(x:uint, type t:c_void_ptr) where c_uintptr != uint
     return __primitive("cast", t, x);
 
 
