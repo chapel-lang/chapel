@@ -179,6 +179,8 @@ class ID final {
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
+
+  std::string str() const;
 };
 
 // docs are turned off for this as a workaround for breathe errors

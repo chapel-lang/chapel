@@ -97,4 +97,10 @@ void ID::stringify(std::ostream& ss,
 
 IMPLEMENT_DUMP(ID);
 
+std::string ID::str() const {
+  std::ostringstream ss;
+  stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
+  return ss.str();
+}
+
 } // end namespace chpl
