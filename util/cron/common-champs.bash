@@ -38,6 +38,8 @@ export CHPL_TEST_CHAMPS=true
 
 CHAMPS_DEP_DIR=$COMMON_DIR/champs-nightly/deps-manual
 if [ -d "$CHAMPS_DEP_DIR" ]; then
+  export MKLROOT=/opt/intel/mkl
+  export MPIROOT=$(dirname $(dirname $(which mpicc)))
   export HDF5ROOT=${HDF5ROOT:-$CHAMPS_DEP_DIR}
   export METISROOT=${METISROOT:-$CHAMPS_DEP_DIR}
   export CGNSROOT=${CGNSROOT:-$CHAMPS_DEP_DIR}
