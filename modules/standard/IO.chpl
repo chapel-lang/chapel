@@ -3639,7 +3639,7 @@ iter channel.lines() {
   try! this.lock();
 
   // Save iostyleInternal
-  var saved_style: iostyleInternal = this._styleInternal();
+  const saved_style: iostyleInternal = this._styleInternal();
   // Update iostyleInternal
   var newline_style: iostyleInternal = this._styleInternal();
 
