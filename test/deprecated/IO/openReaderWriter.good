@@ -1,2 +1,2 @@
-openReaderWriter.chpl:5: warning: openwriter with a style argument is deprecated, please rely on the default value for the argument
-openReaderWriter.chpl:7: warning: openreader with a style argument is deprecated, please rely on the default value for the argument
+openReaderWriter.chpl:5: warning: openwriter with a style argument is deprecated
+openReaderWriter.chpl:7: warning: openreader with a style argument is deprecated

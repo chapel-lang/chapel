@@ -44,8 +44,7 @@ For example, the following program downloads a web-page from http://example.com 
 module URL {
   public use IO;
 
-  pragma "last resort"
-  deprecated "openUrlReader with a style argument is deprecated, please rely on the default value for the argument"
+  deprecated "openUrlReader with a style argument is deprecated"
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)),
@@ -97,8 +96,7 @@ module URL {
                     start=start, end=end);
   }
 
-  pragma "last resort"
-  deprecated "openUrlWriter with a style argument is deprecated, please rely on the default value for the argument"
+  deprecated "openUrlWriter with a style argument is deprecated"
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),

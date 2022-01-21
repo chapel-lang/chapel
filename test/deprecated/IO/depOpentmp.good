@@ -1,1 +1,1 @@
-depOpentmp.chpl:4: warning: opentmp with a style argument is deprecated, please rely on the default value for the argument
+depOpentmp.chpl:4: warning: opentmp with a style argument is deprecated
