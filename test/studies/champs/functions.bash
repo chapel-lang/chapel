@@ -52,19 +52,24 @@ function apply_patch() {
   if ! patch -p1 < $patch_file ; then
     log_fatal_error "applying patch"
   else
-    echo "applied patch successfully"
+    echo "[Applied patch successfully]"
   fi
 }
 
 function test_compile_exec() {
   local kind=$@
+
+  test_start "make $kind"
   make MOD=$kind 2> $kind.comp.out.tmp
   local status=$?
   cat $kind.comp.out.tmp
 
   if [[ $status -ne 0 ]] ; then
     log_fatal_error "compiling ${kind}"
+  else
+    log_success "make output"
   fi
+  test_end
 
   $CHPL_HOME/util/test/computePerfStats comp-time-$kind $CHPL_TEST_PERF_DIR $CHAMPS_GRAPH_PATH/comp-time.perfkeys $kind.comp.out.tmp
   $CHPL_HOME/util/test/computePerfStats emitted-code-size-$kind $CHPL_TEST_PERF_DIR $CHAMPS_GRAPH_PATH/emitted-code-size.perfkeys $kind.comp.out.tmp
@@ -74,6 +79,7 @@ function test_run_exec() {
   local kind=$1
   local nl=$2
 
+  test_start "run $kind"
   ./bin/champs_${CHAMPS_VERSION}_$kind -nl $nl -f $CHAMPS_CFG_PATH/$kind.in 2>&1 >$kind.exec.out.tmp
 
   local status=$?
@@ -81,7 +87,10 @@ function test_run_exec() {
 
   if [[ $status -ne 0 ]] ; then
     log_fatal_error "running ${kind}"
+  else 
+    log_success "$kind output"
   fi
+  test_end
 
   # execute prediff if it exists
   if [ -f $CHAMPS_GRAPH_PATH/$kind.prediff ] ; then
