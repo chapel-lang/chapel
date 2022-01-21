@@ -1,0 +1,4 @@
+#19029
+
+Nested calls where the return type of the callee must be inferred
+will break unless the callee is fully resolved.

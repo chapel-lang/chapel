@@ -291,10 +291,10 @@ class SparseBlockDom: BaseSparseDomImpl {
   iter these(param tag: iterKind) where tag == iterKind.standalone &&
     // Ensure it is legal to invoke the standalone iterator
     // on locDom.mySparseBlock below.
-    __primitive("method call resolves",
-                locDoms[createTuple(rank,int,0)]!.mySparseBlock._value,
-                "these", tag)
-  {
+    __primitive("resolves", locDoms[createTuple(rank,int,0)]!
+                              .mySparseBlock
+                              ._value
+                              .these(tag)) {
     coforall locDom in locDoms {
       on locDom {
         forall i in locDom!.mySparseBlock {
@@ -484,10 +484,8 @@ class SparseBlockArr: BaseSparseArr {
   iter these(param tag: iterKind) ref where tag == iterKind.standalone &&
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
-    __primitive("method call resolves",
-                locArr[locArrDom.low]!.myElems._value,
-                "these", tag)
-   {
+    __primitive("resolves",
+                locArr[locArrDom.low]!.myElems._value.these(tag)) {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       forall i in locA!.myElems {

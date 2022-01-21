@@ -35,7 +35,7 @@ inline proc getDataParMinGranularity() {
 //
 // return a rank*t tuple initialized to val
 //
-proc createTuple(param rank, type t, val) {
+proc createTuple(param rank, type t, val): rank*t {
   var tup: rank*t;
   for param i in 0..rank-1 do tup(i) = val;
   return tup;

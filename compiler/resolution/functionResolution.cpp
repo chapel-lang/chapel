@@ -8732,10 +8732,37 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
 *                                                                             *
 ************************************** | *************************************/
 
+// Non-normalizable expressions may nest at an arbitrary depth (because
+// they are not normalized), so we have to search upwards in the tree
+// to look for them.
+static Expr* handleNonNormalizableExpr(Expr* expr) {
+
+  // TODO: Ways to limit our search depth?
+  if (Expr* nonNormalRoot = partOfNonNormalizableExpr(expr)) {
+    if (CallExpr* call = toCallExpr(nonNormalRoot)) {
+      if (call->isPrimitive(PRIM_RESOLVES)) {
+
+        // Prefolding will completely replace PRIM_RESOLVES calls, so
+        // further action is not needed here.
+        return preFold(call);
+      }
+    } else {
+      INT_FATAL("Not handled yet!");
+    }
+  }
+
+  return nullptr;
+}
+
 void resolveBlockStmt(BlockStmt* blockStmt) {
   for_exprs_postorder(expr, blockStmt) {
-    expr = resolveExpr(expr);
-    INT_ASSERT(expr != NULL);
+    if (Expr* changed = handleNonNormalizableExpr(expr)) {
+      expr = changed;
+    } else {
+      expr = resolveExpr(expr);
+    }
+
+    INT_ASSERT(expr);
   }
 }
 
