@@ -149,6 +149,8 @@ class Param {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
+  DECLARE_DUMP;
+
   static uint64_t binStr2uint64(const char* str, size_t len, std::string& err);
   static uint64_t octStr2uint64(const char* str, size_t len, std::string& err);
   static uint64_t decStr2uint64(const char* str, size_t len, std::string& err);

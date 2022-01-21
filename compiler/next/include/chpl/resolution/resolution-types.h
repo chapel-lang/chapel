@@ -70,6 +70,8 @@ class UntypedFnSignature {
         ss << " ";
       }
     }
+
+    DECLARE_DUMP;
   };
 
  private:
@@ -212,6 +214,8 @@ class UntypedFnSignature {
     ss << std::to_string(numFormals());
     ss << " ";
   }
+
+  DECLARE_DUMP;
 };
 
 using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
@@ -244,12 +248,14 @@ class CallInfoActual {
     return chpl::hash(type_, byName_);
   }
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) {
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     byName().stringify(ss, stringKind);
     ss << " ";
     type().stringify(ss, stringKind);
     ss << " ";
   }
+
+  DECLARE_DUMP;
 };
 
 /** CallInfo */
@@ -309,6 +315,8 @@ class CallInfo {
       name().stringify(ss, stringKind);
       ss << " ";
   }
+
+  DECLARE_DUMP;
 };
 
 
@@ -427,6 +435,8 @@ class PoiInfo {
     ss << "PoiInfo: ";
     poiScope()->stringify(ss, stringKind);
   }
+
+  DECLARE_DUMP;
 };
 
 // TODO: should this actually be types::FunctionType?
@@ -503,6 +513,8 @@ class TypedFnSignature {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  DECLARE_DUMP;
 
   /** Returns the id of the relevant uast node (usually a Function
       but it can be a Record or Class for compiler-generated functions) */
@@ -784,6 +796,8 @@ class ResolvedExpression {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  DECLARE_DUMP;
 };
 
 /**

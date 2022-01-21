@@ -360,14 +360,19 @@ template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
 };
 
 
-// TODO: Check if we can use this to ensure debug always builds,
-// so it can be avalialbe during debugging.
-  template<typename T>
-  void debugPrint(const T &arg) {
-    stringify<T> stringTemplate;
-    stringTemplate(std::cout, chpl::StringifyKind::DEBUG_DETAIL, arg);
-  }
 /// \endcond
+
+#define DECLARE_DUMP \
+  void dump() const; \
+  void dump(chpl::StringifyKind debug_level) const
+
+#define IMPLEMENT_DUMP(T) \
+  void T::dump() const { \
+    stringify(std::cerr, DEBUG_DETAIL); \
+  } \
+  void T::dump(chpl::StringifyKind debug_level) const { \
+    stringify(std::cerr, debug_level); \
+  }
 
 } // end namespace chpl
 

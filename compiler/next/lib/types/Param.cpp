@@ -631,6 +631,8 @@ double Param::str2double(const char* str, size_t len, std::string& err) {
   return num;
 }
 
+IMPLEMENT_DUMP(Param);
+
 // implement the subclasses using macros and ParamClassesList.h
 #define PARAM_NODE(NAME, VALTYPE) \
   const owned<NAME>& NAME::get##NAME(Context* context, VALTYPE value) { \

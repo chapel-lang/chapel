@@ -103,6 +103,8 @@ class Type {
 
   virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
+  DECLARE_DUMP;
+
   // define is__ methods for the various Type subclasses
   // using macros and TypeClassesList.h
   /// \cond DO_NOT_DOCUMENT

@@ -87,6 +87,7 @@ void CompositeType::stringify(std::ostream& ss,
   }
 }
 
+IMPLEMENT_DUMP(CompositeType::FieldDetail);
 
 
 } // end namespace types

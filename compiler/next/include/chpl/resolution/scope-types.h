@@ -174,6 +174,8 @@ class BorrowedIdsWithName {
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     ID().stringify(ss, stringKind);
   }
+
+  DECLARE_DUMP;
 };
 
 // DeclMap: key - string name,  value - vector of ID of a NamedDecl
@@ -281,6 +283,8 @@ class Scope {
     ss << " ";
     ss << std::to_string(numDeclared());
   }
+
+  DECLARE_DUMP;
 };
 
 /**
@@ -488,6 +492,8 @@ class PoiScope {
       inFnPoi()->stringify(ss, stringKind);
     }
   }
+
+  DECLARE_DUMP;
 };
 
 /**
@@ -535,8 +541,11 @@ class InnermostMatch {
     id_.mark(context);
   }
 
-  void stringify(std::ostream &ss, chpl::StringifyKind stringKind) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "InnermostMatch not yet strigified";
+  }
 
+  DECLARE_DUMP;
 };
 
 

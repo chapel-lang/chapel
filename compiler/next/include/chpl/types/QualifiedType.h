@@ -178,6 +178,8 @@ class QualifiedType final {
   void mark(Context* context) const;
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  DECLARE_DUMP;
 };
 
 

@@ -147,6 +147,8 @@ class UniqueString final {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
+  DECLARE_DUMP;
+
   bool isEmpty() const {
     return s.i.c_str()[0] == '\0';
   }
