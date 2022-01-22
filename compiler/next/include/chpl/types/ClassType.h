@@ -56,8 +56,8 @@ class ClassType final : public Type {
       return false;
 
     // add an assumption about the basicTypes, if they differ
-    if (basicType_ != rhs->basicType_)
-      assumptions.emplace(basicType_, rhs->basicType_);
+    if (!assumptions.assume(basicType_, rhs->basicType_))
+      return false;
 
     return true;
   }

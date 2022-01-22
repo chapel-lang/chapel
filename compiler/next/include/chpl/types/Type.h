@@ -44,8 +44,41 @@ class Type {
   TypeTag tag_;
 
  protected:
-  using MatchAssumptions =
-          std::unordered_set<std::pair<const Type*, const Type*>>;
+  // this struct accumulates assumptions to handle recursion when
+  // checking types for equivalence
+  struct MatchAssumptions {
+    using Assumption = std::pair<const Type*, const Type*>;
+    std::unordered_map<Assumption, bool> checked; // pair -> isMatch
+    std::unordered_set<Assumption> toCheck;
+
+    // This function notes an assumption that t matches otherT.
+    // Returns false if we already know they don't match,
+    // and true if we can assume that they do.
+    // These assumptions will be checked in completeMatch.
+    bool assume(const Type* t, const Type* otherT) {
+      if (t != otherT) {
+        if ((t == nullptr) != (otherT == nullptr))
+          return false;
+        if (t == nullptr && otherT == nullptr)
+          return true;
+        if (t->tag() != otherT->tag())
+          return false;
+
+        Assumption a(t, otherT);
+
+        auto found = checked.find(a);
+        if (found != checked.end()) {
+          // Found an assumption that was already checked
+          // Return whether or not it was a match
+          return found->second;
+        } else {
+          // Otherwise, add it to toCheck
+          toCheck.insert(a);
+        }
+      }
+      return true;
+    }
+  };
 
   /**
     This function needs to be defined by subclasses.

@@ -43,8 +43,8 @@ class BasicClassType final : public CompositeType {
     assert(parentType_ != nullptr);
 
     // add an assumption about the parent types, if they differ
-    if (parentType_ != rhs->parentType_)
-      assumptions.emplace(parentType_, rhs->parentType_);
+    if (!assumptions.assume(parentType_, rhs->parentType_))
+      return false;
 
     return compositeTypeContentsMatchInner(rhs, assumptions);
   }

@@ -126,37 +126,34 @@ bool Type::completeMatch(const Type* other) const {
   if (!lhs->contentsMatchInner(rhs, assumptions))
     return false;
 
-  MatchAssumptions allAssumptions = assumptions;
-  MatchAssumptions checkedAssumptions;
+  // Check the assumptions in toCheck
+  while (!assumptions.toCheck.empty()) {
+    // Grab an element (any element!) and remove it
+    auto first = assumptions.toCheck.begin();
+    auto a = *first;
+    assumptions.toCheck.erase(first);
 
-  // Loop as long as we find new assumptions
-  while (true) {
-    MatchAssumptions curAssumptions = allAssumptions;
+    // now check assumption 'a'
 
-    // now check the assumptions
-    for (auto pair : allAssumptions) {
-      auto insertResult = checkedAssumptions.insert(pair);
-      if (insertResult.second) {
-        // it was inserted
+    // adding to set should ensure neither is nullptr
+    assert(a.first != nullptr && a.second != nullptr);
+    // tag should be checked before adding to set
+    assert(a.first->tag() == a.second->tag());
 
-        // check the tag
-        if (pair.first->tag() != pair.second->tag())
-          return false;
+    // add to checked, assuming it does check OK
+    auto pair = assumptions.checked.emplace(a, true);
+    bool isMatch = pair.first->second;
+    if (!isMatch)
+      return false; // it was already checked and didn't match
 
-        // check contentsMatchInner
-        if (!pair.first->contentsMatchInner(pair.second, curAssumptions))
-          return false;
-      }
-    }
-
-    if (allAssumptions != curAssumptions) {
-      allAssumptions = curAssumptions;
-    } else {
-      // everything checked out & there were no new assumptions
-      break;
+    // call contentsMatchInner, which which will add assumptions
+    // to assumptions.toCheck if they have not already been checked.
+    if (!a.first->contentsMatchInner(a.second, assumptions)) {
+      return false;
     }
   }
 
+  // if we got through checking all of the assumptions, there is a match
   return true;
 }
 

@@ -135,9 +135,8 @@ class CompositeType : public Type {
       return false;
 
     // add instantiatedFrom to the assumptions
-    if (instantiatedFrom_ != nullptr &&
-        instantiatedFrom_ != other->instantiatedFrom_)
-      assumptions.emplace(instantiatedFrom_, other->instantiatedFrom_);
+    if (!assumptions.assume(instantiatedFrom_, other->instantiatedFrom_))
+      return false;
 
     // consider the fields
     size_t nFields = fields_.size();
@@ -163,8 +162,8 @@ class CompositeType : public Type {
       assert(fieldType != nullptr);
 
       // add an assumption about the type ptrs, if they differ
-      if (fieldType != otherFieldType)
-        assumptions.emplace(fieldType, otherFieldType);
+      if (!assumptions.assume(fieldType, otherFieldType))
+        return false;
     }
 
     return true;
