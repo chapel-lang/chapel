@@ -1,1 +1,1 @@
-orderIndex-empty.chpl:3: error: halt reached - orderToIndex() is invoked on an empty domain
+orderIndex-empty.chpl:3: error: halt reached - orderToIndex() invoked on an empty domain

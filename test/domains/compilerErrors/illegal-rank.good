@@ -1,0 +1,2 @@
+illegal-rank.chpl:2: warning: index is of type int(64)
+illegal-rank.chpl:2: error: rank of the index must match domain rank

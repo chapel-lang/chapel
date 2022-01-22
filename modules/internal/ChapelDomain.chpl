@@ -1368,7 +1368,7 @@ module ChapelDomain {
          future.
 
        :arg inds: Indices to be added. ``inds`` must be an array of
-                  ``rank*idxType``, except for 1-D domains it must be
+                  ``rank*idxType``, except for 1-D domains, where it must be
                   an array of ``idxType``.
 
        :arg dataSorted: ``true`` if data in ``inds`` is sorted.
@@ -1613,7 +1613,8 @@ module ChapelDomain {
     pragma "last resort"
     proc orderToIndex(order) {
       if this.isRectangular() && isNumericType(this.idxType) then
-        compilerError("the order argument of 'orderToIndex' on this domain must be an integer, excluding uint(64)");
+        compilerError("illegal value passed to orderToIndex():",
+          " the argument 'order' must be an integer, excluding uint(64)");
       else
         compilerError("this domain type does not support 'orderToIndex'");
     }
@@ -1622,7 +1623,7 @@ module ChapelDomain {
     proc checkOrderBounds(order: int){
       if order >= this.sizeAs(uint) || order < 0 {
         if this.isEmpty() then
-          halt("orderToIndex() is invoked on an empty domain");
+          halt("orderToIndex() invoked on an empty domain");
         else
           halt("illegal order in orderToIndex(): ", order,
                ". For this domain, order must lie in 0..", this.sizeAs(uint)-1);

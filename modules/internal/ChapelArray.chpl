@@ -212,7 +212,7 @@ module ChapelArray {
         t(i) = val;
       return t;
     } else {
-      compilerWarning(concept, " is of the type ", val.type:string);
+      compilerWarning(concept, " is of type ", val.type:string);
       compilerError("rank of the ", concept, " must match domain rank");
       return val;
     }
@@ -221,7 +221,7 @@ module ChapelArray {
   pragma "last resort"
   proc _makeIndexTuple(param rank, val, param concept: string,
                        param expand: bool=false) {
-    compilerError("cannot use ", concept, " of the type ", val.type:string);
+    compilerError("cannot use ", concept, " of type ", val.type:string);
   }
 
   pragma "no copy return"
