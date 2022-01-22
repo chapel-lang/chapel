@@ -565,7 +565,7 @@ proc CyclicDom.dsiStride return whole.stride;
 
 proc CyclicDom.dsiMember(i) return whole.contains(i);
 
-proc CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
+override proc CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
 
 proc CyclicDom.dsiDims() return whole.dims();
 

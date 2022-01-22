@@ -637,35 +637,25 @@ module ChapelDomain {
     }
   }
 
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_by(a:domain, b) { ... }
-   *
-   * because the parser renames the routine since 'by' is a keyword.
-   */
+  // This is the definition of the 'by' operator for domains.
   operator by(a: domain, b) {
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
                       true);
-    var t = _makeIndexTuple(a.rank, b, expand=true);
+    var t = _makeIndexTuple(a.rank, b, "step", expand=true);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) by t(i);
     return new _domain(a.dist, a.rank, a._value.idxType, true, r);
   }
 
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_align(a:domain, b) { ... }
-   *
-   * because the parser renames the routine since 'align' is a keyword.
-   */
+  // This is the definition of the 'align' operator for domains.
+  // It produces a new domain with the specified alignment.
+  // See also: 'align' operator on ranges.
   operator align(a: domain, b) {
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
                       a.stridable);
-    var t = _makeIndexTuple(a.rank, b, expand=true);
+    var t = _makeIndexTuple(a.rank, b, "alignment", expand=true);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) align t(i);
     return new _domain(a.dist, a.rank, a._value.idxType, a.stridable, r);
@@ -1313,7 +1303,7 @@ module ChapelDomain {
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
 
-        if inds.sizeAs(uint) == 0 then return 0;
+      if inds.isEmpty() then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
@@ -1377,9 +1367,9 @@ module ChapelDomain {
          addition should occur is unknown. We expect this to change in the
          future.
 
-       :arg inds: Indices to be added. ``inds`` can be an array of
-                  ``rank*idxType`` or an array of ``idxType`` for
-                  1-D domains.
+       :arg inds: Indices to be added. ``inds`` must be an array of
+                  ``rank*idxType``, except for 1-D domains, where it must be
+                  an array of ``idxType``.
 
        :arg dataSorted: ``true`` if data in ``inds`` is sorted.
        :type dataSorted: bool
@@ -1402,9 +1392,14 @@ module ChapelDomain {
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
 
-        if inds.sizeAs(uint) == 0 then return 0;
+      if inds.isEmpty() then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
+    }
+
+    pragma "no doc" pragma "last resort"
+    proc bulkAdd(args...) {
+      compilerError("incompatible argument(s) or this domain type does not support 'bulkAdd'");
     }
 
     /* Remove index ``i`` from this domain */
@@ -1491,7 +1486,7 @@ module ChapelDomain {
     pragma "no doc"
     proc contains(i: rank*_value.idxType) {
       if this.isRectangular() || this.isSparse() then
-        return _value.dsiMember(_makeIndexTuple(rank, i));
+        return _value.dsiMember(_makeIndexTuple(rank, i, "index"));
       else
         return _value.dsiMember(i(0));
     }
@@ -1566,7 +1561,7 @@ module ChapelDomain {
 
     // 1/5/10: do we want to support order() and position()?
     pragma "no doc"
-    proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
+    proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i, "index"));
 
     /*
       Returns the `ith` index in the domain counting from 0.
@@ -1615,15 +1610,29 @@ module ChapelDomain {
         return idx;
     }
 
+    pragma "last resort"
+    proc orderToIndex(order) {
+      if this.isRectangular() && isNumericType(this.idxType) then
+        compilerError("illegal value passed to orderToIndex():",
+          " the argument 'order' must be an integer, excluding uint(64)");
+      else
+        compilerError("this domain type does not support 'orderToIndex'");
+    }
+
     pragma "no doc"
     proc checkOrderBounds(order: int){
-      if order >= this.sizeAs(uint) || order < 0 then
-        halt("Order out of bounds. Order must lie in 0..",this.sizeAs(uint)-1);
+      if order >= this.sizeAs(uint) || order < 0 {
+        if this.isEmpty() then
+          halt("orderToIndex() invoked on an empty domain");
+        else
+          halt("illegal order in orderToIndex(): ", order,
+               ". For this domain, order must lie in 0..", this.sizeAs(uint)-1);
+      }
     }
 
     pragma "no doc"
     proc position(i) {
-      var ind = _makeIndexTuple(rank, i), pos: rank*intIdxType;
+      var ind = _makeIndexTuple(rank, i, "index"), pos: rank*intIdxType;
       for d in 0..rank-1 do
         pos(d) = _value.dsiDim(d).indexOrder(ind(d));
       return pos;

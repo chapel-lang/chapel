@@ -301,6 +301,21 @@ module ArrayViewReindex {
       _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
 
+    // These would be forwarded to 'updom' automatically,
+    // except the "last resort" overloads BaseDom take precedence
+    // over forwarding. So, define these explicitly.
+    proc parSafe return updom.parSafe;
+    proc dsiLow return updom.dsiLow;
+    proc dsiHigh return updom.dsiHigh;
+    proc dsiStride return updom.dsiStride;
+    proc dsiAlignment return updom.dsiAlignment;
+    proc dsiFirst return updom.dsiFirst;
+    proc dsiLast return updom.dsiLast;
+    proc dsiAlignedlow return updom.dsiAlignedlow;
+    proc dsiAlignedhigh return updom.dsiAlignedhigh;
+    proc dsiIndexOrder return updom.dsiIndexOrder;
+    proc dsiMakeIndexBuffer return updom.dsiMakeIndexBuffer;
+
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
     override proc dsiSupportsPrivatization() param
