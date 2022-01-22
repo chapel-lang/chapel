@@ -13,9 +13,7 @@ fi
 module list
 
 source $CWD/common-cray-cs.bash
-export CHPL_LAUNCHER_PARTITION=clx24
-export CHPL_TARGET_CPU=none
-export CHPL_COMM=gasnet
+source $CWD/common-perf-cray-cs-hdr.bash.bash
 
 loadCSModule intel
 loadCSModule cray-mvapich2_nogpu
@@ -26,7 +24,6 @@ module list
 source $CWD/common-perf.bash
 CHAMPS_PERF_DIR=${CHAMPS_PERF_DIR:-$COMMON_DIR/NightlyPerformance/champs} # TODO
 export CHPL_TEST_PERF_DIR=$CHAMPS_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
-export CHPL_TEST_NUM_TRIALS=3
 export CHPL_TEST_PERF_START_DATE=01/21/22
 
 # Run champs correctness and performance testing
@@ -47,11 +44,9 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HDF5ROOT/lib
 
 
 # these may be unnecessary
-export GASNET_PHYSMEM_MAX=124G
-export GASNET_IBV_PORTS=mlx5_1
-export GASNET_ODP_VERBOSE=0
+export GASNET_PHYSMEM_MAX="9/10"
 
-export CHPL_TEST_PERF_CONFIGS="llvm:v,c"  # v: visible by def
+export CHPL_TEST_PERF_CONFIGS="llvm:v,c-backend"  # v: visible by def
 
 function sync_graphs() {
   $CHPL_HOME/util/cron/syncPerfGraphs.py $CHPL_TEST_PERF_DIR/html/ champs/$CHPL_TEST_PERF_CONFIG_NAME
