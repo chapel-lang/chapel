@@ -44,13 +44,24 @@ class Type {
   TypeTag tag_;
 
  protected:
+  using MatchAssumptions =
+          std::unordered_set<std::pair<const Type*, const Type*>>;
+
   /**
     This function needs to be defined by subclasses.
     It should check only those fields defined in subclasses
     (it should not check the Type fields such as tag_).
+
     It can assume that other has the same type as the receiver.
+
+    This function needs to consider the possibility that a type is recursive.
+    To do so, it keeps track of a set of (ptr, other ptr) that is assuming
+    match. These are checked after the call to contentsMatchInner by the caller
+    by checking each for a match (leading to calling contentsMatchInner on
+    them).  If all of these match, then the type is considered a match.
    */
-  virtual bool contentsMatchInner(const Type* other) const = 0;
+  virtual bool contentsMatchInner(const Type* other,
+                                  MatchAssumptions& assumptions) const = 0;
 
   /**
    This function needs to be defined by subclasses.

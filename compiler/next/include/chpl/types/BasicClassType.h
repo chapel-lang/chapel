@@ -35,13 +35,18 @@ class BasicClassType final : public CompositeType {
  private:
   const BasicClassType* parentType_ = nullptr;
 
-  bool contentsMatchInner(const Type* other) const override {
+  bool contentsMatchInner(const Type* other,
+                          MatchAssumptions& assumptions) const override {
+    const BasicClassType* rhs = (const BasicClassType*) other;
+
     // by the time this runs, parentType_ should be set
     assert(parentType_ != nullptr);
 
-    const BasicClassType* rhs = (const BasicClassType*) other;
-    return compositeTypeContentsMatchInner(rhs) &&
-           parentType_ == rhs->parentType_;
+    // add an assumption about the parent types, if they differ
+    if (parentType_ != rhs->parentType_)
+      assumptions.emplace(parentType_, rhs->parentType_);
+
+    return compositeTypeContentsMatchInner(rhs, assumptions);
   }
 
   void markUniqueStringsInner(Context* context) const override {

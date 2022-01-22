@@ -33,7 +33,8 @@ class CStringType final : public Type {
  private:
   CStringType() : Type(typetags::CStringType) { }
 
-  bool contentsMatchInner(const Type* other) const override {
+  bool contentsMatchInner(const Type* other,
+                          MatchAssumptions& assumptions) const override {
     return true;
   }
 

@@ -33,7 +33,8 @@ class NothingType final : public Type {
  private:
   NothingType() : Type(typetags::NothingType) { }
 
-  bool contentsMatchInner(const Type* other) const override {
+  bool contentsMatchInner(const Type* other,
+                          MatchAssumptions& assumptions) const override {
     return true;
   }
 

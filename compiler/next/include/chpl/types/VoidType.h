@@ -33,7 +33,8 @@ class VoidType final : public Type {
  private:
   VoidType() : Type(typetags::VoidType) { }
 
-  bool contentsMatchInner(const Type* other) const override {
+  bool contentsMatchInner(const Type* other,
+                          MatchAssumptions& assumptions) const override {
     return true;
   }
 

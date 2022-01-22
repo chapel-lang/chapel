@@ -35,8 +35,9 @@ class IntType final : public PrimitiveType {
     : PrimitiveType(typetags::IntType, bitwidth)
   { }
 
-  bool contentsMatchInner(const Type* other) const override {
-    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
+  bool contentsMatchInner(const Type* other,
+                          MatchAssumptions& assumptions) const override {
+    return primitiveTypeContentsMatchInner((PrimitiveType*) other, assumptions);
   }
 
   void markUniqueStringsInner(Context* context) const override {

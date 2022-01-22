@@ -47,12 +47,19 @@ class ClassType final : public Type {
       decorator_(decorator)
   { }
 
-  bool contentsMatchInner(const Type* other) const override {
-    const ClassType* lhs = this;
+  bool contentsMatchInner(const Type* other,
+                          MatchAssumptions& assumptions) const override {
     const ClassType* rhs = (const ClassType*) other;
-    return lhs->basicType_ == rhs->basicType_ &&
-           lhs->manager_ == rhs->manager_ &&
-           lhs->decorator_ == rhs->decorator_;
+
+    if (manager_ != rhs->manager_ ||
+        decorator_ != rhs->decorator_)
+      return false;
+
+    // add an assumption about the basicTypes, if they differ
+    if (basicType_ != rhs->basicType_)
+      assumptions.emplace(basicType_, rhs->basicType_);
+
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {

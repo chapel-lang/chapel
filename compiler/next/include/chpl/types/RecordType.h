@@ -33,8 +33,10 @@ namespace types {
 class RecordType final : public CompositeType {
  private:
 
-  bool contentsMatchInner(const Type* other) const override {
-    return compositeTypeContentsMatchInner((const CompositeType*) other);
+  bool contentsMatchInner(const Type* other,
+                          MatchAssumptions& assumptions) const override {
+    return compositeTypeContentsMatchInner((const CompositeType*) other,
+                                           assumptions);
   }
 
   void markUniqueStringsInner(Context* context) const override {

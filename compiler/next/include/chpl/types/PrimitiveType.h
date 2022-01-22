@@ -39,7 +39,8 @@ class PrimitiveType : public Type {
     : Type(tag), bitwidth_(bitwidth) {
   }
 
-  bool primitiveTypeContentsMatchInner(const PrimitiveType* other) const {
+  bool primitiveTypeContentsMatchInner(const PrimitiveType* other,
+                                       MatchAssumptions& assumptions) const {
     const PrimitiveType* lhs = this;
     const PrimitiveType* rhs = (const PrimitiveType*) other;
     return lhs->bitwidth_ == rhs->bitwidth_;

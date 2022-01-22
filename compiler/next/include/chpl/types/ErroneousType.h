@@ -34,7 +34,8 @@ class ErroneousType final : public Type {
  private:
   ErroneousType() : Type(typetags::ErroneousType) { }
 
-  bool contentsMatchInner(const Type* other) const override {
+  bool contentsMatchInner(const Type* other,
+                          MatchAssumptions& assumptions) const override {
     return true;
   }
 

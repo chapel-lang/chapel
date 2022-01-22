@@ -33,7 +33,8 @@ class AnyType final : public Type {
  private:
   AnyType() : Type(typetags::AnyType) { }
 
-  bool contentsMatchInner(const Type* other) const override {
+  bool contentsMatchInner(const Type* other,
+                          MatchAssumptions& assumptions) const override {
     return true;
   }
 

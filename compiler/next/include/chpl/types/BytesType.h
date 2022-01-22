@@ -33,7 +33,8 @@ class BytesType final : public Type {
  private:
   BytesType() : Type(typetags::BytesType) { }
 
-  bool contentsMatchInner(const Type* other) const override {
+  bool contentsMatchInner(const Type* other,
+                          MatchAssumptions& assumptions) const override {
     return true;
   }
 

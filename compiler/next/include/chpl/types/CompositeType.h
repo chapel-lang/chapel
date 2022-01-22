@@ -116,18 +116,58 @@ class CompositeType : public Type {
     }
   }
 
-  bool compositeTypeContentsMatchInner(const CompositeType* other) const {
-    // by the time this runs, the field types should be set
-    for (auto field : fields_) {
-      assert(field.type.type() != nullptr);
+  bool compositeTypeContentsMatchInner(const CompositeType* other,
+                                       MatchAssumptions& assumptions) const {
+    // check basic properties
+    if (id_ != other->id_ || name_ != other->name_)
+      return false;
+
+    if (isGeneric_ != other->isGeneric_)
+      return false;
+
+    if (allGenericFieldsHaveDefaultValues_ !=
+        other->allGenericFieldsHaveDefaultValues_)
+      return false;
+
+    // one is instantiated but the other is not
+    if ((instantiatedFrom_ != nullptr) !=
+        (other->instantiatedFrom_ != nullptr))
+      return false;
+
+    // add instantiatedFrom to the assumptions
+    if (instantiatedFrom_ != nullptr &&
+        instantiatedFrom_ != other->instantiatedFrom_)
+      assumptions.emplace(instantiatedFrom_, other->instantiatedFrom_);
+
+    // consider the fields
+    size_t nFields = fields_.size();
+    for (size_t i = 0; i < nFields; i++) {
+      const FieldDetail& field = fields_[i];
+      const FieldDetail& otherField = other->fields_[i];
+
+      if (field.name != otherField.name ||
+          field.hasDefaultValue != otherField.hasDefaultValue ||
+          field.decl != otherField.decl)
+        return false;
+
+      // Check the elements of the QualifiedType individually,
+      // because we want to handle the Type* in a special way.
+      if (field.type.kind() != otherField.type.kind() ||
+          field.type.param() != otherField.type.param())
+        return false;
+
+      const Type* fieldType = field.type.type();
+      const Type* otherFieldType = otherField.type.type();
+
+      // type should be established by the time this runs
+      assert(fieldType != nullptr);
+
+      // add an assumption about the type ptrs, if they differ
+      if (fieldType != otherFieldType)
+        assumptions.emplace(fieldType, otherFieldType);
     }
 
-    return id_ == other->id_ &&
-           name_ == other->name_ &&
-           fields_ == other->fields_ &&
-           instantiatedFrom_ == other->instantiatedFrom_ &&
-           isGeneric_ == other->isGeneric_ &&
-           allGenericFieldsHaveDefaultValues_ == other->allGenericFieldsHaveDefaultValues_;
+    return true;
   }
 
   void compositeTypeMarkUniqueStringsInner(Context* context) const {

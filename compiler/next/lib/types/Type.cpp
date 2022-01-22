@@ -120,8 +120,42 @@ bool Type::completeMatch(const Type* other) const {
   const Type* rhs = other;
   if (lhs->tag() != rhs->tag())
     return false;
-  if (!lhs->contentsMatchInner(rhs))
+
+  MatchAssumptions assumptions;
+
+  if (!lhs->contentsMatchInner(rhs, assumptions))
     return false;
+
+  MatchAssumptions allAssumptions = assumptions;
+  MatchAssumptions checkedAssumptions;
+
+  // Loop as long as we find new assumptions
+  while (true) {
+    MatchAssumptions curAssumptions = allAssumptions;
+
+    // now check the assumptions
+    for (auto pair : allAssumptions) {
+      auto insertResult = checkedAssumptions.insert(pair);
+      if (insertResult.second) {
+        // it was inserted
+
+        // check the tag
+        if (pair.first->tag() != pair.second->tag())
+          return false;
+
+        // check contentsMatchInner
+        if (!pair.first->contentsMatchInner(pair.second, curAssumptions))
+          return false;
+      }
+    }
+
+    if (allAssumptions != curAssumptions) {
+      allAssumptions = curAssumptions;
+    } else {
+      // everything checked out & there were no new assumptions
+      break;
+    }
+  }
 
   return true;
 }
