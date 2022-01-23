@@ -25,21 +25,23 @@
 
 #include "convert-uast.h"
 
+#include "build.h"
 #include "CatchStmt.h"
 #include "DeferStmt.h"
+#include "docsDriver.h"
 #include "DoWhileStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
 #include "optimizations.h"
+#include "parser.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
-#include "build.h"
-#include "docsDriver.h"
 
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
 #include "chpl/queries/global-strings.h"
+#include "chpl/parsing/parsing-queries.h"
 
 using namespace chpl;
 
@@ -175,6 +177,14 @@ struct Converter {
       return new SymExpr(gNoInit);
     } else if (name == USTR("locale")) {
       return new SymExpr(dtLocale->symbol);
+    } else if (name == USTR("uint")) {
+      return new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol);
+    } else if (name == USTR("int")) {
+      return new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol);
+    } else if (name == USTR("real")) {
+      return new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol);
+    } else if (name == USTR("complex")) {
+      return new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol);
     }
 
     return nullptr;
@@ -322,6 +332,45 @@ struct Converter {
     }
 
     return buildRequireStmt(actuals);
+  }
+
+  // Copy the body of 'buildIncludeModule' since it is heavily tied to the
+  // old parser's implementation.
+  Expr* visit(const uast::Include* node) {
+    const char* name = astr(node->name().c_str());
+    bool isPrivate = node->visibility() == uast::Decl::PRIVATE;
+    bool isPrototype = node->isPrototype();
+
+    auto& loc = chpl::parsing::locateAst(gContext, node);
+    assert(!loc.isEmpty());
+    auto path = astr(loc.path().c_str());
+
+    ModuleSymbol* mod = parseIncludedSubmodule(name, path);
+    INT_ASSERT(mod);
+
+    if (isPrivate && !mod->hasFlag(FLAG_PRIVATE)) {
+      mod->addFlag(FLAG_PRIVATE);
+    }
+
+    if (mod->hasFlag(FLAG_PRIVATE) && !isPrivate) {
+      USR_FATAL_CONT(node->id(),
+                     "cannot make a private module public through "
+                     "an include statement");
+      USR_PRINT(mod, "module declared private here");
+    }
+
+    if (isPrototype) {
+      USR_FATAL_CONT(node->id(), "cannot apply prototype to module in "
+                                 "include statement");
+      USR_PRINT(mod, "put prototype keyword at module declaration here");
+    }
+
+    if (fWarnUnstable && mod->modTag == MOD_USER) {
+      USR_WARN(node->id(), "module include statements are not yet stable "
+                           "and may change");
+    }
+
+    return buildChapelStmt(new DefExpr(mod));
   }
 
   Expr* visit(const uast::Import* node) {

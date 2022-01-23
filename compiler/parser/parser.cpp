@@ -44,9 +44,6 @@
 // Turn this on to report which modules are parsed as uAST.
 #define REPORT_AST_KIND_WHEN_PARSING_MODULE 0
 
-// Use to eagerly try compiling all standard modules to uAST.
-#define PARSE_ALL_STANDARD_MODULES_TO_UAST 0
-
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
 #include "view.h"
 #endif
@@ -83,8 +80,6 @@ static void          parseDependentModules(bool isInternal);
 
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
-
-static bool uASTCanParseMod(const char* modName, ModTag modTag);
 
 static bool uASTAttemptToParseMod(const char* modName,
                                   const char* path,
@@ -593,24 +588,11 @@ static void parseDependentModules(bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
-// TODO: Adjust me over time as more internal modules parse.
-static bool uASTCanParseMod(const char* modName, ModTag modTag) {
-  if (!fCompilerLibraryParser) return false;
-
-#if PARSE_ALL_STANDARD_MODULES_TO_UAST
-  if (modTag == MOD_STANDARD) return true;
-#endif
-
-  if (modTag == MOD_INTERNAL) return true;
-
-  return false;
-}
-
 static bool uASTAttemptToParseMod(const char* modName,
                                   const char* path,
                                   ModTag modTag,
                                   ModuleSymbol*& outModSym) {
-  if (!uASTCanParseMod(modName, modTag)) return false;
+  if (!fCompilerLibraryParser) return false;
 
   const bool namedOnCommandLine = false;
   const bool include = false;
@@ -1128,7 +1110,7 @@ static void addModuleToDoneList(ModuleSymbol* module) {
 ************************************** | *************************************/
 
 
-ModuleSymbol* parseIncludedSubmodule(const char* name) {
+ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
   // save parser global variables to restore after parsing the submodule
   BlockStmt*  s_yyblock = yyblock;
   const char* s_yyfilename = yyfilename;
@@ -1140,7 +1122,7 @@ ModuleSymbol* parseIncludedSubmodule(const char* name) {
   const char* s_chplParseStringMsg = chplParseStringMsg;
   bool        s_currentFileNamedOnCommandLine = currentFileNamedOnCommandLine;
 
-  std::string curPath = yyfilename;
+  std::string curPath = path;
 
   // compute the path of the file to include
   size_t lastDot = curPath.rfind(".");

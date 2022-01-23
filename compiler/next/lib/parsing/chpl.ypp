@@ -970,11 +970,12 @@ opt_prototype:
 ;
 
 include_module_stmt:
- TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
-   {
-     $$ = TODOSTMT(@$);
-     context->visibility = Decl::DEFAULT_VISIBILITY;
-   }
+  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
+  {
+    auto node = Include::build(BUILDER, LOC(@$), context->visibility, $3, $5);
+    $$ = STMT(@$, node.release());
+    context->visibility = Decl::DEFAULT_VISIBILITY;
+  }
 ;
 
 /* Grouping of statements into blocks.
