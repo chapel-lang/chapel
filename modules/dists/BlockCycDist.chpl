@@ -739,7 +739,7 @@ proc BlockCyclicDom.dsiMember(i) {
   return whole.contains(i);
 }
 
-proc BlockCyclicDom.dsiIndexOrder(i) {
+override proc BlockCyclicDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 

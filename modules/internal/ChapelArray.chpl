@@ -194,25 +194,34 @@ module ChapelArray {
   // tuple. If the value is not a tuple and expand is true, copy the value into
   // a rank-tuple. If the value is a scalar and rank is 1, copy it into a 1-tuple.
   //
-  proc _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank == t.size {
+  proc _makeIndexTuple(param rank, t: _tuple, param concept: string,
+                       param expand: bool=false) where rank == t.size {
     return t;
   }
 
-  proc _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank != t.size {
-    compilerError("index rank must match domain rank");
+  proc _makeIndexTuple(param rank, t: _tuple, param concept: string,
+                       param expand: bool=false) where rank != t.size {
+    compilerError("rank of the ", concept, " must match domain rank");
   }
 
-  proc _makeIndexTuple(param rank, val:integral, param expand: bool=false) {
+  proc _makeIndexTuple(param rank, val:integral, param concept: string,
+                       param expand: bool=false) {
     if expand || rank == 1 {
       var t: rank*val.type;
       for param i in 0..rank-1 do
         t(i) = val;
       return t;
     } else {
-      compilerWarning(val.type:string);
-      compilerError("index rank must match domain rank");
+      compilerWarning(concept, " is of type ", val.type:string);
+      compilerError("rank of the ", concept, " must match domain rank");
       return val;
     }
+  }
+
+  pragma "last resort"
+  proc _makeIndexTuple(param rank, val, param concept: string,
+                       param expand: bool=false) {
+    compilerError("cannot use ", concept, " of type ", val.type:string);
   }
 
   pragma "no copy return"

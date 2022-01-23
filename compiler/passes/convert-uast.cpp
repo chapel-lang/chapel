@@ -1273,10 +1273,9 @@ struct Converter {
             if (kwSubdomain->name() == USTR("subdomain")) {
               assert(innerCall->numActuals() == 1);
 
-              ret = new CallExpr("chpl__buildSparseDomainRuntimeType");
+              ret = new CallExpr
+                      ("chpl__buildSparseDomainRuntimeTypeForParentDomain");
               Expr* expr = convertAST(innerCall->actual(0));
-              auto dot = buildDotExpr(expr->copy(), "defaultSparseDist");
-              ret->insertAtTail(dot);
               ret->insertAtTail(expr);
             }
           }

@@ -1,0 +1,1 @@
+parentNotDomainError.chpl:3: error: building a sparse subdomain of a non-domain value of type [domain(1,int(64),false)] range(int(64),bounded,false)

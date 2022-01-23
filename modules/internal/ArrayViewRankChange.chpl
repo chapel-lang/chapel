@@ -389,6 +389,21 @@ module ArrayViewRankChange {
         _delete_dom(downDomInst!, _isPrivatized(downDomInst!));
     }
 
+    // These would be forwarded to 'upDom' automatically,
+    // except the "last resort" overloads BaseDom take precedence
+    // over forwarding. So, define these explicitly.
+    proc parSafe return upDom.parSafe;
+    proc dsiLow return upDom.dsiLow;
+    proc dsiHigh return upDom.dsiHigh;
+    proc dsiStride return upDom.dsiStride;
+    proc dsiAlignment return upDom.dsiAlignment;
+    proc dsiFirst return upDom.dsiFirst;
+    proc dsiLast return upDom.dsiLast;
+    proc dsiAlignedlow return upDom.dsiAlignedlow;
+    proc dsiAlignedhigh return upDom.dsiAlignedhigh;
+    proc dsiIndexOrder return upDom.dsiIndexOrder;
+    proc dsiMakeIndexBuffer return upDom.dsiMakeIndexBuffer;
+
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
     override proc dsiSupportsPrivatization() param
