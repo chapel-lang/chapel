@@ -1315,13 +1315,19 @@ module ChapelDomain {
       _value.dsiClear();
     }
 
-    /* Add index ``i`` to this domain. This method is also available
+    /* Add index ``idx`` to this domain. This method is also available
        as the ``+=`` operator.
 
        The domain must be irregular.
      */
+    proc ref add(in idx) {
+      return _value.dsiAdd(idx);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
     proc ref add(in i) {
-      return _value.dsiAdd(i);
+      return add(i);
     }
 
     pragma "no doc"
@@ -1428,9 +1434,15 @@ module ChapelDomain {
       compilerError("incompatible argument(s) or this domain type does not support 'bulkAdd'");
     }
 
-    /* Remove index ``i`` from this domain */
+    /* Remove index ``idx`` from this domain */
+    proc ref remove(idx) {
+      return _value.dsiRemove(idx);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
     proc ref remove(i) {
-      return _value.dsiRemove(i);
+      return remove(i);
     }
 
     /* Request space for a particular number of values in an
@@ -1438,16 +1450,22 @@ module ChapelDomain {
 
        Currently only applies to associative domains.
      */
-    proc ref requestCapacity(i) {
+    proc ref requestCapacity(capacity) {
 
-      if i < 0 {
-        halt("domain.requestCapacity can only be invoked on sizes >= 0");
+      if capacity < 0 {
+        halt("domain.requestCapacity can only be invoked for capacity >= 0");
       }
 
       if !this.isAssociative() then
         compilerError("domain.requestCapacity only applies to associative domains");
 
-      _value.dsiRequestCapacity(i);
+      _value.dsiRequestCapacity(capacity);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'capacity' instead"
+    proc ref requestCapacity(i) {
+      requestCapacity(i);
     }
 
     /* Return the number of indices in this domain.  For domains whose
@@ -1510,18 +1528,24 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc contains(i: rank*_value.idxType) {
+    proc contains(idx: rank*_value.idxType) {
       if this.isRectangular() || this.isSparse() then
-        return _value.dsiMember(_makeIndexTuple(rank, i, "index"));
+        return _value.dsiMember(_makeIndexTuple(rank, idx, "index"));
       else
-        return _value.dsiMember(i(0));
+        return _value.dsiMember(idx(0));
     }
 
-    /* Return true if this domain contains ``i``. Otherwise return false.
+    /* Return true if this domain contains ``idx``. Otherwise return false.
        For sparse domains, only indices with a value are considered
        to be contained in the domain.
      */
-    inline proc contains(i: _value.idxType ...rank) {
+    inline proc contains(idx: _value.idxType ...rank) {
+      return contains(idx);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
+    inline proc contains(i) {
       return contains(i);
     }
 
