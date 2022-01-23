@@ -1452,11 +1452,17 @@ module DefaultRectangular {
                                    policy=_resizePolicy);
           initShiftedData();
         } else {
-          var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
-                                                         rank=rank,
-                                                         idxType=idxType,
-                                                         stridable=reallocD._value.stridable,
-                                                         dom=reallocD._value);
+
+          // No need to halt, should have been checked above.
+          param initElts = isDefaultInitializable(eltType);
+
+          var copy = new unmanaged
+              DefaultRectangularArr(eltType=eltType,
+                                    rank=rank,
+                                    idxType=idxType,
+                                    stridable=reallocD._value.stridable,
+                                    dom=reallocD._value,
+                                    initElts=initElts);
 
           var keep = reallocD((...dom.ranges));
           // Copy the preserved elements

@@ -1067,8 +1067,13 @@ module ChapelBase {
     // skip initializing, or zero out the memory of new slots.
     select policy {
       when chpl_ddataResizePolicy.normalInit do
-        init_elts(newDdata, newSize, eltType, lo=oldSize);
-      when chpl_ddataResizePolicy.skipInit do;
+        if !isDefaultInitializable(eltType) {
+          halt('internal error: Attempt to resize dynamic block ' +
+               'containing non-default-initializable elements');
+        } else {
+          init_elts(newDdata, newSize, eltType, lo=oldSize);
+        }
+      when chpl_ddataResizePolicy.skipInit do;  // Nothing...
       when chpl_ddataResizePolicy.skipInitButClearMem {
         if newSize > oldSize {
           const elemWidthInBytes = _ddata_sizeof_element(newDdata);
@@ -1078,7 +1083,7 @@ module ChapelBase {
             const shiftedPtr = _ddata_shift(eltType, newDdata, oldSize);
             c_memset(shiftedPtr:c_void_ptr, 0, numBytes);
           } else {
-            halt('internal error: in \'_ddata_realloc\', overflow during ' +
+            halt('internal error: Unsigned integer overflow during ' +
                  'reallocation of dynamic block');
           }
         }
