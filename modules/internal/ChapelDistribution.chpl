@@ -881,8 +881,6 @@ module ChapelDistribution {
     proc rank param {
       return 1;
     }
-
-
   }
 
   /* BaseArrOverRectangularDom has this signature so that dsiReallocate

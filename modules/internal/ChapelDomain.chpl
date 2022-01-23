@@ -1474,7 +1474,6 @@ module ChapelDomain {
         // Only certain forms of index are permissable.
         _checkThatIndexMatchesArrayShape(arr, idx);
 
-        // TODO: Is this even worth checking? It's O(n) number of arrays.
         if !_isArrayOwnedByLhsDomain(arr) then
           halt('Can only initialize elements of arrays declared over ' +
                'the domain being resized');
