@@ -1444,7 +1444,11 @@ module DefaultRectangular {
             writeln("reallocating in-place");
 
           sizesPerDim(0) = reallocD.dsiDim(0).sizeAs(int);
-          data = _ddata_reallocate(data, eltType, oldSize, newSize,
+          data = _ddata_reallocate(oldDdata=data,
+                                   eltType=eltType,
+                                   oldSize=oldSize,
+                                   newSize=newSize,
+                                   subloc=c_sublocid_none,
                                    policy=_resizePolicy);
           initShiftedData();
         } else {

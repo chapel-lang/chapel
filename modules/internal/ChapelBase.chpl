@@ -1056,13 +1056,12 @@ module ChapelBase {
       }
     }
 
-    const alloc = chpl_mem_array_realloc(oldDdata: c_void_ptr,
-                                         oldSize.safeCast(size_t),
-                                         newSize.safeCast(size_t),
-                                         _ddata_sizeof_element(oldDdata),
-                                         subloc,
-                                         callPostAlloc);
-    const newDdata = alloc:oldDdata.type;
+    var newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr,
+                                          oldSize.safeCast(size_t),
+                                          newSize.safeCast(size_t),
+                                          _ddata_sizeof_element(oldDdata),
+                                          subloc,
+                                          callPostAlloc): oldDdata.type;
 
     // The resize policy dictates whether or not we should default-init,
     // skip initializing, or zero out the memory of new slots.
@@ -1071,9 +1070,17 @@ module ChapelBase {
         init_elts(newDdata, newSize, eltType, lo=oldSize);
       when chpl_ddataResizePolicy.skipInit do;
       when chpl_ddataResizePolicy.skipInitButClearMem {
-        forall i in oldSize..<newSize {
-          ref slot = newDdata[i];
-          c_memset(c_ptrTo(slot), 0, c_sizeof(slot.type));
+        if newSize > oldSize {
+          const elemWidthInBytes = _ddata_sizeof_element(newDdata);
+          const numElems = (newSize - oldSize).safeCast(uint);
+          if safeMul(numElems, elemWidthInBytes) {
+            const numBytes = numElems * elemWidthInBytes;
+            const shiftedPtr = _ddata_shift(eltType, newDdata, oldSize);
+            c_memset(shiftedPtr:c_void_ptr, 0, numBytes);
+          } else {
+            halt('internal error: in \'_ddata_realloc\', overflow during ' +
+                 'reallocation of dynamic block');
+          }
         }
       }
     }

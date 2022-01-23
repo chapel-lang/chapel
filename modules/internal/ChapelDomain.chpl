@@ -1523,7 +1523,7 @@ module ChapelDomain {
           if baseArr.chpl_isElementTypeNonNilableClass() {
             const policy = if _checks
               then chpl_ddataResizePolicy.skipInitButClearMem
-              else chpl_ddataResizePolicy.SkipInit;
+              else chpl_ddataResizePolicy.skipInit;
             baseArr.chpl_setResizePolicy(policy);
 
           // The array element type is non-default-initializable (but it is
