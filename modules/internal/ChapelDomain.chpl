@@ -43,8 +43,8 @@ module ChapelDomain {
   // chpl__buildDomainRuntimeType) are replaced by the compiler to just create
   // a record storing the arguments.  The return type of
   // chpl__build...RuntimeType is what tells the compiler which runtime type it
-  // is creating.  These functions are considered type functions early in
-  // compilation.
+  // is creating. These functions are written to return a value even though
+  // they are marked as type functions.
 
   //
   // Support for domain types
@@ -52,19 +52,19 @@ module ChapelDomain {
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
                                     type idxType = int,
-                                    param stridable: bool = false) {
+                                    param stridable: bool = false) type {
     return new _domain(dist, rank, idxType, stridable);
   }
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType,
-                                    param parSafe: bool = true) {
+                                    param parSafe: bool = true) type {
     return new _domain(dist, idxType, parSafe);
   }
 
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(dist: _distribution,
-                                          parentDom: domain) {
+                                          parentDom: domain) type {
     return new _domain(dist, parentDom);
   }
 

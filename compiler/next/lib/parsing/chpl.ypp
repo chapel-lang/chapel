@@ -3065,6 +3065,7 @@ for_expr:
   }
 | TLSBR expr_ls TRSBR expr %prec TFOR
   {
+    // TODO: We have to handle the possibility of [1..2, 3..4] here.
     if ($2->size() > 1) {
       const char* msg = "Invalid iterand expression";
       $$ = context->raiseError(@2, msg);

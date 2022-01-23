@@ -240,14 +240,14 @@ module ChapelArray {
   // chpl__buildArrayRuntimeType) are replaced by the compiler to just create a
   // record storing the arguments.  The return type of
   // chpl__build...RuntimeType is what tells the compiler which runtime type it
-  // is creating.  These functions are considered type functions early in
-  // compilation.
+  // is creating. These functions are written to return a value even though
+  // they are marked as type functions.
 
   //
   // Support for array types
   //
   pragma "runtime type init fn"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) type {
     return dom.buildArray(eltType, false);
   }
 

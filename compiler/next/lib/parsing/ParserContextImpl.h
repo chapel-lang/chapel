@@ -861,6 +861,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
 // TODO: Use me in 'buildBracketLoop' as well.
 owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                               ParserExprList* indexExprs) {
+  // TODO: We have to handle the possibility of [1..2, 3..4] here.
   if (indexExprs->size() > 1) {
     const char* msg = "Invalid index expression";
     noteError(location, msg);

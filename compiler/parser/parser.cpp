@@ -44,9 +44,6 @@
 // Turn this on to report which modules are parsed as uAST.
 #define REPORT_AST_KIND_WHEN_PARSING_MODULE 0
 
-// Use to eagerly try compiling all internal modules to uAST.
-#define PARSE_ALL_INTERNAL_MODULES_TO_UAST 0
-
 // Use to eagerly try compiling all standard modules to uAST.
 #define PARSE_ALL_STANDARD_MODULES_TO_UAST 0
 
@@ -93,6 +90,12 @@ static bool uASTAttemptToParseMod(const char* modName,
                                   const char* path,
                                   ModTag modTag,
                                   ModuleSymbol*& outModSym);
+
+static void initializeGlobalParserState(const char* path, ModTag modTag,
+                                        bool namedOnCommandLine,
+                                        YYLTYPE* yylloc=nullptr);
+
+static void deinitializeGlobalParserState(YYLTYPE* yylloc=nullptr);
 
 static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modTag,
@@ -590,38 +593,17 @@ static void parseDependentModules(bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
-// Internal modules that are currently NOT able to be parsed by the new parser.
-static std::set<std::string> blockedInternalModules = {
-  "ChapelArray",             // Prim call with named args.
-  "ChapelDomain"            // Prim call with named args.
-};
-
 // TODO: Adjust me over time as more internal modules parse.
 static bool uASTCanParseMod(const char* modName, ModTag modTag) {
   if (!fCompilerLibraryParser) return false;
-
-#if PARSE_ALL_INTERNAL_MODULES_TO_UAST
-  if (modTag == MOD_INTERNAL) return true;
-#endif
 
 #if PARSE_ALL_STANDARD_MODULES_TO_UAST
   if (modTag == MOD_STANDARD) return true;
 #endif
 
-  // Otherwise, only try to compile a subset of the internal modules.
-  if (modTag != MOD_INTERNAL) return false;
+  if (modTag == MOD_INTERNAL) return true;
 
-  bool ret = false;
-
-  switch (modTag) {
-    case MOD_INTERNAL:
-      ret = blockedInternalModules.count(modName);
-      break;
-    default:
-      break;
-  }
-
-  return !ret;
+  return false;
 }
 
 static bool uASTAttemptToParseMod(const char* modName,
@@ -713,6 +695,45 @@ static bool haveAlreadyParsed(const char* path) {
   }
 }
 
+static void initializeGlobalParserState(const char* path, ModTag modTag,
+                                        bool namedOnCommandLine,
+                                        YYLTYPE* yylloc) {
+  currentFileNamedOnCommandLine = namedOnCommandLine;
+
+  // If this file only contains explicit module declarations, this
+  // 'currentModuleName' is not accurate, but also should not be
+  // used (because when the 'module' declarations are found, they
+  // will override it).
+  currentModuleName             = filenameToModulename(path);
+  currentModuleType             = modTag;
+  yyfilename                    = path;
+  yystartlineno                 = 1;
+
+  if (yylloc) {
+    yylloc->first_line             = 1;
+    yylloc->first_column           = 0;
+    yylloc->last_line              = 1;
+    yylloc->last_column            = 0;
+  }
+
+  chplLineno                    = 1;
+}
+
+static void deinitializeGlobalParserState(YYLTYPE* yylloc) {
+  yyfilename                    =  NULL;
+
+  if (yylloc) {
+    yylloc->first_line             =    -1;
+    yylloc->first_column           =     0;
+    yylloc->last_line              =    -1;
+    yylloc->last_column            =     0;
+  }
+
+  yystartlineno                 =    -1;
+  chplLineno                    =    -1;
+
+  currentFileNamedOnCommandLine = false;
+}
 
 static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
@@ -737,25 +758,7 @@ static ModuleSymbol* parseFile(const char* path,
     YYLTYPE       yylloc;
     ParserContext context;
 
-    currentFileNamedOnCommandLine = namedOnCommandLine;
-
-    // If this file only contains explicit module declarations, this
-    // 'currentModuleName' is not accurate, but also should not be
-    // used (because when the 'module' declarations are found, they
-    // will override it).
-    currentModuleName             = filenameToModulename(path);
-    currentModuleType             = modTag;
-
-    yyblock                       = NULL;
-    yyfilename                    = path;
-    yystartlineno                 = 1;
-
-    yylloc.first_line             = 1;
-    yylloc.first_column           = 0;
-    yylloc.last_line              = 1;
-    yylloc.last_column            = 0;
-
-    chplLineno                    = 1;
+    initializeGlobalParserState(path, modTag, namedOnCommandLine, &yylloc);
 
     // look for the ArgumentParser and set flag to indicate we should copy
     // the delimiter -- to the arguments passed to chapel program's main
@@ -863,17 +866,7 @@ static ModuleSymbol* parseFile(const char* path,
       addModuleToDoneList(retval);
     }
 
-    yyfilename                    =  NULL;
-
-    yylloc.first_line             =    -1;
-    yylloc.first_column           =     0;
-    yylloc.last_line              =    -1;
-    yylloc.last_column            =     0;
-
-    yystartlineno                 =    -1;
-    chplLineno                    =    -1;
-
-    currentFileNamedOnCommandLine = false;
+    deinitializeGlobalParserState(&yylloc);
 
   } else {
     fprintf(stderr,
@@ -957,6 +950,14 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
     chpl::uast::ASTNode::dump(mod);
 #endif
 
+    initializeGlobalParserState(fileName, modTag, namedOnCommandLine);
+
+    // Set the current file name to nullptr to set locations properly.
+    // This is because astloc default to using 'yyfilename', and check
+    // to see if the filename is nullptr before considering the use of
+    // new compiler IDs.
+    yyfilename = nullptr;
+
     // Only converts the module, does not add to done list.
     ModuleSymbol* got = convertToplevelModule(gContext, mod);
     INT_ASSERT(got);
@@ -984,6 +985,8 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
 
     lastModSym = got;
     numModSyms++;
+
+    deinitializeGlobalParserState();
   }
 
   // TODO (dlongnecke): We should not need this. New parser should report
@@ -998,6 +1001,7 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   // TODO (dlongnecke): Emit the errors in this helper function in the
   // parse query instead when we have warnings (e.g. 'noteWarning').
   if (numModSyms == 1 && lastModSym->hasFlag(FLAG_IMPLICIT_MODULE)) {
+    SET_LINENO(lastModSym);
     containsOnlyModules(lastModSym->block, path.c_str());
   }
 
