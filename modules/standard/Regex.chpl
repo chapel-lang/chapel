@@ -975,6 +975,7 @@ record regex {
       }
       yield ret;
       cur = matches[0].offset + max(1, matches[0].len);
+      nFound += 1;
     }
   }
 
