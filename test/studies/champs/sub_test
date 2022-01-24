@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+# Custom sub_test to run CHAMPS testing. Clones, builds CHAMPS and runs testing.
+
+CHAMPS_BRANCH=${CHAMPS_BRANCH:-development}
+
+CHAMPS_PATCH_PATH=$CHAMPS_SUPPORT_PATH/patches
+CHAMPS_GRAPH_PATH=$CHAMPS_SUPPORT_PATH/graph-infra
+CHAMPS_DATA_PATH=$CHAMPS_SUPPORT_PATH/data
+CHAMPS_CFG_PATH=$CHAMPS_SUPPORT_PATH/configs
+
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $CWD/functions.bash
+
+subtest_start
+
+# CHAMPS needs chpl in PATH
+bin_subdir=$($CHPL_HOME/util/chplenv/chpl_bin_subdir.py)
+export "PATH=$CHPL_HOME/bin/$bin_subdir:$PATH"
+chpl --version
+
+export CHAMPS_HOME=$CWD/champs
+rm -rf ${CHAMPS_HOME}
+
+# Clone CHAMPS 
+if ! git clone --depth=1 ${CHAMPS_URL} --branch=${CHAMPS_BRANCH} ; then
+  log_fatal_error "cloning CHAMPS"
+else
+  echo "Cloned CHAMPS successfully"
+fi
+cd ${CHAMPS_HOME}
+
+CHAMPS_VERSION=$(git describe --tags --abbrev=0)
+
+# Apply patches
+for p in $CHAMPS_PATCH_PATH/*patch; do
+  apply_patch $p
+done
+
+if [ "${CHPL_LLVM}" != "none" ] ; then
+  apply_patch $CHAMPS_PATCH_PATH/optional/llvm.patch
+fi
+
+
+# Compile CHAMPS executables
+test_compile prep
+test_compile flow
+test_compile icing
+
+# copy the input data to the filesystem we're running on
+
+# I can't tell whether prep is running too slow or just freezing, for now don't run it
+# cp $CHAMPS_DATA_PATH/CRMHL_coarse.cgns $CHAMPS_HOME/
+# test_run prep 1
+
+# as a temporary workaround, copy the prepartitoned grid for 16 locales
+cp $CHAMPS_DATA_PATH/CRMHL_coarse_768B.cgns $CHAMPS_HOME/
+test_run flow 16
+
+$CHPL_HOME/util/test/genGraphs --perfdir $CHPL_TEST_PERF_DIR --outdir $CHPL_TEST_PERF_DIR/html --graphlist $CHAMPS_GRAPH_PATH/GRAPHLIST --testdir $CHAMPS_GRAPH_PATH --alttitle "CHAMPS Performance Graphs"
+
+subtest_end
