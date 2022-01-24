@@ -2099,8 +2099,14 @@ codegen_config() {
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (6);
-        args[0] = info->irBuilder->CreateLoad(
-            new_CStringSymbol(var->name)->codegen().val);
+        {
+          GenRet gen = new_CStringSymbol(var->name)->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[0] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+#else
+          args[0] = info->irBuilder->CreateLoad(gen.val);
+#endif
+        }
 
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -2112,23 +2118,43 @@ codegen_config() {
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           type = type->getField("addr")->type;
         }
-        args[1] = info->irBuilder->CreateLoad(
-            new_CStringSymbol(type->symbol->name)->codegen().val);
+        {
+          GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[1] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+#else
+          args[1] = info->irBuilder->CreateLoad(gen.val);
+#endif
+        }
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          args[2] = info->irBuilder->CreateLoad(
-              new_CStringSymbol("Built-in")->codegen().val);
+          GenRet gen = new_CStringSymbol("Built-in")->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[2] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+#else
+          args[2] = info->irBuilder->CreateLoad(gen.val);
+#endif
         }
         else {
-          args[2] =info->irBuilder->CreateLoad(
-              new_CStringSymbol(var->getModule()->name)->codegen().val);
+          GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[2] =info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+#else
+          args[2] =info->irBuilder->CreateLoad(gen.val);
+#endif
         }
 
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
 
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
-        args[5] = info->irBuilder->CreateLoad(new_CStringSymbol(var->getDeprecationMsg())->codegen().val);
-
+        {
+          GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[5] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+#else
+          args[5] = info->irBuilder->CreateLoad(gen.val);
+#endif
+        }
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
     }

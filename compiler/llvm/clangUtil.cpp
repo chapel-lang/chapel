@@ -1880,7 +1880,9 @@ static llvm::TargetOptions getTargetOptions(
 
   Options.FunctionSections = CodeGenOpts.FunctionSections;
   Options.DataSections = CodeGenOpts.DataSections;
-#if HAVE_LLVM_VER >= 120
+#if LLVM_VERSION_MAJOR == 120
+  // clang::CodeGenOptions::IgnoreXCOFFVisibility first appeared in
+  // LLVM version 12 and then went away in version 13.
   Options.IgnoreXCOFFVisibility = CodeGenOpts.IgnoreXCOFFVisibility;
 #endif
   Options.UniqueSectionNames = CodeGenOpts.UniqueSectionNames;
@@ -1904,7 +1906,7 @@ static llvm::TargetOptions getTargetOptions(
       CodeGenOpts.ValueTrackingVariableLocations;
 #endif
   Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
-#if HAVE_LLVM_VER >= 130
+#if HAVE_LLVM_VER >= 140
   Options.LoopAlignment = CodeGenOpts.LoopAlignment;
 #endif
 
@@ -1947,8 +1949,13 @@ static void setupModule()
 
   INT_ASSERT(info->module);
 
+#if HAVE_LLVM_VER >= 130
+  clangInfo->asmTargetLayoutStr =
+    clangInfo->Clang->getTarget().getDataLayoutString();
+#else
   clangInfo->asmTargetLayoutStr =
     clangInfo->Clang->getTarget().getDataLayout().getStringRepresentation();
+#endif
 
   // Set the target triple.
   const llvm::Triple &Triple =
@@ -3889,7 +3896,11 @@ void makeBinaryLLVM(void) {
   if( saveCDir[0] != '\0' ) {
     std::error_code tmpErr;
     // Save the generated LLVM before optimization.
+#if HAVE_LLVM_VER >= 120
+    ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::OF_None);
+#else
     ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::F_None);
+#endif
     if (tmpErr)
       USR_FATAL("Could not open output file %s", preOptFilename.c_str());
 #if HAVE_LLVM_VER < 70
@@ -3919,7 +3930,11 @@ void makeBinaryLLVM(void) {
 
   // Open the output file
   std::error_code error;
+#if HAVE_LLVM_VER >= 120
+  llvm::sys::fs::OpenFlags flags = llvm::sys::fs::OF_None;
+#else
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
+#endif
 
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
@@ -3997,8 +4012,14 @@ void makeBinaryLLVM(void) {
     if( saveCDir[0] != '\0' ) {
       // Save the generated LLVM after first chunk of optimization
       std::error_code tmpErr;
+#if HAVE_LLVM_VER >= 120
+      ToolOutputFile output1 (opt1Filename.c_str(),
+                               tmpErr, sys::fs::OF_None);
+#else
       ToolOutputFile output1 (opt1Filename.c_str(),
                                tmpErr, sys::fs::F_None);
+#endif
+
       if (tmpErr)
         USR_FATAL("Could not open output file %s", opt1Filename.c_str());
 #if HAVE_LLVM_VER < 70
@@ -4034,8 +4055,13 @@ void makeBinaryLLVM(void) {
       if( saveCDir[0] != '\0' ) {
         // Save the generated LLVM after second chunk of optimization
         std::error_code tmpErr;
+#if HAVE_LLVM_VER >= 120
+        ToolOutputFile output2 (opt2Filename.c_str(),
+                                 tmpErr, sys::fs::OF_None);
+#else
         ToolOutputFile output2 (opt2Filename.c_str(),
                                  tmpErr, sys::fs::F_None);
+#endif
         if (tmpErr)
           USR_FATAL("Could not open output file %s", opt2Filename.c_str());
 #if HAVE_LLVM_VER < 70

@@ -339,7 +339,11 @@ static llvm::Value* createInBoundsGEP(llvm::Value* ptr,
     }
   }
 
+#if HAVE_LLVM_VER >= 130
+  return info->irBuilder->CreateInBoundsGEP(ptr->getType(), ptr, idxList);
+#else
   return info->irBuilder->CreateInBoundsGEP(ptr, idxList);
+#endif
 }
 
 #endif
@@ -600,7 +604,11 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                                 bool isLoadOfLocalVar = true)
 {
   GenInfo* info = gGenInfo;
+#if HAVE_LLVM_VER >= 130
+  llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr->getType(), ptr);
+#else
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
+#endif
   llvm::MDNode* tbaa = NULL;
   if (USE_TBAA && valType &&
       (isClass(valType) || !valType->symbol->llvmTbaaStructCopyNode)) {
@@ -2122,7 +2130,11 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
 
     func->getBasicBlockList().push_back(blockEnd);
     info->irBuilder->SetInsertPoint(blockEnd);
+#if HAVE_LLVM_VER >= 130
+    ret.val = info->irBuilder->CreateLoad(tmp->getType(), tmp);
+#else
     ret.val = info->irBuilder->CreateLoad(tmp);
+#endif
     ret.isUnsigned = !values.isSigned;
 #endif
   }
@@ -2211,7 +2223,12 @@ GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
     llvm::Value* elementPtr;
     elementPtr = createInBoundsGEP(table.val, GEPLocs);
 
+#if HAVE_LLVM_VER >= 130
+    llvm::Instruction* element =
+      info->irBuilder->CreateLoad(elementPtr->getType(), elementPtr);
+#else
     llvm::Instruction* element = info->irBuilder->CreateLoad(elementPtr);
+#endif
 
     // I don't think it matters, but we could provide TBAA metadata
     // here to indicate global constant variable loads are constant...
@@ -2544,8 +2561,15 @@ GenRet codegenCallExprInner(GenRet function,
                 unsigned nElts = sTy->getNumElements();
                 for (unsigned i = 0; i < nElts; i++) {
                   // load to produce the next LLVM argument
+#if HAVE_LLVM_VER >= 130
+                  llvm::Value* eltPtr =
+                    irBuilder->CreateStructGEP(ptr->getType(), ptr, i);
+                  llvm::Value* loaded =
+                    irBuilder->CreateLoad(eltPtr->getType(), eltPtr);
+#else
                   llvm::Value* eltPtr = irBuilder->CreateStructGEP(ptr, i);
                   llvm::Value* loaded = irBuilder->CreateLoad(eltPtr);
+#endif
                   llArgs.push_back(loaded);
                 }
               } else {
@@ -2581,8 +2605,15 @@ GenRet codegenCallExprInner(GenRet function,
                 continue;
 
               // load to produce the next LLVM argument
+#if HAVE_LLVM_VER >= 130
+              llvm::Value* eltPtr =
+                irBuilder->CreateStructGEP(ptr->getType(), ptr, i);
+              llvm::Value* loaded =
+                irBuilder->CreateLoad(eltPtr->getType(), eltPtr);
+#else
               llvm::Value* eltPtr = irBuilder->CreateStructGEP(ptr, i);
               llvm::Value* loaded = irBuilder->CreateLoad(eltPtr);
+#endif
               llArgs.push_back(loaded);
             }
             break;
@@ -3974,9 +4005,16 @@ DEFINE_PRIM(RETURN) {
                 nullptr, arg, returnInfo->getInAllocaFieldIndex());
 
             auto align = getPointerAlign(0);
+#if HAVE_LLVM_VER >= 130
+            llvm::Value* v = irBuilder->CreateAlignedLoad(sret->getType(),
+                                                          sret,
+                                                          align,
+                                                          "sret");
+#else
             llvm::Value* v = irBuilder->CreateAlignedLoad(sret,
                                                           align,
                                                           "sret");
+#endif
             returnInst = irBuilder->CreateRet(v);
           } else {
             returnInst = irBuilder->CreateRetVoid();
@@ -5502,7 +5540,12 @@ DEFINE_PRIM(FTABLE_CALL) {
       GEPLocs[0] = llvm::Constant::getNullValue(llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
       fnPtrPtr   = createInBoundsGEP(ftable.val, GEPLocs);
+#if HAVE_LLVM_VER >= 130
+      fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType(),
+                                                   fnPtrPtr);
+#else
       fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr);
+#endif
 
       // Generate an LLVM function type based upon the arguments.
       std::vector<llvm::Type*> argumentTypes;
@@ -5588,7 +5631,12 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
           llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
       fnPtrPtr = createInBoundsGEP(table.val, GEPLocs);
+#if HAVE_LLVM_VER >= 130
+      llvm::Instruction* fnPtrV =
+        gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType(), fnPtrPtr);
+#else
       llvm::Instruction* fnPtrV = gGenInfo->irBuilder->CreateLoad(fnPtrPtr);
+#endif
       fnPtr.val = fnPtrV;
 #endif
     }
