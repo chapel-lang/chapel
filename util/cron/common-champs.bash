@@ -4,7 +4,7 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-export CHAMPS_COMMON_DIR=/cy/users/chapelu
+export CHAMPS_COMMON_DIR=/cy/users/chapelu/champs-nightly
 
 # All CHAMPS testing is currently on a cray-cs
 module list
