@@ -1,0 +1,21 @@
+.. default-domain:: chpl
+
+.. module:: realLength.doc
+
+realLength.doc
+==============
+**Usage**
+
+.. code-block:: chapel
+
+   use realLength.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import realLength.doc;
+
+.. data:: var x = 1.72827
+
