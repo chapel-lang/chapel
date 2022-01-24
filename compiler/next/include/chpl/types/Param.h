@@ -149,8 +149,6 @@ class Param {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  DECLARE_DUMP;
-
   static uint64_t binStr2uint64(const char* str, size_t len, std::string& err);
   static uint64_t octStr2uint64(const char* str, size_t len, std::string& err);
   static uint64_t decStr2uint64(const char* str, size_t len, std::string& err);
@@ -191,6 +189,10 @@ class Param {
   // clear the macros
   #undef PARAM_NODE
   #undef PARAM_TO
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 // define the subclasses using macros and ParamClassesList.h

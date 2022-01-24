@@ -359,20 +359,24 @@ template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
   }
 };
 
-
-/// \endcond
-
+/**
+ macros that define methods to write the object to std::cout
+ */
 #define DECLARE_DUMP \
   void dump() const; \
   void dump(chpl::StringifyKind debug_level) const
 
 #define IMPLEMENT_DUMP(T) \
   void T::dump() const { \
-    stringify(std::cerr, DEBUG_DETAIL); \
+    dump(DEBUG_DETAIL); \
   } \
   void T::dump(chpl::StringifyKind debug_level) const { \
     stringify(std::cerr, debug_level); \
   }
+
+
+/// \endcond
+
 
 } // end namespace chpl
 

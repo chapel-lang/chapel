@@ -70,8 +70,9 @@ class UntypedFnSignature {
         ss << " ";
       }
     }
-
+    /// \cond DO_NOT_DOCUMENT
     DECLARE_DUMP;
+    /// \endcond DO_NOT_DOCUMENT
   };
 
  private:
@@ -215,7 +216,9 @@ class UntypedFnSignature {
     ss << " ";
   }
 
+  /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
@@ -255,7 +258,9 @@ class CallInfoActual {
     ss << " ";
   }
 
+  /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /** CallInfo */
@@ -316,7 +321,9 @@ class CallInfo {
       ss << " ";
   }
 
+  /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 
@@ -436,7 +443,9 @@ class PoiInfo {
     poiScope()->stringify(ss, stringKind);
   }
 
+  /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 // TODO: should this actually be types::FunctionType?
@@ -514,8 +523,6 @@ class TypedFnSignature {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  DECLARE_DUMP;
-
   /** Returns the id of the relevant uast node (usually a Function
       but it can be a Record or Class for compiler-generated functions) */
   const ID& id() const {
@@ -574,6 +581,10 @@ class TypedFnSignature {
     assert(0 <= i && (size_t) i < formalTypes_.size());
     return formalTypes_[i];
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -797,7 +808,9 @@ class ResolvedExpression {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
+  /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**

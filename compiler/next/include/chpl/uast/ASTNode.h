@@ -153,7 +153,9 @@ class ASTNode {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
+  /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h

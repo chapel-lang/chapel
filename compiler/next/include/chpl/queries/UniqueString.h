@@ -147,8 +147,6 @@ class UniqueString final {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  DECLARE_DUMP;
-
   bool isEmpty() const {
     return s.i.c_str()[0] == '\0';
   }
@@ -245,11 +243,12 @@ class UniqueString final {
   void mark(Context* context) const {
     s.i.mark(context);
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
+
 };
-
-/// \cond DO_NOT_DOCUMENT
-
-/// \endcond
 
 
 } // end namespace chpl
