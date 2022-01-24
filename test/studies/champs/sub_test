@@ -43,7 +43,7 @@ fi
 
 
 # Compile CHAMPS executables
-test_compile prp
+test_compile prep
 test_compile flow
 test_compile icing
 
