@@ -165,9 +165,9 @@ static void vrb_log_ep_conn(struct vrb_xrc_ep *ep, char *desc)
 			   (void *) ep, ep->tgt_ibv_qp->qp_num);
 }
 
-/* Caller must hold eq:lock */
 void vrb_free_xrc_conn_setup(struct vrb_xrc_ep *ep, int disconnect)
 {
+	assert(fastlock_held(&ep->base_ep.eq->lock));
 	assert(ep->conn_setup);
 
 	/* If a disconnect is requested then the XRC bidirectional connection
@@ -201,13 +201,13 @@ void vrb_free_xrc_conn_setup(struct vrb_xrc_ep *ep, int disconnect)
 	}
 }
 
-/* Caller must hold the eq:lock */
 int vrb_connect_xrc(struct vrb_xrc_ep *ep, struct sockaddr *addr,
 		       int reciprocal, void *param, size_t paramlen)
 {
 	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
 	int ret;
 
+	assert(fastlock_held(&ep->base_ep.eq->lock));
 	assert(!ep->base_ep.id && !ep->base_ep.ibv_qp && !ep->ini_conn);
 
 	domain->xrc.lock_acquire(&domain->xrc.ini_lock);
@@ -231,11 +231,11 @@ int vrb_connect_xrc(struct vrb_xrc_ep *ep, struct sockaddr *addr,
 	return FI_SUCCESS;
 }
 
-/* Caller must hold the eq:lock */
 void vrb_ep_ini_conn_done(struct vrb_xrc_ep *ep, uint32_t tgt_qpn)
 {
 	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
 
+	assert(fastlock_held(&ep->base_ep.eq->lock));
 	assert(ep->base_ep.id && ep->ini_conn);
 
 	domain->xrc.lock_acquire(&domain->xrc.ini_lock);
@@ -261,9 +261,9 @@ void vrb_ep_ini_conn_done(struct vrb_xrc_ep *ep, uint32_t tgt_qpn)
 	domain->xrc.lock_release(&domain->xrc.ini_lock);
 }
 
-/* Caller must hold the eq:lock */
 void vrb_ep_ini_conn_rejected(struct vrb_xrc_ep *ep)
 {
+	assert(fastlock_held(&ep->base_ep.eq->lock));
 	assert(ep->base_ep.id && ep->ini_conn);
 
 	vrb_log_ep_conn(ep, "INI Connection Rejected");
@@ -281,14 +281,14 @@ void vrb_ep_tgt_conn_done(struct vrb_xrc_ep *ep)
 	}
 }
 
-/* Caller must hold the eq:lock */
 int vrb_resend_shared_accept_xrc(struct vrb_xrc_ep *ep,
-				    struct vrb_connreq *connreq,
-				    struct rdma_cm_id *id)
+				 struct vrb_connreq *connreq,
+				 struct rdma_cm_id *id)
 {
 	struct rdma_conn_param conn_param = { 0 };
 	struct vrb_xrc_cm_data *cm_data = ep->accept_param_data;
 
+	assert(fastlock_held(&ep->base_ep.eq->lock));
 	assert(cm_data && ep->tgt_ibv_qp);
 	assert(ep->tgt_ibv_qp->qp_num == connreq->xrc.tgt_qpn);
 	assert(ep->peer_srqn == connreq->xrc.peer_srqn);
@@ -310,9 +310,8 @@ int vrb_resend_shared_accept_xrc(struct vrb_xrc_ep *ep,
 	return rdma_accept(id, &conn_param);
 }
 
-/* Caller must hold the eq:lock */
 int vrb_accept_xrc(struct vrb_xrc_ep *ep, int reciprocal,
-		      void *param, size_t paramlen)
+		   void *param, size_t paramlen)
 {
 	struct sockaddr *addr;
 	struct vrb_connreq *connreq;
@@ -321,6 +320,7 @@ int vrb_accept_xrc(struct vrb_xrc_ep *ep, int reciprocal,
 	struct vrb_xrc_cm_data connect_cm_data;
 	int ret;
 
+	assert(fastlock_held(&ep->base_ep.eq->lock));
 	addr = rdma_get_local_addr(ep->tgt_id);
 	if (addr)
 		ofi_straddr_dbg(&vrb_prov, FI_LOG_CORE, "src_addr", addr);

@@ -68,6 +68,9 @@
 
 struct local_info {
 	uint32_t mr_cache_size;	// in MBs
+#ifdef PSM_CUDA
+	uint32_t gpu_cache_size;	// in MBs
+#endif
 	uint8_t rdma_mode;	// RV_RDMA_MODE_*
 
 	// additional information for RV_RDMA_MODE_KERNEL
@@ -92,6 +95,10 @@ struct local_info {
 	// output from RNDV driver
 	uint16_t major_rev;		// driver ABI rev
 	uint16_t minor_rev;		// driver ABI rev
+#ifdef PSM_CUDA
+	uint16_t gpu_major_rev;		// driver GPU ABI rev
+	uint16_t gpu_minor_rev;		// driver GPU ABI rev
+#endif
 	uint64_t capability;
 	uint32_t rv_index;		// unique within job on given NIC
 };
@@ -135,6 +142,10 @@ typedef struct psm2_rv_mr *psm2_rv_mr_t;
 
 #define psm2_rv_cache_stats rv_cache_stats_params_out
 
+#ifdef PSM_CUDA
+#define psm2_rv_gpu_cache_stats rv_gpu_cache_stats_params_out
+#endif
+
 #define psm2_rv_conn_stats rv_conn_get_stats_params_out
 
 #define psm2_rv_event_stats rv_event_stats_params_out
@@ -149,12 +160,31 @@ static inline uint16_t psm2_rv_get_user_minor_bldtime_version(void)
 	return RV_ABI_VER_MINOR;
 }
 
+#ifdef NVIDIA_GPU_DIRECT
+static inline uint16_t psm2_rv_get_gpu_user_major_bldtime_version(void)
+{
+	return RV_GPU_ABI_VER_MAJOR;
+}
+
+static inline uint16_t psm2_rv_get_gpu_user_minor_bldtime_version(void)
+{
+	return RV_GPU_ABI_VER_MINOR;
+}
+
+extern uint64_t __psm2_min_gpu_bar_size(void);
+#endif
+
 extern psm2_rv_t __psm2_rv_open(const char *devname, struct local_info *loc_info);
 
 extern int __psm2_rv_close(psm2_rv_t rv);
 
 extern int __psm2_rv_get_cache_stats(psm2_rv_t rv,
 									struct psm2_rv_cache_stats *stats);
+
+#ifdef PSM_CUDA
+extern int __psm2_rv_gpu_get_cache_stats(psm2_rv_t rv,
+									struct psm2_rv_gpu_cache_stats *stats);
+#endif
 
 extern psm2_rv_conn_t __psm2_rv_create_conn(psm2_rv_t rv,
 		struct ibv_ah_attr *ah_attr, // for remote node
@@ -183,9 +213,23 @@ extern psm2_rv_mr_t __psm2_rv_reg_mem(psm2_rv_t rv, int cmd_fd, struct ibv_pd *p
 
 extern int __psm2_rv_dereg_mem(psm2_rv_t rv, psm2_rv_mr_t mr);
 
-extern void * __psm2_rv_pin_and_mmap(psm2_rv_t rv, uintptr_t pageaddr, uint32_t pagelen);
+extern void * __psm2_rv_pin_and_mmap(psm2_rv_t rv, uintptr_t pageaddr,
+			uint64_t pagelen, int access);
 
-extern int __psm2_rv_munmap_and_unpin(psm2_rv_t rv, const void *buf, uint32_t size);
+extern int64_t __psm2_rv_evict_exact(psm2_rv_t rv, void *addr,
+			uint64_t length, int access);
+
+extern int64_t __psm2_rv_evict_range(psm2_rv_t rv, void *addr, uint64_t length);
+
+extern int64_t __psm2_rv_evict_amount(psm2_rv_t rv, uint64_t bytes, uint32_t count);
+
+#ifdef PSM_CUDA
+extern int64_t __psm2_rv_evict_gpu_range(psm2_rv_t rv, uintptr_t addr,
+			uint64_t length);
+
+extern int64_t __psm2_rv_evict_gpu_amount(psm2_rv_t rv, uint64_t bytes,
+			uint32_t count);
+#endif
 
 extern int __psm2_rv_post_rdma_write_immed(psm2_rv_t rv, psm2_rv_conn_t conn,
 				void *loc_buf, psm2_rv_mr_t loc_mr,

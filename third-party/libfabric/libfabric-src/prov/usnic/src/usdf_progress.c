@@ -93,7 +93,7 @@ usdf_fabric_progression_thread(void *v)
 	int num_blocked_waiting;
 	int sleep_time;
 	ofi_epoll_t epfd;
-	void *context;
+	struct ofi_epollfds_event event;
 	int ret;
 	int n;
 
@@ -111,14 +111,14 @@ usdf_fabric_progression_thread(void *v)
 			sleep_time = -1;
 		}
 
-		n = ofi_epoll_wait(epfd, &context, 1, sleep_time);
+		n = ofi_epoll_wait(epfd, &event, 1, sleep_time);
 		if (fp->fab_exit || (n < 0 && n != EINTR)) {
 			pthread_exit(NULL);
 		}
 
 		/* consume event if there was one */
 		if (n == 1) {
-			pip = context;
+			pip = event.data.ptr;
 			ret = pip->pi_rtn(pip->pi_context);
 			if (ret != 0) {
 				pthread_exit(NULL);

@@ -51,7 +51,7 @@ struct psmx3_env psmx3_env = {
 	.conn_timeout	= 10,
 	.prog_interval	= -1,
 	.prog_affinity	= NULL,
-	.multi_ep	= 0,
+	.multi_ep	= 1,
 	.inject_size	= 64,
 	.lock_level	= 2,
 	.lazy_conn	= 0,
@@ -222,7 +222,7 @@ static int psmx3_check_multi_ep_cap(void)
 	uint64_t caps = PSM2_MULTI_EP_CAP;
 	char *s = getenv("PSM3_MULTI_EP");
 
-	if (psm2_get_capability_mask(caps) == caps && psmx3_get_yes_no(s, 0))
+	if (psm2_get_capability_mask(caps) == caps && psmx3_get_yes_no(s, 1))
 		psmx3_env.multi_ep = 1;
 	else
 		psmx3_env.multi_ep = 0;
@@ -418,13 +418,6 @@ static int psmx3_update_hfi_info(void)
 		psmx3_hfi_info.max_trx_ctxt, psmx3_hfi_info.free_trx_ctxt);
 
 	return 0;
-}
-
-int psmx3_get_round_robin_unit(int idx)
-{
-	return psmx3_hfi_info.num_active_units ?
-			psmx3_hfi_info.active_units[idx % psmx3_hfi_info.num_active_units] :
-			-1;
 }
 
 static void psmx3_update_hfi_nic_info(struct fi_info *info)
@@ -669,7 +662,6 @@ static void psmx3_fini(void)
 
 struct fi_provider psmx3_prov = {
 	.name = PSMX3_PROV_NAME,
-	.version = OFI_VERSION_DEF_PROV,
 	.fi_version = OFI_VERSION_LATEST,
 	.getinfo = psmx3_getinfo,
 	.fabric = psmx3_fabric,
@@ -678,9 +670,14 @@ struct fi_provider psmx3_prov = {
 
 PROVIDER_INI
 {
-	FI_INFO(&psmx3_prov, FI_LOG_CORE, "build options: HAVE_PSM3_SRC=%d, "
-			"PSMX3_USE_REQ_CONTEXT=%d\n", HAVE_PSM3_SRC,
-			PSMX3_USE_REQ_CONTEXT);
+	psmx3_prov.version = get_psm3_provider_version();
+
+	FI_INFO(&psmx3_prov, FI_LOG_CORE, "build options: VERSION=%u.%u=%u.%u.%u.%u, "
+			"HAVE_PSM3_SRC=%d, PSM3_CUDA=%d\n",
+			(psmx3_prov.version >> 16), (psmx3_prov.version & 0xFFFF),
+			(psmx3_prov.version >> 16) / 100, (psmx3_prov.version >> 16) % 100,
+			(psmx3_prov.version & 0xFFFF) / 1000, ((psmx3_prov.version & 0xFFFF) % 1000) / 10,
+			HAVE_PSM3_SRC, PSM3_CUDA);
 
 	fi_param_define(&psmx3_prov, "name_server", FI_PARAM_BOOL,
 			"Whether to turn on the name server or not "

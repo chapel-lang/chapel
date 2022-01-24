@@ -68,12 +68,14 @@
 
 struct smr_env {
 	size_t sar_threshold;
+	int disable_cma;
 };
 
 extern struct smr_env smr_env;
 extern struct fi_provider smr_prov;
 extern struct fi_info smr_info;
 extern struct util_prov smr_util_prov;
+extern int smr_global_ep_idx; //protected by the ep_list_lock
 
 int smr_fabric(struct fi_fabric_attr *attr, struct fid_fabric **fabric,
 		void *context);
@@ -180,6 +182,12 @@ static inline enum fi_hmem_iface smr_get_mr_hmem_iface(struct util_domain *domai
 	return ((struct ofi_mr *) *desc)->iface;
 }
 
+static inline uint64_t smr_get_mr_flags(void **desc)
+{
+	assert(desc && *desc);
+	return ((struct ofi_mr *) *desc)->flags;
+}
+
 struct smr_unexp_msg {
 	struct dlist_entry entry;
 	struct smr_cmd cmd;
@@ -197,13 +205,10 @@ struct smr_queue {
 
 struct smr_fabric {
 	struct util_fabric	util_fabric;
-	int			dom_idx;
 };
 
 struct smr_domain {
 	struct util_domain	util_domain;
-	int			dom_idx;
-	int			ep_idx;
 	int			fast_rma;
 };
 
@@ -211,13 +216,6 @@ struct smr_domain {
 #define SMR_PREFIX_NS	"fi_ns://"
 
 #define SMR_ZE_SOCK_PATH	"/dev/shm/ze_"
-
-static inline const char *smr_no_prefix(const char *addr)
-{
-	char *start;
-
-	return (start = strstr(addr, "://")) ? start + 3 : addr;
-}
 
 #define SMR_RMA_ORDER (OFI_ORDER_RAR_SET | OFI_ORDER_RAW_SET | FI_ORDER_RAS |	\
 		       OFI_ORDER_WAR_SET | OFI_ORDER_WAW_SET | FI_ORDER_WAS |	\

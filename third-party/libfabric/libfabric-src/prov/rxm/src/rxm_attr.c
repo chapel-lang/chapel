@@ -53,7 +53,7 @@ struct fi_tx_attr rxm_tx_attr = {
 	.op_flags = RXM_PASSTHRU_TX_OP_FLAGS | RXM_TX_OP_FLAGS,
 	.msg_order = ~0x0ULL,
 	.comp_order = FI_ORDER_NONE,
-	.size = 65536,
+	.size = RXM_TX_SIZE,
 	.iov_limit = RXM_IOV_LIMIT,
 	.rma_iov_limit = RXM_IOV_LIMIT,
 };
@@ -63,7 +63,7 @@ struct fi_rx_attr rxm_rx_attr = {
 	.op_flags = RXM_PASSTHRU_RX_OP_FLAGS | RXM_RX_OP_FLAGS,
 	.msg_order = ~0x0ULL,
 	.comp_order = FI_ORDER_NONE,
-	.size = 65536,
+	.size = RXM_RX_SIZE,
 	.iov_limit= RXM_IOV_LIMIT,
 };
 
@@ -72,7 +72,7 @@ struct fi_tx_attr rxm_tx_attr_coll = {
 	.op_flags = RXM_PASSTHRU_TX_OP_FLAGS | RXM_TX_OP_FLAGS,
 	.msg_order = ~0x0ULL,
 	.comp_order = FI_ORDER_NONE,
-	.size = 65536,
+	.size = RXM_TX_SIZE,
 	.iov_limit = RXM_IOV_LIMIT,
 	.rma_iov_limit = RXM_IOV_LIMIT,
 };
@@ -82,7 +82,7 @@ struct fi_rx_attr rxm_rx_attr_coll = {
 	.op_flags = RXM_PASSTHRU_RX_OP_FLAGS | RXM_RX_OP_FLAGS,
 	.msg_order = ~0x0ULL,
 	.comp_order = FI_ORDER_NONE,
-	.size = 65536,
+	.size = RXM_RX_SIZE,
 	.iov_limit= RXM_IOV_LIMIT,
 };
 

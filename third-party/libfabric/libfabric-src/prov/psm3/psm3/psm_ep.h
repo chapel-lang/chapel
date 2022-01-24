@@ -60,6 +60,7 @@
 #ifndef _PSMI_EP_H
 #define _PSMI_EP_H
 
+
 #include "psm_verbs_ep.h"
 
 /*
@@ -146,6 +147,7 @@ struct psm2_ep {
 	uint16_t network_pkey;	      /**> Pkey */
 	uint16_t network_pkey_index;  /**> Pkey index */
 	int did_syslog;
+	const char *dev_name;	/* just for logging */
 	psm2_uuid_t uuid;
 	uint16_t jkey;
 	uint64_t service_id;	/* OPA service ID */
@@ -167,6 +169,9 @@ struct psm2_ep {
 	uint8_t mr_cache_mode; /** PSM3_MR_CACHE_MODE */
 	uint8_t rv_num_conn; /** PSM3_RV_QP_PER_CONN */
 	uint32_t rv_mr_cache_size; /** PSM3_RV_MR_CACHE_SIZE */
+#ifdef PSM_CUDA
+	uint32_t rv_gpu_cache_size; /** PSM3_RV_GPU_CACHE_SIZE */
+#endif
 	uint32_t rv_q_depth; /** PSM3_RV_Q_DEPTH */
 	uint32_t rv_reconnect_timeout; /* PSM3_RV_RECONNECT_TIMEOUT */
 	uint32_t rv_hb_interval; /* PSM3_RV_HEARTBEAT_INTERVAL */

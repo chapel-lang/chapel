@@ -1569,9 +1569,10 @@ struct psm2_mq_stats {
 	uint64_t rx_user_bytes;
 	/** Messages received into a matched user buffer */
 	uint64_t rx_user_num;
-	/** Bytes received into an unmatched system buffer */
+	/** Bytes received into an unmatched (or out of order) system buffer */
 	uint64_t rx_sys_bytes;
-	/** Messages received into an unmatched system buffer */
+	/** Messages received into an unmatched (or out of order) system buffer */
+	/** this count includes unexpected zero length eager recv */
 	uint64_t rx_sys_num;
 
 	/** Total Messages transmitted (shm and hfi) */
@@ -1580,25 +1581,57 @@ struct psm2_mq_stats {
 	uint64_t tx_eager_num;
 	/** Bytes transmitted eagerly */
 	uint64_t tx_eager_bytes;
-	/** Messages transmitted using expected TID mechanism */
+	/** Messages transmitted using any rendezvous mechanism */
 	uint64_t tx_rndv_num;
-	/** Bytes transmitted using expected TID mechanism */
+	/** Bytes transmitted using any rendezvous mechanism */
 	uint64_t tx_rndv_bytes;
 	/** Messages transmitted (shm only) */
 	uint64_t tx_shm_num;
+	/** Bytes transmitted (shm only) */
+	uint64_t tx_shm_bytes;
 	/** Messages received through shm */
 	uint64_t rx_shm_num;
+	/** Bytes received through shm */
+	uint64_t rx_shm_bytes;
 
-	/** Number of system buffers allocated  */
+	/** sysbufs are used for unexpected eager receive (and RTS payload) */
+	/** Number of messages using system buffers (not used for 0 byte msg) */
 	uint64_t rx_sysbuf_num;
-	/** Bytes allcoated for system buffers */
+	/** Bytes using system buffers */
 	uint64_t rx_sysbuf_bytes;
 
 	/** rank in MPI_COMM_WORLD, while unchanging, easiest to put here */
 	uint64_t comm_world_rank;
 
+#ifdef PSM_CUDA
+	/** Messages transmitted eagerly from CPU buffer */
+	uint64_t tx_eager_cpu_num;
+	/** Bytes transmitted eagerly from CPU buffer */
+	uint64_t tx_eager_cpu_bytes;
+	/** Messages transmitted eagerly from GPU buffer */
+	uint64_t tx_eager_gpu_num;
+	/** Bytes transmitted eagerly from GPU buffer */
+	uint64_t tx_eager_gpu_bytes;
+
+	/** Bytes copied from a system buffer into a matched CPU user buffer */
+	/** this count also includes unexpected zero length eager recv */
+	uint64_t rx_sysbuf_cpu_bytes;
+	/** Messages copied from a system buffer into a matched CPU user buffer */
+	uint64_t rx_sysbuf_cpu_num;
+	/** Bytes gdrCopied from a system buffer into a matched user GPU buffer */
+	uint64_t rx_sysbuf_gdrcopy_bytes;
+	/** Messages gdrCopied from a system buffer into a matched user GPU buffer */
+	uint64_t rx_sysbuf_gdrcopy_num;
+	/** Bytes cuCopied from a system buffer into a matched user GPU buffer */
+	uint64_t rx_sysbuf_cuCopy_bytes;
+	/** Messages cuCopied from a system buffer into a matched user GPU buffer */
+	uint64_t rx_sysbuf_cuCopy_num;
+
 	/** Internally reserved for future use */
+	uint64_t _reserved[3];
+#else
 	uint64_t _reserved[15];
+#endif
 };
 
 #define PSM2_MQ_NUM_STATS    13	/**< How many stats are currently used in @ref psm2_mq_stats */

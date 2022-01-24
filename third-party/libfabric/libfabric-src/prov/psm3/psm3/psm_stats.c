@@ -55,6 +55,7 @@
 
 #include "psm_user.h"
 #include "psm_mq_internal.h"
+#include <sys/syscall.h>
 
 struct psmi_stats_type {
 	STAILQ_ENTRY(psmi_stats_type) next;
@@ -65,6 +66,8 @@ struct psmi_stats_type {
 	uint32_t statstype;
 	uint64_t id;	// identifier to include in output, typically epid
 	void *context;
+	char *info;
+	pid_t tid;	// thread id, useful for multi-ep
 };
 
 static STAILQ_HEAD(, psmi_stats_type) psmi_stats =
@@ -106,6 +109,8 @@ psmi_stats_deregister_type_internal(uint32_t statstype,
 		if (type->statstype == statstype && type->context == context) {
 			STAILQ_REMOVE(&psmi_stats, type, psmi_stats_type, next);
 			psmi_free(type->entries);
+			if (type->info)
+				psmi_free(type->info);
 			psmi_free(type);
 			return PSM2_OK;
 		}
@@ -118,7 +123,7 @@ psmi_stats_register_type_internal(const char *heading,
 			 uint32_t statstype,
 			 const struct psmi_stats_entry *entries_i,
 			 int num_entries, uint64_t id, void *context,
-			 bool rereg)
+			 const char *info, bool rereg)
 {
 	struct psmi_stats_entry *entries;
 	struct psmi_stats_type *type;
@@ -142,6 +147,13 @@ psmi_stats_register_type_internal(const char *heading,
 	type->id = id;
 	type->context = context;
 	type->heading = heading;
+	if (info)
+		type->info = psmi_strdup(NULL, info);
+#ifdef SYS_gettid
+	type->tid = (long int)syscall(SYS_gettid); // gettid();
+#else
+	type->tid = 0;
+#endif
 
 	for (i = 0; i < num_entries; i++) {
 		type->entries[i].desc = entries_i[i].desc;
@@ -160,8 +172,11 @@ psmi_stats_register_type_internal(const char *heading,
 fail:
 	if (entries)
 		psmi_free(entries);
-	if (type)
+	if (type) {
+		if (type->info)
+			psmi_free(type->info);
 		psmi_free(type);
+	}
 	return err;
 }
 
@@ -169,20 +184,22 @@ psm2_error_t
 psmi_stats_register_type(const char *heading,
 			 uint32_t statstype,
 			 const struct psmi_stats_entry *entries_i,
-			 int num_entries, uint64_t id, void *context)
+			 int num_entries, uint64_t id, void *context,
+			 const char* info)
 {
 	return psmi_stats_register_type_internal(heading, statstype, entries_i,
-			 num_entries, id, context, 0);
+			 num_entries, id, context, info, 0);
 }
 
 psm2_error_t
 psmi_stats_reregister_type(const char *heading,
 			 uint32_t statstype,
 			 const struct psmi_stats_entry *entries_i,
-			 int num_entries, uint64_t id, void *context)
+			 int num_entries, uint64_t id, void *context,
+			 const char *info)
 {
 	return psmi_stats_register_type_internal(heading, statstype, entries_i,
-			 num_entries, id, context, 1);
+			 num_entries, id, context, info, 1);
 }
 
 void psmi_stats_show(uint32_t statsmask)
@@ -190,7 +207,6 @@ void psmi_stats_show(uint32_t statsmask)
 	struct psmi_stats_type *type;
 	time_t now;
 	char buf[100];
-	int first=1;
 
 	pthread_spin_lock(&psmi_stats_lock);
 	psmi_open_stats_fd();
@@ -199,9 +215,8 @@ void psmi_stats_show(uint32_t statsmask)
 
 	now = time(NULL);
 
-	if (print_stats_freq > 0)
-		fprintf(perf_stats_fd, "Time Delta %u seconds %s\n",
-			(unsigned)(now - stats_start), ctime_r(&now, buf));
+	fprintf(perf_stats_fd, "Time Delta %u seconds %s",
+		(unsigned)(now - stats_start), ctime_r(&now, buf));
 
 	STAILQ_FOREACH(type, &psmi_stats, next) {
 		int i;
@@ -209,15 +224,17 @@ void psmi_stats_show(uint32_t statsmask)
 
 		if (! (type->statstype & statsmask))
 			continue;
-		if (print_stats_freq <= 0 && first) {
-			fprintf(perf_stats_fd, "Time Delta %u seconds %s\n",
-				(unsigned)(now - stats_start), ctime_r(&now, buf));
-			first = 0;
-		}
+		// when id == 0, we expect 1 report of given type per
+		// process, so we also omit tid.  In which case info probably
+		// NULL but show it if provided when stats_register called.
 		if (type->id)
-			fprintf(perf_stats_fd, " %s id 0x%"PRIx64"\n", type->heading, type->id);
+			fprintf(perf_stats_fd, " %s id 0x%"PRIx64"%s%s tid %d\n",
+				type->heading, type->id, type->info?" ":"",
+				type->info?type->info:"", type->tid);
 		else
-			fprintf(perf_stats_fd, " %s\n", type->heading);
+			fprintf(perf_stats_fd, " %s%s%s\n",
+				type->heading, type->info?" ":"",
+				type->info?type->info:"");
 		for (i=0, entry=&type->entries[0]; i<type->num_entries; i++, entry++) {
 			uint64_t value;
 			value = (entry->getfn != NULL)? entry->getfn(type->context)
@@ -229,6 +246,7 @@ void psmi_stats_show(uint32_t statsmask)
 			entry->old_value = value;
 		}
 	}
+	fprintf(perf_stats_fd, "\n");
 	fflush(perf_stats_fd);
 unlock:
 	pthread_spin_unlock(&psmi_stats_lock);
@@ -254,6 +272,8 @@ psm2_error_t psmi_stats_deregister_all(void)
 	while ((type = STAILQ_FIRST(&psmi_stats)) != NULL) {
 		STAILQ_REMOVE_HEAD(&psmi_stats, next);
 		psmi_free(type->entries);
+		if (type->info)
+			psmi_free(type->info);
 		psmi_free(type);
 	}
 	pthread_spin_unlock(&psmi_stats_lock);
@@ -764,8 +784,11 @@ void stats_register_mem_stats(psm2_ep_t ep)
 		_SDECL("Other_(max)", m_undefined_max),
 	};
 
+	// TBD - these are global, should only call once and not provide
+	// ep nor device name
 	psmi_stats_register_type("PSM_memory_allocation_statistics",
 				 PSMI_STATSTYPE_MEMORY,
-				 entries, PSMI_STATS_HOWMANY(entries), ep);
+				 entries, PSMI_STATS_HOWMANY(entries), ep,
+				 ep->dev_name);
 }
 #endif // 0   // unused code, specific to QLogic MPI

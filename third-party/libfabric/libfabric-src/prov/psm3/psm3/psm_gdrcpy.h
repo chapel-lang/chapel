@@ -66,17 +66,12 @@ void hfi_gdr_open();
 
 void hfi_gdr_close();
 
+// flags=0 for send, 1 for recv
 void *
 gdr_convert_gpu_to_host_addr(int gdr_fd, unsigned long buf,
 				size_t size, int flags,
-				struct ips_proto* proto);
-
-int
-gdr_unmap_gpu_host_addr(int gdr_fd, const void *buf,
-                             size_t size, struct ips_proto* proto);
+				psm2_ep_t ep);
 
 
-uint64_t
-gdr_cache_evict();
 #endif
 #endif

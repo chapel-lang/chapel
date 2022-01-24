@@ -53,13 +53,13 @@ static void ofi_cq_insert_aux(struct util_cq *cq,
 	slist_insert_tail(&entry->list_entry, &cq->aux_queue);
 }
 
-/* Caller must hold 'cq lock' */
 int ofi_cq_write_overflow(struct util_cq *cq, void *context, uint64_t flags,
 			  size_t len, void *buf, uint64_t data, uint64_t tag,
 			  fi_addr_t src)
 {
 	struct util_cq_aux_entry *entry;
 
+	assert(fastlock_held(&cq->cq_lock));
 	FI_DBG(cq->domain->prov, FI_LOG_CQ, "writing to CQ overflow list\n");
 	assert(ofi_cirque_freecnt(cq->cirq) <= 1);
 
@@ -79,12 +79,12 @@ int ofi_cq_write_overflow(struct util_cq *cq, void *context, uint64_t flags,
 	return 0;
 }
 
-/* Caller must hold 'cq lock' */
 int ofi_cq_insert_error(struct util_cq *cq,
 			const struct fi_cq_err_entry *err_entry)
 {
 	struct util_cq_aux_entry *entry;
 
+	assert(fastlock_held(&cq->cq_lock));
 	assert(err_entry->err);
 	if (!(entry = calloc(1, sizeof(*entry))))
 		return -FI_ENOMEM;
@@ -638,7 +638,7 @@ cleanup:
 }
 
 uint64_t ofi_rx_flags[] = {
-	[ofi_op_msg] = FI_RECV,
+	[ofi_op_msg] = FI_MSG | FI_RECV,
 	[ofi_op_tagged] = FI_RECV | FI_TAGGED,
 	[ofi_op_read_req] = FI_RMA | FI_REMOTE_READ,
 	[ofi_op_read_rsp] = FI_RMA | FI_REMOTE_READ,
@@ -647,7 +647,7 @@ uint64_t ofi_rx_flags[] = {
 	[ofi_op_atomic] = FI_ATOMIC | FI_REMOTE_WRITE,
 	[ofi_op_atomic_fetch] = FI_ATOMIC | FI_REMOTE_READ,
 	[ofi_op_atomic_compare] = FI_ATOMIC | FI_REMOTE_READ,
-	[ofi_op_read_async] = FI_RMA | FI_READ,
+	[ofi_op_read_async] = FI_RMA | FI_REMOTE_READ,
 };
 
 uint64_t ofi_tx_flags[] = {
@@ -660,6 +660,6 @@ uint64_t ofi_tx_flags[] = {
 	[ofi_op_atomic] = FI_ATOMIC | FI_WRITE,
 	[ofi_op_atomic_fetch] = FI_ATOMIC | FI_READ,
 	[ofi_op_atomic_compare] = FI_ATOMIC | FI_READ,
-	[ofi_op_read_async] = FI_RMA | FI_RMA,
+	[ofi_op_read_async] = FI_RMA | FI_READ,
 };
 

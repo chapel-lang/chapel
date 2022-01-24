@@ -108,7 +108,7 @@ void rxr_pkt_init_req_hdr(struct rxr_ep *ep,
 			  struct rxr_pkt_entry *pkt_entry)
 {
 	char *opt_hdr;
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 	struct rxr_base_hdr *base_hdr;
 
 	/* init the base header */
@@ -118,8 +118,9 @@ void rxr_pkt_init_req_hdr(struct rxr_ep *ep,
 	base_hdr->flags = 0;
 
 	peer = rxr_ep_get_peer(ep, tx_entry->addr);
+	assert(peer);
 
-	if (OFI_UNLIKELY(!(peer->flags & RXR_PEER_HANDSHAKE_RECEIVED))) {
+	if (rxr_peer_need_raw_addr_hdr(peer)) {
 		/*
 		 * This is the first communication with this peer on this
 		 * endpoint, so send the core's address for this EP in the REQ
@@ -138,9 +139,10 @@ void rxr_pkt_init_req_hdr(struct rxr_ep *ep,
 		struct rxr_req_opt_raw_addr_hdr *raw_addr_hdr;
 
 		raw_addr_hdr = (struct rxr_req_opt_raw_addr_hdr *)opt_hdr;
-		raw_addr_hdr->addr_len = ep->core_addrlen;
-		memcpy(raw_addr_hdr->raw_addr, ep->core_addr, raw_addr_hdr->addr_len);
-		opt_hdr += sizeof(*raw_addr_hdr) + raw_addr_hdr->addr_len;
+		raw_addr_hdr->addr_len = RXR_REQ_OPT_RAW_ADDR_HDR_SIZE - sizeof(struct rxr_req_opt_raw_addr_hdr);
+		assert(raw_addr_hdr->addr_len >= ep->core_addrlen);
+		memcpy(raw_addr_hdr->raw_addr, ep->core_addr, ep->core_addrlen);
+		opt_hdr += RXR_REQ_OPT_RAW_ADDR_HDR_SIZE;
 	}
 
 	if (base_hdr->flags & RXR_REQ_OPT_CQ_DATA_HDR) {
@@ -238,7 +240,7 @@ int64_t rxr_pkt_req_cq_data(struct rxr_pkt_entry *pkt_entry)
 size_t rxr_pkt_req_max_header_size(int pkt_type)
 {
 	int max_hdr_size = REQ_INF_LIST[pkt_type].base_hdr_size
-		+ sizeof(struct rxr_req_opt_raw_addr_hdr) + RXR_MAX_NAME_LENGTH
+		+ RXR_REQ_OPT_RAW_ADDR_HDR_SIZE
 		+ sizeof(struct rxr_req_opt_cq_data_hdr);
 
 	if (pkt_type == RXR_EAGER_RTW_PKT ||
@@ -269,9 +271,10 @@ size_t rxr_pkt_max_header_size(void)
 
 size_t rxr_pkt_req_max_data_size(struct rxr_ep *ep, fi_addr_t addr, int pkt_type)
 {
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 
 	peer = rxr_ep_get_peer(ep, addr);
+	assert(peer);
 
 	if (peer->is_local) {
 		assert(ep->use_shm);
@@ -287,17 +290,28 @@ size_t rxr_pkt_req_max_data_size(struct rxr_ep *ep, fi_addr_t addr, int pkt_type
  *     init() functions
  */
 
-/*
- * this function is called after you have set header in pkt_entry->pkt
+/**
+ * @brief set up data in a REQ packet using tx_entry information.
+ *        Depend on the tx_entry, this function can either copy data to packet entry, or point
+ *        pkt_entry->iov to applicaiton buffer.
+ *        It requires the packet header to be set.
+ *
+ * @param[in]		ep		end point.
+ * @param[in,out]	pkt_entry	packet entry. Header must have been set when the function is called
+ * @param[in]		tx_entry	This function will use iov, iov_count and desc of tx_entry
+ * @param[in]		data_offset	offset of the data to be set up. In reference to tx_entry->total_len.
+ * @param[in]		data_size	length of the data to be set up. In reference to tx_entry->total_len.
+ * @return		no return
  */
-void rxr_pkt_data_from_tx(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry,
-			  struct rxr_tx_entry *tx_entry, size_t data_offset,
-			  size_t data_size)
+static inline
+void rxr_pkt_req_data_from_tx(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry,
+			      struct rxr_tx_entry *tx_entry, size_t data_offset,
+			      size_t data_size)
 {
 	int tx_iov_index;
 	size_t tx_iov_offset;
 	char *data;
-	size_t hdr_size;
+	size_t hdr_size, copied;
 	struct efa_mr *desc;
 
 	assert(pkt_entry->send);
@@ -316,45 +330,41 @@ void rxr_pkt_data_from_tx(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry,
 	assert(tx_iov_offset < tx_entry->iov[tx_iov_index].iov_len);
 
 	/*
-	 * We want to go through the bounce-buffers here only when
-	 * one of the following conditions are true:
-	 * 1. The application can not register buffers (no FI_MR_LOCAL)
-	 * 2. desc.peer.iface is anything but FI_HMEM_SYSTEM
-	 * 3. prov/shm is not used for this transfer, and #1 or #2 hold true.
-	 *
-	 * In the first case, we use the pre-registered pkt_entry's MR. In the
-	 * second case, this is for the eager and medium-message protocols which
-	 * can not rendezvous and pull the data from a peer. In the third case,
-	 * the bufpool would not have been created with a registration handler,
-	 * so pkt_entry->mr will be NULL.
-	 *
+	 * Copy can be avoid if:
+	 * 1. user provided memory descriptor, or lower provider does not need memory descriptor
+	 * 2. data to be send is in 1 iov, because device only support 2 iov, and we use
+	 *    1st iov for header.
 	 */
-	if (!tx_entry->desc[tx_iov_index] && pkt_entry->mr) {
-		data = (char *)pkt_entry->pkt + hdr_size;
-		data_size = ofi_copy_from_hmem_iov(data,
+	if ((!pkt_entry->mr || tx_entry->desc[tx_iov_index]) &&
+	    (tx_iov_offset + data_size <= tx_entry->iov[tx_iov_index].iov_len)) {
+
+		assert(ep->core_iov_limit >= 2);
+		pkt_entry->send->iov[0].iov_base = pkt_entry->pkt;
+		pkt_entry->send->iov[0].iov_len = hdr_size;
+		pkt_entry->send->desc[0] = pkt_entry->mr ? fi_mr_desc(pkt_entry->mr) : NULL;
+
+		pkt_entry->send->iov[1].iov_base = (char *)tx_entry->iov[tx_iov_index].iov_base + tx_iov_offset;
+		pkt_entry->send->iov[1].iov_len = data_size;
+		pkt_entry->send->desc[1] = tx_entry->desc[tx_iov_index];
+		pkt_entry->send->iov_count = 2;
+		pkt_entry->pkt_size = hdr_size + data_size;
+		return;
+	}
+
+	data = (char *)pkt_entry->pkt + hdr_size;
+	copied = ofi_copy_from_hmem_iov(data,
 					data_size,
 					desc ? desc->peer.iface : FI_HMEM_SYSTEM,
 					desc ? desc->peer.device.reserved : 0,
 					tx_entry->iov,
 					tx_entry->iov_count,
 					data_offset);
-		pkt_entry->send->iov_count = 0;
-		pkt_entry->pkt_size = hdr_size + data_size;
-		return;
-	}
-
-	assert(ep->core_iov_limit >= 2);
-	pkt_entry->send->iov[0].iov_base = pkt_entry->pkt;
-	pkt_entry->send->iov[0].iov_len = hdr_size;
-	pkt_entry->send->desc[0] = pkt_entry->mr ? fi_mr_desc(pkt_entry->mr) : NULL;
-
-	pkt_entry->send->iov[1].iov_base = (char *)tx_entry->iov[tx_iov_index].iov_base + tx_iov_offset;
-	pkt_entry->send->iov[1].iov_len = MIN(data_size, tx_entry->iov[tx_iov_index].iov_len - tx_iov_offset);
-	pkt_entry->send->desc[1] = tx_entry->desc[tx_iov_index];
-	pkt_entry->send->iov_count = 2;
-	pkt_entry->pkt_size = hdr_size + pkt_entry->send->iov[1].iov_len;
+	assert(copied == data_size);
+	pkt_entry->send->iov_count = 0;
+	pkt_entry->pkt_size = hdr_size + copied;
 }
 
+static inline
 void rxr_pkt_init_rtm(struct rxr_ep *ep,
 		      struct rxr_tx_entry *tx_entry,
 		      int pkt_type, uint64_t data_offset,
@@ -370,7 +380,7 @@ void rxr_pkt_init_rtm(struct rxr_ep *ep,
 
 	data_size = MIN(tx_entry->total_len - data_offset,
 			ep->mtu_size - rxr_pkt_req_hdr_size(pkt_entry));
-	rxr_pkt_data_from_tx(ep, pkt_entry, tx_entry, data_offset, data_size);
+	rxr_pkt_req_data_from_tx(ep, pkt_entry, tx_entry, data_offset, data_size);
 	pkt_entry->x_entry = tx_entry;
 }
 
@@ -715,8 +725,25 @@ size_t rxr_pkt_rtm_total_len(struct rxr_pkt_entry *pkt_entry)
 	return 0;
 }
 
-void rxr_pkt_rtm_init_rx_entry(struct rxr_pkt_entry *pkt_entry,
-			       struct rxr_rx_entry *rx_entry)
+/*
+ * @brief Update rx_entry with the following information in RTM packet entry.
+ *            address:       this is necessary because original address in
+ *                           rx_entry can be FI_ADDR_UNSPEC
+ *            cq_entry.data: for FI_REMOTE_CQ_DATA
+ *            msg_id:        message id
+ *            total_len:     application might provide a buffer that is larger
+ *                           then incoming message size.
+ *            tag:           sender's tag can be different from receiver's tag
+ *                           becuase match only requires
+ *                           (sender_tag | ignore) == (receiver_tag | ignore)
+ *        This function is applied to both unexpected rx_entry (when they are
+ *        allocated) and expected rx_entry (when they are matched to a RTM)
+ *
+ * @param pkt_entry(input)  RTM packet entry
+ * @param rx_entry(input)   rx entry to be updated
+ */
+void rxr_pkt_rtm_update_rx_entry(struct rxr_pkt_entry *pkt_entry,
+				 struct rxr_rx_entry *rx_entry)
 {
 	struct rxr_base_hdr *base_hdr;
 
@@ -743,8 +770,7 @@ struct rxr_rx_entry *rxr_pkt_get_rtm_matched_rx_entry(struct rxr_ep *ep,
 	assert(match);
 	rx_entry = container_of(match, struct rxr_rx_entry, entry);
 	if (rx_entry->rxr_flags & RXR_MULTI_RECV_POSTED) {
-		rx_entry = rxr_ep_split_rx_entry(ep, rx_entry,
-						 NULL, pkt_entry);
+		rx_entry = rxr_msg_split_rx_entry(ep, rx_entry, NULL, pkt_entry);
 		if (OFI_UNLIKELY(!rx_entry)) {
 			FI_WARN(&rxr_prov, FI_LOG_CQ,
 				"RX entries exhausted.\n");
@@ -752,7 +778,7 @@ struct rxr_rx_entry *rxr_pkt_get_rtm_matched_rx_entry(struct rxr_ep *ep,
 			return NULL;
 		}
 	} else {
-		rxr_pkt_rtm_init_rx_entry(pkt_entry, rx_entry);
+		rxr_pkt_rtm_update_rx_entry(pkt_entry, rx_entry);
 	}
 
 	rx_entry->state = RXR_RX_MATCHED;
@@ -818,6 +844,20 @@ struct rxr_rx_entry *rxr_pkt_get_msgrtm_rx_entry(struct rxr_ep *ep,
 	dlist_func_t *match_func;
 	int pkt_type;
 
+	if ((*pkt_entry_ptr)->alloc_type == RXR_PKT_FROM_USER_BUFFER) {
+		/* If a pkt_entry is constructred from user supplied buffer,
+		 * the endpoint must be in zero copy receive mode.
+		 */
+		assert(ep->use_zcpy_rx);
+		/* In this mode, an rx_entry is always created together
+		 * with this pkt_entry, and pkt_entry->x_entry is pointing
+		 * to it. Thus we can skip the matching process, and return
+		 * pkt_entry->x_entry right away.
+		 */
+		assert((*pkt_entry_ptr)->x_entry);
+		return (*pkt_entry_ptr)->x_entry;
+	}
+
 	if (ep->util_ep.caps & FI_DIRECTED_RECV)
 		match_func = &rxr_pkt_rtm_match_recv;
 	else
@@ -827,10 +867,10 @@ struct rxr_rx_entry *rxr_pkt_get_msgrtm_rx_entry(struct rxr_ep *ep,
 	                               *pkt_entry_ptr);
 	if (OFI_UNLIKELY(!match)) {
 		/*
-		 * rxr_ep_alloc_unexp_rx_entry_for_msgrtm() might release pkt_entry,
+		 * rxr_msg_alloc_unexp_rx_entry_for_msgrtm() might release pkt_entry,
 		 * thus we have to use pkt_entry_ptr here
 		 */
-		rx_entry = rxr_ep_alloc_unexp_rx_entry_for_msgrtm(ep, pkt_entry_ptr);
+		rx_entry = rxr_msg_alloc_unexp_rx_entry_for_msgrtm(ep, pkt_entry_ptr);
 		if (OFI_UNLIKELY(!rx_entry)) {
 			FI_WARN(&rxr_prov, FI_LOG_CQ,
 				"RX entries exhausted.\n");
@@ -868,10 +908,10 @@ struct rxr_rx_entry *rxr_pkt_get_tagrtm_rx_entry(struct rxr_ep *ep,
 	                               *pkt_entry_ptr);
 	if (OFI_UNLIKELY(!match)) {
 		/*
-		 * rxr_ep_alloc_unexp_rx_entry_for_tagrtm() might release pkt_entry,
+		 * rxr_msg_alloc_unexp_rx_entry_for_tagrtm() might release pkt_entry,
 		 * thus we have to use pkt_entry_ptr here
 		 */
-		rx_entry = rxr_ep_alloc_unexp_rx_entry_for_tagrtm(ep, pkt_entry_ptr);
+		rx_entry = rxr_msg_alloc_unexp_rx_entry_for_tagrtm(ep, pkt_entry_ptr);
 		if (OFI_UNLIKELY(!rx_entry)) {
 			efa_eq_write_error(&ep->util_ep, FI_ENOBUFS, -FI_ENOBUFS);
 			return NULL;
@@ -908,7 +948,7 @@ ssize_t rxr_pkt_proc_matched_read_rtm(struct rxr_ep *ep,
 	/* truncate rx_entry->iov to save memory registration pages because we
 	 * need to do memory registration for the receiving buffer.
 	 */
-	ofi_truncate_iov(rx_entry->iov, &rx_entry->iov_count, rx_entry->total_len);
+	ofi_truncate_iov(rx_entry->iov, &rx_entry->iov_count, rx_entry->total_len + ep->msg_prefix_size);
 	return rxr_read_post_remote_read_or_queue(ep, RXR_RX_ENTRY, rx_entry);
 }
 
@@ -957,6 +997,71 @@ ssize_t rxr_pkt_proc_matched_medium_rtm(struct rxr_ep *ep,
 	return ret;
 }
 
+/**
+ * @brief process a matched eager rtm packet entry
+ *
+ * For an eager message, it will write rx completion,
+ * release packet entry and rx_entry.
+ *
+ * @param[in]	ep		endpoint
+ * @param[in]	rx_entry	RX entry
+ * @param[in]	pkt_entry	packet entry
+ * @return	On success, return 0
+ * 		On failure, return libfabric error code
+ */
+ssize_t rxr_pkt_proc_matched_eager_rtm(struct rxr_ep *ep,
+				       struct rxr_rx_entry *rx_entry,
+				       struct rxr_pkt_entry *pkt_entry)
+{
+	int err;
+	char *data;
+	size_t hdr_size, data_size;
+
+	hdr_size = rxr_pkt_req_hdr_size(pkt_entry);
+
+	if (pkt_entry->alloc_type != RXR_PKT_FROM_USER_BUFFER) {
+		data = (char *)pkt_entry->pkt + hdr_size;
+		data_size = pkt_entry->pkt_size - hdr_size;
+
+		/*
+		 * On success, rxr_pkt_copy_to_rx will write rx completion,
+		 * release pkt_entry and rx_entry
+		 */
+		err = rxr_pkt_copy_to_rx(ep, rx_entry, 0, pkt_entry, data, data_size);
+		if (err)
+			rxr_pkt_entry_release_rx(ep, pkt_entry);
+
+		return err;
+	}
+
+	/* In this case, data is already in user provided buffer, so no need
+	 * to copy. However, we do need to make sure the packet header length
+	 * is correct. Otherwise, user will get wrong data.
+	 *
+	 * The expected header size is
+	 * 	ep->msg_prefix_size - sizeof(struct rxr_pkt_entry)
+	 * because we used the first sizeof(struct rxr_pkt_entry) to construct
+	 * a pkt_entry.
+	 */
+	if (hdr_size != ep->msg_prefix_size - sizeof(struct rxr_pkt_entry)) {
+		/* if header size is wrong, the data in user buffer is not useful.
+		 * setting rx_entry->cq_entry.len here will cause an error cq entry
+		 * to be written to application.
+		 */
+		rx_entry->cq_entry.len = 0;
+	} else {
+		assert(rx_entry->cq_entry.buf == pkt_entry->pkt - sizeof(struct rxr_pkt_entry));
+		rx_entry->cq_entry.len = pkt_entry->pkt_size + sizeof(struct rxr_pkt_entry);
+	}
+
+	rxr_cq_write_rx_completion(ep, rx_entry);
+	rxr_release_rx_entry(ep, rx_entry);
+
+	/* no need to release packet entry because it is
+	 * constructed using user supplied buffer */
+	return 0;
+}
+
 ssize_t rxr_pkt_proc_matched_rtm(struct rxr_ep *ep,
 				 struct rxr_rx_entry *rx_entry,
 				 struct rxr_pkt_entry *pkt_entry)
@@ -967,6 +1072,13 @@ ssize_t rxr_pkt_proc_matched_rtm(struct rxr_ep *ep,
 	ssize_t ret;
 
 	assert(rx_entry->state == RXR_RX_MATCHED);
+
+	if (!rx_entry->peer) {
+		rx_entry->addr = pkt_entry->addr;
+		rx_entry->peer = rxr_ep_get_peer(ep, rx_entry->addr);
+		assert(rx_entry->peer);
+		dlist_insert_tail(&rx_entry->peer_entry, &rx_entry->peer->rx_entry_list);
+	}
 
 	/* Adjust rx_entry->cq_entry.len as needed.
 	 * Initialy rx_entry->cq_entry.len is total recv buffer size.
@@ -1008,35 +1120,27 @@ ssize_t rxr_pkt_proc_matched_rtm(struct rxr_ep *ep,
 	    pkt_type == RXR_DC_MEDIUM_TAGRTM_PKT)
 		return rxr_pkt_proc_matched_medium_rtm(ep, rx_entry, pkt_entry);
 
+	if (pkt_type == RXR_EAGER_MSGRTM_PKT ||
+	    pkt_type == RXR_EAGER_TAGRTM_PKT ||
+	    pkt_type == RXR_DC_EAGER_MSGRTM_PKT ||
+	    pkt_type == RXR_DC_EAGER_TAGRTM_PKT) {
+		return rxr_pkt_proc_matched_eager_rtm(ep, rx_entry, pkt_entry);
+	}
+
 	hdr_size = rxr_pkt_req_hdr_size(pkt_entry);
 	data = (char *)pkt_entry->pkt + hdr_size;
 	data_size = pkt_entry->pkt_size - hdr_size;
 
 	rx_entry->bytes_received += data_size;
 	ret = rxr_pkt_copy_to_rx(ep, rx_entry, 0, pkt_entry, data, data_size);
-	if (ret) {
-		rxr_pkt_entry_release_rx(ep, pkt_entry);
-		return ret;
-	}
-
-	if (pkt_type == RXR_EAGER_MSGRTM_PKT ||
-	    pkt_type == RXR_EAGER_TAGRTM_PKT ||
-	    pkt_type == RXR_DC_EAGER_MSGRTM_PKT ||
-	    pkt_type == RXR_DC_EAGER_TAGRTM_PKT) {
-		ret = 0;
-	} else {
-		/*
-		 * long message protocol
-		 */
 #if ENABLE_DEBUG
-		dlist_insert_tail(&rx_entry->rx_pending_entry, &ep->rx_pending_list);
-		ep->rx_pending++;
+	dlist_insert_tail(&rx_entry->rx_pending_entry, &ep->rx_pending_list);
+	ep->rx_pending++;
 #endif
-		rx_entry->state = RXR_RX_RECV;
-		/* we have noticed using the default value achieve better bandwidth */
-		rx_entry->credit_request = rxr_env.tx_min_credits;
-		ret = rxr_pkt_post_ctrl_or_queue(ep, RXR_RX_ENTRY, rx_entry, RXR_CTS_PKT, 0);
-	}
+	rx_entry->state = RXR_RX_RECV;
+	/* we have noticed using the default value achieve better bandwidth */
+	rx_entry->credit_request = rxr_env.tx_min_credits;
+	ret = rxr_pkt_post_ctrl_or_queue(ep, RXR_RX_ENTRY, rx_entry, RXR_CTS_PKT, 0);
 
 	return ret;
 }
@@ -1057,10 +1161,7 @@ ssize_t rxr_pkt_proc_msgrtm(struct rxr_ep *ep,
 	if (rx_entry->state == RXR_RX_MATCHED) {
 		err = rxr_pkt_proc_matched_rtm(ep, rx_entry, pkt_entry);
 		if (OFI_UNLIKELY(err)) {
-			if (rxr_cq_handle_rx_error(ep, rx_entry, err)) {
-				assert(0 && "cannot write cq error entry");
-				efa_eq_write_error(&ep->util_ep, -err, err);
-			}
+			rxr_cq_write_rx_error(ep, rx_entry, -err, -err);
 			rxr_pkt_entry_release_rx(ep, pkt_entry);
 			rxr_release_rx_entry(ep, rx_entry);
 			return err;
@@ -1086,10 +1187,7 @@ ssize_t rxr_pkt_proc_tagrtm(struct rxr_ep *ep,
 	if (rx_entry->state == RXR_RX_MATCHED) {
 		err = rxr_pkt_proc_matched_rtm(ep, rx_entry, pkt_entry);
 		if (OFI_UNLIKELY(err)) {
-			if (rxr_cq_handle_rx_error(ep, rx_entry, err)) {
-				assert(0 && "cannot write error cq entry");
-				efa_eq_write_error(&ep->util_ep, -err, err);
-			}
+			rxr_cq_write_rx_error(ep, rx_entry, -err, -err);
 			rxr_pkt_entry_release_rx(ep, pkt_entry);
 			rxr_release_rx_entry(ep, rx_entry);
 			return err;
@@ -1139,65 +1237,18 @@ ssize_t rxr_pkt_proc_rtm_rta(struct rxr_ep *ep,
 		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
 			"Unknown packet type ID: %d\n",
 		       base_hdr->type);
-		if (rxr_cq_handle_cq_error(ep, -FI_EINVAL))
-			assert(0 && "failed to write err cq entry");
+		efa_eq_write_error(&ep->util_ep, FI_EINVAL, FI_EINVAL);
+		rxr_pkt_entry_release_rx(ep, pkt_entry);
 	}
 
 	return -FI_EINVAL;
-}
-
-void rxr_pkt_handle_zcpy_recv(struct rxr_ep *ep,
-			      struct rxr_pkt_entry *pkt_entry)
-{
-	struct rxr_rx_entry *rx_entry;
-
-	struct rxr_base_hdr *base_hdr __attribute__((unused));
-	base_hdr = rxr_get_base_hdr(pkt_entry->pkt);
-	assert(base_hdr->type >= RXR_BASELINE_REQ_PKT_BEGIN);
-	assert(base_hdr->type != RXR_MEDIUM_MSGRTM_PKT);
-	assert(base_hdr->type != RXR_MEDIUM_TAGRTM_PKT);
-	assert(base_hdr->type != RXR_DC_MEDIUM_MSGRTM_PKT);
-	assert(base_hdr->type != RXR_DC_MEDIUM_MSGRTM_PKT);
-	assert(pkt_entry->type == RXR_PKT_ENTRY_USER);
-
-	rx_entry = rxr_pkt_get_msgrtm_rx_entry(ep, &pkt_entry);
-	if (OFI_UNLIKELY(!rx_entry)) {
-		efa_eq_write_error(&ep->util_ep, FI_ENOBUFS, -FI_ENOBUFS);
-		rxr_pkt_entry_release_rx(ep, pkt_entry);
-		return;
-	}
-	pkt_entry->x_entry = rx_entry;
-	if (rx_entry->state != RXR_RX_MATCHED)
-		return;
-
-	/*
-	 * The incoming receive will always get matched to the first posted
-	 * rx_entry available, so this is a constant cost. No real tag or
-	 * address matching happens.
-	 */
-	assert(rx_entry->state == RXR_RX_MATCHED);
-
-	/*
-	 * Adjust rx_entry->cq_entry.len as needed.
-	 * Initialy rx_entry->cq_entry.len is total recv buffer size.
-	 * rx_entry->total_len is from REQ packet and is total send buffer size.
-	 * if send buffer size < recv buffer size, we adjust value of rx_entry->cq_entry.len
-	 * if send buffer size > recv buffer size, we have a truncated message and will
-	 * write error CQ entry.
-	 */
-	if (rx_entry->cq_entry.len > rx_entry->total_len)
-		rx_entry->cq_entry.len = rx_entry->total_len;
-
-	rxr_cq_write_rx_completion(ep, rx_entry);
-	rxr_pkt_entry_release_rx(ep, pkt_entry);
-	rxr_release_rx_entry(ep, rx_entry);
 }
 
 void rxr_pkt_handle_rtm_rta_recv(struct rxr_ep *ep,
 				 struct rxr_pkt_entry *pkt_entry)
 {
 	struct rxr_base_hdr *base_hdr;
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 	bool need_ordering;
 	int ret, msg_id;
 
@@ -1227,6 +1278,7 @@ void rxr_pkt_handle_rtm_rta_recv(struct rxr_ep *ep,
 
 	need_ordering = false;
 	peer = rxr_ep_get_peer(ep, pkt_entry->addr);
+	assert(peer);
 
 	if (!peer->is_local) {
 		/*
@@ -1257,7 +1309,7 @@ void rxr_pkt_handle_rtm_rta_recv(struct rxr_ep *ep,
 		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
 			"Invalid msg_id: %" PRIu32
 			" robuf->exp_msg_id: %" PRIu32 "\n",
-		       msg_id, peer->robuf->exp_msg_id);
+		       msg_id, peer->robuf.exp_msg_id);
 		efa_eq_write_error(&ep->util_ep, FI_EIO, ret);
 		rxr_pkt_entry_release_rx(ep, pkt_entry);
 		return;
@@ -1286,7 +1338,7 @@ void rxr_pkt_handle_rtm_rta_recv(struct rxr_ep *ep,
 	if (OFI_UNLIKELY(ret))
 		return;
 
-	ofi_recvwin_slide(peer->robuf);
+	ofi_recvwin_slide((&peer->robuf));
 	/* process pending items in reorder buff */
 	rxr_cq_proc_pending_items_in_recvwin(ep, peer);
 }
@@ -1498,10 +1550,8 @@ struct rxr_rx_entry *rxr_pkt_alloc_rtw_rx_entry(struct rxr_ep *ep,
 {
 	struct rxr_rx_entry *rx_entry;
 	struct rxr_base_hdr *base_hdr;
-	struct fi_msg msg = {0};
 
-	msg.addr = pkt_entry->addr;
-	rx_entry = rxr_ep_get_rx_entry(ep, &msg, 0, ~0, ofi_op_write, 0);
+	rx_entry = rxr_ep_alloc_rx_entry(ep, pkt_entry->addr, ofi_op_write);
 	if (OFI_UNLIKELY(!rx_entry))
 		return NULL;
 
@@ -1687,7 +1737,7 @@ void rxr_pkt_handle_long_rtw_recv(struct rxr_ep *ep,
 	err = rxr_pkt_post_ctrl_or_queue(ep, RXR_RX_ENTRY, rx_entry, RXR_CTS_PKT, 0);
 	if (OFI_UNLIKELY(err)) {
 		FI_WARN(&rxr_prov, FI_LOG_CQ, "Cannot post CTS packet\n");
-		rxr_cq_handle_rx_error(ep, rx_entry, err);
+		rxr_cq_write_rx_error(ep, rx_entry, -err, -err);
 		rxr_release_rx_entry(ep, rx_entry);
 	}
 }
@@ -1792,19 +1842,6 @@ ssize_t rxr_pkt_init_long_rtr(struct rxr_ep *ep,
 }
 
 /*
- *     handle_sent() functions for RTR packet types
- */
-void rxr_pkt_handle_rtr_sent(struct rxr_ep *ep,
-			     struct rxr_pkt_entry *pkt_entry)
-{
-	struct rxr_tx_entry *tx_entry;
-
-	tx_entry = (struct rxr_tx_entry *)pkt_entry->x_entry;
-	tx_entry->bytes_sent = 0;
-	tx_entry->state = RXR_TX_WAIT_READ_FINISH;
-}
-
-/*
  *     handle_send_completion() funciton for RTR packet
  */
 void rxr_pkt_handle_rtr_send_completion(struct rxr_ep *ep,
@@ -1827,10 +1864,8 @@ void rxr_pkt_handle_rtr_recv(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry)
 	struct rxr_rx_entry *rx_entry;
 	struct rxr_tx_entry *tx_entry;
 	ssize_t err;
-	struct fi_msg msg = {0};
 
-	msg.addr = pkt_entry->addr;
-	rx_entry = rxr_ep_get_rx_entry(ep, &msg, 0, ~0, ofi_op_read_rsp, 0);
+	rx_entry = rxr_ep_alloc_rx_entry(ep, pkt_entry->addr, ofi_op_read_rsp);
 	if (OFI_UNLIKELY(!rx_entry)) {
 		FI_WARN(&rxr_prov, FI_LOG_CQ,
 			"RX entries exhausted.\n");
@@ -1842,10 +1877,6 @@ void rxr_pkt_handle_rtr_recv(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry)
 	rx_entry->addr = pkt_entry->addr;
 	rx_entry->bytes_received = 0;
 	rx_entry->bytes_copied = 0;
-	rx_entry->cq_entry.flags |= (FI_RMA | FI_READ);
-	rx_entry->cq_entry.len = ofi_total_iov_len(rx_entry->iov, rx_entry->iov_count);
-	rx_entry->cq_entry.buf = rx_entry->iov[0].iov_base;
-	rx_entry->total_len = rx_entry->cq_entry.len;
 
 	rtr_hdr = (struct rxr_rtr_hdr *)pkt_entry->pkt;
 	rx_entry->rma_initiator_rx_id = rtr_hdr->read_req_rx_id;
@@ -1860,6 +1891,11 @@ void rxr_pkt_handle_rtr_recv(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry)
 		rxr_pkt_entry_release_rx(ep, pkt_entry);
 		return;
 	}
+
+	rx_entry->cq_entry.flags |= (FI_RMA | FI_READ);
+	rx_entry->cq_entry.len = ofi_total_iov_len(rx_entry->iov, rx_entry->iov_count);
+	rx_entry->cq_entry.buf = rx_entry->iov[0].iov_base;
+	rx_entry->total_len = rx_entry->cq_entry.len;
 
 	tx_entry = rxr_rma_alloc_readrsp_tx_entry(ep, rx_entry);
 	if (OFI_UNLIKELY(!tx_entry)) {
@@ -2006,10 +2042,8 @@ struct rxr_rx_entry *rxr_pkt_alloc_rta_rx_entry(struct rxr_ep *ep, struct rxr_pk
 {
 	struct rxr_rx_entry *rx_entry;
 	struct rxr_rta_hdr *rta_hdr;
-	struct fi_msg msg = {0};
 
-	msg.addr = pkt_entry->addr;
-	rx_entry = rxr_ep_get_rx_entry(ep, &msg, 0, ~0, op, 0);
+	rx_entry = rxr_ep_alloc_rx_entry(ep, pkt_entry->addr, op);
 	if (OFI_UNLIKELY(!rx_entry)) {
 		FI_WARN(&rxr_prov, FI_LOG_CQ,
 			"RX entries exhausted.\n");
@@ -2088,8 +2122,7 @@ int rxr_pkt_proc_dc_write_rta(struct rxr_ep *ep,
 		FI_WARN(&rxr_prov, FI_LOG_CQ,
 			"Posting of receipt packet failed! err=%s\n",
 			fi_strerror(err));
-		if (rxr_cq_handle_rx_error(ep, rx_entry, err))
-			assert(0 && "Cannot handle rx error");
+		rxr_cq_write_rx_error(ep, rx_entry, -err, -err);
 		return err;
 	}
 
@@ -2126,10 +2159,8 @@ int rxr_pkt_proc_fetch_rta(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry)
 	}
 
 	err = rxr_pkt_post_ctrl_or_queue(ep, RXR_RX_ENTRY, rx_entry, RXR_ATOMRSP_PKT, 0);
-	if (OFI_UNLIKELY(err)) {
-		if (rxr_cq_handle_rx_error(ep, rx_entry, err))
-			assert(0 && "Cannot handle rx error");
-	}
+	if (OFI_UNLIKELY(err))
+		rxr_cq_write_rx_error(ep, rx_entry, -err, -err);
 
 	rxr_pkt_entry_release_rx(ep, pkt_entry);
 	return 0;

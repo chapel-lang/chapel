@@ -47,43 +47,9 @@
 /*
  *   General purpose utility functions
  */
-
-struct rxr_pkt_entry *rxr_pkt_entry_init_prefix(struct rxr_ep *ep,
-						const struct fi_msg *posted_buf,
-						struct ofi_bufpool *pkt_pool)
-{
-	struct rxr_pkt_entry *pkt_entry;
-	struct efa_mr *mr;
-
-	/*
-	 * Given the pkt_entry->pkt immediately follows the pkt_entry
-	 * fields, we can directly map the user-provided fi_msg address
-	 * as the pkt_entry, which will hold the metadata in the prefix.
-	 */
-	assert(posted_buf->msg_iov->iov_len >= sizeof(struct rxr_pkt_entry) + sizeof(struct rxr_eager_msgrtm_hdr));
-	pkt_entry = (struct rxr_pkt_entry *) posted_buf->msg_iov->iov_base;
-	if (!pkt_entry)
-		return NULL;
-
-	/*
-	 * The ownership of the prefix buffer lies with the application, do not
-	 * put it on the dbg list for cleanup during shutdown or poison it. The
-	 * provider loses jurisdiction over it soon after writing the rx
-	 * completion.
-	 */
-	dlist_init(&pkt_entry->entry);
-	mr = (struct efa_mr *) posted_buf->desc[0];
-	pkt_entry->mr = &mr->mr_fid;
-
-	pkt_entry->type = RXR_PKT_ENTRY_USER;
-	pkt_entry->state = RXR_PKT_ENTRY_IN_USE;
-	pkt_entry->next = NULL;
-
-	return pkt_entry;
-}
-
 struct rxr_pkt_entry *rxr_pkt_entry_alloc(struct rxr_ep *ep,
-					  struct ofi_bufpool *pkt_pool)
+					  struct ofi_bufpool *pkt_pool,
+					  enum rxr_pkt_entry_alloc_type alloc_type)
 {
 	struct rxr_pkt_entry *pkt_entry;
 	void *mr = NULL;
@@ -103,18 +69,23 @@ struct rxr_pkt_entry *rxr_pkt_entry_alloc(struct rxr_ep *ep,
 #ifdef ENABLE_EFA_POISONING
 	memset(pkt_entry->pkt, 0, ep->mtu_size);
 #endif
-	pkt_entry->type = RXR_PKT_ENTRY_POSTED;
-	pkt_entry->state = RXR_PKT_ENTRY_IN_USE;
+	pkt_entry->alloc_type = alloc_type;
+	pkt_entry->flags = RXR_PKT_ENTRY_IN_USE;
 	pkt_entry->next = NULL;
-
+	pkt_entry->x_entry = NULL;
 	return pkt_entry;
 }
 
-static
-void rxr_pkt_entry_release_single_tx(struct rxr_ep *ep,
-				     struct rxr_pkt_entry *pkt)
+/**
+ * @brief release a TX packet entry
+ *
+ * @param[in]     ep  the end point
+ * @param[in,out] pkt the pkt_entry to be released
+ */
+void rxr_pkt_entry_release_tx(struct rxr_ep *ep,
+			      struct rxr_pkt_entry *pkt)
 {
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 
 #if ENABLE_DEBUG
 	dlist_remove(&pkt->dbg_entry);
@@ -123,35 +94,28 @@ void rxr_pkt_entry_release_single_tx(struct rxr_ep *ep,
 	 * Decrement rnr_queued_pkts counter and reset backoff for this peer if
 	 * we get a send completion for a retransmitted packet.
 	 */
-	if (OFI_UNLIKELY(pkt->state == RXR_PKT_ENTRY_RNR_RETRANSMIT)) {
+	if (OFI_UNLIKELY(pkt->flags & RXR_PKT_ENTRY_RNR_RETRANSMIT)) {
 		peer = rxr_ep_get_peer(ep, pkt->addr);
+		assert(peer);
 		peer->rnr_queued_pkt_cnt--;
-		peer->timeout_interval = 0;
-		peer->rnr_timeout_exp = 0;
-		if (peer->flags & RXR_PEER_IN_BACKOFF)
-			dlist_remove(&peer->rnr_entry);
-		peer->flags &= ~RXR_PEER_IN_BACKOFF;
+		peer->rnr_backoff_wait_time = 0;
+		if (peer->flags & RXR_PEER_IN_BACKOFF) {
+			dlist_remove(&peer->rnr_backoff_entry);
+			peer->flags &= ~RXR_PEER_IN_BACKOFF;
+		}
 		FI_DBG(&rxr_prov, FI_LOG_EP_DATA,
 		       "reset backoff timer for peer: %" PRIu64 "\n",
 		       pkt->addr);
 	}
+	if (pkt->send) {
+		ofi_buf_free(pkt->send);
+		pkt->send = NULL;
+	}
 #ifdef ENABLE_EFA_POISONING
 	rxr_poison_mem_region((uint32_t *)pkt, ep->tx_pkt_pool_entry_sz);
 #endif
-	pkt->state = RXR_PKT_ENTRY_FREE;
+	pkt->flags = 0;
 	ofi_buf_free(pkt);
-}
-
-void rxr_pkt_entry_release_tx(struct rxr_ep *ep,
-			      struct rxr_pkt_entry *pkt_entry)
-{
-	struct rxr_pkt_entry *next;
-
-	while (pkt_entry) {
-		next = pkt_entry->next;
-		rxr_pkt_entry_release_single_tx(ep, pkt_entry);
-		pkt_entry = next;
-	}
 }
 
 /*
@@ -169,21 +133,14 @@ void rxr_pkt_entry_release_rx(struct rxr_ep *ep,
 {
 	assert(pkt_entry->next == NULL);
 
-	if (ep->use_zcpy_rx && pkt_entry->type == RXR_PKT_ENTRY_USER)
+	if (ep->use_zcpy_rx && pkt_entry->alloc_type == RXR_PKT_FROM_USER_BUFFER)
 		return;
 
-	if (pkt_entry->type == RXR_PKT_ENTRY_POSTED) {
-		struct rxr_peer *peer;
-
-		peer = rxr_ep_get_peer(ep, pkt_entry->addr);
-
-		if (peer->is_local)
-			ep->rx_bufs_shm_to_post++;
-		else
-			ep->rx_bufs_efa_to_post++;
-	}
-
-	if (pkt_entry->type == RXR_PKT_ENTRY_READ_COPY) {
+	if (pkt_entry->alloc_type == RXR_PKT_FROM_EFA_RX_POOL) {
+		ep->rx_bufs_efa_to_post++;
+	} else if (pkt_entry->alloc_type == RXR_PKT_FROM_SHM_RX_POOL) {
+		ep->rx_bufs_shm_to_post++;
+	} else if (pkt_entry->alloc_type == RXR_PKT_FROM_READ_COPY_POOL) {
 		assert(ep->rx_readcopy_pkt_pool_used > 0);
 		ep->rx_readcopy_pkt_pool_used--;
 	}
@@ -195,18 +152,17 @@ void rxr_pkt_entry_release_rx(struct rxr_ep *ep,
 	/* the same pool size is used for all types of rx pkt_entries */
 	rxr_poison_mem_region((uint32_t *)pkt_entry, ep->rx_pkt_pool_entry_sz);
 #endif
-	pkt_entry->state = RXR_PKT_ENTRY_FREE;
+	pkt_entry->flags = 0;
 	ofi_buf_free(pkt_entry);
 }
 
 void rxr_pkt_entry_copy(struct rxr_ep *ep,
 			struct rxr_pkt_entry *dest,
-			struct rxr_pkt_entry *src,
-			int new_entry_type)
+			struct rxr_pkt_entry *src)
 {
 	FI_DBG(&rxr_prov, FI_LOG_EP_CTRL,
-	       "Copying packet out of posted buffer! src_entry_type: %d new_entry_type: %d\n",
-		src->type, new_entry_type);
+	       "Copying packet out of posted buffer! src_entry_alloc_type: %d desc_entry_alloc_type: %d\n",
+		src->alloc_type, dest->alloc_type);
 	dlist_init(&dest->entry);
 #if ENABLE_DEBUG
 	dlist_init(&dest->dbg_entry);
@@ -218,23 +174,40 @@ void rxr_pkt_entry_copy(struct rxr_ep *ep,
 	dest->x_entry = src->x_entry;
 	dest->pkt_size = src->pkt_size;
 	dest->addr = src->addr;
-	dest->type = new_entry_type;
-	dest->state = RXR_PKT_ENTRY_IN_USE;
+	dest->flags = RXR_PKT_ENTRY_IN_USE;
 	dest->next = NULL;
-	memcpy(dest->pkt, src->pkt, ep->mtu_size);
+	assert(src->pkt_size > 0);
+	memcpy(dest->pkt, src->pkt, src->pkt_size);
 }
 
 /*
- * Create a new rx_entry for an unexpected message. Store the packet for later
- * processing and put the rx_entry on the appropriate unexpected list.
+ * Handle copying or updating the metadata for an unexpected packet.
+ *
+ * Packets from the EFA RX pool will be copied into a separate buffer not
+ * registered with the device (if this option is enabled) so that we can repost
+ * the registered buffer again to keep the EFA RX queue full. Packets from the
+ * SHM RX pool will also be copied to reuse the unexpected message pool.
+ *
+ * @param[in]     ep  the end point
+ * @param[in,out] pkt_entry_ptr unexpected packet, if this packet is copied to
+ *                a new memory region this pointer will be updated.
+ *
+ * @return	  struct rxr_pkt_entry of the updated or copied packet, NULL on
+ * 		  allocation failure.
  */
 struct rxr_pkt_entry *rxr_pkt_get_unexp(struct rxr_ep *ep,
 					struct rxr_pkt_entry **pkt_entry_ptr)
 {
 	struct rxr_pkt_entry *unexp_pkt_entry;
+	enum rxr_pkt_entry_alloc_type type;
 
-	if (rxr_env.rx_copy_unexp && (*pkt_entry_ptr)->type == RXR_PKT_ENTRY_POSTED) {
-		unexp_pkt_entry = rxr_pkt_entry_clone(ep, ep->rx_unexp_pkt_pool, *pkt_entry_ptr, RXR_PKT_ENTRY_UNEXP);
+	type = (*pkt_entry_ptr)->alloc_type;
+
+	if (rxr_env.rx_copy_unexp && (type == RXR_PKT_FROM_EFA_RX_POOL ||
+				      type == RXR_PKT_FROM_SHM_RX_POOL)) {
+		unexp_pkt_entry = rxr_pkt_entry_clone(ep, ep->rx_unexp_pkt_pool,
+						      RXR_PKT_FROM_UNEXP_POOL,
+						      *pkt_entry_ptr);
 		if (OFI_UNLIKELY(!unexp_pkt_entry)) {
 			FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
 				"Unable to allocate rx_pkt_entry for unexp msg\n");
@@ -254,12 +227,12 @@ void rxr_pkt_entry_release_cloned(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_e
 	struct rxr_pkt_entry *next;
 
 	while (pkt_entry) {
-		assert(pkt_entry->type == RXR_PKT_ENTRY_OOO  ||
-		       pkt_entry->type == RXR_PKT_ENTRY_UNEXP);
+		assert(pkt_entry->alloc_type == RXR_PKT_FROM_OOO_POOL ||
+		       pkt_entry->alloc_type == RXR_PKT_FROM_UNEXP_POOL);
 #ifdef ENABLE_EFA_POISONING
 		rxr_poison_mem_region((uint32_t *)pkt_entry, ep->tx_pkt_pool_entry_sz);
 #endif
-		pkt_entry->state = RXR_PKT_ENTRY_FREE;
+		pkt_entry->flags = 0;
 		ofi_buf_free(pkt_entry);
 		next = pkt_entry->next;
 		pkt_entry = next;
@@ -268,38 +241,38 @@ void rxr_pkt_entry_release_cloned(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_e
 
 struct rxr_pkt_entry *rxr_pkt_entry_clone(struct rxr_ep *ep,
 					  struct ofi_bufpool *pkt_pool,
-					  struct rxr_pkt_entry *src,
-					  int new_entry_type)
+					  enum rxr_pkt_entry_alloc_type alloc_type,
+					  struct rxr_pkt_entry *src)
 {
 	struct rxr_pkt_entry *root = NULL;
 	struct rxr_pkt_entry *dst;
 
 	assert(src);
-	assert(new_entry_type == RXR_PKT_ENTRY_OOO ||
-	       new_entry_type == RXR_PKT_ENTRY_UNEXP ||
-	       new_entry_type == RXR_PKT_ENTRY_READ_COPY);
+	assert(alloc_type == RXR_PKT_FROM_OOO_POOL ||
+	       alloc_type == RXR_PKT_FROM_UNEXP_POOL ||
+	       alloc_type == RXR_PKT_FROM_READ_COPY_POOL);
 
-	dst = rxr_pkt_entry_alloc(ep, pkt_pool);
+	dst = rxr_pkt_entry_alloc(ep, pkt_pool, alloc_type);
 	if (!dst)
 		return NULL;
 
-	if (new_entry_type == RXR_PKT_ENTRY_READ_COPY) {
+	if (alloc_type == RXR_PKT_FROM_READ_COPY_POOL) {
 		assert(pkt_pool == ep->rx_readcopy_pkt_pool);
 		ep->rx_readcopy_pkt_pool_used++;
 		ep->rx_readcopy_pkt_pool_max_used = MAX(ep->rx_readcopy_pkt_pool_used,
 							ep->rx_readcopy_pkt_pool_max_used);
 	}
 
-	rxr_pkt_entry_copy(ep, dst, src, new_entry_type);
+	rxr_pkt_entry_copy(ep, dst, src);
 	root = dst;
 	while (src->next) {
-		dst->next = rxr_pkt_entry_alloc(ep, pkt_pool);
+		dst->next = rxr_pkt_entry_alloc(ep, pkt_pool, alloc_type);
 		if (!dst->next) {
 			rxr_pkt_entry_release_cloned(ep, root);
 			return NULL;
 		}
 
-		rxr_pkt_entry_copy(ep, dst->next, src->next, new_entry_type);
+		rxr_pkt_entry_copy(ep, dst->next, src->next);
 		src = src->next;
 		dst = dst->next;
 	}
@@ -319,18 +292,30 @@ void rxr_pkt_entry_append(struct rxr_pkt_entry *dst,
 	dst->next = src;
 }
 
+/**
+ * @brief send a packet using lower provider
+ *
+ * @param ep[in]        rxr end point
+ * @param pkt_entry[in] packet entry to be sent
+ * @param msg[in]       information regarding that the send operation, such as
+ *                      memory buffer, remote EP address and local descriptor.
+ *                      If the shm provider is to be used. Remote EP address
+ *                      and local descriptor must be prepared for shm usage.
+ * @param flags[in]     flags to be passed on to lower provider's send.
+ */
 static inline
 ssize_t rxr_pkt_entry_sendmsg(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry,
 			      const struct fi_msg *msg, uint64_t flags)
 {
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 	size_t ret;
 
-	peer = rxr_ep_get_peer(ep, pkt_entry->addr);
-	assert(ep->tx_pending <= ep->max_outstanding_tx);
-
-	if (ep->tx_pending == ep->max_outstanding_tx)
+	if (pkt_entry->alloc_type == RXR_PKT_FROM_EFA_TX_POOL &&
+	    ep->efa_outstanding_tx_ops == ep->efa_max_outstanding_tx_ops)
 		return -FI_EAGAIN;
+
+	peer = rxr_ep_get_peer(ep, pkt_entry->addr);
+	assert(peer);
 
 	if (peer->flags & RXR_PEER_IN_BACKOFF)
 		return -FI_EAGAIN;
@@ -346,72 +331,82 @@ ssize_t rxr_pkt_entry_sendmsg(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry
 		ret = fi_sendmsg(ep->shm_ep, msg, flags);
 	} else {
 		ret = fi_sendmsg(ep->rdm_ep, msg, flags);
-		if (OFI_LIKELY(!ret))
-			rxr_ep_inc_tx_pending(ep, peer);
 	}
 
-	return ret;
+	if (OFI_UNLIKELY(ret))
+		return ret;
+
+	rxr_ep_record_tx_op_submitted(ep, pkt_entry);
+	return 0;
 }
 
-ssize_t rxr_pkt_entry_sendv(struct rxr_ep *ep,
-			    struct rxr_pkt_entry *pkt_entry,
-			    fi_addr_t addr, const struct iovec *iov,
-			    void **desc, size_t count, uint64_t flags)
-{
-	struct fi_msg msg;
-	struct rxr_peer *peer;
-
-	msg.msg_iov = iov;
-	msg.desc = desc;
-	msg.iov_count = count;
-	peer = rxr_ep_get_peer(ep, addr);
-	msg.addr = (peer->is_local) ? peer->shm_fiaddr : addr;
-	msg.context = pkt_entry;
-	msg.data = 0;
-
-	return rxr_pkt_entry_sendmsg(ep, pkt_entry, &msg, flags);
-}
-
-/* rxr_pkt_start currently expects data pkt right after pkt hdr */
-ssize_t rxr_pkt_entry_send_with_flags(struct rxr_ep *ep,
-				      struct rxr_pkt_entry *pkt_entry,
-				      fi_addr_t addr, uint64_t flags)
+/**
+ * @brief Construct a fi_msg object with the information stored in pkt_entry,
+ * and send it out
+ *
+ * @param[in] ep	rxr endpoint
+ * @param[in] pkt_entry	packet entry used to construct the fi_msg object
+ * @param[in] flags	flags to be applied to lower provider's send operation
+ * @return		0 on success
+ * 			On error, a negative value corresponding to fabric errno
+ *
+ */
+ssize_t rxr_pkt_entry_send(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry,
+			   uint64_t flags)
 {
 	struct iovec iov;
 	void *desc;
+	struct fi_msg msg;
+	struct rdm_peer *peer;
 
-	iov.iov_base = rxr_pkt_start(pkt_entry);
-	iov.iov_len = pkt_entry->pkt_size;
+	peer = rxr_ep_get_peer(ep, pkt_entry->addr);
+	assert(peer);
 
-	if (rxr_ep_get_peer(ep, addr)->is_local) {
-		assert(ep->use_shm);
-		desc = NULL;
+	if (pkt_entry->send && pkt_entry->send->iov_count > 0) {
+		msg.msg_iov = pkt_entry->send->iov;
+		msg.iov_count = pkt_entry->send->iov_count;
+		msg.desc = pkt_entry->send->desc;
 	} else {
-		desc = fi_mr_desc(pkt_entry->mr);
+		iov.iov_base = rxr_pkt_start(pkt_entry);
+		iov.iov_len = pkt_entry->pkt_size;
+		desc = peer->is_local ? NULL : fi_mr_desc(pkt_entry->mr);
+		msg.msg_iov = &iov;
+		msg.iov_count = 1;
+		msg.desc = &desc;
 	}
 
-	return rxr_pkt_entry_sendv(ep, pkt_entry, addr, &iov, &desc, 1, flags);
-}
+	msg.addr = pkt_entry->addr;
+	msg.context = pkt_entry;
+	msg.data = 0;
 
-ssize_t rxr_pkt_entry_send(struct rxr_ep *ep,
-			   struct rxr_pkt_entry *pkt_entry,
-			   fi_addr_t addr)
-{
-	return rxr_pkt_entry_send_with_flags(ep, pkt_entry, addr, 0);
+	if (peer->is_local) {
+		msg.addr = peer->shm_fiaddr;
+		rxr_convert_desc_for_shm(msg.iov_count, msg.desc);
+	}
+
+	return rxr_pkt_entry_sendmsg(ep, pkt_entry, &msg, flags);
 }
 
 ssize_t rxr_pkt_entry_inject(struct rxr_ep *ep,
 			     struct rxr_pkt_entry *pkt_entry,
 			     fi_addr_t addr)
 {
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
+	ssize_t ret;
 
 	/* currently only EOR packet is injected using shm ep */
 	peer = rxr_ep_get_peer(ep, addr);
+	assert(peer);
 
 	assert(ep->use_shm && peer->is_local);
-	return fi_inject(ep->shm_ep, rxr_pkt_start(pkt_entry), pkt_entry->pkt_size,
+	ret = fi_inject(ep->shm_ep, rxr_pkt_start(pkt_entry), pkt_entry->pkt_size,
 			 peer->shm_fiaddr);
+
+	if (OFI_UNLIKELY(ret))
+		return ret;
+
+	rxr_ep_record_tx_op_submitted(ep, pkt_entry);
+	return 0;
 }
 
 /*
@@ -423,6 +418,7 @@ struct rxr_rx_entry *rxr_pkt_rx_map_lookup(struct rxr_ep *ep,
 	struct rxr_pkt_rx_map *entry = NULL;
 	struct rxr_pkt_rx_key key;
 
+	memset(&key, 0, sizeof(key));
 	key.msg_id = rxr_pkt_msg_id(pkt_entry);
 	key.addr = pkt_entry->addr;
 	HASH_FIND(hh, ep->pkt_rx_map, &key, sizeof(struct rxr_pkt_rx_key), entry);
@@ -443,6 +439,7 @@ void rxr_pkt_rx_map_insert(struct rxr_ep *ep,
 		return;
 	}
 
+	memset(&entry->key, 0, sizeof(entry->key));
 	entry->key.msg_id = rxr_pkt_msg_id(pkt_entry);
 	entry->key.addr = pkt_entry->addr;
 
@@ -466,6 +463,7 @@ void rxr_pkt_rx_map_remove(struct rxr_ep *ep,
 	struct rxr_pkt_rx_map *entry;
 	struct rxr_pkt_rx_key key;
 
+	memset(&key, 0, sizeof(key));
 	key.msg_id = rxr_pkt_msg_id(pkt_entry);
 	key.addr = pkt_entry->addr;
 

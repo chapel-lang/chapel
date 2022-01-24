@@ -159,6 +159,13 @@ typedef atomic_long	ofi_atomic_int64_t;
 							     &expected, desired,			\
 							     memory_order_acq_rel,			\
 							     memory_order_relaxed);			\
+	}												\
+	static inline											\
+	bool ofi_atomic_cas_bool##radix(ofi_atomic##radix##_t *atomic, 					\
+					int##radix##_t expected, 					\
+					int##radix##_t desired)						\
+	{												\
+		return ofi_atomic_cas_bool_strong##radix(atomic, expected, desired);			\
 	}
 
 #elif defined HAVE_BUILTIN_ATOMICS

@@ -138,9 +138,10 @@ ips_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 	psm2_ep_t ep = proto->ep;
 	struct ibv_send_wr wr;
 	struct ibv_send_wr *bad_wr;
-	struct ibv_sge list;
+	struct ibv_sge list[2];
 	sbuf_t sbuf;
 	struct ips_message_header *ips_lrh = &scb->ips_lrh;
+	int send_dma = ips_scb_flags(scb) & IPS_SEND_FLAG_SEND_MR;
 
 	// these defines are bit ugly, but make code below simpler with less ifdefs
 	// once we decide if USE_RC is valuable we can cleanup
@@ -159,10 +160,10 @@ ips_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 				"RC eager or any "
 				"UD packet before sending",
 				1, IPS_FAULTINJ_SENDLOST);
-		if (psmi_faultinj_is_fault(fi_sendlost))
+		if_pf(PSMI_FAULTINJ_IS_FAULT(fi_sendlost, ""))
 			return PSM2_OK;
 	}
-#endif
+#endif // PSM_FI
 	PSMI_LOCK_ASSERT(proto->mq->progress_lock);
 	psmi_assert_always(! cksum_valid);	// no software checksum yet
 	// allocate a send buffer
@@ -186,25 +187,41 @@ ips_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 	// copy scb->ips_lrh to send buffer
 	_HFI_VDBG("copy lrh %p\n", ips_lrh);
 	memcpy(sbuf_to_buffer(sbuf), ips_lrh, sizeof(*ips_lrh));
-	// copy payload to send buffer, length could be zero, be safe
-	_HFI_VDBG("copy payload %p %u\n",  payload, length);
+	if (!send_dma) {
+		// copy payload to send buffer, length could be zero, be safe
+		_HFI_VDBG("copy payload %p %u\n",  payload, length);
 #ifdef PSM_CUDA
-	if (is_cuda_payload) {
-		PSMI_CUDA_CALL(cuMemcpyDtoH, sbuf_to_buffer(sbuf)+sizeof(*ips_lrh),
-			       (CUdeviceptr)payload, length);
-	} else
+		if (is_cuda_payload) {
+			//_HFI_ERROR("cuMemcpyDtoH %p %u\n", payload, length);
+			PSMI_CUDA_CALL(cuMemcpyDtoH, sbuf_to_buffer(sbuf)+sizeof(*ips_lrh),
+				(CUdeviceptr)payload, length);
+		} else
 #endif
-	{
-		memcpy(sbuf_to_buffer(sbuf)+sizeof(*ips_lrh), payload, length);
+		{
+			memcpy(sbuf_to_buffer(sbuf)+sizeof(*ips_lrh), payload, length);
+		}
 	}
-	_HFI_VDBG("%s send - opcode %x\n", qp_type_str(USE_QP),
-            _get_proto_hfi_opcode((struct  ips_message_header*)sbuf_to_buffer(sbuf)));
+	_HFI_VDBG("%s send - opcode %x dma %d MR %p\n", qp_type_str(USE_QP),
+            _get_proto_hfi_opcode((struct  ips_message_header*)sbuf_to_buffer(sbuf)), !!send_dma, scb->mr);
 	// we don't support software checksum
 	psmi_assert_always(! (proto->flags & IPS_PROTO_FLAG_CKSUM));
 	psmi_assert_always(USE_QP);	// make sure we aren't called too soon
-	list.addr = (uintptr_t)sbuf_to_buffer(sbuf);
-	list.length = sizeof(*ips_lrh)+ length ;	// note no UD_ADDITION
-	list.lkey = sbuf_lkey(ep, sbuf);
+	list[0].addr = (uintptr_t)sbuf_to_buffer(sbuf);
+	list[0].lkey = sbuf_lkey(ep, sbuf);
+	if (send_dma) {
+		list[0].length = sizeof(*ips_lrh);	// note no UD_ADDITION
+		list[1].addr = scb->mr->iova
+			+ ((uintptr_t)ips_scb_buffer(scb) - (uintptr_t)scb->mr->addr);
+		psmi_assert(ips_scb_buffer(scb) == payload);
+#ifdef RNDV_MOD
+		psmi_assert(psm2_verbs_user_space_mr(scb->mr));
+#endif
+		list[1].length = length;
+		list[1].lkey = scb->mr->lkey;
+	} else {
+		list[0].length = sizeof(*ips_lrh)+ length ;	// note no UD_ADDITION
+		list[1].length = 0;
+	}
 #ifdef PSM_FI
 	if_pf(PSMI_FAULTINJ_ENABLED_EP(ep)) {
 		PSMI_FAULTINJ_STATIC_DECL(fi_sq_lkey, "sq_lkey",
@@ -212,20 +229,20 @@ ips_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 				"RC eager or any "
 				"UD packet with bad lkey",
 				0, IPS_FAULTINJ_SQ_LKEY);
-		if (psmi_faultinj_is_fault(fi_sq_lkey)) {
-			printf("corrupting SQ lkey QP %u\n", USE_QP->qp_num );
-			fflush(stdout);
-			list.lkey = 0x55;
-		}
+		if_pf(PSMI_FAULTINJ_IS_FAULT(fi_sq_lkey, " QP %u", USE_QP->qp_num ))
+			list[0].lkey = 0x55;
 	}
-#endif
+#endif // PSM_FI
 	wr.next = NULL;	// just post 1
 	psmi_assert(!((uintptr_t)sbuf & VERBS_SQ_WR_ID_MASK));
 	wr.wr_id = (uintptr_t)sbuf | VERBS_SQ_WR_ID_SEND;	// we'll get this back in completion
-		// we don't use the scb as wr_id since it seems they may be freed
+		// we don't use the scb as wr_id since for PIO they may be freed
 		// immediately after a succesful call to transfer
-	wr.sg_list = &list;
-	wr.num_sge = 1;	// size of sg_list
+	wr.sg_list = list;
+	if (send_dma)
+		wr.num_sge = 2;	// size of sg_list
+	else
+		wr.num_sge = 1;	// size of sg_list
 	wr.opcode = IBV_WR_SEND;
 	// we want to only get occasional send completions
 	// and use them to release a whole set of buffers for reuse
@@ -247,7 +264,7 @@ ips_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 	}
 
 		// for small messages, we may use IBV_SEND_INLINE for performance
-	if (list.length <= USE_MAX_INLINE)
+	if (! send_dma && list[0].length <= USE_MAX_INLINE)
 		wr.send_flags |= IBV_SEND_INLINE;
 	//wr.imm_data = 0;	// only if we use IBV_WR_SEND_WITH_IMM;
 	// ud fields are ignored for RC send (overlay fields for RDMA)
@@ -260,20 +277,21 @@ ips_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 
 	if (_HFI_PDBG_ON) {
 		_HFI_PDBG("ud_transfer_frame: len %u, remote qpn %u payload %u\n",
-			list.length,
+			list[0].length+list[1].length,
 				(USE_QP->qp_type != IBV_QPT_UD)? flow->ipsaddr->remote_qpn :
 				 wr.wr.ud.remote_qpn,
 			length);
-		__psm2_dump_buf((uint8_t*)list.addr, list.length);
+		_HFI_PDBG_DUMP((uint8_t*)list[0].addr, list[1].length);
 		_HFI_PDBG("post send: QP %p (%u)\n", USE_QP, USE_QP->qp_num);
 	}
 	if_pf (ibv_post_send(USE_QP, &wr, &bad_wr)) {
 		if (errno != EBUSY && errno != EAGAIN && errno != ENOMEM)
-			_HFI_ERROR("failed to post SQ: %s", strerror(errno));
+			_HFI_ERROR("failed to post SQ on %s: %s", ep->dev_name, strerror(errno));
+		proto->stats.post_send_fail++;
 		ret = PSM2_EP_NO_RESOURCES;
 	}
 	_HFI_VDBG("done ud_transfer_frame: len %u, remote qpn %u\n",
-		list.length,
+		list[0].length +list[1].length,
 		(USE_QP->qp_type != IBV_QPT_UD)? flow->ipsaddr->remote_qpn :
  		wr.wr.ud.remote_qpn);
 	// reap any completions

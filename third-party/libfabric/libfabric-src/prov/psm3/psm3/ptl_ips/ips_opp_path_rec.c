@@ -107,10 +107,6 @@ ips_opp_get_path_rec(ips_path_type_t type, struct ips_proto *proto,
 		    psmi_calloc(proto->ep, UNDEFINED, 1,
 				sizeof(ips_path_rec_t));
 		if (!elid.key || !path_rec) {
-			if (elid.key)
-				psmi_free(elid.key);
-			if (path_rec)
-				psmi_free(path_rec);
 			err = PSM2_NO_MEMORY;
 			goto fail;
 		}
@@ -121,8 +117,6 @@ ips_opp_get_path_rec(ips_path_type_t type, struct ips_proto *proto,
 							  &query,
 							  &opp_response);
 		if (opp_err) {
-			psmi_free(path_rec);
-			psmi_free(elid.key);
 			err = PSM2_EPID_PATH_RESOLUTION;
 			goto fail;
 		}
@@ -153,8 +147,6 @@ ips_opp_get_path_rec(ips_path_type_t type, struct ips_proto *proto,
 
 		/* Setup CCA parameters for path */
 		if (path_rec->pr_sl > PSMI_SL_MAX) {
-			psmi_free(path_rec);
-			psmi_free(elid.key);
 			err = PSM2_INTERNAL_ERR;
 			goto fail;
 		}
@@ -169,11 +161,8 @@ ips_opp_get_path_rec(ips_path_type_t type, struct ips_proto *proto,
 		if (proto->epinfo.ep_timeout_ack_max < timeout_ack_ms)
 			proto->epinfo.ep_timeout_ack_max = timeout_ack_ms;
 		err = ips_make_ah(proto->ep, path_rec);
-		if (err != PSM2_OK) {
-			psmi_free(elid.key);
-			psmi_free(path_rec);
-			return err;
-		}
+		if (err != PSM2_OK)
+			goto fail;
 
 		/* Add path record into cache */
 		strcpy(elid.key, eplid);
@@ -184,25 +173,30 @@ ips_opp_get_path_rec(ips_path_type_t type, struct ips_proto *proto,
 
 #ifdef _HFI_DEBUGGING
 	/* Dump path record stats */
-	_HFI_PRDBG("Path Record ServiceID: %" PRIx64 " %x -----> %x\n",
+	_HFI_CONNDBG("Path Record ServiceID: %" PRIx64 " %x -----> %x\n",
 		   (uint64_t) __be64_to_cpu(query.service_id),
 		   __be16_to_cpu(slid), __be16_to_cpu(dlid));
 	if (opp_response_set)
 	{
-		_HFI_PRDBG("MTU: %x, %x\n", (opp_response.mtu & 0x3f),
+		_HFI_CONNDBG("MTU: %x, %x\n", (opp_response.mtu & 0x3f),
 			   path_rec->pr_mtu);
-		_HFI_PRDBG("PKEY: 0x%04x\n", ntohs(opp_response.pkey));
-		_HFI_PRDBG("SL: 0x%04x\n", ntohs(opp_response.qos_class_sl));
-		_HFI_PRDBG("Rate: %x\n", (opp_response.rate & 0x3f));
+		_HFI_CONNDBG("PKEY: 0x%04x\n", ntohs(opp_response.pkey));
+		_HFI_CONNDBG("SL: 0x%04x\n", ntohs(opp_response.qos_class_sl));
+		_HFI_CONNDBG("Rate: %x\n", (opp_response.rate & 0x3f));
 	}
-	_HFI_PRDBG("Timeout Init.: 0x%" PRIx64 " Max: 0x%" PRIx64 "\n",
+	_HFI_CONNDBG("Timeout Init.: 0x%" PRIx64 " Max: 0x%" PRIx64 "\n",
 		   proto->epinfo.ep_timeout_ack,
 		   proto->epinfo.ep_timeout_ack_max);
 #endif
 	/* Return the IPS path record */
 	*ppath_rec = path_rec;
+	return err;
 
 fail:
+	if (elid.key)
+		psmi_free(elid.key);
+	if (path_rec)
+		psmi_free(path_rec);
 	return err;
 }
 
@@ -474,7 +468,7 @@ retry_low_path_res:
 
 fail:
 	if (err != PSM2_OK)
-		_HFI_PRDBG
+		_HFI_CONNDBG
 		    ("Unable to get path record for LID 0x%x <---> DLID 0x%x.\n",
 		     slid, dlid);
 	return err;

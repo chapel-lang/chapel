@@ -150,6 +150,7 @@ int ze_hmem_open_shared_handle(int dev_fd, void **handle, int *ze_fd,
 int ze_hmem_close_handle(void *ipc_ptr);
 bool ze_hmem_p2p_enabled(void);
 int ze_hmem_get_base_addr(const void *ptr, void **base);
+int ze_hmem_get_id(const void *ptr, uint64_t *id);
 int *ze_hmem_get_dev_fds(int *nfds);
 
 static inline int ofi_memcpy(uint64_t device, void *dest, const void *src,

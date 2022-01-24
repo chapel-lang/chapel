@@ -43,3 +43,8 @@ FABRIC_1.4 {
 	global:
 		fi_tostr_r;
 } FABRIC_1.3;
+
+FABRIC_1.5 {
+	global:
+		fi_open;
+} FABRIC_1.4;

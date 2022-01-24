@@ -90,8 +90,6 @@ void psmi_mq_handle_rts_complete(psm2_mq_req_t req)
 		ips_tid_mravail_callback(req->rts_peer->proto);
 	}
 
-	/* Stats on rendez-vous messages */
-	psmi_mq_stats_rts_account(req);
 	req->state = MQ_STATE_COMPLETE;
 	ips_barrier();
 	if(!psmi_is_req_internal(req))
@@ -104,7 +102,12 @@ void psmi_mq_handle_rts_complete(psm2_mq_req_t req)
 
 static void
 psmi_mq_req_copy(psm2_mq_req_t req,
-		 uint32_t offset, const void *buf, uint32_t nbytes)
+		 uint32_t offset, const void *buf, uint32_t nbytes
+#ifdef PSM_CUDA
+		, int use_gdrcopy,
+		psm2_ep_t ep
+#endif
+		)
 {
 	/* recv_msglen may be changed by unexpected receive req_data.buf. */
 	uint32_t msglen_this, end;
@@ -123,8 +126,19 @@ psmi_mq_req_copy(psm2_mq_req_t req,
 	} else {
 		msglen_this = nbytes;
 	}
-
-	psmi_mq_mtucpy(msgptr, buf, msglen_this);
+#ifdef PSM_CUDA
+	if (use_gdrcopy) {
+		void *ubuf;
+		ubuf = gdr_convert_gpu_to_host_addr(GDR_FD,
+				(unsigned long)msgptr, msglen_this, 1,
+				ep);
+		if  (! ubuf)
+			psmi_mq_mtucpy(msgptr, buf, msglen_this);
+		else
+		psmi_mq_mtucpy_host_mem(ubuf, buf, msglen_this);
+	} else
+#endif
+		psmi_mq_mtucpy(msgptr, buf, msglen_this);
 
 	if (req->recv_msgoff < end) {
 		req->recv_msgoff = end;
@@ -135,9 +149,17 @@ psmi_mq_req_copy(psm2_mq_req_t req,
 }
 
 // This handles eager and LONG_DATA payload and completion for receiver
+// For ips eager, the caller will have already prepared for gdrcopy
+// For ips, LONG_DATA will not be used for GPU buffers unless RDMA disabled
+// So no need/opportunity to take advantage of gdrcopy here.
 int
 psmi_mq_handle_data(psm2_mq_t mq, psm2_mq_req_t req,
-		    uint32_t offset, const void *buf, uint32_t nbytes)
+		    uint32_t offset, const void *buf, uint32_t nbytes
+#ifdef PSM_CUDA
+		    , int use_gdrcopy,
+		    psm2_ep_t ep
+#endif
+		)
 {
 	psmi_assert(req != NULL);
 	int rc;
@@ -146,10 +168,17 @@ psmi_mq_handle_data(psm2_mq_t mq, psm2_mq_req_t req,
 		rc = MQ_RET_MATCH_OK;
 	else {
 		psmi_assert(req->state == MQ_STATE_UNEXP);
+		// TBD - will be sysbuf, could tell psmi_mq_req_copy to
+		// use psmi_mq_mtucpy_host_mem by passing a func arg
+		// but limited benefit for eager/long protocol
 		rc = MQ_RET_UNEXP_OK;
 	}
 
+#ifdef PSM_CUDA
+	psmi_mq_req_copy(req, offset, buf, nbytes, use_gdrcopy, ep);
+#else
 	psmi_mq_req_copy(req, offset, buf, nbytes);
+#endif
 
 	/*
 	 * the reason to use >= is because send_msgoff
@@ -267,6 +296,7 @@ mq_req_match(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag, int remove)
  */
 int
 psmi_mq_handle_rts(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
+		   struct ptl_strategy_stats *stats,
 		   uint32_t send_msglen, const void *payload, uint32_t paylen,
 		   int msgorder, mq_rts_callback_fn_t cb, psm2_mq_req_t *req_o)
 {
@@ -291,6 +321,16 @@ psmi_mq_handle_rts(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 		if (paylen) {
 			// payload of RTS can contain a single packet synchronous MPI msg
 			psmi_mq_mtucpy(req->req_data.buf, payload, paylen);
+#ifdef PSM_CUDA
+			if (req->is_buf_gpu_mem) {
+				stats->rndv_rts_cuCopy_recv++;
+				stats->rndv_rts_cuCopy_recv_bytes += paylen;
+			} else
+#endif
+			{
+				stats->rndv_rts_cpu_recv++;
+				stats->rndv_rts_cpu_recv_bytes += paylen;
+			}
 		}
 		req->recv_msgoff = req->send_msgoff = paylen;
 		*req_o = req;	/* yes match */
@@ -339,9 +379,13 @@ psmi_mq_handle_rts(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 		if (paylen) {
 			req->req_data.buf = psmi_mq_sysbuf_alloc(mq, paylen);
 			psmi_assert(paylen == 0 || req->req_data.buf != NULL);
-			mq->stats.rx_sysbuf_num++;
-			mq->stats.rx_sysbuf_bytes += paylen;
+#ifdef PSM_CUDA
+			psmi_mq_mtucpy_host_mem(req->req_data.buf, payload, paylen);
+#else
 			psmi_mq_mtucpy(req->req_data.buf, payload, paylen);
+#endif
+			stats->rndv_rts_sysbuf_recv++;
+			stats->rndv_rts_sysbuf_recv_bytes += paylen;
 		}
 		req->recv_msgoff = req->send_msgoff = paylen;
 
@@ -374,6 +418,7 @@ psmi_mq_handle_rts(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
  */
 int
 psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
+			struct ptl_strategy_stats *stats,
 			uint32_t send_msglen, uint32_t offset,
 			const void *payload, uint32_t paylen, int msgorder,
 			uint32_t opcode, psm2_mq_req_t *req_o)
@@ -382,7 +427,7 @@ psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 	uint32_t msglen;
 	psmi_mtucpy_fn_t psmi_mtucpy_fn;
 #if defined(PSM_CUDA)
-	int converted = 0;
+	int use_gdrcopy = 0;
 #endif // PSM_CUDA
 
 	if (msgorder && (req = mq_req_match(mq, src, tag, 1))) {
@@ -403,20 +448,31 @@ psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 		case MQ_MSG_TINY:
 			/* mq_copy_tiny() can handle zero byte */
 #ifdef PSM_CUDA
-			if (PSMI_USE_GDR_COPY(req, msglen)) {
-				user_buffer = gdr_convert_gpu_to_host_addr(GDR_FD,
+			if (!req->is_buf_gpu_mem) {
+				mq_copy_tiny_host_mem((uint32_t *) user_buffer, (uint32_t *) payload, msglen);
+				stats->tiny_cpu_recv++;
+				stats->tiny_cpu_recv_bytes += msglen;
+			// conversion will round up to 64K so just use
+			// msglen here to protect against huge buf_len
+			} else if (PSMI_USE_GDR_COPY_RECV(msglen) &&
+				NULL != (user_buffer = gdr_convert_gpu_to_host_addr(GDR_FD,
 								(unsigned long)req->req_data.buf,
-								msglen, 1, src->proto);
-				converted = 1;
-			}
+								msglen, 1, mq->ep))) {
+				mq_copy_tiny_host_mem((uint32_t *) user_buffer, (uint32_t *) payload, msglen);
+				stats->tiny_gdrcopy_recv++;
+				stats->tiny_gdrcopy_recv_bytes += msglen;
+			} else {
+				user_buffer = req->req_data.buf;
 #endif
-			mq_copy_tiny((uint32_t *) user_buffer, (uint32_t *) payload, msglen);
-#if defined(PSM_CUDA)
-			if (converted) {
-				gdr_unmap_gpu_host_addr(GDR_FD, user_buffer, msglen,
-                                    src->proto);
+				mq_copy_tiny((uint32_t *) user_buffer, (uint32_t *) payload, msglen);
+#ifdef PSM_CUDA
+				stats->tiny_cuCopy_recv++;
+				stats->tiny_cuCopy_recv_bytes += msglen;
 			}
-#endif // PSM_CUDA
+#else
+			stats->tiny_cpu_recv++;
+			stats->tiny_cpu_recv_bytes += msglen;
+#endif
 
 			req->state = MQ_STATE_COMPLETE;
 			ips_barrier();
@@ -426,13 +482,29 @@ psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 		case MQ_MSG_SHORT:	/* message fits in 1 payload */
 			psmi_mtucpy_fn = psmi_mq_mtucpy;
 #ifdef PSM_CUDA
-			if (PSMI_USE_GDR_COPY(req, msglen)) {
-				user_buffer = gdr_convert_gpu_to_host_addr(GDR_FD,
-							(unsigned long)req->req_data.buf,
-							msglen, 1, src->proto);
+			if (!req->is_buf_gpu_mem) {
 				psmi_mtucpy_fn = psmi_mq_mtucpy_host_mem;
-				converted = 1;
+				stats->short_cpu_recv++;
+				stats->short_cpu_recv_bytes += msglen;
+			// conversion will round up to 64K so just use
+			// msglen here to protect against huge buf_len
+			} else if (PSMI_USE_GDR_COPY_RECV(msglen) &&
+				NULL != (user_buffer = gdr_convert_gpu_to_host_addr(GDR_FD,
+							(unsigned long)req->req_data.buf,
+							msglen, 1, mq->ep))) {
+				psmi_mtucpy_fn = psmi_mq_mtucpy_host_mem;
+				stats->short_gdrcopy_recv++;
+				stats->short_gdrcopy_recv_bytes += msglen;
+			} else {
+				user_buffer = req->req_data.buf;
+#endif
+#ifdef PSM_CUDA
+				stats->short_cuCopy_recv++;
+				stats->short_cuCopy_recv_bytes += msglen;
 			}
+#else
+			stats->short_cpu_recv++;
+			stats->short_cpu_recv_bytes += msglen;
 #endif
 			if (msglen <= paylen) {
 				psmi_mtucpy_fn(user_buffer, payload, msglen);
@@ -446,12 +518,6 @@ psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 				mq_copy_tiny((uint32_t *)((uint8_t *)user_buffer + paylen),
 					(uint32_t *)&offset, msglen & 0x3);
 			}
-#if defined(PSM_CUDA)
-			if (converted) {
-				gdr_unmap_gpu_host_addr(GDR_FD, user_buffer, msglen,
-                                    src->proto);
-			}
-#endif // PSM_CUDA
 			req->state = MQ_STATE_COMPLETE;
 			ips_barrier();
 			mq_qq_append(&mq->completed_q, req);
@@ -464,23 +530,32 @@ psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 			STAILQ_INSERT_TAIL(&mq->eager_q, req, nextq);
 			_HFI_VDBG("exp MSG_EAGER of length %d bytes pay=%d\n",
 				  msglen, paylen);
+			// !offset -> only count recv msgs on 1st pkt in msg
 #ifdef PSM_CUDA
-			if (PSMI_USE_GDR_COPY(req, req->req_data.send_msglen)) {
-				req->req_data.buf = gdr_convert_gpu_to_host_addr(GDR_FD,
-						(unsigned long)req->user_gpu_buffer,
-						req->req_data.send_msglen, 1, src->proto);
-				converted = 1;
+			if (!req->is_buf_gpu_mem) {
+				if (!offset) stats->eager_cpu_recv++;
+				stats->eager_cpu_recv_bytes += paylen;
+			} else if (PSMI_USE_GDR_COPY_RECV(paylen)) {
+				req->req_data.buf = req->user_gpu_buffer;
+				use_gdrcopy = 1;
+				if (!offset) stats->eager_gdrcopy_recv++;
+				stats->eager_gdrcopy_recv_bytes += paylen;
+			} else {
+				req->req_data.buf = req->user_gpu_buffer;
+				if (!offset) stats->eager_cuCopy_recv++;
+				stats->eager_cuCopy_recv_bytes += paylen;
 			}
+#else
+			if (!offset) stats->eager_cpu_recv++;
+			stats->eager_cpu_recv_bytes += paylen;
 #endif
 			if (paylen > 0)
 				psmi_mq_handle_data(mq, req, offset, payload,
+#ifdef PSM_CUDA
+						    paylen, use_gdrcopy, mq->ep);
+#else
 						    paylen);
-#if defined(PSM_CUDA)
-			if (converted) {
-				gdr_unmap_gpu_host_addr(GDR_FD, req->req_data.buf,
-									req->req_data.send_msglen, src->proto);
-			}
-#endif // PSM_CUDA
+#endif
 			break;
 
 		default:
@@ -528,6 +603,7 @@ psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 	req->req_data.peer = src;
 	req->req_data.tag = *tag;
 	req->recv_msgoff = 0;
+	// don't yet know recv buffer size, so use send_msglen for now
 	req->req_data.recv_msglen = req->req_data.send_msglen = req->req_data.buf_len = msglen =
 	    send_msglen;
 
@@ -541,32 +617,52 @@ psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 		if (msglen > 0) {
 			req->req_data.buf = psmi_mq_sysbuf_alloc(mq, msglen);
 			psmi_assert(msglen == 0 || req->req_data.buf != NULL);
-			mq->stats.rx_sysbuf_num++;
-			mq->stats.rx_sysbuf_bytes += paylen;
+#ifdef PSM_CUDA
+			mq_copy_tiny_host_mem((uint32_t *) req->req_data.buf,
+				     (uint32_t *) payload, msglen);
+#else
 			mq_copy_tiny((uint32_t *) req->req_data.buf,
 				     (uint32_t *) payload, msglen);
-		} else
+#endif
+			stats->tiny_sysbuf_recv++;
+			stats->tiny_sysbuf_recv_bytes += msglen;
+		} else {
 			req->req_data.buf = NULL;
+			stats->tiny_sysbuf_recv++;	// 0 length
+		}
 		req->state = MQ_STATE_COMPLETE;
 		break;
 
 	case MQ_MSG_SHORT:
 		req->req_data.buf = psmi_mq_sysbuf_alloc(mq, msglen);
 		psmi_assert(msglen == 0 || req->req_data.buf != NULL);
-		mq->stats.rx_sysbuf_num++;
-		mq->stats.rx_sysbuf_bytes += paylen;
 		if (msglen <= paylen) {
+#ifdef PSM_CUDA
+			psmi_mq_mtucpy_host_mem(req->req_data.buf, payload, msglen);
+#else
 			psmi_mq_mtucpy(req->req_data.buf, payload, msglen);
+#endif
 		} else {
 			psmi_assert((msglen & ~0x3) == paylen);
+#ifdef PSM_CUDA
+			psmi_mq_mtucpy_host_mem(req->req_data.buf, payload, paylen);
+#else
 			psmi_mq_mtucpy(req->req_data.buf, payload, paylen);
+#endif
 			/*
 			 * there are nonDW bytes attached in header,
 			 * copy after the DW payload.
 			 */
+#ifdef PSM_CUDA
+			mq_copy_tiny_host_mem((uint32_t *)(req->req_data.buf+paylen),
+				(uint32_t *)&offset, msglen & 0x3);
+#else
 			mq_copy_tiny((uint32_t *)(req->req_data.buf+paylen),
 				(uint32_t *)&offset, msglen & 0x3);
+#endif
 		}
+		stats->short_sysbuf_recv++;
+		stats->short_sysbuf_recv_bytes += msglen;
 		req->state = MQ_STATE_COMPLETE;
 		break;
 
@@ -574,15 +670,19 @@ psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 		req->send_msgoff = 0;
 		req->req_data.buf = psmi_mq_sysbuf_alloc(mq, msglen);
 		psmi_assert(msglen == 0 || req->req_data.buf != NULL);
-		mq->stats.rx_sysbuf_num++;
-		mq->stats.rx_sysbuf_bytes += paylen;
 		req->state = MQ_STATE_UNEXP;
 		req->type |= MQE_TYPE_EAGER_QUEUE;
 		STAILQ_INSERT_TAIL(&mq->eager_q, req, nextq);
 		_HFI_VDBG("unexp MSG_EAGER of length %d bytes pay=%d\n",
 			  msglen, paylen);
 		if (paylen > 0)
+#ifdef PSM_CUDA
+			psmi_mq_handle_data(mq, req, offset, payload, paylen, 0, NULL);
+#else
 			psmi_mq_handle_data(mq, req, offset, payload, paylen);
+#endif
+		stats->eager_sysbuf_recv++;
+		stats->eager_sysbuf_recv_bytes += paylen;
 		break;
 
 	default:
@@ -602,6 +702,51 @@ psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
 	return MQ_RET_UNEXP_OK;
 }
 
+#ifdef PSM_CUDA	// declared inline in psm_mq_internal.h for non-CUDA
+// perform the actual copy for an psmi_mq_irecv_inner.  We copy from a sysbuf
+// (req->req_data.buf) to the actual user buffer (buf) and keep statistics.
+// is_buf_gpu_mem indicates if buf is a gpu buffer
+// len - recv buffer size posted, we use this for any GDR copy pinning so
+// 	can get future cache hits on other size messages in same buffer
+// not needed - msglen - negotiated total message size
+// copysz - actual amount to copy (<= msglen)
+void psmi_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, uint8_t is_buf_gpu_mem,
+				void *buf, uint32_t len, uint32_t copysz)
+{
+	psmi_mtucpy_fn_t psmi_mtucpy_fn = psmi_mq_mtucpy;
+	void *ubuf = buf;
+	if (! copysz) {
+		mq->stats.rx_sysbuf_cpu_num++; // zero length
+		return;
+	}
+	if (!is_buf_gpu_mem) {
+		psmi_assert(!PSMI_IS_CUDA_MEM(buf));
+		mq->stats.rx_sysbuf_cpu_num++;
+		mq->stats.rx_sysbuf_cpu_bytes += copysz;
+		psmi_mtucpy_fn = psmi_mq_mtucpy_host_mem;
+	// len could be huge, so limit ourselves to gdr_copy_limit_recv
+	// Note to get here copysz <= gdr_copy_limit_recv
+	} else if (PSMI_USE_GDR_COPY_RECV(copysz) &&
+		NULL != (ubuf = gdr_convert_gpu_to_host_addr(GDR_FD, (unsigned long)buf,
+						    min(gdr_copy_limit_recv, len), 1,
+						    mq->ep))) {
+		psmi_assert(PSMI_IS_CUDA_MEM(buf));
+		psmi_mtucpy_fn = psmi_mq_mtucpy_host_mem;
+		mq->stats.rx_sysbuf_gdrcopy_num++;
+		mq->stats.rx_sysbuf_gdrcopy_bytes += copysz;
+	} else {
+		psmi_assert(PSMI_IS_CUDA_MEM(buf));
+		ubuf = buf;
+		mq->stats.rx_sysbuf_cuCopy_num++;
+		mq->stats.rx_sysbuf_cuCopy_bytes += copysz;
+	}
+	if (copysz)
+		psmi_mtucpy_fn(ubuf, (const void *)req->req_data.buf, copysz);
+}
+#endif // PSM_CUDA
+
+// we landed an out of order message in a sysbuf and can now process it
+// ureq is where we landed it.  If found, ereq is the user posted receive.
 int psmi_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t ureq)
 {
 	psm2_mq_req_t ereq;
@@ -621,9 +766,17 @@ int psmi_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t ureq)
 	switch (ureq->state) {
 	case MQ_STATE_COMPLETE:
 		if (ureq->req_data.buf != NULL) {	/* 0-byte don't alloc a sysreq_data.buf */
-			psmi_mq_mtucpy(ereq->req_data.buf, (const void *)ureq->req_data.buf,
-				       msglen);
+			psmi_mq_recv_copy(mq, ureq,
+#ifdef PSM_CUDA
+					ereq->is_buf_gpu_mem,
+#endif
+					ereq->req_data.buf,
+					ereq->req_data.buf_len, msglen);
 			psmi_mq_sysbuf_free(mq, ureq->req_data.buf);
+#ifdef PSM_CUDA
+		} else {
+			mq->stats.rx_sysbuf_cpu_num++; // zero length
+#endif
 		}
 		ereq->state = MQ_STATE_COMPLETE;
 		ips_barrier();
@@ -635,11 +788,12 @@ int psmi_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t ureq)
 		ereq->ptl_req_ptr = ureq->ptl_req_ptr;
 		ereq->send_msgoff = ureq->send_msgoff;
 		ereq->recv_msgoff = min(ureq->recv_msgoff, msglen);
-		if (ereq->recv_msgoff) {
-			psmi_mq_mtucpy(ereq->req_data.buf,
-				       (const void *)ureq->req_data.buf,
-				       ereq->recv_msgoff);
-		}
+		psmi_mq_recv_copy(mq, ureq,
+#ifdef PSM_CUDA
+				ereq->is_buf_gpu_mem,
+#endif
+				ereq->req_data.buf,
+			 	ereq->req_data.buf_len, ereq->recv_msgoff);
 		psmi_mq_sysbuf_free(mq, ureq->req_data.buf);
 		ereq->type = ureq->type;
 		STAILQ_INSERT_AFTER(&mq->eager_q, ureq, ereq, nextq);
@@ -651,12 +805,14 @@ int psmi_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t ureq)
 		ereq->rts_sbuf = ureq->rts_sbuf;
 		ereq->send_msgoff = ureq->send_msgoff;
 		ereq->recv_msgoff = min(ureq->recv_msgoff, msglen);
-		if (ereq->recv_msgoff) {
-			psmi_mq_mtucpy(ereq->req_data.buf,
-				       (const void *)ureq->req_data.buf,
-				       ereq->recv_msgoff);
-		}
-		if (ereq->send_msgoff) {
+		if (ereq->send_msgoff) { // only have sysbuf if RTS w/payload
+			psmi_mq_recv_copy(mq, ureq,
+#ifdef PSM_CUDA
+					ereq->is_buf_gpu_mem,
+#endif
+					ereq->req_data.buf,
+			 		ereq->req_data.buf_len,
+					ereq->recv_msgoff);
 			psmi_mq_sysbuf_free(mq, ureq->req_data.buf);
 		}
 		ereq->rts_callback = ureq->rts_callback;
