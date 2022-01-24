@@ -95,4 +95,6 @@ void ID::stringify(std::ostream& ss,
   }
 }
 
+IMPLEMENT_DUMP(ID);
+
 } // end namespace chpl

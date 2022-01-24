@@ -70,6 +70,9 @@ class UntypedFnSignature {
         ss << " ";
       }
     }
+    /// \cond DO_NOT_DOCUMENT
+    DECLARE_DUMP;
+    /// \endcond DO_NOT_DOCUMENT
   };
 
  private:
@@ -212,6 +215,10 @@ class UntypedFnSignature {
     ss << std::to_string(numFormals());
     ss << " ";
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
@@ -244,12 +251,16 @@ class CallInfoActual {
     return chpl::hash(type_, byName_);
   }
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) {
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     byName().stringify(ss, stringKind);
     ss << " ";
     type().stringify(ss, stringKind);
     ss << " ";
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /** CallInfo */
@@ -309,6 +320,10 @@ class CallInfo {
       name().stringify(ss, stringKind);
       ss << " ";
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 
@@ -427,6 +442,10 @@ class PoiInfo {
     ss << "PoiInfo: ";
     poiScope()->stringify(ss, stringKind);
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 // TODO: should this actually be types::FunctionType?
@@ -562,6 +581,10 @@ class TypedFnSignature {
     assert(0 <= i && (size_t) i < formalTypes_.size());
     return formalTypes_[i];
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -784,6 +807,10 @@ class ResolvedExpression {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**

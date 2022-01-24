@@ -70,6 +70,10 @@ class CompositeType : public Type {
       //decl.stringify(ss, stringKind);
       type.stringify(ss, stringKind);
     }
+
+    /// \cond DO_NOT_DOCUMENT
+    DECLARE_DUMP;
+    /// \endcond DO_NOT_DOCUMENT
   };
  protected:
   // TODO: add fields and accessors for a QualifiedType per field

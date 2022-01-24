@@ -302,6 +302,13 @@ void ResolvedExpression::stringify(std::ostream& ss,
   }
 }
 
+IMPLEMENT_DUMP(PoiInfo);
+IMPLEMENT_DUMP(UntypedFnSignature);
+IMPLEMENT_DUMP(UntypedFnSignature::FormalDetail);
+IMPLEMENT_DUMP(TypedFnSignature);
+IMPLEMENT_DUMP(ResolvedExpression);
+IMPLEMENT_DUMP(CallInfoActual);
+IMPLEMENT_DUMP(CallInfo);
 
 } // end namespace resolution
 } // end namespace chpl

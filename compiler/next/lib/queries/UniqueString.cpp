@@ -190,5 +190,6 @@ void UniqueString::stringify(std::ostream& ss,
                              chpl::StringifyKind stringKind) const {
   ss.write(c_str(),length());
 }
+IMPLEMENT_DUMP(UniqueString);
 
 } // end namespace chpl
