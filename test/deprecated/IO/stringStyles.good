@@ -1,0 +1,5 @@
+stringStyles.chpl:3: warning: stringStyleTerminated is deprecated due to returning a deprecated type
+stringStyles.chpl:4: warning: stringStyleNullTerminated is deprecated due to returning a deprecated type
+stringStyles.chpl:5: warning: stringStyleExactLen is deprecated due to returning a deprecated type
+stringStyles.chpl:6: warning: stringStyleWithVariableLength is deprecated due to returning a deprecated type
+stringStyles.chpl:7: warning: stringStyleWithLength is deprecated due to returning a deprecated type

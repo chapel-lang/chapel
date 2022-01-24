@@ -1,0 +1,1 @@
+depDefaultIostyle.chpl:3: warning: defaultIOStyle is deprecated due to returning a deprecated type

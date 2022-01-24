@@ -198,6 +198,7 @@ cmake-build-debug/
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
 /test/io/diten/myBlockArr.bin
+/test/io/test.txt
 
 /test/library/packages/HDF5/mydata.h5
 /test/localeModels/gbt/maxTaskPar.good

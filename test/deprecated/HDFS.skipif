@@ -1,0 +1,2 @@
+# Only test in networking-packages config since needs a service
+CHPL_NIGHTLY_TEST_CONFIG_NAME!=networking-packages

@@ -98,7 +98,7 @@ module analyze_RMAT_graph_associative_array {
         use IO;
 
         param showArrays = false;  // beware of 'local' in the caller
-        const style = new iostyle(min_width_columns = 3);
+        const style = new iostyleInternal(min_width_columns = 3);
         if showArrays {
           writeln("starting ", lo, "..", hi);
           stdout.writeln(neighborList(lo..hi), style);
