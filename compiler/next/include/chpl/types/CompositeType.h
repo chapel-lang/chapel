@@ -140,6 +140,10 @@ class CompositeType : public Type {
 
     // consider the fields
     size_t nFields = fields_.size();
+
+    if (nFields != other->fields_.size())
+      return false;
+
     for (size_t i = 0; i < nFields; i++) {
       const FieldDetail& field = fields_[i];
       const FieldDetail& otherField = other->fields_[i];

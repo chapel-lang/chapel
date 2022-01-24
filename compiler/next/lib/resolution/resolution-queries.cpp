@@ -651,63 +651,6 @@ struct Resolver {
   }
 };
 
-#if 0
-// Given an AggregateDecl, do initial resolution of the fields
-// Note that useGenericFormalDefaults is moot for most types
-// and so code calling this query can optimize by calling with 'false'
-// first and then adjusting if it is not moot.
-static const ResolutionResultByPostorderID&
-resolveFieldsInitialQuery(Context* context,
-                          ID id,
-                          bool useGenericFormalDefaults) {
-  QUERY_BEGIN(resolveFieldsInitialQuery, context, id, useGenericFormalDefaults);
-
-  ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
-
-  auto ast = parsing::idToAst(context, id);
-  if (const AggregateDecl* ad = ast->toAggregateDecl()) {
-    Resolver visitor(context, ad, partialResult, useGenericFormalDefaults);
-    // visit the parent type
-    if (auto cls = ad->toClass()) {
-      if (auto parentClassExpr = cls->parentClass()) {
-        parentClassExpr->traverse(visitor);
-      }
-    }
-    // visit the field declarations
-    for (auto child: ad->children()) {
-      if (child->isVariable() ||
-          child->isMultiDecl() ||
-          child->isTupleDecl()) {
-        child->traverse(visitor);
-      }
-    }
-  } else {
-    assert(false && "case not handled");
-  }
-
-  return QUERY_END_CURRENT_RESULT();
-}
-
-// Computes the initial resolution of the fields, but if we
-// are already computing that, returns the current partial result.
-static const ResolutionResultByPostorderID&
-partiallyResolvedFieldsInitial(Context* context,
-                               ID id,
-                               bool useGenericFormalDefaults) {
-  // check for a partial result from a running query
-  const ResolutionResultByPostorderID* r =
-    QUERY_RUNNING_PARTIAL_RESULT(resolveFieldsInitialQuery, context, id,
-                                 useGenericFormalDefaults);
-  // if there was a partial result, return it
-  if (r != nullptr) {
-    return *r;
-  }
-
-  // otherwise, run the query to compute the full result
-  return resolveFieldsInitialQuery(context, id, useGenericFormalDefaults);
-}
-#endif
-
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
 

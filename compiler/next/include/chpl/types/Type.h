@@ -25,6 +25,8 @@
 #include "chpl/types/TypeClasses.h"
 #include "chpl/types/TypeTag.h"
 
+#include <deque>
+
 namespace chpl {
 namespace uast {
   class Decl;
@@ -47,37 +49,28 @@ class Type {
   // this struct accumulates assumptions to handle recursion when
   // checking types for equivalence
   struct MatchAssumptions {
+    // a shorthand for a pair of types, (t, otherT)
     using Assumption = std::pair<const Type*, const Type*>;
-    std::unordered_map<Assumption, bool> checked; // pair -> isMatch
-    std::unordered_set<Assumption> toCheck;
+    // pairs of types that we have checked for a match
+    std::unordered_set<Assumption> checked;
+    // pairs of types that need to be checked
+    // this is a vector as the easiest way to keep it deterministic
+    std::deque<Assumption> toCheck;
+    // a label (indicating the order of visit) for 't' types
+    std::unordered_map<const Type*, int> tLabels;
+    // a label (indicating the order of visit) for 'otherT' types
+    std::unordered_map<const Type*, int> otherLabels;
+    int nextLabel = 1;
 
     // This function notes an assumption that t matches otherT.
+    // Should always be called in innerMatch functions with the
+    // type contained in 'this' passed in 't' and the type from 'other'
+    // passed in as 'otherT'.
+    //
     // Returns false if we already know they don't match,
     // and true if we can assume that they do.
     // These assumptions will be checked in completeMatch.
-    bool assume(const Type* t, const Type* otherT) {
-      if (t != otherT) {
-        if ((t == nullptr) != (otherT == nullptr))
-          return false;
-        if (t == nullptr && otherT == nullptr)
-          return true;
-        if (t->tag() != otherT->tag())
-          return false;
-
-        Assumption a(t, otherT);
-
-        auto found = checked.find(a);
-        if (found != checked.end()) {
-          // Found an assumption that was already checked
-          // Return whether or not it was a match
-          return found->second;
-        } else {
-          // Otherwise, add it to toCheck
-          toCheck.insert(a);
-        }
-      }
-      return true;
-    }
+    bool assume(const Type* t, const Type* otherT);
   };
 
   /**

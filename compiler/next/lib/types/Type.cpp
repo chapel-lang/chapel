@@ -115,41 +115,98 @@ void Type::gatherBuiltins(Context* context,
   BuiltinType::gatherBuiltins(context, map);
 }
 
+bool Type::MatchAssumptions::assume(const Type* t, const Type* otherT) {
+  // Nothing else to do if the pointers are identical
+  if (t == otherT)
+    return true;
+
+  // if one is null and the other is not, it's not a match
+  if ((t == nullptr) != (otherT == nullptr))
+    return false;
+
+  // if they are both null, it is a match
+  if (t == nullptr && otherT == nullptr)
+    return true;
+
+  // now we know that neither is null
+
+  // if the tags do not match, it's not a match
+  if (t->tag() != otherT->tag())
+    return false;
+
+  Assumption a(t, otherT);
+
+  auto found = checked.find(a);
+  if (found != checked.end()) {
+    // Found an assumption that was already checked
+    return true;
+  } else {
+    // Otherwise, add it to toCheck
+    toCheck.push_back(a);
+    // Also assign labels to t and otherT,
+    // if they don't already have labels.
+    int label = nextLabel;
+    bool addedT = tLabels.emplace(t, label).second;
+    bool addedOther = otherLabels.emplace(otherT, label).second;
+
+    if (addedT != addedOther)
+      return false; // suspect this is not possible
+
+    // If we added something to the label maps, increment the label
+    if (addedT) {
+      nextLabel++;
+    }
+  }
+  return true;
+}
+
 bool Type::completeMatch(const Type* other) const {
-  const Type* lhs = this;
-  const Type* rhs = other;
-  if (lhs->tag() != rhs->tag())
+  if (this->tag() != other->tag())
     return false;
 
   MatchAssumptions assumptions;
 
-  if (!lhs->contentsMatchInner(rhs, assumptions))
+  // initialize the algorithm
+  //  * labels 'this' and 'other'
+  //  * adds the pair to assumptions.toCheck
+  if (!assumptions.assume(this, other))
     return false;
 
   // Check the assumptions in toCheck
   while (!assumptions.toCheck.empty()) {
-    // Grab an element (any element!) and remove it
-    auto first = assumptions.toCheck.begin();
-    auto a = *first;
-    assumptions.toCheck.erase(first);
+    // Grab the first element and remove it
+    MatchAssumptions::Assumption a = assumptions.toCheck.front();
+    assumptions.toCheck.pop_front();
 
     // now check assumption 'a'
 
-    // adding to set should ensure neither is nullptr
+    // adding to set in 'assume' should ensure neither is nullptr
     assert(a.first != nullptr && a.second != nullptr);
-    // tag should be checked before adding to set
+    // and check the tag
     assert(a.first->tag() == a.second->tag());
 
-    // add to checked, assuming it does check OK
-    auto pair = assumptions.checked.emplace(a, true);
-    bool isMatch = pair.first->second;
-    if (!isMatch)
-      return false; // it was already checked and didn't match
+    // add to 'checked' if it is not already there
+    bool addedToChecked = assumptions.checked.insert(a).second;
+    if (addedToChecked) {
+      // just added to checked, so need to do the rest of the checking now
 
-    // call contentsMatchInner, which which will add assumptions
-    // to assumptions.toCheck if they have not already been checked.
-    if (!a.first->contentsMatchInner(a.second, assumptions)) {
-      return false;
+      // check that the labels match
+
+      // should have already added labels, in 'assume'
+      assert(assumptions.tLabels.count(a.first) > 0);
+      assert(assumptions.otherLabels.count(a.second) > 0);
+
+      if (assumptions.tLabels[a.first] != assumptions.otherLabels[a.second]) {
+        // labels don't match, so it's not a match
+        return false;
+      }
+
+      // Call contentsMatchInner, which which can call 'assume'
+      // to add more assumptions to be checked.
+      // If it returns 'false', we know immediately it is not a match.
+      if (!a.first->contentsMatchInner(a.second, assumptions)) {
+        return false;
+      }
     }
   }
 
