@@ -1,0 +1,1 @@
+JoinError.chpl:4: error: join() only takes homogeneous tuple of strings or array of strings

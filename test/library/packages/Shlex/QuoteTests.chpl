@@ -1,0 +1,14 @@
+use Shlex;
+var safe = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+safe += '0123456789'+'@%_-+=:,./';
+writeln(quote(safe));
+assert(quote(safe) == safe);
+writeln(quote(''));
+assert(quote('') == '""');
+writeln(quote('test file name'));
+assert(quote('test file name')=="'test file name'");
+var filename='somefile; rm -rf home';
+var command = 'ls -l '+(quote(filename));
+writeln(command);
+var r_comm= 'ssh home '+quote(command);
+writeln(r_comm);

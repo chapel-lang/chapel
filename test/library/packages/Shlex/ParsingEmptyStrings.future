@@ -1,0 +1,6 @@
+//Passing empty strings with posix set to true is not yet handled completely
+//Expected output should be as below
+['', ')', 'abc']
+['', ')', 'abc']
+['""']
+['']

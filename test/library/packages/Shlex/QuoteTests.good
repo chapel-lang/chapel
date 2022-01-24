@@ -1,0 +1,5 @@
+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@%_-+=:,./
+""
+'test file name'
+ls -l 'somefile; rm -rf home'
+ssh home 'ls -l '"'"'somefile; rm -rf home'"'"''

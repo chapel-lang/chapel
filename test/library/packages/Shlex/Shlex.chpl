@@ -23,7 +23,7 @@ A lexical anayzer class for simple shell-like syntaxes.
 Chapel's version of Shlex (pyhthon) implemented here:
 <https://github.com/python/cpython/blob/3.7/Lib/shlex.py>
 This module provides support for split, join and quote operations.
-One of the known bug is parsing empty strings, since strings in Chapel 
+One of the known bug is parsing empty strings, since strings in Chapel
 cannot be NULL. Any other bugs may be reported in Chapel Issues (github).
 */
 
@@ -53,15 +53,15 @@ module Shlex {
     var pushback: list(string);
     var _pushback_chars: list(string);
     var custom_punctuation_chars: string;
-    
+
     //
     // Initializes the required variables of class Shlex
     // Instream is the string to be parsed and is the only required argument
-    // NOTE: Passing punctuation_chars as true, 
+    // NOTE: Passing punctuation_chars as true,
     //        will set whitespace_split to false
     //
-    proc init(instream:string, posix: bool = false, 
-                punctuation_chars: bool = false, commenters: string = '', 
+    proc init(instream:string, posix: bool = false,
+                punctuation_chars: bool = false, commenters: string = '#',
                   custom_punctuation_chars: string = '') {
       this.instream=instream;
       this.posix=posix;
@@ -82,7 +82,7 @@ module Shlex {
         this.wordchars+="ÑÒÓÔÕÖØÙÚÛÜÝÞ";
       }
       this.whitespace= " \t\n\r";
-      this.whitespace_split=!(punctuation_chars);
+      this.whitespace_split=false;
       this.quotes="\"'";
       this.escapse="\\";
       this.escapsedquotes='"';
@@ -151,7 +151,7 @@ module Shlex {
           nextchar='';
           this.tokindex=-1;
         }
-        if this.debug>=3 then writeln("shlex: in state ", this.state, 
+        if this.debug>=3 then writeln("shlex: in state ", this.state,
                                         "I see character: ", nextchar);
         if nextchar=='\n' then this.lineno+=1;
         if this.state==''{
@@ -167,11 +167,11 @@ module Shlex {
             if(this.debug>=2){
               writeln("shlex: I see whitespaces in whitespace state");
             }
-            if (this.token!='' || (this.posix && quoted)) then break; 
+            if (this.token!='' || (this.posix && quoted)) then break;
             else continue;
           }
           else if(this.commenters.find(nextchar)!=-1){
-            while(this.tokindex<this.instream.size && 
+            while(this.tokindex<this.instream.size &&
                     this.instream[tokindex]!='\n') do
               this.tokindex+=1;
             this.lineno+=1;
@@ -198,7 +198,7 @@ module Shlex {
           }
           else{
             this.token=nextchar;
-            if (this.tokindex!=-1 || (this.posix && quoted)) then break;
+            if (this.token!='' || (this.posix && quoted)) then break;
             else continue;
           }
         }
@@ -218,7 +218,7 @@ module Shlex {
             }
             else this.state='a';
           }
-          else if(this.posix && this.escapse.find(nextchar)!=-1 && 
+          else if(this.posix && this.escapse.find(nextchar)!=-1 &&
                     this.escapsedquotes.find(this.state)!=-1){
             escapsedstate=this.state;
             this.state=nextchar;
@@ -234,7 +234,7 @@ module Shlex {
             }
             throw new Error("No escaped character");
           }
-          if(this.quotes.find(escapsedstate)!=-1 && nextchar!=this.state && 
+          if(this.quotes.find(escapsedstate)!=-1 && nextchar!=this.state &&
               nextchar!=escapsedstate){
             this.token+=this.state;
           }
@@ -257,7 +257,7 @@ module Shlex {
             this.lineno+=1;
             if this.posix {
               this.state=' ';
-              if (this.token!='' || (this.tokindex!=-1 || 
+              if (this.token!='' || (this.tokindex!=-1 ||
                   (this.posix && quoted)))
               then break;
               else continue;
@@ -282,7 +282,7 @@ module Shlex {
             escapsedstate='a';
             this.state=nextchar;
           }
-          else if((this.wordchars.find(nextchar)!=-1) || 
+          else if((this.wordchars.find(nextchar)!=-1) ||
                     (this.quotes.find(nextchar)!=-1) || this.whitespace_split)
           {
             this.token+=nextchar;
@@ -292,7 +292,7 @@ module Shlex {
               this._pushback_chars.append(nextchar);
             }
             else{
-              this.pushback.insert(1, nextchar);
+              this.pushback.insert(0, nextchar);
             }
             if this.debug>=2{
               writeln("shlex: I see punctuation in word state");
@@ -323,7 +323,7 @@ module Shlex {
   // specified by the Shlex object.
   //
 
-  proc split(s:string, comments:bool = false, posix:bool=true, 
+  proc split(s:string, comments:bool = false, posix:bool=true,
               punctuation_chars: bool = false,
                 custom_punctuation_chars: string = "")
   {
@@ -331,7 +331,6 @@ module Shlex {
     if comments then commenters='#';
     var lex=new shlex(s, posix=posix, punctuation_chars=(punctuation_chars || custom_punctuation_chars!=''), commenters=commenters, custom_punctuation_chars=custom_punctuation_chars);
     lex.whitespace_split=!(punctuation_chars || custom_punctuation_chars !='');
-    // if !comments then lex.comments='';
     var lst: list(string);
     var pres:string = ' ';
     while(pres!=''){
@@ -364,10 +363,10 @@ module Shlex {
   proc join(const ref x): string where (isArray(x) || isTuple(x)) {
     if x.size == 0 then return "";
     if(isTuple(x) && (!isHomogeneousTuple(x) || !isString(x[0]))) then
-      compilerError("join() only takes homogeneous tuple of strings" + 
+      compilerError("join() only takes homogeneous tuple of strings " +
                       "or array of strings");
     if(isArray(x) && !isString(x[x.domain.first]))  then
-      compilerError("join() only takes homogeneous tuple of strings" +
+      compilerError("join() only takes homogeneous tuple of strings " +
                       "or array of strings");
     if x.size == 1 {
       if isArray(x) then return x[x.domain.first];
@@ -386,5 +385,9 @@ module Shlex {
       }
     }
     return res;
+  }
+
+  proc join(args:string ...?n){
+    return join(args);
   }
 }
