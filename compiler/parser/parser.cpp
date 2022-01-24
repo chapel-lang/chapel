@@ -892,9 +892,6 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
     return nullptr;
   }
 
-  // Check for the expected configuration only, for now
-  INT_ASSERT(!include);
-
   auto path = chpl::UniqueString::build(gContext, fileName);
 
   // The 'parseFile' query gets us a builder result that we can inspect to
@@ -1134,9 +1131,21 @@ ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
   if (0 != strcmp(modNameFromFile, currentModuleName))
     USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
 
-  ModuleSymbol* ret = parseFile(astr(includeFile), currentModuleType,
-                                /* namedOnCommandLine */ false,
-                                /* include */ true);
+  ModuleSymbol* ret = nullptr;
+  const bool namedOnCommandLine = false;
+  const bool include = true;
+
+  if (fCompilerLibraryParser) {
+    ret = uASTParseFile(astr(includeFile), currentModuleType,
+                        namedOnCommandLine,
+                        include);
+  } else {
+    ret = parseFile(astr(includeFile), currentModuleType,
+                    namedOnCommandLine,
+                    include);
+  }
+
+  INT_ASSERT(ret);
 
   ret->addFlag(FLAG_INCLUDED_MODULE);
 
