@@ -1,3 +1,2 @@
 regexMatchesArgs.chpl:7: warning: regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead.
 ((matched = true, offset = 4, size = 3))
-((matched = true, offset = 12, size = 3))
