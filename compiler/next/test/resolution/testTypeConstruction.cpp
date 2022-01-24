@@ -222,8 +222,24 @@ static const Type* parseTypeOfX(Context* context,
   return qt.type();
 }
 
-static void test4() {
-  printf("test4\n");
+static void test4a() {
+  printf("test4a\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "record R { var field: int; }\n"
+                                 "var x: R;\n");
+  auto rt = t->toRecordType();
+  assert(rt);
+  assert(rt->numFields() == 1);
+  assert(rt->fieldName(0) == "field");
+  assert(rt->fieldHasDefaultValue(0) == false);
+  assert(rt->fieldType(0).kind() == QualifiedType::VAR);
+  assert(rt->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test4b() {
+  printf("test4b\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -1065,7 +1081,8 @@ int main() {
   test1();
   test2();
   test3();
-  test4();
+  test4a();
+  test4b();
   test5();
   test6();
   test7();

@@ -25,27 +25,6 @@ namespace chpl {
 namespace types {
 
 
-const owned<TupleType>&
-TupleType::getTupleType(Context* context, ID id, UniqueString name,
-                        std::vector<CompositeType::FieldDetail> fields,
-                        const TupleType* instantiatedFrom,
-                        SubstitutionsMap subs) {
-  QUERY_BEGIN(getTupleType, context, id, name, fields, instantiatedFrom, subs);
-
-  auto result = toOwned(new TupleType(id, name, std::move(fields),
-                                      instantiatedFrom, subs));
-
-  return QUERY_END(result);
-}
-
-const TupleType*
-TupleType::get(Context* context, ID id, UniqueString name,
-               std::vector<CompositeType::FieldDetail> fields,
-               const TupleType* instantiatedFrom,
-               SubstitutionsMap subs) {
-  return getTupleType(context, id, name, std::move(fields),
-                      instantiatedFrom, subs).get();
-}
 
 
 } // end namespace types

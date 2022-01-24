@@ -30,6 +30,11 @@ namespace types {
 CompositeType::~CompositeType() {
 }
 
+void CompositeType::setFieldType(int i, QualifiedType type) {
+  assert(0 <= i && (size_t) i < fields_.size());
+  fields_[i].type = type;
+}
+
 void CompositeType::finalizeFieldTypes() {
   isGeneric_ = false;
   allGenericFieldsHaveDefaultValues_ = true;

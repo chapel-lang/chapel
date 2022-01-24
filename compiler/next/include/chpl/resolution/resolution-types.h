@@ -87,6 +87,7 @@ class UntypedFnSignature {
   UniqueString name_;
   bool isMethod_; // in that case, formals[0] is the receiver
   bool idIsFunction_; // whether the ID is of a function
+  bool idIsClass_; // whether the ID is of a class
   bool isTypeConstructor_;
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
@@ -98,6 +99,7 @@ class UntypedFnSignature {
                      UniqueString name,
                      bool isMethod,
                      bool idIsFunction,
+                     bool idIsClass,
                      bool isTypeConstructor,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
@@ -106,6 +108,7 @@ class UntypedFnSignature {
       name_(name),
       isMethod_(isMethod),
       idIsFunction_(idIsFunction),
+      idIsClass_(idIsClass),
       isTypeConstructor_(isTypeConstructor),
       kind_(kind),
       formals_(std::move(formals)),
@@ -117,6 +120,7 @@ class UntypedFnSignature {
                         UniqueString name,
                         bool isMethod,
                         bool idIsFunction,
+                        bool idIsClass,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
@@ -128,6 +132,7 @@ class UntypedFnSignature {
                                        UniqueString name,
                                        bool isMethod,
                                        bool idIsFunction,
+                                       bool idIsClass,
                                        bool isTypeConstructor,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
@@ -144,6 +149,7 @@ class UntypedFnSignature {
            name_ == other.name_ &&
            isMethod_ == other.isMethod_ &&
            idIsFunction_ == other.idIsFunction_ &&
+           idIsClass_ == other.idIsClass_ &&
            isTypeConstructor_ == other.isTypeConstructor_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
@@ -181,6 +187,11 @@ class UntypedFnSignature {
   /** Returns true if id() refers to a Function */
   bool idIsFunction() const {
     return idIsFunction_;
+  }
+
+  /** Returns true if id() refers to a Class */
+  bool idIsClass() const {
+    return idIsClass_;
   }
 
   /** Returns true if this is a type constructor */

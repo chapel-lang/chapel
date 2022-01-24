@@ -34,17 +34,18 @@ UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
                                           bool isMethod,
                                           bool idIsFunction,
+                                          bool idIsClass,
                                           bool isTypeConstructor,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
                                           const Expression* whereClause) {
   QUERY_BEGIN(getUntypedFnSignature, context,
-              id, name, isMethod, idIsFunction, isTypeConstructor,
+              id, name, isMethod, idIsFunction, idIsClass, isTypeConstructor,
               kind, formals, whereClause);
 
   owned<UntypedFnSignature> result =
     toOwned(new UntypedFnSignature(id, name, isMethod,
-                                   idIsFunction, isTypeConstructor,
+                                   idIsFunction, idIsClass, isTypeConstructor,
                                    kind, std::move(formals), whereClause));
 
   return QUERY_END(result);
@@ -55,12 +56,13 @@ UntypedFnSignature::get(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
                         bool idIsFunction,
+                        bool idIsClass,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
                         const uast::Expression* whereClause) {
   return getUntypedFnSignature(context, id, name, isMethod,
-                               idIsFunction, isTypeConstructor, kind,
+                               idIsFunction, idIsClass, isTypeConstructor, kind,
                                std::move(formals), whereClause).get();
 }
 
@@ -86,6 +88,7 @@ UntypedFnSignature::get(Context* context, const uast::Function* fn) {
     result = get(context, fn->id(),
                  fn->name(), fn->isMethod(),
                  /* idIsFunction */ true,
+                 /* idIsClass */ false,
                  /* isTypeConstructor */ false,
                  fn->kind(),
                  std::move(formals), fn->whereClause());

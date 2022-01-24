@@ -1013,6 +1013,7 @@ resolveAndSetFieldTypes(Context* context, const AggregateDecl* ad,
   // and then set them in the type
   int i = 0;
   for (auto child: ad->children()) {
+    child->traverse(visitor);
     helpSetFieldTypes(child, r, i, t);
   }
 
@@ -1026,7 +1027,8 @@ resolveAndSetFieldTypes(Context* context, const AggregateDecl* ad,
 // and so code calling this query can optimize by calling with 'false'
 // first and then adjusting if it is not moot.
 //
-// For a class declaration, this returns BasicClassType.
+// For a class declaration, this returns BasicClassType, but
+// that is not appropriate in most cases.
 static const owned<Type>&
 initialTypeForTypeDeclQuery(Context* context,
                             ID declId,
@@ -1173,6 +1175,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   UniqueString name;
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<types::QualifiedType> formalTypes;
+  bool idIsClass = false;
 
   if (auto ct = t->getCompositeType()) {
     id = ct->id();
@@ -1197,6 +1200,9 @@ typeConstructorInitialQuery(Context* context, const Type* t)
         formalTypes.push_back(formalType);
       }
     }
+
+    if (t->isBasicClassType() || t->isClassType())
+      idIsClass = true;
   } else {
     assert(false && "case not handled");
   }
@@ -1205,6 +1211,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                          id, name,
                                          /* isMethod */ false,
                                          /* idIsFunction */ false,
+                                         idIsClass,
                                          /* isTypeConstructor */ true,
                                          Function::PROC,
                                          std::move(formals),
@@ -1688,6 +1695,7 @@ struct ReturnTypeInferer {
   }
 };
 
+// For a class type construction, returns a BasicClassType
 static const owned<Type>&
 returnTypeForTypeCtorQuery(Context* context,
                            const TypedFnSignature* sig,
@@ -1788,6 +1796,16 @@ const QualifiedType& returnType(Context* context,
     }
   } else if (untyped->isTypeConstructor()) {
     const Type* t = returnTypeForTypeCtorQuery(context, sig, poiScope).get();
+
+    // for a 'class C' declaration, the above query returns a BasicClassType,
+    // but 'C' normally means a generic-management non-nil C
+    // so adjust the result.
+    if (untyped->idIsClass()) {
+      auto bct = t->toBasicClassType();
+      assert(bct);
+      auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+      t = ClassType::get(context, bct, /*manager*/ nullptr, dec);
+    }
 
     result = QualifiedType(QualifiedType::TYPE, t);
 

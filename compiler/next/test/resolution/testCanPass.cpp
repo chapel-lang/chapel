@@ -392,12 +392,21 @@ static void test7() {
   auto parentName = UniqueString::build(context, "Parent");
   auto childName = UniqueString::build(context, "Child");
   auto basicObj = BasicClassType::getObjectType(context);
-  auto basicParent = BasicClassType::get(context, emptyId, parentName,
-                                         basicObj, emptyFields,
-                                         /* instantiatedFrom */ nullptr);
-  auto basicChild = BasicClassType::get(context, emptyId, childName,
-                                        basicParent, emptyFields,
-                                        /* instantiatedFrom */ nullptr);
+  auto basicParent = new BasicClassType(emptyId, parentName,
+                                        emptyFields,
+                                        /* instantiatedFrom */ nullptr,
+                                        SubstitutionsMap());
+  basicParent->setParentType(basicObj);
+  basicParent->finalizeFieldTypes();
+  auto basicParentDeleter = toOwned(basicParent); // so it will be deleted
+
+  auto basicChild = new BasicClassType(emptyId, childName,
+                                       emptyFields,
+                                       /* instantiatedFrom */ nullptr,
+                                       SubstitutionsMap());
+  basicChild->setParentType(basicParent);
+  basicChild->finalizeFieldTypes();
+  auto basicChildDeleter = toOwned(basicChild); // so it will be deleted
 
   auto borrowed = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
   auto borrowedQ = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NILABLE);
