@@ -4,10 +4,7 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-COMMON_DIR=/cray/css/users/chapelu
-if [ ! -d "$COMMON_DIR" ]; then
-  COMMON_DIR=/cy/users/chapelu
-fi
+export CHAMPS_COMMON_DIR=/cy/users/chapelu
 
 # All CHAMPS testing is currently on a cray-cs
 module list
