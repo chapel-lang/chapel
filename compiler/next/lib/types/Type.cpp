@@ -149,14 +149,18 @@ bool Type::MatchAssumptions::assume(const Type* t, const Type* otherT) {
     bool addedT = tLabels.emplace(t, label).second;
     bool addedOther = otherLabels.emplace(otherT, label).second;
 
-    if (addedT != addedOther)
-      return false; // suspect this is not possible
+    if (addedT != addedOther) {
+      // if one is already labelled and the other is not,
+      // they won't have the same labels, so they aren't the same
+      return false;
+    }
 
     // If we added something to the label maps, increment the label
     if (addedT) {
       nextLabel++;
     }
   }
+
   return true;
 }
 
