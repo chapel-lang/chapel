@@ -18,6 +18,8 @@ Initializing Modules:
         ChapelArray
          ChapelPrivatization
          ChapelDomain
+          Initialization
+           Memory
           IO
            FormattedIO
             Regex
@@ -32,8 +34,6 @@ Initializing Modules:
            InsertionSort
         ChapelDistribution
          ChapelHashtable
-          Initialization
-           Memory
         ExternalArray
         RangeChunk
        ChapelNumLocales
