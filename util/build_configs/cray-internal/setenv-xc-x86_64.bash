@@ -310,7 +310,7 @@ else
         list_loaded_modules
     fi
 
-    gen_version_gcc=8.3.0
+    gen_version_gcc=8.1.0
     gen_version_intel=16.0.3.210
     gen_version_cce=10.0.3
 
