@@ -1452,9 +1452,8 @@ module ChapelDomain {
      */
     proc ref requestCapacity(capacity) {
 
-      if capacity < 0 {
-        halt("domain.requestCapacity can only be invoked for capacity >= 0");
-      }
+      if capacity < 0 then
+        halt("domain.requestCapacity can only be invoked when capacity >= 0");
 
       if !this.isAssociative() then
         compilerError("domain.requestCapacity only applies to associative domains");
