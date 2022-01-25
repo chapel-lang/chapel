@@ -72,7 +72,14 @@ function test_compile() {
   test_end
 
   $CHPL_HOME/util/test/computePerfStats comp-time-$kind $CHPL_TEST_PERF_DIR $CHAMPS_GRAPH_PATH/comp-time.perfkeys $kind.comp.out.tmp
+  if [[ $? -ne 0 ]] ; then
+    log_fatal_error "computing compile time stats for ${kind}"
+  fi
+
   $CHPL_HOME/util/test/computePerfStats emitted-code-size-$kind $CHPL_TEST_PERF_DIR $CHAMPS_GRAPH_PATH/emitted-code-size.perfkeys $kind.comp.out.tmp
+  if [[ $? -ne 0 ]] ; then
+    log_fatal_error "computing emitted code size stats for ${kind}"
+  fi
 }
 
 function test_run() {
@@ -98,5 +105,8 @@ function test_run() {
   fi
 
   $CHPL_HOME/util/test/computePerfStats exec-time-$kind $CHPL_TEST_PERF_DIR $CHAMPS_GRAPH_PATH/$kind.perfkeys $kind.exec.out.tmp
+  if [[ $? -ne 0 ]] ; then
+    log_fatal_error "computing performance stats for ${kind}"
+  fi
 }
 
