@@ -12,6 +12,7 @@ module list
 source $CWD/common-cray-cs.bash
 source $CWD/common-perf-cray-cs-hdr.bash.bash
 
+loadCSModule PrgEnv-cray
 loadCSModule intel
 loadCSModule cray-mvapich2_nogpu
 
@@ -27,7 +28,7 @@ export CHPL_TEST_PERF_START_DATE=01/21/22
 export CHPL_NIGHTLY_TEST_DIRS=studies/champs/
 export CHPL_TEST_CHAMPS=true
 
-CHAMPS_DEP_DIR=$CHAMPS_COMMON_DIR/champs-nightly/deps-manual
+CHAMPS_DEP_DIR=$CHAMPS_COMMON_DIR/deps-manual
 if [ -d "$CHAMPS_DEP_DIR" ]; then
   export MKLROOT=/opt/intel/mkl
   export MPIROOT=$(dirname $(dirname $(which mpicc)))
