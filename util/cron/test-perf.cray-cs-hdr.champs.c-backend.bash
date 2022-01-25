@@ -11,6 +11,8 @@ export CHPL_TEST_PERF_DESCRIPTION='c-backend'
 source $CWD/common-champs.bash
 source $CWD/common-c-backend.bash
 
+export CHPL_TARGET_CPU=none
+
 $CWD/nightly -cron ${nightly_args} -no-buildcheck
 
 sync_graphs
