@@ -4,7 +4,9 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-export CHAMPS_COMMON_DIR=/cy/users/chapelu/champs-nightly
+COMMON_DIR=/cy/users/chapelu
+
+export CHAMPS_COMMON_DIR=$COMMON_DIR/champs-nightly
 
 # All CHAMPS testing is currently on a cray-cs
 module list
@@ -20,7 +22,7 @@ module list
 
 # Perf configuration
 source $CWD/common-perf.bash
-CHAMPS_PERF_DIR=${CHAMPS_PERF_DIR:-$CHAMPS_COMMON_DIR/NightlyPerformance/champs} # TODO
+CHAMPS_PERF_DIR=${CHAMPS_PERF_DIR:-$COMMON_DIR/NightlyPerformance/champs}
 export CHPL_TEST_PERF_DIR=$CHAMPS_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
 export CHPL_TEST_PERF_START_DATE=01/21/22
 
