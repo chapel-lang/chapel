@@ -76,6 +76,9 @@ libchplcomp-parser: FORCE
 libchplcomp-chpldoc: FORCE
 	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-chpldoc
 
+run-next-linter: FORCE
+	./compiler/next/util/lint --only-changed --jobs=-1
+
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE
 	rm -rf $(SPECTEST_DIR)

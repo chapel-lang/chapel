@@ -97,12 +97,14 @@ $(GASNET_INSTALL_DIR): $(GASNET_DEPEND)
 	cd gasnet && $(MAKE) && $(MAKE) post-install
 
 try-gmp: FORCE
-ifeq ($(wildcard $(GMP_BUILD_DIR)),)
+  ifneq ($(CHPL_MAKE_GMP_IS_OVERRIDDEN), True)
+    ifeq ($(wildcard $(GMP_BUILD_DIR)),)
 	@echo "Speculatively attempting to build gmp"
 	-@$(MAKE) GMP_SPECULATIVE=yes gmp
-else ifeq ($(wildcard $(GMP_H_FILE)),)
+    else ifeq ($(wildcard $(GMP_H_FILE)),)
 	$(info Speculative build of gmp squashed due to previous failures.)
-endif
+    endif
+  endif
 
 gmp: $(GMP_H_FILE)
 $(GMP_H_FILE): $(GMP_DEPEND)
@@ -153,14 +155,14 @@ $(QTHREAD_INSTALL_DIR): $(QTHREAD_DEPEND) $(QTHREAD_OTHER_INSTALL_DIR_DEPS)
 $(QTHREAD_ALIASES): qthread
 
 try-re2: FORCE
-ifeq ($(wildcard $(RE2_BUILD_DIR)),)
+  ifneq ($(CHPL_MAKE_RE2_IS_OVERRIDDEN), True)
+    ifeq ($(wildcard $(RE2_BUILD_DIR)),)
 	@echo "Speculatively attempting to build re2"
 	-@$(MAKE) re2
-else
-ifeq ($(wildcard $(RE2_H_FILE)),)
+    else ifeq ($(wildcard $(RE2_H_FILE)),)
 	$(info Speculative build of re2 squashed due to previous failures.)
-endif
-endif
+    endif
+  endif
 
 re2: $(RE2_H_FILE)
 $(RE2_H_FILE): $(RE2_DEPEND)

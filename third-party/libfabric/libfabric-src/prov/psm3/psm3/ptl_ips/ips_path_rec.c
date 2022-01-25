@@ -100,11 +100,8 @@ ips_none_get_path_rec(struct ips_proto *proto,
 		    psmi_calloc(proto->ep, UNDEFINED, 1,
 				sizeof(ips_path_rec_t));
 		if (!elid.key || !path_rec) {
-			if (elid.key)
-				psmi_free(elid.key);
-			if (path_rec)
-				psmi_free(path_rec);
-			return PSM2_NO_MEMORY;
+			err = PSM2_NO_MEMORY;
+			goto fail;
 		}
 
 		/* Create path record */
@@ -119,16 +116,12 @@ ips_none_get_path_rec(struct ips_proto *proto,
 
 		/* Setup CCA parameters for path */
 		if (path_rec->pr_sl > PSMI_SL_MAX) {
-			psmi_free(elid.key);
-			psmi_free(path_rec);
-			return PSM2_INTERNAL_ERR;
+			err =  PSM2_INTERNAL_ERR;
+			goto fail;
 		}
 		err = ips_make_ah(proto->ep, path_rec);
-		if (err != PSM2_OK) {
-			psmi_free(elid.key);
-			psmi_free(path_rec);
-			return err;
-		}
+		if (err != PSM2_OK)
+			goto fail;
 
 		/* Add path record into cache */
 		strcpy(elid.key, eplid);
@@ -140,6 +133,13 @@ ips_none_get_path_rec(struct ips_proto *proto,
 	/* Return IPS path record */
 	*ppath_rec = path_rec;
 
+	return err;
+
+fail:
+	if (elid.key)
+		psmi_free(elid.key);
+	if (path_rec)
+		psmi_free(path_rec);
 	return err;
 }
 
@@ -162,7 +162,7 @@ psm2_error_t ips_path_rec_to_ah_attr(psm2_ep_t ep,
 		ah_attr->src_path_bits = __be16_to_cpu(path_rec->pr_slid);
 		ah_attr->dlid = __be16_to_cpu(path_rec->pr_dlid);
 		ah_attr->is_global  = 0;
-		_HFI_UDDBG("creating AH with DLID %u\n", ah_attr->dlid);
+		_HFI_CONNDBG("creating AH with DLID %u\n", ah_attr->dlid);
 	} else {
 		ah_attr->src_path_bits = 0;
 		ah_attr->dlid = 1;	// not used on ethernet, make non-zero
@@ -175,9 +175,9 @@ psm2_error_t ips_path_rec_to_ah_attr(psm2_ep_t ep,
 		ah_attr->grh.sgid_index = ep->verbs_ep.lgid_index;
 		ah_attr->grh.hop_limit = 0xFF;
 		ah_attr->grh.traffic_class = 0;
-		if (_HFI_UDDBG_ON) {
+		if (_HFI_CONNDBG_ON) {
 			char buf[80];
-			_HFI_UDDBG("creating AH with DGID: %s\n",
+			_HFI_CONNDBG("creating AH with DGID: %s\n",
 				__psm2_dump_gid(&ah_attr->grh.dgid, buf, sizeof(buf)));
 		}
 	}
@@ -189,23 +189,23 @@ psm2_error_t ips_make_ah(psm2_ep_t ep, ips_path_rec_t *path_rec)
 	struct ibv_ah_attr ah_attr;
 
 	if (path_rec->ah) {
-		_HFI_UDDBG("make_ah called second time on given path_rec, skipping\n");
+		_HFI_CONNDBG("make_ah called second time on given path_rec, skipping\n");
 		return PSM2_OK;
 	}
 	if (PSM2_OK != ips_path_rec_to_ah_attr(ep, path_rec, &ah_attr)) {
-		_HFI_ERROR( "Unable to convert path_rec to AH\n");
+		_HFI_ERROR( "Unable to convert path_rec to AH for %s port %u\n", ep->dev_name, ep->portnum);
 		return PSM2_INTERNAL_ERR;
 	}
 	path_rec->ah = ibv_create_ah(ep->verbs_ep.pd, &ah_attr);
 	if (! path_rec->ah) {
 		int save_errno = errno;
-		_HFI_ERROR( "Unable to create AH: %s (%d)\n", strerror(save_errno), save_errno);
+		_HFI_ERROR( "Unable to create AH for %s: %s (%d)\n", ep->dev_name, strerror(save_errno), save_errno);
 		if (save_errno == ETIMEDOUT)
 			return PSM2_EPID_PATH_RESOLUTION;
 		else
 			return PSM2_INTERNAL_ERR;
 	}
-	_HFI_UDDBG("created AH %p\n", path_rec->ah);
+	_HFI_CONNDBG("created AH %p\n", path_rec->ah);
 	// PSM doesn't free path_rec structures on shutdown, so this will
 	// simply leak and be cleaned up by the kernel close when we shutdown
 	return PSM2_OK;
@@ -387,9 +387,9 @@ ips_none_path_rec(struct ips_proto *proto,
 
 fail:
 	if (err != PSM2_OK)
-		_HFI_PRDBG
-		    ("Unable to get path record for LID %x <---> DLID %x.\n",
-		     slid, dlid);
+		_HFI_CONNDBG
+		    ("Unable to get path record for %s port %u LID %x <---> DLID %x.\n",
+		     proto->ep->dev_name, proto->ep->portnum, slid, dlid);
 	return err;
 }
 
@@ -416,7 +416,7 @@ static psm2_error_t ips_none_path_rec_init(struct ips_proto *proto)
 
 		if (!psmi_getenv("PSM3_ERRCHK_TIMEOUT",
 				 "Errchk timeouts in mS <min:max:factor>",
-				 PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_STR,
+				 PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
 				 (union psmi_envvar_val)errchk_to, &env_to)) {
 			/* Not using default values, parse what we can */
 			errchk_to = env_to.e_str;

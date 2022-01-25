@@ -1086,7 +1086,7 @@ proc StencilDom.dsiMember(i) {
   return wholeFluff.contains(i);
 }
 
-proc StencilDom.dsiIndexOrder(i) {
+override proc StencilDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 

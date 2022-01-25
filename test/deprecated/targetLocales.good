@@ -1,0 +1,12 @@
+targetLocales.chpl:9: warning: 'targetLocales' method on arrays, domains, and distributions is now paren-less; please invoke it without parentheses
+targetLocales.chpl:10: warning: 'targetLocales' method on arrays, domains, and distributions is now paren-less; please invoke it without parentheses
+targetLocales.chpl:11: warning: 'targetLocales' method on arrays, domains, and distributions is now paren-less; please invoke it without parentheses
+targetLocales.chpl:18: warning: 'targetLocales' method on arrays, domains, and distributions is now paren-less; please invoke it without parentheses
+targetLocales.chpl:19: warning: 'targetLocales' method on arrays, domains, and distributions is now paren-less; please invoke it without parentheses
+targetLocales.chpl:21: warning: 'targetLocales' method on arrays, domains, and distributions is now paren-less; please invoke it without parentheses
+LOCALE0
+LOCALE0
+LOCALE0
+LOCALE0
+LOCALE0
+LOCALE0

@@ -16,6 +16,8 @@
 # limitations under the License.
 
 add_executable(chpldoc "chpldoc.cpp")
+# TODO: this is temporary so I could use std::filesystem
+set_property(TARGET chpldoc PROPERTY CXX_STANDARD 17)
 target_link_libraries(chpldoc $<TARGET_OBJECTS:libchplcomp-obj>)
 target_include_directories(chpldoc PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}

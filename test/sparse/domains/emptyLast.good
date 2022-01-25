@@ -1,0 +1,2 @@
+10
+emptyLast.chpl:5: error: halt reached - 'last' is invoked on an empty sparse domain

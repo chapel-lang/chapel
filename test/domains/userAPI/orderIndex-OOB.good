@@ -1,0 +1,1 @@
+orderIndex-OOB.chpl:3: error: halt reached - illegal order in orderToIndex(): 3. For this domain, order must lie in 0..2

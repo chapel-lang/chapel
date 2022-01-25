@@ -190,6 +190,7 @@ void ASTNode::stringify(std::ostream& ss,
   dumpHelper(ss, this, maxIdLen, leadingSpaces);
 }
 
+IMPLEMENT_DUMP(ASTNode);
 
 } // end namespace uast
 } // end namespace chpl

@@ -21,7 +21,9 @@
 // This #define needs to be before the other #includes
 // since it affects included files
 #ifdef __linux__
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #endif
 
 #include "chplrt.h"

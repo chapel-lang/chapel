@@ -134,6 +134,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
+	packages/Socket.chpl \
 	packages/Sort.chpl \
 	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \

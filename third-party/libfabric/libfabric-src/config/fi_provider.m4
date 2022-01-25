@@ -68,7 +68,13 @@ dnl
 					and use $1 installed under PATH)])
 			     ],
 			     [],
-			     [enable_$1=auto])])
+			     [AS_IF([test x"$enable_only" != x"no"],
+			            [AC_MSG_NOTICE([*** Skipping $1 because $enable_only set])
+			             enable_$1=no],
+			            [enable_$1=auto])
+			    ])
+	      ])
+
 
 	# Save CPPFLAGS and LDFLAGS before they are modified by FI_CHECK_PREFIX_DIR.
 	# Provider's local macros could use the value if needed.

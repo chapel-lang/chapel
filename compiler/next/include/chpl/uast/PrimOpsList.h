@@ -328,6 +328,7 @@ PRIMITIVE_R(CALL_RESOLVES, "call resolves")
 PRIMITIVE_R(METHOD_CALL_RESOLVES, "method call resolves")
 PRIMITIVE_R(CALL_AND_FN_RESOLVES, "call and fn resolves")
 PRIMITIVE_R(METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves")
+PRIMITIVE_R(RESOLVES, "resolves")
 
 PRIMITIVE_G(START_RMEM_FENCE, "chpl_rmem_consist_acquire")
 PRIMITIVE_G(FINISH_RMEM_FENCE, "chpl_rmem_consist_release")

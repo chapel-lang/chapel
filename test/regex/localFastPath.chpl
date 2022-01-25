@@ -63,7 +63,7 @@ proc matchesL() {
   var s = "abaabaaab":t;
   var r = compile("(a+)(b)":t);
   writeln("matchesL");
-  for match in r.matches(s, captures=2) do
+  for match in r.matches(s, numCaptures=2) do
     writeln(match);
   writeln();
 }
@@ -74,7 +74,7 @@ proc matchesR(param rvf=true) {
   on locales1 {
     if !rvf then preventRvf(r);
     writef("matchesR(rvf=%t)\n", rvf);
-    for match in r.matches(s, captures=2) do
+    for match in r.matches(s, numCaptures=2) do
       writeln(match);
     writeln();
   }

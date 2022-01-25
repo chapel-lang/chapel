@@ -136,8 +136,11 @@ extern const char* CHPL_SYS_MODULES_SUBDIR;
 extern const char* CHPL_LLVM_UNIQ_CFG_PATH;
 extern const char* CHPL_LLVM_CLANG_C;
 extern const char* CHPL_LLVM_CLANG_CXX;
-extern const char* CHPL_LLVM_CLANG_COMPILE_ARGS;
-extern const char* CHPL_LLVM_CLANG_LINK_ARGS;
+
+extern const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS;
+extern const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS;
+extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
+extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
@@ -267,6 +270,9 @@ extern std::string llvmFlags;
 extern bool fPrintAdditionalErrors;
 
 extern bool fCompilerLibraryParser;
+extern bool fDebugTrace;
+
+extern size_t fBreakOnQueryHash;
 
 namespace chpl {
   class Context;

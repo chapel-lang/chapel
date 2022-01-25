@@ -78,7 +78,6 @@ static struct fi_ops_fabric psmx3_fabric_ops = {
 
 static struct fi_fabric_attr psmx3_fabric_attr = {
 	.name = PSMX3_FABRIC_NAME,
-	.prov_version = OFI_VERSION_DEF_PROV,
 };
 
 int psmx3_fabric(struct fi_fabric_attr *attr,
@@ -117,6 +116,7 @@ int psmx3_fabric(struct fi_fabric_attr *attr,
 		ofi_ns_start_server(&fabric_priv->name_server);
 	}
 
+	psmx3_fabric_attr.prov_version = get_psm3_provider_version();
 	ret = ofi_fabric_init(&psmx3_prov, &psmx3_fabric_attr, attr,
 			     &fabric_priv->util_fabric, context);
 	if (ret) {

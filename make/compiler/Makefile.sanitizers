@@ -19,6 +19,10 @@
 # Note that for ASAN gcc has leak sanitizer on by default, which isn't that
 # helpful ATM. Disable with `export ASAN_OPTIONS=detect_leaks=0`
 
+# Note that CHPL_MAKE_SANITIZE will be set based upon
+# CHPL_SANITIZE / CHPL_SANITIZE_EXE depending on whether or
+# not we are compiling for host or target.
+
 ifneq ($(CHPL_MAKE_SANITIZE), none)
   # Configuration checks
   ifneq ($(CHPL_MAKE_TASKS), fifo)

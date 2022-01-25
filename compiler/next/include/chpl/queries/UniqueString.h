@@ -243,11 +243,12 @@ class UniqueString final {
   void mark(Context* context) const {
     s.i.mark(context);
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
+
 };
-
-/// \cond DO_NOT_DOCUMENT
-
-/// \endcond
 
 
 } // end namespace chpl

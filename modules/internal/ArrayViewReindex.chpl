@@ -125,7 +125,7 @@ module ArrayViewReindex {
         return distInst;
     }
     
-    inline proc updom {
+    inline proc updom: updomInst!.type {
       return updomInst!;
     }
 
@@ -140,7 +140,7 @@ module ArrayViewReindex {
       return a.type;
     }
 
-    inline proc downdom {
+    inline proc downdom: downdomInst.type {
       if _isPrivatized(downdomInst) then
         return chpl_getPrivatizedCopy(downdomInst.type, downdomPid);
       else
@@ -211,7 +211,7 @@ module ArrayViewReindex {
 
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && chpl__isDROrDRView(downdom)
-      && __primitive("method call resolves", updom, "these", tag)
+      && __primitive("resolves", updom.these(tag))
     {
       forall i in updom do
           yield i;
@@ -219,7 +219,7 @@ module ArrayViewReindex {
 
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !chpl__isDROrDRView(downdom)
-      && __primitive("method call resolves", downdom, "these", tag)
+      && __primitive("resolves", downdom.these(tag))
     {
       forall i in downdom do
         yield downIdxToUpIdx(i);
@@ -300,6 +300,21 @@ module ArrayViewReindex {
       _delete_dom(updomInst!, false);
       _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
+
+    // These would be forwarded to 'updom' automatically,
+    // except the "last resort" overloads BaseDom take precedence
+    // over forwarding. So, define these explicitly.
+    proc parSafe return updom.parSafe;
+    proc dsiLow return updom.dsiLow;
+    proc dsiHigh return updom.dsiHigh;
+    proc dsiStride return updom.dsiStride;
+    proc dsiAlignment return updom.dsiAlignment;
+    proc dsiFirst return updom.dsiFirst;
+    proc dsiLast return updom.dsiLast;
+    proc dsiAlignedlow return updom.dsiAlignedlow;
+    proc dsiAlignedhigh return updom.dsiAlignedhigh;
+    proc dsiIndexOrder return updom.dsiIndexOrder;
+    proc dsiMakeIndexBuffer return updom.dsiMakeIndexBuffer;
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
@@ -400,7 +415,7 @@ module ArrayViewReindex {
                       doiBulkTransferFromAny,  doiBulkTransferToAny, doiScan,
                       chpl__serialize, chpl__deserialize;
 
-    proc downdom {
+    proc downdom: arr.dom.type {
       // TODO: This routine may get a remote domain if this is a view
       // of a view and is called on a locale other than the
       // originating one for the domain.  Relax the requirement that
@@ -450,7 +465,7 @@ module ArrayViewReindex {
 
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
-           __primitive("method call resolves", privDom, "these", tag) {
+           __primitive("resolves", privDom.these(tag)) {
       forall i in privDom {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getDataIndex(i);
@@ -625,7 +640,7 @@ module ArrayViewReindex {
     // routines relating to the underlying domains and arrays
     //
 
-    inline proc privDom {
+    inline proc privDom: dom.type {
       if _isPrivatized(dom) {
         return chpl_getPrivatizedCopy(dom.type, _DomPid);
       } else {

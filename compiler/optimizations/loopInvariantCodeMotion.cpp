@@ -57,23 +57,24 @@
 #ifdef detailedTiming
   #define startTimer(timer) timer.start()
   #define stopTimer(timer)  timer.stop()
+
+  Timer allOperandsAreLoopInvariantTimer;
+  Timer computeAliasTimer;
+  Timer collectSymExprAndDefTimer;
+  Timer calculateActualDefsTimer;
+  Timer buildBBTimer;
+  Timer computeDominatorTimer;
+  Timer collectNaturalLoopsTimer;
+  Timer canPerformCodeMotionTimer;
+  Timer buildLocalDefMapsTimer;
+  Timer computeLoopInvariantsTimer;
+  Timer overallTimer;
+  long numLoops = 0;
+
 #else
   #define startTimer(timer) // do nothing
   #define stopTimer(timer)  // do nothing
 #endif
-
-
-Timer allOperandsAreLoopInvariantTimer;
-Timer computeAliasTimer;
-Timer collectSymExprAndDefTimer;
-Timer calculateActualDefsTimer;
-Timer buildBBTimer;
-Timer computeDominatorTimer;
-Timer collectNaturalLoopsTimer;
-Timer canPerformCodeMotionTimer;
-Timer buildLocalDefMapsTimer;
-Timer computeLoopInvariantsTimer;
-Timer overallTimer;
 
 #define MAX_NUM_ALIASES 200000
 
@@ -1166,9 +1167,7 @@ static bool canPerformCodeMotion(Loop* loop) {
  * hoisted before the loop(into a preheader of sorts) so long as they definition dominates
  * all uses in the loop, and the block that the definition is located in dominates all exits.
  */
-// This function returns the number of loops LICM'd
-static long licmFn(FnSymbol* fn) {
-  long numLoops = 0;
+static void licmFn(FnSymbol* fn) {
   //build the basic blocks, where the first bb is the entry block
   startTimer(buildBBTimer);
 
@@ -1224,7 +1223,7 @@ static long licmFn(FnSymbol* fn) {
     std::map<Symbol*, std::set<Symbol*> > aliases;
     bool tooManyAliases = computeAliases(fn, aliases);
     if (tooManyAliases) {
-      return 0;
+      return;
     }
     computeLoopInvariants(loopInvariants, defsInLoop, curLoop, localDefMap, aliases);
     stopTimer(computeLoopInvariantsTimer);
@@ -1245,7 +1244,10 @@ static long licmFn(FnSymbol* fn) {
 
     freeLocalDefUseMaps(localDefMap, localUseMap);
   }
+
+#ifdef detailedTiming
   numLoops += loops.size();
+#endif
 
   for_vector(Loop, loop, loops) {
     delete loop;
@@ -1256,8 +1258,6 @@ static long licmFn(FnSymbol* fn) {
     delete bitVec;
     bitVec = 0;
   }
-
-  return numLoops;
 }
 
 void loopInvariantCodeMotion(void) {
@@ -1273,11 +1273,10 @@ void loopInvariantCodeMotion(void) {
   }
 
   startTimer(overallTimer);
-  long numLoops = 0;
 
   //TODO use stl routine here
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    numLoops += licmFn(fn);
+    licmFn(fn);
   }
 
   stopTimer(overallTimer);

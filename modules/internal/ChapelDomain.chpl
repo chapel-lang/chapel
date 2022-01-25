@@ -62,10 +62,36 @@ module ChapelDomain {
     return new _domain(dist, idxType, parSafe);
   }
 
+  private proc isUltimatelyRectangularParent(parentDom: domain) param {
+    if parentDom.isRectangular() then
+      return true;
+    else if parentDom.isSparse() then
+      return isUltimatelyRectangularParent(parentDom._value.parentDom);
+    else
+      return false;
+  }
+
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(dist: _distribution,
                                           parentDom: domain) {
+    if ! isUltimatelyRectangularParent(parentDom) then
+      compilerError("sparse subdomains are currently supported only for rectangular domains");
+
     return new _domain(dist, parentDom);
+  }
+
+  proc chpl__buildSparseDomainRuntimeTypeForParentDomain(parentDom) type {
+    if ! isDomain(parentDom) then
+      compilerError("building a sparse subdomain of a non-domain value",
+                    " of type ", parentDom.type: string);
+
+    return chpl__buildSparseDomainRuntimeType(parentDom.defaultSparseDist,
+                                              parentDom);
+  }
+
+  proc chpl__buildSparseDomainRuntimeTypeForParentDomain(type parentDom) {
+    compilerError("building a sparse subdomain of a type;",
+                  " please supply a domain value instead");
   }
 
   proc chpl__convertRuntimeTypeToValue(dist: _distribution,
@@ -637,35 +663,25 @@ module ChapelDomain {
     }
   }
 
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_by(a:domain, b) { ... }
-   *
-   * because the parser renames the routine since 'by' is a keyword.
-   */
+  // This is the definition of the 'by' operator for domains.
   operator by(a: domain, b) {
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
                       true);
-    var t = _makeIndexTuple(a.rank, b, expand=true);
+    var t = _makeIndexTuple(a.rank, b, "step", expand=true);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) by t(i);
     return new _domain(a.dist, a.rank, a._value.idxType, true, r);
   }
 
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_align(a:domain, b) { ... }
-   *
-   * because the parser renames the routine since 'align' is a keyword.
-   */
+  // This is the definition of the 'align' operator for domains.
+  // It produces a new domain with the specified alignment.
+  // See also: 'align' operator on ranges.
   operator align(a: domain, b) {
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
                       a.stridable);
-    var t = _makeIndexTuple(a.rank, b, expand=true);
+    var t = _makeIndexTuple(a.rank, b, "alignment", expand=true);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) align t(i);
     return new _domain(a.dist, a.rank, a._value.idxType, a.stridable, r);
@@ -1022,7 +1038,7 @@ module ChapelDomain {
     pragma "no doc"
     iter these(param tag: iterKind)
       where tag == iterKind.standalone &&
-            __primitive("method call resolves", _value, "these", tag=tag) {
+            __primitive("resolves", _value.these(tag=tag)) {
       for i in _value.these(tag) do
         yield i;
     }
@@ -1039,8 +1055,7 @@ module ChapelDomain {
     iter these(param tag: iterKind, followThis, param fast: bool = false)
       where tag == iterKind.follower {
 
-      if __primitive("method call resolves", _value, "these",
-                     tag=tag, followThis, fast=fast) {
+      if __primitive("resolves", _value.these(tag=tag, followThis, fast=fast)) {
         for i in _value.these(tag=tag, followThis, fast=fast) do
           yield i;
       } else {
@@ -1300,13 +1315,19 @@ module ChapelDomain {
       _value.dsiClear();
     }
 
-    /* Add index ``i`` to this domain. This method is also available
+    /* Add index ``idx`` to this domain. This method is also available
        as the ``+=`` operator.
 
        The domain must be irregular.
      */
+    proc ref add(in idx) {
+      return _value.dsiAdd(idx);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
     proc ref add(in i) {
-      return _value.dsiAdd(i);
+      return add(i);
     }
 
     pragma "no doc"
@@ -1314,7 +1335,7 @@ module ChapelDomain {
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
 
-        if inds.sizeAs(uint) == 0 then return 0;
+      if inds.isEmpty() then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
@@ -1378,9 +1399,9 @@ module ChapelDomain {
          addition should occur is unknown. We expect this to change in the
          future.
 
-       :arg inds: Indices to be added. ``inds`` can be an array of
-                  ``rank*idxType`` or an array of ``idxType`` for
-                  1-D domains.
+       :arg inds: Indices to be added. ``inds`` must be an array of
+                  ``rank*idxType``, except for 1-D domains, where it must be
+                  an array of ``idxType``.
 
        :arg dataSorted: ``true`` if data in ``inds`` is sorted.
        :type dataSorted: bool
@@ -1403,14 +1424,25 @@ module ChapelDomain {
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
 
-        if inds.sizeAs(uint) == 0 then return 0;
+      if inds.isEmpty() then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
 
-    /* Remove index ``i`` from this domain */
+    pragma "no doc" pragma "last resort"
+    proc bulkAdd(args...) {
+      compilerError("incompatible argument(s) or this domain type does not support 'bulkAdd'");
+    }
+
+    /* Remove index ``idx`` from this domain */
+    proc ref remove(idx) {
+      return _value.dsiRemove(idx);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
     proc ref remove(i) {
-      return _value.dsiRemove(i);
+      return remove(i);
     }
 
     /* Request space for a particular number of values in an
@@ -1418,16 +1450,21 @@ module ChapelDomain {
 
        Currently only applies to associative domains.
      */
-    proc ref requestCapacity(i) {
+    proc ref requestCapacity(capacity) {
 
-      if i < 0 {
-        halt("domain.requestCapacity can only be invoked on sizes >= 0");
-      }
+      if capacity < 0 then
+        halt("domain.requestCapacity can only be invoked when capacity >= 0");
 
       if !this.isAssociative() then
         compilerError("domain.requestCapacity only applies to associative domains");
 
-      _value.dsiRequestCapacity(i);
+      _value.dsiRequestCapacity(capacity);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'capacity' instead"
+    proc ref requestCapacity(i) {
+      requestCapacity(i);
     }
 
     /* Return the number of indices in this domain.  For domains whose
@@ -1490,18 +1527,24 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc contains(i: rank*_value.idxType) {
+    proc contains(idx: rank*_value.idxType) {
       if this.isRectangular() || this.isSparse() then
-        return _value.dsiMember(_makeIndexTuple(rank, i));
+        return _value.dsiMember(_makeIndexTuple(rank, idx, "index"));
       else
-        return _value.dsiMember(i(0));
+        return _value.dsiMember(idx(0));
     }
 
-    /* Return true if this domain contains ``i``. Otherwise return false.
+    /* Return true if this domain contains ``idx``. Otherwise return false.
        For sparse domains, only indices with a value are considered
        to be contained in the domain.
      */
-    inline proc contains(i: _value.idxType ...rank) {
+    inline proc contains(idx: _value.idxType ...rank) {
+      return contains(idx);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
+    inline proc contains(i) {
       return contains(i);
     }
 
@@ -1567,7 +1610,7 @@ module ChapelDomain {
 
     // 1/5/10: do we want to support order() and position()?
     pragma "no doc"
-    proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
+    proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i, "index"));
 
     /*
       Returns the `ith` index in the domain counting from 0.
@@ -1616,15 +1659,29 @@ module ChapelDomain {
         return idx;
     }
 
+    pragma "last resort"
+    proc orderToIndex(order) {
+      if this.isRectangular() && isNumericType(this.idxType) then
+        compilerError("illegal value passed to orderToIndex():",
+          " the argument 'order' must be an integer, excluding uint(64)");
+      else
+        compilerError("this domain type does not support 'orderToIndex'");
+    }
+
     pragma "no doc"
     proc checkOrderBounds(order: int){
-      if order >= this.sizeAs(uint) || order < 0 then
-        halt("Order out of bounds. Order must lie in 0..",this.sizeAs(uint)-1);
+      if order >= this.sizeAs(uint) || order < 0 {
+        if this.isEmpty() then
+          halt("orderToIndex() invoked on an empty domain");
+        else
+          halt("illegal order in orderToIndex(): ", order,
+               ". For this domain, order must lie in 0..", this.sizeAs(uint)-1);
+      }
     }
 
     pragma "no doc"
     proc position(i) {
-      var ind = _makeIndexTuple(rank, i), pos: rank*intIdxType;
+      var ind = _makeIndexTuple(rank, i, "index"), pos: rank*intIdxType;
       for d in 0..rank-1 do
         pos(d) = _value.dsiDim(d).indexOrder(ind(d));
       return pos;
@@ -1921,7 +1978,7 @@ module ChapelDomain {
     /*
        Return an array of locales over which this domain has been distributed.
     */
-    proc targetLocales() const ref {
+    proc targetLocales const ref {
       return _value.dsiTargetLocales();
     }
 
@@ -2018,7 +2075,7 @@ module ChapelDomain {
     /* Return true if this domain is a rectangular.
        Otherwise return false.  */
     proc isRectangular() param {
-      return isSubtype(_to_borrowed(_value.type), BaseRectangularDom);
+      return this._value.isRectangular();
     }
 
     /* Return true if ``d`` is an irregular domain; e.g. is not rectangular.
@@ -2029,15 +2086,14 @@ module ChapelDomain {
 
     /* Return true if ``d`` is an associative domain. Otherwise return false. */
     proc isAssociative() param {
-      return chpl_isAssociativeDomClass(_to_borrowed(this._value));
+      return this._value.isAssociative();
     }
 
     /* Return true if ``d`` is a sparse domain. Otherwise return false. */
     proc isSparse() param {
-      proc isSparseDomClass(dc: BaseSparseDom) param return true;
-      proc isSparseDomClass(dc) param return false;
-      return isSparseDomClass(this._value);
+      return this._value.isSparse();
     }
+
   }  // record _domain
 
 }

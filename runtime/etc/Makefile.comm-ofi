@@ -21,31 +21,3 @@
 # code) is being linked in.
 #
 LD = $(CXX)
-
-ifneq (, $(findstring mpi, $(CHPL_MAKE_LAUNCHER) $(CHPL_COMM_OFI_OOB)))
-  MPI_LIB_NAME = mpi
-  ifneq ($(MPI_DIR),)
-    ifneq ($(wildcard $(MPI_DIR)/lib64),)
-      MPI_LIB_DIR := $(MPI_DIR)/lib64
-    else ifneq ($(wildcard $(MPI_DIR)/lib),)
-      MPI_LIB_DIR := $(MPI_DIR)/lib
-    endif
-    ifneq ($(MPI_LIB_DIR),)
-      GEN_LFLAGS += -L$(MPI_LIB_DIR) -Wl,-rpath,$(MPI_LIB_DIR)
-      ifneq ($(wildcard $(MPI_LIB_DIR)/libmpich.*),)
-        MPI_LIB_NAME = mpich
-      endif
-    endif
-  endif
-  LIBS += -l$(MPI_LIB_NAME)
-endif
-
-#
-# If we're using the PMI2 out-of-band support we have to reference
-# libpmi2 explicitly, except on Cray XC systems.
-#
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM), hpe-cray-ex)
-  LIBS += -lpmi2
-else ifeq ($(CHPL_COMM_OFI_OOB), pmi2)
-  LIBS += -lpmi2
-endif

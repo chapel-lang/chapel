@@ -171,11 +171,11 @@ module ArrayViewRankChange {
       return collapsedDim.size;
     }
 
-    inline proc upDom {
+    inline proc upDom: upDomInst!.type {
       return upDomInst!;
     }
 
-    inline proc downDom {
+    inline proc downDom: downDomInst!.type {
       if _isPrivatized(downDomInst!) then
         return chpl_getPrivatizedCopy(downDomInst!.type, downDomPid);
       else
@@ -236,7 +236,7 @@ module ArrayViewRankChange {
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !localeModelHasSublocales
       && chpl__isDROrDRView(downDom)
-      && __primitive("method call resolves", upDom, "these", tag)
+      && __primitive("resolves", upDom.these(tag))
     {
       forall i in upDom do
         yield i;
@@ -245,7 +245,7 @@ module ArrayViewRankChange {
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !localeModelHasSublocales
       && !chpl__isDROrDRView(downDom)
-      && __primitive("method call resolves", downDom, "these", tag)
+      && __primitive("resolves", downDom.these(tag))
     {
       forall i in downDom do
         yield downIdxToUpIdx(i);
@@ -388,6 +388,21 @@ module ArrayViewRankChange {
       if downDomInst != nil then
         _delete_dom(downDomInst!, _isPrivatized(downDomInst!));
     }
+
+    // These would be forwarded to 'upDom' automatically,
+    // except the "last resort" overloads BaseDom take precedence
+    // over forwarding. So, define these explicitly.
+    proc parSafe return upDom.parSafe;
+    proc dsiLow return upDom.dsiLow;
+    proc dsiHigh return upDom.dsiHigh;
+    proc dsiStride return upDom.dsiStride;
+    proc dsiAlignment return upDom.dsiAlignment;
+    proc dsiFirst return upDom.dsiFirst;
+    proc dsiLast return upDom.dsiLast;
+    proc dsiAlignedlow return upDom.dsiAlignedlow;
+    proc dsiAlignedhigh return upDom.dsiAlignedhigh;
+    proc dsiIndexOrder return upDom.dsiIndexOrder;
+    proc dsiMakeIndexBuffer return upDom.dsiMakeIndexBuffer;
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
@@ -561,7 +576,7 @@ module ArrayViewRankChange {
     // For now, work around them by using an if-expr
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
-           __primitive("method call resolves", privDom, "these", tag) {
+           __primitive("resolves", privDom.these(tag)) {
       forall i in privDom {
         yield if shouldUseIndexCache()
                 then indexCache.getDataElem(indexCache.getDataIndex(i))
@@ -741,7 +756,7 @@ module ArrayViewRankChange {
     // routines relating to the underlying domains and arrays
     //
 
-    inline proc privDom {
+    inline proc privDom: dom.type {
       if _isPrivatized(dom) {
         return chpl_getPrivatizedCopy(dom.type, _DomPid);
       } else {

@@ -1507,13 +1507,7 @@ operator :(r: range(?), type t: range(?)) {
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
 
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_by(r, step) { ... }
-   *
-   * because the parser renames the routine since 'by' is a keyword.
-   */
+  // This is the definition of the 'by' operator for ranges.
   pragma "no doc"
   inline operator by(r, step) {
     if !isRange(r) then
@@ -1522,13 +1516,6 @@ operator :(r: range(?), type t: range(?)) {
     return chpl_by_help(r, step);
   }
 
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_by(r: range(?), param step) { ... }
-   *
-   * because the parser renames the routine since 'by' is a keyword.
-   */
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
   pragma "no doc"
@@ -1537,14 +1524,6 @@ operator :(r: range(?), type t: range(?)) {
     return chpl_by_help(r, step:r.strType);
   }
 
-
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_align(r: range(?i, ?b, ?s), algn: i) { ... }
-   *
-   * because the parser renames the routine since 'align' is a keyword.
-   */
   // This is the definition of the 'align' operator for ranges.
   // It produces a new range with the specified alignment.
   // By definition, alignment is relative to the low bound of the range.
@@ -1557,14 +1536,6 @@ operator :(r: range(?), type t: range(?)) {
                      r._low, r._high, r.stride, chpl__idxToInt(algn), true);
   }
 
-
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_align(r: range(?i, ?b, ?s), algn) { ... }
-   *
-   * because the parser renames the routine since 'align' is a keyword.
-   */
   pragma "no doc"
   inline operator align(r : range(?i, ?b, ?s), algn) {
     compilerError("can't align a range with idxType ", i:string,

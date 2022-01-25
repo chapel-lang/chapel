@@ -83,6 +83,8 @@ static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(context_open)
 				 psmi_context_t *psm_ctxt,
 				 uint32_t cap_mask,
 				 unsigned);
+static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(context_initstats)
+				 (psm2_ep_t ep);
 
 
 static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_port_rate)

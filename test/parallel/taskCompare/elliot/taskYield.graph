@@ -1,0 +1,5 @@
+perfkeys: Elapsed time 1:, Elapsed time 4:, Elapsed time 16:
+graphkeys: 1 task per core, 4 tasks per core, 16 tasks per core
+repeat-files: chpl-taskyield.dat
+graphtitle: Task Yield Timings (500,000 yields/task)
+ylabel: Time (seconds)

@@ -216,6 +216,8 @@ struct ips_protoexp;
 
 struct ips_proto_stats {
 	uint64_t pio_busy_cnt;
+	uint64_t pio_no_flow_credits;
+	uint64_t post_send_fail;
 	uint64_t writev_busy_cnt;
 	uint64_t scb_egr_unavail_cnt;
 	uint64_t unknown_packets;
@@ -232,6 +234,8 @@ struct ips_proto_epaddr_stats {
 #ifdef RNDV_MOD
 	uint64_t err_chk_rdma_send;
 	uint64_t err_chk_rdma_recv;
+	uint64_t err_chk_rdma_resp_send;
+	uint64_t err_chk_rdma_resp_recv;
 #endif
 	uint64_t nak_send;
 	uint64_t nak_recv;
@@ -243,8 +247,12 @@ struct ips_proto_epaddr_stats {
 	uint64_t disconnect_req_recv;
 	uint64_t disconnect_rep_send;
 	uint64_t disconnect_rep_recv;
-	uint64_t tids_grant_send;
-	uint64_t tids_grant_recv;
+	uint64_t rts_send;
+	uint64_t rts_recv;
+	uint64_t cts_long_data_send;
+	uint64_t cts_long_data_recv;
+	uint64_t cts_rdma_send;
+	uint64_t cts_rdma_recv;
 	uint64_t send_rexmit;
 #ifdef RNDV_MOD
 	uint64_t rdma_rexmit;
@@ -302,16 +310,15 @@ struct ips_proto {
 	struct ips_scbctrl scbc_egr;
 	struct ips_epinfo epinfo;
 
-	ips_scb_t **sdma_scb_queue;
-	uint16_t sdma_queue_size;
-	uint16_t sdma_fill_index;
-	uint16_t sdma_done_index;
-	uint16_t sdma_avail_counter;
 
 	uint64_t timeout_send;
 	uint32_t flags;
 	uint32_t iovec_thresh_eager;
 	uint32_t iovec_thresh_eager_blocking;
+#ifdef PSM_CUDA
+	uint32_t iovec_gpu_thresh_eager;
+	uint32_t iovec_gpu_thresh_eager_blocking;
+#endif
 	uint32_t psn_mask;
 	uint32_t scb_bufsize;
 	uint32_t multirail_thresh_load_balance;
@@ -321,6 +328,7 @@ struct ips_proto {
 	struct ips_ibta_compliance_fn ibta;
 	struct ips_proto_stats stats;
 	struct ips_proto_epaddr_stats epaddr_stats;
+	struct ptl_strategy_stats strat_stats;
 
 	struct ips_proto_am proto_am;
 
@@ -616,15 +624,10 @@ void MOCKABLE(ips_proto_flow_enqueue)(struct ips_flow *flow, ips_scb_t *scb);
 MOCK_DCL_EPILOGUE(ips_proto_flow_enqueue);
 
 psm2_error_t ips_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed);
-psm2_error_t ips_proto_flow_flush_dma(struct ips_flow *flow, int *nflushed);
 
 /* Wrapper for enqueue + flush */
 psm2_error_t ips_proto_scb_pio_send(struct ips_flow *flow, ips_scb_t *scb);
 
-void ips_proto_scb_dma_enqueue(struct ips_proto *proto, ips_scb_t *scb);
-psm2_error_t ips_proto_scb_dma_flush(struct ips_proto *proto,
-				    ips_epaddr_t *ipsaddr, int *nflushed);
-psm2_error_t ips_proto_dma_wait_until(struct ips_proto *proto, ips_scb_t *scb);
 
 /*
  * Protocol receive processing

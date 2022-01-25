@@ -1033,6 +1033,25 @@ module Subprocess {
   }
 
   /*
+    Request an abnormal termination of the child process.  The
+    associated signal, `SIGABRT`, may be caught and handled by
+    the child process. See :proc:`subprocess.send_signal`.
+   */
+  proc subprocess.abort() throws {
+    try _throw_on_launch_error();
+    try this.send_signal(SIGABRT);
+  }
+
+  /* Send the child processan alarm signal. The associated signal,
+     `SIGALRM`, may be caught and handled by the child process. See
+     :proc:`subprocess.send_signal`.
+   */
+  proc subprocess.alarm() throws {
+    try _throw_on_launch_error();
+    try this.send_signal(SIGALRM);
+  }
+
+  /*
     Unconditionally kill the child process.  The associated signal,
     `SIGKILL`, cannot be caught by the child process. See
     :proc:`subprocess.send_signal`.

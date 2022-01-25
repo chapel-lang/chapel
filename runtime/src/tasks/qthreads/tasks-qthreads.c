@@ -447,11 +447,12 @@ static void setupAvailableParallelism(int32_t maxThreads) {
 
         numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
-            if (verbosity > 0) {
-                printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
-                       "to prevent oversubscription of the system.\n",
-                       hwpar, numPUsPerLocale);
-            }
+            char msg[256];
+            sprintf(msg,
+                    "QTHREADS: Reduced numThreadsPerLocale=%d to %d "
+                    "to prevent oversubscription of the system.",
+                    hwpar, numPUsPerLocale);
+            chpl_task_warnNumThreadsPerLocale(msg);
 
             // Do not oversubscribe the system, use all available resources.
             hwpar = numPUsPerLocale;

@@ -2,12 +2,12 @@
 [A]
 
 [A.B]
-name = "sam"
 job = "programmer"
+name = "sam"
 number = 7
 
 [A.C]
-name = "Ben"
 job = "programmer"
+name = "Ben"
 
 

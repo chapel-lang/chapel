@@ -92,6 +92,14 @@ static inline uint64_t ntohll(uint64_t x) { return x; }
 #endif
 #endif
 
+#ifdef MSG_ZEROCOPY
+#define OFI_ZEROCOPY MSG_ZEROCOPY
+#define OFI_ZEROCOPY_SIZE 9000 /* arbitrary based on documentation */
+#else
+#define OFI_ZEROCOPY 0
+#define OFI_ZEROCOPY_SIZE SIZE_MAX
+#endif
+
 
 static inline int ofi_recvall_socket(SOCKET sock, void *buf, size_t len)
 {
@@ -116,6 +124,170 @@ static inline int ofi_sendall_socket(SOCKET sock, const void *buf, size_t len)
 }
 
 int ofi_discard_socket(SOCKET sock, size_t len);
+
+/*
+ * Byte queue - streaming socket staging buffer
+ */
+enum {
+	OFI_BYTEQ_SIZE = 9000, /* Hard-coded max, good for 6 1500B buffers */
+};
+
+struct ofi_byteq {
+	size_t size;
+	unsigned int head;
+	unsigned int tail;
+	uint8_t data[OFI_BYTEQ_SIZE];
+};
+
+static inline void ofi_byteq_init(struct ofi_byteq *byteq, ssize_t size)
+{
+	memset(byteq, 0, sizeof *byteq);
+	if (size > OFI_BYTEQ_SIZE)
+		byteq->size = OFI_BYTEQ_SIZE;
+	else if (size >= 0)
+		byteq->size = size;
+	else
+		byteq->size = 0;
+}
+
+static inline void ofi_byteq_discard(struct ofi_byteq *byteq)
+{
+	byteq->head = 0;
+	byteq->tail = 0;
+}
+
+static inline size_t ofi_byteq_readable(struct ofi_byteq *byteq)
+{
+	return byteq->tail - byteq->head;
+}
+
+static inline size_t ofi_byteq_writeable(struct ofi_byteq *byteq)
+{
+	return byteq->size - byteq->tail;
+}
+
+static inline size_t
+ofi_byteq_read(struct ofi_byteq *byteq, void *buf, size_t len)
+{
+	size_t avail;
+
+	avail = ofi_byteq_readable(byteq);
+	if (!avail)
+		return 0;
+
+	if (len < avail) {
+		memcpy(buf, &byteq->data[byteq->head], len);
+		byteq->head += len;
+		return len;
+	}
+
+	memcpy(buf, &byteq->data[byteq->head], avail);
+	byteq->head = 0;
+	byteq->tail = 0;
+	return avail;
+}
+
+static inline void
+ofi_byteq_write(struct ofi_byteq *byteq, const void *buf, size_t len)
+{
+	assert(len <= ofi_byteq_writeable(byteq));
+	memcpy(&byteq->data[byteq->tail], buf, len);
+	byteq->tail += len;
+}
+
+void ofi_byteq_writev(struct ofi_byteq *byteq, const struct iovec *iov,
+		      size_t cnt);
+
+static inline ssize_t ofi_byteq_recv(struct ofi_byteq *byteq, SOCKET sock)
+{
+	size_t avail;
+	ssize_t ret;
+
+	avail = ofi_byteq_writeable(byteq);
+	assert(avail);
+	ret = ofi_recv_socket(sock, &byteq->data[byteq->tail], avail,
+			      MSG_NOSIGNAL);
+	if (ret > 0)
+		byteq->tail += ret;
+	return ret;
+}
+
+size_t ofi_byteq_readv(struct ofi_byteq *byteq, struct iovec *iov,
+		       size_t cnt, size_t offset);
+
+static inline ssize_t ofi_byteq_send(struct ofi_byteq *byteq, SOCKET sock)
+{
+	size_t avail;
+	ssize_t ret;
+
+	avail = ofi_byteq_readable(byteq);
+	assert(avail);
+	ret = ofi_send_socket(sock, &byteq->data[byteq->head], avail,
+			      MSG_NOSIGNAL);
+	if (ret == avail) {
+		byteq->head = 0;
+		byteq->tail = 0;
+	} else if (ret > 0) {
+		byteq->head += ret;
+	}
+	return ret;
+}
+
+
+/*
+ * Buffered socket - socket with send/receive staging buffers.
+ */
+struct ofi_bsock {
+	SOCKET sock;
+	struct ofi_byteq sq;
+	struct ofi_byteq rq;
+	size_t zerocopy_size;
+	uint32_t async_index;
+	uint32_t done_index;
+};
+
+static inline void
+ofi_bsock_init(struct ofi_bsock *bsock, ssize_t sbuf_size, ssize_t rbuf_size)
+{
+	bsock->sock = INVALID_SOCKET;
+	ofi_byteq_init(&bsock->sq, sbuf_size);
+	ofi_byteq_init(&bsock->rq, rbuf_size);
+	bsock->zerocopy_size = SIZE_MAX;
+
+	/* first async op will wrap back to 0 as the starting index */
+	bsock->async_index = UINT32_MAX;
+	bsock->done_index = UINT32_MAX;
+}
+
+static inline void ofi_bsock_discard(struct ofi_bsock *bsock)
+{
+	ofi_byteq_discard(&bsock->rq);
+	ofi_byteq_discard(&bsock->sq);
+}
+
+static inline size_t ofi_bsock_readable(struct ofi_bsock *bsock)
+{
+	return ofi_byteq_readable(&bsock->rq);
+}
+
+static inline size_t ofi_bsock_tosend(struct ofi_bsock *bsock)
+{
+	return ofi_byteq_readable(&bsock->sq);
+}
+
+ssize_t ofi_bsock_flush(struct ofi_bsock *bsock);
+/* For sends started asynchronously, the return value will be -EINPROGRESS,
+ * and len will be set to the number of bytes that were queued.
+ */
+ssize_t ofi_bsock_send(struct ofi_bsock *bsock, const void *buf, size_t *len);
+ssize_t ofi_bsock_sendv(struct ofi_bsock *bsock, const struct iovec *iov,
+			size_t cnt, size_t *len);
+ssize_t ofi_bsock_recv(struct ofi_bsock *bsock, void *buf, size_t len);
+ssize_t ofi_bsock_recvv(struct ofi_bsock *bsock, struct iovec *iov,
+			size_t cnt);
+uint32_t ofi_bsock_async_done(const struct fi_provider *prov,
+			      struct ofi_bsock *bsock);
+
 
 /*
  * Address utility functions
@@ -226,6 +398,21 @@ static inline int ofi_translate_addr_format(int family)
 		return FI_SOCKADDR_IB;
 	default:
 		return FI_FORMAT_UNSPEC;
+	}
+}
+
+static inline size_t ofi_sizeof_addr_format(int format)
+{
+	switch (format) {
+	case FI_SOCKADDR_IN:
+		return sizeof(struct sockaddr_in);
+	case FI_SOCKADDR_IN6:
+		return sizeof(struct sockaddr_in6);
+	case FI_SOCKADDR_IB:
+		return sizeof(struct ofi_sockaddr_ib);
+	default:
+		FI_WARN(&core_prov, FI_LOG_CORE, "Unsupported address format\n");
+		return 0;
 	}
 }
 

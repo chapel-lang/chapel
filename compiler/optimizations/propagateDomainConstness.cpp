@@ -56,6 +56,16 @@ void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
   }
 }
 
+void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
+                                           FlagSet* flags) {
+  if (defExpr->init != NULL) {
+    // check for the FLAG_CONST bit in the FlagSet
+    if (!flags->test(FLAG_CONST)) {
+      setDefinedConstForDefExprWithIfExprs(defExpr->init);
+    }
+  }
+}
+
 // Add code right after a PRIM_SET_MEMBER, if it is setting a const domain
 // member in an aggregate type
 void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call) {

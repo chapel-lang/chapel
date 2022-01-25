@@ -37,7 +37,6 @@
 #include "ofi.h"
 #include <ofi_util.h>
 #include <ofi_iov.h>
-
 #include "rxr.h"
 #include "efa.h"
 #include "rxr_msg.h"
@@ -64,9 +63,8 @@ struct efa_ep_addr *rxr_peer_raw_addr(struct rxr_ep *ep, fi_addr_t addr)
 
 	efa_ep = container_of(ep->rdm_ep, struct efa_ep, util_ep.ep_fid);
 	efa_av = efa_ep->av;
-	efa_conn = efa_av->conn_table[(int)addr];
-
-	return &efa_conn->ep_addr;
+	efa_conn = efa_av_addr_to_conn(efa_av, addr);
+	return efa_conn ? efa_conn->ep_addr : NULL;
 }
 
 const char *rxr_peer_raw_addr_str(struct rxr_ep *ep, fi_addr_t addr, char *buf, size_t *buflen)
@@ -74,55 +72,50 @@ const char *rxr_peer_raw_addr_str(struct rxr_ep *ep, fi_addr_t addr, char *buf, 
 	return ofi_straddr(buf, buflen, FI_ADDR_EFA, rxr_peer_raw_addr(ep, addr));
 }
 
-struct rxr_rx_entry *rxr_ep_rx_entry_init(struct rxr_ep *ep,
-					  struct rxr_rx_entry *rx_entry,
-					  const struct fi_msg *msg,
-					  uint64_t tag,
-					  uint64_t ignore,
-					  uint32_t op,
-					  uint64_t flags)
+/**
+ * @brief allocate an rx entry for an operation
+ *
+ * @param ep[in]	end point
+ * @param addr[in]	fi address of the sender/requester.
+ * @param op[in]	operation type (ofi_op_msg/ofi_op_tagged/ofi_op_read/ofi_op_write/ofi_op_atomic_xxx)
+ * @return		if allocation succeeded, return pointer to rx_entry
+ * 			if allocation failed, return NULL
+ */
+struct rxr_rx_entry *rxr_ep_alloc_rx_entry(struct rxr_ep *ep, fi_addr_t addr, uint32_t op)
 {
+	struct rxr_rx_entry *rx_entry;
+
+	rx_entry = ofi_buf_alloc(ep->rx_entry_pool);
+	if (OFI_UNLIKELY(!rx_entry)) {
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL, "RX entries exhausted\n");
+		return NULL;
+	}
+	memset(rx_entry, 0, sizeof(struct rxr_rx_entry));
+
+	dlist_insert_tail(&rx_entry->ep_entry, &ep->rx_entry_list);
 	rx_entry->type = RXR_RX_ENTRY;
 	rx_entry->rx_id = ofi_buf_index(rx_entry);
-	rx_entry->addr = msg->addr;
-	rx_entry->fi_flags = flags;
-	rx_entry->rxr_flags = 0;
-	rx_entry->bytes_received = 0;
-	rx_entry->bytes_copied = 0;
-	rx_entry->window = 0;
-	rx_entry->iov_count = msg->iov_count;
-	rx_entry->tag = tag;
-	rx_entry->op = op;
-	rx_entry->ignore = ignore;
-	rx_entry->unexp_pkt = NULL;
-	rx_entry->rma_iov_count = 0;
 	dlist_init(&rx_entry->queued_pkts);
 
-	memset(&rx_entry->cq_entry, 0, sizeof(rx_entry->cq_entry));
+	rx_entry->state = RXR_RX_INIT;
+	rx_entry->addr = addr;
+	if (addr != FI_ADDR_UNSPEC) {
+		rx_entry->peer = rxr_ep_get_peer(ep, addr);
+		assert(rx_entry->peer);
+		dlist_insert_tail(&rx_entry->peer_entry, &rx_entry->peer->rx_entry_list);
+	} else {
+		/*
+		 * If msg->addr is not provided, rx_entry->peer will be set
+		 * after it is matched with a message.
+		 */
+		assert(op == ofi_op_msg || op == ofi_op_tagged);
+		rx_entry->peer = NULL;
+	} 
 
-	rx_entry->owner = ep->use_zcpy_rx ? RXR_RX_USER_BUF : RXR_RX_PROV_BUF;
-
-	/* Handle case where we're allocating an unexpected rx_entry */
-	if (msg->msg_iov) {
-		memcpy(rx_entry->iov, msg->msg_iov, sizeof(*rx_entry->iov) * msg->iov_count);
-		rx_entry->cq_entry.len = ofi_total_iov_len(msg->msg_iov, msg->iov_count);
-		rx_entry->cq_entry.buf = msg->msg_iov[0].iov_base;
-	}
-
-	if (msg->desc)
-		memcpy(&rx_entry->desc[0], msg->desc, sizeof(*msg->desc) * msg->iov_count);
-	else
-		memset(&rx_entry->desc[0], 0, sizeof(rx_entry->desc));
-
-	rx_entry->cq_entry.op_context = msg->context;
-	rx_entry->cq_entry.tag = 0;
-	rx_entry->ignore = ~0;
-
+	rx_entry->op = op;
 	switch (op) {
 	case ofi_op_tagged:
 		rx_entry->cq_entry.flags = (FI_RECV | FI_MSG | FI_TAGGED);
-		rx_entry->cq_entry.tag = tag;
-		rx_entry->ignore = ignore;
 		break;
 	case ofi_op_msg:
 		rx_entry->cq_entry.flags = (FI_RECV | FI_MSG);
@@ -149,147 +142,86 @@ struct rxr_rx_entry *rxr_ep_rx_entry_init(struct rxr_ep *ep,
 	return rx_entry;
 }
 
-struct rxr_rx_entry *rxr_ep_get_rx_entry(struct rxr_ep *ep,
-					 const struct fi_msg *msg,
-					 uint64_t tag,
-					 uint64_t ignore,
-					 uint32_t op,
-					 uint64_t flags)
+/**
+ * @brief post user provided receiving buffer to the device
+ *
+ * @param[in]	ep		endpint
+ * @param[in]	rx_entry	rx_entry that contain user buffer information
+ * @param[in]	flags		user supplied flags passed to fi_recv
+ */
+int rxr_ep_post_user_buf(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry, uint64_t flags)
 {
-	struct rxr_rx_entry *rx_entry;
-
-	rx_entry = ofi_buf_alloc(ep->rx_entry_pool);
-	if (OFI_UNLIKELY(!rx_entry)) {
-		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL, "RX entries exhausted\n");
-		return NULL;
-	}
-
-#if ENABLE_DEBUG
-	dlist_insert_tail(&rx_entry->rx_entry_entry, &ep->rx_entry_list);
-#endif
-	rx_entry = rxr_ep_rx_entry_init(ep, rx_entry, msg, tag, ignore, op, flags);
-	rx_entry->state = RXR_RX_INIT;
-	rx_entry->op = op;
-	return rx_entry;
-}
-
-struct rxr_rx_entry *rxr_ep_alloc_unexp_rx_entry_for_msgrtm(struct rxr_ep *ep,
-							    struct rxr_pkt_entry **pkt_entry_ptr)
-{
-	struct rxr_rx_entry *rx_entry;
-	struct rxr_pkt_entry *unexp_pkt_entry;
+	struct rxr_pkt_entry *pkt_entry;
+	struct efa_mr *mr;
+	struct iovec msg_iov;
 	struct fi_msg msg = {0};
+	int err;
 
-	unexp_pkt_entry = rxr_pkt_get_unexp(ep, pkt_entry_ptr);
-	if (OFI_UNLIKELY(!unexp_pkt_entry)) {
-		FI_WARN(&rxr_prov, FI_LOG_CQ, "packet entries exhausted.\n");
-		return NULL;
+	assert(rx_entry->iov_count == 1);
+	assert(rx_entry->iov[0].iov_len >= ep->msg_prefix_size);
+	pkt_entry = (struct rxr_pkt_entry *)rx_entry->iov[0].iov_base;
+	assert(pkt_entry);
+
+	/*
+	 * The ownership of the prefix buffer lies with the application, do not
+	 * put it on the dbg list for cleanup during shutdown or poison it. The
+	 * provider loses jurisdiction over it soon after writing the rx
+	 * completion.
+	 */
+	dlist_init(&pkt_entry->entry);
+	mr = (struct efa_mr *)rx_entry->desc[0];
+	pkt_entry->mr = &mr->mr_fid;
+	pkt_entry->alloc_type = RXR_PKT_FROM_USER_BUFFER;
+	pkt_entry->flags = RXR_PKT_ENTRY_IN_USE;
+	pkt_entry->next = NULL;
+	/*
+	 * The actual receiving buffer size (pkt_size) is
+	 *    rx_entry->total_len - sizeof(struct rxr_pkt_entry)
+	 * because the first part of user buffer was used to
+	 * construct pkt_entry. The actual receiving buffer
+	 * posted to device starts from pkt_entry->pkt.
+	 */
+	pkt_entry->pkt_size = rx_entry->iov[0].iov_len - sizeof(struct rxr_pkt_entry);
+
+	pkt_entry->x_entry = rx_entry;
+	rx_entry->state = RXR_RX_MATCHED;
+
+	msg_iov.iov_base = pkt_entry->pkt;
+	msg_iov.iov_len = pkt_entry->pkt_size;
+	assert(msg_iov.iov_len <= ep->mtu_size);
+
+	msg.iov_count = 1;
+	msg.msg_iov = &msg_iov;
+	msg.desc = rx_entry->desc;
+	msg.addr = FI_ADDR_UNSPEC;
+	msg.context = pkt_entry;
+	msg.data = 0;
+
+	err = fi_recvmsg(ep->rdm_ep, &msg, flags);
+	if (OFI_UNLIKELY(err)) {
+		rxr_pkt_entry_release_rx(ep, pkt_entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"failed to post user supplied buffer %d (%s)\n", -err,
+			fi_strerror(-err));
+		return err;
 	}
 
-	msg.addr = unexp_pkt_entry->addr;
-	rx_entry = rxr_ep_get_rx_entry(ep, &msg, 0, ~0, ofi_op_msg, 0);
-	if (OFI_UNLIKELY(!rx_entry)) {
-		FI_WARN(&rxr_prov, FI_LOG_CQ, "RX entries exhausted.\n");
-		return NULL;
-	}
-
-	rx_entry->rxr_flags = 0;
-	rx_entry->state = RXR_RX_UNEXP;
-	rx_entry->unexp_pkt = unexp_pkt_entry;
-	rxr_pkt_rtm_init_rx_entry(unexp_pkt_entry, rx_entry);
-	dlist_insert_tail(&rx_entry->entry, &ep->rx_unexp_list);
-	return rx_entry;
+	ep->posted_bufs_efa++;
+	return 0;
 }
 
-struct rxr_rx_entry *rxr_ep_alloc_unexp_rx_entry_for_tagrtm(struct rxr_ep *ep,
-							    struct rxr_pkt_entry **pkt_entry_ptr)
-{
-	uint64_t tag;
-	struct rxr_rx_entry *rx_entry;
-	struct rxr_pkt_entry *unexp_pkt_entry;
-	struct fi_msg msg = {0};
-
-	unexp_pkt_entry = rxr_pkt_get_unexp(ep, pkt_entry_ptr);
-	if (OFI_UNLIKELY(!unexp_pkt_entry)) {
-		FI_WARN(&rxr_prov, FI_LOG_CQ, "packet entries exhausted.\n");
-		return NULL;
-	}
-
-	tag = rxr_pkt_rtm_tag(unexp_pkt_entry);
-	msg.addr = unexp_pkt_entry->addr;
-	rx_entry = rxr_ep_get_rx_entry(ep, &msg, tag, ~0, ofi_op_tagged, 0);
-	if (OFI_UNLIKELY(!rx_entry)) {
-		FI_WARN(&rxr_prov, FI_LOG_CQ, "RX entries exhausted.\n");
-		return NULL;
-	}
-
-	rx_entry->rxr_flags = 0;
-	rx_entry->state = RXR_RX_UNEXP;
-	rx_entry->unexp_pkt = unexp_pkt_entry;
-	rxr_pkt_rtm_init_rx_entry(unexp_pkt_entry, rx_entry);
-	dlist_insert_tail(&rx_entry->entry, &ep->rx_unexp_tagged_list);
-	return rx_entry;
-}
-
-struct rxr_rx_entry *rxr_ep_split_rx_entry(struct rxr_ep *ep,
-					   struct rxr_rx_entry *posted_entry,
-					   struct rxr_rx_entry *consumer_entry,
-					   struct rxr_pkt_entry *pkt_entry)
-{
-	struct rxr_rx_entry *rx_entry;
-	size_t buf_len, consumed_len, data_len;
-	uint64_t tag;
-	struct fi_msg msg = {0};
-
-	assert(rxr_get_base_hdr(pkt_entry->pkt)->type >= RXR_REQ_PKT_BEGIN);
-	tag = 0;
-
-	if (!consumer_entry) {
-		msg.msg_iov = posted_entry->iov;
-		msg.iov_count = posted_entry->iov_count;
-		msg.addr = pkt_entry->addr;
-		rx_entry = rxr_ep_get_rx_entry(ep, &msg, tag, 0, ofi_op_msg,
-					       posted_entry->fi_flags);
-		if (OFI_UNLIKELY(!rx_entry))
-			return NULL;
-
-		FI_DBG(&rxr_prov, FI_LOG_EP_CTRL,
-		       "Splitting into new multi_recv consumer rx_entry %d from rx_entry %d\n",
-		       rx_entry->rx_id,
-		       posted_entry->rx_id);
-	} else {
-		rx_entry = consumer_entry;
-		memcpy(rx_entry->iov, posted_entry->iov,
-		       sizeof(*posted_entry->iov) * posted_entry->iov_count);
-		rx_entry->iov_count = posted_entry->iov_count;
-	}
-
-	rxr_pkt_rtm_init_rx_entry(pkt_entry, rx_entry);
-	data_len = rx_entry->total_len;
-	buf_len = ofi_total_iov_len(rx_entry->iov,
-				    rx_entry->iov_count);
-	consumed_len = MIN(buf_len, data_len);
-
-	rx_entry->rxr_flags |= RXR_MULTI_RECV_CONSUMER;
-	rx_entry->total_len = data_len;
-	rx_entry->fi_flags |= FI_MULTI_RECV;
-	rx_entry->master_entry = posted_entry;
-	rx_entry->cq_entry.len = consumed_len;
-	rx_entry->cq_entry.buf = rx_entry->iov[0].iov_base;
-	rx_entry->cq_entry.op_context = posted_entry->cq_entry.op_context;
-	rx_entry->cq_entry.flags = (FI_RECV | FI_MSG);
-
-	ofi_consume_iov(posted_entry->iov, &posted_entry->iov_count,
-			consumed_len);
-
-	dlist_init(&rx_entry->multi_recv_entry);
-	dlist_insert_tail(&rx_entry->multi_recv_entry,
-			  &posted_entry->multi_recv_consumers);
-	return rx_entry;
-}
-
-/* Post buffers as undirected recv (FI_ADDR_UNSPEC) */
-int rxr_ep_post_buf(struct rxr_ep *ep, const struct fi_msg *posted_recv, uint64_t flags, enum rxr_lower_ep_type lower_ep_type)
+/**
+ * @brief post an internal receive buffer to lower endpoint
+ *
+ * The buffer was posted as undirected recv, (address was set to FI_ADDR_UNSPEC)
+ *
+ * @param[in]	ep		endpoint
+ * @param[in]	flags		flags passed to lower provider, can have FI_MORE
+ * @param[in]	lower_ep_type	lower endpoint type, can be either SHM_EP or EFA_EP
+ * @return	On success, return 0
+ * 		On failure, return a negative error code.
+ */
+int rxr_ep_post_prov_buf(struct rxr_ep *ep, uint64_t flags, enum rxr_lower_ep_type lower_ep_type)
 {
 	struct fi_msg msg = {0};
 	struct iovec msg_iov;
@@ -299,13 +231,10 @@ int rxr_ep_post_buf(struct rxr_ep *ep, const struct fi_msg *posted_recv, uint64_
 
 	switch (lower_ep_type) {
 	case SHM_EP:
-		rx_pkt_entry = rxr_pkt_entry_alloc(ep, ep->rx_pkt_shm_pool);
+		rx_pkt_entry = rxr_pkt_entry_alloc(ep, ep->shm_rx_pkt_pool, RXR_PKT_FROM_SHM_RX_POOL);
 		break;
 	case EFA_EP:
-		if (posted_recv)
-			rx_pkt_entry = rxr_pkt_entry_init_prefix(ep, posted_recv, ep->rx_pkt_efa_pool);
-		else
-			rx_pkt_entry = rxr_pkt_entry_alloc(ep, ep->rx_pkt_efa_pool);
+		rx_pkt_entry = rxr_pkt_entry_alloc(ep, ep->efa_rx_pkt_pool, RXR_PKT_FROM_EFA_RX_POOL);
 		break;
 	default:
 		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
@@ -345,22 +274,11 @@ int rxr_ep_post_buf(struct rxr_ep *ep, const struct fi_msg *posted_recv, uint64_
 		break;
 	case EFA_EP:
 #if ENABLE_DEBUG
-		if (rx_pkt_entry->type != RXR_PKT_ENTRY_USER)
-			dlist_insert_tail(&rx_pkt_entry->dbg_entry,
-					  &ep->rx_posted_buf_list);
+		dlist_insert_tail(&rx_pkt_entry->dbg_entry,
+				  &ep->rx_posted_buf_list);
 #endif
 		desc = fi_mr_desc(rx_pkt_entry->mr);
 		msg.desc = &desc;
-		/*
-		 * Use the actual receive sizes from the application
-		 * rather than posting the full MTU size, like we do
-		 * when using the bufpool.
-		 */
-		if (posted_recv) {
-			msg_iov.iov_len = posted_recv->msg_iov->iov_len;
-			msg.data = posted_recv->data;
-			assert(msg_iov.iov_len <= ep->mtu_size);
-		}
 		ret = fi_recvmsg(ep->rdm_ep, &msg, flags);
 		if (OFI_UNLIKELY(ret)) {
 			rxr_pkt_entry_release_rx(ep, rx_pkt_entry);
@@ -380,6 +298,40 @@ int rxr_ep_post_buf(struct rxr_ep *ep, const struct fi_msg *posted_recv, uint64_
 	return 0;
 }
 
+/**
+ * @brief bulk post internal receive buffer(s) to device
+ *
+ * When posting multiple buffers, this function will use
+ * FI_MORE flag to achieve better performance.
+ *
+ * @param[in]	ep		endpint
+ * @param[in]	nrecv		number of receive buffers to post
+ * @param[in]	lower_ep_type	device type, can be SHM_EP or EFA_EP
+ * @return	On success, return 0
+ * 		On failure, return negative libfabric error code
+ */
+static inline
+ssize_t rxr_ep_bulk_post_prov_buf(struct rxr_ep *ep, int nrecv,
+				  enum rxr_lower_ep_type lower_ep_type)
+{
+	int i;
+	ssize_t err;
+	uint64_t flags;
+
+	flags = FI_MORE;
+	for (i = 0; i < nrecv; ++i) {
+		if (i == nrecv - 1)
+			flags = 0;
+
+		err = rxr_ep_post_prov_buf(ep, flags, lower_ep_type);
+		if (OFI_UNLIKELY(err))
+			return err;
+	}
+
+	return 0;
+}
+
+
 void rxr_tx_entry_init(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry,
 		       const struct fi_msg *msg, uint32_t op, uint64_t flags)
 {
@@ -390,13 +342,15 @@ void rxr_tx_entry_init(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry,
 	tx_entry->tx_id = ofi_buf_index(tx_entry);
 	tx_entry->state = RXR_TX_REQ;
 	tx_entry->addr = msg->addr;
+	tx_entry->peer = rxr_ep_get_peer(ep, tx_entry->addr);
+	assert(tx_entry->peer);
+	dlist_insert_tail(&tx_entry->peer_entry, &tx_entry->peer->tx_entry_list);
 
 	tx_entry->send_flags = 0;
 	tx_entry->rxr_flags = 0;
 	tx_entry->bytes_acked = 0;
 	tx_entry->bytes_sent = 0;
 	tx_entry->window = 0;
-	tx_entry->total_len = ofi_total_iov_len(msg->msg_iov, msg->iov_count);
 	tx_entry->iov_count = msg->iov_count;
 	tx_entry->iov_index = 0;
 	tx_entry->iov_mr_start = 0;
@@ -411,16 +365,13 @@ void rxr_tx_entry_init(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry,
 	else
 		memset(tx_entry->desc, 0, sizeof(tx_entry->desc));
 
-	/*
-	 * The prefix is currently not used by the sender, but needs to be
-	 * accounted for when copying the payload into the bounce-buffer.
-	 */
-	if (ep->use_zcpy_rx) {
-		assert(tx_entry->iov[0].iov_len >= sizeof(struct rxr_pkt_entry) + sizeof(struct rxr_eager_msgrtm_hdr));
-		tx_entry->iov[0].iov_base = (char *)tx_entry->iov[0].iov_base
-					     + sizeof(struct rxr_pkt_entry)
-					     + sizeof(struct rxr_eager_msgrtm_hdr);
+	if (ep->msg_prefix_size > 0) {
+		assert(tx_entry->iov[0].iov_len >= ep->msg_prefix_size);
+		tx_entry->iov[0].iov_base = (char *)tx_entry->iov[0].iov_base + ep->msg_prefix_size;
+		tx_entry->iov[0].iov_len -= ep->msg_prefix_size;
 	}
+
+	tx_entry->total_len = ofi_total_iov_len(tx_entry->iov, tx_entry->iov_count);
 
 	/* set flags */
 	assert(ep->util_ep.tx_msg_flags == 0 ||
@@ -486,15 +437,18 @@ struct rxr_tx_entry *rxr_ep_alloc_tx_entry(struct rxr_ep *rxr_ep,
 		tx_entry->tag = tag;
 	}
 
-#if ENABLE_DEBUG
-	dlist_insert_tail(&tx_entry->tx_entry_entry, &rxr_ep->tx_entry_list);
-#endif
+	dlist_insert_tail(&tx_entry->ep_entry, &rxr_ep->tx_entry_list);
 	return tx_entry;
 }
 
 void rxr_release_tx_entry(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry)
 {
 	int i, err = 0;
+	struct dlist_entry *tmp;
+	struct rxr_pkt_entry *pkt_entry;
+
+	assert(tx_entry->peer);
+	dlist_remove(&tx_entry->peer_entry);
 
 	for (i = 0; i < tx_entry->iov_count; i++) {
 		if (tx_entry->mr[i]) {
@@ -508,10 +462,20 @@ void rxr_release_tx_entry(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry)
 		}
 	}
 
-#if ENABLE_DEBUG
-	dlist_remove(&tx_entry->tx_entry_entry);
-#endif
-	assert(dlist_empty(&tx_entry->queued_pkts));
+	dlist_remove(&tx_entry->ep_entry);
+
+	dlist_foreach_container_safe(&tx_entry->queued_pkts,
+				     struct rxr_pkt_entry,
+				     pkt_entry, entry, tmp) {
+		rxr_pkt_entry_release_tx(ep, pkt_entry);
+	}
+
+	if (tx_entry->rxr_flags & RXR_TX_ENTRY_QUEUED_RNR)
+		dlist_remove(&tx_entry->queued_rnr_entry);
+
+	if (tx_entry->state == RXR_TX_QUEUED_CTRL)
+		dlist_remove(&tx_entry->queued_ctrl_entry);
+
 #ifdef ENABLE_EFA_POISONING
 	rxr_poison_mem_region((uint32_t *)tx_entry,
 			      sizeof(struct rxr_tx_entry));
@@ -559,6 +523,30 @@ int rxr_ep_tx_init_mr_desc(struct rxr_domain *rxr_domain,
 	return ret;
 }
 
+/**
+ * @brief convert EFA descriptors to shm descriptors.
+ *
+ * Each provider defines its descriptors format. The descriptor for
+ * EFA provider is of struct efa_mr *, which shm provider cannot
+ * understand. This function convert EFA descriptors to descriptors
+ * shm can use.
+ *
+ * @param numdesc[in]       number of descriptors in the array
+ * @param desc[in,out]      descriptors input is EFA descriptor, output
+ *                          is shm descriptor.
+ */
+void rxr_convert_desc_for_shm(int numdesc, void **desc)
+{
+	int i;
+	struct efa_mr *efa_mr;
+
+	for (i = 0; i < numdesc; ++i) {
+		efa_mr = desc[i];
+		if (efa_mr)
+			desc[i] = fi_mr_desc(efa_mr->shm_mr);
+	}
+}
+
 void rxr_prepare_desc_send(struct rxr_domain *rxr_domain,
 			   struct rxr_tx_entry *tx_entry)
 {
@@ -588,26 +576,19 @@ void rxr_prepare_desc_send(struct rxr_domain *rxr_domain,
 /* Generic send */
 int rxr_ep_set_tx_credit_request(struct rxr_ep *rxr_ep, struct rxr_tx_entry *tx_entry)
 {
-	struct rxr_peer *peer;
-	int pending;
+	struct rdm_peer *peer;
+	int outstanding;
 
 	peer = rxr_ep_get_peer(rxr_ep, tx_entry->addr);
-
-	/*
-	 * Init tx state for this peer. The rx state and reorder buffers will be
-	 * initialized on the first recv so as to not allocate resources unless
-	 * necessary.
-	 */
-	if (!peer->tx_init)
-		rxr_ep_peer_init_tx(peer);
+	assert(peer);
 
 	/*
 	 * Divy up available credits to outstanding transfers and request the
 	 * minimum of that and the amount required to finish the current long
 	 * message.
 	 */
-	pending = peer->tx_pending + 1;
-	tx_entry->credit_request = MIN(ofi_div_ceil(peer->tx_credits, pending),
+	outstanding = peer->efa_outstanding_tx_ops + 1;
+	tx_entry->credit_request = MIN(ofi_div_ceil(peer->tx_credits, outstanding),
 				       ofi_div_ceil(tx_entry->total_len,
 						    rxr_ep->max_data_payload_size));
 	tx_entry->credit_request = MAX(tx_entry->credit_request,
@@ -624,107 +605,114 @@ int rxr_ep_set_tx_credit_request(struct rxr_ep *rxr_ep, struct rxr_tx_entry *tx_
 
 static void rxr_ep_free_res(struct rxr_ep *rxr_ep)
 {
-	size_t i = 0;
-	struct rxr_peer *peer;
-	struct efa_av *av;
-#if ENABLE_DEBUG
-	struct dlist_entry *tmp;
-	struct dlist_entry *entry;
+	struct dlist_entry *entry, *tmp;
 	struct rxr_rx_entry *rx_entry;
 	struct rxr_tx_entry *tx_entry;
+#if ENABLE_DEBUG
 	struct rxr_pkt_entry *pkt;
 #endif
 
-	if (rxr_need_sas_ordering(rxr_ep)) {
-		av = container_of(rxr_ep->util_ep.av, struct efa_av, util_av);
-		for (i = 0; i < av->count; ++i) {
-			peer = rxr_ep_get_peer(rxr_ep, i);
-			if (peer->rx_init)
-				efa_free_robuf(peer);
-		}
-		if (rxr_ep->robuf_pool)
-			ofi_bufpool_destroy(rxr_ep->robuf_pool);
+	dlist_foreach_safe(&rxr_ep->rx_unexp_list, entry, tmp) {
+		rx_entry = container_of(entry, struct rxr_rx_entry, entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"Closing ep with unmatched unexpected rx_entry: %p pkt_entry %p\n",
+			rx_entry, rx_entry->unexp_pkt);
+		rxr_pkt_entry_release_rx(rxr_ep, rx_entry->unexp_pkt);
+		rxr_release_rx_entry(rxr_ep, rx_entry);
+	}
+
+	dlist_foreach_safe(&rxr_ep->rx_unexp_tagged_list, entry, tmp) {
+		rx_entry = container_of(entry, struct rxr_rx_entry, entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"Closing ep with unmatched unexpected tagged rx_entry: %p pkt_entry %p\n",
+			rx_entry, rx_entry->unexp_pkt);
+		rxr_pkt_entry_release_rx(rxr_ep, rx_entry->unexp_pkt);
+		rxr_release_rx_entry(rxr_ep, rx_entry);
+	}
+
+	dlist_foreach_safe(&rxr_ep->rx_entry_queued_rnr_list, entry, tmp) {
+		rx_entry = container_of(entry, struct rxr_rx_entry,
+					queued_rnr_entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"Closing ep with queued rnr rx_entry: %p\n",
+			rx_entry);
+		rxr_release_rx_entry(rxr_ep, rx_entry);
+	}
+
+	dlist_foreach_safe(&rxr_ep->rx_entry_queued_ctrl_list, entry, tmp) {
+		rx_entry = container_of(entry, struct rxr_rx_entry,
+					queued_ctrl_entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"Closing ep with queued ctrl rx_entry: %p\n",
+			rx_entry);
+		rxr_release_rx_entry(rxr_ep, rx_entry);
+	}
+
+	dlist_foreach_safe(&rxr_ep->tx_entry_queued_rnr_list, entry, tmp) {
+		tx_entry = container_of(entry, struct rxr_tx_entry,
+					queued_rnr_entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"Closing ep with queued rnr tx_entry: %p\n",
+			tx_entry);
+		rxr_release_tx_entry(rxr_ep, tx_entry);
+	}
+
+	dlist_foreach_safe(&rxr_ep->tx_entry_queued_ctrl_list, entry, tmp) {
+		tx_entry = container_of(entry, struct rxr_tx_entry,
+					queued_ctrl_entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"Closing ep with queued ctrl tx_entry: %p\n",
+			tx_entry);
+		rxr_release_tx_entry(rxr_ep, tx_entry);
 	}
 
 #if ENABLE_DEBUG
-	av = container_of(rxr_ep->util_ep.av, struct efa_av, util_av);
-	for (i = 0; i < av->count; ++i) {
-		peer = rxr_ep_get_peer(rxr_ep, i);
-		/*
-		 * TODO: Add support for wait/signal until all pending messages
-		 * have been sent/received so the core does not attempt to
-		 * complete a data operation or an internal RxR transfer after
-		 * the EP is shutdown.
-		 */
-		if ((peer->flags & RXR_PEER_REQ_SENT) && !(peer->flags & RXR_PEER_HANDSHAKE_RECEIVED))
-			FI_WARN(&rxr_prov, FI_LOG_EP_CTRL, "Closing EP with unacked CONNREQs in flight\n");
-	}
-
-	dlist_foreach(&rxr_ep->rx_unexp_list, entry) {
-		rx_entry = container_of(entry, struct rxr_rx_entry, entry);
-		rxr_pkt_entry_release_rx(rxr_ep, rx_entry->unexp_pkt);
-	}
-
-	dlist_foreach(&rxr_ep->rx_unexp_tagged_list, entry) {
-		rx_entry = container_of(entry, struct rxr_rx_entry, entry);
-		rxr_pkt_entry_release_rx(rxr_ep, rx_entry->unexp_pkt);
-	}
-
-	dlist_foreach(&rxr_ep->rx_entry_queued_list, entry) {
-		rx_entry = container_of(entry, struct rxr_rx_entry,
-					queued_entry);
-		dlist_foreach_container_safe(&rx_entry->queued_pkts,
-					     struct rxr_pkt_entry,
-					     pkt, entry, tmp)
-			rxr_pkt_entry_release_tx(rxr_ep, pkt);
-	}
-
-	dlist_foreach(&rxr_ep->tx_entry_queued_list, entry) {
-		tx_entry = container_of(entry, struct rxr_tx_entry,
-					queued_entry);
-		dlist_foreach_container_safe(&tx_entry->queued_pkts,
-					     struct rxr_pkt_entry,
-					     pkt, entry, tmp)
-			rxr_pkt_entry_release_tx(rxr_ep, pkt);
-	}
-
-	if (!rxr_ep->use_zcpy_rx) {
-		/*
-		 * The provider does not own these entries, and there's no need
-		 * to deep-free them even in a debug build.
-		 */
-		dlist_foreach_safe(&rxr_ep->rx_pkt_list, entry, tmp) {
-			pkt = container_of(entry, struct rxr_pkt_entry, dbg_entry);
-			rxr_pkt_entry_release_rx(rxr_ep, pkt);
-		}
-		dlist_foreach_safe(&rxr_ep->rx_posted_buf_list, entry, tmp) {
-			pkt = container_of(entry, struct rxr_pkt_entry, dbg_entry);
-			ofi_buf_free(pkt);
-		}
-	}
-
-	dlist_foreach_safe(&rxr_ep->tx_pkt_list, entry, tmp) {
+	dlist_foreach_safe(&rxr_ep->rx_posted_buf_list, entry, tmp) {
 		pkt = container_of(entry, struct rxr_pkt_entry, dbg_entry);
-		rxr_pkt_entry_release_tx(rxr_ep, pkt);
+		ofi_buf_free(pkt);
 	}
 
-	dlist_foreach_safe(&rxr_ep->rx_entry_list, entry, tmp) {
-		rx_entry = container_of(entry, struct rxr_rx_entry,
-					rx_entry_entry);
-		rxr_release_rx_entry(rxr_ep, rx_entry);
-	}
-	dlist_foreach_safe(&rxr_ep->tx_entry_list, entry, tmp) {
-		tx_entry = container_of(entry, struct rxr_tx_entry,
-					tx_entry_entry);
-		rxr_release_tx_entry(rxr_ep, tx_entry);
-	}
 	if (rxr_ep->use_shm) {
 		dlist_foreach_safe(&rxr_ep->rx_posted_buf_shm_list, entry, tmp) {
 			pkt = container_of(entry, struct rxr_pkt_entry, dbg_entry);
 			ofi_buf_free(pkt);
 		}
 	}
+
+	dlist_foreach_safe(&rxr_ep->rx_pkt_list, entry, tmp) {
+		pkt = container_of(entry, struct rxr_pkt_entry, dbg_entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"Closing ep with unreleased RX pkt_entry: %p\n",
+			pkt);
+		rxr_pkt_entry_release_rx(rxr_ep, pkt);
+	}
+
+	dlist_foreach_safe(&rxr_ep->tx_pkt_list, entry, tmp) {
+		pkt = container_of(entry, struct rxr_pkt_entry, dbg_entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"Closing ep with unreleased TX pkt_entry: %p\n",
+			pkt);
+		rxr_pkt_entry_release_tx(rxr_ep, pkt);
+	}
 #endif
+
+	dlist_foreach_safe(&rxr_ep->rx_entry_list, entry, tmp) {
+		rx_entry = container_of(entry, struct rxr_rx_entry,
+					ep_entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"Closing ep with unreleased rx_entry: %p\n",
+			rx_entry);
+		rxr_release_rx_entry(rxr_ep, rx_entry);
+	}
+
+	dlist_foreach_safe(&rxr_ep->tx_entry_list, entry, tmp) {
+		tx_entry = container_of(entry, struct rxr_tx_entry,
+					ep_entry);
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"Closing ep with unreleased tx_entry: %p\n",
+			tx_entry);
+		rxr_release_tx_entry(rxr_ep, tx_entry);
+	}
 
 	if (rxr_ep->rx_entry_pool)
 		ofi_bufpool_destroy(rxr_ep->rx_entry_pool);
@@ -756,19 +744,63 @@ static void rxr_ep_free_res(struct rxr_ep *rxr_ep)
 	if (rxr_ep->rx_unexp_pkt_pool)
 		ofi_bufpool_destroy(rxr_ep->rx_unexp_pkt_pool);
 
-	if (rxr_ep->rx_pkt_efa_pool)
-		ofi_bufpool_destroy(rxr_ep->rx_pkt_efa_pool);
+	if (rxr_ep->efa_rx_pkt_pool)
+		ofi_bufpool_destroy(rxr_ep->efa_rx_pkt_pool);
 
-	if (rxr_ep->tx_pkt_efa_pool)
-		ofi_bufpool_destroy(rxr_ep->tx_pkt_efa_pool);
+	if (rxr_ep->efa_tx_pkt_pool)
+		ofi_bufpool_destroy(rxr_ep->efa_tx_pkt_pool);
+
+	if (rxr_ep->pkt_sendv_pool)
+		ofi_bufpool_destroy(rxr_ep->pkt_sendv_pool);
 
 	if (rxr_ep->use_shm) {
-		if (rxr_ep->rx_pkt_shm_pool)
-			ofi_bufpool_destroy(rxr_ep->rx_pkt_shm_pool);
+		if (rxr_ep->shm_rx_pkt_pool)
+			ofi_bufpool_destroy(rxr_ep->shm_rx_pkt_pool);
 
-		if (rxr_ep->tx_pkt_shm_pool)
-			ofi_bufpool_destroy(rxr_ep->tx_pkt_shm_pool);
+		if (rxr_ep->shm_tx_pkt_pool)
+			ofi_bufpool_destroy(rxr_ep->shm_tx_pkt_pool);
 	}
+}
+
+/*
+ * @brief determine whether an endpoint has unfinished send
+ *
+ * Unfinished send includes queued ctrl packets, queued
+ * RNR packets and inflight TX packets.
+ *
+ * @param[in]	rxr_ep	endpoint
+ * @return	a boolean
+ */
+static
+bool rxr_ep_has_unfinished_send(struct rxr_ep *rxr_ep)
+{
+	return !dlist_empty(&rxr_ep->rx_entry_queued_rnr_list) ||
+	       !dlist_empty(&rxr_ep->rx_entry_queued_ctrl_list) ||
+	       !dlist_empty(&rxr_ep->tx_entry_queued_rnr_list) ||
+	       !dlist_empty(&rxr_ep->tx_entry_queued_ctrl_list) ||
+	       (rxr_ep->efa_outstanding_tx_ops > 0) ||
+	       (rxr_ep->shm_outstanding_tx_ops > 0);
+}
+
+/*
+ * @brief wait for send to finish
+ *
+ * Wait for queued packet to be sent, and inflight send to
+ * complete.
+ *
+ * @param[in]	rxr_ep		endpoint
+ * @return 	no return
+ */
+static inline
+void rxr_ep_wait_send(struct rxr_ep *rxr_ep)
+{
+	fastlock_acquire(&rxr_ep->util_ep.lock);
+
+	while (rxr_ep_has_unfinished_send(rxr_ep)) {
+		rxr_ep_progress_internal(rxr_ep);
+	}
+
+	fastlock_release(&rxr_ep->util_ep.lock);
 }
 
 static int rxr_ep_close(struct fid *fid)
@@ -777,6 +809,8 @@ static int rxr_ep_close(struct fid *fid)
 	struct rxr_ep *rxr_ep;
 
 	rxr_ep = container_of(fid, struct rxr_ep, util_ep.ep_fid.fid);
+
+	rxr_ep_wait_send(rxr_ep);
 
 	ret = fi_close(&rxr_ep->rdm_ep->fid);
 	if (ret) {
@@ -812,7 +846,6 @@ static int rxr_ep_close(struct fid *fid)
 		retv = ret;
 	}
 	rxr_ep_free_res(rxr_ep);
-	free(rxr_ep->peer);
 	free(rxr_ep);
 	return retv;
 }
@@ -825,16 +858,21 @@ static int rxr_ep_bind(struct fid *ep_fid, struct fid *bfid, uint64_t flags)
 	struct efa_av *av;
 	struct util_cntr *cntr;
 	struct util_eq *eq;
-	struct dlist_entry *ep_list_first_entry;
-	struct util_ep *util_ep;
-	struct rxr_ep *rxr_first_ep;
-	struct rxr_peer *first_ep_peer, *peer;
 	int ret = 0;
-	size_t i;
 
 	switch (bfid->fclass) {
 	case FI_CLASS_AV:
 		av = container_of(bfid, struct efa_av, util_av.av_fid.fid);
+		/*
+		 * Binding multiple endpoints to a single AV is currently not
+		 * supported.
+		 */
+		if (av->ep) {
+			EFA_WARN(FI_LOG_EP_CTRL,
+				 "Address vector already has endpoint bound to it.\n");
+			return -FI_ENOSYS;
+		}
+
 		/* Bind util provider endpoint and av */
 		ret = ofi_ep_bind_av(&rxr_ep->util_ep, &av->util_av);
 		if (ret)
@@ -844,48 +882,11 @@ static int rxr_ep_bind(struct fid *ep_fid, struct fid *bfid, uint64_t flags)
 		if (ret)
 			return ret;
 
-		rxr_ep->peer = calloc(av->count,
-				      sizeof(struct rxr_peer));
-		if (!rxr_ep->peer)
-			return -FI_ENOMEM;
-
-		if (rxr_need_sas_ordering(rxr_ep)) {
-			ret = ofi_bufpool_create(&rxr_ep->robuf_pool,
-						 sizeof(struct rxr_robuf), 16,
-						 0, 0, 0);
-			if (ret)
-				return ret;
-		}
-
 		/* Bind shm provider endpoint & shm av */
 		if (rxr_ep->use_shm) {
 			ret = fi_ep_bind(rxr_ep->shm_ep, &av->shm_rdm_av->fid, flags);
 			if (ret)
 				return ret;
-
-			/*
-			 * We always update the new added EP's local information with the first
-			 * bound EP. The if (ep_list_first_entry->next) check here is to skip the
-			 * update for the first bound EP.
-			 */
-			ep_list_first_entry = av->util_av.ep_list.next;
-			if (ep_list_first_entry->next) {
-				util_ep = container_of(ep_list_first_entry, struct util_ep, av_entry);
-				rxr_first_ep = container_of(util_ep, struct rxr_ep, util_ep);
-
-				/*
-				 * Copy the entire peer array, because we may not be able to make the
-				 * assumption that insertions are always indexed in order in the future.
-				 */
-				for (i = 0; i < av->count; i++) {
-					first_ep_peer = rxr_ep_get_peer(rxr_first_ep, i);
-					if (first_ep_peer->is_local) {
-						peer = rxr_ep_get_peer(rxr_ep, i);
-						peer->shm_fiaddr = first_ep_peer->shm_fiaddr;
-						peer->is_local = 1;
-					}
-				}
-			}
 		}
 		break;
 	case FI_CLASS_CQ:
@@ -927,30 +928,22 @@ void rxr_ep_set_features(struct rxr_ep *ep)
 		ep->features[0] |= RXR_REQ_FEATURE_RDMA_READ;
 
 	ep->features[0] |= RXR_REQ_FEATURE_DELIVERY_COMPLETE;
+
+	if (ep->use_zcpy_rx)
+		ep->features[0] |= RXR_REQ_FEATURE_ZERO_COPY_RECEIVE;
 }
 
 static int rxr_ep_ctrl(struct fid *fid, int command, void *arg)
 {
 	ssize_t ret;
-	size_t i;
 	struct rxr_ep *ep;
-	uint64_t flags = FI_MORE;
-	size_t rx_size, shm_rx_size;
-	char shm_ep_name[NAME_MAX];
+	char shm_ep_name[EFA_SHM_NAME_MAX];
 
 	switch (command) {
 	case FI_ENABLE:
 		/* Enable core endpoints & post recv buff */
 		ep = container_of(fid, struct rxr_ep, util_ep.ep_fid.fid);
 
-		/*
-		 * If the endpoint is configured for zero-copy receives, the
-		 * provider will use the application's undirected receives for
-		 * its internal control packets as well. The onus will be on the
-		 * application to ensure the receive queue is hydrated to avoid
-		 * RNRs.
-		 */
-		rx_size = ep->use_zcpy_rx ? rxr_env.zcpy_rx_seed : rxr_get_rx_pool_chunk_cnt(ep);
 		ret = fi_enable(ep->rdm_ep);
 		if (ret)
 			return ret;
@@ -958,18 +951,6 @@ static int rxr_ep_ctrl(struct fid *fid, int command, void *arg)
 		fastlock_acquire(&ep->util_ep.lock);
 
 		rxr_ep_set_features(ep);
-
-		for (i = 0; i < rx_size; i++) {
-			if (i == rx_size - 1)
-				flags = 0;
-
-			ret = rxr_ep_post_buf(ep, NULL, flags, EFA_EP);
-
-			if (ret)
-				goto out;
-		}
-
-		ep->available_data_bufs = rx_size;
 
 		ep->core_addrlen = RXR_MAX_NAME_LENGTH;
 		ret = fi_getname(&ep->rdm_ep->fid,
@@ -987,25 +968,13 @@ static int rxr_ep_ctrl(struct fid *fid, int command, void *arg)
 		 * shared memory region.
 		 */
 		if (ep->use_shm) {
-			ret = rxr_ep_efa_addr_to_str(ep->core_addr, shm_ep_name);
+			ret = rxr_raw_addr_to_smr_name(ep->core_addr, shm_ep_name);
 			if (ret < 0)
 				goto out;
-
 			fi_setname(&ep->shm_ep->fid, shm_ep_name, sizeof(shm_ep_name));
-			shm_rx_size = shm_info->rx_attr->size;
 			ret = fi_enable(ep->shm_ep);
 			if (ret)
 				return ret;
-			/* Pre-post buffer to receive from shm provider */
-			for (i = 0; i < shm_rx_size; i++) {
-				if (i == shm_rx_size - 1)
-					flags = 0;
-
-				ret = rxr_ep_post_buf(ep, NULL, flags, SHM_EP);
-
-				if (ret)
-					goto out;
-			}
 		}
 
 out:
@@ -1209,9 +1178,18 @@ static int rxr_create_pkt_pool(struct rxr_ep *ep, size_t size,
 	return ofi_bufpool_create_attr(&attr, buf_pool);
 }
 
+/** @brief Initializes the endpoint.
+ *
+ * This function allocates the various buffer pools for the EFA and SHM
+ * provider and does other endpoint initialization.
+ *
+ * @param ep rxr_ep struct to initialize.
+ * @return 0 on success, fi_errno on error.
+ */
 int rxr_ep_init(struct rxr_ep *ep)
 {
-	size_t entry_sz;
+	size_t entry_sz, sendv_pool_size;
+	int hp_pool_flag;
 	int ret;
 
 	entry_sz = ep->mtu_size + sizeof(struct rxr_pkt_entry);
@@ -1220,22 +1198,27 @@ int rxr_ep_init(struct rxr_ep *ep)
 	ep->rx_pkt_pool_entry_sz = entry_sz;
 #endif
 
+	if (efa_fork_status == EFA_FORK_SUPPORT_ON)
+		hp_pool_flag = 0;
+	else
+		hp_pool_flag = OFI_BUFPOOL_HUGEPAGES;
+
 	ret = rxr_create_pkt_pool(ep, entry_sz, rxr_get_tx_pool_chunk_cnt(ep),
-				  OFI_BUFPOOL_HUGEPAGES,
-				  &ep->tx_pkt_efa_pool);
+				  hp_pool_flag,
+				  &ep->efa_tx_pkt_pool);
 	if (ret)
 		goto err_free;
 
 	ret = rxr_create_pkt_pool(ep, entry_sz, rxr_get_rx_pool_chunk_cnt(ep),
-				  OFI_BUFPOOL_HUGEPAGES,
-				  &ep->rx_pkt_efa_pool);
+				  hp_pool_flag,
+				  &ep->efa_rx_pkt_pool);
 	if (ret)
 		goto err_free;
 
 	if (rxr_env.rx_copy_unexp) {
 		ret = ofi_bufpool_create(&ep->rx_unexp_pkt_pool, entry_sz,
 					 RXR_BUF_POOL_ALIGNMENT, 0,
-					 rxr_get_rx_pool_chunk_cnt(ep), 0);
+					 rxr_env.unexp_pool_chunk_size, 0);
 
 		if (ret)
 			goto err_free;
@@ -1244,10 +1227,11 @@ int rxr_ep_init(struct rxr_ep *ep)
 	if (rxr_env.rx_copy_ooo) {
 		ret = ofi_bufpool_create(&ep->rx_ooo_pkt_pool, entry_sz,
 					 RXR_BUF_POOL_ALIGNMENT, 0,
-					 rxr_env.recvwin_size, 0);
+					 rxr_env.ooo_pool_chunk_size, 0);
 
 		if (ret)
 			goto err_free;
+
 	}
 
 	if ((rxr_env.rx_copy_unexp || rxr_env.rx_copy_ooo) &&
@@ -1261,15 +1245,6 @@ int rxr_ep_init(struct rxr_ep *ep)
 
 		if (ret)
 			goto err_free;
-
-		ret = ofi_bufpool_grow(ep->rx_readcopy_pkt_pool);
-		if (ret) {
-			FI_WARN(&rxr_prov, FI_LOG_CQ,
-				"cannot allocate and register memory for readcopy packet pool. error: %s\n",
-				strerror(-ret));
-			goto err_free;
-		}
-
 		ep->rx_readcopy_pkt_pool_used = 0;
 		ep->rx_readcopy_pkt_pool_max_used = 0;
 	}
@@ -1322,9 +1297,20 @@ int rxr_ep_init(struct rxr_ep *ep)
 	if (ret)
 		goto err_free;
 
+	sendv_pool_size = rxr_get_tx_pool_chunk_cnt(ep);
+	if (ep->use_shm)
+		sendv_pool_size += shm_info->tx_attr->size;
+	ret = ofi_bufpool_create(&ep->pkt_sendv_pool,
+				 sizeof(struct rxr_pkt_sendv),
+				 RXR_BUF_POOL_ALIGNMENT,
+				 sendv_pool_size,
+				 sendv_pool_size, 0);
+	if (ret)
+		goto err_free;
+
 	/* create pkt pool for shm */
 	if (ep->use_shm) {
-		ret = ofi_bufpool_create(&ep->tx_pkt_shm_pool,
+		ret = ofi_bufpool_create(&ep->shm_tx_pkt_pool,
 					 entry_sz,
 					 RXR_BUF_POOL_ALIGNMENT,
 					 shm_info->tx_attr->size,
@@ -1332,7 +1318,7 @@ int rxr_ep_init(struct rxr_ep *ep)
 		if (ret)
 			goto err_free;
 
-		ret = ofi_bufpool_create(&ep->rx_pkt_shm_pool,
+		ret = ofi_bufpool_create(&ep->shm_rx_pkt_pool,
 					 entry_sz,
 					 RXR_BUF_POOL_ALIGNMENT,
 					 shm_info->rx_attr->size,
@@ -1349,26 +1335,32 @@ int rxr_ep_init(struct rxr_ep *ep)
 	dlist_init(&ep->rx_tagged_list);
 	dlist_init(&ep->rx_unexp_tagged_list);
 	dlist_init(&ep->rx_posted_buf_list);
-	dlist_init(&ep->rx_entry_queued_list);
-	dlist_init(&ep->tx_entry_queued_list);
+	dlist_init(&ep->rx_entry_queued_rnr_list);
+	dlist_init(&ep->rx_entry_queued_ctrl_list);
+	dlist_init(&ep->tx_entry_queued_rnr_list);
+	dlist_init(&ep->tx_entry_queued_ctrl_list);
 	dlist_init(&ep->tx_pending_list);
 	dlist_init(&ep->read_pending_list);
 	dlist_init(&ep->peer_backoff_list);
-	dlist_init(&ep->peer_queued_list);
+	dlist_init(&ep->handshake_queued_peer_list);
 #if ENABLE_DEBUG
 	dlist_init(&ep->rx_pending_list);
 	dlist_init(&ep->rx_pkt_list);
 	dlist_init(&ep->tx_pkt_list);
+#endif
 	dlist_init(&ep->rx_entry_list);
 	dlist_init(&ep->tx_entry_list);
-#endif
+
 	/* Initialize pkt to rx map */
 	ep->pkt_rx_map = NULL;
 	return 0;
 
 err_free:
-	if (ep->tx_pkt_shm_pool)
-		ofi_bufpool_destroy(ep->tx_pkt_shm_pool);
+	if (ep->shm_tx_pkt_pool)
+		ofi_bufpool_destroy(ep->shm_tx_pkt_pool);
+
+	if (ep->pkt_sendv_pool)
+		ofi_bufpool_destroy(ep->pkt_sendv_pool);
 
 	if (ep->rx_atomrsp_pool)
 		ofi_bufpool_destroy(ep->rx_atomrsp_pool);
@@ -1397,11 +1389,11 @@ err_free:
 	if (rxr_env.rx_copy_unexp && ep->rx_unexp_pkt_pool)
 		ofi_bufpool_destroy(ep->rx_unexp_pkt_pool);
 
-	if (ep->rx_pkt_efa_pool)
-		ofi_bufpool_destroy(ep->rx_pkt_efa_pool);
+	if (ep->efa_rx_pkt_pool)
+		ofi_bufpool_destroy(ep->efa_rx_pkt_pool);
 
-	if (ep->tx_pkt_efa_pool)
-		ofi_bufpool_destroy(ep->tx_pkt_efa_pool);
+	if (ep->efa_tx_pkt_pool)
+		ofi_bufpool_destroy(ep->efa_tx_pkt_pool);
 
 	return ret;
 }
@@ -1435,33 +1427,191 @@ struct fi_ops_cm rxr_ep_cm = {
 	.join = fi_no_join,
 };
 
-static inline int rxr_ep_bulk_post_recv(struct rxr_ep *ep)
+/*
+ * @brief explicitly allocate a chunk of memory for 5 packet pools on RX side:
+ *     efa's receive packet pool (efa_rx_pkt_pool)
+ *     shm's receive packet pool (shm_rx_pkt_pool)
+ *     unexpected packet pool (rx_unexp_pkt_pool),
+ *     out-of-order packet pool (rx_ooo_pkt_pool), and
+ *     local read-copy packet pool (rx_readcopy_pkt_pool).
+ *
+ * @param ep[in]	endpoint
+ * @return		On success, return 0
+ * 			On failure, return a negative error code.
+ */
+int rxr_ep_grow_rx_pkt_pools(struct rxr_ep *ep)
 {
-	uint64_t flags = FI_MORE;
-	int ret;
+	int err;
 
-	while (ep->rx_bufs_efa_to_post) {
-		if (ep->rx_bufs_efa_to_post == 1)
-			flags = 0;
-		ret = rxr_ep_post_buf(ep, NULL, flags, EFA_EP);
-		if (OFI_LIKELY(!ret))
-			ep->rx_bufs_efa_to_post--;
-		else
-			return ret;
+	assert(ep->efa_rx_pkt_pool);
+	err = ofi_bufpool_grow(ep->efa_rx_pkt_pool);
+	if (err) {
+		FI_WARN(&rxr_prov, FI_LOG_CQ,
+			"cannot allocate memory for EFA's RX packet pool. error: %s\n",
+			strerror(-err));
+		return err;
 	}
-	/* bulk post recv buf for shm provider */
-	flags = FI_MORE;
-	while (ep->use_shm && ep->rx_bufs_shm_to_post) {
-		if (ep->rx_bufs_shm_to_post == 1)
-			flags = 0;
-		ret = rxr_ep_post_buf(ep, NULL, flags, SHM_EP);
-		if (OFI_LIKELY(!ret))
-			ep->rx_bufs_shm_to_post--;
-		else
-			return ret;
+
+	if (ep->use_shm) {
+		assert(ep->shm_rx_pkt_pool);
+		err = ofi_bufpool_grow(ep->shm_rx_pkt_pool);
+		if (err) {
+			FI_WARN(&rxr_prov, FI_LOG_CQ,
+				"cannot allocate memory for SHM's RX packet pool. error: %s\n",
+				strerror(-err));
+			return err;
+		}
+	}
+
+	if (ep->rx_unexp_pkt_pool) {
+		assert(ep->rx_unexp_pkt_pool);
+		err = ofi_bufpool_grow(ep->rx_unexp_pkt_pool);
+		if (err) {
+			FI_WARN(&rxr_prov, FI_LOG_CQ,
+				"cannot allocate memory for unexpected packet pool. error: %s\n",
+				strerror(-err));
+			return err;
+		}
+	}
+
+	if (ep->rx_ooo_pkt_pool) {
+		assert(ep->rx_ooo_pkt_pool);
+		err = ofi_bufpool_grow(ep->rx_ooo_pkt_pool);
+		if (err) {
+			FI_WARN(&rxr_prov, FI_LOG_CQ,
+				"cannot allocate memory for out-of-order packet pool. error: %s\n",
+				strerror(-err));
+			return err;
+		}
+	}
+
+	if (ep->rx_readcopy_pkt_pool) {
+		err = ofi_bufpool_grow(ep->rx_readcopy_pkt_pool);
+		if (err) {
+			FI_WARN(&rxr_prov, FI_LOG_CQ,
+				"cannot allocate and register memory for readcopy packet pool. error: %s\n",
+				strerror(-err));
+			return err;
+		}
 	}
 
 	return 0;
+}
+
+/**
+ * @brief post internal receive buffers for progress engine.
+ *
+ * It is more efficient to post multiple receive buffers
+ * to the device at once than to post each receive buffer
+ * individually.
+ *
+ * Therefore, after an internal receive buffer (a packet
+ * entry) was processed, it is not posted to the device
+ * right away.
+ *
+ * Instead, we increase counter
+ *      ep->rx_bufs_efa/shm_to_post
+ * by one.
+ *
+ * Later, progress engine calls this function to
+ * bulk post internal receive buffers (according to
+ * the counter).
+ *
+ * This function also control number of internal
+ * buffers posted to the device in zero copy receive
+ * mode.
+ *
+ * param[in]	ep	endpoint
+ */
+static inline
+void rxr_ep_progress_post_prov_buf(struct rxr_ep *ep)
+{
+	int err;
+
+	if (ep->use_zcpy_rx) {
+		/*
+		 * In zero copy receive mode,
+		 *
+		 * If application did not post any receive buffer,
+		 * we post one internal buffer so endpoint can
+		 * receive RxR control packets such as handshake.
+		 *
+		 * If buffers have posted to the device, we do NOT
+		 * repost internal buffers to maximize the chance
+		 * user buffer is used to receive data.
+		 */
+		if (ep->posted_bufs_efa == 0 && ep->rx_bufs_efa_to_post == 0) {
+			ep->rx_bufs_efa_to_post = 1;
+		} else if (ep->posted_bufs_efa > 0 && ep->rx_bufs_efa_to_post > 0){
+			ep->rx_bufs_efa_to_post = 0;
+		}
+	} else {
+		if (ep->posted_bufs_efa == 0 && ep->rx_bufs_efa_to_post == 0) {
+			/* Both posted_bufs_efa and rx_bufs_efa_to_post equal to 0 means
+			 * this is the first call of the progress engine on this endpoint.
+			 *
+			 * In this case, we explictly allocate the 1st chunk of memory
+			 * for unexp/ooo/readcopy RX packet pool.
+			 *
+			 * The reason to explicitly allocate the memory for RX packet
+			 * pool is to improve efficiency.
+			 *
+			 * Without explicit memory allocation, a pkt pools's memory
+			 * is allocated when 1st packet is allocated from it.
+			 * During the computation, different processes got their 1st
+			 * unexp/ooo/read-copy packet at different time. Therefore,
+			 * if we do not explicitly allocate memory at the beginning,
+			 * memory will be allocated at different time.
+			 *
+			 * When one process is allocating memory, other processes
+			 * have to wait. When each process allocate memory at different
+			 * time, the accumulated waiting time became significant.
+			 *
+			 * By explicitly allocating memory at 1st call to progress
+			 * engine, the memory allocation is parallelized.
+			 * (This assumes the 1st call to the progress engine on
+			 * all processes happen at roughly the same time, which
+			 * is a valid assumption according to our knowledge of
+			 * the workflow of most application)
+			 *
+			 * The memory was not allocated during endpoint initialization
+			 * because some applications will initialize some endpoints
+			 * but never uses it, thus allocating memory initialization
+			 * causes waste.
+			 */
+			err = rxr_ep_grow_rx_pkt_pools(ep);
+			if (err)
+				goto err_exit;
+
+			ep->rx_bufs_efa_to_post = rxr_get_rx_pool_chunk_cnt(ep);
+			ep->available_data_bufs = rxr_get_rx_pool_chunk_cnt(ep);
+
+			if (ep->use_shm) {
+				assert(ep->posted_bufs_shm == 0 && ep->rx_bufs_shm_to_post == 0);
+				ep->rx_bufs_shm_to_post = shm_info->rx_attr->size;
+			}
+		}
+	}
+
+	err = rxr_ep_bulk_post_prov_buf(ep, ep->rx_bufs_efa_to_post, EFA_EP);
+	if (err)
+		goto err_exit;
+
+	ep->rx_bufs_efa_to_post = 0;
+
+	if (ep->use_shm) {
+		err = rxr_ep_bulk_post_prov_buf(ep, ep->rx_bufs_shm_to_post, SHM_EP);
+		if (err)
+			goto err_exit;
+
+		ep->rx_bufs_shm_to_post = 0;
+	}
+
+	return;
+
+err_exit:
+
+	efa_eq_write_error(&ep->util_ep, err, err);
 }
 
 static inline int rxr_ep_send_queued_pkts(struct rxr_ep *ep,
@@ -1477,10 +1627,22 @@ static inline int rxr_ep_send_queued_pkts(struct rxr_ep *ep,
 			dlist_remove(&pkt_entry->entry);
 			continue;
 		}
-		ret = rxr_pkt_entry_send(ep, pkt_entry, pkt_entry->addr);
-		if (ret)
-			return ret;
+
+		/* If send succeeded, pkt_entry->entry will be added
+		 * to peer->outstanding_tx_pkts. Therefore, it must
+		 * be removed from the list before send.
+		 */
 		dlist_remove(&pkt_entry->entry);
+
+		ret = rxr_pkt_entry_send(ep, pkt_entry, 0);
+		if (ret) {
+			if (ret == -FI_EAGAIN) {
+				/* add the pkt back to pkts, so it can be resent again */
+				dlist_insert_tail(&pkt_entry->entry, pkts);
+			}
+
+			return ret;
+		}
 	}
 	return 0;
 }
@@ -1501,28 +1663,126 @@ static inline void rxr_ep_check_available_data_bufs_timer(struct rxr_ep *ep)
 
 static inline void rxr_ep_check_peer_backoff_timer(struct rxr_ep *ep)
 {
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 	struct dlist_entry *tmp;
 
 	if (OFI_LIKELY(dlist_empty(&ep->peer_backoff_list)))
 		return;
 
-	dlist_foreach_container_safe(&ep->peer_backoff_list, struct rxr_peer,
-				     peer, rnr_entry, tmp) {
-		peer->flags &= ~RXR_PEER_BACKED_OFF;
-		if (!rxr_peer_timeout_expired(ep, peer, ofi_gettime_us()))
-			continue;
-		peer->flags &= ~RXR_PEER_IN_BACKOFF;
-		dlist_remove(&peer->rnr_entry);
+	dlist_foreach_container_safe(&ep->peer_backoff_list, struct rdm_peer,
+				     peer, rnr_backoff_entry, tmp) {
+		if (ofi_gettime_us() >= peer->rnr_backoff_begin_ts +
+					peer->rnr_backoff_wait_time) {
+			peer->flags &= ~RXR_PEER_IN_BACKOFF;
+			dlist_remove(&peer->rnr_backoff_entry);
+		}
 	}
 }
 
-static inline void rxr_ep_poll_cq(struct rxr_ep *ep,
-				  struct fid_cq *cq,
-				  size_t cqe_to_process,
-				  bool is_shm_cq)
+/**
+ * @brief poll rdma-core cq and process the cq entry
+ *
+ * @param[in]	ep		end point
+ * @param[in]	cqe_to_process	max number of cq entry to poll and process
+ */
+static inline void rdm_ep_poll_ibv_cq(struct rxr_ep *ep,
+				      size_t cqe_to_process)
+{
+	struct ibv_wc ibv_wc;
+	struct efa_cq *efa_cq;
+	struct efa_av *efa_av;
+	struct efa_ep *efa_ep;
+	struct rdm_peer *peer;
+	struct rxr_pkt_entry *pkt_entry;
+	ssize_t ret;
+	int i, err, prov_errno;
+
+	efa_ep = container_of(ep->rdm_ep, struct efa_ep, util_ep.ep_fid);
+	efa_av = efa_ep->av;
+	efa_cq = container_of(ep->rdm_cq, struct efa_cq, util_cq.cq_fid);
+	for (i = 0; i < cqe_to_process; i++) {
+		ret = ibv_poll_cq(efa_cq->ibv_cq, 1, &ibv_wc);
+
+		if (ret == 0)
+			return;
+
+		if (OFI_UNLIKELY(ret < 0 || ibv_wc.status)) {
+			if (ret < 0) {
+				efa_eq_write_error(&ep->util_ep, -ret, -ret);
+				return;
+			}
+
+			pkt_entry = (void *)(uintptr_t)ibv_wc.wr_id;
+			err = ibv_wc.status;
+			prov_errno = ibv_wc.status;
+			if (ibv_wc.opcode == IBV_WC_SEND) {
+#if ENABLE_DEBUG
+				ep->failed_send_comps++;
+#endif
+				rxr_pkt_handle_send_error(ep, pkt_entry, err, prov_errno);
+			} else {
+				assert(ibv_wc.opcode == IBV_WC_RECV);
+				rxr_pkt_handle_recv_error(ep, pkt_entry, err, prov_errno);
+			}
+
+			return;
+		}
+
+		pkt_entry = (void *)(uintptr_t)ibv_wc.wr_id;
+
+		switch (ibv_wc.opcode) {
+		case IBV_WC_SEND:
+#if ENABLE_DEBUG
+			ep->send_comps++;
+#endif
+			rxr_pkt_handle_send_completion(ep, pkt_entry);
+			break;
+		case IBV_WC_RECV:
+			peer = efa_ahn_qpn_to_peer(efa_av, ibv_wc.slid, ibv_wc.src_qp);
+			pkt_entry->addr = peer ? peer->efa_fiaddr : FI_ADDR_NOTAVAIL;
+			pkt_entry->pkt_size = ibv_wc.byte_len;
+			assert(pkt_entry->pkt_size > 0);
+			rxr_pkt_handle_recv_completion(ep, pkt_entry);
+#if ENABLE_DEBUG
+			ep->recv_comps++;
+#endif
+			break;
+		default:
+			FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+				"Unhandled cq type\n");
+			assert(0 && "Unhandled cq type");
+		}
+	}
+}
+
+static inline
+void rdm_ep_poll_shm_err_cq(struct fid_cq *shm_cq, struct fi_cq_err_entry *cq_err_entry)
+{
+	int ret;
+
+	ret = fi_cq_readerr(shm_cq, cq_err_entry, 0);
+	if (ret == 1)
+		return;
+
+	if (ret < 0) {
+		FI_WARN(&rxr_prov, FI_LOG_CQ, "encountered error when fi_cq_readerr: %s\n",
+			fi_strerror(-ret));
+		cq_err_entry->err = -ret;
+		cq_err_entry->prov_errno = -ret;
+		return;
+	}
+
+	FI_WARN(&rxr_prov, FI_LOG_CQ, "fi_cq_readerr got expected return: %d\n", ret);
+	cq_err_entry->err = FI_EIO;
+	cq_err_entry->prov_errno = FI_EIO;
+}
+
+static inline void rdm_ep_poll_shm_cq(struct rxr_ep *ep,
+				      size_t cqe_to_process)
 {
 	struct fi_cq_data_entry cq_entry;
+	struct fi_cq_err_entry cq_err_entry = { 0 };
+	struct rxr_pkt_entry *pkt_entry;
 	fi_addr_t src_addr;
 	ssize_t ret;
 	struct efa_ep *efa_ep;
@@ -1534,43 +1794,50 @@ static inline void rxr_ep_poll_cq(struct rxr_ep *ep,
 	efa_ep = container_of(ep->rdm_ep, struct efa_ep, util_ep.ep_fid);
 	efa_av = efa_ep->av;
 	for (i = 0; i < cqe_to_process; i++) {
-		ret = fi_cq_readfrom(cq, &cq_entry, 1, &src_addr);
+		ret = fi_cq_readfrom(ep->shm_cq, &cq_entry, 1, &src_addr);
 
 		if (ret == -FI_EAGAIN)
 			return;
 
 		if (OFI_UNLIKELY(ret < 0)) {
-			if (rxr_cq_handle_cq_error(ep, ret))
-				assert(0 &&
-				       "error writing error cq entry after reading from cq");
-			if (!ep->use_zcpy_rx)
-				rxr_ep_bulk_post_recv(ep);
+			if (ret != -FI_EAVAIL) {
+				efa_eq_write_error(&ep->util_ep, -ret, -ret);
+				return;
+			}
+
+			rdm_ep_poll_shm_err_cq(ep->shm_cq, &cq_err_entry);
+			if (cq_err_entry.flags & (FI_SEND | FI_READ | FI_WRITE)) {
+				assert(cq_entry.op_context);
+				rxr_pkt_handle_send_error(ep, cq_entry.op_context, cq_err_entry.err, cq_err_entry.prov_errno);
+			} else if (cq_err_entry.flags & FI_RECV) {
+				assert(cq_entry.op_context);
+				rxr_pkt_handle_recv_error(ep, cq_entry.op_context, cq_err_entry.err, cq_err_entry.prov_errno);
+			} else {
+				efa_eq_write_error(&ep->util_ep, cq_err_entry.err, cq_err_entry.prov_errno);
+			}
+
 			return;
 		}
 
 		if (OFI_UNLIKELY(ret == 0))
 			return;
 
-		if (is_shm_cq && src_addr != FI_ADDR_UNSPEC) {
+		pkt_entry = cq_entry.op_context;
+		if (src_addr != FI_ADDR_UNSPEC) {
 			/* convert SHM address to EFA address */
 			assert(src_addr < EFA_SHM_MAX_AV_COUNT);
 			src_addr = efa_av->shm_rdm_addr_map[src_addr];
 		}
 
-		if (is_shm_cq && (cq_entry.flags & (FI_ATOMIC | FI_REMOTE_CQ_DATA))) {
+		if (cq_entry.flags & (FI_ATOMIC | FI_REMOTE_CQ_DATA)) {
 			rxr_cq_handle_shm_completion(ep, &cq_entry, src_addr);
 		} else if (cq_entry.flags & (FI_SEND | FI_READ | FI_WRITE)) {
-#if ENABLE_DEBUG
-			if (!is_shm_cq)
-				ep->send_comps++;
-#endif
-			rxr_pkt_handle_send_completion(ep, &cq_entry);
+			rxr_pkt_handle_send_completion(ep, pkt_entry);
 		} else if (cq_entry.flags & (FI_RECV | FI_REMOTE_CQ_DATA)) {
-			rxr_pkt_handle_recv_completion(ep, &cq_entry, src_addr);
-#if ENABLE_DEBUG
-			if (!is_shm_cq)
-				ep->recv_comps++;
-#endif
+			pkt_entry->addr = src_addr;
+			pkt_entry->pkt_size = cq_entry.len;
+			assert(pkt_entry->pkt_size > 0);
+			rxr_pkt_handle_recv_completion(ep, pkt_entry);
 		} else {
 			FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
 				"Unhandled cq type\n");
@@ -1586,124 +1853,169 @@ void rxr_ep_progress_internal(struct rxr_ep *ep)
 	struct rxr_rx_entry *rx_entry;
 	struct rxr_tx_entry *tx_entry;
 	struct rxr_read_entry *read_entry;
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 	struct dlist_entry *tmp;
 	ssize_t ret;
 
-	if (!ep->use_zcpy_rx)
-		rxr_ep_check_available_data_bufs_timer(ep);
-
 	// Poll the EFA completion queue
-	rxr_ep_poll_cq(ep, ep->rdm_cq, rxr_env.efa_cq_read_size, 0);
+	rdm_ep_poll_ibv_cq(ep, rxr_env.efa_cq_read_size);
 
 	// Poll the SHM completion queue if enabled
 	if (ep->use_shm)
-		rxr_ep_poll_cq(ep, ep->shm_cq, rxr_env.shm_cq_read_size, 1);
+		rdm_ep_poll_shm_cq(ep, rxr_env.shm_cq_read_size);
 
-	if (!ep->use_zcpy_rx) {
-		ret = rxr_ep_bulk_post_recv(ep);
-
-		if (OFI_UNLIKELY(ret)) {
-			if (rxr_cq_handle_cq_error(ep, ret))
-				assert(0 &&
-				       "error writing error cq entry after failed post recv");
-			return;
-		}
-	}
+	rxr_ep_progress_post_prov_buf(ep);
 
 	rxr_ep_check_peer_backoff_timer(ep);
 
+	if (!ep->use_zcpy_rx)
+		rxr_ep_check_available_data_bufs_timer(ep);
 	/*
 	 * Resend handshake packet for any peers where the first
 	 * handshake send failed.
 	 */
-	dlist_foreach_container_safe(&ep->peer_queued_list,
-				     struct rxr_peer, peer,
-				     queued_entry, tmp) {
+	dlist_foreach_container_safe(&ep->handshake_queued_peer_list,
+				     struct rdm_peer, peer,
+				     handshake_queued_entry, tmp) {
+		if (peer->flags & RXR_PEER_IN_BACKOFF)
+			continue;
 
 		ret = rxr_pkt_post_handshake(ep, peer);
 		if (ret == -FI_EAGAIN)
 			break;
-		if (OFI_UNLIKELY(ret))
-			goto handshake_err;
 
-		dlist_remove(&peer->queued_entry);
+		if (OFI_UNLIKELY(ret)) {
+			FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+				"Failed to post HANDSHAKE to peer %ld: %s\n",
+				peer->efa_fiaddr, fi_strerror(-ret));
+			efa_eq_write_error(&ep->util_ep, FI_EIO, -ret);
+			return;
+		}
+
+		dlist_remove(&peer->handshake_queued_entry);
+		peer->flags &= ~RXR_PEER_HANDSHAKE_QUEUED;
+		peer->flags |= RXR_PEER_HANDSHAKE_SENT;
 	}
 
 	/*
 	 * Send any queued ctrl packets.
 	 */
-	dlist_foreach_container_safe(&ep->rx_entry_queued_list,
+	dlist_foreach_container_safe(&ep->rx_entry_queued_rnr_list,
 				     struct rxr_rx_entry,
-				     rx_entry, queued_entry, tmp) {
+				     rx_entry, queued_rnr_entry, tmp) {
 		peer = rxr_ep_get_peer(ep, rx_entry->addr);
+		assert(peer);
 
 		if (peer->flags & RXR_PEER_IN_BACKOFF)
 			continue;
 
-		if (rx_entry->state == RXR_RX_QUEUED_CTRL) {
-			/*
-			 * We should only have one packet pending at a time for
-			 * rx_entry. Either the send failed due to RNR or the
-			 * rx_entry is queued but not both.
-			 */
-			assert(dlist_empty(&rx_entry->queued_pkts));
-			ret = rxr_pkt_post_ctrl(ep, RXR_RX_ENTRY, rx_entry,
-						rx_entry->queued_ctrl.type,
-						rx_entry->queued_ctrl.inject);
-		} else {
-			ret = rxr_ep_send_queued_pkts(ep, &rx_entry->queued_pkts);
-		}
+		assert(rx_entry->rxr_flags & RXR_RX_ENTRY_QUEUED_RNR);
+		assert(!dlist_empty(&rx_entry->queued_pkts));
+		ret = rxr_ep_send_queued_pkts(ep, &rx_entry->queued_pkts);
 
 		if (ret == -FI_EAGAIN)
 			break;
-		if (OFI_UNLIKELY(ret))
-			goto rx_err;
 
-		dlist_remove(&rx_entry->queued_entry);
+		if (OFI_UNLIKELY(ret)) {
+			rxr_cq_write_rx_error(ep, rx_entry, -ret, -ret);
+			return;
+		}
+
+		dlist_remove(&rx_entry->queued_rnr_entry);
+		rx_entry->rxr_flags &= ~RXR_RX_ENTRY_QUEUED_RNR;
+	}
+
+	dlist_foreach_container_safe(&ep->rx_entry_queued_ctrl_list,
+				     struct rxr_rx_entry,
+				     rx_entry, queued_ctrl_entry, tmp) {
+		peer = rxr_ep_get_peer(ep, rx_entry->addr);
+		assert(peer);
+
+		if (peer->flags & RXR_PEER_IN_BACKOFF)
+			continue;
+		/*
+		 * rx_entry only send one ctrl packet at a time. The
+		 * ctrl packet can be CTS, EOR, RECEIPT.
+		 */
+		assert(rx_entry->state == RXR_RX_QUEUED_CTRL);
+		ret = rxr_pkt_post_ctrl(ep, RXR_RX_ENTRY, rx_entry,
+					rx_entry->queued_ctrl.type,
+					rx_entry->queued_ctrl.inject);
+		if (ret == -FI_EAGAIN)
+			break;
+
+		if (OFI_UNLIKELY(ret)) {
+			rxr_cq_write_rx_error(ep, rx_entry, -ret, -ret);
+			return;
+		}
+
+		/* it can happen that rxr_pkt_post_ctrl() released rx_entry
+		 * (if the packet type is EOR and inject is used). In
+		 * that case rx_entry's state has been set to RXR_RX_FREE and
+		 * it has been removed from ep->rx_queued_entry_list, so nothing
+		 * is left to do.
+		 */
+		if (rx_entry->state == RXR_RX_FREE)
+			continue;
+
+		dlist_remove(&rx_entry->queued_ctrl_entry);
+		/*
+		 * For CTS packet, the state need to be RXR_RX_RECV.
+		 * For EOR/RECEIPT, all data has been received, so any state
+		 * other than RXR_RX_QUEUED_CTRL should work.
+		 * In all, we set the state to RXR_RX_RECV
+		 */
 		rx_entry->state = RXR_RX_RECV;
 	}
 
-	dlist_foreach_container_safe(&ep->tx_entry_queued_list,
+	dlist_foreach_container_safe(&ep->tx_entry_queued_rnr_list,
 				     struct rxr_tx_entry,
-				     tx_entry, queued_entry, tmp) {
+				     tx_entry, queued_rnr_entry, tmp) {
 		peer = rxr_ep_get_peer(ep, tx_entry->addr);
+		assert(peer);
 
 		if (peer->flags & RXR_PEER_IN_BACKOFF)
 			continue;
 
-		/*
-		 * It is possible to receive an RNR after we queue this
-		 * tx_entry if we run out of resources in the medium message
-		 * protocol. Ensure all queued packets are posted before
-		 * continuing to post additional control messages.
-		 */
+		assert(tx_entry->rxr_flags & RXR_TX_ENTRY_QUEUED_RNR);
 		ret = rxr_ep_send_queued_pkts(ep, &tx_entry->queued_pkts);
 		if (ret == -FI_EAGAIN)
 			break;
-		if (OFI_UNLIKELY(ret))
-			goto tx_err;
 
-		if (tx_entry->state == RXR_TX_QUEUED_CTRL) {
-			ret = rxr_pkt_post_ctrl(ep, RXR_TX_ENTRY, tx_entry,
-						tx_entry->queued_ctrl.type,
-						tx_entry->queued_ctrl.inject);
-			if (ret == -FI_EAGAIN)
-				break;
-			if (OFI_UNLIKELY(ret))
-				goto tx_err;
+		if (OFI_UNLIKELY(ret)) {
+			rxr_cq_write_tx_error(ep, tx_entry, -ret, -ret);
+			return;
 		}
 
-		dlist_remove(&tx_entry->queued_entry);
+		dlist_remove(&tx_entry->queued_rnr_entry);
+		tx_entry->rxr_flags &= ~RXR_TX_ENTRY_QUEUED_RNR;
+	}
 
-		if (tx_entry->state == RXR_TX_QUEUED_REQ_RNR ||
-		    tx_entry->state == RXR_TX_QUEUED_CTRL) {
+	dlist_foreach_container_safe(&ep->tx_entry_queued_ctrl_list,
+				     struct rxr_tx_entry,
+				     tx_entry, queued_ctrl_entry, tmp) {
+		peer = rxr_ep_get_peer(ep, tx_entry->addr);
+		assert(peer);
+
+		if (peer->flags & RXR_PEER_IN_BACKOFF)
+			continue;
+
+		assert(tx_entry->state == RXR_TX_QUEUED_CTRL);
+
+		ret = rxr_pkt_post_ctrl(ep, RXR_TX_ENTRY, tx_entry,
+					tx_entry->queued_ctrl.type,
+					tx_entry->queued_ctrl.inject);
+		if (ret == -FI_EAGAIN)
+			break;
+
+		if (OFI_UNLIKELY(ret)) {
+			rxr_cq_write_tx_error(ep, tx_entry, -ret, -ret);
+			return;
+		}
+
+		dlist_remove(&tx_entry->queued_ctrl_entry);
+		if (tx_entry->state == RXR_TX_QUEUED_CTRL)
 			tx_entry->state = RXR_TX_REQ;
-		} else if (tx_entry->state == RXR_TX_QUEUED_DATA_RNR) {
-			tx_entry->state = RXR_TX_SEND;
-			dlist_insert_tail(&tx_entry->entry,
-					  &ep->tx_pending_list);
-		}
 	}
 
 	/*
@@ -1712,6 +2024,7 @@ void rxr_ep_progress_internal(struct rxr_ep *ep)
 	dlist_foreach_container(&ep->tx_pending_list, struct rxr_tx_entry,
 				tx_entry, entry) {
 		peer = rxr_ep_get_peer(ep, tx_entry->addr);
+		assert(peer);
 
 		if (peer->flags & RXR_PEER_IN_BACKOFF)
 			continue;
@@ -1722,14 +2035,14 @@ void rxr_ep_progress_internal(struct rxr_ep *ep)
 			continue;
 
 		while (tx_entry->window > 0) {
-			if (ep->max_outstanding_tx - ep->tx_pending <= 1 ||
+			if (ep->efa_max_outstanding_tx_ops - ep->efa_outstanding_tx_ops <= 1 ||
 			    tx_entry->window <= ep->max_data_payload_size)
 				tx_entry->send_flags &= ~FI_MORE;
 			/*
 			 * The core's TX queue is full so we can't do any
 			 * additional work.
 			 */
-			if (ep->tx_pending == ep->max_outstanding_tx)
+			if (ep->efa_outstanding_tx_ops == ep->efa_max_outstanding_tx_ops)
 				goto out;
 
 			if (peer->flags & RXR_PEER_IN_BACKOFF)
@@ -1740,7 +2053,9 @@ void rxr_ep_progress_internal(struct rxr_ep *ep)
 				tx_entry->send_flags &= ~FI_MORE;
 				if (ret == -FI_EAGAIN)
 					goto out;
-				goto tx_err;
+
+				rxr_cq_write_tx_error(ep, tx_entry, -ret, -ret);
+				return;
 			}
 		}
 	}
@@ -1751,6 +2066,7 @@ void rxr_ep_progress_internal(struct rxr_ep *ep)
 	dlist_foreach_container_safe(&ep->read_pending_list, struct rxr_read_entry,
 				     read_entry, pending_entry, tmp) {
 		peer = rxr_ep_get_peer(ep, read_entry->addr);
+		assert(peer);
 
 		if (peer->flags & RXR_PEER_IN_BACKOFF)
 			continue;
@@ -1759,15 +2075,17 @@ void rxr_ep_progress_internal(struct rxr_ep *ep)
 		 * The core's TX queue is full so we can't do any
 		 * additional work.
 		 */
-		if (ep->tx_pending == ep->max_outstanding_tx)
+		if (ep->efa_outstanding_tx_ops == ep->efa_max_outstanding_tx_ops)
 			goto out;
 
 		ret = rxr_read_post(ep, read_entry);
 		if (ret == -FI_EAGAIN)
 			break;
 
-		if (OFI_UNLIKELY(ret))
-			goto read_err;
+		if (OFI_UNLIKELY(ret)) {
+			rxr_read_write_error(ep, read_entry, -ret, -ret);
+			return;
+		}
 
 		read_entry->state = RXR_RDMA_ENTRY_SUBMITTED;
 		dlist_remove(&read_entry->pending_entry);
@@ -1778,33 +2096,9 @@ out:
 	if (efa_ep->xmit_more_wr_tail != &efa_ep->xmit_more_wr_head) {
 		ret = efa_post_flush(efa_ep, &bad_wr);
 		if (OFI_UNLIKELY(ret))
-			goto tx_err;
+			efa_eq_write_error(&ep->util_ep, -ret, -ret);
 	}
 
-	return;
-rx_err:
-	if (rxr_cq_handle_rx_error(ep, rx_entry, ret))
-		assert(0 &&
-		       "error writing error cq entry when handling RX error");
-	return;
-tx_err:
-	if (rxr_cq_handle_tx_error(ep, tx_entry, ret))
-		assert(0 &&
-		       "error writing error cq entry when handling TX error");
-	return;
-
-read_err:
-	if (rxr_read_handle_error(ep, read_entry, ret))
-		assert(0 &&
-		       "error writing err cq entry while handling RDMA error");
-	return;
-
-handshake_err:
-	FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
-		"Failed to post HANDSHAKE to peer %ld: %s\n",
-		peer->efa_fiaddr, fi_strerror(-ret));
-	assert(0 && "Failed to post HANDSHAKE to peer");
-	efa_eq_write_error(&ep->util_ep, FI_EIO, -ret);
 	return;
 }
 
@@ -1913,7 +2207,8 @@ int rxr_endpoint(struct fid_domain *domain, struct fi_info *info,
 	rxr_ep->tx_size = info->tx_attr->size;
 	rxr_ep->rx_iov_limit = info->rx_attr->iov_limit;
 	rxr_ep->tx_iov_limit = info->tx_attr->iov_limit;
-	rxr_ep->max_outstanding_tx = rdm_info->tx_attr->size;
+	rxr_ep->inject_size = info->tx_attr->inject_size;
+	rxr_ep->efa_max_outstanding_tx_ops = rdm_info->tx_attr->size;
 	rxr_ep->core_rx_size = rdm_info->rx_attr->size;
 	rxr_ep->core_iov_limit = rdm_info->tx_attr->iov_limit;
 	rxr_ep->core_caps = rdm_info->caps;
@@ -1929,6 +2224,7 @@ int rxr_endpoint(struct fid_domain *domain, struct fi_info *info,
 	rxr_ep->core_msg_order = rdm_info->rx_attr->msg_order;
 	rxr_ep->core_inject_size = rdm_info->tx_attr->inject_size;
 	rxr_ep->max_msg_size = info->ep_attr->max_msg_size;
+	rxr_ep->msg_prefix_size = info->ep_attr->msg_prefix_size;
 	rxr_ep->max_proto_hdr_size = rxr_pkt_max_header_size();
 	rxr_ep->mtu_size = rdm_info->ep_attr->max_msg_size;
 	fi_freeinfo(rdm_info);
@@ -1943,8 +2239,8 @@ int rxr_endpoint(struct fid_domain *domain, struct fi_info *info,
 	rxr_ep->min_multi_recv_size = rxr_ep->mtu_size - rxr_ep->max_proto_hdr_size;
 
 	if (rxr_env.tx_queue_size > 0 &&
-	    rxr_env.tx_queue_size < rxr_ep->max_outstanding_tx)
-		rxr_ep->max_outstanding_tx = rxr_env.tx_queue_size;
+	    rxr_env.tx_queue_size < rxr_ep->efa_max_outstanding_tx_ops)
+		rxr_ep->efa_max_outstanding_tx_ops = rxr_env.tx_queue_size;
 
 
 	rxr_ep->use_zcpy_rx = rxr_ep_use_zcpy_rx(rxr_ep, info);
@@ -1956,7 +2252,8 @@ int rxr_endpoint(struct fid_domain *domain, struct fi_info *info,
 		rxr_ep->handle_resource_management);
 
 #if ENABLE_DEBUG
-	rxr_ep->sends = 0;
+	rxr_ep->efa_total_posted_tx_ops = 0;
+	rxr_ep->shm_total_posted_tx_ops = 0;
 	rxr_ep->send_comps = 0;
 	rxr_ep->failed_send_comps = 0;
 	rxr_ep->recv_comps = 0;
@@ -1966,7 +2263,8 @@ int rxr_endpoint(struct fid_domain *domain, struct fi_info *info,
 	rxr_ep->rx_bufs_shm_to_post = 0;
 	rxr_ep->posted_bufs_efa = 0;
 	rxr_ep->rx_bufs_efa_to_post = 0;
-	rxr_ep->tx_pending = 0;
+	rxr_ep->efa_outstanding_tx_ops = 0;
+	rxr_ep->shm_outstanding_tx_ops = 0;
 	rxr_ep->available_data_bufs_ts = 0;
 
 	ret = fi_cq_open(rxr_domain->rdm_domain, &cq_attr,
@@ -2042,3 +2340,120 @@ err_free_ep:
 	free(rxr_ep);
 	return ret;
 }
+
+/**
+ * @brief record the event that a TX op has been submitted
+ *
+ * This function is called after a TX operation has been posted
+ * successfully. It will:
+ *
+ *  1. increase the outstanding tx_op counter in endpoint and
+ *     in the peer structure.
+ *
+ *  2. add the TX packet to peer's outstanding TX packet list.
+ *
+ * Both send and read are considered TX operation.
+ *
+ * The tx_op counters used to prevent over posting the device
+ * and used in flow control. They are also usefull for debugging.
+ *
+ * Peer's outstanding TX packet list is used when removing a peer
+ * to invalidate address of these packets, so that the completion
+ * of these packet is ignored.
+ *
+ * @param[in,out]	ep		endpoint
+ * @param[in]		pkt_entry	TX pkt_entry, which contains
+ * 					the info of the TX op.
+ */
+void rxr_ep_record_tx_op_submitted(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry)
+{
+	struct rdm_peer *peer;
+
+	/*
+	 * peer can be NULL when the pkt_entry is a RMA_CONTEXT_PKT,
+	 * and the RMA is a local read toward the endpoint itself
+	 */
+	peer = rxr_ep_get_peer(ep, pkt_entry->addr);
+	if (peer)
+		dlist_insert_tail(&pkt_entry->entry, &peer->outstanding_tx_pkts);
+
+	if (pkt_entry->alloc_type == RXR_PKT_FROM_EFA_TX_POOL) {
+		ep->efa_outstanding_tx_ops++;
+		if (peer)
+			peer->efa_outstanding_tx_ops++;
+#if ENABLE_DEBUG
+		ep->efa_total_posted_tx_ops++;
+#endif
+	} else {
+		assert(pkt_entry->alloc_type == RXR_PKT_FROM_SHM_TX_POOL);
+		ep->shm_outstanding_tx_ops++;
+		if (peer)
+			peer->shm_outstanding_tx_ops++;
+#if ENABLE_DEBUG
+		ep->shm_total_posted_tx_ops++;
+#endif
+	}
+}
+
+/**
+ * @brief record the event that an TX op is completed
+ *
+ * This function is called when the completion of
+ * a TX operation is received. It will
+ *
+ * 1. decrease the outstanding tx_op counter in the endpoint
+ *    and in the peer.
+ *
+ * 2. remove the TX packet from peer's outstanding
+ *    TX packet list.
+ *
+ * Both send and read are considered TX operation.
+ *
+ * One may ask why this function is not integrated
+ * into rxr_pkt_entry_relase_tx()?
+ *
+ * The reason is the action of decrease tx_op counter
+ * is not tied to releasing a TX pkt_entry.
+ *
+ * Sometimes we need to decreate the tx_op counter
+ * without releasing a TX pkt_entry. For example,
+ * we handle a TX pkt_entry encountered RNR. We need
+ * to decrease the tx_op counter and queue the packet.
+ *
+ * Sometimes we need release TX pkt_entry without
+ * decreasing the tx_op counter. For example, when
+ * rxr_pkt_post_ctrl() failed to post a pkt entry.
+ *
+ * @param[in,out]	ep		endpoint
+ * @param[in]		pkt_entry	TX pkt_entry, which contains
+ * 					the info of the TX op
+ */
+void rxr_ep_record_tx_op_completed(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry)
+{
+	struct rdm_peer *peer;
+
+	/*
+	 * peer can be NULL when:
+	 *
+	 * 1. the pkt_entry is a RMA_CONTEXT_PKT, and the RMA op is a local read
+	 *    toward the endpoint itself.
+	 * 2. peer's address has been removed from address vector. Either because
+	 *    a new peer has the same GID+QPN was inserted to address, or because
+	 *    application removed the peer from address vector.
+	 */
+	peer = rxr_ep_get_peer(ep, pkt_entry->addr);
+	if (peer)
+		dlist_remove(&pkt_entry->entry);
+
+	if (pkt_entry->alloc_type == RXR_PKT_FROM_EFA_TX_POOL) {
+		ep->efa_outstanding_tx_ops--;
+		if (peer)
+			peer->efa_outstanding_tx_ops--;
+	} else {
+		assert(pkt_entry->alloc_type == RXR_PKT_FROM_SHM_TX_POOL);
+		ep->shm_outstanding_tx_ops--;
+		if (peer)
+			peer->shm_outstanding_tx_ops--;
+	}
+}
+

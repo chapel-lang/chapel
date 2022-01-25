@@ -64,6 +64,16 @@ ifelse('
 		                 [psm3_ibv_happy=1],
 		                 [psm3_happy=0])
 
+		FI_CHECK_PACKAGE([psm3_uuid],
+		                 [uuid/uuid.h],
+		                 [uuid],
+		                 [uuid_parse],
+		                 [],
+		                 [$psm3_PREFIX],
+		                 [$psm3_LIBDIR],
+		                 [psm3_uuid_happy=1],
+		                 [psm3_happy=0])
+
 		AC_MSG_CHECKING([for -msse4.2 support])
 
 		dnl Strip other optflags to avoid conflicts when checking for instruction sets
@@ -127,6 +137,10 @@ ifelse('
 				AC_MSG_RESULT([no])
 			])
 		CFLAGS=$save_CFLAGS
+
+		AS_IF([test $have_libcuda -eq 1],
+		      [psm3_CPPFLAGS="$psm3_CPPFLAGS -DPSM_CUDA -DNVIDIA_GPU_DIRECT"])
+		AC_DEFINE_UNQUOTED([PSM3_CUDA], [$have_libcuda], [Whether we have CUDA runtime or not])
 
 		AS_IF([test x$with_psm3_rv = xno],
 		      [psm3_CPPFLAGS="$psm3_CPPFLAGS -URNDV_MOD"],
@@ -198,16 +212,33 @@ ifelse('
 
 	 AS_IF([test $psm3_happy -eq 1], [$1], [$2])
 
-	 psm3_CFLAGS="$PSM3_ARCH_CFLAGS"
-	 psm3_CPPFLAGS="$psm3_CPPFLAGS $psm3_rt_CPPFLAGS $psm3_dl_CPPFLAGS $psm3_numa_CPPFLAGS $psm3_ibv_CPPFLAGS"
-	 psm3_LDFLAGS="$psm3_LDFLAGS $psm3_rt_LDFLAGS $psm3_dl_LDFLAGS $psm3_numa_LDFLAGS $psm3_ibv_LDFLAGS"
-	 psm3_LIBS="$psm3_LIBS $psm3_rt_LIBS $psm3_dl_LIBS $psm3_numa_LIBS $psm3_ibv_LIBS"
+	 psm3_CFLAGS=""
+	 psm3_ARCH_CFLAGS="$PSM3_ARCH_CFLAGS"
+	 psm3_CPPFLAGS="$psm3_CPPFLAGS $psm3_rt_CPPFLAGS $psm3_dl_CPPFLAGS $psm3_numa_CPPFLAGS $psm3_ibv_CPPFLAGS $psm3_uuid_CPPFLAGS"
+	 psm3_LDFLAGS="$psm3_LDFLAGS $psm3_rt_LDFLAGS $psm3_dl_LDFLAGS $psm3_numa_LDFLAGS $psm3_ibv_LDFLAGS $psm3_uuid_LDFLAGS"
+	 psm3_LIBS="$psm3_LIBS $psm3_rt_LIBS $psm3_dl_LIBS $psm3_numa_LIBS $psm3_ibv_LIBS $psm3_uuid_LIBS"
 	 AC_SUBST(psm3_CFLAGS)
+	 AC_SUBST(psm3_ARCH_CFLAGS)
 	 AC_SUBST(psm3_CPPFLAGS)
 	 AC_SUBST(psm3_LDFLAGS)
 	 AC_SUBST(psm3_LIBS)
 	 AC_SUBST(PSM_HAL_CNT)
 	 AC_SUBST(PSM_HAL_INST)
+
+	 PSM3_IFS_VERSION=m4_normalize(m4_esyscmd([cat prov/psm3/VERSION]))
+	 AC_SUBST(PSM3_IFS_VERSION)
+	 PSM3_PROV_VER_MAJOR=$(echo "${PSM3_IFS_VERSION}" | cut -d'_' -f1)
+	 PSM3_PROV_VER_MINOR=$(echo "${PSM3_IFS_VERSION}" | cut -d'_' -f2)
+	 PSM3_PROV_VER_MAINT=$(echo "${PSM3_IFS_VERSION}" | cut -d'_' -f3)
+	 PSM3_PROV_VER_PATCH=$(echo "${PSM3_IFS_VERSION}" | cut -d'_' -f4)
+	 AC_SUBST(PSM3_PROV_VER_MAJOR)
+	 AC_SUBST(PSM3_PROV_VER_MINOR)
+	 AC_SUBST(PSM3_PROV_VER_MAINT)
+	 AC_SUBST(PSM3_PROV_VER_PATCH)
+
+	 AC_SUBST(PSM3_BUILD_TIMESTAMP, ["<Unknown>"])
+	 AC_SUBST(PSM3_SRC_CHECKSUM, ["<Unknown>"])
+	 AC_SUBST(PSM3_GIT_HASH, ["<Unknown>"])
 
 ])
 

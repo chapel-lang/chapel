@@ -255,7 +255,7 @@ psmi_ep_multirail(int *num_rails, uint32_t *unit, uint16_t *port)
 						unit[i], sysfs_unit_dev_name(unit[i]),
 						port[i]);
 			ret = psmi_hal_get_port_lid(unit[i], port[i]);
-			if (ret <= 0)
+			if (ret <= 0 || ret == 0xFFFF)
 				return psmi_handle_error(NULL,
 						PSM2_EP_DEVICE_FAILURE,
 						"PSM3_MULTIRAIL_MAP: Couldn't get lid for unit %d(%s):%d",
@@ -320,7 +320,7 @@ psmi_ep_multirail(int *num_rails, uint32_t *unit, uint16_t *port)
 
 		for (j = HFI_MIN_PORT; j <= HFI_MAX_PORT; j++) {
 			ret = psmi_hal_get_port_lid(i, j);
-			if (ret <= 0)
+			if (ret <= 0 || ret == 0xFFFF)
 				continue;
 			ret = psmi_hal_get_port_subnet(i, j, &gid_hi, NULL, NULL, NULL, NULL, NULL, NULL);
 			if (ret == -1)
@@ -384,7 +384,7 @@ psmi_ep_devlids(uint32_t **lids, uint32_t *num_lids_o,
 				uint32_t ipaddr = 0;
 
 				// if looking for IB/OPA lid, skip ports we can't get lid for
-				if (lid <= 0 && psmi_epid_version(my_epid) == PSMI_EPID_V3)
+				if ((lid <= 0 || lid == 0xFFFF) && psmi_epid_version(my_epid) == PSMI_EPID_V3)
 					continue;
 				// we just need subnet and addr within subnet and idx
 				ret = psmi_hal_get_port_subnet(i, j, &gid_hi, &gid_lo, &ipaddr, NULL, &idx, &actual_gid_hi, NULL);
@@ -449,11 +449,11 @@ psmi_ep_verify_pkey(psm2_ep_t ep, uint16_t pkey, uint16_t *opkey, uint16_t* oind
 // TBD - if we adjust HAL to take a hw_context for this function and
 // put the verbs_ep inside the HAL hw context, we can eliminate this ifdef
 // and simply call into HAL
-		_HFI_UDDBG("looking for pkey 0x%x\n", pkey);
+		_HFI_PRDBG("looking for pkey 0x%x\n", pkey);
 		ret = verbs_get_port_index2pkey(ep, ep->portnum, i);
 		if (ret < 0) {
 			err = psmi_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-						"Can't get a valid pkey value from pkey table\n");
+						"Can't get a valid pkey value from pkey table on %s port %u\n", ep->dev_name, ep->portnum);
 			return err;
 		}
 		// pkey == 0 means get slot 0
@@ -467,15 +467,15 @@ psmi_ep_verify_pkey(psm2_ep_t ep, uint16_t pkey, uint16_t *opkey, uint16_t* oind
 	/* if pkey does not match */
 	if (i == 16) {
 		err = psmi_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-					"Wrong pkey 0x%x, please use PSM3_PKEY to specify a valid pkey\n",
-					pkey);
+					"Wrong pkey 0x%x on %s port %u, please use PSM3_PKEY to specify a valid pkey\n",
+					pkey, ep->dev_name, ep->portnum);
 		return err;
 	}
 
 	if (((uint16_t)ret & 0x8000) == 0) {
 		err = psmi_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-					"Limited Member pkey 0x%x, please use PSM3_PKEY to specify a valid pkey\n",
-					(uint16_t)ret);
+					"Limited Member pkey 0x%x on %s port %u, please use PSM3_PKEY to specify a valid pkey\n",
+					(uint16_t)ret, ep->dev_name, ep->portnum);
 		return err;
 	}
 
@@ -560,7 +560,7 @@ psm2_error_t __psm2_ep_query(int *num_of_epinfo, psm2_epinfo_t *array_of_epinfo)
 		array_of_epinfo[i].jkey = ep->jkey;
 		memcpy(array_of_epinfo[i].uuid,
 		       (void *)ep->uuid, sizeof(psm2_uuid_t));
-		psmi_uuid_unparse(ep->uuid, array_of_epinfo[i].uuid_str);
+		uuid_unparse_lower(ep->uuid, array_of_epinfo[i].uuid_str);
 		ep = ep->user_ep_next;
 	}
 	*num_of_epinfo = i;
@@ -978,12 +978,23 @@ __psm2_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 	// The value returned is a MR_CACHE_MODE_* selection
 	{
 		union psmi_envvar_val env_mr_cache_mode;
-
-		if (! (ep->rdmamode & IPS_PROTOEXP_FLAG_ENABLED)) {
+		if (! (ep->rdmamode & IPS_PROTOEXP_FLAG_ENABLED)
+#ifdef PSM_CUDA
+			&& (PSMI_IS_CUDA_DISABLED || ! psmi_parse_gpudirect())
+#endif
+			&& ! psmi_parse_senddma()) {
 			env_mr_cache_mode.e_uint = MR_CACHE_MODE_NONE;
 		} else if (IPS_PROTOEXP_FLAG_KERNEL_QP(ep->rdmamode)) {
 			// RDMA enabled in kernel mode.  Must use rv MR cache
 			env_mr_cache_mode.e_uint = MR_CACHE_MODE_RV;
+#ifdef PSM_CUDA
+#ifdef RNDV_MOD
+		} else if (PSMI_IS_CUDA_ENABLED && psmi_parse_gpudirect()) {
+			// GPU Direct (RDMA, send DMA and/or gdrcopy) must
+			// use kernel MR cache in RV
+			env_mr_cache_mode.e_uint = MR_CACHE_MODE_KERNEL;
+#endif
+#endif
 		} else {
 			/* Behavior of user space MR Cache
 			 * when 0, we merely share MRs for concurrently used buffers
@@ -1009,8 +1020,14 @@ __psm2_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 				env_mr_cache_mode.e_uint = MR_CACHE_MODE_NONE;
 		}
 #ifndef RNDV_MOD
-		if (env_mr_cache_mode.e_uint == MR_CACHE_MODE_KERNEL)
+		if (env_mr_cache_mode.e_uint == MR_CACHE_MODE_KERNEL) {
+			static int logged = 0;
+			if (! logged) {
+				_HFI_INFO("WARNING: PSM built without rv module enabled, kernel MR caching unavailable\n");
+				logged = 1;
+			}
 			env_mr_cache_mode.e_uint = MR_CACHE_MODE_NONE;
+		}
 #endif
 		ep->mr_cache_mode = env_mr_cache_mode.e_uint;
 	}
@@ -1105,16 +1122,46 @@ __psm2_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 	/* Size of RV Cache - only used for MR_CACHE_MODE_RV or KERNEL,
 	 * otherwise ignored
 	 */
+	// RV defaults are sufficient for default PSM parameters
+	// but if user adjusts ep->hfi_num_send_rdma or mq->hfi_base_window_rv
+	// they also need to increase the cache size.  psm2_verbs_alloc_mr_cache
+	// will verify cache size is sufficient.
+	// min size is (HFI_TF_NFLOWS + ep->hfi_num_send_rdma) *
+	// chunk size (mq->hfi_base_window_rv after psmi_mq_initialize_defaults)
+	// for OPA native, actual window_rv may be smaller, but for UD it
+	// is not reduced
 	psmi_getenv("PSM3_RV_MR_CACHE_SIZE",
 			"kernel space MR cache size"
 			" (MBs, 0 lets rv module decide) [0]",
 			PSMI_ENVVAR_LEVEL_USER,
 			PSMI_ENVVAR_TYPE_UINT,
 			(union psmi_envvar_val)0, &envvar_val);
-	// TBD - min should be (HFI_TF_NFLOWS + ep->hfi_num_send_rdma) *
-	// chunk size (mq->hfi_base_window_rv after psmi_mq_initialize_defaults
-	// TBD actual window_sz may be larger than mq->hfi_base_window_rv
 	ep->rv_mr_cache_size = envvar_val.e_uint;
+
+#ifdef PSM_CUDA
+	/* Size of RV GPU Cache - only used for PSM3_CUDA=1 MR_CACHE_MODE_KERNEL,
+	 * otherwise ignored
+	 */
+	// RV defaults are sufficient for default PSM parameters
+	// but if user adjusts ep->hfi_num_send_rdma or mq->hfi_base_window_rv
+	// they also need to increase the cache size.  psm2_verbs_alloc_mr_cache
+	// will verify cache size is sufficient.
+	// min size is (HFI_TF_NFLOWS + ep->hfi_num_send_rdma) *
+	// chunk size (mq->hfi_base_window_rv after psmi_mq_initialize_defaults)
+	// for OPA native, actual window_rv may be smaller, but for UD it
+	// is not reduced
+	if (PSMI_IS_CUDA_ENABLED) {
+		psmi_getenv("PSM3_RV_GPU_CACHE_SIZE",
+				"kernel space GPU cache size"
+				" (MBs, 0 lets rv module decide) [0]",
+				PSMI_ENVVAR_LEVEL_USER,
+				PSMI_ENVVAR_TYPE_UINT,
+				(union psmi_envvar_val)0, &envvar_val);
+		ep->rv_gpu_cache_size = envvar_val.e_uint;
+	} else {
+		ep->rv_gpu_cache_size = 0;
+	}
+#endif
 
 	psmi_getenv("PSM3_RV_QP_PER_CONN",
 			"Number of sets of RC QPs per RV connection (0 lets rv module decide) [0]",
@@ -1150,7 +1197,7 @@ __psm2_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 		goto fail;
 
 	if (psmi_ep_device_is_enabled(ep, PTL_DEVID_IPS)) {
-		_HFI_UDDBG("my QPN=%u (0x%x)  EPID=0x%"PRIx64" %s\n",
+		_HFI_PRDBG("my QPN=%u (0x%x)  EPID=0x%"PRIx64" %s\n",
 			ep->verbs_ep.qp->qp_num, ep->verbs_ep.qp->qp_num, (uint64_t)ep->epid,
 			psmi_epaddr_fmt_addr(ep->epid));
 	}
@@ -1183,6 +1230,14 @@ __psm2_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 
 	if ((err = psmi_epid_set_hostname(psm2_epid_nid(ep->epid), buf, 0)))
 		goto fail;
+
+	if (! mq->ep)	// only call on 1st EP within MQ
+		psmi_mq_initstats(mq, ep->epid);
+
+#ifdef PSM_CUDA
+	if (PSMI_IS_CUDA_ENABLED)
+		verify_device_support_unified_addr();
+#endif
 
 	_HFI_VDBG("start ptl device init...\n");
 	if (psmi_ep_device_is_enabled(ep, PTL_DEVID_SELF)) {
@@ -1301,8 +1356,12 @@ __psm2_ep_open(psm2_uuid_t const unique_job_key,
 			setenv(pname, pvalue, 1);
 		}
 	}
-
 #ifdef PSM_CUDA
+	else {
+		// only IPS opens RV, needed for gdrcopy
+		is_gdr_copy_enabled = gdr_copy_limit_send =
+			gdr_copy_limit_recv = 0;
+	}
 	if (PSMI_IS_GDR_COPY_ENABLED)
 		hfi_gdr_open();
 #endif
@@ -1325,11 +1384,14 @@ __psm2_ep_open(psm2_uuid_t const unique_job_key,
 	ep->mctxt_master = ep;
 	mq->ep = ep;
 
-	if (show_nics)
-		printf("%s %s NIC %u (%s) Port %u\n",
+	if (show_nics) {
+		int node_id;
+		psmi_hal_get_node_id(ep->unit_id, &node_id);
+		printf("%s %s NIC %u (%s) Port %u NUMA %d\n",
 			hfi_get_mylabel(), hfi_ident_tag,
-			ep->unit_id,  sysfs_unit_dev_name(ep->unit_id),
-			ep->portnum);
+			ep->unit_id,  ep->dev_name,
+			ep->portnum, node_id);
+	}
 
 	/* Active Message initialization */
 	err = psmi_am_init_internal(ep);
@@ -1338,6 +1400,7 @@ __psm2_ep_open(psm2_uuid_t const unique_job_key,
 
 	*epo = ep;
 	*epido = epid;
+	psmi_hal_context_initstats(ep);
 
 	if (psmi_device_is_enabled(devid_enabled, PTL_DEVID_IPS)) {
 		int j;
@@ -1393,11 +1456,15 @@ __psm2_ep_open(psm2_uuid_t const unique_job_key,
 
 				/* Link slave EP after master EP. */
 				PSM_MCTXT_APPEND(ep, tmp);
-				if (j == 0 && show_nics)
-					printf("%s %s NIC %u (%s) Port %u\n",
+				if (j == 0 && show_nics) {
+					int node_id;
+					psmi_hal_get_node_id(ep->unit_id, &node_id);
+					printf("%s %s NIC %u (%s) Port %u NUMA %d\n",
 						hfi_get_mylabel(), hfi_ident_tag,
-						tmp->unit_id,  sysfs_unit_dev_name(tmp->unit_id),
-						tmp->portnum);
+						tmp->unit_id,  tmp->dev_name,
+						tmp->portnum, node_id);
+				}
+				psmi_hal_context_initstats(tmp);
 			}
 		}
 	}
@@ -1577,7 +1644,6 @@ psm2_error_t __psm2_ep_close(psm2_ep_t ep, int mode, int64_t timeout_in)
 
 		PSMI_LOCK(ep->mq->progress_lock);
 
-		PSM_MCTXT_REMOVE(ep);
 		if (psmi_ep_device_is_enabled(ep, PTL_DEVID_AMSH))
 			err =
 			    psmi_ptl_amsh.fini(ep->ptl_amsh.ptl, mode,
@@ -1588,7 +1654,7 @@ psm2_error_t __psm2_ep_close(psm2_ep_t ep, int mode, int64_t timeout_in)
 			err =
 			    psmi_ptl_ips.fini(ep->ptl_ips.ptl, mode,
 					      timeout_in);
-
+		PSM_MCTXT_REMOVE(ep);
 		/* If there's timeouts in the disconnect requests,
 		 * still make sure that we still get to close the
 		 *endpoint and mark it closed */

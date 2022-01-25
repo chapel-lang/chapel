@@ -174,6 +174,10 @@ class BorrowedIdsWithName {
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     ID().stringify(ss, stringKind);
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 // DeclMap: key - string name,  value - vector of ID of a NamedDecl
@@ -253,7 +257,8 @@ class Scope {
            containsUseImport_ == other.containsUseImport_ &&
            containsFunctionDecls_ == other.containsFunctionDecls_ &&
            id_ == other.id_ &&
-           declared_ == other.declared_;
+           declared_ == other.declared_ &&
+           name_ == other.name_;
   }
   bool operator!=(const Scope& other) const {
     return !(*this == other);
@@ -280,6 +285,10 @@ class Scope {
     ss << " ";
     ss << std::to_string(numDeclared());
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -346,7 +355,8 @@ class VisibilitySymbols {
   bool operator==(const VisibilitySymbols &other) const {
     return symbolId_ == other.symbolId_ &&
            kind_ == other.kind_ &&
-           names_ == other.names_;
+           names_ == other.names_ &&
+           isPrivate_ == other.isPrivate_;
   }
   bool operator!=(const VisibilitySymbols& other) const {
     return !(*this == other);
@@ -356,9 +366,11 @@ class VisibilitySymbols {
     symbolId_.swap(other.symbolId_);
     std::swap(kind_, other.kind_);
     names_.swap(other.names_);
+    std::swap(isPrivate_, other.isPrivate_);
   }
 
   void mark(Context* context) const {
+    symbolId_.mark(context);
     for (auto p : names_) {
       p.first.mark(context);
       p.second.mark(context);
@@ -484,6 +496,10 @@ class PoiScope {
       inFnPoi()->stringify(ss, stringKind);
     }
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -531,8 +547,13 @@ class InnermostMatch {
     id_.mark(context);
   }
 
-  void stringify(std::ostream &ss, chpl::StringifyKind stringKind) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "InnermostMatch not yet strigified";
+  }
 
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 

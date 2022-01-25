@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+CWD=$(cd $(dirname $0) ; pwd)
+
+PY=`"$CWD/config/find-python.sh"`
+$PY "$CWD/chplenv/printchplbuilds.py" "$@"

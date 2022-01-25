@@ -31,6 +31,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
+#include "optimizations.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
@@ -615,7 +616,9 @@ struct Converter {
         assert(ifVar->kind() == uast::Variable::CONST ||
                ifVar->kind() == uast::Variable::VAR);
         assert(ifVar->initExpression());
-        auto varNameStr = ifVar->name().c_str();
+        // astr() varNameStr so it doesn't go out of scope when passed to
+        // buildIfVar
+        auto varNameStr = astr(ifVar->name().c_str());
         auto initExpr = toExpr(convertAST(ifVar->initExpression()));
         bool isConst = ifVar->kind() == uast::Variable::CONST;
         cond = buildIfVar(varNameStr, initExpr, isConst);
@@ -1185,10 +1188,9 @@ struct Converter {
             if (kwSubdomain->name() == USTR("subdomain")) {
               assert(innerCall->numActuals() == 1);
 
-              ret = new CallExpr("chpl__buildSparseDomainRuntimeType");
+              ret = new CallExpr
+                      ("chpl__buildSparseDomainRuntimeTypeForParentDomain");
               Expr* expr = convertAST(innerCall->actual(0));
-              auto dot = buildDotExpr(expr->copy(), "defaultSparseDist");
-              ret->insertAtTail(dot);
               ret->insertAtTail(expr);
             }
           }
@@ -1520,10 +1522,8 @@ struct Converter {
     } else if (node->expr()->isVariable()) {
         auto child = node->expr()->toVariable();
         return buildForwardingDeclStmt((BlockStmt*)visit(child));
-    } else if (node->expr()->isFnCall()) {
-      auto child = node->expr()->toFnCall();
-
-      return buildForwardingStmt(convertExprOrNull(child));
+    } else if (node->expr()->isIdentifier() || node->expr()->isFnCall()) {
+      return buildForwardingStmt(convertExprOrNull(node->expr()));
     }
 
     INT_FATAL("Failed to convert ForwardingDecl");
@@ -1589,6 +1589,44 @@ struct Converter {
     ret = astr(ret);
 
     return ret;
+  }
+
+  Expr* convertLifetimeClause(const uast::Expression* node) {
+    assert(node->isOpCall() || node->isReturn());
+    if (auto opCall = node->toOpCall()) {
+      assert(opCall->numActuals()==2);
+      auto lhsIdent = opCall->actual(0)->toIdentifier();
+      auto rhsIdent = opCall->actual(1)->toIdentifier();
+      assert(lhsIdent && rhsIdent);
+      assert(opCall->op() == USTR("=") ||
+             opCall->op() == USTR("<") ||
+             opCall->op() == USTR(">") ||
+             opCall->op() == USTR("==")||
+             opCall->op() == USTR("<=")||
+             opCall->op() == USTR(">="));
+      Expr* lhs = convertLifetimeIdent(lhsIdent);
+      Expr* rhs = convertLifetimeIdent(rhsIdent);
+      return new CallExpr(opCall->op().c_str(), lhs, rhs);
+    } else if (auto ret = node->toReturn()) {
+      assert(ret->value() && ret->value()->isIdentifier());
+      auto ident = ret->value()->toIdentifier();
+
+      Expr* val = convertLifetimeIdent(ident);
+      return new CallExpr(PRIM_RETURN, val);
+
+    } else {
+      assert(false); // should not arrive here, or else we missed something
+    }
+
+  }
+
+  CallExpr* convertLifetimeIdent(const uast::Identifier* node) {
+    astlocMarker markAstLoc(node->id());
+    auto ident = node->toIdentifier();
+    assert(ident);
+    CallExpr* callExpr = new CallExpr(PRIM_LIFETIME_OF,
+                                      convertExprOrNull(node));
+    return callExpr;
   }
 
   Expr* visit(const uast::Function* node) {
@@ -1718,7 +1756,7 @@ struct Converter {
     Expr* lifetimeConstraints = nullptr;
     if (node->numLifetimeClauses() > 0) {
       for (auto clause : node->lifetimeClauses()) {
-        Expr* convertedClause = convertAST(clause);
+        Expr* convertedClause = convertLifetimeClause(clause);
         INT_ASSERT(convertedClause);
 
         if (lifetimeConstraints == nullptr) {
@@ -2064,6 +2102,11 @@ struct Converter {
         ret->init = commandLineInit;
       }
     }
+
+    // If the init expression of this variable is a domain and this
+    // variable is not const, propagate that information by setting
+    // 'definedConst' in the domain to false.
+    setDefinedConstForDefExprIfApplicable(ret, &ret->sym->flags);
 
     return ret;
   }

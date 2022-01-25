@@ -82,6 +82,7 @@ class Type {
   }
 
   bool operator==(const Type& other) const {
+    (void)tag_;  // quiet nextLinter
     return completeMatch(&other);
   }
   bool operator!=(const Type& other) const {
@@ -101,6 +102,7 @@ class Type {
   bool completeMatch(const Type* other) const;
 
   virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
 
   // define is__ methods for the various Type subclasses
   // using macros and TypeClassesList.h
@@ -197,6 +199,10 @@ class Type {
   #undef TYPE_BEGIN_SUBCLASSES
   #undef TYPE_END_SUBCLASSES
   #undef TYPE_TO
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 

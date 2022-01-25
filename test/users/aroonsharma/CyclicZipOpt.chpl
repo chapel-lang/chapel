@@ -384,7 +384,7 @@ proc CyclicZipOptDom.dsiStride return whole.stride;
 
 proc CyclicZipOptDom.dsiMember(i) return whole.contains(i);
 
-proc CyclicZipOptDom.dsiIndexOrder(i) return whole.indexOrder(i);
+override proc CyclicZipOptDom.dsiIndexOrder(i) return whole.indexOrder(i);
 
 proc CyclicZipOptDom.dsiDims() return whole.dims();
 

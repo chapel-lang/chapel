@@ -2215,6 +2215,8 @@ arkouda: &arkouda-base
     - Closes 957 Mimic re library functionality applied to SegStrings (mhmerrill/arkouda#958)
   11/17/21:
     - Closes 963 Performance drop in substring search methods (mhmerrill/arkouda#965)
+  01/12/22:
+    - Switch to batch reading for Parquet files (mhmerrill/arkouda#1014)
 
 
 arkouda-string:

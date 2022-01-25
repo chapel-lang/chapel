@@ -1333,7 +1333,7 @@ chpl_bool isUseableProvider(struct fi_info* info) {
      result = false;
   }
 
-  // The libfabric v1.12.1 sockets provider has a bug w/ IPv6 addresses
+  // The sockets provider has a bug w/ IPv6 addresses
   if ((info->addr_format == FI_SOCKADDR_IN6) && isInProvider("sockets", info)) {
      DBG_PRINTF_NODE0(DBG_PROV, "skipping sockets/FI_SOCKADDR_IN6 provider");
      result = false;
@@ -6728,15 +6728,23 @@ void amCheckRxTxCmpls(chpl_bool* pHadRxEvent, chpl_bool* pHadTxEvent,
       }
     }
   } else {
-    //
+    
     // The provider can't do poll sets.  Consume transmit completions,
-    // and just assume that there may be some inbound operations which
-    // the main loop will handle.  Also, avoid CPU monopolization even
-    // if we had events, because we can't actually tell.
-    //
-    sched_yield();
-    if (pHadRxEvent != NULL) {
-      *pHadRxEvent = true;
+    // and progress the receive endpoint as required by some providers
+    // (e.g. EFA, which may exhange handshake messages in the background
+    // during a transmit and therefore requires progressing the receive
+    // checkpoint so that handshakes are received). Inbound operations
+    // will be handled by the main loop. Also, avoid CPU monopolization
+    // even if we had events, because we can't actually tell.
+    
+    sched_yield(); 
+    int rc = fi_cq_read(ofi_rxCQ, NULL, 0); 
+    if (rc == 0) { 
+      if (pHadRxEvent != NULL) {
+        *pHadRxEvent = true;
+      }
+    } else if (rc != -FI_EAGAIN) {
+      INTERNAL_ERROR_V("fi_cq_read failed: %s", fi_strerror(rc));
     }
     (*tcip->checkTxCmplsFn)(tcip);
     if (pHadTxEvent != NULL) {

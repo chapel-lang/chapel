@@ -194,25 +194,34 @@ module ChapelArray {
   // tuple. If the value is not a tuple and expand is true, copy the value into
   // a rank-tuple. If the value is a scalar and rank is 1, copy it into a 1-tuple.
   //
-  proc _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank == t.size {
+  proc _makeIndexTuple(param rank, t: _tuple, param concept: string,
+                       param expand: bool=false) where rank == t.size {
     return t;
   }
 
-  proc _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank != t.size {
-    compilerError("index rank must match domain rank");
+  proc _makeIndexTuple(param rank, t: _tuple, param concept: string,
+                       param expand: bool=false) where rank != t.size {
+    compilerError("rank of the ", concept, " must match domain rank");
   }
 
-  proc _makeIndexTuple(param rank, val:integral, param expand: bool=false) {
+  proc _makeIndexTuple(param rank, val:integral, param concept: string,
+                       param expand: bool=false) {
     if expand || rank == 1 {
       var t: rank*val.type;
       for param i in 0..rank-1 do
         t(i) = val;
       return t;
     } else {
-      compilerWarning(val.type:string);
-      compilerError("index rank must match domain rank");
+      compilerWarning(concept, " is of type ", val.type:string);
+      compilerError("rank of the ", concept, " must match domain rank");
       return val;
     }
+  }
+
+  pragma "last resort"
+  proc _makeIndexTuple(param rank, val, param concept: string,
+                       param expand: bool=false) {
+    compilerError("cannot use ", concept, " of type ", val.type:string);
   }
 
   pragma "no copy return"
@@ -787,7 +796,7 @@ module ChapelArray {
     /*
        Return an array of locales over which this distribution was declared.
     */
-    proc targetLocales() const ref {
+    proc targetLocales const ref {
       return _value.dsiTargetLocales();
     }
   }  // record _distribution
@@ -1355,7 +1364,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone &&
-            __primitive("method call resolves", _value, "these", tag=tag) {
+            __primitive("resolves", _value.these(tag=tag)) {
       for i in _value.these(tag) do
         yield i;
     }
@@ -1369,9 +1378,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     iter these(param tag: iterKind, followThis, param fast: bool = false) ref
       where tag == iterKind.follower {
-
-      if __primitive("method call resolves", _value, "these",
-                     tag=tag, followThis, fast=fast) {
+      if __primitive("resolves", _value.these(tag=tag, followThis, fast=fast)) {
         for i in _value.these(tag=tag, followThis, fast=fast) do
           yield i;
       } else {
@@ -1599,7 +1606,7 @@ module ChapelArray {
     /*
        Return an array of locales over which this array has been distributed.
     */
-    proc targetLocales() const ref {
+    proc targetLocales const ref {
       //
       // TODO: Is it really appropriate that the array should provide
       // this dsi routine rather than having this call forward to the

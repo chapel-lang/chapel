@@ -115,7 +115,6 @@ static struct fi_domain_attr psmx3_domain_attr = {
 
 static struct fi_fabric_attr psmx3_fabric_attr = {
 	.name			= PSMX3_FABRIC_NAME,
-	.prov_version		= OFI_VERSION_DEF_PROV,
 };
 
 static struct fi_info psmx3_prov_info = {
@@ -266,6 +265,33 @@ fail:
 #define psmx3_dupinfo fi_dupinfo
 #endif /* HAVE_PSM3_DL */
 
+#ifdef PSM_CUDA
+/* mimic parsing functionality of psmi_getenv */
+static long get_psm3_env(const char *var, int default_value) {
+	char *ep;
+	long val;
+	char *e = getenv(var);
+
+	if (!e || !*e)
+		return default_value; /* no value supplied */
+
+	val = strtol(e, &ep, 10);
+	if (!ep ||  *ep) { /* parse error - didn't consume all */
+		val = strtol(e, &ep, 16); /* try hex */
+		if (!ep ||  *ep)
+			return default_value;
+	}
+	return val;
+}
+#endif
+static uint64_t psmx3_check_fi_hmem_cap(void) {
+#ifdef PSM_CUDA
+	if (get_psm3_env("PSM3_CUDA", 0) || get_psm3_env("PSM3_GPUDIRECT", 0))
+		return FI_HMEM;
+#endif
+	return 0;
+}
+
 /*
  * Possible provider variations:
  *
@@ -300,6 +326,7 @@ int psmx3_init_prov_info(const struct fi_info *hints, struct fi_info **info)
 	int addr_format2 = FI_ADDR_STR;
 	int ep_type = FI_EP_RDM;
 	int ep_type2 = FI_EP_DGRAM;
+	uint64_t extra_caps = 0;
 
 	if (!hints)
 		goto alloc_info;
@@ -351,13 +378,22 @@ int psmx3_init_prov_info(const struct fi_info *hints, struct fi_info **info)
 			return -FI_ENODATA;
 	}
 
-	if ((hints->caps & PSMX3_CAPS) != hints->caps) {
+	/* Check if CUDA is enable */
+	extra_caps |= psmx3_check_fi_hmem_cap();
+
+	prov_info->caps |= extra_caps;
+	prov_info->tx_attr->caps |= extra_caps;
+	prov_info->rx_attr->caps |= extra_caps;
+	prov_info->domain_attr->caps |= extra_caps;
+
+	if ((hints->caps & prov_info->caps) != hints->caps) {
 		FI_INFO(&psmx3_prov, FI_LOG_CORE, "caps not supported\n");
 		FI_INFO_CHECK(&psmx3_prov, prov_info, hints, caps, FI_TYPE_CAPS);
 		return -FI_ENODATA;
 	}
 
 alloc_info:
+	psmx3_prov_info.fabric_attr->prov_version = get_psm3_provider_version();
 	info_out = NULL;
 	if (!hints || !(hints->caps & (FI_TAGGED | FI_MSG))) {
 		info_new = psmx3_dupinfo(&psmx3_prov_info);
@@ -365,11 +401,11 @@ alloc_info:
 			/* rma only, 64 bit CQ data */
 			info_new->addr_format = addr_format;
 			info_new->ep_attr->type = ep_type;
-			info_new->caps = PSMX3_RMA_CAPS;
+			info_new->caps = PSMX3_RMA_CAPS | extra_caps;
 			info_new->mode = 0;
-			info_new->tx_attr->caps = PSMX3_RMA_TX_CAPS;
+			info_new->tx_attr->caps = PSMX3_RMA_TX_CAPS | extra_caps;
 			info_new->tx_attr->mode = 0;
-			info_new->rx_attr->caps = PSMX3_RMA_RX_CAPS;
+			info_new->rx_attr->caps = PSMX3_RMA_RX_CAPS | extra_caps;
 			info_new->rx_attr->mode = 0;
 			info_new->domain_attr->cq_data_size = 8;
 			info_out = info_new;

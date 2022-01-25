@@ -67,6 +67,7 @@ Flag types:
   + = increment
   T = toggle
   L = int64 (long)
+  U = unsigned long
   N = --no-... flag, --no version sets to false
   n = --no-... flag, --no version sets to true
 

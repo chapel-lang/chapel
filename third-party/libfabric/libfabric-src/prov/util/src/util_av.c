@@ -247,6 +247,14 @@ void *ofi_av_get_addr(struct util_av *av, fi_addr_t fi_addr)
 	return entry->data;
 }
 
+void *ofi_av_addr_context(struct util_av *av, fi_addr_t fi_addr)
+{
+	void *addr;
+
+	addr = ofi_av_get_addr(av, fi_addr);
+	return (char *) addr + av->context_offset;
+}
+
 int ofi_verify_av_insert(struct util_av *av, uint64_t flags, void *context)
 {
 	if (av->flags & FI_EVENT) {
@@ -274,13 +282,11 @@ int ofi_verify_av_insert(struct util_av *av, uint64_t flags, void *context)
 	return 0;
 }
 
-/*
- * Must hold AV lock
- */
 int ofi_av_insert_addr(struct util_av *av, const void *addr, fi_addr_t *fi_addr)
 {
 	struct util_av_entry *entry = NULL;
 
+	assert(fastlock_held(&av->lock));
 	HASH_FIND(hh, av->hash, addr, av->addrlen, entry);
 	if (entry) {
 		if (fi_addr)
@@ -318,13 +324,11 @@ int ofi_av_elements_iter(struct util_av *av, ofi_av_apply_func apply, void *arg)
 	return 0;
 }
 
-/*
- * Must hold AV lock
- */
 int ofi_av_remove_addr(struct util_av *av, fi_addr_t fi_addr)
 {
 	struct util_av_entry *av_entry;
 
+	assert(fastlock_held(&av->lock));
 	av_entry = ofi_bufpool_get_ibuf(av->av_entry_pool, fi_addr);
 	if (!av_entry)
 		return -FI_ENOENT;

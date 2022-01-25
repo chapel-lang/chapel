@@ -132,6 +132,8 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << " \n";
 }
 
+IMPLEMENT_DUMP(Type);
+
 bool Type::isNilablePtrType() const {
   if (isPtrType()) {
 

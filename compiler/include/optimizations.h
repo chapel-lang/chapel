@@ -34,6 +34,7 @@
 #include "vec.h"
 
 #include "flags.h"
+#include "symbol.h"
 
 #include <set>
 #include <map>
@@ -86,6 +87,8 @@ void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
                                     Symbol *isConst);
 void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
                                            std::set<Flag>* flags);
+void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
+                                           FlagSet* flags);
 void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
 void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
 

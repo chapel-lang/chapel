@@ -2376,20 +2376,20 @@ static int sock_pe_progress_rx_ep(struct sock_pe *pe,
 	if (!map->used)
 		return 0;
 
-	if (map->epoll_ctxs_sz < map->used) {
+	if (map->epoll_size < map->used) {
 		uint64_t new_size = map->used * 2;
-		void *ctxs;
+		struct ofi_epollfds_event *events;
 
-		ctxs = realloc(map->epoll_ctxs,
-			       sizeof(*map->epoll_ctxs) * new_size);
-		if (ctxs) {
-			map->epoll_ctxs = ctxs;
-			map->epoll_ctxs_sz = new_size;
+		events = realloc(map->epoll_events,
+				 sizeof(*map->epoll_events) * new_size);
+		if (events) {
+			map->epoll_events = events;
+			map->epoll_size = new_size;
 		}
 	}
 
-	num_fds = ofi_epoll_wait(map->epoll_set, map->epoll_ctxs,
-	                        MIN(map->used, map->epoll_ctxs_sz), 0);
+	num_fds = ofi_epoll_wait(map->epoll_set, map->epoll_events,
+	                        MIN(map->used, map->epoll_size), 0);
 	if (num_fds < 0 || num_fds == 0) {
 		if (num_fds < 0)
 			SOCK_LOG_ERROR("epoll failed: %d\n", num_fds);
@@ -2398,7 +2398,7 @@ static int sock_pe_progress_rx_ep(struct sock_pe *pe,
 
 	fastlock_acquire(&map->lock);
 	for (i = 0; i < num_fds; i++) {
-		conn = map->epoll_ctxs[i];
+		conn = map->epoll_events[i].data.ptr;
 		if (!conn)
 			SOCK_LOG_ERROR("ofi_idm_lookup failed\n");
 
@@ -2597,9 +2597,9 @@ static void sock_pe_wait(struct sock_pe *pe)
 {
 	char tmp;
 	int ret;
-	void *ep_contexts[1];
+	struct ofi_epollfds_event event;
 
-	ret = ofi_epoll_wait(pe->epoll_set, ep_contexts, 1, -1);
+	ret = ofi_epoll_wait(pe->epoll_set, &event, 1, -1);
 	if (ret < 0)
 		SOCK_LOG_ERROR("poll failed : %s\n", strerror(ofi_sockerr()));
 

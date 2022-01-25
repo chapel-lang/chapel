@@ -2,8 +2,8 @@
 [servers]
 
 [servers.alpha]
-dc = "eqdc10"
 ap = 12
+dc = "eqdc10"
 
 [servers.alpha.right]
 please = "be"

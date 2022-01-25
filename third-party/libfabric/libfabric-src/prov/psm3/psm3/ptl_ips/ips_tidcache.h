@@ -115,7 +115,7 @@ typedef struct {
 #define RBTREE_MI_PL  rbtree_tidcache_mapitem_pl_t
 #define RBTREE_MAP_PL rbtree_tidcache_map_pl_t
 
-#include "rbtree.h"
+#include "psm3_rbtree.h"
 
 /*
  * Macro definition for easy programming.
