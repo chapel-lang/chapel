@@ -859,72 +859,72 @@ static const yytype_int16 yyrline[] =
      753,   754,   755,   756,   757,   771,   786,   794,   806,   817,
      829,   841,   852,   868,   870,   869,   878,   877,   888,   889,
      893,   913,   928,   943,   959,   960,   962,   967,   968,   973,
-     990,   994,   998,  1009,  1028,  1029,  1033,  1037,  1041,  1046,
-    1050,  1054,  1064,  1069,  1075,  1082,  1087,  1094,  1105,  1106,
-    1110,  1114,  1121,  1129,  1138,  1145,  1153,  1165,  1172,  1176,
-    1183,  1189,  1198,  1199,  1203,  1212,  1216,  1220,  1224,  1228,
-    1232,  1241,  1242,  1246,  1247,  1248,  1249,  1250,  1251,  1254,
-    1255,  1256,  1257,  1258,  1259,  1271,  1272,  1283,  1284,  1285,
-    1286,  1287,  1288,  1289,  1290,  1291,  1292,  1293,  1294,  1295,
-    1296,  1297,  1298,  1299,  1300,  1301,  1305,  1306,  1307,  1308,
-    1309,  1310,  1311,  1312,  1313,  1314,  1315,  1316,  1323,  1324,
-    1325,  1326,  1330,  1331,  1335,  1342,  1352,  1354,  1353,  1362,
-    1361,  1372,  1376,  1382,  1382,  1388,  1388,  1397,  1398,  1399,
-    1400,  1401,  1402,  1403,  1407,  1412,  1417,  1422,  1429,  1437,
-    1438,  1442,  1451,  1457,  1465,  1485,  1484,  1497,  1504,  1522,
-    1535,  1548,  1552,  1556,  1560,  1564,  1568,  1572,  1576,  1594,
-    1598,  1602,  1606,  1610,  1614,  1618,  1622,  1626,  1630,  1634,
-    1638,  1642,  1646,  1650,  1654,  1658,  1662,  1666,  1670,  1674,
-    1678,  1682,  1687,  1695,  1704,  1708,  1712,  1716,  1720,  1724,
-    1728,  1732,  1736,  1741,  1746,  1751,  1759,  1774,  1792,  1794,
-    1799,  1800,  1805,  1810,  1811,  1812,  1813,  1814,  1815,  1816,
-    1817,  1818,  1819,  1820,  1821,  1822,  1834,  1835,  1836,  1837,
-    1846,  1847,  1851,  1853,  1855,  1860,  1862,  1864,  1869,  1873,
-    1877,  1881,  1888,  1889,  1893,  1897,  1901,  1908,  1921,  1937,
-    1945,  1949,  1958,  1959,  1963,  1967,  1972,  1982,  1987,  1998,
-    2005,  2006,  2007,  2011,  2012,  2016,  2020,  2024,  2031,  2048,
-    2061,  2068,  2073,  2080,  2079,  2092,  2094,  2093,  2102,  2101,
-    2112,  2119,  2131,  2139,  2143,  2144,  2146,  2151,  2161,  2158,
-    2186,  2194,  2202,  2213,  2224,  2233,  2246,  2247,  2251,  2252,
-    2253,  2262,  2263,  2264,  2265,  2266,  2267,  2268,  2269,  2270,
-    2271,  2272,  2273,  2274,  2275,  2276,  2277,  2278,  2279,  2280,
-    2281,  2282,  2283,  2284,  2285,  2286,  2287,  2291,  2292,  2293,
-    2294,  2295,  2296,  2297,  2298,  2299,  2300,  2301,  2302,  2307,
-    2308,  2312,  2313,  2314,  2318,  2319,  2323,  2327,  2328,  2332,
-    2333,  2337,  2346,  2357,  2367,  2379,  2391,  2399,  2403,  2411,
-    2412,  2413,  2414,  2415,  2416,  2417,  2418,  2419,  2423,  2424,
-    2425,  2426,  2427,  2428,  2432,  2433,  2434,  2438,  2439,  2440,
-    2441,  2442,  2443,  2447,  2448,  2451,  2452,  2456,  2457,  2461,
-    2466,  2467,  2469,  2471,  2473,  2478,  2480,  2485,  2487,  2489,
-    2491,  2493,  2495,  2497,  2502,  2503,  2507,  2515,  2519,  2524,
-    2532,  2536,  2543,  2564,  2565,  2567,  2575,  2576,  2577,  2578,
-    2579,  2584,  2583,  2592,  2600,  2604,  2611,  2627,  2644,  2648,
-    2652,  2659,  2661,  2663,  2670,  2671,  2672,  2677,  2681,  2685,
-    2689,  2693,  2697,  2701,  2708,  2709,  2710,  2711,  2712,  2717,
-    2718,  2719,  2720,  2721,  2741,  2745,  2749,  2753,  2760,  2761,
-    2762,  2766,  2771,  2779,  2784,  2788,  2795,  2796,  2797,  2798,
-    2799,  2805,  2806,  2807,  2808,  2812,  2813,  2817,  2818,  2819,
-    2823,  2827,  2834,  2835,  2839,  2844,  2853,  2854,  2855,  2856,
-    2860,  2861,  2872,  2874,  2876,  2882,  2883,  2884,  2885,  2886,
-    2887,  2889,  2891,  2893,  2895,  2901,  2903,  2906,  2908,  2910,
-    2912,  2914,  2916,  2918,  2920,  2923,  2925,  2930,  2939,  2948,
-    2956,  2970,  2984,  2998,  3007,  3016,  3024,  3038,  3052,  3066,
-    3082,  3091,  3100,  3115,  3133,  3151,  3159,  3160,  3161,  3162,
-    3163,  3164,  3165,  3166,  3171,  3172,  3176,  3185,  3186,  3190,
-    3199,  3200,  3204,  3219,  3223,  3230,  3231,  3232,  3233,  3234,
-    3235,  3239,  3240,  3245,  3247,  3249,  3251,  3253,  3259,  3276,
-    3280,  3284,  3288,  3295,  3303,  3304,  3305,  3306,  3307,  3308,
-    3309,  3310,  3311,  3312,  3316,  3320,  3325,  3330,  3335,  3341,
-    3347,  3379,  3380,  3384,  3385,  3386,  3390,  3391,  3392,  3393,
-    3402,  3403,  3404,  3405,  3406,  3410,  3422,  3434,  3441,  3443,
-    3445,  3447,  3449,  3455,  3468,  3469,  3473,  3477,  3484,  3485,
-    3489,  3490,  3494,  3495,  3496,  3497,  3498,  3499,  3500,  3501,
-    3505,  3509,  3513,  3517,  3521,  3530,  3535,  3544,  3545,  3546,
-    3547,  3548,  3549,  3550,  3551,  3552,  3553,  3554,  3555,  3556,
-    3557,  3558,  3559,  3560,  3561,  3562,  3563,  3564,  3565,  3566,
-    3570,  3571,  3572,  3573,  3574,  3575,  3578,  3582,  3586,  3590,
-    3594,  3601,  3605,  3609,  3613,  3621,  3622,  3623,  3624,  3625,
-    3626,  3627
+     991,   995,   999,  1010,  1029,  1030,  1034,  1038,  1042,  1047,
+    1051,  1055,  1065,  1070,  1076,  1083,  1088,  1095,  1106,  1107,
+    1111,  1115,  1122,  1130,  1139,  1146,  1154,  1166,  1173,  1177,
+    1184,  1190,  1199,  1200,  1204,  1213,  1217,  1221,  1225,  1229,
+    1233,  1242,  1243,  1247,  1248,  1249,  1250,  1251,  1252,  1255,
+    1256,  1257,  1258,  1259,  1260,  1272,  1273,  1284,  1285,  1286,
+    1287,  1288,  1289,  1290,  1291,  1292,  1293,  1294,  1295,  1296,
+    1297,  1298,  1299,  1300,  1301,  1302,  1306,  1307,  1308,  1309,
+    1310,  1311,  1312,  1313,  1314,  1315,  1316,  1317,  1324,  1325,
+    1326,  1327,  1331,  1332,  1336,  1343,  1353,  1355,  1354,  1363,
+    1362,  1373,  1377,  1383,  1383,  1389,  1389,  1398,  1399,  1400,
+    1401,  1402,  1403,  1404,  1408,  1413,  1418,  1423,  1430,  1438,
+    1439,  1443,  1452,  1458,  1466,  1486,  1485,  1498,  1505,  1523,
+    1536,  1549,  1553,  1557,  1561,  1565,  1569,  1573,  1577,  1595,
+    1599,  1603,  1607,  1611,  1615,  1619,  1623,  1627,  1631,  1635,
+    1639,  1643,  1647,  1651,  1655,  1659,  1663,  1667,  1671,  1675,
+    1679,  1683,  1688,  1696,  1705,  1709,  1713,  1717,  1721,  1725,
+    1729,  1733,  1737,  1742,  1747,  1752,  1760,  1775,  1793,  1795,
+    1800,  1801,  1806,  1811,  1812,  1813,  1814,  1815,  1816,  1817,
+    1818,  1819,  1820,  1821,  1822,  1823,  1835,  1836,  1837,  1838,
+    1847,  1848,  1852,  1854,  1856,  1861,  1863,  1865,  1870,  1874,
+    1878,  1882,  1889,  1890,  1894,  1898,  1902,  1909,  1922,  1938,
+    1946,  1950,  1959,  1960,  1964,  1968,  1973,  1983,  1988,  1999,
+    2006,  2007,  2008,  2012,  2013,  2017,  2021,  2025,  2032,  2049,
+    2062,  2069,  2074,  2081,  2080,  2093,  2095,  2094,  2103,  2102,
+    2113,  2120,  2132,  2140,  2144,  2145,  2147,  2152,  2162,  2159,
+    2187,  2195,  2203,  2214,  2225,  2234,  2247,  2248,  2252,  2253,
+    2254,  2263,  2264,  2265,  2266,  2267,  2268,  2269,  2270,  2271,
+    2272,  2273,  2274,  2275,  2276,  2277,  2278,  2279,  2280,  2281,
+    2282,  2283,  2284,  2285,  2286,  2287,  2288,  2292,  2293,  2294,
+    2295,  2296,  2297,  2298,  2299,  2300,  2301,  2302,  2303,  2308,
+    2309,  2313,  2314,  2315,  2319,  2320,  2324,  2328,  2329,  2333,
+    2334,  2338,  2347,  2358,  2368,  2380,  2392,  2400,  2404,  2412,
+    2413,  2414,  2415,  2416,  2417,  2418,  2419,  2420,  2424,  2425,
+    2426,  2427,  2428,  2429,  2433,  2434,  2435,  2439,  2440,  2441,
+    2442,  2443,  2444,  2448,  2449,  2452,  2453,  2457,  2458,  2462,
+    2467,  2468,  2470,  2472,  2474,  2479,  2481,  2486,  2488,  2490,
+    2492,  2494,  2496,  2498,  2503,  2504,  2508,  2516,  2520,  2525,
+    2533,  2537,  2544,  2565,  2566,  2568,  2576,  2577,  2578,  2579,
+    2580,  2585,  2584,  2593,  2601,  2605,  2612,  2628,  2645,  2649,
+    2653,  2660,  2662,  2664,  2671,  2672,  2673,  2678,  2682,  2686,
+    2690,  2694,  2698,  2702,  2709,  2710,  2711,  2712,  2713,  2718,
+    2719,  2720,  2721,  2722,  2742,  2746,  2750,  2754,  2761,  2762,
+    2763,  2767,  2772,  2780,  2785,  2789,  2796,  2797,  2798,  2799,
+    2800,  2806,  2807,  2808,  2809,  2813,  2814,  2818,  2819,  2820,
+    2824,  2828,  2835,  2836,  2840,  2845,  2854,  2855,  2856,  2857,
+    2861,  2862,  2873,  2875,  2877,  2883,  2884,  2885,  2886,  2887,
+    2888,  2890,  2892,  2894,  2896,  2902,  2904,  2907,  2909,  2911,
+    2913,  2915,  2917,  2919,  2921,  2924,  2926,  2931,  2940,  2949,
+    2957,  2971,  2985,  2999,  3008,  3017,  3025,  3039,  3053,  3067,
+    3084,  3093,  3102,  3117,  3135,  3153,  3161,  3162,  3163,  3164,
+    3165,  3166,  3167,  3168,  3173,  3174,  3178,  3187,  3188,  3192,
+    3201,  3202,  3206,  3221,  3225,  3232,  3233,  3234,  3235,  3236,
+    3237,  3241,  3242,  3247,  3249,  3251,  3253,  3255,  3261,  3278,
+    3282,  3286,  3290,  3297,  3305,  3306,  3307,  3308,  3309,  3310,
+    3311,  3312,  3313,  3314,  3318,  3322,  3327,  3332,  3337,  3343,
+    3349,  3381,  3382,  3386,  3387,  3388,  3392,  3393,  3394,  3395,
+    3404,  3405,  3406,  3407,  3408,  3412,  3424,  3436,  3443,  3445,
+    3447,  3449,  3451,  3457,  3470,  3471,  3475,  3479,  3486,  3487,
+    3491,  3492,  3496,  3497,  3498,  3499,  3500,  3501,  3502,  3503,
+    3507,  3511,  3515,  3519,  3523,  3532,  3537,  3546,  3547,  3548,
+    3549,  3550,  3551,  3552,  3553,  3554,  3555,  3556,  3557,  3558,
+    3559,  3560,  3561,  3562,  3563,  3564,  3565,  3566,  3567,  3568,
+    3572,  3573,  3574,  3575,  3576,  3577,  3580,  3584,  3588,  3592,
+    3596,  3603,  3607,  3611,  3615,  3623,  3624,  3625,  3626,  3627,
+    3628,  3629
 };
 #endif
 
@@ -6881,31 +6881,32 @@ yyreduce:
 
   case 59: /* include_module_stmt: TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI  */
 #line 974 "chpl.ypp"
-   {
-     (yyval.commentsAndStmt) = TODOSTMT((yyloc));
-     context->visibility = Decl::DEFAULT_VISIBILITY;
-   }
-#line 6889 "bison-chpl-lib.cpp"
+  {
+    auto node = Include::build(BUILDER, LOC((yyloc)), context->visibility, (yyvsp[-3].moduleKind), (yyvsp[-1].uniqueStr));
+    (yyval.commentsAndStmt) = STMT((yyloc), node.release());
+    context->visibility = Decl::DEFAULT_VISIBILITY;
+  }
+#line 6890 "bison-chpl-lib.cpp"
     break;
 
   case 60: /* block_stmt_body: TLCBR TRCBR  */
-#line 991 "chpl.ypp"
+#line 992 "chpl.ypp"
   {
     (yyval.exprList) = context->blockToParserExprList((yylsp[-1]), (yylsp[0]), nullptr);
   }
-#line 6897 "bison-chpl-lib.cpp"
+#line 6898 "bison-chpl-lib.cpp"
     break;
 
   case 61: /* block_stmt_body: TLCBR stmt_ls TRCBR  */
-#line 995 "chpl.ypp"
+#line 996 "chpl.ypp"
   {
     (yyval.exprList) = context->blockToParserExprList((yylsp[-2]), (yylsp[0]), (yyvsp[-1].exprList));
   }
-#line 6905 "bison-chpl-lib.cpp"
+#line 6906 "bison-chpl-lib.cpp"
     break;
 
   case 62: /* block_stmt_body: TLCBR error TRCBR  */
-#line 999 "chpl.ypp"
+#line 1000 "chpl.ypp"
   {
     context->clearComments();
     // create a list of stmts that just has an ErroneousExpr
@@ -6913,11 +6914,11 @@ yyreduce:
     ParserExprList* lst = context->makeList(errorExpr.release());
     (yyval.exprList) = lst;
   }
-#line 6917 "bison-chpl-lib.cpp"
+#line 6918 "bison-chpl-lib.cpp"
     break;
 
   case 63: /* block_stmt: block_stmt_body  */
-#line 1010 "chpl.ypp"
+#line 1011 "chpl.ypp"
   {
     // comments from before the opening bracket will have been
     // gathered into stmt_ls when that was parsed, so pull out any
@@ -6932,123 +6933,123 @@ yyreduce:
     cs.stmt = blockstmt.release();
     (yyval.commentsAndStmt) = cs;
   }
-#line 6936 "bison-chpl-lib.cpp"
+#line 6937 "bison-chpl-lib.cpp"
     break;
 
   case 64: /* stmt_ls: toplevel_stmt  */
-#line 1028 "chpl.ypp"
+#line 1029 "chpl.ypp"
                                        { (yyval.exprList) = context->makeList((yyvsp[0].commentsAndStmt)); }
-#line 6942 "bison-chpl-lib.cpp"
+#line 6943 "bison-chpl-lib.cpp"
     break;
 
   case 65: /* stmt_ls: stmt_ls toplevel_stmt  */
-#line 1029 "chpl.ypp"
+#line 1030 "chpl.ypp"
                                        { context->appendList((yyvsp[-1].exprList), (yyvsp[0].commentsAndStmt)); }
-#line 6948 "bison-chpl-lib.cpp"
+#line 6949 "bison-chpl-lib.cpp"
     break;
 
   case 66: /* renames_ls: expr  */
-#line 1034 "chpl.ypp"
+#line 1035 "chpl.ypp"
   {
     (yyval.exprList) = context->makeList((yyvsp[0].expr));
   }
-#line 6956 "bison-chpl-lib.cpp"
+#line 6957 "bison-chpl-lib.cpp"
     break;
 
   case 67: /* renames_ls: all_op_name  */
-#line 1038 "chpl.ypp"
+#line 1039 "chpl.ypp"
   {
     (yyval.exprList) = context->makeList(context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)));
   }
-#line 6964 "bison-chpl-lib.cpp"
+#line 6965 "bison-chpl-lib.cpp"
     break;
 
   case 68: /* renames_ls: expr TAS expr  */
-#line 1042 "chpl.ypp"
+#line 1043 "chpl.ypp"
   {
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), toOwned((yyvsp[0].expr)));
     (yyval.exprList) = context->makeList(as);
   }
-#line 6973 "bison-chpl-lib.cpp"
+#line 6974 "bison-chpl-lib.cpp"
     break;
 
   case 69: /* renames_ls: renames_ls TCOMMA expr  */
-#line 1047 "chpl.ypp"
+#line 1048 "chpl.ypp"
   {
     (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr));
   }
-#line 6981 "bison-chpl-lib.cpp"
+#line 6982 "bison-chpl-lib.cpp"
     break;
 
   case 70: /* renames_ls: renames_ls TCOMMA all_op_name  */
-#line 1051 "chpl.ypp"
+#line 1052 "chpl.ypp"
   {
     (yyval.exprList) = context->appendList((yyvsp[-2].exprList), context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)));
   }
-#line 6989 "bison-chpl-lib.cpp"
+#line 6990 "bison-chpl-lib.cpp"
     break;
 
   case 71: /* renames_ls: renames_ls TCOMMA expr TAS expr  */
-#line 1055 "chpl.ypp"
+#line 1056 "chpl.ypp"
   {
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), toOwned((yyvsp[0].expr)));
     (yyval.exprList) = context->appendList((yyvsp[-4].exprList), as);
   }
-#line 6998 "bison-chpl-lib.cpp"
+#line 6999 "bison-chpl-lib.cpp"
     break;
 
   case 72: /* use_renames_ls: expr  */
-#line 1065 "chpl.ypp"
+#line 1066 "chpl.ypp"
   {
     auto node = context->buildVisibilityClause((yyloc), toOwned((yyvsp[0].expr)));
     (yyval.exprList) = context->makeList(node);
   }
-#line 7007 "bison-chpl-lib.cpp"
+#line 7008 "bison-chpl-lib.cpp"
     break;
 
   case 73: /* use_renames_ls: expr TAS expr  */
-#line 1070 "chpl.ypp"
+#line 1071 "chpl.ypp"
   {
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), toOwned((yyvsp[0].expr)));
     auto node = context->buildVisibilityClause((yyloc), toOwned(as));
     (yyval.exprList) = context->makeList(node);
   }
-#line 7017 "bison-chpl-lib.cpp"
+#line 7018 "bison-chpl-lib.cpp"
     break;
 
   case 74: /* use_renames_ls: expr TAS TUNDERSCORE  */
-#line 1076 "chpl.ypp"
+#line 1077 "chpl.ypp"
   {
     auto ident = toOwned(context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)));
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), std::move(ident));
     auto node = context->buildVisibilityClause((yyloc), toOwned(as));
     (yyval.exprList) = context->makeList(node);
   }
-#line 7028 "bison-chpl-lib.cpp"
+#line 7029 "bison-chpl-lib.cpp"
     break;
 
   case 75: /* use_renames_ls: use_renames_ls TCOMMA expr  */
-#line 1083 "chpl.ypp"
+#line 1084 "chpl.ypp"
   {
     auto node = context->buildVisibilityClause((yylsp[0]), toOwned((yyvsp[0].expr)));
     (yyval.exprList) = context->appendList((yyvsp[-2].exprList), node);
   }
-#line 7037 "bison-chpl-lib.cpp"
+#line 7038 "bison-chpl-lib.cpp"
     break;
 
   case 76: /* use_renames_ls: use_renames_ls TCOMMA expr TAS expr  */
-#line 1088 "chpl.ypp"
+#line 1089 "chpl.ypp"
   {
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), toOwned((yyvsp[0].expr)));
     auto locVisClause = context->makeSpannedLocation((yylsp[-2]), (yylsp[0]));
     auto node = context->buildVisibilityClause(locVisClause, toOwned(as));
     (yyval.exprList) = context->appendList((yyvsp[-4].exprList), node);
   }
-#line 7048 "bison-chpl-lib.cpp"
+#line 7049 "bison-chpl-lib.cpp"
     break;
 
   case 77: /* use_renames_ls: use_renames_ls TCOMMA expr TAS TUNDERSCORE  */
-#line 1095 "chpl.ypp"
+#line 1096 "chpl.ypp"
   {
     auto ident = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr));
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), toOwned(ident));
@@ -7056,42 +7057,42 @@ yyreduce:
     auto node = context->buildVisibilityClause(locVisClause, toOwned(as));
     (yyval.exprList) = context->appendList((yyvsp[-4].exprList), node);
   }
-#line 7060 "bison-chpl-lib.cpp"
+#line 7061 "bison-chpl-lib.cpp"
     break;
 
   case 78: /* opt_only_ls: %empty  */
-#line 1105 "chpl.ypp"
+#line 1106 "chpl.ypp"
                   { (yyval.exprList) = nullptr; }
-#line 7066 "bison-chpl-lib.cpp"
+#line 7067 "bison-chpl-lib.cpp"
     break;
 
   case 79: /* opt_only_ls: renames_ls  */
-#line 1106 "chpl.ypp"
+#line 1107 "chpl.ypp"
                   { (yyval.exprList) = (yyvsp[0].exprList); }
-#line 7072 "bison-chpl-lib.cpp"
+#line 7073 "bison-chpl-lib.cpp"
     break;
 
   case 80: /* use_stmt: access_control TUSE use_renames_ls TSEMI  */
-#line 1111 "chpl.ypp"
+#line 1112 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildMultiUseStmt((yyloc), (yyvsp[-3].visibilityTag), (yyvsp[-1].exprList));
   }
-#line 7080 "bison-chpl-lib.cpp"
+#line 7081 "bison-chpl-lib.cpp"
     break;
 
   case 81: /* use_stmt: access_control TUSE expr TEXCEPT renames_ls TSEMI  */
-#line 1115 "chpl.ypp"
+#line 1116 "chpl.ypp"
   {
     auto locVisibilityClause = context->makeSpannedLocation((yylsp[-3]), (yylsp[-1]));
     (yyval.commentsAndStmt) = context->buildSingleUseStmt((yyloc), locVisibilityClause, (yyvsp[-5].visibilityTag), toOwned((yyvsp[-3].expr)),
                                      VisibilityClause::EXCEPT,
                                      (yyvsp[-1].exprList));
   }
-#line 7091 "bison-chpl-lib.cpp"
+#line 7092 "bison-chpl-lib.cpp"
     break;
 
   case 82: /* use_stmt: access_control TUSE expr TAS expr TEXCEPT renames_ls TSEMI  */
-#line 1122 "chpl.ypp"
+#line 1123 "chpl.ypp"
   {
     auto as = context->buildAsExpr((yylsp[-5]), (yylsp[-3]), toOwned((yyvsp[-5].expr)), toOwned((yyvsp[-3].expr)));
     auto locVisibilityClause = context->makeSpannedLocation((yylsp[-5]), (yylsp[-1]));
@@ -7099,11 +7100,11 @@ yyreduce:
                                      VisibilityClause::EXCEPT,
                                      (yyvsp[-1].exprList));
   }
-#line 7103 "bison-chpl-lib.cpp"
+#line 7104 "bison-chpl-lib.cpp"
     break;
 
   case 83: /* use_stmt: access_control TUSE expr TAS TUNDERSCORE TEXCEPT renames_ls TSEMI  */
-#line 1130 "chpl.ypp"
+#line 1131 "chpl.ypp"
   {
     auto ident = toOwned(context->buildIdent((yylsp[-3]), (yyvsp[-3].uniqueStr)));
     auto as = context->buildAsExpr((yylsp[-5]), (yylsp[-3]), toOwned((yyvsp[-5].expr)), std::move(ident));
@@ -7112,22 +7113,22 @@ yyreduce:
                                      VisibilityClause::EXCEPT,
                                      (yyvsp[-1].exprList));
   }
-#line 7116 "bison-chpl-lib.cpp"
+#line 7117 "bison-chpl-lib.cpp"
     break;
 
   case 84: /* use_stmt: access_control TUSE expr TONLY opt_only_ls TSEMI  */
-#line 1139 "chpl.ypp"
+#line 1140 "chpl.ypp"
   {
     auto locVisibilityClause = context->makeSpannedLocation((yylsp[-3]), (yylsp[-1]));
     (yyval.commentsAndStmt) = context->buildSingleUseStmt((yyloc), locVisibilityClause, (yyvsp[-5].visibilityTag), toOwned((yyvsp[-3].expr)),
                                      VisibilityClause::ONLY,
                                      (yyvsp[-1].exprList));
   }
-#line 7127 "bison-chpl-lib.cpp"
+#line 7128 "bison-chpl-lib.cpp"
     break;
 
   case 85: /* use_stmt: access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI  */
-#line 1146 "chpl.ypp"
+#line 1147 "chpl.ypp"
   {
     auto as = context->buildAsExpr((yylsp[-5]), (yylsp[-3]), toOwned((yyvsp[-5].expr)), toOwned((yyvsp[-3].expr)));
     auto locVisibilityClause = context->makeSpannedLocation((yylsp[-5]), (yylsp[-1]));
@@ -7135,11 +7136,11 @@ yyreduce:
                                      VisibilityClause::ONLY,
                                      (yyvsp[-1].exprList));
   }
-#line 7139 "bison-chpl-lib.cpp"
+#line 7140 "bison-chpl-lib.cpp"
     break;
 
   case 86: /* use_stmt: access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI  */
-#line 1154 "chpl.ypp"
+#line 1155 "chpl.ypp"
   {
     auto ident = toOwned(context->buildIdent((yylsp[-3]), (yyvsp[-3].uniqueStr)));
     auto as = context->buildAsExpr((yylsp[-5]), (yylsp[-3]), toOwned((yyvsp[-5].expr)), std::move(ident));
@@ -7148,498 +7149,498 @@ yyreduce:
                                      VisibilityClause::ONLY,
                                      (yyvsp[-1].exprList));
   }
-#line 7152 "bison-chpl-lib.cpp"
+#line 7153 "bison-chpl-lib.cpp"
     break;
 
   case 87: /* import_stmt: access_control TIMPORT import_ls TSEMI  */
-#line 1166 "chpl.ypp"
+#line 1167 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildImportStmt((yyloc), (yyvsp[-3].visibilityTag), (yyvsp[-1].exprList));
   }
-#line 7160 "bison-chpl-lib.cpp"
+#line 7161 "bison-chpl-lib.cpp"
     break;
 
   case 88: /* import_expr: expr  */
-#line 1173 "chpl.ypp"
+#line 1174 "chpl.ypp"
   {
     (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned((yyvsp[0].expr)));
   }
-#line 7168 "bison-chpl-lib.cpp"
+#line 7169 "bison-chpl-lib.cpp"
     break;
 
   case 89: /* import_expr: expr TDOT all_op_name  */
-#line 1177 "chpl.ypp"
+#line 1178 "chpl.ypp"
   {
     auto ident = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr));
     (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned((yyvsp[-2].expr)),
                                         VisibilityClause::NONE,
                                         context->consume(ident));
   }
-#line 7179 "bison-chpl-lib.cpp"
+#line 7180 "bison-chpl-lib.cpp"
     break;
 
   case 90: /* import_expr: expr TAS ident_use  */
-#line 1184 "chpl.ypp"
+#line 1185 "chpl.ypp"
   {
     auto ident = toOwned(context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)));
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), std::move(ident));
     (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned(as));
   }
-#line 7189 "bison-chpl-lib.cpp"
+#line 7190 "bison-chpl-lib.cpp"
     break;
 
   case 91: /* import_expr: expr TDOT TLCBR renames_ls TRCBR  */
-#line 1190 "chpl.ypp"
+#line 1191 "chpl.ypp"
   {
     (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned((yyvsp[-4].expr)),
                                         VisibilityClause::BRACES,
                                         context->consumeList((yyvsp[-1].exprList)));
   }
-#line 7199 "bison-chpl-lib.cpp"
+#line 7200 "bison-chpl-lib.cpp"
     break;
 
   case 92: /* import_ls: import_expr  */
-#line 1198 "chpl.ypp"
+#line 1199 "chpl.ypp"
                                 { (yyval.exprList) = context->makeList((yyvsp[0].expr)); }
-#line 7205 "bison-chpl-lib.cpp"
+#line 7206 "bison-chpl-lib.cpp"
     break;
 
   case 93: /* import_ls: import_ls TCOMMA import_expr  */
-#line 1199 "chpl.ypp"
+#line 1200 "chpl.ypp"
                                 { (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr)); }
-#line 7211 "bison-chpl-lib.cpp"
+#line 7212 "bison-chpl-lib.cpp"
     break;
 
   case 94: /* require_stmt: TREQUIRE expr_ls TSEMI  */
-#line 1204 "chpl.ypp"
+#line 1205 "chpl.ypp"
   {
     auto comments = context->gatherComments((yylsp[-2]));
     auto node = Require::build(BUILDER, LOC((yyloc)), context->consumeList((yyvsp[-1].exprList)));
     (yyval.commentsAndStmt) = { .comments=comments, .stmt=node.release() };
   }
-#line 7221 "bison-chpl-lib.cpp"
+#line 7222 "bison-chpl-lib.cpp"
     break;
 
   case 95: /* assignment_stmt: lhs_expr assignop_ident opt_try_expr TSEMI  */
-#line 1213 "chpl.ypp"
+#line 1214 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = STMT((yyloc), context->buildBinOp((yyloc), (yyvsp[-3].expr), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr)));
     }
-#line 7229 "bison-chpl-lib.cpp"
+#line 7230 "bison-chpl-lib.cpp"
     break;
 
   case 96: /* assignment_stmt: lhs_expr TSWAP opt_try_expr TSEMI  */
-#line 1217 "chpl.ypp"
+#line 1218 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = STMT((yyloc), context->buildBinOp((yyloc), (yyvsp[-3].expr), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr)));
     }
-#line 7237 "bison-chpl-lib.cpp"
+#line 7238 "bison-chpl-lib.cpp"
     break;
 
   case 97: /* assignment_stmt: lhs_expr TASSIGNREDUCE opt_try_expr TSEMI  */
-#line 1221 "chpl.ypp"
+#line 1222 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = STMT((yyloc), context->buildBinOp((yyloc), (yyvsp[-3].expr), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr)));
     }
-#line 7245 "bison-chpl-lib.cpp"
+#line 7246 "bison-chpl-lib.cpp"
     break;
 
   case 98: /* assignment_stmt: lhs_expr TASSIGNLAND opt_try_expr TSEMI  */
-#line 1225 "chpl.ypp"
+#line 1226 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = STMT((yyloc), context->buildBinOp((yyloc), (yyvsp[-3].expr), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr)));
     }
-#line 7253 "bison-chpl-lib.cpp"
+#line 7254 "bison-chpl-lib.cpp"
     break;
 
   case 99: /* assignment_stmt: lhs_expr TASSIGNLOR opt_try_expr TSEMI  */
-#line 1229 "chpl.ypp"
+#line 1230 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = STMT((yyloc), context->buildBinOp((yyloc), (yyvsp[-3].expr), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr)));
     }
-#line 7261 "bison-chpl-lib.cpp"
+#line 7262 "bison-chpl-lib.cpp"
     break;
 
   case 100: /* assignment_stmt: lhs_expr TASSIGN TNOINIT TSEMI  */
-#line 1233 "chpl.ypp"
+#line 1234 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = STMT((yyloc), context->buildBinOp((yyloc), (yyvsp[-3].expr), (yyvsp[-2].uniqueStr), context->buildIdent((yylsp[-1]), (yyvsp[-1].uniqueStr))));
     }
-#line 7269 "bison-chpl-lib.cpp"
+#line 7270 "bison-chpl-lib.cpp"
     break;
 
   case 101: /* opt_label_ident: %empty  */
-#line 1241 "chpl.ypp"
+#line 1242 "chpl.ypp"
          { (yyval.uniqueStr) = STR(""); }
-#line 7275 "bison-chpl-lib.cpp"
+#line 7276 "bison-chpl-lib.cpp"
     break;
 
   case 102: /* opt_label_ident: TIDENT  */
-#line 1242 "chpl.ypp"
+#line 1243 "chpl.ypp"
          { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); }
-#line 7281 "bison-chpl-lib.cpp"
+#line 7282 "bison-chpl-lib.cpp"
     break;
 
   case 103: /* ident_fn_def: TIDENT  */
-#line 1246 "chpl.ypp"
+#line 1247 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); }
-#line 7287 "bison-chpl-lib.cpp"
+#line 7288 "bison-chpl-lib.cpp"
     break;
 
   case 104: /* ident_fn_def: TNONE  */
-#line 1247 "chpl.ypp"
+#line 1248 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); ERROR((yyloc), "redefining reserved word 'none'"); }
-#line 7293 "bison-chpl-lib.cpp"
+#line 7294 "bison-chpl-lib.cpp"
     break;
 
   case 105: /* ident_fn_def: TTHIS  */
-#line 1248 "chpl.ypp"
+#line 1249 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); }
-#line 7299 "bison-chpl-lib.cpp"
+#line 7300 "bison-chpl-lib.cpp"
     break;
 
   case 106: /* ident_fn_def: TFALSE  */
-#line 1249 "chpl.ypp"
+#line 1250 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); ERROR((yyloc), "redefining reserved word 'false'"); }
-#line 7305 "bison-chpl-lib.cpp"
+#line 7306 "bison-chpl-lib.cpp"
     break;
 
   case 107: /* ident_fn_def: TTRUE  */
-#line 1250 "chpl.ypp"
+#line 1251 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); ERROR((yyloc), "redefining reserved word 'true'"); }
-#line 7311 "bison-chpl-lib.cpp"
+#line 7312 "bison-chpl-lib.cpp"
     break;
 
   case 108: /* ident_fn_def: internal_type_ident_def  */
-#line 1251 "chpl.ypp"
+#line 1252 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); ERROR((yyloc), "redefining reserved word"); }
-#line 7317 "bison-chpl-lib.cpp"
+#line 7318 "bison-chpl-lib.cpp"
     break;
 
   case 109: /* ident_def: TIDENT  */
-#line 1254 "chpl.ypp"
+#line 1255 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); }
-#line 7323 "bison-chpl-lib.cpp"
+#line 7324 "bison-chpl-lib.cpp"
     break;
 
   case 110: /* ident_def: TNONE  */
-#line 1255 "chpl.ypp"
+#line 1256 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); ERROR((yyloc), "redefining reserved word 'none'"); }
-#line 7329 "bison-chpl-lib.cpp"
+#line 7330 "bison-chpl-lib.cpp"
     break;
 
   case 111: /* ident_def: TTHIS  */
-#line 1256 "chpl.ypp"
+#line 1257 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); ERROR((yyloc), "redefining reserved word 'this'"); }
-#line 7335 "bison-chpl-lib.cpp"
+#line 7336 "bison-chpl-lib.cpp"
     break;
 
   case 112: /* ident_def: TFALSE  */
-#line 1257 "chpl.ypp"
+#line 1258 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); ERROR((yyloc), "redefining reserved word 'false'"); }
-#line 7341 "bison-chpl-lib.cpp"
+#line 7342 "bison-chpl-lib.cpp"
     break;
 
   case 113: /* ident_def: TTRUE  */
-#line 1258 "chpl.ypp"
+#line 1259 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); ERROR((yyloc), "redefining reserved word 'true'"); }
-#line 7347 "bison-chpl-lib.cpp"
+#line 7348 "bison-chpl-lib.cpp"
     break;
 
   case 114: /* ident_def: internal_type_ident_def  */
-#line 1259 "chpl.ypp"
+#line 1260 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); ERROR((yyloc), "redefining reserved word"); }
-#line 7353 "bison-chpl-lib.cpp"
+#line 7354 "bison-chpl-lib.cpp"
     break;
 
   case 115: /* ident_use: TIDENT  */
-#line 1271 "chpl.ypp"
+#line 1272 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); }
-#line 7359 "bison-chpl-lib.cpp"
+#line 7360 "bison-chpl-lib.cpp"
     break;
 
   case 116: /* ident_use: TTHIS  */
-#line 1272 "chpl.ypp"
+#line 1273 "chpl.ypp"
                            { (yyval.uniqueStr) = (yyvsp[0].uniqueStr); }
-#line 7365 "bison-chpl-lib.cpp"
+#line 7366 "bison-chpl-lib.cpp"
     break;
 
   case 136: /* scalar_type: TBOOL  */
-#line 1305 "chpl.ypp"
+#line 1306 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7371 "bison-chpl-lib.cpp"
+#line 7372 "bison-chpl-lib.cpp"
     break;
 
   case 137: /* scalar_type: TENUM  */
-#line 1306 "chpl.ypp"
+#line 1307 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7377 "bison-chpl-lib.cpp"
+#line 7378 "bison-chpl-lib.cpp"
     break;
 
   case 138: /* scalar_type: TINT  */
-#line 1307 "chpl.ypp"
+#line 1308 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7383 "bison-chpl-lib.cpp"
+#line 7384 "bison-chpl-lib.cpp"
     break;
 
   case 139: /* scalar_type: TUINT  */
-#line 1308 "chpl.ypp"
+#line 1309 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7389 "bison-chpl-lib.cpp"
+#line 7390 "bison-chpl-lib.cpp"
     break;
 
   case 140: /* scalar_type: TREAL  */
-#line 1309 "chpl.ypp"
+#line 1310 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7395 "bison-chpl-lib.cpp"
+#line 7396 "bison-chpl-lib.cpp"
     break;
 
   case 141: /* scalar_type: TIMAG  */
-#line 1310 "chpl.ypp"
+#line 1311 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7401 "bison-chpl-lib.cpp"
+#line 7402 "bison-chpl-lib.cpp"
     break;
 
   case 142: /* scalar_type: TCOMPLEX  */
-#line 1311 "chpl.ypp"
+#line 1312 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7407 "bison-chpl-lib.cpp"
+#line 7408 "bison-chpl-lib.cpp"
     break;
 
   case 143: /* scalar_type: TBYTES  */
-#line 1312 "chpl.ypp"
+#line 1313 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7413 "bison-chpl-lib.cpp"
+#line 7414 "bison-chpl-lib.cpp"
     break;
 
   case 144: /* scalar_type: TSTRING  */
-#line 1313 "chpl.ypp"
+#line 1314 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7419 "bison-chpl-lib.cpp"
+#line 7420 "bison-chpl-lib.cpp"
     break;
 
   case 145: /* scalar_type: TLOCALE  */
-#line 1314 "chpl.ypp"
+#line 1315 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7425 "bison-chpl-lib.cpp"
+#line 7426 "bison-chpl-lib.cpp"
     break;
 
   case 146: /* scalar_type: TNOTHING  */
-#line 1315 "chpl.ypp"
+#line 1316 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7431 "bison-chpl-lib.cpp"
+#line 7432 "bison-chpl-lib.cpp"
     break;
 
   case 147: /* scalar_type: TVOID  */
-#line 1316 "chpl.ypp"
+#line 1317 "chpl.ypp"
            { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 7437 "bison-chpl-lib.cpp"
+#line 7438 "bison-chpl-lib.cpp"
     break;
 
   case 152: /* do_stmt: TDO stmt  */
-#line 1330 "chpl.ypp"
+#line 1331 "chpl.ypp"
                 { (yyval.blockOrDo) = { (yyvsp[0].commentsAndStmt), true }; }
-#line 7443 "bison-chpl-lib.cpp"
+#line 7444 "bison-chpl-lib.cpp"
     break;
 
   case 153: /* do_stmt: block_stmt  */
-#line 1331 "chpl.ypp"
+#line 1332 "chpl.ypp"
                 { (yyval.blockOrDo) = { (yyvsp[0].commentsAndStmt), false }; }
-#line 7449 "bison-chpl-lib.cpp"
+#line 7450 "bison-chpl-lib.cpp"
     break;
 
   case 154: /* return_stmt: TRETURN TSEMI  */
-#line 1336 "chpl.ypp"
+#line 1337 "chpl.ypp"
   {
     auto comments = context->gatherComments((yylsp[-1]));
     auto node = Return::build(BUILDER, LOC((yyloc)), /*value*/ nullptr);
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     (yyval.commentsAndStmt) = context->finishStmt(cs);
   }
-#line 7460 "bison-chpl-lib.cpp"
+#line 7461 "bison-chpl-lib.cpp"
     break;
 
   case 155: /* return_stmt: TRETURN opt_try_expr TSEMI  */
-#line 1343 "chpl.ypp"
+#line 1344 "chpl.ypp"
   {
     auto comments = context->gatherComments((yylsp[-2]));
     auto node = Return::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-1].expr)));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     (yyval.commentsAndStmt) = context->finishStmt(cs);
   }
-#line 7471 "bison-chpl-lib.cpp"
+#line 7472 "bison-chpl-lib.cpp"
     break;
 
   case 157: /* $@3: %empty  */
-#line 1354 "chpl.ypp"
+#line 1355 "chpl.ypp"
   {
     context->noteDeprecation((yyloc), (yyvsp[0].expr));
   }
-#line 7479 "bison-chpl-lib.cpp"
+#line 7480 "bison-chpl-lib.cpp"
     break;
 
   case 158: /* deprecated_class_level_stmt: TDEPRECATED STRINGLITERAL $@3 class_level_stmt  */
-#line 1358 "chpl.ypp"
+#line 1359 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = (yyvsp[0].commentsAndStmt);
   }
-#line 7487 "bison-chpl-lib.cpp"
+#line 7488 "bison-chpl-lib.cpp"
     break;
 
   case 159: /* $@4: %empty  */
-#line 1362 "chpl.ypp"
+#line 1363 "chpl.ypp"
   {
     context->noteDeprecation((yyloc), nullptr);
   }
-#line 7495 "bison-chpl-lib.cpp"
+#line 7496 "bison-chpl-lib.cpp"
     break;
 
   case 160: /* deprecated_class_level_stmt: TDEPRECATED $@4 class_level_stmt  */
-#line 1366 "chpl.ypp"
+#line 1367 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = (yyvsp[0].commentsAndStmt);
   }
-#line 7503 "bison-chpl-lib.cpp"
+#line 7504 "bison-chpl-lib.cpp"
     break;
 
   case 161: /* class_level_stmt: TSEMI  */
-#line 1373 "chpl.ypp"
+#line 1374 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = STMT((yyloc), nullptr);
     }
-#line 7511 "bison-chpl-lib.cpp"
+#line 7512 "bison-chpl-lib.cpp"
     break;
 
   case 162: /* class_level_stmt: inner_class_level_stmt  */
-#line 1377 "chpl.ypp"
+#line 1378 "chpl.ypp"
     {
       // visibility should be default when inner_class_level_stmt is parsed
       (yyval.commentsAndStmt) = context->finishStmt((yyvsp[0].commentsAndStmt));
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
-#line 7521 "bison-chpl-lib.cpp"
+#line 7522 "bison-chpl-lib.cpp"
     break;
 
   case 163: /* $@5: %empty  */
-#line 1382 "chpl.ypp"
+#line 1383 "chpl.ypp"
           {context->noteDeclStartLoc((yylsp[0]));
            context->noteVisibility(Decl::PUBLIC);}
-#line 7528 "bison-chpl-lib.cpp"
+#line 7529 "bison-chpl-lib.cpp"
     break;
 
   case 164: /* class_level_stmt: TPUBLIC $@5 inner_class_level_stmt  */
-#line 1384 "chpl.ypp"
+#line 1385 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = context->finishStmt((yyvsp[0].commentsAndStmt));
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
-#line 7537 "bison-chpl-lib.cpp"
+#line 7538 "bison-chpl-lib.cpp"
     break;
 
   case 165: /* $@6: %empty  */
-#line 1388 "chpl.ypp"
+#line 1389 "chpl.ypp"
            {context->noteDeclStartLoc((yylsp[0]));
             context->noteVisibility(Decl::PRIVATE);}
-#line 7544 "bison-chpl-lib.cpp"
+#line 7545 "bison-chpl-lib.cpp"
     break;
 
   case 166: /* class_level_stmt: TPRIVATE $@6 inner_class_level_stmt  */
-#line 1390 "chpl.ypp"
+#line 1391 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = context->finishStmt((yyvsp[0].commentsAndStmt));
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
-#line 7553 "bison-chpl-lib.cpp"
+#line 7554 "bison-chpl-lib.cpp"
     break;
 
   case 174: /* forwarding_decl_stmt: forwarding_decl_start expr TSEMI  */
-#line 1408 "chpl.ypp"
+#line 1409 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-2].attribute)), toOwned((yyvsp[-1].expr)),
                                         VisibilityClause::NONE, nullptr);
     }
-#line 7562 "bison-chpl-lib.cpp"
+#line 7563 "bison-chpl-lib.cpp"
     break;
 
   case 175: /* forwarding_decl_stmt: forwarding_decl_start expr TEXCEPT renames_ls TSEMI  */
-#line 1413 "chpl.ypp"
+#line 1414 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-4].attribute)), toOwned((yyvsp[-3].expr)),
                                         VisibilityClause::EXCEPT, (yyvsp[-1].exprList));
     }
-#line 7571 "bison-chpl-lib.cpp"
+#line 7572 "bison-chpl-lib.cpp"
     break;
 
   case 176: /* forwarding_decl_stmt: forwarding_decl_start expr TONLY opt_only_ls TSEMI  */
-#line 1418 "chpl.ypp"
+#line 1419 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-4].attribute)), toOwned((yyvsp[-3].expr)),
                                         VisibilityClause::ONLY, (yyvsp[-1].exprList));
     }
-#line 7580 "bison-chpl-lib.cpp"
+#line 7581 "bison-chpl-lib.cpp"
     break;
 
   case 177: /* forwarding_decl_stmt: forwarding_decl_start var_decl_stmt  */
-#line 1423 "chpl.ypp"
+#line 1424 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-1].attribute)), (yyvsp[0].commentsAndStmt));
     }
-#line 7588 "bison-chpl-lib.cpp"
+#line 7589 "bison-chpl-lib.cpp"
     break;
 
   case 178: /* forwarding_decl_start: TFORWARDING  */
-#line 1430 "chpl.ypp"
+#line 1431 "chpl.ypp"
   {
     (yyval.attribute) = context->buildAttributes((yyloc)).release();
     context->resetAttributePartsState();
   }
-#line 7597 "bison-chpl-lib.cpp"
+#line 7598 "bison-chpl-lib.cpp"
     break;
 
   case 179: /* extern_or_export: TEXTERN  */
-#line 1437 "chpl.ypp"
+#line 1438 "chpl.ypp"
           { (yyval.linkageTag) = Decl::EXTERN; }
-#line 7603 "bison-chpl-lib.cpp"
+#line 7604 "bison-chpl-lib.cpp"
     break;
 
   case 180: /* extern_or_export: TEXPORT  */
-#line 1438 "chpl.ypp"
+#line 1439 "chpl.ypp"
           { (yyval.linkageTag) = Decl::EXPORT; }
-#line 7609 "bison-chpl-lib.cpp"
+#line 7610 "bison-chpl-lib.cpp"
     break;
 
   case 181: /* extern_export_decl_stmt_start: extern_or_export  */
-#line 1443 "chpl.ypp"
+#line 1444 "chpl.ypp"
   {
     // Sets the start location only if it is still unset.
     context->noteDeclStartLoc((yylsp[0]));
     (yyval.linkageTag) = context->noteLinkage((yyvsp[0].linkageTag));
   }
-#line 7619 "bison-chpl-lib.cpp"
+#line 7620 "bison-chpl-lib.cpp"
     break;
 
   case 182: /* extern_export_decl_stmt: extern_export_decl_stmt_start class_start opt_inherit TLCBR class_level_stmt_ls TRCBR  */
-#line 1453 "chpl.ypp"
+#line 1454 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildAggregateTypeDecl((yylsp[-5]), (yyvsp[-4].typeDeclParts), (yylsp[-3]), (yyvsp[-3].exprList), (yylsp[-2]), (yyvsp[-1].exprList), (yylsp[0]));
     context->exitScope((yyvsp[-4].typeDeclParts).tag, (yyvsp[-4].typeDeclParts).name);
   }
-#line 7628 "bison-chpl-lib.cpp"
+#line 7629 "bison-chpl-lib.cpp"
     break;
 
   case 183: /* extern_export_decl_stmt: extern_export_decl_stmt_start STRINGLITERAL class_start opt_inherit TLCBR class_level_stmt_ls TRCBR  */
-#line 1459 "chpl.ypp"
+#line 1460 "chpl.ypp"
   {
     // Set the linkage name since it will be nullptr otherwise.
     (yyvsp[-4].typeDeclParts).linkageName = (yyvsp[-5].expr);
     (yyval.commentsAndStmt) = context->buildAggregateTypeDecl((yylsp[-6]), (yyvsp[-4].typeDeclParts), (yylsp[-3]), (yyvsp[-3].exprList), (yylsp[-2]), (yyvsp[-1].exprList), (yylsp[0]));
     context->exitScope((yyvsp[-4].typeDeclParts).tag, (yyvsp[-4].typeDeclParts).name);
   }
-#line 7639 "bison-chpl-lib.cpp"
+#line 7640 "bison-chpl-lib.cpp"
     break;
 
   case 184: /* extern_export_decl_stmt: extern_export_decl_stmt_start opt_expr fn_decl_stmt  */
-#line 1466 "chpl.ypp"
+#line 1467 "chpl.ypp"
   {
     auto loc = context->declStartLoc((yylsp[-2]));
 
@@ -7658,37 +7659,37 @@ yyreduce:
 
     (yyval.commentsAndStmt) = context->buildFunctionDecl((yyloc), fp);
   }
-#line 7662 "bison-chpl-lib.cpp"
+#line 7663 "bison-chpl-lib.cpp"
     break;
 
   case 185: /* $@7: %empty  */
-#line 1485 "chpl.ypp"
+#line 1486 "chpl.ypp"
   {
     // This will be consumed when building the first variable in the list.
     context->storeVarDeclLinkageName((yyvsp[0].expr));
   }
-#line 7671 "bison-chpl-lib.cpp"
+#line 7672 "bison-chpl-lib.cpp"
     break;
 
   case 186: /* extern_export_decl_stmt: extern_export_decl_stmt_start opt_expr $@7 var_decl_type var_decl_stmt_inner_ls TSEMI  */
-#line 1490 "chpl.ypp"
+#line 1491 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildVarOrMultiDeclStmt((yyloc), (yyvsp[-1].exprList));
     context->resetDeclState();
   }
-#line 7680 "bison-chpl-lib.cpp"
+#line 7681 "bison-chpl-lib.cpp"
     break;
 
   case 187: /* extern_block_stmt: TEXTERN EXTERNCODE  */
-#line 1498 "chpl.ypp"
+#line 1499 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildExternBlockStmt((yylsp[-1]), (yyvsp[0].sizedStr));
   }
-#line 7688 "bison-chpl-lib.cpp"
+#line 7689 "bison-chpl-lib.cpp"
     break;
 
   case 188: /* loop_stmt: TDO stmt TWHILE expr TSEMI  */
-#line 1505 "chpl.ypp"
+#line 1506 "chpl.ypp"
   {
     std::vector<ParserComment>* comments;
     ParserExprList* exprLst;
@@ -7706,11 +7707,11 @@ yyreduce:
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     (yyval.commentsAndStmt) = context->finishStmt(cs);
   }
-#line 7710 "bison-chpl-lib.cpp"
+#line 7711 "bison-chpl-lib.cpp"
     break;
 
   case 189: /* loop_stmt: TWHILE expr do_stmt  */
-#line 1523 "chpl.ypp"
+#line 1524 "chpl.ypp"
   {
     std::vector<ParserComment>* comments;
     ParserExprList* exprLst;
@@ -7723,11 +7724,11 @@ yyreduce:
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     (yyval.commentsAndStmt) = context->finishStmt(cs);
   }
-#line 7727 "bison-chpl-lib.cpp"
+#line 7728 "bison-chpl-lib.cpp"
     break;
 
   case 190: /* loop_stmt: TWHILE ifvar do_stmt  */
-#line 1536 "chpl.ypp"
+#line 1537 "chpl.ypp"
   {
     std::vector<ParserComment>* comments;
     ParserExprList* exprLst;
@@ -7740,67 +7741,67 @@ yyreduce:
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     (yyval.commentsAndStmt) = context->finishStmt(cs);
   }
-#line 7744 "bison-chpl-lib.cpp"
+#line 7745 "bison-chpl-lib.cpp"
     break;
 
   case 191: /* loop_stmt: TCOFORALL expr TIN expr opt_task_intent_ls do_stmt  */
-#line 1549 "chpl.ypp"
+#line 1550 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildCoforallLoopStmt((yylsp[-5]), (yylsp[-4]), (yylsp[0]), (yyvsp[-4].expr), (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7752 "bison-chpl-lib.cpp"
+#line 7753 "bison-chpl-lib.cpp"
     break;
 
   case 192: /* loop_stmt: TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt  */
-#line 1553 "chpl.ypp"
+#line 1554 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildCoforallLoopStmt((yylsp[-5]), (yylsp[-4]), (yylsp[0]), (yyvsp[-4].expr), (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7760 "bison-chpl-lib.cpp"
+#line 7761 "bison-chpl-lib.cpp"
     break;
 
   case 193: /* loop_stmt: TCOFORALL expr opt_task_intent_ls do_stmt  */
-#line 1557 "chpl.ypp"
+#line 1558 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildCoforallLoopStmt((yylsp[-3]), (yylsp[-3]), (yylsp[0]), nullptr, (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7768 "bison-chpl-lib.cpp"
+#line 7769 "bison-chpl-lib.cpp"
     break;
 
   case 194: /* loop_stmt: TFOR expr TIN expr do_stmt  */
-#line 1561 "chpl.ypp"
+#line 1562 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForLoopStmt((yylsp[-4]), (yylsp[-3]), (yylsp[0]), (yyvsp[-3].expr), (yyvsp[-1].expr), (yyvsp[0].blockOrDo));
   }
-#line 7776 "bison-chpl-lib.cpp"
+#line 7777 "bison-chpl-lib.cpp"
     break;
 
   case 195: /* loop_stmt: TFOR expr TIN zippered_iterator do_stmt  */
-#line 1565 "chpl.ypp"
+#line 1566 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForLoopStmt((yylsp[-4]), (yylsp[-3]), (yylsp[0]), (yyvsp[-3].expr), (yyvsp[-1].expr), (yyvsp[0].blockOrDo));
   }
-#line 7784 "bison-chpl-lib.cpp"
+#line 7785 "bison-chpl-lib.cpp"
     break;
 
   case 196: /* loop_stmt: TFOR expr do_stmt  */
-#line 1569 "chpl.ypp"
+#line 1570 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForLoopStmt((yylsp[-2]), (yylsp[-2]), (yylsp[0]), nullptr, (yyvsp[-1].expr), (yyvsp[0].blockOrDo));
   }
-#line 7792 "bison-chpl-lib.cpp"
+#line 7793 "bison-chpl-lib.cpp"
     break;
 
   case 197: /* loop_stmt: TFOR zippered_iterator do_stmt  */
-#line 1573 "chpl.ypp"
+#line 1574 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForLoopStmt((yylsp[-2]), (yylsp[-2]), (yylsp[0]), nullptr, (yyvsp[-1].expr), (yyvsp[0].blockOrDo));
   }
-#line 7800 "bison-chpl-lib.cpp"
+#line 7801 "bison-chpl-lib.cpp"
     break;
 
   case 198: /* loop_stmt: TFOR TPARAM ident_def TIN expr do_stmt  */
-#line 1577 "chpl.ypp"
+#line 1578 "chpl.ypp"
   {
     std::vector<ParserComment>* comments;
     ParserExprList* exprLst;
@@ -7818,315 +7819,315 @@ yyreduce:
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     (yyval.commentsAndStmt) = context->finishStmt(cs);
   }
-#line 7822 "bison-chpl-lib.cpp"
+#line 7823 "bison-chpl-lib.cpp"
     break;
 
   case 199: /* loop_stmt: TFORALL expr TIN expr do_stmt  */
-#line 1595 "chpl.ypp"
+#line 1596 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForallLoopStmt((yylsp[-4]), (yylsp[-3]), (yylsp[0]), (yyvsp[-3].expr), (yyvsp[-1].expr), nullptr, (yyvsp[0].blockOrDo));
   }
-#line 7830 "bison-chpl-lib.cpp"
+#line 7831 "bison-chpl-lib.cpp"
     break;
 
   case 200: /* loop_stmt: TFORALL expr TIN expr forall_intent_clause do_stmt  */
-#line 1599 "chpl.ypp"
+#line 1600 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForallLoopStmt((yylsp[-5]), (yylsp[-4]), (yylsp[0]), (yyvsp[-4].expr), (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7838 "bison-chpl-lib.cpp"
+#line 7839 "bison-chpl-lib.cpp"
     break;
 
   case 201: /* loop_stmt: TFORALL expr TIN zippered_iterator do_stmt  */
-#line 1603 "chpl.ypp"
+#line 1604 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForallLoopStmt((yylsp[-4]), (yylsp[-3]), (yylsp[0]), (yyvsp[-3].expr), (yyvsp[-1].expr), nullptr, (yyvsp[0].blockOrDo));
   }
-#line 7846 "bison-chpl-lib.cpp"
+#line 7847 "bison-chpl-lib.cpp"
     break;
 
   case 202: /* loop_stmt: TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt  */
-#line 1607 "chpl.ypp"
+#line 1608 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForallLoopStmt((yylsp[-5]), (yylsp[-4]), (yylsp[0]), (yyvsp[-4].expr), (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7854 "bison-chpl-lib.cpp"
+#line 7855 "bison-chpl-lib.cpp"
     break;
 
   case 203: /* loop_stmt: TFORALL expr do_stmt  */
-#line 1611 "chpl.ypp"
+#line 1612 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForallLoopStmt((yylsp[-2]), (yylsp[-2]), (yylsp[0]), nullptr, (yyvsp[-1].expr), nullptr, (yyvsp[0].blockOrDo));
   }
-#line 7862 "bison-chpl-lib.cpp"
+#line 7863 "bison-chpl-lib.cpp"
     break;
 
   case 204: /* loop_stmt: TFORALL expr forall_intent_clause do_stmt  */
-#line 1615 "chpl.ypp"
+#line 1616 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForallLoopStmt((yylsp[-3]), (yylsp[-3]), (yylsp[0]), nullptr, (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7870 "bison-chpl-lib.cpp"
+#line 7871 "bison-chpl-lib.cpp"
     break;
 
   case 205: /* loop_stmt: TFORALL zippered_iterator do_stmt  */
-#line 1619 "chpl.ypp"
+#line 1620 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForallLoopStmt((yylsp[-2]), (yylsp[-2]), (yylsp[0]), nullptr, (yyvsp[-1].expr), nullptr, (yyvsp[0].blockOrDo));
   }
-#line 7878 "bison-chpl-lib.cpp"
+#line 7879 "bison-chpl-lib.cpp"
     break;
 
   case 206: /* loop_stmt: TFORALL zippered_iterator forall_intent_clause do_stmt  */
-#line 1623 "chpl.ypp"
+#line 1624 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForallLoopStmt((yylsp[-3]), (yylsp[-3]), (yylsp[0]), nullptr, (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7886 "bison-chpl-lib.cpp"
+#line 7887 "bison-chpl-lib.cpp"
     break;
 
   case 207: /* loop_stmt: TFOREACH expr TIN expr do_stmt  */
-#line 1627 "chpl.ypp"
+#line 1628 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForeachLoopStmt((yylsp[-4]), (yylsp[-3]), (yylsp[0]), (yyvsp[-3].expr), (yyvsp[-1].expr), nullptr, (yyvsp[0].blockOrDo));
   }
-#line 7894 "bison-chpl-lib.cpp"
+#line 7895 "bison-chpl-lib.cpp"
     break;
 
   case 208: /* loop_stmt: TFOREACH expr TIN expr forall_intent_clause do_stmt  */
-#line 1631 "chpl.ypp"
+#line 1632 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForeachLoopStmt((yylsp[-5]), (yylsp[-4]), (yylsp[0]), (yyvsp[-4].expr), (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7902 "bison-chpl-lib.cpp"
+#line 7903 "bison-chpl-lib.cpp"
     break;
 
   case 209: /* loop_stmt: TFOREACH expr TIN zippered_iterator do_stmt  */
-#line 1635 "chpl.ypp"
+#line 1636 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForeachLoopStmt((yylsp[-4]), (yylsp[-3]), (yylsp[0]), (yyvsp[-3].expr), (yyvsp[-1].expr), nullptr, (yyvsp[0].blockOrDo));
   }
-#line 7910 "bison-chpl-lib.cpp"
+#line 7911 "bison-chpl-lib.cpp"
     break;
 
   case 210: /* loop_stmt: TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt  */
-#line 1639 "chpl.ypp"
+#line 1640 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForeachLoopStmt((yylsp[-5]), (yylsp[-4]), (yylsp[0]), (yyvsp[-4].expr), (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7918 "bison-chpl-lib.cpp"
+#line 7919 "bison-chpl-lib.cpp"
     break;
 
   case 211: /* loop_stmt: TFOREACH expr do_stmt  */
-#line 1643 "chpl.ypp"
+#line 1644 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForeachLoopStmt((yylsp[-2]), (yylsp[-2]), (yylsp[0]), nullptr, (yyvsp[-1].expr), nullptr, (yyvsp[0].blockOrDo));
   }
-#line 7926 "bison-chpl-lib.cpp"
+#line 7927 "bison-chpl-lib.cpp"
     break;
 
   case 212: /* loop_stmt: TFOREACH expr forall_intent_clause do_stmt  */
-#line 1647 "chpl.ypp"
+#line 1648 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForeachLoopStmt((yylsp[-3]), (yylsp[-3]), (yylsp[0]), nullptr, (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7934 "bison-chpl-lib.cpp"
+#line 7935 "bison-chpl-lib.cpp"
     break;
 
   case 213: /* loop_stmt: TFOREACH zippered_iterator do_stmt  */
-#line 1651 "chpl.ypp"
+#line 1652 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForeachLoopStmt((yylsp[-2]), (yylsp[-2]), (yylsp[0]), nullptr, (yyvsp[-1].expr), nullptr, (yyvsp[0].blockOrDo));
   }
-#line 7942 "bison-chpl-lib.cpp"
+#line 7943 "bison-chpl-lib.cpp"
     break;
 
   case 214: /* loop_stmt: TFOREACH zippered_iterator forall_intent_clause do_stmt  */
-#line 1655 "chpl.ypp"
+#line 1656 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildForeachLoopStmt((yylsp[-3]), (yylsp[-3]), (yylsp[0]), nullptr, (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
-#line 7950 "bison-chpl-lib.cpp"
+#line 7951 "bison-chpl-lib.cpp"
     break;
 
   case 215: /* loop_stmt: TLSBR expr_ls TIN expr TRSBR stmt  */
-#line 1659 "chpl.ypp"
+#line 1660 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildBracketLoopStmt((yylsp[-5]), (yylsp[-4]), (yylsp[-1]), (yyvsp[-4].exprList), (yyvsp[-2].expr), nullptr, (yyvsp[0].commentsAndStmt));
   }
-#line 7958 "bison-chpl-lib.cpp"
+#line 7959 "bison-chpl-lib.cpp"
     break;
 
   case 216: /* loop_stmt: TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt  */
-#line 1663 "chpl.ypp"
+#line 1664 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildBracketLoopStmt((yylsp[-6]), (yylsp[-5]), (yylsp[-1]), (yyvsp[-5].exprList), (yyvsp[-3].expr), (yyvsp[-2].withClause), (yyvsp[0].commentsAndStmt));
   }
-#line 7966 "bison-chpl-lib.cpp"
+#line 7967 "bison-chpl-lib.cpp"
     break;
 
   case 217: /* loop_stmt: TLSBR expr_ls TIN zippered_iterator TRSBR stmt  */
-#line 1667 "chpl.ypp"
+#line 1668 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildBracketLoopStmt((yylsp[-5]), (yylsp[-4]), (yylsp[-1]), (yyvsp[-4].exprList), (yyvsp[-2].expr), nullptr, (yyvsp[0].commentsAndStmt));
   }
-#line 7974 "bison-chpl-lib.cpp"
+#line 7975 "bison-chpl-lib.cpp"
     break;
 
   case 218: /* loop_stmt: TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt  */
-#line 1671 "chpl.ypp"
+#line 1672 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildBracketLoopStmt((yylsp[-6]), (yylsp[-5]), (yylsp[-1]), (yyvsp[-5].exprList), (yyvsp[-3].expr), (yyvsp[-2].withClause), (yyvsp[0].commentsAndStmt));
   }
-#line 7982 "bison-chpl-lib.cpp"
+#line 7983 "bison-chpl-lib.cpp"
     break;
 
   case 219: /* loop_stmt: TLSBR expr_ls TRSBR stmt  */
-#line 1675 "chpl.ypp"
+#line 1676 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildBracketLoopStmt((yylsp[-3]), (yylsp[-2]), (yylsp[-1]), (yyvsp[-2].exprList), nullptr, (yyvsp[0].commentsAndStmt));
   }
-#line 7990 "bison-chpl-lib.cpp"
+#line 7991 "bison-chpl-lib.cpp"
     break;
 
   case 220: /* loop_stmt: TLSBR expr_ls forall_intent_clause TRSBR stmt  */
-#line 1679 "chpl.ypp"
+#line 1680 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildBracketLoopStmt((yylsp[-4]), (yylsp[-3]), (yylsp[-1]), (yyvsp[-3].exprList), (yyvsp[-2].withClause), (yyvsp[0].commentsAndStmt));
   }
-#line 7998 "bison-chpl-lib.cpp"
+#line 7999 "bison-chpl-lib.cpp"
     break;
 
   case 221: /* loop_stmt: TLSBR zippered_iterator TRSBR stmt  */
-#line 1683 "chpl.ypp"
+#line 1684 "chpl.ypp"
   {
     auto iterExprs = context->makeList((yyvsp[-2].expr));
     (yyval.commentsAndStmt) = context->buildBracketLoopStmt((yylsp[-3]), (yylsp[-2]), (yylsp[-1]), iterExprs, nullptr, (yyvsp[0].commentsAndStmt));
   }
-#line 8007 "bison-chpl-lib.cpp"
+#line 8008 "bison-chpl-lib.cpp"
     break;
 
   case 222: /* loop_stmt: TLSBR zippered_iterator forall_intent_clause TRSBR stmt  */
-#line 1688 "chpl.ypp"
+#line 1689 "chpl.ypp"
   {
     auto iterExprs = context->makeList((yyvsp[-3].expr));
     (yyval.commentsAndStmt) = context->buildBracketLoopStmt((yylsp[-4]), (yylsp[-3]), (yylsp[-1]), iterExprs, (yyvsp[-2].withClause), (yyvsp[0].commentsAndStmt));
   }
-#line 8016 "bison-chpl-lib.cpp"
+#line 8017 "bison-chpl-lib.cpp"
     break;
 
   case 223: /* zippered_iterator: TZIP TLP expr_ls TRP  */
-#line 1696 "chpl.ypp"
+#line 1697 "chpl.ypp"
   {
     auto exprs = context->consumeList((yyvsp[-1].exprList));
     auto node = Zip::build(BUILDER, LOC((yyloc)), std::move(exprs));
     (yyval.expr) = node.release();
   }
-#line 8026 "bison-chpl-lib.cpp"
+#line 8027 "bison-chpl-lib.cpp"
     break;
 
   case 224: /* if_stmt: TIF expr TTHEN stmt  */
-#line 1705 "chpl.ypp"
+#line 1706 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildConditionalStmt(true, (yylsp[-3]), (yylsp[-1]), (yyvsp[-2].expr), (yyvsp[0].commentsAndStmt));
   }
-#line 8034 "bison-chpl-lib.cpp"
+#line 8035 "bison-chpl-lib.cpp"
     break;
 
   case 225: /* if_stmt: TIF expr block_stmt  */
-#line 1709 "chpl.ypp"
+#line 1710 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildConditionalStmt(false, (yylsp[-2]), (yylsp[0]), (yyvsp[-1].expr), (yyvsp[0].commentsAndStmt));
   }
-#line 8042 "bison-chpl-lib.cpp"
+#line 8043 "bison-chpl-lib.cpp"
     break;
 
   case 226: /* if_stmt: TIF expr TTHEN stmt TELSE stmt  */
-#line 1713 "chpl.ypp"
+#line 1714 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildConditionalStmt(true, (yylsp[-5]), (yylsp[-3]), (yylsp[-1]), (yyvsp[-4].expr), (yyvsp[-2].commentsAndStmt), (yyvsp[0].commentsAndStmt));
   }
-#line 8050 "bison-chpl-lib.cpp"
+#line 8051 "bison-chpl-lib.cpp"
     break;
 
   case 227: /* if_stmt: TIF expr block_stmt TELSE stmt  */
-#line 1717 "chpl.ypp"
+#line 1718 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildConditionalStmt(false, (yylsp[-4]), (yylsp[-2]), (yylsp[-1]), (yyvsp[-3].expr), (yyvsp[-2].commentsAndStmt), (yyvsp[0].commentsAndStmt));
   }
-#line 8058 "bison-chpl-lib.cpp"
+#line 8059 "bison-chpl-lib.cpp"
     break;
 
   case 228: /* if_stmt: TIF ifvar TTHEN stmt  */
-#line 1721 "chpl.ypp"
+#line 1722 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildConditionalStmt(true, (yylsp[-3]), (yylsp[-1]), (yyvsp[-2].expr), (yyvsp[0].commentsAndStmt));
   }
-#line 8066 "bison-chpl-lib.cpp"
+#line 8067 "bison-chpl-lib.cpp"
     break;
 
   case 229: /* if_stmt: TIF ifvar block_stmt  */
-#line 1725 "chpl.ypp"
+#line 1726 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildConditionalStmt(false, (yylsp[-2]), (yylsp[0]), (yyvsp[-1].expr), (yyvsp[0].commentsAndStmt));
   }
-#line 8074 "bison-chpl-lib.cpp"
+#line 8075 "bison-chpl-lib.cpp"
     break;
 
   case 230: /* if_stmt: TIF ifvar TTHEN stmt TELSE stmt  */
-#line 1729 "chpl.ypp"
+#line 1730 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildConditionalStmt(true, (yylsp[-5]), (yylsp[-3]), (yylsp[-1]), (yyvsp[-4].expr), (yyvsp[-2].commentsAndStmt), (yyvsp[0].commentsAndStmt));
   }
-#line 8082 "bison-chpl-lib.cpp"
+#line 8083 "bison-chpl-lib.cpp"
     break;
 
   case 231: /* if_stmt: TIF ifvar block_stmt TELSE stmt  */
-#line 1733 "chpl.ypp"
+#line 1734 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildConditionalStmt(false, (yylsp[-4]), (yylsp[-2]), (yylsp[-1]), (yyvsp[-3].expr), (yyvsp[-2].commentsAndStmt), (yyvsp[0].commentsAndStmt));
   }
-#line 8090 "bison-chpl-lib.cpp"
+#line 8091 "bison-chpl-lib.cpp"
     break;
 
   case 232: /* if_stmt: TIF expr assignop_ident expr TTHEN stmt  */
-#line 1737 "chpl.ypp"
+#line 1738 "chpl.ypp"
   {
     auto op = context->buildBinOp((yylsp[-3]), (yyvsp[-4].expr), (yyvsp[-3].uniqueStr), (yyvsp[-2].expr));
     (yyval.commentsAndStmt) = context->buildConditionalStmt(true, (yylsp[-5]), (yylsp[-1]), op, (yyvsp[0].commentsAndStmt));
   }
-#line 8099 "bison-chpl-lib.cpp"
+#line 8100 "bison-chpl-lib.cpp"
     break;
 
   case 233: /* if_stmt: TIF expr assignop_ident expr block_stmt  */
-#line 1742 "chpl.ypp"
+#line 1743 "chpl.ypp"
   {
     auto op = context->buildBinOp((yylsp[-2]), (yyvsp[-3].expr), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr));
     (yyval.commentsAndStmt) = context->buildConditionalStmt(false, (yylsp[-4]), (yylsp[0]), op, (yyvsp[0].commentsAndStmt));
   }
-#line 8108 "bison-chpl-lib.cpp"
+#line 8109 "bison-chpl-lib.cpp"
     break;
 
   case 234: /* if_stmt: TIF expr assignop_ident expr TTHEN stmt TELSE stmt  */
-#line 1747 "chpl.ypp"
+#line 1748 "chpl.ypp"
   {
     auto op = context->buildBinOp((yylsp[-5]), (yyvsp[-6].expr), (yyvsp[-5].uniqueStr), (yyvsp[-4].expr));
     (yyval.commentsAndStmt) = context->buildConditionalStmt(true, (yylsp[-7]), (yylsp[-3]), (yylsp[-1]), op, (yyvsp[-2].commentsAndStmt), (yyvsp[0].commentsAndStmt));
   }
-#line 8117 "bison-chpl-lib.cpp"
+#line 8118 "bison-chpl-lib.cpp"
     break;
 
   case 235: /* if_stmt: TIF expr assignop_ident expr block_stmt TELSE stmt  */
-#line 1752 "chpl.ypp"
+#line 1753 "chpl.ypp"
   {
     auto op = context->buildBinOp((yylsp[-4]), (yyvsp[-5].expr), (yyvsp[-4].uniqueStr), (yyvsp[-3].expr));
     (yyval.commentsAndStmt) = context->buildConditionalStmt(false, (yylsp[-6]), (yylsp[-2]), (yylsp[-1]), op, (yyvsp[-2].commentsAndStmt), (yyvsp[0].commentsAndStmt));
   }
-#line 8126 "bison-chpl-lib.cpp"
+#line 8127 "bison-chpl-lib.cpp"
     break;
 
   case 236: /* ifvar: TVAR ident_def TASSIGN expr  */
-#line 1760 "chpl.ypp"
+#line 1761 "chpl.ypp"
   {
     auto varDecl = Variable::build(BUILDER, LOC((yyloc)),
                                    /*attributes*/ nullptr,
@@ -8141,11 +8142,11 @@ yyreduce:
                                    toOwned((yyvsp[0].expr)));
     (yyval.expr) = varDecl.release();
   }
-#line 8145 "bison-chpl-lib.cpp"
+#line 8146 "bison-chpl-lib.cpp"
     break;
 
   case 237: /* ifvar: TCONST ident_def TASSIGN expr  */
-#line 1775 "chpl.ypp"
+#line 1776 "chpl.ypp"
   {
     auto varDecl = Variable::build(BUILDER, LOC((yyloc)),
                                    /*attributes*/ nullptr,
@@ -8160,41 +8161,41 @@ yyreduce:
                                    toOwned((yyvsp[0].expr)));
     (yyval.expr) = varDecl.release();
   }
-#line 8164 "bison-chpl-lib.cpp"
+#line 8165 "bison-chpl-lib.cpp"
     break;
 
   case 238: /* interface_stmt: TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt  */
-#line 1793 "chpl.ypp"
+#line 1794 "chpl.ypp"
     { (yyval.commentsAndStmt) = TODOSTMT((yyloc)); }
-#line 8170 "bison-chpl-lib.cpp"
+#line 8171 "bison-chpl-lib.cpp"
     break;
 
   case 239: /* interface_stmt: TINTERFACE ident_def block_stmt  */
-#line 1795 "chpl.ypp"
+#line 1796 "chpl.ypp"
     { (yyval.commentsAndStmt) = TODOSTMT((yyloc)); }
-#line 8176 "bison-chpl-lib.cpp"
+#line 8177 "bison-chpl-lib.cpp"
     break;
 
   case 240: /* ifc_formal_ls: ifc_formal  */
-#line 1799 "chpl.ypp"
+#line 1800 "chpl.ypp"
                                   { (yyval.exprList) = context->makeList((yyvsp[0].expr)); }
-#line 8182 "bison-chpl-lib.cpp"
+#line 8183 "bison-chpl-lib.cpp"
     break;
 
   case 241: /* ifc_formal_ls: ifc_formal_ls TCOMMA ifc_formal  */
-#line 1800 "chpl.ypp"
+#line 1801 "chpl.ypp"
                                   { context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr)); }
-#line 8188 "bison-chpl-lib.cpp"
+#line 8189 "bison-chpl-lib.cpp"
     break;
 
   case 242: /* ifc_formal: ident_def  */
-#line 1805 "chpl.ypp"
+#line 1806 "chpl.ypp"
              { (yyval.expr) = TODOEXPR((yyloc)); }
-#line 8194 "bison-chpl-lib.cpp"
+#line 8195 "bison-chpl-lib.cpp"
     break;
 
   case 255: /* implements_type_ident: implements_type_error_ident  */
-#line 1823 "chpl.ypp"
+#line 1824 "chpl.ypp"
   {
     std::string s = "type ";
     s += "'"; s += (yyvsp[0].uniqueStr).c_str(); s += "'";
@@ -8202,115 +8203,115 @@ yyreduce:
     context->noteError((yyloc), s);
     (yyval.uniqueStr) = (yyvsp[0].uniqueStr);
   }
-#line 8206 "bison-chpl-lib.cpp"
+#line 8207 "bison-chpl-lib.cpp"
     break;
 
   case 262: /* implements_stmt: TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI  */
-#line 1852 "chpl.ypp"
+#line 1853 "chpl.ypp"
     { (yyval.commentsAndStmt) = TODOSTMT((yyloc)); }
-#line 8212 "bison-chpl-lib.cpp"
+#line 8213 "bison-chpl-lib.cpp"
     break;
 
   case 263: /* implements_stmt: implements_type_ident TIMPLEMENTS ident_def TSEMI  */
-#line 1854 "chpl.ypp"
+#line 1855 "chpl.ypp"
     { (yyval.commentsAndStmt) = TODOSTMT((yyloc)); }
-#line 8218 "bison-chpl-lib.cpp"
+#line 8219 "bison-chpl-lib.cpp"
     break;
 
   case 264: /* implements_stmt: implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI  */
-#line 1856 "chpl.ypp"
+#line 1857 "chpl.ypp"
     { (yyval.commentsAndStmt) = TODOSTMT((yyloc)); }
-#line 8224 "bison-chpl-lib.cpp"
+#line 8225 "bison-chpl-lib.cpp"
     break;
 
   case 265: /* ifc_constraint: TIMPLEMENTS ident_def TLP actual_ls TRP  */
-#line 1861 "chpl.ypp"
+#line 1862 "chpl.ypp"
     { (yyval.expr) = TODOEXPR((yyloc)); }
-#line 8230 "bison-chpl-lib.cpp"
+#line 8231 "bison-chpl-lib.cpp"
     break;
 
   case 266: /* ifc_constraint: implements_type_ident TIMPLEMENTS ident_def  */
-#line 1863 "chpl.ypp"
+#line 1864 "chpl.ypp"
     { (yyval.expr) = TODOEXPR((yyloc)); }
-#line 8236 "bison-chpl-lib.cpp"
+#line 8237 "bison-chpl-lib.cpp"
     break;
 
   case 267: /* ifc_constraint: implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP  */
-#line 1865 "chpl.ypp"
+#line 1866 "chpl.ypp"
     { (yyval.expr) = TODOEXPR((yyloc)); }
-#line 8242 "bison-chpl-lib.cpp"
+#line 8243 "bison-chpl-lib.cpp"
     break;
 
   case 268: /* try_stmt: TTRY tryable_stmt  */
-#line 1870 "chpl.ypp"
+#line 1871 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildTryExprStmt((yyloc), (yyvsp[0].commentsAndStmt), false);
   }
-#line 8250 "bison-chpl-lib.cpp"
+#line 8251 "bison-chpl-lib.cpp"
     break;
 
   case 269: /* try_stmt: TTRYBANG tryable_stmt  */
-#line 1874 "chpl.ypp"
+#line 1875 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildTryExprStmt((yyloc), (yyvsp[0].commentsAndStmt), true);
   }
-#line 8258 "bison-chpl-lib.cpp"
+#line 8259 "bison-chpl-lib.cpp"
     break;
 
   case 270: /* try_stmt: TTRY block_stmt catch_expr_ls  */
-#line 1878 "chpl.ypp"
+#line 1879 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildTryCatchStmt((yyloc), (yyvsp[-1].commentsAndStmt), (yyvsp[0].exprList), false);
   }
-#line 8266 "bison-chpl-lib.cpp"
+#line 8267 "bison-chpl-lib.cpp"
     break;
 
   case 271: /* try_stmt: TTRYBANG block_stmt catch_expr_ls  */
-#line 1882 "chpl.ypp"
+#line 1883 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildTryCatchStmt((yyloc), (yyvsp[-1].commentsAndStmt), (yyvsp[0].exprList), true);
   }
-#line 8274 "bison-chpl-lib.cpp"
+#line 8275 "bison-chpl-lib.cpp"
     break;
 
   case 272: /* catch_expr_ls: %empty  */
-#line 1888 "chpl.ypp"
+#line 1889 "chpl.ypp"
                             { (yyval.exprList) = context->makeList(); }
-#line 8280 "bison-chpl-lib.cpp"
+#line 8281 "bison-chpl-lib.cpp"
     break;
 
   case 273: /* catch_expr_ls: catch_expr_ls catch_expr  */
-#line 1889 "chpl.ypp"
+#line 1890 "chpl.ypp"
                             { (yyval.exprList) = context->appendList((yyvsp[-1].exprList), (yyvsp[0].expr)); }
-#line 8286 "bison-chpl-lib.cpp"
+#line 8287 "bison-chpl-lib.cpp"
     break;
 
   case 274: /* catch_expr: TCATCH block_stmt  */
-#line 1894 "chpl.ypp"
+#line 1895 "chpl.ypp"
   {
     (yyval.expr) = context->buildCatch((yyloc), nullptr, (yyvsp[0].commentsAndStmt), false);
   }
-#line 8294 "bison-chpl-lib.cpp"
+#line 8295 "bison-chpl-lib.cpp"
     break;
 
   case 275: /* catch_expr: TCATCH catch_expr_inner block_stmt  */
-#line 1898 "chpl.ypp"
+#line 1899 "chpl.ypp"
   {
     (yyval.expr) = context->buildCatch((yyloc), (yyvsp[-1].expr), (yyvsp[0].commentsAndStmt), false);
   }
-#line 8302 "bison-chpl-lib.cpp"
+#line 8303 "bison-chpl-lib.cpp"
     break;
 
   case 276: /* catch_expr: TCATCH TLP catch_expr_inner TRP block_stmt  */
-#line 1902 "chpl.ypp"
+#line 1903 "chpl.ypp"
   {
     (yyval.expr) = context->buildCatch((yyloc), (yyvsp[-2].expr), (yyvsp[0].commentsAndStmt), true);
   }
-#line 8310 "bison-chpl-lib.cpp"
+#line 8311 "bison-chpl-lib.cpp"
     break;
 
   case 277: /* catch_expr_inner: ident_def  */
-#line 1909 "chpl.ypp"
+#line 1910 "chpl.ypp"
   {
     (yyval.expr) = Variable::build(BUILDER, LOC((yyloc)), /*attributes*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
@@ -8323,11 +8324,11 @@ yyreduce:
                          /*typeExpression*/ nullptr,
                          /*initExpression*/ nullptr).release();
   }
-#line 8327 "bison-chpl-lib.cpp"
+#line 8328 "bison-chpl-lib.cpp"
     break;
 
   case 278: /* catch_expr_inner: ident_def TCOLON expr  */
-#line 1922 "chpl.ypp"
+#line 1923 "chpl.ypp"
   {
     (yyval.expr) = Variable::build(BUILDER, LOC((yyloc)), /*attributes*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
@@ -8340,160 +8341,160 @@ yyreduce:
                          /*typeExpression*/ toOwned((yyvsp[0].expr)),
                          /*initExpression*/ nullptr).release();
   }
-#line 8344 "bison-chpl-lib.cpp"
+#line 8345 "bison-chpl-lib.cpp"
     break;
 
   case 279: /* throw_stmt: TTHROW expr TSEMI  */
-#line 1938 "chpl.ypp"
+#line 1939 "chpl.ypp"
   {
     auto comments = context->gatherComments((yylsp[-2]));
     auto node = Throw::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-1].expr)));
     (yyval.commentsAndStmt) = { .comments=comments, .stmt=node.release() };
   }
-#line 8354 "bison-chpl-lib.cpp"
+#line 8355 "bison-chpl-lib.cpp"
     break;
 
   case 280: /* select_stmt: TSELECT expr TLCBR when_stmt_ls TRCBR  */
-#line 1946 "chpl.ypp"
+#line 1947 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildSelectStmt((yyloc), toOwned((yyvsp[-3].expr)), (yyvsp[-1].exprList));
   }
-#line 8362 "bison-chpl-lib.cpp"
+#line 8363 "bison-chpl-lib.cpp"
     break;
 
   case 281: /* select_stmt: TSELECT expr TLCBR error TRCBR  */
-#line 1950 "chpl.ypp"
+#line 1951 "chpl.ypp"
   {
     auto comments = context->gatherComments((yyloc));
     auto node = ErroneousExpression::build(BUILDER, LOC((yylsp[-1])));
     (yyval.commentsAndStmt) = { .comments=comments, .stmt=node.release() };
   }
-#line 8372 "bison-chpl-lib.cpp"
+#line 8373 "bison-chpl-lib.cpp"
     break;
 
   case 282: /* when_stmt_ls: %empty  */
-#line 1958 "chpl.ypp"
+#line 1959 "chpl.ypp"
                           { (yyval.exprList) = context->makeList(); }
-#line 8378 "bison-chpl-lib.cpp"
+#line 8379 "bison-chpl-lib.cpp"
     break;
 
   case 283: /* when_stmt_ls: when_stmt_ls when_stmt  */
-#line 1959 "chpl.ypp"
+#line 1960 "chpl.ypp"
                           { (yyval.exprList) = context->appendList((yyvsp[-1].exprList), (yyvsp[0].commentsAndStmt)); }
-#line 8384 "bison-chpl-lib.cpp"
+#line 8385 "bison-chpl-lib.cpp"
     break;
 
   case 284: /* when_stmt: TWHEN expr_ls do_stmt  */
-#line 1964 "chpl.ypp"
+#line 1965 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildWhenStmt((yyloc), (yyvsp[-1].exprList), (yyvsp[0].blockOrDo));
   }
-#line 8392 "bison-chpl-lib.cpp"
+#line 8393 "bison-chpl-lib.cpp"
     break;
 
   case 285: /* when_stmt: TOTHERWISE stmt  */
-#line 1968 "chpl.ypp"
+#line 1969 "chpl.ypp"
   {
     BlockOrDo blockOrDo = { .cs=(yyvsp[0].commentsAndStmt), .usesDo=false };
     (yyval.commentsAndStmt) = context->buildWhenStmt((yyloc), nullptr, blockOrDo);
   }
-#line 8401 "bison-chpl-lib.cpp"
+#line 8402 "bison-chpl-lib.cpp"
     break;
 
   case 286: /* when_stmt: TOTHERWISE TDO stmt  */
-#line 1973 "chpl.ypp"
+#line 1974 "chpl.ypp"
   {
     BlockOrDo blockOrDo = { .cs=(yyvsp[0].commentsAndStmt), .usesDo=true };
     (yyval.commentsAndStmt) = context->buildWhenStmt((yyloc), nullptr, blockOrDo);
   }
-#line 8410 "bison-chpl-lib.cpp"
+#line 8411 "bison-chpl-lib.cpp"
     break;
 
   case 287: /* class_decl_stmt: class_start opt_inherit TLCBR class_level_stmt_ls TRCBR  */
-#line 1983 "chpl.ypp"
+#line 1984 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = context->buildAggregateTypeDecl((yyloc), (yyvsp[-4].typeDeclParts), (yylsp[-3]), (yyvsp[-3].exprList), (yylsp[-2]), (yyvsp[-1].exprList), (yylsp[0]));
       context->exitScope((yyvsp[-4].typeDeclParts).tag, (yyvsp[-4].typeDeclParts).name);
     }
-#line 8419 "bison-chpl-lib.cpp"
+#line 8420 "bison-chpl-lib.cpp"
     break;
 
   case 288: /* class_decl_stmt: class_start opt_inherit TLCBR error TRCBR  */
-#line 1988 "chpl.ypp"
+#line 1989 "chpl.ypp"
     {
       auto contents =
         context->makeList(ErroneousExpression::build(BUILDER, LOC((yylsp[-1]))));
       (yyval.commentsAndStmt) = context->buildAggregateTypeDecl((yyloc), (yyvsp[-4].typeDeclParts), (yylsp[-3]), (yyvsp[-3].exprList), (yylsp[-2]), contents, (yylsp[0]));
       context->exitScope((yyvsp[-4].typeDeclParts).tag, (yyvsp[-4].typeDeclParts).name);
     }
-#line 8430 "bison-chpl-lib.cpp"
+#line 8431 "bison-chpl-lib.cpp"
     break;
 
   case 289: /* class_start: class_tag ident_def  */
-#line 1999 "chpl.ypp"
+#line 2000 "chpl.ypp"
   {
     (yyval.typeDeclParts) = context->enterScopeAndBuildTypeDeclParts((yylsp[-1]), (yyvsp[0].uniqueStr), (yyvsp[-1].astTag));
   }
-#line 8438 "bison-chpl-lib.cpp"
+#line 8439 "bison-chpl-lib.cpp"
     break;
 
   case 290: /* class_tag: TCLASS  */
-#line 2005 "chpl.ypp"
+#line 2006 "chpl.ypp"
            { (yyval.astTag) = asttags::Class; }
-#line 8444 "bison-chpl-lib.cpp"
+#line 8445 "bison-chpl-lib.cpp"
     break;
 
   case 291: /* class_tag: TRECORD  */
-#line 2006 "chpl.ypp"
+#line 2007 "chpl.ypp"
            { (yyval.astTag) = asttags::Record; }
-#line 8450 "bison-chpl-lib.cpp"
+#line 8451 "bison-chpl-lib.cpp"
     break;
 
   case 292: /* class_tag: TUNION  */
-#line 2007 "chpl.ypp"
+#line 2008 "chpl.ypp"
            { (yyval.astTag) = asttags::Union; }
-#line 8456 "bison-chpl-lib.cpp"
+#line 8457 "bison-chpl-lib.cpp"
     break;
 
   case 293: /* opt_inherit: %empty  */
-#line 2011 "chpl.ypp"
+#line 2012 "chpl.ypp"
                   { (yyval.exprList) = nullptr; }
-#line 8462 "bison-chpl-lib.cpp"
+#line 8463 "bison-chpl-lib.cpp"
     break;
 
   case 294: /* opt_inherit: TCOLON expr_ls  */
-#line 2012 "chpl.ypp"
+#line 2013 "chpl.ypp"
                   { (yyval.exprList) = (yyvsp[0].exprList); }
-#line 8468 "bison-chpl-lib.cpp"
+#line 8469 "bison-chpl-lib.cpp"
     break;
 
   case 295: /* class_level_stmt_ls: %empty  */
-#line 2016 "chpl.ypp"
+#line 2017 "chpl.ypp"
   {
     /* nothing */
     (yyval.exprList) = context->makeList();
   }
-#line 8477 "bison-chpl-lib.cpp"
+#line 8478 "bison-chpl-lib.cpp"
     break;
 
   case 296: /* class_level_stmt_ls: class_level_stmt_ls deprecated_class_level_stmt  */
-#line 2021 "chpl.ypp"
+#line 2022 "chpl.ypp"
   {
     context->appendList((yyvsp[-1].exprList), (yyvsp[0].commentsAndStmt));
   }
-#line 8485 "bison-chpl-lib.cpp"
+#line 8486 "bison-chpl-lib.cpp"
     break;
 
   case 297: /* class_level_stmt_ls: class_level_stmt_ls pragma_ls deprecated_class_level_stmt  */
-#line 2025 "chpl.ypp"
+#line 2026 "chpl.ypp"
   {
     context->appendList((yyvsp[-2].exprList), context->buildPragmaStmt((yylsp[0]), (yyvsp[0].commentsAndStmt)));
   }
-#line 8493 "bison-chpl-lib.cpp"
+#line 8494 "bison-chpl-lib.cpp"
     break;
 
   case 298: /* enum_decl_stmt: enum_header_lcbr enum_ls TRCBR  */
-#line 2032 "chpl.ypp"
+#line 2033 "chpl.ypp"
     {
       TypeDeclParts parts = (yyvsp[-2].typeDeclParts);
       ParserExprList* list = (yyvsp[-1].exprList);
@@ -8510,11 +8511,11 @@ yyreduce:
       context->resetDeclState();
       context->clearComments();
     }
-#line 8514 "bison-chpl-lib.cpp"
+#line 8515 "bison-chpl-lib.cpp"
     break;
 
   case 299: /* enum_decl_stmt: enum_header_lcbr error TRCBR  */
-#line 2049 "chpl.ypp"
+#line 2050 "chpl.ypp"
     {
       TypeDeclParts parts = (yyvsp[-2].typeDeclParts);
       auto err = ErroneousExpression::build(BUILDER, LOC((yylsp[-1])));
@@ -8524,99 +8525,99 @@ yyreduce:
       context->resetDeclState();
       context->clearComments();
     }
-#line 8528 "bison-chpl-lib.cpp"
+#line 8529 "bison-chpl-lib.cpp"
     break;
 
   case 300: /* enum_header_lcbr: TENUM ident_def TLCBR  */
-#line 2062 "chpl.ypp"
+#line 2063 "chpl.ypp"
   {
     (yyval.typeDeclParts) = context->enterScopeAndBuildTypeDeclParts((yylsp[-2]), (yyvsp[-1].uniqueStr), asttags::Enum);
   }
-#line 8536 "bison-chpl-lib.cpp"
+#line 8537 "bison-chpl-lib.cpp"
     break;
 
   case 301: /* enum_ls: deprecated_enum_item  */
-#line 2069 "chpl.ypp"
+#line 2070 "chpl.ypp"
   {
     (yyval.exprList) = context->makeList((yyvsp[0].commentsAndStmt));
     context->resetAttributePartsState();
   }
-#line 8545 "bison-chpl-lib.cpp"
+#line 8546 "bison-chpl-lib.cpp"
     break;
 
   case 302: /* enum_ls: enum_ls TCOMMA  */
-#line 2074 "chpl.ypp"
+#line 2075 "chpl.ypp"
   {
     (yyval.exprList) = (yyvsp[-1].exprList);
     context->clearCommentsBefore((yylsp[0]));
     context->resetAttributePartsState();
   }
-#line 8555 "bison-chpl-lib.cpp"
+#line 8556 "bison-chpl-lib.cpp"
     break;
 
   case 303: /* $@8: %empty  */
-#line 2080 "chpl.ypp"
+#line 2081 "chpl.ypp"
   {
     context->clearCommentsBefore((yylsp[0]));
     context->resetAttributePartsState();
   }
-#line 8564 "bison-chpl-lib.cpp"
+#line 8565 "bison-chpl-lib.cpp"
     break;
 
   case 304: /* enum_ls: enum_ls TCOMMA $@8 deprecated_enum_item  */
-#line 2085 "chpl.ypp"
+#line 2086 "chpl.ypp"
   {
     context->appendList((yyvsp[-3].exprList), (yyvsp[0].commentsAndStmt));
     context->resetAttributePartsState();
   }
-#line 8573 "bison-chpl-lib.cpp"
+#line 8574 "bison-chpl-lib.cpp"
     break;
 
   case 306: /* $@9: %empty  */
-#line 2094 "chpl.ypp"
+#line 2095 "chpl.ypp"
   {
     context->noteDeprecation((yyloc), (yyvsp[0].expr));
   }
-#line 8581 "bison-chpl-lib.cpp"
+#line 8582 "bison-chpl-lib.cpp"
     break;
 
   case 307: /* deprecated_enum_item: TDEPRECATED STRINGLITERAL $@9 enum_item  */
-#line 2098 "chpl.ypp"
+#line 2099 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = (yyvsp[0].commentsAndStmt);
   }
-#line 8589 "bison-chpl-lib.cpp"
+#line 8590 "bison-chpl-lib.cpp"
     break;
 
   case 308: /* $@10: %empty  */
-#line 2102 "chpl.ypp"
+#line 2103 "chpl.ypp"
   {
     context->noteDeprecation((yyloc), nullptr);
   }
-#line 8597 "bison-chpl-lib.cpp"
+#line 8598 "bison-chpl-lib.cpp"
     break;
 
   case 309: /* deprecated_enum_item: TDEPRECATED $@10 enum_item  */
-#line 2106 "chpl.ypp"
+#line 2107 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = (yyvsp[0].commentsAndStmt);
   }
-#line 8605 "bison-chpl-lib.cpp"
+#line 8606 "bison-chpl-lib.cpp"
     break;
 
   case 310: /* enum_item: ident_def  */
-#line 2113 "chpl.ypp"
+#line 2114 "chpl.ypp"
     {
       auto decl = EnumElement::build(BUILDER, LOC((yyloc)),
                                      context->buildAttributes((yyloc)),
                                      (yyvsp[0].uniqueStr));
       (yyval.commentsAndStmt) = STMT((yyloc), decl.release());
     }
-#line 8616 "bison-chpl-lib.cpp"
+#line 8617 "bison-chpl-lib.cpp"
     break;
 
   case 311: /* enum_item: ident_def TASSIGN expr  */
-#line 2120 "chpl.ypp"
+#line 2121 "chpl.ypp"
     {
       auto decl = EnumElement::build(BUILDER, LOC((yyloc)),
                                      context->buildAttributes((yyloc)),
@@ -8625,59 +8626,59 @@ yyreduce:
       (yyval.commentsAndStmt) = STMT((yyloc), decl.release());
       context->clearCommentsBefore((yylsp[0]));
     }
-#line 8629 "bison-chpl-lib.cpp"
+#line 8630 "bison-chpl-lib.cpp"
     break;
 
   case 312: /* lambda_decl_expr: TLAMBDA req_formal_ls opt_ret_tag opt_type opt_lifetime_where function_body_stmt  */
-#line 2132 "chpl.ypp"
+#line 2133 "chpl.ypp"
   {
     // TODO (dlongnecke): Leave this unimplemented for now? Since we will
     // be addressing FCFs in 1.26...
     (yyval.expr) = TODOEXPR((yyloc));
   }
-#line 8639 "bison-chpl-lib.cpp"
+#line 8640 "bison-chpl-lib.cpp"
     break;
 
   case 314: /* linkage_spec: linkage_spec_empty  */
-#line 2143 "chpl.ypp"
+#line 2144 "chpl.ypp"
                      { (yyval.functionParts) = context->makeFunctionParts(false, false); }
-#line 8645 "bison-chpl-lib.cpp"
+#line 8646 "bison-chpl-lib.cpp"
     break;
 
   case 315: /* linkage_spec: TINLINE  */
-#line 2144 "chpl.ypp"
+#line 2145 "chpl.ypp"
                      { context->noteDeclStartLoc((yylsp[0]));
                        (yyval.functionParts) = context->makeFunctionParts(true, false); }
-#line 8652 "bison-chpl-lib.cpp"
+#line 8653 "bison-chpl-lib.cpp"
     break;
 
   case 316: /* linkage_spec: TOVERRIDE  */
-#line 2146 "chpl.ypp"
+#line 2147 "chpl.ypp"
                      { context->noteDeclStartLoc((yylsp[0]));
                        (yyval.functionParts) = context->makeFunctionParts(false, true); }
-#line 8659 "bison-chpl-lib.cpp"
+#line 8660 "bison-chpl-lib.cpp"
     break;
 
   case 317: /* fn_decl_stmt_complete: fn_decl_stmt  */
-#line 2152 "chpl.ypp"
+#line 2153 "chpl.ypp"
     {
       (yyval.commentsAndStmt) = context->buildFunctionDecl((yyloc), (yyvsp[0].functionParts));
     }
-#line 8667 "bison-chpl-lib.cpp"
+#line 8668 "bison-chpl-lib.cpp"
     break;
 
   case 318: /* $@11: %empty  */
-#line 2161 "chpl.ypp"
+#line 2162 "chpl.ypp"
     {
       context->clearComments();
       context->resetDeclState();
       context->enterScope(asttags::Function, (yyvsp[-4].functionParts).name);
     }
-#line 8677 "bison-chpl-lib.cpp"
+#line 8678 "bison-chpl-lib.cpp"
     break;
 
   case 319: /* fn_decl_stmt: fn_decl_stmt_inner opt_ret_tag opt_ret_type opt_throws_error opt_lifetime_where $@11 opt_function_body_stmt  */
-#line 2167 "chpl.ypp"
+#line 2168 "chpl.ypp"
     {
       FunctionParts fp = (yyvsp[-6].functionParts);
       fp.returnIntent = (yyvsp[-5].returnTag);
@@ -8694,11 +8695,11 @@ yyreduce:
 
       (yyval.functionParts) = fp;
     }
-#line 8698 "bison-chpl-lib.cpp"
+#line 8699 "bison-chpl-lib.cpp"
     break;
 
   case 320: /* fn_decl_stmt_inner: fn_decl_stmt_start opt_this_intent_tag fn_ident opt_formal_ls  */
-#line 2187 "chpl.ypp"
+#line 2188 "chpl.ypp"
     {
       FunctionParts fp = (yyvsp[-3].functionParts);
       fp.thisIntent = (yyvsp[-2].intentTag);
@@ -8706,11 +8707,11 @@ yyreduce:
       fp.formals = (yyvsp[0].exprList);
       (yyval.functionParts) = fp;
     }
-#line 8710 "bison-chpl-lib.cpp"
+#line 8711 "bison-chpl-lib.cpp"
     break;
 
   case 321: /* fn_decl_stmt_inner: fn_decl_stmt_start opt_this_intent_tag assignop_ident opt_formal_ls  */
-#line 2195 "chpl.ypp"
+#line 2196 "chpl.ypp"
     {
       FunctionParts fp = (yyvsp[-3].functionParts);
       fp.thisIntent = (yyvsp[-2].intentTag);
@@ -8718,11 +8719,11 @@ yyreduce:
       fp.formals = (yyvsp[0].exprList);
       (yyval.functionParts) = fp;
     }
-#line 8722 "bison-chpl-lib.cpp"
+#line 8723 "bison-chpl-lib.cpp"
     break;
 
   case 322: /* fn_decl_stmt_inner: fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls  */
-#line 2203 "chpl.ypp"
+#line 2204 "chpl.ypp"
     {
       FunctionParts fp = (yyvsp[-5].functionParts);
       fp.thisIntent = (yyvsp[-4].intentTag);
@@ -8733,11 +8734,11 @@ yyreduce:
       fp.formals = (yyvsp[0].exprList);
       (yyval.functionParts) = fp;
     }
-#line 8737 "bison-chpl-lib.cpp"
+#line 8738 "bison-chpl-lib.cpp"
     break;
 
   case 323: /* fn_decl_stmt_inner: fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls  */
-#line 2214 "chpl.ypp"
+#line 2215 "chpl.ypp"
     {
       FunctionParts fp = (yyvsp[-5].functionParts);
       fp.thisIntent = (yyvsp[-4].intentTag);
@@ -8748,21 +8749,21 @@ yyreduce:
       fp.formals = (yyvsp[0].exprList);
       (yyval.functionParts) = fp;
     }
-#line 8752 "bison-chpl-lib.cpp"
+#line 8753 "bison-chpl-lib.cpp"
     break;
 
   case 324: /* fn_decl_stmt_inner: fn_decl_stmt_start opt_this_intent_tag error opt_formal_ls  */
-#line 2225 "chpl.ypp"
+#line 2226 "chpl.ypp"
     {
       FunctionParts fp = (yyvsp[-3].functionParts);
       fp.errorExpr = ErroneousExpression::build(BUILDER, LOC((yyloc))).release();
       (yyval.functionParts) = fp;
     }
-#line 8762 "bison-chpl-lib.cpp"
+#line 8763 "bison-chpl-lib.cpp"
     break;
 
   case 325: /* fn_decl_stmt_start: linkage_spec proc_iter_or_op  */
-#line 2234 "chpl.ypp"
+#line 2235 "chpl.ypp"
     {
       FunctionParts fp = (yyvsp[-1].functionParts);
       auto loc = context->declStartLoc((yylsp[0]));
@@ -8772,87 +8773,87 @@ yyreduce:
       fp.kind = (yyvsp[0].functionKind);
       (yyval.functionParts) = fp;
     }
-#line 8776 "bison-chpl-lib.cpp"
+#line 8777 "bison-chpl-lib.cpp"
     break;
 
   case 327: /* fn_decl_receiver_expr: TLP expr TRP  */
-#line 2247 "chpl.ypp"
+#line 2248 "chpl.ypp"
                       { (yyval.expr) = (yyvsp[-1].expr); }
-#line 8782 "bison-chpl-lib.cpp"
+#line 8783 "bison-chpl-lib.cpp"
     break;
 
   case 330: /* fn_ident: ident_def TBANG  */
-#line 2254 "chpl.ypp"
+#line 2255 "chpl.ypp"
   {
     std::string s = (yyvsp[-1].uniqueStr).c_str();
     s += "!";
     (yyval.uniqueStr) = STR(s.c_str());
   }
-#line 8792 "bison-chpl-lib.cpp"
+#line 8793 "bison-chpl-lib.cpp"
     break;
 
   case 371: /* formal_var_arg_expr: TDOTDOTDOT  */
-#line 2312 "chpl.ypp"
+#line 2313 "chpl.ypp"
                          { (yyval.expr) = nullptr; }
-#line 8798 "bison-chpl-lib.cpp"
+#line 8799 "bison-chpl-lib.cpp"
     break;
 
   case 372: /* formal_var_arg_expr: TDOTDOTDOT expr  */
-#line 2313 "chpl.ypp"
+#line 2314 "chpl.ypp"
                          { (yyval.expr) = (yyvsp[0].expr); }
-#line 8804 "bison-chpl-lib.cpp"
+#line 8805 "bison-chpl-lib.cpp"
     break;
 
   case 373: /* formal_var_arg_expr: TDOTDOTDOT query_expr  */
-#line 2314 "chpl.ypp"
+#line 2315 "chpl.ypp"
                          { (yyval.expr) = (yyvsp[0].expr); }
-#line 8810 "bison-chpl-lib.cpp"
+#line 8811 "bison-chpl-lib.cpp"
     break;
 
   case 374: /* opt_formal_ls: %empty  */
-#line 2318 "chpl.ypp"
+#line 2319 "chpl.ypp"
                      { (yyval.exprList) = context->parenlessMarker; }
-#line 8816 "bison-chpl-lib.cpp"
+#line 8817 "bison-chpl-lib.cpp"
     break;
 
   case 375: /* opt_formal_ls: TLP formal_ls TRP  */
-#line 2319 "chpl.ypp"
+#line 2320 "chpl.ypp"
                      { (yyval.exprList) = (yyvsp[-1].exprList); }
-#line 8822 "bison-chpl-lib.cpp"
+#line 8823 "bison-chpl-lib.cpp"
     break;
 
   case 376: /* req_formal_ls: TLP formal_ls TRP  */
-#line 2323 "chpl.ypp"
+#line 2324 "chpl.ypp"
                      { (yyval.exprList) = (yyvsp[-1].exprList); }
-#line 8828 "bison-chpl-lib.cpp"
+#line 8829 "bison-chpl-lib.cpp"
     break;
 
   case 377: /* formal_ls_inner: formal  */
-#line 2327 "chpl.ypp"
+#line 2328 "chpl.ypp"
                                  { (yyval.exprList) = context->makeList((yyvsp[0].expr)); }
-#line 8834 "bison-chpl-lib.cpp"
+#line 8835 "bison-chpl-lib.cpp"
     break;
 
   case 378: /* formal_ls_inner: formal_ls_inner TCOMMA formal  */
-#line 2328 "chpl.ypp"
+#line 2329 "chpl.ypp"
                                  { (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr)); }
-#line 8840 "bison-chpl-lib.cpp"
+#line 8841 "bison-chpl-lib.cpp"
     break;
 
   case 379: /* formal_ls: %empty  */
-#line 2332 "chpl.ypp"
+#line 2333 "chpl.ypp"
                            { (yyval.exprList) = context->makeList(); }
-#line 8846 "bison-chpl-lib.cpp"
+#line 8847 "bison-chpl-lib.cpp"
     break;
 
   case 380: /* formal_ls: formal_ls_inner  */
-#line 2333 "chpl.ypp"
+#line 2334 "chpl.ypp"
                            { (yyval.exprList) = (yyvsp[0].exprList); }
-#line 8852 "bison-chpl-lib.cpp"
+#line 8853 "bison-chpl-lib.cpp"
     break;
 
   case 381: /* formal: opt_formal_intent_tag ident_def opt_formal_type opt_init_expr  */
-#line 2338 "chpl.ypp"
+#line 2339 "chpl.ypp"
   {
     (yyval.expr) = Formal::build(BUILDER, LOC((yyloc)), /*attributes*/ nullptr,
                        /*name*/ (yyvsp[-2].uniqueStr),
@@ -8861,11 +8862,11 @@ yyreduce:
                        toOwned((yyvsp[0].expr))).release();
     context->noteIsBuildingFormal(false);
   }
-#line 8865 "bison-chpl-lib.cpp"
+#line 8866 "bison-chpl-lib.cpp"
     break;
 
   case 382: /* formal: pragma_ls opt_formal_intent_tag ident_def opt_formal_type opt_init_expr  */
-#line 2347 "chpl.ypp"
+#line 2348 "chpl.ypp"
   {
     auto attributes = context->buildAttributes((yyloc));
     (yyval.expr) = Formal::build(BUILDER, LOC((yyloc)), std::move(attributes),
@@ -8876,11 +8877,11 @@ yyreduce:
     context->noteIsBuildingFormal(false);
     context->resetAttributePartsState();
   }
-#line 8880 "bison-chpl-lib.cpp"
+#line 8881 "bison-chpl-lib.cpp"
     break;
 
   case 383: /* formal: opt_formal_intent_tag ident_def opt_formal_type formal_var_arg_expr  */
-#line 2358 "chpl.ypp"
+#line 2359 "chpl.ypp"
   {
     (yyval.expr) = VarArgFormal::build(BUILDER, LOC((yyloc)),
                              /*attributes*/ nullptr,
@@ -8890,11 +8891,11 @@ yyreduce:
                              toOwned((yyvsp[0].expr))).release();
     context->noteIsBuildingFormal(false);
   }
-#line 8894 "bison-chpl-lib.cpp"
+#line 8895 "bison-chpl-lib.cpp"
     break;
 
   case 384: /* formal: pragma_ls opt_formal_intent_tag ident_def opt_formal_type formal_var_arg_expr  */
-#line 2368 "chpl.ypp"
+#line 2369 "chpl.ypp"
   {
     auto attributes = context->buildAttributes((yyloc));
     (yyval.expr) = VarArgFormal::build(BUILDER, LOC((yyloc)),
@@ -8906,11 +8907,11 @@ yyreduce:
     context->noteIsBuildingFormal(false);
     context->resetAttributePartsState();
   }
-#line 8910 "bison-chpl-lib.cpp"
+#line 8911 "bison-chpl-lib.cpp"
     break;
 
   case 385: /* formal: opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr  */
-#line 2381 "chpl.ypp"
+#line 2382 "chpl.ypp"
   {
     (yyval.expr) = TupleDecl::build(BUILDER, LOC((yyloc)), /*attributes*/ nullptr,
                           context->visibility,
@@ -8921,370 +8922,370 @@ yyreduce:
                           toOwned((yyvsp[0].expr))).release();
     context->noteIsBuildingFormal(false);
   }
-#line 8925 "bison-chpl-lib.cpp"
+#line 8926 "bison-chpl-lib.cpp"
     break;
 
   case 386: /* formal: opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type formal_var_arg_expr  */
-#line 2393 "chpl.ypp"
+#line 2394 "chpl.ypp"
   {
     (yyval.expr) = ERROR((yyloc), "variable-length argument may not be grouped in a tuple");
   }
-#line 8933 "bison-chpl-lib.cpp"
+#line 8934 "bison-chpl-lib.cpp"
     break;
 
   case 387: /* opt_formal_intent_tag: %empty  */
-#line 2399 "chpl.ypp"
+#line 2400 "chpl.ypp"
   {
     context->noteIsBuildingFormal(true);
     (yyval.intentTag) = Formal::DEFAULT_INTENT;
   }
-#line 8942 "bison-chpl-lib.cpp"
+#line 8943 "bison-chpl-lib.cpp"
     break;
 
   case 388: /* opt_formal_intent_tag: required_intent_tag  */
-#line 2404 "chpl.ypp"
+#line 2405 "chpl.ypp"
   {
     context->noteIsBuildingFormal(true);
     (yyval.intentTag) = (yyvsp[0].intentTag);
   }
-#line 8951 "bison-chpl-lib.cpp"
+#line 8952 "bison-chpl-lib.cpp"
     break;
 
   case 389: /* required_intent_tag: TIN  */
-#line 2411 "chpl.ypp"
+#line 2412 "chpl.ypp"
               { (yyval.intentTag) = Formal::IN; }
-#line 8957 "bison-chpl-lib.cpp"
+#line 8958 "bison-chpl-lib.cpp"
     break;
 
   case 390: /* required_intent_tag: TINOUT  */
-#line 2412 "chpl.ypp"
+#line 2413 "chpl.ypp"
               { (yyval.intentTag) = Formal::INOUT; }
-#line 8963 "bison-chpl-lib.cpp"
+#line 8964 "bison-chpl-lib.cpp"
     break;
 
   case 391: /* required_intent_tag: TOUT  */
-#line 2413 "chpl.ypp"
+#line 2414 "chpl.ypp"
               { (yyval.intentTag) = Formal::OUT; }
-#line 8969 "bison-chpl-lib.cpp"
+#line 8970 "bison-chpl-lib.cpp"
     break;
 
   case 392: /* required_intent_tag: TCONST TIN  */
-#line 2414 "chpl.ypp"
+#line 2415 "chpl.ypp"
               { (yyval.intentTag) = Formal::CONST_IN; }
-#line 8975 "bison-chpl-lib.cpp"
+#line 8976 "bison-chpl-lib.cpp"
     break;
 
   case 393: /* required_intent_tag: TCONST TREF  */
-#line 2415 "chpl.ypp"
+#line 2416 "chpl.ypp"
               { (yyval.intentTag) = Formal::CONST_REF; }
-#line 8981 "bison-chpl-lib.cpp"
+#line 8982 "bison-chpl-lib.cpp"
     break;
 
   case 394: /* required_intent_tag: TCONST  */
-#line 2416 "chpl.ypp"
+#line 2417 "chpl.ypp"
               { (yyval.intentTag) = Formal::CONST; }
-#line 8987 "bison-chpl-lib.cpp"
+#line 8988 "bison-chpl-lib.cpp"
     break;
 
   case 395: /* required_intent_tag: TPARAM  */
-#line 2417 "chpl.ypp"
+#line 2418 "chpl.ypp"
               { (yyval.intentTag) = Formal::PARAM; }
-#line 8993 "bison-chpl-lib.cpp"
+#line 8994 "bison-chpl-lib.cpp"
     break;
 
   case 396: /* required_intent_tag: TREF  */
-#line 2418 "chpl.ypp"
+#line 2419 "chpl.ypp"
               { (yyval.intentTag) = Formal::REF; }
-#line 8999 "bison-chpl-lib.cpp"
+#line 9000 "bison-chpl-lib.cpp"
     break;
 
   case 397: /* required_intent_tag: TTYPE  */
-#line 2419 "chpl.ypp"
+#line 2420 "chpl.ypp"
               { (yyval.intentTag) = Formal::TYPE; }
-#line 9005 "bison-chpl-lib.cpp"
+#line 9006 "bison-chpl-lib.cpp"
     break;
 
   case 398: /* opt_this_intent_tag: %empty  */
-#line 2423 "chpl.ypp"
+#line 2424 "chpl.ypp"
                 { (yyval.intentTag) = Formal::DEFAULT_INTENT; }
-#line 9011 "bison-chpl-lib.cpp"
+#line 9012 "bison-chpl-lib.cpp"
     break;
 
   case 399: /* opt_this_intent_tag: TPARAM  */
-#line 2424 "chpl.ypp"
+#line 2425 "chpl.ypp"
                 { (yyval.intentTag) = Formal::PARAM; }
-#line 9017 "bison-chpl-lib.cpp"
+#line 9018 "bison-chpl-lib.cpp"
     break;
 
   case 400: /* opt_this_intent_tag: TREF  */
-#line 2425 "chpl.ypp"
+#line 2426 "chpl.ypp"
                 { (yyval.intentTag) = Formal::REF; }
-#line 9023 "bison-chpl-lib.cpp"
+#line 9024 "bison-chpl-lib.cpp"
     break;
 
   case 401: /* opt_this_intent_tag: TCONST TREF  */
-#line 2426 "chpl.ypp"
+#line 2427 "chpl.ypp"
                 { (yyval.intentTag) = Formal::CONST_REF; }
-#line 9029 "bison-chpl-lib.cpp"
+#line 9030 "bison-chpl-lib.cpp"
     break;
 
   case 402: /* opt_this_intent_tag: TCONST  */
-#line 2427 "chpl.ypp"
+#line 2428 "chpl.ypp"
                 { (yyval.intentTag) = Formal::CONST; }
-#line 9035 "bison-chpl-lib.cpp"
+#line 9036 "bison-chpl-lib.cpp"
     break;
 
   case 403: /* opt_this_intent_tag: TTYPE  */
-#line 2428 "chpl.ypp"
+#line 2429 "chpl.ypp"
                 { (yyval.intentTag) = Formal::TYPE; }
-#line 9041 "bison-chpl-lib.cpp"
+#line 9042 "bison-chpl-lib.cpp"
     break;
 
   case 404: /* proc_iter_or_op: TPROC  */
-#line 2432 "chpl.ypp"
+#line 2433 "chpl.ypp"
             { (yyval.functionKind) = Function::PROC; }
-#line 9047 "bison-chpl-lib.cpp"
+#line 9048 "bison-chpl-lib.cpp"
     break;
 
   case 405: /* proc_iter_or_op: TITER  */
-#line 2433 "chpl.ypp"
+#line 2434 "chpl.ypp"
             { (yyval.functionKind) = Function::ITER; }
-#line 9053 "bison-chpl-lib.cpp"
+#line 9054 "bison-chpl-lib.cpp"
     break;
 
   case 406: /* proc_iter_or_op: TOPERATOR  */
-#line 2434 "chpl.ypp"
+#line 2435 "chpl.ypp"
             { (yyval.functionKind) = Function::OPERATOR; }
-#line 9059 "bison-chpl-lib.cpp"
+#line 9060 "bison-chpl-lib.cpp"
     break;
 
   case 407: /* opt_ret_tag: %empty  */
-#line 2438 "chpl.ypp"
+#line 2439 "chpl.ypp"
               { (yyval.returnTag) = Function::DEFAULT_RETURN_INTENT; }
-#line 9065 "bison-chpl-lib.cpp"
+#line 9066 "bison-chpl-lib.cpp"
     break;
 
   case 408: /* opt_ret_tag: TCONST  */
-#line 2439 "chpl.ypp"
+#line 2440 "chpl.ypp"
               { (yyval.returnTag) = Function::CONST; }
-#line 9071 "bison-chpl-lib.cpp"
+#line 9072 "bison-chpl-lib.cpp"
     break;
 
   case 409: /* opt_ret_tag: TCONST TREF  */
-#line 2440 "chpl.ypp"
+#line 2441 "chpl.ypp"
               { (yyval.returnTag) = Function::CONST_REF; }
-#line 9077 "bison-chpl-lib.cpp"
+#line 9078 "bison-chpl-lib.cpp"
     break;
 
   case 410: /* opt_ret_tag: TREF  */
-#line 2441 "chpl.ypp"
+#line 2442 "chpl.ypp"
               { (yyval.returnTag) = Function::REF; }
-#line 9083 "bison-chpl-lib.cpp"
+#line 9084 "bison-chpl-lib.cpp"
     break;
 
   case 411: /* opt_ret_tag: TPARAM  */
-#line 2442 "chpl.ypp"
+#line 2443 "chpl.ypp"
               { (yyval.returnTag) = Function::PARAM; }
-#line 9089 "bison-chpl-lib.cpp"
+#line 9090 "bison-chpl-lib.cpp"
     break;
 
   case 412: /* opt_ret_tag: TTYPE  */
-#line 2443 "chpl.ypp"
+#line 2444 "chpl.ypp"
               { (yyval.returnTag) = Function::TYPE; }
-#line 9095 "bison-chpl-lib.cpp"
+#line 9096 "bison-chpl-lib.cpp"
     break;
 
   case 413: /* opt_throws_error: %empty  */
-#line 2447 "chpl.ypp"
+#line 2448 "chpl.ypp"
           { (yyval.throwsTag) = ThrowsTag_DEFAULT; }
-#line 9101 "bison-chpl-lib.cpp"
+#line 9102 "bison-chpl-lib.cpp"
     break;
 
   case 414: /* opt_throws_error: TTHROWS  */
-#line 2448 "chpl.ypp"
+#line 2449 "chpl.ypp"
           { (yyval.throwsTag) = ThrowsTag_THROWS; }
-#line 9107 "bison-chpl-lib.cpp"
+#line 9108 "bison-chpl-lib.cpp"
     break;
 
   case 415: /* opt_function_body_stmt: TSEMI  */
-#line 2451 "chpl.ypp"
+#line 2452 "chpl.ypp"
                       { context->clearComments(); (yyval.exprList) = nullptr; }
-#line 9113 "bison-chpl-lib.cpp"
+#line 9114 "bison-chpl-lib.cpp"
     break;
 
   case 416: /* opt_function_body_stmt: function_body_stmt  */
-#line 2452 "chpl.ypp"
+#line 2453 "chpl.ypp"
                       { (yyval.exprList) = (yyvsp[0].exprList); }
-#line 9119 "bison-chpl-lib.cpp"
+#line 9120 "bison-chpl-lib.cpp"
     break;
 
   case 417: /* function_body_stmt: block_stmt_body  */
-#line 2456 "chpl.ypp"
+#line 2457 "chpl.ypp"
                     { (yyval.exprList) = (yyvsp[0].exprList); }
-#line 9125 "bison-chpl-lib.cpp"
+#line 9126 "bison-chpl-lib.cpp"
     break;
 
   case 418: /* function_body_stmt: return_stmt  */
-#line 2457 "chpl.ypp"
+#line 2458 "chpl.ypp"
                     { context->clearComments(); (yyval.exprList) = context->makeList((yyvsp[0].commentsAndStmt)); }
-#line 9131 "bison-chpl-lib.cpp"
+#line 9132 "bison-chpl-lib.cpp"
     break;
 
   case 419: /* query_expr: TQUERIEDIDENT  */
-#line 2461 "chpl.ypp"
+#line 2462 "chpl.ypp"
                   { (yyval.expr) = context->buildTypeQuery((yyloc), (yyvsp[0].uniqueStr)); }
-#line 9137 "bison-chpl-lib.cpp"
+#line 9138 "bison-chpl-lib.cpp"
     break;
 
   case 420: /* opt_lifetime_where: %empty  */
-#line 2466 "chpl.ypp"
+#line 2467 "chpl.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(nullptr, nullptr); }
-#line 9143 "bison-chpl-lib.cpp"
+#line 9144 "bison-chpl-lib.cpp"
     break;
 
   case 421: /* opt_lifetime_where: TWHERE expr  */
-#line 2468 "chpl.ypp"
+#line 2469 "chpl.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[0].expr), nullptr); }
-#line 9149 "bison-chpl-lib.cpp"
+#line 9150 "bison-chpl-lib.cpp"
     break;
 
   case 422: /* opt_lifetime_where: TLIFETIME lifetime_components_expr  */
-#line 2470 "chpl.ypp"
+#line 2471 "chpl.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(nullptr, (yyvsp[0].exprList)); }
-#line 9155 "bison-chpl-lib.cpp"
+#line 9156 "bison-chpl-lib.cpp"
     break;
 
   case 423: /* opt_lifetime_where: TWHERE expr TLIFETIME lifetime_components_expr  */
-#line 2472 "chpl.ypp"
+#line 2473 "chpl.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[-2].expr), (yyvsp[0].exprList)); }
-#line 9161 "bison-chpl-lib.cpp"
+#line 9162 "bison-chpl-lib.cpp"
     break;
 
   case 424: /* opt_lifetime_where: TLIFETIME lifetime_components_expr TWHERE expr  */
-#line 2474 "chpl.ypp"
+#line 2475 "chpl.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[0].expr), (yyvsp[-2].exprList)); }
-#line 9167 "bison-chpl-lib.cpp"
+#line 9168 "bison-chpl-lib.cpp"
     break;
 
   case 425: /* lifetime_components_expr: lifetime_expr  */
-#line 2479 "chpl.ypp"
+#line 2480 "chpl.ypp"
   { (yyval.exprList) = context->makeList((yyvsp[0].expr)); }
-#line 9173 "bison-chpl-lib.cpp"
+#line 9174 "bison-chpl-lib.cpp"
     break;
 
   case 426: /* lifetime_components_expr: lifetime_components_expr TCOMMA lifetime_expr  */
-#line 2481 "chpl.ypp"
+#line 2482 "chpl.ypp"
   { (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr)); }
-#line 9179 "bison-chpl-lib.cpp"
+#line 9180 "bison-chpl-lib.cpp"
     break;
 
   case 427: /* lifetime_expr: lifetime_ident TASSIGN lifetime_ident  */
-#line 2486 "chpl.ypp"
+#line 2487 "chpl.ypp"
     { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9185 "bison-chpl-lib.cpp"
+#line 9186 "bison-chpl-lib.cpp"
     break;
 
   case 428: /* lifetime_expr: lifetime_ident TLESS lifetime_ident  */
-#line 2488 "chpl.ypp"
+#line 2489 "chpl.ypp"
     { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9191 "bison-chpl-lib.cpp"
+#line 9192 "bison-chpl-lib.cpp"
     break;
 
   case 429: /* lifetime_expr: lifetime_ident TLESSEQUAL lifetime_ident  */
-#line 2490 "chpl.ypp"
+#line 2491 "chpl.ypp"
     { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9197 "bison-chpl-lib.cpp"
+#line 9198 "bison-chpl-lib.cpp"
     break;
 
   case 430: /* lifetime_expr: lifetime_ident TEQUAL lifetime_ident  */
-#line 2492 "chpl.ypp"
+#line 2493 "chpl.ypp"
     { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9203 "bison-chpl-lib.cpp"
+#line 9204 "bison-chpl-lib.cpp"
     break;
 
   case 431: /* lifetime_expr: lifetime_ident TGREATER lifetime_ident  */
-#line 2494 "chpl.ypp"
+#line 2495 "chpl.ypp"
     { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9209 "bison-chpl-lib.cpp"
+#line 9210 "bison-chpl-lib.cpp"
     break;
 
   case 432: /* lifetime_expr: lifetime_ident TGREATEREQUAL lifetime_ident  */
-#line 2496 "chpl.ypp"
+#line 2497 "chpl.ypp"
     { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9215 "bison-chpl-lib.cpp"
+#line 9216 "bison-chpl-lib.cpp"
     break;
 
   case 433: /* lifetime_expr: TRETURN lifetime_ident  */
-#line 2498 "chpl.ypp"
+#line 2499 "chpl.ypp"
     { (yyval.expr) = Return::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[0].expr))).release(); }
-#line 9221 "bison-chpl-lib.cpp"
+#line 9222 "bison-chpl-lib.cpp"
     break;
 
   case 434: /* lifetime_ident: TIDENT  */
-#line 2502 "chpl.ypp"
+#line 2503 "chpl.ypp"
          { (yyval.expr) = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)); }
-#line 9227 "bison-chpl-lib.cpp"
+#line 9228 "bison-chpl-lib.cpp"
     break;
 
   case 435: /* lifetime_ident: TTHIS  */
-#line 2503 "chpl.ypp"
+#line 2504 "chpl.ypp"
          { (yyval.expr) = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)); }
-#line 9233 "bison-chpl-lib.cpp"
+#line 9234 "bison-chpl-lib.cpp"
     break;
 
   case 436: /* type_alias_decl_stmt: type_alias_decl_stmt_start type_alias_decl_stmt_inner_ls TSEMI  */
-#line 2508 "chpl.ypp"
+#line 2509 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildVarOrMultiDeclStmt((yyloc), (yyvsp[-1].exprList));
     context->resetDeclState();
   }
-#line 9242 "bison-chpl-lib.cpp"
+#line 9243 "bison-chpl-lib.cpp"
     break;
 
   case 437: /* type_alias_decl_stmt_start: TTYPE  */
-#line 2516 "chpl.ypp"
+#line 2517 "chpl.ypp"
   {
     (yyval.variableKind) = context->noteVarDeclKind(Variable::TYPE);
   }
-#line 9250 "bison-chpl-lib.cpp"
+#line 9251 "bison-chpl-lib.cpp"
     break;
 
   case 438: /* type_alias_decl_stmt_start: TCONFIG TTYPE  */
-#line 2520 "chpl.ypp"
+#line 2521 "chpl.ypp"
   {
     (yyval.variableKind) = context->noteVarDeclKind(Variable::TYPE);
     context->noteIsVarDeclConfig(true);
   }
-#line 9259 "bison-chpl-lib.cpp"
+#line 9260 "bison-chpl-lib.cpp"
     break;
 
   case 439: /* type_alias_decl_stmt_start: TEXTERN TTYPE  */
-#line 2525 "chpl.ypp"
+#line 2526 "chpl.ypp"
   {
     (yyval.variableKind) = context->noteVarDeclKind(Variable::TYPE);
     context->noteLinkage(Decl::EXTERN);
   }
-#line 9268 "bison-chpl-lib.cpp"
+#line 9269 "bison-chpl-lib.cpp"
     break;
 
   case 440: /* type_alias_decl_stmt_inner_ls: type_alias_decl_stmt_inner  */
-#line 2533 "chpl.ypp"
+#line 2534 "chpl.ypp"
   {
     (yyval.exprList) = context->makeList((yyvsp[0].commentsAndStmt));
   }
-#line 9276 "bison-chpl-lib.cpp"
+#line 9277 "bison-chpl-lib.cpp"
     break;
 
   case 441: /* type_alias_decl_stmt_inner_ls: type_alias_decl_stmt_inner TCOMMA type_alias_decl_stmt_inner_ls  */
-#line 2537 "chpl.ypp"
+#line 2538 "chpl.ypp"
   {
     (yyval.exprList) = context->appendList((yyvsp[0].exprList), (yyvsp[-2].commentsAndStmt));
   }
-#line 9284 "bison-chpl-lib.cpp"
+#line 9285 "bison-chpl-lib.cpp"
     break;
 
   case 442: /* type_alias_decl_stmt_inner: ident_def opt_init_type  */
-#line 2544 "chpl.ypp"
+#line 2545 "chpl.ypp"
   {
     // TODO (dlongnecke-cray): Add a helper to build this and var_decl_stmt.
     auto node = Variable::build(BUILDER, LOC((yyloc)),
@@ -9302,105 +9303,105 @@ yyreduce:
       (yyval.commentsAndStmt) = STMT((yylsp[-1]), node.release());
       context->clearComments();
   }
-#line 9306 "bison-chpl-lib.cpp"
+#line 9307 "bison-chpl-lib.cpp"
     break;
 
   case 443: /* opt_init_type: %empty  */
-#line 2564 "chpl.ypp"
+#line 2565 "chpl.ypp"
   { (yyval.expr) = nullptr; }
-#line 9312 "bison-chpl-lib.cpp"
+#line 9313 "bison-chpl-lib.cpp"
     break;
 
   case 444: /* opt_init_type: TASSIGN type_level_expr  */
-#line 2566 "chpl.ypp"
+#line 2567 "chpl.ypp"
   { (yyval.expr) = (yyvsp[0].expr); }
-#line 9318 "bison-chpl-lib.cpp"
+#line 9319 "bison-chpl-lib.cpp"
     break;
 
   case 445: /* opt_init_type: TASSIGN array_type  */
-#line 2568 "chpl.ypp"
+#line 2569 "chpl.ypp"
   {
     // Cannot be a type_level_expr as expr inherits from type_level_expr.
     (yyval.expr) = (yyvsp[0].expr);
   }
-#line 9327 "bison-chpl-lib.cpp"
+#line 9328 "bison-chpl-lib.cpp"
     break;
 
   case 446: /* var_decl_type: TPARAM  */
-#line 2575 "chpl.ypp"
+#line 2576 "chpl.ypp"
               { (yyval.variableKind) = context->noteVarDeclKind(Variable::PARAM); }
-#line 9333 "bison-chpl-lib.cpp"
+#line 9334 "bison-chpl-lib.cpp"
     break;
 
   case 447: /* var_decl_type: TCONST TREF  */
-#line 2576 "chpl.ypp"
+#line 2577 "chpl.ypp"
               { (yyval.variableKind) = context->noteVarDeclKind(Variable::CONST_REF); }
-#line 9339 "bison-chpl-lib.cpp"
+#line 9340 "bison-chpl-lib.cpp"
     break;
 
   case 448: /* var_decl_type: TREF  */
-#line 2577 "chpl.ypp"
+#line 2578 "chpl.ypp"
               { (yyval.variableKind) = context->noteVarDeclKind(Variable::REF); }
-#line 9345 "bison-chpl-lib.cpp"
+#line 9346 "bison-chpl-lib.cpp"
     break;
 
   case 449: /* var_decl_type: TCONST  */
-#line 2578 "chpl.ypp"
+#line 2579 "chpl.ypp"
               { (yyval.variableKind) = context->noteVarDeclKind(Variable::CONST); }
-#line 9351 "bison-chpl-lib.cpp"
+#line 9352 "bison-chpl-lib.cpp"
     break;
 
   case 450: /* var_decl_type: TVAR  */
-#line 2579 "chpl.ypp"
+#line 2580 "chpl.ypp"
               { (yyval.variableKind) = context->noteVarDeclKind(Variable::VAR); }
-#line 9357 "bison-chpl-lib.cpp"
+#line 9358 "bison-chpl-lib.cpp"
     break;
 
   case 451: /* $@12: %empty  */
-#line 2584 "chpl.ypp"
+#line 2585 "chpl.ypp"
   {
     // Use a mid-rule action to thread along 'isVarDeclConfig'.
     context->noteIsVarDeclConfig(true);
   }
-#line 9366 "bison-chpl-lib.cpp"
+#line 9367 "bison-chpl-lib.cpp"
     break;
 
   case 452: /* var_decl_stmt: TCONFIG $@12 var_decl_type var_decl_stmt_inner_ls TSEMI  */
-#line 2588 "chpl.ypp"
+#line 2589 "chpl.ypp"
                                              {
     (yyval.commentsAndStmt) = context->buildVarOrMultiDeclStmt((yyloc), (yyvsp[-1].exprList));
     context->resetDeclState();
   }
-#line 9375 "bison-chpl-lib.cpp"
+#line 9376 "bison-chpl-lib.cpp"
     break;
 
   case 453: /* var_decl_stmt: var_decl_type var_decl_stmt_inner_ls TSEMI  */
-#line 2593 "chpl.ypp"
+#line 2594 "chpl.ypp"
   {
     (yyval.commentsAndStmt) = context->buildVarOrMultiDeclStmt((yyloc), (yyvsp[-1].exprList));
     context->resetDeclState();
   }
-#line 9384 "bison-chpl-lib.cpp"
+#line 9385 "bison-chpl-lib.cpp"
     break;
 
   case 454: /* var_decl_stmt_inner_ls: var_decl_stmt_inner  */
-#line 2601 "chpl.ypp"
+#line 2602 "chpl.ypp"
     {
       (yyval.exprList) = context->makeList((yyvsp[0].commentsAndStmt));
     }
-#line 9392 "bison-chpl-lib.cpp"
+#line 9393 "bison-chpl-lib.cpp"
     break;
 
   case 455: /* var_decl_stmt_inner_ls: var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner  */
-#line 2605 "chpl.ypp"
+#line 2606 "chpl.ypp"
     {
       (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].commentsAndStmt));
     }
-#line 9400 "bison-chpl-lib.cpp"
+#line 9401 "bison-chpl-lib.cpp"
     break;
 
   case 456: /* var_decl_stmt_inner: ident_def opt_type opt_init_expr  */
-#line 2612 "chpl.ypp"
+#line 2613 "chpl.ypp"
     {
       auto varDecl = Variable::build(BUILDER, LOC((yyloc)),
                                      context->buildAttributes((yyloc)),
@@ -9416,11 +9417,11 @@ yyreduce:
       (yyval.commentsAndStmt) = STMT((yylsp[-2]), varDecl.release());
       context->clearComments();
     }
-#line 9420 "bison-chpl-lib.cpp"
+#line 9421 "bison-chpl-lib.cpp"
     break;
 
   case 457: /* var_decl_stmt_inner: TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr  */
-#line 2628 "chpl.ypp"
+#line 2629 "chpl.ypp"
     {
       auto intentOrKind = (TupleDecl::IntentOrKind) context->varDeclKind;
       auto tupleDecl = TupleDecl::build(BUILDER, LOC((yyloc)),
@@ -9434,570 +9435,570 @@ yyreduce:
       (yyval.commentsAndStmt) = STMT((yylsp[-4]), tupleDecl.release());
       context->clearComments();
     }
-#line 9438 "bison-chpl-lib.cpp"
+#line 9439 "bison-chpl-lib.cpp"
     break;
 
   case 458: /* tuple_var_decl_component: TUNDERSCORE  */
-#line 2645 "chpl.ypp"
+#line 2646 "chpl.ypp"
   {
     (yyval.expr) = context->buildTupleComponent((yyloc), (yyvsp[0].uniqueStr));
   }
-#line 9446 "bison-chpl-lib.cpp"
+#line 9447 "bison-chpl-lib.cpp"
     break;
 
   case 459: /* tuple_var_decl_component: ident_def  */
-#line 2649 "chpl.ypp"
+#line 2650 "chpl.ypp"
   {
     (yyval.expr) = context->buildTupleComponent((yyloc), (yyvsp[0].uniqueStr));
   }
-#line 9454 "bison-chpl-lib.cpp"
+#line 9455 "bison-chpl-lib.cpp"
     break;
 
   case 460: /* tuple_var_decl_component: TLP tuple_var_decl_stmt_inner_ls TRP  */
-#line 2653 "chpl.ypp"
+#line 2654 "chpl.ypp"
   {
     (yyval.expr) = context->buildTupleComponent((yyloc), (yyvsp[-1].exprList));
   }
-#line 9462 "bison-chpl-lib.cpp"
+#line 9463 "bison-chpl-lib.cpp"
     break;
 
   case 461: /* tuple_var_decl_stmt_inner_ls: tuple_var_decl_component  */
-#line 2660 "chpl.ypp"
+#line 2661 "chpl.ypp"
     { (yyval.exprList) = context->makeList((yyvsp[0].expr)); }
-#line 9468 "bison-chpl-lib.cpp"
+#line 9469 "bison-chpl-lib.cpp"
     break;
 
   case 462: /* tuple_var_decl_stmt_inner_ls: tuple_var_decl_stmt_inner_ls TCOMMA  */
-#line 2662 "chpl.ypp"
+#line 2663 "chpl.ypp"
     { (yyval.exprList) = (yyvsp[-1].exprList); }
-#line 9474 "bison-chpl-lib.cpp"
+#line 9475 "bison-chpl-lib.cpp"
     break;
 
   case 463: /* tuple_var_decl_stmt_inner_ls: tuple_var_decl_stmt_inner_ls TCOMMA tuple_var_decl_component  */
-#line 2664 "chpl.ypp"
+#line 2665 "chpl.ypp"
     { (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr)); }
-#line 9480 "bison-chpl-lib.cpp"
+#line 9481 "bison-chpl-lib.cpp"
     break;
 
   case 464: /* opt_init_expr: %empty  */
-#line 2670 "chpl.ypp"
+#line 2671 "chpl.ypp"
                         { (yyval.expr) = nullptr; }
-#line 9486 "bison-chpl-lib.cpp"
+#line 9487 "bison-chpl-lib.cpp"
     break;
 
   case 465: /* opt_init_expr: TASSIGN TNOINIT  */
-#line 2671 "chpl.ypp"
+#line 2672 "chpl.ypp"
                         { (yyval.expr) = TODOEXPR((yyloc)); }
-#line 9492 "bison-chpl-lib.cpp"
+#line 9493 "bison-chpl-lib.cpp"
     break;
 
   case 466: /* opt_init_expr: TASSIGN opt_try_expr  */
-#line 2672 "chpl.ypp"
+#line 2673 "chpl.ypp"
                         { (yyval.expr) = (yyvsp[0].expr); }
-#line 9498 "bison-chpl-lib.cpp"
+#line 9499 "bison-chpl-lib.cpp"
     break;
 
   case 467: /* ret_array_type: TLSBR TRSBR type_level_expr  */
-#line 2678 "chpl.ypp"
+#line 2679 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayType((yyloc), (yylsp[-2]), /*domainExprs*/ nullptr, (yyvsp[0].expr));
   }
-#line 9506 "bison-chpl-lib.cpp"
+#line 9507 "bison-chpl-lib.cpp"
     break;
 
   case 468: /* ret_array_type: TLSBR TRSBR  */
-#line 2682 "chpl.ypp"
+#line 2683 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayType((yyloc), (yylsp[-1]), nullptr, nullptr);
   }
-#line 9514 "bison-chpl-lib.cpp"
+#line 9515 "bison-chpl-lib.cpp"
     break;
 
   case 469: /* ret_array_type: TLSBR expr_ls TRSBR type_level_expr  */
-#line 2686 "chpl.ypp"
+#line 2687 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayType((yyloc), (yylsp[-2]), (yyvsp[-2].exprList), (yyvsp[0].expr));
   }
-#line 9522 "bison-chpl-lib.cpp"
+#line 9523 "bison-chpl-lib.cpp"
     break;
 
   case 470: /* ret_array_type: TLSBR expr_ls TRSBR  */
-#line 2690 "chpl.ypp"
+#line 2691 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayType((yyloc), (yylsp[-1]), (yyvsp[-1].exprList), /*typeExpr*/ nullptr);
   }
-#line 9530 "bison-chpl-lib.cpp"
+#line 9531 "bison-chpl-lib.cpp"
     break;
 
   case 471: /* ret_array_type: TLSBR TRSBR ret_array_type  */
-#line 2694 "chpl.ypp"
+#line 2695 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayType((yyloc), (yylsp[-2]), /*domainExprs*/ nullptr, (yyvsp[0].expr));
   }
-#line 9538 "bison-chpl-lib.cpp"
+#line 9539 "bison-chpl-lib.cpp"
     break;
 
   case 472: /* ret_array_type: TLSBR expr_ls TRSBR ret_array_type  */
-#line 2698 "chpl.ypp"
+#line 2699 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayType((yyloc), (yylsp[-2]), (yyvsp[-2].exprList), (yyvsp[0].expr));
   }
-#line 9546 "bison-chpl-lib.cpp"
+#line 9547 "bison-chpl-lib.cpp"
     break;
 
   case 473: /* ret_array_type: TLSBR error TRSBR  */
-#line 2702 "chpl.ypp"
+#line 2703 "chpl.ypp"
   {
     (yyval.expr) = ERROR((yyloc), "invalid expression for domain of array return type");
   }
-#line 9554 "bison-chpl-lib.cpp"
+#line 9555 "bison-chpl-lib.cpp"
     break;
 
   case 474: /* opt_ret_type: %empty  */
-#line 2708 "chpl.ypp"
+#line 2709 "chpl.ypp"
                                  { (yyval.expr) = nullptr; }
-#line 9560 "bison-chpl-lib.cpp"
+#line 9561 "bison-chpl-lib.cpp"
     break;
 
   case 475: /* opt_ret_type: TCOLON type_level_expr  */
-#line 2709 "chpl.ypp"
+#line 2710 "chpl.ypp"
                                  { (yyval.expr) = (yyvsp[0].expr); }
-#line 9566 "bison-chpl-lib.cpp"
+#line 9567 "bison-chpl-lib.cpp"
     break;
 
   case 476: /* opt_ret_type: TCOLON ret_array_type  */
-#line 2710 "chpl.ypp"
+#line 2711 "chpl.ypp"
                                  { (yyval.expr) = (yyvsp[0].expr); }
-#line 9572 "bison-chpl-lib.cpp"
+#line 9573 "bison-chpl-lib.cpp"
     break;
 
   case 477: /* opt_ret_type: TCOLON reserved_type_ident_use  */
-#line 2711 "chpl.ypp"
+#line 2712 "chpl.ypp"
                                  { (yyval.expr) = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)); }
-#line 9578 "bison-chpl-lib.cpp"
+#line 9579 "bison-chpl-lib.cpp"
     break;
 
   case 478: /* opt_ret_type: error  */
-#line 2712 "chpl.ypp"
+#line 2713 "chpl.ypp"
                                  { (yyval.expr) = ErroneousExpression::build(BUILDER, LOC((yylsp[0]))).release(); }
-#line 9584 "bison-chpl-lib.cpp"
+#line 9585 "bison-chpl-lib.cpp"
     break;
 
   case 479: /* opt_type: %empty  */
-#line 2717 "chpl.ypp"
+#line 2718 "chpl.ypp"
                                  { (yyval.expr) = nullptr; }
-#line 9590 "bison-chpl-lib.cpp"
+#line 9591 "bison-chpl-lib.cpp"
     break;
 
   case 480: /* opt_type: TCOLON type_level_expr  */
-#line 2718 "chpl.ypp"
+#line 2719 "chpl.ypp"
                                  { (yyval.expr) = (yyvsp[0].expr); }
-#line 9596 "bison-chpl-lib.cpp"
+#line 9597 "bison-chpl-lib.cpp"
     break;
 
   case 481: /* opt_type: TCOLON array_type  */
-#line 2719 "chpl.ypp"
+#line 2720 "chpl.ypp"
                                  { (yyval.expr) = (yyvsp[0].expr); }
-#line 9602 "bison-chpl-lib.cpp"
+#line 9603 "bison-chpl-lib.cpp"
     break;
 
   case 482: /* opt_type: TCOLON reserved_type_ident_use  */
-#line 2720 "chpl.ypp"
+#line 2721 "chpl.ypp"
                                  { (yyval.expr) = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)); }
-#line 9608 "bison-chpl-lib.cpp"
+#line 9609 "bison-chpl-lib.cpp"
     break;
 
   case 483: /* opt_type: error  */
-#line 2721 "chpl.ypp"
+#line 2722 "chpl.ypp"
                                  { (yyval.expr) = ErroneousExpression::build(BUILDER, LOC((yylsp[0]))).release(); }
-#line 9614 "bison-chpl-lib.cpp"
+#line 9615 "bison-chpl-lib.cpp"
     break;
 
   case 484: /* array_type: TLSBR expr_ls TRSBR type_level_expr  */
-#line 2742 "chpl.ypp"
+#line 2743 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayType((yyloc), (yylsp[-2]), (yyvsp[-2].exprList), (yyvsp[0].expr));
   }
-#line 9622 "bison-chpl-lib.cpp"
+#line 9623 "bison-chpl-lib.cpp"
     break;
 
   case 485: /* array_type: TLSBR expr_ls TRSBR array_type  */
-#line 2746 "chpl.ypp"
+#line 2747 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayType((yyloc), (yylsp[-2]), (yyvsp[-2].exprList), (yyvsp[0].expr));
   }
-#line 9630 "bison-chpl-lib.cpp"
+#line 9631 "bison-chpl-lib.cpp"
     break;
 
   case 486: /* array_type: TLSBR expr_ls TIN expr TRSBR type_level_expr  */
-#line 2750 "chpl.ypp"
+#line 2751 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayTypeWithIndex((yyloc), (yylsp[-4]), (yyvsp[-4].exprList), (yyvsp[-2].expr), (yyvsp[0].expr));
   }
-#line 9638 "bison-chpl-lib.cpp"
+#line 9639 "bison-chpl-lib.cpp"
     break;
 
   case 487: /* array_type: TLSBR error TRSBR  */
-#line 2754 "chpl.ypp"
+#line 2755 "chpl.ypp"
   {
     (yyval.expr) = ErroneousExpression::build(BUILDER, LOC((yylsp[-1]))).release();
   }
-#line 9646 "bison-chpl-lib.cpp"
+#line 9647 "bison-chpl-lib.cpp"
     break;
 
   case 488: /* opt_formal_array_elt_type: %empty  */
-#line 2760 "chpl.ypp"
+#line 2761 "chpl.ypp"
                         { (yyval.expr) = nullptr; }
-#line 9652 "bison-chpl-lib.cpp"
+#line 9653 "bison-chpl-lib.cpp"
     break;
 
   case 489: /* opt_formal_array_elt_type: type_level_expr  */
-#line 2761 "chpl.ypp"
+#line 2762 "chpl.ypp"
                         { (yyval.expr) = (yyvsp[0].expr); }
-#line 9658 "bison-chpl-lib.cpp"
+#line 9659 "bison-chpl-lib.cpp"
     break;
 
   case 490: /* opt_formal_array_elt_type: query_expr  */
-#line 2762 "chpl.ypp"
+#line 2763 "chpl.ypp"
                         { (yyval.expr) = (yyvsp[0].expr); }
-#line 9664 "bison-chpl-lib.cpp"
+#line 9665 "bison-chpl-lib.cpp"
     break;
 
   case 491: /* formal_array_type: TLSBR TRSBR opt_formal_array_elt_type  */
-#line 2767 "chpl.ypp"
+#line 2768 "chpl.ypp"
   {
     auto domainLoc = context->makeSpannedLocation((yylsp[-2]), (yylsp[-1]));
     (yyval.expr) = context->buildArrayType((yyloc), domainLoc, /*domainExprs*/ nullptr, (yyvsp[0].expr));
   }
-#line 9673 "bison-chpl-lib.cpp"
+#line 9674 "bison-chpl-lib.cpp"
     break;
 
   case 492: /* formal_array_type: TLSBR expr_ls TRSBR opt_formal_array_elt_type  */
-#line 2772 "chpl.ypp"
+#line 2773 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayType((yyloc), (yylsp[-2]), (yyvsp[-2].exprList), (yyvsp[0].expr));
   }
-#line 9681 "bison-chpl-lib.cpp"
+#line 9682 "bison-chpl-lib.cpp"
     break;
 
   case 493: /* formal_array_type: TLSBR TRSBR formal_array_type  */
-#line 2780 "chpl.ypp"
+#line 2781 "chpl.ypp"
   {
     auto domainLoc = context->makeSpannedLocation((yylsp[-2]), (yylsp[-1]));
     (yyval.expr) = context->buildArrayType((yyloc), domainLoc, /*domainExprs*/ nullptr, (yyvsp[0].expr));
   }
-#line 9690 "bison-chpl-lib.cpp"
+#line 9691 "bison-chpl-lib.cpp"
     break;
 
   case 494: /* formal_array_type: TLSBR expr_ls TRSBR formal_array_type  */
-#line 2785 "chpl.ypp"
+#line 2786 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayType((yyloc), (yylsp[-2]), (yyvsp[-2].exprList), (yyvsp[0].expr));
   }
-#line 9698 "bison-chpl-lib.cpp"
+#line 9699 "bison-chpl-lib.cpp"
     break;
 
   case 495: /* formal_array_type: TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type  */
-#line 2789 "chpl.ypp"
+#line 2790 "chpl.ypp"
   {
     (yyval.expr) = context->buildArrayTypeWithIndex((yyloc), (yylsp[-4]), (yyvsp[-4].exprList), (yyvsp[-2].expr), (yyvsp[0].expr));
   }
-#line 9706 "bison-chpl-lib.cpp"
+#line 9707 "bison-chpl-lib.cpp"
     break;
 
   case 496: /* opt_formal_type: %empty  */
-#line 2795 "chpl.ypp"
+#line 2796 "chpl.ypp"
                                  { (yyval.expr) = nullptr; }
-#line 9712 "bison-chpl-lib.cpp"
+#line 9713 "bison-chpl-lib.cpp"
     break;
 
   case 497: /* opt_formal_type: TCOLON type_level_expr  */
-#line 2796 "chpl.ypp"
+#line 2797 "chpl.ypp"
                                  { (yyval.expr) = (yyvsp[0].expr); }
-#line 9718 "bison-chpl-lib.cpp"
+#line 9719 "bison-chpl-lib.cpp"
     break;
 
   case 498: /* opt_formal_type: TCOLON query_expr  */
-#line 2797 "chpl.ypp"
+#line 2798 "chpl.ypp"
                                  { (yyval.expr) = (yyvsp[0].expr); }
-#line 9724 "bison-chpl-lib.cpp"
+#line 9725 "bison-chpl-lib.cpp"
     break;
 
   case 499: /* opt_formal_type: TCOLON reserved_type_ident_use  */
-#line 2798 "chpl.ypp"
+#line 2799 "chpl.ypp"
                                  { (yyval.expr) = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)); }
-#line 9730 "bison-chpl-lib.cpp"
+#line 9731 "bison-chpl-lib.cpp"
     break;
 
   case 500: /* opt_formal_type: TCOLON formal_array_type  */
-#line 2799 "chpl.ypp"
+#line 2800 "chpl.ypp"
                                  { (yyval.expr) = (yyvsp[0].expr); }
-#line 9736 "bison-chpl-lib.cpp"
+#line 9737 "bison-chpl-lib.cpp"
     break;
 
   case 501: /* expr_ls: expr  */
-#line 2805 "chpl.ypp"
+#line 2806 "chpl.ypp"
                              { (yyval.exprList) = context->makeList((yyvsp[0].expr)); }
-#line 9742 "bison-chpl-lib.cpp"
+#line 9743 "bison-chpl-lib.cpp"
     break;
 
   case 502: /* expr_ls: query_expr  */
-#line 2806 "chpl.ypp"
+#line 2807 "chpl.ypp"
                              { (yyval.exprList) = context->makeList((yyvsp[0].expr)); }
-#line 9748 "bison-chpl-lib.cpp"
+#line 9749 "bison-chpl-lib.cpp"
     break;
 
   case 503: /* expr_ls: expr_ls TCOMMA expr  */
-#line 2807 "chpl.ypp"
+#line 2808 "chpl.ypp"
                              { (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr)); }
-#line 9754 "bison-chpl-lib.cpp"
+#line 9755 "bison-chpl-lib.cpp"
     break;
 
   case 504: /* expr_ls: expr_ls TCOMMA query_expr  */
-#line 2808 "chpl.ypp"
+#line 2809 "chpl.ypp"
                              { (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr)); }
-#line 9760 "bison-chpl-lib.cpp"
+#line 9761 "bison-chpl-lib.cpp"
     break;
 
   case 505: /* simple_expr_ls: expr  */
-#line 2812 "chpl.ypp"
+#line 2813 "chpl.ypp"
                                    { (yyval.exprList) = context->makeList((yyvsp[0].expr)); }
-#line 9766 "bison-chpl-lib.cpp"
+#line 9767 "bison-chpl-lib.cpp"
     break;
 
   case 506: /* simple_expr_ls: simple_expr_ls TCOMMA expr  */
-#line 2813 "chpl.ypp"
+#line 2814 "chpl.ypp"
                                    { (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr)); }
-#line 9772 "bison-chpl-lib.cpp"
+#line 9773 "bison-chpl-lib.cpp"
     break;
 
   case 507: /* tuple_component: TUNDERSCORE  */
-#line 2817 "chpl.ypp"
+#line 2818 "chpl.ypp"
                 { (yyval.expr) = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)); }
-#line 9778 "bison-chpl-lib.cpp"
+#line 9779 "bison-chpl-lib.cpp"
     break;
 
   case 508: /* tuple_component: opt_try_expr  */
-#line 2818 "chpl.ypp"
+#line 2819 "chpl.ypp"
                 { (yyval.expr) = (yyvsp[0].expr); }
-#line 9784 "bison-chpl-lib.cpp"
+#line 9785 "bison-chpl-lib.cpp"
     break;
 
   case 509: /* tuple_component: query_expr  */
-#line 2819 "chpl.ypp"
+#line 2820 "chpl.ypp"
                 { (yyval.expr) = (yyvsp[0].expr); }
-#line 9790 "bison-chpl-lib.cpp"
+#line 9791 "bison-chpl-lib.cpp"
     break;
 
   case 510: /* tuple_expr_ls: tuple_component TCOMMA tuple_component  */
-#line 2824 "chpl.ypp"
+#line 2825 "chpl.ypp"
   {
     (yyval.exprList) = context->appendList(context->makeList((yyvsp[-2].expr)), (yyvsp[0].expr));
   }
-#line 9798 "bison-chpl-lib.cpp"
+#line 9799 "bison-chpl-lib.cpp"
     break;
 
   case 511: /* tuple_expr_ls: tuple_expr_ls TCOMMA tuple_component  */
-#line 2828 "chpl.ypp"
+#line 2829 "chpl.ypp"
   {
     (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr));
   }
-#line 9806 "bison-chpl-lib.cpp"
+#line 9807 "bison-chpl-lib.cpp"
     break;
 
   case 512: /* opt_actual_ls: %empty  */
-#line 2834 "chpl.ypp"
+#line 2835 "chpl.ypp"
              { (yyval.maybeNamedActualList) = new MaybeNamedActualList(); }
-#line 9812 "bison-chpl-lib.cpp"
+#line 9813 "bison-chpl-lib.cpp"
     break;
 
   case 513: /* opt_actual_ls: actual_ls  */
-#line 2835 "chpl.ypp"
+#line 2836 "chpl.ypp"
              { (yyval.maybeNamedActualList) = (yyvsp[0].maybeNamedActualList); }
-#line 9818 "bison-chpl-lib.cpp"
+#line 9819 "bison-chpl-lib.cpp"
     break;
 
   case 514: /* actual_ls: actual_expr  */
-#line 2840 "chpl.ypp"
+#line 2841 "chpl.ypp"
     { MaybeNamedActualList* lst = new MaybeNamedActualList();
       lst->push_back((yyvsp[0].maybeNamedActual));
       (yyval.maybeNamedActualList) = lst;
     }
-#line 9827 "bison-chpl-lib.cpp"
+#line 9828 "bison-chpl-lib.cpp"
     break;
 
   case 515: /* actual_ls: actual_ls TCOMMA actual_expr  */
-#line 2845 "chpl.ypp"
+#line 2846 "chpl.ypp"
     {
       MaybeNamedActualList* lst = (yyvsp[-2].maybeNamedActualList);
       lst->push_back((yyvsp[0].maybeNamedActual));
       (yyval.maybeNamedActualList) = lst;
     }
-#line 9837 "bison-chpl-lib.cpp"
+#line 9838 "bison-chpl-lib.cpp"
     break;
 
   case 516: /* actual_expr: ident_use TASSIGN query_expr  */
-#line 2853 "chpl.ypp"
+#line 2854 "chpl.ypp"
                                  { (yyval.maybeNamedActual) = makeMaybeNamedActual((yyvsp[0].expr), (yyvsp[-2].uniqueStr)); }
-#line 9843 "bison-chpl-lib.cpp"
+#line 9844 "bison-chpl-lib.cpp"
     break;
 
   case 517: /* actual_expr: ident_use TASSIGN opt_try_expr  */
-#line 2854 "chpl.ypp"
+#line 2855 "chpl.ypp"
                                  { (yyval.maybeNamedActual) = makeMaybeNamedActual((yyvsp[0].expr), (yyvsp[-2].uniqueStr)); }
-#line 9849 "bison-chpl-lib.cpp"
+#line 9850 "bison-chpl-lib.cpp"
     break;
 
   case 518: /* actual_expr: query_expr  */
-#line 2855 "chpl.ypp"
+#line 2856 "chpl.ypp"
                                  { (yyval.maybeNamedActual) = makeMaybeNamedActual((yyvsp[0].expr)); }
-#line 9855 "bison-chpl-lib.cpp"
+#line 9856 "bison-chpl-lib.cpp"
     break;
 
   case 519: /* actual_expr: opt_try_expr  */
-#line 2856 "chpl.ypp"
+#line 2857 "chpl.ypp"
                                  { (yyval.maybeNamedActual) = makeMaybeNamedActual((yyvsp[0].expr)); }
-#line 9861 "bison-chpl-lib.cpp"
+#line 9862 "bison-chpl-lib.cpp"
     break;
 
   case 520: /* ident_expr: ident_use  */
-#line 2860 "chpl.ypp"
+#line 2861 "chpl.ypp"
                  { (yyval.expr) = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)); }
-#line 9867 "bison-chpl-lib.cpp"
+#line 9868 "bison-chpl-lib.cpp"
     break;
 
   case 521: /* ident_expr: scalar_type  */
-#line 2861 "chpl.ypp"
+#line 2862 "chpl.ypp"
                  { (yyval.expr) = (yyvsp[0].expr); }
-#line 9873 "bison-chpl-lib.cpp"
+#line 9874 "bison-chpl-lib.cpp"
     break;
 
   case 522: /* type_level_expr: sub_type_level_expr  */
-#line 2873 "chpl.ypp"
+#line 2874 "chpl.ypp"
   { (yyval.expr) = (yyvsp[0].expr); }
-#line 9879 "bison-chpl-lib.cpp"
+#line 9880 "bison-chpl-lib.cpp"
     break;
 
   case 523: /* type_level_expr: sub_type_level_expr TQUESTION  */
-#line 2875 "chpl.ypp"
+#line 2876 "chpl.ypp"
   { (yyval.expr) = context->buildUnaryOp((yyloc), (yyvsp[0].uniqueStr), (yyvsp[-1].expr)); }
-#line 9885 "bison-chpl-lib.cpp"
+#line 9886 "bison-chpl-lib.cpp"
     break;
 
   case 524: /* type_level_expr: TQUESTION  */
-#line 2877 "chpl.ypp"
+#line 2878 "chpl.ypp"
   { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 9891 "bison-chpl-lib.cpp"
+#line 9892 "bison-chpl-lib.cpp"
     break;
 
   case 530: /* sub_type_level_expr: TSINGLE expr  */
-#line 2888 "chpl.ypp"
+#line 2889 "chpl.ypp"
   { (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9897 "bison-chpl-lib.cpp"
+#line 9898 "bison-chpl-lib.cpp"
     break;
 
   case 531: /* sub_type_level_expr: TINDEX TLP opt_actual_ls TRP  */
-#line 2890 "chpl.ypp"
+#line 2891 "chpl.ypp"
   { (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-3].uniqueStr), (yyvsp[-1].maybeNamedActualList)); }
-#line 9903 "bison-chpl-lib.cpp"
+#line 9904 "bison-chpl-lib.cpp"
     break;
 
   case 532: /* sub_type_level_expr: TDOMAIN TLP opt_actual_ls TRP  */
-#line 2892 "chpl.ypp"
+#line 2893 "chpl.ypp"
   { (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-3].uniqueStr), (yyvsp[-1].maybeNamedActualList)); }
-#line 9909 "bison-chpl-lib.cpp"
+#line 9910 "bison-chpl-lib.cpp"
     break;
 
   case 533: /* sub_type_level_expr: TSUBDOMAIN TLP opt_actual_ls TRP  */
-#line 2894 "chpl.ypp"
+#line 2895 "chpl.ypp"
   { (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-3].uniqueStr), (yyvsp[-1].maybeNamedActualList)); }
-#line 9915 "bison-chpl-lib.cpp"
+#line 9916 "bison-chpl-lib.cpp"
     break;
 
   case 534: /* sub_type_level_expr: TSPARSE TSUBDOMAIN TLP actual_expr TRP  */
-#line 2896 "chpl.ypp"
+#line 2897 "chpl.ypp"
   {
     auto locInner = context->makeSpannedLocation((yylsp[-3]), (yylsp[0]));
     auto inner = context->buildTypeConstructor(locInner, (yyvsp[-3].uniqueStr), (yyvsp[-1].maybeNamedActual));
     (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-4].uniqueStr), inner);
   }
-#line 9925 "bison-chpl-lib.cpp"
+#line 9926 "bison-chpl-lib.cpp"
     break;
 
   case 535: /* sub_type_level_expr: TATOMIC expr  */
-#line 2902 "chpl.ypp"
+#line 2903 "chpl.ypp"
   { (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9931 "bison-chpl-lib.cpp"
+#line 9932 "bison-chpl-lib.cpp"
     break;
 
   case 536: /* sub_type_level_expr: TSYNC expr  */
-#line 2904 "chpl.ypp"
+#line 2905 "chpl.ypp"
   { (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9937 "bison-chpl-lib.cpp"
+#line 9938 "bison-chpl-lib.cpp"
     break;
 
   case 537: /* sub_type_level_expr: TOWNED  */
-#line 2907 "chpl.ypp"
+#line 2908 "chpl.ypp"
   { (yyval.expr) = Identifier::build(BUILDER, LOC((yylsp[0])), (yyvsp[0].uniqueStr)).release(); }
-#line 9943 "bison-chpl-lib.cpp"
+#line 9944 "bison-chpl-lib.cpp"
     break;
 
   case 538: /* sub_type_level_expr: TOWNED expr  */
-#line 2909 "chpl.ypp"
+#line 2910 "chpl.ypp"
   { (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9949 "bison-chpl-lib.cpp"
+#line 9950 "bison-chpl-lib.cpp"
     break;
 
   case 539: /* sub_type_level_expr: TUNMANAGED  */
-#line 2911 "chpl.ypp"
+#line 2912 "chpl.ypp"
   { (yyval.expr) = Identifier::build(BUILDER, LOC((yylsp[0])), (yyvsp[0].uniqueStr)).release(); }
-#line 9955 "bison-chpl-lib.cpp"
+#line 9956 "bison-chpl-lib.cpp"
     break;
 
   case 540: /* sub_type_level_expr: TUNMANAGED expr  */
-#line 2913 "chpl.ypp"
+#line 2914 "chpl.ypp"
   { (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9961 "bison-chpl-lib.cpp"
+#line 9962 "bison-chpl-lib.cpp"
     break;
 
   case 541: /* sub_type_level_expr: TSHARED  */
-#line 2915 "chpl.ypp"
+#line 2916 "chpl.ypp"
   { (yyval.expr) = Identifier::build(BUILDER, LOC((yylsp[0])), (yyvsp[0].uniqueStr)).release(); }
-#line 9967 "bison-chpl-lib.cpp"
+#line 9968 "bison-chpl-lib.cpp"
     break;
 
   case 542: /* sub_type_level_expr: TSHARED expr  */
-#line 2917 "chpl.ypp"
+#line 2918 "chpl.ypp"
   { (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9973 "bison-chpl-lib.cpp"
+#line 9974 "bison-chpl-lib.cpp"
     break;
 
   case 543: /* sub_type_level_expr: TBORROWED  */
-#line 2919 "chpl.ypp"
+#line 2920 "chpl.ypp"
   { (yyval.expr) = Identifier::build(BUILDER, LOC((yylsp[0])), (yyvsp[0].uniqueStr)).release(); }
-#line 9979 "bison-chpl-lib.cpp"
+#line 9980 "bison-chpl-lib.cpp"
     break;
 
   case 544: /* sub_type_level_expr: TBORROWED expr  */
-#line 2921 "chpl.ypp"
+#line 2922 "chpl.ypp"
   { (yyval.expr) = context->buildTypeConstructor((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 9985 "bison-chpl-lib.cpp"
+#line 9986 "bison-chpl-lib.cpp"
     break;
 
   case 545: /* sub_type_level_expr: TCLASS  */
-#line 2924 "chpl.ypp"
+#line 2925 "chpl.ypp"
   { (yyval.expr) = Identifier::build(BUILDER, LOC((yylsp[0])), (yyvsp[0].uniqueStr)).release(); }
-#line 9991 "bison-chpl-lib.cpp"
+#line 9992 "bison-chpl-lib.cpp"
     break;
 
   case 546: /* sub_type_level_expr: TRECORD  */
-#line 2926 "chpl.ypp"
+#line 2927 "chpl.ypp"
   { (yyval.expr) = Identifier::build(BUILDER, LOC((yylsp[0])), (yyvsp[0].uniqueStr)).release(); }
-#line 9997 "bison-chpl-lib.cpp"
+#line 9998 "bison-chpl-lib.cpp"
     break;
 
   case 547: /* for_expr: TFOR expr TIN expr TDO expr  */
-#line 2931 "chpl.ypp"
+#line 2932 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-4]), toOwned((yyvsp[-4].expr)));
     (yyval.expr) = For::build(BUILDER, LOC((yyloc)), std::move(index), toOwned((yyvsp[-2].expr)),
@@ -10006,11 +10007,11 @@ yyreduce:
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false).release();
   }
-#line 10010 "bison-chpl-lib.cpp"
+#line 10011 "bison-chpl-lib.cpp"
     break;
 
   case 548: /* for_expr: TFOR expr TIN zippered_iterator TDO expr  */
-#line 2940 "chpl.ypp"
+#line 2941 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-4]), toOwned((yyvsp[-4].expr)));
     (yyval.expr) = For::build(BUILDER, LOC((yyloc)), std::move(index), toOwned((yyvsp[-2].expr)),
@@ -10019,11 +10020,11 @@ yyreduce:
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false).release();
   }
-#line 10023 "bison-chpl-lib.cpp"
+#line 10024 "bison-chpl-lib.cpp"
     break;
 
   case 549: /* for_expr: TFOR expr TDO expr  */
-#line 2949 "chpl.ypp"
+#line 2950 "chpl.ypp"
   {
     (yyval.expr) = For::build(BUILDER, LOC((yyloc)), /*index*/ nullptr, toOwned((yyvsp[0].expr)),
                     BlockStyle::IMPLICIT,
@@ -10031,11 +10032,11 @@ yyreduce:
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false).release();
   }
-#line 10035 "bison-chpl-lib.cpp"
+#line 10036 "bison-chpl-lib.cpp"
     break;
 
   case 550: /* for_expr: TFOR expr TIN expr TDO TIF expr TTHEN expr  */
-#line 2957 "chpl.ypp"
+#line 2958 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-7]), (yyvsp[-7].expr));
     auto ifExpr = Conditional::build(BUILDER, LOC2((yylsp[-3]), (yylsp[0])), toOwned((yyvsp[-2].expr)),
@@ -10049,11 +10050,11 @@ yyreduce:
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false).release();
   }
-#line 10053 "bison-chpl-lib.cpp"
+#line 10054 "bison-chpl-lib.cpp"
     break;
 
   case 551: /* for_expr: TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr  */
-#line 2971 "chpl.ypp"
+#line 2972 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-7]), (yyvsp[-7].expr));
     auto ifExpr = Conditional::build(BUILDER, LOC2((yylsp[-3]), (yylsp[0])), toOwned((yyvsp[-2].expr)),
@@ -10067,11 +10068,11 @@ yyreduce:
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false).release();
   }
-#line 10071 "bison-chpl-lib.cpp"
+#line 10072 "bison-chpl-lib.cpp"
     break;
 
   case 552: /* for_expr: TFOR expr TDO TIF expr TTHEN expr  */
-#line 2985 "chpl.ypp"
+#line 2986 "chpl.ypp"
   {
     auto ifExpr = Conditional::build(BUILDER, LOC2((yylsp[-3]), (yylsp[0])), toOwned((yyvsp[-2].expr)),
                                      BlockStyle::IMPLICIT,
@@ -10085,11 +10086,11 @@ yyreduce:
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false).release();
   }
-#line 10089 "bison-chpl-lib.cpp"
+#line 10090 "bison-chpl-lib.cpp"
     break;
 
   case 553: /* for_expr: TFORALL expr TIN expr TDO expr  */
-#line 2999 "chpl.ypp"
+#line 3000 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-4]), toOwned((yyvsp[-4].expr)));
     (yyval.expr) = Forall::build(BUILDER, LOC((yyloc)), std::move(index), toOwned((yyvsp[-2].expr)),
@@ -10098,11 +10099,11 @@ yyreduce:
                        context->consumeToBlock((yylsp[0]), (yyvsp[0].expr)),
                        /*isExpressionLevel*/ true).release();
   }
-#line 10102 "bison-chpl-lib.cpp"
+#line 10103 "bison-chpl-lib.cpp"
     break;
 
   case 554: /* for_expr: TFORALL expr TIN zippered_iterator TDO expr  */
-#line 3008 "chpl.ypp"
+#line 3009 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-4]), toOwned((yyvsp[-4].expr)));
     (yyval.expr) = Forall::build(BUILDER, LOC((yyloc)), std::move(index), toOwned((yyvsp[-2].expr)),
@@ -10111,11 +10112,11 @@ yyreduce:
                        context->consumeToBlock((yylsp[0]), (yyvsp[0].expr)),
                        /*isExpressionLevel*/ true).release();
   }
-#line 10115 "bison-chpl-lib.cpp"
+#line 10116 "bison-chpl-lib.cpp"
     break;
 
   case 555: /* for_expr: TFORALL expr TDO expr  */
-#line 3017 "chpl.ypp"
+#line 3018 "chpl.ypp"
   {
     (yyval.expr) = Forall::build(BUILDER, LOC((yyloc)), /*index*/ nullptr, toOwned((yyvsp[0].expr)),
                        /*withClause*/ nullptr,
@@ -10123,11 +10124,11 @@ yyreduce:
                        context->consumeToBlock((yylsp[0]), (yyvsp[0].expr)),
                        /*isExpressionLevel*/ true).release();
   }
-#line 10127 "bison-chpl-lib.cpp"
+#line 10128 "bison-chpl-lib.cpp"
     break;
 
   case 556: /* for_expr: TFORALL expr TIN expr TDO TIF expr TTHEN expr  */
-#line 3025 "chpl.ypp"
+#line 3026 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-7]), (yyvsp[-7].expr));
     auto ifExpr = Conditional::build(BUILDER, LOC2((yylsp[-3]), (yylsp[0])), toOwned((yyvsp[-2].expr)),
@@ -10141,11 +10142,11 @@ yyreduce:
                        context->consumeToBlock(ifLoc, ifExpr.release()),
                        /*isExpressionLevel*/ true).release();
   }
-#line 10145 "bison-chpl-lib.cpp"
+#line 10146 "bison-chpl-lib.cpp"
     break;
 
   case 557: /* for_expr: TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr  */
-#line 3039 "chpl.ypp"
+#line 3040 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-7]), (yyvsp[-7].expr));
     auto ifExpr = Conditional::build(BUILDER, LOC2((yylsp[-3]), (yylsp[0])), toOwned((yyvsp[-2].expr)),
@@ -10159,11 +10160,11 @@ yyreduce:
                       context->consumeToBlock(ifLoc, ifExpr.release()),
                       /*isExpressionLevel*/ true).release();
   }
-#line 10163 "bison-chpl-lib.cpp"
+#line 10164 "bison-chpl-lib.cpp"
     break;
 
   case 558: /* for_expr: TFORALL expr TDO TIF expr TTHEN expr  */
-#line 3053 "chpl.ypp"
+#line 3054 "chpl.ypp"
   {
     auto ifExpr = Conditional::build(BUILDER, LOC2((yylsp[-3]), (yylsp[0])), toOwned((yyvsp[-2].expr)),
                                      BlockStyle::IMPLICIT,
@@ -10177,12 +10178,13 @@ yyreduce:
                        context->consumeToBlock(ifLoc, ifExpr.release()),
                        /*isExpressionLevel*/ true).release();
   }
-#line 10181 "bison-chpl-lib.cpp"
+#line 10182 "bison-chpl-lib.cpp"
     break;
 
   case 559: /* for_expr: TLSBR expr_ls TRSBR expr  */
-#line 3067 "chpl.ypp"
+#line 3068 "chpl.ypp"
   {
+    // TODO: We have to handle the possibility of [1..2, 3..4] here.
     if ((yyvsp[-2].exprList)->size() > 1) {
       const char* msg = "Invalid iterand expression";
       (yyval.expr) = context->raiseError((yylsp[-2]), msg);
@@ -10197,11 +10199,11 @@ yyreduce:
                               /*isExpressionLevel*/ true).release();
     }
   }
-#line 10201 "bison-chpl-lib.cpp"
+#line 10203 "bison-chpl-lib.cpp"
     break;
 
   case 560: /* for_expr: TLSBR expr_ls TIN expr TRSBR expr  */
-#line 3083 "chpl.ypp"
+#line 3085 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-4]), (yyvsp[-4].exprList));
     (yyval.expr) = BracketLoop::build(BUILDER, LOC((yyloc)), std::move(index), toOwned((yyvsp[-2].expr)),
@@ -10210,11 +10212,11 @@ yyreduce:
                             context->consumeToBlock((yylsp[0]), (yyvsp[0].expr)),
                             /*isExpressionLevel*/ true).release();
   }
-#line 10214 "bison-chpl-lib.cpp"
+#line 10216 "bison-chpl-lib.cpp"
     break;
 
   case 561: /* for_expr: TLSBR expr_ls TIN zippered_iterator TRSBR expr  */
-#line 3092 "chpl.ypp"
+#line 3094 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-4]), (yyvsp[-4].exprList));
     (yyval.expr) = BracketLoop::build(BUILDER, LOC((yyloc)), std::move(index), toOwned((yyvsp[-2].expr)),
@@ -10223,11 +10225,11 @@ yyreduce:
                             context->consumeToBlock((yylsp[0]), (yyvsp[0].expr)),
                             /*isExpressionLevel*/ true).release();
   }
-#line 10227 "bison-chpl-lib.cpp"
+#line 10229 "bison-chpl-lib.cpp"
     break;
 
   case 562: /* for_expr: TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr  */
-#line 3101 "chpl.ypp"
+#line 3103 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-7]), (yyvsp[-7].exprList));
     auto ifExpr = Conditional::build(BUILDER, LOC2((yylsp[-3]), (yylsp[0])), toOwned((yyvsp[-2].expr)),
@@ -10242,11 +10244,11 @@ yyreduce:
                             context->consumeToBlock(ifLoc, ifExpr.release()),
                             /*isExpressionLevel*/ true).release();
   }
-#line 10246 "bison-chpl-lib.cpp"
+#line 10248 "bison-chpl-lib.cpp"
     break;
 
   case 563: /* for_expr: TLSBR expr_ls TIN zippered_iterator TRSBR TIF expr TTHEN expr  */
-#line 3116 "chpl.ypp"
+#line 3118 "chpl.ypp"
   {
     auto index = context->buildLoopIndexDecl((yylsp[-7]), (yyvsp[-7].exprList));
     auto ifExpr = Conditional::build(BUILDER, LOC2((yylsp[-3]), (yylsp[0])), toOwned((yyvsp[-2].expr)),
@@ -10261,11 +10263,11 @@ yyreduce:
                             context->consumeToBlock(ifLoc, ifExpr.release()),
                             /*isExpressionLevel*/ true).release();
   }
-#line 10265 "bison-chpl-lib.cpp"
+#line 10267 "bison-chpl-lib.cpp"
     break;
 
   case 564: /* cond_expr: TIF expr TTHEN expr TELSE expr  */
-#line 3134 "chpl.ypp"
+#line 3136 "chpl.ypp"
   {
     auto node  = Conditional::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-4].expr)),
                                     BlockStyle::IMPLICIT,
@@ -10275,79 +10277,79 @@ yyreduce:
                                     /*isExpressionLevel*/ true);
     (yyval.expr) = node.release();
   }
-#line 10279 "bison-chpl-lib.cpp"
+#line 10281 "bison-chpl-lib.cpp"
     break;
 
   case 565: /* nil_expr: TNIL  */
-#line 3151 "chpl.ypp"
+#line 3153 "chpl.ypp"
             { (yyval.expr) = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)); }
-#line 10285 "bison-chpl-lib.cpp"
+#line 10287 "bison-chpl-lib.cpp"
     break;
 
   case 573: /* stmt_level_expr: io_expr TIO expr  */
-#line 3167 "chpl.ypp"
+#line 3169 "chpl.ypp"
   { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10291 "bison-chpl-lib.cpp"
+#line 10293 "bison-chpl-lib.cpp"
     break;
 
   case 574: /* opt_task_intent_ls: %empty  */
-#line 3171 "chpl.ypp"
+#line 3173 "chpl.ypp"
                                 { (yyval.withClause) = nullptr; }
-#line 10297 "bison-chpl-lib.cpp"
+#line 10299 "bison-chpl-lib.cpp"
     break;
 
   case 575: /* opt_task_intent_ls: task_intent_clause  */
-#line 3172 "chpl.ypp"
+#line 3174 "chpl.ypp"
                                 { (yyval.withClause) = (yyvsp[0].withClause); }
-#line 10303 "bison-chpl-lib.cpp"
+#line 10305 "bison-chpl-lib.cpp"
     break;
 
   case 576: /* task_intent_clause: TWITH TLP task_intent_ls TRP  */
-#line 3177 "chpl.ypp"
+#line 3179 "chpl.ypp"
   {
     auto exprs = context->consumeList((yyvsp[-1].exprList));
     auto node = WithClause::build(BUILDER, LOC((yyloc)), std::move(exprs));
     (yyval.withClause) = node.release();
   }
-#line 10313 "bison-chpl-lib.cpp"
+#line 10315 "bison-chpl-lib.cpp"
     break;
 
   case 577: /* task_intent_ls: intent_expr  */
-#line 3185 "chpl.ypp"
+#line 3187 "chpl.ypp"
                                       { (yyval.exprList) = context->makeList((yyvsp[0].expr)); }
-#line 10319 "bison-chpl-lib.cpp"
+#line 10321 "bison-chpl-lib.cpp"
     break;
 
   case 578: /* task_intent_ls: task_intent_ls TCOMMA intent_expr  */
-#line 3186 "chpl.ypp"
+#line 3188 "chpl.ypp"
                                       { (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr)); }
-#line 10325 "bison-chpl-lib.cpp"
+#line 10327 "bison-chpl-lib.cpp"
     break;
 
   case 579: /* forall_intent_clause: TWITH TLP forall_intent_ls TRP  */
-#line 3191 "chpl.ypp"
+#line 3193 "chpl.ypp"
   {
     auto exprs = context->consumeList((yyvsp[-1].exprList));
     auto node = WithClause::build(BUILDER, LOC((yyloc)), std::move(exprs));
     (yyval.withClause) = node.release();
   }
-#line 10335 "bison-chpl-lib.cpp"
+#line 10337 "bison-chpl-lib.cpp"
     break;
 
   case 580: /* forall_intent_ls: intent_expr  */
-#line 3199 "chpl.ypp"
+#line 3201 "chpl.ypp"
                                        { (yyval.exprList) = context->makeList((yyvsp[0].expr)); }
-#line 10341 "bison-chpl-lib.cpp"
+#line 10343 "bison-chpl-lib.cpp"
     break;
 
   case 581: /* forall_intent_ls: forall_intent_ls TCOMMA intent_expr  */
-#line 3200 "chpl.ypp"
+#line 3202 "chpl.ypp"
                                        { (yyval.exprList) = context->appendList((yyvsp[-2].exprList), (yyvsp[0].expr)); }
-#line 10347 "bison-chpl-lib.cpp"
+#line 10349 "bison-chpl-lib.cpp"
     break;
 
   case 582: /* intent_expr: task_var_prefix ident_expr opt_type opt_init_expr  */
-#line 3205 "chpl.ypp"
+#line 3207 "chpl.ypp"
   {
     if (auto ident = (yyvsp[-2].expr)->toIdentifier()) {
       auto name = ident->name();
@@ -10362,99 +10364,99 @@ yyreduce:
       (yyval.expr) = context->raiseError((yyloc), msg);
     }
   }
-#line 10366 "bison-chpl-lib.cpp"
+#line 10368 "bison-chpl-lib.cpp"
     break;
 
   case 583: /* intent_expr: reduce_scan_op_expr TREDUCE ident_expr  */
-#line 3220 "chpl.ypp"
+#line 3222 "chpl.ypp"
   {
     (yyval.expr) = Reduce::build(BUILDER, LOC((yyloc)), (yyvsp[-2].uniqueStr), toOwned((yyvsp[0].expr))).release();
   }
-#line 10374 "bison-chpl-lib.cpp"
+#line 10376 "bison-chpl-lib.cpp"
     break;
 
   case 584: /* intent_expr: expr TREDUCE ident_expr  */
-#line 3224 "chpl.ypp"
+#line 3226 "chpl.ypp"
   {
     (yyval.expr) = context->buildCustomReduce((yyloc), (yylsp[-2]), (yyvsp[-2].expr), (yyvsp[0].expr));
   }
-#line 10382 "bison-chpl-lib.cpp"
+#line 10384 "bison-chpl-lib.cpp"
     break;
 
   case 585: /* task_var_prefix: TCONST  */
-#line 3230 "chpl.ypp"
+#line 3232 "chpl.ypp"
                { (yyval.taskIntent) = TaskVar::CONST;     }
-#line 10388 "bison-chpl-lib.cpp"
+#line 10390 "bison-chpl-lib.cpp"
     break;
 
   case 586: /* task_var_prefix: TIN  */
-#line 3231 "chpl.ypp"
+#line 3233 "chpl.ypp"
                { (yyval.taskIntent) = TaskVar::IN;        }
-#line 10394 "bison-chpl-lib.cpp"
+#line 10396 "bison-chpl-lib.cpp"
     break;
 
   case 587: /* task_var_prefix: TCONST TIN  */
-#line 3232 "chpl.ypp"
+#line 3234 "chpl.ypp"
                { (yyval.taskIntent) = TaskVar::CONST_IN;  }
-#line 10400 "bison-chpl-lib.cpp"
+#line 10402 "bison-chpl-lib.cpp"
     break;
 
   case 588: /* task_var_prefix: TREF  */
-#line 3233 "chpl.ypp"
+#line 3235 "chpl.ypp"
                { (yyval.taskIntent) = TaskVar::REF;       }
-#line 10406 "bison-chpl-lib.cpp"
+#line 10408 "bison-chpl-lib.cpp"
     break;
 
   case 589: /* task_var_prefix: TCONST TREF  */
-#line 3234 "chpl.ypp"
+#line 3236 "chpl.ypp"
                { (yyval.taskIntent) = TaskVar::CONST_REF; }
-#line 10412 "bison-chpl-lib.cpp"
+#line 10414 "bison-chpl-lib.cpp"
     break;
 
   case 590: /* task_var_prefix: TVAR  */
-#line 3235 "chpl.ypp"
+#line 3237 "chpl.ypp"
                { (yyval.taskIntent) = TaskVar::VAR;       }
-#line 10418 "bison-chpl-lib.cpp"
+#line 10420 "bison-chpl-lib.cpp"
     break;
 
   case 592: /* io_expr: io_expr TIO expr  */
-#line 3241 "chpl.ypp"
+#line 3243 "chpl.ypp"
   { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10424 "bison-chpl-lib.cpp"
+#line 10426 "bison-chpl-lib.cpp"
     break;
 
   case 593: /* new_maybe_decorated: TNEW  */
-#line 3246 "chpl.ypp"
+#line 3248 "chpl.ypp"
     { (yyval.newManagement) = New::DEFAULT_MANAGEMENT; }
-#line 10430 "bison-chpl-lib.cpp"
+#line 10432 "bison-chpl-lib.cpp"
     break;
 
   case 594: /* new_maybe_decorated: TNEW TOWNED  */
-#line 3248 "chpl.ypp"
+#line 3250 "chpl.ypp"
     { (yyval.newManagement) = New::OWNED; }
-#line 10436 "bison-chpl-lib.cpp"
+#line 10438 "bison-chpl-lib.cpp"
     break;
 
   case 595: /* new_maybe_decorated: TNEW TSHARED  */
-#line 3250 "chpl.ypp"
+#line 3252 "chpl.ypp"
     { (yyval.newManagement) = New::SHARED; }
-#line 10442 "bison-chpl-lib.cpp"
+#line 10444 "bison-chpl-lib.cpp"
     break;
 
   case 596: /* new_maybe_decorated: TNEW TUNMANAGED  */
-#line 3252 "chpl.ypp"
+#line 3254 "chpl.ypp"
     { (yyval.newManagement) = New::UNMANAGED; }
-#line 10448 "bison-chpl-lib.cpp"
+#line 10450 "bison-chpl-lib.cpp"
     break;
 
   case 597: /* new_maybe_decorated: TNEW TBORROWED  */
-#line 3254 "chpl.ypp"
+#line 3256 "chpl.ypp"
     { (yyval.newManagement) = New::BORROWED; }
-#line 10454 "bison-chpl-lib.cpp"
+#line 10456 "bison-chpl-lib.cpp"
     break;
 
   case 598: /* new_expr: new_maybe_decorated expr  */
-#line 3260 "chpl.ypp"
+#line 3262 "chpl.ypp"
   {
     if (FnCall* fnCall = (yyvsp[0].expr)->toFnCall()) {
       (yyval.expr) = context->wrapCalledExpressionInNew((yyloc), (yyvsp[-1].newManagement), fnCall);
@@ -10468,164 +10470,164 @@ yyreduce:
       (yyval.expr) = context->raiseError((yyloc), "Invalid form for new expression");
     }
   }
-#line 10472 "bison-chpl-lib.cpp"
+#line 10474 "bison-chpl-lib.cpp"
     break;
 
   case 599: /* new_expr: TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP  */
-#line 3277 "chpl.ypp"
+#line 3279 "chpl.ypp"
   {
     (yyval.expr) = TODOEXPR((yyloc));
   }
-#line 10480 "bison-chpl-lib.cpp"
+#line 10482 "bison-chpl-lib.cpp"
     break;
 
   case 600: /* new_expr: TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP  */
-#line 3281 "chpl.ypp"
+#line 3283 "chpl.ypp"
   {
     (yyval.expr) = TODOEXPR((yyloc));
   }
-#line 10488 "bison-chpl-lib.cpp"
+#line 10490 "bison-chpl-lib.cpp"
     break;
 
   case 601: /* new_expr: TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION  */
-#line 3285 "chpl.ypp"
+#line 3287 "chpl.ypp"
   {
     (yyval.expr) = TODOEXPR((yyloc));
   }
-#line 10496 "bison-chpl-lib.cpp"
+#line 10498 "bison-chpl-lib.cpp"
     break;
 
   case 602: /* new_expr: TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION  */
-#line 3289 "chpl.ypp"
+#line 3291 "chpl.ypp"
   {
     (yyval.expr) = TODOEXPR((yyloc));
   }
-#line 10504 "bison-chpl-lib.cpp"
+#line 10506 "bison-chpl-lib.cpp"
     break;
 
   case 603: /* let_expr: TLET var_decl_stmt_inner_ls TIN expr  */
-#line 3296 "chpl.ypp"
+#line 3298 "chpl.ypp"
     { (yyval.expr) = TODOEXPR((yyloc)); }
-#line 10510 "bison-chpl-lib.cpp"
+#line 10512 "bison-chpl-lib.cpp"
     break;
 
   case 613: /* expr: TLP TDOTDOTDOT expr TRP  */
-#line 3313 "chpl.ypp"
+#line 3315 "chpl.ypp"
   {
     (yyval.expr) = context->buildUnaryOp((yyloc), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr));
   }
-#line 10518 "bison-chpl-lib.cpp"
+#line 10520 "bison-chpl-lib.cpp"
     break;
 
   case 614: /* expr: expr TCOLON expr  */
-#line 3317 "chpl.ypp"
+#line 3319 "chpl.ypp"
   {
     (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr));
   }
-#line 10526 "bison-chpl-lib.cpp"
+#line 10528 "bison-chpl-lib.cpp"
     break;
 
   case 615: /* expr: expr TDOTDOT expr  */
-#line 3321 "chpl.ypp"
+#line 3323 "chpl.ypp"
   {
     (yyval.expr) = Range::build(BUILDER, LOC((yyloc)), Range::DEFAULT, toOwned((yyvsp[-2].expr)),
                       toOwned((yyvsp[0].expr))).release();
   }
-#line 10535 "bison-chpl-lib.cpp"
+#line 10537 "bison-chpl-lib.cpp"
     break;
 
   case 616: /* expr: expr TDOTDOTOPENHIGH expr  */
-#line 3326 "chpl.ypp"
+#line 3328 "chpl.ypp"
   {
     (yyval.expr) = Range::build(BUILDER, LOC((yyloc)), Range::OPEN_HIGH, toOwned((yyvsp[-2].expr)),
                       toOwned((yyvsp[0].expr))).release();
   }
-#line 10544 "bison-chpl-lib.cpp"
+#line 10546 "bison-chpl-lib.cpp"
     break;
 
   case 617: /* expr: expr TDOTDOT  */
-#line 3331 "chpl.ypp"
+#line 3333 "chpl.ypp"
   {
     (yyval.expr) = Range::build(BUILDER, LOC((yyloc)), Range::DEFAULT, toOwned((yyvsp[-1].expr)),
                       /*upperBound*/ nullptr).release();
   }
-#line 10553 "bison-chpl-lib.cpp"
+#line 10555 "bison-chpl-lib.cpp"
     break;
 
   case 618: /* expr: TDOTDOT expr  */
-#line 3336 "chpl.ypp"
+#line 3338 "chpl.ypp"
   {
     (yyval.expr) = Range::build(BUILDER, LOC((yyloc)), Range::DEFAULT,
                       /*lowerBound*/ nullptr,
                       toOwned((yyvsp[0].expr))).release();
   }
-#line 10563 "bison-chpl-lib.cpp"
+#line 10565 "bison-chpl-lib.cpp"
     break;
 
   case 619: /* expr: TDOTDOTOPENHIGH expr  */
-#line 3342 "chpl.ypp"
+#line 3344 "chpl.ypp"
   {
     (yyval.expr) = Range::build(BUILDER, LOC((yyloc)), Range::OPEN_HIGH,
                       /*lowerBound*/ nullptr,
                       toOwned((yyvsp[0].expr))).release();
   }
-#line 10573 "bison-chpl-lib.cpp"
+#line 10575 "bison-chpl-lib.cpp"
     break;
 
   case 620: /* expr: TDOTDOT  */
-#line 3348 "chpl.ypp"
+#line 3350 "chpl.ypp"
   {
     (yyval.expr) = Range::build(BUILDER, LOC((yyloc)), Range::DEFAULT,
                       /*lowerBound*/ nullptr,
                       /*upperBound*/ nullptr).release();
   }
-#line 10583 "bison-chpl-lib.cpp"
+#line 10585 "bison-chpl-lib.cpp"
     break;
 
   case 621: /* opt_expr: %empty  */
-#line 3379 "chpl.ypp"
+#line 3381 "chpl.ypp"
                   { (yyval.expr) = nullptr; }
-#line 10589 "bison-chpl-lib.cpp"
+#line 10591 "bison-chpl-lib.cpp"
     break;
 
   case 622: /* opt_expr: expr  */
-#line 3380 "chpl.ypp"
+#line 3382 "chpl.ypp"
                   { (yyval.expr) = (yyvsp[0].expr); }
-#line 10595 "bison-chpl-lib.cpp"
+#line 10597 "bison-chpl-lib.cpp"
     break;
 
   case 623: /* opt_try_expr: TTRY expr  */
-#line 3384 "chpl.ypp"
+#line 3386 "chpl.ypp"
                   { (yyval.expr) = context->buildTryExpr((yyloc), (yyvsp[0].expr), false); }
-#line 10601 "bison-chpl-lib.cpp"
+#line 10603 "bison-chpl-lib.cpp"
     break;
 
   case 624: /* opt_try_expr: TTRYBANG expr  */
-#line 3385 "chpl.ypp"
+#line 3387 "chpl.ypp"
                   { (yyval.expr) = context->buildTryExpr((yyloc), (yyvsp[0].expr), true); }
-#line 10607 "bison-chpl-lib.cpp"
+#line 10609 "bison-chpl-lib.cpp"
     break;
 
   case 625: /* opt_try_expr: expr  */
-#line 3386 "chpl.ypp"
+#line 3388 "chpl.ypp"
                   { (yyval.expr) = (yyvsp[0].expr); }
-#line 10613 "bison-chpl-lib.cpp"
+#line 10615 "bison-chpl-lib.cpp"
     break;
 
   case 631: /* call_base_expr: expr TBANG  */
-#line 3403 "chpl.ypp"
+#line 3405 "chpl.ypp"
                                 { (yyval.expr) = TODOEXPR((yyloc)); }
-#line 10619 "bison-chpl-lib.cpp"
+#line 10621 "bison-chpl-lib.cpp"
     break;
 
   case 632: /* call_base_expr: sub_type_level_expr TQUESTION  */
-#line 3404 "chpl.ypp"
+#line 3406 "chpl.ypp"
                                 { (yyval.expr) = TODOEXPR((yyloc)); }
-#line 10625 "bison-chpl-lib.cpp"
+#line 10627 "bison-chpl-lib.cpp"
     break;
 
   case 635: /* call_expr: call_base_expr TLP opt_actual_ls TRP  */
-#line 3411 "chpl.ypp"
+#line 3413 "chpl.ypp"
     {
       ASTList actuals;
       std::vector<UniqueString> actualNames;
@@ -10637,11 +10639,11 @@ yyreduce:
                                   /* square */ false);
       (yyval.expr) = fnCall.release();
     }
-#line 10641 "bison-chpl-lib.cpp"
+#line 10643 "bison-chpl-lib.cpp"
     break;
 
   case 636: /* call_expr: call_base_expr TLSBR opt_actual_ls TRSBR  */
-#line 3423 "chpl.ypp"
+#line 3425 "chpl.ypp"
     {
       ASTList actuals;
       std::vector<UniqueString> actualNames;
@@ -10653,461 +10655,461 @@ yyreduce:
                                   /* square */ true);
       (yyval.expr) = fnCall.release();
     }
-#line 10657 "bison-chpl-lib.cpp"
+#line 10659 "bison-chpl-lib.cpp"
     break;
 
   case 637: /* call_expr: TPRIMITIVE TLP opt_actual_ls TRP  */
-#line 3435 "chpl.ypp"
+#line 3437 "chpl.ypp"
     {
       (yyval.expr) = context->buildPrimCall((yyloc), (yyvsp[-1].maybeNamedActualList));
     }
-#line 10665 "bison-chpl-lib.cpp"
+#line 10667 "bison-chpl-lib.cpp"
     break;
 
   case 638: /* dot_expr: expr TDOT ident_use  */
-#line 3442 "chpl.ypp"
+#line 3444 "chpl.ypp"
     { (yyval.expr) = Dot::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-2].expr)), (yyvsp[0].uniqueStr)).release(); }
-#line 10671 "bison-chpl-lib.cpp"
+#line 10673 "bison-chpl-lib.cpp"
     break;
 
   case 639: /* dot_expr: expr TDOT TTYPE  */
-#line 3444 "chpl.ypp"
+#line 3446 "chpl.ypp"
     { (yyval.expr) = Dot::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-2].expr)), (yyvsp[0].uniqueStr)).release(); }
-#line 10677 "bison-chpl-lib.cpp"
+#line 10679 "bison-chpl-lib.cpp"
     break;
 
   case 640: /* dot_expr: expr TDOT TDOMAIN  */
-#line 3446 "chpl.ypp"
+#line 3448 "chpl.ypp"
     { (yyval.expr) = Dot::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-2].expr)), (yyvsp[0].uniqueStr)).release(); }
-#line 10683 "bison-chpl-lib.cpp"
+#line 10685 "bison-chpl-lib.cpp"
     break;
 
   case 641: /* dot_expr: expr TDOT TLOCALE  */
-#line 3448 "chpl.ypp"
+#line 3450 "chpl.ypp"
     { (yyval.expr) = Dot::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-2].expr)), (yyvsp[0].uniqueStr)).release(); }
-#line 10689 "bison-chpl-lib.cpp"
+#line 10691 "bison-chpl-lib.cpp"
     break;
 
   case 642: /* dot_expr: expr TDOT TBYTES TLP TRP  */
-#line 3450 "chpl.ypp"
+#line 3452 "chpl.ypp"
     {
       (yyval.expr) = FnCall::build(BUILDER, LOC((yyloc)),
                          Dot::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-4].expr)), (yyvsp[-2].uniqueStr)),
                          false).release();
     }
-#line 10699 "bison-chpl-lib.cpp"
+#line 10701 "bison-chpl-lib.cpp"
     break;
 
   case 643: /* dot_expr: expr TDOT TBYTES TLSBR TRSBR  */
-#line 3456 "chpl.ypp"
+#line 3458 "chpl.ypp"
     {
       (yyval.expr) = FnCall::build(BUILDER, LOC((yyloc)),
                          Dot::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-4].expr)), (yyvsp[-2].uniqueStr)),
                          true).release();
     }
-#line 10709 "bison-chpl-lib.cpp"
+#line 10711 "bison-chpl-lib.cpp"
     break;
 
   case 644: /* parenthesized_expr: TLP tuple_component TRP  */
-#line 3468 "chpl.ypp"
+#line 3470 "chpl.ypp"
                                     { (yyval.expr) = (yyvsp[-1].expr); }
-#line 10715 "bison-chpl-lib.cpp"
+#line 10717 "bison-chpl-lib.cpp"
     break;
 
   case 645: /* parenthesized_expr: TLP tuple_component TCOMMA TRP  */
-#line 3470 "chpl.ypp"
+#line 3472 "chpl.ypp"
   {
     (yyval.expr) = Tuple::build(BUILDER, LOC((yyloc)), context->consume((yyvsp[-2].expr))).release();
   }
-#line 10723 "bison-chpl-lib.cpp"
+#line 10725 "bison-chpl-lib.cpp"
     break;
 
   case 646: /* parenthesized_expr: TLP tuple_expr_ls TRP  */
-#line 3474 "chpl.ypp"
+#line 3476 "chpl.ypp"
   {
     (yyval.expr) = Tuple::build(BUILDER, LOC((yyloc)), context->consumeList((yyvsp[-1].exprList))).release();
   }
-#line 10731 "bison-chpl-lib.cpp"
+#line 10733 "bison-chpl-lib.cpp"
     break;
 
   case 647: /* parenthesized_expr: TLP tuple_expr_ls TCOMMA TRP  */
-#line 3478 "chpl.ypp"
+#line 3480 "chpl.ypp"
   {
     (yyval.expr) = Tuple::build(BUILDER, LOC((yyloc)), context->consumeList((yyvsp[-2].exprList))).release();
   }
-#line 10739 "bison-chpl-lib.cpp"
+#line 10741 "bison-chpl-lib.cpp"
     break;
 
   case 648: /* bool_literal: TFALSE  */
-#line 3484 "chpl.ypp"
+#line 3486 "chpl.ypp"
          { (yyval.expr) = BoolLiteral::build(BUILDER, LOC((yyloc)), false).release(); }
-#line 10745 "bison-chpl-lib.cpp"
+#line 10747 "bison-chpl-lib.cpp"
     break;
 
   case 649: /* bool_literal: TTRUE  */
-#line 3485 "chpl.ypp"
+#line 3487 "chpl.ypp"
          { (yyval.expr) = BoolLiteral::build(BUILDER, LOC((yyloc)), true).release(); }
-#line 10751 "bison-chpl-lib.cpp"
+#line 10753 "bison-chpl-lib.cpp"
     break;
 
   case 650: /* str_bytes_literal: STRINGLITERAL  */
-#line 3489 "chpl.ypp"
+#line 3491 "chpl.ypp"
                   { (yyval.expr) = (yyvsp[0].expr); }
-#line 10757 "bison-chpl-lib.cpp"
+#line 10759 "bison-chpl-lib.cpp"
     break;
 
   case 651: /* str_bytes_literal: BYTESLITERAL  */
-#line 3490 "chpl.ypp"
+#line 3492 "chpl.ypp"
                   { (yyval.expr) = (yyvsp[0].expr); }
-#line 10763 "bison-chpl-lib.cpp"
+#line 10765 "bison-chpl-lib.cpp"
     break;
 
   case 654: /* literal_expr: INTLITERAL  */
-#line 3496 "chpl.ypp"
+#line 3498 "chpl.ypp"
                  { (yyval.expr) = context->buildNumericLiteral((yyloc), (yyvsp[0].uniqueStr), INTLITERAL); }
-#line 10769 "bison-chpl-lib.cpp"
+#line 10771 "bison-chpl-lib.cpp"
     break;
 
   case 655: /* literal_expr: REALLITERAL  */
-#line 3497 "chpl.ypp"
+#line 3499 "chpl.ypp"
                  { (yyval.expr) = context->buildNumericLiteral((yyloc), (yyvsp[0].uniqueStr), REALLITERAL); }
-#line 10775 "bison-chpl-lib.cpp"
+#line 10777 "bison-chpl-lib.cpp"
     break;
 
   case 656: /* literal_expr: IMAGLITERAL  */
-#line 3498 "chpl.ypp"
+#line 3500 "chpl.ypp"
                  { (yyval.expr) = context->buildNumericLiteral((yyloc), (yyvsp[0].uniqueStr), IMAGLITERAL); }
-#line 10781 "bison-chpl-lib.cpp"
+#line 10783 "bison-chpl-lib.cpp"
     break;
 
   case 657: /* literal_expr: CSTRINGLITERAL  */
-#line 3499 "chpl.ypp"
+#line 3501 "chpl.ypp"
                       { (yyval.expr) = (yyvsp[0].expr); }
-#line 10787 "bison-chpl-lib.cpp"
+#line 10789 "bison-chpl-lib.cpp"
     break;
 
   case 658: /* literal_expr: TNONE  */
-#line 3500 "chpl.ypp"
+#line 3502 "chpl.ypp"
                       { (yyval.expr) = context->buildIdent((yyloc), (yyvsp[0].uniqueStr)); }
-#line 10793 "bison-chpl-lib.cpp"
+#line 10795 "bison-chpl-lib.cpp"
     break;
 
   case 659: /* literal_expr: TLCBR expr_ls TRCBR  */
-#line 3502 "chpl.ypp"
+#line 3504 "chpl.ypp"
   {
     (yyval.expr) = Domain::build(BUILDER, LOC((yyloc)), context->consumeList((yyvsp[-1].exprList))).release();
   }
-#line 10801 "bison-chpl-lib.cpp"
+#line 10803 "bison-chpl-lib.cpp"
     break;
 
   case 660: /* literal_expr: TLCBR expr_ls TCOMMA TRCBR  */
-#line 3506 "chpl.ypp"
+#line 3508 "chpl.ypp"
   {
     (yyval.expr) = Domain::build(BUILDER, LOC((yyloc)), context->consumeList((yyvsp[-2].exprList))).release();
   }
-#line 10809 "bison-chpl-lib.cpp"
+#line 10811 "bison-chpl-lib.cpp"
     break;
 
   case 661: /* literal_expr: TLSBR expr_ls TRSBR  */
-#line 3510 "chpl.ypp"
+#line 3512 "chpl.ypp"
   {
     (yyval.expr) = Array::build(BUILDER, LOC((yyloc)), context->consumeList((yyvsp[-1].exprList))).release();
   }
-#line 10817 "bison-chpl-lib.cpp"
+#line 10819 "bison-chpl-lib.cpp"
     break;
 
   case 662: /* literal_expr: TLSBR expr_ls TCOMMA TRSBR  */
-#line 3514 "chpl.ypp"
+#line 3516 "chpl.ypp"
   {
     (yyval.expr) = Array::build(BUILDER, LOC((yyloc)), context->consumeList((yyvsp[-2].exprList))).release();
   }
-#line 10825 "bison-chpl-lib.cpp"
+#line 10827 "bison-chpl-lib.cpp"
     break;
 
   case 663: /* literal_expr: TLSBR assoc_expr_ls TRSBR  */
-#line 3518 "chpl.ypp"
+#line 3520 "chpl.ypp"
   {
     (yyval.expr) = Domain::build(BUILDER, LOC((yyloc)), context->consumeList((yyvsp[-1].exprList))).release();
   }
-#line 10833 "bison-chpl-lib.cpp"
+#line 10835 "bison-chpl-lib.cpp"
     break;
 
   case 664: /* literal_expr: TLSBR assoc_expr_ls TCOMMA TRSBR  */
-#line 3522 "chpl.ypp"
+#line 3524 "chpl.ypp"
   {
     // TODO (dlongnecke): Record trailing comma?
     (yyval.expr) = Domain::build(BUILDER, LOC((yyloc)), context->consumeList((yyvsp[-2].exprList))).release();
   }
-#line 10842 "bison-chpl-lib.cpp"
+#line 10844 "bison-chpl-lib.cpp"
     break;
 
   case 665: /* assoc_expr_ls: expr TALIAS expr  */
-#line 3531 "chpl.ypp"
+#line 3533 "chpl.ypp"
   {
     auto node = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr));
     (yyval.exprList) = context->makeList(node);
   }
-#line 10851 "bison-chpl-lib.cpp"
+#line 10853 "bison-chpl-lib.cpp"
     break;
 
   case 666: /* assoc_expr_ls: assoc_expr_ls TCOMMA expr TALIAS expr  */
-#line 3536 "chpl.ypp"
+#line 3538 "chpl.ypp"
   {
     auto loc = context->makeSpannedLocation((yylsp[-2]), (yylsp[0]));
     auto node = context->buildBinOp(loc, (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr));
     (yyval.exprList) = context->appendList((yyvsp[-4].exprList), node);
   }
-#line 10861 "bison-chpl-lib.cpp"
+#line 10863 "bison-chpl-lib.cpp"
     break;
 
   case 667: /* binary_op_expr: expr TPLUS expr  */
-#line 3544 "chpl.ypp"
+#line 3546 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10867 "bison-chpl-lib.cpp"
+#line 10869 "bison-chpl-lib.cpp"
     break;
 
   case 668: /* binary_op_expr: expr TMINUS expr  */
-#line 3545 "chpl.ypp"
+#line 3547 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10873 "bison-chpl-lib.cpp"
+#line 10875 "bison-chpl-lib.cpp"
     break;
 
   case 669: /* binary_op_expr: expr TSTAR expr  */
-#line 3546 "chpl.ypp"
+#line 3548 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10879 "bison-chpl-lib.cpp"
+#line 10881 "bison-chpl-lib.cpp"
     break;
 
   case 670: /* binary_op_expr: expr TDIVIDE expr  */
-#line 3547 "chpl.ypp"
+#line 3549 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10885 "bison-chpl-lib.cpp"
+#line 10887 "bison-chpl-lib.cpp"
     break;
 
   case 671: /* binary_op_expr: expr TSHIFTLEFT expr  */
-#line 3548 "chpl.ypp"
+#line 3550 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10891 "bison-chpl-lib.cpp"
+#line 10893 "bison-chpl-lib.cpp"
     break;
 
   case 672: /* binary_op_expr: expr TSHIFTRIGHT expr  */
-#line 3549 "chpl.ypp"
+#line 3551 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10897 "bison-chpl-lib.cpp"
+#line 10899 "bison-chpl-lib.cpp"
     break;
 
   case 673: /* binary_op_expr: expr TMOD expr  */
-#line 3550 "chpl.ypp"
+#line 3552 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10903 "bison-chpl-lib.cpp"
+#line 10905 "bison-chpl-lib.cpp"
     break;
 
   case 674: /* binary_op_expr: expr TEQUAL expr  */
-#line 3551 "chpl.ypp"
+#line 3553 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10909 "bison-chpl-lib.cpp"
+#line 10911 "bison-chpl-lib.cpp"
     break;
 
   case 675: /* binary_op_expr: expr TNOTEQUAL expr  */
-#line 3552 "chpl.ypp"
+#line 3554 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10915 "bison-chpl-lib.cpp"
+#line 10917 "bison-chpl-lib.cpp"
     break;
 
   case 676: /* binary_op_expr: expr TLESSEQUAL expr  */
-#line 3553 "chpl.ypp"
+#line 3555 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10921 "bison-chpl-lib.cpp"
+#line 10923 "bison-chpl-lib.cpp"
     break;
 
   case 677: /* binary_op_expr: expr TGREATEREQUAL expr  */
-#line 3554 "chpl.ypp"
+#line 3556 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10927 "bison-chpl-lib.cpp"
+#line 10929 "bison-chpl-lib.cpp"
     break;
 
   case 678: /* binary_op_expr: expr TLESS expr  */
-#line 3555 "chpl.ypp"
+#line 3557 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10933 "bison-chpl-lib.cpp"
+#line 10935 "bison-chpl-lib.cpp"
     break;
 
   case 679: /* binary_op_expr: expr TGREATER expr  */
-#line 3556 "chpl.ypp"
+#line 3558 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10939 "bison-chpl-lib.cpp"
+#line 10941 "bison-chpl-lib.cpp"
     break;
 
   case 680: /* binary_op_expr: expr TBAND expr  */
-#line 3557 "chpl.ypp"
+#line 3559 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10945 "bison-chpl-lib.cpp"
+#line 10947 "bison-chpl-lib.cpp"
     break;
 
   case 681: /* binary_op_expr: expr TBOR expr  */
-#line 3558 "chpl.ypp"
+#line 3560 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10951 "bison-chpl-lib.cpp"
+#line 10953 "bison-chpl-lib.cpp"
     break;
 
   case 682: /* binary_op_expr: expr TBXOR expr  */
-#line 3559 "chpl.ypp"
+#line 3561 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10957 "bison-chpl-lib.cpp"
+#line 10959 "bison-chpl-lib.cpp"
     break;
 
   case 683: /* binary_op_expr: expr TAND expr  */
-#line 3560 "chpl.ypp"
+#line 3562 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10963 "bison-chpl-lib.cpp"
+#line 10965 "bison-chpl-lib.cpp"
     break;
 
   case 684: /* binary_op_expr: expr TOR expr  */
-#line 3561 "chpl.ypp"
+#line 3563 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10969 "bison-chpl-lib.cpp"
+#line 10971 "bison-chpl-lib.cpp"
     break;
 
   case 685: /* binary_op_expr: expr TEXP expr  */
-#line 3562 "chpl.ypp"
+#line 3564 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10975 "bison-chpl-lib.cpp"
+#line 10977 "bison-chpl-lib.cpp"
     break;
 
   case 686: /* binary_op_expr: expr TBY expr  */
-#line 3563 "chpl.ypp"
+#line 3565 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10981 "bison-chpl-lib.cpp"
+#line 10983 "bison-chpl-lib.cpp"
     break;
 
   case 687: /* binary_op_expr: expr TALIGN expr  */
-#line 3564 "chpl.ypp"
+#line 3566 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10987 "bison-chpl-lib.cpp"
+#line 10989 "bison-chpl-lib.cpp"
     break;
 
   case 688: /* binary_op_expr: expr THASH expr  */
-#line 3565 "chpl.ypp"
+#line 3567 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10993 "bison-chpl-lib.cpp"
+#line 10995 "bison-chpl-lib.cpp"
     break;
 
   case 689: /* binary_op_expr: expr TDMAPPED expr  */
-#line 3566 "chpl.ypp"
+#line 3568 "chpl.ypp"
                            { (yyval.expr) = context->buildBinOp((yyloc), (yyvsp[-2].expr), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 10999 "bison-chpl-lib.cpp"
+#line 11001 "bison-chpl-lib.cpp"
     break;
 
   case 690: /* unary_op_expr: TPLUS expr  */
-#line 3570 "chpl.ypp"
+#line 3572 "chpl.ypp"
                                  { (yyval.expr) = context->buildUnaryOp((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 11005 "bison-chpl-lib.cpp"
+#line 11007 "bison-chpl-lib.cpp"
     break;
 
   case 691: /* unary_op_expr: TMINUS expr  */
-#line 3571 "chpl.ypp"
+#line 3573 "chpl.ypp"
                                  { (yyval.expr) = context->buildUnaryOp((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 11011 "bison-chpl-lib.cpp"
+#line 11013 "bison-chpl-lib.cpp"
     break;
 
   case 692: /* unary_op_expr: TMINUSMINUS expr  */
-#line 3572 "chpl.ypp"
+#line 3574 "chpl.ypp"
                                  { (yyval.expr) = TODOEXPR((yyloc)); /* warn */ }
-#line 11017 "bison-chpl-lib.cpp"
+#line 11019 "bison-chpl-lib.cpp"
     break;
 
   case 693: /* unary_op_expr: TPLUSPLUS expr  */
-#line 3573 "chpl.ypp"
+#line 3575 "chpl.ypp"
                                  { (yyval.expr) = TODOEXPR((yyloc)); /* warn */ }
-#line 11023 "bison-chpl-lib.cpp"
+#line 11025 "bison-chpl-lib.cpp"
     break;
 
   case 694: /* unary_op_expr: TBANG expr  */
-#line 3574 "chpl.ypp"
+#line 3576 "chpl.ypp"
                                  { (yyval.expr) = context->buildUnaryOp((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 11029 "bison-chpl-lib.cpp"
+#line 11031 "bison-chpl-lib.cpp"
     break;
 
   case 695: /* unary_op_expr: expr TBANG  */
-#line 3575 "chpl.ypp"
+#line 3577 "chpl.ypp"
                                  { (yyval.expr) = context->buildUnaryOp((yyloc),
                                                               STR("postfix!"),
                                                               (yyvsp[-1].expr)); }
-#line 11037 "bison-chpl-lib.cpp"
+#line 11039 "bison-chpl-lib.cpp"
     break;
 
   case 696: /* unary_op_expr: TBNOT expr  */
-#line 3578 "chpl.ypp"
+#line 3580 "chpl.ypp"
                                  { (yyval.expr) = context->buildUnaryOp((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
-#line 11043 "bison-chpl-lib.cpp"
+#line 11045 "bison-chpl-lib.cpp"
     break;
 
   case 697: /* reduce_expr: expr TREDUCE expr  */
-#line 3583 "chpl.ypp"
+#line 3585 "chpl.ypp"
   {
     (yyval.expr) = context->buildCustomReduce((yyloc), (yylsp[-2]), (yyvsp[-2].expr), (yyvsp[0].expr));
   }
-#line 11051 "bison-chpl-lib.cpp"
+#line 11053 "bison-chpl-lib.cpp"
     break;
 
   case 698: /* reduce_expr: expr TREDUCE zippered_iterator  */
-#line 3587 "chpl.ypp"
+#line 3589 "chpl.ypp"
   {
     (yyval.expr) = context->buildCustomReduce((yyloc), (yylsp[-2]), (yyvsp[-2].expr), (yyvsp[0].expr));
   }
-#line 11059 "bison-chpl-lib.cpp"
+#line 11061 "bison-chpl-lib.cpp"
     break;
 
   case 699: /* reduce_expr: reduce_scan_op_expr TREDUCE expr  */
-#line 3591 "chpl.ypp"
+#line 3593 "chpl.ypp"
   {
     (yyval.expr) = Reduce::build(BUILDER, LOC((yyloc)), (yyvsp[-2].uniqueStr), toOwned((yyvsp[0].expr))).release();
   }
-#line 11067 "bison-chpl-lib.cpp"
+#line 11069 "bison-chpl-lib.cpp"
     break;
 
   case 700: /* reduce_expr: reduce_scan_op_expr TREDUCE zippered_iterator  */
-#line 3595 "chpl.ypp"
+#line 3597 "chpl.ypp"
   {
     (yyval.expr) = Reduce::build(BUILDER, LOC((yyloc)), (yyvsp[-2].uniqueStr), toOwned((yyvsp[0].expr))).release();
   }
-#line 11075 "bison-chpl-lib.cpp"
+#line 11077 "bison-chpl-lib.cpp"
     break;
 
   case 701: /* scan_expr: expr TSCAN expr  */
-#line 3602 "chpl.ypp"
+#line 3604 "chpl.ypp"
   {
     (yyval.expr) = context->buildCustomScan((yyloc), (yylsp[-2]), (yyvsp[-2].expr), (yyvsp[0].expr));
   }
-#line 11083 "bison-chpl-lib.cpp"
+#line 11085 "bison-chpl-lib.cpp"
     break;
 
   case 702: /* scan_expr: expr TSCAN zippered_iterator  */
-#line 3606 "chpl.ypp"
+#line 3608 "chpl.ypp"
   {
     (yyval.expr) = context->buildCustomScan((yyloc), (yylsp[-2]), (yyvsp[-2].expr), (yyvsp[0].expr));
   }
-#line 11091 "bison-chpl-lib.cpp"
+#line 11093 "bison-chpl-lib.cpp"
     break;
 
   case 703: /* scan_expr: reduce_scan_op_expr TSCAN expr  */
-#line 3610 "chpl.ypp"
+#line 3612 "chpl.ypp"
   {
     (yyval.expr) = Scan::build(BUILDER, LOC((yyloc)), (yyvsp[-2].uniqueStr), toOwned((yyvsp[0].expr))).release();
   }
-#line 11099 "bison-chpl-lib.cpp"
+#line 11101 "bison-chpl-lib.cpp"
     break;
 
   case 704: /* scan_expr: reduce_scan_op_expr TSCAN zippered_iterator  */
-#line 3614 "chpl.ypp"
+#line 3616 "chpl.ypp"
   {
     (yyval.expr) = Scan::build(BUILDER, LOC((yyloc)), (yyvsp[-2].uniqueStr), toOwned((yyvsp[0].expr))).release();
   }
-#line 11107 "bison-chpl-lib.cpp"
+#line 11109 "bison-chpl-lib.cpp"
     break;
 
 
-#line 11111 "bison-chpl-lib.cpp"
+#line 11113 "bison-chpl-lib.cpp"
 
       default: break;
     }
