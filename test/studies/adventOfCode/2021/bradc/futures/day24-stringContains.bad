@@ -4,5 +4,5 @@ day24-stringContains.chpl:2: note: because method call receiver with type 'strin
 $CHPL_HOME/modules/internal/ChapelRange.chpl:883: note: is passed to formal 'this: range'
 day24-stringContains.chpl:2: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelRange.chpl:909: note:   range.contains(other: range(?))
-$CHPL_HOME/modules/internal/ChapelDomain.chpl:1493: note:   _domain.contains(i: rank*_value.idxType)
-note: and 2 other candidates, use --print-all-candidates to see them
+$CHPL_HOME/modules/internal/ChapelDomain.chpl:1530: note:   _domain.contains(idx: rank*_value.idxType)
+note: and 3 other candidates, use --print-all-candidates to see them
