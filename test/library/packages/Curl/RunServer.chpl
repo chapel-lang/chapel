@@ -55,7 +55,7 @@ proc stopServer() {
   if server.running {
     // Kill the little HTTP server
     try! {
-      server.send_signal(SIGINT);
+      server.sendPosixSignal(SIGINT);
     } catch e:ProcessLookupError {
       // Ignore it already being dead
     }

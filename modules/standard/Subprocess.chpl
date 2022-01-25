@@ -997,6 +997,10 @@ module Subprocess {
 
   private extern proc qio_send_signal(pid: int(64), sig: c_int): syserr;
 
+  deprecated "'send_signal' is deprecated, please use 'sendPosixSignal' instead"
+  proc subprocess.send_signal(signal:int) throws {
+    sendPosixSignal(signal);
+  }
   /*
     Send a signal to a child process.
 
@@ -1022,14 +1026,14 @@ module Subprocess {
 
     :arg signal: the signal to send
    */
-  proc subprocess.send_signal(signal:int) throws {
+  proc subprocess.sendPosixSignal(signal:int) throws {
     try _throw_on_launch_error();
 
     var err: syserr = ENOERR;
     on home {
       err = qio_send_signal(pid, signal:c_int);
     }
-    if err then try ioerror(err, "in subprocess.send_signal, with signal " + signal:string);
+    if err then try ioerror(err, "in subprocess.sendPosixSignal, with signal " + signal:string);
   }
 
   /*
@@ -1054,20 +1058,20 @@ module Subprocess {
   /*
     Unconditionally kill the child process.  The associated signal,
     `SIGKILL`, cannot be caught by the child process. See
-    :proc:`subprocess.send_signal`.
+    :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.kill() throws {
     try _throw_on_launch_error();
-    try this.send_signal(SIGKILL);
+    try this.sendPosixSignal(SIGKILL);
   }
 
   /*
     Request termination of the child process.  The associated signal,
     `SIGTERM`, may be caught and handled by the child process. See
-    :proc:`subprocess.send_signal`.
+    :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.terminate() throws {
     try _throw_on_launch_error();
-    try this.send_signal(SIGTERM);
+    try this.sendPosixSignal(SIGTERM);
   }
 }
