@@ -1,0 +1,5 @@
+domain-add-etc.chpl:6: warning: the formal 'i' is deprecated, please use 'idx' instead
+domain-add-etc.chpl:10: warning: the formal 'i' is deprecated, please use 'idx' instead
+domain-add-etc.chpl:14: warning: the formal 'i' is deprecated, please use 'idx' instead
+domain-add-etc.chpl:18: warning: the formal 'i' is deprecated, please use 'capacity' instead
+domain-add-etc.chpl:20: error: done
