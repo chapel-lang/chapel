@@ -9,17 +9,20 @@ use Shlex;
   var ans = split("abc 'def \"ghi xyz\" jkl' mno");
   writeln(ans);
   writeln(split(ans[1]));
+
   proc split_helper(s:string){
     use List;
     var ret:list(string);
     var lex=new shlex(s);
     var tok=lex.get_token();
+    //since posix is false, we just need to check for empty string as EOF
     while(tok!=''){
       ret.append(tok);
       tok=lex.get_token();
     }
     return ret;
   }
+  
   var lst=['x', 'foo bar', '  foo  bar  ', 'foo   bar    bla     fasel',
             ' x y  z              xxxx', '\\x bar', '\\ x bar', '\\ bar', 
             'foo \\x bar', 'foo \\ bar', 'foo "bar" bla', '"foo" "bar" "bla"',

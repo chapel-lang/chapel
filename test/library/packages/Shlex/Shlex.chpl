@@ -37,7 +37,6 @@ module Shlex {
     var posix: bool;
     var lineno: int;
     var debug: int;
-    var iseofnone: bool;
     var eof: string;
     var commenters: string;
     var wordchars: string;
@@ -68,10 +67,8 @@ module Shlex {
       this.lineno=1;
       this.debug=0;
       if posix {
-        this.iseofnone=true;
       }
       else {
-        this.iseofnone=false;
         this.eof="";
       }
       this.commenters=commenters;
@@ -333,9 +330,10 @@ module Shlex {
     lex.whitespace_split=!(punctuation_chars || custom_punctuation_chars !='');
     var lst: list(string);
     var pres:string = ' ';
-    while(pres!=''){
+    while(lex.tokindex!=-1 || !lex.pushback.isEmpty()){
       pres=lex.get_token();
-      if(pres!=''){
+      // writeln("pres: "+pres + "tokindex: "+lex.tokindex:string);
+      if(posix || pres!=''){
         lst.append(pres);
       }
     }
@@ -360,6 +358,11 @@ module Shlex {
     return "'" + s.replace("'", "'\"'\"'") + "'";
   }
 
+  //
+  // This is the public interface to the SHLEX.
+  // Concatenates the tokens of the list passed into a string.
+  // This is the inverse of split() function above.
+  //
   proc join(const ref x): string where (isArray(x) || isTuple(x)) {
     if x.size == 0 then return "";
     if(isTuple(x) && (!isHomogeneousTuple(x) || !isString(x[0]))) then
@@ -387,6 +390,10 @@ module Shlex {
     return res;
   }
 
+  //
+  // This is the public interface to the SHLEX.
+  // Overloading for multiple string arguments.
+  //
   proc join(args:string ...?n){
     return join(args);
   }
