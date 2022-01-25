@@ -12,7 +12,7 @@ export CHAMPS_COMMON_DIR=$COMMON_DIR/champs-nightly
 module list
 
 source $CWD/common-cray-cs.bash
-source $CWD/common-perf-cray-cs-hdr.bash.bash
+source $CWD/common-perf-cray-cs-hdr.bash
 
 loadCSModule PrgEnv-cray
 loadCSModule intel
