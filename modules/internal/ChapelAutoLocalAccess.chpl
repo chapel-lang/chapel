@@ -76,7 +76,7 @@ module ChapelAutoLocalAccess {
       // calling on default rectangular
       if loopDomain._value.type.isDefaultRectangular() {
         if loopDomain.locale == here {
-          if loopDomain.isSubset(accessBase.localSubdomain()) {
+          if accessBase.localSubdomain().contains(loopDomain) {
             return true;
           }
         }

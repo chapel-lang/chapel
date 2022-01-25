@@ -1,0 +1,1 @@
+contains-idxtype.chpl:7: error: incompatible idxType in domain.contain()
