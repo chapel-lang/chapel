@@ -1931,12 +1931,6 @@ module ChapelBase {
     lhs = lhs << rhs;
   }
 
-  /* domain += and -= add and remove indices */
-  inline operator +=(ref D: domain, idx) { D.add(idx); }
-  inline operator -=(ref D: domain, idx) { D.remove(idx); }
-  inline operator +=(ref D: domain, param idx) { D.add(idx); }
-  inline operator -=(ref D: domain, param idx) { D.remove(idx); }
-
   /* swap operator */
   pragma "ignore transfer errors"
   inline operator <=>(ref lhs, ref rhs) {

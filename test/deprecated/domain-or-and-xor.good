@@ -1,0 +1,6 @@
+domain-or-and-xor.chpl:5: warning: '|' on rectangular domains is deprecated
+domain-or-and-xor.chpl:6: warning: '&' on rectangular domains is deprecated
+domain-or-and-xor.chpl:7: warning: '^' on rectangular domains is deprecated
+9 19 27
+1 0 1
+8 19 26

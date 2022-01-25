@@ -366,6 +366,9 @@ module ChapelDomain {
       compilerError("Cannot add indices to this domain type");
   }
 
+  inline operator +=(ref D: domain, idx) { D.add(idx); }
+  inline operator +=(ref D: domain, param idx) { D.add(idx); }
+
   operator -(d: domain, i: index(d)) {
     if d.isRectangular() then
       compilerError("Cannot remove indices from a rectangular domain");
@@ -392,6 +395,9 @@ module ChapelDomain {
     else
       compilerError("Cannot remove indices from this domain type");
   }
+
+  inline operator -=(ref D: domain, idx) { D.remove(idx); }
+  inline operator -=(ref D: domain, param idx) { D.remove(idx); }
 
   inline operator ==(d1: domain, d2: domain) where d1.isRectangular() &&
                                                    d2.isRectangular() {
@@ -488,10 +494,18 @@ module ChapelDomain {
     return a + b;
   }
 
+  deprecated "'|' on rectangular domains is deprecated"
+  operator |(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
+    return forall (aa, bb) in zip(a, b) do aa|bb;
+
   operator |=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
       a.add(e);
+  }
+
+  operator |=(a :domain, b: domain) where a.isRectangular() {
+    compilerError("cannot invoke '|=' on a rectangular domain");
   }
 
   operator +=(ref a :domain, b: domain) where (a.type == b.type) &&
@@ -514,6 +528,10 @@ module ChapelDomain {
     return newDom;
   }
 
+  deprecated "'&' on rectangular domains is deprecated"
+  operator &(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
+    return forall (aa, bb) in zip(a, b) do aa&bb;
+
   operator &=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var removeSet: domain(a.idxType);
@@ -522,6 +540,10 @@ module ChapelDomain {
         removeSet += e;
     for e in removeSet do
       a.remove(e);
+  }
+
+  operator &=(a :domain, b: domain) where a.isRectangular() {
+    compilerError("cannot invoke '&=' on a rectangular domain");
   }
 
   operator ^(a :domain, b: domain) where (a.type == b.type) &&
@@ -538,6 +560,10 @@ module ChapelDomain {
     return newDom;
   }
 
+  deprecated "'^' on rectangular domains is deprecated"
+  operator ^(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
+    return forall (aa, bb) in zip(a, b) do aa^bb;
+
   /*
      We remove elements in the RHS domain from those in the LHS domain only if
      they exist. If an element in the RHS is not present in the LHS, it is
@@ -550,6 +576,10 @@ module ChapelDomain {
         a.remove(e);
       else
         a.add(e);
+  }
+
+  operator ^=(a :domain, b: domain) where a.isRectangular() {
+    compilerError("cannot invoke '^=' on a rectangular domain");
   }
 
   //
