@@ -194,7 +194,6 @@ BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);
 BlockStmt* buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block);
-BlockStmt* buildAtomicStmt(Expr* stmt);
 BlockStmt* buildExternBlockStmt(const char* c_code);
 CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);

@@ -50,7 +50,6 @@ Chapel provides the following statements:
      begin-statement
      sync-statement
      serial-statement
-     atomic-statement
      forall-statement
      delete-statement
 
@@ -84,7 +83,7 @@ additionally as follows:
 
 -  ``on`` statement :ref:`On`
 
--  cobegin, coforall, begin, sync, serial and atomic statements
+-  cobegin, coforall, begin, sync, and serial statements
    :ref:`Chapter-Task_Parallelism_and_Synchronization`
 
 -  forall :ref:`Chapter-Data_Parallelism`
