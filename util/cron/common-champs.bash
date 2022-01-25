@@ -19,7 +19,7 @@ module list
 
 # Perf configuration
 source $CWD/common-perf.bash
-CHAMPS_PERF_DIR=${CHAMPS_PERF_DIR:-$COMMON_DIR/NightlyPerformance/champs} # TODO
+CHAMPS_PERF_DIR=${CHAMPS_PERF_DIR:-$CHAMPS_COMMON_DIR/NightlyPerformance/champs} # TODO
 export CHPL_TEST_PERF_DIR=$CHAMPS_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
 export CHPL_TEST_PERF_START_DATE=01/21/22
 
@@ -27,7 +27,7 @@ export CHPL_TEST_PERF_START_DATE=01/21/22
 export CHPL_NIGHTLY_TEST_DIRS=studies/champs/
 export CHPL_TEST_CHAMPS=true
 
-CHAMPS_DEP_DIR=$COMMON_DIR/champs-nightly/deps-manual
+CHAMPS_DEP_DIR=$CHAMPS_COMMON_DIR/champs-nightly/deps-manual
 if [ -d "$CHAMPS_DEP_DIR" ]; then
   export MKLROOT=/opt/intel/mkl
   export MPIROOT=$(dirname $(dirname $(which mpicc)))

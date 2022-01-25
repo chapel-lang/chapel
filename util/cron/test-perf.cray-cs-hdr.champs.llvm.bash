@@ -10,6 +10,8 @@ export CHPL_TEST_PERF_DESCRIPTION='llvm'
 
 source $CWD/common-champs.bash
 
+export CHPL_TARGET_CPU=none
+
 $CWD/nightly -cron ${nightly_args} -no-buildcheck
 
 sync_graphs
