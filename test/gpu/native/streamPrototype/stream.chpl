@@ -2,7 +2,7 @@
 // Use standard modules for Block distributions, Timing routines, Type
 // utility functions.
 //
-use Time, Types /*, Random */;
+use DateTime, Types /*, Random */;
 
 //
 // Use shared user module for computing HPCC problem sizes
@@ -76,7 +76,7 @@ proc main() {
     var execTime: [1..numTrials] real;                 // an array of timings
 
     for trial in 1..numTrials {                        // loop over the trials
-      const startTime = getCurrentTime();              // capture the start time
+      const startTime = datetime.timeSinceEpoch();              // capture the start time
 
       //
       // The main loop: Iterate over the vectors A, B, and C in a
@@ -87,7 +87,7 @@ proc main() {
       forall (a, b, c) in zip(A, B, C) do
         a = b + alpha * c;
 
-      execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
+      execTime(trial) = datetime.timeSinceEpoch() - startTime;  // store the elapsed time
     }
 
     const validAnswer = verifyResults(A, B, C);        // verify...
