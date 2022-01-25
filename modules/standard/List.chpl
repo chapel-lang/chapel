@@ -1279,8 +1279,8 @@ module List {
 
     /*
       Return a zero-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found this method returns
-      the value `-1`.
+      is equal to `x`. If no such element can be found or if the list is empty,
+      this method returns the value `-1`.
 
       .. warning::
 
@@ -1306,15 +1306,14 @@ module List {
 
     /*
       Return a zero-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found this method returns
-      the value `-1`.
+      is equal to `x`. If no such element can be found or if the list is empty,
+      this method returns the value `-1`.
 
       .. warning::
 
-        Calling this method on an empty list or with values of `start` or
-        `end` that are out of bounds will cause the currently running program
-        to halt. If the `--fast` flag is used, no safety checks will be
-        performed.
+        Calling this method with values of `start` or `end` that are out of bounds
+        will cause the currently running program to halt. If the `--fast` flag is
+        used, no safety checks will be performed.
 
       :arg x: An element to search for.
       :type x: `eltType`
