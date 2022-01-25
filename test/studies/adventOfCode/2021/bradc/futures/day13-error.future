@@ -1,0 +1,6 @@
+error message: conditionals with boolean expressions involving non-scalars
+
+(...are confusing).  Specifically, it talks about return types in 'then'
+and 'else' branches, but the user's code does not reflect this sort of
+structure.
+

@@ -1,0 +1,12 @@
+04005AC33890
+0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 1 0 1 1 0 0 0 0 1 1 0 0 1 1 1 0 0 0 1 0 0 1 0 0 0 0
+version = 0
+packet type = 1
+totBitLength = 22
+version = 5
+packet type = 4
+Value = 6
+version = 3
+packet type = 4
+Value = 9
+Final result = 54

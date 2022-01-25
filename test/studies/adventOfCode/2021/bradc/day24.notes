@@ -1,0 +1,268 @@
+inp w     # w = digit1
+mul x 0   # x = 0
+add x z   # x = 0
+mod x 26  # x = 0
+add x 13  # x = 13
+eql x w   # x = 0
+eql x 0   # x = 1
+mul y 0   # y = 0
+add y 25  # y = 25
+mul y x   # y = 25
+add y 1   # y = 26
+mul z y   # z = 0
+mul y 0   # y = 0
+add y w   # y = w
+add y 8   # y = digit1+8
+mul y x   # y = digit1+8
+add z y   # z = digit1+8
+
+inp w     # w = digit2
+mul x 0   # x = 0
+add x z   # x = digit1+8
+mod x 26  # x = digit1+8
+add x 12  # x = digit1+20
+eql x w   # x = 0
+eql x 0   # x = 1
+mul y 0   # y = 0
+add y 25  # y = 25
+mul y x   # y = 25
+add y 1   # y = 26
+mul z y   # z = (digit1+8)*26
+mul y 0   # y = 0
+add y w   # y = digit2
+add y 13  # y = digit2 + 13
+mul y x   # y = digit2 + 13
+add z y   # z = (digit1+8)*26 + digit2+13
+
+inp w     # w = digit3
+mul x 0   # x = 0
+add x z   # x = (digit1+8)*26 + digit2+13
+mod x 26  # x = digit2+13
+add x 12  # x = digit2+25
+eql x w   # x = 0
+eql x 0   # x = 1
+mul y 0   # y = 0
+add y 25  # y = 25
+mul y x   # y = 25
+add y 1   # y = 26
+mul z y   # z = (digit1+8)*26*26 + (digit2+13)*26
+mul y 0   # y = 0
+add y w   # y = digit3
+add y 8   # y = digit3+8
+mul y x   # y = digit3+8
+add z y   # z = (digit1+8)*26*26 + (digit2+13)*26 + digit3+8
+
+inp w     # w = digit4
+mul x 0   # x = 0
+add x z   # x = (digit1+8)*26*26 + (digit2+13)*26 + digit3+8
+mod x 26  # x = digit3+8
+add x 10  # x = digit3+18
+eql x w   # x = 0
+eql x 0   # x = 1
+mul y 0   # y = 0
+add y 25  # y = 25
+mul y x   # y = 25
+add y 1   # y = 26
+mul z y   # z = (digit1+8)*26*26*26 + (digit2+13)*26*26 + (digit3+8)*26
+mul y 0   # y = 0
+add y w   # y = digit4
+add y 10  # y = digit4+10
+mul y x   # y = digit4+10
+add z y   # z = (digit1+8)*26*26*26 + (digit2+13)*26*26 + (digit3+8)*26 + digit4+10
+
+inp w     # w = digit5
+mul x 0   # x = 0
+add x z   # x = (digit1+8)*26*26*26 + (digit2+13)*26*26 + (digit3+8)*26 + digit4+10
+mod x 26  # x = digit4+10  # x gets low digitn
+div z 26  # z = (digit1+8)*26*26 + (digit2+13)*26 + (digit3+8)  # z gets other digits
+add x -11 # x = digit4-1
+eql x w   # x = (digit5 == digit4-1)
+eql x 0   # x = (digit5 != digit4-1)
+mul y 0   # y = 0
+add y 25  # y = 25
+mul y x   # y = 25*(digit5 != digit4-1)      ASSERT digit5 != digit4-1
+add y 1   # y = 25*(digit5 != digit4-1) + 1  # y = 1
+mul z y   # z = (digit1+8)*26*26 + (digit2+13)*26 + (digit3+8)
+mul y 0   # y = 0
+add y w   # y = digit5
+add y 12  # y = digit5+12
+mul y x   # y = (digit5+12)*(digit5 != digit4-1)  0
+add z y   # z = (digit1+8)*26*26 + (digit2+13)*26 + (digit3+8)
+
+inp w     # w = digit6
+mul x 0   # x = 0
+add x z   # x = (digit1+8)*26*26 + (digit2+13)*26 + (digit3+8)
+mod x 26  # x = digit3+8
+div z 26  # z = (digit1+8)*26 + (digit2+13)
+add x -13 # x = digit3-5
+eql x w   # (digit6 == digit3-5)
+eql x 0   # (digit6 != digit3-5)
+mul y 0   # y = 0
+add y 25  # y = 25
+mul y x   # y = 0
+add y 1   # y = 1
+mul z y   # z = (digit1+8)*26 + (digit2+13)
+mul y 0   # y = 0
+add y w   # y = digit6
+add y 1   # y = digit6+1
+mul y x   # y = 0
+add z y   # z = (digit1+8)*26 + (digit2+13)
+
+inp w     # w = digit7
+mul x 0   # x = 0
+add x z   # x = (digit1+8)*26 + (digit2+13)
+mod x 26  # x = digit2+13
+add x 15  # x = digit2+28
+eql x w   # x = 0
+eql x 0   # x = 1
+mul y 0   # y = 0
+add y 25  # y = 25
+mul y x   # y = 25
+add y 1   # y = 26
+mul z y   # z = [digit1+8, digit2+13, *]
+mul y 0   # y = 0
+add y w   # y = digit7
+add y 13  # y = digit7+13
+mul y x   # y = digit7+13
+add z y   # z = [digit1+8, digit2+13, digit7+13]
+
+inp w     # w = digit8
+mul x 0   # x = 0
+add x z
+mod x 26
+add x 10  # x = 
+eql x w
+eql x 0
+mul y 0   # y = 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0   # y = 0
+add y w
+add y 5   # y = digit8+5
+mul y x
+add z y   # z = [digit1+8, digit2+13, digit7+13, digit8+5]
+
+inp w     # w = digit9
+mul x 0   # x = 0
+add x z
+mod x 26  # x = digit8+5
+div z 26  # z = [digit1+8, digit2+13, digit7+13]
+add x -2  # x = digit8+3
+eql x w   # digit9 == digit8+3
+eql x 0   
+mul y 0   # y = 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0   # y = 0
+add y w
+add y 10
+mul y x
+add z y   # z = [digit1+8, digit2+13, digit7+13]
+
+inp w     # w = digit10
+mul x 0   # x = 0
+add x z
+mod x 26  # x = digit7+13
+div z 26  # z = [digit1+8, digit2+13]
+add x -6  # x = digit7+7
+eql x w   # digit7+7 == digit10
+eql x 0
+mul y 0   # y = 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0   # y = 0
+add y w
+add y 3
+mul y x
+add z y  # z = [digit1+8, digit2+13]
+
+inp w     # w = digit11
+mul x 0   # x = 0
+add x z
+mod x 26
+add x 14
+eql x w
+eql x 0
+mul y 0   # y = 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0   # y = 0
+add y w   # y = digit11
+add y 2   # y = digit11+2
+mul y x
+add z y   # z = [digit1+8, digit2+13, digit11+2]
+
+inp w     # w = digit12
+mul x 0   # x = 0
+add x z
+mod x 26  # x = digit11+2
+div z 26  # z = [digit1+8, digit2+13]
+add x 0   # x = digit11+2
+eql x w   # test: (digit11+2 == digit12)
+eql x 0
+mul y 0   # y = 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0   # y = 0
+add y w
+add y 2
+mul y x
+add z y   # z = [digit1+8, digit2+13]
+
+inp w     # w = digit13
+mul x 0   # x = 0
+add x z
+mod x 26  # x = digit2+13
+div z 26  # z = [digit1+8]
+add x -15 # x = digit2-2
+eql x w   # test: digit13 == digit2-2
+eql x 0
+mul y 0   # y = 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0   # y = 0
+add y w
+add y 12
+mul y x
+add z y  # z = [digit1+8]
+
+inp w     # w = digit14
+mul x 0   # x = 0
+add x z   # x = z
+mod x 26  # x = z's lowest digit
+div z 26  # z = digit1+8
+add x -4  # x = digit1+4
+eql x w   # x = digit14 = digit1+4
+eql x 0   # x = 1
+mul y 0   # y = 0
+add y 25  # y = 25
+mul y x   # y = 25
+add y 1   # y = 26
+mul z y   # z *= 26
+mul y 0   # y = 0
+add y w   # y = digit14
+add y 7   # y = digit14 + 7
+mul y x   # y = digit14 + 7
+add z y   # z = 
+
+
+# digit14 = digit1+4 / digit1 = digit14-4
+# digit13 = digit2-2 / digit2 = digit13+2
+# digit12 = digit11+2 / digit11 = digit12-2
+# digit10 = digit7+7 / digit7 = digit10-7
+# digit9 = digit8+3 / digit8 = digit9-3
+# digit6 = digit3-5 / digit3 = digit6+5
+# digit5 = digit4-1 / digit4 = digit5+1
+# 

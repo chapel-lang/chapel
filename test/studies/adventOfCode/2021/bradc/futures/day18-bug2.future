@@ -1,0 +1,7 @@
+error message: unclear error message points to internal OwnedObject.chpl module
+
+The cause of this error message isn't particularly clear to a user and
+it points to an internal module, which isn't particularly helpful.
+I'm not sure what the good result should be (I suspect this code isn't
+right), so put the output I was striving for into the .good file as a
+placeholder.

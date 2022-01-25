@@ -1,0 +1,12 @@
+38006F45291200
+0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1 1 1 1 0 1 0 0 0 1 0 1 0 0 1 0 1 0 0 1 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0
+version = 1
+packet type = 6
+totBitLength = 27
+version = 6
+packet type = 4
+Value = 10
+version = 2
+packet type = 4
+Value = 20
+VERSION SUM: 9
