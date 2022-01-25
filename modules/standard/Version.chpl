@@ -115,19 +115,23 @@ module Version {
     compared to one whose ``update`` is non-empty, the latter is
     considered to be earlier than (less than) the former, due to the
     interpretation that it represents a pre-release of the official
-    release.  */
+    release.
+  */
 
-    record sourceVersion {
-    /* The major version number.  For version ``2.0.1``, this would be
-       ``2``. */
+  record sourceVersion {
+    /*
+      The major version number. For version ``2.0.1``, this would be ``2``.
+    */
     param major: int;
 
-    /* The minor version number.  For version ``2.0.1``, this would be
-       ``0``. */
+    /*
+      The minor version number. For version ``2.0.1``, this would be ``0``.
+    */
     param minor: int;
 
-    /* The update version number.  For version ``2.0.1``, this would
-       be ``1``. */
+    /*
+      The update version number. For version ``2.0.1``, this would be ``1``.
+    */
     param update: int;
 
     /* The commit ID of the version (e.g., a Git SHA) */
