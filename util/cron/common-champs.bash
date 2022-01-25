@@ -45,6 +45,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HDF5ROOT/lib
 
 # these may be unnecessary
 export GASNET_PHYSMEM_MAX="9/10"
+export GASNET_IBV_SPAWNER=ssh
 
 export CHPL_TEST_PERF_CONFIGS="llvm:v,c-backend"  # v: visible by def
 
