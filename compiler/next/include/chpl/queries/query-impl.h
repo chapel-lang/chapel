@@ -26,6 +26,21 @@
 #include "chpl/queries/update-functions.h"
 #include "chpl/queries/stringify-functions.h"
 
+#ifndef CHPL_QUERY_TIMING_ENABLED
+#define CHPL_QUERY_TIMING_ENABLED 1
+#endif
+
+#if CHPL_QUERY_TIMING_ENABLED
+
+#define QUERY_BEGIN_TIMING(mapbase)                                                \
+  auto QUERY_STOPWATCH = context->makeQueryTimingStopwatch(mapbase)
+
+#else
+
+#define QUERY_BEGIN_TIMING(mapbase)
+
+#endif
+
 /**
   This file should be included by .cpp files implementing queries.
 
@@ -178,7 +193,19 @@ Context::queryBeginGetMap(
     const char* traceQueryName,
     bool isInputQuery) {
 
-  return getMap(queryFunc, tupleOfArgs, traceQueryName, isInputQuery);
+#if CHPL_QUERY_TIMING_ENABLED
+  auto stopwatch = makePlainQueryTimingStopwatch(enableQueryTiming);
+#endif
+
+  auto ret = getMap(queryFunc, tupleOfArgs, traceQueryName, isInputQuery);
+
+#if CHPL_QUERY_TIMING_ENABLED
+  if (enableQueryTiming) {
+    ret->timings.systemGetMap.update(stopwatch.elapsed());
+  }
+#endif
+
+  return ret;
 }
 
 template<typename ResultType,
@@ -212,7 +239,20 @@ template<typename ResultType,
 const QueryMapResult<ResultType, ArgTs...>*
 Context::queryBeginGetResult(QueryMap<ResultType, ArgTs...>* queryMap,
                              const std::tuple<ArgTs...>& tupleOfArgs) {
-  return getResult(queryMap, tupleOfArgs);
+
+#if CHPL_QUERY_TIMING_ENABLED
+  auto stopwatch = makePlainQueryTimingStopwatch(enableQueryTiming);
+#endif
+
+  auto ret = getResult(queryMap, tupleOfArgs);
+
+#if CHPL_QUERY_TIMING_ENABLED
+  if (enableQueryTiming) {
+    queryMap->timings.systemGetResult.update(stopwatch.elapsed());
+  }
+#endif
+
+  return ret;
 }
 
 template<typename ResultType,
@@ -522,7 +562,8 @@ Context::querySetterUpdateResult(
   QUERY_BEGIN_INNER(false, func, context, __VA_ARGS__); \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
-  }
+  } \
+  QUERY_BEGIN_TIMING(BEGIN_QUERY_MAP);
 
 /**
   QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used
@@ -532,7 +573,8 @@ Context::querySetterUpdateResult(
   QUERY_BEGIN_INNER(true, func, context, __VA_ARGS__) \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
-  }
+  } \
+  QUERY_BEGIN_TIMING(BEGIN_QUERY_MAP);
 
 /**
   Returns a pointer to the partial result if the query is already running

@@ -97,9 +97,13 @@ class Context {
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool checkStringsAlreadyMarked = false;
   bool enableDebugTrace = false;
+  bool enableQueryTiming = false;
+  bool enableQueryTimingTrace = false;
   bool breakSet = false;
   size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
+
+  owned<std::ostream> queryTimingTraceOutput = nullptr;
 
   static void defaultReportError(const ErrorMessage& err);
   void (*reportError)(const ErrorMessage& err) = defaultReportError;
@@ -462,7 +466,7 @@ class Context {
   #endif
   ;
 
-  /*
+  /**
     Sets the enableDebugTrace flag. This was needed because the context
     in main gets created before the arguments to the compiler are parsed.
   */
@@ -473,6 +477,17 @@ class Context {
     context in main is created before arguments to the compiler are parsed.
   */
   void setBreakOnHash(const size_t hashVal);
+
+  /** Enables/disables timing each query execution */
+  void setQueryTimingFlag(bool enable) {
+    enableQueryTiming = enable;
+  }
+
+  /** Begin query timing trace, sending the trace to outname */
+  void beginQueryTimingTrace(const std::string& outname);
+
+  /** End query timing trace, closes out stream */
+  void endQueryTimingTrace();
 
   typedef enum {
     NOT_CHECKED_NOT_CHANGED = 0,
@@ -568,6 +583,40 @@ class Context {
       const char* traceQueryName,
       bool isInputQuery);
 
+
+  /**
+     Output a timing report of the cumulative time each query spent
+   */
+  void queryTimingReport(std::ostream& os);
+
+  // Used in the in QUERY_BEGIN_TIMING macro. Creates a stopwatch that starts
+  // timing if we are enabled. And then on scope exit we conditionally stop the
+  // timing and add it to the total or log it.
+  // Semi-public method because we only expect it to be used in the macro
+  auto makeQueryTimingStopwatch(querydetail::QueryMapBase* base) {
+    size_t depth = queryStack.size();
+    bool enabled = enableQueryTiming || enableQueryTimingTrace;
+
+    return querydetail::makeQueryTimingStopwatch(
+        enabled,
+        // This lambda gets called when the stopwatch object (which lives on the
+        // stack of the query function) is destructed
+        [this, base, depth, enabled](auto& stopwatch) {
+          querydetail::QueryTimingDuration elapsed;
+          if (enabled) {
+            elapsed = stopwatch.elapsed();
+          }
+          if (enableQueryTiming) {
+            base->timings.query.update(elapsed);
+          }
+          if (enableQueryTimingTrace) {
+            auto ticks = elapsed.count();
+            auto os = queryTimingTraceOutput.get();
+            assert(os != nullptr);
+            *os << depth << ' ' << base->queryName << ' ' << ticks << '\n';
+          }
+        });
+  }
 
   /// \endcond
 };
