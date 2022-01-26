@@ -1213,6 +1213,38 @@ static void test38() {
   assert(pct->parentClassType() == BasicClassType::getObjectType(context));
 }
 
+static void test39() {
+  printf("test39\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto p = parseTypeOfX(context,
+                        R""""(
+                          class C {
+                            var next: owned C;
+                          }
+                          var x: owned C;
+                        )"""");
+  auto ct = p.first->toClassType();
+  assert(ct);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(!bct->parentClassType()->isObjectType());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 1);
+  assert(fields->fieldName(0) == "next");
+  assert(fields->fieldHasDefaultValue(0) == false);
+  assert(fields->fieldType(0).kind() == QualifiedType::VAR);
+  assert(fields->fieldType(0).type() == ct);
+
+  auto pct = bct->parentClassType()->toBasicClassType();
+  assert(pct);
+  assert(pct->isObjectType());
+}
+
 
 
 int main() {
@@ -1257,6 +1289,7 @@ int main() {
   test36();
   test37();
   test38();
+  test39();
 
   return 0;
 }
