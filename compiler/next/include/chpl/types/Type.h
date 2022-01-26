@@ -148,8 +148,6 @@ class Type {
   bool completeMatch(const Type* other) const;
 
   virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
-  void dump() const;
-
 
   // define is__ methods for the various Type subclasses
   // using macros and TypeClassesList.h

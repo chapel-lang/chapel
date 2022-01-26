@@ -537,7 +537,6 @@ class TypedFnSignature {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
-  void dump() const;
 
   /** Returns the id of the relevant uast node (usually a Function
       but it can be a Record or Class for compiler-generated functions) */

@@ -173,8 +173,6 @@ void stringifySubstitutionsMap(std::ostream& streamOut,
   }
 }
 
-IMPLEMENT_DUMP(CompositeType::FieldDetail);
-
 
 } // end namespace types
 } // end namespace chpl
