@@ -56,6 +56,9 @@ BlockStmt*         parseString(const char* string,
                                const char* filename,
                                const char* msg);
 
-ModuleSymbol*      parseIncludedSubmodule(const char* name);
+// The new parser does not rely on yyfilename to set locations, so passing
+// in the submodule path allows for overriding that behavior.
+ModuleSymbol*      parseIncludedSubmodule(const char* name,
+                                          const char* path=yyfilename);
 
 #endif

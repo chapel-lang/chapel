@@ -32,7 +32,6 @@
 #undef NDEBUG
 #endif
 
-#include <array>
 #include <cassert>
 
 using namespace chpl;
@@ -75,7 +74,7 @@ static void test0(Parser* parser) {
   // Make sure the task bodies iterator works as expected.
   {
     // Include comments even if they have no meaning.
-    std::array<ASTTag, 3> taskBodyList = {
+    ASTTag taskBodyList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment
