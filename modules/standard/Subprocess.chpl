@@ -1043,7 +1043,7 @@ module Subprocess {
    */
   proc subprocess.abort() throws {
     try _throw_on_launch_error();
-    try this.send_signal(SIGABRT);
+    try this.sendPosixSignal(SIGABRT);
   }
 
   /* Send the child processan alarm signal. The associated signal,
@@ -1052,7 +1052,7 @@ module Subprocess {
    */
   proc subprocess.alarm() throws {
     try _throw_on_launch_error();
-    try this.send_signal(SIGALRM);
+    try this.sendPosixSignal(SIGALRM);
   }
 
   /*
