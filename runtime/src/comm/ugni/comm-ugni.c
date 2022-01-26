@@ -2759,7 +2759,7 @@ mem_region_t* mreg_for_local_addr(void* addr, size_t size)
                    : (mr - &mem_regions->mregs[0] + 1)));
   }
   PERFSTATS_ADD(local_mreg_nsecs, PERFSTATS_TELAPSED(pstStart));
-  if ((uint64_t) addr + size > mr->addr + mrtl_len(mr->len)) {
+  if (mr != NULL && (uint64_t) addr + size > mr->addr + mrtl_len(mr->len)) {
     CHPL_INTERNAL_ERROR("local xfer size extends beyond MR!");
   }
   return mr;
@@ -2791,7 +2791,7 @@ mem_region_t* mreg_for_remote_addr(void* addr, size_t size, c_nodeid_t locale)
                    : (mr - &mem_regions_all_entries[locale]->mregs[0] + 1)));
   }
   PERFSTATS_ADD(remote_mreg_nsecs, PERFSTATS_TELAPSED(pstStart));
-  if ((uint64_t) addr + size > mr->addr + mrtl_len(mr->len)) {
+  if (mr != NULL && (uint64_t) addr + size > mr->addr + mrtl_len(mr->len)) {
     CHPL_INTERNAL_ERROR("remote xfer size extends beyond MR!");
   }
   return mr;
