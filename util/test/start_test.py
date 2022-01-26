@@ -839,6 +839,7 @@ def set_up_general():
         if args.valgrind_exe:
             logger.write("[valgrind: EXE only]")
             os.environ["CHPL_TEST_VGRND_EXE"] = "on"
+            os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET"] = "yes"
         else:
             logger.write("[valgrind: OFF]")
             os.environ["CHPL_TEST_VGRND_EXE"] = "off"
