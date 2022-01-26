@@ -996,6 +996,9 @@ static void test34() {
 }
 
 // test a challenging case
+// TODO: remove this test and instead check it generates a
+// multiply defined symbol error.
+// see issue #18817.
 static void testTypeAndFnSameName() {
   printf("testTypeAndFnSameName\n");
   Context ctx;
