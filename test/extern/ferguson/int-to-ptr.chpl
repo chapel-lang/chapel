@@ -1,16 +1,49 @@
 use SysCTypes;
 use CPtr;
 
-var a: c_void_ptr = (-1): c_void_ptr;
-var b: c_void_ptr = (-1): int : c_void_ptr;
-var c: c_void_ptr = (-1): uint : c_void_ptr;
-var d: c_void_ptr = (-1): c_intptr : c_void_ptr;
-var e: c_void_ptr = (-1): c_uintptr : c_void_ptr;
+config const debug = false;
 
-assert(a == b);
-assert(b == c);
-assert(c == d);
-assert(d == e);
+proc testType(type t, param val) {
+  if debug then
+    writef("testing %s with 0x%xu\n", t:string, val);
 
-var x = a: c_intptr;
-assert(x == -1);
+  param x: t = val;
+  var y: t = x;
+  var a: c_void_ptr = x: c_void_ptr;
+  var b: c_void_ptr = val: t : c_void_ptr;
+  var c: c_void_ptr = x: c_intptr : c_void_ptr;
+  var d: c_void_ptr = x: c_uintptr : c_void_ptr;
+
+
+  assert(a == b);
+  assert(b == c);
+  assert(c == d);
+
+  if debug then
+    writeln(a);
+
+  var back = a: c_uintptr : t;
+
+  if debug then
+    writef("0x%xu\n", back);
+
+  assert(back == y);
+}
+
+proc testWidth(param w) {
+  testType(int(w), -1);
+  testType(int(w), 1);
+  testType(uint(w), 1);
+  testType(uint(w), 1:uint(w) << (w-1));
+}
+
+testWidth(64);
+testWidth(32);
+testWidth(16);
+testWidth(8);
+
+// also check c_intptr / c_uintptr for good measure.
+// normally these are aliases for int/uint
+// but we check them again in case that's not the case.
+testType(c_intptr, -1);
+testType(c_uintptr, 1);
