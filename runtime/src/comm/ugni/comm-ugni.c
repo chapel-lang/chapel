@@ -159,9 +159,9 @@ static atomic_uint_least32_t next_thread_idx;
 
 #define CHPL_INTERNAL_ERROR(msg)                                        \
         do {                                                            \
-          DBG_P_LP(1, "%s:%d: internal error: %s",                      \
+          DBG_P_LP(~0U, "%s:%d: internal error: %s",                    \
                    __FILE__, (int) __LINE__, msg);                      \
-          fflush(debug_file);                                           \
+          fflush(NULL);                                                 \
           abort();                                                      \
         } while (0)
 
@@ -985,7 +985,7 @@ typedef struct {
 } fork_free_info_t;
 
 typedef enum {
-  put_32,
+  put_32 = 0,                           // NOTE: 0x1 bit clear iff 32-bit op
   put_64,
   get_32,
   get_64,
@@ -1370,8 +1370,8 @@ static gni_return_t register_mem_region(uint64_t, uint64_t, gni_mem_handle_t*,
                                         chpl_bool);
 static void      deregister_mem_region(mem_region_t*);
 static mem_region_t* mreg_for_addr(void*, mem_region_table_t*);
-static mem_region_t* mreg_for_local_addr(void*);
-static mem_region_t* mreg_for_remote_addr(void*, c_nodeid_t);
+static mem_region_t* mreg_for_local_addr(void*, size_t);
+static mem_region_t* mreg_for_remote_addr(void*, size_t, c_nodeid_t);
 static void      polling_task(void*);
 static void      set_up_for_polling(void);
 static void      ensure_registered_heap_info_set(void);
@@ -2743,7 +2743,7 @@ mem_region_t* mreg_for_addr(void* addr, mem_region_table_t* tab)
 
 static
 inline
-mem_region_t* mreg_for_local_addr(void* addr)
+mem_region_t* mreg_for_local_addr(void* addr, size_t size)
 {
   static __thread mem_region_t* mr;
   PERFSTATS_INC(local_mreg_cnt);
@@ -2759,13 +2759,16 @@ mem_region_t* mreg_for_local_addr(void* addr)
                    : (mr - &mem_regions->mregs[0] + 1)));
   }
   PERFSTATS_ADD(local_mreg_nsecs, PERFSTATS_TELAPSED(pstStart));
+  if ((uint64_t) addr + size > mr->addr + mrtl_len(mr->len)) {
+    CHPL_INTERNAL_ERROR("local xfer size extends beyond MR!");
+  }
   return mr;
 }
 
 
 static
 inline
-mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
+mem_region_t* mreg_for_remote_addr(void* addr, size_t size, c_nodeid_t locale)
 {
   static __thread mem_region_t** mrs;
   mem_region_t* mr;
@@ -2788,6 +2791,9 @@ mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
                    : (mr - &mem_regions_all_entries[locale]->mregs[0] + 1)));
   }
   PERFSTATS_ADD(remote_mreg_nsecs, PERFSTATS_TELAPSED(pstStart));
+  if ((uint64_t) addr + size > mr->addr + mrtl_len(mr->len)) {
+    CHPL_INTERNAL_ERROR("remote xfer size extends beyond MR!");
+  }
   return mr;
 }
 
@@ -4450,7 +4456,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     {
       mem_region_t* mr;
 
-      if ((mr = mreg_for_local_addr(obj)) == NULL) {
+      if ((mr = mreg_for_local_addr(obj, sizeof(atomic__real64))) == NULL) {
         CPU_INT_ARITH_AMO(add, _real64);
       } else {
         int_least64_t expected;
@@ -4595,7 +4601,7 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   // Fill in the POST descriptor.
   //
   if (mr == NULL
-      && (mr = mreg_for_remote_addr(tgt_addr, locale)) == NULL) {
+      && (mr = mreg_for_remote_addr(tgt_addr, size, locale)) == NULL) {
     CHPL_INTERNAL_ERROR("send_polling_response(): "
                         "remote address is not NIC-registered");
   }
@@ -5090,7 +5096,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   // must have registered source addresses.
   //
   if (remote_mr == NULL)
-    remote_mr = mreg_for_remote_addr(tgt_addr, locale);
+    remote_mr = mreg_for_remote_addr(tgt_addr, size, locale);
 
   if (remote_mr == NULL) {
 
@@ -5099,7 +5105,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
                           "remote address is not NIC-registered");
     }
 
-    local_mr = mreg_for_local_addr(src_addr);
+    local_mr = mreg_for_local_addr(src_addr, size);
     if (local_mr != NULL) {
       //
       // The local source address is NIC-registered.  The target side
@@ -5166,7 +5172,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   // then do an RDMA put instead of FMA
   //
  if (size >= rdma_threshold &&
-     (local_mr = mreg_for_local_addr(src_addr)) != NULL) {
+     (local_mr = mreg_for_local_addr(src_addr, size)) != NULL) {
     do_rdma = true;
     max_trans_sz = MAX_RDMA_TRANS_SZ;
 
@@ -5252,7 +5258,8 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
 
   for (vi = 0, ci = -1; vi < v_len; vi++) {
     remote_mr = ((remote_mr_v == NULL)
-                 ? mreg_for_remote_addr(tgt_addr_v[vi], locale_v[vi])
+                 ? mreg_for_remote_addr(tgt_addr_v[vi], size_v[vi],
+                                        locale_v[vi])
                  : remote_mr_v[vi]);
     if (remote_mr == NULL) {
       if (may_proxy) {
@@ -5365,10 +5372,11 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
 
   for (vi = 0, ci = -1; vi < v_len; vi++) {
     local_mr = ((local_mr_v == NULL)
-                ? mreg_for_local_addr(tgt_addr_v[vi])
+                ? mreg_for_local_addr(tgt_addr_v[vi], size_v[vi])
                 : local_mr_v[vi]);
     remote_mr = ((remote_mr_v == NULL)
-                 ? mreg_for_remote_addr(src_addr_v[vi], locale_v[vi])
+                 ? mreg_for_remote_addr(src_addr_v[vi], size_v[vi],
+                                        locale_v[vi])
                  : remote_mr_v[vi]);
     if (local_mr == NULL || remote_mr == NULL) {
       if (may_proxy) {
@@ -5682,7 +5690,7 @@ void do_remote_put_buff(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   DBG_P_LP(DBGF_GETPUT, "DoRemBuffPut %p -> %d:%p (%#zx), proxy %c",
            src_addr, (int) locale, tgt_addr, size, may_proxy ? 'y' : 'n');
 
-  remote_mr = mreg_for_remote_addr(tgt_addr, locale);
+  remote_mr = mreg_for_remote_addr(tgt_addr, size, locale);
   info = task_local_buff_acquire(put_buff);
 
   if (remote_mr == NULL || info == NULL || size > MAX_UNORDERED_TRANS_SZ) {
@@ -5743,8 +5751,8 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   // trying to reimplement that logic in do_remote_get_V. If any of these
   // aren't true, our performance is already going to suffer.
   //
-  remote_mr = mreg_for_remote_addr(src_addr, locale);
-  local_mr = mreg_for_local_addr(tgt_addr);
+  remote_mr = mreg_for_remote_addr(src_addr, size, locale);
+  local_mr = mreg_for_local_addr(tgt_addr, size);
   info = task_local_buff_acquire(get_buff);
   if (local_mr == NULL || remote_mr == NULL || info == NULL ||
       !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
@@ -5793,14 +5801,14 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   // be registered, but we don't have to worry about alignment or the
   // minimum-size issues associated with direct GETs.
   //
-  remote_mr = mreg_for_remote_addr(src_addr, locale);
+  remote_mr = mreg_for_remote_addr(src_addr, size, locale);
   if (remote_mr == NULL) {
     if (!may_proxy) {
       CHPL_INTERNAL_ERROR("do_remote_get(): "
                           "remote address is not NIC-registered");
     }
 
-    local_mr = mreg_for_local_addr(tgt_addr);
+    local_mr = mreg_for_local_addr(tgt_addr, size);
     if (local_mr != NULL) {
       //
       // The local target address is NIC-registered.  The source side
@@ -5878,7 +5886,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   src_addr_xmit_off = VP_TO_UI64(src_addr) - VP_TO_UI64(src_addr_xmit);
   xmit_size         = ALIGN_32_UP(size + src_addr_xmit_off);
 
-  local_mr = mreg_for_local_addr(tgt_addr_xmit);
+  local_mr = mreg_for_local_addr(tgt_addr_xmit, xmit_size);
   if (local_mr != NULL
       && src_addr_xmit == src_addr
       && xmit_size == size) {
@@ -6175,14 +6183,15 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
       (void) do_amo_on_cpu(_c, res, obj, opnd1, opnd2);                 \
     } else {                                                            \
       fork_t rf_req = { .a={.cmd=_c, .obj=obj} };                       \
+      const size_t sz = sizeof(_t);                                     \
       if (opnd1 != NULL)                                                \
-        memcpy(&rf_req.a.opnd1, opnd1, sizeof(_t));                     \
+        memcpy(&rf_req.a.opnd1, opnd1, sz);                             \
       if (opnd2 != NULL)                                                \
-        memcpy(&rf_req.a.opnd2, opnd2, sizeof(_t));                     \
-      if (res != NULL && mreg_for_local_addr(res) == NULL) {            \
+        memcpy(&rf_req.a.opnd2, opnd2, sz);                             \
+      if (res != NULL && mreg_for_local_addr(res, sz) == NULL) {        \
         rf_req.a.res = amo_res_alloc();                                 \
         fork_amo(&rf_req, loc);                                         \
-        memcpy(res, rf_req.a.res, sizeof(_t));                          \
+        memcpy(res, rf_req.a.res, sz);                                  \
         amo_res_free(rf_req.a.res);                                     \
       }                                                                 \
       else {                                                            \
@@ -6215,12 +6224,14 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                                                                         \
           chpl_comm_diags_verbose_amo("amo write", loc, ln, fn);        \
           chpl_comm_diags_incr(amo);                                    \
+          const size_t sz = sizeof(_t);                                 \
           if (chpl_numNodes == 1                                        \
-              || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
+              || ((remote_mr = mreg_for_remote_addr(obj, sz, loc))      \
+                  == NULL)) {                                           \
             do_non_nic_amo_##_c##_##_f(obj, NULL, val, NULL, loc);      \
           }                                                             \
           else {                                                        \
-            do_remote_put(val, loc, obj, sizeof(_t), remote_mr,         \
+            do_remote_put(val, loc, obj, sz, remote_mr,                 \
                           may_proxy_false);                             \
           }                                                             \
         }
@@ -6259,13 +6270,14 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo read", loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
+          const size_t sz = sizeof(_t);                                 \
           if (chpl_numNodes == 1                                        \
-              || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
+              || ((remote_mr = mreg_for_remote_addr(obj, sz, loc))      \
+                  == NULL)) {                                           \
             do_non_nic_amo_##_c##_##_f(obj, res, NULL, NULL, loc);      \
           }                                                             \
           else {                                                        \
-            size_t sz = sizeof(_t);                                     \
-            if ((local_mr = mreg_for_local_addr(res)) == NULL)          \
+            if ((local_mr = mreg_for_local_addr(res, sz)) == NULL)      \
               do_remote_get(res, loc, obj, sz, may_proxy_false);        \
             else                                                        \
               do_nic_get(res, loc, remote_mr, obj, sz, local_mr);       \
@@ -6306,12 +6318,14 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo xchg", loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
+          const size_t sz = sizeof(_t);                                 \
           if (chpl_numNodes == 1                                        \
-              || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
+              || ((remote_mr = mreg_for_remote_addr(obj, sz, loc))      \
+                  == NULL)) {                                           \
             do_non_nic_amo_##_c##_##_f(obj, res, xchgval, NULL, loc);   \
           }                                                             \
           else {                                                        \
-            do_nic_amo(xchgval, NULL, loc, obj, sizeof(_t),             \
+            do_nic_amo(xchgval, NULL, loc, obj, sz,                     \
                        amo_cmd_2_nic_op(_c, 1), res, remote_mr);        \
           }                                                             \
         }
@@ -6355,18 +6369,20 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, swap_64, int_least64_t)
           chpl_comm_diags_incr(amo);                                    \
           _t old_value;                                                 \
           _t old_expected;                                              \
-          memcpy(&old_expected, cmpval, sizeof(_t));                    \
+          const size_t sz = sizeof(_t);                                 \
+          memcpy(&old_expected, cmpval, sz);                            \
           if (chpl_numNodes == 1                                        \
-              || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
+              || ((remote_mr = mreg_for_remote_addr(obj, sz, loc))      \
+                  == NULL)) {                                           \
             do_non_nic_amo_##_c##_##_f(obj, &old_value, &old_expected,  \
                                        xchgval, loc);                   \
           }                                                             \
           else {                                                        \
-            do_nic_amo(&old_expected, xchgval, loc, obj, sizeof(_t),    \
+            do_nic_amo(&old_expected, xchgval, loc, obj, sz,            \
                        amo_cmd_2_nic_op(_c, 1), &old_value, remote_mr); \
           }                                                             \
           *res = (chpl_bool32)(old_value == old_expected);              \
-          if (!*res) memcpy(cmpval, &old_value, sizeof(_t));            \
+          if (!*res) memcpy(cmpval, &old_value, sz);                    \
         }
 
 DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int32, cswap_32, int_least32_t)
@@ -6404,12 +6420,14 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo " #_o, loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
+          const size_t sz = sizeof(_t);                                 \
           if (chpl_numNodes == 1                                        \
-              || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
+              || ((remote_mr = mreg_for_remote_addr(obj, sz, loc))      \
+                  == NULL)) {                                           \
             do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
           else {                                                        \
-            do_nic_amo_nf(opnd, loc, obj, sizeof(_t),                   \
+            do_nic_amo_nf(opnd, loc, obj, sz,                           \
                           amo_cmd_2_nic_op(_c, 0), remote_mr);          \
           }                                                             \
         }                                                               \
@@ -6428,12 +6446,14 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo unord_" #_o, loc, ln, fn);   \
           chpl_comm_diags_incr(amo);                                    \
+          const size_t sz = sizeof(_t);                                 \
           if (chpl_numNodes == 1                                        \
-              || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
+              || ((remote_mr = mreg_for_remote_addr(obj, sz, loc))      \
+                  == NULL)) {                                           \
             do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
           else {                                                        \
-            do_nic_amo_nf_buff(opnd, loc, obj, sizeof(_t),              \
+            do_nic_amo_nf_buff(opnd, loc, obj, sz,                      \
                                amo_cmd_2_nic_op(_c, 0), remote_mr);     \
           }                                                             \
         }                                                               \
@@ -6454,12 +6474,14 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo fetch_" #_o, loc, ln, fn);   \
           chpl_comm_diags_incr(amo);                                    \
+          const size_t sz = sizeof(_t);                                 \
           if (chpl_numNodes == 1                                        \
-              || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
+              || ((remote_mr = mreg_for_remote_addr(obj, sz, loc))      \
+                  == NULL)) {                                           \
             do_non_nic_amo_##_c##_##_f(obj, res, opnd, NULL, loc);      \
           }                                                             \
           else {                                                        \
-            do_nic_amo(opnd, NULL, loc, obj, sizeof(_t),                \
+            do_nic_amo(opnd, NULL, loc, obj, sz,                        \
                        amo_cmd_2_nic_op(_c, 1), res, remote_mr);        \
           }                                                             \
         }
@@ -6514,9 +6536,11 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo add", loc, ln, fn);          \
           chpl_comm_diags_incr(amo);                                    \
-          if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
-              && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
-            do_nic_amo_nf(opnd, loc, obj, sizeof(_t),                   \
+          const size_t sz = sizeof(_t);                                 \
+          if (chpl_numNodes > 1 && sz == sizeof(int_least32_t)          \
+              && ((remote_mr = mreg_for_remote_addr(obj, sz, loc))      \
+                  != NULL)) {                                           \
+            do_nic_amo_nf(opnd, loc, obj, sz,                           \
                           amo_cmd_2_nic_op(_c, 0), remote_mr);          \
           }                                                             \
           else {                                                        \
@@ -6538,9 +6562,11 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo unord_add", loc, ln, fn);    \
           chpl_comm_diags_incr(amo);                                    \
-          if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
-              && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
-            do_nic_amo_nf_buff(opnd, loc, obj, sizeof(_t),              \
+          const size_t sz = sizeof(_t);                                 \
+          if (chpl_numNodes > 1 && sz == sizeof(int_least32_t)          \
+              && ((remote_mr = mreg_for_remote_addr(obj, sz, loc))      \
+                  != NULL)) {                                           \
+            do_nic_amo_nf_buff(opnd, loc, obj, sz,                      \
                                amo_cmd_2_nic_op(_c, 0), remote_mr);     \
           }                                                             \
           else {                                                        \
@@ -6564,9 +6590,11 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo fetch_add", loc, ln, fn);    \
           chpl_comm_diags_incr(amo);                                    \
-          if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
-              && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
-            do_nic_amo(opnd, NULL, loc, obj, sizeof(_t),                \
+          const size_t sz = sizeof(_t);                                 \
+          if (chpl_numNodes > 1 && sz == sizeof(int_least32_t)          \
+              && ((remote_mr = mreg_for_remote_addr(obj, sz, loc))      \
+                  != NULL)) {                                           \
+            do_nic_amo(opnd, NULL, loc, obj, sz,                        \
                        amo_cmd_2_nic_op(_c, 1), res, remote_mr);        \
           }                                                             \
           else {                                                        \
@@ -6803,10 +6831,10 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   // NIC.
   //
   if (result != NULL) {
-    local_mr = mreg_for_local_addr(reg_result);
+    local_mr = mreg_for_local_addr(reg_result, size);
     if (local_mr == NULL) {
       reg_result = &stack_result;
-      local_mr = mreg_for_local_addr(reg_result);
+      local_mr = mreg_for_local_addr(reg_result, size);
       if (local_mr == NULL) {
         reg_result = amo_res_alloc();
         local_mr = gnr_mreg;
@@ -7010,7 +7038,8 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
 
     chpl_bool heap_copy_arg = !blocking
                               || (get_hugepage_size() > 0
-                                  && mreg_for_local_addr(arg) == NULL);
+                                  && (mreg_for_local_addr(arg, arg_size)
+                                      == NULL));
 
     if (heap_copy_arg) {
       size_t payload_size = arg_size
@@ -7144,9 +7173,16 @@ void fork_amo(fork_t* p_rf_req, c_nodeid_t locale)
   // Make sure that, if we need a result, it is in memory known to the
   // NIC.
   //
-  if (p_rf_req->a.res != NULL
-      && mreg_for_local_addr(p_rf_req->a.res) == NULL) {
-    CHPL_INTERNAL_ERROR("fork_amo(): result address is not NIC-registered");
+  // Note: the AMO command code 0x1 bit is clear for the 32-bit ones and
+  // set for the 64-bit ones.  (See the fork_amo_cmd_t declaration.)
+  //
+  if (p_rf_req->a.res != NULL) {
+    const size_t sz = (p_rf_req->a.cmd & 0x1) == 0
+                      ? sizeof(int32_t)
+                      : sizeof(int64_t);
+    if (mreg_for_local_addr(p_rf_req->a.res, sz) == NULL) {
+      CHPL_INTERNAL_ERROR("fork_amo(): result address is not NIC-registered");
+    }
   }
 
   //
@@ -7205,7 +7241,7 @@ void do_fork_post(c_nodeid_t locale,
                      ? (rf_done_t**)
                        &((chpl_comm_on_bundle_t*) p_rf_req)->comm.rf_done
                      : &p_rf_req->rf_done;
-    if (mreg_for_local_addr(&stack_rf_done) != NULL) {
+    if (mreg_for_local_addr(&stack_rf_done, sizeof(stack_rf_done)) != NULL) {
       *p_rf_done_addr = &stack_rf_done;
     } else {
       *p_rf_done_addr = rf_done_alloc();
