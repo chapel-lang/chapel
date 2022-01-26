@@ -670,9 +670,18 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
               info->module->getOrInsertGlobal
                   (name, info->irBuilder->getInt8PtrTy()));
         globalValue->setConstant(true);
+#if HAVE_LLVM_VER >= 130
+        llvm::Type* ty = llvm::cast<llvm::PointerType>(
+          constString->getType()->getScalarType())->getElementType();
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->irBuilder->CreateConstInBoundsGEP2_32(
-                NULL, constString, 0, 0)));
+              ty, constString, 0, 0)));
+#else
+        globalValue->setInitializer(llvm::cast<llvm::Constant>(
+              info->irBuilder->CreateConstInBoundsGEP2_32(
+              NULL, constString, 0, 0)));
+
+#endif
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {

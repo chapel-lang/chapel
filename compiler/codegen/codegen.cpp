@@ -2102,7 +2102,7 @@ codegen_config() {
         {
           GenRet gen = new_CStringSymbol(var->name)->codegen();
 #if HAVE_LLVM_VER >= 130
-          args[0] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+          args[0] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
 #else
           args[0] = info->irBuilder->CreateLoad(gen.val);
 #endif
@@ -2121,7 +2121,7 @@ codegen_config() {
         {
           GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
 #if HAVE_LLVM_VER >= 130
-          args[1] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+          args[1] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
 #else
           args[1] = info->irBuilder->CreateLoad(gen.val);
 #endif
@@ -2130,7 +2130,7 @@ codegen_config() {
         if (var->getModule()->modTag == MOD_INTERNAL) {
           GenRet gen = new_CStringSymbol("Built-in")->codegen();
 #if HAVE_LLVM_VER >= 130
-          args[2] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+          args[2] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
 #else
           args[2] = info->irBuilder->CreateLoad(gen.val);
 #endif
@@ -2138,7 +2138,7 @@ codegen_config() {
         else {
           GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
 #if HAVE_LLVM_VER >= 130
-          args[2] =info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+          args[2] =info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
 #else
           args[2] =info->irBuilder->CreateLoad(gen.val);
 #endif
@@ -2150,7 +2150,7 @@ codegen_config() {
         {
           GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
 #if HAVE_LLVM_VER >= 130
-          args[5] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+          args[5] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
 #else
           args[5] = info->irBuilder->CreateLoad(gen.val);
 #endif
