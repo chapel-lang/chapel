@@ -839,7 +839,6 @@ def set_up_general():
         if args.valgrind_exe:
             logger.write("[valgrind: EXE only]")
             os.environ["CHPL_TEST_VGRND_EXE"] = "on"
-            os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET"] = "yes"
         else:
             logger.write("[valgrind: OFF]")
             os.environ["CHPL_TEST_VGRND_EXE"] = "off"
@@ -848,6 +847,10 @@ def set_up_general():
         # Stay below valgrind's --max-threads option, which defaults to 500
         if not "CHPL_RT_NUM_THREADS_PER_LOCALE" in os.environ:
             os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE"] = "450";
+
+        # Squash the warning about the potential for deadlock when setting
+        # the number of threads, or all tests will fail with that warning
+        os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET"] = "yes"
 
         # Additionally, fail with an error if valgrind testing is running without
         # tasks=fifo, mem=cstdlib, or with re2 built w/o valgrind support
