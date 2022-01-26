@@ -1,9 +1,2 @@
-#!/usr/bin/env python3
-import os
-
-print('< day22.test3  # day22a-test3.good')
-
-# Some of these configurations are long-running, so let's skip them in
-# valgrindexe testing, which slows things down by nature.
-if os.getenv('CHPL_TEST_VGRND_EXE') != 'on':
-   print('< day22.in')
+< day22.test3  # day22a-test3.good
+#  Takes longer than ideal in nightly testing: < day22.in
