@@ -35,6 +35,19 @@ class BasicClassType final : public CompositeType {
  private:
   const BasicClassType* parentType_ = nullptr;
 
+  BasicClassType(ID id, UniqueString name,
+                 const BasicClassType* parentType,
+                 const BasicClassType* instantiatedFrom,
+                 SubstitutionsMap subs)
+    : CompositeType(typetags::BasicClassType, id, name,
+                    instantiatedFrom, std::move(subs)),
+      parentType_(parentType)
+  {
+    // all classes should have a parent type, except for object
+    // which doesn't.
+    assert(parentType_ || name == USTR("object"));
+  }
+
   bool contentsMatchInner(const Type* other,
                           MatchAssumptions& assumptions) const override {
     const BasicClassType* rhs = (const BasicClassType*) other;
@@ -53,30 +66,21 @@ class BasicClassType final : public CompositeType {
     compositeTypeMarkUniqueStringsInner(context);
   }
 
-  static const owned<BasicClassType>& getObjectTypeQuery(Context* context);
+  static const owned<BasicClassType>&
+  getBasicClassType(Context* context, ID id, UniqueString name,
+                    const BasicClassType* parentType,
+                    const BasicClassType* instantiatedFrom,
+                    SubstitutionsMap subs);
 
  public:
-  /** Construct a BasicClassType.
-      Note: we expect the field types to be nullptr when this is called
-   */
-  BasicClassType(ID id, UniqueString name,
-                 std::vector<CompositeType::FieldDetail> fields,
-                 const BasicClassType* instantiatedFrom,
-                 SubstitutionsMap subs)
-    : CompositeType(typetags::BasicClassType, id, name, std::move(fields),
-                    instantiatedFrom, std::move(subs)),
-      parentType_(nullptr)
-  {
-  }
 
   ~BasicClassType() = default;
 
-  /** Set the parent type. For use only during resolution while the type is
-      still being constructed. Be sure to call
-      finalizeFieldTypes after changing this and any other fields. */
-  void setParentType(const BasicClassType* parentType) {
-    parentType_ = parentType;
-  }
+  static const BasicClassType*
+  get(Context* context, ID id, UniqueString name,
+      const BasicClassType* parentType,
+      const BasicClassType* instantiatedFrom,
+      SubstitutionsMap subs);
 
   static const BasicClassType* getObjectType(Context* context);
 

@@ -18,6 +18,5 @@
 add_subdirectory(parsing)
 add_subdirectory(queries)
 add_subdirectory(resolution)
-add_subdirectory(types)
 add_subdirectory(uast)
 add_subdirectory(util)

@@ -42,6 +42,14 @@ namespace types {
 
  */
 class Type {
+ public:
+  enum Genericity {
+    CONCRETE,
+    GENERIC,
+    GENERIC_WITH_DEFAULTS,
+    MAYBE_GENERIC,
+  };
+
  private:
   TypeTag tag_;
 
@@ -99,9 +107,10 @@ class Type {
  public:
   /**
    This function needs to be defined by subclasses.
-   It returns 'true` if the type represents a generic type.
+   It returns an enum value indicating if the type
+   is generic, concrete, or maybe generic (e.g. depending on the fields).
    */
-  virtual bool isGeneric() const = 0;
+  virtual Genericity genericity() const = 0;
 
  protected:
   Type(TypeTag tag)

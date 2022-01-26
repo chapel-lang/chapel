@@ -24,26 +24,42 @@
 namespace chpl {
 namespace types {
 
-
 const owned<BasicClassType>&
-BasicClassType::getObjectTypeQuery(Context* context) {
-  QUERY_BEGIN(getObjectTypeQuery, context);
+BasicClassType::getBasicClassType(Context* context, ID id, UniqueString name,
+                                  const BasicClassType* parentType,
+                                  const BasicClassType* instantiatedFrom,
+                                  SubstitutionsMap subs) {
+  QUERY_BEGIN(getBasicClassType, context, id, name,
+              parentType, instantiatedFrom, subs);
 
-  ID emptyId;
-  auto name = UniqueString::build(context, "object");
-  std::vector<CompositeType::FieldDetail> emptyFields;
-
-  auto result = toOwned(new BasicClassType(emptyId, name,
-                                           std::move(emptyFields),
-                                           /* instantiatedFrom */ nullptr,
-                                           SubstitutionsMap()));
-
+  auto result = toOwned(new BasicClassType(id, name,
+                                           parentType, instantiatedFrom,
+                                           std::move(subs)));
   return QUERY_END(result);
 }
 
 const BasicClassType*
+BasicClassType::get(Context* context, ID id, UniqueString name,
+                    const BasicClassType* parentType,
+                    const BasicClassType* instantiatedFrom,
+                    SubstitutionsMap subs) {
+  // getObjectType should be used to construct object
+  // everything else should have a parent type.
+  assert(parentType != nullptr);
+  return getBasicClassType(context, id, name,
+                           parentType, instantiatedFrom,
+                           std::move(subs)).get();
+}
+
+const BasicClassType*
 BasicClassType::getObjectType(Context* context) {
-  return getObjectTypeQuery(context).get();
+  ID emptyId;
+  auto name = UniqueString::build(context, "object");
+
+  return getBasicClassType(context, emptyId, name,
+                           /* parentType */ nullptr,
+                           /* instantiatedFrom */ nullptr,
+                           SubstitutionsMap()).get();
 }
 
 bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,

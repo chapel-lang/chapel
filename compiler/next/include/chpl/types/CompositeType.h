@@ -36,69 +36,39 @@ namespace types {
   elements as fields. Subclasses include BasicClass, Record, Union, and Tuple
   types.
 
+  This class itself does not represent the field types. Instead, it
+  uses the uAST ID of the class/record/union. For a generic type,
+  it also uses a SubstitutionsMap.
+
+  (Storing field types in this class would present significant challenges
+   for computing this type in an immutable way within the query framework). 
  */
 class CompositeType : public Type {
  public:
-  using SubstitutionsMap =
-    std::unordered_map<const uast::Decl*, types::QualifiedType>;
+  using SubstitutionsMap = std::unordered_map<ID, types::QualifiedType>;
+  using SubstitutionPair = std::pair<ID, QualifiedType>;
+  using SortedSubstitutions = std::vector<SubstitutionPair>;
 
-  struct FieldDetail {
-    UniqueString name;
-    bool hasDefaultValue = false;
-    const uast::Decl* decl = nullptr;
-    QualifiedType type;
-
-    FieldDetail(UniqueString name,
-                bool hasDefaultValue,
-                const uast::Decl* decl,
-                QualifiedType type)
-      : name(name), hasDefaultValue(hasDefaultValue), decl(decl), type(type) {
-    }
-    bool operator==(const FieldDetail& other) const {
-      return name == other.name &&
-             hasDefaultValue == other.hasDefaultValue &&
-             decl == other.decl &&
-             type == other.type;
-    }
-    bool operator!=(const FieldDetail& other) const {
-      return !(*this == other);
-    }
-    size_t hash() const {
-      return chpl::hash(name, hasDefaultValue, decl, type);
-    }
-
-    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-      name.stringify(ss, stringKind);
-      //TODO: determine the proper way to do this
-      //decl.stringify(ss, stringKind);
-      type.stringify(ss, stringKind);
-    }
-
-    /// \cond DO_NOT_DOCUMENT
-    DECLARE_DUMP;
-    /// \endcond DO_NOT_DOCUMENT
-  };
  protected:
   // TODO: add fields and accessors for a QualifiedType per field
 
   ID id_;
   UniqueString name_;
-  std::vector<FieldDetail> fields_;
 
   // Is this CompositeType representing an instantiation?
   // If so, what is the generic CompositeType that was instantiated?
+  // TODO: should we remove this and compute it again based on id?
   const CompositeType* instantiatedFrom_ = nullptr;
-
-  bool isGeneric_ = false;
-  bool allGenericFieldsHaveDefaultValues_ = false;
+  // If so, what types/params should we use?
+  SubstitutionsMap subs_;
 
   CompositeType(typetags::TypeTag tag,
                 ID id, UniqueString name,
-                std::vector<FieldDetail> fields,
                 const CompositeType* instantiatedFrom,
                 SubstitutionsMap subs)
-    : Type(tag), id_(id), name_(name), fields_(std::move(fields)),
-      instantiatedFrom_(instantiatedFrom) {
+    : Type(tag), id_(id), name_(name),
+      instantiatedFrom_(instantiatedFrom),
+      subs_(std::move(subs)) {
 
     // check instantiated only from same type of object
     assert(instantiatedFrom_ == nullptr || instantiatedFrom_->tag() == tag);
@@ -108,75 +78,15 @@ class CompositeType : public Type {
            instantiatedFrom_->instantiatedFrom_ == nullptr);
 
     // check that subs is consistent with instantiatedFrom
-    assert((instantiatedFrom_ == nullptr) == subs.empty());
-
-    // check that types are not established yet
-    for (auto field : fields_) {
-      assert(field.type.type() == nullptr);
-    }
+    assert((instantiatedFrom_ == nullptr) == subs_.empty());
   }
 
   bool compositeTypeContentsMatchInner(const CompositeType* other,
-                                       MatchAssumptions& assumptions) const {
-    // check basic properties
-    if (id_ != other->id_ || name_ != other->name_)
-      return false;
-
-    if (isGeneric_ != other->isGeneric_)
-      return false;
-
-    if (allGenericFieldsHaveDefaultValues_ !=
-        other->allGenericFieldsHaveDefaultValues_)
-      return false;
-
-    // one is instantiated but the other is not
-    if ((instantiatedFrom_ != nullptr) !=
-        (other->instantiatedFrom_ != nullptr))
-      return false;
-
-    // add instantiatedFrom to the assumptions
-    if (!assumptions.assume(instantiatedFrom_, other->instantiatedFrom_))
-      return false;
-
-    // consider the fields
-    size_t nFields = fields_.size();
-
-    if (nFields != other->fields_.size())
-      return false;
-
-    for (size_t i = 0; i < nFields; i++) {
-      const FieldDetail& field = fields_[i];
-      const FieldDetail& otherField = other->fields_[i];
-
-      if (field.name != otherField.name ||
-          field.hasDefaultValue != otherField.hasDefaultValue ||
-          field.decl != otherField.decl)
-        return false;
-
-      // Check the elements of the QualifiedType individually,
-      // because we want to handle the Type* in a special way.
-      if (field.type.kind() != otherField.type.kind() ||
-          field.type.param() != otherField.type.param())
-        return false;
-
-      const Type* fieldType = field.type.type();
-      const Type* otherFieldType = otherField.type.type();
-
-      // type should be established by the time this runs
-      assert(fieldType != nullptr);
-
-      // add an assumption about the type ptrs, if they differ
-      if (!assumptions.assume(fieldType, otherFieldType))
-        return false;
-    }
-
-    return true;
-  }
+                                       MatchAssumptions& assumptions) const;
 
   void compositeTypeMarkUniqueStringsInner(Context* context) const {
-    for (auto field : fields_) {
-      field.name.mark(context);
-    }
+    id_.mark(context);
+    name_.mark(context);
   }
 
  public:
@@ -185,58 +95,14 @@ class CompositeType : public Type {
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;
 
-  /** Set a field type. For use only during resolution while the type is still
-      being constructed. */
-  void setFieldType(int i, QualifiedType type);
-
-  /** Called during resolution after all field types (and parent type)
-      are set. */
-  void finalizeFieldTypes();
-
   /** Returns true if this is a generic type */
-  bool isGeneric() const override { return isGeneric_; }
-
-  /** Returns true if this is a generic type where all
-      generic fields have default values. For classes,
-      this includes consideration of the parent class. */
-  bool isGenericWithDefaults() const {
-    return isGeneric_ && allGenericFieldsHaveDefaultValues_;
-  }
+  Genericity genericity() const override { return MAYBE_GENERIC; }
 
   /** Return the uAST ID associated with this CompositeType */
   const ID& id() const { return id_; }
 
   /** Returns the name of the uAST associated with this CompositeType */
   UniqueString name() const { return name_; }
-
-  /** Return the number of fields */
-  int numFields() const {
-    return fields_.size();
-  }
-
-  /** Return the name of the i'th field */
-  UniqueString fieldName(int i) const {
-    assert(0 <= i && (size_t) i < fields_.size());
-    return fields_[i].name;
-  }
-
-  /** Return whether or not the i'th field has a default value */
-  bool fieldHasDefaultValue(int i) const {
-    assert(0 <= i && (size_t) i < fields_.size());
-    return fields_[i].hasDefaultValue;
-  }
-
-  /** Return the Decl associated with the i'th field, or nullptr if none */
-  const uast::Decl* fieldDecl(int i) const {
-    assert(0 <= i && (size_t) i < fields_.size());
-    return fields_[i].decl;
-  }
-
-  /** Return the QualifiedType of the i'th field */
-  const QualifiedType& fieldType(int i) const {
-    assert(0 <= i && (size_t) i < fields_.size());
-    return fields_[i].type;
-  }
 
   /** If this type represents an instantiated type,
       returns the type it was instantiated from.
@@ -253,9 +119,28 @@ class CompositeType : public Type {
     return instantiatedFrom_;
   }
 
+  /** Returns true if 'this' is an instantiation of genericType */
   bool isInstantiationOf(const CompositeType* genericType) const {
     auto from = instantiatedFromCompositeType();
     return (from != nullptr && from == genericType);
+  }
+
+  /** Returns the substitutions map */
+  const SubstitutionsMap& substitutions() const {
+    return subs_;
+  }
+
+  /** Returns the substitutions in a sorted order */
+  SortedSubstitutions sortedSubstitutions() const;
+
+  /** Returns the substitution for a particular declId,
+      or an empty QualifiedType if no substitution was found. */
+  types::QualifiedType substitution(ID declId) const {
+    auto it = subs_.find(declId);
+    if (it != subs_.end())
+      return it->second;
+
+    return types::QualifiedType();
   }
 };
 
@@ -285,12 +170,6 @@ template<> struct stringify<types::CompositeType::SubstitutionsMap> {
 
 namespace std {
 
-template<> struct hash<chpl::types::CompositeType::FieldDetail>
-{
-  size_t operator()(const chpl::types::CompositeType::FieldDetail& key) const {
-    return key.hash();
-  }
-};
 template<> struct hash<chpl::types::CompositeType::SubstitutionsMap>
 {
   size_t operator()(const chpl::types::CompositeType::SubstitutionsMap& x) const {

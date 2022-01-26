@@ -53,8 +53,11 @@ class BuiltinType : public Type {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  bool isGeneric() const override {
-    return (int) tag() >= (int) typetags::AnyBoolType;
+  Genericity genericity() const override {
+    if ((int) tag() >= (int) typetags::AnyBoolType)
+      return GENERIC;
+    else
+      return CONCRETE;
   }
 
  public:

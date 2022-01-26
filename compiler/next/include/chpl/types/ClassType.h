@@ -101,9 +101,11 @@ class ClassType final : public Type {
   }
 
   /** Returns true if this is a generic type */
-  bool isGeneric() const override {
-    return decorator_.isUnknownManagement() ||
-           basicType_->isGeneric();
+  Genericity genericity() const override {
+    if (decorator_.isUnknownManagement() || decorator_.isUnknownNilability())
+      return GENERIC;
+    else
+      return MAYBE_GENERIC; // depends on the class
   }
 
   /** Returns the verison this ClassType with the passed decorator */

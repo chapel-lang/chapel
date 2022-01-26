@@ -31,6 +31,13 @@ namespace types {
  */
 class TupleType final : public CompositeType {
  private:
+  TupleType(ID id, UniqueString name,
+            const TupleType* instantiatedFrom,
+            SubstitutionsMap subs)
+    : CompositeType(typetags::TupleType, id, name,
+                    instantiatedFrom, std::move(subs))
+  { }
+
 
   bool contentsMatchInner(const Type* other,
                           MatchAssumptions& assumptions) const override {
@@ -42,14 +49,16 @@ class TupleType final : public CompositeType {
     compositeTypeMarkUniqueStringsInner(context);
   }
 
+  static const owned<TupleType>&
+  getTupleType(Context* context, ID id, UniqueString name,
+               const TupleType* instantiatedFrom,
+               SubstitutionsMap subs);
+
  public:
-  TupleType(ID id, UniqueString name,
-            std::vector<CompositeType::FieldDetail> fields,
-            const TupleType* instantiatedFrom,
-            SubstitutionsMap subs)
-    : CompositeType(typetags::TupleType, id, name, std::move(fields),
-                    instantiatedFrom, subs)
-  { }
+  static const TupleType*
+  get(Context* context, ID id, UniqueString name,
+      const TupleType* instantiatedFrom,
+      SubstitutionsMap subs);
 
   ~TupleType() = default;
 

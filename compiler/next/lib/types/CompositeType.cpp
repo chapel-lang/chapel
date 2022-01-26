@@ -27,39 +27,62 @@ namespace chpl {
 namespace types {
 
 
+bool CompositeType::compositeTypeContentsMatchInner(
+    const CompositeType* other, MatchAssumptions& assumptions) const {
+  // check basic properties
+  if (id_ != other->id_ || name_ != other->name_)
+    return false;
+
+  // one is instantiated but the other is not
+  if ((instantiatedFrom_ != nullptr) !=
+      (other->instantiatedFrom_ != nullptr))
+    return false;
+
+  // add instantiatedFrom to the assumptions
+  if (!assumptions.assume(instantiatedFrom_, other->instantiatedFrom_))
+    return false;
+
+  // consider the substitutions
+  auto sorted = sortedSubstitutions();
+  auto otherSorted = other->sortedSubstitutions();
+
+  if (sorted.size() != otherSorted.size())
+    return false;
+
+  // TODO: is the loop here necessary? Could this just
+  // use == on the SubstitutionMaps?
+
+  size_t nSubs = sorted.size();
+  for (size_t i = 0; i < nSubs; i++) {
+    ID declId = sorted[i].first;
+    ID otherDeclId = otherSorted[i].first;
+    QualifiedType qt = sorted[i].second;
+    QualifiedType otherQt = otherSorted[i].second;
+
+    if (declId != otherDeclId)
+      return false;
+
+    // Check the elements of the QualifiedType individually,
+    // because we want to handle the Type* in a special way.
+    if (qt.kind() != otherQt.kind() ||
+        qt.param() != otherQt.param())
+      return false;
+
+    const Type* fieldType = qt.type();
+    const Type* otherFieldType = otherQt.type();
+
+    // type should be established by the time this runs
+    assert(fieldType != nullptr);
+
+    // add an assumption about the type ptrs, if they differ
+    if (!assumptions.assume(fieldType, otherFieldType))
+      return false;
+  }
+
+  return true;
+}
+
 CompositeType::~CompositeType() {
-}
-
-void CompositeType::setFieldType(int i, QualifiedType type) {
-  assert(0 <= i && (size_t) i < fields_.size());
-  fields_[i].type = type;
-}
-
-void CompositeType::finalizeFieldTypes() {
-  isGeneric_ = false;
-  allGenericFieldsHaveDefaultValues_ = true;
-  for (auto field : fields_) {
-    if (field.type.isGenericOrUnknown()) {
-      if (!field.hasDefaultValue) {
-        allGenericFieldsHaveDefaultValues_ = false;
-      }
-      isGeneric_ = true;
-    }
-  }
-
-  // include also the parent class type for BasicClassType.
-  if (auto bct = this->toBasicClassType()) {
-    if (const Type* parentT = bct->parentClassType()) {
-      if (parentT->isGeneric()) {
-        isGeneric_ = true;
-        if (auto pct = parentT->toBasicClassType()) {
-          allGenericFieldsHaveDefaultValues_ = pct->isGenericWithDefaults();
-        } else {
-          allGenericFieldsHaveDefaultValues_ = false;
-        }
-      }
-    }
-  }
 }
 
 void CompositeType::stringify(std::ostream& ss,
@@ -72,51 +95,68 @@ void CompositeType::stringify(std::ostream& ss,
 
   //std::string ret = typetags::tagToString(tag());
   name().stringify(ss, stringKind);
-  int nFields = numFields();
 
-  if (superType || nFields > 0) {
+  auto sorted = sortedSubstitutions();
+
+  if (superType || !sorted.empty()) {
     bool emittedField = false;
     ss << "(";
-    if (superType) {
+
+    if (superType != nullptr) {
       ss << "super:";
       superType->stringify(ss, stringKind);
       emittedField = true;
     }
 
-    for (int i = 0; i < nFields; i++) {
+    for (auto sub : sorted) {
       if (emittedField) ss << ", ";
-      fieldName(i).stringify(ss, stringKind);
+      sub.first.stringify(ss, stringKind);
       ss << ":";
-      fieldType(i).stringify(ss, stringKind);
+      sub.second.stringify(ss, stringKind);
       emittedField = true;
     }
     ss << ")";
   }
 }
 
-using SubstitutionPair = std::pair<const uast::Decl*,QualifiedType>;
+using SubstitutionPair = CompositeType::SubstitutionPair;
 
 struct SubstitutionsMapCmp {
   bool operator()(const SubstitutionPair& x, const SubstitutionPair& y) {
-    return x.first->id() < y.first->id();
+    return x.first < y.first;
   }
 };
 
-void stringifySubstitutionsMap(std::ostream& streamOut,
-                               StringifyKind stringKind,
-                               const CompositeType::SubstitutionsMap& subs) {
+static
+std::vector<SubstitutionPair>
+sortedSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
   // since it's an unordered map, iteration will occur in a
   // nondeterministic order.
   // it's important to sort the keys / iterate in a deterministic order here,
   // so we create a vector of pair<K,V> and sort that instead
-  std::vector<std::pair<const uast::Decl*,QualifiedType>> v(subs.begin(), subs.end());
+  std::vector<SubstitutionPair> v(subs.begin(), subs.end());
   SubstitutionsMapCmp cmp;
   std::sort(v.begin(), v.end(), cmp);
+  return v;
+}
+
+std::vector<SubstitutionPair> CompositeType::sortedSubstitutions(void) const {
+  return sortedSubstitutionsMap(subs_);
+}
+
+size_t hashSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
+  auto sorted = sortedSubstitutionsMap(subs);
+  return hashVector(sorted);
+}
+
+void stringifySubstitutionsMap(std::ostream& streamOut,
+                               StringifyKind stringKind,
+                               const CompositeType::SubstitutionsMap& subs) {
+  auto sorted = sortedSubstitutionsMap(subs);
   bool first = true;
-  for (auto const& x : v)
+  for (auto const& x : sorted)
   {
-    const uast::Decl* decl = x.first;
-    const uast::NamedDecl* namedDecl = decl->toNamedDecl();
+    ID id = x.first;
     QualifiedType qt = x.second;
 
     if (first) {
@@ -125,10 +165,7 @@ void stringifySubstitutionsMap(std::ostream& streamOut,
       streamOut << ", ";
     }
 
-    if (namedDecl != nullptr && stringKind == StringifyKind::CHPL_SYNTAX)
-      namedDecl->name().stringify(streamOut, stringKind);
-    else
-      decl->id().stringify(streamOut, stringKind);
+    id.stringify(streamOut, stringKind);
 
     streamOut << "= ";
 

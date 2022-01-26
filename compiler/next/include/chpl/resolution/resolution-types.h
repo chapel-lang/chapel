@@ -1018,6 +1018,138 @@ class FormalActualMap {
                         const TypedFnSignature* typed, const CallInfo& call);
 };
 
+/** ResolvedFields represents the fully resolved fields for a
+    class/record/union/tuple type. */
+class ResolvedFields {
+  struct FieldDetail {
+    UniqueString name;
+    bool hasDefaultValue = false;
+    ID declId;
+    types::QualifiedType type;
+
+    FieldDetail(UniqueString name,
+                bool hasDefaultValue,
+                ID declId,
+                types::QualifiedType type)
+      : name(name), hasDefaultValue(hasDefaultValue), declId(declId), type(type) {
+    }
+    bool operator==(const FieldDetail& other) const {
+      return name == other.name &&
+             hasDefaultValue == other.hasDefaultValue &&
+             declId == other.declId &&
+             type == other.type;
+    }
+    bool operator!=(const FieldDetail& other) const {
+      return !(*this == other);
+    }
+    size_t hash() const {
+      return chpl::hash(name, hasDefaultValue, declId, type);
+    }
+
+    void mark(Context* context) const {
+      name.mark(context);
+      declId.mark(context);
+    }
+
+    /*
+    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      name.stringify(ss, stringKind);
+      //TODO: determine the proper way to do this
+      //decl.stringify(ss, stringKind);
+      type.stringify(ss, stringKind);
+    }*/
+  };
+
+  const types::CompositeType* type_ = nullptr;
+  std::vector<FieldDetail> fields_;
+
+  // resolved fields for the parent type (for classes)
+  const ResolvedFields* parentFields_ = nullptr;
+
+  // Summary information that is computed after the field types are known
+  bool isGeneric_ = false;
+  bool allGenericFieldsHaveDefaultValues_ = false;
+
+ public:
+  ResolvedFields(const types::CompositeType* type,
+                 const ResolvedFields* parentFields)
+    : type_(type), parentFields_(parentFields) {
+  }
+                 
+  void addField(UniqueString name,
+                bool hasDefaultValue,
+                ID declId,
+                types::QualifiedType type) {
+    fields_.push_back(FieldDetail(name, hasDefaultValue, declId, type));
+  }
+
+  void finalizeFields(Context* context);
+
+  /** Returns true if this is a generic type */
+  bool isGeneric() const { return isGeneric_; }
+
+  /** Returns true if this is a generic type where all
+      generic fields have default values. For classes,
+      this includes consideration of the parent class. */
+  bool isGenericWithDefaults() const {
+    return isGeneric_ && allGenericFieldsHaveDefaultValues_;
+  }
+
+  const ResolvedFields* parentFields() const {
+    return parentFields_;
+  }
+
+  int numFields() const {
+    return fields_.size();
+  }
+
+  UniqueString fieldName(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].name;
+  }
+  bool fieldHasDefaultValue(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].hasDefaultValue;
+  }
+  ID fieldDeclId(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].declId;
+  }
+  types::QualifiedType fieldType(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].type;
+  }
+
+  bool operator==(const ResolvedFields& other) const {
+    return type_ == other.type_ &&
+           fields_ == other.fields_ &&
+           parentFields_ == other.parentFields_ &&
+           isGeneric_ == other.isGeneric_ &&
+           allGenericFieldsHaveDefaultValues_ ==
+             other.allGenericFieldsHaveDefaultValues_;
+  }
+  bool operator!=(const ResolvedFields& other) const {
+    return !(*this == other);
+  }
+  void swap(ResolvedFields& other) {
+    std::swap(type_, other.type_);
+    fields_.swap(other.fields_);
+    std::swap(parentFields_, other.parentFields_);
+    std::swap(isGeneric_, other.isGeneric_);
+    std::swap(allGenericFieldsHaveDefaultValues_,
+              other.allGenericFieldsHaveDefaultValues_);
+  }
+  static bool update(owned<ResolvedFields>& keep,
+                     owned<ResolvedFields>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    for (auto const &elt : fields_) {
+      elt.mark(context);
+    }
+  }
+};
+
 } // end namespace resolution
 
 

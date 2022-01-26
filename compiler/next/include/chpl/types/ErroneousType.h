@@ -42,8 +42,8 @@ class ErroneousType final : public Type {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  bool isGeneric() const override {
-    return false;
+  Genericity genericity() const override {
+    return CONCRETE; // assume it's not generic when we continue
   }
 
   static const owned<ErroneousType>& getErroneousType(Context* context);

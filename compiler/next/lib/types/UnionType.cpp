@@ -25,6 +25,25 @@ namespace chpl {
 namespace types {
 
 
+const owned<UnionType>&
+UnionType::getUnionType(Context* context, ID id, UniqueString name,
+                        const UnionType* instantiatedFrom,
+                        SubstitutionsMap subs) {
+  QUERY_BEGIN(getUnionType, context, id, name, instantiatedFrom, subs);
+
+  auto result = toOwned(new UnionType(id, name,
+                                      instantiatedFrom, std::move(subs)));
+
+  return QUERY_END(result);
+}
+
+const UnionType*
+UnionType::get(Context* context, ID id, UniqueString name,
+               const UnionType* instantiatedFrom,
+               SubstitutionsMap subs) {
+  return getUnionType(context, id, name,
+                      instantiatedFrom, std::move(subs)).get();
+}
 
 
 } // end namespace types

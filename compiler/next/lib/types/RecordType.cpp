@@ -25,6 +25,25 @@ namespace chpl {
 namespace types {
 
 
+const owned<RecordType>&
+RecordType::getRecordType(Context* context, ID id, UniqueString name,
+                          const RecordType* instantiatedFrom,
+                          SubstitutionsMap subs) {
+  QUERY_BEGIN(getRecordType, context, id, name, instantiatedFrom, subs);
+
+  auto result = toOwned(new RecordType(id, name,
+                                       instantiatedFrom, std::move(subs)));
+
+  return QUERY_END(result);
+}
+
+const RecordType*
+RecordType::get(Context* context, ID id, UniqueString name,
+                const RecordType* instantiatedFrom,
+                SubstitutionsMap subs) {
+  return getRecordType(context, id, name,
+                       instantiatedFrom, std::move(subs)).get();
+}
 
 
 } // end namespace types

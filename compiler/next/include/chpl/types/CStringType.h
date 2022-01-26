@@ -41,8 +41,8 @@ class CStringType final : public Type {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  bool isGeneric() const override {
-    return false;
+  Genericity genericity() const override {
+    return CONCRETE;
   }
 
   static const owned<CStringType>& getCStringType(Context* context);
