@@ -23,8 +23,6 @@ A lexical anayzer class for simple shell-like syntaxes.
 Chapel's version of Shlex (pyhthon) implemented here:
 <https://github.com/python/cpython/blob/3.7/Lib/shlex.py>
 This module provides support for split, join and quote operations.
-One of the known bug is parsing empty strings, since strings in Chapel
-cannot be NULL. Any other bugs may be reported in Chapel Issues (github).
 */
 
 pragma "no doc"
@@ -37,7 +35,6 @@ module Shlex {
     var posix: bool;
     var lineno: int;
     var debug: int;
-    var eof: string;
     var commenters: string;
     var wordchars: string;
     var whitespace: string;
@@ -56,21 +53,14 @@ module Shlex {
     //
     // Initializes the required variables of class Shlex
     // Instream is the string to be parsed and is the only required argument
-    // NOTE: Passing punctuation_chars as true,
-    //        will set whitespace_split to false
     //
     proc init(instream:string, posix: bool = false,
                 punctuation_chars: bool = false, commenters: string = '#',
                   custom_punctuation_chars: string = '') {
-      this.instream=instream;
+      this.instream=instream.strip(trailing=true);
       this.posix=posix;
       this.lineno=1;
       this.debug=0;
-      if posix {
-      }
-      else {
-        this.eof="";
-      }
       this.commenters=commenters;
       this.wordchars="abcdfeghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
       this.wordchars+="0123456789_";
@@ -101,8 +91,6 @@ module Shlex {
 
     //
     // Returns the next token from the input stream
-    // Returns empty string (even if posix is TRUE) if end of stream is reached
-    // This issue is due to the fact that strings in Chapel cannot be NULL
     //
     proc get_token():string{
       if !this.pushback.isEmpty() {
@@ -117,7 +105,7 @@ module Shlex {
       }
       var raw= try! this.read_token();
       if this.debug>=1{
-        if(raw!=this.eof){
+        if(raw!=''){
           writeln("shlex: token="+raw);
         }
         else{
@@ -130,7 +118,6 @@ module Shlex {
     //
     // Reads next token and returns it
     //
-
     proc read_token() throws{
       var quoted:bool = false;
       var escapsedstate:string = ' ';
@@ -319,7 +306,6 @@ module Shlex {
   // It splits a string into a list of tokens in accordance to the rules
   // specified by the Shlex object.
   //
-
   proc split(s:string, comments:bool = false, posix:bool=true,
               punctuation_chars: bool = false,
                 custom_punctuation_chars: string = "")
@@ -332,7 +318,6 @@ module Shlex {
     var pres:string = ' ';
     while(lex.tokindex!=-1 || !lex.pushback.isEmpty()){
       pres=lex.get_token();
-      // writeln("pres: "+pres + "tokindex: "+lex.tokindex:string);
       if(posix || pres!=''){
         lst.append(pres);
       }
