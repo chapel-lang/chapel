@@ -4,6 +4,7 @@ use CPtr;
 config const debug = false;
 
 proc testType(type t, param val) {
+
   if debug then
     writef("testing %s with 0x%xu\n", t:string, val);
 
@@ -22,12 +23,18 @@ proc testType(type t, param val) {
   if debug then
     writeln(a);
 
-  var back = a: c_uintptr : t;
-
-  if debug then
-    writef("0x%xu\n", back);
-
-  assert(back == y);
+  if isIntType(t) {
+    var back = a: c_intptr : t;
+    if debug then
+      writef("0x%xu\n", back);
+    assert(back == y);
+  }
+  if isUintType(t)  && (c_sizeof(t) == c_sizeof(c_void_ptr) || val == 1)  {
+    var back = a: c_uintptr : t;
+    if debug then
+      writef("0x%xu\n", back);
+    assert(back == y);
+  }
 }
 
 proc testWidth(param w) {
