@@ -19,7 +19,7 @@
 // Use standard modules for Timing routines, Type utility functions,
 // and Random numbers
 //
-use Time, Types, Random;
+use DateTime, Types, Random;
 
 //
 // Use shared user module for computing HPCC problem sizes
