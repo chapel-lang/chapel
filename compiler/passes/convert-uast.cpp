@@ -64,11 +64,6 @@ struct Converter {
     return ret;
   }
 
-  astlocMarker pinAstLoc(const uast::ASTNode* node) {
-    INT_ASSERT(node);
-    return astlocMarker(node->id());
-  }
-
   Flag convertFlagForDeclLinkage(const uast::ASTNode* node) {
     if (auto decl = node->toDecl()) {
       switch (decl->linkage()) {
