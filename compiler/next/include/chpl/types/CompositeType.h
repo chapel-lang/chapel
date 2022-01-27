@@ -45,6 +45,38 @@ namespace types {
  */
 class CompositeType : public Type {
  public:
+  /**
+    \rst
+
+    A SubstitutionsMap stores a mapping from uAST ID of a field or formal
+    argument to the QualifiedType for it.
+
+    When a generic type or function is instantiated, the SubstitutionsMap
+    describes the types that are used to instantiate it. For example,
+    if we have
+
+    .. code-block:: chapel
+
+        record R {
+          type t;
+        }
+
+    Then ``R(int)`` is the RecordType with SubstitutionsMap containing
+    a mapping from ``t`` to ``int``.
+
+    Similarly, if we have
+
+    .. code-block:: chapel
+
+        proc f(a, param b) { }
+
+    Then ``f(1.0, 2)`` creates an instantiation of ``f`` with the
+    SubstitutionsMap containing a mapping from ``a`` to ``real`` and a mapping
+    from ``b`` to ``int``.
+
+    \endrst
+
+   */
   using SubstitutionsMap = std::unordered_map<ID, types::QualifiedType>;
   using SubstitutionPair = std::pair<ID, QualifiedType>;
   using SortedSubstitutions = std::vector<SubstitutionPair>;

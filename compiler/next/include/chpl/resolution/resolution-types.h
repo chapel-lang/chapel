@@ -236,6 +236,7 @@ class UntypedFnSignature {
   /// \endcond DO_NOT_DOCUMENT
 };
 
+/** See the documentation for types::CompositeType::SubstitutionsMap. */
 using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
 /** CallInfoActual */
