@@ -1,2 +1,3 @@
-# valgrind takes too long for these tests, so skip them
+# valgrind and memleaks take too long for these tests, so skip them
 CHPL_TEST_VGRND_EXE == on
+EXECOPTS <= memLeaks
