@@ -48,18 +48,10 @@ class BasicClassType final : public CompositeType {
     assert(parentType_ || name == USTR("object"));
   }
 
-  bool contentsMatchInner(const Type* other,
-                          MatchAssumptions& assumptions) const override {
+  bool contentsMatchInner(const Type* other) const override {
     const BasicClassType* rhs = (const BasicClassType*) other;
-
-    // by the time this runs, parentType_ should be set
-    assert(parentType_ != nullptr);
-
-    // add an assumption about the parent types, if they differ
-    if (!assumptions.assume(parentType_, rhs->parentType_))
-      return false;
-
-    return compositeTypeContentsMatchInner(rhs, assumptions);
+    return compositeTypeContentsMatchInner(rhs) &&
+           parentType_ == rhs->parentType_;
   }
 
   void markUniqueStringsInner(Context* context) const override {

@@ -39,10 +39,8 @@ class TupleType final : public CompositeType {
   { }
 
 
-  bool contentsMatchInner(const Type* other,
-                          MatchAssumptions& assumptions) const override {
-    return compositeTypeContentsMatchInner((const CompositeType*) other,
-                                           assumptions);
+  bool contentsMatchInner(const Type* other) const override {
+    return compositeTypeContentsMatchInner((const CompositeType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {

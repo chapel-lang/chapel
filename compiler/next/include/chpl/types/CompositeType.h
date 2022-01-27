@@ -79,8 +79,12 @@ class CompositeType : public Type {
     assert((instantiatedFrom_ == nullptr) == subs_.empty());
   }
 
-  bool compositeTypeContentsMatchInner(const CompositeType* other,
-                                       MatchAssumptions& assumptions) const;
+  bool compositeTypeContentsMatchInner(const CompositeType* other) const {
+    return id_ == other->id_ &&
+           name_ != other->name_ &&
+           instantiatedFrom_ == other->instantiatedFrom_ &&
+           subs_ == other->subs_;
+  }
 
   void compositeTypeMarkUniqueStringsInner(Context* context) const {
     id_.mark(context);

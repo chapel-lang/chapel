@@ -27,61 +27,6 @@ namespace chpl {
 namespace types {
 
 
-bool CompositeType::compositeTypeContentsMatchInner(
-    const CompositeType* other, MatchAssumptions& assumptions) const {
-  // check basic properties
-  if (id_ != other->id_ || name_ != other->name_)
-    return false;
-
-  // one is instantiated but the other is not
-  if ((instantiatedFrom_ != nullptr) !=
-      (other->instantiatedFrom_ != nullptr))
-    return false;
-
-  // add instantiatedFrom to the assumptions
-  if (!assumptions.assume(instantiatedFrom_, other->instantiatedFrom_))
-    return false;
-
-  // consider the substitutions
-  auto sorted = sortedSubstitutions();
-  auto otherSorted = other->sortedSubstitutions();
-
-  if (sorted.size() != otherSorted.size())
-    return false;
-
-  // TODO: is the loop here necessary? Could this just
-  // use == on the SubstitutionMaps?
-
-  size_t nSubs = sorted.size();
-  for (size_t i = 0; i < nSubs; i++) {
-    ID declId = sorted[i].first;
-    ID otherDeclId = otherSorted[i].first;
-    QualifiedType qt = sorted[i].second;
-    QualifiedType otherQt = otherSorted[i].second;
-
-    if (declId != otherDeclId)
-      return false;
-
-    // Check the elements of the QualifiedType individually,
-    // because we want to handle the Type* in a special way.
-    if (qt.kind() != otherQt.kind() ||
-        qt.param() != otherQt.param())
-      return false;
-
-    const Type* fieldType = qt.type();
-    const Type* otherFieldType = otherQt.type();
-
-    // type should be established by the time this runs
-    assert(fieldType != nullptr);
-
-    // add an assumption about the type ptrs, if they differ
-    if (!assumptions.assume(fieldType, otherFieldType))
-      return false;
-  }
-
-  return true;
-}
-
 CompositeType::~CompositeType() {
 }
 

@@ -45,8 +45,7 @@ class BuiltinType : public Type {
     : Type(tag) {
   }
 
-  bool contentsMatchInner(const Type* other,
-                          MatchAssumptions& assumptions) const override {
+  bool contentsMatchInner(const Type* other) const override {
     return true;
   }
 

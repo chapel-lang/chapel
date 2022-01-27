@@ -34,8 +34,7 @@ class UnknownType final : public Type {
  private:
   UnknownType() : Type(typetags::UnknownType) { }
 
-  bool contentsMatchInner(const Type* other,
-                          MatchAssumptions& assumptions) const override {
+  bool contentsMatchInner(const Type* other) const override {
     return true;
   }
 

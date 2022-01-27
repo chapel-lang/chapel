@@ -33,8 +33,7 @@ class StringType final : public Type {
  private:
   StringType() : Type(typetags::StringType) { }
 
-  bool contentsMatchInner(const Type* other,
-                          MatchAssumptions& assumptions) const override {
+  bool contentsMatchInner(const Type* other) const override {
     return true;
   }
 

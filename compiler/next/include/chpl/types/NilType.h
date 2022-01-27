@@ -33,8 +33,7 @@ class NilType final : public Type {
  private:
   NilType() : Type(typetags::NilType) { }
 
-  bool contentsMatchInner(const Type* other,
-                          MatchAssumptions& assumptions) const override {
+  bool contentsMatchInner(const Type* other) const override {
     return true;
   }
 

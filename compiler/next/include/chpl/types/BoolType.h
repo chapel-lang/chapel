@@ -37,9 +37,8 @@ class BoolType final : public PrimitiveType {
     : PrimitiveType(typetags::BoolType, bitwidth)
   { }
 
-  bool contentsMatchInner(const Type* other,
-                          MatchAssumptions& assumptions) const override {
-    return primitiveTypeContentsMatchInner((PrimitiveType*) other, assumptions);
+  bool contentsMatchInner(const Type* other) const override {
+    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {

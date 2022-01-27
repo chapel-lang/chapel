@@ -54,48 +54,14 @@ class Type {
   TypeTag tag_;
 
  protected:
-  // this struct accumulates assumptions to handle recursion when
-  // checking types for equivalence
-  struct MatchAssumptions {
-    // a shorthand for a pair of types, (t, otherT)
-    using Assumption = std::pair<const Type*, const Type*>;
-    // pairs of types that we have checked for a match
-    std::unordered_set<Assumption> checked;
-    // pairs of types that need to be checked
-    // this is a vector as the easiest way to keep it deterministic
-    std::deque<Assumption> toCheck;
-    // a label (indicating the order of visit) for 't' types
-    std::unordered_map<const Type*, int> tLabels;
-    // a label (indicating the order of visit) for 'otherT' types
-    std::unordered_map<const Type*, int> otherLabels;
-    int nextLabel = 1;
-
-    // This function notes an assumption that t matches otherT.
-    // Should always be called in innerMatch functions with the
-    // type contained in 'this' passed in 't' and the type from 'other'
-    // passed in as 'otherT'.
-    //
-    // Returns false if we already know they don't match,
-    // and true if we can assume that they do.
-    // These assumptions will be checked in completeMatch.
-    bool assume(const Type* t, const Type* otherT);
-  };
-
   /**
     This function needs to be defined by subclasses.
     It should check only those fields defined in subclasses
     (it should not check the Type fields such as tag_).
 
     It can assume that other has the same type as the receiver.
-
-    This function needs to consider the possibility that a type is recursive.
-    To do so, it keeps track of a set of (ptr, other ptr) that is assuming
-    match. These are checked after the call to contentsMatchInner by the caller
-    by checking each for a match (leading to calling contentsMatchInner on
-    them).  If all of these match, then the type is considered a match.
    */
-  virtual bool contentsMatchInner(const Type* other,
-                                  MatchAssumptions& assumptions) const = 0;
+  virtual bool contentsMatchInner(const Type* other) const = 0;
 
   /**
    This function needs to be defined by subclasses.
