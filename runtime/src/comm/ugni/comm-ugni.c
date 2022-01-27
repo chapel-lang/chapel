@@ -159,8 +159,8 @@ static atomic_uint_least32_t next_thread_idx;
 
 #define CHPL_INTERNAL_ERROR(msg)                                        \
         do {                                                            \
-          DBG_P_LP(~0U, "%s:%d: internal error: %s",                    \
-                   __FILE__, (int) __LINE__, msg);                      \
+          fprintf(stderr, "%d:%s:%d: internal error: %s\n",             \
+                  (int) chpl_nodeID, __FILE__, (int) __LINE__, msg);    \
           fflush(NULL);                                                 \
           abort();                                                      \
         } while (0)
