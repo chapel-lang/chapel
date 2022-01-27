@@ -56,7 +56,7 @@ class TupleType final : public CompositeType {
   static const TupleType*
   get(Context* context, ID id, UniqueString name,
       const TupleType* instantiatedFrom,
-      SubstitutionsMap subs);
+      CompositeType::SubstitutionsMap subs);
 
   ~TupleType() = default;
 

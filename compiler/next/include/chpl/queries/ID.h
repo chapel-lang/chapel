@@ -178,7 +178,7 @@ class ID final {
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
-  /// \endcond DO_NOT_DOCUMENT
+  /// \endcond
 
   std::string str() const;
 };

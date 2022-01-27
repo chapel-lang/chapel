@@ -91,14 +91,16 @@ class CompositeType : public Type {
     name_.mark(context);
   }
 
+  Genericity genericity() const override {
+    // A CompositeType's generic-ness depends on the fields
+    return MAYBE_GENERIC;
+  }
+
  public:
   virtual ~CompositeType() = 0; // this is an abstract base class
 
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;
-
-  /** Returns true if this is a generic type */
-  Genericity genericity() const override { return MAYBE_GENERIC; }
 
   /** Return the uAST ID associated with this CompositeType */
   const ID& id() const { return id_; }

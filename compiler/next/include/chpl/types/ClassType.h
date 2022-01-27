@@ -65,6 +65,13 @@ class ClassType final : public Type {
                const Type* manager,
                ClassTypeDecorator decorator);
 
+  Genericity genericity() const override {
+    if (decorator_.isUnknownManagement() || decorator_.isUnknownNilability())
+      return GENERIC;
+    else
+      return MAYBE_GENERIC; // depends on the class
+  }
+
  public:
   ~ClassType() = default;
   void stringify(std::ostream& ss,
@@ -91,14 +98,6 @@ class ClassType final : public Type {
   /** Returns the basic class type */
   const BasicClassType* basicClassType() const {
     return basicType_;
-  }
-
-  /** Returns true if this is a generic type */
-  Genericity genericity() const override {
-    if (decorator_.isUnknownManagement() || decorator_.isUnknownNilability())
-      return GENERIC;
-    else
-      return MAYBE_GENERIC; // depends on the class
   }
 
   /** Returns the verison this ClassType with the passed decorator */

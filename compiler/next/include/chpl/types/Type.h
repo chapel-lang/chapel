@@ -44,9 +44,19 @@ namespace types {
 class Type {
  public:
   enum Genericity {
+    /** A concrete type e.g. 'int' */
     CONCRETE,
+
+    /** A generic type, e.g. 'integral' */
     GENERIC,
+
+    /** A type that is generic but has a default for each generic field.
+        E.g. 'record R { type t = int; }'.
+      */
     GENERIC_WITH_DEFAULTS,
+
+    /** When we need more information to decide if the type is generic.
+        It might depend on fields, e.g. */
     MAYBE_GENERIC,
   };
 
@@ -72,9 +82,11 @@ class Type {
 
  public:
   /**
+   This function returns an enum Genericity value to indicate
+   if the type is concrete, generic, generic with defaults,
+   or maybe generic (e.g. depending on the fields).
+
    This function needs to be defined by subclasses.
-   It returns an enum value indicating if the type
-   is generic, concrete, or maybe generic (e.g. depending on the fields).
    */
   virtual Genericity genericity() const = 0;
 

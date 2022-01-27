@@ -72,7 +72,7 @@ class BasicClassType final : public CompositeType {
   get(Context* context, ID id, UniqueString name,
       const BasicClassType* parentType,
       const BasicClassType* instantiatedFrom,
-      SubstitutionsMap subs);
+      CompositeType::SubstitutionsMap subs);
 
   static const BasicClassType* getObjectType(Context* context);
 

@@ -56,7 +56,7 @@ class RecordType final : public CompositeType {
 
   static const RecordType* get(Context* context, ID id, UniqueString name,
                                const RecordType* instantiatedFrom,
-                               SubstitutionsMap subs);
+                               CompositeType::SubstitutionsMap subs);
 
   ~RecordType() = default;
 

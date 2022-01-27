@@ -54,7 +54,7 @@ class UnionType final : public CompositeType {
  public:
   static const UnionType* get(Context* context, ID id, UniqueString name,
                               const UnionType* instantiatedFrom,
-                              SubstitutionsMap subs);
+                              CompositeType::SubstitutionsMap subs);
 
   ~UnionType() = default;
 
