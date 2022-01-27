@@ -1159,45 +1159,6 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
   return compile(x);
 }
 
-/*
-
-   Compile a regular expression and search the receiving string for matches at
-   any offset using :proc:`regex.search`.
-
-   .. warning::
-     This procedure is deprecated - please let us know if you were
-     relying on it.
-
-   :arg needle: the regular expression to search for
-   :arg ignorecase: true to ignore case in the regular expression
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving string where a match occurred
- */
-deprecated "regex matching of a receiving string is deprecated; please let us know if this is probalamatic for you"
-proc string.search(needle: string, ignorecase=false):regexMatch
-{
-  // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
-  return re.search(this);
-}
-
-/*
-
-   Compile a regular expression and search the receiving bytes for matches at
-   any offset using :proc:`regex.search`.
-
-   :arg needle: the regular expression to search for
-   :arg ignorecase: true to ignore case in the regular expression
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving bytes where a match occurred
- */
-proc bytes.search(needle: bytes, ignorecase=false):regexMatch
-{
-  // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
-  return re.search(this);
-}
-
 // documented in the captures version
 pragma "no doc"
 proc string.search(needle: regex(string)):regexMatch
