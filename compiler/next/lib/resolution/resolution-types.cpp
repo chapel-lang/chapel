@@ -250,15 +250,7 @@ void ResolvedFields::finalizeFields(Context* context) {
   bool allGenHaveDefault = true; // all generic fields have default init
                                  // -- vacuously true if there are no generic
 
-  // if it is a class with a parent class, start with parent class info
-  if (parentFields_ != nullptr) {
-    if (parentFields_->isGeneric_) {
-      anyGeneric = true;
-      allGenHaveDefault = parentFields_->allGenericFieldsHaveDefaultValues_;
-    }
-  }
-
-  // then look at the fields and compute the summary information
+  // look at the fields and compute the summary information
   for (auto field : fields_) {
     auto g = field.type.genericityWithFields(context);
     if (g != Type::CONCRETE) {

@@ -1109,16 +1109,16 @@ const Type* initialTypeForTypeDecl(Context* context, ID declId) {
   return initialTypeForTypeDeclQuery(context, declId);
 }
 
-static const owned<ResolvedFields>&
-initialFieldsForTypeDeclQuery(Context* context,
-                              const CompositeType* ct,
-                              bool useGenericFormalDefaults) {
-  QUERY_BEGIN(initialFieldsForTypeDeclQuery, context,
-              ct, useGenericFormalDefaults);
+static
+const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
+                                             const CompositeType* ct,
+                                             bool useGenericFormalDefaults) {
+  QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, useGenericFormalDefaults);
 
-  owned<ResolvedFields> result;
+  ResolvedFields& partialResult = QUERY_CURRENT_RESULT;
 
   assert(ct);
+  partialResult.setType(ct);
 
   bool isObjectType = false;
   if (auto bct = ct->toBasicClassType()) {
@@ -1128,103 +1128,74 @@ initialFieldsForTypeDeclQuery(Context* context,
   if (isObjectType) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
-    result = toOwned(new ResolvedFields(ct, nullptr));
 
   } else {
     auto ast = parsing::idToAst(context, ct->id());
     assert(ast && ast->isAggregateDecl());
     auto ad = ast->toAggregateDecl();
 
-    // get ready to resolve the field types
-    ResolutionResultByPostorderID r;
-    Resolver visitor(context, ad, r, useGenericFormalDefaults);
 
-    const ResolvedFields* parentFields = nullptr;
+    if (ct->instantiatedFromCompositeType() == nullptr) {
+      // handle resolving a not-yet-instantiated type
+      ResolutionResultByPostorderID r;
+      Resolver visitor(context, ad, r, useGenericFormalDefaults);
 
-    if (auto bct = ct->toBasicClassType()) {
-      parentFields = initialFieldsForTypeDecl(context, bct->parentClassType(),
-                                              useGenericFormalDefaults);
+      // resolve the field types and set them in 'result'
+      resolveAndSetFieldTypes(context, ad, r, visitor, ct, partialResult);
+    } else {
+      // handle resolving an instantiated type
+
+      // use nullptr for POI scope because POI is not considered
+      // when resolving the fields when constructing a type..
+      const PoiScope* poiScope = nullptr;
+      ResolutionResultByPostorderID r;
+      Resolver visitor(context, ad, ct->substitutions(), poiScope, r,
+                       useGenericFormalDefaults);
+
+      // resolve the field types and set them in 'result'
+      resolveAndSetFieldTypes(context, ad, r, visitor, ct, partialResult);
     }
-
-    result = toOwned(new ResolvedFields(ct, parentFields));
-    // resolve the field types and set them in 'result'
-    resolveAndSetFieldTypes(context, ad, r, visitor,
-                            ct, *result.get());
   }
 
-  return QUERY_END(result);
+  return QUERY_END_CURRENT_RESULT();
 }
- 
-const ResolvedFields* initialFieldsForTypeDecl(Context* context,
-                                               const CompositeType* ct,
-                                               bool useGenericFormalDefaults) {
-  const ResolvedFields* f = nullptr;
-  f = initialFieldsForTypeDeclQuery(context, ct,
-                                    /* useGenericFormalDefaults */ false).get();
+
+static const ResolvedFields&
+partiallyResolvedFieldsForTypeDecl(Context* context,
+                                   const CompositeType* ct,
+                                   bool useGenericFormalDefaults) {
+  // check for a partial result from a running query
+  const ResolvedFields* r =
+    QUERY_RUNNING_PARTIAL_RESULT(fieldsForTypeDeclQuery, context, ct,
+                                 useGenericFormalDefaults);
+
+  // if there was a partial result, return it
+  if (r != nullptr) {
+    return *r;
+  }
+
+  // otherwise, run the query to compute the full result
+  return fieldsForTypeDeclQuery(context, ct, useGenericFormalDefaults);
+}
+
+const ResolvedFields& fieldsForTypeDecl(Context* context,
+                                        const CompositeType* ct,
+                                        bool useGenericFormalDefaults) {
+
+  // try first with useGenericFormalDefaults=false 
+  const auto& f = partiallyResolvedFieldsForTypeDecl(context, ct, false);
 
   // If useGenericFormalDefaults was requested and the type
   // is generic with defaults, compute the type again.
   // We do it this way so that we are more likely to be able to reuse the
   // result of the above query in most cases since most types
   // are not generic record/class with defaults.
-  if (useGenericFormalDefaults && f->isGenericWithDefaults()) {
-    f = initialFieldsForTypeDeclQuery(context, ct,
-                                      /* useGenericFormalDefaults */true).get();
+  if (useGenericFormalDefaults && f.isGenericWithDefaults()) {
+    return partiallyResolvedFieldsForTypeDecl(context, ct, true);
   }
 
+  // Otherwise, use the value we just computed.
   return f;
-}
-
-static const owned<ResolvedFields>&
-instantiatedFieldsForTypeDeclQuery(Context* context,
-                                   const CompositeType* ct,
-                                   const PoiScope* poiScope) {
-  QUERY_BEGIN(instantiatedFieldsForTypeDeclQuery, context, ct, poiScope);
-
-  owned<ResolvedFields> result;
-
-  assert(ct);
-
-  auto ast = parsing::idToAst(context, ct->id());
-
-  assert(ast && ast->isAggregateDecl());
-
-  auto ad = ast->toAggregateDecl();
-
-  // get ready to resolve the field types
-  ResolutionResultByPostorderID r;
-  Resolver visitor(context, ad, ct->substitutions(), poiScope, r,
-                   /* useGenericFormalDefaults */ false);
-
-  const ResolvedFields* parentFields = nullptr;
-
-  if (auto bct = ct->toBasicClassType()) {
-    parentFields = instantiatedFieldsForTypeDecl(context,
-                                                 bct->parentClassType(),
-                                                 poiScope);
-  }
-
-  result = toOwned(new ResolvedFields(ct, parentFields));
-
-  // resolve the field types and set them in 'result'
-  resolveAndSetFieldTypes(context, ad, r, visitor,
-                          ct, *result.get());
-
-  return QUERY_END(result);
-}
-
-const ResolvedFields* instantiatedFieldsForTypeDecl(Context* context,
-                                                    const CompositeType* ct,
-                                                    const PoiScope* poiScope) {
-
-  // If ct is not an instantiated type, just return the inital type.
-  // This covers also the object type, which doesn't have a real uAST ID.
-  if (ct->instantiatedFromCompositeType() == nullptr) {
-    return initialFieldsForTypeDecl(context, ct,
-                                    /* useGenericFormalDefaults */ false);
-  }
-
-  return instantiatedFieldsForTypeDeclQuery(context, ct, poiScope).get(); 
 }
 
 
@@ -1233,27 +1204,32 @@ static Type::Genericity getFieldsGenericity(Context* context,
   // Figure out the genericity of the type based on the genericity
   // of the fields.
 
-  // some testing code creates CompositeType with empty IDs
-  // assume these are concrete.
+  // Some testing code creates CompositeType with empty IDs.
+  // Assume these are concrete.
+  // Also 'object' has an empty ID and is concrete.
   if (ct->id().isEmpty())
     return Type::CONCRETE;
 
-  const ResolvedFields* r = nullptr;
-  if (ct->instantiatedFromCompositeType()) {
-    // TODO: do we need to pass poiScope here?
-    r = instantiatedFieldsForTypeDecl(context, ct, /* poiScope */ nullptr);
-  } else {
-    r = initialFieldsForTypeDecl(context, ct,
-                                 /* useGenericFormalDefaults */ false);
+  Type::Genericity g = Type::CONCRETE;
+
+  if (auto bct = ct->toBasicClassType()) {
+    g = getFieldsGenericity(context, bct->parentClassType());
+    assert(g != Type::MAYBE_GENERIC);
   }
 
-  if (r->isGenericWithDefaults())
+  // this setting is irrelevant for this query since the
+  // isGenericWithDefaults will be computed either way.
+  bool useGenericFormalDefaults = false;
+  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+                                              useGenericFormalDefaults);
+
+  if (f.isGenericWithDefaults() && g == Type::CONCRETE)
     return Type::GENERIC_WITH_DEFAULTS;
 
-  if (r->isGeneric())
+  if (f.isGeneric())
     return Type::GENERIC;
 
-  return Type::CONCRETE;
+  return g;
 }
 
 Type::Genericity getTypeGenericity(Context* context, const Type* t) {
@@ -1357,27 +1333,27 @@ typeConstructorInitialQuery(Context* context, const Type* t)
     id = ct->id();
     name = ct->name();
 
-    // get the initial resolution of the fields
-
-    const ResolvedFields* f = initialFieldsForTypeDecl(context, ct,
-                                      /* useGenericFormalDefaults */ false);
+    // attempt to resolve the fields
+    bool useGenericFormalDefaults = false;
+    const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+                                                useGenericFormalDefaults);
 
     // find the generic fields from the type and add
     // these as type constructor arguments.
-    int nFields = f->numFields();
+    int nFields = f.numFields();
     for (int i = 0; i < nFields; i++) {
-      auto declId = f->fieldDeclId(i);
+      auto declId = f.fieldDeclId(i);
       auto declAst = parsing::idToAst(context, declId); 
       assert(declAst);
       const Decl* fieldDecl = declAst->toDecl();
       assert(fieldDecl);
-      QualifiedType fieldType = f->fieldType(i);
+      QualifiedType fieldType = f.fieldType(i);
       QualifiedType formalType;
       if (shouldIncludeFieldInTypeConstructor(context, fieldDecl, fieldType,
                                               formalType)) {
 
-        auto d = UntypedFnSignature::FormalDetail(f->fieldName(i),
-                                                  f->fieldHasDefaultValue(i),
+        auto d = UntypedFnSignature::FormalDetail(f.fieldName(i),
+                                                  f.fieldHasDefaultValue(i),
                                                   fieldDecl);
         formals.push_back(d);
         // formalType should have been set above
@@ -1930,12 +1906,6 @@ returnTypeForTypeCtorQuery(Context* context,
                                                       subs,
                                                       poiScope,
                                                       instantiatedFrom);
-
-
-    // figure out the resolved fields for that type
-    //const ResolvedFields* fields = instantiatedFieldsForTypeDecl(context,
-    //                                                             theType,
-    //                                                             poiScope);
 
     result = theType;
 

@@ -72,21 +72,14 @@ const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
   will be assumed to have the default value (int in the above case).
   Otherwise, these fields will remain generic.
 
- */
-const ResolvedFields* initialFieldsForTypeDecl(Context* context,
-                                               const types::CompositeType* ct,
-                                               bool useGenericFormalDefaults);
+  Even if useGenericFormalDefaults is set, the default value will be ignored if
+  the field already has a substitution in the CompositeType.
 
-/**
-  Instantiate the fields for an instantiated type and return them.
-  Generic fields with defaults will always be considered generic
-  by this function, if they have not already been substituted.
+  The returned fields do not include any parent class fields.
  */
-const ResolvedFields*
-instantiatedFieldsForTypeDecl(Context* context,
-                              const types::CompositeType* ct,
-                              const PoiScope* poiScope);
-
+const ResolvedFields& fieldsForTypeDecl(Context* context,
+                                        const types::CompositeType* ct,
+                                        bool useGenericFormalDefaults);
 
 /**
   Compute whether a type is generic or not.

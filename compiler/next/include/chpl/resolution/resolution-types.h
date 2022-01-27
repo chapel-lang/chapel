@@ -1062,19 +1062,17 @@ class ResolvedFields {
   const types::CompositeType* type_ = nullptr;
   std::vector<FieldDetail> fields_;
 
-  // resolved fields for the parent type (for classes)
-  const ResolvedFields* parentFields_ = nullptr;
-
   // Summary information that is computed after the field types are known
   bool isGeneric_ = false;
   bool allGenericFieldsHaveDefaultValues_ = false;
 
  public:
-  ResolvedFields(const types::CompositeType* type,
-                 const ResolvedFields* parentFields)
-    : type_(type), parentFields_(parentFields) {
+  ResolvedFields() { }
+ 
+  void setType(const types::CompositeType* type) {
+    type_ = type;
   }
-                 
+
   void addField(UniqueString name,
                 bool hasDefaultValue,
                 ID declId,
@@ -1089,13 +1087,9 @@ class ResolvedFields {
 
   /** Returns true if this is a generic type where all
       generic fields have default values. For classes,
-      this includes consideration of the parent class. */
+      this does not include consideration of the parent class. */
   bool isGenericWithDefaults() const {
     return isGeneric_ && allGenericFieldsHaveDefaultValues_;
-  }
-
-  const ResolvedFields* parentFields() const {
-    return parentFields_;
   }
 
   int numFields() const {
@@ -1122,7 +1116,6 @@ class ResolvedFields {
   bool operator==(const ResolvedFields& other) const {
     return type_ == other.type_ &&
            fields_ == other.fields_ &&
-           parentFields_ == other.parentFields_ &&
            isGeneric_ == other.isGeneric_ &&
            allGenericFieldsHaveDefaultValues_ ==
              other.allGenericFieldsHaveDefaultValues_;
@@ -1133,14 +1126,13 @@ class ResolvedFields {
   void swap(ResolvedFields& other) {
     std::swap(type_, other.type_);
     fields_.swap(other.fields_);
-    std::swap(parentFields_, other.parentFields_);
     std::swap(isGeneric_, other.isGeneric_);
     std::swap(allGenericFieldsHaveDefaultValues_,
               other.allGenericFieldsHaveDefaultValues_);
   }
-  static bool update(owned<ResolvedFields>& keep,
-                     owned<ResolvedFields>& addin) {
-    return defaultUpdateOwned(keep, addin);
+  static bool update(ResolvedFields& keep,
+                     ResolvedFields& addin) {
+    return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
     for (auto const &elt : fields_) {

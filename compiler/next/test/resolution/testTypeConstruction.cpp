@@ -221,26 +221,17 @@ parseTypeOfX(Context* context, const char* program) {
   assert(qt.type());
 
   const Type* t = qt.type();
-  const ResolvedFields* fields = nullptr;
-
   auto ct = t->toCompositeType();
   if (auto classType = t->toClassType())
     ct = classType->basicClassType();
 
-  if (ct != nullptr) {
-    // if it's an instantiation, get the instantiated field types
-    if (ct->instantiatedFromCompositeType() != nullptr) {
-      auto scope = scopeForModule(context, m->id());
-      auto poiScope = pointOfInstantiationScope(context, scope, nullptr);
-      fields = instantiatedFieldsForTypeDecl(context, ct, poiScope);
-    } else {
-      // otherwise, get the initial field types
-      fields = initialFieldsForTypeDecl(context, ct,
-                                        /*useGenericFormalDefaults*/ true);
-    }
-  }
+  assert(ct != nullptr);
 
-  return std::make_pair(t, fields);
+  bool useGenericFormalDefaults = true;
+  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+                                              useGenericFormalDefaults);
+
+  return std::make_pair(t, &f);
 }
 
 static void test4a() {
@@ -292,16 +283,15 @@ static void test5() {
   assert(rt);
   assert(rt->instantiatedFrom());
 
-  auto initialFields = initialFieldsForTypeDecl(context,
-                                                rt->instantiatedFrom(),
-                                                false);
-  assert(initialFields);
+  auto& initialFields = fieldsForTypeDecl(context,
+                                          rt->instantiatedFrom(),
+                                          false);
   assert(rt->instantiatedFrom()->instantiatedFrom() == nullptr);
-  assert(initialFields->numFields() == 1);
-  assert(initialFields->fieldName(0) == "t");
-  assert(initialFields->fieldHasDefaultValue(0) == false);
-  assert(initialFields->fieldType(0).kind() == QualifiedType::TYPE);
-  assert(initialFields->fieldType(0).type()->isAnyType());
+  assert(initialFields.numFields() == 1);
+  assert(initialFields.fieldName(0) == "t");
+  assert(initialFields.fieldHasDefaultValue(0) == false);
+  assert(initialFields.fieldType(0).kind() == QualifiedType::TYPE);
+  assert(initialFields.fieldType(0).type()->isAnyType());
 
   auto fields = p.second;
   assert(fields);
@@ -1200,17 +1190,15 @@ static void test38() {
 
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
-
-  auto parentFields = fields->parentFields();
-  assert(parentFields);
-  assert(parentFields->numFields() == 1);
-  assert(parentFields->fieldName(0) == "parentField");
-  assert(parentFields->fieldHasDefaultValue(0) == false);
-  assert(parentFields->fieldType(0).kind() == QualifiedType::VAR);
-  assert(parentFields->fieldType(0).type() == IntType::get(context, 0));
-
   assert(pct->parentClassType()->isObjectType());
   assert(pct->parentClassType() == BasicClassType::getObjectType(context));
+
+  auto& parentFields = fieldsForTypeDecl(context, pct, true);
+  assert(parentFields.numFields() == 1);
+  assert(parentFields.fieldName(0) == "parentField");
+  assert(parentFields.fieldHasDefaultValue(0) == false);
+  assert(parentFields.fieldType(0).kind() == QualifiedType::VAR);
+  assert(parentFields.fieldType(0).type() == IntType::get(context, 0));
 }
 
 static void test39() {
@@ -1230,7 +1218,9 @@ static void test39() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(!bct->parentClassType()->isObjectType());
+  auto pct = bct->parentClassType()->toBasicClassType();
+  assert(pct);
+  assert(pct->isObjectType());
 
   auto fields = p.second;
   assert(fields);
@@ -1239,10 +1229,6 @@ static void test39() {
   assert(fields->fieldHasDefaultValue(0) == false);
   assert(fields->fieldType(0).kind() == QualifiedType::VAR);
   assert(fields->fieldType(0).type() == ct);
-
-  auto pct = bct->parentClassType()->toBasicClassType();
-  assert(pct);
-  assert(pct->isObjectType());
 }
 
 
