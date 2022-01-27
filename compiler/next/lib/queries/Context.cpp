@@ -388,7 +388,7 @@ const UniqueString& filePathForModuleIdSymbolPathQuery(Context* context,
   QUERY_BEGIN(filePathForModuleIdSymbolPathQuery, context, modIdSymP);
 
   // return the empty string if it wasn't already set
-  // in setFilePathForModulePath.
+  // in setFilePathForModuleID.
   UniqueString result;
 
   return QUERY_END(result);
