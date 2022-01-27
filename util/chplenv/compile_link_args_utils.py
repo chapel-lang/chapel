@@ -52,6 +52,7 @@ def get_runtime_includes_and_defines():
         # If compiling for GPU locales, add CUDA runtime headers to include path
         cuda_path = chpl_gpu.get_cuda_path()
         system.append("-I" + os.path.join(cuda_path, "include"))
+        bundled.append("-I" + os.path.join(incl, "gpu", chpl_gpu.get()))
 
     if mem == "jemalloc":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
