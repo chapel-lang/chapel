@@ -906,7 +906,7 @@ int main(int argc, char** argv) {
 
   if (args.selfTest) {
     args.files.push_back("selftest.chpl");
-    UniqueString path = UniqueString::build(ctx, "selftest.chpl");
+    UniqueString path = UniqueString::get(ctx, "selftest.chpl");
     setFileText(ctx, path, testString);
   }
 
@@ -915,7 +915,7 @@ int main(int argc, char** argv) {
   }
 
   for (auto cpath : args.files) {
-    UniqueString path = UniqueString::build(ctx, cpath);
+    UniqueString path = UniqueString::get(ctx, cpath);
     const BuilderResult& builderResult = parseFile(ctx, path);
 
     std::ofstream ofs;

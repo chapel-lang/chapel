@@ -54,7 +54,7 @@ BasicClassType::get(Context* context, ID id, UniqueString name,
 const BasicClassType*
 BasicClassType::getObjectType(Context* context) {
   ID emptyId;
-  auto name = UniqueString::build(context, "object");
+  auto name = UniqueString::get(context, "object");
 
   return getBasicClassType(context, emptyId, name,
                            /* parentType */ nullptr,

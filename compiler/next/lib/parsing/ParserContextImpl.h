@@ -146,11 +146,11 @@ owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
 
 PODUniqueString ParserContext::notePragma(YYLTYPE loc,
                                           Expression* pragmaStr) {
-  auto ret = PODUniqueString::build();
+  auto ret = PODUniqueString::get();
 
   // Extract the string literal and convert it into a pragma flag.
   if (auto strLit = pragmaStr->toStringLiteral()) {
-    ret = PODUniqueString::build(context(), strLit->str().c_str());
+    ret = PODUniqueString::get(context(), strLit->str().c_str());
     auto tag = pragmaNameToTag(ret.c_str());
 
     if (tag == PRAGMA_UNKNOWN) {
@@ -651,7 +651,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       Function::PROC,
                       Formal::DEFAULT_INTENT,
                       nullptr,
-                      PODUniqueString::build(),
+                      PODUniqueString::get(),
                       Function::DEFAULT_RETURN_INTENT,
                       false,
                       nullptr, nullptr, nullptr, nullptr,
@@ -675,7 +675,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
     if (currentScopeIsAggregate()) {
       if (fp.receiver == nullptr) {
         auto loc = convertLocation(location);
-        auto ths = UniqueString::build(context(), "this");
+        auto ths = UniqueString::get(context(), "this");
         UniqueString cls = scope.name;
         fp.receiver = Formal::build(builder, loc, /*attributes*/ nullptr,
                                     ths,
@@ -1784,7 +1784,7 @@ Expression* ParserContext::buildTypeQuery(YYLTYPE location,
   assert(!queriedIdent.isEmpty() && queriedIdent.c_str()[0] == '?');
   assert(queriedIdent.length() >= 2);
   const char* adjust = queriedIdent.c_str() + 1;
-  auto name = UniqueString::build(context(), adjust);
+  auto name = UniqueString::get(context(), adjust);
   auto node = TypeQuery::build(builder, convertLocation(location), name);
   return node.release();
 }
@@ -1804,7 +1804,7 @@ Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
 
   MaybeNamedActual actual = {
     .expr=subType,
-    .name=PODUniqueString::build()
+    .name=PODUniqueString::get()
   };
 
   maybeNamedActuals->push_back(actual);

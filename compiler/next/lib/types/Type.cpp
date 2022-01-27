@@ -48,7 +48,7 @@ static void gatherType(Context* context,
                        std::unordered_map<UniqueString,const Type*>& map,
                        const char* c_str,
                        const Type* t) {
-  auto name = UniqueString::build(context, c_str);
+  auto name = UniqueString::get(context, c_str);
   map.insert( {name, t} );
 }
 

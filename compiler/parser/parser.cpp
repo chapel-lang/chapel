@@ -892,7 +892,7 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
     return nullptr;
   }
 
-  auto path = chpl::UniqueString::build(gContext, fileName);
+  auto path = chpl::UniqueString::get(gContext, fileName);
 
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors. The 'parse' query makes us a vector
