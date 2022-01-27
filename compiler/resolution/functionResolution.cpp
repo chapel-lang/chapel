@@ -216,6 +216,10 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
 static bool  obviousMismatch(CallExpr* call, FnSymbol* fn);
 static void  moveHaltMoveIsUnacceptable(CallExpr* call);
+static  Expr* chaseTypeConstructorForActual(CallExpr* init,
+                                            const char* subName,
+                                            int subIdx,
+                                            AggregateType* at);
 static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call);
 
 static bool useLegacyNilability(Expr* at) {
@@ -11378,9 +11382,6 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
       } else {
         call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
       }
-    } else {
-      if (call->numActuals() >= 2)
-        call->get(2)->replace(new SymExpr(type->symbol));
     }
   }
 }
@@ -11797,18 +11798,112 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
   }
 }
 
+// Given the type expression of the PRIM_INIT_VAR call, search for a type
+// construction call and try to grab the actual corresponding to a
+// substitution. This is needed if the actual in the type construction call
+// is a runtime type. This will not work in all cases, in particular if
+// we have to chase a type more than once to find its constructor.
+static
+Expr* chaseTypeConstructorForActual(CallExpr* init, const char* subName,
+                                    int subIdx,
+                                    AggregateType* at) {
+  if (!init->isPrimitive(PRIM_DEFAULT_INIT_VAR)) return nullptr;
+
+  SymExpr* typeSymExpr = toSymExpr(init->get(2));
+  Symbol* typeSym = typeSymExpr->symbol();
+
+  INT_ASSERT(typeSym->hasFlag(FLAG_TYPE_VARIABLE));
+
+  // Given (PRIM_INIT_VAR obj temp) where 'temp' is a type variable, look
+  // for (PRIM_MOVE temp call), where 'call' is a type construction call,
+  // e.g. for the type 'foo(domain(3))'. Normally type construction calls
+  // are replaced with a SymExpr referring to the TypeSymbol, however they
+  // will not be if the call contains one or more runtime types.
+  CallExpr* move = nullptr;
+
+  // Check if the other use of 'temp' is a move.
+  int numUses = 0;
+  for_SymbolSymExprs(se, typeSym) {
+
+    // Be conservative and limit to two uses.
+    if (++numUses > 2) break;
+
+    if (!se->inTree()) continue;
+
+    if (CallExpr* innerCall = toCallExpr(se->parentExpr)) {
+      if (innerCall->isPrimitive(PRIM_MOVE)) {
+        move = innerCall;
+        break;
+      } else {
+        INT_ASSERT(innerCall == init);
+      }
+    }
+  }
+
+  // Didn't find a move, so return early.
+  if (!move) return nullptr;
+
+  // The type variable from the PRIM_INIT_VAR should be on the LHS.
+  SymExpr* lhsSymExpr = toSymExpr(move->get(1));
+  INT_ASSERT(lhsSymExpr);
+  INT_ASSERT(lhsSymExpr->symbol() == typeSym);
+
+  CallExpr* typeConstructorCall = nullptr;
+
+  // See if the RHS of 'move' is a type construction call.
+  if (auto innerCall = toCallExpr(move->get(2))) {
+    if (auto baseSymExpr = toSymExpr(innerCall->baseExpr)) {
+      if (baseSymExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+        if (auto ts = toTypeSymbol(baseSymExpr->symbol())) {
+
+          // The base expression of the call must refer to 'at'.
+          if (ts->type == at) {
+            typeConstructorCall = innerCall;
+          }
+        }
+      }
+    }
+  }
+
+  // No luck, so return early.
+  if (!typeConstructorCall) return nullptr;
+
+  bool isAnyActualNamed = false;
+  Expr* ret = nullptr;
+  int idx = 1;
+
+  // Look for a matching actual using the substitution position.
+  for_actuals(actual, typeConstructorCall) {
+    if (isNamedExpr(actual)) {
+      isAnyActualNamed = true;
+      break;
+    } else {
+      if (subIdx == idx++) {
+        ret = actual;
+      }
+    }
+  }
+
+  // TODO: Handle named actuals in type construction calls.
+  if (isAnyActualNamed) return nullptr;
+
+  return ret;
+}
+
 // call is the context or PRIM_DEFAULT_INIT_VAR - in some cases
 // code will be added before this.
 static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
                                                        AggregateType* at,
                                                        Expr* call) {
-
   AggregateType* root = at->getRootInstantiation();
 
   val->type = root;
 
-  CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(val)));
+  CallExpr* initCall = new CallExpr("init", gMethodToken,
+                                    new NamedExpr("this",
+                                                  new SymExpr(val)));
 
+  int idx = 1;
   for (auto elem: sortedSymbolMapElts(at->substitutions)) {
     const char* keyName = elem.key->name;
     Symbol*     value   = elem.value;
@@ -11821,26 +11916,65 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
     if (field->isParameter()) {
       appendExpr = new SymExpr(value);
     } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
-      if (value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        // BHARSH 2018-11-02: This technically generates code that would
-        // crash at runtime because aggregate types don't contain the runtime
-        // type information for their fields, so this temporary will go
-        // uninitialized. At the moment we fortunately do not access such
-        // fields for default-initialized records, and avoid crashing.
-        VarSymbol* tmp = newTemp("default_runtime_temp");
-        tmp->addFlag(FLAG_TYPE_VARIABLE);
-        CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(keyName));
-        CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
 
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(move);
-
-        resolveExpr(query);
-        resolveExpr(move);
-
-        appendExpr = new SymExpr(tmp);
-      } else {
+      // For non-runtime-types, just use the type.
+      if (!value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         appendExpr = new SymExpr(value);
+
+      // Else, try to search for the type constructor used to create the
+      // type. If we find it, try to grab the runtime type used in the
+      // type constructor and pass that to the initializer.
+      } else {
+
+        CallExpr* init = isCallExpr(call) ? toCallExpr(call) : nullptr;
+        Expr* chase = chaseTypeConstructorForActual(init, keyName, idx, at);
+        bool propagatedActualFromTypeConstructor = false;
+
+        // If we found a type constructor with an actual matching this
+        // substitution, then reuse the actual if it is a runtime type.
+        if (chase) {
+          if (auto chaseSymExpr = toSymExpr(chase)) {
+            if (auto ts = chaseSymExpr->symbol()->type->symbol) {
+              if (ts->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+                if (ts->type == value->type) {
+                  propagatedActualFromTypeConstructor = true;
+
+                  VarSymbol* tmp = newTemp("runtime_temp");
+                  tmp->addFlag(FLAG_MAYBE_TYPE);
+                  Expr* copy = chase->copy();
+                  CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
+                  call->insertBefore(new DefExpr(tmp));
+                  call->insertBefore(move);
+                  resolveExpr(move);
+                  appendExpr = new SymExpr(tmp);
+                }
+              }
+            }
+          }
+        }
+
+        // No luck above, so create a temporary runtime type instead.
+        if (!propagatedActualFromTypeConstructor) {
+
+          // BHARSH 2018-11-02: This technically generates code that would
+          // crash at runtime because aggregate types don't contain the
+          // runtime type information for their fields, so this temporary
+          // will go uninitialized.
+          VarSymbol* tmp = newTemp("default_runtime_temp");
+          tmp->addFlag(FLAG_TYPE_VARIABLE);
+          CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD,
+                                         at->symbol,
+                                         new_CStringSymbol(keyName));
+          CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
+
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(move);
+
+          resolveExpr(query);
+          resolveExpr(move);
+
+          appendExpr = new SymExpr(tmp);
+        }
       }
     } else if (isGenericField) {
 
@@ -11880,6 +12014,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
     appendExpr = new NamedExpr(keyName, appendExpr);
 
     initCall->insertAtTail(appendExpr);
+    idx++;
   }
 
   return initCall;

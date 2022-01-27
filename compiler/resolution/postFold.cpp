@@ -113,8 +113,23 @@ Expr* postFold(Expr* expr) {
       retval = postFoldPrimop(call);
     } else if (SymExpr* se = toSymExpr(call->baseExpr)) {
       if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-        retval = se->copy();
-        call->replace(retval);
+        bool containsRuntimeType = false;
+        for_actuals(actual, call) {
+          if (auto se = toSymExpr(actual)) {
+            auto ts = se->symbol()->type->symbol;
+            if (ts && ts->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+              containsRuntimeType = true;
+              break;
+            }
+          }
+        }
+
+        // If the type construction call contains a runtime type, we need
+        // to hold onto that for later, so don't fold it away.
+        if (!containsRuntimeType) {
+          retval = se->copy();
+          call->replace(retval);
+        }
       }
     }
 
@@ -830,6 +845,20 @@ static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
 
     } else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
       isTypeVar = isTypeExpr(rhs);
+
+    // Check for type construction calls that have not been replaced by a
+    // SymExpr pointing to the appropriate TypeSymbol. If found, then it
+    // is because the type construction call contains one or more runtime
+    // types in it. In this case, propagate FLAG_TYPE_VARIABLE to the LHS.
+    // We need to preserve the type construction call so that the actuals
+    // can be used later.
+    } else if (auto se = toSymExpr(rhs->baseExpr)) {
+      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+        // TODO: Confirm the existence of 1+ runtime type actuals.
+        bool containsRuntimeType = false;
+        (void) containsRuntimeType;
+        isTypeVar = true;
+      }
     }
 
   } else {
