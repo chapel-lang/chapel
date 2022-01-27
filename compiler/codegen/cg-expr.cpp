@@ -420,10 +420,14 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       info->cStatements.push_back(addrAssign);
     } else {
 #ifdef HAVE_LLVM
+      llvm::Type* ty = nullptr;
+#if HAVE_LLVM_VER >= 130
+      ty = llvm::cast<llvm::PointerType>(ret.val->getType()->getScalarType())->getElementType();
+#endif
       llvm::Value* adr = info->irBuilder->CreateStructGEP(
-          NULL, ret.val, WIDE_GEP_ADDR);
+          ty, ret.val, WIDE_GEP_ADDR);
       llvm::Value* loc = info->irBuilder->CreateStructGEP(
-          NULL, ret.val, WIDE_GEP_LOC);
+          ty, ret.val, WIDE_GEP_LOC);
 
       // cast address if needed. This is necessary for building a wide
       // NULL pointer since NULL is actually an i8*.
@@ -869,8 +873,13 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
     if ( !fLLVMWideOpt ) {
       if (ws.val->getType()->isPointerTy()){
         ret.isLVPtr = GEN_PTR;
+        llvm::Type* ty = nullptr;
+#if HAVE_LLVM_VER >= 130 
+        ty = llvm::cast<llvm::PointerType>(
+          ws.val->getType()->getScalarType())->getElementType();
+#endif
         ret.val = info->irBuilder->CreateConstInBoundsGEP2_32(
-                                            NULL, ws.val, 0, field);
+                                            ty, ws.val, 0, field);
       } else {
         ret.isLVPtr = GEN_VAL;
         ret.val = info->irBuilder->CreateExtractValue(ws.val, field);
@@ -1149,8 +1158,12 @@ GenRet doCodegenFieldPtr(
     if( isUnion(ct) && !ct->symbol->hasFlag(FLAG_EXTERN) && !special ) {
       // Get a pointer to the union data then cast it to the right type
       bool unused;
+      llvm::Type* eltTy = nullptr;
+#if HAVE_LLVM_VER >= 130
+      eltTy = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getElementType();
+#endif
       ret.val = info->irBuilder->CreateStructGEP(
-          NULL, baseValue, cBaseType->getMemberGEP("_u", unused));
+          eltTy, baseValue, cBaseType->getMemberGEP("_u", unused));
       llvm::PointerType* ty =
         llvm::PointerType::get(retType.type,
                                baseValue->getType()->getPointerAddressSpace());
@@ -1165,8 +1178,16 @@ GenRet doCodegenFieldPtr(
           ret.chplType->getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
         // Accessing field that is a C array declared with c_ptr(eltType)
         // should result in a pointer to the first element.
-        ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
-        ret.val = info->irBuilder->CreateStructGEP(NULL, ret.val, 0);
+        llvm::Type* baseTy = nullptr;
+        llvm::Type* retTy = nullptr;
+#if HAVE_LLVM_VER >= 130
+        baseTy = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getElementType();
+#endif
+        ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
+#if HAVE_LLVM_VER >= 130
+        retTy = llvm::cast<llvm::PointerType>(ret.val->getType()->getScalarType())->getElementType();
+#endif
+        ret.val = info->irBuilder->CreateStructGEP(retTy, ret.val, 0);
         ret.isLVPtr = GEN_VAL;
       } else {
 #if HAVE_LLVM_VER >= 130

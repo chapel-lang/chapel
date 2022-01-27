@@ -648,7 +648,12 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           hasFlag(FLAG_EXTERN) &&
           getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
           info->lvt->isCArray(cname)) {
-        got.val = info->irBuilder->CreateStructGEP(NULL, got.val, 0);
+        llvm::Type* eltTy = nullptr;
+#if HAVE_LLVM_VER >= 130
+        eltTy = llvm::cast<llvm::PointerType>(got.val->getType()->getScalarType())->getElementType();
+#endif
+
+        got.val = info->irBuilder->CreateStructGEP(eltTy, got.val, 0);
         got.isLVPtr = GEN_VAL;
       }
       if (got.val) {
