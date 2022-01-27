@@ -461,6 +461,55 @@ bool Context::hasFilePathForId(ID id) {
   return false;
 }
 
+void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
+  UniqueString moduleIdSymbolPath = moduleID.symbolPath();
+  auto tupleOfArgs = std::make_tuple(moduleIdSymbolPath);
+
+  updateResultForQuery(filePathForModuleIdSymbolPathQuery,
+                       tupleOfArgs, path,
+                       "filePathForModuleIdSymbolPathQuery",
+                       /* isInputQuery */ false,
+                       /* forSetter */ true);
+
+  if (enableDebugTrace) {
+    printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
+           moduleIdSymbolPath.c_str(), path.c_str());
+  }
+  assert(hasFilePathForId(moduleID));
+}
+
+static const std::vector<UniqueString>&
+moduleSearchPathQuery(Context* context) {
+  QUERY_BEGIN(moduleSearchPathQuery, context);
+
+  // return the empty path if it wasn't already set in
+  // setModuleSearchPath
+  std::vector<UniqueString> result;
+
+  return QUERY_END(result);
+}
+
+const std::vector<UniqueString>& Context::moduleSearchPath() {
+  return moduleSearchPathQuery(this);
+}
+
+void Context::setModuleSearchPath(std::vector<UniqueString> searchPath) {
+  auto tupleOfArgs = std::make_tuple();
+
+  updateResultForQuery(moduleSearchPathQuery,
+                       tupleOfArgs, searchPath,
+                       "moduleSearchPathQuery",
+                       /* isInputQuery */ false,
+                       /* forSetter */ true);
+
+  if (enableDebugTrace) {
+    printf("SETTING MODULE SEARCH PATH to:\n");
+    for (auto elt : searchPath) {
+      printf("  %s\n", elt.c_str());
+    }
+  }
+}
+
 void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
   this->numQueriesRunThisRevision_ = 0;
@@ -543,23 +592,6 @@ void Context::collectGarbage() {
              (int)(nUniqueStringsBefore-nUniqueStringsAfter));
     }
   }
-}
-
-void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
-  UniqueString moduleIdSymbolPath = moduleID.symbolPath();
-  auto tupleOfArgs = std::make_tuple(moduleIdSymbolPath);
-
-  updateResultForQuery(filePathForModuleIdSymbolPathQuery,
-                       tupleOfArgs, path,
-                       "filePathForModuleIdSymbolPathQuery",
-                       /* isInputQuery */ false,
-                       /* forSetter */ true);
-
-  if (enableDebugTrace) {
-    printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
-           moduleIdSymbolPath.c_str(), path.c_str());
-  }
-  assert(hasFilePathForId(moduleID));
 }
 
 void Context::error(ErrorMessage error) {

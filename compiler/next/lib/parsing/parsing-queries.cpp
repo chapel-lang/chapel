@@ -154,8 +154,47 @@ static const Module* const& getToplevelModuleQuery(Context* context,
       }
     }
   } else {
-    // TODO: if we don't have a module read yet, read one.
-    assert(false && "TODO");
+    // Check the module search path for the module.
+    std::string check;
+
+    for (auto path : context->moduleSearchPath()) {
+      check.clear();
+      check += path.c_str();
+      // Remove any '/' characters before adding one so we don't double.
+      while (!check.empty() && check.back() == '/') {
+        check.pop_back();
+      }
+
+      // ignore empty paths
+      if (check.empty())
+        continue;
+
+      check += "/";
+      check += name.c_str();
+      check += ".chpl";
+
+      if (fileExists(check.c_str())) {
+        auto filePath = UniqueString::get(context, check);
+        const ModuleVec& v = parse(context, filePath);
+        for (auto mod: v) {
+          if (mod->name() == name) {
+            result = mod;
+            break;
+          } else {
+            // TODO: is the error what we need in this case?
+            // What does the production compiler do?
+            context->error(mod, "In use/imported file, module name %s "
+                                "does not match file name %s.chpl",
+                           mod->name().c_str(),
+                           name.c_str());
+          }
+        }
+      }
+
+      if (result != nullptr) {
+        break;
+      }
+    }
   }
 
   return QUERY_END(result);

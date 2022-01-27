@@ -365,6 +365,22 @@ class Context {
   bool hasFilePathForId(ID id);
 
   /**
+    Sets the file path for the given module ID. This
+    is suitable to call from a parse query.
+   */
+  void setFilePathForModuleID(ID moduleID, UniqueString path);
+
+  /**
+    Return the current module search path.
+   */
+  const std::vector<UniqueString>& moduleSearchPath();
+
+  /**
+    Sets the current module search path.
+   */
+  void setModuleSearchPath(std::vector<UniqueString> searchPath);
+
+  /**
     This function increments the current revision number stored
     in the context. After it is called, the setters below can
     be used to provide the input at that revision.
@@ -390,14 +406,6 @@ class Context {
     is running.
    */
   void collectGarbage();
-
-  // setters for named queries.
-
-  /**
-    Sets the file path for the given module ID. This
-    is suitable to call from a parse query.
-   */
-  void setFilePathForModuleID(ID moduleID, UniqueString path);
 
   /**
     Note an error for the currently running query and report it

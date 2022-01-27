@@ -55,7 +55,9 @@ void setFileText(Context* context, UniqueString path, FileContents result);
 void setFileText(Context* context, UniqueString path, std::string text);
 
 /**
- This query reads a file (with the fileText query) and then parses it.
+  This query reads a file (with the fileText query) and then parses it.
+
+  Any errors encountered will be reported to the Context.
  */
 const uast::BuilderResult& parseFile(Context* context, UniqueString path);
 
