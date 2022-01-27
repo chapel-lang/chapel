@@ -6,7 +6,7 @@ config const printTiming = false;
 config const doCommDiag = false;
 
 use CommDiagnostics;
-use Time;
+use DateTime;
 
 var l: [1..numLocales] sync bool;
 var A: [1..n,1..m] real;
@@ -23,14 +23,14 @@ proc dit (A, param ttype: testTypes) {
       if loc.id != 0 then
         l[loc.id].readFE();
       if doCommDiag then startCommDiagnostics();
-      var st = getCurrentTime();
+      var st = datetime.timeSinceEpoch();
       select ttype {
         when testTypes.init do A = loc.id+1;
         when testTypes.lhs do A = B;
         when testTypes.rhs do B = A;
         when testTypes.both do compilerError("Both is stupid.\n");
         }
-      var dt = getCurrentTime()-st;
+      var dt = datetime.timeSinceEpoch()-st;
       if doCommDiag then stopCommDiagnostics();
       if printOutput {
         writeln("Remote ", ttype:string, " (Locale ", loc.id, "):");

@@ -86,7 +86,7 @@ proc main() {
 
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
 
-  const startTime = getCurrentTime();  // capture the start time
+  const startTime = datetime.timeSinceEpoch();  // capture the start time
 
   Z = conjg(z);                        // store the conjugate of z in Z
   bitReverseShuffle(Z);                // permute Z
@@ -97,7 +97,7 @@ proc main() {
   forall (b, c) in zip(Z, Zcyc) do
     b = c;
 
-  const execTime = getCurrentTime() - startTime;     // store the elapsed time
+  const execTime = datetime.timeSinceEpoch() - startTime;     // store the elapsed time
 
   const validAnswer = verifyResults(z, Z, Zcyc, Twiddles); // validate the answer
   printResults(validAnswer, execTime);               // print the results

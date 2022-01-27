@@ -164,22 +164,22 @@ proc assignMe(A, B) {
   var st, dt: real;
   select ttype {
     when testType.localGet {
-      st = getCurrentTime();
+      st = datetime.timeSinceEpoch();
       A = B;
-      dt = getCurrentTime()-st;
+      dt = datetime.timeSinceEpoch()-st;
     }
     when testType.localPut {
       on putLocale {
-        st = getCurrentTime();
+        st = datetime.timeSinceEpoch();
         A = B;
-        dt = getCurrentTime()-st;
+        dt = datetime.timeSinceEpoch()-st;
       }
     }
     when testType.remoteGet {
       on remoteLocale {
-        st = getCurrentTime();
+        st = datetime.timeSinceEpoch();
         A = B;
-        dt = getCurrentTime()-st;
+        dt = datetime.timeSinceEpoch()-st;
       }
     }
   }

@@ -8,16 +8,16 @@
 # - The name of the binary is <name>_commDiags, where name is the
 #   corresponding HPCC benchmark
 # - There is only 1 timed region in the program text
-# - Region starts with the first call to getCurrentTime() in the program text
-# - Region end with the last call to getCurrentTime() in the program text
-# - Occurance of getCurrentTime() is the last line of the statement
+# - Region starts with the first call to datetime.timeSinceEpoch() in the program text
+# - Region end with the last call to datetime.timeSinceEpoch() in the program text
+# - Occurance of datetime.timeSinceEpoch() is the last line of the statement
 # - SPECIAL CASE for stream-ep: To get consistent results, include the outer
 #   coforall loop in the comm counts.
 #
 
 import sys, shutil
 
-timerstr = 'getCurrentTime()'
+timerstr = 'datetime.timeSinceEpoch()'
 testname = sys.argv[1][0:sys.argv[1].find('_commDiags')]
 
 #

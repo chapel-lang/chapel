@@ -19,7 +19,7 @@
 // Use standard modules for Timing routines, Type utility functions,
 // and Random numbers
 //
-use Time, Types, Random;
+use DateTime, Types, Random;
 
 //
 // Use shared user module for computing HPCC problem sizes
@@ -98,7 +98,7 @@ proc main() {
     initVectors(B, C);    // Initialize the input vectors, B and C
 
     for trial in 1..numTrials {                        // loop over the trials
-      const startTime = getCurrentTime();              // capture the start time
+      const startTime = datetime.timeSinceEpoch();              // capture the start time
 
       //
       // *** The main loop looks identical to stream.chpl.  However,
@@ -108,7 +108,7 @@ proc main() {
       forall (a, b, c) in zip(A, B, C) do
         a = b + alpha * c;
 
-      execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
+      execTime(trial) = datetime.timeSinceEpoch() - startTime;  // store the elapsed time
     }
 
     //

@@ -110,7 +110,7 @@ proc main() {
     //
     // check the time
     //
-    const startTime = getCurrentTime();
+    const startTime = datetime.timeSinceEpoch();
 
     //
     // run for the specified number of iterations
@@ -141,7 +141,7 @@ proc main() {
     //
     // check the time again
     //
-    const runtime = getCurrentTime() - startTime;
+    const runtime = datetime.timeSinceEpoch() - startTime;
 
     if printTiming then writeln("Execution time = ", runtime);
 

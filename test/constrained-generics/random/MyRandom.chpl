@@ -717,8 +717,8 @@ module MyRandom {
         suitable for the NPB RNG since that requires an odd seed.
       */
       proc type currentTime: int(64) {
-        use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        use DateTime;
+        const seed = (datetime.timeSinceEpoch()*1000):int(64);
         return seed;
 
       }
@@ -728,8 +728,8 @@ module MyRandom {
         for the NPB RNG.
       */
       proc type oddCurrentTime: int(64) {
-        use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        use DateTime;
+        const seed = (datetime.timeSinceEpoch()*1000):int(64);
         const oddseed = if seed % 2 == 0 then seed + 1 else seed;
         return oddseed;
       }

@@ -1,0 +1,3 @@
+deprecatedTimeFeatures.chpl:5: warning: getCurrentTime is deprecated, use DateTime.datetime.timeSinceEpoch()
+deprecatedTimeFeatures.chpl:6: warning: getCurrentDate is deprecated, use DateTime.date.today().isocalendar()
+deprecatedTimeFeatures.chpl:7: warning: getCurrentDayOfWeek is deprecated, use DateTime.date.today().weekday():string

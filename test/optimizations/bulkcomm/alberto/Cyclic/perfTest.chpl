@@ -43,7 +43,7 @@ proc main(){
   var i:int;
   var D1={1..n by 1,1..n by 1};
   var D2={1..n by 1,1..n by 1};
-  var st,dt=getCurrentTime();
+  var st,dt=datetime.timeSinceEpoch();
   for (a,i) in zip(A2,{1..n*n}) do a=i;
 
   if printOutput then writeln("Cyclic Dist. Example 1:");
@@ -65,9 +65,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=C2[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -86,9 +86,9 @@ proc main(){
   D2={1..n ,1..n};
   if printOutput then writeln("Cyclic Dist. Example 2:A",D1," = C",D2);
   if doDiagnostics then startCommDiagnostics();
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=B2[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -113,9 +113,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=C2[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -140,9 +140,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=C2[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -166,9 +166,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=B2[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -192,9 +192,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D6]=C2[D6];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -219,11 +219,11 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D7]=C2[D7];
   // writeln("A2: ", A2);
   // writeln("C2: ", C2);
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -246,11 +246,11 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D8]=C2[D8];
   //  writeln("A2: ", A2);
   //  writeln("C2: ", C2);
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -274,9 +274,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D6]=B2[D6];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -301,9 +301,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D6]=B2[D7];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -329,9 +329,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D6]=B2[D7];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -357,9 +357,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D6]=B2[D7];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -385,9 +385,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -413,9 +413,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -440,9 +440,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -467,9 +467,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -494,9 +494,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   BD[D2]=A2[D1];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -522,9 +522,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   BD[D2]=A2[D1];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -549,9 +549,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   BD[D2]=A2[D1];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -576,9 +576,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   BD[D2]=A2[D1];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -602,9 +602,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=ADR[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -630,9 +630,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=ADR[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -659,9 +659,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D2]=ADR[D1];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -686,9 +686,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   ADR[D1]=A2[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -714,9 +714,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   ADR[D2]=A2[D1];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -741,9 +741,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   ADR[D1]=A2[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -771,9 +771,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   ADR[D1] = BDR[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -804,11 +804,11 @@ proc main(){
 	  startCommDiagnostics();
 	}
       }
-      st = getCurrentTime();
+      st = datetime.timeSinceEpoch();
   
       ADR[D1] = BDR[D2];
   
-      dt = getCurrentTime()-st;
+      dt = datetime.timeSinceEpoch()-st;
       if doDiagnostics {
 	if printComm{
 	  stopCommDiagnostics();
@@ -845,13 +845,13 @@ proc main(){
 	  }
 	}
   
-	st = getCurrentTime();
+	st = datetime.timeSinceEpoch();
   
 	on Locales(1){
 	  ADR[D1] = CDR[D2];
 	}
   
-	dt = getCurrentTime()-st;
+	dt = datetime.timeSinceEpoch()-st;
 	if doDiagnostics {
 	  if printComm{
 	    stopCommDiagnostics();
@@ -887,13 +887,13 @@ proc main(){
 	}
       }
 
-      st = getCurrentTime();
+      st = datetime.timeSinceEpoch();
 
       //  on Locales(1){ 
       ADR[D1] = CDR[D2];
       //  }
 
-      dt = getCurrentTime()-st;
+      dt = datetime.timeSinceEpoch()-st;
       if doDiagnostics {
 	if printComm{
 	  stopCommDiagnostics();
@@ -929,13 +929,13 @@ proc main(){
 	}
       }
 
-      st = getCurrentTime();
+      st = datetime.timeSinceEpoch();
 
       //  on Locales(1){ 
       CDR[D1] = ADR[D2];
       //  }
 
-      dt = getCurrentTime()-st;
+      dt = datetime.timeSinceEpoch()-st;
       if doDiagnostics {
 	if printComm{
 	  stopCommDiagnostics();
@@ -965,7 +965,7 @@ proc main(){
   //    startCommDiagnostics();
   //  }
 
-  //  st = getCurrentTime();
+  //  st = datetime.timeSinceEpoch();
 
   //  on Locales(1){
   //ADR[D3] = CDR[D3];
@@ -974,7 +974,7 @@ proc main(){
   H[D3] = G[D3];
   //  }
 
-  //  dt = getCurrentTime()-st;
+  //  dt = datetime.timeSinceEpoch()-st;
   //  if doDiagnostics {
   //    stopCommDiagnostics();
   //    myPrintComms("");
@@ -1006,13 +1006,13 @@ proc main(){
 	startCommDiagnostics();
       }   
 
-      st = getCurrentTime();
+      st = datetime.timeSinceEpoch();
 
       //  on Locales(1){
       CDR[D3] = ADR[D3];
       //  }
 
-      dt = getCurrentTime()-st;
+      dt = datetime.timeSinceEpoch()-st;
       if doDiagnostics {
 	stopCommDiagnostics();
 	myPrintComms("");
@@ -1043,13 +1043,13 @@ proc main(){
 	startCommDiagnostics();
       }
 
-      st = getCurrentTime();
+      st = datetime.timeSinceEpoch();
 
       //  on Locales(1){
       ADR[D4] = CDR[D4];
       //  }
 
-      dt = getCurrentTime()-st;
+      dt = datetime.timeSinceEpoch()-st;
       if doDiagnostics {
 	stopCommDiagnostics();
 	myPrintComms("");
@@ -1080,13 +1080,13 @@ proc main(){
 	startCommDiagnostics();
       }
 
-      st = getCurrentTime();
+      st = datetime.timeSinceEpoch();
 
       //  on Locales(1){
       CDR[D4] = ADR[D4];
       //  }
 
-      dt = getCurrentTime()-st;
+      dt = datetime.timeSinceEpoch()-st;
       if doDiagnostics {
 	stopCommDiagnostics();
 	myPrintComms("");
@@ -1118,13 +1118,13 @@ proc main(){
 	startCommDiagnostics();
       }
 
-      st = getCurrentTime();
+      st = datetime.timeSinceEpoch();
 
       //  on Locales(1){
       ADR[D5] = CDR[D5];
       //  }
 
-      dt = getCurrentTime()-st;
+      dt = datetime.timeSinceEpoch()-st;
       if doDiagnostics {
 	stopCommDiagnostics();
 	myPrintComms("");
@@ -1155,13 +1155,13 @@ proc main(){
 	startCommDiagnostics();
       }
 
-      st = getCurrentTime();
+      st = datetime.timeSinceEpoch();
 
       //  on Locales(1){
       CDR[D5] = ADR[D5];
       //  }
 
-      dt = getCurrentTime()-st;
+      dt = datetime.timeSinceEpoch()-st;
       if doDiagnostics {
 	stopCommDiagnostics();
 	myPrintComms("");

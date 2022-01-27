@@ -33,9 +33,9 @@ proc main() {
   var execTime: [1..numTrials] real;
 
   for trial in 1..numTrials {
-    const startTime = getCurrentTime();
+    const startTime = datetime.timeSinceEpoch();
     [i in ProblemSpace] A(i) = B(i) + alpha * C(i);
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = datetime.timeSinceEpoch() - startTime;
   }
 
   const validAnswer = verifyResults(A, B, C);

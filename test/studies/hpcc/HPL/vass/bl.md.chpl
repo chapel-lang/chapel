@@ -92,11 +92,11 @@ writeln("n = ", n, "\n", "blkSize = ", blkSize, "\n", "AbD = ", AbD, "\n",
       //"starting offsets = ", st1, ", ", st2, //MBC //BC
         "\n");
 
-const startTime = getCurrentTime();     // capture the start time
+const startTime = datetime.timeSinceEpoch();     // capture the start time
 
 LUFactorize();
 
-const execTime = getCurrentTime() - startTime;  // store the elapsed time
+const execTime = datetime.timeSinceEpoch() - startTime;  // store the elapsed time
 
 write("DONE ");
 if reproducible {

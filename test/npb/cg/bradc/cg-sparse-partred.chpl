@@ -2,7 +2,7 @@
 //   618.233 with default arguments, linear search for sparse domain this()
 //    62.169 with --cflags=-O3, linear search
 //    25.4556 with --cflags=-O3, binary search
-use LayoutCS, CGMakeA, Time;
+use LayoutCS, CGMakeA, DateTime;
 use CSimpl; // user-space partial reductions
 
 type elemType = real(64);
@@ -51,7 +51,7 @@ proc main() {
   for trial in 1..numTrials {
     X = 1.0;
 
-    const startTime = getCurrentTime();
+    const startTime = datetime.timeSinceEpoch();
 
     for it in 1..niter {
       const (Z, rnorm) = conjGrad(A, X);
@@ -63,7 +63,7 @@ proc main() {
       X = (1.0 / sqrt(+ reduce(Z*Z))) * Z;
     }
 
-    const runtime = getCurrentTime() - startTime;
+    const runtime = datetime.timeSinceEpoch() - startTime;
 
     if printTiming then writeln("Execution time = ", runtime);
 

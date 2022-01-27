@@ -70,7 +70,13 @@ private extern proc chpl_timevalue_parts(t:           _timevalue,
 /* Specifies the units to be used when certain functions return a time */
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
 
-/* Specifies the day of the week */
+/* Specifies the day of the week 
+
+   .. warning::
+
+    ``Day`` is deprecated since ``getCurrentDayOfWeek`` is deprecated.
+
+*/
 enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
 
 /*
@@ -79,17 +85,30 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
    :returns: The elapsed time since midnight, local time, in the units specified
    :rtype:   `real(64)`
+
+   .. warning::
+
+      ```getCurrentTime`` is deprecated, use ``DateTime.datetime.timeSinceEpoch()``.
+
  */
-proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64)
+proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) {
+  compilerWarning("getCurrentTime is deprecated, use DateTime.datetime.timeSinceEpoch()");
   return _convert_microseconds(unit, chpl_now_time());
+}
 
 /*
    :returns:  (year, month, day) as a tuple of 3 ints
 
    The month is in the range 1 to 12.
    The day   is in the range 1 to 31
+
+   .. warning::
+
+      ``getCurrentDate`` is deprecated, use ``DateTime.date.today().isocalendar()``.
+
 */
 proc getCurrentDate() {
+  compilerWarning("getCurrentDate is deprecated, use DateTime.date.today().isocalendar()");
   var now = chpl_now_timevalue();
 
   var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
@@ -102,8 +121,14 @@ proc getCurrentDate() {
 /*
    :returns: The current day of the week
    :rtype:   :type:`Day`
+
+   .. warning::
+
+      ``getCurrentDayOfWeek`` is deprecated, use ``DateTime.date.today().weekday():string``.
+
  */
 proc getCurrentDayOfWeek() : Day {
+  compilerWarning("getCurrentDayOfWeek is deprecated, use DateTime.date.today().weekday():string");
   var now = chpl_now_timevalue();
 
   var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);

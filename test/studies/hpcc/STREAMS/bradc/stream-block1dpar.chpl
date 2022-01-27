@@ -37,7 +37,7 @@ proc main() {
   var execTime: [1..numTrials] real;
 
   for trial in 1..numTrials {
-    const startTime = getCurrentTime();
+    const startTime = datetime.timeSinceEpoch();
     // TODO: Ultimately, Want:
     //
     // A = B + alpha * C;
@@ -65,7 +65,7 @@ proc main() {
       }
     }
 
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = datetime.timeSinceEpoch() - startTime;
   }
 
   const validAnswer = verifyResults(A, B, C);

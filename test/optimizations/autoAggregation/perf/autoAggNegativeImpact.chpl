@@ -35,12 +35,12 @@ proc main() {
   var execTime: [1..numTrials] real;                 // an array of timings
 
   for trial in 1..numTrials {                        // loop over the trials
-    const startTime = getCurrentTime();              // capture the start time
+    const startTime = datetime.timeSinceEpoch();              // capture the start time
 
     forall i in ProblemSpace do
       A[i] = B[i+0];
 
-    execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
+    execTime(trial) = datetime.timeSinceEpoch() - startTime;  // store the elapsed time
   }
 
   const validAnswer = verifyResults(A, B);           // verify...

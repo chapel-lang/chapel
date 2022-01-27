@@ -198,7 +198,7 @@ int main(int argc, char* argv[]) {
   indexType i;
   for (i=0; i<m; i++) T[i] = 0; // warm up memory (and zero out)
 
-  double startTime = getCurrentTime();
+  double startTime = datetime.timeSinceEpoch();
 
   for (i=0; i<m; i++) {
     T[i] = i;
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
     T[r & indexMask] ^= r;
   }
 
-  double execTime = getCurrentTime() - startTime;
+  double execTime = datetime.timeSinceEpoch() - startTime;
 
   int validAnswer = verifyResults(T);
   printResults(validAnswer, execTime);

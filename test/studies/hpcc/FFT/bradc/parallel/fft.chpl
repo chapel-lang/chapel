@@ -36,13 +36,13 @@ proc main() {
 
   initVectors(Twiddles, z);
 
-  const startTime = getCurrentTime();
+  const startTime = datetime.timeSinceEpoch();
 
   Z = conjg(z);
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
-  const execTime = getCurrentTime() - startTime;
+  const execTime = datetime.timeSinceEpoch() - startTime;
 
   const validAnswer = verifyResults(z, Z, Twiddles);
   printResults(validAnswer, execTime);

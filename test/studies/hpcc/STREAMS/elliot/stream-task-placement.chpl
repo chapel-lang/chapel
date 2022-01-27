@@ -1,4 +1,4 @@
-use Time;
+use DateTime;
 use Types;
 use Random;
 
@@ -44,11 +44,11 @@ proc main() {
   }
 
   for trial in 1..numTrials {
-    const startTime = getCurrentTime();
+    const startTime = datetime.timeSinceEpoch();
     forall (a, b, c) in zip(A, B, C) {
       a = b + alpha * c;
     }
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = datetime.timeSinceEpoch() - startTime;
   }
 
   const validAnswer = verifyResults(A, B, C);

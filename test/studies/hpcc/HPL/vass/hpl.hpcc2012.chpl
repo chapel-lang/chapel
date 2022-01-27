@@ -200,7 +200,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   if printArrays then
     writeln("after initAB, Ab=\n", Ab);
 
-  const startTime = getCurrentTime();     // capture the start time
+  const startTime = datetime.timeSinceEpoch();     // capture the start time
 
   LUFactorize(n, piv);                 // compute the LU factorization
 
@@ -216,7 +216,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
     writeln("after backwardSub, Ab=\n", Ab, "\nx=\n", x);
 
 
-  var execTime = getCurrentTime() - startTime;  // store the elapsed time
+  var execTime = datetime.timeSinceEpoch() - startTime;  // store the elapsed time
   if execTime < 0 then execTime += 24*3600;          // adjust for date change
   printTime(execTime);
 

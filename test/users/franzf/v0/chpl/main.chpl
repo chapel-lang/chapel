@@ -48,6 +48,8 @@ proc main() {
 
   writeln("Spiral 5.0 Chapel FFT example\n");
 
+  var t = new Timer();
+
   for n in MIN_SIZE..MAX_SIZE {
     var N : int = 2**n;
     const Ndom: domain(1) = {0..N-1};
@@ -71,11 +73,13 @@ proc main() {
     }    
     
     //  benchmark computation
-    startTime = getCurrentTime(TimeUnits.microseconds);
+    t.start();
     for i in 1..NUMRUNS {
       fft(N, Y, X);
     }
-    execTime = (getCurrentTime(TimeUnits.microseconds) - startTime)/NUMRUNS;
+    t.stop();
+    execTime = (t.elapsed(TimeUnits.microseconds))/NUMRUNS;
+    t.clear();
     if (printTimings) then
       writeln("fft_", N, ": ", execTime, "us = ", ops / execTime, " Mflop/s");
     else

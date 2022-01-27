@@ -34,7 +34,7 @@ proc main(){
   var D3={1..n by 1,1..n by 1,1..n by 1};
   var D4={1..n by 1,1..n by 1,1..n by 1};
   
-  var st,dt=getCurrentTime();
+  var st,dt=datetime.timeSinceEpoch();
   for (a,i) in zip(A2,{1..n*n}) do a=i;
 //2D Examples
 // ==============================================================================
@@ -51,9 +51,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -78,9 +78,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -105,9 +105,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 3:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -132,9 +132,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 4:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -159,9 +159,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 5:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -184,9 +184,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 6:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -210,9 +210,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 7:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -238,9 +238,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 8:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -263,9 +263,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -289,9 +289,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -317,9 +317,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -344,9 +344,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -371,9 +371,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -398,9 +398,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -425,9 +425,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -453,9 +453,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -480,9 +480,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -508,9 +508,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -535,9 +535,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = datetime.timeSinceEpoch();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();

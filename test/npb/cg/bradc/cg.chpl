@@ -1,3 +1,5 @@
+use DateTime;
+
 enum classVals {S, W, A, B, C, D, O};
 
 
@@ -36,7 +38,7 @@ proc main() {
   for trial in 1..numTrials {
     X = 1.0;
 
-    const startTime = getCurrentTime();
+    const startTime = datetime.timeSinceEpoch();
 
     for it in 1..numIter {
       const (rnorm, Z) = conjGrad(A, X);
@@ -50,7 +52,7 @@ proc main() {
       X = normTemp(2)*Z;
     }
 
-    const runtime = getCurrentTime() - startTime;
+    const runtime = datetime.timeSinceEpoch() - startTime;
 
     writeln("Execution time = ", runtime);
 
