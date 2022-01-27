@@ -1,2 +1,2 @@
---practice=true   # day21a-test.good
+# Takes awhile, and the next line should cover it: --practice=true   # day21a-test.good
 --practice=false  # day21a.good
