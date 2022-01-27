@@ -74,6 +74,11 @@
 #include <rdma/fi_errno.h>
 #include <rdma/fi_rma.h>
 
+#ifdef __has_include
+#if __has_include(<rdma/fi_cxi_ext.h>)
+#include <rdma/fi_cxi_ext.h>
+#endif
+#endif
 
 ////////////////////////////////////////
 //
@@ -209,8 +214,8 @@ struct memEntry {
   void* addr;
   uint64_t base;
   size_t size;
-  void* desc;
-  uint64_t key;
+  void* desc;       // returned by fi_mr_desc
+  uint64_t key;     // returned by fi_mr_key
 };
 
 #define MAX_MEM_REGIONS 10
@@ -292,6 +297,11 @@ static const char* mcmModeNames[] = { "undefined",
                                       "message-order",
                                       "delivery-complete", };
 
+//
+// Provider-specific support.
+//
+
+static bool cxiHybridMRMode = false;
 
 ////////////////////////////////////////
 //
@@ -519,6 +529,7 @@ typedef enum {
   provType_rxd,
   provType_rxm,
   provType_tcp,
+  provType_cxi,
   provTypeCount
 } provider_t;
 
@@ -567,6 +578,8 @@ void init_providerInUse(void) {
     providerSetSet(&providerInUseSet, provType_tcp);
   } else if (isInProvName("verbs", pn)) {
     providerSetSet(&providerInUseSet, provType_verbs);
+  } else if (isInProvName("cxi", pn)) {
+    providerSetSet(&providerInUseSet, provType_cxi);
   }
 
   //
@@ -2247,6 +2260,33 @@ void init_ofiEp(void) {
   tciTabLen = numTxCtxs;
   CHPL_CALLOC(tciTab, tciTabLen);
 
+  // Use "hybrid" MR mode for the cxi provider if it's available
+
+  if (providerInUse(provType_cxi)) {    
+#ifdef FI_CXI_DOM_OPS_3
+    struct fi_cxi_dom_ops *dom_ops;
+    int rc;
+    rc = fi_open_ops(&ofi_domain->fid, FI_CXI_DOM_OPS_3, 0, 
+                        (void **)&dom_ops, NULL);
+    if (rc == FI_SUCCESS) {
+      rc = dom_ops->enable_hybrid_mr_desc(&ofi_domain->fid, true);
+      if (rc == FI_SUCCESS) {
+        cxiHybridMRMode = true;
+      } else {
+        DBG_PRINTF(DBG_PROV, "enable_hybrid_mr_desc failed: %s", 
+                   fi_strerror(rc));
+      }
+    } else {
+      DBG_PRINTF(DBG_PROV, "fi_open_ops failed: %s", fi_strerror(rc));
+    }
+#endif
+    if (cxiHybridMRMode) {
+      DBG_PRINTF(DBG_PROV, "using cxi hybrid MR mode");
+    } else {
+      DBG_PRINTF(DBG_PROV, "not using cxi hybrid MR mode");
+    }
+  }
+
   //
   // Create transmit contexts.
   //
@@ -2624,7 +2664,9 @@ void init_ofiForMem(void) {
     ((ofi_info->domain_attr->mr_mode & FI_MR_PROV_KEY) != 0);
 
   uint64_t bufAcc = FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE;
-  if ((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) != 0) {
+
+  if (((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) != 0) || 
+       cxiHybridMRMode) {
     bufAcc |= FI_SEND | FI_READ | FI_WRITE;
   }
 
@@ -4374,7 +4416,7 @@ ssize_t wrap_fi_sendmsg(c_nodeid_t node,
   const struct iovec msg_iov = { .iov_base = req,
                                  .iov_len = reqSize };
   const struct fi_msg msg = { .msg_iov = &msg_iov,
-                              .desc = mrDesc,
+                              .desc = &mrDesc,
                               .iov_count = 1,
                               .addr = rxAddr(tcip, node),
                               .context = ctx };
@@ -5747,7 +5789,7 @@ ssize_t wrap_fi_writemsg(const void* addr, void* mrDesc,
                                 .key = mrKey };
   struct fi_msg_rma msg = (struct fi_msg_rma)
                           { .msg_iov = &msg_iov,
-                            .desc = mrDesc,
+                            .desc = &mrDesc,
                             .iov_count = 1,
                             .addr = rxAddr(tcip, node),
                             .rma_iov = &rma_iov,
@@ -6119,7 +6161,7 @@ ssize_t wrap_fi_readmsg(void* addr, void* mrDesc,
                                 .key = mrKey };
   struct fi_msg_rma msg = (struct fi_msg_rma)
                           { .msg_iov = &msg_iov,
-                            .desc = mrDesc,
+                            .desc = &mrDesc,
                             .iov_count = 1,
                             .addr = rxAddr(tcip, node),
                             .rma_iov = &rma_iov,
