@@ -50,14 +50,12 @@ class CompositeType : public Type {
   using SortedSubstitutions = std::vector<SubstitutionPair>;
 
  protected:
-  // TODO: add fields and accessors for a QualifiedType per field
-
   ID id_;
   UniqueString name_;
 
   // Is this CompositeType representing an instantiation?
   // If so, what is the generic CompositeType that was instantiated?
-  // TODO: should we remove this and compute it again based on id?
+  // This is stored here to keep the canPass code more efficient.
   const CompositeType* instantiatedFrom_ = nullptr;
   // If so, what types/params should we use?
   SubstitutionsMap subs_;

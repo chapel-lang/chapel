@@ -990,49 +990,6 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   return ret;
 }
 
-#if 0
-// Allocates and constructs a new type that doesn't yet contain field types
-// The returned pointer needs to be freed or stored in an owned etc.
-static CompositeType*
-constructNewType(Context* context, const AggregateDecl* ad,
-                 const CompositeType* instantiatedFrom,
-                 const CompositeType::SubstitutionsMap subs) {
-  CompositeType* newType = nullptr;
-  if (ad->isClass()) {
-    const BasicClassType* insnFrom = nullptr;
-    if (instantiatedFrom)
-      insnFrom = instantiatedFrom->toBasicClassType();
-
-    newType = new BasicClassType(ad->id(), ad->name(),
-                                 gatherFields(context, ad),
-                                 insnFrom,
-                                 std::move(subs));
-  } else if (ad->isRecord()) {
-    const RecordType* insnFrom = nullptr;
-    if (instantiatedFrom)
-      insnFrom = instantiatedFrom->toRecordType();
-
-    newType = new RecordType(ad->id(), ad->name(),
-                             gatherFields(context, ad),
-                             insnFrom,
-                             std::move(subs));
-  } else if (ad->isUnion()) {
-    const UnionType* insnFrom = nullptr;
-    if (instantiatedFrom)
-      insnFrom = instantiatedFrom->toUnionType();
-
-    newType = new UnionType(ad->id(), ad->name(),
-                            gatherFields(context, ad),
-                            insnFrom,
-                            std::move(subs));
-  } else {
-    assert(false && "should not be reachable");
-  }
-
-  return newType;
-}
-#endif
-
 // initedInParent is true if the decl variable is inited due to a parent
 // uast node.  This comes up for TupleDecls.
 static void helpSetFieldTypes(const ASTNode* ast,
@@ -2515,9 +2472,6 @@ CallResolutionResult resolveFnCall(Context* context,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope) {
-
-  if (call->id().str() == "M@8")
-    gdbShouldBreakHere();
 
   // search for candidates at each POI until we have found a candidate
   std::vector<const TypedFnSignature*> candidates;
