@@ -1164,15 +1164,15 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
    Compile a regular expression and search the receiving string for matches at
    any offset using :proc:`regex.search`.
 
-   :arg needle: the regular expression to search for
+   :arg region: the regular expression to search for
    :arg ignorecase: true to ignore case in the regular expression
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving string where a match occurred
  */
-proc string.search(needle: string, ignorecase=false):regexMatch
+proc string.search(region: string, ignorecase=false):regexMatch
 {
-  // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
+  // Create a regex matching the literal for region
+  var re = compile(region, literal=true, nocapture=true, ignorecase=ignorecase);
   return re.search(this);
 }
 
@@ -1181,58 +1181,58 @@ proc string.search(needle: string, ignorecase=false):regexMatch
    Compile a regular expression and search the receiving bytes for matches at
    any offset using :proc:`regex.search`.
 
-   :arg needle: the regular expression to search for
+   :arg region: the regular expression to search for
    :arg ignorecase: true to ignore case in the regular expression
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving bytes where a match occurred
  */
-proc bytes.search(needle: bytes, ignorecase=false):regexMatch
+proc bytes.search(region: bytes, ignorecase=false):regexMatch
 {
-  // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
+  // Create a regex matching the literal for region
+  var re = compile(region, literal=true, nocapture=true, ignorecase=ignorecase);
   return re.search(this);
 }
 
 // documented in the captures version
 pragma "no doc"
-proc string.search(needle: regex(string)):regexMatch
+proc string.search(region: regex(string)):regexMatch
 {
-  return needle.search(this);
+  return region.search(this);
 }
 
 // documented in the captures version
 pragma "no doc"
-proc bytes.search(needle: regex(bytes)):regexMatch
+proc bytes.search(region: regex(bytes)):regexMatch
 {
-  return needle.search(this);
+  return region.search(this);
 }
 
 /* Search the receiving string for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   :arg needle: the compiled regular expression to search for
+   :arg region: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
                   should be strings or types that strings can cast to.
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving string where a match occurred
  */
-proc string.search(needle: regex(string), ref captures ...?k):regexMatch
+proc string.search(region: regex(string), ref captures ...?k):regexMatch
 {
-  return needle.search(this, (...captures));
+  return region.search(this, (...captures));
 }
 
 /* Search the receiving bytes for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   :arg needle: the compiled regular expression to search for
+   :arg region: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
                   should be bytes or types that bytes can cast to.
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving bytes where a match occurred
  */
-proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
+proc bytes.search(region: regex(bytes), ref captures ...?k):regexMatch
 {
-  return needle.search(this, (...captures));
+  return region.search(this, (...captures));
 }
 
 // documented in the captures version
