@@ -312,6 +312,10 @@ struct ParserContext {
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, owned<Expression> e);
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, ParserExprList* exprLst);
 
+  Expression* buildNewExpr(YYLTYPE location,
+                           New::Management management,
+                           Expression* expr);
+
   FnCall* wrapCalledExpressionInNew(YYLTYPE location,
                                     New::Management management,
                                     FnCall* fnCall);

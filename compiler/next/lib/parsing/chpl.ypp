@@ -2237,6 +2237,7 @@ fn_decl_stmt_start:
       auto loc = context->declStartLoc(@2);
       fp.comments = context->gatherComments(loc);
       fp.attributes = context->buildAttributes(@$).release();
+      fp.visibility = context->visibility;
       context->resetAttributePartsState();
       fp.kind = $2;
       $$ = fp;
@@ -3260,17 +3261,7 @@ new_expr:
   /* Handles the typical new cases, e.g. new C(); new owned C() */
   new_maybe_decorated expr %prec TNEW
   {
-    if (FnCall* fnCall = $2->toFnCall()) {
-      $$ = context->wrapCalledExpressionInNew(@$, $1, fnCall);
-    } else {
-
-      // It's an error for one reason or another. TODO: Specialize these
-      // errors later (e.g. 'new a.field' would require parens around
-      // the expression 'a.field'; 'new foo' would require an argument
-      // list for 'foo'; and something like 'new __primitive()' just
-      // doesn't make any sense...
-      $$ = context->raiseError(@$, "Invalid form for new expression");
-    }
+    $$ = context-> buildNewExpr(@$, $1, $2);
   }
   /* TODO: handles e.g. new (typefn())(initargs) */
   /* TODO TODO: Flag these with asserts in the old compiler parser and
@@ -3402,8 +3393,10 @@ lhs_expr:
  *        reworked to not permit the empty production. */
 call_base_expr:
   lhs_expr
-| expr TBANG                    { $$ = TODOEXPR(@$); }
-| sub_type_level_expr TQUESTION { $$ = TODOEXPR(@$); }
+| expr TBANG                    { $$ = context->buildUnaryOp(@$,
+                                                              STR("postfix!"),
+                                                              $1); }
+| sub_type_level_expr TQUESTION { $$ = context->buildUnaryOp(@$, $2, $1); }
 | lambda_decl_expr
 | str_bytes_literal
 ;
