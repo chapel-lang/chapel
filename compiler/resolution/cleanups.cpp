@@ -216,6 +216,32 @@ static void removeRandomPrimitive(CallExpr* call) {
         Symbol* sym = se->symbol();
         if (isTypeSymbol(sym) || sym->hasFlag(FLAG_TYPE_VARIABLE))
           call->remove();
+
+      // Remove type construction calls that contain runtime types, now.
+      } else if (auto innerCall = toCallExpr(call->get(2))) {
+        auto baseExpr = innerCall->baseExpr;
+
+        if (baseExpr && isTypeExpr(baseExpr)) {
+          if (isTypeExpr(call->get(1))) {
+            bool containsRuntimeType = false;
+
+            for_actuals(actual, innerCall) {
+              if (auto se = toSymExpr(actual)) {
+                auto ts = se->symbol()->type->symbol;
+
+                // Runtime types sould have been transformed into values.
+                if (ts && ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+                  INT_ASSERT(se->symbol()->defPoint->inTree());
+                  containsRuntimeType = true;
+                  break;
+                }
+              }
+            }
+
+            INT_ASSERT(containsRuntimeType);
+            call->remove();
+          }
+        }
       }
     }
     break;
