@@ -41,18 +41,37 @@ namespace parsing {
  In case there is an error reading the file, the error is stored in the error
  field of the FileContents.
  */
+const FileContents& fileText(Context* context, std::string path);
+
+/**
+ Convenience function to call fileText given a UniqueString.
+ */
 const FileContents& fileText(Context* context, UniqueString path);
 
 /**
  This function sets the FileContents that will be returned by the fileText
  query above.
  */
-void setFileText(Context* context, UniqueString path, FileContents result);
+void setFileText(Context* context, std::string path, FileContents result);
+
+/**
+ This function sets the string that will be returned by the fileText
+ query above. The FileContents stored will have an empty ErrorMessage field.
+ */
+void setFileText(Context* context, std::string path, std::string text);
+
 /**
  This function sets the string that will be returned by the fileText
  query above. The FileContents stored will have an empty ErrorMessage field.
  */
 void setFileText(Context* context, UniqueString path, std::string text);
+
+
+/**
+ This function returns `true` if the current revision already has contents
+ stored in the fileText query for the given path.
+ */
+bool hasFileText(Context* context, const std::string& path);
 
 /**
   This query reads a file (with the fileText query) and then parses it.

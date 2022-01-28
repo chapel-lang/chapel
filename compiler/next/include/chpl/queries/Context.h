@@ -175,17 +175,19 @@ class Context {
        bool isInputQuery,
        bool forSetter);
 
-  template<typename ResultType,
-           typename... ArgTs>
-  bool
-  hasResultForQuery(
-       const ResultType& (*queryFunction)(Context* context, ArgTs...),
-       const std::tuple<ArgTs...>& tupleOfArgs,
-       const char* traceQueryName);
-
   void recomputeIfNeeded(const querydetail::QueryMapResultBase* resultEntry);
   void updateForReuse(const querydetail::QueryMapResultBase* resultEntry);
 
+  // Checks to see if the current result exists and can be reused.
+  // This can run queries that it depended on in the previous revision again
+  // and it can update the query's lastChecked value.
+  bool queryCanUseSavedResult(
+            const void* queryFunction,
+            const querydetail::QueryMapResultBase* resultEntry);
+
+  // In addition to the steps in queryCanUseSavedResult, if the result
+  // cannot be reused, adds the query to the stack of currently executing
+  // queries
   bool queryCanUseSavedResultAndPushIfNot(
             const void* queryFunction,
             const querydetail::QueryMapResultBase* resultEntry);
@@ -516,6 +518,20 @@ class Context {
   QueryStatus queryStatus(
          const ResultType& (*queryFunction)(Context* context, ArgTs...),
          const std::tuple<ArgTs...>& tupleOfArgs);
+
+  /**
+    Returns 'true' if the system already has a result for the passed query
+    in the current revision. This can be useful for certain input
+    queries - e.g. one reading a file that can both have the contents
+    set and can also read the data from the filesystem.
+   */
+  template<typename ResultType,
+           typename... ArgTs>
+  bool
+  hasCurrentResultForQuery(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...),
+       const std::tuple<ArgTs...>& tupleOfArgs);
+
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly

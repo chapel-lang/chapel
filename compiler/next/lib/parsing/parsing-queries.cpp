@@ -42,8 +42,9 @@ namespace parsing {
 
 using namespace uast;
 
-const FileContents& fileText(Context* context, UniqueString path) {
-  QUERY_BEGIN_INPUT(fileText, context, path);
+static
+const FileContents& fileTextQuery(Context* context, std::string path) {
+  QUERY_BEGIN_INPUT(fileTextQuery, context, path);
 
   std::string text;
   ErrorMessage error;
@@ -55,18 +56,35 @@ const FileContents& fileText(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-void setFileText(Context* context, UniqueString path, FileContents result) {
-  QUERY_STORE_INPUT_RESULT(fileText, context, result, path);
+const FileContents& fileText(Context* context, std::string path) {
+  return fileTextQuery(context, path);
+}
+
+const FileContents& fileText(Context* context, UniqueString path) {
+  return fileText(context, path.str());
+}
+
+void setFileText(Context* context, std::string path, FileContents result) {
+  QUERY_STORE_INPUT_RESULT(fileTextQuery, context, result, path);
+}
+void setFileText(Context* context, std::string path, std::string text) {
+  setFileText(context, std::move(path), FileContents(std::move(text)));
 }
 void setFileText(Context* context, UniqueString path, std::string text) {
-  setFileText(context, path, FileContents(std::move(text)));
+  setFileText(context, path.str(), FileContents(std::move(text)));
+}
+
+bool hasFileText(Context* context, const std::string& path) {
+  auto tupleOfArgs = std::make_tuple(path);
+
+  return context->hasCurrentResultForQuery(fileTextQuery, tupleOfArgs);
 }
 
 const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
   QUERY_BEGIN(parseFile, context, path);
 
   // Run the fileText query to get the file contents
-  const FileContents& contents = fileText(context, path);
+  const FileContents& contents = fileText(context, path.str());
   const std::string& text = contents.text();
   const ErrorMessage& error = contents.error();
   uast::BuilderResult result(path);
@@ -173,7 +191,7 @@ static const Module* const& getToplevelModuleQuery(Context* context,
       check += name.c_str();
       check += ".chpl";
 
-      if (fileExists(check.c_str())) {
+      if (hasFileText(context, check) || fileExists(check.c_str())) {
         auto filePath = UniqueString::get(context, check);
         const ModuleVec& v = parse(context, filePath);
         for (auto mod: v) {

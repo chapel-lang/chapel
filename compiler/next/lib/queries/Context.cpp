@@ -423,9 +423,8 @@ UniqueString Context::filePathForId(ID id) {
   while (!symbolPath.isEmpty()) {
     auto tupleOfArgs = std::make_tuple(symbolPath);
 
-    bool got = hasResultForQuery(filePathForModuleIdSymbolPathQuery,
-                                 tupleOfArgs,
-                                 "filePathForModuleIdSymbolPathQuery");
+    bool got = hasCurrentResultForQuery(filePathForModuleIdSymbolPathQuery,
+                                        tupleOfArgs);
 
     if (got) {
       const UniqueString& p =
@@ -446,9 +445,8 @@ bool Context::hasFilePathForId(ID id) {
   while (!symbolPath.isEmpty()) {
     auto tupleOfArgs = std::make_tuple(symbolPath);
 
-    bool got = hasResultForQuery(filePathForModuleIdSymbolPathQuery,
-                                 tupleOfArgs,
-                                 "filePathForModuleIdSymbolPathQuery");
+    bool got = hasCurrentResultForQuery(filePathForModuleIdSymbolPathQuery,
+                                        tupleOfArgs);
 
     if (got) {
       return true;
@@ -728,7 +726,7 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   }
 }
 
-bool Context::queryCanUseSavedResultAndPushIfNot(
+bool Context::queryCanUseSavedResult(
                    const void* queryFunction,
                    const QueryMapResultBase* resultEntry) {
 
@@ -759,6 +757,15 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
       updateForReuse(resultEntry);
     }
   }
+
+  return useSaved;
+}
+
+bool Context::queryCanUseSavedResultAndPushIfNot(
+                   const void* queryFunction,
+                   const QueryMapResultBase* resultEntry) {
+
+  bool useSaved = queryCanUseSavedResult(queryFunction, resultEntry);
 
   if (useSaved == false) {
     // Since the result cannot be reused, the query will be evaluated.

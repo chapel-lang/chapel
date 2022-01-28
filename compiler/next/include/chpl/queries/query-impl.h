@@ -487,10 +487,9 @@ Context::updateResultForQuery(
 template<typename ResultType,
          typename... ArgTs>
 bool
-Context::hasResultForQuery(
+Context::hasCurrentResultForQuery(
      const ResultType& (*queryFunction)(Context* context, ArgTs...),
-     const std::tuple<ArgTs...>& tupleOfArgs,
-     const char* traceQueryName) {
+     const std::tuple<ArgTs...>& tupleOfArgs) {
 
   // Look up the map entry for this query name
   const void* queryFuncV = (const void*) queryFunction;
@@ -509,7 +508,7 @@ Context::hasResultForQuery(
     return false;
   }
 
-  return true;
+  return queryCanUseSavedResult(queryFuncV, &(*search2));
 }
 
 template<typename ResultType,
