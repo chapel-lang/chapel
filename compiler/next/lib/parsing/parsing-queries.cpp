@@ -149,23 +149,23 @@ const ModuleVec& parse(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-static const std::vector<UniqueString>&
+static const std::vector<std::string>&
 moduleSearchPathQuery(Context* context) {
   QUERY_BEGIN_INPUT(moduleSearchPathQuery, context);
 
   // return the empty path if it wasn't already set in
   // setModuleSearchPath
-  std::vector<UniqueString> result;
+  std::vector<std::string> result;
 
   return QUERY_END(result);
 }
 
-const std::vector<UniqueString>& moduleSearchPath(Context* context) {
+const std::vector<std::string>& moduleSearchPath(Context* context) {
   return moduleSearchPathQuery(context);
 }
 
 void setModuleSearchPath(Context* context,
-                         std::vector<UniqueString> searchPath) {
+                         std::vector<std::string> searchPath) {
   QUERY_STORE_INPUT_RESULT(moduleSearchPathQuery, context, searchPath);
 }
 
@@ -197,7 +197,7 @@ static const Module* const& getToplevelModuleQuery(Context* context,
 
     for (auto path : moduleSearchPath(context)) {
       check.clear();
-      check += path.c_str();
+      check += path;
       // Remove any '/' characters before adding one so we don't double.
       while (!check.empty() && check.back() == '/') {
         check.pop_back();

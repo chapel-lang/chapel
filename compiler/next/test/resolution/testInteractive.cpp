@@ -199,7 +199,7 @@ int main(int argc, char** argv) {
   Context context;
   Context* ctx = &context;
 
-  std::vector<UniqueString> searchPath;
+  std::vector<std::string> searchPath;
   int firstfile = 1;
   for (int i = 1; i < argc; i++) {
     if (0 == strcmp(argv[i], "--search")) {
@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
         usage(argc, argv);
         return 1;
       }
-      searchPath.push_back(UniqueString::get(ctx, argv[i+1]));
+      searchPath.push_back(argv[i+1]);
       i++;
     } else {
       firstfile = i;

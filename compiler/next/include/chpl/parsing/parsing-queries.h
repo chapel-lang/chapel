@@ -106,13 +106,13 @@ const ModuleVec& parse(Context* context, UniqueString path);
 /**
   Return the current module search path.
  */
-const std::vector<UniqueString>& moduleSearchPath(Context* context);
+const std::vector<std::string>& moduleSearchPath(Context* context);
 
 /**
   Sets the current module search path.
  */
 void setModuleSearchPath(Context* context,
-                         std::vector<UniqueString> searchPath);
+                         std::vector<std::string> searchPath);
 
 /**
  This query parses a toplevel module by name. Returns nullptr
