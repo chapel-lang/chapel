@@ -46,7 +46,6 @@ int chpl_wordexp(const char* pattern, int flags, wordexp_t* ret_glob)
 int chpl_isdir(const char* path)
 {
     struct stat buf;
-    err_t err;
-    err = sys_lstat(path, &buf);
+    sys_lstat(path, &buf);
     return S_ISDIR(buf.st_mode);
 }
