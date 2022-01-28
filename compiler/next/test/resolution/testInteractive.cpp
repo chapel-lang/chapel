@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  ctx->setModuleSearchPath(searchPath);
+  setModuleSearchPath(ctx, searchPath);
 
   if (firstfile == argc) {
     usage(argc, argv);

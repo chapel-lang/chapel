@@ -373,16 +373,6 @@ class Context {
   void setFilePathForModuleID(ID moduleID, UniqueString path);
 
   /**
-    Return the current module search path.
-   */
-  const std::vector<UniqueString>& moduleSearchPath();
-
-  /**
-    Sets the current module search path.
-   */
-  void setModuleSearchPath(std::vector<UniqueString> searchPath);
-
-  /**
     This function increments the current revision number stored
     in the context. After it is called, the setters below can
     be used to provide the input at that revision.
