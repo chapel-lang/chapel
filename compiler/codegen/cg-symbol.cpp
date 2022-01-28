@@ -1890,7 +1890,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
 
       // Adjust attributes for sret argument
       llvm::AttrBuilder b;
+#if HAVE_LLVM_VER >= 130
+      b.addStructRetAttr(llvm::PointerType::get(chapelReturnTy, stackSpace));
+#else
       b.addAttribute(llvm::Attribute::StructRet);
+#endif
       b.addAttribute(llvm::Attribute::NoAlias);
       if (returnInfo.getInReg())
         b.addAttribute(llvm::Attribute::InReg);
