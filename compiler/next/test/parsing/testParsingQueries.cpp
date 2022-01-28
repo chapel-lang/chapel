@@ -618,6 +618,29 @@ static void test8() {
   assert(o == v[2]);
 }
 
+static void test9() {
+  Context ctx;
+  Context* context = &ctx;
+
+  std::vector<std::string> searchPath;
+  searchPath.push_back("/test/path/library");
+  searchPath.push_back("/test/path/program/");
+
+  setModuleSearchPath(context, searchPath);
+
+  setFileText(context, "/test/path/program/Program.chpl",
+                       "module Program { use Library; var x = libY; }");
+  setFileText(context, "/test/path/library/Library.chpl",
+                       "module Library { var libY = 3; }");
+
+  auto Program = UniqueString::get(context, "Program");
+  auto Library = UniqueString::get(context, "Library");
+  auto pMod = getToplevelModule(context, Program);
+  auto lMod = getToplevelModule(context, Library);
+
+  assert(pMod != nullptr);
+  assert(lMod != nullptr);
+}
 
 int main() {
   test0();
@@ -629,6 +652,7 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
 
   return 0;
 }
