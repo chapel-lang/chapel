@@ -7483,7 +7483,8 @@ int isAtomicWriteValid(enum fi_datatype ofiType) {
   if (!inited) {
     for (enum fi_datatype i = FI_INT8; i < FI_DATATYPE_LAST; i++) {
       valid[i] = (fi_atomicvalid(ep, i, FI_ATOMIC_WRITE, &count) == 0);
-      fprintf(stderr, "isAtomicWriteValid %s %d\n", amo_typeName(i), valid[i]);
+      DBG_PRINTF(DBG_CFG, "isAtomicWriteValid %s %d\n", amo_typeName(i), 
+                 valid[i]);
     }
     inited = true;
   }
@@ -8264,6 +8265,8 @@ const char* amo_typeName(enum fi_datatype ofiType) {
   switch (ofiType) {
   case FI_INT8: return "char";
   case FI_UINT8: return "uchar";
+  case FI_INT16: return "int16";
+  case FI_UINT16: return "uint16";
   case FI_INT32: return "int32";
   case FI_UINT32: return "uint32";
   case FI_INT64: return "int64";
