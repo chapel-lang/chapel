@@ -22,9 +22,11 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/UniqueString.h"
-#include "chpl/queries/query-impl.h"
 #include "chpl/queries/global-strings.h"
+#include "chpl/queries/query-impl.h"
 #include "chpl/resolution/can-pass.h"
+#include "chpl/resolution/disambiguation.h"
+#include "chpl/resolution/intents.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
@@ -40,14 +42,11 @@
 namespace chpl {
 namespace resolution {
 
+
 using namespace uast;
 using namespace types;
 
 struct Resolver;
-
-
-static QualifiedType::Kind resolveIntent(const QualifiedType& t);
-
 
 const QualifiedType& typeForBuiltin(Context* context,
                                     UniqueString name) {
@@ -1927,104 +1926,6 @@ const QualifiedType& returnType(Context* context,
   return QUERY_END(result);
 }
 
-// TODO: move this resolveIntent logic to a different file
-
-static QualifiedType::Kind constIntentForType(const Type* t) {
-
-  // anything we don't know the type of has to have unknown intent
-  if (t == nullptr || t->isUnknownType() || t->isErroneousType())
-    return QualifiedType::UNKNOWN;
-
-  if (t->isPrimitiveType())
-    return QualifiedType::CONST_IN;
-
-  if (t->isRecordType() || t->isUnionType() || t->isTupleType())
-    return QualifiedType::CONST_REF;
-
-  if (auto ct = t->toClassType()) {
-    if (ct->decorator().isUnknownManagement())
-      return QualifiedType::CONST_INTENT;
-    else if (ct->decorator().isManaged())
-      return QualifiedType::CONST_REF;
-    else
-      return QualifiedType::CONST_IN;
-  }
-
-  // Otherwise, it should be a generic type that we will
-  // instantiate before computing the final intent.
-  assert(t->genericity() != Type::CONCRETE);
-  return QualifiedType::CONST_INTENT; // leave the intent generic
-}
-
-static QualifiedType::Kind defaultIntentForType(const Type* t) {
-
-  // anything we don't know the type of has to have unknown intent
-  if (t == nullptr || t->isUnknownType() || t->isErroneousType())
-    return QualifiedType::UNKNOWN;
-
-  if (t->isPrimitiveType())
-    return QualifiedType::CONST_IN;
-
-  if (t->isRecordType() || t->isUnionType() || t->isTupleType())
-    return QualifiedType::CONST_REF;
-
-  if (auto ct = t->toClassType()) {
-    if (ct->decorator().isUnknownManagement())
-      return QualifiedType::DEFAULT_INTENT;
-    else if (ct->decorator().isManaged())
-      return QualifiedType::CONST_REF;
-    else
-      return QualifiedType::CONST_IN;
-  }
-
-  // Otherwise, it should be a generic type that we will
-  // instantiate before computing the final intent.
-  assert(t->genericity() != Type::CONCRETE);
-  return QualifiedType::DEFAULT_INTENT; // leave the intent generic
-}
-
-static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
-  auto kind = t.kind();
-  auto type = t.type();
-
-  switch (kind) {
-    case QualifiedType::UNKNOWN:
-    case QualifiedType::INDEX:
-    case QualifiedType::FUNCTION:
-    case QualifiedType::MODULE:
-      // these don't really have an intent
-      return QualifiedType::UNKNOWN;
-
-    case QualifiedType::CONST_REF:
-    case QualifiedType::REF:
-    case QualifiedType::IN:
-    case QualifiedType::CONST_IN:
-    case QualifiedType::OUT:
-    case QualifiedType::INOUT:
-    case QualifiedType::PARAM:
-    case QualifiedType::TYPE:
-      // concrete intents are already resolved
-      return kind;
-
-    case QualifiedType::VAR:
-      // normalize VAR to IN to make some test codes easier
-      return QualifiedType::IN;
-    case QualifiedType::CONST_VAR:
-      // normalize CONST_VAR to CONST_IN to make some test codes easier
-      return QualifiedType::CONST_IN;
-
-    case QualifiedType::DEFAULT_INTENT:
-      // compute the default intent if needed
-      return defaultIntentForType(type);
-
-    // compute the const intent if needed
-    case QualifiedType::CONST_INTENT:
-      return constIntentForType(type);
-  }
-
-  return QualifiedType::UNKNOWN;
-}
-
 // returns nullptr if the candidate is not applicable,
 // or the result of typedSignatureInitial if it is.
 static const TypedFnSignature*
@@ -2191,36 +2092,6 @@ filterCandidatesInstantiating(Context* context,
       result.push_back(typedSignature);
     }
   }
-}
-
-const MostSpecificCandidates&
-findMostSpecificCandidates(Context* context,
-                           std::vector<const TypedFnSignature*> lst,
-                           CallInfo call) {
-  QUERY_BEGIN(findMostSpecificCandidates, context, lst, call);
-
-  MostSpecificCandidates result;
-
-  if (lst.size() > 1) {
-
-    // TODO: find most specific -- pull over disambiguation code
-    // TODO: handle return intent overloading
-    // TODO: this is demo code
-    if (call.numActuals() > 1) {
-      if (call.actuals(1).type().type()->isIntType()) {
-        result.setBestRef(lst[0]);
-      } else {
-        result.setBestRef(lst[lst.size()-1]);
-      }
-    } else {
-      result.setBestRef(lst[0]);
-    }
-  }
-  if (lst.size() == 1) {
-    result.setBestRef(lst[0]);
-  }
-
-  return QUERY_END(result);
 }
 
 static std::vector<BorrowedIdsWithName>

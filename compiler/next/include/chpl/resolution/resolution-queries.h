@@ -170,17 +170,6 @@ filterCandidatesInstantiating(Context* context,
                               std::vector<const TypedFnSignature*>& result);
 
 /**
-  Given the result of filterCandidatesInstantiating, run
-  overload resolution aka disambiguation
-  to determine the most specific functions.
- */
-const MostSpecificCandidates&
-findMostSpecificCandidates(Context* context,
-                           std::vector<const TypedFnSignature*> lst,
-                           CallInfo call);
-
-
-/**
   Given a CallInfo representing a call, a Scope representing the
   scope of that call, and a PoiScope representing the point-of-instantiation
   scope of that call, find the most specific candidates as well

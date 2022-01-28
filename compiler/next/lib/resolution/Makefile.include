@@ -22,6 +22,8 @@ ALL_SRCS += next/lib/resolution/*.cpp
 
 NEXT_RESOLUTION_SRCS =                              \
            can-pass.cpp                             \
+           disambiguation.cpp                       \
+           intents.cpp                              \
            resolution-queries.cpp                   \
            resolution-types.cpp                     \
            scope-queries.cpp                        \

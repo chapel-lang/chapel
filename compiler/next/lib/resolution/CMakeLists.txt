@@ -19,6 +19,8 @@ target_sources(libchplcomp-obj
                PRIVATE
 
                can-pass.cpp
+               disambiguation.cpp
+               intents.cpp
                resolution-queries.cpp
                resolution-types.cpp
                scope-queries.cpp
