@@ -1082,7 +1082,7 @@ module String {
     //TODO: this could be a much better string search
     //      (Boyer-Moore-Horspool|any thing other than brute force)
     //
-    proc doSearchUTF8(needle: string, region: range(?),
+    proc doSearchUTF8(needle: string, indices: range(?),
                       param count: bool, param fromLeft: bool = true) {
       // needle.len is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
@@ -1092,14 +1092,14 @@ module String {
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
         const nLen = needle.buffLen;
-        const (view, _) = getView(this, region);
+        const (view, _) = getView(this, indices);
         const thisLen = view.size;
 
         // Edge cases
         if count {
           if nLen == 0 { // Empty needle
-            if ((region.hasLowBound() && region.low.type == byteIndex) ||
-                (region.hasHighBound() && region.high.type == byteIndex)) {
+            if ((indices.hasLowBound() && indices.low.type == byteIndex) ||
+                (indices.hasHighBound() && indices.high.type == byteIndex)) {
               // Byte indexed, so count the number of bytes in the view
               localRet = thisLen;
             } else {
@@ -1637,7 +1637,7 @@ module String {
 
   /*
     :arg needle: the string to search for
-    :arg region: an optional range defining the substring to search within,
+    :arg indices: an optional range defining the substring to search within,
                  default is the whole string. Halts if the range is not
                  within ``0..<string.size``
 
@@ -1645,17 +1645,17 @@ module String {
               string, or -1 if the `needle` is not in the string.
    */
   inline proc string.find(needle: string,
-                          region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
-    // TODO: better name than region?
+                          indices: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
+    // TODO: better name than indices?
     if this.isASCII() then
-      return doSearchNoEnc(this, needle, region, count=false): byteIndex;
+      return doSearchNoEnc(this, needle, indices, count=false): byteIndex;
     else
-      return doSearchUTF8(needle, region, count=false): byteIndex;
+      return doSearchUTF8(needle, indices, count=false): byteIndex;
   }
 
   /*
     :arg needle: the string to search for
-    :arg region: an optional range defining the substring to search within,
+    :arg indices: an optional range defining the substring to search within,
                  default is the whole string. Halts if the range is not
                  within ``0..<string.size``
 
@@ -1663,29 +1663,29 @@ module String {
               within a string, or -1 if the `needle` is not in the string.
    */
   inline proc string.rfind(needle: string,
-                           region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
+                           indices: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
     if this.isASCII() then
-      return doSearchNoEnc(this, needle, region,
+      return doSearchNoEnc(this, needle, indices,
                            count=false, fromLeft=false): byteIndex;
     else
-      return doSearchUTF8(needle, region,
+      return doSearchUTF8(needle, indices,
                           count=false, fromLeft=false): byteIndex;
   }
 
   /*
     :arg needle: the string to search for
-    :arg region: an optional range defining the substring to search within,
+    :arg indices: an optional range defining the substring to search within,
                  default is the whole string. Halts if the range is not
                  within ``0..<string.size``
 
     :returns: the number of times `needle` occurs in the string
    */
   inline proc string.count(needle: string,
-                           region: range(?) = this.indices) : int {
+                           indices: range(?) = this.indices) : int {
     if this.isASCII() then
-      return doSearchNoEnc(this, needle, region, count=true);
+      return doSearchNoEnc(this, needle, indices, count=true);
     else
-      return doSearchUTF8(needle, region, count=true);
+      return doSearchUTF8(needle, indices, count=true);
   }
 
   /*

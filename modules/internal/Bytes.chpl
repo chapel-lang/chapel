@@ -606,7 +606,7 @@ module Bytes {
 
     :arg needle: :mod:`bytes <Bytes>` to search for
 
-    :arg region: an optional range defining the indices to search
+    :arg indices: an optional range defining the indices to search
                  within, default is the whole. Halts if the range is not
                  within ``this.indices``
 
@@ -615,8 +615,8 @@ module Bytes {
               :mod:`bytes <Bytes>`.
    */
   inline proc bytes.find(needle: bytes,
-                         region: range(?) = this.indices) : idxType {
-    return doSearchNoEnc(this, needle, region, count=false): idxType;
+                         indices: range(?) = this.indices) : idxType {
+    return doSearchNoEnc(this, needle, indices, count=false): idxType;
   }
 
   /*
@@ -624,7 +624,7 @@ module Bytes {
 
     :arg needle: The :mod:`bytes <Bytes>` to search for
 
-    :arg region: an optional range defining the indices to search within,
+    :arg indices: an optional range defining the indices to search within,
                  default is the whole. Halts if the range is not
                  within ``this.indices``
 
@@ -633,8 +633,8 @@ module Bytes {
               :mod:`bytes <Bytes>`.
    */
   inline proc bytes.rfind(needle: bytes,
-                          region: range(?) = this.indices) : idxType {
-    return doSearchNoEnc(this, needle, region, count=false,
+                          indices: range(?) = this.indices) : idxType {
+    return doSearchNoEnc(this, needle, indices, count=false,
                          fromLeft=false): idxType;
   }
 
@@ -643,15 +643,15 @@ module Bytes {
 
     :arg needle: The :mod:`bytes <Bytes>` to search for
 
-    :arg region: an optional range defining the substring to search within,
+    :arg indices: an optional range defining the substring to search within,
                  default is the whole. Halts if the range is not
                  within ``this.indices``
 
     :returns: the number of times `needle` occurs in the :mod:`bytes <Bytes>`
    */
   inline proc bytes.count(needle: bytes,
-                          region: range(?) = this.indices) : int {
-    return doSearchNoEnc(this, needle, region, count=true);
+                          indices: range(?) = this.indices) : int {
+    return doSearchNoEnc(this, needle, indices, count=true);
   }
 
   /*
