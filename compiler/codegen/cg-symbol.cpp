@@ -2604,8 +2604,9 @@ void FnSymbol::codegenDef() {
               llvm::Value* val = &*ai++;
               // store it into the addr
 #if HAVE_LLVM_VER >= 130
+              llvm::Type* eltTy = llvm::cast<llvm::PointerType>(storeAdr->getType()->getScalarType())->getElementType();
               llvm::Value* eltPtr =
-                irBuilder->CreateStructGEP(storeAdr->getType(), storeAdr, i);
+                irBuilder->CreateStructGEP(eltTy, storeAdr, i);
 #else
               llvm::Value* eltPtr = irBuilder->CreateStructGEP(storeAdr, i);
 #endif
