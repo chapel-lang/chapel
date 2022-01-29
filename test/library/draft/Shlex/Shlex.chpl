@@ -20,17 +20,16 @@
 
 /*
   A lexical anayzer class for simple shell-like syntaxes.
-  Implementation and design inspired by Python's Shlex module: 
-  <https://docs.python.org/3/library/shlex.html>
+  Implementation and design inspired by `Python's Shlex module
+  <https://docs.python.org/3/library/shlex.html>`_.
   This module provides support for split, join and quote operations.
 */
 
 module Shlex {
   private use List;
   private use Regex;
-  class shlex{
+  class shlex {
     var instream: string;
-    var infile: string;
     var posix: bool;
     var lineno: int;
     param debug: int;
@@ -49,7 +48,7 @@ module Shlex {
     var _pushback_chars: list(string);
     var custom_punctuation_chars: string;
 
-    /* 
+    /*
       Initializes the required variables of class `shlex`.
       Used in new expressions.
 
@@ -60,7 +59,7 @@ module Shlex {
       :type posix: `bool`
       :arg punctuation_chars: If set to true, contiguous runs of punctuation
                               characters will be returned as a single token.
-                              Defaults to `false`. 
+                              Defaults to `false`.
       :type punctuation_chars: `bool`
       :arg commenters: Strings of characters that are recognized as comment
                         beginners. All characters from comment beginners to end
@@ -76,7 +75,7 @@ module Shlex {
     proc init(instream:string, posix: bool = false,
               punctuation_chars: bool = false, commenters: string = '#',
               custom_punctuation_chars: string = '();<>|&') {
-      this.instream = instream.strip(trailing=true);
+      this.instream = instream.strip(trailing = true);
       this.posix = posix;
       this.lineno = 1;
       this.debug = 0;
@@ -98,9 +97,10 @@ module Shlex {
       if (punctuation_chars == false) {
         this.punctuation_chars = '';
       }
-      else{
-        this.punctuation_chars = if custom_punctuation_chars == '' then '();<>|&'
-        else custom_punctuation_chars;
+      else {
+        if custom_punctuation_chars == '' then
+        this.punctuation_chars = '();<>|&';
+        else this.punctuation_chars = custom_punctuation_chars;
         this.wordchars += '~-./?*=';
         for c in this.punctuation_chars {
           this.wordchars = this.wordchars.replace(c, '');
@@ -124,42 +124,42 @@ module Shlex {
         }
         return tok;
       }
-      if(this.tokindex == -1){
+      if(this.tokindex == -1) {
         return '';
       }
       var raw = try! this.read_token();
       if this.debug >= 1 {
-        if(raw != ''){
+        if(raw != '') {
           writeln("shlex: token = ", raw);
         }
-        else{
+        else {
           writeln("shlex: token = EOF");
         }
       }
       return raw;
     }
 
-    /* 
+    /*
       Parses through `instream` and returns the next token.
-      
+
       :returns: Next token from `instream`.
       :rtype: `string`
-      :throws Error: Unbalanced quotes or absence of escaped character.
+      :throws Error: Unbalanced quotes or incorrect use of escaped character.
     */
-    proc read_token(): string throws{
+    proc read_token(): string throws {
       var quoted:bool = false;
       var escapsedstate:string = ' ';
       var nextchar:string = '';
       while true {
         if this.tokindex == -1 then break;
-        if (this.punctuation_chars != '' && !this._pushback_chars.isEmpty()){
+        if (this.punctuation_chars != '' && !this._pushback_chars.isEmpty()) {
           nextchar = this._pushback_chars.pop();
         }
-        else if(this.tokindex < this.instream.size){
+        else if(this.tokindex < this.instream.size) {
           nextchar = this.instream[this.tokindex];
           this.tokindex += 1;
         }
-        else{
+        else {
           nextchar = '';
           this.tokindex = -1;
         }
@@ -186,7 +186,7 @@ module Shlex {
             while(this.tokindex < this.instream.size &&
                     this.instream[tokindex] != '\n') do
               this.tokindex += 1;
-            this.lineno+=1;
+            this.lineno += 1;
           }
           else if (this.posix && this.escapse.find(nextchar) != -1) {
             escapsedstate = 'a';
@@ -240,7 +240,7 @@ module Shlex {
           }
         }
         else if(this.escapse.find(this.state) != -1) {
-          if(nextchar == ''){
+          if(nextchar == '') {
             if(this.debug >= 2) {
               writeln("I see EOF in escaped state");
             }
@@ -279,7 +279,7 @@ module Shlex {
             if(this.punctuation_chars.find(nextchar) != -1) {
               this.token += nextchar;
             }
-            else{
+            else {
               if(this.whitespace.find(nextchar) == -1) {
                 this._pushback_chars.append(nextchar);
               }
@@ -329,55 +329,56 @@ module Shlex {
     }
   }
 
-  /* 
+  /*
     Splits the string according to parsing rules specified and returns the
     list of tokens.
+
     :arg s: The string to be parsed by shlex.
     :type s: `string`
     :arg comments: Decides whether `'#'` should be considered as a comment
-    starting character. Defaults to false.
+                  starting character. Defaults to `false`.
     :type comments: `bool`
-    :arg posix: Argument to decide parsing rules (POSIX or non-POSIX).
-    Defaults to `false`. Defaults to true.
+    :arg posix: Argument to decide parsing rules (POSIX or non-POSIX). Defaults
+                to `false`. Defaults to `true`.
     :type posix: `bool`
     :arg punctuation_chars: If set to true, contiguous runs of punctuation
-    characters will be returned as a single token.
-    Defaults to `false`. 
+                            characters will be returned as a single token.
+                            Defaults to `false`.
     :type punctuation_chars: `bool`
     :arg custom_punctuation_chars: All the character present in this string
-    will be considered as punctuation
-    characters. NOTE: You can also use this
-    field without setting ``punctuation_chars``
-    to true. Defaults to '' (empty string)
+                                  will be considered as punctuation characters.
+                                  NOTE: You can also use this field without
+                                  setting `punctuation_chars` to true.
+                                  Defaults to `''` (empty string)
     :type custom_punctuation_chars: `string`
   */
-  proc split(s:string, comments:bool = false, posix:bool=true,
+  proc split(s:string, comments:bool = false, posix:bool = true,
               punctuation_chars: bool = false,
                 custom_punctuation_chars: string = "")
   {
     var commenters = '';
     if comments then commenters = '#';
-    var lex = new shlex(s, posix = posix, punctuation_chars = 
+    var lex = new shlex(s, posix = posix, punctuation_chars =
                         (punctuation_chars || custom_punctuation_chars != ''),
-                        commenters = commenters, 
+                        commenters = commenters,
                         custom_punctuation_chars = custom_punctuation_chars);
-    lex.whitespace_split = !(punctuation_chars || 
+    lex.whitespace_split = !(punctuation_chars ||
                               custom_punctuation_chars != '');
     var lst:list(string);
     var pres:string = ' ';
     while(lex.tokindex != -1 || !lex.pushback.isEmpty()) {
       pres = lex.get_token();
-      if(posix || pres != ''){
+      if(posix || pres != '') {
         lst.append(pres);
       }
     }
     return lst;
   }
-  
-  param "no doc";
+
+  pragma "no doc"
   var _find_unsafe = try! compile("[^\\w@%+=:,./-]");
 
-  /* 
+  /*
     Return a shell-escaped version of the string s. The returned value is a
     string that can safely be used as one token in a shell command line, for
     cases where you cannot use a list.
@@ -387,17 +388,17 @@ module Shlex {
     :returns: Shell-escaped version of string `s`.
     :rtype: `string`
   */
-  proc quote(s:string){
-    if(s==''){
+  proc quote(s:string) {
+    if(s == '') {
       return '""';
     }
-    if(!s.search(_find_unsafe)){
+    if(!s.search(_find_unsafe)) {
       return s;
     }
     return "'" + s.replace("'", "'\"'\"'") + "'";
   }
 
-  /* 
+  /*
     Concatenates tokens from list or array of strings and returns equivalent
     string. The functionality is the inverse of `split()` function.
 
@@ -423,20 +424,20 @@ module Shlex {
     for ele in x do {
       if beginning then res += " ";
       else  beginning = true;
-      if (!ele.search(_find_unsafe)){
+      if (!ele.search(_find_unsafe)) {
         res += ele;
       }
-      else{
+      else {
         res += quote(ele);
       }
     }
     return res;
   }
 
-  /* 
+  /*
     Overload for `join()` function to handle multiple strings as arguments.
   */
-  proc join(args:string ...?n){
+  proc join(args:string ...?n) {
     return join(args);
   }
 }

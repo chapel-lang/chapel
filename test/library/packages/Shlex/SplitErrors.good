@@ -1,3 +1,0 @@
-uncaught Error: No closing quotation
-  ./Shlex.chpl:222: thrown here
-  ./Shlex.chpl:129: uncaught here
