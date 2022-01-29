@@ -1,12 +1,10 @@
 use Shlex;
 use List;
-// TestEmptyStringHandling : TODO 
-// (Since assigning NULL to strings in Posix mode does not work)
 {
   var src='"")abc';
   for pun in [false, true] do {
     //Punctuation_chars set to false implies whitespace_split set to true
-    //For testing purposes, we set whitespace_split to true in the next part
+    //For testing purposes, we set whitespace_split to false in the next part
     var ans = split(src,posix=true, punctuation_chars=pun);
     writeln(ans);
   }
