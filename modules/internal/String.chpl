@@ -1082,22 +1082,22 @@ module String {
     //TODO: this could be a much better string search
     //      (Boyer-Moore-Horspool|any thing other than brute force)
     //
-    proc doSearchUTF8(needle: string, indices: range(?),
+    proc doSearchUTF8(pattern: string, indices: range(?),
                       param count: bool, param fromLeft: bool = true) {
-      // needle.len is <= than this.buffLen, so go to the home locale
+      // pattern.len is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         // any value >= 0 means we have a solution
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
-        const nLen = needle.buffLen;
+        const nLen = pattern.buffLen;
         const (view, _) = getView(this, indices);
         const thisLen = view.size;
 
         // Edge cases
         if count {
-          if nLen == 0 { // Empty needle
+          if nLen == 0 { // Empty pattern
             if ((indices.hasLowBound() && indices.low.type == byteIndex) ||
                 (indices.hasHighBound() && indices.high.type == byteIndex)) {
               // Byte indexed, so count the number of bytes in the view
@@ -1120,7 +1120,7 @@ module String {
             }
           }
         } else { // find
-          if nLen == 0 { // Empty needle
+          if nLen == 0 { // Empty pattern
             if fromLeft {
               localRet = -1;
             } else {
@@ -1137,7 +1137,7 @@ module String {
 
         if localRet == -2 {
           localRet = -1;
-          const localNeedle: string = needle.localize();
+          const localNeedle: string = pattern.localize();
 
           // i *is not* an index into anything, it is the order of the element
           // of view we are searching from.
@@ -1616,90 +1616,90 @@ module String {
   }
 
   /*
-    :arg needles: A varargs list of strings to match against.
+    :arg patterns: A varargs list of strings to match against.
 
-    :returns: * `true`  -- when the string begins with one or more of the `needles`
+    :returns: * `true`  -- when the string begins with one or more of the `patterns`
               * `false` -- otherwise
    */
-  inline proc string.startsWith(needles: string ...) : bool {
-    return startsEndsWith(this, needles, fromLeft=true);
+  inline proc string.startsWith(patterns: string ...) : bool {
+    return startsEndsWith(this, patterns, fromLeft=true);
   }
 
   /*
-    :arg needles: A varargs list of strings to match against.
+    :arg patterns: A varargs list of strings to match against.
 
-    :returns: * `true`  -- when the string ends with one or more of the `needles`
+    :returns: * `true`  -- when the string ends with one or more of the `patterns`
               * `false` -- otherwise
    */
-  inline proc string.endsWith(needles: string ...) : bool {
-    return startsEndsWith(this, needles, fromLeft=false);
+  inline proc string.endsWith(patterns: string ...) : bool {
+    return startsEndsWith(this, patterns, fromLeft=false);
   }
 
   /*
-    :arg needle: the string to search for
+    :arg pattern: the string to search for
     :arg indices: an optional range defining the substring to search within,
                  default is the whole string. Halts if the range is not
                  within ``0..<string.size``
 
-    :returns: the index of the first occurrence of `needle` within a
-              string, or -1 if the `needle` is not in the string.
+    :returns: the index of the first occurrence of `pattern` within a
+              string, or -1 if the `pattern` is not in the string.
    */
-  inline proc string.find(needle: string,
+  inline proc string.find(pattern: string,
                           indices: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
     // TODO: better name than indices?
     if this.isASCII() then
-      return doSearchNoEnc(this, needle, indices, count=false): byteIndex;
+      return doSearchNoEnc(this, pattern, indices, count=false): byteIndex;
     else
-      return doSearchUTF8(needle, indices, count=false): byteIndex;
+      return doSearchUTF8(pattern, indices, count=false): byteIndex;
   }
 
   /*
-    :arg needle: the string to search for
+    :arg pattern: the string to search for
     :arg indices: an optional range defining the substring to search within,
                  default is the whole string. Halts if the range is not
                  within ``0..<string.size``
 
-    :returns: the index of the first occurrence from the right of `needle`
-              within a string, or -1 if the `needle` is not in the string.
+    :returns: the index of the first occurrence from the right of `pattern`
+              within a string, or -1 if the `pattern` is not in the string.
    */
-  inline proc string.rfind(needle: string,
+  inline proc string.rfind(pattern: string,
                            indices: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
     if this.isASCII() then
-      return doSearchNoEnc(this, needle, indices,
+      return doSearchNoEnc(this, pattern, indices,
                            count=false, fromLeft=false): byteIndex;
     else
-      return doSearchUTF8(needle, indices,
+      return doSearchUTF8(pattern, indices,
                           count=false, fromLeft=false): byteIndex;
   }
 
   /*
-    :arg needle: the string to search for
+    :arg pattern: the string to search for
     :arg indices: an optional range defining the substring to search within,
                  default is the whole string. Halts if the range is not
                  within ``0..<string.size``
 
-    :returns: the number of times `needle` occurs in the string
+    :returns: the number of times `pattern` occurs in the string
    */
-  inline proc string.count(needle: string,
+  inline proc string.count(pattern: string,
                            indices: range(?) = this.indices) : int {
     if this.isASCII() then
-      return doSearchNoEnc(this, needle, indices, count=true);
+      return doSearchNoEnc(this, pattern, indices, count=true);
     else
-      return doSearchUTF8(needle, indices, count=true);
+      return doSearchUTF8(pattern, indices, count=true);
   }
 
   /*
-    :arg needle: the string to search for
-    :arg replacement: the string to replace `needle` with
+    :arg pattern: the string to search for
+    :arg replacement: the string to replace `pattern` with
     :arg count: an optional integer specifying the number of replacements to
                 make, values less than zero will replace all occurrences
 
-    :returns: a copy of the string where `replacement` replaces `needle` up
+    :returns: a copy of the string where `replacement` replaces `pattern` up
               to `count` times
    */
-  inline proc string.replace(needle: string, replacement: string,
+  inline proc string.replace(pattern: string, replacement: string,
                              count: int = -1) : string {
-    return doReplace(this, needle, replacement, count);
+    return doReplace(this, pattern, replacement, count);
   }
 
   /*
