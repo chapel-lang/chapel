@@ -1,1 +1,1 @@
-contains-idxtype.chpl:7: error: incompatible idxType in domain.contain()
+contains-idxtype.chpl:7: error: incompatible idxType in 'domain.contains()': cannot convert from 'int(64)' to 'int(32)'

@@ -1554,19 +1554,19 @@ module ChapelDomain {
     pragma "last resort" pragma "no doc"
     deprecated "the formal 'i' is deprecated, please use 'idx' instead"
     inline proc contains(i) {
-      return contains(idx=i);
+      return contains(i);
     }
 
     /* Return true if this domain is a subset of ``super``. Otherwise
        returns false. */
-    deprecated "domain1.isSubset(domain2) is deprecated, instead please use domain2.contains(domain1)"
+    deprecated "'domain1.isSubset(domain2)' is deprecated, instead please use 'domain2.contains(domain1)'"
     proc isSubset(super : domain) {
       return super.contains(this);
     }
 
     /* Return true if this domain is a superset of ``sub``. Otherwise
        returns false. */
-    deprecated "domain1.isSuper(domain2) is deprecated, instead please use domain1.contains(domain2)"
+    deprecated "'domain1.isSuper(domain2)' is deprecated, instead please use 'domain1.contains(domain2)'"
     proc isSuper(sub : domain) {
       return this.contains(sub);
     }
@@ -1575,7 +1575,8 @@ module ChapelDomain {
        ``other``. */
     proc contains(other: domain) {
       if this.rank != other.rank then
-        compilerError("rank mismatch in domain.contains()");
+        compilerError("rank mismatch in 'domain.contains()': ",
+                      this.rank:string, " vs. ", other.rank:string);
 
       if this.isRectangular() && other.isRectangular() {
         const thisDims  = this.dims();
@@ -1587,7 +1588,9 @@ module ChapelDomain {
 
       } else {
         if ! isCoercible(other.idxType, this.idxType) then
-          compilerError("incompatible idxType in domain.contain()");
+          compilerError("incompatible idxType in 'domain.contains()':",
+                        " cannot convert from '", other.idxType:string,
+                        "' to '", this.idxType:string, "'");
 
         const otherSize = other.sizeAs(uint);
         if otherSize == 0 then return true;

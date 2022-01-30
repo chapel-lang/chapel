@@ -1,1 +1,1 @@
-contains-rank.chpl:7: error: rank mismatch in domain.contains()
+contains-rank.chpl:7: error: rank mismatch in 'domain.contains()': 2 vs. 1

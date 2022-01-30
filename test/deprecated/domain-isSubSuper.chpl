@@ -1,4 +1,4 @@
-// from test/domains/userAPI/contains.chpl
+// cf. test of domain.contains(): test/domains/userAPI/contains.chpl
 
 config const n = 1000;
 
