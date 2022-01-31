@@ -1491,7 +1491,7 @@ module ChapelDomain {
     proc sizeAs(type t: integral): t {
       use HaltWrappers;
       const size = _value.dsiNumIndices;
-      if boundsChecking && size > max(t) {
+      if boundsChecking && t != uint && size > max(t) {
         var error = ".size query exceeds max(" + t:string + ")";
         if this.isRectangular() {
           error += " for: '" + this:string + "'";
@@ -1543,6 +1543,15 @@ module ChapelDomain {
       return contains(idx);
     }
 
+    // Catch incorrect argument type so that the compiler does not resolve
+    // to the deprecated contains(i)
+    pragma "no doc"
+    inline proc contains(idx) {
+      compilerError("domain.contain(idx) expects idx of type ",
+                    if rank == 1 then idxType:string + " or 1*"
+                                 else rank:string + "*", idxType:string);
+    }
+
     pragma "last resort" pragma "no doc"
     deprecated "the formal 'i' is deprecated, please use 'idx' instead"
     inline proc contains(i) {
@@ -1551,62 +1560,47 @@ module ChapelDomain {
 
     /* Return true if this domain is a subset of ``super``. Otherwise
        returns false. */
+    deprecated "'domain1.isSubset(domain2)' is deprecated, instead please use 'domain2.contains(domain1)'"
     proc isSubset(super : domain) {
-      if !(this.isAssociative() || this.isRectangular()) {
-        if this.isSparse() then
-          compilerError("isSubset not supported on sparse domains");
-        else
-          compilerError("isSubset not supported on this domain type");
-      }
-      if super.type != this.type then
-        if this.isRectangular() {
-          if super.rank != this.rank then
-            compilerError("rank mismatch in domain.isSubset()");
-          else if super.low.type != this.low.type then
-            compilerError("isSubset called with different index types");
-        } else
-          compilerError("isSubset called with different associative domain types");
-
-      if this.isRectangular() {
-        var contains = true;
-        for i in 0..this.dims().size-1 {
-          contains &&= super.dims()[i].contains(this.dims()[i]);
-          if contains == false then break;
-        }
-        return contains;
-      }
-
-      return && reduce forall i in this do super.contains(i);
+      return super.contains(this);
     }
 
     /* Return true if this domain is a superset of ``sub``. Otherwise
        returns false. */
+    deprecated "'domain1.isSuper(domain2)' is deprecated, instead please use 'domain1.contains(domain2)'"
     proc isSuper(sub : domain) {
-      if !(this.isAssociative() || this.isRectangular()) {
-        if this.isSparse() then
-          compilerError("isSuper not supported on sparse domains");
-        else
-          compilerError("isSuper not supported on the domain type ", this.type);
-      }
-      if sub.type != this.type then
-        if this.isRectangular() {
-          if sub.rank != this.rank then
-            compilerError("rank mismatch in domain.isSuper()");
-          else if sub.low.type != this.low.type then
-            compilerError("isSuper called with different index types");
-        } else
-          compilerError("isSuper called with different associative domain types");
+      return this.contains(sub);
+    }
 
-      if this.isRectangular() {
-        var contains = true;
-        for i in 0..this.dims().size-1 {
-          contains &&= this.dims()[i].contains(sub.dims()[i]);
-          if contains == false then break;
-        }
-        return contains;
-      }
+    /* Returns true if this domain contains all the indicies in the domain
+       ``other``. */
+    proc contains(other: domain) {
+      if this.rank != other.rank then
+        compilerError("rank mismatch in 'domain.contains()': ",
+                      this.rank:string, " vs. ", other.rank:string);
 
-      return && reduce forall i in sub do this.contains(i);
+      if this.isRectangular() && other.isRectangular() {
+        const thisDims  = this.dims();
+        const otherDims = other.dims();
+        for param i in 0..<this.rank do
+          if ! thisDims(i).contains(otherDims(i)) then
+            return false;
+        return true;
+
+      } else {
+        if ! isCoercible(other.idxType, this.idxType) then
+          compilerError("incompatible idxType in 'domain.contains()':",
+                        " cannot convert from '", other.idxType:string,
+                        "' to '", this.idxType:string, "'");
+
+        const otherSize = other.sizeAs(uint);
+        if otherSize == 0 then return true;
+
+        const thisSize  = this.sizeAs(uint);
+        if thisSize < otherSize then return false;
+
+        return && reduce forall i in other do this.contains(i);
+      }
     }
 
     // 1/5/10: do we want to support order() and position()?
