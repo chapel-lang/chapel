@@ -1573,19 +1573,16 @@ module ChapelDomain {
       return contains(idx);
     }
 
-    // Catch incorrect argument type so that the compiler does not resolve
-    // to the deprecated contains(i)
-    pragma "no doc"
-    inline proc contains(idx) {
-      compilerError("domain.contain(idx) expects idx of type ",
-                    if rank == 1 then idxType:string + " or 1*"
-                                 else rank:string + "*", idxType:string);
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
+    inline proc contains(i: _value.idxType) {
+      return contains(idx=i);
     }
 
     pragma "last resort" pragma "no doc"
     deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    inline proc contains(i) {
-      return contains(i);
+    inline proc contains(i: rank*_value.idxType) {
+      return contains(idx=i);
     }
 
     /* Return true if this domain is a subset of ``super``. Otherwise
