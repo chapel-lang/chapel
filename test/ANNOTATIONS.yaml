@@ -2238,7 +2238,7 @@ arkouda: &arkouda-base
   01/21/22:
     - Bump substring_search problem size back to 10**8 (mhmerrill/arkouda#1038)
   01/26/22:
-    - Optimize small and medium int in1d operations (mhmerrill/arkoud#1044)
+    - Optimize small and medium int in1d operations (mhmerrill/arkouda#1044)
 
 
 arkouda-string:
