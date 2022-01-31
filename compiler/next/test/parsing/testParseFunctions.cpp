@@ -407,7 +407,7 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* p) {
   auto parseResult = p->parseString("test5.chpl",
-                                         "private extern proc hello();\n");
+                                    "private extern proc hello();\n");
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
