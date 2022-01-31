@@ -722,6 +722,11 @@ proc min(type t) where isComplexType(t) {
   return (min(real(floatwidth)), min(real(floatwidth))): t;
 }
 
+pragma "last resort" pragma "no doc"
+proc min(type t) {
+  compilerError("'min(type t)' is not defined for t=", t:string);
+}
+
 // joint documentation, for user convenience
 /*
 Returns the maximum value the type `t` can store.
@@ -758,6 +763,11 @@ pragma "no doc"
 proc max(type t) where isComplexType(t) {
   param floatwidth = numBits(t) / 2;
   return (max(real(floatwidth)), max(real(floatwidth))): t;
+}
+
+pragma "last resort" pragma "no doc"
+proc max(type t) {
+  compilerError("'max(type t)' is not defined for t=", t:string);
 }
 
 pragma "no doc"
