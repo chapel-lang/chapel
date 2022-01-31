@@ -639,6 +639,10 @@ class MostSpecificCandidates {
     candidates[VALUE] = sig;
   }
 
+  void setBestOnly(const TypedFnSignature* sig) {
+    candidates[REF] = sig;
+  }
+
   const TypedFnSignature* bestRef() const {
     return candidates[REF];
   }

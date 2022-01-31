@@ -23,6 +23,7 @@
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/uast/ASTNode.h"
+#include "chpl/uast/Function.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
@@ -87,14 +88,14 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
   const ErrorMessage& error = contents.error();
-  uast::BuilderResult result(path);
+  BuilderResult result(path);
 
   if (error.isEmpty()) {
     // if there was no error reading the file, proceed to parse
     auto parser = Parser::build(context);
     const char* pathc = path.c_str();
     const char* textc = text.c_str();
-    uast::BuilderResult tmpResult = parser->parseString(pathc, textc);
+    BuilderResult tmpResult = parser->parseString(pathc, textc);
     result.swap(tmpResult);
     // raise any errors encountered
     for (const ErrorMessage& e : result.errors()) {
@@ -120,7 +121,7 @@ const Location& locateId(Context* context, ID id) {
   UniqueString path = context->filePathForId(id);
 
   // Get the result of parsing
-  const uast::BuilderResult& p = parseFile(context, path);
+  const BuilderResult& p = parseFile(context, path);
 
   Location result = p.idToLocation(id, path);
 
@@ -137,11 +138,11 @@ const ModuleVec& parse(Context* context, UniqueString path) {
   QUERY_BEGIN(parse, context, path);
 
   // Get the result of parsing
-  const uast::BuilderResult& p = parseFile(context, path);
+  const BuilderResult& p = parseFile(context, path);
   // Compute a vector of Modules
   ModuleVec result;
   for (auto topLevelExpression : p.topLevelExpressions()) {
-    if (const uast::Module* mod = topLevelExpression->toModule()) {
+    if (const Module* mod = topLevelExpression->toModule()) {
       result.push_back(mod);
     }
   }
@@ -184,7 +185,7 @@ static const Module* const& getToplevelModuleQuery(Context* context,
     if (path.isEmpty() == false &&
         path.c_str()[0] != '<') {
       const ModuleVec& modVec = parse(context, path);
-      for (const uast::Module* mod : modVec) {
+      for (const Module* mod : modVec) {
         if (mod->name() == name) {
           result = mod;
           break;
@@ -249,9 +250,9 @@ static const ASTNode* const& astForIDQuery(Context* context, ID id) {
   UniqueString path = context->filePathForId(id);
 
   // Get the result of parsing
-  const uast::BuilderResult& p = parseFile(context, path);
+  const BuilderResult& p = parseFile(context, path);
 
-  const uast::ASTNode* result = p.idToAst(id);
+  const ASTNode* result = p.idToAst(id);
 
   return QUERY_END(result);
 }
@@ -293,11 +294,31 @@ const ID& idToParentId(Context* context, ID id) {
   UniqueString path = context->filePathForId(id);
 
   // Get the result of parsing
-  const uast::BuilderResult& p = parseFile(context, path);
+  const BuilderResult& p = parseFile(context, path);
 
   ID result = p.idToParentId(id);
 
   return QUERY_END(result);
+}
+
+static const Function::ReturnIntent&
+idToFnReturnIntentQuery(Context* context, ID id) {
+  QUERY_BEGIN(idToFnReturnIntentQuery, context, id);
+
+  const ASTNode* ast = idToAst(context, id);
+  Function::ReturnIntent result = Function::DEFAULT_RETURN_INTENT;
+
+  if (ast != nullptr) {
+    if (auto fn = ast->toFunction()) {
+      result = fn->returnIntent();
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id) {
+  return idToFnReturnIntentQuery(context, id);
 }
 
 

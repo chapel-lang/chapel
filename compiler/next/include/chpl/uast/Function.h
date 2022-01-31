@@ -377,11 +377,35 @@ class Function final : public NamedDecl {
 
 
 } // end namespace uast
+
+
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::uast::Function::Kind> {
+template<> struct update<uast::Function::ReturnIntent> {
+  bool operator()(uast::Function::ReturnIntent& keep,
+                  uast::Function::ReturnIntent& addin) const {
+    return defaultUpdateBasic(keep, addin);
+  }
+};
+
+template<> struct mark<uast::Function::ReturnIntent> {
+  void operator()(Context* context,
+                  const uast::Function::ReturnIntent& keep) const {
+    // nothing to do for enum
+  }
+};
+
+template<> struct stringify<uast::Function::ReturnIntent> {
   void operator()(std::ostream& streamOut,
-                  chpl::StringifyKind stringKind,
-                  const chpl::uast::Function::Kind& stringMe) const {
+                  StringifyKind stringKind,
+                  const uast::Function::ReturnIntent& stringMe) const {
+    streamOut << "uast:Function::ReturnIntent is not stringified";
+  }
+};
+
+template<> struct stringify<uast::Function::Kind> {
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
+                  const uast::Function::Kind& stringMe) const {
     streamOut << "uast:Function::Kind is not stringified";
   }
 };
@@ -391,6 +415,12 @@ template<> struct stringify<chpl::uast::Function::Kind> {
 } // end namespace chpl
 
 namespace std {
+  template<> struct hash<chpl::uast::Function::ReturnIntent> {
+    inline size_t operator()(const chpl::uast::Function::ReturnIntent& k) const{
+      return (size_t) k;
+    }
+  };
+
   template<> struct hash<chpl::uast::Function::Kind> {
     inline size_t operator()(const chpl::uast::Function::Kind& key) const {
       return (size_t) key;
