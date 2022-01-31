@@ -166,7 +166,7 @@ class CompositeType : public Type {
     return subs_;
   }
 
-  /** Returns the substitutions in a sorted order */
+  /** Returns the substitutions sorted by key ID */
   SortedSubstitutions sortedSubstitutions() const;
 
   /** Returns the substitution for a particular declId,
