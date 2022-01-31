@@ -3261,7 +3261,7 @@ new_expr:
   /* Handles the typical new cases, e.g. new C(); new owned C() */
   new_maybe_decorated expr %prec TNEW
   {
-    $$ = context-> buildNewExpr(@$, $1, $2);
+    $$ = context->buildNewExpr(@$, $1, $2);
   }
   /* TODO: handles e.g. new (typefn())(initargs) */
   /* TODO TODO: Flag these with asserts in the old compiler parser and
