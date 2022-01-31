@@ -55,7 +55,7 @@ static void test1() {
   printf("test1\n");
   Context ctx;
   Context* context = &ctx;
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
 
   {
     context->advanceToNextRevision(true);
@@ -90,7 +90,7 @@ static void test2() {
 
   ctx.setErrorHandler(collectErrors);
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
 
   {
     errors.clear();

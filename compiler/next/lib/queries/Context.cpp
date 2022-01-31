@@ -43,7 +43,7 @@ namespace chpl {
     Context rootContext;
 
     static void initGlobalStrings() {
-#define X(field, str) globalStrings.field = UniqueString::build(&rootContext, str);
+#define X(field, str) globalStrings.field = UniqueString::get(&rootContext, str);
 #include "chpl/queries/all-global-strings.h"
 #undef X
     }
@@ -388,7 +388,7 @@ const UniqueString& filePathForModuleIdSymbolPathQuery(Context* context,
   QUERY_BEGIN(filePathForModuleIdSymbolPathQuery, context, modIdSymP);
 
   // return the empty string if it wasn't already set
-  // in setFilePathForModulePath.
+  // in setFilePathForModuleID.
   UniqueString result;
 
   return QUERY_END(result);
@@ -414,7 +414,7 @@ static UniqueString removeLastSymbolPathComponent(Context* context,
     }
   }
 
-  return UniqueString::build(context, s, lastDot);
+  return UniqueString::get(context, s, lastDot);
 }
 
 UniqueString Context::filePathForId(ID id) {
@@ -437,7 +437,7 @@ UniqueString Context::filePathForId(ID id) {
     symbolPath = removeLastSymbolPathComponent(this, symbolPath);
   }
 
-  return UniqueString::build(this, "<unknown file path>");
+  return UniqueString::get(this, "<unknown file path>");
 }
 
 bool Context::hasFilePathForId(ID id) {

@@ -99,7 +99,7 @@ struct ParserContext {
 
   ParserContext(const char* filename, Builder* builder)
   {
-    auto uniqueFilename = UniqueString::build(builder->context(), filename);
+    auto uniqueFilename = UniqueString::get(builder->context(), filename);
 
     this->scanner                 = nullptr;
     this->filename                = uniqueFilename;

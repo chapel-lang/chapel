@@ -238,7 +238,7 @@ class Context {
 
     Strings returned by this function will always be aligned to 2 bytes.
 
-    The function `UniqueString::build` returns such a string
+    The function `UniqueString::get` returns such a string
     with a wrapper type. It should be preferred for type safety
     and to reduce redundant checks.
    */

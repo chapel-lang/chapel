@@ -54,7 +54,7 @@ class UniqueString final {
  public:
   /** create a UniqueString storing the empty string */
   UniqueString() {
-    this->s.i = detail::InlinedString::build();
+    this->s.i = detail::InlinedString::get();
   }
   /** create a UniqueString from a PODUniqueString.
       this constructor intentionally allows implicit conversion.
@@ -68,8 +68,8 @@ class UniqueString final {
     If NULL is provided, this function will return the UniqueString
     representing "".
    */
-  static UniqueString build(Context* context, const char* s) {
-    detail::PODUniqueString ret = detail::PODUniqueString::build(context, s);
+  static UniqueString get(Context* context, const char* s) {
+    detail::PODUniqueString ret = detail::PODUniqueString::get(context, s);
     return UniqueString(ret);
   }
 
@@ -78,16 +78,16 @@ class UniqueString final {
     These input strings cannot contain null bytes other than the null
     terminator.
    */
-  static UniqueString buildConcat(Context* context,
-                                  const char* s1, const char* s2,
-                                  const char* s3 = nullptr,
-                                  const char* s4 = nullptr,
-                                  const char* s5 = nullptr,
-                                  const char* s6 = nullptr,
-                                  const char* s7 = nullptr,
-                                  const char* s8 = nullptr,
-                                  const char* s9 = nullptr) {
-    auto ret = detail::PODUniqueString::buildConcat(context,
+  static UniqueString getConcat(Context* context,
+                                const char* s1, const char* s2,
+                                const char* s3 = nullptr,
+                                const char* s4 = nullptr,
+                                const char* s5 = nullptr,
+                                const char* s6 = nullptr,
+                                const char* s7 = nullptr,
+                                const char* s8 = nullptr,
+                                const char* s9 = nullptr) {
+    auto ret = detail::PODUniqueString::getConcat(context,
                                                     s1, s2,
                                                     s3, s4,
                                                     s5, s6,
@@ -103,13 +103,13 @@ class UniqueString final {
     The length can be passed to truncate a string.
     The string can contain zero bytes.
    */
-  static UniqueString build(Context* context, const char* s, size_t len);
+  static UniqueString get(Context* context, const char* s, size_t len);
 
   /**
     Get or create a unique string for a C++ string.
    */
-  static inline UniqueString build(Context* context, const std::string& s) {
-    return UniqueString::build(context, s.c_str(), s.size());
+  static inline UniqueString get(Context* context, const std::string& s) {
+    return UniqueString::get(context, s.c_str(), s.size());
   }
 
   /**

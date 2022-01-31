@@ -40,7 +40,7 @@ using namespace types;
 using namespace uast;
 
 static const Module* parseModule(Context* context, const char* src) {
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = src;
   setFileText(context, path, contents);
 

@@ -366,7 +366,7 @@ static void test6() {
   // test that we can pass param string c_string
   // but we can't pass param string to bytes
 
-  auto s = UniqueString::build(context, "hello");
+  auto s = UniqueString::get(context, "hello");
   auto p = StringParam::get(context, s);
   auto paramString = QualifiedType(QualifiedType::PARAM,
                                    StringType::get(context),
@@ -395,8 +395,8 @@ static void test7() {
 
   ID emptyId;
 
-  auto parentName = UniqueString::build(context, "Parent");
-  auto childName = UniqueString::build(context, "Child");
+  auto parentName = UniqueString::get(context, "Parent");
+  auto childName = UniqueString::get(context, "Child");
   auto basicObj = BasicClassType::getObjectType(context);
   auto basicParent = BasicClassType::get(context, emptyId, parentName,
                                          basicObj,

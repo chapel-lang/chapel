@@ -49,7 +49,7 @@ static void test1() {
 
   {
     context->advanceToNextRevision(true);
-    auto path = UniqueString::build(context, "input.chpl");
+    auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "var x: int;\n"
                            "x;";
     setFileText(context, path, contents);
@@ -83,7 +83,7 @@ static void test2() {
   {
     printf("part 1\n");
     context->advanceToNextRevision(true);
-    auto path = UniqueString::build(context, "input.chpl");
+    auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "";
     setFileText(context, path, contents);
 
@@ -99,7 +99,7 @@ static void test2() {
   {
     printf("part 2\n");
     context->advanceToNextRevision(true);
-    auto path = UniqueString::build(context, "input.chpl");
+    auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "var x;";
     setFileText(context, path, contents);
 
@@ -115,7 +115,7 @@ static void test2() {
   {
     printf("part 3\n");
     context->advanceToNextRevision(true);
-    auto path = UniqueString::build(context, "input.chpl");
+    auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "var x: int;";
     setFileText(context, path, contents);
 
@@ -139,7 +139,7 @@ static void test2() {
   for (int i = 0; i < 3; i++) {
     printf("part %i\n", 3+i);
     context->advanceToNextRevision(true);
-    auto path = UniqueString::build(context, "input.chpl");
+    auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "var x: int;\n"
                            "x;";
     setFileText(context, path, contents);
@@ -169,7 +169,7 @@ static void test3() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
 
   {
     printf("part 1\n");
@@ -242,7 +242,7 @@ static void test4() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
                            module M {
                              class Parent { }
@@ -280,7 +280,7 @@ static void test5() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
                            module M {
                              var x:int(64);

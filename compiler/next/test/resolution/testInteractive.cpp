@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
     std::set<const ResolvedFunction*> calledFns;
 
     for (int i = 1; i < argc; i++) {
-      auto filepath = UniqueString::build(ctx, argv[i]);
+      auto filepath = UniqueString::get(ctx, argv[i]);
 
       const ModuleVec& mods = parse(ctx, filepath);
       for (const auto mod : mods) {
