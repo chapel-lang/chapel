@@ -3,7 +3,7 @@ var x: domain(string);
 
 x.contains(     "hi"  );
 x.contains(idx=("hi",));
-x.contains(   i="hi"  ); //deprecated
+x.contains(  i=("hi",)); //deprecated
 
 x.add(    "hi");
 x.add(idx="hi");
