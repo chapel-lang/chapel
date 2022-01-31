@@ -188,23 +188,46 @@ computeAndPrintStuff(Context* context,
   }*/
 }
 
-int main(int argc, char** argv) {
+static void usage(int argc, char** argv) {
+  printf("Usage: %s [--search path --search otherPath ...] "
+         "file.chpl otherFile.chpl ...\n", argv[0]);
+}
 
-  if (argc == 1) {
-    printf("Usage: %s file.chpl otherFile.chpl ...\n", argv[0]);
-    return 0; // need this to return 0 for testing to be happy
-  }
+int main(int argc, char** argv) {
 
   bool gc = false;
   Context context;
   Context* ctx = &context;
+
+  std::vector<std::string> searchPath;
+  int firstfile = 1;
+  for (int i = 1; i < argc; i++) {
+    if (0 == strcmp(argv[i], "--search")) {
+      if (i+1 == argc || firstfile != 1) {
+        usage(argc, argv);
+        return 1;
+      }
+      searchPath.push_back(argv[i+1]);
+      i++;
+    } else {
+      firstfile = i;
+      break;
+    }
+  }
+
+  setModuleSearchPath(ctx, searchPath);
+
+  if (firstfile == argc) {
+    usage(argc, argv);
+    return 0; // need this to return 0 for testing to be happy
+  }
 
   while (true) {
     ctx->advanceToNextRevision(gc);
 
     std::set<const ResolvedFunction*> calledFns;
 
-    for (int i = 1; i < argc; i++) {
+    for (int i = firstfile; i < argc; i++) {
       auto filepath = UniqueString::get(ctx, argv[i]);
 
       const ModuleVec& mods = parse(ctx, filepath);

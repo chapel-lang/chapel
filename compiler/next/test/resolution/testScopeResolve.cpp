@@ -721,6 +721,47 @@ static void test14() {
   assert(match.found() == InnermostMatch::MANY);
 }
 
+// test parsing a module due to a 'use' statement
+static void test15() {
+  Context ctx;
+  Context* context = &ctx;
+
+  std::vector<std::string> searchPath;
+  searchPath.push_back("/test/path/library");
+  searchPath.push_back("/test/path/program/");
+
+  setModuleSearchPath(context, searchPath);
+
+  setFileText(context, "/test/path/program/Program.chpl",
+                       "module Program { use Library; libY; }");
+  setFileText(context, "/test/path/library/Library.chpl",
+                       "module Library { var libY = 3; }");
+
+  auto Program = UniqueString::get(context, "Program");
+  auto Library = UniqueString::get(context, "Library");
+  auto pMod = getToplevelModule(context, Program);
+  assert(pMod != nullptr);
+  assert(pMod->numStmts() == 2);
+
+  const Identifier* libYIdent = pMod->stmt(1)->toIdentifier();
+  assert(libYIdent);
+
+  const Scope* scopeForIdent = scopeForId(context, libYIdent->id());
+  assert(scopeForIdent);
+
+  const auto& match = findInnermostDecl(context, scopeForIdent,
+                                        libYIdent->name());
+  assert(match.found() == InnermostMatch::ONE);
+
+  auto lMod = getToplevelModule(context, Library);
+  assert(lMod != nullptr);
+  assert(lMod->numStmts() == 1);
+
+  // finally check that libY resolved to the right variable
+  assert(match.id() == lMod->stmt(0)->id());
+}
+
+
 
 int main() {
   test1();
@@ -737,6 +778,7 @@ int main() {
   test12();
   test13();
   test14();
+  test15();
 
   return 0;
 }
