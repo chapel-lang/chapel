@@ -84,7 +84,7 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
   QUERY_BEGIN(parseFile, context, path);
 
   // Run the fileText query to get the file contents
-  const FileContents& contents = fileText(context, path.str());
+  const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
   const ErrorMessage& error = contents.error();
   uast::BuilderResult result(path);
