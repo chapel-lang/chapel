@@ -6149,7 +6149,6 @@ static void captureTaskIntentValues(int        argNum,
 
       } else if (isReferenceType(varActual->type) ==  true &&
                  isReferenceType(capTemp->type)   == false) {
-
         marker->insertBefore(new CallExpr(PRIM_ASSIGN, capTemp, varActual));
 
       } else {
