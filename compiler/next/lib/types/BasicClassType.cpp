@@ -24,46 +24,42 @@
 namespace chpl {
 namespace types {
 
-
 const owned<BasicClassType>&
-BasicClassType::getBasicClassType(
-    Context* context, ID id, UniqueString name,
-    const BasicClassType* parentType,
-    std::vector<CompositeType::FieldDetail> fields,
-    const BasicClassType* instantiatedFrom) {
-  QUERY_BEGIN(getBasicClassType, context, id, name, parentType, fields,
-              instantiatedFrom);
+BasicClassType::getBasicClassType(Context* context, ID id, UniqueString name,
+                                  const BasicClassType* parentType,
+                                  const BasicClassType* instantiatedFrom,
+                                  SubstitutionsMap subs) {
+  QUERY_BEGIN(getBasicClassType, context, id, name,
+              parentType, instantiatedFrom, subs);
 
   auto result = toOwned(new BasicClassType(id, name,
-                                           parentType, std::move(fields),
-                                           instantiatedFrom));
-
+                                           parentType, instantiatedFrom,
+                                           std::move(subs)));
   return QUERY_END(result);
 }
 
 const BasicClassType*
 BasicClassType::get(Context* context, ID id, UniqueString name,
                     const BasicClassType* parentType,
-                    std::vector<CompositeType::FieldDetail> fields,
-                    const BasicClassType* instantiatedFrom) {
+                    const BasicClassType* instantiatedFrom,
+                    SubstitutionsMap subs) {
   // getObjectType should be used to construct object
   // everything else should have a parent type.
   assert(parentType != nullptr);
   return getBasicClassType(context, id, name,
-                           parentType, std::move(fields),
-                           instantiatedFrom).get();
+                           parentType, instantiatedFrom,
+                           std::move(subs)).get();
 }
 
 const BasicClassType*
 BasicClassType::getObjectType(Context* context) {
   ID emptyId;
   auto name = UniqueString::build(context, "object");
-  std::vector<CompositeType::FieldDetail> emptyFields;
 
   return getBasicClassType(context, emptyId, name,
                            /* parentType */ nullptr,
-                           std::move(emptyFields),
-                           /* instantiatedFrom */ nullptr).get();
+                           /* instantiatedFrom */ nullptr,
+                           SubstitutionsMap()).get();
 }
 
 bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,

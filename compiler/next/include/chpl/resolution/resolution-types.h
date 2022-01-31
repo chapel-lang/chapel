@@ -22,6 +22,7 @@
 
 #include "chpl/queries/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
+#include "chpl/types/CompositeType.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
@@ -39,6 +40,9 @@ namespace resolution {
   including the formals. It exists so that the process of identifying
   candidates does not need to depend on the bodies of the function
   (in terms of incremental recomputation).
+
+  For type constructors for generic types, the formal decls
+  are actually field decls.
  */
 class UntypedFnSignature {
  public:
@@ -83,6 +87,7 @@ class UntypedFnSignature {
   UniqueString name_;
   bool isMethod_; // in that case, formals[0] is the receiver
   bool idIsFunction_; // whether the ID is of a function
+  bool idIsClass_; // whether the ID is of a class
   bool isTypeConstructor_;
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
@@ -94,6 +99,7 @@ class UntypedFnSignature {
                      UniqueString name,
                      bool isMethod,
                      bool idIsFunction,
+                     bool idIsClass,
                      bool isTypeConstructor,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
@@ -102,6 +108,7 @@ class UntypedFnSignature {
       name_(name),
       isMethod_(isMethod),
       idIsFunction_(idIsFunction),
+      idIsClass_(idIsClass),
       isTypeConstructor_(isTypeConstructor),
       kind_(kind),
       formals_(std::move(formals)),
@@ -113,6 +120,7 @@ class UntypedFnSignature {
                         UniqueString name,
                         bool isMethod,
                         bool idIsFunction,
+                        bool idIsClass,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
@@ -124,6 +132,7 @@ class UntypedFnSignature {
                                        UniqueString name,
                                        bool isMethod,
                                        bool idIsFunction,
+                                       bool idIsClass,
                                        bool isTypeConstructor,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
@@ -140,6 +149,7 @@ class UntypedFnSignature {
            name_ == other.name_ &&
            isMethod_ == other.isMethod_ &&
            idIsFunction_ == other.idIsFunction_ &&
+           idIsClass_ == other.idIsClass_ &&
            isTypeConstructor_ == other.isTypeConstructor_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
@@ -177,6 +187,11 @@ class UntypedFnSignature {
   /** Returns true if id() refers to a Function */
   bool idIsFunction() const {
     return idIsFunction_;
+  }
+
+  /** Returns true if id() refers to a Class */
+  bool idIsClass() const {
+    return idIsClass_;
   }
 
   /** Returns true if this is a type constructor */
@@ -221,7 +236,8 @@ class UntypedFnSignature {
   /// \endcond DO_NOT_DOCUMENT
 };
 
-using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
+/** See the documentation for types::CompositeType::SubstitutionsMap. */
+using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
 /** CallInfoActual */
 class CallInfoActual {
@@ -1000,6 +1016,130 @@ class FormalActualMap {
  private:
   bool computeAlignment(const UntypedFnSignature* untyped,
                         const TypedFnSignature* typed, const CallInfo& call);
+};
+
+/** ResolvedFields represents the fully resolved fields for a
+    class/record/union/tuple type. */
+class ResolvedFields {
+  struct FieldDetail {
+    UniqueString name;
+    bool hasDefaultValue = false;
+    ID declId;
+    types::QualifiedType type;
+
+    FieldDetail(UniqueString name,
+                bool hasDefaultValue,
+                ID declId,
+                types::QualifiedType type)
+      : name(name), hasDefaultValue(hasDefaultValue), declId(declId), type(type) {
+    }
+    bool operator==(const FieldDetail& other) const {
+      return name == other.name &&
+             hasDefaultValue == other.hasDefaultValue &&
+             declId == other.declId &&
+             type == other.type;
+    }
+    bool operator!=(const FieldDetail& other) const {
+      return !(*this == other);
+    }
+    size_t hash() const {
+      return chpl::hash(name, hasDefaultValue, declId, type);
+    }
+
+    void mark(Context* context) const {
+      name.mark(context);
+      declId.mark(context);
+    }
+
+    /*
+    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      name.stringify(ss, stringKind);
+      //TODO: determine the proper way to do this
+      //decl.stringify(ss, stringKind);
+      type.stringify(ss, stringKind);
+    }*/
+  };
+
+  const types::CompositeType* type_ = nullptr;
+  std::vector<FieldDetail> fields_;
+
+  // Summary information that is computed after the field types are known
+  bool isGeneric_ = false;
+  bool allGenericFieldsHaveDefaultValues_ = false;
+
+ public:
+  ResolvedFields() { }
+ 
+  void setType(const types::CompositeType* type) {
+    type_ = type;
+  }
+
+  void addField(UniqueString name,
+                bool hasDefaultValue,
+                ID declId,
+                types::QualifiedType type) {
+    fields_.push_back(FieldDetail(name, hasDefaultValue, declId, type));
+  }
+
+  void finalizeFields(Context* context);
+
+  /** Returns true if this is a generic type */
+  bool isGeneric() const { return isGeneric_; }
+
+  /** Returns true if this is a generic type where all
+      generic fields have default values. For classes,
+      this does not include consideration of the parent class. */
+  bool isGenericWithDefaults() const {
+    return isGeneric_ && allGenericFieldsHaveDefaultValues_;
+  }
+
+  int numFields() const {
+    return fields_.size();
+  }
+
+  UniqueString fieldName(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].name;
+  }
+  bool fieldHasDefaultValue(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].hasDefaultValue;
+  }
+  ID fieldDeclId(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].declId;
+  }
+  types::QualifiedType fieldType(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].type;
+  }
+
+  bool operator==(const ResolvedFields& other) const {
+    return type_ == other.type_ &&
+           fields_ == other.fields_ &&
+           isGeneric_ == other.isGeneric_ &&
+           allGenericFieldsHaveDefaultValues_ ==
+             other.allGenericFieldsHaveDefaultValues_;
+  }
+  bool operator!=(const ResolvedFields& other) const {
+    return !(*this == other);
+  }
+  void swap(ResolvedFields& other) {
+    std::swap(type_, other.type_);
+    fields_.swap(other.fields_);
+    std::swap(isGeneric_, other.isGeneric_);
+    std::swap(allGenericFieldsHaveDefaultValues_,
+              other.allGenericFieldsHaveDefaultValues_);
+  }
+  static bool update(ResolvedFields& keep,
+                     ResolvedFields& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    for (auto const &elt : fields_) {
+      elt.mark(context);
+    }
+  }
 };
 
 } // end namespace resolution

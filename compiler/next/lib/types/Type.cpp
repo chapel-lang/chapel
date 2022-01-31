@@ -116,6 +116,7 @@ bool Type::completeMatch(const Type* other) const {
   const Type* rhs = other;
   if (lhs->tag() != rhs->tag())
     return false;
+
   if (!lhs->contentsMatchInner(rhs))
     return false;
 
@@ -129,7 +130,6 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   }
   ss << "type ";
   ss << typetags::tagToString(this->tag());
-  ss << " \n";
 }
 
 IMPLEMENT_DUMP(Type);

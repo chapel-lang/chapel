@@ -20,39 +20,14 @@
 #include "chpl/types/CompositeType.h"
 
 #include "chpl/types/BasicClassType.h"
+#include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/Decl.h"
 
 namespace chpl {
 namespace types {
 
 
 CompositeType::~CompositeType() {
-}
-
-void CompositeType::computeSummaryInformation() {
-  isGeneric_ = false;
-  allGenericFieldsHaveDefaultValues_ = true;
-  for (auto field : fields_) {
-    if (field.type.isGenericOrUnknown()) {
-      if (!field.hasDefaultValue) {
-        allGenericFieldsHaveDefaultValues_ = false;
-      }
-      isGeneric_ = true;
-    }
-  }
-
-  // include also the parent class type for BasicClassType.
-  if (auto bct = this->toBasicClassType()) {
-    if (const Type* parentT = bct->parentClassType()) {
-      if (parentT->isGeneric()) {
-        isGeneric_ = true;
-        if (auto pct = parentT->toBasicClassType()) {
-          allGenericFieldsHaveDefaultValues_ = pct->isGenericWithDefaults();
-        } else {
-          allGenericFieldsHaveDefaultValues_ = false;
-        }
-      }
-    }
-  }
 }
 
 void CompositeType::stringify(std::ostream& ss,
@@ -65,29 +40,83 @@ void CompositeType::stringify(std::ostream& ss,
 
   //std::string ret = typetags::tagToString(tag());
   name().stringify(ss, stringKind);
-  int nFields = numFields();
 
-  if (superType || nFields > 0) {
+  auto sorted = sortedSubstitutions();
+
+  if (superType || !sorted.empty()) {
     bool emittedField = false;
     ss << "(";
-    if (superType) {
+
+    if (superType != nullptr) {
       ss << "super:";
       superType->stringify(ss, stringKind);
       emittedField = true;
     }
 
-    for (int i = 0; i < nFields; i++) {
+    for (auto sub : sorted) {
       if (emittedField) ss << ", ";
-      fieldName(i).stringify(ss, stringKind);
+      sub.first.stringify(ss, stringKind);
       ss << ":";
-      fieldType(i).stringify(ss, stringKind);
+      sub.second.stringify(ss, stringKind);
       emittedField = true;
     }
     ss << ")";
   }
 }
 
-IMPLEMENT_DUMP(CompositeType::FieldDetail);
+using SubstitutionPair = CompositeType::SubstitutionPair;
+
+struct SubstitutionsMapCmp {
+  bool operator()(const SubstitutionPair& x, const SubstitutionPair& y) {
+    return x.first < y.first;
+  }
+};
+
+static
+std::vector<SubstitutionPair>
+sortedSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
+  // since it's an unordered map, iteration will occur in a
+  // nondeterministic order.
+  // it's important to sort the keys / iterate in a deterministic order here,
+  // so we create a vector of pair<K,V> and sort that instead
+  std::vector<SubstitutionPair> v(subs.begin(), subs.end());
+  SubstitutionsMapCmp cmp;
+  std::sort(v.begin(), v.end(), cmp);
+  return v;
+}
+
+std::vector<SubstitutionPair> CompositeType::sortedSubstitutions(void) const {
+  return sortedSubstitutionsMap(subs_);
+}
+
+size_t hashSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
+  auto sorted = sortedSubstitutionsMap(subs);
+  return hashVector(sorted);
+}
+
+void stringifySubstitutionsMap(std::ostream& streamOut,
+                               StringifyKind stringKind,
+                               const CompositeType::SubstitutionsMap& subs) {
+  auto sorted = sortedSubstitutionsMap(subs);
+  bool first = true;
+  for (auto const& x : sorted)
+  {
+    ID id = x.first;
+    QualifiedType qt = x.second;
+
+    if (first) {
+      first = false;
+    } else {
+      streamOut << ", ";
+    }
+
+    id.stringify(streamOut, stringKind);
+
+    streamOut << "= ";
+
+    qt.stringify(streamOut, stringKind);
+  }
+}
 
 
 } // end namespace types

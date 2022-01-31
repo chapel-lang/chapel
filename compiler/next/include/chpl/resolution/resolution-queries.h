@@ -57,15 +57,37 @@ typedSignatureInitial(Context* context,
 
 /**
   Returns a Type that represents the initial type provided by a TypeDecl
-  (e.g. Class, Record, etc). This can have unknown or generic fields.
-  The useGenericFormalDefaults argument indicates if the type should be
-  non-generic if all generic fields have default values. This is the
-  case in many uses of a type name but not the case when calling a type
-  constructor or when inheriting.
+  (e.g. Class, Record, etc). This type does not store the fields.
+  */
+const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
+
+/**
+  Compute the types of the fields for a CompositeType
+  (such as one returned by initialTypeForTypeDecl).
+
+  If useGenericFormalDefaults is true, a generic field like
+    record R {
+      type t = int;
+    }
+  will be assumed to have the default value (int in the above case).
+  Otherwise, these fields will remain generic.
+
+  Even if useGenericFormalDefaults is set, the default value will be ignored if
+  the field already has a substitution in the CompositeType.
+
+  The returned fields do not include any parent class fields.
  */
-const types::Type* initialTypeForTypeDecl(Context* context,
-                                          const uast::TypeDecl* d,
-                                          bool useGenericFormalDefaults);
+const ResolvedFields& fieldsForTypeDecl(Context* context,
+                                        const types::CompositeType* ct,
+                                        bool useGenericFormalDefaults);
+
+/**
+  Compute whether a type is generic or not.
+  Considers the field of a record/class.
+  For a UnknownType, returns MAYBE_GENERIC.
+ */
+types::Type::Genericity getTypeGenericity(Context* context,
+                                          const types::Type* t);
 
 /**
   Compute an initial TypedFnSignature for a type constructor for a
