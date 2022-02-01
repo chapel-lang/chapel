@@ -5890,7 +5890,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   src_addr_xmit_off = VP_TO_UI64(src_addr) - VP_TO_UI64(src_addr_xmit);
   xmit_size         = ALIGN_32_UP(size + src_addr_xmit_off);
 
-  local_mr = mreg_for_local_addr(tgt_addr_xmit, xmit_size);
+  local_mr = mreg_for_local_addr(tgt_addr, size);
   if (local_mr != NULL
       && src_addr_xmit == src_addr
       && xmit_size == size) {
