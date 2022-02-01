@@ -1376,6 +1376,24 @@ struct Converter {
 
     INT_ASSERT(node->numActuals() == 1);
     Expr* expr = convertAST(node->actual(0));
+    if (auto call = toCallExpr(expr)) {
+      if (call->isPrimitive(PRIM_NEW)) {
+        assert(call->numActuals() <= 2);
+        Expr* child = nullptr;
+        if (call->numActuals() == 2) {
+          assert(isNamedExpr(call->get(1)));
+          child = call->get(2);
+        } else if (call->numActuals() == 1) {
+          child = call->get(1);
+        } else {
+          INT_FATAL(call, "unexpected form for new expression (no actuals)");
+        }
+        child->remove();
+        auto toNilable = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, child);
+        call->insertAtTail(toNilable);
+        return call;
+      }
+    }
     return new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, expr);
   }
 
@@ -1737,6 +1755,7 @@ struct Converter {
     FnSymbol* fn = new FnSymbol("_");
 
     attachSymbolAttributes(node, fn);
+    attachSymbolVisibility(node, fn);
 
     if (node->isInline()) {
       fn->addFlag(FLAG_INLINE);
