@@ -83,6 +83,7 @@ module ChapelAutoAggregation {
   }
 
   module CopyAggregation {
+    use ChplConfig;
     use SysCTypes;
     use CPtr;
     use super.AggregationPrimitives;
