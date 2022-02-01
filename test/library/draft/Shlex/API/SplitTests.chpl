@@ -1,29 +1,29 @@
 use Shlex;
-//General strings checking
+//General tests
 {
-  var src="hi there, my name is 'alice bob' and I am a 'programmer'";
+  var src = "hi there, my name is 'alice bob' and I am a 'programmer'";
   writeln(split(src));
-  writeln(split(src, punctuation_chars=true));
-  src="echo \"please preserve      white space\"";
+  writeln(split(src, punctuation_chars = true));
+  src = "echo \"please preserve      white space\"";
   writeln(split(src));
   var ans = split("abc 'def \"ghi xyz\" jkl' mno");
   writeln(ans);
   writeln(split(ans[1]));
 
-  proc split_helper(s:string){
+  proc split_helper(s:string) {
     use List;
-    var ret:list(string);
-    var lex=new shlex(s);
-    var tok=lex.get_token();
+    var ret: list(string);
+    var lex = new shlex(s);
+    var tok = lex.get_token();
     //since posix is false, we just need to check for empty string as EOF
-    while(tok!=''){
+    while(tok != '') {
       ret.append(tok);
-      tok=lex.get_token();
+      tok = lex.get_token();
     }
     return ret;
   }
   
-  var lst=['x', 'foo bar', '  foo  bar  ', 'foo   bar    bla     fasel',
+  var lst = ['x', 'foo bar', '  foo  bar  ', 'foo   bar    bla     fasel',
             ' x y  z              xxxx', '\\x bar', '\\ x bar', '\\ bar', 
             'foo \\x bar', 'foo \\ bar', 'foo "bar" bla', '"foo" "bar" "bla"',
             '"foo" bar "bla"', '"foo" bar bla', "foo 'bar' bla",
@@ -35,11 +35,11 @@ use Shlex;
 //Test semi-colon splitting
 {
   for delimiter in (';', ';;', ';&', ';;&') do {
-    var src=['echo hi '+delimiter+' echo bye',
-                    'echo hi'+delimiter+' echo bye',
-                    'echo hi'+delimiter+'echo bye'];
+    var src = ['echo hi ' + delimiter + ' echo bye',
+                    'echo hi' + delimiter + ' echo bye',
+                    'echo hi' + delimiter + 'echo bye'];
     for ss in src do {
-      var ans=split(ss, punctuation_chars=true);
+      var ans = split(ss, punctuation_chars = true);
       writeln(ans);
     }
   }
@@ -49,11 +49,11 @@ use Shlex;
 {
   for delimiter in ('&&', '&', '|&', ';&', ';;&', '||', '|', '&|', ';|', ';;|')
   do {
-    var src=['echo hi '+delimiter+' echo bye',
-                    'echo hi'+delimiter+' echo bye',
-                    'echo hi'+delimiter+'echo bye'];
+    var src = ['echo hi ' + delimiter + ' echo bye',
+                    'echo hi' + delimiter + ' echo bye',
+                    'echo hi' + delimiter + 'echo bye'];
     for ss in src do {
-      var ans=split(ss, punctuation_chars=true);
+      var ans = split(ss, punctuation_chars = true);
       writeln(ans);
     }
   }
@@ -62,11 +62,11 @@ use Shlex;
 //Test SplitRedirect
 {
   for delimiter in ('<', '|') do {
-    var src=['echo hi '+delimiter+' echo bye',
-                    'echo hi'+delimiter+' echo bye',
-                    'echo hi'+delimiter+'echo bye'];
+    var src = ['echo hi ' + delimiter + ' echo bye',
+                    'echo hi' + delimiter + ' echo bye',
+                    'echo hi' + delimiter + 'echo bye'];
     for ss in src do {
-      var ans=split(ss, punctuation_chars=true);
+      var ans = split(ss, punctuation_chars = true);
       writeln(ans);
     }
   }
@@ -76,7 +76,7 @@ use Shlex;
 {
   var src = ['( echo hi )','(echo hi)'];
   for ss in src do {
-    var ans=split(ss, punctuation_chars=true);
+    var ans = split(ss, punctuation_chars = true);
     writeln(ans);
   }
 }
@@ -84,23 +84,24 @@ use Shlex;
 //Test Syntax Split Custom
 {
   var ss = "~/a && b-c --color=auto || d *.py?";
-  var ans = split(ss, punctuation_chars=true, custom_punctuation_chars='|');
+  var ans = split(ss, punctuation_chars = true, 
+                  custom_punctuation_chars = '|');
   writeln(ans);
 }
 
 //Test Punctuation in Wordchars
 {
-  var src='a_b__c';
-  var ans = split(src, custom_punctuation_chars='_');
+  var src = 'a_b__c';
+  var ans = split(src, custom_punctuation_chars = '_');
   writeln(ans);
 }
 
 //TestPunctuationWithPosix
 {
-  var src='f >"abc"';
-  var ans = split(src, posix=true, punctuation_chars=true);
+  var src = 'f >"abc"';
+  var ans = split(src, posix = true, punctuation_chars = true);
   writeln(ans);
-  src='f >\\"abc\\"';
-  ans = split(src, posix=true, punctuation_chars=true);
+  src = 'f >\\"abc\\"';
+  ans = split(src, posix = true, punctuation_chars = true);
   writeln(ans);
 }

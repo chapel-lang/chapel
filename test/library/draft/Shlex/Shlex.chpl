@@ -29,24 +29,61 @@ module Shlex {
   private use List;
   private use Regex;
   class shlex {
+    /* Input string from which shlex instance is reading characters. */
     var instream: string;
+
+    /* Parsing rules can be set as POSIX or non-POSIX. */
     var posix: bool;
+
+    pragma "no doc"
     var lineno: int;
+
+    /* Make the program verbose. */
     param debug: int;
+
+    /* String of characters which are considered as comment beginners.*/
     var commenters: string;
+
+    /* String of characters that will accumulate multi-character tokens. */
     var wordchars: string;
+
+    /* String of characters which are considered as whitespaces and are
+      skipped. By default, it will include space, tab, linefeed
+      and carriage-return.
+    */
     var whitespace: string;
+
+    /* If `true`, tokens will only be split in whitespaces. */
     var whitespace_split: bool;
+
+    /* Characters that are considered as string quotes. */
     var quotes: string;
+
+    pragma "no doc"
     var escapse: string;
+
+    pragma "no doc"
     var escapsedquotes: string;
+
+    pragma "no doc"
     var state: string;
+
+    pragma "no doc"
     var token: string;
+
+    pragma "no doc"
     var tokindex: int;
+
+    /* String of characters that will be considered as a punctuation.
+      Runs of punctuation characters will be returned as a single token.
+    */
     var punctuation_chars: string;
+
+    pragma "no doc"
     var pushback: list(string);
+
+    pragma "no doc"
     var _pushback_chars: list(string);
-    var custom_punctuation_chars: string;
 
     /*
       Initializes the required variables of class `shlex`.
