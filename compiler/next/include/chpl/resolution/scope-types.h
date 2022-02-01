@@ -278,12 +278,35 @@ class Scope {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-    ss << "Scope ";
-    ss << tagToString(tag());
-    ss << " ";
+
+    // Print out header information (type of AST node, num entries).
+    ss << tagToString(tag()) << " '";
+    name_.stringify(ss, stringKind);
+    ss << "' (id: " ;
     id().stringify(ss, stringKind);
-    ss << " ";
-    ss << std::to_string(numDeclared());
+    ss << ", " << std::to_string(numDeclared()) << " entries)";
+    ss << std::endl;
+
+    // Find the largest entry name to pretty print...
+    int largestEntrySize = 0;
+    for (const auto& entry : declared_)
+      largestEntrySize = entry.first.length() > largestEntrySize
+          ? entry.first.length()
+          : largestEntrySize;
+
+    // Print out each entry.
+    for (const auto& entry : declared_) {
+      auto borrowedIds = BorrowedIdsWithName(entry.second);
+      ss << "  ";
+      entry.first.stringify(ss, stringKind);
+
+      // Add spaces to align columns.
+      auto ofs = largestEntrySize - entry.first.length();
+      for (int i = 0; i < ofs; i++) ss << " ";
+
+      ss << " : " << std::to_string(borrowedIds.numIds()) << " ids";
+      ss << std::endl;
+    }
   }
 
   /// \cond DO_NOT_DOCUMENT

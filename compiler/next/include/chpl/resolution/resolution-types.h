@@ -279,6 +279,13 @@ class CallInfo {
       : name_(name), hasQuestionArg_(hasQuestionArg),
         actuals_(std::move(actuals)) {}
 
+  CallInfo(UniqueString name, bool isMethod, bool hasQuestionArg,
+           std::vector<CallInfoActual> actuals)
+      : name_(name),
+        isMethod_(isMethod),
+        hasQuestionArg_(hasQuestionArg),
+        actuals_(std::move(actuals)) {}
+
   /** return the name of the called thing */
   UniqueString name() const { return name_; }
 

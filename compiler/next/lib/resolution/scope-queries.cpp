@@ -233,7 +233,8 @@ static bool doLookupExprInScope(Context* context,
                                 std::unordered_set<const Scope*>& checkedScopes,
                                 std::vector<BorrowedIdsWithName>& result,
                                 UniqueString& name,
-                                const Scope*& resultScope);
+                                const Scope*& resultScope,
+                                const Scope* candidateScope=nullptr);
 
 static const ResolvedVisibilityScope*
   partiallyResolvedVisibilityScope(Context* context, const Scope* scope);
@@ -386,13 +387,15 @@ static bool doLookupExprInScope(Context* context,
                                 std::unordered_set<const Scope*>& checkedScopes,
                                 std::vector<BorrowedIdsWithName>& result,
                                 UniqueString& name,
-                                const Scope*& resultScope) {
+                                const Scope*& resultScope,
+                                const Scope* candidateScope) {
 
   if (auto ident = expr->toIdentifier()) {
     UniqueString n = ident->name();
     name = n;
     resultScope = scope;
 
+    // TODO: Do we let 'scope' be overriden by 'candidateScope' here?
     return doLookupInScope(context, scope, n, config,
                            checkedScopes, result);
 
@@ -421,7 +424,9 @@ static bool doLookupExprInScope(Context* context,
     rcvId = rcvResult[0].id(0);
 
     // find the fieldName in the scope of rcvId
-    const Scope* rcvScope = scopeForId(context, rcvId);
+    const Scope* searchScope = (candidateScope != nullptr)
+        ? candidateScope
+        : scopeForId(context, rcvId);
 
     LookupConfig fieldConfig = LOOKUP_DECLS |
                                LOOKUP_IMPORT_AND_USE;
@@ -431,11 +436,11 @@ static bool doLookupExprInScope(Context* context,
 
     // save the field name we used and the final scope checked
     name = fieldName;
-    resultScope = rcvScope;
+    resultScope = searchScope;
     // look in rcvScope's declarations for fieldName
     // using a new set of checked scopes
     std::unordered_set<const Scope*> freshCheckedScopes;
-    return doLookupInScope(context, rcvScope, fieldName, fieldConfig,
+    return doLookupInScope(context, searchScope, fieldName, fieldConfig,
                            freshCheckedScopes, result);
   } else {
     context->error(expr, "this expression type is not allowed here");
@@ -516,13 +521,15 @@ lookupInScopeWithSet(Context* context,
                      const Scope* scope,
                      const Expression* expr,
                      LookupConfig config,
-                     std::unordered_set<const Scope*>& visited) {
+                     std::unordered_set<const Scope*>& visited,
+                     const Scope* candidateScope) {
   std::vector<BorrowedIdsWithName> vec;
   UniqueString name;
   const Scope* resultScope;
 
-  doLookupExprInScope(context, scope, expr, config, visited,
-                      vec, name, resultScope);
+  doLookupExprInScope(context, scope, expr, config, visited, vec, name,
+                      resultScope,
+                      candidateScope);
 
   return vec;
 }

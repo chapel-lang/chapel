@@ -584,20 +584,38 @@ struct Resolver {
     // TODO should we move this to a class method that takes in the context and call?
     // Generate a CallInfo for the call
     UniqueString name;
+    const Expression* receiver = nullptr;
 
     if (auto op = call->toOpCall()) {
       name = op->op();
     } else if (auto called = call->calledExpression()) {
       if (auto calledIdent = called->toIdentifier()) {
         name = calledIdent->name();
+
+      // Handle method call with receiver.
+      } else if (auto dot = called->toDot()) {
+        name = dot->field();
+        receiver = dot->receiver();
+      } else if (auto newed = called->toNew()) {
+        assert(false && "New expressions not handled yet");
       } else {
-        assert(false && "TODO: method calls with Dot called");
+        assert(false && "Unhandled called expression");
       }
     }
 
     const FnCall* fnCall = call->toFnCall();
+    const bool isMethod = (receiver != nullptr);
     bool hasQuestionArg = false;
     std::vector<CallInfoActual> actuals;
+
+    // Construct an actual for the receiver.
+    if (receiver != nullptr) {
+      ResolvedExpression& r = byPostorder.byAst(receiver);
+      QualifiedType qt = r.type();
+      auto receiverActualName = USTR("this");
+      auto receiverInfo = CallInfoActual(qt, receiverActualName);
+      actuals.push_back(std::move(receiverInfo));
+    }
 
     int i = 0;
     for (auto actual : call->actuals()) {
@@ -622,7 +640,7 @@ struct Resolver {
       }
     }
 
-    CallInfo ci(name, hasQuestionArg, actuals);
+    CallInfo ci(name, isMethod, hasQuestionArg, actuals);
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
 
     // save the most specific candidates in the resolution result for the id
@@ -2025,7 +2043,8 @@ static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const Call* call,
-                 std::unordered_set<const Scope*>& visited) {
+                 std::unordered_set<const Scope*>& visited,
+                 const Scope* candidateScope=nullptr) {
 
   std::vector<BorrowedIdsWithName> ret;
 
@@ -2039,7 +2058,8 @@ lookupCalledExpr(Context* context,
     ret.swap(vec);
   } else if (const Expression* called = call->calledExpression()) {
     auto vec = lookupInScopeWithSet(context, scope, called, config,
-                                    visited);
+                                    visited,
+                                    candidateScope);
     ret.swap(vec);
   }
 
@@ -2263,7 +2283,6 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
-
 static
 CallResolutionResult resolveFnCall(Context* context,
                                    const Call* call,
@@ -2272,11 +2291,37 @@ CallResolutionResult resolveFnCall(Context* context,
                                    const PoiScope* inPoiScope) {
   // search for candidates at each POI until we have found a candidate
   std::vector<const TypedFnSignature*> candidates;
-  size_t firstPoiCandidate = 0;
   std::unordered_set<const Scope*> visited;
   PoiInfo poiInfo;
 
-  // first, look for candidates without using POI.
+  // If call is a method, search receiver definition scope for methods.
+  if (ci.isMethod()) {
+    assert(ci.numActuals() >= 1);
+
+    // Receiver should be first actual of method call.
+    const auto& receiver = ci.actuals(0);
+
+    if (auto compType = receiver.type().type()->getCompositeType()) {
+      auto candidateScope = scopeForId(context, compType->id());
+      assert(candidateScope);
+
+      // compute the potential functions that it could resolve to
+      auto v = lookupCalledExpr(context, inScope, call,
+                                visited,
+                                candidateScope);
+
+      // filter without instantiating yet
+      const auto& initial = filterCandidatesInitial(context, v, ci);
+
+      // find candidates, doing instantiation if necessary
+      filterCandidatesInstantiating(context, initial, ci,
+                                    inScope,
+                                    inPoiScope,
+                                    candidates);
+    } else {
+      assert(false && "Not handled yet");
+    }
+  }
 
   {
     // compute the potential functions that it could resolve to
@@ -2292,9 +2337,9 @@ CallResolutionResult resolveFnCall(Context* context,
                                   inScope,
                                   inPoiScope,
                                   candidates);
-
-    firstPoiCandidate = candidates.size();
   }
+
+  size_t firstPoiCandidate = candidates.size();
 
   // next, look for candidates using POI
   for (const PoiScope* curPoi = inPoiScope;
