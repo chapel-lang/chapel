@@ -240,6 +240,12 @@ module GMP {
 
   /* */
   extern proc mpz_init(ref x: mpz_t);
+  proc mpz_inits(ref xs: mpz_t...) {
+    use CPtr;
+    extern proc mpz_inits(xs...);
+    mpz_inits((...xs), c_nil);
+  }
+    
 
   extern proc mpz_init2(ref x: mpz_t, n: mp_bitcnt_t);
 
@@ -1326,8 +1332,11 @@ module GMP {
     }
   }
 
-  if CHPL_GMP == "none" {
-    compilerError("Cannot use GMP with CHPL_GMP=none");
+  {
+    use ChplConfig;
+    if CHPL_GMP == "none" {
+      compilerError("Cannot use GMP with CHPL_GMP=none");
+    }
   }
 
   // calls mp_set_memory_functions to use chpl_malloc, etc.
