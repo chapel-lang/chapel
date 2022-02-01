@@ -1,0 +1,2 @@
+--steps=40 < day14.test   # day14a-test.good
+--steps=40 < day14.in

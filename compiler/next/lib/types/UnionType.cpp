@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,22 +27,22 @@ namespace types {
 
 const owned<UnionType>&
 UnionType::getUnionType(Context* context, ID id, UniqueString name,
-                        std::vector<CompositeType::FieldDetail> fields,
-                        const UnionType* instantiatedFrom) {
-  QUERY_BEGIN(getUnionType, context, id, name, fields, instantiatedFrom);
+                        const UnionType* instantiatedFrom,
+                        SubstitutionsMap subs) {
+  QUERY_BEGIN(getUnionType, context, id, name, instantiatedFrom, subs);
 
-  auto result = toOwned(new UnionType(id, name, std::move(fields),
-                                      instantiatedFrom));
+  auto result = toOwned(new UnionType(id, name,
+                                      instantiatedFrom, std::move(subs)));
 
   return QUERY_END(result);
 }
 
 const UnionType*
 UnionType::get(Context* context, ID id, UniqueString name,
-               std::vector<CompositeType::FieldDetail> fields,
-               const UnionType* instantiatedFrom) {
-  return getUnionType(context, id, name, std::move(fields),
-                      instantiatedFrom).get();
+               const UnionType* instantiatedFrom,
+               SubstitutionsMap subs) {
+  return getUnionType(context, id, name,
+                      instantiatedFrom, std::move(subs)).get();
 }
 
 

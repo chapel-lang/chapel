@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,6 +66,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
   //AST_NODE(Implements)               // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt
+  AST_NODE(Include)
   AST_NODE(Label)                      //
   AST_NODE(New)                        //
   AST_NODE(Range)                      //

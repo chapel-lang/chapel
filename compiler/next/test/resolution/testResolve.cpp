@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,8 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/types/IntType.h"
+#include "chpl/types/QualifiedType.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Identifier.h"
@@ -36,6 +38,7 @@
 using namespace chpl;
 using namespace parsing;
 using namespace resolution;
+using namespace types;
 using namespace uast;
 
 // test resolving a very simple module
@@ -46,7 +49,7 @@ static void test1() {
 
   {
     context->advanceToNextRevision(true);
-    auto path = UniqueString::build(context, "input.chpl");
+    auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "var x: int;\n"
                            "x;";
     setFileText(context, path, contents);
@@ -80,7 +83,7 @@ static void test2() {
   {
     printf("part 1\n");
     context->advanceToNextRevision(true);
-    auto path = UniqueString::build(context, "input.chpl");
+    auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "";
     setFileText(context, path, contents);
 
@@ -96,7 +99,7 @@ static void test2() {
   {
     printf("part 2\n");
     context->advanceToNextRevision(true);
-    auto path = UniqueString::build(context, "input.chpl");
+    auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "var x;";
     setFileText(context, path, contents);
 
@@ -112,7 +115,7 @@ static void test2() {
   {
     printf("part 3\n");
     context->advanceToNextRevision(true);
-    auto path = UniqueString::build(context, "input.chpl");
+    auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "var x: int;";
     setFileText(context, path, contents);
 
@@ -136,7 +139,7 @@ static void test2() {
   for (int i = 0; i < 3; i++) {
     printf("part %i\n", 3+i);
     context->advanceToNextRevision(true);
-    auto path = UniqueString::build(context, "input.chpl");
+    auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "var x: int;\n"
                            "x;";
     setFileText(context, path, contents);
@@ -166,9 +169,10 @@ static void test3() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
 
   {
+    printf("part 1\n");
     context->advanceToNextRevision(true);
     std::string contents = "proc foo(arg: int) {\n"
                            "  return arg;\n"
@@ -176,9 +180,6 @@ static void test3() {
                            "var y = foo(1);";
     setFileText(context, path, contents);
     const ModuleVec& vec = parse(context, path);
-    for (const Module* mod : vec) {
-      mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
-    }
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -204,14 +205,11 @@ static void test3() {
   }
 
   {
+    printf("part 2\n");
     context->advanceToNextRevision(true);
     std::string contents = "var y = foo(1);";
     setFileText(context, path, contents);
     const ModuleVec& vec = parse(context, path);
-    for (const Module* mod : vec) {
-      mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
-    }
-
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
@@ -244,7 +242,7 @@ static void test4() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
                            module M {
                              class Parent { }
@@ -276,12 +274,53 @@ static void test4() {
   assert(fn->untyped()->name() == "f");
 }
 
+// this test checks a simple instantiation situation
+static void test5() {
+  printf("test5\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+                           module M {
+                             var x:int(64);
+                             var y = x;
+                             proc f(arg) { }
+                             f(y);
+                           }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 4);
+  const Call* call = m->stmt(3)->toCall();
+  assert(call);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(call);
+
+  assert(re.type().type()->isVoidType());
+
+  const TypedFnSignature* fn = re.mostSpecific().only();
+  assert(fn != nullptr);
+  assert(fn->untyped()->name() == "f");
+
+  assert(fn->numFormals() == 1);
+  assert(fn->formalName(0) == "arg");
+  assert(fn->formalType(0).kind() == QualifiedType::CONST_IN);
+  assert(fn->formalType(0).type() == IntType::get(context, 64));
+}
 
 int main() {
   test1();
   test2();
   test3();
   test4();
+  test5();
 
   return 0;
 }

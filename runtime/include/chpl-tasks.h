@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -424,6 +424,10 @@ uint32_t chpl_task_getNumThreads(void);
 //
 uint32_t chpl_task_getNumIdleThreads(void);
 
+//
+// Warn about a num threads setting
+//
+void chpl_task_warnNumThreadsPerLocale(const char*);
 
 //
 // This gets any per-locale thread count specified in the environment.

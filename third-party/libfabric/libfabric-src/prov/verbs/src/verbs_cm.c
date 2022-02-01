@@ -306,12 +306,15 @@ vrb_msg_ep_reject(struct fid_pep *pep, fid_t handle,
 	vrb_msg_ep_prepare_cm_data(param, paramlen, cm_hdr);
 
 	fastlock_acquire(&_pep->eq->lock);
-	if (connreq->is_xrc)
+	if (connreq->is_xrc) {
 		ret = vrb_msg_xrc_ep_reject(connreq, cm_hdr,
 				(uint8_t)(sizeof(*cm_hdr) + paramlen));
-	else
+	} else if (connreq->id) {
 		ret = rdma_reject(connreq->id, cm_hdr,
 			(uint8_t)(sizeof(*cm_hdr) + paramlen)) ? -errno : 0;
+	} else {
+		ret = -FI_EBUSY;
+	}
 	fastlock_release(&_pep->eq->lock);
 
 	free(connreq);

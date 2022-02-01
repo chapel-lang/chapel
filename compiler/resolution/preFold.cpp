@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,12 +25,13 @@
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
-#include "forallOptimizations.h"
+#include "preFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
@@ -101,6 +102,7 @@ static FnSymbol*      createAndInsertFunParentMethod(CallExpr*      call,
                                                      AggregateType* parent,
                                                      AList&         argList,
                                                      bool           isFormal,
+                                                     RetTag         retTag,
                                                      Type*          retType,
                                                      bool           throws);
 
@@ -1883,6 +1885,93 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_RESOLVES: {
+    if (call->id == breakOnResolveID) gdbShouldBreakHere();
+
+    // This primitive should only have one actual.
+    INT_ASSERT(call && call->numActuals() == 1);
+
+    auto exprToResolve = call->get(1);
+
+    // TODO: To resolve an arbitrary expression (e.g. the UnresolvedSymExpr
+    // for 'foo'), we need a way to back out of resolving any expression
+    // without emitting errors. We'd also need to interact with
+    // scopeResolve as well. This might be easier to do in a new
+    // compiler world.
+    if (!isCallExpr(exprToResolve)) {
+      INT_FATAL("PRIM_RESOLVES can only resolve CallExpr for now");
+    }
+
+    // Insert a temporary block into the AST to use as a workspace.
+    auto tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
+    call->getStmtExpr()->insertAfter(tmpBlock);
+
+    // Remove the expression to resolve and insert it into the block.
+    exprToResolve->remove();
+    tmpBlock->insertAtTail(exprToResolve);
+
+    // Resolution depends on normalized AST (and the expression is not).
+    normalize(tmpBlock);
+
+    bool didResolveExpr = true;
+
+    // Now that the block is normalized, we need to do a postorder traversal
+    // and resolve sub-expressions in a manner similar to normal resolution.
+    // However, calls should use 'tryResolveCall' so that we can back out
+    // if a particular call should fail to resolve.
+    for_exprs_postorder(expr, tmpBlock) {
+      CallExpr* call = toCallExpr(expr);
+
+      // Start by prefolding all calls (e.g. to eliminate partial calls).
+      expr = call && !isContextCallExpr(expr) ? preFold(call) : expr;
+      INT_ASSERT(expr);
+      call = toCallExpr(expr);
+
+      // Go ahead and skip over context calls right away.
+      if (isContextCallExpr(expr)) continue;
+
+      if (call && !call->isPrimitive()) {
+
+        // Partial calls will not be resolved in the current iteration.
+        const bool isPartialCall = call->partialTag;
+
+        // TODO: Might want to set this later, not sure yet.
+        const bool doResolveCalledFns = false;
+
+        FnSymbol* resolvedFn = tryResolveCall(call, doResolveCalledFns);
+
+        if (!resolvedFn && !isPartialCall) {
+          didResolveExpr = false;
+          break;
+        } else {
+
+          // Go ahead and eagerly resolve field accessors.
+          if (resolvedFn && !resolvedFn->isResolved()) {
+            if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)) {
+              resolveFunction(resolvedFn);
+            }
+          }
+        }
+
+      // TODO: Ways to keep type checking from issuing errors? E.g. we could
+      // have code here to handle PRIM_MOVE setting the type of the LHS.
+      } else {
+        expr = resolveExpr(expr);
+        INT_ASSERT(expr);
+      }
+    }
+
+    // We're done with the block, so remove it.
+    tmpBlock->remove();
+
+    // The output is a 'true' or 'false' expression.
+    auto output = didResolveExpr ? new SymExpr(gTrue) : new SymExpr(gFalse);
+
+    call->replace(output);
+    retval = output;
+
+  } break;
+
   case PRIM_STEAL: {
     SymExpr* se = toSymExpr(call->get(1));
     if (Symbol* sym = se->symbol())
@@ -2150,6 +2239,29 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
   return noop;
 }
 
+// Returns true if 'actual' is defined by:
+//   move( actual, call( targetLocales, _mt, tlArg) )
+// where tlArg is a (Chapel) array or domain or distribution.
+static bool isResultOfTargetLocalesCall(Symbol* actual) {
+  if (! actual->hasFlag(FLAG_TEMP)) return false;
+  SymExpr* def = actual->getSingleDef();
+  if (def == nullptr) return false;
+
+  if (CallExpr* move = toCallExpr(def->parentExpr))
+   if (move->isPrimitive(PRIM_MOVE))
+    if (CallExpr* tlCall = toCallExpr(move->get(2)))
+     if (tlCall->isNamed("targetLocales"))
+      if (tlCall->get(1)->typeInfo() == dtMethodToken)
+       if (tlCall->numActuals() == 2)
+        if (SymExpr* tlArgSE = toSymExpr(tlCall->get(2)))
+         if (Symbol* tlArgTS = tlArgSE->getValType()->symbol)
+          if (tlArgTS->hasFlag(FLAG_ARRAY)       ||
+              tlArgTS->hasFlag(FLAG_DOMAIN)      ||
+              tlArgTS->hasFlag(FLAG_DISTRIBUTION) )
+            return true;
+
+  return false;
+}
 
 static bool isMethodCall(CallExpr* call) {
   // The first argument could be DefExpr for a query expr, see
@@ -2220,6 +2332,11 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (Expr* expr = resolveTupleIndexing(call, base->symbol())) {
           retval = expr;  // call was replaced by expr
         }
+      } else if (call->numActuals() == 2 && 
+                 isResultOfTargetLocalesCall(sym)) {
+        USR_WARN(call, "'targetLocales' method on arrays, domains, and distributions is now paren-less; please invoke it without parentheses");
+        retval = new SymExpr(sym);
+        call->replace(retval);
       }
     }
 
@@ -2818,7 +2935,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   } else {
     parent = createAndInsertFunParentClass(call, parent_name.c_str());
     thisParentMethod = createAndInsertFunParentMethod(call, parent,
-        captured_fn->formals, true, captured_fn->retType,
+        captured_fn->formals, true, captured_fn->retTag, captured_fn->retType,
         captured_fn->throwsError());
     functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, thisParentMethod);
   }
@@ -2874,6 +2991,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   CallExpr* innerCall = new CallExpr(captured_fn);
   int       skip      = 2;
 
+  thisMethod->retTag = captured_fn->retTag;
   for_alist(formalExpr, thisParentMethod->formals) {
     //Skip the first two arguments from the parent, which are _mt and this
     if (skip) {
@@ -3055,6 +3173,7 @@ static Type* createOrFindFunTypeFromAnnotation(AList& argList,
                                                   parent,
                                                   argList,
                                                   false,
+                                                  RET_VALUE,
                                                   retType,
                                                   throws);
 
@@ -3246,6 +3365,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
                                                 AggregateType* parent,
                                                 AList&         arg_list,
                                                 bool           isFormal,
+                                                RetTag         retTag,
                                                 Type*          retType,
                                                 bool           throws) {
 
@@ -3352,6 +3472,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
   }
 
   FnSymbol* parent_method = new FnSymbol("this");
+  parent_method->retTag = retTag;
 
   parent_method->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   parent_method->addFlag(FLAG_COMPILER_GENERATED);

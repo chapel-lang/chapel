@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,21 +41,42 @@ namespace parsing {
  In case there is an error reading the file, the error is stored in the error
  field of the FileContents.
  */
+const FileContents& fileText(Context* context, std::string path);
+
+/**
+ Convenience function to call fileText given a UniqueString.
+ */
 const FileContents& fileText(Context* context, UniqueString path);
 
 /**
  This function sets the FileContents that will be returned by the fileText
  query above.
  */
-void setFileText(Context* context, UniqueString path, FileContents result);
+void setFileText(Context* context, std::string path, FileContents result);
+
+/**
+ This function sets the string that will be returned by the fileText
+ query above. The FileContents stored will have an empty ErrorMessage field.
+ */
+void setFileText(Context* context, std::string path, std::string text);
+
 /**
  This function sets the string that will be returned by the fileText
  query above. The FileContents stored will have an empty ErrorMessage field.
  */
 void setFileText(Context* context, UniqueString path, std::string text);
 
+
 /**
- This query reads a file (with the fileText query) and then parses it.
+ This function returns `true` if the current revision already has contents
+ stored in the fileText query for the given path.
+ */
+bool hasFileText(Context* context, const std::string& path);
+
+/**
+  This query reads a file (with the fileText query) and then parses it.
+
+  Any errors encountered will be reported to the Context.
  */
 const uast::BuilderResult& parseFile(Context* context, UniqueString path);
 
@@ -83,8 +104,19 @@ using ModuleVec = std::vector<const uast::Module*>;
 const ModuleVec& parse(Context* context, UniqueString path);
 
 /**
+  Return the current module search path.
+ */
+const std::vector<std::string>& moduleSearchPath(Context* context);
+
+/**
+  Sets the current module search path.
+ */
+void setModuleSearchPath(Context* context,
+                         std::vector<std::string> searchPath);
+
+/**
  This query parses a toplevel module by name. Returns nullptr
- if no such toplevel module can be found.
+ if no such toplevel module can be found in the module search path.
  */
 const uast::Module* getToplevelModule(Context* context, UniqueString name);
 

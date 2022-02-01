@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <sys/uio.h>
 #include "ofi_hook.h"
+#include "ofi_util.h"
 
 static int hook_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 			   uint64_t flags, struct fid_mr **mr)
@@ -101,6 +102,85 @@ static struct fi_ops_mr hook_mr_ops = {
 	.regattr = hook_mr_regattr,
 };
 
+static ssize_t hook_credit_handler(struct fid_ep *ep_fid, size_t credits)
+{
+	/*
+	 * called from the base provider, ep_fid is the base ep, and
+	 * it's fid context is the hook ep.
+	 */
+	struct hook_ep *ep = (struct hook_ep *)ep_fid->fid.context;
+
+	return (*ep->domain->base_credit_handler)(&ep->ep, credits);
+}
+
+static void hook_set_threshold(struct fid_ep *ep_fid, size_t threshold)
+{
+	struct hook_ep *ep = container_of(ep_fid, struct hook_ep, ep);
+
+	return ep->domain->base_ops_flow_ctrl->set_threshold(ep->hep, threshold);
+}
+
+static void hook_set_send_handler(struct fid_domain *domain_fid,
+		ssize_t (*credit_handler)(struct fid_ep *ep, size_t credits))
+{
+	struct hook_domain *domain = container_of(domain_fid,
+						  struct hook_domain, domain);
+
+	domain->base_credit_handler = credit_handler;
+	domain->base_ops_flow_ctrl->set_send_handler(domain->hdomain,
+						     hook_credit_handler);
+}
+
+static int hook_enable_ep_flow_ctrl(struct fid_ep *ep_fid)
+{
+	struct hook_ep *ep = container_of(ep_fid, struct hook_ep, ep);
+
+	return ep->domain->base_ops_flow_ctrl->enable(ep->hep);
+}
+
+static void hook_add_credits(struct fid_ep *ep_fid, size_t credits)
+{
+	struct hook_ep *ep = container_of(ep_fid, struct hook_ep, ep);
+
+	return ep->domain->base_ops_flow_ctrl->add_credits(ep->hep, credits);
+}
+
+static struct ofi_ops_flow_ctrl hook_ops_flow_ctrl = {
+	.size = sizeof(struct ofi_ops_flow_ctrl),
+	.set_threshold = hook_set_threshold,
+	.add_credits = hook_add_credits,
+	.enable = hook_enable_ep_flow_ctrl,
+	.set_send_handler = hook_set_send_handler,
+};
+
+static int hook_domain_ops_open(struct fid *fid, const char *name,
+				uint64_t flags, void **ops, void *context)
+{
+	int err;
+	struct hook_domain *domain = container_of(fid, struct hook_domain,
+						  domain);
+
+	err = fi_open_ops(hook_to_hfid(fid), name, flags, ops, context);
+	if (err)
+		return err;
+
+	if (!strcasecmp(name, OFI_OPS_FLOW_CTRL)) {
+		domain->base_ops_flow_ctrl = *ops;
+		*ops = &hook_ops_flow_ctrl;
+	}
+
+	return 0;
+}
+
+struct fi_ops hook_domain_fid_ops = {
+	.size = sizeof(struct fi_ops),
+	.close = hook_close,
+	.bind = hook_bind,
+	.control = hook_control,
+	.ops_open = hook_domain_ops_open,
+};
+
+
 int hook_query_atomic(struct fid_domain *domain, enum fi_datatype datatype,
 		  enum fi_op op, struct fi_atomic_attr *attr, uint64_t flags)
 {
@@ -146,7 +226,7 @@ int hook_domain(struct fid_fabric *fabric, struct fi_info *info,
 	dom->fabric = fab;
 	dom->domain.fid.fclass = FI_CLASS_DOMAIN;
 	dom->domain.fid.context = context;
-	dom->domain.fid.ops = &hook_fid_ops;
+	dom->domain.fid.ops = &hook_domain_fid_ops;
 	dom->domain.ops = &hook_domain_ops;
 	dom->domain.mr = &hook_mr_ops;
 

@@ -1,0 +1,3 @@
+# ASAN and valgrind take too long for this test, so skip it
+CHPL_SANITIZE_EXE <= address
+CHPL_TEST_VGRND_EXE == on

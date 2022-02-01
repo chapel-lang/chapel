@@ -14,25 +14,26 @@ Basic Commands
 .. toctree::
    :maxdepth: 1
 
-   llvm-as
-   llvm-dis
-   opt
+   dsymutil
    llc
    lli
-   llvm-link
-   llvm-lib
-   llvm-lipo
+   llvm-as
    llvm-config
+   llvm-cov
    llvm-cxxmap
    llvm-diff
-   llvm-cov
+   llvm-dis
+   llvm-dwarfdump
+   llvm-lib
+   llvm-libtool-darwin
+   llvm-link
+   llvm-lipo
+   llvm-mca
    llvm-profdata
+   llvm-readobj
    llvm-stress
    llvm-symbolizer
-   llvm-dwarfdump
-   dsymutil
-   llvm-mca
-   llvm-readobj
+   opt
 
 GNU binutils replacements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,6 +44,7 @@ GNU binutils replacements
    llvm-addr2line
    llvm-ar
    llvm-cxxfilt
+   llvm-install-name-tool
    llvm-nm
    llvm-objcopy
    llvm-objdump
@@ -71,7 +73,7 @@ Developer Tools
    FileCheck
    tblgen
    lit
-   llvm-build
    llvm-exegesis
-   llvm-pdbutil
    llvm-locstats
+   llvm-pdbutil
+   llvm-profgen

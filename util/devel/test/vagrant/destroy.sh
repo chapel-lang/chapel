@@ -11,7 +11,7 @@ do
     cd $name
     echo "------------ $name ---- vagrant destroy"
     vagrant destroy -f
-    cd ..
+    cd ../..
   fi
 done
 

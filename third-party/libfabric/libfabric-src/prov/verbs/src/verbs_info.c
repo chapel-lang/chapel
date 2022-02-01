@@ -734,6 +734,9 @@ static bool vrb_hmem_supported(const char *dev_name)
 	if (vrb_gl_data.peer_mem_support && strstr(dev_name, "mlx"))
 		return true;
 
+	if (vrb_gl_data.dmabuf_support && strstr(dev_name, "mlx5"))
+		return true;
+
 	return false;
 }
 

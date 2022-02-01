@@ -1,12 +1,12 @@
 use IO;
 
-var a = stringStyleWithLength(0);
-var b = stringStyleWithLength(1);
-var c = stringStyleWithLength(2);
-var d = stringStyleWithLength(4);
-var e = stringStyleWithLength(8);
+var a = stringStyleWithLengthInternal(0);
+var b = stringStyleWithLengthInternal(1);
+var c = stringStyleWithLengthInternal(2);
+var d = stringStyleWithLengthInternal(4);
+var e = stringStyleWithLengthInternal(8);
 
 // Those should have worked
 
 // This should throw an error
-stringStyleWithLength(100);
+stringStyleWithLengthInternal(100);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -26,6 +26,7 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 
+extern __constant__ int32_t chpl_nodeID;
 
 // TODO
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)

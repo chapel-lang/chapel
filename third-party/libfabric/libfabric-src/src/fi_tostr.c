@@ -625,6 +625,8 @@ static void ofi_tostr_atomic_type(char *buf, size_t len, enum fi_datatype type)
 	CASEENUMSTRN(FI_UINT32, len);
 	CASEENUMSTRN(FI_INT64, len);
 	CASEENUMSTRN(FI_UINT64, len);
+	CASEENUMSTRN(FI_INT128, len);
+	CASEENUMSTRN(FI_UINT128, len);
 	CASEENUMSTRN(FI_FLOAT, len);
 	CASEENUMSTRN(FI_DOUBLE, len);
 	CASEENUMSTRN(FI_FLOAT_COMPLEX, len);
@@ -842,7 +844,7 @@ char *DEFAULT_SYMVER_PRE(fi_tostr_r)(char *buf, size_t len,
 	}
 	return buf;
 }
-CURRENT_SYMVER(fi_tostr_r_, fi_tostr_r);
+DEFAULT_SYMVER(fi_tostr_r_, fi_tostr_r, FABRIC_1.4);
 
 __attribute__((visibility ("default"),EXTERNALLY_VISIBLE))
 char *DEFAULT_SYMVER_PRE(fi_tostr)(const void *data, enum fi_type datatype)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -565,7 +565,7 @@ proc CyclicDom.dsiStride return whole.stride;
 
 proc CyclicDom.dsiMember(i) return whole.contains(i);
 
-proc CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
+override proc CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
 
 proc CyclicDom.dsiDims() return whole.dims();
 
@@ -837,7 +837,8 @@ override proc CyclicArr.dsiDestroyArr(deinitElts:bool) {
   }
 }
 
-proc CyclicArr.chpl__serialize() {
+proc CyclicArr.chpl__serialize() 
+    where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 

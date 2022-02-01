@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -96,10 +96,14 @@ class Context {
 
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool checkStringsAlreadyMarked = false;
-  bool enableDebugTracing = false;
+  bool enableDebugTrace = false;
+  bool enableQueryTiming = false;
+  bool enableQueryTimingTrace = false;
   bool breakSet = false;
   size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
+
+  owned<std::ostream> queryTimingTraceOutput = nullptr;
 
   static void defaultReportError(const ErrorMessage& err);
   void (*reportError)(const ErrorMessage& err) = defaultReportError;
@@ -171,17 +175,19 @@ class Context {
        bool isInputQuery,
        bool forSetter);
 
-  template<typename ResultType,
-           typename... ArgTs>
-  bool
-  hasResultForQuery(
-       const ResultType& (*queryFunction)(Context* context, ArgTs...),
-       const std::tuple<ArgTs...>& tupleOfArgs,
-       const char* traceQueryName);
-
   void recomputeIfNeeded(const querydetail::QueryMapResultBase* resultEntry);
   void updateForReuse(const querydetail::QueryMapResultBase* resultEntry);
 
+  // Checks to see if the current result exists and can be reused.
+  // This can run queries that it depended on in the previous revision again
+  // and it can update the query's lastChecked value.
+  bool queryCanUseSavedResult(
+            const void* queryFunction,
+            const querydetail::QueryMapResultBase* resultEntry);
+
+  // In addition to the steps in queryCanUseSavedResult, if the result
+  // cannot be reused, adds the query to the stack of currently executing
+  // queries
   bool queryCanUseSavedResultAndPushIfNot(
             const void* queryFunction,
             const querydetail::QueryMapResultBase* resultEntry);
@@ -234,7 +240,7 @@ class Context {
 
     Strings returned by this function will always be aligned to 2 bytes.
 
-    The function `UniqueString::build` returns such a string
+    The function `UniqueString::get` returns such a string
     with a wrapper type. It should be preferred for type safety
     and to reduce redundant checks.
    */
@@ -361,6 +367,12 @@ class Context {
   bool hasFilePathForId(ID id);
 
   /**
+    Sets the file path for the given module ID. This
+    is suitable to call from a parse query.
+   */
+  void setFilePathForModuleID(ID moduleID, UniqueString path);
+
+  /**
     This function increments the current revision number stored
     in the context. After it is called, the setters below can
     be used to provide the input at that revision.
@@ -386,14 +398,6 @@ class Context {
     is running.
    */
   void collectGarbage();
-
-  // setters for named queries.
-
-  /**
-    Sets the file path for the given module ID. This
-    is suitable to call from a parse query.
-   */
-  void setFilePathForModuleID(ID moduleID, UniqueString path);
 
   /**
     Note an error for the currently running query and report it
@@ -462,6 +466,29 @@ class Context {
   #endif
   ;
 
+  /**
+    Sets the enableDebugTrace flag. This was needed because the context
+    in main gets created before the arguments to the compiler are parsed.
+  */
+  void setDebugTraceFlag(const bool enable);
+
+  /*
+    Set the hash value of a query and its arguments to break on. Needed because
+    context in main is created before arguments to the compiler are parsed.
+  */
+  void setBreakOnHash(const size_t hashVal);
+
+  /** Enables/disables timing each query execution */
+  void setQueryTimingFlag(bool enable) {
+    enableQueryTiming = enable;
+  }
+
+  /** Begin query timing trace, sending the trace to outname */
+  void beginQueryTimingTrace(const std::string& outname);
+
+  /** End query timing trace, closes out stream */
+  void endQueryTimingTrace();
+
   typedef enum {
     NOT_CHECKED_NOT_CHANGED = 0,
     REUSED = 1,
@@ -481,6 +508,20 @@ class Context {
   QueryStatus queryStatus(
          const ResultType& (*queryFunction)(Context* context, ArgTs...),
          const std::tuple<ArgTs...>& tupleOfArgs);
+
+  /**
+    Returns 'true' if the system already has a result for the passed query
+    in the current revision. This can be useful for certain input
+    queries - e.g. one reading a file that can both have the contents
+    set and can also read the data from the filesystem.
+   */
+  template<typename ResultType,
+           typename... ArgTs>
+  bool
+  hasCurrentResultForQuery(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...),
+       const std::tuple<ArgTs...>& tupleOfArgs);
+
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly
@@ -556,6 +597,40 @@ class Context {
       const char* traceQueryName,
       bool isInputQuery);
 
+
+  /**
+     Output a timing report of the cumulative time each query spent
+   */
+  void queryTimingReport(std::ostream& os);
+
+  // Used in the in QUERY_BEGIN_TIMING macro. Creates a stopwatch that starts
+  // timing if we are enabled. And then on scope exit we conditionally stop the
+  // timing and add it to the total or log it.
+  // Semi-public method because we only expect it to be used in the macro
+  auto makeQueryTimingStopwatch(querydetail::QueryMapBase* base) {
+    size_t depth = queryStack.size();
+    bool enabled = enableQueryTiming || enableQueryTimingTrace;
+
+    return querydetail::makeQueryTimingStopwatch(
+        enabled,
+        // This lambda gets called when the stopwatch object (which lives on the
+        // stack of the query function) is destructed
+        [this, base, depth, enabled](auto& stopwatch) {
+          querydetail::QueryTimingDuration elapsed;
+          if (enabled) {
+            elapsed = stopwatch.elapsed();
+          }
+          if (enableQueryTiming) {
+            base->timings.query.update(elapsed);
+          }
+          if (enableQueryTimingTrace) {
+            auto ticks = elapsed.count();
+            auto os = queryTimingTraceOutput.get();
+            assert(os != nullptr);
+            *os << depth << ' ' << base->queryName << ' ' << ticks << '\n';
+          }
+        });
+  }
 
   /// \endcond
 };

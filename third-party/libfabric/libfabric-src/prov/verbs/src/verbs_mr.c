@@ -57,6 +57,31 @@ static struct fi_ops vrb_mr_fi_ops = {
 	.ops_open = fi_no_ops_open,
 };
 
+#if VERBS_HAVE_DMABUF_MR
+static inline
+struct ibv_mr *vrb_mr_ibv_reg_dmabuf_mr(struct ibv_pd *pd, const void *buf,
+				        size_t len, int vrb_access)
+{
+	void *handle;
+	void *base;
+	uint64_t offset;
+	int err;
+
+	err = ze_hmem_get_handle((void *)buf, &handle);
+	if (err)
+		return NULL;
+
+	err = ze_hmem_get_base_addr((void *)buf, &base);
+	if (err)
+		return NULL;
+
+	offset = (uintptr_t)buf - (uintptr_t)base;
+	return ibv_reg_dmabuf_mr(pd, offset, len, (uint64_t)buf/* iova */,
+				 (int)(uintptr_t)handle/* dmabuf fd */,
+				 vrb_access);
+}
+#endif
+
 static inline
 int vrb_mr_reg_common(struct vrb_mem_desc *md, int vrb_access, const void *buf,
 		      size_t len, void *context, enum fi_hmem_iface iface,
@@ -70,10 +95,17 @@ int vrb_mr_reg_common(struct vrb_mem_desc *md, int vrb_access, const void *buf,
 	md->info.iov.iov_base = (void *) buf;
 	md->info.iov.iov_len = len;
 
-	if (md->domain->flags & VRB_USE_ODP && iface == FI_HMEM_SYSTEM)
+	if (md->domain->ext_flags & VRB_USE_ODP && iface == FI_HMEM_SYSTEM)
 		vrb_access |= VRB_ACCESS_ON_DEMAND;
 
-	md->mr = ibv_reg_mr(md->domain->pd, (void *) buf, len, vrb_access);
+#if VERBS_HAVE_DMABUF_MR
+	if (iface == FI_HMEM_ZE)
+		md->mr = vrb_mr_ibv_reg_dmabuf_mr(md->domain->pd, buf, len,
+					          vrb_access);
+	else
+#endif
+		md->mr = ibv_reg_mr(md->domain->pd, (void *) buf, len,
+				    vrb_access);
 	if (!md->mr) {
 		if (len)
 			return -errno;

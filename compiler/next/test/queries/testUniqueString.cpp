@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,7 +66,7 @@ static void testPerformance(Context* ctx,
               querybysize[len]++;
               nqueries++;
             }
-            UniqueString::build(ctx, word);
+            UniqueString::get(ctx, word);
           }
         }
       }
@@ -205,9 +205,9 @@ static void test1() {
   std::string test1 = TEST1STRING;
   std::string test1Copy = test1;
   assert(test1.c_str() != test1Copy.c_str());
-  UniqueString t1 = UniqueString::build(ctx, test1);
-  UniqueString t2 = UniqueString::build(ctx, test1Copy);
-  UniqueString t3 = UniqueString::build(ctx, TEST1STRING);
+  UniqueString t1 = UniqueString::get(ctx, test1);
+  UniqueString t2 = UniqueString::get(ctx, test1Copy);
+  UniqueString t3 = UniqueString::get(ctx, TEST1STRING);
   assert(0 == strcmp(t1.c_str(), test1.c_str()));
   assert(t1.c_str() == t2.c_str());
   assert(t2.c_str() == t3.c_str());
@@ -216,32 +216,32 @@ static void test1() {
 
   // this string is short enough to be inlined
   std::string hello = "hello";
-  UniqueString h1 = UniqueString::build(ctx, "hello");
-  UniqueString h2 = UniqueString::build(ctx, hello);
+  UniqueString h1 = UniqueString::get(ctx, "hello");
+  UniqueString h2 = UniqueString::get(ctx, hello);
   assert(0 == strcmp(h1.c_str(), hello.c_str()));
   assert(h1 == h2);
   assert(h1.astr(ctx) == ctx->uniqueCString(hello.c_str()));
   assert(h1.length() == strlen("hello"));
 
   // check that uniqueString(NULL) == uniqueString("")
-  assert(UniqueString::build(ctx, NULL) == UniqueString::build(ctx, ""));
+  assert(UniqueString::get(ctx, NULL) == UniqueString::get(ctx, ""));
 
   // check that default-constructed unique string matches one from ""
   UniqueString empty;
-  assert(empty == UniqueString::build(ctx, ""));
+  assert(empty == UniqueString::get(ctx, ""));
 
   // check that truncation works for short strings and long ones
-  assert(h1 == UniqueString::build(ctx, "hello____", strlen("hello")));
-  assert(t1 == UniqueString::build(ctx, TEST1STRING "_____",
+  assert(h1 == UniqueString::get(ctx, "hello____", strlen("hello")));
+  assert(t1 == UniqueString::get(ctx, TEST1STRING "_____",
                                    strlen(TEST1STRING)));
 
   // check concatenation builder
-  UniqueString ab1 = UniqueString::build(ctx, "aabbb");
-  UniqueString ab2 = UniqueString::buildConcat(ctx, "aa", "bbb");
+  UniqueString ab1 = UniqueString::get(ctx, "aabbb");
+  UniqueString ab2 = UniqueString::getConcat(ctx, "aa", "bbb");
   assert(ab1 == ab2);
   assert(0 == strcmp(ab1.c_str(), "aabbb"));
 
-  UniqueString abcd1 = UniqueString::build(ctx,
+  UniqueString abcd1 = UniqueString::get(ctx,
                                            "a"
                                            "bb"
                                            "ccc"
@@ -251,7 +251,7 @@ static void test1() {
                                            "ggggggg"
                                            "hhhhhhhh"
                                            "iiiiiiiii");
-  UniqueString abcd2 = UniqueString::buildConcat(ctx,
+  UniqueString abcd2 = UniqueString::getConcat(ctx,
                                                  "a",
                                                  "bb",
                                                  "ccc",
@@ -312,12 +312,12 @@ static void test2() {
 
   // We need to test a string that actually gets saved in the table
   // so something longer than a smallstring
-  UniqueString s1 = UniqueString::build(ctx1, "borrowed");
-  UniqueString s2 = UniqueString::build(ctx2, "borrowed");
+  UniqueString s1 = UniqueString::get(ctx1, "borrowed");
+  UniqueString s2 = UniqueString::get(ctx2, "borrowed");
 
   // For use with debug tracing
-  UniqueString::build(ctx1, "i will get garbage collected");
-  UniqueString::build(ctx2, "i will get garbage collected");
+  UniqueString::get(ctx1, "i will get garbage collected");
+  UniqueString::get(ctx2, "i will get garbage collected");
 
   assert(s1.c_str() == USTR("borrowed").c_str());
   assert(s2.c_str() == USTR("borrowed").c_str());
@@ -330,15 +330,15 @@ static void test2() {
   context2.collectGarbage();
 
   // Global string doesn't get collected, should get same pointer
-  UniqueString s3 = UniqueString::build(ctx1, "borrowed");
-  UniqueString s4 = UniqueString::build(ctx2, "borrowed");
+  UniqueString s3 = UniqueString::get(ctx1, "borrowed");
+  UniqueString s4 = UniqueString::get(ctx2, "borrowed");
 
   assert(s1.c_str() == s3.c_str());
   assert(s2.c_str() == s4.c_str());
 
   // Small string should still be equal (even though inlined)
-  UniqueString s5 = UniqueString::build(ctx1, "align");
-  UniqueString s6 = UniqueString::build(ctx2, "align");
+  UniqueString s5 = UniqueString::get(ctx1, "align");
+  UniqueString s6 = UniqueString::get(ctx2, "align");
 
   assert(s5 == USTR("align"));
   assert(s6 == USTR("align"));

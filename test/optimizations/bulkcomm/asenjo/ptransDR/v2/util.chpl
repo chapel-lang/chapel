@@ -28,7 +28,8 @@ proc setupGridLocales(ensureManyLocs = false) {
 
 // show what we have
 config const vsend = true;
-const fpstyle = new iostyle(realfmt = 1, precision = 2, min_width_columns = 6);
+const fpstyle = new iostyleInternal(realfmt = 1, precision = 2,
+                                    min_width_columns = 6);
 
 const colsep = "  ";
 proc showdummyrow() {

@@ -5,7 +5,7 @@ config const f: string;
 proc main() {
   var tomlChannel = openreader(f);
   var tomlData = parseToml(tomlChannel);
-  writeln("Before Mutation: ", tomlData);
+  writeln("Before Mutation:", tomlData);
 
   // New Table
   var tblD: domain(string);
@@ -18,11 +18,11 @@ proc main() {
   var toAdd: bool = true;
   tomlData["A.B.C"]!.set("new-key-added", toAdd);
 
-  writeln("After Mutation: ", tomlData);
+  writeln("After Mutation:", tomlData);
 
   // test toString proc
   var strInt: string = tomlData["A.B"]!["number"]!.toString();
-  writeln("A.B.number = ",strInt); 
+  writeln("A.B.number = ",strInt);
 
   writeln(); //for spacing
 
@@ -30,7 +30,7 @@ proc main() {
   writeln("KV pairs in table A.C");
   writeln(tomlData["A.C"]);
 
- 
+
   // Test of the "copy constructor"
   // New Toml
   var tbl2D: domain(string);
@@ -43,7 +43,7 @@ proc main() {
   writeln("Should be the same as");
   writeln(tomlData2["A"]);
 
-  delete tomlData2;  
+  delete tomlData2;
   delete tomlData;
   tomlChannel.close();
 }

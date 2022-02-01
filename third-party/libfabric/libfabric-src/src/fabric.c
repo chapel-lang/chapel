@@ -49,10 +49,12 @@
 #include "ofi_prov.h"
 #include "ofi_perf.h"
 #include "ofi_hmem.h"
+#include "rdma/fi_ext.h"
 
 #ifdef HAVE_LIBDL
 #include <dlfcn.h>
 #endif
+
 
 struct ofi_prov {
 	struct ofi_prov		*next;
@@ -62,11 +64,101 @@ struct ofi_prov {
 	bool			hidden;
 };
 
+enum ofi_prov_order {
+	OFI_PROV_ORDER_VERSION,
+	OFI_PROV_ORDER_REGISTER,
+};
+
 static struct ofi_prov *prov_head, *prov_tail;
+static enum ofi_prov_order prov_order = OFI_PROV_ORDER_VERSION;
 int ofi_init = 0;
 extern struct ofi_common_locks common_locks;
 
 static struct fi_filter prov_filter;
+
+
+static struct ofi_prov *
+ofi_alloc_prov(const char *prov_name)
+{
+	struct ofi_prov *prov;
+
+	prov = calloc(sizeof *prov, 1);
+	if (!prov)
+		return NULL;
+
+	prov->prov_name = strdup(prov_name);
+	if (!prov->prov_name) {
+		free(prov);
+		return NULL;
+	}
+
+	return prov;
+}
+
+static void
+ofi_init_prov(struct ofi_prov *prov, struct fi_provider *provider,
+	      void *dlhandle)
+{
+	prov->provider = provider;
+	prov->dlhandle = dlhandle;
+}
+
+static void ofi_cleanup_prov(struct fi_provider *provider, void *dlhandle)
+{
+	if (provider) {
+		fi_param_undefine(provider);
+		if (provider->cleanup)
+			provider->cleanup();
+	}
+
+#ifdef HAVE_LIBDL
+	if (dlhandle)
+		dlclose(dlhandle);
+#else
+	OFI_UNUSED(dlhandle);
+#endif
+}
+
+static void ofi_free_prov(struct ofi_prov *prov)
+{
+	ofi_cleanup_prov(prov->provider, prov->dlhandle);
+	free(prov->prov_name);
+	free(prov);
+}
+
+static void ofi_insert_prov(struct ofi_prov *prov)
+{
+	struct ofi_prov *cur, *prev;
+
+	for (prev = NULL, cur = prov_head; cur; prev = cur, cur = cur->next) {
+		if ((strlen(prov->prov_name) == strlen(cur->prov_name)) &&
+		    !strcasecmp(prov->prov_name, cur->prov_name)) {
+			if ((prov_order == OFI_PROV_ORDER_VERSION) &&
+			    FI_VERSION_LT(cur->provider->version,
+					  prov->provider->version)) {
+				cur->hidden = true;
+				prov->next = cur;
+				if (prev)
+					prev->next = prov;
+				else
+					prov_head = prov;
+			} else {
+				prov->hidden = true;
+				prov->next = cur->next;
+				cur->next = prov;
+				if (prov_tail == cur)
+					prov_tail = prov;
+			}
+			return;
+		}
+	}
+
+	if (prov_tail)
+		prov_tail->next = prov;
+	else
+		prov_head = prov;
+	prov_tail = prov;
+}
 
 static int ofi_find_name(char **names, const char *name)
 {
@@ -310,51 +402,6 @@ struct fi_provider *ofi_get_hook(const char *name)
 	return provider;
 }
 
-static void cleanup_provider(struct fi_provider *provider, void *dlhandle)
-{
-	OFI_UNUSED(dlhandle);
-
-	if (provider) {
-		fi_param_undefine(provider);
-
-		if (provider->cleanup)
-			provider->cleanup();
-	}
-
-#ifdef HAVE_LIBDL
-	if (dlhandle)
-		dlclose(dlhandle);
-#endif
-}
-
-static struct ofi_prov *ofi_create_prov_entry(const char *prov_name)
-{
-	struct ofi_prov *prov = NULL;
-	prov = calloc(sizeof *prov, 1);
-	if (!prov) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Not enough memory to allocate provider registry\n");
-		return NULL;
-	}
-
-	prov->prov_name = strdup(prov_name);
-	if (!prov->prov_name) {
-		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to init pre-registered provider name\n");
-		free(prov);
-		return NULL;
-	}
-	if (prov_tail)
-		prov_tail->next = prov;
-	else
-		prov_head = prov;
-	prov_tail = prov;
-
-	prov->hidden = false;
-
-	return prov;
-}
-
 /* This is the default order that providers will be reported when a provider
  * is available.  Initialize the socket(s) provider last.  This will result in
  * it being the least preferred provider.
@@ -378,10 +425,16 @@ static void ofi_ordered_provs_init(void)
 		 */
 		"ofi_hook_perf", "ofi_hook_debug", "ofi_hook_noop",
 	};
-	int num_provs = sizeof(ordered_prov_names)/sizeof(ordered_prov_names[0]), i;
+	struct ofi_prov *prov;
+	int num_provs, i;
 
-	for (i = 0; i < num_provs; i++)
-		ofi_create_prov_entry(ordered_prov_names[i]);
+	num_provs = sizeof(ordered_prov_names) / sizeof(ordered_prov_names[0]);
+
+	for (i = 0; i < num_provs; i++) {
+		prov = ofi_alloc_prov(ordered_prov_names[i]);
+		if (prov)
+			ofi_insert_prov(prov);
+	}
 }
 
 static void ofi_set_prov_type(struct fi_prov_context *ctx,
@@ -455,48 +508,23 @@ static void ofi_register_provider(struct fi_provider *provider, void *dlhandle)
 		ctx->disable_layering = 1;
 
 	prov = ofi_getprov(provider->name, strlen(provider->name));
-	if (prov) {
-		/* If this provider has not been init yet, then we add the
-		 * provider and dlhandle to the struct and exit.
-		 */
-		if (prov->provider == NULL)
-			goto update_prov_registry;
-
-		/* If this provider is older than an already-loaded
-		 * provider of the same name, then discard this one.
-		 */
-		if (FI_VERSION_GE(prov->provider->version, provider->version)) {
-			FI_INFO(&core_prov, FI_LOG_CORE,
-				"a newer %s provider was already loaded; "
-				"ignoring this one\n", provider->name);
-			goto cleanup;
-		}
-
-		/* This provider is newer than an already-loaded
-		 * provider of the same name, so discard the
-		 * already-loaded one.
-		 */
-		FI_INFO(&core_prov, FI_LOG_CORE,
-			"an older %s provider was already loaded; "
-			"keeping this one and ignoring the older one\n",
-			provider->name);
-		cleanup_provider(prov->provider, prov->dlhandle);
+	if (prov && !prov->provider) {
+		ofi_init_prov(prov, provider, dlhandle);
 	} else {
-		prov = ofi_create_prov_entry(provider->name);
+		prov = ofi_alloc_prov(provider->name);
 		if (!prov)
 			goto cleanup;
+
+		ofi_init_prov(prov, provider, dlhandle);
+		ofi_insert_prov(prov);
 	}
 
 	if (hidden)
 		prov->hidden = true;
-
-update_prov_registry:
-	prov->dlhandle = dlhandle;
-	prov->provider = provider;
 	return;
 
 cleanup:
-	cleanup_provider(provider, dlhandle);
+	ofi_cleanup_prov(provider, dlhandle);
 }
 
 #ifdef HAVE_LIBDL
@@ -592,11 +620,11 @@ static void ofi_reg_dl_prov(const char *lib)
 
 static void ofi_ini_dir(const char *dir)
 {
-	int n = 0;
+	int n;
 	char *lib;
 	struct dirent **liblist = NULL;
 
-	n = scandir(dir, &liblist, lib_filter, NULL);
+	n = scandir(dir, &liblist, lib_filter, alphasort);
 	if (n < 0)
 		goto libdl_done;
 
@@ -618,8 +646,8 @@ libdl_done:
 	free(liblist);
 }
 
-/* Search standard system library paths (i.e. LD_LIBRARY_PATH) for known DL provider
- * libraries.
+/* Search standard system library paths (i.e. LD_LIBRARY_PATH) for DLLs for
+ * known providers.
  */
 static void ofi_find_prov_libs(void)
 {
@@ -629,7 +657,6 @@ static void ofi_find_prov_libs(void)
 	char* short_prov_name;
 
 	for (prov = prov_head; prov; prov = prov->next) {
-
 		if (!prov->prov_name)
 			continue;
 
@@ -650,6 +677,55 @@ static void ofi_find_prov_libs(void)
 		free(lib);
 	}
 }
+
+static void ofi_load_dl_prov(void)
+{
+	char **dirs;
+	char *provdir = NULL;
+	void *dlhandle;
+	int i;
+
+	/* If dlopen fails, assume static linking and return */
+	dlhandle = dlopen(NULL, RTLD_NOW);
+	if (!dlhandle)
+		return;
+	dlclose(dlhandle);
+
+	fi_param_define(NULL, "provider_path", FI_PARAM_STRING,
+			"Search for providers in specific path.  Path is "
+			"specified similar to dir1:dir2:dir3.  If the path "
+			"starts with @, loaded providers are given preference "
+			"based on discovery order, rather than version. "
+			"(default: " PROVDLDIR ")");
+
+	fi_param_get_str(NULL, "provider_path", &provdir);
+	if (!provdir || !strlen(provdir)) {
+		ofi_find_prov_libs();
+		dirs = ofi_split_and_alloc(PROVDLDIR, ":", NULL);
+	} else if (provdir[0] == '@') {
+		prov_order = OFI_PROV_ORDER_REGISTER;
+		if (strlen(provdir) == 1)
+			dirs = ofi_split_and_alloc(PROVDLDIR, ":", NULL);
+		else
+			dirs = ofi_split_and_alloc(&provdir[1], ":", NULL);
+	} else {
+		dirs = ofi_split_and_alloc(provdir, ":", NULL);
+	}
+
+	if (dirs) {
+		for (i = 0; dirs[i]; i++)
+			ofi_ini_dir(dirs[i]);
+
+		ofi_free_string_array(dirs);
+	}
+}
+
+#else /* HAVE_LIBDL */
+
+static void ofi_load_dl_prov(void)
+{
+}
+
 #endif
 
 void fi_ini(void)
@@ -688,37 +764,7 @@ void fi_ini(void)
 	fi_param_get_str(NULL, "provider", &param_val);
 	ofi_create_filter(&prov_filter, param_val);
 
-#ifdef HAVE_LIBDL
-	int n = 0;
-	char **dirs;
-	char *provdir = NULL;
-	void *dlhandle;
-
-	/* If dlopen fails, assume static linking and just return
-	   without error */
-	dlhandle = dlopen(NULL, RTLD_NOW);
-	if (dlhandle == NULL) {
-		goto libdl_done;
-	}
-	dlclose(dlhandle);
-
-	fi_param_define(NULL, "provider_path", FI_PARAM_STRING,
-			"Search for providers in specific path (default: "
-			PROVDLDIR ")");
-	fi_param_get_str(NULL, "provider_path", &provdir);
-	if (!provdir) {
-		provdir = PROVDLDIR;
-		ofi_find_prov_libs();
-	}
-	dirs = ofi_split_and_alloc(provdir, ":", NULL);
-	if (dirs) {
-		for (n = 0; dirs[n]; ++n) {
-			ofi_ini_dir(dirs[n]);
-		}
-		ofi_free_string_array(dirs);
-	}
-libdl_done:
-#endif
+	ofi_load_dl_prov();
 
 	ofi_register_provider(PSM3_INIT, NULL);
 	ofi_register_provider(PSM2_INIT, NULL);
@@ -758,9 +804,7 @@ FI_DESTRUCTOR(fi_fini(void))
 	while (prov_head) {
 		prov = prov_head;
 		prov_head = prov->next;
-		cleanup_provider(prov->provider, prov->dlhandle);
-		free(prov->prov_name);
-		free(prov);
+		ofi_free_prov(prov);
 	}
 
 	ofi_free_filter(&prov_filter);
@@ -1232,6 +1276,19 @@ uint32_t DEFAULT_SYMVER_PRE(fi_version)(void)
 	return FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION);
 }
 DEFAULT_SYMVER(fi_version_, fi_version, FABRIC_1.0);
+
+__attribute__((visibility ("default"),EXTERNALLY_VISIBLE))
+int DEFAULT_SYMVER_PRE(fi_open)(uint32_t version, const char *name,
+		void *attr, size_t attr_len, uint64_t flags,
+		struct fid **fid, void *context)
+{
+	if (!strcasecmp("mr_cache", name))
+		return ofi_open_mr_cache(version, attr, attr_len,
+					 flags, fid, context);
+
+	return -FI_ENOSYS;
+}
+CURRENT_SYMVER(fi_open_, fi_open);
 
 static const char *const errstr[] = {
 	[FI_EOTHER - FI_ERRNO_OFFSET] = "Unspecified error",

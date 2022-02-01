@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,6 @@
 #undef NDEBUG
 #endif
 
-#include <array>
 #include <cassert>
 
 using namespace chpl;
@@ -67,7 +66,7 @@ static void test0(Parser* parser) {
   
   // Make sure the statements iterator works as expected.
   {
-    std::array<ASTTag, 2> stmtList = {
+    ASTTag stmtList[] = {
       asttags::Comment,
       asttags::Begin
     };
@@ -110,7 +109,7 @@ static void test1(Parser* parser) {
 
   // Make sure the statements iterator works as expected.
   {
-    std::array<ASTTag, 3> stmtList = {
+    ASTTag stmtList[] = {
       asttags::Comment,
       asttags::Begin,
       asttags::Comment
@@ -159,7 +158,7 @@ static void test2(Parser* parser) {
 
   // Make sure the statements iterator works as expected.
   {
-    std::array<ASTTag, 4> stmtList = {
+    ASTTag stmtList[] = {
       asttags::Comment,
       asttags::Begin,
       asttags::Begin,

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017-2019 Intel Corporation, Inc. All rights reserved.
- * Copyright (c) 2019-2020 Amazon.com, Inc. or its affiliates.
+ * Copyright (c) 2019-2021 Amazon.com, Inc. or its affiliates.
  *                         All rights reserved.
  * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
  *
@@ -49,6 +49,10 @@
 #include <ofi_list.h>
 #include <ofi_tree.h>
 #include <ofi_hmem.h>
+
+
+int ofi_open_mr_cache(uint32_t version, void *attr, size_t attr_len,
+		      uint64_t flags, struct fid **fid, void *context);
 
 struct ofi_mr_info {
 	struct iovec iov;
@@ -120,11 +124,21 @@ struct ofi_mr_cache;
 
 union ofi_mr_hmem_info {
 	uint64_t cuda_id;
+	uint64_t ze_id;
+};
+
+enum fi_mm_state {
+	FI_MM_STATE_UNSPEC = 0,
+	FI_MM_STATE_IDLE,
+	FI_MM_STATE_STARTING,
+	FI_MM_STATE_RUNNING,
+	FI_MM_STATE_STOPPING,
 };
 
 struct ofi_mem_monitor {
 	struct dlist_entry		list;
 	enum fi_hmem_iface		iface;
+	enum fi_mm_state                state;
 
 	void (*init)(struct ofi_mem_monitor *monitor);
 	void (*cleanup)(struct ofi_mem_monitor *monitor);
@@ -151,6 +165,8 @@ void ofi_monitor_init(struct ofi_mem_monitor *monitor);
 void ofi_monitor_cleanup(struct ofi_mem_monitor *monitor);
 void ofi_monitors_init(void);
 void ofi_monitors_cleanup(void);
+int ofi_monitor_import(struct fid *fid);
+
 int ofi_monitors_add_cache(struct ofi_mem_monitor **monitors,
 			   struct ofi_mr_cache *cache);
 void ofi_monitors_del_cache(struct ofi_mr_cache *cache);
@@ -168,6 +184,7 @@ void ofi_monitor_unsubscribe(struct ofi_mem_monitor *monitor,
 extern struct ofi_mem_monitor *default_monitor;
 extern struct ofi_mem_monitor *default_cuda_monitor;
 extern struct ofi_mem_monitor *default_rocr_monitor;
+extern struct ofi_mem_monitor *default_ze_monitor;
 
 /*
  * Userfault fd memory monitor
@@ -191,8 +208,9 @@ struct ofi_memhooks {
 extern struct ofi_mem_monitor *memhooks_monitor;
 
 extern struct ofi_mem_monitor *cuda_monitor;
-
 extern struct ofi_mem_monitor *rocr_monitor;
+extern struct ofi_mem_monitor *ze_monitor;
+extern struct ofi_mem_monitor *import_monitor;
 
 /*
  * Used to store registered memory regions into a lookup map.  This
@@ -262,6 +280,7 @@ struct ofi_mr_cache_params {
 	char *				monitor;
 	int				cuda_monitor_enabled;
 	int				rocr_monitor_enabled;
+	int				ze_monitor_enabled;
 };
 
 extern struct ofi_mr_cache_params	cache_params;
@@ -285,7 +304,7 @@ struct ofi_mr_cache {
 
 	struct ofi_rbmap		tree;
 	struct dlist_entry		lru_list;
-	struct dlist_entry		flush_list;
+	struct dlist_entry		dead_region_list;
 	pthread_mutex_t 		lock;
 
 	size_t				cached_cnt;
@@ -311,10 +330,17 @@ void ofi_mr_cache_cleanup(struct ofi_mr_cache *cache);
 
 void ofi_mr_cache_notify(struct ofi_mr_cache *cache, const void *addr, size_t len);
 
+static inline bool ofi_mr_cache_full(struct ofi_mr_cache *cache)
+{
+	return (cache->cached_cnt >= cache_params.max_cnt) ||
+	       (cache->cached_size >= cache_params.max_size);
+}
+
 bool ofi_mr_cache_flush(struct ofi_mr_cache *cache, bool flush_lru);
 
 int ofi_mr_cache_search(struct ofi_mr_cache *cache, const struct fi_mr_attr *attr,
 			struct ofi_mr_entry **entry);
+
 /**
  * Given an attr (with an iov range), if the iov range is already registered,
  * return the corresponding ofi_mr_entry. Otherwise, return NULL.

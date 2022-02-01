@@ -182,7 +182,7 @@ void amsh_atexit()
 		ptl = (struct ptl_am *)(ep->ptl_amsh.ptl);
 		if (ptl->self_nodeinfo &&
 		    ptl->amsh_keyname != NULL) {
-			_HFI_VDBG("unlinking shm file %s\n",
+			_HFI_PRDBG("unlinking shm file %s\n",
 				  ptl->amsh_keyname);
 			shm_unlink(ptl->amsh_keyname);
 		}
@@ -520,8 +520,8 @@ psm2_error_t psmi_shm_map_remote(ptl_t *ptl_gen, psm2_epid_t epid, uint16_t *shm
 		while (*is_init == 0)
 			usleep(1);
 		ips_sync_reads();
-		_HFI_PRDBG("Got a published remote dirpage page at "
-			   "%p, size=%dn", dest_mapptr, (int)segsz);
+		_HFI_CONNDBG("Got a published remote dirpage page at "
+			   "%p, size=%d\n", dest_mapptr, (int)segsz);
 	}
 
 	shmidx = -1;
@@ -563,10 +563,10 @@ psm2_error_t psmi_shm_map_remote(ptl_t *ptl_gen, psm2_epid_t epid, uint16_t *shm
 			} else
 				psmi_shm_mq_rv_thresh =
 				    PSMI_MQ_RV_THRESH_NO_KASSIST;
-			_HFI_PRDBG("KASSIST MODE: %s\n",
+			_HFI_CONNDBG("KASSIST MODE: %s\n",
 				   psmi_kassist_getmode(ptl->psmi_kassist_mode));
 			shmidx = *shmidx_o = i;
-			_HFI_PRDBG("Mapped epid %lx into shmidx %d\n", epid, shmidx);
+			_HFI_CONNDBG("Mapped epid 0x%"PRIx64" into shmidx %d\n", epid, shmidx);
 			ptl->am_ep[i].amsh_shmbase = (uintptr_t) dest_mapptr;
 			ptl->am_ep[i].amsh_qsizes = dest_nodeinfo->amsh_qsizes;
 			if (i > ptl->max_ep_idx)
@@ -679,7 +679,7 @@ psm2_error_t psmi_shm_detach(ptl_t *ptl_gen)
 	if (ptl->self_nodeinfo == NULL)
 		return err;
 
-	_HFI_VDBG("unlinking shm file %s\n", ptl->amsh_keyname + 1);
+	_HFI_PRDBG("unlinking shm file %s\n", ptl->amsh_keyname + 1);
 	shmbase = ptl->self_nodeinfo->amsh_shmbase;
 	shm_unlink(ptl->amsh_keyname);
 	psmi_free(ptl->amsh_keyname);
@@ -813,8 +813,8 @@ amsh_epaddr_add(ptl_t *ptl_gen, psm2_epid_t epid, uint16_t shmidx, psm2_epaddr_t
 	/* Finally, add to table */
 	if ((err = psmi_epid_add(ptl->ep, epid, epaddr)))
 		goto fail;
-	_HFI_VDBG("epaddr=%s added to ptl=%p\n",
-		  psmi_epaddr_get_name(epid), ptl);
+	_HFI_CONNDBG("epaddr=%p %s added to ptl=%p\n",
+		  epaddr, psmi_epaddr_get_name(epid), ptl);
 	*epaddr_o = epaddr;
 	return PSM2_OK;
 fail:
@@ -938,8 +938,7 @@ amsh_ep_connreq_init(ptl_t *ptl_gen, int op, /* connect, disconnect or abort */
 				continue;
 			}
 
-			_HFI_VDBG("looking at epid %llx\n",
-				  (unsigned long long)epid);
+			_HFI_CONNDBG("Connect epid 0x%"PRIx64"\n", epid);
 			epaddr = psmi_epid_lookup(ptl->ep, epid);
 			if (epaddr != NULL) {
 				if (epaddr->ptlctl->ptl != ptl_gen) {
@@ -969,6 +968,8 @@ amsh_ep_connreq_init(ptl_t *ptl_gen, int op, /* connect, disconnect or abort */
 				continue;
 
 			psmi_assert(epaddr != NULL);
+			_HFI_CONNDBG("Disconnect force=%d epid 0x%"PRIx64"\n",
+				(op == PTL_OP_ABORT), epaddr->epid);
 			cstate = ((am_epaddr_t *) epaddr)->cstate_outgoing;
 			if (cstate == AMSH_CSTATE_OUTGOING_ESTABLISHED) {
 				req->epid_mask[i] = AMSH_CMASK_PREREQ;
@@ -985,8 +986,10 @@ amsh_ep_connreq_init(ptl_t *ptl_gen, int op, /* connect, disconnect or abort */
 	if (req->numep_left == 0) {	/* nothing to do */
 		psmi_free(req->epid_mask);
 		psmi_free(req);
-		_HFI_VDBG("Nothing to connect, bump up phase\n");
-		ptl->connect_phase++;
+		if (op != PTL_OP_ABORT) {
+			_HFI_CONNDBG("Nothing to connect, bump up phase\n");
+			ptl->connect_phase++;
+		}
 		*req_o = NULL;
 		return PSM2_OK;
 	} else {
@@ -1039,8 +1042,11 @@ amsh_ep_connreq_poll(ptl_t *ptl_gen, struct ptl_connection_req *req)
 				psmi_assert(shmidx != (uint16_t)-1);
 				req->args[2].u32w0 = create_extra_ep_data();
 				req->args[2].u32w1 = PSM2_OK;
-				req->args[3].u64w0 =
-				    (uint64_t) (uintptr_t) &req->errors[i];
+				if (req->op != PTL_OP_ABORT)
+					req->args[3].u64w0 =
+					    (uint64_t) (uintptr_t) &req->errors[i];
+				else
+					req->args[3].u64w0 = 0;
 				psmi_amsh_short_request(ptl_gen, epaddr,
 							amsh_conn_handler_hidx,
 							req->args, 4, NULL, 0,
@@ -1186,7 +1192,7 @@ amsh_ep_connreq_poll(ptl_t *ptl_gen, struct ptl_connection_req *req)
 							amsh_conn_handler_hidx,
 							req->args, 4, NULL, 0,
 							0);
-				_HFI_PRDBG("epaddr=%p, epid=%" PRIx64
+				_HFI_CONNDBG("epaddr=%p, epid=0x%" PRIx64
 					   " at shmidx=%d\n", epaddr, epid,
 					   shmidx);
 			}
@@ -1216,12 +1222,15 @@ amsh_ep_connreq_fini(ptl_t *ptl_gen, struct ptl_connection_req *req)
 		return PSM2_OK;
 
 	/* This prevents future connect replies from referencing data structures
-	 * that disappeared */
-	ptl->connect_phase++;
+	 * that disappeared.  For abort we aren't waiting for DISC_REP so
+	 * we want to keep same phase so we accept them after this function */
+	if (req->op != PTL_OP_ABORT)
+		ptl->connect_phase++;
 
 	/* First process any leftovers in postreq or prereq */
 	for (i = 0; i < req->numep; i++) {
-		if (req->epid_mask[i] == AMSH_CMASK_NONE)
+		if (req->epid_mask[i] == AMSH_CMASK_NONE
+			|| req->op == PTL_OP_ABORT)
 			continue;
 		else if (req->epid_mask[i] == AMSH_CMASK_POSTREQ) {
 			int cstate;
@@ -1249,6 +1258,11 @@ amsh_ep_connreq_fini(ptl_t *ptl_gen, struct ptl_connection_req *req)
 	for (i = 0; i < req->numep; i++) {
 		if (req->epid_mask[i] == AMSH_CMASK_NONE)
 			continue;
+		if (req->op == PTL_OP_ABORT
+			 && req->epid_mask[i] != AMSH_CMASK_DONE) {
+			req->epid_mask[i] = AMSH_CMASK_DONE;
+			continue;
+		}
 		psmi_assert(req->epid_mask[i] == AMSH_CMASK_DONE);
 
 		err = psmi_error_cmp(err, req->errors[i]);
@@ -1307,6 +1321,24 @@ amsh_ep_connreq_wrap(ptl_t *ptl_gen, int op,
 					 * there was an error */
 		return err;
 
+	if (op == PTL_OP_ABORT) {
+		int i;
+		/* loop a couple times only, ignore timeout */
+		/* this will move from PREREQ to POSTREQ and check once
+		 * for reply, but not wait for reply
+		 */
+		for (i=0; i < 2; i++) {
+			psmi_poll_internal(ptl->ep, 1);
+			err = amsh_ep_connreq_poll(ptl_gen, req);
+			if (err != PSM2_OK && err != PSM2_OK_NO_PROGRESS) {
+				psmi_free(req->epid_mask);
+				psmi_free(req);
+				goto fail;
+			}
+		}
+		goto fini;
+	}
+
 	/* Poll until either
 	 * 1. We time out
 	 * 2. We are done with connecting
@@ -1330,6 +1362,7 @@ amsh_ep_connreq_wrap(ptl_t *ptl_gen, int op,
 	}
 	while (psmi_cycles_left(t_start, timeout_ns));
 
+fini:
 	err = amsh_ep_connreq_fini(ptl_gen, req);
 
 fail:
@@ -2021,7 +2054,7 @@ amsh_mq_rndv(ptl_t *ptl, psm2_mq_t mq, psm2_mq_req_t req,
 	mq->stats.tx_num++;
 	mq->stats.tx_shm_num++;
 	mq->stats.tx_rndv_num++;
-	mq->stats.tx_rndv_bytes += len;
+	// tx_rndv_bytes tabulated when get CTS
 
 	return err;
 }
@@ -2079,6 +2112,7 @@ amsh_mq_send_inner_eager(psm2_mq_t mq, psm2_mq_req_t req, psm2_epaddr_t epaddr,
 
 	mq->stats.tx_num++;
 	mq->stats.tx_shm_num++;
+	mq->stats.tx_shm_bytes += len;
 	mq->stats.tx_eager_num++;
 	mq->stats.tx_eager_bytes += len;
 
@@ -2100,7 +2134,7 @@ amsh_mq_send_inner(psm2_mq_t mq, psm2_mq_req_t req, psm2_epaddr_t epaddr,
 
 #ifdef PSM_CUDA
 	int gpu_mem = 0;
-	int ep_supports_p2p = (1 << ((am_epaddr_t *) epaddr)->gpuid) & gpu_p2p_supported;
+	int ep_supports_p2p = (1 << ((am_epaddr_t *) epaddr)->gpuid) & gpu_p2p_supported();
 
 	if (PSMI_IS_CUDA_ENABLED && PSMI_IS_CUDA_MEM(ubuf)) {
 		gpu_mem = 1;
@@ -2301,13 +2335,13 @@ amsh_conn_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 	psmi_assert_always(buf == NULL && len == 0);
 	read_extra_ep_data(args[2].u32w0, &pid, &gpuid);
 
-	_HFI_VDBG("Conn op=%d, phase=%d, epid=%llx, err=%d\n",
+	_HFI_CONNDBG("Conn op=%d, phase=%d, epid=0x%llx, err=%d\n",
 		  op, phase, (unsigned long long)epid, err);
 
 	switch (op) {
 	case PSMI_AM_CONN_REQ:
-		_HFI_VDBG("Connect from %d:%d\n",
-			  (int)psm2_epid_nid(epid), (int)psm2_epid_context(epid));
+		_HFI_CONNDBG("Connect from 0x%"PRIx64":%"PRIu64"\n",
+			  psm2_epid_nid(epid), psm2_epid_context(epid));
 		epaddr = psmi_epid_lookup(ptl->ep, epid);
 		if (epaddr && ((am_epaddr_t *) epaddr)->pid != pid) {
 			/* If old pid is unknown consider new pid the correct one */
@@ -2368,7 +2402,7 @@ amsh_conn_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 
 	case PSMI_AM_CONN_REP:
 		if (ptl->connect_phase != phase) {
-			_HFI_VDBG("Out of phase connect reply\n");
+			_HFI_CONNDBG("Out of phase connect reply exp %d got %d\n", ptl->connect_phase, phase);
 			return;
 		}
 		epaddr = ptl->am_ep[shmidx].epaddr;
@@ -2386,14 +2420,14 @@ amsh_conn_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 			= AMSH_CSTATE_OUTGOING_REPLIED;
 		((am_epaddr_t *) epaddr)->return_shmidx = return_shmidx;
 		ptl->connect_outgoing++;
-		_HFI_VDBG("CCC epaddr=%s connected to ptl=%p\n",
+		_HFI_CONNDBG("CCC epaddr=%s connected to ptl=%p\n",
 			  psmi_epaddr_get_name(epaddr->epid), ptl);
 		break;
 
 	case PSMI_AM_DISC_REQ:
 		epaddr = psmi_epid_lookup(ptl->ep, epid);
 		if (!epaddr) {
-			_HFI_VDBG("Dropping disconnect request from an epid that we are not connected to\n");
+			_HFI_CONNDBG("Dropping disconnect request from an epid that we are not connected to 0x%"PRIx64"\n", epid);
 			return;
 		}
 		args[0].u16w0 = PSMI_AM_DISC_REP;
@@ -2428,10 +2462,11 @@ amsh_conn_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 
 	case PSMI_AM_DISC_REP:
 		if (ptl->connect_phase != phase) {
-			_HFI_VDBG("Out of phase disconnect reply\n");
+			_HFI_CONNDBG("Out of phase disconnect reply exp %d got %d\n", ptl->connect_phase, phase);
 			return;
 		}
-		*perr = err;
+		if (perr)
+			*perr = err;
 		epaddr = tok->tok.epaddr_incoming;
 		((am_epaddr_t *) epaddr)->cstate_outgoing =
 			AMSH_CSTATE_OUTGOING_DISC_REPLIED;
@@ -2567,14 +2602,14 @@ amsh_init(psm2_ep_t ep, ptl_t *ptl_gen, ptl_ctl_t *ctl)
 	union psmi_envvar_val env_memcache_enabled;
 	psmi_getenv("PSM3_CUDA_MEMCACHE_ENABLED",
 		    "PSM cuda ipc memhandle cache enabled (default is enabled)",
-		     PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
+		     PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
 		     (union psmi_envvar_val)
 		      1, &env_memcache_enabled);
 	if (PSMI_IS_CUDA_ENABLED && env_memcache_enabled.e_uint) {
 		union psmi_envvar_val env_memcache_size;
 		psmi_getenv("PSM3_CUDA_MEMCACHE_SIZE",
 			    "Size of the cuda ipc memhandle cache ",
-			    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
+			    PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
 			    (union psmi_envvar_val)
 			    CUDA_MEMHANDLE_CACHE_SIZE, &env_memcache_size);
 		if ((err = am_cuda_memhandle_cache_init(env_memcache_size.e_uint) != PSM2_OK))
@@ -2611,6 +2646,8 @@ static psm2_error_t amsh_fini(ptl_t *ptl_gen, int force, uint64_t timeout_ns)
 				num_disc++;
 		}
 		psmi_epid_itor_fini(&itor);
+		if (! num_disc)
+			goto poll;
 
 		mask =
 		    (int *)psmi_calloc(ptl->ep, UNDEFINED, num_disc,
@@ -2652,18 +2689,23 @@ static psm2_error_t amsh_fini(ptl_t *ptl_gen, int force, uint64_t timeout_ns)
 		psmi_free(epaddr_array);
 	}
 
+poll:
 	if (ptl->connect_incoming > 0 || ptl->connect_outgoing > 0) {
+		_HFI_CONNDBG("CCC polling disconnect from=%d,to=%d to=%"PRIu64" phase %d\n",
+			  ptl->connect_incoming, ptl->connect_outgoing, timeout_ns, ptl->connect_phase);
 		while (ptl->connect_incoming > 0 || ptl->connect_outgoing > 0) {
 			if (!psmi_cycles_left(t_start, timeout_ns)) {
 				err = PSM2_TIMEOUT;
-				_HFI_VDBG("CCC timed out with from=%d,to=%d\n",
+				_HFI_CONNDBG("CCC timed out with from=%d,to=%d\n",
 					  ptl->connect_incoming, ptl->connect_outgoing);
 				break;
 			}
 			psmi_poll_internal(ptl->ep, 1);
 		}
+		_HFI_CONNDBG("CCC done polling disconnect from=%d,to=%d\n",
+			  ptl->connect_incoming, ptl->connect_outgoing);
 	} else
-		_HFI_VDBG("CCC complete disconnect from=%d,to=%d\n",
+		_HFI_CONNDBG("CCC complete disconnect from=%d,to=%d\n",
 			  ptl->connect_incoming, ptl->connect_outgoing);
 
 	if ((err_seg = psmi_shm_detach(ptl_gen))) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,7 +42,7 @@ static void test1() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test1.chpl");
+  auto path = UniqueString::get(context, "test1.chpl");
   std::string contents = "module M {\n"
                          "  var x;\n"
                          "  x;\n"
@@ -74,7 +74,7 @@ static void test2() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test2.chpl");
+  auto path = UniqueString::get(context, "test2.chpl");
   std::string contents = "module M {\n"
                          "  var y;\n"
                          "  x;\n"
@@ -106,7 +106,7 @@ static void test3() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test3.chpl");
+  auto path = UniqueString::get(context, "test3.chpl");
   std::string contents = "module M {\n"
                          "  var x;\n"
                          "  var x;\n"
@@ -142,7 +142,7 @@ static void test4() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test4.chpl");
+  auto path = UniqueString::get(context, "test4.chpl");
   std::string contents = "module M {\n"
                          "  var x;\n"
                          "}\n"
@@ -181,7 +181,7 @@ static void test5() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test5.chpl");
+  auto path = UniqueString::get(context, "test5.chpl");
   std::string contents = "module M {\n"
                          "  use N;\n"
                          "  var x;\n"
@@ -221,7 +221,7 @@ static void test6() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test6.chpl");
+  auto path = UniqueString::get(context, "test6.chpl");
   std::string contents = "module M {\n"
                          "  var x;\n"
                          "  { { { x; } } }\n"
@@ -258,7 +258,7 @@ static void test7() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test7.chpl");
+  auto path = UniqueString::get(context, "test7.chpl");
   std::string contents = "";
 
   const Module* m = nullptr;
@@ -415,7 +415,7 @@ static void test8() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test8.chpl");
+  auto path = UniqueString::get(context, "test8.chpl");
   std::string contents = "module M {\n"
                          "  var x;\n"
                          "  {\n"
@@ -449,7 +449,7 @@ static void test8() {
   const Scope* innerScope = scopeForId(context, innerIdent->id());
   assert(innerIdent);
 
-  auto xStr = UniqueString::build(context, "x");
+  auto xStr = UniqueString::get(context, "x");
 
   {
     const auto& match = findInnermostDecl(context, outerScope, xStr);
@@ -470,7 +470,7 @@ static void test9() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test9.chpl");
+  auto path = UniqueString::get(context, "test9.chpl");
   std::string contents = "module M {\n"
                          "  import N;\n"
                          "  N;\n"
@@ -509,7 +509,7 @@ static void test10() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test10.chpl");
+  auto path = UniqueString::get(context, "test10.chpl");
   std::string contents = "module M {\n"
                          "  import N.x;\n"
                          "  x;\n"
@@ -548,7 +548,7 @@ static void test11() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test11.chpl");
+  auto path = UniqueString::get(context, "test11.chpl");
   std::string contents = "module M {\n"
                          "  import N.{x,y};\n"
                          "  x;\n"
@@ -598,7 +598,7 @@ static void test12() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test12.chpl");
+  auto path = UniqueString::get(context, "test12.chpl");
   std::string contents = "module M {\n"
                          "  import N.NN.NNN.x;\n"
                          "  x;\n"
@@ -644,7 +644,7 @@ static void test13() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test13.chpl");
+  auto path = UniqueString::get(context, "test13.chpl");
   std::string contents = "module M {\n"
                          "  use N.NN.NNN;\n"
                          "  x;\n"
@@ -690,7 +690,7 @@ static void test14() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "test14.chpl");
+  auto path = UniqueString::get(context, "test14.chpl");
   std::string contents = "module M {\n"
                          "  import N.f;\n"
                          "  f;\n"
@@ -721,6 +721,47 @@ static void test14() {
   assert(match.found() == InnermostMatch::MANY);
 }
 
+// test parsing a module due to a 'use' statement
+static void test15() {
+  Context ctx;
+  Context* context = &ctx;
+
+  std::vector<std::string> searchPath;
+  searchPath.push_back("/test/path/library");
+  searchPath.push_back("/test/path/program/");
+
+  setModuleSearchPath(context, searchPath);
+
+  setFileText(context, "/test/path/program/Program.chpl",
+                       "module Program { use Library; libY; }");
+  setFileText(context, "/test/path/library/Library.chpl",
+                       "module Library { var libY = 3; }");
+
+  auto Program = UniqueString::get(context, "Program");
+  auto Library = UniqueString::get(context, "Library");
+  auto pMod = getToplevelModule(context, Program);
+  assert(pMod != nullptr);
+  assert(pMod->numStmts() == 2);
+
+  const Identifier* libYIdent = pMod->stmt(1)->toIdentifier();
+  assert(libYIdent);
+
+  const Scope* scopeForIdent = scopeForId(context, libYIdent->id());
+  assert(scopeForIdent);
+
+  const auto& match = findInnermostDecl(context, scopeForIdent,
+                                        libYIdent->name());
+  assert(match.found() == InnermostMatch::ONE);
+
+  auto lMod = getToplevelModule(context, Library);
+  assert(lMod != nullptr);
+  assert(lMod->numStmts() == 1);
+
+  // finally check that libY resolved to the right variable
+  assert(match.id() == lMod->stmt(0)->id());
+}
+
+
 
 int main() {
   test1();
@@ -737,6 +778,7 @@ int main() {
   test12();
   test13();
   test14();
+  test15();
 
   return 0;
 }

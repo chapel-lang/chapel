@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -973,6 +973,16 @@ compareSymbol(const void* v1, const void* v2) {
     if (m1->modTag > m2->modTag)
       return 0;
     return strcmp(m1->cname, m2->cname) < 0;
+  }
+
+  // prefer to place externs earlier in the function list (vector)
+  // this was necessary because in the new parser the order in which
+  // extern and non-externs are identified does not match the old parser.
+  // this keeps things consistent between the old and new parser
+  if (s1->hasFlag(FLAG_EXTERN) != s2->hasFlag(FLAG_EXTERN)) {
+    if (s1->hasFlag(FLAG_EXTERN))
+      return 1;
+    return 0;
   }
 
   if (s1->linenum() != s2->linenum())
@@ -2088,8 +2098,14 @@ codegen_config() {
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (6);
-        args[0] = info->irBuilder->CreateLoad(
-            new_CStringSymbol(var->name)->codegen().val);
+        {
+          GenRet gen = new_CStringSymbol(var->name)->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[0] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+#else
+          args[0] = info->irBuilder->CreateLoad(gen.val);
+#endif
+        }
 
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -2101,23 +2117,43 @@ codegen_config() {
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           type = type->getField("addr")->type;
         }
-        args[1] = info->irBuilder->CreateLoad(
-            new_CStringSymbol(type->symbol->name)->codegen().val);
+        {
+          GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[1] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+#else
+          args[1] = info->irBuilder->CreateLoad(gen.val);
+#endif
+        }
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          args[2] = info->irBuilder->CreateLoad(
-              new_CStringSymbol("Built-in")->codegen().val);
+          GenRet gen = new_CStringSymbol("Built-in")->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[2] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+#else
+          args[2] = info->irBuilder->CreateLoad(gen.val);
+#endif
         }
         else {
-          args[2] =info->irBuilder->CreateLoad(
-              new_CStringSymbol(var->getModule()->name)->codegen().val);
+          GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[2] =info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+#else
+          args[2] =info->irBuilder->CreateLoad(gen.val);
+#endif
         }
 
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
 
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
-        args[5] = info->irBuilder->CreateLoad(new_CStringSymbol(var->getDeprecationMsg())->codegen().val);
-
+        {
+          GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[5] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+#else
+          args[5] = info->irBuilder->CreateLoad(gen.val);
+#endif
+        }
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
     }
@@ -2692,6 +2728,11 @@ void codegen() {
       int status = 0;
       while (wait(&status) != pid) {
         // wait for child process
+      }
+      // If there was an error in GPU code generation then the .fatbin file (containing
+      // the generated GPU code) was not created and we won't be able to continue.
+      if(status != 0) {
+        clean_exit(status);
       }
     }
   }

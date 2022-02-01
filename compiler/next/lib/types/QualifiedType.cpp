@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,7 @@
 
 #include "chpl/types/QualifiedType.h"
 
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/Type.h"
 
@@ -26,12 +27,14 @@ namespace chpl {
 namespace types {
 
 
-bool QualifiedType::isGenericType() const {
-  return type_->isGeneric();
-}
+Type::Genericity QualifiedType::genericityWithFields(Context* context) const {
+   Type::Genericity g = genericity();
+   if (g == Type::MAYBE_GENERIC && type_ != nullptr ) {
+     return resolution::getTypeGenericity(context, type_);
+   }
 
-bool QualifiedType::isUnknownType() const {
-  return type_->isUnknownType();
+   // otherwise return whatever we computed
+   return g;
 }
 
 bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
@@ -84,6 +87,8 @@ void QualifiedType::stringify(std::ostream& ss,
     param_->stringify(ss, stringKind);
   }
 }
+
+IMPLEMENT_DUMP(QualifiedType);
 
 
 } // end namespace types

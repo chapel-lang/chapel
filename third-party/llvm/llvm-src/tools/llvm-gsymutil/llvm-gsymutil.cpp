@@ -207,8 +207,8 @@ static bool filterArch(MachOObjectFile &Obj) {
 /// \returns A valid image base address if we are able to extract one.
 template <class ELFT>
 static llvm::Optional<uint64_t>
-getImageBaseAddress(const object::ELFFile<ELFT> *ELFFile) {
-  auto PhdrRangeOrErr = ELFFile->program_headers();
+getImageBaseAddress(const object::ELFFile<ELFT> &ELFFile) {
+  auto PhdrRangeOrErr = ELFFile.program_headers();
   if (!PhdrRangeOrErr) {
     consumeError(PhdrRangeOrErr.takeError());
     return llvm::None;
@@ -416,7 +416,7 @@ static llvm::Error convertFileToGSYM(raw_ostream &OS) {
   OS << "Input file: " << ConvertFilename << "\n";
 
   auto Objs = expandBundle(ConvertFilename);
-  Objects.insert(Objects.end(), Objs.begin(), Objs.end());
+  llvm::append_range(Objects, Objs);
 
   for (auto Object : Objects) {
     if (auto Err = handleFileConversionToGSYM(Object, OutFile))

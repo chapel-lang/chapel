@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,7 @@
 
 #include "chpl/resolution/can-pass.h"
 
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/all-types.h"
 
 #include <cmath>
@@ -213,10 +214,36 @@ static bool fitsInMantissaExponent(int mantissaWidth,
   return false;
 }
 
+static bool isConsideredGeneric(Type::Genericity g) {
+  switch (g) {
+    case Type::CONCRETE:
+    case Type::GENERIC_WITH_DEFAULTS:
+      // argument passing calculations think of generic with defaults
+      // as the same as concrete.
+      return false;
+    case Type::GENERIC:
+      return true;
+    case Type::MAYBE_GENERIC:
+      assert(false && "Should not be reachable");
+  }
+
+  return false;
+}
+
+bool CanPassResult::isTypeGeneric(Context* context, const QualifiedType& qt) {
+  auto g = qt.genericityWithFields(context);
+  return isConsideredGeneric(g); 
+}
+bool CanPassResult::isTypeGeneric(Context* context, const Type* t) {
+  auto g = getTypeGenericity(context, t);
+  return isConsideredGeneric(g);
+}
+
 // can we do an implicit numeric conversion?
 // does not check for param narrowing conversions
-bool CanPassResult::canConvertNumeric(const types::Type* actualT,
-                                      const types::Type* formalT) {
+bool CanPassResult::canConvertNumeric(Context* context,
+                                      const Type* actualT,
+                                      const Type* formalT) {
   // Return early if the types involved are not numeric/bool
   if (!actualT->isNumericOrBoolType() || !formalT->isNumericOrBoolType())
     return false;
@@ -325,7 +352,8 @@ bool CanPassResult::canConvertNumeric(const types::Type* actualT,
 }
 
 bool
-CanPassResult::canConvertParamNarrowing(const QualifiedType& actualQT,
+CanPassResult::canConvertParamNarrowing(Context* context,
+                                        const QualifiedType& actualQT,
                                         const QualifiedType& formalQT) {
   const Type* actualT = actualQT.type();
   const Param* actualP = actualQT.param();
@@ -413,7 +441,8 @@ CanPassResult::canConvertParamNarrowing(const QualifiedType& actualQT,
   return false;
 }
 
-CanPassResult CanPassResult::canPassDecorators(ClassTypeDecorator actual,
+CanPassResult CanPassResult::canPassDecorators(Context* context,
+                                               ClassTypeDecorator actual,
                                                ClassTypeDecorator formal) {
   if (actual == formal) {
     return passAsIs();
@@ -461,14 +490,16 @@ CanPassResult CanPassResult::canPassDecorators(ClassTypeDecorator actual,
                        conversion);
 }
 
-CanPassResult CanPassResult::canPassClassTypes(const ClassType* actualCt,
+CanPassResult CanPassResult::canPassClassTypes(Context* context,
+                                               const ClassType* actualCt,
                                                const ClassType* formalCt) {
   // owned Child -> owned Parent
   // owned Child -> owned Parent?
   // ditto borrowed, etc
 
   // check decorators allow passing
-  CanPassResult decResult = canPassDecorators(actualCt->decorator(),
+  CanPassResult decResult = canPassDecorators(context,
+                                              actualCt->decorator(),
                                               formalCt->decorator());
 
   if (!decResult.passes())
@@ -524,7 +555,8 @@ CanPassResult CanPassResult::canPassClassTypes(const ClassType* actualCt,
 // kind of NONE or SUBTYPE.
 // It's returning CanPassResult in order to also reflect if instantiation
 // was necessary.
-CanPassResult CanPassResult::canPassSubtype(const Type* actualT,
+CanPassResult CanPassResult::canPassSubtype(Context* context,
+                                            const Type* actualT,
                                             const Type* formalT) {
   // nil -> pointers and class types
   if (actualT->isNilType() && formalT->isNilablePtrType() &&
@@ -533,7 +565,7 @@ CanPassResult CanPassResult::canPassSubtype(const Type* actualT,
 
   if (auto actualCt = actualT->toClassType()) {
     if (auto formalCt = formalT->toClassType()) {
-      CanPassResult result = canPassClassTypes(actualCt, formalCt);
+      CanPassResult result = canPassClassTypes(context, actualCt, formalCt);
       if (result.passes_ && (result.conversionKind_ == NONE ||
                              result.conversionKind_ == SUBTYPE)) {
         return result;
@@ -547,14 +579,15 @@ CanPassResult CanPassResult::canPassSubtype(const Type* actualT,
   return fail();
 }
 
-CanPassResult CanPassResult::canConvert(const QualifiedType& actualQT,
+CanPassResult CanPassResult::canConvert(Context* context,
+                                        const QualifiedType& actualQT,
                                         const QualifiedType& formalQT) {
   const Type* actualT = actualQT.type();
   const Type* formalT = formalQT.type();
 
   // can we convert with a subtype conversion, including class subtyping?
   {
-    auto got = canPassSubtype(actualT, formalT);
+    auto got = canPassSubtype(context, actualT, formalT);
     if (got.passes()) {
       // canPassSubtype should always return NONE or SUBTYPE conversion.
       assert(got.conversionKind_ == NONE || got.conversionKind_ == SUBTYPE);
@@ -563,11 +596,11 @@ CanPassResult CanPassResult::canConvert(const QualifiedType& actualQT,
   }
 
   // can we convert with a numeric conversion?
-  if (canConvertNumeric(actualT, formalT))
+  if (canConvertNumeric(context, actualT, formalT))
     return convert(NUMERIC);
 
   // can we convert with param narrowing?
-  if (canConvertParamNarrowing(actualQT, formalQT))
+  if (canConvertParamNarrowing(context, actualQT, formalQT))
     return convert(PARAM_NARROWING);
 
   // can we convert tuples?
@@ -584,8 +617,9 @@ CanPassResult CanPassResult::canConvert(const QualifiedType& actualQT,
 }
 
 // handles formalT being a builtin generic type like integral
-bool CanPassResult::canInstantiateBuiltin(const types::Type* actualT,
-                                          const types::Type* formalT) {
+bool CanPassResult::canInstantiateBuiltin(Context* context,
+                                          const Type* actualT,
+                                          const Type* formalT) {
   if (formalT->isAnyType())
     return true;
 
@@ -671,9 +705,10 @@ bool CanPassResult::canInstantiateBuiltin(const types::Type* actualT,
   if (formalT->isAnyUintType() && actualT->isUintType())
     return true;
 
-  if (formalT->isAnyUninstantiatedType())
-    if (actualT->isGeneric() || actualT->isUnknownType())
+  if (formalT->isAnyUninstantiatedType()) {
+    if (isTypeGeneric(context, actualT))
       return true;
+  }
 
 
   if (formalT->isAnyUnionType() && actualT->isUnionType())
@@ -697,7 +732,8 @@ bool CanPassResult::canInstantiateBuiltin(const types::Type* actualT,
   return false;
 }
 
-CanPassResult CanPassResult::canInstantiate(const QualifiedType& actualQT,
+CanPassResult CanPassResult::canInstantiate(Context* context,
+                                            const QualifiedType& actualQT,
                                             const QualifiedType& formalQT) {
   // Should we proceed with instantiation?
   // Further checking will occur after the instantiation occurs,
@@ -708,7 +744,7 @@ CanPassResult CanPassResult::canInstantiate(const QualifiedType& actualQT,
   assert(actualT && formalT);
 
   // check for builtin generic types
-  if (canInstantiateBuiltin(actualT, formalT)) {
+  if (canInstantiateBuiltin(context, actualT, formalT)) {
     return instantiate();
   }
 
@@ -717,7 +753,7 @@ CanPassResult CanPassResult::canInstantiate(const QualifiedType& actualQT,
   if (auto actualCt = actualT->toClassType()) {
     // check for instantiating classes
     if (auto formalCt = formalT->toClassType()) {
-      CanPassResult got = canPassClassTypes(actualCt, formalCt);
+      CanPassResult got = canPassClassTypes(context, actualCt, formalCt);
       if (got.passes() && got.instantiates()) {
         return got;
       }
@@ -734,7 +770,8 @@ CanPassResult CanPassResult::canInstantiate(const QualifiedType& actualQT,
   return fail();
 }
 
-CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
+CanPassResult CanPassResult::canPass(Context* context,
+                                     const QualifiedType& actualQT,
                                      const QualifiedType& formalQT) {
 
   const Type* actualT = actualQT.type();
@@ -793,15 +830,16 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
     return fail(); // unknown formal type, can't resolve
   }
 
-  if (formalQT.isGeneric()) {
+  if (isTypeGeneric(context, formalQT)) {
     // Check to see if we should proceed with instantiation.
     // Further checking will occur after the instantiation occurs,
     // so checking here just rules out predictable situations.
 
-    if (formalQT.kind() != QualifiedType::TYPE && actualQT.isGeneric())
+    if (formalQT.kind() != QualifiedType::TYPE &&
+        isTypeGeneric(context, actualQT))
       return fail(); // generic types can only be passed to type actuals
 
-    return canInstantiate(actualQT, formalQT);
+    return canInstantiate(context, actualQT, formalQT);
 
   } else {
     // if the formal type is concrete, do additional checking
@@ -823,7 +861,7 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
       case QualifiedType::CONST_REF:
       case QualifiedType::TYPE:
         {
-          auto got = canPassSubtype(actualT, formalT);
+          auto got = canPassSubtype(context, actualT, formalT);
           if (got.passes()) {
             return got;
           }
@@ -832,7 +870,7 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
 
       case QualifiedType::PARAM:
         {
-          auto got = canConvert(actualQT, formalQT);
+          auto got = canConvert(context, actualQT, formalQT);
           if (got.passes()) {
             // if the formal parameter value is unknown, we need
             // to instantiate as well.
@@ -850,7 +888,7 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
       case QualifiedType::VAR:       // var/const var don't really make sense
       case QualifiedType::CONST_VAR: // as formals but we allow it for testing
         {
-          auto got = canConvert(actualQT, formalQT);
+          auto got = canConvert(context, actualQT, formalQT);
           if (got.passes())
             return got;
           break;

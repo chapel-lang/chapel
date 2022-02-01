@@ -1,4 +1,4 @@
-# Copyright 2021 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -20,7 +20,7 @@ add_library(libchplcomp-obj OBJECT)
 
 # turn on position-independent code so we can use the same
 # libchplcomp-obj for both a static and dynamic library
-#set_property(TARGET libchplcomp-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
+set_property(TARGET libchplcomp-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
 
 # Include the public library .h files as well as any generated .h files
 target_include_directories(libchplcomp-obj PUBLIC
@@ -40,7 +40,7 @@ add_subdirectory(types)
 add_subdirectory(uast)
 add_subdirectory(util)
 
-add_library(libchplcomp $<TARGET_OBJECTS:libchplcomp-obj>)
+add_library(libchplcomp SHARED $<TARGET_OBJECTS:libchplcomp-obj>)
 target_include_directories(libchplcomp PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})

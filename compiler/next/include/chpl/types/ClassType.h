@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,6 +65,13 @@ class ClassType final : public Type {
                const Type* manager,
                ClassTypeDecorator decorator);
 
+  Genericity genericity() const override {
+    if (decorator_.isUnknownManagement() || decorator_.isUnknownNilability())
+      return GENERIC;
+    else
+      return MAYBE_GENERIC; // depends on the class
+  }
+
  public:
   ~ClassType() = default;
   void stringify(std::ostream& ss,
@@ -91,12 +98,6 @@ class ClassType final : public Type {
   /** Returns the basic class type */
   const BasicClassType* basicClassType() const {
     return basicType_;
-  }
-
-  /** Returns true if this is a generic type */
-  bool isGeneric() const override {
-    return decorator_.isUnknownManagement() ||
-           basicType_->isGeneric();
   }
 
   /** Returns the verison this ClassType with the passed decorator */

@@ -4,6 +4,7 @@ symlinks = [
   "lld-link",
   "ld.lld",
   "ld64.lld",
+  "ld64.lld.darwinnew",
   "wasm-ld",
 ]
 foreach(target, symlinks) {
@@ -33,8 +34,5 @@ executable("lld") {
     "//lld/wasm",
     "//llvm/lib/Support",
   ]
-  sources = [
-    # Make `gn format` not collapse this, for sync_source_lists_from_cmake.py.
-    "lld.cpp",
-  ]
+  sources = [ "lld.cpp" ]
 }

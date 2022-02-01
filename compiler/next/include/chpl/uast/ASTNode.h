@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -152,6 +152,10 @@ class ASTNode {
   void mark(Context* context) const;
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h

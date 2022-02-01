@@ -56,12 +56,17 @@ static struct fi_ops X = {
 	.bind = fi_no_bind,
 	.control = fi_no_control,
 	.ops_open = fi_no_ops_open,
+	.tostr = fi_no_ops_tostr,
+	.ops_set = fi_no_ops_set,
 };
  */
 int fi_no_bind(struct fid *fid, struct fid *bfid, uint64_t flags);
 int fi_no_control(struct fid *fid, int command, void *arg);
 int fi_no_ops_open(struct fid *fid, const char *name,
 		uint64_t flags, void **ops, void *context);
+int fi_no_tostr(const struct fid *fid, char *buf, size_t len);
+int fi_no_ops_set(struct fid *fid, const char *name, uint64_t flags,
+		  void *ops, void *context);
 
 /*
 static struct fi_ops_fabric X = {

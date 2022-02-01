@@ -1,6 +1,0 @@
-# This exposes a problem in --no-local/gasnet/etc. compilations.
-# So, test it only in the --no-local configuration.
-# Once the problem is resolved, remove this test and remove
-# cp-problem2.skipif to allow that test to run in all configurations
-
-CHPL_COMM == none

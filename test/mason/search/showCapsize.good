@@ -2,8 +2,8 @@ capsize (0.1.0)
 Displaying the latest version: capsize@0.1.0
 
 [brick]
-name = "capsize"
 chplVersion = "1.19.0"
+name = "capsize"
 source = "nil"
 version = "0.1.0"
 

@@ -1,0 +1,33 @@
+A0016C880162017C3686B18A3D4780
+1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 1 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0 0 1 0 0 0 0 0 0 0 0 1 0 1 1 1 1 1 0 0 0 0 1 1 0 1 1 0 1 0 0 0 0 1 1 0 1 0 1 1 0 0 0 1 1 0 0 0 1 0 1 0 0 0 1 1 1 1 0 1 0 1 0 0 0 1 1 1 1 0 0 0 0 0 0 0
+version = 5
+packet type = 0
+totBitLength = 91
+version = 1
+packet type = 0
+numSubPackets = 1
+sub-packet 0
+version = 3
+packet type = 0
+numSubPackets = 5
+sub-packet 0
+version = 7
+packet type = 4
+Value = 6
+sub-packet 1
+version = 6
+packet type = 4
+Value = 6
+sub-packet 2
+version = 5
+packet type = 4
+Value = 12
+sub-packet 3
+version = 2
+packet type = 4
+Value = 15
+sub-packet 4
+version = 2
+packet type = 4
+Value = 15
+VERSION SUM: 31

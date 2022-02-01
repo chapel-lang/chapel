@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -521,7 +521,11 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
       llvm::Value* tmp_new = irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
       irBuilder->CreateStore(value, tmp_cur);
+#if HAVE_LLVM_VER >= 130
+      return irBuilder->CreateLoad(tmp_new->getType(), tmp_new);
+#else
       return irBuilder->CreateLoad(tmp_new);
+#endif
     }
   }
 

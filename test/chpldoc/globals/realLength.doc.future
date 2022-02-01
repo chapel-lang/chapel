@@ -1,0 +1,2 @@
+bug: chpldoc truncates displayed value for real to 5 decimal points
+#18992

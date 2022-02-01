@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -1086,7 +1086,7 @@ proc StencilDom.dsiMember(i) {
   return wholeFluff.contains(i);
 }
 
-proc StencilDom.dsiIndexOrder(i) {
+override proc StencilDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 
@@ -1847,7 +1847,8 @@ proc type StencilDom.chpl__deserialize(data) {
            data);
 }
 
-proc StencilArr.chpl__serialize() {
+proc StencilArr.chpl__serialize()
+    where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 

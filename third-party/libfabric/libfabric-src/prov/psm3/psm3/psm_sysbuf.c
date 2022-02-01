@@ -109,6 +109,9 @@ void psmi_mq_sysbuf_init(psm2_mq_t mq)
         ptr = psmi_mq_sysbuf_alloc(mq, block_sizes[i]);
         psmi_mq_sysbuf_free(mq, ptr);
     }
+    // undo counters from psmi_mq_sysbuf_alloc during init
+    mq->stats.rx_sysbuf_num = 0;
+    mq->stats.rx_sysbuf_bytes  = 0;
 }
 
 void psmi_mq_sysbuf_fini(psm2_mq_t mq)  // free all buffers that is currently not used

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,10 +33,10 @@ namespace types {
 class UnionType final : public CompositeType {
  private:
   UnionType(ID id, UniqueString name,
-            std::vector<CompositeType::FieldDetail> fields,
-            const UnionType* instantiatedFrom)
-    : CompositeType(typetags::UnionType, id, name, std::move(fields),
-                    instantiatedFrom)
+            const UnionType* instantiatedFrom,
+            SubstitutionsMap subs)
+    : CompositeType(typetags::UnionType, id, name,
+                    instantiatedFrom, std::move(subs))
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -49,15 +49,14 @@ class UnionType final : public CompositeType {
 
   static const owned<UnionType>&
   getUnionType(Context* context, ID id, UniqueString name,
-               std::vector<CompositeType::FieldDetail> fields,
-               const UnionType* instantiatedFrom);
-
+               const UnionType* instantiatedFrom,
+               SubstitutionsMap subs);
  public:
-  ~UnionType() = default;
-
   static const UnionType* get(Context* context, ID id, UniqueString name,
-                              std::vector<CompositeType::FieldDetail> fields,
-                              const UnionType* instantiatedFrom);
+                              const UnionType* instantiatedFrom,
+                              CompositeType::SubstitutionsMap subs);
+
+  ~UnionType() = default;
 
   /** If this type represents an instantiated type,
       returns the type it was instantiated from.
@@ -70,8 +69,6 @@ class UnionType final : public CompositeType {
     assert(ret == nullptr || ret->tag() == typetags::UnionType);
     return (const UnionType*) ret;
   }
-
-
 };
 
 

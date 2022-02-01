@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -405,6 +405,21 @@ static void test4(Parser* parser) {
 }
 
 
+static void test5(Parser* p) {
+  auto parseResult = p->parseString("test5.chpl",
+                                    "private extern proc hello();\n");
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts()==1);
+  auto fn = mod->stmt(0)->toFunction();
+  assert(fn);
+  assert(fn->visibility() == Decl::PRIVATE);
+  assert(fn->linkage() == Decl::EXTERN);
+  assert(fn->numStmts() == 0);
+  assert(fn->numFormals() == 0);
+}
+
 
 int main() {
   Context context;
@@ -427,6 +442,7 @@ int main() {
   test2(p);
   test3(p);
   test4(p);
+  test5(p);
 
   return 0;
 }

@@ -302,13 +302,6 @@ struct psmx3_trx_ctxt *psmx3_trx_ctxt_alloc(struct psmx3_fid_domain *domain,
 	FI_INFO(&psmx3_prov, FI_LOG_CORE,
 		"ep_open_opts: unit=%d port=%u\n", opts.unit, opts.port);
 
-	if (opts.unit < 0 && sep_ctxt_idx >= 0) {
-		should_retry = 1;
-		opts.unit = psmx3_get_round_robin_unit(sep_ctxt_idx);
-		FI_INFO(&psmx3_prov, FI_LOG_CORE,
-			"sep %d: ep_open_opts: unit=%d\n", sep_ctxt_idx, opts.unit);
-	}
-
 	err = psm2_ep_open(uuid, &opts,
 			   &trx_ctxt->psm2_ep, &trx_ctxt->psm2_epid);
 	if (err != PSM2_OK) {

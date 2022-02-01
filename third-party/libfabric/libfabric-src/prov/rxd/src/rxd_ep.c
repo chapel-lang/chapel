@@ -613,19 +613,19 @@ static void rxd_close_peer(struct rxd_ep *ep, struct rxd_peer *peer)
 		peer->unacked_cnt--;
 	}
 
-	while(!dlist_empty(&peer->tx_list)) {
+	while (!dlist_empty(&peer->tx_list)) {
 		dlist_pop_front(&peer->tx_list, struct rxd_x_entry,
 				x_entry, entry);
 		rxd_tx_entry_free(ep, x_entry);
 	}
 
-	while(!dlist_empty(&peer->rx_list)) {
+	while (!dlist_empty(&peer->rx_list)) {
 		dlist_pop_front(&peer->rx_list, struct rxd_x_entry,
 				x_entry, entry);
 		rxd_rx_entry_free(ep, x_entry);
 	}
 
-	while(!dlist_empty(&peer->rma_rx_list)) {
+	while (!dlist_empty(&peer->rma_rx_list)) {
 		dlist_pop_front(&peer->rma_rx_list, struct rxd_x_entry,
 				x_entry, entry);
 		rxd_tx_entry_free(ep, x_entry);
@@ -670,6 +670,9 @@ static int rxd_ep_close(struct fid *fid)
 
 	dlist_foreach_container(&ep->active_peers, struct rxd_peer, peer, entry)
 		rxd_close_peer(ep, peer);
+	dlist_foreach_container(&ep->rts_sent_list, struct rxd_peer, peer, entry)
+		rxd_close_peer(ep, peer);
+	ofi_idm_reset(&(ep->peers_idm), free);
 
 	ret = fi_close(&ep->dg_ep->fid);
 	if (ret)
@@ -696,7 +699,6 @@ static int rxd_ep_close(struct fid *fid)
 		ofi_buf_free(pkt_entry);
 	}
 
-	ofi_idm_reset(&(ep->peers_idm), free);
 	rxd_ep_free_res(ep);
 	ofi_endpoint_close(&ep->util_ep);
 	free(ep);

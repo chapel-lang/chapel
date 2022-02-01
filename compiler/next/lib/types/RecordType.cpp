@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,22 +27,22 @@ namespace types {
 
 const owned<RecordType>&
 RecordType::getRecordType(Context* context, ID id, UniqueString name,
-                          std::vector<CompositeType::FieldDetail> fields,
-                          const RecordType* instantiatedFrom) {
-  QUERY_BEGIN(getRecordType, context, id, name, fields, instantiatedFrom);
+                          const RecordType* instantiatedFrom,
+                          SubstitutionsMap subs) {
+  QUERY_BEGIN(getRecordType, context, id, name, instantiatedFrom, subs);
 
-  auto result = toOwned(new RecordType(id, name, std::move(fields),
-                                       instantiatedFrom));
+  auto result = toOwned(new RecordType(id, name,
+                                       instantiatedFrom, std::move(subs)));
 
   return QUERY_END(result);
 }
 
 const RecordType*
 RecordType::get(Context* context, ID id, UniqueString name,
-                std::vector<CompositeType::FieldDetail> fields,
-                const RecordType* instantiatedFrom) {
-  return getRecordType(context, id, name, std::move(fields),
-                       instantiatedFrom).get();
+                const RecordType* instantiatedFrom,
+                SubstitutionsMap subs) {
+  return getRecordType(context, id, name,
+                       instantiatedFrom, std::move(subs)).get();
 }
 
 

@@ -34,7 +34,8 @@ proc setupGridLocales(ensureManyLocs = false) {
 
 // show what we have
 config const vcalc = false, vsend = false;
-const fpstyle = new iostyle(realfmt = 1, precision = 2, min_width_columns = 6);
+const fpstyle = new iostyleInternal(realfmt = 1, precision = 2,
+                                    min_width_columns = 6);
 
 proc showme(oddphase: bool, delta: elType, msg = "") {
   if !vcalc then return;

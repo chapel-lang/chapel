@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2582,7 +2582,12 @@ void FnSymbol::codegenDef() {
               // consume the next LLVM argument
               llvm::Value* val = &*ai++;
               // store it into the addr
+#if HAVE_LLVM_VER >= 130
+              llvm::Value* eltPtr =
+                irBuilder->CreateStructGEP(storeAdr->getType(), storeAdr, i);
+#else
               llvm::Value* eltPtr = irBuilder->CreateStructGEP(storeAdr, i);
+#endif
               irBuilder->CreateStore(val, eltPtr);
             }
 

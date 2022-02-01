@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,10 @@ void Scope::addBuiltin(UniqueString name) {
   declared_.emplace(name, ID());
 }
 
+IMPLEMENT_DUMP(BorrowedIdsWithName);
+IMPLEMENT_DUMP(Scope);
+IMPLEMENT_DUMP(PoiScope);
+IMPLEMENT_DUMP(InnermostMatch);
 
 } // end namespace resolution
 } // end namespace chpl

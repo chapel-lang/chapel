@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,21 @@
 #include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
 #include "chpl/queries/stringify-functions.h"
+
+#ifndef CHPL_QUERY_TIMING_ENABLED
+#define CHPL_QUERY_TIMING_ENABLED 1
+#endif
+
+#if CHPL_QUERY_TIMING_ENABLED
+
+#define QUERY_BEGIN_TIMING(mapbase)                                                \
+  auto QUERY_STOPWATCH = context->makeQueryTimingStopwatch(mapbase)
+
+#else
+
+#define QUERY_BEGIN_TIMING(mapbase)
+
+#endif
 
 /**
   This file should be included by .cpp files implementing queries.
@@ -120,10 +135,10 @@ template<typename... ArgTs>
 void Context::queryBeginTrace(const char* traceQueryName,
                               const std::tuple<ArgTs...>& tupleOfArg) {
 
-  if (breakSet || enableDebugTracing) {
+  if (breakSet || enableDebugTrace) {
     auto args = queryArgsToStrings(tupleOfArg);
     size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
-    if (enableDebugTracing) {
+    if (enableDebugTrace) {
       printf("QUERY BEGIN     %s (", traceQueryName);
       queryArgsPrint(tupleOfArg);
       printf(")\n");
@@ -178,7 +193,19 @@ Context::queryBeginGetMap(
     const char* traceQueryName,
     bool isInputQuery) {
 
-  return getMap(queryFunc, tupleOfArgs, traceQueryName, isInputQuery);
+#if CHPL_QUERY_TIMING_ENABLED
+  auto stopwatch = makePlainQueryTimingStopwatch(enableQueryTiming);
+#endif
+
+  auto ret = getMap(queryFunc, tupleOfArgs, traceQueryName, isInputQuery);
+
+#if CHPL_QUERY_TIMING_ENABLED
+  if (enableQueryTiming) {
+    ret->timings.systemGetMap.update(stopwatch.elapsed());
+  }
+#endif
+
+  return ret;
 }
 
 template<typename ResultType,
@@ -193,7 +220,7 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
   auto savedElement = &(*pair.first); // pointer to element in map (added/not)
   bool newElementWasAdded = pair.second;
 
-  if (enableDebugTracing) {
+  if (enableDebugTrace) {
     if (newElementWasAdded)
       printf("Added new result %p %s\n", savedElement, queryMap->queryName);
     else
@@ -212,7 +239,20 @@ template<typename ResultType,
 const QueryMapResult<ResultType, ArgTs...>*
 Context::queryBeginGetResult(QueryMap<ResultType, ArgTs...>* queryMap,
                              const std::tuple<ArgTs...>& tupleOfArgs) {
-  return getResult(queryMap, tupleOfArgs);
+
+#if CHPL_QUERY_TIMING_ENABLED
+  auto stopwatch = makePlainQueryTimingStopwatch(enableQueryTiming);
+#endif
+
+  auto ret = getResult(queryMap, tupleOfArgs);
+
+#if CHPL_QUERY_TIMING_ENABLED
+  if (enableQueryTiming) {
+    queryMap->timings.systemGetResult.update(stopwatch.elapsed());
+  }
+#endif
+
+  return ret;
 }
 
 template<typename ResultType,
@@ -225,7 +265,7 @@ Context::queryUseSaved(
   const void* queryFuncV = (const void*) queryFunction;
   bool useSaved = queryCanUseSavedResultAndPushIfNot(queryFuncV, r);
 
-  if (enableDebugTracing) {
+  if (enableDebugTrace) {
     if (useSaved) {
       printf("QUERY END       %s (...) REUSING BASED ON DEPS %p\n",
              traceQueryName, r);
@@ -326,7 +366,7 @@ Context::queryEnd(
     this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
                                    std::move(result), /* forSetter */ false);
 
-  if (enableDebugTracing) {
+  if (enableDebugTrace) {
     bool changed = ret->lastChanged == this->currentRevisionNumber;
     printf("QUERY END       %s (", traceQueryName);
     queryArgsPrint(tupleOfArgs);
@@ -447,10 +487,9 @@ Context::updateResultForQuery(
 template<typename ResultType,
          typename... ArgTs>
 bool
-Context::hasResultForQuery(
+Context::hasCurrentResultForQuery(
      const ResultType& (*queryFunction)(Context* context, ArgTs...),
-     const std::tuple<ArgTs...>& tupleOfArgs,
-     const char* traceQueryName) {
+     const std::tuple<ArgTs...>& tupleOfArgs) {
 
   // Look up the map entry for this query name
   const void* queryFuncV = (const void*) queryFunction;
@@ -469,7 +508,7 @@ Context::hasResultForQuery(
     return false;
   }
 
-  return true;
+  return queryCanUseSavedResult(queryFuncV, &(*search2));
 }
 
 template<typename ResultType,
@@ -522,7 +561,8 @@ Context::querySetterUpdateResult(
   QUERY_BEGIN_INNER(false, func, context, __VA_ARGS__); \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
-  }
+  } \
+  QUERY_BEGIN_TIMING(BEGIN_QUERY_MAP);
 
 /**
   QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used
@@ -532,7 +572,8 @@ Context::querySetterUpdateResult(
   QUERY_BEGIN_INNER(true, func, context, __VA_ARGS__) \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
-  }
+  } \
+  QUERY_BEGIN_TIMING(BEGIN_QUERY_MAP);
 
 /**
   Returns a pointer to the partial result if the query is already running

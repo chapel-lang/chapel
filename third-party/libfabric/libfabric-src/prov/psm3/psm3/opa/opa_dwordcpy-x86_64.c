@@ -295,7 +295,7 @@ void MOCKABLE(psmi_mq_mtucpy)(void *vdest, const void *vsrc, uint32_t nchars)
 {
 
 #ifdef PSM_CUDA
-	if (PSMI_IS_CUDA_ENABLED && (PSMI_IS_CUDA_MEM(vdest) || PSMI_IS_CUDA_MEM((void *) vsrc))) {
+	if (nchars && PSMI_IS_CUDA_ENABLED && (PSMI_IS_CUDA_MEM(vdest) || PSMI_IS_CUDA_MEM((void *) vsrc))) {
 		PSMI_CUDA_CALL(cuMemcpy,
 			       (CUdeviceptr)vdest, (CUdeviceptr)vsrc, nchars);
 		return;

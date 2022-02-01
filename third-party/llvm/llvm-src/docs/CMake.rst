@@ -34,7 +34,7 @@ Quick start
 We use here the command-line, non-interactive CMake interface.
 
 #. `Download <http://www.cmake.org/cmake/resources/software.html>`_ and install
-   CMake. Version 3.4.3 is the minimum required.
+   CMake. Version 3.13.4 is the minimum required.
 
 #. Open a shell. Your development tools must be reachable from this shell
    through the PATH environment variable.
@@ -306,6 +306,10 @@ LLVM-specific variables
   scenario where a manual override may be desirable is when using Visual Studio
   2017's CMake integration, which would not be detected as an IDE otherwise.
 
+**LLVM_ENABLE_MODULES**:BOOL
+  Compile with `Clang Header Modules
+  <https://clang.llvm.org/docs/Modules.html>`_.
+
 **LLVM_ENABLE_PIC**:BOOL
   Add the ``-fPIC`` flag to the compiler command-line, if the compiler supports
   this flag. Some systems, like Windows, do not need this flag. Defaults to ON.
@@ -424,6 +428,11 @@ LLVM-specific variables
   are ``Address``, ``Memory``, ``MemoryWithOrigins``, ``Undefined``, ``Thread``,
   ``DataFlow``, and ``Address;Undefined``. Defaults to empty string.
 
+**LLVM_UBSAN_FLAGS**:STRING
+  Defines the set of compile flags used to enable UBSan. Only used if
+  ``LLVM_USE_SANITIZER`` contains ``Undefined``. This can be used to override
+  the default set of UBSan flags.
+
 **LLVM_ENABLE_LTO**:STRING
   Add ``-flto`` or ``-flto=`` flags to the compile and link command
   lines, enabling link-time optimization. Possible values are ``Off``,
@@ -444,7 +453,7 @@ LLVM-specific variables
 **LLVM_STATIC_LINK_CXX_STDLIB**:BOOL
   Statically link to the C++ standard library if possible. This uses the flag
   "-static-libstdc++", but a Clang host compiler will statically link to libc++
-  if used in conjuction with the **LLVM_ENABLE_LIBCXX** flag. Defaults to OFF.
+  if used in conjunction with the **LLVM_ENABLE_LIBCXX** flag. Defaults to OFF.
 
 **LLVM_ENABLE_LLD**:BOOL
   This option is equivalent to `-DLLVM_USE_LINKER=lld`, except during a 2-stage
@@ -456,6 +465,31 @@ LLVM-specific variables
 
 **LLVM_PARALLEL_LINK_JOBS**:STRING
   Define the maximum number of concurrent link jobs.
+
+**LLVM_EXTERNALIZE_DEBUGINFO**:BOOL
+  Generate dSYM files and strip executables and libraries (Darwin Only).
+  Defaults to OFF.
+
+**LLVM_USE_CRT_{target}**:STRING
+  On Windows, tells which version of the C runtime library (CRT) should be used.
+  For example, -DLLVM_USE_CRT_RELEASE=MT would statically link the CRT into the
+  LLVM tools and library.
+
+**LLVM_INTEGRATED_CRT_ALLOC**:PATH
+  On Windows, allows embedding a different C runtime allocator into the LLVM
+  tools and libraries. Using a lock-free allocator such as the ones listed below
+  greatly decreases ThinLTO link time by about an order of magnitude. It also
+  midly improves Clang build times, by about 5-10%. At the moment, rpmalloc,
+  snmalloc and mimalloc are supported. Use the path to `git clone` to select
+  the respective allocator, for example:
+
+  .. code-block:: console
+
+    $ D:\git> git clone https://github.com/mjansson/rpmalloc
+    $ D:\llvm-project> cmake ... -DLLVM_INTEGRATED_CRT_ALLOC=D:\git\rpmalloc
+  
+  This flag needs to be used along with the static CRT, ie. if building the
+  Release target, add -DLLVM_USE_CRT_RELEASE=MT.
 
 **LLVM_BUILD_DOCS**:BOOL
   Adds all *enabled* documentation targets (i.e. Doxgyen and Sphinx targets) as
@@ -527,7 +561,7 @@ LLVM-specific variables
 **SPHINX_EXECUTABLE**:STRING
   The path to the ``sphinx-build`` executable detected by CMake.
   For installation instructions, see
-  http://www.sphinx-doc.org/en/latest/usage/installation.html
+  https://www.sphinx-doc.org/en/master/usage/installation.html
 
 **SPHINX_OUTPUT_HTML**:BOOL
   If enabled (and ``LLVM_ENABLE_SPHINX`` is enabled) then the targets for
@@ -717,7 +751,7 @@ and uses them to build a simple application ``simple-tool``.
 
 .. code-block:: cmake
 
-  cmake_minimum_required(VERSION 3.4.3)
+  cmake_minimum_required(VERSION 3.13.4)
   project(SimpleProject)
 
   find_package(LLVM REQUIRED CONFIG)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -147,6 +147,9 @@ void usage(const ArgumentState* state,
           {
             const char* setting = get_envvar_setting(desc[i]);
 
+            if (*envvar == '_') {
+              envvar++;
+            }
             printf("%s", envvar);
 
             if (setting)
@@ -347,6 +350,7 @@ Flag types:
   + = increment
   T = toggle
   L = int64 (long)
+  U = unsigned long
   N = --no-... flag, --no version sets to false
   n = --no-... flag, --no version sets to true
 */
@@ -480,6 +484,9 @@ static void ApplyValue(const ArgumentState*       state,
 
         break;
       }
+      case 'U':
+        *((size_t*) location) = str2uint64(value);
+        break;
     }
   }
 
@@ -695,6 +702,10 @@ static void process_arg(const ArgumentState*       state,
             }
             strncpy((char*) desc->location, arg, maxlen);
           }
+          break;
+
+        case 'U':
+          *((size_t*) desc->location) = std::stoull(arg);
           break;
 
         default:

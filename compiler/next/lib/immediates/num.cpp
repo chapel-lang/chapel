@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -926,7 +926,7 @@ fold_constant(chpl::Context* context, int op,
 // these support coerce_immediate (param casts)
 ImmString istrFromUserBool(chpl::Context* context, bool b) {
   const char* s = b ? "true" : "false";
-  return ImmString::build(context, s);
+  return ImmString::get(context, s);
 }
 
 ImmString istrFromUserUint(chpl::Context* context,
@@ -934,28 +934,28 @@ ImmString istrFromUserUint(chpl::Context* context,
   char s[64];
   if (snprintf(s, sizeof(s), "%llu", (long long unsigned)i) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return ImmString::build(context, s);
+  return ImmString::get(context, s);
 }
 
 ImmString istrFromUserInt(chpl::Context* context, int64_t i) {
   char s[64];
   if (snprintf(s, sizeof(s), "%lld", (long long)i) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return ImmString::build(context, s);
+  return ImmString::get(context, s);
 }
 
 ImmString istrFromUserDouble(chpl::Context* context, double i) {
   char s[64];
   if (snprint_float_val(s, sizeof(s), i, false) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return ImmString::build(context, s);
+  return ImmString::get(context, s);
 }
 
 ImmString istrFromUserImag(chpl::Context* context, double i) {
   char s[64];
   if (snprint_imag_val(s, sizeof(s), i, false) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return ImmString::build(context, s);
+  return ImmString::get(context, s);
 }
 
 ImmString istrFromUserComplex(chpl::Context* context,
@@ -963,5 +963,5 @@ ImmString istrFromUserComplex(chpl::Context* context,
   char s[140];
   if (snprint_complex_val(s, sizeof(s), re, im) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return ImmString::build(context, s);
+  return ImmString::get(context, s);
 }

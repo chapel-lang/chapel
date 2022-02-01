@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,8 +40,8 @@ class AnyType final : public Type {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  bool isGeneric() const override {
-    return true;
+  Genericity genericity() const override {
+    return GENERIC;
   }
 
   static const owned<AnyType>& getAnyType(Context* context);

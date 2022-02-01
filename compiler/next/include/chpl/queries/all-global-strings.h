@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,6 +38,7 @@ X(domain         , "domain")
 X(imag_          , "imag")
 X(index          , "index")
 X(int_           , "int")
+X(locale         , "locale")
 X(nil            , "nil")
 X(noinit         , "noinit")
 X(object_        , "object")
@@ -83,6 +84,11 @@ X(logicalAnd     , "&&")
 X(logicalOr      , "||")
 X(plus           , "+")
 X(times          , "*")
+X(compareEqual   , "==")
+X(greaterOrEqual , ">=" )
+X(greaterThan    , ">")
+X(lessThan       , "<")
+X(lessOrEqual    , "<=")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -148,6 +148,8 @@ PRIMITIVE_G(GPU_BLOCKDIM_Z, "gpu blockDim z")
 PRIMITIVE_G(GPU_GRIDDIM_X, "gpu gridDim x")
 PRIMITIVE_G(GPU_GRIDDIM_Y, "gpu gridDim y")
 PRIMITIVE_G(GPU_GRIDDIM_Z, "gpu gridDim z")
+PRIMITIVE_G(GPU_ALLOC_SHARED, "gpu allocShared")
+PRIMITIVE_G(GPU_SYNC_THREADS, "gpu syncThreads")
 
 PRIMITIVE_G(GET_SERIAL, "task_get_serial")
 PRIMITIVE_G(SET_SERIAL, "task_set_serial")
@@ -326,6 +328,7 @@ PRIMITIVE_R(CALL_RESOLVES, "call resolves")
 PRIMITIVE_R(METHOD_CALL_RESOLVES, "method call resolves")
 PRIMITIVE_R(CALL_AND_FN_RESOLVES, "call and fn resolves")
 PRIMITIVE_R(METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves")
+PRIMITIVE_R(RESOLVES, "resolves")
 
 PRIMITIVE_G(START_RMEM_FENCE, "chpl_rmem_consist_acquire")
 PRIMITIVE_G(FINISH_RMEM_FENCE, "chpl_rmem_consist_release")
@@ -370,3 +373,5 @@ PRIMITIVE_R(VERSION_MAJOR, "version major")
 PRIMITIVE_R(VERSION_MINOR, "version minor")
 PRIMITIVE_R(VERSION_UPDATE, "version update")
 PRIMITIVE_R(VERSION_SHA, "version sha")
+
+PRIMITIVE_R(REF_DESERIALIZE, "deserialize for ref fields")

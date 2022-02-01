@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,7 +55,7 @@ static void test1() {
   printf("test1\n");
   Context ctx;
   Context* context = &ctx;
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
 
   {
     context->advanceToNextRevision(true);
@@ -90,7 +90,7 @@ static void test2() {
 
   ctx.setErrorHandler(collectErrors);
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
 
   {
     errors.clear();

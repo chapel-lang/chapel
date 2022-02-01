@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,10 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/stringify-functions.h"
 
+#include <chrono>
+#include <fstream>
+#include <iomanip>
+
 #include <cassert>
 #include <cstdarg>
 #include <cstddef>
@@ -39,7 +43,7 @@ namespace chpl {
     Context rootContext;
 
     static void initGlobalStrings() {
-#define X(field, str) globalStrings.field = UniqueString::build(&rootContext, str);
+#define X(field, str) globalStrings.field = UniqueString::get(&rootContext, str);
 #include "chpl/queries/all-global-strings.h"
 #undef X
     }
@@ -384,7 +388,7 @@ const UniqueString& filePathForModuleIdSymbolPathQuery(Context* context,
   QUERY_BEGIN(filePathForModuleIdSymbolPathQuery, context, modIdSymP);
 
   // return the empty string if it wasn't already set
-  // in setFilePathForModulePath.
+  // in setFilePathForModuleID.
   UniqueString result;
 
   return QUERY_END(result);
@@ -410,7 +414,7 @@ static UniqueString removeLastSymbolPathComponent(Context* context,
     }
   }
 
-  return UniqueString::build(context, s, lastDot);
+  return UniqueString::get(context, s, lastDot);
 }
 
 UniqueString Context::filePathForId(ID id) {
@@ -419,9 +423,8 @@ UniqueString Context::filePathForId(ID id) {
   while (!symbolPath.isEmpty()) {
     auto tupleOfArgs = std::make_tuple(symbolPath);
 
-    bool got = hasResultForQuery(filePathForModuleIdSymbolPathQuery,
-                                 tupleOfArgs,
-                                 "filePathForModuleIdSymbolPathQuery");
+    bool got = hasCurrentResultForQuery(filePathForModuleIdSymbolPathQuery,
+                                        tupleOfArgs);
 
     if (got) {
       const UniqueString& p =
@@ -433,7 +436,7 @@ UniqueString Context::filePathForId(ID id) {
     symbolPath = removeLastSymbolPathComponent(this, symbolPath);
   }
 
-  return UniqueString::build(this, "<unknown file path>");
+  return UniqueString::get(this, "<unknown file path>");
 }
 
 bool Context::hasFilePathForId(ID id) {
@@ -442,9 +445,8 @@ bool Context::hasFilePathForId(ID id) {
   while (!symbolPath.isEmpty()) {
     auto tupleOfArgs = std::make_tuple(symbolPath);
 
-    bool got = hasResultForQuery(filePathForModuleIdSymbolPathQuery,
-                                 tupleOfArgs,
-                                 "filePathForModuleIdSymbolPathQuery");
+    bool got = hasCurrentResultForQuery(filePathForModuleIdSymbolPathQuery,
+                                        tupleOfArgs);
 
     if (got) {
       return true;
@@ -457,6 +459,23 @@ bool Context::hasFilePathForId(ID id) {
   return false;
 }
 
+void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
+  UniqueString moduleIdSymbolPath = moduleID.symbolPath();
+  auto tupleOfArgs = std::make_tuple(moduleIdSymbolPath);
+
+  updateResultForQuery(filePathForModuleIdSymbolPathQuery,
+                       tupleOfArgs, path,
+                       "filePathForModuleIdSymbolPathQuery",
+                       /* isInputQuery */ false,
+                       /* forSetter */ true);
+
+  if (enableDebugTrace) {
+    printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
+           moduleIdSymbolPath.c_str(), path.c_str());
+  }
+  assert(hasFilePathForId(moduleID));
+}
+
 void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
   this->numQueriesRunThisRevision_ = 0;
@@ -467,18 +486,27 @@ void Context::advanceToNextRevision(bool prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
     gcCounter++;
   }
-  if (enableDebugTracing) {
+  if (enableDebugTrace) {
     printf("CURRENT REVISION NUMBER IS NOW %i %s\n",
            (int) this->currentRevisionNumber,
            prepareToGC?"PREPARING GC":"");
   }
 }
 
+void Context::setDebugTraceFlag(bool enable)  {
+  enableDebugTrace = enable;
+}
+
+void Context::setBreakOnHash(size_t hashVal) {
+  breakSet = true;
+  breakOnHash = hashVal;
+}
+
 void Context::collectGarbage() {
   // if there are no parent queries, collect some garbage
   assert(queryStack.size() == 0);
 
-  if (enableDebugTracing) {
+  if (enableDebugTrace) {
     printf("COLLECTING GARBAGE\n");
   }
 
@@ -509,12 +537,12 @@ void Context::collectGarbage() {
       // buf[1] is the doNotCollectMark
       if (buf[1] || buf[0] == gcMark) {
         newTable.insert(e);
-        if (enableDebugTracing) {
+        if (enableDebugTrace) {
           printf("COPYING OVER UNIQUESTRING %s\n", key);
         }
       } else {
         toFree.push_back(allocation);
-        if (enableDebugTracing) {
+        if (enableDebugTrace) {
           printf("WILL FREE UNIQUESTRING %s\n", key);
         }
       }
@@ -524,29 +552,12 @@ void Context::collectGarbage() {
     }
     uniqueStringsTable.swap(newTable);
 
-    if (enableDebugTracing) {
+    if (enableDebugTrace) {
       size_t nUniqueStringsAfter = uniqueStringsTable.size();
       printf("COLLECTED %i UniqueStrings\n",
              (int)(nUniqueStringsBefore-nUniqueStringsAfter));
     }
   }
-}
-
-void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
-  UniqueString moduleIdSymbolPath = moduleID.symbolPath();
-  auto tupleOfArgs = std::make_tuple(moduleIdSymbolPath);
-
-  updateResultForQuery(filePathForModuleIdSymbolPathQuery,
-                       tupleOfArgs, path,
-                       "filePathForModuleIdSymbolPathQuery",
-                       /* isInputQuery */ false,
-                       /* forSetter */ true);
-
-  if (enableDebugTracing) {
-    printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
-           moduleIdSymbolPath.c_str(), path.c_str());
-  }
-  assert(hasFilePathForId(moduleID));
 }
 
 void Context::error(ErrorMessage error) {
@@ -604,7 +615,7 @@ void Context::error(const resolution::TypedFnSignature* inFn,
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
-  if (enableDebugTracing) {
+  if (enableDebugTrace) {
     printf("RECOMPUTING IF NEEDED FOR %p %s\n", resultEntry,
            resultEntry->parentQueryMap->queryName);
   }
@@ -647,14 +658,14 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   if (useSaved == false) {
     resultEntry->recompute(this);
     assert(resultEntry->lastChecked == this->currentRevisionNumber);
-    if (enableDebugTracing) {
+    if (enableDebugTrace) {
       printf("DONE RECOMPUTING IF NEEDED -- RECOMPUTED FOR %s\n",
              resultEntry->parentQueryMap->queryName);
     }
     return;
   } else {
     updateForReuse(resultEntry);
-    if (enableDebugTracing) {
+    if (enableDebugTrace) {
       printf("DONE RECOMPUTING IF NEEDED -- REUSED FOR %s\n",
              resultEntry->parentQueryMap->queryName);
     }
@@ -683,7 +694,7 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   }
 }
 
-bool Context::queryCanUseSavedResultAndPushIfNot(
+bool Context::queryCanUseSavedResult(
                    const void* queryFunction,
                    const QueryMapResultBase* resultEntry) {
 
@@ -714,6 +725,15 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
       updateForReuse(resultEntry);
     }
   }
+
+  return useSaved;
+}
+
+bool Context::queryCanUseSavedResultAndPushIfNot(
+                   const void* queryFunction,
+                   const QueryMapResultBase* resultEntry) {
+
+  bool useSaved = queryCanUseSavedResult(queryFunction, resultEntry);
 
   if (useSaved == false) {
     // Since the result cannot be reused, the query will be evaluated.
@@ -765,6 +785,51 @@ void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
   fprintf(stderr, "Error: recursion encountered in query %s\n",
           r->parentQueryMap->queryName);
   exit(-1);
+}
+
+void Context::queryTimingReport(std::ostream& os) {
+  auto elapsed = [](QueryTimingDuration d) {
+    double ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
+    return ms;
+  };
+
+  os << "query timings\n";
+
+  auto w1 = 40;
+  auto w2 = 14;
+
+  os << std::setw(w1) << "name"  << std::setw(w2) << "query (ms)"
+     << std::setw(w2) << "calls" << std::setw(w2) << "getMap (ms)"
+     << std::setw(w2) << "calls" << std::setw(w2) << "getResult (ms)"
+     << std::setw(w2) << "calls" << "\n";
+
+  for (const auto& it : queryDB) {
+    QueryMapBase* base = it.second.get();
+    const auto& timings = base->timings;
+
+    os << std::setw(w1) << base->queryName
+      // query
+       << std::setw(w2) << elapsed(timings.query.elapsed)
+       << std::setw(w2) << timings.query.count
+      // getMap
+       << std::setw(w2) << elapsed(timings.systemGetMap.elapsed)
+       << std::setw(w2) << timings.systemGetMap.count
+      // getResult
+       << std::setw(w2) << elapsed(timings.systemGetResult.elapsed)
+       << std::setw(w2) << base->timings.systemGetResult.count << "\n";
+    }
+}
+
+// TODO should these be ifdef'd away if !QUERY_TIMING_ENABLED? Or just warn?
+void Context::beginQueryTimingTrace(const std::string& outname) {
+  queryTimingTraceOutput = std::make_unique<std::ofstream>(outname);
+  enableQueryTimingTrace = true;
+}
+
+void Context::endQueryTimingTrace() {
+  queryTimingTraceOutput.reset();
+  enableQueryTimingTrace = false;
 }
 
 namespace querydetail {

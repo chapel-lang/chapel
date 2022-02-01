@@ -1,0 +1,2 @@
+day18-bug3.chpl:13: error: can't initialize an 'owned' class with a 'const'
+day18-bug3.chpl:13: note: because 'owned' assignment must modify the RHS

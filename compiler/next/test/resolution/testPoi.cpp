@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -48,7 +48,7 @@ static void test1() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = "module M {\n"
                          "  proc generic(param p) {\n"
                          "    helper();\n"
@@ -103,7 +103,7 @@ static void test1n() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = "module M {\n"
                          "  proc generic(param p) {\n"
                          "    helper();\n"
@@ -162,7 +162,7 @@ static void test2a() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
     module M {
       proc foo(param arg:int, val:int) { }
@@ -210,7 +210,7 @@ static void test2() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
     module G {
       proc foo(param arg:int, val:int) {
@@ -322,7 +322,7 @@ static void test3() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
     module G {
       proc genericfunc(param p) {
@@ -524,7 +524,7 @@ static void test4() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
     module M {
       proc genericfunc(param p) {
@@ -566,7 +566,7 @@ static void test5() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
     module N {
       proc genericfunc(param p) {
@@ -632,7 +632,7 @@ static void test6() {
   Context ctx;
   Context* context = &ctx;
 
-  auto path = UniqueString::build(context, "input.chpl");
+  auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
     module M {
       proc genericfunc(param p) {

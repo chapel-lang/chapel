@@ -40,7 +40,7 @@ var r = compile("(a+)(b+)(c+)":t);
 {
   writeln("Iter Matches with capture");
   startVerboseMem();
-  for (m, a, b, c) in r.matches("abcaabbcc":t, captures=3) {
+  for (m, a, b, c) in r.matches("abcaabbcc":t, numCaptures=3) {
     assert(m.matched);
   }
   stopVerboseMem();

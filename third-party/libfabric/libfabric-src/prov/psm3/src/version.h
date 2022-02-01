@@ -169,5 +169,7 @@ struct psmx3_context {
 
 #endif /* !PSMX3_USE_REQ_CONTEXT */
 
+uint32_t get_psm3_provider_version();
+
 #endif
 

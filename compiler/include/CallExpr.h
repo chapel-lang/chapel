@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -176,6 +176,30 @@ inline FnSymbol* CallExpr::theFnSymbol() const {
 
 inline bool CallExpr::isResolved() const {
   return resolvedFunction() != NULL;
+}
+
+inline bool CallExpr::isEmpty() const {
+  return primitive == NULL && baseExpr == NULL;
+}
+
+inline bool CallExpr::isPrimitive() const {
+  return primitive != NULL;
+}
+
+inline bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
+  return primitive && primitive->tag == primitiveTag;
+}
+
+inline bool CallExpr::isPrimitive(const char* primitiveName) const {
+  return primitive && !strcmp(primitive->name, primitiveName);
+}
+
+inline int CallExpr::numActuals() const {
+  return argList.length;
+}
+
+inline Expr* CallExpr::get(int index) const {
+  return argList.get(index);
 }
 
 // TODO: rename these

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,6 +43,7 @@
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
 #include "llvmUtil.h"
+#include "llvm/IR/IntrinsicsNVPTX.h"
 #include "clang/CodeGen/CGFunctionInfo.h"
 #endif
 
@@ -338,7 +339,11 @@ static llvm::Value* createInBoundsGEP(llvm::Value* ptr,
     }
   }
 
+#if HAVE_LLVM_VER >= 130
+  return info->irBuilder->CreateInBoundsGEP(ptr->getType(), ptr, idxList);
+#else
   return info->irBuilder->CreateInBoundsGEP(ptr, idxList);
+#endif
 }
 
 #endif
@@ -599,7 +604,11 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                                 bool isLoadOfLocalVar = true)
 {
   GenInfo* info = gGenInfo;
+#if HAVE_LLVM_VER >= 130
+  llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr->getType(), ptr);
+#else
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
+#endif
   llvm::MDNode* tbaa = NULL;
   if (USE_TBAA && valType &&
       (isClass(valType) || !valType->symbol->llvmTbaaStructCopyNode)) {
@@ -2121,7 +2130,11 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
 
     func->getBasicBlockList().push_back(blockEnd);
     info->irBuilder->SetInsertPoint(blockEnd);
+#if HAVE_LLVM_VER >= 130
+    ret.val = info->irBuilder->CreateLoad(tmp->getType(), tmp);
+#else
     ret.val = info->irBuilder->CreateLoad(tmp);
+#endif
     ret.isUnsigned = !values.isSigned;
 #endif
   }
@@ -2210,7 +2223,12 @@ GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
     llvm::Value* elementPtr;
     elementPtr = createInBoundsGEP(table.val, GEPLocs);
 
+#if HAVE_LLVM_VER >= 130
+    llvm::Instruction* element =
+      info->irBuilder->CreateLoad(elementPtr->getType(), elementPtr);
+#else
     llvm::Instruction* element = info->irBuilder->CreateLoad(elementPtr);
+#endif
 
     // I don't think it matters, but we could provide TBAA metadata
     // here to indicate global constant variable loads are constant...
@@ -2543,8 +2561,15 @@ GenRet codegenCallExprInner(GenRet function,
                 unsigned nElts = sTy->getNumElements();
                 for (unsigned i = 0; i < nElts; i++) {
                   // load to produce the next LLVM argument
+#if HAVE_LLVM_VER >= 130
+                  llvm::Value* eltPtr =
+                    irBuilder->CreateStructGEP(ptr->getType(), ptr, i);
+                  llvm::Value* loaded =
+                    irBuilder->CreateLoad(eltPtr->getType(), eltPtr);
+#else
                   llvm::Value* eltPtr = irBuilder->CreateStructGEP(ptr, i);
                   llvm::Value* loaded = irBuilder->CreateLoad(eltPtr);
+#endif
                   llArgs.push_back(loaded);
                 }
               } else {
@@ -2580,8 +2605,15 @@ GenRet codegenCallExprInner(GenRet function,
                 continue;
 
               // load to produce the next LLVM argument
+#if HAVE_LLVM_VER >= 130
+              llvm::Value* eltPtr =
+                irBuilder->CreateStructGEP(ptr->getType(), ptr, i);
+              llvm::Value* loaded =
+                irBuilder->CreateLoad(eltPtr->getType(), eltPtr);
+#else
               llvm::Value* eltPtr = irBuilder->CreateStructGEP(ptr, i);
               llvm::Value* loaded = irBuilder->CreateLoad(eltPtr);
+#endif
               llArgs.push_back(loaded);
             }
             break;
@@ -3973,9 +4005,16 @@ DEFINE_PRIM(RETURN) {
                 nullptr, arg, returnInfo->getInAllocaFieldIndex());
 
             auto align = getPointerAlign(0);
+#if HAVE_LLVM_VER >= 130
+            llvm::Value* v = irBuilder->CreateAlignedLoad(sret->getType(),
+                                                          sret,
+                                                          align,
+                                                          "sret");
+#else
             llvm::Value* v = irBuilder->CreateAlignedLoad(sret,
                                                           align,
                                                           "sret");
+#endif
             returnInst = irBuilder->CreateRet(v);
           } else {
             returnInst = irBuilder->CreateRetVoid();
@@ -4886,6 +4925,45 @@ DEFINE_PRIM(GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.rea
 DEFINE_PRIM(GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
 DEFINE_PRIM(GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
 DEFINE_PRIM(GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
+
+DEFINE_PRIM(GPU_ALLOC_SHARED) {
+#ifdef HAVE_LLVM
+  int bytesToAlloc =
+    toVarSymbol(toSymExpr(call->get(1))->symbol())->immediate->int_value();
+
+  GenInfo* info = gGenInfo;
+  llvm::ArrayType* arrayTy = llvm::ArrayType::get(
+    llvm::IntegerType::get(gGenInfo->llvmContext, 8), bytesToAlloc);
+  // Allocate global variable in "shared memory space" (3)
+  llvm::GlobalVariable* glob = new llvm::GlobalVariable(
+    *info->module, arrayTy, false, llvm::GlobalValue::InternalLinkage,
+    llvm::Constant::getNullValue(arrayTy),
+    "gpuSharedMemory", nullptr, llvm::GlobalValue::NotThreadLocal, 3, false); 
+  llvm::Type* pointerToArrayTy = arrayTy->getPointerTo();
+  //We want to return a void* in the "generic" address space to we need to cast
+  llvm::Value* castedValue = gGenInfo->irBuilder->CreateAddrSpaceCast(
+    glob, pointerToArrayTy, "gpuSharedMemoryCasted");
+
+  ret.val = castedValue;
+  ret.isLVPtr = GEN_VAL;
+  ret.chplType = dtCVoidPtr;
+#endif
+}
+
+DEFINE_PRIM(GPU_SYNC_THREADS) {
+  if(!gCodegenGPU) {
+    return;
+  }
+#ifdef HAVE_LLVM
+  Type *chplReturnType = dtVoid;
+  llvm::Function *fun = llvm::Intrinsic::getDeclaration(gGenInfo->module,
+    llvm::Intrinsic::nvvm_barrier0);
+  ret.val = gGenInfo->irBuilder->CreateCall(fun);
+  ret.isLVPtr = GEN_VAL;
+  ret.chplType = chplReturnType;
+#endif
+}
+
 DEFINE_PRIM(GET_REQUESTED_SUBLOC) { ret = codegenCallExpr("chpl_task_getRequestedSubloc"); }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
@@ -5462,7 +5540,12 @@ DEFINE_PRIM(FTABLE_CALL) {
       GEPLocs[0] = llvm::Constant::getNullValue(llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
       fnPtrPtr   = createInBoundsGEP(ftable.val, GEPLocs);
+#if HAVE_LLVM_VER >= 130
+      fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType(),
+                                                   fnPtrPtr);
+#else
       fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr);
+#endif
 
       // Generate an LLVM function type based upon the arguments.
       std::vector<llvm::Type*> argumentTypes;
@@ -5548,7 +5631,12 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
           llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
       fnPtrPtr = createInBoundsGEP(table.val, GEPLocs);
+#if HAVE_LLVM_VER >= 130
+      llvm::Instruction* fnPtrV =
+        gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType(), fnPtrPtr);
+#else
       llvm::Instruction* fnPtrV = gGenInfo->irBuilder->CreateLoad(fnPtrPtr);
+#endif
       fnPtr.val = fnPtrV;
 #endif
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -229,7 +229,7 @@ typedef qio_style_t* qio_style_ptr_t;
 // and have constructor, new, methods, etc;
 // so we redefine it here to include...
 #ifdef _chplrt_H_
-typedef qio_style_t iostyle;
+typedef qio_style_t iostyleInternal;
 #endif
 
 

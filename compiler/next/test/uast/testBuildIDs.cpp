@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,8 +40,8 @@ static void test0() {
   Context* ctx = &context;
 
   // test some operations on locations
-  Location locOne(UniqueString::build(ctx, "a.chpl"));
-  Location locTwo(UniqueString::build(ctx, "aVeryLongFilenameIndeed.chpl"));
+  Location locOne(UniqueString::get(ctx, "a.chpl"));
+  Location locTwo(UniqueString::get(ctx, "aVeryLongFilenameIndeed.chpl"));
   Location locOneCopy(locOne.path());
   Location locTwoCopy(locTwo.path());
   Location locOneA(locOne.path(),  1, -1, -1, -1);
@@ -99,8 +99,8 @@ static void test1() {
   Context* ctx = &context;
 
   // test some operations on IDs
-  auto shortpath = UniqueString::build(ctx, "mod.fn");
-  auto longpath = UniqueString::build(ctx, "aVeryLongModuleNameIndeed.fn");
+  auto shortpath = UniqueString::get(ctx, "mod.fn");
+  auto longpath = UniqueString::get(ctx, "aVeryLongModuleNameIndeed.fn");
 
   ID emptyID;
 
@@ -149,13 +149,13 @@ static  void test2() {
 
   auto builder = Builder::build(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
-  Location dummyLoc(UniqueString::build(ctx, "path/to/test.chpl"));
+  Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
   {
     // Create the AST for { a; b; c; }
-    auto strA = UniqueString::build(ctx, "a");
-    auto strB = UniqueString::build(ctx, "b");
-    auto strC = UniqueString::build(ctx, "c");
+    auto strA = UniqueString::get(ctx, "a");
+    auto strB = UniqueString::get(ctx, "b");
+    auto strC = UniqueString::get(ctx, "c");
     ASTList children;
 
     children.push_back(Identifier::build(b, dummyLoc, strA));
@@ -255,13 +255,13 @@ static void test3() {
 
   auto builder = Builder::build(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
-  Location dummyLoc(UniqueString::build(ctx, "path/to/test.chpl"));
+  Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
   {
     // Create the AST for { a; { } { b; } c; }
-    auto strA = UniqueString::build(ctx, "a");
-    auto strB = UniqueString::build(ctx, "b");
-    auto strC = UniqueString::build(ctx, "c");
+    auto strA = UniqueString::get(ctx, "a");
+    auto strB = UniqueString::get(ctx, "b");
+    auto strC = UniqueString::get(ctx, "c");
 
     ASTList outer;
     outer.push_back(Identifier::build(b, dummyLoc, strA));
@@ -319,7 +319,7 @@ static void test4() {
 
   auto builder = Builder::build(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
-  Location dummyLoc(UniqueString::build(ctx, "path/to/test.chpl"));
+  Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
   {
     /* Create the AST for
@@ -335,12 +335,12 @@ static void test4() {
 
      */
 
-    auto strA = UniqueString::build(ctx, "a");
-    auto strB = UniqueString::build(ctx, "b");
-    auto strC = UniqueString::build(ctx, "c");
-    auto strX = UniqueString::build(ctx, "x");
-    auto strM = UniqueString::build(ctx, "M");
-    auto strI = UniqueString::build(ctx, "I");
+    auto strA = UniqueString::get(ctx, "a");
+    auto strB = UniqueString::get(ctx, "b");
+    auto strC = UniqueString::get(ctx, "c");
+    auto strX = UniqueString::get(ctx, "x");
+    auto strM = UniqueString::get(ctx, "M");
+    auto strI = UniqueString::get(ctx, "I");
 
     ASTList inner;
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,7 +47,7 @@ namespace types {
 static void gatherType(Context* context,
                        std::unordered_map<UniqueString,const Type*>& map,
                        const BuiltinType* t) {
-  auto name = UniqueString::build(context, t->c_str());
+  auto name = UniqueString::get(context, t->c_str());
   map.insert( {name, t} );
 }
 

@@ -534,7 +534,7 @@ proc MyBlockCyclicDom.dsiMember(i) {
   return whole.contains(i);
 }
 
-proc MyBlockCyclicDom.dsiIndexOrder(i) {
+override proc MyBlockCyclicDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 

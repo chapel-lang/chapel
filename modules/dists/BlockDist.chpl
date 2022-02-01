@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -1008,7 +1008,7 @@ proc BlockDom.dsiMember(i) {
   return whole.contains(i);
 }
 
-proc BlockDom.dsiIndexOrder(i) {
+override proc BlockDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 
@@ -1431,7 +1431,8 @@ proc BlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
-proc BlockArr.chpl__serialize() {
+proc BlockArr.chpl__serialize()
+      where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -33,6 +33,7 @@ namespace llvm {
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/IR/ValueHandle.h"
+#include <vector>
 
 /* The LLVM Global to Wide transformation allows the Chapel code generator
  * to emit multi-locale global pointer code that can be optimized by existing

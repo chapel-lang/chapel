@@ -1,0 +1,1 @@
+orderIndex-non-int.chpl:3: error: illegal value passed to orderToIndex(): the argument 'order' must be an integer, excluding uint(64)

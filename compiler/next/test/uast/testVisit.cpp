@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,13 +34,13 @@ using namespace uast;
 static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
   auto builder = Builder::build(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
-  Location dummyLoc(UniqueString::build(ctx, "path/to/test.chpl"));
+  Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
   {
     // Create the AST for { a; b; c; }
-    auto strA = UniqueString::build(ctx, "a");
-    auto strB = UniqueString::build(ctx, "b");
-    auto strC = UniqueString::build(ctx, "c");
+    auto strA = UniqueString::get(ctx, "a");
+    auto strB = UniqueString::get(ctx, "b");
+    auto strC = UniqueString::get(ctx, "c");
     ASTList children;
 
     children.push_back(Identifier::build(b, dummyLoc, strA));

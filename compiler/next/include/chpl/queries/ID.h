@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -130,6 +130,7 @@ class ID final {
   int compare(const ID& other) const;
 
   bool operator==(const ID& other) const {
+    (void)numChildIds_; // quiet nextLinter
     return symbolPath_ == other.symbolPath_ &&
           postOrderId_ == other.postOrderId_;
   }
@@ -156,6 +157,7 @@ class ID final {
   }
 
   size_t hash() const {
+    (void)numChildIds_; // quiet nextLinter
     std::hash<int> hasher;
     return hash_combine(symbolPath_.hash(), hasher(postOrderId_));
   }
@@ -173,6 +175,12 @@ class ID final {
   static bool update(chpl::ID& keep, chpl::ID& addin);
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond
+
+  std::string str() const;
 };
 
 // docs are turned off for this as a workaround for breathe errors

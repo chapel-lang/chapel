@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -669,6 +669,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   collectCallExprs(base, calls2);
 
   for_vector(CallExpr, call, calls2) {
+    if (partOfNonNormalizableExpr(call->parentExpr)) continue;
     applyGetterTransform(call);
     insertCallTemps(call);
     transformIfVar(call);
@@ -678,6 +679,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
 
   // Handle calls to "type" constructor or "value" constructor
   for_vector(CallExpr, call, calls2) {
+    if (partOfNonNormalizableExpr(call->parentExpr)) continue;
     if (isAlive(call) == true) {
       if (isCallToConstructor(call) == true) {
         normalizeCallToConstructor(call);
@@ -1549,6 +1551,23 @@ static void addEndOfStatementMarkers(BaseAST* base) {
   base->accept(&visitor);
 }
 
+// A non-normalizable expression cannot have it or any of its sub-expressions
+// changed beyond parse-time. These expressions are handled specially by
+// the resolver (e.g. for PRIM_RESOLVES). Anything contained in a
+// non-normalized expression is also non-normalizable. Locate the root of
+// the non-normalized expression.
+Expr* partOfNonNormalizableExpr(Expr* expr) {
+
+  // Anything contained in a non-normalizable expr is non-normalizable.
+  for (Expr* node = expr; node; node = node->parentExpr) {
+    if (CallExpr* call = toCallExpr(node)) {
+      const bool isResolvePrim = call->isPrimitive(PRIM_RESOLVES);
+      if (isResolvePrim) return node;
+    }
+  }
+
+  return nullptr;
+}
 
 static void addTypeBlocksForParentTypeOf(CallExpr* call) {
   Expr* stmt = getCallTempInsertPoint(call);

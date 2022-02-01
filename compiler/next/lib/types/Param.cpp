@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -630,6 +630,8 @@ double Param::str2double(const char* str, size_t len, std::string& err) {
 
   return num;
 }
+
+IMPLEMENT_DUMP(Param);
 
 // implement the subclasses using macros and ParamClassesList.h
 #define PARAM_NODE(NAME, VALTYPE) \

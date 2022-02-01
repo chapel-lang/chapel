@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,7 +49,7 @@ static std::string filenameToModulename(const char* filename) {
 }
 
 owned<Builder> Builder::build(Context* context, const char* filepath) {
-  auto uniqueFilename = UniqueString::build(context, filepath);
+  auto uniqueFilename = UniqueString::get(context, filepath);
   auto b = new Builder(context, uniqueFilename);
   return toOwned(b);
 }
@@ -112,7 +112,7 @@ void Builder::createImplicitModuleIfNeeded() {
   } else {
     // compute the basename of filename to get the inferred module name
     std::string modname = filenameToModulename(filepath_.c_str());
-    auto inferredModuleName = UniqueString::build(context_, modname);
+    auto inferredModuleName = UniqueString::get(context_, modname);
     // create a new module containing all of the statements
     ASTList stmts;
     stmts.swap(topLevelExpressions_);
@@ -235,7 +235,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
         pathStr += std::to_string(repeat);
       }
     }
-    auto newSymbolPath = UniqueString::build(this->context(), pathStr);
+    auto newSymbolPath = UniqueString::get(this->context(), pathStr);
 
     // get a fresh postorder traversal counter and duplicates map
     int freshId = 0;

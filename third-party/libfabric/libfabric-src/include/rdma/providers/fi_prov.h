@@ -76,14 +76,6 @@ struct fi_provider {
 
 /*
  * Defines a configuration parameter for use with libfabric.
- *
- * This registers the configuration variable "foo" in the specified
- * provider.
- *
- * The help string cannot be NULL or empty.
- *
- * The param_name and help_string parameters will be copied internally;
- * they can be freed upon return from fi_param_define().
  */
 int fi_param_define(const struct fi_provider *provider, const char *param_name,
 		    enum fi_param_type type, const char *help_string_fmt, ...);
@@ -92,22 +84,8 @@ int fi_param_define(const struct fi_provider *provider, const char *param_name,
  * Get the value of a configuration variable.
  *
  * Currently, configuration parameter will only be read from the
- * environment.  The environment variable names will be of the form
- * upper_case(FI_<provider_name>_<param_name>).
- *
- * Someday this call could be expanded to also check config files.
- *
- * If the parameter was previously defined and the user set a value,
- * FI_SUCCESS is returned and (*value) points to the retrieved
- * value.
- *
- * If the parameter name was previously defined, but the user did
- * not set a value, -FI_ENODATA is returned and the value of (*value)
- * is unchanged.
- *
- * If the variable name was not previously defined via
- * fi_param_define(), -FI_ENOENT will be returned and the value of
- * (*value) is unchanged.
+ * environment. Someday this call could be expanded to also check
+ * config files.
  */
 int fi_param_get(struct fi_provider *provider, const char *param_name,
 		 void *value);

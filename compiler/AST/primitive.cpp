@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -851,6 +851,13 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
+  // allocate data into shared memory (takes one paremter: number of bytes to allocate)
+  // and returns a c_void_ptr
+  prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
+
+  // synchronize threads in a GPU kernel (equivalent to CUDA __syncThreads)
+  prim_def(PRIM_GPU_SYNC_THREADS, "gpu syncThreads", returnInfoVoid, true);
+
   // task primitives
   // get serial state
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
@@ -1115,6 +1122,7 @@ initPrimitive() {
   // Like the previous two but also always attempts to resolve the called fn
   prim_def(PRIM_CALL_AND_FN_RESOLVES, "call and fn resolves", returnInfoBool);
   prim_def(PRIM_METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves", returnInfoBool);
+  prim_def(PRIM_RESOLVES, "resolves", returnInfoBool);
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);
@@ -1209,6 +1217,8 @@ initPrimitive() {
   prim_def(PRIM_VERSION_MINOR, "version minor", returnInfoDefaultInt);
   prim_def(PRIM_VERSION_UPDATE, "version update", returnInfoDefaultInt);
   prim_def(PRIM_VERSION_SHA, "version sha", returnInfoString);
+
+  prim_def(PRIM_REF_DESERIALIZE, "deserialize for ref fields", returnInfoCVoidPtr);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

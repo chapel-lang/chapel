@@ -76,6 +76,7 @@ common_srcs =				\
 	prov/util/src/util_mr_cache.c	\
 	prov/util/src/cuda_mem_monitor.c \
 	prov/util/src/rocr_mem_monitor.c \
+	prov/util/src/ze_mem_monitor.c \
 	prov/util/src/util_coll.c
 
 
@@ -185,7 +186,7 @@ src_libfabric_la_LIBADD =
 src_libfabric_la_DEPENDENCIES = libfabric.map
 
 if !EMBEDDED
-src_libfabric_la_LDFLAGS += -version-info 16:1:15
+src_libfabric_la_LDFLAGS += -version-info 17:2:16
 endif
 src_libfabric_la_LDFLAGS += -export-dynamic \
 			   $(libfabric_version_script)
@@ -196,6 +197,7 @@ rdmainclude_HEADERS += \
 	$(top_srcdir)/include/rdma/fi_collective.h \
 	$(top_srcdir)/include/rdma/fi_domain.h \
 	$(top_srcdir)/include/rdma/fi_eq.h \
+	$(top_srcdir)/include/rdma/fi_ext.h \
 	$(top_srcdir)/include/rdma/fi_rma.h \
 	$(top_srcdir)/include/rdma/fi_endpoint.h \
 	$(top_srcdir)/include/rdma/fi_errno.h \
@@ -224,6 +226,7 @@ real_man_pages = \
         man/man1/fi_info.1 \
         man/man1/fi_pingpong.1 \
         man/man1/fi_strerror.1 \
+        man/man3/fi_atomic.3 \
         man/man3/fi_av.3 \
         man/man3/fi_av_set.3 \
         man/man3/fi_cm.3 \
@@ -236,6 +239,7 @@ real_man_pages = \
         man/man3/fi_errno.3 \
         man/man3/fi_eq.3 \
         man/man3/fi_fabric.3 \
+        man/man3/fi_provider.3 \
         man/man3/fi_getinfo.3 \
         man/man3/fi_mr.3 \
         man/man3/fi_msg.3 \
@@ -256,7 +260,6 @@ dummy_man_pages = \
         man/man3/fi_allgather.3 \
         man/man3/fi_allreduce.3 \
         man/man3/fi_alltoall.3 \
-        man/man3/fi_atomic.3 \
         man/man3/fi_atomic_valid.3 \
         man/man3/fi_atomicmsg.3 \
         man/man3/fi_atomicv.3 \

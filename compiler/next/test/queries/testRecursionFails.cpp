@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,7 +42,7 @@ int main() {
   Context ctx;
   Context* context = &ctx;
 
-  auto s = UniqueString::build(context, "Nice To See You Again World, Hello");
+  auto s = UniqueString::get(context, "Nice To See You Again World, Hello");
   recursiveQuery(context, s);
 
   return 0;

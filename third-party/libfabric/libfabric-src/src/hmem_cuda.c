@@ -395,7 +395,7 @@ int cuda_host_register(void *ptr, size_t size)
 		return FI_SUCCESS;
 
 	FI_WARN(&core_prov, FI_LOG_CORE,
-		"Failed to perform cudaMemcpy: %s:%s\n",
+		"Failed to perform cudaHostRegister: %s:%s\n",
 		ofi_cudaGetErrorName(cuda_ret),
 		ofi_cudaGetErrorString(cuda_ret));
 
@@ -411,7 +411,7 @@ int cuda_host_unregister(void *ptr)
 		return FI_SUCCESS;
 
 	FI_WARN(&core_prov, FI_LOG_CORE,
-		"Failed to perform cudaMemcpy: %s:%s\n",
+		"Failed to perform cudaHostUnregister: %s:%s\n",
 		ofi_cudaGetErrorName(cuda_ret),
 		ofi_cudaGetErrorString(cuda_ret));
 

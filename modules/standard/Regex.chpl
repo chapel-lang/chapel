@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -946,36 +946,45 @@ record regex {
      :yields: tuples of :record:`regexMatch` objects, the 1st is always
               the match for the whole pattern and the rest are the capture groups.
    */
-  iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
+  iter matches(text: exprType, param numCaptures=0, maxMatches: int = max(int))
   {
     var regexCopy:regex(exprType);
     if home != here then regexCopy = this;
     const localRegex = if home != here then regexCopy._regex else _regex;
-    param nmatches = 1 + captures;
-    var matches: c_array(qio_regex_string_piece_t, nmatches);
+    param nMatches = 1 + numCaptures;
+    var matches: c_array(qio_regex_string_piece_t, nMatches);
     var pos:byteIndex;
-    var endpos:byteIndex;
+    var endPos:byteIndex;
     var textLength:int;
     var localText = text.localize();
 
     pos = 0;
     textLength = localText.numBytes;
-    endpos = pos + textLength;
+    endPos = pos + textLength;
 
-    var nfound = 0;
+    var nFound = 0;
     var cur = pos;
-    while nfound < maxmatches && cur <= endpos {
+    while nFound < maxMatches && cur <= endPos {
       var got = qio_regex_match(localRegex, localText.c_str(), textLength,
-                                cur:int, endpos:int, QIO_REGEX_ANCHOR_UNANCHORED,
-                                matches[0], nmatches);
+                                cur:int, endPos:int, QIO_REGEX_ANCHOR_UNANCHORED,
+                                matches[0], nMatches);
       if !got then break;
-      param nret = captures+1;
-      var ret:nret*regexMatch;
-      for i in 0..captures {
+      var ret:nMatches*regexMatch;
+      for i in 0..numCaptures {
         ret[i] = new regexMatch(got, matches[i].offset:byteIndex, matches[i].len);
       }
       yield ret;
       cur = matches[0].offset + max(1, matches[0].len);
+      nFound += 1;
+    }
+  }
+
+  pragma "last resort"
+  deprecated "regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead."
+  iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
+  {
+    for m in matches(text, numCaptures=captures, maxMatches=maxmatches) {
+      yield m;
     }
   }
 

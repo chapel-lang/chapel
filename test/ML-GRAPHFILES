@@ -12,7 +12,7 @@ release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
 release/examples/benchmarks/hpcc/variants/stream-promoted.ml-perf.graph
 studies/prk/Stencil/prk-stencil.ml-perf.graph
-release/examples/benchmarks/ssca2/SSCA2_main.ml-time.graph
+studies/ssca2/main/SSCA2_main.ml-time.graph
 studies/lulesh/bradc/lulesh-dense.ml-time.graph
 release/examples/benchmarks/miniMD/miniMD.ml-time.graph
 studies/isx/isx.ml-time.graph
@@ -30,7 +30,7 @@ release/examples/benchmarks/hpcc/ra.ml-perf.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
 release/examples/benchmarks/hpcc/variants/stream-promoted.ml-perf.graph
-release/examples/benchmarks/ssca2/SSCA2_main.ml-perf.graph
+studies/ssca2/main/SSCA2_main.ml-perf.graph
 studies/prk/Stencil/prk-stencil.ml-perf.graph
 studies/bale/histogram/histo-atomics.ml-perf.graph
 studies/bale/histogram/histo-atomics-agg.ml-perf.graph
@@ -52,7 +52,7 @@ release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
 release/examples/benchmarks/hpcc/variants/stream-promoted.ml-perf.graph
 # suite: - SSCA (perf)
-release/examples/benchmarks/ssca2/SSCA2_main.ml-perf.graph
+studies/ssca2/main/SSCA2_main.ml-perf.graph
 # suite: - PRK (perf)
 studies/prk/Stencil/prk-stencil.ml-perf.graph
 # suite: - Bale (perf)
@@ -74,7 +74,7 @@ release/examples/benchmarks/hpcc/ra.ml-time.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-time.graph
 release/examples/benchmarks/hpcc/stream.ml-time.graph
 release/examples/benchmarks/hpcc/variants/stream-promoted.ml-time.graph
-release/examples/benchmarks/ssca2/SSCA2_main.ml-time.graph
+studies/ssca2/main/SSCA2_main.ml-time.graph
 studies/lulesh/bradc/lulesh-dense.ml-time.graph
 release/examples/benchmarks/miniMD/miniMD.ml-time.graph
 scan/scanPerf.ml-time.graph
@@ -102,7 +102,7 @@ release/examples/benchmarks/hpcc/stream-ep.ml-time.graph
 release/examples/benchmarks/hpcc/stream.ml-time.graph
 release/examples/benchmarks/hpcc/variants/stream-promoted.ml-time.graph
 # suite: - SSCA (time)
-release/examples/benchmarks/ssca2/SSCA2_main.ml-time.graph
+studies/ssca2/main/SSCA2_main.ml-time.graph
 # suite: - DOE (time)
 studies/lulesh/bradc/lulesh-dense.ml-time.graph
 release/examples/benchmarks/miniMD/miniMD.ml-time.graph

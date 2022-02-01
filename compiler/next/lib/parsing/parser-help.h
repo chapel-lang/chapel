@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,7 +31,7 @@ void yychpl_error(YYLTYPE*       loc,
 #define STMT(LOC,AST) makeCommentsAndStmt(context->gatherComments(LOC), AST)
 #define ENDSTMT() context->clearComments();
 
-#define STR(s) PODUniqueString::build(context->context(), s)
+#define STR(s) PODUniqueString::get(context->context(), s)
 #define LOC(loc) context->convertLocation(loc)
 #define LOC2(STARTLOC, ENDLOC) \
   context->convertLocation(context->makeSpannedLocation(STARTLOC, ENDLOC))

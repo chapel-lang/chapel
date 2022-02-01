@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -134,6 +134,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
+	packages/Socket.chpl \
 	packages/Sort.chpl \
 	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \

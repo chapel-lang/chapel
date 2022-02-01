@@ -269,7 +269,13 @@ psm2_error_t psmi_parse_mpool_env(const psm2_mq_t mq, int level,
 				 uint32_t *valo, uint32_t *chunkszo);
 int psmi_parse_memmode(void);
 int psmi_parse_identify(void);
+unsigned psmi_parse_senddma(void);
 unsigned psmi_parse_rdmamode(void);
+#ifdef PSM_CUDA
+unsigned psmi_parse_gpudirect(void);
+unsigned psmi_parse_gpudirect_send_limit(void);
+unsigned psmi_parse_gpudirect_recv_limit(void);
+#endif
 
 /*
  * Parsing environment variables
@@ -307,6 +313,7 @@ MOCKABLE(psmi_getenv)(const char *name, const char *descr, int level,
 		int type, union psmi_envvar_val defval,
 		union psmi_envvar_val *newval);
 MOCK_DCL_EPILOGUE(psmi_getenv);
+int psmi_parse_val_pattern(const char *env, int def, int def_syntax);
 /*
  * Misc functionality
  */
@@ -315,8 +322,6 @@ uint64_t psmi_cycles_left(uint64_t start_cycles, int64_t timeout_ns);
 uint32_t psmi_get_ipv4addr();
 void psmi_syslog(psm2_ep_t ep, int to_console, int level,
 		 const char *format, ...);
-void psmi_uuid_unparse(const psm2_uuid_t uuid, char *out);
-int psmi_uuid_compare(const psm2_uuid_t uuA, const psm2_uuid_t uuB);
 void *psmi_memcpyo(void *dst, const void *src, size_t n);
 uint32_t psmi_crc(unsigned char *buf, int len);
 
@@ -385,19 +390,36 @@ void psmi_multi_ep_init();
  *		reg_mr - register MR failure (ENOMEM)
  *		nonpri_reg_mr - non-priority register MR failure (ENOMEM)
  *		pri_reg_mr - priority register MR failure (ENOMEM)
+ *		gdrmmap - GPU gdrcopy pin and mmap failure
  */
-struct psmi_faultinj_spec;
 int psmi_faultinj_enabled;	/* use macro to test */
+int psmi_faultinj_verbose;	/* use IS_FAULT macro to test */
 int psmi_faultinj_sec_rail;	/* faults only on secondary rails or EPs */
-#if 1				/* possible to disable at compile time */
+
+struct psmi_faultinj_spec {
+	STAILQ_ENTRY(psmi_faultinj_spec) next;
+	char spec_name[PSMI_FAULTINJ_SPEC_NAMELEN];
+
+	uint64_t num_faults;
+	uint64_t num_calls;
+
+	struct drand48_data drand48_data;
+	int num;
+	int denom;
+	long int initial_seed;
+};
+
 #define PSMI_FAULTINJ_ENABLED()	(!!psmi_faultinj_enabled)
 #define PSMI_FAULTINJ_ENABLED_EP(ep)	(PSMI_FAULTINJ_ENABLED() \
-		&& (!psmi_faultinj_sec_rail || \
-		 	(psmi_opened_endpoint && (ep) != psmi_opened_endpoint)))
-#else
-#define PSMI_FAULTINJ_ENABLED()	0
-#define PSMI_FAULTINJ_ENABLED_EP(ep)	0
-#endif
+		&& (!psmi_faultinj_sec_rail || ((ep)->mctxt_master != (ep))))
+
+int psmi_faultinj_is_fault(struct psmi_faultinj_spec *fi); // use macro instead
+#define PSMI_FAULTINJ_IS_FAULT(fi, fmt, ...) \
+	(psmi_faultinj_is_fault(fi)? \
+			psmi_faultinj_verbose? \
+				(printf("%s: injecting fault: %s" fmt "\n", hfi_get_mylabel(), fi->spec_name, ##__VA_ARGS__), fflush(stdout), 1) \
+				: 1 \
+			: 0)
 
 void psmi_faultinj_init();
 void psmi_faultinj_fini();
@@ -406,10 +428,14 @@ struct psmi_faultinj_spec *psmi_faultinj_getspec(const char *spec_name,
 						 int num, int denom);
 #define PSMI_FAULTINJ_STATIC_DECL(var, spec_name, help, num, denom)	\
 	static struct psmi_faultinj_spec *var;			\
-	if (PSMI_FAULTINJ_ENABLED() && (var) == NULL)			\
+	if_pf(PSMI_FAULTINJ_ENABLED() && (var) == NULL)			\
 	    (var) = psmi_faultinj_getspec((spec_name), (help), (num), (denom));
-int psmi_faultinj_is_fault(struct psmi_faultinj_spec *spec);
 
+#else
+#define PSMI_FAULTINJ_ENABLED()	0
+#define PSMI_FAULTINJ_ENABLED_EP(ep)	0
+#define PSMI_FAULTINJ_IS_FAULT(fi, fmt, ...) 0
+#define PSMI_FAULTINJ_STATIC_DECL(var, spec_name, help, num, denom)
 #endif /* #ifdef PSM_FI */
 /*
  * PSM core component set/get options

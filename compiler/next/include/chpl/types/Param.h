@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -124,6 +124,7 @@ class Param {
   }
 
   bool operator==(const Param& other) const {
+    (void)tag_;  // quiet nextLinter
     return completeMatch(&other);
   }
   bool operator!=(const Param& other) const {
@@ -188,6 +189,10 @@ class Param {
   // clear the macros
   #undef PARAM_NODE
   #undef PARAM_TO
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 // define the subclasses using macros and ParamClassesList.h
@@ -227,18 +232,18 @@ class Param {
 } // end namespace types
 /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<chpl::types::Param::ComplexDouble> {
-  void operator()(std::ostream &stringOut,
+  void operator()(std::ostream& streamOut,
                   chpl::StringifyKind stringKind,
                   const chpl::types::Param::ComplexDouble& stringMe) const {
-    stringOut << "types::Param::ComplexDouble is not stringified";
+    streamOut << "types::Param::ComplexDouble is not stringified";
   }
 };
 
 template<> struct stringify<chpl::types::Param::NoneValue> {
-  void operator()(std::ostream &stringOut,
+  void operator()(std::ostream& streamOut,
                   chpl::StringifyKind stringKind,
                   const chpl::types::Param::NoneValue& stringMe) const {
-    stringOut << "types::Param::NoneValue is not stringified";
+    streamOut << "types::Param::NoneValue is not stringified";
   }
 };
 /// \endcond DO_NOT_DOCUMENT

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,15 +39,15 @@ InlinedString InlinedString::buildUsingContextTable(Context* context,
   return InlinedString::buildFromAlignedPtr(u, len);
 }
 
-InlinedString InlinedString::buildConcat(Context* context,
-                                         const char* s1, const char* s2,
-                                         const char* s3,
-                                         const char* s4,
-                                         const char* s5,
-                                         const char* s6,
-                                         const char* s7,
-                                         const char* s8,
-                                         const char* s9) {
+InlinedString InlinedString::getConcat(Context* context,
+                                       const char* s1, const char* s2,
+                                       const char* s3,
+                                       const char* s4,
+                                       const char* s5,
+                                       const char* s6,
+                                       const char* s7,
+                                       const char* s8,
+                                       const char* s9) {
   size_t len, len1, len2, len3, len4, len5, len6, len7, len8, len9;
   len = len1 = len2 = len3 = len4 = len5 = len6 = len7 = len8 = len9 = 0;
 
@@ -163,20 +163,20 @@ void InlinedString::mark(Context* context) const {
 } // end namespace detail
 
 
-UniqueString UniqueString::build(Context* context,
+UniqueString UniqueString::get(Context* context,
                                  const char* s, size_t len) {
   if (s == nullptr || len == 0) return UniqueString();
 
   if (s[len] == '\0') {
     // string is already appropriately null terminated
     detail::PODUniqueString ret =
-      detail::PODUniqueString::build(context, s, len);
+      detail::PODUniqueString::get(context, s, len);
     return UniqueString(ret);
   } else {
     // otherwise, construct a truncated string
     std::string str(s, len);
     detail::PODUniqueString ret =
-      detail::PODUniqueString::build(context, str.c_str(), len);
+      detail::PODUniqueString::get(context, str.c_str(), len);
     return UniqueString(ret);
   }
 }
@@ -190,5 +190,6 @@ void UniqueString::stringify(std::ostream& ss,
                              chpl::StringifyKind stringKind) const {
   ss.write(c_str(),length());
 }
+IMPLEMENT_DUMP(UniqueString);
 
 } // end namespace chpl

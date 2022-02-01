@@ -1,0 +1,1 @@
+notsupportedStridable-assoc.chpl:3: error: associative domains do not support .stridable

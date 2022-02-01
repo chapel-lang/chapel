@@ -1,7 +1,4 @@
 # suite: Release examples
-release/examples/benchmarks/ssca2/SSCA2_main.graph
-release/examples/benchmarks/ssca2/edge_generation.graph
-release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lcals/LCALS-raw-short.graph
 release/examples/benchmarks/lcals/LCALS-raw-medium.graph
 release/examples/benchmarks/lcals/LCALS-raw-long.graph
@@ -30,7 +27,6 @@ studies/shootout/reverse-complement/revcomp.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/thread-ring/thread-ring.graph
 # suite: Performance tracking
-release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 studies/comd/llnl/CoMD.graph
@@ -110,8 +106,11 @@ release/examples/benchmarks/hpcc/ptrans_performance.graph
 release/examples/benchmarks/hpcc/fft_performance.graph
 release/examples/benchmarks/hpcc/hpl_performance.graph
 studies/hpcc/STREAM_study_performance.graph
-release/examples/benchmarks/ssca2/performance.graph
-# suite: DOE proxy apps
+studies/ssca2/main/performance.graph
+# suite: Proxy apps
+studies/ssca2/main/SSCA2_main.graph
+studies/ssca2/main/edge_generation.graph
+studies/ssca2/main/total_time.graph
 studies/lulesh/bradc/lulesh-dense.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 studies/comd/llnl/CoMD.graph
@@ -233,6 +232,7 @@ parallel/taskCompare/lydia/loopCompare.graph
 # suite: Task Spawning
 parallel/taskCompare/elliot/taskSpawn.graph
 parallel/taskCompare/elliot/serialTaskSpawn.graph
+parallel/taskCompare/elliot/taskYield.graph
 studies/hpcc/STREAMS/elliot/stream-task-placement.graph
 # suite: Barrier
 performance/comm/barrier/empty-chpl-barrier.graph

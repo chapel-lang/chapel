@@ -4,5 +4,5 @@ config const testIters = 8;
 
 var lst: list(int);
 
-var idx = lst.indexOf(testIters);
+var idx = lst.find(testIters);
 assert(idx == -1);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,7 @@
 
 #include "chpl/queries/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
+#include "chpl/types/CompositeType.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
@@ -39,6 +40,9 @@ namespace resolution {
   including the formals. It exists so that the process of identifying
   candidates does not need to depend on the bodies of the function
   (in terms of incremental recomputation).
+
+  For type constructors for generic types, the formal decls
+  are actually field decls.
  */
 class UntypedFnSignature {
  public:
@@ -70,6 +74,9 @@ class UntypedFnSignature {
         ss << " ";
       }
     }
+    /// \cond DO_NOT_DOCUMENT
+    DECLARE_DUMP;
+    /// \endcond DO_NOT_DOCUMENT
   };
 
  private:
@@ -80,6 +87,7 @@ class UntypedFnSignature {
   UniqueString name_;
   bool isMethod_; // in that case, formals[0] is the receiver
   bool idIsFunction_; // whether the ID is of a function
+  bool idIsClass_; // whether the ID is of a class
   bool isTypeConstructor_;
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
@@ -91,6 +99,7 @@ class UntypedFnSignature {
                      UniqueString name,
                      bool isMethod,
                      bool idIsFunction,
+                     bool idIsClass,
                      bool isTypeConstructor,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
@@ -99,6 +108,7 @@ class UntypedFnSignature {
       name_(name),
       isMethod_(isMethod),
       idIsFunction_(idIsFunction),
+      idIsClass_(idIsClass),
       isTypeConstructor_(isTypeConstructor),
       kind_(kind),
       formals_(std::move(formals)),
@@ -110,6 +120,7 @@ class UntypedFnSignature {
                         UniqueString name,
                         bool isMethod,
                         bool idIsFunction,
+                        bool idIsClass,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
@@ -121,6 +132,7 @@ class UntypedFnSignature {
                                        UniqueString name,
                                        bool isMethod,
                                        bool idIsFunction,
+                                       bool idIsClass,
                                        bool isTypeConstructor,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
@@ -137,6 +149,7 @@ class UntypedFnSignature {
            name_ == other.name_ &&
            isMethod_ == other.isMethod_ &&
            idIsFunction_ == other.idIsFunction_ &&
+           idIsClass_ == other.idIsClass_ &&
            isTypeConstructor_ == other.isTypeConstructor_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
@@ -176,6 +189,11 @@ class UntypedFnSignature {
     return idIsFunction_;
   }
 
+  /** Returns true if id() refers to a Class */
+  bool idIsClass() const {
+    return idIsClass_;
+  }
+
   /** Returns true if this is a type constructor */
   bool isTypeConstructor() const {
     return isTypeConstructor_;
@@ -212,9 +230,14 @@ class UntypedFnSignature {
     ss << std::to_string(numFormals());
     ss << " ";
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
-using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
+/** See the documentation for types::CompositeType::SubstitutionsMap. */
+using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
 /** CallInfoActual */
 class CallInfoActual {
@@ -244,12 +267,16 @@ class CallInfoActual {
     return chpl::hash(type_, byName_);
   }
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) {
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     byName().stringify(ss, stringKind);
     ss << " ";
     type().stringify(ss, stringKind);
     ss << " ";
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /** CallInfo */
@@ -309,6 +336,10 @@ class CallInfo {
       name().stringify(ss, stringKind);
       ss << " ";
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 
@@ -427,6 +458,10 @@ class PoiInfo {
     ss << "PoiInfo: ";
     poiScope()->stringify(ss, stringKind);
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 // TODO: should this actually be types::FunctionType?
@@ -562,6 +597,10 @@ class TypedFnSignature {
     assert(0 <= i && (size_t) i < formalTypes_.size());
     return formalTypes_[i];
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -784,6 +823,10 @@ class ResolvedExpression {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -975,28 +1018,153 @@ class FormalActualMap {
                         const TypedFnSignature* typed, const CallInfo& call);
 };
 
+/** ResolvedFields represents the fully resolved fields for a
+    class/record/union/tuple type. */
+class ResolvedFields {
+  struct FieldDetail {
+    UniqueString name;
+    bool hasDefaultValue = false;
+    ID declId;
+    types::QualifiedType type;
+
+    FieldDetail(UniqueString name,
+                bool hasDefaultValue,
+                ID declId,
+                types::QualifiedType type)
+      : name(name), hasDefaultValue(hasDefaultValue), declId(declId), type(type) {
+    }
+    bool operator==(const FieldDetail& other) const {
+      return name == other.name &&
+             hasDefaultValue == other.hasDefaultValue &&
+             declId == other.declId &&
+             type == other.type;
+    }
+    bool operator!=(const FieldDetail& other) const {
+      return !(*this == other);
+    }
+    size_t hash() const {
+      return chpl::hash(name, hasDefaultValue, declId, type);
+    }
+
+    void mark(Context* context) const {
+      name.mark(context);
+      declId.mark(context);
+    }
+
+    /*
+    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      name.stringify(ss, stringKind);
+      //TODO: determine the proper way to do this
+      //decl.stringify(ss, stringKind);
+      type.stringify(ss, stringKind);
+    }*/
+  };
+
+  const types::CompositeType* type_ = nullptr;
+  std::vector<FieldDetail> fields_;
+
+  // Summary information that is computed after the field types are known
+  bool isGeneric_ = false;
+  bool allGenericFieldsHaveDefaultValues_ = false;
+
+ public:
+  ResolvedFields() { }
+ 
+  void setType(const types::CompositeType* type) {
+    type_ = type;
+  }
+
+  void addField(UniqueString name,
+                bool hasDefaultValue,
+                ID declId,
+                types::QualifiedType type) {
+    fields_.push_back(FieldDetail(name, hasDefaultValue, declId, type));
+  }
+
+  void finalizeFields(Context* context);
+
+  /** Returns true if this is a generic type */
+  bool isGeneric() const { return isGeneric_; }
+
+  /** Returns true if this is a generic type where all
+      generic fields have default values. For classes,
+      this does not include consideration of the parent class. */
+  bool isGenericWithDefaults() const {
+    return isGeneric_ && allGenericFieldsHaveDefaultValues_;
+  }
+
+  int numFields() const {
+    return fields_.size();
+  }
+
+  UniqueString fieldName(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].name;
+  }
+  bool fieldHasDefaultValue(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].hasDefaultValue;
+  }
+  ID fieldDeclId(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].declId;
+  }
+  types::QualifiedType fieldType(int i) const {
+    assert(0 <= i && (size_t) i < fields_.size());
+    return fields_[i].type;
+  }
+
+  bool operator==(const ResolvedFields& other) const {
+    return type_ == other.type_ &&
+           fields_ == other.fields_ &&
+           isGeneric_ == other.isGeneric_ &&
+           allGenericFieldsHaveDefaultValues_ ==
+             other.allGenericFieldsHaveDefaultValues_;
+  }
+  bool operator!=(const ResolvedFields& other) const {
+    return !(*this == other);
+  }
+  void swap(ResolvedFields& other) {
+    std::swap(type_, other.type_);
+    fields_.swap(other.fields_);
+    std::swap(isGeneric_, other.isGeneric_);
+    std::swap(allGenericFieldsHaveDefaultValues_,
+              other.allGenericFieldsHaveDefaultValues_);
+  }
+  static bool update(ResolvedFields& keep,
+                     ResolvedFields& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    for (auto const &elt : fields_) {
+      elt.mark(context);
+    }
+  }
+};
+
 } // end namespace resolution
 
 
 /// \cond DO_NOT_DOCUMENT
 
-template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
+template<> struct stringify<resolution::TypedFnSignature::WhereClauseResult>
 {
-  void operator()(std::ostream &stringOut,
-                  chpl::StringifyKind stringKind,
-                  const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
+                  const resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
+    using WhereClauseResult = resolution::TypedFnSignature::WhereClauseResult;
     switch(stringMe) {
-      case 0:
-        stringOut << "WHERE_NONE";
+      case WhereClauseResult::WHERE_NONE:
+        streamOut << "WHERE_NONE";
         break;
-      case 1:
-        stringOut <<  "WHERE_TBD";
+      case WhereClauseResult::WHERE_TBD:
+        streamOut <<  "WHERE_TBD";
         break;
-      case 2:
-        stringOut <<  "WHERE_TRUE";
+      case WhereClauseResult::WHERE_TRUE:
+        streamOut <<  "WHERE_TRUE";
         break;
-      case 3:
-        stringOut <<  "WHERE_FALSE";
+      case WhereClauseResult::WHERE_FALSE:
+        streamOut <<  "WHERE_FALSE";
         break;
     }
 }

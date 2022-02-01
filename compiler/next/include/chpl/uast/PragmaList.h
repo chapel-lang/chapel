@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -480,6 +480,8 @@ PRAGMA(PRINT_MODULE_INIT_FN, ypr, "print module init fn", ncm)
 PRAGMA(PRINT_MODULE_INIT_INDENT_LEVEL, ypr, "print module init indent level", ncm)
 PRAGMA(PRIVATE, npr, "private", ncm)
 PRAGMA(PROMOTION_WRAPPER, npr, "promotion wrapper", ncm)
+PRAGMA(PROMOTION_PROTO_FIELD, npr, "temporary promotion field", ncm)
+PRAGMA(PROMOTION_ITERATOR_RECORD, npr, "promotion iterator record", ncm)
 PRAGMA(PROTOTYPE_MODULE, npr, "prototype module", ncm)
 PRAGMA(RANGE, ypr, "range", "indicates the range type")
 PRAGMA(RECURSIVE_ITERATOR, npr, "recursive iterator", "iterators which call themselves")
@@ -583,6 +585,8 @@ PRAGMA(OPT_INFO_LHS_OUTLIVES_FORALL, npr, "lhs outlives forall", "lhs or destina
 PRAGMA(OPT_INFO_RHS_OUTLIVES_FORALL, npr, "rhs outlives forall", "rhs or sourceoutlives forall")
 PRAGMA(OPT_INFO_NO_TASK_PRIVATE, npr, "forall no task private", "forall does not use task private storage")
 PRAGMA(OPT_INFO_NO_BLOCKING, npr, "forall not blocking", "forall does not have blocking synchronization")
+
+PRAGMA(DESERIALIZATION_BLOCK_MARKER, npr, "marks deserialization options", "then block is var else block is ref serialization")
 
 #undef ypr
 #undef npr

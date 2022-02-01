@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -142,7 +142,7 @@ struct InlinedString {
                                               const char* s, size_t len);
 
   // innerNull indicates if the string contains an inner null byte
-  static InlinedString build(Context* context,
+  static InlinedString get(Context* context,
                              const char* s,
                              size_t len,
                              bool innerNull) {
@@ -155,28 +155,28 @@ struct InlinedString {
       return InlinedString::buildUsingContextTable(context, s, len);
     }
   }
-  static InlinedString build(Context* context, const char* s, size_t len) {
+  static InlinedString get(Context* context, const char* s, size_t len) {
     bool innerNull = false;
     if (s != NULL) innerNull = stringContainsZeroBytes(s, len);
-    return InlinedString::build(context, s, len, innerNull);
+    return InlinedString::get(context, s, len, innerNull);
   }
-  static InlinedString build(Context* context, const char* s) {
+  static InlinedString get(Context* context, const char* s) {
     size_t len = 0;
     if (s != NULL) len = strlen(s);
-    return InlinedString::build(context, s, len, /*innerNull*/ false );
+    return InlinedString::get(context, s, len, /*innerNull*/ false );
   }
-  static InlinedString build() {
+  static InlinedString get() {
     return InlinedString::buildInlined("", 0);
   }
-  static InlinedString buildConcat(Context* context,
-                                   const char* s1, const char* s2,
-                                   const char* s3 = nullptr,
-                                   const char* s4 = nullptr,
-                                   const char* s5 = nullptr,
-                                   const char* s6 = nullptr,
-                                   const char* s7 = nullptr,
-                                   const char* s8 = nullptr,
-                                   const char* s9 = nullptr);
+  static InlinedString getConcat(Context* context,
+                                 const char* s1, const char* s2,
+                                 const char* s3 = nullptr,
+                                 const char* s4 = nullptr,
+                                 const char* s5 = nullptr,
+                                 const char* s6 = nullptr,
+                                 const char* s7 = nullptr,
+                                 const char* s8 = nullptr,
+                                 const char* s9 = nullptr);
 
   bool isInline() const {
     return alignmentIndicatesTag(this->v);
@@ -209,30 +209,30 @@ struct InlinedString {
 // TODO: rename it
 struct PODUniqueString {
   InlinedString i;
-  static PODUniqueString build(Context* context, const char* s, size_t len) {
-    return { InlinedString::build(context, s, len) };
+  static PODUniqueString get(Context* context, const char* s, size_t len) {
+    return { InlinedString::get(context, s, len) };
   }
-  static PODUniqueString build(Context* context, const char* s) {
-    return { InlinedString::build(context, s) };
+  static PODUniqueString get(Context* context, const char* s) {
+    return { InlinedString::get(context, s) };
   }
-  static PODUniqueString buildConcat(Context* context,
-                                     const char* s1, const char* s2,
-                                     const char* s3 = nullptr,
-                                     const char* s4 = nullptr,
-                                     const char* s5 = nullptr,
-                                     const char* s6 = nullptr,
-                                     const char* s7 = nullptr,
-                                     const char* s8 = nullptr,
-                                     const char* s9 = nullptr) {
-    return { InlinedString::buildConcat(context, s1, s2,
-                                        s3, s4,
-                                        s5, s6,
-                                        s7, s8, s9) };
+  static PODUniqueString getConcat(Context* context,
+                                   const char* s1, const char* s2,
+                                   const char* s3 = nullptr,
+                                   const char* s4 = nullptr,
+                                   const char* s5 = nullptr,
+                                   const char* s6 = nullptr,
+                                   const char* s7 = nullptr,
+                                   const char* s8 = nullptr,
+                                   const char* s9 = nullptr) {
+    return { InlinedString::getConcat(context, s1, s2,
+                                      s3, s4,
+                                      s5, s6,
+                                      s7, s8, s9) };
   }
 
 
-  static inline PODUniqueString build() {
-    PODUniqueString ret = {InlinedString::build()};
+  static inline PODUniqueString get() {
+    PODUniqueString ret = {InlinedString::get()};
     return ret;
   }
   const char* c_str() const {

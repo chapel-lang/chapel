@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -35,7 +35,7 @@ inline proc getDataParMinGranularity() {
 //
 // return a rank*t tuple initialized to val
 //
-proc createTuple(param rank, type t, val) {
+proc createTuple(param rank, type t, val): rank*t {
   var tup: rank*t;
   for param i in 0..rank-1 do tup(i) = val;
   return tup;

@@ -12,7 +12,6 @@ _tcp_files = \
 	prov/tcp/src/tcpx_eq.c		\
 	prov/tcp/src/tcpx_init.c	\
 	prov/tcp/src/tcpx_progress.c	\
-	prov/tcp/src/tcpx_comm.c	\
 	prov/tcp/src/tcpx.h
 
 if HAVE_TCP_DL

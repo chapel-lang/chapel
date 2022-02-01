@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1930,12 +1930,6 @@ module ChapelBase {
   inline operator <<=(ref lhs, rhs) {
     lhs = lhs << rhs;
   }
-
-  /* domain += and -= add and remove indices */
-  inline operator +=(ref D: domain, idx) { D.add(idx); }
-  inline operator -=(ref D: domain, idx) { D.remove(idx); }
-  inline operator +=(ref D: domain, param idx) { D.add(idx); }
-  inline operator -=(ref D: domain, param idx) { D.remove(idx); }
 
   /* swap operator */
   pragma "ignore transfer errors"

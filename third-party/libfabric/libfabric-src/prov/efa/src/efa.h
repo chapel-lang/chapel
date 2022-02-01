@@ -83,11 +83,18 @@
 #define EFA_EP_TYPE_IS_RDM(_info) \
 	(_info && _info->ep_attr && (_info->ep_attr->type == FI_EP_RDM))
 
+#define EFA_DEF_POOL_ALIGNMENT (8)
 #define EFA_MEM_ALIGNMENT (64)
 
 #define EFA_DEF_CQ_SIZE 1024
 #define EFA_MR_IOV_LIMIT 1
 #define EFA_MR_SUPPORTED_PERMISSIONS (FI_SEND | FI_RECV | FI_REMOTE_READ)
+
+/*
+ * Setting ibv_qp_attr.rnr_retry to this number when modifying qp
+ * to cause firmware to retry indefininetly.
+ */
+#define EFA_RNR_INFINITE_RETRY 7
 
 /*
  * Multiplier to give some room in the device memory registration limits
@@ -101,6 +108,8 @@
  * Specific flags and attributes for shm provider
  */
 #define EFA_SHM_MAX_AV_COUNT       (256)
+/* maximum name length for shm endpoint */
+#define EFA_SHM_NAME_MAX	   (256)
 
 extern int efa_mr_cache_enable;
 extern size_t efa_mr_max_cached_count;
@@ -113,8 +122,10 @@ struct efa_fabric {
 	struct util_fabric	util_fabric;
 };
 
+#define EFA_GID_LEN	16
+
 struct efa_ep_addr {
-	uint8_t			raw[16];
+	uint8_t			raw[EFA_GID_LEN];
 	uint16_t		qpn;
 	uint16_t		pad;
 	uint32_t		qkey;
@@ -124,13 +135,21 @@ struct efa_ep_addr {
 #define EFA_EP_ADDR_LEN sizeof(struct efa_ep_addr)
 
 struct efa_ah {
-	struct ibv_ah	*ibv_ah;
-	uint16_t	ahn;
+	uint8_t		gid[EFA_GID_LEN]; /* efa device GID */
+	struct ibv_ah	*ibv_ah; /* created by ibv_create_ah() using GID */
+	uint16_t	ahn; /* adress handle number */
+	int		refcnt; /* reference counter. Multiple efa_conn can share an efa_ah */
+	UT_hash_handle	hh; /* hash map handle, link all efa_ah with efa_ep->ah_map */
 };
 
 struct efa_conn {
-	struct efa_ah		ah;
-	struct efa_ep_addr	ep_addr;
+	struct efa_ah		*ah;
+	struct efa_ep_addr	*ep_addr;
+	/* for FI_AV_TABLE, fi_addr is same as util_av_fi_addr,
+	 * for FI_AV_MAP, fi_addr is pointer to efa_conn; */
+	fi_addr_t		fi_addr;
+	fi_addr_t		util_av_fi_addr;
+	struct rdm_peer		rdm_peer;
 };
 
 /*
@@ -155,6 +174,62 @@ struct efa_domain {
 	struct efa_qp		**qp_table;
 	size_t			qp_table_sz_m1;
 };
+
+/**
+ * @brief get a pointer to struct efa_domain from a domain_fid
+ *
+ * @param[in]	domain_fid	a fid to a domain
+ * @return	return the pointer to struct efa_domain
+ */
+static inline
+struct efa_domain *efa_domain_from_fid(struct fid_domain *domain_fid)
+{
+	struct util_domain *util_domain;
+	struct efa_domain_base *efa_domain_base;
+	struct rxr_domain *rxr_domain;
+	struct efa_domain *efa_domain;
+
+	util_domain = container_of(domain_fid, struct util_domain,
+				   domain_fid);
+	efa_domain_base = container_of(util_domain, struct efa_domain_base,
+				       util_domain.domain_fid);
+
+	/*
+	 * An rxr_domain fid was passed to the user if this is an RDM
+	 * endpoint, otherwise it is an efa_domain fid.  This will be
+	 * removed once the rxr and efa domain structures are combined.
+	 */
+	if (efa_domain_base->type == EFA_DOMAIN_RDM) {
+		rxr_domain = (struct rxr_domain *)efa_domain_base;
+		efa_domain = container_of(rxr_domain->rdm_domain, struct efa_domain,
+					  util_domain.domain_fid);
+	} else {
+		assert(efa_domain_base->type == EFA_DOMAIN_DGRAM);
+		efa_domain = (struct efa_domain *)efa_domain_base;
+	}
+
+	return efa_domain;
+}
+
+/**
+ * @brief get efa domain type from domain fid
+ *
+ * @param[in]	domain_fid	a fid to a domain
+ * @return	efa domain type, either EFA_DOMAIN_DGRAM or EFA_DOMAIN_RDM
+ */
+static inline
+enum efa_domain_type efa_domain_get_type(struct fid_domain *domain_fid)
+{
+	struct util_domain *util_domain;
+	struct efa_domain_base *efa_domain_base;
+
+	util_domain = container_of(domain_fid, struct util_domain,
+				   domain_fid);
+	efa_domain_base = container_of(util_domain, struct efa_domain_base,
+				       util_domain.domain_fid);
+
+	return efa_domain_base->type;
+}
 
 extern struct fi_ops_mr efa_domain_mr_ops;
 extern struct fi_ops_mr efa_domain_mr_cache_ops;
@@ -264,33 +339,23 @@ struct efa_recv_wr {
 	struct ibv_sge sge[];
 };
 
-typedef struct efa_conn *
-	(*efa_addr_to_conn_func)
-	(struct efa_av *av, fi_addr_t addr);
-
 struct efa_av {
 	struct fid_av		*shm_rdm_av;
 	fi_addr_t		shm_rdm_addr_map[EFA_SHM_MAX_AV_COUNT];
 	struct efa_domain       *domain;
 	struct efa_ep           *ep;
 	size_t			used;
-	size_t			next;
 	size_t			shm_used;
 	enum fi_av_type		type;
-	efa_addr_to_conn_func	addr_to_conn;
 	struct efa_reverse_av	*reverse_av;
+	struct efa_ah		*ah_map;
 	struct util_av		util_av;
-	size_t			count;
 	enum fi_ep_type         ep_type;
-	/* Used only for FI_AV_TABLE */
-	struct efa_conn         **conn_table;
 };
 
 struct efa_av_entry {
 	uint8_t			ep_addr[EFA_EP_ADDR_LEN];
-	fi_addr_t		rdm_addr;
-	fi_addr_t		shm_rdm_addr;
-	bool			local_mapping;
+	struct efa_conn		conn;
 };
 
 struct efa_ah_qpn {
@@ -300,7 +365,7 @@ struct efa_ah_qpn {
 
 struct efa_reverse_av {
 	struct efa_ah_qpn key;
-	fi_addr_t fi_addr;
+	struct efa_conn *conn;
 	UT_hash_handle hh;
 };
 
@@ -363,8 +428,10 @@ int efa_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 		struct fid_cq **cq_fid, void *context);
 
 /* AV sub-functions */
-int efa_av_insert_addr(struct efa_av *av, struct efa_ep_addr *addr,
-		       fi_addr_t *fi_addr, uint64_t flags, void *context);
+int efa_av_insert_one(struct efa_av *av, struct efa_ep_addr *addr,
+		      fi_addr_t *fi_addr, uint64_t flags, void *context);
+
+struct efa_conn *efa_av_addr_to_conn(struct efa_av *av, fi_addr_t fi_addr);
 
 /* Caller must hold cq->inner_lock. */
 void efa_cq_inc_ref_cnt(struct efa_cq *cq, uint8_t sub_cq_idx);
@@ -373,6 +440,8 @@ void efa_cq_dec_ref_cnt(struct efa_cq *cq, uint8_t sub_cq_idx);
 
 fi_addr_t efa_ahn_qpn_to_addr(struct efa_av *av, uint16_t ahn, uint16_t qpn);
 
+struct rdm_peer *efa_ahn_qpn_to_peer(struct efa_av *av, uint16_t ahn, uint16_t qpn);
+
 struct fi_provider *init_lower_efa_prov();
 
 ssize_t efa_post_flush(struct efa_ep *ep, struct ibv_send_wr **bad_wr);
@@ -380,6 +449,17 @@ ssize_t efa_post_flush(struct efa_ep *ep, struct ibv_send_wr **bad_wr);
 ssize_t efa_cq_readfrom(struct fid_cq *cq_fid, void *buf, size_t count, fi_addr_t *src_addr);
 
 ssize_t efa_cq_readerr(struct fid_cq *cq_fid, struct fi_cq_err_entry *entry, uint64_t flags);
+
+/*
+ * ON will avoid using huge pages for bounce buffers, so that the libibverbs
+ * fork support can be used safely.
+ */
+enum efa_fork_support_status {
+	EFA_FORK_SUPPORT_OFF = 0,
+	EFA_FORK_SUPPORT_ON,
+	EFA_FORK_SUPPORT_UNNEEDED,
+};
+extern enum efa_fork_support_status efa_fork_status;
 
 bool efa_device_support_rdma_read(void);
 
@@ -405,8 +485,29 @@ bool efa_ep_support_rnr_retry_modify(struct fid_ep *ep_fid)
 #endif
 }
 
+/**
+ * @brief return whether this endpoint should write error cq entry for RNR.
+ *
+ * For an endpoint to write RNR completion, two conditions must be met:
+ *
+ * First, the end point must be able to receive RNR completion from rdma-core,
+ * which means rnr_etry must be less then EFA_RNR_INFINITE_RETRY.
+ *
+ * Second, the app need to request this feature when opening endpoint
+ * (by setting info->domain_attr->resource_mgmt to FI_RM_DISABLED).
+ * The setting was saved as rxr_ep->handle_resource_management.
+ *
+ * @param[in]	ep	endpoint
+ */
 static inline
-bool efa_peer_support_rdma_read(struct rxr_peer *peer)
+bool rxr_ep_should_write_rnr_completion(struct rxr_ep *ep)
+{
+	return (rxr_env.rnr_retry < EFA_RNR_INFINITE_RETRY) &&
+		(ep->handle_resource_management == FI_RM_DISABLED);
+}
+
+static inline
+bool efa_peer_support_rdma_read(struct rdm_peer *peer)
 {
 	/* RDMA READ is an extra feature defined in version 4 (the base version).
 	 * Because it is an extra feature, an EP will assume the peer does not support
@@ -417,7 +518,7 @@ bool efa_peer_support_rdma_read(struct rxr_peer *peer)
 }
 
 static inline
-bool rxr_peer_support_delivery_complete(struct rxr_peer *peer)
+bool rxr_peer_support_delivery_complete(struct rdm_peer *peer)
 {
 	/* FI_DELIVERY_COMPLETE is an extra feature defined
 	 * in version 4 (the base version).
@@ -430,13 +531,42 @@ bool rxr_peer_support_delivery_complete(struct rxr_peer *peer)
 }
 
 static inline
-bool efa_both_support_rdma_read(struct rxr_ep *ep, struct rxr_peer *peer)
+bool efa_both_support_rdma_read(struct rxr_ep *ep, struct rdm_peer *peer)
 {
 	if (!rxr_env.use_device_rdma)
 		return 0;
 
 	return efa_ep_support_rdma_read(ep->rdm_ep) &&
 	       (peer->is_self || efa_peer_support_rdma_read(peer));
+}
+
+/**
+ * @brief determines whether a peer needs the endpoint to include
+ * raw address int the req packet header.
+ *
+ * There are two cases a peer need the raw address in REQ packet header:
+ *
+ * 1. the initial packets to a peer should include the raw address,
+ * because the peer might not have ep's address in its address vector
+ * causing the peer to be unable to send packet back. Normally, after
+ * an endpoint received a hanshake packet from a peer, it can stop
+ * including raw address in packet header.
+ *
+ * 2. If the peer is in zero copy receive mode, endpoint will include the
+ * raw address in the header even afer received handshake from a header. This
+ * is because zero copy receive requires the packet header size to remain
+ * the same.
+ *
+ * @params[in]	peer	pointer to rdm_peer
+ * @return	a boolean indicating whether the peer needs the raw address header
+ */
+static inline
+bool rxr_peer_need_raw_addr_hdr(struct rdm_peer *peer)
+{
+	if (OFI_UNLIKELY(!(peer->flags & RXR_PEER_HANDSHAKE_RECEIVED)))
+		return true;
+
+	return peer->features[0] & RXR_REQ_FEATURE_ZERO_COPY_RECEIVE;
 }
 
 static inline
@@ -449,48 +579,18 @@ size_t efa_max_rdma_size(struct fid_ep *ep_fid)
 }
 
 static inline
-struct rxr_peer *efa_ep_get_peer(struct dlist_entry *ep_list_entry,
-				 fi_addr_t addr)
+struct rdm_peer *rxr_ep_get_peer(struct rxr_ep *ep, fi_addr_t addr)
 {
-	struct util_ep *util_ep;
-	struct rxr_ep *rxr_ep;
+	struct util_av_entry *util_av_entry;
+	struct efa_av_entry *av_entry;
 
-	util_ep = container_of(ep_list_entry, struct util_ep,
-			       av_entry);
-	rxr_ep = container_of(util_ep, struct rxr_ep, util_ep);
-	return rxr_ep_get_peer(rxr_ep, addr);
-}
+	if (OFI_UNLIKELY(addr == FI_ADDR_NOTAVAIL))
+		return NULL;
 
-static inline
-int efa_peer_in_use(struct rxr_peer *peer)
-{
-	struct rxr_pkt_entry *pending_pkt;
-
-	if ((peer->tx_pending) || (peer->flags & RXR_PEER_IN_BACKOFF))
-		return -FI_EBUSY;
-	if (peer->rx_init) {
-		pending_pkt = *ofi_recvwin_peek(peer->robuf);
-		if (pending_pkt && pending_pkt->pkt)
-			return -FI_EBUSY;
-	}
-	return 0;
-}
-static inline
-void efa_free_robuf(struct rxr_peer *peer)
-{
-	ofi_recvwin_free(peer->robuf);
-	ofi_buf_free(peer->robuf);
-}
-
-static inline
-void efa_peer_reset(struct rxr_peer *peer)
-{
-	efa_free_robuf(peer);
-#ifdef ENABLE_EFA_POISONING
-	rxr_poison_mem_region((uint32_t *)peer, sizeof(struct rxr_peer));
-#endif
-	memset(peer, 0, sizeof(struct rxr_peer));
-	dlist_init(&peer->rnr_entry);
+	util_av_entry = ofi_bufpool_get_ibuf(ep->util_ep.av->av_entry_pool,
+	                                     addr);
+	av_entry = (struct efa_av_entry *)util_av_entry->data;
+	return av_entry->conn.ep_addr ? &av_entry->conn.rdm_peer : NULL;
 }
 
 static inline bool efa_ep_is_cuda_mr(struct efa_mr *efa_mr)
@@ -510,5 +610,17 @@ static inline bool efa_is_cache_available(struct efa_domain *efa_domain)
 {
 	return efa_domain->cache;
 }
+
+#define RXR_REQ_OPT_HDR_ALIGNMENT 8
+#define RXR_REQ_OPT_RAW_ADDR_HDR_SIZE (((sizeof(struct rxr_req_opt_raw_addr_hdr) + EFA_EP_ADDR_LEN - 1)/RXR_REQ_OPT_HDR_ALIGNMENT + 1) * RXR_REQ_OPT_HDR_ALIGNMENT)
+
+/*
+ * Per libfabric standard, the prefix must be a multiple of 8, hence the static assert
+ */
+#define RXR_MSG_PREFIX_SIZE (sizeof(struct rxr_pkt_entry) + sizeof(struct rxr_eager_msgrtm_hdr) + RXR_REQ_OPT_RAW_ADDR_HDR_SIZE)
+
+#if defined(static_assert) && defined(__x86_64__)
+static_assert(RXR_MSG_PREFIX_SIZE % 8 == 0, "message prefix size alignment check");
+#endif
 
 #endif /* EFA_H */

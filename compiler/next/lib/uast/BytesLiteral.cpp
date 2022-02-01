@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,7 @@ owned<BytesLiteral> BytesLiteral::build(Builder* builder, Location loc,
                                         const std::string& value,
                                         StringLikeLiteral::QuoteStyle quotes) {
   // Construct the UniqueString
-  auto u = UniqueString::build(builder->context(), value);
+  auto u = UniqueString::get(builder->context(), value);
   // Construct the Param
   auto p = types::StringParam::get(builder->context(), u);
   // Construct the BytesLiteral

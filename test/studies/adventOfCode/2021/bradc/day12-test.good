@@ -1,0 +1,11 @@
+[start, A, c, A, b, A]
+[start, A, c, A, b]
+[start, A, c, A]
+[start, A, b, A, c, A]
+[start, A, b, A]
+[start, A, b]
+[start, A]
+[start, b, A, c, A]
+[start, b, A]
+[start, b]
+10

@@ -41,18 +41,6 @@ OptLevel("O",
          cl::ZeroOrMore,
          cl::init('2'));
 
-static cl::opt<bool>
-DisableInline("disable-inlining", cl::init(false),
-  cl::desc("Do not run the inliner pass"));
-
-static cl::opt<bool>
-DisableGVNLoadPRE("disable-gvn-loadpre", cl::init(false),
-  cl::desc("Do not run the GVN load PRE pass"));
-
-static cl::opt<bool> DisableLTOVectorization(
-    "disable-lto-vectorization", cl::init(false),
-    cl::desc("Do not run loop or slp vectorization during LTO"));
-
 static cl::opt<bool> EnableFreestanding(
     "lto-freestanding", cl::init(false),
     cl::desc("Enable Freestanding (disable builtins / TLI) during LTO"));
@@ -158,16 +146,13 @@ DEFINE_SIMPLE_CONVERSION_FUNCTIONS(LTOModule, lto_module_t)
 // Convert the subtarget features into a string to pass to LTOCodeGenerator.
 static void lto_add_attrs(lto_code_gen_t cg) {
   LTOCodeGenerator *CG = unwrap(cg);
-  auto MAttrs = codegen::getMAttrs();
-  if (!MAttrs.empty()) {
-    std::string attrs = join(MAttrs, ",");
-    CG->setAttr(attrs);
-  }
+  CG->setAttrs(codegen::getMAttrs());
 
   if (OptLevel < '0' || OptLevel > '3')
     report_fatal_error("Optimization level must be between 0 and 3");
   CG->setOptLevel(OptLevel - '0');
   CG->setFreestanding(EnableFreestanding);
+  CG->setDisableVerify(DisableVerify);
 }
 
 extern const char* lto_get_version() {
@@ -218,7 +203,8 @@ lto_module_is_object_file_in_memory_for_target(const void* mem,
 
 lto_module_t lto_module_create(const char* path) {
   lto_initialize();
-  llvm::TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags();
+  llvm::TargetOptions Options =
+      codegen::InitTargetOptionsFromCodeGenFlags(Triple());
   ErrorOr<std::unique_ptr<LTOModule>> M =
       LTOModule::createFromFile(*LTOContext, StringRef(path), Options);
   if (!M)
@@ -228,7 +214,8 @@ lto_module_t lto_module_create(const char* path) {
 
 lto_module_t lto_module_create_from_fd(int fd, const char *path, size_t size) {
   lto_initialize();
-  llvm::TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags();
+  llvm::TargetOptions Options =
+      codegen::InitTargetOptionsFromCodeGenFlags(Triple());
   ErrorOr<std::unique_ptr<LTOModule>> M = LTOModule::createFromOpenFile(
       *LTOContext, fd, StringRef(path), size, Options);
   if (!M)
@@ -241,7 +228,8 @@ lto_module_t lto_module_create_from_fd_at_offset(int fd, const char *path,
                                                  size_t map_size,
                                                  off_t offset) {
   lto_initialize();
-  llvm::TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags();
+  llvm::TargetOptions Options =
+      codegen::InitTargetOptionsFromCodeGenFlags(Triple());
   ErrorOr<std::unique_ptr<LTOModule>> M = LTOModule::createFromOpenFileSlice(
       *LTOContext, fd, StringRef(path), map_size, offset, Options);
   if (!M)
@@ -251,7 +239,8 @@ lto_module_t lto_module_create_from_fd_at_offset(int fd, const char *path,
 
 lto_module_t lto_module_create_from_memory(const void* mem, size_t length) {
   lto_initialize();
-  llvm::TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags();
+  llvm::TargetOptions Options =
+      codegen::InitTargetOptionsFromCodeGenFlags(Triple());
   ErrorOr<std::unique_ptr<LTOModule>> M =
       LTOModule::createFromBuffer(*LTOContext, mem, length, Options);
   if (!M)
@@ -263,7 +252,8 @@ lto_module_t lto_module_create_from_memory_with_path(const void* mem,
                                                      size_t length,
                                                      const char *path) {
   lto_initialize();
-  llvm::TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags();
+  llvm::TargetOptions Options =
+      codegen::InitTargetOptionsFromCodeGenFlags(Triple());
   ErrorOr<std::unique_ptr<LTOModule>> M = LTOModule::createFromBuffer(
       *LTOContext, mem, length, Options, StringRef(path));
   if (!M)
@@ -274,7 +264,8 @@ lto_module_t lto_module_create_from_memory_with_path(const void* mem,
 lto_module_t lto_module_create_in_local_context(const void *mem, size_t length,
                                                 const char *path) {
   lto_initialize();
-  llvm::TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags();
+  llvm::TargetOptions Options =
+      codegen::InitTargetOptionsFromCodeGenFlags(Triple());
 
   // Create a local context. Ownership will be transferred to LTOModule.
   std::unique_ptr<LLVMContext> Context = std::make_unique<LLVMContext>();
@@ -293,7 +284,8 @@ lto_module_t lto_module_create_in_codegen_context(const void *mem,
                                                   const char *path,
                                                   lto_code_gen_t cg) {
   lto_initialize();
-  llvm::TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags();
+  llvm::TargetOptions Options =
+      codegen::InitTargetOptionsFromCodeGenFlags(Triple());
   ErrorOr<std::unique_ptr<LTOModule>> M = LTOModule::createFromBuffer(
       unwrap(cg)->getContext(), mem, length, Options, StringRef(path));
   return wrap(M->release());
@@ -356,7 +348,7 @@ void lto_codegen_set_diagnostic_handler(lto_code_gen_t cg,
 static lto_code_gen_t createCodeGen(bool InLocalContext) {
   lto_initialize();
 
-  TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags();
+  TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags(Triple());
 
   LibLTOCodeGenerator *CodeGen =
       InLocalContext ? new LibLTOCodeGenerator(std::make_unique<LLVMContext>())
@@ -441,9 +433,7 @@ bool lto_codegen_write_merged_modules(lto_code_gen_t cg, const char *path) {
 const void *lto_codegen_compile(lto_code_gen_t cg, size_t *length) {
   maybeParseOptions(cg);
   LibLTOCodeGenerator *CG = unwrap(cg);
-  CG->NativeObjectFile =
-      CG->compile(DisableVerify, DisableInline, DisableGVNLoadPRE,
-                  DisableLTOVectorization);
+  CG->NativeObjectFile = CG->compile();
   if (!CG->NativeObjectFile)
     return nullptr;
   *length = CG->NativeObjectFile->getBufferSize();
@@ -452,8 +442,7 @@ const void *lto_codegen_compile(lto_code_gen_t cg, size_t *length) {
 
 bool lto_codegen_optimize(lto_code_gen_t cg) {
   maybeParseOptions(cg);
-  return !unwrap(cg)->optimize(DisableVerify, DisableInline, DisableGVNLoadPRE,
-                               DisableLTOVectorization);
+  return !unwrap(cg)->optimize();
 }
 
 const void *lto_codegen_compile_optimized(lto_code_gen_t cg, size_t *length) {
@@ -468,9 +457,7 @@ const void *lto_codegen_compile_optimized(lto_code_gen_t cg, size_t *length) {
 
 bool lto_codegen_compile_to_file(lto_code_gen_t cg, const char **name) {
   maybeParseOptions(cg);
-  return !unwrap(cg)->compile_to_file(
-      name, DisableVerify, DisableInline, DisableGVNLoadPRE,
-      DisableLTOVectorization);
+  return !unwrap(cg)->compile_to_file(name);
 }
 
 void lto_codegen_debug_options(lto_code_gen_t cg, const char *opt) {
@@ -507,7 +494,8 @@ void lto_codegen_set_should_embed_uselists(lto_code_gen_t cg,
 thinlto_code_gen_t thinlto_create_codegen(void) {
   lto_initialize();
   ThinLTOCodeGenerator *CodeGen = new ThinLTOCodeGenerator();
-  CodeGen->setTargetOptions(codegen::InitTargetOptionsFromCodeGenFlags());
+  CodeGen->setTargetOptions(
+      codegen::InitTargetOptionsFromCodeGenFlags(Triple()));
   CodeGen->setFreestanding(EnableFreestanding);
 
   if (OptLevel.getNumOccurrences()) {

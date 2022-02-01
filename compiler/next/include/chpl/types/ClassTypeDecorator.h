@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -217,10 +217,10 @@ class ClassTypeDecorator final {
 } // end namespace uast
 /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<chpl::types::ClassTypeDecorator> {
-  void operator()(std::ostream &stringOut,
+  void operator()(std::ostream& streamOut,
                   chpl::StringifyKind stringKind,
                   const chpl::types::ClassTypeDecorator& stringMe) const {
-    stringOut << "types::ClassTypeDecorator is not stringified";
+    streamOut << "types::ClassTypeDecorator is not stringified";
   }
 };
 /// \endcond DO_NOT_DOCUMENT

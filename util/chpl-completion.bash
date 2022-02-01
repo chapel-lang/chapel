@@ -32,6 +32,7 @@ _chpl ()
 --break-on-codegen \
 --break-on-codegen-id \
 --break-on-id \
+--break-on-query-hash \
 --break-on-remove-id \
 --break-on-resolve-id \
 --cache-remote \
@@ -52,6 +53,7 @@ _chpl ()
 --dead-code-elimination \
 --debug \
 --debug-short-loc \
+--debug-trace \
 --default-dist \
 --denormalize \
 --devel \
@@ -163,6 +165,7 @@ _chpl ()
 --no-dead-code-elimination \
 --no-debug \
 --no-debug-short-loc \
+--no-debug-trace \
 --no-denormalize \
 --no-devel \
 --no-div-by-zero-checks \
