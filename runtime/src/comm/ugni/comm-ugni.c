@@ -574,6 +574,8 @@ static mem_region_table_t** mem_regions_all_my_entry_map;
 
 static chpl_bool can_register_memory = false;
 
+static chpl_bool do_mr_extent_checks;
+
 //
 // The high bit of the 'len' member of a mem_region_t in the table
 // indicates whether the region is registered.  mrtl_encode() and
@@ -1896,6 +1898,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   // We can reach 16k memory regions on Aries.
   max_mem_regions = chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS", 16384);
 
+  do_mr_extent_checks = chpl_env_rt_get_bool("COMM_UGNI_DO_MR_EXTENT_CHECKS",
+                                             true);
+
   //
   // We have to create the local memory region table before the first
   // call to regMemAlloc() is made.  But that could come from the memory
@@ -2761,7 +2766,7 @@ mem_region_t* mreg_for_local_addr(void* addr, size_t size)
                    : (mr - &mem_regions->mregs[0] + 1)));
   }
   PERFSTATS_ADD(local_mreg_nsecs, PERFSTATS_TELAPSED(pstStart));
-  if (mr != NULL) {
+  if (do_mr_extent_checks && mr != NULL) {
     size_t mrLen = chpl_cache_enabled()
                    ? ALIGN_UP(mrtl_len(mr->len), CACHE_LINE_SIZE)
                    : mrtl_len(mr->len);
@@ -2798,7 +2803,7 @@ mem_region_t* mreg_for_remote_addr(void* addr, size_t size, c_nodeid_t locale)
                    : (mr - &mem_regions_all_entries[locale]->mregs[0] + 1)));
   }
   PERFSTATS_ADD(remote_mreg_nsecs, PERFSTATS_TELAPSED(pstStart));
-  if (mr != NULL) {
+  if (do_mr_extent_checks && mr != NULL) {
     size_t mrLen = chpl_cache_enabled()
                    ? ALIGN_UP(mrtl_len(mr->len), CACHE_LINE_SIZE)
                    : mrtl_len(mr->len);
