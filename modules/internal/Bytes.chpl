@@ -575,6 +575,10 @@ module Bytes {
     return this.buffLen == 0;
   }
 
+  deprecated "startsWith with needles argument is deprecated, use pattern instead"
+  inline proc bytes.startsWith(needles: bytes ...) : bool {
+    return startsEndsWith(this, needles, fromLeft=true);
+  }
   /*
     Checks if the :mod:`bytes <Bytes>` starts with any of the given arguments.
 
@@ -588,6 +592,12 @@ module Bytes {
     return startsEndsWith(this, patterns, fromLeft=true);
   }
 
+  deprecated "endsWith with needles argument is deprecated, use pattern instead"
+  inline proc bytes.endsWith(needles: bytes ...) : bool {
+    return startsEndsWith(this, needles, fromLeft=false);
+  }
+
+ 
   /*
     Checks if the :mod:`bytes <Bytes>` ends with any of the given arguments.
 
@@ -600,6 +610,13 @@ module Bytes {
   inline proc bytes.endsWith(patterns: bytes ...) : bool {
     return startsEndsWith(this, patterns, fromLeft=false);
   }
+
+  deprecated "startsWith with needle argument is deprecated, use pattern instead"
+  inline proc bytes.find(needle: bytes,
+                         indices: range(?) = this.indices) : idxType {
+    return doSearchNoEnc(this, needle, indices, count=false): idxType;
+  }
+
 
   /*
     Finds the argument in the :mod:`bytes <Bytes>`
@@ -617,6 +634,13 @@ module Bytes {
   inline proc bytes.find(pattern: bytes,
                          indices: range(?) = this.indices) : idxType {
     return doSearchNoEnc(this, pattern, indices, count=false): idxType;
+  }
+
+  deprecated "rfind with needle argument is deprecated, use pattern instead"
+  inline proc bytes.rfind(needle: bytes,
+                          indices: range(?) = this.indices) : idxType {
+    return doSearchNoEnc(this, needle, indices, count=false,
+                         fromLeft=false): idxType;
   }
 
   /*
@@ -638,6 +662,12 @@ module Bytes {
                          fromLeft=false): idxType;
   }
 
+  deprecated "count with needles argument is deprecated, use pattern instead"
+  inline proc bytes.count(needles: bytes,
+                          indices: range(?) = this.indices) : int {
+    return doSearchNoEnc(this, needles, indices, count=true);
+  }
+
   /*
     Counts the number of occurrences of the argument in the :mod:`bytes <Bytes>`
 
@@ -653,6 +683,14 @@ module Bytes {
                           indices: range(?) = this.indices) : int {
     return doSearchNoEnc(this, pattern, indices, count=true);
   }
+
+  deprecated "replace with needle argument is deprecated, use pattern instead"
+  inline proc bytes.replace(needle: bytes,
+                            replacement: bytes,
+                            count: int = -1) : bytes {
+    return doReplace(this, needle, replacement, count);
+  }
+
 
   /*
     Replaces occurrences of a :mod:`bytes <Bytes>` with another.
