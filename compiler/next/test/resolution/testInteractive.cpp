@@ -224,6 +224,7 @@ int main(int argc, char** argv) {
 
   while (true) {
     ctx->advanceToNextRevision(gc);
+    setModuleSearchPath(ctx, searchPath);
 
     std::set<const ResolvedFunction*> calledFns;
 
