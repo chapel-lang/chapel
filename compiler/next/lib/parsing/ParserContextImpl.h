@@ -693,7 +693,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 
     auto f = Function::build(builder, this->convertLocation(location),
                              toOwned(fp.attributes),
-                             this->visibility,
+                             fp.visibility,
                              fp.linkage,
                              toOwned(fp.linkageNameExpr),
                              fp.name,
@@ -872,6 +872,34 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
     assert(indexExpr);
     return buildLoopIndexDecl(location, toOwned(indexExpr));
   }
+}
+
+Expression* ParserContext::buildNewExpr(YYLTYPE location,
+                         New::Management management,
+                         Expression* expr) {
+  if (FnCall* fnCall = expr->toFnCall()) {
+    return this->wrapCalledExpressionInNew(location, management, fnCall);
+  } else if (OpCall* opCall = expr->toOpCall()) {
+    assert(opCall->numActuals() == 1);
+    auto& child = builder->mutableRefToChildren(opCall)[0];
+    if (FnCall* fnCall = child->toFnCall()) {
+      child.release();
+      auto wrappedFn = this->wrapCalledExpressionInNew(location, management, fnCall);
+      child.reset(wrappedFn);
+      return expr;
+    } else {
+      //something wrong, as below
+      this->raiseError(location, "Invalid form for new expression");
+    }
+  } else {
+    // It's an error for one reason or another. TODO: Specialize these
+    // errors later (e.g. 'new a.field' would require parens around
+    // the expression 'a.field'; 'new foo' would require an argument
+    // list for 'foo'; and something like 'new __primitive()' just
+    // doesn't make any sense...
+    this->raiseError(location, "Invalid form for new expression");
+  }
+  return nullptr;
 }
 
 FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,

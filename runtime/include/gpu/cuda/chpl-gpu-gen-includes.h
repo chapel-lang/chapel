@@ -26,6 +26,7 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 
+extern __constant__ int32_t chpl_nodeID;
 
 // TODO
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
