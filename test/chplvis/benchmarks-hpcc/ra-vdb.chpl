@@ -87,6 +87,7 @@ config const printParams = true,
 //
 // Use "on" statement in kernel, or remote memory references?
 //
+use ChplConfig;
 config const useOn = (CHPL_COMM != "ugni") && (CHPL_COMM != "none");
 
 //

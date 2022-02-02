@@ -37,7 +37,6 @@ module ChapelEnv {
   private use String;
   private use ChapelStandard;
 
-  /*
   private inline proc warnChplConfigChange() {
     compilerWarning("In an upcoming release, you will need to 'use'/'import " +
                     "ChplConfig' in order to access 'CHPL_*' params",
@@ -270,5 +269,4 @@ module ChapelEnv {
     warnChplConfigChange();
     return CHPL_LLVM;
   }
-*/
 }

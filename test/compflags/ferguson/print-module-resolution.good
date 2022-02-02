@@ -26,6 +26,8 @@ StringCasts
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.StringCasts
 String
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String
+ChplConfig
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.ChplConfig
 ChapelEnv
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv
 ChapelTaskData

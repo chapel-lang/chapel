@@ -1173,7 +1173,7 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
 proc string.search(needle: string, ignorecase=false):regexMatch
 {
   // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
+  var re = compile(needle, literal=true, noCapture=true, ignoreCase=ignorecase);
   return re.search(this);
 }
 

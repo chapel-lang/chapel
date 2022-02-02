@@ -1,7 +1,8 @@
 //
-// Use standard modules for Block distributions and Timing routines
+// Use standard modules for Block distributions, Timing routines, and
+// CHPL_* configuration settings
 //
-use BlockDist, Time;
+use BlockDist, Time, ChplConfig;
 
 //
 // Use the user modules for computing HPCC problem sizes and for
