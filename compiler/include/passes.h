@@ -177,4 +177,8 @@ class ComputeCallSitesPass : public PassT<FnSymbol*> {
   void process(FnSymbol* fn) override;
 };
 
+class FlattenClasses : public PassT<TypeSymbol*> {
+  void process(TypeSymbol* ts) override;
+};
+
 #endif
