@@ -985,7 +985,7 @@ typedef struct {
 } fork_free_info_t;
 
 typedef enum {
-  put_32 = 0,                           // NOTE: 0x1 bit clear iff 32-bit op
+  put_32 = 0,                           // NOTE: see SIZEOF_AMO(), below
   put_64,
   get_32,
   get_64,
@@ -1005,6 +1005,8 @@ typedef enum {
   add_r64,
   num_fork_amo_cmds
 } fork_amo_cmd_t;
+
+#define SIZEOF_AMO(cmd) ((cmd & 0x1) == 0 ? sizeof(int32_t) : sizeof(int64_t))
 
 typedef union {
   int     i;    // used by amo_res_*() mgmt of temp AMO result buffers
@@ -7177,14 +7179,9 @@ void fork_amo(fork_t* p_rf_req, c_nodeid_t locale)
   // Make sure that, if we need a result, it is in memory known to the
   // NIC.
   //
-  // Note: the AMO command code 0x1 bit is clear for the 32-bit ones and
-  // set for the 64-bit ones.  (See the fork_amo_cmd_t declaration.)
-  //
   if (p_rf_req->a.res != NULL) {
-    const size_t sz = (p_rf_req->a.cmd & 0x1) == 0
-                      ? sizeof(int32_t)
-                      : sizeof(int64_t);
-    if (mreg_for_local_addr(p_rf_req->a.res, sz) == NULL) {
+    if (mreg_for_local_addr(p_rf_req->a.res, SIZEOF_AMO(p_rf_req->a.cmd))
+        == NULL) {
       CHPL_INTERNAL_ERROR("fork_amo(): result address is not NIC-registered");
     }
   }
