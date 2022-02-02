@@ -162,4 +162,19 @@ CallExpr* findDownEndCount(FnSymbol* fn);
 Expr*     resolveExpr(Expr* expr);
 void      resolveBlockStmt(BlockStmt* blockStmt);
 
+class returnStarTuplesByRefArgsPass1 : public PassT<FnSymbol*> {
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+};
+
+class returnStarTuplesByRefArgsPass2 : public PassT<CallExpr*> {
+  bool shouldProcess(CallExpr* fn) override;
+  void process(CallExpr* fn) override;
+};
+
+class ComputeCallSitesPass : public PassT<FnSymbol*> {
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+};
+
 #endif
