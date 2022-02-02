@@ -36,7 +36,7 @@ static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl", "");
   auto mod = parseResult.singleModule();
   std::ostringstream ss;
-  mod->stringify(ss, DEBUG_DETAIL);
+  mod->stringify(ss, CHPL_SYNTAX);
   assert(ss.str() == "test0Module test0 \n");
 }
 
@@ -46,7 +46,7 @@ static void test1(Parser* parser) {
   auto mod = parseResult.singleModule();
   auto identifier = mod->stmt(0)->toIdentifier();
   std::ostringstream ss;
-  identifier->stringify(ss, DEBUG_DETAIL);
+  identifier->stringify(ss, CHPL_SYNTAX);
   assert(ss.str() == "test1@0Identifier x \n");
 }
 
@@ -57,7 +57,7 @@ static void test2(Parser* parser) {
   const AggregateDecl* agg = mod->stmt(0)->toAggregateDecl();
   auto cls = agg->toClass();
   std::ostringstream ss;
-  cls->stringify(ss, DEBUG_DETAIL);
+  cls->stringify(ss, CHPL_SYNTAX);
   assert(ss.str() == "test2.CClass C \n");
 }
 
@@ -69,7 +69,7 @@ static void test3(Parser* parser) {
   const AggregateDecl* agg = mod->stmt(0)->toAggregateDecl();
   auto rec = agg->toRecord();
   std::ostringstream ss;
-  rec->stringify(ss, DEBUG_DETAIL);
+  rec->stringify(ss, CHPL_SYNTAX);
   assert(ss.str() == "         test3.RRecord R \n"
                      "       test3.R@0  Variable x \n"
                      "  test3.R.method  Function method \n"
