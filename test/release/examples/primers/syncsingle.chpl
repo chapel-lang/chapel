@@ -18,8 +18,13 @@
 //
 config const n = 7;
 
-var sy: sync int=1;  // state = full, value = 1
-var si: single bool; // state = empty, value = false
+var sy$: sync int=1;  // state = full, value = 1
+var si$: single bool; // state = empty, value = false
+
+// As a convention, sync and single variable names sometimes end in a
+// ``$`` to add a visual cue indicating that reads and writes are possibly
+// expensive operations that can potentially block the task.
+//
 
 // Because of their full/empty state, reads and writes to sync and single
 // variables must be done with methods to make it clear how the full/empty
@@ -35,28 +40,28 @@ var si: single bool; // state = empty, value = false
 // the variable to the default value for the type and the state to
 // ``empty``.
 //
-sy.reset();  // value = 0, state = empty
+sy$.reset();  // value = 0, state = empty
 
 // The ``isFull`` method returns ``true`` if the sync or single variable is
 // in the ``full`` state, ``false`` otherwise.
 //
-writeln("sy.isFull ", sy.isFull);
-writeln("si.isFull ", si.isFull);
+writeln("sy$.isFull ", sy$.isFull);
+writeln("si$.isFull ", si$.isFull);
 
 // The ``writeEF()`` method, defined for sync and single variables,
 // blocks until the state is ``empty`` and then assigns the value argument
 // to the variable and then sets the state to ``full``.  Assignment of
 // sync and single variables are performed using ``writeEF()``.
 //
-sy.writeEF(2*n);
-si.writeEF(true);
+sy$.writeEF(2*n);
+si$.writeEF(true);
 
 // The ``readFE()`` method, defined for sync variables, blocks until the
 // state is ``full`` and then reads the value of the variable, sets the
 // state to ``empty``, and then returns the value.  Normal reads of sync
 // variables are performed using ``readFE()``.
 //
-var sy2 = sy.readFE();
+var sy2 = sy$.readFE();
 writeln("sy2 ", sy2);
 
 // The ``readFF()`` method, defined for sync and single variables, blocks
@@ -64,21 +69,21 @@ writeln("sy2 ", sy2);
 // and returns the value.  The state remains ``full``.  Normal reads of
 // single variables are performed using ``readFF()``.
 //
-var si2 = si.readFF();
+var si2 = si$.readFF();
 writeln("si2 ", si2);
 
 // The ``writeXF()`` method, defined for sync variables, assigns the
 // value argument to the variable and then sets the state to ``full``.
 // This method does not block.
 //
-sy.writeXF(3*n);
+sy$.writeXF(3*n);
 
 // The ``readXX()`` method, defined for sync and single variables, returns
 // the value of the variable regardless of the state.  This method
 // does not block and the state is unchanged.
 //
-var sy3 = sy.readXX();
-var si3 = si.readXX();
+var sy3 = sy$.readXX();
+var si3 = si$.readXX();
 writeln("sy3 ", sy3);
 writeln("si3 ", si3);
 
@@ -86,85 +91,85 @@ writeln("si3 ", si3);
 // state is ``full`` and then and then assigns the value argument to the
 // variable.  The state is unchanged.
 //
-sy.writeFF(4*n);
+sy$.writeFF(4*n);
 
 //
 // The following creates a new task via a :ref:`begin
 // <primers-taskparallel-begin>` statement and declares a variable ``sy``
-// that is initialized using ``sy``.  The initialization statement will block
-// until ``sy`` is ``full``.  The last statement in the ``begin`` block sets
-// ``done`` to ``full``.
+// that is initialized using ``sy$``.  The initialization statement will block
+// until ``sy$`` is ``full``.  The last statement in the ``begin`` block sets
+// ``done$`` to ``full``.
 //
-var done: sync bool;
+var done$: sync bool;
 writeln("Launching new task");
 begin {
-  var sy = sy.readFE(); // This statement will block until sy is full
+  var sy = sy$.readFE(); // This statement will block until sy$ is full
   writeln("New task unblocked, sy=", sy);
-  done.writeEF(true);
+  done$.writeEF(true);
 }
 
 // Recall that execution proceeds immediately following the ``begin``
 // statement after task creation.
 //
 writeln("After launching new task");
-// When ``sy`` is written, its state will be set to ``full`` and the blocked
+// When ``sy$`` is written, its state will be set to ``full`` and the blocked
 // task above will continue.
 //
-sy.writeEF(n);
+sy$.writeEF(n);
 // This next statement blocks until the last statement in the above ``begin``
 // completes.
 //
-done.readFE();
+done$.readFE();
 
 //
 // Example: simple split-phase barrier for tasks
 //
-var count: sync int = n;  // counter which also serves as a lock
-var release: single bool; // barrier release
+var count$: sync int = n;  // counter which also serves as a lock
+var release$: single bool; // barrier release
 
 coforall t in 1..n {
-  var myc = count.readFE(); // read the count, grab the lock (state = empty)
+  var myc = count$.readFE(); // read the count, grab the lock (state = empty)
   if myc!=1 {                // still waiting for others
     write(".");
-    count.writeEF(myc-1); // update the count, release the lock (state = full)
+    count$.writeEF(myc-1); // update the count, release the lock (state = full)
                              // we could do some work while waiting
-    release.readFF();       // wait for everyone
+    release$.readFF();       // wait for everyone
   } else {                   // last one here
-    release.writeEF(true);  // release everyone first (state = full)
+    release$.writeEF(true);  // release everyone first (state = full)
     writeln("done");
   }
 }
 
-sy.reset();
+sy$.reset();
 
 // Sync and single arguments are passed by reference.  As a result,
 // the state of the variable does not change.
 //
-writeln("sy.isFull ", sy.isFull, " - now passing to f_withSyncIntFormal");
-f_withSyncIntFormal(sy);
-writeln("si.isFull ", si.isFull, " - now passing to f_withSingleBoolFormal");
-f_withSingleBoolFormal(si);
+writeln("sy$.isFull ", sy$.isFull, " - now passing to f_withSyncIntFormal");
+f_withSyncIntFormal(sy$);
+writeln("si$.isFull ", si$.isFull, " - now passing to f_withSingleBoolFormal");
+f_withSingleBoolFormal(si$);
 
-sy.writeEF(4*n);
+sy$.writeEF(4*n);
 
 // When passing a sync or single variable to a generic formal,
 // whether with a ``ref`` intent or a default intent, the variable
 // is passed by reference. The state of the variable does not
 // change and sync operations are available.
 //
-f_withGenericDefaultIntentFormal(sy);
-f_withGenericDefaultIntentFormal(si);
-f_withGenericRefFormal(sy);
-f_withGenericRefFormal(si);
+f_withGenericDefaultIntentFormal(sy$);
+f_withGenericDefaultIntentFormal(si$);
+f_withGenericRefFormal(sy$);
+f_withGenericRefFormal(si$);
 
-sy.reset();
-sy.writeEF(5*n);
+sy$.reset();
+sy$.writeEF(5*n);
 
 // Currently, sync and single variables cannot be written out directly.
 // We need to extract the value, for example using ``readFE()`` or ``readFF()``.
 //
-writeln(sy.readFE());
-writeln(si.readFF());
+writeln(sy$.readFE());
+writeln(si$.readFF());
 
 // Definitions of functions used above
 proc f_withSyncIntFormal(x: sync int) {
