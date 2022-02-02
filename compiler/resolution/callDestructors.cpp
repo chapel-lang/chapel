@@ -39,6 +39,8 @@
 #include "symbol.h"
 #include "virtualDispatch.h"
 
+#include "global-ast-vecs.h"
+
 #include <vector>
 #include <algorithm>
 #include <iterator>
@@ -1155,7 +1157,7 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
               // Add another PRIM_AUTO_DESTROY_RUNTIME_TYPE for the field
               destroyCall = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, fieldTemp);
             }
-            
+
             call->insertBefore(destroyCall);
           }
         }

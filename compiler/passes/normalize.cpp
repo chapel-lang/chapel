@@ -44,6 +44,8 @@
 #include "typeSpecifier.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <cctype>
 #include <set>
 #include <vector>

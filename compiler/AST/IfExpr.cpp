@@ -27,6 +27,8 @@
 #include "stmt.h"
 #include "AstVisitor.h"
 
+#include "global-ast-vecs.h"
+
 //
 // Implementation of 'IfExpr'
 //
@@ -134,4 +136,3 @@ bool isLoweredIfExprBlock(BlockStmt* block) {
 
   return false;
 }
-

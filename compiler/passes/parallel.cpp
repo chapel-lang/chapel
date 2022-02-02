@@ -37,6 +37,8 @@
 #include "symbol.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()
 //   insertWideReferences()
@@ -1513,4 +1515,3 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   }
   return wide;
 }
-

@@ -41,6 +41,8 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <map>
 #include <utility>
 

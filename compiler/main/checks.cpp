@@ -31,6 +31,8 @@
 #include "resolution.h"
 #include "TryStmt.h"
 
+#include "global-ast-vecs.h"
+
 //
 // Static function declarations.
 //
@@ -936,7 +938,7 @@ checkFormalActualTypesMatch()
   for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     // Skip verifying some degenerate chpl__deserialize calls
-    if (isTemporaryDeserializeCall(call)) 
+    if (isTemporaryDeserializeCall(call))
       continue;
 
     if (FnSymbol* fn = call->resolvedFunction())
@@ -977,4 +979,3 @@ checkFormalActualTypesMatch()
     }
   }
 }
-

@@ -28,6 +28,8 @@
 #include "resolution.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 static QualifiedType
 returnInfoUnknown(CallExpr* call) {
   return QualifiedType(dtUnknown);

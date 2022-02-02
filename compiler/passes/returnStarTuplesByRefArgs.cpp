@@ -24,6 +24,8 @@
 #include "stmt.h"
 #include "symbol.h"
 
+#include "global-ast-vecs.h"
+
 //
 // returnStarTuplesByRefArgs changes all functions that return star
 // tuples into function that take, as arguments, references to these

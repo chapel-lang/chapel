@@ -26,6 +26,8 @@
 #include "stringutil.h"
 #include "stmt.h"
 
+#include "global-ast-vecs.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // needsShadowVar() and helpers

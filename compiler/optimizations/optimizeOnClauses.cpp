@@ -34,6 +34,8 @@
 #include "stmt.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <vector>
 
 int classifyPrimitive(CallExpr *call, bool inLocal);

@@ -70,6 +70,8 @@
 #include "WhileStmt.h"
 #include "wrappers.h"
 
+#include "global-ast-vecs.h"
+
 #include "../next/lib/immediates/prim_data.h"
 
 #include <algorithm>
@@ -9924,7 +9926,7 @@ static bool ensureSerializersExist(AggregateType* at) {
            ! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
            ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
     if (at != NULL) {
-      if (isRecord(at) == true || 
+      if (isRecord(at) == true ||
           (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
         return resolveSerializeDeserialize(at);
       }
@@ -10069,7 +10071,7 @@ static bool createSerializeDeserialize(AggregateType* at) {
                                                        typeTemp,
                                                        deserializerFormal,
                                                        new_IntSymbol(fieldNum))));
-      
+
       deserializer->insertAtTail(deserVersions);
     }
     else {

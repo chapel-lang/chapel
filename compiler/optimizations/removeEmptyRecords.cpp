@@ -28,6 +28,8 @@
 #include "symbol.h"
 #include "type.h"
 
+#include "global-ast-vecs.h"
+
 void
 removeEmptyRecords() {
   if (fNoRemoveEmptyRecords)

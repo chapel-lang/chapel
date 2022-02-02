@@ -35,6 +35,8 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 
+#include "global-ast-vecs.h"
+
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
     case TFI_DEFAULT:       return "default";
@@ -634,7 +636,7 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
   return retval;
 }
 
-/////////// handle serial cases /////////// 
+/////////// handle serial cases ///////////
 
 static FnSymbol* trivialLeader          = NULL;
 static Type*     trivialLeaderYieldType = NULL;
@@ -642,7 +644,7 @@ static Type*     trivialLeaderYieldType = NULL;
 // Return a _build_tuple of fs's index variables.
 static Expr* hzsMakeIndices(ForallStmt* fs) {
   if (fs->numInductionVars() == 1) {
-    INT_ASSERT(fs->overTupleExpand()); 
+    INT_ASSERT(fs->overTupleExpand());
     return new SymExpr(fs->firstInductionVarDef()->sym);
   }
 
@@ -794,7 +796,7 @@ static CallExpr* setupFollowerCall(BlockStmt* holder, Symbol* followThis,
                                 iterSym, gFollowerTag, followThis);
 
     holder->insertAtHead(followerCall);
-  }    
+  }
 
   return followerCall;
 }
@@ -844,7 +846,7 @@ static bool optionalFollowersAreMissing(ForallStmt* fs, Symbol* followThis) {
   return retval;
 }
 
-/////////// final transformations /////////// 
+/////////// final transformations ///////////
 
 // Create the induction variable of the parallel loop.
 static VarSymbol* createFollowThis(QualifiedType piType) {
@@ -1000,7 +1002,7 @@ static CallExpr *generateFastFollowCheckHelp(CallExpr *iterCall,
 
     leadSym = leadSE->symbol();
   }
-  
+
   const char *zipOp = NULL;
   if (strcmp(fnName, "chpl__canHaveFastFollowers") == 0) {
     zipOp = "||";
@@ -1295,7 +1297,7 @@ void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall)
   DefExpr*   recIterICdef = new DefExpr(parIter);
   CallExpr*  recIterGetIterator  = new CallExpr("_getIterator", iterRec);
   CallExpr*  recIterFreeIterator = new CallExpr("_freeIterator", parIter);
-  
+
   CallExpr* initIterRec = new CallExpr(PRIM_MOVE, iterRec, parIterCall->copy());
   CallExpr* initParIter = new CallExpr(PRIM_MOVE, parIter, recIterGetIterator);
 
@@ -1403,7 +1405,7 @@ void resolveForallStmts2() {
     // If isTaskFun(parent), error is still reported in nonLeaderParCheckInt.
     if (parent->isIterator() && !parent->hasFlag(FLAG_INLINE_ITERATOR))
       USR_FATAL_CONT(fs, "invalid use of parallel construct in serial iterator");
-    
+
     convertIteratorForLoopexpr(fs);
   }
 }

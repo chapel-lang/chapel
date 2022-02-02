@@ -22,6 +22,7 @@
 #define _PASSES_H_
 
 #include "symbol.h"
+#include "PassManager.h"
 
 extern bool parsed;
 extern bool normalized;

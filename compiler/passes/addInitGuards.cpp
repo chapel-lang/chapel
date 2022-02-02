@@ -39,6 +39,8 @@
 #include "stringutil.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 static void addModuleInitBlocks();
 static void addInitGuards();
 static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn);
@@ -247,5 +249,3 @@ static void addPrintModInitOrder(FnSymbol* fn)
   fn->insertAtHead(new DefExpr(s1tmp));
   fn->insertBeforeEpilogue(decIndentLevel);
 }
-
-

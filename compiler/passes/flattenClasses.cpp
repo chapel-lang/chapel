@@ -23,6 +23,8 @@
 #include "expr.h"
 #include "stmt.h"
 
+#include "global-ast-vecs.h"
+
 void flattenClasses() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     Type* t = ts->type;
