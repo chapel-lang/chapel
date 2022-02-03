@@ -1615,6 +1615,11 @@ module String {
     return this.buffLen == 0; // this should be enough of a check
   }
 
+  pragma "last resort"
+  deprecated "startsWith with needles argument is deprecated, use patterns instead"
+  inline proc string.startsWith(patterns: string ...) : bool {
+    return this.startsWith(patterns);
+  }
   /*
     :arg patterns: A varargs list of strings to match against.
 
@@ -1625,6 +1630,11 @@ module String {
     return startsEndsWith(this, patterns, fromLeft=true);
   }
 
+  pragma "last resort"
+  deprecated "endsWith with needles argument is deprecated, use patterns instead"
+  inline proc string.endsWith(needles: string ...) : bool {
+    return this.endsWith(needles);
+  }
   /*
     :arg patterns: A varargs list of strings to match against.
 
@@ -1633,6 +1643,13 @@ module String {
    */
   inline proc string.endsWith(patterns: string ...) : bool {
     return startsEndsWith(this, patterns, fromLeft=false);
+  }
+
+  pragma "last resort"
+  deprecated "find with needle and region argument is deprecated, use pattern and indices instead"
+  inline proc string.find(needle: string,
+                          region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
+    return this.find(needle, region);
   }
 
   /*
@@ -1644,13 +1661,20 @@ module String {
     :returns: the index of the first occurrence of `pattern` within a
               string, or -1 if the `pattern` is not in the string.
    */
+
   inline proc string.find(pattern: string,
                           indices: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
-    // TODO: better name than indices?
     if this.isASCII() then
       return doSearchNoEnc(this, pattern, indices, count=false): byteIndex;
     else
       return doSearchUTF8(pattern, indices, count=false): byteIndex;
+  }
+
+  pragma "last resort"
+  deprecated "rfind with needle and region argument is deprecated, use pattern and indices instead"
+  inline proc string.rfind(needle: string,
+                           region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
+    return this.rfind(needle, region);
   }
 
   /*
@@ -1672,6 +1696,13 @@ module String {
                           count=false, fromLeft=false): byteIndex;
   }
 
+  pragma "last resort"
+  deprecated "count with needle and region argument is deprecated, use pattern and indices instead"
+  inline proc string.count(needle: string,
+                           region: range(?) = this.indices) : int {
+    return this.count(needle, region);
+  }
+
   /*
     :arg pattern: the string to search for
     :arg indices: an optional range defining the substring to search within,
@@ -1688,6 +1719,12 @@ module String {
       return doSearchUTF8(pattern, indices, count=true);
   }
 
+  pragma "last resort"
+  deprecated "replace with needle argument is deprecated, use pattern instead"
+  inline proc string.replace(needle: string, replacement: string,
+                             count: int = -1) : string {
+    return this.replace(needle, replacement, count);
+  }
   /*
     :arg pattern: the string to search for
     :arg replacement: the string to replace `pattern` with
