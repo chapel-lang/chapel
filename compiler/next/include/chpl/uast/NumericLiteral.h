@@ -59,10 +59,10 @@ class NumericLiteral : public Literal {
    Returns the value of this NumericLiteral.
    */
   ValueT value() const {
-    const ParamT* p = (const ParamT*) value_; 
+    const ParamT* p = (const ParamT*) value_;
     return p->value();
   }
- 
+
   /**
    Returns the number as it was written in the source code (as a string)
    */

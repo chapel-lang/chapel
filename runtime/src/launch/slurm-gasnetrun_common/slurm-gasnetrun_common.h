@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -54,7 +54,7 @@ static char* exclude = NULL;
 char slurmFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
-#define procsPerNode 1  
+#define procsPerNode 1
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
@@ -99,7 +99,7 @@ static int getNumCoresPerLocale(void) {
   return numCores;
 }
 
-static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch, 
+static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
                                  int32_t numLocales,
                                  int32_t numCoresPerLocale) {
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
@@ -124,7 +124,7 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
-  if (walltime) 
+  if (walltime)
     fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
   if (nodelist)
     fprintf(slurmFile, "#SBATCH --nodelist=%s\n", nodelist);
@@ -183,7 +183,7 @@ static int propagate_environment(char* buf)
   return len;
 }
 
-static char* chpl_launch_create_command(int argc, char* argv[], 
+static char* chpl_launch_create_command(int argc, char* argv[],
                                         int32_t numLocales) {
   int i;
   int size;
@@ -321,7 +321,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   size = strlen(baseCommand) + 1;
 
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  
+
   sprintf(command, "%s", baseCommand);
 
   if (strlen(command)+1 > size) {

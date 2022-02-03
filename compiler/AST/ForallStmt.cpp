@@ -189,7 +189,7 @@ void ForallStmt::accept(AstVisitor* visitor) {
     if (fRecIterGetIterator)  fRecIterGetIterator->accept(visitor);
     if (fRecIterFreeIterator) fRecIterFreeIterator->accept(visitor);
     if (fZipCall)             fZipCall->accept(visitor);
-    
+
     fLoopBody->accept(visitor);
 
     visitor->exitForallStmt(this);

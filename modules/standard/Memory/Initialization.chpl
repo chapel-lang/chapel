@@ -47,7 +47,7 @@ module Initialization {
     :arg t: A type to check for deinitialization
     :type t: `type`
 
-    :return: ``true`` if ``t`` needs to be deinitialized 
+    :return: ``true`` if ``t`` needs to be deinitialized
     :rtype: param bool
   */
   proc needsDeinit(type t) param {
@@ -223,7 +223,7 @@ module Initialization {
                                    numElements: int) {
     _errorNot1DRectangularArray(a);
 
-    if boundsChecking { 
+    if boundsChecking {
       _haltBadElementRange(a, dstStartIndex, numElements);
       _haltBadIndex(a, dstStartIndex, 'dstStartIndex');
       _haltBadIndex(a, srcStartIndex, 'srcStartIndex');
@@ -269,7 +269,7 @@ module Initialization {
     :arg dstStartIndex: Destination index of elements to move-initialize
     :type dstStartIndex: `dstA.idxType`
 
-    :arg srcA: The array with source elements 
+    :arg srcA: The array with source elements
     :type srcA: An array with the same element type as `dstA.eltType`
 
     :arg srcStartIndex: Source index of elements to move-initialize from

@@ -67,13 +67,13 @@ void cleanup() {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool areMultiDefExprsInAList(AList& list) { 
+static bool areMultiDefExprsInAList(AList& list) {
    int numStmts = 0;
 
     for_alist(stmt, list){
       if (isDefExpr(stmt)) numStmts++;
     }
-    
+
     return numStmts > 1;
 }
 
@@ -136,7 +136,7 @@ static void backPropagateInFunction(BlockStmt* block) {
           }
         }
       }
-    
+
       //3. update def, type then init
       {
         SET_LINENO(def);
@@ -171,7 +171,7 @@ static void backPropagate(BaseAST* ast) {
             return;
           }
         } else if(isEndOfStatementMarker(stmt)){
-        
+
         } else {
           return;
         }

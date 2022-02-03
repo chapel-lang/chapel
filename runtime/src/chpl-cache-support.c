@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,7 @@
 #include "chpl-bitops.h"
 #include "chpl-align.h"
 
-// ----------  SUPPORT FUNCTIONS 
+// ----------  SUPPORT FUNCTIONS
 typedef int64_t cache_seqn_t;
 #define NO_SEQUENCE_NUMBER 0
 static inline
@@ -140,11 +140,11 @@ static inline void saturating_add(saturating_count_t *x, unsigned int num) {
 
 // FIFO Circular Bounded Buffer routines
 
-//  <--                  <--                   <--                       <-- 
+//  <--                  <--                   <--                       <--
 //  tail              complete                 start                     head
 //  "first entry"                                                "last entry"
 //   evict from this end                                  enqueue on this end
- 
+
 // Adds an element to a FIFO circle buffer.
 // When completed:
 //  - first_entry and last_entry will be updated
@@ -281,7 +281,7 @@ void set_valids_for_skip_len(uint64_t* valid, uintptr_t skip, uintptr_t len, int
 }
 
 static
-void unset_valids_for_skip_len(uint64_t* valid, uint64_t* tmp, 
+void unset_valids_for_skip_len(uint64_t* valid, uint64_t* tmp,
                               uintptr_t skip, uintptr_t len, int mask_words)
 {
   int j;
@@ -409,4 +409,4 @@ int count_valid_at_after(uint64_t* valid, uintptr_t at, int mask_words)
   }
   return count;
 }
- 
+

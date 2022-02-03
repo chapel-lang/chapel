@@ -932,7 +932,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
     if (instantiatedFrom != nullptr) {
       if (auto bct = instantiatedFrom->toBasicClassType())
         insnFromBct = bct;
-      else if (auto ct = instantiatedFrom->toClassType()) 
+      else if (auto ct = instantiatedFrom->toClassType())
         insnFromBct = ct->basicClassType();
       else
         assert(false && "unexpected instantiatedFrom type");
@@ -967,7 +967,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       else
         assert(false && "unexpected instantiatedFrom type");
     }
- 
+
     ret = RecordType::get(context, r->id(), r->name(),
                           insnFromRec, std::move(filteredSubs));
 
@@ -979,7 +979,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       else
         assert(false && "unexpected instantiatedFrom type");
     }
- 
+
     ret = UnionType::get(context, u->id(), u->name(),
                          insnFromUni, std::move(filteredSubs));
 
@@ -1139,7 +1139,7 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         const CompositeType* ct,
                                         bool useGenericFormalDefaults) {
 
-  // try first with useGenericFormalDefaults=false 
+  // try first with useGenericFormalDefaults=false
   const auto& f = partiallyResolvedFieldsForTypeDecl(context, ct, false);
 
   // If useGenericFormalDefaults was requested and the type
@@ -1206,7 +1206,7 @@ Type::Genericity getTypeGenericity(Context* context, const Type* t) {
   assert(t->isCompositeType() || t->isClassType());
 
   if (auto classType = t->toClassType()) {
-    // should be handled in BasicClassType::isGeneric 
+    // should be handled in BasicClassType::isGeneric
     // so this code should only be called if the management is concrete
     assert(!classType->decorator().isUnknownManagement());
     assert(!classType->decorator().isUnknownNilability());
@@ -1300,7 +1300,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
     int nFields = f.numFields();
     for (int i = 0; i < nFields; i++) {
       auto declId = f.fieldDeclId(i);
-      auto declAst = parsing::idToAst(context, declId); 
+      auto declAst = parsing::idToAst(context, declId);
       assert(declAst);
       const Decl* fieldDecl = declAst->toDecl();
       assert(fieldDecl);

@@ -1155,7 +1155,7 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
               // Add another PRIM_AUTO_DESTROY_RUNTIME_TYPE for the field
               destroyCall = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, fieldTemp);
             }
-            
+
             call->insertBefore(destroyCall);
           }
         }

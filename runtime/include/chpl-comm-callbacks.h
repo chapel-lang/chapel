@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -68,7 +68,7 @@ extern "C" {
 //   type chpl_comm_cb_info_t, describing the communication operation.  This
 //   type is also defined below.  It contains a union of three different
 //   information sets depending only on the chpl_comm_cb_event_kind_t
-//   value.   
+//   value.
 //
 //
 // RETURN VALUE
@@ -95,7 +95,7 @@ extern "C" {
 //
 // NOTES
 //
-//   Communication callbacks are local to the top-level locale.  In 
+//   Communication callbacks are local to the top-level locale.  In
 //   multi-locale programs, callback functions must be installed separately
 //   on each locale where they are wanted.
 //
@@ -127,7 +127,7 @@ typedef enum {
 } chpl_comm_cb_event_kind_t;
 
 typedef struct {
-  chpl_comm_cb_event_kind_t 
+  chpl_comm_cb_event_kind_t
              event_kind;          // kind of event this describes
   c_nodeid_t localNodeID;         // The node doing the communication
   c_nodeid_t remoteNodeID;        // The node to which the communication is going

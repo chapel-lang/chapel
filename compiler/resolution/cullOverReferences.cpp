@@ -725,7 +725,7 @@ void CullRefCtx::collectTuplesAndRefMaybeConstArgs(void) {
     if (argAt && argAt->symbol->hasFlag(FLAG_TUPLE) &&
         containsReferenceFields(argAt)) {
 
-      AggregateType* tupleType  = argAt; 
+      AggregateType* tupleType  = argAt;
       int            fieldIndex = 1;
 
       // Collect reference or tuple fields for later.
@@ -764,7 +764,7 @@ void CullRefCtx::collectOrLowerContextCallExprs(void) {
   }
 }
 
-// Loop through all the symbols collected so far and analyze them. 
+// Loop through all the symbols collected so far and analyze them.
 void CullRefCtx::visitCollectedSymbols(void) {
   for (size_t i = 0; i < collectedSymbols.size(); i++) {
     GraphNode node = collectedSymbols[i];
@@ -1162,7 +1162,7 @@ bool CullRefCtx::checkGetRefTupleField(CallExpr* call,
       Symbol*        field      = fieldSe->symbol();
 
       // TODO: Is this safe/invariant? Old is...
-      //    AggregateType* tupType = 
+      //    AggregateType* tupType =
       //      toAggregateType(call->get(1)->getValType());
       SymExpr*       tupleSe    = toSymExpr(call->get(1));
       INT_ASSERT(tupleSe);
@@ -1235,7 +1235,7 @@ bool CullRefCtx::checkSetRefTupleField(CallExpr* call, GraphNode node,
     addDependency(revisitGraph, srcNode, makeNode(rhsSymbol, 0));
     revisit = true;
 
-    return true; 
+    return true;
   }
 
   return false;

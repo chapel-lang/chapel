@@ -50,7 +50,7 @@ class TypeDecl : public NamedDecl {
   }
 
   void typeDeclMarkUniqueStringsInner(Context* context) const {
-    namedDeclMarkUniqueStringsInner(context); 
+    namedDeclMarkUniqueStringsInner(context);
   }
 
  public:

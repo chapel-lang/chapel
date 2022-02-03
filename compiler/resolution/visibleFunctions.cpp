@@ -1162,7 +1162,7 @@ static void getVisibleFnsFromUseList(const char*      name,
                 getVisibleFunctionsImpl(use->getRenamedSym(name),
                   call, mod->block, visInfo, visited, visibleFns, true);
               } else {
-                getVisibleFunctionsImpl(name, call, mod->block, visInfo, 
+                getVisibleFunctionsImpl(name, call, mod->block, visInfo,
                                     visited, visibleFns, true);
               }
             }

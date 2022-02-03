@@ -888,7 +888,7 @@ static int processBlockComment(yyscan_t scanner) {
       }
       else
         depth--;
-      
+
       d = 1;
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;

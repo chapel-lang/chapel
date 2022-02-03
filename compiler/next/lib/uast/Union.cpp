@@ -62,7 +62,7 @@ owned<Union> Union::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
- 
+
 
 } // namespace uast
 } // namespace chpl

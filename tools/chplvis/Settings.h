@@ -64,7 +64,7 @@ class SettingsData {
 };
 
 class Settings : public Fl_Group {
-  public: 
+  public:
     Settings (int x, int y, int W, int H, const char *l=0);
 
     void setCoolColor(void);

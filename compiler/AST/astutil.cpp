@@ -295,9 +295,9 @@ void computeAllCallSites(FnSymbol* fn) {
   Vec<CallExpr*>* calledBy = fn->calledBy;
   if (calledBy == NULL)
     fn->calledBy = calledBy = new Vec<CallExpr*>();
-  else 
+  else
     calledBy->clear();
-  
+
   for_SymbolSymExprs(se, fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (fn == call->resolvedFunction()) {

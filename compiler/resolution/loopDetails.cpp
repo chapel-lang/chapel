@@ -646,7 +646,7 @@ void gatherLoopDetails(ForallStmt* fs,
   bool zippered = false;
 
   Symbol* newIterLF = findNewIterLF(fs);
-  
+
   // copied from the other gatherLoopDetails() TODO -- can we remove?
   if (newIterLF) {
     // we still use newIterLF for zippered reduce expressions

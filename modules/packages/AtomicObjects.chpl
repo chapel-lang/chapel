@@ -32,7 +32,7 @@
         ``clang``, or ``llvm``.
 
     .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
-    
+
   This module provides support for performing atomic operations on pointers
   to  ``unmanaged`` classes, which can be thought of as building blocks for
   creating non-blocking algorithms and data structures.
@@ -68,7 +68,7 @@
     I.E when ``CHPL_NETWORK_ATOMICS!="none"``, which is provides a significant improvement
     in performance on systems where they are support, notable on a Cray-XC.
 
-  .. warning:: 
+  .. warning::
 
     Currently, ``hasGlobalSupport=true`` is necessary when using it from multiple locales, even
     if it is intended to be used locally. This is due to there being no compiler primitive to create
@@ -77,14 +77,14 @@
   ABA Wrapper
   -----------
 
-  The 'ABA' problem occurs when a task *T1* reads the value *A* from location *L*, 
-  another task *T2* writes *B* to *L*, and another task *T3* writes the value *A* to *L*; 
-  once *T1* checks to see if *L* has changed, it will incorrectly assume that it has not. 
-  To make this more concrete, think of *A* and *B* both as a node in a linked list; 
-  *T1* reads *A*, *T2* allocates a new node *B* and writes it to *L* and deletes *A*, 
-  and *T3* allocates a new node which just so happens to be the same piece of memory that 
-  *A* had before and writes it to *L*. Atomic operations such the ``compareAndSwap`` 
-  will succeed despite the fact that the nodes are not the same as it will perform 
+  The 'ABA' problem occurs when a task *T1* reads the value *A* from location *L*,
+  another task *T2* writes *B* to *L*, and another task *T3* writes the value *A* to *L*;
+  once *T1* checks to see if *L* has changed, it will incorrectly assume that it has not.
+  To make this more concrete, think of *A* and *B* both as a node in a linked list;
+  *T1* reads *A*, *T2* allocates a new node *B* and writes it to *L* and deletes *A*,
+  and *T3* allocates a new node which just so happens to be the same piece of memory that
+  *A* had before and writes it to *L*. Atomic operations such the ``compareAndSwap``
+  will succeed despite the fact that the nodes are not the same as it will perform
   the operation based on the virtual address.
 
   The ``ABA`` wrapper is one solution to this problem by coupling a 64-bit count alongside
@@ -107,7 +107,7 @@
 
   .. note::
 
-    We ``forward`` all accesses to the ``ABA`` wrapper to the object it is wrapping 
+    We ``forward`` all accesses to the ``ABA`` wrapper to the object it is wrapping
     so that whether or not the ABA versions of the ``AtomicObject`` API is used, it
     becomes as transparent as possible. This applies to all method and field accesses.
 
@@ -147,7 +147,7 @@ prototype module AtomicObjects {
         "c" (with->hi),
         "r" (src),
         "m" (result)
-        : "cc", "memory"); 
+        : "cc", "memory");
         return result;
     }
 
@@ -159,7 +159,7 @@ prototype module AtomicObjects {
     // Returns: If successful or not
     static inline int cas128bit(void *srcvp, void *cmpvp, void *withvp) {
       uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) cmpvp;
-      uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) withvp;      
+      uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) withvp;
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
@@ -203,7 +203,7 @@ prototype module AtomicObjects {
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
       while (!_cas128bit(src, cmp, with)) ;
-      *(uint128_t *) retvalvp = cmp_val; 
+      *(uint128_t *) retvalvp = cmp_val;
     }
 
     // Special-case which will update the ABA count of valvp to be
@@ -215,14 +215,14 @@ prototype module AtomicObjects {
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
-      
+
       with->hi = cmp->hi + 1;
       while (!_cas128bit(src, cmp, with)) {
         with->hi = cmp->hi + 1;
       }
-      *(uint128_t *) retvalvp = cmp_val; 
+      *(uint128_t *) retvalvp = cmp_val;
     }
-    
+
     static inline void read128bit(void *srcvp, void *dstvp) {
       uint128_t __attribute__ ((aligned (16))) src_val = * (uint128_t *) srcvp;
       uint128_t __attribute__ ((aligned (16))) cmp_val = src_val;
@@ -366,7 +366,7 @@ prototype module AtomicObjects {
       this.__ABA_ptr = compress(obj);
       this.__ABA_cnt = cnt;
     }
-    
+
     proc init(type __ABA_objType) {
       this.__ABA_objType = __ABA_objType;
     }
@@ -442,7 +442,7 @@ prototype module AtomicObjects {
     var atomicVar : if hasABASupport then _ddata(_ABAInternal(objType?)) else atomic uint(64);
 
     proc init(type objType, param hasABASupport = false, param hasGlobalSupport = !_local) {
-      if !isUnmanagedClass(objType) { 
+      if !isUnmanagedClass(objType) {
         compilerError ("LocalAtomicObject must take a 'unmanaged' type, not ", objType : string);
       }
       this.objType = objType;
@@ -466,7 +466,7 @@ prototype module AtomicObjects {
       } else {
         ptr = getAddr(defaultValue);
       }
-      
+
       if hasABASupport {
         atomicVar[0]._ABA_ptr.write(ptr);
       } else {
@@ -600,7 +600,7 @@ prototype module AtomicObjects {
         ret = retval;
       }
 
-      return ret; 
+      return ret;
     }
 
     inline proc exchangeABA(newObj: ABA(objType?)) : ABA(objType?) {

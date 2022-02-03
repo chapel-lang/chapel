@@ -34,12 +34,12 @@ bool TupleDecl::assertAcceptableTupleDecl() {
       // TODO: Make sure it is equivalent to components?
     } else if (i == typeExpressionChildNum_) {
       if (!elt->isExpression()) {
-        assert(false && "type expression child is not expression"); 
+        assert(false && "type expression child is not expression");
         return false;
       }
     } else if (i == initExpressionChildNum_) {
       if (!elt->isExpression()) {
-        assert(false && "init expression child is not expression"); 
+        assert(false && "init expression child is not expression");
         return false;
       }
     } else if (!elt->isTupleDecl()) {

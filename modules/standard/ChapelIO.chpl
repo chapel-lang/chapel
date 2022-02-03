@@ -353,7 +353,7 @@ module ChapelIO {
           // Try reading a comma. If we don't, break out of the loop.
           try {
             reader.readwrite(comma);
-            needsComma = false; 
+            needsComma = false;
           } catch err: BadFormatError {
             break;
           }
@@ -420,7 +420,7 @@ module ChapelIO {
         while numRead < numToRead {
 
           // Try reading a comma. If we don't, then break.
-          if needsComma then 
+          if needsComma then
             try {
               var comma = new ioLiteral(",", true);
               reader.readwrite(comma);
@@ -432,7 +432,7 @@ module ChapelIO {
 
           //
           // Find a field name that matches.
-          // 
+          //
           // TODO: this is not particularly efficient. If we have a lot of
           // fields, this is O(n**2), and there are other potential problems
           // with string reallocation.
@@ -542,7 +542,7 @@ module ChapelIO {
 
           var eq = if st == QIO_AGGREGATE_FORMAT_JSON
             then new ioLiteral(":", true)
-            else new ioLiteral("=", true); 
+            else new ioLiteral("=", true);
 
           // TODO: Why not a `readwrite` call here?
           try readIt(eq);

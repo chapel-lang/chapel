@@ -663,7 +663,7 @@ module Subprocess {
   {
     if command.isEmpty() then
       throw new owned IllegalArgumentError('command cannot be an empty string');
-    
+
     var args = if shellarg == "" then [executable, command]
         else [executable, shellarg, command];
 

@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -60,7 +60,7 @@ int chpl_posix_memalign_check_valid(size_t alignment) {
   // return EINVAL if alignment not a power of 2
 
   // find the power of 2 that is alignment
-  for( power = 0; 
+  for( power = 0;
        power < 8*sizeof(size_t);
        power++ ) {
     // find power of two equal to alignment.
@@ -68,7 +68,7 @@ int chpl_posix_memalign_check_valid(size_t alignment) {
   }
   // return EINVAL if not a power of two.
   if( power == 8*sizeof(size_t) || alignment != (one << power) ) {
-    return EINVAL; 
+    return EINVAL;
   }
 
   return 0;
@@ -102,7 +102,7 @@ void* chpl_pvalloc(size_t size)
 {
   size_t page_size = chpl_getHeapPageSize();
   size_t num_pages = (size + page_size - 1) / page_size;
-  size_t rounded_up = num_pages * page_size; 
+  size_t rounded_up = num_pages * page_size;
   return chpl_memalign(chpl_getHeapPageSize(), rounded_up);
 }
 

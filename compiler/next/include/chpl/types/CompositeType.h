@@ -41,7 +41,7 @@ namespace types {
   it also uses a SubstitutionsMap.
 
   (Storing field types in this class would present significant challenges
-   for computing this type in an immutable way within the query framework). 
+   for computing this type in an immutable way within the query framework).
  */
 class CompositeType : public Type {
  public:
