@@ -37,7 +37,7 @@ proc main() {
     while i < 10 && nDigits < n {
       if !tPrecalculation {
         k += 1;
-        doubleK = 2 * k + 1;
+        doubleK = 2*k + 1;
         tCalculating.write(true); // Unblock 't *= doubleK' task
       } else {
         tPrecalculation = false;
@@ -72,7 +72,7 @@ proc main() {
           temp1.mul(t, digit);
 
           k += 1;
-          doubleK = 2 * k + 1;
+          doubleK = 2*k + 1;
 
           tCalculating.write(true);  // Unblock 't *= doubleK' task
           tPrecalculation = true;
@@ -92,11 +92,12 @@ proc main() {
   exit(0);
 }
 
-proc multiplier(ref result, ref multiplier, waitCond) {
+
+proc multiplier(ref result, ref multiplicand, waitCond) {
   while true {
     waitCond.waitFor(true);
 
-    result *= multiplier;
+    result *= multiplicand;
 
     waitCond.write(false);
   }
@@ -117,4 +118,3 @@ proc extract() {
     extractCalculating.write(false);
   }
 }
-
