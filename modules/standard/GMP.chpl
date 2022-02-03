@@ -240,12 +240,6 @@ module GMP {
 
   /* */
   extern proc mpz_init(ref x: mpz_t);
-  proc mpz_inits(ref xs: mpz_t...) {
-    use CPtr;
-    extern proc mpz_inits(xs...);
-    mpz_inits((...xs), c_nil);
-  }
-    
 
   extern proc mpz_init2(ref x: mpz_t, n: mp_bitcnt_t);
 
