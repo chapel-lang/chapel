@@ -11,20 +11,51 @@ config var n = 27;
 
 var q, r, t: bigint;
 var tCalculating, qCalculating, extractCalculating: atomic bool;
-var k, doubleK, qMultiplier, digit: int;
+var k, doubleK, qMultiplicand, digit: int;
 
 proc main() {
-  // launch task to calculate 't *= doubleK'
-  begin with (ref t, ref doubleK)
-    multiplier(t, doubleK, tCalculating);
+  cobegin {
+    tMultiplier();
+    qMultiplier();
+    extractor();
+    computePi();
+  }
+}
 
-  // launch task to calculate 'q *= qMultiplier' (which is sometimes 10)
-  begin with (ref q, ref qMultiplier)
-    multiplier(q, qMultiplier, qCalculating);
+proc tMultiplier() {
+  multiplier(t, doubleK, tCalculating);
+}
 
-  // launch task to extract digits using 'digit = (q*3 + r) / t'
-  begin extract();
+proc qMultiplier() {
+  multiplier(q, qMultiplicand, qCalculating);
+}
 
+proc multiplier(ref result, ref multiplicand, waitCond) {
+  while true {
+    waitCond.waitFor(true);
+
+    result *= multiplicand;
+
+    waitCond.write(false);
+  }
+}
+
+proc extractor() {
+  var tmp1, tmp2: bigint;
+  
+  while true {
+    extractCalculating.waitFor(true);
+
+    tmp1.mul(q, 3);
+    tmp1 += r;
+    tmp2.divQ(tmp1, t);
+    digit = tmp2: int;
+
+    extractCalculating.write(false);
+  }
+}
+
+proc computePi() {
   q = 1;
   t = 1;
   
@@ -45,13 +76,13 @@ proc main() {
       qCalculating.waitFor(false); // Wait for 'q *= 10' to finish (if it runs)
       temp1.add(q,q);
 
-      qMultiplier = k;
-      qCalculating.write(true);  // Unblock task for 'q *= qMultiplier'
+      qMultiplicand = k;
+      qCalculating.write(true);  // Unblock task for 'q *= qMultiplicand'
 
       temp1 += r;
       r.mul(temp1,doubleK);
 
-      qCalculating.waitFor(false); // Wait for 'q *= qMultiplier' to finish
+      qCalculating.waitFor(false); // Wait for 'q *= qMultiplicand' to finish
       tCalculating.waitFor(false); // Wait for 't *= doubleK' to finish (if...)
       if q <= r {
         extractCalculating.write(true);  // Unblock extraction task
@@ -65,7 +96,7 @@ proc main() {
         extractCalculating.waitFor(false); // Wait for extraction task
 
         if digit == digit2 {
-          qMultiplier = 10;
+          qMultiplicand = 10;
           qCalculating.write(true);  // Unblock task for 'q *= 10'
 
           write(digit);
@@ -90,31 +121,4 @@ proc main() {
     writeln("\t:", nDigits);
   }
   exit(0);
-}
-
-
-proc multiplier(ref result, ref multiplicand, waitCond) {
-  while true {
-    waitCond.waitFor(true);
-
-    result *= multiplicand;
-
-    waitCond.write(false);
-  }
-}
-
-
-proc extract() {
-  var tmp1, tmp2: bigint;
-  
-  while true {
-    extractCalculating.waitFor(true);
-
-    tmp1.mul(q, 3);
-    tmp1 += r;
-    tmp2.divQ(tmp1, t);
-    digit = tmp2: int;
-
-    extractCalculating.write(false);
-  }
 }
