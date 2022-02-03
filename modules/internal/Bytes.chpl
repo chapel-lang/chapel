@@ -575,10 +575,12 @@ module Bytes {
     return this.buffLen == 0;
   }
 
-  deprecated "startsWith with needles argument is deprecated, use pattern instead"
+  pragma "last resort"
+  deprecated "startsWith with needles argument is deprecated, use patterns instead"
   inline proc bytes.startsWith(needles: bytes ...) : bool {
-    return startsEndsWith(this, needles, fromLeft=true);
+    return this.startsWith(needles);
   }
+
   /*
     Checks if the :mod:`bytes <Bytes>` starts with any of the given arguments.
 
@@ -590,11 +592,6 @@ module Bytes {
    */
   inline proc bytes.startsWith(patterns: bytes ...) : bool {
     return startsEndsWith(this, patterns, fromLeft=true);
-  }
-
-  deprecated "endsWith with needles argument is deprecated, use pattern instead"
-  inline proc bytes.endsWith(needles: bytes ...) : bool {
-    return startsEndsWith(this, needles, fromLeft=false);
   }
 
  
@@ -611,12 +608,12 @@ module Bytes {
     return startsEndsWith(this, patterns, fromLeft=false);
   }
 
-  deprecated "startsWith with needle argument is deprecated, use pattern instead"
+  pragma "last resort"
+  deprecated "startsWith with needle and region argument is deprecated, use pattern and indices instead"
   inline proc bytes.find(needle: bytes,
-                         indices: range(?) = this.indices) : idxType {
-    return doSearchNoEnc(this, needle, indices, count=false): idxType;
+                         region: range(?) = this.indices) : idxType {
+    return this.find(needle, region);
   }
-
 
   /*
     Finds the argument in the :mod:`bytes <Bytes>`
@@ -636,11 +633,11 @@ module Bytes {
     return doSearchNoEnc(this, pattern, indices, count=false): idxType;
   }
 
-  deprecated "rfind with needle argument is deprecated, use pattern instead"
+  pragma "last resort"
+  deprecated "rfind with needle and region argument is deprecated, use pattern and indices instead"
   inline proc bytes.rfind(needle: bytes,
-                          indices: range(?) = this.indices) : idxType {
-    return doSearchNoEnc(this, needle, indices, count=false,
-                         fromLeft=false): idxType;
+                          region: range(?) = this.indices) : idxType {
+    return this.find(needle, region); 
   }
 
   /*
@@ -662,10 +659,11 @@ module Bytes {
                          fromLeft=false): idxType;
   }
 
-  deprecated "count with needles argument is deprecated, use pattern instead"
+  pragma "last resort"
+  deprecated "count with needles and regions argument is deprecated, use pattern and indices instead"
   inline proc bytes.count(needles: bytes,
-                          indices: range(?) = this.indices) : int {
-    return doSearchNoEnc(this, needles, indices, count=true);
+                          regions: range(?) = this.indices) : int {
+    return this.find(needles, regions);
   }
 
   /*
@@ -684,11 +682,12 @@ module Bytes {
     return doSearchNoEnc(this, pattern, indices, count=true);
   }
 
+  pragma "last resort"
   deprecated "replace with needle argument is deprecated, use pattern instead"
   inline proc bytes.replace(needle: bytes,
                             replacement: bytes,
                             count: int = -1) : bytes {
-    return doReplace(this, needle, replacement, count);
+    return this.find(needle, replacement, count);
   }
 
 
