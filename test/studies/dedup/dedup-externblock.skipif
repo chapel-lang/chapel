@@ -2,22 +2,22 @@
 
 import os
 import subprocess
-import sys
-from distutils.version import LooseVersion
+from pkg_resources import parse_version
 
-llvm=os.getenv('CHPL_LLVM')
-platform=os.getenv('CHPL_TARGET_PLATFORM')
 
-Ok=False
+llvm = os.getenv('CHPL_LLVM')
+platform = os.getenv('CHPL_TARGET_PLATFORM')
 
-if llvm=='none' or platform!='linux64':
-    Ok=False # not linux / no llvm
+Ok = False
+
+if llvm == 'none' or platform != 'linux64':
+    Ok = False  # not linux / no llvm
 else:
     output = subprocess.check_output(['openssl', 'version']).rstrip()
     output = str(output, encoding='utf-8', errors='surrogateescape')
     output = output.replace("OpenSSL", "")
     output = output.strip()
-    if LooseVersion(output) >= LooseVersion('1.1'):
-        Ok=True
+    if parse_version(output) >= parse_version('1.1'):
+        Ok = True
 
 print(not Ok)
