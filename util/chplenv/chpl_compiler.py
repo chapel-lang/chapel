@@ -198,12 +198,6 @@ def get(flag='host'):
                 compiler_val = 'clang'
             else:
                 compiler_val = 'gnu'
-        elif locale_model_val == 'gpu':
-            if find_executable('clang'):
-                compiler_val = 'clang'
-            else:
-                error("clang not found. The 'gpu' locale model is supported "
-                      "with clang only.")
         else:
             compiler_val = 'gnu'
 
