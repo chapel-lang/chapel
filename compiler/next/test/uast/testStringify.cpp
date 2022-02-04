@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#include <climits>
+#include <map>
+#include <vector>
 #include "chpl/queries/Context.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/uast/all-uast.h"
@@ -31,49 +34,33 @@ using namespace chpl;
 using namespace uast;
 using namespace parsing;
 
-static void test0(Parser* parser) {
-  // test Module stringify
-  auto parseResult = parser->parseString("test0.chpl", "");
-  auto mod = parseResult.singleModule();
-  std::ostringstream ss;
-  mod->stringify(ss, CHPL_SYNTAX);
-  assert(!ss.str().empty());
+
+// This macro just helps keep the tests a little cleaner
+// rather than redefine all this for every type we want to test
+#define TEST_STRINGIFY_TYPE(val)                          \
+    {                                                     \
+      std::ostringstream ss;                              \
+      stringify<std::decay_t<decltype(val)>> stringifier; \
+      stringifier(ss, DEBUG_DETAIL, val);                 \
+      assert(!ss.str().empty());                          \
+    }
+
+
+static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
+    // recurse through the nodes and make sure each can call stringify()
+    // and produce a non-empty result (for now)
+    // this is a little convoluted as each ASTNode is also calling
+    // ASTNode.dumpHelper() on all of its children
+    for (const ASTNode* child : node->children()) {
+      stringifyNode(child, kind);
+    }
+    std::ostringstream ss;
+    node->stringify(ss, kind);
+    assert(!ss.str().empty());
 }
 
 static void test1(Parser* parser) {
-  // test Identifier stringify
-  auto parseResult = parser->parseString("test1.chpl", "x;");
-  auto mod = parseResult.singleModule();
-  auto identifier = mod->stmt(0)->toIdentifier();
-  std::ostringstream ss;
-  identifier->stringify(ss, CHPL_SYNTAX);
-  assert(!ss.str().empty());
-}
-
-static void test2(Parser* parser) {
-  // test Class stringify
-  auto parseResult = parser->parseString("test2.chpl", "class C { }");
-  auto mod = parseResult.singleModule();
-  const AggregateDecl* agg = mod->stmt(0)->toAggregateDecl();
-  auto cls = agg->toClass();
-  std::ostringstream ss;
-  cls->stringify(ss, CHPL_SYNTAX);
-  assert(!ss.str().empty());
-}
-
-static void test3(Parser* parser) {
-  // test record stringify
-  auto parseResult = parser->parseString("test3.chpl",
-                                         "record R { var x; proc method() { } }");
-  auto mod = parseResult.singleModule();
-  const AggregateDecl* agg = mod->stmt(0)->toAggregateDecl();
-  auto rec = agg->toRecord();
-  std::ostringstream ss;
-  rec->stringify(ss, CHPL_SYNTAX);
-  assert(!ss.str().empty());
-}
-
-static void test4(Parser* parser) {
+  // the one test to rule them all
   std::string testCode;
   testCode = R""""(
              module Test4 {
@@ -195,14 +182,50 @@ static void test4(Parser* parser) {
              )"""";
   auto parseResult = parser->parseString("Test4.chpl",
                                          testCode.c_str());
-
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
-  std::ostringstream ss;
-  mod->stringify(ss, CHPL_SYNTAX);
-  assert(!ss.str().empty());
-  std::cerr << ss.str();
+  stringifyNode(mod, CHPL_SYNTAX);
+}
+
+static void test2(Parser* parser) {
+
+  TEST_STRINGIFY_TYPE(std::numeric_limits<float>::max())
+  TEST_STRINGIFY_TYPE(std::numeric_limits<double>::max())
+  TEST_STRINGIFY_TYPE(std::numeric_limits<long double>::max())
+
+  TEST_STRINGIFY_TYPE(std::numeric_limits<int>::max())
+  TEST_STRINGIFY_TYPE(std::numeric_limits<long int>::max())
+  TEST_STRINGIFY_TYPE(std::numeric_limits<short int>::max())
+  TEST_STRINGIFY_TYPE(std::numeric_limits<unsigned int>::max())
+  TEST_STRINGIFY_TYPE(std::numeric_limits<unsigned short int>::max())
+  TEST_STRINGIFY_TYPE(std::numeric_limits<unsigned long int>::max())
+  TEST_STRINGIFY_TYPE(std::numeric_limits<unsigned long long int>::max())
+  TEST_STRINGIFY_TYPE(std::numeric_limits<long long int>::max())
+
+  TEST_STRINGIFY_TYPE(std::string("so long, and thanks for all the phish"))
+  TEST_STRINGIFY_TYPE(true)
+
+  TEST_STRINGIFY_TYPE(std::make_pair(42, std::string("the answer to life, "
+                                                     "the universe, "
+                                                     "and everything")))
+  TEST_STRINGIFY_TYPE(std::make_tuple(std::string("blue"),
+                                      true, 35,
+                                      std::make_pair(42, true)))
+  std::vector<int> v{7, 5, 16, 8};
+  TEST_STRINGIFY_TYPE(v)
+  std::set<double> dSet = {1.23, 3.14, 2.789};
+  TEST_STRINGIFY_TYPE(dSet)
+  std::unordered_map<int, std::string> months = {{3, std::string("Mar.")},
+                                                 {1, std::string("Jan.")},
+                                                 {2, std::string("Feb.")}};
+  TEST_STRINGIFY_TYPE(months)
+  std::map<int, std::string> weekDays = {{2, std::string("Tue.")},
+                                         {0, std::string("Sun.")},
+                                         {1, std::string("Mon.")},
+                                         {3, std::string("Wed.")}};
+  TEST_STRINGIFY_TYPE(weekDays)
+
 }
 
 
@@ -212,11 +235,8 @@ int main(int argc, char** argv) {
 
   auto parser = Parser::build(ctx);
   Parser* p = parser.get();
-  test0(p);
   test1(p);
   test2(p);
-  test3(p);
-  test4(p);
 
   return 0;
 }
