@@ -2,9 +2,10 @@
 
 import optparse
 import os
-import shutil
 import subprocess
 import sys
+
+from utils import which
 
 
 # ctags regexes
@@ -44,7 +45,7 @@ etags_opts = [
 
 
 def check_ex_ctags():
-    if not shutil.which('ctags'):
+    if not which('ctags'):
         return False
 
     process = subprocess.Popen(['ctags', '--version'],
@@ -119,7 +120,7 @@ def _main():
         process.communicate()
         sys.exit(process.returncode)
     elif options.emacs:
-        if not shutil.which('etags'):
+        if not which('etags'):
             sys.stderr.write("chpltags: Must have either Exuberant Ctags "
                              "with +regex or etags installed to create "
                              "Chapel tags.\n")

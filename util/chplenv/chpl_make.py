@@ -2,16 +2,8 @@
 
 import sys
 
-try:
-    # Module `distutils` is deprecated in Python 3.10 and will be removed in Python 3.12
-    # Prefer `shutil.which` in Python 3.2+
-    from shutil import which
-except ImportError:
-    # Backport for pre Python 3.2
-    from distutils.spawn import find_executable as which
-
 import chpl_platform, overrides
-from utils import memoize
+from utils import which, memoize
 
 
 @memoize

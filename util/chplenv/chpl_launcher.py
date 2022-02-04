@@ -2,16 +2,8 @@
 
 import sys
 
-try:
-    # Module `distutils` is deprecated in Python 3.10 and will be removed in Python 3.12
-    # Prefer `shutil.which` in Python 3.2+
-    from shutil import which
-except ImportError:
-    # Backport for pre Python 3.2
-    from distutils.spawn import find_executable as which
-
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
-from utils import error, memoize, warning
+from utils import which, error, memoize, warning
 
 
 def slurm_prefix(base_launcher, platform_val):

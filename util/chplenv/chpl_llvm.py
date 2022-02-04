@@ -5,17 +5,9 @@ import os
 import sys
 import re
 
-try:
-    # Module `distutils` is deprecated in Python 3.10 and will be removed in Python 3.12
-    # Prefer `shutil.which` in Python 3.2+
-    from shutil import which
-except ImportError:
-    # Backport for pre Python 3.2
-    from distutils.spawn import find_executable as which
-
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
-from utils import memoize, error, run_command, try_run_command, warning
+from utils import which, memoize, error, run_command, try_run_command, warning
 
 # returns a tuple of supported major LLVM versions as strings
 def llvm_versions():
