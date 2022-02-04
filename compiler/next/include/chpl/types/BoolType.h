@@ -47,6 +47,11 @@ class BoolType final : public PrimitiveType {
 
   static const owned<BoolType>& getBoolType(Context* context, int bitwidth);
 
+  /** what is stored in bitwidth_ for the default 'bool' ? */
+  static int defaultBitwidth() {
+    return 0;
+  }
+
  public:
   ~BoolType() = default;
 
@@ -55,6 +60,10 @@ class BoolType final : public PrimitiveType {
   int bitwidth() const override {
     if (bitwidth_ == 0) return 8;
     return bitwidth_;
+  }
+
+  bool isDefaultWidth() const override {
+    return bitwidth_ == defaultBitwidth();
   }
 
   const char* c_str() const override {

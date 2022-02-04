@@ -45,6 +45,11 @@ class ImagType final : public PrimitiveType {
 
   static const owned<ImagType>& getImagType(Context* context, int bitwidth);
 
+  /** what is stored in bitwidth_ for the default 'imag' ? */
+  static int defaultBitwidth() {
+    return 64;
+  }
+
  public:
   ~ImagType() = default;
 
@@ -52,6 +57,10 @@ class ImagType final : public PrimitiveType {
 
   int bitwidth() const override {
     return bitwidth_;
+  }
+
+  bool isDefaultWidth() const override {
+    return bitwidth_ == defaultBitwidth();
   }
 
   const char* c_str() const override {

@@ -33,7 +33,7 @@ const owned<ComplexType>& ComplexType::getComplexType(Context* context, int bitw
 
 const ComplexType* ComplexType::get(Context* context, int bitwidth) {
   assert(bitwidth == 0 || bitwidth == 64 || bitwidth == 128);
-  if (bitwidth == 0) bitwidth = 128; // canonicalize default width
+  if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
   return getComplexType(context, bitwidth).get();
 }
 
