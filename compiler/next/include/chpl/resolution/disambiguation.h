@@ -31,10 +31,11 @@ namespace resolution {
   overload resolution aka disambiguation
   to determine the most specific functions.
  */
-const MostSpecificCandidates&
+MostSpecificCandidates
 findMostSpecificCandidates(Context* context,
-                           std::vector<const TypedFnSignature*> lst,
-                           CallInfo call);
+                           const std::vector<const TypedFnSignature*>& lst,
+                           const CallInfo& call,
+                           const Scope* callInScope);
 
 
 } // end namespace resolution
