@@ -43,8 +43,8 @@ def returnsExternArray():
 	ret = ExternalArray()
 	ret._extern_arr = ret_arr
 	return ret
-from distutils.core import setup
-from distutils.core import Extension
+from setuptools import setup
+from setuptools import Extension
 from Cython.Build import cythonize
 import numpy
 
