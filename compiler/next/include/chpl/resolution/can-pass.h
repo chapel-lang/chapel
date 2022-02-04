@@ -141,6 +141,11 @@ class CanPassResult {
   /** What type of implicit conversion, if any, is needed? */
   ConversionKind conversionKind() { return conversionKind_; }
 
+  /** Returns true if an implicit param narrowing conversion is required */
+  bool convertsWithParamNarrowing(){
+    return conversionKind_ == PARAM_NARROWING;
+  }
+
   // implementation of canPass to allow use of private fields
   static CanPassResult canPass(Context* context,
                                const types::QualifiedType& actualType,
