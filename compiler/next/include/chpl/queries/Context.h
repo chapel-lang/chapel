@@ -175,17 +175,19 @@ class Context {
        bool isInputQuery,
        bool forSetter);
 
-  template<typename ResultType,
-           typename... ArgTs>
-  bool
-  hasResultForQuery(
-       const ResultType& (*queryFunction)(Context* context, ArgTs...),
-       const std::tuple<ArgTs...>& tupleOfArgs,
-       const char* traceQueryName);
-
   void recomputeIfNeeded(const querydetail::QueryMapResultBase* resultEntry);
   void updateForReuse(const querydetail::QueryMapResultBase* resultEntry);
 
+  // Checks to see if the current result exists and can be reused.
+  // This can run queries that it depended on in the previous revision again
+  // and it can update the query's lastChecked value.
+  bool queryCanUseSavedResult(
+            const void* queryFunction,
+            const querydetail::QueryMapResultBase* resultEntry);
+
+  // In addition to the steps in queryCanUseSavedResult, if the result
+  // cannot be reused, adds the query to the stack of currently executing
+  // queries
   bool queryCanUseSavedResultAndPushIfNot(
             const void* queryFunction,
             const querydetail::QueryMapResultBase* resultEntry);
@@ -238,7 +240,7 @@ class Context {
 
     Strings returned by this function will always be aligned to 2 bytes.
 
-    The function `UniqueString::build` returns such a string
+    The function `UniqueString::get` returns such a string
     with a wrapper type. It should be preferred for type safety
     and to reduce redundant checks.
    */
@@ -365,6 +367,12 @@ class Context {
   bool hasFilePathForId(ID id);
 
   /**
+    Sets the file path for the given module ID. This
+    is suitable to call from a parse query.
+   */
+  void setFilePathForModuleID(ID moduleID, UniqueString path);
+
+  /**
     This function increments the current revision number stored
     in the context. After it is called, the setters below can
     be used to provide the input at that revision.
@@ -390,14 +398,6 @@ class Context {
     is running.
    */
   void collectGarbage();
-
-  // setters for named queries.
-
-  /**
-    Sets the file path for the given module ID. This
-    is suitable to call from a parse query.
-   */
-  void setFilePathForModuleID(ID moduleID, UniqueString path);
 
   /**
     Note an error for the currently running query and report it
@@ -508,6 +508,20 @@ class Context {
   QueryStatus queryStatus(
          const ResultType& (*queryFunction)(Context* context, ArgTs...),
          const std::tuple<ArgTs...>& tupleOfArgs);
+
+  /**
+    Returns 'true' if the system already has a result for the passed query
+    in the current revision. This can be useful for certain input
+    queries - e.g. one reading a file that can both have the contents
+    set and can also read the data from the filesystem.
+   */
+  template<typename ResultType,
+           typename... ArgTs>
+  bool
+  hasCurrentResultForQuery(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...),
+       const std::tuple<ArgTs...>& tupleOfArgs);
+
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly

@@ -6149,7 +6149,7 @@ static void captureTaskIntentValues(int        argNum,
 
       } else if (isReferenceType(varActual->type) ==  true &&
                  isReferenceType(capTemp->type)   == false) {
-        marker->insertBefore("'move'(%S,'deref'(%S))", capTemp, varActual);
+        marker->insertBefore(new CallExpr(PRIM_ASSIGN, capTemp, varActual));
 
       } else {
         marker->insertBefore("'move'(%S,%S)", capTemp, varActual);

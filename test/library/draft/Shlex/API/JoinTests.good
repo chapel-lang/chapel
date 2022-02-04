@@ -1,0 +1,5 @@
+a b c
+a b c
+a b c
+echo -n 'Multiple words'
+echo 'filename; rm -rf "home"'

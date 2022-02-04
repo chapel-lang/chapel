@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
   ctx->beginQueryTimingTrace(outPath);
 
   for (int i = 1; i < argc; i++) {
-    auto filepath = UniqueString::build(ctx, argv[i]);
+    auto filepath = UniqueString::get(ctx, argv[i]);
     const ModuleVec& mods = parse(ctx, filepath);
     for (const Module* mod : mods) {
       const ResolutionResultByPostorderID& rr = resolveModule(ctx, mod->id());

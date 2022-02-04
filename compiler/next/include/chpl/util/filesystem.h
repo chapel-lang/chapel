@@ -33,6 +33,10 @@ namespace chpl {
  */
 bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
 
+/**
+  Checks to see if a file exists at path. Returns 'true' if it does.
+ */
+bool fileExists(const char* path);
 
 } // end namespace chpl
 

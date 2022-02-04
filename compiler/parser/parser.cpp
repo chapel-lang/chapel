@@ -44,6 +44,9 @@
 // Turn this on to report which modules are parsed as uAST.
 #define REPORT_AST_KIND_WHEN_PARSING_MODULE 0
 
+// Only convert user module to uAST
+#define UAST_CONVERT_USER_MODULE_ONLY 0
+
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
 #include "view.h"
 #endif
@@ -594,6 +597,7 @@ static bool uASTAttemptToParseMod(const char* modName,
                                   ModuleSymbol*& outModSym) {
   if (!fCompilerLibraryParser) return false;
 
+  if (UAST_CONVERT_USER_MODULE_ONLY && modTag != MOD_USER) return false;
   const bool namedOnCommandLine = false;
   const bool include = false;
 
@@ -892,7 +896,7 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
     return nullptr;
   }
 
-  auto path = chpl::UniqueString::build(gContext, fileName);
+  auto path = chpl::UniqueString::get(gContext, fileName);
 
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors. The 'parse' query makes us a vector
@@ -906,7 +910,7 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   // TODO (dlongnecke): What if errors were emitted outside of / not noted
   // by the builder result of this query?
   if (builderResult.numErrors()) {
-    USR_FATAL("Error(s) when parsing uAST for: %s", fileName);
+    USR_STOP();
   }
 
   ModuleSymbol* lastModSym = nullptr;

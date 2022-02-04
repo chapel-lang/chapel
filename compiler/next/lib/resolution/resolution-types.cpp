@@ -28,23 +28,25 @@ namespace chpl {
 namespace resolution {
 
 using namespace uast;
+using namespace types;
 
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
                                           bool isMethod,
                                           bool idIsFunction,
+                                          bool idIsClass,
                                           bool isTypeConstructor,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
                                           const Expression* whereClause) {
   QUERY_BEGIN(getUntypedFnSignature, context,
-              id, name, isMethod, idIsFunction, isTypeConstructor,
+              id, name, isMethod, idIsFunction, idIsClass, isTypeConstructor,
               kind, formals, whereClause);
 
   owned<UntypedFnSignature> result =
     toOwned(new UntypedFnSignature(id, name, isMethod,
-                                   idIsFunction, isTypeConstructor,
+                                   idIsFunction, idIsClass, isTypeConstructor,
                                    kind, std::move(formals), whereClause));
 
   return QUERY_END(result);
@@ -55,12 +57,13 @@ UntypedFnSignature::get(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
                         bool idIsFunction,
+                        bool idIsClass,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
                         const uast::Expression* whereClause) {
   return getUntypedFnSignature(context, id, name, isMethod,
-                               idIsFunction, isTypeConstructor, kind,
+                               idIsFunction, idIsClass, isTypeConstructor, kind,
                                std::move(formals), whereClause).get();
 }
 
@@ -86,6 +89,7 @@ UntypedFnSignature::get(Context* context, const uast::Function* fn) {
     result = get(context, fn->id(),
                  fn->name(), fn->isMethod(),
                  /* idIsFunction */ true,
+                 /* idIsClass */ false,
                  /* isTypeConstructor */ false,
                  fn->kind(),
                  std::move(formals), fn->whereClause());
@@ -93,7 +97,6 @@ UntypedFnSignature::get(Context* context, const uast::Function* fn) {
 
   return result;
 }
-
 
 void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
@@ -242,6 +245,26 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   return true;
 }
 
+void ResolvedFields::finalizeFields(Context* context) {
+  bool anyGeneric = false ;
+  bool allGenHaveDefault = true; // all generic fields have default init
+                                 // -- vacuously true if there are no generic
+
+  // look at the fields and compute the summary information
+  for (auto field : fields_) {
+    auto g = field.type.genericityWithFields(context);
+    if (g != Type::CONCRETE) {
+      if (!field.hasDefaultValue) {
+        allGenHaveDefault = false;
+      }
+      anyGeneric = true;
+    }
+  }
+
+  isGeneric_ = anyGeneric;
+  allGenericFieldsHaveDefaultValues_ = allGenHaveDefault;
+}
+
 void TypedFnSignature::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   id().stringify(ss, stringKind);
@@ -257,7 +280,6 @@ void TypedFnSignature::stringify(std::ostream& ss,
   }
   ss << ")";
 }
-
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
   poiFnIdsUsed_.insert(addPoiInfo.poiFnIdsUsed_.begin(),

@@ -19,6 +19,7 @@
 
 #include "chpl/types/QualifiedType.h"
 
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/Type.h"
 
@@ -26,12 +27,14 @@ namespace chpl {
 namespace types {
 
 
-bool QualifiedType::isGenericType() const {
-  return type_->isGeneric();
-}
+Type::Genericity QualifiedType::genericityWithFields(Context* context) const {
+   Type::Genericity g = genericity();
+   if (g == Type::MAYBE_GENERIC && type_ != nullptr ) {
+     return resolution::getTypeGenericity(context, type_);
+   }
 
-bool QualifiedType::isUnknownType() const {
-  return type_->isUnknownType();
+   // otherwise return whatever we computed
+   return g;
 }
 
 bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
@@ -86,6 +89,7 @@ void QualifiedType::stringify(std::ostream& ss,
 }
 
 IMPLEMENT_DUMP(QualifiedType);
+
 
 } // end namespace types
 } // end namespace chpl

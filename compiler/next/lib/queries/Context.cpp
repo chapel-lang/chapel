@@ -43,7 +43,7 @@ namespace chpl {
     Context rootContext;
 
     static void initGlobalStrings() {
-#define X(field, str) globalStrings.field = UniqueString::build(&rootContext, str);
+#define X(field, str) globalStrings.field = UniqueString::get(&rootContext, str);
 #include "chpl/queries/all-global-strings.h"
 #undef X
     }
@@ -388,7 +388,7 @@ const UniqueString& filePathForModuleIdSymbolPathQuery(Context* context,
   QUERY_BEGIN(filePathForModuleIdSymbolPathQuery, context, modIdSymP);
 
   // return the empty string if it wasn't already set
-  // in setFilePathForModulePath.
+  // in setFilePathForModuleID.
   UniqueString result;
 
   return QUERY_END(result);
@@ -414,7 +414,7 @@ static UniqueString removeLastSymbolPathComponent(Context* context,
     }
   }
 
-  return UniqueString::build(context, s, lastDot);
+  return UniqueString::get(context, s, lastDot);
 }
 
 UniqueString Context::filePathForId(ID id) {
@@ -423,9 +423,8 @@ UniqueString Context::filePathForId(ID id) {
   while (!symbolPath.isEmpty()) {
     auto tupleOfArgs = std::make_tuple(symbolPath);
 
-    bool got = hasResultForQuery(filePathForModuleIdSymbolPathQuery,
-                                 tupleOfArgs,
-                                 "filePathForModuleIdSymbolPathQuery");
+    bool got = hasCurrentResultForQuery(filePathForModuleIdSymbolPathQuery,
+                                        tupleOfArgs);
 
     if (got) {
       const UniqueString& p =
@@ -437,7 +436,7 @@ UniqueString Context::filePathForId(ID id) {
     symbolPath = removeLastSymbolPathComponent(this, symbolPath);
   }
 
-  return UniqueString::build(this, "<unknown file path>");
+  return UniqueString::get(this, "<unknown file path>");
 }
 
 bool Context::hasFilePathForId(ID id) {
@@ -446,9 +445,8 @@ bool Context::hasFilePathForId(ID id) {
   while (!symbolPath.isEmpty()) {
     auto tupleOfArgs = std::make_tuple(symbolPath);
 
-    bool got = hasResultForQuery(filePathForModuleIdSymbolPathQuery,
-                                 tupleOfArgs,
-                                 "filePathForModuleIdSymbolPathQuery");
+    bool got = hasCurrentResultForQuery(filePathForModuleIdSymbolPathQuery,
+                                        tupleOfArgs);
 
     if (got) {
       return true;
@@ -459,6 +457,23 @@ bool Context::hasFilePathForId(ID id) {
   }
 
   return false;
+}
+
+void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
+  UniqueString moduleIdSymbolPath = moduleID.symbolPath();
+  auto tupleOfArgs = std::make_tuple(moduleIdSymbolPath);
+
+  updateResultForQuery(filePathForModuleIdSymbolPathQuery,
+                       tupleOfArgs, path,
+                       "filePathForModuleIdSymbolPathQuery",
+                       /* isInputQuery */ false,
+                       /* forSetter */ true);
+
+  if (enableDebugTrace) {
+    printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
+           moduleIdSymbolPath.c_str(), path.c_str());
+  }
+  assert(hasFilePathForId(moduleID));
 }
 
 void Context::advanceToNextRevision(bool prepareToGC) {
@@ -543,23 +558,6 @@ void Context::collectGarbage() {
              (int)(nUniqueStringsBefore-nUniqueStringsAfter));
     }
   }
-}
-
-void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
-  UniqueString moduleIdSymbolPath = moduleID.symbolPath();
-  auto tupleOfArgs = std::make_tuple(moduleIdSymbolPath);
-
-  updateResultForQuery(filePathForModuleIdSymbolPathQuery,
-                       tupleOfArgs, path,
-                       "filePathForModuleIdSymbolPathQuery",
-                       /* isInputQuery */ false,
-                       /* forSetter */ true);
-
-  if (enableDebugTrace) {
-    printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
-           moduleIdSymbolPath.c_str(), path.c_str());
-  }
-  assert(hasFilePathForId(moduleID));
 }
 
 void Context::error(ErrorMessage error) {
@@ -696,7 +694,7 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   }
 }
 
-bool Context::queryCanUseSavedResultAndPushIfNot(
+bool Context::queryCanUseSavedResult(
                    const void* queryFunction,
                    const QueryMapResultBase* resultEntry) {
 
@@ -727,6 +725,15 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
       updateForReuse(resultEntry);
     }
   }
+
+  return useSaved;
+}
+
+bool Context::queryCanUseSavedResultAndPushIfNot(
+                   const void* queryFunction,
+                   const QueryMapResultBase* resultEntry) {
+
+  bool useSaved = queryCanUseSavedResult(queryFunction, resultEntry);
 
   if (useSaved == false) {
     // Since the result cannot be reused, the query will be evaluated.

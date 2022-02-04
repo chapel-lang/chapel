@@ -36,7 +36,7 @@
 #include "optimizations.h"
 
 bool debugPrintGPUChecks = false;
-bool allowFnCallsFromGPU = true;
+bool allowFnCallsFromGPU = false;
 int indentGPUChecksLevel = 0;
 
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
@@ -316,38 +316,6 @@ static  CallExpr* generateGPUCall(OutlineInfo& info, VarSymbol* numThreads) {
   return call;
 }
 
-static void errorForOuterVarAccesses(FnSymbol* fn) {
-  std::vector<SymExpr*> ses;
-  collectSymExprs(fn, ses);
-  for_vector(SymExpr, se, ses) {
-    if (VarSymbol* var = toVarSymbol(se->symbol())) {
-      if (var->defPoint->parentSymbol != fn) {
-        if (!var->isParameter() && var != gVoid) {
-          USR_FATAL(se, "variable '%s' must be defined in the function it"
-                    " is used in for GPU usage", var->name);
-        }
-      }
-    }
-  }
-}
-
-static void markGPUSubCalls(FnSymbol* fn) {
-  if (!fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
-    fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
-    fn->addFlag(FLAG_GPU_CODEGEN);
-  }
-
-  errorForOuterVarAccesses(fn);
-
-  std::vector<CallExpr*> calls;
-  collectCallExprs(fn, calls);
-  for_vector(CallExpr, call, calls) {
-    if (FnSymbol* fn = call->resolvedFunction()) {
-      markGPUSubCalls(fn);
-    }
-  }
-}
-
 static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<BaseAST*> asts;
@@ -355,7 +323,7 @@ static void outlineGPUKernels() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        if (shouldOutlineLoop(loop, allowFnCallsFromGPU)) {
+        if (shouldOutlineLoop(loop, /*allowFnCalls=*/false)) {
           SET_LINENO(loop);
 
           OutlineInfo info = collectOutlineInfo(loop);
@@ -432,15 +400,6 @@ static void outlineGPUKernels() {
                     }
                     else if (parent->isPrimitive()) {
                       addKernelArgument(info, sym);
-                    }
-                    else if (FnSymbol* calledFn = parent->resolvedFunction()) {
-                      if (!toFnSymbol(sym)) {
-                        addKernelArgument(info, sym);
-                      }
-
-                      if (!calledFn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
-                         markGPUSubCalls(calledFn);
-                      }
                     }
                     else {
                       INT_FATAL("Unexpected call expression");

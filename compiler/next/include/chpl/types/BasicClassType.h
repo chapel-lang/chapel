@@ -37,18 +37,15 @@ class BasicClassType final : public CompositeType {
 
   BasicClassType(ID id, UniqueString name,
                  const BasicClassType* parentType,
-                 std::vector<CompositeType::FieldDetail> fields,
-                 const BasicClassType* instantiatedFrom)
-    : CompositeType(typetags::BasicClassType, id, name, std::move(fields),
-                    instantiatedFrom),
+                 const BasicClassType* instantiatedFrom,
+                 SubstitutionsMap subs)
+    : CompositeType(typetags::BasicClassType, id, name,
+                    instantiatedFrom, std::move(subs)),
       parentType_(parentType)
   {
     // all classes should have a parent type, except for object
     // which doesn't.
     assert(parentType_ || name == USTR("object"));
-
-    // compute the summary information, including the parent type
-    computeSummaryInformation();
   }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -64,16 +61,18 @@ class BasicClassType final : public CompositeType {
   static const owned<BasicClassType>&
   getBasicClassType(Context* context, ID id, UniqueString name,
                     const BasicClassType* parentType,
-                    std::vector<CompositeType::FieldDetail> fields,
-                    const BasicClassType* instantiatedFrom);
+                    const BasicClassType* instantiatedFrom,
+                    SubstitutionsMap subs);
+
  public:
+
   ~BasicClassType() = default;
 
   static const BasicClassType*
   get(Context* context, ID id, UniqueString name,
       const BasicClassType* parentType,
-      std::vector<CompositeType::FieldDetail> fields,
-      const BasicClassType* instantiatedFrom);
+      const BasicClassType* instantiatedFrom,
+      CompositeType::SubstitutionsMap subs);
 
   static const BasicClassType* getObjectType(Context* context);
 

@@ -674,7 +674,7 @@ module ChapelDistribution {
       if this.parentDom.isRectangular() &&
          rhs.parentDom.isRectangular() {
         if this.dsiNumIndices == 0 {
-          if rhs.parentDom.isSubset(this.parentDom) {
+          if this.parentDom.contains(rhs.parentDom) {
             return true;
           }
         }

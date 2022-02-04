@@ -1730,8 +1730,7 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if ((fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) ||
-        fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+    if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
       functions.push_back(fn);
     }
   }

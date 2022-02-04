@@ -23,7 +23,7 @@ export CHAMPS_HOME=$CWD/champs
 rm -rf ${CHAMPS_HOME}
 
 # Clone CHAMPS 
-if ! git clone --depth=1 ${CHAMPS_URL} --branch=${CHAMPS_BRANCH} ; then
+if ! git clone ${CHAMPS_URL} --branch=${CHAMPS_BRANCH} ; then
   log_fatal_error "cloning CHAMPS"
 else
   echo "Cloned CHAMPS successfully"

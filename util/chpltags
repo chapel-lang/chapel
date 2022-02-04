@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-import os, sys, re, subprocess, optparse
-from distutils.spawn import find_executable
+
+import optparse
+import os
+import subprocess
+import sys
+from shutil import which
+
 
 # ctags regexes
 c_module = r'/^[ \t]*module[ \t]+([_a-zA-Z0-9$]+)/\1/'
@@ -39,7 +44,7 @@ etags_opts = [
 
 
 def check_ex_ctags():
-    if not find_executable('ctags'):
+    if not which('ctags'):
         return False
 
     process = subprocess.Popen(['ctags', '--version'],
@@ -114,7 +119,7 @@ def _main():
         process.communicate()
         sys.exit(process.returncode)
     elif options.emacs:
-        if not find_executable('etags'):
+        if not which('etags'):
             sys.stderr.write("chpltags: Must have either Exuberant Ctags "
                              "with +regex or etags installed to create "
                              "Chapel tags.\n")

@@ -2217,9 +2217,7 @@ void FnSymbol::codegenPrototype() {
 
     if (generatingGPUKernel) {
       func->setConvergent();
-      if (!hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
-        func->setCallingConv(llvm::CallingConv::PTX_Kernel);
-      }
+      func->setCallingConv(llvm::CallingConv::PTX_Kernel);
     }
 
     func->setDSOLocal(true);
@@ -2363,8 +2361,7 @@ void FnSymbol::codegenDef() {
 
   if( hasFlag(FLAG_NO_CODEGEN) ) return;
 
-  if( (hasFlag(FLAG_GPU_CODEGEN) != gCodegenGPU) &&
-      !hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) return;
+  if( hasFlag(FLAG_GPU_CODEGEN) != gCodegenGPU ) return;
 
   info->cStatements.clear();
   info->cLocalDecls.clear();

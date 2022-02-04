@@ -480,6 +480,15 @@ all:
     - Set memory leak found due to not calling chpl__autoDestroy (#18842)
   12/22/21:
     - Set tests that were leaking memory moved to future tests (#18889)
+  01/19/22:
+    - text: Disable AV
+      config: chapcs
+  01/24/22:
+    - text: Enable AV
+      config: chapcs
+  01/27/22:
+    - text: Switch to new AV
+      config: chapcs
 
 # End all
 
@@ -530,6 +539,12 @@ AllCompTime: &timecomp-base
     - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
   05/14/21:
     - Resolve some issues with finding primary and secondary operator methods (#17684)
+  02/13/22:
+    - Simplify locale setup barrier (#18868)
+  02/19/22:
+    - Move some method definitions into headers (#18961)
+  02/25/22:
+    - Move SSCA out of release/examples (#19054)
 
 allocate:
   06/11/20:
@@ -2217,6 +2232,16 @@ arkouda: &arkouda-base
     - Closes 963 Performance drop in substring search methods (mhmerrill/arkouda#965)
   01/12/22:
     - Switch to batch reading for Parquet files (mhmerrill/arkouda#1014)
+  01/19/22:
+    - Upgrade Arkouda release testing from 1.25.0 to 1.25.1 (#19033)
+    - Optimize Parquet file writing with WriteBatch function (mhmerrill/arkouda#1028)
+  01/21/22:
+    - Bump substring_search problem size back to 10**8 (mhmerrill/arkouda#1038)
+  01/26/22:
+    - Optimize small and medium int in1d operations (mhmerrill/arkouda#1044)
+  02/02/22:
+    - Fix sum precision for real this time (mhmerrill/arkouda#1055)
+    - Issue 1049: Adds capability to print server commands from the client. (mhmerrill/arkouda#1049)
 
 
 arkouda-string:

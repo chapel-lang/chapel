@@ -47,7 +47,7 @@ namespace types {
 static void gatherType(Context* context,
                        std::unordered_map<UniqueString,const Type*>& map,
                        const BuiltinType* t) {
-  auto name = UniqueString::build(context, t->c_str());
+  auto name = UniqueString::get(context, t->c_str());
   map.insert( {name, t} );
 }
 
