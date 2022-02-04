@@ -222,7 +222,6 @@ module ChapelDomain {
   pragma "compiler generated"
   pragma "last resort"
   proc chpl__ensureDomainExpr(x...) {
-//    compilerWarning("Called with : ", x.type:string);
     // we are creating array with a range literal(s). So, the array's domain
     // cannot be changed anymore.
     param dimType = chpl_checkForAnonAssocDom(x);
