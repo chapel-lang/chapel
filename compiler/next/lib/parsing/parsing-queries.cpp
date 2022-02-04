@@ -321,6 +321,26 @@ uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id) {
   return idToFnReturnIntentQuery(context, id);
 }
 
+static const bool&
+functionWithIdHasWhereQuery(Context* context, ID id) {
+  QUERY_BEGIN(functionWithIdHasWhereQuery, context, id);
+
+  const ASTNode* ast = idToAst(context, id);
+  bool result = false;
+
+  if (ast != nullptr) {
+    if (auto fn = ast->toFunction()) {
+      result = (fn->whereClause() != nullptr);
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool functionWithIdHasWhere(Context* context, ID id) {
+  return functionWithIdHasWhereQuery(context, id);
+}
+
 
 } // end namespace parsing
 } // end namespace chpl

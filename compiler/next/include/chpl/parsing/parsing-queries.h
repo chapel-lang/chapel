@@ -137,10 +137,16 @@ uast::ASTTag idToTag(Context* context, ID id);
 const ID& idToParentId(Context* context, ID id);
 
 /**
- Given an ID that represents a function, get the declared return
+ Given an ID that represents a Function, get the declared return
  intent for that function.
  */
 uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id);
+
+/**
+ Returns 'true' if the passed ID represents a Function with a where clause,
+ and 'false' otherwise.
+ */
+bool functionWithIdHasWhere(Context* context, ID id);
 
 
 } // end namespace parsing
