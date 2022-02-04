@@ -1159,53 +1159,9 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
   return compile(x);
 }
 
+pragma "no doc"
 pragma "last resort"
-deprecated "search with needle argument is deprecated, use pattern instead"
-proc string.search(needle: string, ignorecase=false):regexMatch
-{
-  this.search(needle, ignoreCase);
-}
-/*
-
-   Compile a regular expression and search the receiving string for matches at
-   any offset using :proc:`regex.search`.
-
-   :arg pattern: the regular expression to search for
-   :arg ignorecase: true to ignore case in the regular expression
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving string where a match occurred
- */
-proc string.search(pattern: string, ignorecase=false):regexMatch
-{
-  // Create a regex matching the literal for pattern
-  var re = compile(pattern, literal=true, nocapture=true, ignorecase=ignorecase);
-  return re.search(this);
-}
-
-pragma "last resort"
-deprecated "search with needle argument is deprecated, use pattern instead"
-proc bytes.search(needle: bytes, ignorecase=false):regexMatch
-{
-  return this.search(needle, ignorecase);
-}
-/*
-
-   Compile a regular expression and search the receiving bytes for matches at
-   any offset using :proc:`regex.search`.
-
-   :arg pattern: the regular expression to search for
-   :arg ignorecase: true to ignore case in the regular expression
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving bytes where a match occurred
- */
-proc bytes.search(pattern: bytes, ignorecase=false):regexMatch
-{
-  // Create a regex matching the literal for pattern
-  var re = compile(pattern, literal=true, nocapture=true, ignorecase=ignorecase);
-  return re.search(this);
-}
-
-proc string.search(pattern: regex(string)):regexMatch
+proc string.search(needle: regex(string)):regexMatch
 {
   return needle.search(this);
 }
@@ -1216,11 +1172,25 @@ proc string.search(pattern: regex(string)):regexMatch
   return pattern.search(this);
 }
 
+pragma "no doc"
+pragma "last resort"
+proc bytes.search(needle: regex(bytes)):regexMatch
+{
+  return needle.search(this);
+}
+
 // documented in the captures version
 pragma "no doc"
 proc bytes.search(pattern: regex(bytes)):regexMatch
 {
   return pattern.search(this);
+}
+
+
+pragma "last resort"
+proc string.search(needle: regex(string), ref captures ...?k):regexMatch
+{
+  return needle.search(this, (...captures));
 }
 
 /* Search the receiving string for a regular expression already compiled
@@ -1235,6 +1205,12 @@ proc bytes.search(pattern: regex(bytes)):regexMatch
 proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
 {
   return pattern.search(this, (...captures));
+}
+
+pragma "last resort"
+proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
+{
+  return needle.search(this, (...captures));
 }
 
 /* Search the receiving bytes for a regular expression already compiled
