@@ -14,7 +14,7 @@ var tCalculating, qCalculating, extractCalculating: atomic bool;
 var k, doubleK, qMultiplicand, digit: int;
 
 proc main() {
-  cobegin {
+  cobegin {  // create 4 tasks to perform sub-computations
     tMultiplier();
     qMultiplier();
     extractor();
@@ -22,24 +22,29 @@ proc main() {
   }
 }
 
+// compute 't *= doubleK;' when 'tCalculating' is set to 'true'
 proc tMultiplier() {
-  multiplier(t, doubleK, tCalculating);
-}
-
-proc qMultiplier() {
-  multiplier(q, qMultiplicand, qCalculating);
-}
-
-proc multiplier(ref result, ref multiplicand, waitCond) {
   while true {
-    waitCond.waitFor(true);
+    tCalculating.waitFor(true);
 
-    result *= multiplicand;
+    t *= doubleK;
 
-    waitCond.write(false);
+    tCalculating.write(false);
   }
 }
 
+// compute 'q *= qMultiplicand;' when 'qCalculating' is set to 'true'
+proc qMultiplier() {
+  while true {
+    qCalculating.waitFor(true);
+
+    q *= qMultiplicand;
+
+    qCalculating.write(false);
+  }
+}
+
+// extract a digit when 'extractCalculating' is set to 'true'
 proc extractor() {
   var tmp1, tmp2: bigint;
   
@@ -55,6 +60,7 @@ proc extractor() {
   }
 }
 
+// compute n digits of 'pi', printing 10 digits at a time
 proc computePi() {
   q = 1;
   t = 1;
