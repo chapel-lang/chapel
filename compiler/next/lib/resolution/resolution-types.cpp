@@ -151,10 +151,14 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     if (const Decl* decl = untyped->formalDecl(i)) {
       entry.formal_ = decl;
     }
-    if (typed) {
+    if (typed != nullptr) {
       entry.formalType_ = typed->formalType(formalIdx);
+      if (typed->instantiatedFrom() != nullptr) {
+        entry.formalInstantiated_ = typed->formalIsInstantiated(i);
+      }
     }
     entry.hasActual_ = false;
+    entry.formalIdx_ = formalIdx;
     entry.actualIdx_ = -1;
 
     formalIdx++;
