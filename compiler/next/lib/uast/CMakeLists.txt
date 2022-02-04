@@ -70,6 +70,7 @@ target_sources(libchplcomp-obj
                Literal.cpp
                Local.cpp
                Loop.cpp
+               Manage.cpp
                Module.cpp
                MultiDecl.cpp
                NamedDecl.cpp

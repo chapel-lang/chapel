@@ -87,6 +87,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(Block)                    // old AST: BlockStmt
     AST_NODE(Defer)                    // old AST: DeferStmt
     AST_NODE(Local)                    //
+    AST_NODE(Manage)                   //
     AST_NODE(On)                       //
     AST_NODE(Serial)                   //
     AST_NODE(When)                     //

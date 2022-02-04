@@ -73,6 +73,7 @@ NEXT_UAST_SRCS =                                 \
   Literal.cpp \
   Local.cpp \
   Loop.cpp \
+  Manage.cpp \
   Module.cpp \
   MultiDecl.cpp \
   NamedDecl.cpp \

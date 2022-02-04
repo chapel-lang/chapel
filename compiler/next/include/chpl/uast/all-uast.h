@@ -62,6 +62,7 @@
 #include "chpl/uast/Label.h"
 #include "chpl/uast/Literal.h"
 #include "chpl/uast/Local.h"
+#include "chpl/uast/Manage.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/New.h"
