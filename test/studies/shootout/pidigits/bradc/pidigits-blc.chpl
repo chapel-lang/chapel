@@ -1,7 +1,7 @@
-/* The Computer Language Benchmarks Game 
+/* The Computer Language Benchmarks Game
  * https://benchmarksgame-team.pages.debian.net/benchmarksgame/index.html
  *
- * Contributed by Brad Chamberlain and Jatin Garg
+ * Contributed by Brad Chamberlain, Jatin Garg, and Elliot Ronaghan
  * Derived from James Wright's C and Lew Palm's C++ multi-threaded versions
  */
 
@@ -13,50 +13,13 @@ var q, r, t: bigint;
 var tCalculating, qCalculating, extractCalculating: atomic bool;
 var k, doubleK, qMultiplicand, digit: int;
 
+
 proc main() {
   cobegin {  // create 4 tasks to perform sub-computations
+    computePi();
     tMultiplier();
     qMultiplier();
     extractor();
-    computePi();
-  }
-}
-
-// compute 't *= doubleK;' when 'tCalculating' is set to 'true'
-proc tMultiplier() {
-  while true {
-    tCalculating.waitFor(true);
-
-    t *= doubleK;
-
-    tCalculating.write(false);
-  }
-}
-
-// compute 'q *= qMultiplicand;' when 'qCalculating' is set to 'true'
-proc qMultiplier() {
-  while true {
-    qCalculating.waitFor(true);
-
-    q *= qMultiplicand;
-
-    qCalculating.write(false);
-  }
-}
-
-// extract a digit when 'extractCalculating' is set to 'true'
-proc extractor() {
-  var tmp1, tmp2: bigint;
-  
-  while true {
-    extractCalculating.waitFor(true);
-
-    tmp1.mul(q, 3);
-    tmp1 += r;
-    tmp2.divQ(tmp1, t);
-    digit = tmp2: int;
-
-    extractCalculating.write(false);
   }
 }
 
@@ -64,11 +27,11 @@ proc extractor() {
 proc computePi() {
   q = 1;
   t = 1;
-  
+
   var temp1, temp2: bigint;
   var tPrecalculation = false;
   var nDigits = 0;
-  
+
   while nDigits < n {
     var i = 0;
     while i < 10 && nDigits < n {
@@ -116,7 +79,7 @@ proc computePi() {
 
           temp1.sub(r, temp1);
           r.mul(temp1, 10);
-          
+
           i += 1;
           nDigits += 1;
         }
@@ -127,4 +90,42 @@ proc computePi() {
     writeln("\t:", nDigits);
   }
   exit(0);
+}
+
+// compute 't *= doubleK;' when 'tCalculating' is set to 'true'
+proc tMultiplier() {
+  while true {
+    tCalculating.waitFor(true);
+
+    t *= doubleK;
+
+    tCalculating.write(false);
+  }
+}
+
+// compute 'q *= qMultiplicand;' when 'qCalculating' is set to 'true'
+proc qMultiplier() {
+  while true {
+    qCalculating.waitFor(true);
+
+    q *= qMultiplicand;
+
+    qCalculating.write(false);
+  }
+}
+
+// extract a digit when 'extractCalculating' is set to 'true'
+proc extractor() {
+  var tmp1, tmp2: bigint;
+
+  while true {
+    extractCalculating.waitFor(true);
+
+    tmp1.mul(q, 3);
+    tmp1 += r;
+    tmp2.divQ(tmp1, t);
+    digit = tmp2: int;
+
+    extractCalculating.write(false);
+  }
 }
