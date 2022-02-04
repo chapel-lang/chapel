@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/query-impl.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/Function.h"
@@ -92,13 +93,13 @@ enum MoreVisibleResult {
 #define EXPLAIN(...) \
         if (dctx.explain) fprintf(stderr, __VA_ARGS__)
 
-#define EXPLAIN_DUMP(fn) \
-        if (dctx.explain) fn->dump(StringifyKind::CHPL_SYNTAX);
+#define EXPLAIN_DUMP(thing) \
+        if (dctx.explain) (thing)->dump(StringifyKind::CHPL_SYNTAX);
 
 #else
 
 #define EXPLAIN(...)
-#define EXPLAIN_DUMP(fn)
+#define EXPLAIN_DUMP(thing)
 
 #endif
 
@@ -122,6 +123,31 @@ static void testArgMapping(const DisambiguationContext& dctx,
                            const DisambiguationCandidate& candidate2,
                            int actualIdx,
                            DisambiguationState& ds);
+
+static void testArgMapHelper(const DisambiguationContext& dctx,
+                             const FormalActual& fa,
+                             bool* formalPromotes, bool* formalNarrows,
+                             DisambiguationState& ds,
+                             int fnNum);
+
+static bool isFormalInstantiatedAny(const DisambiguationCandidate& candidate,
+                                    const FormalActual* fa);
+
+static bool isFormalPartiallyGeneric(const DisambiguationCandidate& candidate,
+                                     const FormalActual* fa);
+
+static bool prefersConvToOtherNumeric(const DisambiguationContext& dctx,
+                                      QualifiedType actualType,
+                                      QualifiedType f1Type,
+                                      QualifiedType f2Type);
+
+static QualifiedType computeActualScalarType(Context* context,
+                                             QualifiedType actualType);
+
+static bool isNumericParamDefaultType(QualifiedType type);
+
+static bool moreSpecific(const DisambiguationContext& dctx,
+                         QualifiedType actualType, QualifiedType formalType);
 
 
 static MostSpecificCandidates
@@ -583,8 +609,8 @@ computeIsMoreVisible(Context* context,
   LookupConfig config = LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE;
 
-  // Go up scopes tracking which symbol has been found
-  // and then use that.
+  // Go up scopes to figure out which of the two IDs is
+  // declared first / innermost
   for (auto curScope = callInScope;
        curScope != nullptr;
        curScope = curScope->parentScope()) {
@@ -627,6 +653,10 @@ moreVisibleQuery(Context* context,
   return QUERY_END(result);
 }
 
+/**
+  Computes whether candidate1 or candidate2 is more visible/shadowing
+  the other.
+ */
 static MoreVisibleResult
 moreVisible(const DisambiguationContext& dctx,
             const DisambiguationCandidate& candidate1,
@@ -640,69 +670,6 @@ moreVisible(const DisambiguationContext& dctx,
   return moreVisibleQuery(dctx.context, callName, callInScope, fn1Id, fn2Id);
 }
 
-static void testArgMapping(const DisambiguationContext& dctx,
-                           const DisambiguationCandidate& candidate1,
-                           const DisambiguationCandidate& candidate2,
-                           int actualIdx,
-                           DisambiguationState& ds) {
-  // TODO: fill this in
-}
-
-
-#if 0
-// Calls canDispatch and does the initial EXPLAIN calls, which were otherwise
-// duplicated
-static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
-                             Type* fType, Type* actualType, bool actualParam,
-                             bool* formalPromotes, bool* formalNarrows,
-                             const DisambiguationContext& DC,
-                             DisambiguationState& ds,
-                             int fnNum) {
-  canDispatch(actualType, actual, fType, formal, fn, formalPromotes,
-              formalNarrows);
-
-  if (fnNum == 1) {
-    DS.fn1Promotes |= *formalPromotes;
-  } else if (fnNum == 2) {
-    DS.fn2Promotes |= *formalPromotes;
-  } else {
-    INT_FATAL("fnNum should be either 1 or 2");
-  }
-
-  EXPLAIN("Formal %d's type: %s", fnNum, toString(fType));
-  if (*formalPromotes)
-    EXPLAIN(" (promotes)");
-  if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
-    EXPLAIN(" (instantiated param)");
-  if (*formalNarrows)
-    EXPLAIN(" (narrows param)");
-  EXPLAIN("\n");
-
-  if (actualType != fType) {
-    if (actualParam) {
-      EXPLAIN("Actual requires param coercion to match formal %d\n", fnNum);
-    } else {
-      EXPLAIN("Actual requires coercion to match formal %d\n", fnNum);
-    }
-  }
-}
-
-static QualifiedType computeActualScalarType(Context* context,
-                                             QualifiedType actualType) {
-  // TODO: fill this in
-  assert(false && "not implemented yet");
-  return actualType;
-}
-
-static bool isNumericParamDefaultType(QualifiedType type) {
-  if (auto typePtr = type.type()) {
-    if (auto primType = typePtr->toPrimitiveType()) {
-      return primType->isDefaultWidth();
-    }
-  }
-
-  return false;
-}
 
 /**
   Compare two argument mappings, given a set of actual arguments, and set the
@@ -713,8 +680,11 @@ static bool isNumericParamDefaultType(QualifiedType type) {
   language specification (page 107).
 
   actualIdx is the index within the call of the argument to be compared.
+
+  Sets bits in DisambiguationState ds according to whether argument actualIdx
+  in candidate1 vs candidate2 is a better match.
  */
-static void testArgMapping(DisambiguationContext& dctx,
+static void testArgMapping(const DisambiguationContext& dctx,
                            const DisambiguationCandidate& candidate1,
                            const DisambiguationCandidate& candidate2,
                            int actualIdx,
@@ -722,10 +692,10 @@ static void testArgMapping(DisambiguationContext& dctx,
 
   EXPLAIN("\nLooking at argument %d\n", actualIdx);
 
-  const FormalActual* fa1 = candidate1.formalActualMap.byActualIdx(k);
-  const FormalActual* fa2 = candidate2.formalActualMap.byActualIdx(k);
+  const FormalActual* fa1 = candidate1.formalActualMap.byActualIdx(actualIdx);
+  const FormalActual* fa2 = candidate2.formalActualMap.byActualIdx(actualIdx);
 
-  if (formal1 == nullptr || formal2 == nullptr) {
+  if (fa1 == nullptr || fa2 == nullptr) {
     // TODO: call testOpArgMapping if one was an operator but the
     // other is not
     assert(false && "TODO -- handle operator calls");
@@ -738,17 +708,19 @@ static void testArgMapping(DisambiguationContext& dctx,
 
   // Give up early for out intent arguments
   // (these don't impact candidate selection)
-  if (f1Type->kind() == QualifiedType::OUT ||
-      f2Type->kind() == QualifiedType::OUT) {
+  if (f1Type.kind() == QualifiedType::OUT ||
+      f2Type.kind() == QualifiedType::OUT) {
     return;
   }
 
   // Initializer work-around: Skip 'this' for generic initializers
-  if (call->name() == USTR("init") || call->name == USTR("init=")) {
-    if (fa1->formal()->name() == USTR("this") &&
-        fa2->formal()->name() == USTR("this")) {
-      if (f1Type.genericityWithFields(context) != Type::CONCRETE &&
-          f2Type.genericityWithFields(context) != Type::CONCRETE) {
+  if (dctx.call->name() == USTR("init") || dctx.call->name() == USTR("init=")) {
+    auto nd1 = fa1->formal()->toNamedDecl();
+    auto nd2 = fa2->formal()->toNamedDecl();
+    if (nd1 != nullptr && nd2 != nullptr &&
+        nd1->name() == USTR("this") && nd2->name() == USTR("this")) {
+      if (f1Type.genericityWithFields(dctx.context) != Type::CONCRETE &&
+          f2Type.genericityWithFields(dctx.context) != Type::CONCRETE) {
         return;
       }
     }
@@ -759,10 +731,28 @@ static void testArgMapping(DisambiguationContext& dctx,
   bool formal1Narrows = false;
   bool formal2Narrows = false;
 
-  QualifiedType actualScalarType = actualType;
+  QualifiedType actualScalarT = actualType;
 
-  bool f1Param = formal1->hasParamPtr();
-  bool f2Param = formal2->hasParamPtr();
+  bool f1Param = f1Type.hasParamPtr();
+  bool f2Param = f2Type.hasParamPtr();
+
+  bool f1Instantiated = fa1->formalInstantiated();
+  bool f2Instantiated = fa2->formalInstantiated();
+
+  bool f1InstantiatedFromAny = false;
+  bool f2InstantiatedFromAny = false;
+
+  bool f1PartiallyGeneric = false;
+  bool f2PartiallyGeneric = false;
+
+  if (f1Instantiated) {
+    f1InstantiatedFromAny = isFormalInstantiatedAny(candidate1, fa1);
+    f1PartiallyGeneric = isFormalPartiallyGeneric(candidate1, fa1);
+  }
+  if (f2Instantiated) {
+    f2InstantiatedFromAny = isFormalInstantiatedAny(candidate2, fa2);
+    f2PartiallyGeneric = isFormalPartiallyGeneric(candidate2, fa2);
+  }
 
   bool actualParam = false;
   bool paramWithDefaultSize = false;
@@ -774,27 +764,26 @@ static void testArgMapping(DisambiguationContext& dctx,
   //  +(param x:int(64), param y:int(64)
   // called with
   //  param x:int(32), param y:int(64)
-  if (actualType->hasParamPtr()) {
+  if (actualType.hasParamPtr()) {
     actualParam = true;
     paramWithDefaultSize = isNumericParamDefaultType(actualType);
   }
 
-  EXPLAIN("Actual's type: %s", toString(actualType));
+  EXPLAIN("Actual's type: ");
+  EXPLAIN_DUMP(&actualType);
   if (actualParam)
     EXPLAIN(" (param)");
   if (paramWithDefaultSize)
     EXPLAIN(" (default)");
   EXPLAIN("\n");
 
-  testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
-                   &formal1Promotes, &formal1Narrows, DC, DS, 1);
+  testArgMapHelper(dctx, *fa1, &formal1Promotes, &formal1Narrows, ds, 1);
 
-  testArgMapHelper(fn2, formal2, actual, f2Type, actualType, actualParam,
-                   &formal2Promotes, &formal2Narrows, DC, DS, 2);
+  testArgMapHelper(dctx, *fa2, &formal2Promotes, &formal2Narrows, ds, 2);
 
   // Figure out scalar type for candidate matching
   if (formal1Promotes || formal2Promotes) {
-    actualScalarType = computeActualScalarType(dctx.context, actualType);
+    actualScalarT = computeActualScalarType(dctx.context, actualType);
   }
 
   // TODO: for sync/single use the valType
@@ -824,33 +813,25 @@ static void testArgMapping(DisambiguationContext& dctx,
     prefer2 = STRONG; reason = "no promotion vs promotes";
 
   } else if (f1Type == f2Type           &&
-             !formal1->instantiatedFrom &&
-             formal2->instantiatedFrom) {
+             !f1Instantiated && f2Instantiated) {
     prefer1 = STRONG; reason = "concrete vs generic";
 
   } else if (f1Type == f2Type &&
-             formal1->instantiatedFrom &&
-             !formal2->instantiatedFrom) {
+             f1Instantiated && !f2Instantiated) {
     prefer2 = STRONG; reason = "concrete vs generic";
 
-  } else if (formal1->instantiatedFrom != dtAny &&
-             formal2->instantiatedFrom == dtAny) {
+  } else if (!f1InstantiatedFromAny && f2InstantiatedFromAny) {
     prefer1 = STRONG; reason = "generic any vs partially generic/concrete";
 
-  } else if (formal1->instantiatedFrom == dtAny &&
-             formal2->instantiatedFrom != dtAny) {
+  } else if (f1InstantiatedFromAny && !f2InstantiatedFromAny) {
     prefer2 = STRONG; reason = "generic any vs partially generic/concrete";
 
-  } else if (formal1->instantiatedFrom &&
-             formal2->instantiatedFrom &&
-             formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-             !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+  } else if (f1Instantiated && f2Instantiated &&
+             f1PartiallyGeneric && !f2PartiallyGeneric) {
     prefer1 = STRONG; reason = "partially generic vs generic";
 
-  } else if (formal1->instantiatedFrom &&
-             formal2->instantiatedFrom &&
-             !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-             formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+  } else if (f1Instantiated && f2Instantiated &&
+             !f1PartiallyGeneric && f2PartiallyGeneric) {
     prefer2 = STRONG; reason = "partially generic vs generic";
 
   } else if (f1Param != f2Param && f1Param) {
@@ -871,7 +852,7 @@ static void testArgMapping(DisambiguationContext& dctx,
   } else if (!actualParam && actualType == f2Type && actualType != f1Type) {
     prefer2 = STRONG; reason = "actual type vs not";
 
-  } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
+  } else if (actualScalarT == f1Type && actualScalarT != f2Type) {
     if (paramWithDefaultSize)
       prefer1 = WEAKEST;
     else if (actualParam)
@@ -881,7 +862,7 @@ static void testArgMapping(DisambiguationContext& dctx,
 
     reason = "scalar type vs not";
 
-  } else if (actualScalarType == f2Type && actualScalarType != f1Type) {
+  } else if (actualScalarT == f2Type && actualScalarT != f1Type) {
     if (paramWithDefaultSize)
       prefer2 = WEAKEST;
     else if (actualParam)
@@ -891,7 +872,7 @@ static void testArgMapping(DisambiguationContext& dctx,
 
     reason = "scalar type vs not";
 
-  } else if (prefersCoercionToOtherNumericType(actualScalarType, f1Type, f2Type)) {
+  } else if (prefersConvToOtherNumeric(dctx, actualScalarT, f1Type, f2Type)) {
     if (paramWithDefaultSize)
       prefer1 = WEAKEST;
     else
@@ -899,7 +880,7 @@ static void testArgMapping(DisambiguationContext& dctx,
 
     reason = "preferred coercion to other";
 
-  } else if (prefersCoercionToOtherNumericType(actualScalarType, f2Type, f1Type)) {
+  } else if (prefersConvToOtherNumeric(dctx, actualScalarT, f2Type, f1Type)) {
     if (paramWithDefaultSize)
       prefer2 = WEAKEST;
     else
@@ -907,21 +888,21 @@ static void testArgMapping(DisambiguationContext& dctx,
 
     reason = "preferred coercion to other";
 
-  } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
+  } else if (f1Type != f2Type && moreSpecific(dctx, f1Type, f2Type)) {
     prefer1 = actualParam ? WEAKEST : STRONG;
     reason = "can dispatch";
 
-  } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
+  } else if (f1Type != f2Type && moreSpecific(dctx, f2Type, f1Type)) {
     prefer2 = actualParam ? WEAKEST : STRONG;
     reason = "can dispatch";
 
-  } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
+  } else if (f1Type.type()->isIntType() && f2Type.type()->isUintType()) {
     // This int/uint rule supports choosing between an 'int' and 'uint'
     // overload when passed say a uint(32).
     prefer1 = actualParam ? WEAKEST : STRONG;
     reason = "int vs uint";
 
-  } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
+  } else if (f2Type.type()->isIntType() && f1Type.type()->isUintType()) {
     prefer2 = actualParam ? WEAKEST : STRONG;
     reason = "int vs uint";
 
@@ -929,68 +910,255 @@ static void testArgMapping(DisambiguationContext& dctx,
 
   if (prefer1 != NONE) {
     const char* level = "";
-    if (prefer1 == STRONG)  { DS.fn1MoreSpecific = true;     level = "strong"; }
-    if (prefer1 == WEAK)    { DS.fn1WeakPreferred = true;    level = "weak"; }
-    if (prefer1 == WEAKER)  { DS.fn1WeakerPreferred = true;  level = "weaker"; }
-    if (prefer1 == WEAKEST) { DS.fn1WeakestPreferred = true; level = "weakest"; }
-    EXPLAIN("%s: Fn %d is %s preferred\n", reason, i, level);
+    if (prefer1 == STRONG)  { ds.fn1MoreSpecific = true;     level = "strong"; }
+    if (prefer1 == WEAK)    { ds.fn1WeakPreferred = true;    level = "weak"; }
+    if (prefer1 == WEAKER)  { ds.fn1WeakerPreferred = true;  level = "weaker"; }
+    if (prefer1 == WEAKEST) { ds.fn1WeakestPreferred = true; level = "weakest"; }
+    EXPLAIN("%s: Fn %d is %s preferred\n", reason, candidate1.idx, level);
   } else if (prefer2 != NONE) {
     const char* level = "";
-    if (prefer2 == STRONG)  { DS.fn2MoreSpecific = true;     level = "strong"; }
-    if (prefer2 == WEAK)    { DS.fn2WeakPreferred = true;    level = "weak"; }
-    if (prefer2 == WEAKER)  { DS.fn2WeakerPreferred = true;  level = "weaker"; }
-    if (prefer2 == WEAKEST) { DS.fn2WeakestPreferred = true; level = "weakest"; }
-    EXPLAIN("%s: Fn %d is %s preferred\n", reason, j, level);
+    if (prefer2 == STRONG)  { ds.fn2MoreSpecific = true;     level = "strong"; }
+    if (prefer2 == WEAK)    { ds.fn2WeakPreferred = true;    level = "weak"; }
+    if (prefer2 == WEAKER)  { ds.fn2WeakerPreferred = true;  level = "weaker"; }
+    if (prefer2 == WEAKEST) { ds.fn2WeakestPreferred = true; level = "weakest"; }
+    EXPLAIN("%s: Fn %d is %s preferred\n", reason, candidate2.idx, level);
   }
 }
 
-static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
-                             ArgSymbol* formal2, Symbol* actual,
-                             const DisambiguationContext& DC, int i, int j,
-                             DisambiguationState& DS) {
-  // Validate our assumptions in this function - only operator functions should
-  // return a NULL for the formal and they should only do so for method token
-  // and "this" actuals.
-  INT_ASSERT(fn1->hasFlag(FLAG_OPERATOR) == (formal1 == NULL));
-  INT_ASSERT(fn2->hasFlag(FLAG_OPERATOR) == (formal2 == NULL));
+static void testArgMapHelper(const DisambiguationContext& dctx,
+                             const FormalActual& fa,
+                             bool* formalPromotes, bool* formalNarrows,
+                             DisambiguationState& ds,
+                             int fnNum) {
 
-  Type* actualType = actual->type->getValType();
-  bool actualParam = getImmediate(actual) != NULL;
-  const char* reason = "potentially optional argument present vs not";
-  const char* level = "weak";
+  QualifiedType actualType = fa.actualType();
+  QualifiedType formalType = fa.formalType();
 
-  if (formal1 == NULL) {
-    EXPLAIN("Function 1 did not have a corresponding formal");
-    EXPLAIN("Function 1 is an operator standalone function");
-    INT_ASSERT(formal2 != NULL);
+  // If we got to this point, actual type should be passable to the
+  // formal type. (If not, it should have been filtered out when
+  // filtering candidates).
+  // But, here we want to check if it narrows or promotes
+  // since that affects the disambiguation.
 
-    Type* f2Type = formal2->type->getValType();
-    bool formal2Promotes = false;
-    bool formal2Narrows = false;
+  CanPassResult result = canPass(dctx.context, actualType, formalType);
+  assert(result.passes());
+  *formalPromotes = result.promotes();
+  *formalNarrows = result.convertsWithParamNarrowing();
 
-    testArgMapHelper(fn2, formal2, actual, f2Type, actualType, actualParam,
-                     &formal2Promotes, &formal2Narrows, DC, DS, 2);
-
-    DS.fn2WeakPreferred = true;
-    EXPLAIN("%s: Fn % is %s preferred\n", reason, j, level);
-
+  if (fnNum == 1) {
+    ds.fn1Promotes |= *formalPromotes;
+  } else if (fnNum == 2) {
+    ds.fn2Promotes |= *formalPromotes;
   } else {
-    INT_ASSERT(formal2 == NULL);
-    EXPLAIN("Function 2 did not have a corresponding formal");
-    EXPLAIN("Function 2 is an operator standalone function");
+    assert(false && "fnNum should be either 1 or 2");
+  }
 
-    Type* f1Type = formal1->type->getValType();
-    bool formal1Promotes = false;
-    bool formal1Narrows = false;
+  EXPLAIN("Formal %d's type: ", fnNum);
+  EXPLAIN_DUMP(&formalType);
+  if (*formalPromotes)
+    EXPLAIN(" (promotes)");
+  if (formalType.hasParamPtr())
+    EXPLAIN(" (instantiated param)");
+  if (*formalNarrows)
+    EXPLAIN(" (narrows param)");
+  EXPLAIN("\n");
 
-    testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
-                     &formal1Promotes, &formal1Narrows, DC, DS, 1);
-
-    DS.fn1WeakPreferred = true;
-    EXPLAIN("%s: Fn % is %s preferred\n", reason, i, level);
+  if (actualType.type() != formalType.type()) {
+    if (actualType.hasParamPtr()) {
+      EXPLAIN("Actual requires param coercion to match formal %d\n", fnNum);
+    } else {
+      EXPLAIN("Actual requires coercion to match formal %d\n", fnNum);
+    }
   }
 }
-#endif
+
+
+/** Is the formal an instantiaton of the any-type, e.g.
+
+    proc f(arg)
+
+    or
+
+    proc g(arg: ?t = 3)
+ */
+static bool isFormalInstantiatedAny(const DisambiguationCandidate& candidate,
+                                    const FormalActual* fa) {
+
+  if (candidate.fn->instantiatedFrom() != nullptr) {
+    auto initial = candidate.fn->instantiatedFrom();
+    assert(initial->instantiatedFrom() == nullptr);
+
+    int formalIdx = fa->formalIdx();
+    const QualifiedType& qt = initial->formalType(formalIdx);
+
+    if (qt.type() && qt.type()->isAnyType())
+      return true;
+  }
+
+  return false;
+}
+
+/**
+ Is the formal partially generic, syntactically.
+
+ Some examples:
+
+    proc f(arg: [] int)
+    proc f(arg: GenericRecord(int, integral))
+    proc f(arg: (int, ?t))
+ */
+static bool isFormalPartiallyGeneric(const DisambiguationCandidate& candidate,
+                                     const FormalActual* fa) {
+  // TODO
+  return false;
+}
+
+typedef enum {
+  NUMERIC_TYPE_NON_NUMERIC,
+  NUMERIC_TYPE_BOOL,
+  NUMERIC_TYPE_ENUM,
+  NUMERIC_TYPE_INT_UINT,
+  NUMERIC_TYPE_REAL,
+  NUMERIC_TYPE_IMAG,
+  NUMERIC_TYPE_COMPLEX
+} numeric_type_t;
+
+static numeric_type_t classifyNumericType(const Type* t)
+{
+  if (t->isBoolType()) return NUMERIC_TYPE_BOOL;
+  if (t->isEnumType()) return NUMERIC_TYPE_ENUM;
+  if (t->isIntType()) return NUMERIC_TYPE_INT_UINT;
+  if (t->isUintType()) return NUMERIC_TYPE_INT_UINT;
+  if (t->isRealType()) return NUMERIC_TYPE_REAL;
+  if (t->isImagType()) return NUMERIC_TYPE_IMAG;
+  if (t->isComplexType()) return NUMERIC_TYPE_COMPLEX;
+
+  return NUMERIC_TYPE_NON_NUMERIC;
+}
+
+static bool isDefaultInt(const Type* t) {
+  if (auto tt = t->toIntType())
+    return tt->isDefaultWidth();
+
+  return false;
+}
+
+static bool isDefaultUint(const Type* t) {
+  if (auto tt = t->toUintType())
+    return tt->isDefaultWidth();
+
+  return false;
+}
+
+static bool isDefaultReal(const Type* t) {
+  if (auto tt = t->toRealType())
+    return tt->isDefaultWidth();
+
+  return false;
+}
+
+static bool isDefaultComplex(const Type* t) {
+  if (auto tt = t->toComplexType())
+    return tt->isDefaultWidth();
+
+  return false;
+}
+
+static int bitwidth(const Type* t) {
+  if (auto tt = t->toPrimitiveType())
+    return tt->bitwidth();
+
+  return 0;
+}
+
+// Returns 'true' if we should prefer passing actual to f1Type
+// over f2Type.
+// This method implements rules such as that a bool would prefer to
+// coerce to 'int' over 'int(8)'.
+static bool prefersConvToOtherNumeric(const DisambiguationContext& dctx,
+                                      QualifiedType actualQt,
+                                      QualifiedType f1Qt,
+                                      QualifiedType f2Qt) {
+
+  const Type* actualType = actualQt.type();
+  const Type* f1Type = f1Qt.type();
+  const Type* f2Type = f2Qt.type();
+
+  if (actualType != f1Type && actualType != f2Type) {
+    // Is there any preference among coercions of the built-in type?
+    // E.g., would we rather convert 'false' to :int or to :uint(8) ?
+
+    numeric_type_t aT = classifyNumericType(actualType);
+    numeric_type_t f1T = classifyNumericType(f1Type);
+    numeric_type_t f2T = classifyNumericType(f2Type);
+
+    bool aBoolEnum = (aT == NUMERIC_TYPE_BOOL || aT == NUMERIC_TYPE_ENUM);
+
+    // Prefer e.g. bool(w1) passed to bool(w2) over passing to int (say)
+    // Prefer uint(8) passed to uint(16) over passing to a real
+    if (aT == f1T && aT != f2T)
+      return true;
+    // Prefer bool/enum cast to int over uint
+    if (aBoolEnum && f1Type->isIntType() && f2Type->isUintType())
+      return true;
+    // Prefer bool/enum cast to default-sized int/uint over another
+    // size of int/uint
+    if (aBoolEnum &&
+        (isDefaultInt(f1Type) || isDefaultUint(f1Type)) &&
+        f2T == NUMERIC_TYPE_INT_UINT &&
+        !(isDefaultInt(f2Type) || isDefaultUint(f2Type)))
+      return true;
+    // Prefer bool/enum/int/uint cast to a default-sized real over another
+    // size of real or complex.
+    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
+        isDefaultReal(f1Type) &&
+        (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
+        !isDefaultReal(f2Type))
+      return true;
+    // Prefer bool/enum/int/uint cast to a default-sized complex over another
+    // size of complex.
+    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
+        isDefaultComplex(f1Type) &&
+        f2T == NUMERIC_TYPE_COMPLEX &&
+        !isDefaultComplex(f2Type))
+      return true;
+    // Prefer real/imag cast to a same-sized complex over another size of
+    // complex.
+    if ((aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) &&
+        f1T == NUMERIC_TYPE_COMPLEX &&
+        f2T == NUMERIC_TYPE_COMPLEX &&
+        bitwidth(actualType)*2 == bitwidth(f1Type) &&
+        bitwidth(actualType)*2 != bitwidth(f2Type))
+      return true;
+  }
+
+  return false;
+}
+
+
+static QualifiedType computeActualScalarType(Context* context,
+                                             QualifiedType actualType) {
+  // TODO: fill this in
+  assert(false && "not implemented yet");
+  return actualType;
+}
+
+static bool isNumericParamDefaultType(QualifiedType type) {
+  if (auto typePtr = type.type()) {
+    if (auto primType = typePtr->toPrimitiveType()) {
+      return primType->isDefaultWidth();
+    }
+  }
+
+  return false;
+}
+
+static bool moreSpecific(const DisambiguationContext& dctx,
+                         QualifiedType actualType, QualifiedType formalType) {
+  CanPassResult result = canPass(dctx.context, actualType, formalType);
+
+  return result.passes();
+}
 
 
 } // end namespace resolution
