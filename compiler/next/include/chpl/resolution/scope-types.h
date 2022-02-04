@@ -180,9 +180,11 @@ class BorrowedIdsWithName {
   /// \endcond DO_NOT_DOCUMENT
 };
 
-// DeclMap: key - string name,  value - vector of ID of a NamedDecl
-// Using an ID here prevents needing to recompute the Scope
-// if (say) something in the body of a Function changed
+/**
+  A DeclMap has key = string name, and value = vector of ID of a NamedDecl
+  Using an ID here prevents needing to recompute the Scope
+  if (say) something in the body of a Function changed.
+ */
 using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
 
 /**
