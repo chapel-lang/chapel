@@ -52,8 +52,13 @@ class UntypedFnSignature {
     bool hasDefaultValue = false;
     const uast::Decl* decl = nullptr;
 
-    FormalDetail(UniqueString name, bool hasDefault, const uast::Decl* decl)
-      : name(name), hasDefaultValue(hasDefault), decl(decl) { }
+    FormalDetail(UniqueString name,
+                 bool hasDefaultValue,
+                 const uast::Decl* decl)
+      : name(name),
+        hasDefaultValue(hasDefaultValue),
+        decl(decl)
+    { }
 
     bool operator==(const FormalDetail& other) const {
       return name == other.name &&
@@ -581,10 +586,7 @@ class TypedFnSignature {
     it was present in the SubstitutionsMap when instantiating.
    */
   bool formalIsInstantiated(int i) const {
-    if (0 <= i && (size_t) i < formalsInstantiated_.size())
-      return formalsInstantiated_[i];
-    else
-      return false;
+    return formalsInstantiated_[i];
   }
 
   /**
@@ -1050,18 +1052,22 @@ class FormalActualMap;
 class FormalActual {
  friend class FormalActualMap;
  private:
-  const uast::Decl* formal_ = nullptr;
   types::QualifiedType formalType_;
-  bool hasActual_ = false; // == false means uses formal default value
-  int actualIdx_ = -1;
   types::QualifiedType actualType_;
+  const uast::Decl* formal_ = nullptr;
+  int formalIdx_ = -1;
+  int actualIdx_ = -1;
+  bool hasActual_ = false; // == false means uses formal default value
+  bool formalInstantiated_ = false;
 
  public:
-  const uast::Decl* formal() const { return formal_; }
   const types::QualifiedType& formalType() const { return formalType_; }
-  bool hasActual() const { return hasActual_; }
-  int actualIdx() const { return actualIdx_; }
   const types::QualifiedType& actualType() const { return actualType_; }
+  const uast::Decl* formal() const { return formal_; }
+  int formalIdx() const { return formalIdx_; }
+  int actualIdx() const { return actualIdx_; }
+  bool hasActual() const { return hasActual_; }
+  bool formalInstantiated() const { return formalInstantiated_; }
 };
 
 /** FormalActualMap maps formals to actuals */
@@ -1097,7 +1103,6 @@ class FormalActualMap {
     assert(0 <= formalIdx && (size_t) formalIdx < byFormalIdx_.size());
     return byFormalIdx_[formalIdx];
   }
-
 
   /** get the FormalActual for a particular actual index,
       and returns nullptr if none was found. */
