@@ -4,8 +4,7 @@ import optparse
 import os
 import subprocess
 import sys
-
-from utils import which
+from shutil import which
 
 
 # ctags regexes
