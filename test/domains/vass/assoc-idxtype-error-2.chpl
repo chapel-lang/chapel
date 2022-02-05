@@ -1,5 +1,5 @@
 var d1 = [1..2];
-var a1: [d1] int; a1[1] = 555;
+var a1: [{d1}] int; a1[1] = 555;
 
 class C {
   var d;

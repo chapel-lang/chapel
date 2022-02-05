@@ -250,9 +250,9 @@ class ExpmPadeHelper {
   var useExactOneNorm : bool;
   // Boolean arrays to know if A, Exactd, Approxd
   // have been computed.
-  var isAComputed : ["A2", "A4", "A6", "A8", "A10"] bool;
-  var isExactdComputed : ["A4", "A6", "A8", "A10"] bool;
-  var isApproxdComputed : ["A4", "A6", "A8", "A10"] bool;
+  var isAComputed : [{"A2", "A4", "A6", "A8", "A10"}] bool;
+  var isExactdComputed : [{"A4", "A6", "A8", "A10"}] bool;
+  var isApproxdComputed : [{"A4", "A6", "A8", "A10"}] bool;
 
   /*
     :arg A: Expects an N*N square matrix.

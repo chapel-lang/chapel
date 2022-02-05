@@ -211,12 +211,23 @@ module ChapelDomain {
     return x;
   }
 
+  private proc chpl_checkForAnonAssocDom(dims) param : string {
+    for param i in 0..<dims.size do
+      if (!isRange(dims(i))) then
+        return dims(i).type:string;
+    return "";
+  }
+
   // pragma is a workaround for ref-pair vs generic/specific overload resolution
   pragma "compiler generated"
   pragma "last resort"
   proc chpl__ensureDomainExpr(x...) {
     // we are creating array with a range literal(s). So, the array's domain
     // cannot be changed anymore.
+    param dimType = chpl_checkForAnonAssocDom(x);
+    if dimType != "" then
+      compilerWarning("Anonymous associative domain literals without curly brackets are deprecated; please use curly brackets to create an associative domain of '" + dimType + "' indices");
+
     return chpl__buildDomainExpr((...x), definedConst=true);
   }
 
