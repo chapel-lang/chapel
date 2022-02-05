@@ -10258,8 +10258,10 @@ static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
     }
   }
 
+  /*
   if (retval != NULL)
     INT_ASSERT(retval->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
+  */
 
   tmp->defPoint->remove();
 
