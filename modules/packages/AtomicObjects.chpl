@@ -114,6 +114,7 @@
 
 */
 prototype module AtomicObjects {
+  use ChplConfig;
 
   if CHPL_TARGET_ARCH != "x86_64" {
     compilerWarning("The AtomicObjects package module cannot support CHPL_TARGET_ARCH=", CHPL_TARGET_ARCH, ", only x86_64 is supported.");

@@ -437,6 +437,8 @@ module Subprocess {
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
              param kind=iokind.dynamic, param locking=true) throws
   {
+    use ChplConfig;
+
     var stdin_fd:c_int = QIO_FD_FORWARD;
     var stdout_fd:c_int = QIO_FD_FORWARD;
     var stderr_fd:c_int = QIO_FD_FORWARD;

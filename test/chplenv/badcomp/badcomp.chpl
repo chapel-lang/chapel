@@ -1,4 +1,4 @@
-use Subprocess;
+use Subprocess, ChplConfig;
 
 param printchplenv = CHPL_HOME + "/util/printchplenv";
 
