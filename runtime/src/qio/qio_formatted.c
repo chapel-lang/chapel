@@ -4372,7 +4372,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
         // We always read 1 character at least.
         gotch = qio_channel_read_byte(false, ch);
         if( gotch < 0 ) {
-          err = qio_int_to_err(-got);
+          err = qio_int_to_err(-gotch);
           *chr = -1;
           break;
         }
