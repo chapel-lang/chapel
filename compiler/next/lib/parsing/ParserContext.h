@@ -310,6 +310,9 @@ struct ParserContext {
 
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
+  Expression* buildLetExpr(YYLTYPE location, ParserExprList* decls,
+                           Expression* expr);
+
   Expression* buildArrayTypeWithIndex(YYLTYPE location,
                                       YYLTYPE locIndexExprs,
                                       ParserExprList* indexExprs,

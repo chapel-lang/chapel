@@ -3284,7 +3284,9 @@ new_expr:
 
 let_expr:
   TLET var_decl_stmt_inner_ls TIN expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildLetExpr(@$, $2, $4);
+  }
 ;
 
 /* exprs represent valid values and types. Any expression with a valid

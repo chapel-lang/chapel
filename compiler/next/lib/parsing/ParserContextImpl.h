@@ -809,6 +809,16 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   return cs;
 }
 
+Expression*
+ParserContext::buildLetExpr(YYLTYPE location, ParserExprList* decls,
+                            Expression* expr) {
+  auto declExprs = consumeList(decls);
+  auto node = Let::build(builder, convertLocation(location),
+                         std::move(declExprs),
+                         toOwned(expr));
+  return node.release();
+}
+
 // This is the weird one. I can't even parse what is happening here...
 /*
 1920 | TLSBR expr_ls TIN expr TRSBR type_level_expr

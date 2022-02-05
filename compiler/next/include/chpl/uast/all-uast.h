@@ -60,6 +60,7 @@
 #include "chpl/uast/Include.h"
 #include "chpl/uast/IntLiteral.h"
 #include "chpl/uast/Label.h"
+#include "chpl/uast/Let.h"
 #include "chpl/uast/Literal.h"
 #include "chpl/uast/Local.h"
 #include "chpl/uast/Manage.h"

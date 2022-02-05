@@ -68,6 +68,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(Include)
   AST_NODE(Label)                      //
+  AST_NODE(Let)                        //
   AST_NODE(New)                        //
   AST_NODE(Range)                      //
   AST_NODE(Require)                    //

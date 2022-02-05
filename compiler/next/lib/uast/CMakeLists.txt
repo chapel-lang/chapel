@@ -67,6 +67,7 @@ target_sources(libchplcomp-obj
                IndexableLoop.cpp
                IntLiteral.cpp
                Label.cpp
+               Let.cpp
                Literal.cpp
                Local.cpp
                Loop.cpp

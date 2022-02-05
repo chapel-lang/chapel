@@ -70,6 +70,7 @@ NEXT_UAST_SRCS =                                 \
   IndexableLoop.cpp \
   IntLiteral.cpp \
   Label.cpp \
+  Let.cpp \
   Literal.cpp \
   Local.cpp \
   Loop.cpp \

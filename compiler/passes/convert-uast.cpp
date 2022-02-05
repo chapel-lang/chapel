@@ -728,6 +728,30 @@ struct Converter {
     return buildCobeginStmt(byrefVars, block);
   }
 
+  Expr* visit(const uast::Let* node) {
+    BlockStmt* decls = new BlockStmt(BLOCK_SCOPELESS);
+
+    for (auto decl : node->decls()) {
+      Expr* conv = nullptr;
+
+      if (auto var = decl->toVariable()) {
+        const bool useLinkageName = false;
+        conv = convertVariable(var, useLinkageName);
+      } else {
+        // TODO: Might need to do something different on this path.
+        conv = convertAST(decl);
+      }
+
+      INT_ASSERT(conv);
+      decls->insertAtTail(conv);
+    }
+
+    Expr* expr = convertAST(node->expression());
+    INT_ASSERT(expr);
+
+    return buildLetExpr(decls, expr);
+  }
+
   Expr* visit(const uast::Conditional* node) {
     assert(node->condition());
 
