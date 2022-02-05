@@ -59,6 +59,15 @@ static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
     assert(!ss.str().empty());
 }
 
+static void test0(Parser* parser) {
+  // stringify an empty Module
+  auto parseResult = parser->parseString("test0.chpl", "");
+  auto mod = parseResult.singleModule();
+  std::ostringstream ss;
+  mod->stringify(ss, CHPL_SYNTAX);
+  assert(!ss.str().empty());
+}
+
 static void test1(Parser* parser) {
   // the one test to rule them all
   std::string testCode;
@@ -235,6 +244,7 @@ int main(int argc, char** argv) {
 
   auto parser = Parser::build(ctx);
   Parser* p = parser.get();
+  test0(p);
   test1(p);
   test2(p);
 
