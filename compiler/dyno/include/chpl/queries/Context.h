@@ -56,7 +56,7 @@ also stores the results of queries (so that they are are memoized). It tracks
 dependencies of queries in order to update them appropriately when a dependency
 changes.
 
-Please see :ref:`Chapter-next-chpl-queries` for more information about how to
+Please see :ref:`Chapter-dyno-chpl-queries` for more information about how to
 implement queries and how the query framework functions.
 
 \endrst
