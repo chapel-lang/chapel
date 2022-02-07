@@ -1,3 +1,5 @@
+use ChplConfig;
+
 const outdir = "savec_output";
 const filename = "savec.chpl";
 
