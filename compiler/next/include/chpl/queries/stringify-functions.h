@@ -36,6 +36,7 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <set>
 #include <sstream>
 #include <string>
@@ -105,7 +106,7 @@ static inline void defaultStringifyVec(std::ostream& streamOut,
   }
 }
 
-// stringify a map by stringifying each key, value pair
+// stringify an unordered map by stringifying each key, value pair
 // uses {k1: v1, k2: v2} formatting
 template<typename K, typename V>
 static inline void defaultStringifyMap(std::ostream& streamOut,
@@ -127,16 +128,43 @@ static inline void defaultStringifyMap(std::ostream& streamOut,
     std::sort(mapVec.begin(), mapVec.end());
     for (auto const& x : mapVec)
     {
-      streamOut << separator
-                << keyString(stringKind, x.first)
-                << ": "
-                << valString(stringKind, x.second);
+      streamOut << separator;
+      keyString(streamOut, stringKind, x.first);
+      streamOut << ": ";
+      valString(streamOut, stringKind, x.second);
 
       separator = ", ";
     }
     streamOut << "}";
   }
 }
+
+// stringify a map by stringifying each key, value pair
+// uses {k1: v1, k2: v2} formatting
+  template<typename K, typename V>
+  static inline void defaultStringifyMap(std::ostream& streamOut,
+                                         StringifyKind stringKind,
+                                         const std::map<K,V>& stringMap)
+  {
+    if (stringMap.size() == 0) {
+      streamOut << "{ }";
+    } else {
+      std::string separator;
+      stringify<K> keyString;
+      stringify<V> valString;
+      streamOut << "{";
+      for (auto const& x : stringMap)
+      {
+        streamOut << separator;
+        keyString(streamOut, stringKind, x.first);
+        streamOut << ": ";
+        valString(streamOut, stringKind, x.second);
+
+        separator = ", ";
+      }
+      streamOut << "}";
+    }
+  }
 
 // stringify a set by stringifying each element; uses {a, b, c} formatting
 template<typename T>
@@ -170,10 +198,10 @@ static inline void defaultStringifyTuple(std::ostream& streamOut,
     // std::decay_t<decltype(x)> to get the type, so we can instantiate
     // the proper stringify struct
     chpl::stringify<std::decay_t<decltype(elem)>> stringifier;
-    stringifier(streamOut, stringKind, elem);
     if (printsep) {
       streamOut << ", ";
     }
+    stringifier(streamOut, stringKind, elem);
   };
 
   streamOut << "(";
@@ -326,6 +354,14 @@ template<typename K, typename V> struct stringify<std::unordered_map<K,V>> {
                  const std::unordered_map<K,V>& stringMe) const {
    defaultStringifyMap(streamOut, stringKind, stringMe);
  }
+};
+
+template<typename K, typename V> struct stringify<std::map<K,V>> {
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
+                  const std::map<K,V>& stringMe) const {
+    defaultStringifyMap(streamOut, stringKind, stringMe);
+  }
 };
 
 template<typename A, typename B> struct stringify<std::pair<A,B>> {
