@@ -73,6 +73,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/ChapelEnv.chpl \
 	standard/ChapelIO.chpl \
+	standard/ChplConfig.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/CPtr.chpl \
 	standard/DateTime.chpl \
