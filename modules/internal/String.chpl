@@ -1137,7 +1137,7 @@ module String {
 
         if localRet == -2 {
           localRet = -1;
-          const localNeedle: string = pattern.localize();
+          const localPattern: string = pattern.localize();
 
           // i *is not* an index into anything, it is the order of the element
           // of view we are searching from.
@@ -1147,10 +1147,10 @@ module String {
               else 0..#(numPossible) by -1;
           //          writeln("view is ", view);
           for i in searchSpace {
-            // j *is* the index into the localNeedle's buffer
+            // j *is* the index into the localPattern's buffer
             for j in 0..#nLen {
               const idx = view.orderToIndex(i+j); // 0s based idx
-              if this.buff[idx] != localNeedle.buff[j] then break;
+              if this.buff[idx] != localPattern.buff[j] then break;
 
               if j == nLen-1 {
                 if count {
@@ -1615,11 +1615,6 @@ module String {
     return this.buffLen == 0; // this should be enough of a check
   }
 
-  pragma "last resort"
-  deprecated "startsWith with needles argument is deprecated, use patterns instead"
-  inline proc string.startsWith(patterns: string ...) : bool {
-    return this.startsWith(patterns);
-  }
   /*
     :arg patterns: A varargs list of strings to match against.
 
@@ -1630,11 +1625,6 @@ module String {
     return startsEndsWith(this, patterns, fromLeft=true);
   }
 
-  pragma "last resort"
-  deprecated "endsWith with needles argument is deprecated, use patterns instead"
-  inline proc string.endsWith(needles: string ...) : bool {
-    return this.endsWith(needles);
-  }
   /*
     :arg patterns: A varargs list of strings to match against.
 
