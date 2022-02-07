@@ -28,9 +28,9 @@ log = partial(print, file=sys.stderr)
 methods_of_interest = {'operator==', 'mark', 'update', 'swap', 'hash'}
 
 # What dirs do we need to pass with -I
-include_dirs = ['compiler/next/include', 'compiler/include']
+include_dirs = ['compiler/dyno/include', 'compiler/include']
 
-lib_dir = Path('compiler/next/lib')
+lib_dir = Path('compiler/dyno/lib')
 
 # What lib dirs dirs do we look in for .cpp files to check
 lib_dirs = [
@@ -135,7 +135,7 @@ def class_defined_in_our_project(node):
     return ('name' in node and
             node.get('completeDefinition', False) and
             ('includedFrom' not in node.get('loc', {}) or
-             node['loc']['includedFrom']['file'].startswith('compiler/next')
+             node['loc']['includedFrom']['file'].startswith('compiler/dyno')
              )
             )
 
@@ -311,10 +311,10 @@ if __name__ == '__main__':
         args.jobs = multiprocessing.cpu_count()
 
     if args.only_changed:
-        next_includes = Path('compiler/next/include')
+        next_includes = Path('compiler/dyno/include')
         changed_files = files_changed()
         # Check the cpp files that have changed we would check by default
-        # And also include any header that changed in compiler/next/include
+        # And also include any header that changed in compiler/dyno/include
         args.files = (set(args.files) & changed_files) | {x for x in changed_files if x.is_relative_to(next_includes)}
 
         if args.files:

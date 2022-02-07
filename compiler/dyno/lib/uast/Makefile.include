@@ -16,9 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_UAST_OBJDIR = $(COMPILER_BUILD)/next/lib/uast
+NEXT_UAST_OBJDIR = $(COMPILER_BUILD)/dyno/lib/uast
 
-ALL_SRCS += next/lib/uast/*.cpp
+ALL_SRCS += dyno/lib/uast/*.cpp
 
 NEXT_UAST_SRCS =                                 \
   AggregateDecl.cpp \

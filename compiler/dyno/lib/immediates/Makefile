@@ -16,11 +16,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Release
-LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/next/Release
-ifdef CHPL_DEVELOPER
-  LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Debug
-  LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/next/Debug
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../../../..
 endif
 
-CHPL_COMP_LIB = $(LIBCOMPILER_BUILD_DIR)/lib/liblibchplcomp.a
+COMPILER_ROOT = ../../..
+COMPILER_SUBDIR = dyno/lib/immediates
+
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
+
+include Makefile.include
+
+TARGETS = $(NEXT_IMMEDIATES_OBJS)
+
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot

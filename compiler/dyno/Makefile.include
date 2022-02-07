@@ -16,27 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Release
+LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/dyno/Release
+ifdef CHPL_DEVELOPER
+  LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Debug
+  LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/dyno/Debug
 endif
 
-COMPILER_ROOT = ../../..
-COMPILER_SUBDIR = next/lib/queries
-
-#
-# standard header
-#
-include $(COMPILER_ROOT)/make/Makefile.compiler.head
-
-include Makefile.include
-
-TARGETS = $(NEXT_QUERIES_OBJS)
-
-include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
-
-FORCE:
-
-#
-# standard footer
-#
-include $(COMPILER_ROOT)/make/Makefile.compiler.foot
+CHPL_COMP_LIB = $(LIBCOMPILER_BUILD_DIR)/lib/liblibchplcomp.a

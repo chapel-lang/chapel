@@ -59,7 +59,7 @@ help-source:
 
 docs: FORCE
 	@COMP_DOCS_ERROR=0 ; \
-	(cd ../compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs) || \
+	(cd ../compiler/dyno && $(MAKE) -f Makefile.help libchplcomp-docs) || \
 	 COMP_DOCS_ERROR=1 ; \
 	$(MAKE) html-release && \
 	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
@@ -193,7 +193,7 @@ clean-symlinks: FORCE
 	find $(SOURCEDIR) -type l -delete
 
 clean-doxygen: FORCE
-	cd ../compiler/next && $(MAKE) -f Makefile.help clean-libchplcomp-docs
+	cd ../compiler/dyno && $(MAKE) -f Makefile.help clean-libchplcomp-docs
 
 FORCE:
 

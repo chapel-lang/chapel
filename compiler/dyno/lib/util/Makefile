@@ -16,19 +16,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_QUERIES_OBJDIR = $(COMPILER_BUILD)/next/lib/queries
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+endif
 
-ALL_SRCS += next/lib/queries/*.cpp
+COMPILER_ROOT = ../../..
+COMPILER_SUBDIR = dyno/lib/util
 
-NEXT_QUERIES_SRCS =                                 \
-           Context.cpp                              \
-           ErrorMessage.cpp                         \
-           ID.cpp                                   \
-           Location.cpp                             \
-           UniqueString.cpp                         \
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
+include Makefile.include
 
-SRCS = $(NEXT_QUERIES_SRCS)
+TARGETS = $(NEXT_UTIL_OBJS)
 
-NEXT_QUERIES_OBJS = \
-	$(NEXT_QUERIES_SRCS:%.cpp=$(NEXT_QUERIES_OBJDIR)/%.$(OBJ_SUFFIX))
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+
+$(NEXT_UTIL_OBJDIR)/my_aligned_alloc.o: my_aligned_alloc.c $(OBJ_SUBDIR_MADE)
+	$(CC) -c $(COMP_CFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ $<
+
+$(NEXT_UTIL_OBJDIR)/my_strerror_r.o: my_strerror_r.c $(OBJ_SUBDIR_MADE)
+	$(CC) -c $(COMP_CFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ $<
+
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot

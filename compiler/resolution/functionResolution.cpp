@@ -72,7 +72,7 @@
 
 #include "global-ast-vecs.h"
 
-#include "../next/lib/immediates/prim_data.h"
+#include "../dyno/lib/immediates/prim_data.h"
 
 #include <algorithm>
 #include <cmath>

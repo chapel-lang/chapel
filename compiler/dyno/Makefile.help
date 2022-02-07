@@ -21,7 +21,7 @@ export CHPL_MAKE_HOME=$(shell pwd)/../..
 endif
 
 COMPILER_ROOT = ..
-COMPILER_SUBDIR = next
+COMPILER_SUBDIR = dyno
 
 # disable -MMD etc because cmake already specifies it
 NO_DEPEND = 1
@@ -40,7 +40,7 @@ $(LIBCOMPILER_BUILD_DIR):
 	@echo "Configuring the compiler library..."
 	@mkdir -p $(LIBCOMPILER_BUILD_DIR)
 	cd $(LIBCOMPILER_BUILD_DIR) && \
-	  $(CMAKE) $(CHPL_MAKE_HOME)/compiler/next \
+	  $(CMAKE) $(CHPL_MAKE_HOME)/compiler/dyno \
 	    $(LIB_CMAKE_ARG) \
 	    -DCMAKE_C_COMPILER='$(CC)' \
 	    -DCMAKE_C_FLAGS='$(WARN_CFLAGS)' \

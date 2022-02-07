@@ -16,21 +16,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_RESOLUTION_OBJDIR = $(COMPILER_BUILD)/next/lib/resolution
+NEXT_UTIL_OBJDIR = $(COMPILER_BUILD)/dyno/lib/util
 
-ALL_SRCS += next/lib/resolution/*.cpp
+ALL_SRCS += dyno/lib/util/*.cpp
 
-NEXT_RESOLUTION_SRCS =                              \
-           can-pass.cpp                             \
-           disambiguation.cpp                       \
-           intents.cpp                              \
-           resolution-queries.cpp                   \
-           resolution-types.cpp                     \
-           scope-queries.cpp                        \
-           scope-types.cpp                          \
+NEXT_UTIL_SRCS =                                 \
+  bitmap.cpp \
+  break.cpp \
+  filesystem.cpp \
+  string-escapes.cpp \
 
 
-SRCS = $(NEXT_RESOLUTION_SRCS)
+SRCS = $(NEXT_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c
 
-NEXT_RESOLUTION_OBJS = \
-	$(NEXT_RESOLUTION_SRCS:%.cpp=$(NEXT_RESOLUTION_OBJDIR)/%.$(OBJ_SUFFIX))
+NEXT_UTIL_OBJS = \
+	$(NEXT_UTIL_SRCS:%.cpp=$(NEXT_UTIL_OBJDIR)/%.$(OBJ_SUFFIX)) \
+        $(NEXT_UTIL_OBJDIR)/my_aligned_alloc.o \
+        $(NEXT_UTIL_OBJDIR)/my_strerror_r.o \
+

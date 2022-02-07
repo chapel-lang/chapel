@@ -16,9 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_PARSING_OBJDIR = $(COMPILER_BUILD)/next/lib/parsing
+NEXT_PARSING_OBJDIR = $(COMPILER_BUILD)/dyno/lib/parsing
 
-ALL_SRCS += next/lib/parsing/*.cpp
+ALL_SRCS += dyno/lib/parsing/*.cpp
 
 NEXT_PARSING_SRCS =                                 \
            bison-chpl-lib.cpp                       \

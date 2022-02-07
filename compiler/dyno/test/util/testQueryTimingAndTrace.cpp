@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
 
   printf("Wrote trace to %s\n", outPath);
 
-  std::string command = "$CHPL_HOME/compiler/next/util/analyze-query-trace ";
+  std::string command = "$CHPL_HOME/compiler/dyno/util/analyze-query-trace ";
   command += outPath;
   command += " --dot-png /tmp/chpl-queries.png";
   command += " --collapse";

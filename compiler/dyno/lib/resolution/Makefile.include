@@ -16,27 +16,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/../../../..
-endif
+NEXT_RESOLUTION_OBJDIR = $(COMPILER_BUILD)/dyno/lib/resolution
 
-COMPILER_ROOT = ../../..
-COMPILER_SUBDIR = next/lib/parsing
+ALL_SRCS += dyno/lib/resolution/*.cpp
 
-#
-# standard header
-#
-include $(COMPILER_ROOT)/make/Makefile.compiler.head
+NEXT_RESOLUTION_SRCS =                              \
+           can-pass.cpp                             \
+           disambiguation.cpp                       \
+           intents.cpp                              \
+           resolution-queries.cpp                   \
+           resolution-types.cpp                     \
+           scope-queries.cpp                        \
+           scope-types.cpp                          \
 
-include Makefile.include
 
-TARGETS = $(NEXT_PARSING_OBJS)
+SRCS = $(NEXT_RESOLUTION_SRCS)
 
-include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
-
-FORCE:
-
-#
-# standard footer
-#
-include $(COMPILER_ROOT)/make/Makefile.compiler.foot
+NEXT_RESOLUTION_OBJS = \
+	$(NEXT_RESOLUTION_SRCS:%.cpp=$(NEXT_RESOLUTION_OBJDIR)/%.$(OBJ_SUFFIX))

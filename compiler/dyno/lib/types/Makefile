@@ -16,21 +16,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_UTIL_OBJDIR = $(COMPILER_BUILD)/next/lib/util
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+endif
 
-ALL_SRCS += next/lib/util/*.cpp
+COMPILER_ROOT = ../../..
+COMPILER_SUBDIR = dyno/lib/types
 
-NEXT_UTIL_SRCS =                                 \
-  bitmap.cpp \
-  break.cpp \
-  filesystem.cpp \
-  string-escapes.cpp \
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
+include Makefile.include
 
-SRCS = $(NEXT_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c
+TARGETS = $(NEXT_TYPES_OBJS)
 
-NEXT_UTIL_OBJS = \
-	$(NEXT_UTIL_SRCS:%.cpp=$(NEXT_UTIL_OBJDIR)/%.$(OBJ_SUFFIX)) \
-        $(NEXT_UTIL_OBJDIR)/my_aligned_alloc.o \
-        $(NEXT_UTIL_OBJDIR)/my_strerror_r.o \
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot

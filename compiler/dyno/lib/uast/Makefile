@@ -21,7 +21,7 @@ export CHPL_MAKE_HOME=$(shell pwd)/../../../..
 endif
 
 COMPILER_ROOT = ../../..
-COMPILER_SUBDIR = next/lib/resolution
+COMPILER_SUBDIR = dyno/lib/uast
 
 #
 # standard header
@@ -30,7 +30,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 include Makefile.include
 
-TARGETS = $(NEXT_RESOLUTION_OBJS)
+TARGETS = $(NEXT_UAST_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

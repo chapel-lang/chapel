@@ -16,9 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_TYPES_OBJDIR = $(COMPILER_BUILD)/next/lib/types
+NEXT_TYPES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/types
 
-ALL_SRCS += next/lib/types/*.cpp
+ALL_SRCS += dyno/lib/types/*.cpp
 
 NEXT_TYPES_SRCS =                                 \
   AnyType.cpp \

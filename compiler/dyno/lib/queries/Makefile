@@ -16,16 +16,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_IMMEDIATES_OBJDIR = $(COMPILER_BUILD)/next/lib/immediates
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+endif
 
-ALL_SRCS += next/lib/immediates/*.cpp
+COMPILER_ROOT = ../../..
+COMPILER_SUBDIR = dyno/lib/queries
 
-NEXT_IMMEDIATES_SRCS =                              \
-           ifa_vars.cpp                             \
-           hash_multipliers.cpp                     \
-           num.cpp                                  \
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-SRCS = $(NEXT_IMMEDIATES_SRCS)
+include Makefile.include
 
-NEXT_IMMEDIATES_OBJS = \
-	$(NEXT_IMMEDIATES_SRCS:%.cpp=$(NEXT_IMMEDIATES_OBJDIR)/%.$(OBJ_SUFFIX))
+TARGETS = $(NEXT_QUERIES_OBJS)
+
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot

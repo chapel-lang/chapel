@@ -71,7 +71,7 @@ notcompiler: FORCE
 
 libchplcomp: FORCE
 	@echo "Making the compiler library..."
-	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp
+	@cd compiler/dyno && $(MAKE) -f Makefile.help libchplcomp
 
 compiler: FORCE
 	@echo "Making the compiler..."
