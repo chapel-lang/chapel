@@ -31,9 +31,11 @@ accessible through the built-in parameters shown below. This information
 can also be displayed from the command line by executing the compiled
 program with the ``--about`` flag.
 
+.. warning::
+
+    This module has been deprecated - please use :mod:`Subprocess` instead.
  */
 pragma "module included by default"
-deprecated "The ChapelEnv module is deprecated. Please see :mod:`ChplConfig` instead."
 module ChapelEnv {
   private use String;
   private use ChapelStandard;
