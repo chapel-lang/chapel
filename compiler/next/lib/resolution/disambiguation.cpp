@@ -50,12 +50,16 @@ struct DisambiguationContext {
   Context* context = nullptr;
   const CallInfo* call = nullptr;
   const Scope* callInScope = nullptr;
+  const PoiScope* callInPoiScope = nullptr;
   bool explain = false;
   DisambiguationContext(Context* context,
                         const CallInfo* call,
                         const Scope* callInScope,
+                        const PoiScope* callInPoiScope,
                         bool explain)
-    : context(context), call(call), callInScope(callInScope), explain(explain)
+    : context(context), call(call),
+      callInScope(callInScope), callInPoiScope(callInPoiScope),
+      explain(explain)
   {
   }
 };
@@ -94,7 +98,10 @@ enum MoreVisibleResult {
         if (dctx.explain) fprintf(stderr, __VA_ARGS__)
 
 #define EXPLAIN_DUMP(thing) \
-        if (dctx.explain) (thing)->dump(StringifyKind::CHPL_SYNTAX);
+        if (dctx.explain) { \
+          (thing)->dump(StringifyKind::CHPL_SYNTAX); \
+          fprintf(stderr, "\n"); \
+        }
 
 #else
 
@@ -326,12 +333,16 @@ static const MostSpecificCandidates&
 findMostSpecificCandidatesQuery(Context* context,
                                 std::vector<const TypedFnSignature*> lst,
                                 CallInfo call,
-                                const Scope* callInScope) {
-  QUERY_BEGIN(findMostSpecificCandidatesQuery, context, lst, call, callInScope);
+                                const Scope* callInScope,
+                                const PoiScope* callInPoiScope) {
+  QUERY_BEGIN(findMostSpecificCandidatesQuery, context,
+              lst, call, callInScope, callInPoiScope);
 
   // Construct the DisambuguationContext
-  bool explain = false;
-  DisambiguationContext dctx(context, &call, callInScope, explain);
+  bool explain = true;
+  DisambiguationContext dctx(context, &call,
+                             callInScope, callInPoiScope,
+                             explain);
 
   // Compute all of the FormalActualMaps now
   std::vector<const DisambiguationCandidate*> candidates;
@@ -358,7 +369,8 @@ MostSpecificCandidates
 findMostSpecificCandidates(Context* context,
                            const std::vector<const TypedFnSignature*>& lst,
                            const CallInfo& call,
-                           const Scope* callInScope) {
+                           const Scope* callInScope,
+                           const PoiScope* callInPoiScope) {
   if (lst.size() == 0) {
     // nothing to do, return no candidates
     return MostSpecificCandidates::getEmpty();
@@ -373,7 +385,8 @@ findMostSpecificCandidates(Context* context,
   // run the query to handle the more complex case
   // TODO: is it worth storing this in a query? Or should
   // we recompute it each time?
-  return findMostSpecificCandidatesQuery(context, lst, call, callInScope);
+  return findMostSpecificCandidatesQuery(context, lst, call,
+                                         callInScope, callInPoiScope);
 }
 
 /*
@@ -598,6 +611,32 @@ static int compareSpecificity(const DisambiguationContext& dctx,
 }
 
 static MoreVisibleResult
+checkVisibilityInVec(Context* context,
+                     const std::vector<BorrowedIdsWithName>& vec,
+                     ID fn1Id,
+                     ID fn2Id) {
+  bool found1 = false;
+  bool found2 = false;
+  for (const auto& borrowedIds : vec) {
+    for (const auto& id : borrowedIds) {
+      if (id == fn1Id) found1 = true;
+      if (id == fn2Id) found2 = true;
+    }
+  }
+
+  if (found1 || found2) {
+    if (found1 && found2)
+      return MoreVisibleResult::FOUND_BOTH;
+    if (found1)
+      return MoreVisibleResult::FOUND_F1_FIRST;
+    if (found2)
+      return MoreVisibleResult::FOUND_F2_FIRST;
+  }
+
+  return MoreVisibleResult::FOUND_NEITHER;
+}
+
+static MoreVisibleResult
 computeIsMoreVisible(Context* context,
                      UniqueString callName,
                      const Scope* callInScope,
@@ -606,32 +645,31 @@ computeIsMoreVisible(Context* context,
 
   // TODO: This might be over-simplified -- see issue #19167
 
-  LookupConfig config = LOOKUP_DECLS |
-                        LOOKUP_IMPORT_AND_USE;
+  LookupConfig onlyDecls = LOOKUP_DECLS;
+  LookupConfig importAndUse = LOOKUP_IMPORT_AND_USE;
 
   // Go up scopes to figure out which of the two IDs is
   // declared first / innermost
   for (auto curScope = callInScope;
        curScope != nullptr;
        curScope = curScope->parentScope()) {
-    auto vec = lookupNameInScope(context, curScope, callName, config);
 
-    bool found1 = false;
-    bool found2 = false;
-    for (const auto& borrowedIds : vec) {
-      for (const auto& id : borrowedIds) {
-        if (id == fn1Id) found1 = true;
-        if (id == fn2Id) found2 = true;
-      }
+    auto decls = lookupNameInScope(context, curScope, callName, onlyDecls);
+    auto declVis = checkVisibilityInVec(context, decls, fn1Id, fn2Id);
+    if (declVis != MoreVisibleResult::FOUND_NEITHER) {
+      return declVis;
     }
 
-    if (found1 || found2) {
-      if (found1 && found2)
-        return MoreVisibleResult::FOUND_BOTH;
-      if (found1)
-        return MoreVisibleResult::FOUND_F1_FIRST;
-      if (found2)
-        return MoreVisibleResult::FOUND_F2_FIRST;
+    // otherwise, check also in use/imports
+    if (curScope->containsUseImport()) {
+      // TODO: this does not handle
+      // use M putting M in a nearer scope than something called M
+      // within the used module.
+      auto more = lookupNameInScope(context, curScope, callName, importAndUse);
+      auto importUseVis = checkVisibilityInVec(context, more, fn1Id, fn2Id);
+      if (importUseVis != MoreVisibleResult::FOUND_NEITHER) {
+        return importUseVis;
+      }
     }
   }
 
@@ -642,13 +680,26 @@ static const MoreVisibleResult&
 moreVisibleQuery(Context* context,
                  UniqueString callName,
                  const Scope* callInScope,
+                 const PoiScope* callInPoiScope,
                  ID fn1Id,
                  ID fn2Id) {
   QUERY_BEGIN(moreVisibleQuery, context,
-              callName, callInScope, fn1Id, fn2Id);
+              callName, callInScope, callInPoiScope,
+              fn1Id, fn2Id);
 
   MoreVisibleResult result =
     computeIsMoreVisible(context, callName, callInScope, fn1Id, fn2Id);
+
+  for (const PoiScope* curPoi = callInPoiScope;
+       curPoi != nullptr;
+       curPoi = curPoi->inFnPoi()) {
+    // stop if we have found one of them
+    if (result != FOUND_NEITHER)
+      break;
+
+    result = computeIsMoreVisible(context, callName, curPoi->inScope(),
+                                  fn1Id, fn2Id);
+  }
 
   return QUERY_END(result);
 }
@@ -661,13 +712,13 @@ static MoreVisibleResult
 moreVisible(const DisambiguationContext& dctx,
             const DisambiguationCandidate& candidate1,
             const DisambiguationCandidate& candidate2) {
-  // Get the scopes for call, fn1, fn2
   UniqueString callName = dctx.call->name();
-  const Scope* callInScope = dctx.callInScope;
   ID fn1Id = candidate1.fn->id();
   ID fn2Id = candidate2.fn->id();
 
-  return moreVisibleQuery(dctx.context, callName, callInScope, fn1Id, fn2Id);
+  return moreVisibleQuery(dctx.context, callName,
+                          dctx.callInScope, dctx.callInPoiScope,
+                          fn1Id, fn2Id);
 }
 
 

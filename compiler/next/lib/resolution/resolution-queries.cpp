@@ -630,8 +630,23 @@ struct Resolver {
     r.setPoiScope(c.poiInfo().poiScope());
     r.setType(c.exprType());
 
-    if (r.type().type() == nullptr) {
-      context->error(call, "Cannot establish type for call expression");
+    if (r.type().type() != nullptr) {
+      // assume it is OK even if mostSpecific is empty
+      // (e.g. it could be a primitive or other builtin operation)
+    } else {
+
+      if (c.mostSpecific().isEmpty()) {
+        // if the call resolution result is empty, we need to issue an error
+        if (c.mostSpecific().isAmbiguous()) {
+          // ambiguity between candidates
+          context->error(call, "Cannot resolve call: ambiguity");
+        } else {
+          // could not find a most specific candidate
+          context->error(call, "Cannot resolve call: no matching candidates");
+        }
+      } else {
+        context->error(call, "Cannot establish type for call expression");
+      }
       r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
     }
 
@@ -2431,7 +2446,8 @@ CallResolutionResult resolveFnCall(Context* context,
   MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
                                                                    candidates,
                                                                    ci,
-                                                                   inScope);
+                                                                   inScope,
+                                                                   inPoiScope);
 
   // note any most specific candidates from POI in poiFnIdsUsed.
   {

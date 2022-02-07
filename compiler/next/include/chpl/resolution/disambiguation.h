@@ -27,15 +27,19 @@ namespace resolution {
 
 
 /**
-  Given the result of filterCandidatesInstantiating, run
-  overload resolution aka disambiguation
-  to determine the most specific functions.
+  Given the result of filterCandidatesInstantiating, run overload
+  resolution aka disambiguation to determine the most specific functions.
+
+  If a most specific function cannot be found due to ambiguity,
+  returns an empty MostSpecificCandidates that also tracks the fact
+  there was an ambiguity (so it can be differentiated from no candidates).
  */
 MostSpecificCandidates
 findMostSpecificCandidates(Context* context,
                            const std::vector<const TypedFnSignature*>& lst,
                            const CallInfo& call,
-                           const Scope* callInScope);
+                           const Scope* callInScope,
+                           const PoiScope* callInPoiScope);
 
 
 } // end namespace resolution

@@ -737,11 +737,32 @@ class MostSpecificCandidates {
     return ret;
   }
 
+  /**
+    Returns true if there are no most specific candidates.
+   */
+  bool isEmpty() const {
+    return numBest() == 0;
+  }
+
+  /**
+    Returns true if there are no most specific candidates due to ambiguity.
+   */
+  bool isAmbiguous() const {
+    // if emptyDueToAmbiguity is set, isEmpty should return true
+    assert(!emptyDueToAmbiguity || isEmpty());
+
+    return emptyDueToAmbiguity;
+  }
+
   bool operator==(const MostSpecificCandidates& other) const {
     for (int i = 0; i < NUM_INTENTS; i++) {
       if (candidates[i] != other.candidates[i])
         return false;
     }
+
+    if (emptyDueToAmbiguity != other.emptyDueToAmbiguity)
+      return false;
+
     return true;
   }
   bool operator!=(const MostSpecificCandidates& other) const {
@@ -751,6 +772,7 @@ class MostSpecificCandidates {
     for (int i = 0; i < NUM_INTENTS; i++) {
       std::swap(candidates[i], other.candidates[i]);
     }
+    std::swap(emptyDueToAmbiguity, other.emptyDueToAmbiguity);
   }
   static bool update(MostSpecificCandidates& keep,
                      MostSpecificCandidates& addin) {
@@ -760,6 +782,7 @@ class MostSpecificCandidates {
     for (const TypedFnSignature* sig : *this) {
       context->markPointer(sig);
     }
+    (void) emptyDueToAmbiguity; // no mark needed for bool
   }
 };
 
