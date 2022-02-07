@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Ignore line numbers in modules.
+
+# This is derived from test/library/packages/Sort/errors/PREDIFF
+# There and in many other prediffs, the match pattern is /:[0-9:]*:/
+# Here we drop : inside [] because it is not needed.
+
+sed '\|CHPL_HOME/modules|s/:[0-9]*:/:nnnn:/' $2 > $2.tmp
+mv $2.tmp $2
