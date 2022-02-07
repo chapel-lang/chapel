@@ -578,7 +578,7 @@ static bool maybeVolatile(SymExpr* se)
   // See Note #1.
 
   // The function containing the SymExpr referencing the variable.
-  Symbol* fn = se->parentSymbol; 
+  Symbol* fn = se->parentSymbol;
   // Where the variable is defined.
   Symbol* defScope = se->symbol()->defPoint->parentSymbol;
   if (defScope != fn)
@@ -723,7 +723,7 @@ static void destroyPairSet(std::vector<BitVec*> set)
 // one long vector: availablePairs.
 // The ending index for each block is stored in ends[i].
 static void extractAvailablePairs(FnSymbol* fn,
-                                  std::vector<AvailablePair>& availablePairs, 
+                                  std::vector<AvailablePair>& availablePairs,
                                   std::vector<size_t>& ends)
 {
   std::set<Symbol*> liveRefs;
@@ -800,7 +800,7 @@ static void initCopySets(std::vector<BitVec*>& COPY, std::vector<size_t>& ends,
                          size_t nbbs)
 {
   size_t j = 0;
-  for(size_t i = 0; i < nbbs; ++i) 
+  for(size_t i = 0; i < nbbs; ++i)
   {
     // Initialize each copy set: Just set the string of bits corresponding to
     // the pairs generated in block i.
@@ -1003,7 +1003,7 @@ void copyPropagation(void) {
 //# pessimistic to prevent copy propagation merely because a variable is
 //# shared.  Copy propagation assumes that the value has not changed, which is
 //# tantamount to delaying recognition of an external change.  In many
-//# routines, this delay is acceptable and may result in simpler code.  
+//# routines, this delay is acceptable and may result in simpler code.
 //# One place where the delay would not be acceptable is in a tight loop that
 //# is waiting for the named variable to change.  In that case, CP might
 //# replace the variable with a constant, and execution will get stuck in an

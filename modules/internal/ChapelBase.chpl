@@ -1156,7 +1156,7 @@ module ChapelBase {
     use ChplConfig;
     return ChplConfig.CHPL_NETWORK_ATOMICS != "none";
   }
-  
+
   // Parent class for _EndCount instances so that it's easy
   // to add non-generic fields here.
   // And to get 'errors' field from any generic instantiation.

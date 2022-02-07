@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -227,7 +227,7 @@ static inline type atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_o
 } \
 static inline type atomic_load_ ## type(atomic_ ## type * obj) { \
   return atomic_load_explicit_ ## type(obj, memory_order_seq_cst); \
-} 
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -270,7 +270,7 @@ static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ #
 } \
 static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type * expected, type desired) { \
   return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
-} 
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -319,7 +319,7 @@ static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand
 } \
 
 
-// Actually declare the atomics for integer and real types using the above macros 
+// Actually declare the atomics for integer and real types using the above macros
 DECLARE_ATOMICS_BASE(bool, chpl_bool);
 DECLARE_ATOMICS_EXCHANGE_OPS(bool, chpl_bool);
 

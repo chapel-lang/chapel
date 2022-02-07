@@ -32,7 +32,7 @@
 
 static size_t s_ref_repl_count; ///< The number of references replaced this pass.
 
-// If there is exactly one definition of var by something of reference type, 
+// If there is exactly one definition of var by something of reference type,
 // then return the call that defines it.
 // Otherwise, return NULL.
 static CallExpr*
@@ -273,7 +273,7 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
     }
   }
 
-  // Build def/use maps across all symexprs in the function, 
+  // Build def/use maps across all symexprs in the function,
   // but restricted to only the ref variables therein.
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;

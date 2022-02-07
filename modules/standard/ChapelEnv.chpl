@@ -42,7 +42,7 @@ module ChapelEnv {
                     "ChplConfig' in order to access 'CHPL_*' params",
                     errorDepth=2);
   }
-  
+
   /* See :ref:`readme-chplenv.CHPL_HOME` for more information. */
   pragma "last resort"
   proc CHPL_HOME:string {

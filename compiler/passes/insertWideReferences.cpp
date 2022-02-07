@@ -1261,7 +1261,7 @@ static void propagateVar(Symbol* sym) {
             }
           }
           else if (sym->isRefOrWideRef()) {
-            if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) || 
+            if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                 rhs->isPrimitive(PRIM_GET_MEMBER)) {
               SymExpr* field = toSymExpr(rhs->get(2));
               debug(sym, "widening field ref %s (%d)\n", field->symbol()->cname, field->symbol()->id);
@@ -1277,7 +1277,7 @@ static void propagateVar(Symbol* sym) {
                 matchWide(def, field->symbol());
               }
             }
-            else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) || 
+            else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               widenTupleField(rhs, def);
             }

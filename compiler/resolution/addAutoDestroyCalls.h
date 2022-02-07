@@ -32,7 +32,7 @@ void printUseBeforeInitDetails(VarSymbol* var);
 
 // These function during callDestructors.
 // initsVariable returns a variable initialized by a PRIM_MOVE,
-// initializer call, or ret-arg. It returns in fCall any function call. 
+// initializer call, or ret-arg. It returns in fCall any function call.
 VarSymbol* initsVariable(Expr* e, CallExpr*& fCall);
 // initsVariableOut should be called in a loop on the fCall returned above
 // to find variables initialized by out intent.

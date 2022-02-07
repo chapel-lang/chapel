@@ -91,7 +91,7 @@
         n += 1;
         if n % GC_THRESHOLD == 0 then lfs.tryReclaim();
       }
-    } 
+    }
 
   Also provided, is a utility method for draining the stack of all elements,
   called ``drain``. This iterator will implicitly call ``tryReclaim`` at the
@@ -102,9 +102,9 @@
     var lfs = new LockFreeStack(int);
     forall i in 1..N with (var tok = lfs.getToken()) do lfs.push(i,tok);
     var total = + reduce lfs.drain();
-  
-  .. [#] Hendler, Danny, Nir Shavit, and Lena Yerushalmi. 
-      "A scalable lock-free stack algorithm." Proceedings of the sixteenth annual 
+
+  .. [#] Hendler, Danny, Nir Shavit, and Lena Yerushalmi.
+      "A scalable lock-free stack algorithm." Proceedings of the sixteenth annual
       ACM symposium on Parallelism in algorithms and architectures. ACM, 2004.
 */
 module LockFreeStack {

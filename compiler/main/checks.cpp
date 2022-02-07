@@ -936,7 +936,7 @@ checkFormalActualTypesMatch()
   for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     // Skip verifying some degenerate chpl__deserialize calls
-    if (isTemporaryDeserializeCall(call)) 
+    if (isTemporaryDeserializeCall(call))
       continue;
 
     if (FnSymbol* fn = call->resolvedFunction())

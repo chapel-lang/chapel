@@ -54,7 +54,7 @@ owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
                             name,
                             /*initExpression*/ nullptr);
 }
- 
+
 
 } // namespace uast
 } // namespace chpl

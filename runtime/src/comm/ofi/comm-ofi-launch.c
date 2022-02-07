@@ -42,8 +42,8 @@ void chpl_comm_preLaunch(int32_t numLocales) {
   //
   // Based on limited experimentation, numLocales * 10 works with
   // small-scale runs. The cray-pmi{,-lib} modules are likely to be
-  // loaded for large-scale runs in which case KVS isn't even used. 
-  
+  // loaded for large-scale runs in which case KVS isn't even used.
+
   {
     int32_t newVal = numLocales * 10;
 

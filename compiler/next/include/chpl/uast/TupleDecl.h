@@ -33,7 +33,7 @@ namespace uast {
 
 /**
   This class represents a tuple variable declaration
- 
+
   E.g.
 
   \rst
@@ -73,14 +73,14 @@ class TupleDecl final : public Decl {
 
  private:
   TupleDecl::IntentOrKind intentOrKind_;
-  int numElements_; 
+  int numElements_;
   int typeExpressionChildNum_;
   int initExpressionChildNum_;
 
   TupleDecl(ASTList children, int attributesChildNum, Decl::Visibility vis,
             Decl::Linkage linkage,
             IntentOrKind intentOrKind,
-            int numElements,       
+            int numElements,
             int typeExpressionChildNum,
             int initExpressionChildNum)
     : Decl(asttags::TupleDecl, std::move(children), attributesChildNum,

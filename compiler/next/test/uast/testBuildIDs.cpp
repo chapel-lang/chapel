@@ -197,7 +197,7 @@ static  void test2() {
   assert(block->id().contains(block->stmt(0)->id()));
   assert(block->id().contains(block->stmt(1)->id()));
   assert(block->id().contains(block->stmt(2)->id()));
- 
+
   assert(mod->id().contains(mod->id()));
   assert(mod->id().contains(block->id()));
   assert(mod->id().contains(block->stmt(0)->id()));

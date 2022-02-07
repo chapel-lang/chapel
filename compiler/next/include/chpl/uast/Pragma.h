@@ -31,7 +31,7 @@ enum PragmaTag {
 #define PRAGMA(name__, canParse__, parseStr__, desc__) \
   PRAGMA_ ## name__,
 #include "chpl/uast/PragmaList.h"
-#undef PRAGMA 
+#undef PRAGMA
   NUM_KNOWN_PRAGMAS
 };
 
@@ -41,7 +41,7 @@ const char* pragmaTagToName(PragmaTag tag);
 /** Return the PragmaTag associated with a const char* */
 PragmaTag pragmaNameToTag(const char* name);
 
-} // end namespace pragmatags 
+} // end namespace pragmatags
 
 // Make pragmas available in `uast` namespace, e.g. uast::PRAGMA_REF
 using namespace pragmatags;

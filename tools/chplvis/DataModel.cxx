@@ -1050,7 +1050,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             (void)vdbTids.insert(taskid);
           } else {
             if (nfileno < 0 || nfileno >= fileTblSize) nfileno = 0;
-            if (fid < 0) 
+            if (fid < 0)
               { fid = 0; }
             newEvent = new E_task (sec, usec, nid, taskid, fid, onstr[0] == 'O',
                                    nlineno, nfileno);

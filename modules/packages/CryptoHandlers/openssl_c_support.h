@@ -45,7 +45,7 @@ typedef const EVP_CIPHER* CONST_EVP_CIPHER_PTR;
 
 // OpenSSL 1.0 used EVP_MD_CTX_init, EVP_MD_CTX_cleanup
 // EVP_CIPHER_CTX_init, EVP_CIPHER_CTX_cleanup
-typedef EVP_MD_CTX CHPL_EVP_MD_CTX; 
+typedef EVP_MD_CTX CHPL_EVP_MD_CTX;
 typedef EVP_CIPHER_CTX CHPL_EVP_CIPHER_CTX;
 static inline CHPL_EVP_MD_CTX CHPL_EVP_MD_CTX_new(void) {
   EVP_MD_CTX ret;

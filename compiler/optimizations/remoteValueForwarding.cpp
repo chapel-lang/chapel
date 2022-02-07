@@ -462,7 +462,7 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
   }
 }
 
-/*  
+/*
  *  This function handles deserialization of AggregateTypes that have ref
  *  fields. Those fields need to point to data that is local for RVF to be
  *  meaningful. However, if the data is created inside the deserializer of that
@@ -694,7 +694,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
               }
             }
 
-            
+
             // recurse
             FnSymbol* curDeserializer = nestedDeser->resolvedFunction();
             CallExpr* replCall = handleRefDeserializers(moveToArg->next,
