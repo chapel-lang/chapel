@@ -469,6 +469,7 @@ type BadRegexpError = owned BadRegexError;
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
+  use ChplConfig;
 
   if CHPL_RE2 == "none" {
     compilerError("Cannot use Regex with CHPL_RE2=none");
@@ -1157,40 +1158,6 @@ inline operator :(x: string, type t: regex(string)) throws {
 pragma "no doc"
 inline operator :(x: bytes, type t: regex(bytes)) throws {
   return compile(x);
-}
-
-/*
-
-   Compile a regular expression and search the receiving string for matches at
-   any offset using :proc:`regex.search`.
-
-   :arg needle: the regular expression to search for
-   :arg ignorecase: true to ignore case in the regular expression
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving string where a match occurred
- */
-proc string.search(needle: string, ignorecase=false):regexMatch
-{
-  // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
-  return re.search(this);
-}
-
-/*
-
-   Compile a regular expression and search the receiving bytes for matches at
-   any offset using :proc:`regex.search`.
-
-   :arg needle: the regular expression to search for
-   :arg ignorecase: true to ignore case in the regular expression
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving bytes where a match occurred
- */
-proc bytes.search(needle: bytes, ignorecase=false):regexMatch
-{
-  // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
-  return re.search(this);
 }
 
 // documented in the captures version

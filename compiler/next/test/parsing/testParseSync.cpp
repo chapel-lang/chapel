@@ -63,7 +63,7 @@ static void test0(Parser* parser) {
   assert(begin->numStmts() == 1);
   assert(begin->stmt(0)->isFnCall());
   assert(begin->blockStyle() == BlockStyle::IMPLICIT);
-  
+
   // Make sure the statements iterator works as expected.
   {
     ASTTag stmtList[] = {

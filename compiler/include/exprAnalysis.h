@@ -31,7 +31,7 @@
  * denormalize pass and functionality is rather simple.
  *
  * Its main use in the pass is to decide if expressions are movable
- * during denormalization. 
+ * during denormalization.
  *
  * For now, this is a very conservative analysis. A more precise
  * analysis could distinguish between reads and writes to memory and

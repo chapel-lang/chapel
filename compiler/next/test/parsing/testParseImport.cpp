@@ -176,7 +176,7 @@ static void test2(Parser* parser) {
     assert(visClause->limitation(0)->toIdentifier()->name() == "Y");
     assert(visClause->limitation(1)->isIdentifier());
     assert(visClause->limitation(1)->toIdentifier()->name() == "Z");
-  
+
     // Make sure the limitations iterator works as expected.
     {
       int count = 0;

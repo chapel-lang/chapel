@@ -56,9 +56,9 @@ int SelectBrowser::handle (int event)
       lastSelected = NULL;
     }
   }
-  
+
   int rv = Fl_Browser::handle(event);
-  
+
   return rv;
 
 }

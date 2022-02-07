@@ -49,7 +49,7 @@ class Include final : public Expression {
   Decl::Visibility visibility_;
   bool isPrototype_;
   UniqueString name_;
-  
+
   Include(Decl::Visibility visibility, bool isPrototype, UniqueString name)
     : Expression(asttags::Include),
       visibility_(visibility),

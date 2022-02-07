@@ -79,7 +79,7 @@ class Begin final : public SimpleBlockLike {
  public:
 
   /**
-    Create and return a begin statement. 
+    Create and return a begin statement.
   */
   static owned<Begin> build(Builder* builder, Location loc,
                             owned<WithClause> withClause,

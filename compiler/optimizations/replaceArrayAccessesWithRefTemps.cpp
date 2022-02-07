@@ -28,6 +28,8 @@
 #include "stlUtil.h"
 #include "stmt.h"
 
+#include "global-ast-vecs.h"
+
 #define DEBUG_RAAWRT 0
 
 static bool anyAssignmentsToArray(std::vector<ContextCallExpr*> allContextCalls,
@@ -289,4 +291,3 @@ void replaceArrayAccessesWithRefTemps() {
     }
   }
 }
-

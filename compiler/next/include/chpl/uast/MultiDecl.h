@@ -32,7 +32,7 @@ namespace uast {
 
 /**
   This class represents a declaration for multiple variables.
- 
+
   E.g.
 
   \rst
@@ -78,13 +78,13 @@ class MultiDecl final : public Decl {
   void markUniqueStringsInner(Context* context) const override {
     declMarkUniqueStringsInner(context);
   }
- 
+
  public:
   ~MultiDecl() override = default;
 
   static owned<MultiDecl> build(Builder* builder, Location loc,
                                 owned<Attributes> attributes,
-                                Decl::Visibility vis, 
+                                Decl::Visibility vis,
                                 Decl::Linkage linkage,
                                 ASTList varDecls);
 

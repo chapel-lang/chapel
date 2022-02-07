@@ -100,6 +100,8 @@
 
 #include "../next/lib/immediates/prim_data.h"
 
+#include "global-ast-vecs.h"
+
 typedef Type ChapelType;
 
 #ifndef HAVE_LLVM

@@ -37,6 +37,8 @@
 #include "stringutil.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <algorithm>
 #include <regex>
 

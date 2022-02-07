@@ -46,6 +46,8 @@
 #include "virtualDispatch.h"
 #include "chpl/util/filesystem.h"
 
+#include "global-ast-vecs.h"
+
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
 #include "llvm/IR/Module.h"

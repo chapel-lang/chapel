@@ -79,7 +79,7 @@ class While final : public Loop {
   ~While() override = default;
 
   /**
-    Create and return a while loop. 
+    Create and return a while loop.
   */
   static owned<While> build(Builder* builder, Location loc,
                             owned<Expression> condition,

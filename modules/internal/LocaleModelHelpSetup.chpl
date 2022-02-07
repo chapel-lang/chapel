@@ -126,6 +126,7 @@ module LocaleModelHelpSetup {
 
   // gasnet-smp and gasnet-udp w/ GASNET_SPAWNFN=L are local spawns
   private inline proc localSpawn() {
+    use ChplConfig;
     if CHPL_COMM == "gasnet" {
       var spawnfn: c_string;
       if (CHPL_COMM_SUBSTRATE == "udp" &&

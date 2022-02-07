@@ -2239,6 +2239,9 @@ arkouda: &arkouda-base
     - Bump substring_search problem size back to 10**8 (mhmerrill/arkouda#1038)
   01/26/22:
     - Optimize small and medium int in1d operations (mhmerrill/arkouda#1044)
+  02/02/22:
+    - Fix sum precision for real this time (mhmerrill/arkouda#1055)
+    - Issue 1049 Adds capability to print server commands from the client. (mhmerrill/arkouda#1049)
 
 
 arkouda-string:

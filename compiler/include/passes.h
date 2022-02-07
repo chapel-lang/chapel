@@ -22,6 +22,7 @@
 #define _PASSES_H_
 
 #include "symbol.h"
+#include "PassManager.h"
 
 extern bool parsed;
 extern bool normalized;
@@ -160,5 +161,24 @@ CallExpr* findDownEndCount(FnSymbol* fn);
 // resolution
 Expr*     resolveExpr(Expr* expr);
 void      resolveBlockStmt(BlockStmt* blockStmt);
+
+class returnStarTuplesByRefArgsPass1 : public PassT<FnSymbol*> {
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+};
+
+class returnStarTuplesByRefArgsPass2 : public PassT<CallExpr*> {
+  bool shouldProcess(CallExpr* fn) override;
+  void process(CallExpr* fn) override;
+};
+
+class ComputeCallSitesPass : public PassT<FnSymbol*> {
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+};
+
+class FlattenClasses : public PassT<TypeSymbol*> {
+  void process(TypeSymbol* ts) override;
+};
 
 #endif

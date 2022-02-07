@@ -23,6 +23,8 @@
 #include "AstVisitor.h"
 #include "CatchStmt.h"
 
+#include "global-ast-vecs.h"
+
 BlockStmt* TryStmt::build(bool tryBang, Expr* expr) {
   BlockStmt* body = new BlockStmt();
   if (BlockStmt* block = toBlockStmt(expr)) {

@@ -33,6 +33,8 @@
 #include "resolution.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 static void clearDefaultInitFns(FnSymbol* unusedFn) {
   AggregateType* at = toAggregateType(unusedFn->retType);
   if (at) {

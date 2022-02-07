@@ -74,7 +74,7 @@ class Foreach final : public IndexableLoop {
   ~Foreach() override = default;
 
   /**
-    Create and return a foreach loop. 
+    Create and return a foreach loop.
   */
   static owned<Foreach> build(Builder* builder, Location loc,
                               owned<Decl> index,

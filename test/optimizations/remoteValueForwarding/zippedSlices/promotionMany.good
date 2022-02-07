@@ -7,10 +7,10 @@
 |      3 |
 
 Stream:
-| locale | execute_on_fast | execute_on_nb |
-| -----: | --------------: | ------------: |
-|      0 |               0 |             3 |
-|      1 |               1 |             0 |
-|      2 |               1 |             0 |
-|      3 |               1 |             0 |
+| locale |      amo | execute_on_nb |
+| -----: | -------: | ------------: |
+|      0 | unstable |             3 |
+|      1 | unstable |             0 |
+|      2 | unstable |             0 |
+|      3 | unstable |             0 |
 0

@@ -1,4 +1,4 @@
-use Time, Memory.Diagnostics, BlockDist;
+use Time, Memory.Diagnostics, BlockDist, ChplConfig;
 
 // compute a target problem size if one is not specified; assume homogeneity
 config const memFraction = 0;

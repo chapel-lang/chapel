@@ -418,7 +418,7 @@ def genVar(decl):
     name = decl.name
     if name in chapelKeywords:
         name = 'c2chapel_' + name
-    
+
     ty   = toChapelType(decl.type)
     print("extern var " + name + " : " + ty + ";")
     print()

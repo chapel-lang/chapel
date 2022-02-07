@@ -59,13 +59,13 @@ In particular, for our project, I would expect we end up with this structure:
      include/chpl
        uast/ (new AST headers forming library API will go here)
        (nothing from the old compiler since it does not present a library interface)
-       
+
      lib/
        uast/ (new AST source code)
        oast/ (current AST source code and headers)
        resolution/ (resolution code as well as resolution.h)
        ...
-  
+
      tools/
         chpl/
           include/ (current contents of compiler/include)

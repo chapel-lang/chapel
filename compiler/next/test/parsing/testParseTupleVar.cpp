@@ -218,28 +218,28 @@ static void test6(Parser* parser) {
 
   check6(parser, "test6f.chpl",
          "var ( x, ( /*comment*/ y, z)):typ = tup;");
-  
+
   check6(parser, "test6g.chpl",
          "var ( x, ( y /*comment*/ , z)):typ = tup;");
-  
+
   check6(parser, "test6h.chpl",
          "var ( x, ( y, /*comment*/ z)):typ = tup;");
 
   check6(parser, "test6i.chpl",
          "var ( x, ( y, z /*comment*/ )):typ = tup;");
-  
+
   check6(parser, "test6j.chpl",
          "var ( x, ( y, z) /*comment*/ ):typ = tup;");
-  
+
   check6(parser, "test6k.chpl",
          "var ( x, ( y, z) ) /*comment*/ :typ = tup;");
-  
+
   check6(parser, "test6l.chpl",
          "var ( x, ( y, z) ) : /*comment*/ typ = tup;");
-  
+
   check6(parser, "test6m.chpl",
          "var ( x, ( y, z) ) : typ /*comment*/ = tup;");
-  
+
   check6(parser, "test6n.chpl",
          "var ( x, ( y, z) ) : typ = /*comment*/ tup;");
 }

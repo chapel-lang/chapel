@@ -1292,7 +1292,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc dim(param d : int) {
-      return this.domain.dim(d); 
+      return this.domain.dim(d);
     }
 
     pragma "no doc"
@@ -1702,7 +1702,7 @@ module ChapelArray {
     proc back() {
       return this.last;
     }
-    
+
     /* Return the first element in the array. The array must be a
        rectangular 1-D array.
      */

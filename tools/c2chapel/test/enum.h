@@ -1,7 +1,7 @@
 
 /* Header file for enum test script */
 /* Enum without values */
-enum 
+enum
 {
   TEST_STATUS_PASSED,
   TEST_STATUS_FAILED
@@ -17,13 +17,13 @@ enum direction {
 
 
 /* Enum with values */
-enum 
+enum
 {
   PASSED = 1,
   FAILED = 2
 };
 
-typedef enum 
+typedef enum
 {
   ENUM_ERROR = 1,
   ENUM_WVALUES_ERROR = 2,
