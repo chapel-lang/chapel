@@ -26,6 +26,8 @@
 #include "symbol.h"
 #include "typeSpecifier.h"
 
+#include "global-ast-vecs.h"
+
 // The well-known types
 AggregateType* dtArray;
 AggregateType* dtBaseArr;
@@ -595,4 +597,3 @@ void clearGenericWellKnownFunctions()
       *wkfn.fn = NULL;
   }
 }
-

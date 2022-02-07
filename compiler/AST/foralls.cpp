@@ -35,6 +35,8 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 
+#include "global-ast-vecs.h"
+
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
     case TFI_DEFAULT:       return "default";

@@ -58,6 +58,8 @@ static child type could end up calling something in the parent.
 #include "symbol.h"
 #include "wrappers.h"
 
+#include "global-ast-vecs.h"
+
 #include <set>
 #include <vector>
 

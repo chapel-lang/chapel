@@ -37,6 +37,8 @@
 #include "timer.h"
 #include "WhileStmt.h"
 
+#include "global-ast-vecs.h"
+
 #include <algorithm>
 #include <set>
 #include <queue>

@@ -32,6 +32,8 @@
 #include "stmt.h"
 #include "view.h"
 
+#include "global-ast-vecs.h"
+
 //#############################################################################
 //# COPY PROPAGATION
 //#
@@ -1020,4 +1022,3 @@ void copyPropagation(void) {
 //# to be changed.  Allowing the substitution collapses the two variables onto
 //# one.
 //#
-

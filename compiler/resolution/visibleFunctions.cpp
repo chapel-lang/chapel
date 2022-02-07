@@ -33,6 +33,8 @@
 #include "symbol.h"
 #include "view.h"
 
+#include "global-ast-vecs.h"
+
 #include <map>
 #include <set>
 #include <utility>

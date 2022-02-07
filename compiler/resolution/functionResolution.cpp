@@ -70,6 +70,8 @@
 #include "WhileStmt.h"
 #include "wrappers.h"
 
+#include "global-ast-vecs.h"
+
 #include "../next/lib/immediates/prim_data.h"
 
 #include <algorithm>

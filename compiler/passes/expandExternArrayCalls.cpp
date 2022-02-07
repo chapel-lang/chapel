@@ -27,6 +27,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+#include "global-ast-vecs.h"
+
 #include <iostream>
 #include <set>
 

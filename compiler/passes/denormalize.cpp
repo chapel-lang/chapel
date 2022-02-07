@@ -35,6 +35,8 @@
 #include "type.h"
 #include "WhileStmt.h"
 
+#include "global-ast-vecs.h"
+
 //helper datastructures/types
 typedef std::pair<Expr*, Type*> DefCastPair;
 typedef std::map<SymExpr*, DefCastPair> UseDefCastMap;

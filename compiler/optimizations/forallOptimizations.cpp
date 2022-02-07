@@ -34,6 +34,8 @@
 #include "stringutil.h"
 #include "view.h"
 
+#include "global-ast-vecs.h"
+
 // This file contains analysis and transformation logic that need to happen
 // before normalization. These transformations help the following optimizations:
 //

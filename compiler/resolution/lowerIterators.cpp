@@ -39,6 +39,8 @@
 #include "view.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 bool iteratorsLowered = false;
 
 //

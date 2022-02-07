@@ -28,6 +28,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
+
 #include <set>
 #include <vector>
 

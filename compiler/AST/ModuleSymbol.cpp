@@ -29,6 +29,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
+
 BlockStmt*                         rootBlock             = NULL;
 ModuleSymbol*                      rootModule            = NULL;
 ModuleSymbol*                      theProgram            = NULL;

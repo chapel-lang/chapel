@@ -25,6 +25,7 @@
 #include "initializerRules.h"
 #include "stlUtil.h"
 
+#include "global-ast-vecs.h"
 
 static void checkFunctionSignatures();
 static void checkPrimNew();

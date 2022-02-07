@@ -30,6 +30,8 @@
 #include "stmt.h"
 #include "view.h"
 
+#include "global-ast-vecs.h"
+
 static size_t s_ref_repl_count; ///< The number of references replaced this pass.
 
 // If there is exactly one definition of var by something of reference type,
@@ -344,4 +346,3 @@ void refPropagation() {
     }
   }
 }
-

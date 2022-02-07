@@ -28,6 +28,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
+
 //#define DEBUG_SYNC_ACCESS_FUNCTION_SET
 
 static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,

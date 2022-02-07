@@ -28,6 +28,8 @@
 #include "resolveIntents.h"
 #include "symbol.h"
 
+#include "global-ast-vecs.h"
+
 #include <set>
 
 /* This file implements late (after cull over references)

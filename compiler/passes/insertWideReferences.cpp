@@ -195,6 +195,8 @@
 #include "view.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <map>
 #include <queue>
 #include <set>
@@ -2558,4 +2560,3 @@ insertWideReferences(void) {
   printCauses(NULL);
 
 }
-

@@ -28,6 +28,8 @@
 #include "stlUtil.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
 Symbol*           markPruned      = NULL;
 

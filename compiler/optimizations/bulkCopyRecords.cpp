@@ -30,6 +30,7 @@
 #include "stlUtil.h"
 #include "resolution.h" // isPOD
 
+#include "global-ast-vecs.h"
 
 static bool isAssignment(FnSymbol* fn);
 static bool isTrivialAssignment(FnSymbol* fn);

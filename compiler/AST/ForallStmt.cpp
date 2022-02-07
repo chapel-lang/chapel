@@ -25,6 +25,8 @@
 #include "passes.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
+
 ForallOptimizationInfo::ForallOptimizationInfo():
   infoGathered(false),
   autoLocalAccessChecked(false),

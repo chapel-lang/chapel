@@ -49,6 +49,8 @@
 // files, the corresponding collector functions can be removed from this
 // implementation file, then this #include, and finally the .h file itself.
 
+#include "global-ast-vecs.h"
+
 #include <vector>
 
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);

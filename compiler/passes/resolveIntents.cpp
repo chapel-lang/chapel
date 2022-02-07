@@ -23,6 +23,8 @@
 #include "passes.h"
 #include "resolution.h"
 
+#include "global-ast-vecs.h"
+
 bool intentsResolved = false;
 
 IntentTag constIntentForType(Type* t) {

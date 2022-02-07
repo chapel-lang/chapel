@@ -31,6 +31,8 @@
 #include "resolution.h"
 #include "TryStmt.h"
 
+#include "global-ast-vecs.h"
+
 //
 // Static function declarations.
 //
@@ -977,4 +979,3 @@ checkFormalActualTypesMatch()
     }
   }
 }
-

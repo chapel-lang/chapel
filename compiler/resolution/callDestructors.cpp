@@ -39,6 +39,8 @@
 #include "symbol.h"
 #include "virtualDispatch.h"
 
+#include "global-ast-vecs.h"
+
 #include <vector>
 #include <algorithm>
 #include <iterator>

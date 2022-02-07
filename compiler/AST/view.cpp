@@ -46,6 +46,8 @@
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
 
+#include "global-ast-vecs.h"
+
 #include <inttypes.h>
 
 int  debugShortLoc  = true;

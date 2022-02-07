@@ -35,6 +35,8 @@
 #include "symbol.h"
 #include "view.h"
 
+#include "global-ast-vecs.h"
+
 /* This pass implements a backwards (uses to defs) analysis
    to determine if certain reference Symbols are constant.
 

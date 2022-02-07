@@ -39,6 +39,8 @@
 #include "view.h"
 #include "WhileStmt.h"
 
+#include "global-ast-vecs.h"
+
 #include <map>
 #include <vector>
 

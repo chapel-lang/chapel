@@ -44,6 +44,8 @@
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
