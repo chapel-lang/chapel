@@ -39,6 +39,10 @@ namespace. The entries may not be exhaustive.
    :members:
    :undoc-members:
 
+.. doxygenclass:: chpl::Bitmap
+   :members:
+   :undoc-members:
+
 .. doxygentypedef:: chpl::owned
 
 .. doxygenenum:: chpl::StringifyKind
