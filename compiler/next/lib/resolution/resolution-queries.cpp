@@ -596,7 +596,7 @@ struct Resolver {
       } else if (auto dot = called->toDot()) {
         name = dot->field();
         receiver = dot->receiver();
-      } else if (auto newed = called->toNew()) {
+      } else if (called->isNew()) {
         assert(false && "New expressions not handled yet");
       } else {
         assert(false && "Unhandled called expression");

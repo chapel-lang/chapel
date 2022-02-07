@@ -289,10 +289,12 @@ class Scope {
 
     // Find the largest entry name to pretty print...
     int largestEntrySize = 0;
-    for (const auto& entry : declared_)
-      largestEntrySize = entry.first.length() > largestEntrySize
-          ? entry.first.length()
+    for (const auto& entry : declared_) {
+      int entryLength = entry.first.length();
+      largestEntrySize = entryLength > largestEntrySize
+          ? entryLength
           : largestEntrySize;
+    }
 
     // Print out each entry.
     for (const auto& entry : declared_) {
@@ -301,8 +303,9 @@ class Scope {
       entry.first.stringify(ss, stringKind);
 
       // Add spaces to align columns.
-      auto ofs = largestEntrySize - entry.first.length();
-      for (int i = 0; i < ofs; i++) ss << " ";
+      const int entryLength = entry.first.length();
+      const int numSpaces = largestEntrySize - entryLength;
+      for (int i = 0; i < numSpaces; i++) ss << " ";
 
       ss << " : " << std::to_string(borrowedIds.numIds()) << " ids";
       ss << std::endl;
