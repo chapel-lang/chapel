@@ -10,10 +10,10 @@ cd $CHPL_HOME >& /dev/null
 # Look for trailing spaces in files in compiler/runtime/modules.
 # Exclude the generated files bison-chapel.cpp and flex-chapel.cpp and
 # their compiler/next counterparts.
-git grep ' $' -- compiler ':!*bison-chapel.cpp'   ':!*bison-chapel.h' \
-                          ':!*bison-chpl-lib.cpp' ':!*bison-chpl-lib.h' \
-                          ':!*flex-chapel.cpp'    ':!*flex-chapel.h' \
-                          ':!*flex-chpl-lib.cpp'  ':!*flex-chpl-lib.h'
-git grep ' $' -- runtime
-git grep ' $' -- modules
-git grep ' $' -- tools
+git grep -n ' $' -- compiler ':!*bison-chapel.cpp'   ':!*bison-chapel.h' \
+                             ':!*bison-chpl-lib.cpp' ':!*bison-chpl-lib.h' \
+                             ':!*flex-chapel.cpp'    ':!*flex-chapel.h' \
+                             ':!*flex-chpl-lib.cpp'  ':!*flex-chpl-lib.h'
+git grep -n ' $' -- runtime
+git grep -n ' $' -- modules
+git grep -n ' $' -- tools
