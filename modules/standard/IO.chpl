@@ -3863,7 +3863,7 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
 
   return true;
 }
-  
+
 /* read a given number of bytes from a channel
 
    :arg str_out: The string to be read into
