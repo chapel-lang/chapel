@@ -37,6 +37,8 @@
 #include "DoWhileStmt.h"
 #include "view.h"
 
+#include "global-ast-vecs.h"
+
 #include <queue>
 #include <set>
 #include <algorithm>

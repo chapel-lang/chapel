@@ -96,7 +96,7 @@ struct ptl_rcvthread {
          * stored to provide hints during a cuda failure
          * due to a null cuda context.
          */
-	CUcontext ctxt;
+	CUcontext cu_ctxt;
 #endif
 
 /*
@@ -124,7 +124,7 @@ psm2_error_t ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *recvq)
 
 #ifdef PSM_CUDA
 	if (PSMI_IS_CUDA_ENABLED)
-		PSMI_CUDA_CALL(cuCtxGetCurrent, &ctxt);
+		PSMI_CUDA_CALL(cuCtxGetCurrent, &cu_ctxt);
 #endif
 
 	if (psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RTS_RX_THREAD) &&
@@ -151,11 +151,10 @@ psm2_error_t ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *recvq)
 						strerror(errno));
 			goto fail;
 		}
-
+		if ((err = rcvthread_initstats(ptl_gen)))
+			goto fail;
 	}
 
-	if ((err = rcvthread_initstats(ptl_gen)))
-		goto fail;
 
 fail:
 	return err;
@@ -330,7 +329,7 @@ static void process_async_event(psm2_ep_t ep)
 
 	if (ibv_get_async_event(ep->verbs_ep.context, &async_event)) {
 		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-			"Receive thread ibv_get_async_event() error: %s", strerror(errno));
+			"Receive thread ibv_get_async_event() error on %s port %u: %s", ep->dev_name, ep->portnum, strerror(errno));
 	}
 	/* Ack the event */
 	ibv_ack_async_event(&async_event);
@@ -361,7 +360,7 @@ static void process_async_event(psm2_ep_t ep)
 	}
 	if (errstr)
 		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-			  "Fatal %s Async Event: %s", errstr,
+			  "Fatal %s Async Event on %s port %u: %s", errstr, ep->dev_name, ep->portnum,
 				ibv_event_type_str(async_event.event_type));
 }
 
@@ -373,8 +372,8 @@ static void rearm_cq_event(psm2_ep_t ep)
 	_HFI_VDBG("rcvthread got solicited event\n");
 	if (ibv_get_cq_event(ep->verbs_ep.recv_comp_channel, &ev_cq, &ev_ctx)) {
 		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-			  "Receive thread ibv_get_cq_event() error: %s",
-			  strerror(errno));
+			  "Receive thread ibv_get_cq_event() error on %s port %u: %s",
+			  ep->dev_name, ep->portnum, strerror(errno));
 	}
 
 	/* Ack the event */
@@ -388,8 +387,8 @@ static void rearm_cq_event(psm2_ep_t ep)
 	// are one-shots, that seems like overkill
 	if (ibv_req_notify_cq(ep->verbs_ep.recv_cq, 1)) {
 		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-			  "Receive thread ibv_req_notify_cq() error: %s",
-			  strerror(errno));
+			  "Receive thread ibv_req_notify_cq() error on %s port %u: %s",
+			  ep->dev_name, ep->portnum, strerror(errno));
 	}
 }
 
@@ -409,7 +408,7 @@ static void poll_async_events(psm2_ep_t ep)
 		if (IPS_PROTOEXP_FLAG_KERNEL_QP(ep->rdmamode)
 		    && __psm2_rv_cq_overflowed(ep->verbs_ep.rv))
 			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-				  "RV event ring overflow");
+				  "RV event ring overflow for %s port %u", ep->dev_name, ep->portnum);
 #endif
 		pfd[num_ep].fd = ep->verbs_ep.context->async_fd;
 		pfd[num_ep].events = POLLIN;
@@ -458,8 +457,8 @@ void *ips_ptl_pollintr(void *rcvthreadc)
 	psm2_error_t err;
 
 #ifdef PSM_CUDA
-	if (PSMI_IS_CUDA_ENABLED && ctxt != NULL)
-		PSMI_CUDA_CALL(cuCtxSetCurrent, ctxt);
+	if (PSMI_IS_CUDA_ENABLED && cu_ctxt != NULL)
+		PSMI_CUDA_CALL(cuCtxSetCurrent, cu_ctxt);
 #endif
 
 	PSM2_LOG_MSG("entering");
@@ -630,8 +629,10 @@ static psm2_error_t rcvthread_initstats(ptl_t *ptl_gen)
 		}
 	}
 
+	// one rcvThread per process, so omit id (ptl->ep->epid) and
+	// info (ptl->ep->dev_name)
 	return psmi_stats_register_type("RcvThread_statistics",
 					PSMI_STATSTYPE_RCVTHREAD,
 					entries,
-					PSMI_STATS_HOWMANY(entries), ptl->ep->epid, rcvc);
+					PSMI_STATS_HOWMANY(entries), 0, rcvc, NULL);
 }

@@ -18,22 +18,30 @@
  * limitations under the License.
  */
 
+#include "PassManager.h"
+#include "baseAST.h"
 #include "passes.h"
 
 #include "expr.h"
 #include "stmt.h"
 
-void flattenClasses() {
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    Type* t = ts->type;
-    if (isAggregateType(t) || isDecoratedClassType(t)) {
-      if (toAggregateType(t->symbol->defPoint->parentSymbol->type)) {
-        ModuleSymbol* mod = t->getModule();
-        DefExpr*      def = t->symbol->defPoint;
+void FlattenClasses::process(TypeSymbol* ts) {
+  Type* t = ts->type;
+  if (isAggregateType(t) || isDecoratedClassType(t)) {
+    if (toAggregateType(t->symbol->defPoint->parentSymbol->type)) {
+      ModuleSymbol* mod = t->getModule();
+      DefExpr* def = t->symbol->defPoint;
 
-        def->remove();
-        mod->block->insertAtTail(def);
-      }
+      def->remove();
+      mod->block->insertAtTail(def);
     }
   }
+}
+
+// Included down here so only the flattenClasses has access
+#include "global-ast-vecs.h"
+
+void flattenClasses() {
+  PassManager pm;
+  pm.runPass(FlattenClasses(), gTypeSymbols);
 }

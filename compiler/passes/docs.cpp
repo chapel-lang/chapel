@@ -42,6 +42,8 @@
 #include "stringutil.h"
 #include "tmpdirname.h"
 
+#include "global-ast-vecs.h"
+
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
   Symbol* s2 = *(Symbol* const *)v2;

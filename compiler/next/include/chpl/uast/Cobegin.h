@@ -86,7 +86,7 @@ class Cobegin final : public Expression {
  public:
 
   /**
-    Create and return a cobegin statement. 
+    Create and return a cobegin statement.
   */
   static owned<Cobegin> build(Builder* builder, Location loc,
                               owned<WithClause> withClause,

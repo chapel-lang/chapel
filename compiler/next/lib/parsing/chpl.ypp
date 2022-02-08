@@ -250,7 +250,7 @@
   }
   static inline
   MaybeNamedActual makeMaybeNamedActual(Expression* expr) {
-    PODUniqueString emptyName = PODUniqueString::build();
+    PODUniqueString emptyName = PODUniqueString::get();
     MaybeNamedActual ret = {expr, emptyName};
     return ret;
   }
@@ -744,6 +744,7 @@ stmt:
 | error TSEMI
   {
     $$ = STMT(@$, ErroneousExpression::build(BUILDER, LOC(@1)));
+    context->resetDeclState();
   }
 ;
 
@@ -970,11 +971,12 @@ opt_prototype:
 ;
 
 include_module_stmt:
- TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
-   {
-     $$ = TODOSTMT(@$);
-     context->visibility = Decl::DEFAULT_VISIBILITY;
-   }
+  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
+  {
+    auto node = Include::build(BUILDER, LOC(@$), context->visibility, $3, $5);
+    $$ = STMT(@$, node.release());
+    context->visibility = Decl::DEFAULT_VISIBILITY;
+  }
 ;
 
 /* Grouping of statements into blocks.
@@ -2236,6 +2238,7 @@ fn_decl_stmt_start:
       auto loc = context->declStartLoc(@2);
       fp.comments = context->gatherComments(loc);
       fp.attributes = context->buildAttributes(@$).release();
+      fp.visibility = context->visibility;
       context->resetAttributePartsState();
       fp.kind = $2;
       $$ = fp;
@@ -2533,9 +2536,9 @@ type_alias_decl_stmt_inner_ls:
   {
     $$ = context->makeList($1);
   }
-| type_alias_decl_stmt_inner TCOMMA type_alias_decl_stmt_inner_ls
+| type_alias_decl_stmt_inner_ls TCOMMA type_alias_decl_stmt_inner
   {
-    $$ = context->appendList($3, $1);
+    $$ = context->appendList($1, $3);
   }
 ;
 
@@ -2668,7 +2671,7 @@ tuple_var_decl_stmt_inner_ls:
 
 opt_init_expr:
                         { $$ = nullptr; }
-| TASSIGN TNOINIT       { $$ = TODOEXPR(@$); }
+| TASSIGN TNOINIT       { $$ = context->buildIdent(@2, $2); }
 | TASSIGN opt_try_expr  { $$ = $2; }
 ;
 
@@ -3065,6 +3068,7 @@ for_expr:
   }
 | TLSBR expr_ls TRSBR expr %prec TFOR
   {
+    // TODO: We have to handle the possibility of [1..2, 3..4] here.
     if ($2->size() > 1) {
       const char* msg = "Invalid iterand expression";
       $$ = context->raiseError(@2, msg);
@@ -3258,17 +3262,7 @@ new_expr:
   /* Handles the typical new cases, e.g. new C(); new owned C() */
   new_maybe_decorated expr %prec TNEW
   {
-    if (FnCall* fnCall = $2->toFnCall()) {
-      $$ = context->wrapCalledExpressionInNew(@$, $1, fnCall);
-    } else {
-
-      // It's an error for one reason or another. TODO: Specialize these
-      // errors later (e.g. 'new a.field' would require parens around
-      // the expression 'a.field'; 'new foo' would require an argument
-      // list for 'foo'; and something like 'new __primitive()' just
-      // doesn't make any sense...
-      $$ = context->raiseError(@$, "Invalid form for new expression");
-    }
+    $$ = context->buildNewExpr(@$, $1, $2);
   }
   /* TODO: handles e.g. new (typefn())(initargs) */
   /* TODO TODO: Flag these with asserts in the old compiler parser and
@@ -3400,8 +3394,10 @@ lhs_expr:
  *        reworked to not permit the empty production. */
 call_base_expr:
   lhs_expr
-| expr TBANG                    { $$ = TODOEXPR(@$); }
-| sub_type_level_expr TQUESTION { $$ = TODOEXPR(@$); }
+| expr TBANG                    { $$ = context->buildUnaryOp(@$,
+                                                              STR("postfix!"),
+                                                              $1); }
+| sub_type_level_expr TQUESTION { $$ = context->buildUnaryOp(@$, $2, $1); }
 | lambda_decl_expr
 | str_bytes_literal
 ;

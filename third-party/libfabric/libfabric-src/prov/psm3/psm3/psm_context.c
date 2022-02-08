@@ -147,8 +147,16 @@ psmi_create_and_open_affinity_shm(psm2_uuid_t const job_key)
 	int shm_fd, ret;
 	int first_to_create = 0;
 	size_t shm_name_len = 256;
+
+	psmi_assert_always(psmi_affinity_semaphore_open);
+	if (psmi_affinity_shared_file_opened) {
+		/* opened and have our reference counted in shm */
+		psmi_assert_always(affinity_shm_name != NULL);
+		psmi_assert_always(shared_affinity_ptr != NULL);
+		return 0;
+	}
+
 	shared_affinity_ptr = NULL;
-	affinity_shm_name = NULL;
 	affinity_shm_name = (char *) psmi_malloc(PSMI_EP_NONE, UNDEFINED, shm_name_len);
 
 	psmi_assert_always(affinity_shm_name != NULL);
@@ -162,37 +170,35 @@ psmi_create_and_open_affinity_shm(psm2_uuid_t const job_key)
 		if (shm_fd < 0) {
 			_HFI_VDBG("Cannot open affinity shared mem fd:%s, errno=%d\n",
 				  affinity_shm_name, errno);
-			return shm_fd;
+			goto free_name;
 		}
-	} else if (shm_fd > 0) {
+	} else if (shm_fd >= 0) {
 		first_to_create = 1;
 	} else {
 		_HFI_VDBG("Cannot create affinity shared mem fd:%s, errno=%d\n",
 			  affinity_shm_name, errno);
+		goto free_name;
 	}
 
 	ret = ftruncate(shm_fd, AFFINITY_SHMEMSIZE);
 	if ( ret < 0 ) {
 		_HFI_VDBG("Cannot truncate affinity shared mem fd:%s, errno=%d\n",
 			affinity_shm_name, errno);
-		if (shm_fd >= 0) close(shm_fd);
-		return ret;
+		goto close_shm;
 	}
 
 	shared_affinity_ptr = (uint64_t *) mmap(NULL, AFFINITY_SHMEMSIZE, PROT_READ | PROT_WRITE,
 					MAP_SHARED, shm_fd, 0);
 	if (shared_affinity_ptr == MAP_FAILED) {
-		_HFI_VDBG("Cannot mmap affinity shared memory. errno=%d\n",
-			  errno);
-		close(shm_fd);
-		return -1;
+		_HFI_VDBG("Cannot mmap affinity shared memory: %s, errno=%d\n",
+			  affinity_shm_name, errno);
+		goto close_shm;
 	}
 	close(shm_fd);
-
-	psmi_affinity_shared_file_opened = 1;
+	shm_fd = -1;
 
 	if (first_to_create) {
-		_HFI_VDBG("Creating shm to store NIC affinity per socket\n");
+		_HFI_VDBG("Initializing shm to store NIC affinity per socket: %s\n", affinity_shm_name);
 
 		memset(shared_affinity_ptr, 0, AFFINITY_SHMEMSIZE);
 
@@ -202,7 +208,7 @@ psmi_create_and_open_affinity_shm(psm2_uuid_t const job_key)
 		 */
 		psmi_sem_post(sem_affinity_shm_rw, sem_affinity_shm_rw_name);
 	} else {
-		_HFI_VDBG("Opening shm object to read/write NIC affinity per socket\n");
+		_HFI_VDBG("Opened shm object to read/write NIC affinity per socket: %s\n", affinity_shm_name);
 	}
 
 	/*
@@ -212,15 +218,28 @@ psmi_create_and_open_affinity_shm(psm2_uuid_t const job_key)
 	 */
 	if (psmi_sem_timedwait(sem_affinity_shm_rw, sem_affinity_shm_rw_name)) {
 		_HFI_VDBG("Could not enter critical section to update shm refcount\n");
-		return -1;
+		goto unmap_shm;
 	}
 
 	shared_affinity_ptr[AFFINITY_SHM_REF_COUNT_LOCATION] += 1;
+	_HFI_VDBG("shm refcount = %"PRId64"\n",  shared_affinity_ptr[AFFINITY_SHM_REF_COUNT_LOCATION]);
 
 	/* End critical section */
 	psmi_sem_post(sem_affinity_shm_rw, sem_affinity_shm_rw_name);
 
+	psmi_affinity_shared_file_opened = 1;
+
 	return 0;
+
+unmap_shm:
+	munmap(shared_affinity_ptr, AFFINITY_SHMEMSIZE);
+	shared_affinity_ptr = NULL;
+close_shm:
+	if (shm_fd >= 0) close(shm_fd);
+free_name:
+	psmi_free(affinity_shm_name);
+	affinity_shm_name = NULL;
+	return -1;
 }
 
 /*
@@ -274,7 +293,6 @@ static void
 psmi_create_affinity_semaphores(psm2_uuid_t const job_key)
 {
 	int ret;
-	sem_affinity_shm_rw_name = NULL;
 	size_t sem_len = 256;
 
 	/*
@@ -298,7 +316,8 @@ psmi_create_affinity_semaphores(psm2_uuid_t const job_key)
 	if (ret) {
 		_HFI_VDBG("Cannot initialize semaphore: %s for read-write access to shm object.\n",
 			  sem_affinity_shm_rw_name);
-		sem_close(sem_affinity_shm_rw);
+		if (sem_affinity_shm_rw)
+			sem_close(sem_affinity_shm_rw);
 		psmi_free(sem_affinity_shm_rw_name);
 		sem_affinity_shm_rw_name = NULL;
 		return;
@@ -519,19 +538,31 @@ psmi_context_open(const psm2_ep_t ep, long unit_param, long port,
 	context->ep = (psm2_ep_t) ep;
 
 	/* Check backward compatibility bits here and save the info */
+#ifdef PSM_CUDA
+#ifndef OPA
+	gdr_copy_limit_send = min(gdr_copy_limit_send, ep->mtu);
+
+	if (PSMI_IS_CUDA_DISABLED || ! psmi_parse_gpudirect()) {
+		// when CUDA and/or PSM3_GPUDIRECT* is disabled,
+		// PSM_HALCAP_GPUDIRECT is not fetched because it doesn't matter
+		// Just be silent about this situation.
+	} else // CUDA and GPUDIRECT are enabled, check CAP_GPUDIRECT in rv
+#endif
+#endif
 	if (psmi_hal_has_cap(PSM_HAL_CAP_GPUDIRECT_OT))
 	{
 #ifdef PSM_CUDA
 		is_driver_gpudirect_enabled = 1;
 #else
-		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR, "FATAL ERROR: "
-				  "CUDA version of rendezvous driver is loaded with non-CUDA version of "
-				  "psm3 provider.\n");
+		// we can allow this combination
+		//psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR, "FATAL ERROR: "
+		//		  "CUDA version of rendezvous driver is loaded with non-CUDA version of "
+		//		  "psm3 provider.\n");
 #endif
 	}
 #ifdef PSM_CUDA
-	else
-		fprintf(stderr,"WARNING: running CUDA version of psm3 provider with non CUDA version of rendezvous driver.\n");
+	else // we warn here, later tests in ips_proto_init() will be fatal
+		_HFI_INFO("WARNING: running CUDA version of psm3 provider with non CUDA version of rendezvous driver.\n");
 #endif
 	_HFI_VDBG("hal_context_open() passed.\n");
 
@@ -540,15 +571,15 @@ psmi_context_open(const psm2_ep_t ep, long unit_param, long port,
 						|| PSMI_EPID_VERSION == PSMI_EPID_V4);
 	psmi_assert_always (ep->verbs_ep.context);
 	// TBD - if we put the verbs_ep in hw_ctxt we could push this to HAL
-	// verbs_ep_open has initialized: ep->unit_id, ep->portnum,
+	// verbs_ep_open has initialized: ep->unit_id, ep->portnum,ep->dev_name,
 	//	ep->gid_hi, ep->gid_lo
 	if (ep->verbs_ep.link_layer == IBV_LINK_LAYER_ETHERNET) {
 		char buf[INET_ADDRSTRLEN];
 		int netmask_bits = psmi_count_high_bits(ep->verbs_ep.ip_netmask);
 		if (netmask_bits < 0) {
 			err = psmi_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-					"PSM3 invalid netmask: %s",
-					psmi_ipv4_ntop(ep->verbs_ep.ip_netmask, buf, sizeof(buf)));
+					"PSM3 invalid netmask on %s: %s",
+					ep->dev_name, psmi_ipv4_ntop(ep->verbs_ep.ip_netmask, buf, sizeof(buf)));
 			goto bail;
 		}
 		psmi_epid_ver = PSMI_EPID_V4;	// overide default based on device

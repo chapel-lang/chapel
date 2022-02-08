@@ -1,0 +1,2 @@
+--days=256 < day6.test  # day6a-test.good
+--days=256 < day6.in

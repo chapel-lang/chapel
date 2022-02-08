@@ -197,8 +197,8 @@ struct sock_conn {
 struct sock_conn_map {
 	struct sock_conn *table;
 	ofi_epoll_t epoll_set;
-	void **epoll_ctxs;
-	int epoll_ctxs_sz;
+	struct ofi_epollfds_event *epoll_events;
+	int epoll_size;
 	int used;
 	int size;
 	fastlock_t lock;

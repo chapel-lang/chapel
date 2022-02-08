@@ -38,8 +38,8 @@ by the following syntax:
      [ domain-expression ] type-expression
 
 The ``domain-expression`` must specify a domain that the array can be
-declared over. If the ``domain-expression`` is a domain literal, the
-curly braces around the literal may be omitted.
+declared over. If the ``domain-expression`` is a rectangular domain
+literal, the curly braces around the literal may be omitted.
 
    *Example (decls.chpl)*.
 

@@ -1,0 +1,13 @@
+F600BC2D8F
+1 1 1 1 0 1 1 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1 0 0 0 0 1 0 1 1 0 1 1 0 0 0 1 1 1 1
+version = 7
+packet type = 5
+numSubPackets = 2
+version = 7
+packet type = 4
+Value = 5
+version = 5
+packet type = 4
+Value = 15
+subPackets: 5 15
+Final result = 0

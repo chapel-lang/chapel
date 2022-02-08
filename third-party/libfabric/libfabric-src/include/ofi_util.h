@@ -153,9 +153,14 @@ struct ofi_common_locks {
 /*
  * Provider details
  */
+typedef int (*ofi_alter_info_t)(uint32_t version, const struct fi_info *src_info,
+				const struct fi_info *base_info,
+				struct fi_info *dest_info);
+
 struct util_prov {
 	const struct fi_provider	*prov;
 	const struct fi_info		*info;
+	ofi_alter_info_t		alter_defaults;
 	const int			flags;
 };
 
@@ -328,6 +333,12 @@ static inline void ofi_ep_lock_acquire(struct util_ep *ep)
 static inline void ofi_ep_lock_release(struct util_ep *ep)
 {
 	ep->lock_release(&ep->lock);
+}
+
+static inline bool ofi_ep_lock_held(struct util_ep *ep)
+{
+	return (ep->lock_acquire == ofi_fastlock_acquire_noop) ||
+		fastlock_held(&ep->lock);
 }
 
 static inline void ofi_ep_tx_cntr_inc(struct util_ep *ep)
@@ -755,6 +766,8 @@ int ofi_ip_av_create_flags(struct fid_domain *domain_fid, struct fi_av_attr *att
 
 void *ofi_av_get_addr(struct util_av *av, fi_addr_t fi_addr);
 #define ofi_ip_av_get_addr ofi_av_get_addr
+void *ofi_av_addr_context(struct util_av *av, fi_addr_t fi_addr);
+
 fi_addr_t ofi_ip_av_get_fi_addr(struct util_av *av, const void *addr);
 
 int ofi_get_addr(uint32_t *addr_format, uint64_t flags,
@@ -949,10 +962,6 @@ static inline int ofi_has_util_prefix(const char *str)
 	return !strncasecmp(str, OFI_UTIL_PREFIX, strlen(OFI_UTIL_PREFIX));
 }
 
-typedef int (*ofi_alter_info_t)(uint32_t version, const struct fi_info *src_info,
-				const struct fi_info *base_info,
-				struct fi_info *dest_info);
-
 int ofi_get_core_info(uint32_t version, const char *node, const char *service,
 		      uint64_t flags, const struct util_prov *util_prov,
 		      const struct fi_info *util_hints,
@@ -1036,11 +1045,21 @@ struct ofi_ops_flow_ctrl {
 
 
 /* Dynamic receive buffering support. */
-#define OFI_OPS_DYNAMIC_RBUF "ofix_dynamic_rbuf"
+#define OFI_OPS_DYNAMIC_RBUF "ofix_dynamic_rbuf_v2"
+
+struct ofi_cq_rbuf_entry {
+	void			*op_context;
+	uint64_t		flags;
+	size_t			len;
+	void			*buf;
+	uint64_t		data;
+	uint64_t		tag;
+	void			*ep_context;
+};
 
 struct ofi_ops_dynamic_rbuf {
 	size_t	size;
-	ssize_t	(*get_rbuf)(struct fi_cq_data_entry *entry, struct iovec *iov,
+	ssize_t	(*get_rbuf)(struct ofi_cq_rbuf_entry *entry, struct iovec *iov,
 			    size_t *count);
 };
 

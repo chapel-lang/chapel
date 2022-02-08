@@ -42,6 +42,8 @@
 #include "symbol.h"
 #include "vec.h"
 
+#include "global-ast-vecs.h"
+
 #include <cmath>
 
 static bool isDerivedType(Type* type, Flag flag);

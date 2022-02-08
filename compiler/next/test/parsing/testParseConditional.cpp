@@ -37,7 +37,6 @@
 #undef NDEBUG
 #endif
 
-#include <array>
 #include <cassert>
 #include <iostream>
 
@@ -83,7 +82,7 @@ static void test0(Parser* parser) {
 
   // Make sure the then iterator works as expected.
   {
-    std::array<ASTTag, 3> thenStmtList = {
+    ASTTag thenStmtList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment
@@ -97,7 +96,7 @@ static void test0(Parser* parser) {
 
   // Make sure the else iterator works as expected.
   {
-    std::array<ASTTag, 2> elseStmtList = {
+    ASTTag elseStmtList[] = {
       asttags::Comment,
       asttags::FnCall
     };
@@ -152,7 +151,7 @@ static void test1(Parser* parser) {
 
   // Make sure the then iterator works as expected.
   {
-    std::array<ASTTag, 3> thenStmtList = {
+    ASTTag thenStmtList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment,
@@ -166,7 +165,7 @@ static void test1(Parser* parser) {
 
   // Make sure the else iterator works as expected.
   {
-    std::array<ASTTag, 3> elseStmtList = {
+    ASTTag elseStmtList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment,
@@ -243,7 +242,7 @@ static void test3(Parser* parser) {
 
   // Make sure the then iterator works as expected.
   {
-    std::array<ASTTag, 2> thenStmtList = {
+    ASTTag thenStmtList[] = {
       asttags::Comment,
       asttags::FnCall
     };

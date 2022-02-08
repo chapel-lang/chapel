@@ -39,6 +39,8 @@
 #include "TransformLogicalShortCircuit.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <vector>
 
 // Finds all the UnresolvedSymExprs in the LoopExpr's indices expression and

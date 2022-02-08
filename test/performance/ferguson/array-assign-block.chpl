@@ -1,5 +1,6 @@
 use BlockDist;
 use CommUtil;
+use ChplConfig;
 
 config const n = 100000;
 

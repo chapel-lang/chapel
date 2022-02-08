@@ -40,12 +40,12 @@ class MenuManager {
 
   DataView *curDataView;
   ZoomScroll *curZoom;
-  
+
   Fl_Menu_Button *popup;
 
   long curTag;
   long lastLoc;
-    
+
  public:
   MenuManager();
 
@@ -54,11 +54,11 @@ class MenuManager {
   void toggleUTags();
 
   ViewKind currentViewKind() { return curView; }
-  
+
   DataView *currentDataView() { return curDataView; }
 
   void setCurrentDataView(DataView *view);
-  
+
   ZoomScroll *currentZoom() {return curZoom;}
 
   void setCurrentZoom(ZoomScroll *view) { curZoom = view; }
@@ -76,7 +76,7 @@ class MenuManager {
   void setCurrentLoc(long l) { lastLoc = l; }
 
   void makeMenusFor(ViewKind v);
-  
+
 };
 
 

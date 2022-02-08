@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -77,12 +77,12 @@ int chpl_cache_enabled(void)
 #undef CHPL_ASAN
 
 
-// Initialize the remote data cache layer. 
+// Initialize the remote data cache layer.
 void chpl_cache_init(void);
 void chpl_cache_exit(void);
 
 // If release is set, waits on any pending puts in the cache.
-// If acquire is set, sets this task's last acquire fence to 
+// If acquire is set, sets this task's last acquire fence to
 // the cache's current request number.
 void chpl_cache_fence(int acquire, int release, int ln, int32_t fn);
 

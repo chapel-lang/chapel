@@ -552,7 +552,6 @@ stmt:
 | defer_stmt
 | try_stmt
 | return_stmt
-| TATOMIC stmt                         { $$ = buildAtomicStmt($2); }
 | TBREAK opt_label_ident TSEMI         { $$ = buildGotoStmt(GOTO_BREAK, $2); }
 | TCONTINUE opt_label_ident TSEMI      { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
 | TLABEL ident_def stmt                { $$ = buildLabelStmt($2, $3); }

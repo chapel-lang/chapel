@@ -162,7 +162,7 @@ static void viewFlagsHelper(BaseAST* ast, Symbol* sym, const char* msg) {
   printf("%d: %s %d\n", ast->id, msg, sym->id);
   viewSymbolFlags(sym);
 }
-  
+
 void viewFlags(BaseAST* ast) {
   if (!viewFlagsShort && !viewFlagsComment)
     viewFlagsName = true;

@@ -377,6 +377,22 @@ static void test6(Parser* parser) {
   assert(!var6->linkageName());
 }
 
+static void test7(Parser* parser) {
+  auto parseResult = parser->parseString("test7.chpl",
+                                         "var foo = noinit;\n");
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+
+  auto varDecl = mod->stmt(0)->toVariable();
+  assert(varDecl);
+
+  assert(varDecl->name() == "foo");
+  assert(!varDecl->isConfig());
+}
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -397,6 +413,7 @@ int main() {
   test4(p);
   test5(p);
   test6(p);
+  test7(p);
 
   return 0;
 }

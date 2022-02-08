@@ -43,8 +43,8 @@ module ChapelDomain {
   // chpl__buildDomainRuntimeType) are replaced by the compiler to just create
   // a record storing the arguments.  The return type of
   // chpl__build...RuntimeType is what tells the compiler which runtime type it
-  // is creating.  These functions are considered type functions early in
-  // compilation.
+  // is creating. These functions are written to return a value even though
+  // they are marked as type functions.
 
   //
   // Support for domain types
@@ -52,13 +52,13 @@ module ChapelDomain {
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
                                     type idxType = int,
-                                    param stridable: bool = false) {
+                                    param stridable: bool = false) type {
     return new _domain(dist, rank, idxType, stridable);
   }
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType,
-                                    param parSafe: bool = true) {
+                                    param parSafe: bool = true) type {
     return new _domain(dist, idxType, parSafe);
   }
 
@@ -73,9 +73,10 @@ module ChapelDomain {
 
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(dist: _distribution,
-                                          parentDom: domain) {
+                                          parentDom: domain) type {
     if ! isUltimatelyRectangularParent(parentDom) then
-      compilerError("sparse subdomains are currently supported only for rectangular domains");
+      compilerError("sparse subdomains are currently supported only for " +
+                    "rectangular domains");
 
     return new _domain(dist, parentDom);
   }
@@ -210,12 +211,23 @@ module ChapelDomain {
     return x;
   }
 
+  private proc chpl_checkForAnonAssocDom(dims) param : string {
+    for param i in 0..<dims.size do
+      if (!isRange(dims(i))) then
+        return dims(i).type:string;
+    return "";
+  }
+
   // pragma is a workaround for ref-pair vs generic/specific overload resolution
   pragma "compiler generated"
   pragma "last resort"
   proc chpl__ensureDomainExpr(x...) {
     // we are creating array with a range literal(s). So, the array's domain
     // cannot be changed anymore.
+    param dimType = chpl_checkForAnonAssocDom(x);
+    if dimType != "" then
+      compilerWarning("Anonymous associative domain literals without curly brackets are deprecated; please use curly brackets to create an associative domain of '" + dimType + "' indices");
+
     return chpl__buildDomainExpr((...x), definedConst=true);
   }
 
@@ -366,6 +378,9 @@ module ChapelDomain {
       compilerError("Cannot add indices to this domain type");
   }
 
+  inline operator +=(ref D: domain, idx) { D.add(idx); }
+  inline operator +=(ref D: domain, param idx) { D.add(idx); }
+
   operator -(d: domain, i: index(d)) {
     if d.isRectangular() then
       compilerError("Cannot remove indices from a rectangular domain");
@@ -392,6 +407,9 @@ module ChapelDomain {
     else
       compilerError("Cannot remove indices from this domain type");
   }
+
+  inline operator -=(ref D: domain, idx) { D.remove(idx); }
+  inline operator -=(ref D: domain, param idx) { D.remove(idx); }
 
   inline operator ==(d1: domain, d2: domain) where d1.isRectangular() &&
                                                    d2.isRectangular() {
@@ -488,10 +506,18 @@ module ChapelDomain {
     return a + b;
   }
 
+  deprecated "'|' on rectangular domains is deprecated"
+  operator |(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
+    return forall (aa, bb) in zip(a, b) do aa|bb;
+
   operator |=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
       a.add(e);
+  }
+
+  operator |=(a :domain, b: domain) where a.isRectangular() {
+    compilerError("cannot invoke '|=' on a rectangular domain");
   }
 
   operator +=(ref a :domain, b: domain) where (a.type == b.type) &&
@@ -514,6 +540,10 @@ module ChapelDomain {
     return newDom;
   }
 
+  deprecated "'&' on rectangular domains is deprecated"
+  operator &(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
+    return forall (aa, bb) in zip(a, b) do aa&bb;
+
   operator &=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var removeSet: domain(a.idxType);
@@ -522,6 +552,10 @@ module ChapelDomain {
         removeSet += e;
     for e in removeSet do
       a.remove(e);
+  }
+
+  operator &=(a :domain, b: domain) where a.isRectangular() {
+    compilerError("cannot invoke '&=' on a rectangular domain");
   }
 
   operator ^(a :domain, b: domain) where (a.type == b.type) &&
@@ -538,6 +572,10 @@ module ChapelDomain {
     return newDom;
   }
 
+  deprecated "'^' on rectangular domains is deprecated"
+  operator ^(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
+    return forall (aa, bb) in zip(a, b) do aa^bb;
+
   /*
      We remove elements in the RHS domain from those in the LHS domain only if
      they exist. If an element in the RHS is not present in the LHS, it is
@@ -550,6 +588,10 @@ module ChapelDomain {
         a.remove(e);
       else
         a.add(e);
+  }
+
+  operator ^=(a :domain, b: domain) where a.isRectangular() {
+    compilerError("cannot invoke '^=' on a rectangular domain");
   }
 
   //
@@ -1315,13 +1357,19 @@ module ChapelDomain {
       _value.dsiClear();
     }
 
-    /* Add index ``i`` to this domain. This method is also available
+    /* Add index ``idx`` to this domain. This method is also available
        as the ``+=`` operator.
 
        The domain must be irregular.
      */
+    proc ref add(in idx) {
+      return _value.dsiAdd(idx);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
     proc ref add(in i) {
-      return _value.dsiAdd(i);
+      return add(i);
     }
 
     pragma "no doc"
@@ -1428,9 +1476,15 @@ module ChapelDomain {
       compilerError("incompatible argument(s) or this domain type does not support 'bulkAdd'");
     }
 
-    /* Remove index ``i`` from this domain */
+    /* Remove index ``idx`` from this domain */
+    proc ref remove(idx) {
+      return _value.dsiRemove(idx);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
     proc ref remove(i) {
-      return _value.dsiRemove(i);
+      return remove(i);
     }
 
     /* Request space for a particular number of values in an
@@ -1438,16 +1492,21 @@ module ChapelDomain {
 
        Currently only applies to associative domains.
      */
-    proc ref requestCapacity(i) {
+    proc ref requestCapacity(capacity) {
 
-      if i < 0 {
-        halt("domain.requestCapacity can only be invoked on sizes >= 0");
-      }
+      if capacity < 0 then
+        halt("domain.requestCapacity can only be invoked when capacity >= 0");
 
       if !this.isAssociative() then
         compilerError("domain.requestCapacity only applies to associative domains");
 
-      _value.dsiRequestCapacity(i);
+      _value.dsiRequestCapacity(capacity);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'capacity' instead"
+    proc ref requestCapacity(i) {
+      requestCapacity(i);
     }
 
     /* Return the number of indices in this domain.  For domains whose
@@ -1473,7 +1532,7 @@ module ChapelDomain {
     proc sizeAs(type t: integral): t {
       use HaltWrappers;
       const size = _value.dsiNumIndices;
-      if boundsChecking && size > max(t) {
+      if boundsChecking && t != uint && size > max(t) {
         var error = ".size query exceeds max(" + t:string + ")";
         if this.isRectangular() {
           error += " for: '" + this:string + "'";
@@ -1510,79 +1569,76 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc contains(i: rank*_value.idxType) {
+    proc contains(idx: rank*_value.idxType) {
       if this.isRectangular() || this.isSparse() then
-        return _value.dsiMember(_makeIndexTuple(rank, i, "index"));
+        return _value.dsiMember(_makeIndexTuple(rank, idx, "index"));
       else
-        return _value.dsiMember(i(0));
+        return _value.dsiMember(idx(0));
     }
 
-    /* Return true if this domain contains ``i``. Otherwise return false.
+    /* Return true if this domain contains ``idx``. Otherwise return false.
        For sparse domains, only indices with a value are considered
        to be contained in the domain.
      */
-    inline proc contains(i: _value.idxType ...rank) {
-      return contains(i);
+    inline proc contains(idx: _value.idxType ...rank) {
+      return contains(idx);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
+    inline proc contains(i: _value.idxType) {
+      return contains(idx=i);
+    }
+
+    pragma "last resort" pragma "no doc"
+    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
+    inline proc contains(i: rank*_value.idxType) {
+      return contains(idx=i);
     }
 
     /* Return true if this domain is a subset of ``super``. Otherwise
        returns false. */
+    deprecated "'domain1.isSubset(domain2)' is deprecated, instead please use 'domain2.contains(domain1)'"
     proc isSubset(super : domain) {
-      if !(this.isAssociative() || this.isRectangular()) {
-        if this.isSparse() then
-          compilerError("isSubset not supported on sparse domains");
-        else
-          compilerError("isSubset not supported on this domain type");
-      }
-      if super.type != this.type then
-        if this.isRectangular() {
-          if super.rank != this.rank then
-            compilerError("rank mismatch in domain.isSubset()");
-          else if super.low.type != this.low.type then
-            compilerError("isSubset called with different index types");
-        } else
-          compilerError("isSubset called with different associative domain types");
-
-      if this.isRectangular() {
-        var contains = true;
-        for i in 0..this.dims().size-1 {
-          contains &&= super.dims()[i].contains(this.dims()[i]);
-          if contains == false then break;
-        }
-        return contains;
-      }
-
-      return && reduce forall i in this do super.contains(i);
+      return super.contains(this);
     }
 
     /* Return true if this domain is a superset of ``sub``. Otherwise
        returns false. */
+    deprecated "'domain1.isSuper(domain2)' is deprecated, instead please use 'domain1.contains(domain2)'"
     proc isSuper(sub : domain) {
-      if !(this.isAssociative() || this.isRectangular()) {
-        if this.isSparse() then
-          compilerError("isSuper not supported on sparse domains");
-        else
-          compilerError("isSuper not supported on the domain type ", this.type);
-      }
-      if sub.type != this.type then
-        if this.isRectangular() {
-          if sub.rank != this.rank then
-            compilerError("rank mismatch in domain.isSuper()");
-          else if sub.low.type != this.low.type then
-            compilerError("isSuper called with different index types");
-        } else
-          compilerError("isSuper called with different associative domain types");
+      return this.contains(sub);
+    }
 
-      if this.isRectangular() {
-        var contains = true;
-        for i in 0..this.dims().size-1 {
-          contains &&= this.dims()[i].contains(sub.dims()[i]);
-          if contains == false then break;
-        }
-        return contains;
-      }
+    /* Returns true if this domain contains all the indicies in the domain
+       ``other``. */
+    proc contains(other: domain) {
+      if this.rank != other.rank then
+        compilerError("rank mismatch in 'domain.contains()': ",
+                      this.rank:string, " vs. ", other.rank:string);
 
-      return && reduce forall i in sub do this.contains(i);
+      if this.isRectangular() && other.isRectangular() {
+        const thisDims  = this.dims();
+        const otherDims = other.dims();
+        for param i in 0..<this.rank do
+          if ! thisDims(i).contains(otherDims(i)) then
+            return false;
+        return true;
+
+      } else {
+        if ! isCoercible(other.idxType, this.idxType) then
+          compilerError("incompatible idxType in 'domain.contains()':",
+                        " cannot convert from '", other.idxType:string,
+                        "' to '", this.idxType:string, "'");
+
+        const otherSize = other.sizeAs(uint);
+        if otherSize == 0 then return true;
+
+        const thisSize  = this.sizeAs(uint);
+        if thisSize < otherSize then return false;
+
+        return && reduce forall i in other do this.contains(i);
+      }
     }
 
     // 1/5/10: do we want to support order() and position()?

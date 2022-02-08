@@ -1,0 +1,4 @@
+feature request: parallel leader/follower/standalone iterators for bytes
+
+This test shows that bytes can't be involved in parallel iteration,
+but it seems like they trivially should be able to be.

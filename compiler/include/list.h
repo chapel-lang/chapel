@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,7 +52,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   Simple list classes including ones using internal links and ones using external cons cells.
 
   NOTE: SLL/DLL/Queue do not support use with certain types of multiple-inheritance.
-    if you get from g++: 
+    if you get from g++:
       warning: invalid access to non-static data member `A::link' of NULL object
       warning: (perhaps the `offsetof' macro was used incorrectly)
     use -Wno-invalid-offsetof with version 3.3+ of GCC
@@ -125,7 +125,7 @@ template <class C, int o> class Queue : public DLL<C, o> {
   inline void append(Queue<C, o> q);
   bool in(C *e);
   void clear() { head = NULL; tail = NULL; }
-  
+
   Queue() : tail(NULL) {}
 };
 
@@ -134,7 +134,7 @@ template <class C, int o> class Queue : public DLL<C, o> {
 template <class C, int o>
 class CountQueue : public Queue<C, o> {
  public:
-  int size; 
+  int size;
   inline CountQueue(void) : size(0) {}
   inline void push(C *e);
   inline C *pop();
@@ -181,7 +181,7 @@ class List {
 
 /* IMPLEMENTATION */
 
-template <class C, int o> inline void 
+template <class C, int o> inline void
 SLL<C, o>::push(C *e) {
   GetSLinkNext(C, e, o) = head;
   head = e;
@@ -195,7 +195,7 @@ SLL<C, o>::pop() {
   return ret;
 }
 
-template <class C, int o> inline void 
+template <class C, int o> inline void
 DLL<C, o>::push(C *e) {
   if (head)
     GetLinkPrev(C, head, o) = e;
@@ -229,13 +229,13 @@ DLL<C, o>::remove(C *e) {
 template <class C, int o> inline void
 DLL<C, o>::insert(C *e, C *after) {
   if (!after) { push(e); return; }
-  GetLinkPrev(C, e, o) = after; 
+  GetLinkPrev(C, e, o) = after;
   GetLinkNext(C, e, o) = GetLinkNext(C, after, o);
   GetLinkNext(C, after, o) = e;
   if (GetLinkNext(C, e, o)) GetLinkPrev(C, GetLinkNext(C, e, o), o) = e;
 }
 
-template <class C, int o> inline void 
+template <class C, int o> inline void
 Queue<C, o>::push(C *e) {
   DLL<C, o>::push(e);
   if (!tail) tail = head;
@@ -278,7 +278,7 @@ Queue<C, o>::append(Queue<C, o> q) {
   }
 }
 
-template <class C, int o> inline void 
+template <class C, int o> inline void
 Queue<C, o>::enqueue(C *e) {
   if (tail)
     insert(e, tail);
@@ -291,7 +291,7 @@ Queue<C, o>::dequeue() {
   return pop();
 }
 
-template <class C, int o> inline void 
+template <class C, int o> inline void
 CountQueue<C, o>::push(C *e) {
   Queue<C, o>::push(e);
   size++;
@@ -305,13 +305,13 @@ CountQueue<C, o>::pop() {
   return ret;
 }
 
-template <class C, int o> inline void 
+template <class C, int o> inline void
 CountQueue<C, o>::remove(C *e) {
   Queue<C, o>::remove(e);
   size--;
 }
 
-template <class C, int o> inline void 
+template <class C, int o> inline void
 CountQueue<C, o>::enqueue(C *e) {
   Queue<C, o>::enqueue(e);
   size++;

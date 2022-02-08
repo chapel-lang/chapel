@@ -1,0 +1,12 @@
+D8005AC2A8F0
+1 1 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 1 0 1 1 0 0 0 0 1 0 1 0 1 0 1 0 0 0 1 1 1 1 0 0 0 0
+version = 6
+packet type = 6
+totBitLength = 22
+version = 5
+packet type = 4
+Value = 5
+version = 2
+packet type = 4
+Value = 15
+Final result = 1

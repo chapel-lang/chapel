@@ -76,8 +76,7 @@ ssize_t rxr_pkt_send_data(struct rxr_ep *ep,
 	pkt_entry->pkt_size = copied_size + sizeof(struct rxr_data_hdr);
 	pkt_entry->addr = tx_entry->addr;
 
-	return rxr_pkt_entry_send_with_flags(ep, pkt_entry, pkt_entry->addr,
-					     tx_entry->send_flags);
+	return rxr_pkt_entry_send(ep, pkt_entry, tx_entry->send_flags);
 }
 
 /*
@@ -148,6 +147,7 @@ ssize_t rxr_pkt_send_data_desc(struct rxr_ep *ep,
 	size_t i = 0;
 	size_t len = 0;
 
+	size_t j;
 	ssize_t ret;
 
 	orig_iov_index = tx_entry->iov_index;
@@ -206,6 +206,20 @@ ssize_t rxr_pkt_send_data_desc(struct rxr_ep *ep,
 		remaining_len -= len;
 		i++;
 	}
+
+	pkt_entry->send = ofi_buf_alloc(ep->pkt_sendv_pool);
+	if (!pkt_entry->send) {
+		FI_WARN(&rxr_prov, FI_LOG_EP_DATA,
+			"Unable to allocate rxr_pkt_sendv from pkt_sendv_pool\n");
+		return -FI_EAGAIN;
+	}
+
+	for (j = 0; j < i; j++) {
+		memcpy(&pkt_entry->send->iov[j], &iov[j], sizeof(struct iovec));
+		pkt_entry->send->desc[j] = desc[j];
+	}
+	pkt_entry->send->iov_count = i;
+
 	data_pkt->hdr.seg_size = (uint16_t)payload_size;
 	pkt_entry->pkt_size = payload_size + RXR_DATA_HDR_SIZE;
 	pkt_entry->x_entry = tx_entry;
@@ -214,9 +228,7 @@ ssize_t rxr_pkt_send_data_desc(struct rxr_ep *ep,
 	FI_DBG(&rxr_prov, FI_LOG_EP_DATA,
 	       "Sending an iov count, %zu with payload size: %lu.\n",
 	       i, payload_size);
-	ret = rxr_pkt_entry_sendv(ep, pkt_entry, tx_entry->addr,
-				  (const struct iovec *)iov,
-				  desc, i, tx_entry->send_flags);
+	ret = rxr_pkt_entry_send(ep, pkt_entry, tx_entry->send_flags);
 	if (OFI_UNLIKELY(ret)) {
 		/* Reset tx_entry iov pointer on send failure. */
 		tx_entry->iov_index = orig_iov_index;
@@ -270,7 +282,7 @@ void rxr_pkt_proc_data(struct rxr_ep *ep,
 		       char *data, size_t seg_offset,
 		       size_t seg_size)
 {
-	struct rxr_peer *peer;
+	struct rdm_peer *peer;
 	bool all_received = 0;
 	ssize_t err;
 
@@ -284,6 +296,7 @@ void rxr_pkt_proc_data(struct rxr_ep *ep,
 	all_received = (rx_entry->bytes_received == rx_entry->total_len);
 
 	peer = rxr_ep_get_peer(ep, rx_entry->addr);
+	assert(peer);
 	peer->rx_credits += ofi_div_ceil(seg_size, ep->max_data_payload_size);
 
 	rx_entry->window -= seg_size;
@@ -304,7 +317,7 @@ void rxr_pkt_proc_data(struct rxr_ep *ep,
 				 pkt_entry, data, seg_size);
 	if (err) {
 		rxr_pkt_entry_release_rx(ep, pkt_entry);
-		rxr_cq_handle_rx_error(ep, rx_entry, err);
+		rxr_cq_write_rx_error(ep, rx_entry, -err, -err);
 	}
 
 	if (all_received)
@@ -315,7 +328,7 @@ void rxr_pkt_proc_data(struct rxr_ep *ep,
 		err = rxr_pkt_post_ctrl_or_queue(ep, RXR_RX_ENTRY, rx_entry, RXR_CTS_PKT, 0);
 		if (err) {
 			FI_WARN(&rxr_prov, FI_LOG_CQ, "post CTS packet failed!\n");
-			rxr_cq_handle_rx_error(ep, rx_entry, err);
+			rxr_cq_write_rx_error(ep, rx_entry, -err, -err);
 		}
 	}
 }

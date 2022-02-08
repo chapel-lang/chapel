@@ -48,8 +48,8 @@ class PrimitiveType : public Type {
   void primitiveTypeMarkUniqueStringsInner(Context* context) const {
   }
 
-  bool isGeneric() const override {
-    return false;
+  Genericity genericity() const override {
+    return CONCRETE;
   }
 
  public:

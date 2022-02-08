@@ -179,6 +179,7 @@ extern struct vrb_gl_data {
 	} msg;
 
 	bool	peer_mem_support;
+	bool	dmabuf_support;
 } vrb_gl_data;
 
 struct verbs_addr {
@@ -365,9 +366,8 @@ struct vrb_domain {
 
 	ssize_t		(*send_credits)(struct fid_ep *ep, uint64_t credits);
 
-	/* Indicates that MSG endpoints should use the XRC transport.
-	 * TODO: Move selection of XRC/RC to endpoint info from domain */
-	int				flags;
+	/* Domain use of specific extended H/W capabilities, e.g. XRC, ODP */
+	uint64_t			ext_flags;
 	struct {
 		int			xrcd_fd;
 		struct ibv_xrcd		*xrcd;
@@ -847,7 +847,7 @@ ssize_t vrb_eq_write_event(struct vrb_eq *eq, uint32_t event,
 int vrb_query_atomic(struct fid_domain *domain_fid, enum fi_datatype datatype,
 			enum fi_op op, struct fi_atomic_attr *attr,
 			uint64_t flags);
-int vrb_set_rnr_timer(struct ibv_qp *qp);
+void vrb_set_rnr_timer(struct ibv_qp *qp);
 void vrb_cleanup_cq(struct vrb_ep *cur_ep);
 int vrb_find_max_inline(struct ibv_pd *pd, struct ibv_context *context,
 			   enum ibv_qp_type qp_type);

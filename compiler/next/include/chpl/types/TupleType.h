@@ -32,11 +32,12 @@ namespace types {
 class TupleType final : public CompositeType {
  private:
   TupleType(ID id, UniqueString name,
-            std::vector<CompositeType::FieldDetail> fields,
-            const TupleType* instantiatedFrom)
-    : CompositeType(typetags::TupleType, id, name, std::move(fields),
-                    instantiatedFrom)
+            const TupleType* instantiatedFrom,
+            SubstitutionsMap subs)
+    : CompositeType(typetags::TupleType, id, name,
+                    instantiatedFrom, std::move(subs))
   { }
+
 
   bool contentsMatchInner(const Type* other) const override {
     return compositeTypeContentsMatchInner((const CompositeType*) other);
@@ -48,16 +49,16 @@ class TupleType final : public CompositeType {
 
   static const owned<TupleType>&
   getTupleType(Context* context, ID id, UniqueString name,
-               std::vector<CompositeType::FieldDetail> fields,
-               const TupleType* instantiatedFrom);
+               const TupleType* instantiatedFrom,
+               SubstitutionsMap subs);
 
  public:
-  ~TupleType() = default;
-
   static const TupleType*
   get(Context* context, ID id, UniqueString name,
-      std::vector<CompositeType::FieldDetail> fields,
-      const TupleType* instantiatedFrom);
+      const TupleType* instantiatedFrom,
+      CompositeType::SubstitutionsMap subs);
+
+  ~TupleType() = default;
 
   /** If this type represents an instantiated type,
       returns the type it was instantiated from.

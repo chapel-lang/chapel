@@ -39,7 +39,7 @@ static void test0() {
   Context context;
   Context* ctx = &context;
 
-  auto path = UniqueString::build(ctx, "input.chpl");
+  auto path = UniqueString::get(ctx, "input.chpl");
   std::string contents = "/* this is a test */";
   setFileText(ctx, path, contents);
 
@@ -52,7 +52,7 @@ static void test1() {
   Context context;
   Context* ctx = &context;
 
-  auto path = UniqueString::build(ctx, "input.chpl");
+  auto path = UniqueString::get(ctx, "input.chpl");
   std::string contents = "/* this is a test */";
   setFileText(ctx, path, contents);
 
@@ -71,11 +71,11 @@ static void test2() {
   Context* ctx = &context;
 
   ctx->advanceToNextRevision(true);
-  auto modOnePath = UniqueString::build(ctx, "modOne.chpl");
+  auto modOnePath = UniqueString::get(ctx, "modOne.chpl");
   std::string modOneContents = "/* this is a test */\n"
                                "a;\n";
   setFileText(ctx, modOnePath, modOneContents);
-  auto modTwoPath = UniqueString::build(ctx, "modTwo.chpl");
+  auto modTwoPath = UniqueString::get(ctx, "modTwo.chpl");
   std::string modTwoContents = "/* this is a another test */"
                                "a;\n";
   setFileText(ctx, modTwoPath, modTwoContents);
@@ -124,7 +124,7 @@ static void test3() {
   Context context;
   Context* ctx = &context;
 
-  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  auto modulePath = UniqueString::get(ctx, "MyModule.chpl");
   const Module* module = nullptr;
   const Comment* comment = nullptr;
   const Identifier* identifierA = nullptr;
@@ -269,7 +269,7 @@ static void test4() {
   Context context;
   Context* ctx = &context;
 
-  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  auto modulePath = UniqueString::get(ctx, "MyModule.chpl");
   const Module* module = nullptr;
   const Comment* comment = nullptr;
   const Function* A = nullptr;
@@ -463,7 +463,7 @@ static void test5() {
   Context context;
   Context* ctx = &context;
 
-  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  auto modulePath = UniqueString::get(ctx, "MyModule.chpl");
   const Module* mod = nullptr;
   const Comment* comment = nullptr;
   const Variable* A = nullptr;
@@ -527,7 +527,7 @@ static void test6() {
   Context context;
   Context* ctx = &context;
 
-  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  auto modulePath = UniqueString::get(ctx, "MyModule.chpl");
   std::string moduleContents;
 
   moduleContents = "module MyModule {\n"
@@ -545,7 +545,7 @@ static void test6() {
 
   checkPathAllChildren(ctx, mod, modulePath);
 
-  auto got = getToplevelModule(ctx, UniqueString::build(ctx, "MyModule"));
+  auto got = getToplevelModule(ctx, UniqueString::get(ctx, "MyModule"));
   assert(got == mod);
 }
 
@@ -575,7 +575,7 @@ static void test7() {
   Context context;
   Context* ctx = &context;
 
-  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  auto modulePath = UniqueString::get(ctx, "MyModule.chpl");
   std::string moduleContents;
 
   moduleContents = "module MyModule {\n"
@@ -599,7 +599,7 @@ static void test8() {
   Context context;
   Context* ctx = &context;
 
-  auto filepath = UniqueString::build(ctx, "test8.chpl");
+  auto filepath = UniqueString::get(ctx, "test8.chpl");
   std::string contents;
 
   contents = "module M { }\n"
@@ -610,14 +610,37 @@ static void test8() {
   const ModuleVec& v = parse(ctx, filepath);
   assert(v.size() == 3);
 
-  auto m = getToplevelModule(ctx, UniqueString::build(ctx, "M"));
+  auto m = getToplevelModule(ctx, UniqueString::get(ctx, "M"));
   assert(m == v[0]);
-  auto n = getToplevelModule(ctx, UniqueString::build(ctx, "N"));
+  auto n = getToplevelModule(ctx, UniqueString::get(ctx, "N"));
   assert(n == v[1]);
-  auto o = getToplevelModule(ctx, UniqueString::build(ctx, "O"));
+  auto o = getToplevelModule(ctx, UniqueString::get(ctx, "O"));
   assert(o == v[2]);
 }
 
+static void test9() {
+  Context ctx;
+  Context* context = &ctx;
+
+  std::vector<std::string> searchPath;
+  searchPath.push_back("/test/path/library");
+  searchPath.push_back("/test/path/program/");
+
+  setModuleSearchPath(context, searchPath);
+
+  setFileText(context, "/test/path/program/Program.chpl",
+                       "module Program { use Library; var x = libY; }");
+  setFileText(context, "/test/path/library/Library.chpl",
+                       "module Library { var libY = 3; }");
+
+  auto Program = UniqueString::get(context, "Program");
+  auto Library = UniqueString::get(context, "Library");
+  auto pMod = getToplevelModule(context, Program);
+  auto lMod = getToplevelModule(context, Library);
+
+  assert(pMod != nullptr);
+  assert(lMod != nullptr);
+}
 
 int main() {
   test0();
@@ -629,6 +652,7 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
 
   return 0;
 }

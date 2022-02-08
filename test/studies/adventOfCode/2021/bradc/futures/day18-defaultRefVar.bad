@@ -1,0 +1,1 @@
+day18-defaultRefVar.chpl:11: error: const actual is passed to 'ref' formal 'pos' of countDown()

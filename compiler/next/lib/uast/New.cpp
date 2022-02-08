@@ -32,7 +32,7 @@ owned<New> New::build(Builder* builder,
 
   lst.push_back(std::move(typeExpression));
 
-  New* ret = new New(std::move(lst), management); 
+  New* ret = new New(std::move(lst), management);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

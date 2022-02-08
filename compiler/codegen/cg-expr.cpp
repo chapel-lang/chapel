@@ -4964,7 +4964,7 @@ DEFINE_PRIM(GPU_ALLOC_SHARED) {
   llvm::GlobalVariable* glob = new llvm::GlobalVariable(
     *info->module, arrayTy, false, llvm::GlobalValue::InternalLinkage,
     llvm::Constant::getNullValue(arrayTy),
-    "gpuSharedMemory", nullptr, llvm::GlobalValue::NotThreadLocal, 3, false); 
+    "gpuSharedMemory", nullptr, llvm::GlobalValue::NotThreadLocal, 3, false);
   llvm::Type* pointerToArrayTy = arrayTy->getPointerTo();
   //We want to return a void* in the "generic" address space to we need to cast
   llvm::Value* castedValue = gGenInfo->irBuilder->CreateAddrSpaceCast(

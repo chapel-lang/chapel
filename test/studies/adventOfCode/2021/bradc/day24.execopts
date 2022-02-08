@@ -1,0 +1,6 @@
+--programInput=day24.test < day24b.stdin         # day24-test.good
+--programInput=day24.test2 < day24-test2.stdin   # day24-test2.good
+--programInput=day24.test2 < day24-test2a.stdin  # day24-test2a.good
+--programInput=day24.test3 < day24b.stdin        # day24-test3.good
+--programInput=day24.in < day24b.stdin
+--programInput=day24.in < day24a.stdin           # day24a.good

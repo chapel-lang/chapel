@@ -383,9 +383,9 @@ release:
 
 static int util_wait_fd_run(struct fid_wait *wait_fid, int timeout)
 {
+	struct ofi_epollfds_event event;
 	struct util_wait_fd *wait;
 	uint64_t endtime;
-	void *ep_context[1];
 	int ret;
 
 	wait = container_of(wait_fid, struct util_wait_fd, util_wait.wait_fid);
@@ -400,12 +400,17 @@ static int util_wait_fd_run(struct fid_wait *wait_fid, int timeout)
 			return -FI_ETIMEDOUT;
 
 		ret = (wait->util_wait.wait_obj == FI_WAIT_FD) ?
-		      ofi_epoll_wait(wait->epoll_fd, ep_context, 1, timeout) :
-		      ofi_pollfds_wait(wait->pollfds, ep_context, 1, timeout);
+		      ofi_epoll_wait(wait->epoll_fd, &event, 1, timeout) :
+		      ofi_pollfds_wait(wait->pollfds, &event, 1, timeout);
 		if (ret > 0)
 			return FI_SUCCESS;
 
 		if (ret < 0) {
+#if ENABLE_DEBUG
+			/* ignore interrupts in order to enable debugging */
+			if (ret == -FI_EINTR)
+				continue;
+#endif
 			FI_WARN(wait->util_wait.prov, FI_LOG_FABRIC,
 				"poll failed\n");
 			return ret;

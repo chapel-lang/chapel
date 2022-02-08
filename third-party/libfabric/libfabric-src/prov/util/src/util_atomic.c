@@ -49,11 +49,14 @@ static const size_t ofi_datatype_size_table[] = {
 	[FI_DOUBLE_COMPLEX] = sizeof(ofi_complex_double),
 	[FI_LONG_DOUBLE]    = sizeof(long double),
 	[FI_LONG_DOUBLE_COMPLEX] = sizeof(ofi_complex_long_double),
+	/* Compute 128-bit integer size, since compiler may not support type. */
+	[FI_INT128]  = sizeof(int64_t) * 2,
+	[FI_UINT128] = sizeof(uint64_t) * 2,
 };
 
 size_t ofi_datatype_size(enum fi_datatype datatype)
 {
-	if (datatype >= FI_DATATYPE_LAST) {
+	if (datatype >= ARRAY_SIZE(ofi_datatype_size_table)) {
 		errno = FI_EINVAL;
 		return 0;
 	}

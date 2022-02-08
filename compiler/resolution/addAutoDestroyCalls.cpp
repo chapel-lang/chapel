@@ -39,6 +39,8 @@
 #include "symbol.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <vector>
 
 // last mention map:

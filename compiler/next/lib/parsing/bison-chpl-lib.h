@@ -223,7 +223,7 @@ extern int yychpl_debug;
   }
   static inline
   MaybeNamedActual makeMaybeNamedActual(Expression* expr) {
-    PODUniqueString emptyName = PODUniqueString::build();
+    PODUniqueString emptyName = PODUniqueString::get();
     MaybeNamedActual ret = {expr, emptyName};
     return ret;
   }

@@ -35,6 +35,8 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <unordered_map>
 #include <array>
 #include <vector>

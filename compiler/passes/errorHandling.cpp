@@ -34,6 +34,8 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <stack>
 
 /*

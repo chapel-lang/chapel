@@ -27,10 +27,10 @@
 #include <field_base.h>
 
 namespace chapel {
-  
+
   using namespace google::protobuf;
   using namespace google::protobuf::io;
-  
+
   class PrimitiveFieldGenerator : public FieldGeneratorBase {
    public:
     PrimitiveFieldGenerator(const FieldDescriptor* descriptor);

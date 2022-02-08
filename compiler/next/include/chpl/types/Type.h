@@ -25,6 +25,8 @@
 #include "chpl/types/TypeClasses.h"
 #include "chpl/types/TypeTag.h"
 
+#include <deque>
+
 namespace chpl {
 namespace uast {
   class Decl;
@@ -40,6 +42,24 @@ namespace types {
 
  */
 class Type {
+ public:
+  enum Genericity {
+    /** A concrete type e.g. 'int' */
+    CONCRETE,
+
+    /** A generic type, e.g. 'integral' */
+    GENERIC,
+
+    /** A type that is generic but has a default for each generic field.
+        E.g. 'record R { type t = int; }'.
+      */
+    GENERIC_WITH_DEFAULTS,
+
+    /** When we need more information to decide if the type is generic.
+        It might depend on fields, e.g. */
+    MAYBE_GENERIC,
+  };
+
  private:
   TypeTag tag_;
 
@@ -48,6 +68,7 @@ class Type {
     This function needs to be defined by subclasses.
     It should check only those fields defined in subclasses
     (it should not check the Type fields such as tag_).
+
     It can assume that other has the same type as the receiver.
    */
   virtual bool contentsMatchInner(const Type* other) const = 0;
@@ -61,10 +82,13 @@ class Type {
 
  public:
   /**
+   This function returns an enum Genericity value to indicate
+   if the type is concrete, generic, generic with defaults,
+   or maybe generic (e.g. depending on the fields).
+
    This function needs to be defined by subclasses.
-   It returns 'true` if the type represents a generic type.
    */
-  virtual bool isGeneric() const = 0;
+  virtual Genericity genericity() const = 0;
 
  protected:
   Type(TypeTag tag)
@@ -198,6 +222,10 @@ class Type {
   #undef TYPE_BEGIN_SUBCLASSES
   #undef TYPE_END_SUBCLASSES
   #undef TYPE_TO
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 

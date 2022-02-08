@@ -47,7 +47,7 @@ module ChapelAutoAggregation {
   pragma "aggregator generator"
   proc chpl_dstAggregatorFor(dom) where isDomain(dom) {
     // this is only called if the user has:
-    // 
+    //
     // forall i in myDomain { i = foo(); }
     //
     // We want that code to fail with proper error message, so we have this
@@ -83,6 +83,7 @@ module ChapelAutoAggregation {
   }
 
   module CopyAggregation {
+    use ChplConfig;
     use SysCTypes;
     use CPtr;
     use super.AggregationPrimitives;

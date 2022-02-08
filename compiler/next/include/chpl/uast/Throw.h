@@ -68,7 +68,7 @@ class Throw final : public Expression {
 
   /**
     Return the error expression of this throw statement.
-  */ 
+  */
   const Expression* errorExpression() const {
     const ASTNode* ast = this->child(errorExprChildNum_);
     assert(ast->isExpression());

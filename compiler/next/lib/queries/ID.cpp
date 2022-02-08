@@ -45,7 +45,7 @@ ID ID::parentSymbolId(Context* context) const {
   }
 
   // Otherwise, construct an ID for the parent symbol
-  return ID(UniqueString::build(context, path, lastDot), -1, 0);
+  return ID(UniqueString::get(context, path, lastDot), -1, 0);
 }
 
 bool ID::contains(const ID& other) const {
@@ -93,6 +93,14 @@ void ID::stringify(std::ostream& ss,
     ss << "@";
     ss << std::to_string(this->postOrderId());
   }
+}
+
+IMPLEMENT_DUMP(ID);
+
+std::string ID::str() const {
+  std::ostringstream ss;
+  stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
+  return ss.str();
 }
 
 } // end namespace chpl

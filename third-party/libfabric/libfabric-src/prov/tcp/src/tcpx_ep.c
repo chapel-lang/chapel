@@ -41,6 +41,8 @@
 
 extern struct fi_ops_rma tcpx_rma_ops;
 extern struct fi_ops_msg tcpx_msg_ops;
+extern struct fi_ops_tagged tcpx_tagged_ops;
+
 
 void tcpx_hdr_none(struct tcpx_base_hdr *hdr)
 {
@@ -49,25 +51,49 @@ void tcpx_hdr_none(struct tcpx_base_hdr *hdr)
 
 void tcpx_hdr_bswap(struct tcpx_base_hdr *hdr)
 {
-	struct ofi_rma_iov *rma_iov;
-	uint8_t *ptr = (uint8_t *)hdr + sizeof(*hdr);
-	int i;
+	uint64_t *cur;
+	int i, cnt;
 
 	hdr->flags = ntohs(hdr->flags);
 	hdr->size = ntohll(hdr->size);
 
-	if (hdr->flags & OFI_REMOTE_CQ_DATA) {
-		*((uint64_t *)ptr) = ntohll(*((uint64_t *) ptr));
-		ptr += sizeof(uint64_t);
-	}
+	cnt = (hdr->hdr_size - sizeof(*hdr)) >> 3;
+	cur = (uint64_t *) (hdr + 1);
+	for (i = 0; i < cnt; i++)
+		cur[i] = ntohll(cur[i]);
+}
 
-	rma_iov = (struct ofi_rma_iov *)ptr;
-	for ( i = 0; i < hdr->rma_iov_cnt; i++) {
-		rma_iov[i].addr = ntohll(rma_iov[i].addr);
-		rma_iov[i].len = ntohll(rma_iov[i].len);
-		rma_iov[i].key = ntohll(rma_iov[i].key);
+#ifdef MSG_ZEROCOPY
+static void tcpx_set_zerocopy(SOCKET sock)
+{
+	int val = 1;
+
+	if (tcpx_zerocopy_size == SIZE_MAX)
+		return;
+
+	(void) setsockopt(sock, SOL_SOCKET, SO_ZEROCOPY, &val, sizeof(val));
+}
+
+static void tcpx_config_bsock(struct ofi_bsock *bsock)
+{
+	int ret, val = 0;
+	socklen_t len = sizeof(val);
+
+	if (tcpx_zerocopy_size == SIZE_MAX)
+		return;
+
+	ret = getsockopt(bsock->sock, SOL_SOCKET, SO_ZEROCOPY, &val, &len);
+	if (!ret && val) {
+		bsock->zerocopy_size = tcpx_zerocopy_size;
+		FI_INFO(&tcpx_prov, FI_LOG_EP_CTRL,
+			"zero copy enabled for transfers > %zu\n",
+			bsock->zerocopy_size);
 	}
 }
+#else
+#define tcpx_set_zerocopy(sock)
+#define tcpx_config_bsock(bsock)
+#endif
 
 static int tcpx_setup_socket(SOCKET sock, struct fi_info *info)
 {
@@ -110,11 +136,11 @@ static int tcpx_ep_connect(struct fid_ep *ep, const void *addr,
 	struct tcpx_cm_context *cm_ctx;
 	int ret;
 
-	if (!addr || !tcpx_ep->sock || paramlen > TCPX_MAX_CM_DATA_SIZE ||
-	    tcpx_ep->state != TCPX_IDLE)
+	if (!addr || (tcpx_ep->bsock.sock == INVALID_SOCKET) ||
+	    (paramlen > TCPX_MAX_CM_DATA_SIZE) || (tcpx_ep->state != TCPX_IDLE))
 		return -FI_EINVAL;
 
-	cm_ctx = calloc(1, sizeof(*cm_ctx));
+	cm_ctx = tcpx_alloc_cm_ctx(&ep->fid, TCPX_CM_CONNECTING);
 	if (!cm_ctx) {
 		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
 			"cannot allocate memory \n");
@@ -122,7 +148,7 @@ static int tcpx_ep_connect(struct fid_ep *ep, const void *addr,
 	}
 
 	tcpx_ep->state = TCPX_CONNECTING;
-	ret = connect(tcpx_ep->sock, (struct sockaddr *) addr,
+	ret = connect(tcpx_ep->bsock.sock, (struct sockaddr *) addr,
 		      (socklen_t) ofi_sizeofaddr(addr));
 	if (ret && !OFI_SOCK_TRY_CONN_AGAIN(ofi_sockerr())) {
 		tcpx_ep->state = TCPX_IDLE;
@@ -130,62 +156,66 @@ static int tcpx_ep_connect(struct fid_ep *ep, const void *addr,
 		goto free;
 	}
 
-	cm_ctx->fid = &tcpx_ep->util_ep.ep_fid.fid;
-	cm_ctx->state = TCPX_CM_CONNECTING;
-
 	if (paramlen) {
 		cm_ctx->cm_data_sz = paramlen;
 		memcpy(cm_ctx->msg.data, param, paramlen);
 	}
 
-	ret = ofi_wait_add_fd(tcpx_ep->util_ep.eq->wait, tcpx_ep->sock,
-			      POLLOUT, tcpx_eq_wait_try_func, NULL,cm_ctx);
+	ret = ofi_wait_add_fd(tcpx_ep->util_ep.eq->wait, tcpx_ep->bsock.sock,
+			      POLLOUT, tcpx_eq_wait_try_func, NULL, cm_ctx);
 	if (ret)
 		goto disable;
 
 	return 0;
 
 disable:
+	fastlock_acquire(&tcpx_ep->lock);
 	tcpx_ep_disable(tcpx_ep, -ret);
+	fastlock_release(&tcpx_ep->lock);
 free:
-	free(cm_ctx);
+	tcpx_free_cm_ctx(cm_ctx);
 	return ret;
 }
 
-static int tcpx_ep_accept(struct fid_ep *ep, const void *param, size_t paramlen)
+static int
+tcpx_ep_accept(struct fid_ep *fid_ep, const void *param, size_t paramlen)
 {
-	struct tcpx_ep *tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
+	struct tcpx_ep *ep = container_of(fid_ep, struct tcpx_ep, util_ep.ep_fid);
 	struct tcpx_cm_context *cm_ctx;
+	struct tcpx_conn_handle *handle;
 	int ret;
 
-	if (tcpx_ep->sock == INVALID_SOCKET || tcpx_ep->state != TCPX_RCVD_REQ)
+	handle = ep->handle;
+	if (ep->bsock.sock == INVALID_SOCKET || ep->state != TCPX_RCVD_REQ ||
+	    !handle || (handle->fid.fclass != FI_CLASS_CONNREQ))
 		return -FI_EINVAL;
 
-	cm_ctx = calloc(1, sizeof(*cm_ctx));
+	ep->handle = NULL;
+	cm_ctx = tcpx_alloc_cm_ctx(&ep->util_ep.ep_fid.fid, TCPX_CM_RESP_READY);
 	if (!cm_ctx) {
 		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
 			"cannot allocate memory \n");
 		return -FI_ENOMEM;
 	}
 
-	tcpx_ep->state = TCPX_ACCEPTING;
-	cm_ctx->fid = &tcpx_ep->util_ep.ep_fid.fid;
-	cm_ctx->state = TCPX_CM_RESP_READY;
+	ep->state = TCPX_ACCEPTING;
+
 	if (paramlen) {
 		cm_ctx->cm_data_sz = paramlen;
 		memcpy(cm_ctx->msg.data, param, paramlen);
 	}
 
-	ret = ofi_wait_add_fd(tcpx_ep->util_ep.eq->wait, tcpx_ep->sock,
+	ret = ofi_wait_add_fd(ep->util_ep.eq->wait, ep->bsock.sock,
 			      POLLOUT, tcpx_eq_wait_try_func, NULL, cm_ctx);
 	if (ret)
 		goto free;
 
+	free(handle);
 	return 0;
 
 free:
-	tcpx_ep->state = TCPX_RCVD_REQ;
-	free(cm_ctx);
+	ep->state = TCPX_RCVD_REQ;
+	tcpx_free_cm_ctx(cm_ctx);
 	return ret;
 }
 
@@ -200,31 +230,49 @@ static void tcpx_ep_flush_queue(struct slist *queue,
 					  entry);
 		slist_remove_head(queue);
 		tcpx_cq_report_error(&tcpx_cq->util_cq, xfer_entry, FI_ECANCELED);
-		tcpx_xfer_entry_free(tcpx_cq, xfer_entry);
+		tcpx_free_xfer(tcpx_cq, xfer_entry);
 	}
 }
 
-/* must hold ep->lock */
 static void tcpx_ep_flush_all_queues(struct tcpx_ep *ep)
 {
-	struct tcpx_cq *tcpx_cq;
+	struct tcpx_cq *cq;
 
-	tcpx_cq = container_of(ep->util_ep.tx_cq, struct tcpx_cq, util_cq);
-	tcpx_ep_flush_queue(&ep->tx_queue, tcpx_cq);
-	tcpx_ep_flush_queue(&ep->rma_read_queue, tcpx_cq);
-	tcpx_ep_flush_queue(&ep->tx_rsp_pend_queue, tcpx_cq);
+	assert(fastlock_held(&ep->lock));
+	cq = container_of(ep->util_ep.tx_cq, struct tcpx_cq, util_cq);
+	if (ep->cur_tx.entry) {
+		ep->hdr_bswap(&ep->cur_tx.entry->hdr.base_hdr);
+		tcpx_cq_report_error(&cq->util_cq, ep->cur_tx.entry,
+				     FI_ECANCELED);
+		tcpx_free_xfer(cq, ep->cur_tx.entry);
+		ep->cur_tx.entry = NULL;
+	}
 
-	tcpx_cq = container_of(ep->util_ep.rx_cq, struct tcpx_cq, util_cq);
-	tcpx_ep_flush_queue(&ep->rx_queue, tcpx_cq);
+	tcpx_ep_flush_queue(&ep->tx_queue, cq);
+	tcpx_ep_flush_queue(&ep->priority_queue, cq);
+	tcpx_ep_flush_queue(&ep->rma_read_queue, cq);
+	tcpx_ep_flush_queue(&ep->need_ack_queue, cq);
+	tcpx_ep_flush_queue(&ep->async_queue, cq);
+
+	cq = container_of(ep->util_ep.rx_cq, struct tcpx_cq, util_cq);
+	if (ep->cur_rx.entry) {
+		tcpx_cq_report_error(&cq->util_cq, ep->cur_rx.entry,
+				     FI_ECANCELED);
+		tcpx_free_xfer(cq, ep->cur_rx.entry);
+		tcpx_reset_rx(ep);
+	}
+	tcpx_ep_flush_queue(&ep->rx_queue, cq);
+	ofi_bsock_discard(&ep->bsock);
 }
 
-/* must hold ep->lock */
 void tcpx_ep_disable(struct tcpx_ep *ep, int cm_err)
 {
 	struct util_wait_fd *wait;
 	struct fi_eq_cm_entry cm_entry = {0};
 	struct fi_eq_err_entry err_entry = {0};
+	int ret;
 
+	assert(fastlock_held(&ep->lock));
 	switch (ep->state) {
 	case TCPX_RCVD_REQ:
 		break;
@@ -236,25 +284,29 @@ void tcpx_ep_disable(struct tcpx_ep *ep, int cm_err)
 		if (ep->util_ep.tx_cq) {
 			wait = container_of(ep->util_ep.tx_cq->wait,
 					    struct util_wait_fd, util_wait);
-			ofi_wait_fdset_del(wait, ep->sock);
+			ofi_wait_fdset_del(wait, ep->bsock.sock);
 		}
 
 		if (ep->util_ep.rx_cq) {
 			wait = container_of(ep->util_ep.rx_cq->wait,
 					    struct util_wait_fd, util_wait);
-			ofi_wait_fdset_del(wait, ep->sock);
+			ofi_wait_fdset_del(wait, ep->bsock.sock);
 		}
 		/* fall through */
 	case TCPX_ACCEPTING:
 	case TCPX_CONNECTING:
 		wait = container_of(ep->util_ep.eq->wait,
 				    struct util_wait_fd, util_wait);
-		ofi_wait_fdset_del(wait, ep->sock);
+		ofi_wait_fdset_del(wait, ep->bsock.sock);
 		break;
 
 	default:
 		return;
 	}
+
+	ret = ofi_shutdown(ep->bsock.sock, SHUT_RDWR);
+	if (ret && ofi_sockerr() != ENOTCONN)
+		FI_WARN(&tcpx_prov, FI_LOG_EP_DATA, "shutdown failed\n");
 
 	tcpx_ep_flush_all_queues(ep);
 
@@ -276,14 +328,9 @@ void tcpx_ep_disable(struct tcpx_ep *ep, int cm_err)
 static int tcpx_ep_shutdown(struct fid_ep *ep, uint64_t flags)
 {
 	struct tcpx_ep *tcpx_ep;
-	int ret;
 
 	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
-
-	ret = ofi_shutdown(tcpx_ep->sock, SHUT_RDWR);
-	if (ret && ofi_sockerr() != ENOTCONN) {
-		FI_WARN(&tcpx_prov, FI_LOG_EP_DATA, "ep shutdown unsuccessful\n");
-	}
+	(void) ofi_bsock_flush(&tcpx_ep->bsock);
 
 	fastlock_acquire(&tcpx_ep->lock);
 	tcpx_ep_disable(tcpx_ep, 0);
@@ -346,10 +393,10 @@ static int tcpx_pep_sock_create(struct tcpx_pep *pep)
 		return -FI_EIO;
 	}
 	ret = tcpx_setup_socket(pep->sock, pep->info);
-	if (ret) {
+	if (ret)
 		goto err;
-	}
 
+	tcpx_set_zerocopy(pep->sock);
 	ret = fi_fd_nonblock(pep->sock);
 	if (ret) {
 		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
@@ -387,7 +434,7 @@ static int tcpx_ep_getname(fid_t fid, void *addr, size_t *addrlen)
 	int ret;
 
 	tcpx_ep = container_of(fid, struct tcpx_ep, util_ep.ep_fid);
-	ret = ofi_getsockname(tcpx_ep->sock, addr, (socklen_t *)addrlen);
+	ret = ofi_getsockname(tcpx_ep->bsock.sock, addr, (socklen_t *) addrlen);
 	if (ret)
 		return -ofi_sockerr();
 
@@ -401,7 +448,7 @@ static int tcpx_ep_getpeer(struct fid_ep *ep, void *addr, size_t *addrlen)
 	int ret;
 
 	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
-	ret = ofi_getpeername(tcpx_ep->sock, addr, (socklen_t *)addrlen);
+	ret = ofi_getpeername(tcpx_ep->bsock.sock, addr, (socklen_t *) addrlen);
 	if (ret)
 		return -ofi_sockerr();
 
@@ -421,27 +468,22 @@ static struct fi_ops_cm tcpx_cm_ops = {
 	.join = fi_no_join,
 };
 
-void tcpx_rx_entry_free(struct tcpx_xfer_entry *rx_entry)
+void tcpx_reset_rx(struct tcpx_ep *ep)
 {
-	struct tcpx_cq *tcpx_cq;
-
-	assert(rx_entry->hdr.base_hdr.op_data == TCPX_OP_MSG_RECV);
-
-	if (rx_entry->ep->srx_ctx) {
-		tcpx_srx_entry_free(rx_entry->ep->srx_ctx, rx_entry);
-	} else {
-		tcpx_cq = container_of(rx_entry->ep->util_ep.rx_cq,
-				       struct tcpx_cq, util_cq);
-		tcpx_xfer_entry_free(tcpx_cq, rx_entry);
-	}
+	ep->cur_rx.handler = NULL;
+	ep->cur_rx.entry = NULL;
+	ep->cur_rx.hdr_done = 0;
+	ep->cur_rx.hdr_len = sizeof(ep->cur_rx.hdr.base_hdr);
+	OFI_DBG_SET(ep->cur_rx.hdr.base_hdr.version, 0);
 }
 
-/* Must hold ep->lock. */
 static void tcpx_ep_cancel_rx(struct tcpx_ep *ep, void *context)
 {
 	struct slist_entry *cur, *prev;
 	struct tcpx_xfer_entry *xfer_entry;
 	struct tcpx_cq *cq;
+
+	assert(fastlock_held(&ep->lock));
 
 	/* To cancel an active receive, we would need to flush the socket of
 	 * all data associated with that message.  Since some of that data
@@ -452,7 +494,7 @@ static void tcpx_ep_cancel_rx(struct tcpx_ep *ep, void *context)
 	slist_foreach(&ep->rx_queue, cur, prev) {
 		xfer_entry = container_of(cur, struct tcpx_xfer_entry, entry);
 		if (xfer_entry->context == context) {
-			if (ep->cur_rx_entry != xfer_entry)
+			if (ep->cur_rx.entry != xfer_entry)
 				goto found;
 			break;
 		}
@@ -464,8 +506,9 @@ found:
 	cq = container_of(ep->util_ep.rx_cq, struct tcpx_cq, util_cq);
 
 	slist_remove(&ep->rx_queue, cur, prev);
+	ep->rx_avail++;
 	tcpx_cq_report_error(&cq->util_cq, xfer_entry, FI_ECANCELED);
-	tcpx_xfer_entry_free(cq, xfer_entry);
+	tcpx_free_xfer(cq, xfer_entry);
 }
 
 /* We currently only support canceling receives, which is the common case.
@@ -499,16 +542,19 @@ static int tcpx_ep_close(struct fid *fid)
 		fastlock_acquire(&eq->close_lock);
 
 	if (ep->util_ep.rx_cq)
-		ofi_wait_del_fd(ep->util_ep.rx_cq->wait, ep->sock);
+		ofi_wait_del_fd(ep->util_ep.rx_cq->wait, ep->bsock.sock);
 
 	if (ep->util_ep.tx_cq)
-		ofi_wait_del_fd(ep->util_ep.tx_cq->wait, ep->sock);
+		ofi_wait_del_fd(ep->util_ep.tx_cq->wait, ep->bsock.sock);
 
 	if (ep->util_ep.eq && ep->util_ep.eq->wait)
-		ofi_wait_del_fd(ep->util_ep.eq->wait, ep->sock);
+		ofi_wait_del_fd(ep->util_ep.eq->wait, ep->bsock.sock);
 
 	if (eq)
 		fastlock_release(&eq->close_lock);
+
+	if (ep->fid && ep->fid->fclass == TCPX_CLASS_CM)
+		tcpx_free_cm_ctx(ep->cm_ctx);
 
 	/* Lock not technically needed, since we're freeing the EP.  But it's
 	 * harmless to acquire and silences static code analysis tools.
@@ -521,7 +567,7 @@ static int tcpx_ep_close(struct fid *fid)
 		ofi_eq_remove_fid_events(ep->util_ep.eq,
 					 &ep->util_ep.ep_fid.fid);
 	}
-	ofi_close_socket(ep->sock);
+	ofi_close_socket(ep->bsock.sock);
 	ofi_endpoint_close(&ep->util_ep);
 	fastlock_destroy(&ep->lock);
 
@@ -655,36 +701,56 @@ int tcpx_endpoint(struct fid_domain *domain, struct fi_info *info,
 	if (ret)
 		goto err1;
 
+	ofi_bsock_init(&ep->bsock, tcpx_staging_sbuf_size,
+		       tcpx_prefetch_rbuf_size);
 	if (info->handle) {
 		if (((fid_t) info->handle)->fclass == FI_CLASS_PEP) {
 			pep = container_of(info->handle, struct tcpx_pep,
 					   util_pep.pep_fid.fid);
 
-			ep->sock = pep->sock;
+			ep->bsock.sock = pep->sock;
 			pep->sock = INVALID_SOCKET;
 		} else {
 			ep->state = TCPX_RCVD_REQ;
 			handle = container_of(info->handle,
-					      struct tcpx_conn_handle, handle);
-			ep->sock = handle->sock;
+					      struct tcpx_conn_handle, fid);
+			/* EP now owns socket */
+			ep->bsock.sock = handle->sock;
+			handle->sock = INVALID_SOCKET;
 			ep->hdr_bswap = handle->endian_match ?
 					tcpx_hdr_none : tcpx_hdr_bswap;
-			free(handle);
+			/* Save handle, but we only free if user calls accept.
+			 * Otherwise, user will call reject, which will free it.
+			 */
+			ep->handle = handle;
 
-			ret = tcpx_setup_socket(ep->sock, info);
+			ret = tcpx_setup_socket(ep->bsock.sock, info);
 			if (ret)
 				goto err3;
 		}
 	} else {
-		ep->sock = ofi_socket(ofi_get_sa_family(info), SOCK_STREAM, 0);
-		if (ep->sock == INVALID_SOCKET) {
+		ep->bsock.sock = ofi_socket(ofi_get_sa_family(info), SOCK_STREAM, 0);
+		if (ep->bsock.sock == INVALID_SOCKET) {
 			ret = -ofi_sockerr();
 			goto err2;
 		}
 
-		ret = tcpx_setup_socket(ep->sock, info);
+		ret = tcpx_setup_socket(ep->bsock.sock, info);
 		if (ret)
 			goto err3;
+
+		tcpx_set_zerocopy(ep->bsock.sock);
+
+		if (info->src_addr && (!ofi_is_any_addr(info->src_addr) ||
+					ofi_addr_get_port(info->src_addr))) {
+			ret = bind(ep->bsock.sock, info->src_addr,
+				(socklen_t) info->src_addrlen);
+			if (ret) {
+				FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL, "bind failed\n");
+				ret = -ofi_sockerr();
+				goto err3;
+			}
+		}
 	}
 
 	ret = fastlock_init(&ep->lock);
@@ -693,12 +759,18 @@ int tcpx_endpoint(struct fid_domain *domain, struct fi_info *info,
 
 	slist_init(&ep->rx_queue);
 	slist_init(&ep->tx_queue);
+	slist_init(&ep->priority_queue);
 	slist_init(&ep->rma_read_queue);
-	slist_init(&ep->tx_rsp_pend_queue);
+	slist_init(&ep->need_ack_queue);
+	slist_init(&ep->async_queue);
 
-	ep->cur_rx_msg.done_len = 0;
-	ep->cur_rx_msg.hdr_len = sizeof(ep->cur_rx_msg.hdr.base_hdr);
+	if (info->ep_attr->rx_ctx_cnt != FI_SHARED_CONTEXT)
+		ep->rx_avail = info->rx_attr->size;
+
+	ep->cur_rx.hdr_done = 0;
+	ep->cur_rx.hdr_len = sizeof(ep->cur_rx.hdr.base_hdr);
 	ep->min_multi_recv_size = TCPX_MIN_MULTI_RECV;
+	tcpx_config_bsock(&ep->bsock);
 
 	*ep_fid = &ep->util_ep.ep_fid;
 	(*ep_fid)->fid.ops = &tcpx_ep_fi_ops;
@@ -706,6 +778,8 @@ int tcpx_endpoint(struct fid_domain *domain, struct fi_info *info,
 	(*ep_fid)->cm = &tcpx_cm_ops;
 	(*ep_fid)->msg = &tcpx_msg_ops;
 	(*ep_fid)->rma = &tcpx_rma_ops;
+	if (tcpx_dynamic_rbuf(ep))
+		(*ep_fid)->tagged = &tcpx_tagged_ops;
 
 	ep->start_op[ofi_op_msg] = tcpx_op_msg;
 	ep->start_op[ofi_op_tagged] = tcpx_op_invalid;
@@ -714,7 +788,7 @@ int tcpx_endpoint(struct fid_domain *domain, struct fi_info *info,
 	ep->start_op[ofi_op_write] = tcpx_op_write;
 	return 0;
 err3:
-	ofi_close_socket(ep->sock);
+	ofi_close_socket(ep->bsock.sock);
 err2:
 	ofi_endpoint_close(&ep->util_ep);
 err1:
@@ -826,14 +900,17 @@ static int tcpx_pep_listen(struct fid_pep *pep)
 	return ret;
 }
 
-static int tcpx_pep_reject(struct fid_pep *pep, fid_t handle,
+static int tcpx_pep_reject(struct fid_pep *pep, fid_t fid_handle,
 			   const void *param, size_t paramlen)
 {
 	struct tcpx_cm_msg msg;
-	struct tcpx_conn_handle *tcpx_handle;
+	struct tcpx_conn_handle *handle;
 	int ret;
 
-	tcpx_handle = container_of(handle, struct tcpx_conn_handle, handle);
+	handle = container_of(fid_handle, struct tcpx_conn_handle, fid);
+	/* If we created an endpoint, it owns the socket */
+	if (handle->sock == INVALID_SOCKET)
+		goto free;
 
 	memset(&msg.hdr, 0, sizeof(msg.hdr));
 	msg.hdr.version = TCPX_CTRL_HDR_VERSION;
@@ -842,18 +919,19 @@ static int tcpx_pep_reject(struct fid_pep *pep, fid_t handle,
 	if (paramlen)
 		memcpy(&msg.data, param, paramlen);
 
-	ret = ofi_send_socket(tcpx_handle->sock, &msg,
+	ret = ofi_send_socket(handle->sock, &msg,
 			      sizeof(msg.hdr) + paramlen, MSG_NOSIGNAL);
 	if (ret != sizeof(msg.hdr) + paramlen)
 		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
 			"sending of reject message failed\n");
 
-	ofi_shutdown(tcpx_handle->sock, SHUT_RDWR);
-	ret = ofi_close_socket(tcpx_handle->sock);
+	ofi_shutdown(handle->sock, SHUT_RDWR);
+	ret = ofi_close_socket(handle->sock);
 	if (ret)
 		return ret;
 
-	free(tcpx_handle);
+free:
+	free(handle);
 	return FI_SUCCESS;
 }
 
@@ -931,7 +1009,8 @@ int tcpx_passive_ep(struct fid_fabric *fabric, struct fi_info *info,
 		goto err2;
 	}
 
-	_pep->cm_ctx.fid = &_pep->util_pep.pep_fid.fid;
+	_pep->cm_ctx.fid.fclass = TCPX_CLASS_CM;
+	_pep->cm_ctx.hfid = &_pep->util_pep.pep_fid.fid;
 	_pep->cm_ctx.state = TCPX_CM_LISTENING;
 	_pep->cm_ctx.cm_data_sz = 0;
 	_pep->sock = INVALID_SOCKET;

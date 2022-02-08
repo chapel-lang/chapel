@@ -283,7 +283,7 @@ module BytesCasts {
     const localX = x.localize();
 
     if localX.isEmpty() then
-      throw new owned 
+      throw new owned
         IllegalArgumentError("bad cast from empty bytes to complex(" +
                              numBits(t):string + ")");
 

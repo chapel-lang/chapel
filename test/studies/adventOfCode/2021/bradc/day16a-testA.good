@@ -1,0 +1,15 @@
+880086C3E88112
+1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 0 1 1 0 0 0 0 1 1 1 1 1 0 1 0 0 0 1 0 0 0 0 0 0 1 0 0 0 1 0 0 1 0
+version = 4
+packet type = 2
+totBitLength = 33
+version = 5
+packet type = 4
+Value = 7
+version = 6
+packet type = 4
+Value = 8
+version = 0
+packet type = 4
+Value = 9
+Final result = 7

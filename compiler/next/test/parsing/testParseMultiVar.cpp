@@ -420,6 +420,34 @@ static void test4k(Parser* parser) {
   auto d = multi->declOrComment(3)->toVariable();
   checkTest4Decls(multi, a, b, c, d, /*isConfig*/ true);
 }
+
+
+static void test5(Parser* parser) {
+  auto parseResult = parser->parseString("test5.chpl",
+      "type vec3 = 3*real,\n"
+      "     arr33 = 3*vec3;");
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto multi = mod->stmt(0)->toMultiDecl();
+  assert(multi);
+  assert(multi->numDeclOrComments() == 2);
+  auto a = multi->declOrComment(0)->toVariable();
+  auto b = multi->declOrComment(1)->toVariable();
+  assert(a);
+  assert(b);
+  assert(0 == a->name().compare("vec3"));
+  assert(a->typeExpression() == nullptr);
+  assert(a->initExpression()->isOpCall());
+  assert(a->kind() == Variable::Kind::TYPE);
+  assert(0 == b->name().compare("arr33"));
+  assert(b->typeExpression() == nullptr);
+  assert(b->initExpression()->isOpCall());
+  assert(b->kind() == Variable::Kind::TYPE);
+};
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -443,6 +471,7 @@ int main() {
   test4i(p);
   test4j(p);
   test4k(p);
+  test5(p);
 
   return 0;
 }

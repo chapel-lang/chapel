@@ -81,7 +81,7 @@ This specification is organized as follows:
 
 -  Chapter :ref:`Chapter-Task_Parallelism_and_Synchronization` describes
    task-parallel expressions and statements in Chapel as well as
-   synchronization constructs, atomic variables, and the atomic statement.
+   synchronization constructs, and atomic variables.
 
 -  Chapter :ref:`Chapter-Data_Parallelism` describes data-parallel expressions
    and statements in

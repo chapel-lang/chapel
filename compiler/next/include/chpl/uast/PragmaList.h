@@ -257,8 +257,7 @@ PRAGMA(GET_MODULE_NAME, ypr, "get module name", "replace calls to this function 
 
 PRAGMA(GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible through a global type variable")
 PRAGMA(GLOBAL_VAR_BUILTIN, ypr, "global var builtin", "is accessible through a global symbol variable")
-PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "generate GPU code and set function calling convention to kernel launch")
-PRAGMA(GPU_AND_CPU_CODEGEN, npr, "", "generate both GPU and CPU code")
+PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "generate GPU code")
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
 PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
 

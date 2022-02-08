@@ -124,7 +124,7 @@ follows:
   CHPL_TARGET_COMPILER=cray-prgenv-{gnu, intel}
   CHPL_TASKS={qthreads, fifo}   # see discussion below
   CHPL_COMM={ugni, gasnet}
-  CHPL_COMM_SUBSTRATE={aries, mpi}   # if CHPL_COMM=gasnet 
+  CHPL_COMM_SUBSTRATE={aries, mpi}   # if CHPL_COMM=gasnet
   MPICH_MAX_THREAD_SAFETY=multiple
   AMMPI_MPI_THREAD=multiple         # if CHPL_COMM_SUBSTRATE=mpi
 
@@ -144,7 +144,7 @@ module.
 
 We assume that ``CHPL_COMM`` is either ``ugni`` or ``gasnet+aries``.
 We do not recommend using the MPI module with the ``gasnet+mpi`` communication backend
-and ``qthreads``. 
+and ``qthreads``.
 
 1. Use non-blocking calls whenever possible. Note that this also requires using ``MPI_Test``
    instead of ``MPI_Wait``. For convenience, we provide wrappers for a subset of
@@ -278,6 +278,7 @@ module MPI {
      processes (world size)
      */
   proc initialize() {
+    use ChplConfig;
     // If we are running using the uGNI layer, then the following hack
     // appears to be necessary in order to run MPI, as well as Chapel
     // See : https://hpcrdm.lbl.gov/pipermail/upc-users/2014-May/002061.html

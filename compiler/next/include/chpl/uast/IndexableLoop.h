@@ -102,7 +102,7 @@ class IndexableLoop : public Loop {
   */
   const Expression* iterand() const {
     if (iterandChildNum_ < 0) return nullptr;
-    const ASTNode* ast = child(iterandChildNum_); 
+    const ASTNode* ast = child(iterandChildNum_);
     assert(ast->isExpression());
     return (const Expression*) ast;
   }

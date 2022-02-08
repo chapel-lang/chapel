@@ -127,7 +127,7 @@ int rxr_read_post_local_read_or_queue(struct rxr_ep *ep,
 
 void rxr_read_handle_read_completion(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry);
 
-int rxr_read_handle_error(struct rxr_ep *ep, struct rxr_read_entry *read_entry, int ret);
+void rxr_read_write_error(struct rxr_ep *ep, struct rxr_read_entry *read_entry, int err, int prov_errno);
 
 #endif
 

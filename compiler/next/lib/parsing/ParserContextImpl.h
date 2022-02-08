@@ -146,11 +146,11 @@ owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
 
 PODUniqueString ParserContext::notePragma(YYLTYPE loc,
                                           Expression* pragmaStr) {
-  auto ret = PODUniqueString::build();
+  auto ret = PODUniqueString::get();
 
   // Extract the string literal and convert it into a pragma flag.
   if (auto strLit = pragmaStr->toStringLiteral()) {
-    ret = PODUniqueString::build(context(), strLit->str().c_str());
+    ret = PODUniqueString::get(context(), strLit->str().c_str());
     auto tag = pragmaNameToTag(ret.c_str());
 
     if (tag == PRAGMA_UNKNOWN) {
@@ -651,7 +651,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       Function::PROC,
                       Formal::DEFAULT_INTENT,
                       nullptr,
-                      PODUniqueString::build(),
+                      PODUniqueString::get(),
                       Function::DEFAULT_RETURN_INTENT,
                       false,
                       nullptr, nullptr, nullptr, nullptr,
@@ -675,7 +675,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
     if (currentScopeIsAggregate()) {
       if (fp.receiver == nullptr) {
         auto loc = convertLocation(location);
-        auto ths = UniqueString::build(context(), "this");
+        auto ths = UniqueString::get(context(), "this");
         UniqueString cls = scope.name;
         fp.receiver = Formal::build(builder, loc, /*attributes*/ nullptr,
                                     ths,
@@ -693,7 +693,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 
     auto f = Function::build(builder, this->convertLocation(location),
                              toOwned(fp.attributes),
-                             this->visibility,
+                             fp.visibility,
                              fp.linkage,
                              toOwned(fp.linkageNameExpr),
                              fp.name,
@@ -861,6 +861,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
 // TODO: Use me in 'buildBracketLoop' as well.
 owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                               ParserExprList* indexExprs) {
+  // TODO: We have to handle the possibility of [1..2, 3..4] here.
   if (indexExprs->size() > 1) {
     const char* msg = "Invalid index expression";
     noteError(location, msg);
@@ -871,6 +872,34 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
     assert(indexExpr);
     return buildLoopIndexDecl(location, toOwned(indexExpr));
   }
+}
+
+Expression* ParserContext::buildNewExpr(YYLTYPE location,
+                         New::Management management,
+                         Expression* expr) {
+  if (FnCall* fnCall = expr->toFnCall()) {
+    return this->wrapCalledExpressionInNew(location, management, fnCall);
+  } else if (OpCall* opCall = expr->toOpCall()) {
+    assert(opCall->numActuals() == 1);
+    auto& child = builder->mutableRefToChildren(opCall)[0];
+    if (FnCall* fnCall = child->toFnCall()) {
+      child.release();
+      auto wrappedFn = this->wrapCalledExpressionInNew(location, management, fnCall);
+      child.reset(wrappedFn);
+      return expr;
+    } else {
+      //something wrong, as below
+      this->raiseError(location, "Invalid form for new expression");
+    }
+  } else {
+    // It's an error for one reason or another. TODO: Specialize these
+    // errors later (e.g. 'new a.field' would require parens around
+    // the expression 'a.field'; 'new foo' would require an argument
+    // list for 'foo'; and something like 'new __primitive()' just
+    // doesn't make any sense...
+    this->raiseError(location, "Invalid form for new expression");
+  }
+  return nullptr;
 }
 
 FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
@@ -1783,7 +1812,7 @@ Expression* ParserContext::buildTypeQuery(YYLTYPE location,
   assert(!queriedIdent.isEmpty() && queriedIdent.c_str()[0] == '?');
   assert(queriedIdent.length() >= 2);
   const char* adjust = queriedIdent.c_str() + 1;
-  auto name = UniqueString::build(context(), adjust);
+  auto name = UniqueString::get(context(), adjust);
   auto node = TypeQuery::build(builder, convertLocation(location), name);
   return node.release();
 }
@@ -1803,7 +1832,7 @@ Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
 
   MaybeNamedActual actual = {
     .expr=subType,
-    .name=PODUniqueString::build()
+    .name=PODUniqueString::get()
   };
 
   maybeNamedActuals->push_back(actual);

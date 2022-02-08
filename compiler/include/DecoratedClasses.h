@@ -35,7 +35,7 @@ ClassTypeDecoratorEnum removeNilableFromDecorator(ClassTypeDecoratorEnum d) {
 static inline
 ClassTypeDecoratorEnum addNonNilToDecorator(ClassTypeDecoratorEnum d) {
   return ClassTypeDecorator::addNonNilToDecorator(d);
-} 
+}
 static inline
 ClassTypeDecoratorEnum addNilableToDecorator(ClassTypeDecoratorEnum d) {
   return ClassTypeDecorator::addNilableToDecorator(d);

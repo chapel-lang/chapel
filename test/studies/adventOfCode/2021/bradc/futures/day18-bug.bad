@@ -1,0 +1,4 @@
+day18-bug.chpl:23: In function 'lineToTree':
+day18-bug.chpl:28: error: cannot default-initialize a variable with generic type
+day18-bug.chpl:28: note: '<temporary>' has generic type 'Node'
+day18-bug.chpl:28: note: cannot find initialization point to split-init this variable

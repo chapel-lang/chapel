@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,7 @@
    .. note ::
 
      There are several ways in which this module could be improved upon:
-     
+
        * the methods here might be better as type methods,
          so you could use `R.numFields()` instead of `numFields(R)`.
        * :proc:`getField` does not yet return a mutable value.
@@ -163,7 +163,7 @@ inline proc getField(const ref x:?t, param i:int) const ref
 
 /* Get a field in a class or record by name. When the named
    field is a `param`, this overload will be chosen to return a
-   `param`. Will generate a compilation error if a field named 
+   `param`. Will generate a compilation error if a field named
    `name` is not found.
 
    :arg obj: a class or record
@@ -447,7 +447,7 @@ proc canResolveMethod(obj, param fname : string, args ...) param : bool
    */
 proc canResolveTypeMethod(type t, param fname : string) param : bool
   return __primitive("method call and fn resolves", t, fname);
- 
+
 /* Returns ``true`` if a type method named `fname` taking the
    arguments in `args` could be called on type `t` in the current scope.
    */

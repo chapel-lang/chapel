@@ -64,8 +64,39 @@
 #define RXM_OP_VERSION		3
 #define RXM_CTRL_VERSION	4
 
-extern size_t rxm_eager_limit;
+enum {
+	RXM_REJECT_UNSPEC,
+	RXM_REJECT_ECONNREFUSED,
+	RXM_REJECT_EALREADY,
+};
+
+union rxm_cm_data {
+	struct _connect {
+		uint8_t version;
+		uint8_t endianness;
+		uint8_t ctrl_version;
+		uint8_t op_version;
+		uint16_t port;
+		uint8_t padding[2];
+		uint32_t eager_limit;
+		uint32_t rx_size; /* used? */
+		uint64_t client_conn_id;
+	} connect;
+
+	struct _accept {
+		uint64_t server_conn_id;
+		uint32_t rx_size; /* used? */
+	} accept;
+
+	struct _reject {
+		uint8_t version;
+		uint8_t reason;
+	} reject;
+};
+
+
 extern size_t rxm_buffer_size;
+extern size_t rxm_packet_size;
 
 #define RXM_SAR_TX_ERROR	UINT64_MAX
 #define RXM_SAR_RX_INIT		UINT64_MAX
@@ -125,6 +156,13 @@ extern struct util_prov rxm_util_prov;
 extern struct fi_ops_rma rxm_ops_rma;
 extern struct fi_ops_atomic rxm_ops_atomic;
 
+enum {
+	RXM_MSG_RXTX_SIZE = 128,
+	RXM_MSG_SRX_SIZE = 4096,
+	RXM_RX_SIZE = 65536,
+	RXM_TX_SIZE = 16384,
+};
+
 extern size_t rxm_msg_tx_size;
 extern size_t rxm_msg_rx_size;
 extern size_t rxm_cm_progress_interval;
@@ -134,141 +172,63 @@ extern int rxm_use_write_rndv;
 extern enum fi_wait_obj def_wait_obj, def_tcp_wait_obj;
 
 struct rxm_ep;
+struct rxm_av;
 
 
-/*
- * Connection Map
+enum rxm_cm_state {
+	RXM_CM_IDLE,
+	RXM_CM_CONNECTING,
+	RXM_CM_ACCEPTING,
+	RXM_CM_CONNECTED,
+};
+
+enum {
+	RXM_CONN_INDEXED = BIT(0),
+};
+
+/* There will be at most 1 peer address per AV entry.  There
+ * may be addresses that have not been inserted into the local
+ * AV, and have no matching entry.  This can occur if we are
+ * only receiving data from the remote rxm ep.
  */
-
-#define RXM_CMAP_IDX_BITS OFI_IDX_INDEX_BITS
-
-enum rxm_cmap_signal {
-	RXM_CMAP_UNSPEC,
-	RXM_CMAP_FREE,
-	RXM_CMAP_EXIT,
-};
-
-#define RXM_CM_STATES(FUNC)		\
-	FUNC(RXM_CMAP_IDLE),		\
-	FUNC(RXM_CMAP_CONNREQ_SENT),	\
-	FUNC(RXM_CMAP_CONNREQ_RECV),	\
-	FUNC(RXM_CMAP_CONNECTED),	\
-	FUNC(RXM_CMAP_SHUTDOWN),	\
-
-enum rxm_cmap_state {
-	RXM_CM_STATES(OFI_ENUM_VAL)
-};
-
-extern char *rxm_cm_state_str[];
-
-#define RXM_CM_UPDATE_STATE(handle, new_state)				\
-	do {								\
-		FI_DBG(&rxm_prov, FI_LOG_EP_CTRL, "[CM] handle: "	\
-		       "%p %s -> %s\n",	handle,				\
-		       rxm_cm_state_str[handle->state],			\
-		       rxm_cm_state_str[new_state]);			\
-		handle->state = new_state;				\
-	} while (0)
-
-struct rxm_cmap_handle {
-	struct rxm_cmap *cmap;
-	enum rxm_cmap_state state;
-	/* Unique identifier for a connection. Can be exchanged with a peer
-	 * during connection setup and can later be used in a message header
-	 * to identify the source of the message (Used for FI_SOURCE, RNDV
-	 * protocol, etc.) */
-	uint64_t key;
-	uint64_t remote_key;
+struct rxm_peer_addr {
+	struct rxm_av *av;
 	fi_addr_t fi_addr;
-	struct rxm_cmap_peer *peer;
+	struct ofi_rbnode *node;
+	int index;
+	int refcnt;
+	union ofi_sock_ip addr;
 };
 
-struct rxm_cmap_peer {
-	struct rxm_cmap_handle *handle;
-	struct dlist_entry entry;
-	uint8_t addr[];
+struct rxm_peer_addr *rxm_get_peer(struct rxm_av *av, const void *addr);
+void rxm_put_peer(struct rxm_peer_addr *peer);
+
+/* Each local rxm ep will have at most 1 connection to a single
+ * remote rxm ep.  A local rxm ep may not be connected to all
+ * remote rxm ep's.
+ */
+struct rxm_conn {
+	enum rxm_cm_state state;
+	struct rxm_peer_addr *peer;
+	struct fid_ep *msg_ep;
+	struct rxm_ep *ep;
+
+	/* Prior versions of libfabric did not guarantee that all connections
+	 * from the same peer would have the same conn_id.  For compatibility
+	 * we need to store the remote_index per connection, rather than with
+	 * the peer_addr.
+	 */
+	int remote_index;
+	uint8_t flags;
+
+	struct dlist_entry deferred_entry;
+	struct dlist_entry deferred_tx_queue;
+	struct dlist_entry deferred_sar_msgs;
+	struct dlist_entry deferred_sar_segments;
+	struct dlist_entry loopback_entry;
 };
 
-struct rxm_cmap_attr {
-	void 				*name;
-};
-
-struct rxm_cmap {
-	struct rxm_ep		*ep;
-	struct util_av		*av;
-
-	/* cmap handles that correspond to addresses in AV */
-	struct rxm_cmap_handle **handles_av;
-	size_t			num_allocated;
-
-	/* Store all cmap handles (inclusive of handles_av) in an indexer.
-	 * This allows reverse lookup of the handle using the index. */
-	struct indexer		handles_idx;
-
-	struct ofi_key_idx	key_idx;
-
-	struct dlist_entry	peer_list;
-	struct rxm_cmap_attr	attr;
-	pthread_t		cm_thread;
-	ofi_fastlock_acquire_t	acquire;
-	ofi_fastlock_release_t	release;
-	fastlock_t		lock;
-};
-
-enum rxm_cmap_reject_reason {
-	RXM_CMAP_REJECT_UNSPEC,
-	RXM_CMAP_REJECT_GENUINE,
-	RXM_CMAP_REJECT_SIMULT_CONN,
-};
-
-union rxm_cm_data {
-	struct _connect {
-		uint8_t version;
-		uint8_t endianness;
-		uint8_t ctrl_version;
-		uint8_t op_version;
-		uint16_t port;
-		uint8_t padding[2];
-		uint32_t eager_size;
-		uint32_t rx_size;
-		uint64_t client_conn_id;
-	} connect;
-
-	struct _accept {
-		uint64_t server_conn_id;
-		uint32_t rx_size;
-	} accept;
-
-	struct _reject {
-		uint8_t version;
-		uint8_t reason;
-	} reject;
-};
-
-int rxm_cmap_alloc_handle(struct rxm_cmap *cmap, fi_addr_t fi_addr,
-			  enum rxm_cmap_state state,
-			  struct rxm_cmap_handle **handle);
-struct rxm_cmap_handle *rxm_cmap_key2handle(struct rxm_cmap *cmap, uint64_t key);
-int rxm_cmap_update(struct rxm_cmap *cmap, const void *addr, fi_addr_t fi_addr);
-
-void rxm_cmap_process_reject(struct rxm_cmap *cmap,
-			     struct rxm_cmap_handle *handle,
-			     enum rxm_cmap_reject_reason cm_reject_reason);
-void rxm_cmap_process_shutdown(struct rxm_cmap *cmap,
-			       struct rxm_cmap_handle *handle);
-int rxm_cmap_connect(struct rxm_ep *rxm_ep, fi_addr_t fi_addr,
-		     struct rxm_cmap_handle *handle);
-void rxm_cmap_free(struct rxm_cmap *cmap);
-int rxm_cmap_alloc(struct rxm_ep *rxm_ep, struct rxm_cmap_attr *attr);
-int rxm_cmap_remove(struct rxm_cmap *cmap, int index);
-int rxm_msg_eq_progress(struct rxm_ep *rxm_ep);
-
-static inline struct rxm_cmap_handle *
-rxm_cmap_acquire_handle(struct rxm_cmap *cmap, fi_addr_t fi_addr)
-{
-	assert(fi_addr < cmap->num_allocated);
-	return cmap->handles_av[fi_addr];
-}
+void rxm_freeall_conns(struct rxm_ep *ep);
 
 struct rxm_fabric {
 	struct util_fabric util_fabric;
@@ -287,8 +247,33 @@ struct rxm_domain {
 	fastlock_t amo_bufpool_lock;
 };
 
+/* All peer addresses, whether they've been inserted into the AV
+ * or an endpoint has an active connection to it, are stored in
+ * the addr_map.  Peers are allocated from a buffer pool and
+ * assigned a local index using the pool.  All rxm endpoints
+ * maintain a connection array which is aligned with the peer_pool.
+ *
+ * We technically only need to store the index of each peer in
+ * the AV itself.  The 'util_av' could basically be replaced by
+ * an ofi_index_map.  However, too much of the existing code
+ * relies on the util_av existing and storing the AV addresses.
+ *
+ * A future cleanup would be to remove using the util_av and have the
+ * rxm_av implementation be independent.
+ */
+ struct rxm_av {
+	struct util_av util_av;
+	struct ofi_rbmap addr_map;
+	struct ofi_bufpool *peer_pool;
+	struct ofi_bufpool *conn_pool;
+};
+
 int rxm_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,
-		struct fid_av **av, void *context);
+		struct fid_av **fid_av, void *context);
+size_t rxm_av_max_peers(struct rxm_av *av);
+void rxm_ref_peer(struct rxm_peer_addr *peer);
+struct rxm_conn *rxm_av_alloc_conn(struct rxm_av *av);
+void rxm_av_free_conn(struct rxm_conn *conn);
 
 struct rxm_mr {
 	struct fid_mr mr_fid;
@@ -361,14 +346,14 @@ struct rxm_atomic_resp_hdr {
 	FUNC(RXM_RNDV_WRITE_DATA_WAIT),	\
 	FUNC(RXM_RNDV_WRITE_DONE_WAIT),	\
 	FUNC(RXM_RNDV_READ),		\
-	FUNC(RXM_RNDV_WRITE),		\
+	FUNC(RXM_RNDV_WRITE), /* not used */ \
 	FUNC(RXM_RNDV_READ_DONE_SENT),	\
 	FUNC(RXM_RNDV_READ_DONE_RECVD),	\
 	FUNC(RXM_RNDV_WRITE_DATA_SENT),	\
-	FUNC(RXM_RNDV_WRITE_DATA_RECVD),\
+	FUNC(RXM_RNDV_WRITE_DATA_RECVD), /* not used */ \
 	FUNC(RXM_RNDV_WRITE_DONE_SENT),	\
 	FUNC(RXM_RNDV_WRITE_DONE_RECVD),\
-	FUNC(RXM_RNDV_FINISH),		\
+	FUNC(RXM_RNDV_FINISH), /* not needed */	\
 	FUNC(RXM_ATOMIC_RESP_WAIT),	\
 	FUNC(RXM_ATOMIC_RESP_SENT)
 
@@ -438,24 +423,6 @@ struct rxm_iov {
 	uint8_t count;
 };
 
-enum rxm_buf_pool_type {
-	RXM_BUF_POOL_RX		= 0,
-	RXM_BUF_POOL_START	= RXM_BUF_POOL_RX,
-	RXM_BUF_POOL_TX,
-	RXM_BUF_POOL_TX_START	= RXM_BUF_POOL_TX,
-	RXM_BUF_POOL_TX_INJECT,
-	RXM_BUF_POOL_TX_RNDV_RD_DONE,
-	RXM_BUF_POOL_TX_RNDV_WR_DONE,
-	RXM_BUF_POOL_TX_RNDV_REQ,
-	RXM_BUF_POOL_TX_RNDV_WR_DATA,
-	RXM_BUF_POOL_TX_ATOMIC,
-	RXM_BUF_POOL_TX_CREDIT,
-	RXM_BUF_POOL_TX_SAR,
-	RXM_BUF_POOL_TX_END	= RXM_BUF_POOL_TX_SAR,
-	RXM_BUF_POOL_RMA,
-	RXM_BUF_POOL_MAX,
-};
-
 struct rxm_buf {
 	/* Must stay at top */
 	struct fi_context fi_context;
@@ -487,48 +454,27 @@ struct rxm_rx_buf {
 	size_t rndv_rma_index;
 	struct fid_mr *mr[RXM_IOV_LIMIT];
 
+	/* Only differs from pkt.data for unexpected messages */
+	void *data;
 	/* Must stay at bottom */
 	struct rxm_pkt pkt;
 };
 
-struct rxm_tx_base_buf {
+struct rxm_tx_buf {
 	/* Must stay at top */
 	struct rxm_buf hdr;
 
-	/* Must stay at bottom */
-	struct rxm_pkt pkt;
-};
-
-struct rxm_tx_eager_buf {
-	/* Must stay at top */
-	struct rxm_buf hdr;
-
+	OFI_DBG_VAR(bool, user_tx)
 	void *app_context;
 	uint64_t flags;
 
-	/* Must stay at bottom */
-	struct rxm_pkt pkt;
-};
-
-struct rxm_tx_sar_buf {
-	/* Must stay at top */
-	struct rxm_buf hdr;
-
-	void *app_context;
-	uint64_t flags;
-
-	/* Must stay at bottom */
-	struct rxm_pkt pkt;
-};
-
-struct rxm_tx_rndv_buf {
-	/* Must stay at top */
-	struct rxm_buf hdr;
-
-	void *app_context;
-	uint64_t flags;
-	struct fid_mr *mr[RXM_IOV_LIMIT];
-	uint8_t count;
+	union {
+		struct {
+			struct fid_mr *mr[RXM_IOV_LIMIT];
+			uint8_t count;
+		} rma;
+		struct rxm_iov atomic_result;
+	};
 
 	struct {
 		struct iovec iov[RXM_IOV_LIMIT];
@@ -536,7 +482,7 @@ struct rxm_tx_rndv_buf {
 		struct rxm_conn *conn;
 		size_t rndv_rma_index;
 		size_t rndv_rma_count;
-		struct rxm_tx_base_buf *done_buf;
+		struct rxm_tx_buf *done_buf;
 		struct rxm_rndv_hdr remote_hdr;
 	} write_rndv;
 
@@ -544,32 +490,9 @@ struct rxm_tx_rndv_buf {
 	struct rxm_pkt pkt;
 };
 
-struct rxm_rma_buf {
-	/* Must stay at top */
-	struct rxm_buf hdr;
-
-	void *app_context;
-	uint64_t flags;
-
-	struct {
-		struct fid_mr *mr[RXM_IOV_LIMIT];
-		uint8_t count;
-	} mr;
-	/* Must stay at bottom */
-	struct rxm_pkt pkt;
-};
-
-struct rxm_tx_atomic_buf {
-	/* Must stay at top */
-	struct rxm_buf hdr;
-
-	void *app_context;
-	uint64_t flags;
-	struct rxm_iov result_iov;
-
-	/* Must stay at bottom */
-	struct rxm_pkt pkt;
-};
+/* Used for application transmits, provides credit check */
+struct rxm_tx_buf *rxm_get_tx_buf(struct rxm_ep *ep);
+void rxm_free_rx_buf(struct rxm_ep *ep, struct rxm_tx_buf *buf);
 
 enum rxm_deferred_tx_entry_type {
 	RXM_DEFERRED_TX_RNDV_ACK,
@@ -593,7 +516,7 @@ struct rxm_deferred_tx_entry {
 			size_t pkt_size;
 		} rndv_ack;
 		struct {
-			struct rxm_tx_rndv_buf *tx_buf;
+			struct rxm_tx_buf *tx_buf;
 		} rndv_done;
 		struct {
 			struct rxm_rx_buf *rx_buf;
@@ -601,12 +524,12 @@ struct rxm_deferred_tx_entry {
 			struct rxm_iov rxm_iov;
 		} rndv_read;
 		struct {
-			struct rxm_tx_rndv_buf *tx_buf;
+			struct rxm_tx_buf *tx_buf;
 			struct fi_rma_iov rma_iov;
 			struct rxm_iov rxm_iov;
 		} rndv_write;
 		struct {
-			struct rxm_tx_sar_buf *cur_seg_tx_buf;
+			struct rxm_tx_buf *cur_seg_tx_buf;
 			struct {
 				struct iovec iov[RXM_IOV_LIMIT];
 				uint8_t count;
@@ -626,11 +549,11 @@ struct rxm_deferred_tx_entry {
 			uint64_t device;
 		} sar_seg;
 		struct {
-			struct rxm_tx_atomic_buf *tx_buf;
+			struct rxm_tx_buf *tx_buf;
 			ssize_t len;
 		} atomic_resp;
 		struct {
-			struct rxm_tx_base_buf *tx_buf;
+			struct rxm_tx_buf *tx_buf;
 		} credit_msg;
 	};
 };
@@ -657,7 +580,7 @@ struct rxm_recv_entry {
 	/* Used for Rendezvous protocol */
 	struct {
 		/* This is used to send RNDV ACK */
-		struct rxm_tx_base_buf *tx_buf;
+		struct rxm_tx_buf *tx_buf;
 	} rndv;
 };
 OFI_DECLARE_FREESTACK(struct rxm_recv_entry, rxm_recv_fs);
@@ -679,33 +602,12 @@ struct rxm_recv_queue {
 	dlist_func_t		*match_unexp;
 };
 
-struct rxm_buf_pool {
-	enum rxm_buf_pool_type type;
-	struct ofi_bufpool *pool;
-	struct rxm_ep *rxm_ep;
-};
-
-struct rxm_msg_eq_entry {
-	ssize_t			rd;
-	uint32_t		event;
-	/* Used for connection refusal */
-	void			*context;
-	struct fi_eq_err_entry	err_entry;
-	/* must stay at the bottom */
-	struct fi_eq_cm_entry	cm_entry;
-};
-
-#define RXM_MSG_EQ_ENTRY_SZ (sizeof(struct rxm_msg_eq_entry) + \
-			     sizeof(union rxm_cm_data))
-#define RXM_CM_ENTRY_SZ (sizeof(struct fi_eq_cm_entry) + \
-			 sizeof(union rxm_cm_data))
-
-ssize_t rxm_get_dyn_rbuf(struct fi_cq_data_entry *entry, struct iovec *iov,
+ssize_t rxm_get_dyn_rbuf(struct ofi_cq_rbuf_entry *entry, struct iovec *iov,
 			 size_t *count);
 
 struct rxm_eager_ops {
 	void (*comp_tx)(struct rxm_ep *rxm_ep,
-			struct rxm_tx_eager_buf *tx_eager_buf);
+			struct rxm_tx_buf *tx_eager_buf);
 	void (*handle_rx)(struct rxm_rx_buf *rx_buf);
 };
 
@@ -726,14 +628,19 @@ struct rxm_ep {
 	struct util_ep 		util_ep;
 	struct fi_info 		*rxm_info;
 	struct fi_info 		*msg_info;
-	struct rxm_cmap		*cmap;
+
+	struct index_map	conn_idx_map;
+	struct dlist_entry	loopback_list;
+	union ofi_sock_ip	addr;
+
+	pthread_t		cm_thread;
 	struct fid_pep 		*msg_pep;
 	struct fid_eq 		*msg_eq;
+	struct fid_ep 		*srx_ctx;
+
 	struct fid_cq 		*msg_cq;
 	uint64_t		msg_cq_last_poll;
-	struct fid_ep 		*srx_ctx;
 	size_t 			comp_per_progress;
-	ofi_atomic32_t		atomic_tx_credits;
 	int			cq_eq_fairness;
 
 	bool			msg_mr_local;
@@ -745,12 +652,16 @@ struct rxm_ep {
 	size_t			buffered_min;
 	size_t			buffered_limit;
 	size_t			inject_limit;
+
+	size_t			eager_limit;
 	size_t			sar_limit;
+	size_t			tx_credit;
 
-	struct rxm_buf_pool	*buf_pools;
+	struct ofi_bufpool	*rx_pool;
+	struct ofi_bufpool	*tx_pool;
+	struct rxm_pkt		*inject_pkt;
 
-	struct dlist_entry	repost_ready_list;
-	struct dlist_entry	deferred_tx_conn_queue;
+	struct dlist_entry	deferred_queue;
 	struct dlist_entry	rndv_wait_list;
 
 	struct rxm_recv_queue	recv_queue;
@@ -761,25 +672,10 @@ struct rxm_ep {
 	struct rxm_rndv_ops	*rndv_ops;
 };
 
-struct rxm_conn {
-	/* This should stay at the top */
-	struct rxm_cmap_handle handle;
+int rxm_start_listen(struct rxm_ep *ep);
+void rxm_stop_listen(struct rxm_ep *ep);
+void rxm_conn_progress(struct rxm_ep *ep);
 
-	struct fid_ep *msg_ep;
-
-	/* This is used only in non-FI_THREAD_SAFE case */
-	struct rxm_pkt *inject_pkt;
-	struct rxm_pkt *inject_data_pkt;
-	struct rxm_pkt *tinject_pkt;
-	struct rxm_pkt *tinject_data_pkt;
-
-	struct dlist_entry deferred_conn_entry;
-	struct dlist_entry deferred_tx_queue;
-	struct dlist_entry sar_rx_msg_list;
-	struct dlist_entry sar_deferred_rx_msg_list;
-
-	uint32_t rndv_tx_credits;
-};
 
 extern struct fi_provider rxm_prov;
 extern struct fi_fabric_attr rxm_fabric_attr;
@@ -804,7 +700,6 @@ ssize_t rxm_handle_rx_buf(struct rxm_rx_buf *rx_buf);
 int rxm_endpoint(struct fid_domain *domain, struct fi_info *info,
 			  struct fid_ep **ep, void *context);
 
-int rxm_conn_cmap_alloc(struct rxm_ep *rxm_ep);
 void rxm_cq_write_error(struct util_cq *cq, struct util_cntr *cntr,
 			void *op_context, int err);
 void rxm_cq_write_error_all(struct rxm_ep *rxm_ep, int err);
@@ -817,9 +712,9 @@ void rxm_ep_do_progress(struct util_ep *util_ep);
 void rxm_handle_eager(struct rxm_rx_buf *rx_buf);
 void rxm_handle_coll_eager(struct rxm_rx_buf *rx_buf);
 void rxm_finish_eager_send(struct rxm_ep *rxm_ep,
-			   struct rxm_tx_eager_buf *tx_eager_buf);
+			   struct rxm_tx_buf *tx_eager_buf);
 void rxm_finish_coll_eager_send(struct rxm_ep *rxm_ep,
-				struct rxm_tx_eager_buf *tx_eager_buf);
+				struct rxm_tx_buf *tx_eager_buf);
 
 int rxm_prepost_recv(struct rxm_ep *rxm_ep, struct fid_ep *rx_ep);
 
@@ -835,13 +730,13 @@ void rxm_rndv_hdr_init(struct rxm_ep *rxm_ep, void *buf,
 
 static inline size_t rxm_ep_max_atomic_size(struct fi_info *info)
 {
-	assert(rxm_eager_limit >= sizeof(struct rxm_atomic_hdr));
-	return rxm_eager_limit - sizeof(struct rxm_atomic_hdr);
+	assert(rxm_buffer_size >= sizeof(struct rxm_atomic_hdr));
+	return rxm_buffer_size - sizeof(struct rxm_atomic_hdr);
 }
 
 static inline ssize_t
 rxm_atomic_send_respmsg(struct rxm_ep *rxm_ep, struct rxm_conn *conn,
-			struct rxm_tx_atomic_buf *resp_buf, ssize_t len)
+			struct rxm_tx_buf *resp_buf, ssize_t len)
 {
 	struct iovec iov = {
 		.iov_base = (void *) &resp_buf->pkt,
@@ -857,17 +752,6 @@ rxm_atomic_send_respmsg(struct rxm_ep *rxm_ep, struct rxm_conn *conn,
 	return fi_sendmsg(conn->msg_ep, &msg, FI_COMPLETION);
 }
 
-static inline int rxm_needs_atomic_progress(const struct fi_info *info)
-{
-	return (info->caps & FI_ATOMIC) && info->domain_attr &&
-			info->domain_attr->data_progress == FI_PROGRESS_AUTO;
-}
-
-static inline struct rxm_conn *rxm_key2conn(struct rxm_ep *rxm_ep, uint64_t key)
-{
-	return (struct rxm_conn *)rxm_cmap_key2handle(rxm_ep->cmap, key);
-}
-
 void rxm_ep_progress_deferred_queue(struct rxm_ep *rxm_ep,
 				    struct rxm_conn *rxm_conn);
 
@@ -876,29 +760,32 @@ rxm_ep_alloc_deferred_tx_entry(struct rxm_ep *rxm_ep, struct rxm_conn *rxm_conn,
 			       enum rxm_deferred_tx_entry_type type);
 
 static inline void
-rxm_ep_enqueue_deferred_tx_queue(struct rxm_deferred_tx_entry *tx_entry)
+rxm_queue_deferred_tx(struct rxm_deferred_tx_entry *tx_entry,
+		      enum ofi_list_end list_end)
 {
-	if (dlist_empty(&tx_entry->rxm_conn->deferred_tx_queue))
-		dlist_insert_tail(&tx_entry->rxm_conn->deferred_conn_entry,
-				  &tx_entry->rxm_ep->deferred_tx_conn_queue);
-	dlist_insert_tail(&tx_entry->entry, &tx_entry->rxm_conn->deferred_tx_queue);
+	struct rxm_conn *conn = tx_entry->rxm_conn;
+
+	if (dlist_empty(&conn->deferred_tx_queue))
+		dlist_insert_tail(&conn->deferred_entry,
+				  &conn->ep->deferred_queue);
+	if (list_end == OFI_LIST_HEAD) {
+		dlist_insert_head(&tx_entry->entry,
+				  &conn->deferred_tx_queue);
+	} else  {
+		dlist_insert_tail(&tx_entry->entry,
+				  &conn->deferred_tx_queue);
+	}
 }
 
 static inline void
-rxm_ep_enqueue_deferred_tx_queue_priority(struct rxm_deferred_tx_entry *tx_entry)
+rxm_dequeue_deferred_tx(struct rxm_deferred_tx_entry *tx_entry)
 {
-	if (dlist_empty(&tx_entry->rxm_conn->deferred_tx_queue))
-		dlist_insert_head(&tx_entry->rxm_conn->deferred_conn_entry,
-				  &tx_entry->rxm_ep->deferred_tx_conn_queue);
-	dlist_insert_head(&tx_entry->entry, &tx_entry->rxm_conn->deferred_tx_queue);
-}
+	struct rxm_conn *conn = tx_entry->rxm_conn;
 
-static inline void
-rxm_ep_dequeue_deferred_tx_queue(struct rxm_deferred_tx_entry *tx_entry)
-{
-	dlist_remove_init(&tx_entry->entry);
-	if (dlist_empty(&tx_entry->rxm_conn->deferred_tx_queue))
-		dlist_remove(&tx_entry->rxm_conn->deferred_conn_entry);
+	assert(!dlist_empty(&conn->deferred_tx_queue));
+	dlist_remove(&tx_entry->entry);
+	if (dlist_empty(&conn->deferred_tx_queue))
+		dlist_remove_init(&conn->deferred_entry);
 }
 
 int rxm_conn_process_eq_events(struct rxm_ep *rxm_ep);
@@ -959,7 +846,7 @@ rxm_ep_format_tx_buf_pkt(struct rxm_conn *rxm_conn, size_t len, uint8_t op,
 			 uint64_t data, uint64_t tag, uint64_t flags,
 			 struct rxm_pkt *pkt)
 {
-	pkt->ctrl_hdr.conn_id = rxm_conn->handle.remote_key;
+	pkt->ctrl_hdr.conn_id = rxm_conn->remote_index;
 	pkt->hdr.size = len;
 	pkt->hdr.op = op;
 	pkt->hdr.tag = tag;
@@ -967,27 +854,19 @@ rxm_ep_format_tx_buf_pkt(struct rxm_conn *rxm_conn, size_t len, uint8_t op,
 	pkt->hdr.data = data;
 }
 
-static inline void *
-rxm_tx_buf_alloc(struct rxm_ep *rxm_ep, enum rxm_buf_pool_type type)
-{
-	assert((type == RXM_BUF_POOL_TX) ||
-	       (type == RXM_BUF_POOL_TX_INJECT) ||
-	       (type == RXM_BUF_POOL_TX_RNDV_RD_DONE) ||
-	       (type == RXM_BUF_POOL_TX_RNDV_WR_DATA) ||
-	       (type == RXM_BUF_POOL_TX_RNDV_WR_DONE) ||
-	       (type == RXM_BUF_POOL_TX_RNDV_REQ) ||
-	       (type == RXM_BUF_POOL_TX_ATOMIC) ||
-	       (type == RXM_BUF_POOL_TX_CREDIT) ||
-	       (type == RXM_BUF_POOL_TX_SAR));
-	return ofi_buf_alloc(rxm_ep->buf_pools[type].pool);
-}
+int rxm_post_recv(struct rxm_rx_buf *rx_buf);
 
 static inline void
 rxm_rx_buf_free(struct rxm_rx_buf *rx_buf)
 {
-	if (rx_buf->repost) {
-		dlist_insert_tail(&rx_buf->repost_entry,
-				  &rx_buf->ep->repost_ready_list);
+	if (rx_buf->data != rx_buf->pkt.data) {
+		free(rx_buf->data);
+		rx_buf->data = &rx_buf->pkt.data;
+	}
+
+	/* Discard rx buffer if its msg_ep was closed */
+	if (rx_buf->repost && (rx_buf->ep->srx_ctx || rx_buf->conn->msg_ep)) {
+		rxm_post_recv(rx_buf);
 	} else {
 		ofi_buf_free(rx_buf);
 	}
@@ -1010,7 +889,7 @@ rxm_cq_write_recv_comp(struct rxm_rx_buf *rx_buf, void *context, uint64_t flags,
 		rxm_cq_write_src(rx_buf->ep->util_ep.rx_cq, context,
 				 flags, len, buf, rx_buf->pkt.hdr.data,
 				 rx_buf->pkt.hdr.tag,
-				 rx_buf->conn->handle.fi_addr);
+				 rx_buf->conn->peer->fi_addr);
 	else
 		rxm_cq_write(rx_buf->ep->util_ep.rx_cq, context,
 			     flags, len, buf, rx_buf->pkt.hdr.data,

@@ -76,11 +76,11 @@ unlock:
 	return rd;
 }
 
-/* Caller must hold eq:lock */
 void vrb_eq_set_xrc_conn_tag(struct vrb_xrc_ep *ep)
 {
 	struct vrb_eq *eq = ep->base_ep.eq;
 
+	assert(fastlock_held(&eq->lock));
 	assert(ep->conn_setup);
 	assert(ep->conn_setup->conn_tag == VERBS_CONN_TAG_INVALID);
 	ep->conn_setup->conn_tag =
@@ -88,12 +88,12 @@ void vrb_eq_set_xrc_conn_tag(struct vrb_xrc_ep *ep)
 				ofi_idx_insert(eq->xrc.conn_key_map, ep));
 }
 
-/* Caller must hold eq:lock */
 void vrb_eq_clear_xrc_conn_tag(struct vrb_xrc_ep *ep)
 {
 	struct vrb_eq *eq = ep->base_ep.eq;
 	int index;
 
+	assert(fastlock_held(&eq->lock));
 	assert(ep->conn_setup);
 	if (ep->conn_setup->conn_tag == VERBS_CONN_TAG_INVALID)
 		return;
@@ -108,13 +108,13 @@ void vrb_eq_clear_xrc_conn_tag(struct vrb_xrc_ep *ep)
 	ep->conn_setup->conn_tag = VERBS_CONN_TAG_INVALID;
 }
 
-/* Caller must hold eq:lock */
 struct vrb_xrc_ep *vrb_eq_xrc_conn_tag2ep(struct vrb_eq *eq,
-						uint32_t conn_tag)
+					  uint32_t conn_tag)
 {
 	struct vrb_xrc_ep *ep;
 	int index;
 
+	assert(fastlock_held(&eq->lock));
 	index = ofi_key2idx(&eq->xrc.conn_key_idx, (uint64_t)conn_tag);
 	ep = ofi_idx_lookup(eq->xrc.conn_key_map, index);
 	if (!ep || ep->magic != VERBS_XRC_EP_MAGIC) {
@@ -354,14 +354,14 @@ static int vrb_sidr_conn_compare(struct ofi_rbmap *map,
 		-1 : _key->recip > ep->recip_accept;
 }
 
-/* Caller must hold eq:lock */
 struct vrb_xrc_ep *vrb_eq_get_sidr_conn(struct vrb_eq *eq,
-					      struct sockaddr *peer,
-					      uint16_t pep_port, bool recip)
+					struct sockaddr *peer,
+					uint16_t pep_port, bool recip)
 {
 	struct ofi_rbnode *node;
 	struct vrb_sidr_conn_key key;
 
+	assert(fastlock_held(&eq->lock));
 	vrb_set_sidr_conn_key(peer, pep_port, recip, &key);
 	node = ofi_rbmap_find(&eq->xrc.sidr_conn_rbmap, &key);
 	if (OFI_LIKELY(!node))
@@ -370,13 +370,13 @@ struct vrb_xrc_ep *vrb_eq_get_sidr_conn(struct vrb_eq *eq,
 	return (struct vrb_xrc_ep *) node->data;
 }
 
-/* Caller must hold eq:lock */
 int vrb_eq_add_sidr_conn(struct vrb_xrc_ep *ep,
-			    void *param_data, size_t param_len)
+			 void *param_data, size_t param_len)
 {
 	int ret;
 	struct vrb_sidr_conn_key key;
 
+	assert(fastlock_held(&ep->base_ep.eq->lock));
 	assert(!ep->accept_param_data);
 	assert(param_len);
 	assert(ep->tgt_id && ep->tgt_id->ps == RDMA_PS_UDP);
@@ -406,9 +406,9 @@ int vrb_eq_add_sidr_conn(struct vrb_xrc_ep *ep,
 	return FI_SUCCESS;
 }
 
-/* Caller must hold eq:lock */
 void vrb_eq_remove_sidr_conn(struct vrb_xrc_ep *ep)
 {
+	assert(fastlock_held(&ep->base_ep.eq->lock));
 	assert(ep->conn_map_node);
 
 	ofi_rbmap_delete(&ep->base_ep.eq->xrc.sidr_conn_rbmap,
@@ -654,7 +654,6 @@ vrb_eq_xrc_recip_conn_event(struct vrb_eq *eq,
 	return sizeof(*entry) + len;
 }
 
-/* Caller must hold eq:lock */
 static int
 vrb_eq_xrc_rej_event(struct vrb_eq *eq, struct rdma_cm_event *cma_event)
 {
@@ -663,6 +662,7 @@ vrb_eq_xrc_rej_event(struct vrb_eq *eq, struct rdma_cm_event *cma_event)
 	struct vrb_xrc_conn_info xrc_info;
 	enum vrb_xrc_ep_conn_state state;
 
+	assert(fastlock_held(&eq->lock));
 	ep = container_of(fid, struct vrb_xrc_ep, base_ep.util_ep.ep_fid);
 	if (ep->magic != VERBS_XRC_EP_MAGIC) {
 		VERBS_WARN(FI_LOG_EP_CTRL,
@@ -703,11 +703,12 @@ vrb_eq_xrc_rej_event(struct vrb_eq *eq, struct rdma_cm_event *cma_event)
 	return state == VRB_XRC_ORIG_CONNECTING ? FI_SUCCESS : -FI_EAGAIN;
 }
 
-/* Caller must hold eq:lock */
-static inline int
+static int
 vrb_eq_xrc_connect_retry(struct vrb_xrc_ep *ep,
 			 struct rdma_cm_event *cma_event, int *acked)
 {
+	assert(fastlock_held(&ep->base_ep.eq->lock));
+
 	if (ep->base_ep.info_attr.src_addr)
 		ofi_straddr_dbg(&vrb_prov, FI_LOG_EP_CTRL,
 				"Connect retry src ",
@@ -728,15 +729,15 @@ vrb_eq_xrc_connect_retry(struct vrb_xrc_ep *ep,
 			       ep->conn_setup->pending_paramlen);
 }
 
-/* Caller must hold eq:lock */
-static inline int
+static int
 vrb_eq_xrc_cm_err_event(struct vrb_eq *eq,
-                           struct rdma_cm_event *cma_event, int *acked)
+                        struct rdma_cm_event *cma_event, int *acked)
 {
 	struct vrb_xrc_ep *ep;
 	fid_t fid = cma_event->id->context;
 	int ret;
 
+	assert(fastlock_held(&eq->lock));
 	ep = container_of(fid, struct vrb_xrc_ep, base_ep.util_ep.ep_fid);
 	if (ep->magic != VERBS_XRC_EP_MAGIC) {
 		VERBS_WARN(FI_LOG_EP_CTRL, "CM ID context invalid\n");
@@ -776,12 +777,11 @@ vrb_eq_xrc_cm_err_event(struct vrb_eq *eq,
         return FI_SUCCESS;
 }
 
-/* Caller must hold eq:lock */
-static inline int
+static int
 vrb_eq_xrc_connected_event(struct vrb_eq *eq,
-			      struct rdma_cm_event *cma_event, int *acked,
-			      struct fi_eq_cm_entry *entry, size_t len,
-			      uint32_t *event)
+			   struct rdma_cm_event *cma_event, int *acked,
+			   struct fi_eq_cm_entry *entry, size_t len,
+			   uint32_t *event)
 {
 	struct vrb_xrc_ep *ep;
 	fid_t fid = cma_event->id->context;
@@ -789,6 +789,7 @@ vrb_eq_xrc_connected_event(struct vrb_eq *eq,
 
 	ep = container_of(fid, struct vrb_xrc_ep, base_ep.util_ep.ep_fid);
 
+	assert(fastlock_held(&eq->lock));
 	assert(ep->conn_state == VRB_XRC_ORIG_CONNECTING ||
 	       ep->conn_state == VRB_XRC_RECIP_CONNECTING);
 
@@ -807,14 +808,15 @@ vrb_eq_xrc_connected_event(struct vrb_eq *eq,
 	return ret;
 }
 
-/* Caller must hold eq:lock */
-static inline void
+static void
 vrb_eq_xrc_timewait_event(struct vrb_eq *eq,
-			     struct rdma_cm_event *cma_event, int *acked)
+			  struct rdma_cm_event *cma_event, int *acked)
 {
 	fid_t fid = cma_event->id->context;
 	struct vrb_xrc_ep *ep = container_of(fid, struct vrb_xrc_ep,
 						base_ep.util_ep.ep_fid);
+
+	assert(fastlock_held(&eq->lock));
 	assert(ep->magic == VERBS_XRC_EP_MAGIC);
 	assert(ep->conn_setup);
 
@@ -833,14 +835,15 @@ vrb_eq_xrc_timewait_event(struct vrb_eq *eq,
 		vrb_free_xrc_conn_setup(ep, 0);
 }
 
-/* Caller must hold eq:lock */
 static inline void
 vrb_eq_xrc_disconnect_event(struct vrb_eq *eq,
 			       struct rdma_cm_event *cma_event, int *acked)
 {
 	fid_t fid = cma_event->id->context;
 	struct vrb_xrc_ep *ep = container_of(fid, struct vrb_xrc_ep,
-						base_ep.util_ep.ep_fid);
+					     base_ep.util_ep.ep_fid);
+
+	assert(fastlock_held(&eq->lock));
 	assert(ep->magic == VERBS_XRC_EP_MAGIC);
 
 	if (ep->conn_setup && cma_event->id == ep->base_ep.id) {
@@ -918,9 +921,7 @@ vrb_eq_cm_process_event(struct vrb_eq *eq,
 		if (cma_event->id->qp &&
 		    cma_event->id->qp->context->device->transport_type !=
 		    IBV_TRANSPORT_IWARP) {
-			ret = vrb_set_rnr_timer(cma_event->id->qp);
-			if (ret)
-				goto ack;
+			vrb_set_rnr_timer(cma_event->id->qp);
 		}
 		ep = container_of(fid, struct vrb_ep, util_ep.ep_fid);
 		if (vrb_is_xrc_ep(ep)) {
@@ -1061,12 +1062,12 @@ int vrb_eq_match_event(struct dlist_entry *item, const void *arg)
 	}
 }
 
-/* Caller must hold eq->lock */
 void vrb_eq_remove_events(struct vrb_eq *eq, struct fid *fid)
 {
 	struct dlist_entry *item;
 	struct vrb_eq_entry *entry;
 
+	assert(fastlock_held(&eq->lock));
 	while ((item =
 		dlistfd_remove_first_match(&eq->list_head,
 					   vrb_eq_match_event, fid))) {
@@ -1205,7 +1206,7 @@ vrb_eq_sread(struct fid_eq *eq_fid, uint32_t *event,
 		void *buf, size_t len, int timeout, uint64_t flags)
 {
 	struct vrb_eq *eq;
-	void *contexts;
+	struct ofi_epollfds_event fdevent;
 	ssize_t ret;
 
 	eq = container_of(eq_fid, struct vrb_eq, eq_fid.fid);
@@ -1215,12 +1216,12 @@ vrb_eq_sread(struct fid_eq *eq_fid, uint32_t *event,
 		if (ret && (ret != -FI_EAGAIN))
 			return ret;
 
-		ret = ofi_epoll_wait(eq->epollfd, &contexts, 1, timeout);
+		ret = ofi_epoll_wait(eq->epollfd, &fdevent, 1, timeout);
 		if (ret == 0)
 			return -FI_EAGAIN;
 		else if (ret < 0)
 			return -errno;
-	};
+	}
 }
 
 static const char *

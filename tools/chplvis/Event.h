@@ -35,7 +35,7 @@
 enum Event_kind {Ev_start, Ev_tag, Ev_pause, Ev_end, Ev_task, Ev_comm, Ev_fork,
                  Ev_begin_task, Ev_end_task};
 
-class Event {  // Base class for events 
+class Event {  // Base class for events
 
   protected:
     long sec, usec;   //  Time of the event
@@ -55,7 +55,7 @@ class Event {  // Base class for events
     virtual void print() = 0;
 };
 
-// Comparison based on sec, usec 
+// Comparison based on sec, usec
 
 bool operator < (Event &lh, Event &rh);
 bool operator == (Event &lh, Event &rh);
@@ -65,7 +65,7 @@ class  E_start : public Event {
   private:
     long u_sec, u_usec;   // getrusage times
     long s_sec, s_usec;
-     
+
   public:
     E_start (long esec, long eusec, int nid, long u_sec, long u_usec,
              long s_sec, long s_usec)
@@ -92,7 +92,7 @@ class  E_task : public Event {
     bool isOn;
     long lineNum;
     long srcFileNo;
-  
+
   public:
     E_task (long esec, long eusec, int nid, long taskId, long funcid, bool ison,
             long line, long fileno)
@@ -106,7 +106,7 @@ class  E_task : public Event {
     long srcFile () { return srcFileNo; }
     long taskId () { return taskid; }
     long funcId () { return funcid; }
-    
+
 
     virtual int Ekind() {return Ev_task;}
     virtual void print() {
@@ -145,9 +145,9 @@ class E_comm : public Event {
      long inTask() { return byTask; }
 
      virtual int Ekind() {return Ev_comm;}
-     virtual void print() { 
+     virtual void print() {
        printf ("Comm(%s): node %d time %ld.%06ld to %d size %d, inTask %ld\n",
-               isget ? "get" : "put", nodeid, sec, usec, dstid, 
+               isget ? "get" : "put", nodeid, sec, usec, dstid,
                elemsize * datalen, byTask);
      }
 };
@@ -235,7 +235,7 @@ class E_pause : public Event {
     virtual int Ekind() { return Ev_pause; }
     virtual void print() {
       printf ("Pause:  id %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld tagNo %d\n",
-              nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec, tagid); 
+              nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec, tagid);
     }
 };
 
@@ -247,7 +247,7 @@ class E_end : public Event {
     int vdbTask;
 
   public:
-    E_end (long esec, long eusec, int nodeid, long u_sec, long u_usec, 
+    E_end (long esec, long eusec, int nodeid, long u_sec, long u_usec,
            long s_sec, long s_usec, int tid)
       : Event(esec, eusec, nodeid), u_sec(u_sec), u_usec(u_usec),
         s_sec(s_sec), s_usec(s_usec), vdbTask(tid) {};

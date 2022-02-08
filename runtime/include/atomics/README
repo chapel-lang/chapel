@@ -35,13 +35,13 @@ void atomic_destroy_uint_least64_t(volatile A* obj, C value);
 so that we have an opportunity to free memory occupied by a lock.
 
 
-Here is what we expect from the C11 standard: 
+Here is what we expect from the C11 standard:
 
 
 /////////////////
-Memory Orderings: 
+Memory Orderings:
 /////////////////
-   
+
    typedef enum {
      memory_order_relaxed,
      memory_order_consume,
@@ -59,13 +59,13 @@ Memory Orderings:
 
 
 //////////////
-Memory Fences: 
+Memory Fences:
 //////////////
- 
-   // generic memory order-dependent fence synchronization primitive 
+
+   // generic memory order-dependent fence synchronization primitive
    void atomic_thread_fence(memory_order order);
-   
-   // fence between a thread and a signal handler executed in the same thread 
+
+   // fence between a thread and a signal handler executed in the same thread
    void atomic_signal_fence(memory_order order);
 
 
@@ -88,29 +88,29 @@ For Atomic Integers:
    // All the following functions are generic - the Chapel runtime will assume
    // that we have implementations with e.g. _uint_least64_t appended to the function
    // name. The non _explicit versions use memory_order_seq_cst.
-   
+
    // is it implemented lock-free?
    bool atomic_is_lock_free(const volatile A* object);
-       
-   // non-atomically initialize an atomic variable (the name is a little confusing.) 
+
+   // non-atomically initialize an atomic variable (the name is a little confusing.)
    void atomic_init(volatile A* obj, C value);
-  
+
    // gives us a chance to free any mechanisms used to guarantee atomicity (E.G locks)
-   // Note that this function is not part of the C11 standard 
+   // Note that this function is not part of the C11 standard
    void atomic_destroy(volatile A* object);
-   
-   // stores a value in an atomic object 
+
+   // stores a value in an atomic object
    C atomic_store(volatile A* object, C desired);
    C atomic_store_explicit(volatile A* object, C desired, memory_order order);
-   
-   // reads a value from an atomic object 
+
+   // reads a value from an atomic object
    C atomic_load(volatile A* object);
    C atomic_load_explicit(volatile A* object, memory_order order);
-   
-   // swaps a value with the value of an atomic object 
+
+   // swaps a value with the value of an atomic object
    C atomic_exchange(volatile A* object, C desired);
    C atomic_exchange_explicit(volatile A* object, C desired, memory_order order);
-   
+
    // strong compare-and-swap.
    bool atomic_compare_exchange_strong(volatile A* object, C* expected, C desired);
    bool atomic_compare_exchange_strong_explicit(volatile A* object, C* expected, C desired, memory_order success, memory_order failure);
@@ -137,9 +137,9 @@ For Atomic Reals:
 
    // non-atomically initialize an atomic variable (the name is a little confusing.)
    void atomic_init(volatile A* object, C value);
- 
+
    // gives us a chance to free any mechanisms used to guarantee atomicity (E.G locks)
-   // Note that this function is not part of the C11 standard 
+   // Note that this function is not part of the C11 standard
    void atomic_destroy(volatile A* object);
 
    // stores a value in an atomic object

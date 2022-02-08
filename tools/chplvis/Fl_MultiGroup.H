@@ -45,14 +45,14 @@ class Fl_MultiGroup : public Fl_Group {
 public:
 
   Fl_MultiGroup (int x, int y, int w, int h, const char *l = 0);
-  
+
   bool selectChild (int which);    // Select a child to be visible
   bool selectChild (Fl_Widget *w);
 
   bool pushChild (int which);      // Select a child to be visible and stacks current child
   bool pushChild (Fl_Widget *w);
   bool pushNewChild (Fl_Widget *w, bool removeAtPop);
-  
+
   bool popChild ();                // pops a child, displays stacked child
   void popAll();                   // pops all children, displays bottom of stack
 

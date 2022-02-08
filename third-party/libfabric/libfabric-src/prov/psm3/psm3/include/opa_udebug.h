@@ -89,9 +89,13 @@ int hfi_get_mylocalrank_count();	// -1 if unknown
 
 #if _HFI_DEBUGGING
 
-extern char *__hfi_mylabel;
+extern char __hfi_mylabel[];
 void hfi_set_mylabel(char *);
 extern FILE *__hfi_dbgout;
+extern void hfi_dump_buf(uint8_t *buf, uint32_t len);
+#ifdef PSM_CUDA
+extern void hfi_dump_gpu_buf(uint8_t *buf, uint32_t len);
+#endif
 
 #define _HFI_UNIT_ERROR(unit, fmt, ...) \
 	do { \
@@ -134,19 +138,15 @@ extern FILE *__hfi_dbgout;
 	} while (0)
 
 #define _HFI_DBG(fmt, ...) __HFI_DBG_WHICH(__HFI_DBG, fmt, ##__VA_ARGS__)
-#define _HFI_UDDBG(fmt, ...) __HFI_DBG_WHICH(__HFI_UDDBG, fmt, ##__VA_ARGS__)
 #define _HFI_CONNDBG(fmt, ...) __HFI_DBG_WHICH(__HFI_CONNDBG, fmt, ##__VA_ARGS__)
 #define _HFI_VDBG(fmt, ...) __HFI_DBG_WHICH(__HFI_VERBDBG, fmt, ##__VA_ARGS__)
 #define _HFI_PDBG(fmt, ...) __HFI_DBG_WHICH(__HFI_PKTDBG, fmt, ##__VA_ARGS__)
-#define _HFI_EPDBG(fmt, ...) __HFI_DBG_WHICH(__HFI_EPKTDBG, fmt, ##__VA_ARGS__)
 #define _HFI_PRDBG(fmt, ...) __HFI_DBG_WHICH(__HFI_PROCDBG, fmt, ##__VA_ARGS__)
 #define _HFI_ENVDBG(lev, fmt, ...) \
 	__HFI_DBG_WHICH_NOFUNC(					    \
-		(lev == 0) ? __HFI_INFO :				    \
-		    (lev > 1 ? __HFI_ENVDBG : (__HFI_PROCDBG|__HFI_ENVDBG)),\
+		(lev == 0) ? __HFI_INFO : __HFI_ENVDBG,\
 		"env " fmt, ##__VA_ARGS__)
 #define _HFI_MMDBG(fmt, ...) __HFI_DBG_WHICH(__HFI_MMDBG, fmt, ##__VA_ARGS__)
-#define _HFI_CCADBG(fmt, ...) __HFI_DBG_WHICH(__HFI_CCADBG, fmt, ##__VA_ARGS__)
 
 /*
  * Use these macros (_HFI_DBG_ON and _HFI_DBG_ALWAYS) together
@@ -164,9 +164,6 @@ extern FILE *__hfi_dbgout;
 			##__VA_ARGS__); \
 	} while (0)
 
-#define _HFI_UDDBG_ON unlikely(hfi_debug & __HFI_UDDBG)
-#define _HFI_UDDBG_ALWAYS(fmt, ...) _HFI_DBG_ALWAYS(fmt, ##__VA_ARGS__)
-
 #define _HFI_CONNDBG_ON unlikely(hfi_debug & __HFI_CONNDBG)
 #define _HFI_CONNDBG_ALWAYS(fmt, ...) _HFI_DBG_ALWAYS(fmt, ##__VA_ARGS__)
 
@@ -175,6 +172,10 @@ extern FILE *__hfi_dbgout;
 
 #define _HFI_PDBG_ON unlikely(hfi_debug & __HFI_PKTDBG)
 #define _HFI_PDBG_ALWAYS(fmt, ...) _HFI_DBG_ALWAYS(fmt, ##__VA_ARGS__)
+#define _HFI_PDBG_DUMP(buf, len) hfi_dump_buf(buf, len)
+#ifdef PSM_CUDA
+#define _HFI_PDBG_DUMP_GPU(buf, len) hfi_dump_gpu_buf(buf, len)
+#endif
 
 #define _HFI_PRDBG_ON unlikely(hfi_debug & __HFI_PROCDBG)
 #define _HFI_PRDBG_ALWAYS(fmt, ...) _HFI_DBG_ALWAYS(fmt, ##__VA_ARGS__)
@@ -203,25 +204,24 @@ extern FILE *__hfi_dbgout;
 
 #define _HFI_DBG(fmt, ...)
 #define _HFI_PDBG(fmt, ...)
-#define _HFI_EPDBG(fmt, ...)
 #define _HFI_PRDBG(fmt, ...)
 #define _HFI_ENVDBG(lev, fmt, ...)
-#define _HFI_UDDBG(fmt, ...)
 #define _HFI_CONNDBG(fmt, ...)
 #define _HFI_VDBG(fmt, ...)
 #define _HFI_MMDBG(fmt, ...)
-#define _HFI_CCADBG(fmt, ...)
 
 #define _HFI_DBG_ON 0
 #define _HFI_DBG_ALWAYS(fmt, ...)
-#define _HFI_UDDBG_ON 0
-#define _HFI_UDDBG_ALWAYS(fmt, ...)
 #define _HFI_CONNDBG_ON 0
 #define _HFI_CONNDBG_ALWAYS(fmt, ...)
 #define _HFI_VDBG_ON 0
 #define _HFI_VDBG_ALWAYS(fmt, ...)
 #define _HFI_PRDBG_ON 0
 #define _HFI_PRDBG_ALWAYS(fmt, ...)
+#define _HFI_PDBG_DUMP(buf, len)
+#ifdef PSM_CUDA
+#define _HFI_PDBG_DUMP_GPU(buf, len)
+#endif
 #define _HFI_CCADBG_ON 0
 #define _HFI_CCADBG_ALWAYS(fmt, ...)
 #define _HFI_INFO_ON 0

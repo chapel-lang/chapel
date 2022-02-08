@@ -469,6 +469,7 @@ type BadRegexpError = owned BadRegexError;
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
+  use ChplConfig;
 
   if CHPL_RE2 == "none" {
     compilerError("Cannot use Regex with CHPL_RE2=none");
@@ -946,36 +947,45 @@ record regex {
      :yields: tuples of :record:`regexMatch` objects, the 1st is always
               the match for the whole pattern and the rest are the capture groups.
    */
-  iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
+  iter matches(text: exprType, param numCaptures=0, maxMatches: int = max(int))
   {
     var regexCopy:regex(exprType);
     if home != here then regexCopy = this;
     const localRegex = if home != here then regexCopy._regex else _regex;
-    param nmatches = 1 + captures;
-    var matches: c_array(qio_regex_string_piece_t, nmatches);
+    param nMatches = 1 + numCaptures;
+    var matches: c_array(qio_regex_string_piece_t, nMatches);
     var pos:byteIndex;
-    var endpos:byteIndex;
+    var endPos:byteIndex;
     var textLength:int;
     var localText = text.localize();
 
     pos = 0;
     textLength = localText.numBytes;
-    endpos = pos + textLength;
+    endPos = pos + textLength;
 
-    var nfound = 0;
+    var nFound = 0;
     var cur = pos;
-    while nfound < maxmatches && cur <= endpos {
+    while nFound < maxMatches && cur <= endPos {
       var got = qio_regex_match(localRegex, localText.c_str(), textLength,
-                                cur:int, endpos:int, QIO_REGEX_ANCHOR_UNANCHORED,
-                                matches[0], nmatches);
+                                cur:int, endPos:int, QIO_REGEX_ANCHOR_UNANCHORED,
+                                matches[0], nMatches);
       if !got then break;
-      param nret = captures+1;
-      var ret:nret*regexMatch;
-      for i in 0..captures {
+      var ret:nMatches*regexMatch;
+      for i in 0..numCaptures {
         ret[i] = new regexMatch(got, matches[i].offset:byteIndex, matches[i].len);
       }
       yield ret;
       cur = matches[0].offset + max(1, matches[0].len);
+      nFound += 1;
+    }
+  }
+
+  pragma "last resort"
+  deprecated "regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead."
+  iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
+  {
+    for m in matches(text, numCaptures=captures, maxMatches=maxmatches) {
+      yield m;
     }
   }
 
@@ -1148,40 +1158,6 @@ inline operator :(x: string, type t: regex(string)) throws {
 pragma "no doc"
 inline operator :(x: bytes, type t: regex(bytes)) throws {
   return compile(x);
-}
-
-/*
-
-   Compile a regular expression and search the receiving string for matches at
-   any offset using :proc:`regex.search`.
-
-   :arg needle: the regular expression to search for
-   :arg ignorecase: true to ignore case in the regular expression
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving string where a match occurred
- */
-proc string.search(needle: string, ignorecase=false):regexMatch
-{
-  // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
-  return re.search(this);
-}
-
-/*
-
-   Compile a regular expression and search the receiving bytes for matches at
-   any offset using :proc:`regex.search`.
-
-   :arg needle: the regular expression to search for
-   :arg ignorecase: true to ignore case in the regular expression
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving bytes where a match occurred
- */
-proc bytes.search(needle: bytes, ignorecase=false):regexMatch
-{
-  // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
-  return re.search(this);
 }
 
 // documented in the captures version

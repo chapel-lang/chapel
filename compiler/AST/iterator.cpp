@@ -39,6 +39,8 @@
 #include "view.h"
 #include "WhileStmt.h"
 
+#include "global-ast-vecs.h"
+
 #include <map>
 #include <vector>
 
@@ -92,7 +94,7 @@ void cleanupIteratorInfo(FnSymbol* host) {
 
 /*
 The following properties hold after a call is resolved to an iterator "IT".
-Implemented by resolveAlsoParallelIterators(). 
+Implemented by resolveAlsoParallelIterators().
 
 ANY ITERATOR
 
@@ -103,7 +105,7 @@ ANY ITERATOR
   that IG points to: IG.serial, IG.standalone (when non-NULL), etc.
 
   IG.serial is always non-NULL.
-  
+
 * An iterator IT2 (any flavor) is pointed to from a group IG
   if and only if IT2->iteratorGroup == IG.
 
@@ -147,7 +149,7 @@ SERIAL --> PARALLEL
   the representative call should go next to the definition
   of the serial iterator. However, that would cause visibility issues.
 
-LOGISTICS  
+LOGISTICS
 
 * Only the availability of the standalone and leader iterators
   is detected. Their bodies are not resolved, to avoid encountering
@@ -445,7 +447,7 @@ static void addIteratorFromForExpr(Expr* ref, Symbol* ir) {
   fn->retTag = RET_PARAM;
   fn->retType = dtBool;
   fn->setMethod(true);
-  
+
   ArgSymbol* mtArg = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ArgSymbol* irArg = new ArgSymbol(INTENT_BLANK, "this", ir->type);
   irArg->addFlag(FLAG_ARG_THIS);
@@ -475,7 +477,7 @@ bool checkIteratorFromForExpr(Expr* ref, Symbol* shape) {
   FnSymbol* checkFn = checkCall->resolvedFunction();
   resolveFunction(checkFn);
   holder->remove();
-  
+
   Symbol* checkResult = checkFn->getReturnSymbol();
 
   // chpl_iteratorFromForExpr() is a param boolean function
