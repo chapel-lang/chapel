@@ -27,8 +27,6 @@ module ChapelHashing {
 
   proc chpl__defaultHashWrapper(x): int {
     use Reflection;
-    if (isDomain(x)) then
-      compilerError("Domains do not yet support hash functions");
     if !canResolveMethod(x, "hash") then
       compilerError("No hash function found for " + x.type:string);
     const hash = x.hash();

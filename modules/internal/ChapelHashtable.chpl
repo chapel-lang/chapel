@@ -238,6 +238,8 @@ module ChapelHashtable {
     proc init(type keyType, type valType, resizeThreshold=0.5,
               initialCapacity=16,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
+      if isDomainType(keyType) then
+        compilerError("Values of 'domain' type do not support hash functions yet", 2);
       this.keyType = keyType;
       this.valType = valType;
       this.tableNumFullSlots = 0;
