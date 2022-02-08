@@ -1,0 +1,8 @@
+ExplicitConstRefResourceMutation.chpl:19: In function 'test1':
+ExplicitConstRefResourceMutation.chpl:23: error: cannot assign to const variable
+ExplicitConstRefResourceMutation.chpl:27: In function 'test2':
+ExplicitConstRefResourceMutation.chpl:33: error: cannot assign to const variable
+ExplicitConstRefResourceMutation.chpl:37: In function 'test3':
+ExplicitConstRefResourceMutation.chpl:41: error: cannot assign to const variable
+ExplicitConstRefResourceMutation.chpl:45: In function 'test4':
+ExplicitConstRefResourceMutation.chpl:51: error: cannot assign to const variable
