@@ -588,7 +588,6 @@ module Bytes {
     return startsEndsWith(this, patterns, fromLeft=true);
   }
 
- 
   /*
     Checks if the :mod:`bytes <Bytes>` ends with any of the given arguments.
 
