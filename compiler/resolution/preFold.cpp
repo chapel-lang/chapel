@@ -537,19 +537,21 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 
       //
       // Note that a ContextCall is created if a call resolves to multiple
-      // overloads of a routine that differ only by return intent. In
-      // this case, we carry the candidates around in a ContextCall until
+      // overloads of a routine that differ only by return intent. If so,
+      // then we carry the candidates around in a ContextCall until
       // later passes (e.g. constness propagation, cull-over-references)
-      // allow us to decide which call to select.
-      // In this case, the presence of a ContextCall indicates an error,
-      // because for code like:
+      // allow us to decide which candidate to select.
+      //
+      // When a managed resource is inferred, the presence of a ContextCall
+      // indicates an error, because for code like:
       //
       //    manage man as res do ...;
       //
-      // It means we found multiple candidates for 'manager.enterThis()'.
+      // It means that multiple candidates were found for 'man.enterThis()'.
       // We currently don't specify a disambiguation order in this case,
       // which means we have no way to determine the storage of 'res'.
-      // Emit a helpful error in this case.
+      //
+      // Emit a helpful error instead.
       //
       if (ContextCallExpr* cc = toContextCallExpr(moveIntoTemp->get(2))) {
         CallExpr* refCall = nullptr;
