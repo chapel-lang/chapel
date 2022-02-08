@@ -526,10 +526,29 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 
       INT_ASSERT(moveIntoTemp);
 
+      // These used to be set in either branch, but for now are only set in
+      // one. Declare them here because the code that uses them to fold
+      // is at this scope.
       bool isAnyRefOverloadPresent = false;
       bool isConstnessUncertain = false;
       bool isCertainlyConstRef = false;
 
+      //
+      // Note that a ContextCall is created if a call resolves to multiple
+      // overloads of a routine that differ only by return intent. In
+      // this case, we carry the candidates around in a ContextCall until
+      // later passes (e.g. constness propagation, cull-over-references)
+      // allow us to decide which call to select.
+      // In this case, the presence of a ContextCall indicates an error,
+      // because for code like:
+      //
+      //    manage man as res do ...;
+      //
+      // It means we found multiple candidates for 'manager.enterThis()'.
+      // We currently don't specify a disambiguation order in this case,
+      // which means we have no way to determine the storage of 'res'.
+      // Emit a helpful error in this case.
+      //
       if (ContextCallExpr* cc = toContextCallExpr(moveIntoTemp->get(2))) {
         CallExpr* refCall = nullptr;
         CallExpr* valueCall = nullptr;
@@ -541,6 +560,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
         CallExpr* call = refCall ? refCall : constRefCall;
         INT_ASSERT(call);
 
+        // Grab one of the resolved functions so we can use its name.
         auto anyResolved = call->resolvedFunction();
         INT_ASSERT(anyResolved);
         INT_ASSERT(anyResolved->isMethod());
@@ -549,11 +569,13 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
         auto at = anyResolved->getReceiverType();
         INT_ASSERT(at);
 
-        USR_FATAL_CONT(lhs, "cannot determine resource storage due to "
+        USR_FATAL_CONT(lhs, "cannot determine storage for '%s' due to "
                             "multiple return intents for '%s.%s()'",
+                            lhs->name,
                             at->symbol->name,
                             anyResolved->name);
 
+        // Hint that users can specify storage to fix this error.
         if (auto fn = call->resolvedFunction()) {
           const char* retDesc = retTagDescrString(fn->retTag);
           USR_PRINT(lhs, "specify an explicit storage (e.g., '%s') "
@@ -564,7 +586,8 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
         // TODO: Globalize + clear me at pass end?
         static std::set<AggregateType*> onceForEachAggregate;
 
-        // Note the offending overloads, but only once.
+        // Also hint that users can remove the extra overloads, but only
+        // display this hint once per type to avoid verbosity.
         if (onceForEachAggregate.insert(at).second) {
 
           while (call) {
@@ -608,6 +631,10 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 
         lhs->addFlag(FLAG_REF_VAR);
 
+        // This should not currently be possible, but could be if we allow
+        // inference, and both 'ref' and 'const ref' overloads exist. In
+        // which case this flag indicates to make a selection after
+        // constness propagation has occurred.
         if (isConstnessUncertain) {
           lhs->addFlag(FLAG_REF_IF_MODIFIED);
           INT_ASSERT(!isCertainlyConstRef);
