@@ -40,7 +40,8 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
   if (t->isPrimitiveType())
     return QualifiedType::CONST_IN;
 
-  if (t->isRecordType() || t->isUnionType() || t->isTupleType())
+  if (t->isStringType() || t->isBytesType() ||
+      t->isRecordType() || t->isUnionType() || t->isTupleType())
     return QualifiedType::CONST_REF;
 
   if (auto ct = t->toClassType()) {
@@ -67,7 +68,8 @@ static QualifiedType::Kind defaultIntentForType(const Type* t) {
   if (t->isPrimitiveType())
     return QualifiedType::CONST_IN;
 
-  if (t->isRecordType() || t->isUnionType() || t->isTupleType())
+  if (t->isStringType() || t->isBytesType() ||
+      t->isRecordType() || t->isUnionType() || t->isTupleType())
     return QualifiedType::CONST_REF;
 
   if (auto ct = t->toClassType()) {

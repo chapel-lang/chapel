@@ -133,7 +133,7 @@ static void checkCalledIndex(Context* context,
   }
 }
 
-int main() {
+static void test1() {
   Context ctx;
   Context* context = &ctx;
 
@@ -154,6 +154,65 @@ int main() {
         f(x);
       )"""",
     2);
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(param arg: int) { }   // 1
+        proc f(param arg: real) { }  // 2
+        param x = 1;
+        f(x);
+      )"""",
+    1);
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(param arg: real) { }  // 1
+        proc f(param arg: int) { }   // 2
+        param x = 1;
+        f(x);
+      )"""",
+    2);
+}
+
+static void test2() {
+  Context ctx;
+  Context* context = &ctx;
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(arg) { }           // 1
+        proc f(arg: numeric) { }  // 2
+        proc f(arg: int) { }      // 3
+        var x: int;
+        f(x);
+      )"""",
+    3);
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(arg) { }           // 1
+        proc f(arg: numeric) { }  // 2
+        proc f(arg: int) { }      // 3
+        var x: real;
+        f(x);
+      )"""",
+    2);
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(arg) { }           // 1
+        proc f(arg: numeric) { }  // 2
+        proc f(arg: int) { }      // 3
+        var x: string;
+        f(x);
+      )"""",
+    1);
+}
+
+int main() {
+
+  test1();
+  test2();
 
   return 0;
 }
