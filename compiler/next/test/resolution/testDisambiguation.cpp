@@ -56,7 +56,7 @@ struct GatherStuff {
 
 // function indexes count functions from 1
 //   0 means nothing found
-//  -1 means ambiguous 
+//  -1 means ambiguous
 static void checkCalledIndex(Context* context,
                              std::string contents,
                              int expectOnlyIdx,
@@ -209,10 +209,68 @@ static void test2() {
     1);
 }
 
+static void test3() {
+  Context ctx;
+  Context* context = &ctx;
+
+  checkCalledIndex(context,
+      R""""(
+        var g: int;
+        proc f(arg: int) ref { return g; }        // 1
+        proc f(arg: int) const ref { return g; }  // 2
+        proc f(arg: int) { return g; }            // 3
+        proc f(arg: numeric) { }                  // 4
+        proc f(arg: real) { }                     // 5
+        var x: int;
+        f(x);
+      )"""",
+    0, 1, 2, 3);
+
+  checkCalledIndex(context,
+      R""""(
+        var g: int;
+        proc f(arg: real) { }                     // 1
+        proc f(arg: numeric) { }                  // 2
+        proc f(arg: int) { return g; }            // 3
+        proc f(arg: int) const ref { return g; }  // 4
+        proc f(arg: int) ref { return g; }        // 5
+        var x: int;
+        f(x);
+      )"""",
+    0, 5, 4, 3);
+
+  checkCalledIndex(context,
+      R""""(
+        var g: int;
+        proc f(arg: int) ref { return g; }        // 1
+        proc f(arg: int) const ref { return g; }  // 2
+        proc f(arg: int) { return g; }            // 3
+        proc f(arg: numeric) { }                  // 4
+        proc f(arg: real) { }                     // 5
+        var x: real;
+        f(x);
+      )"""",
+    5);
+
+  checkCalledIndex(context,
+      R""""(
+        var g: int;
+        proc f(arg: real) { }                     // 1
+        proc f(arg: numeric) { }                  // 2
+        proc f(arg: int) { return g; }            // 3
+        proc f(arg: int) const ref { return g; }  // 4
+        proc f(arg: int) ref { return g; }        // 5
+        var x: real;
+        f(x);
+      )"""",
+    1);
+}
+
 int main() {
 
   test1();
   test2();
+  test3();
 
   return 0;
 }
