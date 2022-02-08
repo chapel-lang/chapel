@@ -580,12 +580,10 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
                             anyResolved->name);
 
         // Hint that users can specify storage to fix this error.
-        if (auto fn = call->resolvedFunction()) {
-          const char* retDesc = retTagDescrString(fn->retTag);
-          USR_PRINT(lhs, "specify an explicit storage (e.g., '%s') "
-                         "to disambiguate",
-                         retDesc);
-        }
+        const char* retDesc = retTagDescrString(anyResolved->retTag);
+        USR_PRINT(lhs, "specify an explicit storage (e.g., '%s') "
+                       "to disambiguate",
+                       retDesc);
 
         // TODO: Globalize + clear me at pass end?
         static std::set<AggregateType*> onceForEachAggregate;
