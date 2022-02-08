@@ -54,7 +54,7 @@ def filter_compile_args(args):
     # certain flags from the gasnet .pc file
     more_filtered = [ ]
     for arg in ret:
-        if arg.startswith('-O') or arg == '-Winline':
+        if arg.startswith('-O') or arg == '-Winline' or arg == '-g':
             pass # leave out this flag
         else:
             more_filtered.append(arg)
@@ -74,7 +74,7 @@ def get_compile_args():
 def filter_link_args(args):
     ret = [ ]
     for arg in args:
-        if arg.startswith('-O') or arg.startswith('-W'):
+        if arg.startswith('-O') or arg.startswith('-W') or arg == '-g':
             pass # leave out this flag
         else:
             ret.append(arg)
