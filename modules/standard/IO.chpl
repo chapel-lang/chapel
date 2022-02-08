@@ -553,7 +553,7 @@ The :type:`ioendian` type is an enum. When used as arguments to the
 
 enum ioendian {
   native = 0,
-  big = 1, 
+  big = 1,
   little = 2
 }
 
@@ -4073,7 +4073,7 @@ proc channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) t
 
   select (endian) {
     when ioendian.native {
-      e = try _write_binary_internal(_channel_internal, iokind.native, arg);      
+      e = try _write_binary_internal(_channel_internal, iokind.native, arg);
     }
     when ioendian.big {
       e = try _write_binary_internal(_channel_internal, iokind.big, arg);
@@ -4127,7 +4127,7 @@ proc channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native
 
   select (endian) {
     when ioendian.native {
-      e = try _read_binary_internal(_channel_internal, iokind.native, arg);      
+      e = try _read_binary_internal(_channel_internal, iokind.native, arg);
     }
     when ioendian.big {
       e = try _read_binary_internal(_channel_internal, iokind.big, arg);

@@ -4548,11 +4548,11 @@ int _qio_regex_flags_then_rcurly(const char* ptr, int * len)
 }
 
 static
-void deprecated_binary_warning(const char *conversion, int32_t len, 
+void deprecated_binary_warning(const char *conversion, int32_t len,
                                int32_t lineno, int32_t filename) {
   static char last[100] = {0};
   char msg[100];
-  snprintf(msg, sizeof(msg), "binary conversion \"%.*s\" is deprecated.", 
+  snprintf(msg, sizeof(msg), "binary conversion \"%.*s\" is deprecated.",
            len, conversion);
   if (strcmp(last, msg)) {
     chpl_warning(msg, lineno, filename);
