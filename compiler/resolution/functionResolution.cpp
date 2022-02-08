@@ -9230,9 +9230,9 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
         break;
 
       if (i <= head &&
-          frame->linenum()                     >  0             &&
+          frame->linenum() > 0                                  &&
           fn->hasFlag(FLAG_COMPILER_GENERATED) == false         &&
-          module->modTag                       != MOD_INTERNAL) {
+          (developer || module->modTag != MOD_INTERNAL)         ) {
         break;
       }
     }
