@@ -33,7 +33,6 @@
 #undef NDEBUG
 #endif
 
-#include <array>
 #include <cassert>
 
 using namespace chpl;
@@ -64,10 +63,10 @@ static void test0(Parser* parser) {
   assert(begin->numStmts() == 1);
   assert(begin->stmt(0)->isFnCall());
   assert(begin->blockStyle() == BlockStyle::IMPLICIT);
-  
+
   // Make sure the statements iterator works as expected.
   {
-    std::array<ASTTag, 2> stmtList = {
+    ASTTag stmtList[] = {
       asttags::Comment,
       asttags::Begin
     };
@@ -110,7 +109,7 @@ static void test1(Parser* parser) {
 
   // Make sure the statements iterator works as expected.
   {
-    std::array<ASTTag, 3> stmtList = {
+    ASTTag stmtList[] = {
       asttags::Comment,
       asttags::Begin,
       asttags::Comment
@@ -159,7 +158,7 @@ static void test2(Parser* parser) {
 
   // Make sure the statements iterator works as expected.
   {
-    std::array<ASTTag, 4> stmtList = {
+    ASTTag stmtList[] = {
       asttags::Comment,
       asttags::Begin,
       asttags::Begin,

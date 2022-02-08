@@ -37,7 +37,7 @@ owned<Range> Range::build(Builder* builder, Location loc,
     lowerBoundChildNum = lst.size();
     lst.push_back(std::move(lowerBound));
   }
- 
+
   if (upperBound.get() != nullptr) {
     upperBoundChildNum = lst.size();
     lst.push_back(std::move(upperBound));
@@ -45,7 +45,7 @@ owned<Range> Range::build(Builder* builder, Location loc,
 
   Range* ret = new Range(std::move(lst), opKind,
                          lowerBoundChildNum,
-                         upperBoundChildNum); 
+                         upperBoundChildNum);
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);

@@ -25,6 +25,8 @@
 #include "stmt.h"
 #include "stlUtil.h"
 
+#include "global-ast-vecs.h"
+
 //
 // This file implements the function 'inferConstRefs', which attempts to
 // determine whether or not a symbol can be const-val, const-ref, and/or

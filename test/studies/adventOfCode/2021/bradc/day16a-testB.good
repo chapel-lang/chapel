@@ -1,0 +1,16 @@
+CE00C43D881120
+1 1 0 0 1 1 1 0 0 0 0 0 0 0 0 0 1 1 0 0 0 1 0 0 0 0 1 1 1 1 0 1 1 0 0 0 1 0 0 0 0 0 0 1 0 0 0 1 0 0 1 0 0 0 0 0
+version = 6
+packet type = 3
+numSubPackets = 3
+version = 0
+packet type = 4
+Value = 7
+version = 5
+packet type = 4
+Value = 8
+version = 0
+packet type = 4
+Value = 9
+subPackets: 7 8 9
+Final result = 9

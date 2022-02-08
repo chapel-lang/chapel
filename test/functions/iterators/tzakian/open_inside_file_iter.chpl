@@ -1,7 +1,7 @@
 use IO;
 
-iter file.split(hints:iohints = IOHINT_NONE, style:iostyle = this._style) {
-  open(this.path, iomode.r, hints, style);
+iter file.split(hints:iohints = IOHINT_NONE) {
+  open(this.path, iomode.r, hints);
   yield 1;
 }
 

@@ -1,3 +1,5 @@
+use ChplConfig;
+
 const filename = "hello.chpl";
 
 proc mysystem(cmd: string): int {

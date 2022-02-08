@@ -1,3 +1,0 @@
-callFnAccessModVar.chpl:5: In function 'foo':
-callFnAccessModVar.chpl:6: error: variable 'x' must be defined in the function it is used in for GPU usage
-  callFnAccessModVar.chpl:12: called as foo(i: int(64))

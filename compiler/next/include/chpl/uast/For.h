@@ -86,7 +86,7 @@ class For final : public IndexableLoop {
   ~For() override = default;
 
   /**
-    Create and return a for loop. 
+    Create and return a for loop.
   */
   static owned<For> build(Builder* builder, Location loc,
                           owned<Decl> index,

@@ -432,12 +432,12 @@ static int vrb_close_free_ep(struct vrb_ep *ep)
 	return 0;
 }
 
-/* Caller must hold eq:lock */
-static inline void vrb_ep_xrc_close(struct vrb_ep *ep)
+static void vrb_ep_xrc_close(struct vrb_ep *ep)
 {
 	struct vrb_xrc_ep *xrc_ep = container_of(ep, struct vrb_xrc_ep,
-						    base_ep);
+						 base_ep);
 
+	assert(fastlock_held(&ep->eq->lock));
 	if (xrc_ep->conn_setup)
 		vrb_free_xrc_conn_setup(xrc_ep, 0);
 
@@ -687,7 +687,6 @@ static int vrb_create_dgram_ep(struct vrb_domain *domain, struct vrb_ep *ep,
 	return 0;
 }
 
-/* vrb_srq_ep::xrc.prepost_lock must be held */
 FI_VERBS_XRC_ONLY
 static int vrb_process_xrc_preposted(struct vrb_srq_ep *srq_ep)
 {
@@ -695,6 +694,7 @@ static int vrb_process_xrc_preposted(struct vrb_srq_ep *srq_ep)
 	struct slist_entry *entry;
 	int ret;
 
+	assert(fastlock_held(&srq_ep->xrc.prepost_lock));
 	/* The pre-post SRQ function ops have been replaced so the
 	 * posting here results in adding the RX entries to the SRQ */
 	while (!slist_empty(&srq_ep->xrc.prepost_list)) {
@@ -875,7 +875,7 @@ static int vrb_ep_enable(struct fid_ep *ep_fid)
 		if (ep->srq_ep) {
 			/* Override receive function pointers to prevent the user from
 			 * posting Receive WRs to a QP where a SRQ is attached to it */
-			if (domain->flags & VRB_USE_XRC) {
+			if (domain->ext_flags & VRB_USE_XRC) {
 				*ep->util_ep.ep_fid.msg = vrb_msg_srq_xrc_ep_msg_ops;
 				return vrb_ep_enable_xrc(ep);
 			} else {
@@ -883,7 +883,7 @@ static int vrb_ep_enable(struct fid_ep *ep_fid)
 				ep->util_ep.ep_fid.msg->recvv = fi_no_msg_recvv;
 				ep->util_ep.ep_fid.msg->recvmsg = fi_no_msg_recvmsg;
 			}
-		} else if (domain->flags & VRB_USE_XRC) {
+		} else if (domain->ext_flags & VRB_USE_XRC) {
 			VERBS_WARN(FI_LOG_EP_CTRL, "XRC EP_MSG not bound "
 				   "to srx_context\n");
 			return -FI_EINVAL;
@@ -1115,7 +1115,7 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 
 	switch (info->ep_attr->type) {
 	case FI_EP_MSG:
-		if (dom->flags & VRB_USE_XRC) {
+		if (dom->ext_flags & VRB_USE_XRC) {
 			if (dom->util_domain.threading == FI_THREAD_SAFE) {
 				*ep->util_ep.ep_fid.msg = vrb_msg_xrc_ep_msg_ops_ts;
 				ep->util_ep.ep_fid.rma = &vrb_msg_xrc_ep_rma_ops_ts;
@@ -1139,7 +1139,7 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 
 		if (!info->handle) {
 			/* Only RC, XRC active RDMA CM ID is created at connect */
-			if (!(dom->flags & VRB_USE_XRC)) {
+			if (!(dom->ext_flags & VRB_USE_XRC)) {
 				ret = vrb_create_ep(ep,
 					vrb_get_port_space(info->addr_format), &ep->id);
 				if (ret)
@@ -1149,7 +1149,7 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 		} else if (info->handle->fclass == FI_CLASS_CONNREQ) {
 			connreq = container_of(info->handle,
 					       struct vrb_connreq, handle);
-			if (dom->flags & VRB_USE_XRC) {
+			if (dom->ext_flags & VRB_USE_XRC) {
 				assert(connreq->is_xrc);
 
 				if (!connreq->xrc.is_reciprocal) {
@@ -1159,7 +1159,12 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 						goto err1;
 				}
 			} else {
+				/* ep now owns this rdma cm id, prevent trying to access
+				 * it outside of ep operations to avoid possible use-after-
+				 * free bugs in case the ep is closed
+				 */
 				ep->id = connreq->id;
+				connreq->id = NULL;
 				ep->ibv_qp = ep->id->qp;
 				ep->id->context = &ep->util_ep.ep_fid.fid;
 			}
@@ -1626,12 +1631,12 @@ static void vrb_cleanup_prepost_bufs(struct vrb_srq_ep *srq_ep)
 	}
 }
 
-/* Must hold the associated CQ lock cq::xrc.srq_list_lock */
 int vrb_xrc_close_srq(struct vrb_srq_ep *srq_ep)
 {
 	int ret;
 
-	assert(srq_ep->domain->flags & VRB_USE_XRC);
+	assert(fastlock_held(&srq_ep->xrc.cq->xrc.srq_list_lock));
+	assert(srq_ep->domain->ext_flags & VRB_USE_XRC);
 	if (!srq_ep->xrc.cq || !srq_ep->srq)
 		return FI_SUCCESS;
 
@@ -1656,7 +1661,7 @@ static int vrb_srq_close(fid_t fid)
 	struct vrb_cq *cq = srq_ep->xrc.cq;
 	int ret;
 
-	if (srq_ep->domain->flags & VRB_USE_XRC) {
+	if (srq_ep->domain->ext_flags & VRB_USE_XRC) {
 		if (cq) {
 			fastlock_acquire(&cq->xrc.srq_list_lock);
 			ret = vrb_xrc_close_srq(srq_ep);
@@ -1724,7 +1729,7 @@ int vrb_srq_context(struct fid_domain *domain, struct fi_rx_attr *attr,
 
 	/* XRC SRQ creation is delayed until the first endpoint it is bound
 	 * to is enabled.*/
-	if (dom->flags & VRB_USE_XRC) {
+	if (dom->ext_flags & VRB_USE_XRC) {
 		fastlock_init(&srq_ep->xrc.prepost_lock);
 		slist_init(&srq_ep->xrc.prepost_list);
 		dlist_init(&srq_ep->xrc.srq_entry);

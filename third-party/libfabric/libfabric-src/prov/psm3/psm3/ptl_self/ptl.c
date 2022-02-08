@@ -68,6 +68,11 @@ struct ptl_self {
 	ptl_ctl_t *ctl;
 } __attribute__((aligned(16)));
 
+/* not reported yet, so just track in a global so can pass a pointer to
+ * psmi_mq_handle_envelope and psmi_mq_handle_rts
+ */
+static struct ptl_strategy_stats strat_stats;
+
 static
 psm2_error_t
 ptl_handle_rtsmatch(psm2_mq_req_t recv_req, int was_posted)
@@ -79,12 +84,14 @@ ptl_handle_rtsmatch(psm2_mq_req_t recv_req, int was_posted)
 			       recv_req->req_data.recv_msglen);
 	}
 
+	recv_req->mq->stats.rx_user_num++;
+	recv_req->mq->stats.rx_user_bytes += recv_req->req_data.recv_msglen;
 	psmi_mq_handle_rts_complete(recv_req);
 
+	send_req->mq->stats.tx_rndv_bytes += send_req->req_data.send_msglen;
 	/* If the send is already marked complete, that's because it was internally
 	 * buffered. */
 	if (send_req->state == MQ_STATE_COMPLETE) {
-		psmi_mq_stats_rts_account(send_req);
 		if (send_req->req_data.buf != NULL && send_req->req_data.send_msglen > 0)
 			psmi_mq_sysbuf_free(send_req->mq, send_req->req_data.buf);
 		/* req was left "live" even though the sender was told that the
@@ -143,14 +150,17 @@ self_mq_isend(psm2_mq_t mq, psm2_epaddr_t epaddr, uint32_t flags_user,
 	    return PSM2_NO_MEMORY;
 
 #ifdef PSM_CUDA
-	if (PSMI_IS_CUDA_ENABLED && PSMI_IS_CUDA_MEM(ubuf)) {
+	if (len && PSMI_IS_CUDA_ENABLED && PSMI_IS_CUDA_MEM(ubuf)) {
 		psmi_cuda_set_attr_sync_memops(ubuf);
 		send_req->is_buf_gpu_mem = 1;
 	} else
 		send_req->is_buf_gpu_mem = 0;
 #endif
 
-	rc = psmi_mq_handle_rts(mq, epaddr, tag,
+	mq->stats.tx_num++;
+	mq->stats.tx_rndv_num++;
+
+	rc = psmi_mq_handle_rts(mq, epaddr, tag, &strat_stats,
 				len, NULL, 0, 1,
 				ptl_handle_rtsmatch, &recv_req);
 	send_req->req_data.tag = *tag;
@@ -294,6 +304,7 @@ self_connect(ptl_t *ptl_gen,
 			continue;
 
 		if (array_of_epid[i] == ptl->epid) {
+			_HFI_CONNDBG("connect self\n");
 			array_of_epaddr[i] = ptl->epaddr;
 			array_of_epaddr[i]->ptlctl = ptl->ctl;
 			array_of_epaddr[i]->epid = ptl->epid;
@@ -328,6 +339,7 @@ self_disconnect(ptl_t *ptl_gen, int force, int numep,
 			continue;
 
 		if (array_of_epaddr[i] == ptl->epaddr) {
+			_HFI_CONNDBG("disconnect self\n");
 			psmi_epid_remove(ptl->ep, ptl->epid);
 			array_of_errors[i] = PSM2_OK;
 		}

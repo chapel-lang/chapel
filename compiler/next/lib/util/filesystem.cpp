@@ -26,7 +26,12 @@
 
 #include <cerrno>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 namespace chpl {
+
 
 static std::string my_strerror(int errno_) {
   char errbuf[256];
@@ -100,5 +105,12 @@ bool readfile(const char* path,
 
   return true;
 }
+
+bool fileExists(const char* path) {
+  struct stat s;
+  int err = stat(path, &s);
+  return err == 0;
+}
+
 
 }

@@ -1,0 +1,2 @@
+styleAndSetStyle.chpl:5: warning: channel._style is deprecated because it returns a type that is deprecated
+styleAndSetStyle.chpl:6: warning: channel._set_style is deprecated because its purpose involves a deprecated type

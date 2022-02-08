@@ -49,6 +49,7 @@
 
 #include <inttypes.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -67,6 +68,7 @@
 #include <ofi_epoll.h>
 #include <ofi_list.h>
 #include <ofi_osd.h>
+#include <ofi_iov.h>
 #include <shared/ofi_str.h>
 
 struct fi_provider core_prov = {
@@ -1003,6 +1005,338 @@ int ofi_discard_socket(SOCKET sock, size_t len)
 	return ret;
 }
 
+size_t ofi_byteq_readv(struct ofi_byteq *byteq, struct iovec *iov,
+		       size_t cnt, size_t offset)
+{
+	size_t avail, len;
+
+	if (cnt == 1 && !offset)
+		return ofi_byteq_read(byteq, iov[0].iov_base, iov[0].iov_len);
+
+	avail = ofi_byteq_readable(byteq);
+	if (!avail)
+		return 0;
+
+	len = ofi_copy_iov_buf(iov, cnt, offset, &byteq->data[byteq->head],
+			       avail, OFI_COPY_BUF_TO_IOV);
+	if (len < avail) {
+		byteq->head += len;
+	} else {
+		byteq->head = 0;
+		byteq->tail = 0;
+	}
+	return len;
+}
+
+void ofi_byteq_writev(struct ofi_byteq *byteq, const struct iovec *iov,
+		      size_t cnt)
+{
+	size_t i;
+
+	assert(ofi_total_iov_len(iov, cnt) <= ofi_byteq_writeable(byteq));
+
+	if (cnt == 1) {
+		ofi_byteq_write(byteq, iov[0].iov_base, iov[0].iov_len);
+		return;
+	}
+
+	for (i = 0; i < cnt; i++) {
+		memcpy(&byteq->data[byteq->tail], iov[i].iov_base,
+		       iov[i].iov_len);
+		byteq->tail += iov[i].iov_len;
+	}
+}
+
+
+ssize_t ofi_bsock_flush(struct ofi_bsock *bsock)
+{
+	ssize_t ret;
+
+	if (!ofi_bsock_tosend(bsock))
+		return 0;
+
+	ret = ofi_byteq_send(&bsock->sq, bsock->sock);
+	if (ret < 0) {
+		return ofi_sockerr() == EPIPE ?
+			-FI_ENOTCONN : -ofi_sockerr();
+	}
+
+	return ofi_bsock_tosend(bsock) ? -FI_EAGAIN : 0;
+}
+
+ssize_t ofi_bsock_send(struct ofi_bsock *bsock, const void *buf, size_t *len)
+{
+	size_t avail;
+	ssize_t ret;
+
+	avail = ofi_bsock_tosend(bsock);
+	if (avail) {
+		if (*len < ofi_byteq_writeable(&bsock->sq)) {
+			ofi_byteq_write(&bsock->sq, buf, *len);
+			ret = ofi_bsock_flush(bsock);
+			return !ret || ret == -FI_EAGAIN ? *len : ret;
+		}
+
+		ret = ofi_bsock_flush(bsock);
+		if (ret)
+			return ret;
+	}
+
+	assert(!ofi_bsock_tosend(bsock));
+	if (*len > bsock->zerocopy_size) {
+		ret = ofi_send_socket(bsock->sock, buf, *len,
+				      MSG_NOSIGNAL | OFI_ZEROCOPY);
+		if (ret >= 0) {
+			bsock->async_index++;
+			*len = ret;
+			return -FI_EINPROGRESS;
+		}
+	} else {
+		ret = ofi_send_socket(bsock->sock, buf, *len, MSG_NOSIGNAL);
+	}
+	if (ret < 0) {
+		if (OFI_SOCK_TRY_SND_RCV_AGAIN(ofi_sockerr()) &&
+		    *len < ofi_byteq_writeable(&bsock->sq)) {
+			ofi_byteq_write(&bsock->sq, buf, *len);
+			return *len;
+		}
+		return ofi_sockerr() == EPIPE ? -FI_ENOTCONN : -ofi_sockerr();
+	}
+	*len = ret;
+	return ret;
+}
+
+ssize_t ofi_bsock_sendv(struct ofi_bsock *bsock, const struct iovec *iov,
+			size_t cnt, size_t *len)
+{
+	struct msghdr msg;
+	size_t avail;
+	ssize_t ret;
+
+	if (cnt == 1) {
+		*len = iov[0].iov_len;
+		return ofi_bsock_send(bsock, iov[0].iov_base, len);
+	}
+
+	*len = ofi_total_iov_len(iov, cnt);
+	avail = ofi_bsock_tosend(bsock);
+	if (avail) {
+		if (*len < ofi_byteq_writeable(&bsock->sq)) {
+			ofi_byteq_writev(&bsock->sq, iov, cnt);
+			ret = ofi_bsock_flush(bsock);
+			return !ret || ret == -FI_EAGAIN ? *len : ret;
+		}
+
+		ret = ofi_bsock_flush(bsock);
+		if (ret)
+			return ret;
+	}
+
+	assert(!ofi_bsock_tosend(bsock));
+	msg.msg_control = NULL;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+	msg.msg_name = NULL;
+	msg.msg_namelen = 0;
+	msg.msg_iov = (struct iovec *) iov;
+	msg.msg_iovlen = cnt;
+
+	if (*len > bsock->zerocopy_size) {
+		ret = ofi_sendmsg_tcp(bsock->sock, &msg,
+				      MSG_NOSIGNAL | OFI_ZEROCOPY);
+		if (ret >= 0) {
+			bsock->async_index++;
+			*len = ret;
+			return -FI_EINPROGRESS;
+		}
+	} else {
+		ret = ofi_sendmsg_tcp(bsock->sock, &msg, MSG_NOSIGNAL);
+	}
+	if (ret < 0) {
+		if (OFI_SOCK_TRY_SND_RCV_AGAIN(ofi_sockerr()) &&
+		    *len < ofi_byteq_writeable(&bsock->sq)) {
+			ofi_byteq_writev(&bsock->sq, iov, cnt);
+			return *len;
+		}
+		return ofi_sockerr() == EPIPE ? -FI_ENOTCONN : -ofi_sockerr();
+	}
+	*len = ret;
+	return ret;
+}
+
+ssize_t ofi_bsock_recv(struct ofi_bsock *bsock, void *buf, size_t len)
+{
+	size_t bytes;
+	ssize_t ret;
+
+	bytes = ofi_byteq_read(&bsock->rq, buf, len);
+	if (bytes) {
+		if (bytes == len)
+			return len;
+		buf = (char *) buf + bytes;
+		len -= bytes;
+	}
+
+	assert(!ofi_bsock_readable(bsock));
+	if (len < (bsock->rq.size >> 1)) {
+		ret = ofi_byteq_recv(&bsock->rq, bsock->sock);
+		if (ret <= 0)
+			goto out;
+
+		assert(ofi_bsock_readable(bsock));
+		bytes += ofi_byteq_read(&bsock->rq, buf, len);
+		return bytes;
+	}
+
+	ret = ofi_recv_socket(bsock->sock, buf, len, MSG_NOSIGNAL);
+	if (ret > 0)
+		return bytes + ret;
+
+out:
+	if (bytes)
+		return bytes;
+	return ret ? -ofi_sockerr(): -FI_ENOTCONN;
+}
+
+ssize_t ofi_bsock_recvv(struct ofi_bsock *bsock, struct iovec *iov, size_t cnt)
+{
+	struct msghdr msg;
+	size_t len, bytes;
+	ssize_t ret;
+
+	if (cnt == 1)
+		return ofi_bsock_recv(bsock, iov[0].iov_base, iov[0].iov_len);
+
+	len = ofi_total_iov_len(iov, cnt);
+	if (ofi_byteq_readable(&bsock->rq)) {
+		bytes = ofi_byteq_readv(&bsock->rq, iov, cnt, 0);
+		if (bytes == len)
+			return len;
+
+		len -= bytes;
+	} else {
+		bytes = 0;
+	}
+
+	assert(!ofi_bsock_readable(bsock));
+	if (len < (bsock->rq.size >> 1)) {
+		ret = ofi_byteq_recv(&bsock->rq, bsock->sock);
+		if (ret <= 0)
+			goto out;
+
+		assert(ofi_bsock_readable(bsock));
+		bytes += ofi_byteq_readv(&bsock->rq, iov, cnt, bytes);
+		return bytes;
+	}
+
+	/* It's too difficult to adjust the iov without copying it, so return
+	 * what data we have.  The caller will consume the iov and retry.
+	 */
+	if (bytes)
+		return bytes;
+
+	msg.msg_control = NULL;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+	msg.msg_name = NULL;
+	msg.msg_namelen = 0;
+	msg.msg_iov = iov;
+	msg.msg_iovlen = cnt;
+
+	ret = ofi_recvmsg_tcp(bsock->sock, &msg, MSG_NOSIGNAL);
+	if (ret > 0)
+		return ret;
+out:
+	if (bytes)
+		return bytes;
+	return ret ? -ofi_sockerr(): -FI_ENOTCONN;
+}
+
+#ifdef MSG_ZEROCOPY
+uint32_t ofi_bsock_async_done(const struct fi_provider *prov,
+			      struct ofi_bsock *bsock)
+{
+	struct msghdr msg = {};
+	struct sock_extended_err *serr;
+	struct cmsghdr *cmsg;
+	/* x2 is arbitrary but avoids truncation */
+	uint8_t ctrl[CMSG_SPACE(sizeof(*serr) * 2)];
+	int ret;
+
+	msg.msg_control = &ctrl;
+	msg.msg_controllen = sizeof(ctrl);
+	ret = recvmsg(bsock->sock, &msg, MSG_ERRQUEUE);
+	if (ret < 0) {
+		FI_WARN(prov, FI_LOG_EP_DATA,
+			"Error reading MSG_ERRQUEUE (%s)\n", strerror(errno));
+		goto disable;
+	}
+
+	assert(!(msg.msg_flags & MSG_CTRUNC));
+	cmsg = CMSG_FIRSTHDR(&msg);
+	if ((cmsg->cmsg_level != SOL_IP && cmsg->cmsg_type != IP_RECVERR) &&
+	    (cmsg->cmsg_level != SOL_IPV6 && cmsg->cmsg_type != IPV6_RECVERR)) {
+		FI_WARN(prov, FI_LOG_EP_DATA,
+			"Unexpected cmsg level (!IP) or type (!RECVERR)\n");
+		goto disable;
+	}
+
+	serr = (void *) CMSG_DATA(cmsg);
+	if ((serr->ee_origin != SO_EE_ORIGIN_ZEROCOPY) || serr->ee_errno) {
+		FI_WARN(prov, FI_LOG_EP_DATA,
+			"Unexpected sock err origin or errno\n");
+		goto disable;
+	}
+
+	bsock->done_index = serr->ee_data;
+	if (serr->ee_code & SO_EE_CODE_ZEROCOPY_COPIED) {
+		FI_WARN(prov, FI_LOG_EP_DATA,
+			"Zerocopy data was copied\n");
+disable:
+		FI_WARN(prov, FI_LOG_EP_DATA, "disabling zerocopy\n");
+		bsock->zerocopy_size = SIZE_MAX;
+	}
+	return bsock->done_index;
+}
+#else
+uint32_t ofi_bsock_async_done(const struct fi_provider *prov,
+			      struct ofi_bsock *bsock)
+{
+	return 0;
+}
+#endif
+
+int ofi_pollfds_grow(struct ofi_pollfds *pfds, int max_size)
+{
+	struct pollfd *fds;
+	void *contexts;
+	size_t size;
+
+	if (max_size < pfds->size)
+		return FI_SUCCESS;
+
+	size = max_size + 1;
+	if (size < pfds->size + 64)
+		size = pfds->size + 64;
+
+	fds = calloc(size, sizeof(*pfds->fds) + sizeof(*pfds->context));
+	if (!fds)
+		return -FI_ENOMEM;
+
+	contexts = fds + size;
+	if (pfds->size) {
+		memcpy(fds, pfds->fds, pfds->size * sizeof(*pfds->fds));
+		memcpy(contexts, pfds->context, pfds->size * sizeof(*pfds->context));
+		free(pfds->fds);
+	}
+
+	while (pfds->size < size)
+		fds[pfds->size++].fd = INVALID_SOCKET;
+
+	pfds->fds = fds;
+	pfds->context = contexts;
+	return FI_SUCCESS;
+}
 
 int ofi_pollfds_create(struct ofi_pollfds **pfds)
 {
@@ -1012,14 +1346,9 @@ int ofi_pollfds_create(struct ofi_pollfds **pfds)
 	if (!*pfds)
 		return -FI_ENOMEM;
 
-	(*pfds)->size = 64;
-	(*pfds)->fds = calloc((*pfds)->size, sizeof(*(*pfds)->fds) +
-			    sizeof(*(*pfds)->context));
-	if (!(*pfds)->fds) {
-		ret = -FI_ENOMEM;
+	ret = ofi_pollfds_grow(*pfds, 63);
+	if (ret)
 		goto err1;
-	}
-	(*pfds)->context = (void *)((*pfds)->fds + (*pfds)->size);
 
 	ret = fd_signal_init(&(*pfds)->signal);
 	if (ret)
@@ -1064,10 +1393,49 @@ int ofi_pollfds_add(struct ofi_pollfds *pfds, int fd, uint32_t events,
 	return ofi_pollfds_ctl(pfds, POLLFDS_CTL_ADD, fd, events, context);
 }
 
+static int ofi_pollfds_find(struct slist_entry *entry, const void *arg)
+{
+	struct ofi_pollfds_work_item *item;
+	int fd = (int) (uintptr_t) arg;
+
+	item = container_of(entry, struct ofi_pollfds_work_item, entry);
+	return item->fd == fd;
+}
+
+/* We're not changing the fds, just fields.  This is always 'racy' if
+ * the app modifies the events being monitored for an fd while another
+ * thread waits on the fds.  The other thread can always return before
+ * the modifications have been made.  The caller must be prepared to
+ * handle this, same as if epoll were used directly.
+ *
+ * Updating the events is a common case, so handle this immediately
+ * without the overhead of queuing a work item.
+ */
 int ofi_pollfds_mod(struct ofi_pollfds *pfds, int fd, uint32_t events,
 		    void *context)
 {
-	return ofi_pollfds_ctl(pfds, POLLFDS_CTL_MOD, fd, events, context);
+	struct slist_entry *entry;
+	struct ofi_pollfds_work_item *item;
+	int ret;
+
+	fastlock_acquire(&pfds->lock);
+	ret = ofi_pollfds_do_mod(pfds, fd, events, context);
+	if (!ret)
+		goto signal;
+
+	/* fd may be queued for insertion */
+	entry = slist_find_first_match(&pfds->work_item_list, ofi_pollfds_find,
+				       (void *) (uintptr_t) fd);
+	if (entry) {
+		item = container_of(entry, struct ofi_pollfds_work_item, entry);
+		item->events = events;
+		item->context = context;
+	}
+
+signal:
+	fd_signal_set(&pfds->signal);
+	fastlock_release(&pfds->lock);
+	return 0;
 }
 
 int ofi_pollfds_del(struct ofi_pollfds *pfds, int fd)
@@ -1075,101 +1443,42 @@ int ofi_pollfds_del(struct ofi_pollfds *pfds, int fd)
 	return ofi_pollfds_ctl(pfds, POLLFDS_CTL_DEL, fd, 0, NULL);
 }
 
-static int ofi_pollfds_array(struct ofi_pollfds *pfds)
-{
-	struct pollfd *fds;
-	void *contexts;
-
-	fds = calloc(pfds->size + 64,
-		     sizeof(*pfds->fds) + sizeof(*pfds->context));
-	if (!fds)
-		return -FI_ENOMEM;
-
-	pfds->size += 64;
-	contexts = fds + pfds->size;
-
-	memcpy(fds, pfds->fds, pfds->nfds * sizeof(*pfds->fds));
-	memcpy(contexts, pfds->context, pfds->nfds * sizeof(*pfds->context));
-	free(pfds->fds);
-	pfds->fds = fds;
-	pfds->context = contexts;
-	return FI_SUCCESS;
-}
-
-static void ofi_pollfds_cleanup(struct ofi_pollfds *pfds)
-{
-	int i;
-
-	for (i = 0; i < pfds->nfds; i++) {
-		while (pfds->fds[i].fd == INVALID_SOCKET) {
-			pfds->nfds--;
-			if (i == pfds->nfds)
-				break;
-
-			pfds->fds[i].fd = pfds->fds[pfds->nfds].fd;
-			pfds->fds[i].events = pfds->fds[pfds->nfds].events;
-			pfds->fds[i].revents = pfds->fds[pfds->nfds].revents;
-			pfds->context[i] = pfds->context[pfds->nfds];
-		}
-	}
-}
-
 static void ofi_pollfds_process_work(struct ofi_pollfds *pfds)
 {
 	struct slist_entry *entry;
 	struct ofi_pollfds_work_item *item;
-	int i;
 
 	while (!slist_empty(&pfds->work_item_list)) {
-		if ((pfds->nfds == pfds->size) &&
-		    ofi_pollfds_array(pfds))
-			continue;
-
 		entry = slist_remove_head(&pfds->work_item_list);
 		item = container_of(entry, struct ofi_pollfds_work_item, entry);
 
 		switch (item->type) {
 		case POLLFDS_CTL_ADD:
-			pfds->fds[pfds->nfds].fd = item->fd;
-			pfds->fds[pfds->nfds].events = item->events;
-			pfds->fds[pfds->nfds].revents = 0;
-			pfds->context[pfds->nfds] = item->context;
-			pfds->nfds++;
+			ofi_pollfds_do_add(pfds, item);
 			break;
 		case POLLFDS_CTL_DEL:
-			for (i = 0; i < pfds->nfds; i++) {
-				if (pfds->fds[i].fd == item->fd) {
-					pfds->fds[i].fd = INVALID_SOCKET;
-					break;
-				}
-			}
-			break;
-		case POLLFDS_CTL_MOD:
-			for (i = 0; i < pfds->nfds; i++) {
-				if (pfds->fds[i].fd == item->fd) {
-					pfds->fds[i].events = item->events;
-					pfds->fds[i].revents &= item->events;
-					pfds->context[i] = item->context;
-					break;
-				}
-			}
+			ofi_pollfds_do_del(pfds, item);
 			break;
 		default:
 			assert(0);
-			goto out;
+			break;
 		}
 		free(item);
 	}
-out:
-	ofi_pollfds_cleanup(pfds);
 }
 
-int ofi_pollfds_wait(struct ofi_pollfds *pfds, void **contexts,
-		     int max_contexts, int timeout)
+int ofi_pollfds_wait(struct ofi_pollfds *pfds,
+		     struct ofi_epollfds_event *events,
+		     int maxevents, int timeout)
 {
 	int i, ret;
 	int found = 0;
-	uint64_t start = (timeout >= 0) ? ofi_gettime_ms() : 0;
+	uint64_t start = (timeout > 0) ? ofi_gettime_ms() : 0;
+
+	fastlock_acquire(&pfds->lock);
+	if (!slist_empty(&pfds->work_item_list))
+		ofi_pollfds_process_work(pfds);
+	fastlock_release(&pfds->lock);
 
 	do {
 		ret = poll(pfds->fds, pfds->nfds, timeout);
@@ -1178,19 +1487,23 @@ int ofi_pollfds_wait(struct ofi_pollfds *pfds, void **contexts,
 		else if (ret == 0)
 			return 0;
 
-		if (pfds->fds[0].revents)
-			fd_signal_reset(&pfds->signal);
-
 		fastlock_acquire(&pfds->lock);
 		if (!slist_empty(&pfds->work_item_list))
 			ofi_pollfds_process_work(pfds);
-
 		fastlock_release(&pfds->lock);
 
+		if (pfds->fds[0].revents) {
+			fd_signal_reset(&pfds->signal);
+			ret--;
+		}
+
+		ret = MIN(maxevents, ret);
+
 		/* Index 0 is the internal signaling fd, skip it */
-		for (i = 1; i < pfds->nfds && found < max_contexts; i++) {
+		for (i = 1; i < pfds->nfds && found < ret; i++) {
 			if (pfds->fds[i].revents) {
-				contexts[found++] = pfds->context[i];
+				events[found].events = pfds->fds[i].revents;
+				events[found++].data.ptr = pfds->context[i];
 			}
 		}
 

@@ -1,0 +1,17 @@
+8A004A801A8002F478
+1 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 0 1 0 0 0 0 0 0 0 0 0 0 1 1 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1 0 1 0 0 0 1 1 1 1 0 0 0
+version = 4
+packet type = 2
+numSubPackets = 1
+sub-packet 0
+version = 1
+packet type = 2
+numSubPackets = 1
+sub-packet 0
+version = 5
+packet type = 2
+totBitLength = 11
+version = 6
+packet type = 4
+Value = 15
+VERSION SUM: 16

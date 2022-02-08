@@ -1,0 +1,925 @@
+0054FEC8C54DC02295D5AE9B243D2F4FEA154493A43E0E60084E61CE802419A95E38958DE4F100B9708300466AB2AB7D80291DA471EB9110010328F820084D5742D2C8E600AC8DF3DBD486C010999B44CCDBD401C9BBCE3FD3DCA624652C400007FC97B113B8C4600A6002A33907E9C83ECB4F709FD51400B3002C4009202E9D00AF260290D400D70038400E7003C400A201B01400B401609C008201115003915002D002525003A6EB49C751ED114C013865800BFCA234E677512952E20040649A26DFA1C90087D600A8803F0CA1AC1F00042A3E41F8D31EE7C8D800FD97E43CCE401A9E802D377B5B751A95BCD3E574124017CF00341353E672A32E2D2356B9EE79088032AF005E7E8F33F47F95EC29AD3018038000864658471280010C8FD1D63C080390E61D44600092645366202933C9FA2F460095006E40008742A8E70F80010F8DF0AA264B331004C52B647D004E6EEF534C8600BCC93E802D38B5311AC7E7B02D804629DD034DFBB1E2D4E2ACBDE9F9FF8ED2F10099DE828803C7C0068E7B9A7D9EE69F263B7D427541200806582E49725CFA64240050A20043E25C148CC600F45C8E717C8010E84506E1F18023600A4D934DC379B9EC96B242402504A027006E200085C6B8D51200010F89913629A805925FBD3322191A1C45A9EACB4733FBC5631A210805315A7E3BC324BCE8573ACF3222600BCD6B3997E7430F004E37CED091401293BEAC2D138402496508873967A840E00E41E99DE6B9D3CCB5E3F9A69802B2368E7558056802E200D4458AF1180010A82B1520DB80212588014C009803B2A3134DD32706009498C600664200F4558630F840188E11EE3B200C292B59124AFF9AE6775ED8BE73D4FEEFFAD4CE7E72FFBB7BB49005FB3BEBFA84140096CD5FEDF048C011B004A5B327F96CC9E653C9060174EA0CF15CA0E4D044F9E4B6258A5065400D9B68
+0 0 0 0 0 0 0 0 0 1 0 1 0 1 0 0 1 1 1 1 1 1 1 0 1 1 0 0 1 0 0 0 1 1 0 0 0 1 0 1 0 1 0 0 1 1 0 1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 1 0 1 0 0 1 0 1 0 1 1 1 0 1 0 1 0 1 1 0 1 0 1 1 1 0 1 0 0 1 1 0 1 1 0 0 1 0 0 1 0 0 0 0 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 0 1 1 1 1 1 1 1 0 1 0 1 0 0 0 0 1 0 1 0 1 0 1 0 0 0 1 0 0 1 0 0 1 0 0 1 1 1 0 1 0 0 1 0 0 0 0 1 1 1 1 1 0 0 0 0 0 1 1 1 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 1 1 1 0 0 1 1 0 0 0 0 1 1 1 0 0 1 1 1 0 1 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 0 1 1 0 0 1 1 0 1 0 1 0 0 1 0 1 0 1 1 1 1 0 0 0 1 1 1 0 0 0 1 0 0 1 0 1 0 1 1 0 0 0 1 1 0 1 1 1 1 0 0 1 0 0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 1 0 1 1 1 0 0 1 0 1 1 1 0 0 0 0 1 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 0 1 1 0 0 1 1 0 1 0 1 0 1 0 1 1 0 0 1 0 1 0 1 0 1 0 1 1 0 1 1 1 1 1 0 1 1 0 0 0 0 0 0 0 0 0 1 0 1 0 0 1 0 0 0 1 1 1 0 1 1 0 1 0 0 1 0 0 0 1 1 1 0 0 0 1 1 1 1 0 1 0 1 1 1 0 0 1 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 1 0 0 1 0 1 0 0 0 1 1 1 1 1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 1 1 0 1 0 1 0 1 0 1 1 1 0 1 0 0 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 0 1 0 0 0 1 1 1 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 1 0 1 1 0 0 1 0 0 0 1 1 0 1 1 1 1 1 0 0 1 1 1 1 0 1 1 0 1 1 1 1 0 1 0 1 0 0 1 0 0 0 0 1 1 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 1 1 0 0 1 1 0 0 1 1 0 1 1 0 1 0 0 0 1 0 0 1 1 0 0 1 1 0 0 1 1 0 1 1 0 1 1 1 1 0 1 0 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 0 0 1 1 0 1 1 1 0 1 1 1 1 0 0 1 1 1 0 0 0 1 1 1 1 1 1 1 1 0 1 0 0 1 1 1 1 0 1 1 1 0 0 1 0 1 0 0 1 1 0 0 0 1 0 0 1 0 0 0 1 1 0 0 1 0 1 0 0 1 0 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 1 1 1 1 0 1 1 0 0 0 1 0 0 0 1 0 0 1 1 1 0 1 1 1 0 0 0 1 1 0 0 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 1 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 1 0 0 0 1 1 0 0 1 1 1 0 0 1 0 0 0 0 0 1 1 1 1 1 1 0 1 0 0 1 1 1 0 0 1 0 0 0 0 0 1 1 1 1 1 0 1 1 0 0 1 0 1 1 0 1 0 0 1 1 1 1 0 1 1 1 0 0 0 0 1 0 0 1 1 1 1 1 1 1 0 1 0 1 0 1 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0 1 1 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 1 0 0 0 0 0 0 0 1 0 1 1 1 0 1 0 0 1 1 1 0 1 0 0 0 0 0 0 0 0 1 0 1 0 1 1 1 1 0 0 1 0 0 1 1 0 0 0 0 0 0 0 1 0 1 0 0 1 0 0 0 0 1 1 0 1 0 1 0 0 0 0 0 0 0 0 0 0 1 1 0 1 0 1 1 1 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 1 1 0 1 1 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 1 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0 0 0 0 1 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 1 0 1 0 1 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 0 0 0 1 0 1 0 1 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 1 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 0 0 1 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 1 1 1 0 1 0 0 1 1 0 1 1 1 0 1 0 1 1 0 1 0 0 1 0 0 1 1 1 0 0 0 1 1 1 0 1 0 1 0 0 0 1 1 1 1 0 1 1 0 1 0 0 0 1 0 0 0 1 0 1 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 1 1 1 0 0 0 0 1 1 0 0 1 0 1 1 0 0 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1 1 1 1 1 0 0 1 0 1 0 0 0 1 0 0 0 1 1 0 1 0 0 1 1 1 0 0 1 1 0 0 1 1 1 0 1 1 1 0 1 0 1 0 0 0 1 0 0 1 0 1 0 0 1 0 1 0 1 0 0 1 0 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 1 0 0 1 0 0 1 0 0 1 1 0 1 0 0 0 1 0 0 1 1 0 1 1 0 1 1 1 1 1 1 0 1 0 0 0 0 1 1 1 0 0 1 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 1 1 0 1 0 1 1 0 0 0 0 0 0 0 0 0 1 0 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 0 0 0 0 1 1 0 0 1 0 1 0 0 0 0 1 1 0 1 0 1 1 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 0 1 0 1 0 0 0 1 1 1 1 1 0 0 1 0 0 0 0 0 1 1 1 1 1 1 0 0 0 1 1 0 1 0 0 1 1 0 0 0 1 1 1 1 0 1 1 1 0 0 1 1 1 1 1 0 0 1 0 0 0 1 1 0 1 1 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 0 1 1 0 0 1 0 1 1 1 1 1 1 0 0 1 0 0 0 0 1 1 1 1 0 0 1 1 0 0 1 1 1 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 1 0 1 0 0 1 1 1 1 0 1 0 0 0 0 0 0 0 0 0 1 0 1 1 0 1 0 0 1 1 0 1 1 1 0 1 1 1 1 0 1 1 0 1 0 1 1 0 1 1 0 1 1 1 0 1 0 1 0 0 0 1 1 0 1 0 1 0 0 1 0 1 0 1 1 0 1 1 1 1 0 0 1 1 0 1 0 0 1 1 1 1 1 0 0 1 0 1 0 1 1 1 0 1 0 0 0 0 0 1 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1 1 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 1 1 0 1 0 0 0 0 0 1 0 0 1 1 0 1 0 1 0 0 1 1 1 1 1 0 0 1 1 0 0 1 1 1 0 0 1 0 1 0 1 0 0 0 1 1 0 0 1 0 1 1 1 0 0 0 1 0 1 1 0 1 0 0 1 0 0 0 1 1 0 1 0 1 0 1 1 0 1 0 1 1 1 0 0 1 1 1 1 0 1 1 1 0 0 1 1 1 1 0 0 1 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 0 1 0 1 0 1 0 1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1 0 0 1 1 1 1 1 1 0 1 0 0 0 1 1 1 1 0 0 1 1 0 0 1 1 1 1 1 1 0 1 0 0 0 1 1 1 1 1 1 1 1 0 0 1 0 1 0 1 1 1 1 0 1 1 0 0 0 0 1 0 1 0 0 1 1 0 1 0 1 1 0 1 0 0 1 1 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 0 0 1 0 0 0 1 1 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 1 1 0 0 0 1 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 0 0 1 0 0 0 1 1 1 1 1 1 0 1 0 0 0 1 1 1 0 1 0 1 1 0 0 0 1 1 1 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 0 0 0 0 1 1 1 0 0 1 1 0 0 0 0 1 1 1 0 1 0 1 0 0 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 1 0 0 1 1 0 0 1 0 0 0 1 0 1 0 0 1 1 0 1 1 0 0 1 1 0 0 0 1 0 0 0 0 0 0 0 1 0 1 0 0 1 0 0 1 1 0 0 1 1 1 1 0 0 1 0 0 1 1 1 1 1 1 0 1 0 0 0 1 0 1 1 1 1 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 0 1 0 0 0 0 0 0 0 0 0 1 1 0 1 1 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 1 0 0 0 0 1 0 1 0 1 0 1 0 0 0 1 1 1 0 0 1 1 1 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 1 1 0 0 0 1 1 0 1 1 1 1 1 0 0 0 0 1 0 1 0 1 0 1 0 0 0 1 0 0 1 1 0 0 1 0 0 1 0 1 1 0 0 1 1 0 0 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 1 1 0 0 0 1 0 1 0 0 1 0 1 0 1 1 0 1 1 0 0 1 0 0 0 1 1 1 1 1 0 1 0 0 0 0 0 0 0 0 0 1 0 0 1 1 1 0 0 1 1 0 1 1 1 0 1 1 1 0 1 1 1 1 0 1 0 1 0 0 1 1 0 1 0 0 1 1 0 0 1 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1 0 0 1 1 0 0 1 0 0 1 0 0 1 1 1 1 1 0 1 0 0 0 0 0 0 0 0 0 1 0 1 1 0 1 0 0 1 1 1 0 0 0 1 0 1 1 0 1 0 1 0 0 1 1 0 0 0 1 0 0 0 1 1 0 1 0 1 1 0 0 0 1 1 1 1 1 1 0 0 1 1 1 1 0 1 1 0 0 0 0 0 0 1 0 1 1 0 1 1 0 0 0 0 0 0 0 0 1 0 0 0 1 1 0 0 0 1 0 1 0 0 1 1 1 0 1 1 1 0 1 0 0 0 0 0 0 1 1 0 1 0 0 1 1 0 1 1 1 1 1 1 0 1 1 1 0 1 1 0 0 0 1 1 1 1 0 0 0 1 0 1 1 0 1 0 1 0 0 1 1 1 0 0 0 1 0 1 0 1 0 1 1 0 0 1 0 1 1 1 1 0 1 1 1 1 0 1 0 0 1 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 1 0 0 0 1 1 1 0 1 1 0 1 0 0 1 0 1 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 1 1 0 0 1 1 1 0 1 1 1 1 0 1 0 0 0 0 0 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1 0 0 0 1 1 1 0 0 1 1 1 1 0 1 1 1 0 0 1 1 0 1 0 0 1 1 1 1 1 0 1 1 0 0 1 1 1 1 0 1 1 1 0 0 1 1 0 1 0 0 1 1 1 1 1 0 0 1 0 0 1 1 0 0 0 1 1 1 0 1 1 0 1 1 1 1 1 0 1 0 1 0 0 0 0 1 0 0 1 1 1 0 1 0 1 0 1 0 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 1 0 0 1 0 1 1 0 0 0 0 0 1 0 1 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 0 0 1 0 0 1 0 1 1 1 0 0 1 1 1 1 1 0 1 0 0 1 1 0 0 1 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 1 1 0 0 0 1 0 0 1 0 1 1 1 0 0 0 0 0 1 0 1 0 0 1 0 0 0 1 1 0 0 1 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 1 1 1 1 0 1 0 0 0 1 0 1 1 1 0 0 1 0 0 0 1 1 1 0 0 1 1 1 0 0 0 1 0 1 1 1 1 1 0 0 1 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 1 0 0 0 0 1 0 0 0 1 0 1 0 0 0 0 0 1 1 0 1 1 1 0 0 0 0 1 1 1 1 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 0 1 1 0 1 1 0 0 0 0 0 0 0 0 0 1 0 1 0 0 1 0 0 1 1 0 1 1 0 0 1 0 0 1 1 0 1 0 0 1 1 0 1 1 1 0 0 0 0 1 1 0 1 1 1 1 0 0 1 1 0 1 1 1 0 0 1 1 1 1 0 1 1 0 0 1 0 0 1 0 1 1 0 1 0 1 1 0 0 1 0 0 1 0 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 1 0 0 1 0 1 0 0 0 0 0 1 0 0 1 0 1 0 0 0 0 0 0 0 1 0 0 1 1 1 0 0 0 0 0 0 0 0 0 1 1 0 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 0 1 1 1 0 0 0 1 1 0 1 0 1 1 1 0 0 0 1 1 0 1 0 1 0 1 0 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 1 1 0 0 0 1 0 0 1 1 0 0 1 0 0 0 1 0 0 1 1 0 1 1 0 0 0 1 0 1 0 0 1 1 0 1 0 1 0 0 0 0 0 0 0 0 1 0 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 1 1 0 1 1 1 1 0 1 0 0 1 1 0 0 1 1 0 0 1 0 0 0 1 0 0 0 0 1 1 0 0 1 0 0 0 1 1 0 1 0 0 0 0 1 1 1 0 0 0 1 0 0 0 1 0 1 1 0 1 0 1 0 0 1 1 1 1 0 1 0 1 0 1 1 0 0 1 0 1 1 0 1 0 0 0 1 1 1 0 0 1 1 0 0 1 1 1 1 1 1 1 0 1 1 1 1 0 0 0 1 0 1 0 1 1 0 0 0 1 1 0 0 0 1 1 0 1 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0 1 0 0 1 1 0 0 0 1 0 1 0 1 1 0 1 0 0 1 1 1 1 1 1 0 0 0 1 1 1 0 1 1 1 1 0 0 0 0 1 1 0 0 1 0 0 1 0 0 1 0 1 1 1 1 0 0 1 1 1 0 1 0 0 0 0 1 0 1 0 1 1 1 0 0 1 1 1 0 1 0 1 1 0 0 1 1 1 1 0 0 1 1 0 0 1 0 0 0 1 0 0 0 1 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1 0 0 1 1 0 1 0 1 1 0 1 0 1 1 0 0 1 1 1 0 0 1 1 0 0 1 0 1 1 1 1 1 1 0 0 1 1 1 0 1 0 0 0 0 1 1 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0 1 1 1 0 0 0 1 1 0 1 1 1 1 1 0 0 1 1 1 0 1 1 0 1 0 0 0 0 1 0 0 1 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 0 0 1 0 0 1 1 1 0 1 1 1 1 1 0 1 0 1 0 1 1 0 0 0 0 1 0 1 1 0 1 0 0 0 1 0 0 1 1 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 1 0 0 1 0 0 1 0 1 1 0 0 1 0 1 0 0 0 0 1 0 0 0 1 0 0 0 0 1 1 1 0 0 1 1 1 0 0 1 0 1 1 0 0 1 1 1 1 0 1 0 1 0 0 0 0 1 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 0 0 0 0 0 1 1 1 1 0 1 0 0 1 1 0 0 1 1 1 0 1 1 1 1 0 0 1 1 0 1 0 1 1 1 0 0 1 1 1 0 1 0 0 1 1 1 1 0 0 1 1 0 0 1 0 1 1 0 1 0 1 1 1 1 0 0 0 1 1 1 1 1 1 1 0 0 1 1 0 1 0 0 1 1 0 1 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 1 0 1 1 0 0 1 0 0 0 1 1 0 1 1 0 1 0 0 0 1 1 1 0 0 1 1 1 0 1 0 1 0 1 0 1 1 0 0 0 0 0 0 0 0 1 0 1 0 1 1 0 1 0 0 0 0 0 0 0 0 0 1 0 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 1 0 1 0 0 0 1 0 0 0 1 0 1 1 0 0 0 1 0 1 0 1 1 1 1 0 0 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 0 1 0 1 0 0 0 0 0 1 0 1 0 1 1 0 0 0 1 0 1 0 1 0 0 1 0 0 0 0 0 1 1 0 1 1 0 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 1 0 0 1 0 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 1 1 0 0 0 0 0 0 0 0 0 0 1 0 0 1 1 0 0 0 0 0 0 0 0 0 1 1 1 0 1 1 0 0 1 0 1 0 1 0 0 0 1 1 0 0 0 1 0 0 1 1 0 1 0 0 1 1 0 1 1 1 0 1 0 0 1 1 0 0 1 0 0 1 1 1 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 0 0 1 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 1 1 0 0 1 1 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 1 1 0 1 0 0 0 1 0 1 0 1 0 1 1 0 0 0 0 1 1 0 0 0 1 1 0 0 0 0 1 1 1 1 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 0 0 1 0 0 0 1 1 1 0 0 0 0 1 0 0 0 1 1 1 1 0 1 1 1 0 0 0 1 1 1 0 1 1 0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 1 0 1 0 0 1 0 0 1 0 1 0 1 1 0 1 0 1 1 0 0 1 0 0 0 1 0 0 1 0 0 1 0 0 1 0 1 0 1 1 1 1 1 1 1 1 1 0 0 1 1 0 1 0 1 1 1 0 0 1 1 0 0 1 1 1 0 1 1 1 0 1 0 1 1 1 1 0 1 1 0 1 1 0 0 0 1 0 1 1 1 1 1 0 0 1 1 1 0 0 1 1 1 1 0 1 0 1 0 0 1 1 1 1 1 1 1 0 1 1 1 0 1 1 1 1 1 1 1 1 1 0 1 0 1 1 0 1 0 1 0 0 1 1 0 0 1 1 1 0 0 1 1 1 1 1 1 0 0 1 1 1 0 0 1 0 1 1 1 1 1 1 1 1 1 0 1 1 1 0 1 1 0 1 1 1 1 0 1 1 1 0 1 1 0 1 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1 1 1 0 1 1 0 0 1 1 1 0 1 1 1 1 1 0 1 0 1 1 1 1 1 1 1 0 1 0 1 0 0 0 0 1 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 1 0 1 1 0 0 1 1 0 1 0 1 0 1 1 1 1 1 1 1 1 0 1 1 0 1 1 1 1 1 0 0 0 0 0 1 0 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 0 1 1 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 0 0 1 0 1 1 0 1 1 0 0 1 1 0 0 1 0 0 1 1 1 1 1 1 1 1 0 0 1 0 1 1 0 1 1 0 0 1 1 0 0 1 0 0 1 1 1 1 0 0 1 1 0 0 1 0 1 0 0 1 1 1 1 0 0 1 0 0 1 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 1 0 1 1 1 0 1 0 0 1 1 1 0 1 0 1 0 0 0 0 0 1 1 0 0 1 1 1 1 0 0 0 1 0 1 0 1 1 1 0 0 1 0 1 0 0 0 0 0 1 1 1 0 0 1 0 0 1 1 0 1 0 0 0 0 0 1 0 0 0 1 0 0 1 1 1 1 1 0 0 1 1 1 1 0 0 1 0 0 1 0 1 1 0 1 1 0 0 0 1 0 0 1 0 1 1 0 0 0 1 0 1 0 0 1 0 1 0 0 0 0 0 1 1 0 0 1 0 1 0 1 0 0 0 0 0 0 0 0 0 0 1 1 0 1 1 0 0 1 1 0 1 1 0 1 1 0 1 0 0 0
+version = 0
+packet type = 0
+totBitLength = 5439
+version = 5
+packet type = 4
+Value = 282
+version = 3
+packet type = 3
+numSubPackets = 4
+sub-packet 0
+version = 2
+packet type = 4
+Value = 370297
+sub-packet 1
+version = 5
+packet type = 4
+Value = 35
+sub-packet 2
+version = 6
+packet type = 4
+Value = 122658904
+sub-packet 3
+version = 4
+packet type = 4
+Value = 213232
+version = 7
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 0
+packet type = 4
+Value = 3214
+sub-packet 1
+version = 3
+packet type = 5
+totBitLength = 72
+version = 1
+packet type = 4
+Value = 2725347942
+version = 7
+packet type = 4
+Value = 14337
+version = 3
+packet type = 4
+Value = 113
+version = 0
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 1
+packet type = 4
+Value = 676445
+sub-packet 1
+version = 7
+packet type = 5
+numSubPackets = 2
+sub-packet 0
+version = 4
+packet type = 4
+Value = 14
+sub-packet 1
+version = 6
+packet type = 4
+Value = 102004
+version = 2
+packet type = 1
+totBitLength = 16
+version = 1
+packet type = 4
+Value = 79
+version = 4
+packet type = 0
+numSubPackets = 2
+sub-packet 0
+version = 0
+packet type = 4
+Value = 42402
+sub-packet 1
+version = 6
+packet type = 4
+Value = 104
+version = 7
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 5
+packet type = 4
+Value = 24762196
+sub-packet 1
+version = 1
+packet type = 5
+numSubPackets = 2
+sub-packet 0
+version = 0
+packet type = 4
+Value = 2365
+sub-packet 1
+version = 0
+packet type = 4
+Value = 2365
+version = 7
+packet type = 2
+numSubPackets = 3
+sub-packet 0
+version = 4
+packet type = 4
+Value = 192094127
+sub-packet 1
+version = 3
+packet type = 4
+Value = 18470
+sub-packet 2
+version = 2
+packet type = 4
+Value = 100
+version = 0
+packet type = 0
+totBitLength = 31
+version = 7
+packet type = 4
+Value = 190487
+version = 3
+packet type = 4
+Value = 12
+version = 2
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 4
+packet type = 6
+totBitLength = 42
+version = 1
+packet type = 4
+Value = 3087
+version = 6
+packet type = 4
+Value = 3087
+sub-packet 1
+version = 5
+packet type = 4
+Value = 104530938
+version = 4
+packet type = 2
+numSubPackets = 1
+sub-packet 0
+version = 3
+packet type = 1
+numSubPackets = 1
+sub-packet 0
+version = 3
+packet type = 0
+numSubPackets = 1
+sub-packet 0
+version = 1
+packet type = 1
+totBitLength = 372
+version = 7
+packet type = 2
+totBitLength = 350
+version = 2
+packet type = 3
+totBitLength = 328
+version = 3
+packet type = 2
+numSubPackets = 1
+sub-packet 0
+version = 5
+packet type = 3
+numSubPackets = 1
+sub-packet 0
+version = 6
+packet type = 0
+numSubPackets = 1
+sub-packet 0
+version = 6
+packet type = 3
+numSubPackets = 1
+sub-packet 0
+version = 7
+packet type = 0
+numSubPackets = 1
+sub-packet 0
+version = 2
+packet type = 1
+totBitLength = 216
+version = 0
+packet type = 2
+numSubPackets = 1
+sub-packet 0
+version = 3
+packet type = 2
+totBitLength = 176
+version = 2
+packet type = 3
+numSubPackets = 1
+sub-packet 0
+version = 0
+packet type = 1
+totBitLength = 136
+version = 5
+packet type = 2
+totBitLength = 114
+version = 1
+packet type = 2
+numSubPackets = 1
+sub-packet 0
+version = 3
+packet type = 2
+totBitLength = 74
+version = 2
+packet type = 2
+numSubPackets = 1
+sub-packet 0
+version = 6
+packet type = 4
+Value = 778514865480
+version = 5
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 3
+packet type = 4
+Value = 6
+sub-packet 1
+version = 2
+packet type = 6
+totBitLength = 47
+version = 7
+packet type = 4
+Value = 72
+version = 6
+packet type = 4
+Value = 826194
+version = 2
+packet type = 4
+Value = 85
+version = 6
+packet type = 1
+totBitLength = 32
+version = 1
+packet type = 4
+Value = 45
+version = 0
+packet type = 4
+Value = 191
+version = 6
+packet type = 4
+Value = 7
+version = 1
+packet type = 1
+totBitLength = 135
+version = 6
+packet type = 5
+numSubPackets = 2
+sub-packet 0
+version = 5
+packet type = 0
+numSubPackets = 3
+sub-packet 0
+version = 7
+packet type = 4
+Value = 6
+sub-packet 1
+version = 2
+packet type = 4
+Value = 6
+sub-packet 2
+version = 5
+packet type = 4
+Value = 3
+sub-packet 1
+version = 7
+packet type = 0
+totBitLength = 33
+version = 2
+packet type = 4
+Value = 15
+version = 4
+packet type = 4
+Value = 3
+version = 7
+packet type = 4
+Value = 13
+version = 1
+packet type = 4
+Value = 15
+version = 3
+packet type = 4
+Value = 244
+version = 3
+packet type = 3
+totBitLength = 31
+version = 5
+packet type = 4
+Value = 508140
+version = 7
+packet type = 1
+totBitLength = 106
+version = 3
+packet type = 6
+numSubPackets = 2
+sub-packet 0
+version = 6
+packet type = 4
+Value = 192310099
+sub-packet 1
+version = 2
+packet type = 4
+Value = 22329
+version = 7
+packet type = 4
+Value = 1441
+version = 1
+packet type = 1
+totBitLength = 95
+version = 1
+packet type = 7
+totBitLength = 52
+version = 0
+packet type = 4
+Value = 10733978
+version = 1
+packet type = 4
+Value = 114
+version = 6
+packet type = 4
+Value = 349
+version = 3
+packet type = 4
+Value = 60648
+version = 2
+packet type = 1
+totBitLength = 101
+version = 2
+packet type = 7
+numSubPackets = 2
+sub-packet 0
+version = 7
+packet type = 4
+Value = 3919
+sub-packet 1
+version = 1
+packet type = 4
+Value = 3919
+version = 7
+packet type = 4
+Value = 97536684
+version = 0
+packet type = 1
+numSubPackets = 3
+sub-packet 0
+version = 4
+packet type = 0
+totBitLength = 33
+version = 4
+packet type = 4
+Value = 12
+version = 5
+packet type = 4
+Value = 4
+version = 3
+packet type = 4
+Value = 9
+sub-packet 1
+version = 2
+packet type = 0
+totBitLength = 33
+version = 4
+packet type = 4
+Value = 15
+version = 6
+packet type = 4
+Value = 14
+version = 5
+packet type = 4
+Value = 15
+sub-packet 2
+version = 0
+packet type = 0
+numSubPackets = 3
+sub-packet 0
+version = 4
+packet type = 4
+Value = 7
+sub-packet 1
+version = 1
+packet type = 4
+Value = 7
+sub-packet 2
+version = 2
+packet type = 4
+Value = 8
+version = 6
+packet type = 0
+totBitLength = 73
+version = 1
+packet type = 4
+Value = 25
+version = 5
+packet type = 4
+Value = 2050
+version = 4
+packet type = 4
+Value = 10239519
+version = 2
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 2
+packet type = 5
+totBitLength = 110
+version = 2
+packet type = 0
+totBitLength = 33
+version = 6
+packet type = 4
+Value = 5
+version = 2
+packet type = 4
+Value = 14
+version = 3
+packet type = 4
+Value = 7
+version = 6
+packet type = 0
+totBitLength = 33
+version = 7
+packet type = 4
+Value = 13
+version = 7
+packet type = 4
+Value = 5
+version = 2
+packet type = 4
+Value = 9
+sub-packet 1
+version = 4
+packet type = 4
+Value = 108
+version = 6
+packet type = 1
+totBitLength = 76
+version = 2
+packet type = 4
+Value = 1384
+version = 7
+packet type = 6
+numSubPackets = 2
+sub-packet 0
+version = 3
+packet type = 4
+Value = 2943
+sub-packet 1
+version = 2
+packet type = 4
+Value = 172
+version = 4
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 7
+packet type = 4
+Value = 148
+sub-packet 1
+version = 7
+packet type = 6
+numSubPackets = 2
+sub-packet 0
+version = 6
+packet type = 4
+Value = 203
+sub-packet 1
+version = 2
+packet type = 4
+Value = 8475127
+version = 5
+packet type = 4
+Value = 1
+version = 3
+packet type = 3
+totBitLength = 140
+version = 2
+packet type = 4
+Value = 3488
+version = 6
+packet type = 4
+Value = 12505547
+version = 2
+packet type = 4
+Value = 202
+version = 5
+packet type = 4
+Value = 2001682382
+version = 6
+packet type = 4
+Value = 1808
+version = 0
+packet type = 4
+Value = 39841
+version = 2
+packet type = 1
+totBitLength = 120
+version = 7
+packet type = 6
+totBitLength = 52
+version = 3
+packet type = 4
+Value = 60591
+version = 5
+packet type = 4
+Value = 60591
+version = 4
+packet type = 4
+Value = 2373583704
+version = 1
+packet type = 1
+totBitLength = 64
+version = 1
+packet type = 4
+Value = 97
+version = 3
+packet type = 4
+Value = 43
+version = 4
+packet type = 4
+Value = 119
+version = 6
+packet type = 4
+Value = 145
+version = 1
+packet type = 0
+totBitLength = 161
+version = 2
+packet type = 1
+totBitLength = 33
+version = 7
+packet type = 4
+Value = 9
+version = 3
+packet type = 4
+Value = 2
+version = 4
+packet type = 4
+Value = 12
+version = 6
+packet type = 1
+numSubPackets = 3
+sub-packet 0
+version = 6
+packet type = 4
+Value = 11
+sub-packet 1
+version = 4
+packet type = 4
+Value = 14
+sub-packet 2
+version = 3
+packet type = 4
+Value = 11
+version = 7
+packet type = 1
+totBitLength = 33
+version = 6
+packet type = 4
+Value = 4
+version = 2
+packet type = 4
+Value = 3
+version = 3
+packet type = 4
+Value = 7
+version = 6
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 1
+packet type = 5
+numSubPackets = 2
+sub-packet 0
+version = 4
+packet type = 4
+Value = 180
+sub-packet 1
+version = 6
+packet type = 4
+Value = 11581815
+sub-packet 1
+version = 5
+packet type = 4
+Value = 10900
+version = 1
+packet type = 1
+totBitLength = 148
+version = 0
+packet type = 4
+Value = 64
+version = 4
+packet type = 7
+totBitLength = 110
+version = 1
+packet type = 0
+totBitLength = 33
+version = 3
+packet type = 4
+Value = 13
+version = 3
+packet type = 4
+Value = 13
+version = 2
+packet type = 4
+Value = 9
+version = 0
+packet type = 0
+totBitLength = 33
+version = 7
+packet type = 4
+Value = 9
+version = 4
+packet type = 4
+Value = 9
+version = 5
+packet type = 4
+Value = 10
+version = 3
+packet type = 2
+numSubPackets = 5
+sub-packet 0
+version = 4
+packet type = 4
+Value = 49760548
+sub-packet 1
+version = 1
+packet type = 4
+Value = 327
+sub-packet 2
+version = 0
+packet type = 4
+Value = 11
+sub-packet 3
+version = 2
+packet type = 4
+Value = 938663
+sub-packet 4
+version = 1
+packet type = 4
+Value = 4219801928
+version = 2
+packet type = 0
+numSubPackets = 5
+sub-packet 0
+version = 1
+packet type = 4
+Value = 10
+sub-packet 1
+version = 6
+packet type = 4
+Value = 990092
+sub-packet 2
+version = 4
+packet type = 4
+Value = 29509
+sub-packet 3
+version = 3
+packet type = 4
+Value = 220
+sub-packet 4
+version = 7
+packet type = 4
+Value = 146
+version = 1
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 7
+packet type = 4
+Value = 45794652998
+sub-packet 1
+version = 0
+packet type = 7
+numSubPackets = 2
+sub-packet 0
+version = 3
+packet type = 4
+Value = 13
+sub-packet 1
+version = 7
+packet type = 4
+Value = 3396
+version = 4
+packet type = 2
+numSubPackets = 2
+sub-packet 0
+version = 2
+packet type = 4
+Value = 227938
+sub-packet 1
+version = 6
+packet type = 4
+Value = 9
+version = 6
+packet type = 0
+numSubPackets = 4
+sub-packet 0
+version = 4
+packet type = 4
+Value = 106
+sub-packet 1
+version = 0
+packet type = 4
+Value = 8
+sub-packet 2
+version = 3
+packet type = 4
+Value = 3183
+sub-packet 3
+version = 2
+packet type = 4
+Value = 4
+version = 0
+packet type = 3
+numSubPackets = 3
+sub-packet 0
+version = 4
+packet type = 4
+Value = 3
+sub-packet 1
+version = 6
+packet type = 4
+Value = 163142063
+sub-packet 2
+version = 1
+packet type = 4
+Value = 6758201
+version = 5
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 5
+packet type = 4
+Value = 370779393
+sub-packet 1
+version = 2
+packet type = 6
+numSubPackets = 2
+sub-packet 0
+version = 7
+packet type = 0
+numSubPackets = 3
+sub-packet 0
+version = 2
+packet type = 4
+Value = 8
+sub-packet 1
+version = 5
+packet type = 4
+Value = 10
+sub-packet 2
+version = 7
+packet type = 4
+Value = 8
+sub-packet 1
+version = 6
+packet type = 0
+totBitLength = 33
+version = 2
+packet type = 4
+Value = 2
+version = 5
+packet type = 4
+Value = 10
+version = 4
+packet type = 4
+Value = 3
+version = 3
+packet type = 3
+numSubPackets = 2
+sub-packet 0
+version = 0
+packet type = 4
+Value = 10240
+sub-packet 1
+version = 2
+packet type = 4
+Value = 128
+version = 1
+packet type = 1
+numSubPackets = 3
+sub-packet 0
+version = 5
+packet type = 4
+Value = 83
+sub-packet 1
+version = 0
+packet type = 4
+Value = 173
+sub-packet 2
+version = 6
+packet type = 4
+Value = 151
+version = 0
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 2
+packet type = 4
+Value = 51
+sub-packet 1
+version = 0
+packet type = 6
+totBitLength = 102
+version = 2
+packet type = 0
+numSubPackets = 3
+sub-packet 0
+version = 6
+packet type = 4
+Value = 10
+sub-packet 1
+version = 5
+packet type = 4
+Value = 6
+sub-packet 2
+version = 1
+packet type = 4
+Value = 7
+version = 6
+packet type = 0
+numSubPackets = 3
+sub-packet 0
+version = 0
+packet type = 4
+Value = 14
+sub-packet 1
+version = 0
+packet type = 4
+Value = 15
+sub-packet 2
+version = 3
+packet type = 4
+Value = 14
+version = 6
+packet type = 2
+totBitLength = 194
+version = 4
+packet type = 4
+Value = 21796
+version = 4
+packet type = 4
+Value = 6582785760613
+version = 7
+packet type = 4
+Value = 886100718934
+version = 3
+packet type = 4
+Value = 65280071549
+version = 1
+packet type = 1
+totBitLength = 95
+version = 5
+packet type = 4
+Value = 14581316
+version = 0
+packet type = 5
+totBitLength = 37
+version = 5
+packet type = 4
+Value = 43005
+version = 7
+packet type = 4
+Value = 2
+version = 2
+packet type = 1
+numSubPackets = 2
+sub-packet 0
+version = 1
+packet type = 5
+numSubPackets = 2
+sub-packet 0
+version = 2
+packet type = 4
+Value = 26927
+sub-packet 1
+version = 7
+packet type = 4
+Value = 26927
+sub-packet 1
+version = 1
+packet type = 4
+Value = 1257
+version = 0
+packet type = 1
+numSubPackets = 5
+sub-packet 0
+version = 6
+packet type = 4
+Value = 216
+sub-packet 1
+version = 1
+packet type = 4
+Value = 229
+sub-packet 2
+version = 3
+packet type = 4
+Value = 67
+sub-packet 3
+version = 4
+packet type = 4
+Value = 161
+sub-packet 4
+version = 0
+packet type = 4
+Value = 247
+version = 4
+packet type = 4
+Value = 109216835
+version = 1
+packet type = 2
+numSubPackets = 1
+sub-packet 0
+version = 5
+packet type = 4
+Value = 189
+VERSION SUM: 934

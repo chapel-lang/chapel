@@ -149,6 +149,7 @@ int hfi_get_num_units(void)
 		char pathname[PATH_MAX];
 		struct stat st;
 		int r;
+
 		snprintf(pathname, sizeof(pathname), "/dev/infiniband/uverbs%d", ret);
 		r = stat(pathname, &st);
 		if (r) break;
@@ -163,18 +164,20 @@ int hfi_get_num_units(void)
    returns -1 when an error occurred. */
 int hfi_get_unit_active(int unit)
 {
-	int p,rv;
+	int p, lid;
 
-	for (p = HFI_MIN_PORT; p <= HFI_MAX_PORT; p++)
-		if ((rv=hfi_get_port_lid(unit, p)) > 0)
+	for (p = HFI_MIN_PORT; p <= HFI_MAX_PORT; p++) {
+		lid = hfi_get_port_lid(unit, p);
+		if (lid > 0 && lid != 0xFFFF)
 			break;
+	}
 
 	if (p <= HFI_MAX_PORT)
 	{
 		return 1;
 	}
 
-	return rv;
+	return lid;
 }
 
 /* get the number of contexts from the unit id. */

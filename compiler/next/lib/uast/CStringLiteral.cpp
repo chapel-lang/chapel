@@ -30,7 +30,7 @@ CStringLiteral::build(Builder* builder, Location loc,
                       const std::string& value,
                       StringLikeLiteral::QuoteStyle quotes) {
   // Construct the UniqueString
-  auto u = UniqueString::build(builder->context(), value);
+  auto u = UniqueString::get(builder->context(), value);
   // Construct the Param
   auto p = types::StringParam::get(builder->context(), u);
   // Construct the CStringLiteral

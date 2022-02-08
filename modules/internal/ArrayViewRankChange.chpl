@@ -115,7 +115,7 @@ module ArrayViewRankChange {
     }
 
     proc dsiEqualDMaps(that: ArrayViewRankChangeDist(?)) {
-      return (this.collapsedDim == that.collapsedDim && 
+      return (this.collapsedDim == that.collapsedDim &&
               this.idx == that.idx &&
               this.downDist.dsiEqualDMaps(that.downDist));
     }

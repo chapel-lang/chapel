@@ -248,6 +248,8 @@ void hfi_vsyslog(const char *prefix, int to_console, int level,
  */
 void hfi_dwordcpy(volatile uint32_t *dest, const uint32_t *src,
 		  uint32_t ndwords);
+void hfi_qwordcpy(volatile uint64_t *dest, const uint64_t *src,
+		  uint32_t nqwords);
 
 extern uint32_t __hfi_pico_per_cycle;	/* only for use in these functions */
 

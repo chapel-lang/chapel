@@ -24,6 +24,7 @@
 #include "chpl/uast/IntentList.h"
 #include "chpl/util/hash.h"
 #include "chpl/queries/stringify-functions.h"
+#include "chpl/types/Type.h"
 
 #include <cstddef>
 #include <string>
@@ -103,20 +104,40 @@ class QualifiedType final {
     return param_ != nullptr;
   }
 
-  // these are not defined here so we don't have to #include Type.h, Param.h
-  bool isGenericType() const;
-  bool isUnknownType() const;
+  /** Returns the fast-to-compute genericity of the contained Type pointer.
+      Does not include consideration of fields. If the type can have fields
+      and they have not been considered, returns Type::MAYBE_GENERIC. */
+  Type::Genericity typeGenericity() const {
+    if (type_ == nullptr)
+      return Type::MAYBE_GENERIC;
 
-  bool isGeneric() const {
-    bool genericParam = kind_ == PARAM && !hasParamPtr();
-    return genericParam || isGenericType();
+    return type_->genericity();
   }
+
+  /** Returns the fast-to-compute genericity of this QualifiedType.
+      Does not include consideration of fields. If the type can have fields
+      and they have not been considered, returns Type::MAYBE_GENERIC. */
+  Type::Genericity genericity() const {
+    bool genericParam = kind_ == PARAM && !hasParamPtr();
+    if (genericParam)
+      return Type::GENERIC;
+
+    return typeGenericity();
+  }
+
+  /** Returns the genericity of this QualifiedType including
+      consideration of fields.
+      To consider fields, this can run the getTypeGenericity query.
+   */
+  Type::Genericity genericityWithFields(Context* context) const;
 
   bool isUnknown() const {
-    return kind_ == UNKNOWN || !hasTypePtr() || isUnknownType();
+    return kind_ == UNKNOWN || !hasTypePtr() || type_->isUnknownType();
   }
 
-  bool isGenericOrUnknown() const { return isUnknown() || isGeneric(); }
+  bool isGenericOrUnknown() const {
+    return isUnknown() || (genericity() != Type::CONCRETE);
+  }
 
   /** Returns true if kind is TYPE */
   bool isType() const { return kind_ == Kind::TYPE; }
@@ -178,6 +199,10 @@ class QualifiedType final {
   void mark(Context* context) const;
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 

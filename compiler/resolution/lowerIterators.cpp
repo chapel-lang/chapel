@@ -39,6 +39,8 @@
 #include "view.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 bool iteratorsLowered = false;
 
 //
@@ -144,7 +146,7 @@ bool isVirtualIterator(FnSymbol* iterFn) {
         IRtype = formal->getValType();
       }
   }
-  
+
   if (AggregateType* at = toAggregateType(IRtype)) {
     Vec<AggregateType*>* children = &(at->dispatchChildren);
 
@@ -1906,7 +1908,7 @@ static Expr* ibbInsertPoint(Expr* loopRef, Symbol* IC, GotoStmt* gt) {
   if (!IC) {
     return gt;
   }
-  
+
   // If we are breaking out from this loop, the IC is freed
   // at the break target. Insert the IBB right before the goto.
   // Cf. if gt is a GOTO_RETURN, the IC is freed at the goto.
@@ -2065,7 +2067,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         BlockStmt* bodyCopy = forLoop->copyBody(&map);
         addIteratorBreakBlocksInline(ibody, forLoop->iteratorGet()->symbol(),
                                      bodyCopy, call, NULL);
-        
+
         if (int count = countEnclosingLocalBlocks(call, ibody)) {
           for (int i = 0; i < count; i++) {
             bodyCopy = new BlockStmt(bodyCopy);

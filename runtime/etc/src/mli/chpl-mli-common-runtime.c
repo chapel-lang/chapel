@@ -180,7 +180,7 @@ char* chpl_mli_concat(size_t count, ...) {
   result[length] = 0;
   va_end(argp);
 
-  return result;  
+  return result;
 }
 
 //
@@ -203,11 +203,11 @@ static
 void chpl_mli_connect(void* socket, const char* conn) {
   int err = 0;
 
-  // TODO: Remove this assert / make this more robust. 
+  // TODO: Remove this assert / make this more robust.
   err = zmq_connect(socket, conn);
   assert(err == 0);
 
-  return;  
+  return;
 }
 
 static

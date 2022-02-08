@@ -350,6 +350,7 @@ int ips_protoexp_process_err_chk_rdma_resp(struct ips_recvhdrq_event *rcv_ev);
 #endif
 
 
+
 PSMI_ALWAYS_INLINE(
 void ips_protoexp_unaligned_copy(uint8_t *dst, uint8_t *src, uint16_t len))
 {

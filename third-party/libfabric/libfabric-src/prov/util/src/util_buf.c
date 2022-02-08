@@ -170,7 +170,9 @@ int ofi_bufpool_create_attr(struct ofi_bufpool_attr *attr,
 
 	entry_sz = (attr->size + sizeof(struct ofi_bufpool_hdr));
 	OFI_DBG_ADD(entry_sz, sizeof(struct ofi_bufpool_ftr));
-	pool->entry_size = ofi_get_aligned_size(entry_sz, attr->alignment);
+	if (!attr->alignment)
+		pool->attr.alignment = entry_sz;
+	pool->entry_size = ofi_get_aligned_size(entry_sz, pool->attr.alignment);
 
 	if (!attr->chunk_cnt) {
 		pool->attr.chunk_cnt =

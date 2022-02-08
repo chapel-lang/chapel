@@ -1,0 +1,275 @@
+#!/usr/bin/env python3
+
+from typing import NamedTuple, List
+from dataclasses import dataclass
+from collections import defaultdict
+import pandas as pd
+import numpy as np
+from functools import partial
+import sys
+import io
+import subprocess
+from pathlib import Path
+import re
+
+# Analyze the output of the query trace timing
+# The output of a query trace timing is a text file of the form:
+# <depth:int> <name:str no spaces> <time:int>
+
+# Node of the tree of queries that were executed
+class Node: pass
+
+@dataclass
+class Node:
+    depth: int
+    query: str
+    elapsed: int
+    children: List[Node]
+    children_elapsed: int = 0
+    calls: int = 1
+
+    @property
+    def self_elapsed(self):
+        return self.elapsed - self.children_elapsed
+
+    def compute_child_sums(self):
+        self.children_elapsed = sum(child.compute_child_sums() for child in self.children)
+        return self.elapsed
+
+class Forest(Node):
+    pass
+
+def visit_tree(node: Node):
+    yield node
+    for child in node.children:
+        yield from visit_tree(child)
+
+def visit_forest(root: Forest):
+    for node in root.children:
+        yield from visit_tree(node)
+
+def collapse_by_regex(r, node):
+    if r.match(node.query):
+        return r.pattern
+    return None
+
+def make_collapse_by_regex(pattern):
+    return partial(collapse_by_regex, re.compile(pattern))
+
+def collapse_leaves(node, key=lambda x: x.query):
+    """
+    Collapse sibling leaves (no children) recursively with a mapping function
+    `key` should return None to mean "do not collapse me"
+    The default is to collapse sibling leaves with the same query name
+    Collapsed leaves have a new query name given by the output of `key`
+    Collapsed leaves sum their elapsed times
+    Collapsed leaves will use the leftmost sibling as the destination
+    """
+
+    grouped = defaultdict(list)
+    for i, child in enumerate(node.children):
+        if len(child.children) == 0:
+            k = key(child)
+            if k is not None:
+                grouped[key(child)].append(i)
+
+    if grouped:
+        remove = set()
+        for new_name, indices in grouped.items():
+            into = node.children[indices[0]]
+            into.elapsed += sum(node.children[i].elapsed for i in indices[1:])
+            into.query = new_name
+            into.calls += len(indices) - 1
+            remove.update(indices[1:])
+
+        # Assuming lots of removals, this is not _so_ horrible
+        node.children = [c for i, c in enumerate(node.children) if i not in remove]
+
+    for child in node.children:
+        collapse_leaves(child, key=key)
+
+def parse_lines(fname):
+    """
+    Parses a file where lines are:
+      <depth:int> <name:str no spaces> <time:int>
+    These are output in post-order (just before a function returns) from the query system
+    and this function reconstructs the call tree
+    """
+    # Stack holds a list of lists, one for each `depth` that we encounter
+    stack = []
+    prev_d = 0
+
+    # adds empty lists to ensure that stack[d] indexes into a valid list element
+    def ensure_size(d):
+        for _ in range(max(0, (d + 1) - len(stack))):
+            stack.append([])
+
+    with open(fname) as fh:
+        for line in fh:
+            depth, fn, time = line.strip().split()
+            d = int(depth)
+            t = int(time)
+            node = Node(d, fn, t, [])
+            ensure_size(d)
+
+            # If we are lower depth than previous, our children are in stack[d + 1]
+            if d < prev_d:
+                assert prev_d - d == 1
+                node.children.extend(stack[d + 1])
+                stack[d + 1].clear()
+
+            # Add ourselves as a sibling in stack[d]
+            stack[d].append(node)
+
+            prev_d = d
+
+    lens = [len(x) for x in stack]
+    # only the 1st slot should have children after processing the whole file
+    assert all(l == 0 for i, l in enumerate(lens) if i != 1)
+
+    roots = stack[1]
+    time_total = sum(x.elapsed for x in roots)
+    return Forest(-1, '<root>', time_total, roots)
+
+def print_tree(node, indent=0):
+    indent_s = ' ' * indent
+    self_percent = node.self_elapsed / node.elapsed * 100
+    name = indent_s + node.query
+    if node.children:
+        # Only inner nodes have a useful report for self timing
+        print(f'{name:<40} tot {node.elapsed:>8} self {self_percent:.2f}%')
+    else:
+        print(f'{name:<40} tot {node.elapsed:>8}')
+    for child in node.children:
+        print_tree(child, indent + 1)
+
+def print_forest(root: Forest):
+    for node in root.children:
+        print_tree(node)
+
+def minmax_self_elapsed(f, root: Forest) -> Node:
+    return f(visit_forest(root), key=lambda x: x.self_elapsed)
+
+slowest_self = partial(minmax_self_elapsed, max)
+fastest_self = partial(minmax_self_elapsed, min)
+
+def table_summary(root: Forest) -> pd.DataFrame:
+    # TODO This could use a running mean + std dev
+    self_times = defaultdict(list)
+    total_calls = defaultdict(lambda: 0)
+
+    for x in visit_forest(root):
+        self_times[x.query].append(x.self_elapsed)
+        total_calls[x.query] += x.calls
+
+    rows = []
+
+    for k in self_times:
+        if k == '<root>':
+            continue
+        times = self_times[k]
+        calls = total_calls[k]
+        rows.append((k, calls, np.mean(times), np.std(times)))
+
+    return pd.DataFrame(rows, columns=['name', 'calls', 'self mean', 'self std'])
+
+def to_dot(root: Forest, buf=sys.stdout, min_show_percent=1):
+    p = partial(print, file=buf)
+
+    # we want some id so that multiple invocations of a single query aren't mashed together
+    def graph_id(node):
+        return id(node)
+
+    p('digraph G {')
+
+    p('  {}[label="<root>"];'.format(graph_id(root)))
+
+    fastest = fastest_self(root)
+    slowest = slowest_self(root)
+    fastest_elapsed = fastest.self_elapsed
+
+    # Print all the nodes and their labels
+    for x in visit_forest(root):
+        gid = graph_id(x)
+        slowdown = (x.self_elapsed / fastest_elapsed) / x.calls
+        # only show a decimal for small numbers like 1.5, 2.2 etc
+        slowdown_s = f'{slowdown:.1f}' if slowdown < 3 else str(int(slowdown))
+        if x is fastest:
+            color = 'blue'
+        elif x is slowest:
+            color = 'red'
+        else:
+            color = 'black'
+        p(f'  {gid}[label="{x.query}({slowdown_s}x)",color={color}];')
+
+    # print all the edges
+    for x in visit_tree(root):
+        a = graph_id(x)
+        for child in x.children:
+            b = graph_id(child)
+            percent = child.elapsed / x.elapsed * 100
+            label = ''
+            if percent > min_show_percent:
+                label = f'{percent:.2f}%'
+            if child.calls > 1:
+                label += f' (#{child.calls})'
+            if label:
+                label = f'[label="{label}"]'
+            p(f'  {a} -> {b} {label};')
+
+    p('}')
+
+def to_dot_string(node) -> str:
+    with io.StringIO() as fh:
+        to_dot(node, fh)
+        return fh.getvalue()
+
+def run_dot_png(s, outname):
+    # TODO I would have thought input could have been an file like object
+    subprocess.run(['dot', '-Tpng', '-o', str(outname)], check=True, input=s, text=True)
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('chpl_queries_trace_file')
+    parser.add_argument('--dot', default=None, type=Path, help='Output a .dot file')
+    parser.add_argument('--markdown', default=None, action='store_true', help='Output table in .md format')
+    parser.add_argument('--dot-png', default=None, type=Path, help='Output a .png file of the dot')
+    parser.add_argument('--debug', default=False, action='store_true')
+    parser.add_argument('--collapse', default=False, action='store_true', help='Collapse sibling leaves with the same query name')
+    parser.add_argument('--collapse-regex', default=(), help='Collapse sibiling leaves that match this regex pattern (Can be used multiple times)', nargs='*')
+    args = parser.parse_args()
+
+    root = parse_lines(args.chpl_queries_trace_file)
+    if args.debug:
+        print_forest(root)
+
+    if args.collapse:
+        collapse_leaves(root)
+
+    for r in args.collapse_regex:
+        collapse_leaves(root, make_collapse_by_regex(r))
+
+    root.compute_child_sums()
+
+    df = table_summary(root)
+    df.sort_values('self mean', inplace=True, ascending=False)
+    if args.markdown:
+        df.to_markdown(sys.stdout)
+    else:
+        df.to_string(sys.stdout, float_format='{:.2f}'.format, index_names=False)
+    print()  # to_{string,markdown} doesn't put in a newline
+
+    if args.dot:
+        with open(args.dot, 'w') as fh:
+            to_dot(root, fh)
+        print(f'Wrote .dot to {args.dot}')
+
+    if args.dot_png:
+        run_dot_png(to_dot_string(root), args.dot_png)
+        print(f'Wrote .png to {args.dot_png}')
+
+
+if __name__ == '__main__':
+    main()

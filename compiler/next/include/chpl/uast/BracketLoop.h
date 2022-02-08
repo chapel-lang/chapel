@@ -71,7 +71,7 @@ class BracketLoop final : public IndexableLoop {
   ~BracketLoop() override = default;
 
   /**
-    Create and return a bracket loop. 
+    Create and return a bracket loop.
   */
   static owned<BracketLoop> build(Builder* builder, Location loc,
                                   owned<Decl> index,

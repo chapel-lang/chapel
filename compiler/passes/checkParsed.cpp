@@ -30,6 +30,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
 
 static void checkNamedArguments(CallExpr* call);
 static void checkManagedClassKinds(CallExpr* call);

@@ -99,7 +99,7 @@ struct ParserContext {
 
   ParserContext(const char* filename, Builder* builder)
   {
-    auto uniqueFilename = UniqueString::build(builder->context(), filename);
+    auto uniqueFilename = UniqueString::get(builder->context(), filename);
 
     this->scanner                 = nullptr;
     this->filename                = uniqueFilename;
@@ -311,6 +311,10 @@ struct ParserContext {
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, const Expression* e);
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, owned<Expression> e);
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, ParserExprList* exprLst);
+
+  Expression* buildNewExpr(YYLTYPE location,
+                           New::Management management,
+                           Expression* expr);
 
   FnCall* wrapCalledExpressionInNew(YYLTYPE location,
                                     New::Management management,

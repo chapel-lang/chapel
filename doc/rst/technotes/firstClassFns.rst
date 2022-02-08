@@ -134,7 +134,6 @@ For example:
 
   writeln("retType  = ", F.retType  : string);
   writeln("argTypes = ", F.argTypes : string);
-  writeln();
 
 generates the output::
 
@@ -143,6 +142,23 @@ generates the output::
   retType  = int(64)
   argTypes = 1*int(64)
 
+Additionally, first-class functions can be cast to a string to get the
+function name or printed to output the function name. For example:
+
+.. code-block:: chapel
+
+  proc myFunc(x:int) { return x + 1; }
+
+  var F = myFunc;
+  var Fname = F:string;
+
+  writeln(Fname);
+  writeln(F);
+
+generates the output::
+
+    myFunc()
+    myFunc()
 
 
 Future Directions

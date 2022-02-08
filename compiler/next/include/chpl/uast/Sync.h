@@ -49,7 +49,7 @@ namespace uast {
   This code will wait for both task1 and task2 to complete before printing
   due to use of the sync block.
  */
-  
+
 class Sync final : public SimpleBlockLike {
  private:
   Sync(ASTList stmts, BlockStyle blockStyle, int bodyChildNum,

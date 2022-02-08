@@ -90,6 +90,7 @@ module DateTime {
   }
 
   private proc tm_zoneType type {
+    use ChplConfig;
     if CHPL_TARGET_PLATFORM == "darwin" then
       return c_ptr(c_char); // char *
     else

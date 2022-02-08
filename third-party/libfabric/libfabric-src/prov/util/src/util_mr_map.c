@@ -266,6 +266,13 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 
 	ofi_mr_update_attr(domain->fabric->fabric_fid.api_version,
 			   domain->info_domain_caps, attr, &cur_abi_attr);
+	if (!hmem_ops[cur_abi_attr.iface].initialized) {
+		FI_WARN(domain->mr_map.prov, FI_LOG_MR,
+			"MR registration failed - hmem iface not initialized\n");
+		free(mr);
+		return -FI_ENOSYS;
+	}
+
 	fastlock_acquire(&domain->lock);
 
 	mr->mr_fid.fid.fclass = FI_CLASS_MR;

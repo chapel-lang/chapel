@@ -225,13 +225,13 @@ proc isComplexValue(e)   param  return isComplexType(e.type);
 proc isStringValue(e)    param  return isStringType(e.type);
 /* Returns `true` if the argument is a `bytes` value. */
 proc isBytesValue(e)     param  return isBytesType(e.type);
-/* Returns `true` if the argument is a value of one the following types: 
+/* Returns `true` if the argument is a value of one the following types:
 `int`, `uint`. */
 proc isIntegralValue(e)  param  return isIntegralType(e.type);
-/* Returns `true` if the argument is a value of one the following types: 
+/* Returns `true` if the argument is a value of one the following types:
 `real`, `imag`. */
 proc isFloatValue(e)     param  return isFloatType(e.type);
-/* Returns `true` if the argument is a value of one the following types: 
+/* Returns `true` if the argument is a value of one the following types:
 `int`, `uint`, `real`, `imag`, `complex`. */
 proc isNumericValue(e)   param  return isNumericType(e.type);
 /* Returns `true` if the argument is a value of primitive type. */

@@ -41,8 +41,8 @@ class UnknownType final : public Type {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  bool isGeneric() const override {
-    return false; // well actually we don't know, because it is unknown
+  Genericity genericity() const override {
+    return MAYBE_GENERIC;
   }
 
   static const owned<UnknownType>& getUnknownType(Context* context);

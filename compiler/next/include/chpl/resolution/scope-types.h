@@ -174,6 +174,10 @@ class BorrowedIdsWithName {
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     ID().stringify(ss, stringKind);
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 // DeclMap: key - string name,  value - vector of ID of a NamedDecl
@@ -281,6 +285,10 @@ class Scope {
     ss << " ";
     ss << std::to_string(numDeclared());
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -488,6 +496,10 @@ class PoiScope {
       inFnPoi()->stringify(ss, stringKind);
     }
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -535,8 +547,13 @@ class InnermostMatch {
     id_.mark(context);
   }
 
-  void stringify(std::ostream &ss, chpl::StringifyKind stringKind) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "InnermostMatch not yet strigified";
+  }
 
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 

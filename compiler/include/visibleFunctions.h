@@ -38,7 +38,7 @@ public:
   BlockStmt* nextPOI;
 
   // for CalledFunInfo
-  std::vector<BlockStmt*> visitedScopes; // in visited order  
+  std::vector<BlockStmt*> visitedScopes; // in visited order
   std::vector<BlockStmt*> instnPoints;   // one per POI depth
   int poiDepth;
   CallExpr* call;

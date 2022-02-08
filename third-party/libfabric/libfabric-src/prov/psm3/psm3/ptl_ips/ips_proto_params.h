@@ -169,6 +169,9 @@
 #define IPS_SEND_FLAG_PAYLOAD_BUF_GPU   0x0800
 #endif
 
+#define IPS_SEND_FLAG_SEND_MR          0x1000
+
+
 /* 0x10000000, interrupt when done */
 #define IPS_SEND_FLAG_INTR		(1<<HFI_KHDR_INTR_SHIFT)
 

@@ -1,0 +1,8 @@
+day24-stringContains.chpl:2: error: unresolved call 'string.contains("0")'
+$CHPL_HOME/modules/internal/ChapelRange.chpl:883: note: this candidate did not match: range.contains(ind: idxType)
+day24-stringContains.chpl:2: note: because method call receiver with type 'string'
+$CHPL_HOME/modules/internal/ChapelRange.chpl:883: note: is passed to formal 'this: range'
+day24-stringContains.chpl:2: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelRange.chpl:909: note:   range.contains(other: range(?))
+$CHPL_HOME/modules/internal/ChapelDomain.chpl:1530: note:   _domain.contains(idx: rank*_value.idxType)
+note: and 5 other candidates, use --print-all-candidates to see them

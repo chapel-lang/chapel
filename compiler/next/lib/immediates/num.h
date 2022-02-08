@@ -192,7 +192,7 @@ class Immediate { public:
     const_kind = CONST_KIND_STRING;
     string_kind = kind;
     num_index = 0;
-    v_string = ImmString::build(context, str, len);
+    v_string = ImmString::get(context, str, len);
   }
 
   Immediate();

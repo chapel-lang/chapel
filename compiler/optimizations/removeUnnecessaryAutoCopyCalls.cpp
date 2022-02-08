@@ -27,6 +27,8 @@
 #include "stlUtil.h"
 #include "stmt.h"
 
+#include "global-ast-vecs.h"
+
 // We can remove the calls to chpl__initCopy (should actually be chpl__autoCopy)
 // and corresponding calls to chpl__autoDestroy for Plain-Old-Data (POD) types.
 // See isPOD() and propagateNotPOD().

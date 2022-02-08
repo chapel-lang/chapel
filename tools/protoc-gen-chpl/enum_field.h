@@ -29,10 +29,10 @@
 #include <field_base.h>
 
 namespace chapel {
-  
+
   using namespace google::protobuf;
   using namespace google::protobuf::io;
-  
+
   class EnumFieldGenerator : public FieldGeneratorBase {
    public:
     EnumFieldGenerator(const FieldDescriptor* descriptor);

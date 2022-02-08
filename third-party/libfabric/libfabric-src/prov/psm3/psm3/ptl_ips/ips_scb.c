@@ -281,6 +281,7 @@ ips_scb_t *MOCKABLE(ips_scbctrl_alloc)(struct ips_scbctrl *scbc, int scbnum, int
 #ifdef PSM_CUDA
 		scb->mq_req = NULL;
 #endif
+		scb->mr = NULL;
 
 		scbc->scb_num_cur--;
 		if (scbc->scb_num_cur < (scbc->scb_num >> 1))
@@ -305,6 +306,7 @@ void ips_scbctrl_free(ips_scb_t *scb)
 
 	ips_scb_buffer(scb) = NULL;
 	scb->tidsendc = NULL;
+	scb->mr = NULL;
 	scb->payload_size = 0;
 	scbc->scb_num_cur++;
 	if (SLIST_EMPTY(&scbc->scb_free)) {
@@ -338,6 +340,7 @@ ips_scb_t *MOCKABLE(ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc)
 #ifdef PSM_CUDA
 	scb->mq_req = NULL;
 #endif
+	scb->mr = NULL;
 
 	scbc->scb_num_cur--;
 	if (scbc->scb_num_cur < (scbc->scb_num >> 1))

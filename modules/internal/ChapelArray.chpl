@@ -249,14 +249,14 @@ module ChapelArray {
   // chpl__buildArrayRuntimeType) are replaced by the compiler to just create a
   // record storing the arguments.  The return type of
   // chpl__build...RuntimeType is what tells the compiler which runtime type it
-  // is creating.  These functions are considered type functions early in
-  // compilation.
+  // is creating. These functions are written to return a value even though
+  // they are marked as type functions.
 
   //
   // Support for array types
   //
   pragma "runtime type init fn"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) type {
     return dom.buildArray(eltType, false);
   }
 
@@ -1292,7 +1292,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc dim(param d : int) {
-      return this.domain.dim(d); 
+      return this.domain.dim(d);
     }
 
     pragma "no doc"
@@ -1308,8 +1308,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc localSlice(r... rank)
-    where isSubtype(_value.type, DefaultRectangularArr) &&
-          chpl__isTupleOfRanges(r) {
+    where chpl__isDROrDRView(this) && chpl__isTupleOfRanges(r) {
       if boundsChecking then
         checkSlice((...r), value=_value);
       var dom = _dom((...r));
@@ -1319,8 +1318,7 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc localSlice(d: domain)
-    where isSubtype(_value.type, DefaultRectangularArr) {
+    proc localSlice(d: domain) where chpl__isDROrDRView(this) {
       if boundsChecking then
         checkSlice((...d.getIndices()), value=_value);
 
@@ -1338,8 +1336,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc localSlice(r... rank)
-    where chpl__isTupleOfRanges(r) &&
-          !isSubtype(_value.type, DefaultRectangularArr) {
+    where chpl__isTupleOfRanges(r) && !chpl__isDROrDRView(this) {
       if boundsChecking then
         checkSlice((...r), value=_value);
       return _value.dsiLocalSlice(r);
@@ -1705,7 +1702,7 @@ module ChapelArray {
     proc back() {
       return this.last;
     }
-    
+
     /* Return the first element in the array. The array must be a
        rectangular 1-D array.
      */

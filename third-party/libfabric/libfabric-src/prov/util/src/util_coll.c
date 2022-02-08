@@ -1178,7 +1178,9 @@ int ofi_av_set(struct fid_av *av, struct fi_av_set_attr *attr,
 {
 	struct util_av *util_av = container_of(av, struct util_av, av_fid);
 	struct util_av_set *av_set;
-	int ret, iter;
+	size_t max_size;
+	uint64_t i;
+	int ret;
 
 	if (!util_av->coll_mc) {
 		ret = util_coll_av_init(util_av);
@@ -1186,7 +1188,7 @@ int ofi_av_set(struct fid_av *av, struct fi_av_set_attr *attr,
 			return ret;
 	}
 
-	av_set = calloc(1,sizeof(*av_set));
+	av_set = calloc(1, sizeof(*av_set));
 	if (!av_set)
 		return -FI_ENOMEM;
 
@@ -1194,16 +1196,17 @@ int ofi_av_set(struct fid_av *av, struct fi_av_set_attr *attr,
 	if (ret)
 		goto err1;
 
-	av_set->fi_addr_array = calloc(ofi_av_size(util_av),
+	max_size = attr->count ? attr->count : ofi_av_size(util_av);
+	av_set->fi_addr_array = calloc(max_size,
 				       sizeof(*av_set->fi_addr_array));
 	if (!av_set->fi_addr_array)
 		goto err2;
 
-	for (iter = 0; iter < attr->count; iter++) {
-		av_set->fi_addr_array[iter] =
-			util_av->coll_mc->av_set->fi_addr_array[iter * attr->stride];
-		av_set->fi_addr_count++;
+	for (i = attr->start_addr; i <= attr->end_addr; i += attr->stride) {
+		av_set->fi_addr_array[av_set->fi_addr_count++] =
+			util_av->coll_mc->av_set->fi_addr_array[i];
 	}
+	assert(av_set->fi_addr_count <= max_size);
 
 	util_coll_mc_init(&av_set->coll_mc, av_set, NULL, context);
 

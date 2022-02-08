@@ -44,6 +44,8 @@
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -2382,7 +2384,7 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (Expr* expr = resolveTupleIndexing(call, base->symbol())) {
           retval = expr;  // call was replaced by expr
         }
-      } else if (call->numActuals() == 2 && 
+      } else if (call->numActuals() == 2 &&
                  isResultOfTargetLocalesCall(sym)) {
         USR_WARN(call, "'targetLocales' method on arrays, domains, and distributions is now paren-less; please invoke it without parentheses");
         retval = new SymExpr(sym);

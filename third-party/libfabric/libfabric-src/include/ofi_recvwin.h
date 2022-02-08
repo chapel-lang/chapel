@@ -80,6 +80,12 @@ ofi_recvwin_id_valid(struct name *recvq, id_type id)			\
 }									\
 									\
 static inline int							\
+ofi_recvwin_id_processed(struct name *recvq, id_type id)		\
+{									\
+	return ofi_recvwin_id_processed_ ## id_type (recvq, id);	\
+}									\
+									\
+static inline int							\
 ofi_recvwin_queue_msg(struct name *recvq, entrytype * msg, id_type id)	\
 {									\
 	size_t write_idx;						\
@@ -138,5 +144,10 @@ ofi_recvwin_slide(struct name *recvq)					\
 	ofi_val32_inrange(rq->exp_msg_id, rq->win_size, id)
 #define ofi_recvwin_id_valid_uint64_t(rq, id) \
 	ofi_val64_inrange(rq->exp_msg_id, rq->win_size, id)
+
+#define ofi_recvwin_id_processed_uint32_t(rq, id) \
+	ofi_val32_gt(rq->exp_msg_id, id)
+#define ofi_recvwin_id_processed_uint64_t(rq, id) \
+	ofi_val64_gt(rq->exp_msg_id, id)
 
 #endif /* FI_RECVWIN_H */

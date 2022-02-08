@@ -179,7 +179,7 @@ module ByteBufferHelpers {
     if loc1 == chpl_nodeID && loc2 == chpl_nodeID {
       // it's local
       return _strcmp_local(buf1, len1, buf2, len2);
-    } 
+    }
     else if loc1 != chpl_nodeID && loc2 == chpl_nodeID {
       var locBuf1 = bufferCopyRemote(loc1, buf1, len1);
       const ret = _strcmp_local(locBuf1, len1, buf2, len2);

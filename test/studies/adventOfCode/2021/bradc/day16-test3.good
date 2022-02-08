@@ -1,0 +1,18 @@
+EE00D40C823060
+1 1 1 0 1 1 1 0 0 0 0 0 0 0 0 0 1 1 0 1 0 1 0 0 0 0 0 0 1 1 0 0 1 0 0 0 0 0 1 0 0 0 1 1 0 0 0 0 0 1 1 0 0 0 0 0
+version = 7
+packet type = 3
+numSubPackets = 3
+sub-packet 0
+version = 2
+packet type = 4
+Value = 1
+sub-packet 1
+version = 4
+packet type = 4
+Value = 2
+sub-packet 2
+version = 1
+packet type = 4
+Value = 3
+VERSION SUM: 14

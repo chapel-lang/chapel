@@ -2,25 +2,25 @@
 
 import os
 import subprocess
-from distutils.version import LooseVersion
+from pkg_resources import parse_version
 
 platform = os.getenv('CHPL_TARGET_PLATFORM')
 
 skip = False
 
 if platform != 'linux64':
-  skip = True
+    skip = True
 else:
-  v = subprocess.check_output(['pkg-config', '--modversion', 'libevent'])
-  v = v.rstrip()
-  v = str(v, encoding='utf-8', errors='surrogateescape')
+    v = subprocess.check_output(['pkg-config', '--modversion', 'libevent'])
+    v = v.rstrip()
+    v = str(v, encoding='utf-8', errors='surrogateescape')
 
-  if LooseVersion(v) < LooseVersion('2.1'):
-    # skip, version not is compatible.
-    skip = True
+    if parse_version(v) < parse_version('2.1'):
+        # skip, version not is compatible.
+        skip = True
 
-  if os.getenv('CHPL_TASKS') == 'fifo' or os.getenv('CHPL_TARGET_COMPILER') == 'llvm':
-    skip = True
+    if os.getenv('CHPL_TASKS') == 'fifo' or os.getenv('CHPL_TARGET_COMPILER') == 'llvm':
+        skip = True
 
 
 print(skip)

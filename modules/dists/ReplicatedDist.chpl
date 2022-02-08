@@ -165,9 +165,9 @@ proc Replicated.dsiPrivatize(privatizeData)
   // make private copy of targetLocales and its domain
   const privDom = otherTargetLocales.domain;
   const privTargetLocales: [privDom] locale = otherTargetLocales;
- 
+
   const nonNilWrapper: [0..#privTargetLocales.sizeAs(int)] locale =
-    for loc in otherTargetLocales do loc; 
+    for loc in otherTargetLocales do loc;
 
   return new unmanaged Replicated(nonNilWrapper, "used during privatization");
 }

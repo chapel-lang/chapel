@@ -155,8 +155,7 @@ struct ips_scb {
 	uint16_t tidctrl;
 	uint16_t frag_size;	/* max packet size in sequence */
 	uint16_t opcode;
-	uint16_t tsess_length;
-	uint32_t *tsess;
+	psm2_verbs_mr_t mr;
 	struct ips_flow *flow;
 	struct ips_tid_send_desc *tidsendc;
 

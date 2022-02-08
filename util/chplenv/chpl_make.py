@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-from distutils.spawn import find_executable
+
 import sys
 
 import chpl_platform, overrides
-from utils import memoize
+from utils import which, memoize
 
 
 @memoize
@@ -14,7 +14,7 @@ def get():
         if platform_val.startswith('cygwin') or platform_val == 'darwin':
             make_val = 'make'
         elif platform_val.startswith('linux'):
-            if find_executable('gmake'):
+            if which('gmake'):
                 make_val = 'gmake'
             else:
                 make_val = 'make'

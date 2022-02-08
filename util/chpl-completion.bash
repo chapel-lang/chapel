@@ -32,6 +32,7 @@ _chpl ()
 --break-on-codegen \
 --break-on-codegen-id \
 --break-on-id \
+--break-on-query-hash \
 --break-on-remove-id \
 --break-on-resolve-id \
 --cache-remote \

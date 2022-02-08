@@ -189,6 +189,10 @@ class Param {
   // clear the macros
   #undef PARAM_NODE
   #undef PARAM_TO
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 // define the subclasses using macros and ParamClassesList.h

@@ -74,7 +74,7 @@ class Scan final : public Call {
 
   /**
     Returns the scan operator. It may be either a regular operator
-    (e.g. '+', '-') or the name of a class. 
+    (e.g. '+', '-') or the name of a class.
   */
   UniqueString op() const {
     return op_;

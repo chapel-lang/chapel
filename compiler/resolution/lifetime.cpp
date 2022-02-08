@@ -39,6 +39,8 @@
 #include "wellknown.h"
 #include "WhileDoStmt.h"
 
+#include "global-ast-vecs.h"
+
 // These enable debug facilities
 static const char* debugLifetimesForFn = "";
 static const int debugLifetimesForId = 0;

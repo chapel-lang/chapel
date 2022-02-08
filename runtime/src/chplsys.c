@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -226,7 +226,7 @@ static int fitsInHeap(size_t page_size, void* heap_start, size_t heap_size)
 
   start = round_up_to_mask(start, page_size-1);
   end   = round_down_to_mask(end, page_size-1);
-  
+
   if (2*page_size <= end - start)
     return 1;
   else
@@ -267,7 +267,7 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
 
     if (max_heap_page_size > max_page_size)
       max_heap_page_size = max_page_size;
- 
+
     // Now do experiments with the last 2 pages in the heap
     // to find if we have underestimated the page size.
 
@@ -781,7 +781,7 @@ c_string chpl_nodeName(void) {
 
     uname(&utsinfo);
     namelen = strlen(utsinfo.nodename)+1;
-    namespace = chpl_mem_realloc(namespace, namelen * sizeof(char), 
+    namespace = chpl_mem_realloc(namespace, namelen * sizeof(char),
                                  CHPL_RT_MD_LOCALE_NAME_BUF, 0, 0);
     strcpy(namespace, utsinfo.nodename);
   }

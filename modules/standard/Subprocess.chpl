@@ -437,6 +437,8 @@ module Subprocess {
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
              param kind=iokind.dynamic, param locking=true) throws
   {
+    use ChplConfig;
+
     var stdin_fd:c_int = QIO_FD_FORWARD;
     var stdout_fd:c_int = QIO_FD_FORWARD;
     var stderr_fd:c_int = QIO_FD_FORWARD;
@@ -661,7 +663,7 @@ module Subprocess {
   {
     if command.isEmpty() then
       throw new owned IllegalArgumentError('command cannot be an empty string');
-    
+
     var args = if shellarg == "" then [executable, command]
         else [executable, shellarg, command];
 
@@ -997,6 +999,10 @@ module Subprocess {
 
   private extern proc qio_send_signal(pid: int(64), sig: c_int): syserr;
 
+  deprecated "'send_signal' is deprecated, please use 'sendPosixSignal' instead"
+  proc subprocess.send_signal(signal:int) throws {
+    sendPosixSignal(signal);
+  }
   /*
     Send a signal to a child process.
 
@@ -1022,33 +1028,52 @@ module Subprocess {
 
     :arg signal: the signal to send
    */
-  proc subprocess.send_signal(signal:int) throws {
+  proc subprocess.sendPosixSignal(signal:int) throws {
     try _throw_on_launch_error();
 
     var err: syserr = ENOERR;
     on home {
       err = qio_send_signal(pid, signal:c_int);
     }
-    if err then try ioerror(err, "in subprocess.send_signal, with signal " + signal:string);
+    if err then try ioerror(err, "in subprocess.sendPosixSignal, with signal " + signal:string);
+  }
+
+  /*
+    Request an abnormal termination of the child process.  The
+    associated signal, `SIGABRT`, may be caught and handled by
+    the child process. See :proc:`subprocess.send_signal`.
+   */
+  proc subprocess.abort() throws {
+    try _throw_on_launch_error();
+    try this.sendPosixSignal(SIGABRT);
+  }
+
+  /* Send the child processan alarm signal. The associated signal,
+     `SIGALRM`, may be caught and handled by the child process. See
+     :proc:`subprocess.send_signal`.
+   */
+  proc subprocess.alarm() throws {
+    try _throw_on_launch_error();
+    try this.sendPosixSignal(SIGALRM);
   }
 
   /*
     Unconditionally kill the child process.  The associated signal,
     `SIGKILL`, cannot be caught by the child process. See
-    :proc:`subprocess.send_signal`.
+    :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.kill() throws {
     try _throw_on_launch_error();
-    try this.send_signal(SIGKILL);
+    try this.sendPosixSignal(SIGKILL);
   }
 
   /*
     Request termination of the child process.  The associated signal,
     `SIGTERM`, may be caught and handled by the child process. See
-    :proc:`subprocess.send_signal`.
+    :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.terminate() throws {
     try _throw_on_launch_error();
-    try this.send_signal(SIGTERM);
+    try this.sendPosixSignal(SIGTERM);
   }
 }
