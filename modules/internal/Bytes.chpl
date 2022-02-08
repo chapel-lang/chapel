@@ -631,7 +631,7 @@ module Bytes {
   deprecated "rfind with needle and region argument is deprecated, use pattern and indices instead"
   inline proc bytes.rfind(needle: bytes,
                           region: range(?) = this.indices) : idxType {
-    return this.rfind(needle, region); 
+    return this.rfind(needle, region);
   }
 
   /*
