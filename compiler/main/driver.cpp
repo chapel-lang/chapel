@@ -299,9 +299,9 @@ bool fPrintAdditionalErrors;
 static
 bool fPrintChplSettings = false;
 
-bool fCompilerLibraryParser = false;
-bool fDebugTrace = false;
-size_t fBreakOnQueryHash = 0;
+bool fDynoCompilerLibrary = false;
+bool fDynoDebugTrace = false;
+size_t fDynoBreakOnQueryHash = 0;
 
 int fGPUBlockSize = 0;
 char fCUDAArch[16] = "sm_60";
@@ -1200,9 +1200,9 @@ static ArgumentDescription arg_desc[] = {
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
 
- {"compiler-library-parser", ' ', NULL, "Enable [disable] using compiler library parser", "N", &fCompilerLibraryParser, "CHPL_COMPILER_LIBRARY_PARSER", NULL},
- {"debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using compiler library parser", "N", &fDebugTrace, "CHPL_DEBUG_TRACE", NULL},
- {"break-on-query-hash", ' ' , NULL, "Break when query with given hash value is executed when using compiler library parser", "U", &fBreakOnQueryHash, "CHPL_BREAK_ON_QUERY_HASH", NULL},
+ {"dyno", ' ', NULL, "Enable [disable] using dyno compiler library", "N", &fDynoCompilerLibrary, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
+ {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
+ {"dyno-break-on-query-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "U", &fDynoBreakOnQueryHash, "CHPL_DYNO_BREAK_ON_QUERY_HASH", NULL},
 
 
  DRIVER_ARG_PRINT_CHPL_HOME,
@@ -1796,9 +1796,9 @@ int main(int argc, char* argv[]) {
     postprocess_args();
 
     if (gContext != nullptr) {
-      gContext->setDebugTraceFlag(fDebugTrace);
-      if (fBreakOnQueryHash != 0)
-        gContext->setBreakOnHash(fBreakOnQueryHash);
+      gContext->setDebugTraceFlag(fDynoDebugTrace);
+      if (fDynoBreakOnQueryHash != 0)
+        gContext->setBreakOnHash(fDynoBreakOnQueryHash);
     }
 
     initCompilerGlobals(); // must follow argument parsing

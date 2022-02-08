@@ -269,10 +269,10 @@ extern std::string llvmFlags;
 
 extern bool fPrintAdditionalErrors;
 
-extern bool fCompilerLibraryParser;
-extern bool fDebugTrace;
+extern bool fDynoCompilerLibrary;
+extern bool fDynoDebugTrace;
 
-extern size_t fBreakOnQueryHash;
+extern size_t fDynoBreakOnQueryHash;
 
 namespace chpl {
   class Context;
