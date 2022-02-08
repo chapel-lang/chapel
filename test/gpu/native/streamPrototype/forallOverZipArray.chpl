@@ -1,7 +1,7 @@
 config const start = 1;
 config const end = 10;
 
-on here.getChild(1) {
+on here.getGpu(0) {
   var a, b: [start..end] int;
 
   forall  (x,i) in zip(b, b.domain) do x = i+12;

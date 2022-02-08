@@ -7,7 +7,7 @@ config const n = 10;
 */
 
 writeln("on GPU:");
-jacobi(here.getChild(1));
+jacobi(here.getGpu(0));
 writeln("on CPU:");
 jacobi(here);
 

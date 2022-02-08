@@ -2,7 +2,7 @@ use BlockDist;
 
 config const n = 10;
 
-on here.getChild(1) {
+on here.getGpu(0) {
   var space = {1..n};
   var dom = space dmapped Block(space, targetLocales=[here,]);
   var arr: [dom] int;

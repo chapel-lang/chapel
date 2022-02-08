@@ -1,6 +1,6 @@
 config const n = 10;
 
-on here.getChild(1) {
+on here.getGpu(0) {
   var a, b: [0..n] int;
   var value = 20;
 

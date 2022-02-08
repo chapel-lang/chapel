@@ -189,7 +189,7 @@ void chpl_mem_array_free(void* p,
                          size_t nmemb, size_t eltSize, c_sublocid_t subloc,
                          int32_t lineno, int32_t filename) {
 #ifdef HAS_GPU_LOCALE
-  if (subloc > 0) {
+  if (subloc >= 0) {
     chpl_gpu_mem_free(p, lineno, filename);
   }
   else {
