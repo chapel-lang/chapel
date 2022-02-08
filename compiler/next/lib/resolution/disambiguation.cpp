@@ -665,6 +665,7 @@ computeIsMoreVisible(Context* context,
       // TODO: this does not handle
       // use M putting M in a nearer scope than something called M
       // within the used module.
+      // see issue #19219
       auto more = lookupNameInScope(context, curScope, callName, importAndUse);
       auto importUseVis = checkVisibilityInVec(context, more, fn1Id, fn2Id);
       if (importUseVis != MoreVisibleResult::FOUND_NEITHER) {
