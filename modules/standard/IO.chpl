@@ -127,7 +127,10 @@ I/O Styles
 
 .. warning::
 
-   :record:`iostyle` is now deprecated.  It will be replaced by a new solution.
+   :record:`iostyle` is now deprecated.
+   We are working on creating a full-featured replacement for it
+   but in the meantime the :ref:`about-io-formatted-io` facilities are still
+   available to control formatting.
 
 Reading and writing of Chapel's basic types is regulated by an applicable
 :record:`iostyle`.  In particular, the I/O style controls whether binary or
