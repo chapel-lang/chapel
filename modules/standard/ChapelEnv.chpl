@@ -53,6 +53,7 @@ module ChapelEnv {
 
   /* Deprecated */
   pragma "last resort"
+  deprecated "CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem"
   proc CHPL_AUX_FILESYS param : string {
     use ChplConfig;
     warnChplConfigChange();
