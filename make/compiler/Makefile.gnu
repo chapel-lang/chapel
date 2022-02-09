@@ -223,18 +223,19 @@ OPT_CFLAGS += -fno-ipa-cp-clone
 endif
 
 #
-# Avoid false positives for allocation size, memcpy, and string truncation.
+# Avoid false positives for allocation size, memcpy, and string and
+# unchecked bounded formatted conversion (snprintf()) truncation.
 # Note that we use -Walloc-size-larger-than=SIZE_MAX instead of
 # `-Wno-alloc-size-larger-than` since that did not exist in gcc 8.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 7; echo "$$?"),0)
 WARN_CXXFLAGS += -Walloc-size-larger-than=18446744073709551615
-WARN_CXXFLAGS += -Wno-stringop-truncation
+WARN_CXXFLAGS += -Wno-stringop-truncation -Wno-format-truncation
 endif
 
 ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -gt 7; echo "$$?"),0)
 WARN_CFLAGS += -Walloc-size-larger-than=18446744073709551615
-WARN_CFLAGS += -Wno-stringop-truncation
+WARN_CFLAGS += -Wno-stringop-truncation -Wno-format-truncation
 SQUASH_WARN_GEN_CFLAGS += -Walloc-size-larger-than=18446744073709551615 -Wno-restrict
 endif
 
