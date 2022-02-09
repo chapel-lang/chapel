@@ -71,9 +71,6 @@ typedef enum {
 static qsubVersion determineQsubVersion(void) {
   const int buflen = 256;
   char version[buflen];
-  char whichMoab[buflen];
-  FILE *whichOutput;
-  int fileError = 1;
   char *argv[3];
   argv[0] = (char *) "qsub";
   argv[1] = (char *) "--version";
@@ -88,19 +85,10 @@ static qsubVersion determineQsubVersion(void) {
     return nccs;
   } else if (strstr(version, "pbs_version") || strstr(version, "PBSPro")) {
     return pbspro;
-  } else {
-    memset(whichMoab, 0, buflen);
-    whichOutput = popen("which moab 2>&1 >/dev/null", "r");
-    if (whichOutput != NULL ) {
-      fgets(whichMoab, buflen, whichOutput);
-      fileError = ferror(whichOutput);
-      pclose(whichOutput);
-      if (strlen(whichMoab) == 0 && !fileError) {
-        return moab;
-      }
-    }
-    return unknown;
+  } else if (chpl_find_executable("moab") != NULL) {
+    return moab;
   }
+  return unknown;
 }
 
 //
