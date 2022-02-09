@@ -25,10 +25,13 @@
 /*
 Access to Configuration information for the ``chpl`` compiler
 
-The values of Chapel's set and inferred configuration settings at
-compile-time are accessible through the parameters in this module.
-This information can also be displayed from the command line by
-executing the compiled program with the ``--about`` flag.
+This module's contents provide access to compile-time aspects of
+Chapel's configuration, such as those specified by ``CHPL_*``
+environment variables or ``chpl`` command-line options, as well as
+those inferred from the environment or other settings.  For details,
+refer to :ref:`readme-chplenv` and the :ref:`chpl man page
+<man-chpl>`.  This information can also be displayed from a Chapel
+executable's command line by executing it with the ``--about`` flag.
 */
 
 module ChplConfig {
@@ -40,8 +43,12 @@ module ChplConfig {
   CHPL_HOME = __primitive("get compiler variable", "CHPL_HOME");
 
   /* Deprecated */
-  param CHPL_AUX_FILESYS:string;
-  CHPL_AUX_FILESYS = __primitive("get compiler variable", "CHPL_AUX_FILESYS");
+  deprecated "CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem"
+  proc CHPL_AUX_FILESYS param :string {
+    // use a proc here because the split initialization caused an
+    // additional deprecation warning
+    return __primitive("get compiler variable", "CHPL_AUX_FILESYS");
+  }
 
   /* See :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` for more information. */
   param CHPL_TARGET_PLATFORM:string;

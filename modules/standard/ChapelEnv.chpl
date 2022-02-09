@@ -31,6 +31,9 @@ accessible through the built-in parameters shown below. This information
 can also be displayed from the command line by executing the compiled
 program with the ``--about`` flag.
 
+.. warning::
+
+    This module has been deprecated - please use :mod:`Subprocess` instead.
  */
 pragma "module included by default"
 module ChapelEnv {
@@ -45,6 +48,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_HOME` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_HOME:string {
     use ChplConfig;
     warnChplConfigChange();
@@ -53,6 +57,8 @@ module ChapelEnv {
 
   /* Deprecated */
   pragma "last resort"
+  pragma "no doc"
+  deprecated "CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem"
   proc CHPL_AUX_FILESYS param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -61,6 +67,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_TARGET_PLATFORM param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -69,6 +76,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_HOST_PLATFORM` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_HOST_PLATFORM param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -77,6 +85,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_HOST_ARCH` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_HOST_ARCH param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -85,6 +94,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_COMPILER` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_HOST_COMPILER param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -93,6 +103,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_COMPILER` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_TARGET_COMPILER param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -101,6 +112,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_TARGET_ARCH` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_TARGET_ARCH param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -109,6 +121,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_TARGET_CPU` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_TARGET_CPU param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -117,6 +130,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_LOCALE_MODEL` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_LOCALE_MODEL param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -125,6 +139,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_COMM` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_COMM param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -133,6 +148,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-launcher` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_COMM_SUBSTRATE param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -141,6 +157,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-multilocale` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_GASNET_SEGMENT param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -158,6 +175,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_TASKS` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_TASKS param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -166,6 +184,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_LAUNCHER` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_LAUNCHER param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -174,6 +193,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_TIMERS` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_TIMERS param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -182,6 +202,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_UNWIND` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_UNWIND param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -190,6 +211,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_MEM` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_MEM param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -198,6 +220,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_MAKE` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_MAKE param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -206,6 +229,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_ATOMICS` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_ATOMICS param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -214,6 +238,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-atomics` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_NETWORK_ATOMICS param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -222,6 +247,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_GMP` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_GMP param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -230,6 +256,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_HWLOC` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_HWLOC param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -256,6 +283,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_RE2` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_RE2 param : string {
     use ChplConfig;
     warnChplConfigChange();
@@ -264,6 +292,7 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_LLVM` for more information. */
   pragma "last resort"
+  pragma "no doc"
   proc CHPL_LLVM param : string {
     use ChplConfig;
     warnChplConfigChange();

@@ -528,10 +528,31 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 
       INT_ASSERT(moveIntoTemp);
 
+      // These used to be set in either branch, but for now are only set in
+      // one. Declare them here because the code that uses them to fold
+      // is at this scope.
       bool isAnyRefOverloadPresent = false;
       bool isConstnessUncertain = false;
       bool isCertainlyConstRef = false;
 
+      //
+      // Note that a ContextCall is created if a call resolves to multiple
+      // overloads of a routine that differ only by return intent. If so,
+      // then we carry the candidates around in a ContextCall until
+      // later passes (e.g. constness propagation, cull-over-references)
+      // allow us to decide which candidate to select.
+      //
+      // When a managed resource is inferred, the presence of a ContextCall
+      // indicates an error, because for code like:
+      //
+      //    manage man as res do ...;
+      //
+      // It means that multiple candidates were found for 'man.enterThis()'.
+      // We currently don't specify a disambiguation order in this case,
+      // which means we have no way to determine the storage of 'res'.
+      //
+      // Emit a helpful error instead.
+      //
       if (ContextCallExpr* cc = toContextCallExpr(moveIntoTemp->get(2))) {
         CallExpr* refCall = nullptr;
         CallExpr* valueCall = nullptr;
@@ -539,33 +560,58 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 
         cc->getCalls(refCall, valueCall, constRefCall);
 
-        isAnyRefOverloadPresent = (constRefCall || refCall);
-        isConstnessUncertain = (constRefCall && refCall);
-        isCertainlyConstRef = (constRefCall && !refCall);
+        // We note extra overloads in order from ref -> const ref -> value.
+        CallExpr* call = refCall ? refCall : constRefCall;
+        INT_ASSERT(call);
 
-        // Replace or remove the CC entirely if a ref option is present.
-        if (isAnyRefOverloadPresent && valueCall) {
-          if (refCall && constRefCall) {
-            auto swp = new ContextCallExpr();
+        // Grab one of the resolved functions so we can use its name.
+        auto anyResolved = call->resolvedFunction();
+        INT_ASSERT(anyResolved);
+        INT_ASSERT(anyResolved->isMethod());
 
-            refCall->remove();
-            constRefCall->remove();
-            swp->setRefValueConstRefOptions(refCall, nullptr, constRefCall);
-            cc->replace(swp);
+        // TODO: What about if receiver is a primitive type?
+        auto at = anyResolved->getReceiverType();
+        INT_ASSERT(at);
 
-          // If there is only one ref option, replace the CC with it.
-          } else {
-            CallExpr* callToUse = refCall ? refCall : constRefCall;
-            INT_ASSERT(callToUse);
+        USR_FATAL_CONT(lhs, "cannot determine storage for '%s' due to "
+                            "multiple return intents for '%s.%s()'",
+                            lhs->name,
+                            at->symbol->name,
+                            anyResolved->name);
 
-            if (callToUse == constRefCall) rhs->addFlag(FLAG_CONST);
+        // Hint that users can specify storage to fix this error.
+        const char* retDesc = retTagDescrString(anyResolved->retTag);
+        USR_PRINT(lhs, "specify an explicit storage (e.g., '%s') "
+                       "to disambiguate",
+                       retDesc);
 
-            callToUse->remove();
-            cc->replace(callToUse);
+        // TODO: Globalize + clear me at pass end?
+        static std::set<AggregateType*> onceForEachAggregate;
+
+        // Also hint that users can remove the extra overloads, but only
+        // display this hint once per type to avoid verbosity.
+        if (onceForEachAggregate.insert(at).second) {
+
+          while (call) {
+            if (auto fn = call->resolvedFunction()) {
+              const char* retDesc = retTagDescrString(fn->retTag);
+              USR_PRINT(fn, "return by '%s' defined here", retDesc);
+            }
+
+            // Cycle to the next overload.
+            if (call == refCall) {
+              call = constRefCall;
+            } else if (call == constRefCall) {
+              call = valueCall;
+            } else {
+              call = nullptr;
+            }
           }
         }
 
-      // There is no context call, so we can respect the RHS call.
+      // There is no context call, so we can respect the RHS call. In this
+      // case multiple overloads either do not exist, or if they do there
+      // is no ambiguity at the callsite.
       } else {
         auto enterThisCall = toCallExpr(moveIntoTemp->get(2));
 
@@ -587,6 +633,10 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 
         lhs->addFlag(FLAG_REF_VAR);
 
+        // This should not currently be possible, but could be if we allow
+        // inference, and both 'ref' and 'const ref' overloads exist. In
+        // which case this flag indicates to make a selection after
+        // constness propagation has occurred.
         if (isConstnessUncertain) {
           lhs->addFlag(FLAG_REF_IF_MODIFIED);
           INT_ASSERT(!isCertainlyConstRef);
