@@ -45,31 +45,47 @@ module SysBasic {
 /* BASIC TYPES */
 use SysCTypes;
 
-/* The type corresponding to a C float */
-extern type c_float = real(32);
-/* The type corresponding to a C double */
-extern type c_double = real(64);
-/*extern type c_wchar_t = uint(32); */
-/* The type corresponding to C's off_t */
-extern type off_t = int(64);
-/* The type corresponding to C's mode_t */
-extern type mode_t = uint(32);
-/* The type corresponding to C's socklen_t */
-extern type socklen_t = int(32);
+  pragma "no doc"
+  pragma "last resort"
+  proc c_float type {
+    use CTypes, Reflection;
+    chpl_typeMoveWarning("c_float", getModuleName());
+    return c_float;
+  }
 
-// C File type
-//type c_file = _file;
+  pragma "no doc"
+  pragma "last resort"
+  proc c_double type {
+    use CTypes, Reflection;
+    chpl_typeMoveWarning("c_double", getModuleName());
+    return c_double;
+  }
 
-// stdin/stdout/stderr
-//extern proc chpl_cstdin():_file;
-pragma "no doc"
-extern proc chpl_cstdout():_file;
-pragma "no doc"
-extern proc chpl_cstderr():_file;
-pragma "no doc"
-extern proc chpl_cnullfile():_file;
+  pragma "no doc"
+  pragma "last resort"
+  proc off_t type {
+    use CTypes, Sys, Reflection;
+    chpl_typeMoveWarning("off_t", getModuleName(), "Sys");
+    return off_t;
+  }
 
-// chpldoc TODO - docs for syserr don't show up
+  pragma "no doc"
+  pragma "last resort"
+  proc mode_t type {
+    use CTypes, Sys, Reflection;
+    chpl_typeMoveWarning("mode_t", getModuleName(), "Sys");
+    return mode_t;
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc socklen_t type {
+    use CTypes, Sys, Reflection;
+    chpl_typeMoveWarning("socklen_t", getModuleName(), "Sys");
+    return socklen_t;
+  }
+
+
 /* A type storing an error code or an error message.
    A syserr can be compared using == or != to an err_t (ie integer error code)
    or to another syserr. A syserr can be cast to or from an err_t. It can be
