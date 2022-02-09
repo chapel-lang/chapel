@@ -44,8 +44,8 @@ class As final : public Expression {
  private:
   As(ASTList children)
     : Expression(asttags::As, std::move(children)) {
-    const Expression* symbol = this->symbol();
-    assert(symbol->isIdentifier() || symbol->isDot());
+    auto rename = this->rename();
+    assert(rename->isIdentifier() || rename->isVariable());
   }
 
   // No need to match 'symbolChildNum_' or 'renameChildNum_', they are const.
@@ -69,7 +69,7 @@ class As final : public Expression {
   */
   static owned<As> build(Builder* builder, Location loc,
                          owned<Expression> symbol,
-                         owned<Identifier> rename);
+                         owned<Expression> rename);
 
   /**
     Return the original name specified by this as expression.
@@ -83,10 +83,10 @@ class As final : public Expression {
   /**
     Return the rename specified by this as expression.
   */
-  const Identifier* rename() const {
+  const Expression* rename() const {
     auto ret = child(renameChildNum_);
-    assert(ret->isIdentifier());
-    return (const Identifier*)ret;
+    assert(ret->isExpression());
+    return (const Expression*)ret;
   }
 
 };

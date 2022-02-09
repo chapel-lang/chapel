@@ -68,6 +68,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(Include)
   AST_NODE(Label)                      //
+  AST_NODE(Let)                        //
   AST_NODE(New)                        //
   AST_NODE(Range)                      //
   AST_NODE(Require)                    //
@@ -87,6 +88,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(Block)                    // old AST: BlockStmt
     AST_NODE(Defer)                    // old AST: DeferStmt
     AST_NODE(Local)                    //
+    AST_NODE(Manage)                   //
     AST_NODE(On)                       //
     AST_NODE(Serial)                   //
     AST_NODE(When)                     //

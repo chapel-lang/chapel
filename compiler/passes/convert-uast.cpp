@@ -50,8 +50,11 @@ namespace {
 struct Converter {
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
+  ModTag modTag;
 
-  Converter(chpl::Context* context) : context(context) {}
+  Converter(chpl::Context* context, ModTag modTag)
+    : context(context),
+      modTag(modTag) {}
 
   Expr* convertAST(const uast::ASTNode* node);
 
@@ -253,6 +256,71 @@ struct Converter {
     }
   }
 
+  Expr* visit(const uast::Manage* node) {
+    auto managers = new BlockStmt();
+
+    for (auto manager : node->managers()) {
+
+      // TODO: This is deleted by the callee, odd convention...
+      std::set<Flag>* flags = nullptr;
+      Expr* managerExpr = nullptr;
+      const char* resourceName = nullptr;
+
+      if (auto as = manager->toAs()) {
+        managerExpr = convertAST(as->symbol());
+
+        auto var = as->rename()->toVariable();
+        assert(var);
+        assert(!var->initExpression() && !var->typeExpression());
+
+        resourceName = astr(var->name().c_str());
+
+        // TODO: I'm not sure what the best way to get flags is here.
+        if (var->kind() != uast::Variable::INDEX) {
+          flags = new std::set<Flag>;
+
+          // TODO: Duplication here and with 'attachVarSymbolStorage',
+          // consider cleaning up after parser is replaced.
+          switch (var->kind()) {
+            case uast::Variable::CONST:
+              flags->insert(FLAG_CONST);
+              break;
+            case uast::Variable::CONST_REF:
+              flags->insert(FLAG_REF_VAR);
+              flags->insert(FLAG_CONST);
+              break;
+            case uast::Variable::PARAM:
+              flags->insert(FLAG_PARAM);
+              break;
+            case uast::Variable::REF:
+              flags->insert(FLAG_REF_VAR);
+              break;
+            case uast::Variable::TYPE:
+              flags->insert(FLAG_TYPE_VARIABLE);
+              break;
+            default: break;
+          }
+        }
+      } else {
+        managerExpr = convertAST(manager);
+      }
+
+      INT_ASSERT(managerExpr);
+
+      auto conv = buildManagerBlock(managerExpr, flags, resourceName);
+      INT_ASSERT(conv);
+
+      managers->insertAtTail(conv);
+    }
+
+    auto block = createBlockWithStmts(node->stmts());
+
+    auto ret = buildManageStmt(managers, block);
+    INT_ASSERT(ret);
+
+    return ret;
+  }
+
   BlockStmt* visit(const uast::On* node) {
     Expr* expr = toExpr(convertAST(node->destination()));
     Expr* stmt = toExpr(createBlockWithStmts(node->stmts()));
@@ -382,7 +450,9 @@ struct Converter {
           // Handles case: 'import foo as bar'
           if (auto as = vc->symbol()->toAs()) {
             Expr* mod = convertAST(as->symbol());
-            const char* rename = astr(as->rename()->name().c_str());
+            auto ident = as->rename()->toIdentifier();
+            assert(ident);
+            const char* rename = astr(ident->name().c_str());
             conv = buildImportStmt(mod, rename);
 
           // Handles: 'import foo'
@@ -656,6 +726,30 @@ struct Converter {
     CallExpr* byrefVars = convertWithClause(node->withClause(), node);
     BlockStmt* block = createBlockWithStmts(node->taskBodies());
     return buildCobeginStmt(byrefVars, block);
+  }
+
+  Expr* visit(const uast::Let* node) {
+    BlockStmt* decls = new BlockStmt(BLOCK_SCOPELESS);
+
+    for (auto decl : node->decls()) {
+      Expr* conv = nullptr;
+
+      if (auto var = decl->toVariable()) {
+        const bool useLinkageName = false;
+        conv = convertVariable(var, useLinkageName);
+      } else {
+        // TODO: Might need to do something different on this path.
+        conv = convertAST(decl);
+      }
+
+      INT_ASSERT(conv);
+      decls->insertAtTail(conv);
+    }
+
+    Expr* expr = convertAST(node->expression());
+    INT_ASSERT(expr);
+
+    return buildLetExpr(decls, expr);
   }
 
   Expr* visit(const uast::Conditional* node) {
@@ -1927,7 +2021,7 @@ struct Converter {
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
     // See 'uASTAttemptToParseMod'. Eventually, it would be great if the
     // new frontend could note if a module is standard/internal/user.
-    const ModTag tag = MOD_USER;
+    const ModTag tag = this->modTag;
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||
                       node->kind() == uast::Module::IMPLICIT);
@@ -2382,9 +2476,10 @@ Expr* Converter::convertAST(const uast::ASTNode* node) {
 } // end anonymous namespace
 
 ModuleSymbol* convertToplevelModule(chpl::Context* context,
-                                    const chpl::uast::Module* mod) {
+                                    const chpl::uast::Module* mod,
+                                    ModTag modTag) {
   astlocMarker markAstLoc(mod->id());
-  Converter c(context);
+  Converter c(context, modTag);
   DefExpr* def = c.visit(mod);
   ModuleSymbol* ret = toModuleSymbol(def->sym);
   return ret;

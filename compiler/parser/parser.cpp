@@ -942,7 +942,7 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
     yyfilename = nullptr;
 
     // Only converts the module, does not add to done list.
-    ModuleSymbol* got = convertToplevelModule(gContext, mod);
+    ModuleSymbol* got = convertToplevelModule(gContext, mod, modTag);
     INT_ASSERT(got);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
@@ -951,9 +951,7 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
 #endif
 
     // TODO (dlongnecke): The new frontend should determine this for us.
-    if (modTag != MOD_USER) {
-      got->modTag = modTag;
-    }
+    INT_ASSERT(got->modTag == modTag);
 
     addModuleToDoneList(got);
 

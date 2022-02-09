@@ -285,12 +285,33 @@ struct ParserContext {
   OpCall* buildUnaryOp(YYLTYPE location,
                        PODUniqueString op, Expression* expr);
 
+  Expression* buildManagerExpr(YYLTYPE location, Expression* expr,
+                               Variable::Kind kind,
+                               YYLTYPE locResourceName,
+                               UniqueString resourceName);
 
+  Expression* buildManagerExpr(YYLTYPE location, Expression* expr,
+                               YYLTYPE locResourceName,
+                               UniqueString resourceName);
+
+  CommentsAndStmt buildManageStmt(YYLTYPE location,
+                                  ParserExprList* managerExprs,
+                                  YYLTYPE locBlockOrDo,
+                                  BlockOrDo blockOrDo);
 
   FunctionParts makeFunctionParts(bool isInline,
                                   bool isOverride);
 
+  CommentsAndStmt
+  buildExternExportFunctionDecl(YYLTYPE location, FunctionParts& fp);
+
+  CommentsAndStmt
+  buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp);
+
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
+
+  Expression* buildLetExpr(YYLTYPE location, ParserExprList* decls,
+                           Expression* expr);
 
   Expression* buildArrayTypeWithIndex(YYLTYPE location,
                                       YYLTYPE locIndexExprs,

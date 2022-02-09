@@ -234,7 +234,8 @@ static void test4(Parser* parser) {
   const As* as = vc->limitation(0)->toAs();
   assert(as->symbol()->isIdentifier());
   assert(as->symbol()->toIdentifier()->name() == "Y");
-  assert(as->rename()->name() == "Z");
+  assert(as->rename()->isIdentifier());
+  assert(as->rename()->toIdentifier()->name() == "Z");
 }
 
 static void test5(Parser* parser) {

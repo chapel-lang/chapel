@@ -120,33 +120,6 @@
   using ParserExprList = std::vector<Expression*>;
   using UniqueStrList = std::vector<PODUniqueString>;
 
-  struct PotentialRename {
-    enum {SINGLE, DOUBLE} tag;
-
-    Expression* elem;
-    std::pair<Expression*, Expression*> renamed;
-
-    PotentialRename(Expression* elem) {
-      this->tag = SINGLE;
-      this->elem = elem;
-      this->renamed = std::make_pair((Expression*)nullptr, (Expression*)nullptr);
-    }
-    PotentialRename(owned<Expression> elem) : PotentialRename(elem.release()) { }
-    PotentialRename(Expression* from, Expression* to)
-    {
-      this->tag = DOUBLE;
-      this->elem = nullptr;
-      this->renamed = std::make_pair(from, to);
-    }
-    PotentialRename(owned<Expression> from, owned<Expression> to)
-    : PotentialRename(from.release(), to.release()) { }
-    PotentialRename(Expression* from, owned<Expression> to)
-    : PotentialRename(from, to.release()) { }
-
-  };
-
-  using RenameList = std::vector<PotentialRename>;
-
   // these structures do not use constructors to avoid
   // errors about being in the union below. Additionally
   // they only have pointer or numeric fields.
@@ -184,6 +157,8 @@
   // It is just saving some components of a function to be used
   // when building the FunctionDecl.
   struct FunctionParts {
+    int startLocFirstLine;
+    int startLocFirstColumn;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
     Attributes* attributes;
@@ -300,20 +275,8 @@
     MaybeNamedActualList* maybeNamedActualList;
     ModuleParts moduleParts;
     ParserExprList* exprList;
-    RenameList* renameList;
     UniqueStrList* uniqueStrList;
     WhereAndLifetime lifetimeAndWhere;
-
-    // TODO
-    //Type*                     ptype;
-    //EnumType*                 penumtype;
-    //std::vector<DefExpr*>*    pvecOfDefs;
-    //ImportStmt*               pimportstmt;
-    //FlagSet*                  flagSet;
-    //ShadowVarSymbol*          pShadowVar;
-    //ShadowVarPrefix           pShadowVarPref;
-    //std::vector<PotentialRename*>* ponlylist;
-    //std::set<Flag>*           pflagset;
   };
 
   #define YYSTYPE YYCHPL_STYPE
@@ -423,7 +386,7 @@
 %token <uniqueStr> TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token <uniqueStr> TIMPLEMENTS TINTERFACE
 %token <uniqueStr> TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
-%token <uniqueStr> TMINUSMINUS TMODULE
+%token <uniqueStr> TMANAGE TMINUSMINUS TMODULE
 %token <uniqueStr> TNEW TNIL TNOINIT TNONE TNOTHING
 %token <uniqueStr> TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
 %token <uniqueStr> TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE
@@ -551,6 +514,9 @@
 %type <blockOrDo> do_stmt
 %type <commentsAndStmt> if_stmt loop_stmt
 %type <commentsAndStmt> select_stmt
+%type <commentsAndStmt> manage_stmt
+%type <exprList> manager_expr_ls
+%type <expr> manager_expr
 %type <commentsAndStmt> assignment_stmt
 
 %type <typeDeclParts> class_start
@@ -753,6 +719,7 @@ tryable_stmt:
 | if_stmt                   { $$ = $1; } // Don't clear stored comments.
 | loop_stmt                 { $$ = $1; } // Don't clear stored comments.
 | select_stmt               { $$ = context->finishStmt($1); }
+| manage_stmt               { $$ = context->finishStmt($1); }
 | stmt_level_expr TSEMI     { $$ = context->finishStmt(STMT(@$,$1)); }
 | throw_stmt                { $$ = context->finishStmt($1); }
 | TBEGIN opt_task_intent_ls stmt
@@ -1480,8 +1447,7 @@ extern_export_decl_stmt:
     fp.linkage = $1;
     fp.comments = comments;
     fp.linkageNameExpr = optExpr;
-
-    $$ = context->buildFunctionDecl(@$, fp);
+    $$ = context->buildExternExportFunctionDecl(@$, fp);
   }
 | extern_export_decl_stmt_start opt_expr
   {
@@ -1978,6 +1944,34 @@ when_stmt:
   }
 ;
 
+manager_expr:
+  expr TAS var_decl_type ident_def
+  {
+    $$ = context->buildManagerExpr(@$, $1, $3, @4, $4);
+    context->resetDeclState();
+  }
+| expr TAS ident_def
+  {
+    $$ = context->buildManagerExpr(@$, $1, @3, $3);
+  }
+| expr
+  {
+    $$ = $1;
+  }
+;
+
+manager_expr_ls:
+  manager_expr                          { $$ = context->makeList($1); }
+| manager_expr_ls TCOMMA manager_expr   { $$ = context->appendList($1, $3); }
+;
+
+manage_stmt:
+  TMANAGE manager_expr_ls do_stmt
+  {
+    $$ = context->buildManageStmt(@$, $2, @3, $3);
+  }
+;
+
 /** DECLARATION STATEMENTS ***************************************************/
 
 class_decl_stmt:
@@ -2152,7 +2146,7 @@ linkage_spec:
 fn_decl_stmt_complete:
   fn_decl_stmt
     {
-      $$ = context->buildFunctionDecl(@$, $1);
+      $$ = context->buildRegularFunctionDecl(@$, $1);
     }
 ;
 
@@ -2235,7 +2229,11 @@ fn_decl_stmt_start:
   linkage_spec proc_iter_or_op
     {
       FunctionParts fp = $1;
+      context->noteDeclStartLoc(@2);
+      // Preserve the first location, to avoid desync on start line number.
       auto loc = context->declStartLoc(@2);
+      fp.startLocFirstLine = loc.first_line;
+      fp.startLocFirstColumn = loc.first_column;
       fp.comments = context->gatherComments(loc);
       fp.attributes = context->buildAttributes(@$).release();
       fp.visibility = context->visibility;
@@ -3287,7 +3285,9 @@ new_expr:
 
 let_expr:
   TLET var_decl_stmt_inner_ls TIN expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildLetExpr(@$, $2, $4);
+  }
 ;
 
 /* exprs represent valid values and types. Any expression with a valid

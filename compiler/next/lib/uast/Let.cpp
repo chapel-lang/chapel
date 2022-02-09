@@ -1,6 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,17 +17,29 @@
  * limitations under the License.
  */
 
-#ifndef _CONVERT_UAST_H_
-#define _CONVERT_UAST_H_
+#include "chpl/uast/Let.h"
 
-#include "alist.h"
-#include "baseAST.h"
-#include "ModuleSymbol.h"
-#include "chpl/queries/Context.h"
-#include "chpl/uast/Module.h"
+#include "chpl/uast/Builder.h"
 
-ModuleSymbol* convertToplevelModule(chpl::Context* context,
-                                    const chpl::uast::Module* mod,
-                                    ModTag modTag);
+namespace chpl {
+namespace uast {
 
-#endif
+
+owned<Let> Let::build(Builder* builder, Location loc, ASTList decls,
+                      owned<Expression> expression) {
+  assert(decls.size() >= 1);
+  assert(expression.get() != nullptr);
+
+  const int numDecls = decls.size();
+  ASTList children = std::move(decls);
+
+  children.push_back(std::move(expression));
+
+  Let* ret = new Let(std::move(children), numDecls);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
+}
+
+
+} // namespace uast
+} // namespace chpl

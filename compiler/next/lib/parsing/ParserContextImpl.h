@@ -638,9 +638,67 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
                        op, toOwned(expr)).release();
 }
 
+Expression* ParserContext::buildManagerExpr(YYLTYPE location,
+                                            Expression* expr,
+                                            Variable::Kind kind,
+                                            YYLTYPE locResourceName,
+                                            UniqueString resourceName) {
+  auto var = Variable::build(builder, convertLocation(locResourceName),
+                             nullptr,
+                             Decl::DEFAULT_VISIBILITY,
+                             Decl::DEFAULT_LINKAGE,
+                             nullptr,
+                             resourceName,
+                             kind,
+                             false,
+                             false,
+                             nullptr,
+                             nullptr);
+  auto as = As::build(builder, convertLocation(location),
+                      toOwned(expr),
+                      std::move(var));
+  return as.release();
+}
+
+Expression* ParserContext::buildManagerExpr(YYLTYPE location,
+                                            Expression* expr,
+                                            YYLTYPE locResourceName,
+                                            UniqueString resourceName) {
+  return buildManagerExpr(location, expr, Variable::INDEX,
+                          locResourceName,
+                          resourceName);
+}
+
+CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
+                                               ParserExprList* managerExprs,
+                                               YYLTYPE locBlockOrDo,
+                                               BlockOrDo blockOrDo) {
+  std::vector<ParserComment>* comments;
+  ParserExprList* stmtExprList;
+  BlockStyle blockStyle;
+
+  prepareStmtPieces(comments, stmtExprList, blockStyle, location,
+                    locBlockOrDo,
+                    blockOrDo);
+
+  ASTList managers = consumeList(managerExprs);
+  ASTList stmts = consumeList(stmtExprList);
+
+  auto node = Manage::build(builder, convertLocation(location),
+                            std::move(managers),
+                            blockStyle,
+                            std::move(stmts));
+
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+
+  return ret;
+}
+
 FunctionParts ParserContext::makeFunctionParts(bool isInline,
                                                bool isOverride) {
-  FunctionParts fp = {nullptr,
+  FunctionParts fp = {-1,
+                      -1,
+                      nullptr,
                       nullptr,
                       nullptr,
                       this->visibility,
@@ -657,6 +715,39 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       nullptr, nullptr, nullptr, nullptr,
                       nullptr};
   return fp;
+}
+
+CommentsAndStmt
+ParserContext::buildExternExportFunctionDecl(YYLTYPE location,
+                                             FunctionParts& fp) {
+  return buildFunctionDecl(location, fp);
+}
+
+CommentsAndStmt
+ParserContext::buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp) {
+
+  //
+  // The location for regular function decls seems to include blank lines
+  // following the last production in the 'first_line' of location. As a
+  // quick, hacky workaround, store the 'first_line' and 'first_column' of
+  // the start keyword when building up 'fp' and use that to compute an
+  // accurate location.
+  // Note that we also can't just store a YYLTYPE in 'FunctionParts',
+  // because a weird circular dependency causes C++ to explode.
+  // I think that the proper fix for this is to massage the grammar so that
+  // the 'fn_decl_complete' rule includes a terminal on its LHS, but I'm
+  // not going to fiddle with grammar rules right now.
+  //
+  YYLTYPE startLoc = {
+    .first_line = fp.startLocFirstLine,
+    .first_column = fp.startLocFirstColumn,
+    .last_line = fp.startLocFirstLine,
+    .last_column = fp.startLocFirstColumn
+  };
+
+  auto accurateLoc = makeSpannedLocation(startLoc, location);
+
+  return buildFunctionDecl(accurateLoc, fp);
 }
 
 CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
@@ -716,6 +807,16 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   }
   this->clearComments();
   return cs;
+}
+
+Expression*
+ParserContext::buildLetExpr(YYLTYPE location, ParserExprList* decls,
+                            Expression* expr) {
+  auto declExprs = consumeList(decls);
+  auto node = Let::build(builder, convertLocation(location),
+                         std::move(declExprs),
+                         toOwned(expr));
+  return node.release();
 }
 
 // This is the weird one. I can't even parse what is happening here...

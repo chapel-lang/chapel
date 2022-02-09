@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/As.h"
+#include "chpl/uast/Manage.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,18 +25,32 @@ namespace chpl {
 namespace uast {
 
 
-owned<As> As::build(Builder* builder, Location loc,
-                    owned<Expression> symbol,
-                    owned<Expression> rename) {
-  assert(symbol.get() != nullptr);
-  assert(rename.get() != nullptr);
+owned<Manage> Manage::build(Builder* builder, Location loc,
+                            ASTList managers,
+                            BlockStyle blockStyle,
+                            ASTList stmts) {
+  int managerExprChildNum = -1;
+  const int numManagerExprs = managers.size();
+  int bodyChildNum = -1;
+  const int numBodyStmts = stmts.size();
+  ASTList children;
 
-  ASTList lst;
+  if (managers.size()) {
+    managerExprChildNum = children.size();
+    children.swap(managers);
+  }
 
-  lst.push_back(std::move(symbol));
-  lst.push_back(std::move(rename));
+  if (stmts.size()) {
+    bodyChildNum = children.size();
+    for (auto& ast : stmts) children.push_back(std::move(ast));
+  }
 
-  As* ret = new As(std::move(lst));
+  Manage* ret = new Manage(std::move(children), managerExprChildNum,
+                           numManagerExprs,
+                           blockStyle,
+                           bodyChildNum,
+                           numBodyStmts);
+
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
