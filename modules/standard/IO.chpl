@@ -125,6 +125,10 @@ to perform I/O will need to know how to open files as well as create channels.
 I/O Styles
 ----------
 
+.. warning::
+
+   :record:`iostyle` is now deprecated.  It will be replaced by a new solution.
+
 Reading and writing of Chapel's basic types is regulated by an applicable
 :record:`iostyle`.  In particular, the I/O style controls whether binary or
 text I/O should be performed. For binary I/O it specifies, for example, byte
@@ -159,12 +163,6 @@ A channel's I/O style may be retrieved using :proc:`channel._style` and set
 using :proc:`channel._set_style`. These functions should only be called while
 the channel lock is held, however. See :ref:`about-io-channel-synchronization`
 for more information on channel locks.
-
-.. note::
-
-  :record:`iostyle` is work in progress: the fields and/or their types may
-  change. Among other changes, we expect to be replacing the types of some
-  multiple-choice fields from integral to enums.
 
 As an example for specifying an I/O style, the code below specifies the minimum width for writing numbers so array elements are aligned in the output:
 
