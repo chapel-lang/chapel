@@ -26,6 +26,8 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 CatchStmt* CatchStmt::build(DefExpr* def, BlockStmt* body) {
   const char* name = def->sym->name;
   Expr* type = def->exprType;

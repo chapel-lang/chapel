@@ -24,7 +24,7 @@
 #include "CallExpr.h"
 #include "symbol.h"
 
-enum LocalityInfo { 
+enum LocalityInfo {
   UNKNOWN,  // it may be anything
   PENDING,  // we will make a decision later
   LOCAL,    // we know this is local

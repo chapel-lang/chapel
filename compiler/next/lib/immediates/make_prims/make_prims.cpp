@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,7 +45,7 @@ buf_read(char *pathname, char **buf, int *len) {
   *buf = 0;
   *len = 0;
   fd = open(pathname, O_RDONLY);
-  if (fd <= 0) 
+  if (fd <= 0)
     return -1;
   memset(&sb, 0, sizeof(sb));
   fstat(fd, &sb);
@@ -108,7 +108,7 @@ get(charp &p, int optnum = 0) {
     p++;
     while (*p && *p != '"') p++;
     if (*p) p++;
-  } else 
+  } else
     while (*p && !isspace(*p)) p++;
   if (!*p) return EOF_TOK;
   if (*s == ';') return NULL;
@@ -123,7 +123,7 @@ get_lines(char *b, Vec<Line *> &lines) {
     l->index = index++;
     do {
       while (*b && isspace(*b)) b++;
-      if (*b != '/') 
+      if (*b != '/')
         break;
       while (*b && *b != '\n') b++;
     } while (*b);
@@ -161,7 +161,7 @@ build_data(Vec<Line *> &lines) {
     if (!rets) rets = "1";
     fprintf(fp, "  static PrimType %s_arg_types[] = %s;\n", l->name, l->argtypes);
     fprintf(fp, "  static PrimType %s_ret_types[] = %s;\n", l->name, l->rettypes);
-    fprintf(fp, "  %s = new Prim(%d, %s, \"%s\", %s, %s, %s, %s_arg_types, %s_ret_types, %s);\n", 
+    fprintf(fp, "  %s = new Prim(%d, %s, \"%s\", %s, %s, %s, %s_arg_types, %s_ret_types, %s);\n",
             l->name, l->index, l->string, l->name, l->nargs, l->pos, rets, l->name,
             l->name, l->options ? "PRIM_NON_FUNCTIONAL" : "0");
     fprintf(fp, "  n = if1->strings.put(%s);\n", l->string);

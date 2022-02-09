@@ -37,7 +37,7 @@ static void checkQuoting(const char* input, const char* expect) {
 }
 
 int main(int argc, char** argv) {
- 
+
   checkQuoting("\a", "\\a");
   checkQuoting("\"", "\\\"");
   checkQuoting("?", "\\?");

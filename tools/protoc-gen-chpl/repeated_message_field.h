@@ -27,10 +27,10 @@
 #include <field_base.h>
 
 namespace chapel {
-  
+
   using namespace google::protobuf;
   using namespace google::protobuf::io;
-  
+
   class RepeatedMessageFieldGenerator : public FieldGeneratorBase {
    public:
     RepeatedMessageFieldGenerator(const FieldDescriptor* descriptor);

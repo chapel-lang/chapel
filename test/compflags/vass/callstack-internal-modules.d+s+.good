@@ -1,0 +1,5 @@
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: In function '+':
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: error: illegal use of '+' on operands of type uint(64) and signed integer
+  callstack-internal-modules.chpl:26: called as +(a: int(64), b: uint(64)) from function 'foo'
+  callstack-internal-modules.chpl:22: called as foo() from function 'bar'
+  callstack-internal-modules.chpl:18: called as bar() from function 'main'

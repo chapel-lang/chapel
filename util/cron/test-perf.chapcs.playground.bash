@@ -14,6 +14,10 @@ CWD=$(cd $(dirname $0) ; pwd)
 export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $CWD/common-perf.bash
+source $CWD/common-llvm.bash
+
+# common-llvm restricts to just extern/ferguson. Enable all perf tests
+unset CHPL_NIGHTLY_TEST_DIRS
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
@@ -25,11 +29,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test fix for qthreads memory consistency issues on PowerPC and ARM
-GITHUB_USER=ronawho
-GITHUB_BRANCH=qthread-arm-fix
-SHORT_NAME=qthread-arm-fix
-START_DATE=12/07/21
+# Test performance of llvm-13 for version upgrade
+GITHUB_USER=daviditen
+GITHUB_BRANCH=llvm-13-upgrade
+SHORT_NAME=llvm13
+START_DATE=02/07/22
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

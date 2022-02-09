@@ -977,7 +977,7 @@ module ChapelRange {
 
   operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
 
-  /* 
+  /*
     .. warning::
       This procedure is deprecated - please let us know if you were
       relying on it.
@@ -990,7 +990,7 @@ module ChapelRange {
   proc ident(r1: range(?), r2: r1.type) {
     return chpl_ident(r1, r2);
   }
-  
+
   proc chpl_ident(r1: range(?), r2: range(?))
     where r1.idxType == r2.idxType &&
     r1.boundedType == r2.boundedType &&

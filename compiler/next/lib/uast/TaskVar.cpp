@@ -27,7 +27,7 @@ namespace uast {
 
 owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
                               owned<Attributes> attributes,
-                              UniqueString name, 
+                              UniqueString name,
                               TaskVar::Intent intent,
                               owned<Expression> typeExpression,
                               owned<Expression> initExpression) {
@@ -40,7 +40,7 @@ owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
     attributesChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
-    
+
   if (typeExpression.get() != nullptr) {
     typeExpressionChildNum = lst.size();
     lst.push_back(std::move(typeExpression));

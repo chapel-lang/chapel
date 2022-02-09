@@ -51,11 +51,11 @@ GenRet AList::codegen(const char* separator) {
 /*
 LLVMRet AList::genLLVM(GenInfo info) {
   LLVMRet ret = {NULL, NULL, NULL, NULL};
-  
+
   for_alist(node, *this) {
     node->genLLVM(info);
   }
-  
+
   return ret;
 }
 */

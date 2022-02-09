@@ -24,6 +24,8 @@
 #include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
 
+#include "global-ast-vecs.h"
+
 BlockStmt* DeferStmt::build(BlockStmt* body) {
   return buildChplStmt(new DeferStmt(body));
 }

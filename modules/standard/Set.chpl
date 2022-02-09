@@ -141,9 +141,9 @@ module Set {
     /* If `true`, this set will perform parallel safe operations. */
     param parSafe = false;
 
-    /* 
-       Fractional value that specifies how full this map can be 
-       before requesting additional memory. The default value of 
+    /*
+       Fractional value that specifies how full this map can be
+       before requesting additional memory. The default value of
        0.5 means that the map will not resize until the map is more
        than 50% full. The acceptable values for this argument are
        between 0 and 1, exclusive, meaning (0,1). This is useful
@@ -202,7 +202,7 @@ module Set {
     proc init(type eltType, iterable, param parSafe=false,
               resizeThreshold=0.5, initialCapacity=16)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
-      _checkElementType(eltType); 
+      _checkElementType(eltType);
 
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -365,7 +365,7 @@ module Set {
     proc const contains(const ref x: eltType): bool {
       return contains(element=x);
     }
-    
+
     /*
      As above, but parSafe lock must be held and must be called "on this".
     */
@@ -420,8 +420,8 @@ module Set {
     }
 
     /*
-      Attempt to remove the item from this set with a value equal to `element`. 
-      If an element equal to `element` was removed from this set, return `true`, 
+      Attempt to remove the item from this set with a value equal to `element`.
+      If an element equal to `element` was removed from this set, return `true`,
       else return `false` if no such value was found.
 
       .. warning::
@@ -494,7 +494,7 @@ module Set {
         Modifying this set while iterating over it may invalidate the
         references returned by an iterator and is considered undefined
         behavior.
-      
+
       :yields: A constant reference to an element in this set.
     */
     iter const these() const ref {

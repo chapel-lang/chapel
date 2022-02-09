@@ -49,6 +49,8 @@
 // files, the corresponding collector functions can be removed from this
 // implementation file, then this #include, and finally the .h file itself.
 
+#include "global-ast-vecs.h"
+
 #include <vector>
 
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
@@ -295,9 +297,9 @@ void computeAllCallSites(FnSymbol* fn) {
   Vec<CallExpr*>* calledBy = fn->calledBy;
   if (calledBy == NULL)
     fn->calledBy = calledBy = new Vec<CallExpr*>();
-  else 
+  else
     calledBy->clear();
-  
+
   for_SymbolSymExprs(se, fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (fn == call->resolvedFunction()) {

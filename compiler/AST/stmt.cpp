@@ -36,6 +36,8 @@
 #include <algorithm>
 #include <vector>
 
+#include "global-ast-vecs.h"
+
 // remember these so we can update their labels' iterResumeGoto
 Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
 

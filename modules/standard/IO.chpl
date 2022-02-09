@@ -125,6 +125,13 @@ to perform I/O will need to know how to open files as well as create channels.
 I/O Styles
 ----------
 
+.. warning::
+
+   :record:`iostyle` is now deprecated.
+   We are working on creating a full-featured replacement for it
+   but in the meantime the :ref:`about-io-formatted-io` facilities are still
+   available to control formatting.
+
 Reading and writing of Chapel's basic types is regulated by an applicable
 :record:`iostyle`.  In particular, the I/O style controls whether binary or
 text I/O should be performed. For binary I/O it specifies, for example, byte
@@ -159,12 +166,6 @@ A channel's I/O style may be retrieved using :proc:`channel._style` and set
 using :proc:`channel._set_style`. These functions should only be called while
 the channel lock is held, however. See :ref:`about-io-channel-synchronization`
 for more information on channel locks.
-
-.. note::
-
-  :record:`iostyle` is work in progress: the fields and/or their types may
-  change. Among other changes, we expect to be replacing the types of some
-  multiple-choice fields from integral to enums.
 
 As an example for specifying an I/O style, the code below specifies the minimum width for writing numbers so array elements are aligned in the output:
 
@@ -250,9 +251,9 @@ more details on the situation in which this kind of data race can occur.
    * concurrent operations on multiple channels that operate on overlapping
      regions of a file
    * where at least one of the overlapping channels is a writing channel
-   * and where data could be stored in more than one of the overlapping 
-     channel's buffers at the same time (i.e., write and read ordering are 
-     not enforced through :proc:`channel.flush` and other means such as 
+   * and where data could be stored in more than one of the overlapping
+     channel's buffers at the same time (i.e., write and read ordering are
+     not enforced through :proc:`channel.flush` and other means such as
      sync variables).
 
   Note that it is possible in some cases to create a :record:`file` that does

@@ -68,7 +68,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test/lit.cfg.in" "${CMAKE_CURRENT_BI
 
 file( GLOB_RECURSE test_files RELATIVE
       "${CMAKE_CURRENT_SOURCE_DIR}/" "test/*.ll" )
-foreach( test_file ${test_files} ) 
+foreach( test_file ${test_files} )
   # test_file is e.g. test/a.ll
   # copy the test to the build directory
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${test_file}"
@@ -83,6 +83,6 @@ endif()
 add_custom_target(check
     COMMAND ${PYTHON_EXECUTABLE} ${LLVM_LIT}
             "${CMAKE_CURRENT_BINARY_DIR}/test/" -v
-            DEPENDS llvm-pgas 
+            DEPENDS llvm-pgas
 )
 

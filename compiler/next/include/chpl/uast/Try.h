@@ -93,7 +93,7 @@ class Try final : public Expression {
   ~Try() override = default;
 
   /**
-    Create and return a try statement. 
+    Create and return a try statement.
   */
   static owned<Try> build(Builder* builder, Location loc, ASTList stmts,
                           ASTList catches,
@@ -108,7 +108,7 @@ class Try final : public Expression {
                           bool isExpressionLevel);
 
   /**
-    Iterate over the statements contained in this try. 
+    Iterate over the statements contained in this try.
   */
   ASTListIteratorPair<Expression> stmts() const {
     auto begin = numBodyStmts_ ? children_.begin() + bodyChildNum_
@@ -135,10 +135,10 @@ class Try final : public Expression {
   }
 
   /**
-    Iterate over the catch blocks contained in this try. 
+    Iterate over the catch blocks contained in this try.
   */
   ASTListIteratorPair<Catch> handlers() const {
-    auto begin = numHandlers_ ? children_.begin() + numBodyStmts_ 
+    auto begin = numHandlers_ ? children_.begin() + numBodyStmts_
                               : children_.end();
     auto end = begin + numHandlers_;
     return ASTListIteratorPair<Catch>(begin, end);

@@ -1,15 +1,15 @@
 /*
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
- * Other additional copyright holders may be indicated within.  * 
+ * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,7 +51,7 @@ static void chpl_gpu_cuda_check(int err, const char* file, int line) {
     snprintf(msg, msg_len,
              "%s:%d: Error calling CUDA function. (Code: %d)",
              file, line, err);
-    
+
     chpl_internal_error(msg);
   }
 }
@@ -76,9 +76,9 @@ void chpl_gpu_init() {
 
   // Create driver context
   // TODO CUDA documentation recommends using cuDevicePrimaryCtxRetain instead:
-  // 
+  //
   // CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
-  
+
   CUDA_CALL(cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, device));
 
   CUcontext cuda_context = NULL;
@@ -113,7 +113,7 @@ bool chpl_gpu_is_device_ptr(void* ptr) {
   chpl_gpu_ensure_context();
 
   unsigned int res;
-  
+
   // We call CUDA_CALL later, because we want to treat some error codes
   // separately
   CUresult ret_val = cuPointerGetAttribute(&res, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
@@ -215,7 +215,7 @@ static void chpl_gpu_launch_kernel_help(const char* fatbinData,
                            NULL));  // extra options
 
   CHPL_GPU_LOG("Call returned %s\n", name);
-  
+
   CUDA_CALL(cudaDeviceSynchronize());
 
   CHPL_GPU_LOG("Synchronization complete %s\n", name);

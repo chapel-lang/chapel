@@ -87,7 +87,7 @@ bool SubView::ShowFile (const char *filename, int lineNo)
 {
   char FinalName[1024];
   // Check for known 'bad' file names
-  if (filename[0] == '<' && 
+  if (filename[0] == '<' &&
       (strcmp(filename, "<unknown>") == 0
        || strcmp(filename, "<internal>") == 0)) {
     fl_alert("No file to open.");
@@ -104,7 +104,7 @@ bool SubView::ShowFile (const char *filename, int lineNo)
   } else {
     strncpy (FinalName, filename, sizeof(FinalName));
   }
-  
+
   Fl_Browser *fb = new Fl_Browser (x(), y()+24, w(), h()-24);
   if (!fb->load(FinalName)) {
     fl_alert("Could not open %s: %s", FinalName, strerror(errno));
@@ -131,12 +131,12 @@ bool SubView::ShowTaskComm (taskData *task)
 
   // Save the task
   dispTask = task;
-  
+
   // Time reference
   double startTime = VisData.start_clock();
-  if (task->beginRec) 
+  if (task->beginRec)
     startTime = task->beginRec->clock_time();
-  
+
   // Data lines
   SelectBrowser *theList = new SelectBrowser (x(), y()+24, w(), h()-24);
   theList->callback(CommListItemClickCB);
@@ -161,10 +161,10 @@ bool SubView::ShowTaskComm (taskData *task)
     case Ev_comm:
       cp = (E_comm *) *itr;
       fName = VisData.fileName(cp->srcFile());
-      if (cp->isGet()) 
+      if (cp->isGet())
         snprintf (tmpText, sizeof(tmpText),
                   "[%f] Get from %d, total size %d, file %s:%ld\n",
-                  cp->clock_time() - startTime, cp->srcId(), cp->totalLen(), 
+                  cp->clock_time() - startTime, cp->srcId(), cp->totalLen(),
                   (fName[0] == '$' ? &fName[11] : fName), cp->srcLine());
       else
         snprintf (tmpText, sizeof(tmpText),
@@ -240,5 +240,5 @@ void SubView::TaskCommCB (void)
     }
     itr++;
   }
- 
+
 }

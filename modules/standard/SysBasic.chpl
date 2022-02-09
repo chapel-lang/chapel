@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,7 @@
  */
 
 /* Types for low-level programming and C integration.
-   
+
    This module provides basic types when those types are not
    platform-dependent. The module :mod:`SysCTypes` contains the
    platform-dependent declarations for C compatibility.
@@ -75,7 +75,7 @@ extern proc chpl_cnullfile():_file;
    or to another syserr. A syserr can be cast to or from an err_t. It can be
    assigned the value of an err_t or another syserr. In addition, syserr can be
    checked directly in an if statement like so:
-   
+
    .. code-block:: chapel
 
      var err: syserr;
@@ -94,7 +94,7 @@ extern type syserr; // = c_int, opaque so we can manually override ==,!=,etc
 
 /* An integral error code. This is really just a `c_int`, but code is
    clearer if you use err_t to indicate arguments, variables, and return types
-   that are system error codes. 
+   that are system error codes.
  */
 extern type err_t = c_int;
 
@@ -294,7 +294,7 @@ extern const ECONNREFUSED:err_t;
 
 /* Connection reset by peer. A connection was forcibly closed by a peer. This
    normally results from a loss of the connection on the remote socket due to a
-   timeout or a reboot. (POSIX.1) 
+   timeout or a reboot. (POSIX.1)
  */
 extern const ECONNRESET:err_t;
 
@@ -454,7 +454,7 @@ extern const EMFILE:err_t;
   */
 extern const EMLINK:err_t;
 
-/* Message too long. A message sent on a socket was larger than the internal 
+/* Message too long. A message sent on a socket was larger than the internal
    message buffer or some other network limit. (POSIX.1)
  */
 extern const EMSGSIZE:err_t;
@@ -481,7 +481,7 @@ extern const ENETRESET:err_t;
  */
 extern const ENETUNREACH:err_t;
 
-/* Too many open files in system. Maximum number of open files allowable on 
+/* Too many open files in system. Maximum number of open files allowable on
    the system has been reached and requests for an open cannot be satisfied
    until at least one has been closed. (POSIX.1)
  */
@@ -517,7 +517,7 @@ extern const ENOEXEC:err_t;
 /* Required key not available (linux only) */
 extern const ENOKEY:err_t;
 
-/* No locks available. A system-imposed limit on the number of simultaneous 
+/* No locks available. A system-imposed limit on the number of simultaneous
   file locks was reached. (POSIX.1)
  */
 extern const ENOLCK:err_t;
@@ -570,7 +570,7 @@ extern const ENOSR:err_t;
 /* Not a STREAM (POSIX.1 XSI STREAMS option) */
 extern const ENOSTR:err_t;
 
-/* Function not implemented. Attempted a system call that is not available on 
+/* Function not implemented. Attempted a system call that is not available on
    this system. (POSIX.1)
  */
 extern const ENOSYS:err_t;
@@ -592,7 +592,7 @@ extern const ENOTCONN:err_t;
  */
 extern const ENOTDIR:err_t;
 
-/* Directory not empty. A directory with entries other than '.' and '..' was 
+/* Directory not empty. A directory with entries other than '.' and '..' was
    supplied to a remove directory or rename call. (POSIX.1)
  */
 extern const ENOTEMPTY:err_t;
@@ -649,12 +649,12 @@ extern const EPERM:err_t;
  */
 extern const EPFNOSUPPORT:err_t;
 
-/* Broken pipe. A write on a pipe, socket or FIFO for which there is no 
+/* Broken pipe. A write on a pipe, socket or FIFO for which there is no
    process to read the data. (POSIX.1)
  */
 extern const EPIPE:err_t;
 
-/* Protocol error. A device or socket encountered an unrecoverable 
+/* Protocol error. A device or socket encountered an unrecoverable
    protocol error. (POSIX.1)
  */
 extern const EPROTO:err_t;
@@ -670,7 +670,7 @@ extern const EPROTONOSUPPORT:err_t;
  */
 extern const EPROTOTYPE:err_t;
 
-/* Result too large. A numerical result of the function was too large to fit 
+/* Result too large. A numerical result of the function was too large to fit
    in the available space (perhaps exceeded precision). (POSIX.1, C99)
  */
 extern const ERANGE:err_t;
@@ -698,23 +698,23 @@ extern const EROFS:err_t;
  */
 extern const ESHUTDOWN:err_t;
 
-/* Illegal seek. An lseek system call was issued on a socket, pipe or FIFO. 
+/* Illegal seek. An lseek system call was issued on a socket, pipe or FIFO.
    (POSIX.1)
  */
 extern const ESPIPE:err_t;
 
 /* Socket type not supported. The support for the socket type has not been
-   configured into the system or no implementation for it exists. 
+   configured into the system or no implementation for it exists.
    (linux, FreeBSD)
  */
 extern const ESOCKTNOSUPPORT:err_t;
 
-/* No such process. No process could be found corresponding to that specified 
+/* No such process. No process could be found corresponding to that specified
    by the given process ID. (POSIX.1)
  */
 extern const ESRCH:err_t;
 
-/* Stale NFS file handle. An attempt was made to access an open file (on an 
+/* Stale NFS file handle. An attempt was made to access an open file (on an
    NFS file system) which is now unavailable as referenced by the file
    descriptor. This may indicate the file was deleted on the NFS server or
    some other catastrophic event occurred. (POSIX.1)
@@ -728,13 +728,13 @@ extern const ESTRPIPE:err_t;
  */
 extern const ETIME:err_t;
 
-/* Operation timed out. A connect or send system call failed because the 
+/* Operation timed out. A connect or send system call failed because the
    connected party did not properly respond after a period of time. (The
    timeout period is dependent on the communication protocol.) (POSIX.1)
  */
 extern const ETIMEDOUT:err_t;
 
-/* Text file busy. The new process was a pure procedure (shared text) file 
+/* Text file busy. The new process was a pure procedure (shared text) file
    which was open for writing by another process, or while the pure procedure
    file was being executed an open system call requested write access. (POSIX.1)
  */
@@ -746,7 +746,7 @@ extern const EUCLEAN:err_t;
 /* Protocol driver not attached (linux only) */
 extern const EUNATCH:err_t;
 
-/* Too many users. The quota system ran out of table entries. 
+/* Too many users. The quota system ran out of table entries.
    (linux, FreeBSD)
  */
 extern const EUSERS:err_t;
@@ -755,7 +755,7 @@ extern const EUSERS:err_t;
  */
 extern const EWOULDBLOCK:err_t;
 
-/* Cross-device link. A hard link to a file on another file system was 
+/* Cross-device link. A hard link to a file on another file system was
    attempted. (POSIX.1)
  */
 extern const EXDEV:err_t;

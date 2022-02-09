@@ -45,7 +45,7 @@ module ChapelEnv {
                     "ChplConfig' in order to access 'CHPL_*' params",
                     errorDepth=2);
   }
-  
+
   /* See :ref:`readme-chplenv.CHPL_HOME` for more information. */
   pragma "last resort"
   pragma "no doc"
@@ -58,6 +58,7 @@ module ChapelEnv {
   /* Deprecated */
   pragma "last resort"
   pragma "no doc"
+  deprecated "CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem"
   proc CHPL_AUX_FILESYS param : string {
     use ChplConfig;
     warnChplConfigChange();

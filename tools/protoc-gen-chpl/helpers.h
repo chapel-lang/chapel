@@ -28,30 +28,30 @@
 #include <google/protobuf/compiler/code_generator.h>
 
 namespace chapel {
-  
+
   using namespace std;
-  
+
   using namespace google::protobuf;
   using namespace google::protobuf::compiler;
 
   class FieldGeneratorBase;
 
   string GetOutputFile(const FileDescriptor* descriptor, string*error);
-  
+
   string GetFieldName(const FieldDescriptor* descriptor);
 
   FieldGeneratorBase* CreateFieldGenerator(const FieldDescriptor* descriptor);
 
   string GetModuleName(const FileDescriptor* descriptor);
-  
+
   string GetMessageName(const Descriptor* descriptor);
 
   string GetEnumName(const EnumDescriptor* descriptor);
-  
+
   string GetPackageName(const FileDescriptor* descriptor);
 
   string GetOneofName(const OneofDescriptor* descriptor);
-  
+
   inline bool IsMapEntryMessage(const Descriptor* descriptor) {
     return descriptor->options().map_entry();
   }

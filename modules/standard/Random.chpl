@@ -352,11 +352,11 @@ module Random {
   {
     import Search;
     import Sort;
-    
+
     if prob.size != X.sizeAs(idxType) {
       throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
     }
-    
+
     if prob.size == 0 then
       throw new owned IllegalArgumentError('choice() prob array cannot be empty');
 
@@ -1121,7 +1121,7 @@ module Random {
      */
       proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
-      { 
+      {
         var dom: domain(1,stridable=true);
 
         if !isBoundedRange(x) {
@@ -2624,7 +2624,7 @@ module Random {
       proc getNth(n: integral): eltType throws {
         if (n < 0) then
           throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with negative 'n' value " + n:string);
-        _lock(); 
+        _lock();
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         const result = NPBRandomStreamPrivate_getNext_noLock();
         _unlock();

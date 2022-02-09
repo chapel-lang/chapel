@@ -89,14 +89,14 @@ Some issues could be considered current bugs.)
 
    + Have a save as new defaults button to write all current settings
      to the persistent cache file.
-     
+
    + Have a remove defaults button that deletes the cache file, and
         restores to built-in chplvis defaults.
 
    + (really minor) Remove the tag label from the top, when viewing tag: all
 
 - Add export png / pdf of current view feature
-  
+
 
 Wild suggestions ...
 

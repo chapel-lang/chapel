@@ -369,7 +369,7 @@ static void test5() {
   assert(nQuerySixRuns == 1);
   assert(q6 == "hello there giant world...");
 
-  // run it again with something that is still even length 
+  // run it again with something that is still even length
   printf("part 3\n");
   context->advanceToNextRevision(false);
   inputString = "hello there giant wrld"; // even length

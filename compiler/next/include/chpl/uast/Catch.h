@@ -74,7 +74,7 @@ class Catch final : public Expression {
   ~Catch() override = default;
 
   /**
-    Create and return a catch. 
+    Create and return a catch.
   */
   static owned<Catch> build(Builder* builder, Location loc,
                             owned<Variable> error,

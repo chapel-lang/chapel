@@ -38,6 +38,8 @@
 #include "optimizations.h"
 #include "WhileStmt.h"
 
+#include "global-ast-vecs.h"
+
 #include <algorithm>
 #include <set>
 #include <stack>
@@ -1325,4 +1327,3 @@ void loopInvariantCodeMotion(void) {
 #endif
 
 }
-

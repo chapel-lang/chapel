@@ -44,6 +44,8 @@
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <algorithm>
 #include <map>
 #include <set>

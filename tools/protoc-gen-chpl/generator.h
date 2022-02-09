@@ -39,8 +39,8 @@ namespace chapel {
     ~Generator();
     bool Generate(
       const FileDescriptor *file,
-      const string &parameter,         
-      GeneratorContext *generator_context,     
+      const string &parameter,
+      GeneratorContext *generator_context,
       string *error)
     const override;
   };

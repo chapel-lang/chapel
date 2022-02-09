@@ -124,7 +124,7 @@ module ArrayViewReindex {
       else
         return distInst;
     }
-    
+
     inline proc updom: updomInst!.type {
       return updomInst!;
     }

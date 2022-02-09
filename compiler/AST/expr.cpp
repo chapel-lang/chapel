@@ -38,6 +38,7 @@
 #include "wellknown.h"
 #include "WhileStmt.h"
 
+#include "global-ast-vecs.h"
 
 #include <cstdio>
 #include <cstdlib>

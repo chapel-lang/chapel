@@ -21,6 +21,8 @@ record res {
 
 var globalRes = new res();
 
+// Multiple overloads of 'enterThis()' can exist, that just means that the
+// resource storage cannot be inferred.
 record man {
   var x = new r();
 
@@ -188,12 +190,3 @@ proc test14() {
 }
 test14(); writeln();
 
-// TODO: This will currently prefer const ref > value > ref. We need to
-// decide what the order should be (and the current order is almost certainly
-// bugged and should prefer value first).
-proc test15() {
-  writeln('T15: storage kind of resource omitted');
-  manage new man() as myResource do
-    myResource.doSomething();
-}
-test15(); writeln();

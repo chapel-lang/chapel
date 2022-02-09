@@ -304,7 +304,7 @@ BlockStmt* ForLoop::buildForeachLoop(Expr*      indices,
                                      BlockStmt* body,
                                      bool       zippered,
                                      bool       isForExpr)
-                                     
+
 {
   return doBuildForLoop(indices, iteratorExpr, body,
                         /* coforall */ false,

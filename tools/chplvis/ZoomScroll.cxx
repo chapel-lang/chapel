@@ -28,7 +28,7 @@ void ZoomScroll::resize (int new_x, int new_y, int new_w, int new_h)
     Fl_Scroll::resize(new_x,new_y,new_w,new_h);
     return;
   }
-  
+
   int dbv_x = zoomWidget->x();
   int dbv_y = zoomWidget->y();
   int dbv_w = zoomWidget->w();
@@ -73,7 +73,7 @@ void ZoomScroll::zoomIn(int zx, int zy)
 {
   // Do nothing if zoomWidget not set yet.
   if (!zoomWidget) return;
-  
+
   // Multiply size by 1.2, center of scroll to stay fixed.
   zoomWidget->resize((12*zoomWidget->x() - 2*(x() + w()/2))/10,
                   (12*zoomWidget->y() - 2*(y() + h()/2))/10,

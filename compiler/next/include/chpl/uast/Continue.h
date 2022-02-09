@@ -64,7 +64,7 @@ class Continue : public Expression {
     expressionMarkUniqueStringsInner(context);
   }
 
-  int8_t targetChildNum_; 
+  int8_t targetChildNum_;
 
  public:
 

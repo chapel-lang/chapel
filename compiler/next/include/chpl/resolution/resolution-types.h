@@ -1069,7 +1069,7 @@ class ResolvedFields {
 
  public:
   ResolvedFields() { }
- 
+
   void setType(const types::CompositeType* type) {
     type_ = type;
   }
