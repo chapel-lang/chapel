@@ -1656,11 +1656,10 @@ struct Converter {
       } else if (auto var = decl->toVariable()) {
         const bool useLinkageName = false;
         conv = convertVariable(var, useLinkageName);
-
       // It must be a tuple.
       } else {
         assert(decl->isTupleDecl());
-        conv = convertAST(decl);
+        conv = convertTupleDeclComponents(decl->toTupleDecl());
       }
 
       INT_ASSERT(conv);
