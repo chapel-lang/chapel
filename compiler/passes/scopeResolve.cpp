@@ -638,7 +638,7 @@ static void processImportExprs() {
       std::vector<BaseAST*> asts;
 
       // Collect *all* asts within this top-level module in text order
-      collect_asts(topLevelModule, asts);
+      collect_asts_preorder(topLevelModule, asts);
 
       std::stack<ResolveScope*> scopes;
       for_vector(BaseAST, item, asts) {

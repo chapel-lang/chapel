@@ -204,14 +204,17 @@ void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
     symbols.push_back(symbol);
 }
 
-void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
+void collect_asts_preorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
   asts.push_back(ast);
   AST_CHILDREN_CALL(ast, collect_asts, asts);
 }
 
-void collect_asts_postorder(BaseAST* ast, Vec<BaseAST*>& asts) {
-  AST_CHILDREN_CALL(ast, collect_asts_postorder, asts);
-  asts.add(ast);
+void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  collect_asts_preorder(ast, asts);
+}
+
+void collect_asts_unorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  collect_asts_preorder(ast, asts);
 }
 
 void collect_asts_postorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
