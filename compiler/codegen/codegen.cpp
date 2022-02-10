@@ -885,7 +885,7 @@ static void genUnwindSymbolTable(){
     std::vector<GenRet> table;
     table.reserve(symbols.size() * 2);
 
-    forv_Vec(FnSymbol, fn, symbols) {
+    for (FnSymbol* fn : symbols) {
       table.push_back(codegenStringForTable(fn->cname));
       table.push_back(codegenStringForTable(fn->name));
     }
@@ -908,7 +908,7 @@ static void genUnwindSymbolTable(){
     std::vector<GenRet> table;
     table.reserve(symbols.size() * 2);
 
-    forv_Vec(FnSymbol, fn, symbols) {
+    for (FnSymbol* fn : symbols) {
       int fileno = getFilenameLookupPosition(fn->fname());
       int lineno = fn->linenum();
 

@@ -919,7 +919,7 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   // Functions appearing the function pointer table are visible.
   // These are blocks that can be started through a forall, coforall,
   // or on statement.
-  forv_Vec(FnSymbol, fn, ftableVec)
+  for (FnSymbol* fn : ftableVec)
     pruneVisit(fn, fns, types);
 
   // Mark VFT entries as visible.
@@ -1182,7 +1182,7 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
       // of recursive iterator lowering seems to be too big of an obstacle
       // right now.
       //
-      forv_Vec(FnSymbol, fn, ftableVec) {
+      for (FnSymbol* fn : ftableVec) {
         addToUsedFnSymbols(fnSymbols, fn);
       }
     }

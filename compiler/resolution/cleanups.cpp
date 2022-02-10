@@ -83,7 +83,7 @@ static void removeUnusedFunctions() {
 
           collectDefExprs(fn, defExprs);
 
-          forv_Vec(DefExpr, def, defExprs) {
+          for (DefExpr* def : defExprs) {
             if (TypeSymbol* typeSym = toTypeSymbol(def->sym)) {
               Type* refType = typeSym->type->refType;
 

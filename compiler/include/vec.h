@@ -142,6 +142,13 @@ class Vec {
 // b) check for sites that actually use the expanding iteration nature
 // I'm leaving this in here since the migration process is ongoing
 #if 0
+
+template <typename N>
+struct is_vector { static const int value = 0; };
+
+template <typename N, typename A>
+struct is_vector<std::vector<N, A>> { static const int value = 1; };
+
 // Utility for watching when a vector changes size
 // requires c++17
 #include <cstdio>
@@ -152,7 +159,9 @@ template <typename V> struct VecIteratorWatcher {
   int line_;
   int begin_;
   VecIteratorWatcher(V& v, const char* var, const char* file, int line)
-      : v_(v), file_(file), var_(var), line_(line), begin_(v.size()) {}
+      : v_(v), file_(file), var_(var), line_(line), begin_(v.size()) {
+    static_assert(!is_vector<V>::value);
+  }
   ~VecIteratorWatcher() {
     // Check for increased size at end of iteration
     // Can also check != for something that shrank
@@ -209,6 +218,12 @@ template <typename V> struct VecIteratorWatcher {
          ((intptr_t)(qq__##_p) < (int)(_v).size()) && \
           ((_p = (_v).begin()[(intptr_t)qq__##_p]) || 1); \
          qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+
+#define for_alive_in_Vec(TYPE, VAR, VEC)                                       \
+  forv_Vec(TYPE, VAR, VEC) if (VAR->inTree())
+
+#define for_alive_in_expanding_Vec(TYPE, VAR, VEC)                             \
+  forv_expanding_Vec(TYPE, VAR, VEC) if (VAR->inTree())
 
 template <class C, int S = VEC_INTEGRAL_SIZE> class Accum { public:
   Vec<C,S> asset;
