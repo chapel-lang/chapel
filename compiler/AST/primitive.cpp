@@ -28,6 +28,8 @@
 #include "resolution.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 static QualifiedType
 returnInfoUnknown(CallExpr* call) {
   return QualifiedType(dtUnknown);
@@ -1122,6 +1124,7 @@ initPrimitive() {
   // Like the previous two but also always attempts to resolve the called fn
   prim_def(PRIM_CALL_AND_FN_RESOLVES, "call and fn resolves", returnInfoBool);
   prim_def(PRIM_METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves", returnInfoBool);
+  prim_def(PRIM_RESOLVES, "resolves", returnInfoBool);
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);

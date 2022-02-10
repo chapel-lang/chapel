@@ -119,7 +119,7 @@ class Conditional final : public Expression {
   ~Conditional() override = default;
 
   /**
-    Create and return a conditional. 
+    Create and return a conditional.
   */
   static owned<Conditional> build(Builder* builder, Location loc,
                                   owned<Expression> condition,

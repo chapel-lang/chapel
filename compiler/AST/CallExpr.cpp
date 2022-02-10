@@ -26,6 +26,7 @@
 #include "stringutil.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
 
 static void callExprHelper(CallExpr* call, BaseAST* arg);
 
@@ -246,8 +247,9 @@ void CallExpr::verify() {
   } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
     // Confirm that this is a partial call, but only if the call is not
     // within a DefExpr (indicated by not having a stmt-expr)
-    if (normalized && subCall->getStmtExpr() != NULL)
-      INT_ASSERT(subCall->partialTag == true);
+    if (!partOfNonNormalizableExpr(this))
+      if (normalized && subCall->getStmtExpr() != NULL)
+        INT_ASSERT(subCall->partialTag == true);
   }
 
   verifyNotOnList(baseExpr);

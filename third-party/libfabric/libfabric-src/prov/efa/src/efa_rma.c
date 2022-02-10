@@ -101,9 +101,10 @@ ssize_t efa_rma_post_read(struct efa_ep *ep, const struct fi_msg_rma *msg,
 		ibv_wr_set_ud_addr(qp->ibv_qp_ex, ep->self_ah,
 				   qp->qp_num, qp->qkey);
 	} else {
-		conn = ep->av->addr_to_conn(ep->av, msg->addr);
-		ibv_wr_set_ud_addr(qp->ibv_qp_ex, conn->ah.ibv_ah,
-				   conn->ep_addr.qpn, conn->ep_addr.qkey);
+		conn = efa_av_addr_to_conn(ep->av, msg->addr);
+		assert(conn && conn->ep_addr);
+		ibv_wr_set_ud_addr(qp->ibv_qp_ex, conn->ah->ibv_ah,
+				   conn->ep_addr->qpn, conn->ep_addr->qkey);
 	}
 
 	return ibv_wr_complete(qp->ibv_qp_ex);

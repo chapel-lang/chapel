@@ -459,11 +459,11 @@ module Math {
   }
 
   /* Returns the projection of `z` on a Riemann sphere. */
-  inline proc cproj(z: complex(?w)): real(w/2) {
+  inline proc cproj(z: complex(?w)): complex(w) {
     pragma "fn synchronization free"
-    extern proc cprojf(z: complex(64)): real(32);
+    extern proc cprojf(z: complex(64)): complex(64);
     pragma "fn synchronization free"
-    extern proc cproj(z: complex(128)): real(64);
+    extern proc cproj(z: complex(128)): complex(128);
     if w == 64 then
       return cprojf(z);
     else

@@ -23,6 +23,8 @@
 #include "passes.h"
 #include "resolution.h"
 
+#include "global-ast-vecs.h"
+
 bool intentsResolved = false;
 
 IntentTag constIntentForType(Type* t) {
@@ -309,7 +311,7 @@ void resolveArgIntent(ArgSymbol* arg) {
       // records/unions.
       bool addedTmp = (isRecord(arg->type) || isUnion(arg->type));
       FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
-      if (fn->hasFlag(FLAG_EXTERN)) 
+      if (fn->hasFlag(FLAG_EXTERN))
         // Q - should this check arg->type->symbol->hasFlag(FLAG_EXTERN)?
         addedTmp = false;
       // Pass wrappers used in libraries/interop by value.

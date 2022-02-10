@@ -73,6 +73,7 @@ void psmi_hal_register_instance(psmi_hal_instance_t *psm_hi)
 
 	REJECT_IMPROPER_HI(hfp_close_context);
 	REJECT_IMPROPER_HI(hfp_context_open);
+	REJECT_IMPROPER_HI(hfp_context_initstats);
 
 
 	REJECT_IMPROPER_HI(hfp_finalize_);

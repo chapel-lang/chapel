@@ -46,7 +46,7 @@ class ProfileBrowser : public SelectBrowser {
   void prepareData(whichData what);
 
   void showFileFor(int ix);
-  
+
 };
 
 

@@ -1,0 +1,1 @@
+rect-xor-eq.chpl:5: error: cannot invoke '^=' on a rectangular domain

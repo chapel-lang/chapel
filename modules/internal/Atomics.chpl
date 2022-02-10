@@ -208,6 +208,7 @@ module Atomics {
   // Parser hook
   pragma "no doc"
   proc chpl__atomicType(type T) type {
+    use ChplConfig;
     if CHPL_NETWORK_ATOMICS == "none" {
       return chpl__processorAtomicType(T);
     } else {

@@ -1,0 +1,8 @@
+feature request: Have pure, returning routines warn when result not used
+
+In this example, I temporarily forgot that '.strip()' doesn't modify
+the string directly, but returns a modified string and wasted some
+time before realizing my error.  Thinking about what the compiler
+could do to help with this, one idea would be to have routines that
+are side-effect-free generate warnings when their return values aren't
+used to avoid such confusion.

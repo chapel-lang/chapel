@@ -26,7 +26,7 @@
   case, elements are stored and considered in ascending order. For example,
   ``these`` will yield elements in ascending order.
 
-  All references to ``sortedSet`` elements are invalidated when the ``sortedSet`` is 
+  All references to ``sortedSet`` elements are invalidated when the ``sortedSet`` is
   cleared or deinitialized.
 
   ``sortedSet`` is not parallel safe by default, but can be made parallel safe
@@ -90,7 +90,7 @@ module SortedSet {
 
     /*
       Initialize this sortedSet with a copy of each of the elements contained in
-      the sortedSet `other`. This sortedSet will inherit the `parSafe` value of 
+      the sortedSet `other`. This sortedSet will inherit the `parSafe` value of
       the sortedSet `other`.
 
       :arg other: An sortedSet to initialize this sortedSet with.
@@ -99,7 +99,7 @@ module SortedSet {
       this.eltType = t;
       this.parSafe = other.parSafe;
       this.instance = new treap(this.eltType, this.parSafe,
-                                            other.instance.comparator); 
+                                            other.instance.comparator);
 
       this.complete();
 
@@ -265,7 +265,7 @@ module SortedSet {
         Modifying this sortedSet while iterating over it may invalidate the
         references returned by an iterator and is considered undefined
         behavior.
-      
+
       :yields: A constant reference to an element in this sortedSet.
     */
     iter const these() {
@@ -323,7 +323,7 @@ module SortedSet {
   */
 
   /*
-    Clear the contents of this sortedSet, then extend this now empty sortedSet 
+    Clear the contents of this sortedSet, then extend this now empty sortedSet
     with the elements contained in another sortedSet.
 
     .. warning::
@@ -332,7 +332,7 @@ module SortedSet {
       `lhs`.
 
     :arg lhs: The sortedSet to assign to.
-    :arg rhs: The sortedSet to assign from. 
+    :arg rhs: The sortedSet to assign from.
   */
   operator sortedSet.=(ref lhs: sortedSet(?t), rhs: sortedSet(t)) {
     lhs.clear();
@@ -468,7 +468,7 @@ module SortedSet {
   }
 
   /*
-    Assign to the sortedSet `lhs` the sortedSet that is the intersection of `lhs` 
+    Assign to the sortedSet `lhs` the sortedSet that is the intersection of `lhs`
     and `rhs`.
 
     .. warning::
@@ -483,7 +483,7 @@ module SortedSet {
                          const ref rhs: sortedSet(t, ?)) {
 
     // We can't remove things from lhs while iterating over it, so
-    // use a temporary. 
+    // use a temporary.
     var result = new sortedSet(t, (lhs.parSafe || rhs.parSafe),
                                 lhs.instance.comparator);
 

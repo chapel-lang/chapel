@@ -50,7 +50,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
 
   const int maxlargc = 15 + chpl_get_charset_env_nargs();
   char *largv[maxlargc];
-  
+
   sprintf(_nlbuf, "%d", numLocales);
 
   int largc = 15;

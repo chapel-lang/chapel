@@ -162,9 +162,10 @@ vrb_dgram_ep_senddata(struct fid_ep *ep_fid, const void *buf,
 	struct ibv_send_wr wr = {
 		.wr_id = VERBS_COMP(ep, (uintptr_t)context),
 		.opcode = IBV_WR_SEND_WITH_IMM,
-		.imm_data = htonl((uint32_t)data),
 		.send_flags = VERBS_INJECT(ep, len, desc),
 	};
+
+	wr.imm_data = htonl((uint32_t)data);
 
 	if (vrb_dgram_ep_set_addr(ep, dest_addr, &wr))
 		return -FI_ENOENT;
@@ -181,9 +182,10 @@ vrb_dgram_ep_injectdata(struct fid_ep *ep_fid, const void *buf, size_t len,
 	struct ibv_send_wr wr = {
 		.wr_id = VERBS_NO_COMP_FLAG,
 		.opcode = IBV_WR_SEND_WITH_IMM,
-		.imm_data = htonl((uint32_t)data),
 		.send_flags = IBV_SEND_INLINE,
 	};
+
+	wr.imm_data = htonl((uint32_t)data);
 
 	if (vrb_dgram_ep_set_addr(ep, dest_addr, &wr))
 		return -FI_ENOENT;

@@ -49,8 +49,8 @@ class DataView : public Fl_Box {
 
   public:
 
- DataView(int x, int y, int w, int h, const char *l=0) 
-   : Fl_Box(x, y, w, h, l) 
+ DataView(int x, int y, int w, int h, const char *l=0)
+   : Fl_Box(x, y, w, h, l)
       {
         numlocales = 1;
         curTagData = 0;
@@ -68,7 +68,7 @@ class DataView : public Fl_Box {
   virtual void setNumLocales (int n) = 0;
 
   virtual int  getNumLocales (void) { return numlocales; }
-  
+
 };
 
 #endif

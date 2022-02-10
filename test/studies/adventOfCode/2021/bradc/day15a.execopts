@@ -1,0 +1,3 @@
+< day15.test   # day15a-test.good
+# Takes minutes to run in my current solution w/ --fast, so disabling for now:
+# < day15.in

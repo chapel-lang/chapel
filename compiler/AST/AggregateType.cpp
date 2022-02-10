@@ -41,6 +41,8 @@
 #include "wellknown.h"
 #include "../next/lib/immediates/prim_data.h"
 
+#include "global-ast-vecs.h"
+
 #include <queue>
 
 AggregateType* dtObject = NULL;

@@ -44,6 +44,10 @@ void Scope::addBuiltin(UniqueString name) {
   declared_.emplace(name, ID());
 }
 
+IMPLEMENT_DUMP(BorrowedIdsWithName);
+IMPLEMENT_DUMP(Scope);
+IMPLEMENT_DUMP(PoiScope);
+IMPLEMENT_DUMP(InnermostMatch);
 
 } // end namespace resolution
 } // end namespace chpl

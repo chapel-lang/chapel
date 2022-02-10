@@ -175,6 +175,12 @@ class ID final {
   static bool update(chpl::ID& keep, chpl::ID& addin);
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond
+
+  std::string str() const;
 };
 
 // docs are turned off for this as a workaround for breathe errors

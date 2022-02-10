@@ -101,7 +101,6 @@ int smr_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 
 	smr_fabric = container_of(fabric, struct smr_fabric, util_fabric.fabric_fid);
 	fastlock_acquire(&smr_fabric->util_fabric.lock);
-	smr_domain->dom_idx = smr_fabric->dom_idx++;
 	smr_domain->fast_rma = smr_fast_rma_enabled(info->domain_attr->mr_mode,
 						    info->tx_attr->msg_order);
 	fastlock_release(&smr_fabric->util_fabric.lock);

@@ -1,0 +1,26 @@
+9C0141080250320F1802104A08
+1 0 0 1 1 1 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 0 0 0 0 0 0 1 1 0 0 1 0 0 0 0 0 1 1 1 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 1 0 0 1 0 1 0 0 0 0 0 1 0 0 0
+version = 4
+packet type = 7
+totBitLength = 80
+version = 2
+packet type = 0
+numSubPackets = 2
+version = 2
+packet type = 4
+Value = 1
+version = 4
+packet type = 4
+Value = 3
+subPackets: 1 3
+version = 6
+packet type = 1
+numSubPackets = 2
+version = 0
+packet type = 4
+Value = 2
+version = 2
+packet type = 4
+Value = 2
+subPackets: 2 2
+Final result = 1

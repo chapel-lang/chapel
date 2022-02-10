@@ -72,7 +72,7 @@ class Coforall final : public IndexableLoop {
   ~Coforall() override = default;
 
   /**
-    Create and return a coforall loop. 
+    Create and return a coforall loop.
   */
   static owned<Coforall> build(Builder* builder, Location loc,
                                owned<Decl> index,

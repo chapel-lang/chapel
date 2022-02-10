@@ -1,0 +1,28 @@
+620080001611562C8802118E34
+0 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 0 1 0 1 1 0 0 0 1 0 1 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 1 0 0 0 1 1 1 0 0 0 1 1 0 1 0 0
+version = 3
+packet type = 0
+numSubPackets = 2
+sub-packet 0
+version = 0
+packet type = 0
+totBitLength = 22
+version = 0
+packet type = 4
+Value = 10
+version = 5
+packet type = 4
+Value = 11
+sub-packet 1
+version = 1
+packet type = 0
+numSubPackets = 2
+sub-packet 0
+version = 0
+packet type = 4
+Value = 12
+sub-packet 1
+version = 3
+packet type = 4
+Value = 13
+VERSION SUM: 12

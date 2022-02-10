@@ -250,9 +250,9 @@ class ExpmPadeHelper {
   var useExactOneNorm : bool;
   // Boolean arrays to know if A, Exactd, Approxd
   // have been computed.
-  var isAComputed : ["A2", "A4", "A6", "A8", "A10"] bool;
-  var isExactdComputed : ["A4", "A6", "A8", "A10"] bool;
-  var isApproxdComputed : ["A4", "A6", "A8", "A10"] bool;
+  var isAComputed : [{"A2", "A4", "A6", "A8", "A10"}] bool;
+  var isExactdComputed : [{"A4", "A6", "A8", "A10"}] bool;
+  var isApproxdComputed : [{"A4", "A6", "A8", "A10"}] bool;
 
   /*
     :arg A: Expects an N*N square matrix.
@@ -894,7 +894,7 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
              else {Adom.dim(0)};
 
   var Y: [Ydom] eltType;
-  
+
   if chpl__isArrayView(X) {
     var temp = X;
     BLAS.gemv(A, temp, Y, 1:eltType, 0:eltType, opA=op);

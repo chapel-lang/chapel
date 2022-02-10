@@ -1,0 +1,1 @@
+subprocess-send_signal.chpl:6: warning: 'send_signal' is deprecated, please use 'sendPosixSignal' instead

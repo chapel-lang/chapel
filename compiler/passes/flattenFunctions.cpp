@@ -28,6 +28,8 @@
 #include "stmt.h"
 #include "stlUtil.h"
 
+#include "global-ast-vecs.h"
+
 static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions);
 
 void flattenFunctions() {

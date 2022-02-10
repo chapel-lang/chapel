@@ -62,7 +62,6 @@ static int smr_av_insert(struct fid_av *av_fid, const void *addr, size_t count,
 	struct smr_av *smr_av;
 	struct smr_ep *smr_ep;
 	struct dlist_entry *av_entry;
-	const char *ep_name;
 	fi_addr_t util_addr;
 	int64_t shm_id = -1;
 	int i, ret;
@@ -73,17 +72,19 @@ static int smr_av_insert(struct fid_av *av_fid, const void *addr, size_t count,
 
 	for (i = 0; i < count; i++, addr = (char *) addr + strlen(addr) + 1) {
 		if (smr_av->used < SMR_MAX_PEERS) {
-			ep_name = smr_no_prefix(addr);
+			util_addr = FI_ADDR_NOTAVAIL;
 			ret = smr_map_add(&smr_prov, smr_av->smr_map,
-					  ep_name, &shm_id);
-			if (!ret)
+					  addr, &shm_id);
+			if (!ret) {
+				fastlock_acquire(&util_av->lock);
 				ret = ofi_av_insert_addr(util_av, &shm_id,
 							 &util_addr);
+				fastlock_release(&util_av->lock);
+			}
 		} else {
 			FI_WARN(&smr_prov, FI_LOG_AV,
 				"AV insert failed. The maximum number of AV "
 				"entries shm supported has been reached.\n");
-			util_addr = FI_ADDR_NOTAVAIL;
 			ret = -FI_ENOMEM;
 		}
 
@@ -159,21 +160,19 @@ static int smr_av_lookup(struct fid_av *av, fi_addr_t fi_addr, void *addr,
 {
 	struct util_av *util_av;
 	struct smr_av *smr_av;
-	struct smr_region *peer_smr;
 	int64_t id;
+	char *name;
 
 	util_av = container_of(av, struct util_av, av_fid);
 	smr_av = container_of(util_av, struct smr_av, util_av);
 
 	id = smr_addr_lookup(util_av, fi_addr);
-	peer_smr = smr_map_get(smr_av->smr_map, id);
+	name = smr_av->smr_map->peers[id].peer.name;
 
-	if (!peer_smr)
-		return -FI_ENODATA;
+	strncpy((char *) addr, name, *addrlen);
 
-	strncpy((char *)addr, smr_name(peer_smr), *addrlen);
-	((char *) addr)[MIN(*addrlen - 1, strlen(smr_name(peer_smr)))] = '\0';
-	*addrlen = strlen(smr_name(peer_smr) + 1);
+	((char *) addr)[MIN(*addrlen - 1, strlen(name))] = '\0';
+	*addrlen = strlen(name) + 1;
 	return 0;
 }
 

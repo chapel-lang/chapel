@@ -64,6 +64,11 @@
 #include <infiniband/verbs.h>
 #ifdef RNDV_MOD
 #include <psm_rndv_mod.h>
+#define IBV_ACCESS_RDMA IBV_ACCESS_KERNEL
+#else
+#define IBV_ACCESS_RDMA 0
+// pick a flag value unused by verbs.h
+#define IBV_ACCESS_IS_GPU_ADDR 0x10000000
 #endif
 
 #define MR_CACHE_MODE_NONE 0	// user space MRs, but no caching
@@ -73,7 +78,7 @@
 #define MR_CACHE_MODE_VALID(mode) ((unsigned)(mode) <= 3)
 
 // This performs memory registration for RDMA Rendezvous when PSM3_RDMA enabled
-// Priority registration calls ere those immediately before the data transfer
+// Priority registration calls are those immediately before the data transfer
 // hence delaying their registration directly delays IOs.
 // Non-priority calls are those registering the whole IO
 // prior to sending/receiving the CTS.  Delays in non-priority
@@ -92,6 +97,15 @@
 // track current inuse entries and only allow non-priority registrations when
 // we have a reasonable amount of headroom.  This way most priority
 // registrations will succeed.
+//
+// access indicates the purpose and permissions for the MR
+// IBV_ACCESS_RDMA - send RDMA
+// IBV_ACCESS_RDMA|IBV_ACCESS_REMOTE_WRITE - recv RDMA
+// 0 - send DMA
+// | IBV_ACCESS_IS_GPU_ADDR - GPU variation of any of the above 3
+// When using RV kernel QPs, IBV_ACCESS_RDMA (== IBV_ACCESS_KERNEL) is passed
+// to RV.  Otherwise, it's is omitted and a user space accessible MR is created.
+// When using only user space QPs, we allow send RDMA and send DMA to share MRs.
 
 // the pointer to psm2_verbs_mr itself is the handle for subsequenent release
 struct psm2_verbs_mr {
@@ -119,7 +133,7 @@ struct psm2_verbs_mr {
 	// also addr is used in callers to translate remote addr returned in CTS
 	void *addr;
 	uint64_t length;
-	uint8_t access;
+	uint32_t access;
 	// below is for queue of cache entries available for reuse (refcount==0)
 	// only used when cache_mode==1
 	TAILQ_ENTRY(psm2_verbs_mr) next;
@@ -132,18 +146,37 @@ typedef struct psm2_mr_cache *psm2_mr_cache_t;
 
 extern psm2_mr_cache_t psm2_verbs_alloc_mr_cache(psm2_ep_t ep,
 				uint32_t num_entries, uint8_t cache_mode,
-				uint32_t pri_entries, uint64_t pri_size);
-// pick a flag value unused by verbs.h
-#define IBV_ACCESS_IS_GPU_ADDR 0x10000000
+				uint32_t pri_entries, uint64_t pri_size
+#ifdef PSM_CUDA
+				, uint64_t gpu_pri_size
+#endif
+				);
+extern int psm2_verbs_mr_cache_allows_user_mr(psm2_mr_cache_t cache);
+
+#ifdef PSM_CUDA
+extern int64_t psm2_verbs_evict_some(psm2_ep_t ep, uint64_t length, int access);
+#endif
+
 // pd can be the verbs_ep.pd or NULL to use the RV module's kernel pd
 extern psm2_verbs_mr_t psm2_verbs_reg_mr(psm2_mr_cache_t cache,
 				bool priority, struct ibv_pd *pd,
 				void *addr, uint64_t length, int access);
 static inline psm2_verbs_mr_t psm2_verbs_ref_mr(psm2_verbs_mr_t mr) {
 	mr->refcount++;
+	_HFI_MMDBG("cache hit MR addr %p len %"PRIu64" access 0x%x ref %d ptr %p\n",
+		mr->addr, mr->length, mr->access, mr->refcount, mr);
 	return mr;
 }
 extern int psm2_verbs_release_mr(psm2_verbs_mr_t mrc);
+#ifdef RNDV_MOD
+// can the given MR be used for user space send DMA
+static inline int psm2_verbs_user_space_mr(struct psm2_verbs_mr *mrc)
+{
+	psmi_assert(mrc);
+	psmi_assert(mrc->refcount);
+	return ! (mrc->access & IBV_ACCESS_KERNEL);
+}
+#endif
 extern void psm2_verbs_free_mr_cache(psm2_mr_cache_t cache);
 void ips_tid_mravail_callback(struct ips_proto *proto);
 

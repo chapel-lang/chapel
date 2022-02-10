@@ -58,7 +58,7 @@ namespace chapel {
     for (int i = 0; i < descriptor_->field_count(); i++) {
       const FieldDescriptor* fieldDescriptor = descriptor_->field(i);
       FieldGeneratorBase* field_obj;
-      
+
       vars[i]["field_name"] = GetFieldName(fieldDescriptor);
       vars[i]["field_number"] = std::to_string(fieldDescriptor->number());
       vars[i]["type_name"] = field_obj->type_name(fieldDescriptor);

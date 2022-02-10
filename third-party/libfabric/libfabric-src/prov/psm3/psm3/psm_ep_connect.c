@@ -130,7 +130,9 @@ __psm2_ep_connect(psm2_ep_t ep, int num_of_epid, psm2_epid_t const *array_of_epi
 			array_of_errors[j] = PSM2_EPID_UNKNOWN;
 			array_of_epaddr[j] = NULL;
 			if (psmi_epid_version(array_of_epid[j]) !=
-						 PSMI_EPID_VERSION) {
+						 PSMI_EPID_VERSION
+				&& psmi_epid_version(array_of_epid[j]) !=
+					psmi_epid_version(ep->epid)) {
 					psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
 					  " Mismatched version of EPID - %"PRIu64"\n"
 					  "Confirm all nodes are running the same interconnect HW and PSM version\n",
@@ -479,8 +481,8 @@ psm2_error_t __psm2_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
 		}
 		t_left = psmi_cycles_left(t_start, timeout);
 
-		if (_HFI_VDBG_ON) {
-			_HFI_VDBG_ALWAYS
+		if (_HFI_CONNDBG_ON) {
+			_HFI_CONNDBG_ALWAYS
 				("Trying to disconnect with device %s\n",
 				psmi_getdevice(ep->devid_enabled[i]));
 		}
@@ -595,8 +597,8 @@ disconnect_fail:
 				    snprintf(errbuf + len,
 					     sizeof(errbuf) - len - 1, "%c %s",
 					     j == 0 ? ':' : ',',
-					     psmi_epaddr_get_hostname
-					     (array_of_epaddr[i]->epid));
+					     array_of_epaddr[i]?psmi_epaddr_get_hostname
+					     (array_of_epaddr[i]->epid):"Unknown");
 				j++;
 			}
 		}

@@ -7,6 +7,7 @@ use neighbor;
 public use StencilDist;
 public use BlockDist;
 private use IO;
+use ChplConfig;
 
 // used in testing system
 config param printOriginal = false;

@@ -25,12 +25,13 @@
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
-#include "forallOptimizations.h"
+#include "preFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
@@ -42,6 +43,8 @@
 #include "version.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -525,10 +528,31 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 
       INT_ASSERT(moveIntoTemp);
 
+      // These used to be set in either branch, but for now are only set in
+      // one. Declare them here because the code that uses them to fold
+      // is at this scope.
       bool isAnyRefOverloadPresent = false;
       bool isConstnessUncertain = false;
       bool isCertainlyConstRef = false;
 
+      //
+      // Note that a ContextCall is created if a call resolves to multiple
+      // overloads of a routine that differ only by return intent. If so,
+      // then we carry the candidates around in a ContextCall until
+      // later passes (e.g. constness propagation, cull-over-references)
+      // allow us to decide which candidate to select.
+      //
+      // When a managed resource is inferred, the presence of a ContextCall
+      // indicates an error, because for code like:
+      //
+      //    manage man as res do ...;
+      //
+      // It means that multiple candidates were found for 'man.enterThis()'.
+      // We currently don't specify a disambiguation order in this case,
+      // which means we have no way to determine the storage of 'res'.
+      //
+      // Emit a helpful error instead.
+      //
       if (ContextCallExpr* cc = toContextCallExpr(moveIntoTemp->get(2))) {
         CallExpr* refCall = nullptr;
         CallExpr* valueCall = nullptr;
@@ -536,33 +560,58 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 
         cc->getCalls(refCall, valueCall, constRefCall);
 
-        isAnyRefOverloadPresent = (constRefCall || refCall);
-        isConstnessUncertain = (constRefCall && refCall);
-        isCertainlyConstRef = (constRefCall && !refCall);
+        // We note extra overloads in order from ref -> const ref -> value.
+        CallExpr* call = refCall ? refCall : constRefCall;
+        INT_ASSERT(call);
 
-        // Replace or remove the CC entirely if a ref option is present.
-        if (isAnyRefOverloadPresent && valueCall) {
-          if (refCall && constRefCall) {
-            auto swp = new ContextCallExpr();
+        // Grab one of the resolved functions so we can use its name.
+        auto anyResolved = call->resolvedFunction();
+        INT_ASSERT(anyResolved);
+        INT_ASSERT(anyResolved->isMethod());
 
-            refCall->remove();
-            constRefCall->remove();
-            swp->setRefValueConstRefOptions(refCall, nullptr, constRefCall);
-            cc->replace(swp);
+        // TODO: What about if receiver is a primitive type?
+        auto at = anyResolved->getReceiverType();
+        INT_ASSERT(at);
 
-          // If there is only one ref option, replace the CC with it.
-          } else {
-            CallExpr* callToUse = refCall ? refCall : constRefCall;
-            INT_ASSERT(callToUse);
+        USR_FATAL_CONT(lhs, "cannot determine storage for '%s' due to "
+                            "multiple return intents for '%s.%s()'",
+                            lhs->name,
+                            at->symbol->name,
+                            anyResolved->name);
 
-            if (callToUse == constRefCall) rhs->addFlag(FLAG_CONST);
+        // Hint that users can specify storage to fix this error.
+        const char* retDesc = retTagDescrString(anyResolved->retTag);
+        USR_PRINT(lhs, "specify an explicit storage (e.g., '%s') "
+                       "to disambiguate",
+                       retDesc);
 
-            callToUse->remove();
-            cc->replace(callToUse);
+        // TODO: Globalize + clear me at pass end?
+        static std::set<AggregateType*> onceForEachAggregate;
+
+        // Also hint that users can remove the extra overloads, but only
+        // display this hint once per type to avoid verbosity.
+        if (onceForEachAggregate.insert(at).second) {
+
+          while (call) {
+            if (auto fn = call->resolvedFunction()) {
+              const char* retDesc = retTagDescrString(fn->retTag);
+              USR_PRINT(fn, "return by '%s' defined here", retDesc);
+            }
+
+            // Cycle to the next overload.
+            if (call == refCall) {
+              call = constRefCall;
+            } else if (call == constRefCall) {
+              call = valueCall;
+            } else {
+              call = nullptr;
+            }
           }
         }
 
-      // There is no context call, so we can respect the RHS call.
+      // There is no context call, so we can respect the RHS call. In this
+      // case multiple overloads either do not exist, or if they do there
+      // is no ambiguity at the callsite.
       } else {
         auto enterThisCall = toCallExpr(moveIntoTemp->get(2));
 
@@ -584,6 +633,10 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 
         lhs->addFlag(FLAG_REF_VAR);
 
+        // This should not currently be possible, but could be if we allow
+        // inference, and both 'ref' and 'const ref' overloads exist. In
+        // which case this flag indicates to make a selection after
+        // constness propagation has occurred.
         if (isConstnessUncertain) {
           lhs->addFlag(FLAG_REF_IF_MODIFIED);
           INT_ASSERT(!isCertainlyConstRef);
@@ -1884,6 +1937,93 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_RESOLVES: {
+    if (call->id == breakOnResolveID) gdbShouldBreakHere();
+
+    // This primitive should only have one actual.
+    INT_ASSERT(call && call->numActuals() == 1);
+
+    auto exprToResolve = call->get(1);
+
+    // TODO: To resolve an arbitrary expression (e.g. the UnresolvedSymExpr
+    // for 'foo'), we need a way to back out of resolving any expression
+    // without emitting errors. We'd also need to interact with
+    // scopeResolve as well. This might be easier to do in a new
+    // compiler world.
+    if (!isCallExpr(exprToResolve)) {
+      INT_FATAL("PRIM_RESOLVES can only resolve CallExpr for now");
+    }
+
+    // Insert a temporary block into the AST to use as a workspace.
+    auto tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
+    call->getStmtExpr()->insertAfter(tmpBlock);
+
+    // Remove the expression to resolve and insert it into the block.
+    exprToResolve->remove();
+    tmpBlock->insertAtTail(exprToResolve);
+
+    // Resolution depends on normalized AST (and the expression is not).
+    normalize(tmpBlock);
+
+    bool didResolveExpr = true;
+
+    // Now that the block is normalized, we need to do a postorder traversal
+    // and resolve sub-expressions in a manner similar to normal resolution.
+    // However, calls should use 'tryResolveCall' so that we can back out
+    // if a particular call should fail to resolve.
+    for_exprs_postorder(expr, tmpBlock) {
+      CallExpr* call = toCallExpr(expr);
+
+      // Start by prefolding all calls (e.g. to eliminate partial calls).
+      expr = call && !isContextCallExpr(expr) ? preFold(call) : expr;
+      INT_ASSERT(expr);
+      call = toCallExpr(expr);
+
+      // Go ahead and skip over context calls right away.
+      if (isContextCallExpr(expr)) continue;
+
+      if (call && !call->isPrimitive()) {
+
+        // Partial calls will not be resolved in the current iteration.
+        const bool isPartialCall = call->partialTag;
+
+        // TODO: Might want to set this later, not sure yet.
+        const bool doResolveCalledFns = false;
+
+        FnSymbol* resolvedFn = tryResolveCall(call, doResolveCalledFns);
+
+        if (!resolvedFn && !isPartialCall) {
+          didResolveExpr = false;
+          break;
+        } else {
+
+          // Go ahead and eagerly resolve field accessors.
+          if (resolvedFn && !resolvedFn->isResolved()) {
+            if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)) {
+              resolveFunction(resolvedFn);
+            }
+          }
+        }
+
+      // TODO: Ways to keep type checking from issuing errors? E.g. we could
+      // have code here to handle PRIM_MOVE setting the type of the LHS.
+      } else {
+        expr = resolveExpr(expr);
+        INT_ASSERT(expr);
+      }
+    }
+
+    // We're done with the block, so remove it.
+    tmpBlock->remove();
+
+    // The output is a 'true' or 'false' expression.
+    auto output = didResolveExpr ? new SymExpr(gTrue) : new SymExpr(gFalse);
+
+    call->replace(output);
+    retval = output;
+
+  } break;
+
   case PRIM_STEAL: {
     SymExpr* se = toSymExpr(call->get(1));
     if (Symbol* sym = se->symbol())
@@ -2244,7 +2384,7 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (Expr* expr = resolveTupleIndexing(call, base->symbol())) {
           retval = expr;  // call was replaced by expr
         }
-      } else if (call->numActuals() == 2 && 
+      } else if (call->numActuals() == 2 &&
                  isResultOfTargetLocalesCall(sym)) {
         USR_WARN(call, "'targetLocales' method on arrays, domains, and distributions is now paren-less; please invoke it without parentheses");
         retval = new SymExpr(sym);

@@ -258,6 +258,7 @@ int DEFAULT_SYMVER_PRE(fi_param_get)(struct fi_provider *provider,
 {
 	struct fi_param_entry *param;
 	char *str_value;
+	int parsed_boolean;
 	int ret = FI_SUCCESS;
 
 	if (!provider)
@@ -294,11 +295,17 @@ int DEFAULT_SYMVER_PRE(fi_param_get)(struct fi_provider *provider,
 			"read int var %s=%d\n", param_name, *(int *) value);
 		break;
 	case FI_PARAM_BOOL:
-		* ((int *) value) = fi_parse_bool(str_value);
+		parsed_boolean = fi_parse_bool(str_value);
+		if (parsed_boolean == -1) {
+			ret = -FI_EINVAL;
+			FI_WARN(provider, FI_LOG_CORE,
+					"failed to parse bool var %s=%s\n", param_name, str_value);
+			break;
+		}
+
+		* ((int *) value) = parsed_boolean;
 		FI_INFO(provider, FI_LOG_CORE,
 			"read bool var %s=%d\n", param_name, *(int *) value);
-		if (*(int *) value == -1)
-			ret = -FI_EINVAL;
 		break;
 	case FI_PARAM_SIZE_T:
 		* ((size_t *) value) = strtol(str_value, NULL, 0);

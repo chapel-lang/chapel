@@ -63,12 +63,15 @@ target_sources(libchplcomp-obj
                Identifier.cpp
                ImagLiteral.cpp
                Import.cpp
+               Include.cpp
                IndexableLoop.cpp
                IntLiteral.cpp
                Label.cpp
+               Let.cpp
                Literal.cpp
                Local.cpp
                Loop.cpp
+               Manage.cpp
                Module.cpp
                MultiDecl.cpp
                NamedDecl.cpp

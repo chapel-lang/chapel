@@ -35,7 +35,7 @@ Formal::build(Builder* builder, Location loc, owned<Attributes> attributes,
   int attributesChildNum = -1;
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;
-  
+
   if (attributes.get() != nullptr) {
     attributesChildNum = lst.size();
     lst.push_back(std::move(attributes));

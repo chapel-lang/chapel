@@ -28,7 +28,7 @@ namespace uast {
 owned<Enum> Enum::build(Builder* builder, Location loc,
                         owned<Attributes> attributes,
                         Decl::Visibility vis,
-                        UniqueString name, 
+                        UniqueString name,
                         ASTList stmts) {
   ASTList lst;
   int attributesChildNum = -1;
@@ -46,7 +46,7 @@ owned<Enum> Enum::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
- 
+
 
 } // namespace uast
 } // namespace chpl

@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -134,7 +134,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   elements. The user must manually refresh these caches after writes by calling
   the ``updateFluff`` method. Otherwise, reading and writing array elements
   behaves the same as a Block-distributed array.
-  
+
   The indices are partitioned in the same way as the :mod:`Block <BlockDist>`
   distribution.
 
@@ -181,11 +181,11 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   The ``periodic`` functionality is disabled by default.
 
   .. note::
-  
+
      Note that this domain does not currently handle indices outside of
      the expanded bounding box, so a user must manually wrap periodic indices
      themselves.
-  
+
   Iterating directly over a Stencil-distributed domain or array will only yield
   indices and elements within the ``boundingBox``.
 
@@ -1086,7 +1086,7 @@ proc StencilDom.dsiMember(i) {
   return wholeFluff.contains(i);
 }
 
-proc StencilDom.dsiIndexOrder(i) {
+override proc StencilDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 

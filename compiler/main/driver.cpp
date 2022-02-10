@@ -301,6 +301,7 @@ bool fPrintChplSettings = false;
 
 bool fCompilerLibraryParser = false;
 bool fDebugTrace = false;
+size_t fBreakOnQueryHash = 0;
 
 int fGPUBlockSize = 0;
 char fCUDAArch[16] = "sm_60";
@@ -949,6 +950,7 @@ Flag types:
   + = increment
   T = toggle
   L = int64 (long)
+  U = unsigned long
   N = --no-... flag, --no version sets to false
   n = --no-... flag, --no version sets to true
 
@@ -1200,6 +1202,8 @@ static ArgumentDescription arg_desc[] = {
 
  {"compiler-library-parser", ' ', NULL, "Enable [disable] using compiler library parser", "N", &fCompilerLibraryParser, "CHPL_COMPILER_LIBRARY_PARSER", NULL},
  {"debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using compiler library parser", "N", &fDebugTrace, "CHPL_DEBUG_TRACE", NULL},
+ {"break-on-query-hash", ' ' , NULL, "Break when query with given hash value is executed when using compiler library parser", "U", &fBreakOnQueryHash, "CHPL_BREAK_ON_QUERY_HASH", NULL},
+
 
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
@@ -1787,13 +1791,15 @@ int main(int argc, char* argv[]) {
 
     process_args(&sArgState, argc, argv);
 
-    if (gContext != nullptr) {
-      gContext->setDebugTraceFlag(fDebugTrace);
-    }
-
     setupChplGlobals(argv[0]);
 
     postprocess_args();
+
+    if (gContext != nullptr) {
+      gContext->setDebugTraceFlag(fDebugTrace);
+      if (fBreakOnQueryHash != 0)
+        gContext->setBreakOnHash(fBreakOnQueryHash);
+    }
 
     initCompilerGlobals(); // must follow argument parsing
 

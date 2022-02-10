@@ -65,7 +65,7 @@ class Yield final : public Expression {
   ~Yield() override = default;
 
   /**
-    Create and return a yield statement. The value formal cannot be nullptr. 
+    Create and return a yield statement. The value formal cannot be nullptr.
   */
   static owned<Yield> build(Builder* builder, Location loc,
                             owned<Expression> value);

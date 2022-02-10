@@ -176,7 +176,7 @@ static void test2(Parser* parser) {
     assert(visClause->limitation(0)->toIdentifier()->name() == "Y");
     assert(visClause->limitation(1)->isIdentifier());
     assert(visClause->limitation(1)->toIdentifier()->name() == "Z");
-  
+
     // Make sure the limitations iterator works as expected.
     {
       int count = 0;
@@ -234,7 +234,8 @@ static void test4(Parser* parser) {
   const As* as = vc->limitation(0)->toAs();
   assert(as->symbol()->isIdentifier());
   assert(as->symbol()->toIdentifier()->name() == "Y");
-  assert(as->rename()->name() == "Z");
+  assert(as->rename()->isIdentifier());
+  assert(as->rename()->toIdentifier()->name() == "Z");
 }
 
 static void test5(Parser* parser) {

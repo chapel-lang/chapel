@@ -6,7 +6,7 @@
   different sizes of task/on bundles, this test ensures that they
   work as expected with a variety of sizes.
 */
-
+use ChplConfig;
 
 config const niters = if CHPL_COMM == "none" then 1000 else 10;
 config const ncoforall = 100;

@@ -81,6 +81,7 @@ static void test1() {
   printf("test1\n");
   Context ctx;
   Context* context = &ctx;
+  Context* c = context;
 
   QualifiedType int0(QualifiedType::VAR, IntType::get(context, 0));
   QualifiedType int8(QualifiedType::VAR, IntType::get(context, 8));
@@ -90,43 +91,44 @@ static void test1() {
   QualifiedType real0(QualifiedType::VAR, RealType::get(context, 0));
 
   CanPassResult r;
-  r = canPass(int0, int0); assert(passesAsIs(r));
-  r = canPass(int8, int8); assert(passesAsIs(r));
-  r = canPass(int16, int16); assert(passesAsIs(r));
-  r = canPass(int32, int32); assert(passesAsIs(r));
-  r = canPass(int64, int64); assert(passesAsIs(r));
-  r = canPass(int0, int64); assert(passesAsIs(r));
+  r = canPass(c, int0, int0); assert(passesAsIs(r));
+  r = canPass(c, int8, int8); assert(passesAsIs(r));
+  r = canPass(c, int16, int16); assert(passesAsIs(r));
+  r = canPass(c, int32, int32); assert(passesAsIs(r));
+  r = canPass(c, int64, int64); assert(passesAsIs(r));
+  r = canPass(c, int0, int64); assert(passesAsIs(r));
 
-  r = canPass(int8, int0); assert(passesNumeric(r));
-  r = canPass(int8, int16); assert(passesNumeric(r));
-  r = canPass(int8, int32); assert(passesNumeric(r));
-  r = canPass(int8, int64); assert(passesNumeric(r));
+  r = canPass(c, int8, int0); assert(passesNumeric(r));
+  r = canPass(c, int8, int16); assert(passesNumeric(r));
+  r = canPass(c, int8, int32); assert(passesNumeric(r));
+  r = canPass(c, int8, int64); assert(passesNumeric(r));
 
-  r = canPass(int16, int0); assert(passesNumeric(r));
-  r = canPass(int16, int8); assert(doesNotPass(r));
-  r = canPass(int16, int32); assert(passesNumeric(r));
-  r = canPass(int16, int64); assert(passesNumeric(r));
+  r = canPass(c, int16, int0); assert(passesNumeric(r));
+  r = canPass(c, int16, int8); assert(doesNotPass(r));
+  r = canPass(c, int16, int32); assert(passesNumeric(r));
+  r = canPass(c, int16, int64); assert(passesNumeric(r));
 
-  r = canPass(int32, int0); assert(passesNumeric(r));
-  r = canPass(int32, int8); assert(doesNotPass(r));
-  r = canPass(int32, int16); assert(doesNotPass(r));
-  r = canPass(int32, int64); assert(passesNumeric(r));
+  r = canPass(c, int32, int0); assert(passesNumeric(r));
+  r = canPass(c, int32, int8); assert(doesNotPass(r));
+  r = canPass(c, int32, int16); assert(doesNotPass(r));
+  r = canPass(c, int32, int64); assert(passesNumeric(r));
 
-  r = canPass(int64, int0); assert(passesAsIs(r));
-  r = canPass(int64, int8); assert(doesNotPass(r));
-  r = canPass(int64, int16); assert(doesNotPass(r));
-  r = canPass(int64, int32); assert(doesNotPass(r));
+  r = canPass(c, int64, int0); assert(passesAsIs(r));
+  r = canPass(c, int64, int8); assert(doesNotPass(r));
+  r = canPass(c, int64, int16); assert(doesNotPass(r));
+  r = canPass(c, int64, int32); assert(doesNotPass(r));
 
-  r = canPass(int0, int8); assert(doesNotPass(r));
-  r = canPass(int0, int16); assert(doesNotPass(r));
-  r = canPass(int0, int32); assert(doesNotPass(r));
-  r = canPass(int0, int64); assert(passesAsIs(r));
+  r = canPass(c, int0, int8); assert(doesNotPass(r));
+  r = canPass(c, int0, int16); assert(doesNotPass(r));
+  r = canPass(c, int0, int32); assert(doesNotPass(r));
+  r = canPass(c, int0, int64); assert(passesAsIs(r));
 }
 
 static void test2() {
   printf("test2\n");
   Context ctx;
   Context* context = &ctx;
+  Context* c = context;
 
   QualifiedType int0(QualifiedType::VAR, IntType::get(context, 0));
   QualifiedType int8(QualifiedType::VAR, IntType::get(context, 8));
@@ -136,17 +138,18 @@ static void test2() {
   QualifiedType real0(QualifiedType::VAR, RealType::get(context, 0));
 
   CanPassResult r;
-  r = canPass(int0, real0); assert(passesNumeric(r));
-  r = canPass(int8, real0); assert(passesNumeric(r));
-  r = canPass(int16, real0); assert(passesNumeric(r));
-  r = canPass(int32, real0); assert(passesNumeric(r));
-  r = canPass(int64, real0); assert(passesNumeric(r));
+  r = canPass(c, int0, real0); assert(passesNumeric(r));
+  r = canPass(c, int8, real0); assert(passesNumeric(r));
+  r = canPass(c, int16, real0); assert(passesNumeric(r));
+  r = canPass(c, int32, real0); assert(passesNumeric(r));
+  r = canPass(c, int64, real0); assert(passesNumeric(r));
 }
 
 static void test3() {
   printf("test3\n");
   Context ctx;
   Context* context = &ctx;
+  Context* c = context;
 
   QualifiedType bool0(QualifiedType::VAR, BoolType::get(context, 0));
   QualifiedType bool8(QualifiedType::VAR, BoolType::get(context, 8));
@@ -155,42 +158,43 @@ static void test3() {
   QualifiedType bool64(QualifiedType::VAR, BoolType::get(context, 64));
 
   CanPassResult r;
-  r = canPass(bool0, bool0); assert(passesAsIs(r));
-  r = canPass(bool8, bool8); assert(passesAsIs(r));
-  r = canPass(bool16, bool16); assert(passesAsIs(r));
-  r = canPass(bool32, bool32); assert(passesAsIs(r));
-  r = canPass(bool64, bool64); assert(passesAsIs(r));
+  r = canPass(c, bool0, bool0); assert(passesAsIs(r));
+  r = canPass(c, bool8, bool8); assert(passesAsIs(r));
+  r = canPass(c, bool16, bool16); assert(passesAsIs(r));
+  r = canPass(c, bool32, bool32); assert(passesAsIs(r));
+  r = canPass(c, bool64, bool64); assert(passesAsIs(r));
 
-  r = canPass(bool0, bool8); assert(passesNumeric(r));
-  r = canPass(bool0, bool16); assert(passesNumeric(r));
-  r = canPass(bool0, bool32); assert(passesNumeric(r));
-  r = canPass(bool0, bool64); assert(passesNumeric(r));
+  r = canPass(c, bool0, bool8); assert(passesNumeric(r));
+  r = canPass(c, bool0, bool16); assert(passesNumeric(r));
+  r = canPass(c, bool0, bool32); assert(passesNumeric(r));
+  r = canPass(c, bool0, bool64); assert(passesNumeric(r));
 
-  r = canPass(bool8, bool0); assert(passesNumeric(r));
-  r = canPass(bool8, bool16); assert(passesNumeric(r));
-  r = canPass(bool8, bool32); assert(passesNumeric(r));
-  r = canPass(bool8, bool64); assert(passesNumeric(r));
+  r = canPass(c, bool8, bool0); assert(passesNumeric(r));
+  r = canPass(c, bool8, bool16); assert(passesNumeric(r));
+  r = canPass(c, bool8, bool32); assert(passesNumeric(r));
+  r = canPass(c, bool8, bool64); assert(passesNumeric(r));
 
-  r = canPass(bool16, bool0); assert(passesNumeric(r));
-  r = canPass(bool16, bool8); assert(passesNumeric(r));
-  r = canPass(bool16, bool32); assert(passesNumeric(r));
-  r = canPass(bool16, bool64); assert(passesNumeric(r));
+  r = canPass(c, bool16, bool0); assert(passesNumeric(r));
+  r = canPass(c, bool16, bool8); assert(passesNumeric(r));
+  r = canPass(c, bool16, bool32); assert(passesNumeric(r));
+  r = canPass(c, bool16, bool64); assert(passesNumeric(r));
 
-  r = canPass(bool32, bool0); assert(passesNumeric(r));
-  r = canPass(bool32, bool8); assert(passesNumeric(r));
-  r = canPass(bool32, bool16); assert(passesNumeric(r));
-  r = canPass(bool32, bool64); assert(passesNumeric(r));
+  r = canPass(c, bool32, bool0); assert(passesNumeric(r));
+  r = canPass(c, bool32, bool8); assert(passesNumeric(r));
+  r = canPass(c, bool32, bool16); assert(passesNumeric(r));
+  r = canPass(c, bool32, bool64); assert(passesNumeric(r));
 
-  r = canPass(bool64, bool0); assert(passesNumeric(r));
-  r = canPass(bool64, bool8); assert(passesNumeric(r));
-  r = canPass(bool64, bool16); assert(passesNumeric(r));
-  r = canPass(bool64, bool32); assert(passesNumeric(r));
+  r = canPass(c, bool64, bool0); assert(passesNumeric(r));
+  r = canPass(c, bool64, bool8); assert(passesNumeric(r));
+  r = canPass(c, bool64, bool16); assert(passesNumeric(r));
+  r = canPass(c, bool64, bool32); assert(passesNumeric(r));
 }
 
 static void test4() {
   printf("test4\n");
   Context ctx;
   Context* context = &ctx;
+  Context* c = context;
 
   auto oneParam = IntParam::get(context, 1);
   auto negParam = IntParam::get(context, -1);
@@ -248,41 +252,41 @@ static void test4() {
 
 
   CanPassResult r;
-  r = canPass(oneInt0,  int8); assert(passesParamNarrowing(r));
-  r = canPass(oneInt8,  int8); assert(passesAsIs(r));
-  r = canPass(oneInt16, int8); assert(passesParamNarrowing(r));
-  r = canPass(oneInt32, int8); assert(passesParamNarrowing(r));
-  r = canPass(oneInt64, int8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneInt0,  int8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneInt8,  int8); assert(passesAsIs(r));
+  r = canPass(c, oneInt16, int8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneInt32, int8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneInt64, int8); assert(passesParamNarrowing(r));
 
-  r = canPass(oneUint0,  int8); assert(passesParamNarrowing(r));
-  r = canPass(oneUint8,  int8); assert(passesParamNarrowing(r));
-  r = canPass(oneUint16, int8); assert(passesParamNarrowing(r));
-  r = canPass(oneUint32, int8); assert(passesParamNarrowing(r));
-  r = canPass(oneUint64, int8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneUint0,  int8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneUint8,  int8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneUint16, int8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneUint32, int8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneUint64, int8); assert(passesParamNarrowing(r));
 
-  r = canPass(oneInt0,  uint8); assert(passesParamNarrowing(r));
-  r = canPass(oneInt8,  uint8); assert(passesParamNarrowing(r));
-  r = canPass(oneInt16, uint8); assert(passesParamNarrowing(r));
-  r = canPass(oneInt32, uint8); assert(passesParamNarrowing(r));
-  r = canPass(oneInt64, uint8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneInt0,  uint8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneInt8,  uint8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneInt16, uint8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneInt32, uint8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneInt64, uint8); assert(passesParamNarrowing(r));
 
-  r = canPass(oneUint0,  uint8); assert(passesParamNarrowing(r));
-  r = canPass(oneUint8,  uint8); assert(passesAsIs(r));
-  r = canPass(oneUint16, uint8); assert(passesParamNarrowing(r));
-  r = canPass(oneUint32, uint8); assert(passesParamNarrowing(r));
-  r = canPass(oneUint64, uint8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneUint0,  uint8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneUint8,  uint8); assert(passesAsIs(r));
+  r = canPass(c, oneUint16, uint8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneUint32, uint8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneUint64, uint8); assert(passesParamNarrowing(r));
 
-  r = canPass(negInt0,  int8); assert(passesParamNarrowing(r));
-  r = canPass(negInt8,  int8); assert(passesAsIs(r));
-  r = canPass(negInt16, int8); assert(passesParamNarrowing(r));
-  r = canPass(negInt32, int8); assert(passesParamNarrowing(r));
-  r = canPass(negInt64, int8); assert(passesParamNarrowing(r));
+  r = canPass(c, negInt0,  int8); assert(passesParamNarrowing(r));
+  r = canPass(c, negInt8,  int8); assert(passesAsIs(r));
+  r = canPass(c, negInt16, int8); assert(passesParamNarrowing(r));
+  r = canPass(c, negInt32, int8); assert(passesParamNarrowing(r));
+  r = canPass(c, negInt64, int8); assert(passesParamNarrowing(r));
 
-  r = canPass(negInt0,  uint8); assert(doesNotPass(r));
-  r = canPass(negInt8,  uint8); assert(doesNotPass(r));
-  r = canPass(negInt16, uint8); assert(doesNotPass(r));
-  r = canPass(negInt32, uint8); assert(doesNotPass(r));
-  r = canPass(negInt64, uint8); assert(doesNotPass(r));
+  r = canPass(c, negInt0,  uint8); assert(doesNotPass(r));
+  r = canPass(c, negInt8,  uint8); assert(doesNotPass(r));
+  r = canPass(c, negInt16, uint8); assert(doesNotPass(r));
+  r = canPass(c, negInt32, uint8); assert(doesNotPass(r));
+  r = canPass(c, negInt64, uint8); assert(doesNotPass(r));
 }
 
 static QualifiedType getint(Context* context, int val) {
@@ -299,6 +303,7 @@ static void test5() {
   printf("test5\n");
   Context ctx;
   Context* context = &ctx;
+  Context* c = context;
 
   auto m5 = getint(context, (1<<24) - 5);
   auto m4 = getint(context, (1<<24) - 4);
@@ -327,40 +332,41 @@ static void test5() {
   QualifiedType real32(QualifiedType::VAR, RealType::get(context, 32));
 
   CanPassResult r;
-  r = canPass(m5,  real32); assert(passesParamNarrowing(r));
-  r = canPass(m4,  real32); assert(passesParamNarrowing(r));
-  r = canPass(m3,  real32); assert(passesParamNarrowing(r));
-  r = canPass(m2,  real32); assert(passesParamNarrowing(r));
-  r = canPass(m1,  real32); assert(passesParamNarrowing(r));
-  r = canPass(p0,  real32); assert(passesParamNarrowing(r));
-  r = canPass(p1,  real32); assert(doesNotPass(r));
-  r = canPass(p2,  real32); assert(doesNotPass(r));
-  r = canPass(p3,  real32); assert(doesNotPass(r));
-  r = canPass(p4,  real32); assert(doesNotPass(r));
-  r = canPass(p5,  real32); assert(doesNotPass(r));
+  r = canPass(c, m5,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, m4,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, m3,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, m2,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, m1,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, p0,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, p1,  real32); assert(doesNotPass(r));
+  r = canPass(c, p2,  real32); assert(doesNotPass(r));
+  r = canPass(c, p3,  real32); assert(doesNotPass(r));
+  r = canPass(c, p4,  real32); assert(doesNotPass(r));
+  r = canPass(c, p5,  real32); assert(doesNotPass(r));
 
-  r = canPass(n_m5,  real32); assert(doesNotPass(r));
-  r = canPass(n_m4,  real32); assert(doesNotPass(r));
-  r = canPass(n_m3,  real32); assert(doesNotPass(r));
-  r = canPass(n_m2,  real32); assert(doesNotPass(r));
-  r = canPass(n_m1,  real32); assert(doesNotPass(r));
-  r = canPass(n_p0,  real32); assert(passesParamNarrowing(r));
-  r = canPass(n_p1,  real32); assert(passesParamNarrowing(r));
-  r = canPass(n_p2,  real32); assert(passesParamNarrowing(r));
-  r = canPass(n_p3,  real32); assert(passesParamNarrowing(r));
-  r = canPass(n_p4,  real32); assert(passesParamNarrowing(r));
-  r = canPass(n_p5,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, n_m5,  real32); assert(doesNotPass(r));
+  r = canPass(c, n_m4,  real32); assert(doesNotPass(r));
+  r = canPass(c, n_m3,  real32); assert(doesNotPass(r));
+  r = canPass(c, n_m2,  real32); assert(doesNotPass(r));
+  r = canPass(c, n_m1,  real32); assert(doesNotPass(r));
+  r = canPass(c, n_p0,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, n_p1,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, n_p2,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, n_p3,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, n_p4,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, n_p5,  real32); assert(passesParamNarrowing(r));
 }
 
 static void test6() {
   printf("test6\n");
   Context ctx;
   Context* context = &ctx;
+  Context* c = context;
 
   // test that we can pass param string c_string
   // but we can't pass param string to bytes
 
-  auto s = UniqueString::build(context, "hello");
+  auto s = UniqueString::get(context, "hello");
   auto p = StringParam::get(context, s);
   auto paramString = QualifiedType(QualifiedType::PARAM,
                                    StringType::get(context),
@@ -373,31 +379,34 @@ static void test6() {
   auto bytesQT = QualifiedType(QualifiedType::VAR,
                                BytesType::get(context));
   CanPassResult r;
-  r = canPass(paramString, stringQT); assert(passesAsIs(r));
-  r = canPass(paramString, cStringQT); assert(passesParamNarrowing(r));
-  r = canPass(paramString, bytesQT); assert(doesNotPass(r));
+  r = canPass(c, paramString, stringQT); assert(passesAsIs(r));
+  r = canPass(c, paramString, cStringQT); assert(passesParamNarrowing(r));
+  r = canPass(c, paramString, bytesQT); assert(doesNotPass(r));
 }
 
 static void test7() {
   printf("test7\n");
   Context ctx;
   Context* context = &ctx;
+  Context* c = context;
 
   // test that we can pass a child class to its parent class type
   // but that we can't do the inverse.
 
   ID emptyId;
-  std::vector<CompositeType::FieldDetail> emptyFields;
 
-  auto parentName = UniqueString::build(context, "Parent");
-  auto childName = UniqueString::build(context, "Child");
+  auto parentName = UniqueString::get(context, "Parent");
+  auto childName = UniqueString::get(context, "Child");
   auto basicObj = BasicClassType::getObjectType(context);
   auto basicParent = BasicClassType::get(context, emptyId, parentName,
-                                         basicObj, emptyFields,
-                                         /* instantiatedFrom */ nullptr);
+                                         basicObj,
+                                        /* instantiatedFrom */ nullptr,
+                                        SubstitutionsMap());
+
   auto basicChild = BasicClassType::get(context, emptyId, childName,
-                                        basicParent, emptyFields,
-                                        /* instantiatedFrom */ nullptr);
+                                        basicParent,
+                                        /* instantiatedFrom */ nullptr,
+                                        SubstitutionsMap());
 
   auto borrowed = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
   auto borrowedQ = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NILABLE);
@@ -431,124 +440,124 @@ static void test7() {
   CanPassResult r;
 
   // first, check same type passes
-  r = canPass(borrowedParent,   borrowedParent);   assert(passesAsIs(r));
-  r = canPass(borrowedChild,    borrowedChild);    assert(passesAsIs(r));
-  r = canPass(borrowedParentQ,  borrowedParentQ);  assert(passesAsIs(r));
-  r = canPass(borrowedChildQ,   borrowedChildQ);   assert(passesAsIs(r));
-  r = canPass(unmanagedParent,  unmanagedParent);  assert(passesAsIs(r));
-  r = canPass(unmanagedChild,   unmanagedChild);   assert(passesAsIs(r));
-  r = canPass(unmanagedParentQ, unmanagedParentQ); assert(passesAsIs(r));
-  r = canPass(unmanagedChildQ,  unmanagedChildQ);  assert(passesAsIs(r));
-  r = canPass(ownedParent,      ownedParent);      assert(passesAsIs(r));
-  r = canPass(ownedChild,       ownedChild);       assert(passesAsIs(r));
-  r = canPass(ownedParentQ,     ownedParentQ);     assert(passesAsIs(r));
-  r = canPass(ownedChildQ,      ownedChildQ);      assert(passesAsIs(r));
+  r = canPass(c, borrowedParent,   borrowedParent);   assert(passesAsIs(r));
+  r = canPass(c, borrowedChild,    borrowedChild);    assert(passesAsIs(r));
+  r = canPass(c, borrowedParentQ,  borrowedParentQ);  assert(passesAsIs(r));
+  r = canPass(c, borrowedChildQ,   borrowedChildQ);   assert(passesAsIs(r));
+  r = canPass(c, unmanagedParent,  unmanagedParent);  assert(passesAsIs(r));
+  r = canPass(c, unmanagedChild,   unmanagedChild);   assert(passesAsIs(r));
+  r = canPass(c, unmanagedParentQ, unmanagedParentQ); assert(passesAsIs(r));
+  r = canPass(c, unmanagedChildQ,  unmanagedChildQ);  assert(passesAsIs(r));
+  r = canPass(c, ownedParent,      ownedParent);      assert(passesAsIs(r));
+  r = canPass(c, ownedChild,       ownedChild);       assert(passesAsIs(r));
+  r = canPass(c, ownedParentQ,     ownedParentQ);     assert(passesAsIs(r));
+  r = canPass(c, ownedChildQ,      ownedChildQ);      assert(passesAsIs(r));
 
   // next check child-parent toggling nilability within each group
-  r = canPass(borrowedChild,    borrowedParent);   assert(passesSubtype(r));
-  r = canPass(borrowedChild,    borrowedParentQ);  assert(passesSubtype(r));
-  r = canPass(borrowedChildQ,   borrowedParent);   assert(doesNotPass(r));
-  r = canPass(borrowedChildQ,   borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, borrowedChild,    borrowedParent);   assert(passesSubtype(r));
+  r = canPass(c, borrowedChild,    borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, borrowedChildQ,   borrowedParent);   assert(doesNotPass(r));
+  r = canPass(c, borrowedChildQ,   borrowedParentQ);  assert(passesSubtype(r));
 
-  r = canPass(borrowedParent,   borrowedChild);    assert(doesNotPass(r));
-  r = canPass(borrowedParent,   borrowedChildQ);   assert(doesNotPass(r));
-  r = canPass(borrowedParentQ,  borrowedChild);    assert(doesNotPass(r));
-  r = canPass(borrowedParentQ,  borrowedChildQ);   assert(doesNotPass(r));
+  r = canPass(c, borrowedParent,   borrowedChild);    assert(doesNotPass(r));
+  r = canPass(c, borrowedParent,   borrowedChildQ);   assert(doesNotPass(r));
+  r = canPass(c, borrowedParentQ,  borrowedChild);    assert(doesNotPass(r));
+  r = canPass(c, borrowedParentQ,  borrowedChildQ);   assert(doesNotPass(r));
 
-  r = canPass(unmanagedChild,   unmanagedParent);  assert(passesSubtype(r));
-  r = canPass(unmanagedChild,   unmanagedParentQ); assert(passesSubtype(r));
-  r = canPass(unmanagedChildQ,  unmanagedParent);  assert(doesNotPass(r));
-  r = canPass(unmanagedChildQ,  unmanagedParentQ); assert(passesSubtype(r));
+  r = canPass(c, unmanagedChild,   unmanagedParent);  assert(passesSubtype(r));
+  r = canPass(c, unmanagedChild,   unmanagedParentQ); assert(passesSubtype(r));
+  r = canPass(c, unmanagedChildQ,  unmanagedParent);  assert(doesNotPass(r));
+  r = canPass(c, unmanagedChildQ,  unmanagedParentQ); assert(passesSubtype(r));
 
-  r = canPass(unmanagedParent,  unmanagedChild);   assert(doesNotPass(r));
-  r = canPass(unmanagedParent,  unmanagedChildQ);  assert(doesNotPass(r));
-  r = canPass(unmanagedParentQ, unmanagedChild);   assert(doesNotPass(r));
-  r = canPass(unmanagedParentQ, unmanagedChildQ);  assert(doesNotPass(r));
+  r = canPass(c, unmanagedParent,  unmanagedChild);   assert(doesNotPass(r));
+  r = canPass(c, unmanagedParent,  unmanagedChildQ);  assert(doesNotPass(r));
+  r = canPass(c, unmanagedParentQ, unmanagedChild);   assert(doesNotPass(r));
+  r = canPass(c, unmanagedParentQ, unmanagedChildQ);  assert(doesNotPass(r));
 
-  r = canPass(ownedChild,       ownedParent);      assert(passesSubtype(r));
-  r = canPass(ownedChild,       ownedParentQ);     assert(passesSubtype(r));
-  r = canPass(ownedChildQ,      ownedParent);      assert(doesNotPass(r));
-  r = canPass(ownedChildQ,      ownedParentQ);     assert(passesSubtype(r));
+  r = canPass(c, ownedChild,       ownedParent);      assert(passesSubtype(r));
+  r = canPass(c, ownedChild,       ownedParentQ);     assert(passesSubtype(r));
+  r = canPass(c, ownedChildQ,      ownedParent);      assert(doesNotPass(r));
+  r = canPass(c, ownedChildQ,      ownedParentQ);     assert(passesSubtype(r));
 
-  r = canPass(ownedParent,      ownedChild);       assert(doesNotPass(r));
-  r = canPass(ownedParent,      ownedChildQ);      assert(doesNotPass(r));
-  r = canPass(ownedParentQ,     ownedChild);       assert(doesNotPass(r));
-  r = canPass(ownedParentQ,     ownedChildQ);      assert(doesNotPass(r));
+  r = canPass(c, ownedParent,      ownedChild);       assert(doesNotPass(r));
+  r = canPass(c, ownedParent,      ownedChildQ);      assert(doesNotPass(r));
+  r = canPass(c, ownedParentQ,     ownedChild);       assert(doesNotPass(r));
+  r = canPass(c, ownedParentQ,     ownedChildQ);      assert(doesNotPass(r));
 
   // next, check cross-management with same type, toggling nilability
 
   // borrowed - unmanaged
-  r = canPass(borrowedChild,    unmanagedChild);   assert(doesNotPass(r));
-  r = canPass(borrowedChild,    unmanagedChildQ);  assert(doesNotPass(r));
-  r = canPass(borrowedChildQ,   unmanagedChild);   assert(doesNotPass(r));
-  r = canPass(borrowedChildQ,   unmanagedChildQ);  assert(doesNotPass(r));
+  r = canPass(c, borrowedChild,    unmanagedChild);   assert(doesNotPass(r));
+  r = canPass(c, borrowedChild,    unmanagedChildQ);  assert(doesNotPass(r));
+  r = canPass(c, borrowedChildQ,   unmanagedChild);   assert(doesNotPass(r));
+  r = canPass(c, borrowedChildQ,   unmanagedChildQ);  assert(doesNotPass(r));
 
   // borrowed - owned
-  r = canPass(borrowedChild,    ownedChild);       assert(doesNotPass(r));
-  r = canPass(borrowedChild,    ownedChildQ);      assert(doesNotPass(r));
-  r = canPass(borrowedChildQ,   ownedChild);       assert(doesNotPass(r));
-  r = canPass(borrowedChildQ,   ownedChildQ);      assert(doesNotPass(r));
+  r = canPass(c, borrowedChild,    ownedChild);       assert(doesNotPass(r));
+  r = canPass(c, borrowedChild,    ownedChildQ);      assert(doesNotPass(r));
+  r = canPass(c, borrowedChildQ,   ownedChild);       assert(doesNotPass(r));
+  r = canPass(c, borrowedChildQ,   ownedChildQ);      assert(doesNotPass(r));
 
   // unmanaged - borrowed
-  r = canPass(unmanagedChild,   borrowedChild);    assert(passesSubtype(r));
-  r = canPass(unmanagedChild,   borrowedChildQ);   assert(passesSubtype(r));
-  r = canPass(unmanagedChildQ,  borrowedChild);    assert(doesNotPass(r));
-  r = canPass(unmanagedChildQ,  borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, unmanagedChild,   borrowedChild);    assert(passesSubtype(r));
+  r = canPass(c, unmanagedChild,   borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, unmanagedChildQ,  borrowedChild);    assert(doesNotPass(r));
+  r = canPass(c, unmanagedChildQ,  borrowedChildQ);   assert(passesSubtype(r));
 
   // unamanaged - owned
-  r = canPass(unmanagedChild,   ownedChild);       assert(doesNotPass(r));
-  r = canPass(unmanagedChild,   ownedChildQ);      assert(doesNotPass(r));
-  r = canPass(unmanagedChildQ,  ownedChild);       assert(doesNotPass(r));
-  r = canPass(unmanagedChildQ,  ownedChildQ);      assert(doesNotPass(r));
+  r = canPass(c, unmanagedChild,   ownedChild);       assert(doesNotPass(r));
+  r = canPass(c, unmanagedChild,   ownedChildQ);      assert(doesNotPass(r));
+  r = canPass(c, unmanagedChildQ,  ownedChild);       assert(doesNotPass(r));
+  r = canPass(c, unmanagedChildQ,  ownedChildQ);      assert(doesNotPass(r));
 
   // owned - borrowed
-  r = canPass(ownedChild,       borrowedChild);    assert(passesSubtype(r));
-  r = canPass(ownedChild,       borrowedChildQ);   assert(passesSubtype(r));
-  r = canPass(ownedChildQ,      borrowedChild);    assert(doesNotPass(r));
-  r = canPass(ownedChildQ,      borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, ownedChild,       borrowedChild);    assert(passesSubtype(r));
+  r = canPass(c, ownedChild,       borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, ownedChildQ,      borrowedChild);    assert(doesNotPass(r));
+  r = canPass(c, ownedChildQ,      borrowedChildQ);   assert(passesSubtype(r));
 
   // owned - unmanaged
-  r = canPass(ownedChild,       unmanagedChild);   assert(doesNotPass(r));
-  r = canPass(ownedChild,       unmanagedChildQ);  assert(doesNotPass(r));
-  r = canPass(ownedChildQ,      unmanagedChild);   assert(doesNotPass(r));
-  r = canPass(ownedChildQ,      unmanagedChildQ);  assert(doesNotPass(r));
+  r = canPass(c, ownedChild,       unmanagedChild);   assert(doesNotPass(r));
+  r = canPass(c, ownedChild,       unmanagedChildQ);  assert(doesNotPass(r));
+  r = canPass(c, ownedChildQ,      unmanagedChild);   assert(doesNotPass(r));
+  r = canPass(c, ownedChildQ,      unmanagedChildQ);  assert(doesNotPass(r));
 
   // next, same as above, with Child and Parent
   // borrowed - unmanaged
-  r = canPass(borrowedChild,    unmanagedParent);  assert(doesNotPass(r));
-  r = canPass(borrowedChild,    unmanagedParentQ); assert(doesNotPass(r));
-  r = canPass(borrowedChildQ,   unmanagedParent);  assert(doesNotPass(r));
-  r = canPass(borrowedChildQ,   unmanagedParentQ); assert(doesNotPass(r));
+  r = canPass(c, borrowedChild,    unmanagedParent);  assert(doesNotPass(r));
+  r = canPass(c, borrowedChild,    unmanagedParentQ); assert(doesNotPass(r));
+  r = canPass(c, borrowedChildQ,   unmanagedParent);  assert(doesNotPass(r));
+  r = canPass(c, borrowedChildQ,   unmanagedParentQ); assert(doesNotPass(r));
 
   // borrowed - owned
-  r = canPass(borrowedChild,    ownedParent);      assert(doesNotPass(r));
-  r = canPass(borrowedChild,    ownedParentQ);     assert(doesNotPass(r));
-  r = canPass(borrowedChildQ,   ownedParent);      assert(doesNotPass(r));
-  r = canPass(borrowedChildQ,   ownedParentQ);     assert(doesNotPass(r));
+  r = canPass(c, borrowedChild,    ownedParent);      assert(doesNotPass(r));
+  r = canPass(c, borrowedChild,    ownedParentQ);     assert(doesNotPass(r));
+  r = canPass(c, borrowedChildQ,   ownedParent);      assert(doesNotPass(r));
+  r = canPass(c, borrowedChildQ,   ownedParentQ);     assert(doesNotPass(r));
 
   // unmanaged - borrowed
-  r = canPass(unmanagedChild,   borrowedParent);   assert(passesSubtype(r));
-  r = canPass(unmanagedChild,   borrowedParentQ);  assert(passesSubtype(r));
-  r = canPass(unmanagedChildQ,  borrowedParent);   assert(doesNotPass(r));
-  r = canPass(unmanagedChildQ,  borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, unmanagedChild,   borrowedParent);   assert(passesSubtype(r));
+  r = canPass(c, unmanagedChild,   borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, unmanagedChildQ,  borrowedParent);   assert(doesNotPass(r));
+  r = canPass(c, unmanagedChildQ,  borrowedParentQ);  assert(passesSubtype(r));
 
   // unamanaged - owned
-  r = canPass(unmanagedChild,   ownedParent);      assert(doesNotPass(r));
-  r = canPass(unmanagedChild,   ownedParentQ);     assert(doesNotPass(r));
-  r = canPass(unmanagedChildQ,  ownedParent);      assert(doesNotPass(r));
-  r = canPass(unmanagedChildQ,  ownedParentQ);     assert(doesNotPass(r));
+  r = canPass(c, unmanagedChild,   ownedParent);      assert(doesNotPass(r));
+  r = canPass(c, unmanagedChild,   ownedParentQ);     assert(doesNotPass(r));
+  r = canPass(c, unmanagedChildQ,  ownedParent);      assert(doesNotPass(r));
+  r = canPass(c, unmanagedChildQ,  ownedParentQ);     assert(doesNotPass(r));
 
   // owned - borrowed
-  r = canPass(ownedChild,       borrowedParent);   assert(passesSubtype(r));
-  r = canPass(ownedChild,       borrowedParentQ);  assert(passesSubtype(r));
-  r = canPass(ownedChildQ,      borrowedParent);   assert(doesNotPass(r));
-  r = canPass(ownedChildQ,      borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, ownedChild,       borrowedParent);   assert(passesSubtype(r));
+  r = canPass(c, ownedChild,       borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, ownedChildQ,      borrowedParent);   assert(doesNotPass(r));
+  r = canPass(c, ownedChildQ,      borrowedParentQ);  assert(passesSubtype(r));
 
   // owned - unmanaged
-  r = canPass(ownedChild,       unmanagedParent);  assert(doesNotPass(r));
-  r = canPass(ownedChild,       unmanagedParentQ); assert(doesNotPass(r));
-  r = canPass(ownedChildQ,      unmanagedParent);  assert(doesNotPass(r));
-  r = canPass(ownedChildQ,      unmanagedParentQ); assert(doesNotPass(r));
+  r = canPass(c, ownedChild,       unmanagedParent);  assert(doesNotPass(r));
+  r = canPass(c, ownedChild,       unmanagedParentQ); assert(doesNotPass(r));
+  r = canPass(c, ownedChildQ,      unmanagedParent);  assert(doesNotPass(r));
+  r = canPass(c, ownedChildQ,      unmanagedParentQ); assert(doesNotPass(r));
 }
 
 

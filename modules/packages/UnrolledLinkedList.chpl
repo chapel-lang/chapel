@@ -21,11 +21,11 @@
 /*
   This module contains the implementation of the unrolledLinkedList type.
 
-  An unrolled linked list is a linked list of small arrays, all of the same size 
-  where each is so small that the insertion or deletion is fast and quick, but 
+  An unrolled linked list is a linked list of small arrays, all of the same size
+  where each is so small that the insertion or deletion is fast and quick, but
   large enough to fill the cache line. The list tends to keep each node half full.
 
-  Given a list with size N and nodeCapacity M, indexing is O(N/M). And insertion or 
+  Given a list with size N and nodeCapacity M, indexing is O(N/M). And insertion or
   deletion at a given place is O(N/M + M), which contains a indexing operation.
   Appending operation, which doesn't need to index, is O(M).
 */
@@ -198,7 +198,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Initializes an unrolledLinkedList containing elements that are copy 
+      Initializes an unrolledLinkedList containing elements that are copy
       initialized from the elements contained in an array.
 
       Used in new expressions.
@@ -223,7 +223,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Initializes an unrolledLinkedList containing elements that are copy 
+      Initializes an unrolledLinkedList containing elements that are copy
       initialized from the elements contained in another unrolledLinkedList.
 
       :arg other: The list to initialize from.
@@ -381,7 +381,7 @@ module UnrolledLinkedList {
 
     pragma "no doc"
     proc _append(x: eltType)
-    lifetime this < x { 
+    lifetime this < x {
       _size += 1;
       _spareSpaceInTail();
       _tail!.append(x);
@@ -389,7 +389,7 @@ module UnrolledLinkedList {
 
     pragma "no doc"
     proc _append(ref x: eltType) where isOwnedClass(x)
-    lifetime this < x { 
+    lifetime this < x {
       _size += 1;
       _spareSpaceInTail();
       _tail!.append(x);
@@ -449,8 +449,8 @@ module UnrolledLinkedList {
 
       .. warning::
 
-        Calling this method on an empty unrolledLinkedList will cause the 
-        currently running program to halt. If the `--fast` flag is used, no 
+        Calling this method on an empty unrolledLinkedList will cause the
+        currently running program to halt. If the `--fast` flag is used, no
         safety checks will be performed.
 
       :return: A reference to the first item in this unrolledLinkedList.
@@ -475,8 +475,8 @@ module UnrolledLinkedList {
 
       .. warning::
 
-        Calling this method on an empty unrolledLinkedList will cause the 
-        currently running program to halt. If the `--fast` flag is used, no 
+        Calling this method on an empty unrolledLinkedList will cause the
+        currently running program to halt. If the `--fast` flag is used, no
         safety checks will be performed.
 
       :return: A reference to the last item in this unrolledLinkedList.
@@ -489,11 +489,11 @@ module UnrolledLinkedList {
         _leave();
         boundsCheckHalt("Called \"unrolledLinkedList.last\" on an empty unrolledLinkedList.");
       }
-     
+
       ref result = _tail!.data[_tail!.size-1];
       _leave();
 
-      return result;  
+      return result;
     }
 
     pragma "no doc"
@@ -507,7 +507,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extend this unrolledLinkedList by appending a copy of each element 
+      Extend this unrolledLinkedList by appending a copy of each element
       contained in a list.
 
       :arg other: A list containing elements of the same type as those
@@ -523,10 +523,10 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extend this unrolledLinkedList by appending a copy of each element 
+      Extend this unrolledLinkedList by appending a copy of each element
       contained in an unrolledLinkedList.
 
-      :arg other: an unrolledLinkedList containing elements of the same type as 
+      :arg other: an unrolledLinkedList containing elements of the same type as
         those contained in this unrolledLinkedList.
       :type other: `unrolledLinkedList(eltType)`
     */
@@ -539,7 +539,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extend this unrolledLinkedList by appending a copy of each element 
+      Extend this unrolledLinkedList by appending a copy of each element
       contained in an array.
 
       :arg other: An array containing elements of the same type as those
@@ -555,12 +555,12 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extends this unrolledLinkedList by appending a copy of each element 
+      Extends this unrolledLinkedList by appending a copy of each element
       yielded by a range.
 
       .. note::
 
-        Attempting to initialize an unrolledLinkedList from an unbounded range 
+        Attempting to initialize an unrolledLinkedList from an unbounded range
         will trigger a compiler error.
 
       :arg other: The range to initialize from.
@@ -582,13 +582,13 @@ module UnrolledLinkedList {
     }
 
     pragma "no doc"
-    proc ref _insert(idx: int, in x: eltType) 
+    proc ref _insert(idx: int, in x: eltType)
          lifetime this < x {
 
       _size += 1;
 
       var pos = 0;
-      var cur = _head; 
+      var cur = _head;
       while cur != nil {
         if idx >= pos + cur!.size {
           pos += cur!.size;
@@ -597,7 +597,7 @@ module UnrolledLinkedList {
         else {
           // The position in this node
           var i = idx - pos;
-          
+
           // The node to insert into
           var dest = cur;
 
@@ -614,7 +614,7 @@ module UnrolledLinkedList {
           dest!.size += 1;
           for j in i+1..dest!.size-1 by -1 {
             dest!.data[j] = dest!.data[j-1];
-          } 
+          }
 
           dest!.data[i] = x;
 
@@ -625,17 +625,17 @@ module UnrolledLinkedList {
 
     /*
       Insert an element at a given position in this unrolledLinkedList, shifting
-      all elements currently at and following that index one to the right. The 
-      call ``a.insert(0, x)`` inserts an element at the front of the 
-      unrolledLinkedList `a`, and ``a.insert((a.size), x)`` is equivalent to 
+      all elements currently at and following that index one to the right. The
+      call ``a.insert(0, x)`` inserts an element at the front of the
+      unrolledLinkedList `a`, and ``a.insert((a.size), x)`` is equivalent to
       ``a.append(x)``.
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
 
       .. warning::
-      
-        Inserting an element into this unrolledLinkedList may invalidate 
+
+        Inserting an element into this unrolledLinkedList may invalidate
         existing references to the elements contained in this unrolledLinkedList.
 
       :arg idx: The index into this unrolledLinkedList at which to insert.
@@ -666,7 +666,7 @@ module UnrolledLinkedList {
         _leave();
       }
 
-      return result;  
+      return result;
     }
 
     pragma "no doc"
@@ -702,16 +702,16 @@ module UnrolledLinkedList {
     }
 
     /*
-      Insert elements of an array `arr` into this unrolledLinkedList at index 
-      `idx`, shifting all elements at and following the index `arr.size` 
-      positions to the right. 
+      Insert elements of an array `arr` into this unrolledLinkedList at index
+      `idx`, shifting all elements at and following the index `arr.size`
+      positions to the right.
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
 
       .. warning::
 
-        Inserting elements into this unrolledLinkedList may invalidate existing 
+        Inserting elements into this unrolledLinkedList may invalidate existing
         references to the elements contained in this unrolledLinkedList.
 
       :arg idx: The index into this unrolledLinkedList at which to insert.
@@ -737,8 +737,8 @@ module UnrolledLinkedList {
     }
 
     /*
-      Insert elements of a list `lst` into this unrolledLinkedList at index 
-      `idx`, shifting all elements at and following the index `lst.size` 
+      Insert elements of a list `lst` into this unrolledLinkedList at index
+      `idx`, shifting all elements at and following the index `lst.size`
       positions to the right.
 
       If the insertion is successful, this method returns `true`. If the given
@@ -746,7 +746,7 @@ module UnrolledLinkedList {
 
       .. warning::
 
-        Inserting elements into this unrolledLinkedList may invalidate existing 
+        Inserting elements into this unrolledLinkedList may invalidate existing
         references to the elements contained in this unrolledLinkedList.
 
       :arg idx: The index into this unrolledLinkedList at which to insert.
@@ -759,9 +759,9 @@ module UnrolledLinkedList {
       :rtype: `bool`
     */
     proc ref insert(idx: int, lst: list(eltType)): bool lifetime this < lst {
-      
+
       var result = false;
-      
+
       // Prevent deadlock if we are trying to insert this into itself.
       const size = lst.size;
 
@@ -775,16 +775,16 @@ module UnrolledLinkedList {
     }
 
     /*
-      Remove the first `count` elements from this unrolledLinkedList with values 
+      Remove the first `count` elements from this unrolledLinkedList with values
       equal to `x`, shifting all elements following the removed item left.
 
       If the count of elements to remove is less than or equal to zero, then
-      all elements from this unrolledLinkedList equal to the value of `x` will 
+      all elements from this unrolledLinkedList equal to the value of `x` will
       be removed.
 
       .. warning::
 
-        Removing elements from this unrolledLinkedList may invalidate existing 
+        Removing elements from this unrolledLinkedList may invalidate existing
         references to the elements contained in this unrolledLinkedList.
 
       :arg x: The value of the element to remove.
@@ -818,7 +818,7 @@ module UnrolledLinkedList {
             }
             dst_i += 1;
           }
-          
+
           // No hit in this node, continue
           if dst_i == cur!.size {
             cur = cur!.next;
@@ -894,14 +894,14 @@ module UnrolledLinkedList {
 
       .. warning::
 
-        Popping an element from this unrolledLinkedList will invalidate any 
-        reference to the element taken while it was contained in this 
+        Popping an element from this unrolledLinkedList will invalidate any
+        reference to the element taken while it was contained in this
         unrolledLinkedList.
 
       .. warning::
 
-        Calling this method on an empty unrolledLinkedList will cause the 
-        currently running program to halt. If the `--fast` flag is used, no 
+        Calling this method on an empty unrolledLinkedList will cause the
+        currently running program to halt. If the `--fast` flag is used, no
         safety checks will be performed.
 
       :return: The element popped.
@@ -919,20 +919,20 @@ module UnrolledLinkedList {
     }
 
     /*
-      Remove the element at the index `idx` from this unrolledLinkedList and 
+      Remove the element at the index `idx` from this unrolledLinkedList and
       return it.
 
       .. warning::
 
-        Popping an element from this unrolledLinkedList will invalidate any 
-        reference to the element taken while it was contained in this 
+        Popping an element from this unrolledLinkedList will invalidate any
+        reference to the element taken while it was contained in this
         unrolledLinkedList.
 
       .. warning::
 
-        Calling this method on an empty unrolledLinkedList or with values of 
-        `idx` that are out of bounds will cause the currently running program 
-        to halt. If the `--fast` flag is used, no safety checks will be 
+        Calling this method on an empty unrolledLinkedList or with values of
+        `idx` that are out of bounds will cause the currently running program
+        to halt. If the `--fast` flag is used, no safety checks will be
         performed.
 
       :arg idx: The index of the element to remove.
@@ -953,7 +953,7 @@ module UnrolledLinkedList {
 
       .. warning::
 
-        Clearing the contents of this unrolledLinkedList will invalidate all 
+        Clearing the contents of this unrolledLinkedList will invalidate all
         existing references to the elements contained in this unrolledLinkedList.
     */
     proc ref clear() {
@@ -975,15 +975,15 @@ module UnrolledLinkedList {
     }
 
     /*
-      Return a zero-based index into this unrolledLinkedList of the first item 
-      whose value is equal to `x`. If no such element can be found this method 
+      Return a zero-based index into this unrolledLinkedList of the first item
+      whose value is equal to `x`. If no such element can be found this method
       returns the value `-1`.
 
       .. warning::
 
-        Calling this method on an empty unrolledLinkedList or with values of 
-        `start` or `end` that are out of bounds will cause the currently running 
-        program to halt. If the `--fast` flag is used, no safety checks will be 
+        Calling this method on an empty unrolledLinkedList or with values of
+        `start` or `end` that are out of bounds will cause the currently running
+        program to halt. If the `--fast` flag is used, no safety checks will be
         performed.
 
       :arg x: An element to search for.
@@ -1070,7 +1070,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Index this unrolledLinkedList via subscript. Returns a reference to the 
+      Index this unrolledLinkedList via subscript. Returns a reference to the
       element at a given index in this unrolledLinkedList.
 
       :arg i: The index of the element to access.
@@ -1125,7 +1125,7 @@ module UnrolledLinkedList {
     */
     proc writeThis(ch: channel) throws {
       _enter();
-      
+
       ch <~> "[";
 
       var first = true;
@@ -1152,7 +1152,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      The current number of elements contained in this unrolledLinkedList. Returns 
+      The current number of elements contained in this unrolledLinkedList. Returns
       in O(1).
     */
     inline proc const size {
@@ -1178,7 +1178,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Returns a new DefaultRectangular array containing a copy of 
+      Returns a new DefaultRectangular array containing a copy of
       each of the elements contained in this unrolledLinkedList.
 
       :return: A new DefaultRectangular array.
@@ -1207,7 +1207,7 @@ module UnrolledLinkedList {
   } // End record "unrolledLinkedList".
 
   /*
-    Clear the contents of this unrolledLinkedList, then extend this now-empty 
+    Clear the contents of this unrolledLinkedList, then extend this now-empty
     unrolledLinkedList with the elements contained in another unrolledLinkedList.
 
     .. warning::

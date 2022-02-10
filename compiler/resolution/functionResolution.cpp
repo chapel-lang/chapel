@@ -70,6 +70,8 @@
 #include "WhileStmt.h"
 #include "wrappers.h"
 
+#include "global-ast-vecs.h"
+
 #include "../next/lib/immediates/prim_data.h"
 
 #include <algorithm>
@@ -6149,7 +6151,7 @@ static void captureTaskIntentValues(int        argNum,
 
       } else if (isReferenceType(varActual->type) ==  true &&
                  isReferenceType(capTemp->type)   == false) {
-        marker->insertBefore("'move'(%S,'deref'(%S))", capTemp, varActual);
+        marker->insertBefore(new CallExpr(PRIM_ASSIGN, capTemp, varActual));
 
       } else {
         marker->insertBefore("'move'(%S,%S)", capTemp, varActual);
@@ -8732,10 +8734,37 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
 *                                                                             *
 ************************************** | *************************************/
 
+// Non-normalizable expressions may nest at an arbitrary depth (because
+// they are not normalized), so we have to search upwards in the tree
+// to look for them.
+static Expr* handleNonNormalizableExpr(Expr* expr) {
+
+  // TODO: Ways to limit our search depth?
+  if (Expr* nonNormalRoot = partOfNonNormalizableExpr(expr)) {
+    if (CallExpr* call = toCallExpr(nonNormalRoot)) {
+      if (call->isPrimitive(PRIM_RESOLVES)) {
+
+        // Prefolding will completely replace PRIM_RESOLVES calls, so
+        // further action is not needed here.
+        return preFold(call);
+      }
+    } else {
+      INT_FATAL("Not handled yet!");
+    }
+  }
+
+  return nullptr;
+}
+
 void resolveBlockStmt(BlockStmt* blockStmt) {
   for_exprs_postorder(expr, blockStmt) {
-    expr = resolveExpr(expr);
-    INT_ASSERT(expr != NULL);
+    if (Expr* changed = handleNonNormalizableExpr(expr)) {
+      expr = changed;
+    } else {
+      expr = resolveExpr(expr);
+    }
+
+    INT_ASSERT(expr);
   }
 }
 
@@ -9201,9 +9230,9 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
         break;
 
       if (i <= head &&
-          frame->linenum()                     >  0             &&
+          frame->linenum() > 0                                  &&
           fn->hasFlag(FLAG_COMPILER_GENERATED) == false         &&
-          module->modTag                       != MOD_INTERNAL) {
+          (developer || module->modTag != MOD_INTERNAL)         ) {
         break;
       }
     }
@@ -9806,6 +9835,9 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
     retval = true;
   }
 
+  // remove the temporary used in resolving
+  tmp->defPoint->remove();
+
   return retval;
 }
 
@@ -9846,6 +9878,9 @@ static void resolveBroadcasters(AggregateType* at) {
 
   ser.broadcaster = broadcastFn;
   ser.destroyer   = destroyFn;
+
+  // remove the temporary used to resolve
+  tmp->defPoint->remove();
 }
 
 static FnSymbol* createMethodStub(AggregateType* at, const char* methodName,
@@ -9897,7 +9932,7 @@ static bool ensureSerializersExist(AggregateType* at) {
            ! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
            ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
     if (at != NULL) {
-      if (isRecord(at) == true || 
+      if (isRecord(at) == true ||
           (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
         return resolveSerializeDeserialize(at);
       }
@@ -10042,7 +10077,7 @@ static bool createSerializeDeserialize(AggregateType* at) {
                                                        typeTemp,
                                                        deserializerFormal,
                                                        new_IntSymbol(fieldNum))));
-      
+
       deserializer->insertAtTail(deserVersions);
     }
     else {

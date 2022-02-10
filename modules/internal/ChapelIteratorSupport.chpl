@@ -540,21 +540,21 @@ module ChapelIteratorSupport {
 
   // There are three types of iterands w.r.t. fast followers:
   // 1. Those that can have fast followers:
-  //    
+  //
   //    We can generate fast followers for these types, and they are the only
   //    category of types that can result in fast followers in a
   //    non-zippered forall.
-  //    
+  //
   //    Arrays are in this category
   //
   // 2. Those that can lead fast followers:
-  // 
+  //
   //    We can generate fast followers in zippered foralls where the first
   //    iterand is one of these types. Note that, being able to lead fast
   //    followers doesn't mean being able to generate fast followers.
   //
   //    Domains and arrays are in this category
-  //    
+  //
   // 3. Those that can appear in a fast copy of a forall as followers
   //
   //    Basically reverse of 1. These iterands do not break static or dynamic

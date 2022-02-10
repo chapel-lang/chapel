@@ -632,7 +632,13 @@ struct ImportsResolver {
         } else {
           context->error(s, "expression type not supported for 'as'");
         }
-        rename = as->rename()->name();
+
+        // Expect an identifier by construction.
+        auto ident = as->rename()->toIdentifier();
+        assert(ident);
+
+        rename = ident->name();
+
         ret.push_back(std::make_pair(name, rename));
       }
     }

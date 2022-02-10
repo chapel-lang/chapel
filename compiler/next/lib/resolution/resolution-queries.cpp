@@ -290,7 +290,7 @@ struct Resolver {
         isFieldOrFormal = isField || decl->isFormal();
 
         if (substitutions != nullptr) {
-          auto search = substitutions->find(decl);
+          auto search = substitutions->find(id);
           if (search != substitutions->end()) {
             isSubstituted = true;
           }
@@ -304,9 +304,9 @@ struct Resolver {
   QualifiedType typeForId(const ID& id, bool localGenericToUnknown) {
     // if the id is contained within this symbol,
     // get the type information from the resolution result.
-    if (id.symbolPath() == symbol->id().symbolPath()) {
+    if (id.symbolPath() == symbol->id().symbolPath() && id.postOrderId() >= 0) {
       QualifiedType ret = byPostorder.byId(id).type();
-      if (ret.isGenericType()) {
+      if (ret.typeGenericity() != Type::CONCRETE) {
         if (shouldUseUnknownTypeForGeneric(id)) {
           // if id refers to a field or formal that needs to be instantiated,
           // replace the type with UnknownType since we can't compute
@@ -464,7 +464,7 @@ struct Resolver {
         if (isFieldOrFormal) {
           // use substitutions computed for fields and formals
           if (substitutions != nullptr) {
-            auto search = substitutions->find(decl);
+            auto search = substitutions->find(decl->id());
             if (search != substitutions->end()) {
               const QualifiedType& t = search->second;
               typePtr = t.type();
@@ -651,41 +651,6 @@ struct Resolver {
   }
 };
 
-// Given an AggregateDecl, do initial resolution of the fields
-// Note that useGenericFormalDefaults is moot for most types
-// and so code calling this query can optimize by calling with 'false'
-// first and then adjusting if it is not moot.
-static const ResolutionResultByPostorderID&
-resolveFieldsInitial(Context* context, ID id, bool useGenericFormalDefaults) {
-  QUERY_BEGIN(resolveFieldsInitial, context, id, useGenericFormalDefaults);
-
-  ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
-
-  auto ast = parsing::idToAst(context, id);
-  if (const AggregateDecl* ad = ast->toAggregateDecl()) {
-    Resolver visitor(context, ad, partialResult, useGenericFormalDefaults);
-    // visit the parent type
-    if (auto cls = ad->toClass()) {
-      if (auto parentClassExpr = cls->parentClass()) {
-        parentClassExpr->traverse(visitor);
-      }
-    }
-    // visit the field declarations
-    for (auto child: ad->children()) {
-      if (child->isVariable() ||
-          child->isMultiDecl() ||
-          child->isTupleDecl()) {
-        child->traverse(visitor);
-      }
-    }
-  } else {
-    assert(false && "case not handled");
-  }
-
-  return QUERY_END_CURRENT_RESULT();
-}
-
-
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
 
@@ -738,15 +703,16 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
     const Type* t = nullptr;
 
-    auto ast = parsing::idToAst(context, id);
-    if (auto* decl = ast->toNamedDecl()) {
-      kind = qualifiedTypeKindForDecl(decl);
-      if (auto td = decl->toTypeDecl()) {
-        bool useGenericFormalDefaults = true;
-        t = initialTypeForTypeDecl(context, td, useGenericFormalDefaults);
-        assert(kind == QualifiedType::TYPE);
-      } else if (decl->isModule() || decl->isFunction()) {
-        // OK, don't try to establish the types of these right now
+    auto tag = parsing::idToTag(context, id);
+
+    if (asttags::isNamedDecl(tag)) {
+      if (asttags::isTypeDecl(tag)) {
+        kind = QualifiedType::TYPE;
+        t = initialTypeForTypeDecl(context, id);
+      } else if (asttags::isModule(tag)) {
+        kind = QualifiedType::MODULE;
+      } else if (asttags::isFunction(tag)) {
+        kind = QualifiedType::FUNCTION;
       } else {
         assert(false && "case not handled");
       }
@@ -800,10 +766,17 @@ getFormalTypes(const Function* fn,
 }
 
 static bool
-anyFormalNeedsInstantiation(const std::vector<types::QualifiedType>& formalTs) {
+anyFormalNeedsInstantiation(Context* context,
+                            const std::vector<types::QualifiedType>& formalTs) {
   bool genericOrUnknown = false;
   for (const auto& qt : formalTs) {
-    if (qt.isGenericOrUnknown()) {
+    if (qt.isUnknown()) {
+      genericOrUnknown = true;
+      break;
+    }
+
+    auto g = qt.genericityWithFields(context);
+    if (g != Type::CONCRETE) {
       genericOrUnknown = true;
       break;
     }
@@ -887,7 +860,7 @@ typedSignatureInitial(Context* context,
 
   // now, construct a TypedFnSignature from the result
   std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
-  bool needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
+  bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
   auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
   // use an empty poiFnIdsUsed since this is never an instantiation
   std::set<std::pair<ID, ID>> poiFnIdsUsed;
@@ -902,79 +875,186 @@ typedSignatureInitial(Context* context,
   return result.get();
 }
 
+// Get a Type for an AggregateDecl
+// poiScope, instantiatedFrom are nullptr if not instantiating
+static
+const CompositeType* helpGetTypeForDecl(Context* context,
+                                        const AggregateDecl* ad,
+                                        const SubstitutionsMap& substitutions,
+                                        const PoiScope* poiScope,
+                                        const Type* instantiatedFrom) {
+
+  assert(ad);
+
+  // Filter out substitutions that aren't fields within 'ad'.
+  // In particular, there might be substitutions to do with a parent class.
+  SubstitutionsMap filteredSubs;
+  for (auto pair : substitutions) {
+    if (ad->id().contains(pair.first)) {
+      filteredSubs.insert(pair);
+    }
+  }
+
+  if (filteredSubs.empty()) {
+    instantiatedFrom = nullptr;
+  }
+
+  const CompositeType* ret = nullptr;
+
+  if (const Class* c = ad->toClass()) {
+    const BasicClassType* parentClassType = nullptr;
+    if (const Expression* parentClassExpr = c->parentClass()) {
+      // Resolve the parent class type expression
+      bool useGenericFormalDefaults = true; // doesn't matter, won't use fields
+      ResolutionResultByPostorderID r;
+      Resolver visitor(context, c, substitutions, poiScope, r,
+                       useGenericFormalDefaults);
+      parentClassExpr->traverse(visitor);
+
+      QualifiedType qt = r.byAst(parentClassExpr).type();
+      if (auto t = qt.type()) {
+        if (auto bct = t->toBasicClassType())
+          parentClassType = bct;
+        else if (auto ct = t->toClassType())
+          parentClassType = ct->basicClassType();
+      }
+      if (qt.isType() && parentClassType != nullptr) {
+        // OK
+      } else {
+        context->error(parentClassExpr, "invalid parent class expression");
+        parentClassType = BasicClassType::getObjectType(context);
+      }
+    } else {
+      parentClassType = BasicClassType::getObjectType(context);
+    }
+
+    const BasicClassType* insnFromBct = nullptr;
+    if (instantiatedFrom != nullptr) {
+      if (auto bct = instantiatedFrom->toBasicClassType())
+        insnFromBct = bct;
+      else if (auto ct = instantiatedFrom->toClassType())
+        insnFromBct = ct->basicClassType();
+      else
+        assert(false && "unexpected instantiatedFrom type");
+    }
+
+
+    if (!parentClassType->isObjectType() && !substitutions.empty()) {
+      // recompute the parent class type with substitutions
+      auto parentAst = parsing::idToAst(context, parentClassType->id());
+      assert(parentAst);
+      auto parentAd = parentAst->toAggregateDecl();
+      assert(parentAd);
+      auto got = helpGetTypeForDecl(context,
+                                    parentAd,
+                                    substitutions,
+                                    poiScope,
+                                    parentClassType);
+      auto gotBct = got->toBasicClassType();
+      assert(gotBct);
+      parentClassType = gotBct;
+    }
+
+    ret = BasicClassType::get(context, c->id(), c->name(),
+                              parentClassType,
+                              insnFromBct, std::move(filteredSubs));
+
+  } else if (auto r = ad->toRecord()) {
+    const RecordType* insnFromRec = nullptr;
+    if (instantiatedFrom != nullptr) {
+      if (auto rec = instantiatedFrom->toRecordType())
+        insnFromRec = rec;
+      else
+        assert(false && "unexpected instantiatedFrom type");
+    }
+
+    ret = RecordType::get(context, r->id(), r->name(),
+                          insnFromRec, std::move(filteredSubs));
+
+  } else if (auto u = ad->toUnion()) {
+    const UnionType* insnFromUni = nullptr;
+    if (instantiatedFrom != nullptr) {
+      if (auto uni = instantiatedFrom->toUnionType())
+        insnFromUni = uni;
+      else
+        assert(false && "unexpected instantiatedFrom type");
+    }
+
+    ret = UnionType::get(context, u->id(), u->name(),
+                         insnFromUni, std::move(filteredSubs));
+
+  } else {
+    assert(false && "case not handled");
+  }
+
+  return ret;
+}
+
+// initedInParent is true if the decl variable is inited due to a parent
+// uast node.  This comes up for TupleDecls.
+static void helpSetFieldTypes(const ASTNode* ast,
+                              ResolutionResultByPostorderID& r,
+                              bool initedInParent,
+                              ResolvedFields& fields) {
+
+  if (auto var = ast->toVarLikeDecl()) {
+    bool hasDefaultValue = initedInParent || var->initExpression() != nullptr;
+    const ResolvedExpression& e = r.byAst(var);
+    fields.addField(var->name(), hasDefaultValue, var->id(), e.type());
+  } else if (auto mult = ast->toMultiDecl()) {
+    for (auto decl : mult->decls()) {
+      helpSetFieldTypes(decl, r, initedInParent, fields);
+    }
+  } else if (auto tup = ast->toTupleDecl()) {
+    bool hasInit = initedInParent || tup->initExpression() != nullptr;
+    for (auto decl : tup->decls()) {
+      helpSetFieldTypes(decl, r, hasInit, fields);
+    }
+  }
+
+  // no action needed for other types of Decls since they aren't fields.
+}
+
+// This visits the fields to resolve them and then
+// sets the types in the Type* passed.
+static void
+resolveAndSetFieldTypes(Context* context, const AggregateDecl* ad,
+                        ResolutionResultByPostorderID& r,
+                        Resolver& visitor,
+                        const CompositeType* t,
+                        ResolvedFields& fields) {
+
+  // visit the field declarations to resolve them
+  // and then set them in the type
+  for (auto child: ad->children()) {
+    child->traverse(visitor);
+    helpSetFieldTypes(child, r, /* initedInParent */ false, fields);
+  }
+
+  // finalize the field types to compute summary information
+  // like whether any was generic
+  fields.finalizeFields(context);
+}
 
 static const Type* const&
-initialTypeForTypeDeclQuery(Context* context,
-                            ID declId,
-                            bool useGenericFormalDefaults) {
-  QUERY_BEGIN(initialTypeForTypeDeclQuery, context,
-              declId, useGenericFormalDefaults);
+initialTypeForTypeDeclQuery(Context* context, ID declId) {
+  QUERY_BEGIN(initialTypeForTypeDeclQuery, context, declId);
 
   const Type* result = nullptr;
 
   auto ast = parsing::idToAst(context, declId);
-  if (auto td = ast->toTypeDecl()) {
-    if (td->isEnum())
-      assert(false && "case not handled");
-    if (auto ad = td->toAggregateDecl()) {
-      // do 1st pass resolution of the field types
-      const ResolutionResultByPostorderID& r =
-        resolveFieldsInitial(context, declId, useGenericFormalDefaults);
-
-      // visit the parent type
-      const BasicClassType* parentType = nullptr;
-      if (auto cls = ad->toClass()) {
-        if (auto parentClassExpr = cls->parentClass()) {
-          QualifiedType qt = r.byAst(parentClassExpr).type();
-          if (auto t = qt.type()) {
-            if (auto bct = t->toBasicClassType())
-              parentType = bct;
-            else if (auto ct = t->toClassType())
-              parentType = ct->basicClassType();
-          }
-          if (qt.isType() && parentType != nullptr) {
-            // OK
-          } else {
-            context->error(declId, "invalid parent class");
-            parentType = BasicClassType::getObjectType(context);
-          }
-        } else {
-          parentType = BasicClassType::getObjectType(context);
-        }
-      }
-
-      // now pull out the field types
-      // TODO: handle MultiDecl and TupleDecl
-      std::vector<CompositeType::FieldDetail> fields;
-      for (auto child: ad->children()) {
-        if (auto var = child->toVariable()) {
-          if (var->isField()) {
-            const ResolvedExpression& e = r.byAst(child);
-            bool hasDefault = var->initExpression() != nullptr;
-            fields.push_back(CompositeType::FieldDetail(var->name(),
-                                                        hasDefault,
-                                                        var,
-                                                        e.type()));
-          }
-        }
-      }
-
-      if (auto rec = ad->toRecord()) {
-        result = RecordType::get(context, rec->id(), rec->name(),
-                                 std::move(fields),
-                                 /* instantiatedFrom */ nullptr);
-      }
-      if (auto cls = ad->toClass()) {
-        auto t = BasicClassType::get(context, cls->id(), cls->name(),
-                                     parentType, std::move(fields),
-                                     /* instantiatedFrom */ nullptr);
-        auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
-        result = ClassType::get(context, t, /*manager*/ nullptr, d);
-      }
-      if (auto uni = ad->toUnion()) {
-        result = UnionType::get(context, uni->id(), uni->name(),
-                                std::move(fields),
+  if (auto ad = ast->toAggregateDecl()) {
+    result = helpGetTypeForDecl(context, ad,
+                                SubstitutionsMap(),
+                                /* poiScope */ nullptr,
                                 /* instantiatedFrom */ nullptr);
+
+    if (result != nullptr) {
+      if (auto bct = result->toBasicClassType()) {
+        // for a 'class C' declaration, 'C' normally means a generic-management
+        // non-nil C so adjust the result.
+        auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+        result = ClassType::get(context, bct, /*manager*/ nullptr, dec);
       }
     }
   }
@@ -982,31 +1062,162 @@ initialTypeForTypeDeclQuery(Context* context,
   return QUERY_END(result);
 }
 
-const Type* initialTypeForTypeDecl(Context* context,
-                            const TypeDecl* d,
-                            bool useGenericFormalDefaults) {
-  assert(d);
-  const Type* t;
-  t = initialTypeForTypeDeclQuery(context, d->id(),
-                                  /* useGenericFormalDefaults */ false);
+const Type* initialTypeForTypeDecl(Context* context, ID declId) {
+  return initialTypeForTypeDeclQuery(context, declId);
+}
+
+static
+const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
+                                             const CompositeType* ct,
+                                             bool useGenericFormalDefaults) {
+  QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, useGenericFormalDefaults);
+
+  ResolvedFields& partialResult = QUERY_CURRENT_RESULT;
+
+  assert(ct);
+  partialResult.setType(ct);
+
+  bool isObjectType = false;
+  if (auto bct = ct->toBasicClassType()) {
+    isObjectType = bct->isObjectType();
+  }
+
+  if (isObjectType) {
+    // no need to try to resolve the fields for the object type,
+    // which doesn't have a real uAST ID.
+
+  } else {
+    auto ast = parsing::idToAst(context, ct->id());
+    assert(ast && ast->isAggregateDecl());
+    auto ad = ast->toAggregateDecl();
+
+
+    if (ct->instantiatedFromCompositeType() == nullptr) {
+      // handle resolving a not-yet-instantiated type
+      ResolutionResultByPostorderID r;
+      Resolver visitor(context, ad, r, useGenericFormalDefaults);
+
+      // resolve the field types and set them in 'result'
+      resolveAndSetFieldTypes(context, ad, r, visitor, ct, partialResult);
+    } else {
+      // handle resolving an instantiated type
+
+      // use nullptr for POI scope because POI is not considered
+      // when resolving the fields when constructing a type..
+      const PoiScope* poiScope = nullptr;
+      ResolutionResultByPostorderID r;
+      Resolver visitor(context, ad, ct->substitutions(), poiScope, r,
+                       useGenericFormalDefaults);
+
+      // resolve the field types and set them in 'result'
+      resolveAndSetFieldTypes(context, ad, r, visitor, ct, partialResult);
+    }
+  }
+
+  return QUERY_END_CURRENT_RESULT();
+}
+
+static const ResolvedFields&
+partiallyResolvedFieldsForTypeDecl(Context* context,
+                                   const CompositeType* ct,
+                                   bool useGenericFormalDefaults) {
+  // check for a partial result from a running query
+  const ResolvedFields* r =
+    QUERY_RUNNING_PARTIAL_RESULT(fieldsForTypeDeclQuery, context, ct,
+                                 useGenericFormalDefaults);
+
+  // if there was a partial result, return it
+  if (r != nullptr) {
+    return *r;
+  }
+
+  // otherwise, run the query to compute the full result
+  return fieldsForTypeDeclQuery(context, ct, useGenericFormalDefaults);
+}
+
+const ResolvedFields& fieldsForTypeDecl(Context* context,
+                                        const CompositeType* ct,
+                                        bool useGenericFormalDefaults) {
+
+  // try first with useGenericFormalDefaults=false
+  const auto& f = partiallyResolvedFieldsForTypeDecl(context, ct, false);
 
   // If useGenericFormalDefaults was requested and the type
   // is generic with defaults, compute the type again.
   // We do it this way so that we are more likely to be able to reuse the
   // result of the above query in most cases since most types
   // are not generic record/class with defaults.
-  if (useGenericFormalDefaults) {
-    if (auto ct = t->getCompositeType()) {
-      if (ct->isGenericWithDefaults()) {
-        t = initialTypeForTypeDeclQuery(context, d->id(),
-                                        /* useGenericFormalDefaults */ true);
-      }
-    }
+  if (useGenericFormalDefaults && f.isGenericWithDefaults()) {
+    return partiallyResolvedFieldsForTypeDecl(context, ct, true);
   }
 
-  return t;
+  // Otherwise, use the value we just computed.
+  return f;
 }
 
+
+static Type::Genericity getFieldsGenericity(Context* context,
+                                            const CompositeType* ct) {
+  // Figure out the genericity of the type based on the genericity
+  // of the fields.
+
+  // Some testing code creates CompositeType with empty IDs.
+  // Assume these are concrete.
+  // Also 'object' has an empty ID and is concrete.
+  if (ct->id().isEmpty())
+    return Type::CONCRETE;
+
+  Type::Genericity g = Type::CONCRETE;
+
+  if (auto bct = ct->toBasicClassType()) {
+    g = getFieldsGenericity(context, bct->parentClassType());
+    assert(g != Type::MAYBE_GENERIC);
+  }
+
+  // this setting is irrelevant for this query since the
+  // isGenericWithDefaults will be computed either way.
+  bool useGenericFormalDefaults = false;
+  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+                                              useGenericFormalDefaults);
+
+  if (f.isGenericWithDefaults() && g == Type::CONCRETE)
+    return Type::GENERIC_WITH_DEFAULTS;
+
+  if (f.isGeneric())
+    return Type::GENERIC;
+
+  return g;
+}
+
+Type::Genericity getTypeGenericity(Context* context, const Type* t) {
+  assert(t);
+
+  // check if the type knows the full answer
+  Type::Genericity ret = t->genericity();
+
+  if (ret != Type::MAYBE_GENERIC)
+    return ret;
+
+  if (t->isUnknownType())
+    return Type::MAYBE_GENERIC;
+
+  // MAYBE_GENERIC should only be returned for CompositeType /
+  // ClassType right now.
+  assert(t->isCompositeType() || t->isClassType());
+
+  if (auto classType = t->toClassType()) {
+    // should be handled in BasicClassType::isGeneric
+    // so this code should only be called if the management is concrete
+    assert(!classType->decorator().isUnknownManagement());
+    assert(!classType->decorator().isUnknownNilability());
+
+    auto bct = classType->basicClassType();
+    return getFieldsGenericity(context, bct);
+  }
+
+  auto compositeType = t->toCompositeType();
+  return getFieldsGenericity(context, compositeType);
+}
 
 // Returns true if the field should be included in the type constructor.
 // In that event, also sets formalType to the type the formal should use.
@@ -1050,12 +1261,8 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
     //    (and when previous generic fields are set, they will be concrete)
     const Type* t = fieldType.type();
     if (t && !t->isUnknownType()) {
-      bool fieldIsGeneric = t->isGeneric();
-      if (const CompositeType* ct = t->getCompositeType()) {
-        if (ct->isGenericWithDefaults())
-          fieldIsGeneric = false;
-      }
-      if (fieldIsGeneric) {
+      Type::Genericity g = getTypeGenericity(context, t);
+      if (g == Type::GENERIC) { // and not GENERIC_WITH_DEFAULTS
         formalType = QualifiedType(QualifiedType::TYPE, t);
         return true;
       }
@@ -1077,23 +1284,33 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   UniqueString name;
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<types::QualifiedType> formalTypes;
+  bool idIsClass = false;
 
   if (auto ct = t->getCompositeType()) {
     id = ct->id();
     name = ct->name();
 
+    // attempt to resolve the fields
+    bool useGenericFormalDefaults = false;
+    const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+                                                useGenericFormalDefaults);
+
     // find the generic fields from the type and add
     // these as type constructor arguments.
-    int nFields = ct->numFields();
+    int nFields = f.numFields();
     for (int i = 0; i < nFields; i++) {
-      const Decl* fieldDecl = ct->fieldDecl(i);
-      QualifiedType fieldType = ct->fieldType(i);
+      auto declId = f.fieldDeclId(i);
+      auto declAst = parsing::idToAst(context, declId);
+      assert(declAst);
+      const Decl* fieldDecl = declAst->toDecl();
+      assert(fieldDecl);
+      QualifiedType fieldType = f.fieldType(i);
       QualifiedType formalType;
       if (shouldIncludeFieldInTypeConstructor(context, fieldDecl, fieldType,
                                               formalType)) {
 
-        auto d = UntypedFnSignature::FormalDetail(ct->fieldName(i),
-                                                  ct->fieldHasDefaultValue(i),
+        auto d = UntypedFnSignature::FormalDetail(f.fieldName(i),
+                                                  f.fieldHasDefaultValue(i),
                                                   fieldDecl);
         formals.push_back(d);
         // formalType should have been set above
@@ -1101,6 +1318,9 @@ typeConstructorInitialQuery(Context* context, const Type* t)
         formalTypes.push_back(formalType);
       }
     }
+
+    if (t->isBasicClassType() || t->isClassType())
+      idIsClass = true;
   } else {
     assert(false && "case not handled");
   }
@@ -1109,6 +1329,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                          id, name,
                                          /* isMethod */ false,
                                          /* idIsFunction */ false,
+                                         idIsClass,
                                          /* isTypeConstructor */ true,
                                          Function::PROC,
                                          std::move(formals),
@@ -1148,8 +1369,8 @@ static QualifiedType getInstantiationType(Context* context,
   assert(formalT != nullptr);
 
   // this function should only be called when instantiation is required
-  assert(canPass(actualType, formalType).passes());
-  assert(canPass(actualType, formalType).instantiates());
+  assert(canPass(context, actualType, formalType).passes());
+  assert(canPass(context, actualType, formalType).instantiates());
 
   if (auto actualCt = actualT->toClassType()) {
     // handle decorated class passed to decorated class
@@ -1169,7 +1390,8 @@ static QualifiedType getInstantiationType(Context* context,
 
       // which BasicClassType to use?
       const BasicClassType* bct = formalCt->basicClassType();
-      if (bct->isGeneric()) {
+      auto g = getTypeGenericity(context, bct);
+      if (g != Type::CONCRETE) {
         assert(false && "not implemented yet");
       }
 
@@ -1296,22 +1518,22 @@ const TypedFnSignature* instantiateSignature(Context* context,
         // don't add any substitution
       } else {
         // add a "use the default" hint substitution.
-        substitutions.insert({entry.formal, entry.actualType});
+        substitutions.insert({entry.formal->id(), entry.actualType});
       }
     } else {
-      auto got = canPass(entry.actualType, entry.formalType);
+      auto got = canPass(context, entry.actualType, entry.formalType);
       assert(got.passes()); // should not get here otherwise
       if (got.instantiates()) {
         // add a substitution for a valid value
         if (!got.converts() && !got.promotes()) {
           // use the actual type since no conversion/promotion was needed
-          substitutions.insert({entry.formal, entry.actualType});
+          substitutions.insert({entry.formal->id(), entry.actualType});
         } else {
           // get instantiation type
           QualifiedType useType = getInstantiationType(context,
                                                        entry.actualType,
                                                        entry.formalType);
-          substitutions.insert({entry.formal, useType});
+          substitutions.insert({entry.formal->id(), useType});
         }
       }
     }
@@ -1331,7 +1553,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
     auto tmp = getFormalTypes(fn, r);
     formalTypes.swap(tmp);
-    needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
+    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
     where = whereClauseResult(context, fn, r, needsInstantiation);
   } else if (ad != nullptr) {
     // visit the fields
@@ -1369,7 +1591,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                           fieldType.type(),
                                           fieldType.param()));
     }
-    needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
+    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
   } else {
     assert(false && "case not handled");
   }
@@ -1592,6 +1814,67 @@ struct ReturnTypeInferer {
   }
 };
 
+// For a class type construction, returns a BasicClassType
+static const Type* const&
+returnTypeForTypeCtorQuery(Context* context,
+                           const TypedFnSignature* sig,
+                           const PoiScope* poiScope) {
+  QUERY_BEGIN(returnTypeForTypeCtorQuery, context, sig, poiScope);
+
+  const UntypedFnSignature* untyped = sig->untyped();
+
+  const Type* result;
+
+  // handle type construction
+  const AggregateDecl* ad = nullptr;
+  if (!untyped->id().isEmpty())
+    if (auto ast = parsing::idToAst(context, untyped->id()))
+      ad = ast->toAggregateDecl();
+
+  if (ad) {
+    // compute instantiatedFrom
+    const CompositeType* instantiatedFrom = nullptr;
+    if (sig->instantiatedFrom()) {
+      const Type* t = initialTypeForTypeDecl(context, ad->id());
+      assert(t);
+
+      // ignore decorators etc for finding instantiatedFrom
+      if (auto ct = t->toClassType())
+        t = ct->basicClassType();
+
+      instantiatedFrom = t->toCompositeType();
+      assert(instantiatedFrom);
+    }
+
+    // compute the substitutions
+    SubstitutionsMap subs;
+
+    int nFormals = sig->numFormals();
+    for (int i = 0; i < nFormals; i++) {
+      const Decl* formalDecl = untyped->formalDecl(i);
+      const QualifiedType& formalType = sig->formalType(i);
+      // Note that the formalDecl should already be a fieldDecl
+      // based on typeConstructorInitialQuery.
+      subs.insert({formalDecl->id(), formalType});
+    }
+
+    // get a type using the substitutions
+    const CompositeType* theType = helpGetTypeForDecl(context, ad,
+                                                      subs,
+                                                      poiScope,
+                                                      instantiatedFrom);
+
+    result = theType;
+
+  } else {
+    // built-in type construction should be handled
+    // by resolveFnCallSpecialType and not reach this point.
+    assert(false && "case not handled");
+  }
+
+  return QUERY_END(result);
+}
+
 const QualifiedType& returnType(Context* context,
                                 const TypedFnSignature* sig,
                                 const PoiScope* poiScope) {
@@ -1623,108 +1906,20 @@ const QualifiedType& returnType(Context* context,
       result = visitor.returnedType();
     }
   } else if (untyped->isTypeConstructor()) {
-    // handle type construction
-    const AggregateDecl* ad = nullptr;
-    if (!untyped->id().isEmpty())
-      if (auto ast = parsing::idToAst(context, untyped->id()))
-        ad = ast->toAggregateDecl();
+    const Type* t = returnTypeForTypeCtorQuery(context, sig, poiScope);
 
-    if (ad) {
-      // compute the substitutions
-      SubstitutionsMap substitutions;
-
-      int nFormals = sig->numFormals();
-      for (int i = 0; i < nFormals; i++) {
-        const Decl* formalDecl = untyped->formalDecl(i);
-        const QualifiedType& formalType = sig->formalType(i);
-        substitutions.insert({formalDecl, formalType});
-      }
-
-      const BasicClassType* parentType = nullptr;
-      std::vector<CompositeType::FieldDetail> fields;
-
-      ResolutionResultByPostorderID r;
-      Resolver visitor(context, ad, substitutions, poiScope, r,
-                       /* useGenericFormalDefaults */ false);
-      // visit the parent type
-      if (auto cls = ad->toClass()) {
-        if (auto parentClassExpr = cls->parentClass()) {
-          parentClassExpr->traverse(visitor);
-          QualifiedType qt = r.byAst(parentClassExpr).type();
-          assert(qt.hasTypePtr() && qt.isType());
-          if (auto t = qt.type()) {
-            if (auto bct = t->toBasicClassType())
-              parentType = bct;
-            else if (auto ct = t->toClassType())
-              parentType = ct->basicClassType();
-          }
-          assert(parentType);
-        } else {
-          parentType = BasicClassType::getObjectType(context);
-        }
-      }
-      // visit the fields, computing types once again
-      // TODO: handle MultiDecl and TupleDecl
-      for (auto child: ad->children()) {
-        if (auto var = child->toVariable()) {
-          if (var->isField()) {
-            var->traverse(visitor);
-
-            UniqueString name = var->name();
-            bool hasDefault = var->initExpression() != nullptr;
-            QualifiedType type = r.byAst(var).type();
-
-            fields.push_back(
-              CompositeType::FieldDetail(name, hasDefault, var, type));
-          }
-        }
-      }
-
-
-      const Type* instantiatedFrom = nullptr;
-      if (sig->instantiatedFrom()) {
-        bool useGenericFormalDefaults = false;
-        instantiatedFrom = initialTypeForTypeDecl(context,
-                                                  ad,
-                                                  useGenericFormalDefaults);
-        assert(instantiatedFrom);
-      }
-
-      const Type* t = nullptr;
-      if (auto rec = ad->toRecord()) {
-        assert(instantiatedFrom == nullptr || instantiatedFrom->isRecordType());
-        t = RecordType::get(context, rec->id(), rec->name(),
-                            std::move(fields),
-                            (const RecordType*) instantiatedFrom);
-      }
-      if (auto cls = ad->toClass()) {
-        // ignore decorators etc for finding instantiatedFrom
-        if (instantiatedFrom)
-          if (auto ct = instantiatedFrom->toClassType())
-            instantiatedFrom = ct->basicClassType();
-
-        assert(instantiatedFrom == nullptr ||
-               instantiatedFrom->isBasicClassType());
-        auto bct = BasicClassType::get(context, cls->id(), cls->name(),
-                                       parentType, std::move(fields),
-                                       (const BasicClassType*) instantiatedFrom);
-        auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
-        t = ClassType::get(context, bct, nullptr, d);
-      }
-      if (auto uni = ad->toUnion()) {
-        assert(instantiatedFrom == nullptr ||
-               instantiatedFrom->isUnionType());
-        t = UnionType::get(context, uni->id(), uni->name(),
-                           std::move(fields),
-                           (const UnionType*) instantiatedFrom);
-      }
-      result = QualifiedType(QualifiedType::TYPE, t);
-
-    } else {
-      // built-in type construction should be handled
-      // by resolveFnCallSpecialType and not reach this point.
-      assert(false && "case not handled");
+    // for a 'class C' declaration, the above query returns a BasicClassType,
+    // but 'C' normally means a generic-management non-nil C
+    // so adjust the result.
+    if (untyped->idIsClass()) {
+      auto bct = t->toBasicClassType();
+      assert(bct);
+      auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+      t = ClassType::get(context, bct, /*manager*/ nullptr, dec);
     }
+
+    result = QualifiedType(QualifiedType::TYPE, t);
+
   } else {
     assert(false && "case not handled");
   }
@@ -1747,17 +1942,22 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
     return QualifiedType::CONST_REF;
 
   if (auto ct = t->toClassType()) {
-    if (ct->decorator().isManaged())
+    if (ct->decorator().isUnknownManagement())
+      return QualifiedType::CONST_INTENT;
+    else if (ct->decorator().isManaged())
       return QualifiedType::CONST_REF;
     else
       return QualifiedType::CONST_IN;
   }
 
-  assert(false && "case not yet handled");
-  return QualifiedType::UNKNOWN;
+  // Otherwise, it should be a generic type that we will
+  // instantiate before computing the final intent.
+  assert(t->genericity() != Type::CONCRETE);
+  return QualifiedType::CONST_INTENT; // leave the intent generic
 }
 
 static QualifiedType::Kind defaultIntentForType(const Type* t) {
+
   // anything we don't know the type of has to have unknown intent
   if (t == nullptr || t->isUnknownType() || t->isErroneousType())
     return QualifiedType::UNKNOWN;
@@ -1769,14 +1969,18 @@ static QualifiedType::Kind defaultIntentForType(const Type* t) {
     return QualifiedType::CONST_REF;
 
   if (auto ct = t->toClassType()) {
-    if (ct->decorator().isManaged())
+    if (ct->decorator().isUnknownManagement())
+      return QualifiedType::DEFAULT_INTENT;
+    else if (ct->decorator().isManaged())
       return QualifiedType::CONST_REF;
     else
       return QualifiedType::CONST_IN;
   }
 
-  assert(false && "case not yet handled");
-  return QualifiedType::UNKNOWN;
+  // Otherwise, it should be a generic type that we will
+  // instantiate before computing the final intent.
+  assert(t->genericity() != Type::CONCRETE);
+  return QualifiedType::DEFAULT_INTENT; // leave the intent generic
 }
 
 static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
@@ -1843,9 +2047,7 @@ doIsCandidateApplicableInitial(Context* context,
       td = ast->toTypeDecl();
 
     if (td != nullptr) {
-      bool useGenericFormalDefaults = false;
-      const Type* t = initialTypeForTypeDecl(context, td,
-                                             useGenericFormalDefaults);
+      const Type* t = initialTypeForTypeDecl(context, td->id());
       return typeConstructorInitial(context, t);
     } else {
       assert(false && "case not handled");
@@ -1874,7 +2076,7 @@ doIsCandidateApplicableInitial(Context* context,
   for (const FormalActual& entry : faMap.byFormalIdx()) {
     const auto& actualType = entry.actualType;
     const auto& formalType = initialTypedSignature->formalType(formalIdx);
-    auto got = canPass(actualType, formalType);
+    auto got = canPass(context, actualType, formalType);
     if (!got.passes()) {
       return nullptr;
     }
@@ -1910,7 +2112,7 @@ doIsCandidateApplicableInstantiating(Context* context,
   for (size_t i = 0; i < nActuals; i++) {
     const QualifiedType& actualType = call.actuals(i).type();
     const QualifiedType& formalType = instantiated->formalType(i);
-    auto got = canPass(actualType, formalType);
+    auto got = canPass(context, actualType, formalType);
     if (!got.passes())
       return nullptr;
   }
@@ -2270,6 +2472,7 @@ CallResolutionResult resolveFnCall(Context* context,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope) {
+
   // search for candidates at each POI until we have found a candidate
   std::vector<const TypedFnSignature*> candidates;
   size_t firstPoiCandidate = 0;

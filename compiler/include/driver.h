@@ -272,6 +272,8 @@ extern bool fPrintAdditionalErrors;
 extern bool fCompilerLibraryParser;
 extern bool fDebugTrace;
 
+extern size_t fBreakOnQueryHash;
+
 namespace chpl {
   class Context;
 }

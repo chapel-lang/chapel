@@ -68,7 +68,7 @@ struct mpool_element {
 #ifdef PSM_DEBUG
 	uint32_t me_isused;
 #endif
-} __attribute__ ((aligned(8)));
+} __attribute__ ((aligned(16)));
 
 #ifdef PSM_DEBUG
 #  define me_mark_used(me)    ((me)->me_isused = 1)
@@ -182,13 +182,16 @@ psmi_mpool_create_inner(size_t obj_size, uint32_t num_obj_per_chunk,
 	mp->mp_elm_vector_free = mp->mp_elm_vector;
 
 	if (flags & PSMI_MPOOL_ALIGN) {
+		// TBD - this is broken, mp_elm_offset is not
+		// used all the places where it needs to be
+		// fortunately this flag is not used yet
+		psmi_assert_always(0);
 		/* User wants its block to start on a PSMI_MPOOL_ALIGNMENT
 		 * boundary. */
 		hdr_size = PSMI_ALIGNUP(sizeof(struct mpool_element),
 					PSMI_MPOOL_ALIGNMENT);
 		mp->mp_obj_size = PSMI_ALIGNUP(obj_size, PSMI_MPOOL_ALIGNMENT);
 		mp->mp_elm_size = hdr_size + mp->mp_obj_size;
-
 		mp->mp_elm_offset = hdr_size - sizeof(struct mpool_element);
 	} else {
 		hdr_size = sizeof(struct mpool_element);

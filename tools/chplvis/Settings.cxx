@@ -31,7 +31,7 @@
 
 // Color Reference location and height
 static const int cr_x = 180;
-static const int cr_y = 35;  
+static const int cr_y = 35;
 static const int cr_h = 20;
 
 

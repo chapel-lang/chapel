@@ -1,5 +1,5 @@
-perfkeys: real, real
-graphkeys: release, submitted
-files: knucleotide.dat, knucleotide-submitted.dat
+perfkeys: real, real, real
+graphkeys: release, submitted, knucleotide-hash
+files: knucleotide.dat, knucleotide-submitted.dat, knucleotide-hash.dat
 graphtitle: Submitted K-nucleotide Shootout Benchmark
 ylabel: Time (seconds)

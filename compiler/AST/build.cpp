@@ -41,6 +41,8 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <map>
 #include <utility>
 
@@ -127,29 +129,10 @@ void checkControlFlow(Expr* expr, const char* context) {
 static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
   forv_Vec(const char, str, *pragmas) {
     Flag flag = pragma2flag(str);
-    if (flag == FLAG_UNKNOWN)
+    if (flag == FLAG_UNKNOWN) {
       USR_FATAL_CONT(sym, "unknown pragma: \"%s\"", str);
-    else {
+    } else {
       sym->addFlag(flag);
-
-      if (flag == FLAG_RUNTIME_TYPE_INIT_FN) {
-        //
-        // These functions must be marked as type functions early in
-        // compilation, as calls to them are inserted by the compiler
-        // at the declaration points for arrays and domains.  In the
-        // past, they had to be defined as type functions in the
-        // modules, but most of us found that very confusing because
-        // the code in the functions actually returns a value.  See
-        // buildRuntimTypeToValueFns() in functionResolution.cpp for
-        // more info on what happens to these functions.
-        //
-        FnSymbol* fn = toFnSymbol(sym);
-        INT_ASSERT(fn);
-        if (fn->retTag != RET_VALUE) {
-          USR_WARN(fn, "function's return type is not a value type.  Ignoring.");
-        }
-        fn->retTag = RET_TYPE;
-      }
     }
   }
 }
@@ -2611,17 +2594,6 @@ BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1, Expr* e2) {
 BlockStmt* buildDeleteStmt(CallExpr* exprlist) {
   INT_ASSERT(exprlist->isPrimitive(PRIM_ACTUALS_LIST));
   return new BlockStmt(new CallExpr("chpl__delete", exprlist), BLOCK_SCOPELESS);
-}
-
-BlockStmt*
-buildAtomicStmt(Expr* stmt) {
-  static bool atomic_warning = false;
-
-  if (!atomic_warning) {
-    atomic_warning = true;
-    USR_WARN(stmt, "atomic statement is ignored (not implemented)");
-  }
-  return buildChapelStmt(new BlockStmt(stmt));
 }
 
 

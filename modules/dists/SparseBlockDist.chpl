@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -291,10 +291,10 @@ class SparseBlockDom: BaseSparseDomImpl {
   iter these(param tag: iterKind) where tag == iterKind.standalone &&
     // Ensure it is legal to invoke the standalone iterator
     // on locDom.mySparseBlock below.
-    __primitive("method call resolves",
-                locDoms[createTuple(rank,int,0)]!.mySparseBlock._value,
-                "these", tag)
-  {
+    __primitive("resolves", locDoms[createTuple(rank,int,0)]!
+                              .mySparseBlock
+                              ._value
+                              .these(tag)) {
     coforall locDom in locDoms {
       on locDom {
         forall i in locDom!.mySparseBlock {
@@ -484,10 +484,8 @@ class SparseBlockArr: BaseSparseArr {
   iter these(param tag: iterKind) ref where tag == iterKind.standalone &&
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
-    __primitive("method call resolves",
-                locArr[locArrDom.low]!.myElems._value,
-                "these", tag)
-   {
+    __primitive("resolves",
+                locArr[locArrDom.low]!.myElems._value.these(tag)) {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       forall i in locA!.myElems {

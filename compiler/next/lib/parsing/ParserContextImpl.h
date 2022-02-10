@@ -146,11 +146,11 @@ owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
 
 PODUniqueString ParserContext::notePragma(YYLTYPE loc,
                                           Expression* pragmaStr) {
-  auto ret = PODUniqueString::build();
+  auto ret = PODUniqueString::get();
 
   // Extract the string literal and convert it into a pragma flag.
   if (auto strLit = pragmaStr->toStringLiteral()) {
-    ret = PODUniqueString::build(context(), strLit->str().c_str());
+    ret = PODUniqueString::get(context(), strLit->str().c_str());
     auto tag = pragmaNameToTag(ret.c_str());
 
     if (tag == PRAGMA_UNKNOWN) {
@@ -638,9 +638,67 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
                        op, toOwned(expr)).release();
 }
 
+Expression* ParserContext::buildManagerExpr(YYLTYPE location,
+                                            Expression* expr,
+                                            Variable::Kind kind,
+                                            YYLTYPE locResourceName,
+                                            UniqueString resourceName) {
+  auto var = Variable::build(builder, convertLocation(locResourceName),
+                             nullptr,
+                             Decl::DEFAULT_VISIBILITY,
+                             Decl::DEFAULT_LINKAGE,
+                             nullptr,
+                             resourceName,
+                             kind,
+                             false,
+                             false,
+                             nullptr,
+                             nullptr);
+  auto as = As::build(builder, convertLocation(location),
+                      toOwned(expr),
+                      std::move(var));
+  return as.release();
+}
+
+Expression* ParserContext::buildManagerExpr(YYLTYPE location,
+                                            Expression* expr,
+                                            YYLTYPE locResourceName,
+                                            UniqueString resourceName) {
+  return buildManagerExpr(location, expr, Variable::INDEX,
+                          locResourceName,
+                          resourceName);
+}
+
+CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
+                                               ParserExprList* managerExprs,
+                                               YYLTYPE locBlockOrDo,
+                                               BlockOrDo blockOrDo) {
+  std::vector<ParserComment>* comments;
+  ParserExprList* stmtExprList;
+  BlockStyle blockStyle;
+
+  prepareStmtPieces(comments, stmtExprList, blockStyle, location,
+                    locBlockOrDo,
+                    blockOrDo);
+
+  ASTList managers = consumeList(managerExprs);
+  ASTList stmts = consumeList(stmtExprList);
+
+  auto node = Manage::build(builder, convertLocation(location),
+                            std::move(managers),
+                            blockStyle,
+                            std::move(stmts));
+
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+
+  return ret;
+}
+
 FunctionParts ParserContext::makeFunctionParts(bool isInline,
                                                bool isOverride) {
-  FunctionParts fp = {nullptr,
+  FunctionParts fp = {-1,
+                      -1,
+                      nullptr,
                       nullptr,
                       nullptr,
                       this->visibility,
@@ -651,12 +709,45 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       Function::PROC,
                       Formal::DEFAULT_INTENT,
                       nullptr,
-                      PODUniqueString::build(),
+                      PODUniqueString::get(),
                       Function::DEFAULT_RETURN_INTENT,
                       false,
                       nullptr, nullptr, nullptr, nullptr,
                       nullptr};
   return fp;
+}
+
+CommentsAndStmt
+ParserContext::buildExternExportFunctionDecl(YYLTYPE location,
+                                             FunctionParts& fp) {
+  return buildFunctionDecl(location, fp);
+}
+
+CommentsAndStmt
+ParserContext::buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp) {
+
+  //
+  // The location for regular function decls seems to include blank lines
+  // following the last production in the 'first_line' of location. As a
+  // quick, hacky workaround, store the 'first_line' and 'first_column' of
+  // the start keyword when building up 'fp' and use that to compute an
+  // accurate location.
+  // Note that we also can't just store a YYLTYPE in 'FunctionParts',
+  // because a weird circular dependency causes C++ to explode.
+  // I think that the proper fix for this is to massage the grammar so that
+  // the 'fn_decl_complete' rule includes a terminal on its LHS, but I'm
+  // not going to fiddle with grammar rules right now.
+  //
+  YYLTYPE startLoc = {
+    .first_line = fp.startLocFirstLine,
+    .first_column = fp.startLocFirstColumn,
+    .last_line = fp.startLocFirstLine,
+    .last_column = fp.startLocFirstColumn
+  };
+
+  auto accurateLoc = makeSpannedLocation(startLoc, location);
+
+  return buildFunctionDecl(accurateLoc, fp);
 }
 
 CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
@@ -675,7 +766,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
     if (currentScopeIsAggregate()) {
       if (fp.receiver == nullptr) {
         auto loc = convertLocation(location);
-        auto ths = UniqueString::build(context(), "this");
+        auto ths = UniqueString::get(context(), "this");
         UniqueString cls = scope.name;
         fp.receiver = Formal::build(builder, loc, /*attributes*/ nullptr,
                                     ths,
@@ -693,7 +784,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 
     auto f = Function::build(builder, this->convertLocation(location),
                              toOwned(fp.attributes),
-                             this->visibility,
+                             fp.visibility,
                              fp.linkage,
                              toOwned(fp.linkageNameExpr),
                              fp.name,
@@ -716,6 +807,16 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   }
   this->clearComments();
   return cs;
+}
+
+Expression*
+ParserContext::buildLetExpr(YYLTYPE location, ParserExprList* decls,
+                            Expression* expr) {
+  auto declExprs = consumeList(decls);
+  auto node = Let::build(builder, convertLocation(location),
+                         std::move(declExprs),
+                         toOwned(expr));
+  return node.release();
 }
 
 // This is the weird one. I can't even parse what is happening here...
@@ -861,6 +962,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
 // TODO: Use me in 'buildBracketLoop' as well.
 owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                               ParserExprList* indexExprs) {
+  // TODO: We have to handle the possibility of [1..2, 3..4] here.
   if (indexExprs->size() > 1) {
     const char* msg = "Invalid index expression";
     noteError(location, msg);
@@ -871,6 +973,34 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
     assert(indexExpr);
     return buildLoopIndexDecl(location, toOwned(indexExpr));
   }
+}
+
+Expression* ParserContext::buildNewExpr(YYLTYPE location,
+                         New::Management management,
+                         Expression* expr) {
+  if (FnCall* fnCall = expr->toFnCall()) {
+    return this->wrapCalledExpressionInNew(location, management, fnCall);
+  } else if (OpCall* opCall = expr->toOpCall()) {
+    assert(opCall->numActuals() == 1);
+    auto& child = builder->mutableRefToChildren(opCall)[0];
+    if (FnCall* fnCall = child->toFnCall()) {
+      child.release();
+      auto wrappedFn = this->wrapCalledExpressionInNew(location, management, fnCall);
+      child.reset(wrappedFn);
+      return expr;
+    } else {
+      //something wrong, as below
+      this->raiseError(location, "Invalid form for new expression");
+    }
+  } else {
+    // It's an error for one reason or another. TODO: Specialize these
+    // errors later (e.g. 'new a.field' would require parens around
+    // the expression 'a.field'; 'new foo' would require an argument
+    // list for 'foo'; and something like 'new __primitive()' just
+    // doesn't make any sense...
+    this->raiseError(location, "Invalid form for new expression");
+  }
+  return nullptr;
 }
 
 FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
@@ -1783,7 +1913,7 @@ Expression* ParserContext::buildTypeQuery(YYLTYPE location,
   assert(!queriedIdent.isEmpty() && queriedIdent.c_str()[0] == '?');
   assert(queriedIdent.length() >= 2);
   const char* adjust = queriedIdent.c_str() + 1;
-  auto name = UniqueString::build(context(), adjust);
+  auto name = UniqueString::get(context(), adjust);
   auto node = TypeQuery::build(builder, convertLocation(location), name);
   return node.release();
 }
@@ -1803,7 +1933,7 @@ Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
 
   MaybeNamedActual actual = {
     .expr=subType,
-    .name=PODUniqueString::build()
+    .name=PODUniqueString::get()
   };
 
   maybeNamedActuals->push_back(actual);

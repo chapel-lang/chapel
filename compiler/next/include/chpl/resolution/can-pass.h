@@ -86,29 +86,40 @@ class CanPassResult {
     return ret;
   }
 
+  static bool isTypeGeneric(Context* context, const types::QualifiedType& qt);
+  static bool isTypeGeneric(Context* context, const types::Type* t);
+
   static bool
-  canConvertNumeric(const types::Type* actualT,
+  canConvertNumeric(Context* context,
+                    const types::Type* actualT,
                     const types::Type* formalT);
 
-  static bool canConvertParamNarrowing(const types::QualifiedType& actualType,
+  static bool canConvertParamNarrowing(Context* context,
+                                       const types::QualifiedType& actualType,
                                        const types::QualifiedType& formalType);
 
-  static CanPassResult canPassDecorators(types::ClassTypeDecorator actual,
+  static CanPassResult canPassDecorators(Context* context,
+                                         types::ClassTypeDecorator actual,
                                          types::ClassTypeDecorator formal);
 
-  static CanPassResult canPassClassTypes(const types::ClassType* actualCt,
+  static CanPassResult canPassClassTypes(Context* context,
+                                         const types::ClassType* actualCt,
                                          const types::ClassType* formalCt);
 
-  static CanPassResult canPassSubtype(const types::Type* actualT,
+  static CanPassResult canPassSubtype(Context* context,
+                                      const types::Type* actualT,
                                       const types::Type* formalT);
 
-  static CanPassResult canConvert(const types::QualifiedType& actualType,
+  static CanPassResult canConvert(Context* context,
+                                  const types::QualifiedType& actualType,
                                   const types::QualifiedType& formalType);
 
-  static bool canInstantiateBuiltin(const types::Type* actualT,
+  static bool canInstantiateBuiltin(Context* context,
+                                    const types::Type* actualT,
                                     const types::Type* formalT);
 
-  static CanPassResult canInstantiate(const types::QualifiedType& actualType,
+  static CanPassResult canInstantiate(Context* context,
+                                      const types::QualifiedType& actualType,
                                       const types::QualifiedType& formalType);
 
  public:
@@ -131,7 +142,8 @@ class CanPassResult {
   ConversionKind conversionKind() { return conversionKind_; }
 
   // implementation of canPass to allow use of private fields
-  static CanPassResult canPass(const types::QualifiedType& actualType,
+  static CanPassResult canPass(Context* context,
+                               const types::QualifiedType& actualType,
                                const types::QualifiedType& formalType);
 
 };
@@ -145,9 +157,10 @@ class CanPassResult {
   the compiler may figure out that the argument cannot be passed.
  */
 static inline
-CanPassResult canPass(const types::QualifiedType& actualType,
+CanPassResult canPass(Context* context,
+                      const types::QualifiedType& actualType,
                       const types::QualifiedType& formalType) {
-  return CanPassResult::canPass(actualType, formalType);
+  return CanPassResult::canPass(context, actualType, formalType);
 }
 
 

@@ -22,6 +22,7 @@
 #define _PASSES_H_
 
 #include "symbol.h"
+#include "PassManager.h"
 
 extern bool parsed;
 extern bool normalized;
@@ -150,6 +151,7 @@ void normalize(FnSymbol* fn);
 void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
 void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
+Expr* partOfNonNormalizableExpr(Expr* expr);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
@@ -159,5 +161,24 @@ CallExpr* findDownEndCount(FnSymbol* fn);
 // resolution
 Expr*     resolveExpr(Expr* expr);
 void      resolveBlockStmt(BlockStmt* blockStmt);
+
+class returnStarTuplesByRefArgsPass1 : public PassT<FnSymbol*> {
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+};
+
+class returnStarTuplesByRefArgsPass2 : public PassT<CallExpr*> {
+  bool shouldProcess(CallExpr* fn) override;
+  void process(CallExpr* fn) override;
+};
+
+class ComputeCallSitesPass : public PassT<FnSymbol*> {
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+};
+
+class FlattenClasses : public PassT<TypeSymbol*> {
+  void process(TypeSymbol* ts) override;
+};
 
 #endif

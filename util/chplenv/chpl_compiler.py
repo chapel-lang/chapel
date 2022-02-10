@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
+
 import optparse
 import os
 import sys
 
-from distutils.spawn import find_executable
-
 import chpl_platform, chpl_locale_model, overrides
-from utils import error, memoize, warning
+from utils import which, error, memoize, warning
 
 
 #
@@ -56,12 +55,12 @@ def should_consider_cc_cxx(flag):
     if default_llvm:
         return False
 
-    if (overrides.get('CHPL_HOST_COMPILER') != None or
-        overrides.get('CHPL_HOST_CC') != None or
-        overrides.get('CHPL_HOST_CXX') != None or
-        overrides.get('CHPL_TARGET_COMPILER') != None or
-        overrides.get('CHPL_TARGET_CC') != None or
-        overrides.get('CHPL_TARGET_CXX') != None):
+    if (overrides.get('CHPL_HOST_COMPILER') is not None or
+        overrides.get('CHPL_HOST_CC') is not None or
+        overrides.get('CHPL_HOST_CXX') is not None or
+        overrides.get('CHPL_TARGET_COMPILER') is not None or
+        overrides.get('CHPL_TARGET_CC') is not None or
+        overrides.get('CHPL_TARGET_CXX') is not None):
         # A compilation configuration setting was adjusted,
         # so require CHPL_HOST_CC etc rather than using CC
         return False
@@ -103,7 +102,7 @@ def get_compiler_from_cc_cxx():
                   "  {2} -> {3}\n"
                   "Set CHPL_HOST_COMPILER and CHPL_TARGET_COMPILER to the "
                   "desired compiler family".format(cc_val, cc_compiler,
-                      cxx_val, cxx_compiler))
+                                                   cxx_val, cxx_compiler))
             compiler_val = 'unknown'
 
     else:
@@ -121,7 +120,7 @@ def get_compiler_from_cc_cxx():
 
     if compiler_val == 'unknown':
         error("Could not infer CHPL_TARGET_COMPILER from "
-              "CC={0} CXX={1}".format(cc_val, cxx_val));
+              "CC={0} CXX={1}".format(cc_val, cxx_val))
     else:
         if warn and cc_val:
             error('CC is set but not CXX -- please set both\n')
@@ -138,7 +137,7 @@ def default_to_llvm(flag):
         import chpl_llvm
         has_llvm = chpl_llvm.get()
 
-        if has_llvm == 'bundled' or has_llvm  == 'system':
+        if has_llvm == 'bundled' or has_llvm == 'system':
             # Default to CHPL_TARGET_COMPILER=llvm when CHPL_LLVM!=none
             ret = True
 
@@ -194,16 +193,10 @@ def get(flag='host'):
         elif platform_val.startswith('pwr'):
             compiler_val = 'ibm'
         elif platform_val == 'darwin' or platform_val == 'freebsd':
-            if find_executable('clang'):
+            if which('clang'):
                 compiler_val = 'clang'
             else:
                 compiler_val = 'gnu'
-        elif locale_model_val == 'gpu':
-            if find_executable('clang'):
-                compiler_val = 'clang'
-            else:
-                error("clang not found. The 'gpu' locale model is supported "
-                      "with clang only.")
         else:
             compiler_val = 'gnu'
 
@@ -232,11 +225,11 @@ def get_path_component(flag='host'):
 # where family-name corresponds to CHPL_TARGET_COMPILER etc settings e.g. gnu.
 # This table only includes the cases where it is reasonable to
 # infer the family from the command name.
-COMPILERS = [ ('gnu', 'gcc', 'g++'),
-              ('clang', 'clang', 'clang++'),
-              ('ibm', 'xlc', 'xlC'),
-              ('intel', 'icc', 'icpc'),
-              ('pgi', 'pgicc', 'pgc++') ]
+COMPILERS = [('gnu', 'gcc', 'g++'),
+             ('clang', 'clang', 'clang++'),
+             ('ibm', 'xlc', 'xlC'),
+             ('intel', 'icc', 'icpc'),
+             ('pgi', 'pgicc', 'pgc++')]
 
 # given a compiler command string, (e.g. "gcc" or "/path/to/clang++"),
 # figure out the compiler family (e.g. gnu or clang),
@@ -293,8 +286,9 @@ def get_compiler_name_cxx(compiler):
 
     return 'unknown-c++-compiler'
 
+
 def compiler_is_prgenv(compiler_val):
-  return compiler_val.startswith('cray-prgenv')
+    return compiler_val.startswith('cray-prgenv')
 
 # flag should be host or target
 # lang should be c or cxx (aka c++)
@@ -324,7 +318,7 @@ def get_compiler_command(flag, lang):
     # construct CHPL_HOST_CC / CHPL_TARGET_CXX etc
     varname = 'CHPL_' + flag_upper + '_' + lang_upper
 
-    command = overrides.get(varname, '');
+    command = overrides.get(varname, '')
     if command:
         return command.split()
 

@@ -1,0 +1,6 @@
+error message: bad error message when initializing owned from 'const'
+
+I think this error is correct — that I need to make these formals
+ref's — but the wording is not particularly clear, focusing on the
+details of how an init= is called rather than the higher-level
+semantic issue.

@@ -25,6 +25,7 @@
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
 
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <tuple>
@@ -69,6 +70,19 @@ struct UniqueStrHash final {
 namespace querydetail {
 
 using RevisionNumber = int64_t;
+
+using QueryTimingClock = std::chrono::steady_clock;
+using QueryTimingDuration = QueryTimingClock::duration;
+
+struct QueryTimingStat {
+  QueryTimingDuration elapsed = QueryTimingDuration::zero();
+  size_t count = 0;
+
+  void update(QueryTimingDuration d) {
+    count += 1;
+    elapsed += d;
+  }
+};
 
 // forward declare some types
 class QueryMapResultBase;
@@ -275,6 +289,22 @@ class QueryMapBase {
    const char* queryName;
    bool isInputQuery;
 
+  struct QueryStats {
+    // NOTE: `system` here refers to what the query system is doing
+    // `self` is confusing b/c a profiler uses `self` to mean, time in me - time in children
+
+    // Time spent inside a query after a QUERY_BEGIN
+    //   * Not incremented (time or count) when queryUseSaved is true
+    QueryTimingStat query;
+
+    // Time spent inside Context::queryBeginGetMap
+    QueryTimingStat systemGetMap;
+
+    // Time spent inside Context::queryBeginGetResult
+    QueryTimingStat systemGetResult;
+    // Other per-query timings can be added here as needed
+  } timings;
+
    QueryMapBase(const char* queryName, bool isInputQuery)
      : queryName(queryName), isInputQuery(isInputQuery) {
    }
@@ -326,6 +356,41 @@ class QueryMap final : public QueryMapBase {
     oldResults.clear();
   }
 };
+
+// Stopwatch that conditionally starts based on `enabled` passed to the
+// constructor.
+// `onExit` is called with a reference to the object itself so that `elapsed()`
+// can be conditionally called. This avoids us needing to store an enabled flag
+template<typename F, typename Clock=QueryTimingClock>
+struct QueryTimingStopwatch {
+  F onExit_;
+  typename Clock::time_point start_;
+
+  QueryTimingStopwatch(bool enabled, F onExit)
+      : onExit_(onExit) {
+    if (enabled) {
+      start_ = Clock::now();
+    }
+  }
+
+  QueryTimingDuration elapsed() {
+    auto stop = Clock::now();
+    return stop - start_;
+  }
+
+  ~QueryTimingStopwatch() { onExit_(*this); }
+};
+
+// Helper function to sort out the templates over lambda's
+template <typename F> QueryTimingStopwatch<F>
+makeQueryTimingStopwatch(bool enabled, F onExit) {
+  return QueryTimingStopwatch<F>(enabled, onExit);
+}
+
+inline auto
+makePlainQueryTimingStopwatch(bool enabled) {
+  return makeQueryTimingStopwatch(enabled, [](auto& arg){(void)arg;});
+}
 
 } // end namespace querydetail
 } // end namespace chpl

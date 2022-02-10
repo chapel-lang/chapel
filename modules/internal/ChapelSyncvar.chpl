@@ -1199,6 +1199,7 @@ private module SyncVarRuntimeSupport {
   // native qthreads aligned_t sync vars only work on non-ARM 64-bit platform,
   // and we only support casting between certain types and aligned_t
   proc supportsNativeSyncVar(type t) param {
+    use ChplConfig;
     return CHPL_TASKS == "qthreads" &&
            CHPL_TARGET_ARCH != "aarch64" &&
            castableToAlignedT(t) &&

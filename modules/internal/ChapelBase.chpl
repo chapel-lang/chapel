@@ -1186,7 +1186,12 @@ module ChapelBase {
     }
   }
 
-  config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
+  config param useAtomicTaskCnt = defaultAtomicTaskCount();
+
+  proc defaultAtomicTaskCount() param {
+    use ChplConfig;
+    return ChplConfig.CHPL_NETWORK_ATOMICS != "none";
+  }
 
   // Parent class for _EndCount instances so that it's easy
   // to add non-generic fields here.
@@ -1966,12 +1971,6 @@ module ChapelBase {
   inline operator <<=(ref lhs, rhs) {
     lhs = lhs << rhs;
   }
-
-  /* domain += and -= add and remove indices */
-  inline operator +=(ref D: domain, idx) { D.add(idx); }
-  inline operator -=(ref D: domain, idx) { D.remove(idx); }
-  inline operator +=(ref D: domain, param idx) { D.add(idx); }
-  inline operator -=(ref D: domain, param idx) { D.remove(idx); }
 
   /* swap operator */
   pragma "ignore transfer errors"

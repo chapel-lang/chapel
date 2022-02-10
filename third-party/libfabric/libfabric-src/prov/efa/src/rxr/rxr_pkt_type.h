@@ -125,7 +125,7 @@ static inline struct rxr_base_hdr *rxr_get_base_hdr(void *pkt)
 }
 
 struct rxr_ep;
-struct rxr_peer;
+struct rdm_peer;
 struct rxr_tx_entry;
 struct rxr_rx_entry;
 struct rxr_read_entry;
@@ -157,10 +157,10 @@ ssize_t rxr_pkt_init_handshake(struct rxr_ep *ep,
 			       struct rxr_pkt_entry *pkt_entry,
 			       fi_addr_t addr);
 
-ssize_t rxr_pkt_post_handshake(struct rxr_ep *ep, struct rxr_peer *peer);
+ssize_t rxr_pkt_post_handshake(struct rxr_ep *ep, struct rdm_peer *peer);
 
 void rxr_pkt_post_handshake_or_queue(struct rxr_ep *ep,
-				     struct rxr_peer *peer);
+				     struct rdm_peer *peer);
 
 void rxr_pkt_handle_handshake_recv(struct rxr_ep *ep,
 				   struct rxr_pkt_entry *pkt_entry);
@@ -194,7 +194,7 @@ struct rxr_cts_hdr *rxr_get_cts_hdr(void *pkt)
 	return (struct rxr_cts_hdr *)pkt;
 }
 
-void rxr_pkt_calc_cts_window_credits(struct rxr_ep *ep, struct rxr_peer *peer,
+void rxr_pkt_calc_cts_window_credits(struct rxr_ep *ep, struct rdm_peer *peer,
 				     uint64_t size, int request,
 				     int *window, int *credits);
 

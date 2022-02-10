@@ -73,10 +73,7 @@
 
 #define __HFI_INFO        0x1	/* generic low verbosity stuff */
 #define __HFI_DBG         0x2	/* generic debug */
-#define __HFI_TRSAMPLE    0x8	/* generate trace buffer sample entries */
 /* leave some low verbosity spots open */
-/* Debug messages specific to UD */
-#define __HFI_UDDBG       0x10
 /* Debug messages related to the connection protocol. */
 #define __HFI_CONNDBG     0x20
 #define __HFI_VERBDBG     0x40	/* very verbose debug */
@@ -87,8 +84,10 @@
 #define __HFI_MMDBG       0x200
 /* low-level environment variables */
 #define __HFI_ENVDBG	    0x400
-#define __HFI_EPKTDBG     0x800	/* print error packet data */
-#define __HFI_CCADBG      0x1000	/* print CCA related events */
+
+#define __HFI_DEBUG_DEFAULT __HFI_INFO
+#define __HFI_DEBUG_DEFAULT_STR "0x0001"
+
 #else /* _HFI_DEBUGGING */
 
 /*
@@ -99,15 +98,15 @@
 
 #define __HFI_INFO      0x0	/* generic low verbosity stuff */
 #define __HFI_DBG       0x0	/* generic debug */
-#define __HFI_TRSAMPLE  0x0	/* generate trace buffer sample entries */
-#define __HFI_UDDBG     0x0
 #define __HFI_CONNDBG   0x0
 #define __HFI_VERBDBG   0x0	/* very verbose debug */
 #define __HFI_PKTDBG    0x0	/* print packet data */
 #define __HFI_PROCDBG   0x0	/* print process startup (init)/exit messages */
 /* print MR, mmap/nopage stuff, not using VDBG any more */
 #define __HFI_MMDBG     0x0
-#define __HFI_CCADBG    0x0	/* print CCA related events */
+
+#define __HFI_DEBUG_DEFAULT __HFI_INFO
+#define __HFI_DEBUG_DEFAULT_STR "0x0000"
 
 #endif /* _HFI_DEBUGGING */
 

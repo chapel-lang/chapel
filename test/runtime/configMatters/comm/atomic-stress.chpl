@@ -1,7 +1,7 @@
 // Stress some atomic operations that we know have tricky
 // implementations on some platforms/configurations.
 
-use Time;
+use Time, ChplConfig;
 
 config const numTasks = here.maxTaskPar;
 const locAtomicDflt = 50_000;

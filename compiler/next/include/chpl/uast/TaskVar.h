@@ -79,7 +79,7 @@ class TaskVar final : public VarLikeDecl {
 
     return lhs->varLikeDeclContentsMatchInner(rhs);
   }
- 
+
   void markUniqueStringsInner(Context* context) const override {
     varLikeDeclMarkUniqueStringsInner(context);
   }

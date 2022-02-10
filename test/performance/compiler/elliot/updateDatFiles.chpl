@@ -3,6 +3,7 @@
 use Subprocess;
 use FileSystem;
 use IO;
+use ChplConfig;
 
 const develPath = "%s/util/devel/".format(CHPL_HOME);
 const origDat = "compilerPerformance.dat";

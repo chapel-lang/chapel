@@ -1,0 +1,1 @@
+undefined-max-error.chpl:5: error: 'max(type t)' is not defined for t=C

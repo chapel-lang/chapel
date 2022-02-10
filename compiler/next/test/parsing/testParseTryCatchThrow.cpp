@@ -33,7 +33,6 @@
 #undef NDEBUG
 #endif
 
-#include <array>
 #include <cassert>
 
 using namespace chpl;

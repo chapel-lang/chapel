@@ -40,6 +40,8 @@
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 
+#include "global-ast-vecs.h"
+
 bool        AstDumpToNode::compact      = false;
 const char* AstDumpToNode::delimitEnter = "#<"; // or { } or ( ) etc.
 const char* AstDumpToNode::delimitExit  = ">";

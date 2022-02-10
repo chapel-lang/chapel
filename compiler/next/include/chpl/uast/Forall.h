@@ -74,7 +74,7 @@ class Forall final : public IndexableLoop {
   ~Forall() override = default;
 
   /**
-    Create and return a forall loop. 
+    Create and return a forall loop.
   */
   static owned<Forall> build(Builder* builder, Location loc,
                              owned<Decl> index,

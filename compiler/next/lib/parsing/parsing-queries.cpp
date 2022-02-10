@@ -42,8 +42,9 @@ namespace parsing {
 
 using namespace uast;
 
-const FileContents& fileText(Context* context, UniqueString path) {
-  QUERY_BEGIN_INPUT(fileText, context, path);
+static
+const FileContents& fileTextQuery(Context* context, std::string path) {
+  QUERY_BEGIN_INPUT(fileTextQuery, context, path);
 
   std::string text;
   ErrorMessage error;
@@ -55,11 +56,28 @@ const FileContents& fileText(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-void setFileText(Context* context, UniqueString path, FileContents result) {
-  QUERY_STORE_INPUT_RESULT(fileText, context, result, path);
+const FileContents& fileText(Context* context, std::string path) {
+  return fileTextQuery(context, path);
+}
+
+const FileContents& fileText(Context* context, UniqueString path) {
+  return fileText(context, path.str());
+}
+
+void setFileText(Context* context, std::string path, FileContents result) {
+  QUERY_STORE_INPUT_RESULT(fileTextQuery, context, result, path);
+}
+void setFileText(Context* context, std::string path, std::string text) {
+  setFileText(context, std::move(path), FileContents(std::move(text)));
 }
 void setFileText(Context* context, UniqueString path, std::string text) {
-  setFileText(context, path, FileContents(std::move(text)));
+  setFileText(context, path.str(), FileContents(std::move(text)));
+}
+
+bool hasFileText(Context* context, const std::string& path) {
+  auto tupleOfArgs = std::make_tuple(path);
+
+  return context->hasCurrentResultForQuery(fileTextQuery, tupleOfArgs);
 }
 
 const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
@@ -131,6 +149,26 @@ const ModuleVec& parse(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
+static const std::vector<std::string>&
+moduleSearchPathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(moduleSearchPathQuery, context);
+
+  // return the empty path if it wasn't already set in
+  // setModuleSearchPath
+  std::vector<std::string> result;
+
+  return QUERY_END(result);
+}
+
+const std::vector<std::string>& moduleSearchPath(Context* context) {
+  return moduleSearchPathQuery(context);
+}
+
+void setModuleSearchPath(Context* context,
+                         std::vector<std::string> searchPath) {
+  QUERY_STORE_INPUT_RESULT(moduleSearchPathQuery, context, searchPath);
+}
+
 static const Module* const& getToplevelModuleQuery(Context* context,
                                                    UniqueString name) {
   QUERY_BEGIN(getToplevelModuleQuery, context, name);
@@ -154,8 +192,47 @@ static const Module* const& getToplevelModuleQuery(Context* context,
       }
     }
   } else {
-    // TODO: if we don't have a module read yet, read one.
-    assert(false && "TODO");
+    // Check the module search path for the module.
+    std::string check;
+
+    for (auto path : moduleSearchPath(context)) {
+      check.clear();
+      check += path;
+      // Remove any '/' characters before adding one so we don't double.
+      while (!check.empty() && check.back() == '/') {
+        check.pop_back();
+      }
+
+      // ignore empty paths
+      if (check.empty())
+        continue;
+
+      check += "/";
+      check += name.c_str();
+      check += ".chpl";
+
+      if (hasFileText(context, check) || fileExists(check.c_str())) {
+        auto filePath = UniqueString::get(context, check);
+        const ModuleVec& v = parse(context, filePath);
+        for (auto mod: v) {
+          if (mod->name() == name) {
+            result = mod;
+            break;
+          } else {
+            // TODO: is the error what we need in this case?
+            // What does the production compiler do?
+            context->error(mod, "In use/imported file, module name %s "
+                                "does not match file name %s.chpl",
+                           mod->name().c_str(),
+                           name.c_str());
+          }
+        }
+      }
+
+      if (result != nullptr) {
+        break;
+      }
+    }
   }
 
   return QUERY_END(result);

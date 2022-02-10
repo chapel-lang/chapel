@@ -1,3 +1,3 @@
-use ChapelEnv;
+use ChplConfig;
 
 writeln(CHPL_REGEXP);

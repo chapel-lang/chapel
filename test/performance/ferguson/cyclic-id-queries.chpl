@@ -1,5 +1,6 @@
 use CommUtil;
 use CyclicDist;
+use ChplConfig;
 
 config const numElements = 1024;
 

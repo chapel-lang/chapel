@@ -619,7 +619,7 @@ module ChapelHashtable {
 
     proc resize(grow:bool) {
       if postponeResize then return;
-      
+
       // double if you are growing, half if you are shrinking
       var newSize = if tableSize == 0 then startingSize else if grow then tableSize << 1 else tableSize >> 1;
 

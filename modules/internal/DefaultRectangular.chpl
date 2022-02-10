@@ -490,7 +490,7 @@ module DefaultRectangular {
         compilerError("rank mismatch in zippered iteration (can't zip a " +
                       followThis.size:string + "D expression with a " +
                       this.rank:string + "D domain)");
-        
+
       proc anyStridable(rangeTuple, param i: int = 0) param
         return if i == rangeTuple.size-1 then rangeTuple(i).stridable
                else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
@@ -2339,11 +2339,11 @@ module DefaultRectangular {
     var size2: rank*int;
     for (i, r) in zip(0..#other.dom.ranges.size, other.dom.ranges) do
       size2(i) = r.sizeAs(int);
-    
+
     if(this.locale == other.locale &&
        size1 == size2) {
       if debugOptimizedSwap {
-        writeln("DefaultRectangular doing optimized swap. Domains: ", 
+        writeln("DefaultRectangular doing optimized swap. Domains: ",
                 this.dom.ranges, " ", other.dom.ranges);
       }
       this.data <=> other.data;
@@ -2352,7 +2352,7 @@ module DefaultRectangular {
       return true;
     }
     if debugOptimizedSwap {
-      writeln("DefaultRectangular doing unoptimized swap. Domains: ", 
+      writeln("DefaultRectangular doing unoptimized swap. Domains: ",
               this.dom.ranges, " ", other.dom.ranges);
     }
     return false;

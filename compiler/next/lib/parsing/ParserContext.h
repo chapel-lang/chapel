@@ -99,7 +99,7 @@ struct ParserContext {
 
   ParserContext(const char* filename, Builder* builder)
   {
-    auto uniqueFilename = UniqueString::build(builder->context(), filename);
+    auto uniqueFilename = UniqueString::get(builder->context(), filename);
 
     this->scanner                 = nullptr;
     this->filename                = uniqueFilename;
@@ -285,12 +285,33 @@ struct ParserContext {
   OpCall* buildUnaryOp(YYLTYPE location,
                        PODUniqueString op, Expression* expr);
 
+  Expression* buildManagerExpr(YYLTYPE location, Expression* expr,
+                               Variable::Kind kind,
+                               YYLTYPE locResourceName,
+                               UniqueString resourceName);
 
+  Expression* buildManagerExpr(YYLTYPE location, Expression* expr,
+                               YYLTYPE locResourceName,
+                               UniqueString resourceName);
+
+  CommentsAndStmt buildManageStmt(YYLTYPE location,
+                                  ParserExprList* managerExprs,
+                                  YYLTYPE locBlockOrDo,
+                                  BlockOrDo blockOrDo);
 
   FunctionParts makeFunctionParts(bool isInline,
                                   bool isOverride);
 
+  CommentsAndStmt
+  buildExternExportFunctionDecl(YYLTYPE location, FunctionParts& fp);
+
+  CommentsAndStmt
+  buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp);
+
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
+
+  Expression* buildLetExpr(YYLTYPE location, ParserExprList* decls,
+                           Expression* expr);
 
   Expression* buildArrayTypeWithIndex(YYLTYPE location,
                                       YYLTYPE locIndexExprs,
@@ -311,6 +332,10 @@ struct ParserContext {
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, const Expression* e);
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, owned<Expression> e);
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, ParserExprList* exprLst);
+
+  Expression* buildNewExpr(YYLTYPE location,
+                           New::Management management,
+                           Expression* expr);
 
   FnCall* wrapCalledExpressionInNew(YYLTYPE location,
                                     New::Management management,

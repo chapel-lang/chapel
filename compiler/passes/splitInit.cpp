@@ -920,7 +920,7 @@ static bool doFindCopyElisionPoints(Expr* start,
       if (ifRet && elseRet) {
         return true;
 
-      // Neither if nor else block returns. Promote elision points from 
+      // Neither if nor else block returns. Promote elision points from
       // each block into the parent copy elision map. If a variable is
       // declared in a higher scope and is not copied in both blocks, then
       // we cannot promote it. The elision points for local variables from
@@ -970,7 +970,7 @@ static bool doFindCopyElisionPoints(Expr* start,
           }
         }
 
-      // One block hasn't returned. Figure out which one it is, and promote 
+      // One block hasn't returned. Figure out which one it is, and promote
       // all its elision points into the parent map.
       } else {
         VarToCopyElisionState::iterator it, end;

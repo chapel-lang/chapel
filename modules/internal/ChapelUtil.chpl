@@ -123,9 +123,9 @@ module ChapelUtil {
     }
     // //if all the case are false then multiplication is safe
     return true;
- 
+
   }
-  
+
   pragma "no default functions"
   extern record chpl_main_argument {
     var argc: int(64);

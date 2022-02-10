@@ -62,6 +62,11 @@
 #include "am_cuda_memhandle_cache.h"
 #endif
 
+/* not reported yet, so just track in a global so can pass a pointer to
+ * psmi_mq_handle_envelope and psmi_mq_handle_rts
+ */
+static struct ptl_strategy_stats strat_stats;
+
 /**
  * Callback function when a receive request is matched with the
  * tag obtained from the RTS packet.
@@ -96,8 +101,7 @@ ptl_handle_rtsmatch_request(psm2_mq_req_t req, int was_posted,
 		if (req->is_buf_gpu_mem) {
 			PSMI_CUDA_CALL(cuMemcpyDtoD, (CUdeviceptr)req->req_data.buf, cuda_ipc_dev_ptr,
 				       req->req_data.recv_msglen);
-			PSMI_CUDA_CALL(cuEventRecord, req->cuda_ipc_event, 0);
-			PSMI_CUDA_CALL(cuEventSynchronize, req->cuda_ipc_event);
+			PSMI_CUDA_CALL(cuStreamSynchronize, 0);
 		} else
 			PSMI_CUDA_CALL(cuMemcpyDtoH, req->req_data.buf, cuda_ipc_dev_ptr,
 				       req->req_data.recv_msglen);
@@ -129,8 +133,7 @@ ptl_handle_rtsmatch_request(psm2_mq_req_t req, int was_posted,
 			 * copies for msg sizes less than 64k. The event record
 			 * and synchronize calls are to guarentee completion.
 			 */
-			PSMI_CUDA_CALL(cuEventRecord, req->cuda_ipc_event, 0);
-			PSMI_CUDA_CALL(cuEventSynchronize, req->cuda_ipc_event);
+			PSMI_CUDA_CALL(cuStreamSynchronize, 0);
 			psmi_free(cuda_ipc_bounce_buf);
 		} else {
 			/* cma can be done in handler context or not. */
@@ -172,6 +175,11 @@ send_cts:
 		psmi_amsh_short_request((struct ptl *)ptl, epaddr, mq_handler_rtsmatch_hidx,
 					args, 5, NULL, 0, 0);
 
+	req->mq->stats.rx_user_num++;
+	req->mq->stats.rx_user_bytes += req->req_data.recv_msglen;
+	req->mq->stats.rx_shm_num++;
+	req->mq->stats.rx_shm_bytes += req->req_data.recv_msglen;
+
 	/* 0-byte completion or we used kassist */
 	if (pid || cma_succeed ||
 		req->req_data.recv_msglen == 0 || cuda_ipc_send_completion == 1) {
@@ -206,7 +214,7 @@ psmi_am_mq_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 	tag.tag[1] = args[1].u32w0;
 	tag.tag[2] = args[2].u32w1;
 	psmi_assert(toki != NULL);
-	_HFI_VDBG("mq=%p opcode=%d, len=%d, msglen=%d\n",
+	_HFI_VDBG("mq=%p opcode=%x, len=%d, msglen=%d\n",
 		  tok->mq, opcode, (int)len, msglen);
 
 	switch (opcode) {
@@ -214,12 +222,16 @@ psmi_am_mq_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 	case MQ_MSG_SHORT:
 	case MQ_MSG_EAGER:
 		rc = psmi_mq_handle_envelope(tok->mq, tok->tok.epaddr_incoming,
-					     &tag, msglen, 0, buf,
+					     &tag, &strat_stats, msglen, 0, buf,
 					     (uint32_t) len, 1, opcode, &req);
 
 		/* for eager matching */
 		req->ptl_req_ptr = (void *)tok->tok.epaddr_incoming;
 		req->msg_seqnum = 0;	/* using seqnum 0 */
+		req->mq->stats.rx_shm_num++;
+		// close enough, may not yet be matched,
+		//  don't know recv buf_len, so assume no truncation
+		req->mq->stats.rx_shm_bytes += msglen;
 		break;
 	default:{
 			void *sreq = (void *)(uintptr_t) args[3].u64w0;
@@ -227,7 +239,7 @@ psmi_am_mq_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 			psmi_assert(narg == 5);
 			psmi_assert_always(opcode == MQ_MSG_LONGRTS);
 			rc = psmi_mq_handle_rts(tok->mq, tok->tok.epaddr_incoming,
-						&tag, msglen, NULL, 0, 1,
+						&tag, &strat_stats, msglen, NULL, 0, 1,
 						ptl_handle_rtsmatch, &req);
 
 			req->rts_peer = tok->tok.epaddr_incoming;
@@ -265,7 +277,11 @@ psmi_am_mq_handler_data(void *toki, psm2_amarg_t *args, int narg, void *buf,
 	psm2_epaddr_t epaddr = (psm2_epaddr_t) tok->tok.epaddr_incoming;
 	psm2_mq_req_t req = mq_eager_match(tok->mq, epaddr, 0);	/* using seqnum 0 */
 	psmi_assert_always(req != NULL);
+#ifdef PSM_CUDA
+	psmi_mq_handle_data(tok->mq, req, args[2].u32w0, buf, len, 0, NULL);
+#else
 	psmi_mq_handle_data(tok->mq, req, args[2].u32w0, buf, len);
+#endif
 
 	return;
 }
@@ -289,6 +305,8 @@ psmi_am_mq_handler_rtsmatch(void *toki, psm2_amarg_t *args, int narg, void *buf,
 	 */
 	if (sreq->cuda_ipc_handle_attached) {
 		sreq->cuda_ipc_handle_attached = 0;
+		sreq->mq->stats.tx_shm_bytes += sreq->req_data.send_msglen;
+		sreq->mq->stats.tx_rndv_bytes += sreq->req_data.send_msglen;
 		psmi_mq_handle_rts_complete(sreq);
 		return;
 	}
@@ -334,6 +352,8 @@ no_kassist:
 					     1, sreq->req_data.buf, msglen, dest, 0);
 		}
 	}
+	sreq->mq->stats.tx_shm_bytes += sreq->req_data.send_msglen;
+	sreq->mq->stats.tx_rndv_bytes += sreq->req_data.send_msglen;
 	psmi_mq_handle_rts_complete(sreq);
 }
 

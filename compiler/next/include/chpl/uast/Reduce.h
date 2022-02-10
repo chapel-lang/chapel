@@ -67,7 +67,7 @@ class Reduce final : public Call {
 
   /**
     Returns the reduction operator. It may be either a regular operator
-    (e.g. '+', '-') or the name of a class. 
+    (e.g. '+', '-') or the name of a class.
   */
   UniqueString op() const {
     return op_;

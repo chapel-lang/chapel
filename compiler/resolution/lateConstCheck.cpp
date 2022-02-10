@@ -28,11 +28,13 @@
 #include "resolveIntents.h"
 #include "symbol.h"
 
+#include "global-ast-vecs.h"
+
 #include <set>
 
 /* This file implements late (after cull over references)
    const checking.
-   
+
    Const checking can't be complete before then since
    it's not known if ref or value or const ref return
    overloads will be used.
@@ -244,7 +246,7 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
                         intentDescrString(formal->intent),
                         fieldIdx);
     }
-    
+
     // Check ref/ref-if-modified fields in "checkTupleFormalToActual".
     if (fieldIntent == INTENT_REF_MAYBE_CONST ||
         fieldIntent == INTENT_REF) {
@@ -268,7 +270,7 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
                           "cannot be modified",
                           formal->name,
                           calledFn->name);
-                          
+
       // TODO: Pin IFF the element is a user type.
       USR_PRINT("tuple element #%d of type %s",
                 fieldIdx-1,
@@ -319,7 +321,7 @@ static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
       continue;
     }
 
-    // Third argument should be the read temp. 
+    // Third argument should be the read temp.
     SymExpr* fromReadTmp = toSymExpr(set->get(3));
     if (fromReadTmp == NULL) {
       continue;
@@ -379,7 +381,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
   if (isTupleFunctionToSkip(calledFn)) {
     return false;
   }
- 
+
   AggregateType* at = toAggregateType(formal->getValType());
   if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE)) {
     return false;

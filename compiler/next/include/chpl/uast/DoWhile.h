@@ -80,7 +80,7 @@ class DoWhile final : public Loop {
   ~DoWhile() override = default;
 
   /**
-    Create and return a do-while loop. 
+    Create and return a do-while loop.
   */
   static owned<DoWhile> build(Builder* builder, Location loc,
                               BlockStyle blockStyle,

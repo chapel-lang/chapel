@@ -739,7 +739,7 @@ proc BlockCyclicDom.dsiMember(i) {
   return whole.contains(i);
 }
 
-proc BlockCyclicDom.dsiIndexOrder(i) {
+override proc BlockCyclicDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 
@@ -921,7 +921,7 @@ override proc BlockCyclicArr.dsiDestroyArr(deinitElts:bool) {
 
 override proc BlockCyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
 
-proc BlockCyclicArr.chpl__serialize() 
+proc BlockCyclicArr.chpl__serialize()
     where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
