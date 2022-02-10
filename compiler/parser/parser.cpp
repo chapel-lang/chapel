@@ -38,7 +38,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 
-// Turn this on to dump AST/uAST when using --compiler-library-parser.
+// Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
 
 // Turn this on to report which modules are parsed as uAST.
@@ -375,7 +375,7 @@ static void parseChplSourceFile(const char* inputFileName) {
     USR_FATAL(errorMessage, baseName, maxFileName);
   }
 
-  if (fCompilerLibraryParser == false) {
+  if (fDynoCompilerLibrary == false) {
     parseFile(inputFileName, MOD_USER, true, false);
   } else {
     uASTParseFile(inputFileName, MOD_USER, true, false);
@@ -595,7 +595,7 @@ static bool uASTAttemptToParseMod(const char* modName,
                                   const char* path,
                                   ModTag modTag,
                                   ModuleSymbol*& outModSym) {
-  if (!fCompilerLibraryParser) return false;
+  if (!fDynoCompilerLibrary) return false;
 
   if (UAST_CONVERT_USER_MODULE_ONLY && modTag != MOD_USER) return false;
   const bool namedOnCommandLine = false;
@@ -1167,7 +1167,7 @@ ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
   const bool namedOnCommandLine = false;
   const bool include = true;
 
-  if (fCompilerLibraryParser) {
+  if (fDynoCompilerLibrary) {
     ret = uASTParseFile(astr(includeFile), currentModuleType,
                         namedOnCommandLine,
                         include);
