@@ -16,16 +16,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_IMMEDIATES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/immediates
+DYNO_IMMEDIATES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/immediates
 
 ALL_SRCS += dyno/lib/immediates/*.cpp
 
-NEXT_IMMEDIATES_SRCS =                              \
+DYNO_IMMEDIATES_SRCS =                              \
            ifa_vars.cpp                             \
            hash_multipliers.cpp                     \
            num.cpp                                  \
 
-SRCS = $(NEXT_IMMEDIATES_SRCS)
+SRCS = $(DYNO_IMMEDIATES_SRCS)
 
-NEXT_IMMEDIATES_OBJS = \
-	$(NEXT_IMMEDIATES_SRCS:%.cpp=$(NEXT_IMMEDIATES_OBJDIR)/%.$(OBJ_SUFFIX))
+DYNO_IMMEDIATES_OBJS = \
+	$(DYNO_IMMEDIATES_SRCS:%.cpp=$(DYNO_IMMEDIATES_OBJDIR)/%.$(OBJ_SUFFIX))

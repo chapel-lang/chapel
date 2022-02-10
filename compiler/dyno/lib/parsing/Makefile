@@ -30,7 +30,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 include Makefile.include
 
-TARGETS = $(NEXT_PARSING_OBJS)
+TARGETS = $(DYNO_PARSING_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

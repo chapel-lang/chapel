@@ -30,7 +30,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 include Makefile.include
 
-TARGETS = $(NEXT_RESOLUTION_OBJS)
+TARGETS = $(DYNO_RESOLUTION_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

@@ -16,21 +16,21 @@
 # limitations under the License.
 
 
-add_library(libchplcomp-obj OBJECT)
+add_library(libdyno-obj OBJECT)
 
 # turn on position-independent code so we can use the same
-# libchplcomp-obj for both a static and dynamic library
-set_property(TARGET libchplcomp-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
+# dyno-obj for both a static and dynamic library
+set_property(TARGET libdyno-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
 
 # Include the public library .h files as well as any generated .h files
-target_include_directories(libchplcomp-obj PUBLIC
+target_include_directories(libdyno-obj PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
 
 
 # Library code can also use headers from the lib/ directory
 # but these are not to be public
-target_include_directories(libchplcomp-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(libdyno-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(immediates)
 add_subdirectory(parsing)
@@ -40,7 +40,7 @@ add_subdirectory(types)
 add_subdirectory(uast)
 add_subdirectory(util)
 
-add_library(libchplcomp SHARED $<TARGET_OBJECTS:libchplcomp-obj>)
-target_include_directories(libchplcomp PUBLIC
+add_library(libdyno SHARED $<TARGET_OBJECTS:libdyno-obj>)
+target_include_directories(libdyno PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})

@@ -30,7 +30,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 include Makefile.include
 
-TARGETS = $(NEXT_UAST_OBJS)
+TARGETS = $(DYNO_UAST_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

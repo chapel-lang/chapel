@@ -16,11 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_UAST_OBJDIR = $(COMPILER_BUILD)/dyno/lib/uast
+DYNO_UAST_OBJDIR = $(COMPILER_BUILD)/dyno/lib/uast
 
 ALL_SRCS += dyno/lib/uast/*.cpp
 
-NEXT_UAST_SRCS =                                 \
+DYNO_UAST_SRCS =                                 \
   AggregateDecl.cpp \
   Array.cpp \
   ASTList.cpp \
@@ -119,7 +119,7 @@ NEXT_UAST_SRCS =                                 \
   Zip.cpp \
 
 
-SRCS = $(NEXT_UAST_SRCS)
+SRCS = $(DYNO_UAST_SRCS)
 
-NEXT_UAST_OBJS = \
-	$(NEXT_UAST_SRCS:%.cpp=$(NEXT_UAST_OBJDIR)/%.$(OBJ_SUFFIX))
+DYNO_UAST_OBJS = \
+	$(DYNO_UAST_SRCS:%.cpp=$(DYNO_UAST_OBJDIR)/%.$(OBJ_SUFFIX))

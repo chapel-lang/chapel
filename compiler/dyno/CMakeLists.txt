@@ -17,7 +17,7 @@
 
 cmake_minimum_required(VERSION 3.13.4)
 
-project(libchplcomp VERSION 0.1)
+project(dyno VERSION 0.1)
 
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 set(CHPL_MAIN_INCLUDE_DIR ${CHPL_MAIN_SRC_DIR}/include)
@@ -41,7 +41,7 @@ set(CMAKE_C_STANDARD_REQUIRED True)
 # set include directories for -I
 #include_directories(include)
 
-# lib/CMakeLists.txt defines the target libchplcomp
+# lib/CMakeLists.txt defines the target libdyno
 add_subdirectory(lib)
 # also make sure headers are included in the target
 add_subdirectory(include/chpl)
@@ -60,11 +60,11 @@ add_custom_target(tests)
 function(comp_unit_test target)
   add_executable(${target} "${target}.cpp")
   set_property(TARGET ${target} PROPERTY EXCLUDE_FROM_ALL)
-  target_link_libraries(${target} libchplcomp)
+  target_link_libraries(${target} libdyno)
   target_include_directories(${target} PUBLIC
                              ${CHPL_MAIN_INCLUDE_DIR}
                              ${CHPL_INCLUDE_DIR})
-  add_dependencies(${target} libchplcomp)
+  add_dependencies(${target} libdyno)
   add_test(NAME ${target} COMMAND ${target})
   add_dependencies(tests ${target})
 endfunction(comp_unit_test)

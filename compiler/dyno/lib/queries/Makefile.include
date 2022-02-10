@@ -16,11 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_QUERIES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/queries
+DYNO_QUERIES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/queries
 
 ALL_SRCS += dyno/lib/queries/*.cpp
 
-NEXT_QUERIES_SRCS =                                 \
+DYNO_QUERIES_SRCS =                                 \
            Context.cpp                              \
            ErrorMessage.cpp                         \
            ID.cpp                                   \
@@ -28,7 +28,7 @@ NEXT_QUERIES_SRCS =                                 \
            UniqueString.cpp                         \
 
 
-SRCS = $(NEXT_QUERIES_SRCS)
+SRCS = $(DYNO_QUERIES_SRCS)
 
-NEXT_QUERIES_OBJS = \
-	$(NEXT_QUERIES_SRCS:%.cpp=$(NEXT_QUERIES_OBJDIR)/%.$(OBJ_SUFFIX))
+DYNO_QUERIES_OBJS = \
+	$(DYNO_QUERIES_SRCS:%.cpp=$(DYNO_QUERIES_OBJDIR)/%.$(OBJ_SUFFIX))

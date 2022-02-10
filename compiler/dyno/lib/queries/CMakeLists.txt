@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-target_sources(libchplcomp-obj
+target_sources(libdyno-obj
                PRIVATE
 
                Context.cpp

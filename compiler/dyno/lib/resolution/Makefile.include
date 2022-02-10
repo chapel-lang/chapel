@@ -16,11 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_RESOLUTION_OBJDIR = $(COMPILER_BUILD)/dyno/lib/resolution
+DYNO_RESOLUTION_OBJDIR = $(COMPILER_BUILD)/dyno/lib/resolution
 
 ALL_SRCS += dyno/lib/resolution/*.cpp
 
-NEXT_RESOLUTION_SRCS =                              \
+DYNO_RESOLUTION_SRCS =                              \
            can-pass.cpp                             \
            disambiguation.cpp                       \
            intents.cpp                              \
@@ -30,7 +30,7 @@ NEXT_RESOLUTION_SRCS =                              \
            scope-types.cpp                          \
 
 
-SRCS = $(NEXT_RESOLUTION_SRCS)
+SRCS = $(DYNO_RESOLUTION_SRCS)
 
-NEXT_RESOLUTION_OBJS = \
-	$(NEXT_RESOLUTION_SRCS:%.cpp=$(NEXT_RESOLUTION_OBJDIR)/%.$(OBJ_SUFFIX))
+DYNO_RESOLUTION_OBJS = \
+	$(DYNO_RESOLUTION_SRCS:%.cpp=$(DYNO_RESOLUTION_OBJDIR)/%.$(OBJ_SUFFIX))

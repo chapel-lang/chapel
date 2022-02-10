@@ -18,8 +18,8 @@
 add_executable(chpldoc "chpldoc.cpp")
 # TODO: this is temporary so I could use std::filesystem
 set_property(TARGET chpldoc PROPERTY CXX_STANDARD 17)
-target_link_libraries(chpldoc $<TARGET_OBJECTS:libchplcomp-obj>)
+target_link_libraries(chpldoc $<TARGET_OBJECTS:libdyno-obj>)
 target_include_directories(chpldoc PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
-add_dependencies(chpldoc libchplcomp-obj)
+add_dependencies(chpldoc libdyno-obj)

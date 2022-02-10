@@ -311,11 +311,11 @@ if __name__ == '__main__':
         args.jobs = multiprocessing.cpu_count()
 
     if args.only_changed:
-        next_includes = Path('compiler/dyno/include')
+        dyno_includes = Path('compiler/dyno/include')
         changed_files = files_changed()
         # Check the cpp files that have changed we would check by default
         # And also include any header that changed in compiler/dyno/include
-        args.files = (set(args.files) & changed_files) | {x for x in changed_files if x.is_relative_to(next_includes)}
+        args.files = (set(args.files) & changed_files) | {x for x in changed_files if x.is_relative_to(dyno_includes)}
 
         if args.files:
             print('Running on files that are different from main:')

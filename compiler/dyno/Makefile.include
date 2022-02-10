@@ -23,4 +23,4 @@ ifdef CHPL_DEVELOPER
   LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/dyno/Debug
 endif
 
-CHPL_COMP_LIB = $(LIBCOMPILER_BUILD_DIR)/lib/liblibchplcomp.a
+CHPL_COMP_LIB = $(LIBCOMPILER_BUILD_DIR)/lib/libdyno.a

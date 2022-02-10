@@ -30,7 +30,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 include Makefile.include
 
-TARGETS = $(NEXT_QUERIES_OBJS)
+TARGETS = $(DYNO_QUERIES_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

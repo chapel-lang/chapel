@@ -50,23 +50,23 @@ $(LIBCOMPILER_BUILD_DIR):
 	    -DCMAKE_MODULE_LINKER_FLAGS='$(LDFLAGS)' \
 	    -DBUILD_SHARED_LIBS=OFF
 
-libchplcomp-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
+dyno-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
 	cd $(LIBCOMPILER_BUILD_DIR)/lib/parsing && $(CMAKE) --build . --target parser
 
-libchplcomp-chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
+dyno-chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
 	+cd $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc && $(CMAKE) --build . --target chpldoc
 
-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
+dyno: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
-	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) libchplcomp ; \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) libdyno ; \
 	else \
-	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target libchplcomp ; \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target libdyno ; \
 	fi
 
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
 
-libchplcomp-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
+dyno-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library docs..."
 	cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target api-docs
 # copy the generated doxygen output to the build directory
@@ -74,13 +74,13 @@ libchplcomp-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 	  $(COPY_IF_DIFFERENT) $(LIBCOMPILER_BUILD_DIR)/doc/doxygen $(CHPL_MAKE_HOME)/build/doc/doxygen ; \
 	fi
 
-clean-libchplcomp-docs: FORCE
+clean-dyno-docs: FORCE
 	rm -rf $(CHPL_MAKE_HOME)/build/doc/doxygen
 
-clobber-libchplcomp: clean-libchplcomp-docs FORCE
+clobber-dyno: clean-dyno-docs FORCE
 	rm -rf $(LIBCOMPILER_BUILD_DIR)
 
-test-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
+test-dyno: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making and running the tests..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
 	  JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \

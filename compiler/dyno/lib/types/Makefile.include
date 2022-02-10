@@ -16,11 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_TYPES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/types
+DYNO_TYPES_OBJDIR = $(COMPILER_BUILD)/dyno/lib/types
 
 ALL_SRCS += dyno/lib/types/*.cpp
 
-NEXT_TYPES_SRCS =                                 \
+DYNO_TYPES_SRCS =                                 \
   AnyType.cpp \
   BasicClassType.cpp \
   BoolType.cpp \
@@ -51,7 +51,7 @@ NEXT_TYPES_SRCS =                                 \
   VoidType.cpp \
 
 
-SRCS = $(NEXT_TYPES_SRCS)
+SRCS = $(DYNO_TYPES_SRCS)
 
-NEXT_TYPES_OBJS = \
-	$(NEXT_TYPES_SRCS:%.cpp=$(NEXT_TYPES_OBJDIR)/%.$(OBJ_SUFFIX))
+DYNO_TYPES_OBJS = \
+	$(DYNO_TYPES_SRCS:%.cpp=$(DYNO_TYPES_OBJDIR)/%.$(OBJ_SUFFIX))

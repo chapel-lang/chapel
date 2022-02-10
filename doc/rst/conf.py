@@ -39,7 +39,7 @@ extensions = [
     'breathe',
 ]
 
-breathe_default_project = "libchplcomp"
+breathe_default_project = "dyno"
 
 nitpick_ignore = []
 for line in open('../util/nitpick_ignore'):

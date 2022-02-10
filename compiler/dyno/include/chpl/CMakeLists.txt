@@ -16,7 +16,7 @@
 # limitations under the License.
 
 file(GLOB_RECURSE headers CONFIGURE_DEPENDS "*.h")
-target_sources(libchplcomp-obj
+target_sources(libdyno-obj
                PUBLIC
 
                ${headers})

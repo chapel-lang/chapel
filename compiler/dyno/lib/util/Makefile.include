@@ -16,21 +16,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NEXT_UTIL_OBJDIR = $(COMPILER_BUILD)/dyno/lib/util
+DYNO_UTIL_OBJDIR = $(COMPILER_BUILD)/dyno/lib/util
 
 ALL_SRCS += dyno/lib/util/*.cpp
 
-NEXT_UTIL_SRCS =                                 \
+
+DYNO_UTIL_SRCS =      \
   bitmap.cpp \
   break.cpp \
   filesystem.cpp \
   string-escapes.cpp \
 
 
-SRCS = $(NEXT_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c
+SRCS = $(DYNO_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c
 
-NEXT_UTIL_OBJS = \
-	$(NEXT_UTIL_SRCS:%.cpp=$(NEXT_UTIL_OBJDIR)/%.$(OBJ_SUFFIX)) \
-        $(NEXT_UTIL_OBJDIR)/my_aligned_alloc.o \
-        $(NEXT_UTIL_OBJDIR)/my_strerror_r.o \
+DYNO_UTIL_OBJS = \
+	$(DYNO_UTIL_SRCS:%.cpp=$(DYNO_UTIL_OBJDIR)/%.$(OBJ_SUFFIX)) \
+        $(DYNO_UTIL_OBJDIR)/my_aligned_alloc.o \
+        $(DYNO_UTIL_OBJDIR)/my_strerror_r.o \
 

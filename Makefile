@@ -69,9 +69,9 @@ notcompiler: FORCE
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
-libchplcomp: FORCE
+dyno: FORCE
 	@echo "Making the compiler library..."
-	@cd compiler/dyno && $(MAKE) -f Makefile.help libchplcomp
+	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno
 
 compiler: FORCE
 	@echo "Making the compiler..."
