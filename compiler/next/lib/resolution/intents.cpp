@@ -87,9 +87,12 @@ static QualifiedType::Kind defaultIntentForType(const Type* t) {
   return QualifiedType::DEFAULT_INTENT; // leave the intent generic
 }
 
-QualifiedType::Kind resolveIntent(const QualifiedType& t) {
+QualifiedType::Kind resolveIntent(const QualifiedType& t, bool isThis) {
   auto kind = t.kind();
   auto type = t.type();
+
+  // TODO: take into account isThis
+  // TODO: REF_MAYBE_CONST or equivalent for arrays, record this
 
   switch (kind) {
     case QualifiedType::UNKNOWN:

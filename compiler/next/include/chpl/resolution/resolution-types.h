@@ -626,6 +626,7 @@ class MostSpecificCandidates {
   typedef enum {
     // the slots in the candidates array for return intent
     // overloading
+    ONLY = 0, // same slot as REF
     REF = 0,
     CONST_REF,
     VALUE,
@@ -692,7 +693,7 @@ class MostSpecificCandidates {
   }
 
   void setBestOnly(const TypedFnSignature* sig) {
-    candidates[REF] = sig;
+    candidates[ONLY] = sig;
   }
 
   const TypedFnSignature* bestRef() const {
@@ -721,6 +722,9 @@ class MostSpecificCandidates {
     if (nPresent != 1) {
       return nullptr;
     }
+
+    // if there is only one candidate, it should be in slot ONLY
+    assert(candidates[ONLY] == ret);
     return ret;
   }
 

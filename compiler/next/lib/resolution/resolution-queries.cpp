@@ -775,7 +775,8 @@ getFormalTypes(const Function* fn,
   for (auto formal : fn->formals()) {
     QualifiedType t = r.byAst(formal).type();
     // compute concrete intent
-    t = QualifiedType(resolveIntent(t), t.type(), t.param());
+    bool isThis = fn->name() == USTR("this");
+    t = QualifiedType(resolveIntent(t, isThis), t.type(), t.param());
 
     formalTypes.push_back(std::move(t));
   }

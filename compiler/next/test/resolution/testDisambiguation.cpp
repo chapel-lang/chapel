@@ -207,6 +207,17 @@ static void test2() {
         f(x);
       )"""",
     1);
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(arg: numeric) { }  // 1
+        proc f(arg: int) { }      // 2
+        proc f(arg) { }           // 3
+        var x: string;
+        f(x);
+      )"""",
+    3);
+
 }
 
 static void test3() {

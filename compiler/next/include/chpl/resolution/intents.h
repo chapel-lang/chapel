@@ -30,12 +30,16 @@ namespace resolution {
     and (possibly generic) intent. For example 'const' is a generic
     intent and it has different behavior depending on the type.
 
+    The argument 'isThis' indicates if the formal argument is
+    the 'this' method receiver argument.
+
     The generic and resolved intents are all represented as QualifiedType::Kind.
 
     If the type is not known or only partially known, this function
     can return a generic intent.
  */
-types::QualifiedType::Kind resolveIntent(const types::QualifiedType& t);
+types::QualifiedType::Kind resolveIntent(const types::QualifiedType& t,
+                                         bool isThis);
 
 
 } // end namespace resolution

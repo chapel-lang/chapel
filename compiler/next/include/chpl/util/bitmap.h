@@ -51,10 +51,8 @@ class Bitmap {
   }
   /** Returns the value of bit index i */
   bool operator[](size_t i) const {
-    if (0 <= i && i < bits_.size())
-      return bits_[i];
-
-    return false;
+    assert(0 <= i && i < bits_.size());
+    return bits_[i];
   }
   /** Set the value of bit index i */
   void setBit(size_t i, bool value) {
