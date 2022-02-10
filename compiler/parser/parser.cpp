@@ -569,7 +569,7 @@ static void ensureRequiredStandardModulesAreParsed() {
 ************************************** | *************************************/
 
 static void parseDependentModules(bool isInternal) {
-  forv_Vec(const char*, modName, sModNameList) {
+  forv_expanding_Vec(const char*, modName, sModNameList) {
     if (sModDoneSet.set_in(modName)   == NULL &&
         parseMod(modName, isInternal) != NULL) {
       sModDoneSet.set_add(modName);

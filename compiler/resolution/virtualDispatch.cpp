@@ -157,7 +157,7 @@ static AggregateType* getReceiverClassType(FnSymbol* fn);
 static bool buildVirtualMaps() {
   int numTypes = gTypeSymbols.n;
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     if (AggregateType* at = fn->getReceiverType()) {
       if (at->isClass() == true) {
         if (at->isGeneric() == false) {
@@ -768,7 +768,7 @@ static void buildVirtualMethodTable() {
     }
   }
 
-  forv_Vec(Type, t, ctq) {
+  forv_expanding_Vec(Type, t, ctq) {
     if (Vec<FnSymbol*>* parentFns = virtualMethodTable.get(t)) {
       forv_Vec(FnSymbol, pfn, *parentFns) {
         Vec<Type*> childSet;
@@ -1313,7 +1313,7 @@ static void checkMethodsOverride() {
 static bool wasSuperDot(CallExpr* call);
 
 void insertDynamicDispatchCalls() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
       if (FnSymbol* fn = call->resolvedFunction()) {
 

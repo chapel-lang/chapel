@@ -2669,7 +2669,7 @@ static void cleanupLeaderFollowerIteratorCalls()
   // Fixes uses of formals outside of their function.
   // Such formals were temporarily added (e.g. in preFold for PRIM_TO_FOLLOWER)
   //
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
       if (FnSymbol* fn = call->resolvedFunction()) {
         if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
@@ -3012,7 +3012,7 @@ void lowerIterators() {
     }
   }
 
-  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
+  for_alive_in_expanding_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block))
       expandForLoop(loop);
   }

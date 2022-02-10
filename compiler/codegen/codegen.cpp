@@ -21,6 +21,7 @@
 #include "codegen.h"
 
 #include "astutil.h"
+#include "baseAST.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
@@ -2097,7 +2098,7 @@ codegen_config() {
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
-    forv_Vec(VarSymbol, var, gVarSymbols) {
+    forv_expanding_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (6);
         {
@@ -2264,14 +2265,9 @@ static void convertSymbolToRefType(Symbol* sym) {
 }
 
 static void convertToRefTypes() {
-#define updateSymbols(SymType) \
-  forv_Vec(SymType, sym, g##SymType##s) { \
-    convertSymbolToRefType(sym); \
-  }
-
-  updateSymbols(VarSymbol);
-  updateSymbols(ArgSymbol);
-  updateSymbols(ShadowVarSymbol);
+  forv_expanding_Vec(VarSymbol, sym, gVarSymbols) convertSymbolToRefType(sym);
+  forv_Vec(ArgSymbol, sym, gArgSymbols) convertSymbolToRefType(sym);
+  forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) convertSymbolToRefType(sym);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->getReturnSymbol()) {

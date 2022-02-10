@@ -860,7 +860,7 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
   buildDefUseSets(locals, fn, defSet, useSet);
 
   // Traverse the asts in the iterator and select just the sym expressions.
-  forv_Vec(BaseAST, ast, asts) {
+  forv_expanding_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast)) {
 
       // Ignore symexprs that are not in the tree.

@@ -145,7 +145,7 @@ void doPreNormalizeArrayOptimizations() {
                                  fAutoAggregation ||
                                  !fNoFastFollowers;
   if (anyAnalysisNeeded) {
-    forv_Vec(ForallStmt, forall, gForallStmts) {
+    forv_expanding_Vec(ForallStmt, forall, gForallStmts) {
       if (!fNoFastFollowers) {
         symbolicFastFollowerAnalysis(forall);
       }

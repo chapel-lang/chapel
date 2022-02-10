@@ -1532,7 +1532,7 @@ static void removeDeadIters() {
 
 void lowerForallStmtsInline()
 {
-  forv_Vec(ForallStmt, fs, gForallStmts)
+  forv_expanding_Vec(ForallStmt, fs, gForallStmts)
     if (fs->inTree())
       lowerOneForallStmt(fs);
 
