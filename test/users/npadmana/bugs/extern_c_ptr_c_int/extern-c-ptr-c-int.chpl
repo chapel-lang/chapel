@@ -1,5 +1,5 @@
 use CPtr;
-use SysBasic, SysCTypes;
+use SysCTypes;
 
 extern var y : c_ptr(c_int);
 

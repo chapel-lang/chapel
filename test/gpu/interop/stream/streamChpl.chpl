@@ -1,5 +1,5 @@
 use SysCTypes;
-use SysBasic;
+use CTypes;
 use CPtr;
 
 param N = 10;

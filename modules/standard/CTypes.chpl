@@ -36,7 +36,7 @@ module CTypes {
                             param newmod: string = "CTypes") {
     compilerWarning("type '" + name + "' has moved from '" + mod +
                     "' to '" + newmod + "'; please update your " +
-                    "'use'/'import' statements accordingly.");
+                    "'use'/'import' statements accordingly.", errorDepth=2);
   }
 
   /* The type corresponding to a C float */

@@ -1,4 +1,4 @@
-use SysBasic;
+use CPtr;
 
 /* This record does something probably not allowed in the language:
    it uses the C interop mechanisms to store in one field a pointer
@@ -34,6 +34,7 @@ proc R.R(x:int) {
 proc ref R.init(x:int, allow_zero:bool = false) {
   if !allow_zero then assert(x != 0);
   this.x = x;
+  this.complete();
   set_self_ptr();
 }
 
@@ -93,7 +94,7 @@ proc chpl__initCopy(arg: R) {
   return ret;
 }
 
-proc =(ref lhs: R, rhs: R) {
+operator =(ref lhs: R, rhs: R) {
   extern proc printf(fmt:c_string, arg:c_ptr(int));
   extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
   if debug then

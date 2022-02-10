@@ -2492,7 +2492,7 @@ module BLAS {
 
   */
   module C_BLAS {
-    use SysCTypes, SysBasic, CPtr;
+    use SysCTypes, CTypes, CPtr;
     extern type CBLAS_INDEX = c_int;
 
     // Define the external types

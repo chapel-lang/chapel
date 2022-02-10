@@ -1,4 +1,5 @@
 
+
 /*
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
@@ -127,7 +128,7 @@ module LAPACK {
   /* Available LAPACK implementations for ``lapackImpl`` */
   enum LapackImpl {lapack, mkl, off};
   use LapackImpl;
-  use SysBasic;
+  use CTypes;
   use CPtr;
 
   /*
@@ -219,8 +220,8 @@ module ClassicLAPACK {
 
 use SysCTypes;
 use CPtr;
+use CTypes;
 use LAPACK;
-use SysBasic;
 
 pragma "no doc"
 extern proc lapack_make_complex_float(re : c_float, im : c_float) : complex(64);

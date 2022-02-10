@@ -567,7 +567,7 @@ module MPI {
 
    */
    module C_MPI {
-     use SysCTypes, SysBasic;
+     use SysCTypes, CTypes;
      use MPI;
 
   // Special case MPI_Init -- we will send these null pointers

@@ -1,4 +1,4 @@
-use SysCTypes, SysBasic;
+use SysCTypes, CTypes;
 
 extern proc printarr(x: [], n:c_int);
 

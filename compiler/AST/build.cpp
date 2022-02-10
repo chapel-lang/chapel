@@ -796,12 +796,12 @@ BlockStmt*
 buildExternBlockStmt(const char* c_code) {
   bool privateUse = true;
 
-  // use CPtr, SysBasic, SysCTypes to get c_ptr, c_int, c_double etc.
+  // use CPtr, CTypes, SysCTypes to get c_ptr, c_int, c_double etc.
   // (System error codes do not need to be part of this).
   BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CPtr"), "",
                                      NULL, privateUse);
   buildUseList(new UnresolvedSymExpr("SysCTypes"), "", useBlock, privateUse);
-  buildUseList(new UnresolvedSymExpr("SysBasic"), "", useBlock, privateUse);
+  buildUseList(new UnresolvedSymExpr("CTypes"), "", useBlock, privateUse);
 
   useBlock->insertAtTail(new ExternBlockStmt(c_code));
   BlockStmt* ret = buildChapelStmt(useBlock);
