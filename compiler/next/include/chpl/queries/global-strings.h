@@ -22,6 +22,9 @@
 
 #include "Context.h"
 
+// NOTE: to add a global string for USTR, add it to
+//   all-global-strings.h
+
 /* Max length of a global string that can appear in a USTR("<something>") macro  */
 /* If updating here, you should also ensure there is a EXPAND{MAXLEN} macro */
 #define MAXLEN 16

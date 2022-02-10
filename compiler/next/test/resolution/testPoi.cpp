@@ -316,6 +316,58 @@ static void test2() {
   assert(m2foobar->id() == m2Bar->id());
 }
 
+// simpler warm-up to test3
+static void test3a() {
+  printf("test3a\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+        module M {
+          proc helper1() { }
+        }
+
+        module N {
+          use M;
+
+          proc helper1() { }
+
+          proc main() {
+            helper1();
+          }
+        }
+
+  )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 2);
+  const Module* M = vec[0]->toModule();
+  assert(M);
+  assert(M->numStmts() == 1);
+  const Module* N = vec[1]->toModule();
+  assert(N);
+  assert(N->numStmts() == 3);
+
+  auto main = N->stmt(2)->toFunction();
+  assert(main);
+  assert(main->numStmts() == 1);
+
+  auto nCall = main->stmt(0)->toCall();
+  assert(nCall);
+
+  // resolve main
+  const ResolvedFunction* rMain = resolveConcreteFunction(context, main->id());
+  assert(rMain);
+
+  // find the resolved calls in main to nCallFunc, mCallFunc, mGenericCallFunc
+  const ResolvedFunction* rNCallFunc =
+    resolveOnlyCandidate(context, rMain->byAst(nCall));
+  assert(rNCallFunc);
+}
+
 // testing the challenging program from issue 18119
 static void test3() {
   printf("test3\n");
@@ -713,6 +765,7 @@ int main() {
   test1n();
   test2a();
   test2();
+  test3a();
   test3();
   test4();
   test5();

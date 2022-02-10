@@ -149,13 +149,17 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   for (int i = 0; i < numFormals; i++) {
     FormalActual& entry = byFormalIdx_[formalIdx];
     if (const Decl* decl = untyped->formalDecl(i)) {
-      entry.formal = decl;
+      entry.formal_ = decl;
     }
-    if (typed) {
-      entry.formalType = typed->formalType(formalIdx);
+    if (typed != nullptr) {
+      entry.formalType_ = typed->formalType(formalIdx);
+      if (typed->instantiatedFrom() != nullptr) {
+        entry.formalInstantiated_ = typed->formalIsInstantiated(i);
+      }
     }
-    entry.hasActual = false;
-    entry.actualIdx = -1;
+    entry.hasActual_ = false;
+    entry.formalIdx_ = formalIdx;
+    entry.actualIdx_ = -1;
 
     formalIdx++;
   }
@@ -171,9 +175,9 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         if (actual.byName() == untyped->formalName(i)) {
           match = true;
           FormalActual& entry = byFormalIdx_[i];
-          entry.hasActual = true;
-          entry.actualIdx = actualIdx;
-          entry.actualType = actual.type();
+          entry.hasActual_ = true;
+          entry.actualIdx_ = actualIdx;
+          entry.actualType_ = actual.type();
           actualIdxToFormalIdx_[actualIdx] = formalIdx;
           break;
         }
@@ -204,7 +208,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
     if (actual.byName().isEmpty()) {
       // Skip any formals already matched to named arguments
-      while (byFormalIdx_[formalIdx].actualIdx >= 0) {
+      while (byFormalIdx_[formalIdx].actualIdx_ >= 0) {
         if (formalIdx + 1 >= (int) byFormalIdx_.size()) {
           // too many actuals
           failingActualIdx_ = actualIdx;
@@ -217,9 +221,9 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       // TODO: special handling for operators
 
       FormalActual& entry = byFormalIdx_[formalIdx];
-      entry.hasActual = true;
-      entry.actualIdx = actualIdx;
-      entry.actualType = actual.type();
+      entry.hasActual_ = true;
+      entry.actualIdx_ = actualIdx;
+      entry.actualType_ = actual.type();
       actualIdxToFormalIdx_[actualIdx] = formalIdx;
     }
     actualIdx++;
@@ -231,7 +235,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     // This is left out for type constructors because presently
     // a partial instantiation is provided by simply leaving out arguments.
     while (formalIdx < (int) byFormalIdx_.size()) {
-      if (byFormalIdx_[formalIdx].actualIdx < 0) {
+      if (byFormalIdx_[formalIdx].actualIdx_ < 0) {
         if (!untyped->formalHasDefault(formalIdx)) {
           // formal was not provided and there is no default value
           failingFormalIdx_ = formalIdx;

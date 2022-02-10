@@ -17,26 +17,23 @@
  * limitations under the License.
  */
 
-#include "chpl/types/ComplexType.h"
-#include "chpl/queries/query-impl.h"
+#include "chpl/util/bitmap.h"
 
 namespace chpl {
-namespace types {
 
-const owned<ComplexType>& ComplexType::getComplexType(Context* context, int bitwidth) {
-  QUERY_BEGIN(getComplexType, context, bitwidth);
 
-  auto result = toOwned(new ComplexType(bitwidth));
-
-  return QUERY_END(result);
+size_t Bitmap::hash() const {
+  std::hash<std::vector<bool>> hasher;
+  return hasher(bits_);
 }
 
-const ComplexType* ComplexType::get(Context* context, int bitwidth) {
-  assert(bitwidth == 0 || bitwidth == 64 || bitwidth == 128);
-  if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
-  return getComplexType(context, bitwidth).get();
+void Bitmap::stringify(std::ostream& s, StringifyKind stringKind) const {
+  s << "[";
+  for (auto e : bits_) {
+    s << (int)e;
+  }
+  s << "]";
 }
 
 
-} // end namespace types
-} // end namespace chpl
+}

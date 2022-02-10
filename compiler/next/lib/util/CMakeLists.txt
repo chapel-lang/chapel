@@ -18,15 +18,16 @@
 target_sources(libchplcomp-obj
                PRIVATE
 
-               filesystem_help.h
-               filesystem.cpp
-
+               # C sources
                my_aligned_alloc.h
                my_aligned_alloc.c
                my_strerror_r.h
                my_strerror_r.c
 
-               string-escapes.cpp
-
+               # C++ sources
+               bitmap.cpp
                break.cpp
+               filesystem.cpp
+               filesystem_help.h
+               string-escapes.cpp
               )

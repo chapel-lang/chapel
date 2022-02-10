@@ -27,6 +27,7 @@
 #include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
 #include "chpl/uast/Function.h"
+#include "chpl/util/bitmap.h"
 #include "chpl/util/memory.h"
 
 #include <unordered_map>
@@ -51,8 +52,13 @@ class UntypedFnSignature {
     bool hasDefaultValue = false;
     const uast::Decl* decl = nullptr;
 
-    FormalDetail(UniqueString name, bool hasDefault, const uast::Decl* decl)
-      : name(name), hasDefaultValue(hasDefault), decl(decl) { }
+    FormalDetail(UniqueString name,
+                 bool hasDefaultValue,
+                 const uast::Decl* decl)
+      : name(name),
+        hasDefaultValue(hasDefaultValue),
+        decl(decl)
+    { }
 
     bool operator==(const FormalDetail& other) const {
       return name == other.name &&
@@ -235,9 +241,6 @@ class UntypedFnSignature {
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
 };
-
-/** See the documentation for types::CompositeType::SubstitutionsMap. */
-using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
 /** CallInfoActual */
 class CallInfoActual {
@@ -496,8 +499,8 @@ class TypedFnSignature {
   // function signature?
   const TypedFnSignature* parentFn_ = nullptr;
 
-  // TODO: This could include a substitutions map, if we need it.
-  // The formalTypes above might be enough, though.
+  // Which formal arguments were substituted when instantiating?
+  Bitmap formalsInstantiated_;
 
  public:
   TypedFnSignature(const UntypedFnSignature* untypedSignature,
@@ -505,13 +508,15 @@ class TypedFnSignature {
                    WhereClauseResult whereClauseResult,
                    bool needsInstantiation,
                    const TypedFnSignature* instantiatedFrom,
-                   const TypedFnSignature* parentFn)
+                   const TypedFnSignature* parentFn,
+                   Bitmap formalsInstantiated)
     : untypedSignature_(untypedSignature),
       formalTypes_(std::move(formalTypes)),
       whereClauseResult_(whereClauseResult),
       needsInstantiation_(needsInstantiation),
       instantiatedFrom_(instantiatedFrom),
-      parentFn_(parentFn) { }
+      parentFn_(parentFn),
+      formalsInstantiated_(std::move(formalsInstantiated)) { }
 
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature_ == other.untypedSignature_ &&
@@ -519,7 +524,8 @@ class TypedFnSignature {
            whereClauseResult_ == other.whereClauseResult_ &&
            needsInstantiation_ == other.needsInstantiation_ &&
            instantiatedFrom_ == other.instantiatedFrom_ &&
-           parentFn_ == other.parentFn_;
+           parentFn_ == other.parentFn_ &&
+           formalsInstantiated_ == other.formalsInstantiated_;
   }
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
@@ -535,6 +541,7 @@ class TypedFnSignature {
     }
     context->markPointer(instantiatedFrom_);
     context->markPointer(parentFn_);
+    (void) formalsInstantiated_; // nothing to mark
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -575,6 +582,14 @@ class TypedFnSignature {
   }
 
   /**
+    Returns 'true' if formal argument i was instantiated; that is,
+    it was present in the SubstitutionsMap when instantiating.
+   */
+  bool formalIsInstantiated(int i) const {
+    return formalsInstantiated_[i];
+  }
+
+  /**
      Is this for an inner Function? If so, what is the parent
      function signature?
    */
@@ -611,6 +626,7 @@ class MostSpecificCandidates {
   typedef enum {
     // the slots in the candidates array for return intent
     // overloading
+    ONLY = 0, // same slot as REF
     REF = 0,
     CONST_REF,
     VALUE,
@@ -620,8 +636,45 @@ class MostSpecificCandidates {
 
  private:
   const TypedFnSignature* candidates[NUM_INTENTS] = {nullptr};
+  bool emptyDueToAmbiguity = false;
 
  public:
+  /**
+    Default-initialize MostSpecificCandidates with no candidates
+    which is not empty due to ambiguity.
+   */
+  MostSpecificCandidates() { }
+
+  /**
+    If fn is not nullptr, creates a MostSpecificCandidates with that function.
+    Otherwise, default-initializes a MostSpecificCandidates with no candidates
+    that is not empty due to ambiguity.
+   */
+  static MostSpecificCandidates getOnly(const TypedFnSignature* fn) {
+    MostSpecificCandidates ret;
+    if (fn != nullptr)
+      ret.setBestOnly(fn);
+    return ret;
+  }
+
+  /**
+    Creates a MostSpecificCandidates with no candidates that is not
+    empty due to ambiguity.
+   */
+  static MostSpecificCandidates getEmpty() {
+    return MostSpecificCandidates();
+  }
+
+  /**
+    Creates a MostSpecificCandidates that represents a no candidates
+    but that is empty due to ambiguity.
+   */
+  static MostSpecificCandidates getAmbiguous() {
+    MostSpecificCandidates ret;
+    ret.emptyDueToAmbiguity = true;
+    return ret;
+  }
+
   const TypedFnSignature* const* begin() const {
     return &candidates[0];
   }
@@ -637,6 +690,10 @@ class MostSpecificCandidates {
   }
   void setBestValue(const TypedFnSignature* sig) {
     candidates[VALUE] = sig;
+  }
+
+  void setBestOnly(const TypedFnSignature* sig) {
+    candidates[ONLY] = sig;
   }
 
   const TypedFnSignature* bestRef() const {
@@ -665,7 +722,40 @@ class MostSpecificCandidates {
     if (nPresent != 1) {
       return nullptr;
     }
+
+    // if there is only one candidate, it should be in slot ONLY
+    assert(candidates[ONLY] == ret);
     return ret;
+  }
+
+  /**
+   Returns the number of best candidates that are contained here.
+   */
+  int numBest() const {
+    int ret = 0;
+    for (const TypedFnSignature* sig : *this) {
+      if (sig != nullptr) {
+        ret++;
+      }
+    }
+    return ret;
+  }
+
+  /**
+    Returns true if there are no most specific candidates.
+   */
+  bool isEmpty() const {
+    return numBest() == 0;
+  }
+
+  /**
+    Returns true if there are no most specific candidates due to ambiguity.
+   */
+  bool isAmbiguous() const {
+    // if emptyDueToAmbiguity is set, isEmpty should return true
+    assert(!emptyDueToAmbiguity || isEmpty());
+
+    return emptyDueToAmbiguity;
   }
 
   bool operator==(const MostSpecificCandidates& other) const {
@@ -673,6 +763,10 @@ class MostSpecificCandidates {
       if (candidates[i] != other.candidates[i])
         return false;
     }
+
+    if (emptyDueToAmbiguity != other.emptyDueToAmbiguity)
+      return false;
+
     return true;
   }
   bool operator!=(const MostSpecificCandidates& other) const {
@@ -682,6 +776,7 @@ class MostSpecificCandidates {
     for (int i = 0; i < NUM_INTENTS; i++) {
       std::swap(candidates[i], other.candidates[i]);
     }
+    std::swap(emptyDueToAmbiguity, other.emptyDueToAmbiguity);
   }
   static bool update(MostSpecificCandidates& keep,
                      MostSpecificCandidates& addin) {
@@ -691,6 +786,7 @@ class MostSpecificCandidates {
     for (const TypedFnSignature* sig : *this) {
       context->markPointer(sig);
     }
+    (void) emptyDueToAmbiguity; // no mark needed for bool
   }
 };
 
@@ -976,13 +1072,29 @@ class ResolvedFunction {
   }
 };
 
+class FormalActualMap;
+
+
 /** FormalActual holds information on a function formal and its binding (if any) */
-struct FormalActual {
-  const uast::Decl* formal = nullptr;
-  types::QualifiedType formalType;
-  bool hasActual = false; // == false means uses formal default value
-  int actualIdx = -1;
-  types::QualifiedType actualType;
+class FormalActual {
+ friend class FormalActualMap;
+ private:
+  types::QualifiedType formalType_;
+  types::QualifiedType actualType_;
+  const uast::Decl* formal_ = nullptr;
+  int formalIdx_ = -1;
+  int actualIdx_ = -1;
+  bool hasActual_ = false; // == false means uses formal default value
+  bool formalInstantiated_ = false;
+
+ public:
+  const types::QualifiedType& formalType() const { return formalType_; }
+  const types::QualifiedType& actualType() const { return actualType_; }
+  const uast::Decl* formal() const { return formal_; }
+  int formalIdx() const { return formalIdx_; }
+  int actualIdx() const { return actualIdx_; }
+  bool hasActual() const { return hasActual_; }
+  bool formalInstantiated() const { return formalInstantiated_; }
 };
 
 /** FormalActualMap maps formals to actuals */
@@ -1008,9 +1120,26 @@ class FormalActualMap {
   /** check if mapping is valid */
   bool isValid() const { return mappingIsValid_; }
 
-  /** get the FormalActuals */
-  FormalActualIterable byFormalIdx() const {
+  /** get the FormalActuals in the order of the formal arguments */
+  FormalActualIterable byFormals() const {
     return FormalActualIterable(byFormalIdx_);
+  }
+
+  /** get the FormalActual for a particular formal index */
+  const FormalActual& byFormalIdx(int formalIdx) const {
+    assert(0 <= formalIdx && (size_t) formalIdx < byFormalIdx_.size());
+    return byFormalIdx_[formalIdx];
+  }
+
+  /** get the FormalActual for a particular actual index,
+      and returns nullptr if none was found. */
+  const FormalActual* byActualIdx(int actualIdx) const {
+    if (actualIdx < 0 || (size_t) actualIdx >= actualIdxToFormalIdx_.size())
+      return nullptr;
+    int formalIdx = actualIdxToFormalIdx_[actualIdx];
+    if (formalIdx < 0 || (size_t) formalIdx >= byFormalIdx_.size())
+      return nullptr;
+    return &byFormalIdx_[formalIdx];
   }
 
  private:
@@ -1141,6 +1270,10 @@ class ResolvedFields {
     }
   }
 };
+
+/** See the documentation for types::CompositeType::SubstitutionsMap. */
+using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
+
 
 } // end namespace resolution
 

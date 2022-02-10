@@ -27,6 +27,7 @@
 #include "chpl/uast/ASTNode.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Expression.h"
+#include "chpl/uast/Function.h"
 #include "chpl/uast/Module.h"
 
 #include <vector>
@@ -135,7 +136,17 @@ uast::ASTTag idToTag(Context* context, ID id);
  */
 const ID& idToParentId(Context* context, ID id);
 
-// TODO: make a wrapper for ID.parentSymbolId
+/**
+ Given an ID that represents a Function, get the declared return
+ intent for that function.
+ */
+uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id);
+
+/**
+ Returns 'true' if the passed ID represents a Function with a where clause,
+ and 'false' otherwise.
+ */
+bool functionWithIdHasWhere(Context* context, ID id);
 
 
 } // end namespace parsing
