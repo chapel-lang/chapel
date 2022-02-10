@@ -339,11 +339,12 @@ static FnSymbol* operatorExists(const char* name,
                                 Type* formalType1,
                                 Type* formalType2,
                                 functionExistsKind kind=FIND_EITHER) {
-  // check for standalone operator
-  FnSymbol* retval = functionExists(name, formalType1, formalType2);
+  FnSymbol* retval = NULL;
+  // check for operator method
+  retval = functionExists(name, dtMethodToken, dtAny, formalType1, formalType2);
   if (retval == NULL) {
-    // check for operator method
-    retval = functionExists(name, dtMethodToken, dtAny, formalType1, formalType2);
+    // check for standalone operator
+    retval = functionExists(name, formalType1, formalType2);
   }
   return retval;
 }
