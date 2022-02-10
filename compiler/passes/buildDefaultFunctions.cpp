@@ -184,6 +184,10 @@ void buildDefaultFunctions() {
       }
 
       if (isRecord(ct)) {
+        // Build hash function first so we don't trip over our own
+        // compiler-generated '==' operator
+        buildRecordHashFunction(ct);
+
         if (!isRecordWrappedType(ct)) {
           buildRecordComparisonFunc(ct, "==");
           buildRecordComparisonFunc(ct, "!=");
@@ -193,7 +197,6 @@ void buildDefaultFunctions() {
           buildRecordComparisonFunc(ct, ">=");
         }
 
-        buildRecordHashFunction(ct);
 
         checkNotPod(ct);
       }
@@ -1609,7 +1612,11 @@ static void checkNotPod(AggregateType* at) {
 ************************************** | *************************************/
 
 static void buildRecordHashFunction(AggregateType *ct) {
-  if (functionExists("hash", dtMethodToken, ct))
+  if (functionExists("hash", dtMethodToken, ct) ||
+      functionExists("==", dtMethodToken, dtAny, ct, ct) ||
+      functionExists("==", ct, ct) ||
+      functionExists("!=", dtMethodToken, dtAny, ct, ct) ||
+      functionExists("!=", ct, ct))
     return;
 
   FnSymbol *fn = new FnSymbol("hash");
