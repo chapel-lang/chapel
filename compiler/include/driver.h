@@ -272,7 +272,7 @@ extern bool fPrintAdditionalErrors;
 extern bool fDynoCompilerLibrary;
 extern bool fDynoDebugTrace;
 
-extern size_t fDynoBreakOnQueryHash;
+extern size_t fDynoBreakOnHash;
 
 namespace chpl {
   class Context;

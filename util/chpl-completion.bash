@@ -58,7 +58,7 @@ _chpl ()
 --dynamic \
 --dynamic-auto-local-access \
 --dyno \
---dyno-break-on-query-hash \
+--dyno-break-on-hash \
 --dyno-debug-trace \
 --early-deinit \
 --explain-call \

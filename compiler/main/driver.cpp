@@ -301,7 +301,7 @@ bool fPrintChplSettings = false;
 
 bool fDynoCompilerLibrary = false;
 bool fDynoDebugTrace = false;
-size_t fDynoBreakOnQueryHash = 0;
+size_t fDynoBreakOnHash = 0;
 
 int fGPUBlockSize = 0;
 char fCUDAArch[16] = "sm_60";
@@ -1202,7 +1202,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"dyno", ' ', NULL, "Enable [disable] using dyno compiler library", "N", &fDynoCompilerLibrary, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
- {"dyno-break-on-query-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "U", &fDynoBreakOnQueryHash, "CHPL_DYNO_BREAK_ON_QUERY_HASH", NULL},
+ {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "U", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
 
 
  DRIVER_ARG_PRINT_CHPL_HOME,
@@ -1797,8 +1797,8 @@ int main(int argc, char* argv[]) {
 
     if (gContext != nullptr) {
       gContext->setDebugTraceFlag(fDynoDebugTrace);
-      if (fDynoBreakOnQueryHash != 0)
-        gContext->setBreakOnHash(fDynoBreakOnQueryHash);
+      if (fDynoBreakOnHash != 0)
+        gContext->setBreakOnHash(fDynoBreakOnHash);
     }
 
     initCompilerGlobals(); // must follow argument parsing
