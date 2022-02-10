@@ -27,7 +27,6 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
-#include "oldCollectors.h"
 #include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
@@ -2514,7 +2513,7 @@ expandForLoop(ForLoop* forLoop) {
       // Need to check if iterator will be inlined, isSingleLoopIterator()
       // doesn't handle arbitrary blockstmts well, so we collapse them first
       iterFn->collapseBlocks();
-      Vec<BaseAST*> asts;
+      std::vector<BaseAST*> asts;
       collect_asts_postorder(iterFn, asts);
 
       // If the iterator cannot be inlined a re-entrant advance function will

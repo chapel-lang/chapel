@@ -44,11 +44,6 @@
 #include "wellknown.h"
 #include "WhileStmt.h"
 
-#include "oldCollectors.h" // Deprecated. To be removed.
-// After #include "oldCollectors.h" has been removed from all other source
-// files, the corresponding collector functions can be removed from this
-// implementation file, then this #include, and finally the .h file itself.
-
 #include "global-ast-vecs.h"
 
 #include <vector>

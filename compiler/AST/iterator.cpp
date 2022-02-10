@@ -27,7 +27,6 @@
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
-#include "oldCollectors.h"
 #include "optimizations.h"
 #include "passes.h"
 #include "preFold.h"
@@ -574,12 +573,12 @@ static Expr* loopOrNonBlockParent(Expr* expr) {
 // I believe these conditions can be relaxed.
 //
 CallExpr*
-isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
+isSingleLoopIterator(FnSymbol* fn, std::vector<BaseAST*>& asts) {
   if (fNoOptimizeLoopIterators)
     return NULL;
   BlockStmt* singleFor = NULL;
   CallExpr* singleYield = NULL;
-  forv_Vec(BaseAST, ast, asts) {
+  for (BaseAST* ast : asts) {
     // If a yield statement,
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
@@ -684,7 +683,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
                                       Symbol*        field,
                                       bool           is_def,
                                       bool           is_use,
-                                      Vec<BaseAST*>& asts)
+                                      std::vector<BaseAST*>& asts)
 {
   // Get the expression that sets or uses the symexpr.
   CallExpr* call = toCallExpr(se->parentExpr);
@@ -730,7 +729,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
 
   // OK, insert the declaration.
   stmt->insertBefore(new DefExpr(tmp));
-  asts.add(tmp->defPoint);  // hilde sez: I don't think this is necessary.
+  asts.push_back(tmp->defPoint);  // hilde sez: I don't think this is necessary.
 
   // If this symexpr is used here,
   if (is_use) {
@@ -845,7 +844,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
 // with references to fields in the iterator class instead.
 static void
 replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
-                        Vec<BaseAST*>& asts,    // the asts in that function, listed postorder.
+                        std::vector<BaseAST*>& asts,    // the asts in that function, listed postorder.
                         SymbolMap& local2field, // Map: local symbol --> class field
                         Vec<Symbol*>& yldSymSet,// The set of locals that appear in yields.
                         Symbol* valField,       // ic.value field - value being yielded.
@@ -860,7 +859,7 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
   buildDefUseSets(locals, fn, defSet, useSet);
 
   // Traverse the asts in the iterator and select just the sym expressions.
-  forv_expanding_Vec(BaseAST, ast, asts) {
+  for (BaseAST* ast : chpl::expandingIterator(asts)) {
     if (SymExpr* se = toSymExpr(ast)) {
 
       // Ignore symexprs that are not in the tree.
@@ -937,7 +936,7 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
 // body that occur *before* the start of the loop proper (i.e. before the
 // singleLoop construct).
 static void
-buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+buildZip1(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Expects to be called inside a clause that already tests singleLoop !=
   // NULL.  This restriction can be removed if the != NULL test is pushed down
@@ -960,7 +959,7 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   // scanning the exprs to be copied and just populating the map with the
   // symbols we actually use.  This utility can be factored out of all of the
   // buildZip functions.
-  forv_Vec(BaseAST, ast, asts) {
+  for (BaseAST* ast : asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
         zip1body->insertAtTail(def->copy(&map));
@@ -1010,7 +1009,7 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 // Build the zip2 function, copying expressions out of the singleLoop
 // body that are *before* the yield
 static void
-buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+buildZip2(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Expects to be called inside a clause that already tests singleLoop !=
   // NULL.  This restriction can be removed if the != NULL test is pushed down
@@ -1031,7 +1030,7 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Copy non-arg def expressions from the original iterator
   // See TODO #1 above.
-  forv_Vec(BaseAST, ast, asts) {
+  for (BaseAST* ast : asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
         zip2body->insertAtTail(def->copy(&map));
@@ -1064,7 +1063,7 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 // Build the zip3 function, copying expressions out of the singleLoop
 // body that are *after* the yield
 static void
-buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+buildZip3(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Expects to be called inside a clause that already tests singleLoop !=
   // NULL.  This restriction can be removed if the != NULL test is pushed down
@@ -1083,7 +1082,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Copy non-arg def expressions from the original iterator
   // See TODO #1 above.
-  forv_Vec(BaseAST, ast, asts) {
+  for (BaseAST* ast : asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
         zip3body->insertAtTail(def->copy(&map));
@@ -1134,7 +1133,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 // Build the zip4 function, copy expressions out of the iterator body
 // that are *after* the singleLoop
 static void
-buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+buildZip4(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Expects to be called inside a clause that already tests singleLoop !=
   // NULL.  This restriction can be removed if the != NULL test is pushed down
@@ -1155,7 +1154,7 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Copy non-arg def expressions from the original iterator
   // See TODO #1 above.
-  forv_Vec(BaseAST, ast, asts) {
+  for (BaseAST* ast : asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
         zip4body->insertAtTail(def->copy(&map));
@@ -1311,7 +1310,7 @@ static void buildJumpTables(BlockStmt* advanceBody,
 // will continue from the next label the next time the iterator is entered.
 static void
 buildAdvance(FnSymbol* fn,
-             Vec<BaseAST*>& asts,
+             std::vector<BaseAST*>& asts,
              SymbolMap& local2field,
              Vec<Symbol*>& locals) {
   IteratorInfo* ii = fn->iteratorInfo;
@@ -1333,7 +1332,7 @@ buildAdvance(FnSymbol* fn,
   int i = 2; // 1 = not started, 0 = finished
   Vec<LabelSymbol*> labels, breakLbls;
 
-  forv_Vec(BaseAST, ast, asts) {
+  for (BaseAST* ast : asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
         handleYieldInAdvance(labels, breakLbls, ii, ic, end, call, i++);
@@ -1752,8 +1751,8 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop,
 // Collect all local variables
 // (Called only if live variable analysis is turned off.)
 static void
-addAllLocalVariables(Vec<Symbol*>& syms, Vec<BaseAST*>& asts) {
-  forv_Vec(BaseAST, ast, asts) {
+addAllLocalVariables(Vec<Symbol*>& syms, std::vector<BaseAST*>& asts) {
+  for (BaseAST* ast : asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (VarSymbol* var = toVarSymbol(def->sym))
         if (!var->type->symbol->hasFlag(FLAG_REF) ||
@@ -1894,11 +1893,11 @@ rebuildGetIterator(IteratorInfo* ii) {
 // All "newRet" symbols used in yield expressions will need special handling,
 // so we collect them into a set.
 static void
-collectYieldSymbols(FnSymbol* fn, Vec<BaseAST*>& asts, Vec<Symbol*>& yldSymSet,
+collectYieldSymbols(FnSymbol* fn, std::vector<BaseAST*>& asts, Vec<Symbol*>& yldSymSet,
                     bool* oneLocalYSRef)
 {
   bool gotNonlocalYS = false;
-  forv_Vec(BaseAST, ast, asts) {
+  for (BaseAST* ast : asts) {
     if (CallExpr* yCall = asYieldExpr(ast)) {
       SymExpr* ySymExpr = toSymExpr(yCall->get(1));
       INT_ASSERT(ySymExpr);
@@ -1931,7 +1930,7 @@ addYieldSymbols(Vec<Symbol*>& locals, Vec<Symbol*>& yldSymSet) {
 
 // After replaceLocalsWithFields() all locals are replaced with field accesses.
 static void
-removeLocals(Vec<Symbol*>& locals, Vec<BaseAST*>& asts, Vec<Symbol*>& yldSymSet, FnSymbol* fn) {
+removeLocals(Vec<Symbol*>& locals, std::vector<BaseAST*>& asts, Vec<Symbol*>& yldSymSet, FnSymbol* fn) {
   forv_Vec(Symbol, l, locals) {
     INT_ASSERT(l->defPoint->parentSymbol == fn);
     if (!isArgSymbol(l))
@@ -2092,7 +2091,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
 void lowerIterator(FnSymbol* fn) {
   INT_ASSERT(! iteratorsLowered);  // ensure formalToPrimMap is valid
   SET_LINENO(fn);
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   Type* yieldedType = removeRetSymbolAndUses(fn);
   collect_asts_postorder(fn, asts);
 
