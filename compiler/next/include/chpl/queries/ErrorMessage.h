@@ -41,8 +41,7 @@ class ErrorMessage final {
     NOTE,
     WARNING,
     SYNTAX,
-    ERROR,
-    FATAL
+    ERROR
   };
 
  private:

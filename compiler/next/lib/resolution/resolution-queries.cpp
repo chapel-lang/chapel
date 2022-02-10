@@ -403,7 +403,6 @@ struct Resolver {
         const BorrowedIdsWithName& m = vec[0];
         if (m.id(0) == decl->id() && m.numIds() > 1) {
           Location loc = parsing::locateId(context, decl->id());
-          // TODO: Overload of 'context->error()' that can handle these.
           auto error =
             ErrorMessage::build(decl->id(), loc, ErrorMessage::ERROR,
                                 "'%s' has multiple definitions",

@@ -36,9 +36,7 @@ void yychpl_error(YYLTYPE*       loc,
     assert(msg.size() == 0);
   }
 
-  // Not wasteful, will be collected at the end of the next revision.
-  auto uniqueStrMsg = UniqueString::get(context->context(), msg);
-  auto err = ParserError(*loc, uniqueStrMsg.c_str(), ErrorMessage::SYNTAX);
+  auto err = ParserError(*loc, msg, ErrorMessage::SYNTAX);
   context->noteSyntaxError(std::move(err));
 }
 

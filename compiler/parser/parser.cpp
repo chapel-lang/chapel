@@ -887,14 +887,11 @@ static void uASTDisplayError(const chpl::ErrorMessage& err) {
       if (strlen(msg) > 0) {
         fprintf(stderr, ": %s\n", msg);
       } else {
-        putc('\n', stderr);
+        fprintf(stderr, "\n");
       }
     } break;
     case chpl::ErrorMessage::ERROR:
       USR_FATAL_CONT("%s", msg);
-      break;
-    case chpl::ErrorMessage::FATAL:
-      USR_FATAL("%s", msg);
       break;
     default:
       INT_FATAL("Should not reach here!");
