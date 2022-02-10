@@ -136,6 +136,46 @@ class Vec {
   void addx();
 };
 
+// TODO remove this once forv_Vec has been removed
+// This bit of code lets us:
+// a) check for sites that use a forv_Vec on a std::vector (see the static_assert)
+// b) check for sites that actually use the expanding iteration nature
+// I'm leaving this in here since the migration process is ongoing
+#if 0
+// Utility for watching when a vector changes size
+// requires c++17
+#include <cstdio>
+template <typename V> struct VecIteratorWatcher {
+  V& v_;
+  const char* file_;
+  const char* var_;
+  int line_;
+  int begin_;
+  VecIteratorWatcher(V& v, const char* var, const char* file, int line)
+      : v_(v), file_(file), var_(var), line_(line), begin_(v.size()) {}
+  ~VecIteratorWatcher() {
+    // Check for increased size at end of iteration
+    // Can also check != for something that shrank
+    // size_t casts because Vec uses int
+    if ((size_t)begin_ < (size_t)v_.size()) {
+      printf("WARN vector %s grew from %ld to %ld at %s:%d\n", var_,
+             (size_t)begin_, (size_t)v_.size(), file_, line_);
+    }
+    // printf("INFO iterated vector %s %ld times at %s:%d\n", var_,
+    //        (size_t)v_.size(), file_, line_);
+  }
+};
+
+#define forv_Vec(_c, _p, _v)                                                   \
+  if (auto vecIteratorWatcher##__LINE__ =                                      \
+          VecIteratorWatcher<decltype(_v)>(_v, #_v, __FILE__, __LINE__);       \
+      (_v).size())                                                             \
+    for (_c* qq__##_p = (_c*)0, *_p = (_v).begin()[0];                         \
+         ((intptr_t)(qq__##_p) < (int)(_v).size()) &&                          \
+         ((_p = (_v).begin()[(intptr_t)qq__##_p]) || 1);                       \
+         qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+
+#else
 // forv_Vec: iterate over all elements of a Vec vector
 // _c -- type that vector elements are pointers to
 // _p -- loop variable to be declared by the macro
@@ -144,6 +184,26 @@ class Vec {
 // note: loop variable is declared as type _c* in order
 // to fit into a loop declaration.
 #define forv_Vec(_c, _p, _v) \
+  if ((_v).size()) \
+    for (_c *qq__##_p = (_c*)0, *_p = (_v).begin()[0]; \
+         ((intptr_t)(qq__##_p) < (int)(_v).size()) && \
+          ((_p = (_v).begin()[(intptr_t)qq__##_p]) || 1); \
+         qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+
+#endif
+
+// NOTE: historically forv_Vec has been used in place of a range for,
+// but it is not a drop-in replacement because the iteration continues
+// if new elements are added to the vector during iteration. This is
+// surprising behavior and while it may be intentional in some spots,
+// it is not used in all spots, and it is useful to know which the
+// callsite intends, so we split out this macro into an expanding
+// version. Today it is just a name change, but allows us to start
+// marking callsites that are known expanding. Callsites that are
+// known to not be expanding should use a range for
+// #define forv_expanding_Vec(_c, _p, _v) forv_Vec(_c, _p, _v)
+
+#define forv_expanding_Vec(_c, _p, _v) \
   if ((_v).size()) \
     for (_c *qq__##_p = (_c*)0, *_p = (_v).begin()[0]; \
          ((intptr_t)(qq__##_p) < (int)(_v).size()) && \
