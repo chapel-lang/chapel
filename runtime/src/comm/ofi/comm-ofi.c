@@ -3784,7 +3784,7 @@ static void amRequestRmaPut(c_nodeid_t, void*, void*, size_t);
 static void amRequestRmaGet(c_nodeid_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
-static void amRequestFAMOResult(c_nodeid_t, chpl_amo_datum_t*, 
+static void amRequestFAMOResult(c_nodeid_t, chpl_amo_datum_t*,
                                 enum fi_datatype, void*, size_t, amDone_t*);
 static void amRequestFree(c_nodeid_t, void*);
 static void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
@@ -4371,8 +4371,8 @@ void amReqFn_dlvrCmplt(c_nodeid_t node,
                        chpl_bool blocking, struct perTxCtxInfo_t* tcip) {
   if (!blocking && (reqSize <= ofi_info->tx_attr->inject_size) &&
       (ofi_info->tx_attr->msg_order & FI_ORDER_SAS)) {
-    
-    /*    
+
+    /*
     Special case: injection is the quickest.  We use that if this is a
     non-blocking AM, the size doesn't exceed the injection size limit,
     and the provider supports send-after-send (SAS) message ordering so
@@ -4381,7 +4381,7 @@ void amReqFn_dlvrCmplt(c_nodeid_t node,
     point because we're going to wait for it to get done on the target
     anyway.)
     */
-    
+   
     (void) wrap_fi_inject(node, req, reqSize, tcip);
   } else {
     //
@@ -4745,7 +4745,6 @@ void processRxAmReqCntr(void) {
       // skip any padding and look for the next message
       for (; ptr < horizon && *ptr == '\0'; ptr++); // do nothing
       CHK_TRUE(ptr < horizon);
-
       // found it. zero and repost current buffer, switch to other
       memset(ofi_msg_reqs[ofi_msg_i].msg_iov->iov_base, '\0',
              ofi_msg_reqs[ofi_msg_i].msg_iov->iov_len);
@@ -4965,7 +4964,7 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
       amRequestFAMOResult(amo->b.node, &result, amo->ofiType, amo->result, resSize, amo->b.pAmDone);
     } else {
       // do a blocking PUT of the result
-      DBG_PRINTF(DBG_AM | DBG_AM_RECV, 
+      DBG_PRINTF(DBG_AM | DBG_AM_RECV,
                  "writing FAMO result via blocking PUT");
       CHK_TRUE(mrGetKey(NULL, NULL, amo->b.node, amo->result, resSize));
       (void) ofi_put(&result, amo->b.node, amo->result, resSize);
@@ -4975,7 +4974,7 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
   // PUT the "done" flag if necessary
   if ((amo->b.pAmDone != NULL) && ((amo->result == NULL) ||
       ((ofi_info->tx_attr->msg_order & FI_ORDER_SAS) == 0))) {
-      DBG_PRINTF(DBG_AM | DBG_AM_RECV, 
+      DBG_PRINTF(DBG_AM | DBG_AM_RECV,
                  "writing FAMO done flag via non-blocking PUT");
     amPutDone(amo->b.node, amo->b.pAmDone);
   }
@@ -8256,7 +8255,7 @@ const char* am_reqStr(c_nodeid_t tgtNode, amRequest_t* req, size_t reqSize) {
                     ", ofiType %s, sz %d",
                     req->famo_result.res,
                     DBG_VAL(&req->famo_result.result, req->famo_result.ofiType),
-                    amo_typeName(req->famo_result.ofiType), 
+                    amo_typeName(req->famo_result.ofiType),
                     req->famo_result.size);
     break;
 
