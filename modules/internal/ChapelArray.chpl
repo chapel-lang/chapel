@@ -2776,6 +2776,13 @@ module ChapelArray {
     return lhs;
   }
 
+  // TODO: why is the compiler calling chpl__autoCopy on a domain at all?
+  pragma "auto copy fn"
+  proc chpl__autoCopy(const ref x:domain, definedConst: bool) {
+    pragma "no copy" var b = chpl__initCopy(x, definedConst);
+    return b;
+  }
+
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
     pragma "no copy"
@@ -2783,6 +2790,7 @@ module ChapelArray {
     return lhs;
   }
 
+  // TODO: why is the compiler calling chpl__autoCopy on an array at all?
   pragma "auto copy fn" proc chpl__autoCopy(x: [], definedConst: bool) {
     pragma "no copy" var b = chpl__initCopy(x, definedConst);
     return b;
