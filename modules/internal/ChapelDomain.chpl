@@ -1322,11 +1322,9 @@ module ChapelDomain {
       */
       inline proc checks return _checks;
 
-      /*
-        Check if a given class reference is ``nil`` without triggering
-        runtime nilability checks.
-      */
-      proc isClassReferenceNil(const ref x) {
+      // Type overload. Not documented, but provided for convenience.
+      pragma "no doc"
+      proc type isClassReferenceNil(const ref x) {
         if isClassType(x.type) {
           return if isBorrowedOrUnmanagedClassType(x.type)
             then x == nil
@@ -1334,6 +1332,14 @@ module ChapelDomain {
         } else {
           return false;
         }
+      }
+
+      /*
+        Check if a given class reference is ``nil`` without triggering
+        runtime nilability checks.
+      */
+      proc isClassReferenceNil(const ref x) {
+        return this.type.isClassReferenceNil(x);
       }
 
       pragma "no doc"

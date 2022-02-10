@@ -1453,7 +1453,7 @@ module DefaultRectangular {
           initShiftedData();
         } else {
 
-          // No need to halt, should have been checked above.
+          // Should have been checked above.
           param initElts = isDefaultInitializable(eltType);
 
           var copy = new unmanaged
@@ -1464,7 +1464,27 @@ module DefaultRectangular {
                                     dom=reallocD._value,
                                     initElts=initElts);
 
+          // May have to prepare the buffer based on the resize policy,
+          // but only if the element type is non-default-initializable.
+          if !initElts {
+            select _resizePolicy {
+
+              // User-facing error occurs above this scope.
+              when chpl_ddataResizePolicy.normalInit do
+                halt("internal error: bad resize policy for array of " +
+                     "non-default-initializable elements");
+
+              // Do nothing.
+              when chpl_ddataResizePolicy.skipInit do;
+
+              // TODO: An upgrade would be to zero out only new slots.
+              when chpl_ddataResizePolicy.skipInitButClearMem do
+                _ddata_fill(copy.data, eltType, 0, reallocD.size);
+            }
+          }
+
           var keep = reallocD((...dom.ranges));
+
           // Copy the preserved elements
           forall i in keep {
             // "move" from the old buffer to the new one

@@ -1026,7 +1026,26 @@ module ChapelBase {
                                              oldSize.safeCast(size_t),
                                              newSize.safeCast(size_t),
                                              _ddata_sizeof_element(oldDdata));
+  }
+
+  inline proc _ddata_fill(ddata,
+                          type eltType,
+                          lo: integral,
+                          hi: integral,
+                          fill: int(8)=0) {
+    if hi > lo {
+      const elemWidthInBytes = _ddata_sizeof_element(ddata);
+      const numElems = (hi - lo).safeCast(uint);
+      if safeMul(numElems, elemWidthInBytes) {
+        const numBytes = numElems * elemWidthInBytes;
+        const shiftedPtr = _ddata_shift(eltType, ddata, lo);
+        c_memset(shiftedPtr:c_void_ptr, fill, numBytes);
+      } else {
+        halt('internal error: Unsigned integer overflow during ' +
+             'memset of dynamic block');
+      }
     }
+  }
 
   inline proc _ddata_reallocate(oldDdata,
                                 type eltType,
@@ -1073,21 +1092,9 @@ module ChapelBase {
         } else {
           init_elts(newDdata, newSize, eltType, lo=oldSize);
         }
-      when chpl_ddataResizePolicy.skipInit do;  // Nothing...
-      when chpl_ddataResizePolicy.skipInitButClearMem {
-        if newSize > oldSize {
-          const elemWidthInBytes = _ddata_sizeof_element(newDdata);
-          const numElems = (newSize - oldSize).safeCast(uint);
-          if safeMul(numElems, elemWidthInBytes) {
-            const numBytes = numElems * elemWidthInBytes;
-            const shiftedPtr = _ddata_shift(eltType, newDdata, oldSize);
-            c_memset(shiftedPtr:c_void_ptr, 0, numBytes);
-          } else {
-            halt('internal error: Unsigned integer overflow during ' +
-                 'reallocation of dynamic block');
-          }
-        }
-      }
+      when chpl_ddataResizePolicy.skipInit do;
+      when chpl_ddataResizePolicy.skipInitButClearMem do
+        _ddata_fill(newDdata, eltType, oldSize, newSize);
     }
 
     if (callPostAlloc) {
