@@ -174,7 +174,6 @@ static chpl_bool envOversubscribed;     // env: over-subscribed?
 static chpl_bool envUseTxCntr;          // env: tasks use transmit counters
 static chpl_bool envUseAmTxCntr;        // env: AMH uses transmit counters
 static chpl_bool envUseAmRxCntr;        // env: AMH uses receive counters
-static chpl_bool envProgressCntr;       // env: counters must be progressed
 static chpl_bool envInjectRMA;          // env: inject RMA messages
 static chpl_bool envInjectAMO;          // env: inject AMO messages
 static chpl_bool envInjectAM;           // env: inject AM messages
@@ -1014,7 +1013,6 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   envUseTxCntr = chpl_env_rt_get_bool("COMM_OFI_TX_COUNTER", false);
   envUseAmTxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_TX_COUNTER", false);
   envUseAmRxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_RX_COUNTER", false);
-  envProgressCntr = chpl_env_rt_get_bool("COMM_OFI_PROGRESS_COUNTER", false);
 
   envUseCxiHybridMR = chpl_env_rt_get_bool("COMM_OFI_CXI_HYBRID_MR", true);
 
@@ -2380,7 +2378,7 @@ void init_ofiEp(void) {
     txCQLen = cqAttr.size;
     cntrAttr = (struct fi_cntr_attr)
                { .events = FI_CNTR_EVENTS_COMP,
-                 .wait_obj = FI_WAIT_NONE, };
+                 .wait_obj = FI_WAIT_UNSPEC, };
     DBG_PRINTF(DBG_TCIPS, "creating tx endpoints/contexts");
     for (int i = 0; i < numWorkerTxCtxs; i++) {
       init_ofiEpTxCtx(i, false /*isAMHandler*/, &avAttr, &cqAttr,
@@ -2404,7 +2402,7 @@ void init_ofiEp(void) {
              .wait_set = ofi_amhWaitSet, };
   cntrAttr = (struct fi_cntr_attr)
              { .events = FI_CNTR_EVENTS_COMP,
-               .wait_obj = waitObj,
+               .wait_obj = FI_WAIT_UNSPEC,
                .wait_set = ofi_amhWaitSet, };
   DBG_PRINTF(DBG_TCIPS, "creating AM handler tx endpoints/contexts");
   for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
@@ -2426,7 +2424,7 @@ void init_ofiEp(void) {
              .wait_set = ofi_amhWaitSet, };
   cntrAttr = (struct fi_cntr_attr)
              { .events = FI_CNTR_EVENTS_COMP,
-               .wait_obj = waitObj,
+               .wait_obj = FI_WAIT_UNSPEC,
                .wait_set = ofi_amhWaitSet, };
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
@@ -4620,6 +4618,11 @@ void fini_amHandling(void) {
   //
   PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
   atomic_store_bool(&amHandlersExit, true);
+  // AM handler may be waiting on the receive counter. Break it out.
+  if (ofi_rxCntr != NULL) {
+    OFI_CHK(fi_cntr_add(ofi_rxCntr, 1));
+  }
+
   PTHREAD_CHK(pthread_cond_wait(&amStartStopCond, &amStartStopMutex));
   PTHREAD_CHK(pthread_mutex_unlock(&amStartStopMutex));
 
@@ -4770,14 +4773,11 @@ void processRxAmReqCntr(void) {
   // Process requests received on the AM request endpoint.
   //
 
-  if (envProgressCntr) {
-    // Manually progress the counter if necessary
-    int rc = fi_cq_read(ofi_rxCQ, NULL, 0);
-    if ((rc < 0) && (rc != -FI_EAGAIN)) {
-      INTERNAL_ERROR_V("fi_cq_read failed: %s", fi_strerror(rc));
-    }
-  }
+  OFI_CHK(fi_cntr_wait(ofi_rxCntr, ofi_rxCount+1, -1));
   uint64_t todo = fi_cntr_read(ofi_rxCntr) - ofi_rxCount;
+  if (atomic_load_bool(&amHandlersExit)) {
+    return;
+  }
   if (todo == 0) {
     uint64_t errors = fi_cntr_readerr(ofi_rxCntr);
     if (errors > 0) {
@@ -6952,23 +6952,19 @@ void checkTxCmplsCQ(struct perTxCtxInfo_t* tcip) {
 
 static
 void checkTxCmplsCntr(struct perTxCtxInfo_t* tcip) {
-  if (envProgressCntr) {
-    // Manually progress the counter
-    int rc = fi_cq_read(tcip->txCQ, NULL, 0);
-    if ((rc < 0) && (rc != -FI_EAGAIN)) {
-      INTERNAL_ERROR_V("fi_cq_read failed: %s", fi_strerror(rc));
-    }
-  }
-  uint64_t count = fi_cntr_read(tcip->txCntr);
-  if (count > tcip->numTxnsSent) {
-    INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxnsSent %" PRIu64,
-                     count, tcip->numTxnsSent);
-  }
-  tcip->numTxnsOut = tcip->numTxnsSent - count;
   if (tcip->numTxnsOut > 0) {
-    count = fi_cntr_readerr(tcip->txCntr);
-    if (count > 0) {
-      INTERNAL_ERROR_V("error count %" PRIu64, count);
+    OFI_CHK(fi_cntr_wait(tcip->txCntr, tcip->numTxnsSent, -1));
+    uint64_t count = fi_cntr_read(tcip->txCntr);
+    if (count > tcip->numTxnsSent) {
+      INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxnsSent %" PRIu64,
+                       count, tcip->numTxnsSent);
+    }
+    tcip->numTxnsOut = tcip->numTxnsSent - count;
+    if (tcip->numTxnsOut > 0) {
+      count = fi_cntr_readerr(tcip->txCntr);
+      if (count > 0) {
+        INTERNAL_ERROR_V("error count %" PRIu64, count);
+      }
     }
   }
 }
