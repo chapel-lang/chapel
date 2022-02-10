@@ -22,9 +22,11 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/UniqueString.h"
-#include "chpl/queries/query-impl.h"
 #include "chpl/queries/global-strings.h"
+#include "chpl/queries/query-impl.h"
 #include "chpl/resolution/can-pass.h"
+#include "chpl/resolution/disambiguation.h"
+#include "chpl/resolution/intents.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
@@ -40,14 +42,11 @@
 namespace chpl {
 namespace resolution {
 
+
 using namespace uast;
 using namespace types;
 
 struct Resolver;
-
-
-static QualifiedType::Kind resolveIntent(const QualifiedType& t);
-
 
 const QualifiedType& typeForBuiltin(Context* context,
                                     UniqueString name) {
@@ -634,8 +633,23 @@ struct Resolver {
     r.setPoiScope(c.poiInfo().poiScope());
     r.setType(c.exprType());
 
-    if (r.type().type() == nullptr) {
-      context->error(call, "Cannot establish type for call expression");
+    if (r.type().type() != nullptr) {
+      // assume it is OK even if mostSpecific is empty
+      // (e.g. it could be a primitive or other builtin operation)
+    } else {
+
+      if (c.mostSpecific().isEmpty()) {
+        // if the call resolution result is empty, we need to issue an error
+        if (c.mostSpecific().isAmbiguous()) {
+          // ambiguity between candidates
+          context->error(call, "Cannot resolve call: ambiguity");
+        } else {
+          // could not find a most specific candidate
+          context->error(call, "Cannot resolve call: no matching candidates");
+        }
+      } else {
+        context->error(call, "Cannot establish type for call expression");
+      }
       r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
     }
 
@@ -739,17 +753,20 @@ typedSignatureQuery(Context* context,
                     TypedFnSignature::WhereClauseResult whereClauseResult,
                     bool needsInstantiation,
                     const TypedFnSignature* instantiatedFrom,
-                    const TypedFnSignature* parentFn) {
+                    const TypedFnSignature* parentFn,
+                    Bitmap formalsInstantiated) {
   QUERY_BEGIN(typedSignatureQuery, context,
               untypedSignature, formalTypes, whereClauseResult,
-              needsInstantiation, instantiatedFrom, parentFn);
+              needsInstantiation, instantiatedFrom, parentFn,
+              formalsInstantiated);
 
   auto result = toOwned(new TypedFnSignature(untypedSignature,
                                              std::move(formalTypes),
                                              whereClauseResult,
                                              needsInstantiation,
                                              instantiatedFrom,
-                                             parentFn));
+                                             parentFn,
+                                             formalsInstantiated));
 
   return QUERY_END(result);
 }
@@ -761,7 +778,8 @@ getFormalTypes(const Function* fn,
   for (auto formal : fn->formals()) {
     QualifiedType t = r.byAst(formal).type();
     // compute concrete intent
-    t = QualifiedType(resolveIntent(t), t.type(), t.param());
+    bool isThis = fn->name() == USTR("this");
+    t = QualifiedType(resolveIntent(t, isThis), t.type(), t.param());
 
     formalTypes.push_back(std::move(t));
   }
@@ -867,6 +885,8 @@ typedSignatureInitial(Context* context,
   auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
   // use an empty poiFnIdsUsed since this is never an instantiation
   std::set<std::pair<ID, ID>> poiFnIdsUsed;
+  // same for formalsInstantiated
+  Bitmap formalsInstantiated;
 
   const auto& result = typedSignatureQuery(context,
                                            untypedSig,
@@ -874,7 +894,8 @@ typedSignatureInitial(Context* context,
                                            whereResult,
                                            needsInstantiation,
                                            /* instantiatedFrom */ nullptr,
-                                           /* parentFn */ parentFnTyped);
+                                           /* parentFn */ parentFnTyped,
+                                           formalsInstantiated);
   return result.get();
 }
 
@@ -1338,12 +1359,16 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                          std::move(formals),
                                          /* whereClause */ nullptr);
 
+  // not instantiated yet so use empty formalsInstantiated
+  Bitmap formalsInstantiated;
+
   auto sig = new TypedFnSignature(untyped,
                                   std::move(formalTypes),
                                   TypedFnSignature::WHERE_NONE,
                                   /* needsInstantiation */ true,
                                   /* instantiatedFrom */ nullptr,
-                                  /* parentFn */ nullptr);
+                                  /* parentFn */ nullptr,
+                                  formalsInstantiated);
   result = toOwned(sig);
 
   return QUERY_END(result);
@@ -1511,35 +1536,56 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   // compute the substitutions
   SubstitutionsMap substitutions;
-  for (const FormalActual& entry : faMap.byFormalIdx()) {
+  Bitmap formalsInstantiated;
+  int formalIdx = 0;
+
+  for (const FormalActual& entry : faMap.byFormals()) {
+    bool addSub = false;
+    QualifiedType useType;
+
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
     // use the default value. Unless the call used a ? argument.
-    if (entry.actualType.kind() == QualifiedType::UNKNOWN &&
-        entry.actualType.type() == nullptr) {
+    if (entry.actualType().kind() == QualifiedType::UNKNOWN &&
+        entry.actualType().type() == nullptr) {
       if (call.hasQuestionArg()) {
         // don't add any substitution
       } else {
         // add a "use the default" hint substitution.
-        substitutions.insert({entry.formal->id(), entry.actualType});
+        addSub = true;
+        useType = entry.actualType();
       }
     } else {
-      auto got = canPass(context, entry.actualType, entry.formalType);
+      auto got = canPass(context, entry.actualType(), entry.formalType());
       assert(got.passes()); // should not get here otherwise
       if (got.instantiates()) {
         // add a substitution for a valid value
         if (!got.converts() && !got.promotes()) {
           // use the actual type since no conversion/promotion was needed
-          substitutions.insert({entry.formal->id(), entry.actualType});
+          addSub = true;
+          useType = entry.actualType();
         } else {
           // get instantiation type
-          QualifiedType useType = getInstantiationType(context,
-                                                       entry.actualType,
-                                                       entry.formalType);
-          substitutions.insert({entry.formal->id(), useType});
+          addSub = true;
+          useType = getInstantiationType(context,
+                                         entry.actualType(),
+                                         entry.formalType());
         }
       }
     }
+
+    // add the substitution if we identified that we need to
+    if (addSub) {
+      // add it to the substitutions map
+      substitutions.insert({entry.formal()->id(), useType});
+      // note that a substitution was used here
+      if ((size_t) formalIdx >= formalsInstantiated.size()) {
+        formalsInstantiated.resize(sig->numFormals());
+      }
+      formalsInstantiated.setBit(formalIdx, true);
+    }
+
+    formalIdx++;
   }
 
   std::vector<types::QualifiedType> formalTypes;
@@ -1606,7 +1652,8 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                            where,
                                            needsInstantiation,
                                            /* instantiatedFrom */ sig,
-                                           /* parentFn */ parentFnTyped);
+                                           /* parentFn */ parentFnTyped,
+                                           formalsInstantiated);
   return result.get();
 }
 
@@ -1930,104 +1977,6 @@ const QualifiedType& returnType(Context* context,
   return QUERY_END(result);
 }
 
-// TODO: move this resolveIntent logic to a different file
-
-static QualifiedType::Kind constIntentForType(const Type* t) {
-
-  // anything we don't know the type of has to have unknown intent
-  if (t == nullptr || t->isUnknownType() || t->isErroneousType())
-    return QualifiedType::UNKNOWN;
-
-  if (t->isPrimitiveType())
-    return QualifiedType::CONST_IN;
-
-  if (t->isRecordType() || t->isUnionType() || t->isTupleType())
-    return QualifiedType::CONST_REF;
-
-  if (auto ct = t->toClassType()) {
-    if (ct->decorator().isUnknownManagement())
-      return QualifiedType::CONST_INTENT;
-    else if (ct->decorator().isManaged())
-      return QualifiedType::CONST_REF;
-    else
-      return QualifiedType::CONST_IN;
-  }
-
-  // Otherwise, it should be a generic type that we will
-  // instantiate before computing the final intent.
-  assert(t->genericity() != Type::CONCRETE);
-  return QualifiedType::CONST_INTENT; // leave the intent generic
-}
-
-static QualifiedType::Kind defaultIntentForType(const Type* t) {
-
-  // anything we don't know the type of has to have unknown intent
-  if (t == nullptr || t->isUnknownType() || t->isErroneousType())
-    return QualifiedType::UNKNOWN;
-
-  if (t->isPrimitiveType())
-    return QualifiedType::CONST_IN;
-
-  if (t->isRecordType() || t->isUnionType() || t->isTupleType())
-    return QualifiedType::CONST_REF;
-
-  if (auto ct = t->toClassType()) {
-    if (ct->decorator().isUnknownManagement())
-      return QualifiedType::DEFAULT_INTENT;
-    else if (ct->decorator().isManaged())
-      return QualifiedType::CONST_REF;
-    else
-      return QualifiedType::CONST_IN;
-  }
-
-  // Otherwise, it should be a generic type that we will
-  // instantiate before computing the final intent.
-  assert(t->genericity() != Type::CONCRETE);
-  return QualifiedType::DEFAULT_INTENT; // leave the intent generic
-}
-
-static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
-  auto kind = t.kind();
-  auto type = t.type();
-
-  switch (kind) {
-    case QualifiedType::UNKNOWN:
-    case QualifiedType::INDEX:
-    case QualifiedType::FUNCTION:
-    case QualifiedType::MODULE:
-      // these don't really have an intent
-      return QualifiedType::UNKNOWN;
-
-    case QualifiedType::CONST_REF:
-    case QualifiedType::REF:
-    case QualifiedType::IN:
-    case QualifiedType::CONST_IN:
-    case QualifiedType::OUT:
-    case QualifiedType::INOUT:
-    case QualifiedType::PARAM:
-    case QualifiedType::TYPE:
-      // concrete intents are already resolved
-      return kind;
-
-    case QualifiedType::VAR:
-      // normalize VAR to IN to make some test codes easier
-      return QualifiedType::IN;
-    case QualifiedType::CONST_VAR:
-      // normalize CONST_VAR to CONST_IN to make some test codes easier
-      return QualifiedType::CONST_IN;
-
-    case QualifiedType::DEFAULT_INTENT:
-      // compute the default intent if needed
-      return defaultIntentForType(type);
-
-    // compute the const intent if needed
-    case QualifiedType::CONST_INTENT:
-      return constIntentForType(type);
-  }
-
-  return QualifiedType::UNKNOWN;
-}
-
 // returns nullptr if the candidate is not applicable,
 // or the result of typedSignatureInitial if it is.
 static const TypedFnSignature*
@@ -2076,8 +2025,8 @@ doIsCandidateApplicableInitial(Context* context,
   auto initialTypedSignature = typedSignatureInitial(context, uSig);
   // Next, check that the types are compatible
   int formalIdx = 0;
-  for (const FormalActual& entry : faMap.byFormalIdx()) {
-    const auto& actualType = entry.actualType;
+  for (const FormalActual& entry : faMap.byFormals()) {
+    const auto& actualType = entry.actualType();
     const auto& formalType = initialTypedSignature->formalType(formalIdx);
     auto got = canPass(context, actualType, formalType);
     if (!got.passes()) {
@@ -2194,36 +2143,6 @@ filterCandidatesInstantiating(Context* context,
       result.push_back(typedSignature);
     }
   }
-}
-
-const MostSpecificCandidates&
-findMostSpecificCandidates(Context* context,
-                           std::vector<const TypedFnSignature*> lst,
-                           CallInfo call) {
-  QUERY_BEGIN(findMostSpecificCandidates, context, lst, call);
-
-  MostSpecificCandidates result;
-
-  if (lst.size() > 1) {
-
-    // TODO: find most specific -- pull over disambiguation code
-    // TODO: handle return intent overloading
-    // TODO: this is demo code
-    if (call.numActuals() > 1) {
-      if (call.actuals(1).type().type()->isIntType()) {
-        result.setBestRef(lst[0]);
-      } else {
-        result.setBestRef(lst[lst.size()-1]);
-      }
-    } else {
-      result.setBestRef(lst[0]);
-    }
-  }
-  if (lst.size() == 1) {
-    result.setBestRef(lst[0]);
-  }
-
-  return QUERY_END(result);
 }
 
 static std::vector<BorrowedIdsWithName>
@@ -2530,7 +2449,9 @@ CallResolutionResult resolveFnCall(Context* context,
   // find most specific candidates / disambiguate
   MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
                                                                    candidates,
-                                                                   ci);
+                                                                   ci,
+                                                                   inScope,
+                                                                   inPoiScope);
 
   // note any most specific candidates from POI in poiFnIdsUsed.
   {

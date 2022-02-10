@@ -17,28 +17,32 @@
  * limitations under the License.
  */
 
-#include "chpl/types/IntType.h"
-#include "chpl/queries/query-impl.h"
+#ifndef CHPL_RESOLUTION_INTENTS_H
+#define CHPL_RESOLUTION_INTENTS_H
+
+#include "chpl/types/QualifiedType.h"
 
 namespace chpl {
-namespace types {
+namespace resolution {
 
 
-const owned<IntType>& IntType::getIntType(Context* context, int bitwidth) {
-  QUERY_BEGIN(getIntType, context, bitwidth);
+/** Resolve the intent of a formal argument based on its type
+    and (possibly generic) intent. For example 'const' is a generic
+    intent and it has different behavior depending on the type.
 
-  auto result = toOwned(new IntType(bitwidth));
+    The argument 'isThis' indicates if the formal argument is
+    the 'this' method receiver argument.
 
-  return QUERY_END(result);
-}
+    The generic and resolved intents are all represented as QualifiedType::Kind.
 
-const IntType* IntType::get(Context* context, int bitwidth) {
-  assert(bitwidth == 0 || bitwidth == 8 || bitwidth == 16 ||
-         bitwidth == 32 || bitwidth == 64);
-  if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
-  return getIntType(context, bitwidth).get();
-}
+    If the type is not known or only partially known, this function
+    can return a generic intent.
+ */
+types::QualifiedType::Kind resolveIntent(const types::QualifiedType& t,
+                                         bool isThis);
 
 
-} // end namespace types
+} // end namespace resolution
 } // end namespace chpl
+
+#endif

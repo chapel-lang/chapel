@@ -5183,13 +5183,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     bool                         ignoreWhere,
                     Vec<ResolutionCandidate*>&   ambiguous);
 
-
-static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous);
-
 static int  compareSpecificity(ResolutionCandidate*         candidate1,
                                ResolutionCandidate*         candidate2,
                                const DisambiguationContext& DC,

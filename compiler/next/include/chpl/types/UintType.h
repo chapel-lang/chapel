@@ -45,6 +45,11 @@ class UintType final : public PrimitiveType {
 
   static const owned<UintType>& getUintType(Context* context, int bitwidth);
 
+  /** what is stored in bitwdith_ for the default 'uint'? */
+  static int defaultBitwidth() {
+    return 64;
+  }
+
  public:
   ~UintType() = default;
 
@@ -52,6 +57,10 @@ class UintType final : public PrimitiveType {
 
   int bitwidth() const override {
     return bitwidth_;
+  }
+
+  bool isDefaultWidth() const override {
+    return bitwidth_ == defaultBitwidth();
   }
 
   const char* c_str() const override {

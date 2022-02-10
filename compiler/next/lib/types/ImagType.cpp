@@ -34,7 +34,7 @@ const owned<ImagType>& ImagType::getImagType(Context* context, int bitwidth) {
 
 const ImagType* ImagType::get(Context* context, int bitwidth) {
   assert(bitwidth == 0 || bitwidth == 32 || bitwidth == 64);
-  if (bitwidth == 0) bitwidth = 64; // canonicalize default width
+  if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
   return getImagType(context, bitwidth).get();
 }
 
