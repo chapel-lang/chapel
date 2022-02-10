@@ -866,15 +866,48 @@ static ModuleSymbol* parseFile(const char* path,
   return retval;
 }
 
+static void uASTDisplayError(const chpl::ErrorMessage& err) {
+  astlocMarker locMarker(err.location());
+
+  const char* msg = err.message().c_str();
+
+  switch (err.kind()) {
+    case chpl::ErrorMessage::NOTE:
+      USR_PRINT("%s", msg);
+      break;
+    case chpl::ErrorMessage::WARNING:
+      USR_WARN("%s", msg);
+      break;
+    case chpl::ErrorMessage::SYNTAX: {
+      const char* path = err.path().c_str();
+      const int line = err.line();
+      const int tagUsrFatalCont = 3;
+      setupError("parser", path, line, tagUsrFatalCont);
+      fprintf(stderr, "%s:%d: %s", path, line, "syntax error");
+      if (strlen(msg) > 0) {
+        fprintf(stderr, ": %s\n", msg);
+      } else {
+        putc('\n', stderr);
+      }
+    } break;
+    case chpl::ErrorMessage::ERROR:
+      USR_FATAL_CONT("%s", msg);
+      break;
+    case chpl::ErrorMessage::FATAL:
+      USR_FATAL("%s", msg);
+      break;
+    default:
+      INT_FATAL("Should not reach here!");
+      break;
+  }
+}
+
 // TODO: Add helpers to convert locations without passing IDs.
 static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err) {
-  auto markError = astlocMarker(err.location());
+  uASTDisplayError(err);
 
-  USR_FATAL_CONT("%s", err.message().c_str());
-
-  for (const auto& detail : err.details()) {
-    auto markDetail = astlocMarker(detail.location());
-    USR_PRINT("%s", detail.message().c_str());
+  for (auto& detail : err.details()) {
+    uASTDisplayError(detail);
   }
 }
 

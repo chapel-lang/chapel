@@ -405,7 +405,7 @@ class Context {
 
     If no query is currently running, it just reports the error.
    */
-  void error(ErrorMessage error);
+  void report(ErrorMessage error);
 
   /**
     Note an error for the currently running query.

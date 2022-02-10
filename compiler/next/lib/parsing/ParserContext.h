@@ -32,12 +32,15 @@ struct ParserError {
   // When an error occurs during parsing, the parser should
   // emit errors here and create a stand-in ErroneousExpression AST
   // node.
+  ErrorMessage::Kind kind;
   YYLTYPE location;
   std::string message;
-  ParserError(YYLTYPE location, std::string message)
-    : location(location), message(message) { }
-  ParserError(YYLTYPE location, const char* message)
-    : location(location), message(message) { }
+  ParserError(YYLTYPE location, std::string message,
+              ErrorMessage::Kind kind)
+    : kind(kind), location(location), message(message) { }
+  ParserError(YYLTYPE location, const char* message,
+              ErrorMessage::Kind kind)
+    : kind(kind), location(location), message(message) { }
 };
 
 struct ParserComment {
@@ -178,27 +181,52 @@ struct ParserContext {
     };
   }
 
-  void noteError(ParserError error) {
+  void noteSyntaxError(ParserError error) {
+    assert(error.kind == ErrorMessage::SYNTAX);
     errors.push_back(std::move(error));
   }
+
+  void noteError(ParserError error) {
+    assert(error.kind == ErrorMessage::ERROR);
+    errors.push_back(std::move(error));
+  }
+
   void noteError(YYLTYPE location, const char* msg) {
-    noteError(ParserError(location, msg));
+    noteError(ParserError(location, msg, ErrorMessage::ERROR));
   }
+
   void noteError(YYLTYPE location, std::string msg) {
-    noteError(ParserError(location, std::move(msg)));
+    noteError(ParserError(location, std::move(msg), ErrorMessage::ERROR));
   }
+
+  void noteWarning(ParserError error) {
+    assert(error.kind == ErrorMessage::WARNING);
+    errors.push_back(std::move(error));
+  }
+
+  void noteWarning(YYLTYPE location, const char* msg) {
+    noteWarning(ParserError(location, msg, ErrorMessage::WARNING));
+  }
+
+  void noteWarning(YYLTYPE location, std::string msg) {
+    noteWarning(ParserError(location, std::move(msg), ErrorMessage::WARNING));
+  }
+
   ErroneousExpression* raiseError(ParserError error) {
+    assert(error.kind == ErrorMessage::ERROR);
     Location ll = convertLocation(error.location);
     // note the error for printing
     noteError(std::move(error));
     // return an error sentinel
     return ErroneousExpression::build(builder, ll).release();
   }
+
   ErroneousExpression* raiseError(YYLTYPE location, const char* msg) {
-    return raiseError(ParserError(location, msg));
+    return raiseError(ParserError(location, msg, ErrorMessage::ERROR));
   }
+
   ErroneousExpression* raiseError(YYLTYPE location, std::string msg) {
-    return raiseError(ParserError(location, msg));
+    return raiseError(ParserError(location, msg, ErrorMessage::ERROR));
   }
 
   void noteComment(YYLTYPE loc, const char* data, long size);

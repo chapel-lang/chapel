@@ -48,26 +48,31 @@ static std::string vprint_to_string(const char* format, va_list vl) {
 }
 
 ErrorMessage::ErrorMessage()
-  : level_(-1), location_(), message_() {
+  : kind_(ERROR), location_(), message_() {
 }
-ErrorMessage::ErrorMessage(ID id, Location location, std::string message)
-  : level_(0), location_(location), message_(message), id_(id) {
+ErrorMessage::ErrorMessage(ID id, Location location, std::string message,
+                           Kind kind)
+  : kind_(kind), location_(location), message_(message), id_(id) {
 }
-ErrorMessage::ErrorMessage(ID id, Location location, const char* message)
-  : level_(0), location_(location), message_(message), id_(id) {
+ErrorMessage::ErrorMessage(ID id, Location location, const char* message,
+                           Kind kind)
+  : kind_(kind), location_(location), message_(message), id_(id) {
 }
 
-ErrorMessage ErrorMessage::vbuild(ID id, Location loc, const char* fmt, va_list vl) {
+ErrorMessage ErrorMessage::vbuild(ID id, Location loc, Kind kind,
+                                  const char* fmt,
+                                  va_list vl) {
   std::string ret;
   ret = vprint_to_string(fmt, vl);
-  return ErrorMessage(id, loc, ret);
+  return ErrorMessage(id, loc, ret, kind);
 }
 
-ErrorMessage ErrorMessage::build(ID id, Location loc, const char* fmt, ...) {
+ErrorMessage ErrorMessage::build(ID id, Location loc, Kind kind,
+                                 const char* fmt, ...) {
   ErrorMessage ret;
   va_list vl;
   va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(id, loc, fmt, vl);
+  ret = ErrorMessage::vbuild(id, loc, kind, fmt, vl);
   va_end(vl);
   return ret;
 }
@@ -77,7 +82,7 @@ void ErrorMessage::addDetail(ErrorMessage err) {
 }
 
 void ErrorMessage::swap(ErrorMessage& other) {
-  std::swap(level_, other.level_);
+  std::swap(kind_, other.kind_);
   location_.swap(other.location_);
   message_.swap(other.message_);
   details_.swap(other.details_);
