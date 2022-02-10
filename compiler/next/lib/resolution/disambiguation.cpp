@@ -156,6 +156,103 @@ static bool isNumericParamDefaultType(QualifiedType type);
 static bool moreSpecific(const DisambiguationContext& dctx,
                          QualifiedType actualType, QualifiedType formalType);
 
+static MostSpecificCandidates
+computeMostSpecificCandidatesWithVecs(const DisambiguationContext& dctx,
+                                      const CandidatesVec& vec);
+
+// count the number of candidates with each return intent
+static void countByReturnIntent(const DisambiguationContext& dctx,
+                                const CandidatesVec& vec,
+                                int& nRef,
+                                int& nConstRef,
+                                int& nValue,
+                                int& nOther) {
+  for (auto c : vec) {
+    auto fn = c->fn;
+    auto returnIntent = parsing::idToFnReturnIntent(dctx.context, fn->id());
+
+    switch (returnIntent) {
+      case Function::DEFAULT_RETURN_INTENT:
+      case Function::CONST:
+        nValue++;
+        break;
+      case Function::CONST_REF:
+        nConstRef++;
+        break;
+      case Function::REF:
+        nRef++;
+        break;
+      case Function::PARAM:
+      case Function::TYPE:
+        nOther++;
+        break;
+    }
+  }
+}
+
+// if there is <= 1 most specific candidate with each intent,
+// return it as a MostSpecificCandidates
+static MostSpecificCandidates
+gatherByReturnIntent(const DisambiguationContext& dctx,
+                     const CandidatesVec& vec) {
+  MostSpecificCandidates ret;
+
+  for (auto c : vec) {
+    auto fn = c->fn;
+    auto returnIntent = parsing::idToFnReturnIntent(dctx.context, fn->id());
+
+    switch (returnIntent) {
+      case Function::DEFAULT_RETURN_INTENT:
+      case Function::CONST:
+        assert(ret.bestValue() == nullptr);
+        ret.setBestValue(fn);
+        break;
+      case Function::CONST_REF:
+        assert(ret.bestConstRef() == nullptr);
+        ret.setBestConstRef(fn);
+        break;
+      case Function::REF:
+        assert(ret.bestRef() == nullptr);
+        ret.setBestRef(fn);
+        break;
+      case Function::PARAM:
+      case Function::TYPE:
+        assert(false && "should not be reachable");
+        break;
+    }
+  }
+
+  return ret;
+}
+
+// Gather the most specific candidates with each return intent into vectors
+// by return intent
+static void gatherVecsByReturnIntent(const DisambiguationContext& dctx,
+                                     const CandidatesVec& vec,
+                                     CandidatesVec& refCandidates,
+                                     CandidatesVec& constRefCandidates,
+                                     CandidatesVec& valueCandidates) {
+  for (auto c : vec) {
+    auto fn = c->fn;
+    auto returnIntent = parsing::idToFnReturnIntent(dctx.context, fn->id());
+
+    switch (returnIntent) {
+      case Function::DEFAULT_RETURN_INTENT:
+      case Function::CONST:
+        valueCandidates.push_back(c);
+        break;
+      case Function::CONST_REF:
+        constRefCandidates.push_back(c);
+        break;
+      case Function::REF:
+        refCandidates.push_back(c);
+        break;
+      case Function::PARAM:
+      case Function::TYPE:
+        break;
+    }
+  }
+}
 
 static MostSpecificCandidates
 computeMostSpecificCandidates(const DisambiguationContext& dctx,
@@ -183,33 +280,13 @@ computeMostSpecificCandidates(const DisambiguationContext& dctx,
   //
   // If there is only one most specific function in each category,
   // that is what we need to return.
-  int                  nRef              = 0;
-  int                  nConstRef         = 0;
-  int                  nValue            = 0;
-  int                  nOther            = 0;
+  int nRef = 0;
+  int nConstRef = 0;
+  int nValue = 0;
+  int nOther = 0;
 
   // Count number of candidates in each category.
-  for (auto c : ambiguousBest) {
-    auto fn = c->fn;
-    auto returnIntent = parsing::idToFnReturnIntent(dctx.context, fn->id());
-
-    switch (returnIntent) {
-      case Function::DEFAULT_RETURN_INTENT:
-      case Function::CONST:
-        nValue++;
-        break;
-      case Function::CONST_REF:
-        nConstRef++;
-        break;
-      case Function::REF:
-        nRef++;
-        break;
-      case Function::PARAM:
-      case Function::TYPE:
-        nOther++;
-        break;
-    }
-  }
+  countByReturnIntent(dctx, ambiguousBest, nRef, nConstRef, nValue, nOther);
 
   if (nOther > 0) {
     // If there are *any* type/param candidates, we need to cause ambiguity
@@ -226,62 +303,36 @@ computeMostSpecificCandidates(const DisambiguationContext& dctx,
   }
 
   if (nRef <= 1 && nConstRef <= 1 && nValue <= 1) {
-    MostSpecificCandidates ret;
-
-    for (auto c : ambiguousBest) {
-      auto fn = c->fn;
-      auto returnIntent = parsing::idToFnReturnIntent(dctx.context, fn->id());
-
-      switch (returnIntent) {
-        case Function::DEFAULT_RETURN_INTENT:
-        case Function::CONST:
-          ret.setBestValue(fn);
-          break;
-        case Function::CONST_REF:
-          ret.setBestConstRef(fn);
-          break;
-        case Function::REF:
-          ret.setBestRef(fn);
-          break;
-        case Function::PARAM:
-        case Function::TYPE:
-          assert(false && "should not be reachable");
-          break;
-      }
-    }
-    return ret;
+    return gatherByReturnIntent(dctx, ambiguousBest);
   }
 
   // Otherwise, nRef > 1 || nConstRef > 1 || nValue > 1.
 
+  // handle the more complex case where there is > 1 candidate
+  // with a particular return intent by disambiguating each group
+  // individually.
+  return computeMostSpecificCandidatesWithVecs(dctx, ambiguousBest);
+}
+
+static MostSpecificCandidates
+computeMostSpecificCandidatesWithVecs(const DisambiguationContext& dctx,
+                                      const CandidatesVec& vec) {
+  CandidatesVec refCandidates;
+  CandidatesVec constRefCandidates;
+  CandidatesVec valueCandidates;
+  CandidatesVec ambiguousBest;
+
   // Split candidates into ref, const ref, and value candidates
-  std::vector<const DisambiguationCandidate*> refCandidates;
-  std::vector<const DisambiguationCandidate*> constRefCandidates;
-  std::vector<const DisambiguationCandidate*> valueCandidates;
-
-  // Gather the candidates in each category
-  for (auto c : ambiguousBest) {
-    auto fn = c->fn;
-    auto returnIntent = parsing::idToFnReturnIntent(dctx.context, fn->id());
-
-    switch (returnIntent) {
-      case Function::DEFAULT_RETURN_INTENT:
-      case Function::CONST:
-        valueCandidates.push_back(c);
-        break;
-      case Function::CONST_REF:
-        constRefCandidates.push_back(c);
-        break;
-      case Function::REF:
-        refCandidates.push_back(c);
-        break;
-      case Function::PARAM:
-      case Function::TYPE:
-        break;
-    }
-  }
+  gatherVecsByReturnIntent(dctx, vec,
+                           refCandidates,
+                           constRefCandidates,
+                           valueCandidates);
 
   // Disambiguate each group and update the counts
+  int nRef = 0;
+  int nConstRef = 0;
+  int nValue = 0;
+
   bool ignoreWhere = false;
 
   ambiguousBest.clear();
@@ -328,6 +379,14 @@ computeMostSpecificCandidates(const DisambiguationContext& dctx,
 
   return ret;
 }
+
+// handle the more complex case where there is > 1 candidate
+// with a particular return intent by disambiguating each group
+// individually.
+static MostSpecificCandidates
+computeMostSpecificCandidatesWithVecs(const DisambiguationContext& dctx,
+                                      const CandidatesVec& vec);
+
 
 static const MostSpecificCandidates&
 findMostSpecificCandidatesQuery(Context* context,
