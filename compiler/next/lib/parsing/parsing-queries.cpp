@@ -51,7 +51,7 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   ErrorMessage error;
   bool ok = readfile(path.c_str(), text, error);
   if (!ok) {
-    context->error(error);
+    context->report(error);
   }
   auto result = FileContents(std::move(text), std::move(error));
   return QUERY_END(result);
@@ -101,7 +101,7 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
     for (const ErrorMessage& e : result.errors()) {
       if (!e.isEmpty()) {
         // report the error and save it for this query
-        context->error(e);
+        context->report(e);
       }
     }
     BuilderResult::updateFilePaths(context, result);
@@ -224,8 +224,8 @@ static const Module* const& getToplevelModuleQuery(Context* context,
             // What does the production compiler do?
             context->error(mod, "In use/imported file, module name %s "
                                 "does not match file name %s.chpl",
-                           mod->name().c_str(),
-                           name.c_str());
+                                mod->name().c_str(),
+                                name.c_str());
           }
         }
       }

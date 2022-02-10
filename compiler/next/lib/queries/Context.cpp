@@ -560,7 +560,7 @@ void Context::collectGarbage() {
   }
 }
 
-void Context::error(ErrorMessage error) {
+void Context::report(ErrorMessage error) {
   if (queryStack.size() > 0) {
     queryStack.back()->errors.push_back(std::move(error));
     reportError(queryStack.back()->errors.back());
@@ -569,49 +569,66 @@ void Context::error(ErrorMessage error) {
   }
 }
 
-void Context::error(Location loc, const char* fmt, ...) {
+static void logErrorInContext(Context* context, Location loc,
+                              ErrorMessage::Kind kind,
+                              const char* fmt,
+                              va_list vl) {
   ID id;
   ErrorMessage err;
-  va_list vl;
-  va_start(vl, fmt);
-  err = ErrorMessage::vbuild(id, loc, fmt, vl);
-  va_end(vl);
-  Context::error(err);
+  err = ErrorMessage::vbuild(id, loc, kind, fmt, vl);
+  context->report(err);
+}
+
+static void logErrorInContext(Context* context, ID id,
+                              ErrorMessage::Kind kind,
+                              const char* fmt,
+                              va_list vl) {
+  Location loc = parsing::locateId(context, id);
+  ErrorMessage err;
+  err = ErrorMessage::vbuild(id, loc, ErrorMessage::ERROR, fmt, vl);
+  context->report(err);
+}
+
+static void logErrorInContext(Context* context,
+                              const uast::ASTNode* ast,
+                              ErrorMessage::Kind kind,
+                              const char* fmt,
+                              va_list vl) {
+  Location loc = parsing::locateAst(context, ast);
+  ErrorMessage err;
+  err = ErrorMessage::vbuild(ast->id(), loc, ErrorMessage::ERROR, fmt, vl);
+  context->report(err);
+}
+
+#define CHPL_CONTEXT_LOG_ERROR_HELPER(context__, pin__, kind__, fmt__) \
+  do { \
+    va_list vl; \
+    va_start(vl, fmt__); \
+    logErrorInContext(context__, pin__, kind__, fmt__, vl); \
+    va_end(vl); \
+  } while (0)
+
+// TODO: Similar overloads for NOTE, WARN, etc.
+void Context::error(Location loc, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, loc, ErrorMessage::ERROR, fmt);
 }
 
 void Context::error(ID id, const char* fmt, ...) {
-  Location loc = parsing::locateId(this, id);
-  ErrorMessage err;
-  va_list vl;
-  va_start(vl, fmt);
-  err = ErrorMessage::vbuild(id, loc, fmt, vl);
-  va_end(vl);
-  Context::error(err);
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, id, ErrorMessage::ERROR, fmt);
 }
 
 void Context::error(const uast::ASTNode* ast, const char* fmt, ...) {
-  Location loc = parsing::locateAst(this, ast);
-  ErrorMessage err;
-  va_list vl;
-  va_start(vl, fmt);
-  err = ErrorMessage::vbuild(ast->id(), loc, fmt, vl);
-  va_end(vl);
-  Context::error(err);
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ast, ErrorMessage::ERROR, fmt);
 }
 
 void Context::error(const resolution::TypedFnSignature* inFn,
                     const uast::ASTNode* ast,
                     const char* fmt, ...) {
-  Location loc = parsing::locateAst(this, ast);
-  ErrorMessage err;
-  va_list vl;
-  va_start(vl, fmt);
-  err = ErrorMessage::vbuild(ast->id(), loc, fmt, vl);
-  va_end(vl);
-  Context::error(err);
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ast, ErrorMessage::ERROR, fmt);
   // TODO: add note about instantiation & POI stack
 }
 
+#undef CHPL_CONTEXT_LOG_ERROR_HELPER
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 

@@ -20,10 +20,24 @@
 
 #include <string>
 
+extern const char* yychpl_get_text(yyscan_t scanner);
+
 void yychpl_error(YYLTYPE*       loc,
                   ParserContext* context,
                   const char*    errorMessage) {
-  context->noteError(ParserError(*loc, errorMessage));
+  std::string msg;
+  const char* tokenText = yychpl_get_text(context->scanner);
+  if (strlen(tokenText) > 0) {
+    msg += "near '";
+    msg += tokenText;
+    msg += "'";
+  } else {
+    // Not very helpful, but default parser errors aren't...
+    assert(msg.size() == 0);
+  }
+
+  auto err = ParserError(*loc, msg, ErrorMessage::SYNTAX);
+  context->noteSyntaxError(std::move(err));
 }
 
 // these helpers can be used in the semantic actions

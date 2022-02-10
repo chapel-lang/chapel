@@ -36,8 +36,16 @@ namespace chpl {
   is saved (in the event it needs to be reported again).
  */
 class ErrorMessage final {
+ public:
+  enum Kind {
+    NOTE,
+    WARNING,
+    SYNTAX,
+    ERROR
+  };
+
  private:
-  int level_; // error? warning? performance hint?
+  Kind kind_;
   Location location_;
   std::string message_;
   ID id_;
@@ -50,15 +58,19 @@ class ErrorMessage final {
 
  public:
   ErrorMessage();
-  ErrorMessage(ID id, Location location, std::string message);
-  ErrorMessage(ID id, Location location, const char* message);
+  ErrorMessage(ID id, Location location, std::string message, Kind kind);
+  ErrorMessage(ID id, Location location, const char* message, Kind kind);
 
-  static ErrorMessage vbuild(ID id, Location loc, const char* fmt, va_list vl);
-  static ErrorMessage build(ID id, Location loc, const char* fmt, ...)
+  static ErrorMessage vbuild(ID id, Location loc, Kind kind,
+                             const char* fmt,
+                             va_list vl);
+
+  static ErrorMessage build(ID id, Location loc, Kind kind,
+                            const char* fmt, ...)
 #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 3, 4)))
+    __attribute__ ((format (printf, 4, 5)))
 #endif
   ;
 
@@ -78,8 +90,10 @@ class ErrorMessage final {
 
   const std::vector<ErrorMessage>& details() const { return details_; }
 
+  const Kind kind() const { return kind_; }
+
   inline bool operator==(const ErrorMessage& other) const {
-    return level_ == other.level_ &&
+    return kind_ == other.kind_ &&
            location_ == other.location_ &&
            message_ == other.message_ &&
            details_ == other.details_ &&

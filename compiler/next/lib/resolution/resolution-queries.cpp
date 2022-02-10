@@ -403,15 +403,18 @@ struct Resolver {
         if (m.id(0) == decl->id() && m.numIds() > 1) {
           Location loc = parsing::locateId(context, decl->id());
           auto error =
-            ErrorMessage::build(decl->id(), loc, "'%s' has multiple definitions",
+            ErrorMessage::build(decl->id(), loc, ErrorMessage::ERROR,
+                                "'%s' has multiple definitions",
                                 decl->name().c_str());
           for (const ID& id : m) {
             if (id != decl->id()) {
               Location curLoc = parsing::locateId(context, id);
-              error.addDetail(ErrorMessage::build(id, curLoc, "redefined here"));
+              error.addDetail(ErrorMessage::build(id, curLoc,
+                                                  ErrorMessage::ERROR,
+                                                  "redefined here"));
             }
           }
-          context->error(error);
+          context->report(error);
         }
       }
     }

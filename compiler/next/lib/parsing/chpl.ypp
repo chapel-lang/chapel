@@ -3565,8 +3565,8 @@ binary_op_expr:
 unary_op_expr:
   TPLUS expr %prec TUPLUS        { $$ = context->buildUnaryOp(@$, $1, $2); }
 | TMINUS expr %prec TUMINUS      { $$ = context->buildUnaryOp(@$, $1, $2); }
-| TMINUSMINUS expr %prec TUMINUS { $$ = TODOEXPR(@$); /* warn */ }
-| TPLUSPLUS expr %prec TUPLUS    { $$ = TODOEXPR(@$); /* warn */ }
+| TMINUSMINUS expr %prec TUMINUS { $$ = context->buildUnaryOp(@$, $1, $2); }
+| TPLUSPLUS expr %prec TUPLUS    { $$ = context->buildUnaryOp(@$, $1, $2); }
 | TBANG expr %prec TLNOT         { $$ = context->buildUnaryOp(@$, $1, $2); }
 | expr TBANG                     { $$ = context->buildUnaryOp(@$,
                                                               STR("postfix!"),

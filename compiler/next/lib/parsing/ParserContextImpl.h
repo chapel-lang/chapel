@@ -634,6 +634,14 @@ OpCall* ParserContext::buildBinOp(YYLTYPE location,
 OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
                                     PODUniqueString op,
                                     Expression* expr) {
+  auto ustrOp = UniqueString(op);
+
+  if (ustrOp == "++") {
+    noteWarning(location, "++ is not a pre-increment");
+  } else if (ustrOp == "--") {
+    noteWarning(location, "== is not a pre-decrement");
+  }
+
   return OpCall::build(builder, convertLocation(location),
                        op, toOwned(expr)).release();
 }

@@ -22,6 +22,7 @@
 // It contains any #includes necessary for the parser.
 
 #include "chpl/queries/Context.h"
+#include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
 
