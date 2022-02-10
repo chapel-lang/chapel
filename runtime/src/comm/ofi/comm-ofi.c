@@ -3679,10 +3679,10 @@ typedef enum {
   am_opGet,                                // do an RMA GET
   am_opPut,                                // do an RMA PUT
   am_opAMO,                                // do an AMO
+  am_opFAMOResult,                         // return result of fetching AMO
   am_opFree,                               // free some memory
   am_opNop,                                // do nothing; for MCM & liveness
   am_opShutdown,                           // signal main process for shutdown
-  am_opFAMOResult,                         // return result of fetching AMO
 } amOp_t;
 
 static inline
@@ -3756,8 +3756,8 @@ typedef union {
   struct amRequest_execOnLrg_t xol;
   struct amRequest_RMA_t rma;
   struct amRequest_AMO_t amo;
-  struct amRequest_free_t free;
   struct amRequest_FAMO_result_t famo_result;
+  struct amRequest_free_t free;
 } amRequest_t;
 
 struct taskArg_RMA_t {
@@ -4053,32 +4053,6 @@ void amRequestAMO(c_nodeid_t node, void* object,
 }
 
 
-static inline
-void amRequestFree(c_nodeid_t node, void* p) {
-  amRequest_t req = { .free = { .b = { .op = am_opFree,
-                                       .node = chpl_nodeID, },
-                                .p = p, }, };
-  amRequestCommon(node, &req, sizeof(req.free), false, NULL);
-}
-
-
-static inline
-void amRequestNop(c_nodeid_t node, chpl_bool blocking,
-                  struct perTxCtxInfo_t* tcip) {
-  amRequest_t req = { .b = { .op = am_opNop,
-                             .node = chpl_nodeID, }, };
-  amRequestCommon(node, &req, sizeof(req.b), blocking, tcip);
-}
-
-
-static inline
-void amRequestShutdown(c_nodeid_t node) {
-  assert(!isAmHandler);
-  amRequest_t req = { .b = { .op = am_opShutdown,
-                             .node = chpl_nodeID, }, };
-  amRequestCommon(node, &req, sizeof(req.b), false, NULL);
-}
-
 /*
 amRequestFAMOResult
 
@@ -4114,6 +4088,34 @@ void amRequestFAMOResult(c_nodeid_t node,
                   tcip);
   tciFree(tcip);
 }
+
+
+static inline
+void amRequestFree(c_nodeid_t node, void* p) {
+  amRequest_t req = { .free = { .b = { .op = am_opFree,
+                                       .node = chpl_nodeID, },
+                                .p = p, }, };
+  amRequestCommon(node, &req, sizeof(req.free), false, NULL);
+}
+
+
+static inline
+void amRequestNop(c_nodeid_t node, chpl_bool blocking,
+                  struct perTxCtxInfo_t* tcip) {
+  amRequest_t req = { .b = { .op = am_opNop,
+                             .node = chpl_nodeID, }, };
+  amRequestCommon(node, &req, sizeof(req.b), blocking, tcip);
+}
+
+
+static inline
+void amRequestShutdown(c_nodeid_t node) {
+  assert(!isAmHandler);
+  amRequest_t req = { .b = { .op = am_opShutdown,
+                             .node = chpl_nodeID, }, };
+  amRequestCommon(node, &req, sizeof(req.b), false, NULL);
+}
+
 
 typedef void (amReqFn_t)(c_nodeid_t node,
                          amRequest_t* req, size_t reqSize, void* mrDesc,
@@ -4381,7 +4383,7 @@ void amReqFn_dlvrCmplt(c_nodeid_t node,
     point because we're going to wait for it to get done on the target
     anyway.)
     */
-   
+
     (void) wrap_fi_inject(node, req, reqSize, tcip);
   } else {
     //
@@ -4958,22 +4960,13 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
            amo->ofiOp, amo->ofiType, amo->size);
 
   if (amo->result != NULL) {
-    if (ofi_info->tx_attr->msg_order & FI_ORDER_SAS) {
       // Use a non-blocking AMO to return the result and set pAmDone.
       DBG_PRINTF(DBG_AM | DBG_AM_RECV, "sending FAMO result via AM");
       amRequestFAMOResult(amo->b.node, &result, amo->ofiType, amo->result, resSize, amo->b.pAmDone);
-    } else {
-      // do a blocking PUT of the result
-      DBG_PRINTF(DBG_AM | DBG_AM_RECV,
-                 "writing FAMO result via blocking PUT");
-      CHK_TRUE(mrGetKey(NULL, NULL, amo->b.node, amo->result, resSize));
-      (void) ofi_put(&result, amo->b.node, amo->result, resSize);
-    }
   }
 
   // PUT the "done" flag if necessary
-  if ((amo->b.pAmDone != NULL) && ((amo->result == NULL) ||
-      ((ofi_info->tx_attr->msg_order & FI_ORDER_SAS) == 0))) {
+  if ((amo->b.pAmDone != NULL) && (amo->result == NULL)) {
       DBG_PRINTF(DBG_AM | DBG_AM_RECV,
                  "writing FAMO done flag via non-blocking PUT");
     amPutDone(amo->b.node, amo->b.pAmDone);
@@ -8117,10 +8110,10 @@ const char* am_opName(amOp_t op) {
   case am_opGet: return "opGet";
   case am_opPut: return "opPut";
   case am_opAMO: return "opAMO";
+  case am_opFAMOResult: return "opFAMOResult";
   case am_opFree: return "opFree";
   case am_opNop: return "opNop";
   case am_opShutdown: return "opShutdown";
-  case am_opFAMOResult: return "opFAMOResult";
   default: return "op???";
   }
 }
@@ -8155,7 +8148,7 @@ const char* amo_typeName(enum fi_datatype ofiType) {
   case FI_FLOAT: return "real32";
   case FI_DOUBLE: return "real64";
   case FI_FLOAT_COMPLEX: return "float-complex";
-  case FI_DOUBLE_COMPLEX: return "float-complex";
+  case FI_DOUBLE_COMPLEX: return "double-complex";
   case FI_LONG_DOUBLE: return "long-double";
   case FI_LONG_DOUBLE_COMPLEX: return "long-double-complex";
   default: return "amoType???";
