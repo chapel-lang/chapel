@@ -76,7 +76,7 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
           std::vector<SymExpr*> syms;
           collectSymExprsFor(exprToMove, toSymExpr(ce->get(1))->symbol(), syms);
           for_vector(SymExpr, s, syms) {
-              safeExprCache[e] = false;
+              safeExprCache[s] = false;
               return false;
           }
         }
