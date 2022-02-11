@@ -536,18 +536,15 @@ param iolittle = iokind.little;
 
 /*
 
-The :type:`ioendian` type is an enum. When used as arguments to the
-:record:`channel` type, its constants have the following meaning:
+The :type:`ioendian` type is an enum. When used as an argument to the
+:record:`channel` methods, its constants have the following meanings:
 
-* ``ioendian.big`` means binary I/O with big-endian byte order is performed
-  when writing/reading basic types from the channel.
+* ``ioendian.big`` means binary I/O is performed in big-endian byte order.
 
-* ``ioendian.little`` means binary I/O with little-endian byte order
-  (similar to ``ioendian.big`` but with little-endian byte order).
+* ``ioendian.little`` means binary I/O is performed in little-endian byte order.
 
-* ``ioendian.native`` means binary I/O in native byte order
-  (similar to ``ioendian.big`` but with the byte order that is native
-  to the target platform).
+* ``ioendian.native`` means binary I/O is performed in the byte order that is native
+  to the target platform.
 
 */
 
@@ -4063,8 +4060,8 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
    Write a binary number to the channel
 
    :arg arg: number to be written
-   :arg endian: type:`ioendian` compile-time argument that specifies the byte order in which
-              to write the number. Defaults to `ioendian.native`.
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to write the number. Defaults to ``ioendian.native``.
 
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
@@ -4091,8 +4088,8 @@ proc channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) t
    Write a binary number to the channel
 
    :arg arg: number to be written
-   :arg endian: type:`ioendian` specifies the byte order in which
-              to write the number. Defaults to `ioendian.native`.
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to write the number. Defaults to ``ioendian.native``.
 
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
@@ -4114,15 +4111,14 @@ proc channel.writeBinary(arg:numeric, endian:ioendian = ioendian.native) throws 
    Read a binary number from the channel
 
    :arg arg: number to be read
-   :arg endian: type:`ioendian` compile-time argument that specifies the byte order in which
-              to read the number. Defaults to `ioendian.native`.
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the number. Defaults to ``ioendian.native``.
    :returns: `true` if the number was read, `false` otherwise
 
    :throws SystemError: Thrown if an error occurred reading the number.
  */
 
 proc channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
-  var rv: bool = false;
   var e:syserr = ENOERR;
 
   select (endian) {
@@ -4148,8 +4144,8 @@ proc channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native
    Read a binary number from the channel
 
    :arg arg: number to be read
-   :arg endian: type:`ioendian` specifies the byte order in which
-              to read the number. Defaults to `ioendian.native`.
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to read the number. Defaults to ``ioendian.native``.
    :returns: `true` if the number was read, `false` otherwise
 
    :throws SystemError: Thrown if an error occurred reading the number.
