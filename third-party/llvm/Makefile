@@ -45,6 +45,8 @@ endif
 
 CMAKE ?= cmake
 
+CHPL_LLVM_SUPPORTED_VERSIONS := $(shell python -c 'import sys; sys.path.insert(0, "${CHPL_MAKE_HOME}"+"/util/chplenv"); import chpl_llvm; print chpl_llvm.llvm_versions_string()')
+
 default: $(CHPL_MAKE_LLVM)
 
 all: $(CHPL_MAKE_LLVM)
@@ -153,6 +155,7 @@ unset:
 	@echo "  1) 'none' to build without LLVM support"
 	@echo "  2) 'bundled' to build with the LLVM packaged in the third-party directory"
 	@echo "  3) 'system' to use a pre-installed system-wide LLVM"
+	@echo "     Currently supported LLVM versions are: $(CHPL_LLVM_SUPPORTED_VERSIONS)"
 	@echo "See: https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-llvm"
 	@exit 1
 
