@@ -6,4 +6,4 @@ $CHPL_HOME/modules/internal/ChapelBase.chpl:N: note: is passed to formal 'a: nil
 genericsInstantiationBad.chpl:N: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelBase.chpl:N: note:   ==(a: bool, b: bool)
 $CHPL_HOME/modules/internal/ChapelBase.chpl:N: note:   ==(a: borrowed object?, b: borrowed object?)
-note: and 86 other candidates, use --print-all-candidates to see them
+note: and 87 other candidates, use --print-all-candidates to see them

@@ -2069,13 +2069,14 @@ ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
   BlockStyle blockStyle = blockOrDo.usesDo ? BlockStyle::IMPLICIT
                                            : BlockStyle::EXPLICIT;
 
-  if (blockOrDo.usesDo && stmt->isBlock()) {
+  if (blockOrDo.usesDo && stmt && stmt->isBlock()) {
     blockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
   }
 
   auto caseList = caseExprs ? consumeList(caseExprs) : ASTList();
 
-  auto stmtList = consumeAndFlattenTopLevelBlocks(makeList(stmt));
+  auto stmtExprs = stmt ? makeList(stmt) : makeList();
+  auto stmtList = consumeAndFlattenTopLevelBlocks(stmtExprs);
 
   auto node = When::build(builder, convertLocation(location),
                           std::move(caseList),

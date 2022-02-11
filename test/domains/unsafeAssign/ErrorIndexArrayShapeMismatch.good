@@ -1,0 +1,2 @@
+ErrorIndexArrayShapeMismatch.chpl:3: In function 'test':
+ErrorIndexArrayShapeMismatch.chpl:9: error: invalid index type 2*int(64) for array with rank 1
