@@ -39,7 +39,7 @@
 #include "symbol.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
-#include "../next/lib/immediates/prim_data.h"
+#include "../dyno/lib/immediates/prim_data.h"
 
 #include "global-ast-vecs.h"
 

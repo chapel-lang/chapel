@@ -1,15 +1,15 @@
 # Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,23 +61,23 @@ always-build-chplspell-venv: FORCE
 test: spectests FORCE
 	cd examples && start_test
 
-libchplcomp-docs: FORCE
-	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs
+dyno-docs: FORCE
+	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-docs
 
-clobber-libchplcomp: FORCE
-	@cd compiler/next && $(MAKE) -f Makefile.help clobber-libchplcomp
+clobber-dyno: FORCE
+	@cd compiler/dyno && $(MAKE) -f Makefile.help clobber-dyno
 
-test-libchplcomp: FORCE
-	@cd compiler/next && $(MAKE) -f Makefile.help test-libchplcomp
+test-dyno: FORCE
+	@cd compiler/dyno && $(MAKE) -f Makefile.help test-dyno
 
-libchplcomp-parser: FORCE
-	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-parser
+dyno-parser: FORCE
+	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-parser
 
-libchplcomp-chpldoc: FORCE
-	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-chpldoc
+dyno-chpldoc: FORCE
+	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-chpldoc
 
-run-next-linter: FORCE
-	./compiler/next/util/lint --only-changed --jobs=-1
+run-dyno-linter: FORCE
+	./compiler/dyno/util/lint --only-changed --jobs=-1
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE

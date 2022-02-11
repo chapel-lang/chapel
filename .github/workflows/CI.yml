@@ -27,9 +27,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: install deps
       run: sudo apt-get install cmake doxygen
-    - name: make libchplcomp-docs
+    - name: make dyno-docs
       run: |
-        make libchplcomp-docs
+        make dyno-docs
     - name: make check-chpldoc && make docs
       # Uses a quickstart config to keep it from running too long
       run: |
@@ -50,15 +50,15 @@ jobs:
       run: |
         ./util/buildRelease/smokeTest quickstart mason chpl
 
-  check_compiler_next_tests:
+  check_compiler_dyno_tests:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: install deps
       run: sudo apt-get install $CHPL_APT_DEPS
-    - name: make test-libchplcomp
+    - name: make test-dyno
       run: |
-        make test-libchplcomp -j`util/buildRelease/chpl-make-cpu_count`
+        make test-dyno -j`util/buildRelease/chpl-make-cpu_count`
 
   check_annotations_rt_calls:
     runs-on: ubuntu-latest

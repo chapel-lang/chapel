@@ -72,7 +72,7 @@
 
 #include "global-ast-vecs.h"
 
-#include "../next/lib/immediates/prim_data.h"
+#include "../dyno/lib/immediates/prim_data.h"
 
 #include <algorithm>
 #include <cmath>
@@ -5175,13 +5175,6 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
 #define EXPLAIN(...)
 
 #endif
-
-
-static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous);
 
 
 static ResolutionCandidate*
