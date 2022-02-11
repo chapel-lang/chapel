@@ -1374,6 +1374,21 @@ module ChapelDomain {
             yield baseArr;
       }
 
+      pragma "no doc"
+      proc postinit() {
+        for baseArr in _arraysOverLhsDom() {
+          if _checks {
+            if !baseArr.chpl_isElementTypeDefaultInitializable() &&
+               !baseArr.chpl_isElementTypeNonNilableClass() {
+              param msg = 'Checks in \'unsafeAssign\' for arrays of non-' +
+                          'default-initializable elements are not ' +
+                          'supported yet';
+              halt(msg);
+            }
+          }
+        }
+      }
+
       /*
         Returns 'true' if this manager has runtime safety checks enabled.
       */
@@ -1404,8 +1419,8 @@ module ChapelDomain {
 
         // TODO: Test associative, ND rectangular with rank 2+.
         if !arr.isDefaultRectangular() {
-          compilerError('The array shape ' + arr.type:string +
-                        'is not supported');
+          compilerError('The array shape ' + arr.type:string + ' is ' +
+                        'not supported');
         }
       }
 
@@ -1413,8 +1428,8 @@ module ChapelDomain {
       proc _checkThatIndexMatchesArrayShape(arr, idx) param {
         if arr.rank > 1 || idx.type != arr.idxType {
           if idx.type != (arr.rank*arr.idxType) {
-            compilerError('Index type ' + idx.type + ' not valid for ' +
-                          'array with rank ' + arr.rank:string);
+            compilerError('invalid index type ' + idx.type:string +
+                          ' for array with rank ' + arr.rank:string);
           }
         }
       }
@@ -1471,15 +1486,13 @@ module ChapelDomain {
             }
           }
 
-        // Arrays of non-default-initializable types.
+        // TODO: For non-default-initializable elements, we'd iterate
+        // through a bitvector mapped to newly added slots.
         } else if !baseArr.chpl_isElementTypeDefaultInitializable() {
 
-          // TODO: For non-default-initializable elements, we'd iterate
-          // through a bitvector mapped to newly added slots.
-          param msg = 'Checks in \'unsafeAssign\' for arrays of non-' +
-                      'default-initializable elements are not ' +
-                      'supported yet';
-          halt(msg);
+          // Should have already halted in postinit.
+          halt('internal error: checks for arrays of non-default-' +
+               'initializable elements are not supported');
 
         // Should never reach here.
         } else {
@@ -1517,6 +1530,19 @@ module ChapelDomain {
         moveInitialize(elem, value);
       }
 
+      pragma "no doc"
+      proc _checkNoChecksWhenNonDefaultInitializableEltType(arr) {
+        if _checks {
+          if !isDefaultInitializable(arr.eltType) &&
+             !isNonNilableClass(arr.eltType) {
+            param msg = 'Checks in \'unsafeAssign\' for arrays of non-' +
+                        'default-initializable elements are not ' +
+                        'supported yet';
+            compilerError(msg);
+          }
+        }
+      }
+
       /*
         Initialize a newly added array element at an index with a new value.
         If the array element at `idx` has already been initialized, this
@@ -1537,6 +1563,15 @@ module ChapelDomain {
         // Only certain forms of index are permissable.
         _checkThatIndexMatchesArrayShape(arr, idx);
 
+        // Produce a compiler error.
+        _checkNoChecksWhenNonDefaultInitializableEltType(arr);
+
+        // TODO: Remove this restriction in the future?
+        if isDefaultInitializable(arr.eltType) then
+          compilerError('Cannot call \'initialize\' on array with ' +
+                        'default-initializable element type ' +
+                        '\'' + arr.eltType:string + '\'');
+
         if !_isArrayOwnedByLhsDomain(arr) then
           halt('Can only initialize elements of arrays declared over ' +
                'the domain being resized');
@@ -1553,6 +1588,8 @@ module ChapelDomain {
           if !isElementInitialized(arr, idx) {
             _moveInitializeElement(arr, idx, value);
           } else {
+
+            // TODO: Halt instead of assigning?
             elem = value;
           }
 
@@ -1645,6 +1682,12 @@ module ChapelDomain {
       arrays of non-default-initializable elements. If `checks` is true,
       the manager will ensure that all new elements have been initialized
       in non-default-initializable arrays declared over this domain.
+
+      .. note::
+
+        Checks are not currently supported for arrays with
+        non-default-initializable element types that are not non-nilable
+        classes.
     */
     proc ref unsafeAssign(const ref dom: domain, param checks: bool=false) {
       return new unsafeAssignManager(_lhsInstance=_value,
