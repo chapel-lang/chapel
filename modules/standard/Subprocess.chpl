@@ -437,6 +437,8 @@ module Subprocess {
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
              param kind=iokind.dynamic, param locking=true) throws
   {
+    use ChplConfig;
+
     var stdin_fd:c_int = QIO_FD_FORWARD;
     var stdout_fd:c_int = QIO_FD_FORWARD;
     var stderr_fd:c_int = QIO_FD_FORWARD;
@@ -661,7 +663,7 @@ module Subprocess {
   {
     if command.isEmpty() then
       throw new owned IllegalArgumentError('command cannot be an empty string');
-    
+
     var args = if shellarg == "" then [executable, command]
         else [executable, shellarg, command];
 

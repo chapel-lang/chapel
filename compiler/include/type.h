@@ -26,7 +26,7 @@
 #include "alist.h"
 #include "genret.h"
 
-#include "../next/lib/immediates/num.h"
+#include "../dyno/lib/immediates/num.h"
 
 #include <cstdio>
 #include <map>

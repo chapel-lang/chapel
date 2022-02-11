@@ -53,7 +53,7 @@ int compTask (const void *p1, const void *p2)
 {
   funcInfo *a = *(funcInfo **)p1;
   funcInfo *b = *(funcInfo **)p2;
-  return  b->noTasks - a->noTasks; 
+  return  b->noTasks - a->noTasks;
 }
 
 int compClockTime (const void *p1, const void *p2)
@@ -214,7 +214,7 @@ void ProfileBrowser:: showFileFor(int index)
   show->headerText (text);
   show->showBackButton ();
   if (!show->ShowFile (fname, funcList[index]->lineNo)) {
-    delete show; 
+    delete show;
     return;
   }
 

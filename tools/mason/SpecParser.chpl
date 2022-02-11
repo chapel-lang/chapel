@@ -71,6 +71,7 @@ proc getSpecFields(spec: string) {
 
 
 private proc inferCompiler() throws {
+  use ChplConfig;
   var compiler = CHPL_TARGET_COMPILER;
   if compiler.size < 1 {
     throw new owned MasonError("Could not infer target compiler");

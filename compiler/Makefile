@@ -38,13 +38,13 @@ SUBDIRS = \
 	codegen \
 	llvm \
 	main \
-	next/lib/immediates \
-	next/lib/parsing \
-	next/lib/queries \
-	next/lib/resolution \
-	next/lib/types \
-	next/lib/uast \
-	next/lib/util \
+	dyno/lib/immediates \
+	dyno/lib/parsing \
+	dyno/lib/queries \
+	dyno/lib/resolution \
+	dyno/lib/types \
+	dyno/lib/uast \
+	dyno/lib/util \
 	optimizations \
 	parser \
 	passes \
@@ -78,13 +78,13 @@ include backend/Makefile.include
 include codegen/Makefile.include
 include llvm/Makefile.include
 include main/Makefile.include
-include next/lib/immediates/Makefile.include
-include next/lib/parsing/Makefile.include
-include next/lib/queries/Makefile.include
-include next/lib/resolution/Makefile.include
-include next/lib/types/Makefile.include
-include next/lib/uast/Makefile.include
-include next/lib/util/Makefile.include
+include dyno/lib/immediates/Makefile.include
+include dyno/lib/parsing/Makefile.include
+include dyno/lib/queries/Makefile.include
+include dyno/lib/resolution/Makefile.include
+include dyno/lib/types/Makefile.include
+include dyno/lib/uast/Makefile.include
+include dyno/lib/util/Makefile.include
 include optimizations/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
@@ -107,13 +107,13 @@ CHPL_OBJS = \
 	$(RESOLUTION_OBJS) \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
-	$(NEXT_IMMEDIATES_OBJS) \
-	$(NEXT_PARSING_OBJS) \
-	$(NEXT_QUERIES_OBJS) \
-	$(NEXT_RESOLUTION_OBJS) \
-	$(NEXT_TYPES_OBJS) \
-	$(NEXT_UAST_OBJS) \
-	$(NEXT_UTIL_OBJS) \
+	$(DYNO_IMMEDIATES_OBJS) \
+	$(DYNO_PARSING_OBJS) \
+	$(DYNO_QUERIES_OBJS) \
+	$(DYNO_RESOLUTION_OBJS) \
+	$(DYNO_TYPES_OBJS) \
+	$(DYNO_UAST_OBJS) \
+	$(DYNO_UTIL_OBJS) \
 
 
 EXECS = $(CHPL) $(CHPLDOC)

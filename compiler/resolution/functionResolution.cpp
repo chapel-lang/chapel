@@ -70,7 +70,9 @@
 #include "WhileStmt.h"
 #include "wrappers.h"
 
-#include "../next/lib/immediates/prim_data.h"
+#include "global-ast-vecs.h"
+
+#include "../dyno/lib/immediates/prim_data.h"
 
 #include <algorithm>
 #include <cmath>
@@ -5181,13 +5183,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     bool                         ignoreWhere,
                     Vec<ResolutionCandidate*>&   ambiguous);
 
-
-static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous);
-
 static int  compareSpecificity(ResolutionCandidate*         candidate1,
                                ResolutionCandidate*         candidate2,
                                const DisambiguationContext& DC,
@@ -6149,7 +6144,7 @@ static void captureTaskIntentValues(int        argNum,
 
       } else if (isReferenceType(varActual->type) ==  true &&
                  isReferenceType(capTemp->type)   == false) {
-        marker->insertBefore("'move'(%S,'deref'(%S))", capTemp, varActual);
+        marker->insertBefore(new CallExpr(PRIM_ASSIGN, capTemp, varActual));
 
       } else {
         marker->insertBefore("'move'(%S,%S)", capTemp, varActual);
@@ -9228,9 +9223,9 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
         break;
 
       if (i <= head &&
-          frame->linenum()                     >  0             &&
+          frame->linenum() > 0                                  &&
           fn->hasFlag(FLAG_COMPILER_GENERATED) == false         &&
-          module->modTag                       != MOD_INTERNAL) {
+          (developer || module->modTag != MOD_INTERNAL)         ) {
         break;
       }
     }
@@ -9833,6 +9828,9 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
     retval = true;
   }
 
+  // remove the temporary used in resolving
+  tmp->defPoint->remove();
+
   return retval;
 }
 
@@ -9873,6 +9871,9 @@ static void resolveBroadcasters(AggregateType* at) {
 
   ser.broadcaster = broadcastFn;
   ser.destroyer   = destroyFn;
+
+  // remove the temporary used to resolve
+  tmp->defPoint->remove();
 }
 
 static FnSymbol* createMethodStub(AggregateType* at, const char* methodName,
@@ -9924,7 +9925,7 @@ static bool ensureSerializersExist(AggregateType* at) {
            ! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
            ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
     if (at != NULL) {
-      if (isRecord(at) == true || 
+      if (isRecord(at) == true ||
           (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
         return resolveSerializeDeserialize(at);
       }
@@ -10069,7 +10070,7 @@ static bool createSerializeDeserialize(AggregateType* at) {
                                                        typeTemp,
                                                        deserializerFormal,
                                                        new_IntSymbol(fieldNum))));
-      
+
       deserializer->insertAtTail(deserVersions);
     }
     else {

@@ -130,10 +130,3 @@ leaving
 leaving
 deinit (ptr = {x = 19})
 
-T15: storage kind of resource omitted
-default-init (ptr = {x = 20})
-proc man.enterThis() const ref: res
-doing something with resource
-leaving
-deinit (ptr = {x = 20})
-

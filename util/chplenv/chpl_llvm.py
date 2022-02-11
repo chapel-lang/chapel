@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
+
 import optparse
 import os
 import sys
-from distutils.spawn import find_executable
 import re
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
-from utils import memoize, error, run_command, try_run_command, warning
+from utils import which, memoize, error, run_command, try_run_command, warning
 
 # returns a tuple of supported major LLVM versions as strings
 def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('12','11',)
+    return ('12', '11',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val):
     if llvm_val == "bundled":
-      # put platform-arch-compiler for included llvm
-      host_bin_subdir = chpl_bin_subdir.get('host')
-      host_compiler = chpl_compiler.get('host')
-      llvm_target_dir = '{0}-{1}'.format(host_bin_subdir, host_compiler)
+        # put platform-arch-compiler for included llvm
+        host_bin_subdir = chpl_bin_subdir.get('host')
+        host_compiler = chpl_compiler.get('host')
+        llvm_target_dir = '{0}-{1}'.format(host_bin_subdir, host_compiler)
     else:
-      # just put 'system' for system llvm
-      llvm_target_dir = llvm_val
+        # just put 'system' for system llvm
+        llvm_target_dir = llvm_val
 
     return llvm_target_dir
 
@@ -51,9 +51,9 @@ def is_included_llvm_built():
         return False
 
 def compatible_platform_for_llvm():
-  target_arch = chpl_arch.get('target')
-  target_platform = chpl_platform.get('target')
-  return (target_arch != "i368" and target_platform != "linux32")
+    target_arch = chpl_arch.get('target')
+    target_platform = chpl_platform.get('target')
+    return (target_arch != "i368" and target_platform != "linux32")
 
 # returns a string of the supported llvm versions suitable for error msgs
 def llvm_versions_string():
@@ -97,13 +97,13 @@ def check_llvm_config(llvm_config):
         return (got_version, s)
 
     if not llvm_include_ok:
-       s = "Could not find the LLVM header {0}".format(llvm_header)
-       s += "\nPerhaps you need to install clang and llvm dev packages"
-       return (got_version, s)
+        s = "Could not find the LLVM header {0}".format(llvm_header)
+        s += "\nPerhaps you need to install clang and llvm dev packages"
+        return (got_version, s)
     elif not clang_include_ok:
-       s = "Could not find the clang header {0}".format(clang_header)
-       s += "\nPerhaps you need to install clang and llvm dev packages"
-       return (got_version, s)
+        s = "Could not find the clang header {0}".format(clang_header)
+        s += "\nPerhaps you need to install clang and llvm dev packages"
+        return (got_version, s)
 
     return (got_version, '')
 
@@ -138,7 +138,7 @@ def find_system_llvm_config():
 
     for command in paths:
         found_version, found_config_err = check_llvm_config(command)
-        all_found.append( (command, found_version, found_config_err) )
+        all_found.append((command, found_version, found_config_err))
 
     found = ('', '', '')
     for vers in llvm_versions():
@@ -167,7 +167,7 @@ def get_llvm_config():
         llvm_subdir = get_bundled_llvm_dir()
         bundled_config = os.path.join(llvm_subdir, 'bin', 'llvm-config')
         if llvm_config != 'none' and llvm_config != bundled_config:
-            warning("CHPL_LLVM_CONFIG is ignored for CHPL_LLVM=bundled");
+            warning("CHPL_LLVM_CONFIG is ignored for CHPL_LLVM=bundled")
         llvm_config = bundled_config
 
     elif llvm_config == 'none' and llvm_val == 'system':
@@ -319,12 +319,12 @@ def get_gcc_prefix():
 
         # When 'gcc' is a command other than '/usr/bin/gcc',
         # compute the 'gcc' prefix that LLVM should use.
-        gcc_path = find_executable('gcc')
-        if gcc_path == '/usr/bin/gcc' :
+        gcc_path = which('gcc')
+        if gcc_path == '/usr/bin/gcc':
             # In this common case, nothing else needs to be done,
             # because we can assume that clang can find this gcc.
             pass
-        elif gcc_path == None:
+        elif gcc_path is None:
             # Nothing else we can do here
             pass
         else:
@@ -388,8 +388,8 @@ def get_sysroot_resource_dir_args():
         if not os.path.isfile(cfile):
             error("error computing isysroot -- sys_basic.h is missing")
 
-        (out,err) = run_command(['clang', '-###', cfile],
-                                stdout=True, stderr=True)
+        (out, err) = run_command(['clang', '-###', cfile],
+                                 stdout=True, stderr=True)
         out += err
 
         found = re.search('"-isysroot" "([^"]+)"', out)
@@ -443,6 +443,7 @@ def gather_pe_chpl_pkgconfig_libs():
         return ""
 
     import chpl_comm, chpl_comm_substrate, chpl_aux_filesys, chpl_libfabric
+
     platform = chpl_platform.get('target')
     comm = chpl_comm.get()
     substrate = chpl_comm_substrate.get()
@@ -470,10 +471,10 @@ def gather_pe_chpl_pkgconfig_libs():
         # on login/compute nodes, lustre requires the devel api to make
         # lustre/lustreapi.h available (it's implicitly available on esl nodes)
         if 'lustre' in auxfs:
-          exists, returncode, out, err = try_run_command(
-              ['pkg-config', '--exists', 'cray-lustre-api-devel'])
-          if exists and returncode == 0:
-            ret = 'cray-lustre-api-devel:' + ret
+            exists, returncode, out, err = try_run_command(
+                ['pkg-config', '--exists', 'cray-lustre-api-devel'])
+            if exists and returncode == 0:
+                ret = 'cray-lustre-api-devel:' + ret
 
     return ret
 
@@ -493,7 +494,7 @@ def get_clang_prgenv_args():
         # Set up the environment to make the proper libraries and include
         # files available.
         os.environ['PE_PKGCONFIG_PRODUCTS'] = (
-            'PE_CHAPEL:' + os.environ.get('PE_PKGCONFIG_PRODUCTS',''));
+            'PE_CHAPEL:' + os.environ.get('PE_PKGCONFIG_PRODUCTS', ''))
 
         os.environ['PE_CHAPEL_MODULE_NAME'] = 'chapel'
         os.environ['PE_CHAPEL_PKGCONFIG_LIBS'] = gather_pe_chpl_pkgconfig_libs()
@@ -637,7 +638,7 @@ def get_host_link_args():
 
         ldflags = run_command([llvm_config,
                                '--ldflags', '--system-libs', '--libs'] +
-                               llvm_components)
+                              llvm_components)
         if ldflags:
             system.extend(filter_llvm_link_flags(ldflags.split()))
 
@@ -670,7 +671,7 @@ def get_host_link_args():
 
             ldflags = run_command([llvm_config,
                                    '--ldflags', '--libs'] +
-                                   llvm_components)
+                                  llvm_components)
 
             bundled.extend(ldflags.split())
 
@@ -679,7 +680,6 @@ def get_host_link_args():
                                       llvm_components)
 
             system.extend(system_libs.split())
-
 
         else:
             warning("included llvm not built yet")
@@ -700,16 +700,16 @@ def _main():
 
     (options, args) = parser.parse_args()
 
-    #if --needs-llvm-runtime is set, print out llvm if runtime is needed,
+    # if --needs-llvm-runtime is set, print out llvm if runtime is needed,
     # and print out nothing if it is not.
     if options.action == 'needsllvm':
         if llvm_val == 'system' or llvm_val == 'bundled':
-            sys.stdout.write("llvm\n");
+            sys.stdout.write("llvm\n")
     elif options.action == 'llvmconfig':
         sys.stdout.write("{0}\n".format(llvm_config))
         validate_llvm_config()
     else:
-      sys.stdout.write("{0}\n".format(llvm_val))
+        sys.stdout.write("{0}\n".format(llvm_val))
 
 
 if __name__ == '__main__':

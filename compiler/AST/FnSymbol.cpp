@@ -34,6 +34,8 @@
 #include "stringutil.h"
 #include "visibleFunctions.h"
 
+#include "global-ast-vecs.h"
+
 FnSymbol*                 chpl_gen_main         = NULL;
 FnSymbol*                 initStringLiterals    = NULL;
 

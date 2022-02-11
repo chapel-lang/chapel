@@ -30,6 +30,8 @@
 #include "symbol.h"
 #include "virtualDispatch.h"
 
+#include "global-ast-vecs.h"
+
 #include <algorithm>
 #include <queue>
 

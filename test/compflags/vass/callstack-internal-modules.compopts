@@ -1,0 +1,4 @@
+   --devel    --print-callstack-on-error # callstack-internal-modules.d+s+.good
+--no-devel    --print-callstack-on-error # callstack-internal-modules.d-s+.good
+   --devel --no-print-callstack-on-error # callstack-internal-modules.d+s-.good
+--no-devel --no-print-callstack-on-error # callstack-internal-modules.d-s-.good

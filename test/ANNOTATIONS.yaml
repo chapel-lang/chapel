@@ -539,12 +539,6 @@ AllCompTime: &timecomp-base
     - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
   05/14/21:
     - Resolve some issues with finding primary and secondary operator methods (#17684)
-  02/13/22:
-    - Simplify locale setup barrier (#18868)
-  02/19/22:
-    - Move some method definitions into headers (#18961)
-  02/25/22:
-    - Move SSCA out of release/examples (#19054)
 
 allocate:
   06/11/20:
@@ -2134,6 +2128,12 @@ compilerAndTestingStats: &compiler-perf-base
     - Heap allocate string literals (#18307)
   11/03/21:
     - buildDefaultFunctions perf improvement (#18624)
+  01/13/22:
+    - Simplify locale setup barrier (#18868)
+  01/19/22:
+    - Move some method definitions into headers (#18961)
+  01/25/22:
+    - Move SSCA out of release/examples (#19054)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2146,73 +2146,73 @@ topPasses:
 
 arkouda: &arkouda-base
   04/22/20:
-    - Optimize coargsort for numeric arrays (mhmerrill/arkouda#330)
+    - Optimize coargsort for numeric arrays (Bears-R-Us/arkouda#330)
   04/28/20:
-    - text: Improve comm=none build and execution speed (mhmerrill/arkouda#358)
+    - text: Improve comm=none build and execution speed (Bears-R-Us/arkouda#358)
       config: chapcs
     - text: Move XC testing from login to elogin node
       config: 16-node-xc
   05/20/20:
     - Upgrade Arkouda release testing from 1.20 to 1.22 (#15690)
   07/01/20:
-    - Translate pdarray setops to server-side operations (mhmerrill/arkouda#392)
+    - Translate pdarray setops to server-side operations (Bears-R-Us/arkouda#392)
   07/02/20:
     - Reduce fragmentation for large allocations (#15992)
   09/23/20:
-    - text: Optimize DstAggregator by caching remote allocations (mhmerrill/arkouda#485)
+    - text: Optimize DstAggregator by caching remote allocations (Bears-R-Us/arkouda#485)
       config: 16-node-cs, 16-node-xc
   10/02/20:
-    - text: Optimize SrcAggregator by caching remote allocations (mhmerrill/arkouda#503)
+    - text: Optimize SrcAggregator by caching remote allocations (Bears-R-Us/arkouda#503)
       config: 16-node-cs
   10/03/20:
-    - text: Enable SrcAggregator under ugni (mhmerrill/arkouda#507)
+    - text: Enable SrcAggregator under ugni (Bears-R-Us/arkouda#507)
       config: 16-node-xc
     - text: Move XC testing from elogin back to login node
       config: 16-node-xc
   10/06/20:
-    - text: Optimize aggregators by yielding more often (mhmerrill/arkouda#509)
+    - text: Optimize aggregators by yielding more often (Bears-R-Us/arkouda#509)
       config: 16-node-cs, 16-node-xc
   10/21/20:
     - Upgrade Arkouda release testing from 1.22 to 1.23 (#16599)
   01/08/21:
-    - Benchmark improvements (mhmerrill/arkouda#616)
+    - Benchmark improvements (Bears-R-Us/arkouda#616)
   01/14/21:
     - Optimize scans by using noinit for the result array (#16919)
   01/15/21:
-    - Optimize int64 prod reduce (mhmerrill/arkouda#628)
+    - Optimize int64 prod reduce (Bears-R-Us/arkouda#628)
   02/12/21:
-    - 624 convert message format to json (mhmerrill/arkouda#639)
+    - 624 convert message format to json (Bears-R-Us/arkouda#639)
   02/16/21:
-    - Optimize string argsort (mhmerrill/arkouda#671)
+    - Optimize string argsort (Bears-R-Us/arkouda#671)
   02/18/21:
-    - Increase the problem size for string benchmarks (mhmerrill/arkouda#676)
+    - Increase the problem size for string benchmarks (Bears-R-Us/arkouda#676)
   02/19/21:
-    - Skip long string partitioning in string argsort (mhmerrill/arkouda#681)
+    - Skip long string partitioning in string argsort (Bears-R-Us/arkouda#681)
   03/23/21:
     - A few communication micro-optimizations to improve Block array creation (#17354)
   03/25/21:
-    - fix groupby benchmark bug (mhmerrill/arkouda#712)
+    - fix groupby benchmark bug (Bears-R-Us/arkouda#712)
   04/07/21:
-    - Increase the aggregation buffer sizes for non-ugni configurations (mhmerrill/arkouda#732)
+    - Increase the aggregation buffer sizes for non-ugni configurations (Bears-R-Us/arkouda#732)
     - Revert a recent change in block array creation that caused performance regression (#17531)
   05/01/21:
-    - Optimize the aggregation copy routines (mhmerrill/arkouda#783)
+    - Optimize the aggregation copy routines (Bears-R-Us/arkouda#783)
   05/19/21:
     - Upgrade Arkouda release testing from 1.23.0 to 1.24.1 (#17773)
   06/02/21:
-    - Make the array values in groupby and aggregate benchmarks consistent (mhmerrill/arkouda#832)
+    - Make the array values in groupby and aggregate benchmarks consistent (Bears-R-Us/arkouda#832)
   06/29/21:
-    - Improve the performance of client-server array transfers (mhmerrill/arkouda#856)
+    - Improve the performance of client-server array transfers (Bears-R-Us/arkouda#856)
   07/10/21:
-    - Optimize client conversions for client-server array transfers (mhmerrill/arkouda#870)
+    - Optimize client conversions for client-server array transfers (Bears-R-Us/arkouda#870)
   07/15/21:
-    - Optimize server conversions for client-server array transfers (mhmerrill/arkouda#880)
+    - Optimize server conversions for client-server array transfers (Bears-R-Us/arkouda#880)
   07/28/21:
-    - Optimize the number of copies for client-server array transfers (mhmerrill/arkouda#885)
+    - Optimize the number of copies for client-server array transfers (Bears-R-Us/arkouda#885)
   07/31/21:
     - Optimize out a copy in ZMQ recv for local operations (#18126)
   08/04/21:
-    - Further reduce the number of copies for client-server array transfers (mhmerrill/arkouda#893)
+    - Further reduce the number of copies for client-server array transfers (Bears-R-Us/arkouda#893)
   08/05/21:
     - Parallelize bytes copies over a certain threshold in ZMQ (#18140)
     - Upgrade to PyZMQ 22.2.0 (includes mutable pyzmq improvement)
@@ -2220,25 +2220,31 @@ arkouda: &arkouda-base
     - text: Allow jemalloc to merge/split chunks to reduce fixed heap fragmentation (#18299)
       config: 16-node-cs-hdr
   10/01/21:
-    - Avoid tracking small allocations by setting memThreshold (mhmerrill/arkouda#935)
+    - Avoid tracking small allocations by setting memThreshold (Bears-R-Us/arkouda#935)
     - Optimize memory tracking with a memThreshold (#18465)
   10/05/21:
-    - Optimize how segmented array slices are interpreted as strings/bytes (mhmerrill/arkouda#931)
+    - Optimize how segmented array slices are interpreted as strings/bytes (Bears-R-Us/arkouda#931)
   10/28/21:
     - Upgrade Arkouda release testing from 1.24.1 to 1.25.0 (#18613)
   11/03/21:
-    - Closes 957 Mimic re library functionality applied to SegStrings (mhmerrill/arkouda#958)
+    - Closes 957 Mimic re library functionality applied to SegStrings (Bears-R-Us/arkouda#958)
   11/17/21:
-    - Closes 963 Performance drop in substring search methods (mhmerrill/arkouda#965)
+    - Closes 963 Performance drop in substring search methods (Bears-R-Us/arkouda#965)
   01/12/22:
-    - Switch to batch reading for Parquet files (mhmerrill/arkouda#1014)
+    - Switch to batch reading for Parquet files (Bears-R-Us/arkouda#1014)
   01/19/22:
     - Upgrade Arkouda release testing from 1.25.0 to 1.25.1 (#19033)
-    - Optimize Parquet file writing with WriteBatch function (mhmerrill/arkouda#1028)
+    - Optimize Parquet file writing with WriteBatch function (Bears-R-Us/arkouda#1028)
   01/21/22:
-    - Bump substring_search problem size back to 10**8 (mhmerrill/arkouda#1038)
+    - Bump substring_search problem size back to 10**8 (Bears-R-Us/arkouda#1038)
   01/26/22:
-    - Optimize small and medium int in1d operations (mhmerrill/arkoud#1044)
+    - Optimize small and medium int in1d operations (Bears-R-Us/arkouda#1044)
+  02/02/22:
+    - Fix sum precision for real this time (Bears-R-Us/arkouda#1055)
+  02/05/22:
+    - Optimize sorting calls when both keys and ranks are needed (Bears-R-Us/arkouda#1063)
+  02/10/22:
+    - String ops follow byte locality (Bears-R-Us/arkouda#1060)
 
 
 arkouda-string:
@@ -2262,3 +2268,9 @@ arkouda-comp:
     - Fix some issues with constant domain optimization (#16397)
   02/25/21:
     - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
+  02/02/22:
+    - Issue 1049 Adds capability to print server commands from the client. (Bears-R-Us/arkouda#1049)
+  02/07/22:
+    - Add support for arrays of unsigned integers (Bears-R-Us/arkouda#1070)
+  02/10/22:
+    - Add in1d and setops support for uint pdarrays (Bears-R-Us/arkouda#1085)

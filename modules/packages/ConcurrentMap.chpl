@@ -206,7 +206,7 @@ module ConcurrentMap {
   pragma "no doc"
   // Stores keys and values in the hash table. The lock is used to
   // determine both the 'lock'/'unlock' state of the bucket, and if
-  // the bucket is going to be destroyed, meaning that the task should 
+  // the bucket is going to be destroyed, meaning that the task should
   // back out and try again. The bucket gets destroyed when a task
   // attempts to insert an element into an already-full bucket. All
   // tasks _must_ be in the current epoch to even get this far, so
@@ -278,7 +278,7 @@ module ConcurrentMap {
   class ConcurrentMap : Base {
     pragma "no doc"
     var root : unmanaged Buckets(keyType, valType);
-  
+
     pragma "no doc"
     var _manager = new owned LocalEpochManager();
 
@@ -318,7 +318,7 @@ module ConcurrentMap {
         var next = curr.buckets[idx].read();
         // writeln("stuck");
         if (next == nil) {
-          // If we're not inserting something, I.E we are removing 
+          // If we're not inserting something, I.E we are removing
           // or retreiving, we are done.
           if !isInsertion then return nil;
 
@@ -396,7 +396,7 @@ module ConcurrentMap {
         var next = curr.buckets[idx].read();
         // writeln("stuck");
         if (next == nil) {
-          // If we're not inserting something, I.E we are removing 
+          // If we're not inserting something, I.E we are removing
           // or retreiving, we are done.
           if !isInsertion then return retNil;
 

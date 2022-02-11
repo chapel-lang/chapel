@@ -50,7 +50,7 @@ class LocCommBox : public Fl_Group {
  public:
 
   enum LCBoxKind { I_None, I_Locale, I_Comm } what;
-  
+
   LocCommBox (int X, int Y, int W, int H, char *l = 0);
 
   enum LCBoxKind boxKind (void) { return what; }

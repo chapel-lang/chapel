@@ -27,7 +27,7 @@
 #include <google/protobuf/io/printer.h>
 
 namespace chapel {
-  
+
   using namespace std;
 
   using namespace google::protobuf;

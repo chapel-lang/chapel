@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -65,7 +65,7 @@ void deallocate_string_literals_buf(void) {
   chpl_string_literals_buffer = NULL;
 }
 
-int handleNonstandardArg(int* argc, char* argv[], int argNum, 
+int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
 
   if (mainHasArgs) {
@@ -110,7 +110,7 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 void chpl_rt_preUserCodeHook(void) {
   //
   // The module initialization functions have all completed on each
-  // node, locally, before we are called. 
+  // node, locally, before we are called.
   //
   // The module init code can leave the running task counts incorrect.
   // Once module init is complete, we can set those counts to the right
@@ -308,7 +308,7 @@ void chpl_std_module_init(void) {
 // The function previously known as "chpl_main".
 //
 // Chapel standard module initialization has been factored out
-// into chpl-init.c:chapel_std_module_init() for reuse by 
+// into chpl-init.c:chapel_std_module_init() for reuse by
 // chpl-init.c:chpl_library_init().
 //
 void chpl_executable_init(void) {
@@ -356,7 +356,7 @@ void chpl_library_init(int argc, char* argv[]) {
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
   chpl_libraryModuleLevelSetup();
 
-  // @dlongnecke-cray, 11/16/2020 
+  // @dlongnecke-cray, 11/16/2020
   // TODO: Call chpl_rt_preUserCodeHook() here for Locale[0]?
 }
 
@@ -365,7 +365,7 @@ void chpl_library_init(int argc, char* argv[]) {
 extern void chpl_deinitModules(void);
 
 //
-// A wrapper around chpl-init.c:chpl_rt_finalize(...), sole purpose is 
+// A wrapper around chpl-init.c:chpl_rt_finalize(...), sole purpose is
 // to provide a "chpl_library_*" interface for the Chapel "library-user".
 void chpl_library_finalize(void) {
   chpl_libraryModuleLevelCleanup();

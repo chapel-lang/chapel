@@ -60,6 +60,8 @@
 #include "wellknown.h"
 #include "WhileDoStmt.h"
 
+#include "global-ast-vecs.h"
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>

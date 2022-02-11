@@ -35,6 +35,8 @@
 #include "symbol.h"
 #include "view.h"
 
+#include "global-ast-vecs.h"
+
 static const bool debugScalarReplacement = false;
 
 // statistics

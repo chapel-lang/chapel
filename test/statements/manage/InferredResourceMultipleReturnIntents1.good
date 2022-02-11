@@ -1,0 +1,7 @@
+InferredResourceMultipleReturnIntents1.chpl:48: error: cannot determine storage for 'myResource' due to multiple return intents for 'man.enterThis()'
+InferredResourceMultipleReturnIntents1.chpl:48: note: specify an explicit storage (e.g., 'ref') to disambiguate
+InferredResourceMultipleReturnIntents1.chpl:23: note: return by 'ref' defined here
+InferredResourceMultipleReturnIntents1.chpl:28: note: return by 'const ref' defined here
+InferredResourceMultipleReturnIntents1.chpl:33: note: return by 'value' defined here
+InferredResourceMultipleReturnIntents1.chpl:56: error: cannot determine storage for 'myResource' due to multiple return intents for 'man.enterThis()'
+InferredResourceMultipleReturnIntents1.chpl:56: note: specify an explicit storage (e.g., 'ref') to disambiguate

@@ -164,7 +164,7 @@ module SSCA2_kernels
     } // end of rooted_heavy_subgraphs
 
 
-  use BlockDist;
+  use BlockDist, ChplConfig;
   config param useAtomicReal = CHPL_NETWORK_ATOMICS!="none";
   config param useOnClause = CHPL_NETWORK_ATOMICS=="none";
   // For task-private temporary variables

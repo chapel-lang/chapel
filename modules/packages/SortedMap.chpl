@@ -19,12 +19,12 @@
  */
 
 /*
-  This module contains the implementation of the sortedMap type 
-  which is a container that stores key-value associations. 
+  This module contains the implementation of the sortedMap type
+  which is a container that stores key-value associations.
 
   sortedMaps are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any sortedMap constructor. When
-  constructed from another sortedMap, the new sortedMap will inherit 
+  constructed from another sortedMap, the new sortedMap will inherit
   the parallel safety mode of its originating sortedMap.
 
   SortedSet supports searching for a certain key, insertion and deletion in O(logN).
@@ -153,12 +153,12 @@ module SortedMap {
       this.comparator = comparator;
       this._eltType = (keyType, shared _valueWrapper(valType)?);
 
-      this._set = new sortedSet(_eltType, false, new _keyComparator(comparator)); 
+      this._set = new sortedSet(_eltType, false, new _keyComparator(comparator));
     }
 
     /*
       Initialize this sortedMap with a copy of each of the elements contained in
-      the sortedMap `other`. This sortedMap will inherit the `parSafe` value of 
+      the sortedMap `other`. This sortedMap will inherit the `parSafe` value of
       the sortedMap `other`.
 
       :arg other: An sortedMap to initialize this sortedMap with.
@@ -263,7 +263,7 @@ module SortedMap {
       if !_set.contains((k, nil)) then {
         var defaultValue: valType;
         _set.add((k, new shared _valueWrapper(defaultValue)?));
-      } 
+      }
 
       ref e = _set.instance._getReference((k, nil));
 
@@ -414,7 +414,7 @@ module SortedMap {
       Writes the contents of this sortedMap to a channel. The format looks like:
 
         .. code-block:: chapel
-    
+
            {k1: v1, k2: v2, .... , kn: vn}
 
       :arg ch: A channel to write to.
@@ -450,7 +450,7 @@ module SortedMap {
     */
     proc add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
-      
+
       if _set.contains((k, nil)) {
         return false;
       }
@@ -499,7 +499,7 @@ module SortedMap {
 
     /*
       Removes a key-value pair from the sortedMap, with the given key.
-      
+
      :arg k: The key to remove from the sortedMap
 
      :returns: `false` if `k` was not in the sortedMap.  `true` if it was and removed.
@@ -533,7 +533,7 @@ module SortedMap {
     }
 
     /*
-      Returns a new 0-based array containing a copy of keys. Array is sorted using 
+      Returns a new 0-based array containing a copy of keys. Array is sorted using
       the comparator.
 
       :return: A new DefaultRectangular array.
@@ -582,7 +582,7 @@ module SortedMap {
       `lhs`.
 
     :arg lhs: The sortedMap to assign to.
-    :arg rhs: The sortedMap to assign from. 
+    :arg rhs: The sortedMap to assign from.
   */
   operator sortedMap.=(ref lhs: sortedMap(?kt, ?vt, ?ps),
                         const ref rhs: sortedMap(kt, vt, ps)) {
@@ -612,7 +612,7 @@ module SortedMap {
     if a.size != b.size then return false;
     for (e1, e2) in zip(a.items(), b.items()) {
       if e1 != e2 then return false;
-    } 
+    }
     return true;
   }
 

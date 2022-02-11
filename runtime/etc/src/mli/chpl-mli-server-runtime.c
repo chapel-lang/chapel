@@ -109,7 +109,7 @@ void chpl_mli_smain(const char* setup_conn) {
   while (execute) {
 
     chpl_mli_debugf("%s\n", "Listening...");
-    
+
     // Every transaction starts by reading an int64 off the wire.
     err = chpl_mli_pull(chpl_server.main, &id, sizeof(id));
 
@@ -127,7 +127,7 @@ void chpl_mli_smain(const char* setup_conn) {
       chpl_mli_debugf("Received request for ID: %lld\n", id);
       ack = CHPL_MLI_CODE_NONE;
     }
- 
+
     chpl_mli_debugf("Responding with code: %s\n", chpl_mli_errstr(0));
     err = chpl_mli_push(chpl_server.main, &ack, sizeof(ack));
 

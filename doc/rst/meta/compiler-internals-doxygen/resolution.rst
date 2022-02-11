@@ -1,6 +1,6 @@
 .. default-domain:: cpp
 
-.. _Chapter-next-chpl-resolution:
+.. _Chapter-dyno-chpl-resolution:
 
 Resolution
 ==========
