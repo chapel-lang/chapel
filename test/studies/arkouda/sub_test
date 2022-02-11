@@ -3,7 +3,7 @@
 # Custom sub_test to run Arkouda testing. Clones, installs dependencies, builds
 # Arkouda and runs testing.
 
-ARKOUDA_URL=${ARKOUDA_URL:-https://github.com/mhmerrill/arkouda.git}
+ARKOUDA_URL=${ARKOUDA_URL:-https://github.com/Bears-R-Us/arkouda.git}
 ARKOUDA_BRANCH=${ARKOUDA_BRANCH:-master}
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
