@@ -1,12 +1,7 @@
-$CHPL_HOME/modules/standard/SysBasic.chpl:50: In function 'c_float':
-$CHPL_HOME/modules/standard/SysBasic.chpl:52: warning: type 'c_float' has moved from 'SysBasic' to 'CTypes'; please update your 'use'/'import' statements accordingly.
-$CHPL_HOME/modules/standard/SysBasic.chpl:58: In function 'c_double':
-$CHPL_HOME/modules/standard/SysBasic.chpl:60: warning: type 'c_double' has moved from 'SysBasic' to 'CTypes'; please update your 'use'/'import' statements accordingly.
-$CHPL_HOME/modules/standard/SysBasic.chpl:66: In function 'off_t':
-$CHPL_HOME/modules/standard/SysBasic.chpl:68: warning: type 'off_t' has moved from 'SysBasic' to 'Sys'; please update your 'use'/'import' statements accordingly.
-$CHPL_HOME/modules/standard/SysBasic.chpl:74: In function 'mode_t':
-$CHPL_HOME/modules/standard/SysBasic.chpl:76: warning: type 'mode_t' has moved from 'SysBasic' to 'Sys'; please update your 'use'/'import' statements accordingly.
-$CHPL_HOME/modules/standard/SysBasic.chpl:82: In function 'socklen_t':
-$CHPL_HOME/modules/standard/SysBasic.chpl:84: warning: type 'socklen_t' has moved from 'SysBasic' to 'Sys'; please update your 'use'/'import' statements accordingly.
+moveToSysCTypes.chpl:4: warning: type 'c_float' has moved from 'SysBasic' to 'CTypes'; please update your 'use'/'import' statements accordingly.
+moveToSysCTypes.chpl:5: warning: type 'c_double' has moved from 'SysBasic' to 'CTypes'; please update your 'use'/'import' statements accordingly.
+moveToSysCTypes.chpl:10: warning: type 'off_t' has moved from 'SysBasic' to 'Sys'; please update your 'use'/'import' statements accordingly.
+moveToSysCTypes.chpl:11: warning: type 'mode_t' has moved from 'SysBasic' to 'Sys'; please update your 'use'/'import' statements accordingly.
+moveToSysCTypes.chpl:12: warning: type 'socklen_t' has moved from 'SysBasic' to 'Sys'; please update your 'use'/'import' statements accordingly.
 0.0
 0.0
