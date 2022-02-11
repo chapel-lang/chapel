@@ -1623,8 +1623,9 @@ static void checkNotPod(AggregateType* at) {
 
 static void buildRecordHashFunction(AggregateType *ct) {
   if (functionExists("hash", dtMethodToken, ct) ||
-      operatorExists("==", ct, ct) ||
-      operatorExists("!=", ct, ct))
+      (!ct->symbol->hasFlag(FLAG_TUPLE) &&  // tuples already always have ==/!=
+       (operatorExists("==", ct, ct) ||
+        operatorExists("!=", ct, ct))))
     return;
 
   FnSymbol *fn = new FnSymbol("hash");
