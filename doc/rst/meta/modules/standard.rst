@@ -101,6 +101,7 @@ System/Interoperability
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>
    SysBasic <standard/SysBasic>
+   SysCTypes <standard/SysCTypes>
    SysError <standard/SysError>
 
 Utilities

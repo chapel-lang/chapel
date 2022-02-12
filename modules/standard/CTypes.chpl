@@ -27,11 +27,11 @@ Access to C types for interoperability purposes
 
 This module provides access to C types.
 
-.. include:: SysCTypes.rst
+.. include:: ChapelSysCTypes.rst
 */
 
 module CTypes {
-  public use SysCTypes;
+  public use ChapelSysCTypes;
 
   pragma "no doc"
   proc chpl_typeMoveWarning(param name: string, param mod: string,

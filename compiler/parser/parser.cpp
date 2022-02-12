@@ -318,10 +318,10 @@ static void parseInternalModules() {
                             parseMod("ISO_Fortran_binding", true);
     }
 
-    // parse SysCTypes right away to provide well-known types.
-    ModuleSymbol* sysctypes = parseMod("SysCTypes", false);
+    // parse ChapelSysCTypes right away to provide well-known types.
+    ModuleSymbol* sysctypes = parseMod("ChapelSysCTypes", false);
     if (sysctypes == NULL && fMinimalModules == false) {
-      USR_FATAL("Could not find module 'SysCTypes', which should be defined by '%s/SysCTypes.chpl'", stdGenModulesPath);
+      USR_FATAL("Could not find module 'ChapelSysCTypes', which should be defined by '%s/ChapelSysCTypes.chpl'", stdGenModulesPath);
     }
     // ditto Errors
     ModuleSymbol* errors = parseMod("Errors", false);
