@@ -75,6 +75,7 @@ MODULES_TO_DOCUMENT = \
 	standard/ChapelIO.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/CPtr.chpl \
+	standard/CTypes.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/Errors.chpl \
@@ -102,8 +103,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
-	standard/Version.chpl \
-	$(SYS_CTYPES_MODULE_DOC)
+	standard/Version.chpl
 
 PACKAGES_TO_DOCUMENT = \
 	packages/ArgumentParser.chpl \

@@ -323,7 +323,7 @@ std::vector<AggregateType*> ModuleSymbol::getTopLevelClasses() {
 void ModuleSymbol::printDocs(std::ostream* file,
                              unsigned int  tabs,
                              std::string   parentName) {
-  if (this->noDocGen()) {
+  if (this->noDocGen() || this->docsName() == "SysCTypes") {
     return;
   }
 

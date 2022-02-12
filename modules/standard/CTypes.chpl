@@ -26,6 +26,8 @@
 Access to C types for interoperability purposes
 
 This module provides access to C types.
+
+.. include:: SysCTypes.rst
 */
 
 module CTypes {

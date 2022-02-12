@@ -176,6 +176,8 @@ def get_sys_c_types(docs=False):
     # <chpl_value>;" where <chpl_value> is found by looking up the max value
     # (from evaluated expression above) in the _max_value_to_chpl_type map.
     sys_c_types = []
+    sys_c_types.append('deprecated \"\'SysCTypes\' module is deprecated; please use \'CTypes\' module instead\"');
+    sys_c_types.append('module SysCTypes {');
     handled_c_ptr = False
     for i, max_value in enumerate(max_values):
         max_macro, chpl_type, c_type = _types[i]
@@ -218,6 +220,7 @@ def get_sys_c_types(docs=False):
         sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
               ';'.format(**locals()))
     sys_c_types.append('}')
+    sys_c_types.append('}');  # close module scope
 
     return '\n'.join(sys_c_types)
 
