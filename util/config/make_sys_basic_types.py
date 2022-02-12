@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Build SysCTypes.chpl module.
+"""Build ChapelSysCTypes.chpl module.
 
 Determines the size of various C types (e.g. long, size_t, etc) and creates a
 Chapel module with 'extern types' declaration so Chapel code can refer to the
@@ -8,7 +8,7 @@ types.
 
 Specify the output file as a positional argument, e.g.:
 
-    %prog path/to/SysCTypes.chpl
+    %prog path/to/ChapelSysCTypes.chpl
 """
 
 from __future__ import print_function
@@ -84,7 +84,7 @@ def main():
 
 
 def get_sys_c_types(docs=False):
-    """Returns a string with the SysCTypes.chpl module content."""
+    """Returns a string with the ChapelSysCTypes.chpl module content."""
 
     # Find the $CHPL_HOME/util/config/ dir.
     util_cfg_dir = os.path.abspath(os.path.dirname(__file__))
@@ -171,13 +171,12 @@ def get_sys_c_types(docs=False):
     logging.debug('Evaluated all {0} expressions from '
                   'preprocessor.'.format(len(max_values)))
 
-    # Iterate through the chapel types/max values and print out the SysCTypes
-    # Chapel module code. Each line takes the form "extern type <chpl_type>=
-    # <chpl_value>;" where <chpl_value> is found by looking up the max value
+    # Iterate through the chapel types/max values and print out the
+    # ChapelSysCTypes module code. Each line takes the form
+    #   "extern type <chpl_type>=<chpl_value>;"
+    # where <chpl_value> is found by looking up the max value
     # (from evaluated expression above) in the _max_value_to_chpl_type map.
     sys_c_types = []
-#    sys_c_types.append('deprecated \"\'SysCTypes\' module is deprecated; please use \'CTypes\' module instead\"');
-#    sys_c_types.append('module SysCTypes {');
     handled_c_ptr = False
     for i, max_value in enumerate(max_values):
         max_macro, chpl_type, c_type = _types[i]
@@ -245,7 +244,7 @@ def _parse_args():
             return text
 
     parser = optparse.OptionParser(
-        usage='usage: %prog [--doc] [--verbose] <SysCTypes_filename>',
+        usage='usage: %prog [--doc] [--verbose] <ChapelSysCTypes_filename>',
         description=__doc__,
         formatter=NoWrapHelpFormatter()
     )
@@ -256,7 +255,7 @@ def _parse_args():
     )
     parser.add_option(
         '--doc', action='store_true',
-        help='Build SysCTypes module for chpldoc.'
+        help='Build ChapelSysCTypes module for chpldoc.'
     )
 
     opts, args = parser.parse_args()
