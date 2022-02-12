@@ -27,7 +27,7 @@
  */
 module CPtr {
   private use ChapelStandard;
-  private use SysBasic, SysError, SysCTypes;
+  private use SysBasic, SysError, CTypes;
   private import HaltWrappers;
 
 

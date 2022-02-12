@@ -28,7 +28,7 @@ module ChapelBase {
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
-  use ChapelEnv, SysCTypes, CPtr;
+  use ChapelEnv, CTypes, CPtr;
 
   config param enablePostfixBangChecks = false;
 

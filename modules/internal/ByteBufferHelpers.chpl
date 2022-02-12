@@ -20,7 +20,7 @@
 
 module ByteBufferHelpers {
   private use ChapelStandard;
-  private use SysCTypes;
+  private use CTypes;
   private use CPtr;
 
   pragma "no doc"

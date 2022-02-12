@@ -1140,7 +1140,7 @@ module ChapelSyncvar {
 
 
 private module SyncVarRuntimeSupport {
-  use ChapelStandard, SysCTypes;
+  use ChapelStandard, CTypes;
   use AlignedTSupport;
   use CPtr;
 

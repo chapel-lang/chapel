@@ -169,7 +169,7 @@ module LAPACK {
                    else 'lapacke.h'
                  else lapackHeader;
 
-  public use SysCTypes;
+  public use CTypes;
 
   /* Return `true` if type is supported by LAPACK */
   proc isLAPACKType(type t) param: bool {
@@ -218,7 +218,7 @@ pragma "no doc"
 */
 module ClassicLAPACK {
 
-use SysCTypes;
+use CTypes;
 use CPtr;
 use CTypes;
 use LAPACK;

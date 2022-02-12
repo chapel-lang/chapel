@@ -109,7 +109,7 @@ module GMP {
   use CTypes;
   use SysError;
   use BigInteger;
-  private use SysCTypes;
+  private use CTypes;
   private use CPtr;
 
   require "GMPHelper/chplgmp.h";

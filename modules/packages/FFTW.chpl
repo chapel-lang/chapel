@@ -123,7 +123,7 @@ module FFTW {
   */
   config param isFFTW_MKL=false;
 
-  use SysCTypes;
+  use CTypes;
   use CPtr;
   require "fftw3.h"; // This is common
   if (isFFTW_MKL) {
@@ -697,7 +697,7 @@ module FFTW {
 
      Please refer to the FFTW documentation for more details. */
   module C_FFTW {
-    public use SysCTypes, CTypes, CPtr;
+    public use CTypes, CTypes, CPtr;
     extern proc fftw_execute(p : fftw_plan) : void;
     import FFTW.fftw_plan;
 

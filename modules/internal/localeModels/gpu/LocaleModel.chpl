@@ -37,7 +37,7 @@ module LocaleModel {
 
   public use LocaleModelHelpGPU;
 
-  use IO, SysCTypes, CPtr;
+  use IO, CTypes, CPtr;
 
   private inline
   proc runningOnGPUSublocale(): bool {

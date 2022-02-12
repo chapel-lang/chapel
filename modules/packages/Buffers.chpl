@@ -48,7 +48,7 @@
 module Buffers {
   use SysBasic;
   use SysError;
-  private use SysCTypes;
+  private use CTypes;
   private use CPtr;
 
   pragma "no doc"

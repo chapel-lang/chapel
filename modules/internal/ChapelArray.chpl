@@ -31,7 +31,7 @@ module ChapelArray {
   use ArrayViewReindex;
   import Reflection;
   use ChapelDebugPrint;
-  use SysCTypes;
+  use CTypes;
   use ChapelPrivatization;
   public use ChapelDomain;
 

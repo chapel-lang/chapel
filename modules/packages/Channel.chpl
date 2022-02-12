@@ -41,7 +41,7 @@ module Channel {
   import ChapelLocks;
   use CPtr;
   use Sort;
-  use SysCTypes;
+  use CTypes;
   use List;
   use Random;
 

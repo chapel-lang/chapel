@@ -205,7 +205,7 @@ codepoint of the argument:
  */
 module String {
   use ChapelStandard;
-  use SysCTypes, CPtr;
+  use CTypes, CPtr;
   use ByteBufferHelpers;
   use BytesStringCommon;
   use SysBasic;

@@ -70,7 +70,7 @@ require "-levent_pthreads";
 
 public use Sys;
 public use SysError;
-public use SysCTypes;
+public use CTypes;
 use Time;
 use SysBasic;
 use CPtr;

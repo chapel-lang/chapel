@@ -23,7 +23,7 @@ module LocaleModelHelpGPU {
 
   public use LocaleModelHelpSetup;
   public use LocaleModelHelpRuntime;
-  use SysCTypes;
+  use CTypes;
 
   pragma "no doc"
   config param debugGPULocale = false;

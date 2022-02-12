@@ -190,7 +190,7 @@ MPI Module Documentation
 
 */
 module MPI {
-  public use SysCTypes;
+  public use CTypes;
   require "mpi.h";
 
   use ReplicatedVar;
@@ -567,7 +567,7 @@ module MPI {
 
    */
    module C_MPI {
-     use SysCTypes, CTypes;
+     use CTypes, CTypes;
      use MPI;
 
   // Special case MPI_Init -- we will send these null pointers
@@ -729,7 +729,7 @@ module MPI {
 
 
   module C_Env {
-    use SysCTypes;
+    use CTypes;
     // Helper routines to access the environment
     extern proc getenv(name : c_string) : c_string;
     extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;

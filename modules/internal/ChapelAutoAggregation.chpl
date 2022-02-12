@@ -84,7 +84,7 @@ module ChapelAutoAggregation {
 
   module CopyAggregation {
     use ChplConfig;
-    use SysCTypes;
+    use CTypes;
     use CPtr;
     use super.AggregationPrimitives;
 
@@ -314,7 +314,7 @@ module ChapelAutoAggregation {
 
   module AggregationPrimitives {
     use CPtr;
-    use SysCTypes;
+    use CTypes;
 
     inline proc getAddr(const ref p): c_ptr(p.type) {
       // TODO can this use c_ptrTo?

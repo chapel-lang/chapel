@@ -95,7 +95,7 @@ module FileSystem {
   public use SysError;
   use Path;
   use HaltWrappers;
-  use SysCTypes;
+  use CTypes;
   use IO;
   use SysBasic;
   use CPtr;
@@ -872,7 +872,7 @@ proc getUID(out error: syserr, name: string): int {
 private module GlobWrappers {
   import HaltWrappers;
   extern type glob_t;
-  use SysCTypes;
+  use CTypes;
 
   private extern const GLOB_NOMATCH: c_int;
   private extern const GLOB_NOSPACE: c_int;

@@ -244,7 +244,7 @@ module ZMQ {
   private use Reflection;
   private use ExplicitRefCount;
   private use IO;
-  private use SysCTypes;
+  private use CTypes;
   private use CPtr;
   use SysError;
 

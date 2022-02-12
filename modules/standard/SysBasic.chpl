@@ -18,13 +18,9 @@
  * limitations under the License.
  */
 
-/* Types for low-level programming and C integration.
+/* Types for low-level system error integration
 
-   This module provides basic types when those types are not
-   platform-dependent. The module :mod:`SysCTypes` contains the
-   platform-dependent declarations for C compatibility.
-
-   This module also defines the error types :type:`syserr` and :type:`err_t`.
+   This module defines the error types :type:`syserr` and :type:`err_t`.
 
    When should one use :type:`syserr` and when should one use :type:`err_t`?
    :type:`err_t` is a system error code (a `c_int` by a nicer name to
@@ -43,7 +39,7 @@
 module SysBasic {
 
 /* BASIC TYPES */
-use SysCTypes;
+use CTypes;
 
   pragma "no doc"
   pragma "last resort"

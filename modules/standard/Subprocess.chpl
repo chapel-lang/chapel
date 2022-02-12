@@ -131,7 +131,7 @@ other task is consuming it.
 module Subprocess {
   public use IO;
   use SysError;
-  use SysCTypes;
+  use CTypes;
   use SysBasic;
   use CPtr;
 

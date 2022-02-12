@@ -21,7 +21,7 @@
 module StringCasts {
   private use ChapelStandard;
   private use BytesStringCommon;
-  private use SysCTypes;
+  private use CTypes;
   private use CPtr;
   private use String.NVStringFactory;
 
