@@ -3,8 +3,7 @@
 // Note: Generated with fake std headers
 
 use CPtr;
-use SysCTypes;
-use SysBasic;
+use CTypes;
 extern proc foobar(x : c_int) : c_int;
 
 extern proc main() : c_int;

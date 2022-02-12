@@ -67,7 +67,7 @@ c2chapel["float"]  = "c_float"
 c2chapel["char"]   = "c_char"
 c2chapel["void"]   = ""
 
-# Based on SysCTypes.chpl
+# Based on ChapelSysCTypes.chpl
 c2chapel["int"]                = "c_int"
 c2chapel["unsigned"]           = "c_uint"
 c2chapel["unsigned int"]       = "c_uint"
@@ -91,7 +91,7 @@ c2chapel["signed int"]         = "c_int"
 c2chapel["signed long long"]   = "c_longlong"
 c2chapel["signed long"]        = "c_long"
 
-# Note: this mapping is defined by the compiler, not the SysCTypes file
+# Note: this mapping is defined by the compiler, not the ChapelSysCTypes file
 c2chapel["FILE"] = "_file"
 
 __temp = [k for k in c2chapel.keys()]
@@ -643,8 +643,7 @@ def preamble(args, fakes):
     print("use CPtr;")
 
     # Needed for C types
-    print("use SysCTypes;")
-    print("use SysBasic;")
+    print("use CTypes;")
 
 # TODO: accept file from stdin?
 if __name__=="__main__":
