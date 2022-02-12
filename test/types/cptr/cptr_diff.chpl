@@ -1,5 +1,5 @@
 use CPtr;
-use SysCTypes;
+use CTypes;
 
 var A:[0..10] int;
 

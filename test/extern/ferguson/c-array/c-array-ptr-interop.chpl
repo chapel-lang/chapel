@@ -1,5 +1,5 @@
 use CPtr;
-use SysCTypes;
+use CTypes;
 
 extern type mytriple = c_ptr(c_int); // a lie we intentionally support
 

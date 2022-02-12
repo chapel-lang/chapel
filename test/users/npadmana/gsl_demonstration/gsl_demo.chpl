@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 require '-lgsl','-lgslcblas';
 
 /* Put in the usual GSL includes here */

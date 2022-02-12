@@ -1,5 +1,5 @@
 use CPtr;
-use SysCTypes;
+use CTypes;
 
 extern proc printarr(x:c_ptr(c_int), n:c_int);
 

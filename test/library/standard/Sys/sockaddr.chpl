@@ -1,6 +1,6 @@
 use Sys;
 use CPtr;
-use SysCTypes;
+use CTypes;
 use UnitTest;
 
 proc test_addr_string_ipv4(test: borrowed Test) throws {

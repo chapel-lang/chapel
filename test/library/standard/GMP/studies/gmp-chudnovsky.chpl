@@ -27,7 +27,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-use GMP, IO, Time, SysCTypes;
+use GMP, IO, Time, CTypes;
 
 param A = 13591409,
       B = 545140134,

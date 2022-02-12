@@ -1,5 +1,5 @@
 use CPtr;
-use SysCTypes;
+use CTypes;
 
 extern proc returnit(x:c_ptr(c_int)):c_ptr(c_int);
 extern proc printit(x:c_ptr(c_int));

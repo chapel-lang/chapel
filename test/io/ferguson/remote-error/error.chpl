@@ -1,4 +1,4 @@
-use IO, SysCTypes, CPtr;
+use IO, CTypes, CPtr;
 
 extern proc printf(fmt: c_string, x:c_ptr(int(64)), y:c_ptr(int(64)));
 extern proc printf(fmt: c_string, a:c_int, x:c_ptr(int(64)));

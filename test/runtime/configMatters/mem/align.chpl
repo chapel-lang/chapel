@@ -1,5 +1,5 @@
 use CPtr;
-use SysCTypes;
+use CTypes;
 
 // try with size = 2*alignment
 for i in 3..20 {

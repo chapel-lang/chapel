@@ -4,7 +4,7 @@
    derived from the Rust #2 version by Matt Brubeck
 */
 use CPtr;
-use IO, SysCTypes;
+use IO, CTypes;
 
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 

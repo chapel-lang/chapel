@@ -1,4 +1,4 @@
-use SysCTypes, CPtr;
+use CTypes, CPtr;
 
 require "helper.h";
 

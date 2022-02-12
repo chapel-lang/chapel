@@ -1,7 +1,7 @@
-SysCTypes
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.SysCTypes
+ChapelSysCTypes
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CTypes.ChapelSysCTypes
 CTypes
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.SysBasic.CTypes
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CTypes
 Reflection
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.SysBasic.Reflection
 SysError

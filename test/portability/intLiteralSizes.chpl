@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 extern proc sizeof(e): size_t;
 

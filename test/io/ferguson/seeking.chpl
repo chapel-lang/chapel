@@ -1,4 +1,4 @@
-use Random, IO, SysCTypes;
+use Random, IO, CTypes;
 
 config const path = "binary-output.bin";
 config const maxbyte = 255;

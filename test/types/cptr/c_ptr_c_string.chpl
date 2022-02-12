@@ -1,5 +1,5 @@
 use CPtr;
-use SysCTypes;
+use CTypes;
 
 proc printit(arg:c_string) {
   extern proc printf(fmt: c_string, str: c_string);

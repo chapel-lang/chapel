@@ -1,4 +1,3 @@
-use SysCTypes;
 use CTypes;
 use CPtr;
 

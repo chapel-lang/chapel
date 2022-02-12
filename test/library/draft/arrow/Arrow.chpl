@@ -3,7 +3,7 @@
   // public use ArrowDecl;
   require "parquetHeaders.chpl";
   use parquetHeaders;
-  public use SysCTypes, CPtr;
+  public use CTypes, CPtr;
   
   // Temporary Error caller for convenience.
   inline proc printGError(msg: string, error: GErrorPtr){

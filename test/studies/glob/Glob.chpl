@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 /*********** Extern declarations **********/
 extern type glob_t;

@@ -1,5 +1,5 @@
 use CPtr;
-use SysCTypes;
+use CTypes;
 
 var i:c_int;
 var i_ptr = c_ptrTo(i); // now i_ptr has type c_ptr(c_int) == int* in C

@@ -31,7 +31,7 @@ use Sort;
 
 iter listdir(path: string, hidden=false, dirs=true, files=true, 
     listlinks=true): string {
-  use SysCTypes;
+  use CTypes;
 
   extern type DIRptr;
   extern type direntptr;

@@ -1,4 +1,4 @@
-use SysCTypes, CPtr;
+use CTypes, CPtr;
 
 
 extern proc chpl_gpu_get_alloc_size(arg): size_t;
