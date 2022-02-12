@@ -1908,6 +1908,7 @@ module ShallowCopy {
 
   // TODO: These shallowCopy functions should handle Block,Cyclic arrays
   inline proc shallowCopy(ref A, dst, src, nElts) {
+
     // Ideally this would just be
     //A[dst..#nElts] = A[src..#nElts];
 
@@ -1933,6 +1934,7 @@ module ShallowCopy {
     }
   }
   inline proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
+
     // Ideally this would just be
     //DstA[dst..#nElts] = SrcA[src..#nElts];
 
