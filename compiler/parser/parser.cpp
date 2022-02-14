@@ -64,8 +64,6 @@ int                  chplLineno                    = 0;
 bool                 chplParseString               = false;
 const char*          chplParseStringMsg            = NULL;
 
-bool                 currentFileNamedOnCommandLine = false;
-
 bool                 parsed                        = false;
 
 static bool          sFirstFile                    = true;
@@ -684,7 +682,6 @@ static bool haveAlreadyParsed(const char* path) {
 static void initializeGlobalParserState(const char* path, ModTag modTag,
                                         bool namedOnCommandLine,
                                         YYLTYPE* yylloc) {
-  currentFileNamedOnCommandLine = namedOnCommandLine;
 
   // If this file only contains explicit module declarations, this
   // 'currentModuleName' is not accurate, but also should not be
@@ -717,8 +714,6 @@ static void deinitializeGlobalParserState(YYLTYPE* yylloc) {
 
   yystartlineno                 =    -1;
   chplLineno                    =    -1;
-
-  currentFileNamedOnCommandLine = false;
 }
 
 static ModuleSymbol* parseFile(const char* path,
@@ -822,8 +817,12 @@ static ModuleSymbol* parseFile(const char* path,
 
             defExpr->remove();
 
-            if (include == false)
+            if (include == false) {
               ModuleSymbol::addTopLevelModule(modSym);
+              if (namedOnCommandLine) {
+                modSym->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+              }
+            }
 
             addModuleToDoneList(modSym);
 
@@ -844,8 +843,12 @@ static ModuleSymbol* parseFile(const char* path,
 
       retval = buildModule(modName, modTag, yyblock, yyfilename, false, false, NULL);
 
-      if (include == false)
+      if (include == false) {
         ModuleSymbol::addTopLevelModule(retval);
+        if (namedOnCommandLine) {
+          retval->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+        }
+      }
 
       retval->addFlag(FLAG_IMPLICIT_MODULE);
 
@@ -1149,7 +1152,6 @@ ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
   int         s_chplLineno = chplLineno;
   bool        s_chplParseString = chplParseString;
   const char* s_chplParseStringMsg = chplParseStringMsg;
-  bool        s_currentFileNamedOnCommandLine = currentFileNamedOnCommandLine;
 
   std::string curPath = path;
 
@@ -1190,7 +1192,6 @@ ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
   chplLineno = s_chplLineno;
   chplParseString = s_chplParseString;
   chplParseStringMsg = s_chplParseStringMsg;
-  currentFileNamedOnCommandLine = s_currentFileNamedOnCommandLine;
 
   return ret;
 }

@@ -834,10 +834,6 @@ ModuleSymbol* buildModule(const char* name,
                           const char* docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
 
-  if (currentFileNamedOnCommandLine) {
-    mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-  }
-
   if (priv == true) {
     mod->addFlag(FLAG_PRIVATE);
   }
