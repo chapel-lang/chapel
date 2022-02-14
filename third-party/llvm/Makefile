@@ -45,7 +45,7 @@ endif
 
 CMAKE ?= cmake
 
-CHPL_LLVM_SUPPORTED_VERSIONS := $(shell python -c 'import sys; sys.path.insert(0, "${CHPL_MAKE_HOME}"+"/util/chplenv"); import chpl_llvm; print chpl_llvm.llvm_versions_string()')
+CHPL_LLVM_SUPPORTED_VERSIONS := $(shell python -c 'import sys; sys.path.insert(0, "${CHPL_MAKE_HOME}"+"/util/chplenv"); import chpl_llvm; print(chpl_llvm.llvm_versions_string())')
 
 default: $(CHPL_MAKE_LLVM)
 
