@@ -175,9 +175,7 @@ static void test1(Parser* parser) {
                  when x do f1();
                  otherwise do f2();
                }
-               foreach x in zip(a, b) {
-                 foo();
-               }
+
                delete foo, bar, baz;
                defer
                  foo();
@@ -238,6 +236,17 @@ static void test2(Parser* parser) {
 }
 
 
+static void test3(Parser* parser) {
+  // stringify an empty Module
+  auto parseResult = parser->parseString("test0.chpl", "proc bar(x: int) {\n}");
+  auto mod = parseResult.singleModule();
+  std::ostringstream ss;
+  mod->stringify(ss, CHPL_SYNTAX);
+  assert(!ss.str().empty());
+  stringifyNode(mod, CHPL_SYNTAX);
+}
+
+
 int main(int argc, char** argv) {
   Context context;
   Context* ctx = &context;
@@ -247,6 +256,7 @@ int main(int argc, char** argv) {
   test0(p);
   test1(p);
   test2(p);
+  test3(p);
 
   return 0;
 }
