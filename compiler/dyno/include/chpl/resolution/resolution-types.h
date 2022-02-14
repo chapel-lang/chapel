@@ -1178,6 +1178,7 @@ class ResolvedFields {
     void mark(Context* context) const {
       name.mark(context);
       declId.mark(context);
+      type.mark(context);
     }
 
     /*
@@ -1268,6 +1269,7 @@ class ResolvedFields {
     for (auto const &elt : fields_) {
       elt.mark(context);
     }
+    context->markPointer(type_);
   }
 };
 

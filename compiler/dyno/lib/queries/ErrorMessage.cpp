@@ -91,6 +91,10 @@ void ErrorMessage::swap(ErrorMessage& other) {
 
 void ErrorMessage::mark(Context* context) const {
   location_.mark(context);
+  for (auto& em : details_) {
+    em.mark(context);
+  }
+  id_.mark(context);
 }
 
 void ErrorMessage::updateLocation(Context* context) {

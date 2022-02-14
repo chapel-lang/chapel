@@ -152,6 +152,9 @@ const char* InlinedString::astr(Context* context) const {
 }
 
 void InlinedString::mark(Context* context) const {
+  // mark union fields as used for linter
+  (void)v;
+  (void)data;
   if (isInline()) {
     // nothing to do since string data is stored inline, not in map
   } else {

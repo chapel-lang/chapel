@@ -74,6 +74,8 @@ void BuilderResult::swap(BuilderResult& other) {
   idToAst_.swap(other.idToAst_);
   idToLocation_.swap(other.idToLocation_);
   commentIdToLocation_.swap(other.commentIdToLocation_);
+  idToParentId_.swap(other.idToParentId_);
+  idToAst_.swap(other.idToAst_);
 }
 
 bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
@@ -115,11 +117,26 @@ void BuilderResult::mark(Context* context) const {
 
   // mark UniqueStrings in the Locations
   for (const auto& pair : idToLocation_) {
+    pair.first.mark(context);
     pair.second.mark(context);
+  }
+
+  for (const auto& pair : idToParentId_) {
+    pair.first.mark(context);
+    pair.second.mark(context);
+  }
+
+  for (const auto& pair : idToAst_) {
+    pair.first.mark(context);
+    context->markPointer(pair.second);
   }
 
   for (const Location& loc : commentIdToLocation_) {
     loc.mark(context);
+  }
+
+  for (const auto& em : errors_) {
+    em.mark(context);
   }
 
   // mark UniqueStrings in the ASTs
