@@ -19,6 +19,8 @@
 
 #include "chpl/uast/ASTNode.h"
 
+
+#include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
@@ -183,11 +185,15 @@ static void dumpHelper(std::ostream& ss,
 }
 
 void ASTNode::stringify(std::ostream& ss,
-                        chpl::StringifyKind stringKind) const {
-  int maxIdLen = 0;
-  int leadingSpaces = 0;
-  dumpMaxIdLen(this, maxIdLen);
-  dumpHelper(ss, this, maxIdLen, leadingSpaces);
+                        StringifyKind stringKind) const {
+  // int maxIdLen = 0;
+  // int leadingSpaces = 0;
+  // dumpMaxIdLen(this, maxIdLen);
+  // dumpHelper(ss, this, maxIdLen, leadingSpaces);
+  printAst(ss, this);
+//  for (const ASTNode* child : this->children()) {
+//    printAst(ss, child);
+//  }
 }
 
 IMPLEMENT_DUMP(ASTNode);
