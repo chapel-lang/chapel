@@ -91,7 +91,7 @@ themselves like so:
 
 .. code-block:: chapel
 
-  proc op<(a: returnType, b: returnType): bool {
+  operator <(a: returnType, b: returnType): bool {
     ...
   }
 
