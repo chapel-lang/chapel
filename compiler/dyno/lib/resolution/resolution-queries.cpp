@@ -656,6 +656,25 @@ struct Resolver {
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo());
   }
+  bool enter(const Dot* dot) {
+    return true;
+  }
+  void exit(const Dot* dot) {
+    if (dot->field() == USTR("type")) {
+      ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
+      const Type* receiverType;
+      ResolvedExpression& r = byPostorder.byAst(dot);
+
+      if (receiver.type().type() != nullptr) {
+        receiverType = receiver.type().type();
+      } else {
+        receiverType = ErroneousType::get(context);
+      }
+      r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
+    }
+
+    // TODO: resolve field accessors / parenless methods
+  }
 
   bool enter(const ASTNode* ast) {
     enterScope(ast);
