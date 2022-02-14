@@ -26,11 +26,12 @@ namespace chpl {
 
   using namespace uast;
 
-  const char* kindToString(Function::Visibility kind) {
+
+  static const char* kindToString(Function::Visibility kind) {
     switch (kind) {
-    case Function::Visibility::PRIVATE: return "private";
-    case Function::Visibility::PUBLIC: return "public";
-    case Function::Visibility::DEFAULT_VISIBILITY: assert(false);
+      case Function::Visibility::PRIVATE: return "private";
+      case Function::Visibility::PUBLIC: return "public";
+      case Function::Visibility::DEFAULT_VISIBILITY: assert(false);
     }
     assert(false);
     return "";
@@ -38,9 +39,9 @@ namespace chpl {
 
   static const char* kindToString(Function::Kind kind) {
     switch (kind) {
-    case Function::Kind::PROC: return "proc";
-    case Function::Kind::ITER: return "iter";
-    case Function::Kind::OPERATOR: return "operator";
+      case Function::Kind::PROC: return "proc";
+      case Function::Kind::ITER: return "iter";
+      case Function::Kind::OPERATOR: return "operator";
     }
     assert(false);
     return "";
@@ -48,12 +49,12 @@ namespace chpl {
 
   static const char* kindToString(Function::ReturnIntent kind) {
     switch (kind) {
-    case Function::ReturnIntent::CONST: return "const";
-    case Function::ReturnIntent::REF: return "ref";
-    case Function::ReturnIntent::CONST_REF: return "const ref";
-    case Function::ReturnIntent::PARAM: return "param";
-    case Function::ReturnIntent::TYPE: return "type";
-    case Function::ReturnIntent::DEFAULT_RETURN_INTENT: assert(false);
+      case Function::ReturnIntent::CONST: return "const";
+      case Function::ReturnIntent::REF: return "ref";
+      case Function::ReturnIntent::CONST_REF: return "const ref";
+      case Function::ReturnIntent::PARAM: return "param";
+      case Function::ReturnIntent::TYPE: return "type";
+      case Function::ReturnIntent::DEFAULT_RETURN_INTENT: assert(false);
     }
     assert(false);
     return "";
@@ -61,16 +62,16 @@ namespace chpl {
 
   static const char* kindToString(Formal::Intent kind) {
     switch (kind) {
-    case Formal::Intent::CONST: return "const";
-    case Formal::Intent::CONST_REF: return "const ref";
-    case Formal::Intent::REF: return "ref";
-    case Formal::Intent::IN: return "in";
-    case Formal::Intent::CONST_IN: return "const in";
-    case Formal::Intent::OUT: return "out";
-    case Formal::Intent::INOUT: return "inout";
-    case Formal::Intent::PARAM: return "param";
-    case Formal::Intent::TYPE: return "type";
-    case Formal::Intent::DEFAULT_INTENT: assert(false);
+      case Formal::Intent::CONST: return "const";
+      case Formal::Intent::CONST_REF: return "const ref";
+      case Formal::Intent::REF: return "ref";
+      case Formal::Intent::IN: return "in";
+      case Formal::Intent::CONST_IN: return "const in";
+      case Formal::Intent::OUT: return "out";
+      case Formal::Intent::INOUT: return "inout";
+      case Formal::Intent::PARAM: return "param";
+      case Formal::Intent::TYPE: return "type";
+      case Formal::Intent::DEFAULT_INTENT: assert(false);
     }
     assert(false);
     return "";
@@ -78,13 +79,13 @@ namespace chpl {
 
   static const char* kindToString(Variable::Kind kind) {
     switch (kind) {
-    case Variable::Kind::VAR: return "var";
-    case Variable::Kind::CONST: return "const";
-    case Variable::Kind::PARAM: return "param";
-    case Variable::Kind::TYPE: return "type";
-    case Variable::Kind::REF: return "ref";
-    case Variable::Kind::CONST_REF: return "const ref";
-    case Variable::Kind::INDEX: assert(false);
+      case Variable::Kind::VAR: return "var";
+      case Variable::Kind::CONST: return "const";
+      case Variable::Kind::PARAM: return "param";
+      case Variable::Kind::TYPE: return "type";
+      case Variable::Kind::REF: return "ref";
+      case Variable::Kind::CONST_REF: return "const ref";
+      case Variable::Kind::INDEX: assert(false);
     }
     assert(false);
     return "";
@@ -92,11 +93,11 @@ namespace chpl {
 
   static const char* kindToString(New::Management kind) {
     switch (kind) {
-    case New::Management::BORROWED: return "borrowed";
-    case New::Management::OWNED: return "owned";
-    case New::Management::SHARED: return "shared";
-    case New::Management::UNMANAGED: return "unmanaged";
-    case New::Management::DEFAULT_MANAGEMENT: assert(false);
+      case New::Management::BORROWED: return "borrowed";
+      case New::Management::OWNED: return "owned";
+      case New::Management::SHARED: return "shared";
+      case New::Management::UNMANAGED: return "unmanaged";
+      case New::Management::DEFAULT_MANAGEMENT: assert(false);
     default:
       assert(false);
     }
@@ -104,30 +105,27 @@ namespace chpl {
     return "";
   }
 
+  /** visit each elt of begin..end, outputting `separator` between each.
+   * `surroundBegin` and `surroundEnd` are output before and after respectively
+   * if not null */
+  template<typename It>
+  void interpose(std::ostream& ss_, It begin, It end, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
+    bool first = true;
+    if (surroundBegin) ss_ << surroundBegin;
+    for (auto it = begin; it != end; it++) {
+      if (!first) ss_ << separator;
+      printAst(ss_,*it);
+      first = false;
+    }
+    if (surroundEnd) ss_ << surroundEnd;
+  }
+
+  template<typename T>
+  void interpose(std::ostream& ss_, T xs, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
+    interpose(ss_, xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
+  }
   struct ChplSyntaxVisitor {
     std::stringstream ss_;
-
-    /** visit each elt of begin..end, outputting `separator` between each.
-     * `surroundBegin` and `surroundEnd` are output before and after respectively
-     * if not null */
-    template<typename It>
-    void interpose(It begin, It end, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
-      bool first = true;
-      if (surroundBegin) ss_ << surroundBegin;
-      for (auto it = begin; it != end; it++) {
-        if (!first) ss_ << separator;
-        printAst(ss_,*it);
-        first = false;
-      }
-      if (surroundEnd) ss_ << surroundEnd;
-    }
-
-    template<typename T>
-    void interpose(T xs, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
-      interpose(xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
-    }
-
-
 
     void visit(const uast::ASTNode* node) {
       ss_ << tagToString(node->tag());
@@ -183,7 +181,7 @@ namespace chpl {
         ss_ << "()";
       } else {
         auto it = node->formals();
-        interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
+        interpose(ss_, it.begin() + numThisFormal, it.end(), ", ", "(", ")");
       }
 
       // Return type
@@ -200,7 +198,7 @@ namespace chpl {
     }
 
     void visit(const BracketLoop* node) {
-      interpose(node->children(), "", "[", "]");
+      interpose(ss_, node->children(), "", "[", "]");
     }
 
 
@@ -234,19 +232,19 @@ namespace chpl {
       }
       assert(callee);  // This should be true because OpCall is handled
       printAst(ss_, callee);
-      interpose(node->actuals(), ", ", "(", ")");
+      interpose(ss_, node->actuals(), ", ", "(", ")");
     }
 
     void visit(const Domain* node) {
-      interpose(node->children(), ", ", "{", "}");
+      interpose(ss_, node->children(), ", ", "{", "}");
     }
 
     void visit(const Tuple* node) {
-      interpose(node->children(), ", ", "(", ")");
+      interpose(ss_, node->children(), ", ", "(", ")");
     }
 
     void visit(const Array* node) {
-      interpose(node->children(), ", ", "[", "]");
+      interpose(ss_, node->children(), ", ", "[", "]");
     }
 
     void visit(const Range* node) {
@@ -296,7 +294,7 @@ namespace chpl {
 
     void visit(const Enum* node) {
       ss_ << "enum " << node->name().c_str() << " ";
-      interpose(node->enumElements(), ", ", "{ ", " }");
+      interpose(ss_, node->enumElements(), ", ", "{ ", " }");
     }
 
     void visit(const EnumElement* node) {
@@ -309,13 +307,64 @@ namespace chpl {
 
   };
 
+
+  struct UserStringVisitor {
+    std::stringstream ss_;
+
+    void visit(const uast::Function* node) {
+      std::stringstream ss;
+      if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
+        ss_ << kindToString(node->visibility()) << " ";
+      }
+      // Function Name
+      ss_ << node->name().str();
+
+      // Formals
+      int numThisFormal = node->thisFormal() ? 1 : 0;
+      int nFormals = node->numFormals() - numThisFormal;
+      if (nFormals == 0 && node->isParenless()) {
+        // pass
+      } else if (nFormals == 0) {
+        ss_ << "()";
+      } else {
+        auto it = node->formals();
+        interpose(ss_, it.begin() + numThisFormal, it.end(), ", ", "(", ")");
+      }
+
+      // Return type
+      if (const Expression* e = node->returnType()) {
+        ss_ << ": ";
+        printAst(ss_, e);
+      }
+
+      // Return Intent
+      if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
+        ss_ << " " << kindToString(node->returnIntent());
+      }
+
+    }
+
+    void visit(const uast::ASTNode* node) {
+      ss_ << tagToString(node->tag());
+    }
+
+  };
+
   /* Generic printer calling the above functions */
   void printAst(std::ostream& os, const uast::ASTNode* node) {
     auto visitor = ChplSyntaxVisitor{};
     node->dispatch<void>(visitor);
-    // TODO: avoid using .str() here
     os << visitor.ss_.rdbuf();
     os << std::flush;
   }
+
+  /* Generic printer calling the above functions */
+  void printUserString(std::ostream& os, const uast::Function* node) {
+    auto visitor = UserStringVisitor{};
+    node->dispatch<void>(visitor);
+    os << visitor.ss_.rdbuf();
+    os << std::flush;
+  }
+
 } // end chpl namespace
 

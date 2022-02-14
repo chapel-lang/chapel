@@ -34,5 +34,7 @@ namespace chpl {
 
   void printAst(std::ostream& os, const uast::ASTNode* node);
 
+  void printUserString(std::ostream& os, const uast::Function* node);
+
 }
 #endif

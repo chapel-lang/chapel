@@ -23,6 +23,8 @@
    the conversion.
  */
 
+#include <iostream>
+
 #include "convert-uast.h"
 
 #include "build.h"
@@ -42,6 +44,7 @@
 #include "chpl/util/string-escapes.h"
 #include "chpl/queries/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/uast/chpl-syntax-printer.h"
 
 using namespace chpl;
 
@@ -1846,6 +1849,12 @@ struct Converter {
 
   Expr* visit(const uast::Function* node) {
     FnSymbol* fn = new FnSymbol("_");
+
+    // build up the userString as in old parser
+    // needed to match up some error outputs
+    std::stringstream ss;
+    printUserString(ss, node);
+    fn->userString = astr(ss.str().c_str());
 
     attachSymbolAttributes(node, fn);
     attachSymbolVisibility(node, fn);
