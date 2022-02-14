@@ -1,0 +1,12 @@
+#!/bin/sh
+
+testname=$1
+outfile=$2
+
+grep -i "qio_channel_final_flush returned fatal error" $outfile > $outfile.2
+if [ $? -eq 0 ]
+then
+  mv $outfile.2 $outfile
+else
+  echo OtherError > $outfile
+fi

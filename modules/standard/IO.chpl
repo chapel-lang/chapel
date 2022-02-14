@@ -537,6 +537,27 @@ param iolittle = iokind.little;
 
 /*
 
+The :type:`ioendian` type is an enum. When used as an argument to the
+:record:`channel` methods, its constants have the following meanings:
+
+* ``ioendian.big`` means binary I/O is performed in big-endian byte order.
+
+* ``ioendian.little`` means binary I/O is performed in little-endian byte order.
+
+* ``ioendian.native`` means binary I/O is performed in the byte order that is native
+  to the target platform.
+
+*/
+
+enum ioendian {
+  native = 0,
+  big = 1,
+  little = 2
+}
+
+
+/*
+
 This enum contains values used to control binary I/O with strings
 via the ``str_style`` field in :record:`iostyle`.
 
@@ -1293,6 +1314,7 @@ private extern const QIO_CONV_SET_STRINGEND:c_int;
 private extern const QIO_CONV_SET_CAPTURE:c_int;
 private extern const QIO_CONV_SET_DONE:c_int;
 
+pragma "insert line file info"
 private extern proc qio_conv_parse(const fmt:c_string, start:size_t, ref end:uint(64), scanning:c_int, ref spec:qio_conv_t, ref style:iostyleInternal):syserr;
 
 private extern proc qio_format_error_too_many_args():syserr;
@@ -3069,7 +3091,13 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
   return EINVAL;
 }
 
+pragma "no doc"
+config param chpl_testReadBinaryInternalEIO = false;
+
 private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, ref x:?t):syserr where _isIoPrimitiveType(t) {
+  if chpl_testReadBinaryInternalEIO {
+    return EIO;
+  }
   if isBoolType(t) {
     var got:int(32);
     got = qio_channel_read_byte(false, _channel_internal);
@@ -3165,7 +3193,13 @@ private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param by
   return EINVAL;
 }
 
+pragma "no doc"
+config param chpl_testWriteBinaryInternalEIO = false;
+
 private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):syserr where _isIoPrimitiveType(t) {
+  if chpl_testWriteBinaryInternalEIO {
+    return EIO;
+  }
   if isBoolType(t) {
     var zero_one:uint(8) = if x then 1:uint(8) else 0:uint(8);
     return qio_channel_write_byte(false, _channel_internal, zero_one);
@@ -4022,6 +4056,118 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
 
   return try this.write(new ioBits(v:uint(64), nbits:int(8)));
 }
+
+/*
+   Write a binary number to the channel
+
+   :arg arg: number to be written
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to write the number. Defaults to ``ioendian.native``.
+
+   :throws SystemError: Thrown if the number could not be written to the channel.
+ */
+proc channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) throws {
+  var e:syserr = ENOERR;
+
+  select (endian) {
+    when ioendian.native {
+      e = try _write_binary_internal(_channel_internal, iokind.native, arg);
+    }
+    when ioendian.big {
+      e = try _write_binary_internal(_channel_internal, iokind.big, arg);
+    }
+    when ioendian.little {
+      e = try _write_binary_internal(_channel_internal, iokind.little, arg);
+    }
+  }
+  if (e != ENOERR) {
+    throw SystemError.fromSyserr(e);
+  }
+}
+
+/*
+   Write a binary number to the channel
+
+   :arg arg: number to be written
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to write the number. Defaults to ``ioendian.native``.
+
+   :throws SystemError: Thrown if the number could not be written to the channel.
+ */
+proc channel.writeBinary(arg:numeric, endian:ioendian = ioendian.native) throws {
+  select (endian) {
+    when ioendian.native {
+      this.writeBinary(arg, ioendian.native);
+    }
+    when ioendian.big {
+      this.writeBinary(arg, ioendian.big);
+    }
+    when ioendian.little {
+      this.writeBinary(arg, ioendian.little);
+    }
+  }
+}
+
+/*
+   Read a binary number from the channel
+
+   :arg arg: number to be read
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the number. Defaults to ``ioendian.native``.
+   :returns: `true` if the number was read, `false` otherwise
+
+   :throws SystemError: Thrown if an error occurred reading the number.
+ */
+
+proc channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
+  var e:syserr = ENOERR;
+
+  select (endian) {
+    when ioendian.native {
+      e = try _read_binary_internal(_channel_internal, iokind.native, arg);
+    }
+    when ioendian.big {
+      e = try _read_binary_internal(_channel_internal, iokind.big, arg);
+    }
+    when ioendian.little {
+      e = try _read_binary_internal(_channel_internal, iokind.little, arg);
+    }
+  }
+  if (e == EEOF) {
+    return false;
+  } else if (e != ENOERR) {
+    throw SystemError.fromSyserr(e);
+  }
+  return true;
+}
+
+/*
+   Read a binary number from the channel
+
+   :arg arg: number to be read
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to read the number. Defaults to ``ioendian.native``.
+   :returns: `true` if the number was read, `false` otherwise
+
+   :throws SystemError: Thrown if an error occurred reading the number.
+ */
+proc channel.readBinary(ref arg:numeric, endian: ioendian=ioendian.native):bool throws {
+  var rv: bool = false;
+
+  select (endian) {
+    when ioendian.native {
+      rv = this.readBinary(arg, ioendian.native);
+    }
+    when ioendian.big {
+      rv = this.readBinary(arg, ioendian.big);
+    }
+    when ioendian.little {
+      rv = this.readBinary(arg, ioendian.little);
+    }
+  }
+  return rv;
+}
+
 
 // Documented in the varargs version
 pragma "no doc"
