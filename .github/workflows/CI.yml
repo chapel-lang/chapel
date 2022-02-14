@@ -60,6 +60,16 @@ jobs:
       run: |
         make test-dyno -j`util/buildRelease/chpl-make-cpu_count`
 
+  run_dyno_linters:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: install deps
+      run: sudo apt-get install $CHPL_APT_DEPS
+    - name: make run-dyno-linters
+      run: |
+        CHPL_HOME=$PWD make run-dyno-linters
+
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
     steps:

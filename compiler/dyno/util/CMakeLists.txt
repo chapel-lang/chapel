@@ -15,11 +15,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO compile_commands missing stddef for some reason
-# run with ./fieldsUsed --extra-arg-before=-I/usr/lib64/clang/13.0.0/include ../../lib/queries/ID.cpp
-# TODO switch to cmake
-opt=-O2
-# san=-fsanitize=address -fno-omit-frame-pointer
-libs=-lclang-cpp -lLLVM-13 -lLLVMSupport
-fieldsUsed: fieldsUsed.cpp
-	clang++ -std=c++14 $(opt) $(san) -g $< -o $@ $(libs)
+add_subdirectory(linters)
