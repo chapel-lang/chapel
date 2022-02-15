@@ -26,6 +26,25 @@ namespace chpl {
 
   using namespace uast;
 
+  static const char* kindToString(IntentList kind) {
+    switch (kind) {
+      case IntentList::DEFAULT_INTENT: assert(false);
+      case IntentList::CONST_INTENT: return "const";
+      case IntentList::VAR: return "var";
+      case IntentList::CONST_VAR: return "const var";
+      case IntentList::CONST_REF: return "const ref";
+      case IntentList::REF: return "ref";
+      case IntentList::IN: return "in";
+      case IntentList::CONST_IN: return "const in";
+      case IntentList::OUT: return "out";
+      case IntentList::INOUT: return "inout";
+      case IntentList::PARAM: return "param";
+      case IntentList::TYPE: return "type";
+      default: return "";
+    }
+    return "";
+  }
+
 
   static const char* kindToString(Function::Visibility kind) {
     switch (kind) {
@@ -159,7 +178,7 @@ namespace chpl {
         printAst(ss_, te);
       }
       if (const Expression* ie = node->initExpression()) {
-        ss_ << "=";
+        ss_ << " = ";
         printAst(ss_, ie);
       }
     }
@@ -198,7 +217,14 @@ namespace chpl {
     }
 
     void visit(const BracketLoop* node) {
-      interpose(ss_, node->children(), "", "[", "]");
+      if (node->numChildren() == 2 && node->child(0)->isDomain() && node->child(1)->isBlock()){
+        ss_ << "[";
+        printAst(ss_, node->child(0));
+        ss_ << "] ";
+        printAst(ss_, node->child(1));
+      } else {
+        interpose(ss_, node->children(), "", "[", "]");
+      }
     }
 
 
@@ -231,12 +257,24 @@ namespace chpl {
         node->stringify(std::cerr, StringifyKind::CHPL_SYNTAX);
       }
       assert(callee);  // This should be true because OpCall is handled
+
       printAst(ss_, callee);
-      interpose(ss_, node->actuals(), ", ", "(", ")");
+      if (callee->isIdentifier() && (callee->toIdentifier()->name() == "borrowed" || callee->toIdentifier()->name() == "owned"
+          || callee->toIdentifier()->name() == "unmanaged" || callee->toIdentifier()->name() == "shared")) {
+        ss_ << " ";
+        printAst(ss_, node->actual(0));
+      } else {
+        interpose(ss_, node->actuals(), ", ", "(", ")");
+      }
     }
 
     void visit(const Domain* node) {
-      interpose(ss_, node->children(), ", ", "{", "}");
+      if (node->numChildren() == 1 && node->child(0)->isTypeQuery()){
+        ss_ << "?";
+        printAst(ss_,node->child(0));
+      } else {
+        interpose(ss_, node->children(), ", ", "{", "}");
+      }
     }
 
     void visit(const Tuple* node) {
@@ -259,6 +297,10 @@ namespace chpl {
 
     void visit(const BoolLiteral* node) {
         ss_ << (node->value() ? "true" : "false");
+    }
+
+    void visit(const Block* node) {
+      interpose(ss_, node->children(), " ");
     }
 
     template<typename T>
@@ -305,6 +347,9 @@ namespace chpl {
       }
     }
 
+    void visit(const TypeQuery* node) {
+      ss_ << node->name().c_str();
+    }
   };
 
 
@@ -316,6 +361,12 @@ namespace chpl {
       if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
         ss_ << kindToString(node->visibility()) << " ";
       }
+
+      // storage kind
+      if (node->thisFormal() != nullptr && node->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
+        ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
+      }
+
       // Function Name
       ss_ << node->name().str();
 
