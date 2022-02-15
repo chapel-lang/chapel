@@ -45,7 +45,7 @@ endif
 
 CMAKE ?= cmake
 
-CHPL_LLVM_SUPPORTED_VERSIONS := $(shell ${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py --supported-versions)
+CHPL_LLVM_SUPPORTED_VERSIONS := $(shell ${CHPL_MAKE_HOME}/util/config/llvmVersions)
 
 default: $(CHPL_MAKE_LLVM)
 
