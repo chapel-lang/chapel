@@ -24,6 +24,7 @@
 #include "chpl/queries/UniqueString.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/parsing/Parser.h"
+#include "chpl/uast/chpl-syntax-printer.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -56,7 +57,8 @@ static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
     }
     std::ostringstream ss;
     node->stringify(ss, kind);
-    assert(!ss.str().empty());
+//    assert(!ss.str().empty());
+//    std::cerr << ss.str() << std::endl;
 }
 
 static void test0(Parser* parser) {
@@ -238,12 +240,67 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   // stringify an empty Module
-  auto parseResult = parser->parseString("test0.chpl", "proc bar(x: int) {\n}");
+  auto parseResult = parser->parseString("test3.chpl", "proc bar(x: int) {\n}\n"
+                                                       "proc foo(X: [?Dlocal] real) {\n}\n"
+                                                       "proc baz(A: borrowed C) {\n}\n"
+                                                       "class C {\n"
+                                                       "  proc ref setClt(rhs: borrowed C) {\n}\n}\n"
+                                                       "proc test(const ref arg:unmanaged MyClass) {\n}\n"
+                                                       "inline proc (borrowed object?).hash(): uint {\n}\n"
+                                                       "proc bark(c = new C()) {\n}\n");
   auto mod = parseResult.singleModule();
   std::ostringstream ss;
-  mod->stringify(ss, CHPL_SYNTAX);
+//  mod->stringify(ss, CHPL_SYNTAX);
+//  assert(!ss.str().empty());
+//  stringifyNode(mod, CHPL_SYNTAX);
+  auto barDecl = mod->stmt(0)->toFunction();
+  auto fooDecl = mod->stmt(1)->toFunction();
+  auto bazDecl = mod->stmt(2)->toFunction();
+  auto cDecl = mod->stmt(3)->toClass();
+  auto testDecl = mod->stmt(4)->toFunction();
+  auto inlineDecl = mod->stmt(5)->toFunction();
+  auto barkDecl =mod->stmt(6)->toFunction();
+  assert(cDecl);
+  assert(inlineDecl);
+  auto setCltDecl = cDecl->child(0)->toFunction();
+  assert(setCltDecl);
+  assert(barDecl);
+  assert(fooDecl);
+  assert(bazDecl);
+  assert(testDecl);
+  assert(barkDecl);
+  printUserString(ss, inlineDecl);
+//  std::cerr << ss.str() << std::endl;
   assert(!ss.str().empty());
-  stringifyNode(mod, CHPL_SYNTAX);
+  ss.str("");
+  ss.clear();
+  printUserString(ss, testDecl);
+  assert(!ss.str().empty());
+//  std::cerr << ss.str() << std::endl;
+  ss.str("");
+  ss.clear();
+  printUserString(ss, setCltDecl);
+  assert(!ss.str().empty());
+//  std::cerr << ss.str() << std::endl;
+  printUserString(ss,barDecl);
+  assert(!ss.str().empty());
+//  std::cerr << ss.str() << std::endl;
+  ss.str("");
+  ss.clear();
+  printUserString(ss,barkDecl);
+  assert(!ss.str().empty());
+//  std::cerr << ss.str() << std::endl;
+  ss.str("");
+  ss.clear();
+  printUserString(ss, fooDecl);
+  assert(!ss.str().empty());
+//  std::cerr << ss.str() << std::endl;
+  ss.str("");
+  ss.clear();
+
+  printUserString(ss, bazDecl);
+  assert(!ss.str().empty());
+//  std::cerr << ss.str() << std::endl;
 }
 
 
