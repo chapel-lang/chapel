@@ -8,3 +8,4 @@ Value: some\nbytes, Here are "some" more escapes:
 Type: bytes
 some\nbytes, Here are "some" more escapes:
             \t \r \xff This literal uses single quotes
+raw-literal.chpl:5: warning: binary conversion "%|*s" is deprecated.

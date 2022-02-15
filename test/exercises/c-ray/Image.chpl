@@ -95,7 +95,7 @@ proc writeImagePPM(outfile, pixels) {
   outfile.writeln(255);
   for p in pixels do
     for param c in 0..numColors-1 do
-      outfile.writef("%|1i", ((p >> colorOffset(c)) & colorMask));
+      outfile.writeBinary(((p >> colorOffset(c)) & colorMask):int(8));
 }
 
 //
@@ -121,6 +121,29 @@ proc writeImageBMP(outfile, pixels) {
         offsetToPixelData = headerSize + dibHeaderSize;
 
   // Write the BMP image header
+  outfile.writef("BM");
+  outfile.writeBinary(size:uint(32), ioendian.little);
+  outfile.writeBinary(0:uint(16), ioendian.little); /* reserved1 */
+  outfile.writeBinary(0:uint(16), ioendian.little); /* reserved2 */
+  outfile.writeBinary(offsetToPixelData:uint(32), ioendian.little);
+
+  // Write the DIB header BITMAPINFOHEADER
+  outfile.writeBinary(dibHeaderSize:uint(32), ioendian.little);
+  outfile.writeBinary(cols:int(32), ioendian.little);
+  outfile.writeBinary(-rows:int(32), ioendian.little); /*neg for swap*/
+  outfile.writeBinary(1:uint(16), ioendian.little); /* 1 color plane */
+  outfile.writeBinary(bitsPerPixel:uint(16), ioendian.little);
+  outfile.writeBinary(0:uint(32), ioendian.little); /* no compression */
+  outfile.writeBinary(pixelsSize:uint(32), ioendian.little);
+  outfile.writeBinary(2835:uint(32), ioendian.little); /*pixels/meter print resolution=72dpi*/
+  outfile.writeBinary(2835:uint(32), ioendian.little); /*pixels/meter print resolution=72dpi*/
+  outfile.writeBinary(0:uint(32), ioendian.little); /* colors in palette */
+  outfile.writeBinary(0:uint(32), ioendian.little); /* "important" colors */
+
+
+
+/*
+  // Write the BMP image header
   outfile.writef("BM%<4u %<2u %<2u %<4u",
                  size,
                  0 /* reserved1 */,
@@ -136,6 +159,7 @@ proc writeImageBMP(outfile, pixels) {
                  2835, 2835 /*pixels/meter print resolution=72dpi*/,
                  0 /* colors in palette */,
                  0 /* "important" colors */);
+*/
 
   for i in pixels.domain.dim(0) {
     var nbits = 0;
