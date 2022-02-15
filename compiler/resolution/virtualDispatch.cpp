@@ -1093,6 +1093,11 @@ static void checkMethodsOverride() {
     // output error for overriding for non-class methods
     if (aFn->hasFlag(FLAG_OVERRIDE)) {
 
+      if (aFn->_this == NULL) {
+        USR_FATAL("'override' cannot be applied to non-method '%s'",
+                  aFn->name);
+      }
+
       //
       // Type methods may have managed receiver types, which would normally
       // not be recognized as a class.
