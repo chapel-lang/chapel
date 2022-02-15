@@ -341,8 +341,6 @@ struct Resolver {
         return;
       }
 
-      //gdbShouldBreakHere();
-
       auto baseCt = actualCt->instantiatedFromCompositeType();
       auto sig = typeConstructorInitial(context, baseCt);
 
@@ -450,9 +448,6 @@ struct Resolver {
   }
 
   bool enter(const Identifier* ident) {
-    if (ident->id().str() == "M.f@4")
-      gdbShouldBreakHere();
-
     assert(scopeStack.size() > 0);
     const Scope* scope = scopeStack.back();
     ResolvedExpression& result = byPostorder.byAst(ident);
@@ -2108,7 +2103,26 @@ returnTypeForTypeCtorQuery(Context* context,
       const QualifiedType& formalType = sig->formalType(i);
       // Note that the formalDecl should already be a fieldDecl
       // based on typeConstructorInitialQuery.
-      subs.insert({formalDecl->id(), formalType});
+      bool hasInitExpression = false;
+      if (auto vd = formalDecl->toVarLikeDecl())
+        if (vd->initExpression() != nullptr)
+          hasInitExpression = true;
+
+      if (formalType.type()->isAnyType() && !hasInitExpression) {
+        // Ignore this substitution - easier to just leave it out
+        // of the map entirely.
+        // Note that we explicitly put a sub for AnyType for generics
+        // with default, where the default is not used. E.g.
+        //    record R { type t = int; }
+        //    type RR = R(?);
+        //    var x: RR;
+        // is a compilation error because x has generic type.
+        // In order to support that pattern, we need to be able to
+        // represent that RR is a version of R where it's not behaving
+        // as generic-with-default and substituting in AnyType does that.
+      } else {
+        subs.insert({formalDecl->id(), formalType});
+      }
     }
 
     // get a type using the substitutions
