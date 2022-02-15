@@ -39,7 +39,7 @@
 
 module Channel {
   import ChapelLocks;
-  use CPtr;
+  use CTypes;
   use Sort;
   use CTypes;
   use List;

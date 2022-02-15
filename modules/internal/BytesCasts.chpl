@@ -22,7 +22,6 @@ module BytesCasts {
   private use ChapelStandard;
   private use BytesStringCommon;
   private use CTypes;
-  private use CPtr;
 
 
   //

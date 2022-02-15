@@ -434,7 +434,6 @@ public use SysBasic;
 use CTypes;
 public use SysError;
 
-private use CPtr;
 
 /*
 
@@ -5351,7 +5350,6 @@ FormattedIO Functions and Types
 module FormattedIO {
   use IO;
   use CTypes;
-  use CPtr;
   use SysBasic;
   use SysError;
 //use IO;

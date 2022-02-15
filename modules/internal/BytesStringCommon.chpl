@@ -21,7 +21,6 @@
 module BytesStringCommon {
   private use ChapelStandard;
   private use CTypes;
-  private use CPtr;
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
 

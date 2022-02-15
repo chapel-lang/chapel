@@ -46,7 +46,6 @@ module Sys {
   // get basic types from SysBasic
   use SysBasic;
   private use CTypes;
-  private use CPtr;
   private use SysError;
 
 

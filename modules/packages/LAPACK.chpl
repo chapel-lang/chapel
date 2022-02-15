@@ -129,7 +129,6 @@ module LAPACK {
   enum LapackImpl {lapack, mkl, off};
   use LapackImpl;
   use CTypes;
-  use CPtr;
 
   /*
     Specifies which header filename to include, based on the lapack
@@ -219,7 +218,6 @@ pragma "no doc"
 module ClassicLAPACK {
 
 use CTypes;
-use CPtr;
 use CTypes;
 use LAPACK;
 

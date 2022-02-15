@@ -46,7 +46,7 @@ module ChapelSyncvar {
   use MemConsistency;
   use SyncVarRuntimeSupport;
 
-  use CPtr;
+  use CTypes;
 
   /************************************ | *************************************
   *                                                                           *
@@ -1142,7 +1142,7 @@ module ChapelSyncvar {
 private module SyncVarRuntimeSupport {
   use ChapelStandard, CTypes;
   use AlignedTSupport;
-  use CPtr;
+  use CTypes;
 
   //
   // Sync var externs

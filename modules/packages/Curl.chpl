@@ -116,7 +116,7 @@ issue a POST request:
 
     // This example uses the curl_easy_ interface from libcurl
     // to POST some json data.
-    use CTypes, CPtr;
+    use CTypes;
     import Curl;
 
     extern const CURLOPT_CUSTOMREQUEST: Curl.CURLoption;
@@ -156,7 +156,7 @@ Curl Support Types and Functions
 
  */
 module Curl {
-  public use IO, CTypes, CPtr;
+  public use IO, CTypes;
   use Sys;
 
   require "curl/curl.h";
@@ -504,7 +504,7 @@ module Curl {
     use IO;
     use Curl;
     use Sys;
-    use CPtr;
+    use CTypes;
 
     class CurlFile : QioPluginFile {
 

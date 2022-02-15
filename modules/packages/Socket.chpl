@@ -73,7 +73,6 @@ public use SysError;
 public use CTypes;
 use Time;
 use SysBasic;
-use CPtr;
 use IO;
 
 /*

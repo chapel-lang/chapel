@@ -1,0 +1,2 @@
+testCPtr.chpl:1: warning: 'CPtr' is deprecated; please use the 'CTypes' module instead
+(nil, nil)

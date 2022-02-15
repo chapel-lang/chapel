@@ -25,7 +25,6 @@
 // representation, being in essence the common NUL-terminated C string.
 module CString {
   private use ChapelStandard, CTypes;
-  private use CPtr;
 
   //inline proc c_string.c_str() return this;
 

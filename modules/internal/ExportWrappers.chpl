@@ -21,7 +21,6 @@
 pragma "no doc"
 module ExportWrappers {
   use ChapelStandard;
-  use CPtr;
   use CTypes;
 
   private proc _initDynamicEndCount() {
