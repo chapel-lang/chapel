@@ -492,9 +492,13 @@ class PoiScope {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     ss << "PoiScope ";
-    inScope()->stringify(ss,stringKind);
+    if (inScope() != nullptr) {
+      inScope()->stringify(ss,stringKind);
+    } else {
+      ss << "null";
+    }
     ss << " ";
-    if (inFnPoi() != this) {
+    if (inFnPoi() != this && inFnPoi() != nullptr) {
       inFnPoi()->stringify(ss, stringKind);
     }
   }

@@ -293,10 +293,15 @@ class CallInfo {
  public:
   using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
 
+  /** Construct a CallInfo that contains QualifiedTypes for actuals */
   CallInfo(UniqueString name, bool hasQuestionArg,
            std::vector<CallInfoActual> actuals)
       : name_(name), hasQuestionArg_(hasQuestionArg),
         actuals_(std::move(actuals)) {}
+
+  /** Construct a CallInfo with unknown types for the actuals
+      that can be used for FormalActualMap but not much else.  */
+  CallInfo(const uast::FnCall* call);
 
   /** return the name of the called thing */
   UniqueString name() const { return name_; }

@@ -209,6 +209,8 @@ int main(int argc, char** argv) {
       }
       searchPath.push_back(argv[i+1]);
       i++;
+    } else if (0 == strcmp(argv[i], "--trace")) {
+      ctx->setDebugTraceFlag(true);
     } else {
       firstfile = i;
       break;

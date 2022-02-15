@@ -19,10 +19,13 @@
 
 #include "chpl/resolution/resolution-types.h"
 
+#include "chpl/queries/global-strings.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/Builder.h"
+#include "chpl/uast/FnCall.h"
 #include "chpl/uast/Formal.h"
+#include "chpl/uast/Identifier.h"
 
 namespace chpl {
 namespace resolution {
@@ -96,6 +99,35 @@ UntypedFnSignature::get(Context* context, const uast::Function* fn) {
   }
 
   return result;
+}
+
+CallInfo::CallInfo(const uast::FnCall* call) {
+  // set the name (simple cases only)
+  if (auto called = call->calledExpression()) {
+    if (auto id = called->toIdentifier())
+      name_ = id->name();
+  }
+
+  int i = 0;
+  for (auto actual : call->actuals()) {
+    bool isQuestionMark = false;
+    if (auto id = actual->toIdentifier())
+      if (id->name() == USTR("?"))
+        isQuestionMark = true;
+
+    if (isQuestionMark) {
+      hasQuestionArg_ = true;
+    } else {
+      UniqueString byName;
+      if (call->isNamedActual(i)) {
+        byName = call->actualName(i);
+        if (i == 0 && byName == USTR("this"))
+          isMethod_ = true;
+      }
+      actuals_.push_back(CallInfoActual(QualifiedType(), byName));
+      i++;
+    }
+  }
 }
 
 void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {

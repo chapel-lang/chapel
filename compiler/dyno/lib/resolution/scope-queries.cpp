@@ -41,6 +41,36 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+static void gather(DeclMap& declared, UniqueString name, const NamedDecl* d) {
+  auto search = declared.find(name);
+  if (search == declared.end()) {
+    // add a new entry containing just the one ID
+    declared.emplace_hint(search,
+                          name,
+                          OwnedIdsWithName(d->id()));
+  } else {
+    // found an entry, so add to it
+    OwnedIdsWithName& val = search->second;
+    val.appendId(d->id());
+  }
+}
+
+struct GatherQueryDecls {
+  DeclMap& declared;
+  GatherQueryDecls(DeclMap& declared) : declared(declared) { }
+
+  bool enter(const TypeQuery* ast) {
+    gather(declared, ast->name(), ast);
+    return true;
+  }
+  void exit(const TypeQuery* ast) { }
+
+  bool enter(const ASTNode* ast) {
+    return true;
+  }
+  void exit(const ASTNode* ast) { }
+};
+
 struct GatherDecls {
   DeclMap declared;
   bool containsUseImport = false;
@@ -50,22 +80,20 @@ struct GatherDecls {
 
   // Add NamedDecls to the map
   bool enter(const NamedDecl* d) {
-    UniqueString name = d->name();
-    auto search = declared.find(name);
-    if (search == declared.end()) {
-      // add a new entry containing just the one ID
-      declared.emplace_hint(search,
-                            name,
-                            OwnedIdsWithName(d->id()));
-    } else {
-      // found an entry, so add to it
-      OwnedIdsWithName& val = search->second;
-      val.appendId(d->id());
-    }
+    gather(declared, d->name(), d);
 
     if (d->isFunction()) {
       // make a note if we encountered a function
       containsFunctionDecls = true;
+    }
+
+    // traverse inside to look for type queries &
+    // add them to declared
+    if (auto fml = d->toFormal()) {
+      if (auto typeExpr = fml->typeExpression()) {
+        GatherQueryDecls gatherQueryDecls(declared);
+        typeExpr->traverse(gatherQueryDecls);
+      }
     }
 
     return false;

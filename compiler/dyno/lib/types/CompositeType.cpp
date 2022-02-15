@@ -19,13 +19,51 @@
 
 #include "chpl/types/CompositeType.h"
 
+#include "chpl/resolution/can-pass.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/BasicClassType.h"
-#include "chpl/uast/NamedDecl.h"
 #include "chpl/uast/Decl.h"
+#include "chpl/uast/NamedDecl.h"
 
 namespace chpl {
 namespace types {
 
+
+using namespace resolution;
+
+bool
+CompositeType::areSubsInstantiationOf(Context* context,
+                                      const CompositeType* partial) const {
+  // Check to see if the substitutions of `this` are all instantiations
+  // of the field types of `partial`
+
+  const SubstitutionsMap& mySubs = substitutions();
+  const SubstitutionsMap& pSubs = partial->substitutions();
+
+  // check, for each substitution in mySubs, that it matches
+  // or is an instantiation of pSubs.
+
+  for (auto mySubPair : mySubs) {
+    ID mySubId = mySubPair.first;
+    QualifiedType mySubType = mySubPair.second;
+
+    // look for a substitution in pSubs with the same ID
+    auto pSearch = pSubs.find(mySubId);
+    if (pSearch != pSubs.end()) {
+      QualifiedType pSubType = pSearch->second;
+      // check the types
+      auto r = canPass(context, mySubType, pSubType);
+      if (r.passes() && !r.promotes() && !r.converts()) {
+        // instantiation and same-type passing are allowed here
+      } else {
+        // it was not an instantiation
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
 
 CompositeType::~CompositeType() {
 }
