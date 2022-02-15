@@ -27,8 +27,9 @@
  */
 deprecated "'CPtr' is deprecated; please use the 'CTypes' module instead"
 module CPtr {
-  public use CTypes only c_void_ptr, c_nil, is_c_nil, c_ptr, c_array, c_sizeof,
-                         c_offsetof, c_calloc, c_malloc, c_aligned_alloc,
-                         c_free, isAnyCPtr, c_memmove, c_memcpy, c_memcmp,
-                         c_memset;
+  public use CTypes only c_void_ptr, c_nil, is_c_nil, c_ptr, c_array,
+                         c_pointer_return, c_pointer_diff, c_ptrTo,
+                         c_sizeof, c_offsetof, c_calloc, c_malloc,
+                         c_aligned_alloc, c_free, isAnyCPtr, c_memmove,
+                         c_memcpy, c_memcmp, c_memset;
 }
