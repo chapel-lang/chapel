@@ -5,7 +5,6 @@ require "anonymousStruct.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 extern "struct foobar" record foobar {
   var a : c_int;

@@ -5,7 +5,6 @@ require "nestedStruct.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 extern "struct first" record first {
   var a : c_int;

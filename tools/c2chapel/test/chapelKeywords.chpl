@@ -5,7 +5,6 @@ require "chapelKeywords.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 extern proc foo(out_arg : c_int, ref_arg : c_char) : c_int;
 

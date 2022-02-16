@@ -5,7 +5,6 @@ require "opaqueUnion.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 extern "union foobar" union foobar {
   var a : c_int;

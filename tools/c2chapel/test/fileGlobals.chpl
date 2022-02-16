@@ -5,7 +5,6 @@ require "fileGlobals.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 extern var globalInt : c_int;
 

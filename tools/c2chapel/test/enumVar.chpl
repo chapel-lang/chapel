@@ -5,7 +5,6 @@ require "enumVar.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 // Enum: E
 extern const UP :c_int;

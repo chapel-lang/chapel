@@ -5,7 +5,6 @@ require "fnPointers.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 extern proc fnPointerArgs(callback : c_fn_ptr, msg : c_string) : c_int;
 

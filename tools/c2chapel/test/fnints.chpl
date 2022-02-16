@@ -5,7 +5,6 @@ require "fnints.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 extern proc firstFunc(a : c_int, b : c_int, c : c_int) : void;
 

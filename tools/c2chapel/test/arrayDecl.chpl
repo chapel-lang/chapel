@@ -5,7 +5,6 @@ require "arrayDecl.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 extern var intArr : c_ptr(c_int);
 

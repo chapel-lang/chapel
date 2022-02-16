@@ -638,11 +638,9 @@ def preamble(args, fakes):
         genComment("Note: Generated with fake std headers")
         print()
 
+    # Needed for C types
     # Arguably we can tighten the use of this module based on what we actually
     # generate, but for now this is good enough
-    print("use CPtr;")
-
-    # Needed for C types
     print("use CTypes;")
 
 # TODO: accept file from stdin?

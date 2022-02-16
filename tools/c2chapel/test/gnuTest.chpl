@@ -5,7 +5,6 @@ require "gnuTest.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 // Anonymous union or struct was encountered within and skipped.
 extern "struct _GValue" record _GValue {

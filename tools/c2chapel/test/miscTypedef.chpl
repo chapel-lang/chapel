@@ -5,7 +5,6 @@ require "miscTypedef.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 extern "struct simpleStruct" record simpleStruct {
   var a : c_int;

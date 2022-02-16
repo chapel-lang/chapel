@@ -5,7 +5,6 @@ require "miscTypedefUnion.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
 use CTypes;
 extern "union simpleUnion" union simpleUnion {
   var a : c_int;
