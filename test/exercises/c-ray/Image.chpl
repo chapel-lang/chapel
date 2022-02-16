@@ -140,27 +140,6 @@ proc writeImageBMP(outfile, pixels) {
   outfile.writeBinary(0:uint(32), ioendian.little); /* colors in palette */
   outfile.writeBinary(0:uint(32), ioendian.little); /* "important" colors */
 
-
-
-/*
-  // Write the BMP image header
-  outfile.writef("BM%<4u %<2u %<2u %<4u",
-                 size,
-                 0 /* reserved1 */,
-                 0 /* reserved2 */,
-                 offsetToPixelData);
-
-  // Write the DIB header BITMAPINFOHEADER
-  outfile.writef("%<4u %<4i %<4i %<2u %<2u %<4u %<4u %<4u %<4u %<4u %<4u",
-                 dibHeaderSize, cols, -rows /*neg for swap*/,
-                 1 /* 1 color plane */, bitsPerPixel,
-                 0 /* no compression */,
-                 pixelsSize,
-                 2835, 2835 /*pixels/meter print resolution=72dpi*/,
-                 0 /* colors in palette */,
-                 0 /* "important" colors */);
-*/
-
   for i in pixels.domain.dim(0) {
     var nbits = 0;
     for j in pixels.domain.dim(1) {
