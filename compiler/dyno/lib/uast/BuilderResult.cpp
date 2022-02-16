@@ -113,21 +113,22 @@ void BuilderResult::mark(Context* context) const {
   // mark the UniqueString file path
   filePath_.mark(context);
 
-  // UniqueStrings in the AST IDs will be marked in markASTList below
+  // NOTE: pair.first.mark(context) is redundant in each of these b/c any
+  // ID (pair.first) will be marked by markASTList below
 
   // mark UniqueStrings in the Locations
   for (const auto& pair : idToLocation_) {
-    pair.first.mark(context);
+    // pair.first.mark(context); // redundant
     pair.second.mark(context);
   }
 
   for (const auto& pair : idToParentId_) {
-    pair.first.mark(context);
+    // pair.first.mark(context); // redundant
     pair.second.mark(context);
   }
 
   for (const auto& pair : idToAst_) {
-    pair.first.mark(context);
+    // pair.first.mark(context); // redundant
     context->markPointer(pair.second);
   }
 
