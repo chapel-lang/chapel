@@ -134,6 +134,17 @@ ModuleSymbol* ModuleSymbol::findMainModuleByName() {
   return retval;
 }
 
+static bool isModuleOrSubmoduleFromCommandLine(ModuleSymbol* mod) {
+  for (ModuleSymbol* cur = mod;
+       cur != nullptr && cur->defPoint != nullptr;
+       cur = cur->defPoint->getModule()) {
+    if (cur->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE))
+      return true;
+  }
+
+  return false;
+}
+
 ModuleSymbol* ModuleSymbol::findMainModuleFromMainFunction() {
   bool          errorP  = false;
   FnSymbol*     matchFn = NULL;
@@ -143,7 +154,7 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromMainFunction() {
     if (strcmp("main", fn->name) == 0) {
       ModuleSymbol* fnMod = fn->getModule();
 
-      if (fnMod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) == true) {
+      if (isModuleOrSubmoduleFromCommandLine(fnMod)) {
         if (retval == NULL) {
           matchFn = fn;
           retval  = fnMod;
@@ -182,7 +193,7 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromCommandLine() {
   for_alist(expr, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-        if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) == true) {
+        if (isModuleOrSubmoduleFromCommandLine(mod)) {
           if (retval != NULL) {
             if (fLibraryCompile) {
               // "Main module" is not a valid concept in library compilation
