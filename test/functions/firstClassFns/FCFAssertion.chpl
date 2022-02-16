@@ -7,7 +7,7 @@ record R {}
 
 module M1 {
 
-  use CPtr;
+  use CTypes;
 
   class Integrator {
     type T;

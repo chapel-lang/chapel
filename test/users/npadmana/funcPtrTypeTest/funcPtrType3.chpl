@@ -1,4 +1,4 @@
-use CPtr;
+
 use CTypes;
 
 export proc f1(x : real) : real {

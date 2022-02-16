@@ -1,4 +1,4 @@
-use CPtr, CTypes;
+use CTypes;
 
 require "passNilToExtern.h";
 

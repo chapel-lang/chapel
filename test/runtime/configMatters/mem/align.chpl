@@ -1,4 +1,4 @@
-use CPtr;
+
 use CTypes;
 
 // try with size = 2*alignment

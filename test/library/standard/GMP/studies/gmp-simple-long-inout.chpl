@@ -1,4 +1,4 @@
-use GMP, CTypes, CPtr;
+use GMP, CTypes;
 
 var depth = 4: c_long;
 

@@ -1,4 +1,4 @@
-use CPtr;
+
 use CTypes;
 
 var i:c_int;

@@ -2,7 +2,7 @@ require "mydata.h";
 require "mydata.c";
 
 use CTypes;
-use CPtr;
+
 
 extern "struct mydata" record mydata { }
 

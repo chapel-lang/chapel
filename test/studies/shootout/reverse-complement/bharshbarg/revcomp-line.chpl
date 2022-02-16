@@ -4,7 +4,7 @@
    contributed by Ben Harshbarger
    derived from the Rust #3 version by Matt Brubeck
 */
-private use IO, CTypes, CPtr;
+private use IO, CTypes;
 
 /*
    This is very ugly because we don't have good IO support for

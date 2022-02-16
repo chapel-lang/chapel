@@ -1,5 +1,5 @@
 use Sys;
-use CPtr;
+
 use CTypes;
 use UnitTest;
 

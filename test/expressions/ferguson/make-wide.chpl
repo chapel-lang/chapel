@@ -1,4 +1,4 @@
-use CPtr;
+
 use CTypes;
 
 config const debug = false;

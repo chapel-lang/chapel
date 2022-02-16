@@ -1,4 +1,4 @@
-use CPtr;
+
 use CTypes;
 
 extern var y : c_ptr(c_int);

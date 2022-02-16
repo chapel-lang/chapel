@@ -1,4 +1,4 @@
-use CPtr;
+
 use CTypes;
 
 type buf_t = c_char;

@@ -2,7 +2,7 @@ var chplInt: int;
 var chplReal: real;
 
 export proc chpl_library_init_ftn() {
-  use CPtr;
+
 use CTypes;
 
   extern proc chpl_library_init(argc: c_int, argv: c_ptr(c_ptr(c_char)));

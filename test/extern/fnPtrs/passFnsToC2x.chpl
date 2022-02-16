@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 require 'externCFns.h';
 
 proc foo() {

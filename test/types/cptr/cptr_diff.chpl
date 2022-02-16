@@ -1,4 +1,4 @@
-use CPtr;
+
 use CTypes;
 
 var A:[0..10] int;

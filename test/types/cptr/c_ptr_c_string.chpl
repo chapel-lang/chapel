@@ -1,4 +1,4 @@
-use CPtr;
+
 use CTypes;
 
 proc printit(arg:c_string) {

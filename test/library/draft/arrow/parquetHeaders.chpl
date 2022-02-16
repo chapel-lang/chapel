@@ -13,7 +13,7 @@ require "/usr/local/include/parquet-glib/parquet-glib.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
+
 use CTypes;
 
 extern type time_t;

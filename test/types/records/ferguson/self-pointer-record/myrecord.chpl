@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 /* This record does something probably not allowed in the language:
    it uses the C interop mechanisms to store in one field a pointer

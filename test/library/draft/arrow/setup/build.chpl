@@ -4,7 +4,7 @@ module Build{
   
   proc main(): int{
 
-    use CTypes, CPtr;
+    use CTypes;
     var array: c_ptr(GArrowArray);
 
     {

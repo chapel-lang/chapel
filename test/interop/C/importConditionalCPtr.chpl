@@ -1,4 +1,4 @@
-import CPtr.c_ptr;
+import CTypes.c_ptr;
 
 var c: c_ptr(int);
 
