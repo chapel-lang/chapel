@@ -217,13 +217,19 @@ namespace chpl {
     }
 
     void visit(const BracketLoop* node) {
-      if (node->numChildren() == 2 && node->child(0)->isDomain() && node->child(1)->isBlock()){
+      // [A in B] foo
+      // A = node->index()
+      // B = node->iterand()
+      // if A and B exist, A in B
+      // no situation where only A
+      // [B] = node->iterand()
+      if (node->iterand()->isDomain()){
         ss_ << "[";
-        printAst(ss_, node->child(0));
+        printAst(ss_, node->iterand());
         ss_ << "] ";
-        printAst(ss_, node->child(1));
+        interpose(ss_, node->body()->stmts(), "");
       } else {
-        interpose(ss_, node->children(), "", "[", "]");
+        interpose(ss_, node->stmts(), "", "[", "]");
       }
     }
 
@@ -269,11 +275,13 @@ namespace chpl {
     }
 
     void visit(const Domain* node) {
-      if (node->numChildren() == 1 && node->child(0)->isTypeQuery()){
+      if (node->numExprs() == 1 && node->expr(0)->isTypeQuery()) {
         ss_ << "?";
-        printAst(ss_,node->child(0));
+        printAst(ss_, node->expr(0));
+      } else if (node->numExprs() == 0) {
+        // do nothing
       } else {
-        interpose(ss_, node->children(), ", ", "{", "}");
+        interpose(ss_, node->exprs(), ", ", "{", "}");
       }
     }
 
@@ -300,7 +308,7 @@ namespace chpl {
     }
 
     void visit(const Block* node) {
-      interpose(ss_, node->children(), " ");
+      interpose(ss_, node->stmts(), " ", "{","}");
     }
 
     template<typename T>
@@ -354,7 +362,7 @@ namespace chpl {
 
 
   struct UserStringVisitor {
-    std::stringstream ss_;
+    std::ostringstream ss_;
 
     void visit(const uast::Function* node) {
       std::stringstream ss;
@@ -365,6 +373,12 @@ namespace chpl {
       // storage kind
       if (node->thisFormal() != nullptr && node->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
         ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
+      }
+      // secondary methods
+      if (node->isMethod() && !node->isPrimaryMethod() && node->thisFormal()->child(0)->isIdentifier()) {
+//        assert(node->thisFormal()->numChildren() >= 1);
+//        assert(node->thisFormal()->child(0)->isIdentifier());
+        ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
       }
 
       // Function Name
@@ -405,16 +419,14 @@ namespace chpl {
   void printAst(std::ostream& os, const uast::ASTNode* node) {
     auto visitor = ChplSyntaxVisitor{};
     node->dispatch<void>(visitor);
-    os << visitor.ss_.rdbuf();
-    os << std::flush;
+    os << visitor.ss_.str();
   }
 
   /* Generic printer calling the above functions */
   void printUserString(std::ostream& os, const uast::Function* node) {
     auto visitor = UserStringVisitor{};
     node->dispatch<void>(visitor);
-    os << visitor.ss_.rdbuf();
-    os << std::flush;
+    os << visitor.ss_.str();
   }
 
 } // end chpl namespace
