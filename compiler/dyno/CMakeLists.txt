@@ -38,6 +38,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
+# generate the compile_commands.json compilation database
+# tools like the fieldsUsed linter require this
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # set include directories for -I
