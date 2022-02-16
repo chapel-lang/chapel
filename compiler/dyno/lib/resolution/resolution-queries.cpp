@@ -789,7 +789,13 @@ struct Resolver {
       }
     }
 
-    CallInfo ci(name, hasQuestionArg, actuals);
+    QualifiedType calledType;
+    if (auto calledExpr = call->calledExpression()) {
+      ResolvedExpression& r = byPostorder.byAst(calledExpr);
+      calledType = r.type();
+    }
+
+    CallInfo ci(name, calledType, hasQuestionArg, actuals);
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
 
     // save the most specific candidates in the resolution result for the id
@@ -972,19 +978,36 @@ getFormalTypes(const Function* fn,
 
 static bool
 anyFormalNeedsInstantiation(Context* context,
-                            const std::vector<types::QualifiedType>& formalTs) {
+                            const std::vector<types::QualifiedType>& formalTs,
+                            const UntypedFnSignature* untypedSig,
+                            SubstitutionsMap* substitutions) {
   bool genericOrUnknown = false;
+  int i = 0;
   for (const auto& qt : formalTs) {
     if (qt.isUnknown()) {
       genericOrUnknown = true;
       break;
     }
 
-    auto g = qt.genericityWithFields(context);
-    if (g != Type::CONCRETE) {
-      genericOrUnknown = true;
-      break;
+    bool considerGenericity = true;
+    if (substitutions != nullptr) {
+      auto formalDecl = untypedSig->formalDecl(i);
+      if (substitutions->count(formalDecl->id())) {
+        // don't consider it needing a substitution - e.g. when passing
+        // a generic type into a type argument.
+        considerGenericity = false;
+      }
     }
+
+    if (considerGenericity) {
+      auto g = qt.genericityWithFields(context);
+      if (g != Type::CONCRETE) {
+        genericOrUnknown = true;
+        break;
+      }
+    }
+
+    i++;
   }
   return genericOrUnknown;
 }
@@ -1069,7 +1092,9 @@ typedSignatureInitialQuery(Context* context,
 
     // now, construct a TypedFnSignature from the result
     std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
-    bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
+    bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
+                                                          untypedSig,
+                                                          nullptr);
     auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
     // use an empty poiFnIdsUsed since this is never an instantiation
     std::set<std::pair<ID, ID>> poiFnIdsUsed;
@@ -1806,7 +1831,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
     auto tmp = getFormalTypes(fn, r);
     formalTypes.swap(tmp);
-    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
+    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
+                                                     untypedSignature,
+                                                     &substitutions);
     where = whereClauseResult(context, fn, r, needsInstantiation);
   } else if (ad != nullptr) {
     // visit the fields
@@ -1844,7 +1871,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                           fieldType.type(),
                                           fieldType.param()));
     }
-    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
+    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
+                                                     untypedSignature,
+                                                     &substitutions);
   } else {
     assert(false && "case not handled");
   }
@@ -2609,19 +2638,17 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
-
-static
-CallResolutionResult resolveFnCall(Context* context,
-                                   const Call* call,
-                                   const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope) {
-
+static MostSpecificCandidates
+resolveFnCallFilterAndFindMostSpecific(Context* context,
+                                       const Call* call,
+                                       const CallInfo& ci,
+                                       const Scope* inScope,
+                                       const PoiScope* inPoiScope,
+                                       PoiInfo& poiInfo) {
   // search for candidates at each POI until we have found a candidate
   std::vector<const TypedFnSignature*> candidates;
   size_t firstPoiCandidate = 0;
   std::unordered_set<const Scope*> visited;
-  PoiInfo poiInfo;
 
   // first, look for candidates without using POI.
 
@@ -2675,16 +2702,49 @@ CallResolutionResult resolveFnCall(Context* context,
                                                                    inScope,
                                                                    inPoiScope);
 
-  // note any most specific candidates from POI in poiFnIdsUsed.
+  // note any most specific candidates from POI in poiInfo.
   {
     size_t n = candidates.size();
     for (size_t i = firstPoiCandidate; i < n; i++) {
       for (const TypedFnSignature* candidate : mostSpecific) {
-        if (candidate != nullptr) {
+        if (candidate == candidates[i]) {
           poiInfo.addIds(call->id(), candidate->id());
         }
       }
     }
+  }
+
+  return mostSpecific;
+}
+
+
+static
+CallResolutionResult resolveFnCall(Context* context,
+                                   const Call* call,
+                                   const CallInfo& ci,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope) {
+
+  std::vector<const TypedFnSignature*> candidates;
+  std::unordered_set<const Scope*> visited;
+  PoiInfo poiInfo;
+  MostSpecificCandidates mostSpecific;
+
+  /*
+  if (ci.calledType().kind() == QualifiedType::TYPE) {
+    assert(ci.calledType().type());
+    // if this is an invocation of a type constructor,
+    // handle that
+    auto sig = typeConstructorInitial(context, ci.calledType().type());
+    mostSpecific.setBestOnly(sig);
+  } else*/ {
+    // * search for candidates at each POI until we have found a candidate
+    // * filter and instantiate
+    // * disambiguate
+    // * note any most specific candidates from POI in poiInfo.
+    mostSpecific = resolveFnCallFilterAndFindMostSpecific(context, call, ci,
+                                                          inScope, inPoiScope,
+                                                          poiInfo);
   }
 
   // fully resolve each candidate function and gather poiScopesUsed.
