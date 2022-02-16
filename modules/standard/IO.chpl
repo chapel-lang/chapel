@@ -4090,11 +4090,11 @@ proc channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) t
 
    :arg arg: number to be written
    :arg endian: :type:`ioendian` specifies the byte order in which
-              to write the number. Defaults to ``ioendian.native``.
+              to write the number.
 
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
-proc channel.writeBinary(arg:numeric, endian:ioendian = ioendian.native) throws {
+proc channel.writeBinary(arg:numeric, endian:ioendian) throws {
   select (endian) {
     when ioendian.native {
       this.writeBinary(arg, ioendian.native);
@@ -4146,12 +4146,12 @@ proc channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native
 
    :arg arg: number to be read
    :arg endian: :type:`ioendian` specifies the byte order in which
-              to read the number. Defaults to ``ioendian.native``.
+              to read the number.
    :returns: `true` if the number was read, `false` otherwise
 
    :throws SystemError: Thrown if an error occurred reading the number.
  */
-proc channel.readBinary(ref arg:numeric, endian: ioendian=ioendian.native):bool throws {
+proc channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
   var rv: bool = false;
 
   select (endian) {
