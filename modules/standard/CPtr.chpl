@@ -31,5 +31,5 @@ module CPtr {
                          c_pointer_return, c_pointer_diff, c_ptrTo,
                          c_sizeof, c_offsetof, c_calloc, c_malloc,
                          c_aligned_alloc, c_free, isAnyCPtr, c_memmove,
-                         c_memcpy, c_memcmp, c_memset;
+                         c_memcpy, c_memcmp, c_memset, =, :, ==, !=;
 }

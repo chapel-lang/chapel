@@ -250,7 +250,7 @@ module CTypes {
       lhs[i] = rhs[i];
     }
   }
-  operator c_ptr.=(ref lhs:c_ptr, ref rhs:c_array) {
+  operator =(ref lhs:c_ptr, ref rhs:c_array) {
     if lhs.eltType != rhs.eltType then
       compilerError("element type mismatch in c_array assignment");
     lhs = c_ptrTo(rhs[0]);
@@ -275,7 +275,7 @@ module CTypes {
 
 
   pragma "no doc"
-  inline operator c_fn_ptr.:(x:c_fn_ptr, type t:c_void_ptr) {
+  inline operator :(x:c_fn_ptr, type t:c_void_ptr) {
     return __primitive("cast", c_void_ptr, x);
   }
 
@@ -286,19 +286,19 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline operator c_array.:(ref x:c_array, type t:c_ptr(?e)) where x.eltType == e {
+  inline operator :(ref x:c_array, type t:c_ptr(?e)) where x.eltType == e {
     return c_ptrTo(x[0]);
   }
   pragma "no doc"
-  inline operator c_array.:(ref x:c_array, type t:c_void_ptr) {
+  inline operator :(ref x:c_array, type t:c_void_ptr) {
     return c_ptrTo(x[0]):c_void_ptr;
   }
   pragma "no doc"
-  inline operator c_ptr.:(x:c_ptr, type t:c_void_ptr) {
+  inline operator :(x:c_ptr, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline operator c_ptr.:(x:c_void_ptr, type t:c_ptr) {
+  inline operator :(x:c_void_ptr, type t:c_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
@@ -358,17 +358,17 @@ module CTypes {
 
   // casts from c pointer to c_intptr / c_uintptr
   pragma "no doc"
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:c_intptr)
+  inline operator :(x:c_void_ptr, type t:c_intptr)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:c_uintptr)
+  inline operator :(x:c_void_ptr, type t:c_uintptr)
     return __primitive("cast", t, x);
 
   pragma "no doc"
-  inline operator c_ptr.:(x:c_ptr, type t:c_intptr)
+  inline operator :(x:c_ptr, type t:c_intptr)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline operator c_ptr.:(x:c_ptr, type t:c_uintptr)
+  inline operator :(x:c_ptr, type t:c_uintptr)
     return __primitive("cast", t, x);
 
 
@@ -390,10 +390,10 @@ module CTypes {
 
   // casts from c_intptr / c_uintptr to c_void_ptr
   pragma "no doc"
-  inline operator c_intptr.:(x:c_intptr, type t:c_void_ptr)
+  inline operator :(x:c_intptr, type t:c_void_ptr)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline operator c_uintptr.:(x:c_uintptr, type t:c_void_ptr)
+  inline operator :(x:c_uintptr, type t:c_void_ptr)
     return __primitive("cast", t, x);
 
   // casts from int / uint to c_void_ptr
@@ -412,11 +412,11 @@ module CTypes {
   }
 
   pragma "no doc"
-  inline operator c_ptr.==(a: c_ptr, b: c_void_ptr) {
+  inline operator ==(a: c_ptr, b: c_void_ptr) {
     return __primitive("ptr_eq", a, b);
   }
   pragma "no doc"
-  inline operator c_ptr.==(a: c_void_ptr, b: c_ptr) {
+  inline operator ==(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_eq", a, b);
   }
   // Don't need _nilType versions -
@@ -427,11 +427,11 @@ module CTypes {
     return __primitive("ptr_neq", a, b);
   }
   pragma "no doc"
-  inline operator c_ptr.!=(a: c_ptr, b: c_void_ptr) {
+  inline operator !=(a: c_ptr, b: c_void_ptr) {
     return __primitive("ptr_neq", a, b);
   }
   pragma "no doc"
-  inline operator c_ptr.!=(a: c_void_ptr, b: c_ptr) {
+  inline operator !=(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_neq", a, b);
   }
 
