@@ -82,7 +82,7 @@ void ErrorMessage::addDetail(ErrorMessage err) {
 }
 
 void ErrorMessage::swap(ErrorMessage& other) {
-  (void)id_;                    // mark field as used for linter
+  std::swap(id_, other.id_);
   std::swap(kind_, other.kind_);
   location_.swap(other.location_);
   message_.swap(other.message_);
