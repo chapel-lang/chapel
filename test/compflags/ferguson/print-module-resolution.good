@@ -1,23 +1,21 @@
+HaltWrappers
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CTypes.HaltWrappers
 ChapelSysCTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CTypes.ChapelSysCTypes
+Reflection
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CTypes.Reflection
 CTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CTypes
-Reflection
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.SysBasic.Reflection
-SysError
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.SysBasic.Sys.SysError
-Sys
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.SysBasic.Sys
-SysBasic
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.SysBasic
-HaltWrappers
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.HaltWrappers
-CPtr
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr
 ByteBufferHelpers
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.ByteBufferHelpers
 NVStringFactory
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.NVStringFactory
+SysError
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.SysBasic.Sys.SysError
+Sys
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.SysBasic.Sys
+SysBasic
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.SysBasic
 BytesCasts
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.Bytes.BytesCasts
 Bytes
