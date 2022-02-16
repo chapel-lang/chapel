@@ -1,2 +1,9 @@
---n=10000 # pidigits.good
---n=27    # pidigits-27-nospace.good
+#!/usr/bin/env python3
+import os
+
+# This configuration is particularly long-running under valgrind, so
+# let's skip it valgrindexe testing.
+if os.getenv('CHPL_TEST_VGRND_EXE') != 'on':
+   print('--n=10000 # pidigits.good')
+
+print('--n=27     # pidigits-27-nospace.good')
