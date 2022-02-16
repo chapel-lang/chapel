@@ -380,6 +380,10 @@ checkFunction(FnSymbol* fn) {
     }
   }
 
+  if (fn->hasFlag(FLAG_OVERRIDE) && fn->_this == NULL) {
+    USR_FATAL("'override' cannot be applied to non-method '%s'", fn->name);
+  }
+
   if (fn->retTag == RET_TYPE || fn->retTag == RET_PARAM) {
     for_formals(formal, fn) {
       if (formal->intent == INTENT_OUT ||
