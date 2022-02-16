@@ -149,7 +149,7 @@ void normalize() {
     preNormalizePostInit(at);
   }
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
 
     if (fn->hasFlag(FLAG_EXPORT) &&

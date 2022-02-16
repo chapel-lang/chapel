@@ -638,7 +638,7 @@ static void processImportExprs() {
       std::vector<BaseAST*> asts;
 
       // Collect *all* asts within this top-level module in text order
-      collect_asts(topLevelModule, asts);
+      collect_asts_preorder(topLevelModule, asts);
 
       std::stack<ResolveScope*> scopes;
       for_vector(BaseAST, item, asts) {
@@ -800,11 +800,11 @@ static void resolveUnresolvedSymExprs() {
   // that is used to determine visible functions.
   //
 
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     resolveModuleCall(call);
   }
 
-  forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
+  forv_expanding_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     resolveUnresolvedSymExpr(unresolvedSymExpr);
   }
 
@@ -2267,7 +2267,7 @@ static void buildBreadthFirstModuleList(
 
   Vec<VisibilityStmt*> next;
 
-  forv_Vec(VisibilityStmt, source, *current) {
+  forv_expanding_Vec(VisibilityStmt, source, *current) {
     if (!source) {
       break;
     } else {

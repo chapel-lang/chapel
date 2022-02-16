@@ -730,7 +730,7 @@ void createTaskFunctions(void) {
   }
 
   // Process task-creating constructs. We include 'on' blocks, too.
-  forv_Vec(BlockStmt, block, gBlockStmts) {
+  forv_expanding_Vec(BlockStmt, block, gBlockStmts) {
     if (block->isLoopStmt() == true) {
       // Loops are not a parallel block construct, so do nothing.
       // The isLoopStmt() test guards the call blockInfoGet() below

@@ -9663,7 +9663,7 @@ static void resolveExports() {
   std::vector<FnSymbol*> exps;
 
   // We need to resolve any additional functions that will be exported.
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn == initStringLiterals) {
       // initStringLiterals is exported but is explicitly resolved last since
       // code may be added to it in postFold calls while resolving other
@@ -10096,7 +10096,7 @@ static void resolveSerializers() {
     return;
   }
 
-  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
 
     if (AggregateType* at = toAggregateType(ts->type)) {
       bool hasSerializers = ensureSerializersExist(at);
@@ -10113,7 +10113,7 @@ static void resolveSerializers() {
 static void resolveDestructors() {
   std::set<Type*> wellknown = getWellKnownTypesSet();
 
-  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_REF)                     &&
         ! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
@@ -10137,7 +10137,7 @@ static void resolveDestructors() {
 static const char* autoCopyFnForType(AggregateType* at);
 
 static void resolveAutoCopies() {
-  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
@@ -10462,7 +10462,7 @@ static void insertReturnTemps() {
   // Note that we do not do this for --minimal-modules compilation
   // because we do not support sync/singles for minimal modules.
   //
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_expanding_Vec(CallExpr, call, gCallExprs) {
       if (call->list == NULL && isForallRecIterHelper(call))
         continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
