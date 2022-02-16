@@ -1207,9 +1207,12 @@ multiple modules.
 
    *Implementation Notes*.
 
-   In the current Chapel compiler implementation, the *– –main-module* flag
-   can be used to specify the module from which the main function
-   definition will be used.
+   A ``main`` function will only be considered to identify the main
+   module if it appears within a file named on the command line.
+
+   The *––main-module* flag can be used to specify the module from which
+   the main function definition will be used.
+
 
 ..
 
@@ -1281,7 +1284,17 @@ main function is equivalent to
 
 .. code-block:: chapel
 
-   proc main() {}
+     proc main() {}
+
+
+..
+
+  *Implementation Notes*.
+
+  The default ``main`` will be created only for a single module in a file
+  named on the command line or for whatever module is indicated by the
+  *--main-module* flag.
+
 
 ..
 
