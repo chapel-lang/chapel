@@ -46,6 +46,31 @@ using namespace parsing;
       assert(!ss.str().empty());                          \
     }
 
+// Helper macro for testing output from printUserString
+#define TEST_USER_STRING(funcDef, val)                               \
+    {                                                                \
+      std::ostringstream ss;                                         \
+      auto parseResult = parser->parseString("test3.chpl", funcDef); \
+      auto mod = parseResult.singleModule();                         \
+      auto funcDecl = mod->stmt(0)->toFunction();                    \
+      assert(funcDecl);                                              \
+      printUserString(ss, funcDecl);                                 \
+      std::cerr << ss.str() << std::endl;                            \
+      assert(ss.str() == val);                                       \
+    }
+
+
+#define TEST_CHPL_SYNTAX(src, val) \
+{\
+      std::ostringstream ss;                                         \
+      auto parseResult = parser->parseString("test5.chpl", src); \
+      auto mod = parseResult.singleModule();                         \
+      assert(mod);                                              \
+      printAst(ss, mod);                                 \
+      std::cerr << ss.str() << std::endl;                            \
+      assert(ss.str() == val);\
+}
+
 
 static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
     // recurse through the nodes and make sure each can call stringify()
@@ -57,8 +82,8 @@ static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
     }
     std::ostringstream ss;
     node->stringify(ss, kind);
-//    assert(!ss.str().empty());
-//    std::cerr << ss.str() << std::endl;
+    // assert(!ss.str().empty());
+    // std::cerr << ss.str() << std::endl;
 }
 
 static void test0(Parser* parser) {
@@ -239,70 +264,36 @@ static void test2(Parser* parser) {
 
 
 static void test3(Parser* parser) {
-  // stringify an empty Module
-  auto parseResult = parser->parseString("test3.chpl", "proc bar(x: int) {\n}\n"
-                                                       "proc foo(X: [?Dlocal] real) {\n}\n"
-                                                       "proc baz(A: borrowed C) {\n}\n"
-                                                       "class C {\n"
-                                                       "  proc ref setClt(rhs: borrowed C) {\n}\n}\n"
-                                                       "proc test(const ref arg:unmanaged MyClass) {\n}\n"
-                                                       "inline proc (borrowed object?).hash(): uint {\n}\n"
-                                                       "proc bark(c = new C()) {\n}\n");
-  auto mod = parseResult.singleModule();
-  std::ostringstream ss;
-//  mod->stringify(ss, CHPL_SYNTAX);
-//  assert(!ss.str().empty());
-//  stringifyNode(mod, CHPL_SYNTAX);
-  auto barDecl = mod->stmt(0)->toFunction();
-  auto fooDecl = mod->stmt(1)->toFunction();
-  auto bazDecl = mod->stmt(2)->toFunction();
-  auto cDecl = mod->stmt(3)->toClass();
-  auto testDecl = mod->stmt(4)->toFunction();
-  auto inlineDecl = mod->stmt(5)->toFunction();
-  auto barkDecl =mod->stmt(6)->toFunction();
-  assert(cDecl);
-  assert(inlineDecl);
-  auto setCltDecl = cDecl->child(0)->toFunction();
-  assert(setCltDecl);
-  assert(barDecl);
-  assert(fooDecl);
-  assert(bazDecl);
-  assert(testDecl);
-  assert(barkDecl);
-  printUserString(ss, inlineDecl);
-//  std::cerr << ss.str() << std::endl;
-  assert(!ss.str().empty());
-  ss.str("");
-  ss.clear();
-  printUserString(ss, testDecl);
-  assert(!ss.str().empty());
-//  std::cerr << ss.str() << std::endl;
-  ss.str("");
-  ss.clear();
-  printUserString(ss, setCltDecl);
-  assert(!ss.str().empty());
-//  std::cerr << ss.str() << std::endl;
-  printUserString(ss,barDecl);
-  assert(!ss.str().empty());
-//  std::cerr << ss.str() << std::endl;
-  ss.str("");
-  ss.clear();
-  printUserString(ss,barkDecl);
-  assert(!ss.str().empty());
-//  std::cerr << ss.str() << std::endl;
-  ss.str("");
-  ss.clear();
-  printUserString(ss, fooDecl);
-  assert(!ss.str().empty());
-//  std::cerr << ss.str() << std::endl;
-  ss.str("");
-  ss.clear();
 
-  printUserString(ss, bazDecl);
-  assert(!ss.str().empty());
-//  std::cerr << ss.str() << std::endl;
+  TEST_USER_STRING("proc bar(x: int) {\n}\n", "bar(x: int)")
+  TEST_USER_STRING("proc foo(X: [?Dlocal] real) {\n}\n", "foo(X: [?Dlocal] real)")
+  TEST_USER_STRING("proc baz(A: borrowed C) {\n}\n", "baz(A: borrowed C)")
+  TEST_USER_STRING("proc test(const ref arg:unmanaged MyClass) {\n}\n", "test(const ref arg: unmanaged MyClass)")
+  TEST_USER_STRING("inline proc (borrowed object?).hash(): uint {\n}\n", "hash(): uint")
+  TEST_USER_STRING("proc bark(c = new C()) {\n}\n", "bark(c = new C())")
+  TEST_USER_STRING("proc ref C.setClt2(rhs: borrowed C) {\n}\n", "ref C.setClt2(rhs: borrowed C)")
+  TEST_USER_STRING("proc main(args: [] string) {\n}", "main(args: [] string)")
 }
 
+static void test4(Parser* parser) {
+  auto parseResult = parser->parseString("test3.chpl",
+                                                       "class C {\n"
+                                                           "  proc ref setClt(rhs: borrowed C) {\n}\n}\n");
+  auto mod = parseResult.singleModule();
+  std::ostringstream ss;
+  auto cDecl = mod->stmt(0)->toClass();
+  assert(cDecl);
+
+  auto setCltDecl = cDecl->child(0)->toFunction();
+  assert(setCltDecl);
+  printUserString(ss, setCltDecl);
+  assert(ss.str() == "ref setClt(rhs: borrowed C)");
+}
+
+static void test5(Parser* parser) {
+  // unsure how best to set this up for testing
+  // TEST_CHPL_SYNTAX("module foo {\n}", "module foo {\n}")
+}
 
 int main(int argc, char** argv) {
   Context context;
@@ -314,6 +305,8 @@ int main(int argc, char** argv) {
   test1(p);
   test2(p);
   test3(p);
+  test4(p);
+  test5(p);
 
   return 0;
 }
