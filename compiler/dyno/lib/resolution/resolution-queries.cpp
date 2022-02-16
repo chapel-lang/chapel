@@ -1057,12 +1057,15 @@ typedSignatureInitialQuery(Context* context,
 
     ResolutionResultByPostorderID r;
     Resolver visitor(context, fn, r);
-    // visit the formals, return type, where clause
-    for (auto child: fn->children()) {
-      if (child != fn->body()) {
-        child->traverse(visitor);
-      }
+    // visit the formals
+    for (auto formal : fn->formals()) {
+      formal->traverse(visitor);
     }
+    // visit the where clause
+    if (auto whereClause = fn->whereClause()) {
+      whereClause->traverse(visitor);
+    }
+    // do not visit the return type or function body
 
     // now, construct a TypedFnSignature from the result
     std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
@@ -1789,14 +1792,17 @@ const TypedFnSignature* instantiateSignature(Context* context,
   TypedFnSignature::WhereClauseResult where = TypedFnSignature::WHERE_NONE;
 
   if (fn != nullptr) {
-    // visit the formals, return type, where clause
     ResolutionResultByPostorderID r;
     Resolver visitor(context, fn, substitutions, poiScope, r);
-    for (auto child: fn->children()) {
-      if (child != fn->body()) {
-        child->traverse(visitor);
-      }
+    // visit the formals
+    for (auto formal : fn->formals()) {
+      formal->traverse(visitor);
     }
+    // visit the where clause
+    if (auto whereClause = fn->whereClause()) {
+      whereClause->traverse(visitor);
+    }
+    // do not visit the return type or function body
 
     auto tmp = getFormalTypes(fn, r);
     formalTypes.swap(tmp);
