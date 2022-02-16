@@ -17,11 +17,12 @@
 
 add_executable(fieldsUsed "fieldsUsed.cpp")
 
-execute_process(COMMAND llvm-config --cxxflags OUTPUT_VARIABLE llvm_cxx_flags OUTPUT_STRIP_TRAILING_WHITESPACE)
-# target_compile_options(fieldsUsed PRIVATE ${llvm_cxx_flags})
+# this finds the target clang-cpp and also finds an appropriate LLVM version
+# Not marked as required since this linter is optional
+find_package(Clang)
 
-execute_process(COMMAND llvm-config-11 --libs support OUTPUT_VARIABLE llvm_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND llvm-config-11 --libdir OUTPUT_VARIABLE llvm_libdir OUTPUT_STRIP_TRAILING_WHITESPACE)
+message("Using LLVM version ${LLVM_FIND_VERSION}")
 
-target_link_directories(fieldsUsed PRIVATE ${llvm_libdir})
-target_link_libraries(fieldsUsed clang-cpp ${llvm_libs})
+# Using LLVM here links against the shared library.
+# Linking against LLVMSupport (which grabs libLLVMSupport.a) was giving me issues
+target_link_libraries(fieldsUsed LLVM clang-cpp)
