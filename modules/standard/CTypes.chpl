@@ -23,11 +23,19 @@
 //
 
 /*
-Access to C types for interoperability purposes
 
-This module provides access to C types.
+Defines C types and related routines to support interoperability
+
+This module provides access to common C types for the purpose of
+calling between Chapel and C, declaring variables using C's types,
+etc.  It also contains routines in support of working with C types.
+
+See :ref:`readme-extern`, and :ref:`Chapter-Interoperability` for
+additional information about interoperating between Chapel and C (or
+other languages).
 
 .. include:: ChapelSysCTypes.rst
+
 */
 
 module CTypes {

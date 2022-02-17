@@ -19,12 +19,16 @@
  */
 
 /*
-   This module contains Chapel types that can serve as C pointer
-   types for the purposes of interoperability and methods to work
-   with them.
 
-   See also :ref:`readme-extern`.
- */
+In previous releases, this module contained Chapel types that
+represent C pointers and related routines.  It has been deprecated and
+its contents have been moved to :mod:`CTypes`.
+
+.. warning::
+
+    This module has been deprecated - please use :mod:`CTypes` instead.
+*/
+
 deprecated "'CPtr' is deprecated; please use the 'CTypes' module instead"
 module CPtr {
   public use CTypes only c_void_ptr, c_nil, is_c_nil, c_ptr, c_array,

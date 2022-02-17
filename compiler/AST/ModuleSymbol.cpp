@@ -323,7 +323,7 @@ std::vector<AggregateType*> ModuleSymbol::getTopLevelClasses() {
 void ModuleSymbol::printDocs(std::ostream* file,
                              unsigned int  tabs,
                              std::string   parentName) {
-  if (this->noDocGen() || this->docsName() == "ChapelSysCTypes") {
+  if (this->noDocGen()) {
     return;
   }
 
@@ -332,6 +332,9 @@ void ModuleSymbol::printDocs(std::ostream* file,
   // after the title, sphinx will complain about a duplicate id error.
   if (!fDocsTextOnly) {
     *file << ".. default-domain:: chpl" << std::endl << std::endl;
+    if (this->docsName() == "ChapelSysCTypes") {
+      return;
+    }
     *file << ".. module:: " << this->docsName() << std::endl;
 
     if (this->doc != NULL) {
