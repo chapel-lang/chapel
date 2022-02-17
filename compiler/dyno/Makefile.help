@@ -56,6 +56,12 @@ dyno-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
 dyno-chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
 	+cd $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc && $(CMAKE) --build . --target chpldoc
 
+dyno-linters: $(LIBCOMPILER_BUILD_DIR) FORCE
+	+cd $(LIBCOMPILER_BUILD_DIR)/util && $(CMAKE) --build .
+
+run-dyno-linters: dyno-linters
+	@env PATH=$(LIBCOMPILER_BUILD_DIR)/util/linters:$(PATH) ./util/lint --compile-commands $(LIBCOMPILER_BUILD_DIR) --jobs=-1
+
 dyno: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \

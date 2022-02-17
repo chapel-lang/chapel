@@ -82,6 +82,7 @@ void ErrorMessage::addDetail(ErrorMessage err) {
 }
 
 void ErrorMessage::swap(ErrorMessage& other) {
+  std::swap(id_, other.id_);
   std::swap(kind_, other.kind_);
   location_.swap(other.location_);
   message_.swap(other.message_);
@@ -90,6 +91,10 @@ void ErrorMessage::swap(ErrorMessage& other) {
 
 void ErrorMessage::mark(Context* context) const {
   location_.mark(context);
+  for (auto& em : details_) {
+    em.mark(context);
+  }
+  id_.mark(context);
 }
 
 void ErrorMessage::updateLocation(Context* context) {

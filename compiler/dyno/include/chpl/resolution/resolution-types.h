@@ -783,10 +783,9 @@ class MostSpecificCandidates {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    for (const TypedFnSignature* sig : *this) {
+    for (const TypedFnSignature* sig : candidates) {
       context->markPointer(sig);
     }
-    (void) emptyDueToAmbiguity; // no mark needed for bool
   }
 };
 
@@ -1178,6 +1177,7 @@ class ResolvedFields {
     void mark(Context* context) const {
       name.mark(context);
       declId.mark(context);
+      type.mark(context);
     }
 
     /*
@@ -1268,6 +1268,7 @@ class ResolvedFields {
     for (auto const &elt : fields_) {
       elt.mark(context);
     }
+    context->markPointer(type_);
   }
 };
 
