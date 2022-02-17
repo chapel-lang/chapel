@@ -232,4 +232,13 @@ class BulkCopyRecords : public PassT<FnSymbol*> {
   std::map<Type*, bool> containsRef;
 };
 
+class RemoveUnnecessaryAutoCopyCalls : public PassT<FnSymbol*> {
+ public:
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+
+ private:
+  std::vector<CallExpr*> calls;
+};
+
 #endif
