@@ -91,7 +91,7 @@ types::Type::Genericity getTypeGenericity(Context* context,
 
 /**
   Compute an initial TypedFnSignature for a type constructor for a
-  particular type. If some fields of t are still generic,
+  particular type. If some fields of `t` are still generic,
   it will be necessary to call instantiateSignature on it.
  */
 const TypedFnSignature* typeConstructorInitial(Context* context,

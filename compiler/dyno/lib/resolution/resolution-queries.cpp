@@ -128,6 +128,9 @@ static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
   return QualifiedType::UNKNOWN;
 }
 
+// TODO: migrate fns out-of-body to avoid requiring inlining
+// TODO: move this and supporting functions to another file
+
 struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;
@@ -137,6 +140,7 @@ struct Resolver {
   bool useGenericFormalDefaults = false;
 
   // internal variables
+  std::vector<const Decl*> declStack;
   std::vector<const Scope*> scopeStack;
   bool signatureOnly = false;
   const Block* fnBody = nullptr;
@@ -225,6 +229,9 @@ struct Resolver {
 
       ResolvedExpression& r = byPostorder.byAst(decl);
       r.setType(qt);
+
+      if (auto formal = decl->toFormal())
+        resolveTypeQueriesFromFormalType(formal, qt);
     }
   }
 
@@ -300,12 +307,100 @@ struct Resolver {
     return isFieldOrFormal && !isSubstituted;
   }
 
+  // helper for resolveTypeQueriesFromFormalType
+  void resolveTypeQueries(const Expression* formalTypeExpr,
+                          const Type* actualType) {
+
+    // Give up if the type is nullptr or UnknownType or AnyType
+    if (actualType == nullptr ||
+        actualType->isUnknownType() ||
+        actualType->isAnyType())
+      return;
+
+    assert(formalTypeExpr != nullptr);
+
+    // Give up if typeExpr is an Identifier
+    if (formalTypeExpr->isIdentifier())
+      return;
+
+    // Set the type that we know (since it was passed in)
+    ResolvedExpression& result = byPostorder.byAst(formalTypeExpr);
+    result.setType(QualifiedType(QualifiedType::TYPE, actualType));
+
+    // Make recursive calls as needed to handle any TypeQuery nodes
+    // nested within typeExpr.
+    if (auto call = formalTypeExpr->toFnCall()) {
+      // Error if it is not calling a type constructor
+      auto actualCt = actualType->toCompositeType();
+
+      if (actualCt == nullptr) {
+        context->error(formalTypeExpr, "Type construction call expected");
+        return;
+      } else if (!actualCt->instantiatedFromCompositeType()) {
+        context->error(formalTypeExpr, "Instantiated type expected");
+        return;
+      }
+
+      auto baseCt = actualCt->instantiatedFromCompositeType();
+      auto sig = typeConstructorInitial(context, baseCt);
+
+      // Generate a simple CallInfo for the call
+      auto callInfo = CallInfo(call);
+      // generate a FormalActualMap
+      auto faMap = FormalActualMap(sig, callInfo);
+
+      // Now, consider the formals
+      int nActuals = call->numActuals();
+      for (int i = 0; i < nActuals; i++) {
+        // ignore actuals like ?
+        // since these aren't type queries & don't match a formal
+        if (auto id = call->actual(i)->toIdentifier())
+          if (id->name() == USTR("?"))
+            continue;
+
+        const FormalActual* fa = faMap.byActualIdx(i);
+        assert(fa != nullptr && fa->formal() != nullptr);
+
+        // get the substitution for that field from the CompositeType
+        // and recurse with the result to set types for nested TypeQuery nodes
+        const uast::Decl* field = fa->formal();
+        const SubstitutionsMap& subs = actualCt->substitutions();
+        auto search = subs.find(field->id());
+        if (search != subs.end()) {
+          QualifiedType fieldType = search->second;
+          auto actual = call->actual(i);
+          resolveTypeQueries(actual, fieldType.type());
+        }
+      }
+    }
+  }
+
+  /* When resolving a function with a TypeQuery, we need to
+     resolve the type that is queried, since it can be used
+     on its own later.
+
+     E.g.
+
+       proc a(arg: ?t) { }
+       proc b(arg: GenericRecord(?u)) { }
+
+     This function resolves the types of all TypeQuery nodes
+     contained in the passed Formal (by updating 'byPostorder').
+   */
+  void resolveTypeQueriesFromFormalType(const Formal* formal,
+                                        QualifiedType formalType) {
+    if (auto typeExpr = formal->typeExpression()) {
+      resolveTypeQueries(typeExpr, formalType.type());
+    }
+  }
+
   QualifiedType typeForId(const ID& id, bool localGenericToUnknown) {
     // if the id is contained within this symbol,
     // get the type information from the resolution result.
     if (id.symbolPath() == symbol->id().symbolPath() && id.postOrderId() >= 0) {
       QualifiedType ret = byPostorder.byId(id).type();
-      if (ret.typeGenericity() != Type::CONCRETE) {
+      auto g = getTypeGenericity(context, ret.type());
+      if (g != Type::CONCRETE) {
         if (shouldUseUnknownTypeForGeneric(id)) {
           // if id refers to a field or formal that needs to be instantiated,
           // replace the type with UnknownType since we can't compute
@@ -329,10 +424,18 @@ struct Resolver {
     if (createsScope(ast->tag())) {
       scopeStack.push_back(scopeForId(context, ast->id()));
     }
+    if (auto d = ast->toDecl()) {
+      declStack.push_back(d);
+    }
   }
   void exitScope(const ASTNode* ast) {
     if (createsScope(ast->tag())) {
+      assert(!scopeStack.empty());
       scopeStack.pop_back();
+    }
+    if (ast->isDecl()) {
+      assert(!declStack.empty());
+      declStack.pop_back();
     }
   }
 
@@ -348,6 +451,14 @@ struct Resolver {
     assert(scopeStack.size() > 0);
     const Scope* scope = scopeStack.back();
     ResolvedExpression& result = byPostorder.byAst(ident);
+
+    // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
+    assert(declStack.size() > 0);
+    const Decl* inDecl = declStack.back();
+    if (inDecl->isVarLikeDecl() && ident->name() == USTR("?")) {
+      result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
+      return false;
+    }
 
     LookupConfig config = LOOKUP_DECLS |
                           LOOKUP_IMPORT_AND_USE |
@@ -380,6 +491,55 @@ struct Resolver {
     return false;
   }
   void exit(const Identifier* ident) {
+  }
+
+  bool enter(const TypeQuery* tq) {
+    // Consider 'proc f(arg:?t)'
+    //   * if there is no substitution for 'arg', 't' should be AnyType
+    //   * if there is a substitution for 'arg', 't' should be computed from it
+
+    // Find the parent Formal and check for a substitution for that Formal
+    const Formal* formal = nullptr;
+    bool foundFormalSubstitution = false;
+    QualifiedType foundFormalType;
+    for (auto it = declStack.rbegin(); it != declStack.rend(); ++it) {
+      const Decl* d = *it;
+      if (auto fml = d->toFormal()) {
+        formal = fml;
+        break;
+      }
+    }
+    if (formal != nullptr) {
+      if (substitutions != nullptr) {
+        auto search = substitutions->find(formal->id());
+        if (search != substitutions->end()) {
+          foundFormalSubstitution = true;
+          foundFormalType = search->second;
+        }
+      }
+    }
+
+    ResolvedExpression& result = byPostorder.byAst(tq);
+
+    if (!foundFormalSubstitution) {
+      // No substitution (i.e. initial signature) so use AnyType
+      result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
+    } else {
+
+      if (result.type().kind() != QualifiedType::UNKNOWN &&
+          result.type().type() != nullptr) {
+        // Looks like we already computed it, so do nothing else
+      } else {
+        // Found a substitution after instantiating, so gather the components
+        // of the type. We do this in a way that handles all TypeQuery
+        // nodes within the Formal uAST node.
+        resolveTypeQueriesFromFormalType(formal, foundFormalType);
+      }
+    }
+
+    return false;
+  }
+  void exit(const TypeQuery* tq) {
   }
 
   bool enter(const NamedDecl* decl) {
@@ -569,6 +729,10 @@ struct Resolver {
         }
       }
 
+      // forget the param value if the QualifiedType is not param
+      if (qtKind != QualifiedType::PARAM)
+        paramPtr = nullptr;
+
       ResolvedExpression& result = byPostorder.byAst(decl);
       result.setType(QualifiedType(qtKind, typePtr, paramPtr));
     }
@@ -583,7 +747,8 @@ struct Resolver {
     assert(scopeStack.size() > 0);
     const Scope* scope = scopeStack.back();
 
-    // TODO should we move this to a class method that takes in the context and call?
+    // TODO should we move this to a class method that takes in the
+    // context and call?
     // Generate a CallInfo for the call
     UniqueString name;
 
@@ -655,6 +820,25 @@ struct Resolver {
 
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo());
+  }
+  bool enter(const Dot* dot) {
+    return true;
+  }
+  void exit(const Dot* dot) {
+    if (dot->field() == USTR("type")) {
+      ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
+      const Type* receiverType;
+      ResolvedExpression& r = byPostorder.byAst(dot);
+
+      if (receiver.type().type() != nullptr) {
+        receiverType = receiver.type().type();
+      } else {
+        receiverType = ErroneousType::get(context);
+      }
+      r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
+    }
+
+    // TODO: resolve field accessors / parenless methods
   }
 
   bool enter(const ASTNode* ast) {
@@ -850,53 +1034,68 @@ static ID parentFunctionId(Context* context, ID functionId) {
   return ID();
 }
 
+static const TypedFnSignature* const&
+typedSignatureInitialQuery(Context* context,
+                           const UntypedFnSignature* untypedSig) {
+  QUERY_BEGIN(typedSignatureInitialQuery, context, untypedSig);
+
+  const TypedFnSignature* result = nullptr;
+  const ASTNode* ast = parsing::idToAst(context, untypedSig->id());
+  const Function* fn = ast->toFunction();
+
+  if (fn != nullptr) {
+    // look at the parent scopes to find the parent function, if any
+    const UntypedFnSignature* parentFnUntyped = nullptr;
+    const TypedFnSignature* parentFnTyped = nullptr;
+    ID parentFnId = parentFunctionId(context, fn->id());
+    if (!parentFnId.isEmpty()) {
+      auto parentAst = parsing::idToAst(context, parentFnId);
+      auto parentFn = parentAst->toFunction();
+      parentFnUntyped = UntypedFnSignature::get(context, parentFn);
+      parentFnTyped = typedSignatureInitial(context, parentFnUntyped);
+    }
+
+    ResolutionResultByPostorderID r;
+    Resolver visitor(context, fn, r);
+    // visit the formals
+    for (auto formal : fn->formals()) {
+      formal->traverse(visitor);
+    }
+    // visit the where clause
+    if (auto whereClause = fn->whereClause()) {
+      whereClause->traverse(visitor);
+    }
+    // do not visit the return type or function body
+
+    // now, construct a TypedFnSignature from the result
+    std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
+    bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
+    auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
+    // use an empty poiFnIdsUsed since this is never an instantiation
+    std::set<std::pair<ID, ID>> poiFnIdsUsed;
+    // same for formalsInstantiated
+    Bitmap formalsInstantiated;
+
+    const auto& got = typedSignatureQuery(context,
+                                          untypedSig,
+                                          std::move(formalTypes),
+                                          whereResult,
+                                          needsInstantiation,
+                                          /* instantiatedFrom */ nullptr,
+                                          /* parentFn */ parentFnTyped,
+                                          formalsInstantiated);
+    result = got.get();
+  }
+
+  return QUERY_END(result);
+}
+
 const TypedFnSignature*
 typedSignatureInitial(Context* context,
                       const UntypedFnSignature* untypedSig) {
 
-  const ASTNode* ast = parsing::idToAst(context, untypedSig->id());
-  const Function* fn = ast->toFunction();
+  return typedSignatureInitialQuery(context, untypedSig);
 
-  if (fn == nullptr) {
-    return nullptr;
-  }
-
-  // look at the parent scopes to find the parent function, if any
-  const UntypedFnSignature* parentFnUntyped = nullptr;
-  const TypedFnSignature* parentFnTyped = nullptr;
-  ID parentFnId = parentFunctionId(context, fn->id());
-  if (!parentFnId.isEmpty()) {
-    auto parentAst = parsing::idToAst(context, parentFnId);
-    auto parentFn = parentAst->toFunction();
-    parentFnUntyped = UntypedFnSignature::get(context, parentFn);
-    parentFnTyped = typedSignatureInitial(context, parentFnUntyped);
-  }
-
-  ResolutionResultByPostorderID r;
-  Resolver visitor(context, fn, r);
-  // visit the formals, return type, where clause
-  for (auto child: fn->children()) {
-    child->traverse(visitor);
-  }
-
-  // now, construct a TypedFnSignature from the result
-  std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
-  bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
-  auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
-  // use an empty poiFnIdsUsed since this is never an instantiation
-  std::set<std::pair<ID, ID>> poiFnIdsUsed;
-  // same for formalsInstantiated
-  Bitmap formalsInstantiated;
-
-  const auto& result = typedSignatureQuery(context,
-                                           untypedSig,
-                                           std::move(formalTypes),
-                                           whereResult,
-                                           needsInstantiation,
-                                           /* instantiatedFrom */ nullptr,
-                                           /* parentFn */ parentFnTyped,
-                                           formalsInstantiated);
-  return result.get();
 }
 
 // Get a Type for an AggregateDecl
@@ -1593,12 +1792,17 @@ const TypedFnSignature* instantiateSignature(Context* context,
   TypedFnSignature::WhereClauseResult where = TypedFnSignature::WHERE_NONE;
 
   if (fn != nullptr) {
-    // visit the formals, return type, where clause
     ResolutionResultByPostorderID r;
     Resolver visitor(context, fn, substitutions, poiScope, r);
-    for (auto child: fn->children()) {
-      child->traverse(visitor);
+    // visit the formals
+    for (auto formal : fn->formals()) {
+      formal->traverse(visitor);
     }
+    // visit the where clause
+    if (auto whereClause = fn->whereClause()) {
+      whereClause->traverse(visitor);
+    }
+    // do not visit the return type or function body
 
     auto tmp = getFormalTypes(fn, r);
     formalTypes.swap(tmp);
@@ -1690,7 +1894,7 @@ resolveFunctionByInfoQuery(Context* context,
     ResolutionResultByPostorderID resolutionById;
     Resolver visitor(context, fn, poiScope, sig, resolutionById);
 
-    // visit the body
+    // visit the function body
     fn->body()->traverse(visitor);
 
     resolvedPoiInfo.swap(visitor.poiInfo);
@@ -1905,7 +2109,26 @@ returnTypeForTypeCtorQuery(Context* context,
       const QualifiedType& formalType = sig->formalType(i);
       // Note that the formalDecl should already be a fieldDecl
       // based on typeConstructorInitialQuery.
-      subs.insert({formalDecl->id(), formalType});
+      bool hasInitExpression = false;
+      if (auto vd = formalDecl->toVarLikeDecl())
+        if (vd->initExpression() != nullptr)
+          hasInitExpression = true;
+
+      if (formalType.type()->isAnyType() && !hasInitExpression) {
+        // Ignore this substitution - easier to just leave it out
+        // of the map entirely.
+        // Note that we explicitly put a sub for AnyType for generics
+        // with default, where the default is not used. E.g.
+        //    record R { type t = int; }
+        //    type RR = R(?);
+        //    var x: RR;
+        // is a compilation error because x has generic type.
+        // In order to support that pattern, we need to be able to
+        // represent that RR is a version of R where it's not behaving
+        // as generic-with-default and substituting in AnyType does that.
+      } else {
+        subs.insert({formalDecl->id(), formalType});
+      }
     }
 
     // get a type using the substitutions
@@ -1983,7 +2206,6 @@ static const TypedFnSignature*
 doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& call) {
-
   const ASTNode* ast = nullptr;
   const Function* fn = nullptr;
 
