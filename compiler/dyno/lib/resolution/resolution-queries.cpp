@@ -532,7 +532,7 @@ struct Resolver {
       } else {
         // Found a substitution after instantiating, so gather the components
         // of the type. We do this in a way that handles all TypeQuery
-        // nodes withing the Formal uAST node.
+        // nodes within the Formal uAST node.
         resolveTypeQueriesFromFormalType(formal, foundFormalType);
       }
     }
