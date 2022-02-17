@@ -134,7 +134,8 @@ ModuleSymbol* ModuleSymbol::findMainModuleByName() {
   return retval;
 }
 
-static bool isModuleOrSubmoduleFromCommandLine(ModuleSymbol* mod) {
+// is it a module or submodule from a file named on the command line?
+static bool isModOrSubmodFromCommandLine(ModuleSymbol* mod) {
   for (ModuleSymbol* cur = mod;
        cur != nullptr && cur->defPoint != nullptr;
        cur = cur->defPoint->getModule()) {
@@ -154,7 +155,7 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromMainFunction() {
     if (strcmp("main", fn->name) == 0) {
       ModuleSymbol* fnMod = fn->getModule();
 
-      if (isModuleOrSubmoduleFromCommandLine(fnMod)) {
+      if (isModOrSubmodFromCommandLine(fnMod)) {
         if (retval == NULL) {
           matchFn = fn;
           retval  = fnMod;
@@ -193,7 +194,7 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromCommandLine() {
   for_alist(expr, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-        if (isModuleOrSubmoduleFromCommandLine(mod)) {
+        if (isModOrSubmodFromCommandLine(mod)) {
           if (retval != NULL) {
             if (fLibraryCompile) {
               // "Main module" is not a valid concept in library compilation
