@@ -204,4 +204,13 @@ class AddModuleInitBlocks : public PassT<ModuleSymbol*> {
   void process(ModuleSymbol* mod) override;
 };
 
+class LocalizeGlobals : public PassT<FnSymbol*> {
+ public:
+  void process(FnSymbol* fn) override;
+
+ private:
+  Map<Symbol*, VarSymbol*> globals;
+  std::vector<SymExpr*> symExprs;
+};
+
 #endif
