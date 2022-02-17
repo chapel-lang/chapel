@@ -162,23 +162,24 @@ struct Resolver {
     return PoiInfo(poiScope);
   }
 
+ private:
   Resolver(Context* context,
            const ASTNode* symbol,
            ResolutionResultByPostorderID& byPostorder,
-           const PoiScope* poiScope,
-           /*TODO remove this */ bool internalUse)
+           const PoiScope* poiScope)
     : context(context), symbol(symbol), poiScope(poiScope),
       byPostorder(byPostorder), poiInfo(makePoiInfo(poiScope)) {
 
     enterScope(symbol);
   }
+ public:
 
   // set up Resolver to resolve a Module
   static Resolver
   moduleResolver(Context* context,
                  const Module* mod,
                  ResolutionResultByPostorderID& byPostorder) {
-    auto ret = Resolver(context, mod, byPostorder, nullptr, true);
+    auto ret = Resolver(context, mod, byPostorder, nullptr);
     byPostorder.setupForSymbol(mod);
     return ret;
   }
@@ -188,7 +189,7 @@ struct Resolver {
   initialSignatureResolver(Context* context,
                            const Function* fn,
                            ResolutionResultByPostorderID& byPostorder) {
-    auto ret = Resolver(context, fn, byPostorder, nullptr, true);
+    auto ret = Resolver(context, fn, byPostorder, nullptr);
     ret.signatureOnly = true;
     ret.fnBody = fn->body();
     byPostorder.setupForSignature(fn);
@@ -202,7 +203,7 @@ struct Resolver {
                                 const SubstitutionsMap& substitutions,
                                 const PoiScope* poiScope,
                                 ResolutionResultByPostorderID& byPostorder) {
-    auto ret = Resolver(context, fn, byPostorder, poiScope, true);
+    auto ret = Resolver(context, fn, byPostorder, poiScope);
     ret.substitutions = &substitutions;
     ret.signatureOnly = true;
     ret.fnBody = fn->body();
@@ -218,7 +219,7 @@ struct Resolver {
                    const PoiScope* poiScope,
                    const TypedFnSignature* typedFnSignature,
                    ResolutionResultByPostorderID& byPostorder) {
-    auto ret = Resolver(context, fn, byPostorder, poiScope, true);
+    auto ret = Resolver(context, fn, byPostorder, poiScope);
     ret.typedSignature = typedFnSignature;
     ret.signatureOnly = false;
     ret.fnBody = fn->body();
@@ -252,7 +253,7 @@ struct Resolver {
                         const AggregateDecl* decl,
                         ResolutionResultByPostorderID& byPostorder,
                         bool useGenericFormalDefaults) {
-    auto ret = Resolver(context, decl, byPostorder, nullptr, true);
+    auto ret = Resolver(context, decl, byPostorder, nullptr);
     ret.useGenericFormalDefaults = useGenericFormalDefaults;
     byPostorder.setupForSymbol(decl);
     return ret;
@@ -266,7 +267,7 @@ struct Resolver {
                              const PoiScope* poiScope,
                              ResolutionResultByPostorderID& byPostorder,
                              bool useGenericFormalDefaults) {
-    auto ret = Resolver(context, decl, byPostorder, poiScope, true);
+    auto ret = Resolver(context, decl, byPostorder, poiScope);
     ret.substitutions = &substitutions;
     ret.useGenericFormalDefaults = useGenericFormalDefaults;
     byPostorder.setupForSymbol(decl);
