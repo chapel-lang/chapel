@@ -57,7 +57,7 @@ module CTypes {
   extern type c_double = real(64);
 
   // Former CPtr contents start here
-  
+
   /* A Chapel type alias for 'void*' in C. */
   extern type c_void_ptr = chpl__c_void_ptr;
 
