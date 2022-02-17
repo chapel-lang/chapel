@@ -203,7 +203,8 @@ module BigInteger {
 
   pragma "ignore noinit"
   record bigint {
-    /* The underlying GMP C structure */
+    // The underlying GMP C structure
+    pragma "no doc"
     var mpz      : mpz_t;              // A dynamic-vector of C integers
 
     pragma "no doc"
@@ -368,12 +369,12 @@ module BigInteger {
       return ret.safeCast(int);
     }
 
-    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the :var:`mpz` field instead"
+    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the result of :proc:`getImpl` instead"
     proc numLimbs : uint {
       return chpl_gmp_mpz_nlimbs(this.mpz);
     }
 
-    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the :var:`mpz` field instead"
+    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the result of :proc:`getImpl` instead"
     proc get_limbn(n: integral) : uint {
       var   ret: uint;
 
@@ -394,7 +395,18 @@ module BigInteger {
       return ret;
     }
 
+    deprecated "This method is deprecated, please use :proc:`getImpl` instead"
     proc mpzStruct() : __mpz_struct {
+      return getImpl();
+    }
+
+    /* Return the underlying implementation of :record:`bigint`.  Currently,
+       that type is ``__mpz_struct``.
+
+       This method is provided as a convenience but its result may change in the
+       future.
+    */
+    proc getImpl(): __mpz_struct {
       var ret: __mpz_struct;
 
       if _local {
