@@ -1,5 +1,4 @@
 
-
 /*
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
@@ -130,6 +129,7 @@ module LAPACK {
   use LapackImpl;
   use CTypes;
 
+
   /*
     Specifies which header filename to include, based on the lapack
     implementation.
@@ -218,8 +218,9 @@ pragma "no doc"
 module ClassicLAPACK {
 
 use CTypes;
-use CTypes;
+
 use LAPACK;
+
 
 pragma "no doc"
 extern proc lapack_make_complex_float(re : c_float, im : c_float) : complex(64);
