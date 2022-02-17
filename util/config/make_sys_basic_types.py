@@ -219,7 +219,6 @@ def get_sys_c_types(docs=False):
         sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
               ';'.format(**locals()))
     sys_c_types.append('}')
-#    sys_c_types.append('}');  # close module scope
 
     return '\n'.join(sys_c_types)
 
