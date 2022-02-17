@@ -21,6 +21,7 @@
 #ifndef _PASSES_H_
 #define _PASSES_H_
 
+#include "FnSymbol.h"
 #include "symbol.h"
 #include "PassManager.h"
 
@@ -179,6 +180,28 @@ class ComputeCallSitesPass : public PassT<FnSymbol*> {
 
 class FlattenClasses : public PassT<TypeSymbol*> {
   void process(TypeSymbol* ts) override;
+};
+
+// addInitGuards.cpp
+class AddInitGuards : public PassT<ModuleSymbol*> {
+ public:
+  AddInitGuards();
+  bool shouldProcess(ModuleSymbol* mod) override;
+  void process(ModuleSymbol* mod) override;
+
+  static FnSymbol* getOrCreatePreInitFn();
+  static void addInitGuard(FnSymbol* fn, FnSymbol* preInitfn);
+  static void addPrintModInitOrder(FnSymbol* fn);
+
+ private:
+  // This is the global preInitFn
+  FnSymbol* preInitFn;
+};
+
+class AddModuleInitBlocks : public PassT<ModuleSymbol*> {
+ public:
+  bool shouldProcess(ModuleSymbol* mod) override;
+  void process(ModuleSymbol* mod) override;
 };
 
 #endif

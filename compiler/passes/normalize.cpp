@@ -4588,6 +4588,7 @@ static void find_printModuleInit_stuff() {
     if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
       gModuleInitIndentLevel = toVarSymbol(symbol);
       INT_ASSERT(gModuleInitIndentLevel);
+      // Q why  doesn't this break out of the loop
     }
   }
 }
