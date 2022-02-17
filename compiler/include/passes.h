@@ -213,4 +213,23 @@ class LocalizeGlobals : public PassT<FnSymbol*> {
   std::vector<SymExpr*> symExprs;
 };
 
+class BulkCopyRecords : public PassT<FnSymbol*> {
+ public:
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+
+  // TODO: this is a "pure" function on types, but uses
+  // a map for caching. Could break out
+  bool typeContainsRef(Type* t, bool isRoot = true);
+
+  bool isTrivialAssignment(FnSymbol* fn);
+
+  static void replaceSimpleAssignment(FnSymbol* fn);
+
+  static bool isAssignment(FnSymbol* fn);
+
+ private:
+  std::map<Type*, bool> containsRef;
+};
+
 #endif
