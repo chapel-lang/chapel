@@ -189,7 +189,7 @@ static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName);
 static Expr* foldTryCond(Expr* expr);
 
 static void unmarkDefaultedGenerics();
-static void resolveUses(ModuleSymbol* mod, const char* path);
+static void resolveUsesAndModule(ModuleSymbol* mod, const char* path);
 static void resolveSupportForModuleDeinits();
 static void resolveExports();
 static void resolveEnumTypes();
@@ -9460,10 +9460,18 @@ void resolve() {
 
   resolveObviousGlobals();
 
-  resolveUses(ModuleSymbol::mainModule(), "");
+  resolveUsesAndModule(ModuleSymbol::mainModule(), "");
+
+  // Also resolve modules mentioned on command line
+  // Could rely on init calls in chpl_gen_main for this.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
+      resolveUsesAndModule(mod, "");
+    }
+  }
 
   if (printModuleInitModule)
-    resolveUses(printModuleInitModule, "");
+    resolveUsesAndModule(printModuleInitModule, "");
 
   if (chpl_gen_main)
     resolveFunction(chpl_gen_main);
@@ -9590,7 +9598,7 @@ static void unmarkDefaultedGenerics() {
 
 static std::set<ModuleSymbol*> moduleInitResolved;
 
-static void resolveUses(ModuleSymbol* mod, const char* path) {
+static void resolveUsesAndModule(ModuleSymbol* mod, const char* path) {
   if (moduleInitResolved.count(mod) == 0) {
     moduleInitResolved.insert(mod);
 
@@ -9604,12 +9612,12 @@ static void resolveUses(ModuleSymbol* mod, const char* path) {
 
     if (ModuleSymbol* parent = mod->defPoint->getModule()) {
       if (parent != theProgram && parent != rootModule) {
-        resolveUses(parent, path);
+        resolveUsesAndModule(parent, path);
       }
     }
 
     for_vector(ModuleSymbol, usedMod, mod->modUseList) {
-      resolveUses(usedMod, path);
+      resolveUsesAndModule(usedMod, path);
     }
 
     if (fPrintModuleResolution == true) {

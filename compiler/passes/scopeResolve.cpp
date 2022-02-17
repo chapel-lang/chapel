@@ -2848,9 +2848,17 @@ static void removeUnusedModules() {
   if (printModuleInitModule)
     markUsedModule(usedModules, printModuleInitModule);
 
+  // mark all modules named on the command line
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE))
+      markUsedModule(usedModules, mod);
+  }
+
   // Now remove any module not in the set
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-    if (usedModules.count(mod) == 0) {
+    bool removeIt = (usedModules.count(mod) == 0);
+
+    if (removeIt) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();
 

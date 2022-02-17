@@ -24,7 +24,8 @@
 
 //
 // HOW TO ADD A FLAG:
-// - add an entry (sorted alphabetically) to the list in flags_list.h
+// - add an entry (sorted alphabetically) to the list in
+//   compiler/dyno/include/chpl/uast/PragmaList.h
 // - to add the flag to a symbol, use Symbol::addFlag(Flag)
 // - to check whether a symbol has a flag, use Symbol::hasFlag(Flag)
 //
