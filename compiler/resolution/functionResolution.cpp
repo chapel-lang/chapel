@@ -1819,90 +1819,157 @@ getParentBlock(Expr* expr) {
   return NULL;
 }
 
+enum MoreVisibleResult {
+  FOUND_F1_FIRST,
+  FOUND_F2_FIRST,
+  FOUND_BOTH,
+  FOUND_NEITHER
+};
 
 //
-// helper routine for isMoreVisible (below);
-// returns true if fn1 is more visible than fn2
+// helper routines for isMoreVisible (below);
 //
+
 static bool
-isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
-                      Vec<BlockStmt*>& visited) {
-  //
-  // fn1 is more visible
-  //
-  if (fn1->defPoint->parentExpr == block)
-    return true;
+isDefinedInBlock(BlockStmt* block, FnSymbol* fn) {
+  return (fn->defPoint->parentExpr == block);
+}
 
-  //
-  // fn2 is more visible
-  //
-  if (fn2->defPoint->parentExpr == block)
-    return false;
-
-  visited.set_add(block);
-
-  //
-  // return true unless fn2 is more visible,
-  // including the case where neither are visible
-  //
-
-  //
-  // ensure f2 is not more visible via parent block, and recurse
-  //
-  if (BlockStmt* parentBlock = getParentBlock(block))
-    if (!visited.set_in(parentBlock))
-      if (! isMoreVisibleInternal(parentBlock, fn1, fn2, visited))
-        return false;
-
-  //
-  // ensure f2 is not more visible via module uses, and recurse
-  //
+static bool
+isDefinedInUseImport(BlockStmt* block, FnSymbol* fn,
+                     bool allowPrivateUseImp, bool forShadowScope,
+                     Vec<BlockStmt*>& visited) {
   if (block && block->useList) {
+    visited.set_add(block);
+
     for_actuals(expr, block->useList) {
+      bool checkThisInShadowScope = false;
+      if (UseStmt* use = toUseStmt(expr)) {
+        if (use->isPrivate)
+          checkThisInShadowScope = true;
+      }
+
+      // Skip for now things that don't match the request
+      // to find use/import for the shadow scope (or not).
+      // (these will be handled in a different call to this function)
+      if (forShadowScope != checkThisInShadowScope)
+        continue;
+
+      bool isPrivate = false;
       SymExpr* se = NULL;
       if (UseStmt* use = toUseStmt(expr)) {
         se = toSymExpr(use->src);
-      } else if (ImportStmt* import = toImportStmt(expr)) {
-        se = toSymExpr(import->src);
+        isPrivate = use->isPrivate;
+      } else if (ImportStmt* imp = toImportStmt(expr)) {
+        se = toSymExpr(imp->src);
+        isPrivate = imp->isPrivate;
       }
       INT_ASSERT(se);
-      // We only care about uses of modules during function resolution, not
-      // uses of enums.
+
+      // Skip things that are private when considering a nested use/import 
+      if (isPrivate && !allowPrivateUseImp)
+        continue;
+
+      // ignore uses of enums here
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-        if (!visited.set_in(mod->block))
-          if (! isMoreVisibleInternal(mod->block, fn1, fn2, visited))
-            return false;
+        // is it defined in the use/imported module?
+        if (isDefinedInBlock(mod->block, fn))
+          return true;
+        // is it defined in something used/imported in that module?
+        if (!visited.set_in(mod->block)) {
+          if (isDefinedInUseImport(mod->block, fn,
+                                   /* allowPrivateUseImp */ false,
+                                   /* forShadowScope */ false,
+                                   visited))
+            return true;
+        }
       }
     }
   }
 
-  return true;
+  return false;
 }
 
+static MoreVisibleResult  
+isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
+                      Vec<BlockStmt*>& visited1, Vec<BlockStmt*>& visited2) {
+
+  if (visited1.set_in(block) && visited2.set_in(block))
+    return FOUND_NEITHER; 
+
+  // first, check things in the current block or
+  // from use/import that don't use a shadow scope
+  bool foundHere1 = isDefinedInBlock(block, fn1) ||
+                    isDefinedInUseImport(block, fn1,
+                                         /* allowPrivateUseImp */ true,
+                                         /* forShadowScope */ false,
+                                         visited1);
+
+  bool foundHere2 = isDefinedInBlock(block, fn2) ||
+                    isDefinedInUseImport(block, fn2,
+                                         /* allowPrivateUseImp */ true,
+                                         /* forShadowScope */ false,
+                                         visited2);
+
+  if (foundHere1 && foundHere2)
+    return FOUND_BOTH;
+
+  if (foundHere1)
+    return FOUND_F1_FIRST;
+
+  if (foundHere2)
+    return FOUND_F2_FIRST;
+
+  // next, check anything from a use/import in the
+  // current block that uses a shadow scope
+  bool foundShadowHere1 = isDefinedInUseImport(block, fn1,
+                                               /* allowPrivateUseImp */ true,
+                                               /* forShadowScope */ true,
+                                               visited1);
+
+  bool foundShadowHere2 = isDefinedInUseImport(block, fn2,
+                                               /* allowPrivateUseImp */ true,
+                                               /* forShadowScope */ true,
+                                               visited2);
+
+  if (foundShadowHere1 && foundShadowHere2)
+    return FOUND_BOTH;
+
+  if (foundShadowHere1)
+    return FOUND_F1_FIRST;
+
+  if (foundShadowHere2)
+    return FOUND_F2_FIRST;
+
+  // next, check parent scope, recursively
+  if (BlockStmt* parentBlock = getParentBlock(block)) {
+    return isMoreVisibleInternal(parentBlock, fn1, fn2, visited1, visited2);
+  }
+
+  return FOUND_NEITHER;
+}
 
 //
-// return true if fn1 is more visible than fn2 from expr
+// return whether fn1 is more visible than fn2 from expr
 //
-// assumption: fn1 and fn2 are visible from expr; if this assumption
-//             is violated, this function will return true
-//
-static bool
+static MoreVisibleResult  
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
   //
   // common-case check to see if functions have equal visibility
   //
   if (fn1->defPoint->parentExpr == fn2->defPoint->parentExpr) {
-    return false;
+    return FOUND_BOTH;
   }
 
   //
   // call helper function with visited set to avoid infinite recursion
   //
-  Vec<BlockStmt*> visited;
+  Vec<BlockStmt*> visited1;
+  Vec<BlockStmt*> visited2;
   BlockStmt* block = toBlockStmt(expr);
   if (!block)
     block = getParentBlock(expr);
-  return isMoreVisibleInternal(block, fn1, fn2, visited);
+  return isMoreVisibleInternal(block, fn1, fn2, visited1, visited2);
 }
 
 
@@ -3489,7 +3556,7 @@ static void reportHijackingError(CallExpr* call,
 {
   USR_FATAL_CONT(call, "multiple overload sets are applicable to this call");
 
-  if (isMoreVisible(call, candFn, bestFn))
+  if (isMoreVisible(call, candFn, bestFn) == FOUND_F1_FIRST)
   {
     USR_PRINT(candFn, "instead of the candidate here");
     USR_PRINT(candMod, "... defined in this closer module");
@@ -3549,7 +3616,7 @@ static bool overloadSetsOK(CallExpr* call, check_state_t checkState,
 
     ModuleSymbol* candMod = overloadSetModule(candidate);
     if (candMod && candMod != bestMod                                       &&
-        ! isMoreVisible(call, bestFn, candidate->fn)                        &&
+        isMoreVisible(call, bestFn, candidate->fn) != FOUND_F1_FIRST &&
         ! isAcceptableMethodChoice(call, bestFn, candidate->fn, candidates) )
     {
       if (checkState == CHECK_NORMAL_CALL)
@@ -5550,11 +5617,12 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
   } else {
     // If the decision hasn't been made based on the argument mappings...
-    if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
+    auto v = isMoreVisible(DC.scope, candidate1->fn, candidate2->fn);
+    if (v == FOUND_F1_FIRST) {
       EXPLAIN("\nQ: preferring more visible function\n");
       prefer1 = true;
 
-    } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
+    } else if (v == FOUND_F2_FIRST) {
       EXPLAIN("\nR: preferring more visible function\n");
       prefer2 = true;
 
