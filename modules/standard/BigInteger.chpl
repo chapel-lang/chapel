@@ -369,12 +369,12 @@ module BigInteger {
       return ret.safeCast(int);
     }
 
-    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the result of :proc:`getImpl` instead"
+    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the mpz field instead"
     proc numLimbs : uint {
       return chpl_gmp_mpz_nlimbs(this.mpz);
     }
 
-    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the result of :proc:`getImpl` instead"
+    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the mpz field instead"
     proc get_limbn(n: integral) : uint {
       var   ret: uint;
 
@@ -395,13 +395,13 @@ module BigInteger {
       return ret;
     }
 
-    deprecated "This method is deprecated, please use :proc:`getImpl` instead"
+    deprecated "mpzStruct is deprecated, please use :proc:`getImpl` instead"
     proc mpzStruct() : __mpz_struct {
       return getImpl();
     }
 
     /* Return the underlying implementation of :record:`bigint`.  Currently,
-       that type is ``__mpz_struct``.
+       the type returned is ``__mpz_struct``.
 
        This method is provided as a convenience but its result may change in the
        future.
