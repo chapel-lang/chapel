@@ -83,7 +83,7 @@ static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
     std::ostringstream ss;
     node->stringify(ss, kind);
     // assert(!ss.str().empty());
-    // std::cerr << ss.str() << std::endl;
+    std::cerr << ss.str() << std::endl;
 }
 
 static void test0(Parser* parser) {
@@ -99,8 +99,9 @@ static void test1(Parser* parser) {
   // the one test to rule them all
   std::string testCode;
   testCode = R""""(
-             module Test4 {
+             module Test1 {
                use Map;
+               require "foo.h", "foo.c";
                import Foo as X ;
                include module Foo;
                include private module Bar;
@@ -126,12 +127,17 @@ static void test1(Parser* parser) {
                record R {
                  // my record comment
                  var x,y :int;
+                 var a, b:int, c, d = 1;
+                 var x: int, y = 3, z: real;
                  proc df(arg) { }
                  proc const cnst(arg) const { }
                  proc const ref cnstrf(arg) const ref { }
                  proc ref rf(arg) ref { }
                  proc param prm(arg) param { }
                  proc type tp(arg) type { }
+               }
+               class D : C {
+                 override proc Cproc(val: int) { writeln(val:string); }
                }
                proc R.df2(arg) { }
                proc const R.cnst2(arg) const { }
@@ -158,7 +164,7 @@ static void test1(Parser* parser) {
                    throw fooError();
                  } catch e1: ErrorType1 {
                    writeln('E1');
-                 } catch e2: ErrorType2 {
+                 } catch (e2: ErrorType2) {
                    writeln('E2');
                    return 1;
                  } catch {
@@ -202,7 +208,9 @@ static void test1(Parser* parser) {
                  when x do f1();
                  otherwise do f2();
                }
-
+               foreach x in zip(a, b) {
+                 foo();
+               }
                delete foo, bar, baz;
                defer
                  foo();
