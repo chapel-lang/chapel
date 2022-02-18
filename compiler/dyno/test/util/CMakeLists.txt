@@ -17,3 +17,4 @@
 
 comp_unit_test(testQuoteStrings)
 comp_unit_test(testQueryTimingAndTrace)
+comp_unit_test(testIteratorAdapters)

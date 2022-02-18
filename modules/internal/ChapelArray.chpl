@@ -31,7 +31,7 @@ module ChapelArray {
   use ArrayViewReindex;
   import Reflection;
   use ChapelDebugPrint;
-  use SysCTypes;
+  use CTypes;
   use ChapelPrivatization;
   public use ChapelDomain;
 
@@ -3431,7 +3431,7 @@ module ChapelArray {
     if (arr._value.locale != here) then
       halt("An array can only be passed to an external routine from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
 
-    use CPtr;
+    use CTypes;
     const ptr = c_pointer_return(arr[arr.domain.alignedLow]);
     if castToVoidStar then
       return ptr: c_void_ptr;

@@ -106,11 +106,10 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
 
 */
 module GMP {
-  use SysBasic;
+  use CTypes;
   use SysError;
   use BigInteger;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   require "GMPHelper/chplgmp.h";
 

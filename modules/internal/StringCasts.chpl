@@ -21,8 +21,7 @@
 module StringCasts {
   private use ChapelStandard;
   private use BytesStringCommon;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   private use String.NVStringFactory;
 
   // TODO: I want to break all of these casts from string to T out into

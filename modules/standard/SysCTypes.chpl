@@ -18,17 +18,18 @@
  * limitations under the License.
  */
 
-// oldCollectors.h
-//
-// It is desired to deprecate the collect...() functions below in favor of
-// their STL-based counter parts that still appear in astutil.h
-//
-// Please do not include this .h file nor use these functions in new code.
-//
+/*
 
-#ifndef OLD_COLLECTORS_H
-#define OLD_COLLECTORS_H
+In previous releases, this module contained Chapel types that
+represent C integer types.  It has been deprecated and its contents
+have been moved to :mod:`CTypes`.
 
-void collect_asts_postorder(BaseAST*, Vec<BaseAST*>& asts);
+.. warning::
 
-#endif
+    This module has been deprecated - please use :mod:`CTypes` instead.
+*/
+
+deprecated "'SysCTypes' is deprecated; please use the 'CTypes' module instead"
+module SysCTypes {
+  public use ChapelSysCTypes;
+}

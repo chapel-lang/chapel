@@ -35,8 +35,7 @@
 
 module DateTime {
   import HaltWrappers;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;

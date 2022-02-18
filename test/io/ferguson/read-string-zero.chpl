@@ -24,18 +24,4 @@ var f = opentmp();
   assert(s == str);
 }
 
-{
-  // test 2: readf
-  var r = f.reader(kind=iokind.native);
-
-  var s:string;
-  var len = str.numBytes;
-  var got = r.readf("%|*s", len, s);
-
-  assert(got);
-  writeln("readf read a string with length ", s.numBytes);
-  assert(s.numBytes == str.numBytes);
-  assert(s == str);
-}
-
 f.close();

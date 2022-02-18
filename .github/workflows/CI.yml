@@ -26,7 +26,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: install deps
-      run: sudo apt-get install cmake doxygen
+      run: sudo apt-get install cmake doxygen $CHPL_APT_DEPS
     - name: make dyno-docs
       run: |
         make dyno-docs
@@ -59,6 +59,9 @@ jobs:
     - name: make test-dyno
       run: |
         make test-dyno -j`util/buildRelease/chpl-make-cpu_count`
+    - name: run dyno linters
+      run: |
+        CHPL_HOME=$PWD make run-dyno-linters
 
   check_annotations_rt_calls:
     runs-on: ubuntu-latest

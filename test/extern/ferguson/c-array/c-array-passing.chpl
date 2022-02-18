@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 var global: c_array(int, 3);
 
 var count = 0;

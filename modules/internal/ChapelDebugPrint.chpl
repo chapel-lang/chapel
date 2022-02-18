@@ -27,7 +27,7 @@
  */
 
 module ChapelDebugPrint {
-  private use ChapelStandard, SysCTypes;
+  private use ChapelStandard, CTypes;
   private use ChapelIOStringifyHelper;
 
   proc chpl_debug_stringify(args...) : string {

@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 record R {
   var x:int;
 }

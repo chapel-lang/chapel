@@ -32,7 +32,7 @@ module ProtobufProtocolSupport {
   public use WireEncoding;
   public use Fields;
   public use RepeatedFields;
-  private use CPtr;
+  private use CTypes;
 
   pragma "no doc"
   module WireEncoding {
@@ -43,7 +43,7 @@ module ProtobufProtocolSupport {
     */
 
     use IO;
-    use CPtr;
+    use CTypes;
 
     type writingChannel = channel(true,iokind.little,false);
     type readingChannel = channel(false,iokind.little,false);

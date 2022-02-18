@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 proc getAddr(obj) {
   return __primitive("_wide_get_addr", obj);

@@ -1,2 +1,3 @@
 Success
 Success
+writeread-random.chpl:48: warning: binary conversion "%|*s" is deprecated.

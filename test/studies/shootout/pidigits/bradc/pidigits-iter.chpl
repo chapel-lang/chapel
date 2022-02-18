@@ -34,7 +34,7 @@ proc main() {
 
 
 iter gen_digits(numDigits) {
-  use SysCTypes;
+  use CTypes;
 
   var numer, accum, denom, tmp1, tmp2: mpz_t;
 

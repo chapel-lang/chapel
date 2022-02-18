@@ -95,10 +95,9 @@ module FileSystem {
   public use SysError;
   use Path;
   use HaltWrappers;
-  use SysCTypes;
+  use CTypes;
   use IO;
   use SysBasic;
-  use CPtr;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -872,7 +871,7 @@ proc getUID(out error: syserr, name: string): int {
 private module GlobWrappers {
   import HaltWrappers;
   extern type glob_t;
-  use SysCTypes;
+  use CTypes;
 
   private extern const GLOB_NOMATCH: c_int;
   private extern const GLOB_NOSPACE: c_int;
@@ -1622,6 +1621,7 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
    :rtype: `int`
 */
 proc locale.umask(mask: int): int {
+  use Sys;
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
 
   var result: int;

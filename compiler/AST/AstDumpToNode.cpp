@@ -274,7 +274,7 @@ void AstDumpToNode::exitModSym(ModuleSymbol* node)
 
     fputs("ModUseList:", mFP);
 
-    forv_Vec(ModuleSymbol, mod, node->modUseList)
+    for (ModuleSymbol* mod : node->modUseList)
     {
       fprintf(mFP, " %s", mod->name);
     }

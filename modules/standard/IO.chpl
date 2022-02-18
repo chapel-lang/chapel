@@ -431,10 +431,9 @@ module IO {
 */
 
 public use SysBasic;
-use SysCTypes;
+use CTypes;
 public use SysError;
 
-private use CPtr;
 
 /*
 
@@ -534,6 +533,27 @@ param ionative = iokind.native;
 param iobig = iokind.big;
 /* A synonym for ``iokind.little``; see :type:`iokind` */
 param iolittle = iokind.little;
+
+/*
+
+The :type:`ioendian` type is an enum. When used as an argument to the
+:record:`channel` methods, its constants have the following meanings:
+
+* ``ioendian.big`` means binary I/O is performed in big-endian byte order.
+
+* ``ioendian.little`` means binary I/O is performed in little-endian byte order.
+
+* ``ioendian.native`` means binary I/O is performed in the byte order that is native
+  to the target platform.
+
+*/
+
+enum ioendian {
+  native = 0,
+  big = 1,
+  little = 2
+}
+
 
 /*
 
@@ -1293,6 +1313,7 @@ private extern const QIO_CONV_SET_STRINGEND:c_int;
 private extern const QIO_CONV_SET_CAPTURE:c_int;
 private extern const QIO_CONV_SET_DONE:c_int;
 
+pragma "insert line file info"
 private extern proc qio_conv_parse(const fmt:c_string, start:size_t, ref end:uint(64), scanning:c_int, ref spec:qio_conv_t, ref style:iostyleInternal):syserr;
 
 private extern proc qio_format_error_too_many_args():syserr;
@@ -1823,6 +1844,7 @@ private proc openfdHelper(fd: fd_t, hints:iohints=IOHINT_NONE,
   var local_style = style;
   var ret:file;
   ret.home = here;
+  extern proc chpl_cnullfile():_file;
   var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints, local_style, 0);
 
   // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
@@ -3069,7 +3091,13 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
   return EINVAL;
 }
 
+pragma "no doc"
+config param chpl_testReadBinaryInternalEIO = false;
+
 private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, ref x:?t):syserr where _isIoPrimitiveType(t) {
+  if chpl_testReadBinaryInternalEIO {
+    return EIO;
+  }
   if isBoolType(t) {
     var got:int(32);
     got = qio_channel_read_byte(false, _channel_internal);
@@ -3165,7 +3193,13 @@ private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param by
   return EINVAL;
 }
 
+pragma "no doc"
+config param chpl_testWriteBinaryInternalEIO = false;
+
 private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):syserr where _isIoPrimitiveType(t) {
+  if chpl_testWriteBinaryInternalEIO {
+    return EIO;
+  }
   if isBoolType(t) {
     var zero_one:uint(8) = if x then 1:uint(8) else 0:uint(8);
     return qio_channel_write_byte(false, _channel_internal, zero_one);
@@ -4023,6 +4057,118 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
   return try this.write(new ioBits(v:uint(64), nbits:int(8)));
 }
 
+/*
+   Write a binary number to the channel
+
+   :arg arg: number to be written
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to write the number. Defaults to ``ioendian.native``.
+
+   :throws SystemError: Thrown if the number could not be written to the channel.
+ */
+proc channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) throws {
+  var e:syserr = ENOERR;
+
+  select (endian) {
+    when ioendian.native {
+      e = try _write_binary_internal(_channel_internal, iokind.native, arg);
+    }
+    when ioendian.big {
+      e = try _write_binary_internal(_channel_internal, iokind.big, arg);
+    }
+    when ioendian.little {
+      e = try _write_binary_internal(_channel_internal, iokind.little, arg);
+    }
+  }
+  if (e != ENOERR) {
+    throw SystemError.fromSyserr(e);
+  }
+}
+
+/*
+   Write a binary number to the channel
+
+   :arg arg: number to be written
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to write the number.
+
+   :throws SystemError: Thrown if the number could not be written to the channel.
+ */
+proc channel.writeBinary(arg:numeric, endian:ioendian) throws {
+  select (endian) {
+    when ioendian.native {
+      this.writeBinary(arg, ioendian.native);
+    }
+    when ioendian.big {
+      this.writeBinary(arg, ioendian.big);
+    }
+    when ioendian.little {
+      this.writeBinary(arg, ioendian.little);
+    }
+  }
+}
+
+/*
+   Read a binary number from the channel
+
+   :arg arg: number to be read
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the number. Defaults to ``ioendian.native``.
+   :returns: `true` if the number was read, `false` otherwise
+
+   :throws SystemError: Thrown if an error occurred reading the number.
+ */
+
+proc channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
+  var e:syserr = ENOERR;
+
+  select (endian) {
+    when ioendian.native {
+      e = try _read_binary_internal(_channel_internal, iokind.native, arg);
+    }
+    when ioendian.big {
+      e = try _read_binary_internal(_channel_internal, iokind.big, arg);
+    }
+    when ioendian.little {
+      e = try _read_binary_internal(_channel_internal, iokind.little, arg);
+    }
+  }
+  if (e == EEOF) {
+    return false;
+  } else if (e != ENOERR) {
+    throw SystemError.fromSyserr(e);
+  }
+  return true;
+}
+
+/*
+   Read a binary number from the channel
+
+   :arg arg: number to be read
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to read the number.
+   :returns: `true` if the number was read, `false` otherwise
+
+   :throws SystemError: Thrown if an error occurred reading the number.
+ */
+proc channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
+  var rv: bool = false;
+
+  select (endian) {
+    when ioendian.native {
+      rv = this.readBinary(arg, ioendian.native);
+    }
+    when ioendian.big {
+      rv = this.readBinary(arg, ioendian.big);
+    }
+    when ioendian.little {
+      rv = this.readBinary(arg, ioendian.little);
+    }
+  }
+  return rv;
+}
+
+
 // Documented in the varargs version
 pragma "no doc"
 proc channel.readln():bool throws {
@@ -4396,9 +4542,15 @@ proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
 /* standard input, otherwise known as file descriptor 0 */
 const stdin:channel(false, iokind.dynamic, true);
 stdin = try! openfd(0).reader();
+
+pragma "no doc"
+extern proc chpl_cstdout():_file;
 /* standard output, otherwise known as file descriptor 1 */
 const stdout:channel(true, iokind.dynamic, true);
 stdout = try! openfp(chpl_cstdout()).writer();
+
+pragma "no doc"
+extern proc chpl_cstderr():_file;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:channel(true, iokind.dynamic, true);
 stderr = try! openfp(chpl_cstderr()).writer();
@@ -5343,8 +5495,7 @@ FormattedIO Functions and Types
  */
 module FormattedIO {
   use IO;
-  use SysCTypes;
-  use CPtr;
+  use CTypes;
   use SysBasic;
   use SysError;
 //use IO;

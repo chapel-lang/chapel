@@ -38,6 +38,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
+# generate the compile_commands.json compilation database
+# tools like the fieldsUsed linter require this
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # set include directories for -I
 #include_directories(include)
 
@@ -47,8 +51,10 @@ add_subdirectory(lib)
 add_subdirectory(include/chpl)
 # Support for documentation of AST header
 add_subdirectory(doc)
-
+# Tools like chpldoc
 add_subdirectory(tools)
+# Utils like C++ linters for this codebase
+add_subdirectory(util)
 
 # Support for C++ compiler unit tests
 # Needs to happen in this file for ctest to work in this dir

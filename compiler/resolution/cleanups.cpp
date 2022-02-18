@@ -83,7 +83,7 @@ static void removeUnusedFunctions() {
 
           collectDefExprs(fn, defExprs);
 
-          forv_Vec(DefExpr, def, defExprs) {
+          for (DefExpr* def : defExprs) {
             if (TypeSymbol* typeSym = toTypeSymbol(def->sym)) {
               Type* refType = typeSym->type->refType;
 
@@ -234,7 +234,7 @@ static void removeRandomPrimitive(CallExpr* call) {
 }
 
 static void removeRandomPrimitives() {
-  for_alive_in_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_expanding_Vec(CallExpr, call, gCallExprs)
     if (call->isPrimitive())
       removeRandomPrimitive(call);
 }
@@ -509,7 +509,7 @@ static void removeUnusedTypes() {
   std::set<Type*> wellknown = getWellKnownTypesSet();
 
   // Remove unused aggregate types.
-  for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
+  for_alive_in_expanding_Vec(TypeSymbol, type, gTypeSymbols) {
     if (! type->hasFlag(FLAG_REF)                &&
         ! type->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
       if (AggregateType* at = toAggregateType(type->type)) {
@@ -755,7 +755,7 @@ static bool isNothingType(Type* type) {
 
 static void cleanupNothingVarsAndFields() {
   // Remove most uses of nothing variables and fields
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_expanding_Vec(CallExpr, call, gCallExprs) {
      if (call->isPrimitive())
       switch (call->primitive->tag) {
       case PRIM_MOVE:

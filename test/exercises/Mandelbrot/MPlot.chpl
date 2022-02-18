@@ -3,6 +3,7 @@
 // Plotting routines for the Mandelbrot exercise.
 //
 
+private use IO;
 //
 // Types of image files: Black & White, Greyscale, or Color.  The integer
 // values chosen here represent the header encoding for PBM, PGM, and
@@ -160,21 +161,24 @@ const header_size = 14;
   const offset_to_pixel_data = header_size + dib_header_size;
 
   // Write the BMP image header
-  outfile.writef("BM%<4u %<2u %<2u %<4u",
-                 size,
-                 0 /* reserved1 */,
-                 0 /* reserved2 */,
-                 offset_to_pixel_data);
-  
+  outfile.writef("BM");
+  outfile.writeBinary(size:uint(32), ioendian.little);
+  outfile.writeBinary(0:uint(16), ioendian.little); /* reserved1 */
+  outfile.writeBinary(0:uint(16), ioendian.little); /* reserved2 */
+  outfile.writeBinary(offset_to_pixel_data:uint(32), ioendian.little);
+
   // Write the DIB header BITMAPINFOHEADER
-  outfile.writef("%<4u %<4i %<4i %<2u %<2u %<4u %<4u %<4u %<4u %<4u %<4u",
-                 dib_header_size, cols, -rows /*neg for swap*/,
-                 1 /* 1 color plane */, bits_per_pixel,
-                 0 /* no compression */,
-                 pixels_size,
-                 2835, 2835 /*pixels/meter print resolution=72dpi*/,
-                 0 /* colors in palette */,
-                 0 /* "important" colors */);
+  outfile.writeBinary(dib_header_size:uint(32), ioendian.little);
+  outfile.writeBinary(cols:int(32), ioendian.little);
+  outfile.writeBinary(-rows:int(32), ioendian.little); /*neg for swap*/
+  outfile.writeBinary(1:uint(16), ioendian.little); /* 1 color plane */
+  outfile.writeBinary(bits_per_pixel:uint(16), ioendian.little);
+  outfile.writeBinary(0:uint(32), ioendian.little); /* no compression */
+  outfile.writeBinary(pixels_size:uint(32), ioendian.little);
+  outfile.writeBinary(2835:uint(32), ioendian.little); /*pixels/meter print resolution=72dpi*/
+  outfile.writeBinary(2835:uint(32), ioendian.little); /*pixels/meter print resolution=72dpi*/
+  outfile.writeBinary(0:uint(32), ioendian.little); /* colors in palette */
+  outfile.writeBinary(0:uint(32), ioendian.little); /* "important" colors */
 
   //
   // compute the maximum number of steps that were taken, just in case

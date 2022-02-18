@@ -1,6 +1,6 @@
 require "ccode.h";
 
-use SysCTypes;
+use CTypes;
 
 extern record S {
   var okname: c_int;

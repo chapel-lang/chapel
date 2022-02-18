@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 extern proc chpl_sys_physicalMemoryBytes(): uint(64);
 const physMemSize_1pct: real = chpl_sys_physicalMemoryBytes():real * 0.01;

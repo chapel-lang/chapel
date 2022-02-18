@@ -4547,13 +4547,26 @@ int _qio_regex_flags_then_rcurly(const char* ptr, int * len)
   return 0;
 }
 
+static
+void deprecated_binary_warning(const char *conversion, int32_t len,
+                               int32_t lineno, int32_t filename) {
+  static char last[100] = {0};
+  char msg[100];
+  snprintf(msg, sizeof(msg), "binary conversion \"%.*s\" is deprecated.",
+           len, conversion);
+  if (strcmp(last, msg)) {
+    chpl_warning(msg, lineno, filename);
+    strncpy(last, msg, sizeof(last));
+  }
+}
 
 qioerr qio_conv_parse(c_string fmt,
                       size_t start,
                       uint64_t* end,
                       int scanning,
                       qio_conv_t* spec_out,
-                      qio_style_t* style_out)
+                      qio_style_t* style_out,
+                      int32_t lineno, int32_t filename)
 {
   size_t i;
   int in_group = 0;
@@ -4578,6 +4591,7 @@ qioerr qio_conv_parse(c_string fmt,
   char S_encoding = 0;
   qioerr err = 0;
   int after_percent = 0;
+  int percent = 0;
 
   qio_conv_init(spec_out);
   qio_style_init_default(style_out);
@@ -4634,6 +4648,7 @@ qioerr qio_conv_parse(c_string fmt,
 
   // do we have a % conversion to match?
   if( fmt[i] == '%' ) {
+    percent = i;
     i++; // pass %
 
     if( fmt[i] == '{' ) {
@@ -4770,6 +4785,7 @@ qioerr qio_conv_parse(c_string fmt,
     // Consume the width, precision, flags and base arguments,
     // updating the style appropriately.
     if( binary ) {
+      deprecated_binary_warning(&fmt[percent], i - percent, lineno, filename);
       // Binary conversions silently consume space characters after the
       // conversion.
       while( fmt[i] == ' ' ) i++;
