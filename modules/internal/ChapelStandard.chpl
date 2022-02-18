@@ -44,7 +44,7 @@ module ChapelStandard {
   public use ChapelReduce;
   public use ChapelSyncvar;
   public use ChapelTaskDataHelp;
-  public use LocaleModel;
+  public use LocaleModel as _; // let LocaleModel refer to the class
   public use ChapelLocale;
   public use ChapelPrivatization;
   public use DefaultRectangular; // This might be able to go just after Atomics

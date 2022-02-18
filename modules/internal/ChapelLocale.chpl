@@ -26,7 +26,7 @@
  */
 module ChapelLocale {
 
-  public use LocaleModel;
+  public use LocaleModel as _; // let LocaleModel refer to the class
   import HaltWrappers;
   use CTypes;
 

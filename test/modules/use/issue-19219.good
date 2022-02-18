@@ -1,0 +1,2 @@
+issue-19219.chpl:1: error: symbol M is multiply defined
+issue-19219.chpl:2: note: also defined here

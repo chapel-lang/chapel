@@ -2018,6 +2018,16 @@ bool lookupThisScopeAndUses(const char*           name,
 
         forv_Vec(Stmt, stmt, *moduleUses) {
           if (UseStmt* use = toUseStmt(stmt)) {
+            // Check to see if the module name matches what is use'd
+            if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
+              if (isRepeat(modSym, symbols) == false) {
+                symbols.push_back(modSym);
+                if (storeRenames && use->isARename()) {
+                  renameLocs[modSym] = &use->astloc;
+                }
+              }
+            }
+
             if (use->skipSymbolSearch(name) == false) {
               const char* nameToUse = use->isARenamedSym(name) ?
                 use->getRenamedSym(name) : name;
