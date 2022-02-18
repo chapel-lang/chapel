@@ -8,4 +8,4 @@ $CHPL_HOME/modules/internal/ChapelHashing.chpl:68: note:   int.hash()
 $CHPL_HOME/modules/internal/ChapelHashing.chpl:72: note:   uint.hash()
 note: and 50 other candidates, use --print-all-candidates to see them
   $CHPL_HOME/modules/standard/Set.chpl:335: called as (set(R,false))._addElem(elem: R) from method 'add'
-  nonPodRecord.chpl:28: called as (set(R,false)).add(element: R)
+  noHashForRecordWithEq2.chpl:29: called as (set(R,false)).add(element: R)
