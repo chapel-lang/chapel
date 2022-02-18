@@ -186,11 +186,16 @@ static void dumpHelper(std::ostream& ss,
 
 void ASTNode::stringify(std::ostream& ss,
                         StringifyKind stringKind) const {
-  // int maxIdLen = 0;
-  // int leadingSpaces = 0;
-  // dumpMaxIdLen(this, maxIdLen);
-  // dumpHelper(ss, this, maxIdLen, leadingSpaces);
-  printAst(ss, this);
+
+  if (stringKind == StringifyKind::CHPL_SYNTAX) {
+    printAst(ss, this);
+  }
+  else {
+    int maxIdLen = 0;
+    int leadingSpaces = 0;
+    dumpMaxIdLen(this, maxIdLen);
+    dumpHelper(ss, this, maxIdLen, leadingSpaces);
+  }
 //  for (const ASTNode* child : this->children()) {
 //    printAst(ss, child);
 //  }
