@@ -1955,6 +1955,15 @@ static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
 static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
                          ImportStmt* current);
 
+static void lookupUseImport(const char*           name,
+                            BaseAST*              context,
+                            BaseAST*              scope,
+                            std::vector<Symbol*>& symbols,
+                            std::map<Symbol*, astlocT*>& renameLocs,
+                            bool storeRenames,
+                            std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                            bool forShadowScope);
+
 static
 bool lookupThisScopeAndUses(const char*           name,
                             BaseAST*              context,
@@ -1986,150 +1995,183 @@ bool lookupThisScopeAndUses(const char*           name,
     symbols.push_back(sym);
   }
 
+  // check public use/imports
+  lookupUseImport(name, context, scope, symbols,
+                  renameLocs, storeRenames, reexportPts,
+                  /* forShadowScope */ false);
+
   if (symbols.size() == 0) {
-    // Nothing found so far, look into the uses.
-    if (BlockStmt* block = toBlockStmt(scope)) {
-      if (block->useList != NULL) {
-        Vec<VisibilityStmt*>* moduleUses = NULL;
+    // check private use only
+    lookupUseImport(name, context, scope, symbols,
+                    renameLocs, storeRenames, reexportPts,
+                    /* forShadowScope */ true);
+  }
 
-        if (moduleUsesCache.count(block) == 0) {
-          moduleUses = new Vec<VisibilityStmt*>();
+  return symbols.size() != 0;
+}
 
-          for_actuals(expr, block->useList) {
-            // Ensure we only have use or import statements in this list
-            if (UseStmt* use = toUseStmt(expr)) {
-              moduleUses->add(use);
-            } else if (ImportStmt* import = toImportStmt(expr)) {
-              moduleUses->add(import);
-            } else {
-              INT_FATAL("Bad contents for useList, expected use or import");
+static void lookupUseImport(const char*           name,
+                            BaseAST*              context,
+                            BaseAST*              scope,
+                            std::vector<Symbol*>& symbols,
+                            std::map<Symbol*, astlocT*>& renameLocs,
+                            bool storeRenames,
+                            std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                            bool forShadowScope) {
+  // Nothing found so far, look into the uses.
+  if (BlockStmt* block = toBlockStmt(scope)) {
+    if (block->useList != NULL) {
+      Vec<VisibilityStmt*>* moduleUses = NULL;
+
+      if (moduleUsesCache.count(block) == 0) {
+        moduleUses = new Vec<VisibilityStmt*>();
+
+        for_actuals(expr, block->useList) {
+          // Ensure we only have use or import statements in this list
+          if (UseStmt* use = toUseStmt(expr)) {
+            moduleUses->add(use);
+          } else if (ImportStmt* import = toImportStmt(expr)) {
+            moduleUses->add(import);
+          } else {
+            INT_FATAL("Bad contents for useList, expected use or import");
+          }
+        }
+
+        INT_ASSERT(moduleUses->n);
+
+        buildBreadthFirstModuleList(moduleUses);
+
+        if (enableModuleUsesCache)
+          moduleUsesCache[block] = moduleUses;
+      } else {
+        moduleUses = moduleUsesCache[block];
+      }
+
+      forv_Vec(Stmt, stmt, *moduleUses) {
+        bool checkThisInShadowScope = false;
+        if (UseStmt* use = toUseStmt(stmt)) {
+          if (use->isPrivate)
+            checkThisInShadowScope = true;
+        }
+
+        // Skip for now things that don't match the request
+        // to find use/import for the shadow scope (or not).
+        // (these will be handled in a different call to this function)
+        if (forShadowScope != checkThisInShadowScope)
+          continue;
+
+        if (UseStmt* use = toUseStmt(stmt)) {
+          // Check to see if the module name matches what is use'd
+          if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
+            if (isRepeat(modSym, symbols) == false) {
+              symbols.push_back(modSym);
+              if (storeRenames && use->isARename()) {
+                renameLocs[modSym] = &use->astloc;
+              }
             }
           }
 
-          INT_ASSERT(moduleUses->n);
+          if (use->skipSymbolSearch(name) == false) {
+            const char* nameToUse = use->isARenamedSym(name) ?
+              use->getRenamedSym(name) : name;
+            BaseAST* scopeToUse = use->getSearchScope();
 
-          buildBreadthFirstModuleList(moduleUses);
-
-          if (enableModuleUsesCache)
-            moduleUsesCache[block] = moduleUses;
-        } else {
-          moduleUses = moduleUsesCache[block];
-        }
-
-        forv_Vec(Stmt, stmt, *moduleUses) {
-          if (UseStmt* use = toUseStmt(stmt)) {
-            // Check to see if the module name matches what is use'd
-            if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
-              if (isRepeat(modSym, symbols) == false) {
-                symbols.push_back(modSym);
-                if (storeRenames && use->isARename()) {
-                  renameLocs[modSym] = &use->astloc;
+            Symbol* sym = inSymbolTable(nameToUse, scopeToUse);
+            if (!sym && use->canReexport) {
+              if (ResolveScope* rs = ResolveScope::getScopeFor(scopeToUse)) {
+                sym = rs->lookupPublicUnqualAccessSyms(nameToUse, context,
+                                                       renameLocs,
+                                                       reexportPts, false);
+                // propagate this information to the UseStmt
+                if (!rs->canReexport) {
+                  use->canReexport = false;
                 }
               }
             }
-
-            if (use->skipSymbolSearch(name) == false) {
-              const char* nameToUse = use->isARenamedSym(name) ?
-                use->getRenamedSym(name) : name;
-              BaseAST* scopeToUse = use->getSearchScope();
-
-              Symbol* sym = inSymbolTable(nameToUse, scopeToUse);
-              if (!sym && use->canReexport) {
-                if (ResolveScope* rs = ResolveScope::getScopeFor(scopeToUse)) {
-                  sym = rs->lookupPublicUnqualAccessSyms(nameToUse, context,
-                                                         renameLocs,
-                                                         reexportPts, false);
-                  // propagate this information to the UseStmt
-                  if (!rs->canReexport) {
-                    use->canReexport = false;
-                  }
-                }
-              }
-              if (sym) {
-                if (sym->hasFlag(FLAG_PRIVATE) == true) {
-                  if (sym->isVisible(context) == true &&
-                      isRepeat(sym, symbols)  == false) {
-                    symbols.push_back(sym);
-                    if (storeRenames && use->isARenamedSym(name)) {
-                      renameLocs[sym] = &use->astloc;
-                    }
-                  }
-
-                } else if (isRepeat(sym, symbols) == false) {
+            if (sym) {
+              if (sym->hasFlag(FLAG_PRIVATE) == true) {
+                if (sym->isVisible(context) == true &&
+                    isRepeat(sym, symbols)  == false) {
                   symbols.push_back(sym);
                   if (storeRenames && use->isARenamedSym(name)) {
                     renameLocs[sym] = &use->astloc;
                   }
                 }
+
+              } else if (isRepeat(sym, symbols) == false) {
+                symbols.push_back(sym);
+                if (storeRenames && use->isARenamedSym(name)) {
+                  renameLocs[sym] = &use->astloc;
+                }
               }
             }
-          } else if (ImportStmt* import = toImportStmt(stmt)) {
-            // Only traverse import statements that define a symbol with this
-            // name for unqualified access.  We're only looking for explicitly
-            // named symbols
-            if (import->skipSymbolSearch(name) == false) {
-              const char* nameToUse = import->isARenamedSym(name) ?
-                import->getRenamedSym(name) : name;
-              BaseAST* scopeToUse = import->getSearchScope();
-              if (Symbol* sym = inSymbolTable(nameToUse, scopeToUse)) {
-                if (sym->hasFlag(FLAG_PRIVATE) == true) {
-                  if (sym->isVisible(context) == true &&
-                      isRepeat(sym, symbols)  == false) {
-                    symbols.push_back(sym);
-                    if (storeRenames && import->isARenamedSym(name)) {
-                      renameLocs[sym] = &import->astloc;
-                    }
-                  }
-                } else if (isRepeat(sym, symbols) == false) {
+          }
+        } else if (ImportStmt* import = toImportStmt(stmt)) {
+          // Only traverse import statements that define a symbol with this
+          // name for unqualified access.  We're only looking for explicitly
+          // named symbols
+          if (import->skipSymbolSearch(name) == false) {
+            const char* nameToUse = import->isARenamedSym(name) ?
+              import->getRenamedSym(name) : name;
+            BaseAST* scopeToUse = import->getSearchScope();
+            if (Symbol* sym = inSymbolTable(nameToUse, scopeToUse)) {
+              if (sym->hasFlag(FLAG_PRIVATE) == true) {
+                if (sym->isVisible(context) == true &&
+                    isRepeat(sym, symbols)  == false) {
                   symbols.push_back(sym);
                   if (storeRenames && import->isARenamedSym(name)) {
                     renameLocs[sym] = &import->astloc;
                   }
                 }
+              } else if (isRepeat(sym, symbols) == false) {
+                symbols.push_back(sym);
+                if (storeRenames && import->isARenamedSym(name)) {
+                  renameLocs[sym] = &import->astloc;
+                }
               }
-            }
-          } else {
-            // break on each new depth if a symbol has been found
-            if (symbols.size() > 0) {
-              break;
-            }
-          }
-        }
-
-        if (symbols.size() > 0) {
-          // We found a symbol in the module use.  This could conflict with
-          // the function symbol's arguments if we are at the top level scope
-          // within a function.  Note that we'd check the next scope up if
-          // size() == 0, so we only need to do this check here because the
-          // module case would hide it otherwise
-          if (FnSymbol* fn = toFnSymbol(getScope(block))) {
-            // The next scope up from the block statement is a function
-            // symbol. That means that we need to check the arguments
-            if (Symbol* sym = inSymbolTable(name, fn)) {
-              // We found it in the arguments.  This should cause a conflict,
-              // because it is probably an error that the user had the same
-              // name as a module level variable.
-              USR_WARN(sym,
-                       "Module level symbol is hiding function argument '%s'",
-                       name);
             }
           }
         } else {
-          // we haven't found a match yet, so as a last resort, let's
-          // check the names of the modules in the 'use'/'import' statements
-          // themselves...  This effectively places the module names at
-          // a scope just a bit further out than the one holding the
-          // symbols that they define.
-          forv_Vec(VisibilityStmt, stmt, *moduleUses) {
-            if (stmt != NULL) {
-              if (!isImportStmt(stmt) ||
-                  toImportStmt(stmt)->providesQualifiedAccess()) {
-                if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
-                  if (isRepeat(modSym, symbols) == false) {
-                    symbols.push_back(modSym);
-                    if (storeRenames && stmt->isARename()) {
-                      renameLocs[modSym] = &stmt->astloc;
-                    }
+          // break on each new depth if a symbol has been found
+          if (symbols.size() > 0) {
+            break;
+          }
+        }
+      }
+
+      if (symbols.size() > 0) {
+        // We found a symbol in the module use.  This could conflict with
+        // the function symbol's arguments if we are at the top level scope
+        // within a function.  Note that we'd check the next scope up if
+        // size() == 0, so we only need to do this check here because the
+        // module case would hide it otherwise
+        if (FnSymbol* fn = toFnSymbol(getScope(block))) {
+          // The next scope up from the block statement is a function
+          // symbol. That means that we need to check the arguments
+          if (Symbol* sym = inSymbolTable(name, fn)) {
+            // We found it in the arguments.  This should cause a conflict,
+            // because it is probably an error that the user had the same
+            // name as a module level variable.
+            USR_WARN(sym,
+                     "Module level symbol is hiding function argument '%s'",
+                     name);
+          }
+        }
+      } else {
+        // we haven't found a match yet, so as a last resort, let's
+        // check the names of the modules in the 'use'/'import' statements
+        // themselves...  This effectively places the module names at
+        // a scope just a bit further out than the one holding the
+        // symbols that they define.
+        forv_Vec(VisibilityStmt, stmt, *moduleUses) {
+          if (stmt != NULL) {
+            if (!isImportStmt(stmt) ||
+                toImportStmt(stmt)->providesQualifiedAccess()) {
+              if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
+                if (isRepeat(modSym, symbols) == false) {
+                  symbols.push_back(modSym);
+                  if (storeRenames && stmt->isARename()) {
+                    renameLocs[modSym] = &stmt->astloc;
                   }
                 }
               }
@@ -2139,9 +2181,8 @@ bool lookupThisScopeAndUses(const char*           name,
       }
     }
   }
-
-  return symbols.size() != 0;
 }
+
 
 // Returns true if the symbol is present in the vector, false otherwise
 static bool isRepeat(Symbol* toAdd, const std::vector<Symbol*>& symbols) {

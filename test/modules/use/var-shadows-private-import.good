@@ -1,0 +1,2 @@
+var-shadows-private-import.chpl:7: error: symbol x is multiply defined
+var-shadows-private-import.chpl:2: note: also defined here
