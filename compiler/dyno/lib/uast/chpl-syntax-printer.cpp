@@ -86,6 +86,7 @@ namespace chpl {
 
   static const char* kindToString(Module::Kind kind) {
     switch (kind) {
+      case Module::Kind::DEFAULT_MODULE_KIND: assert(false);
       case Module::Kind::IMPLICIT: return "";
       case Module::Kind::PROTOTYPE: return "prototype";
     }
