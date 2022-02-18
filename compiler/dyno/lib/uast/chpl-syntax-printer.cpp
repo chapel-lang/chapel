@@ -26,6 +26,18 @@ namespace chpl {
 
   using namespace uast;
 
+  static const char* kindToString(TaskVar::Intent kind) {
+    switch (kind) {
+      case TaskVar::Intent::VAR: return "var";
+      case TaskVar::Intent::CONST: return "const";
+      case TaskVar::Intent::CONST_REF: return "const ref";
+      case TaskVar::Intent::REF: return "ref";
+      case TaskVar::Intent::IN: return "in";
+      case TaskVar::Intent::CONST_IN: return "const in";
+    }
+    assert(false);
+  }
+
   static const char* kindToString(VisibilityClause::LimitationKind kind) {
     switch (kind) {
       case VisibilityClause::LimitationKind::NONE: assert(false);
@@ -219,10 +231,6 @@ namespace chpl {
       ss_ << tagToString(node->tag());
     }
 
-    void visit(const AggregateDecl* node) {
-      interpose(ss_, node->decls(), ";\n");
-    }
-
     void visit(const Array* node) {
       interpose(ss_, node->children(), ", ", "[", "]");
     }
@@ -233,6 +241,21 @@ namespace chpl {
       printAst(ss_, node->rename());
     }
 
+    //Attributes
+
+    void visit(const Begin* node) {
+      ss_ << "begin ";
+      if (node->withClause()) {
+        printAst(ss_, node->withClause());
+        ss_ << " ";
+      }
+      if (node->blockStyle() == BlockStyle::IMPLICIT) {
+        interpose(ss_, node->stmts(), "\n");
+      } else {
+        interpose(ss_, node->stmts(), "\n", "{", "}");
+      }
+    }
+
     void visit(const Block* node) {
       interpose(ss_, node->stmts(), " ", "{","}");
     }
@@ -240,43 +263,43 @@ namespace chpl {
     void visit(const BoolLiteral* node) {
       ss_ << (node->value() ? "true" : "false");
     }
+
     void visit(const BracketLoop* node) {
-      // [A in B] foo
-      // A = node->index()
-      // B = node->iterand()
-      // if A and B exist, A in B
-      // no situation where only A
-      // [B] = node->iterand()
-      if (node->iterand()->isDomain()){
-        ss_ << "[";
-        printAst(ss_, node->iterand());
-        ss_ << "] ";
-        interpose(ss_, node->body()->stmts(), "");
-      } else {
-        interpose(ss_, node->stmts(), "", "[", "]");
+      ss_ << "[";
+      if (node->index()) {
+        printAst(ss_, node->index());
+        ss_ << " in ";
+      }
+      printAst(ss_, node->iterand());
+      if (node->withClause()) {
+        ss_<< " ";
+        printAst(ss_, node->withClause());
+      }
+      ss_ << "]";
+      if (node->numStmts() > 0) {
+        ss_ << " ";
+        interpose(ss_, node->stmts(), "");
       }
     }
 
-    void visit(const Call* node) {
-      const Expression* callee = node->calledExpression();
-      if (!callee) {
-        printf("ERROR %s\n", asttags::tagToString(node->tag()));
-        node->stringify(std::cerr, StringifyKind::CHPL_SYNTAX);
+    void visit(const Break* node) {
+      ss_ << "break";
+      if (node->target()) {
+        ss_<< " ";
+        printAst(ss_, node->target());
       }
-      assert(callee);  // This should be true because OpCall is handled
+      ss_ << ";";
+    }
 
-      printAst(ss_, callee);
-      if (callee->isIdentifier() && (callee->toIdentifier()->name() == "borrowed" || callee->toIdentifier()->name() == "owned"
-                                     || callee->toIdentifier()->name() == "unmanaged" || callee->toIdentifier()->name() == "shared")) {
-        ss_ << " ";
-        printAst(ss_, node->actual(0));
-      } else {
-        interpose(ss_, node->actuals(), ", ", "(", ")");
-      }
+    //builder
+    //builderResult
+
+    void visit(const BytesLiteral* node) {
+      ss_ << "b\"" << quoteStringForC(std::string(node->str().c_str())) << '"';
     }
 
     void visit(const Catch* node) {
-      ss_ << " catch ";
+      ss_ << "catch ";
       if (node->error()){
         if (node->hasParensAroundError()) {
           ss_ << "(";
@@ -300,13 +323,50 @@ namespace chpl {
 
     void visit(const Class* node) {
       ss_ << "class ";
-      ss_ << node->name().c_str();
+      ss_ << node->name().c_str() << " ";
       if (node->parentClass() != nullptr) {
-        ss_ << " : ";
+        ss_ << ": ";
         printAst(ss_, node->parentClass());
+        ss_ << " ";
+      }
+      interpose(ss_, node->decls(), "\n", "{", "}");
+    }
+
+    void visit(const Cobegin* node) {
+      ss_ << "cobegin ";
+      if (node->withClause()) {
+        printAst(ss_, node->withClause());
+        ss_<< " ";
+      }
+      interpose(ss_, node->taskBodies(), "\n", "{","}");
+    }
+
+    void visit(const Coforall* node) {
+      ss_ << "coforall ";
+
+      if (node->index()) {
+        printAst(ss_, node->index());
+        ss_ << " in ";
+      }
+      printAst(ss_, node->iterand());
+      if (node->withClause()) {
+        ss_<< " ";
+        printAst(ss_, node->withClause());
       }
       ss_ << " ";
-      interpose(ss_, node->decls(), "\n", "{", "}");
+      if (node->blockStyle() == BlockStyle::IMPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        ss_ << "do ";
+      }
+      if (node->blockStyle() == BlockStyle::EXPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{","}");
+      } else {
+        interpose(ss_, node->stmts(), "\n");
+      }
+    }
+
+    void visit(const Comment* node){
+      // TODO: Discuss if we want to provide comments back
+      ss_ << node->c_str();
     }
 
     void visit(const Conditional* node) {
@@ -328,6 +388,21 @@ namespace chpl {
       ss_ << "c\"" << quoteStringForC(std::string(node->str().c_str())) << '"';
     }
 
+    void visit(const Defer* node) {
+      ss_ << "defer ";
+      const BlockStyle style = node->blockStyle();
+      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{","}");
+      } else {
+        interpose(ss_, node->stmts(), "\n");
+      }
+    }
+
+    void visit(const Delete* node) {
+      ss_ << "delete ";
+      interpose(ss_, node->exprs(), ", ");
+    }
+
     void visit(const Domain* node) {
       if (node->numExprs() == 1 && node->expr(0)->isTypeQuery()) {
         ss_ << "?";
@@ -344,6 +419,18 @@ namespace chpl {
       ss_ << "." << node->field().c_str();
     }
 
+    void visit(const DoWhile* node) {
+      ss_ << "do ";
+      BlockStyle style = node->blockStyle();
+      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{", "}");
+      } else {
+        interpose(ss_, node->stmts(),"\n");
+      }
+      ss_ << " while ";
+      printAst(ss_, node->condition());
+    }
+
     void visit(const Enum* node) {
       ss_ << "enum " << node->name().c_str() << " ";
       interpose(ss_, node->enumElements(), ", ", "{ ", " }");
@@ -357,10 +444,99 @@ namespace chpl {
       }
     }
 
+    //erroneousExpression
+
     void visit(const ExternBlock* node) {
       ss_ << "extern {\n";
       ss_ << node->code();
       ss_ << "}";
+    }
+
+    void visit(const FnCall* node) {
+      const Expression* callee = node->calledExpression();
+      if (!callee) {
+        printf("ERROR %s\n", asttags::tagToString(node->tag()));
+        node->stringify(std::cerr, StringifyKind::CHPL_SYNTAX);
+      }
+      assert(callee);  // This should be true because OpCall is handled
+
+      printAst(ss_, callee);
+      if (callee->isIdentifier() && (callee->toIdentifier()->name() == "borrowed" || callee->toIdentifier()->name() == "owned"
+                                     || callee->toIdentifier()->name() == "unmanaged" || callee->toIdentifier()->name() == "shared")) {
+        ss_ << " ";
+        printAst(ss_, node->actual(0));
+      } else {
+        if (node->callUsedSquareBrackets()) {
+          interpose(ss_, node->actuals(), ", ", "[", "]");
+        } else {
+          interpose(ss_, node->actuals(), ", ", "(", ")");
+        }
+      }
+
+    }
+
+    void visit(const For* node) {
+      ss_ << "for ";
+      if (node->isParam()) {
+        ss_ << "param ";
+      }
+      if (node->index()) {
+        printAst(ss_, node->index());
+        ss_ << " in ";
+      }
+      printAst(ss_, node->iterand());
+      ss_ << " ";
+      if (node->blockStyle() == BlockStyle::IMPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        ss_ << "do ";
+      }
+      if (node->blockStyle() == BlockStyle::EXPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{","}");
+      } else {
+        interpose(ss_, node->stmts(), "\n");
+      }
+    }
+
+    void visit(const Forall* node) {
+      ss_ << "forall ";
+
+      if (node->index()) {
+        printAst(ss_, node->index());
+        ss_ << " in ";
+      }
+      printAst(ss_, node->iterand());
+      if (node->withClause()) {
+        ss_<< " ";
+        printAst(ss_, node->withClause());
+      }
+      ss_ << " ";
+      if (node->blockStyle() == BlockStyle::IMPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        ss_ << "do ";
+      }
+      if (node->blockStyle() == BlockStyle::EXPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{","}");
+      } else {
+        interpose(ss_, node->stmts(), "\n");
+      }
+    }
+
+    void visit(const Foreach* node) {
+      ss_ << "foreach ";
+
+      if (node->index()) {
+        printAst(ss_, node->index());
+        ss_ << " in ";
+      }
+      printAst(ss_, node->iterand());
+      ss_ << " ";
+      const BlockStyle style = node->blockStyle();
+      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        ss_ << "do ";
+      }
+      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{","}");
+      } else {
+        interpose(ss_, node->stmts(), "\n");
+      }
     }
 
     void visit(const Formal* node) {
@@ -416,7 +592,7 @@ namespace chpl {
 
       // Return type
       if (const Expression* e = node->returnType()) {
-        ss_ << ": ";
+        ss_ << " : ";
         printAst(ss_, e);
       }
 
@@ -425,7 +601,7 @@ namespace chpl {
         ss_ << " " << kindToString(node->returnIntent());
       }
 
-      interpose(ss_, node->stmts(), "\n", " {\n", "}");
+      interpose(ss_, node->stmts(), "\n", " {", "}");
 
     }
 
@@ -456,6 +632,33 @@ namespace chpl {
     }
 
     void visit(const IntLiteral* node)  { return visitLiteral(ss_, node); }
+
+    void visit(const Label* node) {
+      ss_ << "label ";
+      ss_ << node->name().c_str() << " ";
+      printAst(ss_, node->loop());
+    }
+
+    //let
+
+    void visit(const Local* node) {
+      ss_ << "local ";
+      if (node->condition()) {
+        printAst(ss_, node->condition());
+        ss_ << " ";
+      }
+      BlockStyle style = node->blockStyle();
+      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        ss_ << "do ";
+      }
+      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{","}");
+      } else {
+        interpose(ss_, node->stmts(), "\n");
+      }
+    }
+
+    //manage
 
     void visit(const Module* node) {
       if (node->visibility() != Decl::Visibility::DEFAULT_VISIBILITY) {
@@ -498,7 +701,25 @@ namespace chpl {
       printAst(ss_, node->typeExpression());
     }
 
+    void visit(const On* node) {
+      ss_ << "on ";
+      printAst(ss_, node->destination());
+      ss_ << " ";
+      BlockStyle style = node->blockStyle();
+      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        ss_ << "do ";
+      }
+      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{", "}");
+      } else {
+        interpose(ss_, node->stmts(),"\n");
+      }
+    }
+
     void visit(const OpCall* node) {
+      // TODO: Where do parens come in?
+      // ex: !(this && that)
+      // is different than !this && that
       if (node->isUnaryOp()) {
         ss_ << node->op().c_str();
         assert(node->numActuals() == 1);
@@ -511,6 +732,8 @@ namespace chpl {
         printAst(ss_, node->actual(1));
       }
     }
+
+    //primCall
 
     void visit(const Range* node) {
       if (auto lb = node->lowerBound()) {
@@ -527,9 +750,11 @@ namespace chpl {
     void visit(const Record* node) {
       printLinkages(node);
       ss_ << "record ";
-      ss_ << node->name().c_str();
-      interpose(ss_, node->decls(), "\n", " {\n", "}");
+      ss_ << node->name().c_str() << " ";
+      interpose(ss_, node->decls(), "\n", "{", "}");
     }
+
+    //reduce
 
     void visit(const Require* node) {
       ss_ << "require ";
@@ -545,8 +770,49 @@ namespace chpl {
       ss_ << ";";
     }
 
+    //scan
+
+    void visit(const Select* node) {
+      ss_ << "select ";
+      printAst(ss_, node->expr());
+      ss_ << " ";
+      interpose(ss_, node->whenStmts(), "\n", "{", "}");
+    }
+
+    void visit(const Serial* node) {
+      ss_ << "serial ";
+      if (node->condition()) {
+        printAst(ss_, node->condition());
+        ss_ << " ";
+      }
+      BlockStyle style = node->blockStyle();
+      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        ss_ << "do ";
+      }
+      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{", "}");
+      } else {
+        interpose(ss_, node->stmts(),"\n");
+      }
+    }
+
     void visit(const StringLiteral* node) {
       ss_ << '"' << quoteStringForC(std::string(node->str().c_str())) << '"';
+    }
+
+    void visit(const Sync* node) {
+      ss_ << "sync ";
+      BlockStyle style = node->blockStyle();
+      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{", "}");
+      } else {
+        interpose(ss_, node->stmts(),"");
+      }
+    }
+
+    void visit(const TaskVar* node) {
+      ss_ << kindToString(node->intent());
+      ss_ << " " << node->name().c_str();
     }
 
     void visit(const Throw* node) {
@@ -562,7 +828,9 @@ namespace chpl {
         ss_ << " ";
       }
       interpose(ss_, node->stmts(), "\n", "{","}");
+      // if try block has catch blocks
       if (!node->isTryBang()) {
+        ss_ << " ";
         interpose(ss_, node->handlers(), "\n");
       }
     }
@@ -632,6 +900,8 @@ namespace chpl {
       interpose(ss_, node->visibilityClauses(), ", ");
     }
 
+    //varargformal
+
     void visit(const Variable* node) {
       if (node->isConfig()) {
         ss_ << "config ";
@@ -666,6 +936,51 @@ namespace chpl {
         printAst(ss_, node->symbol());
         interpose(ss_, node->limitations(), ", ");
       }
+    }
+
+    void visit(const When* node) {
+      if (node->isOtherwise()) {
+        ss_ << "otherwise ";
+      } else {
+        ss_ << "when ";
+        interpose(ss_, node->caseExprs(), ", ");
+        ss_ << " ";
+      }
+      BlockStyle style = node->blockStyle();
+      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        ss_ << "do ";
+      }
+      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{", "}");
+      } else {
+        interpose(ss_, node->stmts(),"\n");
+      }
+
+    }
+
+    void visit(const While* node) {
+      ss_ << "while ";
+      printAst(ss_, node->condition());
+      ss_ << " ";
+      BlockStyle style = node->blockStyle();
+      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        ss_ << "do ";
+      }
+      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
+        interpose(ss_, node->stmts(), "\n", "{", "}");
+      } else {
+        interpose(ss_, node->stmts(),"\n");
+      }
+    }
+
+    void visit(const WithClause* node) {
+      ss_ << "with ";
+      interpose(ss_, node->exprs(), ", ", "(", ")");
+    }
+
+    void visit(const Yield* node) {
+      ss_ << "yield ";
+      printAst(ss_, node->value());
     }
 
     void visit(const Zip* node) {
