@@ -1,0 +1,4 @@
+issue-19167-3-f.chpl:44: In function 'main':
+issue-19167-3-f.chpl:45: error: ambiguous call 'f()'
+issue-19167-3-f.chpl:12: note: candidates are: f()
+issue-19167-3-f.chpl:2: note:                 f()

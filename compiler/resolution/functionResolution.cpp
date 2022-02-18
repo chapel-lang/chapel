@@ -1860,9 +1860,15 @@ isDefinedInUseImport(BlockStmt* block, FnSymbol* fn,
       if (UseStmt* use = toUseStmt(expr)) {
         se = toSymExpr(use->src);
         isPrivate = use->isPrivate;
+        // TODO: handle renames
+        if (use->skipSymbolSearch(fn->name))
+          continue;
       } else if (ImportStmt* imp = toImportStmt(expr)) {
         se = toSymExpr(imp->src);
         isPrivate = imp->isPrivate;
+        // TODO: handle renames
+        if (imp->skipSymbolSearch(fn->name))
+          continue;
       }
       INT_ASSERT(se);
 
