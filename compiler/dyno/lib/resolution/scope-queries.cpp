@@ -234,7 +234,7 @@ static bool doLookupExprInScope(Context* context,
                                 std::vector<BorrowedIdsWithName>& result,
                                 UniqueString& name,
                                 const Scope*& resultScope,
-                                const Scope* candidateScope=nullptr);
+                                const Scope* scopeForReceiverType=nullptr);
 
 static const ResolvedVisibilityScope*
   partiallyResolvedVisibilityScope(Context* context, const Scope* scope);
@@ -388,7 +388,7 @@ static bool doLookupExprInScope(Context* context,
                                 std::vector<BorrowedIdsWithName>& result,
                                 UniqueString& name,
                                 const Scope*& resultScope,
-                                const Scope* candidateScope) {
+                                const Scope* scopeForReceiverType) {
 
   if (auto ident = expr->toIdentifier()) {
     UniqueString n = ident->name();
@@ -406,7 +406,7 @@ static bool doLookupExprInScope(Context* context,
     std::vector<BorrowedIdsWithName> rcvResult;
     ID rcvId;
     UniqueString rcvName;
-    const Scope* ignoredScope;
+    const Scope* ignoredScope = nullptr;
 
     LookupConfig rcvConfig = config | LOOKUP_INNERMOST;
 
@@ -424,8 +424,8 @@ static bool doLookupExprInScope(Context* context,
     rcvId = rcvResult[0].id(0);
 
     // find the fieldName in the scope of rcvId
-    const Scope* searchScope = (candidateScope != nullptr)
-        ? candidateScope
+    const Scope* searchScope = (scopeForReceiverType != nullptr)
+        ? scopeForReceiverType
         : scopeForId(context, rcvId);
 
     LookupConfig fieldConfig = LOOKUP_DECLS |
@@ -522,14 +522,14 @@ lookupInScopeWithSet(Context* context,
                      const Expression* expr,
                      LookupConfig config,
                      std::unordered_set<const Scope*>& visited,
-                     const Scope* candidateScope) {
+                     const Scope* scopeForReceiverType) {
   std::vector<BorrowedIdsWithName> vec;
   UniqueString name;
   const Scope* resultScope;
 
   doLookupExprInScope(context, scope, expr, config, visited, vec, name,
                       resultScope,
-                      candidateScope);
+                      scopeForReceiverType);
 
   return vec;
 }

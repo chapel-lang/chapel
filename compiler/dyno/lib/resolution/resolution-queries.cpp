@@ -610,6 +610,8 @@ struct Resolver {
     bool hasQuestionArg = false;
     std::vector<CallInfoActual> actuals;
 
+    debuggerBreakHere();
+
     // Construct an actual for the receiver.
     if (receiver != nullptr) {
       ResolvedExpression& r = byPostorder.byAst(receiver);
@@ -2168,7 +2170,7 @@ lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const Call* call,
                  std::unordered_set<const Scope*>& visited,
-                 const Scope* candidateScope=nullptr) {
+                 const Scope* scopeForReceiverType=nullptr) {
 
   std::vector<BorrowedIdsWithName> ret;
 
@@ -2183,7 +2185,7 @@ lookupCalledExpr(Context* context,
   } else if (const Expression* called = call->calledExpression()) {
     auto vec = lookupInScopeWithSet(context, scope, called, config,
                                     visited,
-                                    candidateScope);
+                                    scopeForReceiverType);
     ret.swap(vec);
   }
 
@@ -2424,42 +2426,32 @@ CallResolutionResult resolveFnCall(Context* context,
     assert(ci.numActuals() >= 1);
 
     // Receiver should be first actual of method call.
-    const auto& receiver = ci.actuals(0);
+    auto& receiver = ci.actuals(0);
+    auto& qualType = receiver.type();
+    const Scope* scopeForReceiverType = nullptr;
 
-    if (auto compType = receiver.type().type()->getCompositeType()) {
-      auto candidateScope = scopeForId(context, compType->id());
-      assert(candidateScope);
-
-      // compute the potential functions that it could resolve to
-      auto v = lookupCalledExpr(context, inScope, call,
-                                visited,
-                                candidateScope);
-
-      // filter without instantiating yet
-      const auto& initial = filterCandidatesInitial(context, v, ci);
-
-      // find candidates, doing instantiation if necessary
-      filterCandidatesInstantiating(context, initial, ci,
-                                    inScope,
-                                    inPoiScope,
-                                    candidates);
+    // Look for a scope associated with the receiver type.
+    if (auto compType = qualType.type()->getCompositeType()) {
+      scopeForReceiverType = scopeForId(context, compType->id());
     } else {
       assert(false && "Not handled yet");
     }
+
+    if (scopeForReceiverType) {
+      auto v = lookupCalledExpr(context, inScope, call, visited,
+                                scopeForReceiverType);
+      const auto& initial = filterCandidatesInitial(context, v, ci);
+      filterCandidatesInstantiating(context, initial, ci, inScope,
+                                    inPoiScope,
+                                    candidates);
+    }
   }
 
+  // Now look for candidates starting at the call site.
   {
-    // compute the potential functions that it could resolve to
     auto v = lookupCalledExpr(context, inScope, call, visited);
-
-    // filter without instantiating yet
-    const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
-
-    // find candidates, doing instantiation if necessary
-    filterCandidatesInstantiating(context,
-                                  initialCandidates,
-                                  ci,
-                                  inScope,
+    const auto& initial = filterCandidatesInitial(context, v, ci);
+    filterCandidatesInstantiating(context, initial, ci, inScope,
                                   inPoiScope,
                                   candidates);
   }
@@ -2476,17 +2468,10 @@ CallResolutionResult resolveFnCall(Context* context,
       break;
     }
 
-    // compute the potential functions that it could resolve to
+    // Lookup and filter candidates.
     auto v = lookupCalledExpr(context, curPoi->inScope(), call, visited);
-
-    // filter without instantiating yet
-    const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
-
-    // find candidates, doing instantiation if necessary
-    filterCandidatesInstantiating(context,
-                                  initialCandidates,
-                                  ci,
-                                  inScope,
+    const auto& initial = filterCandidatesInitial(context, v, ci);
+    filterCandidatesInstantiating(context, initial, ci, inScope,
                                   inPoiScope,
                                   candidates);
   }

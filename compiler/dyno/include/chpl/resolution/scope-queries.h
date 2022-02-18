@@ -92,7 +92,7 @@ namespace resolution {
                        const uast::Expression* expr,
                        LookupConfig config,
                        std::unordered_set<const Scope*>& visited,
-                       const Scope* candidateScope=nullptr);
+                       const Scope* scopeForReceiverType=nullptr);
 
   /**
     Same as lookupNameInScope but includes a set tracking visited scopes.
