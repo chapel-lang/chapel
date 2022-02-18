@@ -1,2 +1,2 @@
---n=10000 # pidigits.good
---n=27    # pidigits-27-nospace.good
+--n=10000 # pidigits4-syscwarn.good
+--n=27    # pidigits4-27-nospace.good
