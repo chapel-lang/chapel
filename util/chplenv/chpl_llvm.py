@@ -146,9 +146,6 @@ def find_system_llvm_config():
             if entry[1] == vers:
                 found = entry
                 break
-        # Found the most preferred supported version available. Look no further.
-        if found[1] == vers:
-            break
 
     # command set, version > 0, no error
     command = found[0]
