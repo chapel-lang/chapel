@@ -222,7 +222,7 @@ module BigInteger {
       if _local || num.localeId == chpl_nodeID {
         mpz_init_set(this.mpz, num.mpz);
       } else {
-        var mpz_struct = num.mpzStruct();
+        var mpz_struct = num.getImpl();
 
         mpz_init(this.mpz);
 
@@ -5298,7 +5298,7 @@ module BigInteger {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const mpz_struct = a.mpzStruct();
+        const mpz_struct = a.getImpl();
 
         chpl_gmp_get_mpz(this.mpz, a.localeId, mpz_struct);
       }
