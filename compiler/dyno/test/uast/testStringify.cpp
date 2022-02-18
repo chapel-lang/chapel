@@ -179,6 +179,8 @@ static void test1(Parser* parser) {
                  with (ref a, var b = foo())  {
                    writeln(a);
                  }
+                 begin writeln(x);
+
                  [x in foo with (ref thing)] {
                    foo();
                  }
@@ -190,6 +192,7 @@ static void test1(Parser* parser) {
                sync {
                  begin foo();
                }
+               var myBytes = b"this string to bytes";
                serial do
                  var a;
                iter foo(): int {
@@ -219,6 +222,13 @@ static void test1(Parser* parser) {
                }
                cobegin {
                  writeln(a);
+               }
+               do {
+                 writeln(i);
+                 i += 1;
+               } while i < 5;
+               forall i in 1..10 {
+                 x.fetchAdd(i);
                }
              }
              )"""";
