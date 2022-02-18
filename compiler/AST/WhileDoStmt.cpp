@@ -52,7 +52,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
     DefExpr* varDef = toDefExpr(condIV->get(1)->remove());
     Expr*  condExpr = condIV->get(1)->remove();
     INT_ASSERT(! varDef->init && ! varDef->exprType); // from parser
-    
+
     // The construction follows the non-IfVar case below, adding the following:
     //
     //  // at start of 'retval' block

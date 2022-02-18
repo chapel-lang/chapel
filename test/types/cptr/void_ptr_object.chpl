@@ -5,7 +5,7 @@ class C {
 
 
 proc main() {
-  use CPtr;
+  use CTypes;
   var c = new unmanaged C(1);
   // cast it to a c_void_ptr
   var ptr1 = c:c_void_ptr;

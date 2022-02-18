@@ -36,6 +36,8 @@
 #include "virtualDispatch.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <stack>
 
 /*
@@ -182,7 +184,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
 std::vector<Expr *> getLastStmtsForForallUnorderedOps(ForallStmt *forall) {
   std::vector<Expr *> lastStmts;
-  for_vector(BlockStmt, block, forall->loopBodies()) {
+  for (BlockStmt* block : forall->loopBodies()) {
     getLastStmts(block, lastStmts);
   }
   return lastStmts;

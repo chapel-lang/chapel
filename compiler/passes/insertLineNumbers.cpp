@@ -30,6 +30,8 @@
 #include "symbol.h"
 #include "virtualDispatch.h"
 
+#include "global-ast-vecs.h"
+
 #include <algorithm>
 #include <queue>
 
@@ -262,7 +264,7 @@ static bool isClassMethodCall(CallExpr* call) {
 //      handling a call to a destructor.
 //
 static void insertNilChecks() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     // A member access is one of these primitives or a method call.
     // A method call is expected to access its "this" argument.
     if (call->isPrimitive(PRIM_GET_MEMBER)       ||

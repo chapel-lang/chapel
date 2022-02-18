@@ -1,6 +1,6 @@
 .. default-domain:: cpp
 
-.. _Chapter-next-chpl:
+.. _Chapter-dyno-chpl:
 
 Base
 ====
@@ -9,7 +9,7 @@ This section contains a selection of the definitions declared in the `chpl`
 namespace. The entries may not be exhaustive.
 
 .. comment:
-   See entries in '$CHPL_HOME/compiler/next/include/chpl/queries'
+   See entries in '$CHPL_HOME/compiler/dyno/include/chpl/queries'
 
 .. doxygenclass:: chpl::CommentID
    :members:
@@ -36,6 +36,10 @@ namespace. The entries may not be exhaustive.
    :undoc-members:
 
 .. doxygenclass:: chpl::Iterable
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::Bitmap
    :members:
    :undoc-members:
 

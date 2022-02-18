@@ -3,7 +3,7 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,7 +24,7 @@ module LocaleModelHelpAPU {
 
   public use LocaleModelHelpSetup;
   public use LocaleModelHelpRuntime;
-  use SysCTypes;
+  use CTypes;
 
   pragma "no doc"
   config param debugAPULocale = false;
@@ -90,7 +90,7 @@ module LocaleModelHelpAPU {
                      ) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
-    
+
     if (debugAPULocale) {
       if (dsubloc == 0) {
           chpl_debug_writeln("** executing on CPU");
@@ -109,7 +109,7 @@ module LocaleModelHelpAPU {
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
         chpl_ftable_call(fn, args);
-      } else {        
+      } else {
         // move to a different sublocale
         chpl_task_setSubloc(dsubloc);
         chpl_ftable_call(fn, args);

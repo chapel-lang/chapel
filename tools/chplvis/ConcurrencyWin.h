@@ -21,7 +21,7 @@
 #ifndef CONCURRENCYWIN_H
 #define CONCURRENCYWIN_H
 
-class ConcurrencyWin; 
+class ConcurrencyWin;
 
 #include <FL/Fl_Double_Window.H>
 #include "ConcurrencyView.h"

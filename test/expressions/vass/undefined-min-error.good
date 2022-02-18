@@ -1,0 +1,1 @@
+undefined-min-error.chpl:5: error: 'min(type t)' is not defined for t=R

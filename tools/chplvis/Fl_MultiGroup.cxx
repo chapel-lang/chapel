@@ -28,7 +28,7 @@
 #include <stdio.h>
 
 Fl_MultiGroup::Fl_MultiGroup (int x, int y, int w, int h, const char *l)
-  : Fl_Group(x, y, w, h, l) 
+  : Fl_Group(x, y, w, h, l)
 {
   childStack = NULL;
   numChildren = 0;
@@ -41,7 +41,7 @@ bool Fl_MultiGroup::selectChild (int which)
 {
   if (which < 0 || which >= children())
     return false;
-  
+
   // Hide the current selected
   child(selectedChild)->hide();
   // Select the new child
@@ -168,7 +168,7 @@ void Fl_MultiGroup::insert (Fl_Widget &o, int number)
 
 // Widget construction support
 
-void Fl_MultiGroup::begin() 
+void Fl_MultiGroup::begin()
  {
    Fl_Group::current(this);
  }

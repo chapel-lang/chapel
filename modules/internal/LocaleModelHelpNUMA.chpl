@@ -19,7 +19,7 @@
  */
 
 module LocaleModelHelpNUMA {
-  use SysCTypes;
+  use CTypes;
 
   param localeModelHasSublocales = true;
   param localeModelPartitionsIterationOnSublocales = true;

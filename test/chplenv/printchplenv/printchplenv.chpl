@@ -1,3 +1,5 @@
+use ChplConfig;
+
 writeln('CHPL_HOME: ', CHPL_HOME);
 writeln('CHPL_TARGET_PLATFORM: ', CHPL_TARGET_PLATFORM);
 writeln('CHPL_TARGET_COMPILER: ', CHPL_TARGET_COMPILER);
@@ -23,4 +25,3 @@ writeln('CHPL_GMP: ', CHPL_GMP);
 writeln('CHPL_HWLOC: ', CHPL_HWLOC);
 writeln('CHPL_RE2: ', CHPL_RE2);
 writeln('CHPL_LLVM: ', CHPL_LLVM);
-writeln('CHPL_AUX_FILESYS: ', CHPL_AUX_FILESYS);

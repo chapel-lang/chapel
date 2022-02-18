@@ -325,7 +325,7 @@ proc Cyclic.init(other: Cyclic, privateData,
   dataParIgnoreRunningTasks = privateData[3];
   dataParMinGranularity = privateData[4];
 }
-                 
+
 override proc Cyclic.dsiSupportsPrivatization() param return true;
 
 proc Cyclic.dsiGetPrivatizeData() return (startIdx,
@@ -837,7 +837,7 @@ override proc CyclicArr.dsiDestroyArr(deinitElts:bool) {
   }
 }
 
-proc CyclicArr.chpl__serialize() 
+proc CyclicArr.chpl__serialize()
     where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }

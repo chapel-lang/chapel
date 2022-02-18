@@ -605,7 +605,7 @@ static Symbol* tryCResolve(BaseAST* context,
 
   // try the modules used by this module.
   // TODO: handle only, except, etc
-  forv_Vec(ModuleSymbol, usedMod, module->modUseList) {
+  for (ModuleSymbol* usedMod : module->modUseList) {
     if (usedMod->modTag == MOD_USER) { // no extern blocks in internal code
       Symbol* got = tryCResolve(context, usedMod, name, visited);
       if (got != NULL)
@@ -641,4 +641,3 @@ static Expr* lookupExpr(ModuleSymbol* module, const char* name) {
 }
 
 #endif
-

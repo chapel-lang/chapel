@@ -20,6 +20,7 @@
 
 
 use ArgumentParser;
+use ChplConfig;
 use FileSystem;
 use List;
 use Map;

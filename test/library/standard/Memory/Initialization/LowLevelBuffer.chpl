@@ -15,8 +15,11 @@ record buffer {
       import HaltWrappers.boundsCheckHalt;
       boundsCheckHalt('Cannot allocate buffer with size <= 0');
     } else {
-      this._data = _ddata_allocate(eltType, size, initElts=false);
+      var callPostAlloc: bool;
+      this._data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
       this._size = size;
+      if callPostAlloc then
+        _ddata_allocate_postalloc(_data, size);
     }
   }
 

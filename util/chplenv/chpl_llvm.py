@@ -689,6 +689,7 @@ def get_host_link_args():
 def _main():
     llvm_val = get()
     llvm_config = get_llvm_config()
+    llvm_versions = llvm_versions_string()
 
     parser = optparse.OptionParser(usage='usage: %prog [--needs-llvm-runtime]')
     parser.add_option('--needs-llvm-runtime', dest='action',
@@ -697,6 +698,9 @@ def _main():
     parser.add_option('--llvm-config', dest='action',
                       action='store_const',
                       const='llvmconfig', default='')
+    parser.add_option('--supported-versions', dest='action',
+                      action='store_const',
+                      const='llvmversions', default='')
 
     (options, args) = parser.parse_args()
 
@@ -708,6 +712,8 @@ def _main():
     elif options.action == 'llvmconfig':
         sys.stdout.write("{0}\n".format(llvm_config))
         validate_llvm_config()
+    elif options.action == 'llvmversions':
+        sys.stdout.write("{0}\n".format(llvm_versions))
     else:
         sys.stdout.write("{0}\n".format(llvm_val))
 

@@ -29,6 +29,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
+
 BlockStmt*                         rootBlock             = NULL;
 ModuleSymbol*                      rootModule            = NULL;
 ModuleSymbol*                      theProgram            = NULL;
@@ -132,6 +134,18 @@ ModuleSymbol* ModuleSymbol::findMainModuleByName() {
   return retval;
 }
 
+// is it a module or submodule from a file named on the command line?
+static bool isModOrSubmodFromCommandLine(ModuleSymbol* mod) {
+  for (ModuleSymbol* cur = mod;
+       cur != nullptr && cur->defPoint != nullptr;
+       cur = cur->defPoint->getModule()) {
+    if (cur->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE))
+      return true;
+  }
+
+  return false;
+}
+
 ModuleSymbol* ModuleSymbol::findMainModuleFromMainFunction() {
   bool          errorP  = false;
   FnSymbol*     matchFn = NULL;
@@ -141,7 +155,7 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromMainFunction() {
     if (strcmp("main", fn->name) == 0) {
       ModuleSymbol* fnMod = fn->getModule();
 
-      if (fnMod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) == true) {
+      if (isModOrSubmodFromCommandLine(fnMod)) {
         if (retval == NULL) {
           matchFn = fn;
           retval  = fnMod;
@@ -180,7 +194,7 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromCommandLine() {
   for_alist(expr, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-        if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) == true) {
+        if (isModOrSubmodFromCommandLine(mod)) {
           if (retval != NULL) {
             if (fLibraryCompile) {
               // "Main module" is not a valid concept in library compilation
@@ -330,6 +344,9 @@ void ModuleSymbol::printDocs(std::ostream* file,
   // after the title, sphinx will complain about a duplicate id error.
   if (!fDocsTextOnly) {
     *file << ".. default-domain:: chpl" << std::endl << std::endl;
+    if (this->docsName() == "ChapelSysCTypes") {
+      return;
+    }
     *file << ".. module:: " << this->docsName() << std::endl;
 
     if (this->doc != NULL) {

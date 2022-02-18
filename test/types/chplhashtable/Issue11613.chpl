@@ -11,6 +11,10 @@ operator R.!=(a: R, b: R) {
   return || reduce (a.a != b.a);
 }
 
+proc R.hash() {
+  return a.hash();
+}
+
 var d : domain(R(int));
 d += new R(int);
 

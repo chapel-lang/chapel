@@ -1,3 +1,5 @@
+no-use-enum-other-file.chpl:2: In function 'f':
+no-use-enum-other-file.chpl:3: error: 'X' undeclared (first use this function)
 no-use-enum.chpl:6: In function 'main':
 no-use-enum.chpl:7: error: 'X' undeclared (first use this function)
 no-use-enum.chpl:10: error: 'Z' undeclared (first use this function)

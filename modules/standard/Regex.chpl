@@ -340,7 +340,7 @@ Regular Expression Types and Methods
 
  */
 module Regex {
-  private use SysBasic, SysError, SysCTypes, CPtr;
+  private use SysBasic, SysError, CTypes;
 
 pragma "no doc"
 extern type qio_regex_t;
@@ -469,6 +469,7 @@ type BadRegexpError = owned BadRegexError;
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
+  use ChplConfig;
 
   if CHPL_RE2 == "none" {
     compilerError("Cannot use Regex with CHPL_RE2=none");

@@ -1,7 +1,1 @@
-day14-maxlocstringinds.chpl:6: error: unresolved call 'max(type string)'
-$CHPL_HOME/modules/internal/ChapelTuple.chpl:393: note: this candidate did not match: max(type t)
-$CHPL_HOME/modules/internal/ChapelTuple.chpl:393: note: because where clause evaluated to false
-day14-maxlocstringinds.chpl:6: note: other candidates are:
-$CHPL_HOME/modules/standard/Types.chpl:734: note:   max(type t)
-$CHPL_HOME/modules/standard/Types.chpl:737: note:   max(type t)
-note: and 22 other candidates, use --print-all-candidates to see them
+day14-maxlocstringinds.chpl:6: error: 'max(type t)' is not defined for t=string

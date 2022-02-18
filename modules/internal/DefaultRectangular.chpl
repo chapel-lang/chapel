@@ -32,7 +32,7 @@ module DefaultRectangular {
 
   use DSIUtil;
   public use ChapelArray;
-  use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes, CPtr;
+  use ChapelDistribution, ChapelRange, SysBasic, SysError, CTypes, CTypes;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
   public use ExternalArray; // OK: currently expected to be available by
@@ -490,7 +490,7 @@ module DefaultRectangular {
         compilerError("rank mismatch in zippered iteration (can't zip a " +
                       followThis.size:string + "D expression with a " +
                       this.rank:string + "D domain)");
-        
+
       proc anyStridable(rangeTuple, param i: int = 0) param
         return if i == rangeTuple.size-1 then rangeTuple(i).stridable
                else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
@@ -1083,6 +1083,21 @@ module DefaultRectangular {
       deinitElts = false;
     }
 
+    //
+    // This small kernel must be implemented by different array shapes due
+    // to 'BaseArr' having no notion of indexing scheme.
+    //
+    // TODO: Without this where clause any code using `unsafeAssign` to
+    // resize a 2D+ array will explode, because the 'locales' array tries
+    // to reuse an existing instantiation. Comment this out and run
+    // 'test/domains/unsafeAssign/TestUnsafeAssign2D.chpl' to see.
+    //
+    override proc chpl_unsafeAssignIsClassElementNil(manager, idx)
+    where idx.type == (rank*idxType) {
+      ref elem = this.dsiAccess(idx);
+      return manager.isClassReferenceNil(elem);
+    }
+
     override proc dsiDestroyArr(deinitElts:bool) {
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
@@ -1403,10 +1418,12 @@ module DefaultRectangular {
       if !actuallyResizing then
         return;
 
-      if !isDefaultInitializable(eltType) {
-        halt("Can't resize domains whose arrays' elements don't " +
-             "have default values");
-      } else if this.locale != here {
+      if _resizePolicy == chpl_ddataResizePolicy.normalInit then
+        if !isDefaultInitializable(eltType) then
+          halt("Can't resize domains whose arrays' elements don't " +
+               "have default values");
+
+      if this.locale != here {
         halt("internal error: dsiReallocate() can only be called " +
              "from an array's home locale");
       } else {
@@ -1427,16 +1444,47 @@ module DefaultRectangular {
             writeln("reallocating in-place");
 
           sizesPerDim(0) = reallocD.dsiDim(0).sizeAs(int);
-          data = _ddata_reallocate(data, eltType, oldSize, newSize);
+          data = _ddata_reallocate(oldDdata=data,
+                                   eltType=eltType,
+                                   oldSize=oldSize,
+                                   newSize=newSize,
+                                   subloc=c_sublocid_none,
+                                   policy=_resizePolicy);
           initShiftedData();
         } else {
-          var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
-                                                         rank=rank,
-                                                         idxType=idxType,
-                                                         stridable=reallocD._value.stridable,
-                                                         dom=reallocD._value);
+
+          // Should have been checked above.
+          param initElts = isDefaultInitializable(eltType);
+
+          var copy = new unmanaged
+              DefaultRectangularArr(eltType=eltType,
+                                    rank=rank,
+                                    idxType=idxType,
+                                    stridable=reallocD._value.stridable,
+                                    dom=reallocD._value,
+                                    initElts=initElts);
+
+          // May have to prepare the buffer based on the resize policy,
+          // but only if the element type is non-default-initializable.
+          if !initElts {
+            select _resizePolicy {
+
+              // User-facing error occurs above this scope.
+              when chpl_ddataResizePolicy.normalInit do
+                halt("internal error: bad resize policy for array of " +
+                     "non-default-initializable elements");
+
+              // Do nothing.
+              when chpl_ddataResizePolicy.skipInit do;
+
+              // TODO: An upgrade would be to zero out only new slots.
+              when chpl_ddataResizePolicy.skipInitButClearMem do
+                _ddata_fill(copy.data, eltType, 0, reallocD.size);
+            }
+          }
 
           var keep = reallocD((...dom.ranges));
+
           // Copy the preserved elements
           forall i in keep {
             // "move" from the old buffer to the new one
@@ -2291,11 +2339,11 @@ module DefaultRectangular {
     var size2: rank*int;
     for (i, r) in zip(0..#other.dom.ranges.size, other.dom.ranges) do
       size2(i) = r.sizeAs(int);
-    
+
     if(this.locale == other.locale &&
        size1 == size2) {
       if debugOptimizedSwap {
-        writeln("DefaultRectangular doing optimized swap. Domains: ", 
+        writeln("DefaultRectangular doing optimized swap. Domains: ",
                 this.dom.ranges, " ", other.dom.ranges);
       }
       this.data <=> other.data;
@@ -2304,7 +2352,7 @@ module DefaultRectangular {
       return true;
     }
     if debugOptimizedSwap {
-      writeln("DefaultRectangular doing unoptimized swap. Domains: ", 
+      writeln("DefaultRectangular doing unoptimized swap. Domains: ",
               this.dom.ranges, " ", other.dom.ranges);
     }
     return false;

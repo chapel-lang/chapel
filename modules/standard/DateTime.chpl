@@ -35,8 +35,7 @@
 
 module DateTime {
   import HaltWrappers;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;
@@ -90,6 +89,7 @@ module DateTime {
   }
 
   private proc tm_zoneType type {
+    use ChplConfig;
     if CHPL_TARGET_PLATFORM == "darwin" then
       return c_ptr(c_char); // char *
     else

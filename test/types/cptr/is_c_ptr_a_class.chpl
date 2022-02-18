@@ -1,2 +1,2 @@
-use CPtr;
+use CTypes;
 writeln(isClassType(c_ptr(int)));

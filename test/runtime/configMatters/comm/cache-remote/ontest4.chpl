@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 extern proc chpl_cache_print();
 extern proc chpl_cache_fence(acquire:c_int, release:c_int, ln:int(32), fn:int(32));
 extern proc printf(fmt: c_string, vals...?numvals): int;

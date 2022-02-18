@@ -3,7 +3,7 @@
 // with a compile-time switch.
 module FFTW_MPI {
 
-  use SysCTypes;
+  use CTypes;
   use FFTW;
   use SimpleMPI;
 

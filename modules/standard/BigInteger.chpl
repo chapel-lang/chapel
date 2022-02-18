@@ -165,11 +165,12 @@ See :mod:`GMP` for more information on how to use GMP with Chapel.
 */
 
 module BigInteger {
+  use CTypes;
   use GMP;
   use HaltWrappers;
-  use SysCTypes;
+  use CTypes;
+  use SysBasic only syserr, EFORMAT, ENOERR;
   use SysError;
-  use SysBasic;
 
   /*
     .. warning::
@@ -2465,9 +2466,9 @@ module BigInteger {
       ret = mpz_divisible_p(this.mpz, div.mpz);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -2493,9 +2494,9 @@ module BigInteger {
       ret = mpz_divisible_ui_p(t_.mpz,   div_);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -2528,9 +2529,9 @@ module BigInteger {
       ret = mpz_divisible_ui_p(t_.mpz,   div_);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -2573,9 +2574,9 @@ module BigInteger {
       ret = mpz_divisible_2exp_p(t_.mpz,   exp_);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -2622,9 +2623,9 @@ module BigInteger {
       ret = mpz_congruent_p(t_.mpz, con_.mpz, mod_.mpz);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -2663,9 +2664,9 @@ module BigInteger {
       ret = mpz_congruent_ui_p(t_.mpz,   con_, mod_);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -2715,9 +2716,9 @@ module BigInteger {
       ret = mpz_congruent_2exp_p(t_.mpz, con_.mpz, modExp_);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -3107,9 +3108,9 @@ module BigInteger {
       ret = mpz_perfect_power_p(t_.mpz);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -3144,9 +3145,9 @@ module BigInteger {
       ret = mpz_perfect_square_p(t_.mpz);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -3436,7 +3437,7 @@ module BigInteger {
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
     return this.removeFactor(a,f);
   }
-  
+
   // This helper is intended for use only when the factor is 0
   // Division by 0 is undefined and it results in a
   // Floating point exception error.
@@ -3935,9 +3936,9 @@ module BigInteger {
       ret = mpz_even_p(t_.mpz);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -3970,9 +3971,9 @@ module BigInteger {
       ret = mpz_odd_p(t_.mpz);
     }
 
-    if ret then 
+    if ret then
       return true;
-    else 
+    else
       return false;
   }
 
@@ -5390,10 +5391,10 @@ module BigInteger {
     var ret: uint = this > 0;
     if _local {
       hashHelper();
-      
+
     } else if this.localeId == chpl_nodeID {
       hashHelper();
-      
+
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
@@ -5403,12 +5404,12 @@ module BigInteger {
     }
 
     return ret;
-    
+
     inline proc hashHelper() {
       for i in 0..#(chpl_gmp_mpz_nlimbs(this.mpz)) {
         var limb = chpl_gmp_mpz_getlimbn(this.mpz, i);
         ret = chpl__defaultHashCombine(limb.hash(), ret, i + 1);
-      }      
+      }
     }
   }
 }

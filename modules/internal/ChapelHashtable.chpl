@@ -31,7 +31,7 @@ module ChapelHashtable {
 
   use ChapelBase, DSIUtil;
 
-  private use CPtr;
+  private use CTypes;
 
   // empty needs to be 0 so memset 0 sets it
   enum chpl__hash_status { empty=0, full, deleted };
@@ -621,7 +621,7 @@ module ChapelHashtable {
 
     proc resize(grow:bool) {
       if postponeResize then return;
-      
+
       // double if you are growing, half if you are shrinking
       var newSize = if tableSize == 0 then startingSize else if grow then tableSize << 1 else tableSize >> 1;
 

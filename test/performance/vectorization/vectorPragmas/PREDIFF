@@ -2,18 +2,27 @@
 
 import sys
 
-# concat per test compiler good file and directory exec good file
+# concat per test compiler good file,
+# directory exec good file,
+# and per test good file (if it exists)
 
 testBaseName = sys.argv[1]
 testGoodFile = testBaseName + '.good'
 goodCompOutputFile = testBaseName + '.compgood'
-goodExecOutputFile = 'GOOD_EXEC_OUTPUT'
+goodExecOutputFile1 = 'GOOD_EXEC_OUTPUT'
+goodExecOutputFile2 = testBaseName + '.execgood'
 
 with open (goodCompOutputFile, 'r') as f:
     compGoodOutput = f.read()
 
-with open (goodExecOutputFile, 'r') as f:
+with open (goodExecOutputFile1, 'r') as f:
     execGoodOutput = f.read()
+
+try: 
+    with open (goodExecOutputFile2, 'r') as f:
+        execGoodOutput = execGoodOutput + f.read()
+except FileNotFoundError:
+    pass
 
 with open (testGoodFile, 'w') as f:
     f.write(compGoodOutput)

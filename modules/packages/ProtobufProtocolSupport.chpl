@@ -32,7 +32,7 @@ module ProtobufProtocolSupport {
   public use WireEncoding;
   public use Fields;
   public use RepeatedFields;
-  private use CPtr;
+  private use CTypes;
 
   pragma "no doc"
   module WireEncoding {
@@ -43,7 +43,7 @@ module ProtobufProtocolSupport {
     */
 
     use IO;
-    use CPtr;
+    use CTypes;
 
     type writingChannel = channel(true,iokind.little,false);
     type readingChannel = channel(false,iokind.little,false);
@@ -60,7 +60,7 @@ module ProtobufProtocolSupport {
         ch.write(zero);
         return;
       }
-    
+
       var newVal = val;
       var shiftVal: uint;
       while newVal != 0 {
@@ -98,7 +98,7 @@ module ProtobufProtocolSupport {
     proc tagAppend(fieldNumber: int, wireType: int, ch: writingChannel) throws {
       unsignedVarintAppend(((fieldNumber << 3) | wireType):uint, ch);
     }
-    
+
     proc uint64AppendBase(val: uint(64), ch: writingChannel) throws {
       var uintVal = val:uint;
       unsignedVarintAppend(uintVal, ch);
@@ -215,7 +215,7 @@ module ProtobufProtocolSupport {
       c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       fixed32AppendBase(b, ch);
     }
-    
+
     proc floatConsumeBase(ch: readingChannel): real(32) throws {
       var a = fixed32ConsumeBase(ch);
       var b: real(32);
@@ -229,7 +229,7 @@ module ProtobufProtocolSupport {
       c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       fixed64AppendBase(b, ch);
     }
-    
+
     proc doubleConsumeBase(ch: readingChannel): real(64) throws {
       var a = fixed64ConsumeBase(ch);
       var b: real(64);
@@ -309,7 +309,7 @@ module ProtobufProtocolSupport {
     }
 
   }
-  
+
   pragma "no doc"
   module Fields {
     /*
@@ -342,7 +342,7 @@ module ProtobufProtocolSupport {
     proc uint32Consume(ch: readingChannel): uint(32) throws {
       return uint32ConsumeBase(ch);
     }
-    
+
     proc int64Append(val: int(64), fieldNumber: int, ch: writingChannel) throws {
       if val == 0 then return;
 
@@ -448,7 +448,7 @@ module ProtobufProtocolSupport {
       tagAppend(fieldNumber, fixed32Type, ch);
       floatAppendBase(val, ch);
     }
-    
+
     proc floatConsume(ch: readingChannel): real(32) throws {
       return floatConsumeBase(ch);
     }
@@ -459,7 +459,7 @@ module ProtobufProtocolSupport {
       tagAppend(fieldNumber, fixed64Type, ch);
       doubleAppendBase(val, ch);
     }
-    
+
     proc doubleConsume(ch: readingChannel): real(64) throws {
       return doubleConsumeBase(ch);
     }
@@ -720,7 +720,7 @@ module ProtobufProtocolSupport {
     }
 
   }
-  
+
   pragma "no doc"
   module RepeatedFields {
     /*
@@ -778,7 +778,7 @@ module ProtobufProtocolSupport {
         uint32AppendBase(val, ch);
       }
     }
-    
+
     proc uint32RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
       var initialOffset = ch.offset();
@@ -789,9 +789,9 @@ module ProtobufProtocolSupport {
         var val = uint32ConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc int64RepeatedAppend(valList: list(int(64)), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 
@@ -808,7 +808,7 @@ module ProtobufProtocolSupport {
         int64AppendBase(val, ch);
       }
     }
-    
+
     proc int64RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
       var initialOffset = ch.offset();
@@ -819,9 +819,9 @@ module ProtobufProtocolSupport {
         var val = int64ConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc int32RepeatedAppend(valList: list(int(32)), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 
@@ -838,7 +838,7 @@ module ProtobufProtocolSupport {
         int32AppendBase(val, ch);
       }
     }
-    
+
     proc int32RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
       var initialOffset = ch.offset();
@@ -849,14 +849,14 @@ module ProtobufProtocolSupport {
         var val = int32ConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc boolRepeatedAppend(valList: list(bool), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var payloadLength = valList.size; 
+      var payloadLength = valList.size;
       unsignedVarintAppend(payloadLength:uint, ch);
       for val in valList {
         boolAppendBase(val, ch);
@@ -873,9 +873,9 @@ module ProtobufProtocolSupport {
         var val = boolConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc sint64RepeatedAppend(valList: list(int(64)), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 
@@ -892,7 +892,7 @@ module ProtobufProtocolSupport {
         sint64AppendBase(val, ch);
       }
     }
-    
+
     proc sint64RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
       var initialOffset = ch.offset();
@@ -903,9 +903,9 @@ module ProtobufProtocolSupport {
         var val = sint64ConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc sint32RepeatedAppend(valList: list(int(32)), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 
@@ -922,7 +922,7 @@ module ProtobufProtocolSupport {
         sint32AppendBase(val, ch);
       }
     }
-    
+
     proc sint32RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
       var initialOffset = ch.offset();
@@ -933,9 +933,9 @@ module ProtobufProtocolSupport {
         var val = sint32ConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc bytesRepeatedAppend(valList: list(bytes), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
       for val in valList {
@@ -970,7 +970,7 @@ module ProtobufProtocolSupport {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var payloadLength = valList.size * 4; 
+      var payloadLength = valList.size * 4;
       unsignedVarintAppend(payloadLength:uint, ch);
       for val in valList {
         fixed32AppendBase(val, ch);
@@ -987,14 +987,14 @@ module ProtobufProtocolSupport {
         var val = fixed32ConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc fixed64RepeatedAppend(valList: list(uint(64)), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var payloadLength = valList.size * 8; 
+      var payloadLength = valList.size * 8;
       unsignedVarintAppend(payloadLength:uint, ch);
       for val in valList {
         fixed64AppendBase(val, ch);
@@ -1011,14 +1011,14 @@ module ProtobufProtocolSupport {
         var val = fixed64ConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
 
     proc floatRepeatedAppend(valList: list(real(32)), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var payloadLength = valList.size * 4; 
+      var payloadLength = valList.size * 4;
       unsignedVarintAppend(payloadLength:uint, ch);
       for val in valList {
         floatAppendBase(val, ch);
@@ -1035,14 +1035,14 @@ module ProtobufProtocolSupport {
         var val = floatConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc doubleRepeatedAppend(valList: list(real(64)), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var payloadLength = valList.size * 8; 
+      var payloadLength = valList.size * 8;
       unsignedVarintAppend(payloadLength:uint, ch);
       for val in valList {
         doubleAppendBase(val, ch);
@@ -1059,14 +1059,14 @@ module ProtobufProtocolSupport {
         var val = doubleConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc sfixed64RepeatedAppend(valList: list(int(64)), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var payloadLength = valList.size * 8; 
+      var payloadLength = valList.size * 8;
       unsignedVarintAppend(payloadLength:uint, ch);
       for val in valList {
         sfixed64AppendBase(val, ch);
@@ -1083,14 +1083,14 @@ module ProtobufProtocolSupport {
         var val = sfixed64ConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc sfixed32RepeatedAppend(valList: list(int(32)), fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var payloadLength = valList.size * 4; 
+      var payloadLength = valList.size * 4;
       unsignedVarintAppend(payloadLength:uint, ch);
       for val in valList {
         sfixed32AppendBase(val, ch);
@@ -1107,9 +1107,9 @@ module ProtobufProtocolSupport {
         var val = sfixed32ConsumeBase(ch);
         returnList.append(val);
       }
-      return returnList; 
+      return returnList;
     }
-    
+
     proc enumRepeatedAppend(valList, fieldNumber: int, ch: writingChannel) throws {
       if valList.isEmpty() then return;
 

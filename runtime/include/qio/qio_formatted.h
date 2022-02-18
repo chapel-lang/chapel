@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -728,9 +728,9 @@ typedef struct qio_truncate_info_ {
   ssize_t max_columns;
   ssize_t max_chars;
   ssize_t max_bytes;
-  ssize_t ret_columns; 
-  ssize_t ret_chars; 
-  ssize_t ret_bytes; 
+  ssize_t ret_columns;
+  ssize_t ret_chars;
+  ssize_t ret_bytes;
   ssize_t ret_truncated_at_byte;
   ssize_t ret_truncated;
 } qio_truncate_info_t;
@@ -816,7 +816,7 @@ typedef struct qio_conv_s {
 
 void qio_conv_destroy(qio_conv_t* spec);
 void qio_conv_init(qio_conv_t* spec_out);
-qioerr qio_conv_parse(c_string fmt, size_t start, uint64_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out);
+qioerr qio_conv_parse(c_string fmt, size_t start, uint64_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out, int32_t lineno, int32_t filename);
 
 // These error codes can be used by callers to qio_conv_parse
 qioerr qio_format_error_too_many_args(void);

@@ -35,6 +35,8 @@
 #include "astutil.h"
 #include "optimizations.h"
 
+#include "global-ast-vecs.h"
+
 bool debugPrintGPUChecks = false;
 bool allowFnCallsFromGPU = false;
 int indentGPUChecksLevel = 0;
@@ -541,4 +543,3 @@ void gpuTransforms() {
     outlineGPUKernels();
   }
 }
-

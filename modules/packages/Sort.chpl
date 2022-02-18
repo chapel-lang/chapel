@@ -91,7 +91,7 @@ themselves like so:
 
 .. code-block:: chapel
 
-  proc op<(a: returnType, b: returnType): bool {
+  operator <(a: returnType, b: returnType): bool {
     ...
   }
 
@@ -254,7 +254,7 @@ module Sort {
 
   private use List;
   private use Reflection;
-  private use CPtr;
+  private use CTypes;
 
 /* Module-defined comparators */
 
@@ -1383,7 +1383,7 @@ module ShellSort {
 pragma "no doc"
 module SampleSortHelp {
   private use Sort;
-  private use CPtr;
+  private use CTypes;
 
   param maxLogBuckets = 8; // not counting equality buckets.
   param classifyUnrollFactor = 7;
@@ -1839,8 +1839,8 @@ module RadixSortHelp {
 
 pragma "no doc"
 module ShallowCopy {
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
+
 
   // The shallowCopy / shallowSwap code needs to be able to copy/swap
   // _array records. But c_ptrTo on an _array will return a pointer to
@@ -1908,7 +1908,7 @@ module ShallowCopy {
 
   // TODO: These shallowCopy functions should handle Block,Cyclic arrays
   inline proc shallowCopy(ref A, dst, src, nElts) {
-    use SysCTypes;
+
     // Ideally this would just be
     //A[dst..#nElts] = A[src..#nElts];
 
@@ -1934,7 +1934,7 @@ module ShallowCopy {
     }
   }
   inline proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
-    use SysCTypes;
+
     // Ideally this would just be
     //DstA[dst..#nElts] = SrcA[src..#nElts];
 
@@ -3196,7 +3196,7 @@ module TwoArraySampleSort {
   private use super.SampleSortHelp;
   private use super.RadixSortHelp;
 
-  private use CPtr;
+  private use CTypes;
 
   proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
 

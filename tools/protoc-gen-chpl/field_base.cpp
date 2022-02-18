@@ -24,7 +24,7 @@
 #include <helpers.h>
 
 namespace chapel {
-  
+
 
   void FieldGeneratorBase::SetCommonFieldVariables(
       map<string, string>* variables) {
@@ -54,7 +54,7 @@ namespace chapel {
   string FieldGeneratorBase::name() {
     return GetFieldName(descriptor_);
   }
-  
+
   string FieldGeneratorBase::oneof_name(const OneofDescriptor* descriptor) {
     return GetOneofName(descriptor);
   }
@@ -146,7 +146,7 @@ namespace chapel {
     }
   }
 
-  string FieldGeneratorBase::default_value(const FieldDescriptor* descriptor) {	
+  string FieldGeneratorBase::default_value(const FieldDescriptor* descriptor) {
     switch (descriptor->type()) {
       case FieldDescriptor::TYPE_MESSAGE:
         return ""; // we use chapel compiler generated default values for messages;

@@ -46,7 +46,7 @@ module ChapelSyncvar {
   use MemConsistency;
   use SyncVarRuntimeSupport;
 
-  use CPtr;
+  use CTypes;
 
   /************************************ | *************************************
   *                                                                           *
@@ -1140,9 +1140,9 @@ module ChapelSyncvar {
 
 
 private module SyncVarRuntimeSupport {
-  use ChapelStandard, SysCTypes;
+  use ChapelStandard, CTypes;
   use AlignedTSupport;
-  use CPtr;
+  use CTypes;
 
   //
   // Sync var externs
@@ -1199,6 +1199,7 @@ private module SyncVarRuntimeSupport {
   // native qthreads aligned_t sync vars only work on non-ARM 64-bit platform,
   // and we only support casting between certain types and aligned_t
   proc supportsNativeSyncVar(type t) param {
+    use ChplConfig;
     return CHPL_TASKS == "qthreads" &&
            CHPL_TARGET_ARCH != "aarch64" &&
            castableToAlignedT(t) &&

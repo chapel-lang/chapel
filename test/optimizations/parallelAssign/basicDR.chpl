@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 use Time;
 use RangeChunk;
 

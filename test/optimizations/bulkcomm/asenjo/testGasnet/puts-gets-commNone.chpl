@@ -10,7 +10,7 @@ proc TestGetsPuts(A:[], B:[])
 
 proc BlockArr.TestGetsPuts(B)
 {
-  use SysCTypes;
+  use CTypes;
 
   param stridelevels=1;
   //Errors below if stridelevels=0 !!

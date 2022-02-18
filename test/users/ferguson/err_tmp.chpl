@@ -1,4 +1,4 @@
-use SysBasic;
+use Sys, SysBasic;
 
 proc doDebugWrite(x, y):err_t {
   extern proc qio_int_to_err(a:int(32)):syserr;

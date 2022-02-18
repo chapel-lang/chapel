@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 var ptr = c_malloc(c_array(int, 5), 1);
 
 ref arr = ptr.deref();

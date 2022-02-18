@@ -47,7 +47,7 @@ module ChapelAutoAggregation {
   pragma "aggregator generator"
   proc chpl_dstAggregatorFor(dom) where isDomain(dom) {
     // this is only called if the user has:
-    // 
+    //
     // forall i in myDomain { i = foo(); }
     //
     // We want that code to fail with proper error message, so we have this
@@ -83,8 +83,8 @@ module ChapelAutoAggregation {
   }
 
   module CopyAggregation {
-    use SysCTypes;
-    use CPtr;
+    use ChplConfig;
+    use CTypes;
     use super.AggregationPrimitives;
 
     param defaultBuffSize = if CHPL_COMM == "ugni" then 4096 else 8096;
@@ -312,8 +312,7 @@ module ChapelAutoAggregation {
   }
 
   module AggregationPrimitives {
-    use CPtr;
-    use SysCTypes;
+    use CTypes;
 
     inline proc getAddr(const ref p): c_ptr(p.type) {
       // TODO can this use c_ptrTo?

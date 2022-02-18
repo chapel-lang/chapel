@@ -1,5 +1,5 @@
-use SysCTypes;
-use CPtr;
+use CTypes;
+
 use CommDiagnostics;
 use Random;
 

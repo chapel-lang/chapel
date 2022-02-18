@@ -25,6 +25,8 @@
 #include "passes.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
+
 ForallOptimizationInfo::ForallOptimizationInfo():
   infoGathered(false),
   autoLocalAccessChecked(false),
@@ -189,7 +191,7 @@ void ForallStmt::accept(AstVisitor* visitor) {
     if (fRecIterGetIterator)  fRecIterGetIterator->accept(visitor);
     if (fRecIterFreeIterator) fRecIterFreeIterator->accept(visitor);
     if (fZipCall)             fZipCall->accept(visitor);
-    
+
     fLoopBody->accept(visitor);
 
     visitor->exitForallStmt(this);

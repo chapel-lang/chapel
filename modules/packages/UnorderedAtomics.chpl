@@ -156,6 +156,7 @@ module UnorderedAtomics {
      Fence any pending unordered atomics issued by the current task.
    */
   inline proc unorderedAtomicTaskFence(): void {
+    use ChplConfig;
     if CHPL_NETWORK_ATOMICS != "none" {
       extern proc chpl_comm_atomic_unordered_task_fence();
       chpl_comm_atomic_unordered_task_fence();

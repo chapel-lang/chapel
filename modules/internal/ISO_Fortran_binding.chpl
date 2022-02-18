@@ -21,8 +21,8 @@
 // generated from:
 // jupiter:/opt/intel/compilers_and_libraries_2019.0.117/linux/compiler/include/ISO_Fortran_binding.h
 module ISO_Fortran_binding {
-  private use SysCTypes;
-  private use ChapelBase, ChapelRange, CPtr;
+  private use CTypes;
+  private use ChapelBase, ChapelRange;
   require "chpl-ISO_Fortran_binding.h";
 
 

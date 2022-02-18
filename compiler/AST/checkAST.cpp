@@ -28,6 +28,8 @@
 #include "expr.h"
 #include "driver.h" // For prototypes.
 
+#include "global-ast-vecs.h"
+
 //#include <unordered_set> // C++11 (not fully supported yet)
 #include <set>
 #include <map>

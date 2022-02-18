@@ -15,7 +15,7 @@ proc test1() {
   // check the output
   {
     var i: int;
-    f.reader().readf("%>8i", i);
+    f.reader().readBinary(i, ioendian.big);
     assert(i == 1);
   }
 }
@@ -34,7 +34,7 @@ proc test2() {
   // check the output
   {
     var i: int;
-    f.reader().readf("%>8i", i);
+    f.reader().readBinary(i, ioendian.big);
     assert(i == 1);
   }
 }

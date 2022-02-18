@@ -58,6 +58,8 @@ static child type could end up calling something in the parent.
 #include "symbol.h"
 #include "wrappers.h"
 
+#include "global-ast-vecs.h"
+
 #include <set>
 #include <vector>
 
@@ -155,7 +157,7 @@ static AggregateType* getReceiverClassType(FnSymbol* fn);
 static bool buildVirtualMaps() {
   int numTypes = gTypeSymbols.n;
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     if (AggregateType* at = fn->getReceiverType()) {
       if (at->isClass() == true) {
         if (at->isGeneric() == false) {
@@ -766,7 +768,7 @@ static void buildVirtualMethodTable() {
     }
   }
 
-  forv_Vec(Type, t, ctq) {
+  forv_expanding_Vec(Type, t, ctq) {
     if (Vec<FnSymbol*>* parentFns = virtualMethodTable.get(t)) {
       forv_Vec(FnSymbol, pfn, *parentFns) {
         Vec<Type*> childSet;
@@ -1091,6 +1093,11 @@ static void checkMethodsOverride() {
     // output error for overriding for non-class methods
     if (aFn->hasFlag(FLAG_OVERRIDE)) {
 
+      if (aFn->_this == NULL) {
+        USR_FATAL("'override' cannot be applied to non-method '%s'",
+                  aFn->name);
+      }
+
       //
       // Type methods may have managed receiver types, which would normally
       // not be recognized as a class.
@@ -1311,7 +1318,7 @@ static void checkMethodsOverride() {
 static bool wasSuperDot(CallExpr* call);
 
 void insertDynamicDispatchCalls() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
       if (FnSymbol* fn = call->resolvedFunction()) {
 

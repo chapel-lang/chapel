@@ -1,7 +1,7 @@
 
 use MasonEnv;
 
-use FileSystem, SysCTypes;
+use FileSystem, CTypes;
 
 proc setEnv(name : string, val : string) {
   extern proc setenv(name : c_string, val : c_string, overwrite : c_int) : c_int;

@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 proc main() {
   var x: c_array(int, 4);
 

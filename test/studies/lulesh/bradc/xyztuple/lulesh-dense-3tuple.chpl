@@ -35,7 +35,8 @@
 
 use Time,       // to get timing routines for benchmarking
     BlockDist,  // for block-distributed arrays
-    IO;         // for file operations
+    IO,         // for file operations
+    ChplConfig; // for CHPL_* values
 
 use luleshInit3, luleshTupleHelp;   // to get I/O version of setting up data structures
 

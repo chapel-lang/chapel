@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 config param N=16;
 config param BLOCK_SIZE;

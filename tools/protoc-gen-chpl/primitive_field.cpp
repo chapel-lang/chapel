@@ -32,7 +32,7 @@ namespace chapel {
   void PrimitiveFieldGenerator::GenerateMembers(Printer* printer) {
     printer->Print(variables_, "var $name$: $type_name$;\n");
   }
-  
+
   PrimitiveOneofFieldGenerator::PrimitiveOneofFieldGenerator(const FieldDescriptor* descriptor)
       : FieldGeneratorBase(descriptor) {
     SetCommonOneofFieldVariables(&variables_);

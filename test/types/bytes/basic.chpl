@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 var b = b"this is a bytes";
 var s = "this is a string";
 var cs: c_string = "this is a c_string";
