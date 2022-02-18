@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 // Note: c_offsetof is intended for use in C interoperability only.
 record Test {
   var x : int(8);

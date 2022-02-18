@@ -1,5 +1,5 @@
-use CPtr;
-use SysCTypes;
+
+use CTypes;
 
 extern type mytriple = c_array(c_int, 3);
 

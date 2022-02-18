@@ -25,7 +25,7 @@ module LocaleModelHelpFlat {
 
   public use LocaleModelHelpSetup;
   public use LocaleModelHelpRuntime;
-  use SysCTypes;
+  use CTypes;
 
   //////////////////////////////////////////
   //

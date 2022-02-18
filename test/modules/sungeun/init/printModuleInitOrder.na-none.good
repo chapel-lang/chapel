@@ -37,7 +37,6 @@ Initializing Modules:
         ExternalArray
         RangeChunk
        ChapelNumLocales
-       Sys
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray

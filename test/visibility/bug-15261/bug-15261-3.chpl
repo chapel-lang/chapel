@@ -1,9 +1,9 @@
 module MHDF5 {
-  import SysCTypes;
+  import CTypes;
 
   public import this.C_HDF5;
   module C_HDF5 {
-    import SysCTypes;
+    import CTypes;
 
     public import this.HDF5_WAR;
     module HDF5_WAR {

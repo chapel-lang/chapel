@@ -28,7 +28,7 @@ module ChapelLocale {
 
   public use LocaleModel;
   import HaltWrappers;
-  use SysCTypes, CPtr;
+  use CTypes;
 
   compilerAssert(!(!localeModelHasSublocales &&
    localeModelPartitionsIterationOnSublocales),

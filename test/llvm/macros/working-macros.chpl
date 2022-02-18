@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 extern const DEC_17 : c_int;
 extern const HEX_x17 : c_int;

@@ -1,7 +1,7 @@
 // Run an RA-like pattern to stress --cache-remote
 // on all cores and report the overhead per operation.
 
-use SysCTypes;
+use CTypes;
 use Time;
 use Random;
 

@@ -8,7 +8,7 @@
 // In particular it runs an update only once for every streamTwoUpdateRate
 // updates in stream one.
 
-use SysCTypes;
+use CTypes;
 use Time;
 use Random;
 

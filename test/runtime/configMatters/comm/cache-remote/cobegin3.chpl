@@ -1,4 +1,4 @@
-use Time, SysCTypes;
+use Time, CTypes;
 
 extern proc chpl_cache_print();
 extern proc chpl_task_getId():c_int;

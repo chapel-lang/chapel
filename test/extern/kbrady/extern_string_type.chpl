@@ -1,2 +1,2 @@
-use CPtr;
+use CTypes;
 c_sizeof(string);

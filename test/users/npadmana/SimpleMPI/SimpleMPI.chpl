@@ -6,7 +6,7 @@
 
 module SimpleMPI {
 
-  use SysCTypes;
+  use CTypes;
 
   // External types
   extern type MPI_Comm; // Opaque type for MPI communicator 

@@ -22,7 +22,7 @@
 //
 module MemTracking
 {
-  private use ChapelStandard, SysCTypes;
+  private use ChapelStandard, CTypes;
 
   config const
     memTrack: bool = false,

@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 // check a couple of sizes can be allocated and freed
 var sizes = (0, 1, 16, 17, 1000);

@@ -431,10 +431,9 @@ module IO {
 */
 
 public use SysBasic;
-use SysCTypes;
+use CTypes;
 public use SysError;
 
-private use CPtr;
 
 /*
 
@@ -1845,6 +1844,7 @@ private proc openfdHelper(fd: fd_t, hints:iohints=IOHINT_NONE,
   var local_style = style;
   var ret:file;
   ret.home = here;
+  extern proc chpl_cnullfile():_file;
   var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints, local_style, 0);
 
   // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
@@ -4542,9 +4542,15 @@ proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
 /* standard input, otherwise known as file descriptor 0 */
 const stdin:channel(false, iokind.dynamic, true);
 stdin = try! openfd(0).reader();
+
+pragma "no doc"
+extern proc chpl_cstdout():_file;
 /* standard output, otherwise known as file descriptor 1 */
 const stdout:channel(true, iokind.dynamic, true);
 stdout = try! openfp(chpl_cstdout()).writer();
+
+pragma "no doc"
+extern proc chpl_cstderr():_file;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:channel(true, iokind.dynamic, true);
 stderr = try! openfp(chpl_cstderr()).writer();
@@ -5489,8 +5495,7 @@ FormattedIO Functions and Types
  */
 module FormattedIO {
   use IO;
-  use SysCTypes;
-  use CPtr;
+  use CTypes;
   use SysBasic;
   use SysError;
 //use IO;
