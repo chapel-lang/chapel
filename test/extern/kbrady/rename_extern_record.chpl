@@ -1,7 +1,7 @@
 use CTypes, Sys;
 
 extern "struct stat" record chpl_stat {
-  var st_size: off_t;
+  var st_size: c_off_t;
 }
 
 proc getFileSize(path:c_string) : int {

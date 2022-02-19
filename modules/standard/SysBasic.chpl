@@ -57,29 +57,29 @@ use CTypes;
     return c_double;
   }
 
-  pragma "no doc"
-  pragma "last resort"
-  proc off_t type {
-    use CTypes, Sys, Reflection;
-    chpl_typeMoveWarning("off_t", getModuleName(), "Sys");
-    return off_t;
-  }
+  /* The type corresponding to C's off_t
 
-  pragma "no doc"
-  pragma "last resort"
-  proc mode_t type {
-    use CTypes, Sys, Reflection;
-    chpl_typeMoveWarning("mode_t", getModuleName(), "Sys");
-    return mode_t;
-  }
+     .. warning::
+        'SysBasic.off_t' has been deprecated in favor of :type:`~Sys.c_off_t` defined in :mod:`Sys`
+  */
+  deprecated "'SysBasic.off_t' has been deprecated in favor of 'Sys.c_off_t'"
+  extern type off_t = int(64);
 
-  pragma "no doc"
-  pragma "last resort"
-  proc socklen_t type {
-    use CTypes, Sys, Reflection;
-    chpl_typeMoveWarning("socklen_t", getModuleName(), "Sys");
-    return socklen_t;
-  }
+  /* The type corresponding to C's mode_t
+
+     .. warning::
+        'SysBasic.mode_t' has been deprecated in favor of :type:`~Sys.c_mode_t` defined in :mod:`Sys`
+  */
+  deprecated "'SysBasic.mode_t' has been deprecated in favor of 'Sys.c_mode_t'"
+  extern type mode_t = uint(32);
+
+  /* The type corresponding to C's socklen_t
+
+     .. warning::
+        'SysBasic.socklen_t' has been deprecated in favor of :type:`~Sys.c_socklen_t` defined in :mod:`Sys`
+  */
+  deprecated "'SysBasic.socklen_t' has been deprecated in favor of 'Sys.c_socklen_t'"
+  extern type socklen_t = int(32);
 
 
 /* A type storing an error code or an error message.

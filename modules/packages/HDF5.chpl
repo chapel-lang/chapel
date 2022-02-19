@@ -1538,7 +1538,7 @@ module HDF5 {
 
     extern proc H5Pget_virtual_dsetname(dcpl_id : hid_t, index_arg : size_t, name : c_string, size : size_t) : ssize_t;
 
-    extern proc H5Pset_external(plist_id : hid_t, name : c_string, offset : off_t, size : hsize_t) : herr_t;
+    extern proc H5Pset_external(plist_id : hid_t, name : c_string, offset : c_off_t, size : hsize_t) : herr_t;
 
     extern proc H5Pset_chunk_opts(plist_id : hid_t, opts : c_uint) : herr_t;
 
@@ -1546,7 +1546,7 @@ module HDF5 {
 
     extern proc H5Pget_external_count(plist_id : hid_t) : c_int;
 
-    extern proc H5Pget_external(plist_id : hid_t, idx : c_uint, name_size : size_t, name : c_string, ref offset : off_t, ref size : hsize_t) : herr_t;
+    extern proc H5Pget_external(plist_id : hid_t, idx : c_uint, name_size : size_t, name : c_string, ref offset : c_off_t, ref size : hsize_t) : herr_t;
 
     extern proc H5Pset_szip(plist_id : hid_t, options_mask : c_uint, pixels_per_block : c_uint) : herr_t;
 

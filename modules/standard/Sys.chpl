@@ -255,10 +255,10 @@ module Sys {
 
   extern type sys_sockaddr_storage_t;
   /* The type corresponding to C's socklen_t */
-  extern type socklen_t = int(32);
+  extern type c_socklen_t = int(32);
   extern record sys_sockaddr_t {
     var addr:sys_sockaddr_storage_t;
-    var len:socklen_t;
+    var len:c_socklen_t;
 
     proc init() {
       this.complete();
@@ -382,7 +382,7 @@ module Sys {
     var ai_family: c_int;
     var ai_socktype: c_int;
     var ai_protocol: c_int;
-    var ai_addrlen: socklen_t;
+    var ai_addrlen: c_socklen_t;
     var ai_next: c_ptr(sys_addrinfo_t);
   }
   type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t);
@@ -400,7 +400,7 @@ module Sys {
   extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
   extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint);
   extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
-  extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
+  extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: c_socklen_t, ref length: c_int) : c_int;
   extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
 
@@ -422,14 +422,14 @@ module Sys {
    */
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
   /* The type corresponding to C's mode_t */
-  extern type mode_t = uint(32);
-  extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):err_t;
+  extern type c_mode_t = uint(32);
+  extern proc sys_open(pathname:c_string, flags:c_int, mode:c_mode_t, ref fd_out:fd_t):err_t;
   extern proc sys_close(fd:fd_t):err_t;
 
   /* The type corresponding to C's off_t */
-  extern type off_t = int(64);
+  extern type c_off_t = int(64);
 
-  extern proc sys_mmap(addr:c_void_ptr, length:size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, ref ret_out:c_void_ptr):err_t;
+  extern proc sys_mmap(addr:c_void_ptr, length:size_t, prot:c_int, flags:c_int, fd:fd_t, offset:c_off_t, ref ret_out:c_void_ptr):err_t;
   extern proc sys_munmap(addr:c_void_ptr, length:size_t):err_t;
 
   // readv, writev, preadv, pwritev -- can't (yet) pass array.
@@ -448,7 +448,7 @@ module Sys {
   extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_protocol(res:sys_addrinfo_ptr_t):c_int;
-  extern proc sys_getaddrinfo_addrlen(res:sys_addrinfo_ptr_t):socklen_t;
+  extern proc sys_getaddrinfo_addrlen(res:sys_addrinfo_ptr_t):c_socklen_t;
   extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
   extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
   extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
@@ -459,8 +459,8 @@ module Sys {
 
   // TODO -- these should be generic, assuming caller knows what they
   // are doing.
-  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):err_t;
-  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):err_t;
+  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:c_socklen_t):err_t;
+  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:c_socklen_t):err_t;
 
   extern proc sys_listen(sockfd:fd_t, backlog:c_int):err_t;
   extern proc sys_shutdown(sockfd:fd_t, how:c_int):err_t;

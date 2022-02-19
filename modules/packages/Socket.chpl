@@ -981,7 +981,7 @@ proc udpSocket.writeThis(f) throws {
 
 pragma "no doc"
 proc setSockOpt(socketFd: fd_t, level: c_int, optname: c_int, ref value: c_int) throws {
-  var optlen = sizeof(value):socklen_t;
+  var optlen = sizeof(value):c_socklen_t;
   var ptroptval = c_ptrTo(value);
   var err_out = sys_setsockopt(socketFd, level, optname, ptroptval:c_void_ptr, optlen);
   if err_out != 0 {
@@ -1017,7 +1017,7 @@ proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: c_int)
 
 pragma "no doc"
 proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, ref value: bytes) throws {
-  var optlen = value.size:socklen_t;
+  var optlen = value.size:c_socklen_t;
   var ptroptval = value.c_str();
   var err_out = sys_setsockopt(socketFd, level, optname, ptroptval, optlen);
   if err_out != 0 {
@@ -1050,7 +1050,7 @@ proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: bytes)
 }
 
 pragma "no doc"
-proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, value:nothing, optlen:socklen_t) throws {
+proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, value:nothing, optlen:c_socklen_t) throws {
   var err_out = sys_setsockopt(socketFd, level, optname, nil, optlen);
   if err_out != 0 {
     throw SystemError.fromSyserr(err_out, "Failed to set socket option");
@@ -1074,7 +1074,7 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, value:nothing, optl
   :throws SystemError: Upon incompatible arguments
                         and socket.
 */
-proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: nothing, optlen: socklen_t)
+proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: nothing, optlen: c_socklen_t)
                 throws where t == udpSocket || t == tcpConn || t == tcpListener {
   var socketFd = socket.socketFd;
   setSockOpt(socketFd, level, optname, value, optlen);
@@ -1084,7 +1084,7 @@ pragma "no doc"
 proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int) throws {
   var optval:c_int;
   var ptroptval = c_ptrTo(optval);
-  var optlen = sizeof(optval):socklen_t;
+  var optlen = sizeof(optval):c_socklen_t;
   var err_out = sys_getsockopt(socketFd, level, optname, ptroptval:c_void_ptr, optlen);
   if err_out != 0 {
     throw SystemError.fromSyserr(err_out, "Failed to get socket option");
@@ -1120,7 +1120,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int, buflen: uint(16)) t
     throw new Error("getSockOpt buflen out of range");
   }
   else {
-    var len:socklen_t = buflen;
+    var len:c_socklen_t = buflen;
     var buffer = c_calloc(c_uchar, buflen);
     var err_out = sys_getsockopt(socketFd, level, optname, buffer:c_void_ptr, len);
     if err_out != 0 {

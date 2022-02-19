@@ -1,7 +1,7 @@
+sysBasicTypes.chpl:10: warning: 'SysBasic.off_t' has been deprecated in favor of 'Sys.c_off_t'
+sysBasicTypes.chpl:11: warning: 'SysBasic.mode_t' has been deprecated in favor of 'Sys.c_mode_t'
+sysBasicTypes.chpl:12: warning: 'SysBasic.socklen_t' has been deprecated in favor of 'Sys.c_socklen_t'
 sysBasicTypes.chpl:4: warning: type 'c_float' has moved from 'SysBasic' to 'CTypes'; please update your 'use'/'import' statements accordingly.
 sysBasicTypes.chpl:5: warning: type 'c_double' has moved from 'SysBasic' to 'CTypes'; please update your 'use'/'import' statements accordingly.
-sysBasicTypes.chpl:10: warning: type 'off_t' has moved from 'SysBasic' to 'Sys'; please update your 'use'/'import' statements accordingly.
-sysBasicTypes.chpl:11: warning: type 'mode_t' has moved from 'SysBasic' to 'Sys'; please update your 'use'/'import' statements accordingly.
-sysBasicTypes.chpl:12: warning: type 'socklen_t' has moved from 'SysBasic' to 'Sys'; please update your 'use'/'import' statements accordingly.
 0.0
 0.0

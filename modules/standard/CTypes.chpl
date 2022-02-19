@@ -43,10 +43,9 @@ module CTypes {
   public use ChapelSysCTypes;
 
   pragma "no doc"
-  proc chpl_typeMoveWarning(param name: string, param mod: string,
-                            param newmod: string = "CTypes") {
+  proc chpl_typeMoveWarning(param name: string, param mod: string) {
     compilerWarning("type '" + name + "' has moved from '" + mod +
-                    "' to '" + newmod + "'; please update your " +
+                    "' to 'CTypes'; please update your " +
                     "'use'/'import' statements accordingly.", errorDepth=2);
   }
 

@@ -1622,11 +1622,11 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
 */
 proc locale.umask(mask: int): int {
   use Sys;
-  extern proc chpl_fs_umask(mask: mode_t): mode_t;
+  extern proc chpl_fs_umask(mask: c_mode_t): c_mode_t;
 
   var result: int;
   on this {
-    var callRes = chpl_fs_umask(mask.safeCast(mode_t));
+    var callRes = chpl_fs_umask(mask.safeCast(c_mode_t));
     result = callRes.safeCast(int);
   }
   return result;
