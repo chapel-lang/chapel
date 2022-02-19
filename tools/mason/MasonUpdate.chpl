@@ -55,6 +55,8 @@ proc masonUpdate(args: [?d] string) {
   var parser = new argumentParser(helpHandler=new MasonUpdateHelpHandler());
 
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var checksumFlag = parser.addFlag(name="checksum", flagInversion=true,
+                                    defaultValue=true);
 
   parser.parseArgs(args);
 
@@ -62,18 +64,25 @@ proc masonUpdate(args: [?d] string) {
     skipUpdate = !updateFlag.valueAsBool();
   }
 
-  return updateLock(skipUpdate, tf, lf);
+  var checksum = checksumFlag.valueAsBool();
+
+  return updateLock(skipUpdate, checksum, tf, lf);
 }
+
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
+proc updateLock(skipUpdate: bool, checksum: bool, tf="Mason.toml", lf="Mason.lock") {
 
   try! {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
+    var previousHash = "";
+    if checksum then {
+      previousHash = removeHash(projectHome, tf);
+    }
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;
@@ -109,7 +118,15 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     openFile.close();
     delete TomlFile;
     delete lockFile;
-
+    if checksum then {
+      if previousHash == "" {
+        writeln("No previous hash detected, generating new hash");
+      }
+      var newHash = updateTomlWithChecksum(projectHome);
+      if previousHash != "" && previousHash != newHash {
+        writeln("Project had some updates, computing the new Hash");
+      }
+    }
   }
   catch e: MasonError {
     stderr.writeln(e.message());
@@ -505,4 +522,3 @@ private proc getDependencies(tomlTbl: unmanaged Toml) {
   }
   return deps;
 }
-

@@ -205,6 +205,7 @@ proc masonRunHelp() {
   writeln('        --build                  Compile before running binary');
   writeln('        --show                   Increase verbosity');
   writeln('        --example <example>      Run an example');
+  writeln('        --[no-]checksum          [Do not] store a checksum of the source in the TOML file');
   writeln();
   writeln('When --example is thrown without an example, all available examples will be listed');
   writeln();
@@ -231,6 +232,7 @@ proc masonBuildHelp() {
   writeln('        --force                  Force Mason to build the project');
   writeln('        --example <example>      Build an example from the example/ directory');
   writeln('        --[no-]update            [Do not] update the mason registry before building');
+  writeln('        --[no-]checksum          [Do not] store a checksum of the source in the TOML file');
   writeln();
   writeln('When --example is thrown without an example, all examples will be built');
   writeln('When no options are provided, the following will take place:');
@@ -251,7 +253,8 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
-  writeln('    --name <legalName>           Specify package name different from directory name');
+  writeln('        --name <legalName>       Specify package name different from directory name');
+  writeln('        --[no-]checksum          [Do not] store a checksum of the source in the TOML file');
 }
 
 proc masonInitHelp(){
@@ -316,6 +319,7 @@ proc masonUpdateHelp() {
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
   writeln("    --[no-]update               [Do not] update the mason registry before generating the lock file");
+  writeln("    --[no-]checksum             [Do not] store a checksum of the source in the TOML file");
 }
 
 proc masonEnvHelp() {
@@ -506,6 +510,7 @@ proc masonTestHelp() {
   writeln("        --parallel              Run tests in parallel(sequential by default)");
   writeln("        --[no]-update           [Do not] update the mason-registry when testing");
   writeln("        --setComm               Set the CHPL_COMM value for running the tests,  e.g. none, gasnet, ugni");
+  writeln("        --[no-]checksum         [Do not] store a checksum of the source in the TOML file");
   writeln();
   writeln("Test configuration is up to the user");
   writeln("Tests pass if they exit with status code 0");

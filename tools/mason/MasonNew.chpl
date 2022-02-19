@@ -20,6 +20,7 @@
 
 
 use ArgumentParser;
+use FileHashing;
 use FileSystem;
 use IO;
 use MasonEnv;
@@ -28,7 +29,10 @@ use MasonModify;
 use MasonUpdate;
 use MasonUtils;
 use Path;
+use Sort;
 use Subprocess;
+use TOML;
+
 
 
 /*
@@ -48,6 +52,9 @@ proc masonNew(args: [] string) throws {
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var dirArg = parser.addArgument(name="directory", numArgs=0..1);
 
+  var checksumFlag = parser.addFlag(name="checksum", flagInversion=true,
+                                     defaultValue=true);
+
   parser.parseArgs(args);
 
   var vcs = !vcsFlag.valueAsBool();
@@ -57,7 +64,7 @@ proc masonNew(args: [] string) throws {
   var version = '';
   var chplVersion = '';
   var license = 'None';
-
+  var checksum = checksumFlag.valueAsBool();
   try! {
     if args.size == 1 {
       var metadata = beginInteractiveSession('','','','');
@@ -78,7 +85,7 @@ proc masonNew(args: [] string) throws {
       if isDir(dirName) {
         throw new owned MasonError("A directory named '" + dirName + "' already exists");
       }
-      InitProject(dirName, packageName, vcs, show, version, chplVersion, license);
+      InitProject(dirName, packageName, vcs, show, version, chplVersion, license, checksum);
     }
   }
   catch e: MasonError {
@@ -256,7 +263,7 @@ proc validatePackageName(dirName) throws {
   directories such as .git, src, example, test
 */
 proc InitProject(dirName, packageName, vcs, show,
-                  version: string, chplVersion: string, license: string) throws {
+                  version: string, chplVersion: string, license: string, checksum: bool) throws {
   if vcs {
     gitInit(dirName, show);
     addGitIgnore(dirName);
@@ -271,6 +278,9 @@ proc InitProject(dirName, packageName, vcs, show,
     makeModule(dirName, fileName=packageName);
     makeTestDir(dirName);
     makeExampleDir(dirName);
+    if checksum then {
+      updateTomlWithChecksum(path=dirName);
+    }
     writeln("Created new library project: " + dirName);
   }
   else {
@@ -293,6 +303,7 @@ proc addGitIgnore(dirName: string) {
   GIwriter.write(toIgnore);
   GIwriter.close();
 }
+
 
 proc getBaseTomlString(packageName: string, version: string, chapelVersion: string, license: string) {
   const baseToml = """[brick]

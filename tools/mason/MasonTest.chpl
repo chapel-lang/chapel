@@ -61,6 +61,8 @@ proc masonTest(args: [] string) throws {
   var parFlag = parser.addFlag(name="parallel", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var setCommOpt = parser.addOption(name="setComm", defaultValue="none");
+  var checksumFlag = parser.addFlag(name="checksum", flagInversion=true,
+                                    defaultValue=true);
 
   // TODO: Why doesn't masonTest support a passthrough for values that should
   // go to the runtime?
@@ -82,6 +84,7 @@ proc masonTest(args: [] string) throws {
 
   var compopts: list(string);
   var searchSubStrings: list(string);
+  var checksum = checksumFlag.valueAsBool();
 
   if otherArgs.hasValue() {
     var flagInArgs = false;
@@ -168,7 +171,7 @@ proc masonTest(args: [] string) throws {
       }
     }
 
-    updateLock(skipUpdate);
+    updateLock(skipUpdate, checksum);
     compopts.append("".join("--comm=",comm));
     runTests(show, run, parallel, compopts);
   }

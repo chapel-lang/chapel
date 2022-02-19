@@ -23,13 +23,13 @@ use ArgumentParser;
 use FileSystem;
 use List;
 use Map;
-use MasonUtils;
-use MasonHelp;
 use MasonEnv;
-use MasonUpdate;
-use MasonSystem;
-use MasonExternal;
 use MasonExample;
+use MasonExternal;
+use MasonHelp;
+use MasonSystem;
+use MasonUpdate;
+use MasonUtils;
 use Subprocess;
 use TOML;
 
@@ -42,6 +42,8 @@ proc masonBuild(args: [] string) throws {
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var exampleOpts = parser.addOption(name="example", numArgs=0..);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var checksumFlag = parser.addFlag(name="checksum", flagInversion=true,
+                                    defaultValue=true);
 
   var passArgs = parser.addPassThrough();
 
@@ -57,6 +59,7 @@ proc masonBuild(args: [] string) throws {
   var compopts: list(string);
   var example = false;
   var skipUpdate = MASON_OFFLINE;
+  var checksum = checksumFlag.valueAsBool();
 
   // when --example provided with or without a value
   if exampleOpts._present then example = true;
@@ -75,6 +78,7 @@ proc masonBuild(args: [] string) throws {
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
+    if !checksum then compopts.append("--no-checksum");
     // add expected arguments for masonExample
     compopts.insert(0,["example", "--example"]);
     masonExample(compopts.toArray());
@@ -83,10 +87,10 @@ proc masonBuild(args: [] string) throws {
     if passArgs.hasValue() {
       for val in passArgs.values() do compopts.append(val);
     }
-    const configNames = updateLock(skipUpdate);
+    const configNames = updateLock(skipUpdate, checksum);
     const tomlName = configNames[0];
     const lockName = configNames[1];
-    buildProgram(release, show, force, compopts, tomlName, lockName);
+    buildProgram(release, show, force, compopts, checksum, tomlName, lockName);
   }
 }
 
@@ -101,7 +105,7 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
 
 
 proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: list(string),
-                  tomlName="Mason.toml", lockName="Mason.lock") throws {
+                  checksum: bool, tomlName="Mason.toml", lockName="Mason.lock") throws {
 
   try! {
 
@@ -119,6 +123,10 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 
     // build on last modification
     if projectModified(projectHome, projectName, binLoc) || force {
+      var previousHash = "";
+      if checksum then {
+        previousHash = removeHash(projectHome, tomlName);
+      }
 
       if isFile(projectHome + "/" + lockName) {
 
@@ -157,6 +165,16 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
       }
       else {
         throw new owned MasonError("Cannot build: no Mason.lock found");
+      }
+
+      if checksum then {
+        if previousHash == "" {
+          writeln("No previous hash detected, generating new hash");
+        }
+        var newHash = updateTomlWithChecksum(projectHome);
+        if previousHash != "" && previousHash != newHash {
+          writeln("Project had some updates, computing the new Hash");
+        }
       }
     }
     else {

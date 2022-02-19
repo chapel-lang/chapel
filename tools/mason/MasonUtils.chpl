@@ -28,6 +28,8 @@ public use Subprocess;
 public use MasonEnv;
 public use Path;
 public use TOML;
+public use FileHashing;
+public use Sort;
 
 
 /* Gets environment variables for spawn commands */
@@ -489,4 +491,104 @@ iter allFields(tomlTbl: unmanaged Toml) {
       continue;
     else yield(k,v);
   }
+}
+
+/* Recursively finds the files & directories and adds
+   the candidate files to the `paths` set. Excludes all
+   the files in /target subdirectory.
+ */
+proc getPathExcludingTargetFolder(dirName: string, ref paths: domain(string)) {
+ if isDir(dirName) {
+   for path in findfiles(dirName, recursive=true) {
+     // exclude files from target folder
+     if (!path.startsWith(dirName + "/target/")) then
+       paths += relativeRealPath(path);
+   }
+ } else {
+   writeln("Error: not a directory ", dirName);
+ }
+}
+
+/* Given the paths of the files, this method sorts all the paths
+   lexicographically, computes hash of all the files & its path
+   combined and returns the hash.
+ */
+proc computeHash(ref paths: domain(string)) {
+  /* Preprocess and generate a file.. use this file to compute hash
+     output of paths {example-files/c2, example-files/all-bytes1,
+                      example-files/all-bytes2, example-files/all-bytes-twice,
+                      example-files/d1, example-files/a3, example-files/a2,
+                      example-files/a1, example-files/b1, example-files/c1}
+  */
+  var sortedPaths:[0..<paths.size] string;
+  for (str, path) in zip(sortedPaths, paths) {
+    str = path;
+  }
+  sort(sortedPaths);
+  var fout = openmem();
+  var wout = fout.writer();
+  for path in sortedPaths {
+    var f = open(path, iomode.r);
+    var r = f.reader();
+    var line = "";
+    wout.write(path);
+    while (r.readline(line)) {
+      wout.write(line);
+    }
+    r.close();
+    f.close();
+  }
+  wout.close();
+  var hash = computeFileHash(fout);
+  var hash_string = "";
+  for component in hash.hash {
+    hash_string += try! "%08xu".format(component);
+  }
+  fout.close();
+  return hash_string;
+}
+
+/* Updates the Mason.toml with checksum */
+proc updateTomlWithChecksum(path: string, tf="Mason.toml") {
+  var paths: domain(string);
+  // Find files based on arguments and store them in paths
+  getPathExcludingTargetFolder(dirName=path, paths);
+  var hash = computeHash(paths);
+  var tomlPath = path+ "/" + tf;
+  const toParse = open(tomlPath, iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  tomlFile["brick"]!.set("checksum", hash);
+  generateToml(tomlFile, tomlPath);
+  return hash;
+}
+
+/* Generate the modified Mason.toml */
+proc generateToml(toml: borrowed Toml, tomlPath: string) {
+  const tomlFile = open(tomlPath, iomode.cw);
+  const tomlWriter = tomlFile.writer();
+  tomlWriter.writeln(toml);
+  tomlWriter.close();
+  tomlFile.close();
+}
+
+/*
+Given a project Directory, this method removes the
+checksum field from the project's toml and regenerates
+a toml without the checksum field.
+*/
+proc removeHash(projectHome: string, tf: string) {
+  // TODO: Avoid rewriting the .toml file just to remove
+  // the checksum value prior to rehashing
+  var hash = "";
+  var tomlPath = projectHome + "/" + tf;
+  if isFile(tomlPath) {
+    const toParse = open(tomlPath, iomode.r);
+    const tomlFile = owned.create(parseToml(toParse));
+    if tomlFile.pathExists("brick.checksum") {
+      hash = tomlFile["brick"]!["checksum"]!.s;
+      tomlFile["brick"]!.A.remove("checksum");
+      generateToml(tomlFile, tomlPath);
+    }
+  }
+  return hash;
 }

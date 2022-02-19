@@ -1,10 +1,10 @@
-use IO;
-use MasonNew;
-use MasonUtils;
 
+use MasonUtils;
+use MasonNew;
+use IO;
 
 proc main() {
-  const args = ["new", "newTest", "--no-checksum"];
+  const args = ["new", "newTest"];
 
   assert(isDir("newTest") == false);
 

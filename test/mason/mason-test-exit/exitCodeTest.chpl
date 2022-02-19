@@ -1,3 +1,3 @@
 use MasonTestHelpers;
 
-checkExitStatus(['mason','test'],1);
+checkExitStatus(["mason","test", "--no-checksum"],1);
