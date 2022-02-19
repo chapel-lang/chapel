@@ -429,8 +429,8 @@ module Sys {
   /* The type corresponding to C's off_t */
   extern type off_t = int(64);
 
-  extern proc sys_mmap(addr:c_void_ptr, length:size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, ref ret_out:c_void_ptr):err_t;
-  extern proc sys_munmap(addr:c_void_ptr, length:size_t):err_t;
+  extern proc sys_mmap(addr:c_void_ptr, length:c_size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, ref ret_out:c_void_ptr):err_t;
+  extern proc sys_munmap(addr:c_void_ptr, length:c_size_t):err_t;
 
   // readv, writev, preadv, pwritev -- can't (yet) pass array.
 

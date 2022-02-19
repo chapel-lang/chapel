@@ -303,8 +303,8 @@ module BigInteger {
          bigint.size() is deprecated
     */
     deprecated "bigint.size() is deprecated"
-    proc size() : size_t {
-      var ret: size_t;
+    proc size() : c_size_t {
+      var ret: c_size_t;
 
       if _local {
         ret = mpz_size(this.mpz);
@@ -350,7 +350,7 @@ module BigInteger {
      */
     proc sizeInBase(base: int) : int {
       const base_ = base.safeCast(c_int);
-      var   ret: size_t;
+      var   ret: c_size_t;
 
       if _local {
         ret = mpz_sizeinbase(this.mpz, base_);

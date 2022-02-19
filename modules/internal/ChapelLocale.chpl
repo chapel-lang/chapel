@@ -337,7 +337,7 @@ module ChapelLocale {
 
     var maxTaskPar: int;
 
-    var callStackSize: size_t;
+    var callStackSize: c_size_t;
 
     proc id : int return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 
@@ -706,7 +706,7 @@ module ChapelLocale {
                   __primitive("array_get", newRL, 0),
                   0 /* locale 0 */,
                   __primitive("array_get", origRL, 0),
-                  numLocales:size_t);
+                  numLocales:c_size_t);
       // Set the rootLocale to the local copy
       rootLocale._instance = newRootLocale;
     }

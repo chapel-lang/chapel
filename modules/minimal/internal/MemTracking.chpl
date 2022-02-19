@@ -38,11 +38,11 @@ module MemTracking
                                          ref ret_memLog: c_string,
                                          ref ret_memLeaksLog: c_string) {
 
-    // ** In minimal-modules mode, I've hard-coded these size_t
-    // arguments to uint(64) rather than using the size_t aliases
+    // ** In minimal-modules mode, I've hard-coded these c_size_t
+    // arguments to uint(64) rather than using the c_size_t aliases
     // in CTypes.chpl because doing that requires dragging in a
     // bunch of other ChapelBase code.  My assumption here is that
-    // size_t will either be, or be compatible with, uint(64) for
+    // c_size_t will either be, or be compatible with, uint(64) for
     // most developers.  If that turns out not to be the case, we
     // can reconsider this choice.
   }

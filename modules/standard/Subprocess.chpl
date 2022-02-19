@@ -156,7 +156,7 @@ module Subprocess {
   // the C allocator instead of the Chapel one.
 
   private extern proc qio_spawn_strdup(str: c_string): c_string;
-  private extern proc qio_spawn_allocate_ptrvec(count: size_t): c_ptr(c_string);
+  private extern proc qio_spawn_allocate_ptrvec(count: c_size_t): c_ptr(c_string);
   private extern proc qio_spawn_free_ptrvec(args: c_ptr(c_string));
   private extern proc qio_spawn_free_str(str: c_string);
 
@@ -490,14 +490,14 @@ module Subprocess {
     // that are NULL terminated and consist of C strings.
 
     var nargs = args.size + 1;
-    var use_args = qio_spawn_allocate_ptrvec( nargs.safeCast(size_t) );
+    var use_args = qio_spawn_allocate_ptrvec( nargs.safeCast(c_size_t) );
     for (a,i) in zip(args, 0..) {
       use_args[i] = qio_spawn_strdup(a.c_str());
     }
     var use_env:c_ptr(c_string) = nil;
     if env.size != 0 {
       var nenv = env.size + 1;
-      use_env = qio_spawn_allocate_ptrvec( nenv.safeCast(size_t) );
+      use_env = qio_spawn_allocate_ptrvec( nenv.safeCast(c_size_t) );
       for (a,i) in zip(env, 0..) {
         use_env[i] = qio_spawn_strdup(a.c_str());
       }

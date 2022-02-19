@@ -948,11 +948,11 @@ module ChapelBase {
     return ret;
   }
 
-  inline proc _ddata_sizeof_element(type t: _ddata): size_t {
-    return __primitive("sizeof_ddata_element", t):size_t;
+  inline proc _ddata_sizeof_element(type t: _ddata): c_size_t {
+    return __primitive("sizeof_ddata_element", t):c_size_t;
   }
 
-  inline proc _ddata_sizeof_element(x: _ddata): size_t {
+  inline proc _ddata_sizeof_element(x: _ddata): c_size_t {
     return _ddata_sizeof_element(x.type);
   }
 
@@ -979,11 +979,11 @@ module ChapelBase {
                                      subloc = c_sublocid_none) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
+    extern proc chpl_mem_array_alloc(nmemb: c_size_t, eltSize: c_size_t,
                                      subloc: chpl_sublocID_t,
                                      ref callPostAlloc: bool): c_void_ptr;
     var ret: _ddata(eltType);
-    ret = chpl_mem_array_alloc(size:size_t, _ddata_sizeof_element(ret),
+    ret = chpl_mem_array_alloc(size:c_size_t, _ddata_sizeof_element(ret),
                                subloc, callPostAlloc):ret.type;
     return ret;
   }
@@ -991,9 +991,9 @@ module ChapelBase {
   inline proc _ddata_allocate_postalloc(data:_ddata, size: integral) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
-                                         eltSize: size_t);
-    chpl_mem_array_postAlloc(data:c_void_ptr, size:size_t,
+    extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: c_size_t,
+                                         eltSize: c_size_t);
+    chpl_mem_array_postAlloc(data:c_void_ptr, size:c_size_t,
                              _ddata_sizeof_element(data));
   }
 
@@ -1020,11 +1020,11 @@ module ChapelBase {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_supports_realloc(ptr: c_void_ptr,
-                                                oldNmemb: size_t, newNmemb:
-                                                size_t, eltSize: size_t): bool;
+                                                oldNmemb: c_size_t, newNmemb:
+                                                c_size_t, eltSize: c_size_t): bool;
       return chpl_mem_array_supports_realloc(oldDdata: c_void_ptr,
-                                             oldSize.safeCast(size_t),
-                                             newSize.safeCast(size_t),
+                                             oldSize.safeCast(c_size_t),
+                                             newSize.safeCast(c_size_t),
                                              _ddata_sizeof_element(oldDdata));
   }
 
@@ -1056,8 +1056,8 @@ module ChapelBase {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
-                                       oldNmemb: size_t, newNmemb: size_t,
-                                       eltSize: size_t,
+                                       oldNmemb: c_size_t, newNmemb: c_size_t,
+                                       eltSize: c_size_t,
                                        subloc: chpl_sublocID_t,
                                        ref callPostAlloc: bool): c_void_ptr;
     var callPostAlloc: bool;
@@ -1076,8 +1076,8 @@ module ChapelBase {
     }
 
     var newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr,
-                                          oldSize.safeCast(size_t),
-                                          newSize.safeCast(size_t),
+                                          oldSize.safeCast(c_size_t),
+                                          newSize.safeCast(c_size_t),
                                           _ddata_sizeof_element(oldDdata),
                                           subloc,
                                           callPostAlloc): oldDdata.type;
@@ -1101,12 +1101,12 @@ module ChapelBase {
       pragma "fn synchronization free"
       pragma "insert line file info"
       extern proc chpl_mem_array_postRealloc(oldData: c_void_ptr,
-                                             oldNmemb: size_t,
+                                             oldNmemb: c_size_t,
                                              newData: c_void_ptr,
-                                             newNmemb: size_t,
-                                             eltSize: size_t);
-      chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(size_t),
-                                 newDdata:c_void_ptr, newSize.safeCast(size_t),
+                                             newNmemb: c_size_t,
+                                             eltSize: c_size_t);
+      chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(c_size_t),
+                                 newDdata:c_void_ptr, newSize.safeCast(c_size_t),
                                  _ddata_sizeof_element(oldDdata));
     }
     return newDdata;
@@ -1119,9 +1119,9 @@ module ChapelBase {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_free(data: c_void_ptr,
-                                    nmemb: size_t, eltSize: size_t,
+                                    nmemb: c_size_t, eltSize: c_size_t,
                                     subloc: chpl_sublocID_t);
-    chpl_mem_array_free(data:c_void_ptr, size:size_t,
+    chpl_mem_array_free(data:c_void_ptr, size:c_size_t,
                         _ddata_sizeof_element(data),
                         subloc);
   }
