@@ -440,7 +440,7 @@ module MPI {
 
   {
     pragma "no doc"
-    extern proc sizeof(type t): size_t;
+    extern proc sizeof(type t): csize_t;
     assert(sizeof(MPI_Aint) == sizeof(c_ptrdiff));
   }
 

@@ -896,16 +896,16 @@ private module GlobWrappers {
 
   // glob_num wrapper that takes care of casting
   inline proc glob_num_w(glb: glob_t): int {
-    extern proc chpl_glob_num(glb: glob_t): size_t;
+    extern proc chpl_glob_num(glb: glob_t): c_size_t;
     return chpl_glob_num(glb).safeCast(int);
   }
 
   // glob_index wrapper that takes care of casting
   inline proc glob_index_w(glb: glob_t, idx: int): string {
-    extern proc chpl_glob_index(glb: glob_t, idx: size_t): c_string;
+    extern proc chpl_glob_index(glb: glob_t, idx: c_size_t): c_string;
     try! {
       return createStringWithNewBuffer(chpl_glob_index(glb,
-                                                       idx.safeCast(size_t)),
+                                                       idx.safeCast(c_size_t)),
                                        policy=decodePolicy.escape);
     }
   }

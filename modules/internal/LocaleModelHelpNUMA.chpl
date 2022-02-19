@@ -86,7 +86,7 @@ module LocaleModelHelpNUMA {
   proc chpl_executeOn(in loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: chpl_comm_on_bundle_p,     // function args
-                      args_size: size_t     // args size
+                      args_size: c_size_t     // args size
                      ) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
@@ -119,7 +119,7 @@ module LocaleModelHelpNUMA {
   proc chpl_executeOnFast(in loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: chpl_comm_on_bundle_p,     // function args
-                          args_size: size_t     // args size
+                          args_size: c_size_t     // args size
                          ) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
@@ -150,7 +150,7 @@ module LocaleModelHelpNUMA {
   proc chpl_executeOnNB(in loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: chpl_comm_on_bundle_p,     // function args
-                        args_size: size_t     // args size
+                        args_size: c_size_t     // args size
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than

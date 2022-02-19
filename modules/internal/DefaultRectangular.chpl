@@ -1877,14 +1877,14 @@ module DefaultRectangular {
       const elemSize = c_sizeof(arr.eltType);
       if boundsChecking {
         var rw = if f.writing then "write" else "read";
-        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
-               "length of array to ", rw, " is greater than ssize_t can hold");
+        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(c_ssize_t):uint,
+               "length of array to ", rw, " is greater than c_ssize_t can hold");
       }
 
       const len = dom.dsiNumIndices;
       const src = arr.theData;
       const idx = arr.getDataIndex(dom.dsiLow);
-      const size = len:ssize_t*elemSize:ssize_t;
+      const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
         if f.writing {
           f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
@@ -1985,7 +1985,7 @@ module DefaultRectangular {
     for param i in 0..rank-1 do
       Blo(i) = Bdims(i).first;
 
-    const len = aView.sizeAs(aView.intIdxType).safeCast(size_t);
+    const len = aView.sizeAs(aView.intIdxType).safeCast(c_size_t);
 
     if len == 0 then return;
 
@@ -2165,7 +2165,7 @@ module DefaultRectangular {
     // each level. It will ultimately be an array of size `stridelevels+1`.
     //
     var countDom = {1..inferredRank+1};
-    var count : [countDom] size_t;
+    var count : [countDom] c_size_t;
     for c in count do c = 1; // serial to avoid task creation overhead
 
     //
@@ -2174,7 +2174,7 @@ module DefaultRectangular {
     // it can be aggregated. Will ultimately be of size `stridelevels`.
     //
     var strideDom = {1..inferredRank};
-    var dstStride, srcStride : [strideDom] size_t;
+    var dstStride, srcStride : [strideDom] c_size_t;
 
     //
     // If the last dimension is strided then we can only copy one element at a
@@ -2188,8 +2188,8 @@ module DefaultRectangular {
     if LBlk(inferredRank-1) > 1 || RBlk(inferredRank-1) > 1 {
       stridelevels           += 1;
       count[stridelevels]     = 1;
-      dstStride[stridelevels] = LBlk(inferredRank-1).safeCast(size_t);
-      srcStride[stridelevels] = RBlk(inferredRank-1).safeCast(size_t);
+      dstStride[stridelevels] = LBlk(inferredRank-1).safeCast(c_size_t);
+      srcStride[stridelevels] = RBlk(inferredRank-1).safeCast(c_size_t);
     }
 
     //
@@ -2201,21 +2201,21 @@ module DefaultRectangular {
     for i in 2..inferredRank by -1 {
       // Each corresponding dimension in A and B should have the same length,
       // so it doesn't matter which we use here.
-      count[stridelevels+1] *= DimSizes(i).safeCast(size_t);
+      count[stridelevels+1] *= DimSizes(i).safeCast(c_size_t);
 
       const bothReuse = canReuseStride(LBlk, i, stridelevels, count, dstStride) &&
                         canReuseStride(RBlk, i, stridelevels, count, srcStride);
 
       if !bothReuse {
         stridelevels += 1;
-        dstStride[stridelevels] = LBlk(i-2).safeCast(size_t);
-        srcStride[stridelevels] = RBlk(i-2).safeCast(size_t);
+        dstStride[stridelevels] = LBlk(i-2).safeCast(c_size_t);
+        srcStride[stridelevels] = RBlk(i-2).safeCast(c_size_t);
       }
     }
-    count[stridelevels+1] *= DimSizes(1).safeCast(size_t);
+    count[stridelevels+1] *= DimSizes(1).safeCast(c_size_t);
 
     assert(stridelevels <= inferredRank, "BulkTransferStride: stride levels greater than rank.");
-    if stridelevels == 0 then assert(count[1] == LViewDom.sizeAs(size_t), "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.sizeAs(size_t));
+    if stridelevels == 0 then assert(count[1] == LViewDom.sizeAs(c_size_t), "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.sizeAs(c_size_t));
 
     countDom  = {1..stridelevels+1};
     strideDom = {1..stridelevels};

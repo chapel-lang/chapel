@@ -820,11 +820,11 @@ module FFTW {
 
     extern proc fftw_sprint_plan(p : fftw_plan) : c_string;
 
-    extern proc fftw_malloc(n : size_t) : c_void_ptr;
+    extern proc fftw_malloc(n : c_size_t) : c_void_ptr;
 
-    extern proc fftw_alloc_real(n : size_t) : c_ptr(c_double);
+    extern proc fftw_alloc_real(n : c_size_t) : c_ptr(c_double);
 
-    extern proc fftw_alloc_complex(n : size_t) : c_ptr(fftw_complex);
+    extern proc fftw_alloc_complex(n : c_size_t) : c_ptr(fftw_complex);
 
     extern proc fftw_free(p : c_void_ptr) : void;
 
