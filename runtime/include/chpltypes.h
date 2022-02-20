@@ -30,6 +30,7 @@
 #include <stddef.h> // for ptrdiff_t
 #include <string.h>
 #include <sys/time.h> // for struct timeval
+#include <sys/socket.h> // for socket_t
 
 #ifndef __cplusplus
 #include <complex.h>
@@ -64,6 +65,9 @@ typedef void* c_fn_ptr;  // a white lie
 typedef uintptr_t c_uintptr;
 typedef intptr_t c_intptr;
 typedef ptrdiff_t c_ptrdiff;
+typedef socklen_t c_socklen_t;
+typedef mode_t c_mode_t;
+typedef off_t c_off_t;
 
 // C++ does not support c99 bools
 #ifndef __cplusplus
