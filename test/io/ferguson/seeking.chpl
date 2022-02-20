@@ -6,10 +6,10 @@ config const maxint = 32*1024;
 config const seed = SeedGenerator.oddCurrentTime;
 
 config const bufsz = 0;
-extern var qbytes_iobuf_size:size_t;
+extern var qbytes_iobuf_size:c_size_t;
 
 if bufsz > 0 {
-  qbytes_iobuf_size = bufsz:size_t;
+  qbytes_iobuf_size = bufsz:c_size_t;
 }
 
 proc test1() {

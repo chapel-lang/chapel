@@ -43,7 +43,7 @@ record buf {
     if cur >= cap {
       if numLeft > 0 {
         cap = min(bufSize, numLeft);
-        chan.readBytes(c_ptrTo(buf), cap:ssize_t);
+        chan.readBytes(c_ptrTo(buf), cap:c_ssize_t);
         numLeft -= cap;
 
         // ensure we return an empty slice if we run out of bytes
@@ -62,9 +62,9 @@ record buf {
   }
 
   proc _memchr(c : uint(8), arr : []) {
-    extern proc memchr(s:c_void_ptr, c : c_int, n : size_t) : c_void_ptr;
+    extern proc memchr(s:c_void_ptr, c : c_int, n : c_size_t) : c_void_ptr;
     const ptr = c_ptrTo(arr);
-    const ret = memchr(ptr, c:c_int, arr.size:size_t);
+    const ret = memchr(ptr, c:c_int, arr.size:c_size_t);
     if ret != c_nil {
       const idx = arr.domain.first + ret:c_intptr - ptr:c_intptr;
       return idx;

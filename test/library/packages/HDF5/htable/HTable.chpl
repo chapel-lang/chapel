@@ -102,7 +102,7 @@ module HTable {
     extern proc H5TBappend_records(loc_id : hid_t, dset_name: c_string,
                                    numRecords : hsize_t, type_size : hsize_t,
                                    field_offset : c_array(hsize_t),
-                                   field_sizes : c_array(size_t),
+                                   field_sizes : c_array(c_size_t),
                                    data : c_void_ptr);
     var meta = new H5MetaTable(R);
     var cname = name.c_str();
@@ -134,9 +134,9 @@ module HTable {
   {
     extern proc H5TBread_fields_name(loc_id : hid_t, dset_name : c_string,
                                      field_names : c_string, start : hsize_t,
-                                     nrecords : hsize_t, type_size : size_t,
+                                     nrecords : hsize_t, type_size : c_size_t,
                                      field_offset : c_array(hsize_t),
-                                     field_sizes : c_array(size_t),
+                                     field_sizes : c_array(c_size_t),
                                      data : c_void_ptr);
     extern proc H5TBget_table_info(loc_id : hid_t, table_name : c_string,
                                    nfields : c_ptr(hsize_t), nrecords : c_ptr(hsize_t));
@@ -176,7 +176,7 @@ module HTable {
     param nFields : int;
 
     /* The size of `R` as reported by C `sizeof` */
-    const Rsize : size_t;
+    const Rsize : c_size_t;
 
     /* A c_array of names of fields */
     var names : c_array(c_string, nFields);
@@ -185,7 +185,7 @@ module HTable {
     /* HDF5 types of fields */
     var types : c_array(hid_t, nFields);
     /* Sizes of fields */
-    var sizes : c_array(size_t, nFields);
+    var sizes : c_array(c_size_t, nFields);
 
     /* Are the types created by this routine (currently,
      `c_array` types fall into this class). If so, this
@@ -223,12 +223,12 @@ module HTable {
           var dim : hsize_t = ifield.size : hsize_t; 
           types[ii] = H5Tarray_create2(getHDF5Type(ifield.eltType), 1, c_ptrTo(dim));
           ownedtypes[ii] = true;
-          sizes[ii] = (c_sizeof(ifield.eltType)*dim):size_t;
+          sizes[ii] = (c_sizeof(ifield.eltType)*dim):c_size_t;
           continue;
         }
         // All other cases
         types[ii] = getHDF5Type(fieldtype);
-        sizes[ii] = c_sizeof(fieldtype) : size_t;
+        sizes[ii] = c_sizeof(fieldtype) : c_size_t;
         ownedtypes[ii] = false;
       }
 

@@ -1,6 +1,6 @@
 use CTypes;
 
-extern proc sizeof(e): size_t;
+extern proc sizeof(e): c_size_t;
 
 /* Testing that the size reported is correct */
 writeln(sizeof(true:bool(8)));

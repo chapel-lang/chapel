@@ -50,7 +50,7 @@ proc main {
 
   /* The start and count arrays will tell the netCDF library where to
      write our data. */
-  var start, count: [0..#ndims] size_t;
+  var start, count: [0..#ndims] c_size_t;
 
   /* Program variables to hold the data we will write out. We will only
      need enough space to hold one timestep of data; one record. */
@@ -92,7 +92,7 @@ proc main {
   cdfError(nc_def_dim(ncid, lvlName, nlvl, lvl_dimid));
   cdfError(nc_def_dim(ncid, latName, nlat, lat_dimid));
   cdfError(nc_def_dim(ncid, lonName, nlon, lon_dimid));
-  cdfError(nc_def_dim(ncid, recName, NC_UNLIMITED: size_t, rec_dimid));
+  cdfError(nc_def_dim(ncid, recName, NC_UNLIMITED: c_size_t, rec_dimid));
 
   /* Define the coordinate variables. We will only define coordinate
      variables for lat and lon.  Ordinarily we would need to provide
@@ -156,9 +156,9 @@ proc main {
      surface temperature data. The arrays only hold one timestep worth
      of data. We will just rewrite the same data for each timestep. In
      a real application, the data would change between timesteps. */
-  extern proc nc_put_vara_float_WAR(ncid: c_int, pres_varid: c_int, ref start: size_t, ref count: size_t, ref pres_out: real(32)): c_int;
+  extern proc nc_put_vara_float_WAR(ncid: c_int, pres_varid: c_int, ref start: c_size_t, ref count: c_size_t, ref pres_out: real(32)): c_int;
   for rec in 0..#nrec {
-    start[0] = rec: size_t;
+    start[0] = rec: c_size_t;
     cdfError(nc_put_vara_float_WAR(ncid, pres_varid, start[0], count[0],
                                    pres_out[0, 0, 0]));
     cdfError(nc_put_vara_float_WAR(ncid, temp_varid, start[0], count[0],

@@ -32,7 +32,7 @@ proc readData(param dims: int, dataname: string) {
   assert(ndims == dims);
 
   var dimids: [0..#ndims] c_int;
-  var dimlens: [0..#ndims] size_t;
+  var dimlens: [0..#ndims] c_size_t;
 
   cdfError(nc_inq_vardimid(ncid, varid, dimids[0]));
   extern proc nc_inq_dimlen_WAR(ncid:c_int, dimid: c_int, ref dimlens): c_int;

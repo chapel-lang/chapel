@@ -1,6 +1,6 @@
 use CTypes;
 
-extern proc sizeof(e): ssize_t;
+extern proc sizeof(e): c_ssize_t;
 
 writeln(sizeof(1.0i));
 writeln(sizeof(1.2i));

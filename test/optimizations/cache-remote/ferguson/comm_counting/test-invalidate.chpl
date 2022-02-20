@@ -5,7 +5,7 @@ use Random;
 
 pragma "insert line file info"
 extern proc chpl_cache_invalidate(node:c_int, raddr:c_void_ptr,
-                                  size: size_t);
+                                  size: c_size_t);
 
 config const verbose = false;
 param testSize = 4096;
@@ -80,7 +80,7 @@ proc test_invalidate_mode(const start:int, const size:int, const mode:int,
     assert(warmCounts.cache_get_misses == 0);
 
     // Now do the invalidate call
-    chpl_cache_invalidate(0:c_int, eltPtr, size:size_t);
+    chpl_cache_invalidate(0:c_int, eltPtr, size:c_size_t);
 
     // Read up until 'start'
     if mode == 0 {
