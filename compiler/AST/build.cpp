@@ -2622,7 +2622,7 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
       }
       de->sym->addFlag(FLAG_EXTERN);
       if (cname != NULL) {
-	de->sym->cname = astr(cname);
+        de->sym->cname = astr(cname);
       }
     } else {
       INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
