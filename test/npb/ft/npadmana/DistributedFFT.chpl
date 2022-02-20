@@ -354,9 +354,9 @@ prototype module DistributedFFT {
   */
   proc copy(ref dst, const ref src, numBytes: int) {
     if dst.locale.id == here.id {
-      __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes.safeCast(size_t));
+      __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes.safeCast(c_size_t));
     } else if src.locale.id == here.id {
-      __primitive("chpl_comm_put", src, dst.locale.id, dst, numBytes.safeCast(size_t));
+      __primitive("chpl_comm_put", src, dst.locale.id, dst, numBytes.safeCast(c_size_t));
     } else {
       halt("Remote src and remote dst not yet supported");
     }

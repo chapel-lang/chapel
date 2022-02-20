@@ -69,7 +69,7 @@ var result:c_int;
 
 hostname_ptr = c_calloc(c_char, hostname_len);
 
-result = gethostname(hostname_ptr:c_ptr(c_char), hostname_len:size_t);
+result = gethostname(hostname_ptr:c_ptr(c_char), hostname_len:c_size_t);
 if !quiet {
   if result == 0 {
     writeln("gethostname returned:");

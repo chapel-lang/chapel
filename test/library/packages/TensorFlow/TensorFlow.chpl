@@ -6,7 +6,7 @@ module TensorFlow {
 
     extern proc TF_Version() : c_string;
 
-    extern proc TF_DataTypeSize(dt : TF_DataType) : size_t;
+    extern proc TF_DataTypeSize(dt : TF_DataType) : c_size_t;
 
     extern proc TF_NewStatus() : c_ptr(TF_Status);
 
@@ -26,7 +26,7 @@ module TensorFlow {
 
     extern proc TF_Message(s : c_ptr(TF_Status)) : c_string;
 
-    extern proc TF_NewBufferFromString(proto : c_void_ptr, proto_len : size_t) : c_ptr(TF_Buffer);
+    extern proc TF_NewBufferFromString(proto : c_void_ptr, proto_len : c_size_t) : c_ptr(TF_Buffer);
 
     extern proc TF_NewBuffer() : c_ptr(TF_Buffer);
 
@@ -38,13 +38,13 @@ module TensorFlow {
 
     extern proc TF_GetBuffer(buffer : c_ptr(TF_Buffer)) : TF_Buffer;
 
-    extern proc TF_NewTensor(arg0 : TF_DataType, ref dims : int(64), num_dims : c_int, data : c_void_ptr, len : size_t, ref deallocator : c_fn_ptr, deallocator_arg : c_void_ptr) : c_ptr(TF_Tensor);
+    extern proc TF_NewTensor(arg0 : TF_DataType, ref dims : int(64), num_dims : c_int, data : c_void_ptr, len : c_size_t, ref deallocator : c_fn_ptr, deallocator_arg : c_void_ptr) : c_ptr(TF_Tensor);
 
-    extern proc TF_NewTensor(arg0 : TF_DataType, dims : c_ptr(int(64)), num_dims : c_int, data : c_void_ptr, len : size_t, deallocator : c_fn_ptr, deallocator_arg : c_void_ptr) : c_ptr(TF_Tensor);
+    extern proc TF_NewTensor(arg0 : TF_DataType, dims : c_ptr(int(64)), num_dims : c_int, data : c_void_ptr, len : c_size_t, deallocator : c_fn_ptr, deallocator_arg : c_void_ptr) : c_ptr(TF_Tensor);
 
-    extern proc TF_AllocateTensor(arg0 : TF_DataType, ref dims : int(64), num_dims : c_int, len : size_t) : c_ptr(TF_Tensor);
+    extern proc TF_AllocateTensor(arg0 : TF_DataType, ref dims : int(64), num_dims : c_int, len : c_size_t) : c_ptr(TF_Tensor);
 
-    extern proc TF_AllocateTensor(arg0 : TF_DataType, dims : c_ptr(int(64)), num_dims : c_int, len : size_t) : c_ptr(TF_Tensor);
+    extern proc TF_AllocateTensor(arg0 : TF_DataType, dims : c_ptr(int(64)), num_dims : c_int, len : c_size_t) : c_ptr(TF_Tensor);
 
     extern proc TF_TensorMaybeMove(ref tensor : TF_Tensor) : c_ptr(TF_Tensor);
 
@@ -66,23 +66,23 @@ module TensorFlow {
 
     extern proc TF_Dim(tensor : c_ptr(TF_Tensor), dim_index : c_int) : int(64);
 
-    extern proc TF_TensorByteSize(ref arg0 : TF_Tensor) : size_t;
+    extern proc TF_TensorByteSize(ref arg0 : TF_Tensor) : c_size_t;
 
-    extern proc TF_TensorByteSize(arg0 : c_ptr(TF_Tensor)) : size_t;
+    extern proc TF_TensorByteSize(arg0 : c_ptr(TF_Tensor)) : c_size_t;
 
     extern proc TF_TensorData(ref arg0 : TF_Tensor) : c_void_ptr;
 
     extern proc TF_TensorData(arg0 : c_ptr(TF_Tensor)) : c_void_ptr;
 
-    extern proc TF_StringEncode(src : c_string, src_len : size_t, dst : c_string, dst_len : size_t, ref status : TF_Status) : size_t;
+    extern proc TF_StringEncode(src : c_string, src_len : c_size_t, dst : c_string, dst_len : c_size_t, ref status : TF_Status) : c_size_t;
 
-    extern proc TF_StringEncode(src : c_string, src_len : size_t, dst : c_string, dst_len : size_t, status : c_ptr(TF_Status)) : size_t;
+    extern proc TF_StringEncode(src : c_string, src_len : c_size_t, dst : c_string, dst_len : c_size_t, status : c_ptr(TF_Status)) : c_size_t;
 
-    extern proc TF_StringDecode(src : c_string, src_len : size_t, ref dst : c_string, ref dst_len : size_t, ref status : TF_Status) : size_t;
+    extern proc TF_StringDecode(src : c_string, src_len : c_size_t, ref dst : c_string, ref dst_len : c_size_t, ref status : TF_Status) : c_size_t;
 
-    extern proc TF_StringDecode(src : c_string, src_len : size_t, dst : c_ptr(c_string), dst_len : c_ptr(size_t), status : c_ptr(TF_Status)) : size_t;
+    extern proc TF_StringDecode(src : c_string, src_len : c_size_t, dst : c_ptr(c_string), dst_len : c_ptr(c_size_t), status : c_ptr(TF_Status)) : c_size_t;
 
-    extern proc TF_StringEncodedSize(len : size_t) : size_t;
+    extern proc TF_StringEncodedSize(len : c_size_t) : c_size_t;
 
     extern proc TF_NewSessionOptions() : c_ptr(TF_SessionOptions);
 
@@ -90,9 +90,9 @@ module TensorFlow {
 
     extern proc TF_SetTarget(options : c_ptr(TF_SessionOptions), target : c_string) : void;
 
-    extern proc TF_SetConfig(ref options : TF_SessionOptions, proto : c_void_ptr, proto_len : size_t, ref status : TF_Status) : void;
+    extern proc TF_SetConfig(ref options : TF_SessionOptions, proto : c_void_ptr, proto_len : c_size_t, ref status : TF_Status) : void;
 
-    extern proc TF_SetConfig(options : c_ptr(TF_SessionOptions), proto : c_void_ptr, proto_len : size_t, status : c_ptr(TF_Status)) : void;
+    extern proc TF_SetConfig(options : c_ptr(TF_SessionOptions), proto : c_void_ptr, proto_len : c_size_t, status : c_ptr(TF_Status)) : void;
 
     extern proc TF_DeleteSessionOptions(ref arg0 : TF_SessionOptions) : void;
 
@@ -140,13 +140,13 @@ module TensorFlow {
 
     extern proc TF_ColocateWith(desc : c_ptr(TF_OperationDescription), op : c_ptr(TF_Operation)) : void;
 
-    extern proc TF_SetAttrString(ref desc : TF_OperationDescription, attr_name : c_string, value : c_void_ptr, length : size_t) : void;
+    extern proc TF_SetAttrString(ref desc : TF_OperationDescription, attr_name : c_string, value : c_void_ptr, length : c_size_t) : void;
 
-    extern proc TF_SetAttrString(desc : c_ptr(TF_OperationDescription), attr_name : c_string, value : c_void_ptr, length : size_t) : void;
+    extern proc TF_SetAttrString(desc : c_ptr(TF_OperationDescription), attr_name : c_string, value : c_void_ptr, length : c_size_t) : void;
 
-    extern proc TF_SetAttrStringList(ref desc : TF_OperationDescription, attr_name : c_string, ref values : c_void_ptr, ref lengths : size_t, num_values : c_int) : void;
+    extern proc TF_SetAttrStringList(ref desc : TF_OperationDescription, attr_name : c_string, ref values : c_void_ptr, ref lengths : c_size_t, num_values : c_int) : void;
 
-    extern proc TF_SetAttrStringList(desc : c_ptr(TF_OperationDescription), attr_name : c_string, values : c_ptr(c_void_ptr), lengths : c_ptr(size_t), num_values : c_int) : void;
+    extern proc TF_SetAttrStringList(desc : c_ptr(TF_OperationDescription), attr_name : c_string, values : c_ptr(c_void_ptr), lengths : c_ptr(c_size_t), num_values : c_int) : void;
 
     extern proc TF_SetAttrInt(ref desc : TF_OperationDescription, attr_name : c_string, value : int(64)) : void;
 
@@ -180,9 +180,9 @@ module TensorFlow {
 
     extern proc TF_SetAttrTypeList(desc : c_ptr(TF_OperationDescription), attr_name : c_string, values : c_ptr(TF_DataType), num_values : c_int) : void;
 
-    extern proc TF_SetAttrFuncName(ref desc : TF_OperationDescription, attr_name : c_string, value : c_string, length : size_t) : void;
+    extern proc TF_SetAttrFuncName(ref desc : TF_OperationDescription, attr_name : c_string, value : c_string, length : c_size_t) : void;
 
-    extern proc TF_SetAttrFuncName(desc : c_ptr(TF_OperationDescription), attr_name : c_string, value : c_string, length : size_t) : void;
+    extern proc TF_SetAttrFuncName(desc : c_ptr(TF_OperationDescription), attr_name : c_string, value : c_string, length : c_size_t) : void;
 
     extern proc TF_SetAttrShape(ref desc : TF_OperationDescription, attr_name : c_string, ref dims : int(64), num_dims : c_int) : void;
 
@@ -192,13 +192,13 @@ module TensorFlow {
 
     extern proc TF_SetAttrShapeList(desc : c_ptr(TF_OperationDescription), attr_name : c_string, dims : c_ptr(c_ptr(int(64))), num_dims : c_ptr(c_int), num_shapes : c_int) : void;
 
-    extern proc TF_SetAttrTensorShapeProto(ref desc : TF_OperationDescription, attr_name : c_string, proto : c_void_ptr, proto_len : size_t, ref status : TF_Status) : void;
+    extern proc TF_SetAttrTensorShapeProto(ref desc : TF_OperationDescription, attr_name : c_string, proto : c_void_ptr, proto_len : c_size_t, ref status : TF_Status) : void;
 
-    extern proc TF_SetAttrTensorShapeProto(desc : c_ptr(TF_OperationDescription), attr_name : c_string, proto : c_void_ptr, proto_len : size_t, status : c_ptr(TF_Status)) : void;
+    extern proc TF_SetAttrTensorShapeProto(desc : c_ptr(TF_OperationDescription), attr_name : c_string, proto : c_void_ptr, proto_len : c_size_t, status : c_ptr(TF_Status)) : void;
 
-    extern proc TF_SetAttrTensorShapeProtoList(ref desc : TF_OperationDescription, attr_name : c_string, ref protos : c_void_ptr, ref proto_lens : size_t, num_shapes : c_int, ref status : TF_Status) : void;
+    extern proc TF_SetAttrTensorShapeProtoList(ref desc : TF_OperationDescription, attr_name : c_string, ref protos : c_void_ptr, ref proto_lens : c_size_t, num_shapes : c_int, ref status : TF_Status) : void;
 
-    extern proc TF_SetAttrTensorShapeProtoList(desc : c_ptr(TF_OperationDescription), attr_name : c_string, protos : c_ptr(c_void_ptr), proto_lens : c_ptr(size_t), num_shapes : c_int, status : c_ptr(TF_Status)) : void;
+    extern proc TF_SetAttrTensorShapeProtoList(desc : c_ptr(TF_OperationDescription), attr_name : c_string, protos : c_ptr(c_void_ptr), proto_lens : c_ptr(c_size_t), num_shapes : c_int, status : c_ptr(TF_Status)) : void;
 
     extern proc TF_SetAttrTensor(ref desc : TF_OperationDescription, attr_name : c_string, ref value : TF_Tensor, ref status : TF_Status) : void;
 
@@ -208,9 +208,9 @@ module TensorFlow {
 
     extern proc TF_SetAttrTensorList(desc : c_ptr(TF_OperationDescription), attr_name : c_string, values : c_ptr(c_ptr(TF_Tensor)), num_values : c_int, status : c_ptr(TF_Status)) : void;
 
-    extern proc TF_SetAttrValueProto(ref desc : TF_OperationDescription, attr_name : c_string, proto : c_void_ptr, proto_len : size_t, ref status : TF_Status) : void;
+    extern proc TF_SetAttrValueProto(ref desc : TF_OperationDescription, attr_name : c_string, proto : c_void_ptr, proto_len : c_size_t, ref status : TF_Status) : void;
 
-    extern proc TF_SetAttrValueProto(desc : c_ptr(TF_OperationDescription), attr_name : c_string, proto : c_void_ptr, proto_len : size_t, status : c_ptr(TF_Status)) : void;
+    extern proc TF_SetAttrValueProto(desc : c_ptr(TF_OperationDescription), attr_name : c_string, proto : c_void_ptr, proto_len : c_size_t, status : c_ptr(TF_Status)) : void;
 
     extern proc TF_FinishOperation(ref desc : TF_OperationDescription, ref status : TF_Status) : c_ptr(TF_Operation);
 
@@ -276,13 +276,13 @@ module TensorFlow {
 
     extern proc TF_OperationGetAttrMetadata(oper : c_ptr(TF_Operation), attr_name : c_string, status : c_ptr(TF_Status)) : TF_AttrMetadata;
 
-    extern proc TF_OperationGetAttrString(ref oper : TF_Operation, attr_name : c_string, value : c_void_ptr, max_length : size_t, ref status : TF_Status) : void;
+    extern proc TF_OperationGetAttrString(ref oper : TF_Operation, attr_name : c_string, value : c_void_ptr, max_length : c_size_t, ref status : TF_Status) : void;
 
-    extern proc TF_OperationGetAttrString(oper : c_ptr(TF_Operation), attr_name : c_string, value : c_void_ptr, max_length : size_t, status : c_ptr(TF_Status)) : void;
+    extern proc TF_OperationGetAttrString(oper : c_ptr(TF_Operation), attr_name : c_string, value : c_void_ptr, max_length : c_size_t, status : c_ptr(TF_Status)) : void;
 
-    extern proc TF_OperationGetAttrStringList(ref oper : TF_Operation, attr_name : c_string, ref values : c_void_ptr, ref lengths : size_t, max_values : c_int, storage : c_void_ptr, storage_size : size_t, ref status : TF_Status) : void;
+    extern proc TF_OperationGetAttrStringList(ref oper : TF_Operation, attr_name : c_string, ref values : c_void_ptr, ref lengths : c_size_t, max_values : c_int, storage : c_void_ptr, storage_size : c_size_t, ref status : TF_Status) : void;
 
-    extern proc TF_OperationGetAttrStringList(oper : c_ptr(TF_Operation), attr_name : c_string, values : c_ptr(c_void_ptr), lengths : c_ptr(size_t), max_values : c_int, storage : c_void_ptr, storage_size : size_t, status : c_ptr(TF_Status)) : void;
+    extern proc TF_OperationGetAttrStringList(oper : c_ptr(TF_Operation), attr_name : c_string, values : c_ptr(c_void_ptr), lengths : c_ptr(c_size_t), max_values : c_int, storage : c_void_ptr, storage_size : c_size_t, status : c_ptr(TF_Status)) : void;
 
     extern proc TF_OperationGetAttrInt(ref oper : TF_Operation, attr_name : c_string, ref value : int(64), ref status : TF_Status) : void;
 
@@ -348,9 +348,9 @@ module TensorFlow {
 
     extern proc TF_GraphOperationByName(graph : c_ptr(TF_Graph), oper_name : c_string) : c_ptr(TF_Operation);
 
-    extern proc TF_GraphNextOperation(ref graph : TF_Graph, ref pos : size_t) : c_ptr(TF_Operation);
+    extern proc TF_GraphNextOperation(ref graph : TF_Graph, ref pos : c_size_t) : c_ptr(TF_Operation);
 
-    extern proc TF_GraphNextOperation(graph : c_ptr(TF_Graph), pos : c_ptr(size_t)) : c_ptr(TF_Operation);
+    extern proc TF_GraphNextOperation(graph : c_ptr(TF_Graph), pos : c_ptr(c_size_t)) : c_ptr(TF_Operation);
 
     extern proc TF_GraphToGraphDef(ref graph : TF_Graph, ref output_graph_def : TF_Buffer, ref status : TF_Status) : void;
 
@@ -486,13 +486,13 @@ module TensorFlow {
 
     extern proc TF_FunctionToFunctionDef(func : c_ptr(TF_Function), output_func_def : c_ptr(TF_Buffer), status : c_ptr(TF_Status)) : void;
 
-    extern proc TF_FunctionImportFunctionDef(proto : c_void_ptr, proto_len : size_t, ref status : TF_Status) : c_ptr(TF_Function);
+    extern proc TF_FunctionImportFunctionDef(proto : c_void_ptr, proto_len : c_size_t, ref status : TF_Status) : c_ptr(TF_Function);
 
-    extern proc TF_FunctionImportFunctionDef(proto : c_void_ptr, proto_len : size_t, status : c_ptr(TF_Status)) : c_ptr(TF_Function);
+    extern proc TF_FunctionImportFunctionDef(proto : c_void_ptr, proto_len : c_size_t, status : c_ptr(TF_Status)) : c_ptr(TF_Function);
 
-    extern proc TF_FunctionSetAttrValueProto(ref func : TF_Function, attr_name : c_string, proto : c_void_ptr, proto_len : size_t, ref status : TF_Status) : void;
+    extern proc TF_FunctionSetAttrValueProto(ref func : TF_Function, attr_name : c_string, proto : c_void_ptr, proto_len : c_size_t, ref status : TF_Status) : void;
 
-    extern proc TF_FunctionSetAttrValueProto(func : c_ptr(TF_Function), attr_name : c_string, proto : c_void_ptr, proto_len : size_t, status : c_ptr(TF_Status)) : void;
+    extern proc TF_FunctionSetAttrValueProto(func : c_ptr(TF_Function), attr_name : c_string, proto : c_void_ptr, proto_len : c_size_t, status : c_ptr(TF_Status)) : void;
 
     extern proc TF_FunctionGetAttrValueProto(ref func : TF_Function, attr_name : c_string, ref output_attr_value : TF_Buffer, ref status : TF_Status) : void;
 
@@ -552,9 +552,9 @@ module TensorFlow {
 
     extern proc TF_Reset(opt : c_ptr(TF_SessionOptions), containers : c_ptr(c_string), ncontainers : c_int, status : c_ptr(TF_Status)) : void;
 
-    extern proc TF_ExtendGraph(ref arg0 : TF_DeprecatedSession, proto : c_void_ptr, proto_len : size_t, ref arg3 : TF_Status) : void;
+    extern proc TF_ExtendGraph(ref arg0 : TF_DeprecatedSession, proto : c_void_ptr, proto_len : c_size_t, ref arg3 : TF_Status) : void;
 
-    extern proc TF_ExtendGraph(arg0 : c_ptr(TF_DeprecatedSession), proto : c_void_ptr, proto_len : size_t, arg3 : c_ptr(TF_Status)) : void;
+    extern proc TF_ExtendGraph(arg0 : c_ptr(TF_DeprecatedSession), proto : c_void_ptr, proto_len : c_size_t, arg3 : c_ptr(TF_Status)) : void;
 
     extern proc TF_Run(ref arg0 : TF_DeprecatedSession, ref run_options : TF_Buffer, ref input_names : c_string, ref inputs : c_ptr(TF_Tensor), ninputs : c_int, ref output_names : c_string, ref outputs : c_ptr(TF_Tensor), noutputs : c_int, ref target_oper_names : c_string, ntargets : c_int, ref run_metadata : TF_Buffer, ref arg11 : TF_Status) : void;
 
@@ -622,13 +622,13 @@ module TensorFlow {
 
     extern proc TF_DeleteApiDefMap(apimap : c_ptr(TF_ApiDefMap)) : void;
 
-    extern proc TF_ApiDefMapPut(ref api_def_map : TF_ApiDefMap, text : c_string, text_len : size_t, ref status : TF_Status) : void;
+    extern proc TF_ApiDefMapPut(ref api_def_map : TF_ApiDefMap, text : c_string, text_len : c_size_t, ref status : TF_Status) : void;
 
-    extern proc TF_ApiDefMapPut(api_def_map : c_ptr(TF_ApiDefMap), text : c_string, text_len : size_t, status : c_ptr(TF_Status)) : void;
+    extern proc TF_ApiDefMapPut(api_def_map : c_ptr(TF_ApiDefMap), text : c_string, text_len : c_size_t, status : c_ptr(TF_Status)) : void;
 
-    extern proc TF_ApiDefMapGet(ref api_def_map : TF_ApiDefMap, name : c_string, name_len : size_t, ref status : TF_Status) : c_ptr(TF_Buffer);
+    extern proc TF_ApiDefMapGet(ref api_def_map : TF_ApiDefMap, name : c_string, name_len : c_size_t, ref status : TF_Status) : c_ptr(TF_Buffer);
 
-    extern proc TF_ApiDefMapGet(api_def_map : c_ptr(TF_ApiDefMap), name : c_string, name_len : size_t, status : c_ptr(TF_Status)) : c_ptr(TF_Buffer);
+    extern proc TF_ApiDefMapGet(api_def_map : c_ptr(TF_ApiDefMap), name : c_string, name_len : c_size_t, status : c_ptr(TF_Status)) : c_ptr(TF_Buffer);
 
     extern proc TF_GetAllRegisteredKernels(ref status : TF_Status) : c_ptr(TF_Buffer);
 
@@ -661,7 +661,7 @@ module TensorFlow {
 
     extern record TF_Buffer {
       var data : c_void_ptr;
-      var length : size_t;
+      var length : c_size_t;
       var data_deallocator : c_fn_ptr;
     }
 

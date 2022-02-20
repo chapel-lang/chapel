@@ -94,9 +94,9 @@ proc main {
 
   /* Define units attributes for vars. */
   cdfError(nc_put_att_text(ncid, presVarId, units.c_str(),
-                           presUnits.numBytes:size_t, presUnits.c_str()));
+                           presUnits.numBytes:c_size_t, presUnits.c_str()));
   cdfError(nc_put_att_text(ncid, tempVarId, units.c_str(),
-                           tempUnits.numBytes:size_t, tempUnits.c_str()));
+                           tempUnits.numBytes:c_size_t, tempUnits.c_str()));
 
   /* End define mode. */
   cdfError(nc_enddef(ncid));

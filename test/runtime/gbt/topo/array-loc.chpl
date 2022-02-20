@@ -17,9 +17,9 @@ proc localityStr(loc: localityCheck_t): string {
 //
 // Supporting stuff elsewhere, e.g. the runtime.
 //
-extern proc sizeof(type x): size_t;
+extern proc sizeof(type x): c_size_t;
 
-extern proc chpl_getHeapPageSize(): size_t;
+extern proc chpl_getHeapPageSize(): c_size_t;
 const pgSize = chpl_getHeapPageSize();
 const pgMask = pgSize - 1;
 
@@ -41,12 +41,12 @@ extern proc chpl_topo_getMemLocality(p: c_ptr): chpl_sublocID_t;
 //
 proc checkMemLocalityParts(p: c_ptr, size, type eltType) {
   var myP = __primitive("cast", c_ptr(int(8)), p);
-  var sizeBytes = size:size_t * sizeof(eltType);
+  var sizeBytes = size:c_size_t * sizeof(eltType);
 
   //
   // We ignore any leading partial edge page.
   //
-  const offInPage = __primitive("cast", size_t, myP) & pgMask;
+  const offInPage = __primitive("cast", c_size_t, myP) & pgMask;
   if offInPage != 0 {
     const offToPage = pgSize - offInPage;
     if sizeBytes <= offToPage then
@@ -87,12 +87,12 @@ proc checkMemLocalityWhole(p: c_ptr, size, type eltType,
   extern proc chpl_topo_getMemLocality(p: c_ptr): chpl_sublocID_t;
 
   var myP = __primitive("cast", c_ptr(int(8)), p);
-  var sizeBytes = size:size_t * sizeof(eltType);
+  var sizeBytes = size:c_size_t * sizeof(eltType);
 
   //
   // We ignore any leading partial edge page.
   //
-  const offInPage = __primitive("cast", size_t, myP) & pgMask;
+  const offInPage = __primitive("cast", c_size_t, myP) & pgMask;
   if offInPage != 0 {
     const offToPage = pgSize - offInPage;
     if sizeBytes <= offToPage then

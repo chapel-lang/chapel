@@ -6,7 +6,7 @@ use Time;
 use Random;
 
 extern proc chpl_cache_print_stats();
-extern proc chpl_cache_mock_get(node:c_int, raddr:uint(64), size:size_t):c_int;
+extern proc chpl_cache_mock_get(node:c_int, raddr:uint(64), size:c_size_t):c_int;
 
 config const seed = 97;
 config const nLocales:uint = 512;
