@@ -21,6 +21,7 @@ Initializing Modules:
           Initialization
            Memory
           IO
+           SysError
            FormattedIO
             Regex
          Sort
@@ -37,6 +38,7 @@ Initializing Modules:
         ExternalArray
         RangeChunk
        ChapelNumLocales
+       Sys
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray

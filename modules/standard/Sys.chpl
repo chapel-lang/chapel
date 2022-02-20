@@ -255,7 +255,7 @@ module Sys {
 
   extern type sys_sockaddr_storage_t;
   /* The type corresponding to C's socklen_t */
-  extern type c_socklen_t = int(32);
+  extern "socklen_t" type c_socklen_t = int(32);
   extern record sys_sockaddr_t {
     var addr:sys_sockaddr_storage_t;
     var len:c_socklen_t;
@@ -422,12 +422,12 @@ module Sys {
    */
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
   /* The type corresponding to C's mode_t */
-  extern type c_mode_t = uint(32);
+  extern "mode_t" type c_mode_t = uint(32);
   extern proc sys_open(pathname:c_string, flags:c_int, mode:c_mode_t, ref fd_out:fd_t):err_t;
   extern proc sys_close(fd:fd_t):err_t;
 
   /* The type corresponding to C's off_t */
-  extern type c_off_t = int(64);
+  extern "off_t" type c_off_t = int(64);
 
   extern proc sys_mmap(addr:c_void_ptr, length:size_t, prot:c_int, flags:c_int, fd:fd_t, offset:c_off_t, ref ret_out:c_void_ptr):err_t;
   extern proc sys_munmap(addr:c_void_ptr, length:size_t):err_t;

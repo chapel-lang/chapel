@@ -196,7 +196,7 @@ BlockStmt* buildSyncStmt(Expr* stmt);
 BlockStmt* buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block);
 BlockStmt* buildExternBlockStmt(const char* c_code);
 CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
-BlockStmt* convertTypesToExtern(BlockStmt*);
+BlockStmt* convertTypesToExtern(BlockStmt*, const char* cname=NULL);
 BlockStmt* handleConfigTypes(BlockStmt*);
 
 // In the following routines 'open[high|low]' are used to indicate
