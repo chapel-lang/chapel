@@ -927,7 +927,7 @@ static void addKnownWides() {
 
     FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
-    forv_Vec(FnSymbol, indirectlyCalledFn, ftableVec) {
+    for (FnSymbol* indirectlyCalledFn : ftableVec) {
       if (fn == indirectlyCalledFn) {
         debug(arg, "called from ftableVec\n");
         setWide(fn, arg);
@@ -2471,7 +2471,7 @@ insertWideReferences(void) {
   }
 
   debugTimer.start();
-  forv_Vec(Symbol, sym, heapVars) {
+  for (Symbol* sym : heapVars) {
     DEBUG_PRINTF("Heap var %s (%d) is wide\n", sym->cname, sym->id);
     setWide(sym->defPoint->getModule(), sym);
   }

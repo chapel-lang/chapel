@@ -4,7 +4,7 @@
 //   test/constrained-generics/hashtable/test-chpl-hashtable.chpl
 
 record my__hashtable {
-  var table: _ddata(int) = _ddata_allocate(int, 2, initElts=true);
+  var table: _ddata(int) = _ddata_allocate(int, 2);
 }
 
 interface chpl_Hashtable(HT) {

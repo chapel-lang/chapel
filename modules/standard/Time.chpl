@@ -29,7 +29,6 @@
  */
 
 module Time {
-  private use SysBasic;
   import HaltWrappers;
 
 // Returns the number of seconds since midnight.  Has the potential for
@@ -125,6 +124,7 @@ proc getCurrentDayOfWeek() : Day {
    :type unit: :type:`TimeUnits`
 */
 inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
+  use CTypes;
   extern proc chpl_task_sleep(s:c_double) : void;
 
   if t < 0 {

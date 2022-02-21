@@ -638,7 +638,7 @@ static void processImportExprs() {
       std::vector<BaseAST*> asts;
 
       // Collect *all* asts within this top-level module in text order
-      collect_asts(topLevelModule, asts);
+      collect_asts_preorder(topLevelModule, asts);
 
       std::stack<ResolveScope*> scopes;
       for_vector(BaseAST, item, asts) {
@@ -800,11 +800,11 @@ static void resolveUnresolvedSymExprs() {
   // that is used to determine visible functions.
   //
 
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     resolveModuleCall(call);
   }
 
-  forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
+  forv_expanding_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     resolveUnresolvedSymExpr(unresolvedSymExpr);
   }
 
@@ -2267,7 +2267,7 @@ static void buildBreadthFirstModuleList(
 
   Vec<VisibilityStmt*> next;
 
-  forv_Vec(VisibilityStmt, source, *current) {
+  forv_expanding_Vec(VisibilityStmt, source, *current) {
     if (!source) {
       break;
     } else {
@@ -2848,9 +2848,17 @@ static void removeUnusedModules() {
   if (printModuleInitModule)
     markUsedModule(usedModules, printModuleInitModule);
 
+  // mark all modules named on the command line
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE))
+      markUsedModule(usedModules, mod);
+  }
+
   // Now remove any module not in the set
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-    if (usedModules.count(mod) == 0) {
+    bool removeIt = (usedModules.count(mod) == 0);
+
+    if (removeIt) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();
 

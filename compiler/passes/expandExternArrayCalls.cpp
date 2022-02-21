@@ -104,7 +104,7 @@ void expandExternArrayCalls() {
       SET_LINENO(fn);
       Expr* parentScope = fn->defPoint->parentExpr;
       if (cptrScopes.count(parentScope) == 0) {
-        BlockStmt* useBlock = buildChapelStmt(new UseStmt(new UnresolvedSymExpr("CPtr"), "",
+        BlockStmt* useBlock = buildChapelStmt(new UseStmt(new UnresolvedSymExpr("CTypes"), "",
                                                         true));
         fn->defPoint->insertAfter(useBlock);
         cptrScopes.insert(parentScope);

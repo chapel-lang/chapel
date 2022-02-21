@@ -28,7 +28,7 @@ module ChapelBase {
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
-  use ChapelEnv, SysCTypes, CPtr;
+  use ChapelEnv, CTypes;
 
   config param enablePostfixBangChecks = false;
 
@@ -1034,7 +1034,7 @@ module ChapelBase {
                           hi: integral,
                           fill: int(8)=0) {
     if hi > lo {
-      const elemWidthInBytes = _ddata_sizeof_element(ddata);
+      const elemWidthInBytes: uint  = _ddata_sizeof_element(ddata);
       const numElems = (hi - lo).safeCast(uint);
       if safeMul(numElems, elemWidthInBytes) {
         const numBytes = numElems * elemWidthInBytes;

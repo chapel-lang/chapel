@@ -1,6 +1,6 @@
 require "return-int-pretend-void.h";
 
-use SysCTypes;
+use CTypes;
 
 extern proc foo():void;  // actually, foo() returns c_int
 extern proc bar():c_int; // actually, bar() returns void

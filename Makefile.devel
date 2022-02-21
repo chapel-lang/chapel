@@ -76,8 +76,8 @@ dyno-parser: FORCE
 dyno-chpldoc: FORCE
 	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-chpldoc
 
-run-dyno-linter: FORCE
-	./compiler/dyno/util/lint --only-changed --jobs=-1
+run-dyno-linters: FORCE
+	@cd compiler/dyno && $(MAKE) -f Makefile.help run-dyno-linters
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE

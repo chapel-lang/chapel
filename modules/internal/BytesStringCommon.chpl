@@ -20,8 +20,7 @@
 
 module BytesStringCommon {
   private use ChapelStandard;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
 

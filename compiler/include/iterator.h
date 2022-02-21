@@ -73,7 +73,7 @@ void showIteratorGroup(IteratorGroup* igroup);
 void showIteratorGroup(BaseAST* ast);
 void showIteratorGroup(int id);
 
-CallExpr* isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts);
+CallExpr* isSingleLoopIterator(FnSymbol* fn, std::vector<BaseAST*>& asts);
 CondStmt* isIBBCondStmt(BaseAST* ast);
 void      createIteratorBreakBlocks();
 void      addIteratorBreakBlocksInline(Expr* loopRef, Symbol* IC,

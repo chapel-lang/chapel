@@ -85,8 +85,7 @@ module Crypto {
   use SysError;
 
   private use IO;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   pragma "no doc"
   proc generateKeys(bits: int) {
@@ -1198,8 +1197,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     require "openssl/pem.h", "openssl/bn.h", "openssl/bio.h", "openssl/evp.h",
             "openssl/aes.h", "openssl/rand.h", "openssl/sha.h", "-lcrypto", "-lssl";
 
-    use SysCTypes;
-    use CPtr;
+    use CTypes;
 
     extern type EVP_PKEY_CTX;
     extern type EVP_PKEY;

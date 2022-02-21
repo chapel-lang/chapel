@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Time, SysCTypes;
+use Memory.Diagnostics, Time, CTypes;
 
 enum op_t {
   opGet,

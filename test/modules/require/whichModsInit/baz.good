@@ -1,4 +1,3 @@
-warning: though named on the command-line, module 'baz' is not 'use'd by
-         main module 'foo' and will not affect execution.
 In foo's init
+In baz's init
 In foo's main()

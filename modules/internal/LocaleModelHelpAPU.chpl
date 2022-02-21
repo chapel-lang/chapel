@@ -24,7 +24,7 @@ module LocaleModelHelpAPU {
 
   public use LocaleModelHelpSetup;
   public use LocaleModelHelpRuntime;
-  use SysCTypes;
+  use CTypes;
 
   pragma "no doc"
   config param debugAPULocale = false;

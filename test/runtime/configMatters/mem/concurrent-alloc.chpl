@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 config const size = 256 * 1024 * 1024;
 config const numTasks = max(here.maxTaskPar, max(int(8)));

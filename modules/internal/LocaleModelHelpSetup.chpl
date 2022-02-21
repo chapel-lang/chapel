@@ -35,7 +35,7 @@ module LocaleModelHelpSetup {
   public use ChapelNumLocales;
   use ChapelEnv;
   use Sys;
-  use SysCTypes;
+  use CTypes;
 
   config param debugLocaleModel = false;
 

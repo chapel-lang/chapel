@@ -4,24 +4,9 @@
 // that deadMod does not exist, and mainMain uses aliveMod. Lastly,
 // deadModWithDeadProc should also be eliminated. 
 
-module aliveMod {
-  proc alive() {
-    writeln("I'm Alive!");
-  }
-}
-
-module deadMod {
-  public use aliveMod;
-}
-
-module deadModWithDeadProc {
-  proc dead() {
-   writeln("I'm Dead :("); 
-  }
-}
-
 module mainMod {
-  public use deadMod;
+  public use deadModuleElimDeadMod;
+
   proc main() {
     alive();
   }

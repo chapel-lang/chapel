@@ -1,3 +1,2 @@
 M.chpl --main-module module-resolution-issue
 M.chpl M0.chpl --main-module module-resolution-issue
-

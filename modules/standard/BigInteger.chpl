@@ -165,11 +165,12 @@ See :mod:`GMP` for more information on how to use GMP with Chapel.
 */
 
 module BigInteger {
+  use CTypes;
   use GMP;
   use HaltWrappers;
-  use SysCTypes;
+  use CTypes;
+  use SysBasic only syserr, EFORMAT, ENOERR;
   use SysError;
-  use SysBasic;
 
   /*
     .. warning::

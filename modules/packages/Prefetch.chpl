@@ -22,7 +22,7 @@
  *  Prefetch
  */
 module Prefetch {
-  private use CPtr;
+  private use CTypes;
 
   import Prefetch_internal;
   inline proc prefetch(addr:c_ptr) {
@@ -35,6 +35,6 @@ module Prefetch {
 }
 
 module Prefetch_internal {
-  use CPtr;
+  use CTypes;
   extern proc chpl_prefetch(addr: c_void_ptr);
 }

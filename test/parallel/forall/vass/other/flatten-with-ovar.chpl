@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 class A {
   proc fn() : c_ptr(int) {
     return c_nil : c_ptr(int);

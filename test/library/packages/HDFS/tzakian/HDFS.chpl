@@ -1,5 +1,3 @@
-use SysBasic; // For c_types 
-
 // TODO
 //extern type tSize = int(32);
 

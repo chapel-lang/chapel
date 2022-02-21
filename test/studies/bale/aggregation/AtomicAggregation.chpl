@@ -1,5 +1,5 @@
 module AtomicAggregation {
-  use CPtr;
+  use CTypes;
   use ChapelAutoAggregation.AggregationPrimitives;
 
   private config const yieldFrequency = getEnvInt("AGGREGATION_YIELD_FREQUENCY", 1024);

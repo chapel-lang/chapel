@@ -293,6 +293,7 @@ class CallInfo {
  public:
   using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
 
+  /** Construct a CallInfo that contains QualifiedTypes for actuals */
   CallInfo(UniqueString name, bool hasQuestionArg,
            std::vector<CallInfoActual> actuals)
       : name_(name), hasQuestionArg_(hasQuestionArg),
@@ -304,6 +305,10 @@ class CallInfo {
         isMethod_(isMethod),
         hasQuestionArg_(hasQuestionArg),
         actuals_(std::move(actuals)) {}
+
+  /** Construct a CallInfo with unknown types for the actuals
+      that can be used for FormalActualMap but not much else.  */
+  CallInfo(const uast::FnCall* call);
 
   /** return the name of the called thing */
   UniqueString name() const { return name_; }
@@ -790,10 +795,9 @@ class MostSpecificCandidates {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    for (const TypedFnSignature* sig : *this) {
+    for (const TypedFnSignature* sig : candidates) {
       context->markPointer(sig);
     }
-    (void) emptyDueToAmbiguity; // no mark needed for bool
   }
 };
 
@@ -1185,6 +1189,7 @@ class ResolvedFields {
     void mark(Context* context) const {
       name.mark(context);
       declId.mark(context);
+      type.mark(context);
     }
 
     /*
@@ -1275,6 +1280,7 @@ class ResolvedFields {
     for (auto const &elt : fields_) {
       elt.mark(context);
     }
+    context->markPointer(type_);
   }
 };
 

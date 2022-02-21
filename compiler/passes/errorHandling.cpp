@@ -1175,7 +1175,7 @@ static void lowerErrorHandling(FnSymbol* fn)
 
 void lowerCheckErrorPrimitive()
 {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CHECK_ERROR)) {
       SET_LINENO(call);
 

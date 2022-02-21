@@ -5,9 +5,7 @@ require "nestedUnion.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
-use SysCTypes;
-use SysBasic;
+use CTypes;
 extern "union first" union first {
   var a : c_int;
   var b : c_string;

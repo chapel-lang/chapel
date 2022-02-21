@@ -758,10 +758,10 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
         return got;
       }
     }
-  } else if (auto actualAt = actualT->toCompositeType()) {
+  } else if (auto actualCt = actualT->toCompositeType()) {
     // check for instantiating records/unions/tuples
-    if (auto formalAt = formalT->toCompositeType()) {
-      if (actualAt->isInstantiationOf(formalAt)) {
+    if (auto formalCt = formalT->toCompositeType()) {
+      if (actualCt->isInstantiationOf(context, formalCt)) {
         return instantiate();
       }
     }

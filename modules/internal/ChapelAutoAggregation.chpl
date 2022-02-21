@@ -84,8 +84,7 @@ module ChapelAutoAggregation {
 
   module CopyAggregation {
     use ChplConfig;
-    use SysCTypes;
-    use CPtr;
+    use CTypes;
     use super.AggregationPrimitives;
 
     param defaultBuffSize = if CHPL_COMM == "ugni" then 4096 else 8096;
@@ -313,8 +312,7 @@ module ChapelAutoAggregation {
   }
 
   module AggregationPrimitives {
-    use CPtr;
-    use SysCTypes;
+    use CTypes;
 
     inline proc getAddr(const ref p): c_ptr(p.type) {
       // TODO can this use c_ptrTo?

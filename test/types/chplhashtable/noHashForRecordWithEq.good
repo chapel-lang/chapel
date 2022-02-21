@@ -1,0 +1,11 @@
+$CHPL_HOME/modules/standard/Set.chpl:277: In method '_addElem':
+$CHPL_HOME/modules/standard/Set.chpl:290: error: unresolved call 'R.hash()'
+$CHPL_HOME/modules/internal/ChapelHashing.chpl:61: note: this candidate did not match: bool.hash()
+$CHPL_HOME/modules/internal/ChapelHashtable.chpl:366: note: because method call receiver with type 'R'
+$CHPL_HOME/modules/internal/ChapelHashing.chpl:61: note: is passed to formal 'this: bool'
+$CHPL_HOME/modules/standard/Set.chpl:290: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelHashing.chpl:68: note:   int.hash()
+$CHPL_HOME/modules/internal/ChapelHashing.chpl:72: note:   uint.hash()
+note: and 51 other candidates, use --print-all-candidates to see them
+  $CHPL_HOME/modules/standard/Set.chpl:335: called as (set(R,false))._addElem(elem: R) from method 'add'
+  noHashForRecordWithEq.chpl:28: called as (set(R,false)).add(element: R)

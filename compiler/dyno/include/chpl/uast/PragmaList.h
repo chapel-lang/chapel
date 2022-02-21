@@ -356,7 +356,10 @@ PRAGMA(C_MEMORY_ORDER_TYPE, ypr, "c memory order type", "type implementing c mem
 PRAGMA(METHOD, npr, "method", "function that is a method")
 PRAGMA(METHOD_PRIMARY, npr, "primary method", "function that is a method and defined in type declaration")
 PRAGMA(MODIFIES_CONST_FIELDS, npr, "modifies const fields", "... of 'this' argument")
+
+// marks top-level modules mentioned on the compiler command line
 PRAGMA(MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")
+
 PRAGMA(MODULE_INIT, npr, "module init", "a module init function")
 
 PRAGMA(MODULE_INCLUDED_BY_DEFAULT, ypr, "module included by default", "module is included by default")

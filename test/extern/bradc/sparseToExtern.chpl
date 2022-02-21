@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 extern proc cprintarr(X: [] real, n: c_int);
 

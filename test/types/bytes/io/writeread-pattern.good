@@ -6,3 +6,4 @@ Success
 Success
 Success
 Success
+writeread-pattern.chpl:59: warning: binary conversion "%|*s" is deprecated.

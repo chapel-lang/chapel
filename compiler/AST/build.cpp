@@ -796,12 +796,10 @@ BlockStmt*
 buildExternBlockStmt(const char* c_code) {
   bool privateUse = true;
 
-  // use CPtr, SysBasic, SysCTypes to get c_ptr, c_int, c_double etc.
+  // use CTypes to get c_ptr, c_int, c_double etc.
   // (System error codes do not need to be part of this).
-  BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CPtr"), "",
+  BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CTypes"), "",
                                      NULL, privateUse);
-  buildUseList(new UnresolvedSymExpr("SysCTypes"), "", useBlock, privateUse);
-  buildUseList(new UnresolvedSymExpr("SysBasic"), "", useBlock, privateUse);
 
   useBlock->insertAtTail(new ExternBlockStmt(c_code));
   BlockStmt* ret = buildChapelStmt(useBlock);
@@ -833,10 +831,6 @@ ModuleSymbol* buildModule(const char* name,
                           bool        prototype,
                           const char* docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
-
-  if (currentFileNamedOnCommandLine) {
-    mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-  }
 
   if (priv == true) {
     mod->addFlag(FLAG_PRIVATE);

@@ -201,6 +201,7 @@ class UniqueString final {
     \endrst
    */
   inline bool operator==(const char* other) const {
+    (void)s;                    // mark field as used for linter
     return 0 == this->compare(other);
   }
   inline bool operator!=(const UniqueString other) const {

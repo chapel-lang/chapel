@@ -33,7 +33,7 @@ pragma "module included by default"
 module Errors {
   private use ChapelStandard;
   private use ChapelLocks;
-  private use CPtr;
+  private use CTypes;
 
   // Base class for errors
   // TODO: should Error include list pointers for TaskErrors?

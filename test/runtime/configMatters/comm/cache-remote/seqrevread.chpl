@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 config const n = 40000;
 extern proc chpl_cache_print();

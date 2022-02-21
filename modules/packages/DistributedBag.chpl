@@ -125,8 +125,7 @@ module DistributedBag {
 
   public use Collection;
   use BlockDist;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   use IO only channel;
 
   /*

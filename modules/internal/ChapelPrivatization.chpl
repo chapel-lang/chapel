@@ -20,7 +20,7 @@
 
 module ChapelPrivatization {
 
-  private use CPtr;
+  private use CTypes;
 
   // the type of elements in chpl_privateObjects.
   pragma "no doc"
