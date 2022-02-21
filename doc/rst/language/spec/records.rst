@@ -660,7 +660,7 @@ named ``hash`` on the record which takes no arguments and returns a
       record R {
         var i: uint;
 
-        proc hash() {
+        proc hash(): uint {
           writeln("In custom hash function");
           return i;
         }
@@ -680,9 +680,9 @@ named ``hash`` on the record which takes no arguments and returns a
       {(i = 42)}
 
 Note that the compiler-generated ``hash`` can only be overridden for
-records that have been defined in user code, and cannot be used to
-override the default hash for built-in types like ``int``, for
-example.
+records that have been defined in user code.  As an result, this
+feature cannot be used to override the default hash for built-in types
+like ``int``.
 
 
 

@@ -123,7 +123,7 @@ writeln(r.vals);
 
 use Map;
 
-proc R.hash() {
+proc R.hash(): int {
   writeln("In custom hash function");
   return vals[0];
 }
