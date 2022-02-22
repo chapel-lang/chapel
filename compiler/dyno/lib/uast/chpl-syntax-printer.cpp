@@ -26,26 +26,63 @@ namespace chpl {
 
   using namespace uast;
 
-  static const char* kindToString(TaskVar::Intent kind) {
+  static const char* kindToString(Decl::Linkage kind) {
     switch (kind) {
-      case TaskVar::Intent::VAR: return "var";
-      case TaskVar::Intent::CONST: return "const";
-      case TaskVar::Intent::CONST_REF: return "const ref";
-      case TaskVar::Intent::REF: return "ref";
-      case TaskVar::Intent::IN: return "in";
-      case TaskVar::Intent::CONST_IN: return "const in";
+      case Decl::Linkage::DEFAULT_LINKAGE: assert(false);
+      case Decl::Linkage::EXTERN: return "extern";
+      case Decl::Linkage::EXPORT: return "export";
     }
     assert(false);
   }
 
-  static const char* kindToString(VisibilityClause::LimitationKind kind) {
+  static const char* kindToString(Formal::Intent kind) {
     switch (kind) {
-      case VisibilityClause::LimitationKind::NONE: assert(false);
-      case VisibilityClause::LimitationKind::ONLY: return "only";
-      case VisibilityClause::LimitationKind::EXCEPT: return "except";
-      case VisibilityClause::LimitationKind::BRACES: assert(false);
-      default: return "";
+      case Formal::Intent::CONST: return "const";
+      case Formal::Intent::CONST_REF: return "const ref";
+      case Formal::Intent::REF: return "ref";
+      case Formal::Intent::IN: return "in";
+      case Formal::Intent::CONST_IN: return "const in";
+      case Formal::Intent::OUT: return "out";
+      case Formal::Intent::INOUT: return "inout";
+      case Formal::Intent::PARAM: return "param";
+      case Formal::Intent::TYPE: return "type";
+      case Formal::Intent::DEFAULT_INTENT: assert(false);
     }
+    assert(false);
+    return "";
+  }
+
+  static const char* kindToString(Function::Kind kind) {
+    switch (kind) {
+      case Function::Kind::PROC: return "proc";
+      case Function::Kind::ITER: return "iter";
+      case Function::Kind::OPERATOR: return "operator";
+    }
+    assert(false);
+    return "";
+  }
+
+  static const char* kindToString(Function::ReturnIntent kind) {
+    switch (kind) {
+      case Function::ReturnIntent::CONST: return "const";
+      case Function::ReturnIntent::REF: return "ref";
+      case Function::ReturnIntent::CONST_REF: return "const ref";
+      case Function::ReturnIntent::PARAM: return "param";
+      case Function::ReturnIntent::TYPE: return "type";
+      case Function::ReturnIntent::DEFAULT_RETURN_INTENT: assert(false);
+    }
+    assert(false);
+    return "";
+  }
+
+  static const char* kindToString(Function::Visibility kind) {
+    switch (kind) {
+      case Function::Visibility::PRIVATE: return "private";
+      case Function::Visibility::PUBLIC: return "public";
+      case Function::Visibility::DEFAULT_VISIBILITY: assert(false);
+    }
+    assert(false);
+    return "";
   }
 
   static const char* kindToString(IntentList kind) {
@@ -67,35 +104,6 @@ namespace chpl {
     return "";
   }
 
-  static const char* kindToString(Decl::Linkage kind) {
-    switch (kind) {
-      case Decl::Linkage::DEFAULT_LINKAGE: assert(false);
-      case Decl::Linkage::EXTERN: return "extern";
-      case Decl::Linkage::EXPORT: return "export";
-    }
-    assert(false);
-  }
-
-  static const char* kindToString(Function::Visibility kind) {
-    switch (kind) {
-      case Function::Visibility::PRIVATE: return "private";
-      case Function::Visibility::PUBLIC: return "public";
-      case Function::Visibility::DEFAULT_VISIBILITY: assert(false);
-    }
-    assert(false);
-    return "";
-  }
-
-  static const char* kindToString(Function::Kind kind) {
-    switch (kind) {
-      case Function::Kind::PROC: return "proc";
-      case Function::Kind::ITER: return "iter";
-      case Function::Kind::OPERATOR: return "operator";
-    }
-    assert(false);
-    return "";
-  }
-
   static const char* kindToString(Module::Kind kind) {
     switch (kind) {
       case Module::Kind::DEFAULT_MODULE_KIND: assert(false);
@@ -105,50 +113,6 @@ namespace chpl {
     assert(false);
   }
 
-  static const char* kindToString(Function::ReturnIntent kind) {
-    switch (kind) {
-      case Function::ReturnIntent::CONST: return "const";
-      case Function::ReturnIntent::REF: return "ref";
-      case Function::ReturnIntent::CONST_REF: return "const ref";
-      case Function::ReturnIntent::PARAM: return "param";
-      case Function::ReturnIntent::TYPE: return "type";
-      case Function::ReturnIntent::DEFAULT_RETURN_INTENT: assert(false);
-    }
-    assert(false);
-    return "";
-  }
-
-  static const char* kindToString(Formal::Intent kind) {
-    switch (kind) {
-      case Formal::Intent::CONST: return "const";
-      case Formal::Intent::CONST_REF: return "const ref";
-      case Formal::Intent::REF: return "ref";
-      case Formal::Intent::IN: return "in";
-      case Formal::Intent::CONST_IN: return "const in";
-      case Formal::Intent::OUT: return "out";
-      case Formal::Intent::INOUT: return "inout";
-      case Formal::Intent::PARAM: return "param";
-      case Formal::Intent::TYPE: return "type";
-      case Formal::Intent::DEFAULT_INTENT: assert(false);
-    }
-    assert(false);
-    return "";
-  }
-
-  static const char* kindToString(Variable::Kind kind) {
-    switch (kind) {
-      case Variable::Kind::VAR: return "var";
-      case Variable::Kind::CONST: return "const";
-      case Variable::Kind::PARAM: return "param";
-      case Variable::Kind::TYPE: return "type";
-      case Variable::Kind::REF: return "ref";
-      case Variable::Kind::CONST_REF: return "const ref";
-      case Variable::Kind::INDEX: assert(false);
-    }
-    assert(false);
-    return "";
-  }
-
   static const char* kindToString(New::Management kind) {
     switch (kind) {
       case New::Management::BORROWED: return "borrowed";
@@ -156,11 +120,23 @@ namespace chpl {
       case New::Management::SHARED: return "shared";
       case New::Management::UNMANAGED: return "unmanaged";
       case New::Management::DEFAULT_MANAGEMENT: assert(false);
-    default:
-      assert(false);
+      default:
+        assert(false);
     }
     assert(false);
     return "";
+  }
+
+  static const char* kindToString(TaskVar::Intent kind) {
+    switch (kind) {
+      case TaskVar::Intent::VAR: return "var";
+      case TaskVar::Intent::CONST: return "const";
+      case TaskVar::Intent::CONST_REF: return "const ref";
+      case TaskVar::Intent::REF: return "ref";
+      case TaskVar::Intent::IN: return "in";
+      case TaskVar::Intent::CONST_IN: return "const in";
+    }
+    assert(false);
   }
 
   static const char* kindToString(TupleDecl::IntentOrKind kind) {
@@ -182,6 +158,30 @@ namespace chpl {
     assert(false);
   }
 
+  static const char* kindToString(Variable::Kind kind) {
+    switch (kind) {
+      case Variable::Kind::VAR: return "var";
+      case Variable::Kind::CONST: return "const";
+      case Variable::Kind::PARAM: return "param";
+      case Variable::Kind::TYPE: return "type";
+      case Variable::Kind::REF: return "ref";
+      case Variable::Kind::CONST_REF: return "const ref";
+      case Variable::Kind::INDEX: assert(false);
+    }
+    assert(false);
+    return "";
+  }
+
+  static const char* kindToString(VisibilityClause::LimitationKind kind) {
+    switch (kind) {
+      case VisibilityClause::LimitationKind::NONE: assert(false);
+      case VisibilityClause::LimitationKind::ONLY: return "only";
+      case VisibilityClause::LimitationKind::EXCEPT: return "except";
+      case VisibilityClause::LimitationKind::BRACES: assert(false);
+      default: return "";
+    }
+  }
+
 
   /** visit each elt of begin..end, outputting `separator` between each.
    * `surroundBegin` and `surroundEnd` are output before and after respectively
@@ -197,6 +197,12 @@ namespace chpl {
     }
     if (surroundEnd) os << surroundEnd;
   }
+
+  template<typename T>
+  void interpose(std::ostream& os, T xs, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
+    interpose(os, xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
+  }
+
 
   /*
    * helper for printing descendants of simpleBlockLike to handle when to print
@@ -214,10 +220,6 @@ namespace chpl {
     }
   }
 
-  template<typename T>
-  void interpose(std::ostream& os, T xs, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
-    interpose(os, xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
-  }
 
   template<typename T>
   void printBlockWithStyle(std::ostream& os, BlockStyle style,  T xs, const char* implicitOpeningKeyword=nullptr) {
@@ -235,7 +237,8 @@ namespace chpl {
 
 
   struct ChplSyntaxVisitor {
-    std::stringstream ss_;
+    std::ostringstream ss_;
+    ChplSyntaxVisitor(std::ostringstream ss_ = std::ostringstream()) {}
 
     void printLinkages(const Decl* node) {
       if (node->linkage() != Decl::Linkage::DEFAULT_LINKAGE) {
@@ -985,6 +988,8 @@ namespace chpl {
 
   struct UserStringVisitor {
     std::ostringstream ss_;
+    UserStringVisitor(std::ostringstream ss_ = std::ostringstream()) {}
+
 
     void visit(const Function* node) {
       std::stringstream ss;
