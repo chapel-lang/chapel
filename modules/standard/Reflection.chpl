@@ -20,15 +20,21 @@
 
 /*
 
-   Functions for finding out about fields, functions, and methods.
+   Functions for reflecting about language elements, such as fields,
+   functions, and methods.
 
    .. note ::
 
-     There are several ways in which this module could be improved upon:
+     There are several ways in which this module could be improved:
 
        * the methods here might be better as type methods,
          so you could use `R.numFields()` instead of `numFields(R)`.
        * :proc:`getField` does not yet return a mutable value.
+
+   .. note ::
+
+     For reflecting about aspects of the compilation process, see
+     :mod:`ChplConfig`.
 */
 module Reflection {
 
