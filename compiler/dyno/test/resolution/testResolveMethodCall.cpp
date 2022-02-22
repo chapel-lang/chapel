@@ -39,13 +39,11 @@ using namespace uast;
 // test resolving a very simple module
 // Test resolving a simple primary and secondary method call on a record.
 static void test1() {
-  printf("test1\n");
   Context ctx;
   Context* context = &ctx;
 
   context->advanceToNextRevision(true);
 
-  // TODO: Difference between this approach and parseFile?
   auto path = UniqueString::get(context, "input.chpl");
   std::string contents =
     " record r {\n"
@@ -82,13 +80,36 @@ static void test1() {
 
   // Resolve the module.
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  (void) rr;
 
   // Get the type of 'r'.
-  const auto qualType = typeForModuleLevelSymbol(context, r->id());
-  (void) qualType;
+  auto& qtR = typeForModuleLevelSymbol(context, r->id());
 
-  // TODO: Why do we collect garbage, won't the context destructor do it? 
+  // Assert some things about the primary call.
+  auto& reCallPrimary = rr.byAst(callPrimary);
+  auto& qtCallPrimary = reCallPrimary.type();
+  assert(qtCallPrimary.type()->isVoidType());
+  auto tfsCallPrimary = reCallPrimary.mostSpecific().only();
+  assert(tfsCallPrimary);
+
+  // Check the primary call receiver.
+  assert(tfsCallPrimary->id() == fnPrimary->id());
+  assert(tfsCallPrimary->numFormals() == 1);
+  assert(tfsCallPrimary->formalName(0) == "this");
+  assert(tfsCallPrimary->formalType(0).type() == qtR.type());
+
+  // Assert some things about the secondary call.
+  auto& reCallSecondary = rr.byAst(callSecondary);
+  auto& qtCallSecondary = reCallSecondary.type();
+  assert(qtCallSecondary.type()->isVoidType());
+  auto tfsCallSecondary = reCallSecondary.mostSpecific().only();
+  assert(tfsCallSecondary);
+
+  // Check the secondary call receiver.
+  assert(tfsCallSecondary->id() == fnSecondary->id());
+  assert(tfsCallSecondary->numFormals() == 1);
+  assert(tfsCallSecondary->formalName(0) == "this");
+  assert(tfsCallSecondary->formalType(0).type() == qtR.type());
+
   context->collectGarbage();
 }
 

@@ -2660,7 +2660,26 @@ CallResolutionResult resolveFnCall(Context* context,
     }
 
     if (scopeForReceiverType) {
-      auto v = lookupCalledExpr(context, inScope, call, visited,
+
+      //
+      // TODO (dlongnecke-cray): The current approach is unsatisfactory and
+      // could be improved by adjusting scope-resolve methods to handle
+      // the differences between dot-exprs mapped to identifiers, to method
+      // calls, and regular calls.
+      //
+      // Additionally, I think the temporary scope created when recursively
+      // resolving dot-exprs should be made for the recursive portion and
+      // not the '.baz' of 'foo.bar.baz', but am less sure of that.
+      //
+      // Right now this temp scope set is used because 'visited' will contain
+      // the scope of the _receiver_, which is where a secondary method
+      // could be defined. I think it should contain the scope of the
+      // record instead. As things are now we never report that we visited
+      // the scope for the receiver record, which makes the set useless.
+      //
+      std::unordered_set<const Scope*> visitedForReceiverScope;
+      auto v = lookupCalledExpr(context, inScope, call,
+                                visitedForReceiverScope,
                                 scopeForReceiverType);
       const auto& initial = filterCandidatesInitial(context, v, ci);
       filterCandidatesInstantiating(context, initial, ci, inScope,
