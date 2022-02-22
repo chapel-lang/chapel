@@ -230,6 +230,8 @@ static void test1(Parser* parser) {
                forall i in 1..10 {
                  x.fetchAdd(i);
                }
+               proc magnitude( (x,y,z):3*real ) {
+               }
              }
              )"""";
   auto parseResult = parser->parseString("Test4.chpl",
