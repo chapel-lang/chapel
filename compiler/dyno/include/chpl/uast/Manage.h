@@ -61,9 +61,11 @@ class Manage final : public SimpleBlockLike {
     assert(0 <= managerExprChildNum_);
     assert(managerExprChildNum_ < numChildren());
 
-    for (auto mgr : managers()) {
-      if (auto as = mgr->toAs()) assert(as->rename()->isVariable());
-    }
+    #ifndef NDEBUG
+      for (auto mgr : managers()) {
+        if (auto as = mgr->toAs()) assert(as->rename()->isVariable());
+      }
+    #endif
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {

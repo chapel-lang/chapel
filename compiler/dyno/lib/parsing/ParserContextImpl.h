@@ -1015,7 +1015,10 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
                                                  New::Management management,
                                                  FnCall* fnCall) {
   assert(fnCall->calledExpression());
-  bool wrappedBaseExpression = false;
+
+  #ifndef NDEBUG
+    bool wrappedBaseExpression = false;
+  #endif
 
   // Find the child slot containing the called expression. Then remove it,
   // wrap it in a new expression, and swap in the new expression.
@@ -1027,7 +1030,9 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
                                 toOwned(calledExpr),
                                 management);
       child = std::move(newExpr);
-      wrappedBaseExpression = true;
+      #ifndef NDEBUG
+        wrappedBaseExpression = true;
+      #endif
       break;
     }
   }
