@@ -881,7 +881,7 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = context->makeList();
       context->appendList(body, context->gatherComments(@3));
-      auto mod = Module::build(BUILDER, LOC(@$), toOwned(parts.attributes),
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
                                parts.visibility,
                                parts.name,
                                parts.kind,
@@ -896,7 +896,7 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = $3;
       context->appendList(body, context->gatherComments(@4));
-      auto mod = Module::build(BUILDER, LOC(@$), toOwned(parts.attributes),
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
                                parts.visibility,
                                parts.name,
                                parts.kind,
@@ -909,7 +909,7 @@ module_decl_stmt:
       ModuleParts parts = $1;
       auto err = ErroneousExpression::build(BUILDER, LOC(@3));
       ParserExprList* body = context->makeList(std::move(err));
-      auto mod = Module::build(BUILDER, LOC(@$), toOwned(parts.attributes),
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
                                parts.visibility,
                                parts.name,
                                parts.kind,
