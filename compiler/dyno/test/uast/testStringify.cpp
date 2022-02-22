@@ -232,6 +232,18 @@ static void test1(Parser* parser) {
                }
                proc magnitude( (x,y,z):3*real ) {
                }
+               proc f(ref x: int ...?k) {
+                 writeln(x);
+               }
+               writeln(+ scan A);
+               forall myIterator() with (+ reduce x) {
+                 x = 1;
+               }
+               __primitive("=", x, y);
+               let x = 0 in writeln(x);
+               var x = if foo then bar else baz;
+               manage myManager() as myResource do
+                 myResource.doSomething();
              }
              )"""";
   auto parseResult = parser->parseString("Test4.chpl",
