@@ -86,7 +86,7 @@ clean-dyno-docs: FORCE
 clobber-dyno: clean-dyno-docs FORCE
 	rm -rf $(LIBCOMPILER_BUILD_DIR)
 
-test-dyno-assuming-asserts: $(LIBCOMPILER_BUILD_DIR) FORCE
+test-dyno: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making and running the tests..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
 	  JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
@@ -94,9 +94,6 @@ test-dyno-assuming-asserts: $(LIBCOMPILER_BUILD_DIR) FORCE
 	else \
 	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target tests && ctest . ; \
 	fi
-
-test-dyno: FORCE
-	$(MAKE) -f Makefile.help DYNO_ENABLE_ASSERTIONS=1 test-dyno-assuming-asserts
 
 FORCE:
 
