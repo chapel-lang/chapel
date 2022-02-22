@@ -902,7 +902,7 @@ module Math {
 
      :rtype: The type of `x`.
    */
-  inline proc max(x, y) {
+  inline proc max(x, y) where !isArray(x) && !isArray(y) {
     if isAtomic(x) || isAtomic(y) {
       compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
     }
@@ -933,7 +933,7 @@ module Math {
 
      :rtype: The type of `x`.
    */
-  inline proc min(x, y) {
+  inline proc min(x, y) where !isArray(x) && !isArray(y) {
     if isAtomic(x) || isAtomic(y) {
       compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
     }
