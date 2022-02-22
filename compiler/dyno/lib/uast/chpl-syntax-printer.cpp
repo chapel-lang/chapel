@@ -187,20 +187,41 @@ namespace chpl {
    * `surroundBegin` and `surroundEnd` are output before and after respectively
    * if not null */
   template<typename It>
-  void interpose(std::ostream& ss_, It begin, It end, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
+  void interpose(std::ostream& os, It begin, It end, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
     bool first = true;
-    if (surroundBegin) ss_ << surroundBegin;
+    if (surroundBegin) os << surroundBegin;
     for (auto it = begin; it != end; it++) {
-      if (!first) ss_ << separator;
-      printAst(ss_,*it);
+      if (!first) os << separator;
+      printAst(os,*it);
       first = false;
     }
-    if (surroundEnd) ss_ << surroundEnd;
+    if (surroundEnd) os << surroundEnd;
+  }
+
+  /*
+   * helper for printing descendants of simpleBlockLike to handle when to print
+   * the optional opening keyword and if braces should follow that keyword
+   */
+  template<typename It>
+  void printBlockWithStyle(std::ostream& os, BlockStyle style,  It begin, It end, const char* implicitOpeningKeyword=nullptr) {
+    if (implicitOpeningKeyword && (style == BlockStyle::IMPLICIT || style == uast::BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK)) {
+      os << implicitOpeningKeyword;
+    }
+    if (style != BlockStyle::IMPLICIT) {
+      interpose(os, begin, end, "\n", "{","}");
+    } else {
+      interpose(os, begin, end, "\n");
+    }
   }
 
   template<typename T>
-  void interpose(std::ostream& ss_, T xs, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
-    interpose(ss_, xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
+  void interpose(std::ostream& os, T xs, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
+    interpose(os, xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
+  }
+
+  template<typename T>
+  void printBlockWithStyle(std::ostream& os, BlockStyle style,  T xs, const char* implicitOpeningKeyword=nullptr) {
+    printBlockWithStyle(os, style, xs.begin(), xs.end(), implicitOpeningKeyword);
   }
 
   template<typename T>
@@ -215,7 +236,6 @@ namespace chpl {
 
   struct ChplSyntaxVisitor {
     std::stringstream ss_;
-
 
     void printLinkages(const Decl* node) {
       if (node->linkage() != Decl::Linkage::DEFAULT_LINKAGE) {
@@ -249,15 +269,11 @@ namespace chpl {
         printAst(ss_, node->withClause());
         ss_ << " ";
       }
-      if (node->blockStyle() == BlockStyle::IMPLICIT) {
-        interpose(ss_, node->stmts(), "\n");
-      } else {
-        interpose(ss_, node->stmts(), "\n", "{", "}");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
     }
 
     void visit(const Block* node) {
-      interpose(ss_, node->stmts(), " ", "{","}");
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
     }
 
     void visit(const BoolLiteral* node) {
@@ -354,14 +370,7 @@ namespace chpl {
         printAst(ss_, node->withClause());
       }
       ss_ << " ";
-      if (node->blockStyle() == BlockStyle::IMPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        ss_ << "do ";
-      }
-      if (node->blockStyle() == BlockStyle::EXPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{","}");
-      } else {
-        interpose(ss_, node->stmts(), "\n");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
     }
 
     void visit(const Comment* node){
@@ -373,14 +382,10 @@ namespace chpl {
       ss_ << "if ";
       printAst(ss_, node->condition());
       ss_ << " ";
-      if (node->thenBlockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK ||
-          node->thenBlockStyle() == BlockStyle::IMPLICIT) {
-        ss_ << "then ";
-      }
-      printAst(ss_, node->thenBlock());
+      printBlockWithStyle(ss_, node->thenBlockStyle(), node->thenStmts(), "then ");
       if (node->hasElseBlock()) {
         ss_ << " else ";
-        printAst(ss_, node->elseBlock());
+        printBlockWithStyle(ss_, node->elseBlockStyle(), node->elseStmts());
       }
     }
 
@@ -390,12 +395,7 @@ namespace chpl {
 
     void visit(const Defer* node) {
       ss_ << "defer ";
-      const BlockStyle style = node->blockStyle();
-      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{","}");
-      } else {
-        interpose(ss_, node->stmts(), "\n");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
     }
 
     void visit(const Delete* node) {
@@ -405,8 +405,7 @@ namespace chpl {
 
     void visit(const Domain* node) {
       if (node->numExprs() == 1 && node->expr(0)->isTypeQuery()) {
-        ss_ << "?";
-        printAst(ss_, node->expr(0));
+        printAst(ss_, node->expr(0)->toTypeQuery());
       } else if (node->numExprs() == 0) {
         // do nothing
       } else {
@@ -421,12 +420,7 @@ namespace chpl {
 
     void visit(const DoWhile* node) {
       ss_ << "do ";
-      BlockStyle style = node->blockStyle();
-      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{", "}");
-      } else {
-        interpose(ss_, node->stmts(),"\n");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
       ss_ << " while ";
       printAst(ss_, node->condition());
     }
@@ -486,14 +480,7 @@ namespace chpl {
       }
       printAst(ss_, node->iterand());
       ss_ << " ";
-      if (node->blockStyle() == BlockStyle::IMPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        ss_ << "do ";
-      }
-      if (node->blockStyle() == BlockStyle::EXPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{","}");
-      } else {
-        interpose(ss_, node->stmts(), "\n");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
     }
 
     void visit(const Forall* node) {
@@ -509,14 +496,7 @@ namespace chpl {
         printAst(ss_, node->withClause());
       }
       ss_ << " ";
-      if (node->blockStyle() == BlockStyle::IMPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        ss_ << "do ";
-      }
-      if (node->blockStyle() == BlockStyle::EXPLICIT || node->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{","}");
-      } else {
-        interpose(ss_, node->stmts(), "\n");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
     }
 
     void visit(const Foreach* node) {
@@ -528,15 +508,7 @@ namespace chpl {
       }
       printAst(ss_, node->iterand());
       ss_ << " ";
-      const BlockStyle style = node->blockStyle();
-      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        ss_ << "do ";
-      }
-      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{","}");
-      } else {
-        interpose(ss_, node->stmts(), "\n");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
     }
 
     void visit(const Formal* node) {
@@ -639,7 +611,26 @@ namespace chpl {
       printAst(ss_, node->loop());
     }
 
-    //let
+    void visit(const Let* node) {
+      ss_ << "let ";
+      // custom handling to avoid printing storage kind as variables would
+      // normally do
+      // TODO: Can we eliminate or generalize this in a better way?
+      for (auto decl : node->decls()) {
+        const Variable* var = decl->toVariable();
+        ss_ << var->name().c_str();
+        if (const Expression *te = var->typeExpression()) {
+          ss_ << ": ";
+          printAst(ss_, te);
+        }
+        if (const Expression *ie = var->initExpression()) {
+          ss_ << " = ";
+          printAst(ss_, ie);
+        }
+      }
+      ss_ << " in ";
+      printAst(ss_, node->expression());
+    }
 
     void visit(const Local* node) {
       ss_ << "local ";
@@ -647,18 +638,15 @@ namespace chpl {
         printAst(ss_, node->condition());
         ss_ << " ";
       }
-      BlockStyle style = node->blockStyle();
-      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        ss_ << "do ";
-      }
-      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{","}");
-      } else {
-        interpose(ss_, node->stmts(), "\n");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
     }
 
-    //manage
+    void visit(const Manage* node) {
+      ss_ << "manage ";
+      interpose(ss_, node->managers(), ", ");
+      ss_ << " ";
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    }
 
     void visit(const Module* node) {
       if (node->visibility() != Decl::Visibility::DEFAULT_VISIBILITY) {
@@ -705,15 +693,7 @@ namespace chpl {
       ss_ << "on ";
       printAst(ss_, node->destination());
       ss_ << " ";
-      BlockStyle style = node->blockStyle();
-      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        ss_ << "do ";
-      }
-      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{", "}");
-      } else {
-        interpose(ss_, node->stmts(),"\n");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
     }
 
     void visit(const OpCall* node) {
@@ -733,7 +713,13 @@ namespace chpl {
       }
     }
 
-    //primCall
+    void visit(const PrimCall* node) {
+      ss_ << "__primitive";
+      ss_ << "(";
+      ss_ << '"' << quoteStringForC(primTagToName(node->prim())) << '"' << ", ";
+      interpose(ss_, node->actuals(), ", ");
+      ss_ << ")";
+    }
 
     void visit(const Range* node) {
       if (auto lb = node->lowerBound()) {
@@ -754,7 +740,11 @@ namespace chpl {
       interpose(ss_, node->decls(), "\n", "{", "}");
     }
 
-    //reduce
+    void visit(const Reduce* node) {
+      ss_ << node->op().c_str() << " ";
+      ss_ << "reduce ";
+      interpose(ss_, node->actuals(), ", ");
+    }
 
     void visit(const Require* node) {
       ss_ << "require ";
@@ -770,7 +760,11 @@ namespace chpl {
       ss_ << ";";
     }
 
-    //scan
+    void visit(const Scan* node) {
+      ss_ << node->op().c_str() << " ";
+      ss_ << "scan ";
+      interpose(ss_, node->actuals(), ", ");
+    }
 
     void visit(const Select* node) {
       ss_ << "select ";
@@ -785,15 +779,7 @@ namespace chpl {
         printAst(ss_, node->condition());
         ss_ << " ";
       }
-      BlockStyle style = node->blockStyle();
-      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        ss_ << "do ";
-      }
-      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{", "}");
-      } else {
-        interpose(ss_, node->stmts(),"\n");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
     }
 
     void visit(const StringLiteral* node) {
@@ -802,12 +788,7 @@ namespace chpl {
 
     void visit(const Sync* node) {
       ss_ << "sync ";
-      BlockStyle style = node->blockStyle();
-      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{", "}");
-      } else {
-        interpose(ss_, node->stmts(),"");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
     }
 
     void visit(const TaskVar* node) {
@@ -880,6 +861,7 @@ namespace chpl {
     }
 
     void visit(const TypeQuery* node) {
+      ss_ << "?";
       ss_ << node->name().c_str();
     }
 
@@ -900,7 +882,30 @@ namespace chpl {
       interpose(ss_, node->visibilityClauses(), ", ");
     }
 
-    //varargformal
+    void visit(const VarArgFormal* node) {
+      if (node->intent() != Formal::Intent::DEFAULT_INTENT){
+        ss_ << kindToString(node->intent()) << " ";
+      }
+
+      ss_ << node->name().c_str();
+      if (const Expression* te = node->typeExpression()) {
+        ss_ << ": ";
+        printAst(ss_, te);
+      }
+      if (const Expression* ie = node->initExpression()) {
+        ss_ << " = ";
+        printAst(ss_, ie);
+      }
+
+      if (const Expression* ce = node->count()) {
+        ss_ << " ...";
+        if (const TypeQuery* tq = ce->toTypeQuery()){
+          printAst(ss_, tq);
+        } else {
+          printAst(ss_, ce);
+        }
+      }
+    }
 
     void visit(const Variable* node) {
       if (node->isConfig()) {
@@ -946,31 +951,14 @@ namespace chpl {
         interpose(ss_, node->caseExprs(), ", ");
         ss_ << " ";
       }
-      BlockStyle style = node->blockStyle();
-      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        ss_ << "do ";
-      }
-      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{", "}");
-      } else {
-        interpose(ss_, node->stmts(),"\n");
-      }
-
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
     }
 
     void visit(const While* node) {
       ss_ << "while ";
       printAst(ss_, node->condition());
       ss_ << " ";
-      BlockStyle style = node->blockStyle();
-      if (style == BlockStyle::IMPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        ss_ << "do ";
-      }
-      if (style == BlockStyle::EXPLICIT || style == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK) {
-        interpose(ss_, node->stmts(), "\n", "{", "}");
-      } else {
-        interpose(ss_, node->stmts(),"\n");
-      }
+      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
     }
 
     void visit(const WithClause* node) {
@@ -1010,8 +998,6 @@ namespace chpl {
       }
       // secondary methods
       if (node->isMethod() && !node->isPrimaryMethod() && node->thisFormal()->child(0)->isIdentifier()) {
-//        assert(node->thisFormal()->numChildren() >= 1);
-//        assert(node->thisFormal()->child(0)->isIdentifier());
         ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
       }
 
