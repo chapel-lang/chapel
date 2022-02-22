@@ -44,6 +44,41 @@ void Scope::addBuiltin(UniqueString name) {
   declared_.emplace(name, ID());
 }
 
+void
+Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+
+  // Print out header information (type of AST node, num entries).
+  ss << tagToString(tag()) << " '";
+  name_.stringify(ss, stringKind);
+  ss << "' (id: " ;
+  id().stringify(ss, stringKind);
+  ss << ", " << std::to_string(numDeclared()) << " entries)";
+  ss << std::endl;
+
+  // Find the largest entry name to pretty print...
+  int largestEntrySize = 0;
+  for (const auto& entry : declared_) {
+    int entryLength = entry.first.length();
+    largestEntrySize = entryLength > largestEntrySize
+        ? entryLength
+        : largestEntrySize;
+  }
+
+  // Print out each entry.
+  for (const auto& entry : declared_) {
+    auto borrowedIds = BorrowedIdsWithName(entry.second);
+    ss << "  ";
+    entry.first.stringify(ss, stringKind);
+
+    // Add spaces to align columns.
+    const int entryLength = entry.first.length();
+    const int numSpaces = largestEntrySize - entryLength;
+    for (int i = 0; i < numSpaces; i++) ss << " ";
+
+    ss << " : " << std::to_string(borrowedIds.numIds()) << " ids";
+    ss << std::endl;
+  }
+}
 IMPLEMENT_DUMP(BorrowedIdsWithName);
 IMPLEMENT_DUMP(Scope);
 IMPLEMENT_DUMP(PoiScope);

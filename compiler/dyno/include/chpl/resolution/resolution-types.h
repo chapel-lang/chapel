@@ -294,11 +294,6 @@ class CallInfo {
   using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
 
   /** Construct a CallInfo that contains QualifiedTypes for actuals */
-  CallInfo(UniqueString name, bool hasQuestionArg,
-           std::vector<CallInfoActual> actuals)
-      : name_(name), hasQuestionArg_(hasQuestionArg),
-        actuals_(std::move(actuals)) {}
-
   CallInfo(UniqueString name, bool isMethod, bool hasQuestionArg,
            std::vector<CallInfoActual> actuals)
       : name_(name),
