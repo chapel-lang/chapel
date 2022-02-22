@@ -849,17 +849,17 @@ namespace chpl {
       std::string delimiter = "";
       for (auto decl : node->decls()) {
         ss_ << delimiter;
-        ss_ << decl->toVariable()->name().c_str();
-        if (const Expression* te = decl->toVariable()->typeExpression()) {
-          ss_ << ": ";
-          printAst(ss_, te);
+          ss_ << decl->toVarLikeDecl()->name().c_str();
+          if (const Expression* te = decl->toVarLikeDecl()->typeExpression()) {
+            ss_ << ": ";
+            printAst(ss_, te);
+          }
+          if (const Expression* ie = decl->toVarLikeDecl()->initExpression()) {
+            ss_ << " = ";
+            printAst(ss_, ie);
+          }
+          delimiter = ", ";
         }
-        if (const Expression* ie = decl->toVariable()->initExpression()) {
-          ss_ << " = ";
-          printAst(ss_, ie);
-        }
-        delimiter = ", ";
-      }
       ss_ << ")";
 
 
