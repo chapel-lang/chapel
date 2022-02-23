@@ -42,7 +42,7 @@ proc Box.init=(const ref other: Box) {
   this.atoms = other.atoms;
 }
 
-proc =(ref A : Box, B : Box) {
+operator Box.=(ref A : Box, B : Box) {
   A.count = B.count;
   if A.count > 0 then
     A.atoms[1..A.count] = B.atoms[1..A.count];

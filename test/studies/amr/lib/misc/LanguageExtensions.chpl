@@ -19,14 +19,14 @@ proc main {
 //| >    Scalar-tuple arithmetic    | >
 //|/________________________________|/
 
-proc =(ref T,a)
+operator =(ref T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   for i in 0..#T.size do
     T(i) = a;
 }
 
-proc +(a,T)
+operator +(a,T)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
@@ -35,7 +35,7 @@ proc +(a,T)
   return U;
 }
 
-proc +(T,a)
+operator +(T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
@@ -44,7 +44,7 @@ proc +(T,a)
   return U;
 }
 
-proc -(a,T)
+operator -(a,T)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
@@ -53,7 +53,7 @@ proc -(a,T)
   return U;
 }
 
-proc -(T,a)
+operator -(T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
@@ -62,7 +62,7 @@ proc -(T,a)
   return U;
 }
 
-proc -(T)
+operator -(T)
   where isTuple(T) && isHomogeneousTuple(T)
 {
   var U: T.type;
@@ -71,7 +71,7 @@ proc -(T)
   return U;
 }
 
-proc *(a, T)
+operator *(a, T)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
@@ -80,7 +80,7 @@ proc *(a, T)
   return U;;
 }
 
-proc *(T,a)
+operator *(T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
@@ -89,7 +89,7 @@ proc *(T,a)
   return U;;
 }
 
-proc /(a, T)
+operator /(a, T)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
@@ -98,7 +98,7 @@ proc /(a, T)
   return U;;
 }
 
-proc /(T,a)
+operator /(T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(0).type
 {
   var U: T.type;
@@ -127,7 +127,7 @@ proc abs(T)
 //| >    Range/domain arithmetic    | >
 //|/________________________________|/
 //==== Range exponentiation ====
-proc **(R: range(stridable=?s), param n: int) {
+operator **(R: range(stridable=?s), param n: int) {
   var ranges: n*R.type;
   for i in 0..#n do ranges(i) = R;
 
@@ -136,7 +136,7 @@ proc **(R: range(stridable=?s), param n: int) {
 }
 
 //==== range * domain ====
-proc *(R: range(stridable=?s), D: domain)
+operator *(R: range(stridable=?s), D: domain)
 {
   param stridable = s || D.stridable;
 
@@ -149,7 +149,7 @@ proc *(R: range(stridable=?s), D: domain)
 }
 
 //==== domain * range ====
-proc *(D: domain, R: range(stridable=?s))
+operator *(D: domain, R: range(stridable=?s))
 {
   param stridable = s || D.stridable;
 
@@ -162,7 +162,7 @@ proc *(D: domain, R: range(stridable=?s))
 }
 
 //==== domain * domain ====
-proc *(D1: domain, D2: domain)
+operator *(D1: domain, D2: domain)
 {
   param stridable = D1.stridable || D2.stridable;
   param rank = D1.rank + D2.rank;
