@@ -761,21 +761,14 @@ proc LocBlock.init(param rank, type idxType, param dummy: bool) where dummy {
 
 ////// BlockDom and LocBlockDom methods /////////////////////////////////////
 
-override proc BlockDom.dsiMyDist() return dist;
-
 override proc BlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
 }
 
-proc BlockDom.dsiDims() return whole.dims();
-
-proc BlockDom.dsiDim(d: int) return whole.dim(d);
-
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
-
 
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
@@ -885,17 +878,6 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 }
 
 //
-// output domain
-//
-proc BlockDom.dsiSerialWrite(x) {
-  x <~> whole;
-}
-
-proc BlockDom.doiToString() {
-  return whole:string;
-}
-
-//
 // how to allocate a new array over this domain
 //
 proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
@@ -933,13 +915,26 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc BlockDom.dsiNumIndices return whole.sizeAs(uint);
-proc BlockDom.dsiLow return whole.low;
-proc BlockDom.dsiHigh return whole.high;
-proc BlockDom.dsiStride return whole.stride;
-proc BlockDom.dsiAlignedLow return whole.alignedLow;
-proc BlockDom.dsiAlignedHigh return whole.alignedHigh;
-proc BlockDom.dsiAlignment return whole.alignment;
+// common redirects
+proc BlockDom.dsiLow           return whole.low;
+proc BlockDom.dsiHigh          return whole.high;
+proc BlockDom.dsiAlignedLow    return whole.alignedLow;
+proc BlockDom.dsiAlignedHigh   return whole.alignedHigh;
+proc BlockDom.dsiFirst         return whole.first;
+proc BlockDom.dsiLast          return whole.last;
+proc BlockDom.dsiStride        return whole.stride;
+proc BlockDom.dsiAlignment     return whole.alignment;
+proc BlockDom.dsiNumIndices    return whole.sizeAs(uint);
+proc BlockDom.dsiDim(d)        return whole.dim(d);
+proc BlockDom.dsiDim(param d)  return whole.dim(d);
+proc BlockDom.dsiDims()        return whole.dims();
+proc BlockDom.dsiGetIndices()  return whole.getIndices();
+proc BlockDom.dsiMember(i)     return whole.contains(i);
+proc BlockDom.doiToString()    return whole:string;
+proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
+proc BlockDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
+override proc BlockDom.dsiIndexOrder(i)              return whole.indexOrder(i);
+override proc BlockDom.dsiMyDist()                   return dist;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
@@ -974,17 +969,8 @@ proc BlockDom.dsiSetIndices(x) {
   }
 }
 
-proc BlockDom.dsiGetIndices() {
-  return whole.getIndices();
-}
-
 proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
   chpl_assignDomainWithGetSetIndices(this, rhs);
-}
-
-// dsiLocalSlice
-proc BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
-  return whole((...ranges));
 }
 
 proc BlockDom.setup() {
@@ -1002,14 +988,6 @@ override proc BlockDom.dsiDestroyDom() {
       delete locDomsElt;
     }
   }
-}
-
-proc BlockDom.dsiMember(i) {
-  return whole.contains(i);
-}
-
-override proc BlockDom.dsiIndexOrder(i) {
-  return whole.indexOrder(i);
 }
 
 //

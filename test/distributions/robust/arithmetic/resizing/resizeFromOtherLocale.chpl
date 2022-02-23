@@ -34,6 +34,12 @@ proc buildSpace(Dom) {
   else if distType == DistType.replicated {
     return Dom dmapped Replicated();
   }
+  else if distType == DistType.stencil {
+    return Dom dmapped Stencil(boundingBox={1..3});
+  }
+  else if distType == DistType.blockcyclic {
+    return Dom dmapped BlockCyclic(startIdx=1, blocksize=2);
+  }
   else {
     compilerError("Compiling with unknown DistType.");
   }
