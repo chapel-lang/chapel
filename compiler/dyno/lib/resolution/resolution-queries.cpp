@@ -2077,7 +2077,7 @@ returnTypeForTypeCtorQuery(Context* context,
 
   const UntypedFnSignature* untyped = sig->untyped();
 
-  const Type* result;
+  const Type* result = nullptr;
 
   // handle type construction
   const AggregateDecl* ad = nullptr;
