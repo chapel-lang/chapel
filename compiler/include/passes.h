@@ -21,6 +21,7 @@
 #ifndef _PASSES_H_
 #define _PASSES_H_
 
+#include "FnSymbol.h"
 #include "symbol.h"
 #include "PassManager.h"
 
@@ -179,6 +180,65 @@ class ComputeCallSitesPass : public PassT<FnSymbol*> {
 
 class FlattenClasses : public PassT<TypeSymbol*> {
   void process(TypeSymbol* ts) override;
+};
+
+// addInitGuards.cpp
+class AddInitGuards : public PassT<ModuleSymbol*> {
+ public:
+  AddInitGuards();
+  bool shouldProcess(ModuleSymbol* mod) override;
+  void process(ModuleSymbol* mod) override;
+
+  static FnSymbol* getOrCreatePreInitFn();
+  static void addInitGuard(FnSymbol* fn, FnSymbol* preInitfn);
+  static void addPrintModInitOrder(FnSymbol* fn);
+
+ private:
+  // This is the global preInitFn
+  FnSymbol* preInitFn;
+};
+
+class AddModuleInitBlocks : public PassT<ModuleSymbol*> {
+ public:
+  bool shouldProcess(ModuleSymbol* mod) override;
+  void process(ModuleSymbol* mod) override;
+};
+
+class LocalizeGlobals : public PassT<FnSymbol*> {
+ public:
+  void process(FnSymbol* fn) override;
+
+ private:
+  Map<Symbol*, VarSymbol*> globals;
+  std::vector<SymExpr*> symExprs;
+};
+
+class BulkCopyRecords : public PassT<FnSymbol*> {
+ public:
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+
+  // TODO: this is a "pure" function on types, but uses
+  // a map for caching. Could break out
+  bool typeContainsRef(Type* t, bool isRoot = true);
+
+  bool isTrivialAssignment(FnSymbol* fn);
+
+  static void replaceSimpleAssignment(FnSymbol* fn);
+
+  static bool isAssignment(FnSymbol* fn);
+
+ private:
+  std::map<Type*, bool> containsRef;
+};
+
+class RemoveUnnecessaryAutoCopyCalls : public PassT<FnSymbol*> {
+ public:
+  bool shouldProcess(FnSymbol* fn) override;
+  void process(FnSymbol* fn) override;
+
+ private:
+  std::vector<CallExpr*> calls;
 };
 
 #endif
