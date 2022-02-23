@@ -1,1 +1,2 @@
-expecting ambiguity
+issue-19167-3-x.chpl:9: error: symbol x is multiply defined
+issue-19167-3-x.chpl:3: note: also defined here

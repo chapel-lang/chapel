@@ -57,17 +57,6 @@
 *                                                                             *
 ************************************** | *************************************/
 
-//
-// The moduleUsesCache is a cache from blocks with use-statements to
-// the modules that they use arranged in breadth-first order and
-// separated by NULL modules to indicate that the modules are not at
-// the same depth.
-//
-// Note that this caching is not enabled until after use expression
-// have been resolved.
-//
-static std::map<BlockStmt*, Vec<VisibilityStmt*>*> moduleUsesCache;
-static bool enableModuleUsesCache = false;
 
 // To avoid duplicate user warnings in checkIdInsideWithClause().
 // Using pair<> instead of astlocT to avoid defining operator<.
@@ -1629,17 +1618,6 @@ static void adjustTypeMethodsOnClasses() {
 }
 
 
-void destroyModuleUsesCaches() {
-  std::map<BlockStmt*, Vec<VisibilityStmt*>*>::iterator use;
-
-  for (use = moduleUsesCache.begin(); use != moduleUsesCache.end(); use++) {
-    delete use->second;
-  }
-
-  moduleUsesCache.clear();
-}
-
-
 static void renameDefaultType(Type* type, const char* newname);
 
 static void renameDefaultTypesToReflectWidths(void) {
@@ -1947,18 +1925,6 @@ static bool      methodMatched(BaseAST* scope, FnSymbol* method);
 
 static FnSymbol* getMethod(const char* name, Type* type);
 
-static void      buildBreadthFirstModuleList(Vec<VisibilityStmt*>* modules);
-
-static void      buildBreadthFirstModuleList(
-            Vec<VisibilityStmt*>*                             modules,
-            Vec<VisibilityStmt*>*                             current,
-            std::map<Symbol*, std::vector<VisibilityStmt*> >* alreadySeen);
-
-static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
-                         UseStmt* current);
-static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
-                         ImportStmt* current);
-
 static void lookupUseImport(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
@@ -1966,6 +1932,7 @@ static void lookupUseImport(const char*           name,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                            std::set<ModuleSymbol*>& visitedModules,
                             bool forShadowScope);
 
 static
@@ -1999,15 +1966,17 @@ bool lookupThisScopeAndUses(const char*           name,
     symbols.push_back(sym);
   }
 
+  std::set<ModuleSymbol*> visitedModules;
+
   // check public use/imports
   lookupUseImport(name, context, scope, symbols,
-                  renameLocs, storeRenames, reexportPts,
+                  renameLocs, storeRenames, reexportPts, visitedModules,
                   /* forShadowScope */ false);
 
   if (symbols.size() == 0) {
     // check private use only
     lookupUseImport(name, context, scope, symbols,
-                    renameLocs, storeRenames, reexportPts,
+                    renameLocs, storeRenames, reexportPts, visitedModules,
                     /* forShadowScope */ true);
   }
 
@@ -2021,58 +1990,37 @@ static void lookupUseImport(const char*           name,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                            std::set<ModuleSymbol*>& visitedModules,
                             bool forShadowScope) {
   // Nothing found so far, look into the uses.
   if (BlockStmt* block = toBlockStmt(scope)) {
     if (block->useList != NULL) {
-      Vec<VisibilityStmt*>* moduleUses = NULL;
-
-      if (moduleUsesCache.count(block) == 0) {
-        moduleUses = new Vec<VisibilityStmt*>();
-
-        for_actuals(expr, block->useList) {
-          // Ensure we only have use or import statements in this list
-          if (UseStmt* use = toUseStmt(expr)) {
-            moduleUses->add(use);
-          } else if (ImportStmt* import = toImportStmt(expr)) {
-            moduleUses->add(import);
-          } else {
-            INT_FATAL("Bad contents for useList, expected use or import");
-          }
+      int nUseImport = 0;
+      for_actuals(expr, block->useList) {
+        // Ensure we only have use or import statements in this list
+        if (UseStmt* use = toUseStmt(expr)) {
+          INT_ASSERT(toSymExpr(use->src));
+          // if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+          //   if (mod->block->useList != NULL) {
+          nUseImport++;
+        } else if (ImportStmt* imp = toImportStmt(expr)) {
+          INT_ASSERT(toSymExpr(imp->src));
+          nUseImport++;
+        } else {
+          INT_FATAL("Bad contents for useList, expected use or import");
         }
-
-        INT_ASSERT(moduleUses->n);
-
-        buildBreadthFirstModuleList(moduleUses);
-
-        if (enableModuleUsesCache)
-          moduleUsesCache[block] = moduleUses;
-      } else {
-        moduleUses = moduleUsesCache[block];
       }
 
-      // after a NULL is found, the rest of the
-      // scopes are from a transitive use/import
-      bool foundNull = false;
+      INT_ASSERT(nUseImport > 0);
 
       if (name == astr("exxy"))
         gdbShouldBreakHere();
 
-      forv_Vec(Stmt, stmt, *moduleUses) {
-        if (stmt == nullptr) {
-          printf("Found NULL\n");
-          foundNull = true;
-          continue;
-        }
-
+      for_actuals(stmt, block->useList) {
         bool checkThisInShadowScope = false;
-        if (foundNull) {
-          // all the scopes are transitive uses, so don't consider
-          // any shadow scopes.
-        } else {
-          if (UseStmt* use = toUseStmt(stmt)) {
-            if (use->isPrivate)
-              checkThisInShadowScope = true;
+        if (UseStmt* use = toUseStmt(stmt)) {
+          if (use->isPrivate) {
+            checkThisInShadowScope = true;
           }
         }
 
@@ -2081,9 +2029,6 @@ static void lookupUseImport(const char*           name,
         // (these will be handled in a different call to this function)
         if (forShadowScope != checkThisInShadowScope)
           continue;
-
-        //if (name == astr("x") && context->getModule()->modTag == MOD_USER)
-        //  gdbShouldBreakHere();
 
         if (UseStmt* use = toUseStmt(stmt)) {
           // Check to see if the module name matches what is use'd
@@ -2131,7 +2076,39 @@ static void lookupUseImport(const char*           name,
               }
             }
           }
+
+          // For a use statement, also look into public uses
+          // from whatever was used.
+          if (SymExpr* se = toSymExpr(use->src)) {
+            if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+              if (mod->block->useList != NULL) {
+                auto pair = visitedModules.insert(mod);
+                if (pair.second == false) {
+                  // module has already been visited by this function
+                  // so don't try to visit it again
+                } else {
+                  lookupUseImport(name, context, mod->block,
+                                  symbols, renameLocs, storeRenames,
+                                  reexportPts, visitedModules,
+                                  /* forShadowScope */ false);
+                }
+              }
+            }
+          }
+
         } else if (ImportStmt* import = toImportStmt(stmt)) {
+          // Check the name of the module
+          if (import->providesQualifiedAccess()) {
+            if (Symbol* modSym = import->checkIfModuleNameMatches(name)) {
+              if (isRepeat(modSym, symbols) == false) {
+                symbols.push_back(modSym);
+                if (storeRenames && import->isARename()) {
+                  renameLocs[modSym] = &import->astloc;
+                }
+              }
+            }
+          }
+
           // Only traverse import statements that define a symbol with this
           // name for unqualified access.  We're only looking for explicitly
           // named symbols
@@ -2157,10 +2134,7 @@ static void lookupUseImport(const char*           name,
             }
           }
         } else {
-          // break on each new depth if a symbol has been found
-          //if (symbols.size() > 0) {
-          //  break;
-          //}
+          INT_FATAL("should not be reachable");
         }
       }
 
@@ -2180,29 +2154,6 @@ static void lookupUseImport(const char*           name,
             USR_WARN(sym,
                      "Module level symbol is hiding function argument '%s'",
                      name);
-          }
-        }
-      } else {
-        // TODO: remove this block
-
-        // we haven't found a match yet, so as a last resort, let's
-        // check the names of the modules in the 'use'/'import' statements
-        // themselves...  This effectively places the module names at
-        // a scope just a bit further out than the one holding the
-        // symbols that they define.
-        forv_Vec(VisibilityStmt, stmt, *moduleUses) {
-          if (stmt != NULL) {
-            if (!isImportStmt(stmt) ||
-                toImportStmt(stmt)->providesQualifiedAccess()) {
-              if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
-                if (isRepeat(modSym, symbols) == false) {
-                  symbols.push_back(modSym);
-                  if (storeRenames && stmt->isARename()) {
-                    renameLocs[modSym] = &stmt->astloc;
-                  }
-                }
-              }
-            }
           }
         }
       }
@@ -2350,264 +2301,6 @@ static FnSymbol* getMethod(const char* name, Type* type) {
   }
 
   return retval;
-}
-
-static void buildBreadthFirstModuleList(Vec<VisibilityStmt*>* modules) {
-  std::map<Symbol*, std::vector<VisibilityStmt* > > seen;
-
-  return buildBreadthFirstModuleList(modules, modules, &seen);
-}
-
-// If the uses of a particular module are considered its level 1 uses, then
-// this function will only add level 2 and lower uses to the modules vector
-// argument.
-static void buildBreadthFirstModuleList(
-               Vec<VisibilityStmt*>*                             modules,
-               Vec<VisibilityStmt*>*                             current,
-               std::map<Symbol*, std::vector<VisibilityStmt*> >* alreadySeen) {
-  // use NULL as a sentinel to identify modules of equal depth
-  modules->add(NULL);
-
-  Vec<VisibilityStmt*> next;
-
-  forv_expanding_Vec(VisibilityStmt, source, *current) {
-    if (!source) {
-      break;
-    } else {
-      if (UseStmt* srcUse = toUseStmt(source)) {
-        SymExpr* se = toSymExpr(srcUse->src);
-        INT_ASSERT(se);
-        if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-          if (mod->block->useList != NULL) {
-            for_actuals(expr, mod->block->useList) {
-              if (UseStmt* use = toUseStmt(expr)) {
-                SymExpr* useSE = toSymExpr(use->src);
-                INT_ASSERT(useSE);
-
-                UseStmt* useToAdd = NULL;
-                if (!use->isPrivate &&
-                    !useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                  // Uses of private modules are not transitive - the symbols
-                  // in the private modules are only visible to itself and its
-                  // immediate parent.  Therefore, if the symbol is private,
-                  // we will not traverse it further and will merely add it to
-                  // the alreadySeen map.
-                  useToAdd = use->applyOuterUse(srcUse);
-
-                  if (useToAdd                       != NULL &&
-                      skipUse(alreadySeen, useToAdd) == false) {
-                    next.add(useToAdd);
-                    modules->add(useToAdd);
-                  }
-
-                  // if applyOuterUse returned NULL, the number of symbols
-                  // that could be provided from this use was 0, so it didn't
-                  // need to be added to the alreadySeen map.
-                  if (useToAdd != NULL) {
-                    (*alreadySeen)[useSE->symbol()].push_back(useToAdd);
-                  }
-
-                } else if (!use->isPrivate &&
-                           useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                  // Private uses should be skipped, but should not prevent us
-                  // from traversing the module in a later use of it, if that
-                  // later use is not private.
-                  (*alreadySeen)[useSE->symbol()].push_back(use);
-                }
-              } else if (ImportStmt* import = toImportStmt(expr)) {
-                SymExpr* importSE = toSymExpr(import->src);
-                INT_ASSERT(importSE);
-
-                if (!import->isPrivate &&
-                    !importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                  ImportStmt* importToAdd = import->applyOuterUse(srcUse);
-                  // Imports of private modules are not transitive - the
-                  // symbols in the private modules are only visible to itself
-                  // and its immediate parent.  Therefore, if the symbol is
-                  // private, we will not traverse it further and will merely
-                  // add it to the alreadySeen map.
-                  if (importToAdd != NULL &&
-                      skipUse(alreadySeen, importToAdd) == false) {
-                    next.add(importToAdd);
-                    modules->add(importToAdd);
-                  }
-
-                  if (importToAdd != NULL) {
-                    (*alreadySeen)[importSE->symbol()].push_back(importToAdd);
-                  }
-                } else if (!import->isPrivate &&
-                           importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                  // If we're skipping because the import was public, but the
-                  // module was private, then we shouldn't look at the module
-                  // again and should add it to the alreadySeen map.  Otherwise
-                  // there might be a later import or use that is public, so
-                  // we should allow it to be found
-                  (*alreadySeen)[importSE->symbol()].push_back(import);
-                }
-              } else {
-                INT_ASSERT("Bad use list, expected UseStmt or ImportStmt");
-              }
-            }
-          }
-        }
-      } else if (ImportStmt* srcImport = toImportStmt(source)) {
-        // Don't traverse the use statements of a module we imported for
-        // qualified access, their contents aren't brought into scope.
-        SymExpr* se = toSymExpr(srcImport->src);
-        INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->symbol());
-        INT_ASSERT(mod);
-        if (mod->block->useList != NULL) {
-          for_actuals(expr, mod->block->useList) {
-            if (UseStmt* use = toUseStmt(expr)) {
-              SymExpr* useSE = toSymExpr(use->src);
-              INT_ASSERT(useSE);
-
-              ImportStmt* importToAdd = NULL;
-              if (!use->isPrivate &&
-                  !useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                // Uses of private modules are not transitive - the symbols
-                // in the private modules are only visible to itself and its
-                // immediate parent.  Therefore, if the symbol is private,
-                // we will not traverse it further and will merely add it to
-                // the alreadySeen map.
-                importToAdd = use->applyOuterImport(srcImport);
-
-                if (importToAdd                       != NULL &&
-                    skipUse(alreadySeen, importToAdd) == false) {
-                  next.add(importToAdd);
-                  modules->add(importToAdd);
-                }
-
-                // if applyOuterUse returned NULL, the number of symbols
-                // that could be provided from this use was 0, so it didn't
-                // need to be added to the alreadySeen map.
-                if (importToAdd != NULL) {
-                  (*alreadySeen)[useSE->symbol()].push_back(importToAdd);
-                }
-
-              } else if (!use->isPrivate &&
-                         useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                // Private uses should be skipped, but should not prevent us
-                // from traversing the module in a later use of it, if that
-                // later use is not private.
-                (*alreadySeen)[useSE->symbol()].push_back(use);
-              }
-            } else if (ImportStmt* import = toImportStmt(expr)) {
-              SymExpr* importSE = toSymExpr(import->src);
-              INT_ASSERT(importSE);
-
-              if (!import->isPrivate &&
-                  !importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                ImportStmt* importToAdd = import->applyOuterImport(srcImport);
-                // Imports of private modules are not transitive - the
-                // symbols in the private modules are only visible to itself
-                // and its immediate parent.  Therefore, if the symbol is
-                // private, we will not traverse it further and will merely
-                // add it to the alreadySeen map.
-                if (importToAdd != NULL &&
-                    skipUse(alreadySeen, importToAdd) == false) {
-                  next.add(importToAdd);
-                  modules->add(importToAdd);
-                }
-
-                if (importToAdd != NULL) {
-                  (*alreadySeen)[importSE->symbol()].push_back(importToAdd);
-                }
-              } else if (!import->isPrivate &&
-                         importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                // If we're skipping because the import was public, but the
-                // module was private, then we shouldn't look at the module
-                // again and should add it to the alreadySeen map.  Otherwise
-                // there might be a later import or use that is public, so
-                // we should allow it to be found
-                (*alreadySeen)[importSE->symbol()].push_back(import);
-              }
-            } else {
-              INT_ASSERT("Bad use list, expected UseStmt or ImportStmt");
-            }
-          }
-        }
-
-      } else {
-        INT_ASSERT("Bad use list, expected UseStmt or ImportStmt");
-      }
-    }
-  }
-
-  if (next.n) {
-    buildBreadthFirstModuleList(modules, &next, alreadySeen);
-  }
-}
-
-// Returns true if we should skip looking at this use, because the symbols it
-// provides have already been covered by a previous use.
-static bool skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
-                    UseStmt* current) {
-  SymExpr* useSE = toSymExpr(current->src);
-
-  INT_ASSERT(useSE);
-
-  std::vector<VisibilityStmt*> vec = (*seen)[useSE->symbol()];
-
-  if (vec.size() > 0) {
-    // We've already seen at least one use of this module, but it might
-    // not be thorough enough to justify skipping the newest 'use'.
-    for_vector(VisibilityStmt, stmt, vec) {
-      if (UseStmt* use = toUseStmt(stmt)) {
-        if (current->providesNewSymbols(use) == false) {
-          // We found a prior use that covered all the symbols available
-          // from current.  We can skip looking at current
-          return true;
-        }
-      } else if (ImportStmt* import = toImportStmt(stmt)) {
-        if (current->providesNewSymbols(import) == false) {
-          // The current use statement is equivalent to a prior import statement
-          // so no need to include it
-          return true;
-        }
-      }
-    }
-  }
-
-  // We didn't have a prior use, or all the prior uses we missing at
-  // least one of the symbols current provides.  Don't skip current.
-  return false;
-}
-
-// Returns true if we should skip looking at this import, because the symbols it
-// provides have already been covered by a previous use.
-static bool skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
-                    ImportStmt* current) {
-  SymExpr* useSE = toSymExpr(current->src);
-
-  INT_ASSERT(useSE);
-
-  std::vector<VisibilityStmt*> vec = (*seen)[useSE->symbol()];
-
-  if (vec.size() > 0) {
-    // We've already seen at least one use or import of this module, but it
-    // might not be thorough enough to justify skipping the newest 'import'
-    for_vector(VisibilityStmt, stmt, vec) {
-      if (UseStmt* use = toUseStmt(stmt)) {
-        if (current->providesNewSymbols(use) == false) {
-          // We found a prior use that covered all the symbols available
-          // from current.  We can skip looking at current
-          return true;
-        }
-      } else if (ImportStmt* import = toImportStmt(stmt)) {
-        if (current->providesNewSymbols(import) == false) {
-          // The current import statement is equivalent to a prior import
-          // statement so no need to include it
-          return true;
-        }
-      }
-    }
-  }
-
-  // We didn't have a prior use or import that covered the symbols this
-  // provides.  Don't skip current.
-  return false;
 }
 
 /************************************* | **************************************
@@ -3127,8 +2820,6 @@ void scopeResolve() {
 
   processImportExprs();
 
-  enableModuleUsesCache = true;
-
   computeClassHierarchy();
 
   handleReceiverFormals();
@@ -3150,8 +2841,6 @@ void scopeResolve() {
   processGetVisibleSymbols();
 
   ResolveScope::destroyAstMap();
-
-  destroyModuleUsesCaches();
 
   warnedForDotInsideWith.clear();
   interfaceMethodNames.clear();

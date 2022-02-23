@@ -1,18 +1,18 @@
 module A {
   proc f() { writeln("A.f"); }
-  var exxy = "A";
+  var x = "A";
 }
 
 module CUseA {
   public use A;
   proc f() { writeln("C.f"); }
-  var exxy = "C";
+  var x = "C";
 }
 
 module Program {
   use CUseA;
 
   proc main() {
-    writeln(exxy);
+    writeln(x);
   }
 }
