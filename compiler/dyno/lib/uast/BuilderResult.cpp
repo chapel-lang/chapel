@@ -117,7 +117,7 @@ void BuilderResult::mark(Context* context) const {
   markASTList(context, topLevelExpressions_);
 
   // NOTE: pair.first.mark(context) is redundant in each of these b/c any
-  // ID (pair.first) will be marked by markASTList below
+  // ID (pair.first) will be marked by markASTList above
 
   // mark UniqueStrings in the Locations
   for (const auto& pair : idToLocation_) {
