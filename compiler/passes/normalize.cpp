@@ -4586,9 +4586,16 @@ static void find_printModuleInit_stuff() {
 
     // TODO -- move this logic to wellknown.cpp
     if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
+      // assert that we haven't set this already this loop, b/c duplicates
+      // would be an error
+      INT_ASSERT(!gModuleInitIndentLevel);
       gModuleInitIndentLevel = toVarSymbol(symbol);
-      INT_ASSERT(gModuleInitIndentLevel);
-      // Q why  doesn't this break out of the loop
+
+      // NOTE: we do not `break` here b/c we'd like to verify there is only
+      // one such var with that pragma. This is only walking over PrintModuleInitOrder.chpl
+      // so the number of symbols is small
     }
   }
+  // assert that we actually found such a symbol
+  INT_ASSERT(gModuleInitIndentLevel);
 }
