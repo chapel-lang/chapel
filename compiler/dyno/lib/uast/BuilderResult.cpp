@@ -113,12 +113,15 @@ void BuilderResult::mark(Context* context) const {
   // mark the UniqueString file path
   filePath_.mark(context);
 
+  // mark UniqueStrings in the ASTs
+  markASTList(context, topLevelExpressions_);
+
   // NOTE: pair.first.mark(context) is redundant in each of these b/c any
   // ID (pair.first) will be marked by markASTList below
 
   // mark UniqueStrings in the Locations
   for (const auto& pair : idToLocation_) {
-    // pair.first.mark(context); // redundant
+    //pair.first.mark(context); // redundant
     pair.second.mark(context);
   }
 
@@ -139,9 +142,6 @@ void BuilderResult::mark(Context* context) const {
   for (const auto& em : errors_) {
     em.mark(context);
   }
-
-  // mark UniqueStrings in the ASTs
-  markASTList(context, topLevelExpressions_);
 
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
