@@ -1,0 +1,1 @@
+issue-18077-1.chpl:9: error: Cannot transfer ownership from this non-nilable reference variable
