@@ -254,4 +254,181 @@ module Version {
       compilerError("can't compare versions that only differ by commit IDs");
     return retval >= 0 && retval != 2;
   }
+
+  /*
+    A helper function that creates a new version value from its
+    arguments.
+
+    :arg major: The major version number
+    :type major: `int`
+
+    :arg minor: The minor version number
+    :type minor: `int`
+
+    :arg update: The optional update version number (defaults to 0)
+    :type update: `int`
+
+    :arg commit: The optional commit ID (defaults to "")
+    :type commit: `string`
+
+    :returns: A new version value of type :type:`programVersion`.
+  */
+  proc createVersion(major: int,
+                     minor: int,
+                     update: int = 0,
+                     commit: string = ""): programVersion {
+    return new programVersion(major, minor, update, commit);
+
+  }
+
+
+  record programVersion {
+    /*
+      The major version number. For version ``2.0.1``, this would be ``2``.
+    */
+    const major: int;
+
+    /*
+      The minor version number. For version ``2.0.1``, this would be ``0``.
+    */
+    const minor: int;
+
+    /*
+      The update version number. For version ``2.0.1``, this would be ``1``.
+    */
+    const update: int;
+
+    /* The commit ID of the version (e.g., a Git SHA) */
+    const commit: string = "";
+
+
+    pragma "no doc"
+    proc writeThis(s) throws {
+      s.write(this:string);
+    }
+  }
+
+  // cast from programVersion to string
+  pragma "no doc"
+  operator :(x: programVersion, type t: string) const {
+    if (x.commit == "") then
+      return ("version " + x.major:string + "." + x.minor:string + "." +
+              x.update:string);
+    else
+      return ("version " + x.major:string + "." + x.minor:string + "." +
+              x.update:string + " (" + x.commit + ")");
+  }
+
+
+  // helper functions for comparison operators
+
+  private proc spaceship(x: int, y: int) const : int {
+    if x < y then
+      return -1;
+    else if x == y then
+      return 0;
+    else
+      return 1;
+  }
+
+  private proc spaceship(v1: programVersion,
+                         v2: programVersion) const : int {
+    const majComp = spaceship(v1.major, v2.major);
+    if majComp != 0 {
+      return majComp;
+    } else {
+      const minComp = spaceship(v1.minor, v2.minor);
+      if minComp != 0 {
+        return minComp;
+      } else {
+        const upComp = spaceship(v1.update, v2.update);
+        if upComp != 0 {
+          return upComp;
+        } else if v1.commit == v2.commit {
+          return 0;
+        } else if v1.commit == "" {
+          return 1;
+        } else if v2.commit == "" then {
+          return -1;
+        } else {
+          // sentinel for "not comparable"
+          return 2;
+        }
+      }
+    }
+  }
+
+  // Comparisons between programVersions
+  operator programVersion.==(v1: programVersion,
+                             v2: programVersion) : bool {
+    return spaceship(v1, v2) == 0;
+  }
+
+  /*
+    Equality/inequality operators between two values of type
+    :type:`programVersion` check whether or not the two values
+    have identical major, minor, update, and commit values.
+  */
+  operator programVersion.!=(v1: programVersion,
+                             v2: programVersion) : bool {
+    return spaceship(v1, v2) != 0;
+  }
+
+  operator programVersion.<(v1: programVersion,
+                            v2: programVersion) : bool throws {
+    const retval = spaceship(v1, v2);
+    if (retval == 2) then
+      throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
+    return retval < 0;
+  }
+
+  operator programVersion.<=(v1: programVersion,
+                             v2: programVersion) : bool throws {
+    const retval = spaceship(v1, v2);
+    if (retval == 2) then
+      throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
+    return retval <= 0;
+  }
+
+  operator programVersion.>(v1: programVersion,
+                            v2: programVersion) : bool throws {
+    const retval = spaceship(v1, v2);
+    if (retval == 2) then
+      throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
+    return retval > 0 && retval != 2;
+  }
+
+  /*
+    Ordered comparisons between two values of type
+    :type:`programVersion` are based on the ordering of the semantic
+    versions of the two values, as defined by their ``major``,
+    ``minor``, and ``update`` components.  If the two values have
+    identical semantic versions, any cases that rely on an ordering of
+    the commits will generate a compile-time error if the values have
+    differing, non-empty ``commit`` values due to the challenge of
+    ordering commits at compile-time.  An empty ``commit`` value is
+    considered to come after (be greater than) a non-empty value, as
+    the former is considered an official release and the latter a
+    pre-release.
+  */
+  operator programVersion.>=(v1: programVersion,
+                             v2: programVersion) : bool throws {
+    const retval = spaceship(v1, v2);
+    if (retval == 2) then
+      throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
+    return retval >= 0 && retval != 2;
+  }
+
+  class VersionComparisonError : Error {
+    var _msg:string;
+
+    proc init(msg:string) {
+      this._msg = msg;
+    }
+
+    override proc message() {
+      return _msg;
+    }
+  }
+
 }
