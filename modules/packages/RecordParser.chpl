@@ -154,13 +154,6 @@ class RecordReader {
     }
   }
 
-  pragma "no doc"
-  pragma "last resort"
-  proc init(type t, myReader, mRegexp) /* throws */ {
-    compilerWarning("RecordReader.init(): 'mRegexp' is deprecated; please use 'mRegex'");
-    init(t, myReader, mRegexp);
-  }
-
   /* Create a string regular expression for the record type :type:`t` attached to
      this RecordReader.
 
@@ -176,12 +169,6 @@ class RecordReader {
       accum = accum + getFieldName(t, n) + "\\s*(.*?)" + "\\s*";
     }
     return accum;
-  }
-
-  pragma "no doc"
-  proc createRegexp() {
-    compilerWarning("RecordReader: 'createRegexp' is deprecated; please use 'createRegex' instead.");
-    return createRegex();
   }
 
   /* Yield records for the range offst..offst+len, but assumes that the

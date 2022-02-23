@@ -1,4 +1,3 @@
-regexp_error.chpl:4: warning: Regex: 'regexp' is deprecated; please use 'regex' instead
 regexp_error.chpl:5: warning: regex: 'ok' is deprecated; errors are used to detect regex compile errors
 regexp_error.chpl:12: warning: regex: 'ok' is deprecated; errors are used to detect regex compile errors
 regexp_error.chpl:14: warning: regex: 'error()' is deprecated; errors are used to detect regex compile errors

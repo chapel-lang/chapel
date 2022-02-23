@@ -1,7 +1,7 @@
 use Regex;
 
 {
-  var re : regexp(string);
+  var re : regex(string);
   writeln(re.ok);
   writeln("111111111111111111111");
   try! {

@@ -1092,13 +1092,6 @@ record regex {
 }
 
 pragma "no doc"
-proc regexp type
-{
-   compilerWarning("Regex: 'regexp' is deprecated; please use 'regex' instead");
-   return regex;
-}
-
-pragma "no doc"
 operator regex.=(ref ret:regex(?t), x:regex(t))
 {
   // retain -- release
