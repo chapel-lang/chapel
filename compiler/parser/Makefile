@@ -35,11 +35,8 @@ TARGETS = $(PARSER_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
-ifdef CHPL_DEVELOPER
 CLEAN_TARGS += \
                bison-chapel.output
-
-endif
 
 # Don't create rules for bison-chapel.cpp or flex-chapel.cpp since we don't
 # want them to be rebuilt automatically. (This is because of the bison version
