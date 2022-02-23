@@ -9,7 +9,7 @@ module N {
 
   proc main() {
     use M;
-    writeln(X); // prints out 0 so refers to M.X
-    f(); // ambiguity error
+    writeln(X);
+    f();
   }
 }

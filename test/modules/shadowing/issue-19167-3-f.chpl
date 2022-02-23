@@ -2,10 +2,6 @@ module A {
   proc f() { writeln("A.f"); }
   var x = "A";
 }
-module B {
-  proc f() { writeln("B.f"); }
-  var x = "B";
-}
 
 module CUseA {
   public use A;
@@ -13,33 +9,8 @@ module CUseA {
   var x = "C";
 }
 
-module UseA_UseB {
-  public use A;
-  public use B;
-}
-
-module UseB {
-  public use B;
-}
-
-module UseA_UseUseB {
-  public use A;
-  public use UseB;
-}
-
-module CUseA_UseA {
-  public use CUseA;
-  public use A;
-}
-
-module CUseA_ImportA {
-  public use CUseA;
-  import A;
-}
-
 module Program {
-  use CUseA;         // -> f refers to C.f
-                     // -> x refers to C.x
+  use CUseA;
 
   proc main() {
     f();
