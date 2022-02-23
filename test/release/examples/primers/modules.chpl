@@ -264,8 +264,8 @@ module MainModule {
       // writeln(_.bar); // also an error, _ is not an identifier otherwise
     }
 
-    /* The symbols provided by a ``use`` statement are only considered when
-       the name in question cannot be resolved directly within the local
+    /* The symbols provided by a private ``use`` statement are only considered
+       when the name in question cannot be resolved directly within the local
        scope. Thus, because another ``bar`` is defined within this scope, the
        access to ``bar`` within the ``writeln`` will refer to the local
        variable ``bar`` rather than to ``modToUse.bar``.
@@ -280,18 +280,8 @@ module MainModule {
       // '4.0'), rather than the value of modToUse.bar (which is '2')
     }
 
-    /* Again, the same is true of symbols provided by an ``import`` statement.
-     */
-    {
-      var bar = 4.0;
-
-      import modToUse.bar;
-
-      writeln(bar);
-      // Will output the value of the bar defined in this scope (which is
-      // '4.0'), rather than the value of modToUse.bar (which is '2')
-    }
-
+    /* In contrast, defining a symbol with the same name as something
+       imported leads to a multiple definition error. */
 
     /* If a symbol cannot be resolved directly within the local scope, then
        the symbols provided by a ``use`` statement are considered before the
