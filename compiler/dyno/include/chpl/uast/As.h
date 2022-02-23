@@ -44,8 +44,7 @@ class As final : public Expression {
  private:
   As(ASTList children)
     : Expression(asttags::As, std::move(children)) {
-    auto rename = this->rename();
-    assert(rename->isIdentifier() || rename->isVariable());
+    assert(rename()->isIdentifier() || rename()->isVariable());
   }
 
   // No need to match 'symbolChildNum_' or 'renameChildNum_', they are const.

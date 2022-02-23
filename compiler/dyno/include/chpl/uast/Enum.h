@@ -52,13 +52,15 @@ class Enum final : public TypeDecl {
                /*linkageNameChildNum*/ -1,
                name) {
 
-    for (auto ast : declOrComments()) {
-      assert(ast->isEnumElement() || ast->isComment());
-    }
+    #ifndef NDEBUG
+      for (auto ast : declOrComments()) {
+        assert(ast->isEnumElement() || ast->isComment());
+      }
 
-    if (attributes()) {
-      assert(declOrCommentChildNum() > 0);
-    }
+      if (attributes()) {
+        assert(declOrCommentChildNum() > 0);
+      }
+    #endif
   }
 
   int declOrCommentChildNum() const {

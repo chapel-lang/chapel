@@ -530,8 +530,7 @@ Context::querySetterUpdateResult(
   auto* BEGIN_QUERY_FUNCTION = func; \
   Context* BEGIN_QUERY_CONTEXT = context; \
   const char* BEGIN_QUERY_FUNC_NAME = #func; \
-  const char* BEGIN_QUERY_IN_FUNC_NAME = __func__; \
-  assert(0 == strcmp(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_IN_FUNC_NAME)); \
+  assert(0 == strcmp(BEGIN_QUERY_FUNC_NAME, __func__)); \
   auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
   context->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
   auto BEGIN_QUERY_MAP = context->queryBeginGetMap(BEGIN_QUERY_FUNCTION, \

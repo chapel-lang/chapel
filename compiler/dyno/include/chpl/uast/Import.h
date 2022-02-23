@@ -50,11 +50,13 @@ class Import final : public Expression {
       visibility_(visibility) {
     assert(numChildren() >= 1);
 
-    for (auto vc : visibilityClauses()) {
-      bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
-                        vc->limitationKind() == VisibilityClause::BRACES;
-      assert(acceptable);
-    }
+    #ifndef NDEBUG
+      for (auto vc : visibilityClauses()) {
+        bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
+                          vc->limitationKind() == VisibilityClause::BRACES;
+        assert(acceptable);
+      }
+    #endif
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
