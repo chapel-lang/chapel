@@ -1935,6 +1935,15 @@ static void lookupUseImport(const char*           name,
                             std::set<ModuleSymbol*>& visitedModules,
                             bool forShadowScope);
 
+static void lookupUsedImportedMod(const char*           name,
+                                  BaseAST*              context,
+                                  BaseAST*              scope,
+                                  std::vector<Symbol*>& symbols,
+                                  std::map<Symbol*, astlocT*>& renameLocs,
+                                  bool storeRenames,
+                                  bool forShadowScope);
+
+
 static
 bool lookupThisScopeAndUses(const char*           name,
                             BaseAST*              context,
@@ -1968,16 +1977,27 @@ bool lookupThisScopeAndUses(const char*           name,
 
   std::set<ModuleSymbol*> visitedModules;
 
-  // check public use/imports
+  // check imports and public use
+  // including names of modules imported or public use'd
   lookupUseImport(name, context, scope, symbols,
                   renameLocs, storeRenames, reexportPts, visitedModules,
                   /* forShadowScope */ false);
 
   if (symbols.size() == 0) {
-    // check private use only
+    // check private use only, not including names of modules
+    // (this forms the 1st shadow scope for a private use)
     lookupUseImport(name, context, scope, symbols,
                     renameLocs, storeRenames, reexportPts, visitedModules,
                     /* forShadowScope */ true);
+  }
+
+  if (symbols.size() == 0) {
+    // Check to see if the module name matches what is use'd
+    // with a private use
+    // (this forms the 2nd shadow scope for a private use)
+    lookupUsedImportedMod(name, context, scope, symbols,
+                          renameLocs, storeRenames,
+                          /* forShadowScope */ true);
   }
 
   return symbols.size() != 0;
@@ -2016,6 +2036,13 @@ static void lookupUseImport(const char*           name,
       if (name == astr("exxy"))
         gdbShouldBreakHere();
 
+      if (forShadowScope == false) {
+        // check names of modules imported or public use'd
+        lookupUsedImportedMod(name, context, scope, symbols,
+                              renameLocs, storeRenames,
+                              /* forShadowScope */ false);
+      }
+
       for_actuals(stmt, block->useList) {
         bool checkThisInShadowScope = false;
         if (UseStmt* use = toUseStmt(stmt)) {
@@ -2031,16 +2058,6 @@ static void lookupUseImport(const char*           name,
           continue;
 
         if (UseStmt* use = toUseStmt(stmt)) {
-          // Check to see if the module name matches what is use'd
-          if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
-            if (isRepeat(modSym, symbols) == false) {
-              symbols.push_back(modSym);
-              if (storeRenames && use->isARename()) {
-                renameLocs[modSym] = &use->astloc;
-              }
-            }
-          }
-
           if (use->skipSymbolSearch(name) == false) {
             const char* nameToUse = use->isARenamedSym(name) ?
               use->getRenamedSym(name) : name;
@@ -2097,18 +2114,6 @@ static void lookupUseImport(const char*           name,
           }
 
         } else if (ImportStmt* import = toImportStmt(stmt)) {
-          // Check the name of the module
-          if (import->providesQualifiedAccess()) {
-            if (Symbol* modSym = import->checkIfModuleNameMatches(name)) {
-              if (isRepeat(modSym, symbols) == false) {
-                symbols.push_back(modSym);
-                if (storeRenames && import->isARename()) {
-                  renameLocs[modSym] = &import->astloc;
-                }
-              }
-            }
-          }
-
           // Only traverse import statements that define a symbol with this
           // name for unqualified access.  We're only looking for explicitly
           // named symbols
@@ -2154,6 +2159,57 @@ static void lookupUseImport(const char*           name,
             USR_WARN(sym,
                      "Module level symbol is hiding function argument '%s'",
                      name);
+          }
+        }
+      }
+    }
+  }
+}
+
+static void lookupUsedImportedMod(const char*           name,
+                                  BaseAST*              context,
+                                  BaseAST*              scope,
+                                  std::vector<Symbol*>& symbols,
+                                  std::map<Symbol*, astlocT*>& renameLocs,
+                                  bool storeRenames,
+                                  bool forShadowScope) {
+  // Check to see if the name matches a module name use'd / imported
+  if (BlockStmt* block = toBlockStmt(scope)) {
+    if (block->useList != NULL) {
+      for_actuals(stmt, block->useList) {
+        bool checkThisInShadowScope = false;
+        if (UseStmt* use = toUseStmt(stmt)) {
+          if (use->isPrivate) {
+            checkThisInShadowScope = true;
+          }
+        }
+
+        // Skip for now things that don't match the request
+        // to find use/import for the shadow scope (or not).
+        // (these will be handled in a different call to this function)
+        if (forShadowScope != checkThisInShadowScope)
+          continue;
+
+        if (UseStmt* use = toUseStmt(stmt)) {
+          if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
+            if (isRepeat(modSym, symbols) == false) {
+              symbols.push_back(modSym);
+              if (storeRenames && use->isARename()) {
+                renameLocs[modSym] = &use->astloc;
+              }
+            }
+          }
+        } else if (ImportStmt* imp = toImportStmt(stmt)) {
+          // Check the name of the module
+          if (imp->providesQualifiedAccess()) {
+            if (Symbol* modSym = imp->checkIfModuleNameMatches(name)) {
+              if (isRepeat(modSym, symbols) == false) {
+                symbols.push_back(modSym);
+                if (storeRenames && imp->isARename()) {
+                  renameLocs[modSym] = &imp->astloc;
+                }
+              }
+            }
           }
         }
       }
