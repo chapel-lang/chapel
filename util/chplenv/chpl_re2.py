@@ -12,9 +12,8 @@ from utils import memoize, warning
 @memoize
 def is_overridden():
     re2 = overrides.get('CHPL_RE2')
-    regexp = overrides.get('CHPL_REGEXP')
 
-    if re2 or regexp:
+    if re2:
         return True
 
     return False
@@ -23,12 +22,7 @@ def is_overridden():
 def get():
     re2 = overrides.get('CHPL_RE2')
     regexp = overrides.get('CHPL_REGEXP')
-    if regexp:
-        if not re2:
-            re2 = 'bundled' if regexp == 're2' else 'none'
-
-        warning("CHPL_REGEXP is deprecated. Use CHPL_RE2.")
-    elif not re2:
+    if not re2:
         re2_header = os.path.join(get_chpl_third_party(), 're2',
                                   'install', get_uniq_cfg_path(),
                                   'include', 're2', 're2.h')

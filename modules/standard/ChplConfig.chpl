@@ -140,10 +140,6 @@ module ChplConfig {
   param CHPL_JEMALLOC:string;
   CHPL_JEMALLOC = __primitive("get compiler variable", "CHPL_TARGET_JEMALLOC");
 
-  pragma "no doc"
-  deprecated "CHPL_REGEXP is deprecated, please use CHPL_RE2 instead"
-  param CHPL_REGEXP:string = __primitive("get compiler variable", "CHPL_RE2");
-
   /* See :ref:`readme-chplenv.CHPL_RE2` for more information. */
   param CHPL_RE2:string;
   CHPL_RE2 = __primitive("get compiler variable", "CHPL_RE2");
