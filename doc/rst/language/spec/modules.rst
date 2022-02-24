@@ -394,7 +394,8 @@ necessary to obtain them.  For instance,
 
    .. code-block:: printoutput
 
-      false
+      conflict1.chpl:2: error: symbol x is multiply defined
+      conflict1.chpl:10: note: also defined here
 
    If, however, C had been publicly used by another module D and that was used
    by MainMod instead, then the compiler cannot determine which of ``C.x`` and
