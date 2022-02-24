@@ -1,6 +1,6 @@
 module M4 {
   use M1 except a;
-  use M3;
+  use M3 except a;
   use M2;
 
   proc main() {

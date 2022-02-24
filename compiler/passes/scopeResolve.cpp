@@ -1933,7 +1933,8 @@ static void lookupUseImport(const char*           name,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
                             std::set<ModuleSymbol*>& visitedModules,
-                            bool forShadowScope);
+                            bool forShadowScope,
+                            bool publicOnly);
 
 static void lookupUsedImportedMod(const char*           name,
                                   BaseAST*              context,
@@ -1941,7 +1942,8 @@ static void lookupUsedImportedMod(const char*           name,
                                   std::vector<Symbol*>& symbols,
                                   std::map<Symbol*, astlocT*>& renameLocs,
                                   bool storeRenames,
-                                  bool forShadowScope);
+                                  bool forShadowScope,
+                                  bool publicOnly);
 
 
 static
@@ -1981,14 +1983,16 @@ bool lookupThisScopeAndUses(const char*           name,
   // including names of modules imported or public use'd
   lookupUseImport(name, context, scope, symbols,
                   renameLocs, storeRenames, reexportPts, visitedModules,
-                  /* forShadowScope */ false);
+                  /* forShadowScope */ false,
+                  /* publicOnly */ false);
 
   if (symbols.size() == 0) {
     // check private use only, not including names of modules
     // (this forms the 1st shadow scope for a private use)
     lookupUseImport(name, context, scope, symbols,
                     renameLocs, storeRenames, reexportPts, visitedModules,
-                    /* forShadowScope */ true);
+                    /* forShadowScope */ true,
+                    /* publicOnly */ false);
   }
 
   if (symbols.size() == 0) {
@@ -1997,7 +2001,8 @@ bool lookupThisScopeAndUses(const char*           name,
     // (this forms the 2nd shadow scope for a private use)
     lookupUsedImportedMod(name, context, scope, symbols,
                           renameLocs, storeRenames,
-                          /* forShadowScope */ true);
+                          /* forShadowScope */ true,
+                          /* publicOnly */ false);
   }
 
   return symbols.size() != 0;
@@ -2011,7 +2016,8 @@ static void lookupUseImport(const char*           name,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
                             std::set<ModuleSymbol*>& visitedModules,
-                            bool forShadowScope) {
+                            bool forShadowScope,
+                            bool publicOnly) {
   // Nothing found so far, look into the uses.
   if (BlockStmt* block = toBlockStmt(scope)) {
     if (block->useList != NULL) {
@@ -2035,21 +2041,27 @@ static void lookupUseImport(const char*           name,
         // check names of modules imported or public use'd
         lookupUsedImportedMod(name, context, scope, symbols,
                               renameLocs, storeRenames,
-                              /* forShadowScope */ false);
+                              /* forShadowScope */ false,
+                              /* publicOnly */ publicOnly);
       }
 
       for_actuals(stmt, block->useList) {
+        bool isPublic = false;
         bool checkThisInShadowScope = false;
         if (UseStmt* use = toUseStmt(stmt)) {
-          if (use->isPrivate) {
-            checkThisInShadowScope = true;
-          }
+          isPublic = !use->isPrivate;
+          checkThisInShadowScope = use->isPrivate;
+        } else if (ImportStmt* imp = toImportStmt(stmt)) {
+          isPublic = !imp->isPrivate;
         }
 
         // Skip for now things that don't match the request
         // to find use/import for the shadow scope (or not).
         // (these will be handled in a different call to this function)
         if (forShadowScope != checkThisInShadowScope)
+          continue;
+
+        if (publicOnly && !isPublic)
           continue;
 
         if (UseStmt* use = toUseStmt(stmt)) {
@@ -2101,7 +2113,8 @@ static void lookupUseImport(const char*           name,
                     lookupUseImport(nameToUse, context, mod->block,
                                     symbols, renameLocs, storeRenames,
                                     reexportPts, visitedModules,
-                                    /* forShadowScope */ false);
+                                    /* forShadowScope */ false,
+                                    /* publicOnly */ true);
                   }
                 }
               }
@@ -2129,6 +2142,26 @@ static void lookupUseImport(const char*           name,
                 symbols.push_back(sym);
                 if (storeRenames && import->isARenamedSym(name)) {
                   renameLocs[sym] = &import->astloc;
+                }
+              }
+            }
+
+            // also check to see if the module imported has the
+            // symbol, recursively
+            if (SymExpr* se = toSymExpr(import->src)) {
+              if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+                if (mod->block->useList != NULL) {
+                  auto pair = visitedModules.insert(mod);
+                  if (pair.second == false) {
+                    // module has already been visited by this function
+                    // so don't try to visit it again
+                  } else {
+                    lookupUseImport(nameToUse, context, mod->block,
+                                    symbols, renameLocs, storeRenames,
+                                    reexportPts, visitedModules,
+                                    /* forShadowScope */ false,
+                                    /* publicOnly */ true);
+                  }
                 }
               }
             }
@@ -2167,22 +2200,28 @@ static void lookupUsedImportedMod(const char*           name,
                                   std::vector<Symbol*>& symbols,
                                   std::map<Symbol*, astlocT*>& renameLocs,
                                   bool storeRenames,
-                                  bool forShadowScope) {
+                                  bool forShadowScope,
+                                  bool publicOnly) {
   // Check to see if the name matches a module name use'd / imported
   if (BlockStmt* block = toBlockStmt(scope)) {
     if (block->useList != NULL) {
       for_actuals(stmt, block->useList) {
+        bool isPublic = false;
         bool checkThisInShadowScope = false;
         if (UseStmt* use = toUseStmt(stmt)) {
-          if (use->isPrivate) {
-            checkThisInShadowScope = true;
-          }
+          isPublic = !use->isPrivate;
+          checkThisInShadowScope = use->isPrivate;
+        } else if (ImportStmt* imp = toImportStmt(stmt)) {
+          isPublic = !imp->isPrivate;
         }
 
         // Skip for now things that don't match the request
         // to find use/import for the shadow scope (or not).
         // (these will be handled in a different call to this function)
         if (forShadowScope != checkThisInShadowScope)
+          continue;
+
+        if (publicOnly && !isPublic)
           continue;
 
         if (UseStmt* use = toUseStmt(stmt)) {
