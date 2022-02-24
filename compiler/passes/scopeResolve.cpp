@@ -1925,6 +1925,8 @@ static bool      methodMatched(BaseAST* scope, FnSymbol* method);
 
 static FnSymbol* getMethod(const char* name, Type* type);
 
+using VisitedModulesSet = std::set<std::pair<ModuleSymbol*, const char*>>;
+
 static void lookupUseImport(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
@@ -1932,7 +1934,7 @@ static void lookupUseImport(const char*           name,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
-                            std::set<ModuleSymbol*>& visitedModules,
+                            VisitedModulesSet& visitedModules,
                             bool forShadowScope,
                             bool publicOnly);
 
@@ -1977,7 +1979,7 @@ bool lookupThisScopeAndUses(const char*           name,
     symbols.push_back(sym);
   }
 
-  std::set<ModuleSymbol*> visitedModules;
+  VisitedModulesSet visitedModules;
 
   // check imports and public use
   // including names of modules imported or public use'd
@@ -1989,6 +1991,7 @@ bool lookupThisScopeAndUses(const char*           name,
   if (symbols.size() == 0) {
     // check private use only, not including names of modules
     // (this forms the 1st shadow scope for a private use)
+    visitedModules.clear();
     lookupUseImport(name, context, scope, symbols,
                     renameLocs, storeRenames, reexportPts, visitedModules,
                     /* forShadowScope */ true,
@@ -2015,12 +2018,26 @@ static void lookupUseImport(const char*           name,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
-                            std::set<ModuleSymbol*>& visitedModules,
+                            VisitedModulesSet& visitedModules,
                             bool forShadowScope,
                             bool publicOnly) {
   // Nothing found so far, look into the uses.
   if (BlockStmt* block = toBlockStmt(scope)) {
     if (block->useList != NULL) {
+
+      // check to see if we have already visited this scope
+      // if it is a module scope (to avoid infinite loop with recursive use)
+      if (ModuleSymbol* mod = toModuleSymbol(block->parentSymbol)) {
+        if (mod->block == block) {
+          auto pair = visitedModules.insert(std::make_pair(mod, name));
+          if (pair.second == false) {
+            // module+name has already been visited by this function
+            // so don't try to visit it again
+            return;
+          }
+        }
+      }
+
       int nUseImport = 0;
       for_actuals(expr, block->useList) {
         // Ensure we only have use or import statements in this list
@@ -2100,22 +2117,16 @@ static void lookupUseImport(const char*           name,
               }
             }
 
-            // For a use statement, also look into public uses
+            // For a use statement, also look into public uses / imports
             // from whatever was used.
             if (SymExpr* se = toSymExpr(use->src)) {
               if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
                 if (mod->block->useList != NULL) {
-                  auto pair = visitedModules.insert(mod);
-                  if (pair.second == false) {
-                    // module has already been visited by this function
-                    // so don't try to visit it again
-                  } else {
-                    lookupUseImport(nameToUse, context, mod->block,
-                                    symbols, renameLocs, storeRenames,
-                                    reexportPts, visitedModules,
-                                    /* forShadowScope */ false,
-                                    /* publicOnly */ true);
-                  }
+                  lookupUseImport(nameToUse, context, mod->block,
+                                  symbols, renameLocs, storeRenames,
+                                  reexportPts, visitedModules,
+                                  /* forShadowScope */ false,
+                                  /* publicOnly */ true);
                 }
               }
             }
@@ -2151,17 +2162,11 @@ static void lookupUseImport(const char*           name,
             if (SymExpr* se = toSymExpr(import->src)) {
               if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
                 if (mod->block->useList != NULL) {
-                  auto pair = visitedModules.insert(mod);
-                  if (pair.second == false) {
-                    // module has already been visited by this function
-                    // so don't try to visit it again
-                  } else {
-                    lookupUseImport(nameToUse, context, mod->block,
-                                    symbols, renameLocs, storeRenames,
-                                    reexportPts, visitedModules,
-                                    /* forShadowScope */ false,
-                                    /* publicOnly */ true);
-                  }
+                  lookupUseImport(nameToUse, context, mod->block,
+                                  symbols, renameLocs, storeRenames,
+                                  reexportPts, visitedModules,
+                                  /* forShadowScope */ false,
+                                  /* publicOnly */ true);
                 }
               }
             }
