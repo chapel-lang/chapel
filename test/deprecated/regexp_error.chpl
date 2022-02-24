@@ -7,7 +7,7 @@ use Regex;
   try! {
     re = compile("*");
     writeln("Should not reach here");
-  } catch (e: BadRegexError) {
+  } catch (e: BadRegexpError) {
     writeln("222222222222222222222");
     writeln(re.ok);
     writeln("333333333333333333333");
