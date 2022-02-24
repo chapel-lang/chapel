@@ -1160,30 +1160,58 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
   return compile(x);
 }
 
-// documented in the captures version
 pragma "no doc"
+pragma "last resort"
 proc string.search(needle: regex(string)):regexMatch
 {
   return needle.search(this);
 }
-
 // documented in the captures version
 pragma "no doc"
+proc string.search(pattern: regex(string)):regexMatch
+{
+  return pattern.search(this);
+}
+
+pragma "no doc"
+pragma "last resort"
 proc bytes.search(needle: regex(bytes)):regexMatch
 {
   return needle.search(this);
 }
 
+// documented in the captures version
+pragma "no doc"
+proc bytes.search(pattern: regex(bytes)):regexMatch
+{
+  return pattern.search(this);
+}
+
+
+pragma "last resort"
+deprecated "search with needle argument is deprecated, use pattern instead"
+proc string.search(needle: regex(string), ref captures ...?k):regexMatch
+{
+  return needle.search(this, (...captures));
+}
+
 /* Search the receiving string for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   :arg needle: the compiled regular expression to search for
+   :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
                   should be strings or types that strings can cast to.
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving string where a match occurred
  */
-proc string.search(needle: regex(string), ref captures ...?k):regexMatch
+proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
+{
+  return pattern.search(this, (...captures));
+}
+
+pragma "last resort"
+deprecated "search with needle argument is deprecated, use pattern instead"
+proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
 {
   return needle.search(this, (...captures));
 }
@@ -1191,15 +1219,15 @@ proc string.search(needle: regex(string), ref captures ...?k):regexMatch
 /* Search the receiving bytes for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   :arg needle: the compiled regular expression to search for
+   :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
                   should be bytes or types that bytes can cast to.
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving bytes where a match occurred
  */
-proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
+proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
 {
-  return needle.search(this, (...captures));
+  return pattern.search(this, (...captures));
 }
 
 // documented in the captures version

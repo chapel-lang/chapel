@@ -1,0 +1,40 @@
+argsNeedleRegion.chpl:3: warning: find with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:4: warning: find with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:5: warning: find with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:7: warning: rfind with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:8: warning: rfind with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:9: warning: rfind with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:11: warning: count with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:12: warning: count with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:13: warning: count with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:15: warning: replace with needle argument is deprecated, use pattern instead
+argsNeedleRegion.chpl:19: warning: find with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:20: warning: find with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:21: warning: find with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:23: warning: rfind with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:24: warning: rfind with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:25: warning: rfind with needle and region argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:27: warning: count with needles and regions argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:28: warning: count with needles and regions argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:29: warning: count with needles and regions argument is deprecated, use pattern and indices instead
+argsNeedleRegion.chpl:31: warning: replace with needle argument is deprecated, use pattern instead
+find: 7
+find: 14
+find: 14
+rfind: 14
+rfind: 7
+rfind: 7
+count: 2
+count: 1
+count: 1
+replace: hello, worlds, worlds
+byte find: 2
+byte find: 5
+byte find: 5
+byte rfind: 5
+byte rfind: 2
+byte rfind: 2
+byte count: 2
+byte count: 1
+byte count: 1
+byte replace: these are bytes
