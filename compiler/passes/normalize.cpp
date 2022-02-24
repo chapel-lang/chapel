@@ -4596,6 +4596,8 @@ static void find_printModuleInit_stuff() {
       // so the number of symbols is small
     }
   }
-  // assert that we actually found such a symbol
-  INT_ASSERT(gModuleInitIndentLevel);
+  // assert that we actually found such a symbol unless in minimal modules mode
+  if (!fMinimalModules) {
+    INT_ASSERT(gModuleInitIndentLevel);
+  }
 }
