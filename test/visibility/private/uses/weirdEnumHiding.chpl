@@ -21,8 +21,8 @@ module weirdEnumHiding {
   }
 
   module D {
-    public use super.C;
-    public use super.B;
+    public use super.C except checkFoo;
+    public use super.B except checkFoo;
 
     proc checkFoo() {
       writeln(foo.b);
