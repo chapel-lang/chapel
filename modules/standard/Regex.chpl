@@ -412,6 +412,7 @@ class BadRegexError : Error {
 }
 
 // Until Issue 17275 is fixed:
+deprecated "Regex: 'BadRegexpError' is deprecated; please use 'BadRegexError' instead"
 type BadRegexpError = owned BadRegexError;
 
 // When Issue 17275 is fixed:
