@@ -2020,8 +2020,6 @@ static void lookupUseImport(const char*           name,
         // Ensure we only have use or import statements in this list
         if (UseStmt* use = toUseStmt(expr)) {
           INT_ASSERT(toSymExpr(use->src));
-          // if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-          //   if (mod->block->useList != NULL) {
           nUseImport++;
         } else if (ImportStmt* imp = toImportStmt(expr)) {
           INT_ASSERT(toSymExpr(imp->src));
@@ -2032,9 +2030,6 @@ static void lookupUseImport(const char*           name,
       }
 
       INT_ASSERT(nUseImport > 0);
-
-      if (name == astr("exxy"))
-        gdbShouldBreakHere();
 
       if (forShadowScope == false) {
         // check names of modules imported or public use'd
@@ -2092,22 +2087,22 @@ static void lookupUseImport(const char*           name,
                 }
               }
             }
-          }
 
-          // For a use statement, also look into public uses
-          // from whatever was used.
-          if (SymExpr* se = toSymExpr(use->src)) {
-            if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-              if (mod->block->useList != NULL) {
-                auto pair = visitedModules.insert(mod);
-                if (pair.second == false) {
-                  // module has already been visited by this function
-                  // so don't try to visit it again
-                } else {
-                  lookupUseImport(name, context, mod->block,
-                                  symbols, renameLocs, storeRenames,
-                                  reexportPts, visitedModules,
-                                  /* forShadowScope */ false);
+            // For a use statement, also look into public uses
+            // from whatever was used.
+            if (SymExpr* se = toSymExpr(use->src)) {
+              if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+                if (mod->block->useList != NULL) {
+                  auto pair = visitedModules.insert(mod);
+                  if (pair.second == false) {
+                    // module has already been visited by this function
+                    // so don't try to visit it again
+                  } else {
+                    lookupUseImport(nameToUse, context, mod->block,
+                                    symbols, renameLocs, storeRenames,
+                                    reexportPts, visitedModules,
+                                    /* forShadowScope */ false);
+                  }
                 }
               }
             }
