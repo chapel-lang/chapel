@@ -1636,7 +1636,7 @@ module String {
   }
 
   pragma "last resort"
-  deprecated "find with needle and region argument is deprecated, use pattern and indices instead"
+  deprecated "find with needle and region arguments is deprecated, use pattern and indices instead"
   inline proc string.find(needle: string,
                           region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
     return this.find(needle, region);
@@ -1661,7 +1661,7 @@ module String {
   }
 
   pragma "last resort"
-  deprecated "rfind with needle and region argument is deprecated, use pattern and indices instead"
+  deprecated "rfind with needle and region arguments is deprecated, use pattern and indices instead"
   inline proc string.rfind(needle: string,
                            region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
     return this.rfind(needle, region);
@@ -1687,7 +1687,7 @@ module String {
   }
 
   pragma "last resort"
-  deprecated "count with needle and region argument is deprecated, use pattern and indices instead"
+  deprecated "count with needle and region arguments is deprecated, use pattern and indices instead"
   inline proc string.count(needle: string,
                            region: range(?) = this.indices) : int {
     return this.count(needle, region);
