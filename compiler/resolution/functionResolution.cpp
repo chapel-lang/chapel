@@ -1872,7 +1872,7 @@ isDefinedInUseImport(BlockStmt* block, FnSymbol* fn,
       }
       INT_ASSERT(se);
 
-      // Skip things that are private when considering a nested use/import 
+      // Skip things that are private when considering a nested use/import
       if (isPrivate && !allowPrivateUseImp)
         continue;
 
@@ -1896,12 +1896,12 @@ isDefinedInUseImport(BlockStmt* block, FnSymbol* fn,
   return false;
 }
 
-static MoreVisibleResult  
+static MoreVisibleResult
 isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
                       Vec<BlockStmt*>& visited1, Vec<BlockStmt*>& visited2) {
 
   if (visited1.set_in(block) && visited2.set_in(block))
-    return FOUND_NEITHER; 
+    return FOUND_NEITHER;
 
   // first, check things in the current block or
   // from use/import that don't use a shadow scope
@@ -1958,7 +1958,7 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 //
 // return whether fn1 is more visible than fn2 from expr
 //
-static MoreVisibleResult  
+static MoreVisibleResult
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
   //
   // common-case check to see if functions have equal visibility
@@ -3213,13 +3213,14 @@ static bool      isGenericRecordInit(CallExpr* call);
 static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState);
 static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
 
-static void      findVisibleFunctionsAndCandidates(
+static BlockStmt* findVisibleFunctionsAndCandidates(
                                      CallInfo&                  info,
                                      VisibilityInfo&            visInfo,
                                      Vec<FnSymbol*>&            visibleFns,
                                      Vec<ResolutionCandidate*>& candidates);
 
 static int       disambiguateByMatch(CallInfo&                  info,
+                                     BlockStmt*                 searchScope,
                                      Vec<ResolutionCandidate*>& candidates,
                                      ResolutionCandidate*&      bestRef,
                                      ResolutionCandidate*&      bestConstRef,
@@ -3557,12 +3558,13 @@ static bool isAcceptableMethodChoice(CallExpr* call,
 }
 
 static void reportHijackingError(CallExpr* call,
+                                 BlockStmt* searchScope,
                                  FnSymbol* bestFn, ModuleSymbol* bestMod,
                                  FnSymbol* candFn, ModuleSymbol* candMod)
 {
   USR_FATAL_CONT(call, "multiple overload sets are applicable to this call");
 
-  if (isMoreVisible(call, candFn, bestFn) == FOUND_F1_FIRST)
+  if (isMoreVisible(searchScope, candFn, bestFn) == FOUND_F1_FIRST)
   {
     USR_PRINT(candFn, "instead of the candidate here");
     USR_PRINT(candMod, "... defined in this closer module");
@@ -3581,7 +3583,9 @@ static void reportHijackingError(CallExpr* call,
   USR_STOP();
 }
 
-static bool overloadSetsOK(CallExpr* call, check_state_t checkState,
+static bool overloadSetsOK(CallExpr* call,
+                           BlockStmt* searchScope,
+                           check_state_t checkState,
                            Vec<ResolutionCandidate*>& candidates,
                            ResolutionCandidate* bestRef,
                            ResolutionCandidate* bestCref,
@@ -3622,11 +3626,12 @@ static bool overloadSetsOK(CallExpr* call, check_state_t checkState,
 
     ModuleSymbol* candMod = overloadSetModule(candidate);
     if (candMod && candMod != bestMod                                       &&
-        isMoreVisible(call, bestFn, candidate->fn) != FOUND_F1_FIRST &&
+        isMoreVisible(searchScope, bestFn, candidate->fn) != FOUND_F1_FIRST &&
         ! isAcceptableMethodChoice(call, bestFn, candidate->fn, candidates) )
     {
       if (checkState == CHECK_NORMAL_CALL)
-        reportHijackingError(call, bestFn, bestMod, candidate->fn, candMod);
+        reportHijackingError(call, searchScope,
+                             bestFn, bestMod, candidate->fn, candMod);
       return false;
     }
   }
@@ -3652,9 +3657,12 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
 
   FnSymbol*                 retval     = NULL;
 
-  findVisibleFunctionsAndCandidates(info, visInfo, mostApplicable, candidates);
+  BlockStmt* scopeUsed = nullptr;
 
-  numMatches = disambiguateByMatch(info, candidates,
+  scopeUsed = findVisibleFunctionsAndCandidates(info, visInfo,
+                                                mostApplicable, candidates);
+
+  numMatches = disambiguateByMatch(info, scopeUsed, candidates,
                                    bestRef, bestCref, bestVal);
 
   if (checkState == CHECK_NORMAL_CALL && numMatches > 0 && visInfo.inPOI())
@@ -3677,7 +3685,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   }
 
   if (numMatches > 0) {
-    if (! overloadSetsOK(info.call, checkState, candidates,
+    if (! overloadSetsOK(info.call, scopeUsed, checkState, candidates,
                          bestRef, bestCref, bestVal))
       return NULL; // overloadSetsOK() found an error
 
@@ -4818,7 +4826,8 @@ void advanceCurrStart(VisibilityInfo& visInfo) {
   visInfo.nextPOI = NULL;
 }
 
-static void findVisibleFunctionsAndCandidates(
+// Returns the POI scope used to find the candidates
+static BlockStmt* findVisibleFunctionsAndCandidates(
                                 CallInfo&                  info,
                                 VisibilityInfo&            visInfo,
                                 Vec<FnSymbol*>&            mostApplicable,
@@ -4838,7 +4847,7 @@ static void findVisibleFunctionsAndCandidates(
 
     explainGatherCandidate(info, candidates);
 
-    return;
+    return getVisibilityScope(call);
   }
 
   // CG TODO: pull all visible interface functions, if within a CG context
@@ -4852,6 +4861,7 @@ static void findVisibleFunctionsAndCandidates(
   std::set<BlockStmt*> visited;
   visInfo.currStart = getVisibilityScope(call);
   INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
+  BlockStmt* scopeUsed = nullptr;
 
   do {
     // CG TODO: no POI for CG functions
@@ -4865,6 +4875,9 @@ static void findVisibleFunctionsAndCandidates(
 
     gatherCandidatesAndLastResort(info, visInfo, mostApplicable, numVisitedMA,
                                   lrc, candidates);
+
+    // save the scope used for disambiguation
+    scopeUsed = visInfo.currStart;
 
     advanceCurrStart(visInfo);
   }
@@ -4885,6 +4898,8 @@ static void findVisibleFunctionsAndCandidates(
   }
 
   explainGatherCandidate(info, candidates);
+
+  return scopeUsed;
 }
 
 // run filterCandidate() on 'fn' if appropriate
@@ -5288,19 +5303,22 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
 
 ResolutionCandidate*
 disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
-  DisambiguationContext     DC(info);
+  DisambiguationContext     DC(info, getVisibilityScope(info.call));
   Vec<ResolutionCandidate*> ambiguous;
 
   return disambiguateByMatch(candidates, DC, false, ambiguous);
 }
 
+
+// searchScope is the scope used to evaluate is-more-visible
 static int disambiguateByMatch(CallInfo&                  info,
+                               BlockStmt*                 searchScope,
                                Vec<ResolutionCandidate*>& candidates,
 
                                ResolutionCandidate*&      bestRef,
                                ResolutionCandidate*&      bestConstRef,
                                ResolutionCandidate*&      bestValue) {
-  DisambiguationContext     DC(info);
+  DisambiguationContext     DC(info, searchScope);
 
   Vec<ResolutionCandidate*> ambiguous;
 
@@ -12026,9 +12044,11 @@ void expandInitFieldPrims()
 *                                                                             *
 ************************************** | *************************************/
 
-DisambiguationContext::DisambiguationContext(CallInfo& info) {
+DisambiguationContext::DisambiguationContext(CallInfo& info,
+                                             BlockStmt* searchScope) {
   actuals = &info.actuals;
-  scope   = (info.scope) ? info.scope : getVisibilityScope(info.call);
+  scope   = searchScope;
+
   explain = false;
 
   if (fExplainVerbose == true) {
