@@ -2029,6 +2029,15 @@ static void lookupUseImport(const char*           name,
       // if it is a module scope (to avoid infinite loop with recursive use)
       if (ModuleSymbol* mod = toModuleSymbol(block->parentSymbol)) {
         if (mod->block == block) {
+          // if the module is private, return,
+          // since we can't access anything in it
+          // TODO: does this need to have a more involved check?
+          // could a private outer module use a private inner
+          // module and see it?
+          if (publicOnly && mod->hasFlag(FLAG_PRIVATE)) {
+            return;
+          }
+
           auto pair = visitedModules.insert(std::make_pair(mod, name));
           if (pair.second == false) {
             // module+name has already been visited by this function
@@ -2231,10 +2240,12 @@ static void lookupUsedImportedMod(const char*           name,
 
         if (UseStmt* use = toUseStmt(stmt)) {
           if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
-            if (isRepeat(modSym, symbols) == false) {
-              symbols.push_back(modSym);
-              if (storeRenames && use->isARename()) {
-                renameLocs[modSym] = &use->astloc;
+            if (!(publicOnly && modSym->hasFlag(FLAG_PRIVATE))) {
+              if (isRepeat(modSym, symbols) == false) {
+                symbols.push_back(modSym);
+                if (storeRenames && use->isARename()) {
+                  renameLocs[modSym] = &use->astloc;
+                }
               }
             }
           }
@@ -2242,10 +2253,12 @@ static void lookupUsedImportedMod(const char*           name,
           // Check the name of the module
           if (imp->providesQualifiedAccess()) {
             if (Symbol* modSym = imp->checkIfModuleNameMatches(name)) {
-              if (isRepeat(modSym, symbols) == false) {
-                symbols.push_back(modSym);
-                if (storeRenames && imp->isARename()) {
-                  renameLocs[modSym] = &imp->astloc;
+              if (!(publicOnly && modSym->hasFlag(FLAG_PRIVATE))) {
+                if (isRepeat(modSym, symbols) == false) {
+                  symbols.push_back(modSym);
+                  if (storeRenames && imp->isARename()) {
+                    renameLocs[modSym] = &imp->astloc;
+                  }
                 }
               }
             }
