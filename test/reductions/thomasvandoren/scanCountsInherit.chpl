@@ -8,7 +8,7 @@
  * could determine a ranking of the particles within each octant.
  */
 
-public use counts;
+public use CountsMod;
 
 class scanCountsInherit : counts {
   // Track the current value, so it can be used in generate() method. Use min()
