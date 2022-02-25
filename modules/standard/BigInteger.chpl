@@ -3694,8 +3694,14 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
+  pragma "last resort"
+  deprecated "The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead"
   proc bigint.scan0(starting_bit: integral) : uint {
-    const sb_ = starting_bit.safeCast(c_ulong);
+    return this.scan0(startBitIdx = starting_bit);
+  }
+
+  proc bigint.scan0(startBitIdx: integral): uint {
+    const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
 
     if _local {
@@ -3713,8 +3719,14 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
+  pragma "last resort"
+  deprecated "The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead"
   proc bigint.scan1(starting_bit: integral) : uint {
-    const sb_ = starting_bit.safeCast(c_ulong);
+    return this.scan1(startBitIdx = starting_bit);
+  }
+
+  proc bigint.scan1(startBitIdx: integral): uint {
+    const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
 
     if _local {
