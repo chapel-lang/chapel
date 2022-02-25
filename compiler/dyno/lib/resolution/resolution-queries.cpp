@@ -131,6 +131,38 @@ static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
 // TODO: migrate fns out-of-body to avoid requiring inlining
 // TODO: move this and supporting functions to another file
 
+// This class can gather up the IDs of contained fields or formals
+struct GatherFieldsOrFormals {
+  std::set<ID> fieldOrFormals;
+
+  bool enter(const NamedDecl* decl) {
+    // visit type declarations
+    // is it a field or a formal?
+    bool isField = false;
+    if (auto var = decl->toVariable())
+      if (var->isField())
+        isField = true;
+
+    bool isFieldOrFormal = isField || decl->isFormal();
+
+    if (isFieldOrFormal)
+      fieldOrFormals.insert(decl->id());
+
+    return false;
+  }
+  void exit(const NamedDecl* decl) { }
+
+  // go in to TupleDecl and MultiDecl
+  bool enter(const TupleDecl* d) { return true; }
+  void exit(const TupleDecl* d) { }
+  bool enter(const MultiDecl* d) { return true; }
+  void exit(const MultiDecl* d) { }
+
+  // don't go in to anything else
+  bool enter(const ASTNode* ast) { return false; }
+  void exit(const ASTNode* ast) { }
+};
+
 struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;
@@ -145,6 +177,9 @@ struct Resolver {
   std::vector<const Scope*> scopeStack;
   bool signatureOnly = false;
   const Block* fnBody = nullptr;
+  bool fieldOrFormalsComputed = false;
+  std::set<ID> fieldOrFormals;
+  std::set<ID> instantiatedFieldOrFormals;
 
   // results of the resolution process
 
@@ -288,31 +323,45 @@ struct Resolver {
      But, if we have a substitution for `t`, we should use that.
    */
   bool shouldUseUnknownTypeForGeneric(const ID& id) {
-    bool isFieldOrFormal = false;
-    bool isSubstituted = false;
-    // TODO: should we compute this some other way
-    // (e.g. when setting up the traversal)
-    // given that it's within the Symbol we are visiting?
-    auto ast = parsing::idToAst(context, id);
-    if (ast) {
-      if (auto decl = ast->toDecl()) {
-        bool isField = false;
-        if (auto var = decl->toVariable())
-          if (var->isField())
-            isField = true;
 
-        isFieldOrFormal = isField || decl->isFormal();
+    // make sure the set of IDs for fields and formals is computed
+    if (!fieldOrFormalsComputed) {
+      auto visitor = GatherFieldsOrFormals();
+      symbol->traverse(visitor);
+      fieldOrFormals.swap(visitor.fieldOrFormals);
 
-        if (substitutions != nullptr) {
-          auto search = substitutions->find(id);
-          if (search != substitutions->end()) {
-            isSubstituted = true;
+      // also compute instantiatedFieldOrFormals
+      if (typedSignature != nullptr) {
+        auto untyped = typedSignature->untyped();
+        int nFormals = untyped->numFormals();
+        for (int i = 0; i < nFormals; i++) {
+          if (typedSignature->formalIsInstantiated(i)) {
+            assert(!untyped->formalDecl(i)->id().isEmpty());
+            instantiatedFieldOrFormals.insert(untyped->formalDecl(i)->id());
           }
         }
       }
+
+      fieldOrFormalsComputed = true;
     }
 
-    return isFieldOrFormal && !isSubstituted;
+    bool isFieldOrFormal = fieldOrFormals.count(id) > 0;
+    bool isSubstituted = false;
+    bool isFormalInstantiated = false;
+
+    if (substitutions != nullptr) {
+      auto search = substitutions->find(id);
+      if (search != substitutions->end()) {
+        isSubstituted = true;
+      }
+    }
+
+    // check also instantiated formals from typedSignature
+    if (isFieldOrFormal) {
+      isFormalInstantiated = instantiatedFieldOrFormals.count(id) > 0;
+    }
+
+    return isFieldOrFormal && !isSubstituted && !isFormalInstantiated;
   }
 
   // helper for resolveTypeQueriesFromFormalType
