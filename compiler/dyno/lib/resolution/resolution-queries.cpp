@@ -661,6 +661,10 @@ struct Resolver {
       // Figure out the param value, if any
       const Param* paramPtr = nullptr;
 
+      bool isField = false;
+      bool isFormal = false;
+      bool isFieldOrFormal = false;
+
       if (auto var = decl->toVarLikeDecl()) {
         // Figure out variable type based upon:
         //  * the type in the variable declaration
@@ -670,12 +674,12 @@ struct Resolver {
         auto typeExpr = var->typeExpression();
         auto initExpr = var->initExpression();
 
-        bool isField = false;
         if (auto var = decl->toVariable())
           if (var->isField())
             isField = true;
 
-        bool isFieldOrFormal = isField || decl->isFormal();
+        isFormal = decl->isFormal();
+        isFieldOrFormal = isField || isFormal;
 
         bool foundSubstitution = false;
         bool foundSubstitutionDefaultHint = false;
@@ -789,6 +793,36 @@ struct Resolver {
       // forget the param value if the QualifiedType is not param
       if (qtKind != QualifiedType::PARAM)
         paramPtr = nullptr;
+
+      auto declaredKind = qtKind;
+
+      // compute the intent for formals (including type constructor formals)
+      if (isFormal || (signatureOnly && isField)) {
+        bool isThis = decl->name() == USTR("this");
+        auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
+        // update qtKind with the result of resolving the intent
+        qtKind = resolveIntent(formalQt, isThis);
+      }
+
+      // adjust tuple declarations for value / referential tuples
+      if (typePtr != nullptr) {
+        if (auto tupleType = typePtr->toTupleType()) {
+          if (declaredKind == QualifiedType::DEFAULT_INTENT ||
+              declaredKind == QualifiedType::CONST_INTENT) {
+            typePtr = tupleType->toReferentialTuple(context);
+          } else if (qtKind == QualifiedType::VAR ||
+                     qtKind == QualifiedType::CONST_VAR ||
+                     qtKind == QualifiedType::CONST_REF ||
+                     qtKind == QualifiedType::REF ||
+                     qtKind == QualifiedType::IN ||
+                     qtKind == QualifiedType::CONST_IN ||
+                     qtKind == QualifiedType::OUT ||
+                     qtKind == QualifiedType::INOUT ||
+                     qtKind == QualifiedType::TYPE) {
+            typePtr = tupleType->toValueTuple(context);
+          }
+        }
+      }
 
       ResolvedExpression& result = byPostorder.byAst(decl);
       result.setType(QualifiedType(qtKind, typePtr, paramPtr));
@@ -1025,7 +1059,10 @@ getFormalTypes(const Function* fn,
   for (auto formal : fn->formals()) {
     QualifiedType t = r.byAst(formal).type();
     // compute concrete intent
-    bool isThis = fn->name() == USTR("this");
+    bool isThis = false;
+    if (auto namedDecl = formal->toNamedDecl()) {
+      isThis = namedDecl->name() == USTR("this");
+    }
     t = QualifiedType(resolveIntent(t, isThis), t.type(), t.param());
 
     formalTypes.push_back(std::move(t));
