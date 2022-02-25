@@ -1,5 +1,5 @@
-regexpSearch.chpl:11: warning: search with needle argument is deprecated, use pattern instead
-regexpSearch.chpl:27: warning: search with needle argument is deprecated, use pattern instead
+regexpSearch.chpl:11: warning: the 'needle' argument is deprecated, use 'pattern' instead
+regexpSearch.chpl:27: warning: the 'needle' argument is deprecated, use 'pattern' instead
 search string
 (matched = true, offset = 1, size = 4)
 (matched = true, offset = 1, size = 1)

@@ -4,8 +4,8 @@ recordOfNonHashRecord.chpl:22: note: this candidate did not match: WrapR.hash()
 recordOfNonHashRecord.chpl:22: note: because method call receiver with type 'R'
 recordOfNonHashRecord.chpl:22: note: is passed to formal 'this: WrapR'
 $CHPL_HOME/modules/standard/Set.chpl:290: note: other candidates are:
-$CHPL_HOME/modules/internal/Bytes.chpl:1251: note:   bytes.hash()
-$CHPL_HOME/modules/internal/String.chpl:2521: note:   string.hash()
+$CHPL_HOME/modules/internal/Bytes.chpl:1281: note:   bytes.hash()
+$CHPL_HOME/modules/internal/String.chpl:2548: note:   string.hash()
 note: and 38 other candidates, use --print-all-candidates to see them
   $CHPL_HOME/modules/standard/Set.chpl:335: called as (set(WrapR,false))._addElem(elem: WrapR) from method 'add'
   recordOfNonHashRecord.chpl:32: called as (set(WrapR,false)).add(element: WrapR)

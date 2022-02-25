@@ -602,7 +602,7 @@ module Bytes {
   }
 
   pragma "last resort"
-  deprecated "find with needle and region arguments is deprecated, use pattern and indices instead"
+  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
   inline proc bytes.find(needle: bytes,
                          region: range(?) = this.indices) : idxType {
     return this.find(needle, region);
@@ -627,7 +627,7 @@ module Bytes {
   }
 
   pragma "last resort"
-  deprecated "rfind with needle and region arguments is deprecated, use pattern and indices instead"
+  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
   inline proc bytes.rfind(needle: bytes,
                           region: range(?) = this.indices) : idxType {
     return this.rfind(needle, region);
@@ -653,7 +653,7 @@ module Bytes {
   }
 
   pragma "last resort"
-  deprecated "count with needles and regions arguments is deprecated, use pattern and indices instead"
+  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
   inline proc bytes.count(needle: bytes,
                           region: range(?) = this.indices) : int {
     return this.count(needle, region);
@@ -676,7 +676,7 @@ module Bytes {
   }
 
   pragma "last resort"
-  deprecated "replace with needle argument is deprecated, use pattern instead"
+  deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
   inline proc bytes.replace(needle: bytes,
                             replacement: bytes,
                             count: int = -1) : bytes {
