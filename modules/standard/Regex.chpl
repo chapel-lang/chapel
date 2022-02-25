@@ -535,7 +535,7 @@ record regexMatch {
   /* 0-based offset into the string or channel that matched; -1 if matched=false */
   var offset:byteIndex; // 0-based, -1 if matched==false
   /* the length of the match. 0 if matched==false */
-  var size:int; // 0 if matched==false
+  var numBytes:int; // 0 if matched==false
 }
 
 pragma "no doc"
@@ -569,7 +569,7 @@ inline proc regexMatch.chpl_cond_test_method() return this.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:regexMatch) {
-  if m.matched then return this[m.offset..#m.size];
+  if m.matched then return this[m.offset..#m.numBytes];
   else return "";
 }
 
@@ -582,7 +582,7 @@ proc string.this(m:regexMatch) {
     :returns: the portion of ``this`` referred to by the match
  */
 proc bytes.this(m:regexMatch) {
-  if m.matched then return this[m.offset:int..#m.size];
+  if m.matched then return this[m.offset:int..#m.numBytes];
   else return b"";
 }
 

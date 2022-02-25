@@ -7159,7 +7159,7 @@ pragma "no doc"
 proc channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:syserr) {
   var cur:int(64);
   var target = m.offset:int;
-  var len = m.size;
+  var len = m.numBytes;
 
   // If there was no match, return the default value of the type
   if !m.matched {
