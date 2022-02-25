@@ -551,35 +551,28 @@ override proc CyclicDom.dsiDisplayRepresentation() {
   dist.dsiDisplayRepresentation();
 }
 
-proc CyclicDom.dsiLow return whole.low;
-
-proc CyclicDom.dsiHigh return whole.high;
-
-proc CyclicDom.dsiAlignedLow return whole.alignedLow;
-
-proc CyclicDom.dsiAlignedHigh return whole.alignedHigh;
-
-proc CyclicDom.dsiAlignment return whole.alignment;
-
-proc CyclicDom.dsiStride return whole.stride;
-
-proc CyclicDom.dsiMember(i) return whole.contains(i);
-
-override proc CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
-
-proc CyclicDom.dsiDims() return whole.dims();
-
-proc CyclicDom.dsiDim(d: int) return whole.dim(d);
+// common redirects
+proc CyclicDom.dsiLow           return whole.low;
+proc CyclicDom.dsiHigh          return whole.high;
+proc CyclicDom.dsiAlignedLow    return whole.alignedLow;
+proc CyclicDom.dsiAlignedHigh   return whole.alignedHigh;
+proc CyclicDom.dsiFirst         return whole.first;
+proc CyclicDom.dsiLast          return whole.last;
+proc CyclicDom.dsiStride        return whole.stride;
+proc CyclicDom.dsiAlignment     return whole.alignment;
+proc CyclicDom.dsiNumIndices    return whole.sizeAs(uint);
+proc CyclicDom.dsiDim(d)        return whole.dim(d);
+proc CyclicDom.dsiDim(param d)  return whole.dim(d);
+proc CyclicDom.dsiDims()        return whole.dims();
+proc CyclicDom.dsiGetIndices()  return whole.getIndices();
+proc CyclicDom.dsiMember(i)     return whole.contains(i);
+proc CyclicDom.doiToString()    return whole:string;
+//proc CyclicDom.dsiSerialWrite(x) { x.write(whole); }
+proc CyclicDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
+override proc CyclicDom.dsiIndexOrder(i)              return whole.indexOrder(i);
+override proc CyclicDom.dsiMyDist()                   return dist;
 
 proc CyclicDom.getLocDom(localeIdx) return locDoms(localeIdx);
-
-override proc CyclicDom.dsiMyDist() return dist;
-
-
-
-proc CyclicDom.dsiGetIndices() {
-  return whole.getIndices();
-}
 
 proc CyclicDom.dsiSetIndices(x: domain) {
   whole = x;
@@ -607,12 +600,6 @@ proc CyclicDom.dsiSerialWrite(x) {
     x <~> whole;
   }
 }
-
-proc CyclicDom.doiToString() {
-  return whole:string;
-}
-
-proc CyclicDom.dsiNumIndices return whole.sizeAs(uint);
 
 iter CyclicDom.these() {
   for i in whole do
@@ -722,10 +709,6 @@ proc CyclicDom.dsiGetReprivatizeData() return 0;
 proc CyclicDom.dsiReprivatize(other, reprivatizeData) {
   locDoms = other.locDoms;
   whole = other.whole;
-}
-
-proc CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
-  return whole((...ranges));
 }
 
 

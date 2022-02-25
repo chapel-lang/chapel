@@ -2042,7 +2042,7 @@ module ChapelDomain {
             currInd+=hi;
           else
             currInd+=lo;
-          idx[i] = currInd;
+          idx[i] = currInd: idxType;
           rankOrder = rankOrder%div;
       }
       if(this.rank==1) then

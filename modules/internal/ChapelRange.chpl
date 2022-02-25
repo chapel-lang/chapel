@@ -1037,7 +1037,7 @@ proc range.safeCast(type t: range(?)) {
   }
 
   if tmp.stridable {
-    tmp._stride = this.stride;
+    tmp._stride = this.stride.safeCast(tmp.strType);
     tmp._alignment = chpl__idxToInt(this.alignment).safeCast(tmp.intIdxType);
     tmp._aligned = this.aligned;
   } else if this.stride != 1 {

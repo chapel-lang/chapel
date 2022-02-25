@@ -1,3 +1,11 @@
+test_dot_rank.chpl:12: warning: 1
+test_dot_rank.chpl:13: warning: 2
+test_dot_rank.chpl:14: warning: 3
+test_dot_rank.chpl:15: warning: 4
+test_dot_rank.chpl:16: warning: 1
+test_dot_rank.chpl:17: warning: 2
+test_dot_rank.chpl:18: warning: 3
+test_dot_rank.chpl:19: warning: 4
 1
 2
 3
