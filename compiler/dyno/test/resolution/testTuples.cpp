@@ -50,6 +50,28 @@ static const Module* parseModule(Context* context, const char* src) {
   return vec[0];
 }
 
+// assumes the last statement is a variable declaration for x
+// with an initialization expression.
+// Returns the type of the initializer expression.
+static QualifiedType
+parseTypeOfXInit(Context* context, const char* program) {
+  auto m = parseModule(context, program);
+  assert(m->numStmts() > 0);
+  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
+  assert(x);
+  assert(x->name() == "x");
+  auto initExpr = x->initExpression();
+  assert(initExpr);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(initExpr).type();
+  assert(qt.type());
+
+  return qt;
+}
+
+
 // assumes the last statement is a variable declaration for x.
 // returns the type of that.
 static QualifiedType
@@ -73,12 +95,12 @@ static void test1() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfX(context,
+  auto qt = parseTypeOfXInit(context,
                 R""""(
-                  const ref x = (1, 2);
+                  var x = (1, 2);
                 )"""");
 
-  assert(qt.kind() == QualifiedType::CONST_REF);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
   assert(tt->numElements() == 2);
@@ -98,14 +120,14 @@ static void test2() {
   Context ctx;
   Context* context = &ctx;
 
-  auto qt = parseTypeOfX(context,
+  auto qt = parseTypeOfXInit(context,
                 R""""(
                   record R { }
                   var r: R;
-                  const ref x = (r, r);
+                  var x = (r, r);
                 )"""");
 
-  assert(qt.kind() == QualifiedType::CONST_REF);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
   assert(tt->numElements() == 2);
@@ -124,10 +146,38 @@ static void test2() {
   assert(vt->elementType(0).type()->isRecordType());
 }
 
+static void test3() {
+  printf("test3\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfX(context,
+                R""""(
+                  record R { }
+                  var r: R;
+                  var x = (r, r);
+                )"""");
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+  assert(tt->numElements() == 2);
+  assert(tt->elementType(0) == tt->elementType(1));
+  assert(tt->elementType(0).kind() == QualifiedType::VAR);
+  assert(tt->elementType(0).type()->isRecordType());
+
+  auto rt = tt->toReferentialTuple(context);
+  assert(rt != tt);
+
+  auto vt = tt->toValueTuple(context);
+  assert(vt == tt);
+}
+
 
 int main() {
   test1();
   test2();
+  test3();
 
   return 0;
 }
