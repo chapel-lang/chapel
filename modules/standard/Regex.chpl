@@ -1189,7 +1189,7 @@ proc bytes.search(pattern: regex(bytes)):regexMatch
 
 
 pragma "last resort"
-deprecated "search with needle argument is deprecated, use pattern instead"
+deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
 proc string.search(needle: regex(string), ref captures ...?k):regexMatch
 {
   return needle.search(this, (...captures));
@@ -1210,7 +1210,7 @@ proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
 }
 
 pragma "last resort"
-deprecated "search with needle argument is deprecated, use pattern instead"
+deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
 proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
 {
   return needle.search(this, (...captures));
