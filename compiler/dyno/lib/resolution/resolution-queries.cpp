@@ -3029,7 +3029,12 @@ CallResolutionResult resolveTupleExpr(Context* context,
     eltTypes.push_back(t);
   }
 
-  auto t = TupleType::getReferentialTuple(context, std::move(eltTypes));
+  const TupleType* t = nullptr;
+  if (allType)
+    t = TupleType::getValueTuple(context, std::move(eltTypes));
+  else
+    t = TupleType::getReferentialTuple(context, std::move(eltTypes));
+
   return CallResolutionResult(QualifiedType(kind, t));
 }
 
