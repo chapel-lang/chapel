@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Time, SysCTypes;
+use Memory.Diagnostics, Time, CTypes;
 
 type elemType = int;
 

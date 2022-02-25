@@ -355,6 +355,11 @@ static bool isDeadModule(ModuleSymbol* mod) {
   if (mod == ModuleSymbol::mainModule())
     return false;
 
+  // Modules named on the command line should not be considered dead
+  // either since the init function should be called.
+  if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE))
+    return false;
+
   // Ditto for the string literals module
   if (mod == stringLiteralModule)
     return false;

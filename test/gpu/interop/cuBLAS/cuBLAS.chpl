@@ -1,9 +1,8 @@
 module cuBLAS {
 
   use C_CUBLAS;
-  public use CPtr;
-  public use SysBasic;
-  public use SysCTypes;
+
+  public use CTypes;
 
   record DevicePtr {
     type eltType;
@@ -385,9 +384,8 @@ module cuBLAS {
 }
 
   module C_CUBLAS {
-    use CPtr;
-    use SysBasic;
-    use SysCTypes;
+
+    use CTypes;
 
     //extern type complex = complex(64);
 

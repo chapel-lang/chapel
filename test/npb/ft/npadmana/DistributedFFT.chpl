@@ -42,7 +42,7 @@ prototype module DistributedFFT {
   use FFTW.C_FFTW;
   use FFT_Locks;
   use FFT_Timers;
-  use SysCTypes, CPtr;
+  use CTypes;
 
   /*
     Compile time parameters for higher performance.

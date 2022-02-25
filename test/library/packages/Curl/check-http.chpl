@@ -3,7 +3,7 @@ module CheckHttp {
   use URL;
   use FileSystem;
   use IO;
-  use SysCTypes;
+  use CTypes;
 
   config const verbose = false;
   config const bufsz = 0;

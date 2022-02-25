@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 // This code is dereved from issue github issue #15817.
 // At the time it was written it was failing to compile

@@ -48,7 +48,7 @@ INCL_CFLAGS = -I. \
               -I$(COMPILER_BUILD) \
               -I$(RUNTIME_ROOT)/include/encoding \
               -I$(THIRD_PARTY_DIR)/utf8-decoder \
-              -I$(COMPILER_ROOT)/next/include \
+              -I$(COMPILER_ROOT)/dyno/include \
 
 
 COMP_CXXFLAGS += $(INCL_CFLAGS)

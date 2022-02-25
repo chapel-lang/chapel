@@ -127,8 +127,8 @@ module LAPACK {
   /* Available LAPACK implementations for ``lapackImpl`` */
   enum LapackImpl {lapack, mkl, off};
   use LapackImpl;
-  use SysBasic;
-  use CPtr;
+  use CTypes;
+
 
   /*
     Specifies which header filename to include, based on the lapack
@@ -168,7 +168,7 @@ module LAPACK {
                    else 'lapacke.h'
                  else lapackHeader;
 
-  public use SysCTypes;
+  public use CTypes;
 
   /* Return `true` if type is supported by LAPACK */
   proc isLAPACKType(type t) param: bool {
@@ -217,10 +217,10 @@ pragma "no doc"
 */
 module ClassicLAPACK {
 
-use SysCTypes;
-use CPtr;
+use CTypes;
+
 use LAPACK;
-use SysBasic;
+
 
 pragma "no doc"
 extern proc lapack_make_complex_float(re : c_float, im : c_float) : complex(64);

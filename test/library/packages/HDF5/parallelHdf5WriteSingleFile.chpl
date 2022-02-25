@@ -2,7 +2,7 @@ config const fileName = "mydata.h5",
              dsetName = "dset";
 
 proc main {
-  use BlockDist, HDF5, HDF5.IOusingMPI, SysCTypes;
+  use BlockDist, HDF5, HDF5.IOusingMPI, CTypes;
   use Hdf5PathHelp;
 
   const pathPrefix = readPrefixEnv();

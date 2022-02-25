@@ -98,7 +98,7 @@
 #include "llvmDebug.h"
 #include "llvmVer.h"
 
-#include "../next/lib/immediates/prim_data.h"
+#include "../dyno/lib/immediates/prim_data.h"
 
 #include "global-ast-vecs.h"
 

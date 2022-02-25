@@ -114,17 +114,24 @@ writeln(r.vals);
   --------------
 */
 
+// By default, the compiler will define a hash method for any record
+// that does not define its own ``==`` or ``!=`` overloads.  This
+// permits such records to be used as the indices of associative
+// domains, the values in a :mod:`Set`, or the keys in a :mod:`Map`.
+// Users can override this default by supplying their own hash method
+// that returns a ``uint`` or ``int`` value.  For example:
+
 use Map;
 
-proc R.hash() {
+proc R.hash(): int {
   writeln("In custom hash function");
   return vals[0];
 }
 
-// Now that the record R has a ``hash`` method defined, Chapel's map
-// and associative domain will call this custom ``hash`` instead of
-// the compiler generated method for ``hash``. Note that this only works
-// for records and will not apply to defining a ``int.hash`` for example.
+// Now that the record R has a ``hash`` method defined, Chapel's,
+// ``set``, ``map``, and associative domain types will call this
+// custom ``hash`` instead of the compiler-generated method.
+
 var myMap = new map(R, int);
 var myD: domain(R);
 var myR = new R();

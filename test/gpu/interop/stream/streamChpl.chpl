@@ -1,6 +1,5 @@
-use SysCTypes;
-use SysBasic;
-use CPtr;
+use CTypes;
+
 
 param N = 10;
 

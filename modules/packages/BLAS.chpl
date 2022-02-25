@@ -211,7 +211,7 @@ module BLAS {
 
   use C_BLAS;
 
-  public use SysCTypes;
+  public use CTypes;
 
   /* Return `true` if type is supported by BLAS */
   proc isBLASType(type t) param: bool {
@@ -2492,7 +2492,7 @@ module BLAS {
 
   */
   module C_BLAS {
-    use SysCTypes, SysBasic, CPtr;
+    use CTypes;
     extern type CBLAS_INDEX = c_int;
 
     // Define the external types

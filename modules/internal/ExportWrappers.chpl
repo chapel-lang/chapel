@@ -21,8 +21,7 @@
 pragma "no doc"
 module ExportWrappers {
   use ChapelStandard;
-  use CPtr;
-  use SysCTypes;
+  use CTypes;
 
   private proc _initDynamicEndCount() {
     var endCount = _endCountAlloc(forceLocalTypes=false);

@@ -1,2 +1,2 @@
---n=10000
+--n=10000 # pidigits3-syscwarn.good
 --n=27    # pidigits-27.good

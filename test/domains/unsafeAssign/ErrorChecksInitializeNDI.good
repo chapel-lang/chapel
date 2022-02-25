@@ -1,0 +1,2 @@
+ErrorChecksInitializeNDI.chpl:7: In function 'test':
+ErrorChecksInitializeNDI.chpl:13: error: Checks in 'unsafeAssign' for arrays of non-default-initializable elements are not supported yet

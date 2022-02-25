@@ -1,4 +1,4 @@
-In foo's init
+In Foo.chpl's module init
 In useModAsString3's init
 In useModAsString.chpl's foo
 In Foo.chpl's foo

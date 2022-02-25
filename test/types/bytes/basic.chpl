@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 var b = b"this is a bytes";
 var s = "this is a string";
 var cs: c_string = "this is a c_string";
@@ -160,9 +160,9 @@ writeln(b.find(b"is")); //2
 writeln(b.rfind(b"is")); //5
 writeln(b.count(b"is")); //2
 
-writeln(b.find(b"is", region=3..)); //5
-writeln(b.rfind(b"is", region=..4)); //2
-writeln(b.count(b"is", region=..4)); //1
+writeln(b.find(b"is", indices=3..)); //5
+writeln(b.rfind(b"is", indices=..4)); //2
+writeln(b.count(b"is", indices=..4)); //1
 
 writeln(b.find(b"is is")); //2
 writeln("Make it plural ", b.replace(b"is is a", b"ese are"));

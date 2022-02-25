@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 config const n = 11;
 config param nn = 11;

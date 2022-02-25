@@ -165,11 +165,12 @@ See :mod:`GMP` for more information on how to use GMP with Chapel.
 */
 
 module BigInteger {
+  use CTypes;
   use GMP;
   use HaltWrappers;
-  use SysCTypes;
+  use CTypes;
+  use SysBasic only syserr, EFORMAT, ENOERR;
   use SysError;
-  use SysBasic;
 
   /*
     .. warning::
@@ -203,7 +204,8 @@ module BigInteger {
 
   pragma "ignore noinit"
   record bigint {
-    /* The underlying GMP C structure */
+    // The underlying GMP C structure
+    pragma "no doc"
     var mpz      : mpz_t;              // A dynamic-vector of C integers
 
     pragma "no doc"
@@ -221,7 +223,7 @@ module BigInteger {
       if _local || num.localeId == chpl_nodeID {
         mpz_init_set(this.mpz, num.mpz);
       } else {
-        var mpz_struct = num.mpzStruct();
+        var mpz_struct = num.getImpl();
 
         mpz_init(this.mpz);
 
@@ -368,12 +370,12 @@ module BigInteger {
       return ret.safeCast(int);
     }
 
-    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the :var:`mpz` field instead"
+    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the mpz field instead"
     proc numLimbs : uint {
       return chpl_gmp_mpz_nlimbs(this.mpz);
     }
 
-    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the :var:`mpz` field instead"
+    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the mpz field instead"
     proc get_limbn(n: integral) : uint {
       var   ret: uint;
 
@@ -394,7 +396,18 @@ module BigInteger {
       return ret;
     }
 
+    deprecated "mpzStruct is deprecated, please use :proc:`getImpl` instead"
     proc mpzStruct() : __mpz_struct {
+      return getImpl();
+    }
+
+    /* Return the underlying implementation of :record:`bigint`.  Currently,
+       the type returned is ``__mpz_struct``.
+
+       This method is provided as a convenience but its result may change in the
+       future.
+    */
+    proc getImpl(): __mpz_struct {
       var ret: __mpz_struct;
 
       if _local {
@@ -5286,7 +5299,7 @@ module BigInteger {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const mpz_struct = a.mpzStruct();
+        const mpz_struct = a.getImpl();
 
         chpl_gmp_get_mpz(this.mpz, a.localeId, mpz_struct);
       }

@@ -47,7 +47,7 @@ exception will be generated.
 pragma "module included by default"
 module Math {
   import HaltWrappers;
-  private use SysCTypes;
+  private use CTypes;
 
   //////////////////////////////////////////////////////////////////////////
   // Constants (included in chpldocs)

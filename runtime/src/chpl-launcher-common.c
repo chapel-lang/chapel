@@ -245,6 +245,28 @@ chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen) {
 
 
 //
+// Find the named executable in the PATH, if it's there.
+//
+char *chpl_find_executable(const char *prog_name) {
+  const char *cmd_fmt = "/usr/bin/which --skip-alias --skip-functions %s";
+  const int cmd_len
+            = strlen(cmd_fmt)     // 'which' command, as printf() format
+              - 2                 //   length of "%s" specifier
+              + strlen(prog_name) //   length of prog_name
+              + 1;                //   length of trailing '\0'
+  char cmd[cmd_len];
+  (void) snprintf(cmd, sizeof(cmd), cmd_fmt, prog_name);
+
+  // hopefully big enough; PATH_MAX is problematic, but what's better?
+  const size_t path_len = PATH_MAX;
+  char *path = chpl_mem_alloc(path_len,
+                              CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+
+  return (chpl_run_cmdstr(cmd, path, path_len) > 0) ? path : NULL;
+}
+
+
+//
 // Record environment variables set by the launcher itself.  This is
 // called back from the runtime chpl_env_set() function.
 //
@@ -315,14 +337,8 @@ void get_debugger_wrapper(int* argc, char*** argv) {
     dbg_term = "xterm";
   }
 
-  // hopefully big enough; PATH_MAX is problematic, but what's better?
-  const size_t term_path_size = PATH_MAX;
-  char *term_path = chpl_mem_alloc(term_path_size,
-                                   CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-
-  static char cmd[16] = "";
-  snprintf(cmd, sizeof(cmd), "which %s", dbg_term);
-  if (chpl_run_cmdstr(cmd, term_path, term_path_size) <= 0) {
+  char *term_path;
+  if ((term_path = chpl_find_executable(dbg_term)) == NULL) {
     static char err_msg[128] = "";
     snprintf(err_msg, sizeof(err_msg),
              "CHPL_COMM_USE_(G|LL)DB ignored because no %s", dbg_term);

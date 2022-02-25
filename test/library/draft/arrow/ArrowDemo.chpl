@@ -2,7 +2,7 @@ module ArrowDemo {
   require "Arrow.chpl";
   require "-larrow-glib", "-lglib-2.0", "-lgobject-2.0";
   use Arrow;
-  use CPtr;
+  use CTypes;
 
   proc main(){
     var arrowInt64Array: ArrowArray = new ArrowArray([1,2,3,4]);

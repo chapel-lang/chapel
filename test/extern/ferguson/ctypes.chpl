@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 var v_c_int: c_int = 0;
 var v_c_uint: c_uint = 0;

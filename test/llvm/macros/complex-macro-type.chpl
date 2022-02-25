@@ -1,6 +1,6 @@
 extern type ComplexType;
 
-use CPtr;
+use CTypes;
 
 proc main() {
   var a: ComplexType;

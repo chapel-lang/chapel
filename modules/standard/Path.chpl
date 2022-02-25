@@ -68,7 +68,7 @@ module Path {
 use List;
 use SysError, IO;
 use Sys, SysBasic;
-use CPtr;
+use CTypes;
 
 /*
    Represents generally the current directory. This starts as the directory
@@ -164,13 +164,6 @@ proc absPath(path: string): string throws {
 */
 proc absPath(f: file): string throws {
   return try absPath(f.path);
-}
-
-pragma "no doc"
-deprecated "'file.absPath()' is deprecated. Please use 'absPath(file)' instead."
-proc file.absPath(): string throws {
-  // If we don't use the namespace we get a funky compiler type error.
-  return try Path.absPath(this);
 }
 
 /* Returns the file name portion of the path provided.  For instance:
@@ -435,19 +428,6 @@ proc dirname(path: string): string {
    return res;
  }
 
-pragma "no doc"
-deprecated "'file.getParentName()' is deprecated. Please use 'dirname(realPath(file))' instead."
-proc file.getParentName(): string throws {
-  try check();
-
-  try {
-    // realPath returns a string, nothing to worry about encoding-wise here
-    return dirname(createStringWithNewBuffer(this.realPath()));
-  } catch {
-    return "unknown";
-  }
-}
-
 /* Determines whether the path specified is an absolute path.
 
    .. note::
@@ -632,18 +612,12 @@ proc realPath(f: file): string throws {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
 
   if (is_c_nil(f._file_internal)) then
-    try ioerror(EBADF:syserr, "in file.realPath");
+    try ioerror(EBADF:syserr, "in realPath with a file argument");
 
   var res: c_string;
   var err = chpl_fs_realpath_file(f._file_internal, res);
-  if err then try ioerror(err, "in file.realPath");
+  if err then try ioerror(err, "in realPath with a file argument");
   return createStringWithOwnedBuffer(res);
-}
-
-pragma "no doc"
-deprecated "'file.realPath()' is deprecated. Please use 'realPath(file)' instead."
-proc file.realPath(): string throws {
-  return try Path.realPath(this);
 }
 
 /* Compute the common prefix length between two lists of path components. */
@@ -744,12 +718,6 @@ proc relPath(path: string, start:string=curDir): string throws {
 */
 proc relPath(f: file, start:string=curDir): string throws {
   return relPath(f.path, start);
-}
-
-pragma "no doc"
-deprecated "'file.relPath()' is deprecated. Please use 'relPath(file)' instead."
-proc file.relPath(start:string=curDir): string throws {
-  return Path.relPath(this, start);
 }
 
 /*

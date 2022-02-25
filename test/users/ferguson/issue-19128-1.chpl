@@ -1,5 +1,5 @@
 use BlockDist;
-use CPtr;
+use CTypes;
 
 const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 

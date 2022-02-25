@@ -1,5 +1,5 @@
 require "header.h";
-use SysCTypes;
+use CTypes;
 
 extern proc returnIntFromIntArg(arg: real): real;
 

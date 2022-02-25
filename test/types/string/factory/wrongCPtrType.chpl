@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 var cPtr = c_malloc(int, 4);
 

@@ -1144,7 +1144,7 @@ proc inv(ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   if isDistributed(A) then
     compilerError("inv does not support distributed vectors/matrices");
 
-  use SysCTypes;
+  use CTypes;
   if Adom.rank != 2 then
     halt("Wrong rank for matrix inverse");
 
@@ -1806,7 +1806,7 @@ proc solve(A: [?Adom] ?eltType, b: [?bdom] eltType) {
 proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   where usingLAPACK && isLAPACKType(t)
 {
-  use SysCTypes;
+  use CTypes;
   use IO; // for string.format
   import LAPACK;
   require LAPACK.header;
@@ -2411,7 +2411,7 @@ This method finds P Q Matrices, where P = U + V and Q = -U + V
 it then returns X where Q*X = P.
 */
 private proc solvePQ(U: [?D], V: [D]) where usingLAPACK {
-  use SysCTypes;
+  use CTypes;
 
   var P = U + V;
   var Q = -U + V;
@@ -2423,8 +2423,6 @@ private proc solvePQ(U: [?D], V: [D]) where usingLAPACK {
 }
 
 private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
-  use SysCTypes;
-
   var P = U + V;
   var Q = -U + V;
 

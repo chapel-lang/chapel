@@ -35,6 +35,7 @@ void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
 int chpl_run_utility1K(const char *command, char *const argv[],
                        char *outbuf, int outbuflen);
 int chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen);
+char *chpl_find_executable(const char *prog_name);
 void chpl_launcher_record_env_var(const char*, const char *);
 char **chpl_bundle_exec_args(int argc, char *const argv[],
                              int largc, char *const largv[]);

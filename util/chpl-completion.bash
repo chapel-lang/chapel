@@ -32,7 +32,6 @@ _chpl ()
 --break-on-codegen \
 --break-on-codegen-id \
 --break-on-id \
---break-on-query-hash \
 --break-on-remove-id \
 --break-on-resolve-id \
 --cache-remote \
@@ -44,7 +43,6 @@ _chpl ()
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
---compiler-library-parser \
 --copy-elision \
 --copy-propagation \
 --copyright \
@@ -53,13 +51,15 @@ _chpl ()
 --dead-code-elimination \
 --debug \
 --debug-short-loc \
---debug-trace \
 --default-dist \
 --denormalize \
 --devel \
 --div-by-zero-checks \
 --dynamic \
 --dynamic-auto-local-access \
+--dyno \
+--dyno-break-on-hash \
+--dyno-debug-trace \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -157,7 +157,6 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
---no-compiler-library-parser \
 --no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
@@ -165,11 +164,12 @@ _chpl ()
 --no-dead-code-elimination \
 --no-debug \
 --no-debug-short-loc \
---no-debug-trace \
 --no-denormalize \
 --no-devel \
 --no-div-by-zero-checks \
 --no-dynamic-auto-local-access \
+--no-dyno \
+--no-dyno-debug-trace \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \

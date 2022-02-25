@@ -40,7 +40,7 @@ module MemTracking
 
     // ** In minimal-modules mode, I've hard-coded these size_t
     // arguments to uint(64) rather than using the size_t aliases
-    // in SysCTypes.chpl because doing that requires dragging in a
+    // in CTypes.chpl because doing that requires dragging in a
     // bunch of other ChapelBase code.  My assumption here is that
     // size_t will either be, or be compatible with, uint(64) for
     // most developers.  If that turns out not to be the case, we
