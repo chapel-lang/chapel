@@ -21,1027 +21,975 @@
 #include "chpl/uast/chpl-syntax-printer.h"
 
 
+using namespace chpl;
+using namespace uast;
 
-namespace chpl {
-
-  using namespace uast;
-
-  static const char* kindToString(Decl::Linkage kind) {
-    switch (kind) {
-      case Decl::Linkage::DEFAULT_LINKAGE: assert(false);
-      case Decl::Linkage::EXTERN: return "extern";
-      case Decl::Linkage::EXPORT: return "export";
-    }
-    assert(false);
+static const char* kindToString(Decl::Linkage kind) {
+  switch (kind) {
+    case Decl::Linkage::DEFAULT_LINKAGE: assert(false);
+    case Decl::Linkage::EXTERN: return "extern";
+    case Decl::Linkage::EXPORT: return "export";
   }
+  assert(false);
+}
 
-  static const char* kindToString(Formal::Intent kind) {
-    switch (kind) {
-      case Formal::Intent::CONST: return "const";
-      case Formal::Intent::CONST_REF: return "const ref";
-      case Formal::Intent::REF: return "ref";
-      case Formal::Intent::IN: return "in";
-      case Formal::Intent::CONST_IN: return "const in";
-      case Formal::Intent::OUT: return "out";
-      case Formal::Intent::INOUT: return "inout";
-      case Formal::Intent::PARAM: return "param";
-      case Formal::Intent::TYPE: return "type";
-      case Formal::Intent::DEFAULT_INTENT: assert(false);
-    }
-    assert(false);
-    return "";
+static const char* kindToString(Function::Kind kind) {
+  switch (kind) {
+    case Function::Kind::PROC: return "proc";
+    case Function::Kind::ITER: return "iter";
+    case Function::Kind::OPERATOR: return "operator";
   }
+  assert(false);
+  return "";
+}
 
-  static const char* kindToString(Function::Kind kind) {
-    switch (kind) {
-      case Function::Kind::PROC: return "proc";
-      case Function::Kind::ITER: return "iter";
-      case Function::Kind::OPERATOR: return "operator";
-    }
-    assert(false);
-    return "";
+static const char* kindToString(Function::Visibility kind) {
+  switch (kind) {
+    case Function::Visibility::PRIVATE: return "private";
+    case Function::Visibility::PUBLIC: return "public";
+    case Function::Visibility::DEFAULT_VISIBILITY: assert(false);
   }
+  assert(false);
+  return "";
+}
 
-  static const char* kindToString(Function::ReturnIntent kind) {
-    switch (kind) {
-      case Function::ReturnIntent::CONST: return "const";
-      case Function::ReturnIntent::REF: return "ref";
-      case Function::ReturnIntent::CONST_REF: return "const ref";
-      case Function::ReturnIntent::PARAM: return "param";
-      case Function::ReturnIntent::TYPE: return "type";
-      case Function::ReturnIntent::DEFAULT_RETURN_INTENT: assert(false);
-    }
-    assert(false);
-    return "";
+static const char* kindToString(IntentList kind) {
+  switch (kind) {
+    case IntentList::DEFAULT_INTENT: assert(false);
+    case IntentList::CONST_INTENT: return "const";
+    case IntentList::VAR: return "var";
+    case IntentList::CONST_VAR: return "const var";
+    case IntentList::CONST_REF: return "const ref";
+    case IntentList::REF: return "ref";
+    case IntentList::IN: return "in";
+    case IntentList::CONST_IN: return "const in";
+    case IntentList::OUT: return "out";
+    case IntentList::INOUT: return "inout";
+    case IntentList::PARAM: return "param";
+    case IntentList::TYPE: return "type";
+    default: return "";
   }
+  return "";
+}
 
-  static const char* kindToString(Function::Visibility kind) {
-    switch (kind) {
-      case Function::Visibility::PRIVATE: return "private";
-      case Function::Visibility::PUBLIC: return "public";
-      case Function::Visibility::DEFAULT_VISIBILITY: assert(false);
-    }
-    assert(false);
-    return "";
+static const char* kindToString(Module::Kind kind) {
+  switch (kind) {
+    case Module::Kind::DEFAULT_MODULE_KIND: assert(false);
+    case Module::Kind::IMPLICIT: return "";
+    case Module::Kind::PROTOTYPE: return "prototype";
   }
+  assert(false);
+}
 
-  static const char* kindToString(IntentList kind) {
-    switch (kind) {
-      case IntentList::DEFAULT_INTENT: assert(false);
-      case IntentList::CONST_INTENT: return "const";
-      case IntentList::VAR: return "var";
-      case IntentList::CONST_VAR: return "const var";
-      case IntentList::CONST_REF: return "const ref";
-      case IntentList::REF: return "ref";
-      case IntentList::IN: return "in";
-      case IntentList::CONST_IN: return "const in";
-      case IntentList::OUT: return "out";
-      case IntentList::INOUT: return "inout";
-      case IntentList::PARAM: return "param";
-      case IntentList::TYPE: return "type";
-      default: return "";
-    }
-    return "";
+static const char* kindToString(New::Management kind) {
+  switch (kind) {
+    case New::Management::BORROWED: return "borrowed";
+    case New::Management::OWNED: return "owned";
+    case New::Management::SHARED: return "shared";
+    case New::Management::UNMANAGED: return "unmanaged";
+    case New::Management::DEFAULT_MANAGEMENT: assert(false);
+    default:
+      assert(false);
   }
+  assert(false);
+  return "";
+}
 
-  static const char* kindToString(Module::Kind kind) {
-    switch (kind) {
-      case Module::Kind::DEFAULT_MODULE_KIND: assert(false);
-      case Module::Kind::IMPLICIT: return "";
-      case Module::Kind::PROTOTYPE: return "prototype";
-    }
-    assert(false);
+static const char* kindToString(VisibilityClause::LimitationKind kind) {
+  switch (kind) {
+    case VisibilityClause::LimitationKind::NONE: assert(false);
+    case VisibilityClause::LimitationKind::ONLY: return "only";
+    case VisibilityClause::LimitationKind::EXCEPT: return "except";
+    case VisibilityClause::LimitationKind::BRACES: assert(false);
+    default: return "";
   }
+}
 
-  static const char* kindToString(New::Management kind) {
-    switch (kind) {
-      case New::Management::BORROWED: return "borrowed";
-      case New::Management::OWNED: return "owned";
-      case New::Management::SHARED: return "shared";
-      case New::Management::UNMANAGED: return "unmanaged";
-      case New::Management::DEFAULT_MANAGEMENT: assert(false);
-      default:
-        assert(false);
-    }
-    assert(false);
-    return "";
+
+/** visit each elt of begin..end, outputting `separator` between each.
+ * `surroundBegin` and `surroundEnd` are output before and after respectively
+ * if not null */
+template<typename It>
+void interpose(std::ostream& os, It begin, It end, const char* separator,
+               const char* surroundBegin=nullptr,
+               const char* surroundEnd=nullptr) {
+  bool first = true;
+  if (surroundBegin) os << surroundBegin;
+  for (auto it = begin; it != end; it++) {
+    if (!first) os << separator;
+    printChapelSyntax(os,*it);
+    first = false;
   }
+  if (surroundEnd) os << surroundEnd;
+}
 
-  static const char* kindToString(TaskVar::Intent kind) {
-    switch (kind) {
-      case TaskVar::Intent::VAR: return "var";
-      case TaskVar::Intent::CONST: return "const";
-      case TaskVar::Intent::CONST_REF: return "const ref";
-      case TaskVar::Intent::REF: return "ref";
-      case TaskVar::Intent::IN: return "in";
-      case TaskVar::Intent::CONST_IN: return "const in";
-    }
-    assert(false);
+template<typename T>
+void interpose(std::ostream& os, T xs, const char* separator,
+               const char* surroundBegin=nullptr,
+               const char* surroundEnd=nullptr) {
+  interpose(os, xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
+}
+
+
+/*
+  * helper for printing descendants of simpleBlockLike to handle when to print
+  * the optional opening keyword and if braces should follow that keyword
+  */
+template<typename It>
+void printBlockWithStyle(std::ostream& os, BlockStyle style,  It begin, It end,
+                         const char* implicitOpeningKeyword=nullptr) {
+  if (implicitOpeningKeyword && (style == BlockStyle::IMPLICIT
+      || style == uast::BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK)) {
+    os << implicitOpeningKeyword;
   }
-
-  static const char* kindToString(TupleDecl::IntentOrKind kind) {
-    switch(kind) {
-      case TupleDecl::IntentOrKind::DEFAULT_INTENT: assert(false);
-      case TupleDecl::IntentOrKind::CONST_INTENT: return "const";
-      case TupleDecl::IntentOrKind::VAR: return "var";
-      case TupleDecl::IntentOrKind::CONST_VAR: return "const var";
-      case TupleDecl::IntentOrKind::CONST_REF: return "const ref";
-      case TupleDecl::IntentOrKind::REF: return "ref";
-      case TupleDecl::IntentOrKind::IN: return "in";
-      case TupleDecl::IntentOrKind::CONST_IN: return "const in";
-      case TupleDecl::IntentOrKind::OUT: return "out";
-      case TupleDecl::IntentOrKind::INOUT: return "inout";
-      case TupleDecl::IntentOrKind::INDEX: assert(false);
-      case TupleDecl::IntentOrKind::PARAM: return "param";
-      case TupleDecl::IntentOrKind::TYPE: return "type";
-    }
-    assert(false);
+  if (style != BlockStyle::IMPLICIT) {
+    interpose(os, begin, end, "\n", "{","}");
+  } else {
+    interpose(os, begin, end, "\n");
   }
-
-  static const char* kindToString(Variable::Kind kind) {
-    switch (kind) {
-      case Variable::Kind::VAR: return "var";
-      case Variable::Kind::CONST: return "const";
-      case Variable::Kind::PARAM: return "param";
-      case Variable::Kind::TYPE: return "type";
-      case Variable::Kind::REF: return "ref";
-      case Variable::Kind::CONST_REF: return "const ref";
-      case Variable::Kind::INDEX: assert(false);
-    }
-    assert(false);
-    return "";
-  }
-
-  static const char* kindToString(VisibilityClause::LimitationKind kind) {
-    switch (kind) {
-      case VisibilityClause::LimitationKind::NONE: assert(false);
-      case VisibilityClause::LimitationKind::ONLY: return "only";
-      case VisibilityClause::LimitationKind::EXCEPT: return "except";
-      case VisibilityClause::LimitationKind::BRACES: assert(false);
-      default: return "";
-    }
-  }
+}
 
 
-  /** visit each elt of begin..end, outputting `separator` between each.
-   * `surroundBegin` and `surroundEnd` are output before and after respectively
-   * if not null */
-  template<typename It>
-  void interpose(std::ostream& os, It begin, It end, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
-    bool first = true;
-    if (surroundBegin) os << surroundBegin;
-    for (auto it = begin; it != end; it++) {
-      if (!first) os << separator;
-      printAst(os,*it);
-      first = false;
-    }
-    if (surroundEnd) os << surroundEnd;
-  }
+template<typename T>
+void printBlockWithStyle(std::ostream& os, BlockStyle style,  T xs,
+                         const char* implicitOpeningKeyword=nullptr) {
+  printBlockWithStyle(os, style, xs.begin(), xs.end(), implicitOpeningKeyword);
+}
 
-  template<typename T>
-  void interpose(std::ostream& os, T xs, const char* separator, const char* surroundBegin=nullptr, const char* surroundEnd=nullptr) {
-    interpose(os, xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
-  }
+template<typename T>
+void visitLiteral(std::ostream& ss_, const T* node) {
+  ss_ << node->text().c_str();
+}
+
+// TODO: Nesting
+// TODO: Semicolons
+// TODO: Newlines
 
 
-  /*
-   * helper for printing descendants of simpleBlockLike to handle when to print
-   * the optional opening keyword and if braces should follow that keyword
-   */
-  template<typename It>
-  void printBlockWithStyle(std::ostream& os, BlockStyle style,  It begin, It end, const char* implicitOpeningKeyword=nullptr) {
-    if (implicitOpeningKeyword && (style == BlockStyle::IMPLICIT || style == uast::BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK)) {
-      os << implicitOpeningKeyword;
-    }
-    if (style != BlockStyle::IMPLICIT) {
-      interpose(os, begin, end, "\n", "{","}");
-    } else {
-      interpose(os, begin, end, "\n");
-    }
-  }
+struct ChplSyntaxVisitor {
+  std::ostringstream ss_;
+  ChplSyntaxVisitor(std::ostringstream ss_ = std::ostringstream()) {}
 
-
-  template<typename T>
-  void printBlockWithStyle(std::ostream& os, BlockStyle style,  T xs, const char* implicitOpeningKeyword=nullptr) {
-    printBlockWithStyle(os, style, xs.begin(), xs.end(), implicitOpeningKeyword);
-  }
-
-  template<typename T>
-  void visitLiteral(std::ostream& ss_, const T* node) {
-    ss_ << node->text().c_str();
-  }
-
-  // TODO: Nesting
-  // TODO: Semicolons
-  // TODO: Newlines
-
-
-  struct ChplSyntaxVisitor {
-    std::ostringstream ss_;
-    ChplSyntaxVisitor(std::ostringstream ss_ = std::ostringstream()) {}
-
-    void printLinkages(const Decl* node) {
-      if (node->linkage() != Decl::Linkage::DEFAULT_LINKAGE) {
-        ss_ << kindToString(node->linkage()) << " ";
-        if (node->linkageName() != nullptr) {
-          printAst(ss_, node->linkageName());
-          ss_ << " ";
-        }
-      }
-    }
-
-    void visit(const uast::ASTNode* node) {
-      ss_ << tagToString(node->tag());
-    }
-
-    void visit(const Array* node) {
-      interpose(ss_, node->children(), ", ", "[", "]");
-    }
-
-    void visit(const As* node) {
-      printAst(ss_, node->symbol());
-      ss_ << " as ";
-      printAst(ss_, node->rename());
-    }
-
-    //Attributes
-
-    void visit(const Begin* node) {
-      ss_ << "begin ";
-      if (node->withClause()) {
-        printAst(ss_, node->withClause());
+  void printLinkage(const Decl* node) {
+    if (node->linkage() != Decl::Linkage::DEFAULT_LINKAGE) {
+      ss_ << kindToString(node->linkage()) << " ";
+      if (node->linkageName() != nullptr) {
+        printChapelSyntax(ss_, node->linkageName());
         ss_ << " ";
       }
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
     }
+  }
 
-    void visit(const Block* node) {
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
-    }
+  void visit(const uast::ASTNode* node) {
+    assert(false && "Unhandled uAST node");
+  }
 
-    void visit(const BoolLiteral* node) {
-      ss_ << (node->value() ? "true" : "false");
-    }
+  void visit(const Array* node) {
+    interpose(ss_, node->children(), ", ", "[", "]");
+  }
 
-    void visit(const BracketLoop* node) {
-      ss_ << "[";
-      if (node->index()) {
-        printAst(ss_, node->index());
-        ss_ << " in ";
-      }
-      printAst(ss_, node->iterand());
-      if (node->withClause()) {
-        ss_<< " ";
-        printAst(ss_, node->withClause());
-      }
-      ss_ << "]";
-      if (node->numStmts() > 0) {
-        ss_ << " ";
-        interpose(ss_, node->stmts(), "");
-      }
-    }
+  void visit(const As* node) {
+    printChapelSyntax(ss_, node->symbol());
+    ss_ << " as ";
+    printChapelSyntax(ss_, node->rename());
+  }
 
-    void visit(const Break* node) {
-      ss_ << "break";
-      if (node->target()) {
-        ss_<< " ";
-        printAst(ss_, node->target());
-      }
-      ss_ << ";";
-    }
+  //Attributes
 
-    //builder
-    //builderResult
-
-    void visit(const BytesLiteral* node) {
-      ss_ << "b\"" << quoteStringForC(std::string(node->str().c_str())) << '"';
-    }
-
-    void visit(const Catch* node) {
-      ss_ << "catch ";
-      if (node->error()){
-        if (node->hasParensAroundError()) {
-          ss_ << "(";
-          ss_ << node->error()->name().c_str();
-          if (const Expression* te = node->error()->toVariable()->typeExpression()) {
-            ss_ << " : ";
-            printAst(ss_, te);
-          }
-          ss_ << ") ";
-        } else {
-          ss_ << node->error()->name().c_str();
-          if (const Expression* te = node->error()->toVariable()->typeExpression()) {
-            ss_ << " : ";
-            printAst(ss_, te);
-          }
-          ss_ << " ";
-        }
-      }
-      interpose(ss_, node->stmts(), "\n","{", "}");
-    }
-
-    void visit(const Class* node) {
-      ss_ << "class ";
-      ss_ << node->name().c_str() << " ";
-      if (node->parentClass() != nullptr) {
-        ss_ << ": ";
-        printAst(ss_, node->parentClass());
-        ss_ << " ";
-      }
-      interpose(ss_, node->decls(), "\n", "{", "}");
-    }
-
-    void visit(const Cobegin* node) {
-      ss_ << "cobegin ";
-      if (node->withClause()) {
-        printAst(ss_, node->withClause());
-        ss_<< " ";
-      }
-      interpose(ss_, node->taskBodies(), "\n", "{","}");
-    }
-
-    void visit(const Coforall* node) {
-      ss_ << "coforall ";
-
-      if (node->index()) {
-        printAst(ss_, node->index());
-        ss_ << " in ";
-      }
-      printAst(ss_, node->iterand());
-      if (node->withClause()) {
-        ss_<< " ";
-        printAst(ss_, node->withClause());
-      }
+  void visit(const Begin* node) {
+    ss_ << "begin ";
+    if (node->withClause()) {
+      printChapelSyntax(ss_, node->withClause());
       ss_ << " ";
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
     }
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
+  }
 
-    void visit(const Comment* node){
-      // TODO: Discuss if we want to provide comments back
-      ss_ << node->c_str();
-    }
+  void visit(const Block* node) {
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
+  }
 
-    void visit(const Conditional* node) {
-      ss_ << "if ";
-      printAst(ss_, node->condition());
-      ss_ << " ";
-      printBlockWithStyle(ss_, node->thenBlockStyle(), node->thenStmts(), "then ");
-      if (node->hasElseBlock()) {
-        ss_ << " else ";
-        printBlockWithStyle(ss_, node->elseBlockStyle(), node->elseStmts());
-      }
-    }
+  void visit(const BoolLiteral* node) {
+    ss_ << (node->value() ? "true" : "false");
+  }
 
-    void visit(const CStringLiteral* node) {
-      ss_ << "c\"" << quoteStringForC(std::string(node->str().c_str())) << '"';
-    }
-
-    void visit(const Defer* node) {
-      ss_ << "defer ";
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
-    }
-
-    void visit(const Delete* node) {
-      ss_ << "delete ";
-      interpose(ss_, node->exprs(), ", ");
-    }
-
-    void visit(const Domain* node) {
-      if (node->numExprs() == 1 && node->expr(0)->isTypeQuery()) {
-        printAst(ss_, node->expr(0)->toTypeQuery());
-      } else if (node->numExprs() == 0) {
-        // do nothing
-      } else {
-        interpose(ss_, node->exprs(), ", ", "{", "}");
-      }
-    }
-
-    void visit(const Dot* node) {
-      printAst(ss_, node->receiver());
-      ss_ << "." << node->field().c_str();
-    }
-
-    void visit(const DoWhile* node) {
-      ss_ << "do ";
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
-      ss_ << " while ";
-      printAst(ss_, node->condition());
-    }
-
-    void visit(const Enum* node) {
-      ss_ << "enum " << node->name().c_str() << " ";
-      interpose(ss_, node->enumElements(), ", ", "{ ", " }");
-    }
-
-    void visit(const EnumElement* node) {
-      ss_ << node->name().c_str();
-      if (const Expression* ie = node->initExpression()) {
-        ss_ <<  " = ";
-        printAst(ss_, ie);
-      }
-    }
-
-    //erroneousExpression
-
-    void visit(const ExternBlock* node) {
-      ss_ << "extern {\n";
-      ss_ << node->code();
-      ss_ << "}";
-    }
-
-    void visit(const FnCall* node) {
-      const Expression* callee = node->calledExpression();
-      if (!callee) {
-        printf("ERROR %s\n", asttags::tagToString(node->tag()));
-        node->stringify(std::cerr, StringifyKind::CHPL_SYNTAX);
-      }
-      assert(callee);  // This should be true because OpCall is handled
-
-      printAst(ss_, callee);
-      if (callee->isIdentifier() && (callee->toIdentifier()->name() == "borrowed" || callee->toIdentifier()->name() == "owned"
-                                     || callee->toIdentifier()->name() == "unmanaged" || callee->toIdentifier()->name() == "shared")) {
-        ss_ << " ";
-        printAst(ss_, node->actual(0));
-      } else {
-        if (node->callUsedSquareBrackets()) {
-          interpose(ss_, node->actuals(), ", ", "[", "]");
-        } else {
-          interpose(ss_, node->actuals(), ", ", "(", ")");
-        }
-      }
-
-    }
-
-    void visit(const For* node) {
-      ss_ << "for ";
-      if (node->isParam()) {
-        ss_ << "param ";
-      }
-      if (node->index()) {
-        printAst(ss_, node->index());
-        ss_ << " in ";
-      }
-      printAst(ss_, node->iterand());
-      ss_ << " ";
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
-    }
-
-    void visit(const Forall* node) {
-      ss_ << "forall ";
-
-      if (node->index()) {
-        printAst(ss_, node->index());
-        ss_ << " in ";
-      }
-      printAst(ss_, node->iterand());
-      if (node->withClause()) {
-        ss_<< " ";
-        printAst(ss_, node->withClause());
-      }
-      ss_ << " ";
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
-    }
-
-    void visit(const Foreach* node) {
-      ss_ << "foreach ";
-
-      if (node->index()) {
-        printAst(ss_, node->index());
-        ss_ << " in ";
-      }
-      printAst(ss_, node->iterand());
-      ss_ << " ";
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
-    }
-
-    void visit(const Formal* node) {
-      if (node->intent() != Formal::DEFAULT_INTENT) {
-        ss_ << kindToString(node->intent()) << " ";
-      }
-      ss_ << node->name().str();
-      if (const Expression* te = node->typeExpression()) {
-        ss_ << ": ";
-        printAst(ss_, te);
-      }
-      if (const Expression* ie = node->initExpression()) {
-        ss_ << " = ";
-        printAst(ss_, ie);
-      }
-    }
-
-    void visit(const ForwardingDecl* node) {
-      ss_ << "forwarding ";
-      if (node->expr()) {
-        printAst(ss_, node->expr());
-      }
-    }
-
-    void visit(const Function* node) {
-
-      printLinkages(node);
-
-      if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
-        ss_ << kindToString(node->visibility()) << " ";
-      }
-
-      if (node->isOverride()) {
-        ss_ << "override ";
-      } else if (node->isInline()) {
-        ss_ << "inline ";
-      }
-
-      // Function Name
-      ss_ << kindToString(node->kind()) << " " << node->name().str();
-
-      // Formals
-      int numThisFormal = node->thisFormal() ? 1 : 0;
-      int nFormals = node->numFormals() - numThisFormal;
-      if (nFormals == 0 && node->isParenless()) {
-        // pass
-      } else if (nFormals == 0) {
-        ss_ << "()";
-      } else {
-        auto it = node->formals();
-        interpose(ss_, it.begin() + numThisFormal, it.end(), ", ", "(", ")");
-      }
-
-      // Return type
-      if (const Expression* e = node->returnType()) {
-        ss_ << " : ";
-        printAst(ss_, e);
-      }
-
-      // Return Intent
-      if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-        ss_ << " " << kindToString(node->returnIntent());
-      }
-
-      interpose(ss_, node->stmts(), "\n", " {", "}");
-
-    }
-
-    void visit(const Identifier* node) {
-      ss_ << node->name().str();
-    }
-
-    void visit(const ImagLiteral* node) { return visitLiteral(ss_, node); }
-
-    void visit(const Import* node) {
-      if (node->visibility() != Decl::Visibility::DEFAULT_VISIBILITY) {
-        ss_ << kindToString(node->visibility());
-      }
-      ss_ << "import ";
-      interpose(ss_, node->visibilityClauses(), ", ");
-    }
-
-    void visit(const Include* node) {
-      ss_ << "include ";
-      if (node->visibility() != Decl::DEFAULT_VISIBILITY) {
-        ss_ << kindToString(node->visibility()) << " ";
-      }
-      if (node->isPrototype()) {
-        ss_ << "prototype ";
-      }
-      ss_ << "module ";
-      ss_ << node->name().c_str();
-    }
-
-    void visit(const IntLiteral* node)  { return visitLiteral(ss_, node); }
-
-    void visit(const Label* node) {
-      ss_ << "label ";
-      ss_ << node->name().c_str() << " ";
-      printAst(ss_, node->loop());
-    }
-
-    void visit(const Let* node) {
-      ss_ << "let ";
-      // custom handling to avoid printing storage kind as variables would
-      // normally do
-      // TODO: Can we eliminate or generalize this in a better way?
-      for (auto decl : node->decls()) {
-        const Variable* var = decl->toVariable();
-        ss_ << var->name().c_str();
-        if (const Expression *te = var->typeExpression()) {
-          ss_ << ": ";
-          printAst(ss_, te);
-        }
-        if (const Expression *ie = var->initExpression()) {
-          ss_ << " = ";
-          printAst(ss_, ie);
-        }
-      }
+  void visit(const BracketLoop* node) {
+    ss_ << "[";
+    if (node->index()) {
+      printChapelSyntax(ss_, node->index());
       ss_ << " in ";
-      printAst(ss_, node->expression());
     }
-
-    void visit(const Local* node) {
-      ss_ << "local ";
-      if (node->condition()) {
-        printAst(ss_, node->condition());
-        ss_ << " ";
-      }
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printChapelSyntax(ss_, node->iterand());
+    if (node->withClause()) {
+      ss_<< " ";
+      printChapelSyntax(ss_, node->withClause());
     }
-
-    void visit(const Manage* node) {
-      ss_ << "manage ";
-      interpose(ss_, node->managers(), ", ");
+    ss_ << "]";
+    if (node->numStmts() > 0) {
       ss_ << " ";
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+      interpose(ss_, node->stmts(), "");
+    }
+  }
+
+  void visit(const Break* node) {
+    ss_ << "break";
+    if (node->target()) {
+      ss_<< " ";
+      printChapelSyntax(ss_, node->target());
+    }
+  }
+
+  void visit(const BytesLiteral* node) {
+    ss_ << "b\"" << quoteStringForC(std::string(node->str().c_str())) << '"';
+  }
+
+  void visit(const Catch* node) {
+    ss_ << "catch ";
+    if (node->error()){
+      if (node->hasParensAroundError()) ss_ << "(";
+      ss_ << node->error()->name().c_str();
+      if (const Expression* te = node->error()->toVariable()->typeExpression()) {
+        ss_ << " : ";
+        printChapelSyntax(ss_, te);
+      }
+      if (node->hasParensAroundError()) ss_ << ")";
+      ss_ << " ";
+    }
+    interpose(ss_, node->stmts(), "\n","{", "}");
+  }
+
+  void visit(const Class* node) {
+    ss_ << "class ";
+    ss_ << node->name().c_str() << " ";
+    if (node->parentClass() != nullptr) {
+      ss_ << ": ";
+      printChapelSyntax(ss_, node->parentClass());
+      ss_ << " ";
+    }
+    interpose(ss_, node->decls(), "\n", "{", "}");
+  }
+
+  void visit(const Cobegin* node) {
+    ss_ << "cobegin ";
+    if (node->withClause()) {
+      printChapelSyntax(ss_, node->withClause());
+      ss_<< " ";
+    }
+    interpose(ss_, node->taskBodies(), "\n", "{","}");
+  }
+
+  void visit(const Coforall* node) {
+    ss_ << "coforall ";
+
+    if (node->index()) {
+      printChapelSyntax(ss_, node->index());
+      ss_ << " in ";
+    }
+    printChapelSyntax(ss_, node->iterand());
+    if (node->withClause()) {
+      ss_<< " ";
+      printChapelSyntax(ss_, node->withClause());
+    }
+    ss_ << " ";
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+  }
+
+  void visit(const Comment* node){
+    // TODO: Discuss if we want to provide comments back
+    ss_ << node->c_str();
+  }
+
+  void visit(const Conditional* node) {
+    ss_ << "if ";
+    printChapelSyntax(ss_, node->condition());
+    ss_ << " ";
+    printBlockWithStyle(ss_, node->thenBlockStyle(), node->thenStmts(), "then ");
+    if (node->hasElseBlock()) {
+      ss_ << " else ";
+      printBlockWithStyle(ss_, node->elseBlockStyle(), node->elseStmts());
+    }
+  }
+
+  void visit(const CStringLiteral* node) {
+    ss_ << "c\"" << quoteStringForC(std::string(node->str().c_str())) << '"';
+  }
+
+  void visit(const Defer* node) {
+    ss_ << "defer ";
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
+  }
+
+  void visit(const Delete* node) {
+    ss_ << "delete ";
+    interpose(ss_, node->exprs(), ", ");
+  }
+
+  void visit(const Domain* node) {
+    if (node->numExprs() == 1 && node->expr(0)->isTypeQuery()) {
+      printChapelSyntax(ss_, node->expr(0)->toTypeQuery());
+    } else if (node->numExprs() == 0) {
+      // do nothing
+    } else {
+      interpose(ss_, node->exprs(), ", ", "{", "}");
+    }
+  }
+
+  void visit(const Dot* node) {
+    printChapelSyntax(ss_, node->receiver());
+    ss_ << "." << node->field().c_str();
+  }
+
+  void visit(const DoWhile* node) {
+    ss_ << "do ";
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
+    ss_ << " while ";
+    printChapelSyntax(ss_, node->condition());
+  }
+
+  void visit(const Enum* node) {
+    ss_ << "enum " << node->name().c_str() << " ";
+    interpose(ss_, node->enumElements(), ", ", "{ ", " }");
+  }
+
+  void visit(const EnumElement* node) {
+    ss_ << node->name().c_str();
+    if (const Expression* ie = node->initExpression()) {
+      ss_ <<  " = ";
+      printChapelSyntax(ss_, ie);
+    }
+  }
+
+  void visit(const ErroneousExpression* node) {
+    ss_ << "<ERROR: Erroneous Expression>";
+  }
+
+  void visit(const ExternBlock* node) {
+    ss_ << "extern {\n";
+    ss_ << node->code();
+    ss_ << "}";
+  }
+
+  void visit(const FnCall* node) {
+    const Expression* callee = node->calledExpression();
+    assert(callee);
+    printChapelSyntax(ss_, callee);
+    if (callee->isIdentifier() &&
+       (callee->toIdentifier()->name() == "borrowed"
+       || callee->toIdentifier()->name() == "owned"
+       || callee->toIdentifier()->name() == "unmanaged"
+       || callee->toIdentifier()->name() == "shared")) {
+      ss_ << " ";
+      printChapelSyntax(ss_, node->actual(0));
+    } else {
+      if (node->callUsedSquareBrackets()) {
+        interpose(ss_, node->actuals(), ", ", "[", "]");
+      } else {
+        interpose(ss_, node->actuals(), ", ", "(", ")");
+      }
     }
 
-    void visit(const Module* node) {
-      if (node->visibility() != Decl::Visibility::DEFAULT_VISIBILITY) {
-        ss_ << kindToString(node->visibility()) << " ";
-      }
-      if (node->kind() != Module::Kind::DEFAULT_MODULE_KIND ) {
-        ss_ << kindToString(node->kind()) << " ";
-      }
-      ss_ << "module ";
-      ss_ << node->name().c_str() << " ";
-      interpose(ss_, node->stmts(), "\n", "{", "}");
+  }
+
+  void visit(const For* node) {
+    ss_ << "for ";
+    if (node->isParam()) {
+      ss_ << "param ";
+    }
+    if (node->index()) {
+      printChapelSyntax(ss_, node->index());
+      ss_ << " in ";
+    }
+    printChapelSyntax(ss_, node->iterand());
+    ss_ << " ";
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+  }
+
+  void visit(const Forall* node) {
+    ss_ << "forall ";
+
+    if (node->index()) {
+      printChapelSyntax(ss_, node->index());
+      ss_ << " in ";
+    }
+    printChapelSyntax(ss_, node->iterand());
+    if (node->withClause()) {
+      ss_<< " ";
+      printChapelSyntax(ss_, node->withClause());
+    }
+    ss_ << " ";
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+  }
+
+  void visit(const Foreach* node) {
+    ss_ << "foreach ";
+
+    if (node->index()) {
+      printChapelSyntax(ss_, node->index());
+      ss_ << " in ";
+    }
+    printChapelSyntax(ss_, node->iterand());
+    ss_ << " ";
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+  }
+
+  void visit(const Formal* node) {
+    if (node->intent() != Formal::DEFAULT_INTENT) {
+      ss_ << kindToString((IntentList) node->intent()) << " ";
+    }
+    ss_ << node->name().str();
+    if (const Expression* te = node->typeExpression()) {
+      ss_ << ": ";
+      printChapelSyntax(ss_, te);
+    }
+    if (const Expression* ie = node->initExpression()) {
+      ss_ << " = ";
+      printChapelSyntax(ss_, ie);
+    }
+  }
+
+  void visit(const ForwardingDecl* node) {
+    ss_ << "forwarding ";
+    if (node->expr()) {
+      printChapelSyntax(ss_, node->expr());
+    }
+  }
+
+  void visit(const Function* node) {
+
+    printLinkage(node);
+
+    if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
+      ss_ << kindToString(node->visibility()) << " ";
     }
 
-    void visit(const MultiDecl* node) {
-      ss_ << "var ";
+    if (node->isOverride()) {
+      assert(node->linkage() == Decl::Linkage::DEFAULT_LINKAGE);
+      ss_ << "override ";
+    } else if (node->isInline()) {
+      assert(node->linkage() == Decl::Linkage::DEFAULT_LINKAGE);
+      ss_ << "inline ";
+    }
 
-      // TODO: Can this be generalized between TupleDecl and MultiDecl?
-      std::string delimiter = "";
-      for (auto decl : node->decls()) {
-        ss_ << delimiter;
-        ss_ << decl->toVariable()->name().c_str();
-        if (const Expression* te = decl->toVariable()->typeExpression()) {
+    // Function Kind (proc, iter, ...)
+    ss_ << kindToString(node->kind());
+    ss_ << " ";
+
+    // storage kind
+    if (node->thisFormal() != nullptr
+        && node->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
+      ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
+    }
+
+    // secondary methods
+    if (node->isMethod() && !node->isPrimaryMethod()
+        && node->thisFormal()->child(0)->isIdentifier()) {
+      ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
+    }
+
+    // Function Name
+    ss_ << " " << node->name().str();
+
+    // Formals
+    int numThisFormal = node->thisFormal() ? 1 : 0;
+    int nFormals = node->numFormals() - numThisFormal;
+    if (nFormals == 0 && node->isParenless()) {
+      // pass
+    } else if (nFormals == 0) {
+      ss_ << "()";
+    } else {
+      auto it = node->formals();
+      interpose(ss_, it.begin() + numThisFormal, it.end(), ", ", "(", ")");
+    }
+
+    // Return Intent
+    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
+      ss_ << " " << kindToString((IntentList) node->returnIntent());
+      ss_ << " ";
+    }
+
+    // Return type
+    if (const Expression* e = node->returnType()) {
+      ss_ << " : ";
+      printChapelSyntax(ss_, e);
+    }
+
+    // where clause
+    if (node->whereClause()) printChapelSyntax(ss_, node->whereClause());
+
+    // throws
+    if (node->throws()) ss_ << " throws";
+
+    // function body
+    interpose(ss_, node->stmts(), "\n", " {", "}");
+
+  }
+
+  void visit(const chpl::uast::Identifier* node) {
+    ss_ << node->name().str();
+  }
+
+  void visit(const ImagLiteral* node) { return visitLiteral(ss_, node); }
+
+  void visit(const Import* node) {
+    if (node->visibility() != Decl::Visibility::DEFAULT_VISIBILITY) {
+      ss_ << kindToString(node->visibility());
+    }
+    ss_ << "import ";
+    interpose(ss_, node->visibilityClauses(), ", ");
+  }
+
+  void visit(const Include* node) {
+    ss_ << "include ";
+    if (node->visibility() != Decl::DEFAULT_VISIBILITY) {
+      ss_ << kindToString(node->visibility()) << " ";
+    }
+    if (node->isPrototype()) {
+      ss_ << "prototype ";
+    }
+    ss_ << "module ";
+    ss_ << node->name().c_str();
+  }
+
+  void visit(const IntLiteral* node)  { return visitLiteral(ss_, node); }
+
+  void visit(const Label* node) {
+    ss_ << "label ";
+    ss_ << node->name().c_str() << " ";
+    printChapelSyntax(ss_, node->loop());
+  }
+
+  void visit(const Let* node) {
+    ss_ << "let ";
+    // custom handling to avoid printing storage kind as variables would
+    // normally do
+    // TODO: Can we eliminate or generalize this in a better way?
+    for (auto decl : node->decls()) {
+      const Variable* var = decl->toVariable();
+      ss_ << var->name().c_str();
+      if (const Expression *te = var->typeExpression()) {
+        ss_ << ": ";
+        printChapelSyntax(ss_, te);
+      }
+      if (const Expression *ie = var->initExpression()) {
+        ss_ << " = ";
+        printChapelSyntax(ss_, ie);
+      }
+    }
+    ss_ << " in ";
+    printChapelSyntax(ss_, node->expression());
+  }
+
+  void visit(const Local* node) {
+    ss_ << "local ";
+    if (node->condition()) {
+      printChapelSyntax(ss_, node->condition());
+      ss_ << " ";
+    }
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+  }
+
+  void visit(const Manage* node) {
+    ss_ << "manage ";
+    interpose(ss_, node->managers(), ", ");
+    ss_ << " ";
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+  }
+
+  void visit(const Module* node) {
+    if (node->visibility() != Decl::Visibility::DEFAULT_VISIBILITY) {
+      ss_ << kindToString(node->visibility()) << " ";
+    }
+    if (node->kind() != Module::Kind::DEFAULT_MODULE_KIND ) {
+      ss_ << kindToString(node->kind()) << " ";
+    }
+    ss_ << "module ";
+    ss_ << node->name().c_str() << " ";
+    interpose(ss_, node->stmts(), "\n", "{", "}");
+  }
+
+  void visit(const MultiDecl* node) {
+    ss_ << "var ";
+
+    // TODO: Can this be generalized between TupleDecl and MultiDecl?
+    std::string delimiter = "";
+    for (auto decl : node->decls()) {
+      ss_ << delimiter;
+      ss_ << decl->toVariable()->name().c_str();
+      if (const Expression* te = decl->toVariable()->typeExpression()) {
+        ss_ << ": ";
+        printChapelSyntax(ss_, te);
+      }
+      if (const Expression* ie = decl->toVariable()->initExpression()) {
+        ss_ << " = ";
+        printChapelSyntax(ss_, ie);
+      }
+      delimiter = ", ";
+    }
+
+  }
+
+  void visit(const New* node) {
+    ss_ << "new ";
+    if (node->management() != New::Management::DEFAULT_MANAGEMENT) {
+      ss_ << kindToString(node->management()) << " ";
+    }
+    printChapelSyntax(ss_, node->typeExpression());
+  }
+
+  void visit(const On* node) {
+    ss_ << "on ";
+    printChapelSyntax(ss_, node->destination());
+    ss_ << " ";
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+  }
+
+  void visit(const OpCall* node) {
+    // TODO: Where do parens come in?
+    // ex: !(this && that)
+    // is different than !this && that
+    if (node->isUnaryOp()) {
+      ss_ << node->op().c_str();
+      assert(node->numActuals() == 1);
+      printChapelSyntax(ss_, node->actual(0));
+
+    } else if (node->isBinaryOp()) {
+      assert(node->numActuals() == 2);
+      printChapelSyntax(ss_, node->actual(0));
+      ss_ << " " << node->op().c_str() << " ";
+      printChapelSyntax(ss_, node->actual(1));
+    }
+  }
+
+  void visit(const PrimCall* node) {
+    ss_ << "__primitive";
+    ss_ << "(";
+    ss_ << '"' << quoteStringForC(primTagToName(node->prim())) << '"' << ", ";
+    interpose(ss_, node->actuals(), ", ");
+    ss_ << ")";
+  }
+
+  void visit(const Range* node) {
+    if (auto lb = node->lowerBound()) {
+      printChapelSyntax(ss_, lb);
+    }
+    ss_ << "..";
+    if (auto ub = node->upperBound()) {
+      printChapelSyntax(ss_, ub);
+    }
+  }
+
+  void visit(const RealLiteral* node) { return visitLiteral(ss_, node); }
+
+  void visit(const Record* node) {
+    printLinkage(node);
+    ss_ << "record ";
+    ss_ << node->name().c_str() << " ";
+    interpose(ss_, node->decls(), "\n", "{", "}");
+  }
+
+  void visit(const Reduce* node) {
+    ss_ << node->op().c_str() << " ";
+    ss_ << "reduce ";
+    interpose(ss_, node->actuals(), ", ");
+  }
+
+  void visit(const Require* node) {
+    ss_ << "require ";
+    interpose(ss_, node->exprs(), ", ");
+  }
+
+  void visit(const Return* node) {
+    ss_ << "return";
+    if (node->value() != nullptr) {
+      ss_ << " ";
+      printChapelSyntax(ss_, node->value());
+    }
+  }
+
+  void visit(const Scan* node) {
+    ss_ << node->op().c_str() << " ";
+    ss_ << "scan ";
+    interpose(ss_, node->actuals(), ", ");
+  }
+
+  void visit(const Select* node) {
+    ss_ << "select ";
+    printChapelSyntax(ss_, node->expr());
+    ss_ << " ";
+    interpose(ss_, node->whenStmts(), "\n", "{", "}");
+  }
+
+  void visit(const Serial* node) {
+    ss_ << "serial ";
+    if (node->condition()) {
+      printChapelSyntax(ss_, node->condition());
+      ss_ << " ";
+    }
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+  }
+
+  void visit(const StringLiteral* node) {
+    ss_ << '"' << quoteStringForC(std::string(node->str().c_str())) << '"';
+  }
+
+  void visit(const Sync* node) {
+    ss_ << "sync ";
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
+  }
+
+  void visit(const TaskVar* node) {
+    ss_ << kindToString((IntentList) node->intent());
+    ss_ << " " << node->name().c_str();
+  }
+
+  void visit(const Throw* node) {
+    ss_ << "throw ";
+    printChapelSyntax(ss_, node->errorExpression());
+  }
+
+  void visit(const Try* node) {
+    ss_ << "try";
+    if (node->isTryBang()) {
+      ss_ << "! ";
+    } else {
+      ss_ << " ";
+    }
+    interpose(ss_, node->stmts(), "\n", "{","}");
+    // if try block has catch blocks
+    if (!node->isTryBang()) {
+      ss_ << " ";
+      interpose(ss_, node->handlers(), "\n");
+    }
+  }
+
+  void visit(const Tuple* node) {
+    interpose(ss_, node->children(), ", ", "(", ")");
+  }
+
+  void visit(const TupleDecl* node) {
+    if (node->intentOrKind() != TupleDecl::IntentOrKind::DEFAULT_INTENT &&
+        node->intentOrKind() != TupleDecl::IntentOrKind::INDEX) {
+      ss_ << kindToString((IntentList) node->intentOrKind()) << " ";
+    }
+    ss_ << "(";
+    // TODO: Can this be generalized between TupleDecl and MultiDecl?
+    std::string delimiter = "";
+    for (auto decl : node->decls()) {
+      ss_ << delimiter;
+        ss_ << decl->toVarLikeDecl()->name().c_str();
+        if (const Expression* te = decl->toVarLikeDecl()->typeExpression()) {
           ss_ << ": ";
-          printAst(ss_, te);
+          printChapelSyntax(ss_, te);
         }
-        if (const Expression* ie = decl->toVariable()->initExpression()) {
+        if (const Expression* ie = decl->toVarLikeDecl()->initExpression()) {
           ss_ << " = ";
-          printAst(ss_, ie);
+          printChapelSyntax(ss_, ie);
         }
         delimiter = ", ";
       }
+    ss_ << ")";
 
+
+    if (const Expression* te = node->typeExpression()) {
+      ss_ << ": ";
+      printChapelSyntax(ss_, te);
+    }
+    if (const Expression* ie = node->initExpression()) {
+      ss_ << " = ";
+      printChapelSyntax(ss_, ie);
+    }
+  }
+
+  void visit(const TypeDecl* node) {
+    printLinkage(node);
+    ss_ << "type ";
+    ss_ << node->name().c_str();
+  }
+
+  void visit(const TypeQuery* node) {
+    ss_ << "?";
+    ss_ << node->name().c_str();
+  }
+
+  void visit(const UintLiteral* node) { return visitLiteral(ss_, node); }
+
+  void visit(const Union* node) {
+    printLinkage(node);
+    ss_ << "union ";
+    ss_ << node->name().c_str() << " ";
+    interpose(ss_, node->children(), "\n", "{", "}");
+  }
+
+  void visit(const Use* node) {
+    if (node->visibility() != Decl::DEFAULT_VISIBILITY) {
+      ss_ << kindToString(node->visibility());
+    }
+    ss_ << "use ";
+    interpose(ss_, node->visibilityClauses(), ", ");
+  }
+
+  void visit(const VarArgFormal* node) {
+    if (node->intent() != Formal::Intent::DEFAULT_INTENT){
+      ss_ << kindToString((IntentList) node->intent()) << " ";
     }
 
-    void visit(const New* node) {
-      ss_ << "new ";
-      if (node->management() != New::Management::DEFAULT_MANAGEMENT) {
-        ss_ << kindToString(node->management()) << " ";
+    ss_ << node->name().c_str();
+    if (const Expression* te = node->typeExpression()) {
+      ss_ << ": ";
+      printChapelSyntax(ss_, te);
+    }
+    if (const Expression* ie = node->initExpression()) {
+      ss_ << " = ";
+      printChapelSyntax(ss_, ie);
+    }
+
+    if (const Expression* ce = node->count()) {
+      ss_ << " ...";
+      if (const TypeQuery* tq = ce->toTypeQuery()){
+        printChapelSyntax(ss_, tq);
+      } else {
+        printChapelSyntax(ss_, ce);
       }
-      printAst(ss_, node->typeExpression());
+    }
+  }
+
+  void visit(const Variable* node) {
+    if (node->isConfig()) {
+      ss_ << "config ";
+    } else {
+      printLinkage(node);
     }
 
-    void visit(const On* node) {
-      ss_ << "on ";
-      printAst(ss_, node->destination());
+    if (node->kind() != Variable::Kind::INDEX) {
+      ss_ << kindToString((IntentList) node->kind()) << " ";
+    }
+    ss_ << node->name().c_str();
+    if (const Expression* te = node->typeExpression()) {
+      ss_ << ": ";
+      printChapelSyntax(ss_, te);
+    }
+    if (const Expression* ie = node->initExpression()) {
+      ss_ << " = ";
+      printChapelSyntax(ss_, ie);
+    }
+  }
+
+  void visit(const VisibilityClause* node) {
+    VisibilityClause::LimitationKind limit = node->limitationKind();
+    if (limit == VisibilityClause::LimitationKind::ONLY ||
+        limit == VisibilityClause::LimitationKind::EXCEPT) {
+      ss_ << kindToString(limit);
+      printChapelSyntax(ss_, node->symbol());
+      interpose(ss_, node->limitations(), ", ");
+    } else if (limit == VisibilityClause::LimitationKind::BRACES) {
+      printChapelSyntax(ss_, node->symbol());
+      interpose(ss_, node->limitations(), ", ", "{","}");
+    } else { //NONE
+      printChapelSyntax(ss_, node->symbol());
+      interpose(ss_, node->limitations(), ", ");
+    }
+  }
+
+  void visit(const When* node) {
+    if (node->isOtherwise()) {
+      ss_ << "otherwise ";
+    } else {
+      ss_ << "when ";
+      interpose(ss_, node->caseExprs(), ", ");
       ss_ << " ";
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    }
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+  }
+
+  void visit(const While* node) {
+    ss_ << "while ";
+    printChapelSyntax(ss_, node->condition());
+    ss_ << " ";
+    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+  }
+
+  void visit(const WithClause* node) {
+    ss_ << "with ";
+    interpose(ss_, node->exprs(), ", ", "(", ")");
+  }
+
+  void visit(const Yield* node) {
+    ss_ << "yield ";
+    printChapelSyntax(ss_, node->value());
+  }
+
+  void visit(const Zip* node) {
+    ss_ << "zip";
+    interpose(ss_, node->actuals(),", ","(",")");
+  }
+
+};
+
+/***************************************************************
+ * Specializations for generating userString when converting
+ * from uAST to old AST
+ */
+
+struct UserStringVisitor {
+  std::ostringstream ss_;
+  UserStringVisitor(std::ostringstream ss_ = std::ostringstream()) {}
+
+
+  void visit(const Function* node) {
+    std::stringstream ss;
+    if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
+      ss_ << kindToString(node->visibility()) << " ";
     }
 
-    void visit(const OpCall* node) {
-      // TODO: Where do parens come in?
-      // ex: !(this && that)
-      // is different than !this && that
-      if (node->isUnaryOp()) {
-        ss_ << node->op().c_str();
-        assert(node->numActuals() == 1);
-        printAst(ss_, node->actual(0));
-
-      } else if (node->isBinaryOp()) {
-        assert(node->numActuals() == 2);
-        printAst(ss_, node->actual(0));
-        ss_ << " " << node->op().c_str() << " ";
-        printAst(ss_, node->actual(1));
-      }
+    // storage kind
+    if (node->thisFormal() != nullptr
+        && node->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
+      ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
+    }
+    // secondary methods
+    if (node->isMethod() && !node->isPrimaryMethod()
+        && node->thisFormal()->child(0)->isIdentifier()) {
+      ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
     }
 
-    void visit(const PrimCall* node) {
-      ss_ << "__primitive";
-      ss_ << "(";
-      ss_ << '"' << quoteStringForC(primTagToName(node->prim())) << '"' << ", ";
-      interpose(ss_, node->actuals(), ", ");
-      ss_ << ")";
+    // Function Name
+    ss_ << node->name().str();
+
+    // Formals
+    int numThisFormal = node->thisFormal() ? 1 : 0;
+    int nFormals = node->numFormals() - numThisFormal;
+    if (nFormals == 0 && node->isParenless()) {
+      // pass
+    } else if (nFormals == 0) {
+      ss_ << "()";
+    } else {
+      auto it = node->formals();
+      interpose(ss_, it.begin() + numThisFormal, it.end(), ", ", "(", ")");
     }
 
-    void visit(const Range* node) {
-      if (auto lb = node->lowerBound()) {
-        printAst(ss_, lb);
-      }
-      ss_ << "..";
-      if (auto ub = node->upperBound()) {
-        printAst(ss_, ub);
-      }
-    }
-
-    void visit(const RealLiteral* node) { return visitLiteral(ss_, node); }
-
-    void visit(const Record* node) {
-      printLinkages(node);
-      ss_ << "record ";
-      ss_ << node->name().c_str() << " ";
-      interpose(ss_, node->decls(), "\n", "{", "}");
-    }
-
-    void visit(const Reduce* node) {
-      ss_ << node->op().c_str() << " ";
-      ss_ << "reduce ";
-      interpose(ss_, node->actuals(), ", ");
-    }
-
-    void visit(const Require* node) {
-      ss_ << "require ";
-      interpose(ss_, node->exprs(), ", ");
-    }
-
-    void visit(const Return* node) {
-      ss_ << "return";
-      if (node->value() != nullptr) {
-        ss_ << " ";
-        printAst(ss_, node->value());
-      }
-      ss_ << ";";
-    }
-
-    void visit(const Scan* node) {
-      ss_ << node->op().c_str() << " ";
-      ss_ << "scan ";
-      interpose(ss_, node->actuals(), ", ");
-    }
-
-    void visit(const Select* node) {
-      ss_ << "select ";
-      printAst(ss_, node->expr());
+    // Return Intent
+    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
+      ss_ << " " << kindToString((IntentList) node->returnIntent());
       ss_ << " ";
-      interpose(ss_, node->whenStmts(), "\n", "{", "}");
     }
 
-    void visit(const Serial* node) {
-      ss_ << "serial ";
-      if (node->condition()) {
-        printAst(ss_, node->condition());
-        ss_ << " ";
-      }
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    // Return type
+    if (const Expression* e = node->returnType()) {
+      ss_ << ": ";
+      printChapelSyntax(ss_, e);
     }
 
-    void visit(const StringLiteral* node) {
-      ss_ << '"' << quoteStringForC(std::string(node->str().c_str())) << '"';
-    }
+  }
 
-    void visit(const Sync* node) {
-      ss_ << "sync ";
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
-    }
+  void visit(const ASTNode* node) {
+    ss_ << tagToString(node->tag());
+  }
 
-    void visit(const TaskVar* node) {
-      ss_ << kindToString(node->intent());
-      ss_ << " " << node->name().c_str();
-    }
+};
 
-    void visit(const Throw* node) {
-      ss_ << "throw ";
-      printAst(ss_, node->errorExpression());
-    }
-
-    void visit(const Try* node) {
-      ss_ << "try";
-      if (node->isTryBang()) {
-        ss_ << "! ";
-      } else {
-        ss_ << " ";
-      }
-      interpose(ss_, node->stmts(), "\n", "{","}");
-      // if try block has catch blocks
-      if (!node->isTryBang()) {
-        ss_ << " ";
-        interpose(ss_, node->handlers(), "\n");
-      }
-    }
-
-    void visit(const Tuple* node) {
-      interpose(ss_, node->children(), ", ", "(", ")");
-    }
-
-    void visit(const TupleDecl* node) {
-      if (node->intentOrKind() != TupleDecl::IntentOrKind::DEFAULT_INTENT &&
-         node->intentOrKind() != TupleDecl::IntentOrKind::INDEX) {
-        ss_ << kindToString(node->intentOrKind()) << " ";
-      }
-      ss_ << "(";
-      // TODO: Can this be generalized between TupleDecl and MultiDecl?
-      std::string delimiter = "";
-      for (auto decl : node->decls()) {
-        ss_ << delimiter;
-          ss_ << decl->toVarLikeDecl()->name().c_str();
-          if (const Expression* te = decl->toVarLikeDecl()->typeExpression()) {
-            ss_ << ": ";
-            printAst(ss_, te);
-          }
-          if (const Expression* ie = decl->toVarLikeDecl()->initExpression()) {
-            ss_ << " = ";
-            printAst(ss_, ie);
-          }
-          delimiter = ", ";
-        }
-      ss_ << ")";
-
-
-      if (const Expression* te = node->typeExpression()) {
-        ss_ << ": ";
-        printAst(ss_, te);
-      }
-      if (const Expression* ie = node->initExpression()) {
-        ss_ << " = ";
-        printAst(ss_, ie);
-      }
-    }
-
-    void visit(const TypeDecl* node) {
-      printLinkages(node);
-      ss_ << "type ";
-      ss_ << node->name().c_str();
-    }
-
-    void visit(const TypeQuery* node) {
-      ss_ << "?";
-      ss_ << node->name().c_str();
-    }
-
-    void visit(const UintLiteral* node) { return visitLiteral(ss_, node); }
-
-    void visit(const Union* node) {
-      printLinkages(node);
-      ss_ << "union ";
-      ss_ << node->name().c_str() << " ";
-      interpose(ss_, node->children(), "\n", "{", "}");
-    }
-
-    void visit(const Use* node) {
-      if (node->visibility() != Decl::DEFAULT_VISIBILITY) {
-        ss_ << kindToString(node->visibility());
-      }
-      ss_ << "use ";
-      interpose(ss_, node->visibilityClauses(), ", ");
-    }
-
-    void visit(const VarArgFormal* node) {
-      if (node->intent() != Formal::Intent::DEFAULT_INTENT){
-        ss_ << kindToString(node->intent()) << " ";
-      }
-
-      ss_ << node->name().c_str();
-      if (const Expression* te = node->typeExpression()) {
-        ss_ << ": ";
-        printAst(ss_, te);
-      }
-      if (const Expression* ie = node->initExpression()) {
-        ss_ << " = ";
-        printAst(ss_, ie);
-      }
-
-      if (const Expression* ce = node->count()) {
-        ss_ << " ...";
-        if (const TypeQuery* tq = ce->toTypeQuery()){
-          printAst(ss_, tq);
-        } else {
-          printAst(ss_, ce);
-        }
-      }
-    }
-
-    void visit(const Variable* node) {
-      if (node->isConfig()) {
-        ss_ << "config ";
-      } else {
-        printLinkages(node);
-      }
-
-      if (node->kind() != Variable::Kind::INDEX) {
-        ss_ << kindToString(node->kind()) << " ";
-      }
-      ss_ << node->name().c_str();
-      if (const Expression* te = node->typeExpression()) {
-        ss_ << ": ";
-        printAst(ss_, te);
-      }
-      if (const Expression* ie = node->initExpression()) {
-        ss_ << " = ";
-        printAst(ss_, ie);
-      }
-    }
-
-    void visit(const VisibilityClause* node) {
-      if (node->limitationKind() == VisibilityClause::LimitationKind::ONLY &&
-          node->limitationKind() == VisibilityClause::LimitationKind::EXCEPT) {
-        ss_ << kindToString(node->limitationKind());
-        printAst(ss_, node->symbol());
-        interpose(ss_, node->limitations(), ", ");
-      } else if (node->limitationKind() == VisibilityClause::LimitationKind::BRACES) {
-        printAst(ss_, node->symbol());
-        interpose(ss_, node->limitations(), ", ", "{","}");
-      } else { //NONE
-        printAst(ss_, node->symbol());
-        interpose(ss_, node->limitations(), ", ");
-      }
-    }
-
-    void visit(const When* node) {
-      if (node->isOtherwise()) {
-        ss_ << "otherwise ";
-      } else {
-        ss_ << "when ";
-        interpose(ss_, node->caseExprs(), ", ");
-        ss_ << " ";
-      }
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
-    }
-
-    void visit(const While* node) {
-      ss_ << "while ";
-      printAst(ss_, node->condition());
-      ss_ << " ";
-      printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
-    }
-
-    void visit(const WithClause* node) {
-      ss_ << "with ";
-      interpose(ss_, node->exprs(), ", ", "(", ")");
-    }
-
-    void visit(const Yield* node) {
-      ss_ << "yield ";
-      printAst(ss_, node->value());
-    }
-
-    void visit(const Zip* node) {
-      ss_ << "zip";
-      interpose(ss_, node->actuals(),", ","(",")");
-    }
-
-  };
-
-  /***************************************************************
-   * Specializations for generating userString when converting
-   * from uAST to old AST
-   */
-
-  struct UserStringVisitor {
-    std::ostringstream ss_;
-    UserStringVisitor(std::ostringstream ss_ = std::ostringstream()) {}
-
-
-    void visit(const Function* node) {
-      std::stringstream ss;
-      if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
-        ss_ << kindToString(node->visibility()) << " ";
-      }
-
-      // storage kind
-      if (node->thisFormal() != nullptr && node->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
-        ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
-      }
-      // secondary methods
-      if (node->isMethod() && !node->isPrimaryMethod() && node->thisFormal()->child(0)->isIdentifier()) {
-        ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
-      }
-
-      // Function Name
-      ss_ << node->name().str();
-
-      // Formals
-      int numThisFormal = node->thisFormal() ? 1 : 0;
-      int nFormals = node->numFormals() - numThisFormal;
-      if (nFormals == 0 && node->isParenless()) {
-        // pass
-      } else if (nFormals == 0) {
-        ss_ << "()";
-      } else {
-        auto it = node->formals();
-        interpose(ss_, it.begin() + numThisFormal, it.end(), ", ", "(", ")");
-      }
-
-      // Return type
-      if (const Expression* e = node->returnType()) {
-        ss_ << ": ";
-        printAst(ss_, e);
-      }
-
-      // Return Intent
-      if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-        ss_ << " " << kindToString(node->returnIntent());
-      }
-
-    }
-
-    void visit(const ASTNode* node) {
-      ss_ << tagToString(node->tag());
-    }
-
-  };
-
+namespace chpl {
   /* Generic printer calling the above functions */
-  void printAst(std::ostream& os, const ASTNode* node) {
+  void printChapelSyntax(std::ostream& os, const ASTNode* node) {
     auto visitor = ChplSyntaxVisitor{};
     node->dispatch<void>(visitor);
     // TODO: Avoid making copy of string here
@@ -1051,7 +999,7 @@ namespace chpl {
   }
 
   /* Generic printer calling the above functions */
-  void printUserString(std::ostream& os, const Function* node) {
+  void printFunctionSignature(std::ostream& os, const Function* node) {
     auto visitor = UserStringVisitor{};
     node->dispatch<void>(visitor);
     // TODO: Avoid making copy of string here

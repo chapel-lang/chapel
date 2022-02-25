@@ -1854,7 +1854,7 @@ struct Converter {
     // build up the userString as in old parser
     // needed to match up some error outputs
     std::stringstream ss;
-    printUserString(ss, node);
+    printFunctionSignature(ss, node);
     fn->userString = astr(ss.str().c_str());
 
     attachSymbolAttributes(node, fn);
