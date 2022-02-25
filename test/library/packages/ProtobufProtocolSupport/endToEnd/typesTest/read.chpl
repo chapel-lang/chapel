@@ -1,7 +1,7 @@
 use typesTest;
 use IO;
 
-var messageObj = new Types();
+var messageObj = new typesTest.Types();
 var file = open("out", iomode.r);
 var readingChannel = file.reader();
 
