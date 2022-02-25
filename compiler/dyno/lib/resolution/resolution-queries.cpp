@@ -2770,6 +2770,79 @@ CallResolutionResult resolvePrimCall(Context* context,
   return CallResolutionResult(candidates, type, poi);
 }
 
+static
+CallResolutionResult resolveTupleExpr(Context* context,
+                                      const Tuple* tuple,
+                                      const CallInfo& ci,
+                                      const Scope* inScope,
+                                      const PoiScope* inPoiScope) {
+  // resolve the tuple type from a tuple expression
+
+  // per spec:
+  // Tuple expressions are a form of referential tuple.
+  // Like most other referential tuples, tuple expressions capture each
+  // element based on the default argument intent of the element’s type.
+
+
+  // check if the elements are all type or all value
+  bool anyUnknown = false;
+  bool allType = true;
+  bool allValue = true;
+  for (auto actual : ci.actuals()) {
+    QualifiedType q = actual.type();
+    const Type* t = q.type();
+    if (t == nullptr || t->isUnknownType())
+      anyUnknown = true;
+    else if (q.kind() == QualifiedType::TYPE)
+      allValue = false;
+    else
+      allType = false;
+  }
+
+  // if any argument is Unknown / null, return Unknown
+  if (anyUnknown) {
+    auto unk = UnknownType::get(context);
+    return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, unk));
+  }
+
+  // if there is a mix of value and type elements, error
+  if (allType == false && allValue == false) {
+    context->error(tuple, "Mix of value and type tuple elements in tuple expr");
+    auto e = ErroneousType::get(context);
+    return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, e));
+  }
+
+  // otherwise, construct the tuple type
+  std::vector<QualifiedType> eltTypes;
+
+  QualifiedType::Kind kind = QualifiedType::UNKNOWN;
+  if (allValue)
+    kind = QualifiedType::CONST_VAR;
+  else if (allType)
+    kind = QualifiedType::TYPE;
+
+  for (auto actual : ci.actuals()) {
+    QualifiedType q = actual.type();
+    const Type* t = q.type();
+    // is the default intent for this type a variation of ref?
+    QualifiedType testFormal = QualifiedType(QualifiedType::DEFAULT_INTENT, t);
+    auto actualKind = resolveIntent(testFormal, false);
+    bool defaultIntentRef = (actualKind == QualifiedType::CONST_REF ||
+                             actualKind == QualifiedType::REF);
+    if (defaultIntentRef) {
+      actualKind = QualifiedType::REF;
+    } else {
+      actualKind = QualifiedType::VAR;
+    }
+
+    eltTypes.push_back(QualifiedType(actualKind, t));
+  }
+
+  auto t = TupleType::get(context, std::move(eltTypes));
+  return CallResolutionResult(QualifiedType(kind, t));
+}
+
+
 CallResolutionResult resolveCall(Context* context,
                                  const Call* call,
                                  const CallInfo& ci,
@@ -2785,6 +2858,8 @@ CallResolutionResult resolveCall(Context* context,
     return resolveFnCall(context, call, ci, inScope, inPoiScope);
   } else if (auto prim = call->toPrimCall()) {
     return resolvePrimCall(context, prim, ci, inScope, inPoiScope);
+  } else if (auto tuple = call->toTuple()) {
+    return resolveTupleExpr(context, tuple, ci, inScope, inPoiScope);
   }
 
   assert(false && "should not be reached");

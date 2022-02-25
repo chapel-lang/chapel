@@ -37,12 +37,46 @@ TupleType::getTupleType(Context* context, ID id, UniqueString name,
   return QUERY_END(result);
 }
 
+static ID idForTupElt(int i) {
+  // Use an ID with only a postOrderId but empty name for the tuple elts
+  return ID(UniqueString(), i, 0);
+}
+
 const TupleType*
-TupleType::get(Context* context, ID id, UniqueString name,
-               const TupleType* instantiatedFrom,
-               SubstitutionsMap subs) {
-  return getTupleType(context, id, name,
-                      instantiatedFrom, std::move(subs)).get();
+TupleType::get(Context* context, std::vector<QualifiedType> eltTypes) {
+  SubstitutionsMap subs;
+  int i = 0;
+  for (auto elt : eltTypes) {
+    subs.emplace(idForTupElt(i), elt);
+    i++;
+  }
+
+  auto name = UniqueString::get(context, "_tuple");
+  auto id = ID();
+  const TupleType* instantiatedFrom = getGenericTupleType(context);
+  return getTupleType(context, id, name, instantiatedFrom,
+                      std::move(subs)).get();
+}
+
+const TupleType*
+TupleType::getGenericTupleType(Context* context) {
+  auto name = UniqueString::get(context, "_tuple");
+  auto id = ID();
+  SubstitutionsMap subs;
+  const TupleType* instantiatedFrom = nullptr;
+  return getTupleType(context, id, name, instantiatedFrom, subs).get();
+}
+
+QualifiedType TupleType::elementType(int i) const {
+  assert(0 <= i && (size_t) i < subs_.size());
+  // find subs[id]
+  auto search = subs_.find(idForTupElt(i));
+  if (search != subs_.end()) {
+    return search->second;
+  } else {
+    assert(false && "ID mismatch in tuple elements");
+    return QualifiedType();
+  }
 }
 
 
