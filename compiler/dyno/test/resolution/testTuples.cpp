@@ -85,6 +85,12 @@ static void test1() {
   assert(tt->elementType(0) == tt->elementType(1));
   assert(tt->elementType(0).kind() == QualifiedType::VAR);
   assert(tt->elementType(0).type()->isIntType());
+
+  auto rt = tt->toReferentialTuple(context);
+  assert(rt == tt);
+
+  auto vt = tt->toValueTuple(context);
+  assert(vt == tt);
 }
 
 static void test2() {
@@ -106,6 +112,16 @@ static void test2() {
   assert(tt->elementType(0) == tt->elementType(1));
   assert(tt->elementType(0).kind() == QualifiedType::REF);
   assert(tt->elementType(0).type()->isRecordType());
+
+  auto rt = tt->toReferentialTuple(context);
+  assert(rt == tt);
+
+  auto vt = tt->toValueTuple(context);
+  assert(vt != tt);
+  assert(vt->numElements() == 2);
+  assert(vt->elementType(0) == vt->elementType(1));
+  assert(vt->elementType(0).kind() == QualifiedType::VAR);
+  assert(vt->elementType(0).type()->isRecordType());
 }
 
 

@@ -53,9 +53,13 @@ class TupleType final : public CompositeType {
                SubstitutionsMap subs);
 
  public:
-  /** Return a tuple type based on the vector of actual types. */
+  /** Return a value tuple type based on the vector of actual types. */
   static const TupleType*
-  get(Context* context, std::vector<QualifiedType> eltTypes);
+  getValueTuple(Context* context, std::vector<const Type*> eltTypes);
+
+  /** Return a referential tuple type based on the vector of actual types. */
+  static const TupleType*
+  getReferentialTuple(Context* context, std::vector<const Type*> eltTypes);
 
   /** Return the generic tuple type `_tuple` */
   static const TupleType* getGenericTupleType(Context* context);
@@ -69,6 +73,12 @@ class TupleType final : public CompositeType {
 
   /** Return the type of the i'th element */
   QualifiedType elementType(int i) const;
+
+  /** Return the value tuple variant of this tuple type */
+  const TupleType* toValueTuple(Context* context) const;
+
+  /** Return the referential tuple variant of this tuple type */
+  const TupleType* toReferentialTuple(Context* context) const;
 };
 
 

@@ -2783,7 +2783,6 @@ CallResolutionResult resolveTupleExpr(Context* context,
   // Like most other referential tuples, tuple expressions capture each
   // element based on the default argument intent of the element’s type.
 
-
   // check if the elements are all type or all value
   bool anyUnknown = false;
   bool allType = true;
@@ -2813,7 +2812,7 @@ CallResolutionResult resolveTupleExpr(Context* context,
   }
 
   // otherwise, construct the tuple type
-  std::vector<QualifiedType> eltTypes;
+  std::vector<const Type*> eltTypes;
 
   QualifiedType::Kind kind = QualifiedType::UNKNOWN;
   if (allValue)
@@ -2824,21 +2823,10 @@ CallResolutionResult resolveTupleExpr(Context* context,
   for (auto actual : ci.actuals()) {
     QualifiedType q = actual.type();
     const Type* t = q.type();
-    // is the default intent for this type a variation of ref?
-    QualifiedType testFormal = QualifiedType(QualifiedType::DEFAULT_INTENT, t);
-    auto actualKind = resolveIntent(testFormal, false);
-    bool defaultIntentRef = (actualKind == QualifiedType::CONST_REF ||
-                             actualKind == QualifiedType::REF);
-    if (defaultIntentRef) {
-      actualKind = QualifiedType::REF;
-    } else {
-      actualKind = QualifiedType::VAR;
-    }
-
-    eltTypes.push_back(QualifiedType(actualKind, t));
+    eltTypes.push_back(t);
   }
 
-  auto t = TupleType::get(context, std::move(eltTypes));
+  auto t = TupleType::getReferentialTuple(context, std::move(eltTypes));
   return CallResolutionResult(QualifiedType(kind, t));
 }
 
