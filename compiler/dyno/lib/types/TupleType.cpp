@@ -20,6 +20,7 @@
 #include "chpl/types/TupleType.h"
 
 #include "chpl/queries/query-impl.h"
+#include "chpl/resolution/intents.h"
 
 namespace chpl {
 namespace types {
@@ -43,11 +44,40 @@ static ID idForTupElt(int i) {
 }
 
 const TupleType*
-TupleType::get(Context* context, std::vector<QualifiedType> eltTypes) {
+TupleType::getValueTuple(Context* context, std::vector<const Type*> eltTypes) {
+  auto kind = QualifiedType::VAR;
   SubstitutionsMap subs;
   int i = 0;
-  for (auto elt : eltTypes) {
-    subs.emplace(idForTupElt(i), elt);
+  for (auto t : eltTypes) {
+    subs.emplace(idForTupElt(i), QualifiedType(kind, t));
+    i++;
+  }
+
+  auto name = UniqueString::get(context, "_tuple");
+  auto id = ID();
+  const TupleType* instantiatedFrom = getGenericTupleType(context);
+  return getTupleType(context, id, name, instantiatedFrom,
+                      std::move(subs)).get();
+}
+
+const TupleType*
+TupleType::getReferentialTuple(Context* context,
+                               std::vector<const Type*> eltTypes) {
+  SubstitutionsMap subs;
+  int i = 0;
+  for (auto t : eltTypes) {
+    // is the default intent for this type a variation of ref?
+    QualifiedType testFormal = QualifiedType(QualifiedType::DEFAULT_INTENT, t);
+    auto kind = resolution::resolveIntent(testFormal, false);
+    bool defaultIntentRef = (kind == QualifiedType::CONST_REF ||
+                             kind == QualifiedType::REF);
+    if (defaultIntentRef) {
+      kind = QualifiedType::REF;
+    } else {
+      kind = QualifiedType::VAR;
+    }
+
+    subs.emplace(idForTupElt(i), QualifiedType(kind, t));
     i++;
   }
 
@@ -77,6 +107,53 @@ QualifiedType TupleType::elementType(int i) const {
     assert(false && "ID mismatch in tuple elements");
     return QualifiedType();
   }
+}
+
+const TupleType* TupleType::toValueTuple(Context* context) const {
+  // Is it already a value tuple? If so, return that
+  bool allValue = true;
+  int n = numElements();
+  for (int i = 0; i < n; i++) {
+    auto kind = elementType(i).kind();
+    if (kind == QualifiedType::CONST_REF ||
+        kind == QualifiedType::REF)
+      allValue = false;
+  }
+
+  if (numElements() == 0 || allValue)
+    return this;
+
+  // Otherwise, compute a new value tuple
+  std::vector<const Type*> eltTypes;
+  for (int i = 0; i < n; i++) {
+    eltTypes.push_back(elementType(i).type());
+  }
+
+  return getValueTuple(context, std::move(eltTypes));
+}
+
+
+const TupleType* TupleType::toReferentialTuple(Context* context) const {
+  // Is it already a referential tuple? If so, return that
+  bool allRef = true;
+  int n = numElements();
+  for (int i = 0; i < n; i++) {
+    auto kind = elementType(i).kind();
+    if (kind != QualifiedType::CONST_REF &&
+        kind != QualifiedType::REF)
+      allRef = false;
+  }
+
+  if (numElements() == 0 || allRef)
+    return this;
+
+  // Otherwise, compute a new referential tuple
+  std::vector<const Type*> eltTypes;
+  for (int i = 0; i < n; i++) {
+    eltTypes.push_back(elementType(i).type());
+  }
+
+  return getReferentialTuple(context, std::move(eltTypes));
 }
 
 
