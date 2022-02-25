@@ -1852,6 +1852,9 @@ struct Converter {
 
     // build up the userString as in old parser
     // needed to match up some error outputs
+    // NOTE:
+    // parentheses may have been discarded from the original user declaration,
+    // and if so, we are not able to reconstruct them at this time
     std::stringstream ss;
     printFunctionSignature(ss, node);
     fn->userString = astr(ss.str().c_str());
