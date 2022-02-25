@@ -38,52 +38,52 @@ using namespace parsing;
 
 // This macro just helps keep the tests a little cleaner
 // rather than redefine all this for every type we want to test
-#define TEST_STRINGIFY_TYPE(val)                          \
-    {                                                     \
-      std::ostringstream ss;                              \
-      stringify<std::decay_t<decltype(val)>> stringifier; \
-      stringifier(ss, DEBUG_DETAIL, val);                 \
-      assert(!ss.str().empty());                          \
-    }
+#define TEST_STRINGIFY_TYPE(val)                      \
+{                                                     \
+  std::ostringstream ss;                              \
+  stringify<std::decay_t<decltype(val)>> stringifier; \
+  stringifier(ss, DEBUG_DETAIL, val);                 \
+  assert(!ss.str().empty());                          \
+}
 
 // Helper macro for testing output from printUserString
-#define TEST_USER_STRING(funcDef, val)                               \
-    {                                                                \
-      std::ostringstream ss;                                         \
-      auto parseResult = parser->parseString("test3.chpl", funcDef); \
-      auto mod = parseResult.singleModule();                         \
-      auto funcDecl = mod->stmt(0)->toFunction();                    \
-      assert(funcDecl);                                              \
-      printUserString(ss, funcDecl);                                 \
-      std::cerr << ss.str() << std::endl;                            \
-      assert(ss.str() == val);                                       \
-    }
+#define TEST_USER_STRING(funcDef, val)                           \
+{                                                                \
+  std::ostringstream ss;                                         \
+  auto parseResult = parser->parseString("test3.chpl", funcDef); \
+  auto mod = parseResult.singleModule();                         \
+  auto funcDecl = mod->stmt(0)->toFunction();                    \
+  assert(funcDecl);                                              \
+  printFunctionSignature(ss, funcDecl);                          \
+  std::cerr << ss.str() << std::endl;                            \
+  assert(ss.str() == val);                                       \
+}
 
 
-#define TEST_CHPL_SYNTAX(src, val) \
-{\
-      std::ostringstream ss;                                         \
-      auto parseResult = parser->parseString("test5.chpl", src); \
-      auto mod = parseResult.singleModule();                         \
-      assert(mod);                                              \
-      printAst(ss, mod);                                 \
-      std::cerr << ss.str() << std::endl;                            \
-      assert(ss.str() == val);\
+#define TEST_CHPL_SYNTAX(src, val)                           \
+{                                                            \
+  std::ostringstream ss;                                     \
+  auto parseResult = parser->parseString("test5.chpl", src); \
+  auto mod = parseResult.singleModule();                     \
+  assert(mod);                                               \
+  printChapelSyntax(ss, mod);                                \
+  std::cerr << ss.str() << std::endl;                        \
+  assert(ss.str() == val);                                   \
 }
 
 
 static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
-    // recurse through the nodes and make sure each can call stringify()
-    // and produce a non-empty result (for now)
-    // this is a little convoluted as each ASTNode is also calling
-    // ASTNode.dumpHelper() on all of its children
-    for (const ASTNode* child : node->children()) {
-      stringifyNode(child, kind);
-    }
-    std::ostringstream ss;
-    node->stringify(ss, kind);
-    // assert(!ss.str().empty());
-    std::cerr << ss.str() << std::endl;
+  // recurse through the nodes and make sure each can call stringify()
+  // and produce a non-empty result (for now)
+  // this is a little convoluted as each ASTNode is also calling
+  // ASTNode.dumpHelper() on all of its children
+  for (const ASTNode* child : node->children()) {
+    stringifyNode(child, kind);
+  }
+  std::ostringstream ss;
+  node->stringify(ss, kind);
+  // assert(!ss.str().empty());
+  std::cerr << ss.str() << std::endl;
 }
 
 static void test0(Parser* parser) {
@@ -318,7 +318,7 @@ static void test4(Parser* parser) {
 
   auto setCltDecl = cDecl->child(0)->toFunction();
   assert(setCltDecl);
-  printUserString(ss, setCltDecl);
+  printFunctionSignature(ss, setCltDecl);
   assert(ss.str() == "ref setClt(rhs: borrowed C)");
 }
 

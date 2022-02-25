@@ -32,9 +32,20 @@
 
 namespace chpl {
 
-  void printAst(std::ostream& os, const uast::ASTNode* node);
+  /*
+    With this function we are tyring to create a faithful representation
+    of the uAST in Chapel syntax. The goal is to generate strings that could
+    be copy/pasted and compiled back to the same uAST.
+  */
+  void printChapelSyntax(std::ostream& os, const uast::ASTNode* node);
 
-  void printUserString(std::ostream& os, const uast::Function* node);
+
+  /*
+    This function can be used to generate the signature of a function without
+    the declaration (proc, iter etc). Suitable for the userString field
+    of the old AST.
+  */
+  void printFunctionSignature(std::ostream& os, const uast::Function* node);
 
 }
 #endif

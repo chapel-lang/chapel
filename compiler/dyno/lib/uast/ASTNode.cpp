@@ -188,7 +188,7 @@ void ASTNode::stringify(std::ostream& ss,
                         StringifyKind stringKind) const {
 
   if (stringKind == StringifyKind::CHPL_SYNTAX) {
-    printAst(ss, this);
+    printChapelSyntax(ss, this);
   }
   else {
     int maxIdLen = 0;
@@ -196,9 +196,6 @@ void ASTNode::stringify(std::ostream& ss,
     dumpMaxIdLen(this, maxIdLen);
     dumpHelper(ss, this, maxIdLen, leadingSpaces);
   }
-//  for (const ASTNode* child : this->children()) {
-//    printAst(ss, child);
-//  }
 }
 
 IMPLEMENT_DUMP(ASTNode);
