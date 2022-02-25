@@ -2056,10 +2056,19 @@ struct ReturnTypeInferer {
     checkReturn(inExpr, voidType);
   }
   void noteReturnType(const Expression* expr, const Expression* inExpr) {
-    const QualifiedType& qt = resolutionById.byAst(expr).type();
+    QualifiedType qt = resolutionById.byAst(expr).type();
 
     QualifiedType::Kind kind = qt.kind();
     const Type* type = qt.type();
+
+    // Functions that return tuples need to return
+    // a value tuple (for value returns and type returns)
+    // or a reference to a value tuple (for ref/const ref returns)
+    if (type && type->isTupleType()) {
+      auto tt = type->toTupleType();
+      type = tt->toValueTuple(context);
+      qt = QualifiedType(kind, type);
+    }
 
     checkReturn(inExpr, qt);
 
@@ -2215,6 +2224,27 @@ const QualifiedType& returnType(Context* context,
       fn->body()->traverse(visitor);
       result = visitor.returnedType();
     }
+
+    // Figure out the kind for the QualifiedType based on the return intent
+    // Need to do this if the return type is declared.
+    QualifiedType::Kind kind = (QualifiedType::Kind) fn->returnIntent();
+    // adjust default / const return intent to 'var'
+    if (kind == QualifiedType::DEFAULT_INTENT ||
+        kind == QualifiedType::CONST_VAR) {
+        kind = QualifiedType::VAR;
+    }
+    result = QualifiedType(kind, result.type(), result.param());
+
+    // Functions that return tuples need to return
+    // a value tuple (for value returns and type returns)
+    // or a reference to a value tuple (for ref/const ref returns)
+    if (result.type() && result.type()->isTupleType()) {
+      auto tt = result.type()->toTupleType();
+      auto vt = tt->toValueTuple(context);
+      assert(tt == vt); // this should already be done in return type inference
+      result = QualifiedType(kind, vt);
+    }
+
   } else if (untyped->isTypeConstructor()) {
     const Type* t = returnTypeForTypeCtorQuery(context, sig, poiScope);
 

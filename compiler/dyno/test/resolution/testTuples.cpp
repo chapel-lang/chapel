@@ -219,6 +219,78 @@ static void test5() {
   assert(vt == tt);
 }
 
+static void test6() {
+  printf("test6\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  record R { }
+                  proc f() {
+                    var r: R;
+                    return (r, r);
+                  }
+                  var x = f();
+                )"""");
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+  auto rt = tt->toReferentialTuple(context);
+  assert(rt != tt);
+  auto vt = tt->toValueTuple(context);
+  assert(vt == tt);
+}
+
+static void test7() {
+  printf("test7\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  record R { }
+                  var r: R;
+                  var glob = (r, r);
+                  proc f() ref {
+                    return glob;
+                  }
+                  var x = f();
+                )"""");
+
+  assert(qt.kind() == QualifiedType::REF);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+  auto rt = tt->toReferentialTuple(context);
+  assert(rt != tt);
+  auto vt = tt->toValueTuple(context);
+  assert(vt == tt);
+}
+
+static void test8() {
+  printf("test8\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  record R { }
+                  proc f() : (R, R) {
+                    var r: R;
+                    return (r, r);
+                  }
+                  var x = f();
+                )"""");
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+  auto rt = tt->toReferentialTuple(context);
+  assert(rt != tt);
+  auto vt = tt->toValueTuple(context);
+  assert(vt == tt);
+}
 
 int main() {
   test1();
@@ -226,6 +298,9 @@ int main() {
   test3();
   test4();
   test5();
+  test6();
+  test7();
+  test8();
 
   return 0;
 }
