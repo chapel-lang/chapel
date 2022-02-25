@@ -487,7 +487,7 @@ struct ChplSyntaxVisitor {
     }
 
     // Function Name
-    ss_ << " " << node->name().str();
+    ss_ << node->name().str();
 
     // Formals
     int numThisFormal = node->thisFormal() ? 1 : 0;
@@ -504,7 +504,6 @@ struct ChplSyntaxVisitor {
     // Return Intent
     if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
       ss_ << " " << kindToString((IntentList) node->returnIntent());
-      ss_ << " ";
     }
 
     // Return type
@@ -514,7 +513,10 @@ struct ChplSyntaxVisitor {
     }
 
     // where clause
-    if (node->whereClause()) printChapelSyntax(ss_, node->whereClause());
+    if (node->whereClause()){
+      ss_ << " where ";
+      printChapelSyntax(ss_, node->whereClause());
+    }
 
     // throws
     if (node->throws()) ss_ << " throws";

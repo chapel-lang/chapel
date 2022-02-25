@@ -82,7 +82,8 @@ static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
   }
   std::ostringstream ss;
   node->stringify(ss, kind);
-  // assert(!ss.str().empty());
+  if (!(node->isDomain() && node->toDomain()->numChildren() == 0))
+    assert(!ss.str().empty());
   std::cerr << ss.str() << std::endl;
 }
 
@@ -132,7 +133,7 @@ static void test1(Parser* parser) {
                  proc df(arg) { }
                  proc const cnst(arg) const { }
                  proc const ref cnstrf(arg) const ref { }
-                 proc ref rf(arg) ref { }
+                 private proc ref rf(arg) ref : string where !(isDomainType(eltType) || isArrayType(eltType)) { }
                  proc param prm(arg) param { }
                  proc type tp(arg) type { }
                }
