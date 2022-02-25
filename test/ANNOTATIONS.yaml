@@ -489,6 +489,9 @@ all:
   01/27/22:
     - text: Switch to new AV
       config: chapcs
+  02/22/22:
+    - text: OS reinstall
+      config: chapcs
 
 # End all
 
@@ -1835,7 +1838,7 @@ spectralnorm:
     - qthreads updated to yield every ~100 uncontested sync var locks
   12/18/18:
     - brad version changed to serial implementation (#11904)
-  02/22/22
+  02/18/22:
     - A spectral norm variant that avoids a reciprocal and unrolls by two (#19271)
 
 spectral-norm-specify-step:
@@ -2247,7 +2250,7 @@ arkouda: &arkouda-base
     - Optimize sorting calls when both keys and ranks are needed (Bears-R-Us/arkouda#1063)
   02/10/22:
     - String ops follow byte locality (Bears-R-Us/arkouda#1060)
-  02/17/22
+  02/17/22:
     - Closes 1109 Scale substring_search.py and flatten.py benchmarks with numLocales (Bears-R-Us/arkouda#1112)
   02/24/22:
     - Use int in1d to implement the hashed based string in1d (Bears-R-Us/arkouda#1132)
