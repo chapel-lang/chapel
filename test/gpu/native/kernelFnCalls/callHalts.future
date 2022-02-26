@@ -1,0 +1,1 @@
+Calling halt from code intended to run on GPU makes it silently not run on GPU
