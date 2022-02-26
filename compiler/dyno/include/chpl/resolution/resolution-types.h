@@ -334,6 +334,7 @@ class CallInfo {
 
   bool operator==(const CallInfo& other) const {
     return name_ == other.name_ &&
+           calledType_ == other.calledType_ &&
            isMethod_ == other.isMethod_ &&
            hasQuestionArg_ == other.hasQuestionArg_ &&
            actuals_ == other.actuals_;
@@ -342,7 +343,7 @@ class CallInfo {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(name_, isMethod_, hasQuestionArg_, actuals_);
+    return chpl::hash(name_, calledType_, isMethod_, hasQuestionArg_, actuals_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
