@@ -229,6 +229,7 @@ static memTab_t* memTabMap;
 
 static struct fid_mr* ofiMrTab[MAX_MEM_REGIONS];
 
+static chpl_bool  envUseCxiHybridMR;
 //
 // Messaging (AM) support.
 //
@@ -1011,6 +1012,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   envUseAmTxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_TX_COUNTER", false);
   envUseAmRxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_RX_COUNTER", false);
   envProgressCntr = chpl_env_rt_get_bool("COMM_OFI_PROGRESS_COUNTER", false);
+
+  envUseCxiHybridMR = chpl_env_rt_get_bool("COMM_OFI_CXI_HYBRID_MR", true);
   //
   // The user can specify the provider by setting either the Chapel
   // CHPL_RT_COMM_OFI_PROVIDER environment variable or the libfabric
@@ -2262,28 +2265,30 @@ void init_ofiEp(void) {
 
   // Use "hybrid" MR mode for the cxi provider if it's available
 
-  if (providerInUse(provType_cxi)) {    
+  if (providerInUse(provType_cxi)) {
+    if (envUseCxiHybridMR) {
 #ifdef FI_CXI_DOM_OPS_3
-    struct fi_cxi_dom_ops *dom_ops;
-    int rc;
-    rc = fi_open_ops(&ofi_domain->fid, FI_CXI_DOM_OPS_3, 0, 
-                        (void **)&dom_ops, NULL);
-    if (rc == FI_SUCCESS) {
-      rc = dom_ops->enable_hybrid_mr_desc(&ofi_domain->fid, true);
+      struct fi_cxi_dom_ops *dom_ops;
+      int rc;
+      rc = fi_open_ops(&ofi_domain->fid, FI_CXI_DOM_OPS_3, 0,
+                          (void **)&dom_ops, NULL);
       if (rc == FI_SUCCESS) {
-        cxiHybridMRMode = true;
+        rc = dom_ops->enable_hybrid_mr_desc(&ofi_domain->fid, true);
+        if (rc == FI_SUCCESS) {
+          cxiHybridMRMode = true;
+        } else {
+          DBG_PRINTF(DBG_PROV, "enable_hybrid_mr_desc failed: %s",
+                     fi_strerror(rc));
+        }
       } else {
-        DBG_PRINTF(DBG_PROV, "enable_hybrid_mr_desc failed: %s", 
-                   fi_strerror(rc));
+        DBG_PRINTF(DBG_PROV, "fi_open_ops failed: %s", fi_strerror(rc));
       }
-    } else {
-      DBG_PRINTF(DBG_PROV, "fi_open_ops failed: %s", fi_strerror(rc));
-    }
 #endif
+    }
     if (cxiHybridMRMode) {
-      DBG_PRINTF(DBG_PROV, "using cxi hybrid MR mode");
+      DBG_PRINTF(DBG_PROV, "cxi hybrid MR mode enabled");
     } else {
-      DBG_PRINTF(DBG_PROV, "not using cxi hybrid MR mode");
+      DBG_PRINTF(DBG_PROV, "cxi hybrid MR mode disabled");
     }
   }
 
@@ -2665,7 +2670,7 @@ void init_ofiForMem(void) {
 
   uint64_t bufAcc = FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE;
 
-  if (((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) != 0) || 
+  if (((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) != 0) ||
        cxiHybridMRMode) {
     bufAcc |= FI_SEND | FI_READ | FI_WRITE;
   }
