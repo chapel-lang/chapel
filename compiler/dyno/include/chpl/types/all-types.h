@@ -40,7 +40,6 @@
 #include "chpl/types/TupleType.h"
 #include "chpl/types/Type.h"
 #include "chpl/types/Type.h"
-#include "chpl/types/TypeClasses.h"
 #include "chpl/types/TypeTag.h"
 #include "chpl/types/UintType.h"
 #include "chpl/types/UnionType.h"

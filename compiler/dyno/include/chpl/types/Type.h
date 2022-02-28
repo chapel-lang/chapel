@@ -22,7 +22,6 @@
 
 #include "chpl/queries/Context.h"
 #include "chpl/queries/update-functions.h"
-#include "chpl/types/TypeClasses.h"
 #include "chpl/types/TypeTag.h"
 
 #include <deque>
@@ -32,6 +31,25 @@ namespace uast {
   class Decl;
 }
 namespace types {
+
+
+// forward declare the various Type subclasses
+// using macros and type-classes-list.h
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_DECL(NAME) class NAME;
+#define TYPE_NODE(NAME) TYPE_DECL(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_DECL(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_DECL(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+/// \endcond
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
+// clear the macros
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef TYPE_DECL
 
 
 /**
