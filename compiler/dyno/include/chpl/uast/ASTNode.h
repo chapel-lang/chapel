@@ -158,7 +158,7 @@ class ASTNode {
   /// \endcond DO_NOT_DOCUMENT
 
   // define is__ methods for the various AST types
-  // using macros and ASTClassesList.h
+  // using macros and uast-classes-list.h
   /// \cond DO_NOT_DOCUMENT
   #define AST_IS(NAME) \
     bool is##NAME() const { \
@@ -169,8 +169,8 @@ class ASTNode {
   #define AST_BEGIN_SUBCLASSES(NAME) AST_IS(NAME)
   #define AST_END_SUBCLASSES(NAME)
   /// \endcond
-  // Apply the above macros to ASTClassesList.h
-  #include "chpl/uast/ASTClassesList.h"
+  // Apply the above macros to uast-classes-list.h
+  #include "chpl/uast/uast-classes-list.h"
   // clear the macros
   #undef AST_NODE
   #undef AST_LEAF
@@ -179,7 +179,7 @@ class ASTNode {
   #undef AST_IS
 
   // define to__ methods for the various AST types
-  // using macros and ASTClassesList.h
+  // using macros and uast-classes-list.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
   /// \cond DO_NOT_DOCUMENT
   #define AST_TO(NAME) \
@@ -194,8 +194,8 @@ class ASTNode {
   #define AST_BEGIN_SUBCLASSES(NAME) AST_TO(NAME)
   #define AST_END_SUBCLASSES(NAME)
   /// \endcond
-  // Apply the above macros to ASTClassesList.h
-  #include "chpl/uast/ASTClassesList.h"
+  // Apply the above macros to uast-classes-list.h
+  #include "chpl/uast/uast-classes-list.h"
   // clear the macros
   #undef AST_NODE
   #undef AST_LEAF
@@ -227,7 +227,7 @@ class ASTNode {
         #define AST_BEGIN_SUBCLASSES(NAME) IGNORE(START_##NAME)
         #define AST_END_SUBCLASSES(NAME) IGNORE(END_##NAME)
 
-        #include "chpl/uast/ASTClassesList.h"
+        #include "chpl/uast/uast-classes-list.h"
 
         IGNORE(NUM_AST_TAGS)
 
@@ -267,7 +267,7 @@ class ASTNode {
         #define AST_BEGIN_SUBCLASSES(NAME) IGNORE(START_##NAME)
         #define AST_END_SUBCLASSES(NAME) IGNORE(END_##NAME)
 
-        #include "chpl/uast/ASTClassesList.h"
+        #include "chpl/uast/uast-classes-list.h"
 
         IGNORE(NUM_AST_TAGS)
 
@@ -382,9 +382,9 @@ class ASTNode {
       #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
       #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
 
-      // Apply the above macros to ASTClassesList.h
+      // Apply the above macros to uast-classes-list.h
       // to fill in the cases
-      #include "chpl/uast/ASTClassesList.h"
+      #include "chpl/uast/uast-classes-list.h"
       // and also for NUM_AST_TAGS
       CASE_OTHER(NUM_AST_TAGS)
 
@@ -406,7 +406,7 @@ class ASTNode {
 namespace std {
 
 // define std::less for the various AST types
-// using macros and ASTClassesList.h
+// using macros and uast-classes-list.h
 /// \cond DO_NOT_DOCUMENT
 #define AST_LESS(NAME) \
   template<> struct less<chpl::uast::NAME*> { \
@@ -425,8 +425,8 @@ namespace std {
 #define AST_BEGIN_SUBCLASSES(NAME) AST_LESS(NAME)
 #define AST_END_SUBCLASSES(NAME)
 /// \endcond
-// Apply the above macros to ASTClassesList.h
-#include "chpl/uast/ASTClassesList.h"
+// Apply the above macros to uast-classes-list.h
+#include "chpl/uast/uast-classes-list.h"
 // Additionally, apply the macro to ASTNode
 AST_LESS(ASTNode)
 // clear the macros

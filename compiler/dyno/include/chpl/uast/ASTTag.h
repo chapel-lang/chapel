@@ -35,15 +35,15 @@ namespace asttags {
  */
 enum ASTTag {
   // define the enum for all of the non-virtual AST nodes
-  // using macros and ASTClassesList.h
+  // using macros and uast-classes-list.h
   /// \cond DO_NOT_DOCUMENT
   #define AST_NODE(NAME) NAME ,
   #define AST_LEAF(NAME) NAME ,
   #define AST_BEGIN_SUBCLASSES(NAME) START_##NAME ,
   #define AST_END_SUBCLASSES(NAME) END_##NAME ,
   /// \endcond
-  // Apply the above macros to ASTClassesList.h
-  #include "chpl/uast/ASTClassesList.h"
+  // Apply the above macros to uast-classes-list.h
+  #include "chpl/uast/uast-classes-list.h"
   // clear the macros
   #undef AST_NODE
   #undef AST_LEAF
@@ -64,8 +64,8 @@ enum ASTTag {
 #define AST_BEGIN_SUBCLASSES(NAME)
 #define AST_END_SUBCLASSES(NAME)
 /// \endcond
-// Apply the above macros to ASTClassesList.h
-#include "chpl/uast/ASTClassesList.h"
+// Apply the above macros to uast-classes-list.h
+#include "chpl/uast/uast-classes-list.h"
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF
@@ -84,8 +84,8 @@ enum ASTTag {
 #define AST_BEGIN_SUBCLASSES(NAME) IS_BASE_CLASS_AST(NAME)
 #define AST_END_SUBCLASSES(NAME)
 /// \endcond
-// Apply the above macros to ASTClassesList.h
-#include "chpl/uast/ASTClassesList.h"
+// Apply the above macros to uast-classes-list.h
+#include "chpl/uast/uast-classes-list.h"
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF
