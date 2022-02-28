@@ -106,69 +106,123 @@ static const char* kindToString(VisibilityClause::LimitationKind kind) {
 }
 
 
-/** visit each elt of begin..end, outputting `separator` between each.
- * `surroundBegin` and `surroundEnd` are output before and after respectively
- * if not null */
-template<typename It>
-void interpose(std::ostream& os, It begin, It end, const char* separator,
-               const char* surroundBegin=nullptr,
-               const char* surroundEnd=nullptr) {
-  bool first = true;
-  if (surroundBegin) os << surroundBegin;
-  for (auto it = begin; it != end; it++) {
-    if (!first) os << separator;
-    printChapelSyntax(os,*it);
-    first = false;
-  }
-  if (surroundEnd) os << surroundEnd;
-}
-
-template<typename T>
-void interpose(std::ostream& os, T xs, const char* separator,
-               const char* surroundBegin=nullptr,
-               const char* surroundEnd=nullptr) {
-  interpose(os, xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
-}
-
-
-/*
-  * helper for printing descendants of simpleBlockLike to handle when to print
-  * the optional opening keyword and if braces should follow that keyword
-  */
-template<typename It>
-void printBlockWithStyle(std::ostream& os, BlockStyle style,  It begin, It end,
-                         const char* implicitOpeningKeyword=nullptr) {
-  if (implicitOpeningKeyword && (style == BlockStyle::IMPLICIT
-      || style == uast::BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK)) {
-    os << implicitOpeningKeyword;
-  }
-  if (style != BlockStyle::IMPLICIT) {
-    interpose(os, begin, end, "\n", "{","}");
-  } else {
-    interpose(os, begin, end, "\n");
-  }
-}
-
-
-template<typename T>
-void printBlockWithStyle(std::ostream& os, BlockStyle style,  T xs,
-                         const char* implicitOpeningKeyword=nullptr) {
-  printBlockWithStyle(os, style, xs.begin(), xs.end(), implicitOpeningKeyword);
-}
-
-template<typename T>
-void visitLiteral(std::ostream& ss_, const T* node) {
-  ss_ << node->text().c_str();
-}
 
 // TODO: Nesting
 // TODO: Semicolons
 // TODO: Newlines
+// TODO: Parentheses based on operator precedence
 
 
 struct ChplSyntaxVisitor {
-  std::ostringstream ss_;
+  std::stringstream ss_;
   ChplSyntaxVisitor(std::ostringstream ss_ = std::ostringstream()) {}
+
+  /** visit each elt of begin..end, outputting `separator` between each.
+   * `surroundBegin` and `surroundEnd` are output before and after respectively
+   * if not null */
+  template<typename It>
+  void interpose(It begin, It end, const char* separator,
+                const char* surroundBegin=nullptr,
+                const char* surroundEnd=nullptr) {
+    bool first = true;
+    if (surroundBegin) ss_ << surroundBegin;
+    for (auto it = begin; it != end; it++) {
+      if (!first) ss_ << separator;
+      printChapelSyntax(ss_,*it);
+      first = false;
+    }
+    if (surroundEnd) ss_ << surroundEnd;
+  }
+
+  template<typename T>
+  void interpose(T xs, const char* separator,
+                const char* surroundBegin=nullptr,
+                const char* surroundEnd=nullptr) {
+    interpose(xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
+  }
+
+
+  /*
+    * helper for printing descendants of simpleBlockLike to handle when to print
+    * the optional opening keyword and if braces should follow that keyword
+    */
+  template<typename It>
+  void printBlockWithStyle(BlockStyle style,  It begin, It end,
+                          const char* implicitOpeningKeyword=nullptr) {
+    if (implicitOpeningKeyword && (style == BlockStyle::IMPLICIT
+        || style == uast::BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK)) {
+      ss_ << implicitOpeningKeyword;
+    }
+    if (style != BlockStyle::IMPLICIT) {
+      interpose(begin, end, "\n", "{","}");
+    } else {
+      interpose(begin, end, "\n");
+    }
+  }
+
+
+  template<typename T>
+  void printBlockWithStyle(BlockStyle style,  T xs,
+                          const char* implicitOpeningKeyword=nullptr) {
+    printBlockWithStyle(style, xs.begin(), xs.end(), implicitOpeningKeyword);
+  }
+
+  template<typename T>
+  void visitLiteral(const T* node) {
+    ss_ << node->text().c_str();
+  }
+
+
+  void printFunctionHelper(const Function* node) {
+     // storage kind
+    if (node->thisFormal() != nullptr
+        && node->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
+      ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
+    }
+
+    // secondary methods
+    if (node->isMethod() && !node->isPrimaryMethod()
+        && node->thisFormal()->child(0)->isIdentifier()) {
+      ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
+    }
+
+    // Function Name
+    ss_ << node->name().str();
+
+    // Formals
+    int numThisFormal = node->thisFormal() ? 1 : 0;
+    int nFormals = node->numFormals() - numThisFormal;
+    if (nFormals == 0 && node->isParenless()) {
+      // pass
+    } else if (nFormals == 0) {
+      ss_ << "()";
+    } else {
+      auto it = node->formals();
+      interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
+    }
+
+    // Return Intent
+    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
+      ss_ << " " << kindToString((IntentList) node->returnIntent());
+    }
+
+    // Return type
+    if (const Expression* e = node->returnType()) {
+      ss_ << ": ";
+      printChapelSyntax(ss_, e);
+    }
+  }
+
+  /*
+  Customized method to print just the function signature as required by
+  the old parser's `userSignature` field.
+  */
+  void printFunctionSignature(const Function* node) {
+    if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
+      ss_ << kindToString(node->visibility()) << " ";
+    }
+    printFunctionHelper(node);
+  }
 
   void printLinkage(const Decl* node) {
     if (node->linkage() != Decl::Linkage::DEFAULT_LINKAGE) {
@@ -185,7 +239,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Array* node) {
-    interpose(ss_, node->children(), ", ", "[", "]");
+    interpose(node->children(), ", ", "[", "]");
   }
 
   void visit(const As* node) {
@@ -202,11 +256,11 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->withClause());
       ss_ << " ";
     }
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
+    printBlockWithStyle(node->blockStyle(), node->stmts());
   }
 
   void visit(const Block* node) {
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
+    printBlockWithStyle(node->blockStyle(), node->stmts());
   }
 
   void visit(const BoolLiteral* node) {
@@ -227,7 +281,7 @@ struct ChplSyntaxVisitor {
     ss_ << "]";
     if (node->numStmts() > 0) {
       ss_ << " ";
-      interpose(ss_, node->stmts(), "");
+      interpose(node->stmts(), "");
     }
   }
 
@@ -248,14 +302,14 @@ struct ChplSyntaxVisitor {
     if (node->error()){
       if (node->hasParensAroundError()) ss_ << "(";
       ss_ << node->error()->name().c_str();
-      if (const Expression* te = node->error()->toVariable()->typeExpression()) {
+      if (const Expression* te = node->error()->typeExpression()) {
         ss_ << " : ";
         printChapelSyntax(ss_, te);
       }
       if (node->hasParensAroundError()) ss_ << ")";
       ss_ << " ";
     }
-    interpose(ss_, node->stmts(), "\n","{", "}");
+    interpose(node->stmts(), "\n","{", "}");
   }
 
   void visit(const Class* node) {
@@ -266,7 +320,7 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->parentClass());
       ss_ << " ";
     }
-    interpose(ss_, node->decls(), "\n", "{", "}");
+    interpose(node->decls(), "\n", "{", "}");
   }
 
   void visit(const Cobegin* node) {
@@ -275,7 +329,7 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->withClause());
       ss_<< " ";
     }
-    interpose(ss_, node->taskBodies(), "\n", "{","}");
+    interpose(node->taskBodies(), "\n", "{","}");
   }
 
   void visit(const Coforall* node) {
@@ -291,7 +345,7 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->withClause());
     }
     ss_ << " ";
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
   void visit(const Comment* node){
@@ -303,10 +357,10 @@ struct ChplSyntaxVisitor {
     ss_ << "if ";
     printChapelSyntax(ss_, node->condition());
     ss_ << " ";
-    printBlockWithStyle(ss_, node->thenBlockStyle(), node->thenStmts(), "then ");
+    printBlockWithStyle(node->thenBlockStyle(), node->thenStmts(), "then ");
     if (node->hasElseBlock()) {
       ss_ << " else ";
-      printBlockWithStyle(ss_, node->elseBlockStyle(), node->elseStmts());
+      printBlockWithStyle(node->elseBlockStyle(), node->elseStmts());
     }
   }
 
@@ -316,12 +370,12 @@ struct ChplSyntaxVisitor {
 
   void visit(const Defer* node) {
     ss_ << "defer ";
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
+    printBlockWithStyle(node->blockStyle(), node->stmts());
   }
 
   void visit(const Delete* node) {
     ss_ << "delete ";
-    interpose(ss_, node->exprs(), ", ");
+    interpose(node->exprs(), ", ");
   }
 
   void visit(const Domain* node) {
@@ -330,7 +384,7 @@ struct ChplSyntaxVisitor {
     } else if (node->numExprs() == 0) {
       // do nothing
     } else {
-      interpose(ss_, node->exprs(), ", ", "{", "}");
+      interpose(node->exprs(), ", ", "{", "}");
     }
   }
 
@@ -341,14 +395,14 @@ struct ChplSyntaxVisitor {
 
   void visit(const DoWhile* node) {
     ss_ << "do ";
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
+    printBlockWithStyle(node->blockStyle(), node->stmts());
     ss_ << " while ";
     printChapelSyntax(ss_, node->condition());
   }
 
   void visit(const Enum* node) {
     ss_ << "enum " << node->name().c_str() << " ";
-    interpose(ss_, node->enumElements(), ", ", "{ ", " }");
+    interpose(node->enumElements(), ", ", "{ ", " }");
   }
 
   void visit(const EnumElement* node) {
@@ -382,9 +436,9 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->actual(0));
     } else {
       if (node->callUsedSquareBrackets()) {
-        interpose(ss_, node->actuals(), ", ", "[", "]");
+        interpose(node->actuals(), ", ", "[", "]");
       } else {
-        interpose(ss_, node->actuals(), ", ", "(", ")");
+        interpose(node->actuals(), ", ", "(", ")");
       }
     }
 
@@ -401,7 +455,7 @@ struct ChplSyntaxVisitor {
     }
     printChapelSyntax(ss_, node->iterand());
     ss_ << " ";
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
   void visit(const Forall* node) {
@@ -417,7 +471,7 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->withClause());
     }
     ss_ << " ";
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
   void visit(const Foreach* node) {
@@ -429,7 +483,7 @@ struct ChplSyntaxVisitor {
     }
     printChapelSyntax(ss_, node->iterand());
     ss_ << " ";
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
   void visit(const Formal* node) {
@@ -474,55 +528,21 @@ struct ChplSyntaxVisitor {
     ss_ << kindToString(node->kind());
     ss_ << " ";
 
-    // storage kind
-    if (node->thisFormal() != nullptr
-        && node->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
-      ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
-    }
-
-    // secondary methods
-    if (node->isMethod() && !node->isPrimaryMethod()
-        && node->thisFormal()->child(0)->isIdentifier()) {
-      ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
-    }
-
-    // Function Name
-    ss_ << node->name().str();
-
-    // Formals
-    int numThisFormal = node->thisFormal() ? 1 : 0;
-    int nFormals = node->numFormals() - numThisFormal;
-    if (nFormals == 0 && node->isParenless()) {
-      // pass
-    } else if (nFormals == 0) {
-      ss_ << "()";
-    } else {
-      auto it = node->formals();
-      interpose(ss_, it.begin() + numThisFormal, it.end(), ", ", "(", ")");
-    }
-
-    // Return Intent
-    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      ss_ << " " << kindToString((IntentList) node->returnIntent());
-    }
-
-    // Return type
-    if (const Expression* e = node->returnType()) {
-      ss_ << " : ";
-      printChapelSyntax(ss_, e);
-    }
+    printFunctionHelper(node);
+    ss_ << " ";
 
     // where clause
     if (node->whereClause()){
-      ss_ << " where ";
+      ss_ << "where ";
       printChapelSyntax(ss_, node->whereClause());
+      ss_ << " ";
     }
 
     // throws
-    if (node->throws()) ss_ << " throws";
+    if (node->throws()) ss_ << "throws ";
 
     // function body
-    interpose(ss_, node->stmts(), "\n", " {", "}");
+    interpose(node->stmts(), "\n", "{", "}");
 
   }
 
@@ -530,14 +550,14 @@ struct ChplSyntaxVisitor {
     ss_ << node->name().str();
   }
 
-  void visit(const ImagLiteral* node) { return visitLiteral(ss_, node); }
+  void visit(const ImagLiteral* node) { return visitLiteral(node); }
 
   void visit(const Import* node) {
     if (node->visibility() != Decl::Visibility::DEFAULT_VISIBILITY) {
       ss_ << kindToString(node->visibility());
     }
     ss_ << "import ";
-    interpose(ss_, node->visibilityClauses(), ", ");
+    interpose(node->visibilityClauses(), ", ");
   }
 
   void visit(const Include* node) {
@@ -552,7 +572,7 @@ struct ChplSyntaxVisitor {
     ss_ << node->name().c_str();
   }
 
-  void visit(const IntLiteral* node)  { return visitLiteral(ss_, node); }
+  void visit(const IntLiteral* node)  { return visitLiteral(node); }
 
   void visit(const Label* node) {
     ss_ << "label ";
@@ -587,14 +607,14 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->condition());
       ss_ << " ";
     }
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
   void visit(const Manage* node) {
     ss_ << "manage ";
-    interpose(ss_, node->managers(), ", ");
+    interpose(node->managers(), ", ");
     ss_ << " ";
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
   void visit(const Module* node) {
@@ -606,7 +626,7 @@ struct ChplSyntaxVisitor {
     }
     ss_ << "module ";
     ss_ << node->name().c_str() << " ";
-    interpose(ss_, node->stmts(), "\n", "{", "}");
+    interpose(node->stmts(), "\n", "{", "}");
   }
 
   void visit(const MultiDecl* node) {
@@ -642,7 +662,7 @@ struct ChplSyntaxVisitor {
     ss_ << "on ";
     printChapelSyntax(ss_, node->destination());
     ss_ << " ";
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
   void visit(const OpCall* node) {
@@ -666,7 +686,7 @@ struct ChplSyntaxVisitor {
     ss_ << "__primitive";
     ss_ << "(";
     ss_ << '"' << quoteStringForC(primTagToName(node->prim())) << '"' << ", ";
-    interpose(ss_, node->actuals(), ", ");
+    interpose(node->actuals(), ", ");
     ss_ << ")";
   }
 
@@ -680,24 +700,24 @@ struct ChplSyntaxVisitor {
     }
   }
 
-  void visit(const RealLiteral* node) { return visitLiteral(ss_, node); }
+  void visit(const RealLiteral* node) { return visitLiteral(node); }
 
   void visit(const Record* node) {
     printLinkage(node);
     ss_ << "record ";
     ss_ << node->name().c_str() << " ";
-    interpose(ss_, node->decls(), "\n", "{", "}");
+    interpose(node->decls(), "\n", "{", "}");
   }
 
   void visit(const Reduce* node) {
     ss_ << node->op().c_str() << " ";
     ss_ << "reduce ";
-    interpose(ss_, node->actuals(), ", ");
+    interpose(node->actuals(), ", ");
   }
 
   void visit(const Require* node) {
     ss_ << "require ";
-    interpose(ss_, node->exprs(), ", ");
+    interpose(node->exprs(), ", ");
   }
 
   void visit(const Return* node) {
@@ -711,14 +731,14 @@ struct ChplSyntaxVisitor {
   void visit(const Scan* node) {
     ss_ << node->op().c_str() << " ";
     ss_ << "scan ";
-    interpose(ss_, node->actuals(), ", ");
+    interpose(node->actuals(), ", ");
   }
 
   void visit(const Select* node) {
     ss_ << "select ";
     printChapelSyntax(ss_, node->expr());
     ss_ << " ";
-    interpose(ss_, node->whenStmts(), "\n", "{", "}");
+    interpose(node->whenStmts(), "\n", "{", "}");
   }
 
   void visit(const Serial* node) {
@@ -727,7 +747,7 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, node->condition());
       ss_ << " ";
     }
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
   void visit(const StringLiteral* node) {
@@ -736,7 +756,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const Sync* node) {
     ss_ << "sync ";
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts());
+    printBlockWithStyle(node->blockStyle(), node->stmts());
   }
 
   void visit(const TaskVar* node) {
@@ -756,16 +776,16 @@ struct ChplSyntaxVisitor {
     } else {
       ss_ << " ";
     }
-    interpose(ss_, node->stmts(), "\n", "{","}");
+    interpose(node->stmts(), "\n", "{","}");
     // if try block has catch blocks
     if (!node->isTryBang()) {
       ss_ << " ";
-      interpose(ss_, node->handlers(), "\n");
+      interpose(node->handlers(), "\n");
     }
   }
 
   void visit(const Tuple* node) {
-    interpose(ss_, node->children(), ", ", "(", ")");
+    interpose(node->children(), ", ", "(", ")");
   }
 
   void visit(const TupleDecl* node) {
@@ -813,13 +833,13 @@ struct ChplSyntaxVisitor {
     ss_ << node->name().c_str();
   }
 
-  void visit(const UintLiteral* node) { return visitLiteral(ss_, node); }
+  void visit(const UintLiteral* node) { return visitLiteral(node); }
 
   void visit(const Union* node) {
     printLinkage(node);
     ss_ << "union ";
     ss_ << node->name().c_str() << " ";
-    interpose(ss_, node->children(), "\n", "{", "}");
+    interpose(node->children(), "\n", "{", "}");
   }
 
   void visit(const Use* node) {
@@ -827,7 +847,7 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString(node->visibility());
     }
     ss_ << "use ";
-    interpose(ss_, node->visibilityClauses(), ", ");
+    interpose(node->visibilityClauses(), ", ");
   }
 
   void visit(const VarArgFormal* node) {
@@ -882,13 +902,13 @@ struct ChplSyntaxVisitor {
         limit == VisibilityClause::LimitationKind::EXCEPT) {
       ss_ << kindToString(limit);
       printChapelSyntax(ss_, node->symbol());
-      interpose(ss_, node->limitations(), ", ");
+      interpose(node->limitations(), ", ");
     } else if (limit == VisibilityClause::LimitationKind::BRACES) {
       printChapelSyntax(ss_, node->symbol());
-      interpose(ss_, node->limitations(), ", ", "{","}");
+      interpose(node->limitations(), ", ", "{","}");
     } else { //NONE
       printChapelSyntax(ss_, node->symbol());
-      interpose(ss_, node->limitations(), ", ");
+      interpose(node->limitations(), ", ");
     }
   }
 
@@ -897,22 +917,22 @@ struct ChplSyntaxVisitor {
       ss_ << "otherwise ";
     } else {
       ss_ << "when ";
-      interpose(ss_, node->caseExprs(), ", ");
+      interpose(node->caseExprs(), ", ");
       ss_ << " ";
     }
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
   void visit(const While* node) {
     ss_ << "while ";
     printChapelSyntax(ss_, node->condition());
     ss_ << " ";
-    printBlockWithStyle(ss_, node->blockStyle(), node->stmts(), "do ");
+    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
   void visit(const WithClause* node) {
     ss_ << "with ";
-    interpose(ss_, node->exprs(), ", ", "(", ")");
+    interpose(node->exprs(), ", ", "(", ")");
   }
 
   void visit(const Yield* node) {
@@ -922,69 +942,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const Zip* node) {
     ss_ << "zip";
-    interpose(ss_, node->actuals(),", ","(",")");
-  }
-
-};
-
-/***************************************************************
- * Specializations for generating userString when converting
- * from uAST to old AST
- */
-
-struct UserStringVisitor {
-  std::ostringstream ss_;
-  UserStringVisitor(std::ostringstream ss_ = std::ostringstream()) {}
-
-
-  void visit(const Function* node) {
-    std::stringstream ss;
-    if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
-      ss_ << kindToString(node->visibility()) << " ";
-    }
-
-    // storage kind
-    if (node->thisFormal() != nullptr
-        && node->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
-      ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
-    }
-    // secondary methods
-    if (node->isMethod() && !node->isPrimaryMethod()
-        && node->thisFormal()->child(0)->isIdentifier()) {
-      ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
-    }
-
-    // Function Name
-    ss_ << node->name().str();
-
-    // Formals
-    int numThisFormal = node->thisFormal() ? 1 : 0;
-    int nFormals = node->numFormals() - numThisFormal;
-    if (nFormals == 0 && node->isParenless()) {
-      // pass
-    } else if (nFormals == 0) {
-      ss_ << "()";
-    } else {
-      auto it = node->formals();
-      interpose(ss_, it.begin() + numThisFormal, it.end(), ", ", "(", ")");
-    }
-
-    // Return Intent
-    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      ss_ << " " << kindToString((IntentList) node->returnIntent());
-      ss_ << " ";
-    }
-
-    // Return type
-    if (const Expression* e = node->returnType()) {
-      ss_ << ": ";
-      printChapelSyntax(ss_, e);
-    }
-
-  }
-
-  void visit(const ASTNode* node) {
-    ss_ << tagToString(node->tag());
+    interpose(node->actuals(),", ","(",")");
   }
 
 };
@@ -994,21 +952,32 @@ namespace chpl {
   void printChapelSyntax(std::ostream& os, const ASTNode* node) {
     auto visitor = ChplSyntaxVisitor{};
     node->dispatch<void>(visitor);
-    // TODO: Avoid making copy of string here
-    // challenge: when using rdbuf(), if nothing gets added to ss_, then
+    // when using << with ss_.rdbuf(), if nothing gets added to os, then
     // os goes into fail state -> see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
-    os << visitor.ss_.str();
+    // check for failbit and reset
+    os << visitor.ss_.rdbuf();
+    if (os.fail()) {
+      os.clear();
+    }
+    os.flush();
+
   }
 
-  /* Generic printer calling the above functions */
+  /***************************************************************
+   * Specialization for generating userString when converting
+   * from uAST to old AST
+  */
   void printFunctionSignature(std::ostream& os, const Function* node) {
-    auto visitor = UserStringVisitor{};
-    node->dispatch<void>(visitor);
-    // TODO: Avoid making copy of string here
-    // challenge: when using rdbuf() as so:, if nothing gets added to ss_, then
-    // os << visitor.ss_.rdbuf()
+    auto visitor = ChplSyntaxVisitor{};
+    visitor.printFunctionSignature(node);
+    // when using << with ss_.rdbuf(), if nothing gets added to os, then
     // os goes into fail state -> see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
-    os << visitor.ss_.str();
+    // check for failbit and reset
+    os << visitor.ss_.rdbuf();
+    if (os.fail()) {
+      os.clear();
+    }
+    os.flush();
   }
 
 } // end chpl namespace
