@@ -29,7 +29,7 @@ namespace primtags {
 enum PrimitiveTag {
 #define PRIMITIVE_G(NAME, str) PRIM_ ## NAME ,
 #define PRIMITIVE_R(NAME, str) PRIM_ ## NAME ,
-#include "chpl/uast/PrimOpsList.h"
+#include "chpl/uast/prim-ops-list.h"
   NUM_KNOWN_PRIMS
 #undef PRIMITIVE_G
 #undef PRIMITIVE_R
