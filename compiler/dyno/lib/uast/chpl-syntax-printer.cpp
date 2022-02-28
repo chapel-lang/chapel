@@ -105,8 +105,7 @@ static const char* kindToString(VisibilityClause::LimitationKind kind) {
   }
 }
 
-
-
+// TODO: Attributes
 // TODO: Nesting
 // TODO: Semicolons
 // TODO: Newlines
@@ -117,9 +116,11 @@ struct ChplSyntaxVisitor {
   std::stringstream ss_;
   ChplSyntaxVisitor(std::ostringstream ss_ = std::ostringstream()) {}
 
-  /** visit each elt of begin..end, outputting `separator` between each.
-   * `surroundBegin` and `surroundEnd` are output before and after respectively
-   * if not null */
+  /**
+   * visit each elt of begin..end, outputting `separator` between each.
+   * if not null, `surroundBegin` and `surroundEnd` are output before
+   * and after respectively
+  */
   template<typename It>
   void interpose(It begin, It end, const char* separator,
                 const char* surroundBegin=nullptr,
@@ -141,11 +142,10 @@ struct ChplSyntaxVisitor {
     interpose(xs.begin(), xs.end(), separator, surroundBegin, surroundEnd);
   }
 
-
   /*
-    * helper for printing descendants of simpleBlockLike to handle when to print
-    * the optional opening keyword and if braces should follow that keyword
-    */
+   * helper for printing descendants of simpleBlockLike to handle when to print
+   * the optional opening keyword and if braces should follow that keyword
+  */
   template<typename It>
   void printBlockWithStyle(BlockStyle style,  It begin, It end,
                           const char* implicitOpeningKeyword=nullptr) {
@@ -160,7 +160,6 @@ struct ChplSyntaxVisitor {
     }
   }
 
-
   template<typename T>
   void printBlockWithStyle(BlockStyle style,  T xs,
                           const char* implicitOpeningKeyword=nullptr) {
@@ -172,8 +171,10 @@ struct ChplSyntaxVisitor {
     ss_ << node->text().c_str();
   }
 
-  // helper to check if the called expression is actually a
-  // management kind. Helps FnCalls not to print () in this case
+  /*
+   * helper to check if the called expression is actually a
+   * management kind. Helps FnCalls not to print () in this case
+  */
   bool isCalleeManagementKind(const Expression* callee) {
     if (callee->isIdentifier() &&
       (callee->toIdentifier()->name() == "borrowed"
@@ -225,8 +226,8 @@ struct ChplSyntaxVisitor {
   }
 
   /*
-  Customized method to print just the function signature as required by
-  the old parser's `userSignature` field.
+   * Customized method to print just the function signature as required by
+   * the old parser's `userSignature` field.
   */
   void printFunctionSignature(const Function* node) {
     if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
@@ -310,7 +311,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const Catch* node) {
     ss_ << "catch ";
-    if (node->error()){
+    if (node->error()) {
       if (node->hasParensAroundError()) ss_ << "(";
       ss_ << node->error()->name().c_str();
       if (const Expression* te = node->error()->typeExpression()) {
@@ -359,8 +360,7 @@ struct ChplSyntaxVisitor {
     printBlockWithStyle(node->blockStyle(), node->stmts(), "do ");
   }
 
-  void visit(const Comment* node){
-    // TODO: Discuss if we want to provide comments back
+  void visit(const Comment* node) {
     ss_ << node->c_str();
   }
 
@@ -538,7 +538,7 @@ struct ChplSyntaxVisitor {
     ss_ << " ";
 
     // where clause
-    if (node->whereClause()){
+    if (node->whereClause()) {
       ss_ << "where ";
       printChapelSyntax(ss_, node->whereClause());
       ss_ << " ";
@@ -857,7 +857,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const VarArgFormal* node) {
-    if (node->intent() != Formal::Intent::DEFAULT_INTENT){
+    if (node->intent() != Formal::Intent::DEFAULT_INTENT) {
       ss_ << kindToString((IntentList) node->intent()) << " ";
     }
 
@@ -873,7 +873,7 @@ struct ChplSyntaxVisitor {
 
     if (const Expression* ce = node->count()) {
       ss_ << " ...";
-      if (const TypeQuery* tq = ce->toTypeQuery()){
+      if (const TypeQuery* tq = ce->toTypeQuery()) {
         printChapelSyntax(ss_, tq);
       } else {
         printChapelSyntax(ss_, ce);
