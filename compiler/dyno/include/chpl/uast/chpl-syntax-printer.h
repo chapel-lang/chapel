@@ -28,7 +28,7 @@
 #include "chpl/uast/all-uast.h"
 
 
-#include<ostream>
+#include<iostream>
 
 namespace chpl {
 
