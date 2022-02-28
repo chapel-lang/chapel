@@ -145,7 +145,7 @@ size_t chpl_gpu_get_alloc_size(void* ptr) {
 }
 
 bool chpl_gpu_running_on_gpu_locale() {
-  return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
+  return chpl_task_getRequestedSubloc()>0;
 }
 
 static void chpl_gpu_launch_kernel_help(const char* fatbinData,
