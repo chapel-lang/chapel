@@ -157,7 +157,7 @@ class Param {
   static double str2double(const char* str, size_t len, std::string& err);
 
   // define is__ methods for the various Param subclasses
-  // using macros and ParamClassesList.h
+  // using macros and param-classes-list.h
   /// \cond DO_NOT_DOCUMENT
   #define PARAM_IS(NAME) \
     bool is##NAME() const { \
@@ -165,14 +165,14 @@ class Param {
     }
   #define PARAM_NODE(NAME, VALTYPE) PARAM_IS(NAME)
   /// \endcond
-  // Apply the above macros to ParamClassesList.h
-  #include "chpl/types/ParamClassesList.h"
+  // Apply the above macros to param-classes-list.h
+  #include "chpl/types/param-classes-list.h"
   // clear the macros
   #undef PARAM_NODE
   #undef PARAM_IS
 
   // define to__ methods for the various Param subclasses
-  // using macros and ParamClassesList.h
+  // using macros and param-classes-list.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
   /// \cond DO_NOT_DOCUMENT
   #define PARAM_TO(NAME) \
@@ -184,8 +184,8 @@ class Param {
     }
   #define PARAM_NODE(NAME, VALTYPE) PARAM_TO(NAME)
   /// \endcond
-  // Apply the above macros to ParamClassesList.h
-  #include "chpl/types/ParamClassesList.h"
+  // Apply the above macros to param-classes-list.h
+  #include "chpl/types/param-classes-list.h"
   // clear the macros
   #undef PARAM_NODE
   #undef PARAM_TO
@@ -195,7 +195,7 @@ class Param {
   /// \endcond DO_NOT_DOCUMENT
 };
 
-// define the subclasses using macros and ParamClassesList.h
+// define the subclasses using macros and param-classes-list.h
 /// \cond DO_NOT_DOCUMENT
 #define PARAM_NODE(NAME, VALTYPE) \
   class NAME : public Param { \
@@ -222,8 +222,8 @@ class Param {
   };
 /// \endcond
 
-// Apply the above macros to ParamClassesList.h
-#include "chpl/types/ParamClassesList.h"
+// Apply the above macros to param-classes-list.h
+#include "chpl/types/param-classes-list.h"
 
 // clear the macros
 #undef PARAM_NODE
