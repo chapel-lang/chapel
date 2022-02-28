@@ -5847,6 +5847,10 @@ ssize_t wrap_fi_writemsg(const void* addr, void* mrDesc,
                             .rma_iov = &rma_iov,
                             .rma_iov_count = 1,
                             .context = ctx };
+
+  if ((flags & FI_INJECT) && (size > ofi_info->tx_attr->inject_size)) {
+    flags &= ~FI_INJECT;
+  }
   DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
              "tx write msg: %d:%#" PRIx64 " <= %p, size %zd, ctx %p, "
              "flags %#" PRIx64,
