@@ -361,6 +361,94 @@ qioerr _append_char(char* restrict * restrict buf, size_t* restrict buf_len, siz
   return 0;
 }
 
+qioerr read_entire_file(const int threadsafe,qio_channel_t* restrict ch,
+                        const char* restrict* restrict out,
+                        int64_t* restrict len_out, ssize_t maxlen)
+{  
+  qioerr err,err_reading_file=0;
+  int64_t file_length,chunkSize=1024;
+  char* ret=NULL;
+  ssize_t amt=0;
+  err_t errcode;
+  ssize_t total_amt_read=0;
+  bool err_flag;
+  if( threadsafe ) 
+  {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+  // obtain file length
+  err=qio_file_length(ch->file,&file_length);   
+  // no error in obtaining file length
+  if(!err)                                     
+  {
+    //allocate initial buffer
+    ret=qio_malloc(file_length+1);              
+    ret[0]='\0';
+    //Why file_length+1 instead of file_length? When the program tries 
+    //to read one more character than the prescribed file length then,
+    //if we have already,reached the file end reading 1 more character 
+    //will generate EOF. But, if the file length has increased while 
+    //reading, we have just read one more character.
+    err=qio_channel_read(false, ch, ret,file_length+1, &amt);    
+    // Here,checking whether file end is reached.
+    if(qio_err_to_int(err)==EEOF)                                
+    {
+       err=0;
+    }
+    else
+    {
+       err=QIO_EEOF;
+    }
+    total_amt_read=amt;
+  }
+  //error might be due to being unable to fetch file length or there is 
+  //something left to read.
+  if(err)                                                        
+  {    
+    // add some more space to the buffer to read the remaining data.
+         
+    while(true)
+    {
+      ret=qio_realloc(ret,total_amt_read+chunkSize+1);       
+      //we will read the remaining data in units of 1024 each time .
+      //calculate the amt that we have read until now
+      //break out of loop is data is exhausted finally
+      err_reading_file = qio_channel_read(false, ch,&ret[total_amt_read],
+                                          chunkSize, &amt);   
+      total_amt_read+=amt;                                                                
+      if (err_reading_file == QIO_EEOF) break;                                            
+      chunkSize*=2;
+    }
+    
+    //adjust the buffer size to avoid wastage of memory
+    ret=qio_realloc(ret,total_amt_read+1);                                                    
+    
+  }
+    
+  //always add terminator at the end
+  ret[total_amt_read] = '\0'; 
+    
+  err= 0;
+  if( threadsafe ) 
+  {
+    qio_unlock(&ch->lock);
+  }
+
+
+  errcode = qio_err_to_int(err);
+  if( errcode && errcode != EEOF) qio_free(ret);
+  else 
+  {
+       
+      *out = ret;
+      *len_out = total_amt_read;
+    
+  }
+  return err;
+}
+
+
 // string binary style:
 // QIO_BINARY_STRING_STYLE_LEN1B_DATA -1 -- 1 byte of length before
 // QIO_BINARY_STRING_STYLE_LEN2B_DATA -2 -- 2 bytes of length before
@@ -387,7 +475,12 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
   err_t errcode;
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
-
+  //if block moved before threadsafe
+  if(str_style==QIO_BINARY_STRING_STYLE_TOEOF)  
+  {
+     err=read_entire_file(threadsafe,ch,out,len_out,maxlen);
+    return err;
+  }
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) return err;
@@ -420,11 +513,9 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
     case QIO_BINARY_STRING_STYLE_TOEOF:
       // read until the end of the file.
       // Figure out how many bytes are available.
-      err = _peek_until_len(ch, maxlen, &peek_amt);
-      num = peek_amt;
-      // Ignore EOF errors as long as we read something.
-      if( err && qio_err_to_int(err) == EEOF && num > 0 ) err = 0;
+      // This case has already been handled above
       break;
+      
     default:
       if( str_style >= 0 ) {
         // just read the suggested length
