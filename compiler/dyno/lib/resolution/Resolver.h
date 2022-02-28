@@ -149,6 +149,11 @@ struct Resolver {
   void resolveTypeQueriesFromFormalType(const uast::Formal* formal,
                                         types::QualifiedType formalType);
 
+  // helper to resolve a NamedDecl
+  // useType will be used to set the type if it is not nullptr
+  void resolveNamedDecl(const uast::NamedDecl* decl,
+                        const types::Type* useType);
+
   /* What is the type for the symbol with a particular ID?
      localGenericUnknown, if true, indicates that a use of a
      field/formal with generic type (that is not substituted)
@@ -174,6 +179,9 @@ struct Resolver {
 
   bool enter(const uast::NamedDecl* decl);
   void exit(const uast::NamedDecl* decl);
+
+  bool enter(const uast::MultiDecl* decl);
+  void exit(const uast::MultiDecl* decl);
 
   bool enter(const uast::Call* call);
   void exit(const uast::Call* call);
