@@ -5787,7 +5787,7 @@ void CallExpr::registerPrimitivesForCodegen() {
   if (PRIM_ ## NAME != PRIM_UNKNOWN) \
     registerPrimitiveCodegen(PRIM_ ## NAME, codegen ## NAME );
 #define PRIMITIVE_R(NAME, str)
-#include "chpl/uast/PrimOpsList.h"
+#include "chpl/uast/prim-ops-list.h"
 
 #undef PRIMITIVE_G
 #undef PRIMITIVE_R
