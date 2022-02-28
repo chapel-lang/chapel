@@ -874,7 +874,7 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
       if (ws.val->getType()->isPointerTy()){
         ret.isLVPtr = GEN_PTR;
         llvm::Type* ty = nullptr;
-#if HAVE_LLVM_VER >= 130 
+#if HAVE_LLVM_VER >= 130
         ty = llvm::cast<llvm::PointerType>(
           ws.val->getType()->getScalarType())->getElementType();
 #endif
