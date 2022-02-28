@@ -1,0 +1,1 @@
+This contains tests for the new read_entire_file function .
