@@ -604,6 +604,10 @@ struct Resolver {
       // Figure out the param value, if any
       const Param* paramPtr = nullptr;
 
+      bool isField = false;
+      bool isFormal = false;
+      bool isFieldOrFormal = false;
+
       if (auto var = decl->toVarLikeDecl()) {
         // Figure out variable type based upon:
         //  * the type in the variable declaration
@@ -613,12 +617,12 @@ struct Resolver {
         auto typeExpr = var->typeExpression();
         auto initExpr = var->initExpression();
 
-        bool isField = false;
         if (auto var = decl->toVariable())
           if (var->isField())
             isField = true;
 
-        bool isFieldOrFormal = isField || decl->isFormal();
+        isFormal = decl->isFormal();
+        isFieldOrFormal = isField || isFormal;
 
         bool foundSubstitution = false;
         bool foundSubstitutionDefaultHint = false;
@@ -732,6 +736,36 @@ struct Resolver {
       // forget the param value if the QualifiedType is not param
       if (qtKind != QualifiedType::PARAM)
         paramPtr = nullptr;
+
+      auto declaredKind = qtKind;
+
+      // compute the intent for formals (including type constructor formals)
+      if (isFormal || (signatureOnly && isField)) {
+        bool isThis = decl->name() == USTR("this");
+        auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
+        // update qtKind with the result of resolving the intent
+        qtKind = resolveIntent(formalQt, isThis);
+      }
+
+      // adjust tuple declarations for value / referential tuples
+      if (typePtr != nullptr) {
+        if (auto tupleType = typePtr->toTupleType()) {
+          if (declaredKind == QualifiedType::DEFAULT_INTENT ||
+              declaredKind == QualifiedType::CONST_INTENT) {
+            typePtr = tupleType->toReferentialTuple(context);
+          } else if (qtKind == QualifiedType::VAR ||
+                     qtKind == QualifiedType::CONST_VAR ||
+                     qtKind == QualifiedType::CONST_REF ||
+                     qtKind == QualifiedType::REF ||
+                     qtKind == QualifiedType::IN ||
+                     qtKind == QualifiedType::CONST_IN ||
+                     qtKind == QualifiedType::OUT ||
+                     qtKind == QualifiedType::INOUT ||
+                     qtKind == QualifiedType::TYPE) {
+            typePtr = tupleType->toValueTuple(context);
+          }
+        }
+      }
 
       ResolvedExpression& result = byPostorder.byAst(decl);
       result.setType(QualifiedType(qtKind, typePtr, paramPtr));
@@ -962,7 +996,10 @@ getFormalTypes(const Function* fn,
   for (auto formal : fn->formals()) {
     QualifiedType t = r.byAst(formal).type();
     // compute concrete intent
-    bool isThis = fn->name() == USTR("this");
+    bool isThis = false;
+    if (auto namedDecl = formal->toNamedDecl()) {
+      isThis = namedDecl->name() == USTR("this");
+    }
     t = QualifiedType(resolveIntent(t, isThis), t.type(), t.param());
 
     formalTypes.push_back(std::move(t));
@@ -2019,10 +2056,19 @@ struct ReturnTypeInferer {
     checkReturn(inExpr, voidType);
   }
   void noteReturnType(const Expression* expr, const Expression* inExpr) {
-    const QualifiedType& qt = resolutionById.byAst(expr).type();
+    QualifiedType qt = resolutionById.byAst(expr).type();
 
     QualifiedType::Kind kind = qt.kind();
     const Type* type = qt.type();
+
+    // Functions that return tuples need to return
+    // a value tuple (for value returns and type returns)
+    // or a reference to a value tuple (for ref/const ref returns)
+    if (type && type->isTupleType()) {
+      auto tt = type->toTupleType();
+      type = tt->toValueTuple(context);
+      qt = QualifiedType(kind, type);
+    }
 
     checkReturn(inExpr, qt);
 
@@ -2178,6 +2224,27 @@ const QualifiedType& returnType(Context* context,
       fn->body()->traverse(visitor);
       result = visitor.returnedType();
     }
+
+    // Figure out the kind for the QualifiedType based on the return intent
+    // Need to do this if the return type is declared.
+    QualifiedType::Kind kind = (QualifiedType::Kind) fn->returnIntent();
+    // adjust default / const return intent to 'var'
+    if (kind == QualifiedType::DEFAULT_INTENT ||
+        kind == QualifiedType::CONST_VAR) {
+        kind = QualifiedType::VAR;
+    }
+    result = QualifiedType(kind, result.type(), result.param());
+
+    // Functions that return tuples need to return
+    // a value tuple (for value returns and type returns)
+    // or a reference to a value tuple (for ref/const ref returns)
+    if (result.type() && result.type()->isTupleType()) {
+      auto tt = result.type()->toTupleType();
+      auto vt = tt->toValueTuple(context);
+      assert(tt == vt); // this should already be done in return type inference
+      result = QualifiedType(kind, vt);
+    }
+
   } else if (untyped->isTypeConstructor()) {
     const Type* t = returnTypeForTypeCtorQuery(context, sig, poiScope);
 
@@ -2770,6 +2837,72 @@ CallResolutionResult resolvePrimCall(Context* context,
   return CallResolutionResult(candidates, type, poi);
 }
 
+static
+CallResolutionResult resolveTupleExpr(Context* context,
+                                      const Tuple* tuple,
+                                      const CallInfo& ci,
+                                      const Scope* inScope,
+                                      const PoiScope* inPoiScope) {
+  // resolve the tuple type from a tuple expression
+
+  // per spec:
+  // Tuple expressions are a form of referential tuple.
+  // Like most other referential tuples, tuple expressions capture each
+  // element based on the default argument intent of the element’s type.
+
+  // check if the elements are all type or all value
+  bool anyUnknown = false;
+  bool allType = true;
+  bool allValue = true;
+  for (auto actual : ci.actuals()) {
+    QualifiedType q = actual.type();
+    const Type* t = q.type();
+    if (t == nullptr || t->isUnknownType())
+      anyUnknown = true;
+    else if (q.kind() == QualifiedType::TYPE)
+      allValue = false;
+    else
+      allType = false;
+  }
+
+  // if any argument is Unknown / null, return Unknown
+  if (anyUnknown) {
+    auto unk = UnknownType::get(context);
+    return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, unk));
+  }
+
+  // if there is a mix of value and type elements, error
+  if (allType == false && allValue == false) {
+    context->error(tuple, "Mix of value and type tuple elements in tuple expr");
+    auto e = ErroneousType::get(context);
+    return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, e));
+  }
+
+  // otherwise, construct the tuple type
+  std::vector<const Type*> eltTypes;
+
+  QualifiedType::Kind kind = QualifiedType::UNKNOWN;
+  if (allValue)
+    kind = QualifiedType::CONST_VAR;
+  else if (allType)
+    kind = QualifiedType::TYPE;
+
+  for (auto actual : ci.actuals()) {
+    QualifiedType q = actual.type();
+    const Type* t = q.type();
+    eltTypes.push_back(t);
+  }
+
+  const TupleType* t = nullptr;
+  if (allType)
+    t = TupleType::getValueTuple(context, std::move(eltTypes));
+  else
+    t = TupleType::getReferentialTuple(context, std::move(eltTypes));
+
+  return CallResolutionResult(QualifiedType(kind, t));
+}
+
+
 CallResolutionResult resolveCall(Context* context,
                                  const Call* call,
                                  const CallInfo& ci,
@@ -2785,6 +2918,8 @@ CallResolutionResult resolveCall(Context* context,
     return resolveFnCall(context, call, ci, inScope, inPoiScope);
   } else if (auto prim = call->toPrimCall()) {
     return resolvePrimCall(context, prim, ci, inScope, inPoiScope);
+  } else if (auto tuple = call->toTuple()) {
+    return resolveTupleExpr(context, tuple, ci, inScope, inPoiScope);
   }
 
   assert(false && "should not be reached");

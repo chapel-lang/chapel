@@ -20,6 +20,7 @@
 #include "chpl/types/TupleType.h"
 
 #include "chpl/queries/query-impl.h"
+#include "chpl/resolution/intents.h"
 
 namespace chpl {
 namespace types {
@@ -37,12 +38,122 @@ TupleType::getTupleType(Context* context, ID id, UniqueString name,
   return QUERY_END(result);
 }
 
+static ID idForTupElt(int i) {
+  // Use an ID with only a postOrderId but empty name for the tuple elts
+  return ID(UniqueString(), i, 0);
+}
+
 const TupleType*
-TupleType::get(Context* context, ID id, UniqueString name,
-               const TupleType* instantiatedFrom,
-               SubstitutionsMap subs) {
-  return getTupleType(context, id, name,
-                      instantiatedFrom, std::move(subs)).get();
+TupleType::getValueTuple(Context* context, std::vector<const Type*> eltTypes) {
+  auto kind = QualifiedType::VAR;
+  SubstitutionsMap subs;
+  int i = 0;
+  for (auto t : eltTypes) {
+    subs.emplace(idForTupElt(i), QualifiedType(kind, t));
+    i++;
+  }
+
+  auto name = UniqueString::get(context, "_tuple");
+  auto id = ID();
+  const TupleType* instantiatedFrom = getGenericTupleType(context);
+  return getTupleType(context, id, name, instantiatedFrom,
+                      std::move(subs)).get();
+}
+
+const TupleType*
+TupleType::getReferentialTuple(Context* context,
+                               std::vector<const Type*> eltTypes) {
+  SubstitutionsMap subs;
+  int i = 0;
+  for (auto t : eltTypes) {
+    // is the default intent for this type a variation of ref?
+    QualifiedType testFormal = QualifiedType(QualifiedType::DEFAULT_INTENT, t);
+    auto kind = resolution::resolveIntent(testFormal, false);
+    bool defaultIntentRef = (kind == QualifiedType::CONST_REF ||
+                             kind == QualifiedType::REF);
+    if (defaultIntentRef) {
+      kind = QualifiedType::REF;
+    } else {
+      kind = QualifiedType::VAR;
+    }
+
+    subs.emplace(idForTupElt(i), QualifiedType(kind, t));
+    i++;
+  }
+
+  auto name = UniqueString::get(context, "_tuple");
+  auto id = ID();
+  const TupleType* instantiatedFrom = getGenericTupleType(context);
+  return getTupleType(context, id, name, instantiatedFrom,
+                      std::move(subs)).get();
+}
+
+const TupleType*
+TupleType::getGenericTupleType(Context* context) {
+  auto name = UniqueString::get(context, "_tuple");
+  auto id = ID();
+  SubstitutionsMap subs;
+  const TupleType* instantiatedFrom = nullptr;
+  return getTupleType(context, id, name, instantiatedFrom, subs).get();
+}
+
+QualifiedType TupleType::elementType(int i) const {
+  assert(0 <= i && (size_t) i < subs_.size());
+  // find subs[id]
+  auto search = subs_.find(idForTupElt(i));
+  if (search != subs_.end()) {
+    return search->second;
+  } else {
+    assert(false && "ID mismatch in tuple elements");
+    return QualifiedType();
+  }
+}
+
+const TupleType* TupleType::toValueTuple(Context* context) const {
+  // Is it already a value tuple? If so, return that
+  bool allValue = true;
+  int n = numElements();
+  for (int i = 0; i < n; i++) {
+    auto kind = elementType(i).kind();
+    if (kind == QualifiedType::CONST_REF ||
+        kind == QualifiedType::REF)
+      allValue = false;
+  }
+
+  if (numElements() == 0 || allValue)
+    return this;
+
+  // Otherwise, compute a new value tuple
+  std::vector<const Type*> eltTypes;
+  for (int i = 0; i < n; i++) {
+    eltTypes.push_back(elementType(i).type());
+  }
+
+  return getValueTuple(context, std::move(eltTypes));
+}
+
+
+const TupleType* TupleType::toReferentialTuple(Context* context) const {
+  // Is it already a referential tuple? If so, return that
+  bool allRef = true;
+  int n = numElements();
+  for (int i = 0; i < n; i++) {
+    auto kind = elementType(i).kind();
+    if (kind != QualifiedType::CONST_REF &&
+        kind != QualifiedType::REF)
+      allRef = false;
+  }
+
+  if (numElements() == 0 || allRef)
+    return this;
+
+  // Otherwise, compute a new referential tuple
+  std::vector<const Type*> eltTypes;
+  for (int i = 0; i < n; i++) {
+    eltTypes.push_back(elementType(i).type());
+  }
+
+  return getReferentialTuple(context, std::move(eltTypes));
 }
 
 

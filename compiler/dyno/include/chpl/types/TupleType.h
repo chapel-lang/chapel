@@ -53,31 +53,36 @@ class TupleType final : public CompositeType {
                SubstitutionsMap subs);
 
  public:
+  /** Return a value tuple type based on the vector of actual types. */
   static const TupleType*
-  get(Context* context, ID id, UniqueString name,
-      const TupleType* instantiatedFrom,
-      CompositeType::SubstitutionsMap subs);
+  getValueTuple(Context* context, std::vector<const Type*> eltTypes);
+
+  /** Return a referential tuple type based on the vector of actual types. */
+  static const TupleType*
+  getReferentialTuple(Context* context, std::vector<const Type*> eltTypes);
+
+  /** Return the generic tuple type `_tuple` */
+  static const TupleType* getGenericTupleType(Context* context);
 
   ~TupleType() = default;
 
-  /** If this type represents an instantiated type,
-      returns the type it was instantiated from.
-
-      This is just instantiatedFromCompositeType() with the
-      result cast to TupleType.
-   */
-  const TupleType* instantiatedFrom() const {
-    const CompositeType* ret = instantiatedFromCompositeType();
-    assert(ret == nullptr || ret->tag() == typetags::TupleType);
-    return (const TupleType*) ret;
+  /** Returns the number of tuple elements */
+  int numElements() const {
+    return subs_.size();
   }
+
+  /** Return the type of the i'th element */
+  QualifiedType elementType(int i) const;
+
+  /** Return the value tuple variant of this tuple type */
+  const TupleType* toValueTuple(Context* context) const;
+
+  /** Return the referential tuple variant of this tuple type */
+  const TupleType* toReferentialTuple(Context* context) const;
 };
 
 
 } // end namespace uast
-
-
-
 } // end namespace chpl
 
 #endif
