@@ -172,6 +172,17 @@ struct ChplSyntaxVisitor {
     ss_ << node->text().c_str();
   }
 
+  // helper to check if the called expression is actually a
+  // management kind. Helps FnCalls not to print () in this case
+  bool isCalleeManagementKind(const Expression* callee) {
+    if (callee->isIdentifier() &&
+      (callee->toIdentifier()->name() == "borrowed"
+       || callee->toIdentifier()->name() == "owned"
+       || callee->toIdentifier()->name() == "unmanaged"
+       || callee->toIdentifier()->name() == "shared"))
+        return true;
+      return false;
+  }
 
   void printFunctionHelper(const Function* node) {
      // storage kind
@@ -427,11 +438,7 @@ struct ChplSyntaxVisitor {
     const Expression* callee = node->calledExpression();
     assert(callee);
     printChapelSyntax(ss_, callee);
-    if (callee->isIdentifier() &&
-       (callee->toIdentifier()->name() == "borrowed"
-       || callee->toIdentifier()->name() == "owned"
-       || callee->toIdentifier()->name() == "unmanaged"
-       || callee->toIdentifier()->name() == "shared")) {
+    if (isCalleeManagementKind(callee)) {
       ss_ << " ";
       printChapelSyntax(ss_, node->actual(0));
     } else {
@@ -441,7 +448,6 @@ struct ChplSyntaxVisitor {
         interpose(node->actuals(), ", ", "(", ")");
       }
     }
-
   }
 
   void visit(const For* node) {
