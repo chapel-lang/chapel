@@ -304,6 +304,190 @@ void Resolver::resolveTypeQueriesFromFormalType(const Formal* formal,
   }
 }
 
+// useType will be used to set the type if it is not nullptr
+void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
+  // Figure out the Kind of the declaration
+  auto qtKind = qualifiedTypeKindForDecl(decl);
+
+  // Figure out the Type of the declaration
+  // Nested Identifiers and Expressions should already be resolved
+  const Type* typePtr = nullptr;
+
+  // Figure out the param value, if any
+  const Param* paramPtr = nullptr;
+
+  bool isField = false;
+  bool isFormal = false;
+  bool isFieldOrFormal = false;
+
+  if (auto var = decl->toVarLikeDecl()) {
+    // Figure out variable type based upon:
+    //  * the type in the variable declaration
+    //  * the initialization expression in the variable declaration
+    //  * the initialization expression from split-init
+
+    auto typeExpr = var->typeExpression();
+    auto initExpr = var->initExpression();
+
+    if (auto var = decl->toVariable())
+      if (var->isField())
+        isField = true;
+
+    isFormal = decl->isFormal();
+    isFieldOrFormal = isField || isFormal;
+
+    bool foundSubstitution = false;
+    bool foundSubstitutionDefaultHint = false;
+
+    if (isFieldOrFormal) {
+      // use substitutions computed for fields and formals
+      if (substitutions != nullptr) {
+        auto search = substitutions->find(decl->id());
+        if (search != substitutions->end()) {
+          const QualifiedType& t = search->second;
+          typePtr = t.type();
+          paramPtr = t.param();
+          if (typePtr == nullptr && t.kind() == QualifiedType::UNKNOWN)
+            foundSubstitutionDefaultHint = true;
+          else
+            foundSubstitution = true;
+        }
+      }
+    }
+
+    if (typeExpr && !foundSubstitution) {
+      // get the type we should have already computed postorder
+      ResolvedExpression& r = byPostorder.byAst(typeExpr);
+      // check that the resolution of that expression is a type
+      auto kind = r.type().kind();
+      if (kind == QualifiedType::TYPE) {
+        typePtr = r.type().type();
+      } else if (kind != QualifiedType::UNKNOWN) {
+        typePtr = ErroneousType::get(context);
+        context->error(typeExpr, "Value provided where type expected");
+      }
+      // otherwise, typePtr can remain nullptr.
+    }
+
+    if (initExpr && !foundSubstitution) {
+      // compute the type based upon the init expression
+      ResolvedExpression& r = byPostorder.byAst(initExpr);
+      const QualifiedType& initType = r.type();
+
+      // check that the init expression has compatible kind
+      if (qtKind == QualifiedType::TYPE &&
+          initType.kind() != QualifiedType::TYPE) {
+        context->error(initExpr, "Cannot initialize type with value");
+      } else if (qtKind != QualifiedType::TYPE &&
+                 initType.kind() == QualifiedType::TYPE) {
+        context->error(initExpr, "Cannot initialize value with type");
+      } else if (qtKind == QualifiedType::PARAM &&
+                 initType.kind() != QualifiedType::PARAM) {
+        context->error(initExpr, "Cannot initialize param with non-param");
+      }
+      // check that the initExpr type is compatible with declared type
+      if (typePtr != nullptr && initType.type() != typePtr) {
+        context->error(typeExpr, "Cannot initialize this type with that");
+        // TODO: better error
+        // TODO: implicit conversions and instantiations
+      }
+
+      bool isGenericField = isField &&
+                            (qtKind == QualifiedType::TYPE ||
+                             qtKind == QualifiedType::PARAM);
+
+      // infer the type of the variable from its initialization expr?
+      bool inferFromInit = !isGenericField ||
+                            useGenericFormalDefaults ||
+                            foundSubstitutionDefaultHint;
+
+      if (inferFromInit) {
+        // Infer the param value from the initialization expr
+        if (qtKind == QualifiedType::PARAM &&
+            initType.kind() == QualifiedType::PARAM) {
+          paramPtr = initType.param();
+        }
+        // Infer the type from the initialization expr
+        typePtr = initType.type();
+      } else if (isGenericField) {
+        // a type or param field with initExpr is still generic, e.g.
+        // record R { type t = int; }
+        // if that behavior is requested with useGenericFormalDefaults
+        typePtr = AnyType::get(context);
+      }
+    }
+
+    if (isFieldOrFormal && !foundSubstitution) {
+      // Lack of initializer for a formal means the Any type
+      if (typeExpr == nullptr && initExpr == nullptr) {
+        typePtr = AnyType::get(context);
+      }
+    }
+
+    // TODO: handle split init
+    // TODO: handle generic & instantiated formal arguments
+
+    if (useType != nullptr && typePtr == nullptr) {
+      // use type from argument to resolveNamedDecl
+      typePtr = useType;
+    }
+
+    if (typePtr == nullptr) {
+      context->error(var, "Cannot establish type for %s",
+                           var->name().c_str());
+      typePtr = ErroneousType::get(context);
+    }
+  }
+
+  if (typePtr == nullptr) {
+    if (qtKind == QualifiedType::FUNCTION ||
+        qtKind == QualifiedType::MODULE) {
+      // OK, type can be null for now
+    } else {
+      // type should have been established above
+      context->error(decl, "Cannot establish type");
+      typePtr = ErroneousType::get(context);
+    }
+  }
+
+  // forget the param value if the QualifiedType is not param
+  if (qtKind != QualifiedType::PARAM)
+    paramPtr = nullptr;
+
+  auto declaredKind = qtKind;
+
+  // compute the intent for formals (including type constructor formals)
+  if (isFormal || (signatureOnly && isField)) {
+    bool isThis = decl->name() == USTR("this");
+    auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
+    // update qtKind with the result of resolving the intent
+    qtKind = resolveIntent(formalQt, isThis);
+  }
+
+  // adjust tuple declarations for value / referential tuples
+  if (typePtr != nullptr) {
+    if (auto tupleType = typePtr->toTupleType()) {
+      if (declaredKind == QualifiedType::DEFAULT_INTENT ||
+          declaredKind == QualifiedType::CONST_INTENT) {
+        typePtr = tupleType->toReferentialTuple(context);
+      } else if (qtKind == QualifiedType::VAR ||
+                 qtKind == QualifiedType::CONST_VAR ||
+                 qtKind == QualifiedType::CONST_REF ||
+                 qtKind == QualifiedType::REF ||
+                 qtKind == QualifiedType::IN ||
+                 qtKind == QualifiedType::CONST_IN ||
+                 qtKind == QualifiedType::OUT ||
+                 qtKind == QualifiedType::INOUT ||
+                 qtKind == QualifiedType::TYPE) {
+        typePtr = tupleType->toValueTuple(context);
+      }
+    }
+  }
+
+  ResolvedExpression& result = byPostorder.byAst(decl);
+  result.setType(QualifiedType(qtKind, typePtr, paramPtr));
+}
+
 QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // if the id is contained within this symbol,
   // get the type information from the resolution result.
@@ -500,188 +684,72 @@ bool Resolver::enter(const NamedDecl* decl) {
 
 void Resolver::exit(const NamedDecl* decl) {
   if (decl->id().postOrderId() < 0) {
-    // It's a scoped symbol. Don't try to resolve it now in this
+    // It's a symbol with a different path, e.g. a Function.
+    // Don't try to resolve it now in this
     // traversal. Instead, resolve it e.g. when the function is called.
 
   } else {
-    // Figure out the Kind of the declaration
-    auto qtKind = qualifiedTypeKindForDecl(decl);
-
-    // Figure out the Type of the declaration
-    // Nested Identifiers and Expressions should already be resolved
-    const Type* typePtr = nullptr;
-
-    // Figure out the param value, if any
-    const Param* paramPtr = nullptr;
-
-    bool isField = false;
-    bool isFormal = false;
-    bool isFieldOrFormal = false;
-
-    if (auto var = decl->toVarLikeDecl()) {
-      // Figure out variable type based upon:
-      //  * the type in the variable declaration
-      //  * the initialization expression in the variable declaration
-      //  * the initialization expression from split-init
-
-      auto typeExpr = var->typeExpression();
-      auto initExpr = var->initExpression();
-
-      if (auto var = decl->toVariable())
-        if (var->isField())
-          isField = true;
-
-      isFormal = decl->isFormal();
-      isFieldOrFormal = isField || isFormal;
-
-      bool foundSubstitution = false;
-      bool foundSubstitutionDefaultHint = false;
-
-      if (isFieldOrFormal) {
-        // use substitutions computed for fields and formals
-        if (substitutions != nullptr) {
-          auto search = substitutions->find(decl->id());
-          if (search != substitutions->end()) {
-            const QualifiedType& t = search->second;
-            typePtr = t.type();
-            paramPtr = t.param();
-            if (typePtr == nullptr && t.kind() == QualifiedType::UNKNOWN)
-              foundSubstitutionDefaultHint = true;
-            else
-              foundSubstitution = true;
-          }
-        }
-      }
-
-      if (typeExpr && !foundSubstitution) {
-        // get the type we should have already computed postorder
-        ResolvedExpression& r = byPostorder.byAst(typeExpr);
-        // check that the resolution of that expression is a type
-        auto kind = r.type().kind();
-        if (kind == QualifiedType::TYPE) {
-          typePtr = r.type().type();
-        } else if (kind != QualifiedType::UNKNOWN) {
-          typePtr = ErroneousType::get(context);
-          context->error(typeExpr, "Value provided where type expected");
-        }
-        // otherwise, typePtr can remain nullptr.
-      }
-
-      if (initExpr && !foundSubstitution) {
-        // compute the type based upon the init expression
-        ResolvedExpression& r = byPostorder.byAst(initExpr);
-        const QualifiedType& initType = r.type();
-
-        // check that the init expression has compatible kind
-        if (qtKind == QualifiedType::TYPE &&
-            initType.kind() != QualifiedType::TYPE) {
-          context->error(initExpr, "Cannot initialize type with value");
-        } else if (qtKind != QualifiedType::TYPE &&
-                   initType.kind() == QualifiedType::TYPE) {
-          context->error(initExpr, "Cannot initialize value with type");
-        } else if (qtKind == QualifiedType::PARAM &&
-                   initType.kind() != QualifiedType::PARAM) {
-          context->error(initExpr, "Cannot initialize param with non-param");
-        }
-        // check that the initExpr type is compatible with declared type
-        if (typePtr != nullptr && initType.type() != typePtr) {
-          context->error(typeExpr, "Cannot initialize this type with that");
-          // TODO: better error
-          // TODO: implicit conversions and instantiations
-        }
-
-        bool isGenericField = isField &&
-                              (qtKind == QualifiedType::TYPE ||
-                               qtKind == QualifiedType::PARAM);
-
-        // infer the type of the variable from its initialization expr?
-        bool inferFromInit = !isGenericField ||
-                              useGenericFormalDefaults ||
-                              foundSubstitutionDefaultHint;
-
-        if (inferFromInit) {
-          // Infer the param value from the initialization expr
-          if (qtKind == QualifiedType::PARAM &&
-              initType.kind() == QualifiedType::PARAM) {
-            paramPtr = initType.param();
-          }
-          // Infer the type from the initialization expr
-          typePtr = initType.type();
-        } else if (isGenericField) {
-          // a type or param field with initExpr is still generic, e.g.
-          // record R { type t = int; }
-          // if that behavior is requested with useGenericFormalDefaults
-          typePtr = AnyType::get(context);
-        }
-      }
-
-      if (isFieldOrFormal && !foundSubstitution) {
-        // Lack of initializer for a formal means the Any type
-        if (typeExpr == nullptr && initExpr == nullptr) {
-          typePtr = AnyType::get(context);
-        }
-      }
-
-      // TODO: handle split init
-      // TODO: handle generic & instantiated formal arguments
-
-      if (typePtr == nullptr) {
-        context->error(var, "Cannot establish type for %s",
-                             var->name().c_str());
-        typePtr = ErroneousType::get(context);
-      }
-    }
-
-    if (typePtr == nullptr) {
-      if (qtKind == QualifiedType::FUNCTION ||
-          qtKind == QualifiedType::MODULE) {
-        // OK, type can be null for now
-      } else {
-        // type should have been established above
-        context->error(decl, "Cannot establish type");
-        typePtr = ErroneousType::get(context);
-      }
-    }
-
-    // forget the param value if the QualifiedType is not param
-    if (qtKind != QualifiedType::PARAM)
-      paramPtr = nullptr;
-
-    auto declaredKind = qtKind;
-
-    // compute the intent for formals (including type constructor formals)
-    if (isFormal || (signatureOnly && isField)) {
-      bool isThis = decl->name() == USTR("this");
-      auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
-      // update qtKind with the result of resolving the intent
-      qtKind = resolveIntent(formalQt, isThis);
-    }
-
-    // adjust tuple declarations for value / referential tuples
-    if (typePtr != nullptr) {
-      if (auto tupleType = typePtr->toTupleType()) {
-        if (declaredKind == QualifiedType::DEFAULT_INTENT ||
-            declaredKind == QualifiedType::CONST_INTENT) {
-          typePtr = tupleType->toReferentialTuple(context);
-        } else if (qtKind == QualifiedType::VAR ||
-                   qtKind == QualifiedType::CONST_VAR ||
-                   qtKind == QualifiedType::CONST_REF ||
-                   qtKind == QualifiedType::REF ||
-                   qtKind == QualifiedType::IN ||
-                   qtKind == QualifiedType::CONST_IN ||
-                   qtKind == QualifiedType::OUT ||
-                   qtKind == QualifiedType::INOUT ||
-                   qtKind == QualifiedType::TYPE) {
-          typePtr = tupleType->toValueTuple(context);
-        }
-      }
-    }
-
-    ResolvedExpression& result = byPostorder.byAst(decl);
-    result.setType(QualifiedType(qtKind, typePtr, paramPtr));
+    resolveNamedDecl(decl, /* useType */ nullptr);
   }
 
   exitScope(decl);
+}
+
+bool Resolver::enter(const MultiDecl* decl) {
+  enterScope(decl);
+
+  // Establish the type or init expressions within
+  // by visiting those nodes
+  for (auto d : decl->decls()) {
+    enterScope(d);
+    if (auto v = d->toVarLikeDecl()) {
+      if (auto t = v->typeExpression()) {
+        t->traverse(*this);
+      }
+      if (auto e = v->initExpression()) {
+        e->traverse(*this);
+      }
+    }
+    exitScope(d);
+  }
+
+  return false;
+}
+
+void Resolver::exit(const MultiDecl* decl) {
+  // Visit the named decls in reverse order
+  // setting the type/init.
+  auto begin = decl->declOrComments().begin();
+  auto it = decl->declOrComments().end();
+  const Type* lastType = nullptr;
+  while (it != begin) {
+    --it;
+    if (auto d = it->toDecl()) {
+      if (auto v = d->toVarLikeDecl()) {
+        // if it has neither init nor type, use the type from the
+        // variable to the right.
+        // e.g., in var a, b: int, a is of type int
+        if (v->typeExpression() == nullptr && v->initExpression() == nullptr) {
+          const Type* t = nullptr;
+          if (lastType == nullptr) {
+            context->error(v, "invalid multiple declaration");
+            t = ErroneousType::get(context);
+          } else {
+            t = lastType;
+          }
+
+          resolveNamedDecl(v, t);
+        } else {
+          // otherwise, resolve the named decl with the type/init as usual
+          resolveNamedDecl(v, /* useType */ nullptr);
+        }
+
+        // update lastType
+        ResolvedExpression& result = byPostorder.byAst(v);
+        lastType = result.type().type();
+      }
+    }
+  }
 }
 
 bool Resolver::enter(const Call* call) {
