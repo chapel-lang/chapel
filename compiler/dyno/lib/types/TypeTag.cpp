@@ -32,8 +32,8 @@ static const char* tagToStringTable[NUM_TYPE_TAGS] = {
 #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) NAMESTR(NAME)
 #define TYPE_BEGIN_SUBCLASSES(NAME) NAMESTR(START_##NAME)
 #define TYPE_END_SUBCLASSES(NAME) NAMESTR(END_##NAME)
-// Apply the above macros to TypeClassesList.h
-#include "chpl/types/TypeClassesList.h"
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
 // clear the macros
 #undef TYPE_NODE
 #undef BUILTIN_TYPE_NODE

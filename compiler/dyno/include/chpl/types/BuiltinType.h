@@ -90,8 +90,8 @@ class BuiltinType : public Type {
   };
 /// \endcond
 
-// Apply the above macros to TypeClassesList.h
-#include "chpl/types/TypeClassesList.h"
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
 
 // clear the macros
 #undef TYPE_NODE
