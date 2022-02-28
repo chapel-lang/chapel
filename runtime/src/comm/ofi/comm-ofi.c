@@ -1928,8 +1928,9 @@ void init_ofiFabricDomain(void) {
       size_t size;
       chpl_comm_regMemHeapInfo(&start, &size);
       char buf[10];
-      printf("COMM=ofi: %s MCM mode, \"%s\" provider, %s fixed heap\n",
+      printf("COMM=ofi: %s MCM mode, \"%s\" provider, \"%s\" device, %s fixed heap\n",
              mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name,
+             ofi_info->domain_attr->name,
              ((size == 0)
               ? "no"
               : chpl_snprintf_KMG_z(buf, sizeof(buf), size)));
