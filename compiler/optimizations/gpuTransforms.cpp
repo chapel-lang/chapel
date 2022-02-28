@@ -74,6 +74,7 @@ static bool shouldOutlineLoopHelp(BlockStmt* blk,
                                   std::set<FnSymbol*> visitedFns,
                                   bool allowFnCalls);
 
+static SymExpr* hasOuterVarAccesses(FnSymbol* fn);
 static void markGPUSuitableLoops();
 
 
@@ -318,18 +319,29 @@ static  CallExpr* generateGPUCall(OutlineInfo& info, VarSymbol* numThreads) {
   return call;
 }
 
-static void errorForOuterVarAccesses(FnSymbol* fn) {
+// If any SymExpr is referring to a variable defined outside the
+// function return the SymExpr. Otherwise return nullptr
+static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
   std::vector<SymExpr*> ses;
   collectSymExprs(fn, ses);
   for_vector(SymExpr, se, ses) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
         if (!var->isParameter() && var != gVoid) {
-          USR_FATAL(se, "variable '%s' must be defined in the function it"
-                    " is used in for GPU usage", var->name);
+          return se;
         }
       }
     }
+  }
+  return nullptr;
+}
+
+static void errorForOuterVarAccesses(FnSymbol* fn) {
+  if (SymExpr* se = hasOuterVarAccesses(fn)) {
+    VarSymbol* var = toVarSymbol(se->symbol());
+    INT_ASSERT(var);
+    USR_FATAL(se, "variable '%s' must be defined in the function it"
+              " is used in for GPU usage", var->name);
   }
 }
 
@@ -538,6 +550,10 @@ static bool shouldOutlineLoopHelp(BlockStmt* blk,
         return false;
 
       FnSymbol* fn = call->resolvedFunction();
+
+      if (hasOuterVarAccesses(fn))
+        return false;
+
       indentGPUChecksLevel += 2;
       if (okFns.count(fn) != 0 ||
           shouldOutlineLoopHelp(fn->body, okFns,
