@@ -14,6 +14,7 @@ use HPCCProblemSize, RARandomStream;
 //
 use PeekPoke;
 use CommAggregation;
+config param aggregate = false;
 
 //
 // The number of tables as well as the element and index types of
@@ -100,7 +101,9 @@ proc main() {
   // T is the distributed table itself, storing a variable of type
   // elemType for each index in TableSpace.
   //
-  var T: [TableSpace] chpl__processorAtomicType(elemType);
+  type atomicElemType = if aggregate then chpl__processorAtomicType(elemType)
+                                     else atomic elemType;
+  var T: [TableSpace] atomicElemType;
 
   //
   // In parallel, initialize the table such that each position
@@ -118,8 +121,13 @@ proc main() {
   // in r.  Compute the update using r both to compute the index and
   // as the update value.
   //
-  forall (_, r) in zip(Updates, RAStream()) with (var agg = new AtomicAggregator(elemType)) do
-    agg.xor(T[r & indexMask], r);
+  if aggregate {
+    forall (_, r) in zip(Updates, RAStream()) with (var agg = new AtomicAggregator(elemType)) do
+      agg.xor(T(r & indexMask), r);
+  } else {
+    forall (_, r) in zip(Updates, RAStream()) do
+      T(r & indexMask).xor(r);
+    }
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
