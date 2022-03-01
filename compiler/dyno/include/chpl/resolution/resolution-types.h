@@ -270,12 +270,7 @@ class CallInfoActual {
     return chpl::hash(type_, byName_);
   }
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-    byName().stringify(ss, stringKind);
-    ss << " ";
-    type().stringify(ss, stringKind);
-    ss << " ";
-  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -346,11 +341,7 @@ class CallInfo {
     return chpl::hash(name_, calledType_, isMethod_, hasQuestionArg_, actuals_);
   }
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-      ss << "CallInfo: ";
-      name().stringify(ss, stringKind);
-      ss << " ";
-  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
