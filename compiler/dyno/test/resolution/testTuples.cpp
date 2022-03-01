@@ -386,8 +386,67 @@ static void test11() {
   assert(tt->elementType(0).type()->isRealType());
 }
 
+static void test12() {
+  printf("test12\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  record R { }
+                  proc f(in arg: (R, R)) { return arg; }
+                  var r: R;
+                  var x = f( (r, r) );
+                )"""");
 
 
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+
+  assert(tt->numElements() == 2);
+  assert(tt->isStarTuple());
+  assert(tt->elementType(0) == tt->elementType(1));
+  assert(tt->elementType(0).kind() == QualifiedType::VAR);
+  assert(tt->elementType(0).type()->isRecordType());
+ 
+  auto rt = tt->toReferentialTuple(context);
+  assert(rt != tt);
+  auto vt = tt->toValueTuple(context);
+  assert(vt == tt);
+}
+
+static void test13() {
+  printf("test13\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  record R { param p; }
+                  proc f(in arg: (R, R)) { return arg; }
+                  var r: R(1);
+                  var x = f( (r, r) );
+                )"""");
+
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+
+  assert(tt->numElements() == 2);
+  assert(tt->isStarTuple());
+  assert(tt->elementType(0) == tt->elementType(1));
+  assert(tt->elementType(0).kind() == QualifiedType::VAR);
+  assert(tt->elementType(0).type()->isRecordType());
+  auto rec = tt->elementType(0).type()->toRecordType();
+  assert(rec->instantiatedFrom() != nullptr);
+
+  auto rt = tt->toReferentialTuple(context);
+  assert(rt != tt);
+  auto vt = tt->toValueTuple(context);
+  assert(vt == tt);
+}
 
 int main() {
   test1();
@@ -401,6 +460,8 @@ int main() {
   test9();
   test10();
   test11();
+  test12();
+  test13();
 
   return 0;
 }

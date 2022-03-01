@@ -673,6 +673,23 @@ static Type::Genericity getFieldsGenericity(Context* context,
   // Figure out the genericity of the type based on the genericity
   // of the fields.
 
+  // compute genericity of tuple types
+  if (auto tt = ct->toTupleType()) {
+    Type::Genericity combined = Type::CONCRETE;
+    int n = tt->numElements();
+    for (int i = 0; i < n; i++) {
+      auto g = tt->elementType(i).genericityWithFields(context);
+      assert(g != Type::MAYBE_GENERIC);
+      if (g == Type::GENERIC) {
+        combined = g;
+      } else if (g == Type::GENERIC_WITH_DEFAULTS &&
+                 combined == Type::CONCRETE) {
+        combined = g;
+      }
+    }
+    return combined;
+  }
+
   // Some testing code creates CompositeType with empty IDs.
   // Assume these are concrete.
   // Also 'object' has an empty ID and is concrete.
