@@ -1239,6 +1239,62 @@ static void test40() {
   auto p = parseTypeOfX(context,
                         R""""(
                           proc useType(type t) {
+                            var ret: t;
+                            return ret;
+                          }
+                          record R { }
+                          var x = useType(R);
+                        )"""");
+
+  auto rt = p.first->toRecordType();
+  assert(rt);
+  assert(rt->instantiatedFrom() == nullptr);
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 0);
+}
+
+static void test41() {
+  printf("test41\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto p = parseTypeOfX(context,
+                        R""""(
+                          proc useType(type t) {
+                            var ret: t;
+                            return ret;
+                          }
+                          record R {
+                            param p;
+                          }
+                          var x = useType(R(1));
+                        )"""");
+
+  auto rt = p.first->toRecordType();
+  assert(rt);
+  assert(rt->instantiatedFrom());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 1);
+  assert(fields->fieldName(0) == "p");
+  assert(fields->fieldHasDefaultValue(0) == false);
+  assert(fields->fieldType(0).kind() == QualifiedType::PARAM);
+  assert(fields->fieldType(0).type() == IntType::get(context, 0));
+  assert(fields->fieldType(0).param() == IntParam::get(context, 1));
+}
+
+
+static void test42() {
+  printf("test42\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto p = parseTypeOfX(context,
+                        R""""(
+                          proc useType(type t) {
                             var ret: t(1);
                             return ret;
                           }
@@ -1261,6 +1317,7 @@ static void test40() {
   assert(fields->fieldType(0).type() == IntType::get(context, 0));
   assert(fields->fieldType(0).param() == IntParam::get(context, 1));
 }
+
 
 int main() {
   test1();
@@ -1306,6 +1363,8 @@ int main() {
   test38();
   test39();
   test40();
+  test41();
+  test42();
 
   return 0;
 }
