@@ -168,6 +168,11 @@ struct ChplSyntaxVisitor {
 
   template<typename T>
   void visitLiteral(const T* node) {
+    /*
+     * TODO: can text() be placed in `Literal.h` so this can be generalized
+     * for all literals instead of creating specializations of visit for each
+     * numeric literal type?
+    */
     ss_ << node->text().c_str();
   }
 
@@ -361,7 +366,11 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Comment* node) {
-    ss_ << node->c_str();
+    // TODO: create a way to filter comments using an adapted ASTListIterator
+    // TODO: how to control when we want comments on/off
+
+    //    do nothing for now, can be enabled with code below
+    //    ss_ << node->c_str();
   }
 
   void visit(const Conditional* node) {
@@ -556,7 +565,7 @@ struct ChplSyntaxVisitor {
     ss_ << node->name().str();
   }
 
-  void visit(const ImagLiteral* node) { return visitLiteral(node); }
+  void visit(const ImagLiteral* node) { visitLiteral(node); }
 
   void visit(const Import* node) {
     if (node->visibility() != Decl::Visibility::DEFAULT_VISIBILITY) {
@@ -578,7 +587,7 @@ struct ChplSyntaxVisitor {
     ss_ << node->name().c_str();
   }
 
-  void visit(const IntLiteral* node)  { return visitLiteral(node); }
+  void visit(const IntLiteral* node)  { visitLiteral(node); }
 
   void visit(const Label* node) {
     ss_ << "label ";
@@ -706,7 +715,7 @@ struct ChplSyntaxVisitor {
     }
   }
 
-  void visit(const RealLiteral* node) { return visitLiteral(node); }
+  void visit(const RealLiteral* node) { visitLiteral(node); }
 
   void visit(const Record* node) {
     printLinkage(node);
@@ -839,7 +848,7 @@ struct ChplSyntaxVisitor {
     ss_ << node->name().c_str();
   }
 
-  void visit(const UintLiteral* node) { return visitLiteral(node); }
+  void visit(const UintLiteral* node) { visitLiteral(node); }
 
   void visit(const Union* node) {
     printLinkage(node);
@@ -966,7 +975,6 @@ namespace chpl {
       os.clear();
     }
     os.flush();
-
   }
 
   /***************************************************************
