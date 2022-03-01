@@ -35,6 +35,7 @@ target_sources(libdyno-obj
                BytesLiteral.cpp
                Call.cpp
                Catch.cpp
+               chpl-syntax-printer.cpp
                Class.cpp
                Cobegin.cpp
                Coforall.cpp

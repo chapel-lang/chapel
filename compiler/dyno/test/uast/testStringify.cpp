@@ -24,6 +24,7 @@
 #include "chpl/queries/UniqueString.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/parsing/Parser.h"
+#include "chpl/uast/chpl-syntax-printer.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -37,26 +38,55 @@ using namespace parsing;
 
 // This macro just helps keep the tests a little cleaner
 // rather than redefine all this for every type we want to test
-#define TEST_STRINGIFY_TYPE(val)                          \
-    {                                                     \
-      std::ostringstream ss;                              \
-      stringify<std::decay_t<decltype(val)>> stringifier; \
-      stringifier(ss, DEBUG_DETAIL, val);                 \
-      assert(!ss.str().empty());                          \
-    }
+#define TEST_STRINGIFY_TYPE(val)                      \
+{                                                     \
+  std::ostringstream ss;                              \
+  stringify<std::decay_t<decltype(val)>> stringifier; \
+  stringifier(ss, DEBUG_DETAIL, val);                 \
+  assert(!ss.str().empty());                          \
+}
+
+// Helper macro for testing output from printUserString
+#define TEST_USER_STRING(funcDef, val)                           \
+{                                                                \
+  std::ostringstream ss;                                         \
+  auto parseResult = parser->parseString("test3.chpl", funcDef); \
+  auto mod = parseResult.singleModule();                         \
+  auto funcDecl = mod->stmt(0)->toFunction();                    \
+  assert(funcDecl);                                              \
+  printFunctionSignature(ss, funcDecl);                          \
+  std::cerr << ss.str() << std::endl;                            \
+  assert(ss.str() == val);                                       \
+}
+
+
+#define TEST_CHPL_SYNTAX(src, val)                           \
+{                                                            \
+  std::ostringstream ss;                                     \
+  auto parseResult = parser->parseString("test5.chpl", src); \
+  auto mod = parseResult.singleModule();                     \
+  assert(mod);                                               \
+  printChapelSyntax(ss, mod);                                \
+  std::cerr << ss.str() << std::endl;                        \
+  assert(ss.str() == val);                                   \
+}
 
 
 static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
-    // recurse through the nodes and make sure each can call stringify()
-    // and produce a non-empty result (for now)
-    // this is a little convoluted as each ASTNode is also calling
-    // ASTNode.dumpHelper() on all of its children
-    for (const ASTNode* child : node->children()) {
-      stringifyNode(child, kind);
-    }
-    std::ostringstream ss;
-    node->stringify(ss, kind);
+  // recurse through the nodes and make sure each can call stringify()
+  // and produce a non-empty result (for now)
+  // this is a little convoluted as each ASTNode is also calling
+  // ASTNode.dumpHelper() on all of its children
+  for (const ASTNode* child : node->children()) {
+    stringifyNode(child, kind);
+  }
+  std::ostringstream ss;
+  node->stringify(ss, kind);
+  // don't test an empty domains as in formal array decls like `proc main(args:[] string)`
+  // don't test comments for now as they are not printed by the chpl-syntax-printer
+  if (!(node->isDomain() && node->toDomain()->numChildren() == 0) && !node->isComment())
     assert(!ss.str().empty());
+  std::cerr << ss.str() << std::endl;
 }
 
 static void test0(Parser* parser) {
@@ -72,8 +102,9 @@ static void test1(Parser* parser) {
   // the one test to rule them all
   std::string testCode;
   testCode = R""""(
-             module Test4 {
+             module Test1 {
                use Map;
+               require "foo.h", "foo.c";
                import Foo as X ;
                include module Foo;
                include private module Bar;
@@ -99,12 +130,17 @@ static void test1(Parser* parser) {
                record R {
                  // my record comment
                  var x,y :int;
+                 var a, b:int, c, d = 1;
+                 var x: int, y = 3, z: real;
                  proc df(arg) { }
                  proc const cnst(arg) const { }
                  proc const ref cnstrf(arg) const ref { }
-                 proc ref rf(arg) ref { }
+                 private proc ref rf(arg) ref : string where !(isDomainType(eltType) || isArrayType(eltType)) { }
                  proc param prm(arg) param { }
                  proc type tp(arg) type { }
+               }
+               class D : C {
+                 override proc Cproc(val: int) { writeln(val:string); }
                }
                proc R.df2(arg) { }
                proc const R.cnst2(arg) const { }
@@ -131,7 +167,7 @@ static void test1(Parser* parser) {
                    throw fooError();
                  } catch e1: ErrorType1 {
                    writeln('E1');
-                 } catch e2: ErrorType2 {
+                 } catch (e2: ErrorType2) {
                    writeln('E2');
                    return 1;
                  } catch {
@@ -146,6 +182,8 @@ static void test1(Parser* parser) {
                  with (ref a, var b = foo())  {
                    writeln(a);
                  }
+                 begin writeln(x);
+
                  [x in foo with (ref thing)] {
                    foo();
                  }
@@ -157,6 +195,7 @@ static void test1(Parser* parser) {
                sync {
                  begin foo();
                }
+               var myBytes = b"this string to bytes";
                serial do
                  var a;
                iter foo(): int {
@@ -187,6 +226,27 @@ static void test1(Parser* parser) {
                cobegin {
                  writeln(a);
                }
+               do {
+                 writeln(i);
+                 i += 1;
+               } while i < 5;
+               forall i in 1..10 {
+                 x.fetchAdd(i);
+               }
+               proc magnitude( (x,y,z):3*real ) {
+               }
+               proc f(ref x: int ...?k) {
+                 writeln(x);
+               }
+               writeln(+ scan A);
+               forall myIterator() with (+ reduce x) {
+                 x = 1;
+               }
+               __primitive("=", x, y);
+               let x = 0 in writeln(x);
+               var x = if foo then bar else baz;
+               manage myManager() as myResource do
+                 myResource.doSomething();
              }
              )"""";
   auto parseResult = parser->parseString("Test4.chpl",
@@ -238,6 +298,38 @@ static void test2(Parser* parser) {
 }
 
 
+static void test3(Parser* parser) {
+
+  TEST_USER_STRING("proc bar(x: int) {\n}\n", "bar(x: int)")
+  TEST_USER_STRING("proc foo(X: [?Dlocal] real) {\n}\n", "foo(X: [?Dlocal] real)")
+  TEST_USER_STRING("proc baz(A: borrowed C) {\n}\n", "baz(A: borrowed C)")
+  TEST_USER_STRING("proc test(const ref arg:unmanaged MyClass) {\n}\n", "test(const ref arg: unmanaged MyClass)")
+  TEST_USER_STRING("inline proc (borrowed object?).hash(): uint {\n}\n", "hash(): uint")
+  TEST_USER_STRING("proc bark(c = new C()) {\n}\n", "bark(c = new C())")
+  TEST_USER_STRING("proc ref C.setClt2(rhs: borrowed C) {\n}\n", "ref C.setClt2(rhs: borrowed C)")
+  TEST_USER_STRING("proc main(args: [] string) {\n}", "main(args: [] string)")
+}
+
+static void test4(Parser* parser) {
+  auto parseResult = parser->parseString("test3.chpl",
+                                                       "class C {\n"
+                                                           "  proc ref setClt(rhs: borrowed C) {\n}\n}\n");
+  auto mod = parseResult.singleModule();
+  std::ostringstream ss;
+  auto cDecl = mod->stmt(0)->toClass();
+  assert(cDecl);
+
+  auto setCltDecl = cDecl->child(0)->toFunction();
+  assert(setCltDecl);
+  printFunctionSignature(ss, setCltDecl);
+  assert(ss.str() == "ref setClt(rhs: borrowed C)");
+}
+
+static void test5(Parser* parser) {
+  // unsure how best to set this up for testing
+  // TEST_CHPL_SYNTAX("module foo {\n}", "module foo {\n}")
+}
+
 int main(int argc, char** argv) {
   Context context;
   Context* ctx = &context;
@@ -247,6 +339,9 @@ int main(int argc, char** argv) {
   test0(p);
   test1(p);
   test2(p);
+  test3(p);
+  test4(p);
+  test5(p);
 
   return 0;
 }
