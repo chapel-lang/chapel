@@ -1729,11 +1729,13 @@ lookupCalledExpr(Context* context,
                         LOOKUP_IMPORT_AND_USE |
                         LOOKUP_PARENTS;
 
+  #ifndef NDEBUG
   if (call != nullptr) {
     if (auto op = call->toOpCall()) {
       assert(op->op() == calledName);
     }
   }
+  #endif
 
   if (call == nullptr || call->isOpCall()) {
     auto vec = lookupNameInScopeWithSet(context, scope, calledName, config,
