@@ -59,9 +59,6 @@ jobs:
     - name: make test-dyno-with-asserts
       run: |
         make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
-    - name: make test-dyno-no-asserts
-      run: |
-        make DYNO_ENABLE_ASSERTIONS=0 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
     - name: run dyno linters
       run: |
         CHPL_HOME=$PWD make run-dyno-linters
