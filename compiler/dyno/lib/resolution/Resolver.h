@@ -161,14 +161,14 @@ struct Resolver {
 
   // e.g. (a, b) = mytuple
   // checks that tuple size matches and that the elements are assignable
-  void resolveTupleSplitAssign(const uast::Tuple* lhsTuple,
-                               types::QualifiedType lhsType,
-                               types::QualifiedType rhsType);
+  void resolveTupleUnpackAssign(const uast::Tuple* lhsTuple,
+                                types::QualifiedType lhsType,
+                                types::QualifiedType rhsType);
 
   // e.g. var (a, b) = mytuple
   // checks that tuple size matches and establishes types for a and b
-  void resolveTupleSplitDecl(const uast::TupleDecl* lhsTuple,
-                             types::QualifiedType rhsType);
+  void resolveTupleUnpackDecl(const uast::TupleDecl* lhsTuple,
+                              types::QualifiedType rhsType);
 
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false

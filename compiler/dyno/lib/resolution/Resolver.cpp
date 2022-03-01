@@ -509,9 +509,9 @@ Resolver::issueErrorForFailedCallResolution(const uast::ASTNode* astForErr,
   }
 }
 
-void Resolver::resolveTupleSplitAssign(const Tuple* lhsTuple,
-                                       QualifiedType lhsType,
-                                       QualifiedType rhsType) {
+void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
+                                        QualifiedType lhsType,
+                                        QualifiedType rhsType) {
   // Check that lhsType = rhsType can work
 
   if (!lhsType.hasTypePtr()) {
@@ -555,7 +555,7 @@ void Resolver::resolveTupleSplitAssign(const Tuple* lhsTuple,
     QualifiedType lhsEltType = lhsT->elementType(i);
     QualifiedType rhsEltType = rhsT->elementType(i);
     if (auto innerTuple = actual->toTuple()) {
-      resolveTupleSplitAssign(innerTuple, lhsEltType, rhsEltType);
+      resolveTupleUnpackAssign(innerTuple, lhsEltType, rhsEltType);
     } else {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(lhsEltType, UniqueString()));
@@ -576,7 +576,7 @@ void Resolver::resolveTupleSplitAssign(const Tuple* lhsTuple,
   }
 }
 
-void Resolver::resolveTupleSplitDecl(const TupleDecl* lhsTuple,
+void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
                                      QualifiedType rhsType) {
   if (!rhsType.hasTypePtr()) {
     context->error(lhsTuple, "Unknown rhs tuple type in split tuple decl");
@@ -601,7 +601,7 @@ void Resolver::resolveTupleSplitDecl(const TupleDecl* lhsTuple,
   for (auto actual : lhsTuple->decls()) {
     QualifiedType rhsEltType = rhsT->elementType(i);
     if (auto innerTuple = actual->toTupleDecl()) {
-      resolveTupleSplitDecl(innerTuple, rhsEltType);
+      resolveTupleUnpackDecl(innerTuple, rhsEltType);
     } else if (auto namedDecl = actual->toNamedDecl()) {
       resolveNamedDecl(namedDecl, rhsEltType.type());
     } else {
@@ -619,7 +619,7 @@ bool Resolver::resolveSpecialCall(const Call* call) {
           QualifiedType lhsType = byPostorder.byAst(op->actual(0)).type();
           QualifiedType rhsType = byPostorder.byAst(op->actual(1)).type();
 
-          resolveTupleSplitAssign(lhsTuple, lhsType, rhsType);
+          resolveTupleUnpackAssign(lhsTuple, lhsType, rhsType);
           return true;
         }
       }
@@ -937,7 +937,7 @@ void Resolver::exit(const TupleDecl* decl) {
     }
   }
 
-  resolveTupleSplitDecl(decl, useType);
+  resolveTupleUnpackDecl(decl, useType);
 }
 
 bool Resolver::enter(const Call* call) {
