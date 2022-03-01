@@ -31,6 +31,7 @@ static const char* kindToString(Decl::Linkage kind) {
     case Decl::Linkage::EXPORT: return "export";
   }
   assert(false);
+  return "";
 }
 
 static const char* kindToString(Function::Kind kind) {
@@ -79,6 +80,7 @@ static const char* kindToString(Module::Kind kind) {
     case Module::Kind::PROTOTYPE: return "prototype";
   }
   assert(false);
+  return "";
 }
 
 static const char* kindToString(New::Management kind) {
