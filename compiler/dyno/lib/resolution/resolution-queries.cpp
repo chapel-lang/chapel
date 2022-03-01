@@ -1697,10 +1697,13 @@ filterCandidatesInstantiating(Context* context,
   }
 }
 
+// call can be nullptr; in that event, calledName must be provided
+// and it will search for something with name calledName.
 static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const Call* call,
+                 UniqueString calledName,
                  std::unordered_set<const Scope*>& visited) {
 
   std::vector<BorrowedIdsWithName> ret;
@@ -1709,8 +1712,14 @@ lookupCalledExpr(Context* context,
                         LOOKUP_IMPORT_AND_USE |
                         LOOKUP_PARENTS;
 
-  if (auto op = call->toOpCall()) {
-    auto vec = lookupNameInScopeWithSet(context, scope, op->op(), config,
+  if (call != nullptr) {
+    if (auto op = call->toOpCall()) {
+      assert(op->op() == calledName);
+    }
+  }
+
+  if (call == nullptr || call->isOpCall()) {
+    auto vec = lookupNameInScopeWithSet(context, scope, calledName, config,
                                         visited);
     ret.swap(vec);
   } else if (const Expression* called = call->calledExpression()) {
@@ -1751,13 +1760,13 @@ void accumulatePoisUsedByResolvingBody(Context* context,
 // return the result or ErroneousType.
 // returns nullptr if the class type is not handled here.
 static const Type* getManagedClassType(Context* context,
-                                       const Call* call,
+                                       const ASTNode* astForErr,
                                        const CallInfo& ci) {
   UniqueString name = ci.name();
 
   if (ci.hasQuestionArg()) {
     if (ci.numActuals() != 0) {
-      context->error(call, "invalid class type construction");
+      context->error(astForErr, "invalid class type construction");
       return ErroneousType::get(context);
     } else if (name == USTR("owned")) {
       return AnyOwnedType::get(context);
@@ -1800,7 +1809,7 @@ static const Type* getManagedClassType(Context* context,
     t = ci.actuals(0).type().type();
 
   if (t == nullptr || !(t->isBasicClassType() || t->isClassType())) {
-    context->error(call, "invalid class type construction");
+    context->error(astForErr, "invalid class type construction");
     return ErroneousType::get(context);
   }
 
@@ -1821,13 +1830,13 @@ static const Type* getManagedClassType(Context* context,
 }
 
 static const Type* getNumericType(Context* context,
-                                  const Call* call,
+                                  const ASTNode* astForErr,
                                   const CallInfo& ci) {
   UniqueString name = ci.name();
 
   if (ci.hasQuestionArg()) {
     if (ci.numActuals() != 0) {
-      context->error(call, "invalid numeric type construction");
+      context->error(astForErr, "invalid numeric type construction");
       return ErroneousType::get(context);
     } else if (name == USTR("int")) {
       return AnyIntType::get(context);
@@ -1857,7 +1866,7 @@ static const Type* getNumericType(Context* context,
     if (qt.type() == nullptr || !qt.type()->isIntType() ||
         qt.param() == nullptr || !qt.param()->isIntParam() ||
         ci.numActuals() != 1) {
-      context->error(call, "invalid numeric type construction");
+      context->error(astForErr, "invalid numeric type construction");
       return ErroneousType::get(context);
     }
 
@@ -1869,7 +1878,7 @@ static const Type* getNumericType(Context* context,
     }
 
     if (ret == nullptr) {
-      context->error(call, "invalid numeric type construction");
+      context->error(astForErr, "invalid numeric type construction");
       return ErroneousType::get(context);
     }
 
@@ -1882,7 +1891,7 @@ static const Type* getNumericType(Context* context,
 // Resolving compiler-supported type-returning patterns
 // 'call' and 'inPoiScope' are used for the location for error reporting.
 static const Type* resolveFnCallSpecialType(Context* context,
-                                            const Call* call,
+                                            const ASTNode* astForErr,
                                             const CallInfo& ci) {
 
   if (ci.name() == USTR("?")) {
@@ -1907,11 +1916,11 @@ static const Type* resolveFnCallSpecialType(Context* context,
     }
   }
 
-  if (auto t = getManagedClassType(context, call, ci)) {
+  if (auto t = getManagedClassType(context, astForErr, ci)) {
     return t;
   }
 
-  if (auto t = getNumericType(context, call, ci)) {
+  if (auto t = getNumericType(context, astForErr, ci)) {
     return t;
   }
 
@@ -1921,9 +1930,8 @@ static const Type* resolveFnCallSpecialType(Context* context,
 
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
-// 'call' and 'inPoiScope' are used for the location for error reporting.
 static bool resolveFnCallSpecial(Context* context,
-                                 const Call* call,
+                                 const ASTNode* astForErr,
                                  const CallInfo& ci,
                                  QualifiedType& exprTypeOut) {
   // TODO: type comparisons
@@ -1931,7 +1939,7 @@ static bool resolveFnCallSpecial(Context* context,
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
-  if (const Type* t = resolveFnCallSpecialType(context, call, ci)) {
+  if (const Type* t = resolveFnCallSpecialType(context, astForErr, ci)) {
     exprTypeOut = QualifiedType(QualifiedType::TYPE, t);
     return true;
   }
@@ -1941,7 +1949,6 @@ static bool resolveFnCallSpecial(Context* context,
 
 static MostSpecificCandidates
 resolveFnCallForTypeCtor(Context* context,
-                         const Call* call,
                          const CallInfo& ci,
                          const Scope* inScope,
                          const PoiScope* inPoiScope,
@@ -1976,6 +1983,8 @@ resolveFnCallForTypeCtor(Context* context,
   return mostSpecific;
 }
 
+// call can be nullptr. in that event, ci.name() will be used
+// to find the call with that name.
 static MostSpecificCandidates
 resolveFnCallFilterAndFindMostSpecific(Context* context,
                                        const Call* call,
@@ -1992,7 +2001,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
 
   {
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, inScope, call, visited);
+    auto v = lookupCalledExpr(context, inScope, call, ci.name(), visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -2019,7 +2028,8 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
     }
 
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, curPoi->inScope(), call, visited);
+    auto v = lookupCalledExpr(context, curPoi->inScope(), call, ci.name(),
+                              visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -2056,6 +2066,8 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
 }
 
 
+// call can be nullptr. in that event ci.name() will be used to find
+// what is called.
 static
 CallResolutionResult resolveFnCall(Context* context,
                                    const Call* call,
@@ -2069,7 +2081,7 @@ CallResolutionResult resolveFnCall(Context* context,
   if (ci.calledType().kind() == QualifiedType::TYPE) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)
-    mostSpecific = resolveFnCallForTypeCtor(context, call, ci,
+    mostSpecific = resolveFnCallForTypeCtor(context, ci,
                                             inScope, inPoiScope,
                                             poiInfo);
   } else {
@@ -2255,6 +2267,20 @@ CallResolutionResult resolveCall(Context* context,
   QualifiedType emptyType;
   PoiInfo emptyPoi;
   return CallResolutionResult(emptyCandidates, emptyType, emptyPoi);
+}
+
+CallResolutionResult resolveGeneratedCall(Context* context,
+                                          const ASTNode* astForErr,
+                                          const CallInfo& ci,
+                                          const Scope* inScope,
+                                          const PoiScope* inPoiScope) {
+  // see if the call is handled directly by the compiler
+  QualifiedType tmpRetType;
+  if (resolveFnCallSpecial(context, astForErr, ci, tmpRetType)) {
+    return CallResolutionResult(std::move(tmpRetType));
+  }
+  // otherwise do regular call resolution
+  return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope);
 }
 
 

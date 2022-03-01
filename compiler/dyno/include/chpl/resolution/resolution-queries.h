@@ -176,7 +176,7 @@ filterCandidatesInstantiating(Context* context,
                               std::vector<const TypedFnSignature*>& result);
 
 /**
-  Given a CallInfo representing a call, a Scope representing the
+  Given a uast::Call, a CallInfo representing the call, a Scope representing the
   scope of that call, and a PoiScope representing the point-of-instantiation
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
@@ -186,6 +186,18 @@ CallResolutionResult resolveCall(Context* context,
                                  const CallInfo& ci,
                                  const Scope* inScope,
                                  const PoiScope* inPoiScope);
+
+/**
+  Given a CallInfo representing a call, a Scope representing the
+  scope of that call, and a PoiScope representing the point-of-instantiation
+  scope of that call, find the most specific candidates as well
+  as the point-of-instantiation scopes that were used when resolving them.
+ */
+CallResolutionResult resolveGeneratedCall(Context* context,
+                                          const uast::ASTNode* astForErr,
+                                          const CallInfo& ci,
+                                          const Scope* inScope,
+                                          const PoiScope* inPoiScope);
 
 
 } // end namespace resolution
