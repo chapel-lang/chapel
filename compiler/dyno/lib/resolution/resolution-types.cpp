@@ -317,6 +317,50 @@ void TypedFnSignature::stringify(std::ostream& ss,
   ss << ")";
 }
 
+void CallInfoActual::stringify(std::ostream& ss,
+                               chpl::StringifyKind stringKind) const {
+  if (!byName_.isEmpty()) {
+    byName_.stringify(ss, stringKind);
+    ss << "=";
+  }
+
+  type_.stringify(ss, stringKind);
+}
+
+void CallInfo::stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const {
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << "CallInfo with name '";
+    name_.stringify(ss, stringKind);
+    ss << "'";
+  } else {
+    name_.stringify(ss, stringKind);
+  }
+  if (calledType_ != QualifiedType()) {
+    ss << " receiver type: ";
+    calledType_.stringify(ss, stringKind);
+  }
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << " isMethod=" << isMethod_;
+    ss << " hasQuestionArg=" << hasQuestionArg_;
+    ss << " ";
+  }
+  ss << "(";
+  bool first = true;
+  for (auto actual: actuals()) {
+    if (first) {
+      first = false;
+    } else {
+      ss << ",";
+    }
+    actual.stringify(ss, stringKind);
+  }
+  ss << ")";
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << "\n";
+  }
+}
+
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
   poiFnIdsUsed_.insert(addPoiInfo.poiFnIdsUsed_.begin(),
                       addPoiInfo.poiFnIdsUsed_.end());
