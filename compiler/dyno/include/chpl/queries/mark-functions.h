@@ -96,11 +96,11 @@ template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
 };
 
 template<typename A, typename B> struct mark<std::pair<A,B>> {
-  void operator()(Context* context, std::pair<A,B>& keep) const {
+  void operator()(Context* context, const std::pair<A,B>& keep) const {
     chpl::mark<A> firstMarker;
     chpl::mark<B> secondMarker;
-    firstMarker.mark(context, keep.first);
-    secondMarker.mark(context, keep.second);
+    firstMarker(context, keep.first);
+    secondMarker(context, keep.second);
   }
 };
 /// \endcond

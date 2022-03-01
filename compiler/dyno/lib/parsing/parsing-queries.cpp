@@ -341,6 +341,19 @@ bool functionWithIdHasWhere(Context* context, ID id) {
   return functionWithIdHasWhereQuery(context, id);
 }
 
+void setConfigParams(Context* context, std::vector<std::pair<std::string,std::string>> keys) {
+  QUERY_STORE_INPUT_RESULT(configParams, context, keys);
+}
+
+const
+std::vector<std::pair<std::string,std::string>>& configParams(Context* context) {
+  QUERY_BEGIN_INPUT(configParams, context);
+
+  // return empty configParams if not already set using setConfigParams
+  std::vector<std::pair<std::string, std::string>> result;
+
+  return QUERY_END(result);
+}
 
 } // end namespace parsing
 } // end namespace chpl

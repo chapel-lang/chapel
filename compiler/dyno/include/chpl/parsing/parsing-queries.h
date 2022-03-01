@@ -147,6 +147,10 @@ uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id);
  */
 bool functionWithIdHasWhere(Context* context, ID id);
 
+void setConfigParams(Context* context, std::vector<std::pair<std::string,std::string>> keys);
+
+const
+std::vector<std::pair<std::string,std::string>>& configParams(Context* context);
 
 } // end namespace parsing
 } // end namespace chpl

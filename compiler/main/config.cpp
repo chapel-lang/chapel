@@ -27,6 +27,15 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+#include <ostream>
+
+#include "chpl/queries/Context.h"
+#include "chpl/parsing/Parser.h"
+#include "chpl/uast/all-uast.h"
+#include "AstToText.h"
+
+using namespace chpl;
+
 static Map<const char*, Expr*> configMap; // map from configs to vals
 static Map<const char*, VarSymbol*> usedConfigParams; // map from configs to uses
 
@@ -73,6 +82,32 @@ void parseCmdLineConfig(const char* name, const char* value) {
   const char* parseFn  = astr("Command-line arg (", name, ")");
   const char* parseMsg = astr("parsing '", value, "'");
 
+  // unfortunately this is parsed in the order from the command line, so for
+  // it to work, --dyno must come before -sConfigVar=Val or it will not try
+  // to use the dyno parser for command line input
+  if (fDynoCompilerLibrary) {
+    // build some tooling for using dyno parser here
+    Context context;
+    Context* ctx = &context;
+    auto parser = parsing::Parser::build(ctx);
+    parsing::Parser* p = parser.get();
+
+    // print out the old stmtText for reference:
+    std::cerr << "old parse input: " << stmtText << std::endl;
+    // build up input for the dyno parser
+    const char* dynoText = (value[0] != '\0') ? astr( name, "=", value, ";") : astr("dummyConfig=true;");
+    // shadow the old parsing, using the dyno parser and input
+    auto parseResult = p->parseString("CompilationConfigs", dynoText);
+    assert(!parseResult.numErrors());
+    auto mod = parseResult.singleModule();
+    assert(mod);
+    std::cerr << "dyno parse input: " << dynoText <<std::endl;
+    mod->stringify(std::cerr, CHPL_SYNTAX);
+    // manually adding a new line here because chpl syntax visitor doesn't handle
+    // them well at the moment
+    std::cerr << std::endl;
+  }
+
   // Invoke the parser to generate AST
   BlockStmt*  stmt     = parseString(stmtText, parseFn, parseMsg);
 
@@ -100,6 +135,11 @@ void parseCmdLineConfig(const char* name, const char* value) {
   }
 
   configMap.put(astr(name), newExpr);
+
+  // print the result of parsing the input
+  std::cerr << astr(name) << "=";
+  newExpr->prettyPrint(&std::cerr);
+  std::cerr << std::endl;
 
   INT_ASSERT(newExpr == configMap.get(astr(name)));
 }
