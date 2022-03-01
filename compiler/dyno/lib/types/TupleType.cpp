@@ -26,6 +26,29 @@ namespace chpl {
 namespace types {
 
 
+static ID idForTupElt(int i) {
+  // Use an ID with only a postOrderId but empty name for the tuple elts
+  return ID(UniqueString(), i, 0);
+}
+
+void TupleType::computeIsStarTuple() {
+  int n = numElements();
+  QualifiedType eltT;
+  bool allEltTypesSame = true;
+  for (int i = 0; i < n; i++) {
+    if (i == 0) {
+      eltT = elementType(i);
+    } else {
+      if (eltT != elementType(i)) {
+        allEltTypesSame = false;
+        break;
+      }
+    }
+  }
+
+  isStarTuple_ = allEltTypesSame;
+}
+
 const owned<TupleType>&
 TupleType::getTupleType(Context* context, ID id, UniqueString name,
                         const TupleType* instantiatedFrom,
@@ -36,11 +59,6 @@ TupleType::getTupleType(Context* context, ID id, UniqueString name,
                                       instantiatedFrom, std::move(subs)));
 
   return QUERY_END(result);
-}
-
-static ID idForTupElt(int i) {
-  // Use an ID with only a postOrderId but empty name for the tuple elts
-  return ID(UniqueString(), i, 0);
 }
 
 const TupleType*

@@ -31,16 +31,24 @@ namespace types {
  */
 class TupleType final : public CompositeType {
  private:
+  bool isStarTuple_ = false; // i.e. all elements have the same type
+
+  void computeIsStarTuple();
+
   TupleType(ID id, UniqueString name,
             const TupleType* instantiatedFrom,
             SubstitutionsMap subs)
     : CompositeType(typetags::TupleType, id, name,
                     instantiatedFrom, std::move(subs))
-  { }
+  {
+    computeIsStarTuple();
+  }
 
 
   bool contentsMatchInner(const Type* other) const override {
-    return compositeTypeContentsMatchInner((const CompositeType*) other);
+    const TupleType* rhs = (const TupleType*) other;
+    return isStarTuple_ == rhs->isStarTuple_ &&
+           compositeTypeContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -73,6 +81,10 @@ class TupleType final : public CompositeType {
 
   /** Return the type of the i'th element */
   QualifiedType elementType(int i) const;
+
+  /** Return true if this is a *star tuple* - that is, all of the
+      element types are the same. */
+  bool isStarTuple() const { return isStarTuple_; }
 
   /** Return the value tuple variant of this tuple type */
   const TupleType* toValueTuple(Context* context) const;
