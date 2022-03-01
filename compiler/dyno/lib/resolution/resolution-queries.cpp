@@ -2900,7 +2900,6 @@ CallResolutionResult resolveFnCall(Context* context,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope) {
 
-  std::unordered_set<const Scope*> visited;
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
 
