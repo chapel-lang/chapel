@@ -409,7 +409,7 @@ static void test12() {
   assert(tt->elementType(0) == tt->elementType(1));
   assert(tt->elementType(0).kind() == QualifiedType::VAR);
   assert(tt->elementType(0).type()->isRecordType());
- 
+
   auto rt = tt->toReferentialTuple(context);
   assert(rt != tt);
   auto vt = tt->toValueTuple(context);
