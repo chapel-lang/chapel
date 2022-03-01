@@ -82,7 +82,9 @@ static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
   }
   std::ostringstream ss;
   node->stringify(ss, kind);
-  if (!(node->isDomain() && node->toDomain()->numChildren() == 0))
+  // don't test an empty domains as in formal array decls like `proc main(args:[] string)`
+  // don't test comments for now as they are not printed by the chpl-syntax-printer
+  if (!(node->isDomain() && node->toDomain()->numChildren() == 0) && !node->isComment())
     assert(!ss.str().empty());
   std::cerr << ss.str() << std::endl;
 }
