@@ -165,6 +165,11 @@ struct Resolver {
                                types::QualifiedType lhsType,
                                types::QualifiedType rhsType);
 
+  // e.g. var (a, b) = mytuple
+  // checks that tuple size matches and establishes types for a and b
+  void resolveTupleSplitDecl(const uast::TupleDecl* lhsTuple,
+                             types::QualifiedType rhsType);
+
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
   // if it is a regular call.
@@ -198,6 +203,9 @@ struct Resolver {
 
   bool enter(const uast::MultiDecl* decl);
   void exit(const uast::MultiDecl* decl);
+
+  bool enter(const uast::TupleDecl* decl);
+  void exit(const uast::TupleDecl* decl);
 
   bool enter(const uast::Call* call);
   void exit(const uast::Call* call);

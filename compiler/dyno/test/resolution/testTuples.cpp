@@ -24,6 +24,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
+#include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/Variable.h"
 
 // always check assertions in this test
@@ -292,6 +293,76 @@ static void test8() {
   assert(vt == tt);
 }
 
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto M = parseModule(context,
+                R""""(
+                  var (a, (b, c)) = (1, (2.0, 3));
+                )"""");
+
+  assert(M->numStmts() == 1);
+  const TupleDecl* td = M->stmt(0)->toTupleDecl();
+  assert(td);
+  auto a = td->decl(0)->toVariable();
+  assert(a);
+  auto innerTd = td->decl(1)->toTupleDecl();
+  assert(innerTd);
+  auto b = innerTd->decl(0)->toVariable();
+  assert(b);
+  auto c = innerTd->decl(1)->toVariable();
+  assert(c);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, M->id());
+  auto aQt = rr.byAst(a).type();
+  auto bQt = rr.byAst(b).type();
+  auto cQt = rr.byAst(c).type();
+  assert(aQt.kind() == QualifiedType::VAR);
+  assert(aQt.type() == IntType::get(context, 0));
+  assert(bQt.kind() == QualifiedType::VAR);
+  assert(bQt.type() == RealType::get(context, 0));
+  assert(cQt.kind() == QualifiedType::VAR);
+  assert(cQt.type() == IntType::get(context, 0));
+}
+
+static void test10() {
+  printf("test10\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto M = parseModule(context,
+                R""""(
+                  const (a, (b, c)) = (1, (2.0, 3));
+                )"""");
+
+  assert(M->numStmts() == 1);
+  const TupleDecl* td = M->stmt(0)->toTupleDecl();
+  assert(td);
+  auto a = td->decl(0)->toVariable();
+  assert(a);
+  auto innerTd = td->decl(1)->toTupleDecl();
+  assert(innerTd);
+  auto b = innerTd->decl(0)->toVariable();
+  assert(b);
+  auto c = innerTd->decl(1)->toVariable();
+  assert(c);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, M->id());
+  auto aQt = rr.byAst(a).type();
+  auto bQt = rr.byAst(b).type();
+  auto cQt = rr.byAst(c).type();
+  assert(aQt.kind() == QualifiedType::CONST_VAR);
+  assert(aQt.type() == IntType::get(context, 0));
+  assert(bQt.kind() == QualifiedType::CONST_VAR);
+  assert(bQt.type() == RealType::get(context, 0));
+  assert(cQt.kind() == QualifiedType::CONST_VAR);
+  assert(cQt.type() == IntType::get(context, 0));
+}
+
+
+
 int main() {
   test1();
   test2();
@@ -301,6 +372,8 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
+  test10();
 
   return 0;
 }
