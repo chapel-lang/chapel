@@ -532,7 +532,7 @@ void Resolver::resolveTupleSplitAssign(const Tuple* lhsTuple,
     return;
   }
   if (rhsT == nullptr) {
-    context->error(lhsTuple, "lhs type is not tuple in split tuple assign");
+    context->error(lhsTuple, "rhs type is not tuple in split tuple assign");
     return;
   }
 
@@ -571,6 +571,41 @@ void Resolver::resolveTupleSplitAssign(const Tuple* lhsTuple,
       }
       // gather the poi scopes used when resolving the call
       poiInfo.accumulate(c.poiInfo());
+    }
+    i++;
+  }
+}
+
+void Resolver::resolveTupleSplitDecl(const TupleDecl* lhsTuple,
+                                     QualifiedType rhsType) {
+  if (!rhsType.hasTypePtr()) {
+    context->error(lhsTuple, "Unknown rhs tuple type in split tuple decl");
+    return;
+  }
+
+  const TupleType* rhsT = rhsType.type()->toTupleType();
+
+  if (rhsT == nullptr) {
+    context->error(lhsTuple, "rhs type is not tuple in split tuple decl");
+    return;
+  }
+
+  // Then, check that they have the same size
+  if (lhsTuple->numDecls() != rhsT->numElements()) {
+    context->error(lhsTuple, "tuple size mismatch in split tuple decl");
+    return;
+  }
+
+  // Finally, try to resolve = between the elements
+  int i = 0;
+  for (auto actual : lhsTuple->decls()) {
+    QualifiedType rhsEltType = rhsT->elementType(i);
+    if (auto innerTuple = actual->toTupleDecl()) {
+      resolveTupleSplitDecl(innerTuple, rhsEltType);
+    } else if (auto namedDecl = actual->toNamedDecl()) {
+      resolveNamedDecl(namedDecl, rhsEltType.type());
+    } else {
+      assert(false && "case not handled");
     }
     i++;
   }
@@ -822,7 +857,6 @@ bool Resolver::enter(const MultiDecl* decl) {
 
   return false;
 }
-
 void Resolver::exit(const MultiDecl* decl) {
   // Visit the named decls in reverse order
   // setting the type/init.
@@ -857,6 +891,53 @@ void Resolver::exit(const MultiDecl* decl) {
       }
     }
   }
+}
+
+bool Resolver::enter(const TupleDecl* decl) {
+  enterScope(decl);
+
+  // Establish the type or init expression within.
+  if (auto t = decl->typeExpression()) {
+    t->traverse(*this);
+  }
+  if (auto e = decl->initExpression()) {
+    e->traverse(*this);
+  }
+  return false;
+}
+
+void Resolver::exit(const TupleDecl* decl) {
+  QualifiedType typeExprT;
+  QualifiedType initExprT;
+  QualifiedType useType;
+
+  // Get the type for the type/init expr resolved earlier
+  if (auto t = decl->typeExpression()) {
+    ResolvedExpression& result = byPostorder.byAst(t);
+    typeExprT = result.type();
+    useType = typeExprT;
+  }
+  if (auto e = decl->initExpression()) {
+    ResolvedExpression& result = byPostorder.byAst(e);
+    initExprT = result.type();
+    useType = initExprT;
+  }
+
+  if (!typeExprT.hasTypePtr() && !initExprT.hasTypePtr()) {
+    context->error(decl, "Cannot establish type for tuple decl");
+    useType = QualifiedType(QualifiedType::VAR, ErroneousType::get(context));
+
+  } else if (typeExprT.hasTypePtr() && initExprT.hasTypePtr()) {
+    // check that they are compatible
+    if (typeExprT.type() != initExprT.type()) {
+      context->error(decl, "Cannot initialize this type with that");
+      // TODO: better error
+      // TODO: implicit conversions and instantiations
+      // TODO: share a helper method for this check & error w/ resolveNamedDecl
+    }
+  }
+
+  resolveTupleSplitDecl(decl, useType);
 }
 
 bool Resolver::enter(const Call* call) {
