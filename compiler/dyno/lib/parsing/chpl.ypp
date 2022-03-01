@@ -658,7 +658,6 @@ stmt:
   }
 | try_stmt                  { $$ = context->finishStmt(@$, $1); }
 | return_stmt               { $$ = context->finishStmt($1); }
-| TATOMIC stmt              { $$ = TODOSTMT(@$); }
 | TBREAK opt_label_ident TSEMI
   {
     auto comments = context->gatherComments(@1);
