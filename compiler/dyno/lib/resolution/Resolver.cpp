@@ -488,6 +488,113 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   result.setType(QualifiedType(qtKind, typePtr, paramPtr));
 }
 
+void
+Resolver::issueErrorForFailedCallResolution(const uast::ASTNode* astForErr,
+                                            const CallInfo& ci,
+                                            const CallResolutionResult& c) {
+  if (c.mostSpecific().isEmpty()) {
+    // if the call resolution result is empty, we need to issue an error
+    if (c.mostSpecific().isAmbiguous()) {
+      // ambiguity between candidates
+      context->error(astForErr, "Cannot resolve call: ambiguity");
+    } else {
+      // could not find a most specific candidate
+      context->error(astForErr, "Cannot resolve call: no matching candidates");
+    }
+  } else {
+    context->error(astForErr, "Cannot establish type for call expression");
+
+    // expecting call site to check for hasTypePtr.
+    assert(!c.exprType().hasTypePtr());
+  }
+}
+
+void Resolver::resolveTupleSplitAssign(const Tuple* lhsTuple,
+                                       QualifiedType lhsType,
+                                       QualifiedType rhsType) {
+  // Check that lhsType = rhsType can work
+
+  if (!lhsType.hasTypePtr()) {
+    context->error(lhsTuple, "Unknown lhs tuple type in split tuple assign");
+    return;
+  }
+  if (!rhsType.hasTypePtr()) {
+    context->error(lhsTuple, "Unknown rhs tuple type in split tuple assign");
+    return;
+  }
+
+  // First, check that lhsType and rhsType are tuples
+  const TupleType* lhsT = lhsType.type()->toTupleType();
+  const TupleType* rhsT = rhsType.type()->toTupleType();
+
+  if (lhsT == nullptr) {
+    context->error(lhsTuple, "lhs type is not tuple in split tuple assign");
+    return;
+  }
+  if (rhsT == nullptr) {
+    context->error(lhsTuple, "lhs type is not tuple in split tuple assign");
+    return;
+  }
+
+  // Then, check that they have the same size
+  if (lhsTuple->numActuals() != rhsT->numElements()) {
+    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
+    return;
+  }
+  if (lhsT->numElements() != rhsT->numElements()) {
+    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
+    return;
+  }
+
+  assert(scopeStack.size() > 0);
+  const Scope* scope = scopeStack.back();
+
+  // Finally, try to resolve = between the elements
+  int i = 0;
+  for (auto actual : lhsTuple->actuals()) {
+    QualifiedType lhsEltType = lhsT->elementType(i);
+    QualifiedType rhsEltType = rhsT->elementType(i);
+    if (auto innerTuple = actual->toTuple()) {
+      resolveTupleSplitAssign(innerTuple, lhsEltType, rhsEltType);
+    } else {
+      std::vector<CallInfoActual> actuals;
+      actuals.push_back(CallInfoActual(lhsEltType, UniqueString()));
+      actuals.push_back(CallInfoActual(rhsEltType, UniqueString()));
+      auto ci = CallInfo (/* name */ USTR("="),
+                          /* calledType */ QualifiedType(),
+                          /* hasQuestionArg */ false,
+                          actuals);
+
+      auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
+      if (!c.exprType().hasTypePtr()) {
+        issueErrorForFailedCallResolution(actual, ci, c);
+      }
+      // gather the poi scopes used when resolving the call
+      poiInfo.accumulate(c.poiInfo());
+    }
+    i++;
+  }
+}
+
+bool Resolver::resolveSpecialCall(const Call* call) {
+  if (auto op = call->toOpCall()) {
+    if (op->op() == USTR("=")) {
+      if (op->numActuals() == 2) {
+        if (auto lhsTuple = op->actual(0)->toTuple()) {
+          QualifiedType lhsType = byPostorder.byAst(op->actual(0)).type();
+          QualifiedType rhsType = byPostorder.byAst(op->actual(1)).type();
+
+          resolveTupleSplitAssign(lhsTuple, lhsType, rhsType);
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+
 QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // if the id is contained within this symbol,
   // get the type information from the resolution result.
@@ -755,9 +862,15 @@ void Resolver::exit(const MultiDecl* decl) {
 bool Resolver::enter(const Call* call) {
   return true;
 }
+
 void Resolver::exit(const Call* call) {
   assert(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
+
+  // try to resolve it as a special call (e.g. Tuple assignment)
+  bool handled = resolveSpecialCall(call);
+  if (handled)
+    return;
 
   // TODO should we move this to a class method that takes in the
   // context and call?
@@ -816,23 +929,11 @@ void Resolver::exit(const Call* call) {
   r.setPoiScope(c.poiInfo().poiScope());
   r.setType(c.exprType());
 
-  if (r.type().type() != nullptr) {
-    // assume it is OK even if mostSpecific is empty
-    // (e.g. it could be a primitive or other builtin operation)
-  } else {
 
-    if (c.mostSpecific().isEmpty()) {
-      // if the call resolution result is empty, we need to issue an error
-      if (c.mostSpecific().isAmbiguous()) {
-        // ambiguity between candidates
-        context->error(call, "Cannot resolve call: ambiguity");
-      } else {
-        // could not find a most specific candidate
-        context->error(call, "Cannot resolve call: no matching candidates");
-      }
-    } else {
-      context->error(call, "Cannot establish type for call expression");
-    }
+  if (r.type().type() == nullptr) {
+    // assume it is OK if a type was computed, even with no candidates
+    // (that happens e.g. for a primitive)
+    issueErrorForFailedCallResolution(call, ci, c);
     r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
   }
 

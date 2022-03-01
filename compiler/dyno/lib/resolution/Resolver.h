@@ -154,6 +154,22 @@ struct Resolver {
   void resolveNamedDecl(const uast::NamedDecl* decl,
                         const types::Type* useType);
 
+  // issue ambiguity / no matching candidates / etc error
+  void issueErrorForFailedCallResolution(const uast::ASTNode* astForErr,
+                                         const CallInfo& ci,
+                                         const CallResolutionResult& c);
+
+  // e.g. (a, b) = mytuple
+  // checks that tuple size matches and that the elements are assignable
+  void resolveTupleSplitAssign(const uast::Tuple* lhsTuple,
+                               types::QualifiedType lhsType,
+                               types::QualifiedType rhsType);
+
+  // helper to resolve a special call
+  // returns 'true' if the call was a special call handled here, false
+  // if it is a regular call.
+  bool resolveSpecialCall(const uast::Call* call);
+
   /* What is the type for the symbol with a particular ID?
      localGenericUnknown, if true, indicates that a use of a
      field/formal with generic type (that is not substituted)
