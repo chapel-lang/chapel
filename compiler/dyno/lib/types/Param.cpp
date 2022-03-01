@@ -355,8 +355,8 @@ void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
       ss << Param::valueToString(value); \
       break; \
     }
-// Apply the above macros to ParamClassesList.h
-#include "chpl/types/ParamClassesList.h"
+// Apply the above macros to param-classes-list.h
+#include "chpl/types/param-classes-list.h"
 // clear the macros
 #undef PARAM_NODE
   }
@@ -633,7 +633,7 @@ double Param::str2double(const char* str, size_t len, std::string& err) {
 
 IMPLEMENT_DUMP(Param);
 
-// implement the subclasses using macros and ParamClassesList.h
+// implement the subclasses using macros and param-classes-list.h
 #define PARAM_NODE(NAME, VALTYPE) \
   const owned<NAME>& NAME::get##NAME(Context* context, VALTYPE value) { \
     QUERY_BEGIN(get##NAME, context, value); \
@@ -641,8 +641,8 @@ IMPLEMENT_DUMP(Param);
     return QUERY_END(result); \
   }
 
-// Apply the above macros to ParamClassesList.h
-#include "chpl/types/ParamClassesList.h"
+// Apply the above macros to param-classes-list.h
+#include "chpl/types/param-classes-list.h"
 
 // clear the macros
 #undef PARAM_NODE

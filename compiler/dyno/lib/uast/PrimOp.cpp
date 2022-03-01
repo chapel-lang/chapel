@@ -34,7 +34,7 @@ const char* primTagToName(PrimitiveTag tag) {
 
 #define PRIMITIVE_G(NAME, str) PRIMITIVE(NAME, str)
 #define PRIMITIVE_R(NAME, str) PRIMITIVE(NAME, str)
-#include "chpl/uast/PrimOpsList.h"
+#include "chpl/uast/prim-ops-list.h"
     case NUM_KNOWN_PRIMS:
       return "";
 #undef PRIMITIVE_G
@@ -52,7 +52,7 @@ PrimitiveTag primNameToTag(const char* name) {
 
 #define PRIMITIVE_G(NAME, str) PRIMITIVE(NAME, str)
 #define PRIMITIVE_R(NAME, str) PRIMITIVE(NAME, str)
-#include "chpl/uast/PrimOpsList.h"
+#include "chpl/uast/prim-ops-list.h"
 
 #undef PRIMITIVE_G
 #undef PRIMITIVE_R

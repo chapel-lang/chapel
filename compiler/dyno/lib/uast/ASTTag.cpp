@@ -32,8 +32,8 @@ static const char* tagToStringTable[NUM_AST_TAGS] = {
 #define AST_LEAF(NAME) NAMESTR(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME) NAMESTR(START_##NAME)
 #define AST_END_SUBCLASSES(NAME) NAMESTR(END_##NAME)
-// Apply the above macros to ASTClassesList.h
-#include "chpl/uast/ASTClassesList.h"
+// Apply the above macros to uast-classes-list.h
+#include "chpl/uast/uast-classes-list.h"
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF

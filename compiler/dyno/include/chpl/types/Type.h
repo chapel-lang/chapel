@@ -22,7 +22,6 @@
 
 #include "chpl/queries/Context.h"
 #include "chpl/queries/update-functions.h"
-#include "chpl/types/TypeClasses.h"
 #include "chpl/types/TypeTag.h"
 
 #include <deque>
@@ -32,6 +31,25 @@ namespace uast {
   class Decl;
 }
 namespace types {
+
+
+// forward declare the various Type subclasses
+// using macros and type-classes-list.h
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_DECL(NAME) class NAME;
+#define TYPE_NODE(NAME) TYPE_DECL(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_DECL(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_DECL(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+/// \endcond
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
+// clear the macros
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef TYPE_DECL
 
 
 /**
@@ -128,7 +146,7 @@ class Type {
   virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // define is__ methods for the various Type subclasses
-  // using macros and TypeClassesList.h
+  // using macros and type-classes-list.h
   /// \cond DO_NOT_DOCUMENT
   #define TYPE_IS(NAME) \
     bool is##NAME() const { \
@@ -139,8 +157,8 @@ class Type {
   #define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_IS(NAME)
   #define TYPE_END_SUBCLASSES(NAME)
   /// \endcond
-  // Apply the above macros to TypeClassesList.h
-  #include "chpl/types/TypeClassesList.h"
+  // Apply the above macros to type-classes-list.h
+  #include "chpl/types/type-classes-list.h"
   // clear the macros
   #undef TYPE_NODE
   #undef BUILTIN_TYPE_NODE
@@ -199,7 +217,7 @@ class Type {
   const CompositeType* getCompositeType() const;
 
   // define to__ methods for the various Type subclasses
-  // using macros and TypeClassesList.h
+  // using macros and type-classes-list.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
   /// \cond DO_NOT_DOCUMENT
   #define TYPE_TO(NAME) \
@@ -214,8 +232,8 @@ class Type {
   #define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_TO(NAME)
   #define TYPE_END_SUBCLASSES(NAME)
   /// \endcond
-  // Apply the above macros to TypeClassesList.h
-  #include "chpl/types/TypeClassesList.h"
+  // Apply the above macros to type-classes-list.h
+  #include "chpl/types/type-classes-list.h"
   // clear the macros
   #undef TYPE_NODE
   #undef BUILTIN_TYPE_NODE

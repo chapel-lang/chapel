@@ -60,7 +60,7 @@ classifyPrimitive(CallExpr *call) {
   // ...
   #define PRIMITIVE_G(NAME, str)
   #define PRIMITIVE_R(NAME, str) case PRIM_ ## NAME:
-  #include "chpl/uast/PrimOpsList.h"
+  #include "chpl/uast/prim-ops-list.h"
   #undef PRIMITIVE_R
   #undef PRIMITIVE_G
     switch (call->primitive->tag) {

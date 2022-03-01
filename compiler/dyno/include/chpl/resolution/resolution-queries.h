@@ -44,6 +44,12 @@ const types::QualifiedType& typeForModuleLevelSymbol(Context* context, ID id);
  */
 const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
 
+/**
+  Compute the type for a literal
+ */
+types::QualifiedType typeForLiteral(Context* context,
+                                    const uast::Literal* literal);
+
 /////// function resolution
 
 /**
