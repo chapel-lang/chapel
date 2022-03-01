@@ -1176,7 +1176,7 @@ module DistributedBag {
                                   break;
                                 }
 
-                                extern proc sizeof(type x): size_t;
+                                extern proc sizeof(type x): c_size_t;
                                 // We steal at most 1MB worth of data. If the user has less than that, we steal a %, at least 1.
                                 const mb = distributedBagWorkStealingMemCap * 1024 * 1024;
                                 var toSteal = max(distributedBagWorkStealingMinElems, min(mb / sizeof(eltType), targetSegment.nElems.read() * distributedBagWorkStealingRatio)) : int;

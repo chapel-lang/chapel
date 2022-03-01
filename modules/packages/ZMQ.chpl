@@ -263,26 +263,26 @@ module ZMQ {
   private extern proc zmq_errno(): c_int;
   private extern proc zmq_msg_init(ref msg: zmq_msg_t): c_int;
   private extern proc zmq_msg_init_size(ref msg: zmq_msg_t,
-                                        size: size_t): c_int;
+                                        size: c_size_t): c_int;
   private extern proc zmq_msg_init_data(ref msg: zmq_msg_t,
                                         data: c_void_ptr,
-                                        size: size_t,
+                                        size: c_size_t,
                                         ffn: c_fn_ptr,
                                         hint: c_void_ptr): c_int;
   private extern proc zmq_msg_data(ref msg: zmq_msg_t): c_void_ptr;
-  private extern proc zmq_msg_size(ref msg: zmq_msg_t): size_t;
+  private extern proc zmq_msg_size(ref msg: zmq_msg_t): c_size_t;
   private extern proc zmq_msg_send(ref msg: zmq_msg_t, sock: c_void_ptr,
                                    flags: c_int): c_int;
   private extern proc zmq_msg_recv(ref msg: zmq_msg_t, sock: c_void_ptr,
                                    flags: c_int): c_int;
   private extern proc zmq_msg_close(ref msg: zmq_msg_t): c_int;
   private extern proc zmq_recv(sock: c_void_ptr, buf: c_void_ptr,
-                               len: size_t, flags: c_int): c_int;
+                               len: c_size_t, flags: c_int): c_int;
   private extern proc zmq_send(sock: c_void_ptr, buf: c_void_ptr,
-                               len: size_t, flags: c_int): c_int;
+                               len: c_size_t, flags: c_int): c_int;
   private extern proc zmq_setsockopt (sock: c_void_ptr, option_name: int,
                                       const option_value: c_void_ptr,
-                                      option_len: size_t): c_int;
+                                      option_len: c_size_t): c_int;
   private extern proc zmq_socket(ctx: c_void_ptr, socktype: c_int): c_void_ptr;
   private extern proc zmq_strerror(errnum: c_int): c_string;
   private extern proc zmq_version(major: c_ptr(c_int),
@@ -801,7 +801,7 @@ module ZMQ {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
                                  value.c_str(): c_void_ptr,
-                                 value.numBytes:size_t): int;
+                                 value.numBytes:c_size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
           // It would be good to use a factory method for a ZMQError subclass,
@@ -841,7 +841,7 @@ module ZMQ {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
                                  value.c_str(): c_void_ptr,
-                                 value.numBytes:size_t): int;
+                                 value.numBytes:c_size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
           // It would be good to use a factory method for a ZMQError subclass,
@@ -897,7 +897,7 @@ module ZMQ {
         // Create the ZeroMQ message from the data buffer
         var msg: zmq_msg_t;
         if (0 != zmq_msg_init_data(msg, copy.c_str():c_void_ptr,
-                                   copy.numBytes:size_t, c_ptrTo(free_helper),
+                                   copy.numBytes:c_size_t, c_ptrTo(free_helper),
                                    c_nil)) {
           try throw_socket_error(errno, "send");
         }
@@ -920,7 +920,7 @@ module ZMQ {
       on classRef.home {
         var copy = data;
         while (-1 == zmq_send(classRef.socket, c_ptrTo(copy):c_void_ptr,
-                              numBytes(T):size_t,
+                              numBytes(T):c_size_t,
                               (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
             chpl_task_yield();
@@ -1020,7 +1020,7 @@ module ZMQ {
       on classRef.home {
         var data: T;
         while (-1 == zmq_recv(classRef.socket, c_ptrTo(data):c_void_ptr,
-                              numBytes(T):size_t,
+                              numBytes(T):c_size_t,
                               (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
             chpl_task_yield();

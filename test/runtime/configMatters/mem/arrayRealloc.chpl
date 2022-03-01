@@ -50,8 +50,8 @@ config type arrayType = int;
 // just use 64MB.
 proc arraySize() {
   use CTypes;
-  extern proc chpl_comm_regMemAllocThreshold(): size_t;
-  extern var SIZE_MAX: size_t;
+  extern proc chpl_comm_regMemAllocThreshold(): c_size_t;
+  extern var SIZE_MAX: c_size_t;
   if chpl_comm_regMemAllocThreshold() != SIZE_MAX then
     return chpl_comm_regMemAllocThreshold():int * 4 / numBytes(arrayType);
   else

@@ -1920,7 +1920,7 @@ module ShallowCopy {
 
     if A._instance.isDefaultRectangular() {
       type st = __primitive("static field type", A._value, "eltType");
-      var size = (nElts:size_t)*c_sizeof(st);
+      var size = (nElts:c_size_t)*c_sizeof(st);
       c_memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ A, {dst..#nElts},
@@ -1947,7 +1947,7 @@ module ShallowCopy {
     if DstA._instance.isDefaultRectangular() &&
        SrcA._instance.isDefaultRectangular() {
       type st = __primitive("static field type", DstA._value, "eltType");
-      var size = (nElts:size_t)*c_sizeof(st);
+      var size = (nElts:c_size_t)*c_sizeof(st);
       c_memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ DstA, {dst..#nElts},
@@ -1960,7 +1960,7 @@ module ShallowCopy {
       }
     }
   }
-  proc shallowCopyPutGetRefs(ref dst, const ref src, numBytes: size_t) {
+  proc shallowCopyPutGetRefs(ref dst, const ref src, numBytes: c_size_t) {
     if dst.locale.id == here.id {
       __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes);
     } else if src.locale.id == here.id {
@@ -1973,7 +1973,7 @@ module ShallowCopy {
   // For the case in which we know that the source and dest regions
   // are contiguous within a locale
   proc shallowCopyPutGet(ref DstA, dst, const ref SrcA, src, nElts) {
-    var size = (nElts:size_t)*c_sizeof(DstA.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
     shallowCopyPutGetRefs(DstA[dst], SrcA[src], size);
   }
 }

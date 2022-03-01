@@ -252,7 +252,7 @@ proc main() {
   /* output Pi and timing statistics */
   if (_out&1)  {
     writeln("pi(0,", terms, ")=");
-    mpf_out_str(chpl_cstdout(), 10:c_int, (d+2):size_t, qi);
+    mpf_out_str(chpl_cstdout(), 10:c_int, (d+2):c_size_t, qi);
     writeln();
   }
 

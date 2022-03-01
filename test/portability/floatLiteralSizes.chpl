@@ -1,6 +1,6 @@
 use CTypes;
 
-extern proc sizeof(e): size_t;
+extern proc sizeof(e): c_size_t;
 
 writeln("sizes of real literals");
 writeln(sizeof(1.0:real(32)));

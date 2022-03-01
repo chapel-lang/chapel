@@ -5,15 +5,15 @@ const desiredTasks = oversubscription * here.maxTaskPar;
 
 // At most use 1/memFraction of available/addressable memory
 var memAvail = here.physicalMemory(unit=MemUnits.Bytes);
-if numBits(size_t) < 64 then
+if numBits(c_size_t) < 64 then
   memAvail = min(memAvail, 2**30);
 
 config const memFraction = 10;
 config var maxMem = memAvail / memFraction;
 const arrSize = maxMem / desiredTasks;
 
-extern proc chpl_comm_regMemAllocThreshold(): size_t;
-extern var SIZE_MAX: size_t;
+extern proc chpl_comm_regMemAllocThreshold(): c_size_t;
+extern var SIZE_MAX: c_size_t;
 if chpl_comm_regMemAllocThreshold() != SIZE_MAX then
   if chpl_comm_regMemAllocThreshold():int > arrSize then
     writeln("Warning: Array size is too small to test registered allocation");

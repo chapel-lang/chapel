@@ -7,11 +7,11 @@ extern type wordexp_t;
 extern proc chpl_study_glob(pattern:c_string, flags:c_int, ref ret_glob:glob_t):c_int;
 extern proc chpl_wordexp(pattern:c_string, flags:c_int, ref ret_glob:wordexp_t):c_int;
 
-extern proc glob_num(x:glob_t): size_t;
-extern proc glob_index(x:glob_t, idx:size_t): c_string;
+extern proc glob_num(x:glob_t): c_size_t;
+extern proc glob_index(x:glob_t, idx:c_size_t): c_string;
 
-extern proc wordexp_num(x:wordexp_t): size_t;
-extern proc wordexp_index(x:wordexp_t, idx:size_t): c_string;
+extern proc wordexp_num(x:wordexp_t): c_size_t;
+extern proc wordexp_index(x:wordexp_t, idx:c_size_t): c_string;
 
 extern proc chpl_isdir(path:c_string):c_int;
 extern proc globfree(ref glb:glob_t);

@@ -3300,7 +3300,7 @@ module ChapelArray {
     var r = if shapeful then ir._shape_ else 1..0;
 
     var i  = 0;
-    var size = r.sizeAs(size_t);
+    var size = r.sizeAs(c_size_t);
     type elemType = iteratorToArrayElementType(ir.type);
     var data:_ddata(elemType) = nil;
 

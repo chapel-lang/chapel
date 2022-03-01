@@ -220,12 +220,12 @@ module String {
   private extern proc qio_decode_char_buf(ref chr:int(32),
                                           ref nbytes:c_int,
                                           buf:c_string,
-                                          buflen:ssize_t): syserr;
+                                          buflen:c_ssize_t): syserr;
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf_esc(ref chr:int(32),
                                               ref nbytes:c_int,
                                               buf:c_string,
-                                              buflen:ssize_t): syserr;
+                                              buflen:c_ssize_t): syserr;
   pragma "fn synchronization free"
   private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
   pragma "fn synchronization free"
@@ -1515,7 +1515,7 @@ module String {
       return chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
     }
     else {
-      var maxbytes = (this.buffLen - idx): ssize_t;
+      var maxbytes = (this.buffLen - idx): c_ssize_t;
       if maxbytes < 0 || maxbytes > 4 then
         maxbytes = 4;
       var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=idx,
