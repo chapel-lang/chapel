@@ -286,6 +286,7 @@ class CallInfoActual {
 class CallInfo {
  private:
   UniqueString name_;                   // the name of the called thing
+  types::QualifiedType calledType_;     // the type of the called thing
   bool isMethod_ = false;               // in that case, actuals[0] is receiver
   bool hasQuestionArg_ = false;         // includes ? arg for type constructor
   std::vector<CallInfoActual> actuals_; // types/params/names of actuals
@@ -294,9 +295,11 @@ class CallInfo {
   using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
 
   /** Construct a CallInfo that contains QualifiedTypes for actuals */
-  CallInfo(UniqueString name, bool hasQuestionArg,
+  CallInfo(UniqueString name, types::QualifiedType calledType,
+           bool hasQuestionArg,
            std::vector<CallInfoActual> actuals)
-      : name_(name), hasQuestionArg_(hasQuestionArg),
+      : name_(name), calledType_(calledType),
+        hasQuestionArg_(hasQuestionArg),
         actuals_(std::move(actuals)) {}
 
   /** Construct a CallInfo with unknown types for the actuals
@@ -305,6 +308,9 @@ class CallInfo {
 
   /** return the name of the called thing */
   UniqueString name() const { return name_; }
+
+  /** return the type of the called thing */
+  types::QualifiedType calledType() const { return calledType_; }
 
   /** check if the call is a method call */
   bool isMethod() const { return isMethod_; }
@@ -328,6 +334,7 @@ class CallInfo {
 
   bool operator==(const CallInfo& other) const {
     return name_ == other.name_ &&
+           calledType_ == other.calledType_ &&
            isMethod_ == other.isMethod_ &&
            hasQuestionArg_ == other.hasQuestionArg_ &&
            actuals_ == other.actuals_;
@@ -336,7 +343,7 @@ class CallInfo {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(name_, isMethod_, hasQuestionArg_, actuals_);
+    return chpl::hash(name_, calledType_, isMethod_, hasQuestionArg_, actuals_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {

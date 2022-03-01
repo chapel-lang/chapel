@@ -131,6 +131,38 @@ static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
 // TODO: migrate fns out-of-body to avoid requiring inlining
 // TODO: move this and supporting functions to another file
 
+// This class can gather up the IDs of contained fields or formals
+struct GatherFieldsOrFormals {
+  std::set<ID> fieldOrFormals;
+
+  bool enter(const NamedDecl* decl) {
+    // visit type declarations
+    // is it a field or a formal?
+    bool isField = false;
+    if (auto var = decl->toVariable())
+      if (var->isField())
+        isField = true;
+
+    bool isFieldOrFormal = isField || decl->isFormal();
+
+    if (isFieldOrFormal)
+      fieldOrFormals.insert(decl->id());
+
+    return false;
+  }
+  void exit(const NamedDecl* decl) { }
+
+  // go in to TupleDecl and MultiDecl
+  bool enter(const TupleDecl* d) { return true; }
+  void exit(const TupleDecl* d) { }
+  bool enter(const MultiDecl* d) { return true; }
+  void exit(const MultiDecl* d) { }
+
+  // don't go in to anything else
+  bool enter(const ASTNode* ast) { return false; }
+  void exit(const ASTNode* ast) { }
+};
+
 struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;
@@ -138,12 +170,16 @@ struct Resolver {
   const PoiScope* poiScope = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
   bool useGenericFormalDefaults = false;
+  const TypedFnSignature* typedSignature = nullptr;
 
   // internal variables
   std::vector<const Decl*> declStack;
   std::vector<const Scope*> scopeStack;
   bool signatureOnly = false;
   const Block* fnBody = nullptr;
+  bool fieldOrFormalsComputed = false;
+  std::set<ID> fieldOrFormals;
+  std::set<ID> instantiatedFieldOrFormals;
 
   // results of the resolution process
 
@@ -154,70 +190,79 @@ struct Resolver {
   // allow accurate caching and reuse of instantiations
   PoiInfo poiInfo;
 
-  // set up Resolver to resolve a Module
-  Resolver(Context* context,
-           const Module* mod,
-           ResolutionResultByPostorderID& byPostorder)
-    : context(context),
-      symbol(mod),
-      byPostorder(byPostorder) {
+  static PoiInfo makePoiInfo(const PoiScope* poiScope) {
+    if (poiScope == nullptr)
+      return PoiInfo();
 
-    byPostorder.setupForSymbol(mod);
+    return PoiInfo(poiScope);
+  }
+
+ private:
+  Resolver(Context* context,
+           const ASTNode* symbol,
+           ResolutionResultByPostorderID& byPostorder,
+           const PoiScope* poiScope)
+    : context(context), symbol(symbol), poiScope(poiScope),
+      byPostorder(byPostorder), poiInfo(makePoiInfo(poiScope)) {
+
     enterScope(symbol);
+  }
+ public:
+
+  // set up Resolver to resolve a Module
+  static Resolver
+  moduleResolver(Context* context,
+                 const Module* mod,
+                 ResolutionResultByPostorderID& byPostorder) {
+    auto ret = Resolver(context, mod, byPostorder, nullptr);
+    byPostorder.setupForSymbol(mod);
+    return ret;
   }
 
   // set up Resolver to resolve a potentially generic Function signature
-  Resolver(Context* context,
-           const Function* fn,
-           ResolutionResultByPostorderID& byPostorder)
-    : context(context),
-      symbol(fn),
-      signatureOnly(true),
-      fnBody(fn->body()),
-      byPostorder(byPostorder) {
-
+  static Resolver
+  initialSignatureResolver(Context* context,
+                           const Function* fn,
+                           ResolutionResultByPostorderID& byPostorder) {
+    auto ret = Resolver(context, fn, byPostorder, nullptr);
+    ret.signatureOnly = true;
+    ret.fnBody = fn->body();
     byPostorder.setupForSignature(fn);
-    enterScope(symbol);
+    return ret;
   }
 
   // set up Resolver to resolve an instantiation of a Function signature
-  Resolver(Context* context,
-           const Function* fn,
-           const SubstitutionsMap& substitutions,
-           const PoiScope* poiScope,
-           ResolutionResultByPostorderID& byPostorder)
-    : context(context),
-      symbol(fn),
-      poiScope(poiScope),
-      substitutions(&substitutions),
-      signatureOnly(true),
-      fnBody(fn->body()),
-      byPostorder(byPostorder),
-      poiInfo(poiScope) {
-
+  static Resolver
+  instantiatedSignatureResolver(Context* context,
+                                const Function* fn,
+                                const SubstitutionsMap& substitutions,
+                                const PoiScope* poiScope,
+                                ResolutionResultByPostorderID& byPostorder) {
+    auto ret = Resolver(context, fn, byPostorder, poiScope);
+    ret.substitutions = &substitutions;
+    ret.signatureOnly = true;
+    ret.fnBody = fn->body();
     byPostorder.setupForSignature(fn);
-    enterScope(symbol);
+    return ret;
   }
 
-  // set up Resolver to resolve a Function body
-  Resolver(Context* context,
-           const Function* fn,
-           const PoiScope* poiScope,
-           const TypedFnSignature* typedFnSignature,
-           ResolutionResultByPostorderID& byPostorder)
-    : context(context),
-      symbol(fn),
-      poiScope(poiScope),
-      signatureOnly(false),
-      fnBody(fn->body()),
-      byPostorder(byPostorder),
-      poiInfo(poiScope) {
+  // set up Resolver to resolve a Function body/return type after
+  // instantiation (if any instantiation was needed)
+  static Resolver
+  functionResolver(Context* context,
+                   const Function* fn,
+                   const PoiScope* poiScope,
+                   const TypedFnSignature* typedFnSignature,
+                   ResolutionResultByPostorderID& byPostorder) {
+    auto ret = Resolver(context, fn, byPostorder, poiScope);
+    ret.typedSignature = typedFnSignature;
+    ret.signatureOnly = false;
+    ret.fnBody = fn->body();
 
     assert(typedFnSignature);
     assert(typedFnSignature->untyped());
 
     byPostorder.setupForFunction(fn);
-    enterScope(symbol);
 
     // set the resolution results for the formals according to
     // the typedFnSignature
@@ -227,45 +272,41 @@ struct Resolver {
       const Decl* decl = uSig->formalDecl(i);
       const auto& qt = typedFnSignature->formalType(i);
 
-      ResolvedExpression& r = byPostorder.byAst(decl);
+      ResolvedExpression& r = ret.byPostorder.byAst(decl);
       r.setType(qt);
 
       if (auto formal = decl->toFormal())
-        resolveTypeQueriesFromFormalType(formal, qt);
+        ret.resolveTypeQueriesFromFormalType(formal, qt);
     }
+
+    return ret;
   }
 
   // set up Resolver to initially resolve field declaration types
-  Resolver(Context* context,
-           const AggregateDecl* decl,
-           ResolutionResultByPostorderID& byPostorder,
-           bool useGenericFormalDefaults)
-    : context(context),
-      symbol(decl),
-      useGenericFormalDefaults(useGenericFormalDefaults),
-      byPostorder(byPostorder) {
-
+  static Resolver
+  initialFieldsResolver(Context* context,
+                        const AggregateDecl* decl,
+                        ResolutionResultByPostorderID& byPostorder,
+                        bool useGenericFormalDefaults) {
+    auto ret = Resolver(context, decl, byPostorder, nullptr);
+    ret.useGenericFormalDefaults = useGenericFormalDefaults;
     byPostorder.setupForSymbol(decl);
-    enterScope(symbol);
+    return ret;
   }
 
   // set up Resolver to resolve instantiated field declaration types
-  Resolver(Context* context,
-           const AggregateDecl* decl,
-           const SubstitutionsMap& substitutions,
-           const PoiScope* poiScope,
-           ResolutionResultByPostorderID& byPostorder,
-           bool useGenericFormalDefaults)
-    : context(context),
-      symbol(decl),
-      poiScope(poiScope),
-      substitutions(&substitutions),
-      useGenericFormalDefaults(useGenericFormalDefaults),
-      byPostorder(byPostorder),
-      poiInfo(poiScope) {
-
+  static Resolver
+  instantiatedFieldsResolver(Context* context,
+                             const AggregateDecl* decl,
+                             const SubstitutionsMap& substitutions,
+                             const PoiScope* poiScope,
+                             ResolutionResultByPostorderID& byPostorder,
+                             bool useGenericFormalDefaults) {
+    auto ret = Resolver(context, decl, byPostorder, poiScope);
+    ret.substitutions = &substitutions;
+    ret.useGenericFormalDefaults = useGenericFormalDefaults;
     byPostorder.setupForSymbol(decl);
-    enterScope(symbol);
+    return ret;
   }
 
 
@@ -278,33 +319,49 @@ struct Resolver {
      before instantiating, we should conclude that:
        * t has type AnyType
        * arg has type UnknownType (and in particular, not AnyType)
+
+     But, if we have a substitution for `t`, we should use that.
    */
   bool shouldUseUnknownTypeForGeneric(const ID& id) {
-    bool isFieldOrFormal = false;
-    bool isSubstituted = false;
-    // TODO: should we compute this some other way
-    // (e.g. when setting up the traversal)
-    // given that it's within the Symbol we are visiting?
-    auto ast = parsing::idToAst(context, id);
-    if (ast) {
-      if (auto decl = ast->toDecl()) {
-        bool isField = false;
-        if (auto var = decl->toVariable())
-          if (var->isField())
-            isField = true;
 
-        isFieldOrFormal = isField || decl->isFormal();
+    // make sure the set of IDs for fields and formals is computed
+    if (!fieldOrFormalsComputed) {
+      auto visitor = GatherFieldsOrFormals();
+      symbol->traverse(visitor);
+      fieldOrFormals.swap(visitor.fieldOrFormals);
 
-        if (substitutions != nullptr) {
-          auto search = substitutions->find(id);
-          if (search != substitutions->end()) {
-            isSubstituted = true;
+      // also compute instantiatedFieldOrFormals
+      if (typedSignature != nullptr) {
+        auto untyped = typedSignature->untyped();
+        int nFormals = untyped->numFormals();
+        for (int i = 0; i < nFormals; i++) {
+          if (typedSignature->formalIsInstantiated(i)) {
+            assert(!untyped->formalDecl(i)->id().isEmpty());
+            instantiatedFieldOrFormals.insert(untyped->formalDecl(i)->id());
           }
         }
       }
+
+      fieldOrFormalsComputed = true;
     }
 
-    return isFieldOrFormal && !isSubstituted;
+    bool isFieldOrFormal = fieldOrFormals.count(id) > 0;
+    bool isSubstituted = false;
+    bool isFormalInstantiated = false;
+
+    if (substitutions != nullptr) {
+      auto search = substitutions->find(id);
+      if (search != substitutions->end()) {
+        isSubstituted = true;
+      }
+    }
+
+    // check also instantiated formals from typedSignature
+    if (isFieldOrFormal) {
+      isFormalInstantiated = instantiatedFieldOrFormals.count(id) > 0;
+    }
+
+    return isFieldOrFormal && !isSubstituted && !isFormalInstantiated;
   }
 
   // helper for resolveTypeQueriesFromFormalType
@@ -823,7 +880,13 @@ struct Resolver {
       }
     }
 
-    CallInfo ci(name, hasQuestionArg, actuals);
+    QualifiedType calledType;
+    if (auto calledExpr = call->calledExpression()) {
+      ResolvedExpression& r = byPostorder.byAst(calledExpr);
+      calledType = r.type();
+    }
+
+    CallInfo ci(name, calledType, hasQuestionArg, actuals);
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
 
     // save the most specific candidates in the resolution result for the id
@@ -893,7 +956,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
 
   auto ast = parsing::idToAst(context, id);
   if (const Module* mod = ast->toModule()) {
-    Resolver visitor(context, mod, partialResult);
+    auto visitor = Resolver::moduleResolver(context, mod, partialResult);
     for (auto child: mod->children()) {
       child->traverse(visitor);
     }
@@ -1009,19 +1072,36 @@ getFormalTypes(const Function* fn,
 
 static bool
 anyFormalNeedsInstantiation(Context* context,
-                            const std::vector<types::QualifiedType>& formalTs) {
+                            const std::vector<types::QualifiedType>& formalTs,
+                            const UntypedFnSignature* untypedSig,
+                            SubstitutionsMap* substitutions) {
   bool genericOrUnknown = false;
+  int i = 0;
   for (const auto& qt : formalTs) {
     if (qt.isUnknown()) {
       genericOrUnknown = true;
       break;
     }
 
-    auto g = qt.genericityWithFields(context);
-    if (g != Type::CONCRETE) {
-      genericOrUnknown = true;
-      break;
+    bool considerGenericity = true;
+    if (substitutions != nullptr) {
+      auto formalDecl = untypedSig->formalDecl(i);
+      if (substitutions->count(formalDecl->id())) {
+        // don't consider it needing a substitution - e.g. when passing
+        // a generic type into a type argument.
+        considerGenericity = false;
+      }
     }
+
+    if (considerGenericity) {
+      auto g = qt.genericityWithFields(context);
+      if (g != Type::CONCRETE) {
+        genericOrUnknown = true;
+        break;
+      }
+    }
+
+    i++;
   }
   return genericOrUnknown;
 }
@@ -1093,7 +1173,7 @@ typedSignatureInitialQuery(Context* context,
     }
 
     ResolutionResultByPostorderID r;
-    Resolver visitor(context, fn, r);
+    auto visitor = Resolver::initialSignatureResolver(context, fn, r);
     // visit the formals
     for (auto formal : fn->formals()) {
       formal->traverse(visitor);
@@ -1106,7 +1186,9 @@ typedSignatureInitialQuery(Context* context,
 
     // now, construct a TypedFnSignature from the result
     std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
-    bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
+    bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
+                                                          untypedSig,
+                                                          nullptr);
     auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
     // use an empty poiFnIdsUsed since this is never an instantiation
     std::set<std::pair<ID, ID>> poiFnIdsUsed;
@@ -1167,8 +1249,11 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       // Resolve the parent class type expression
       bool useGenericFormalDefaults = true; // doesn't matter, won't use fields
       ResolutionResultByPostorderID r;
-      Resolver visitor(context, c, substitutions, poiScope, r,
-                       useGenericFormalDefaults);
+      auto visitor =
+        Resolver::instantiatedFieldsResolver(context, c,
+                                             substitutions,
+                                             poiScope, r,
+                                             useGenericFormalDefaults);
       parentClassExpr->traverse(visitor);
 
       QualifiedType qt = r.byAst(parentClassExpr).type();
@@ -1355,7 +1440,8 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
     if (ct->instantiatedFromCompositeType() == nullptr) {
       // handle resolving a not-yet-instantiated type
       ResolutionResultByPostorderID r;
-      Resolver visitor(context, ad, r, useGenericFormalDefaults);
+      auto visitor = Resolver::initialFieldsResolver(context, ad, r,
+                                                     useGenericFormalDefaults);
 
       // resolve the field types and set them in 'result'
       resolveAndSetFieldTypes(context, ad, r, visitor, ct, partialResult);
@@ -1366,8 +1452,11 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
       // when resolving the fields when constructing a type..
       const PoiScope* poiScope = nullptr;
       ResolutionResultByPostorderID r;
-      Resolver visitor(context, ad, ct->substitutions(), poiScope, r,
-                       useGenericFormalDefaults);
+      auto visitor =
+        Resolver::instantiatedFieldsResolver(context, ad,
+                                             ct->substitutions(),
+                                             poiScope, r,
+                                             useGenericFormalDefaults);
 
       // resolve the field types and set them in 'result'
       resolveAndSetFieldTypes(context, ad, r, visitor, ct, partialResult);
@@ -1830,7 +1919,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   if (fn != nullptr) {
     ResolutionResultByPostorderID r;
-    Resolver visitor(context, fn, substitutions, poiScope, r);
+    auto visitor = Resolver::instantiatedSignatureResolver(context, fn,
+                                                           substitutions,
+                                                           poiScope, r);
     // visit the formals
     for (auto formal : fn->formals()) {
       formal->traverse(visitor);
@@ -1843,13 +1934,18 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
     auto tmp = getFormalTypes(fn, r);
     formalTypes.swap(tmp);
-    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
+    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
+                                                     untypedSignature,
+                                                     &substitutions);
     where = whereClauseResult(context, fn, r, needsInstantiation);
   } else if (ad != nullptr) {
     // visit the fields
     ResolutionResultByPostorderID r;
-    Resolver visitor(context, ad, substitutions, poiScope, r,
-                     /* useGenericFormalDefaults */ false);
+    bool useGenericFormalDefaults = false;
+    auto visitor =
+      Resolver::instantiatedFieldsResolver(context, ad,
+                                           substitutions, poiScope, r,
+                                           useGenericFormalDefaults);
     // visit the parent type
     if (auto cls = ad->toClass()) {
       if (auto parentClassExpr = cls->parentClass()) {
@@ -1881,7 +1977,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                           fieldType.type(),
                                           fieldType.param()));
     }
-    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes);
+    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
+                                                     untypedSignature,
+                                                     &substitutions);
   } else {
     assert(false && "case not handled");
   }
@@ -1929,7 +2027,8 @@ resolveFunctionByInfoQuery(Context* context,
 
   if (fn) {
     ResolutionResultByPostorderID resolutionById;
-    Resolver visitor(context, fn, poiScope, sig, resolutionById);
+    auto visitor = Resolver::functionResolver(context, fn, poiScope, sig,
+                                              resolutionById);
 
     // visit the function body
     fn->body()->traverse(visitor);
@@ -2213,7 +2312,8 @@ const QualifiedType& returnType(Context* context,
     if (const Expression* retType = fn->returnType()) {
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
-      Resolver visitor(context, fn, poiScope, sig, resolutionById);
+      auto visitor = Resolver::functionResolver(context, fn, poiScope, sig,
+                                                resolutionById);
       retType->traverse(visitor);
       result = resolutionById.byAst(retType).type();
     } else {
@@ -2676,19 +2776,54 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
+static MostSpecificCandidates
+resolveFnCallForTypeCtor(Context* context,
+                         const Call* call,
+                         const CallInfo& ci,
+                         const Scope* inScope,
+                         const PoiScope* inPoiScope,
+                         PoiInfo& poiInfo) {
 
-static
-CallResolutionResult resolveFnCall(Context* context,
-                                   const Call* call,
-                                   const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope) {
+  std::vector<const TypedFnSignature*> initialCandidates;
+  std::vector<const TypedFnSignature*> candidates;
 
+  assert(ci.calledType().type() != nullptr);
+  assert(!ci.calledType().type()->isUnknownType());
+
+  auto initial = typeConstructorInitial(context, ci.calledType().type());
+  initialCandidates.push_back(initial);
+
+  // TODO: do something for partial instantiation
+
+  filterCandidatesInstantiating(context,
+                                initialCandidates,
+                                ci,
+                                inScope,
+                                inPoiScope,
+                                candidates);
+
+  // find most specific candidates / disambiguate
+  // Note: at present there can only be one candidate here
+  MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
+                                                                   candidates,
+                                                                   ci,
+                                                                   inScope,
+                                                                   inPoiScope);
+
+  return mostSpecific;
+}
+
+static MostSpecificCandidates
+resolveFnCallFilterAndFindMostSpecific(Context* context,
+                                       const Call* call,
+                                       const CallInfo& ci,
+                                       const Scope* inScope,
+                                       const PoiScope* inPoiScope,
+                                       PoiInfo& poiInfo) {
   // search for candidates at each POI until we have found a candidate
   std::vector<const TypedFnSignature*> candidates;
   size_t firstPoiCandidate = 0;
   std::unordered_set<const Scope*> visited;
-  PoiInfo poiInfo;
 
   // first, look for candidates without using POI.
 
@@ -2742,16 +2877,46 @@ CallResolutionResult resolveFnCall(Context* context,
                                                                    inScope,
                                                                    inPoiScope);
 
-  // note any most specific candidates from POI in poiFnIdsUsed.
+  // note any most specific candidates from POI in poiInfo.
   {
     size_t n = candidates.size();
     for (size_t i = firstPoiCandidate; i < n; i++) {
       for (const TypedFnSignature* candidate : mostSpecific) {
-        if (candidate != nullptr) {
+        if (candidate == candidates[i]) {
           poiInfo.addIds(call->id(), candidate->id());
         }
       }
     }
+  }
+
+  return mostSpecific;
+}
+
+
+static
+CallResolutionResult resolveFnCall(Context* context,
+                                   const Call* call,
+                                   const CallInfo& ci,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope) {
+
+  PoiInfo poiInfo;
+  MostSpecificCandidates mostSpecific;
+
+  if (ci.calledType().kind() == QualifiedType::TYPE) {
+    // handle invocation of a type constructor from a type
+    // (note that we might have the type through a type alias)
+    mostSpecific = resolveFnCallForTypeCtor(context, call, ci,
+                                            inScope, inPoiScope,
+                                            poiInfo);
+  } else {
+    // * search for candidates at each POI until we have found a candidate
+    // * filter and instantiate
+    // * disambiguate
+    // * note any most specific candidates from POI in poiInfo.
+    mostSpecific = resolveFnCallFilterAndFindMostSpecific(context, call, ci,
+                                                          inScope, inPoiScope,
+                                                          poiInfo);
   }
 
   // fully resolve each candidate function and gather poiScopesUsed.
