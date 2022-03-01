@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -47,6 +48,20 @@ extern const int mainHasArgs;
 extern const int mainPreserveDelimiter;
 extern const int launcher_is_mli;
 extern const char* launcher_mli_real_name;
+
+
+//
+// Are we doing a dry run, printing the system launcher command but
+// not running it?
+//
+#define CHPL_DRY_RUN_ARG "--dry-run"
+
+static int dryRunFlag = 0;
+
+int chpl_doDryRun(void) {
+  return dryRunFlag;
+}
+
 
 static void chpl_launch_sanity_checks(const char* argv0) {
   // Do sanity checks just before launching.
@@ -432,25 +447,40 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
   return newargv;
 }
 
+
+//
+// Print out the system launcher command (used by --verbose and
+// --dry-run).
+//
+static
+void print_sys_launch_cmd(FILE *f, const char* command, char * const argv[]) {
+  if (evListSize > 0) {
+    fprintf(f, "%s ", evList);
+  }
+  // TODO: remove this sanity check
+  if (command != NULL && strcmp(command, argv[0]) != 0) {
+    chpl_internal_error("command, argv[0]) != 0");
+  }
+  for (char * const *arg = argv; *arg != NULL; arg++) {
+    fprintf(f, "%s%s", (arg == argv) ? "" : " ", *arg);
+  }
+  fprintf(f, "\n");
+  fflush(f);
+}
+
+
 //
 // This function calls execvp(3)
 //
 int chpl_launch_using_exec(const char* command, char * const argv1[], const char* argv0) {
-  if (verbosity > 1) {
-    char * const *arg;
-    if (evListSize > 0) {
-      printf("%s ", evList);
-    }
-    printf("%s ", command);
-    fflush(stdout);
-    for (arg = argv1+1; *arg; arg++) {
-      printf(" %s", *arg);
-      fflush(stdout);
-    }
-    printf("\n");
-    fflush(stdout);
+  if (verbosity > 1 || chpl_doDryRun()) {
+    print_sys_launch_cmd(stdout, command, argv1);
   }
   chpl_launch_sanity_checks(argv0);
+
+  if (chpl_doDryRun()) {
+    exit(0);
+  }
 
   execvp(command, argv1);
   {
@@ -487,15 +517,12 @@ int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const
 }
 
 int chpl_launch_using_system(char* command, char* argv0) {
-  if (verbosity > 1) {
-    if (evListSize > 0) {
-      printf("%s ", evList);
-    }
-    printf("%s\n", command);
-    fflush(stdout);
+  if (verbosity > 1 || chpl_doDryRun()) {
+    char * const argv[] = { command, NULL };
+    print_sys_launch_cmd(stdout, NULL, argv);
   }
   chpl_launch_sanity_checks(argv0);
-  return system(command);
+  return chpl_doDryRun() ? 0 : system(command);
 }
 
 // This function returns a string containing a character-
@@ -602,6 +629,17 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
   int numHandled = chpl_launch_handle_arg(*argc, argv, argNum,
                                           lineno, filename);
   if (numHandled == 0) {
+    //
+    // The specific launcher didn't handle this arg.  Check to see if
+    // it's one that is universal to all launchers.
+    //
+    if (strcmp(argv[argNum], CHPL_DRY_RUN_ARG) == 0) {
+      dryRunFlag = 1;
+      numHandled = 1;
+    }
+  }
+
+  if (numHandled == 0) {
     if (mainHasArgs) {
       chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
       chpl_gen_main_arg.argc++;
@@ -611,14 +649,18 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
       chpl_error(message, lineno, filename);
     }
     return 0;
-  } else {
-    int i;
-    for (i=argNum+numHandled; i<*argc; i++) {
-      argv[i-numHandled] = argv[i];
-    }
-    *argc -= numHandled;
-    return -1;  // back the cursor up in order to re-parse this arg
   }
+
+  //
+  // Remove the handled arg from caller's argv and tell them to
+  // continue parsing where what used to be the next arg now is.
+  //
+  int i;
+  for (i=argNum+numHandled; i<*argc; i++) {
+    argv[i-numHandled] = argv[i];
+  }
+  *argc -= numHandled;
+  return -1;
 }
 
 

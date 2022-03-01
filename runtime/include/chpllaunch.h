@@ -28,8 +28,9 @@ extern "C" {
 #endif
 
 //
-// Defined in main_launcher.c
+// Defined in chpl-launcher-common.c
 //
+int chpl_doDryRun(void);
 void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
                           const char* arg);
 int chpl_run_utility1K(const char *command, char *const argv[],

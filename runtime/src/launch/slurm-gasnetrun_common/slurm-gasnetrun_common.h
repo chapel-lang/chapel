@@ -332,7 +332,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 }
 
 static void chpl_launch_cleanup(void) {
-  if (!debug) {
+  if (!chpl_doDryRun() && !debug) {
     if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
       unlink(slurmFilename);
     }

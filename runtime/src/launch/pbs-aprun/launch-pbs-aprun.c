@@ -379,7 +379,7 @@ static void genQsubScript(int argc, char *argv[], int numLocales) {
 }
 
 static void chpl_launch_cleanup(void) {
-  if (!debug) {
+  if (!chpl_doDryRun() && !debug) {
     if (unlink(expectFilename)) {
       char msg[FILENAME_MAX + 35];
       snprintf(msg, FILENAME_MAX + 35, "Error removing temporary file '%s': %s",
