@@ -23,6 +23,7 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/MultiDecl.h"
+#include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/Variable.h"
 
 // always check assertions in this test
@@ -161,10 +162,106 @@ static void test3() {
   assert(fQt.type() == StringType::get(context));
 }
 
+static void test4() {
+  // test case mixing MultiDecl and TupleDecl
+  printf("test4\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto M = parseModule(context,
+                R""""(
+                  var a, b: real, (c, d): (int, real), (e, f) = (1.0, 2);
+                )"""");
+
+  assert(M->numStmts() == 1);
+  const MultiDecl* md = M->stmt(0)->toMultiDecl();
+  assert(md);
+  auto a = md->declOrComment(0)->toVariable();
+  assert(a);
+  auto b = md->declOrComment(1)->toVariable();
+  assert(b);
+  auto cd = md->declOrComment(2)->toTupleDecl();
+  assert(cd);
+  auto c = cd->decl(0)->toVariable();
+  assert(c);
+  auto d = cd->decl(1)->toVariable();
+  assert(d);
+  auto ef = md->declOrComment(3)->toTupleDecl();
+  assert(ef);
+  auto e = ef->decl(0)->toVariable();
+  assert(e);
+  auto f = ef->decl(1)->toVariable();
+  assert(f);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, M->id());
+  auto aQt = rr.byAst(a).type();
+  auto bQt = rr.byAst(b).type();
+  auto cQt = rr.byAst(c).type();
+  auto dQt = rr.byAst(d).type();
+  auto eQt = rr.byAst(e).type();
+  auto fQt = rr.byAst(f).type();
+  assert(aQt.kind() == QualifiedType::VAR);
+  assert(aQt.type() == RealType::get(context, 0));
+  assert(bQt.kind() == QualifiedType::VAR);
+  assert(bQt.type() == RealType::get(context, 0));
+  assert(cQt.kind() == QualifiedType::VAR);
+  assert(cQt.type() == IntType::get(context, 0));
+  assert(dQt.kind() == QualifiedType::VAR);
+  assert(dQt.type() == RealType::get(context, 0));
+  assert(eQt.kind() == QualifiedType::VAR);
+  assert(eQt.type() == RealType::get(context, 0));
+  assert(fQt.kind() == QualifiedType::VAR);
+  assert(fQt.type() == IntType::get(context, 0));
+}
+
+static void test5() {
+  // this is the test case from issue #19340
+  printf("test5\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto M = parseModule(context,
+                R""""(
+                  var (a, b), (c, d): (int, real);
+                )"""");
+
+  assert(M->numStmts() == 1);
+  const MultiDecl* md = M->stmt(0)->toMultiDecl();
+  assert(md);
+  auto ab = md->declOrComment(0)->toTupleDecl();
+  assert(ab);
+  auto a = ab->decl(0)->toVariable();
+  assert(a);
+  auto b = ab->decl(1)->toVariable();
+  assert(b);
+  auto cd = md->declOrComment(1)->toTupleDecl();
+  assert(cd);
+  auto c = cd->decl(0)->toVariable();
+  assert(c);
+  auto d = cd->decl(1)->toVariable();
+  assert(d);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, M->id());
+  auto aQt = rr.byAst(a).type();
+  auto bQt = rr.byAst(b).type();
+  auto cQt = rr.byAst(c).type();
+  auto dQt = rr.byAst(d).type();
+  assert(aQt.kind() == QualifiedType::VAR);
+  assert(aQt.type() == IntType::get(context, 0));
+  assert(bQt.kind() == QualifiedType::VAR);
+  assert(bQt.type() == RealType::get(context, 0));
+  assert(cQt.kind() == QualifiedType::VAR);
+  assert(cQt.type() == IntType::get(context, 0));
+  assert(dQt.kind() == QualifiedType::VAR);
+  assert(dQt.type() == RealType::get(context, 0));
+}
+
 int main() {
   test1();
   test2();
   test3();
+  test4();
+  test5();
 
   return 0;
 }

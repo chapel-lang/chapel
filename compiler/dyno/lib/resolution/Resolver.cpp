@@ -670,7 +670,7 @@ void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
 }
 
 void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
-                                     QualifiedType rhsType) {
+                                      QualifiedType rhsType) {
   if (!rhsType.hasTypePtr()) {
     context->error(lhsTuple, "Unknown rhs tuple type in split tuple decl");
     return;
@@ -689,7 +689,7 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
     return;
   }
 
-  // Finally, try to resolve = between the elements
+  // Finally, try to resolve the types of the elements
   int i = 0;
   for (auto actual : lhsTuple->decls()) {
     QualifiedType rhsEltType = rhsT->elementType(i);
@@ -702,6 +702,46 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
     }
     i++;
   }
+}
+
+void Resolver::resolveTupleDecl(const TupleDecl* td,
+                                const Type* useType) {
+  QualifiedType::Kind declKind = (IntentList) td->intentOrKind();
+  QualifiedType useT;
+
+  // Figure out the type to use for this tuple
+  if (useType != nullptr) {
+    useT = QualifiedType(declKind, useType);
+  } else {
+    QualifiedType typeExprT;
+    QualifiedType initExprT;
+
+    auto typeExpr = td->typeExpression();
+    auto initExpr = td->initExpression();
+
+    if (typeExpr != nullptr) {
+      ResolvedExpression& result = byPostorder.byAst(typeExpr);
+      typeExprT = result.type();
+    }
+    if (initExpr != nullptr) {
+      ResolvedExpression& result = byPostorder.byAst(initExpr);
+      initExprT = result.type();
+    }
+
+    useT = getTypeForDecl(td, typeExpr, initExpr,
+                          declKind, typeExprT, initExprT);
+  }
+
+  if (!useT.hasTypePtr()) {
+    context->error(td, "Cannot establish type for tuple decl");
+    useT = QualifiedType(declKind, ErroneousType::get(context));
+  }
+
+  // save the type in byPostorder
+  ResolvedExpression& result = byPostorder.byAst(td);
+  result.setType(useT);
+  // resolve the types of the tuple elements
+  resolveTupleUnpackDecl(td, useT);
 }
 
 bool Resolver::resolveSpecialCall(const Call* call) {
@@ -930,6 +970,28 @@ void Resolver::exit(const NamedDecl* decl) {
   exitScope(decl);
 }
 
+static void getVarLikeOrTupleTypeInit(const ASTNode* ast,
+                                      const ASTNode*& typeExpr,
+                                      const ASTNode*& initExpr) {
+  typeExpr = nullptr;
+  initExpr = nullptr;
+  if (auto v = ast->toVarLikeDecl()) {
+    if (auto t = v->typeExpression()) {
+      typeExpr = t;
+    }
+    if (auto e = v->initExpression()) {
+      initExpr = e;
+    }
+  } else if (auto td = ast->toTupleDecl()) {
+    if (auto t = td->typeExpression()) {
+      typeExpr = t;
+    }
+    if (auto e = td->initExpression()) {
+      initExpr = e;
+    }
+  }
+}
+
 bool Resolver::enter(const MultiDecl* decl) {
   enterScope(decl);
 
@@ -937,24 +999,18 @@ bool Resolver::enter(const MultiDecl* decl) {
   // by visiting those nodes
   for (auto d : decl->decls()) {
     enterScope(d);
-    if (auto v = d->toVarLikeDecl()) {
-      if (auto t = v->typeExpression()) {
-        t->traverse(*this);
-      }
-      if (auto e = v->initExpression()) {
-        e->traverse(*this);
-      }
-    } else if (auto m = d->toMultiDecl()) {
-      assert(false && "should not be possible");
-      m->traverse(*this);
-    } else if (auto td = d->toTupleDecl()) {
-      if (auto t = td->typeExpression()) {
-        t->traverse(*this);
-      }
-      if (auto e = td->initExpression()) {
-        e->traverse(*this);
-      }
+
+    const ASTNode* typeExpr = nullptr;
+    const ASTNode* initExpr = nullptr;
+    getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
+
+    if (typeExpr != nullptr) {
+      typeExpr->traverse(*this);
     }
+    if (initExpr != nullptr) {
+      initExpr->traverse(*this);
+    }
+
     exitScope(d);
   }
 
@@ -968,38 +1024,49 @@ void Resolver::exit(const MultiDecl* decl) {
   const Type* lastType = nullptr;
   while (it != begin) {
     --it;
-    if (auto d = it->toDecl()) {
-      if (auto v = d->toVarLikeDecl()) {
-        // if it has neither init nor type, use the type from the
-        // variable to the right.
-        // e.g., in var a, b: int, a is of type int
-        if (v->typeExpression() == nullptr && v->initExpression() == nullptr) {
-          const Type* t = nullptr;
-          if (lastType == nullptr) {
-            context->error(v, "invalid multiple declaration");
-            t = ErroneousType::get(context);
-          } else {
-            t = lastType;
-          }
 
-          resolveNamedDecl(v, t);
-        } else {
-          // otherwise, resolve the named decl with the type/init as usual
-          resolveNamedDecl(v, /* useType */ nullptr);
-        }
+    auto d = it->toDecl();
+    const ASTNode* typeExpr = nullptr;
+    const ASTNode* initExpr = nullptr;
+    getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
 
-        // update lastType
-        ResolvedExpression& result = byPostorder.byAst(v);
-        lastType = result.type().type();
+    // if it has neither init nor type, use the type from the
+    // variable to the right.
+    // e.g., in
+    //    var a, b: int
+    // a is of type int
+    const Type* t = nullptr;
+    if (typeExpr == nullptr && initExpr == nullptr) {
+      if (lastType == nullptr) {
+        // TODO: allow this when we allow split init
+        context->error(d, "invalid multiple declaration");
+        t = ErroneousType::get(context);
+      } else {
+        t = lastType;
       }
     }
+
+    // for the functions called in these conditionals:
+    //  * if t is nullptr, just resolve it like usual
+    //  * update the type of d in byPostorder
+    if (auto v = d->toVarLikeDecl()) {
+      resolveNamedDecl(v, t);
+    } else if (auto td = d->toTupleDecl()) {
+      resolveTupleDecl(td, t);
+    }
+
+    // update lastType
+    ResolvedExpression& result = byPostorder.byAst(d);
+    lastType = result.type().type();
   }
+
+  exitScope(decl);
 }
 
 bool Resolver::enter(const TupleDecl* decl) {
   enterScope(decl);
 
-  // Establish the type or init expression within.
+  // Establish the type of the type expr / init expr within
   if (auto t = decl->typeExpression()) {
     t->traverse(*this);
   }
@@ -1010,37 +1077,8 @@ bool Resolver::enter(const TupleDecl* decl) {
 }
 
 void Resolver::exit(const TupleDecl* decl) {
-  QualifiedType typeExprT;
-  QualifiedType initExprT;
-  QualifiedType useType;
-
-  // Get the type for the type/init expr resolved earlier
-  if (auto t = decl->typeExpression()) {
-    ResolvedExpression& result = byPostorder.byAst(t);
-    typeExprT = result.type();
-    useType = typeExprT;
-  }
-  if (auto e = decl->initExpression()) {
-    ResolvedExpression& result = byPostorder.byAst(e);
-    initExprT = result.type();
-    useType = initExprT;
-  }
-
-  if (!typeExprT.hasTypePtr() && !initExprT.hasTypePtr()) {
-    context->error(decl, "Cannot establish type for tuple decl");
-    useType = QualifiedType(QualifiedType::VAR, ErroneousType::get(context));
-
-  } else if (typeExprT.hasTypePtr() && initExprT.hasTypePtr()) {
-    // check that they are compatible
-    if (typeExprT.type() != initExprT.type()) {
-      context->error(decl, "Cannot initialize this type with that");
-      // TODO: better error
-      // TODO: implicit conversions and instantiations
-      // TODO: share a helper method for this check & error w/ resolveNamedDecl
-    }
-  }
-
-  resolveTupleUnpackDecl(decl, useType);
+  resolveTupleDecl(decl, /* useType */ nullptr);
+  exitScope(decl);
 }
 
 bool Resolver::enter(const Call* call) {
