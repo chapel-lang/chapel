@@ -185,10 +185,15 @@ struct Resolver {
                                 types::QualifiedType lhsType,
                                 types::QualifiedType rhsType);
 
+  // helper for resolveTupleDecl
   // e.g. var (a, b) = mytuple
   // checks that tuple size matches and establishes types for a and b
   void resolveTupleUnpackDecl(const uast::TupleDecl* lhsTuple,
                               types::QualifiedType rhsType);
+
+  // e.g. var (a, b) = mytuple
+  void resolveTupleDecl(const uast::TupleDecl* td,
+                        const types::Type* useType);
 
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
