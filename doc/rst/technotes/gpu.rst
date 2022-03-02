@@ -12,9 +12,9 @@ environments. We have tested it on systems with Nvidia Tesla P100 GPUs and CUDA
 implementation does not support multiple GPUs on one node and will only apply
 to certain ``forall`` and ``foreach`` loops.
 
-We also (currently) only support single-locale execution (i.e. Chapel Chapel
-must be compiled with ``CHPL_COMM=none``). We also require ``LLVM`` to be used
-as Chapel's backend compiler (i.e. ``CHPL_LLVM`` must be set to ``system`` or
+We also (currently) only support single-locale execution (i.e. Chapel must be
+compiled with ``CHPL_COMM=none``). We also require ``LLVM`` to be used as
+Chapel's backend compiler (i.e. ``CHPL_LLVM`` must be set to ``system`` or
 ``bundled``). For more information about these settings see :ref:`Optional
 Settings <readme-chplenv>`.
 
