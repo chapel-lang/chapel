@@ -4707,12 +4707,15 @@ void processRxAmReqCntr(void) {
   //
 
   if (envProgressCntr) {
-    // Manually progress the counter if necessary
+    // Calling fi_cq_read with count==0 will progress the counter. This 
+    // is only necessary for specific operations on specific providers,
+    // but for now it's controlled by an environment variable.
     int rc = fi_cq_read(ofi_rxCQ, NULL, 0);
     if ((rc < 0) && (rc != -FI_EAGAIN)) {
       INTERNAL_ERROR_V("fi_cq_read failed: %s", fi_strerror(rc));
     }
   }
+  OFI_CHK(fi_cntr_wait(ofi_rxCntr, ofi_rxCount+1, -1));
   uint64_t todo = fi_cntr_read(ofi_rxCntr) - ofi_rxCount;
   if (todo == 0) {
     uint64_t errors = fi_cntr_readerr(ofi_rxCntr);
@@ -6874,7 +6877,9 @@ static
 void checkTxCmplsCntr(struct perTxCtxInfo_t* tcip) {
   if (tcip->numTxnsOut > 0) {
     if (envProgressCntr) {
-      // Manually progress the counter
+      // Calling fi_cq_read with count==0 will progress the counter. This 
+      // is only necessary for specific operations on specific providers,
+      // but for now it's controlled by an environment variable.
       int rc;
       OFI_CHK_2(fi_cq_read(tcip->txCQ, NULL, 0), rc, -FI_EAGAIN);
     }
