@@ -492,6 +492,21 @@ static void test15() {
   assert(tt->elementType(2).type()->isRealType());
 }
 
+static void test16() {
+  printf("test16\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfX(context,
+                R""""(
+                  proc helper(a: int, b: real) { return b; }
+                  var tup = (1, 2.0);
+                  var x = helper( (... tup) );
+                )"""");
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isRealType());
+}
 
 int main() {
   test1();
@@ -509,6 +524,7 @@ int main() {
   test13();
   test14();
   test15();
+  test16();
 
   return 0;
 }
