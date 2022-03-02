@@ -99,8 +99,7 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
         else:
             # for C compilation, CPU needs to be set by cray-prgenv-*
             # and not by e.g. CHPL_TARGET_CPU.
-            cpu = cray_cpu
-            if has_cpu:
+            if has_cpu and cpu != cray_cpu:
                 warning("Setting the processor type through environment "
                         "variables is not supported for cray-prgenv-*. "
                         "Please use the appropriate craype-* module for your "
@@ -109,6 +108,7 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
                 warning("No craype-* processor type module was detected, "
                         "please load the appropriate one if you want any "
                         "specialization to occur.")
+            cpu = cray_cpu
 
         if get_lcd:
             cpu = get_module_lcd_cpu(platform_val, cpu)
