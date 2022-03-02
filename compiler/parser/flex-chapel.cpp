@@ -1,6 +1,6 @@
-#line 2 "flex-chapel.cpp"
+#line 1 "flex-chapel.cpp"
 
-#line 4 "flex-chapel.cpp"
+#line 3 "flex-chapel.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -886,10 +886,10 @@ static void processInvalidToken(yyscan_t scanner);
 
 static bool yy_has_state(yyscan_t scanner);
 
-#line 890 "flex-chapel.cpp"
+#line 889 "flex-chapel.cpp"
 /* hex float literals, have decimal exponents indicating the power of 2 */
 
-#line 893 "flex-chapel.cpp"
+#line 892 "flex-chapel.cpp"
 
 #define INITIAL 0
 #define externmode 1
@@ -1181,7 +1181,7 @@ YY_DECL
 #line 121 "chapel.lex"
 
 
-#line 1185 "flex-chapel.cpp"
+#line 1184 "flex-chapel.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -2186,7 +2186,7 @@ YY_RULE_SETUP
 #line 337 "chapel.lex"
 ECHO;
 	YY_BREAK
-#line 2190 "flex-chapel.cpp"
+#line 2189 "flex-chapel.cpp"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(externmode):
 	yyterminate();
