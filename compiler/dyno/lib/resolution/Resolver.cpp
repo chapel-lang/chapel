@@ -757,6 +757,10 @@ bool Resolver::resolveSpecialCall(const Call* call) {
           return true;
         }
       }
+    } else if (op->op() == USTR("...")) {
+      // just leave it unknown -- tuple expansion only makes sense
+      // in the argument list for another call.
+      return true;
     }
   }
 
@@ -1130,11 +1134,60 @@ void Resolver::exit(const Call* call) {
       hasQuestionArg = true;
     } else {
       ResolvedExpression& r = byPostorder.byAst(actual);
+      QualifiedType actualType = r.type();
       UniqueString byName;
       if (fnCall && fnCall->isNamedActual(i)) {
         byName = fnCall->actualName(i);
       }
-      actuals.push_back(CallInfoActual(r.type(), byName));
+
+      bool handled = false;
+      if (auto op = actual->toOpCall()) {
+        if (op->op() == USTR("...")) {
+          if (op->numActuals() != 1) {
+            context->error(op, "tuple expansion can only accept one argument");
+            actualType = QualifiedType(QualifiedType::VAR,
+                                       ErroneousType::get(context));
+          } else {
+            ResolvedExpression& rr = byPostorder.byAst(op->actual(0));
+            actualType = rr.type();
+          }
+
+          // handle tuple expansion
+          if (!actualType.hasTypePtr() ||
+              actualType.type()->isUnknownType()) {
+            // leave the result unknown
+            actualType = QualifiedType(QualifiedType::VAR,
+                                       UnknownType::get(context));
+          } else if (actualType.type()->isErroneousType()) {
+            // let it stay erroneous type
+          } else if (!actualType.type()->isTupleType()) {
+            context->error(op, "tuple expansion applied to non-tuple");
+            actualType = QualifiedType(QualifiedType::VAR,
+                                       ErroneousType::get(context));
+          } else {
+            if (!byName.isEmpty()) {
+              context->error(op, "named argument passing cannot be used "
+                                 "with tuple expansion");
+            }
+
+            auto tupleType = actualType.type()->toTupleType();
+            int n = tupleType->numElements();
+            for (int i = 0; i < n; i++) {
+              tupleType->elementType(i);
+              // intentionally use the empty name (to ignore it if it was
+              // set and we issued an error above)
+              actuals.push_back(CallInfoActual(tupleType->elementType(i),
+                                               UniqueString()));
+            }
+            handled = true;
+          }
+        }
+      }
+
+      if (!handled) {
+        actuals.push_back(CallInfoActual(actualType, byName));
+      }
+
       i++;
     }
   }
