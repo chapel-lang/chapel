@@ -247,6 +247,8 @@ static void test1(Parser* parser) {
                var x = if foo then bar else baz;
                manage myManager() as myResource do
                  myResource.doSomething();
+               var C = for 1..10 do 5;
+               var C = forall 1..10 do 5;
              }
              )"""";
   auto parseResult = parser->parseString("Test4.chpl",
