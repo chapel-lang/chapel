@@ -4,6 +4,11 @@ output=${2:-}
 execopts=${5:-}
 
 function doit {
+  # Wait 10 seconds if the file doesn't exist. Useful on systems where file
+  # IO may only complete after the launcher returns
+  if ! [ -f rmatalt.weights ]; then
+    sleep 10
+  fi
   sort rmatalt.weights | { diff rmatalt.weights.good - && echo weights match; }
   sort rmatalt.neis    | { diff rmatalt.neis.good - && echo neis match; }
 }
