@@ -84,4 +84,9 @@ void chpl_comm_preLaunch(int32_t numLocales) {
     //
     chpl_env_set("PMI_NO_PREINITIALIZE", "y", 1);
   }
+  //
+  // Don't map virtual hugepages to physical pages if we allocate a
+  // fixed heap.
+  //
+  chpl_env_set("HUGETLB_NO_RESERVE", "yes", 0);
 }

@@ -3473,18 +3473,17 @@ void init_fixedHeap(void) {
   // them.  But if you're on such a system and don't, we'll emit the
   // message later.
   //
-  size_t page_size;
+  size_t page_size = chpl_getSysPageSize();
   chpl_bool have_hugepages;
 
-  if ((page_size = get_hugepageSize()) == 0) {
-    page_size = chpl_getSysPageSize();
+  if (get_hugepageSize() == 0) {
     have_hugepages = false;
   } else {
     have_hugepages = true;
   }
 
   //
-  // We'll make a fixed heap, on whole (huge)pages.
+  // We'll make a fixed heap on whole pages.
   //
   size = ALIGN_UP(size, page_size);
 
@@ -3508,15 +3507,32 @@ void init_fixedHeap(void) {
                  chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
     }
 #endif
-    if (have_hugepages) {
-      start = chpl_comm_ofi_hp_get_huge_pages(size);
-    } else {
-      CHK_SYS_MEMALIGN(start, page_size, size);
-    }
+    CHK_SYS_MEMALIGN(start, page_size, size);
   } while (start == NULL && size > decrement);
 
-  if (start == NULL)
+
+  if (start == NULL) {
     chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
+  }
+
+  if (have_hugepages) {
+    //
+    // If we have hugepages then free the heap we just allocated and
+    // re-allocate a whole number of hugepages. We do it this way because
+    // HUGETLB_NO_RESERVE must be set when we allocate the hugepages
+    // otherwise the libhugetlbfs library will map the virtual pages to
+    // physical pages. We don't want this to happen because we want to stripe
+    // the heap across NUMA domains ourself. We can't allocate the heap in
+    // hugepages from the get-go because if HUGETLB_NO_RESERVE is set the
+    // allocation won't fail when there is insufficient physical memory.
+    //
+    CHK_SYS_FREE(start);
+    size = ALIGN_DN(size, get_hugepageSize());
+    start = chpl_comm_ofi_hp_get_huge_pages(size);
+    if (start == NULL) {
+      chpl_error("cannot create fixed heap: cannot get huge pages", 0, 0);
+    }
+  }
 
   chpl_comm_regMemHeapTouch(start, size);
 
