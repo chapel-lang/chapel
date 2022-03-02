@@ -624,6 +624,15 @@ int chpl_get_charset_env_args(char *argv[])
   return charset_env_nargs;
 }
 
+
+static const
+argDescTuple_t universalArgs[]
+               = { { CHPL_DRY_RUN_ARG,
+                     "just print system launcher command, don't run it" },
+                   { NULL, NULL },
+                 };
+
+
 int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
   int numHandled = chpl_launch_handle_arg(*argc, argv, argNum,
@@ -664,9 +673,50 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
 }
 
 
+static void printAdditionalHelpEntry(const argDescTuple_t* argTuple,
+                                     size_t argFieldWidth);
+
 void printAdditionalHelp(void) {
-  chpl_launch_print_help();
+  const argDescTuple_t* argSources[] = { chpl_launch_get_help(),
+                                         universalArgs };
+
+  //
+  // So we can format nicely, first figure out the longest arg we'll
+  // need to print, then do the actual printing.
+  //
+  size_t argLenMax = 0;
+  for (int i = 0; i < sizeof(argSources) / sizeof(argSources[0]); i++) {
+    if (argSources[i] != NULL) {
+      for (const argDescTuple_t* p = argSources[i]; p->arg != NULL; p++) {
+        size_t argLen = strlen(p->arg);
+        if (argLen > argLenMax) {
+          argLenMax = argLen;
+        }
+      }
+    }
+  }
+
+  fprintf(stdout, "LAUNCHER FLAGS:\n");
+  fprintf(stdout, "===============\n");
+  for (int i = 0; i < sizeof(argSources) / sizeof(argSources[0]); i++) {
+    if (argSources[i] != NULL) {
+      for (const argDescTuple_t* p = argSources[i]; p->arg != NULL; p++) {
+        printAdditionalHelpEntry(p, argLenMax);
+      }
+    }
+  }
 }
+
+static
+void printAdditionalHelpEntry(const argDescTuple_t* argTuple,
+                              size_t argFieldWidth) {
+  fprintf(stdout,
+          "  %-*s  %s %s\n",
+          (int) argFieldWidth, argTuple->arg,
+          (argTuple->arg[0] == '\0') ? " " : ":",
+          argTuple->desc);
+}
+
 
 // These are defined in the config.c file, which is built
 // on-the-fly in runtime/etc/Makefile.launcher.

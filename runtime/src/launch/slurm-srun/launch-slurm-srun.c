@@ -558,17 +558,37 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 }
 
 
-
-void chpl_launch_print_help(void) {
-  fprintf(stdout, "LAUNCHER FLAGS:\n");
-  fprintf(stdout, "===============\n");
-  fprintf(stdout, "  %s : generate an sbatch script and exit\n", CHPL_GENERATE_SBATCH_SCRIPT);
-  fprintf(stdout, "  %s <HH:MM:SS> : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
-  fprintf(stdout, "  %s <nodelist> : specify a nodelist to use\n", CHPL_NODELIST_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_NODELIST)\n");
-  fprintf(stdout, "  %s <partition> : specify a partition to use\n", CHPL_PARTITION_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_PARTITION)\n");
-  fprintf(stdout, "  %s <nodes> : specify node(s) to exclude\n", CHPL_EXCLUDE_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_EXCLUDE)\n");
+const argDescTuple_t* chpl_launch_get_help(void) {
+  static const
+    argDescTuple_t args[] =
+    { { CHPL_GENERATE_SBATCH_SCRIPT,
+        "generate an sbatch script and exit"
+      },
+      { CHPL_WALLTIME_FLAG " <HH:MM:SS>",
+        "specify a wallclock time limit"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_WALLTIME)"
+      },
+      { CHPL_NODELIST_FLAG " <nodelist>",
+        "specify a nodelist to use"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_NODELIST)"
+      },
+      { CHPL_PARTITION_FLAG " <partition>",
+        "specify a partition to use"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_PARTITION)"
+      },
+      { CHPL_EXCLUDE_FLAG " <nodes>",
+        "specify node(s) to exclude"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_EXCLUDE)"
+      },
+      { NULL, NULL },
+    };
+  return args;
 }

@@ -116,5 +116,6 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 }
 
 
-void chpl_launch_print_help(void) {
+const argDescTuple_t* chpl_launch_get_help(void) {
+  return NULL;
 }

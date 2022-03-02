@@ -450,15 +450,24 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   return 0;
 }
 
-void chpl_launch_print_help(void) {
-  fprintf(stdout, "LAUNCHER FLAGS:\n");
-  fprintf(stdout, "===============\n");
-  fprintf(stdout, "  %s <cpu assignment>   : specify cpu assignment within a node:\n", CHPL_CC_ARG);
-  fprintf(stdout, "                           none (default), numa_node, cpu\n");
-  fprintf(stdout, "  %s : generate a qsub script and exit\n", CHPL_GENERATE_QSUB_SCRIPT);
-  fprintf(stdout, "  %s <queue>        : specify a queue\n", CHPL_QUEUE_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_QUEUE)\n");
-  fprintf(stdout, "  %s <HH:MM:SS>  : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
-  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
+const argDescTuple_t* chpl_launch_get_help(void) {
+  static const
+    argDescTuple_t args[] =
+    { { CHPL_CC_ARG " <cpu assignment>",
+        "specify cpu assignment within a node:" },
+      { "",
+        "none (default), numa_node, cpu" },
+      { CHPL_GENERATE_QSUB_SCRIPT,
+        "generate a qsub script and exit" },
+      { CHPL_QUEUE_FLAG " <queue>",
+        "specify a queue" },
+      { "",
+        "(or use $CHPL_LAUNCHER_QUEUE)" },
+      { CHPL_WALLTIME_FLAG " <HH:MM:SS>",
+        "specify a wallclock time limit" },
+      { "",
+        "(or use $CHPL_LAUNCHER_WALLTIME)" },
+      { NULL, NULL },
+    };
+  return args;
 }
-
