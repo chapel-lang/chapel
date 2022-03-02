@@ -884,9 +884,9 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
   return typeConstructorInitialQuery(context, t).get();
 }
 
-static QualifiedType getInstantiationType(Context* context,
-                                          QualifiedType actualType,
-                                          QualifiedType formalType) {
+QualifiedType getInstantiationType(Context* context,
+                                   QualifiedType actualType,
+                                   QualifiedType formalType) {
 
   // The formal is generic but the actual might require a coercion
   // on the way to it. In that event, instantiate the formal type

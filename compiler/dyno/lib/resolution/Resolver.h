@@ -149,6 +149,26 @@ struct Resolver {
   void resolveTypeQueriesFromFormalType(const uast::Formal* formal,
                                         types::QualifiedType formalType);
 
+  // helper for getTypeForDecl -- checks the Kinds are compatible
+  // if so, returns false.
+  // if not, issues error(s) and returns true.
+  bool checkForKindError(const uast::ASTNode* typeForErr,
+                         const uast::ASTNode* initForErr,
+                         types::QualifiedType::Kind declKind,
+                         types::QualifiedType declaredType,
+                         types::QualifiedType initExprType);
+
+  // Helper to figure out what type to use for a declaration
+  // that can have both a declared type and an init expression.
+  // If both are provided, checks that they are compatible.
+  // Returns the type to use for the declaration.
+  types::QualifiedType getTypeForDecl(const uast::ASTNode* declForErr,
+                                      const uast::ASTNode* typeForErr,
+                                      const uast::ASTNode* initForErr,
+                                      types::QualifiedType::Kind declKind,
+                                      types::QualifiedType declaredType,
+                                      types::QualifiedType initExprType);
+
   // helper to resolve a NamedDecl
   // useType will be used to set the type if it is not nullptr
   void resolveNamedDecl(const uast::NamedDecl* decl,

@@ -50,6 +50,15 @@ const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
 types::QualifiedType typeForLiteral(Context* context,
                                     const uast::Literal* literal);
 
+/**
+  Returns the type that results when instantiating formalType,
+  which must be generic, with actualType.
+ */
+types::QualifiedType getInstantiationType(Context* context,
+                                          types::QualifiedType actualType,
+                                          types::QualifiedType formalType);
+
+
 /////// function resolution
 
 /**
