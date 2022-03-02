@@ -276,6 +276,15 @@ def expandvars_chpl(path):
     expand_env.update(get_chplenv())
     return string.Template(path).safe_substitute(expand_env)
 
+# Wait up to timeout seconds for files to exist. Useful on systems where file
+# IO may only complete after the launcher returns
+def WaitForFiles(files, timeout=10):
+    waited = 0
+    for f in files:
+        while not os.path.exists(f) and waited < timeout:
+            time.sleep(1)
+            waited += 1
+
 # Read a file or if the file is executable read its output. If the file is
 # executable, the current chplenv is copied into the env before executing.
 # Expands shell and chplenv variables and strip out comments/whitespace.
@@ -1722,6 +1731,7 @@ for testname in testsrc:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
                                  (test_filename+'.catfiles'))
                 sys.stdout.flush()
+                WaitForFiles(catfiles.split())
                 p = py3_compat.Popen(['cat']+catfiles.split(),
                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 catoutput = p.communicate()[0]
@@ -2240,6 +2250,7 @@ for testname in testsrc:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%
                                     (test_filename+'.catfiles'))
                     sys.stdout.flush()
+                    WaitForFiles(catfiles.split())
                     p = py3_compat.Popen(['cat']+catfiles.split(),
                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                     cat_output = p.communicate()[0]
