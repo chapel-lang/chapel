@@ -10,7 +10,13 @@ under active development and has not yet been tested under a wide variety of
 environments. We have tested it on systems with Nvidia Tesla P100 GPUs and CUDA
 11.0 and a system with Nvidia Tesla K20 GPUs with CUDA 10.2. The current
 implementation does not support multiple GPUs on one node and will only apply
-to certain ``forall`` loops.
+to certain ``forall`` and ``foreach`` loops.
+
+We also (currently) only support single-locale execution (i.e. Chapel Chapel
+must be compiled with ``CHPL_COMM=none``). We also require ``LLVM`` to be used
+as Chapel's backend compiler (i.e. ``CHPL_LLVM`` must be set to ``system`` or
+``bundled``). For more information about these settings see :ref:`Optional
+Settings <readme-chplenv>`.
 
 Overview
 --------
@@ -20,12 +26,17 @@ the GPU locale (i.e. ``here.getChild(1)``). For a given locale, we represent the
 CPU as sublocale 0 and GPU(s) on the system as sublocales with positive IDs.
 
 Any arrays that are declared in the body of this ``on`` statement will be
-allocated on the GPU. Chapel will generate CUDA kernels for ``forall`` statements
-in the ``on`` block that are eligible. Loops are eligible if they only make use
-of known compiler primitives that are fast and local. Here "fast" means "safe
-to run in a signal handler" and "local" means "doesn't cause any network
-communication". In practice, this means loops not containing any non-inlined
-function calls.
+allocated into unified memory and will be accessible on the GPU. Chapel will
+generate CUDA kernels for all eligible loops in the ``on`` block. Loops are
+eligible when:
+
+* They are order-independent (e.g., `forall` or `foreach`).
+* They only make use of known compiler primitives that are fast and local. Here
+  "fast" means "safe to run in a signal handler" and "local" means "doesn't
+  cause any network communication". In practice, this means loops not containing
+  any non-inlined function calls.
+* They are free of any call to a function that fails to meet the above
+  criteria, accesses outer variables, or is recursive.
 
 Any non-eligible loop will be executed on the CPU.
 
