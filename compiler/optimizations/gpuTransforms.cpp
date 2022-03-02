@@ -38,7 +38,7 @@
 #include "global-ast-vecs.h"
 
 bool debugPrintGPUChecks = false;
-bool allowFnCallsFromGPU = false;
+bool allowFnCallsFromGPU = true;
 int indentGPUChecksLevel = 0;
 
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
@@ -74,6 +74,7 @@ static bool shouldOutlineLoopHelp(BlockStmt* blk,
                                   std::set<FnSymbol*> visitedFns,
                                   bool allowFnCalls);
 
+static SymExpr* hasOuterVarAccesses(FnSymbol* fn);
 static void markGPUSuitableLoops();
 
 
@@ -318,6 +319,49 @@ static  CallExpr* generateGPUCall(OutlineInfo& info, VarSymbol* numThreads) {
   return call;
 }
 
+// If any SymExpr is referring to a variable defined outside the
+// function return the SymExpr. Otherwise return nullptr
+static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
+  std::vector<SymExpr*> ses;
+  collectSymExprs(fn, ses);
+  for_vector(SymExpr, se, ses) {
+    if (VarSymbol* var = toVarSymbol(se->symbol())) {
+      if (var->defPoint->parentSymbol != fn) {
+        if (!var->isParameter() && var != gVoid) {
+          return se;
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+static void errorForOuterVarAccesses(FnSymbol* fn) {
+  if (SymExpr* se = hasOuterVarAccesses(fn)) {
+    VarSymbol* var = toVarSymbol(se->symbol());
+    INT_ASSERT(var);
+    USR_FATAL(se, "variable '%s' must be defined in the function it"
+              " is used in for GPU usage", var->name);
+  }
+}
+
+static void markGPUSubCalls(FnSymbol* fn) {
+  if (!fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+    fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
+    fn->addFlag(FLAG_GPU_CODEGEN);
+  }
+
+  errorForOuterVarAccesses(fn);
+
+  std::vector<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  for_vector(CallExpr, call, calls) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
+      markGPUSubCalls(fn);
+    }
+  }
+}
+
 static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<BaseAST*> asts;
@@ -325,7 +369,7 @@ static void outlineGPUKernels() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        if (shouldOutlineLoop(loop, /*allowFnCalls=*/false)) {
+        if (shouldOutlineLoop(loop, allowFnCallsFromGPU)) {
           SET_LINENO(loop);
 
           OutlineInfo info = collectOutlineInfo(loop);
@@ -402,6 +446,15 @@ static void outlineGPUKernels() {
                     }
                     else if (parent->isPrimitive()) {
                       addKernelArgument(info, sym);
+                    }
+                    else if (FnSymbol* calledFn = parent->resolvedFunction()) {
+                      if (!toFnSymbol(sym)) {
+                        addKernelArgument(info, sym);
+                      }
+
+                      if (!calledFn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+                         markGPUSubCalls(calledFn);
+                      }
                     }
                     else {
                       INT_FATAL("Unexpected call expression");
@@ -497,6 +550,10 @@ static bool shouldOutlineLoopHelp(BlockStmt* blk,
         return false;
 
       FnSymbol* fn = call->resolvedFunction();
+
+      if (hasOuterVarAccesses(fn))
+        return false;
+
       indentGPUChecksLevel += 2;
       if (okFns.count(fn) != 0 ||
           shouldOutlineLoopHelp(fn->body, okFns,
