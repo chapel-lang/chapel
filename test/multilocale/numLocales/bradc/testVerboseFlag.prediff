@@ -70,6 +70,7 @@ case $launcher in
          mv $2.tmp $2;;
   slurm-srun) sed -e "s/ \(--cpus-per-task\)=[1-9][0-9]* / \1=N /" \
                   -e "s/ \(--partition\)=[^ ]* / \1=P /" \
+                  -e "s/ \(--exclude\)=[^ ]* / \1=E /" \
                   -e "s/ --time=[^ ]*//" \
                   -e 's/ *$//' \
                   $2 > $2.tmp &&
