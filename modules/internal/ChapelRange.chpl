@@ -1509,9 +1509,7 @@ operator :(r: range(?), type t: range(?)) {
 
   // This is the definition of the 'by' operator for ranges.
   pragma "no doc"
-  inline operator by(r, step) {
-    if !isRange(r) then
-      compilerError("the first argument of the 'by' operator is not a range");
+  inline operator by(r : range(?), step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step);
   }
@@ -1522,6 +1520,11 @@ operator :(r: range(?), type t: range(?)) {
   inline operator by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step:r.strType);
+  }
+
+  pragma "last resort"
+  inline operator by(r, step) {
+    compilerError("cannot apply 'by' to '", r.type:string, "'");
   }
 
   // This is the definition of the 'align' operator for ranges.
@@ -1536,11 +1539,15 @@ operator :(r: range(?), type t: range(?)) {
                      r._low, r._high, r.stride, chpl__idxToInt(algn), true);
   }
 
-  pragma "no doc"
+  pragma "no doc" pragma "last resort"
   inline operator align(r : range(?i, ?b, ?s), algn) {
     compilerError("can't align a range with idxType ", i:string,
                   " using a value of type ", algn.type:string);
-    return r;
+  }
+
+  pragma "last resort"
+  inline operator align(r, algn) {
+    compilerError("cannot apply 'align' to '", r.type:string, "'");
   }
 
   /* Returns a range whose alignment is this range's first index plus ``offset``.
@@ -1868,11 +1875,16 @@ operator :(r: range(?), type t: range(?)) {
     return chpl_count_help(r, count);
   }
 
+  pragma "last resort"
   operator #(r: range(?i), count) {
     compilerError("can't apply '#' to a range with idxType ",
                   i:string, " using a count of type ",
                   count.type:string);
-    return r;
+  }
+
+  pragma "last resort"
+  operator #(r, count) {
+    compilerError("cannot apply '#' to '", r.type:string, "'");
   }
 
   // This function checks if a bounded iterator will overflow. This is basic

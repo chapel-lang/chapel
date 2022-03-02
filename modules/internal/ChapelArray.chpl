@@ -195,12 +195,10 @@ module ChapelArray {
   // a rank-tuple. If the value is a scalar and rank is 1, copy it into a 1-tuple.
   //
   proc _makeIndexTuple(param rank, t: _tuple, param concept: string,
-                       param expand: bool=false) where rank == t.size {
+                       param expand: bool=false) {
+   if rank == t.size then
     return t;
-  }
-
-  proc _makeIndexTuple(param rank, t: _tuple, param concept: string,
-                       param expand: bool=false) where rank != t.size {
+   else
     compilerError("rank of the ", concept, " must match domain rank");
   }
 
@@ -1918,6 +1916,22 @@ module ChapelArray {
   operator :(x: [], type t:string) {
     use IO;
     return stringify(x);
+  }
+
+  pragma "fn returns aliasing array"
+  operator #(arr: [], counts: integral) {
+    return arr[arr.domain#counts];
+  }
+
+  pragma "fn returns aliasing array"
+  operator #(arr: [], counts: _tuple) {
+    return arr[arr.domain#counts];
+  }
+
+  pragma "last resort"
+  operator #(arr: [], counts) {
+    compilerError("cannot apply '#' to '", arr.type:string,
+                  "' using count(s) of type ", counts.type:string);
   }
 
   //

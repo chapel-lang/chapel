@@ -424,6 +424,10 @@ module DefaultAssociative {
       }
     }
 
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
+    }
+
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain(loc: locale) {
