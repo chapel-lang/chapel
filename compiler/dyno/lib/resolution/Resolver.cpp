@@ -156,6 +156,8 @@ Resolver::functionResolver(Context* context,
 
     if (auto formal = decl->toFormal())
       ret.resolveTypeQueriesFromFormalType(formal, qt);
+    if (auto td = decl->toTupleDecl())
+      ret.resolveTupleUnpackDecl(td, qt);
   }
 
   return ret;
@@ -492,9 +494,8 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
     if (!typeExprT.hasTypePtr() && useType != nullptr) {
       // use type from argument to resolveNamedDecl
       typeExprT = QualifiedType(QualifiedType::TYPE, useType);
-    }
-
-    if (foundSubstitution) {
+      typePtr = typeExprT.type();
+    } else if (foundSubstitution) {
       // if we are working with a substitution, just use that
       // without doing lots of kinds checking
       typePtr = typeExprT.type();
@@ -768,16 +769,18 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // get the type information from the resolution result.
   if (id.symbolPath() == symbol->id().symbolPath() && id.postOrderId() >= 0) {
     QualifiedType ret = byPostorder.byId(id).type();
-    auto g = getTypeGenericity(context, ret.type());
-    if (g != Type::CONCRETE) {
-      if (shouldUseUnknownTypeForGeneric(id)) {
-        // if id refers to a field or formal that needs to be instantiated,
-        // replace the type with UnknownType since we can't compute
-        // the type of anything using this type (since it will change
-        // on instantiation).
-        auto unknownType = UnknownType::get(context);
-        ret = QualifiedType(ret.kind(), unknownType, nullptr);
-      }
+    auto g = Type::MAYBE_GENERIC;
+    if (ret.hasTypePtr()) {
+      g = getTypeGenericity(context, ret.type());
+    }
+
+    if (g != Type::CONCRETE && shouldUseUnknownTypeForGeneric(id)) {
+      // if id refers to a field or formal that needs to be instantiated,
+      // replace the type with UnknownType since we can't compute
+      // the type of anything using this type (since it will change
+      // on instantiation).
+      auto unknownType = UnknownType::get(context);
+      ret = QualifiedType(ret.kind(), unknownType, nullptr);
     }
 
     return ret;
@@ -1182,6 +1185,30 @@ void Resolver::exit(const Dot* dot) {
 
   // TODO: resolve field accessors / parenless methods
 }
+
+/*
+bool Resolver::enter(const Tuple* tup) {
+  return true;
+}
+void Resolver::exit(const Tuple* tup) {
+  // Set the type to a TupleType based on the types of the elements
+  std::vector<const Type*> eltTypes;
+  for (auto actual : tup->actuals()) {
+    ResolvedExpression& r = byPostorder.byAst(actual);
+    const QualifiedType& qt = r.type();
+    const Type* t = nullptr;
+    if (!qt.hasTypePtr()) {
+      t = UnknownType::get(context);
+    } else {
+      t = qt.type();
+    }
+    eltTypes.push_back(t);
+  }
+
+  auto tupleType = TupleType::getReferentialTuple(context, std::move(eltTypes));
+  ResolvedExpression& r = byPostorder.byAst(tup);
+  r.setType(QualifiedType(QualifiedType::CONST_VAR, tupleType));
+}*/
 
 bool Resolver::enter(const ASTNode* ast) {
   enterScope(ast);

@@ -589,6 +589,9 @@ class TypedFnSignature {
     it was present in the SubstitutionsMap when instantiating.
    */
   bool formalIsInstantiated(int i) const {
+    if (instantiatedFrom_ == nullptr)
+      return false;
+
     return formalsInstantiated_[i];
   }
 

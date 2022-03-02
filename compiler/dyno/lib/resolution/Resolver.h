@@ -232,6 +232,7 @@ struct Resolver {
   bool enter(const uast::TupleDecl* decl);
   void exit(const uast::TupleDecl* decl);
 
+  // Note: Call cases here include Tuple
   bool enter(const uast::Call* call);
   void exit(const uast::Call* call);
 

@@ -448,6 +448,28 @@ static void test13() {
   assert(vt == tt);
 }
 
+static void test14() {
+  printf("test14\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  proc f(x: int, (y, z): (real, int)) { return (x, y, z); }
+                  var x = f( 1, (2.0, 3) );
+                )"""");
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+
+  assert(tt->numElements() == 3);
+  assert(!tt->isStarTuple());
+  assert(tt->elementType(0).type()->isIntType());
+  assert(tt->elementType(1).type()->isRealType());
+  assert(tt->elementType(2).type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -462,6 +484,7 @@ int main() {
   test11();
   test12();
   test13();
+  test14();
 
   return 0;
 }
