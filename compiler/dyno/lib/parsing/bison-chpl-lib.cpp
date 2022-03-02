@@ -10213,7 +10213,7 @@ yyreduce:
   case 556: /* for_expr: TFOR expr TDO expr  */
 #line 2950 "chpl.ypp"
   {
-    (yyval.expr) = For::build(BUILDER, LOC((yyloc)), /*index*/ nullptr, toOwned((yyvsp[0].expr)),
+    (yyval.expr) = For::build(BUILDER, LOC((yyloc)), /*index*/ nullptr, toOwned((yyvsp[-2].expr)),
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock((yylsp[0]), (yyvsp[0].expr)),
                     /*isExpressionLevel*/ true,
@@ -10305,7 +10305,7 @@ yyreduce:
   case 562: /* for_expr: TFORALL expr TDO expr  */
 #line 3018 "chpl.ypp"
   {
-    (yyval.expr) = Forall::build(BUILDER, LOC((yyloc)), /*index*/ nullptr, toOwned((yyvsp[0].expr)),
+    (yyval.expr) = Forall::build(BUILDER, LOC((yyloc)), /*index*/ nullptr, toOwned((yyvsp[-2].expr)),
                        /*withClause*/ nullptr,
                        BlockStyle::IMPLICIT,
                        context->consumeToBlock((yylsp[0]), (yyvsp[0].expr)),
@@ -11195,13 +11195,13 @@ yyreduce:
 
   case 699: /* unary_op_expr: TMINUSMINUS expr  */
 #line 3568 "chpl.ypp"
-                                 { (yyval.expr) = TODOEXPR((yyloc)); /* warn */ }
+                                 { (yyval.expr) = context->buildUnaryOp((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
 #line 11200 "bison-chpl-lib.cpp"
     break;
 
   case 700: /* unary_op_expr: TPLUSPLUS expr  */
 #line 3569 "chpl.ypp"
-                                 { (yyval.expr) = TODOEXPR((yyloc)); /* warn */ }
+                                 { (yyval.expr) = context->buildUnaryOp((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
 #line 11206 "bison-chpl-lib.cpp"
     break;
 
