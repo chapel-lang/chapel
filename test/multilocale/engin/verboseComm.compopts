@@ -3,7 +3,12 @@
 import os
 
 do_cache = os.getenv('CHPL_SANITIZE_EXE', '') == 'none'
+comm = os.getenv('CHPL_COMM')
 
 print(  '--no-cache-remote # verboseComm.no-cache.good')
 if do_cache:
-  print('--cache-remote    # verboseComm.cache.good')
+    # ofi and ugni support the cache, but don't implement non-blocking ops
+    if comm in ('ugni', 'ofi'):
+        print('--cache-remote    # verboseComm.cache.block.good')
+    else:
+        print('--cache-remote    # verboseComm.cache.good')
