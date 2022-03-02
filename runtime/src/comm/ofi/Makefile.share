@@ -48,9 +48,10 @@ ifneq (, $(findstring pmi2, $(COMM_SRCS)))
 endif
 
 #
-# Use hugepages only on Cray XC systems.
+# Use hugepages on Cray XC and HPE Cray EX systems.
 #
-ifneq (, $(findstring cray-x,$(CHPL_MAKE_TARGET_PLATFORM)))
+
+ifneq (, $(findstring $(CHPL_MAKE_TARGET_PLATFORM), cray-xc hpe-cray-ex))
   COMM_SRCS += comm-ofi-hugepages.c
 else
   COMM_SRCS += comm-ofi-no-hugepages.c
