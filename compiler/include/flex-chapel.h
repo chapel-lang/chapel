@@ -2,9 +2,9 @@
 #define yyHEADER_H 1
 #define yyIN_HEADER 1
 
-#line 6 "../include/flex-chapel.h"
+#line 5 "../include/flex-chapel.h"
 
-#line 8 "../include/flex-chapel.h"
+#line 7 "../include/flex-chapel.h"
 
 #define  YY_INT_ALIGNED short int
 
@@ -522,6 +522,6 @@ extern int yylex \
 #line 337 "chapel.lex"
 
 
-#line 526 "../include/flex-chapel.h"
+#line 525 "../include/flex-chapel.h"
 #undef yyIN_HEADER
 #endif /* yyHEADER_H */

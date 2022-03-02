@@ -2604,12 +2604,12 @@ CallExpr* buildPreDecIncWarning(Expr* expr, char sign) {
   return NULL;
 }
 
-BlockStmt* convertTypesToExtern(BlockStmt* blk) {
+BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
   for_alist(node, blk->body) {
     if (DefExpr* de = toDefExpr(node)) {
       if (!de->init) {
         Symbol* vs = de->sym;
-        PrimitiveType* pt = new PrimitiveType(NULL);
+        PrimitiveType* pt = new PrimitiveType(nullptr);
 
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
@@ -2621,6 +2621,9 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
         de = newde;
       }
       de->sym->addFlag(FLAG_EXTERN);
+      if (cname != nullptr) {
+        de->sym->cname = astr(cname);
+      }
     } else {
       INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
     }
