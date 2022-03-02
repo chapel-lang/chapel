@@ -239,9 +239,8 @@ class ASTNode {
         #undef IGNORE
       }
 
-      ReturnType dummy;
       assert(false && "this code should never be run");
-      return dummy;
+      return ReturnType();
     }
   };
   template <typename Visitor>
