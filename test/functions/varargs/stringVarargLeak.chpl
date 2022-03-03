@@ -11,7 +11,7 @@ record myRec {
 }
 
 proc bar(paths: myRec ...?n) {
-  ref refToArg = paths;
+  var refToArg = paths;
 
   for p in refToArg do writeln(p);
 
