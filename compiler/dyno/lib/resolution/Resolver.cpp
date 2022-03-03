@@ -1239,30 +1239,6 @@ void Resolver::exit(const Dot* dot) {
   // TODO: resolve field accessors / parenless methods
 }
 
-/*
-bool Resolver::enter(const Tuple* tup) {
-  return true;
-}
-void Resolver::exit(const Tuple* tup) {
-  // Set the type to a TupleType based on the types of the elements
-  std::vector<const Type*> eltTypes;
-  for (auto actual : tup->actuals()) {
-    ResolvedExpression& r = byPostorder.byAst(actual);
-    const QualifiedType& qt = r.type();
-    const Type* t = nullptr;
-    if (!qt.hasTypePtr()) {
-      t = UnknownType::get(context);
-    } else {
-      t = qt.type();
-    }
-    eltTypes.push_back(t);
-  }
-
-  auto tupleType = TupleType::getReferentialTuple(context, std::move(eltTypes));
-  ResolvedExpression& r = byPostorder.byAst(tup);
-  r.setType(QualifiedType(QualifiedType::CONST_VAR, tupleType));
-}*/
-
 bool Resolver::enter(const ASTNode* ast) {
   enterScope(ast);
 
