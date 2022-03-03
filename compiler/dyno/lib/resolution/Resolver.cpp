@@ -156,6 +156,8 @@ Resolver::functionResolver(Context* context,
 
     if (auto formal = decl->toFormal())
       ret.resolveTypeQueriesFromFormalType(formal, qt);
+    if (auto td = decl->toTupleDecl())
+      ret.resolveTupleUnpackDecl(td, qt);
   }
 
   return ret;
@@ -304,21 +306,485 @@ void Resolver::resolveTypeQueriesFromFormalType(const Formal* formal,
   }
 }
 
+bool Resolver::checkForKindError(const ASTNode* typeForErr,
+                                 const ASTNode* initForErr,
+                                 QualifiedType::Kind declKind,
+                                 QualifiedType declaredType,
+                                 QualifiedType initExprType) {
+  // check that the resolution of the type expression is a type
+  if (declaredType.hasTypePtr() &&
+      declaredType.kind() != QualifiedType::UNKNOWN) {
+    if (declaredType.kind() != QualifiedType::TYPE) {
+      context->error(typeForErr, "Value provided where type expected");
+      return true;
+    }
+  }
+
+  // check that the init expression has compatible kind
+  if (initExprType.hasTypePtr() &&
+      initExprType.kind() != QualifiedType::UNKNOWN) {
+    if (declKind == QualifiedType::TYPE &&
+        initExprType.kind() != QualifiedType::TYPE) {
+      context->error(initForErr, "Cannot initialize type with value");
+      return true;
+    } else if (declKind != QualifiedType::TYPE &&
+               initExprType.kind() == QualifiedType::TYPE) {
+      context->error(initForErr, "Cannot initialize value with type");
+      return true;
+    } else if (declKind == QualifiedType::PARAM &&
+               initExprType.kind() != QualifiedType::PARAM) {
+      context->error(initForErr, "Cannot initialize param with non-param");
+      return true;
+    }
+  }
+
+  return false; // no error
+}
+
+
+QualifiedType Resolver::getTypeForDecl(const ASTNode* declForErr,
+                                       const ASTNode* typeForErr,
+                                       const ASTNode* initForErr,
+                                       QualifiedType::Kind declKind,
+                                       QualifiedType declaredType,
+                                       QualifiedType initExprType) {
+
+  const Type* typePtr = nullptr;
+  const Param* paramPtr = nullptr;
+
+  if (typeForErr == nullptr)
+    typeForErr = declForErr;
+  if (initForErr == nullptr)
+    initForErr = declForErr;
+
+  bool inferParam = (declKind == QualifiedType::PARAM &&
+                     initExprType.kind() == QualifiedType::PARAM);
+
+  // check that the resolution of the type expression is a type
+  if (checkForKindError(typeForErr, initForErr, declKind,
+                        declaredType, initExprType)) {
+    // error already issued in checkForKindError
+    typePtr = ErroneousType::get(context);
+  } else if (!declaredType.hasTypePtr() && !initExprType.hasTypePtr()) {
+    // TODO: remove this error when we add split init support
+    context->error(declForErr, "Cannot establish type for decl");
+    typePtr = ErroneousType::get(context);
+  } else if (declaredType.hasTypePtr() && !initExprType.hasTypePtr()) {
+    // declared type but no init, so use declared type
+    typePtr = declaredType.type();
+  } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
+    // init but no declared type, so use init type
+    typePtr = initExprType.type();
+    if (inferParam) {
+      paramPtr = initExprType.param();
+    }
+  } else {
+    // otherwise both declaredType and initExprType are provided.
+    // check that they are compatible
+    auto got = canPass(context, initExprType, declaredType);
+    if (!got.passes()) {
+      context->error(declForErr, "Type mismatch in declared type vs init expr");
+      typePtr = ErroneousType::get(context);
+    } else if (!got.instantiates()) {
+      // use the declared type since no conversion/promotion was needed
+      typePtr = declaredType.type();
+    } else {
+      // instantiation is needed
+      if (!got.converts() && !got.promotes()) {
+        // use the init expr type since no conversion/promotion was needed
+        typePtr = initExprType.type();
+        if (inferParam) {
+          paramPtr = initExprType.param();
+        }
+      } else {
+        // get instantiation type
+        auto t = getInstantiationType(context, initExprType, declaredType);
+        typePtr = t.type();
+        if (inferParam) {
+          paramPtr = t.param();
+        }
+      }
+    }
+  }
+
+  assert(typePtr != nullptr); // should always be set above.
+  return QualifiedType(declKind, typePtr, paramPtr);
+}
+
+// useType will be used to set the type if it is not nullptr
+void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
+  // Figure out the Kind of the declaration
+  auto qtKind = qualifiedTypeKindForDecl(decl);
+
+  // Figure out the Type of the declaration
+  // Nested Identifiers and Expressions should already be resolved
+  const Type* typePtr = nullptr;
+
+  // Figure out the param value, if any
+  const Param* paramPtr = nullptr;
+
+  bool isField = false;
+  bool isFormal = false;
+  bool isFieldOrFormal = false;
+
+  if (auto var = decl->toVarLikeDecl()) {
+    // Figure out variable type based upon:
+    //  * the type in the variable declaration
+    //  * the initialization expression in the variable declaration
+    //  * the initialization expression from split-init
+
+    auto typeExpr = var->typeExpression();
+    auto initExpr = var->initExpression();
+
+    if (auto var = decl->toVariable())
+      if (var->isField())
+        isField = true;
+
+    isFormal = decl->isFormal();
+    isFieldOrFormal = isField || isFormal;
+
+    bool foundSubstitution = false;
+    bool foundSubstitutionDefaultHint = false;
+
+    QualifiedType typeExprT;
+    QualifiedType initExprT;
+
+    if (isFieldOrFormal) {
+      // use substitutions computed for fields and formals
+      if (substitutions != nullptr) {
+        auto search = substitutions->find(decl->id());
+        if (search != substitutions->end()) {
+          const QualifiedType& t = search->second;
+          if (t.kind() == QualifiedType::PARAM) {
+            typeExprT = t; // keep kind, typePtr, paramPtr
+          } else {
+            // set kind to TYPE and forget about paramPtr
+            typeExprT = QualifiedType(QualifiedType::TYPE, t.type());
+          }
+          if (t.type() == nullptr && t.kind() == QualifiedType::UNKNOWN)
+            foundSubstitutionDefaultHint = true;
+          else
+            foundSubstitution = true;
+        }
+      }
+    }
+
+    if (typeExpr && !foundSubstitution) {
+      // get the type we should have already computed postorder
+      ResolvedExpression& r = byPostorder.byAst(typeExpr);
+      typeExprT = r.type();
+      // otherwise, typeExprT can be empty/null
+    }
+
+    if (initExpr && !foundSubstitution) {
+      // compute the type based upon the init expression
+      ResolvedExpression& r = byPostorder.byAst(initExpr);
+      initExprT = r.type();
+    }
+
+    bool isGenericField = isField &&
+                          (qtKind == QualifiedType::TYPE ||
+                           qtKind == QualifiedType::PARAM);
+
+    // infer the type of the variable from its initialization expr?
+    bool inferFromInit = !isGenericField ||
+                          useGenericFormalDefaults ||
+                          foundSubstitutionDefaultHint;
+
+    if (!typeExprT.hasTypePtr() && useType != nullptr) {
+      // use type from argument to resolveNamedDecl
+      typeExprT = QualifiedType(QualifiedType::TYPE, useType);
+      typePtr = typeExprT.type();
+    } else if (foundSubstitution) {
+      // if we are working with a substitution, just use that
+      // without doing lots of kinds checking
+      typePtr = typeExprT.type();
+      if (qtKind == QualifiedType::PARAM)
+        paramPtr = typeExprT.param();
+    } else {
+      if (isFieldOrFormal && typeExpr == nullptr && initExpr == nullptr) {
+        // Lack of initializer for a field/formal means the Any type
+        typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+      } else if (!inferFromInit) {
+        // if we aren't inferring from the init expr, clear initExprT.
+        initExprT = QualifiedType();
+        if (isGenericField) {
+          // a type or param field with initExpr is still generic, e.g.
+          // record R { type t = int; }
+          // if that behavior is requested with !useGenericFormalDefaults
+          typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+        }
+      }
+
+      // Check that the initExpr type is compatible with declared type
+      // Check kinds are OK
+      // Handle any implicit conversions / instantiations
+      auto qt = getTypeForDecl(decl, typeExpr, initExpr,
+                               qtKind, typeExprT, initExprT);
+      typePtr = qt.type();
+      paramPtr = qt.param();
+    }
+
+    // TODO: handle split init
+
+    if (typePtr == nullptr) {
+      context->error(var, "Cannot establish type for %s",
+                           var->name().c_str());
+      typePtr = ErroneousType::get(context);
+    }
+  }
+
+  if (typePtr == nullptr) {
+    if (qtKind == QualifiedType::FUNCTION ||
+        qtKind == QualifiedType::MODULE) {
+      // OK, type can be null for now
+    } else {
+      // type should have been established above
+      context->error(decl, "Cannot establish type");
+      typePtr = ErroneousType::get(context);
+    }
+  }
+
+  // param value should not be set if the QualifiedType is not param
+  assert(qtKind == QualifiedType::PARAM || paramPtr == nullptr);
+
+  auto declaredKind = qtKind;
+
+  // compute the intent for formals (including type constructor formals)
+  if (isFormal || (signatureOnly && isField)) {
+    bool isThis = decl->name() == USTR("this");
+    auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
+    // update qtKind with the result of resolving the intent
+    qtKind = resolveIntent(formalQt, isThis);
+  }
+
+  // adjust tuple declarations for value / referential tuples
+  if (typePtr != nullptr) {
+    if (auto tupleType = typePtr->toTupleType()) {
+      if (declaredKind == QualifiedType::DEFAULT_INTENT ||
+          declaredKind == QualifiedType::CONST_INTENT) {
+        typePtr = tupleType->toReferentialTuple(context);
+      } else if (qtKind == QualifiedType::VAR ||
+                 qtKind == QualifiedType::CONST_VAR ||
+                 qtKind == QualifiedType::CONST_REF ||
+                 qtKind == QualifiedType::REF ||
+                 qtKind == QualifiedType::IN ||
+                 qtKind == QualifiedType::CONST_IN ||
+                 qtKind == QualifiedType::OUT ||
+                 qtKind == QualifiedType::INOUT ||
+                 qtKind == QualifiedType::TYPE) {
+        typePtr = tupleType->toValueTuple(context);
+      }
+    }
+  }
+
+  ResolvedExpression& result = byPostorder.byAst(decl);
+  result.setType(QualifiedType(qtKind, typePtr, paramPtr));
+}
+
+void
+Resolver::issueErrorForFailedCallResolution(const uast::ASTNode* astForErr,
+                                            const CallInfo& ci,
+                                            const CallResolutionResult& c) {
+  if (c.mostSpecific().isEmpty()) {
+    // if the call resolution result is empty, we need to issue an error
+    if (c.mostSpecific().isAmbiguous()) {
+      // ambiguity between candidates
+      context->error(astForErr, "Cannot resolve call: ambiguity");
+    } else {
+      // could not find a most specific candidate
+      context->error(astForErr, "Cannot resolve call: no matching candidates");
+    }
+  } else {
+    context->error(astForErr, "Cannot establish type for call expression");
+
+    // expecting call site to check for hasTypePtr.
+    assert(!c.exprType().hasTypePtr());
+  }
+}
+
+void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
+                                        QualifiedType lhsType,
+                                        QualifiedType rhsType) {
+  // Check that lhsType = rhsType can work
+
+  if (!lhsType.hasTypePtr()) {
+    context->error(lhsTuple, "Unknown lhs tuple type in split tuple assign");
+    return;
+  }
+  if (!rhsType.hasTypePtr()) {
+    context->error(lhsTuple, "Unknown rhs tuple type in split tuple assign");
+    return;
+  }
+
+  // First, check that lhsType and rhsType are tuples
+  const TupleType* lhsT = lhsType.type()->toTupleType();
+  const TupleType* rhsT = rhsType.type()->toTupleType();
+
+  if (lhsT == nullptr) {
+    context->error(lhsTuple, "lhs type is not tuple in split tuple assign");
+    return;
+  }
+  if (rhsT == nullptr) {
+    context->error(lhsTuple, "rhs type is not tuple in split tuple assign");
+    return;
+  }
+
+  // Then, check that they have the same size
+  if (lhsTuple->numActuals() != rhsT->numElements()) {
+    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
+    return;
+  }
+  if (lhsT->numElements() != rhsT->numElements()) {
+    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
+    return;
+  }
+
+  assert(scopeStack.size() > 0);
+  const Scope* scope = scopeStack.back();
+
+  // Finally, try to resolve = between the elements
+  int i = 0;
+  for (auto actual : lhsTuple->actuals()) {
+    QualifiedType lhsEltType = lhsT->elementType(i);
+    QualifiedType rhsEltType = rhsT->elementType(i);
+    if (auto innerTuple = actual->toTuple()) {
+      resolveTupleUnpackAssign(innerTuple, lhsEltType, rhsEltType);
+    } else {
+      std::vector<CallInfoActual> actuals;
+      actuals.push_back(CallInfoActual(lhsEltType, UniqueString()));
+      actuals.push_back(CallInfoActual(rhsEltType, UniqueString()));
+      auto ci = CallInfo (/* name */ USTR("="),
+                          /* calledType */ QualifiedType(),
+                          /* hasQuestionArg */ false,
+                          actuals);
+
+      auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
+      if (!c.exprType().hasTypePtr()) {
+        issueErrorForFailedCallResolution(actual, ci, c);
+      }
+      // gather the poi scopes used when resolving the call
+      poiInfo.accumulate(c.poiInfo());
+    }
+    i++;
+  }
+}
+
+void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
+                                      QualifiedType rhsType) {
+  if (!rhsType.hasTypePtr()) {
+    context->error(lhsTuple, "Unknown rhs tuple type in split tuple decl");
+    return;
+  }
+
+  const TupleType* rhsT = rhsType.type()->toTupleType();
+
+  if (rhsT == nullptr) {
+    context->error(lhsTuple, "rhs type is not tuple in split tuple decl");
+    return;
+  }
+
+  // Then, check that they have the same size
+  if (lhsTuple->numDecls() != rhsT->numElements()) {
+    context->error(lhsTuple, "tuple size mismatch in split tuple decl");
+    return;
+  }
+
+  // Finally, try to resolve the types of the elements
+  int i = 0;
+  for (auto actual : lhsTuple->decls()) {
+    QualifiedType rhsEltType = rhsT->elementType(i);
+    if (auto innerTuple = actual->toTupleDecl()) {
+      resolveTupleUnpackDecl(innerTuple, rhsEltType);
+    } else if (auto namedDecl = actual->toNamedDecl()) {
+      resolveNamedDecl(namedDecl, rhsEltType.type());
+    } else {
+      assert(false && "case not handled");
+    }
+    i++;
+  }
+}
+
+void Resolver::resolveTupleDecl(const TupleDecl* td,
+                                const Type* useType) {
+  QualifiedType::Kind declKind = (IntentList) td->intentOrKind();
+  QualifiedType useT;
+
+  // Figure out the type to use for this tuple
+  if (useType != nullptr) {
+    useT = QualifiedType(declKind, useType);
+  } else {
+    QualifiedType typeExprT;
+    QualifiedType initExprT;
+
+    auto typeExpr = td->typeExpression();
+    auto initExpr = td->initExpression();
+
+    if (typeExpr != nullptr) {
+      ResolvedExpression& result = byPostorder.byAst(typeExpr);
+      typeExprT = result.type();
+    }
+    if (initExpr != nullptr) {
+      ResolvedExpression& result = byPostorder.byAst(initExpr);
+      initExprT = result.type();
+    }
+
+    useT = getTypeForDecl(td, typeExpr, initExpr,
+                          declKind, typeExprT, initExprT);
+  }
+
+  if (!useT.hasTypePtr()) {
+    context->error(td, "Cannot establish type for tuple decl");
+    useT = QualifiedType(declKind, ErroneousType::get(context));
+  }
+
+  // save the type in byPostorder
+  ResolvedExpression& result = byPostorder.byAst(td);
+  result.setType(useT);
+  // resolve the types of the tuple elements
+  resolveTupleUnpackDecl(td, useT);
+}
+
+bool Resolver::resolveSpecialCall(const Call* call) {
+  if (auto op = call->toOpCall()) {
+    if (op->op() == USTR("=")) {
+      if (op->numActuals() == 2) {
+        if (auto lhsTuple = op->actual(0)->toTuple()) {
+          QualifiedType lhsType = byPostorder.byAst(op->actual(0)).type();
+          QualifiedType rhsType = byPostorder.byAst(op->actual(1)).type();
+
+          resolveTupleUnpackAssign(lhsTuple, lhsType, rhsType);
+          return true;
+        }
+      }
+    } else if (op->op() == USTR("...")) {
+      // just leave it unknown -- tuple expansion only makes sense
+      // in the argument list for another call.
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
 QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // if the id is contained within this symbol,
   // get the type information from the resolution result.
   if (id.symbolPath() == symbol->id().symbolPath() && id.postOrderId() >= 0) {
     QualifiedType ret = byPostorder.byId(id).type();
-    auto g = getTypeGenericity(context, ret.type());
-    if (g != Type::CONCRETE) {
-      if (shouldUseUnknownTypeForGeneric(id)) {
-        // if id refers to a field or formal that needs to be instantiated,
-        // replace the type with UnknownType since we can't compute
-        // the type of anything using this type (since it will change
-        // on instantiation).
-        auto unknownType = UnknownType::get(context);
-        ret = QualifiedType(ret.kind(), unknownType, nullptr);
-      }
+    auto g = Type::MAYBE_GENERIC;
+    if (ret.hasTypePtr()) {
+      g = getTypeGenericity(context, ret.type());
+    }
+
+    if (g != Type::CONCRETE && shouldUseUnknownTypeForGeneric(id)) {
+      // if id refers to a field or formal that needs to be instantiated,
+      // replace the type with UnknownType since we can't compute
+      // the type of anything using this type (since it will change
+      // on instantiation).
+      auto unknownType = UnknownType::get(context);
+      ret = QualifiedType(ret.kind(), unknownType, nullptr);
     }
 
     return ret;
@@ -500,196 +966,140 @@ bool Resolver::enter(const NamedDecl* decl) {
 
 void Resolver::exit(const NamedDecl* decl) {
   if (decl->id().postOrderId() < 0) {
-    // It's a scoped symbol. Don't try to resolve it now in this
+    // It's a symbol with a different path, e.g. a Function.
+    // Don't try to resolve it now in this
     // traversal. Instead, resolve it e.g. when the function is called.
 
   } else {
-    // Figure out the Kind of the declaration
-    auto qtKind = qualifiedTypeKindForDecl(decl);
-
-    // Figure out the Type of the declaration
-    // Nested Identifiers and Expressions should already be resolved
-    const Type* typePtr = nullptr;
-
-    // Figure out the param value, if any
-    const Param* paramPtr = nullptr;
-
-    bool isField = false;
-    bool isFormal = false;
-    bool isFieldOrFormal = false;
-
-    if (auto var = decl->toVarLikeDecl()) {
-      // Figure out variable type based upon:
-      //  * the type in the variable declaration
-      //  * the initialization expression in the variable declaration
-      //  * the initialization expression from split-init
-
-      auto typeExpr = var->typeExpression();
-      auto initExpr = var->initExpression();
-
-      if (auto var = decl->toVariable())
-        if (var->isField())
-          isField = true;
-
-      isFormal = decl->isFormal();
-      isFieldOrFormal = isField || isFormal;
-
-      bool foundSubstitution = false;
-      bool foundSubstitutionDefaultHint = false;
-
-      if (isFieldOrFormal) {
-        // use substitutions computed for fields and formals
-        if (substitutions != nullptr) {
-          auto search = substitutions->find(decl->id());
-          if (search != substitutions->end()) {
-            const QualifiedType& t = search->second;
-            typePtr = t.type();
-            paramPtr = t.param();
-            if (typePtr == nullptr && t.kind() == QualifiedType::UNKNOWN)
-              foundSubstitutionDefaultHint = true;
-            else
-              foundSubstitution = true;
-          }
-        }
-      }
-
-      if (typeExpr && !foundSubstitution) {
-        // get the type we should have already computed postorder
-        ResolvedExpression& r = byPostorder.byAst(typeExpr);
-        // check that the resolution of that expression is a type
-        auto kind = r.type().kind();
-        if (kind == QualifiedType::TYPE) {
-          typePtr = r.type().type();
-        } else if (kind != QualifiedType::UNKNOWN) {
-          typePtr = ErroneousType::get(context);
-          context->error(typeExpr, "Value provided where type expected");
-        }
-        // otherwise, typePtr can remain nullptr.
-      }
-
-      if (initExpr && !foundSubstitution) {
-        // compute the type based upon the init expression
-        ResolvedExpression& r = byPostorder.byAst(initExpr);
-        const QualifiedType& initType = r.type();
-
-        // check that the init expression has compatible kind
-        if (qtKind == QualifiedType::TYPE &&
-            initType.kind() != QualifiedType::TYPE) {
-          context->error(initExpr, "Cannot initialize type with value");
-        } else if (qtKind != QualifiedType::TYPE &&
-                   initType.kind() == QualifiedType::TYPE) {
-          context->error(initExpr, "Cannot initialize value with type");
-        } else if (qtKind == QualifiedType::PARAM &&
-                   initType.kind() != QualifiedType::PARAM) {
-          context->error(initExpr, "Cannot initialize param with non-param");
-        }
-        // check that the initExpr type is compatible with declared type
-        if (typePtr != nullptr && initType.type() != typePtr) {
-          context->error(typeExpr, "Cannot initialize this type with that");
-          // TODO: better error
-          // TODO: implicit conversions and instantiations
-        }
-
-        bool isGenericField = isField &&
-                              (qtKind == QualifiedType::TYPE ||
-                               qtKind == QualifiedType::PARAM);
-
-        // infer the type of the variable from its initialization expr?
-        bool inferFromInit = !isGenericField ||
-                              useGenericFormalDefaults ||
-                              foundSubstitutionDefaultHint;
-
-        if (inferFromInit) {
-          // Infer the param value from the initialization expr
-          if (qtKind == QualifiedType::PARAM &&
-              initType.kind() == QualifiedType::PARAM) {
-            paramPtr = initType.param();
-          }
-          // Infer the type from the initialization expr
-          typePtr = initType.type();
-        } else if (isGenericField) {
-          // a type or param field with initExpr is still generic, e.g.
-          // record R { type t = int; }
-          // if that behavior is requested with useGenericFormalDefaults
-          typePtr = AnyType::get(context);
-        }
-      }
-
-      if (isFieldOrFormal && !foundSubstitution) {
-        // Lack of initializer for a formal means the Any type
-        if (typeExpr == nullptr && initExpr == nullptr) {
-          typePtr = AnyType::get(context);
-        }
-      }
-
-      // TODO: handle split init
-      // TODO: handle generic & instantiated formal arguments
-
-      if (typePtr == nullptr) {
-        context->error(var, "Cannot establish type for %s",
-                             var->name().c_str());
-        typePtr = ErroneousType::get(context);
-      }
-    }
-
-    if (typePtr == nullptr) {
-      if (qtKind == QualifiedType::FUNCTION ||
-          qtKind == QualifiedType::MODULE) {
-        // OK, type can be null for now
-      } else {
-        // type should have been established above
-        context->error(decl, "Cannot establish type");
-        typePtr = ErroneousType::get(context);
-      }
-    }
-
-    // forget the param value if the QualifiedType is not param
-    if (qtKind != QualifiedType::PARAM)
-      paramPtr = nullptr;
-
-    auto declaredKind = qtKind;
-
-    // compute the intent for formals (including type constructor formals)
-    if (isFormal || (signatureOnly && isField)) {
-      bool isThis = decl->name() == USTR("this");
-      auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
-      // update qtKind with the result of resolving the intent
-      qtKind = resolveIntent(formalQt, isThis);
-    }
-
-    // adjust tuple declarations for value / referential tuples
-    if (typePtr != nullptr) {
-      if (auto tupleType = typePtr->toTupleType()) {
-        if (declaredKind == QualifiedType::DEFAULT_INTENT ||
-            declaredKind == QualifiedType::CONST_INTENT) {
-          typePtr = tupleType->toReferentialTuple(context);
-        } else if (qtKind == QualifiedType::VAR ||
-                   qtKind == QualifiedType::CONST_VAR ||
-                   qtKind == QualifiedType::CONST_REF ||
-                   qtKind == QualifiedType::REF ||
-                   qtKind == QualifiedType::IN ||
-                   qtKind == QualifiedType::CONST_IN ||
-                   qtKind == QualifiedType::OUT ||
-                   qtKind == QualifiedType::INOUT ||
-                   qtKind == QualifiedType::TYPE) {
-          typePtr = tupleType->toValueTuple(context);
-        }
-      }
-    }
-
-    ResolvedExpression& result = byPostorder.byAst(decl);
-    result.setType(QualifiedType(qtKind, typePtr, paramPtr));
+    resolveNamedDecl(decl, /* useType */ nullptr);
   }
 
+  exitScope(decl);
+}
+
+static void getVarLikeOrTupleTypeInit(const ASTNode* ast,
+                                      const ASTNode*& typeExpr,
+                                      const ASTNode*& initExpr) {
+  typeExpr = nullptr;
+  initExpr = nullptr;
+  if (auto v = ast->toVarLikeDecl()) {
+    if (auto t = v->typeExpression()) {
+      typeExpr = t;
+    }
+    if (auto e = v->initExpression()) {
+      initExpr = e;
+    }
+  } else if (auto td = ast->toTupleDecl()) {
+    if (auto t = td->typeExpression()) {
+      typeExpr = t;
+    }
+    if (auto e = td->initExpression()) {
+      initExpr = e;
+    }
+  }
+}
+
+bool Resolver::enter(const MultiDecl* decl) {
+  enterScope(decl);
+
+  // Establish the type or init expressions within
+  // by visiting those nodes
+  for (auto d : decl->decls()) {
+    enterScope(d);
+
+    const ASTNode* typeExpr = nullptr;
+    const ASTNode* initExpr = nullptr;
+    getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
+
+    if (typeExpr != nullptr) {
+      typeExpr->traverse(*this);
+    }
+    if (initExpr != nullptr) {
+      initExpr->traverse(*this);
+    }
+
+    exitScope(d);
+  }
+
+  return false;
+}
+void Resolver::exit(const MultiDecl* decl) {
+  // Visit the named decls in reverse order
+  // setting the type/init.
+  auto begin = decl->declOrComments().begin();
+  auto it = decl->declOrComments().end();
+  const Type* lastType = nullptr;
+  while (it != begin) {
+    --it;
+
+    auto d = it->toDecl();
+    const ASTNode* typeExpr = nullptr;
+    const ASTNode* initExpr = nullptr;
+    getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
+
+    // if it has neither init nor type, use the type from the
+    // variable to the right.
+    // e.g., in
+    //    var a, b: int
+    // a is of type int
+    const Type* t = nullptr;
+    if (typeExpr == nullptr && initExpr == nullptr) {
+      if (lastType == nullptr) {
+        // TODO: allow this when we allow split init
+        context->error(d, "invalid multiple declaration");
+        t = ErroneousType::get(context);
+      } else {
+        t = lastType;
+      }
+    }
+
+    // for the functions called in these conditionals:
+    //  * if t is nullptr, just resolve it like usual
+    //  * update the type of d in byPostorder
+    if (auto v = d->toVarLikeDecl()) {
+      resolveNamedDecl(v, t);
+    } else if (auto td = d->toTupleDecl()) {
+      resolveTupleDecl(td, t);
+    }
+
+    // update lastType
+    ResolvedExpression& result = byPostorder.byAst(d);
+    lastType = result.type().type();
+  }
+
+  exitScope(decl);
+}
+
+bool Resolver::enter(const TupleDecl* decl) {
+  enterScope(decl);
+
+  // Establish the type of the type expr / init expr within
+  if (auto t = decl->typeExpression()) {
+    t->traverse(*this);
+  }
+  if (auto e = decl->initExpression()) {
+    e->traverse(*this);
+  }
+  return false;
+}
+
+void Resolver::exit(const TupleDecl* decl) {
+  resolveTupleDecl(decl, /* useType */ nullptr);
   exitScope(decl);
 }
 
 bool Resolver::enter(const Call* call) {
   return true;
 }
+
 void Resolver::exit(const Call* call) {
   assert(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
+
+  // try to resolve it as a special call (e.g. Tuple assignment)
+  bool handled = resolveSpecialCall(call);
+  if (handled)
+    return;
 
   // TODO should we move this to a class method that takes in the
   // context and call?
@@ -724,11 +1134,60 @@ void Resolver::exit(const Call* call) {
       hasQuestionArg = true;
     } else {
       ResolvedExpression& r = byPostorder.byAst(actual);
+      QualifiedType actualType = r.type();
       UniqueString byName;
       if (fnCall && fnCall->isNamedActual(i)) {
         byName = fnCall->actualName(i);
       }
-      actuals.push_back(CallInfoActual(r.type(), byName));
+
+      bool handled = false;
+      if (auto op = actual->toOpCall()) {
+        if (op->op() == USTR("...")) {
+          if (op->numActuals() != 1) {
+            context->error(op, "tuple expansion can only accept one argument");
+            actualType = QualifiedType(QualifiedType::VAR,
+                                       ErroneousType::get(context));
+          } else {
+            ResolvedExpression& rr = byPostorder.byAst(op->actual(0));
+            actualType = rr.type();
+          }
+
+          // handle tuple expansion
+          if (!actualType.hasTypePtr() ||
+              actualType.type()->isUnknownType()) {
+            // leave the result unknown
+            actualType = QualifiedType(QualifiedType::VAR,
+                                       UnknownType::get(context));
+          } else if (actualType.type()->isErroneousType()) {
+            // let it stay erroneous type
+          } else if (!actualType.type()->isTupleType()) {
+            context->error(op, "tuple expansion applied to non-tuple");
+            actualType = QualifiedType(QualifiedType::VAR,
+                                       ErroneousType::get(context));
+          } else {
+            if (!byName.isEmpty()) {
+              context->error(op, "named argument passing cannot be used "
+                                 "with tuple expansion");
+            }
+
+            auto tupleType = actualType.type()->toTupleType();
+            int n = tupleType->numElements();
+            for (int i = 0; i < n; i++) {
+              tupleType->elementType(i);
+              // intentionally use the empty name (to ignore it if it was
+              // set and we issued an error above)
+              actuals.push_back(CallInfoActual(tupleType->elementType(i),
+                                               UniqueString()));
+            }
+            handled = true;
+          }
+        }
+      }
+
+      if (!handled) {
+        actuals.push_back(CallInfoActual(actualType, byName));
+      }
+
       i++;
     }
   }
@@ -748,23 +1207,11 @@ void Resolver::exit(const Call* call) {
   r.setPoiScope(c.poiInfo().poiScope());
   r.setType(c.exprType());
 
-  if (r.type().type() != nullptr) {
-    // assume it is OK even if mostSpecific is empty
-    // (e.g. it could be a primitive or other builtin operation)
-  } else {
 
-    if (c.mostSpecific().isEmpty()) {
-      // if the call resolution result is empty, we need to issue an error
-      if (c.mostSpecific().isAmbiguous()) {
-        // ambiguity between candidates
-        context->error(call, "Cannot resolve call: ambiguity");
-      } else {
-        // could not find a most specific candidate
-        context->error(call, "Cannot resolve call: no matching candidates");
-      }
-    } else {
-      context->error(call, "Cannot establish type for call expression");
-    }
+  if (r.type().type() == nullptr) {
+    // assume it is OK if a type was computed, even with no candidates
+    // (that happens e.g. for a primitive)
+    issueErrorForFailedCallResolution(call, ci, c);
     r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
   }
 

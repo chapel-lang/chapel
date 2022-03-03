@@ -149,6 +149,57 @@ struct Resolver {
   void resolveTypeQueriesFromFormalType(const uast::Formal* formal,
                                         types::QualifiedType formalType);
 
+  // helper for getTypeForDecl -- checks the Kinds are compatible
+  // if so, returns false.
+  // if not, issues error(s) and returns true.
+  bool checkForKindError(const uast::ASTNode* typeForErr,
+                         const uast::ASTNode* initForErr,
+                         types::QualifiedType::Kind declKind,
+                         types::QualifiedType declaredType,
+                         types::QualifiedType initExprType);
+
+  // Helper to figure out what type to use for a declaration
+  // that can have both a declared type and an init expression.
+  // If both are provided, checks that they are compatible.
+  // Returns the type to use for the declaration.
+  types::QualifiedType getTypeForDecl(const uast::ASTNode* declForErr,
+                                      const uast::ASTNode* typeForErr,
+                                      const uast::ASTNode* initForErr,
+                                      types::QualifiedType::Kind declKind,
+                                      types::QualifiedType declaredType,
+                                      types::QualifiedType initExprType);
+
+  // helper to resolve a NamedDecl
+  // useType will be used to set the type if it is not nullptr
+  void resolveNamedDecl(const uast::NamedDecl* decl,
+                        const types::Type* useType);
+
+  // issue ambiguity / no matching candidates / etc error
+  void issueErrorForFailedCallResolution(const uast::ASTNode* astForErr,
+                                         const CallInfo& ci,
+                                         const CallResolutionResult& c);
+
+  // e.g. (a, b) = mytuple
+  // checks that tuple size matches and that the elements are assignable
+  void resolveTupleUnpackAssign(const uast::Tuple* lhsTuple,
+                                types::QualifiedType lhsType,
+                                types::QualifiedType rhsType);
+
+  // helper for resolveTupleDecl
+  // e.g. var (a, b) = mytuple
+  // checks that tuple size matches and establishes types for a and b
+  void resolveTupleUnpackDecl(const uast::TupleDecl* lhsTuple,
+                              types::QualifiedType rhsType);
+
+  // e.g. var (a, b) = mytuple
+  void resolveTupleDecl(const uast::TupleDecl* td,
+                        const types::Type* useType);
+
+  // helper to resolve a special call
+  // returns 'true' if the call was a special call handled here, false
+  // if it is a regular call.
+  bool resolveSpecialCall(const uast::Call* call);
+
   /* What is the type for the symbol with a particular ID?
      localGenericUnknown, if true, indicates that a use of a
      field/formal with generic type (that is not substituted)
@@ -175,6 +226,13 @@ struct Resolver {
   bool enter(const uast::NamedDecl* decl);
   void exit(const uast::NamedDecl* decl);
 
+  bool enter(const uast::MultiDecl* decl);
+  void exit(const uast::MultiDecl* decl);
+
+  bool enter(const uast::TupleDecl* decl);
+  void exit(const uast::TupleDecl* decl);
+
+  // Note: Call cases here include Tuple
   bool enter(const uast::Call* call);
   void exit(const uast::Call* call);
 

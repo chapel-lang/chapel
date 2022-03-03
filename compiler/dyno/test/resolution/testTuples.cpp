@@ -24,6 +24,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
+#include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/Variable.h"
 
 // always check assertions in this test
@@ -103,6 +104,7 @@ static void test1() {
   assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
+  assert(tt->isStarTuple() == true);
   assert(tt->numElements() == 2);
   assert(tt->elementType(0) == tt->elementType(1));
   assert(tt->elementType(0).kind() == QualifiedType::VAR);
@@ -122,16 +124,18 @@ static void test2() {
 
   auto qt = parseTypeOfXInit(context,
                 R""""(
-                  type x = (int, int);
+                  type x = (int, real);
                 )"""");
 
   assert(qt.kind() == QualifiedType::TYPE);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
+  assert(tt->isStarTuple() == false);
   assert(tt->numElements() == 2);
-  assert(tt->elementType(0) == tt->elementType(1));
   assert(tt->elementType(0).kind() == QualifiedType::VAR);
   assert(tt->elementType(0).type()->isIntType());
+  assert(tt->elementType(1).kind() == QualifiedType::VAR);
+  assert(tt->elementType(1).type()->isRealType());
 }
 
 
@@ -292,6 +296,218 @@ static void test8() {
   assert(vt == tt);
 }
 
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto M = parseModule(context,
+                R""""(
+                  var (a, (b, c)) = (1, (2.0, 3));
+                )"""");
+
+  assert(M->numStmts() == 1);
+  const TupleDecl* td = M->stmt(0)->toTupleDecl();
+  assert(td);
+  auto a = td->decl(0)->toVariable();
+  assert(a);
+  auto innerTd = td->decl(1)->toTupleDecl();
+  assert(innerTd);
+  auto b = innerTd->decl(0)->toVariable();
+  assert(b);
+  auto c = innerTd->decl(1)->toVariable();
+  assert(c);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, M->id());
+  auto aQt = rr.byAst(a).type();
+  auto bQt = rr.byAst(b).type();
+  auto cQt = rr.byAst(c).type();
+  assert(aQt.kind() == QualifiedType::VAR);
+  assert(aQt.type() == IntType::get(context, 0));
+  assert(bQt.kind() == QualifiedType::VAR);
+  assert(bQt.type() == RealType::get(context, 0));
+  assert(cQt.kind() == QualifiedType::VAR);
+  assert(cQt.type() == IntType::get(context, 0));
+}
+
+static void test10() {
+  printf("test10\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto M = parseModule(context,
+                R""""(
+                  const (a, (b, c)) = (1, (2.0, 3));
+                )"""");
+
+  assert(M->numStmts() == 1);
+  const TupleDecl* td = M->stmt(0)->toTupleDecl();
+  assert(td);
+  auto a = td->decl(0)->toVariable();
+  assert(a);
+  auto innerTd = td->decl(1)->toTupleDecl();
+  assert(innerTd);
+  auto b = innerTd->decl(0)->toVariable();
+  assert(b);
+  auto c = innerTd->decl(1)->toVariable();
+  assert(c);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, M->id());
+  auto aQt = rr.byAst(a).type();
+  auto bQt = rr.byAst(b).type();
+  auto cQt = rr.byAst(c).type();
+  assert(aQt.kind() == QualifiedType::CONST_VAR);
+  assert(aQt.type() == IntType::get(context, 0));
+  assert(bQt.kind() == QualifiedType::CONST_VAR);
+  assert(bQt.type() == RealType::get(context, 0));
+  assert(cQt.kind() == QualifiedType::CONST_VAR);
+  assert(cQt.type() == IntType::get(context, 0));
+}
+
+static void test11() {
+  printf("test11\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  proc f(in arg: (real, real)) { return arg; }
+                  var x = f( (1,2) );
+                )"""");
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+
+  assert(tt->numElements() == 2);
+  assert(tt->isStarTuple());
+  assert(tt->elementType(0) == tt->elementType(1));
+  assert(tt->elementType(0).kind() == QualifiedType::VAR);
+  assert(tt->elementType(0).type()->isRealType());
+}
+
+static void test12() {
+  printf("test12\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  record R { }
+                  proc f(in arg: (R, R)) { return arg; }
+                  var r: R;
+                  var x = f( (r, r) );
+                )"""");
+
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+
+  assert(tt->numElements() == 2);
+  assert(tt->isStarTuple());
+  assert(tt->elementType(0) == tt->elementType(1));
+  assert(tt->elementType(0).kind() == QualifiedType::VAR);
+  assert(tt->elementType(0).type()->isRecordType());
+
+  auto rt = tt->toReferentialTuple(context);
+  assert(rt != tt);
+  auto vt = tt->toValueTuple(context);
+  assert(vt == tt);
+}
+
+static void test13() {
+  printf("test13\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  record R { param p; }
+                  proc f(in arg: (R, R)) { return arg; }
+                  var r: R(1);
+                  var x = f( (r, r) );
+                )"""");
+
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+
+  assert(tt->numElements() == 2);
+  assert(tt->isStarTuple());
+  assert(tt->elementType(0) == tt->elementType(1));
+  assert(tt->elementType(0).kind() == QualifiedType::VAR);
+  assert(tt->elementType(0).type()->isRecordType());
+  auto rec = tt->elementType(0).type()->toRecordType();
+  assert(rec->instantiatedFrom() != nullptr);
+
+  auto rt = tt->toReferentialTuple(context);
+  assert(rt != tt);
+  auto vt = tt->toValueTuple(context);
+  assert(vt == tt);
+}
+
+static void test14() {
+  printf("test14\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  proc f(x: int, (y, z): (real, int)) { return (x, y, z); }
+                  var x = f( 1, (2.0, 3) );
+                )"""");
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+
+  assert(tt->numElements() == 3);
+  assert(!tt->isStarTuple());
+  assert(tt->elementType(0).type()->isIntType());
+  assert(tt->elementType(1).type()->isRealType());
+  assert(tt->elementType(2).type()->isIntType());
+}
+
+static void test15() {
+  printf("test15\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfXInit(context,
+                R""""(
+                  var tup = (1, 2);
+                  var x = ( (... tup), 3.0);
+                )"""");
+
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+
+  assert(tt->numElements() == 3);
+  assert(!tt->isStarTuple());
+  assert(tt->elementType(0).type()->isIntType());
+  assert(tt->elementType(1).type()->isIntType());
+  assert(tt->elementType(2).type()->isRealType());
+}
+
+static void test16() {
+  printf("test16\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = parseTypeOfX(context,
+                R""""(
+                  proc helper(a: int, b: real) { return b; }
+                  var tup = (1, 2.0);
+                  var x = helper( (... tup) );
+                )"""");
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isRealType());
+}
+
 int main() {
   test1();
   test2();
@@ -301,6 +517,14 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
+  test10();
+  test11();
+  test12();
+  test13();
+  test14();
+  test15();
+  test16();
 
   return 0;
 }
