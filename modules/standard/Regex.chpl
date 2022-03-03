@@ -529,6 +529,8 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
       if !m then do_something_if_not_matched();
 
  */
+
+/*
 record regexMatch {
   /* true if the regular expression search matched successfully */
   var matched:bool;
@@ -547,6 +549,39 @@ record regexMatch {
     this.matched = matched;
     this.byteOffset = byteOffset;
     this.numBytes = numBytes;
+  }
+}
+*/
+
+record regexMatch {
+  /* true if the regular expression search matched successfully */
+  var matched:bool;
+  /* 0-based offset into the string or channel that matched; -1 if matched=false */
+  var byteOffset:byteIndex;
+  /* the length of the match. 0 if matched==false */
+  var numBytes:int;
+  //TODO: remove when removing offset and size
+  proc init(){
+
+  }
+
+  pragma "no doc"
+  proc init(matched: bool, byteOffset: byteIndex, numBytes: int){
+    this.matched = matched;
+    this.byteOffset = byteOffset;
+    this.numBytes = numBytes;
+  }
+
+  pragma "no doc"
+  deprecated "field offset is deprecated, use byteOffset instead" 
+  proc offset:byteIndex {
+    return this.byteOffset;
+  }
+
+  pragma "no doc"
+  deprecated "field size is deprecated, use numBytes instead"
+  proc size:int {
+    return this.numBytes;
   }
 }
 
