@@ -2325,7 +2325,17 @@ struct Converter {
       }
     }
 
-    Expr* initExpr = convertExprOrNull(node->initExpression());
+    Expr* initExpr = nullptr;
+
+    if (const uast::Expression* ie = node->initExpression()) {
+      if (node->kind() == uast::Variable::TYPE) {
+        if (const uast::BracketLoop* bkt = ie->toBracketLoop()) {
+          initExpr = convertArrayType(bkt);
+        }
+      } else {
+        initExpr = toExpr(convertAST(ie));
+      }
+    }
 
     auto ret = new DefExpr(varSym, initExpr, typeExpr);
 
