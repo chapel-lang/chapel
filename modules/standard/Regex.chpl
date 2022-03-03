@@ -412,6 +412,7 @@ class BadRegexError : Error {
 }
 
 // Until Issue 17275 is fixed:
+deprecated "Regex: 'BadRegexpError' is deprecated; please use 'BadRegexError' instead"
 type BadRegexpError = owned BadRegexError;
 
 // When Issue 17275 is fixed:
@@ -1089,13 +1090,6 @@ record regex {
                                   this._regex);
       }
   }
-}
-
-pragma "no doc"
-proc regexp type
-{
-   compilerWarning("Regex: 'regexp' is deprecated; please use 'regex' instead");
-   return regex;
 }
 
 pragma "no doc"
