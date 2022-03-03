@@ -60,7 +60,7 @@ static const char* kindToString(IntentList kind) {
   switch (kind) {
     case IntentList::CONST_INTENT: return "const";
     case IntentList::VAR: return "var";
-    case IntentList::CONST_VAR: return "const var";
+    case IntentList::CONST_VAR: return "const";
     case IntentList::CONST_REF: return "const ref";
     case IntentList::REF: return "ref";
     case IntentList::IN: return "in";
