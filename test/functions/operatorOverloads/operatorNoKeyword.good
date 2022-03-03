@@ -1,0 +1,2 @@
+operatorNoKeyword.chpl:4: error: Operators cannot be declared without the operator keyword
+operatorNoKeyword.chpl:8: error: Operators cannot be declared without the operator keyword

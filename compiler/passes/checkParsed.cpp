@@ -453,13 +453,12 @@ checkFunction(FnSymbol* fn) {
 }
 
 static void checkOperator(FnSymbol* fn) {
-  if (!fn->hasFlag(FLAG_OPERATOR) && !fn->hasFlag(FLAG_METHOD)) {
+  if (!fn->hasFlag(FLAG_OPERATOR)) {
     if (isAstrOpName(fn->name)) {
-      USR_WARN(fn,
-               "Operators declared without the operator keyword are deprecated");
-      fn->addFlag(FLAG_OPERATOR);
+      USR_FATAL_CONT(fn,
+                     "Operators cannot be declared without the operator keyword");
     }
-  } else if (fn->hasFlag(FLAG_OPERATOR)) {
+  } else {
     if (!isAstrOpName(fn->name)) {
       USR_FATAL_CONT(fn, "'%s' is not a legal operator name", fn->name);
     }
