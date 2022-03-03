@@ -2940,9 +2940,13 @@ void chpl_comm_rollcall(void) {
 
   //
   // Only node 0 in multi-node programs does liveness checks, and only
-  // after we're sure all the other nodes' AM handlers are running.
+  // after we're sure all the other nodes' AM handlers are running. By default
+  // we only do liveness checks with the rxm utility provider to turn hangs
+  // into hard failures.
   //
-  if (chpl_numNodes > 1 && chpl_nodeID == 0) {
+  bool envLivenessChecks = chpl_env_rt_get_bool("COMM_OFI_LIVENESS_CHECKS",
+                                                providerInUse(provType_rxm));
+  if (envLivenessChecks && chpl_numNodes > 1 && chpl_nodeID == 0) {
     amDoLivenessChecks = true;
   }
 }
