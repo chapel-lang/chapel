@@ -1,15 +1,15 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Lydia Duncan, Albert Sidelnik, and Brad Chamberlain
-   derived from the Chapel version by Lydia Duncan et al. and the
-   Julia version by TODO
+   contributed by Brad Chamberlain
+   derived from the Chapel version by Lydia Duncan et al.
+   and the Julia version by Adam Beckmeyer and Vincent Yu
 */
 
 config const n = 500;           // the size of A (n x n), u and v (n-vectors)
 
 proc main() {
-  var tmp, u, v: [0..#n] real;
+  var tmp, u, v: [0..<n] real;
 
   u = 1.0;
 
@@ -49,5 +49,5 @@ proc multiplyAtv(v: [?Dv], Atv: [?DAtv]) {
 // Compute element i,j of the conceptually infinite matrix A
 //
 inline proc A(i: real, j: real) {
-  return 1.0 / ((((i+j) * (i+j+1)) / 2) + i + 1);
+  return 1.0 / ((((i+j) * (i+j+1)) * 0.5) + i + 1);
 }
