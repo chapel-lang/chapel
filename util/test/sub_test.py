@@ -278,7 +278,7 @@ def expandvars_chpl(path):
 
 # Wait up to timeout seconds for files to exist. Useful on systems where file
 # IO may only complete after the launcher returns
-def WaitForFiles(files, timeout=10):
+def WaitForFiles(files, timeout=int(os.getenv('CHPL_TEST_WAIT_FOR_FILES_TIMEOUT', '10'))):
     waited = 0
     for f in files:
         while not os.path.exists(f) and waited < timeout:
