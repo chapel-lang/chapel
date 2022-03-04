@@ -186,6 +186,10 @@ struct Converter {
       return new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol);
     } else if (name == USTR("complex")) {
       return new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol);
+    } else if (name == USTR("align")) {
+      return new UnresolvedSymExpr("chpl_align");
+    } else if (name == USTR("by")) {
+      return new UnresolvedSymExpr("chpl_by");
     }
 
     return nullptr;
