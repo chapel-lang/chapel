@@ -8,7 +8,7 @@ config const numTasks = here.maxTaskPar;
 config const printTime = true;
 config const printDiags = false;
 
-enum OP {GET,PUT,FAMO,NFAMO,CASAMO,GETAMO,PUTAMO,AM};
+enum OP {GET,PUT,FAMO,NFAMO,CASAMO,GETAMO,PUTAMO,FASTAM,AM};
 
 var t: Timer;
 proc startDiags() {
@@ -28,6 +28,11 @@ proc stopDiags(op: OP, iters) {
   }
 }
 
+inline proc thwartFastOn() {
+  extern proc sizeof(type x): int;
+  return sizeof(int);
+}
+
 // Pad to avoid any cacheline contention
 record padded {
   type T;
@@ -38,7 +43,7 @@ record padded {
 // Create arrays and warmup / init RAD cache
 var A = newBlockArr(1..numTasks*2, padded(atomic int));
 var B = newBlockArr(1..numTasks*2, padded(int));
-on Locales[numLocales-1] {
+for loc in Locales do on loc {
   coforall tid in 1..numTasks*2 {
     A[tid].val.write(0);
     B[tid].val = 0;
@@ -47,23 +52,28 @@ on Locales[numLocales-1] {
 
 // Test different OPS
 proc test(op: OP) {
+  const iters = if op == OP.AM || op == OP.FASTAM then numIters/10 else numIters;
   startDiags();
-  const iters = if op == OP.AM then numIters/10 else numIters;
-  on Locales[numLocales-1] {
-    coforall tid in 1..numTasks {
-      select op {
-        // RMA
-        when OP.GET    do for i in 0..<iters do B[tid+numTasks].val = B[tid].val;
-        when OP.PUT    do for i in 0..<iters do B[tid].val = B[tid+numTasks].val;
-        // AMO
-        when OP.FAMO   do for i in 0..<iters do A[tid].val.fetchAdd(1);
-        when OP.NFAMO  do for i in 0..<iters do A[tid].val.add(1);
-        when OP.CASAMO do for i in 0..<iters do A[tid].val.compareAndSwap(i, i+1);
-        when OP.GETAMO do for i in 0..<iters do B[tid+numTasks].val = A[tid].val.read();
-        when OP.PUTAMO do for i in 0..<iters do A[tid].val.write(B[tid+numTasks].val);
-        // AM
-        when OP.AM     do for i in 0..<iters do on Locales[0] do B[tid].val = 0;
-      }
+  coforall tid in 1..numTasks {
+    ref bLoc = B.localAccess[tid].val;
+    ref bRem = B[tid+numTasks].val;
+    ref aLoc = A.localAccess[tid].val;
+    ref aRem = A[tid+numTasks].val;
+    ref lRem = Locales[numLocales-1];
+    select op {
+
+      // RMA
+      when OP.GET    do for i in 0..<iters do bLoc = bRem;
+      when OP.PUT    do for i in 0..<iters do bRem = bLoc;
+      // AMO
+      when OP.FAMO   do for i in 0..<iters do aRem.fetchAdd(1);
+      when OP.NFAMO  do for i in 0..<iters do aRem.add(1);
+      when OP.CASAMO do for i in 0..<iters do aRem.compareAndSwap(i, i+1);
+      when OP.GETAMO do for i in 0..<iters do bLoc = aRem.read();
+      when OP.PUTAMO do for i in 0..<iters do aRem.write(bLoc);
+      // AM
+      when OP.FASTAM do for i in 0..<iters do on lRem do B.localAccess[tid].val = 0;
+      when OP.AM     do for i in 0..<iters do on lRem do B.localAccess[tid].val = thwartFastOn();
     }
   }
   stopDiags(op, iters);
