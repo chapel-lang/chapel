@@ -532,12 +532,11 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
       offset field is deprecated, use byte offset instead
     .. warning::
       size field is deprecated, use numBytes instead
- 
  */
 record regexMatch {
   /* true if the regular expression search matched successfully */
   var matched:bool;
-  /* 0-based offset into the string or channel that matched; -1 if matched=false */ 
+  /* 0-based offset into the string or channel that matched; -1 if matched=false */
   var byteOffset:byteIndex;
   /* the length of the match. 0 if matched==false */
   var numBytes:int;
@@ -556,7 +555,7 @@ record regexMatch {
   }
 
   pragma "no doc"
-  deprecated "field offset is deprecated, use byteOffset instead" 
+  deprecated "field offset is deprecated, use byteOffset instead"
   proc offset:byteIndex {
     return this.byteOffset;
   }
