@@ -208,6 +208,28 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const Scope* inScope,
                                           const PoiScope* inPoiScope);
 
+/**
+  Given a type and a UniqueString representing the name of a method,
+  determine if the type needs a method with such a name to be
+  generated for it.
+*/
+bool needCompilerGeneratedMethodForType(Context* context,
+                                        const types::Type* type,
+                                        UniqueString name);
+
+/**
+  Given a type and a UniqueString representing the name of a method,
+  determine if the type needs a method with such a name to be
+  generated for it, and if so, generates and returns a
+  TypedFnSignature representing the generated method.
+
+  If no method was generated, returns nullptr.
+*/
+const owned<TypedFnSignature>&
+getCompilerGeneratedMethodForType(Context* context,
+                                  const types::Type* type,
+                                  UniqueString name);
+
 
 } // end namespace resolution
 } // end namespace chpl

@@ -656,6 +656,7 @@ void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
       actuals.push_back(CallInfoActual(rhsEltType, UniqueString()));
       auto ci = CallInfo (/* name */ USTR("="),
                           /* calledType */ QualifiedType(),
+                          /* isMethod */ false,
                           /* hasQuestionArg */ false,
                           actuals);
 
@@ -1092,36 +1093,15 @@ bool Resolver::enter(const Call* call) {
   return true;
 }
 
-void Resolver::exit(const Call* call) {
-  assert(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
-
-  // try to resolve it as a special call (e.g. Tuple assignment)
-  bool handled = resolveSpecialCall(call);
-  if (handled)
-    return;
-
-  // TODO should we move this to a class method that takes in the
-  // context and call?
-  // Generate a CallInfo for the call
-  UniqueString name;
-
-  if (auto op = call->toOpCall()) {
-    name = op->op();
-  } else if (auto called = call->calledExpression()) {
-    if (auto calledIdent = called->toIdentifier()) {
-      name = calledIdent->name();
-    } else {
-      assert(false && "TODO: method calls with Dot called");
-    }
-  }
-
+void Resolver::prepareCallInfoActuals(const Call* call,
+                                      std::vector<CallInfoActual>& actuals,
+                                      bool& hasQuestionArg) {
   const FnCall* fnCall = call->toFnCall();
-  bool hasQuestionArg = false;
-  std::vector<CallInfoActual> actuals;
 
-  int i = 0;
-  for (auto actual : call->actuals()) {
+  // Prepare the actuals of the call.
+  for (int i = 0; i < call->numActuals(); i++) {
+    auto actual = call->actual(i);
+
     bool isQuestionMark = false;
     if (auto id = actual->toIdentifier())
       if (id->name() == USTR("?"))
@@ -1187,18 +1167,81 @@ void Resolver::exit(const Call* call) {
       if (!handled) {
         actuals.push_back(CallInfoActual(actualType, byName));
       }
+    }
+  }
+}
 
-      i++;
+CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
+
+  // TODO should we move this to a class method that takes in the
+  // context and call?
+  // Pieces of the CallInfo we need to prepare.
+  UniqueString name;
+  QualifiedType calledType;
+  bool isMethod = false;
+  bool hasQuestionArg = false;
+  std::vector<CallInfoActual> actuals;
+
+  // Get the name of the called expression.
+  if (auto op = call->toOpCall()) {
+    name = op->op();
+  } else if (auto called = call->calledExpression()) {
+    if (auto calledIdent = called->toIdentifier()) {
+      name = calledIdent->name();
+    } else if (auto calledDot = called->toDot()) {
+      name = calledDot->field();
+    } else {
+      assert(false && "Unexpected called expression");
     }
   }
 
-  QualifiedType calledType;
+  // Check for method call, maybe construct a receiver.
+  if (!call->isOpCall()) {
+    if (auto called = call->calledExpression()) {
+      if (auto calledDot = called->toDot()) {
+
+        const Expression* receiver = calledDot->receiver();
+        ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
+        const QualifiedType& qtReceiver = reReceiver.type();
+
+        // Check to make sure the receiver is a value or type.
+        if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
+            qtReceiver.kind() != QualifiedType::FUNCTION &&
+            qtReceiver.kind() != QualifiedType::MODULE) {
+
+          auto receiverInfo = CallInfoActual(qtReceiver, USTR("this"));
+          actuals.push_back(std::move(receiverInfo));
+          isMethod = true;
+        }
+      }
+    }
+  }
+
+  // Get the type of the called expression.
   if (auto calledExpr = call->calledExpression()) {
     ResolvedExpression& r = byPostorder.byAst(calledExpr);
     calledType = r.type();
   }
 
-  CallInfo ci(name, calledType, hasQuestionArg, actuals);
+  // Prepare the remaining actuals.
+  prepareCallInfoActuals(call, actuals, hasQuestionArg);
+
+  auto ret = CallInfo(name, calledType, isMethod, hasQuestionArg, actuals);
+
+  return ret;
+}
+
+void Resolver::exit(const Call* call) {
+  assert(scopeStack.size() > 0);
+  const Scope* scope = scopeStack.back();
+
+  // try to resolve it as a special call (e.g. Tuple assignment)
+  if (resolveSpecialCall(call)) {
+    return;
+  }
+
+  auto ci = prepareCallInfoNormalCall(call);
+
   CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
 
   // save the most specific candidates in the resolution result for the id
@@ -1237,6 +1280,97 @@ void Resolver::exit(const Dot* dot) {
   }
 
   // TODO: resolve field accessors / parenless methods
+}
+
+bool Resolver::enter(const uast::New* nw) {
+  return true;
+}
+
+void Resolver::resolveNewForClass(const uast::New* node,
+                                  const types::ClassType* classType) {
+  assert(false && "Not handled yet!");
+
+  /*
+  const auto decorator = classType->decorator();
+  const bool isUnknownManagement = decorator->isUnknownManagement();
+  const bool isUnknownNilability = decorator->isUnknownNilability();
+  // We have duplicate decorators.
+  if (nw->management() != New::DEFAULT_MANAGEMENT &&
+      !isUnknownManagement) {
+  }
+  */
+
+  //
+  // TODO: Class may or may not be decorated, have to inspect decorator.
+  // TODO: All class types go through here.
+  // TODO: Make a BasicClassType then decorate it to get a ClassType.
+  // TODO: Need to set POI?
+  // TODO: Do I need to make a TypeConstructor call?
+  //
+
+  return;
+}
+
+void Resolver::resolveNewForRecord(const uast::New* node,
+                                   const RecordType* recordType) {
+  ResolvedExpression& re = byPostorder.byAst(node);
+
+  if (node->management() != New::DEFAULT_MANAGEMENT) {
+    auto managementStr = New::managementToString(node->management());
+    auto recordNameStr = recordType->name().c_str();
+    context->error(node, "Cannot use new %s with record %s",
+                         managementStr,
+                         recordNameStr);
+  } else {
+
+    auto qt = QualifiedType(QualifiedType::VAR, recordType);
+    re.setType(qt);
+  }
+}
+
+void Resolver::exit(const uast::New* node) {
+
+  // Fetch the pieces of the type expression.
+  const Expression* typeExpr = node->typeExpression();
+  ResolvedExpression& reTypeExpr = byPostorder.byAst(typeExpr);
+  auto& qtTypeExpr = reTypeExpr.type();
+
+  // TODO: What about if the thing doesn't make sense/is 'UNKNOWN'?
+  if (qtTypeExpr.kind() != QualifiedType::TYPE) {
+    context->error(node, "'new' must be followed by a type expression");
+  }
+
+  // TODO: Set ErroneousType here.
+  if (qtTypeExpr.type()->isUnknownType()) {
+    assert(false && "Not handled yet!");
+  }
+
+  if (auto basicClassType = qtTypeExpr.type()->toBasicClassType()) {
+    assert(false && "Expected fully decorated class type");
+
+  } else if (auto classType = qtTypeExpr.type()->toClassType()) {
+    resolveNewForClass(node, classType);
+
+  } else if (auto recordType = qtTypeExpr.type()->toRecordType()) {
+    resolveNewForRecord(node, recordType);
+
+  } else {
+
+    // TODO: Need to also print the type name.
+    if (node->management() != New::DEFAULT_MANAGEMENT) {
+      auto managementStr = New::managementToString(node->management());
+      context->error(node, "cannot use management %s on non-class",
+                           managementStr);
+    }
+
+    // TODO: Specialize this error to more types (e.g. enum).
+    if (auto primType = qtTypeExpr.type()->toPrimitiveType()) {
+      context->error(node, "invalid use of 'new' on primitive %s",
+                           primType->c_str());
+    } else {
+      context->error(node, "invalid use of 'new'");
+    }
+  }
 }
 
 bool Resolver::enter(const ASTNode* ast) {

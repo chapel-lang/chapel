@@ -52,6 +52,8 @@ class New : public Expression {
     UNMANAGED
   };
 
+  static const char* managementToString(Management management);
+
  private:
   New(ASTList children, New::Management management)
     : Expression(asttags::New, std::move(children)),

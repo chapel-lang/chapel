@@ -208,6 +208,23 @@ struct Resolver {
    */
   types::QualifiedType typeForId(const ID& id, bool localGenericToUnknown);
 
+  // prepare the CallInfoActuals by inspecting the actuals of a call
+  // includes special handling for operators and tuple literals
+  void prepareCallInfoActuals(const uast::Call* call,
+                              std::vector<CallInfoActual>& actuals,
+                              bool& hasQuestionArg);
+
+  // prepare a CallInfo by inspecting the called expression and actuals
+  CallInfo prepareCallInfoNormalCall(const uast::Call* call);
+
+  // resolve 'new R' for a given record type 'R'
+  void resolveNewForRecord(const uast::New* node,
+                           const types::RecordType* recordType);
+
+  // resolve 'new C' for a given class type 'C', including management
+  void resolveNewForClass(const uast::New* node,
+                          const types::ClassType* classType);
+
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */
   void enterScope(const uast::ASTNode* ast);
@@ -238,6 +255,9 @@ struct Resolver {
 
   bool enter(const uast::Dot* dot);
   void exit(const uast::Dot* dot);
+
+  bool enter(const uast::New* node);
+  void exit(const uast::New* node);
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::ASTNode* ast);

@@ -291,11 +291,20 @@ class CallInfo {
 
   /** Construct a CallInfo that contains QualifiedTypes for actuals */
   CallInfo(UniqueString name, types::QualifiedType calledType,
+           bool isMethod,
            bool hasQuestionArg,
            std::vector<CallInfoActual> actuals)
       : name_(name), calledType_(calledType),
+        isMethod_(isMethod),
         hasQuestionArg_(hasQuestionArg),
-        actuals_(std::move(actuals)) {}
+        actuals_(std::move(actuals)) {
+    #ifndef NDEBUG
+    if (isMethod) {
+      assert(numActuals() >= 1);
+      assert(this->actuals(0).byName() == "this");
+    }
+    #endif
+  }
 
   /** Construct a CallInfo with unknown types for the actuals
       that can be used for FormalActualMap but not much else.  */

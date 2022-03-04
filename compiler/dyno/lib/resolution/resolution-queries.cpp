@@ -1714,36 +1714,65 @@ filterCandidatesInstantiating(Context* context,
   }
 }
 
-// call can be nullptr; in that event, calledName must be provided
+// call can be nullptr; in that event, the CallInfo will be consulted
 // and it will search for something with name calledName.
 static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const Call* call,
-                 UniqueString calledName,
+                 const CallInfo& ci,
                  std::unordered_set<const Scope*>& visited) {
-
   std::vector<BorrowedIdsWithName> ret;
 
-  LookupConfig config = LOOKUP_DECLS |
-                        LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_PARENTS;
-
+  const bool doLookupByName = (call == nullptr || call->isOpCall());
+  const LookupConfig config = LOOKUP_DECLS |
+                              LOOKUP_IMPORT_AND_USE |
+                              LOOKUP_PARENTS;
   #ifndef NDEBUG
   if (call != nullptr) {
     if (auto op = call->toOpCall()) {
-      assert(op->op() == calledName);
+      assert(op->op() == ci.name());
     }
   }
   #endif
 
-  if (call == nullptr || call->isOpCall()) {
-    auto vec = lookupNameInScopeWithSet(context, scope, calledName, config,
-                                        visited);
-    ret.swap(vec);
+  // For method calls, perform an initial lookup starting at the scope for
+  // the definition of the receiver type, if it can be found.
+  if (ci.isMethod()) {
+    assert(ci.numActuals() >= 1);
+
+    auto& receiverQualType = ci.actuals(0).type();
+    const Scope* scopeForReceiverType = nullptr;
+
+    // Try to fetch the scope of the receiver type's definition.
+    if (auto receiverType = receiverQualType.type()) {
+      if (auto compType = receiverType->getCompositeType()) {
+        scopeForReceiverType = scopeForId(context, compType->id());
+      }
+    }
+
+    // Lookup by name, as lookup for dot-exprs does not handle method calls.
+    if (scopeForReceiverType && !visited.count(scopeForReceiverType)) {
+      auto vec = lookupNameInScopeWithSet(context, scopeForReceiverType,
+                                          ci.name(),
+                                          config,
+                                          visited);
+      ret.swap(vec);
+    }
+  }
+
+  std::vector<BorrowedIdsWithName> vec;
+  if (doLookupByName) {
+    vec = lookupNameInScopeWithSet(context, scope, ci.name(), config,
+                                   visited);
   } else if (const Expression* called = call->calledExpression()) {
-    auto vec = lookupInScopeWithSet(context, scope, called, config,
-                                    visited);
+    vec = lookupInScopeWithSet(context, scope, called, config,
+                               visited);
+  }
+
+  if (ret.size() > 0) {
+    ret.insert(ret.end(), vec.begin(), vec.end());
+  } else {
     ret.swap(vec);
   }
 
@@ -2020,7 +2049,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
 
   {
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, inScope, call, ci.name(), visited);
+    auto v = lookupCalledExpr(context, inScope, call, ci, visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -2047,7 +2076,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
     }
 
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, curPoi->inScope(), call, ci.name(),
+    auto v = lookupCalledExpr(context, curPoi->inScope(), call, ci,
                               visited);
 
     // filter without instantiating yet
@@ -2300,6 +2329,53 @@ CallResolutionResult resolveGeneratedCall(Context* context,
   }
   // otherwise do regular call resolution
   return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope);
+}
+
+static bool
+isNameOfCompilerGeneratedMethod(UniqueString name) {
+  // TODO: Update me over time.
+  if (name == USTR("init")       ||
+      name == USTR("deinit")     ||
+      name == USTR("init=")) {
+    return true;
+  }
+
+  return false;
+}
+
+static bool
+areOverloadsPresentInDefiningScope(Context* context, const Type* type,
+                                   UniqueString name) {
+  assert(false && "Not implemented yet!");
+  return false;
+}
+
+bool
+needCompilerGeneratedMethodForType(Context* context, const Type* type,
+                                   UniqueString name) {
+  if (isNameOfCompilerGeneratedMethod(name)) {
+    if (!areOverloadsPresentInDefiningScope(context, type, name)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+const owned<TypedFnSignature>&
+getCompilerGeneratedMethodForType(Context* context, const Type* type,
+                                  UniqueString name) {
+  QUERY_BEGIN(getCompilerGeneratedMethodForType, context, type, name);
+
+  TypedFnSignature* tfs = nullptr;
+
+  if (needCompilerGeneratedMethodForType(context, type, name)) {
+    assert(false && "Not implemented yet!");
+  }
+
+  auto ret = toOwned(tfs);
+
+  return QUERY_END(ret);
 }
 
 
