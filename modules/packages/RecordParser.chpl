@@ -241,7 +241,7 @@ class RecordReader {
     // This will only loop through  at most one time before returning
     // FEATURE REQUEST: Make this so we don't need a for loop here
     for m in myReader.matches(matchRegex, num_fields, 1) {
-      if (((m(0).offset) >= offst+len) && len != -1) { // rec.start >= start + len
+      if (((m(0).byteOffset) >= offst+len) && len != -1) { // rec.start >= start + len
         // Then break and dont return any record
         return (rec, false);
       }

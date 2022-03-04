@@ -7572,7 +7572,7 @@ iter channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
           error = qio_channel_mark(false, _channel_internal);
           if !error {
             var cur = qio_channel_offset_unlocked(_channel_internal);
-            var target = m.offset:int;
+            var target = m.byteOffset:int;
             error = qio_channel_advance(false, _channel_internal, target - cur);
           }
         } else {
