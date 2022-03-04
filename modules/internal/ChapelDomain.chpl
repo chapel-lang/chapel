@@ -283,6 +283,14 @@ module ChapelDomain {
   deprecated "isSparseDom is deprecated - please use isSparse method on domain"
   proc isSparseDom(d: domain) param return d.isSparse();
 
+  private proc errorIfNotRectangular(dom: domain, param op, param arrays="") {
+    if dom.isAssociative() || dom.isSparse() then
+      compilerError("cannot apply '", op,
+                    "' to associative and sparse domains", arrays);
+    if ! dom.isRectangular() then
+      compilerError("cannot apply '", op, "' to '", dom.type:string, "'");
+  }
+
   // Helper function used to ensure a returned array matches the declared
   // return type when the declared return type specifies a particular domain
   // but not the element type.
@@ -314,8 +322,7 @@ module ChapelDomain {
   }
 
   operator #(dom: domain, counts: integral) {
-    if ! dom.isRectangular() then compilerError(
-      "cannot apply '#' to associative and sparse domains and arrays");
+    errorIfNotRectangular(dom, "#", " and arrays");
     if dom.rank != 1 then compilerError(
       "cannot apply '#' with an integer to multi-dimensional domains and arrays");
 
@@ -323,8 +330,7 @@ module ChapelDomain {
   }
 
   operator #(dom: domain, counts: _tuple) {
-    if ! dom.isRectangular() then compilerError(
-      "cannot apply '#' to associative and sparse domains and arrays");
+    errorIfNotRectangular(dom, "#", " and arrays");
     if (counts.size != dom.rank) then compilerError(
       "rank mismatch in '#'");
     return chpl_countDomHelp(dom, counts);
@@ -726,8 +732,7 @@ module ChapelDomain {
 
   // This is the definition of the 'by' operator for domains.
   operator by(a: domain, b) {
-    if ! a.isRectangular() then compilerError(
-      "cannot apply 'by' to associative and sparse domains");
+    errorIfNotRectangular(a, "by");
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
                       true);
@@ -741,8 +746,7 @@ module ChapelDomain {
   // It produces a new domain with the specified alignment.
   // See also: 'align' operator on ranges.
   operator align(a: domain, b) {
-    if ! a.isRectangular() then compilerError(
-      "cannot apply 'align' to associative and sparse domains");
+    errorIfNotRectangular(a, "align");
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
                       a.stridable);
