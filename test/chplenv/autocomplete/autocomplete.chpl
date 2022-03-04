@@ -13,8 +13,8 @@ var home = CHPL_HOME;
 var genScript = home + "/util/devel/gen-chpl-bash-completion";
 var completeScript = home + "/util/chpl-completion.bash";
 
-var diff = spawn(["diff", "-", completeScript], stdin=PIPE);
-var runScript = spawn([genScript], stdout=PIPE);
+var diff = spawn(["diff", "-", completeScript], stdin=pipeStyle.pipe);
+var runScript = spawn([genScript], stdout=pipeStyle.pipe);
 
 for line in runScript.stdout.lines() {
   diff.stdin.write(line);

@@ -52,9 +52,9 @@ proc main(args:[] string)
     if verbose then
       writeln("Running sha1sum ", path);
     // The spawn call creates a subprocess. By specifying
-    // stdout=PIPE, we are requesting that the output of the subprocess
-    // be sent to a pipe that we can read from.
-    var sub = spawn(["sha1sum", path], stdout=PIPE);
+    // stdout=pipeStyle.pipe, we are requesting that the output of the
+    // subprocess be sent to a pipe that we can read from.
+    var sub = spawn(["sha1sum", path], stdout=pipeStyle.pipe);
     // Read the hash value from the output of sha1sum.
     // Note that sha1sum output looks like this:
     // d556d22d3e7b3ae55108442b36b5833523c923b7  dedup-distributed-strings.chpl

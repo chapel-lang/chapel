@@ -11,7 +11,7 @@ var server:subprocess(kind=iokind.dynamic, locking=true);
 proc startServer() {
   // Run a curl command to check if the server is already up
   var check = spawn(["curl", "http://" + host + ":" + port + "/test.txt"],
-                     stdin=CLOSE, stdout=PIPE, stderr=PIPE);
+                     stdin=pipeStyle.close, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
   check.communicate();
 
   if check.exitCode == 0 {
@@ -21,7 +21,7 @@ proc startServer() {
 
   // Start a little HTTP server
   server = spawn(["python3", "-m", "http.server", port, "--bind", host],
-                 stdin=CLOSE, stdout=PIPE, stderr=PIPE);
+                 stdin=pipeStyle.close, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
   var ok = false;
 
@@ -30,7 +30,7 @@ proc startServer() {
     // We could use curl to do the retries, but not all curl versions
     // have the relevant options.
     var check = spawn(["curl", "http://" + host + ":" + port + "/test.txt"],
-                       stdin=CLOSE, stdout=PIPE, stderr=PIPE);
+                       stdin=pipeStyle.close, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
     check.communicate();
 
     if check.exitCode == 0 {

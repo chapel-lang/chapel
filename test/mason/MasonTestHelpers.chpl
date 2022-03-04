@@ -1,7 +1,7 @@
 use Subprocess;
 
 proc checkExitStatus(cmd: [] string, exitStatus: int) {
-  var p = spawn(cmd, stdout=PIPE);
+  var p = spawn(cmd, stdout=pipeStyle.pipe);
   var cmdString = " ".join(cmd);
   p.wait();
   if p.exitCode == exitStatus {

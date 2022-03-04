@@ -316,34 +316,50 @@ module Subprocess {
   private extern const QIO_FD_BUFFERED_PIPE:c_int;
 
   /*
-     FORWARD indicates that the child process should inherit
+     Styles of piping to use in a subprocess.
+
+     ``forward`` indicates that the child process should inherit
      the stdin/stdout/stderr of this process.
-   */
-  const FORWARD = QIO_FD_FORWARD;
-  /*
-     CLOSE indicates that the child process should close
+
+     ``close`` indicates that the child process should close
      its stdin/stdout/stderr.
-   */
-  const CLOSE = QIO_FD_CLOSE;
-  /*
-     PIPE indicates that the spawn operation should set up
+
+     ``pipe`` indicates that the spawn operation should set up
      a pipe between the parent process and the child process
      so that the parent process can provide input to the
      child process or capture its output.
-   */
-  const PIPE = QIO_FD_PIPE;
-  /*
-     STDOUT indicates that the stderr stream of the child process
+
+     ``stdout`` indicates that the stderr stream of the child process
      should be forwarded to its stdout stream.
-   */
-  const STDOUT = QIO_FD_TO_STDOUT;
-  /*
-     BUFFERED_PIPE is the same as PIPE, but when used for stdin causes all data
+
+     ``bufferAll`` is the same as pipe, but when used for stdin causes all data
      to be buffered and sent on the communicate() call. This avoids certain
-     deadlock scenarios where stdout or stderr are PIPE. In particular, without
-     BUFFERED_PIPE, the sub-process might block on writing output which will not
+     deadlock scenarios where stdout or stderr are pipe. In particular, without
+     ``bufferAll``, the sub-process might block on writing output which will not
      be consumed until the communicate() call.
+
    */
+  enum pipeStyle {
+    forward,
+    close,
+    pipe,
+    stdout,
+    bufferedStdin,
+  }
+
+  deprecated "'FORWARD' is deprecated, please use 'pipeStyle.forward' instead"
+  const FORWARD = QIO_FD_FORWARD;
+
+  deprecated "'CLOSE' is deprecated, please use 'pipeStyle.close' instead"
+  const CLOSE = QIO_FD_CLOSE;
+
+  deprecated "'PIPE' is deprecated, please use 'pipeStyle.pipe' instead"
+  const PIPE = QIO_FD_PIPE;
+
+  deprecated "'STDOUT' is deprecated, please use 'pipeStyle.stdout' instead"
+  const STDOUT = QIO_FD_TO_STDOUT;
+
+  deprecated "'BUFFERED_PIPE' is deprecated, please use 'pipeStyle.bufferAll' instead"
   const BUFFERED_PIPE = QIO_FD_BUFFERED_PIPE;
 
   private const empty_env:[1..0] string;
@@ -359,7 +375,7 @@ module Subprocess {
      indicates stderr -> stdout.
 
      What about a string for a file path? To support that, use
-     arguments like this: stdin:?t = FORWARD
+     arguments like this: stdin:?t = pipeStyle.forward
 
      * forward it -> posix_spawn_file_actions_adddup2
      * close it -> posix_spawn_file_actions_addclose
@@ -403,23 +419,25 @@ module Subprocess {
                       found by searching the PATH.
 
      :arg stdin: indicates how the standard input of the child process
-                 should be handled. It could be :const:`FORWARD`,
-                 :const:`CLOSE`, :const:`PIPE`, or a file
-                 descriptor number to use. Defaults to :const:`FORWARD`.
+                 should be handled. It could be :type:`pipeStyle`
+                 ``pipeStyle.forward``, ``pipeStyle.close``,
+                 ``pipeStyle.pipe``, or a file descriptor number to use.
+                 Defaults to ``pipeStyle.forward``.
 
      :arg stdout: indicates how the standard output of the child process
-                  should be handled. It could be :const:`FORWARD`,
-                  :const:`CLOSE`, :const:`PIPE`, or a file
-                  descriptor number to use. Defaults to :const:`FORWARD`.
+                  should be handled. It could be :type:`pipeStyle`
+                  ``pipeStyle.forward``, ``pipeStyle.close``,
+                  ``pipeStyle.pipe``, or a file descriptor number to use.
+                  Defaults to ``pipeStyle.forward``.
 
      :arg stderr: indicates how the standard error of the child process
-                  should be handled. It could be :const:`FORWARD`,
-                  :const:`CLOSE`, :const:`PIPE`, :const:`STDOUT`, or
-                  a file descriptor number to use. Defaults to
-                  :const:`FORWARD`.
+                  should be handled. It could be :type:`pipeStyle`
+                  ``pipeStyle.forward``, ``pipeStyle.close``,
+                  ``pipeStyle.pipe``, ``pipeStyle.stdout``, or a file
+                  descriptor number to use. Defaults to ``pipeStyle.forward``.
 
      :arg kind: What kind of channels should be created when
-                :const:`PIPE` is used. This argument is used to set
+                ``pipeStyle.pipe`` is used. This argument is used to set
                 :attr:`subprocess.kind` in the resulting subprocess.
                 Defaults to :type:`IO.iokind` ``iokind.dynamic``.
 
@@ -433,7 +451,8 @@ module Subprocess {
      :throws IllegalArgumentError: Thrown when ``args`` is an empty array.
      */
   proc spawn(args:[] string, env:[] string=Subprocess.empty_env, executable="",
-             stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
+             stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
+             stderr:?v = pipeStyle.forward,
              param kind=iokind.dynamic, param locking=true) throws
   {
     use ChplConfig;
@@ -448,11 +467,11 @@ module Subprocess {
     var err:syserr;
 
     if isIntegralType(stdin.type) then stdin_fd = stdin;
-    else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
+    else compilerError("only pipeStyle.forward/close/pipe/stdout supported");
     if isIntegralType(stdout.type) then stdout_fd = stdout;
-    else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
+    else compilerError("only pipeStyle.forward/close/pipe/stdout supported");
     if isIntegralType(stderr.type) then stderr_fd = stderr;
-    else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
+    else compilerError("only pipeStyle.forward/close/pipe/stdout supported");
 
     if args.size == 0 then
       throw new owned IllegalArgumentError('args cannot be an empty array');
@@ -461,11 +480,11 @@ module Subprocess {
     // segfault. Here we halt before such a call is made to provide an
     // informative error message instead of a segfault. Note that we don't
     // register with the NIC for numLocales == 1, and vfork is used instead of
-    // fork when stdin, stdout, stderr=FORWARD so we won't run into this issue
-    // under those circumstances. See issue #7550 for more details.
+    // fork when stdin, stdout, stderr=pipeStyle.forward so we won't run into
+    // this issue under those circumstances. See issue #7550 for more details.
     if CHPL_COMM == "ugni" {
       use Sys;
-      if stdin != FORWARD || stdout != FORWARD || stderr != FORWARD then
+      if stdin != pipeStyle.forward || stdout != pipeStyle.forward || stderr != pipeStyle.forward then
         if numLocales > 1 {
           var env_c_str:c_string;
           var env_str:string;
@@ -474,7 +493,7 @@ module Subprocess {
             if env_str.count("HUGETLB") > 0 then
               throw SystemError.fromSyserr(
                   EINVAL,
-                  "spawn with more than 1 locale for CHPL_COMM=ugni with hugepages currently requires stdin, stdout, stderr=FORWARD");
+                  "spawn with more than 1 locale for CHPL_COMM=ugni with hugepages currently requires stdin, stdout, stderr=pipeStyle.forward");
           }
         }
     }
@@ -619,20 +638,23 @@ module Subprocess {
                process.
 
      :arg stdin: indicates how the standard input of the child process
-                 should be handled. It could be :const:`FORWARD`,
-                 :const:`CLOSE`, :const:`PIPE`, or a file
-                 descriptor number to use. Defaults to :const:`FORWARD`.
+                 should be handled. It could be :type:`pipeStyle`
+                 ``pipeStyle.forward``, ``pipeStyle.close``,
+                 ``pipeStyle.pipe``, or a file descriptor number to use.
+                 Defaults to ``pipeStyle.forward``.
 
      :arg stdout: indicates how the standard output of the child process
-                  should be handled. It could be :const:`FORWARD`,
-                  :const:`CLOSE`, :const:`PIPE`, or a file
-                  descriptor number to use. Defaults to :const:`FORWARD`.
+                  should be handled. It could be :type:`pipeStyle`
+                  ``pipeStyle.forward``, ``pipeStyle.close``,
+                  ``pipeStyle.pipe``, or a file descriptor number to use.
+                  Defaults to ``pipeStyle.forward``.
 
      :arg stderr: indicates how the standard error of the child process
-                  should be handled. It could be :const:`FORWARD`,
-                  :const:`CLOSE`, :const:`PIPE`, :const:`STDOUT`, or
-                  a file descriptor number to use. Defaults to
-                  :const:`FORWARD`.
+                  should be handled. It could be :type:`pipeStyle`
+                  ``pipeStyle.forward``, ``pipeStyle.close``,
+                  ``pipeStyle.pipe``, ``pipeStyle.stdout``, or a file
+                  descriptor number to use. Defaults to
+                  ``pipeStyle.forward``.
 
      :arg executable: By default, the executable argument is "/bin/sh".
                       That directs the subprocess to run the /bin/sh shell
@@ -656,7 +678,8 @@ module Subprocess {
      :throws IllegalArgumentError: Thrown when ``command`` is an empty string.
   */
   proc spawnshell(command:string, env:[] string=Subprocess.empty_env,
-                  stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
+                  stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
+                  stderr:?v = pipeStyle.forward,
                   executable="/bin/sh", shellarg="-c",
                   param kind=iokind.dynamic, param locking=true) throws
   {
