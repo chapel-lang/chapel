@@ -528,39 +528,22 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
       if m then do_something_if_matched();
       if !m then do_something_if_not_matched();
 
+    .. warning::
+      offset field is deprecated, use byte offset instead
+    .. warning::
+      size field is deprecated, use numBytes instead
+ 
  */
-
-/*
 record regexMatch {
   /* true if the regular expression search matched successfully */
   var matched:bool;
-  /* 0-based offset into the string or channel that matched; -1 if matched=false */
-  var byteOffset:byteIndex;
-  deprecated "field offset is deprecated, use byteOffset instead" var offset:byteIndex = byteOffset;
-  /* the length of the match. 0 if matched==false */
-  var numBytes:int; 
-  deprecated "field size is deprecated, use numBytes instead" var size:int = numBytes;
-  //TODO: remove when removing offset and size
-  proc init(){
-    
-  }
-
-  proc init(matched: bool, byteOffset: byteIndex, numBytes: int){
-    this.matched = matched;
-    this.byteOffset = byteOffset;
-    this.numBytes = numBytes;
-  }
-}
-*/
-
-record regexMatch {
-  /* true if the regular expression search matched successfully */
-  var matched:bool;
-  /* 0-based offset into the string or channel that matched; -1 if matched=false */
+  /* 0-based offset into the string or channel that matched; -1 if matched=false */ 
   var byteOffset:byteIndex;
   /* the length of the match. 0 if matched==false */
   var numBytes:int;
+
   //TODO: remove when removing offset and size
+  pragma "no doc"
   proc init(){
 
   }
@@ -584,18 +567,6 @@ record regexMatch {
     return this.numBytes;
   }
 }
-
-
-/*
-record regexMatch {
-  /* true if the regular expression search matched successfully */
-  var matched:bool;
-  /* 0-based offset into the string or channel that matched; -1 if matched=false */
-  var byteOffset:byteIndex; // 0-based, -1 if matched==false
-  /* the length of the match. 0 if matched==false */
-  var numBytes:int; // 0 if matched==false
-}
-*/
 
 pragma "no doc"
 proc reMatch type
