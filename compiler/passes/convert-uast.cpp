@@ -755,8 +755,41 @@ struct Converter {
     return buildLetExpr(decls, expr);
   }
 
+  /*
+   * This helper checks if a conditional node has an assignment op in its
+   * condition expression, and reproduces an error similar to that in the
+   * old parser
+   * NOTE: This checking should move to the dyno resolver in the future
+   */
+  bool checkAssignConditional(const uast::Conditional* node) {
+    bool assignOp = false;
+    if (node->condition()->isOpCall() ) {
+      auto opCall = node->condition()->toOpCall();
+      auto op = opCall->op();
+      if (op == USTR("=")) {
+        assignOp = true;
+        USR_FATAL_CONT(convertAST(opCall->actual(0)), "Assignment is illegal in a conditional");
+        USR_PRINT(convertAST(opCall->actual(0)), "Use == to check for equality in a conditional");
+      } else if (op == USTR("+=") || op == USTR("-=") || op == USTR("*=")
+                 || op == USTR("/=") || op == USTR("%=") || op == USTR("**=")
+                 || op == USTR("&=") || op == USTR("|=") || op == USTR("^=")
+                 || op == USTR(">>=")|| op == USTR("<<=")) {
+        assignOp = true;
+        USR_FATAL_CONT(convertAST(opCall->actual(0)), "Assignment operation %s is illegal in a conditional",
+                       op.c_str());
+      }
+    }
+    return assignOp;
+  }
+
   Expr* visit(const uast::Conditional* node) {
     INT_ASSERT(node->condition());
+
+    /*
+     * NOTE: we need to check for assignment in conditionals as the old parser
+     * was handling this. In the future, this should move to the dyno resolver
+     */
+    if (checkAssignConditional(node)) USR_STOP();
 
     Expr* ret = nullptr;
 
@@ -2331,10 +2364,14 @@ struct Converter {
       if (node->kind() == uast::Variable::TYPE) {
         if (const uast::BracketLoop* bkt = ie->toBracketLoop()) {
           initExpr = convertArrayType(bkt);
+        } else {
+          initExpr = convertExprOrNull(node->initExpression());
         }
       } else {
         initExpr = toExpr(convertAST(ie));
       }
+    } else {
+      initExpr = convertExprOrNull(node->initExpression());
     }
 
     auto ret = new DefExpr(varSym, initExpr, typeExpr);
