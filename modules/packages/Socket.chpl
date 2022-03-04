@@ -159,7 +159,7 @@ record ipAddr {
     return try! _addressStorage.port();
   }
 
-  proc =(in other: ipAddr) {
+  operator =(in other: ipAddr) {
     this._addressStorage = new sys_sockaddr_t(other._addressStorage);
   }
 }
@@ -241,7 +241,7 @@ proc ipAddr.writeThis(f) throws {
 }
 
 pragma "no doc"
-proc timeval.=(other: real) {
+operator timeval.=(other: real) {
   this.tv_sec = other:c_long;
   this.tv_usec = (other - this.tv_sec) * 1000000;
 }
