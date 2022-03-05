@@ -1828,7 +1828,8 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
       if (parts.tag == asttags::Record) {
-        noteError(inheritLoc, "records cannot inherit");
+        noteError(inheritLoc, "inheritance is not currently supported for records");
+        noteNote(inheritLoc, "thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851");
       } else if (parts.tag == asttags::Union) {
         noteError(inheritLoc, "unions cannot inherit");
       } else {
