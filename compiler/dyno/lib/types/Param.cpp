@@ -383,7 +383,7 @@ uint64_t Param::binStr2uint64(const char* str, size_t len, std::string& err) {
   if (len-startPos > 64) {
     err = "Integer literal overflow: '";
     err += str;
-    err += "' is too big for type uint64";
+    err += "' is too big for type 'uint64'";
     return 0;
   }
   uint64_t val = 0;
@@ -424,7 +424,7 @@ uint64_t Param::octStr2uint64(const char* str, size_t len, std::string& err) {
   if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
     err = "Integer literal overflow: '";
     err += str;
-    err += "' is too big for type uint64";
+    err += "' is too big for type 'uint64'";
     return 0;
   }
 
@@ -489,7 +489,7 @@ uint64_t Param::decStr2uint64(const char* str, size_t len, std::string& err) {
   if (strcmp(str+startPos, checkStr) != 0) {
     err = "Integer literal overflow: '";
     err += str;
-    err += "' is too big for type uint64";
+    err += "' is too big for type 'uint64'";
     return 0;
   }
   free(checkStr);
@@ -543,7 +543,7 @@ int64_t Param::decStr2int64(const char* str, size_t len, std::string& err) {
   if (strcmp(str+startPos, checkStr) != 0) {
     err = "Integer literal overflow: '";
     err += str;
-    err += "' is too big for type uint64";
+    err += "' is too big for type 'uint64'";
     return 0;
   }
   free(checkStr);
@@ -577,7 +577,7 @@ uint64_t Param::hexStr2uint64(const char* str, size_t len, std::string &err) {
   if (len-startPos > 16) {
     err = "Integer literal overflow: '";
     err += str;
-    err += "' is too big for type uint64";
+    err += "' is too big for type 'uint64'";
     return 0;
   }
 
