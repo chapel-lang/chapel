@@ -915,16 +915,17 @@ struct ChplSyntaxVisitor {
 
   void visit(const VisibilityClause* node) {
     VisibilityClause::LimitationKind limit = node->limitationKind();
-    if (limit == VisibilityClause::LimitationKind::ONLY ||
-        limit == VisibilityClause::LimitationKind::EXCEPT) {
-      ss_ << kindToString(limit);
-      printChapelSyntax(ss_, node->symbol());
-      interpose(node->limitations(), ", ");
-    } else if (limit == VisibilityClause::LimitationKind::BRACES) {
-      printChapelSyntax(ss_, node->symbol());
+    printChapelSyntax(ss_, node->symbol());
+    if (limit == VisibilityClause::LimitationKind::BRACES) {
+      ss_ << ".";
       interpose(node->limitations(), ", ", "{","}");
-    } else { //NONE
-      printChapelSyntax(ss_, node->symbol());
+    } else {
+      ss_ << " ";
+      if (limit == VisibilityClause::LimitationKind::ONLY ||
+          limit == VisibilityClause::LimitationKind::EXCEPT) {
+        ss_ << kindToString(limit);
+        ss_ << " ";
+      }
       interpose(node->limitations(), ", ");
     }
   }

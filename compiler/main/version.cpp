@@ -27,7 +27,7 @@
 #include "version_num.h"
 
 // this include sets CONFIGURED_PREFIX
-#include "configured_prefix.h"
+//#include "configured_prefix.h"
 
 void
 get_version(char *v) {
@@ -46,7 +46,7 @@ get_major_minor_version(char *v) {
 
 const char*
 get_configured_prefix() {
-  return CONFIGURED_PREFIX;
+  return "configured_prefix.h";
 }
 
 int get_major_version() {
