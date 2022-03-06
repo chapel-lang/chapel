@@ -35,7 +35,7 @@ proc main(args:[] string)
   // Compute the SHA1 sums using the external program
   // Do so in parallel across all locales
   forall path in distributedPaths {
-    var sub = spawn(["sha1sum", path], stdout=pipeStype.pipe);
+    var sub = spawn(["sha1sum", path], stdout=pipeStyle.pipe);
     var hash:string;
     sub.stdout.read(hash);
     distributedWriters[here.id].writeln(hash, " ", path);
@@ -45,7 +45,7 @@ proc main(args:[] string)
   for w in distributedWriters do
     w.close();
  
-  var sorter = spawn(["sort"], stdin=pipeStype.pipe, stdout=pipeStype.pipe);
+  var sorter = spawn(["sort"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
   cobegin {
     {
       // Output all of the to the sort process
