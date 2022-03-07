@@ -334,9 +334,9 @@ module Subprocess {
 
      ``bufferAll`` is the same as pipe, but when used for stdin causes all data
      to be buffered and sent on the communicate() call. This avoids certain
-     deadlock scenarios where stdout or stderr are pipe. In particular, without
-     ``bufferAll``, the sub-process might block on writing output which will not
-     be consumed until the communicate() call.
+     deadlock scenarios where stdout or stderr are ``pipe``. In particular,
+     without ``bufferAll``, the sub-process might block on writing output
+     which will not be consumed until the communicate() call.
 
    */
   enum pipeStyle {
@@ -496,8 +496,9 @@ module Subprocess {
     // segfault. Here we halt before such a call is made to provide an
     // informative error message instead of a segfault. Note that we don't
     // register with the NIC for numLocales == 1, and vfork is used instead of
-    // fork when stdin, stdout, stderr=pipeStyle.forward so we won't run into
-    // this issue under those circumstances. See issue #7550 for more details.
+    // fork when stdin, stdout, stderr=``pipeStyle.forward`` so we won't run
+    // into this issue under those circumstances. See issue #7550 for
+    // more details.
     if CHPL_COMM == "ugni" {
       use Sys;
       if stdin != pipeStyle.forward || stdout != pipeStyle.forward || stderr != pipeStyle.forward then
