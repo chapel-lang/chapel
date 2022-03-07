@@ -7158,8 +7158,8 @@ proc channel._extractMatch(m:regexMatch, ref arg:regexMatch, ref error:syserr) {
 pragma "no doc"
 proc channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:syserr) {
   var cur:int(64);
-  var target = m.offset:int;
-  var len = m.size;
+  var target = m.byteOffset:int;
+  var len = m.numBytes;
 
   // If there was no match, return the default value of the type
   if !m.matched {
@@ -7572,7 +7572,7 @@ iter channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
           error = qio_channel_mark(false, _channel_internal);
           if !error {
             var cur = qio_channel_offset_unlocked(_channel_internal);
-            var target = m.offset:int;
+            var target = m.byteOffset:int;
             error = qio_channel_advance(false, _channel_internal, target - cur);
           }
         } else {
