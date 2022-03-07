@@ -2251,7 +2251,7 @@ void gni_setup_per_comm_dom(int cdi)
   //
   // Create communication domain.
   //
-  gni_init(&cd->nih, cdi);
+  gni_init(&cd->nih, (chpl_nodeID * comm_dom_cnt_max) + cdi);
 
   //
   // Create completion queue.
