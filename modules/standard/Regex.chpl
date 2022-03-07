@@ -529,7 +529,7 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
       if !m then do_something_if_not_matched();
 
     .. warning::
-      offset field is deprecated, use byte offset instead
+      offset field is deprecated, use byteOffset instead
     .. warning::
       size field is deprecated, use numBytes instead
  */
@@ -540,19 +540,6 @@ record regexMatch {
   var byteOffset:byteIndex;
   /* the length of the match. 0 if matched==false */
   var numBytes:int;
-
-  //TODO: remove when removing offset and size
-  pragma "no doc"
-  proc init(){
-
-  }
-
-  pragma "no doc"
-  proc init(matched: bool, byteOffset: byteIndex, numBytes: int){
-    this.matched = matched;
-    this.byteOffset = byteOffset;
-    this.numBytes = numBytes;
-  }
 
   pragma "no doc"
   deprecated "field offset is deprecated, use byteOffset instead"
