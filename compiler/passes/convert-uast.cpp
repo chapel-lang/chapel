@@ -989,17 +989,22 @@ struct Converter {
     bool maybeArrayType = isLoopMaybeArrayType(node);
     bool zippered = node->iterand()->isZip();
 
-      // Unpack things differently if body is a conditional.
-      if (auto origCond = node->stmt(0)->toConditional()) {
-        INT_ASSERT(origCond->numThenStmts() == 1);
-        INT_ASSERT(!origCond->hasElseBlock());
-        expr = singleExprFromStmts(origCond->thenStmts());
+    // Unpack things differently if body is a conditional.
+    if (auto origCond = node->stmt(0)->toConditional()) {
+      INT_ASSERT(origCond->numThenStmts() == 1);
+      // a filter expression
+      if (!origCond->hasElseBlock()) {
         cond = convertAST(origCond->condition());
+        expr = singleExprFromStmts(origCond->thenStmts());
         INT_ASSERT(cond);
       } else {
+        // an assignment expression
+        INT_ASSERT(origCond->numElseStmts() == 1);
         expr = singleExprFromStmts(node->stmts());
       }
-
+    } else { // not a conditional
+      expr = singleExprFromStmts(node->stmts());
+    }
     INT_ASSERT(expr != nullptr);
 
     return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
