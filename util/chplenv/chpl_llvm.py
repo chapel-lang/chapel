@@ -146,7 +146,8 @@ def find_system_llvm_config():
             errs.append((command, config_err))
 
     for version in llvm_versions():
-        if commands := by_version[version]:
+        commands = by_version[version]
+        if commands:
             return commands[0]
 
     return ''
