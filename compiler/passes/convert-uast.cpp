@@ -1774,7 +1774,9 @@ struct Converter {
     } else if (node->expr()->isVariable()) {
         auto child = node->expr()->toVariable();
         return buildForwardingDeclStmt((BlockStmt*)visit(child));
-    } else if (node->expr()->isIdentifier() || node->expr()->isFnCall()) {
+    } else if (node->expr()->isIdentifier()
+               || node->expr()->isFnCall()
+               || node->expr()->isOpCall()) {
       return buildForwardingStmt(convertExprOrNull(node->expr()));
     }
 
