@@ -1,0 +1,2 @@
+public-use-no-mod1.chpl:8: In function 'main':
+public-use-no-mod1.chpl:9: error: 'M' undeclared (first use this function)

@@ -2225,6 +2225,9 @@ static void lookupUsedImportedMod(const char*           name,
         if (UseStmt* use = toUseStmt(stmt)) {
           isPublic = !use->isPrivate;
           checkThisInShadowScope = use->isPrivate;
+          // don't bring in the module name for 'public use' at all
+          if (isPublic)
+            continue;
         } else if (ImportStmt* imp = toImportStmt(stmt)) {
           isPublic = !imp->isPrivate;
         }
