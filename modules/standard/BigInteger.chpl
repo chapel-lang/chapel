@@ -2386,6 +2386,10 @@ module BigInteger {
 
   // documented in bigint, integral version
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       mpz_divexact(this.mpz, numer.mpz, denom.mpz);
 
@@ -4558,6 +4562,10 @@ module BigInteger {
   proc bigint.divQ(const ref numer: bigint,
                    const ref denom: bigint,
                    param rounding = round.zero) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       select rounding {
         when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
@@ -4661,6 +4669,10 @@ module BigInteger {
   proc bigint.divR(const ref numer: bigint,
                    const ref denom: bigint,
                    param     rounding = round.zero) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       select rounding {
         when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
@@ -4766,6 +4778,10 @@ module BigInteger {
                     const ref numer: bigint,
                     const ref denom: bigint,
                     param     rounding = round.zero) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       select rounding {
         when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,
