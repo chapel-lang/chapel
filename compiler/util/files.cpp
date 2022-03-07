@@ -894,6 +894,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   for (size_t i = 0; i < splitFiles.size(); i++) {
     fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
   }
+  fprintf(makefile.fptr, "\t$(CHPLSRC:%%.c=%%) \\\n\n");
   fprintf(makefile.fptr, "\n");
 
   genCFiles(makefile.fptr);
