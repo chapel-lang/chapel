@@ -107,7 +107,7 @@ template <typename T, typename ResultType = void> class PassT {
 //   1) enqueue(T x)        | enqueue(FnSymbol* fn)
 //   2) enqueue(T x, U, y)  | enqueue(FnSymbol* fn, CallExpr* call)
 //
-// Each `enqueue` overload corresponds to a `process` overload and is in-effect
+// Each `enqueue` overload corresponds to a `process` overload and is in effect
 // a delayed function call.
 //
 // The second overload is called to process a `call` in its enclosing `fn`

@@ -136,7 +136,8 @@ bool InsertLineNumbers::shouldPreferASTLine(/*const*/ FnSymbol* fn,
       !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO))
     return true;
 
-  // TODO can we mark the FnSymbol directly instead of checking this global map
+  // TODO can we mark the FnSymbol directly instead of checking this global map?
+  //      Or maybe you could know it is an ftable call based on how it is called
   // don't add arguments to ftable calls
   if (ftableMap.count(fn))
     return true;
@@ -351,11 +352,12 @@ void InsertLineNumbers::process(FnSymbol *fn) {
     std::ignore = getLineAndFileForFn(fn);
   }
 
-  // We only need to process each call in our body once; calls which may later
-  // require line numbers will be enqueued by their function.
-  // We may need to process the fn itself more than once, so that if we discover
-  // a function needs a line/file formal after processing the first time, we can
-  // do so
+  // This check is after the above getLineAndFileForFn because we only
+  // need to process each call in our body once; calls which may later
+  // require line numbers will be enqueued by their function.  We may
+  // need to process the fn itself more than once, so that if we
+  // discover a function needs a line/file formal after processing the
+  // first time, we can do so
   if (alreadyProcessed(fn))
     return;
 
@@ -435,7 +437,7 @@ void InsertNilChecksPass::process(CallExpr* call) {
 void insertLineNumbers() {
   PassManager pm;
 
-  // It's pretty apparent in this refactoring that we don't actually need to
+  // TODO It's pretty apparent in this refactoring that we don't actually need to
   // recompute all call sites, but only the subset we'll be working on, which
   // is probably better done on demand
   pm.runPass<FnSymbol*>(ComputeCallSitesPass(), gFnSymbols);
