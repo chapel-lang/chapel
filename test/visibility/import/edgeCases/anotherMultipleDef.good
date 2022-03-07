@@ -1,2 +1,1 @@
-anotherMultipleDef.chpl:1: error: symbol A is multiply defined
-anotherMultipleDef.chpl:7: note: also defined here
+Module scope A.foo()

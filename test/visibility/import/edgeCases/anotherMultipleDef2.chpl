@@ -13,7 +13,7 @@ module B {
 
 module Z {
   import A;
-  use B;
+  public use B;
 
   proc main() {
     A.foo();
