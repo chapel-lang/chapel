@@ -390,6 +390,10 @@ module DefaultSparse {
       }
     }
 
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
+    }
+
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain(loc: locale) {
@@ -548,8 +552,8 @@ module DefaultSparse {
       yield 0;  // dummy
     }
 
-    proc dsiTargetLocales() {
-      compilerError("targetLocales is unsupported by sparse domains");
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;

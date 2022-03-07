@@ -283,6 +283,14 @@ module ChapelDomain {
   deprecated "isSparseDom is deprecated - please use isSparse method on domain"
   proc isSparseDom(d: domain) param return d.isSparse();
 
+  private proc errorIfNotRectangular(dom: domain, param op, param arrays="") {
+    if dom.isAssociative() || dom.isSparse() then
+      compilerError("cannot apply '", op,
+                    "' to associative and sparse domains", arrays);
+    if ! dom.isRectangular() then
+      compilerError("cannot apply '", op, "' to '", dom.type:string, "'");
+  }
+
   // Helper function used to ensure a returned array matches the declared
   // return type when the declared return type specifies a particular domain
   // but not the element type.
@@ -313,29 +321,25 @@ module ChapelDomain {
     return dom[(...ranges)];
   }
 
-  operator #(dom: domain, counts: integral) where dom.isRectangular() &&
-    dom.rank == 1 {
+  operator #(dom: domain, counts: integral) {
+    errorIfNotRectangular(dom, "#", " and arrays");
+    if dom.rank != 1 then compilerError(
+      "cannot apply '#' with an integer to multi-dimensional domains and arrays");
+
     return chpl_countDomHelp(dom, (counts,));
   }
 
-  operator #(dom: domain, counts) where dom.isRectangular() &&
-    isTuple(counts) {
-    if (counts.size != dom.rank) then
-      compilerError("the domain and tuple arguments of # must have the same rank");
+  operator #(dom: domain, counts: _tuple) {
+    errorIfNotRectangular(dom, "#", " and arrays");
+    if (counts.size != dom.rank) then compilerError(
+      "rank mismatch in '#'");
     return chpl_countDomHelp(dom, counts);
   }
 
-  pragma "fn returns aliasing array"
-  operator #(arr: [], counts: integral) where arr.isRectangular() &&
-    arr.rank == 1 {
-    return arr[arr.domain#counts];
-  }
-
-  pragma "fn returns aliasing array"
-  operator #(arr: [], counts) where arr.isRectangular() && isTuple(counts) {
-    if (counts.size != arr.rank) then
-      compilerError("the domain and array arguments of # must have the same rank");
-    return arr[arr.domain#counts];
+  pragma "last resort"
+  operator #(dom: domain, counts) {
+    compilerError("cannot apply '#' to '", dom.type:string,
+                  "' using count(s) of type ", counts.type:string);
   }
 
   operator +(d: domain, i: index(d)) {
@@ -462,13 +466,34 @@ module ChapelDomain {
 
   // any combinations not handled by the above
 
-  inline operator ==(d1: domain, d2: domain) param {
-    return false;
+  private proc cmpError(d1, d2) {
+    if d1.isRectangular() then
+      compilerError("comparing a rectangular domain against",
+        " an associative or sparse domain is not currently supported");
+    if d1.isAssociative() then
+      compilerError("comparing an associative domain against",
+        " a rectangular or sparse domain is not currently supported");
+    if d1.isSparse() then
+      compilerError("comparing a sparse domain against",
+        " a rectangular or associative domain is not currently supported");
+    // we should not get here, however if we do...
+    compilerError("comparing '", d1.type:string, "' against '",
+                  d2.type:string, "' is not currently supported");
   }
 
-  inline operator !=(d1: domain, d2: domain) param {
-    return true;
+  inline operator ==(d1: domain, d2: domain) {
+    cmpError(d1, d2);
   }
+
+  inline operator !=(d1: domain, d2: domain) {
+    cmpError(d1, d2);
+  }
+
+  // check this before comparing two domains with == or !=
+  proc chpl_sameDomainKind(d1: domain, d2: domain) param
+    return (d1.isRectangular() && d2.isRectangular()) ||
+           (d1.isAssociative() && d2.isAssociative()) ||
+           (d1.isSparse()      && d2.isSparse()     );
 
   /* Return true if ``t`` is a domain type. Otherwise return false. */
   proc isDomainType(type t) param {
@@ -707,6 +732,7 @@ module ChapelDomain {
 
   // This is the definition of the 'by' operator for domains.
   operator by(a: domain, b) {
+    errorIfNotRectangular(a, "by");
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
                       true);
@@ -720,6 +746,7 @@ module ChapelDomain {
   // It produces a new domain with the specified alignment.
   // See also: 'align' operator on ranges.
   operator align(a: domain, b) {
+    errorIfNotRectangular(a, "align");
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
                       a.stridable);
@@ -1735,6 +1762,8 @@ module ChapelDomain {
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
+      if chpl_warnUnstable then compilerWarning(
+        "bulkAdd() is subject to change in the future.");
 
       if inds.isEmpty() then return 0;
 
@@ -1768,13 +1797,16 @@ module ChapelDomain {
 
        .. note::
 
-          The interface and implementation is not stable and may change in the
+          The interface and implementation are not stable and may change in the
           future.
 
      :arg size: Size of the buffer in number of indices.
      :type size: int
     */
     inline proc makeIndexBuffer(size: int) {
+      if chpl_warnUnstable then compilerWarning(
+        "makeIndexBuffer() is subject to change in the future.");
+
       return _value.dsiMakeIndexBuffer(size);
     }
 
@@ -1800,6 +1832,11 @@ module ChapelDomain {
          addition should occur is unknown. We expect this to change in the
          future.
 
+       .. note::
+
+          The interface and implementation are not stable and may change in the
+          future.
+
        :arg inds: Indices to be added. ``inds`` must be an array of
                   ``rank*idxType``, except for 1-D domains, where it must be
                   an array of ``idxType``.
@@ -1824,6 +1861,8 @@ module ChapelDomain {
     proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
+      if chpl_warnUnstable then compilerWarning(
+        "bulkAdd() is subject to change in the future.");
 
       if inds.isEmpty() then return 0;
 

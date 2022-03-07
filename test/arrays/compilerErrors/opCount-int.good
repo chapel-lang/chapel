@@ -1,0 +1,1 @@
+opCount-int.chpl:5: error: cannot apply '#' with an integer to multi-dimensional domains and arrays
