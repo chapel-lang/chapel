@@ -1071,19 +1071,7 @@ module BigInteger {
   // Division
   operator bigint./(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
-
-    if _local {
-      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      mpz_tdiv_q(c.mpz, a_.mpz, b_.mpz);
-    }
+    c.divQ(a, b, round.zero);
 
     return c;
   }
@@ -1872,21 +1860,7 @@ module BigInteger {
 
   // /=
   operator bigint./=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_tdiv_q(a.mpz, a.mpz, b_.mpz);
-      }
-    }
+    a.divQ(a, b, round.zero);
   }
 
   operator bigint./=(ref a: bigint, b: integral) {
