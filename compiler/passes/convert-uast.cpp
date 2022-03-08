@@ -602,7 +602,15 @@ struct Converter {
     for (auto limitation : vc->limitations()) {
       names->push_back(convertRename(limitation));
     }
-
+    // special handling case when only list is empty
+    // old parser expects an empty potential rename to indicate something like
+    // use A only;
+    if (vc->limitationKind() == uast::VisibilityClause::ONLY && vc->numLimitations()==0) {
+      PotentialRename* ret = new PotentialRename();
+      ret->tag = PotentialRename::SINGLE;
+      ret->elem = new UnresolvedSymExpr("");
+      names->push_back(ret);
+    }
     return buildUseStmt(mod, rename, names, except, privateUse);
   }
 
