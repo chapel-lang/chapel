@@ -190,6 +190,8 @@ struct Converter {
       return new UnresolvedSymExpr("chpl_align");
     } else if (name == USTR("by")) {
       return new UnresolvedSymExpr("chpl_by");
+    } else if (name == USTR("_")) {
+      return new UnresolvedSymExpr("chpl__tuple_blank");
     }
 
     return nullptr;
@@ -951,8 +953,12 @@ struct Converter {
 
     // Simple variables just get reverted to UnresolvedSymExpr.
     if (const uast::Variable* var = node->toVariable()) {
-      return new UnresolvedSymExpr(var->name().c_str());
-
+      auto name = var->name();
+      if (auto remap = reservedWordRemapForIdent(name)) {
+        return remap;
+      } else {
+        return new UnresolvedSymExpr(name.c_str());
+      }
     // For tuples, recursively call 'convertLoopIndexDecl' on each element.
     } else if (const uast::TupleDecl* td = node->toTupleDecl()) {
       CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
