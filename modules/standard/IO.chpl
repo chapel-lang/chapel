@@ -7309,7 +7309,7 @@ proc channel.search(re:regex(?), ref error:syserr):regexMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at EOF
@@ -7375,7 +7375,7 @@ proc channel.search(re:regex(?), ref captures ...?k): regexMatch throws
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         err = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at EOF
@@ -7417,7 +7417,7 @@ proc channel.match(re:regex(?), ref error:syserr):regexMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at start
@@ -7471,7 +7471,7 @@ proc channel.match(re:regex(?), ref captures ...?k, ref error:syserr):regexMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at start
