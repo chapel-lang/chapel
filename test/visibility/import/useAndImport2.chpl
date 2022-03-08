@@ -6,7 +6,7 @@ module A {
   }
 }
 module B {
-  import A;
+  public import A;
 }
 
 module C {

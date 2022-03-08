@@ -10,7 +10,7 @@ module B {
 }
 
 module C {
-  import A;
+  public import A;
 }
 
 module D {
