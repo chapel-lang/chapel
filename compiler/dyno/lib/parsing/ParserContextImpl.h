@@ -234,7 +234,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
   // it was and the counter got reset at some point before this.
   assert(numAttributesBuilt == 0);
 
-  if (cs.stmt->isDecl()) {
+  if (cs.stmt && cs.stmt->isDecl()) {
 
     // If a decl was produced then the attributes should have been reset.
     // If they were _not_ reset, then it means that a deprecated statement
@@ -250,7 +250,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
 
   } else {
     assert(numAttributesBuilt == 0);
-    assert(hasAttributeParts);
+    if(cs.stmt) assert(hasAttributeParts);
     auto msg = "cannot attach pragmas to this statement";
 
     // TODO: The original builder also states the first pragma.
