@@ -32,7 +32,7 @@ proc contains(teststring, seekstring) {
 }
 
 iter getDigitsOutputs() {
-  while (stdin.readline(line)) {
+  while readline(line) {
     //  writeln("Got: ", line);
     var parts: [1..2] string = line.split(" | ");
     //  writeln("Got: ", (parts[1], parts[2]));

@@ -38,7 +38,7 @@ writeln("total flashes: ", flashes.read());
 proc readEnergies() {
   var line: string;
   var row = 0;
-  while (stdin.readline(line)) {
+  while readline(line) {
     line = line.strip();
     row += 1;
     stringToRow(line, row);

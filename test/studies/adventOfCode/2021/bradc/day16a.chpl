@@ -3,7 +3,7 @@ use IO, List;
 param bitsPerHex = 4;
 
 var line: bytes;
-stdin.readline(line);
+readline(line);
 line = line.strip();
 writeln(line);
 

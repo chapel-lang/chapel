@@ -68,7 +68,7 @@ while !Q.isEmpty() {
 
 proc readRisk() {
   var line: string;
-  while (stdin.readline(line)) {
+  while readline(line) {
     line = line.strip();
     rows += 1;
     if cols == 0 then cols = line.size;

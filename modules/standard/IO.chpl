@@ -4554,10 +4554,24 @@ extern proc chpl_cstderr():_file;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:channel(true, iokind.dynamic, true);
 stderr = try! openfp(chpl_cstderr()).writer();
-
 /* Equivalent to ``stdin.read``. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {
   return stdin.read((...args));
+}
+/* Equivalent to ``stdin.read``. See :proc:`channel.read` for types */
+proc read(type t ...?numTypes) throws {
+  return stdin.read((...t));
+}
+/* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
+              amount = arg.domain.high - start + 1) : bool throws
+                where arg.rank == 1 && arg.isRectangular() {
+  return stdin.readline(arg, numRead, start, amount);
+}
+
+/* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
+  return stdin.readline(arg);
 }
 /* Equivalent to ``stdin.readln``. See :proc:`channel.readln` */
 proc readln(ref args ...?n):bool throws {
@@ -4572,10 +4586,6 @@ proc readln():bool throws {
 /* Equivalent to ``stdin.readln``. See :proc:`channel.readln` for types */
 proc readln(type t ...?numTypes) throws {
   return stdin.readln((...t));
-}
-/* Equivalent to ``stdin.read``. See :proc:`channel.read` for types */
-proc read(type t ...?numTypes) throws {
-  return stdin.read((...t));
 }
 
 
