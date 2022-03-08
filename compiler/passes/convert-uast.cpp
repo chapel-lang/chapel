@@ -748,9 +748,10 @@ struct Converter {
         // TODO: Might need to do something different on this path.
         conv = convertAST(decl);
       }
-
-      INT_ASSERT(conv);
-      decls->insertAtTail(conv);
+      if (!decl->isComment()) {
+        INT_ASSERT(conv);
+        decls->insertAtTail(conv);
+      }
     }
 
     Expr* expr = convertAST(node->expression());
