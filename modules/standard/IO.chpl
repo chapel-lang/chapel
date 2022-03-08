@@ -4607,8 +4607,7 @@ proc unlink(path:string) throws {
    :returns: `true` if this version of the Chapel runtime supports UTF-8 output.
  */
 proc unicodeSupported():bool {
-  extern proc qio_unicode_supported():c_int;
-  return qio_unicode_supported() > 0;
+  return true;
 }
 
 
