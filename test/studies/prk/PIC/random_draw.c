@@ -170,10 +170,10 @@ uint64_t random_draw(double mu)
   const double   rand_div    = 1.0/(double)ULLONG_MAX;
   const uint64_t denominator = UINT_MAX;
 
-  static double   z0, z1;
+  static double   z0;
   double          u0, u1, sigma;
   static uint64_t numerator;
-  static uint64_t i0, i1;
+  static uint64_t i1;
 
   if (mu>=1.0) {
     sigma = mu*0.15;  
@@ -181,13 +181,12 @@ uint64_t random_draw(double mu)
     u1 = LCG_next(rand_max) * rand_div;
 
     z0 = sqrt(-2.0 * log(u0)) * cos(two_pi * u1);
-    z1 = sqrt(-2.0 * log(u0)) * sin(two_pi * u1);
     return (uint64_t) (z0 * sigma + mu+0.5);
   }
   else {
     /* we need to pick two integers whose quotient approximates mu; set one to UINT_MAX */
     numerator = (uint32_t) (mu*(double)denominator);
-    i0 = LCG_next(denominator); /* don't use this value, but must call LCG_next twice   */
+    LCG_next(denominator); /* don't use this value, but must call LCG_next twice   */
     i1 = LCG_next(denominator);
     return ((uint64_t)(i1<=numerator));
   }

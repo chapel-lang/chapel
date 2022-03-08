@@ -8,17 +8,18 @@
 
 #include "X86Counter.h"
 
+#if defined(__linux__) && defined(HAVE_LIBPFM) &&                              \
+    defined(LIBPFM_HAS_FIELD_CYCLES)
+
 // FIXME: Use appropriate wrappers for poll.h and mman.h
 // to support Windows and remove this linux-only guard.
-#ifdef __linux__
+
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/Errc.h"
 
-#ifdef HAVE_LIBPFM
-#include "perfmon/perf_event.h"
-#include "perfmon/pfmlib.h"
-#include "perfmon/pfmlib_perf_event.h"
-#endif // HAVE_LIBPFM
+#include <perfmon/perf_event.h>
+#include <perfmon/pfmlib.h>
+#include <perfmon/pfmlib_perf_event.h>
 
 #include <atomic>
 #include <chrono>
@@ -32,7 +33,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#if defined(HAVE_LIBPFM) && defined(LIBPFM_HAS_FIELD_CYCLES)
 namespace llvm {
 namespace exegesis {
 
@@ -40,6 +40,10 @@ namespace exegesis {
 static constexpr int kLbrEntries = 16;
 static constexpr size_t kBufferPages = 8;
 static const size_t kDataBufferSize = kBufferPages * getpagesize();
+
+// First page is reserved for perf_event_mmap_page. Data buffer starts on
+// the next page, so we allocate one more page.
+static const size_t kMappedBufferSize = (kBufferPages + 1) * getpagesize();
 
 // Waits for the LBR perf events.
 static int pollLbrPerfEvent(const int FileDescriptor) {
@@ -137,15 +141,16 @@ X86LbrPerfEvent::X86LbrPerfEvent(unsigned SamplingPeriod) {
 
 X86LbrCounter::X86LbrCounter(pfm::PerfEvent &&NewEvent)
     : Counter(std::move(NewEvent)) {
-  // First page is reserved for perf_event_mmap_page. Data buffer starts on
-  // the next page, so we allocate one more page.
-  MMappedBuffer = mmap(nullptr, (kBufferPages + 1) * getpagesize(),
-                       PROT_READ | PROT_WRITE, MAP_SHARED, FileDescriptor, 0);
+  MMappedBuffer = mmap(nullptr, kMappedBufferSize, PROT_READ | PROT_WRITE,
+                       MAP_SHARED, FileDescriptor, 0);
   if (MMappedBuffer == MAP_FAILED)
     llvm::errs() << "Failed to mmap buffer.";
 }
 
-X86LbrCounter::~X86LbrCounter() { close(FileDescriptor); }
+X86LbrCounter::~X86LbrCounter() {
+  if (0 != munmap(MMappedBuffer, kMappedBufferSize))
+    llvm::errs() << "Failed to munmap buffer.";
+}
 
 void X86LbrCounter::start() {
   ioctl(FileDescriptor, PERF_EVENT_IOC_REFRESH, 1024 /* kMaxPollsPerFd */);
@@ -173,6 +178,7 @@ llvm::Error X86LbrCounter::checkLbrSupport() {
   }
 
   counter.stop();
+  (void)Sum;
 
   auto ResultOrError = counter.doReadCounter(nullptr, nullptr);
   if (ResultOrError)
@@ -251,5 +257,5 @@ X86LbrCounter::doReadCounter(const void *From, const void *To) const {
 } // namespace exegesis
 } // namespace llvm
 
-#endif //  defined(HAVE_LIBPFM) && defined(LIBPFM_HAS_FIELD_CYCLES)
-#endif // __linux__
+#endif // defined(__linux__) && defined(HAVE_LIBPFM) &&
+       // defined(LIBPFM_HAS_FIELD_CYCLES)

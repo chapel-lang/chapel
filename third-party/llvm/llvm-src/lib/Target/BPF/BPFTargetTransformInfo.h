@@ -44,15 +44,33 @@ public:
     return TTI::TCC_Basic;
   }
 
-  int getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
-                         CmpInst::Predicate VecPred,
-                         TTI::TargetCostKind CostKind,
-                         const llvm::Instruction *I = nullptr) {
+  InstructionCost getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
+                                     CmpInst::Predicate VecPred,
+                                     TTI::TargetCostKind CostKind,
+                                     const llvm::Instruction *I = nullptr) {
     if (Opcode == Instruction::Select)
-      return SCEVCheapExpansionBudget;
+      return SCEVCheapExpansionBudget.getValue();
 
     return BaseT::getCmpSelInstrCost(Opcode, ValTy, CondTy, VecPred, CostKind,
                                      I);
+  }
+
+  InstructionCost getArithmeticInstrCost(
+    unsigned Opcode, Type *Ty,
+    TTI::TargetCostKind CostKind = TTI::TCK_RecipThroughput,
+    TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
+    TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
+    TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
+    TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
+    ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
+    const Instruction *CxtI = nullptr) {
+      int ISD = TLI->InstructionOpcodeToISD(Opcode);
+      if (ISD == ISD::ADD && CostKind == TTI::TCK_RecipThroughput)
+        return SCEVCheapExpansionBudget.getValue() + 1;
+
+      return BaseT::getArithmeticInstrCost(Opcode, Ty, CostKind, Opd1Info,
+                                           Opd2Info, Opd1PropInfo,
+                                           Opd2PropInfo);
   }
 };
 

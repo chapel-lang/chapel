@@ -43,7 +43,14 @@ clang_tablegen("arm_cde") {
   output_name = "arm_cde.h"
 }
 
-copy("arm_headers") {
+# Generate riscv_vector.h
+clang_tablegen("riscv_vector") {
+  args = [ "-gen-riscv-vector-header" ]
+  td_file = "//clang/include/clang/Basic/riscv_vector.td"
+  output_name = "riscv_vector.h"
+}
+
+copy("tablegen_headers") {
   visibility = [ ":Headers" ]
   deps = [
     ":arm_bf16",
@@ -52,6 +59,7 @@ copy("arm_headers") {
     ":arm_mve",
     ":arm_neon",
     ":arm_sve",
+    ":riscv_vector",
   ]
   sources = []
   foreach(dep, deps) {
@@ -61,7 +69,7 @@ copy("arm_headers") {
 }
 
 copy("Headers") {
-  deps = [ ":arm_headers" ]
+  deps = [ ":tablegen_headers" ]
 
   sources = [
     "__clang_cuda_builtin_vars.h",
@@ -119,6 +127,7 @@ copy("Headers") {
     "avxvnniintrin.h",
     "bmi2intrin.h",
     "bmiintrin.h",
+    "builtins.h",
     "cet.h",
     "cetintrin.h",
     "cldemoteintrin.h",
@@ -137,9 +146,13 @@ copy("Headers") {
     "fmaintrin.h",
     "fxsrintrin.h",
     "gfniintrin.h",
+    "hexagon_circ_brev_intrinsics.h",
+    "hexagon_protos.h",
+    "hexagon_types.h",
     "hresetintrin.h",
     "htmintrin.h",
     "htmxlintrin.h",
+    "hvx_hexagon_protos.h",
     "ia32intrin.h",
     "immintrin.h",
     "intrin.h",

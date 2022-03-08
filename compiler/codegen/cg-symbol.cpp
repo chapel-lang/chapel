@@ -650,7 +650,12 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           hasFlag(FLAG_EXTERN) &&
           getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
           info->lvt->isCArray(cname)) {
-        got.val = info->irBuilder->CreateStructGEP(NULL, got.val, 0);
+        llvm::Type* eltTy = nullptr;
+#if HAVE_LLVM_VER >= 130
+        eltTy = llvm::cast<llvm::PointerType>(got.val->getType()->getScalarType())->getElementType();
+#endif
+
+        got.val = info->irBuilder->CreateStructGEP(eltTy, got.val, 0);
         got.isLVPtr = GEN_VAL;
       }
       if (got.val) {
@@ -672,9 +677,18 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
               info->module->getOrInsertGlobal
                   (name, info->irBuilder->getInt8PtrTy()));
         globalValue->setConstant(true);
+#if HAVE_LLVM_VER >= 130
+        llvm::Type* ty = llvm::cast<llvm::PointerType>(
+          constString->getType()->getScalarType())->getElementType();
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->irBuilder->CreateConstInBoundsGEP2_32(
-                NULL, constString, 0, 0)));
+              ty, constString, 0, 0)));
+#else
+        globalValue->setInitializer(llvm::cast<llvm::Constant>(
+              info->irBuilder->CreateConstInBoundsGEP2_32(
+              NULL, constString, 0, 0)));
+
+#endif
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
@@ -1878,7 +1892,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
 
       // Adjust attributes for sret argument
       llvm::AttrBuilder b;
+#if HAVE_LLVM_VER >= 130
+      b.addStructRetAttr(llvm::PointerType::get(chapelReturnTy, stackSpace));
+#else
       b.addAttribute(llvm::Attribute::StructRet);
+#endif
       b.addAttribute(llvm::Attribute::NoAlias);
       if (returnInfo.getInReg())
         b.addAttribute(llvm::Attribute::InReg);
@@ -2588,8 +2606,9 @@ void FnSymbol::codegenDef() {
               llvm::Value* val = &*ai++;
               // store it into the addr
 #if HAVE_LLVM_VER >= 130
+              llvm::Type* eltTy = llvm::cast<llvm::PointerType>(storeAdr->getType()->getScalarType())->getElementType();
               llvm::Value* eltPtr =
-                irBuilder->CreateStructGEP(storeAdr->getType(), storeAdr, i);
+                irBuilder->CreateStructGEP(eltTy, storeAdr, i);
 #else
               llvm::Value* eltPtr = irBuilder->CreateStructGEP(storeAdr, i);
 #endif

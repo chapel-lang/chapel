@@ -31,6 +31,8 @@ protected:
         TestAsmPrinter::create("x86_64-pc-linux", Version, Format);
     ASSERT_THAT_EXPECTED(ExpectedTestPrinter, Succeeded());
     TestPrinter = std::move(ExpectedTestPrinter.get());
+    if (!TestPrinter)
+      GTEST_SKIP();
   }
 
   dwarf::Form Form;
@@ -51,23 +53,17 @@ struct DIEExprFixture : public DIEFixtureBase {
 };
 
 TEST_P(DIEExprFixture, SizeOf) {
-  if (!TestPrinter)
-    return;
-
   DIEExpr Tst(Val);
   EXPECT_EQ(Size, Tst.SizeOf(TestPrinter->getAP(), Form));
 }
 
 TEST_P(DIEExprFixture, EmitValue) {
-  if (!TestPrinter)
-    return;
-
   DIEExpr Tst(Val);
   EXPECT_CALL(TestPrinter->getMS(), emitValueImpl(Val, Size, _));
   Tst.emitValue(TestPrinter->getAP(), Form);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     DIETestParams, DIEExprFixture,
     testing::Values(
         DIETestParams{4, dwarf::DWARF32, dwarf::DW_FORM_data4, 4u},
@@ -75,7 +71,7 @@ INSTANTIATE_TEST_CASE_P(
         DIETestParams{4, dwarf::DWARF32, dwarf::DW_FORM_sec_offset, 4u},
         DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_data4, 4u},
         DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_data8, 8u},
-        DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_sec_offset, 8u}), );
+        DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_sec_offset, 8u}));
 
 struct DIELabelFixture : public DIEFixtureBase {
   void SetUp() override {
@@ -90,17 +86,11 @@ struct DIELabelFixture : public DIEFixtureBase {
 };
 
 TEST_P(DIELabelFixture, SizeOf) {
-  if (!TestPrinter)
-    return;
-
   DIELabel Tst(Val);
   EXPECT_EQ(Size, Tst.SizeOf(TestPrinter->getAP(), Form));
 }
 
 TEST_P(DIELabelFixture, EmitValue) {
-  if (!TestPrinter)
-    return;
-
   DIELabel Tst(Val);
 
   const MCExpr *Arg0 = nullptr;
@@ -113,7 +103,7 @@ TEST_P(DIELabelFixture, EmitValue) {
   EXPECT_EQ(&(ActualArg0->getSymbol()), Val);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     DIETestParams, DIELabelFixture,
     testing::Values(
         DIETestParams{4, dwarf::DWARF32, dwarf::DW_FORM_data4, 4u},
@@ -125,7 +115,7 @@ INSTANTIATE_TEST_CASE_P(
         DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_data8, 8u},
         DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_sec_offset, 8u},
         DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_strp, 8u},
-        DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_addr, 8u}), );
+        DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_addr, 8u}));
 
 struct DIEDeltaFixture : public DIEFixtureBase {
   void SetUp() override {
@@ -142,23 +132,17 @@ struct DIEDeltaFixture : public DIEFixtureBase {
 };
 
 TEST_P(DIEDeltaFixture, SizeOf) {
-  if (!TestPrinter)
-    return;
-
   DIEDelta Tst(Hi, Lo);
   EXPECT_EQ(Size, Tst.SizeOf(TestPrinter->getAP(), Form));
 }
 
 TEST_P(DIEDeltaFixture, EmitValue) {
-  if (!TestPrinter)
-    return;
-
   DIEDelta Tst(Hi, Lo);
   EXPECT_CALL(TestPrinter->getMS(), emitAbsoluteSymbolDiff(Hi, Lo, Size));
   Tst.emitValue(TestPrinter->getAP(), Form);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     DIETestParams, DIEDeltaFixture,
     testing::Values(
         DIETestParams{4, dwarf::DWARF32, dwarf::DW_FORM_data4, 4u},
@@ -166,21 +150,18 @@ INSTANTIATE_TEST_CASE_P(
         DIETestParams{4, dwarf::DWARF32, dwarf::DW_FORM_sec_offset, 4u},
         DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_data4, 4u},
         DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_data8, 8u},
-        DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_sec_offset, 8u}), );
+        DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_sec_offset, 8u}));
 
 struct DIELocListFixture : public DIEFixtureBase {
   void SetUp() override { DIEFixtureBase::SetUp(); }
 };
 
 TEST_P(DIELocListFixture, SizeOf) {
-  if (!TestPrinter)
-    return;
-
   DIELocList Tst(999);
   EXPECT_EQ(Size, Tst.SizeOf(TestPrinter->getAP(), Form));
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     DIETestParams, DIELocListFixture,
     testing::Values(
         DIETestParams{4, dwarf::DWARF32, dwarf::DW_FORM_loclistx, 2u},
@@ -188,6 +169,6 @@ INSTANTIATE_TEST_CASE_P(
         DIETestParams{4, dwarf::DWARF32, dwarf::DW_FORM_sec_offset, 4u},
         DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_loclistx, 2u},
         DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_data8, 8u},
-        DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_sec_offset, 8u}), );
+        DIETestParams{4, dwarf::DWARF64, dwarf::DW_FORM_sec_offset, 8u}));
 
 } // end namespace

@@ -18,7 +18,7 @@ using namespace llvm;
 namespace {
 
 TEST(ScalableVectorMVTsTest, IntegerMVTs) {
-  for (auto VecTy : MVT::integer_scalable_vector_valuetypes()) {
+  for (MVT VecTy : MVT::integer_scalable_vector_valuetypes()) {
     ASSERT_TRUE(VecTy.isValid());
     ASSERT_TRUE(VecTy.isInteger());
     ASSERT_TRUE(VecTy.isVector());
@@ -30,7 +30,7 @@ TEST(ScalableVectorMVTsTest, IntegerMVTs) {
 }
 
 TEST(ScalableVectorMVTsTest, FloatMVTs) {
-  for (auto VecTy : MVT::fp_scalable_vector_valuetypes()) {
+  for (MVT VecTy : MVT::fp_scalable_vector_valuetypes()) {
     ASSERT_TRUE(VecTy.isValid());
     ASSERT_TRUE(VecTy.isFloatingPoint());
     ASSERT_TRUE(VecTy.isVector());
@@ -180,7 +180,8 @@ TEST(ScalableVectorMVTsTest, SizeQueries) {
   // Check convenience size scaling methods.
   EXPECT_EQ(v2i32.getSizeInBits() * 2, v4i32.getSizeInBits());
   EXPECT_EQ(2 * nxv2i32.getSizeInBits(), nxv4i32.getSizeInBits());
-  EXPECT_EQ(nxv2f64.getSizeInBits() / 2, nxv2i32.getSizeInBits());
+  EXPECT_EQ(nxv2f64.getSizeInBits().divideCoefficientBy(2),
+            nxv2i32.getSizeInBits());
 }
 
 } // end anonymous namespace
