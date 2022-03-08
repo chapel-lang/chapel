@@ -2226,7 +2226,9 @@ static void lookupUsedImportedMod(const char*           name,
           isPublic = !use->isPrivate;
           checkThisInShadowScope = use->isPrivate;
           // don't bring in the module name for 'public use' at all
-          if (isPublic)
+          // unless it is renamed as in 'use Foo as F'
+          // and then it is OK because the user has opted in to it.
+          if (isPublic && !use->isARename())
             continue;
         } else if (ImportStmt* imp = toImportStmt(stmt)) {
           isPublic = !imp->isPrivate;
