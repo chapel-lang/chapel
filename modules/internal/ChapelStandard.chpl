@@ -26,93 +26,51 @@ module ChapelStandard {
   // Internal, but uses standard/CommDiagnostics
 
   // Internal modules.
-  public import CString;
-  public use CString;
-  public import Bytes;
-  public use Bytes;
-  public import String;
-  public use String;
-  public import OwnedObject;
-  public use OwnedObject;
-  public import SharedObject;
-  public use SharedObject;
-  public import ChapelEnv;
-  public use ChapelEnv;
-  public import ChapelBase;
-  public use ChapelBase;
-  public import Atomics;
-  public use Atomics;
-  public import NetworkAtomics;
-  public use NetworkAtomics;
-  public import NetworkAtomicTypes;
-  public use NetworkAtomicTypes;
-  public import AtomicsCommon;
-  public use AtomicsCommon;
-  public import ChapelIteratorSupport;
-  public use ChapelIteratorSupport;
-  public import ChapelThreads;
-  public use ChapelThreads;
-  public import ChapelTuple;
-  public use ChapelTuple;
-  public import ChapelRange;
-  public use ChapelRange;
-  public import ChapelReduce;
-  public use ChapelReduce;
-  public import ChapelSyncvar;
-  public use ChapelSyncvar;
-  public import ChapelTaskDataHelp;
-  public use ChapelTaskDataHelp;
+  public use CString as CString;
+  public use Bytes as Bytes;
+  public use String as String;
+  public use OwnedObject as OwnedObject;
+  public use SharedObject as SharedObject;
+  public use ChapelEnv as ChapelEnv;
+  public use ChapelBase as ChapelBase;
+  public use Atomics as Atomics;
+  public use NetworkAtomics as NetworkAtomics;
+  public use NetworkAtomicTypes as NetworkAtomicTypes;
+  public use AtomicsCommon as AtomicsCommon;
+  public use ChapelIteratorSupport as ChapelIteratorSupport;
+  public use ChapelThreads as ChapelThreads;
+  public use ChapelTuple as ChapelTuple;
+  public use ChapelRange as ChapelRange;
+  public use ChapelReduce as ChapelReduce;
+  public use ChapelSyncvar as ChapelSyncvar;
+  public use ChapelTaskDataHelp as ChapelTaskDataHelp;
   public use LocaleModel as _; // let LocaleModel refer to the class
-  public import ChapelLocale;
-  public use ChapelLocale;
-  public import ChapelPrivatization;
-  public use ChapelPrivatization;
-  public import DefaultRectangular; // This might be able to go just after Atomics
-  public use DefaultRectangular; // This might be able to go just after Atomics
-  public import LocalesArray;
-  public use LocalesArray;
-  public import ChapelArray;
-  public use ChapelArray;
-  public import ChapelDistribution;
-  public use ChapelDistribution;
-  public import ChapelAutoLocalAccess;
-  public use ChapelAutoLocalAccess;
-  public import ChapelIO;
-  public use ChapelIO;
-  public import LocaleTree;
-  public use LocaleTree;
-  public import ChapelHashing;
-  public use ChapelHashing;
-  public import DefaultAssociative;
-  public use DefaultAssociative;
-  public import DefaultSparse;
-  public use DefaultSparse;
-  public import ChapelTaskID;
-  public use ChapelTaskID;
-  public import ChapelTaskTable;
-  public use ChapelTaskTable;
-  public import MemTracking;
-  public use MemTracking;
-  public import ChapelUtil;
-  public use ChapelUtil;
-  public import Errors;
-  public use Errors;
-  public import ChapelTaskData;
-  public use ChapelTaskData;
-  public import ChapelSerializedBroadcast;
-  public use ChapelSerializedBroadcast;
-  public import ExportWrappers;
-  public use ExportWrappers;
-  public import ChapelAutoAggregation;
-  public use ChapelAutoAggregation;
+  public use ChapelLocale as ChapelLocale;
+  public use ChapelPrivatization as ChapelPrivatization;
+  public use DefaultRectangular as DefaultRectangular; // This might be able to go just after Atomics
+  public use LocalesArray as LocalesArray;
+  public use ChapelArray as ChapelArray;
+  public use ChapelDistribution as ChapelDistribution;
+  public use ChapelAutoLocalAccess as ChapelAutoLocalAccess;
+  public use ChapelIO as ChapelIO;
+  public use LocaleTree as LocaleTree;
+  public use ChapelHashing as ChapelHashing;
+  public use DefaultAssociative as DefaultAssociative;
+  public use DefaultSparse as DefaultSparse;
+  public use ChapelTaskID as ChapelTaskID;
+  public use ChapelTaskTable as ChapelTaskTable;
+  public use MemTracking as MemTracking;
+  public use ChapelUtil as ChapelUtil;
+  public use Errors as Errors;
+  public use ChapelTaskData as ChapelTaskData;
+  public use ChapelSerializedBroadcast as ChapelSerializedBroadcast;
+  public use ExportWrappers as ExportWrappers;
+  public use ChapelAutoAggregation as ChapelAutoAggregation;
 
   // Standard modules.
-  public import Types;
-  public use Types;
-  public import Math;
-  public use Math;
-  public import VectorizingIterator;
-  public use VectorizingIterator;
+  public use Types as Types;
+  public use Math as Math;
+  public use VectorizingIterator as VectorizingIterator;
 
   use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }
