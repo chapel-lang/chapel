@@ -249,6 +249,30 @@ struct ChplSyntaxVisitor {
     }
   }
 
+  void printTupleContents(const TupleDecl* node) {
+    ss_ << "(";
+    // TODO: Can this be generalized between TupleDecl and MultiDecl?
+    std::string delimiter = "";
+    for (auto decl : node->decls()) {
+      ss_ << delimiter;
+      if (decl->isTupleDecl()) {
+        printTupleContents(decl->toTupleDecl());
+      } else {
+        ss_ << decl->toVarLikeDecl()->name().c_str();
+        if (const Expression *te = decl->toVarLikeDecl()->typeExpression()) {
+          ss_ << ": ";
+          printChapelSyntax(ss_, te);
+        }
+        if (const Expression *ie = decl->toVarLikeDecl()->initExpression()) {
+          ss_ << " = ";
+          printChapelSyntax(ss_, ie);
+        }
+      }
+      delimiter = ", ";
+    }
+    ss_ << ")";
+  }
+
   void visit(const uast::ASTNode* node) {
     assert(false && "Unhandled uAST node");
   }
@@ -824,24 +848,8 @@ struct ChplSyntaxVisitor {
         node->intentOrKind() != TupleDecl::IntentOrKind::INDEX) {
       ss_ << kindToString((IntentList) node->intentOrKind()) << " ";
     }
-    ss_ << "(";
-    // TODO: Can this be generalized between TupleDecl and MultiDecl?
-    std::string delimiter = "";
-    for (auto decl : node->decls()) {
-      ss_ << delimiter;
-        ss_ << decl->toVarLikeDecl()->name().c_str();
-        if (const Expression* te = decl->toVarLikeDecl()->typeExpression()) {
-          ss_ << ": ";
-          printChapelSyntax(ss_, te);
-        }
-        if (const Expression* ie = decl->toVarLikeDecl()->initExpression()) {
-          ss_ << " = ";
-          printChapelSyntax(ss_, ie);
-        }
-        delimiter = ", ";
-      }
-    ss_ << ")";
 
+    printTupleContents(node);
 
     if (const Expression* te = node->typeExpression()) {
       ss_ << ": ";
