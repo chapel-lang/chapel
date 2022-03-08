@@ -1000,11 +1000,13 @@ struct Converter {
       } else {
         // an assignment expression
         INT_ASSERT(origCond->numElseStmts() == 1);
-        expr = singleExprFromStmts(node->stmts());
       }
-    } else { // not a conditional
+    }
+
+    if (!expr) {
       expr = singleExprFromStmts(node->stmts());
     }
+
     INT_ASSERT(expr != nullptr);
 
     return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
@@ -1070,10 +1072,15 @@ struct Converter {
       // Unpack things differently if body is a conditional.
       if (auto origCond = node->stmt(0)->toConditional()) {
         INT_ASSERT(origCond->numThenStmts() == 1);
-        INT_ASSERT(!origCond->hasElseBlock());
-        body = singleExprFromStmts(origCond->thenStmts());
-        cond = toExpr(convertAST(origCond->condition()));
-      } else {
+        if (!origCond->hasElseBlock()) {
+          body = singleExprFromStmts(origCond->thenStmts());
+          cond = toExpr(convertAST(origCond->condition()));
+        } else {
+          INT_ASSERT(origCond->numElseStmts() == 1);
+        }
+      }
+
+      if (!body) {
         body = singleExprFromStmts(node->stmts());
       }
 
