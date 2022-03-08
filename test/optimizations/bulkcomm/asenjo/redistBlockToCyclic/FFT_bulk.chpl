@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 proc copyBtoC(A:[], B:[])
 {

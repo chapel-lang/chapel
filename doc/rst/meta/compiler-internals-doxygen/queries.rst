@@ -1,6 +1,6 @@
 .. default-domain:: cpp
 
-.. _Chapter-next-chpl-queries:
+.. _Chapter-dyno-chpl-queries:
 
 Query Framework
 ===============

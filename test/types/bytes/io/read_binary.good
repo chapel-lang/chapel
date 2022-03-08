@@ -1,1 +1,2 @@
-testtest
+testtestread_binary.chpl:4: warning: binary conversion "%|4s" is deprecated.
+read_binary.chpl:7: warning: binary conversion "%|*s" is deprecated.

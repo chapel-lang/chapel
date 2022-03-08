@@ -1,5 +1,5 @@
 require "header.h";
-use SysCTypes;
+use CTypes;
 
 extern proc returnVoidFromVoidArg(arg: c_int): c_int;
 

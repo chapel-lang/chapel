@@ -4,7 +4,7 @@ First line of every file is:
 
   ChplVdebug: ver x.y nodes m nid n tid t seq s t1 t2 t3
      x.y is the version number.   The current version in 1.2.
-     m is the total locale/node count. 
+     m is the total locale/node count.
      n is the current node id
      t is the task id for this call to ChplVdebug.
      s is a sequence number for this run which is the time

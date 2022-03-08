@@ -32,7 +32,7 @@ namespace chapel {
   void EnumFieldGenerator::GenerateMembers(Printer* printer) {
     printer->Print(variables_, "var $name$: $type_name$;\n");
   }
-  
+
   EnumOneofFieldGenerator::EnumOneofFieldGenerator(const FieldDescriptor* descriptor)
       : FieldGeneratorBase(descriptor) {
     SetCommonOneofFieldVariables(&variables_);

@@ -34,8 +34,8 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
-SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
-SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
+SYS_CTYPES_MODULE_DOC=standard/ChapelSysCTypes.chpl
+SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/ChapelSysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC_BUILD=${CHPL_MAKE_HOME}/build/doc
@@ -61,6 +61,7 @@ MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/make_sys_basic_types.py
 
 $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
+	rm -f $(@D)/SysCTypes.chpl # TODO: Can remove once people are caught up
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) $(@F)
 
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
@@ -73,8 +74,10 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/ChapelEnv.chpl \
 	standard/ChapelIO.chpl \
+	standard/ChplConfig.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/CPtr.chpl \
+	standard/CTypes.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/Errors.chpl \
@@ -98,12 +101,12 @@ MODULES_TO_DOCUMENT = \
 	standard/Subprocess.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
+	standard/SysCTypes.chpl \
 	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
-	standard/Version.chpl \
-	$(SYS_CTYPES_MODULE_DOC)
+	standard/Version.chpl
 
 PACKAGES_TO_DOCUMENT = \
 	packages/ArgumentParser.chpl \
@@ -182,7 +185,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
 	@export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
-	  $(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
+	  $(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT) $(SYS_CTYPES_MODULE_DOC)
 	@echo "Running post-processing scripts"
 	@./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	@./dists/fixDistDocs.perl      ${MODULE_SPHINX}

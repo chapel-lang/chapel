@@ -27,7 +27,7 @@
 // backward compatible with the architecture implicitly provided by
 // releases 1.6 and preceding.
 //
-module LocaleModel { 
+module LocaleModel {
 
   if chpl_warnUnstable {
     compilerWarning("GPU support is a prototype in this version of Chapel.",
@@ -37,7 +37,7 @@ module LocaleModel {
 
   public use LocaleModelHelpGPU;
 
-  use IO, SysCTypes, CPtr;
+  use IO, CTypes;
 
   private inline
   proc runningOnGPUSublocale(): bool {
@@ -76,7 +76,7 @@ module LocaleModel {
 
     if runningOnGPUSublocale() then
       return chpl_gpu_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
-    else 
+    else
       return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 

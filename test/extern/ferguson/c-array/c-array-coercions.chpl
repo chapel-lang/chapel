@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 proc f(ptr:c_ptr(int)) {
   writeln(ptr.deref());
 }

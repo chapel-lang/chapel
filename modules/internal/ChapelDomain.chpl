@@ -1342,6 +1342,365 @@ module ChapelDomain {
       return _newArray(x);
     }
 
+    /*
+      This manager is returned by ``unsafeAssign()`` and can be used in
+      managed blocks to help resize arrays of non-default-initializable
+      elements.
+    */
+    record unsafeAssignManager {
+      pragma "no doc"
+      var _lhsInstance;
+
+      pragma "no doc"
+      var _lhsPid: int;
+
+      pragma "no doc"
+      var _rhsInstance;
+
+      pragma "no doc"
+      var _rhsPid: int;
+
+      pragma "no doc"
+      var _oldLhsDomainCopy: domain;
+
+      pragma "no doc"
+      param _checks: bool;
+
+      pragma "no doc"
+      var _isActiveManager: bool;
+
+      pragma "no doc"
+      iter _arraysOverLhsDom() {
+        for baseArr in _lhsInstance._arrs do
+          if !chpl__isArrayView(baseArr) then
+            yield baseArr;
+      }
+
+      pragma "no doc"
+      proc postinit() {
+        for baseArr in _arraysOverLhsDom() {
+          if _checks {
+            if !baseArr.chpl_isElementTypeDefaultInitializable() &&
+               !baseArr.chpl_isElementTypeNonNilableClass() {
+              param msg = 'Checks in \'unsafeAssign\' for arrays of non-' +
+                          'default-initializable elements are not ' +
+                          'supported yet';
+              halt(msg);
+            }
+          }
+        }
+      }
+
+      /*
+        Returns 'true' if this manager has runtime safety checks enabled.
+      */
+      inline proc checks return _checks;
+
+      // Type overload. Not documented, but provided for convenience.
+      pragma "no doc"
+      proc type isClassReferenceNil(const ref x) {
+        if isClassType(x.type) {
+          return if isBorrowedOrUnmanagedClassType(x.type)
+            then x == nil
+            else x.chpl_p == nil;
+        } else {
+          return false;
+        }
+      }
+
+      /*
+        Check if a given class reference is ``nil`` without triggering
+        runtime nilability checks.
+      */
+      proc isClassReferenceNil(const ref x) {
+        return this.type.isClassReferenceNil(x);
+      }
+
+      pragma "no doc"
+      proc _checkThatArrayShapeIsSupported(arr) param {
+
+        // TODO: Test associative, ND rectangular with rank 2+.
+        if !arr.isDefaultRectangular() {
+          compilerError('The array shape ' + arr.type:string + ' is ' +
+                        'not supported');
+        }
+      }
+
+      pragma "no doc"
+      proc _checkThatIndexMatchesArrayShape(arr, idx) param {
+        if arr.rank > 1 || idx.type != arr.idxType {
+          if idx.type != (arr.rank*arr.idxType) {
+            compilerError('invalid index type ' + idx.type:string +
+                          ' for array with rank ' + arr.rank:string);
+          }
+        }
+      }
+
+      pragma "no doc"
+      proc _isBaseArrClassElementNil(baseArr: BaseArr, idx) {
+        var idxTup = if isTuple(idx) then idx else (idx,);
+        return baseArr.chpl_unsafeAssignIsClassElementNil(this, idxTup);
+      }
+
+      /*
+        Return ``true`` if the value at a given index in an array has
+        been initialized.
+      */
+      proc isElementInitialized(arr: [?d], idx) {
+
+        // E.g., default rectangular...
+        _checkThatArrayShapeIsSupported(arr);
+
+        // Only certain forms of index are permissable.
+        _checkThatIndexMatchesArrayShape(arr, idx);
+
+        if _checks {
+          type T = arr.eltType;
+          if isNonNilableClassType(T) {
+            var baseArr = chpl__getActualArray(arr);
+            return !_isBaseArrClassElementNil(baseArr, idx);
+          } else if !isDefaultInitializable(T) {
+            halt('Checking if a non-default-initializable element is ' +
+                 'initialized is not supported yet');
+            return false;
+          } else {
+            return true;
+          }
+
+        // No checks, so just issue a compiler error.
+        } else {
+          param msg = 'Cannot check initialization state of non-' +
+                      'default-initializable array elements from a ' +
+                      'manager initialized with \'checks=false\'';
+          compilerError(msg);
+          return false;
+        }
+      }
+
+      pragma "no doc"
+      proc _checkIfAllElementsAreInitialized(baseArr) {
+
+        // Arrays of non-nilable classes.
+        if baseArr.chpl_isElementTypeNonNilableClass() {
+          for idx in newIndices() {
+            if _isBaseArrClassElementNil(baseArr, idx) {
+              baseArr.chpl_unsafeAssignHaltUninitializedElement(idx);
+            }
+          }
+
+        // TODO: For non-default-initializable elements, we'd iterate
+        // through a bitvector mapped to newly added slots.
+        } else if !baseArr.chpl_isElementTypeDefaultInitializable() {
+
+          // Should have already halted in postinit.
+          halt('internal error: checks for arrays of non-default-' +
+               'initializable elements are not supported');
+
+        // Should never reach here.
+        } else {
+          halt('Internal error!');
+        }
+      }
+
+      pragma "no doc"
+      proc _ensureNoLongerManagingThis() {
+        if !_isActiveManager then return; else _isActiveManager = false;
+
+        // Possible runtime checks, reset the resize policy of owned arrays.
+        for baseArr in _arraysOverLhsDom() {
+          if !baseArr.chpl_isElementTypeDefaultInitializable() {
+            if _checks then _checkIfAllElementsAreInitialized(baseArr);
+            const policy = chpl_ddataResizePolicy.normalInit;
+            baseArr.chpl_setResizePolicy(policy);
+          }
+        }
+      }
+
+      proc deinit() {
+        _ensureNoLongerManagingThis();
+      }
+
+      pragma "no doc"
+      proc _isArrayOwnedByLhsDomain(arr) {
+        return arr.dsiGetBaseDom() == _lhsInstance;
+      }
+
+      pragma "no doc"
+      proc _moveInitializeElement(arr, idx, in value) {
+        import Memory.Initialization.moveInitialize;
+        ref elem = arr[idx];
+        moveInitialize(elem, value);
+      }
+
+      pragma "no doc"
+      proc _checkNoChecksWhenNonDefaultInitializableEltType(arr) {
+        if _checks {
+          if !isDefaultInitializable(arr.eltType) &&
+             !isNonNilableClass(arr.eltType) {
+            param msg = 'Checks in \'unsafeAssign\' for arrays of non-' +
+                        'default-initializable elements are not ' +
+                        'supported yet';
+            compilerError(msg);
+          }
+        }
+      }
+
+      /*
+        Initialize a newly added array element at an index with a new value.
+        If the array element at `idx` has already been initialized, this
+        method will silently perform assignment instead. This method will
+        error if `idx` is not a valid indice in `arr`.
+      */
+      proc initialize(arr: [?d], idx, in value: arr.eltType) {
+
+        // Check to make sure value and array element types match.
+        if arr.eltType != value.type then
+          compilerError('Initialization value type \'' + value:string +
+                        '\' does not match array element type \'' +
+                        arr.eltType:string + '\'');
+
+        // E.g., default rectangular...
+        _checkThatArrayShapeIsSupported(arr);
+
+        // Only certain forms of index are permissable.
+        _checkThatIndexMatchesArrayShape(arr, idx);
+
+        // Produce a compiler error.
+        _checkNoChecksWhenNonDefaultInitializableEltType(arr);
+
+        // TODO: Remove this restriction in the future?
+        if isDefaultInitializable(arr.eltType) then
+          compilerError('Cannot call \'initialize\' on array with ' +
+                        'default-initializable element type ' +
+                        '\'' + arr.eltType:string + '\'');
+
+        if !_isArrayOwnedByLhsDomain(arr) then
+          halt('Can only initialize elements of arrays declared over ' +
+               'the domain being resized');
+
+        if !arr.domain.contains(idx) then
+          halt('Array index out of bounds: ' + idx:string);
+
+        // Get a reference to the array slot.
+        ref elem = arr[idx];
+
+        // If there are checks, we can fall back on assignment should a slot
+        // already be move-initialized.
+        if _checks {
+          if !isElementInitialized(arr, idx) {
+            _moveInitializeElement(arr, idx, value);
+          } else {
+
+            // TODO: Halt instead of assigning?
+            elem = value;
+          }
+
+        // If there are no checks, all we can do is destructively
+        // move-initialize.
+        } else {
+          _moveInitializeElement(arr, idx, value);
+        }
+      }
+
+      pragma "no doc"
+      proc enterThis() ref {
+
+        // TODO: Is it possible to nest unsafe assignments? Future work...
+        if _isActiveManager {
+          halt('Cannot nest a manager for unsafe domain assignment');
+        } else {
+          _isActiveManager = true;
+        }
+
+        for baseArr in _arraysOverLhsDom() {
+
+          // Don't care about arrays with default-initializable elements.
+          if baseArr.chpl_isElementTypeDefaultInitializable() then
+            continue;
+
+          // Array elements are non-nilable classes. In this case, tell
+          // the array to clear new slots when resizing by setting the
+          // resize policy. We can use 'nil' slots as sentinel values.
+          if baseArr.chpl_isElementTypeNonNilableClass() {
+            const policy = if _checks
+              then chpl_ddataResizePolicy.skipInitButClearMem
+              else chpl_ddataResizePolicy.skipInit;
+            baseArr.chpl_setResizePolicy(policy);
+
+          // The array element type is non-default-initializable (but it is
+          // not a non-nilable class).
+          } else {
+
+            // TODO: Future work could handle this case by using a bitvector
+            // to mark slot initialization status. Initialization calls
+            // would have to go through the 'initialize' method in order
+            // for this approach to work.
+            if _checks {
+              halt('Runtime checks are currently only supported for ' +
+                   'arrays of non-nilable classes');
+            } else {
+              const policy = chpl_ddataResizePolicy.skipInitButClearMem;
+              baseArr.chpl_setResizePolicy(policy);
+            }
+          }
+        }
+
+        // Create temporary shells for the LHS and RHS domains so that we
+        // can perform domain assignment.
+        var lhsTmpDom = new _domain(_lhsPid, _lhsInstance, _unowned=true);
+        var rhsTmpDom = new _domain(_rhsPid, _rhsInstance, _unowned=true);
+
+        // Perform the actual assignment.
+        lhsTmpDom = rhsTmpDom;
+
+        return this;
+      }
+
+      pragma "no doc"
+      proc leaveThis(in err: owned Error?) throws {
+        _ensureNoLongerManagingThis();
+        if err then throw err;
+      }
+
+      /*
+        Iterate over any new indices that will be added to this domain as a
+        result of unsafe assignment.
+      */
+      iter newIndices() {
+        var rhsTmpDom = new _domain(_rhsPid, _rhsInstance, _unowned=true);
+        for idx in rhsTmpDom do
+          if !_oldLhsDomainCopy.contains(idx) then
+            yield idx;
+      }
+    }
+
+    /*
+      Perform an unsafe assignment on this domain within the scope of a
+      manage statement. Within the managed scope, arrays of non-default-
+      initializable (e.g., an array of non-nilable classes) types
+      declared over this domain will not initialize new elements.
+
+      The context manager returned by this method can be used to initialize
+      arrays of non-default-initializable elements. If `checks` is true,
+      the manager will ensure that all new elements have been initialized
+      in non-default-initializable arrays declared over this domain.
+
+      .. note::
+
+        Checks are not currently supported for arrays with
+        non-default-initializable element types that are not non-nilable
+        classes.
+    */
+    proc ref unsafeAssign(const ref dom: domain, param checks: bool=false) {
+      return new unsafeAssignManager(_lhsInstance=_value,
+                                     _lhsPid=_pid,
+                                     _oldLhsDomainCopy=this,
+                                     _rhsInstance=dom._value,
+                                     _rhsPid=dom._pid,
+                                     _checks=checks,
+                                     _isActiveManager=false);
+    }
+
     /* Remove all indices from this domain, leaving it empty */
     proc ref clear() where this.isRectangular() {
       // For rectangular domains, create an empty domain and assign it to this

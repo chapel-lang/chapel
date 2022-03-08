@@ -1,0 +1,1 @@
+HaltBadArrayIndex.chpl:9: error: halt reached - Array index out of bounds: 2

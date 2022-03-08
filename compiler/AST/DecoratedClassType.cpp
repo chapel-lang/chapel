@@ -26,6 +26,8 @@
 #include "expr.h"
 #include "iterator.h"
 
+#include "global-ast-vecs.h"
+
 static const char* nameForUser(const char* className) {
   if (!strcmp(className, "_owned") || !strcmp(className, "_shared"))
     return className+1;

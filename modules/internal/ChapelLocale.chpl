@@ -28,7 +28,7 @@ module ChapelLocale {
 
   public use LocaleModel;
   import HaltWrappers;
-  use SysCTypes, CPtr;
+  use CTypes;
 
   compilerAssert(!(!localeModelHasSublocales &&
    localeModelPartitionsIterationOnSublocales),
@@ -55,7 +55,7 @@ module ChapelLocale {
     return (subloc != c_sublocid_none
             && subloc != c_sublocid_any
             && subloc != c_sublocid_all);
-  
+
   /*
     regular: Has a concrete BaseLocale instance
     any: Placeholder to represent the notion of "anywhere"
@@ -456,20 +456,20 @@ module ChapelLocale {
       HaltWrappers.pureVirtualMethodHalt();
       return 0;
     }
-  
+
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
 //    iter getChildIndices() : int {
 //      for idx in this.getChildSpace do
 //        yield idx;
 //    }
-  
+
     pragma "no doc"
     proc addChild(loc:locale)
     {
       HaltWrappers.pureVirtualMethodHalt();
     }
-  
+
     pragma "no doc"
     proc getChild(idx:int) : locale {
       HaltWrappers.pureVirtualMethodHalt();
@@ -493,7 +493,7 @@ module ChapelLocale {
    */
   pragma "no doc"
   class DummyLocale : BaseLocale {
-    proc init() { 
+    proc init() {
       super.init(nilLocale);
     }
 
@@ -705,7 +705,7 @@ module ChapelLocale {
       __primitive("chpl_comm_array_get",
                   __primitive("array_get", newRL, 0),
                   0 /* locale 0 */,
-                  __primitive("array_get", origRL, 0), 
+                  __primitive("array_get", origRL, 0),
                   numLocales:size_t);
       // Set the rootLocale to the local copy
       rootLocale._instance = newRootLocale;
@@ -784,7 +784,7 @@ module ChapelLocale {
       // For code prior to rootLocale initialization
       // in cases where we capture functions as FCF, module initialization order
       // changes in a way that IO is inited too early. In that scenario, we
-      // somehow don't get dummyLocale set up correctly in this scheme 
+      // somehow don't get dummyLocale set up correctly in this scheme
       // remove this check, and test/exits/albrecht/exitWithNoCall fails
       if dummyLocale._instance == nil {
         dummyLocale._instance = new unmanaged DummyLocale();
@@ -805,7 +805,7 @@ module ChapelLocale {
     on this do totalThreads = chpl_task_getNumThreads();
     return totalThreads;
   }
-  
+
   pragma "no doc"
   deprecated "locale.idleThreads() is deprecated; please let us know if this is a problem for you"
   proc locale.idleThreads() {
@@ -814,7 +814,7 @@ module ChapelLocale {
     on this do idleThreads = chpl_task_getNumIdleThreads();
     return idleThreads;
   }
-  
+
   pragma "no doc"
   deprecated "locale.queuedTasks() is deprecated; please let us know if this is a problem for you"
   proc locale.queuedTasks() {

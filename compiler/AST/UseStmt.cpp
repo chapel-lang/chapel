@@ -28,6 +28,8 @@
 #include "stringutil.h"
 #include "visibleFunctions.h"
 
+#include "global-ast-vecs.h"
+
 #include <algorithm>
 
 UseStmt::UseStmt(BaseAST* source, const char* modRename,

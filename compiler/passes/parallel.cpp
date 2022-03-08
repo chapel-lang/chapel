@@ -37,6 +37,8 @@
 #include "symbol.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()
 //   insertWideReferences()
@@ -1301,7 +1303,7 @@ static void insertEndCounts()
   Vec<FnSymbol*> queue;
   Map<FnSymbol*,Symbol*> endCountMap;
 
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     SET_LINENO(call);
     if (call->isPrimitive(PRIM_GET_END_COUNT)) {
       FnSymbol* pfn = call->getFunction();
@@ -1399,7 +1401,7 @@ CallExpr* createConditionalForDirectOn(CallExpr* call, FnSymbol* fn)
 // call that are accessed within the body of the nested function (recursively,
 // of course).
 static void passArgsToNestedFns() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     if (isTaskFun(fn)) {
       BundleArgsFnData baData = bundleArgsFnDataInit;
 
@@ -1513,4 +1515,3 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   }
   return wide;
 }
-

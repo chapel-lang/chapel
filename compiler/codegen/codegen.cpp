@@ -21,6 +21,7 @@
 #include "codegen.h"
 
 #include "astutil.h"
+#include "baseAST.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
@@ -45,6 +46,8 @@
 #include "view.h"
 #include "virtualDispatch.h"
 #include "chpl/util/filesystem.h"
+
+#include "global-ast-vecs.h"
 
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
@@ -882,7 +885,7 @@ static void genUnwindSymbolTable(){
     std::vector<GenRet> table;
     table.reserve(symbols.size() * 2);
 
-    forv_Vec(FnSymbol, fn, symbols) {
+    for (FnSymbol* fn : symbols) {
       table.push_back(codegenStringForTable(fn->cname));
       table.push_back(codegenStringForTable(fn->name));
     }
@@ -905,7 +908,7 @@ static void genUnwindSymbolTable(){
     std::vector<GenRet> table;
     table.reserve(symbols.size() * 2);
 
-    forv_Vec(FnSymbol, fn, symbols) {
+    for (FnSymbol* fn : symbols) {
       int fileno = getFilenameLookupPosition(fn->fname());
       int lineno = fn->linenum();
 
@@ -2095,7 +2098,7 @@ codegen_config() {
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
-    forv_Vec(VarSymbol, var, gVarSymbols) {
+    forv_expanding_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (6);
         {
@@ -2262,14 +2265,9 @@ static void convertSymbolToRefType(Symbol* sym) {
 }
 
 static void convertToRefTypes() {
-#define updateSymbols(SymType) \
-  forv_Vec(SymType, sym, g##SymType##s) { \
-    convertSymbolToRefType(sym); \
-  }
-
-  updateSymbols(VarSymbol);
-  updateSymbols(ArgSymbol);
-  updateSymbols(ShadowVarSymbol);
+  forv_expanding_Vec(VarSymbol, sym, gVarSymbols) convertSymbolToRefType(sym);
+  forv_Vec(ArgSymbol, sym, gArgSymbols) convertSymbolToRefType(sym);
+  forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) convertSymbolToRefType(sym);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->getReturnSymbol()) {

@@ -1,5 +1,4 @@
 use IO;
-use SysBasic;
 
 var style = defaultIOStyleInternal();
 var f = openfp(chpl_cstdout(), style=style);

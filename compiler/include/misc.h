@@ -94,6 +94,15 @@ bool        localeUsesGPU();
 const char* cleanFilename(const BaseAST* ast);
 const char* cleanFilename(const char*    name);
 
+//
+// Error tag values:
+//
+//  1 = INT_FATAL
+//  2 = USR_FATAL
+//  3 = USR_FATAL_CONT
+//  4 = USR_WARN
+//  5 = USR_PRINT
+//
 void        setupError(const char* subdir, const char* filename, int lineno, int tag);
 
 void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));

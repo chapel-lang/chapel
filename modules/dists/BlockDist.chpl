@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -208,7 +208,7 @@ The ``Block`` class initializer is defined as follows:
 
     proc Block.init(
       boundingBox: domain,
-      targetLocales: [] locale  = Locales, 
+      targetLocales: [] locale  = Locales,
       dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
       dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
       dataParMinGranularity     = // value of  dataParMinGranularity      config const,
@@ -1235,7 +1235,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       arrSection = _to_nonnil(myLocArr);
 
     local {
-      use CPtr; // Needed to cast from c_void_ptr in the next line
+      use CTypes; // Needed to cast from c_void_ptr in the next line
       const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type?;
       ref myElems = _to_nonnil(narrowArrSection).myElems;
       foreach i in myFollowThisDom do yield myElems[i];

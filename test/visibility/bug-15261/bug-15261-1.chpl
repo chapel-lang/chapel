@@ -1,9 +1,9 @@
 module MHDF5 {
-  use SysCTypes;
+  use CTypes;
 
   public import this.C_HDF5;
   module C_HDF5 {
-    public use SysCTypes;
+    public use CTypes;
 
     use HDF5_WAR;
 

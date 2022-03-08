@@ -28,7 +28,7 @@ module ChapelBase {
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
-  use ChapelEnv, SysCTypes, CPtr;
+  use ChapelEnv, CTypes;
 
   config param enablePostfixBangChecks = false;
 
@@ -917,6 +917,9 @@ module ChapelBase {
   pragma "no doc"
   extern type chpl_mem_descInt_t = int(16);
 
+  pragma "no doc"
+  enum chpl_ddataResizePolicy { normalInit, skipInit, skipInitButClearMem }
+
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
   //  and defined in SysBasic.chpl)
@@ -995,15 +998,13 @@ module ChapelBase {
   }
 
   inline proc _ddata_allocate(type eltType, size: integral,
-                              subloc = c_sublocid_none,
-                              param initElts: bool=true) {
+                              subloc = c_sublocid_none) {
     var callPostAlloc: bool;
     var ret: _ddata(eltType);
 
     ret = _ddata_allocate_noinit(eltType, size, callPostAlloc, subloc);
 
-    if initElts then
-      init_elts(ret, size, eltType);
+    init_elts(ret, size, eltType);
 
     if callPostAlloc {
       _ddata_allocate_postalloc(ret, size);
@@ -1025,13 +1026,33 @@ module ChapelBase {
                                              oldSize.safeCast(size_t),
                                              newSize.safeCast(size_t),
                                              _ddata_sizeof_element(oldDdata));
+  }
+
+  inline proc _ddata_fill(ddata,
+                          type eltType,
+                          lo: integral,
+                          hi: integral,
+                          fill: int(8)=0) {
+    if hi > lo {
+      const elemWidthInBytes: uint  = _ddata_sizeof_element(ddata);
+      const numElems = (hi - lo).safeCast(uint);
+      if safeMul(numElems, elemWidthInBytes) {
+        const numBytes = numElems * elemWidthInBytes;
+        const shiftedPtr = _ddata_shift(eltType, ddata, lo);
+        c_memset(shiftedPtr:c_void_ptr, fill, numBytes);
+      } else {
+        halt('internal error: Unsigned integer overflow during ' +
+             'memset of dynamic block');
+      }
     }
+  }
 
   inline proc _ddata_reallocate(oldDdata,
                                 type eltType,
                                 oldSize: integral,
                                 newSize: integral,
-                                subloc = c_sublocid_none) {
+                                subloc = c_sublocid_none,
+                                policy = chpl_ddataResizePolicy.normalInit) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
@@ -1054,12 +1075,27 @@ module ChapelBase {
       }
     }
 
-    const newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr, oldSize.safeCast(size_t),
-                                   newSize.safeCast(size_t),
-                                   _ddata_sizeof_element(oldDdata),
-                                   subloc, callPostAlloc): oldDdata.type;
+    var newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr,
+                                          oldSize.safeCast(size_t),
+                                          newSize.safeCast(size_t),
+                                          _ddata_sizeof_element(oldDdata),
+                                          subloc,
+                                          callPostAlloc): oldDdata.type;
 
-    init_elts(newDdata, newSize, eltType, lo=oldSize);
+    // The resize policy dictates whether or not we should default-init,
+    // skip initializing, or zero out the memory of new slots.
+    select policy {
+      when chpl_ddataResizePolicy.normalInit do
+        if !isDefaultInitializable(eltType) {
+          halt('internal error: Attempt to resize dynamic block ' +
+               'containing non-default-initializable elements');
+        } else {
+          init_elts(newDdata, newSize, eltType, lo=oldSize);
+        }
+      when chpl_ddataResizePolicy.skipInit do;
+      when chpl_ddataResizePolicy.skipInitButClearMem do
+        _ddata_fill(newDdata, eltType, oldSize, newSize);
+    }
 
     if (callPostAlloc) {
       pragma "fn synchronization free"
@@ -1150,7 +1186,12 @@ module ChapelBase {
     }
   }
 
-  config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
+  config param useAtomicTaskCnt = defaultAtomicTaskCount();
+
+  proc defaultAtomicTaskCount() param {
+    use ChplConfig;
+    return ChplConfig.CHPL_NETWORK_ATOMICS != "none";
+  }
 
   // Parent class for _EndCount instances so that it's easy
   // to add non-generic fields here.

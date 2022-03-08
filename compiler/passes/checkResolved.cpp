@@ -35,6 +35,8 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <set>
 
 // We use RefVector to store a list of symbols that are aliases for the return

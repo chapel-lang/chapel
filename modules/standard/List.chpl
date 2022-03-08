@@ -524,7 +524,10 @@ module List {
 
     pragma "no doc"
     proc _makeArray(size: int) {
-      return _ddata_allocate(eltType, size, initElts=false);
+      var callPostAlloc = false;
+      var ret = _ddata_allocate_noinit(eltType, size, callPostAlloc);
+      if callPostAlloc then _ddata_allocate_postalloc(ret, size);
+      return ret;
     }
 
     pragma "no doc"

@@ -68,22 +68,22 @@ module Path {
 use List;
 use SysError, IO;
 use Sys, SysBasic;
-use CPtr;
+use CTypes;
 
-/* 
+/*
    Represents generally the current directory. This starts as the directory
    where the program is being executed from. On all the platforms that Chapel
    supports this parameter is set to ".".
 */
 param curDir;
 
-/* 
+/*
    Represents generally the parent directory. On all the platforms that Chapel
    supports this parameter is set to "..".
 */
 param parentDir;
 
-/* 
+/*
    Denotes the separator between a directory and its child.  On all the
    platforms that Chapel supports this parameter is set to "/"
 */
@@ -108,12 +108,12 @@ private inline proc unescape(str: string) {
   given a non-absolute path this function is equivalent to the following code:
 
   .. code-block:: Chapel
-  
+
     normPath(joinPath(here.cwd(), path))
-  
+
   See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`
   for details.
-    
+
   .. warning::
 
     This function is unsafe for use in a parallel environment due to its
@@ -137,14 +137,14 @@ proc absPath(path: string): string throws {
 }
 
 /*
-  Creates a normalized absolutized version of the path of a 
+  Creates a normalized absolutized version of the path of a
   :type:`~IO.file`. On most platforms, when given a non-absolute path this
   function is equivalent to the following code:
-  
+
   .. code-block:: Chapel
-  
+
       normPath(joinPath(here.cwd(), f.path))
-      
+
   See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`,
   :proc:`~IO.file.path` for details.
 
@@ -558,7 +558,7 @@ private proc normalizeLeadingSlashCount(path: string): int {
   :rtype: `string`
 */
 proc normPath(path: string): string {
-  
+
   // Python 3.7 implementation:
   // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
 
@@ -612,7 +612,7 @@ proc realPath(path: string): string throws {
   const ret = createStringWithNewBuffer(res, policy=decodePolicy.escape);
   // res was qio_malloc'd by chpl_fs_realpath, so free it here
   chpl_free_c_string(res);
-  return ret; 
+  return ret;
 }
 
 /* Determines the canonical path referenced by a given :type:`~IO.file` record.
@@ -621,7 +621,7 @@ proc realPath(path: string): string throws {
 
    :arg f: A file whose path should be resolved.
    :type f: :type:`~IO.file`
-   
+
    :return: A canonical path to the file referenced by the given :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
             occur.

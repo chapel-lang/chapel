@@ -38,7 +38,7 @@ module ChapelAutoLocalAccess {
     if loopDomain._value.type.isDefaultRectangular() {
       return accessBase.domain.supportsAutoLocalAccess();
     }
-    
+
     return false;
   }
 
@@ -62,7 +62,7 @@ module ChapelAutoLocalAccess {
     if chpl__staticAutoLocalCheck(accessBase, loopDomain) {
       // if they're the same domain...
       if accessBase.domain == loopDomain &&
-         accessBase.domain._value.dist.dsiEqualDMaps(loopDomain._value.dist) then 
+         accessBase.domain._value.dist.dsiEqualDMaps(loopDomain._value.dist) then
         return true;
 
       // or at least if they were distributed the same way

@@ -91,7 +91,7 @@ void extractAndPrintFunctionsLLVM(std::set<const GlobalValue*> *gvs) {
 #else
   ToolOutputFile Out("-", EC, sys::fs::F_None);
 #endif
-  if (EC) {    
+  if (EC) {
     errs() << EC.message() << '\n';
     return;
   }

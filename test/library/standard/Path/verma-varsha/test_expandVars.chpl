@@ -1,4 +1,4 @@
-use Path;
+use Path, ChplConfig;
 
 var x1:string = "$CHPL_HOME/bin/${TEST_HOST_PLATFORM}";
 assert(expandVars(x1) == CHPL_HOME+"/bin/"+CHPL_HOST_PLATFORM);

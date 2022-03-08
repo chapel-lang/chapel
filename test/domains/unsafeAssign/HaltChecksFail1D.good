@@ -1,0 +1,2 @@
+{x = 0}
+HaltChecksFail1D.chpl:11: error: halt reached - Upon finishing unsafe assignment, one or more elements of a non-default-initializable array of type 'shared C' remain uninitialized

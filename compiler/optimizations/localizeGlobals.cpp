@@ -27,6 +27,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
+
 #include <cstdio>
 
 // This pass pulls out any global constants to the top of the given

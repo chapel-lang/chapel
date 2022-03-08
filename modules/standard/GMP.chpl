@@ -106,11 +106,10 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
 
 */
 module GMP {
-  use SysBasic;
+  use CTypes;
   use SysError;
   use BigInteger;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   require "GMPHelper/chplgmp.h";
 
@@ -1326,8 +1325,11 @@ module GMP {
     }
   }
 
-  if CHPL_GMP == "none" {
-    compilerError("Cannot use GMP with CHPL_GMP=none");
+  {
+    use ChplConfig;
+    if CHPL_GMP == "none" {
+      compilerError("Cannot use GMP with CHPL_GMP=none");
+    }
   }
 
   // calls mp_set_memory_functions to use chpl_malloc, etc.

@@ -30,6 +30,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
 
 static void checkNamedArguments(CallExpr* call);
 static void checkManagedClassKinds(CallExpr* call);
@@ -377,6 +378,10 @@ checkFunction(FnSymbol* fn) {
     } else {
       USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
     }
+  }
+
+  if (fn->hasFlag(FLAG_OVERRIDE) && fn->_this == NULL) {
+    USR_FATAL("'override' cannot be applied to non-method '%s'", fn->name);
   }
 
   if (fn->retTag == RET_TYPE || fn->retTag == RET_PARAM) {

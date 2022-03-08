@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 pragma "codegen for GPU"
 pragma "always resolve function"

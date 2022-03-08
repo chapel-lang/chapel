@@ -70,7 +70,9 @@
 #include "WhileStmt.h"
 #include "wrappers.h"
 
-#include "../next/lib/immediates/prim_data.h"
+#include "global-ast-vecs.h"
+
+#include "../dyno/lib/immediates/prim_data.h"
 
 #include <algorithm>
 #include <cmath>
@@ -187,7 +189,7 @@ static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName);
 static Expr* foldTryCond(Expr* expr);
 
 static void unmarkDefaultedGenerics();
-static void resolveUses(ModuleSymbol* mod, const char* path);
+static void resolveUsesAndModule(ModuleSymbol* mod, const char* path);
 static void resolveSupportForModuleDeinits();
 static void resolveExports();
 static void resolveEnumTypes();
@@ -5181,13 +5183,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     bool                         ignoreWhere,
                     Vec<ResolutionCandidate*>&   ambiguous);
 
-
-static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous);
-
 static int  compareSpecificity(ResolutionCandidate*         candidate1,
                                ResolutionCandidate*         candidate2,
                                const DisambiguationContext& DC,
@@ -9228,9 +9223,9 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
         break;
 
       if (i <= head &&
-          frame->linenum()                     >  0             &&
+          frame->linenum() > 0                                  &&
           fn->hasFlag(FLAG_COMPILER_GENERATED) == false         &&
-          module->modTag                       != MOD_INTERNAL) {
+          (developer || module->modTag != MOD_INTERNAL)         ) {
         break;
       }
     }
@@ -9465,10 +9460,18 @@ void resolve() {
 
   resolveObviousGlobals();
 
-  resolveUses(ModuleSymbol::mainModule(), "");
+  resolveUsesAndModule(ModuleSymbol::mainModule(), "");
+
+  // Also resolve modules mentioned on command line
+  // Could rely on init calls in chpl_gen_main for this.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
+      resolveUsesAndModule(mod, "");
+    }
+  }
 
   if (printModuleInitModule)
-    resolveUses(printModuleInitModule, "");
+    resolveUsesAndModule(printModuleInitModule, "");
 
   if (chpl_gen_main)
     resolveFunction(chpl_gen_main);
@@ -9595,7 +9598,7 @@ static void unmarkDefaultedGenerics() {
 
 static std::set<ModuleSymbol*> moduleInitResolved;
 
-static void resolveUses(ModuleSymbol* mod, const char* path) {
+static void resolveUsesAndModule(ModuleSymbol* mod, const char* path) {
   if (moduleInitResolved.count(mod) == 0) {
     moduleInitResolved.insert(mod);
 
@@ -9609,12 +9612,12 @@ static void resolveUses(ModuleSymbol* mod, const char* path) {
 
     if (ModuleSymbol* parent = mod->defPoint->getModule()) {
       if (parent != theProgram && parent != rootModule) {
-        resolveUses(parent, path);
+        resolveUsesAndModule(parent, path);
       }
     }
 
     for_vector(ModuleSymbol, usedMod, mod->modUseList) {
-      resolveUses(usedMod, path);
+      resolveUsesAndModule(usedMod, path);
     }
 
     if (fPrintModuleResolution == true) {
@@ -9668,7 +9671,7 @@ static void resolveExports() {
   std::vector<FnSymbol*> exps;
 
   // We need to resolve any additional functions that will be exported.
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn == initStringLiterals) {
       // initStringLiterals is exported but is explicitly resolved last since
       // code may be added to it in postFold calls while resolving other
@@ -9833,6 +9836,9 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
     retval = true;
   }
 
+  // remove the temporary used in resolving
+  tmp->defPoint->remove();
+
   return retval;
 }
 
@@ -9873,6 +9879,9 @@ static void resolveBroadcasters(AggregateType* at) {
 
   ser.broadcaster = broadcastFn;
   ser.destroyer   = destroyFn;
+
+  // remove the temporary used to resolve
+  tmp->defPoint->remove();
 }
 
 static FnSymbol* createMethodStub(AggregateType* at, const char* methodName,
@@ -9924,7 +9933,7 @@ static bool ensureSerializersExist(AggregateType* at) {
            ! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
            ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
     if (at != NULL) {
-      if (isRecord(at) == true || 
+      if (isRecord(at) == true ||
           (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
         return resolveSerializeDeserialize(at);
       }
@@ -10069,7 +10078,7 @@ static bool createSerializeDeserialize(AggregateType* at) {
                                                        typeTemp,
                                                        deserializerFormal,
                                                        new_IntSymbol(fieldNum))));
-      
+
       deserializer->insertAtTail(deserVersions);
     }
     else {
@@ -10095,7 +10104,7 @@ static void resolveSerializers() {
     return;
   }
 
-  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
 
     if (AggregateType* at = toAggregateType(ts->type)) {
       bool hasSerializers = ensureSerializersExist(at);
@@ -10112,7 +10121,7 @@ static void resolveSerializers() {
 static void resolveDestructors() {
   std::set<Type*> wellknown = getWellKnownTypesSet();
 
-  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_REF)                     &&
         ! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
@@ -10136,7 +10145,7 @@ static void resolveDestructors() {
 static const char* autoCopyFnForType(AggregateType* at);
 
 static void resolveAutoCopies() {
-  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
@@ -10461,7 +10470,7 @@ static void insertReturnTemps() {
   // Note that we do not do this for --minimal-modules compilation
   // because we do not support sync/singles for minimal modules.
   //
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_expanding_Vec(CallExpr, call, gCallExprs) {
       if (call->list == NULL && isForallRecIterHelper(call))
         continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {

@@ -1,4 +1,4 @@
-use Time;
+use Time, ChplConfig;
 
 config const remoteTasksCreatedPerTask = if CHPL_COMM == 'ugni' then 100000
                                                                 else 2000;

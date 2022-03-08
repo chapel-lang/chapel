@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -107,17 +107,17 @@ void* calloc(size_t n, size_t size)
   void* ret;
   if( !chpl_mem_inited() ) {
     ret = __libc_calloc(n, size);
-    if( DEBUG_REPLACE_MALLOC ) 
+    if( DEBUG_REPLACE_MALLOC )
       printf("in early calloc %p = system calloc(%#x)\n", ret, (int) (n*size));
     track_system_allocated(ret, n*size, __libc_malloc);
     return ret;
   }
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("in calloc\n");
 
   ret = chpl_calloc(n, size);
 
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("%p = chpl_calloc(%#x)\n", ret, (int) (n*size));
 
   return ret;
@@ -128,17 +128,17 @@ void* malloc(size_t size)
   void* ret;
   if( !chpl_mem_inited() ) {
     ret = __libc_malloc(size);
-    if( DEBUG_REPLACE_MALLOC ) 
+    if( DEBUG_REPLACE_MALLOC )
       printf("in early malloc %p = system malloc(%#x)\n", ret, (int) size);
     track_system_allocated(ret, size, __libc_malloc);
     return ret;
   }
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("in malloc\n");
 
   ret = chpl_malloc(size);
 
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("%p = chpl_malloc(%#x)\n", ret, (int) size);
 
   return ret;
@@ -148,12 +148,12 @@ void* memalign(size_t alignment, size_t size)
 {
   if( !chpl_mem_inited() ) {
     void* ret = __libc_memalign(alignment, size);
-    if( DEBUG_REPLACE_MALLOC ) 
+    if( DEBUG_REPLACE_MALLOC )
       printf("in early memalign %p = system memalign(%#x)\n", ret, (int) size);
     track_system_allocated(ret, size, __libc_malloc);
     return ret;
   }
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("in memalign\n");
 
   return chpl_memalign(alignment, size);
@@ -163,7 +163,7 @@ void* realloc(void* ptr, size_t size)
 {
   if( !chpl_mem_inited() ) {
     void* ret = __libc_realloc(ptr, size);
-    if( DEBUG_REPLACE_MALLOC ) 
+    if( DEBUG_REPLACE_MALLOC )
       printf("in early realloc %p = system realloc(%p,%#x)\n",
              ret, ptr, (int) size);
     track_system_allocated(ret, size, __libc_malloc);
@@ -206,18 +206,18 @@ void* realloc(void* ptr, size_t size)
 void free(void* ptr)
 {
   if( ! ptr ) return;
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("in free(%p)\n", ptr);
   // check to see if we're freeing a pointer that was allocated
   // before the our allocator came up.
   if( !chpl_mem_inited() || is_system_allocated(ptr, NULL) ) {
-    if( DEBUG_REPLACE_MALLOC ) 
+    if( DEBUG_REPLACE_MALLOC )
       printf("calling system free\n");
     __libc_free(ptr);
     return;
   }
 
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("calling chpl_free\n");
   chpl_free(ptr);
 }
@@ -231,19 +231,19 @@ int posix_memalign(void **memptr, size_t alignment, size_t size)
     if( ret ) return ret;
     *memptr = __libc_memalign(alignment, size);
     if( ! *memptr ) return ENOMEM;
-    if( DEBUG_REPLACE_MALLOC ) 
+    if( DEBUG_REPLACE_MALLOC )
       printf("in early posix_memalign %p = system posix_memalign(%#x)\n",
              *memptr, (int) size);
     track_system_allocated(*memptr, size, __libc_malloc);
     return 0;
   }
 
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("in posix_memalign\n");
 
   ret = chpl_posix_memalign(memptr, alignment, size);
 
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("%p = chpl_posix_memalign(%#x, %#x) returned %i\n",
            *memptr, (int) alignment, (int) size, ret);
 
@@ -255,17 +255,17 @@ void* valloc(size_t size)
   void* ret;
   if( !chpl_mem_inited() ) {
     ret = __libc_valloc(size);
-    if( DEBUG_REPLACE_MALLOC ) 
+    if( DEBUG_REPLACE_MALLOC )
       printf("in early valloc %p = system valloc(%#x)\n", ret, (int) size);
     track_system_allocated(ret, size, __libc_malloc);
     return ret;
   }
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("in valloc\n");
 
   ret = chpl_valloc(size);
 
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("%p = chpl_valloc(%#x)\n", ret, (int) size);
 
   return ret;
@@ -275,13 +275,13 @@ void* pvalloc(size_t size)
 {
   if( !chpl_mem_inited() ) {
     void* ret = __libc_pvalloc(size);
-    if( DEBUG_REPLACE_MALLOC ) 
+    if( DEBUG_REPLACE_MALLOC )
       printf("in early pvalloc %p = system pvalloc(%#x)\n",
              ret, (int) size);
     track_system_allocated(ret, size, __libc_malloc);
     return ret;
   }
-  if( DEBUG_REPLACE_MALLOC ) 
+  if( DEBUG_REPLACE_MALLOC )
     printf("in pvalloc\n");
 
   return chpl_pvalloc(size);

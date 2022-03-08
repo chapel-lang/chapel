@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -451,7 +451,7 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
   }
   len = num;
 
- 
+
   // Now read that many bytes into an allocated area.
   ret = qio_malloc(len + 1); // room for \0.
   if( ! ret ) {
@@ -667,7 +667,7 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
         // handle \uABCD
         tmpi = 0;
 
-        for( z = 0; z < 4; z++ ) { 
+        for( z = 0; z < 4; z++ ) {
           err = qio_channel_read_char(false, ch, &tmpchr);
           if( err ) break;
           err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
@@ -687,7 +687,7 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
 
         // It might be a surrogate pair....
         if( 0xD800 <= conv && conv <= 0xDBFF ) {
-          // We *must* read another \uXXXX, 
+          // We *must* read another \uXXXX,
           //  and it *must* be a trail surrogate (ie in 0xDC00..0xDFFF)
           // Read \ character
           err = qio_channel_read_char(false, ch, &chr);
@@ -705,7 +705,7 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
           }
           tmpi = 0;
           // Now read XXXX
-          for( z = 0; z < 4; z++ ) { 
+          for( z = 0; z < 4; z++ ) {
             err = qio_channel_read_char(false, ch, &tmpchr);
             if( err ) break;
             err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
@@ -1126,7 +1126,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     if( ! err ) {
       // We've exited the loop because the last
       // one we read wasn't whitespace, so seek
-      // back to lastwspos. 
+      // back to lastwspos.
       qio_channel_advance_unlocked(ch, lastwspos - qio_channel_offset_unlocked(ch));
     }
   }
@@ -1173,7 +1173,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     if( ! err ) {
       // We've exited the loop because the last
       // one we read wasn't whitespace, so seek
-      // back to lastwspos. 
+      // back to lastwspos.
       qio_channel_advance_unlocked(ch, lastwspos - qio_channel_offset_unlocked(ch));
     }
   }*/
@@ -1389,7 +1389,7 @@ int _qio_chr_escape(int32_t chr, int32_t string_end, int string_format, char* tm
   int width_chars = 0;
   int width_cols = 0;
   int cwidth;
- 
+
 #define WRITEC(c) { \
     width_chars++; \
     if( width_cols_out ) { \
@@ -1471,7 +1471,7 @@ int _qio_chr_escape(int32_t chr, int32_t string_end, int string_format, char* tm
           WRITEC(_qio_tohex((chr >>  0) & 0xf));
         } else {
           unsigned int code = (chr - 0x10000) & 0xFFFFF;
-          unsigned int lead = (0xD800 + (code >> 10)) & 0xFFFF; 
+          unsigned int lead = (0xD800 + (code >> 10)) & 0xFFFF;
           unsigned int trail = (0xDC00 + (code & 0x3FF)) & 0xFFFF;
           WRITEC('\\');
           WRITEC('u');
@@ -1777,7 +1777,7 @@ unlock:
 }
 
 // Returns length information for how we would quote ptr
-// without actually saving it anywhere. 
+// without actually saving it anywhere.
 qioerr qio_quote_bytes_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti)
 {
   ssize_t i; // how far along the input are we (ie ptr[i])
@@ -1875,7 +1875,7 @@ qioerr qio_quote_bytes_length(uint8_t string_start, uint8_t string_end, uint8_t 
 }
 
 // Returns length information for how we would quote ptr
-// without actually saving it anywhere. 
+// without actually saving it anywhere.
 qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti)
 {
   qioerr err;
@@ -2007,7 +2007,7 @@ qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string
   ti.max_columns = (ti_arg)?(ti_arg->max_columns):(SSIZE_MAX);
   ti.max_chars = (ti_arg)?(ti_arg->max_chars):(SSIZE_MAX);
   ti.max_bytes = (ti_arg)?(ti_arg->max_bytes):(SSIZE_MAX);
- 
+
   // Figure out the how big the string will be
   err = qio_quote_string_length(string_start, string_end, string_format, ptr, len, &ti);
   if( err ) return err;
@@ -2435,7 +2435,7 @@ typedef struct number_reading_state_s {
   int usebase;
 
   signed char sign; // resulting sign; positive or negative
-  char is_nan; // did we read nan()? 
+  char is_nan; // did we read nan()?
   char is_inf; // did we read inf or infinity?
   int gotbase;
   int64_t digits_start; // where do the digits start?
@@ -2615,7 +2615,7 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
       s->end = s->point = qio_channel_offset_unlocked(ch);
       NEXT_CHR_OR_EOF;
       // Continue to read digits.
-    } else if( s->allow_real && 
+    } else if( s->allow_real &&
                ( (s->usebase <= 10 && chr == s->exponent_char) ||
                  (s->usebase > 10 && chr == s->other_exponent_char) ) &&
                s->exponent == -1 ) {
@@ -2906,7 +2906,7 @@ qioerr qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restr
     buf[i++] = (st.sign>=0)?'+':'-';
   } else if ( st.gotbase == 16 ) {
     if( st.is_nan || st.is_inf ) {
-      // do nothing. 
+      // do nothing.
     } else {
       buf[i++] = (st.sign>=0)?'+':'-';
       buf[i++] = '0';
@@ -2916,7 +2916,7 @@ qioerr qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restr
     QIO_GET_CONSTANT_ERROR(err, EFORMAT, "unknown floating point base");
     goto error;
   }
- 
+
   // set the radix character to '.'
   if( point >= i && tolower(buf[point]) == st.point_char ) {
     buf[point] = '.';
@@ -2937,7 +2937,7 @@ qioerr qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restr
       st.exponent_char != 'e' ) {
     buf[exponent] = 'e';
   }
- 
+
   // fix the sign characters in the exponent.
   if( exponent >= i &&
       tolower(buf[exponent]) == st.exponent_char ) {
@@ -3590,7 +3590,7 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
   // Try printing it directly into the buffer.
   if( qio_space_in_ptr_diff(max, ch->cached_end,ch->cached_cur) ) {
     // Print it all directly into the buffer.
-    got = _ltoa(ch->cached_cur, qio_ptr_diff(ch->cached_end,ch->cached_cur), 
+    got = _ltoa(ch->cached_cur, qio_ptr_diff(ch->cached_end,ch->cached_cur),
                 num, isneg, base, style);
     if( got < 0 ) {
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknown base or bad width");
@@ -3606,7 +3606,7 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
       max = got + 1;
     }
   }
- 
+
   // We get here if there wasn't enough room in cached for _ltoa
   {
     char* tmp = NULL;
@@ -3710,7 +3710,7 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
     // amount of room needed.
     max = got + extra + 1;
   }
- 
+
 
   // We get here if there wasn't enough room in cached for _ftoa
   // In that case, write to a temporary buffer. Note that
@@ -4115,7 +4115,7 @@ qioerr qio_channel_print_complex(const int threadsafe,
     } else if( re_got + extra  < re_max ) {
       break;
     } else {
-      // Not enough room... try again. 
+      // Not enough room... try again.
       MAYBE_STACK_FREE(re_buf, re_buf_onstack);
       re_buf = NULL;
       re_max = re_got + extra + 1;
@@ -4144,7 +4144,7 @@ qioerr qio_channel_print_complex(const int threadsafe,
     } else if( im_got + extra < im_max ) {
       break;
     } else {
-      // Not enough room... try again. 
+      // Not enough room... try again.
       MAYBE_STACK_FREE(im_buf, im_buf_onstack);
       im_buf = NULL;
       im_max = im_got + extra + 1;
@@ -4281,8 +4281,8 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
         tmp1 = qio_channel_read_amt(false, ch, tmp, 3);
         if( tmp1 != 0 ) gotch = - tmp1; // error code.
         if( tmp1 == 0 &&
-            (tmp[0] & 0xc0) == 0x80 && 
-            (tmp[1] & 0xc0) == 0x80 && 
+            (tmp[0] & 0xc0) == 0x80 &&
+            (tmp[1] & 0xc0) == 0x80 &&
             (tmp[2] & 0xc0) == 0x80 ) {
           gotch = ((((unsigned int) gotch) & 0x07) << 18) |
                   ((((unsigned int)tmp[0]) & 0x3f) << 12 ) |
@@ -4372,7 +4372,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
         // We always read 1 character at least.
         gotch = qio_channel_read_byte(false, ch);
         if( gotch < 0 ) {
-          err = qio_int_to_err(-got);
+          err = qio_int_to_err(-gotch);
           *chr = -1;
           break;
         }
@@ -4418,7 +4418,7 @@ c_string qio_encode_to_string(int32_t chr)
   if( nbytes == 0 ) {
     return NULL;
   }
-  
+
   buf = qio_malloc(nbytes + 1);
   if( ! buf ) return NULL;
 
@@ -4547,13 +4547,26 @@ int _qio_regex_flags_then_rcurly(const char* ptr, int * len)
   return 0;
 }
 
+static
+void deprecated_binary_warning(const char *conversion, int32_t len,
+                               int32_t lineno, int32_t filename) {
+  static char last[100] = {0};
+  char msg[100];
+  snprintf(msg, sizeof(msg), "binary conversion \"%.*s\" is deprecated.",
+           len, conversion);
+  if (strcmp(last, msg)) {
+    chpl_warning(msg, lineno, filename);
+    strncpy(last, msg, sizeof(last));
+  }
+}
 
 qioerr qio_conv_parse(c_string fmt,
                       size_t start,
                       uint64_t* end,
                       int scanning,
                       qio_conv_t* spec_out,
-                      qio_style_t* style_out)
+                      qio_style_t* style_out,
+                      int32_t lineno, int32_t filename)
 {
   size_t i;
   int in_group = 0;
@@ -4578,6 +4591,7 @@ qioerr qio_conv_parse(c_string fmt,
   char S_encoding = 0;
   qioerr err = 0;
   int after_percent = 0;
+  int percent = 0;
 
   qio_conv_init(spec_out);
   qio_style_init_default(style_out);
@@ -4588,7 +4602,7 @@ qioerr qio_conv_parse(c_string fmt,
   i = start;
 
   // do we have a ####.#### conversion to match?
-  if( fmt[i] == '%' && fmt[i+1] == '{' && 
+  if( fmt[i] == '%' && fmt[i+1] == '{' &&
       (fmt[i+2] == '#' || (fmt[i+2] == '.' && fmt[i+3] == '#') ) ) {
     // handle %{####} conversions
     size_t num_before, num_after, period;
@@ -4600,7 +4614,7 @@ qioerr qio_conv_parse(c_string fmt,
     num_before = 0;
     num_after = 0;
     period = 0;
-    
+
     // how many ### do we have before a . ?
     for( ; fmt[i] == '#'; i++ ) num_before++;
 
@@ -4634,6 +4648,7 @@ qioerr qio_conv_parse(c_string fmt,
 
   // do we have a % conversion to match?
   if( fmt[i] == '%' ) {
+    percent = i;
     i++; // pass %
 
     if( fmt[i] == '{' ) {
@@ -4649,14 +4664,14 @@ qioerr qio_conv_parse(c_string fmt,
       spec_out->literal_is_whitespace = 0;
       spec_out->literal_length = 1;
       spec_out->literal = (int8_t*) "%";
-      goto done;  
+      goto done;
     }
 
     // Are we working with binary?
     if( fmt[i] == '<' || fmt[i] == '|' || fmt[i] == '>' ) {
       binary = fmt[i];
       i++;
-    } 
+    }
 
     // Read some flags.
     for( ; fmt[i]; i++ ) {
@@ -4770,10 +4785,11 @@ qioerr qio_conv_parse(c_string fmt,
     // Consume the width, precision, flags and base arguments,
     // updating the style appropriately.
     if( binary ) {
+      deprecated_binary_warning(&fmt[percent], i - percent, lineno, filename);
       // Binary conversions silently consume space characters after the
       // conversion.
       while( fmt[i] == ' ' ) i++;
-      
+
       // Do Binary.
       style_out->binary = 1;
 
@@ -4819,7 +4835,7 @@ qioerr qio_conv_parse(c_string fmt,
         if( S_encoding ) type = S_encoding;
 
         // Handle width. Precision doesn't do anything for %s
-        // If there's no other encoding info, width is exact str len 
+        // If there's no other encoding info, width is exact str len
         if( width != WIDTH_NOT_SET ) {
           if( width == WIDTH_IN_ARG ) {
             if( type == 's' ) spec_out->preArg1 = QIO_CONV_SET_STRINGLEN;
@@ -4857,7 +4873,7 @@ qioerr qio_conv_parse(c_string fmt,
       }
     } else if( istype(specifier, "niurmz" ) ) {
       // For numeric conversions
-      
+
       // Handle width and precision
       if( width != WIDTH_NOT_SET ) {
         // These settings have no effect when scanning
@@ -4900,7 +4916,7 @@ qioerr qio_conv_parse(c_string fmt,
         style_out->realfmt = 2;
         style_out->pad_char = ' ';
       }
-  
+
       // Handle real formats.
       if( specifier == 'r' || specifier == 'm' || specifier == 'z' ) {
         if( exponential == 'e' ) {
@@ -4933,7 +4949,7 @@ qioerr qio_conv_parse(c_string fmt,
       // Either one could limit the number of bytes read (width)
       // or the number of characters read (precision)
       // (although the / conversion will ignore # chars read/precision)
-     
+
       // Handle width and precision
       if( width != WIDTH_NOT_SET ) {
         if( width == WIDTH_IN_ARG ) {
@@ -5046,7 +5062,7 @@ qioerr qio_conv_parse(c_string fmt,
             }
             end = i;
             flagsstart = i + 1; // past / ending re
-            i = flagsstart + flagslen; // at closing { } 
+            i = flagsstart + flagslen; // at closing { }
           } else {
             while( fmt[i-1] == '\\' || fmt[i] != '/' ) {
               if( fmt[i] == 0 ) {

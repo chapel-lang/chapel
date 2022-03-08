@@ -27,7 +27,7 @@ installed, grab it from http://sphinx-doc.org/"
 
 # Internal variables.
 COMP_DOXY_XML=../build/doc/doxygen/xml
-BREATHEOPT = -Dbreathe_projects.libchplcomp=../$(COMP_DOXY_XML)
+BREATHEOPT = -Dbreathe_projects.dyno=../$(COMP_DOXY_XML)
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) $(BREATHEOPT) $(SOURCEDIR)

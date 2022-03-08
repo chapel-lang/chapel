@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -55,7 +55,7 @@ static char expectFilename[FILENAME_MAX];
 extern int fileno(FILE *stream);
 
 /* copies of binary to run per node */
-#define procsPerNode 1  
+#define procsPerNode 1
 #define versionBuffLen 80
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
@@ -63,7 +63,7 @@ extern int fileno(FILE *stream);
 typedef enum {
   pbspro,
   nccs,
-  moab, 
+  moab,
   unknown
 } qsubVersion;
 
@@ -71,14 +71,11 @@ typedef enum {
 static qsubVersion determineQsubVersion(void) {
   const int buflen = 256;
   char version[buflen];
-  char whichMoab[buflen];
-  FILE *whichOutput;
-  int fileError = 1;
   char *argv[3];
   argv[0] = (char *) "qsub";
   argv[1] = (char *) "--version";
   argv[2] = NULL;
-  
+
   memset(version, 0, buflen);
   if (chpl_run_utility1K("qsub", argv, version, buflen) <= 0) {
     chpl_error("Error trying to determine qsub version", 0, 0);
@@ -88,19 +85,10 @@ static qsubVersion determineQsubVersion(void) {
     return nccs;
   } else if (strstr(version, "pbs_version") || strstr(version, "PBSPro")) {
     return pbspro;
-  } else {
-    memset(whichMoab, 0, buflen);
-    whichOutput = popen("which moab 2>&1 >/dev/null", "r");  
-    if (whichOutput != NULL ) {
-      fgets(whichMoab, buflen, whichOutput);
-      fileError = ferror(whichOutput); 
-      pclose(whichOutput);
-      if (strlen(whichMoab) == 0 && !fileError) {
-        return moab;
-      }
-    }
-    return unknown;
+  } else if (chpl_find_executable("moab") != NULL) {
+    return moab;
   }
+  return unknown;
 }
 
 //
@@ -108,7 +96,7 @@ static qsubVersion determineQsubVersion(void) {
 //   was written with the qsub options
 // else return the qsub options for the command line as a string
 //
-static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion qsub, 
+static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion qsub,
                             int32_t numLocales, int32_t numCoresPerLocale) {
   const size_t maxOptLength = 256;
   char* optionString = NULL;
@@ -216,7 +204,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
   return optionString;
 }
 
-static char** chpl_launch_create_argv(int argc, char* argv[], 
+static char** chpl_launch_create_argv(int argc, char* argv[],
                                       int32_t numLocales) {
   const int largc = 2;
   char *largv[largc];
@@ -303,7 +291,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(expectFile, "spawn qsub %s\n", qsubOptions);
     fprintf(expectFile, "expect {\n");
     fprintf(expectFile, "  \"A project was not specified\" {send_user "
-            "\"error: A project account must be specified via \\$" 
+            "\"error: A project account must be specified via \\$"
             launcherAccountEnvvar "\\n\" ; exit 1}\n");
     fprintf(expectFile, "  -ex \"qsub: waiting\" {}\n");
     fprintf(expectFile, "}\n");
@@ -321,7 +309,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
       fprintf(expectFile, "expect {\n");
       fprintf(expectFile, "  \"failed: chdir\" {send_user "
               "\"error: %s must be launched from and/or stored on a "
-              "cross-mounted file system\\n\" ; exit 1}\n", 
+              "cross-mounted file system\\n\" ; exit 1}\n",
               basenamePtr);
       fprintf(expectFile, "  -ex \"$chpl_prompt\" {}\n");
       fprintf(expectFile, "}\n");

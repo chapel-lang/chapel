@@ -23,10 +23,12 @@
 
 #include "alist.h"
 #include "baseAST.h"
+#include "ModuleSymbol.h"
 #include "chpl/queries/Context.h"
 #include "chpl/uast/Module.h"
 
 ModuleSymbol* convertToplevelModule(chpl::Context* context,
-                                    const chpl::uast::Module* mod);
+                                    const chpl::uast::Module* mod,
+                                    ModTag modTag);
 
 #endif

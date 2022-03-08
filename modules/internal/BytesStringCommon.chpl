@@ -20,8 +20,7 @@
 
 module BytesStringCommon {
   private use ChapelStandard;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
 
@@ -48,7 +47,7 @@ module BytesStringCommon {
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
      when decoding a :mod:`Bytes` into a UTF-8 :record:`~String.string`.
-       
+
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character
        - **drop**: silently drop data
@@ -61,7 +60,7 @@ module BytesStringCommon {
      ``encodePolicy`` specifies what happens when there is escaped non-UTF8
      bytes when encoding a :record:`~String.string` into a
      :mod:`Bytes`.
-       
+
        - **pass**: default policy; copy directly
        - **unescape**: recover the original data from the escaped data
   */
@@ -129,8 +128,8 @@ module BytesStringCommon {
     var thisIdx = 0;
     var decodedIdx = 0;
     while thisIdx < length {
-      const (decodeRet, cp, nBytes) = decodeHelp(buff, length, 
-                                                 thisIdx, 
+      const (decodeRet, cp, nBytes) = decodeHelp(buff, length,
+                                                 thisIdx,
                                                  allowEsc=false);
       var buffToDecode = buff + thisIdx;
 
@@ -168,7 +167,7 @@ module BytesStringCommon {
             decodedIdx += 3;  // replacement character is 3 bytes in UTF8
           }
           else if policy == decodePolicy.escape {
-              
+
             hasEscapes = true;
 
             // encoded escape sequence is 3 bytes. And this is per invalid byte
@@ -210,30 +209,30 @@ module BytesStringCommon {
   }
 
   /*
-    This function decodeHelp is used to create a wrapper for 
-    qio_decode_char_buf* and qio_decode_char_buf_esc and return 
+    This function decodeHelp is used to create a wrapper for
+    qio_decode_char_buf* and qio_decode_char_buf_esc and return
     the value of syserr , cp and nBytes.
-      
-      :arg buff: Buffer to decode 
-      
+
+      :arg buff: Buffer to decode
+
       :arg buffLen: Size of buffer
-      
+
       :arg offset: Starting index of read buffer,
-      
-      :arg allowEsc:  Choice between "qio_decode_char_buf" 
-                      and "qio_decode_char_buf_esc" that allows 
+
+      :arg allowEsc:  Choice between "qio_decode_char_buf"
+                      and "qio_decode_char_buf_esc" that allows
                       escaped sequences in the string
-    
+
     :returns: Tuple of decodeRet, chr and nBytes
               decodeRet : error code : syserr
-              chr : corresponds to codepoint 
+              chr : corresponds to codepoint
               nBytes : number of bytes of corresponding UTF-8 encoding
    */
-  proc decodeHelp(buff:c_ptr(uint(8)), buffLen:int, 
+  proc decodeHelp(buff:c_ptr(uint(8)), buffLen:int,
                   offset:int, allowEsc: bool ) {
     use SysBasic;
     pragma "fn synchronization free"
-    extern proc qio_decode_char_buf(ref chr:int(32), 
+    extern proc qio_decode_char_buf(ref chr:int(32),
                                     ref nBytes:c_int,
                                     buf:c_string,
                                     buflen:ssize_t): syserr;
@@ -243,7 +242,7 @@ module BytesStringCommon {
                                         buf:c_string,
                                         buffLen:ssize_t): syserr;
     // esc chooses between qio_decode_char_buf_esc and
-    // qio_decode_char_buf as a single wrapper function 
+    // qio_decode_char_buf as a single wrapper function
     var chr: int(32);
     var nBytes: c_int;
     var start = offset:c_int;
@@ -251,12 +250,12 @@ module BytesStringCommon {
     var maxbytes = (buffLen - start): ssize_t;
     var decodeRet: syserr;
     if(allowEsc) then
-      decodeRet = qio_decode_char_buf_esc(chr, nBytes, 
+      decodeRet = qio_decode_char_buf_esc(chr, nBytes,
                                           multibytes,
                                           maxbytes);
     else
       decodeRet = qio_decode_char_buf(chr, nBytes,
-                                      multibytes, 
+                                      multibytes,
                                       maxbytes);
 
     return (decodeRet, chr, nBytes);
@@ -769,7 +768,7 @@ module BytesStringCommon {
   // needles though
   pragma "no doc"
   inline proc startsEndsWith(const ref x: ?t, needles,
-                             param fromLeft: bool) : bool 
+                             param fromLeft: bool) : bool
                              where isHomogeneousTuple(needles) &&
                                    needles[0].type==t {
     assertArgType(t, "startsEndsWith");
@@ -1008,7 +1007,7 @@ module BytesStringCommon {
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      if !safeAdd(lhs.buffLen,rhs.buffLen) then 
+      if !safeAdd(lhs.buffLen,rhs.buffLen) then
         halt("Buffer overflow allocating string copy data");
       const newLength = lhs.buffLen + rhs.buffLen;
       //resize the buffer if needed
@@ -1152,7 +1151,7 @@ module BytesStringCommon {
       compilerError("Unexpected type");
     }
 
-    if !safeMul(sLen, n) then 
+    if !safeMul(sLen, n) then
       halt("Buffer overflow allocating string copy data");
 
     const buffLen = sLen * n;
@@ -1347,7 +1346,7 @@ module BytesStringCommon {
     return (b & 0xc0) != 0x80;
   }
 
-  /* 
+  /*
    Returns the byte index of the beginning of the first codepoint starting from
    (and including) i
    */

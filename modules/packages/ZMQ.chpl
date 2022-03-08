@@ -244,8 +244,7 @@ module ZMQ {
   private use Reflection;
   private use ExplicitRefCount;
   private use IO;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   use SysError;
 
   private extern proc chpl_macro_int_errno():c_int;
@@ -335,7 +334,7 @@ module ZMQ {
    */
   const PULL = ZMQ_PULL;
 
-  /* 
+  /*
     The exclusive pair pattern socket type.
   */
   const PAIR = ZMQ_PAIR;
@@ -888,7 +887,7 @@ module ZMQ {
         //
         // TODO: If *not crossing locales*, check for ownership and
         // conditionally have ZeroMQ free the memory.
-        // 
+        //
         // Note: the string factory below can throw DecodeError
         var copy = if isString(T) then createStringWithNewBuffer(x=data)
                    else parallelCreateBytesWithNewBuffer(data.localize().buff,
@@ -941,7 +940,7 @@ module ZMQ {
     // send, records (of other supported things)
     pragma "no doc"
     proc send(data: ?T, flags: int = 0) throws where (isRecordType(T) &&
-                                                     (!isString(T)) && 
+                                                     (!isString(T)) &&
                                                      (!isBytes(T))) {
       on classRef.home {
         var copy = data;
@@ -993,7 +992,7 @@ module ZMQ {
         // Construct the value on the current locale, copying the data buffer
         // from the message object; then, release the message object
         var len = zmq_msg_size(msg):int;
-        const val = if isString(T) then 
+        const val = if isString(T) then
                       createStringWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
                                                 length=len, size=len+1)
                     else

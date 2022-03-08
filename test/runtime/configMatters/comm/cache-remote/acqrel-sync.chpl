@@ -4,7 +4,7 @@ config const max=100;
 
 proc doit(a:locale, b:locale, c:locale)
 {
-  use SysCTypes;
+  use CTypes;
   extern proc printf(fmt: c_string, vals...?numvals): int;
  
   on a {

@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,7 @@
 // Get (or provide) definitions for htobe64
 // ( in particular, htobe## htole## be##toh and le##toh for
 //   widths of 16, 32, and 64).
-// 
+//
 // DO NOT modify this file without testing on at least
 //  GCC, PGI, Intel, Cray, and Mac OS X compilers!
 #ifndef _BSWAP_H_
@@ -56,7 +56,7 @@
 // such as PGI, Cray or Intel compilers, __bswap_64 will not be
 // defined (even though htobe64 is).
 // There is a check in glibc for #if defined __GNUC__ && __GNUC__ >= 2
-// 
+//
 # include <endian.h>
 # include <byteswap.h>
 

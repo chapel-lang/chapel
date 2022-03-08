@@ -35,6 +35,8 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <unordered_map>
 #include <array>
 #include <vector>
@@ -182,6 +184,10 @@ void buildDefaultFunctions() {
       }
 
       if (isRecord(ct)) {
+        // Build hash function first so we don't trip over our own
+        // compiler-generated '==' operator
+        buildRecordHashFunction(ct);
+
         if (!isRecordWrappedType(ct)) {
           buildRecordComparisonFunc(ct, "==");
           buildRecordComparisonFunc(ct, "!=");
@@ -191,7 +197,6 @@ void buildDefaultFunctions() {
           buildRecordComparisonFunc(ct, ">=");
         }
 
-        buildRecordHashFunction(ct);
 
         checkNotPod(ct);
       }
@@ -328,6 +333,20 @@ static FnSymbol* functionExists(const char* name,
                                 Type* formalType4,
                                 functionExistsKind kind=FIND_EITHER) {
   return functionExists<4>(name, {{formalType1, formalType2, formalType3, formalType4}}, kind);
+}
+
+static FnSymbol* operatorExists(const char* name,
+                                Type* formalType1,
+                                Type* formalType2,
+                                functionExistsKind kind=FIND_EITHER) {
+  FnSymbol* retval = NULL;
+  // check for operator method
+  retval = functionExists(name, dtMethodToken, dtAny, formalType1, formalType2);
+  if (retval == NULL) {
+    // check for standalone operator
+    retval = functionExists(name, formalType1, formalType2);
+  }
+  return retval;
 }
 
 static void fixupAccessor(AggregateType* ct, Symbol *field,
@@ -788,6 +807,14 @@ static void buildChplEntryPoints() {
   // It will initialize all the modules it uses, recursively.
   if (!fMultiLocaleInterop) {
     chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
+    // also init other modules mentioned on command line
+    forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+      if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) &&
+          mod != mainModule) {
+        chpl_gen_main->insertAtTail(new CallExpr(mod->initFn));
+      }
+    }
+
   } else {
     // Create an extern definition for the multilocale library server's main
     // function.  chpl_gen_main needs to call it in the course of its run, so
@@ -926,9 +953,7 @@ static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct,
 }
 
 static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
-  if (functionExists(op, ct, ct)) {
-    return;
-  } else if (functionExists(op, dtMethodToken, dtAny, ct, ct)) {
+  if (operatorExists(op, ct, ct)) {
     return;
   }
 
@@ -1454,9 +1479,7 @@ static void buildEnumOrderFunctions(EnumType* et) {
 
 
 static void buildRecordAssignmentFunction(AggregateType* ct) {
-  if (functionExists("=", ct, ct)) {
-    return;
-  } else if (functionExists("=", dtMethodToken, dtAny, ct, ct)) {
+  if (operatorExists("=", ct, ct)) {
     return;
   }
 
@@ -1517,7 +1540,7 @@ static void buildRecordAssignmentFunction(AggregateType* ct) {
 
 static void buildExternAssignmentFunction(Type* type)
 {
-  if (functionExists("=", type, type))
+  if (operatorExists("=", type, type))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -1545,7 +1568,7 @@ static void buildExternAssignmentFunction(Type* type)
 
 // TODO: we should know what field is active after assigning unions
 static void buildUnionAssignmentFunction(AggregateType* ct) {
-  if (functionExists("=", ct, ct))
+  if (operatorExists("=", ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -1607,7 +1630,10 @@ static void checkNotPod(AggregateType* at) {
 ************************************** | *************************************/
 
 static void buildRecordHashFunction(AggregateType *ct) {
-  if (functionExists("hash", dtMethodToken, ct))
+  if (functionExists("hash", dtMethodToken, ct) ||
+      (!ct->symbol->hasFlag(FLAG_TUPLE) &&  // tuples already always have ==/!=
+       (operatorExists("==", ct, ct) ||
+        operatorExists("!=", ct, ct))))
     return;
 
   FnSymbol *fn = new FnSymbol("hash");
@@ -1903,7 +1929,7 @@ static void buildEnumStringOrBytesCastFunctions(EnumType* et,
   if (otherType != dtString && otherType != dtBytes) {
     INT_FATAL("wrong type was passed to buildEnumStringOrBytesCastFunctions");
   }
-  if (functionExists(astrScolon, otherType, et))
+  if (operatorExists(astrScolon, otherType, et))
     return;
 
   FnSymbol* fn = new FnSymbol(astrScolon);

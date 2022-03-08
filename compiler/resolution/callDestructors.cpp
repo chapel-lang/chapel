@@ -39,6 +39,8 @@
 #include "symbol.h"
 #include "virtualDispatch.h"
 
+#include "global-ast-vecs.h"
+
 #include <vector>
 #include <algorithm>
 #include <iterator>
@@ -1155,7 +1157,7 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
               // Add another PRIM_AUTO_DESTROY_RUNTIME_TYPE for the field
               destroyCall = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, fieldTemp);
             }
-            
+
             call->insertBefore(destroyCall);
           }
         }
@@ -1167,7 +1169,7 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
 }
 
 static void insertDestructorCalls() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
       Type* type = call->get(1)->typeInfo();
 
@@ -1205,7 +1207,7 @@ static void insertDestructorCalls() {
 static void insertCopiesForYields()
 {
   // Examine all calls.
-  forv_Vec(CallExpr, call, gCallExprs)
+  forv_expanding_Vec(CallExpr, call, gCallExprs)
   {
     // Select only yield primitives.
     if (! call->isPrimitive(PRIM_YIELD))

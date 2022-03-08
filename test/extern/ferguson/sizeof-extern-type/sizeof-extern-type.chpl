@@ -1,5 +1,5 @@
 proc doit() {
-  use SysCTypes;
+  use CTypes;
 
   extern proc sizeof(type t): size_t;
 

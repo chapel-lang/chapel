@@ -1,6 +1,6 @@
 // test from issue #18672
 
-use SysCTypes;
+use CTypes;
 
 extern "strlen"        proc f1(c_string): size_t;
 extern "strlen" inline proc f2(c_string): size_t;

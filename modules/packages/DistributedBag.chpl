@@ -125,8 +125,7 @@ module DistributedBag {
 
   public use Collection;
   use BlockDist;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   use IO only channel;
 
   /*
@@ -256,9 +255,9 @@ module DistributedBag {
       }
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
-  
+
     pragma "no doc"
-    /* Read/write the contents of DistBag from/to a channel */ 
+    /* Read/write the contents of DistBag from/to a channel */
     proc readWriteThis(ch: channel) throws {
       ch <~> "[";
       var size = this.getSize();
@@ -268,7 +267,7 @@ module DistributedBag {
       }
       ch <~> "]";
     }
-    
+
     forwarding _value;
   }
 

@@ -1,7 +1,7 @@
 // This program exercises the --cache-remote data structure
 // in a manner similar to the RA-rmo benchmark.
 
-use SysCTypes;
+use CTypes;
 use Time;
 use Random;
 

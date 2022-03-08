@@ -2,15 +2,15 @@
  * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -115,14 +115,14 @@ class LayeredValueTable
         addedToChapelAST = false;
       }
     };
-   
+
     typedef llvm::StringMap<Storage> map_type;//just map, key is string, value is Storage
     typedef std::list<map_type> layers_type;// each element of the list is a map
     typedef layers_type::iterator layer_iterator;
     typedef map_type::iterator value_iterator;
-    
+
     layers_type layers;
-  
+
   public:
     LayeredValueTable();
     void addLayer();
@@ -145,7 +145,7 @@ class LayeredValueTable
         astlocT *astlocOut=NULL);
     bool isCArray(llvm::StringRef name);
     VarSymbol* getVarSymbol(llvm::StringRef name);
-    const clang::MacroInfo* getMacro(llvm::StringRef name); 
+    const clang::MacroInfo* getMacro(llvm::StringRef name);
     bool isAlreadyInChapelAST(llvm::StringRef name);
     bool markAddedToChapelAST(llvm::StringRef name);
 

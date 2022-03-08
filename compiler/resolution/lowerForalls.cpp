@@ -30,6 +30,8 @@
 #include "stringutil.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <map>
 #include <set>
 
@@ -1530,7 +1532,7 @@ static void removeDeadIters() {
 
 void lowerForallStmtsInline()
 {
-  forv_Vec(ForallStmt, fs, gForallStmts)
+  forv_expanding_Vec(ForallStmt, fs, gForallStmts)
     if (fs->inTree())
       lowerOneForallStmt(fs);
 

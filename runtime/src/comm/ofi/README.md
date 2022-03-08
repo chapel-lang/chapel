@@ -515,7 +515,7 @@ and the following message orderings:
 
 Note that there is no explicitly asserted ordering here between RMA and
 atomic operations.  That is achieved by by fenced operations and their
-completions. 
+completions.
 
 In this mode, the comm layer uses fenced operations to force the memory
 effects of prior RMA writes and native atomic operations to be visible,

@@ -24,6 +24,8 @@
 #include "ResolveScope.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
+
 #include <algorithm>
 
 /************************************* | **************************************

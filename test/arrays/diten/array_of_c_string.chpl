@@ -1,6 +1,6 @@
 require "array_of_c_string.h";//, "array_of_c_string.c";
 
-use CPtr;
+use CTypes;
 
 extern proc foo(argc: int, argv: c_void_ptr);
 

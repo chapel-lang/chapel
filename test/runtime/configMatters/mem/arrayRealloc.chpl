@@ -49,7 +49,7 @@ config type arrayType = int;
 // memory. For configs that have comm thresholds go with 4x that and otherwise
 // just use 64MB.
 proc arraySize() {
-  use SysCTypes;
+  use CTypes;
   extern proc chpl_comm_regMemAllocThreshold(): size_t;
   extern var SIZE_MAX: size_t;
   if chpl_comm_regMemAllocThreshold() != SIZE_MAX then
