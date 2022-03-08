@@ -42,7 +42,7 @@ module LocaleModel {
   private inline
   proc runningOnGPUSublocale(): bool {
     extern proc chpl_gpu_has_context(): bool;
-    return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
+    return chpl_task_getRequestedSubloc()>0;
   }
 
   private inline

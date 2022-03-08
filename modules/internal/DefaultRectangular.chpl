@@ -109,6 +109,9 @@ module DefaultRectangular {
     override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
       return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
 
+    proc dsiTargetLocales() const ref
+      return chpl_getSingletonLocaleArray(this.locale);
+
     proc dsiIndexToLocale(ind) return this.locale;
 
     // Right now, the default distribution acts like a singleton.

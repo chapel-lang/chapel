@@ -529,14 +529,30 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
       if m then do_something_if_matched();
       if !m then do_something_if_not_matched();
 
+    .. warning::
+      offset field is deprecated, use byteOffset instead
+    .. warning::
+      size field is deprecated, use numBytes instead
  */
 record regexMatch {
   /* true if the regular expression search matched successfully */
   var matched:bool;
   /* 0-based offset into the string or channel that matched; -1 if matched=false */
-  var offset:byteIndex; // 0-based, -1 if matched==false
+  var byteOffset:byteIndex;
   /* the length of the match. 0 if matched==false */
-  var size:int; // 0 if matched==false
+  var numBytes:int;
+
+  pragma "no doc"
+  deprecated "field offset is deprecated, use byteOffset instead"
+  proc offset:byteIndex {
+    return this.byteOffset;
+  }
+
+  pragma "no doc"
+  deprecated "field size is deprecated, use numBytes instead"
+  proc size:int {
+    return this.numBytes;
+  }
 }
 
 pragma "no doc"
@@ -570,7 +586,7 @@ inline proc regexMatch.chpl_cond_test_method() return this.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:regexMatch) {
-  if m.matched then return this[m.offset..#m.size];
+  if m.matched then return this[m.byteOffset..#m.numBytes];
   else return "";
 }
 
@@ -583,7 +599,7 @@ proc string.this(m:regexMatch) {
     :returns: the portion of ``this`` referred to by the match
  */
 proc bytes.this(m:regexMatch) {
-  if m.matched then return this[m.offset:int..#m.size];
+  if m.matched then return this[m.byteOffset:int..#m.numBytes];
   else return b"";
 }
 

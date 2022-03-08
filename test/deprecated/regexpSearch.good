@@ -1,10 +1,10 @@
 regexpSearch.chpl:11: warning: the 'needle' argument is deprecated, use 'pattern' instead
 regexpSearch.chpl:27: warning: the 'needle' argument is deprecated, use 'pattern' instead
 search string
-(matched = true, offset = 1, size = 4)
-(matched = true, offset = 1, size = 1)
+(matched = true, byteOffset = 1, numBytes = 4)
+(matched = true, byteOffset = 1, numBytes = 1)
 test
 search bytes
-(matched = true, offset = 1, size = 4)
-(matched = true, offset = 1, size = 1)
+(matched = true, byteOffset = 1, numBytes = 4)
+(matched = true, byteOffset = 1, numBytes = 1)
 test

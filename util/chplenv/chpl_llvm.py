@@ -8,6 +8,7 @@ import re
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
 from utils import which, memoize, error, run_command, try_run_command, warning
+from collections import defaultdict
 
 # returns a tuple of supported major LLVM versions as strings
 def llvm_versions():
@@ -134,26 +135,20 @@ def find_system_llvm_config():
     if homebrew_prefix:
         paths.append(homebrew_prefix + "/opt/llvm/bin/llvm-config")
 
-    all_found = [ ]
+    by_version = defaultdict(list)
+    errs = []
 
     for command in paths:
-        found_version, found_config_err = check_llvm_config(command)
-        all_found.append((command, found_version, found_config_err))
+        version, config_err = check_llvm_config(command)
+        if not config_err:
+            by_version[version].append(command)
+        else:
+            errs.append((command, config_err))
 
-    found = ('', '', '')
-    for vers in llvm_versions():
-        for entry in all_found:
-            if entry[1] == vers:
-                found = entry
-                break
-
-    # command set, version > 0, no error
-    command = found[0]
-    version = found[1]
-    config_err = found[2]
-
-    if command and version and not config_err:
-        return found[0]
+    for version in llvm_versions():
+        commands = by_version[version]
+        if commands:
+            return commands[0]
 
     return ''
 

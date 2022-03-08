@@ -1,0 +1,5 @@
+subprocess-pipe-types.chpl:3: warning: 'FORWARD' is deprecated, please use 'pipeStyle.forward' instead
+subprocess-pipe-types.chpl:4: warning: 'CLOSE' is deprecated, please use 'pipeStyle.close' instead
+subprocess-pipe-types.chpl:5: warning: 'PIPE' is deprecated, please use 'pipeStyle.pipe' instead
+subprocess-pipe-types.chpl:6: warning: 'STDOUT' is deprecated, please use 'pipeStyle.stdout' instead
+subprocess-pipe-types.chpl:7: warning: 'BUFFERED_PIPE' is deprecated, please use 'pipeStyle.bufferAll' instead

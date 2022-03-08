@@ -5,8 +5,8 @@ use Subprocess;
 
 config const pipeStdout = false;
 
-var stdoutArg=FORWARD;
-if pipeStdout then stdoutArg=PIPE;
+var stdoutArg=pipeStyle.forward;
+if pipeStdout then stdoutArg=pipeStyle.pipe;
 
 var sub = spawn(["ls", "../test.txt"], stdout=stdoutArg);
 sub.wait();

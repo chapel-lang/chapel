@@ -11,7 +11,7 @@ var Landscape: map(3*int, item);
 
 iter readScanner() {
   var header: string;
-  stdin.readline(header);
+  readline(header);
 //  writeln(header);
   var x, y, z: int;
   try {  // TODO: 'try' seems like it shouldn't be necessary here for scanner 0, yet it is due to the commas... is that as intended?  (vs. returning false?)
@@ -21,7 +21,7 @@ iter readScanner() {
   } catch {
   }
   readln();
-//  stdin.readline(header);
+//  readline(header);
 //  writeln("tail:", header);
 }
 

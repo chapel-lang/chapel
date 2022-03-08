@@ -44,7 +44,7 @@ foldSheet(Sheet);
 iter readDots() {
   var line: string;
   do {
-    stdin.readline(line);
+    readline(line);
     var A = line.strip().split(",");
     if (A.size == 2) then
       yield (A[0]:int, A[1]:int);
@@ -55,7 +55,7 @@ iter readFolds() {
   var line: string;
   try {
     var fold: string;
-    while stdin.readf("fold along %s\n", fold) {
+    while readf("fold along %s\n", fold) {
       yield fold;
     }
   } catch { }

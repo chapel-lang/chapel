@@ -6,7 +6,7 @@ config const steps = 10,
 // TODO: bytes + array of uint(8) would be more appropriate, storage-wise
 
 var polyTemplStr: string;
-stdin.readline(polyTemplStr);  
+readline(polyTemplStr);  
 polyTemplStr = polyTemplStr.strip();
 
 var allChars: domain(string);
@@ -15,7 +15,7 @@ var prodMap: map(string, string);
 try {
   var line: string;
   readln();
-  while (stdin.readline(line)) {
+  while readline(line) {
     prodMap.add(line[0..1], line[6]);
     // TODO: This has got to be too conservative:
     allChars.add[line[0]];

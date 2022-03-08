@@ -6,7 +6,7 @@ var Caves: domain(string);
 var Corridors: [Caves] list(string);
 
 var line: string;
-while stdin.readline(line) {
+while readline(line) {
   var pair = line.strip().split("-");
   Caves += pair[0];
   Caves += pair[1];

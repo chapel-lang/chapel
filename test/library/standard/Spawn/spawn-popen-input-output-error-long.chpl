@@ -6,7 +6,7 @@ use Subprocess;
   assert(comp.exitCode == 0);
 }
 
-var sub = spawn(["./stdout-stderr", "-nl", "1"], stdin=BUFFERED_PIPE, stdout=PIPE, stderr=PIPE);
+var sub = spawn(["./stdout-stderr", "-nl", "1"], stdin=pipeStyle.bufferAll, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
 config const n = 10000;
 for i in 1..n {

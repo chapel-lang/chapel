@@ -40,7 +40,7 @@ proc main(args:[] string)
   forall (id,path) in zip(distributedPaths.domain, distributedPaths) {
     if verbose then
       writeln("Running sha1sum ", path);
-    var sub = spawn(["sha1sum", path], stdout=PIPE);
+    var sub = spawn(["sha1sum", path], stdout=pipeStyle.pipe);
     var hashString:string;
     sub.stdout.read(hashString);
     if verbose then

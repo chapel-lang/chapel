@@ -4554,10 +4554,24 @@ extern proc chpl_cstderr():_file;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:channel(true, iokind.dynamic, true);
 stderr = try! openfp(chpl_cstderr()).writer();
-
 /* Equivalent to ``stdin.read``. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {
   return stdin.read((...args));
+}
+/* Equivalent to ``stdin.read``. See :proc:`channel.read` for types */
+proc read(type t ...?numTypes) throws {
+  return stdin.read((...t));
+}
+/* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
+              amount = arg.domain.high - start + 1) : bool throws
+                where arg.rank == 1 && arg.isRectangular() {
+  return stdin.readline(arg, numRead, start, amount);
+}
+
+/* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
+  return stdin.readline(arg);
 }
 /* Equivalent to ``stdin.readln``. See :proc:`channel.readln` */
 proc readln(ref args ...?n):bool throws {
@@ -4572,10 +4586,6 @@ proc readln():bool throws {
 /* Equivalent to ``stdin.readln``. See :proc:`channel.readln` for types */
 proc readln(type t ...?numTypes) throws {
   return stdin.readln((...t));
-}
-/* Equivalent to ``stdin.read``. See :proc:`channel.read` for types */
-proc read(type t ...?numTypes) throws {
-  return stdin.read((...t));
 }
 
 
@@ -7158,8 +7168,8 @@ proc channel._extractMatch(m:regexMatch, ref arg:regexMatch, ref error:syserr) {
 pragma "no doc"
 proc channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:syserr) {
   var cur:int(64);
-  var target = m.offset:int;
-  var len = m.size;
+  var target = m.byteOffset:int;
+  var len = m.numBytes;
 
   // If there was no match, return the default value of the type
   if !m.matched {
@@ -7309,7 +7319,7 @@ proc channel.search(re:regex(?), ref error:syserr):regexMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at EOF
@@ -7375,7 +7385,7 @@ proc channel.search(re:regex(?), ref captures ...?k): regexMatch throws
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         err = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at EOF
@@ -7417,7 +7427,7 @@ proc channel.match(re:regex(?), ref error:syserr):regexMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at start
@@ -7471,7 +7481,7 @@ proc channel.match(re:regex(?), ref captures ...?k, ref error:syserr):regexMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at start
@@ -7572,7 +7582,7 @@ iter channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
           error = qio_channel_mark(false, _channel_internal);
           if !error {
             var cur = qio_channel_offset_unlocked(_channel_internal);
-            var target = m.offset:int;
+            var target = m.byteOffset:int;
             error = qio_channel_advance(false, _channel_internal, target - cur);
           }
         } else {

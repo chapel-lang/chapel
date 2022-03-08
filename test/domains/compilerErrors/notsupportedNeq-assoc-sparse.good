@@ -1,0 +1,1 @@
+notsupportedNeq-assoc-sparse.chpl:5: error: comparing an associative domain against a rectangular or sparse domain is not currently supported
