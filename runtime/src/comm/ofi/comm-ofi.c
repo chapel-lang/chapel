@@ -4502,45 +4502,44 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     break;
   }
 
-  if (havePutsOut || haveAmosOut) {
-    //
-    // Special case: Do a fenced send if we need it for ordering with
-    // respect to some prior operation(s).  If we can inject, do so and
-    // just collect the completion later.  Otherwise, wait for it here.
-    //
-    if (!blocking
-        && reqSize <= ofi_info->tx_attr->inject_size
-        && envInjectAM) {
-      void* ctx = txnTrkEncodeId(__LINE__);
-      uint64_t flags = FI_FENCE | FI_INJECT;
-      (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
-    } else {
-      atomic_bool txnDone;
-      void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
-      uint64_t flags = FI_FENCE;
-      (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
-      waitForTxnComplete(tcip, ctx);
-      txCtxCleanup(ctx);
-    }
+  uint64_t flags = 0;
+  void *ctx = NULL;
+  atomic_bool txnDone;
 
-    if (havePutsOut) {
-      bitmapClear(tcip->putVisBitmap, node);
-    }
-    if (haveAmosOut) {
-      bitmapClear(tcip->amoVisBitmap, node);
-    }
+  if (havePutsOut || haveAmosOut) {
+    // Do a fenced send if we need it for ordering with respect to some
+    // prior operation(s).
+    flags |= FI_FENCE;
+  }
+
+  if (reqSize <= ofi_info->tx_attr->inject_size && envInjectAM) {
+    // Inject if we can and should.
+    flags |= FI_INJECT;
+    ctx = txnTrkEncodeId(__LINE__);
   } else {
-    //
-    // General case.
-    //
-    atomic_bool txnDone;
-    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
+    ctx = txCtxInit(tcip, __LINE__, &txnDone);
+  }
+
+  // Note: could call wrap_fi_sendmsg in both cases. This would eliminate
+  // the conditional but may have higher overhead.
+  if (flags) {
+    (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
+  } else {
     (void) wrap_fi_send(node, req, reqSize, mrDesc, ctx, tcip);
+  }
+
+  if ((flags & FI_INJECT) == 0) {
+    // if we didn't inject we must wait for the transmission to complete
     waitForTxnComplete(tcip, ctx);
     txCtxCleanup(ctx);
   }
+  if (havePutsOut) {
+    bitmapClear(tcip->putVisBitmap, node);
+  }
+  if (haveAmosOut) {
+    bitmapClear(tcip->amoVisBitmap, node);
+  }
 }
-
 
 //
 // Implements amRequestCommon() when MCM mode is message ordering.
