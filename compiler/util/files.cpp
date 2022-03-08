@@ -892,7 +892,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // List object files needed to compile this deliverable.
   fprintf(makefile.fptr, "CHPLUSEROBJ = \\\n");
   if (!fLibraryCompile) {
-    fprintf(makefile.fptr, "\t$(CHPLSRC:%%.c=%%) \\\n");
+    const char* dot = &(mainfile->pathname[strlen(mainfile->pathname)-2]);
+    const char* ext = &(mainfile->pathname[strlen(mainfile->pathname)-1]);
+    if (*dot != '.') {
+      INT_FATAL("Unexpected extension in mainfile for non-library compile");
+    }
+    fprintf(makefile.fptr, "\t$(CHPLSRC:%%.%s=%%) \\\n", ext);
   }
   for (size_t i = 0; i < splitFiles.size(); i++) {
     fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
