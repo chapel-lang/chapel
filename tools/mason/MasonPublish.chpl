@@ -182,7 +182,7 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
     }
     else {
       var command = ('git ls-remote ' + registryPath).split();
-      var checkRemote = spawn(command, stdout=PIPE);
+      var checkRemote = spawn(command, stdout=pipeStyle.pipe);
       checkRemote.wait();
       if checkRemote.exitCode == 0 then return true;
       else {
@@ -255,7 +255,7 @@ private proc commitSubProcess(dir: string, command: [] string) throws {
   var spawnArgs = command;
   const oldDir = here.cwd();
   here.chdir(dir);
-  var commitSpawn = spawn(spawnArgs, stdout=PIPE, stderr=PIPE);
+  var commitSpawn = spawn(spawnArgs, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
   commitSpawn.wait();
   here.chdir(oldDir);
   return commitSpawn;
@@ -693,7 +693,7 @@ private proc checkLicense(projectHome: string) throws {
 /* Attempts to build the package/
  */
 private proc attemptToBuild() throws {
-  var sub = spawn(['mason','build','--force'], stdout=PIPE);
+  var sub = spawn(['mason','build','--force'], stdout=pipeStyle.pipe);
   sub.wait();
   if sub.exitCode == 1 {
   writeln('(FAILED) Please make sure your package builds');

@@ -30,7 +30,7 @@ proc main() {
 
 proc checkOutput(cmd: string) {
   var splitCmd = cmd.split();
-  var p = spawn(splitCmd,stdout=PIPE);
+  var p = spawn(splitCmd,stdout=pipeStyle.pipe);
   writeln("$ " + cmd);
   var line:string;
   while p.stdout.readline(line) {
