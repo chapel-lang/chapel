@@ -36,6 +36,7 @@ prototype module DistributedFFT {
 
   public use BlockDist;
   public use FFTW;
+  import FFTW; // also allow FFTW.execute, etc
 
   use AllLocalesBarriers;
   use RangeChunk;
