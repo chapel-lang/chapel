@@ -1,0 +1,3 @@
+uncaught TaskErrors: 1 errors: Error: 
+  forall-in-function-throws.chpl:8: thrown here
+  forall-in-function-throws.chpl:8: uncaught here
