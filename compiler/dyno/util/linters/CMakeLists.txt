@@ -17,11 +17,21 @@
 
 add_executable(fieldsUsed "fieldsUsed.cpp")
 
-# this finds the target clang-cpp and also finds an appropriate LLVM version
-# Not marked as required since this linter is optional
-find_package(Clang)
+option(DYNO_LINTERS_CLANG_CMAKE_PATH "Override the path to find a ClangConfig.cmake")
 
-message("Using LLVM version ${LLVM_FIND_VERSION}")
+if(DYNO_LINTERS_CLANG_CMAKE_PATH)
+  # this finds the target clang-cpp and also finds an appropriate LLVM version
+  # Not marked as required since this linter is optional
+  find_package(Clang
+    PATHS ${DYNO_LINTERS_CLANG_CMAKE_PATH}
+    NO_DEFAULT_PATH)
+
+else()
+  find_package(Clang)
+endif()
+
+
+message("Using libclang from ${Clang_DIR}")
 
 # Using LLVM here links against the shared library.
 # Linking against LLVMSupport (which grabs libLLVMSupport.a) was giving me issues
