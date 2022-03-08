@@ -220,16 +220,6 @@ struct ChplSyntaxVisitor {
       interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
     }
 
-    // Return Intent
-    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      ss_ << " " << kindToString((IntentList) node->returnIntent());
-    }
-
-    // Return type
-    if (const Expression* e = node->returnType()) {
-      ss_ << ": ";
-      printChapelSyntax(ss_, e);
-    }
   }
 
   /*
@@ -241,6 +231,12 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString(node->visibility()) << " ";
     }
     printFunctionHelper(node);
+
+    // Return type
+    if (const Expression* e = node->returnType()) {
+      ss_ << ": ";
+      printChapelSyntax(ss_, e);
+    }
   }
 
   void printLinkage(const Decl* node) {
@@ -546,6 +542,17 @@ struct ChplSyntaxVisitor {
     ss_ << " ";
 
     printFunctionHelper(node);
+
+    // Return Intent
+    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
+      ss_ << " " << kindToString((IntentList) node->returnIntent());
+    }
+
+    // Return type
+    if (const Expression* e = node->returnType()) {
+      ss_ << ": ";
+      printChapelSyntax(ss_, e);
+    }
     ss_ << " ";
 
     // where clause
@@ -687,14 +694,21 @@ struct ChplSyntaxVisitor {
     // ex: !(this && that)
     // is different than !this && that
     if (node->isUnaryOp()) {
-      ss_ << node->op().c_str();
+      bool isPostFixBang = false;
+      if (strncmp(node->op().c_str(),"postfix!", 8) == 0) {
+        isPostFixBang = true;
+      } else {
+        ss_ << node->op().c_str();
+      }
       assert(node->numActuals() == 1);
       printChapelSyntax(ss_, node->actual(0));
-
+      if (isPostFixBang) {
+        ss_ << "!";
+      }
     } else if (node->isBinaryOp()) {
       assert(node->numActuals() == 2);
       printChapelSyntax(ss_, node->actual(0));
-      ss_ << " " << node->op().c_str() << " ";
+      ss_ << node->op().c_str();
       printChapelSyntax(ss_, node->actual(1));
     }
   }
