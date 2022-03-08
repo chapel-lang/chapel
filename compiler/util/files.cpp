@@ -891,10 +891,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // List object files needed to compile this deliverable.
   fprintf(makefile.fptr, "CHPLUSEROBJ = \\\n");
+  if (!fLibraryCompile) {
+    fprintf(makefile.fptr, "\t$(CHPLSRC:%%.c=%%) \\\n");
+  }
   for (size_t i = 0; i < splitFiles.size(); i++) {
     fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
   }
-  fprintf(makefile.fptr, "\t$(CHPLSRC:%%.c=%%) \\\n\n");
   fprintf(makefile.fptr, "\n");
 
   genCFiles(makefile.fptr);
