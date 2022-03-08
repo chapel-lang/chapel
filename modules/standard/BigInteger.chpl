@@ -1071,19 +1071,7 @@ module BigInteger {
   // Division
   operator bigint./(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
-
-    if _local {
-      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      mpz_tdiv_q(c.mpz, a_.mpz, b_.mpz);
-    }
+    c.divQ(a, b, round.zero);
 
     return c;
   }
@@ -1872,21 +1860,7 @@ module BigInteger {
 
   // /=
   operator bigint./=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_tdiv_q(a.mpz, a.mpz, b_.mpz);
-      }
-    }
+    a.divQ(a, b, round.zero);
   }
 
   operator bigint./=(ref a: bigint, b: integral) {
@@ -2386,6 +2360,10 @@ module BigInteger {
 
   // documented in bigint, integral version
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       mpz_divexact(this.mpz, numer.mpz, denom.mpz);
 
@@ -4558,6 +4536,10 @@ module BigInteger {
   proc bigint.divQ(const ref numer: bigint,
                    const ref denom: bigint,
                    param rounding = round.zero) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       select rounding {
         when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
@@ -4661,6 +4643,10 @@ module BigInteger {
   proc bigint.divR(const ref numer: bigint,
                    const ref denom: bigint,
                    param     rounding = round.zero) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       select rounding {
         when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
@@ -4766,6 +4752,10 @@ module BigInteger {
                     const ref numer: bigint,
                     const ref denom: bigint,
                     param     rounding = round.zero) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       select rounding {
         when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,
