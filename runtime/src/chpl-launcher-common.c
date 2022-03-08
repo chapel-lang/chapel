@@ -30,6 +30,7 @@
 #include "chplcgfns.h"
 #include "chpl-comm-launch.h"
 #include "chpl-comm-locales.h"
+#include "chplexit.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
@@ -479,7 +480,7 @@ int chpl_launch_using_exec(const char* command, char * const argv1[], const char
   chpl_launch_sanity_checks(argv0);
 
   if (chpl_doDryRun()) {
-    exit(0);
+    chpl_exit_any(0);
   }
 
   execvp(command, argv1);
