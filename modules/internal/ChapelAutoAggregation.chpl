@@ -87,7 +87,7 @@ module ChapelAutoAggregation {
     use CTypes;
     use super.AggregationPrimitives;
 
-    param defaultBuffSize = if CHPL_COMM == "ugni" then 4096 else 8096;
+    param defaultBuffSize = if CHPL_COMM == "ugni" then 4096 else 8192;
     private const yieldFrequency = getEnvInt("CHPL_AGGREGATION_YIELD_FREQUENCY", 1024);
     private const dstBuffSize = getEnvInt("CHPL_AGGREGATION_DST_BUFF_SIZE", defaultBuffSize);
     private const srcBuffSize = getEnvInt("CHPL_AGGREGATION_SRC_BUFF_SIZE", defaultBuffSize);
@@ -101,7 +101,7 @@ module ChapelAutoAggregation {
       type elemType;
       type aggType = (c_ptr(elemType), elemType);
       const bufferSize = dstBuffSize;
-      const myLocaleSpace = LocaleSpace;
+      const myLocaleSpace = 0..<numLocales;
       var opsUntilYield = yieldFrequency;
       var lBuffers: c_ptr(c_ptr(aggType));
       var rBuffers: [myLocaleSpace] remoteBuffer(aggType);
@@ -198,7 +198,7 @@ module ChapelAutoAggregation {
       type elemType;
       type aggType = c_ptr(elemType);
       const bufferSize = srcBuffSize;
-      const myLocaleSpace = LocaleSpace;
+      const myLocaleSpace = 0..<numLocales;
       var opsUntilYield = yieldFrequency;
       var dstAddrs: c_ptr(c_ptr(aggType));
       var lSrcAddrs: c_ptr(c_ptr(aggType));
