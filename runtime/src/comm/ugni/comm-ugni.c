@@ -2251,7 +2251,7 @@ void gni_setup_per_comm_dom(int cdi)
   //
   // Create communication domain.
   //
-  gni_init(&cd->nih, (chpl_nodeID * comm_dom_cnt_max) + cdi);
+  gni_init(&cd->nih, cdi);
 
   //
   // Create completion queue.
@@ -2312,7 +2312,12 @@ void gni_init(gni_nic_handle_t* nih, int cdi)
   GNI_CDM_MODES:
   - Check _FORK options for the data server
 \* -------------------------------------------------------------------------- */
-  GNI_CHECK(GNI_CdmCreate(cdi, ptag, cookie, modes, &cdm_handle));
+  //
+  // The instance ID must be node-unique.  The one we specify
+  // here is job-unique, even.
+  //
+  const int inst_id = (chpl_nodeID * comm_dom_cnt_max) + cdi;
+  GNI_CHECK(GNI_CdmCreate(inst_id, ptag, cookie, modes, &cdm_handle));
   GNI_CHECK(GNI_CdmAttach(cdm_handle, device_id, &local_address, nih));
 }
 
