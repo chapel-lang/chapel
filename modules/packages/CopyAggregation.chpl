@@ -1,21 +1,140 @@
+/*
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+   .. warning::
+     This module represents work in progress. The API is unstable and likely to
+     change over time.
+
+   This module provides an aggregated version of copy/assignment for trivially
+   copyable types. Trivially copyable types require no special behavior to be
+   copied and merely copying their representation is sufficient. They include
+   ``numeric`` and ``bool`` types as well as tuples or records consisting only
+   of ``numeric``/``bool``. Records cannot have user-defined copy-initializers,
+   deinitializers, or assignment overloads.
+
+   Aggregated copies can provide a significant speedup for batch assignment
+   operations that do not require ordering of operations. The results of
+   aggregated operations are not visible until the aggregator is deinitialized
+   or an explicit ``flush()`` call is made. The current implementation requires
+   that one side of the copy is always local. When the source is always local
+   and the destination may be remote a :record:`DstAggregator` should be used.
+   When the destination is always local and the source may be remote, a
+   :record:`SrcAggregator` should be used. Note that aggregators are not
+   parallel safe and are expected to be created on a per-task basis. Each
+   aggregator has a per-peer buffer, so memory usage increases with number of
+   locales. The following example demonstrates  using :record:`SrcAggregator`
+   to reverse an array:
+
+   .. code-block:: chapel
+
+     use BlockDist, CopyAggregation;
+
+     const size = 10000;
+     const space = {0..size};
+     const D = space dmapped Block(space);
+     var A, reversedA: [D] int = D;
+
+     forall (rA, i) in zip(reversedA, D) with (var agg = new SrcAggregator(int)) do
+       agg.copy(rA, A[size-i]);
+
+     // no flush required, flushed when aggregator is deinitialized
+
+     forall (rA, i) in zip(reversedA, D) do
+       assert(rA == size-i);
+
+
+   It's important to be aware that aggregated operations are not consistent with
+   regular operations and updates may not be visible until the aggregator is
+   deinitialized or an explicit call to ``flush()`` is made.
+
+   .. code-block:: chapel
+
+     use CopyAggregation;
+
+     var a = 0;
+     on Locales[numLocales-1] {
+       var agg = new DstAggregator(int);
+       var b = 1;
+       agg.copy(a, b);
+       writeln(a);   // can print 0 or 1
+       agg.flush();
+       writeln(a);   // must print 0
+     }
+
+   Generally speaking aggregators are useful for when you have a large batch of
+   remote assignments to perform and the order of those operations doesn't
+   matter.
+ */
 module CopyAggregation {
   use ChplConfig;
   use CTypes;
   use AggregationPrimitives;
 
-  config param verboseAggregation = false;
+  private config param verboseAggregation = false;
 
-  param defaultBuffSize = if CHPL_COMM == "ugni" then 4096 else 8192;
+  private param defaultBuffSize = if CHPL_COMM == "ugni" then 4096 else 8192;
   private const yieldFrequency = getEnvInt("CHPL_AGGREGATION_YIELD_FREQUENCY", 1024);
   private const dstBuffSize = getEnvInt("CHPL_AGGREGATION_DST_BUFF_SIZE", defaultBuffSize);
   private const srcBuffSize = getEnvInt("CHPL_AGGREGATION_SRC_BUFF_SIZE", defaultBuffSize);
 
+  private config param aggregate = CHPL_COMM != "none";
+
   /*
-   * Aggregates copy(ref dst, src). Optimized for when src is local.
-   * Not parallel safe and is expected to be created on a per-task basis
-   * High memory usage since there are per-destination buffers
+     Aggregates ``copy(ref dst, src)``. Optimized for when src is local.
+     Not parallel safe and is expected to be created on a per-task basis.
+     High memory usage since there are per-destination buffers.
    */
   record DstAggregator {
+    type elemType;
+    pragma "no doc"
+    var agg: if aggregate then DstAggregatorImpl(elemType) else nothing;
+    inline proc copy(ref dst: elemType, const in srcVal: elemType) {
+      if aggregate then agg.copy(dst, srcVal);
+                   else dst = srcVal;
+    }
+    inline proc flush() {
+      if aggregate then agg.flush();
+    }
+  }
+
+  /*
+     Aggregates ``copy(ref dst, const ref src)``. Only works when dst is local.
+     Not parallel safe and is expected to be created on a per task basis.
+     High memory usage since there are per-destination buffers.
+   */
+  record SrcAggregator {
+    type elemType;
+    pragma "no doc"
+    var agg: if aggregate then SrcAggregatorImpl(elemType) else nothing;
+    inline proc copy(ref dst: elemType, const ref src: elemType) {
+      if aggregate then agg.copy(dst, src);
+                   else dst = src;
+    }
+    inline proc flush() {
+      if aggregate then agg.flush();
+    }
+  }
+
+  pragma "no doc"
+  record DstAggregatorImpl {
     type elemType;
     type aggType = (c_ptr(elemType), elemType);
     const bufferSize = dstBuffSize;
@@ -106,13 +225,8 @@ module CopyAggregation {
     }
   }
 
-
-  /*
-   * Aggregates copy(ref dst, const ref src). Only works when dst is local.
-   * Not parallel safe and is expected to be created on a per task basis
-   * High memory usage since there are per-destination buffers
-   */
-  record SrcAggregator {
+  pragma "no doc"
+  record SrcAggregatorImpl {
     type elemType;
     type aggType = c_ptr(elemType);
     const bufferSize = srcBuffSize;
@@ -228,6 +342,8 @@ module CopyAggregation {
   }
 }
 
+
+pragma "no doc"
 module AggregationPrimitives {
   use CTypes;
 

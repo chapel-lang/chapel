@@ -115,6 +115,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
 	packages/ConcurrentMap.chpl \
+	packages/CopyAggregation.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/EpochManager.chpl \
