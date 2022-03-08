@@ -1960,6 +1960,10 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 //
 static MoreVisibleResult
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
+  // Do not consider methods more visible in disambiguation
+  if (fn1->isMethod() || fn2->isMethod())
+    return FOUND_NEITHER;
+
   //
   // common-case check to see if functions have equal visibility
   //
