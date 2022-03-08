@@ -7947,3 +7947,7 @@ static void _psv_print(int li, chpl_comm_pstats_t* ps)
 #undef _PSV_PRINT
 }
 #endif
+
+void chpl_comm_wait_for_transmits_complete(void) {
+  // nothing to do
+}

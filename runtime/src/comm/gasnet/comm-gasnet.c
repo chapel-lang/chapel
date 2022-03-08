@@ -1650,3 +1650,7 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                       /*fast*/ true, /*blocking*/ true);
   }
 }
+
+void chpl_comm_wait_for_transmits_complete(void) {
+  // transmits are synchronous, nothing to do
+}
