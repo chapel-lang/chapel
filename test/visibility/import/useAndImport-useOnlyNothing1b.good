@@ -1,2 +1,2 @@
-4
-In A.foo()
+useAndImport-useOnlyNothing1b.chpl:21: In function 'main':
+useAndImport-useOnlyNothing1b.chpl:23: error: 'A' undeclared (first use this function)
