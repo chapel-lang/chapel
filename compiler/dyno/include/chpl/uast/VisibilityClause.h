@@ -154,7 +154,7 @@ class VisibilityClause final : public Expression {
     Return the i'th limitation of this visibility clause. If the limitation
     kind is 'EXCEPT', then the limitations will all be Identifier. If the
     limitation kind is 'ONLY' or 'BRACES', then the limitations may be
-    Identifer or As expressions.
+    Identifier or As expressions.
   */
   const Expression* limitation(int i) const {
     assert(i >= 0 && i < numLimitations_);
