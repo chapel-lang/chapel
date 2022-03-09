@@ -166,7 +166,7 @@ record ipAddr {
 
 
 /*
-  Returns a new record of type :type:`ipAddr` prvoided `host`, `port`
+  Returns a new record of type :type:`ipAddr` provided `host`, `port`
   and `family`. this function is equivalent to the following code:
 
   :arg host: address string in dot-dash or colon notation depending on family.
@@ -188,7 +188,7 @@ proc type ipAddr.create(host: string = "127.0.0.1", port: uint(16) = 8000,
 }
 
 /*
-  Returns a new record of type `ipAddr` prvoided `host` and `port`.
+  Returns a new record of type `ipAddr` provided `host` and `port`.
   The family type is assumed based on `host` which is a standard address.
   this function is equivalent to the following code:
 
@@ -1164,7 +1164,7 @@ proc getPeerName(socketFD: fd_t) throws {
 }
 
 /*
-  Returns the remote addressto which socket is connected. This is
+  Returns the remote address to which socket is connected. This is
   useful to find out the address and port number of a
   remote IPv4/v6 socket, for instance.
 
