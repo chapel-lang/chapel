@@ -50,7 +50,7 @@ static inline ASTList makeASTList(owned<ASTNode> ast) {
 /**
  Update an AST list with some replacement AST.
 
- It's kindof like swapping 'keep' and 'addin' but it tries
+ It's kind of like swapping 'keep' and 'addin' but it tries
  to keep old AST nodes when they are the same. This allows
  for more reuse of results in the query framework.
 
