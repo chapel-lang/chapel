@@ -1152,7 +1152,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
       QualifiedType sigType = sig->formalType(i);
 
       // use the same kind as the old formal type but update the type, param
-      // to reflect how instantiation occured.
+      // to reflect how instantiation occurred.
       formalTypes.push_back(QualifiedType(sigType.kind(),
                                           fieldType.type(),
                                           fieldType.param()));
@@ -1280,7 +1280,7 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
   return resolveFunction(context, sig, poiScope);
 }
 
-struct ReturnTypeInferer {
+struct ReturnTypeInferrer {
   // input
   Context* context;
   Function::ReturnIntent returnIntent;
@@ -1289,8 +1289,8 @@ struct ReturnTypeInferer {
   // output
   std::vector<QualifiedType> returnedTypes;
 
-  ReturnTypeInferer(Context* context,
-                    const ResolvedFunction& resolvedFn)
+  ReturnTypeInferrer(Context* context,
+                     const ResolvedFunction& resolvedFn)
     : context(context),
       returnIntent(resolvedFn.returnIntent()),
       resolutionById(resolvedFn.resolutionById()) {
@@ -1500,7 +1500,7 @@ const QualifiedType& returnType(Context* context,
       // resolve the function body
       const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);
       // infer the return type
-      ReturnTypeInferer visitor(context, *rFn);
+      ReturnTypeInferrer visitor(context, *rFn);
       fn->body()->traverse(visitor);
       result = visitor.returnedType();
     }
