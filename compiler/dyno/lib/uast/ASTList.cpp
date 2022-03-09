@@ -28,7 +28,7 @@ namespace uast {
 
 bool updateASTList(ASTList& keep, ASTList& addin) {
   /*
-   It's kindof like swapping 'keep' and 'addin' but it tries
+   It's kind of like swapping 'keep' and 'addin' but it tries
    to keep old AST nodes when they are the same. This allows
    for more reuse of results in the query framework.
 
