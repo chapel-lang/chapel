@@ -11,6 +11,11 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-deps.sh"
 
+  # It comes with clang 12 and pkg install llvm installs 9,
+  # but 13+ are available.  E.g. /usr/local/llvm13/bin/llvm-config
+  config.vm.provision "shell",
+    path: "../../provision-scripts/freebsd-pkg-llvm13.sh"
+
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"
 

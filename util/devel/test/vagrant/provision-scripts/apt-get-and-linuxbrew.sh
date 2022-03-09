@@ -1,9 +1,13 @@
 #!/bin/bash
 
+# Note, this is not run all as root, so use sudo where needed
+
+sudo apt-get update
+
 # homebrew recommends installing this
-apt-get install -y build-essential
+sudo apt-get install -y build-essential
 # many of these are in build-essential
-apt-get install -y gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config cmake
+sudo apt-get install -y gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
 
 export NONINTERACTIVE=1
 

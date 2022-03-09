@@ -8,7 +8,7 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/impish64"
 
-  config.vm.provision "shell",
+  config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/apt-get-and-linuxbrew.sh"
 
   config.vm.provision "shell", privileged: false,
