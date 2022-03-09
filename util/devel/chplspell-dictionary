@@ -2678,6 +2678,7 @@ usearg
 
 FILEID: 613bf236-1d80-11e6-a3a6-10ddb1d4c3d5
 breakflags
+hdrs
 rungdb
 runlldb
 savec
@@ -2705,6 +2706,8 @@ mtiming
 FILEID: 93e7af94-1d81-11e6-a3a6-10ddb1d4c3d5
 dpar
 reref
+retargs
+rtts
 
 FILEID: 965c5d6a-1d81-11e6-a3a6-10ddb1d4c3d5
 dinit
@@ -3779,6 +3782,7 @@ kace
 linkedlist
 paircount
 pdarray
+pdarrays
 pyzmq
 regexdnaredux
 setops
@@ -4920,6 +4924,7 @@ testmain
 
 FILEID: a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5
 dabc
+mytest
 
 FILEID: c51f1070-3a21-11e8-af7e-10ddb1d4c3d5
 abcdefghijklmnopqrstuvwxyz
@@ -5695,6 +5700,500 @@ upranges
 uprank
 upstridable
 
+FILEID: 2de80716-9f6c-11ec-866d-111c8d7a1817
+newmod
+
+FILEID: 9be43b4a-9f6c-11ec-866d-111c8d7a1817
+evloop
+evthread
+evutil
+getfl
+levent
+localtempfd
+loopbreak
+ptroptval
+rcvtimeo
+recvd
+reuseaddr
+setfl
+sndtimeo
+somaxconn
+tempfd
+
+FILEID: 5e93026e-9f6f-11ec-866d-111c8d7a1817
+extrahelp
+
+FILEID: 6e8fb3ba-9f6f-11ec-866d-111c8d7a1817
+cbegin
+cend
+usecase
+
+FILEID: db34a282-9f6f-11ec-866d-111c8d7a1817
+stringtype
+typetags
+
+FILEID: e045c08a-9f6f-11ec-866d-111c8d7a1817
+cstringtype
+typetags
+
+FILEID: e5093692-9f6f-11ec-866d-111c8d7a1817
+paramtag
+paramtags
+
+FILEID: e9f785aa-9f6f-11ec-866d-111c8d7a1817
+bitwidth
+inttype
+typetags
+
+FILEID: 7d5a9986-9f70-11ec-866d-111c8d7a1817
+imagtype
+
+FILEID: 7fabd8d0-9f70-11ec-866d-111c8d7a1817
+anytype
+
+FILEID: 8085b514-9f70-11ec-866d-111c8d7a1817
+voidtype
+
+FILEID: 894be330-9f70-11ec-866d-111c8d7a1817
+paramtags
+
+FILEID: 8ee06334-9f70-11ec-866d-111c8d7a1817
+builtintype
+
+FILEID: 9ae680c8-9f70-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 9dba0644-9f70-11ec-866d-111c8d7a1817
+erroneoustype
+
+FILEID: a8a34048-9f70-11ec-866d-111c8d7a1817
+booltype
+
+FILEID: a9aa4b58-9f70-11ec-866d-111c8d7a1817
+realtype
+
+FILEID: a9aa4b59-9f70-11ec-866d-111c8d7a1817
+bytestype
+
+FILEID: 082123be-9f71-11ec-866d-111c8d7a1817
+qualifiedtype
+
+FILEID: 092689de-9f71-11ec-866d-111c8d7a1817
+complextype
+
+FILEID: 0a7c5278-9f71-11ec-866d-111c8d7a1817
+nothingtype
+
+FILEID: 111b0bc4-9f71-11ec-866d-111c8d7a1817
+anyint
+
+FILEID: 16268030-9f71-11ec-866d-111c8d7a1817
+unknowntype
+
+FILEID: b2d3a318-9f71-11ec-866d-111c8d7a1817
+asttypes
+
+FILEID: b56cc532-9f71-11ec-866d-111c8d7a1817
+ndrst
+tupledecl
+
+FILEID: bb35557e-9f71-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: bf51d6dc-9f71-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: c2094ef0-9f71-11ec-866d-111c8d7a1817
+nameddecl
+
+FILEID: c461eff4-9f71-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: ca94ec3c-9f71-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: cc49bb0c-9f71-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: cdf2efbe-9f71-11ec-866d-111c8d7a1817
+opcall
+
+FILEID: d2eb1668-9f71-11ec-866d-111c8d7a1817
+griddim
+
+FILEID: d56e1494-9f71-11ec-866d-111c8d7a1817
+cstringliteral
+
+FILEID: d743109e-9f71-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: df9b832a-9f71-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: e35a9ff0-9f71-11ec-866d-111c8d7a1817
+myiter
+ndrst
+parenless
+
+FILEID: ed76a74a-9f71-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: ef4d808e-9f71-11ec-866d-111c8d7a1817
+ndrst
+primcall
+
+FILEID: f36f73b6-9f71-11ec-866d-111c8d7a1817
+blockstyle
+ndrst
+
+FILEID: f6c35dca-9f71-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 1e463c3c-9f72-11ec-866d-111c8d7a1817
+uintliteral
+
+FILEID: 22c5fcf2-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 25416ab6-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 26bbfbfe-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 27dd52c6-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 2b010178-9f72-11ec-866d-111c8d7a1817
+pragmatags
+
+FILEID: 2cb7747a-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 2ea504c8-9f72-11ec-866d-111c8d7a1817
+typedecl
+
+FILEID: 2fe3c446-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 3327c724-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 358c21ae-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 373799b6-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 387bc64e-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 398ec004-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 3aae948c-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 3be03bb2-9f72-11ec-866d-111c8d7a1817
+astlist
+
+FILEID: b9e8cbd2-9f72-11ec-866d-111c8d7a1817
+erroneousexpression
+
+FILEID: bb77b0c6-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: c010ed0a-9f72-11ec-866d-111c8d7a1817
+indexableloop
+
+FILEID: c1821d12-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: c4ba33ac-9f72-11ec-866d-111c8d7a1817
+simpleblocklike
+
+FILEID: c6d33490-9f72-11ec-866d-111c8d7a1817
+aggregatedecl
+
+FILEID: c8b99538-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: c8b99539-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: cc832ba2-9f72-11ec-866d-111c8d7a1817
+enumelement
+ndrst
+
+FILEID: cfbceba0-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: d0f16e38-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: d0f16e39-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: dcd1606e-9f72-11ec-866d-111c8d7a1817
+ndrst
+taskvar
+
+FILEID: ded2da32-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: ded2da33-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: e2ddb174-9f72-11ec-866d-111c8d7a1817
+stringlikeliteral
+
+FILEID: e5530b8e-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: e791e8ca-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: e9ef4e78-9f72-11ec-866d-111c8d7a1817
+intentlist
+
+FILEID: e9ef4e79-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: ed23284e-9f72-11ec-866d-111c8d7a1817
+bracketloop
+ndrst
+
+FILEID: f1585970-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: f38e8b92-9f72-11ec-866d-111c8d7a1817
+externblock
+ndrst
+
+FILEID: fc6af246-9f72-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: fe2ad90c-9f72-11ec-866d-111c8d7a1817
+realliteral
+
+FILEID: 0163ea46-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 036aa00a-9f73-11ec-866d-111c8d7a1817
+ndrst
+typequery
+
+FILEID: 06937e78-9f73-11ec-866d-111c8d7a1817
+ndrst
+varargformal
+
+FILEID: 09cc7194-9f73-11ec-866d-111c8d7a1817
+bytesliteral
+
+FILEID: 0c514296-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 0f67ca54-9f73-11ec-866d-111c8d7a1817
+ndrst
+visibilityclause
+
+FILEID: 1d9efc3c-9f73-11ec-866d-111c8d7a1817
+varlikedecl
+
+FILEID: 1f633326-9f73-11ec-866d-111c8d7a1817
+astnode
+
+FILEID: 2e59a00e-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 2fc07314-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 315b55b8-9f73-11ec-866d-111c8d7a1817
+imagliteral
+
+FILEID: 32ad6e7e-9f73-11ec-866d-111c8d7a1817
+intliteral
+
+FILEID: 35a13476-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 388ac7a6-9f73-11ec-866d-111c8d7a1817
+stringliteral
+
+FILEID: 3a4a084a-9f73-11ec-866d-111c8d7a1817
+boolliteral
+
+FILEID: 3bab9b90-9f73-11ec-866d-111c8d7a1817
+ndrst
+withclause
+
+FILEID: 3e40f74c-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 3f2f81e6-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 3f2f81e7-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 4a72881e-9f73-11ec-866d-111c8d7a1817
+builderresult
+
+FILEID: 4bb86216-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 4bb86217-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 4cec2a3c-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 4e749aec-9f73-11ec-866d-111c8d7a1817
+multidecl
+ndrst
+
+FILEID: 50840840-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 52dcfb24-9f73-11ec-866d-111c8d7a1817
+numericliteral
+
+FILEID: 6804c1bc-9f73-11ec-866d-111c8d7a1817
+decltype
+printsep
+
+FILEID: 772f06ca-9f73-11ec-866d-111c8d7a1817
+ndrst
+
+FILEID: 772f06cb-9f73-11ec-866d-111c8d7a1817
+ndrst
+outname
+querydetail
+
+FILEID: 885d2288-9f73-11ec-866d-111c8d7a1817
+errormessage
+vbuild
+
+FILEID: 8f8948a2-9f73-11ec-866d-111c8d7a1817
+codereview
+decltype
+printsep
+querydetail
+stackexchange
+
+FILEID: b21ab428-9f73-11ec-866d-111c8d7a1817
+somethingtoolong
+somethingtoolongforthemacro
+
+FILEID: b6d19b44-9f73-11ec-866d-111c8d7a1817
+mapbase
+querydetail
+
+FILEID: 28bcfa5a-9f74-11ec-866d-111c8d7a1817
+truthiness
+
+FILEID: 2fa2d27c-9f74-11ec-866d-111c8d7a1817
+moby
+
+FILEID: 360f852e-9f74-11ec-866d-111c8d7a1817
+cfloat
+cinttypes
+foldb
+foldpow
+
+FILEID: 45947086-9f74-11ec-866d-111c8d7a1817
+textc
+
+FILEID: 495be19a-9f74-11ec-866d-111c8d7a1817
+cfloat
+cinttypes
+imagliteral
+intliteral
+parenless
+realliteral
+tlsbr
+trsbr
+uncasted
+
+FILEID: 8af2955e-9f74-11ec-866d-111c8d7a1817
+endloc
+endstmt
+startloc
+todoexpr
+todolist
+todostmt
+yychpl
+
+FILEID: 95534796-9f74-11ec-866d-111c8d7a1817
+pstate
+yychpl
+yylloc
+
+FILEID: a96a12f0-9f74-11ec-866d-111c8d7a1817
+myproc
+
+FILEID: bd49d274-9f74-11ec-866d-111c8d7a1817
+cfloat
+cinttypes
+paramtags
+
+FILEID: c662e13e-9f74-11ec-866d-111c8d7a1817
+tellp
+
+FILEID: fcb9430e-9f74-11ec-866d-111c8d7a1817
+intpart
+nily
+stringlike
+
+FILEID: 0cc92926-9f75-11ec-866d-111c8d7a1817
+mytuple
+
+FILEID: 0ebe9126-9f75-11ec-866d-111c8d7a1817
+dctx
+eturn
+
+FILEID: 7415e1e6-9f75-11ec-866d-111c8d7a1817
+failbit
+ltlt
+rdbuf
+
+FILEID: 82e3c60c-9f75-11ec-866d-111c8d7a1817
+pragmatags
+
+FILEID: 87f2bc0c-9f75-11ec-866d-111c8d7a1817
+iomanip
+setw
+
+FILEID: 8c459914-9f75-11ec-866d-111c8d7a1817
+iomanip
+outname
+querydetail
+setw
+uniqued
+uniquestring
+vbuild
+
+FILEID: bc2f95d0-9f75-11ec-866d-111c8d7a1817
+vbuild
+vprint
+
+FILEID: c2297db6-9f75-11ec-866d-111c8d7a1817
+cpath
+decltype
+outdir
+outpath
+pragmatags
+
+FILEID: 34addaee-9f76-11ec-866d-111c8d7a1817
+decltype
+
+FILEID: 1beb4f5e-9f77-11ec-866d-111c8d7a1817
+userhash
+
+FILEID: a074aca8-9f80-11ec-866d-111c8d7a1817
+ndrst
+
 NATURAL:
 aarch
 abcd
@@ -5731,6 +6230,8 @@ algebralib
 algol
 aliasee
 alice
+alignedhigh
+alignedlow
 alioth
 alist
 allen
@@ -5762,6 +6263,7 @@ anyimag
 anymanaged
 anynil
 anyreal
+anyuint
 apache
 apollo
 appletalk
@@ -5792,6 +6294,7 @@ arounds
 arpa
 arrayness
 arrayview
+arrayviews
 aryamaan
 asan
 asciiz
@@ -5806,6 +6309,7 @@ astloc
 astlocs
 astrs
 asts
+asttags
 atanh
 atexit
 atlassian
@@ -5834,6 +6338,7 @@ backquotes
 backticks
 backtics
 backtraces
+baillie
 balancer
 balensiefer
 balinese
@@ -5882,6 +6387,8 @@ bitmapped
 bitmasks
 bitset
 bitsinpart
+bitvector
+bitwidth
 bitwise
 bjoern
 blackscholes
@@ -6037,6 +6544,7 @@ chunked
 chunking
 chunksize
 churchill
+cinttypes
 cissell
 ciura
 clangexe
@@ -6080,6 +6588,7 @@ coforalls
 cohen
 colorado
 colostate
+combinable
 combit
 commid
 comparetype
@@ -6095,7 +6604,9 @@ condwait
 confchpldoc
 configs
 conjg
+constexpr
 constness
+constructible
 consts
 contextless
 cookiefile
@@ -6231,6 +6742,7 @@ densify
 deprioritized
 deps
 dequeue
+dequeued
 dequeuer
 dequeues
 dereference
@@ -6247,6 +6759,7 @@ deserialization
 deserialize
 deserialized
 deserializer
+deserializers
 deserializing
 destructors
 destructure
@@ -6332,6 +6845,7 @@ duvvuri
 dwords
 dygraphs
 dylan
+dyno
 eacces
 eaddrinuse
 eaddrnotavail
@@ -6468,6 +6982,7 @@ erfc
 eric
 erin
 erofs
+errbuf
 errhandling
 errmsg
 errno
@@ -6803,6 +7318,7 @@ ibarrier
 icfp
 iclass
 icpc
+idempotence
 idempotent
 idents
 idxs
@@ -6822,6 +7338,7 @@ immadi
 immediates
 immmediately
 implementors
+inaddr
 inbox
 incls
 includedir
@@ -6836,6 +7353,7 @@ indraprastha
 inds
 indvars
 inet
+inferrer
 infile
 infilesize
 infiniband
@@ -6874,6 +7392,7 @@ iobig
 ioctldata
 ioctlfunction
 iodynamic
+ioendian
 ioerror
 iohint
 iohints
@@ -7137,6 +7656,7 @@ linefeeds
 lineno
 linkershared
 linpack
+linter
 linux
 listdir
 listlinks
@@ -7174,6 +7694,7 @@ longlong
 longnecker
 lookahead
 lookups
+loopback
 loopexprs
 lopez
 lossless
@@ -7184,6 +7705,7 @@ lowlevel
 lpath
 lrint
 lseek
+lshift
 lstat
 ltrim
 ltsnet
@@ -7396,6 +7918,7 @@ mytimer
 mytype
 myuint
 nafees
+nagle
 nagri
 nakashima
 naman
@@ -7403,6 +7926,7 @@ namedexpr
 namespaced
 namespaces
 namespacing
+namestr
 nanox
 napierian
 nareas
@@ -7421,6 +7945,7 @@ ncodepoints
 ncols
 ncsa
 ndata
+ndcond
 ndebug
 ndefs
 ndim
@@ -7632,6 +8157,7 @@ parameterized
 paramness
 paratest
 parekh
+parenless
 parens
 parenthesesless
 parenthesization
@@ -7640,6 +8166,7 @@ parsable
 parsafe
 partee
 passlist
+passmanager
 passname
 passphrase
 passthrough
@@ -7694,9 +8221,11 @@ poslast
 postalloc
 postamble
 postblit
+postdecrement
 postfields
 postfieldsize
 postfixed
+postincrement
 postinit
 postinits
 postorder
@@ -7718,12 +8247,16 @@ preadv
 preallocated
 precompiled
 precomputing
+predecrement
 prediff
 preemptively
 preexec
 prefixscan
 prefold
+prefolding
 preformatted
+preincrement
+preinitialize
 prelaunch
 preorder
 prepended
@@ -7751,6 +8284,7 @@ prng
 procid
 procs
 profilability
+profiler
 programmatically
 progressdata
 progressfunction
@@ -7801,6 +8335,7 @@ quickack
 quicksort
 quickstart
 qword
+rabin
 rachel
 radixbits
 rafael
@@ -7951,6 +8486,7 @@ roundoff
 roxana
 rpart
 rrandomb
+rshift
 rsize
 rstart
 rsync
@@ -8206,22 +8742,29 @@ steven
 stitt
 stmt
 stmts
+stoull
 strawman
 strchr
 strcmp
 strcmps
+strerrbuf
 strerror
 strftime
 stridability
 stridable
 strided
+stringification
+stringified
+stringifier
 stringify
+stringifying
 strncmp
 strout
 strptime
 strrchr
 strs
 strstr
+strstream
 structs
 subarray
 subbits
@@ -8275,6 +8818,7 @@ sungeun
 sunos
 superclass
 superclasses
+supertype
 superuser
 suppressif
 surya
@@ -8411,6 +8955,7 @@ tracebacks
 tradeoff
 tradeoffs
 transfertext
+traverser
 travis
 treap
 treiber
@@ -8436,8 +8981,10 @@ typedefed
 typefix
 typeinfo
 typeof
+typesafe
 typeselect
 typesymbol
+typetags
 tzakian
 tzinfo
 tzname
@@ -8579,6 +9126,7 @@ vinschen
 virtualenv
 virtualenvs
 virtualizable
+virtualized
 vlsi
 vosteen
 vptr
