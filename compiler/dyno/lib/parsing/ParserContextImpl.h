@@ -449,7 +449,11 @@ void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
         anyActualNames = true;
     }
     for (auto& elt : *lst) {
-      actualsOut.push_back(toOwned(elt.expr));
+      // check if expr is not NULL, which can happen in some bad examples
+      // like new A;
+      if (elt.expr) {
+        actualsOut.push_back(toOwned(elt.expr));
+      }
       if (anyActualNames)
         namesOut.push_back(elt.name);
     }
@@ -1023,15 +1027,20 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
       return expr;
     } else {
       //something wrong, as below
-      this->raiseError(location, "Invalid form for new expression");
+      this->raiseError(location, "Invalid form for 'new' expression");
     }
   } else {
-    // It's an error for one reason or another. TODO: Specialize these
-    // errors later (e.g. 'new a.field' would require parens around
-    // the expression 'a.field'; 'new foo' would require an argument
-    // list for 'foo'; and something like 'new __primitive()' just
-    // doesn't make any sense...
-    this->raiseError(location, "Invalid form for new expression");
+    if (expr->isIdentifier() && expr->toIdentifier()->numChildren() == 0) {
+      // try to capture case of new A; (new without parens)
+      this->raiseError(location, "type in 'new' expression is missing its argument list");
+    } else {
+      // It's an error for one reason or another. TODO: Specialize these
+      // errors later (e.g. 'new a.field' would require parens around
+      // the expression 'a.field'; 'new foo' would require an argument
+      // list for 'foo'; and something like 'new __primitive()' just
+      // doesn't make any sense...
+      this->raiseError(location, "Invalid form for 'new' expression");
+    }
   }
   return nullptr;
 }
