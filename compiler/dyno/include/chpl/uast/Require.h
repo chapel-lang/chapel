@@ -36,7 +36,7 @@ namespace uast {
     // 'Require' tells the compiler where to look for C functions:
     require "foo.h", "foo.c";
 
-  /endrst
+  \endrst
 */
 class Require final : public Expression {
  private:
