@@ -4,8 +4,18 @@ init 10
 init 20
 init 30
 in commonPrefixLength
+init= 1
+init= 2
+init= 10
+init= 20
+init= 30
 (x = 1, ptr = {})
 (x = 2, ptr = {})
+deinit 10
+deinit 20
+deinit 30
+deinit 1
+deinit 2
 end commonPrefixLength
 deinit 10
 deinit 20

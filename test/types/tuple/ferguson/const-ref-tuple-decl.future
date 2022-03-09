@@ -1,2 +1,5 @@
 bug: problem with const ref tuple declaration
 #14778
+
+Note when retiring the future, the serial statement in the test may be
+removed.
