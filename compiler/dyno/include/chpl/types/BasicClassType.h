@@ -87,7 +87,7 @@ class BasicClassType final : public CompositeType {
   }
 
   /** Returns true if this class type is a subclass of the passed
-      parent class type or an instantiaton of a passed generic
+      parent class type or an instantiation of a passed generic
       class type or a combination of the two.
 
       The argument 'convert' is set to true if passing required
