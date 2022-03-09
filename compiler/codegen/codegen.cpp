@@ -259,8 +259,13 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
               info->module->getOrInsertGlobal(
                       cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
       auto globalStringIr = info->irBuilder->CreateGlobalString(value);
+      llvm::Type* ty = nullptr;
+#if HAVE_LLVM_VER >= 130
+      ty = llvm::cast<llvm::PointerType>(
+        globalStringIr->getType()->getScalarType())->getElementType();
+#endif
       auto correctlyTypedValue = info->irBuilder->CreateConstInBoundsGEP2_32(
-        NULL, globalStringIr, 0, 0);
+        ty, globalStringIr, 0, 0);
       globalString->setInitializer(llvm::cast<llvm::Constant>(correctlyTypedValue));
       globalString->setConstant(true);
       info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
