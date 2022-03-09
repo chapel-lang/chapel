@@ -1480,7 +1480,7 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
     if (type == IMAGLITERAL) {
       // Remove the trailing `i` from the noUnderscores number
       if (noUnderscores[noUnderscoresLen-1] != 'i') {
-        err = "invalig imag literal - does not end in i";
+        err = "invalid imag literal - does not end in i";
       }
       noUnderscoresLen--;
       noUnderscores[noUnderscoresLen] = '\0';
