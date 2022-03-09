@@ -1,4 +1,4 @@
-proc countDown(x: int, ref pos = 0) {
+proc countDown(x: int, ref pos = new int(0)) {
   if x == 0 then
     writeln(pos);
   else {
