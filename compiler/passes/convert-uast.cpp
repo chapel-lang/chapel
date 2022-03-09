@@ -602,7 +602,8 @@ struct Converter {
     for (auto limitation : vc->limitations()) {
       names->push_back(convertRename(limitation));
     }
-    // special handling case when only list is empty
+    // special handling case when visibility is `only` and limitations list
+    // is empty.
     // old parser expects an empty potential rename to indicate something like
     // use A only;
     if (vc->limitationKind() == uast::VisibilityClause::ONLY && vc->numLimitations()==0) {

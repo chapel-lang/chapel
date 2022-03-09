@@ -3459,6 +3459,18 @@ static int processToken(yyscan_t scanner, int t) {
       captureString.push_back(' ');
     }
 
+    // this is here to remove extra space added between
+    // the end of an array formal and the closing paren.
+    // e.g print maxIndex(A: [?D]) instead of maxIndex(A: [?D] )
+    if (t == TRP) {
+      auto last = captureString.back();
+      if (last == ' ' && captureString.length() > 1) {
+        if (captureString[captureString.length() - 2] == ']') {
+          captureString.pop_back();
+        }
+      }
+    }
+
     if (t != TLCBR && t != TRETURN) {
       captureString.append(yyget_text(scanner));
     }

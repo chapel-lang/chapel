@@ -887,6 +887,7 @@ struct ChplSyntaxVisitor {
   void visit(const Use* node) {
     if (node->visibility() != Decl::DEFAULT_VISIBILITY) {
       ss_ << kindToString(node->visibility());
+      ss_ << " ";
     }
     ss_ << "use ";
     interpose(node->visibilityClauses(), ", ");
