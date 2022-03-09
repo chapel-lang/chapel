@@ -1570,7 +1570,7 @@ for testname in testsrc:
         # Run the precompile script
         #
         if globalPrecomp:
-            sys.stdout.write('[Executing ./PRECOMP]\n')
+            sys.stdout.write('[Executing ./PRECOMP %s %s %s]\n'%(execname, complog. compiler))
             sys.stdout.flush()
             p = py3_compat.Popen(['./PRECOMP', execname, complog, compiler],
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
