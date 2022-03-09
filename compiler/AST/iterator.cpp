@@ -1986,7 +1986,7 @@ void cleanupPrimIRFieldValByFormal() {
 static void fixPromotionProtoField(AggregateType* at, Symbol* locSym,
                                    VarSymbol* newField) {
 
-  if ((at->numFields() == 0 || !at->isSerializeable())) {
+  if ((at->numFields() == 0 || !at->isSerializable())) {
     return;
   }
 
@@ -2018,7 +2018,7 @@ static void cleanupProtoFields(AggregateType* at) {
     return;
   }
 
-  if (!at->isSerializeable()) {
+  if (!at->isSerializable()) {
     for_fields (field, at) {
       if (field->hasFlag(FLAG_PROMOTION_PROTO_FIELD)) {
         field->defPoint->remove();
