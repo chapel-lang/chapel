@@ -1,1 +1,2 @@
-day18-defaultRefVar.chpl:11: error: const actual is passed to 'ref' formal 'pos' of countDown()
+day18-defaultRefVar.chpl:1: In function 'countDown':
+day18-defaultRefVar.chpl:1: error: invalid use of 'new' on primitive int(64)
