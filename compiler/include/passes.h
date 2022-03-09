@@ -190,7 +190,7 @@ class AddInitGuards : public PassT<ModuleSymbol*> {
   void process(ModuleSymbol* mod) override;
 
   static FnSymbol* getOrCreatePreInitFn();
-  static void addInitGuard(FnSymbol* fn, FnSymbol* preInitfn);
+  static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn);
   static void addPrintModInitOrder(FnSymbol* fn);
 
  private:
