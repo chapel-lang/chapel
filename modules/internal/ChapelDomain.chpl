@@ -1478,7 +1478,7 @@ module ChapelDomain {
         // E.g., default rectangular...
         _checkThatArrayShapeIsSupported(arr);
 
-        // Only certain forms of index are permissable.
+        // Only certain forms of index are permissible.
         _checkThatIndexMatchesArrayShape(arr, idx);
 
         if _checks {
@@ -1589,7 +1589,7 @@ module ChapelDomain {
         // E.g., default rectangular...
         _checkThatArrayShapeIsSupported(arr);
 
-        // Only certain forms of index are permissable.
+        // Only certain forms of index are permissible.
         _checkThatIndexMatchesArrayShape(arr, idx);
 
         // Produce a compiler error.
@@ -2010,7 +2010,7 @@ module ChapelDomain {
       return this.contains(sub);
     }
 
-    /* Returns true if this domain contains all the indicies in the domain
+    /* Returns true if this domain contains all the indices in the domain
        ``other``. */
     proc contains(other: domain) {
       if this.rank != other.rank then
