@@ -45,7 +45,7 @@ class IntType final : public PrimitiveType {
 
   static const owned<IntType>& getIntType(Context* context, int bitwidth);
 
-  /** what is stored in bitwdith_ for the default 'int'? */
+  /** what is stored in bitwidth_ for the default 'int'? */
   static int defaultBitwidth() {
     return 64;
   }
