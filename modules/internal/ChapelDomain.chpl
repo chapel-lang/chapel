@@ -1262,7 +1262,7 @@ module ChapelDomain {
       for i in _value.dimIter(d, ind) do yield i;
     }
 
-   /* Return a tuple of :proc:`int` describing the size of each
+   /* Return a tuple of `int` describing the size of each
       dimension.
 
       For a sparse domain, this returns the shape of the parent domain.
