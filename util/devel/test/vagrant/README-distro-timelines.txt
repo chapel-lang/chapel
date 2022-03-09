@@ -66,7 +66,7 @@ x 11.2 EOL Oct 2019
 x 11.4 EOL Sep 2021
 x 12.0 EOL Feb 2020
 x 12.1 EOL Jan 2021
-  12.2
+  12.2 EOL Mar 2022
   12.3
   13.0 EOL Jan 2026
 
