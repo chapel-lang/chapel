@@ -153,7 +153,7 @@ char* Context::setupStringMetadata(char* buf, size_t len) {
   // set the GC mark
   *buf = gcMark;
   buf++;
-  // set the doNotcollectMark
+  // set the doNotCollectMark
   *buf = 0;
   buf++;
   return buf;
