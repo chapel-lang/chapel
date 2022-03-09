@@ -8,13 +8,20 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "freebsd/FreeBSD-13.0-STABLE"
 
+  # needs more disk space
+  # have to use this for it to work:
+  #   export VAGRANT_EXPERIMENTAL="disks"
+  # but this doesn't seem to work with this particular image
+  #config.vm.disk :disk, size: "12GB", primary: true
+
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-deps.sh"
 
   # It comes with clang 12 and pkg install llvm installs 9,
   # but 13+ are available.  E.g. /usr/local/llvm13/bin/llvm-config
-  config.vm.provision "shell",
-    path: "../../provision-scripts/freebsd-pkg-llvm13.sh"
+  # Leaving it out to save disk space
+  #config.vm.provision "shell",
+  #  path: "../../provision-scripts/freebsd-pkg-llvm13.sh"
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"

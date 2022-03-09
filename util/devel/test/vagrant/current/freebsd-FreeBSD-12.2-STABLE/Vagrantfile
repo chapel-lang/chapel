@@ -8,6 +8,11 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "freebsd/FreeBSD-12.2-STABLE"
 
+  # needs more disk space
+  # have to use this for it to work:
+  #   export VAGRANT_EXPERIMENTAL="disks"
+  config.vm.disk :disk, size: "12GB", primary: true
+
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-deps.sh"
 
