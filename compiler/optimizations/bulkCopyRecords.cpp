@@ -133,7 +133,7 @@ bool BulkCopyRecords::shouldProcess(FnSymbol* fn) {
 void BulkCopyRecords::process(FnSymbol* fn) {
   replaceSimpleAssignment(fn);
   // TODO PAssManager I think here would be a great place
-  // for a stats gather method so we can easiliy count how
+  // for a stats gather method so we can easily count how
   // many things actually got replaced
   // passes do this on their own today in various forms
   // And this could also extend to a verify

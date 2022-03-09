@@ -145,7 +145,7 @@ void Builder::assignIDs() {
 
 /* A note about ID assignment
 
-  This ID assigment tries to balance several competing goals:
+  This ID assignment tries to balance several competing goals:
    * would like postorder Ids to be available to make it easy to store e.g.
      resolution results for a function in a vector
    * would like incremental recompilation to minimize recomputation if code is

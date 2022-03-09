@@ -342,7 +342,7 @@ This function returns:
 
   * for a full ``sync`` or ``single``, a copy of the value stored
   * for an empty ``sync`` or ``single``, the implementation will return
-    either a new default-initialzed value of type ``t`` or the last value
+    either a new default-initialized value of type ``t`` or the last value
     stored.
 
 

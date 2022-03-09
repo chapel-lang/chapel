@@ -2146,7 +2146,7 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   if (optLevel <= 1) {
       bool InsertLifetimeIntrinsics = (CodeGenOpts.OptimizationLevel != 0 &&
                                        !CodeGenOpts.DisableLifetimeMarkers);
-      // TODO: insert lifetime intrinics if Coroutines are used
+      // TODO: insert lifetime intrinsics if Coroutines are used
     PMBuilder.Inliner = createAlwaysInlinerLegacyPass(InsertLifetimeIntrinsics);
   } else {
     PMBuilder.Inliner = createFunctionInliningPass(
@@ -2303,7 +2303,7 @@ static bool isTargetCpuValid(const char* targetCpu) {
 // In that event, filter out everything but the -D and -I arguments,
 // since other arguments might not be understood by clang.
 //
-// This could filter out more agressively but we do need the
+// This could filter out more aggressively but we do need the
 // paths and defines for the runtime headers to work.
 static void addFilteredArgs(std::vector<std::string>& dst,
                             std::vector<std::string>& src,

@@ -55,7 +55,7 @@ two special methods called ``enterThis()`` and ``leaveThis()``:
 
 The ``enterThis()`` method is called on the manager before entering
 the managed block. The ``leaveThis()`` method is called on the
-manager before leaving the block. It accepts a nillable
+manager before leaving the block. It accepts a nilable
 ``owned Error?`` by ``in`` intent in order to take ownership of it.
 The type author may decide to rethrow the error or suppress it.
 

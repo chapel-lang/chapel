@@ -32,7 +32,7 @@
 namespace chpl {
 
   /*
-    With this function we are tyring to create a faithful representation
+    With this function we are trying to create a faithful representation
     of the uAST in Chapel syntax. The goal is to generate strings that could
     be copy/pasted and compiled back to the same uAST.
   */

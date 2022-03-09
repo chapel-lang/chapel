@@ -6881,7 +6881,7 @@ void amCheckRxTxCmpls(chpl_bool* pHadRxEvent, chpl_bool* pHadTxEvent,
 
     // The provider can't do poll sets.  Consume transmit completions,
     // and progress the receive endpoint as required by some providers
-    // (e.g. EFA, which may exhange handshake messages in the background
+    // (e.g. EFA, which may exchange handshake messages in the background
     // during a transmit and therefore requires progressing the receive
     // checkpoint so that handshakes are received). Inbound operations
     // will be handled by the main loop. Also, avoid CPU monopolization

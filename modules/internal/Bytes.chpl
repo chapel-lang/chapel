@@ -774,7 +774,7 @@ module Bytes {
     // this overload serves as a catch-all for unsupported types.
     // for the implementation of array and tuple overloads, see
     // join() methods in the _bytes record.
-    compilerError("bytes.join() accepts any number of bytes, homogenous "
+    compilerError("bytes.join() accepts any number of bytes, homogeneous "
                     + "tuple of bytes, or array of bytes as an argument");
   }
 

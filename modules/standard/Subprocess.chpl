@@ -1089,7 +1089,7 @@ module Subprocess {
     try this.sendPosixSignal(SIGABRT);
   }
 
-  /* Send the child processan alarm signal. The associated signal,
+  /* Send the child process an alarm signal. The associated signal,
      `SIGALRM`, may be caught and handled by the child process. See
      :proc:`subprocess.send_signal`.
    */

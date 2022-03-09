@@ -32,7 +32,7 @@
 // be used in the future. A PassT processes a single item of type T so
 // that the caller can drive the execution.
 //
-// There might be a useful baseclass for this that has more general `run` method
+// There might be a useful base class for this that has more general `run` method
 // for instance, but for now having it templated over its input type is too useful.
 //
 // Run could equally be spelled operator() but I find the name more clear.

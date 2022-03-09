@@ -554,7 +554,7 @@ class InnermostMatch {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-    ss << "InnermostMatch not yet strigified";
+    ss << "InnermostMatch not yet stringified";
   }
 
   /// \cond DO_NOT_DOCUMENT

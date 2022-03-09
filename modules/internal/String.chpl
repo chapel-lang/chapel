@@ -1802,7 +1802,7 @@ module String {
     // this overload serves as a catch-all for unsupported types.
     // for the implementation of array and tuple overloads, see
     // join() methods in the _string record.
-    compilerError("string.join() accepts any number of strings, homogenous "
+    compilerError("string.join() accepts any number of strings, homogeneous "
                   + "tuple of strings, or array of strings as an argument");
   }
 

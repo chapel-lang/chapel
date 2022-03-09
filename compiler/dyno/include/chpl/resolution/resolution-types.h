@@ -397,7 +397,7 @@ class PoiInfo {
 
   // TODO callers copy and store this elsewhere, do we return as is? change the
   // getter to poiFnIdsUsedAsSet? make callers do std::set(poiFnIdsUsed.begin(),
-  // poiFnidsUsed.end()) ?
+  // poiFnIdsUsed.end()) ?
   const std::set<std::pair<ID, ID>> &poiFnIdsUsed() const {
     return poiFnIdsUsed_;
   }
