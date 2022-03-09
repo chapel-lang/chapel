@@ -87,7 +87,7 @@ class Range final : public Expression {
                             owned<Expression> upperBound);
 
   /**
-    Returns the operator kind used to constrct this range.
+    Returns the operator kind used to construct this range.
   */
   OpKind opKind() const {
     return this->opKind_;
