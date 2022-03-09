@@ -894,8 +894,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   if (!fLibraryCompile) {
     const char* dot = &(mainfile->pathname[strlen(mainfile->pathname)-2]);
     const char* ext = &(mainfile->pathname[strlen(mainfile->pathname)-1]);
-    if (*dot != '.') {
-      INT_FATAL("Unexpected extension in mainfile for non-library compile");
+    if (*dot != '.' || (*ext != 'c' && *ext != 'o' )) {
+      INT_FATAL("Unexpected extension in 'mainfile' for non-library compile");
     }
     fprintf(makefile.fptr, "\t$(CHPLSRC:%%.%s=%%) \\\n", ext);
   }
