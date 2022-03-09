@@ -2560,9 +2560,6 @@ static void codegenPartTwo() {
   if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
 
-    if(fIncrementalCompilation)
-      USR_FATAL("Incremental compilation is not yet supported with LLVM");
-
     if(debugCCode)
     {
       debug_info = new debug_data(*info->module);
@@ -2609,15 +2606,13 @@ static void codegenPartTwo() {
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         const char* filename = NULL;
         filename = generateFileName(fileNameHashMap, filename, currentModule->name);
-        if(currentModule->modTag == MOD_USER) {
-          openCFile(&modulefile, filename, "c");
-          int modulePathLen = strlen(astr(modulefile.pathname));
-          char path[FILENAME_MAX];
-          strncpy(path, astr(modulefile.pathname), modulePathLen-2);
-          path[modulePathLen-2]='\0';
-          userFileName.push_back(astr(path));
-          closeCFile(&modulefile);
-        }
+        openCFile(&modulefile, filename, "c");
+        int modulePathLen = strlen(astr(modulefile.pathname));
+        char path[FILENAME_MAX];
+        strncpy(path, astr(modulefile.pathname), modulePathLen-2);
+        path[modulePathLen-2]='\0';
+        userFileName.push_back(astr(path));
+        closeCFile(&modulefile);
       }
     }
     codegen_makefile(&mainfile, NULL, NULL, false, userFileName);
@@ -2668,13 +2663,13 @@ static void codegenPartTwo() {
 
       openCFile(&modulefile, filename, "c");
       info->cfile = modulefile.fptr;
-      if(fIncrementalCompilation && (currentModule->modTag == MOD_USER))
+      if(fIncrementalCompilation)
         fprintf(modulefile.fptr, "#include \"chpl__header.h\"\n");
       currentModule->codegenDef();
 
       closeCFile(&modulefile);
 
-      if(!(fIncrementalCompilation && (currentModule->modTag == MOD_USER)))
+      if(!(fIncrementalCompilation))
         fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
     }
 
