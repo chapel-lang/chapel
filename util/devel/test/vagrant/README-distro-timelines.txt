@@ -21,9 +21,11 @@ x 6 full updates until May 2017, maintenance until Nov 2020
     7.4  released Sep 2017
     7.5  released May 2018
     7.6  released Dec 2018
-    # note -- gcc 9 is available with devtoolset-9 
+    # note -- gcc 11 is available with devtoolset-11
       https://stackoverflow.com/questions/36327805/how-to-install-gcc-5-3-with-yum-on-centos-7-2/37355018
-  8 full updates until May 2024, maintenance until May 2029
+  8 not-stream - EOL 2021-12-31
+  8 stream - EOL May 2024
+  8 stream - estimated EOL 2027
 
 
 Debian -- see https://wiki.debian.org/DebianReleases
@@ -51,6 +53,7 @@ x 31 EOL Nov 2020
 x 32 EOL May 2021
   33 EOL Nov 2021
   34
+  35
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html
         -- and https://app.vagrantup.com/freebsd

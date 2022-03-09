@@ -9,7 +9,7 @@ Vagrant.configure("2") do |config|
   config.vm.box = "centos/7"
 
   config.vm.provision "shell",
-    path: "../../provision-scripts/yum-deps.sh"
+    path: "../../provision-scripts/yum-deps-centos-7.sh"
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"
