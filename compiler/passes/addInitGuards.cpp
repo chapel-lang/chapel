@@ -149,7 +149,7 @@ void AddInitGuards::addInitGuard(FnSymbol* fn, FnSymbol* preInitFn) {
     fn->insertAtHead(ifStmt);
 }
 
-// TODO GLOBALS gPrintmoduleinitfn, gModuleInitindentlevel
+// TODO GLOBALS gPrintModuleInitFn, gModuleInitIndentLevel
 //
 // Insert code that prints out the name of the module as it is
 // initialized.  We do this by inserting a call to printModInitOrder()
@@ -165,12 +165,12 @@ void AddInitGuards::addPrintModInitOrder(FnSymbol* fn) {
   if (gPrintModuleInitFn == NULL)
     return;
 
-  // The function printModuleIInit() takes 3 arguments:
+  // The function printModuleInitFn() takes 3 arguments:
   //   s1:  the format string "%*s"
   //   s2:  string to be printed
   //   len: length of s2
   // Since no other modules are initialized prior to this
-  // PrintModuleinitOrder, we'll be conservative and generate s1 and
+  // PrintModuleInitOrder, we'll be conservative and generate s1 and
   // len here.
   VarSymbol* s1tmp = newTemp("modFormatStr", dtStringC);
   VarSymbol* s2tmp = newTemp("modStr", dtStringC);
