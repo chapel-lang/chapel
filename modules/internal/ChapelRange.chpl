@@ -166,14 +166,8 @@ module ChapelRange {
   pragma "no doc"
   config param useOptimizedRangeIterators = true;
 
-  /* Chapel is in the process of changing ``range(idxType).size`` away
-     from returning the range's size as an ``idxType`` value in favor
-     of returning an ``int`` value.  Setting ``sizeReturnsInt`` to
-     ``true`` permits a user to opt into this new behavior now rather
-     than having it change out from under them in a future release.
-     The old behavior can be retained by using the new
-     :proc:`range.sizeAs` method.  */
-
+  pragma "no doc"
+  deprecated "'sizeReturnsInt' is deprecated and no longer has an effect"
   config param sizeReturnsInt = false;
 
 
@@ -757,26 +751,12 @@ module ChapelRange {
   }
 
   /* Returns the number of elements in this range as an integer.
-     Historically, and by default for now, the return type is
-     represented as an ``intIdxType`` value.  However, Chapel is in
-     the process of changing to always return an ``int`` value, and so
-     will generate a warning if ``intIdxType != int`` to alert users
-     to the change.  :param:`sizeReturnsInt` can be used to opt into
-     the new behavior now.  Or :proc:`range.sizeAs` can be used to
-     request a different return type.
 
-     If the size exceeds ``max(intIdxType)``/``max(int)``, this
-     procedure will halt when bounds checks are on.
+     If the size exceeds ``max(int)``, this procedure will halt when
+     bounds checks are on.
    */
   proc range.size {
-    if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
-      compilerWarning("'range("+idxType:string+").size' is changing to return 'int' values rather than '"+idxType:string+"'\n" +
-                      "  (to get the value as a different type, call the new method '.sizeAs(type t)')\n" +
-                      "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')");
-      return this.sizeAs(this.intIdxType);
-    } else {
-      return this.sizeAs(int);
-    }
+    return this.sizeAs(int);
   }
 
   /* Returns the number of elements in this range as the specified
