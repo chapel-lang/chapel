@@ -5960,7 +5960,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   }
 
   for (int vi = 0; vi < v_len; vi++) {
-    (void) wrap_fi_writemsg(addr_v[vi], &local_mr_v[vi],
+    (void) wrap_fi_writemsg(addr_v[vi], local_mr_v[vi],
                             locale_v[vi],
                             (uint64_t) raddr_v[vi], remote_mr_v[vi],
                             size_v[vi], txnTrkEncodeId(__LINE__),
