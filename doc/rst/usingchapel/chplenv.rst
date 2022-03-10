@@ -822,19 +822,10 @@ CHPL_LIB_PIC
 
 Character Set
 -------------
-   Chapel works with the Unicode character set with UTF-8 encoding and the
-   traditional C collating sequence. Users are responsible for making sure that
-   they are running Chapel in a suitable environment. For example, for `en_US`
-   locale, the following environment variables should be set:
 
-   .. code-block:: sh
-
-       LANG=en_US.UTF-8
-       LC_COLLATE=C
-       LC_ALL=""
-
-   .. note::
-       Other character sets may be supported in the future.
+Chapel works with the Unicode character set with the UTF-8 encoding.
+Chapel programs will use the UTF-8 encoding regardless of the LANG and
+LC_ALL environment variable settings that the C library uses.
 
 Compiler Command Line Option Defaults
 -------------------------------------

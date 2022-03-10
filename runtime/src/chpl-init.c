@@ -157,6 +157,44 @@ void chpl_rt_postUserCodeHook(void) {
 }
 
 
+static void chpl_setlocale_utf8(void) {
+  const char* got = NULL;
+
+  // Note: the C locale only currently matters for calls to
+  // wcwidth in formatted I/O.
+  // TODO: Would it be better to bundle some third-party library
+  // that can compute the number of columns of each UTF-8 character?
+
+  // First, try setting the character type to UTF-8 this way.
+  // It seems to work on Mac OS X and linux
+  // and matches the documentation.
+  //
+  // This should only affect the character set and so the
+  // language is irrelevant.
+  got = setlocale(LC_CTYPE, "en_US.UTF-8");
+
+  if (got == NULL) {
+    // This seems to work on linux but not on Mac OS X
+    got = setlocale(LC_CTYPE, "C.UTF-8");
+  }
+
+  if (got == NULL) {
+    // This seems to work on Mac OS X but not linux
+    got = setlocale(LC_CTYPE, "UTF-8");
+  }
+
+  if (got == NULL) {
+    fprintf(stderr, "Warning: setlocale(LC_CTYPE, \"en_US.UTF-8\") failed. "
+                    "Formatted I/O may not work correctly.");
+
+    // This should always succeed and we should have already been
+    // in the C locale when we started (but it is possible to be otherwise
+    // when we are being launched as a library).
+    // This way at least the ASCII subset of UTF-8 will work correctly.
+    setlocale(LC_CTYPE, "C");
+  }
+}
+
 //
 // Chapel runtime initialization
 //
@@ -174,10 +212,9 @@ void chpl_rt_init(int argc, char* argv[]) {
   assert( sys_page_size() > 0 );
 
   // Declare that we are 'locale aware' so that
-  // UTF-8 functions (e.g. wcrtomb) work as
-  // indicated by the locale environment variables.
-  setlocale(LC_CTYPE,"");
-  qio_set_glocale();
+  // wctype.h functions such as wcwidth work with UTF-8.
+  chpl_setlocale_utf8();
+
   // So that use of localtime_r is portable.
   tzset();
 

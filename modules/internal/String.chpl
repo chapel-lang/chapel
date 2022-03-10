@@ -80,10 +80,6 @@ Chapel strings use the UTF-8 encoding. Note that ASCII strings are a simple
 subset of UTF-8 strings, because every ASCII character is a UTF-8 character with
 the same meaning.
 
-UTF-8 strings might not work properly if a UTF-8 environment is not used. See
-:ref:`character set environment <readme-chplenv.character_set>` for more
-information.
-
 .. _string.nonunicode:
 
 Non-Unicode Data and Chapel Strings
