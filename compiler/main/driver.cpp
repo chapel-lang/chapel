@@ -201,6 +201,7 @@ bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
+int fParMake = -1;
 bool fIncrementalCompilation = false;
 bool fNoOptimizeForallUnordered = false;
 
@@ -1191,6 +1192,7 @@ static ArgumentDescription arg_desc[] = {
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
+ {"parallel-make", 'j', NULL, "Specify degree of parallelism for C back-end", "I", &fParMake, "CHPL_PAR_MAKE", NULL},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"print-additional-errors", ' ', NULL, "Print additional errors", "F", &fPrintAdditionalErrors, NULL,NULL},
  {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
@@ -1554,6 +1556,15 @@ static void setGPUFlags() {
   }
 }
 
+static void setIncrementalAndParMake() {
+  if (!fFastFlag && fParMake == -1) {
+    fParMake = 0;
+  }
+  if (fParMake != -1) {
+    fIncrementalCompilation = 1;
+  }
+}
+
 static void checkLLVMCodeGen() {
 #ifdef HAVE_LLVM
   // LLVM does not currently work on 32-bit x86
@@ -1586,9 +1597,9 @@ static void checkIncrementalAndOptimized() {
   std::size_t optimizationsEnabled = ccflags.find("-O");
   if(fIncrementalCompilation && ( optimizeCCode ||
       optimizationsEnabled!=std::string::npos ))
-    USR_WARN("Compiling with --incremental along with optimizations enabled"
-              " may lead to a slower execution time compared to --fast or"
-              " using -O optimizations directly.");
+    USR_WARN("Compiling with '--incremental' or '--parallel-make' with "
+             "optimizations enabled may lead to a slower execution time "
+             "due to the use of separate compilation in the back-end.");
 }
 
 static void checkUnsupportedConfigs(void) {
@@ -1723,6 +1734,8 @@ static void postprocess_args() {
   setPrintCppLineno();
 
   setGPUFlags();
+
+  setIncrementalAndParMake();
 }
 
 

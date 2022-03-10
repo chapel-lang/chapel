@@ -2754,7 +2754,12 @@ void makeBinary(void) {
 #endif
   } else {
     const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
+    char parMakeFlags[16] = "-j ";
+    if (fParMake > 0) {
+      sprintf(parMakeFlags, "-j %d ", fParMake);
+    }
     const char* command = astr(astr(CHPL_MAKE, " "),
+                               (fParMake > -1 ? parMakeFlags : ""),
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
     mysystem(command, "compiling generated source");
