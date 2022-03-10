@@ -176,7 +176,7 @@ struct ChplSyntaxVisitor {
      * for all literals instead of creating specializations of visit for each
      * numeric literal type?
     */
-    ss_ << node->text().c_str();
+    ss_ << node->text();
   }
 
   /*
@@ -256,7 +256,7 @@ struct ChplSyntaxVisitor {
       if (decl->isTupleDecl()) {
         printTupleContents(decl->toTupleDecl());
       } else {
-        ss_ << decl->toVarLikeDecl()->name().c_str();
+        ss_ << decl->toVarLikeDecl()->name();
         if (const Expression *te = decl->toVarLikeDecl()->typeExpression()) {
           ss_ << ": ";
           printChapelSyntax(ss_, te);
@@ -338,7 +338,7 @@ struct ChplSyntaxVisitor {
     ss_ << "catch ";
     if (node->error()) {
       if (node->hasParensAroundError()) ss_ << "(";
-      ss_ << node->error()->name().c_str();
+      ss_ << node->error()->name();
       if (const Expression* te = node->error()->typeExpression()) {
         ss_ << " : ";
         printChapelSyntax(ss_, te);
@@ -351,7 +351,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const Class* node) {
     ss_ << "class ";
-    ss_ << node->name().c_str() << " ";
+    ss_ << node->name() << " ";
     if (node->parentClass() != nullptr) {
       ss_ << ": ";
       printChapelSyntax(ss_, node->parentClass());
@@ -430,7 +430,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const Dot* node) {
     printChapelSyntax(ss_, node->receiver());
-    ss_ << "." << node->field().c_str();
+    ss_ << "." << node->field();
   }
 
   void visit(const DoWhile* node) {
@@ -441,12 +441,12 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Enum* node) {
-    ss_ << "enum " << node->name().c_str() << " ";
+    ss_ << "enum " << node->name() << " ";
     interpose(node->enumElements(), ", ", "{ ", " }");
   }
 
   void visit(const EnumElement* node) {
-    ss_ << node->name().c_str();
+    ss_ << node->name();
     if (const Expression* ie = node->initExpression()) {
       ss_ <<  " = ";
       printChapelSyntax(ss_, ie);
@@ -615,14 +615,14 @@ struct ChplSyntaxVisitor {
       ss_ << "prototype ";
     }
     ss_ << "module ";
-    ss_ << node->name().c_str();
+    ss_ << node->name();
   }
 
   void visit(const IntLiteral* node)  { visitLiteral(node); }
 
   void visit(const Label* node) {
     ss_ << "label ";
-    ss_ << node->name().c_str() << " ";
+    ss_ << node->name() << " ";
     printChapelSyntax(ss_, node->loop());
   }
 
@@ -633,7 +633,7 @@ struct ChplSyntaxVisitor {
     // TODO: Can we eliminate or generalize this in a better way?
     for (auto decl : node->decls()) {
       const Variable* var = decl->toVariable();
-      ss_ << var->name().c_str();
+      ss_ << var->name();
       if (const Expression *te = var->typeExpression()) {
         ss_ << ": ";
         printChapelSyntax(ss_, te);
@@ -671,7 +671,7 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString(node->kind()) << " ";
     }
     ss_ << "module ";
-    ss_ << node->name().c_str() << " ";
+    ss_ << node->name() << " ";
     interpose(node->stmts(), "\n", "{", "}");
   }
 
@@ -682,7 +682,7 @@ struct ChplSyntaxVisitor {
     std::string delimiter = "";
     for (auto decl : node->decls()) {
       ss_ << delimiter;
-      ss_ << decl->toVariable()->name().c_str();
+      ss_ << decl->toVariable()->name();
       if (const Expression* te = decl->toVariable()->typeExpression()) {
         ss_ << ": ";
         printChapelSyntax(ss_, te);
@@ -720,7 +720,7 @@ struct ChplSyntaxVisitor {
       if (node->op() == USTR("postfix!")) {
         isPostFixBang = true;
       } else {
-        ss_ << node->op().c_str();
+        ss_ << node->op();
       }
       assert(node->numActuals() == 1);
       printChapelSyntax(ss_, node->actual(0));
@@ -730,7 +730,7 @@ struct ChplSyntaxVisitor {
     } else if (node->isBinaryOp()) {
       assert(node->numActuals() == 2);
       printChapelSyntax(ss_, node->actual(0));
-      ss_ << node->op().c_str();
+      ss_ << node->op();
       printChapelSyntax(ss_, node->actual(1));
     }
   }
@@ -758,12 +758,12 @@ struct ChplSyntaxVisitor {
   void visit(const Record* node) {
     printLinkage(node);
     ss_ << "record ";
-    ss_ << node->name().c_str() << " ";
+    ss_ << node->name() << " ";
     interpose(node->decls(), "\n", "{", "}");
   }
 
   void visit(const Reduce* node) {
-    ss_ << node->op().c_str() << " ";
+    ss_ << node->op() << " ";
     ss_ << "reduce ";
     interpose(node->actuals(), ", ");
   }
@@ -782,7 +782,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Scan* node) {
-    ss_ << node->op().c_str() << " ";
+    ss_ << node->op() << " ";
     ss_ << "scan ";
     interpose(node->actuals(), ", ");
   }
@@ -814,7 +814,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const TaskVar* node) {
     ss_ << kindToString((IntentList) node->intent());
-    ss_ << " " << node->name().c_str();
+    ss_ << " " << node->name();
   }
 
   void visit(const Throw* node) {
@@ -862,12 +862,12 @@ struct ChplSyntaxVisitor {
   void visit(const TypeDecl* node) {
     printLinkage(node);
     ss_ << "type ";
-    ss_ << node->name().c_str();
+    ss_ << node->name();
   }
 
   void visit(const TypeQuery* node) {
     ss_ << "?";
-    ss_ << node->name().c_str();
+    ss_ << node->name();
   }
 
   void visit(const UintLiteral* node) { visitLiteral(node); }
@@ -875,7 +875,7 @@ struct ChplSyntaxVisitor {
   void visit(const Union* node) {
     printLinkage(node);
     ss_ << "union ";
-    ss_ << node->name().c_str() << " ";
+    ss_ << node->name() << " ";
     interpose(node->children(), "\n", "{", "}");
   }
 
@@ -892,7 +892,7 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString((IntentList) node->intent()) << " ";
     }
 
-    ss_ << node->name().c_str();
+    ss_ << node->name();
     if (const Expression* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
@@ -922,7 +922,7 @@ struct ChplSyntaxVisitor {
     if (node->kind() != Variable::Kind::INDEX) {
       ss_ << kindToString((IntentList) node->kind()) << " ";
     }
-    ss_ << node->name().c_str();
+    ss_ << node->name();
     if (const Expression* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
@@ -1018,4 +1018,3 @@ namespace chpl {
   }
 
 } // end chpl namespace
-
