@@ -34,6 +34,7 @@
 #include "bb.h"
 #include "astutil.h"
 #include "optimizations.h"
+#include "view.h"
 
 #include "global-ast-vecs.h"
 
@@ -80,6 +81,30 @@ static void markGPUSuitableLoops();
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
   return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
+}
+
+static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
+  if (isDefinedInTheLoop(sym, loop)) {
+    return false;
+  }
+
+  if (!sym->isRef()) {
+    return false;
+  }
+
+  for_SymbolUses(use, sym) {
+    if (LoopStmt::findEnclosingLoop(use) != loop) {
+      return false;
+    }
+  }
+
+  for_SymbolDefs(def, sym) {
+    if (LoopStmt::findEnclosingLoop(def) != loop) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 static bool isIndexVariable(OutlineInfo& info, Symbol* sym) {
@@ -221,6 +246,16 @@ static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop) {
   info.copyMap.put(symInLoop, newFormal);
 
   return newFormal;
+}
+
+static Symbol* addLocalVariable(OutlineInfo& info, Symbol* symInLoop) {
+  Symbol* newSym = symInLoop->copy();
+
+  info.fn->insertAtHead(new DefExpr(newSym));
+
+  info.copyMap.put(symInLoop, newSym);
+
+  return newSym;
 }
 
 /**
@@ -400,6 +435,8 @@ static void outlineGPUKernels() {
           thenBlock->insertAtHead(gpuLaunchBlock);
           elseBlock->insertAtHead(loop->remove());
 
+          std::set<Symbol*> handledSymbols;
+
           for_alist(node, loop->body) {
 
             bool copyNode = true;
@@ -418,12 +455,20 @@ static void outlineGPUKernels() {
               for_vector(SymExpr, symExpr, symExprsInBody) {
                 Symbol* sym = symExpr->symbol();
 
+                if (handledSymbols.count(sym) == 1) {
+                  continue;
+                }
+                handledSymbols.insert(sym);
+
                 if (isDefinedInTheLoop(sym, loop)) {
                   // looks like this symbol was declared within the loop body,
                   // so do nothing. TODO: I am hoping that we don't need to
                   // check the type of the variable here, and we'll know that it
                   // is a valid variable to declare on the gpu via the loop body
                   // analysis
+                }
+                else if (isDegenerateOuterRef(sym, loop)) {
+                  addLocalVariable(info, sym);
                 }
                 else if (sym->isImmediate()) {
                   // nothing to do
