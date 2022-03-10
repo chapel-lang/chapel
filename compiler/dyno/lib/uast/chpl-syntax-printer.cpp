@@ -19,6 +19,7 @@
 
 
 #include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/queries/global-strings.h"
 
 
 using namespace chpl;
@@ -26,9 +27,9 @@ using namespace uast;
 
 static const char* kindToString(Decl::Linkage kind) {
   switch (kind) {
-    case Decl::Linkage::DEFAULT_LINKAGE: assert(false);
     case Decl::Linkage::EXTERN: return "extern";
     case Decl::Linkage::EXPORT: return "export";
+    case Decl::Linkage::DEFAULT_LINKAGE: assert(false);
   }
   assert(false);
   return "";
@@ -56,7 +57,6 @@ static const char* kindToString(Function::Visibility kind) {
 
 static const char* kindToString(IntentList kind) {
   switch (kind) {
-    case IntentList::DEFAULT_INTENT: assert(false);
     case IntentList::CONST_INTENT: return "const";
     case IntentList::VAR: return "var";
     case IntentList::CONST_VAR: return "const var";
@@ -68,6 +68,7 @@ static const char* kindToString(IntentList kind) {
     case IntentList::INOUT: return "inout";
     case IntentList::PARAM: return "param";
     case IntentList::TYPE: return "type";
+    case IntentList::DEFAULT_INTENT: assert(false);
     default: return "";
   }
   return "";
@@ -75,9 +76,9 @@ static const char* kindToString(IntentList kind) {
 
 static const char* kindToString(Module::Kind kind) {
   switch (kind) {
-    case Module::Kind::DEFAULT_MODULE_KIND: assert(false);
     case Module::Kind::IMPLICIT: return "";
     case Module::Kind::PROTOTYPE: return "prototype";
+    case Module::Kind::DEFAULT_MODULE_KIND: assert(false);
   }
   assert(false);
   return "";
@@ -99,10 +100,10 @@ static const char* kindToString(New::Management kind) {
 
 static const char* kindToString(VisibilityClause::LimitationKind kind) {
   switch (kind) {
-    case VisibilityClause::LimitationKind::NONE: assert(false);
     case VisibilityClause::LimitationKind::ONLY: return "only";
     case VisibilityClause::LimitationKind::EXCEPT: return "except";
     case VisibilityClause::LimitationKind::BRACES: assert(false);
+    case VisibilityClause::LimitationKind::NONE: assert(false);
     default: return "";
   }
 }
@@ -227,6 +228,9 @@ struct ChplSyntaxVisitor {
    * the old parser's `userSignature` field.
   */
   void printFunctionSignature(const Function* node) {
+    // TODO: We want to print the function's return intent as well,
+    // but we are not until the old parser is replaced. Once that happens
+    // we should modify this to include the return intent as visit does
     if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
       ss_ << kindToString(node->visibility()) << " ";
     }
@@ -719,7 +723,7 @@ struct ChplSyntaxVisitor {
     // is different than !this && that
     if (node->isUnaryOp()) {
       bool isPostFixBang = false;
-      if (strncmp(node->op().c_str(),"postfix!", 8) == 0) {
+      if (node->op() == USTR("postfix!")) {
         isPostFixBang = true;
       } else {
         ss_ << node->op().c_str();

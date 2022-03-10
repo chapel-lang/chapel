@@ -34,10 +34,10 @@ using chpl::types::Param;
 
 static const char* kindToString(VisibilityClause::LimitationKind kind) {
   switch (kind) {
-    case VisibilityClause::LimitationKind::NONE: assert(false);
     case VisibilityClause::LimitationKind::ONLY: return "only";
     case VisibilityClause::LimitationKind::EXCEPT: return "except";
     case VisibilityClause::LimitationKind::BRACES: assert(false);
+    case VisibilityClause::LimitationKind::NONE: assert(false);
     default: return "";
   }
 }

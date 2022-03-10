@@ -1005,7 +1005,7 @@ struct Converter {
         expr = singleExprFromStmts(origCond->thenStmts());
         INT_ASSERT(cond);
       } else {
-        // an assignment expression
+        // a regular conditional expression
         INT_ASSERT(origCond->numElseStmts() == 1);
       }
     }
@@ -2386,15 +2386,12 @@ struct Converter {
     Expr* initExpr = nullptr;
 
     if (const uast::Expression* ie = node->initExpression()) {
-      if (node->kind() == uast::Variable::TYPE) {
-        if (const uast::BracketLoop* bkt = ie->toBracketLoop()) {
+      const uast::BracketLoop* bkt = ie->toBracketLoop();
+      if (bkt && node->kind() == uast::Variable::TYPE) {
           initExpr = convertArrayType(bkt);
         } else {
-          initExpr = convertExprOrNull(node->initExpression());
+          initExpr = convertAST(ie);
         }
-      } else {
-        initExpr = toExpr(convertAST(ie));
-      }
     } else {
       initExpr = convertExprOrNull(node->initExpression());
     }
