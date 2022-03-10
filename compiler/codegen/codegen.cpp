@@ -68,6 +68,7 @@
 #include <cmath>
 #include <cstring>
 #include <cstdio>
+#include <thread>
 #include <vector>
 
 #include <sys/types.h>
@@ -2754,9 +2755,9 @@ void makeBinary(void) {
 #endif
   } else {
     const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-    char parMakeFlags[16] = "-j ";
-    if (fParMake > 0) {
-      sprintf(parMakeFlags, "-j %d ", fParMake);
+    char parMakeFlags[32];
+    if (fParMake >= 0) {
+      sprintf(parMakeFlags, "-j %d ", fParMake == 0 ? std::thread::hardware_concurrency() : fParMake);
     }
     const char* command = astr(astr(CHPL_MAKE, " "),
                                (fParMake > -1 ? parMakeFlags : ""),
