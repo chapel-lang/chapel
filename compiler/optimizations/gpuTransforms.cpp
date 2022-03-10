@@ -91,6 +91,10 @@ static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
     return false;
   }
 
+  if (!isVarSymbol(sym)) {
+    return false;
+  }
+
   for_SymbolUses(use, sym) {
     if (LoopStmt::findEnclosingLoop(use) != loop) {
       return false;
@@ -244,7 +248,9 @@ static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop) {
 }
 
 static Symbol* addLocalVariable(OutlineInfo& info, Symbol* symInLoop) {
-  Symbol* newSym = symInLoop->copy();
+  VarSymbol* newSym = toVarSymbol(symInLoop->copy());
+
+  INT_ASSERT(newSym);
 
   info.fn->insertAtHead(new DefExpr(newSym));
   info.copyMap.put(symInLoop, newSym);
