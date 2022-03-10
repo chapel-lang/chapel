@@ -201,7 +201,7 @@ bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
-int fParMake = -1;
+int fParMake = 0;
 bool fIncrementalCompilation = false;
 bool fNoOptimizeForallUnordered = false;
 
@@ -939,6 +939,10 @@ static void setPythonAndLibmode(const ArgumentDescription* desc,
   fLibraryPython = true;
 }
 
+static void turnIncrementalOn() {
+  fIncrementalCompilation = true;
+}
+
 /*
 Flag types:
 
@@ -1192,7 +1196,7 @@ static ArgumentDescription arg_desc[] = {
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
- {"parallel-make", 'j', NULL, "Specify degree of parallelism for C back-end", "I", &fParMake, "CHPL_PAR_MAKE", NULL},
+ {"parallel-make", 'j', NULL, "Specify degree of parallelism for C back-end", "I", &fParMake, "CHPL_PAR_MAKE", turnIncrementalOn},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"print-additional-errors", ' ', NULL, "Print additional errors", "F", &fPrintAdditionalErrors, NULL,NULL},
  {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
@@ -1556,18 +1560,6 @@ static void setGPUFlags() {
   }
 }
 
-static void setIncrementalAndParMake() {
-  // when using the C back-end, if --fast wasn't thrown and
-  // --parallel-make wasn't explicitly set, default it to 0
-  if (fParMake == -1 && !fLlvmCodegen && !fFastFlag) {
-    fParMake = 0;
-  }
-  // Whenever --parallel-make is set, also set --incremental
-  if (fParMake != -1) {
-    fIncrementalCompilation = 1;
-  }
-}
-
 static void checkLLVMCodeGen() {
 #ifdef HAVE_LLVM
   // LLVM does not currently work on 32-bit x86
@@ -1737,8 +1729,6 @@ static void postprocess_args() {
   setPrintCppLineno();
 
   setGPUFlags();
-
-  setIncrementalAndParMake();
 }
 
 
