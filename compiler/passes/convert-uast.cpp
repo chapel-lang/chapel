@@ -1005,7 +1005,7 @@ struct Converter {
         expr = singleExprFromStmts(origCond->thenStmts());
         INT_ASSERT(cond);
       } else {
-        // a regular conditional expression
+        // not a filter
         INT_ASSERT(origCond->numElseStmts() == 1);
       }
     }

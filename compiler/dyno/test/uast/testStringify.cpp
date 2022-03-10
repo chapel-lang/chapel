@@ -354,7 +354,7 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("proc foo(X: [?Dlocal] real) {\n}\n", "foo(X: [?Dlocal] real)")
   TEST_USER_STRING("proc baz(A: borrowed C) {\n}\n", "baz(A: borrowed C)")
   TEST_USER_STRING("proc test(const ref arg:unmanaged MyClass) {\n}\n", "test(const ref arg: unmanaged MyClass)")
-  TEST_USER_STRING("inline proc (borrowed object?).hash(): uint {\n}\n", "hash(): uint")
+  TEST_USER_STRING("inline proc (borrowed object?).hash(): uint {\n}\n", "hash()")
   TEST_USER_STRING("proc bark(c = new C()) {\n}\n", "bark(c = new C())")
   TEST_USER_STRING("proc ref C.setClt2(rhs: borrowed C) {\n}\n", "ref C.setClt2(rhs: borrowed C)")
   TEST_USER_STRING("proc main(args: [] string) {\n}", "main(args: [] string)")

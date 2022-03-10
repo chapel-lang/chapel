@@ -228,19 +228,13 @@ struct ChplSyntaxVisitor {
    * the old parser's `userSignature` field.
   */
   void printFunctionSignature(const Function* node) {
-    // TODO: We want to print the function's return intent as well,
-    // but we are not until the old parser is replaced. Once that happens
-    // we should modify this to include the return intent as visit does
+    // TODO: Determine how the function signature should be formated
+    // e.g print return type and intent? what about where clause?
+    // github issue: https://github.com/chapel-lang/chapel/issues/19411
     if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
       ss_ << kindToString(node->visibility()) << " ";
     }
     printFunctionHelper(node);
-
-    // Return type
-    if (const Expression* e = node->returnType()) {
-      ss_ << ": ";
-      printChapelSyntax(ss_, e);
-    }
   }
 
   void printLinkage(const Decl* node) {
