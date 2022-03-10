@@ -1557,9 +1557,12 @@ static void setGPUFlags() {
 }
 
 static void setIncrementalAndParMake() {
-  if (!fFastFlag && fParMake == -1) {
+  // when using the C back-end, if --fast wasn't thrown and
+  // --parallel-make wasn't explicitly set, default it to 0
+  if (fParMake == -1 && !fLlvmCodegen && !fFastFlag) {
     fParMake = 0;
   }
+  // Whenever --parallel-make is set, also set --incremental
   if (fParMake != -1) {
     fIncrementalCompilation = 1;
   }
