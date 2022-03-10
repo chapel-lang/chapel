@@ -34,7 +34,6 @@
 #include "bb.h"
 #include "astutil.h"
 #include "optimizations.h"
-#include "view.h"
 
 #include "global-ast-vecs.h"
 
@@ -185,10 +184,6 @@ static OutlineInfo collectOutlineInfo(CForLoop* loop) {
   info.fn->addFlag(FLAG_ALWAYS_RESOLVE);
   info.fn->addFlag(FLAG_GPU_CODEGEN);
 
-  if (loop->id == 1665141) {
-    gdbShouldBreakHere();
-  }
-
   generateIndexComputation(info);
   generateEarlyReturn(info);
 
@@ -252,7 +247,6 @@ static Symbol* addLocalVariable(OutlineInfo& info, Symbol* symInLoop) {
   Symbol* newSym = symInLoop->copy();
 
   info.fn->insertAtHead(new DefExpr(newSym));
-
   info.copyMap.put(symInLoop, newSym);
 
   return newSym;
