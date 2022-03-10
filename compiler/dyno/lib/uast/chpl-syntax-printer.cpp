@@ -945,6 +945,10 @@ struct ChplSyntaxVisitor {
     if (limit == VisibilityClause::LimitationKind::BRACES) {
       ss_ << ".";
       interpose(node->limitations(), ", ", "{","}");
+    } else if (limit == VisibilityClause::LimitationKind::NONE && node->numLimitations() == 1) {
+      assert(node->limitation(0)->isIdentifier());
+      ss_ << ".";
+      printChapelSyntax(ss_, node->limitation(0));
     } else {
       ss_ << " ";
       if (limit == VisibilityClause::LimitationKind::ONLY ||

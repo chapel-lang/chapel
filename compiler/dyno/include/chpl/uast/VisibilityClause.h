@@ -75,7 +75,7 @@ class VisibilityClause final : public AstNode {
       case BRACES:
       case EXCEPT: assert(numLimitations >= 1); break;
       case ONLY: assert(numLimitations_ >= 0); break;
-      case NONE: assert(numLimitations_ == 0); break;
+      case NONE: assert(numLimitations_ >= 0); break;
     }
   }
 

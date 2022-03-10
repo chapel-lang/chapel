@@ -454,8 +454,9 @@ struct Converter {
 
       switch (vc->limitationKind()) {
         case uast::VisibilityClause::NONE: {
-          INT_ASSERT(vc->numLimitations() == 0);
-
+          // INT_ASSERT(vc->numLimitations() == 0);
+          // also need to handle 'import this.defOp.+;
+          // in which case numLimitations == 1 and VisibilityClause::NONE
           // Handles case: 'import foo as bar'
           if (auto as = vc->symbol()->toAs()) {
             Expr* mod = convertAST(as->symbol());
