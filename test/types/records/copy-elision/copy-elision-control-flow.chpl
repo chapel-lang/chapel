@@ -175,7 +175,10 @@ proc test5d() {
   var x = new R(1);
   var done: sync int;
   begin {
-    var y = x;
+    {
+      var y = x;
+      // deinit y here, before signalling sync var
+    }
     done.writeEF(1);
   }
 
