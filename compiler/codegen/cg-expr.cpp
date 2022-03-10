@@ -4888,14 +4888,14 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
       Type* actualValType = actual->typeInfo()->getValType();
 
       // TODO can we use codegenArgForFormal instead of this logic?
-      if (isClass(actualValType) || !isAggregateType(actualValType)) {
-        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
-        args.push_back(new_IntSymbol(0));
-      }
-      else if (actualSym->isRef()) {
-        INT_ASSERT(isAggregateType(actualValType));
+      if (actualSym->isRef()) {
+        //INT_ASSERT(isAggregateType(actualValType));
         args.push_back(actual->codegen());
         args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
+      }
+      else if (isClass(actualValType) || !isAggregateType(actualValType)) {
+        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
+        args.push_back(new_IntSymbol(0));
       }
       else {
         args.push_back(codegenAddrOf(codegenValuePtr(actual)));

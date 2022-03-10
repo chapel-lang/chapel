@@ -160,6 +160,10 @@ static OutlineInfo collectOutlineInfo(CForLoop* loop) {
   info.fn->addFlag(FLAG_ALWAYS_RESOLVE);
   info.fn->addFlag(FLAG_GPU_CODEGEN);
 
+  if (loop->id == 1665141) {
+    gdbShouldBreakHere();
+  }
+
   generateIndexComputation(info);
   generateEarlyReturn(info);
 

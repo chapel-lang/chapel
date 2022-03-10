@@ -185,6 +185,7 @@ static void chpl_gpu_launch_kernel_help(const char* fatbinData,
     size_t cur_arg_size = va_arg(args, size_t);
 
     if (cur_arg_size > 0) {
+      CHPL_GPU_LOG("%p %zu\n", cur_arg, cur_arg_size);
       // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
       kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
 
@@ -192,7 +193,9 @@ static void chpl_gpu_launch_kernel_help(const char* fatbinData,
       // desc
       *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
 
-      chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
+      if (cur_arg != NULL) {
+        chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
+      }
 
       CHPL_GPU_LOG("\tKernel parameter %d: %p (device ptr)\n",
                    i, *kernel_params[i]);
@@ -240,6 +243,7 @@ void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst));
 
   CHPL_GPU_LOG("Copying %zu bytes from host to device\n", n);
+  CHPL_GPU_LOG("%p %p\n", dst, src);
 
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
