@@ -64,6 +64,9 @@ class EnumElement final : public NamedDecl {
   }
 
   int initExpressionChildNum() const {
+    // if you blindly read this and try to access the underlying children_
+    // array, you can segfault in the case that there is an attribute
+    // but no init expression on this enum element.
     return this->attributesChildNum() + 1;
   }
 
@@ -84,6 +87,13 @@ class EnumElement final : public NamedDecl {
     none.
    */
   const AstNode* initExpression() const {
+    // need to handle the case when an attribute exists but an initExpression does not
+    // in this case children_.size() is > 0, but initExpression should still be nullptr
+    if (this->attributesChildNum() > -1 && children_.size() == 1) {
+      assert(this->child(0)->isAttributes());
+      return nullptr;
+    }
+
     if (children_.size() > 0) {
       const AstNode* ast = this->child(initExpressionChildNum());
       return ast;

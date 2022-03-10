@@ -2496,6 +2496,7 @@ struct Converter {
     const char* name = astr(node->name().c_str());
     Expr* initExpr = convertExprOrNull(node->initExpression());
     auto ret = new DefExpr(new EnumSymbol(name), initExpr);
+    attachSymbolAttributes(node, ret->sym);
     return ret;
   }
 
