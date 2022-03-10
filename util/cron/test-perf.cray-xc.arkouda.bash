@@ -23,8 +23,8 @@ module unload atp
 
 module list
 
-export CHPL_LAUNCHER_CONSTRAINT=BW28
-export CHPL_LAUNCHER_CORES_PER_LOCALE=56
+export CHPL_LAUNCHER_CONSTRAINT=CL48
+export CHPL_LAUNCHER_CORES_PER_LOCALE=96
 export CHPL_LAUNCHER=slurm-srun
 nightly_args="${nightly_args} -no-buildcheck"
 
