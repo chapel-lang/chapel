@@ -1262,12 +1262,12 @@ module ChapelDomain {
       for i in _value.dimIter(d, ind) do yield i;
     }
 
-   /* Return a tuple of `int` describing the size of each
+   /* Return a tuple of ``int`` values representing the size of each
       dimension.
 
       For a sparse domain, this returns the shape of the parent domain.
     */
-    proc shape where this.isRectangular() || this.isSparse() {
+    proc shape: rank*int where this.isRectangular() || this.isSparse() {
       return chpl_shapeAs(int);
     }
 
@@ -1899,7 +1899,7 @@ module ChapelDomain {
     /*
       Return the number of indices in this domain as an ``int``.
     */
-    proc size {
+    proc size: int {
       return this.sizeAs(int);
     }
 

@@ -755,7 +755,7 @@ module ChapelRange {
      If the size exceeds ``max(int)``, this procedure will halt when
      bounds checks are on.
    */
-  proc range.size {
+  proc range.size: int {
     return this.sizeAs(int);
   }
 
