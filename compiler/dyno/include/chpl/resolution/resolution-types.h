@@ -205,6 +205,11 @@ class UntypedFnSignature {
     return isTypeConstructor_;
   }
 
+  /** Returns true if this is a method */
+  bool isMethod() const {
+    return isMethod_;
+  }
+
   /** Returns the number of formals */
   int numFormals() const {
     return formals_.size();
@@ -874,7 +879,12 @@ class ResolvedExpression {
   // resolving functions in mostSpecific?
   const PoiScope *poiScope_ = nullptr;
 
+  // functions associated with or used to implement this expression
+  std::vector<const TypedFnSignature*> associatedFns_;
+
  public:
+  using AssociatedFns = std::vector<const TypedFnSignature*>;
+
   ResolvedExpression() { }
 
   /** get the qualified type */
@@ -893,6 +903,10 @@ class ResolvedExpression {
 
   const PoiScope* poiScope() const { return poiScope_; }
 
+  const AssociatedFns& associatedFns() const {
+    return associatedFns_;
+  }
+
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
 
@@ -906,6 +920,11 @@ class ResolvedExpression {
 
   /** set the point-of-instantiation scope */
   void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
+
+  /** set the functions associated with this expression */
+  void setAssociatedFns(const AssociatedFns& fns) {
+    associatedFns_ = fns;
+  }
 
   bool operator==(const ResolvedExpression& other) const {
     return type_ == other.type_ &&

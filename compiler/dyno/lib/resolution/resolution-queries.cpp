@@ -1547,12 +1547,69 @@ const QualifiedType& returnType(Context* context,
   return QUERY_END(result);
 }
 
+static bool
+isUntypedSignatureApplicable(Context* context,
+                             const UntypedFnSignature* ufs,
+                             const FormalActualMap& faMap,
+                             const CallInfo& ci) {
+  // First, check that the untyped properties allow a match:
+  //  * number of arguments
+  //  * names of arguments
+  //  * method-ness
+  //  * ref-ness
+
+  if (!faMap.isValid()) {
+    return false;
+  }
+
+  // TODO: more to check for method-ness?
+  if (ci.isMethod() != ufs->isMethod()) {
+    return false;
+  }
+
+  // TODO: reason failed
+
+  return true;
+}
+
+// given a typed function signature, determine if it applies to a call
+static bool
+isInitialTypedSignatureApplicable(Context* context,
+                                  const TypedFnSignature* tfs,
+                                  const FormalActualMap& faMap,
+                                  const CallInfo& ci) {
+  if (!isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
+    return false;
+  }
+
+  // Next, check that the types are compatible
+  int formalIdx = 0;
+  for (const FormalActual& entry : faMap.byFormals()) {
+    const auto& actualType = entry.actualType();
+    const auto& formalType = tfs->formalType(formalIdx);
+    auto got = canPass(context, actualType, formalType);
+    if (!got.passes()) {
+      return false;
+    }
+
+    formalIdx++;
+  }
+
+  // check that the where clause applies
+  auto whereResult = tfs->whereClauseResult();
+  if (whereResult == TypedFnSignature::WHERE_FALSE) {
+    return false;
+  }
+
+  return true;
+}
+
 // returns nullptr if the candidate is not applicable,
 // or the result of typedSignatureInitial if it is.
 static const TypedFnSignature*
 doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
-                               const CallInfo& call) {
+                               const CallInfo& ci) {
   const ASTNode* ast = nullptr;
   const Function* fn = nullptr;
 
@@ -1576,42 +1633,15 @@ doIsCandidateApplicableInitial(Context* context,
   }
 
   assert(fn);
-  auto uSig = UntypedFnSignature::get(context, fn);
-  // First, check that the untyped properties allow a match:
-  //  * number of arguments
-  //  * names of arguments
-  //  * method-ness
-  //  * ref-ness
+  auto ufs = UntypedFnSignature::get(context, fn);
+  auto faMap = FormalActualMap(ufs, ci);
+  auto ret = typedSignatureInitial(context, ufs);
 
-  auto faMap = FormalActualMap(uSig, call);
-  if (!faMap.isValid()) {
+  if (!isInitialTypedSignatureApplicable(context, ret, faMap, ci)) {
     return nullptr;
   }
 
-  // TODO: check method-ness
-  // TODO: reason failed
-
-  auto initialTypedSignature = typedSignatureInitial(context, uSig);
-  // Next, check that the types are compatible
-  int formalIdx = 0;
-  for (const FormalActual& entry : faMap.byFormals()) {
-    const auto& actualType = entry.actualType();
-    const auto& formalType = initialTypedSignature->formalType(formalIdx);
-    auto got = canPass(context, actualType, formalType);
-    if (!got.passes()) {
-      return nullptr;
-    }
-
-    formalIdx++;
-  }
-
-  // check that the where clause applies
-  auto whereResult = initialTypedSignature->whereClauseResult();
-  if (whereResult == TypedFnSignature::WHERE_FALSE) {
-    return nullptr;
-  }
-
-  return initialTypedSignature;
+  return ret;
 }
 
 // returns nullptr if the candidate is not applicable,
@@ -2031,6 +2061,58 @@ resolveFnCallForTypeCtor(Context* context,
   return mostSpecific;
 }
 
+using CandidatesVec = std::vector<const TypedFnSignature*>;
+
+static bool
+considerCompilerGeneratedCandidates(Context* context,
+                                    const CallInfo& ci,
+                                    const Scope* inScope,
+                                    const PoiScope* inPoiScope,
+                                    PoiInfo& poiInfo,
+                                    CandidatesVec& candidates) {
+
+  // only consider compiler-generated methods, for now
+  if (!ci.isMethod()) return false;
+
+  // fetch the receiver type info
+  assert(ci.numActuals() >= 1);
+  auto& receiver = ci.actuals(0);
+  auto receiverType = receiver.type().type();
+
+  // if not compiler-generated, then nothing to do
+  if (!needCompilerGeneratedMethod(context, receiverType, ci.name()))
+    return false;
+
+  // get the compiler-generated function, may be generic
+  auto& gen = getCompilerGeneratedMethod(context, receiverType, ci.name());
+  auto tfs = gen.get();
+  assert(tfs);
+
+  // check if the inital signature matches
+  auto faMap = FormalActualMap(tfs->untyped(), ci);
+  if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci)) {
+    return false;
+  }
+
+  // OK, already concrete, store and return
+  if (!tfs->needsInstantiation()) {
+    candidates.push_back(tfs);
+    return true;
+  }
+
+  // need to instantiate before storing
+  auto poi = pointOfInstantiationScope(context, inScope, inPoiScope);
+  auto instantiated = doIsCandidateApplicableInstantiating(context,
+                                                           tfs,
+                                                           ci,
+                                                           poi);
+
+  // TODO: also add POI info?
+  candidates.push_back(instantiated);
+
+  return true;
+}
+
 // call can be nullptr. in that event, ci.name() will be used
 // to find the call with that name.
 static MostSpecificCandidates
@@ -2041,12 +2123,16 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                        const PoiScope* inPoiScope,
                                        PoiInfo& poiInfo) {
   // search for candidates at each POI until we have found a candidate
-  std::vector<const TypedFnSignature*> candidates;
+  CandidatesVec candidates;
   size_t firstPoiCandidate = 0;
   std::unordered_set<const Scope*> visited;
 
-  // first, look for candidates without using POI.
+  // inject compiler-generated candidates in a manner similar to below
+  considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,
+                                      poiInfo,
+                                      candidates);
 
+  // first, look for candidates without using POI.
   {
     // compute the potential functions that it could resolve to
     auto v = lookupCalledExpr(context, inScope, call, ci, visited);
@@ -2351,8 +2437,8 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
 }
 
 bool
-needCompilerGeneratedMethodForType(Context* context, const Type* type,
-                                   UniqueString name) {
+needCompilerGeneratedMethod(Context* context, const Type* type,
+                            UniqueString name) {
   if (isNameOfCompilerGeneratedMethod(name)) {
     if (!areOverloadsPresentInDefiningScope(context, type, name)) {
       return true;
@@ -2363,13 +2449,13 @@ needCompilerGeneratedMethodForType(Context* context, const Type* type,
 }
 
 const owned<TypedFnSignature>&
-getCompilerGeneratedMethodForType(Context* context, const Type* type,
-                                  UniqueString name) {
-  QUERY_BEGIN(getCompilerGeneratedMethodForType, context, type, name);
+getCompilerGeneratedMethod(Context* context, const Type* type,
+                           UniqueString name) {
+  QUERY_BEGIN(getCompilerGeneratedMethod, context, type, name);
 
   TypedFnSignature* tfs = nullptr;
 
-  if (needCompilerGeneratedMethodForType(context, type, name)) {
+  if (needCompilerGeneratedMethod(context, type, name)) {
     assert(false && "Not implemented yet!");
   }
 

@@ -195,6 +195,13 @@ struct Resolver {
   void resolveTupleDecl(const uast::TupleDecl* td,
                         const types::Type* useType);
 
+  // e.g. new shared C(a, 0)
+  // also resolves initializer call as a side effect
+  bool resolveSpecialNewCall(const uast::Call* call);
+
+  // resolve a special op call such as tuple unpack assign
+  bool resolveSpecialOpCall(const uast::Call* call);
+
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
   // if it is a regular call.

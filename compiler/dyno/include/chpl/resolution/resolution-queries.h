@@ -213,9 +213,9 @@ CallResolutionResult resolveGeneratedCall(Context* context,
   determine if the type needs a method with such a name to be
   generated for it.
 */
-bool needCompilerGeneratedMethodForType(Context* context,
-                                        const types::Type* type,
-                                        UniqueString name);
+bool needCompilerGeneratedMethod(Context* context,
+                                 const types::Type* type,
+                                 UniqueString name);
 
 /**
   Given a type and a UniqueString representing the name of a method,
@@ -226,9 +226,9 @@ bool needCompilerGeneratedMethodForType(Context* context,
   If no method was generated, returns nullptr.
 */
 const owned<TypedFnSignature>&
-getCompilerGeneratedMethodForType(Context* context,
-                                  const types::Type* type,
-                                  UniqueString name);
+getCompilerGeneratedMethod(Context* context,
+                           const types::Type* type,
+                           UniqueString name);
 
 
 } // end namespace resolution

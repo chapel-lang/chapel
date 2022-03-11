@@ -746,28 +746,95 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   resolveTupleUnpackDecl(td, useT);
 }
 
-bool Resolver::resolveSpecialCall(const Call* call) {
-  if (auto op = call->toOpCall()) {
-    if (op->op() == USTR("=")) {
-      if (op->numActuals() == 2) {
-        if (auto lhsTuple = op->actual(0)->toTuple()) {
-          QualifiedType lhsType = byPostorder.byAst(op->actual(0)).type();
-          QualifiedType rhsType = byPostorder.byAst(op->actual(1)).type();
+bool Resolver::resolveSpecialNewCall(const Call* call) {
+  if (!call->calledExpression() ||
+      !call->calledExpression()->isNew()) {
+    return false;
+  }
 
-          resolveTupleUnpackAssign(lhsTuple, lhsType, rhsType);
-          return true;
-        }
+  auto newExpr = call->calledExpression()->toNew();
+  ResolvedExpression& re = byPostorder.byAst(call);
+
+  // the type of the 'new' call is the type of the 'new' expression
+  ResolvedExpression& reNewExpr = byPostorder.byAst(newExpr);
+  re.setType(reNewExpr.type());
+
+  // exit immediately if the 'new' failed to resolve
+  if (re.type().type()->isErroneousType() ||
+      re.type().isUnknown()) {
+    return true;
+  }
+
+  // new calls produce a 'init' call as a side effect
+  UniqueString name = USTR("init");
+  QualifiedType calledType = re.type();
+  bool hasQuestionArg = false;
+  bool isMethod = true;
+  std::vector<CallInfoActual> actuals;
+
+  // prepare the receiver (the 'newed' object)
+  auto receiverInfo = CallInfoActual(re.type(), USTR("this"));
+  actuals.push_back(std::move(receiverInfo));
+
+  // prepare the remaining actuals
+  if (call->numActuals()) {
+    prepareCallInfoActuals(call, actuals, hasQuestionArg);
+    assert(!hasQuestionArg);
+  }
+
+  auto ci = CallInfo(name, calledType, hasQuestionArg, isMethod,
+                     std::move(actuals));
+  auto inScope = scopeStack.back();
+  auto inPoiScope = poiScope;
+
+  // note: the resolution machinery will get compiler generated candidates
+  auto crr = resolveGeneratedCall(context, call, ci, inScope, inPoiScope);
+
+  // there should be one or zero applicable candidates
+  if (auto only = crr.mostSpecific().only()) {
+
+    // TODO: do we need to worry about recording POI scope here?
+    ResolvedExpression::AssociatedFns associated;
+    associated.push_back(only);
+    re.setAssociatedFns(associated);
+  }
+
+  return true;
+}
+
+bool Resolver::resolveSpecialOpCall(const Call* call) {
+  if (!call->isOpCall()) return false;
+
+  auto op = call->toOpCall();
+
+  if (op->op() == USTR("=")) {
+    if (op->numActuals() == 2) {
+      if (auto lhsTuple = op->actual(0)->toTuple()) {
+        QualifiedType lhsType = byPostorder.byAst(op->actual(0)).type();
+        QualifiedType rhsType = byPostorder.byAst(op->actual(1)).type();
+
+        resolveTupleUnpackAssign(lhsTuple, lhsType, rhsType);
+        return true;
       }
-    } else if (op->op() == USTR("...")) {
-      // just leave it unknown -- tuple expansion only makes sense
-      // in the argument list for another call.
-      return true;
     }
+  } else if (op->op() == USTR("...")) {
+    // just leave it unknown -- tuple expansion only makes sense
+    // in the argument list for another call.
+    return true;
   }
 
   return false;
 }
 
+bool Resolver::resolveSpecialCall(const Call* call) {
+  if (resolveSpecialOpCall(call)) {
+    return true;
+  } else if (resolveSpecialNewCall(call)) {
+    return true;
+  }
+
+  return false;
+}
 
 QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // if the id is contained within this symbol,
@@ -1345,7 +1412,7 @@ void Resolver::exit(const uast::New* node) {
     assert(false && "Not handled yet!");
   }
 
-  if (auto basicClassType = qtTypeExpr.type()->toBasicClassType()) {
+  if (qtTypeExpr.type()->isBasicClassType()) {
     assert(false && "Expected fully decorated class type");
 
   } else if (auto classType = qtTypeExpr.type()->toClassType()) {
