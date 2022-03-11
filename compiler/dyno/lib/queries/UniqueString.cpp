@@ -195,10 +195,10 @@ void UniqueString::stringify(std::ostream& ss,
 }
 IMPLEMENT_DUMP(UniqueString);
 
-} // end namespace chpl
-
 std::ostream& operator<<(std::ostream& os, const chpl::UniqueString& uStr) {
   // write obj to stream
   os << uStr.c_str();
   return os;
 }
+
+} // end namespace chpl

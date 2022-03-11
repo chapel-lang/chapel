@@ -251,6 +251,7 @@ class UniqueString final {
 
 };
 
+std::ostream& operator<<(std::ostream&, const chpl::UniqueString&);
 
 } // end namespace chpl
 
@@ -273,5 +274,5 @@ namespace std {
   };
 
 } // end namespace std
-std::ostream& operator<<(std::ostream&, const chpl::UniqueString&);
+
 #endif
