@@ -45,7 +45,8 @@ module ChapelArray {
   // This permits a user to opt into upcoming behavior to always have
   // .indices return local indices for an array
   pragma "no doc"
-  config param arrayIndicesAlwaysLocal = false;
+  deprecated "'arrayIndicesAlwaysLocal' is deprecated and no longer has an effect"
+  config param arrayIndicesAlwaysLocal = true;
 
   pragma "no doc"
   config param debugBulkTransfer = false;
@@ -887,40 +888,17 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
 
-    /* Return the array's indices as a copy of its domain.
-
-       .. note::
-
-         In a forthcoming release, we expect ``.indices`` to change in
-         behavior to return/yield indices using a local representation
-         rather than as a clone of the array's domain.  In order to
-         preserve the legacy behavior in your program, please use
-         ``.domain`` instead (or a copy thereof).
-
-         If you'd like to opt into a prototype of the new behavior,
-         recompile with ``-sarrayIndicesAlwaysLocal=true``.  For
-         dense, rectangular arrays, this will have the effect of
-         returning a local domain representing the array's indices;
-         for a sparse or associative array, it will invoke a serial
-         iterator that yields the array's indices.
-
-         See https://github.com/chapel-lang/chapel/issues/17883 for
-         further details.
+    /*
+      Return a dense rectangular array's indices as a default domain.
     */
-    deprecated "the current behavior of  '.indices' on arrays is deprecated; see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.indices for details"
-    proc indices where arrayIndicesAlwaysLocal == false {
-      return _dom;
-    }
-
-    pragma "no doc"
-    proc indices where arrayIndicesAlwaysLocal == true &&
-                       !this.isSparse() && !this.isAssociative() {
+    proc indices where !this.isSparse() && !this.isAssociative() {
       return {(..._dom.getIndices())};
     }
 
-    pragma "no doc"
-    iter indices where arrayIndicesAlwaysLocal == true &&
-                       (this.isSparse() || this.isAssociative()) {
+    /*
+      Yield an irregular array's indices.
+    */
+    iter indices where (this.isSparse() || this.isAssociative()) {
       for i in _dom do
         yield i;
     }
