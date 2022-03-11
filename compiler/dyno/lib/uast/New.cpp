@@ -33,6 +33,9 @@ const char* New::managementToString(New::Management management) {
     case UNMANAGED: return "unmanaged";
     default: break;
   }
+
+  assert(false && "Should not reach here");
+  return nullptr;
 }
 
 owned<New> New::build(Builder* builder,
