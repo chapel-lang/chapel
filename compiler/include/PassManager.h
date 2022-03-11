@@ -225,7 +225,17 @@ class PassManager {
   void runPassChained(PassTList<T>&& passes, Container& xs) {
     for (auto& x : xs) {
       for (auto& p : passes) {
-        // NOTE: these passes can't currently have leftovers
+        // NOTE: these passes can't currently have leftovers:
+        // In other words, it's not as easy to run multiple PassTU chained
+        // together because we don't know for sure that at its legal to do
+        //   p1.run(x); p2.run(x);
+        // without
+        //   p1.run(x); while (p1.hasNext()); p1.processNext(); p2.run(x)
+        // and in the latter case, you're not guaranteed that another
+        // call to
+        //   p1.run(y)
+        // for some y would have enqueued more work for x that should
+        // be processed before p2.run(x).
         p.run(x);
       }
     }

@@ -321,6 +321,7 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
 
   lineAndFilenameMap.emplace_hint(it, fn, result);
 
+  // NOTE: this requires that we have run ComputeCallSitesPass
   for (CallExpr* call : *fn->calledBy) {
     enqueue(call->getFunction(), call);
   }
@@ -437,9 +438,11 @@ void InsertNilChecksPass::process(CallExpr* call) {
 void insertLineNumbers() {
   PassManager pm;
 
-  // TODO It's pretty apparent in this refactoring that we don't actually need to
-  // recompute all call sites, but only the subset we'll be working on, which
+  // TODO It's pretty apparent in this refactoring that we don't actually need
+  // to recompute all call sites, but only the subset we'll be working on, which
   // is probably better done on demand
+  // NOTE this is required for looking up fn->calledBy in
+  // InsertLineNumbers::getLineAndFileForFn
   pm.runPass<FnSymbol*>(ComputeCallSitesPass(), gFnSymbols);
 
   {
