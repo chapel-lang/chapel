@@ -3491,7 +3491,9 @@ static int processToken(yyscan_t scanner, int t) {
         t == TUNMANAGED ||
         t == TOWNED ||
         t == TSHARED ||
-        t == TNEW) {
+        t == TNEW ||
+        t == TSINGLE ||
+        t == TSYNC) {
       captureString.push_back(' ');
     }
   }

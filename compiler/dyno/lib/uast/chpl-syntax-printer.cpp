@@ -182,14 +182,16 @@ struct ChplSyntaxVisitor {
 
   /*
    * helper to check if the called expression is actually a
-   * management kind. Helps FnCalls not to print () in this case
+   * reserved word. Helps FnCalls not to print () in this case
   */
   bool isCalleeManagementKind(const AstNode* callee) {
     if (callee->isIdentifier() &&
       (callee->toIdentifier()->name() == "borrowed"
        || callee->toIdentifier()->name() == "owned"
        || callee->toIdentifier()->name() == "unmanaged"
-       || callee->toIdentifier()->name() == "shared"))
+       || callee->toIdentifier()->name() == "shared"
+       || callee->toIdentifier()->name() == "sync"
+       || callee->toIdentifier()->name() == "single"))
         return true;
       return false;
   }
@@ -472,7 +474,7 @@ struct ChplSyntaxVisitor {
     const AstNode* callee = node->calledExpression();
     assert(callee);
     printChapelSyntax(ss_, callee);
-    if (isCalleeManagementKind(callee)) {
+    if (isCalleeReservedWord(callee)) {
       ss_ << " ";
       printChapelSyntax(ss_, node->actual(0));
     } else {
