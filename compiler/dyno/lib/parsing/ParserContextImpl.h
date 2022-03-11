@@ -20,6 +20,7 @@
 
 #include "chpl/types/Param.h"
 #include "chpl/uast/Pragma.h"
+#include "chpl/queries/global-strings.h"
 
 #include <cerrno>
 #include <cfloat>
@@ -31,6 +32,7 @@
 #include <vector>
 
 using chpl::types::Param;
+using chpl::owned;
 
 static const char* kindToString(VisibilityClause::LimitationKind kind) {
   switch (kind) {
@@ -649,15 +651,18 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
                                     PODUniqueString op,
                                     AstNode* expr) {
   auto ustrOp = UniqueString(op);
-
+  // may reassign op here to match old parser
+  // as in buildPreDecIncWarning
   if (ustrOp == "++") {
     noteWarning(location, "++ is not a pre-increment");
+    ustrOp = USTR("+");
   } else if (ustrOp == "--") {
-    noteWarning(location, "== is not a pre-decrement");
+    noteWarning(location, "-- is not a pre-decrement");
+    ustrOp = USTR("-");
   }
 
   return OpCall::build(builder, convertLocation(location),
-                       op, toOwned(expr)).release();
+                       ustrOp, toOwned(expr)).release();
 }
 
 AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
@@ -984,7 +989,8 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                             /*typeExpression*/ nullptr,
                             /*initExpression*/ nullptr);
   } else {
-    const char* msg = "Cannot handle this kind of index var";
+    // Cannot handle this kind of index var
+    const char* msg = "invalid index expression";
     noteError(location, msg);
     return nullptr;
   }
@@ -1544,7 +1550,9 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
                       VisibilityClause::LimitationKind limitationKind,
                       AstList limitations) {
   if (!symbol->isAs() && !symbol->isIdentifier() && !symbol->isDot()) {
-    auto msg = "Expected symbol in visibility clause";
+    // auto msg = "Expected symbol in visibility clause";
+    // TODO: This error message isn't always correct here, might be an import statement that starts this builder
+    auto msg = "'use' statements must refer to module or enum symbols (e.g., 'use <module>[.<submodule>]*;')";
     return raiseError(location, msg);
   }
 
