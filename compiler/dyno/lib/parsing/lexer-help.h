@@ -332,7 +332,10 @@ static std::string eatStringLiteral(yyscan_t scanner,
         s += "\\";
         break; // EOF reached, so stop
       } else {
-        noteErrInString(scanner, nLines, nCols, "unexpected string escape");
+        std::string msg = "Unexpected string escape: '\\";
+        msg+=c;
+        msg+="'";
+        noteErrInString(scanner, nLines, nCols, msg.c_str());
         isErroneousOut = true;
       }
     } else {
