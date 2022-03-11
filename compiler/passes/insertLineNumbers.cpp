@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <queue>
 #include <unordered_set>
+#include <vector>
 
 //
 // insertLineNumbers() inserts line numbers and filenames into
@@ -464,7 +465,12 @@ void insertLineNumbers() {
 
   // refactoring  TODO: why is InsertNilChecks in this pass?
   if (!fNoNilChecks) {
-    pm.runPass<CallExpr*>(InsertNilChecksPass(), gCallExprs);
+    // TODO: this is a temporary workaround to avoid iterating over a vector
+    // that changes size during iteration. gCallExprs grows during
+    // insertNilChecks because it creates new CallExpr's, but we also know that
+    // those new CallExpr's don't need to get processed
+    std::vector<CallExpr*> toProcess(gCallExprs.begin(), gCallExprs.end());
+    pm.runPass<CallExpr*>(InsertNilChecksPass(), toProcess);
   }
 
   // TODO: this is a WIP state on integrating with the PassManager
