@@ -31,6 +31,9 @@ ifneq ($(CHPL_MAKE_SANITIZE), none)
   ifneq ($(CHPL_MAKE_TARGET_MEM), cstdlib)
     $(error CHPL_MEM=cstdlib is required for sanitizers)
   endif
+  ifneq ($(CHPL_MAKE_HOST_MEM), cstdlib)
+    $(error CHPL_HOST_MEM=cstdlib is required for sanitizers)
+  endif
 
   # enable sanitizers
   SANITIZER_CFLAGS += -fsanitize=$(CHPL_MAKE_SANITIZE)

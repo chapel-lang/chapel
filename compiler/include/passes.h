@@ -249,6 +249,7 @@ class RemoveUnnecessaryAutoCopyCalls : public PassT<FnSymbol*> {
 
 // insertLineNumbers.cpp
 class InsertNilChecksPass : public PassT<CallExpr*> {
+ public:
   bool shouldProcess(CallExpr* call) override;
   void process(CallExpr* call) override;
 };
