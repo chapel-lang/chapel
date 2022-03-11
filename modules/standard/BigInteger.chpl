@@ -427,7 +427,23 @@ module BigInteger {
       return ret;
     }
 
+    deprecated "get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead"
     proc get_d_2exp() : (uint(32), real) {
+      var (dbl, exp) = getD2Exp();
+      return (exp, dbl);
+    }
+
+    /*
+      Convert ``this`` to a tuple containing a real (truncated if necessary, by
+      rounding towards zero) and the exponent.  The returned tuple fulfills the
+      condition ``d * 2^exp == this`` where ``d`` is the first value in the
+      tuple and ``exp`` is the second.
+
+      :returns: a tuple representing the number in multiple parts, ``(d, exp)``,
+                such that their combination ``d * 2^exp`` is equal to ``this``.
+      :rtype: ``(real, uint(32))``
+     */
+    proc getD2Exp(): (real, uint(32)) {
       var exp: c_long;
       var dbl: c_double;
 
@@ -454,7 +470,7 @@ module BigInteger {
         }
       }
 
-      return (exp.safeCast(uint(32)), dbl: real);
+      return (dbl: real, exp.safeCast(uint(32)));
     }
 
     proc get_str(base: int = 10) : string {
