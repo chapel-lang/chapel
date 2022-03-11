@@ -1,0 +1,6 @@
+vectorizeOnlyWithIntents.chpl:5: syntax error: near 'with'
+vectorizeOnlyWithIntents.chpl:8: syntax error: near '}'
+vectorizeOnlyWithIntents.chpl:11: syntax error: near 'with'
+vectorizeOnlyWithIntents.chpl:14: syntax error: near '}'
+vectorizeOnlyWithIntents.chpl:17: syntax error: near 'with'
+vectorizeOnlyWithIntents.chpl:20: syntax error: near '}'

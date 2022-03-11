@@ -125,18 +125,21 @@ module VectorizingIterator {
      Future releases may explicitly prevent the use ``zip`` with this iterator.
   */
   pragma "vectorize yielding loops"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(iterables...) where singleValIter(iterables) {
     for i in iterables(0) do yield i;
   }
 
   pragma "no doc"
   pragma "vectorize yielding loops"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(iterables...) ref where singleRefIter(iterables) {
     for i in iterables(0) do yield i;
   }
 
   pragma "no doc"
   pragma "vectorize yielding loops"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(iterables...?numiterables) where numiterables > 1 {
     for i in zip((...iterables)) do yield i;
   }
@@ -147,6 +150,7 @@ module VectorizingIterator {
   //
   pragma "no doc"
   pragma "vectorize yielding loops"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(param tag: iterKind, iterables...)
     where tag == iterKind.standalone && singleValIter(iterables) {
     for i in iterables(0) do yield i;
@@ -154,6 +158,7 @@ module VectorizingIterator {
 
   pragma "no doc"
   pragma "vectorize yielding loops"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(param tag: iterKind, iterables...) ref
     where tag == iterKind.standalone && singleRefIter(iterables) {
     for i in iterables(0) do yield i;
@@ -161,6 +166,7 @@ module VectorizingIterator {
 
   pragma "no doc"
   pragma "vectorize yielding loops"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(param tag: iterKind, iterables...?numiterables)
     where tag == iterKind.standalone && numiterables > 1  {
     for i in zip((...iterables)) do yield i;
@@ -171,18 +177,21 @@ module VectorizingIterator {
   // leader versions
   //
   pragma "no doc"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(param tag: iterKind, iterables...)
     where tag == iterKind.leader && singleValIter(iterables) {
       yield iterables(0);
   }
 
   pragma "no doc"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(param tag: iterKind, iterables...) ref
     where tag == iterKind.leader && singleRefIter(iterables) {
       yield iterables(0);
   }
 
   pragma "no doc"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(param tag: iterKind, iterables...?numiterables)
     where tag == iterKind.leader && numiterables > 1  {
       yield iterables;
@@ -194,6 +203,7 @@ module VectorizingIterator {
   //
   pragma "no doc"
   pragma "vectorize yielding loops"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...)
     where tag == iterKind.follower && singleValIter(iterables) {
       for i in iterables(0) do yield i;
@@ -201,6 +211,7 @@ module VectorizingIterator {
 
   pragma "no doc"
   pragma "vectorize yielding loops"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...) ref
     where tag == iterKind.follower && singleRefIter(iterables) {
       for i in iterables(0) do yield i;
@@ -208,6 +219,7 @@ module VectorizingIterator {
 
   pragma "no doc"
   pragma "vectorize yielding loops"
+  deprecated "'vectorizeOnly()' is deprecated in favor of using 'foreach' loops"
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...?numiterables)
     where tag == iterKind.follower && numiterables > 1 {
     for i in zip((...iterables)) do yield i;

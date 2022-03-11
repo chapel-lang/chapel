@@ -1,10 +1,10 @@
 
 proc loop (A, B, C, D, E, F, n) {
-  for i in vectorizeOnly(1..n) {
+  foreach i in 1..n {
     A[i] = 3*B[i];
-    for j in vectorizeOnly(1..n) {
+    foreach j in 1..n {
       C[i,j] = 3*D[i,j];
-      for k in vectorizeOnly(1..n) {
+      foreach k in 1..n {
       // CHECK: <4 x i32>
         E[i,j,k] = 3*F[i,j,k];
       }

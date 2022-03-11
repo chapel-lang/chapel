@@ -4,7 +4,7 @@
 //that we compile loop in a way that it allows for such vectorization
 proc loop (A, B) {
   var sum : int(32) = 0;
-  for i in vectorizeOnly(1..511) {
+  foreach i in 1..511 {
     // CHECK: <4 x i32>
     if(A[i] <= B[i])
     {
