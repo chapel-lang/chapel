@@ -288,7 +288,7 @@ struct Converter {
         if (var->kind() != uast::Variable::INDEX) {
           flags = new std::set<Flag>;
 
-          // TODO: Duplication here and with 'attachVarSymbolStorage',
+          // TODO: Duplication here and with 'attachSymbolStorage',
           // consider cleaning up after parser is replaced.
           switch (var->kind()) {
             case uast::Variable::CONST:
@@ -454,9 +454,7 @@ struct Converter {
 
       switch (vc->limitationKind()) {
         case uast::VisibilityClause::NONE: {
-          // INT_ASSERT(vc->numLimitations() == 0);
-          // also need to handle 'import this.defOp.+;
-          // in which case numLimitations == 1 and VisibilityClause::NONE
+          INT_ASSERT(vc->numLimitations() == 0);
           // Handles case: 'import foo as bar'
           if (auto as = vc->symbol()->toAs()) {
             Expr* mod = convertAST(as->symbol());
@@ -1761,11 +1759,14 @@ struct Converter {
 
     BlockStmt* ret = buildTupleVarDeclStmt(tuple, typeExpr, initExpr);
 
+    // get the definition of the temporary that was added
+    DefExpr* tmpDef = toDefExpr(ret->body.first());
+    attachSymbolStorage((uast::IntentList)node->intentOrKind(), tmpDef->sym);
+
     // Move the block info around like in 'buildVarDecls'.
     if (auto info = ret->blockInfoGet()) {
       INT_ASSERT(info->isNamed("_check_tuple_var_decl"));
-      SymExpr* tuple = toSymExpr(info->get(1));
-      tuple->symbol()->defPoint->insertAfter(info);
+      tmpDef->insertAfter(info);
       ret->blockInfoSet(NULL);
     }
 
@@ -2296,33 +2297,35 @@ struct Converter {
       return name;
   }
 
-  void attachVarSymbolStorage(const uast::Variable* node, VarSymbol* vs) {
-    switch (node->kind()) {
-      case uast::Variable::VAR:
+  void attachSymbolStorage(const uast::IntentList kind, Symbol* vs) {
+    switch (kind) {
+      case uast::IntentList::VAR:
         vs->qual = QUAL_VAL;
         break;
-      case uast::Variable::CONST:
+      case uast::IntentList::CONST_VAR:
         vs->addFlag(FLAG_CONST);
         vs->qual = QUAL_CONST;
         break;
-      case uast::Variable::CONST_REF:
+      case uast::IntentList::CONST_REF:
         vs->addFlag(FLAG_CONST);
         vs->addFlag(FLAG_REF_VAR);
         vs->qual = QUAL_CONST_REF;
         break;
-      case uast::Variable::REF:
+      case uast::IntentList::REF:
         vs->addFlag(FLAG_REF_VAR);
         vs->qual = QUAL_REF;
         break;
-      case uast::Variable::PARAM:
+      case uast::IntentList::PARAM:
         vs->addFlag(FLAG_PARAM);
         vs->qual = QUAL_PARAM;
         break;
-      case uast::Variable::TYPE:
+      case uast::IntentList::TYPE:
         vs->addFlag(FLAG_TYPE_VARIABLE);
         break;
-      case uast::Variable::INDEX:
+      case uast::IntentList::INDEX:
         INT_FATAL("Index variables should be handled elsewhere");
+        break;
+      default:
         break;
     }
   }
@@ -2392,7 +2395,7 @@ struct Converter {
     auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
 
     // Adjust the variable according to its kind, e.g. 'const'/'type'.
-    attachVarSymbolStorage(node, varSym);
+    attachSymbolStorage((uast::IntentList)node->kind(), varSym);
 
     attachSymbolAttributes(node, varSym);
 

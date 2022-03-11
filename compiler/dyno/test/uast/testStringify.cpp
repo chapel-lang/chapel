@@ -390,7 +390,7 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("proc main(args: [] string) {\n}", "main(args: [] string)")
   // TEST_USER_STRING("proc MYPROC(FORMAL: single int) { }", "proc MYPROC(FORMAL: single int)")
   TEST_USER_STRING("inline operator ==(a: _nilType, b: _nilType) param return true;", "==(a: _nilType, b: _nilType)")
-  TEST_USER_STRING("private proc param R.prm2(arg) param : string { }", "private param R.prm2(arg): string")
+  TEST_USER_STRING("private proc param R.prm2(arg) param : string { }", "private param R.prm2(arg)")
 }
 
 static void test4(Parser* parser) {

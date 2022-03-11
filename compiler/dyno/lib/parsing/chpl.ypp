@@ -1140,10 +1140,8 @@ import_expr:
   }
 | expr TDOT all_op_name
   {
-    auto ident = context->buildIdent(@3, $3);
-    $$ = context->buildVisibilityClause(@$, toOwned($1),
-                                        VisibilityClause::NONE,
-                                        context->consume(ident));
+    auto dot = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release();
+    $$ = context->buildVisibilityClause(@$, toOwned(dot));
   }
 | expr TAS ident_use
   {
