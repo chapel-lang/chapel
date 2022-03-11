@@ -1,0 +1,4 @@
+vectorizeOnly.chpl:1: warning: 'vectorizeOnly()' is deprecated in favor of using 'foreach' loops
+vectorizeOnly.chpl:1: warning: 'vectorizeOnly()' is deprecated in favor of using 'foreach' loops
+vectorizeOnly.chpl:1: warning: 'vectorizeOnly()' is deprecated in favor of using 'foreach' loops
+1
