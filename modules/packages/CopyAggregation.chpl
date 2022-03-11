@@ -76,7 +76,7 @@
        agg.copy(a, b);
        writeln(a);   // can print 0 or 1
        agg.flush();
-       writeln(a);   // must print 0
+       writeln(a);   // must print 1
      }
 
    Generally speaking aggregators are useful for when you have a large batch of
