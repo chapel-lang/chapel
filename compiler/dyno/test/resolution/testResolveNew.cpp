@@ -88,9 +88,24 @@ static void test1() {
   assert(qtNewExpr.kind() == QualifiedType::VAR);
   assert(qtNewExpr.type() == qtR.type());
 
-  //
-  // TODO: Fill in the rest of the details.
-  //
+  // The 'new' call should have the same type as the 'new' expr.
+  auto& reNewCall = rr.byAst(newCall);
+  auto& qtNewCall = reNewCall.type();
+  assert(qtNewExpr == qtNewCall);
+
+  // The 'new' call should have 'init' as an associated function.
+  auto& associatedFns = reNewCall.associatedFns();
+  assert(associatedFns.size() == 1);
+  auto initTfs = associatedFns[0];
+  assert(initTfs->id() == fnInit->id());
+  assert(initTfs->numFormals() == 1);
+  assert(initTfs->formalName(0) == "this");
+  auto receiverQualType = initTfs->formalType(0);
+  assert(receiverQualType.type() == qtR.type());
+
+  // TODO: should dyno mark this 'init' as 'REF'? Seems deceptive since
+  // an initializer is always going to mutate state.
+  assert(receiverQualType.kind() == QualifiedType::CONST_REF);
 
   context->collectGarbage();
 }

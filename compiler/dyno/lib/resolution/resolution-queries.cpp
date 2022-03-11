@@ -2432,7 +2432,48 @@ isNameOfCompilerGeneratedMethod(UniqueString name) {
 static bool
 areOverloadsPresentInDefiningScope(Context* context, const Type* type,
                                    UniqueString name) {
-  assert(false && "Not implemented yet!");
+  const Scope* scopeForReceiverType = nullptr;
+
+  if (auto compType = type->getCompositeType()) {
+    scopeForReceiverType = scopeForId(context, compType->id());
+  }
+
+  // there is no defining scope
+  if (!scopeForReceiverType) return false;
+
+  // do not look outside the defining module
+  const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS;
+
+  auto vec = lookupNameInScope(context, scopeForReceiverType,
+                               name,
+                               config);
+
+  // nothing found
+  if (vec.size() == 0) return false;
+
+  // loop through IDs and see if any are methods on the same type
+  for (auto& ids : vec) {
+    for (auto id : ids) {
+      auto node = parsing::idToAst(context, id);
+      assert(node);
+
+      if (auto fn = node->toFunction()) {
+        auto ufs = UntypedFnSignature::get(context, fn);
+
+        if (!ufs->isMethod()) continue;
+
+        // TODO: way to just compute formal type instead of whole TFS?
+        auto tfs = typedSignatureInitial(context, ufs);
+        auto receiverQualType = tfs->formalType(0);
+
+        // receiver type matches, return true
+        if (receiverQualType.type() == type) {
+          return true;
+        }
+      }
+    }
+  }
+
   return false;
 }
 

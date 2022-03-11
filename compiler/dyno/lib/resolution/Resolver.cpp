@@ -767,9 +767,9 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   // new calls produce a 'init' call as a side effect
   UniqueString name = USTR("init");
-  QualifiedType calledType = re.type();
-  bool hasQuestionArg = false;
+  auto calledType = QualifiedType(QualifiedType::REF, re.type().type());
   bool isMethod = true;
+  bool hasQuestionArg = false;
   std::vector<CallInfoActual> actuals;
 
   // prepare the receiver (the 'newed' object)
@@ -782,7 +782,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     assert(!hasQuestionArg);
   }
 
-  auto ci = CallInfo(name, calledType, hasQuestionArg, isMethod,
+  auto ci = CallInfo(name, calledType, isMethod, hasQuestionArg,
                      std::move(actuals));
   auto inScope = scopeStack.back();
   auto inPoiScope = poiScope;
@@ -1356,26 +1356,6 @@ bool Resolver::enter(const uast::New* nw) {
 void Resolver::resolveNewForClass(const uast::New* node,
                                   const types::ClassType* classType) {
   assert(false && "Not handled yet!");
-
-  /*
-  const auto decorator = classType->decorator();
-  const bool isUnknownManagement = decorator->isUnknownManagement();
-  const bool isUnknownNilability = decorator->isUnknownNilability();
-  // We have duplicate decorators.
-  if (nw->management() != New::DEFAULT_MANAGEMENT &&
-      !isUnknownManagement) {
-  }
-  */
-
-  //
-  // TODO: Class may or may not be decorated, have to inspect decorator.
-  // TODO: All class types go through here.
-  // TODO: Make a BasicClassType then decorate it to get a ClassType.
-  // TODO: Need to set POI?
-  // TODO: Do I need to make a TypeConstructor call?
-  //
-
-  return;
 }
 
 void Resolver::resolveNewForRecord(const uast::New* node,
