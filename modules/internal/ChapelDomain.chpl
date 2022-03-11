@@ -1262,26 +1262,13 @@ module ChapelDomain {
       for i in _value.dimIter(d, ind) do yield i;
     }
 
-   /* Return a tuple of :proc:`intIdxType` describing the size of each
-      dimension.  Note that this routine is in the process of changing
-      to return a tuple of ``int``, similar to the ``.size`` query on
-      ranges, domains, and arrays.  See :proc:`ChapelRange.range.size` for details.
+   /* Return a tuple of ``int`` values representing the size of each
+      dimension.
 
       For a sparse domain, this returns the shape of the parent domain.
     */
-    proc shape where this.isRectangular() || this.isSparse() {
-      use ChapelRange;
-      if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
-        compilerWarning("'.shape' queries for domains and arrays with 'idxType = " +
-                        idxType:string +
-                        "' are changing to return '" + rank:string +
-                        "int' values rather than '" + rank:string + "*" +
-                        idxType:string+"'\n"+
-                        "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'\n");
-        return chpl_shapeAs(idxType);
-      } else {
-        return chpl_shapeAs(int);
-      }
+    proc shape: rank*int where this.isRectangular() || this.isSparse() {
+      return chpl_shapeAs(int);
     }
 
     proc chpl_shapeAs(type t: integral) {
@@ -1909,23 +1896,11 @@ module ChapelDomain {
       requestCapacity(i);
     }
 
-    /* Return the number of indices in this domain.  For domains whose
-       ``intIdxType != int``, please refer to the note in
-       :proc:`ChapelRange.range.size` about changes to this routine's return type.
+    /*
+      Return the number of indices in this domain as an ``int``.
     */
-    proc size {
-      use ChapelRange;
-      if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
-        compilerWarning("'.size' queries for domains and arrays with 'idxType == " +
-                        idxType:string +
-                        "' are changing to return 'int' values rather than '"+
-                        idxType:string+"'\n"+
-                        "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'\n" +
-                        "  or switch to the new '.sizeAs(type t: integral)' method)");
-        return this.sizeAs(this.intIdxType);
-      } else {
-        return this.sizeAs(int);
-      }
+    proc size: int {
+      return this.sizeAs(int);
     }
 
     /* Return the number of indices in this domain as the specified type */
