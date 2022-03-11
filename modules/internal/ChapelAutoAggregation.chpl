@@ -23,13 +23,13 @@ module ChapelAutoAggregation {
 
   pragma "aggregator generator"
   proc chpl_srcAggregatorFor(arr: []) {
-    return new SrcAggregator(arr.eltType);
+    return new SrcAggregatorImpl(arr.eltType);
   }
 
   // we can't do dom: domain here, it causes resolution issues
   pragma "aggregator generator"
   proc chpl_srcAggregatorFor(dom) where isDomain(dom) {
-    return new SrcAggregator(dom.idxType);
+    return new SrcAggregatorImpl(dom.idxType);
   }
 
   pragma "aggregator generator"
@@ -39,7 +39,7 @@ module ChapelAutoAggregation {
 
   pragma "aggregator generator"
   proc chpl_dstAggregatorFor(arr: []) {
-    return new DstAggregator(arr.eltType);
+    return new DstAggregatorImpl(arr.eltType);
   }
 
   pragma "aggregator generator"
