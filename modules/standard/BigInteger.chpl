@@ -441,6 +441,10 @@ module BigInteger {
 
       :returns: a tuple representing the number in multiple parts, ``(d, exp)``,
                 such that their combination ``d * 2^exp`` is equal to ``this``.
+
+                ``d`` in this case will be in the range ``0.5 <= abs(d) < 1``,
+                unless ``this`` is ``0``, in which case ``d == 0.0`` and
+                ``exp == 0``.
       :rtype: ``(real, uint(32))``
      */
     proc getD2Exp(): (real, uint(32)) {
