@@ -73,7 +73,8 @@ void LocalizeGlobals::process(FnSymbol* fn) {
         !lhsOfMove &&
         var->hasFlag(FLAG_CONST) &&
         !var->hasFlag(FLAG_EXTERN) &&
-        var->defPoint->parentSymbol != rootModule) {
+        var->defPoint->parentSymbol != rootModule &&
+        isPrimitiveType(var->type)) {
       VarSymbol* local_global = globals.get(var);
       SET_LINENO(se); // Set the se line number for output
       if (!local_global) {
