@@ -1747,7 +1747,7 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
 
 static bool
 findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
-    Symbol*& outErrorSymbol, CallExpr*& endCountFree) {
+    Symbol*& outErrorSymbol, CallExpr*& endCountFree, bool inForall = false) {
   Expr* stmt = se->getStmtExpr(); // aka last scope
   Expr* scope = stmt->parentExpr;
 
@@ -1758,7 +1758,8 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
       for(Expr* cur = stmt->next; cur != NULL; cur = cur->next) {
         if (DefExpr* def = toDefExpr(cur)) {
           if (LabelSymbol* label = toLabelSymbol(def->sym)) {
-            if (label->hasFlag(FLAG_ERROR_LABEL)) {
+            if (label->hasFlag(FLAG_ERROR_LABEL) ||
+                (inForall && label->hasFlag(FLAG_FORALL_BREAK_LABEL))) {
               outHandlerLabel = label;
               // find the error that this block is working with
               for(Expr* e = def->next; e != NULL; e = e->next) {
@@ -1800,13 +1801,13 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
   return false;
 }
 
-void handleChplPropagateErrorCall(CallExpr* call) {
+void handleChplPropagateErrorCall(CallExpr* call, bool inForall) {
   SymExpr* errSe = toSymExpr(call->get(1));
   INT_ASSERT(errSe && errSe->typeInfo() == dtError);
   LabelSymbol* label = NULL;
   Symbol* error = NULL;
   CallExpr *endCountFree = NULL;
-  if (findFollowingCheckErrorBlock(errSe, label, error, endCountFree)) {
+  if (findFollowingCheckErrorBlock(errSe, label, error, endCountFree, inForall)) {
     errSe->remove();
     if (endCountFree != NULL) {
       call->insertBefore(endCountFree->copy());

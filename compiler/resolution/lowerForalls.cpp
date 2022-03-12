@@ -348,7 +348,7 @@ public:
       if (isTaskFun(calledFn)) {
         expandTaskFn(this, node, calledFn);
       } else if (calledFn == gChplPropagateError) {
-        handleChplPropagateErrorCall(node);
+        handleChplPropagateErrorCall(node, true);
       }
     }
     // There shouldn't be anything interesting inside the call.
@@ -844,7 +844,7 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   // No need for taskFnCopies.
 
   // This holds because we flatten everything right away.
-  // We need it so that we can place the def of 'fcopy' anywhere
+  // We need it so that we can place the def of 'cloneTaskFn' anywhere
   // while preserving correct scoping of its SymExprs.
   INT_ASSERT(isGlobal(taskFn));
 

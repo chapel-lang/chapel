@@ -143,7 +143,7 @@ bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr);
 
 // lowerIterators.cpp, lowerForalls.cpp
 void lowerForallStmtsInline();
-void handleChplPropagateErrorCall(CallExpr* call);
+void handleChplPropagateErrorCall(CallExpr* call, bool allowForall = false);
 void fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller);
 void addDummyErrorArgumentToCall(CallExpr* call);
 bool isVirtualIterator(FnSymbol* iterFn);
