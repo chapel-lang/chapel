@@ -388,7 +388,7 @@ module ChapelIteratorSupport {
     return _getIterator(x.these());
   }
 
-  proc _getIterator(type t) {
+  inline proc _getIterator(type t) {
     return _getIterator(t.these());
   }
 
