@@ -1745,6 +1745,31 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
   }
 }
 
+/*
+Given 'se' - a location in the AST - find the nearest enclosing error handler
+that follows this location. If it was found, then return 'true' and store
+its error label and error symbol in the "out" arguments. If a call to
+_endCountFree was encountered while searching, save it as well so it can be
+cloned. Here is an example of the expected AST structure:
+    {
+      { ... some number of block nests ...
+        if check error( error[1] )
+          {
+            call( fn chpl_propagate_error error[1] )
+          }
+        call( fn _endCountFree _coforallCount )
+        call( fn _freeIterator _iterator )
+       }
+    }
+    ...
+    def handler
+    def val shouldHandleError:bool
+    move( shouldHandleError check error( error[2] ) )
+    if shouldHandleError
+      { ... }
+where 'se' is a reference to 'error[1]'. outHandlerLabel is set to 'handler',
+outErrorSymbol to 'error[2]', endCountFree to the call to _endCountFree.
+*/
 static bool
 findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
     Symbol*& outErrorSymbol, CallExpr*& endCountFree, bool inForall = false) {
