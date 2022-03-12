@@ -42,7 +42,7 @@ if (numLocales == 4) {
 
 proc testit(D, A) {
   writeln("Testing domain D: ", D);
-  writeln("Mapped to locales:\n", D.dist.targetLocales);
+  writeln("Mapped to locales:\n", D.dist.targetLocales());
   testit(D);
   writeln();
 

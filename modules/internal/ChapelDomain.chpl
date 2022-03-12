@@ -2386,7 +2386,7 @@ module ChapelDomain {
     /*
        Return an array of locales over which this domain has been distributed.
     */
-    proc targetLocales const ref {
+    proc targetLocales() const ref {
       return _value.dsiTargetLocales();
     }
 

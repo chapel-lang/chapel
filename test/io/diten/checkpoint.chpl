@@ -1,7 +1,7 @@
 private use IO;
 
 proc readArrayCheckpoint(filename: string, A:[] ?t, nTasks: int = dataParTasksPerLocale) {
-  var targetLocs = reshape(A.targetLocales, {1..A.targetLocales.size});
+  var targetLocs = reshape(A.targetLocales(), {1..A.targetLocales().size});
   var offsetDom = targetLocs.domain;
   var offsetArr: [offsetDom] int;
 
@@ -27,7 +27,7 @@ proc readArrayCheckpoint(filename: string, A:[] ?t, nTasks: int = dataParTasksPe
 
 proc checkpointArray(filename: string, A:[] ?t, nTasks: int = dataParTasksPerLocale) {
   var f = open(filename, iomode.cw); // create/clear the file
-  var targetLocs = reshape(A.targetLocales, {1..A.targetLocales.size});
+  var targetLocs = reshape(A.targetLocales(), {1..A.targetLocales().size});
   var offsetDom = targetLocs.domain;
   var offsetArr: [offsetDom] int;
 
