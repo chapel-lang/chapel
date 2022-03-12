@@ -212,7 +212,7 @@ repfiles[repfileST2] = createGraphFile(snapshot_prefix, START_FILENAME, rea);
     }
 
    if DISTRIBUTION_TYPE == "BLOCK" && IOsingleTaskPerLocale {
-      coforall loc in GRow.targetLocales do on loc {
+      coforall loc in GRow.targetLocales() do on loc {
         const myIDs = GRow.localSubdomain().dim(0);
 
         // All work is done in graphReaderReal() iterator.

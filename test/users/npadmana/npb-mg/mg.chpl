@@ -261,7 +261,7 @@ proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff
   // TODO: use local slice feature when available to avoid manual calls to
   // localAccess
   //
-  coforall loc in dest.targetLocales {
+  coforall loc in dest.targetLocales() {
     on loc {
       const (w0, w1, w2, w3) = w;
 
