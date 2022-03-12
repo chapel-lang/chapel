@@ -1,4 +1,3 @@
-config param promoted = true;
 config const n = 10;
 
 config const alpha = 10;
