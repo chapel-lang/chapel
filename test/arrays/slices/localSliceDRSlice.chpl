@@ -5,7 +5,7 @@ module Spam {
     use Reflection;
 
     proc sliceAndDice(fn: string, line: int, ref arr) throws {
-        for l in arr.targetLocales do on l {
+        for l in arr.targetLocales() do on l {
           for d in arr.localSubdomains() {
             {
               // test domain-based slicing

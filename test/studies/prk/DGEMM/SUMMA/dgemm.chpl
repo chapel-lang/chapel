@@ -85,7 +85,7 @@ if windowSize == 0 {
 }
 else {
   for niter in 0..iterations {
-    coforall loc in A.targetLocales with (ref t) {
+    coforall loc in A.targetLocales() with (ref t) {
       on loc {
         if here.id==0 && niter==1 then t.start();
         var localDomainA = A.localSubdomain();

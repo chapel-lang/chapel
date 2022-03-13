@@ -1641,8 +1641,8 @@ static void checkRuntimeBuilt(void) {
                 "configuration.");
     } else {
       USR_FATAL_CONT("The runtime has not been built for this configuration. "
-                     "Check $CHPL_HOME/util/printchplenv and try rebuilding "
-                     "with $CHPL_MAKE from $CHPL_HOME.");
+                     "Run $CHPL_HOME/util/chplenv/printchplbuilds.py for information "
+                     "on available runtimes.");
     }
     if (developer) {
       USR_PRINT("Expected runtime library in %s", runtime_dir.c_str());

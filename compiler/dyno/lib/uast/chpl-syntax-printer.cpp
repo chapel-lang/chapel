@@ -19,6 +19,7 @@
 
 
 #include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/queries/global-strings.h"
 
 
 using namespace chpl;
@@ -26,9 +27,9 @@ using namespace uast;
 
 static const char* kindToString(Decl::Linkage kind) {
   switch (kind) {
-    case Decl::Linkage::DEFAULT_LINKAGE: assert(false);
     case Decl::Linkage::EXTERN: return "extern";
     case Decl::Linkage::EXPORT: return "export";
+    case Decl::Linkage::DEFAULT_LINKAGE: assert(false);
   }
   assert(false);
   return "";
@@ -56,7 +57,6 @@ static const char* kindToString(Function::Visibility kind) {
 
 static const char* kindToString(IntentList kind) {
   switch (kind) {
-    case IntentList::DEFAULT_INTENT: assert(false);
     case IntentList::CONST_INTENT: return "const";
     case IntentList::VAR: return "var";
     case IntentList::CONST_VAR: return "const var";
@@ -68,6 +68,7 @@ static const char* kindToString(IntentList kind) {
     case IntentList::INOUT: return "inout";
     case IntentList::PARAM: return "param";
     case IntentList::TYPE: return "type";
+    case IntentList::DEFAULT_INTENT: assert(false);
     default: return "";
   }
   return "";
@@ -75,9 +76,9 @@ static const char* kindToString(IntentList kind) {
 
 static const char* kindToString(Module::Kind kind) {
   switch (kind) {
-    case Module::Kind::DEFAULT_MODULE_KIND: assert(false);
     case Module::Kind::IMPLICIT: return "";
     case Module::Kind::PROTOTYPE: return "prototype";
+    case Module::Kind::DEFAULT_MODULE_KIND: assert(false);
   }
   assert(false);
   return "";
@@ -99,10 +100,10 @@ static const char* kindToString(New::Management kind) {
 
 static const char* kindToString(VisibilityClause::LimitationKind kind) {
   switch (kind) {
-    case VisibilityClause::LimitationKind::NONE: assert(false);
     case VisibilityClause::LimitationKind::ONLY: return "only";
     case VisibilityClause::LimitationKind::EXCEPT: return "except";
     case VisibilityClause::LimitationKind::BRACES: assert(false);
+    case VisibilityClause::LimitationKind::NONE: assert(false);
     default: return "";
   }
 }
@@ -175,7 +176,7 @@ struct ChplSyntaxVisitor {
      * for all literals instead of creating specializations of visit for each
      * numeric literal type?
     */
-    ss_ << node->text().c_str();
+    ss_ << node->text();
   }
 
   /*
@@ -220,16 +221,6 @@ struct ChplSyntaxVisitor {
       interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
     }
 
-    // Return Intent
-    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      ss_ << " " << kindToString((IntentList) node->returnIntent());
-    }
-
-    // Return type
-    if (const Expression* e = node->returnType()) {
-      ss_ << ": ";
-      printChapelSyntax(ss_, e);
-    }
   }
 
   /*
@@ -237,6 +228,9 @@ struct ChplSyntaxVisitor {
    * the old parser's `userSignature` field.
   */
   void printFunctionSignature(const Function* node) {
+    // TODO: Determine how the function signature should be formated
+    // e.g print return type and intent? what about where clause?
+    // github issue: https://github.com/chapel-lang/chapel/issues/19411
     if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {
       ss_ << kindToString(node->visibility()) << " ";
     }
@@ -251,6 +245,30 @@ struct ChplSyntaxVisitor {
         ss_ << " ";
       }
     }
+  }
+
+  void printTupleContents(const TupleDecl* node) {
+    ss_ << "(";
+    // TODO: Can this be generalized between TupleDecl and MultiDecl?
+    std::string delimiter = "";
+    for (auto decl : node->decls()) {
+      ss_ << delimiter;
+      if (decl->isTupleDecl()) {
+        printTupleContents(decl->toTupleDecl());
+      } else {
+        ss_ << decl->toVarLikeDecl()->name();
+        if (const Expression *te = decl->toVarLikeDecl()->typeExpression()) {
+          ss_ << ": ";
+          printChapelSyntax(ss_, te);
+        }
+        if (const Expression *ie = decl->toVarLikeDecl()->initExpression()) {
+          ss_ << " = ";
+          printChapelSyntax(ss_, ie);
+        }
+      }
+      delimiter = ", ";
+    }
+    ss_ << ")";
   }
 
   void visit(const uast::ASTNode* node) {
@@ -320,7 +338,7 @@ struct ChplSyntaxVisitor {
     ss_ << "catch ";
     if (node->error()) {
       if (node->hasParensAroundError()) ss_ << "(";
-      ss_ << node->error()->name().c_str();
+      ss_ << node->error()->name();
       if (const Expression* te = node->error()->typeExpression()) {
         ss_ << " : ";
         printChapelSyntax(ss_, te);
@@ -333,7 +351,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const Class* node) {
     ss_ << "class ";
-    ss_ << node->name().c_str() << " ";
+    ss_ << node->name() << " ";
     if (node->parentClass() != nullptr) {
       ss_ << ": ";
       printChapelSyntax(ss_, node->parentClass());
@@ -412,7 +430,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const Dot* node) {
     printChapelSyntax(ss_, node->receiver());
-    ss_ << "." << node->field().c_str();
+    ss_ << "." << node->field();
   }
 
   void visit(const DoWhile* node) {
@@ -423,12 +441,12 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Enum* node) {
-    ss_ << "enum " << node->name().c_str() << " ";
+    ss_ << "enum " << node->name() << " ";
     interpose(node->enumElements(), ", ", "{ ", " }");
   }
 
   void visit(const EnumElement* node) {
-    ss_ << node->name().c_str();
+    ss_ << node->name();
     if (const Expression* ie = node->initExpression()) {
       ss_ <<  " = ";
       printChapelSyntax(ss_, ie);
@@ -546,6 +564,17 @@ struct ChplSyntaxVisitor {
     ss_ << " ";
 
     printFunctionHelper(node);
+
+    // Return Intent
+    if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
+      ss_ << " " << kindToString((IntentList) node->returnIntent());
+    }
+
+    // Return type
+    if (const Expression* e = node->returnType()) {
+      ss_ << ": ";
+      printChapelSyntax(ss_, e);
+    }
     ss_ << " ";
 
     // where clause
@@ -586,14 +615,14 @@ struct ChplSyntaxVisitor {
       ss_ << "prototype ";
     }
     ss_ << "module ";
-    ss_ << node->name().c_str();
+    ss_ << node->name();
   }
 
   void visit(const IntLiteral* node)  { visitLiteral(node); }
 
   void visit(const Label* node) {
     ss_ << "label ";
-    ss_ << node->name().c_str() << " ";
+    ss_ << node->name() << " ";
     printChapelSyntax(ss_, node->loop());
   }
 
@@ -604,7 +633,7 @@ struct ChplSyntaxVisitor {
     // TODO: Can we eliminate or generalize this in a better way?
     for (auto decl : node->decls()) {
       const Variable* var = decl->toVariable();
-      ss_ << var->name().c_str();
+      ss_ << var->name();
       if (const Expression *te = var->typeExpression()) {
         ss_ << ": ";
         printChapelSyntax(ss_, te);
@@ -642,7 +671,7 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString(node->kind()) << " ";
     }
     ss_ << "module ";
-    ss_ << node->name().c_str() << " ";
+    ss_ << node->name() << " ";
     interpose(node->stmts(), "\n", "{", "}");
   }
 
@@ -653,7 +682,7 @@ struct ChplSyntaxVisitor {
     std::string delimiter = "";
     for (auto decl : node->decls()) {
       ss_ << delimiter;
-      ss_ << decl->toVariable()->name().c_str();
+      ss_ << decl->toVariable()->name();
       if (const Expression* te = decl->toVariable()->typeExpression()) {
         ss_ << ": ";
         printChapelSyntax(ss_, te);
@@ -687,14 +716,21 @@ struct ChplSyntaxVisitor {
     // ex: !(this && that)
     // is different than !this && that
     if (node->isUnaryOp()) {
-      ss_ << node->op().c_str();
+      bool isPostFixBang = false;
+      if (node->op() == USTR("postfix!")) {
+        isPostFixBang = true;
+      } else {
+        ss_ << node->op();
+      }
       assert(node->numActuals() == 1);
       printChapelSyntax(ss_, node->actual(0));
-
+      if (isPostFixBang) {
+        ss_ << "!";
+      }
     } else if (node->isBinaryOp()) {
       assert(node->numActuals() == 2);
       printChapelSyntax(ss_, node->actual(0));
-      ss_ << " " << node->op().c_str() << " ";
+      ss_ << node->op();
       printChapelSyntax(ss_, node->actual(1));
     }
   }
@@ -722,12 +758,12 @@ struct ChplSyntaxVisitor {
   void visit(const Record* node) {
     printLinkage(node);
     ss_ << "record ";
-    ss_ << node->name().c_str() << " ";
+    ss_ << node->name() << " ";
     interpose(node->decls(), "\n", "{", "}");
   }
 
   void visit(const Reduce* node) {
-    ss_ << node->op().c_str() << " ";
+    ss_ << node->op() << " ";
     ss_ << "reduce ";
     interpose(node->actuals(), ", ");
   }
@@ -746,7 +782,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Scan* node) {
-    ss_ << node->op().c_str() << " ";
+    ss_ << node->op() << " ";
     ss_ << "scan ";
     interpose(node->actuals(), ", ");
   }
@@ -778,7 +814,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const TaskVar* node) {
     ss_ << kindToString((IntentList) node->intent());
-    ss_ << " " << node->name().c_str();
+    ss_ << " " << node->name();
   }
 
   void visit(const Throw* node) {
@@ -810,24 +846,8 @@ struct ChplSyntaxVisitor {
         node->intentOrKind() != TupleDecl::IntentOrKind::INDEX) {
       ss_ << kindToString((IntentList) node->intentOrKind()) << " ";
     }
-    ss_ << "(";
-    // TODO: Can this be generalized between TupleDecl and MultiDecl?
-    std::string delimiter = "";
-    for (auto decl : node->decls()) {
-      ss_ << delimiter;
-        ss_ << decl->toVarLikeDecl()->name().c_str();
-        if (const Expression* te = decl->toVarLikeDecl()->typeExpression()) {
-          ss_ << ": ";
-          printChapelSyntax(ss_, te);
-        }
-        if (const Expression* ie = decl->toVarLikeDecl()->initExpression()) {
-          ss_ << " = ";
-          printChapelSyntax(ss_, ie);
-        }
-        delimiter = ", ";
-      }
-    ss_ << ")";
 
+    printTupleContents(node);
 
     if (const Expression* te = node->typeExpression()) {
       ss_ << ": ";
@@ -842,12 +862,12 @@ struct ChplSyntaxVisitor {
   void visit(const TypeDecl* node) {
     printLinkage(node);
     ss_ << "type ";
-    ss_ << node->name().c_str();
+    ss_ << node->name();
   }
 
   void visit(const TypeQuery* node) {
     ss_ << "?";
-    ss_ << node->name().c_str();
+    ss_ << node->name();
   }
 
   void visit(const UintLiteral* node) { visitLiteral(node); }
@@ -855,7 +875,7 @@ struct ChplSyntaxVisitor {
   void visit(const Union* node) {
     printLinkage(node);
     ss_ << "union ";
-    ss_ << node->name().c_str() << " ";
+    ss_ << node->name() << " ";
     interpose(node->children(), "\n", "{", "}");
   }
 
@@ -872,7 +892,7 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString((IntentList) node->intent()) << " ";
     }
 
-    ss_ << node->name().c_str();
+    ss_ << node->name();
     if (const Expression* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
@@ -902,7 +922,7 @@ struct ChplSyntaxVisitor {
     if (node->kind() != Variable::Kind::INDEX) {
       ss_ << kindToString((IntentList) node->kind()) << " ";
     }
-    ss_ << node->name().c_str();
+    ss_ << node->name();
     if (const Expression* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
@@ -915,16 +935,17 @@ struct ChplSyntaxVisitor {
 
   void visit(const VisibilityClause* node) {
     VisibilityClause::LimitationKind limit = node->limitationKind();
-    if (limit == VisibilityClause::LimitationKind::ONLY ||
-        limit == VisibilityClause::LimitationKind::EXCEPT) {
-      ss_ << kindToString(limit);
-      printChapelSyntax(ss_, node->symbol());
-      interpose(node->limitations(), ", ");
-    } else if (limit == VisibilityClause::LimitationKind::BRACES) {
-      printChapelSyntax(ss_, node->symbol());
+    printChapelSyntax(ss_, node->symbol());
+    if (limit == VisibilityClause::LimitationKind::BRACES) {
+      ss_ << ".";
       interpose(node->limitations(), ", ", "{","}");
-    } else { //NONE
-      printChapelSyntax(ss_, node->symbol());
+    } else {
+      ss_ << " ";
+      if (limit == VisibilityClause::LimitationKind::ONLY ||
+          limit == VisibilityClause::LimitationKind::EXCEPT) {
+        ss_ << kindToString(limit);
+        ss_ << " ";
+      }
       interpose(node->limitations(), ", ");
     }
   }
@@ -997,4 +1018,3 @@ namespace chpl {
   }
 
 } // end chpl namespace
-

@@ -870,16 +870,18 @@ static ModuleSymbol* parseFile(const char* path,
 }
 
 static void uASTDisplayError(const chpl::ErrorMessage& err) {
-  astlocMarker locMarker(err.location());
+  //astlocMarker locMarker(err.location());
+
+  auto loc = err.location();
 
   const char* msg = err.message().c_str();
 
   switch (err.kind()) {
     case chpl::ErrorMessage::NOTE:
-      USR_PRINT("%s", msg);
+      USR_PRINT(loc,"%s", msg);
       break;
     case chpl::ErrorMessage::WARNING:
-      USR_WARN("%s", msg);
+      USR_WARN(loc,"%s", msg);
       break;
     case chpl::ErrorMessage::SYNTAX: {
       const char* path = err.path().c_str();
@@ -894,7 +896,7 @@ static void uASTDisplayError(const chpl::ErrorMessage& err) {
       }
     } break;
     case chpl::ErrorMessage::ERROR:
-      USR_FATAL_CONT("%s", msg);
+      USR_FATAL_CONT(loc,"%s", msg);
       break;
     default:
       INT_FATAL("Should not reach here!");

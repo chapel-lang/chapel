@@ -212,6 +212,11 @@ struct ParserContext {
     noteWarning(ParserError(location, std::move(msg), ErrorMessage::WARNING));
   }
 
+  void noteNote(YYLTYPE location, std::string msg) {
+    auto err = ParserError(location, std::move(msg), ErrorMessage::NOTE);
+    errors.push_back(std::move(err));
+  }
+
   ErroneousExpression* raiseError(ParserError error) {
     assert(error.kind == ErrorMessage::ERROR);
     Location ll = convertLocation(error.location);

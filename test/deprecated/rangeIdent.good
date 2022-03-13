@@ -1,6 +1,0 @@
-rangeIdent.chpl:6: warning: ident() on ranges is deprecated; please let us know if this is problematic for you
-rangeIdent.chpl:7: warning: ident() on ranges is deprecated; please let us know if this is problematic for you
-rangeIdent.chpl:8: warning: ident() on ranges is deprecated; please let us know if this is problematic for you
-false
-false
-false

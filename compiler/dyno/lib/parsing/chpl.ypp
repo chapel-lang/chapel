@@ -2948,7 +2948,7 @@ for_expr:
   }
 | TFOR expr TDO expr %prec TFOR
   {
-    $$ = For::build(BUILDER, LOC(@$), /*index*/ nullptr, toOwned($4),
+    $$ = For::build(BUILDER, LOC(@$), /*index*/ nullptr, toOwned($2),
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(@4, $4),
                     /*isExpressionLevel*/ true,
@@ -3016,7 +3016,7 @@ for_expr:
   }
 | TFORALL expr TDO expr %prec TFOR
   {
-    $$ = Forall::build(BUILDER, LOC(@$), /*index*/ nullptr, toOwned($4),
+    $$ = Forall::build(BUILDER, LOC(@$), /*index*/ nullptr, toOwned($2),
                        /*withClause*/ nullptr,
                        BlockStyle::IMPLICIT,
                        context->consumeToBlock(@4, $4),

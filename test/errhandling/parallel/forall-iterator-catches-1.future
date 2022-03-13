@@ -1,0 +1,9 @@
+bug: iterator handler catches errors in loop body
+
+Currently a try block within a parallel iterator handles both the exceptions
+thrown within the iterator and those thrown in the loop body of the forall.
+It should handle only the exceptions thrown within its lexical scope.
+
+This happens when the try block surrounds a task construct.
+Cf. when the try block surrounds a yield without a task construct in between,
+the behavior is correct, see forall-iterator-catches-2.chpl

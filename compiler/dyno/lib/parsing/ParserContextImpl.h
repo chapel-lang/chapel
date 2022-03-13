@@ -32,6 +32,16 @@
 
 using chpl::types::Param;
 
+static const char* kindToString(VisibilityClause::LimitationKind kind) {
+  switch (kind) {
+    case VisibilityClause::LimitationKind::ONLY: return "only";
+    case VisibilityClause::LimitationKind::EXCEPT: return "except";
+    case VisibilityClause::LimitationKind::BRACES: assert(false);
+    case VisibilityClause::LimitationKind::NONE: assert(false);
+    default: return "";
+  }
+}
+
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
          (lhs.first_line == rhs.first_line &&
@@ -1519,7 +1529,9 @@ buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
         expr->isComment()) {
       continue;
     } else {
-      auto msg = "Expected symbol in limitation list";
+      std::string msg = "incorrect expression in '";
+      msg += kindToString(limitationKind);
+      msg += "' list, identifier expected";
       return raiseError(location, msg);
     }
   }
@@ -1828,7 +1840,8 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
       if (parts.tag == asttags::Record) {
-        noteError(inheritLoc, "records cannot inherit");
+        noteError(inheritLoc, "inheritance is not currently supported for records");
+        noteNote(inheritLoc, "thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851");
       } else if (parts.tag == asttags::Union) {
         noteError(inheritLoc, "unions cannot inherit");
       } else {

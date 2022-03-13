@@ -166,14 +166,8 @@ module ChapelRange {
   pragma "no doc"
   config param useOptimizedRangeIterators = true;
 
-  /* Chapel is in the process of changing ``range(idxType).size`` away
-     from returning the range's size as an ``idxType`` value in favor
-     of returning an ``int`` value.  Setting ``sizeReturnsInt`` to
-     ``true`` permits a user to opt into this new behavior now rather
-     than having it change out from under them in a future release.
-     The old behavior can be retained by using the new
-     :proc:`range.sizeAs` method.  */
-
+  pragma "no doc"
+  deprecated "'sizeReturnsInt' is deprecated and no longer has an effect"
   config param sizeReturnsInt = false;
 
 
@@ -757,26 +751,12 @@ module ChapelRange {
   }
 
   /* Returns the number of elements in this range as an integer.
-     Historically, and by default for now, the return type is
-     represented as an ``intIdxType`` value.  However, Chapel is in
-     the process of changing to always return an ``int`` value, and so
-     will generate a warning if ``intIdxType != int`` to alert users
-     to the change.  :param:`sizeReturnsInt` can be used to opt into
-     the new behavior now.  Or :proc:`range.sizeAs` can be used to
-     request a different return type.
 
-     If the size exceeds ``max(intIdxType)``/``max(int)``, this
-     procedure will halt when bounds checks are on.
+     If the size exceeds ``max(int)``, this procedure will halt when
+     bounds checks are on.
    */
-  proc range.size {
-    if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
-      compilerWarning("'range("+idxType:string+").size' is changing to return 'int' values rather than '"+idxType:string+"'\n" +
-                      "  (to get the value as a different type, call the new method '.sizeAs(type t)')\n" +
-                      "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')");
-      return this.sizeAs(this.intIdxType);
-    } else {
-      return this.sizeAs(int);
-    }
+  proc range.size: int {
+    return this.sizeAs(int);
   }
 
   /* Returns the number of elements in this range as the specified
@@ -976,20 +956,6 @@ module ChapelRange {
   }
 
   operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
-
-  /*
-    .. warning::
-      This procedure is deprecated - please let us know if you were
-      relying on it.
-
-    Returns true if the two ranges are the same in every respect: i.e. the
-     two ranges have the same ``idxType``, ``boundedType``, ``stridable``,
-     ``low``, ``high``, ``stride`` and ``alignment`` values.
-   */
-  deprecated "ident() on ranges is deprecated; please let us know if this is problematic for you"
-  proc ident(r1: range(?), r2: r1.type) {
-    return chpl_ident(r1, r2);
-  }
 
   proc chpl_ident(r1: range(?), r2: range(?))
     where r1.idxType == r2.idxType &&

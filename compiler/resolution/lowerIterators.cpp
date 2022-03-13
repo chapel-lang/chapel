@@ -1745,9 +1745,34 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
   }
 }
 
+/*
+Given 'se' - a location in the AST - find the nearest enclosing error handler
+that follows this location. If it was found, then return 'true' and store
+its error label and error symbol in the "out" arguments. If a call to
+_endCountFree was encountered while searching, save it as well so it can be
+cloned. Here is an example of the expected AST structure:
+    {
+      { ... some number of block nests ...
+        if check error( error[1] )
+          {
+            call( fn chpl_propagate_error error[1] )
+          }
+        call( fn _endCountFree _coforallCount )
+        call( fn _freeIterator _iterator )
+       }
+    }
+    ...
+    def handler
+    def val shouldHandleError:bool
+    move( shouldHandleError check error( error[2] ) )
+    if shouldHandleError
+      { ... }
+where 'se' is a reference to 'error[1]'. outHandlerLabel is set to 'handler',
+outErrorSymbol to 'error[2]', endCountFree to the call to _endCountFree.
+*/
 static bool
 findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
-    Symbol*& outErrorSymbol, CallExpr*& endCountFree) {
+    Symbol*& outErrorSymbol, CallExpr*& endCountFree, bool inForall = false) {
   Expr* stmt = se->getStmtExpr(); // aka last scope
   Expr* scope = stmt->parentExpr;
 
@@ -1758,7 +1783,8 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
       for(Expr* cur = stmt->next; cur != NULL; cur = cur->next) {
         if (DefExpr* def = toDefExpr(cur)) {
           if (LabelSymbol* label = toLabelSymbol(def->sym)) {
-            if (label->hasFlag(FLAG_ERROR_LABEL)) {
+            if (label->hasFlag(FLAG_ERROR_LABEL) ||
+                (inForall && label->hasFlag(FLAG_FORALL_BREAK_LABEL))) {
               outHandlerLabel = label;
               // find the error that this block is working with
               for(Expr* e = def->next; e != NULL; e = e->next) {
@@ -1800,13 +1826,13 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
   return false;
 }
 
-void handleChplPropagateErrorCall(CallExpr* call) {
+void handleChplPropagateErrorCall(CallExpr* call, bool inForall) {
   SymExpr* errSe = toSymExpr(call->get(1));
   INT_ASSERT(errSe && errSe->typeInfo() == dtError);
   LabelSymbol* label = NULL;
   Symbol* error = NULL;
   CallExpr *endCountFree = NULL;
-  if (findFollowingCheckErrorBlock(errSe, label, error, endCountFree)) {
+  if (findFollowingCheckErrorBlock(errSe, label, error, endCountFree, inForall)) {
     errSe->remove();
     if (endCountFree != NULL) {
       call->insertBefore(endCountFree->copy());

@@ -61,7 +61,6 @@ MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/make_sys_basic_types.py
 
 $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-	rm -f $(@D)/SysCTypes.chpl # TODO: Can remove once people are caught up
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) $(@F)
 
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
@@ -115,6 +114,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
 	packages/ConcurrentMap.chpl \
+	packages/CopyAggregation.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/EpochManager.chpl \
