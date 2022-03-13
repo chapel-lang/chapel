@@ -1563,15 +1563,22 @@ static void setGPUFlags() {
 
 static void checkLLVMCodeGen() {
 #ifdef HAVE_LLVM
-  // LLVM does not currently work on 32-bit x86
-  bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
-  if (fLlvmCodegen && unsupportedLlvmConfiguration)
-    USR_FATAL("CHPL_TARGET_COMPILER=llvm not yet supported for this architecture");
+  if (fLlvmCodegen) {
+    // LLVM does not currently work on 32-bit x86
+    bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
+    if (unsupportedLlvmConfiguration) {
+      USR_FATAL("CHPL_TARGET_COMPILER=llvm not yet supported for this architecture");
+    }
+
+    if (fIncrementalCompilation)
+      USR_FATAL("Incremental compilation is not yet supported with LLVM");
+  }
 
   if (0 == strcmp(CHPL_LLVM, "none")) {
     if (fLlvmCodegen)
       USR_FATAL("CHPL_TARGET_COMPILER=llvm not supported when CHPL_LLVM=none");
   }
+
 #else
   // compiler wasn't built with LLVM, so if LLVM is enabled, error
   if (fLlvmCodegen)
