@@ -3292,7 +3292,8 @@ void init_fixedHeap(void) {
     for (info = infoList; info != NULL; info = info->next) {
       if (isGoodCoreProvider(info)
           && (!isInProvider("verbs", info)
-              || !isInProvider("ofi_rxd", info))) {
+              || !isInProvider("ofi_rxd", info))
+          && isUseableProvider(info)) {
         break;
       }
     }
