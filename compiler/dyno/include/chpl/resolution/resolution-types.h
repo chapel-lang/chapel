@@ -930,7 +930,8 @@ class ResolvedExpression {
     return type_ == other.type_ &&
            toId_ == other.toId_ &&
            mostSpecific_ == other.mostSpecific_ &&
-           poiScope_ == other.poiScope_;
+           poiScope_ == other.poiScope_ &&
+           associatedFns_ == other.associatedFns_;
   }
   bool operator!=(const ResolvedExpression& other) const {
     return !(*this == other);
@@ -940,6 +941,7 @@ class ResolvedExpression {
     toId_.swap(other.toId_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
+    std::swap(associatedFns_, other.associatedFns_);
   }
   static bool update(ResolvedExpression& keep, ResolvedExpression& addin) {
     return defaultUpdate(keep, addin);
@@ -949,6 +951,7 @@ class ResolvedExpression {
     toId_.mark(context);
     mostSpecific_.mark(context);
     context->markPointer(poiScope_);
+    for (auto tfs : associatedFns_) tfs->mark(context);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;

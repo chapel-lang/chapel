@@ -225,7 +225,7 @@ bool needCompilerGeneratedMethod(Context* context,
 
   If no method was generated, returns nullptr.
 */
-const owned<TypedFnSignature>&
+const TypedFnSignature*
 getCompilerGeneratedMethod(Context* context,
                            const types::Type* type,
                            UniqueString name);

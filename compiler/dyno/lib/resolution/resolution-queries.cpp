@@ -2084,8 +2084,7 @@ considerCompilerGeneratedCandidates(Context* context,
     return false;
 
   // get the compiler-generated function, may be generic
-  auto& gen = getCompilerGeneratedMethod(context, receiverType, ci.name());
-  auto tfs = gen.get();
+  auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name());
   assert(tfs);
 
   // check if the inital signature matches
@@ -2489,15 +2488,87 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
   return false;
 }
 
-const owned<TypedFnSignature>&
-getCompilerGeneratedMethod(Context* context, const Type* type,
-                           UniqueString name) {
-  QUERY_BEGIN(getCompilerGeneratedMethod, context, type, name);
+// TODO: should we grab the parent instantiation here? Doesn't make sense
+// to generate this for partial instantiations.
+static TypedFnSignature*
+generateInitSignature(Context* context, const CompositeType* compType) {
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  // start by adding a formal for the receiver
+  auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
+                                                      false,
+                                                      nullptr);
+  ufsFormals.push_back(std::move(ufsReceiver));
+
+  // consult the fields to build up the remaining untyped formals
+  const bool useGenericDefaults = false;
+  auto& rf = fieldsForTypeDecl(context, compType, useGenericDefaults);
+
+  // push all fields -> formals in order
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto qualType = rf.fieldType(i);
+    auto name = rf.fieldName(i);
+    bool hasDefault = rf.fieldHasDefaultValue(i);
+    const uast::Decl* node = nullptr;
+    auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, node);
+    ufsFormals.push_back(std::move(fd));
+
+    // for types & param, use the field kind, for values use 'in' intent
+    if (qualType.isType() || qualType.isParam()) {
+      formalTypes.push_back(qualType);
+    } else {
+      auto qt = QualifiedType(QualifiedType::IN, qualType.type());
+      formalTypes.push_back(std::move(qt));
+    }
+  }
+
+  // build the untyped signature
+  auto ufs = UntypedFnSignature::get(context,
+                              /*id*/ compType->id(),
+                              /*name*/ USTR("init"),
+                              /*isMethod*/ true,
+                              /*idIsFunction*/ false,
+                              /*idIsClass*/ true,
+                              /*idIsTypeConstructor*/ false,
+                              /*kind*/ uast::Function::Kind::PROC,
+                              /*formals*/ std::move(ufsFormals),
+                              /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  auto whereClauseResult = TypedFnSignature::WHERE_NONE;
+  bool needsInstantiation = rf.isGeneric();
+  const TypedFnSignature* instantiatedFrom = nullptr;
+  const TypedFnSignature* parentFn = nullptr;
+
+  // TODO: not sure when this is non-empty
+  Bitmap formalsInstantiated;
+
+  auto ret = new TypedFnSignature(ufs, formalTypes, whereClauseResult,
+                                  needsInstantiation,
+                                  instantiatedFrom,
+                                  parentFn,
+                                  formalsInstantiated);
+
+  return ret;
+}
+
+static const owned<TypedFnSignature>&
+getCompilerGeneratedMethodQuery(Context* context, const Type* type,
+                                UniqueString name) {
+  QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, type, name);
 
   TypedFnSignature* tfs = nullptr;
 
   if (needCompilerGeneratedMethod(context, type, name)) {
-    assert(false && "Not implemented yet!");
+    auto compType = type->toCompositeType();
+    assert(compType);
+
+    if (name == USTR("init")) {
+      tfs = generateInitSignature(context, compType);
+    } else {
+      assert(false && "Not implemented yet!");
+    }
   }
 
   auto ret = toOwned(tfs);
@@ -2505,6 +2576,13 @@ getCompilerGeneratedMethod(Context* context, const Type* type,
   return QUERY_END(ret);
 }
 
+const TypedFnSignature*
+getCompilerGeneratedMethod(Context* context, const Type* type,
+                           UniqueString name) {
+  auto& owned = getCompilerGeneratedMethodQuery(context, type, name);
+  auto ret = owned.get();
+  return ret;
+}
 
 } // end namespace resolution
 } // end namespace chpl

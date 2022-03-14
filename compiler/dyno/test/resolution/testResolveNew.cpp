@@ -36,8 +36,6 @@ using namespace resolution;
 using namespace types;
 using namespace uast;
 
-// test resolving a very simple module
-// Test resolving a simple primary and secondary method call on a record.
 static void test1() {
   Context ctx;
   Context* context = &ctx;
@@ -110,8 +108,78 @@ static void test1() {
   context->collectGarbage();
 }
 
+static void test2() {
+  Context ctx;
+  Context* context = &ctx;
+
+  context->advanceToNextRevision(true);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents =
+    " record r {\n"
+    " }\n"
+    " var obj = new r();\n";
+
+  setFileText(context, path, contents);
+
+  // Get the module.
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+
+  // Unpack all the uAST we need for the test.
+  assert(m->numStmts() == 2);
+  auto r = m->stmt(0)->toRecord();
+  assert(r);
+  auto obj = m->stmt(1)->toVariable();
+  assert(obj && !obj->typeExpression() && obj->initExpression());
+  auto newCall = obj->initExpression()->toFnCall();
+  assert(newCall);
+  auto newExpr = newCall->calledExpression()->toNew();
+  assert(newExpr);
+  assert(newExpr->management() == New::DEFAULT_MANAGEMENT);
+
+  // Resolve the module.
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  (void) rr;
+
+  // Get the type of 'r'.
+  auto& qtR = typeForModuleLevelSymbol(context, r->id());
+  (void) qtR;
+
+  // Remember that 'new r' is the base expression of the call.
+  auto& reNewExpr = rr.byAst(newExpr);
+  auto& qtNewExpr = reNewExpr.type();
+  assert(qtNewExpr.kind() == QualifiedType::VAR);
+  assert(qtNewExpr.type() == qtR.type());
+
+  // The 'new' call should have the same type as the 'new' expr.
+  auto& reNewCall = rr.byAst(newCall);
+  auto& qtNewCall = reNewCall.type();
+  assert(qtNewExpr == qtNewCall);
+
+  // The 'new' call should have 'init' as an associated function.
+  // This 'init' is compiler generated.
+  auto& associatedFns = reNewCall.associatedFns();
+  assert(associatedFns.size() == 1);
+  auto initTfs = associatedFns[0];
+  assert(initTfs->id() == r->id());
+  assert(initTfs->numFormals() == 1);
+  assert(initTfs->formalName(0) == "this");
+  auto receiverQualType = initTfs->formalType(0);
+  assert(receiverQualType.type() == qtR.type());
+
+  // TODO: should dyno mark this 'init' as 'REF'? Seems deceptive since
+  // an initializer is always going to mutate state.
+  assert(receiverQualType.kind() == QualifiedType::REF);
+
+  context->collectGarbage();
+}
+
 int main() {
   test1();
+  test2();
 
   return 0;
 }
