@@ -64,7 +64,7 @@ CUcontext *chpl_gpu_primary_ctx;
 
 void chpl_gpu_init() {
   int         num_devices;
-  
+
   // CUDA initialization
   CUDA_CALL(cuInit(0));
 
