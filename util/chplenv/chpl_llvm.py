@@ -181,24 +181,25 @@ def validate_llvm_config():
                   " with one of the supported versions: {0}".format(
                   llvm_versions_string()))
 
-        else:
-            bindir = get_system_llvm_config_bindir()
-            if not (bindir and os.path.isdir(bindir)):
-                error("llvm-config command {0} provides missing bin dir {0}"
-                      .format(llvm_config, bindir))
-            clang_c = get_llvm_clang('c')[0]
-            clang_cxx = get_llvm_clang('c++')[0]
-            if not os.path.exists(clang_c):
-                error("Missing clang command at {0}".format(clang_c))
-            if not os.path.exists(clang_cxx):
-                error("Missing clang++ command at {0}".format(clang_cxx))
-
     if (llvm_val == 'system' or
         (llvm_val == 'bundled' and os.path.exists(llvm_config))):
         version, config_error = check_llvm_config(llvm_config)
         if config_error:
             error("Problem with llvm-config at {0} -- {1}"
                   .format(llvm_config, config_error))
+
+    if llvm_val == 'system':
+        bindir = get_system_llvm_config_bindir()
+        if not (bindir and os.path.isdir(bindir)):
+            error("llvm-config command {0} provides missing bin dir {1}"
+                  .format(llvm_config, bindir))
+        clang_c = get_llvm_clang('c')[0]
+        clang_cxx = get_llvm_clang('c++')[0]
+        if not os.path.exists(clang_c):
+            error("Missing clang command at {0}".format(clang_c))
+        if not os.path.exists(clang_cxx):
+            error("Missing clang++ command at {0}".format(clang_cxx))
+
 
 
 @memoize
