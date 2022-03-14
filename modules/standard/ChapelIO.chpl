@@ -804,7 +804,7 @@ module ChapelIO {
   private proc chpl_readNeedsIO(param name: string) param: string {
     return name + "() is not available by default; try 'use IO;' or 'import IO;'";
   }
-  
+
   pragma "no doc"
   pragma "last resort"
   proc read(ref args...?k) {
@@ -859,7 +859,7 @@ module ChapelIO {
   proc readline(ref arg: ?t) {
     compilerError(chpl_readNeedsIO("readline"));
   }
-  
+
   pragma "no doc"
   pragma "last resort"
   proc readf(fmtStr: ?t, ref args ...?k) {
