@@ -7,6 +7,7 @@ most recent Chapel release:
 Contributors to the Chapel 1.26.0 release
 -----------------------------------------
 * Ben Albrecht, [HPE]
+* John Byrne, [HPE]
 * Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
 * R Chinmay, individual contributor
