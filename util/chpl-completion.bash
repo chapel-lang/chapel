@@ -263,6 +263,7 @@ _chpl ()
 --output \
 --overload-sets-checks \
 --override-checking \
+--parallel-make \
 --parse-only \
 --parser-debug \
 --permit-unhandled-module-errors \
@@ -345,6 +346,7 @@ _chpl ()
 -O \
 -g \
 -h \
+-j \
 -l \
 -o \
 -s"
