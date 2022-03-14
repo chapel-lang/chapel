@@ -68,7 +68,7 @@ writeln("gcd(120, 100) = ", a);
 
 c.set(720);
 d.set(1000);
-a.gcdext(e, b, c, d);
+a.gcd(c, d, e, b);
 
 writeln("gcd(", c, ", ", d, ") = ", a);
 writeln(c, " * ", e, " + ", d, " * ", b, " = ", a);

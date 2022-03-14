@@ -3286,11 +3286,37 @@ module BigInteger {
 
   // sets this to gcd(a,b)
   // set s and t to to coefficients satisfying a*s + b*t == g
+  deprecated "gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead"
   proc bigint.gcdext(ref s: bigint,
                      ref t: bigint,
                      const ref a: bigint,
                      const ref b: bigint) {
+    this.gcd(a, b, s, t);
+  }
 
+  /* Set ``this`` to the greatest common divisor of ``a`` and ``b``, and
+     set ``s`` and ``t`` to coefficients such that ``a*s + b*t == this``.
+
+     .. note::
+        The result stored in ``this`` is always positive, even if one or
+        both of ``a`` and ``b`` are negative (or zero if both are zero).
+
+     This fulfills the same role as the GMP function ``mpz_gcdext``.
+
+     :arg a: One of the numbers to compute the greatest common divisor of
+     :type a: ``bigint``
+
+     :arg b: One of the numbers to compute the greatest common divisor of
+     :type b: ``bigint``
+
+     :arg s: The returned coefficient that can be multiplied by ``a``.
+     :type s: ``bigint``
+
+     :arg t: The returned coefficient that can be multiplied by ``b``.
+     :type t: ``bigint``
+   */
+  proc bigint.gcd(const ref a: bigint, const ref b: bigint,
+                  ref s: bigint, ref t: bigint): void {
     if _local {
       mpz_gcdext(this.mpz, s.mpz, t.mpz, a.mpz, b.mpz);
 
