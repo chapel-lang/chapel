@@ -57,9 +57,7 @@ typedef struct {
   c_sublocid_t subloc;          // target sublocale
   size_t argSize;               // #bytes in whole arg bundle
   void* pAmDone;                // initiator's 'amDone' flag; NULL means nonblk
-#ifdef CHPL_COMM_DEBUG
   uint64_t seq;
-#endif
 } chpl_comm_bundleData_t;
 
 // The type of the communication handle.

@@ -52,9 +52,7 @@ typedef struct {
   c_sublocid_t subloc;
   size_t size;
   void* rf_done; // where to indicate completion on caller
-#ifdef CHPL_COMM_DEBUG
   uint_least64_t seq;
-#endif
 } chpl_comm_bundleData_t;
 
 // The type of the communication handle.

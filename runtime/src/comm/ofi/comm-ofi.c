@@ -1189,7 +1189,8 @@ void debugOverrideHints(struct fi_info* hints) {
                                   CFG_HINT(FI_TAGGED),
                                   CFG_HINT(FI_TRIGGER),
                                   CFG_HINT(FI_VARIABLE_MSG),
-                                  CFG_HINT(FI_WRITE), };
+                                  CFG_HINT(FI_WRITE),
+                                  CFG_HINT_NULL, };
     if (getCfgHint("COMM_OFI_HINTS_CAPS",
                    hintVals, false /*justOne*/, &val)) {
       hints->caps = val;
