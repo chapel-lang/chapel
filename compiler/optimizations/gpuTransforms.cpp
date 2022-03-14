@@ -83,6 +83,10 @@ static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
 }
 
 static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
+  if (!sym->hasFlag(FLAG_TEMP)) {
+    return false;
+  }
+
   if (isDefinedInTheLoop(sym, loop)) {
     return false;
   }
