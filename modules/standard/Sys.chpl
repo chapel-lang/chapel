@@ -70,6 +70,9 @@ module Sys {
   extern const O_RDWR:c_int;
 
   // POSIX flags
+  // It is expected that a new module for Posix interface functionality
+  // will likely be introduced. Much of this code would be moved to that
+  // module at that time.
   extern const O_APPEND:c_int;
   extern const O_CREAT:c_int;
   extern const O_DSYNC:c_int;
@@ -81,7 +84,7 @@ module Sys {
   extern const O_TRUNC:c_int;
 
   // Signals as required by POSIX.1-2008, 2013 edition
-  // See note below about signals intentionally not included.
+  // See note below about signals intentionally not included
   extern const SIGABRT: c_int;
   extern const SIGALRM: c_int;
   extern const SIGBUS: c_int;
