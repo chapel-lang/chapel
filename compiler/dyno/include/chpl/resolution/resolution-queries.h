@@ -209,6 +209,11 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const PoiScope* inPoiScope);
 
 /**
+  Return true if 'name' is the name of a compiler generated method.
+*/
+bool isNameOfCompilerGeneratedMethod(UniqueString name);
+
+/**
   Given a type and a UniqueString representing the name of a method,
   determine if the type needs a method with such a name to be
   generated for it.

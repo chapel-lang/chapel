@@ -1539,7 +1539,18 @@ const QualifiedType& returnType(Context* context,
     }
 
     result = QualifiedType(QualifiedType::TYPE, t);
-
+  } else if (untyped->idIsClass()) {
+    if (untyped->isMethod() &&
+        isNameOfCompilerGeneratedMethod(untyped->name())) {
+      if (untyped->name() == USTR("init")) {
+        result = QualifiedType(QualifiedType::CONST_VAR,
+                               VoidType::get(context));
+      } else {
+        assert(false && "case not handled");
+      }
+    } else {
+      assert(false && "case not handled");
+    }
   } else {
     assert(false && "case not handled");
   }
@@ -2416,8 +2427,7 @@ CallResolutionResult resolveGeneratedCall(Context* context,
   return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope);
 }
 
-static bool
-isNameOfCompilerGeneratedMethod(UniqueString name) {
+bool isNameOfCompilerGeneratedMethod(UniqueString name) {
   // TODO: Update me over time.
   if (name == USTR("init")       ||
       name == USTR("deinit")     ||
@@ -2500,6 +2510,7 @@ generateInitSignature(Context* context, const CompositeType* compType) {
                                                       false,
                                                       nullptr);
   ufsFormals.push_back(std::move(ufsReceiver));
+  formalTypes.push_back(QualifiedType(QualifiedType::REF, compType));
 
   // consult the fields to build up the remaining untyped formals
   const bool useGenericDefaults = false;
