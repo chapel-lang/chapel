@@ -1,6 +1,218 @@
 Release Changes List
 ====================
 
+[*** Tips for contributors:
+ - Please provide documentation links using the following base URL:
+   https://chapel-lang.org/docs/1.26/
+  - If you've merged a PR by an external developer, please make sure I
+    add their name to the CONTRIBUTORS file
+  - The first several categories here are for things that a user would
+    care about or could perceive; things that are specific to
+    developers follow at the end.
+  - See the descriptions following each section for how I think of them
+    when deciding where to place items
+
+version 1.26.0
+==============
+
+Twenty-ninth public release of Chapel, March 31, 2022
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+[feel free to leave this to me to roll up]
+
+Packaging / Configuration Changes
+---------------------------------
+[user-facing changes to how we bundle, distribute, configure Chapel releases]
+
+Syntactic / Naming Changes
+--------------------------
+[user-facing changes to syntax or names of things in the language]
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+[changes to existing language features]
+
+New Features
+------------
+[brand new language features that did not exist before]
+
+Feature Improvements
+--------------------
+[improvements to existing features that didn't change their behavior]
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+[language features that have been deprecated, marked unstable, or removed]
+
+Namespace Changes
+-----------------
+[changes to language-level namespaces (typically moving things from
+internal modules to standard or package)]
+
+Name Changes in Libraries
+-------------------------
+[changes of user-facing names in standard or package modules]
+
+Deprecated / Removed Library Features
+-------------------------------------
+[deprecated or removed features within standard or package modules]
+
+Standard Library Modules
+------------------------
+[improvements or changes to standard modules]
+
+Package Modules
+---------------
+[improvements or changes to package modules]
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+[improvements or changes to standard domain map modules]
+
+Tool Improvements
+-----------------
+[improvements to the tools (mason, c2chapel, chplvis, etc.)]
+
+Performance Optimizations / Improvements
+----------------------------------------
+[improvements to performance of generated executables]
+
+Compilation-Time / Generated Code Improvements
+----------------------------------------------
+[improvements in compile-time or generated code]
+
+Memory Improvements
+-------------------
+[improvements in memory utilization of generated executables]
+
+Documentation
+-------------
+[improvements to user-facing documentation]
+
+Syntax Highlighting
+-------------------
+[improvements to our syntax highlighters]
+
+Example Codes
+-------------
+[improvements or changes to test/release/examples/*]
+
+Portability
+-----------
+[improvements in terms of the portability of Chapel]
+
+GPU Computing
+-------------
+[improvements in Chapel's ability to target GPUs]
+
+Compiler Improvements
+---------------------
+[improvements to the compiler that a user would care about or notice]
+
+Compiler Flags
+--------------
+[changes to user-facing compiler flags]
+
+Generated Executable Flags
+--------------------------
+[changes to flags on the generated executables]
+
+Runtime Library Changes
+-----------------------
+[user-facing changes to the runtime library]
+
+Launchers
+---------
+[user-facing changes to the launchers]
+
+Error Messages / Semantic Checks
+--------------------------------
+[improvements to, or new, error messages or semantic checks]
+
+Bug Fixes
+---------
+[general bug fixes]
+
+Bug Fixes for Build Issues
+--------------------------
+[bug fixes w.r.t. building Chapel]
+
+Bug Fixes for Libraries
+-----------------------
+[bug fixes w.r.t. the standard/package modules]
+
+Bug Fixes for Tools
+-------------------
+[bug fixes w.r.t. the tools]
+
+Platform-specific Bug Fixes
+---------------------------
+[bug fixes that are specific to a given platform]
+
+Third-Party Software Changes
+----------------------------
+[changes to our bundled third-party software]
+
+[*** The following categories are for things that aren't particularly
+interesting to the end-user, but might be to an external developer
+***]
+
+Developer-oriented changes: Process
+-----------------------------------
+[changes to our process that an external developer would need to know]
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+[changes to documentation that's targeted at developers]
+
+Developer-oriented changes: Naming Changes
+------------------------------------------
+[changes to names that are not user-facing that a developer may want to know]
+
+Developer-oriented changes: Module changes
+------------------------------------------
+[changes to internal modules, or to other modules that are not user-facing]
+
+Developer-oriented changes: Performance improvements
+----------------------------------------------------
+[changes to performance that are not user-facing (e.g., enabled by a
+developer flag?)]
+
+Developer-oriented changes: Makefile / Build-time changes
+---------------------------------------------------------
+[changes to the makefiles or how we build that another developer
+might care about]
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+[additions or changes to developer-only compiler flags]
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+[improvements or major changes to the compiler that another developer
+might care about]
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+[improvements or major changes to the runtime that another developer
+might care about]
+
+Developer-oriented changes: Testing System
+------------------------------------------
+[improvements or major changes to the test system that another
+developer might care about]
+
+Developer-oriented changes: Tool Improvements
+---------------------------------------------
+[improvements or major changes to a tool that another developer might
+care about]
+
+Developer-oriented changes: Utilities
+-------------------------------------
+[changes to utility scripts that another developer might care about]
+
+
 version 1.25.1
 ==============
 
