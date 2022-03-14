@@ -114,15 +114,20 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
 }
 
 proc main() {
-  runExample(1,1,1, 1,1,1);
+  on here.getChild(1) {
+    var dummy = [1,2,3]; // to ensure that the CUDA context is attached to the
+                         // thread
 
-  runExample(1,1,1, 2,2,2);
-  runExample(1,1,1, 2,3,4);
+    runExample(1,1,1, 1,1,1);
 
-  runExample(2,2,2, 1,1,1);
-  runExample(2,3,4, 1,1,1);
+    runExample(1,1,1, 2,2,2);
+    runExample(1,1,1, 2,3,4);
 
-  runExample(2,2,2, 2,2,2);
-  runExample(2,3,4, 2,3,4);
+    runExample(2,2,2, 1,1,1);
+    runExample(2,3,4, 1,1,1);
+
+    runExample(2,2,2, 2,2,2);
+    runExample(2,3,4, 2,3,4);
+  }
 }
 

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+grep 'Kernel launch' $2 | sort | uniq -c > $2.new
+mv $2.new $2
