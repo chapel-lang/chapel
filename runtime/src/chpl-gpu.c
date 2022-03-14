@@ -79,59 +79,14 @@ void chpl_gpu_init() {
 
     CUDA_CALL(cuDeviceGet(&device, i));
     CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+    CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
 
     chpl_gpu_primary_ctx[i] = context;
-
-    unsigned int flags = 0;
-    int state = -1;
-    CUDA_CALL(cuDevicePrimaryCtxGetState(device, &flags, &state));
-    printf("context: %p, i: %d, flags: %u, state: %d\n", (void*)context, i, flags, state);
   }
 }
 
-/*void chpl_gpu_init() {*/
-  /*CUdevice    device;*/
-  /*CUcontext   context;*/
-  /*int         devCount;*/
-
-  /*CHPL_GPU_LOG("Initializing GPU\n");*/
-
-  /*// CUDA initialization*/
-  /*CUDA_CALL(cuInit(0));*/
-
-  /*CUDA_CALL(cuDeviceGetCount(&devCount));*/
-  
-  /*printf("initing gpu on a task on subloc %d\n", chpl_task_getRequestedSubloc());*/
-
-  /*CUDA_CALL(cuDeviceGet(&device, 0));*/
-
-  /*// Create driver context*/
-  /*// TODO CUDA documentation recommends using cuDevicePrimaryCtxRetain instead:*/
-  /*//*/
-  /*unsigned int flags = 0;*/
-  /*int state = -1;*/
-  /*CUDA_CALL(cuDevicePrimaryCtxGetState(device, &flags, &state));*/
-  /*printf("flags: %u, state: %d\n", flags, state);*/
-  /*CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));*/
-  /*CUDA_CALL(cuDevicePrimaryCtxGetState(device, &flags, &state));*/
-  /*printf("flags: %u, state: %d\n", flags, state);*/
-
-  /*CUDA_CALL(cuCtxPushCurrent(context));*/
-  /*CUDA_CALL(cuDevicePrimaryCtxGetState(device, &flags, &state));*/
-  /*printf("flags: %u, state: %d\n", flags, state);*/
-  /*[>CUDA_CALL(cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, device));<]*/
-
-  /*CUcontext cuda_context = NULL;*/
-  /*cuCtxGetCurrent(&cuda_context);*/
-  /*if (cuda_context == NULL) {*/
-    /*chpl_internal_error("CUDA context creation failed\n");*/
-  /*}*/
-/*}*/
-
-inline static void chpl_gpu_ensure_context() {
+static void chpl_gpu_ensure_context() {
   CUcontext next_context = chpl_gpu_primary_ctx[chpl_task_getRequestedSubloc()-1];
-
-  printf("will switch. subloc %d, context %p\n", chpl_task_getRequestedSubloc(), next_context);
 
   if (!chpl_gpu_has_context()) {
     CUDA_CALL(cuCtxPushCurrent(next_context));
@@ -142,7 +97,6 @@ inline static void chpl_gpu_ensure_context() {
     if (cur_context == NULL) {
       chpl_internal_error("Unexpected GPU context error");
     }
-
 
     if (cur_context != next_context) {
       CUcontext popped;
