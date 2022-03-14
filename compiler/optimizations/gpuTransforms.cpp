@@ -82,20 +82,20 @@ static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
   return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
 }
 
+// This is primarily to handle the indexOfInterest generated for promoted
+// expressions. That symbol is a ref that's defined outside the for loop, but it
+// is def'd and use'd only inside the block. Moreover, one of its defs is
+// actually redundant and should be removed. However at this stage in the
+// compilation it is not. The bottom line is, that ref could actually just be a
+// local variable in the loop body. So, we handle that specially to avoid
+// passing that as an argument to the GPU kernel.
+// TODO: investigate whether that def is removed later in the compilation.
+// Ideally move GPU transforms after that pass
 static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
-  if (!sym->hasFlag(FLAG_TEMP)) {
-    return false;
-  }
-
-  if (isDefinedInTheLoop(sym, loop)) {
-    return false;
-  }
-
-  if (!sym->isRef()) {
-    return false;
-  }
-
-  if (!isVarSymbol(sym)) {
+  if (isDefinedInTheLoop(sym, loop) ||
+      !sym->hasFlag(FLAG_TEMP)      ||
+      !sym->isRef()                 ||
+      !isVarSymbol(sym)) {
     return false;
   }
 
