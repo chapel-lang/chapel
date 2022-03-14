@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -83,7 +83,14 @@ char** chpl_create_pals_cmd(int argc, char* argv[], int32_t numLocales,
   int largv_len = 0;
 #define APPEND_LARGV(arg) chpl_append_to_largv(&largc, &largv, &largv_len, arg)
 
-  APPEND_LARGV("cray");
+  //
+  // Some systems using the PALS launcher have it behind a `cray`
+  // utility wrapper, and some do not.  Adapt to circumstances.
+  //
+  if (chpl_find_executable("cray") != NULL) {
+    APPEND_LARGV("cray");
+  }
+
   APPEND_LARGV("mpiexec");
 
   if (verbosity < 2) {

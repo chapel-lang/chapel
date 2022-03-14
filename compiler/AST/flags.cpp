@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -162,7 +162,7 @@ static void viewFlagsHelper(BaseAST* ast, Symbol* sym, const char* msg) {
   printf("%d: %s %d\n", ast->id, msg, sym->id);
   viewSymbolFlags(sym);
 }
-  
+
 void viewFlags(BaseAST* ast) {
   if (!viewFlagsShort && !viewFlagsComment)
     viewFlagsName = true;

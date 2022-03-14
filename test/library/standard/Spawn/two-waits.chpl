@@ -8,7 +8,7 @@ if pipes then
   buffer = true;
 
 var process = if pipes
-              then spawn(['ls', 'two-waits.chpl'], stdout=PIPE, stderr=PIPE)
+              then spawn(['ls', 'two-waits.chpl'], stdout=pipeStyle.pipe, stderr=pipeStyle.pipe)
               else spawn(['ls', 'two-waits.chpl']);
 
 

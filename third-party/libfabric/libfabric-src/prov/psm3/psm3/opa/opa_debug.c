@@ -67,10 +67,11 @@
 #include <fcntl.h>
 #include <ucontext.h>
 #include "opa_user.h"
+#include "psm_user.h"
 #include "../psm_log.h"
 
-unsigned hfi_debug = __HFI_INFO;
-char *__hfi_mylabel = NULL;
+unsigned hfi_debug = __HFI_DEBUG_DEFAULT;
+char __hfi_mylabel[1024];
 int __hfi_myrank = -1;
 int __hfi_myrank_count = -1;
 int __hfi_mylocalrank = -1;
@@ -80,7 +81,6 @@ static void init_hfi_mylabel(void) __attribute__ ((constructor));
 static void init_hfi_backtrace(void) __attribute__ ((constructor));
 static void init_hfi_dbgfile(void) __attribute__ ((constructor));
 static void fini_hfi_backtrace(void) __attribute__ ((destructor));
-static void fini_hfi_mylabel(void) __attribute__ ((destructor));
 static struct sigaction SIGSEGV_old_act;
 static struct sigaction SIGBUS_old_act;
 static struct sigaction SIGILL_old_act;
@@ -142,14 +142,13 @@ static void hfi_brake_debug(void)
 
 static void init_hfi_mylabel(void)
 {
-	char lbl[1024];
 	char hostname[80];
 	char *e;
 	/* By default, try to come up with a decent default label, it will be
 	 * overridden later.  Try getting rank, if that's not available revert to
 	 * pid. */
 	gethostname(hostname, 80);
-	lbl[0] = '\0';
+	__hfi_mylabel[0] = '\0';
 	hostname[sizeof(hostname) - 1] = '\0';
 
 #if 0
@@ -216,19 +215,14 @@ static void init_hfi_mylabel(void)
 		unsigned long val;
 		val = strtoul(e, &ep, 10);
 		if (ep != e) {	/* valid conversion */
-			snprintf(lbl, 1024, "%s:rank%lu", hostname, val);
+			snprintf(__hfi_mylabel, sizeof(__hfi_mylabel),
+				"%s:rank%lu", hostname, val);
 			__hfi_myrank = val;
 		}
 	}
-	if (lbl[0] == '\0')
-		snprintf(lbl, 1024, "%s:pid%u", hostname, getpid());
-	__hfi_mylabel = strdup(lbl);
-}
-
-static void fini_hfi_mylabel(void)
-{
-	if(__hfi_mylabel != NULL)
-		free(__hfi_mylabel);
+	if (__hfi_mylabel[0] == '\0')
+		snprintf(__hfi_mylabel, sizeof(__hfi_mylabel),
+			"%s:pid%u", hostname, getpid());
 }
 
 /* FIXME: This signal handler does not conform to the posix standards described
@@ -414,7 +408,8 @@ static void init_hfi_dbgfile(void)
 
 void hfi_set_mylabel(char *label)
 {
-	__hfi_mylabel = label;
+	strncpy(__hfi_mylabel, label, sizeof(__hfi_mylabel));
+	__hfi_mylabel[sizeof(__hfi_mylabel)-1] = '\0';
 }
 
 char *hfi_get_mylabel()
@@ -453,3 +448,32 @@ static void fini_hfi_backtrace(void)
     (void)sigaction(SIGTERM, &SIGTERM_old_act, NULL);
   }
 }
+
+void hfi_dump_buf(uint8_t *buf, uint32_t len)
+{
+	int i, j;
+	for (i=0; i<len; i += 16 ) {
+		fprintf(__hfi_dbgout, "%s: 0x%04x:", __hfi_mylabel, i);
+		for (j=0; j<16 && i+j < len; j++)
+			fprintf(__hfi_dbgout, " %02x", (unsigned)buf[i+j]);
+		fprintf(__hfi_dbgout, "\n");
+	}
+}
+
+#ifdef PSM_CUDA
+void hfi_dump_gpu_buf(uint8_t *buf, uint32_t len)
+{
+	int i, j;
+	uint8_t hbuf[1024];
+
+	for (i=0; i<len; i += 16 ) {
+		fprintf(__hfi_dbgout, "%s: 0x%04x:", __hfi_mylabel, i);
+		if (0 == i % 1024)
+			PSMI_CUDA_CALL(cuMemcpyDtoH, hbuf, (CUdeviceptr)buf,
+                                                min(len-i, 1024));
+		for (j=0; j<16 && i+j < len; j++)
+			fprintf(__hfi_dbgout, " %02x", (unsigned)hbuf[i%1024+j]);
+		fprintf(__hfi_dbgout, "\n");
+	}
+}
+#endif

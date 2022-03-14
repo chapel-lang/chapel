@@ -1,0 +1,1 @@
+notsupportedBulkAdd-assoc.chpl:5: error: incompatible argument(s) or this domain type does not support 'bulkAdd'

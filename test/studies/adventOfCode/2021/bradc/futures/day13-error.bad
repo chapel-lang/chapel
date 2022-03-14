@@ -1,0 +1,3 @@
+day13-error.chpl:5: error: Unable to resolve type of if-expression
+note: 'then' branch returns type "bool"
+note: 'else' branch returns type "_ir_chpl_promo2_isTrue"

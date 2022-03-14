@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,7 +34,7 @@ namespace chapel {
     printer->Print("enum $name$ {\n",
                    "name", GetEnumName(descriptor_));
     printer->Indent();
-    
+
     for (int i = 0; i < descriptor_->value_count(); i++) {
       printer->Print("$name$ = $number$,\n",
                      "name", descriptor_->value(i)->name(),
@@ -42,8 +42,8 @@ namespace chapel {
     }
 
     printer->Outdent();
-    printer->Print("}\n"); 
-              
+    printer->Print("}\n");
+
   }
 
 }  // namespace chapel

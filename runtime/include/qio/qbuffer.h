@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -122,7 +122,7 @@ typedef void (*qbytes_free_t)(struct qbytes_s*);
 typedef struct qbytes_s {
   // reference count which is atomically updated
   qbytes_refcnt_t ref_cnt;
-  // all of the other fields 
+  // all of the other fields
   void* data;
   int64_t len;
   qbytes_free_t free_function;
@@ -205,13 +205,13 @@ typedef struct qbuffer_part_s {
  *
  * Buffers are not inherently thread-safe and access should
  * be protected by some other means.
- * 
+ *
  * A buffer should be wrapped as a record; the destructor
  * should be called when it goes out of scope.
  */
 typedef struct qbuffer_s {
   qbytes_refcnt_t ref_cnt; // atomically updated
-  deque_t deque; // contains qbuffer_part_t s 
+  deque_t deque; // contains qbuffer_part_t s
   int64_t offset_start;
   int64_t offset_end;
 } qbuffer_t;
@@ -324,14 +324,14 @@ void qbuffer_iter_next_part(qbuffer_t* buf, qbuffer_iter_t* iter);
  */
 void qbuffer_iter_prev_part(qbuffer_t* buf, qbuffer_iter_t* iter);
 
-/* Move to the beginning of the current part 
+/* Move to the beginning of the current part
  */
 void qbuffer_iter_floor_part(qbuffer_t* buf, qbuffer_iter_t* iter);
 /* Move to the end of the current part.
  */
 void qbuffer_iter_ceil_part(qbuffer_t* buf, qbuffer_iter_t* iter);
 
-/* Advances an iterator using linear search. 
+/* Advances an iterator using linear search.
  * Returns qbuffer_start() if the resulting offset was < start
  *         qbuffer_end() if the resulting offset was >= end
  */
@@ -393,7 +393,7 @@ void qbuffer_iter_get(qbuffer_iter_t iter, qbuffer_iter_t end, qbytes_t** bytes_
   int64_t iter_offset_within = iter.offset - (qbp->end_offset - qbp->len_bytes);
   int64_t part_len = qbp->len_bytes - iter_offset_within;
   int64_t len = end.offset - iter.offset;
-  
+
   if( len > part_len ) len = part_len;
 
   *bytes_out = qbp->bytes;
@@ -422,8 +422,8 @@ int64_t qbuffer_len(qbuffer_t* buf)
 /* Turn a range from a qbuffer into an io-vector. Note that this contains
  * pointers into the qbuffer and is only valid until the qbuffer is changed...
  */
-qioerr qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
-                   size_t max_iov, struct iovec *iov_out, 
+qioerr qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
+                   size_t max_iov, struct iovec *iov_out,
                    qbytes_t** bytes_out /* can be NULL */,
                    size_t *iovcnt_out);
 

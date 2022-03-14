@@ -285,7 +285,7 @@ proc WrapperRectDom.dsiHigh               return whole.high;
 proc WrapperRectDom.dsiStride             return whole.stride;
 proc WrapperRectDom.dsiNumIndices         return whole.size;
 proc WrapperRectDom.dsiMember(indexx)     return whole.contains(indexx);
-proc WrapperRectDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
+override proc WrapperRectDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
 
 proc WrapperRectDom.dsiSerialWrite(f: Writer): void { f.write(whole); }
 

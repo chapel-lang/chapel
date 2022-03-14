@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,8 @@
 #include "stmt.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <vector>
 
 int classifyPrimitive(CallExpr *call, bool inLocal);
@@ -58,7 +60,7 @@ classifyPrimitive(CallExpr *call) {
   // ...
   #define PRIMITIVE_G(NAME, str)
   #define PRIMITIVE_R(NAME, str) case PRIM_ ## NAME:
-  #include "chpl/uast/PrimOpsList.h"
+  #include "chpl/uast/prim-ops-list.h"
   #undef PRIMITIVE_R
   #undef PRIMITIVE_G
     switch (call->primitive->tag) {
@@ -293,6 +295,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_GRIDDIM_X:
   case PRIM_GPU_GRIDDIM_Y:
   case PRIM_GPU_GRIDDIM_Z:
+  case PRIM_GPU_ALLOC_SHARED:
+  case PRIM_GPU_SYNC_THREADS:
   case PRIM_GET_REQUESTED_SUBLOC:
     return FAST_AND_LOCAL;
 

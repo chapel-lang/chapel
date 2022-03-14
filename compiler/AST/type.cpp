@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,10 +36,13 @@
 #include "iterator.h"
 #include "misc.h"
 #include "passes.h"
+#include "resolution.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
+
+#include "global-ast-vecs.h"
 
 #include <cmath>
 
@@ -119,6 +122,14 @@ FnSymbol* Type::getDestructor() const {
 
 void Type::setDestructor(FnSymbol* fn) {
   destructor = fn;
+}
+
+bool Type::isSerializable() {
+  if (isAggregateType(this)) {
+    return serializeMap.find(this->getValType()) != serializeMap.end();
+  }
+
+  return false;
 }
 
 Symbol* Type::getSubstitutionWithName(const char* name) const {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,7 +24,7 @@
 #include "CallExpr.h"
 #include "symbol.h"
 
-enum LocalityInfo { 
+enum LocalityInfo {
   UNKNOWN,  // it may be anything
   PENDING,  // we will make a decision later
   LOCAL,    // we know this is local

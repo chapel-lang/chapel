@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,9 @@ module ChapelHashing {
   use ChapelBase;
 
   proc chpl__defaultHashWrapper(x): int {
+    use Reflection;
+    if !canResolveMethod(x, "hash") then
+      compilerError("No hash function found for " + x.type:string);
     const hash = x.hash();
     return (hash & max(int)): int;
   }
@@ -133,32 +136,4 @@ module ChapelHashing {
     }
     return ret;
   }
-
-  // Is 'idxType' legal to create a default associative domain with?
-  // Currently based on the availability of hash().
-  // Enumerated and sparse domains are handled separately.
-  // Tuples and records also work, somehow.
-  proc chpl__validDefaultAssocDomIdxType(type idxType) param return false;
-
-  proc chpl__validDefaultAssocDomIdxType(type idxType) param where
-      // one check per an implementation of hash() above
-      isBoolType(idxType)     ||
-      isIntType(idxType)      ||
-      isUintType(idxType)    ||
-      isRealType(idxType)        ||
-      isImagType(idxType)        ||
-      isComplexType(idxType)     ||
-      idxType == chpl_taskID_t    ||
-      idxType == string           ||
-      idxType == bytes            ||
-      idxType == c_string         ||
-      isClassType(idxType)        ||
-      // these are handled differently
-      isEnumType(idxType)  ||
-      isTupleType(idxType)        ||
-      isRecordType(idxType)
-  {
-    return true;
-  }
-
 }

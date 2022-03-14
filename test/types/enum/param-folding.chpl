@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 // This used to result in an internal error during compilation,
 // due to a bug in function resolution.

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
+
 import optparse
 import os
 import sys
 
-from distutils.spawn import find_executable
-
-import chpl_platform, overrides
-from utils import error, memoize, warning
+import chpl_platform, chpl_locale_model, overrides
+from utils import which, error, memoize, warning
 
 
 #
@@ -16,13 +15,18 @@ from utils import error, memoize, warning
 # and CXX to compile things, for better or worse.
 #
 @memoize
-def validate_compiler(compiler_val):
+def validate_compiler(compiler_val, flag):
     if compiler_val != 'llvm':
         import chpl_home_utils
         chpl_home = chpl_home_utils.get_chpl_home()
         comp_makefile = os.path.join(chpl_home, 'make', 'compiler', 'Makefile.{0}'.format(compiler_val))
         if not os.path.isfile(comp_makefile):
             warning('Unknown compiler: "{0}"'.format(compiler_val))
+
+    if chpl_locale_model.get() == 'gpu' and flag == 'target':
+        if compiler_val != 'llvm':
+            error("The 'gpu' locale model can only be used with "
+                  "CHPL_TARGET_COMPILER=llvm.")
 
 
 
@@ -56,12 +60,12 @@ def should_consider_cc_cxx(flag):
     if default_llvm:
         return False
 
-    if (overrides.get('CHPL_HOST_COMPILER') != None or
-        overrides.get('CHPL_HOST_CC') != None or
-        overrides.get('CHPL_HOST_CXX') != None or
-        overrides.get('CHPL_TARGET_COMPILER') != None or
-        overrides.get('CHPL_TARGET_CC') != None or
-        overrides.get('CHPL_TARGET_CXX') != None):
+    if (overrides.get('CHPL_HOST_COMPILER') is not None or
+        overrides.get('CHPL_HOST_CC') is not None or
+        overrides.get('CHPL_HOST_CXX') is not None or
+        overrides.get('CHPL_TARGET_COMPILER') is not None or
+        overrides.get('CHPL_TARGET_CC') is not None or
+        overrides.get('CHPL_TARGET_CXX') is not None):
         # A compilation configuration setting was adjusted,
         # so require CHPL_HOST_CC etc rather than using CC
         return False
@@ -103,7 +107,7 @@ def get_compiler_from_cc_cxx():
                   "  {2} -> {3}\n"
                   "Set CHPL_HOST_COMPILER and CHPL_TARGET_COMPILER to the "
                   "desired compiler family".format(cc_val, cc_compiler,
-                      cxx_val, cxx_compiler))
+                                                   cxx_val, cxx_compiler))
             compiler_val = 'unknown'
 
     else:
@@ -121,7 +125,7 @@ def get_compiler_from_cc_cxx():
 
     if compiler_val == 'unknown':
         error("Could not infer CHPL_TARGET_COMPILER from "
-              "CC={0} CXX={1}".format(cc_val, cxx_val));
+              "CC={0} CXX={1}".format(cc_val, cxx_val))
     else:
         if warn and cc_val:
             error('CC is set but not CXX -- please set both\n')
@@ -138,7 +142,7 @@ def default_to_llvm(flag):
         import chpl_llvm
         has_llvm = chpl_llvm.get()
 
-        if has_llvm == 'bundled' or has_llvm  == 'system':
+        if has_llvm == 'bundled' or has_llvm == 'system':
             # Default to CHPL_TARGET_COMPILER=llvm when CHPL_LLVM!=none
             ret = True
 
@@ -165,7 +169,7 @@ def get(flag='host'):
             compiler_val = get_compiler_from_cc_cxx()
 
     if compiler_val:
-        validate_compiler(compiler_val)
+        validate_compiler(compiler_val, flag)
         return compiler_val
 
     prgenv_compiler = get_prgenv_compiler()
@@ -193,14 +197,14 @@ def get(flag='host'):
         elif platform_val.startswith('pwr'):
             compiler_val = 'ibm'
         elif platform_val == 'darwin' or platform_val == 'freebsd':
-            if find_executable('clang'):
+            if which('clang'):
                 compiler_val = 'clang'
             else:
                 compiler_val = 'gnu'
         else:
             compiler_val = 'gnu'
 
-    validate_compiler(compiler_val)
+    validate_compiler(compiler_val, flag)
     return compiler_val
 
 @memoize
@@ -225,11 +229,11 @@ def get_path_component(flag='host'):
 # where family-name corresponds to CHPL_TARGET_COMPILER etc settings e.g. gnu.
 # This table only includes the cases where it is reasonable to
 # infer the family from the command name.
-COMPILERS = [ ('gnu', 'gcc', 'g++'),
-              ('clang', 'clang', 'clang++'),
-              ('ibm', 'xlc', 'xlC'),
-              ('intel', 'icc', 'icpc'),
-              ('pgi', 'pgicc', 'pgc++') ]
+COMPILERS = [('gnu', 'gcc', 'g++'),
+             ('clang', 'clang', 'clang++'),
+             ('ibm', 'xlc', 'xlC'),
+             ('intel', 'icc', 'icpc'),
+             ('pgi', 'pgicc', 'pgc++')]
 
 # given a compiler command string, (e.g. "gcc" or "/path/to/clang++"),
 # figure out the compiler family (e.g. gnu or clang),
@@ -286,8 +290,9 @@ def get_compiler_name_cxx(compiler):
 
     return 'unknown-c++-compiler'
 
+
 def compiler_is_prgenv(compiler_val):
-  return compiler_val.startswith('cray-prgenv')
+    return compiler_val.startswith('cray-prgenv')
 
 # flag should be host or target
 # lang should be c or cxx (aka c++)
@@ -317,7 +322,7 @@ def get_compiler_command(flag, lang):
     # construct CHPL_HOST_CC / CHPL_TARGET_CXX etc
     varname = 'CHPL_' + flag_upper + '_' + lang_upper
 
-    command = overrides.get(varname, '');
+    command = overrides.get(varname, '')
     if command:
         return command.split()
 
@@ -354,6 +359,100 @@ def get_compiler_command(flag, lang):
                 command = chpl_llvm.get_llvm_clang(lang_upper)
 
     return command
+
+# Returns any -I options needed to find bundled headers
+#
+# Can include other compiler args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -I flags
+@memoize
+def get_bundled_compile_args(flag):
+    paths = [ ]
+
+    # TODO - port over third-party arg gathering
+    return paths
+
+# Returns any -I options needed for this compiler / system
+# to find headers
+#
+# Can include other compiler args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -I flags
+@memoize
+def get_system_compile_args(flag):
+    platform_val = chpl_platform.get(flag)
+    compiler_val = get(flag)
+
+    paths = [ ]
+
+    # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
+    if compiler_val == 'llvm' and flag == 'target':
+        import chpl_llvm
+        (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
+        paths.extend(comp_args)
+
+    # FreeBSD uses /usr/local but compilers don't search there by default
+    if platform_val == 'freebsd':
+        paths.append('-I/usr/local/include')
+
+    # Add Homebrew include directory if Homebrew is installed
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    if homebrew_prefix:
+        paths.append('-I' + homebrew_prefix + '/include')
+
+    return paths
+
+# Returns any -L options needed to find bundled libraries
+#
+# Can include other link args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -L flags
+@memoize
+def get_bundled_link_args(flag):
+    paths = [ ]
+
+    # TODO - port over third-party arg gathering
+    return paths
+
+# Returns any -L options needed for this compiler / system
+# to find libraries
+#
+# Can include other link args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -L flags
+@memoize
+def get_system_link_args(flag):
+    platform_val = chpl_platform.get(flag)
+    compiler_val = get(flag)
+
+    paths = [ ]
+
+    # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
+    if compiler_val == 'llvm' and flag == 'target':
+        import chpl_llvm
+        (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
+        paths.extend(link_args)
+
+    # FreeBSD uses /usr/local but compilers don't search there by default
+    if platform_val == 'freebsd':
+        paths.append('-L/usr/local/lib')
+
+    # Add Homebrew lib directory if Homebrew is installed
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    if homebrew_prefix:
+        paths.append('-L' + homebrew_prefix + '/lib')
+
+    return paths
+
+
 
 def validate_inference_matches(flag, lang):
     flag_upper = flag.upper()

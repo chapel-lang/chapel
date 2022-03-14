@@ -3,7 +3,7 @@ use BitOps;
  use MSBRadixSort;
  use Random;
  use Time;
- use CPtr;;
+ use CTypes;
 
  config const printStats = false;
  config const size = 10000;

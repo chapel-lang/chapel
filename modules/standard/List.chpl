@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -524,7 +524,10 @@ module List {
 
     pragma "no doc"
     proc _makeArray(size: int) {
-      return _ddata_allocate(eltType, size, initElts=false);
+      var callPostAlloc = false;
+      var ret = _ddata_allocate_noinit(eltType, size, callPostAlloc);
+      if callPostAlloc then _ddata_allocate_postalloc(ret, size);
+      return ret;
     }
 
     pragma "no doc"
@@ -1279,15 +1282,12 @@ module List {
 
     /*
       Return a zero-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found this method returns
-      the value `-1`.
+      is equal to `x`. If no such element can be found or if the list is empty,
+      this method returns the value `-1`.
 
       .. warning::
 
-        Calling this method on an empty list or with values of `start` or
-        `end` that are out of bounds will cause the currently running program
-        to halt. If the `--fast` flag is used, no safety checks will be
-        performed.
+        indexOf on lists is deprecated, use :proc:`find` instead.
 
       :arg x: An element to search for.
       :type x: `eltType`
@@ -1302,15 +1302,43 @@ module List {
       :return: The index of the element to search for, or `-1` on error.
       :rtype: `int`
     */
+    deprecated "indexOf on lists is deprecated, use :proc:`find` instead; please let us know if this is problematic for you."
     proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
+      return find(x, start, end);
+    }
 
+    /*
+      Return a zero-based index into this list of the first item whose value
+      is equal to `x`. If no such element can be found or if the list is empty,
+      this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of bounds
+        will cause the currently running program to halt. If the `--fast` flag is
+        used, no safety checks will be performed.
+
+      :arg x: An element to search for.
+      :type x: `eltType`
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the element to search for, or `-1` on error.
+      :rtype: `int`
+    */
+    proc const find(x: eltType, start: int=0, end: int=-1): int {
       param error = -1;
 
       if _size == 0 then
         return error;
 
       if boundsChecking {
-        const msg = " index for \"list.indexOf\" out of bounds: ";
+        const msg = " index for \"list.find\" out of bounds: ";
 
         if end >= 0 && !_withinBounds(end) then
           boundsCheckHalt("End" + msg + end:string);

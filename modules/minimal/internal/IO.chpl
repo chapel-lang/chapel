@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,7 +27,7 @@ module IO {
 
   export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):syserr {
     return qio_int_to_err(0);
-  } 
+  }
   export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
     return qio_int_to_err(0);
   }

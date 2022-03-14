@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "view.h"
+
+#include "global-ast-vecs.h"
 
 #include <map>
 #include <set>
@@ -1162,7 +1164,7 @@ static void getVisibleFnsFromUseList(const char*      name,
                 getVisibleFunctionsImpl(use->getRenamedSym(name),
                   call, mod->block, visInfo, visited, visibleFns, true);
               } else {
-                getVisibleFunctionsImpl(name, call, mod->block, visInfo, 
+                getVisibleFunctionsImpl(name, call, mod->block, visInfo,
                                     visited, visibleFns, true);
               }
             }

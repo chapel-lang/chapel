@@ -1,0 +1,3 @@
+deprecateGetd2exp.chpl:4: warning: get_d_2exp is deprecated in favor of bigint.getD2Exp, which returns (d, exp) instead of (exp, d).  Please use that method instead
+0.5
+7

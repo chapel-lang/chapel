@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,6 +35,8 @@
 #include <cstring>
 #include <algorithm>
 #include <vector>
+
+#include "global-ast-vecs.h"
 
 // remember these so we can update their labels' iterResumeGoto
 Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;

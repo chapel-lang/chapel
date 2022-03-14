@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -76,7 +76,7 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
           std::vector<SymExpr*> syms;
           collectSymExprsFor(exprToMove, toSymExpr(ce->get(1))->symbol(), syms);
           for_vector(SymExpr, s, syms) {
-              safeExprCache[e] = false;
+              safeExprCache[s] = false;
               return false;
           }
         }

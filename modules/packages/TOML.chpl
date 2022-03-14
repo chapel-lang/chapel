@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -127,6 +127,7 @@ module TomlParser {
   import IO.channel;
   private use TOML.TomlReader;
   import TOML.TomlError;
+  use Sort;
 
   /* Prints a line by line output of parsing process */
   config const debugTomlParser = false;
@@ -919,8 +920,10 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValues(f: channel, v: borrowed Toml) throws {
-      for (key, val) in v.A.items() {
-        var value = val!;
+      var keys = v.A.keysToArray();
+      sort(keys);
+      for key in keys {
+        var value = v.A[key]!;
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
@@ -974,8 +977,10 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValuesJSON(f: channel, v: borrowed Toml, in indent=0) throws {
-      for ((key, val), i) in zip(v.A.items(), 1..v.A.size) {
-        var value = val!;
+      var keys = v.A.keysToArray();
+      sort(keys);
+      for (key, i) in zip(keys, 1..v.A.size) {
+        var value = v.A[key]!;
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {

@@ -1,0 +1,4 @@
+--debug < day20.test  # day20-test.good
+--debug < day20.in
+--numSteps=50 < day20.test  # day20a-test.good
+--numSteps=50 < day20.in    # day20a.good

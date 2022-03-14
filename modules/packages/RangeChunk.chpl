@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,23 +22,23 @@
    The ``RangeChunk`` module assists with dividing a bounded ``range`` of any ``idxType``
    and stride into ``numChunks``. Chunks are 0-based, with the ``0`` index chunk including
    ``range.low`` and the ``numChunks - 1`` index chunk including ``range.high``.
-   
+
    Chunks are accessible in several ways:
 
      * as a range, through an iterator
      * as a range, through a query
      * as a tuple of 0-based orders into the range, through an iterator
      * as a tuple of 0-based orders into the range, through a query
-   
+
    Given that it will be uncommon for the length of a given ``range`` to be divisible by
    ``numChunks``, there are three different remainder policies available, expressed
    by the enum ``RemElems``.
-*/  
+*/
 module RangeChunk {
 
   /*
      ``RemElems`` specifies the distribution of remainder elements:
-       
+
        - **Thru**: default policy; remainder elements will be distributed throughout
          ``numChunks`` chunks
        - **Pack**: chunks at the front will receive ``ceil(range.size / numChunks)``
@@ -55,7 +55,7 @@ module RangeChunk {
   private use RemElems;
   private use BoundedRangeType;
 
-  
+
   /*
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a range. The remainders will be distributed according to ``remPol``.
@@ -87,19 +87,19 @@ module RangeChunk {
 
   /*
     Iterates through a range ``r``, which is blocked up in repeating ```nTasks```
-    blocks of size ```blockSize```. Blocks are indexed from 0..nTasks-1 and the  
+    blocks of size ```blockSize```. Blocks are indexed from 0..nTasks-1 and the
     iterator emits all blocks with index ```tid``` in a cyclic manner.
   */
-  //  Eg : 
+  //  Eg :
   //  1. For a range 1..15 and 4 blocks of size 2
   //  2. The block indexes range : 0-2
   //  3. The range is blocked up as following block indexes :
   //      1,2, 3,4, 5,6, 7,8, 9,10, 11,12, 13,14, 15
-  //       0    1    2    3    0      1      2     3 
+  //       0    1    2    3    0      1      2     3
   //  4. For a desired tid 2, the following chunks are emitted
   //      (5,6) (13,14)
   iter blockCyclicChunks(r: range(?t, boundedType=BoundedRangeType.bounded,
-                         ?strided), blockSize: integral, tid: integral, 
+                         ?strided), blockSize: integral, tid: integral,
                          nTasks: integral) {
     if (tid >= nTasks) then
       halt("Parameter tid must be < nTasks " +
@@ -120,7 +120,7 @@ module RangeChunk {
     if firstBlockStart > r.high || firstBlockStart < r.low then return;
 
     var strideToNextBlock = blockStride * nTasks;
-  
+
     if rangeStride > 0 {
       for blockStart in firstBlockStart..high by strideToNextBlock {
         var blockEnd = min(high, blockStart + blockStride - 1);
@@ -189,7 +189,7 @@ module RangeChunk {
       when Thru {
         return chunkOrderThru(nElems, nChunks, i);
       }
-      when Pack { 
+      when Pack {
         var chunkSize = nElems / nChunks;
         if chunkSize * nChunks != nElems then
           chunkSize += 1;
@@ -232,7 +232,7 @@ module RangeChunk {
     var end = start + chunkSize - 1;
     if end >= nElems then
       end = nElems - 1;
-    return (start, end); 
+    return (start, end);
   }
 
   pragma "no doc"

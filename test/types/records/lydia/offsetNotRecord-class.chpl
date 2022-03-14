@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 class Foo {
   var x: int;
 }

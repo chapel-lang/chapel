@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,7 +28,7 @@
 // duplication. If necessary, a locale model using this file
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpMem {
-  private use ChapelStandard, SysCTypes, CPtr;
+  private use ChapelStandard, CTypes;
 
   //////////////////////////////////////////
   //
@@ -53,8 +53,8 @@ module LocaleModelHelpMem {
   proc chpl_here_alloc(size:int(64), md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
-    return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
+      extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    return chpl_mem_alloc(size.safeCast(c_size_t), md + chpl_memhook_md_num());
   }
 
   pragma "allocator"
@@ -63,8 +63,8 @@ module LocaleModelHelpMem {
   proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
-    return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
+      extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    return chpl_mem_alloc(size.safeCast(c_size_t), md + chpl_memhook_md_num());
   }
 
   pragma "allocator"
@@ -74,9 +74,9 @@ module LocaleModelHelpMem {
                                md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_memalign(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
-    return chpl_mem_memalign(alignment.safeCast(size_t),
-                             size.safeCast(size_t),
+    extern proc chpl_mem_memalign(alignment:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    return chpl_mem_memalign(alignment.safeCast(c_size_t),
+                             size.safeCast(c_size_t),
                              md + chpl_memhook_md_num());
   }
 
@@ -86,8 +86,8 @@ module LocaleModelHelpMem {
   proc chpl_here_calloc(size:integral, number:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
-    return chpl_mem_calloc(number.safeCast(size_t), size.safeCast(size_t), md + chpl_memhook_md_num());
+      extern proc chpl_mem_calloc(number:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    return chpl_mem_calloc(number.safeCast(c_size_t), size.safeCast(c_size_t), md + chpl_memhook_md_num());
   }
 
   pragma "allocator"
@@ -95,8 +95,8 @@ module LocaleModelHelpMem {
   proc chpl_here_realloc(ptr:c_void_ptr, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
-    return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
+      extern proc chpl_mem_realloc(ptr:c_void_ptr, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    return chpl_mem_realloc(ptr, size.safeCast(c_size_t), md + chpl_memhook_md_num());
   }
 
   pragma "fn synchronization free"
@@ -104,8 +104,8 @@ module LocaleModelHelpMem {
   proc chpl_here_good_alloc_size(min_size:integral): min_size.type {
     pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_good_alloc_size(min_size:size_t) : size_t;
-    return chpl_mem_good_alloc_size(min_size.safeCast(size_t)).safeCast(min_size.type);
+      extern proc chpl_mem_good_alloc_size(min_size:c_size_t) : c_size_t;
+    return chpl_mem_good_alloc_size(min_size.safeCast(c_size_t)).safeCast(min_size.type);
   }
 
   pragma "locale model free"

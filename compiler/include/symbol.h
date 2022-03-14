@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -675,6 +675,45 @@ public:
   void  replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
   void  codegenDef()                                      override;
 };
+
+inline bool Symbol::hasFlag(Flag flag) const {
+  CHECK_FLAG(flag);
+  return flags[flag];
+}
+
+inline void Symbol::addFlag(Flag flag) {
+  CHECK_FLAG(flag);
+  flags.set(flag);
+}
+
+inline void Symbol::copyFlags(const Symbol* other) {
+  flags |= other->flags;
+  qual   = other->qual;
+}
+
+inline void Symbol::removeFlag(Flag flag) {
+  CHECK_FLAG(flag);
+  flags.reset(flag);
+}
+
+inline bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
+  return hasFlag(aflag) || hasFlag(bflag);
+}
+
+inline bool Symbol::isRef() {
+  QualifiedType q = qualType();
+  return (type != NULL) && (q.isRef() || type->symbol->hasFlag(FLAG_REF));
+}
+
+inline bool Symbol::isWideRef() {
+  QualifiedType q = qualType();
+  return (q.isWideRef() || type->symbol->hasFlag(FLAG_WIDE_REF));
+}
+
+inline bool Symbol::isRefOrWideRef() {
+  return isRef() || isWideRef();
+}
+
 
 /************************************* | **************************************
 *                                                                             *

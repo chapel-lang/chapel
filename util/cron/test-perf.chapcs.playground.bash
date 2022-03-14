@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test fix for qthreads memory consistency issues on PowerPC and ARM
-GITHUB_USER=ronawho
-GITHUB_BRANCH=qthread-arm-fix
-SHORT_NAME=qthread-arm-fix
-START_DATE=12/07/21
+# Test not localizing non-primitives
+GITHUB_USER=bradcray
+GITHUB_BRANCH=no-localize-non-primitives
+SHORT_NAME=no-localize-non-primitives
+START_DATE=03/12/22
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

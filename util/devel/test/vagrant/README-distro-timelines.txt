@@ -2,6 +2,14 @@ x means reached end of life
 - means end of life soon
   (last updated: 2019-01-11)
 
+Alpine Linux
+  3.14  2023-05-01
+  3.15  2023-11-01
+
+Amazon Linux
+  2    EOL June 30, 2023
+  2022
+
 CentOS -- see https://wiki.centos.org/About/Product
        -- and https://app.vagrantup.com/centos/
 x 5 full updates until Jan 2014, maintenance until Mar 2017
@@ -41,7 +49,7 @@ x 29 EOL Nov 2019
 x 30 EOL May 2020
 x 31 EOL Nov 2020
 x 32 EOL May 2021
-  33
+  33 EOL Nov 2021
   34
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html
@@ -79,7 +87,7 @@ x 12.04 "Precise Pangolin"  LTS until Apr 2017
 x 14.04 "Trusty Tahir"      LTS until Apr 2019
 x 16.04 "Xenial Xerus"      LTS until Apr 2021
   18.04 "Bionic Beaver"     LTS until April 2023
-  20.04 "Foral Fossa"       LTS until April 2030
+  20.04 "Focal Fossa"       LTS until April 2030
 
 non-LTS:
 x 14.10 "Utopic Unicorn"    EOL July 2015

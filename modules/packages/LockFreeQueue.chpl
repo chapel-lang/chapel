@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -90,7 +90,7 @@
         n += 1;
         if n % GC_THRESHOLD == 0 then lfq.tryReclaim();
       }
-    } 
+    }
 
   Also provided, is a utility method for draining the stack of all elements,
   called ``drain``. This iterator will implicitly call ``tryReclaim`` at the
@@ -101,9 +101,9 @@
     var lfq = new LockFreeQueue(int);
     forall i in 1..N with (var tok = lfq.getToken()) do lfq.enqueue(i,tok);
     var total = + reduce lfq.drain();
-  
-  .. [#] Michael, Maged M., and Michael L. Scott. 
-      Simple, Fast, and Practical Non-Blocking and Blocking Concurrent Queue Algorithms. 
+
+  .. [#] Michael, Maged M., and Michael L. Scott.
+      Simple, Fast, and Practical Non-Blocking and Blocking Concurrent Queue Algorithms.
       No. TR-600. ROCHESTER UNIV NY DEPT OF COMPUTER SCIENCE, 1995.
 */
 module LockFreeQueue {

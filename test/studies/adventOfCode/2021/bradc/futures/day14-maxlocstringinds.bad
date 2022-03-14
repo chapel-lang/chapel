@@ -1,0 +1,1 @@
+day14-maxlocstringinds.chpl:6: error: 'max(type t)' is not defined for t=string

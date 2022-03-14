@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -658,7 +658,7 @@ static void printErrorFooter(bool guess) {
   if (!developer && !err_user) {
     print_error("\n\n"
       "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
-      "and we're sorry for the hassle.  We would appreciate your reporting this bug -- \n"
+      "and we're sorry for the hassle.  We would appreciate your reporting this bug --\n"
       "please see %s for instructions.  In the meantime,\n"
       "the filename + line number above may be useful in working around the issue.\n\n",
       help_url);
@@ -786,6 +786,18 @@ void handleError(const BaseAST* ast, const char *fmt, ...) {
 }
 
 void handleError(astlocT astloc, const char *fmt, ...) {
+  va_list args;
+
+  va_start(args, fmt);
+
+  vhandleError(NULL, astloc, fmt, args);
+
+  va_end(args);
+}
+
+void handleError(chpl::Location loc, const char *fmt, ...) {
+  astlocT astloc(loc.firstLine(), loc.path().c_str());
+
   va_list args;
 
   va_start(args, fmt);

@@ -1,0 +1,2 @@
+< day19.test    # day19a-test.good
+# Takes longer than ideal in nightly testing:  < day19.in  

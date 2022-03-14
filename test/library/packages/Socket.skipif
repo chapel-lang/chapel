@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess
+from pkg_resources import parse_version
+
+platform = os.getenv('CHPL_TARGET_PLATFORM')
+
+skip = False
+
+if platform != 'linux64':
+    skip = True
+else:
+    v = subprocess.check_output(['pkg-config', '--modversion', 'libevent'])
+    v = v.rstrip()
+    v = str(v, encoding='utf-8', errors='surrogateescape')
+
+    if parse_version(v) < parse_version('2.1'):
+        # skip, version not is compatible.
+        skip = True
+
+    if os.getenv('CHPL_TASKS') == 'fifo' or os.getenv('CHPL_TARGET_COMPILER') == 'llvm':
+        skip = True
+
+
+print(skip)

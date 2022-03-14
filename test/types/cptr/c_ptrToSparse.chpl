@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 var D = {1..3};
 var DS: sparse subdomain(D) = {2};

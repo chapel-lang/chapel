@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -154,13 +154,6 @@ class RecordReader {
     }
   }
 
-  pragma "no doc"
-  pragma "last resort"
-  proc init(type t, myReader, mRegexp) /* throws */ {
-    compilerWarning("RecordReader.init(): 'mRegexp' is deprecated; please use 'mRegex'");
-    init(t, myReader, mRegexp);
-  }
-
   /* Create a string regular expression for the record type :type:`t` attached to
      this RecordReader.
 
@@ -176,12 +169,6 @@ class RecordReader {
       accum = accum + getFieldName(t, n) + "\\s*(.*?)" + "\\s*";
     }
     return accum;
-  }
-
-  pragma "no doc"
-  proc createRegexp() {
-    compilerWarning("RecordReader: 'createRegexp' is deprecated; please use 'createRegex' instead.");
-    return createRegex();
   }
 
   /* Yield records for the range offst..offst+len, but assumes that the
@@ -241,7 +228,7 @@ class RecordReader {
     // This will only loop through  at most one time before returning
     // FEATURE REQUEST: Make this so we don't need a for loop here
     for m in myReader.matches(matchRegex, num_fields, 1) {
-      if (((m(0).offset) >= offst+len) && len != -1) { // rec.start >= start + len
+      if (((m(0).byteOffset) >= offst+len) && len != -1) { // rec.start >= start + len
         // Then break and dont return any record
         return (rec, false);
       }

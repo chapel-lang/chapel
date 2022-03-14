@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,11 +51,11 @@ GenRet AList::codegen(const char* separator) {
 /*
 LLVMRet AList::genLLVM(GenInfo info) {
   LLVMRet ret = {NULL, NULL, NULL, NULL};
-  
+
   for_alist(node, *this) {
     node->genLLVM(info);
   }
-  
+
   return ret;
 }
 */

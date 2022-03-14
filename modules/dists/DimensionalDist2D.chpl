@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -490,6 +490,30 @@ proc DimensionalDist2D.dsiClone(): _to_unmanaged(this.type) {
   return _to_unmanaged(this);
 }
 
+//== targetLocales, localSubdomain
+
+proc DimensionalDist2D.dsiTargetLocales() const ref return targetLocales;
+proc DimensionalDom.dsiTargetLocales()    const ref return dist.targetLocales;
+proc DimensionalArr.dsiTargetLocales()    const ref return dom.dist.targetLocales;
+
+proc DimensionalDom.dsiHasSingleLocalSubdomain() param return true;
+proc DimensionalArr.dsiHasSingleLocalSubdomain() param return true;
+
+proc DimensionalDom.dsiLocalSubdomain(loc: locale) {
+  import ChplConfig;
+  if ChplConfig.CHPL_COMM != "none" then
+    compilerError("DimensionalDist2D.dsiLocalSubdomain() is currently not implemented for non-local compilation");
+  return whole;
+  // for multilocale, start here:
+  // const (locIds, foundIt) = _CurrentLocaleToLocIDs(dist.targetLocales, loc);
+  // var result: whole.type;
+  // if !foundIt then return empty result;
+}
+
+proc DimensionalArr.dsiLocalSubdomain(loc: locale) {
+  return dom.dsiLocalSubdomain(loc);
+}
+
 
 //== privatization
 
@@ -605,13 +629,14 @@ proc DimensionalDist2D.dsiIndexToLocale(indexx: indexT): locale {
 // when the targetLocales array is assigned, so this is at most a constant
 // factor of extra time on top of that.
 //
-proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
+private proc _CurrentLocaleToLocIDs(targetLocales, desiredLocale)
+                                     : (targetLocales.rank*locIdT, bool)
 {
   var result: targetLocales.rank * locIdT;
   // guard updates to 'result' to ensure atomicity of updates
   var gotresult$: sync bool = false;
   forall (lls, loc) in zip(targetLocales.domain, targetLocales) with (ref result) do
-    if loc == here {
+    if loc == desiredLocale {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
       gotresult$.readFE();
@@ -619,7 +644,7 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
       gotresult$.writeEF(true);
     }
   // instead of crashing right away, return a flag
-  //if !gotresult$.readXX() then halt("DimensionalDist2D: the current locale ", here, " is not among the target locales ", targetLocales);
+  //if !gotresult$.readXX() then halt("DimensionalDist2D: the current locale ", desiredLocale, " is not among the target locales ", targetLocales);
 
   return (result, gotresult$.readXX());
 }
@@ -638,7 +663,7 @@ proc _passLocalLocIDsDist(ref d1, param doD1:bool, ref d2, param doD2:bool,
      if gotHint && targetLocales(hint) == here
        then (hint, true)
      else
-       _CurrentLocaleToLocIDs(targetLocales);
+       _CurrentLocaleToLocIDs(targetLocales, here);
 
    if d1.dsiUsesLocalLocID1d() && doD1 then d1.dsiStoreLocalLocID1d(lIds(0),l);
    if d2.dsiUsesLocalLocID1d() && doD2 then d2.dsiStoreLocalLocID1d(lIds(1),l);
@@ -749,27 +774,8 @@ proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
 
 //== miscellanea
 
-override proc DimensionalDom.dsiMyDist() return dist;
-
-proc DimensionalDom.dsiDims()             return whole.dims();
-proc DimensionalDom.dsiDim(d)             return whole.dim(d);
-proc DimensionalDom.dsiDim(param d)       return whole.dim(d);
-proc DimensionalDom.dsiLow                return whole.low;
-proc DimensionalDom.dsiHigh               return whole.high;
-proc DimensionalDom.dsiStride             return whole.stride;
-proc DimensionalDom.dsiNumIndices         return whole.sizeAs(uint);
-proc DimensionalDom.dsiMember(indexx)     return whole.contains(indexx);
-proc DimensionalDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
-
 proc DimensionalDom.dimSpecifier(param dim: int) {
   return dist.dimSpecifier(dim);
-}
-
-
-//== writing
-
-proc DimensionalDom.dsiSerialWrite(f): void {
-  f <~> whole;
 }
 
 
@@ -836,6 +842,27 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   result.dsiSetIndices(inds);
   return result;
 }
+
+// common redirects
+proc DimensionalDom.dsiLow           return whole.low;
+proc DimensionalDom.dsiHigh          return whole.high;
+proc DimensionalDom.dsiAlignedLow    return whole.alignedLow;
+proc DimensionalDom.dsiAlignedHigh   return whole.alignedHigh;
+proc DimensionalDom.dsiFirst         return whole.first;
+proc DimensionalDom.dsiLast          return whole.last;
+proc DimensionalDom.dsiStride        return whole.stride;
+proc DimensionalDom.dsiAlignment     return whole.alignment;
+proc DimensionalDom.dsiNumIndices    return whole.sizeAs(uint);
+proc DimensionalDom.dsiDim(d)        return whole.dim(d);
+proc DimensionalDom.dsiDim(param d)  return whole.dim(d);
+proc DimensionalDom.dsiDims()        return whole.dims();
+//proc DimensionalDom.dsiGetIndices()  return whole.getIndices();
+proc DimensionalDom.dsiMember(i)     return whole.contains(i);
+proc DimensionalDom.doiToString()    return whole:string;
+proc DimensionalDom.dsiSerialWrite(x) { x.write(whole); }
+proc DimensionalDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
+override proc DimensionalDom.dsiIndexOrder(i)              return whole.indexOrder(i);
+override proc DimensionalDom.dsiMyDist()                   return dist;
 
 proc DimensionalDom.dsiSetIndices(newIndices: domainT): void {
   whole = newIndices;

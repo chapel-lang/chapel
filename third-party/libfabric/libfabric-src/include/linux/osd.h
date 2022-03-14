@@ -43,10 +43,14 @@
 #include <assert.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
+#include <linux/errqueue.h>
 #include <ifaddrs.h>
 #include "unix/osd.h"
 #include "rdma/fi_errno.h"
+
 
 static inline int ofi_shm_remap(struct util_shm *shm,
 				size_t newsize, void **mapped)

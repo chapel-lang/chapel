@@ -186,6 +186,7 @@ typedef struct ips_path_rec {
 	psm2_rv_conn_t rv_conn;
 	uint8_t connecting;
 #endif
+
 } ips_path_rec_t;
 
 psm2_error_t ips_opp_init(struct ips_proto *proto);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -293,17 +293,19 @@ namespace {
 
   void checkFunctionExistAndHasArgs(Value* f, Type* t, unsigned nArgs)
   {
-    assert(f);
-    if( Function* ff = dyn_cast<Function>(f) ) {
-      assert(ff->getParent());
-    }
-    FunctionType* ft = NULL;
-    if( PointerType* pt = dyn_cast<PointerType>(t) ) {
-      t = pt->getElementType();
-    }
-    ft = cast<FunctionType>(t);
-    assert(ft);
-    assert(ft->getNumParams() == nArgs);
+    #ifndef NDEBUG
+      assert(f);
+      if( Function* ff = dyn_cast<Function>(f) ) {
+        assert(ff->getParent());
+      }
+      FunctionType* ft = NULL;
+      if( PointerType* pt = dyn_cast<PointerType>(t) ) {
+        t = pt->getElementType();
+      }
+      ft = cast<FunctionType>(t);
+      assert(ft);
+      assert(ft->getNumParams() == nArgs);
+    #endif
   }
 
 
@@ -664,7 +666,7 @@ namespace {
 #else
             Value* call = CallInst::Create(getFn, args, "", oldLoad);
 #endif
-            assert(call);
+            if (call == nullptr) assert(false && "failure creating call");
 
             // Now load from the alloc'd area.
             Instruction* loadedWide = new LoadInst(wLoadedTy, alloc, "",
@@ -717,7 +719,7 @@ namespace {
                                             oldStore->getOrdering(),
                                             oldStore->getSyncScopeID(),
                                             oldStore);
-            assert(st);
+            if (st == nullptr) assert(false && "failure creating store");
 
             Value* node = createRnode(info, wAddr, oldStore);
             Value* raddr = createRaddr(info, wAddr, oldStore);
@@ -751,10 +753,9 @@ namespace {
           PtrToIntInst *ptrToInt = cast<PtrToIntInst>(insn);
           if( ptrToInt->getPointerAddressSpace() == info->globalSpace ) {
             Value* ptr = ptrToInt->getPointerOperand();
-            const DataLayout& DL = M.getDataLayout();
 
-            assert(DL.getTypeSizeInBits(ptrToInt->getType()) ==
-                   DL.getTypeSizeInBits(ptr->getType()));
+            assert(M.getDataLayout().getTypeSizeInBits(ptrToInt->getType()) ==
+                   M.getDataLayout().getTypeSizeInBits(ptr->getType()));
 
             Instruction* conv = createStoreLoadCast(ptr,
                                                     ptrToInt->getType(),
@@ -766,10 +767,9 @@ namespace {
           IntToPtrInst *intToPtr = cast<IntToPtrInst>(insn);
           if( intToPtr->getAddressSpace() == info->globalSpace ) {
             Value* i = intToPtr->getOperand(0);
-            const DataLayout& DL = M.getDataLayout();
 
-            assert(DL.getTypeSizeInBits(intToPtr->getType()) ==
-                   DL.getTypeSizeInBits(i->getType()));
+            assert(M.getDataLayout().getTypeSizeInBits(intToPtr->getType()) ==
+                   M.getDataLayout().getTypeSizeInBits(i->getType()));
 
             Instruction* conv = createStoreLoadCast(i,
                                                     intToPtr->getType(),
@@ -1122,7 +1122,8 @@ namespace {
           // We don't do this for instructions since in
           // general we might not have remapped them yet.
           assert(newV != NULL);
-          assert( newV->getType() == new_type );
+          if (newV->getType() != new_type)
+            assert(false && "new argument is not mapped type");
         }
       }
 
@@ -1133,7 +1134,6 @@ namespace {
 
 
     Type *old_type = I->getType();
-    Type *new_type = NULL;
     if( old_type ) TypeMapper->remapType(old_type);
 
     // Now, remap operands that we know about needing remap
@@ -1144,15 +1144,6 @@ namespace {
     // been remapped.
     //
     RemapInstruction(I, VM, RF_IgnoreMissingLocals, TypeMapper);
-
-    if( extraChecks ) {
-      if( VM.count(I) ) {
-        Value* V = VM[I];
-        if( new_type ) assert(V->getType() == new_type);
-      } else {
-        if( new_type ) assert(I->getType() == new_type);
-      }
-    }
   }
 
 
@@ -2319,7 +2310,8 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
 #endif
   }
 
-  assert(0);
+  assert(false && "should not be reached");
+  return nullptr;
 }
 
 

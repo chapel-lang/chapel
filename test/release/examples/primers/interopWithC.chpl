@@ -240,17 +240,17 @@ module interopWithC {
    }
 
 /*
-   Chapel also has a standard module named :mod:`SysCTypes` (located under
-   ``$CHPL_HOME/modules/standard/gen/...``). 
+   Chapel also has a standard module named :mod:`CTypes` (located in
+   ``$CHPL_HOME/modules/standard/``). 
    This module defines a few C types which align with the C compiler 
    specification and do not require the ``extern`` keyword, 
    such as ``c_int`` and ``c_char``. For more information about these types see
    the :ref:`readme-extern` Technical Note.
 */
 
-// You can include SysCTypes using a simple use statement:
+// You can include CTypes using a simple use statement:
 
-   use SysCTypes;
+   use CTypes;
 
 // We must always make sure the types align as the C compiler specification allows for
 // different sizes for the same type depending on the compiler.

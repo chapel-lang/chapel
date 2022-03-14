@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,8 +21,7 @@
 module StringCasts {
   private use ChapelStandard;
   private use BytesStringCommon;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   private use String.NVStringFactory;
 
   // TODO: I want to break all of these casts from string to T out into
@@ -65,7 +64,7 @@ module StringCasts {
     pragma "fn synchronization free"
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
     pragma "fn synchronization free"
-    extern proc strlen(const str: c_string) : size_t;
+    extern proc strlen(const str: c_string) : c_size_t;
 
     var isErr: bool;
     var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type), isErr);
@@ -156,7 +155,7 @@ module StringCasts {
     pragma "fn synchronization free"
     extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
     pragma "fn synchronization free"
-    extern proc strlen(const str: c_string) : size_t;
+    extern proc strlen(const str: c_string) : c_size_t;
 
     var csc = real_to_c_string(x:real(64), isImag);
 

@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,17 +37,23 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+void chpl_task_warnNumThreadsPerLocale(const char* msg)
+{
+  if (!chpl_env_rt_get_bool("NUM_THREADS_PER_LOCALE_QUIET", false)) {
+    chpl_warning(msg, 0, 0);
+  }
+}
 
 int32_t chpl_task_getenvNumThreadsPerLocale(void)
 {
-  char*          p;
+  const char*    p;
   static int     env_checked = 0;
   static int32_t num = 0;
 
   if (env_checked)
     return num;
 
-  if ((p = getenv("CHPL_RT_NUM_THREADS_PER_LOCALE")) != NULL) {
+  if ((p = chpl_env_rt_get("NUM_THREADS_PER_LOCALE", NULL)) != NULL) {
     int32_t lim = chpl_comm_getMaxThreads();
 
     if (strcmp(p, "MAX_PHYSICAL") == 0) {
@@ -75,7 +81,7 @@ int32_t chpl_task_getenvNumThreadsPerLocale(void)
                    "CHPL_RT_NUM_THREADS_PER_LOCALE = %" PRIi32 " is too large; "
                    "limit is %" PRIi32,
                    num, lim);
-          chpl_warning(msg, 0, 0);
+          chpl_task_warnNumThreadsPerLocale(msg);
           num = lim;
         }
       }
@@ -215,20 +221,17 @@ size_t chpl_task_getDefaultCallStackSize(void)
 // Support for task reporting on ^C.
 //
 static pthread_once_t taskReportOnce = PTHREAD_ONCE_INIT;
-static chpl_bool taskReportIsSet = false;
 static chpl_bool taskReport;
 
 static void init_taskReport(void);
 
 chpl_bool chpl_task_doTaskReport(void) {
-  if (!taskReportIsSet
-      && pthread_once(&taskReportOnce, init_taskReport) != 0) {
+  if (pthread_once(&taskReportOnce, init_taskReport) != 0) {
     chpl_internal_error("pthread_once(&taskReportOnce) failed");
   }
   return taskReport;
 }
 
 static void init_taskReport(void) {
-  taskReportIsSet = true;
   taskReport = chpl_env_rt_get_bool("ENABLE_TASK_REPORTING", false);
 }

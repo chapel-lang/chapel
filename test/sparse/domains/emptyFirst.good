@@ -1,0 +1,2 @@
+1
+emptyFirst.chpl:5: error: halt reached - 'first' is invoked on an empty sparse domain

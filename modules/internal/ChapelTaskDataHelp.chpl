@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +23,7 @@
 module ChapelTaskDataHelp {
 
   private use ChapelStandard;
-  private use CPtr;
+  private use CTypes;
 
   extern type chpl_task_infoChapel_t;
   pragma "fn synchronization free"

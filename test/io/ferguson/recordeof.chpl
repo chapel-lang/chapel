@@ -19,7 +19,7 @@ proc MyRecord.readWriteThis(f) throws {
 {
   // create a reader but specify that we'd like to use single-quoted strings.
   // 0x27 is ascii for '
-  var reader = f.reader(style=new iostyle(string_format=iostringformat.basic:uint(8), string_start = 0x27, string_end = 0x27));
+  var reader = f.reader(style=new iostyleInternal(string_format=iostringformat.basic:uint(8), string_start = 0x27, string_end = 0x27));
 
   var rec:MyRecord;
   var i = 1;

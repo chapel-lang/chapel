@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,7 +20,7 @@
 
 /*
   This module contains the implementation of the map type which is a container
-  that stores key-value associations. 
+  that stores key-value associations.
 
   Maps are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any map constructor. When
@@ -79,9 +79,9 @@ module Map {
     /* If `true`, this map will perform parallel safe operations. */
     param parSafe = false;
 
-    /* 
-       Fractional value that specifies how full this map can be 
-       before requesting additional memory. The default value of 
+    /*
+       Fractional value that specifies how full this map can be
+       before requesting additional memory. The default value of
        0.5 means that the map will not resize until the map is more
        than 50% full. The acceptable values for this argument are
        between 0 and 1, exclusive, meaning (0,1). This is useful
@@ -123,31 +123,37 @@ module Map {
                             attempting to resize.
     */
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold = 0.5, initialCapacity = 16) {
+              resizeThreshold=0.5, initialCapacity=16) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
-      if boundsChecking then
-        if resizeThreshold <= 0 || resizeThreshold >= 1 then
-          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
-      this.resizeThreshold = resizeThreshold;
-      table = new chpl__hashtable(keyType, valType, resizeThreshold,
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
                                   initialCapacity);
     }
 
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold = 0.5, initialCapacity = 16)
+              resizeThreshold=0.5, initialCapacity=16)
     where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
-      if boundsChecking then
-        if resizeThreshold <= 0 || resizeThreshold >= 1 then
-          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
-      this.resizeThreshold = resizeThreshold;
-      table = new chpl__hashtable(keyType, valType, resizeThreshold,
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
                                   initialCapacity);
     }
 
@@ -423,8 +429,14 @@ module Map {
     }
 
     /* Get a copy of the element stored at position `k`.
+
+      :arg k: The key to lookup in the map
+
+      :throws: `KeyNotFoundError` if `k` not in map
+
+      :returns: A copy of the value at position `k`
      */
-    proc getValue(k: keyType) const {
+    proc getValue(k: keyType) const throws {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
                       'map value type: ' + valType:string);
@@ -432,7 +444,32 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
+        throw new KeyNotFoundError(k: string);
+      try! {
+        const result = table.table[slot].val: valType;
+        return result;
+      }
+    }
+
+    /* Get a copy of the element stored at position `k` or a sentinel
+       value if an element at position `k` does not exist.
+
+      :arg k: The key to lookup in the map
+      :arg sentinel: The value to return if the map does not contain an
+                     entry at position `k`
+
+      :returns: A copy of the value at position `k` or a sentinel value
+                if the map does not have an entry at position `k`
+    */
+    proc getValue(k: keyType, const sentinel: valType) const {
+      if !isCopyableType(valType) then
+        compilerError('cannot call `getValue()` for non-copyable ' +
+                      'map value type: ' + valType:string);
+
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        return sentinel;
       try! {
         const result = table.table[slot].val: valType;
         return result;
@@ -527,7 +564,7 @@ module Map {
       Writes the contents of this map to a channel. The format looks like:
 
         .. code-block:: chapel
-    
+
            {k1: v1, k2: v2, .... , kn: vn}
 
       :arg ch: A channel to write to.
@@ -615,7 +652,7 @@ module Map {
 
     /*
       Removes a key-value pair from the map, with the given key.
-      
+
      :arg k: The key to remove from the map
 
      :returns: `false` if `k` was not in the map.  `true` if it was and removed.
@@ -705,15 +742,17 @@ module Map {
       `lhs`.
 
     :arg lhs: The map to assign to.
-    :arg rhs: The map to assign from. 
+    :arg rhs: The map to assign from.
   */
   operator map.=(ref lhs: map(?kt, ?vt, ?), const ref rhs: map(kt, vt, ?)) {
     if !isCopyableType(kt) || !isCopyableType(vt) then
       compilerError("assigning map with non-copyable type");
 
     lhs.clear();
-    for key in rhs.keys() {
-      lhs.add(key, rhs.getValue(key));
+    try! {
+      for key in rhs.keys() {
+        lhs.add(key, rhs.getValue(key));
+      }
     }
   }
 
@@ -795,8 +834,8 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a do newMap.add(k, a.getValue(k));
-    for k in b do newMap.add(k, b.getValue(k));
+    try! { for k in a do newMap.add(k, a.getValue(k)); }
+    try! { for k in b do newMap.add(k, b.getValue(k)); }
     return newMap;
   }
 
@@ -806,7 +845,7 @@ module Map {
   operator map.|=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
     // add keys/values from b to a if they weren't already in a
-    for k in b do a.add(k, b.getValue(k));
+    try! { for k in b do a.add(k, b.getValue(k)); }
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
@@ -814,9 +853,11 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a.keys() do
-      if b.contains(k) then
-        newMap.add(k, a.getValue(k));
+    try! {
+      for k in a.keys() do
+        if b.contains(k) then
+          newMap.add(k, a.getValue(k));
+    }
 
     return newMap;
   }
@@ -833,9 +874,11 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for ak in a.keys() {
-      if !b.contains(ak) then
-        newMap.add(ak, a.getValue(ak));
+    try! {
+      for ak in a.keys() {
+        if !b.contains(ak) then
+          newMap.add(ak, a.getValue(ak));
+      }
     }
 
     return newMap;
@@ -864,10 +907,14 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a.keys() do
-      if !b.contains(k) then newMap.add(k, a.getValue(k));
-    for k in b do
-      if !a.contains(k) then newMap.add(k, b.getValue(k));
+    try! {
+      for k in a.keys() do
+        if !b.contains(k) then newMap.add(k, a.getValue(k));
+    }
+    try! {
+      for k in b do
+        if !a.contains(k) then newMap.add(k, b.getValue(k));
+    }
     return newMap;
   }
 
@@ -875,9 +922,25 @@ module Map {
      left-hand map or the right-hand map, but not both. */
   operator map.^=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
-    for k in b.keys() {
-      if a.contains(k) then a.remove(k);
-      else a.add(k, b.getValue(k));
+    try! {
+      for k in b.keys() {
+        if a.contains(k) then a.remove(k);
+        else a.add(k, b.getValue(k));
+      }
+    }
+  }
+
+  /*
+   A `KeyNotFoundError` is thrown at runtime if an attempt is made
+   to access a map value at a given key that is not in the current
+   state of the `map`. An example of this is calling `map.getValue()`.
+   */
+  class KeyNotFoundError : Error {
+    proc init() {}
+
+    proc init(k: string) {
+      var msg = "key '" + k + "' not found";
+      super.init(msg);
     }
   }
 }

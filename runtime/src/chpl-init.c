@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -65,7 +65,7 @@ void deallocate_string_literals_buf(void) {
   chpl_string_literals_buffer = NULL;
 }
 
-int handleNonstandardArg(int* argc, char* argv[], int argNum, 
+int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
 
   if (mainHasArgs) {
@@ -110,7 +110,7 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 void chpl_rt_preUserCodeHook(void) {
   //
   // The module initialization functions have all completed on each
-  // node, locally, before we are called. 
+  // node, locally, before we are called.
   //
   // The module init code can leave the running task counts incorrect.
   // Once module init is complete, we can set those counts to the right
@@ -157,6 +157,44 @@ void chpl_rt_postUserCodeHook(void) {
 }
 
 
+static void chpl_setlocale_utf8(void) {
+  const char* got = NULL;
+
+  // Note: the C locale only currently matters for calls to
+  // wcwidth in formatted I/O.
+  // TODO: Would it be better to bundle some third-party library
+  // that can compute the number of columns of each UTF-8 character?
+
+  // First, try setting the character type to UTF-8 this way.
+  // It seems to work on Mac OS X and linux
+  // and matches the documentation.
+  //
+  // This should only affect the character set and so the
+  // language is irrelevant.
+  got = setlocale(LC_CTYPE, "en_US.UTF-8");
+
+  if (got == NULL) {
+    // This seems to work on linux but not on Mac OS X
+    got = setlocale(LC_CTYPE, "C.UTF-8");
+  }
+
+  if (got == NULL) {
+    // This seems to work on Mac OS X but not linux
+    got = setlocale(LC_CTYPE, "UTF-8");
+  }
+
+  if (got == NULL) {
+    fprintf(stderr, "Warning: setlocale(LC_CTYPE, \"en_US.UTF-8\") failed. "
+                    "Formatted I/O may not work correctly.");
+
+    // This should always succeed and we should have already been
+    // in the C locale when we started (but it is possible to be otherwise
+    // when we are being launched as a library).
+    // This way at least the ASCII subset of UTF-8 will work correctly.
+    setlocale(LC_CTYPE, "C");
+  }
+}
+
 //
 // Chapel runtime initialization
 //
@@ -174,10 +212,9 @@ void chpl_rt_init(int argc, char* argv[]) {
   assert( sys_page_size() > 0 );
 
   // Declare that we are 'locale aware' so that
-  // UTF-8 functions (e.g. wcrtomb) work as
-  // indicated by the locale environment variables.
-  setlocale(LC_CTYPE,"");
-  qio_set_glocale();
+  // wctype.h functions such as wcwidth work with UTF-8.
+  chpl_setlocale_utf8();
+
   // So that use of localtime_r is portable.
   tzset();
 
@@ -308,7 +345,7 @@ void chpl_std_module_init(void) {
 // The function previously known as "chpl_main".
 //
 // Chapel standard module initialization has been factored out
-// into chpl-init.c:chapel_std_module_init() for reuse by 
+// into chpl-init.c:chapel_std_module_init() for reuse by
 // chpl-init.c:chpl_library_init().
 //
 void chpl_executable_init(void) {
@@ -356,7 +393,7 @@ void chpl_library_init(int argc, char* argv[]) {
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
   chpl_libraryModuleLevelSetup();
 
-  // @dlongnecke-cray, 11/16/2020 
+  // @dlongnecke-cray, 11/16/2020
   // TODO: Call chpl_rt_preUserCodeHook() here for Locale[0]?
 }
 
@@ -365,7 +402,7 @@ void chpl_library_init(int argc, char* argv[]) {
 extern void chpl_deinitModules(void);
 
 //
-// A wrapper around chpl-init.c:chpl_rt_finalize(...), sole purpose is 
+// A wrapper around chpl-init.c:chpl_rt_finalize(...), sole purpose is
 // to provide a "chpl_library_*" interface for the Chapel "library-user".
 void chpl_library_finalize(void) {
   chpl_libraryModuleLevelCleanup();

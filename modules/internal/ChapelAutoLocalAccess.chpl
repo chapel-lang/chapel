@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,7 +38,7 @@ module ChapelAutoLocalAccess {
     if loopDomain._value.type.isDefaultRectangular() {
       return accessBase.domain.supportsAutoLocalAccess();
     }
-    
+
     return false;
   }
 
@@ -61,8 +61,9 @@ module ChapelAutoLocalAccess {
   proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
     if chpl__staticAutoLocalCheck(accessBase, loopDomain) {
       // if they're the same domain...
-      if accessBase.domain == loopDomain &&
-         accessBase.domain._value.dist.dsiEqualDMaps(loopDomain._value.dist) then 
+      if chpl_sameDomainKind(accessBase.domain, loopDomain) &&
+         accessBase.domain == loopDomain                    &&
+         accessBase.domain._value.dist.dsiEqualDMaps(loopDomain._value.dist) then
         return true;
 
       // or at least if they were distributed the same way
@@ -76,7 +77,7 @@ module ChapelAutoLocalAccess {
       // calling on default rectangular
       if loopDomain._value.type.isDefaultRectangular() {
         if loopDomain.locale == here {
-          if loopDomain.isSubset(accessBase.localSubdomain()) {
+          if accessBase.localSubdomain().contains(loopDomain) {
             return true;
           }
         }

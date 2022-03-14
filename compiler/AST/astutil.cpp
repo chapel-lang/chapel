@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,10 +44,7 @@
 #include "wellknown.h"
 #include "WhileStmt.h"
 
-#include "oldCollectors.h" // Deprecated. To be removed.
-// After #include "oldCollectors.h" has been removed from all other source
-// files, the corresponding collector functions can be removed from this
-// implementation file, then this #include, and finally the .h file itself.
+#include "global-ast-vecs.h"
 
 #include <vector>
 
@@ -202,14 +199,17 @@ void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
     symbols.push_back(symbol);
 }
 
-void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
+void collect_asts_preorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
   asts.push_back(ast);
   AST_CHILDREN_CALL(ast, collect_asts, asts);
 }
 
-void collect_asts_postorder(BaseAST* ast, Vec<BaseAST*>& asts) {
-  AST_CHILDREN_CALL(ast, collect_asts_postorder, asts);
-  asts.add(ast);
+void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  collect_asts_preorder(ast, asts);
+}
+
+void collect_asts_unorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  collect_asts_preorder(ast, asts);
 }
 
 void collect_asts_postorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
@@ -295,9 +295,9 @@ void computeAllCallSites(FnSymbol* fn) {
   Vec<CallExpr*>* calledBy = fn->calledBy;
   if (calledBy == NULL)
     fn->calledBy = calledBy = new Vec<CallExpr*>();
-  else 
+  else
     calledBy->clear();
-  
+
   for_SymbolSymExprs(se, fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (fn == call->resolvedFunction()) {
@@ -914,7 +914,7 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   // Functions appearing the function pointer table are visible.
   // These are blocks that can be started through a forall, coforall,
   // or on statement.
-  forv_Vec(FnSymbol, fn, ftableVec)
+  for (FnSymbol* fn : ftableVec)
     pruneVisit(fn, fns, types);
 
   // Mark VFT entries as visible.
@@ -1177,7 +1177,7 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
       // of recursive iterator lowering seems to be too big of an obstacle
       // right now.
       //
-      forv_Vec(FnSymbol, fn, ftableVec) {
+      for (FnSymbol* fn : ftableVec) {
         addToUsedFnSymbols(fnSymbols, fn);
       }
     }

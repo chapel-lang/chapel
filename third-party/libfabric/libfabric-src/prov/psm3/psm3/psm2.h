@@ -56,6 +56,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <uuid/uuid.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -444,7 +445,7 @@ typedef enum psm2_path_res psm2_path_res_t;
    	// In this example, we want to handle our own errors before doing init,
    	// since we don't want a fatal error if OPA is not found.
    	// Note that @ref psm2_error_register_handler
-   	// (and @ref psm2_uuid_generate and @ref psm2_get_capability_mask)
+   	// (and @ref psm2_get_capability_mask)
    	// are the only function that can be called before @ref psm2_init
 
    	int try_to_initialize_psm() {
@@ -644,9 +645,8 @@ typedef struct psm2_epaddr *psm2_epaddr_t;
  * endpoint within a particular job.  Since PSM2 does not participate in job
  * allocation and management, users are expected to generate a unique ID to
  * associate endpoints to a particular parallel or collective job.
- * @see psm2_uuid_generate
  */
-typedef uint8_t psm2_uuid_t[16];
+typedef uuid_t psm2_uuid_t;
 
 /** @brief Get Endpoint identifier's Unique Network ID */
 uint64_t psm2_epid_nid(psm2_epid_t epid);
@@ -666,15 +666,6 @@ uint64_t psm2_epid_port(psm2_epid_t epid);
  * @returns PSM2_OK unless the user has not called @ref psm2_init
  */
 psm2_error_t psm2_ep_num_devunits(uint32_t *num_units);
-
-/** @brief Utility to generate UUIDs for @ref psm2_ep_open
- *
- * This function is available as a utility for generating unique job-wide ids.
- * See discussion in @ref psm2_ep_open for further information.
- *
- * @remark This function does not require PSM2 to be initialized.
- */
-void psm2_uuid_generate(psm2_uuid_t uuid_out);
 
 /* Affinity modes for the affinity member of struct psm2_ep_open_opts */
 #define PSM2_EP_OPEN_AFFINITY_SKIP     0	/**< Disable setting affinity */
@@ -744,16 +735,14 @@ struct psm2_ep_open_opts {
  *
  * PSM2 does not internally verify the consistency of the uuid, it is up to the
  * user to ensure that the uid is unique enough not to collide with other
- * currently-running jobs.  Users can employ three mechanisms to obtain a uuid.
+ * currently-running jobs.  Users can employ two mechanisms to obtain a uuid.
  *
- * 1. Use the supplied @ref psm2_uuid_generate utility
- *
- * 2. Use an OS or library-specific uuid generation utility, that complies with
+ * 1. Use an OS or library-specific uuid generation utility, that complies with
  *    OSF DCE 1.1, such as @c uuid_generate on Linux or @c uuid_create on
  *    FreeBSD.
  *    (see http://www.opengroup.org/onlinepubs/009629399/uuid_create.htm)
  *
- * 3. Manually pack a 16-byte string using a utility such as /dev/random or
+ * 2. Manually pack a 16-byte string using a utility such as /dev/random or
  *    other source with enough entropy and proper seeding to prevent two nodes
  *    from generating the same uuid_t.
  *

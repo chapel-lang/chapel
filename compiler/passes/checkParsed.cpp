@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
 
 static void checkNamedArguments(CallExpr* call);
 static void checkManagedClassKinds(CallExpr* call);
@@ -379,6 +380,10 @@ checkFunction(FnSymbol* fn) {
     }
   }
 
+  if (fn->hasFlag(FLAG_OVERRIDE) && fn->_this == NULL) {
+    USR_FATAL("'override' cannot be applied to non-method '%s'", fn->name);
+  }
+
   if (fn->retTag == RET_TYPE || fn->retTag == RET_PARAM) {
     for_formals(formal, fn) {
       if (formal->intent == INTENT_OUT ||
@@ -448,13 +453,12 @@ checkFunction(FnSymbol* fn) {
 }
 
 static void checkOperator(FnSymbol* fn) {
-  if (!fn->hasFlag(FLAG_OPERATOR) && !fn->hasFlag(FLAG_METHOD)) {
+  if (!fn->hasFlag(FLAG_OPERATOR)) {
     if (isAstrOpName(fn->name)) {
-      USR_WARN(fn,
-               "Operators declared without the operator keyword are deprecated");
-      fn->addFlag(FLAG_OPERATOR);
+      USR_FATAL_CONT(fn,
+                     "Operators cannot be declared without the operator keyword");
     }
-  } else if (fn->hasFlag(FLAG_OPERATOR)) {
+  } else {
     if (!isAstrOpName(fn->name)) {
       USR_FATAL_CONT(fn, "'%s' is not a legal operator name", fn->name);
     }

@@ -26,6 +26,7 @@
 use Image;    // use helper module related to writing out images
 use IO;       // allows access to stderr, stdin, iomode
 use List;
+use ChplConfig;
 
 //
 // Configuration constants
@@ -499,7 +500,7 @@ proc loadScene() {
 // its results are portable, and it can optionally be used in parallel).
 //
 proc initRands() {
-  use SysCTypes;
+  use CTypes;
 
   if useCRand {
     // extern declarations of C's random number generators.

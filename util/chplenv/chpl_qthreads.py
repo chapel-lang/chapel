@@ -11,12 +11,20 @@ def get_uniq_cfg_path():
     hwloc = chpl_hwloc.get()
     return '{0}-{1}-{2}-{3}'.format(def_uniq_cfg, lm, target_mem, hwloc)
 
+# returns 2-tuple of lists
+#  (compiler_bundled_args, compiler_system_args)
+@memoize
+def get_compile_args():
+    ucp_val = get_uniq_cfg_path()
+    return third_party_utils.get_bundled_compile_args('qthread', ucp=ucp_val)
+
+
+# returns 2-tuple of lists
+#  (linker_bundled_args, linker_system_args)
 @memoize
 def get_link_args():
     # Qthreads may call back to the runtime, so re-search libchpl after.
-    link_args = \
-        third_party_utils.default_get_link_args('qthread',
-                                                ucp=get_uniq_cfg_path(),
-                                                libs=['libqthread.la',
-                                                      '-lchpl'])
-    return link_args
+    return third_party_utils.get_bundled_link_args('qthread',
+                                                   ucp=get_uniq_cfg_path(),
+                                                   libs=['libqthread.la',
+                                                         '-lchpl'])

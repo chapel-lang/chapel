@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,7 +31,7 @@
 #include <field_base.h>
 
 namespace chapel {
-  
+
   string StripDotProto(const std::string& proto_file) {
     int lastindex = proto_file.find_last_of(".");
     return proto_file.substr(0, lastindex);
@@ -94,7 +94,7 @@ namespace chapel {
   string GetFieldName(const FieldDescriptor* descriptor) {
       return descriptor->name();
   }
-  
+
   string GetNestedTypeName(const Descriptor* descriptor, string name) {
     if (descriptor != NULL) {
       return descriptor->name() + "_" + name;
@@ -112,7 +112,7 @@ namespace chapel {
 
   string GetOneofName(const OneofDescriptor* descriptor) {
     return GetNestedTypeName(descriptor->containing_type(), descriptor->name());
-  }  
+  }
 
   FieldGeneratorBase* CreateFieldGenerator(const FieldDescriptor* descriptor) {
     switch (descriptor->type()) {
@@ -149,7 +149,7 @@ namespace chapel {
           } else {
             return new PrimitiveFieldGenerator(descriptor);
           }
-        }  
+        }
     }
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -340,7 +340,7 @@ Regular Expression Types and Methods
 
  */
 module Regex {
-  private use SysBasic, SysError, SysCTypes, CPtr;
+  private use SysBasic, SysError, CTypes;
 
 pragma "no doc"
 extern type qio_regex_t;
@@ -412,6 +412,7 @@ class BadRegexError : Error {
 }
 
 // Until Issue 17275 is fixed:
+deprecated "Regex: 'BadRegexpError' is deprecated; please use 'BadRegexError' instead"
 type BadRegexpError = owned BadRegexError;
 
 // When Issue 17275 is fixed:
@@ -469,6 +470,7 @@ type BadRegexpError = owned BadRegexError;
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
+  use ChplConfig;
 
   if CHPL_RE2 == "none" {
     compilerError("Cannot use Regex with CHPL_RE2=none");
@@ -527,14 +529,30 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
       if m then do_something_if_matched();
       if !m then do_something_if_not_matched();
 
+    .. warning::
+      offset field is deprecated, use byteOffset instead
+    .. warning::
+      size field is deprecated, use numBytes instead
  */
 record regexMatch {
   /* true if the regular expression search matched successfully */
   var matched:bool;
   /* 0-based offset into the string or channel that matched; -1 if matched=false */
-  var offset:byteIndex; // 0-based, -1 if matched==false
+  var byteOffset:byteIndex;
   /* the length of the match. 0 if matched==false */
-  var size:int; // 0 if matched==false
+  var numBytes:int;
+
+  pragma "no doc"
+  deprecated "field offset is deprecated, use byteOffset instead"
+  proc offset:byteIndex {
+    return this.byteOffset;
+  }
+
+  pragma "no doc"
+  deprecated "field size is deprecated, use numBytes instead"
+  proc size:int {
+    return this.numBytes;
+  }
 }
 
 pragma "no doc"
@@ -568,7 +586,7 @@ inline proc regexMatch.chpl_cond_test_method() return this.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:regexMatch) {
-  if m.matched then return this[m.offset..#m.size];
+  if m.matched then return this[m.byteOffset..#m.numBytes];
   else return "";
 }
 
@@ -581,7 +599,7 @@ proc string.this(m:regexMatch) {
     :returns: the portion of ``this`` referred to by the match
  */
 proc bytes.this(m:regexMatch) {
-  if m.matched then return this[m.offset:int..#m.size];
+  if m.matched then return this[m.byteOffset:int..#m.numBytes];
   else return b"";
 }
 
@@ -946,36 +964,45 @@ record regex {
      :yields: tuples of :record:`regexMatch` objects, the 1st is always
               the match for the whole pattern and the rest are the capture groups.
    */
-  iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
+  iter matches(text: exprType, param numCaptures=0, maxMatches: int = max(int))
   {
     var regexCopy:regex(exprType);
     if home != here then regexCopy = this;
     const localRegex = if home != here then regexCopy._regex else _regex;
-    param nmatches = 1 + captures;
-    var matches: c_array(qio_regex_string_piece_t, nmatches);
+    param nMatches = 1 + numCaptures;
+    var matches: c_array(qio_regex_string_piece_t, nMatches);
     var pos:byteIndex;
-    var endpos:byteIndex;
+    var endPos:byteIndex;
     var textLength:int;
     var localText = text.localize();
 
     pos = 0;
     textLength = localText.numBytes;
-    endpos = pos + textLength;
+    endPos = pos + textLength;
 
-    var nfound = 0;
+    var nFound = 0;
     var cur = pos;
-    while nfound < maxmatches && cur <= endpos {
+    while nFound < maxMatches && cur <= endPos {
       var got = qio_regex_match(localRegex, localText.c_str(), textLength,
-                                cur:int, endpos:int, QIO_REGEX_ANCHOR_UNANCHORED,
-                                matches[0], nmatches);
+                                cur:int, endPos:int, QIO_REGEX_ANCHOR_UNANCHORED,
+                                matches[0], nMatches);
       if !got then break;
-      param nret = captures+1;
-      var ret:nret*regexMatch;
-      for i in 0..captures {
+      var ret:nMatches*regexMatch;
+      for i in 0..numCaptures {
         ret[i] = new regexMatch(got, matches[i].offset:byteIndex, matches[i].len);
       }
       yield ret;
       cur = matches[0].offset + max(1, matches[0].len);
+      nFound += 1;
+    }
+  }
+
+  pragma "last resort"
+  deprecated "regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead."
+  iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
+  {
+    for m in matches(text, numCaptures=captures, maxMatches=maxmatches) {
+      yield m;
     }
   }
 
@@ -1082,13 +1109,6 @@ record regex {
 }
 
 pragma "no doc"
-proc regexp type
-{
-   compilerWarning("Regex: 'regexp' is deprecated; please use 'regex' instead");
-   return regex;
-}
-
-pragma "no doc"
 operator regex.=(ref ret:regex(?t), x:regex(t))
 {
   // retain -- release
@@ -1150,64 +1170,58 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
   return compile(x);
 }
 
-/*
-
-   Compile a regular expression and search the receiving string for matches at
-   any offset using :proc:`regex.search`.
-
-   :arg needle: the regular expression to search for
-   :arg ignorecase: true to ignore case in the regular expression
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving string where a match occurred
- */
-proc string.search(needle: string, ignorecase=false):regexMatch
-{
-  // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
-  return re.search(this);
-}
-
-/*
-
-   Compile a regular expression and search the receiving bytes for matches at
-   any offset using :proc:`regex.search`.
-
-   :arg needle: the regular expression to search for
-   :arg ignorecase: true to ignore case in the regular expression
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving bytes where a match occurred
- */
-proc bytes.search(needle: bytes, ignorecase=false):regexMatch
-{
-  // Create a regex matching the literal for needle
-  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
-  return re.search(this);
-}
-
-// documented in the captures version
 pragma "no doc"
+pragma "last resort"
 proc string.search(needle: regex(string)):regexMatch
 {
   return needle.search(this);
 }
-
 // documented in the captures version
 pragma "no doc"
+proc string.search(pattern: regex(string)):regexMatch
+{
+  return pattern.search(this);
+}
+
+pragma "no doc"
+pragma "last resort"
 proc bytes.search(needle: regex(bytes)):regexMatch
 {
   return needle.search(this);
 }
 
+// documented in the captures version
+pragma "no doc"
+proc bytes.search(pattern: regex(bytes)):regexMatch
+{
+  return pattern.search(this);
+}
+
+
+pragma "last resort"
+deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
+proc string.search(needle: regex(string), ref captures ...?k):regexMatch
+{
+  return needle.search(this, (...captures));
+}
+
 /* Search the receiving string for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   :arg needle: the compiled regular expression to search for
+   :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
                   should be strings or types that strings can cast to.
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving string where a match occurred
  */
-proc string.search(needle: regex(string), ref captures ...?k):regexMatch
+proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
+{
+  return pattern.search(this, (...captures));
+}
+
+pragma "last resort"
+deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
+proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
 {
   return needle.search(this, (...captures));
 }
@@ -1215,15 +1229,15 @@ proc string.search(needle: regex(string), ref captures ...?k):regexMatch
 /* Search the receiving bytes for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   :arg needle: the compiled regular expression to search for
+   :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
                   should be bytes or types that bytes can cast to.
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving bytes where a match occurred
  */
-proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
+proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
 {
-  return needle.search(this, (...captures));
+  return pattern.search(this, (...captures));
 }
 
 // documented in the captures version

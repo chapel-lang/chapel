@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,8 @@
 #include "resolution.h"
 #include "stringutil.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 #include <map>
 #include <set>
@@ -346,7 +348,7 @@ public:
       if (isTaskFun(calledFn)) {
         expandTaskFn(this, node, calledFn);
       } else if (calledFn == gChplPropagateError) {
-        handleChplPropagateErrorCall(node);
+        handleChplPropagateErrorCall(node, true);
       }
     }
     // There shouldn't be anything interesting inside the call.
@@ -842,7 +844,7 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   // No need for taskFnCopies.
 
   // This holds because we flatten everything right away.
-  // We need it so that we can place the def of 'fcopy' anywhere
+  // We need it so that we can place the def of 'cloneTaskFn' anywhere
   // while preserving correct scoping of its SymExprs.
   INT_ASSERT(isGlobal(taskFn));
 
@@ -1530,7 +1532,7 @@ static void removeDeadIters() {
 
 void lowerForallStmtsInline()
 {
-  forv_Vec(ForallStmt, fs, gForallStmts)
+  forv_expanding_Vec(ForallStmt, fs, gForallStmts)
     if (fs->inTree())
       lowerOneForallStmt(fs);
 

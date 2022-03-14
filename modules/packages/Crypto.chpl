@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -85,8 +85,7 @@ module Crypto {
   use SysError;
 
   private use IO;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   pragma "no doc"
   proc generateKeys(bits: int) {
@@ -380,7 +379,7 @@ module Crypto {
     md = EVP_get_digestbyname(digestName.c_str());
 
     EVP_DigestInit_ex(CHPL_EVP_MD_CTX_ptr(ctx), md, c_nil: ENGINE_PTR);
-    EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_void_ptr, inputBuffer._len: size_t);
+    EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_void_ptr, inputBuffer._len: c_size_t);
     EVP_DigestFinal_ex(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(hash): c_ptr(c_uchar), retHashLen);
 
     CHPL_EVP_MD_CTX_free(ctx);
@@ -1198,8 +1197,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     require "openssl/pem.h", "openssl/bn.h", "openssl/bio.h", "openssl/evp.h",
             "openssl/aes.h", "openssl/rand.h", "openssl/sha.h", "-lcrypto", "-lssl";
 
-    use SysCTypes;
-    use CPtr;
+    use CTypes;
 
     extern type EVP_PKEY_CTX;
     extern type EVP_PKEY;
@@ -1254,7 +1252,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc CHPL_EVP_MD_CTX_free(ref c: CHPL_EVP_MD_CTX);
     extern proc CHPL_EVP_MD_CTX_ptr(ref c: CHPL_EVP_MD_CTX):EVP_MD_CTX_PTR;
     extern proc EVP_DigestInit_ex(ctx: EVP_MD_CTX_PTR, types: CONST_EVP_MD_PTR, impl: ENGINE_PTR): c_int;
-    extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_void_ptr, cnt: size_t): c_int;
+    extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_void_ptr, cnt: c_size_t): c_int;
     extern proc EVP_DigestFinal_ex(ctx: EVP_MD_CTX_PTR, md: c_ptr(c_uchar), ref s: c_uint): c_int;
 
     extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;

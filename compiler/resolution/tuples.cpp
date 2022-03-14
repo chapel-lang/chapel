@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -444,7 +444,7 @@ getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
   int methodToken = 0;
   if (fn->getFormal(1)->type == dtMethodToken)
     methodToken = 1;
-  
+
   if (fn->name == astr_initCopy || fn->name == astr_autoCopy) {
     INT_ASSERT(fn->numFormals() == 2); // expected of the original function
   }

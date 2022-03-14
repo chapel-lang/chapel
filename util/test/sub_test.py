@@ -276,6 +276,15 @@ def expandvars_chpl(path):
     expand_env.update(get_chplenv())
     return string.Template(path).safe_substitute(expand_env)
 
+# Wait up to timeout seconds for files to exist. Useful on systems where file
+# IO may only complete after the launcher returns
+def WaitForFiles(files, timeout=int(os.getenv('CHPL_TEST_WAIT_FOR_FILES_TIMEOUT', '10'))):
+    waited = 0
+    for f in files:
+        while not os.path.exists(f) and waited < timeout:
+            time.sleep(1)
+            waited += 1
+
 # Read a file or if the file is executable read its output. If the file is
 # executable, the current chplenv is copied into the env before executing.
 # Expands shell and chplenv variables and strip out comments/whitespace.
@@ -365,13 +374,22 @@ def KillProc(p, timeout):
     return
 
 # clean up after the test has been built
-def cleanup(execname):
+def cleanup(execname, test_ran_and_more_compopts=False):
     try:
         if execname is not None:
             if os.path.isfile(execname):
                 os.unlink(execname)
             if os.path.isfile(execname+'_real'):
                 os.unlink(execname+'_real')
+            # Hopefully short term workaround on cygwin where we've been seeing
+            # an issue where after a test is run, some other process has a
+            # handle on the executable and we can't create a new executable
+            # with the same name for a bit. If a test ran and we have
+            # additional compopts (which means the exec name will be reused)
+            # wait a second while cleaning up the executable to give the other
+            # process time to release its handle.
+            if test_ran_and_more_compopts and 'cygwin' in platform:
+                time.sleep(1)
     except (IOError, OSError) as ex:
         # If the error is "Device or resource busy", call lsof on the file (or
         # handle for windows) to see what is holding the file handle, to help
@@ -515,12 +533,17 @@ def FindGoodFile(basename, commExecNums=['']):
         # Else try comm-, networkAtomics-, and localeModel-specific .good
         # files.  All 3, any 2, or just 1 of these may be used, but if more
         # then 1 they must be in the above order.
+        # Also tries tasks- by itself. If this grows any larger, we should probably
+        # list all files with basename prefix and parse them out to avoid the combination
+        # blowup and large number of stat calls
         if not os.path.isfile(goodfile):
             for specstr in [ chplcommstr+chplnastr+chpllmstr,
                              chplcommstr+chplnastr,
                              chplcommstr+chpllmstr,
+                             chplcommstr+chpltasksstr,
                              chplnastr+chpllmstr,
                              chplcommstr,
+                             chpltasksstr,
                              chplnastr,
                              chpllmstr ]:
                 goodfile=basename+specstr+commExecNum+'.good'
@@ -841,6 +864,10 @@ chpllauncher=os.getenv('CHPL_LAUNCHER','none').strip()
 chpllm=os.getenv('CHPL_LOCALE_MODEL','flat').strip()
 chpllmstr='.lm-'+chpllm
 #sys.stdout.write('lm=%s\n'%(chpllm))
+
+# CHPL_TASKS
+chpltasks=os.getenv('CHPL_TASKS', 'none').strip()
+chpltasksstr='.tasks-'+chpltasks
 
 #
 # Test options for all tests in this directory
@@ -1552,7 +1579,7 @@ for testname in testsrc:
         # Run the precompile script
         #
         if globalPrecomp:
-            sys.stdout.write('[Executing ./PRECOMP]\n')
+            sys.stdout.write('[Executing ./PRECOMP %s %s %s]\n'%(execname, complog, compiler))
             sys.stdout.flush()
             p = py3_compat.Popen(['./PRECOMP', execname, complog, compiler],
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -1613,6 +1640,9 @@ for testname in testsrc:
             if valgrindcomp:
                 cmd = valgrindcomp
                 args = valgrindcompopts+[compiler]+args
+            # TODO: temporary way to plugin chpldoc next for testing
+            elif 'CHPL_CHPLDOC_NEXT' in os.environ:
+                cmd = os.environ['CHPL_CHPLDOC_NEXT']
             else:
                 cmd = compiler
 
@@ -1710,6 +1740,7 @@ for testname in testsrc:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
                                  (test_filename+'.catfiles'))
                 sys.stdout.flush()
+                WaitForFiles(catfiles.split())
                 p = py3_compat.Popen(['cat']+catfiles.split(),
                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 catoutput = p.communicate()[0]
@@ -2228,6 +2259,7 @@ for testname in testsrc:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%
                                     (test_filename+'.catfiles'))
                     sys.stdout.flush()
+                    WaitForFiles(catfiles.split())
                     p = py3_compat.Popen(['cat']+catfiles.split(),
                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                     cat_output = p.communicate()[0]
@@ -2382,7 +2414,7 @@ for testname in testsrc:
                     if exectimeout or status != 0:
                         break
 
-        cleanup(execname)
+        cleanup(execname, len(compoptslist) > 1)
 
     del execoptslist
     del compoptslist

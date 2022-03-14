@@ -384,7 +384,7 @@ proc CyclicZipOptDom.dsiStride return whole.stride;
 
 proc CyclicZipOptDom.dsiMember(i) return whole.contains(i);
 
-proc CyclicZipOptDom.dsiIndexOrder(i) return whole.indexOrder(i);
+override proc CyclicZipOptDom.dsiIndexOrder(i) return whole.indexOrder(i);
 
 proc CyclicZipOptDom.dsiDims() return whole.dims();
 
@@ -826,8 +826,8 @@ proc CyclicZipOptArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
 iter CyclicZipOptArr.these(param tag: iterKind, followThis, param fast: bool = false) var where tag == iterKind.follower {
-  extern proc sizeof(type t): size_t;
-  extern proc memcmp(ref a, ref b, n:size_t):c_int;
+  extern proc sizeof(type t): c_size_t;
+  extern proc memcmp(ref a, ref b, n:c_size_t):c_int;
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
 

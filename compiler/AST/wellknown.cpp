@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +25,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeSpecifier.h"
+
+#include "global-ast-vecs.h"
 
 // The well-known types
 AggregateType* dtArray;
@@ -165,8 +167,8 @@ static WellKnownType sWellKnownTypes[] = {
   { "c_intptr",              &dt_c_intptr    },
   { "c_uintptr",             &dt_c_uintptr   },
   { "c_ptrdiff",             &dt_c_ptrdiff   },
-  { "ssize_t",               &dt_ssize_t     },
-  { "size_t",                &dt_size_t      },
+  { "c_ssize_t",             &dt_ssize_t     },
+  { "c_size_t",              &dt_size_t      },
 };
 
 static void removeIfUndefinedGlobalType(AggregateType*& t) {
@@ -595,4 +597,3 @@ void clearGenericWellKnownFunctions()
       *wkfn.fn = NULL;
   }
 }
-

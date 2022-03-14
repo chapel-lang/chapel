@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,22 +68,22 @@ module Path {
 use List;
 use SysError, IO;
 use Sys, SysBasic;
-use CPtr;
+use CTypes;
 
-/* 
+/*
    Represents generally the current directory. This starts as the directory
    where the program is being executed from. On all the platforms that Chapel
    supports this parameter is set to ".".
 */
 param curDir;
 
-/* 
+/*
    Represents generally the parent directory. On all the platforms that Chapel
    supports this parameter is set to "..".
 */
 param parentDir;
 
-/* 
+/*
    Denotes the separator between a directory and its child.  On all the
    platforms that Chapel supports this parameter is set to "/"
 */
@@ -108,12 +108,12 @@ private inline proc unescape(str: string) {
   given a non-absolute path this function is equivalent to the following code:
 
   .. code-block:: Chapel
-  
+
     normPath(joinPath(here.cwd(), path))
-  
+
   See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`
   for details.
-    
+
   .. warning::
 
     This function is unsafe for use in a parallel environment due to its
@@ -137,14 +137,14 @@ proc absPath(path: string): string throws {
 }
 
 /*
-  Creates a normalized absolutized version of the path of a 
+  Creates a normalized absolutized version of the path of a
   :type:`~IO.file`. On most platforms, when given a non-absolute path this
   function is equivalent to the following code:
-  
+
   .. code-block:: Chapel
-  
+
       normPath(joinPath(here.cwd(), f.path))
-      
+
   See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`,
   :proc:`~IO.file.path` for details.
 
@@ -164,13 +164,6 @@ proc absPath(path: string): string throws {
 */
 proc absPath(f: file): string throws {
   return try absPath(f.path);
-}
-
-pragma "no doc"
-deprecated "'file.absPath()' is deprecated. Please use 'absPath(file)' instead."
-proc file.absPath(): string throws {
-  // If we don't use the namespace we get a funky compiler type error.
-  return try Path.absPath(this);
 }
 
 /* Returns the file name portion of the path provided.  For instance:
@@ -435,19 +428,6 @@ proc dirname(path: string): string {
    return res;
  }
 
-pragma "no doc"
-deprecated "'file.getParentName()' is deprecated. Please use 'dirname(realPath(file))' instead."
-proc file.getParentName(): string throws {
-  try check();
-
-  try {
-    // realPath returns a string, nothing to worry about encoding-wise here
-    return dirname(createStringWithNewBuffer(this.realPath()));
-  } catch {
-    return "unknown";
-  }
-}
-
 /* Determines whether the path specified is an absolute path.
 
    .. note::
@@ -558,7 +538,7 @@ private proc normalizeLeadingSlashCount(path: string): int {
   :rtype: `string`
 */
 proc normPath(path: string): string {
-  
+
   // Python 3.7 implementation:
   // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
 
@@ -612,7 +592,7 @@ proc realPath(path: string): string throws {
   const ret = createStringWithNewBuffer(res, policy=decodePolicy.escape);
   // res was qio_malloc'd by chpl_fs_realpath, so free it here
   chpl_free_c_string(res);
-  return ret; 
+  return ret;
 }
 
 /* Determines the canonical path referenced by a given :type:`~IO.file` record.
@@ -621,7 +601,7 @@ proc realPath(path: string): string throws {
 
    :arg f: A file whose path should be resolved.
    :type f: :type:`~IO.file`
-   
+
    :return: A canonical path to the file referenced by the given :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
             occur.
@@ -632,18 +612,12 @@ proc realPath(f: file): string throws {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
 
   if (is_c_nil(f._file_internal)) then
-    try ioerror(EBADF:syserr, "in file.realPath");
+    try ioerror(EBADF:syserr, "in realPath with a file argument");
 
   var res: c_string;
   var err = chpl_fs_realpath_file(f._file_internal, res);
-  if err then try ioerror(err, "in file.realPath");
+  if err then try ioerror(err, "in realPath with a file argument");
   return createStringWithOwnedBuffer(res);
-}
-
-pragma "no doc"
-deprecated "'file.realPath()' is deprecated. Please use 'realPath(file)' instead."
-proc file.realPath(): string throws {
-  return try Path.realPath(this);
 }
 
 /* Compute the common prefix length between two lists of path components. */
@@ -744,12 +718,6 @@ proc relPath(path: string, start:string=curDir): string throws {
 */
 proc relPath(f: file, start:string=curDir): string throws {
   return relPath(f.path, start);
-}
-
-pragma "no doc"
-deprecated "'file.relPath()' is deprecated. Please use 'relPath(file)' instead."
-proc file.relPath(start:string=curDir): string throws {
-  return Path.relPath(this, start);
 }
 
 /*

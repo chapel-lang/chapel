@@ -838,7 +838,7 @@ proc AccumStencilDom.dsiMember(i) {
   return wholeFluff.contains(i);
 }
 
-proc AccumStencilDom.dsiIndexOrder(i) {
+override proc AccumStencilDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 

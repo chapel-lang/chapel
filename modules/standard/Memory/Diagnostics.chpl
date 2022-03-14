@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -54,7 +54,7 @@
     allocation statistics produced by :proc:`printMemAllocStats`, and the
     summary information about leaked memory produced by
     :proc:`printMemAllocsByType`.
-    
+
 
   ``memStats``: `bool`:
     Enable memory tracking and produce summary memory statistics by
@@ -169,7 +169,7 @@ proc memoryUsed() {
   :type thresh: `int`
 */
 proc printMemAllocs(thresh=0) {
-  pragma "insert line file info" 
+  pragma "insert line file info"
   extern proc chpl_printMemAllocs(thresh);
 
   chpl_printMemAllocs(thresh);
@@ -185,7 +185,7 @@ proc printMemAllocs(thresh=0) {
   allocations and bytes allocated for that type.
 */
 proc printMemAllocsByType() {
-  pragma "insert line file info" 
+  pragma "insert line file info"
   extern proc chpl_printMemAllocsByType();
 
   chpl_printMemAllocsByType();
@@ -213,7 +213,7 @@ proc printMemAllocStats() {
   The reporting output consists of a single line describing each
   memory allocation or deallocation, written to ``memLog``.
  */
-proc startVerboseMem() { 
+proc startVerboseMem() {
   extern proc chpl_startVerboseMem();
   chpl_startVerboseMem();
 }

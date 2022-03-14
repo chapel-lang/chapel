@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,8 @@
 #include "stmt.h"
 #include "stlUtil.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
 Symbol*           markPruned      = NULL;
@@ -130,11 +132,7 @@ ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar) {
 }
 
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
+/********************** addReduceIntent **********************/
 
 // Is 'type' a Reduce/Scan Op?
 // similar to isArrayClass()
@@ -369,6 +367,8 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   redRef2->insertBefore(new CallExpr("chpl__cleanupLocalOp",
                                      parentOp, currOp));
 }
+
+/********************** task intents **********************/
 
 // Is 'sym' an index var in the coforall loop
 // for which the 'fn' was created?
@@ -652,6 +652,28 @@ static void replaceVarUses(Expr* topAst, SymbolMap& vars) {
   }
 }
 
+/********************** helpers **********************/
+
+// Is this expr within a try or try! statement or a 'throws' function?
+static bool inTryContext(Expr* expr) {
+  if (FnSymbol* parentFn = toFnSymbol(expr->parentSymbol)) {
+    if (parentFn->throwsError())
+      return true;
+    if (isTaskFun(parentFn) && ! parentFn->hasFlag(FLAG_OUTSIDE_TRY))
+      return true;
+  }
+
+  Expr* curr = expr->parentExpr; // must be inTree()
+  do {
+    if (isTryStmt(curr))
+      return true;
+    curr = curr->parentExpr;
+  }
+  while (curr != nullptr);
+
+  return false; // did not find any enclosing try context
+}
+
 static
 bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = NULL)
 {
@@ -677,6 +699,8 @@ bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = N
   }
   return false;
 }
+
+/********************** createTaskFunctions **********************/
 
 //
 // Converts blocks implementing various task constructs into
@@ -728,7 +752,7 @@ void createTaskFunctions(void) {
   }
 
   // Process task-creating constructs. We include 'on' blocks, too.
-  forv_Vec(BlockStmt, block, gBlockStmts) {
+  forv_expanding_Vec(BlockStmt, block, gBlockStmts) {
     if (block->isLoopStmt() == true) {
       // Loops are not a parallel block construct, so do nothing.
       // The isLoopStmt() test guards the call blockInfoGet() below
@@ -811,6 +835,9 @@ void createTaskFunctions(void) {
 
         if( info->isPrimitive(PRIM_BLOCK_ON) ) {
           isBlockingOn = true;
+        }
+        if (! inTryContext(block)) {
+          fn->addFlag(FLAG_OUTSIDE_TRY);
         }
 
         // Add the call to the outlined task function.

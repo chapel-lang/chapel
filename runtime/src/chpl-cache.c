@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -3566,13 +3566,42 @@ static struct rdcache_s* cache_create(void);
 CHPL_TLS_DECL(struct rdcache_s*,cache_remote_data);
 static pthread_key_t pthread_cache_info_key; // stores struct rdcache_s*
 
+// ideally we would just make is_inited an atomic but
+// the runtime atomics support can't handle static initialization
+// so we use a pthread mutex for now
+static pthread_mutex_t is_inited_mutex = PTHREAD_MUTEX_INITIALIZER;
+static chpl_bool is_inited = false; // protected by is_inited_mutex
+
+
+// returns NULL if the cache is not yet inited
 static
 struct rdcache_s* tls_cache_remote_data(void) {
+#ifndef CHPL_TLS
+  // Configs without native TLS use pthread_getspecific, which can't be called
+  // before pthread_key_create. Use a somewhat racy init check  before calling
+  // TLS_GET (get_specific wrapper). In reality, this is a single byte read so
+  // we expect it to be atomic, but it's not strictly conforming to the MCM.
+  if (!is_inited) return NULL;
+#endif
+
   struct rdcache_s *cache = CHPL_TLS_GET(cache_remote_data);
-  if( ! cache && chpl_cache_enabled() ) {
-    cache = cache_create();
-    CHPL_TLS_SET(cache_remote_data, cache);
-    pthread_setspecific(pthread_cache_info_key, cache);
+  if( !cache && chpl_cache_enabled()) {
+    // check also if the cache has already been initialized
+    chpl_bool local_is_inited;
+
+    pthread_mutex_lock(&is_inited_mutex);
+    local_is_inited = is_inited;
+    pthread_mutex_unlock(&is_inited_mutex);
+
+    if (local_is_inited) {
+      // cache has been initialized so init the thread-local
+      // state for this thread.
+      cache = cache_create();
+      CHPL_TLS_SET(cache_remote_data, cache);
+      // set the pthread key so that the cache will be freed
+      // on thread exit
+      pthread_setspecific(pthread_cache_info_key, cache);
+    }
   }
   return cache;
 }
@@ -3581,7 +3610,11 @@ static
 chpl_cache_taskPrvData_t* task_private_cache_data(void)
 {
   chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
-  assert(infoRuntime);
+
+  // propagate NULL to caller if we run in to it
+  if (infoRuntime == NULL)
+    return NULL;
+
   return &infoRuntime->comm_data.cache_data;
 }
 
@@ -3589,32 +3622,35 @@ static
 void destroy_pthread_local_cache(void* arg)
 {
   struct rdcache_s* s = (struct rdcache_s*) arg;
-  cache_destroy(s);
+  if (s) cache_destroy(s);
 }
 
 static
 void chpl_cache_do_init(void)
 {
-  static int inited = 0;
-  if( ! inited ) {
+  pthread_mutex_lock(&is_inited_mutex);
+  if (!is_inited) {
     // We will need some thread-local storage.
     // We create two versions: cache_remote_data stores
     // our pointer to the struct rd_cache_s* and is what
     // we normally use, with __thread or CHPL_TLS_GET which is
     // faster.
     CHPL_TLS_INIT(cache_remote_data);
-    // The second key we never read but create so that we
+    // The second key we never read but we create it so that we
     // can free the cache when the thread exits.
     pthread_key_create(&pthread_cache_info_key, &destroy_pthread_local_cache);
-    inited = 1;
+    is_inited = 1;
   }
+  pthread_mutex_unlock(&is_inited_mutex);
 }
 
 // The implementation of functions in chpl-cache.h
 
 void chpl_cache_init(void) {
 
-  chpl_cache_warn_if_disabled();
+  if (chpl_nodeID == 0) {
+    chpl_cache_warn_if_disabled();
+  }
 
   if( ! chpl_cache_enabled() ) {
     return;
@@ -3632,38 +3668,39 @@ void chpl_cache_exit(void)
 
 void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
 {
+  struct rdcache_s* cache = tls_cache_remote_data();
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
+  // Do nothing if the cache is not yet inited
+  if (!cache) return;
+
   if( acquire == 0 && release == 0 ) return;
-  if( chpl_cache_enabled() ) {
-    struct rdcache_s* cache = tls_cache_remote_data();
-    chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
 
-    INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
+  INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
 
-    TRACE_FENCE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i)"
-                       " on cache %p from %s:%d\n",
-                       chpl_nodeID, (int) chpl_task_getId(), acquire, release,
-                       cache, chpl_lookupFilename(fn), ln));
+  TRACE_FENCE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i)"
+                     " on cache %p from %s:%d\n",
+                     chpl_nodeID, (int) chpl_task_getId(), acquire, release,
+                     cache, chpl_lookupFilename(fn), ln));
 
 #ifdef DUMP
-    DEBUG_PRINT(("%d: task %d before fence\n", chpl_nodeID, (int) chpl_task_getId()));
-    chpl_cache_print();
+  DEBUG_PRINT(("%d: task %d before fence\n", chpl_nodeID, (int) chpl_task_getId()));
+  chpl_cache_print();
 #endif
 
-    if( acquire ) {
-      task_local->last_acquire = cache->next_request_number;
-      cache->next_request_number++;
-    }
-
-    if( release ) {
-      cache_clean_dirty(cache, task_local);
-      wait_all(cache);
-    }
-#ifdef DUMP
-    DEBUG_PRINT(("%d: task %d after fence\n", chpl_nodeID, (int) chpl_task_getId()));
-    chpl_cache_print();
-#endif
+  if( acquire ) {
+    task_local->last_acquire = cache->next_request_number;
+    cache->next_request_number++;
   }
-  // Do nothing if cache is not enabled.
+
+  if( release ) {
+    cache_clean_dirty(cache, task_local);
+    wait_all(cache);
+  }
+#ifdef DUMP
+  DEBUG_PRINT(("%d: task %d after fence\n", chpl_nodeID, (int) chpl_task_getId()));
+  chpl_cache_print();
+#endif
 }
 
 void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
@@ -3672,6 +3709,8 @@ void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
 
+  // Do nothing if the cache is not yet inited
+  if (!cache) return;
 
   TRACE_PRINT(("%d: task %d in chpl_cache_invalidate %s:%d %d bytes at %d:%p\n",
                chpl_nodeID, (int)chpl_task_getId(),
@@ -3698,9 +3737,12 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   int all_hits;
 
-  if (size_merits_direct_comm(cache, size)) {
-    cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+  if (!cache || size_merits_direct_comm(cache, size)) {
+    if (cache)
+      cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+
     chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
+
     if (EXTRA_YIELDS) {
       TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for chpl_comm_put\n",
                          chpl_nodeID, (int) chpl_task_getId(), cache));
@@ -3739,14 +3781,16 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t commID, int ln, int32_t fn)
 {
-  //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   int all_hits;
 
-  if (size_merits_direct_comm(cache, size)) {
-    cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+  if (!cache || size_merits_direct_comm(cache, size)) {
+    if (cache)
+      cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
+
     if (EXTRA_YIELDS) {
       TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for chpl_comm_get\n",
                          chpl_nodeID, (int) chpl_task_getId(), cache));
@@ -3787,6 +3831,9 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
+  // Do nothing if the cache is not yet inited
+  if (!cache) return;
 
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
 
@@ -3833,6 +3880,9 @@ void strd_invalidate(void *addr, void *dststr, c_nodeid_t node,
 
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
+  // Do nothing if the cache is not yet inited
+  if (!cache) return;
 
   struct cache_strd_callback_ctx ctx;
   ctx.cache = cache;
@@ -3928,8 +3978,12 @@ void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-  cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+
+  if (cache)
+    cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+
   chpl_comm_put_unordered(addr, node, raddr, size, commID, ln, fn);
+
   if (EXTRA_YIELDS) {
     TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for put_unordered\n",
                       chpl_nodeID, (int) chpl_task_getId(), cache));
@@ -3946,8 +4000,12 @@ void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-  cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+
+  if (cache)
+    cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+
   chpl_comm_get_unordered(addr, node, raddr, size, commID, ln, fn);
+
   if (EXTRA_YIELDS) {
     TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for get_unordered\n",
                        chpl_nodeID, (int) chpl_task_getId(), cache));
@@ -3967,9 +4025,14 @@ void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-  cache_invalidate(cache, task_local, srcnode, (raddr_t)srcaddr, size);
-  cache_invalidate(cache, task_local, dstnode, (raddr_t)dstaddr, size);
+
+  if (cache) {
+    cache_invalidate(cache, task_local, srcnode, (raddr_t)srcaddr, size);
+    cache_invalidate(cache, task_local, dstnode, (raddr_t)dstaddr, size);
+  }
+
   chpl_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+
   if (EXTRA_YIELDS) {
     TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for getput_unordered\n",
                        chpl_nodeID, (int) chpl_task_getId(), cache));
@@ -3991,6 +4054,9 @@ void chpl_cache_print(void)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
+  if (!cache) return;
+
   printf("%d: cache dump last acquire %i\n", chpl_nodeID, (int) task_local->last_acquire);
   rdcache_print(cache);
 }
@@ -4002,6 +4068,8 @@ void chpl_cache_assert_released(void)
   struct dirty_entry_s* cur;
   cache_seqn_t sn;
   int index;
+
+  if (!cache) return;
 
   cur = cache->dirty_lru_head;
   if ( cur && cur->entry )
@@ -4019,6 +4087,8 @@ void chpl_cache_assert_released(void)
 // This is for debugging
 void chpl_cache_print_stats(void) {
   struct rdcache_s* cache = tls_cache_remote_data();
+  if (!cache) return;
+
   int n_used_slots = 0;
   int n_full_slots = 0;
   int n_bottom_entries = 0;
@@ -4078,6 +4148,9 @@ int chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size)
 
   if (!chpl_cache_enabled())
     chpl_internal_error("chpl_cache_mock_get called without --cache-remote");
+
+  if (!cache)
+    chpl_internal_error("chpl_cache_mock_get called without cache inited");
 
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_mock_get from %d:%p\n",

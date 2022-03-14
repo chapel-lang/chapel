@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 var v_c_int: c_int = 0;
 var v_c_uint: c_uint = 0;
@@ -14,8 +14,8 @@ var v_c_ushort: c_ushort = 0;
 var v_c_intptr: c_intptr = 0;
 var v_c_uintptr: c_uintptr = 0;
 var v_c_ptrdiff: c_ptrdiff = 0;
-var v_c_ssize_t: ssize_t = 0;
-var v_c_size_t: size_t = 0;
+var v_c_ssize_t: c_ssize_t = 0;
+var v_c_size_t: c_size_t = 0;
 
 writeln(v_c_int);
 writeln(v_c_uint);

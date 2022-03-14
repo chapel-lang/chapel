@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -89,7 +89,7 @@ void initAprunAttributes() {
   argv[0] = (char *) "cnselect";
   argv[1] = (char *) "-l";
   argv[2] = NULL;
-  
+
   memset(CNA, 0, CNAbuflen);
   // We assume here that 'cnselect -l' will always return something meaningful
   if (chpl_run_utility1K("cnselect", argv, CNA, CNAbuflen) <= 0) {
@@ -126,7 +126,7 @@ int getCoresPerLocale() {
     argv[0] = (char *) "cnselect";
     argv[1] = (char *) "-Lnumcores";
     argv[2] = NULL;
-  
+
     memset(buf, 0, buflen);
     if (chpl_run_utility1K("cnselect", argv, buf, buflen) <= 0)
       chpl_error("Error trying to determine number of cores per node", 0, 0);
@@ -142,11 +142,11 @@ int getCoresPerLocale() {
     const int buflen = 1024;
     char buf[buflen];
     char* argv[3];
- 
+
     argv[0] = (char *) "cnselect";
     argv[1] = (char *) "-Lcoremask";
     argv[2] = NULL;
-  
+
     memset(buf, 0, buflen);
     if (chpl_run_utility1K("cnselect", argv, buf, buflen) <= 0)
       chpl_error("Error trying to determine number coremask on node", 0, 0);

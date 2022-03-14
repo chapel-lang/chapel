@@ -1,0 +1,5 @@
+bulkAddAndMIB.chpl:6: warning: makeIndexBuffer() is subject to change in the future.
+bulkAddAndMIB.chpl:7: warning: makeIndexBuffer() is subject to change in the future.
+bulkAddAndMIB.chpl:9: warning: bulkAdd() is subject to change in the future.
+bulkAddAndMIB.chpl:10: warning: bulkAdd() is subject to change in the future.
+bulkAddAndMIB.chpl:11: error: done

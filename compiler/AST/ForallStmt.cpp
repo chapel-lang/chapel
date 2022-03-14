@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,8 @@
 #include "ForLoop.h"
 #include "passes.h"
 #include "stringutil.h"
+
+#include "global-ast-vecs.h"
 
 ForallOptimizationInfo::ForallOptimizationInfo():
   infoGathered(false),
@@ -189,7 +191,7 @@ void ForallStmt::accept(AstVisitor* visitor) {
     if (fRecIterGetIterator)  fRecIterGetIterator->accept(visitor);
     if (fRecIterFreeIterator) fRecIterFreeIterator->accept(visitor);
     if (fZipCall)             fZipCall->accept(visitor);
-    
+
     fLoopBody->accept(visitor);
 
     visitor->exitForallStmt(this);

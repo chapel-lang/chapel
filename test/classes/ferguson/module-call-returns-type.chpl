@@ -1,6 +1,6 @@
 module OuterModule {
   module C {
-    use SysCTypes;
+    use CTypes;
     record my_struct {
       var my_field:c_int;
     }

@@ -40,6 +40,7 @@
 extern struct sigaction *old_action;
 struct smr_env smr_env = {
 	.sar_threshold = SIZE_MAX,
+	.disable_cma = false,
 };
 
 static void smr_init_env(void)
@@ -47,6 +48,7 @@ static void smr_init_env(void)
 	fi_param_get_size_t(&smr_prov, "sar_threshold", &smr_env.sar_threshold);
 	fi_param_get_size_t(&smr_prov, "tx_size", &smr_info.tx_attr->size);
 	fi_param_get_size_t(&smr_prov, "rx_size", &smr_info.rx_attr->size);
+	fi_param_get_bool(&smr_prov, "disable_cma", &smr_env.disable_cma);
 }
 
 static void smr_resolve_addr(const char *node, const char *service,
@@ -214,6 +216,8 @@ SHM_INI
 	fi_param_define(&smr_prov, "rx_size", FI_PARAM_SIZE_T,
 			"Max number of outstanding rx operations \
 			 Default: 1024");
+	fi_param_define(&smr_prov, "disable_cma", FI_PARAM_BOOL,
+			"Manually disables CMA. Default: false");
 
 	smr_init_env();
 

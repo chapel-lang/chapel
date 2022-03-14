@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,8 +20,7 @@
 
 module ByteBufferHelpers {
   private use ChapelStandard;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   pragma "no doc"
   type byteType = uint(8);
@@ -56,7 +55,7 @@ module ByteBufferHelpers {
 
   inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
                                    src_addr: bufferType, len: integral) {
-    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
+    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(c_size_t));
   }
 
   private inline proc getGoodAllocSize(requestedSize: int): int {
@@ -179,7 +178,7 @@ module ByteBufferHelpers {
     if loc1 == chpl_nodeID && loc2 == chpl_nodeID {
       // it's local
       return _strcmp_local(buf1, len1, buf2, len2);
-    } 
+    }
     else if loc1 != chpl_nodeID && loc2 == chpl_nodeID {
       var locBuf1 = bufferCopyRemote(loc1, buf1, len1);
       const ret = _strcmp_local(locBuf1, len1, buf2, len2);

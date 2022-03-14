@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -125,8 +125,7 @@ module DistributedBag {
 
   public use Collection;
   use BlockDist;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   use IO only channel;
 
   /*
@@ -256,9 +255,9 @@ module DistributedBag {
       }
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
-  
+
     pragma "no doc"
-    /* Read/write the contents of DistBag from/to a channel */ 
+    /* Read/write the contents of DistBag from/to a channel */
     proc readWriteThis(ch: channel) throws {
       ch <~> "[";
       var size = this.getSize();
@@ -268,7 +267,7 @@ module DistributedBag {
       }
       ch <~> "]";
     }
-    
+
     forwarding _value;
   }
 
@@ -1177,7 +1176,7 @@ module DistributedBag {
                                   break;
                                 }
 
-                                extern proc sizeof(type x): size_t;
+                                extern proc sizeof(type x): c_size_t;
                                 // We steal at most 1MB worth of data. If the user has less than that, we steal a %, at least 1.
                                 const mb = distributedBagWorkStealingMemCap * 1024 * 1024;
                                 var toSteal = max(distributedBagWorkStealingMinElems, min(mb / sizeof(eltType), targetSegment.nElems.read() * distributedBagWorkStealingRatio)) : int;

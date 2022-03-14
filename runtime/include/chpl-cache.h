@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,7 @@
 
 #include "chpltypes.h"
 #include "chpl-atomics.h"
-#include "chpl-comm.h" // to get HAS_CHPL_CACHE_FNS via chpl-comm-task-decls.h
+#include "chpl-comm-task-decls.h"
 #include "chpl-env.h"
 #include "chpl-tasks.h"
 #include "error.h"
@@ -55,8 +55,7 @@ extern const int CHPL_CACHE_REMOTE;
 static inline
 void chpl_cache_warn_if_disabled(void)
 {
-  if (CHPL_CACHE_REMOTE && chpl_nodeID == 0 &&
-      !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
+  if (CHPL_CACHE_REMOTE && !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
     if (CHPL_ASAN) {
       chpl_warning("Disabling --cache-remote due to incompatibility with "
                    "AddressSanitizer (quiet with CHPL_RT_CACHE_QUIET=true)", 0, 0);
@@ -78,12 +77,12 @@ int chpl_cache_enabled(void)
 #undef CHPL_ASAN
 
 
-// Initialize the remote data cache layer. 
+// Initialize the remote data cache layer.
 void chpl_cache_init(void);
 void chpl_cache_exit(void);
 
 // If release is set, waits on any pending puts in the cache.
-// If acquire is set, sets this task's last acquire fence to 
+// If acquire is set, sets this task's last acquire fence to
 // the cache's current request number.
 void chpl_cache_fence(int acquire, int release, int ln, int32_t fn);
 

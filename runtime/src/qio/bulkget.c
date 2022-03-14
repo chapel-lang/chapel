@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,7 +59,7 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
   }
 
   // Great! All done.
-  return ret; 
+  return ret;
 }
 
 qioerr bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
@@ -72,7 +72,7 @@ qioerr bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
   size_t i,j;
   MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   qioerr err;
- 
+
   if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end )  QIO_RETURN_CONSTANT_ERROR(EINVAL, "range outside of buffer");
 
   MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,7 +46,7 @@ class ProfileBrowser : public SelectBrowser {
   void prepareData(whichData what);
 
   void showFileFor(int ix);
-  
+
 };
 
 

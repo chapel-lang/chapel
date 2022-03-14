@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,7 +32,7 @@ namespace chapel {
   void PrimitiveFieldGenerator::GenerateMembers(Printer* printer) {
     printer->Print(variables_, "var $name$: $type_name$;\n");
   }
-  
+
   PrimitiveOneofFieldGenerator::PrimitiveOneofFieldGenerator(const FieldDescriptor* descriptor)
       : FieldGeneratorBase(descriptor) {
     SetCommonOneofFieldVariables(&variables_);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -206,7 +206,7 @@ module ConcurrentMap {
   pragma "no doc"
   // Stores keys and values in the hash table. The lock is used to
   // determine both the 'lock'/'unlock' state of the bucket, and if
-  // the bucket is going to be destroyed, meaning that the task should 
+  // the bucket is going to be destroyed, meaning that the task should
   // back out and try again. The bucket gets destroyed when a task
   // attempts to insert an element into an already-full bucket. All
   // tasks _must_ be in the current epoch to even get this far, so
@@ -278,7 +278,7 @@ module ConcurrentMap {
   class ConcurrentMap : Base {
     pragma "no doc"
     var root : unmanaged Buckets(keyType, valType);
-  
+
     pragma "no doc"
     var _manager = new owned LocalEpochManager();
 
@@ -318,8 +318,8 @@ module ConcurrentMap {
         var next = curr.buckets[idx].read();
         // writeln("stuck");
         if (next == nil) {
-          // If we're not inserting something, I.E we are removing 
-          // or retreiving, we are done.
+          // If we're not inserting something, I.E we are removing
+          // or retrieving, we are done.
           if !isInsertion then return nil;
 
           // Otherwise, speculatively create a new bucket to add in.
@@ -396,8 +396,8 @@ module ConcurrentMap {
         var next = curr.buckets[idx].read();
         // writeln("stuck");
         if (next == nil) {
-          // If we're not inserting something, I.E we are removing 
-          // or retreiving, we are done.
+          // If we're not inserting something, I.E we are removing
+          // or retrieving, we are done.
           if !isInsertion then return retNil;
 
           // Otherwise, speculatively create a new bucket to add in.
@@ -681,7 +681,7 @@ module ConcurrentMap {
     }
 
     /*
-      Parallely iterates over the key-value pairs of this map.
+      Parallelly iterates over the key-value pairs of this map.
 
       :yields: A tuple whose elements are a copy of one of the key-value
                pairs contained in this map.
@@ -693,7 +693,7 @@ module ConcurrentMap {
     }
 
     /*
-      Parallely iterates over the keys of this map.
+      Parallelly iterates over the keys of this map.
 
       :yields: A copy of one of the keys contained in this map.
     */
@@ -704,7 +704,7 @@ module ConcurrentMap {
     }
 
     /*
-      Parallely iterates over the values of this map.
+      Parallelly iterates over the values of this map.
 
       :yields: A copy of one of the values contained in this map.
     */
@@ -1095,7 +1095,7 @@ module ConcurrentMap {
     var atok = a.getToken();
     var btok = b.getToken();
     var result = true;
-    for (key, val) in a {                   // Can also be done parallely
+    for (key, val) in a {                   // Can also be done parallelly
       var (found, Val) = b.getValue(key, btok);
       if !found || val != Val then
         result = false;

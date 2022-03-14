@@ -1,0 +1,6 @@
+catchDeprecatedError.chpl:5: In function 'throwsDepErr':
+catchDeprecatedError.chpl:6: warning: MyDepErr is deprecated
+catchDeprecatedError.chpl:9: In function 'main':
+catchDeprecatedError.chpl:12: warning: MyDepErr is deprecated
+catchDeprecatedError.chpl:12: warning: MyDepErr is deprecated
+owned MyDepErr

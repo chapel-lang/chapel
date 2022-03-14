@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,7 +27,6 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
-#include "oldCollectors.h"
 #include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
@@ -38,6 +37,8 @@
 #include "symbol.h"
 #include "view.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 bool iteratorsLowered = false;
 
@@ -144,7 +145,7 @@ bool isVirtualIterator(FnSymbol* iterFn) {
         IRtype = formal->getValType();
       }
   }
-  
+
   if (AggregateType* at = toAggregateType(IRtype)) {
     Vec<AggregateType*>* children = &(at->dispatchChildren);
 
@@ -1744,9 +1745,34 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
   }
 }
 
+/*
+Given 'se' - a location in the AST - find the nearest enclosing error handler
+that follows this location. If it was found, then return 'true' and store
+its error label and error symbol in the "out" arguments. If a call to
+_endCountFree was encountered while searching, save it as well so it can be
+cloned. Here is an example of the expected AST structure:
+    {
+      { ... some number of block nests ...
+        if check error( error[1] )
+          {
+            call( fn chpl_propagate_error error[1] )
+          }
+        call( fn _endCountFree _coforallCount )
+        call( fn _freeIterator _iterator )
+       }
+    }
+    ...
+    def handler
+    def val shouldHandleError:bool
+    move( shouldHandleError check error( error[2] ) )
+    if shouldHandleError
+      { ... }
+where 'se' is a reference to 'error[1]'. outHandlerLabel is set to 'handler',
+outErrorSymbol to 'error[2]', endCountFree to the call to _endCountFree.
+*/
 static bool
 findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
-    Symbol*& outErrorSymbol, CallExpr*& endCountFree) {
+    Symbol*& outErrorSymbol, CallExpr*& endCountFree, bool inForall = false) {
   Expr* stmt = se->getStmtExpr(); // aka last scope
   Expr* scope = stmt->parentExpr;
 
@@ -1757,7 +1783,8 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
       for(Expr* cur = stmt->next; cur != NULL; cur = cur->next) {
         if (DefExpr* def = toDefExpr(cur)) {
           if (LabelSymbol* label = toLabelSymbol(def->sym)) {
-            if (label->hasFlag(FLAG_ERROR_LABEL)) {
+            if (label->hasFlag(FLAG_ERROR_LABEL) ||
+                (inForall && label->hasFlag(FLAG_FORALL_BREAK_LABEL))) {
               outHandlerLabel = label;
               // find the error that this block is working with
               for(Expr* e = def->next; e != NULL; e = e->next) {
@@ -1799,13 +1826,13 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
   return false;
 }
 
-void handleChplPropagateErrorCall(CallExpr* call) {
+void handleChplPropagateErrorCall(CallExpr* call, bool inForall) {
   SymExpr* errSe = toSymExpr(call->get(1));
   INT_ASSERT(errSe && errSe->typeInfo() == dtError);
   LabelSymbol* label = NULL;
   Symbol* error = NULL;
   CallExpr *endCountFree = NULL;
-  if (findFollowingCheckErrorBlock(errSe, label, error, endCountFree)) {
+  if (findFollowingCheckErrorBlock(errSe, label, error, endCountFree, inForall)) {
     errSe->remove();
     if (endCountFree != NULL) {
       call->insertBefore(endCountFree->copy());
@@ -1906,7 +1933,7 @@ static Expr* ibbInsertPoint(Expr* loopRef, Symbol* IC, GotoStmt* gt) {
   if (!IC) {
     return gt;
   }
-  
+
   // If we are breaking out from this loop, the IC is freed
   // at the break target. Insert the IBB right before the goto.
   // Cf. if gt is a GOTO_RETURN, the IC is freed at the goto.
@@ -2065,7 +2092,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         BlockStmt* bodyCopy = forLoop->copyBody(&map);
         addIteratorBreakBlocksInline(ibody, forLoop->iteratorGet()->symbol(),
                                      bodyCopy, call, NULL);
-        
+
         if (int count = countEnclosingLocalBlocks(call, ibody)) {
           for (int i = 0; i < count; i++) {
             bodyCopy = new BlockStmt(bodyCopy);
@@ -2512,7 +2539,7 @@ expandForLoop(ForLoop* forLoop) {
       // Need to check if iterator will be inlined, isSingleLoopIterator()
       // doesn't handle arbitrary blockstmts well, so we collapse them first
       iterFn->collapseBlocks();
-      Vec<BaseAST*> asts;
+      std::vector<BaseAST*> asts;
       collect_asts_postorder(iterFn, asts);
 
       // If the iterator cannot be inlined a re-entrant advance function will
@@ -2667,7 +2694,7 @@ static void cleanupLeaderFollowerIteratorCalls()
   // Fixes uses of formals outside of their function.
   // Such formals were temporarily added (e.g. in preFold for PRIM_TO_FOLLOWER)
   //
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
       if (FnSymbol* fn = call->resolvedFunction()) {
         if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
@@ -3010,7 +3037,7 @@ void lowerIterators() {
     }
   }
 
-  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
+  for_alive_in_expanding_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block))
       expandForLoop(loop);
   }
@@ -3035,6 +3062,28 @@ void lowerIterators() {
   }
 
   USR_STOP();
+
+  forv_Vec (CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
+      call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
+
+      if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+        if (isSymExpr(parentCall->get(1))) {
+          if (SymExpr* field = toSymExpr(call->get(2))) {
+            if (field->symbol()->isRef()) {
+              SET_LINENO(call);
+
+              VarSymbol* derefTmp = newTemp("derefTmp", field->symbol()->type);
+              parentCall->insertBefore(new DefExpr(derefTmp));
+              parentCall->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
+                                                    call->remove()));
+              parentCall->insertAtTail(new CallExpr(PRIM_DEREF, derefTmp));
+            }
+          }
+        }
+      }
+    }
+  }
 
   removeUncalledIterators();
 

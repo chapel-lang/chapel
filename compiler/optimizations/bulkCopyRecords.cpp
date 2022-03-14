@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,9 @@
 // Look for record assignment functions that can be replaced by an assign
 // primitive.
 //
+#include "FnSymbol.h"
+#include "PassManager.h"
+#include "baseAST.h"
 #include "passes.h" // For global declaration of the main routine.
 
 #include "stmt.h"
@@ -30,11 +33,7 @@
 #include "stlUtil.h"
 #include "resolution.h" // isPOD
 
-
-static bool isAssignment(FnSymbol* fn);
-static bool isTrivialAssignment(FnSymbol* fn);
-
-static bool isAssignment(FnSymbol* fn)
+bool BulkCopyRecords::isAssignment(FnSymbol* fn)
 {
   if (! fn->hasFlag(FLAG_ASSIGNOP))
     return false;
@@ -44,9 +43,7 @@ static bool isAssignment(FnSymbol* fn)
   return true;
 }
 
-static std::map<Type*, bool> containsRef;
-
-static bool typeContainsRef(Type* t, bool isRoot = true)
+bool BulkCopyRecords::typeContainsRef(Type* t, bool isRoot)
 {
   if (containsRef.count(t))
     return containsRef[t];
@@ -77,11 +74,11 @@ static bool typeContainsRef(Type* t, bool isRoot = true)
     - the lhs and rhs arguments are POD types
     - the lhs and rhs arguments do not contain references
  */
-static bool isTrivialAssignment(FnSymbol* fn)
+bool BulkCopyRecords::isTrivialAssignment(FnSymbol* fn)
 {
   if (! isAssignment(fn))
     return false;
-  
+
   // The base argument types must match.
   ArgSymbol* lhs = fn->getFormal(1);
   ArgSymbol* rhs = fn->getFormal(2);
@@ -113,7 +110,7 @@ static bool isTrivialAssignment(FnSymbol* fn)
 // (PRIM_ASSIGN) operation.  In the generated code, PRIM_ASSIGN on a type that
 // is represented by a C struct will be rendered as a struct assignment, which
 // the C compiler can implement as a memcpy.
-static void replaceSimpleAssignment(FnSymbol* fn)
+void BulkCopyRecords::replaceSimpleAssignment(FnSymbol* fn)
 {
   SET_LINENO(fn);
   SymExpr* lhs = new SymExpr(fn->getFormal(1));
@@ -124,19 +121,27 @@ static void replaceSimpleAssignment(FnSymbol* fn)
   fn->body->replace(block);
 }
 
+bool BulkCopyRecords::shouldProcess(FnSymbol* fn) {
+  // We do not convert wrapper functions (only the functions that do the
+  // actual assignment).
+  if (fn->hasFlag(FLAG_WRAPPER))
+    return false;
 
-void bulkCopyRecords()
-{
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    // We do not convert wrapper functions (only the functions that do the
-    // actual assignment).
-    if (fn->hasFlag(FLAG_WRAPPER))
-      continue;
+  return isTrivialAssignment(fn);
+}
 
-    if (isTrivialAssignment(fn))
-      replaceSimpleAssignment(fn);
-  }
+void BulkCopyRecords::process(FnSymbol* fn) {
+  replaceSimpleAssignment(fn);
+  // TODO PAssManager I think here would be a great place
+  // for a stats gather method so we can easily count how
+  // many things actually got replaced
+  // passes do this on their own today in various forms
+  // And this could also extend to a verify
+}
 
-  containsRef.clear();
+#include "global-ast-vecs.h"
+
+void bulkCopyRecords() {
+  PassManager pm;
+  pm.runPass<FnSymbol*>(BulkCopyRecords(), gFnSymbols);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,7 +33,7 @@ pragma "module included by default"
 module Errors {
   private use ChapelStandard;
   private use ChapelLocks;
-  private use CPtr;
+  private use CTypes;
 
   // Base class for errors
   // TODO: should Error include list pointers for TaskErrors?

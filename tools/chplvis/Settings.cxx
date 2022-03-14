@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,7 +31,7 @@
 
 // Color Reference location and height
 static const int cr_x = 180;
-static const int cr_y = 35;  
+static const int cr_y = 35;
 static const int cr_h = 20;
 
 

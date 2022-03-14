@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +25,8 @@
 #include "symbol.h"
 #include "expr.h"
 #include "iterator.h"
+
+#include "global-ast-vecs.h"
 
 static const char* nameForUser(const char* className) {
   if (!strcmp(className, "_owned") || !strcmp(className, "_shared"))

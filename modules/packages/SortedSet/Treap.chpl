@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,7 +23,7 @@
   Treap supports insertion, deletion, query in O(lgN).
 
   .. note::
-    Generally, users don't have to directly use this module. The methods of a treap 
+    Generally, users don't have to directly use this module. The methods of a treap
     are available for an sortedSet. This page is for reference.
 */
 pragma "no doc"
@@ -40,7 +40,7 @@ module Treap {
   private param _sanityChecks = false;
 
   // The locker is borrowed from List.chpl
-  // 
+  //
   // We can change the lock type later. Use a spinlock for now.
   //
   pragma "no doc"
@@ -212,7 +212,7 @@ module Treap {
     */
     proc init(type eltType, iterable, param parSafe = false, comparator: record = defaultComparator)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
-      _checkType(eltType); 
+      _checkType(eltType);
 
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -285,7 +285,7 @@ module Treap {
       var result = false;
 
       on this {
-        _enter(); 
+        _enter();
         result = _contains(x);
         _leave();
       }
@@ -320,7 +320,7 @@ module Treap {
 
       _link(child!.children[pos^1], node, pos);
       _link(node, child, pos^1);
-      
+
 
       // Update the size field.
       node!.update();
@@ -357,7 +357,7 @@ module Treap {
       else return _findRef(node!.children[1], element);
     }
 
-    /* Given one element, return the reference to the element in the sortedSet, 
+    /* Given one element, return the reference to the element in the sortedSet,
        which equals to the former in the perspective of the comparator.
 
        This procedure could halt when there is no hit.
@@ -373,7 +373,7 @@ module Treap {
       return result;
     }
 
-    /* Given one element, return the element in the sortedSet, which equals to the 
+    /* Given one element, return the element in the sortedSet, which equals to the
        former in the perspective of the comparator.
 
        This procedure could halt when there is no hit.
@@ -513,7 +513,7 @@ module Treap {
       if node == nil then return nil;
       if node!.children[direction] {
         // node has right child,
-        // find the leftmost node in its right child tree 
+        // find the leftmost node in its right child tree
         node = node!.children[direction];
         direction ^= 1;
         while node != nil && node!.children[direction] != nil {
@@ -573,7 +573,7 @@ module Treap {
         compilerError("lowerBound is not available on types that can't be \
                       default-initialized, here: " + eltType: string);
       }
-      
+
       _enter(); defer _leave();
 
       var node = _lower_bound(_root, e);
@@ -643,7 +643,7 @@ module Treap {
       }
       return result;
     }
-    
+
     /*
       Find the successor of one element in the sortedSet.
 
@@ -761,7 +761,7 @@ module Treap {
         Modifying this sortedSet while iterating over it may invalidate the
         references returned by an iterator and is considered undefined
         behavior.
-      
+
       :yields: A constant reference to an element in this sortedSet.
     */
     iter const these() {
@@ -799,7 +799,7 @@ module Treap {
 
       return result;
     }
-    
+
     /*
       Returns `true` if this sortedSet and `other` have at least one element in
       common, and `false` otherwise.

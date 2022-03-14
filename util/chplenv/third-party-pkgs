@@ -48,6 +48,7 @@ def generate_subdir_map():
     pkg_aliases['CHPL_LIBFABRIC-bundled'] = 'libfabric'
     pkg_aliases['CHPL_LLVM-bundled'] = 'llvm'
     pkg_aliases['CHPL_UNWIND-bundled'] = 'libunwind'
+    pkg_aliases['CHPL_RE2-bundled'] = 're2'
 
     return pkg_aliases
 

@@ -1,15 +1,15 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
- * Other additional copyright holders may be indicated within.  * 
+ * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@
 #include "chplcgfns.h"
 
 #ifdef HAS_GPU_LOCALE
+
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -50,7 +51,7 @@ static void chpl_gpu_cuda_check(int err, const char* file, int line) {
     snprintf(msg, msg_len,
              "%s:%d: Error calling CUDA function. (Code: %d)",
              file, line, err);
-    
+
     chpl_internal_error(msg);
   }
 }
@@ -75,9 +76,9 @@ void chpl_gpu_init() {
 
   // Create driver context
   // TODO CUDA documentation recommends using cuDevicePrimaryCtxRetain instead:
-  // 
+  //
   // CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
-  
+
   CUDA_CALL(cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, device));
 
   CUcontext cuda_context = NULL;
@@ -112,7 +113,7 @@ bool chpl_gpu_is_device_ptr(void* ptr) {
   chpl_gpu_ensure_context();
 
   unsigned int res;
-  
+
   // We call CUDA_CALL later, because we want to treat some error codes
   // separately
   CUresult ret_val = cuPointerGetAttribute(&res, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
@@ -144,7 +145,7 @@ size_t chpl_gpu_get_alloc_size(void* ptr) {
 }
 
 bool chpl_gpu_running_on_gpu_locale() {
-  return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
+  return chpl_task_getRequestedSubloc()>0;
 }
 
 static void chpl_gpu_launch_kernel_help(const char* fatbinData,
@@ -214,7 +215,7 @@ static void chpl_gpu_launch_kernel_help(const char* fatbinData,
                            NULL));  // extra options
 
   CHPL_GPU_LOG("Call returned %s\n", name);
-  
+
   CUDA_CALL(cudaDeviceSynchronize());
 
   CHPL_GPU_LOG("Synchronization complete %s\n", name);
@@ -289,10 +290,15 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
   CHPL_GPU_LOG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
 
-  CUdeviceptr ptr;
-  CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
+  CUdeviceptr ptr = 0;
+  if (size > 0) {
+    CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
+    CHPL_GPU_LOG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
+  }
+  else {
+    CHPL_GPU_LOG("chpl_gpu_mem_alloc returning NULL (size was 0)\n");
+  }
 
-  CHPL_GPU_LOG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
 
   return (void*)ptr;
 
@@ -357,11 +363,14 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   chpl_gpu_ensure_context();
 
-  CHPL_GPU_LOG("chpl_gpu_mem_free called. Ptr=%p\n", memAlloc);
+  CHPL_GPU_LOG("chpl_gpu_mem_free called. Ptr:%p file:%s line:%d\n", memAlloc,
+               chpl_lookupFilename(filename), lineno);
 
-  assert(chpl_gpu_is_device_ptr(memAlloc));
+  if (memAlloc != NULL) {
+    assert(chpl_gpu_is_device_ptr(memAlloc));
 
-  CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
+    CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
+  }
 }
 
 #endif // HAS_GPU_LOCALE

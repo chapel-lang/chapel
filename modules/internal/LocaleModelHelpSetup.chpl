@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,7 +35,7 @@ module LocaleModelHelpSetup {
   public use ChapelNumLocales;
   use ChapelEnv;
   use Sys;
-  use SysCTypes;
+  use CTypes;
 
   config param debugLocaleModel = false;
 
@@ -126,6 +126,7 @@ module LocaleModelHelpSetup {
 
   // gasnet-smp and gasnet-udp w/ GASNET_SPAWNFN=L are local spawns
   private inline proc localSpawn() {
+    use ChplConfig;
     if CHPL_COMM == "gasnet" {
       var spawnfn: c_string;
       if (CHPL_COMM_SUBSTRATE == "udp" &&
@@ -157,7 +158,7 @@ module LocaleModelHelpSetup {
   proc helpSetupLocaleFlat(dst:borrowed LocaleModel, out local_name:string) {
     local_name = getNodeName();
 
-    extern proc chpl_task_getCallStackSize(): size_t;
+    extern proc chpl_task_getCallStackSize(): c_size_t;
     dst.callStackSize = chpl_task_getCallStackSize();
 
     extern proc chpl_topo_getNumCPUsPhysical(accessible_only: bool): c_int;
@@ -238,10 +239,13 @@ module LocaleModelHelpSetup {
 
     for i in childSpace {
       chpl_task_setSubloc(i:chpl_sublocID_t);
-      if i == 0 then
+      if i == 0 {
         dst.childLocales[i] = new unmanaged CPULocale(i:chpl_sublocID_t, dst);
-      else
+      }
+      else {
         dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
+        dst.childLocales[i].maxTaskPar = 1;
+      }
     }
     chpl_task_setSubloc(origSubloc);
   }

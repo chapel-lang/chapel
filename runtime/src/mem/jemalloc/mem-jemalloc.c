@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -418,6 +418,8 @@ void chpl_mem_layerInit(void) {
   //   memory allocation routines, the allocator initializes its internals"
   if (heap_base != NULL) {
     heap.type = FIXED;
+    // With a fixed heap all memory should be registered together so
+    // merging/splitting is allowed
     merge_split_chunks = chpl_env_rt_get_bool("MERGE_SPLIT_CHUNKS", true);
     heap.base = heap_base;
     heap.size = heap_size;
@@ -428,6 +430,9 @@ void chpl_mem_layerInit(void) {
     initializeSharedHeap();
   } else if (chpl_comm_regMemAllocThreshold() < SIZE_MAX) {
     heap.type = DYNAMIC;
+    // With a dynamic heap, extensions can be split, but merging may not work
+    // since we'd have a single blob of memory covered by multiple registration
+    // regions, which our comm layers may not support.
     merge_split_chunks = chpl_env_rt_get_bool("MERGE_SPLIT_CHUNKS", false);
     initializeSharedHeap();
   } else {

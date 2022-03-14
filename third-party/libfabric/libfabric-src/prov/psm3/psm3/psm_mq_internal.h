@@ -246,12 +246,11 @@ struct psm2_mq_req {
 	psm2_verbs_mr_t	mr;	// local registered memory for app buffer
 
 #ifdef PSM_CUDA
-	uint8_t* user_gpu_buffer;
+	uint8_t* user_gpu_buffer;	/* for recv */
 	STAILQ_HEAD(sendreq_spec_, ips_cuda_hostbuf) sendreq_prefetch;
 	uint32_t prefetch_send_msgoff;
 	int cuda_hostbuf_used;
 	CUipcMemHandle cuda_ipc_handle;
-	CUevent cuda_ipc_event;
 	uint8_t cuda_ipc_handle_attached;
 	uint32_t cuda_ipc_offset;
 	/*
@@ -259,12 +258,12 @@ struct psm2_mq_req {
 	 * when send is on a device buffer
 	 */
 	uint8_t is_sendbuf_gpu_mem;
-#endif
 	/*
 	 * is_buf_gpu_mem - used to indicate if the send or receive is issued
 	 * on a device/host buffer.
 	 */
 	uint8_t is_buf_gpu_mem;
+#endif
 
 	/* PTLs get to store their own per-request data.  MQ manages the allocation
 	 * by allocating psm2_mq_req so that ptl_req_data has enough space for all
@@ -307,7 +306,7 @@ void
 mq_copy_tiny(uint32_t *dest, uint32_t *src, uint8_t len))
 {
 #ifdef PSM_CUDA
-	if (PSMI_IS_CUDA_ENABLED && (PSMI_IS_CUDA_MEM(dest) || PSMI_IS_CUDA_MEM(src))) {
+	if (len && PSMI_IS_CUDA_ENABLED && (PSMI_IS_CUDA_MEM(dest) || PSMI_IS_CUDA_MEM(src))) {
 		PSMI_CUDA_CALL(cuMemcpy, (CUdeviceptr)dest, (CUdeviceptr)src, len);
 		return;
 	}
@@ -345,6 +344,7 @@ mq_copy_tiny(uint32_t *dest, uint32_t *src, uint8_t len))
 }
 
 typedef void (*psmi_mtucpy_fn_t)(void *dest, const void *src, uint32_t len);
+typedef void (*psmi_copy_tiny_fn_t)(uint32_t *dest, uint32_t *src, uint8_t len);
 #ifdef PSM_CUDA
 
 PSMI_ALWAYS_INLINE(
@@ -535,6 +535,7 @@ MOCK_DCL_EPILOGUE(psmi_mq_req_alloc);
  */
 psm2_error_t psmi_mq_malloc(psm2_mq_t *mqo);
 psm2_error_t psmi_mq_initialize_defaults(psm2_mq_t mq);
+psm2_error_t psmi_mq_initstats(psm2_mq_t mq, psm2_epid_t epid);
 
 psm2_error_t MOCKABLE(psmi_mq_free)(psm2_mq_t mq);
 MOCK_DCL_EPILOGUE(psmi_mq_free);
@@ -548,16 +549,43 @@ MOCK_DCL_EPILOGUE(psmi_mq_free);
 
 void psmi_mq_handle_rts_complete(psm2_mq_req_t req);
 int psmi_mq_handle_data(psm2_mq_t mq, psm2_mq_req_t req,
-			uint32_t offset, const void *payload, uint32_t paylen);
+			uint32_t offset, const void *payload, uint32_t paylen
+#ifdef PSM_CUDA
+			, int use_gdrcopy,
+			psm2_ep_t ep
+#endif
+			);
 int psmi_mq_handle_rts(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
+		       struct ptl_strategy_stats *stats,
 		       uint32_t msglen, const void *payload, uint32_t paylen,
 		       int msgorder, mq_rts_callback_fn_t cb,
 		       psm2_mq_req_t *req_o);
 int psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
+			    struct ptl_strategy_stats *stats,
 			    uint32_t msglen, uint32_t offset,
 			    const void *payload, uint32_t paylen, int msgorder,
 			    uint32_t opcode, psm2_mq_req_t *req_o);
 int psmi_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t req);
+
+// perform the actual copy for a recv matching a sysbuf.  We copy from a sysbuf
+// (req->req_data.buf) to the actual user buffer (buf) and keep statistics.
+// is_buf_gpu_mem indicates if buf is a gpu buffer
+// len - recv buffer size posted, we use this for any GDR copy pinning so
+// 	can get future cache hits on other size messages in same buffer
+// not needed - msglen - negotiated total message size
+// copysz - actual amount to copy (<= msglen)
+#ifdef PSM_CUDA
+void psmi_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, uint8_t is_buf_gpu_mem,
+                                void *buf, uint32_t len, uint32_t copysz);
+#else
+PSMI_ALWAYS_INLINE(
+void psmi_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, void *buf,
+                                uint32_t len, uint32_t copysz))
+{
+	if (copysz)
+		psmi_mq_mtucpy(buf, (const void *)req->req_data.buf, copysz);
+}
+#endif
 
 #if 0   // unused code, specific to QLogic MPI
 void psmi_mq_stats_register(psm2_mq_t mq, mpspawn_stats_add_fn add_fn);
@@ -605,19 +633,5 @@ psm_mq_unexpected_callback_fn_t
 psmi_mq_register_unexpected_callback(psm2_mq_t mq,
 				     psm_mq_unexpected_callback_fn_t fn);
 #endif
-
-PSMI_ALWAYS_INLINE(void psmi_mq_stats_rts_account(psm2_mq_req_t req))
-{
-	psm2_mq_t mq = req->mq;
-	if (MQE_TYPE_IS_SEND(req->type)) {
-		mq->stats.tx_num++;
-		mq->stats.tx_rndv_num++;
-		mq->stats.tx_rndv_bytes += req->req_data.send_msglen;
-	} else {
-		mq->stats.rx_user_num++;
-		mq->stats.rx_user_bytes += req->req_data.recv_msglen;
-	}
-	return;
-}
 
 #endif

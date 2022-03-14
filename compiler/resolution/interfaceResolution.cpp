@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -292,7 +292,7 @@ void handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
         cgCalleeSE->replace(new SymExpr(origCGfun));
         resolveNormalCall(call);
         adjustOutIntents(call);
-        
+
       } else {
         // cgCallee was created for 'origFn'. It gets referenced in 'newFn'
         // because newFn is a copy of origFn. Once handleCallsToOtherCGfuns
@@ -516,7 +516,7 @@ static Symbol* hasEntriesMappedToGenerics(SymbolMap& fml2act) {
 // Extends fml2act with the mapping origT -> the new instantiation.
 // Returns the new instantiation.
 // Adds it to cgInstantiations and marks it for later removal if markRm.
-// 
+//
 // If origT is already a key in fml2act, returns its mapping.
 // Otherwise returns NULL to indicate that origT does not involve CG types.
 //
@@ -661,7 +661,7 @@ static void createRepsForConstraint(Expr*     anchor, AList&          CTdefs,
 
   // Also account for the interfaces in the associated constraints.
   if (depth >= repsMaxDepth)  return; // an arbitrary recursion limiter
-  
+
   int aconNum = isym->associatedConstraints.size();
   repData.conReps.resize(aconNum);
   for (int aconIdx = 0; aconIdx < aconNum; aconIdx++) {
@@ -693,7 +693,7 @@ static void createRepsForIfcSymbols(FnSymbol* fn, InterfaceInfo* ifcInfo) {
   for_alist(iconExpr, ifcInfo->interfaceConstraints) {
     IfcConstraint* icon = toIfcConstraint(iconExpr);
     InterfaceReps& repData = ifcInfo->ifcReps[consIdx++];
-    
+
     createRepsForConstraint(fn->body->body.head, ifcInfo->constrainedTypes,
                             icon, repData, 0);
   }
@@ -1128,7 +1128,7 @@ static bool removedInitCopyForInArg(SymExpr* actualSE, Symbol* actualSym,
                                     ArgSymbol* origActual) {
   if (! (origActual->intent & INTENT_FLAG_IN))
     return false;  // not 'in' intent
-  
+
   if (actualSym->type != origActual->type)
     return false;  // if the types differ, we probably must keep the copy
 
@@ -1261,7 +1261,7 @@ static bool adjustAndCheckHolder(InterfaceSymbol* isym, ImplementsStmt* istm,
                                  CallExpr*       call, FnSymbol*&     target,
                                  FnSymbol*      reqFn, bool     reportErrors) {
   target = finalizeHolder(istm, reqFn, holder, call, target, formalDups);
-  
+
   if (!holder->body.empty()) {
     if (reportErrors) {
       USR_FATAL_CONT(istm, "when checking this implements statement");
@@ -1397,7 +1397,7 @@ static bool checkFormals(InterfaceSymbol* isym,  ImplementsStmt* istm,
       target->numFormals() == 2 + reqFn->numFormals())
     // the target is an operator written as a type method
     tgtExpr = tgtExpr->next->next;
-    
+
   // Check that argument intents are compatible i.e. the "calling convention"
   // for reqFn's formal will work for target's formal.
   // 'target' may have extra arguments, which should have default values.
@@ -1671,7 +1671,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
   INT_ASSERT(wrapFn->hasFlag(FLAG_RESOLVED));
   CallExpr* popped = callStack.pop();
   INT_ASSERT(popped == callsite);
-  callsite->remove();  
+  callsite->remove();
 
   if (!success) {
     if (reportErrors) USR_STOP();
@@ -1777,7 +1777,7 @@ static bool isGenericMatch(Type* consT, Type* implT) {
 class MatchResult { public:
   ImplementsStmt* istm;
   bool            isSuccess;
-  bool            isConcrete; 
+  bool            isConcrete;
   MatchResult(ImplementsStmt* is, bool ss, bool con):
     istm(is), isSuccess(ss), isConcrete(con) { }
 };
@@ -2114,7 +2114,7 @@ static ImplementsStmt* findSatisfyingIstm(InterfaceSymbol* isym,
   if (ImplementsStmt* conSuccess = pick.conSuccess)
     // yippee, found a satisfying concrete istm
     bestIstm = conSuccess;
-  
+
   else if (ImplementsStmt* genSuccess = pick.genSuccess)
     // instantiate a generic istm
     bestIstm = useGenericImplementsStmt(callsite, isym, call2wf, genSuccess);
@@ -2333,7 +2333,7 @@ void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
   adjustCGtype(substitutions, fn->retType);
   for_formals(formal, fn)
     adjustCGtype(substitutions, formal->type);
-    
+
   if (isInterimInstantiation) {
     fn->addFlag(FLAG_CG_INTERIM_INST);
     // Do not fill in the body of an interim instantiation.

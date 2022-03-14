@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -208,7 +208,7 @@ The ``Block`` class initializer is defined as follows:
 
     proc Block.init(
       boundingBox: domain,
-      targetLocales: [] locale  = Locales, 
+      targetLocales: [] locale  = Locales,
       dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
       dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
       dataParMinGranularity     = // value of  dataParMinGranularity      config const,
@@ -761,21 +761,14 @@ proc LocBlock.init(param rank, type idxType, param dummy: bool) where dummy {
 
 ////// BlockDom and LocBlockDom methods /////////////////////////////////////
 
-override proc BlockDom.dsiMyDist() return dist;
-
 override proc BlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
 }
 
-proc BlockDom.dsiDims() return whole.dims();
-
-proc BlockDom.dsiDim(d: int) return whole.dim(d);
-
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
-
 
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
@@ -885,17 +878,6 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 }
 
 //
-// output domain
-//
-proc BlockDom.dsiSerialWrite(x) {
-  x <~> whole;
-}
-
-proc BlockDom.doiToString() {
-  return whole:string;
-}
-
-//
 // how to allocate a new array over this domain
 //
 proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
@@ -933,13 +915,26 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc BlockDom.dsiNumIndices return whole.sizeAs(uint);
-proc BlockDom.dsiLow return whole.low;
-proc BlockDom.dsiHigh return whole.high;
-proc BlockDom.dsiStride return whole.stride;
-proc BlockDom.dsiAlignedLow return whole.alignedLow;
-proc BlockDom.dsiAlignedHigh return whole.alignedHigh;
-proc BlockDom.dsiAlignment return whole.alignment;
+// common redirects
+proc BlockDom.dsiLow           return whole.low;
+proc BlockDom.dsiHigh          return whole.high;
+proc BlockDom.dsiAlignedLow    return whole.alignedLow;
+proc BlockDom.dsiAlignedHigh   return whole.alignedHigh;
+proc BlockDom.dsiFirst         return whole.first;
+proc BlockDom.dsiLast          return whole.last;
+proc BlockDom.dsiStride        return whole.stride;
+proc BlockDom.dsiAlignment     return whole.alignment;
+proc BlockDom.dsiNumIndices    return whole.sizeAs(uint);
+proc BlockDom.dsiDim(d)        return whole.dim(d);
+proc BlockDom.dsiDim(param d)  return whole.dim(d);
+proc BlockDom.dsiDims()        return whole.dims();
+proc BlockDom.dsiGetIndices()  return whole.getIndices();
+proc BlockDom.dsiMember(i)     return whole.contains(i);
+proc BlockDom.doiToString()    return whole:string;
+proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
+proc BlockDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
+override proc BlockDom.dsiIndexOrder(i)              return whole.indexOrder(i);
+override proc BlockDom.dsiMyDist()                   return dist;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
@@ -974,17 +969,8 @@ proc BlockDom.dsiSetIndices(x) {
   }
 }
 
-proc BlockDom.dsiGetIndices() {
-  return whole.getIndices();
-}
-
 proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
   chpl_assignDomainWithGetSetIndices(this, rhs);
-}
-
-// dsiLocalSlice
-proc BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
-  return whole((...ranges));
 }
 
 proc BlockDom.setup() {
@@ -1002,14 +988,6 @@ override proc BlockDom.dsiDestroyDom() {
       delete locDomsElt;
     }
   }
-}
-
-proc BlockDom.dsiMember(i) {
-  return whole.contains(i);
-}
-
-proc BlockDom.dsiIndexOrder(i) {
-  return whole.indexOrder(i);
 }
 
 //
@@ -1235,7 +1213,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       arrSection = _to_nonnil(myLocArr);
 
     local {
-      use CPtr; // Needed to cast from c_void_ptr in the next line
+      use CTypes; // Needed to cast from c_void_ptr in the next line
       const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type?;
       ref myElems = _to_nonnil(narrowArrSection).myElems;
       foreach i in myFollowThisDom do yield myElems[i];
@@ -1431,7 +1409,8 @@ proc BlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
-proc BlockArr.chpl__serialize() {
+proc BlockArr.chpl__serialize()
+      where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 

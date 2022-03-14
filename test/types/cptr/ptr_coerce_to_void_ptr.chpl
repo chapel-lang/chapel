@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 proc test(x: c_void_ptr) {
   writeln(x == nil);
 }

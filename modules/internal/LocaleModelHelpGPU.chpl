@@ -1,8 +1,8 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,7 +23,7 @@ module LocaleModelHelpGPU {
 
   public use LocaleModelHelpSetup;
   public use LocaleModelHelpRuntime;
-  use SysCTypes;
+  use CTypes;
 
   pragma "no doc"
   config param debugGPULocale = false;
@@ -85,11 +85,11 @@ module LocaleModelHelpGPU {
   proc chpl_executeOn(in loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: chpl_comm_on_bundle_p,     // function args
-                      args_size: size_t     // args size
+                      args_size: c_size_t     // args size
                      ) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
-    
+
     if (debugGPULocale) {
       if (dsubloc == 0) {
           chpl_debug_writeln("** executing on CPU");
@@ -108,7 +108,7 @@ module LocaleModelHelpGPU {
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
         chpl_ftable_call(fn, args);
-      } else {        
+      } else {
         // move to a different sublocale
         chpl_task_setSubloc(dsubloc);
         chpl_ftable_call(fn, args);
@@ -126,7 +126,7 @@ module LocaleModelHelpGPU {
   proc chpl_executeOnFast(in loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: chpl_comm_on_bundle_p,     // function args
-                          args_size: size_t     // args size
+                          args_size: c_size_t     // args size
                          ) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
@@ -155,7 +155,7 @@ module LocaleModelHelpGPU {
   proc chpl_executeOnNB(in loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: chpl_comm_on_bundle_p,     // function args
-                        args_size: size_t     // args size
+                        args_size: c_size_t     // args size
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than

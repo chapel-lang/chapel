@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -98,7 +98,9 @@
 #include "llvmDebug.h"
 #include "llvmVer.h"
 
-#include "../next/lib/immediates/prim_data.h"
+#include "../dyno/lib/immediates/prim_data.h"
+
+#include "global-ast-vecs.h"
 
 typedef Type ChapelType;
 
@@ -148,8 +150,18 @@ struct ClangInfo {
 
   std::string clangCC;
   std::string clangCXX;
+  // arguments to C/C++ compiler
+  // including -I for bundled paths
+  // these will apply when compiling C files as well
   std::vector<std::string> clangCCArgs;
-  std::vector<std::string> clangOtherArgs; // other compile-time args
+
+  // other arguments to C/C++ compiler, passed after the above ones.
+  // these tend to be the arguments indicating what to compile etc.
+  // and these arguments don't apply when compiling C files named
+  // on the command line
+  std::vector<std::string> clangOtherArgs;
+
+  // arguments to the linker from CC/CXX variable overrides
   std::vector<std::string> clangLDArgs;
 
   // the following 3 are here to make sure of no memory errors
@@ -1870,8 +1882,10 @@ static llvm::TargetOptions getTargetOptions(
 
   Options.FunctionSections = CodeGenOpts.FunctionSections;
   Options.DataSections = CodeGenOpts.DataSections;
-#if HAVE_LLVM_VER >= 120
-  Options.IgnoreXCOFFVisibility = LangOpts.IgnoreXCOFFVisibility;
+#if LLVM_VERSION_MAJOR == 120
+  // clang::CodeGenOptions::IgnoreXCOFFVisibility first appeared in
+  // LLVM version 12 and then went away in version 13.
+  Options.IgnoreXCOFFVisibility = CodeGenOpts.IgnoreXCOFFVisibility;
 #endif
   Options.UniqueSectionNames = CodeGenOpts.UniqueSectionNames;
   Options.UniqueBasicBlockSectionNames =
@@ -1881,7 +1895,7 @@ static llvm::TargetOptions getTargetOptions(
   Options.ExplicitEmulatedTLS = CodeGenOpts.ExplicitEmulatedTLS;
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
-#if HAVE_LLVM_VER >= 120
+#if HAVE_LLVM_VER >= 130
   Options.StackUsageOutput = CodeGenOpts.StackUsageOutput;
 #endif
   Options.EmitAddrsig = CodeGenOpts.Addrsig;
@@ -1894,7 +1908,7 @@ static llvm::TargetOptions getTargetOptions(
       CodeGenOpts.ValueTrackingVariableLocations;
 #endif
   Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
-#if HAVE_LLVM_VER >= 120
+#if HAVE_LLVM_VER >= 140
   Options.LoopAlignment = CodeGenOpts.LoopAlignment;
 #endif
 
@@ -1919,7 +1933,7 @@ static llvm::TargetOptions getTargetOptions(
 
   Options.MCOptions.Argv0 = CodeGenOpts.Argv0;
   Options.MCOptions.CommandLineArgs = CodeGenOpts.CommandLineArgs;
-#if HAVE_LLVM_VER >= 120
+#if HAVE_LLVM_VER >= 130
   Options.DebugStrictDwarf = CodeGenOpts.DebugStrictDwarf;
 #endif
 
@@ -1937,8 +1951,13 @@ static void setupModule()
 
   INT_ASSERT(info->module);
 
+#if HAVE_LLVM_VER >= 130
+  clangInfo->asmTargetLayoutStr =
+    clangInfo->Clang->getTarget().getDataLayoutString();
+#else
   clangInfo->asmTargetLayoutStr =
     clangInfo->Clang->getTarget().getDataLayout().getStringRepresentation();
+#endif
 
   // Set the target triple.
   const llvm::Triple &Triple =
@@ -2127,7 +2146,7 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   if (optLevel <= 1) {
       bool InsertLifetimeIntrinsics = (CodeGenOpts.OptimizationLevel != 0 &&
                                        !CodeGenOpts.DisableLifetimeMarkers);
-      // TODO: insert lifetime intrinics if Coroutines are used
+      // TODO: insert lifetime intrinsics if Coroutines are used
     PMBuilder.Inliner = createAlwaysInlinerLegacyPass(InsertLifetimeIntrinsics);
   } else {
     PMBuilder.Inliner = createFunctionInliningPass(
@@ -2279,7 +2298,47 @@ static bool isTargetCpuValid(const char* targetCpu) {
   }
 }
 
+// If we are parsing an extern block with clang, we might
+// be configured to use a target compiler that is not clang.
+// In that event, filter out everything but the -D and -I arguments,
+// since other arguments might not be understood by clang.
+//
+// This could filter out more aggressively but we do need the
+// paths and defines for the runtime headers to work.
+static void addFilteredArgs(std::vector<std::string>& dst,
+                            std::vector<std::string>& src,
+                            bool parseOnly) {
+  bool clang = 0 == strcmp(CHPL_TARGET_COMPILER, "llvm") ||
+               0 == strcmp(CHPL_TARGET_COMPILER, "clang");
+  bool filter = parseOnly && !clang;
+
+  if (filter) {
+    for (size_t i = 0; i < src.size(); i++) {
+      const auto& arg = src[i];
+      const char* s = arg.c_str();
+      if (startsWith(s, "-D") || startsWith(s, "-I")) {
+        dst.push_back(arg);
+        if (arg.size() == 2 && i+1 < src.size()) {
+          // if it was just "-D" or "-I", add the next argument too
+          i++;
+          dst.push_back(src[i]);
+        }
+      }
+    }
+
+  } else {
+    // add all of the arguments without filtering
+    for (size_t i = 0; i < src.size(); i++) {
+      dst.push_back(src[i]);
+    }
+  }
+}
+
+// if just_parse_filename != NULL, it is a file
+// containing an extern block to parse only
+// (and in that setting there is no need to work with the runtime).
 void runClang(const char* just_parse_filename) {
+  bool parseOnly = (just_parse_filename != NULL);
   static bool is_installed_fatal_error_handler = false;
 
   const char* clang_warn[] = {"-Wall", "-Werror", "-Wpointer-arith",
@@ -2295,7 +2354,6 @@ void runClang(const char* just_parse_filename) {
   const char* clang_fast_float = "-ffast-math";
   const char* clang_ieee_float = "-fno-fast-math";
 
-  std::vector<std::string> args;
   std::vector<std::string> split;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangOtherArgs;
@@ -2304,7 +2362,7 @@ void runClang(const char* just_parse_filename) {
   // find the path to clang and clang++
   std::string clangCC, clangCXX;
 
-  // get any args passed to clangCC and add them to the builtin clang invocation
+  // get any args passed to CC/CXX and add them to the builtin clang invocation
   splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
   // set clangCC / clangCXX to just the first argument
   for (size_t i = 0; i < split.size(); i++) {
@@ -2322,80 +2380,58 @@ void runClang(const char* just_parse_filename) {
     clangCXX = split[0];
   }
 
-  // TODO: move this to printchplenv
-  std::string runtime_includes(CHPL_RUNTIME_LIB);
-  runtime_includes += "/";
-  runtime_includes += CHPL_RUNTIME_SUBDIR;
-  runtime_includes += "/list-includes-and-defines";
 
-  bool rtOk = readArgsFromFile(runtime_includes, args, /*errFatal*/ false);
-  if (rtOk == false) {
-    std::string runtime_dir(CHPL_RUNTIME_LIB);
-    runtime_dir += "/";
-    runtime_dir += CHPL_RUNTIME_SUBDIR;
-
-    if (developer)
-      USR_FATAL_CONT("Expected runtime library in %s", runtime_dir.c_str());
-
-    const char* module_home = getenv("CHPL_MODULE_HOME");
-    if (module_home) {
-      USR_FATAL("The requested configuration is not included in the module. "
-                "Please send the package maintainer the output of "
-                "$CHPL_HOME/util/printchplenv and request support for this "
-                "configuration.");
-    } else {
-      USR_FATAL("The runtime has not been built for this configuration. "
-                "Check $CHPL_HOME/util/printchplenv and try rebuilding "
-                "with $CHPL_MAKE from $CHPL_HOME.");
-    }
+  // add -fPIC if CHPL_LIB_PIC indicates we should
+  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
+    clangCCArgs.push_back("-fPIC");
   }
 
-  // Remove -DCHPL_DEBUG, -DCHPL_OPTIMIZE, -DNDEBUG from the args
-  // They are settings from the runtime build and we want to
-  // use flags appropriate to the compilation instead of the runtime build
-  std::vector<std::string>::iterator pos =
-    std::find(args.begin(), args.end(), "-DCHPL_DEBUG");
-  if (pos != args.end())
-    args.erase(pos);
+  // after arguments provided in CC/CXX
+  // add include paths to anything builtin or in CHPL_HOME
+  {
+    std::vector<std::string> args;
+    std::string dashI = "-I";
 
-  pos = std::find(args.begin(), args.end(), "-DCHPL_OPTIMIZE");
-  if (pos != args.end())
-    args.erase(pos);
+    // add -I$CHPL_HOME/modules/standard/
+    // add -I$CHPL_HOME/modules/packages/
+    args.push_back(dashI + CHPL_HOME + "/modules/standard");
+    args.push_back(dashI + CHPL_HOME + "/modules/packages");
 
+    // add arguments from CHPL_TARGET_BUNDLED_COMPILE_ARGS
+    splitStringWhitespace(CHPL_TARGET_BUNDLED_COMPILE_ARGS, args);
+    // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+    expandInstallationPaths(args);
 
-  pos = std::find(args.begin(), args.end(), "-DNDEBUG");
-  if (pos != args.end())
-    args.erase(pos);
+    // add the arguments, filtering if parsing an extern block
+    addFilteredArgs(clangCCArgs, args, parseOnly);
+  }
 
-  std::string dashImodules = "-I";
-  dashImodules += CHPL_HOME;
-  dashImodules += "/modules";
+  // add a -I. so we can find headers named on command line in same dir
+  clangCCArgs.push_back("-I.");
 
-  args.push_back(dashImodules + "/standard");
-  args.push_back(dashImodules + "/packages");
+  // add a -I for the generated code directory
+  clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
 
-  // add arguments from CHPL_LLVM_CLANG_COMPILE_ARGS
-  splitStringWhitespace(CHPL_LLVM_CLANG_COMPILE_ARGS, args);
-
-  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
-  expandInstallationPaths(args);
-
+  // Add warnings flags
   if (ccwarnings) {
     for (int i = 0; clang_warn[i]; i++) {
-      args.push_back(clang_warn[i]);
+      clangCCArgs.push_back(clang_warn[i]);
     }
   }
 
+  // Add debug flags
   if (debugCCode) {
-    args.push_back(clang_debug);
-    args.push_back("-DCHPL_DEBUG");
+    clangCCArgs.push_back(clang_debug);
+    clangCCArgs.push_back("-DCHPL_DEBUG");
   }
 
+  // Add optimize flags
   if (optimizeCCode) {
-    args.push_back(clang_opt);
-    args.push_back("-DCHPL_OPTIMIZE");
+    clangCCArgs.push_back(clang_opt);
+    clangCCArgs.push_back("-DCHPL_OPTIMIZE");
   }
 
+  // Add specialization flags
   if (specializeCCode &&
       CHPL_TARGET_CPU_FLAG != NULL &&
       CHPL_TARGET_BACKEND_CPU != NULL &&
@@ -2420,41 +2456,42 @@ void runClang(const char* just_parse_filename) {
       march += CHPL_TARGET_CPU_FLAG;
       march += "=";
       march += CHPL_TARGET_BACKEND_CPU;
-      args.push_back(march);
+      clangCCArgs.push_back(march);
     }
   }
 
   // Passing -ffast-math is important to get approximate versions
   // of cabs but it appears to slow down simple complex multiplication.
   if (ffloatOpt > 0) // --no-ieee-float
-    args.push_back(clang_fast_float); // --ffast-math
+    clangCCArgs.push_back(clang_fast_float); // --ffast-math
 
   if (ffloatOpt < 0) // --ieee-float
-    args.push_back(clang_ieee_float); // -fno-fast-math
+    clangCCArgs.push_back(clang_ieee_float); // -fno-fast-math
 
-  // Gather information from readargsfrom into clangArgs.
-
-  // Note that these CC arguments will be saved in info->clangCCArgs
-  // and will be used when compiling C files as well.
-  for( size_t i = 0; i < args.size(); ++i ) {
-    clangCCArgs.push_back(args[i]);
-  }
-
+  // Add include directories specified on the command line
   for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
-  clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
 
-  //split ccflags by spaces
+  // Add C compilation flags from the command line (--ccflags arguments)
   splitStringWhitespace(ccflags, clangCCArgs);
-
-  clangCCArgs.push_back("-pthread");
 
   // Library directories/files and ldflags are handled during linking later.
   // Skip this in multi-locale libraries because the C blob that is built
   // already defines this.
   if (!fMultiLocaleInterop) {
     clangCCArgs.push_back("-DCHPL_GEN_CODE");
+  }
+
+  // add -pthread since we will use pthreads
+  clangCCArgs.push_back("-pthread");
+
+  // add system compiler args from printchplenv
+  {
+    std::vector<std::string> args;
+    splitStringWhitespace(CHPL_TARGET_SYSTEM_COMPILE_ARGS, args);
+    // add the arguments, filtering if parsing an extern block
+    addFilteredArgs(clangCCArgs, args, parseOnly);
   }
 
   // tell clang to use CUDA support
@@ -2475,8 +2512,7 @@ void runClang(const char* just_parse_filename) {
   clangOtherArgs.push_back("-include");
   clangOtherArgs.push_back("sys_basic.h");
 
-  if (!just_parse_filename) {
-
+  if (!parseOnly) {
     if (localeUsesGPU()) {
       //create a header file to include header files from the command line
       std::string genHeaderFilename;
@@ -2548,7 +2584,7 @@ void runClang(const char* just_parse_filename) {
   }
 
   if( printSystemCommands ) {
-    if (just_parse_filename != NULL)
+    if (parseOnly)
       printf("<internal clang parsing %s> ", just_parse_filename);
     else
       printf("<internal clang code generation> ");
@@ -2562,7 +2598,6 @@ void runClang(const char* just_parse_filename) {
     printf("\n");
   }
 
-  bool parseOnly = (just_parse_filename != NULL);
 
   // Initialize gGenInfo
   // Toggle LLVM code generation in our clang run;
@@ -2609,7 +2644,7 @@ void runClang(const char* just_parse_filename) {
     // and does the code generation.
     clangInfo->cCodeGenAction = new CCodeGenAction();
     if (!clangInfo->Clang->ExecuteAction(*clangInfo->cCodeGenAction)) {
-      if (just_parse_filename) {
+      if (parseOnly) {
         USR_FATAL("error running clang on extern block");
       } else {
         USR_FATAL("error running clang during code generation");
@@ -3863,8 +3898,11 @@ void makeBinaryLLVM(void) {
   if( saveCDir[0] != '\0' ) {
     std::error_code tmpErr;
     // Save the generated LLVM before optimization.
-    ToolOutputFile output (preOptFilename.c_str(),
-                             tmpErr, sys::fs::F_None);
+#if HAVE_LLVM_VER >= 120
+    ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::OF_None);
+#else
+    ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::F_None);
+#endif
     if (tmpErr)
       USR_FATAL("Could not open output file %s", preOptFilename.c_str());
 #if HAVE_LLVM_VER < 70
@@ -3894,7 +3932,11 @@ void makeBinaryLLVM(void) {
 
   // Open the output file
   std::error_code error;
+#if HAVE_LLVM_VER >= 120
+  llvm::sys::fs::OpenFlags flags = llvm::sys::fs::OF_None;
+#else
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
+#endif
 
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
@@ -3972,8 +4014,14 @@ void makeBinaryLLVM(void) {
     if( saveCDir[0] != '\0' ) {
       // Save the generated LLVM after first chunk of optimization
       std::error_code tmpErr;
+#if HAVE_LLVM_VER >= 120
+      ToolOutputFile output1 (opt1Filename.c_str(),
+                               tmpErr, sys::fs::OF_None);
+#else
       ToolOutputFile output1 (opt1Filename.c_str(),
                                tmpErr, sys::fs::F_None);
+#endif
+
       if (tmpErr)
         USR_FATAL("Could not open output file %s", opt1Filename.c_str());
 #if HAVE_LLVM_VER < 70
@@ -4009,8 +4057,13 @@ void makeBinaryLLVM(void) {
       if( saveCDir[0] != '\0' ) {
         // Save the generated LLVM after second chunk of optimization
         std::error_code tmpErr;
+#if HAVE_LLVM_VER >= 120
+        ToolOutputFile output2 (opt2Filename.c_str(),
+                                 tmpErr, sys::fs::OF_None);
+#else
         ToolOutputFile output2 (opt2Filename.c_str(),
                                  tmpErr, sys::fs::F_None);
+#endif
         if (tmpErr)
           USR_FATAL("Could not open output file %s", opt2Filename.c_str());
 #if HAVE_LLVM_VER < 70
@@ -4161,12 +4214,6 @@ void makeBinaryLLVM(void) {
   maino += CHPL_RUNTIME_SUBDIR;
   maino += "/main.o";
 
-  // TODO: move this to printchplenv
-  std::string runtime_libs(CHPL_RUNTIME_LIB);
-  runtime_libs += "/";
-  runtime_libs += CHPL_RUNTIME_SUBDIR;
-  runtime_libs += "/list-libraries";
-
   // TODO: move this logic to printchplenv
   std::string runtime_ld_override(CHPL_RUNTIME_LIB);
   runtime_ld_override += "/";
@@ -4185,24 +4232,20 @@ void makeBinaryLLVM(void) {
   if (ldOverride.size() > 0)
     useLinkCXX = ldOverride[0];
 
-  std::vector<std::string> runtimeArgs;
-  readArgsFromFile(runtime_libs, runtimeArgs);
-
-  std::vector<std::string> linkArgs;
-  splitStringWhitespace(CHPL_LLVM_CLANG_LINK_ARGS, linkArgs);
-
   // start with arguments from CHPL_LLVM_CLANG_C unless
   // using a non-clang compiler to link
   std::vector<std::string> clangLDArgs = clangInfo->clangLDArgs;
   if (useLinkCXX != clangCXX)
     clangLDArgs.clear();
 
-  for (auto & arg : runtimeArgs) {
-    clangLDArgs.push_back(arg);
-  }
-  for (auto & arg : linkArgs) {
-    clangLDArgs.push_back(arg);
-  }
+  // Add runtime libs arguments
+  //readArgsFromFile(runtime_libs, clangLDArgs);
+
+  // add the bundled link args from printchplenv
+  splitStringWhitespace(CHPL_TARGET_BUNDLED_LINK_ARGS, clangLDArgs);
+
+  // add the system link args from printchplenv
+  splitStringWhitespace(CHPL_TARGET_SYSTEM_LINK_ARGS, clangLDArgs);
 
   // Grab extra dependencies for multilocale libraries if needed.
   if (fMultiLocaleInterop) {
@@ -4216,7 +4259,6 @@ void makeBinaryLLVM(void) {
 
   // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
   expandInstallationPaths(clangLDArgs);
-
 
 
   std::vector<std::string> dotOFiles;
@@ -4256,11 +4298,6 @@ void makeBinaryLLVM(void) {
 
   // We used to supply link args here *and* later on
   // in the link line. I think the later position is sufficient.
-  /*
-  for( size_t i = 0; i < clangLDArgs.size(); ++i ) {
-    options += " ";
-    options += clangLDArgs[i].c_str();
-  }*/
 
   // note: currently ldflags are not stored into clangLDArgs.
   // If they were, these lines would need to be removed.

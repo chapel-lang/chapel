@@ -1,0 +1,21 @@
+7 8 4 9 6 7 8
+{be: 1, bcdef: 3, bcdefg: 9, abcdefg: 8, bceg: 4, bde: 7, abcdf: 2, cdefg: 5, acdefg: 6, abdefg: 0}
+6 8 4 7 9 8 7
+{abcdfg: 0, cg: 1, cefg: 4, bcg: 7, abcde: 2, abcdefg: 8, abdefg: 6, bdefg: 5, bcdeg: 3, bcdefg: 9}
+6 8 7 4 9 8 7
+{abcdfg: 9, cg: 1, bcg: 7, abcde: 2, abcdefg: 8, acfg: 4, abcdg: 3, abdfg: 5, bcdefg: 0, abdefg: 6}
+6 8 7 7 4 9 8
+{bcd: 7, abdeg: 2, abcdef: 9, abcf: 4, bc: 1, abcdefg: 8, acdef: 5, abcde: 3, acdefg: 6, bcdefg: 0}
+8 8 7 7 9 6 4
+{abcdfg: 0, abdef: 2, cefg: 4, abefg: 3, fg: 1, abcdefg: 8, bfg: 7, abceg: 5, abcdeg: 6, abcefg: 9}
+8 7 9 6 7 8 4
+{abce: 4, acf: 7, bcdfg: 2, abefg: 5, abcfg: 3, abcdefg: 8, abdefg: 6, ac: 1, acdefg: 0, abcefg: 9}
+9 7 4 6 8 7 8
+{dfg: 7, bcdfg: 3, cefg: 4, bcdef: 5, fg: 1, abcdefg: 8, abcdg: 2, bcdefg: 9, abcdef: 6, abdefg: 0}
+6 7 4 9 7 8 8
+{bdef: 4, bcefg: 5, bcdeg: 3, de: 1, abcdefg: 8, abcdg: 2, cde: 7, acdefg: 0, bcdefg: 9, abcefg: 6}
+7 8 4 7 9 8 6
+{cdeg: 4, cg: 1, bcg: 7, bcdefg: 9, abcdefg: 8, bcefg: 3, abcef: 2, bdefg: 5, abdefg: 6, abcdfg: 0}
+8 7 7 6 9 8 4
+{aefg: 4, abcefg: 9, abcdeg: 6, fg: 1, abcdefg: 8, cfg: 7, abcdf: 2, abcfg: 3, abceg: 5, bcdefg: 0}
+61229

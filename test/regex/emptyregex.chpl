@@ -10,8 +10,8 @@ var matches = r.matches(s);
 assert(matches.size == (s.size + 1));
 writeln(matches.size);
 for (i, (match,)) in zip(matches.domain, matches) {
-  writeln("offset=", match.offset);
-  assert(i == match.offset);
+  writeln("offset=", match.byteOffset);
+  assert(i == match.byteOffset);
 }
 
 writeln();

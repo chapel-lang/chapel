@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -49,8 +49,9 @@ include $(CHPL_MAKE_HOME)/make/compiler/Makefile.sanitizers
 CFLAGS += $(SANITIZER_CFLAGS)
 CXXFLAGS += $(SANITIZER_CFLAGS)
 LDFLAGS += $(SANITIZER_LDFLAGS)
-GEN_LFLAGS += $(SANITIZER_LDFLAGS)
 OPT_CFLAGS += $(SANITIZER_OPT_CFLAGS)
+GEN_CFLAGS += $(SANITIZER_CFLAGS)
+GEN_LFLAGS += $(SANITIZER_LDFLAGS)
 
 #
 # If the compiler's default C version is less than C99, force C99 mode.
@@ -82,7 +83,7 @@ COMP_CXXFLAGS = $(CXX14_STD) $(CPPFLAGS) $(CXXFLAGS)
 COMP_CXXFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS)
 RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
-GEN_CFLAGS = $(C_STD)
+GEN_CFLAGS += $(C_STD)
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
 LIB_STATIC_FLAG =
@@ -123,7 +124,7 @@ endif
 #
 # Flags for turning on warnings for C++/C code
 #
-WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing -Wmissing-declarations
+WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing -Wmissing-declarations -Wmissing-braces
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized

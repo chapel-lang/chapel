@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1660,7 +1660,7 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
 }
 
 static bool isFormalTempConst(FnSymbol *fn, ArgSymbol *formal) {
-  
+
   // Today, if we generate a default initializer for a type with const fields,
   // the formals that correspond to those fields have `in` intents. However, we
   // still need to set those temporaries that will be passed to those formals to
@@ -1780,7 +1780,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
         tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       }
-      
+
       CallExpr* copy = NULL;
 
       Symbol *definedConst = isFormalTempConst(fn, formal) ?  gTrue : gFalse;
@@ -1886,7 +1886,7 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
     resolveFunction(fn, call);
   }
 
- 
+
   for_formals(formal, fn) {
     SET_LINENO(currActual);
     nextActual = currActual->next;
@@ -2431,7 +2431,7 @@ static void buildLeaderIterator(PromotionInfo& promotion,
     CallExpr *iterCall = toCallExpr(iterator);
     INT_ASSERT(iterCall);
     INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
-    
+
     toLeader = new CallExpr("_toLeader", iterCall->get(1)->copy(&leaderMap));
   }
   else {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,6 +31,6 @@ extern std::vector<std::string> gFilenameLookup;
 // Caches the location of filenames in gFilenameLookup
 extern std::map<std::string, int> gFilenameLookupCache;
 
-int getFilenameLookupPosition(std::string name);
+int getFilenameLookupPosition(const std::string& name);
 
 #endif //_INSERT_LINE_NUMBERS_H

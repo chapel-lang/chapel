@@ -1,6 +1,6 @@
 module AtomicAggregation {
-  use CPtr;
-  use ChapelAutoAggregation.AggregationPrimitives;
+  use CTypes;
+  use AggregationPrimitives;
 
   private config const yieldFrequency = getEnvInt("AGGREGATION_YIELD_FREQUENCY", 1024);
   private config const amoBuffSize = getEnvInt("AGGREGATION_AMO_BUFF_SIZE", 8096);

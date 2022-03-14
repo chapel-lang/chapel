@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -211,7 +211,7 @@ module BLAS {
 
   use C_BLAS;
 
-  public use SysCTypes;
+  public use CTypes;
 
   /* Return `true` if type is supported by BLAS */
   proc isBLASType(type t) param: bool {
@@ -656,7 +656,7 @@ module BLAS {
       B := alpha * B * op(A)
 
     where ``A`` is a triangular matrix.
-    
+
     :throws IllegalArgumentError: When `B` is a non-square array.
   */
   proc trmm(A : [?Adom] ?eltType,  B : [?Bdom] eltType,
@@ -716,7 +716,7 @@ module BLAS {
       X * op(A) = alpha * B
 
     where ``A`` is a triangular matrix.
-    
+
     :throws IllegalArgumentError: When `B` is a non-square array.
   */
   proc trsm(A : [?Adom],  B : [?Bdom],
@@ -1011,7 +1011,7 @@ module BLAS {
     Wrapper for the `HEMV`_ routines::
 
       y := alpha*A*x + beta*y
-      
+
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1047,7 +1047,7 @@ module BLAS {
     Wrapper for the `HER`_ routines::
 
       A := alpha*x*conjg(x') + A
-      
+
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc her(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
@@ -1083,7 +1083,7 @@ module BLAS {
     Wrapper for `HER2`_ routines::
 
       A := alpha *x*conjg(y') + conjg(alpha)*y *conjg(x') + A
-      
+
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc her2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1361,7 +1361,7 @@ module BLAS {
     Wrapper for the `SYMV`_ routines::
 
       y := alpha*A*x + beta*y
-      
+
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc symv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
@@ -1397,7 +1397,7 @@ module BLAS {
     Wrapper for `SYR`_ routines::
 
       A := alpha*x*x' + A
-      
+
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc syr(A: [?Adom] ?eltType, X: [?vDom] eltType,
@@ -2492,7 +2492,7 @@ module BLAS {
 
   */
   module C_BLAS {
-    use SysCTypes, SysBasic, CPtr;
+    use CTypes;
     extern type CBLAS_INDEX = c_int;
 
     // Define the external types

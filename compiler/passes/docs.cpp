@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,6 +41,8 @@
 #include "symbol.h"
 #include "stringutil.h"
 #include "tmpdirname.h"
+
+#include "global-ast-vecs.h"
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;

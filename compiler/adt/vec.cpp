@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,7 +74,7 @@ template<>
 uintptr_t _vec_hasher(int obj) {
   return obj;
 }
-  
+
 // binary search over intervals
 static int
 i_find(Intervals *i, int x) {
@@ -93,14 +93,14 @@ i_find(Intervals *i, int x) {
     l = m;
     goto Lrecurse;
   }
-  if (x < i->v[m]) {    
+  if (x < i->v[m]) {
     h = m;
     goto Lrecurse;
   }
   return (l + 1);
 }
 
-int 
+int
 Intervals::in(int x) {
   if (!n)
     return 0;
@@ -110,7 +110,7 @@ Intervals::in(int x) {
 }
 
 // insert into interval with merge
-void 
+void
 Intervals::insert(int x) {
   if (!n) {
     add(x);
@@ -194,7 +194,7 @@ UnionFind::find(int n) {
   return i;
 }
 
-void 
+void
 UnionFind::unify(int n, int m) {
   n = find(n);
   m = find(m);

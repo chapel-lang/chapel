@@ -64,7 +64,7 @@
 
 #define SYSLOG_MAXLEN	512
 
-extern char *__hfi_mylabel;
+extern char __hfi_mylabel[];
 
 void
 hfi_vsyslog(const char *prefix, int to_console, int level,
@@ -81,7 +81,7 @@ hfi_vsyslog(const char *prefix, int to_console, int level,
 		gethostname(hostname, sizeof(hostname));
 		hostname[sizeof(hostname) - 1] = '\0';
 
-		if (__hfi_mylabel)
+		if (__hfi_mylabel[0])
 			fprintf(stderr, "%s: ", __hfi_mylabel);
 		else
 			fprintf(stderr, "%s: ", hostname);

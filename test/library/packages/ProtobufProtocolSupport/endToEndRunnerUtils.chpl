@@ -23,7 +23,7 @@ proc endToEndTest(package: string) {
   shell2.wait();
   shell2 = spawnshell("chpl -o "+packageDir+"/read "+packageDir+"/read.chpl");
   shell2.wait();
-  shell2 = spawnshell(packageDir+"/./read -nl 1", stdout=PIPE);
+  shell2 = spawnshell(packageDir+"/./read -nl 1", stdout=pipeStyle.pipe);
   while shell2.stdout.readline(line1) {
     if(line1.strip() != "true") then writeln("Chapel to Chapel failed");
   }
@@ -34,7 +34,7 @@ proc endToEndTest(package: string) {
   shell2.wait();
   shell2 = spawnshell(packageDir+"/./write -nl 1");
   shell2.wait();
-  shell2 = spawnshell("python3 "+packageDir+"/read.py", stdout=PIPE);
+  shell2 = spawnshell("python3 "+packageDir+"/read.py", stdout=pipeStyle.pipe);
   while shell2.stdout.readline(line1) {
     if(line1.strip() != "true") then writeln("Chapel to Python failed");
   }
@@ -45,7 +45,7 @@ proc endToEndTest(package: string) {
   shell2.wait();
   shell2 = spawnshell("chpl -o "+packageDir+"/read "+packageDir+"/read.chpl");
   shell2.wait();
-  shell2 = spawnshell(packageDir+"/./read -nl 1", stdout=PIPE);
+  shell2 = spawnshell(packageDir+"/./read -nl 1", stdout=pipeStyle.pipe);
   while shell2.stdout.readline(line1) {
     if(line1.strip() != "true") then writeln("Python to Chapel failed");
   }

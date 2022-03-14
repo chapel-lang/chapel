@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -67,7 +67,7 @@ c2chapel["float"]  = "c_float"
 c2chapel["char"]   = "c_char"
 c2chapel["void"]   = ""
 
-# Based on SysCTypes.chpl
+# Based on ChapelSysCTypes.chpl
 c2chapel["int"]                = "c_int"
 c2chapel["unsigned"]           = "c_uint"
 c2chapel["unsigned int"]       = "c_uint"
@@ -91,7 +91,7 @@ c2chapel["signed int"]         = "c_int"
 c2chapel["signed long long"]   = "c_longlong"
 c2chapel["signed long"]        = "c_long"
 
-# Note: this mapping is defined by the compiler, not the SysCTypes file
+# Note: this mapping is defined by the compiler, not the ChapelSysCTypes file
 c2chapel["FILE"] = "_file"
 
 __temp = [k for k in c2chapel.keys()]
@@ -418,7 +418,7 @@ def genVar(decl):
     name = decl.name
     if name in chapelKeywords:
         name = 'c2chapel_' + name
-    
+
     ty   = toChapelType(decl.type)
     print("extern var " + name + " : " + ty + ";")
     print()
@@ -638,13 +638,10 @@ def preamble(args, fakes):
         genComment("Note: Generated with fake std headers")
         print()
 
+    # Needed for C types
     # Arguably we can tighten the use of this module based on what we actually
     # generate, but for now this is good enough
-    print("use CPtr;")
-
-    # Needed for C types
-    print("use SysCTypes;")
-    print("use SysBasic;")
+    print("use CTypes;")
 
 # TODO: accept file from stdin?
 if __name__=="__main__":

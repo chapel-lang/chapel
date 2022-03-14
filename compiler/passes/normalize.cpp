@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,6 +43,8 @@
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 #include <cctype>
 #include <set>
@@ -147,7 +149,7 @@ void normalize() {
     preNormalizePostInit(at);
   }
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
 
     if (fn->hasFlag(FLAG_EXPORT) &&
@@ -669,6 +671,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   collectCallExprs(base, calls2);
 
   for_vector(CallExpr, call, calls2) {
+    if (partOfNonNormalizableExpr(call->parentExpr)) continue;
     applyGetterTransform(call);
     insertCallTemps(call);
     transformIfVar(call);
@@ -678,6 +681,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
 
   // Handle calls to "type" constructor or "value" constructor
   for_vector(CallExpr, call, calls2) {
+    if (partOfNonNormalizableExpr(call->parentExpr)) continue;
     if (isAlive(call) == true) {
       if (isCallToConstructor(call) == true) {
         normalizeCallToConstructor(call);
@@ -1549,6 +1553,23 @@ static void addEndOfStatementMarkers(BaseAST* base) {
   base->accept(&visitor);
 }
 
+// A non-normalizable expression cannot have it or any of its sub-expressions
+// changed beyond parse-time. These expressions are handled specially by
+// the resolver (e.g. for PRIM_RESOLVES). Anything contained in a
+// non-normalized expression is also non-normalizable. Locate the root of
+// the non-normalized expression.
+Expr* partOfNonNormalizableExpr(Expr* expr) {
+
+  // Anything contained in a non-normalizable expr is non-normalizable.
+  for (Expr* node = expr; node; node = node->parentExpr) {
+    if (CallExpr* call = toCallExpr(node)) {
+      const bool isResolvePrim = call->isPrimitive(PRIM_RESOLVES);
+      if (isResolvePrim) return node;
+    }
+  }
+
+  return nullptr;
+}
 
 static void addTypeBlocksForParentTypeOf(CallExpr* call) {
   Expr* stmt = getCallTempInsertPoint(call);
@@ -4565,8 +4586,18 @@ static void find_printModuleInit_stuff() {
 
     // TODO -- move this logic to wellknown.cpp
     if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
+      // assert that we haven't set this already this loop, b/c duplicates
+      // would be an error
+      INT_ASSERT(!gModuleInitIndentLevel);
       gModuleInitIndentLevel = toVarSymbol(symbol);
-      INT_ASSERT(gModuleInitIndentLevel);
+
+      // NOTE: we do not `break` here b/c we'd like to verify there is only
+      // one such var with that pragma. This is only walking over PrintModuleInitOrder.chpl
+      // so the number of symbols is small
     }
+  }
+  // assert that we actually found such a symbol unless in minimal modules mode
+  if (!fMinimalModules) {
+    INT_ASSERT(gModuleInitIndentLevel);
   }
 }

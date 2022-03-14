@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -208,6 +208,7 @@ module Atomics {
   // Parser hook
   pragma "no doc"
   proc chpl__atomicType(type T) type {
+    use ChplConfig;
     if CHPL_NETWORK_ATOMICS == "none" {
       return chpl__processorAtomicType(T);
     } else {

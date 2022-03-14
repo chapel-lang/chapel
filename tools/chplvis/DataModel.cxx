@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2015-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1050,7 +1050,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             (void)vdbTids.insert(taskid);
           } else {
             if (nfileno < 0 || nfileno >= fileTblSize) nfileno = 0;
-            if (fid < 0) 
+            if (fid < 0)
               { fid = 0; }
             newEvent = new E_task (sec, usec, nid, taskid, fid, onstr[0] == 'O',
                                    nlineno, nfileno);

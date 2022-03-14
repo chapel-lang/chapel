@@ -790,7 +790,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
           // split the range along parDim-th dimension
 
           // gotta have a param index into local1dDdescs
-          // TODO: make local1dDdescs homogenous (introduce a superclass
+          // TODO: make local1dDdescs homogeneous (introduce a superclass
           // of subordinate 1-d local domain descriptors?)
           //
           for param dd in 1..rank do if dd == parDim {

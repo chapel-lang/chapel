@@ -2,6 +2,8 @@ public use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist, StencilDist;
 
 enum DistType { default, block, cyclic, blockcyclic, replicated, stencil };
 
+use ChplConfig;
+
 config param distType: DistType = if CHPL_COMM=="none" then DistType.default
                                                        else DistType.block;
 

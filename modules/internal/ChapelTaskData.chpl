@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,13 +22,13 @@
 //
 module ChapelTaskData {
 
-  private use ChapelStandard, SysCTypes, CPtr;
+  private use ChapelStandard, CTypes;
 
   // Chapel task-local data format:
   // up to 16 bytes of wide pointer for _remoteEndCountType
   // 1 byte for serial_state
   // 1 byte for nextCoStmtSerial
-  private const chpl_offset_endCount = 0:size_t;
+  private const chpl_offset_endCount = 0:c_size_t;
   private const chpl_offset_serial = sizeof_endcount_ptr();
   private const chpl_offset_nextCoStmtSerial = chpl_offset_serial+1;
   private const chpl_offset_end = chpl_offset_nextCoStmtSerial+1;
@@ -43,7 +43,7 @@ module ChapelTaskData {
   // task local storage starting from a pointer to the tls region.
   proc chpl_task_data_setDynamicEndCount(tls:c_ptr(chpl_task_infoChapel_t), end: _remoteEndCountType) {
     var prv = tls:c_ptr(c_uchar);
-    var i:size_t;
+    var i:c_size_t;
 
     // Get the wide pointer components
     var loc = __primitive("_wide_get_locale", end);
@@ -60,7 +60,7 @@ module ChapelTaskData {
 
   proc chpl_task_data_getDynamicEndCount(tls:c_ptr(chpl_task_infoChapel_t)) {
     var prv = tls:c_ptr(c_uchar);
-    var i:size_t;
+    var i:c_size_t;
 
     var loc:chpl_localeID_t;
     var adr:c_void_ptr;

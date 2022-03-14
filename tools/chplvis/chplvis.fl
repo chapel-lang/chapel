@@ -1,9 +1,9 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0303 
-header_name {.h} 
+version 1.0303
+header_name {.h}
 code_name {.cxx}
 comment {/*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,67 +22,67 @@ comment {/*
  * limitations under the License.
  */
 } {in_source in_header
-} 
+}
 
 decl {\#include <FL/Fl_File_Chooser.H>} {private local
-} 
+}
 
 decl {\#include <FL/Fl_Multiline_Output.H>} {public local
-} 
+}
 
 decl {\#include <FL/Fl_Sys_Menu_Bar.H>} {public local
-} 
+}
 
 decl {\#include <FL/fl_ask.H>} {private local
-} 
+}
 
 decl {\#include <FL/Fl_Color_Chooser.H>} {private local
-} 
+}
 
 decl {\#include <unistd.h>} {public local
-} 
+}
 
 decl {\#include "Fl_MultiGroup.H"} {public global
-} 
+}
 
 decl {\#include "Settings.h"} {public local
-} 
+}
 
 decl {\#include "DataModel.h"} {public global
-} 
+}
 
 decl {\#include "InfoBar.h"} {public local
-} 
+}
 
 decl {\#include "MenuManager.h"} {public global
-} 
+}
 
 decl {\#include "ZoomScroll.h"} {public global
-} 
+}
 
 decl {\#include "GraphView.h"} {public global
-} 
+}
 
 decl {\#include "GridView.h"} {public global
-} 
+}
 
 decl {\#include "LocCommWin.h"} {public global
-} 
+}
 
 decl {\#include "ConcurrencyWin.h"} {public local
-} 
+}
 
 decl {\#include "ProfileBrowser.h"} {public local
-} 
+}
 
 decl {DataModel VisData;} {public local
-} 
+}
 
 decl {MenuManager Menus;} {public local
-} 
+}
 
 decl {SettingsData VisSettings;} {public local
-} 
+}
 
 Function {mainWinCallback(Fl_Widget *)} {open return_type void
 } {
@@ -90,7 +90,7 @@ Function {mainWinCallback(Fl_Widget *)} {open return_type void
    VisSettings.saveToFile(false);
 }
 exit(1);} {}
-} 
+}
 
 Function {make_LC_window(int locnum, localeData *locInfo)} {open C
 } {
@@ -105,7 +105,7 @@ Function {make_LC_window(int locnum, localeData *locInfo)} {open C
   }
   code {w->setBox(LC_Box);
 w->setAsLocale(locnum, locInfo);} {}
-} 
+}
 
 Function {make_LC_window(int fromLn, int toLn, struct commData *commdata)} {open
 } {
@@ -120,7 +120,7 @@ Function {make_LC_window(int fromLn, int toLn, struct commData *commdata)} {open
   }
   code {w->setBox(LC_Box1);
 w->setAsComm(fromLn, toLn, commdata);} {}
-} 
+}
 
 Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
 } {
@@ -150,7 +150,7 @@ Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {
   code {w->setMembers(theView);
 w->updateData(locNum, tagNum);
 return w;} {}
-} 
+}
 
 Function {open_data_set(const char *name, bool fromArgv)} {open private return_type bool
 } {
@@ -170,16 +170,16 @@ Menus.setCurrentTag(DataModel::TagALL);
 
 Graph_View->setNumLocales(VisData.NumLocales());
 Graph_View->selectData(DataModel::TagALL);
- 
+
 Grid_View->setNumLocales(VisData.NumLocales());
 Grid_View->selectData(DataModel::TagALL);
- 
+
 Info->setFileName(name);
 Info->clearTagName();
 
 return true;} {selected
   }
-} 
+}
 
 Function {} {open
 } {
@@ -383,4 +383,4 @@ if (VisSettings.save_WH) {
 }
 Menus.makeMenusFor(VIEW_GRAPH);
 ProfileView->loadData();} {}
-} 
+}

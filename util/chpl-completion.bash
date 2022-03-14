@@ -43,7 +43,6 @@ _chpl ()
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
---compiler-library-parser \
 --copy-elision \
 --copy-propagation \
 --copyright \
@@ -58,6 +57,9 @@ _chpl ()
 --div-by-zero-checks \
 --dynamic \
 --dynamic-auto-local-access \
+--dyno \
+--dyno-break-on-hash \
+--dyno-debug-trace \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -155,7 +157,6 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
---no-compiler-library-parser \
 --no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
@@ -167,6 +168,8 @@ _chpl ()
 --no-devel \
 --no-div-by-zero-checks \
 --no-dynamic-auto-local-access \
+--no-dyno \
+--no-dyno-debug-trace \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \

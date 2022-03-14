@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,6 +40,8 @@
 #include "stringutil.h"
 #include "TryStmt.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 #include <map>
 #include <utility>
@@ -127,29 +129,10 @@ void checkControlFlow(Expr* expr, const char* context) {
 static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
   forv_Vec(const char, str, *pragmas) {
     Flag flag = pragma2flag(str);
-    if (flag == FLAG_UNKNOWN)
+    if (flag == FLAG_UNKNOWN) {
       USR_FATAL_CONT(sym, "unknown pragma: \"%s\"", str);
-    else {
+    } else {
       sym->addFlag(flag);
-
-      if (flag == FLAG_RUNTIME_TYPE_INIT_FN) {
-        //
-        // These functions must be marked as type functions early in
-        // compilation, as calls to them are inserted by the compiler
-        // at the declaration points for arrays and domains.  In the
-        // past, they had to be defined as type functions in the
-        // modules, but most of us found that very confusing because
-        // the code in the functions actually returns a value.  See
-        // buildRuntimTypeToValueFns() in functionResolution.cpp for
-        // more info on what happens to these functions.
-        //
-        FnSymbol* fn = toFnSymbol(sym);
-        INT_ASSERT(fn);
-        if (fn->retTag != RET_VALUE) {
-          USR_WARN(fn, "function's return type is not a value type.  Ignoring.");
-        }
-        fn->retTag = RET_TYPE;
-      }
     }
   }
 }
@@ -813,12 +796,10 @@ BlockStmt*
 buildExternBlockStmt(const char* c_code) {
   bool privateUse = true;
 
-  // use CPtr, SysBasic, SysCTypes to get c_ptr, c_int, c_double etc.
+  // use CTypes to get c_ptr, c_int, c_double etc.
   // (System error codes do not need to be part of this).
-  BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CPtr"), "",
+  BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CTypes"), "",
                                      NULL, privateUse);
-  buildUseList(new UnresolvedSymExpr("SysCTypes"), "", useBlock, privateUse);
-  buildUseList(new UnresolvedSymExpr("SysBasic"), "", useBlock, privateUse);
 
   useBlock->insertAtTail(new ExternBlockStmt(c_code));
   BlockStmt* ret = buildChapelStmt(useBlock);
@@ -850,10 +831,6 @@ ModuleSymbol* buildModule(const char* name,
                           bool        prototype,
                           const char* docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
-
-  if (currentFileNamedOnCommandLine) {
-    mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-  }
 
   if (priv == true) {
     mod->addFlag(FLAG_PRIVATE);
@@ -2613,17 +2590,6 @@ BlockStmt* buildDeleteStmt(CallExpr* exprlist) {
   return new BlockStmt(new CallExpr("chpl__delete", exprlist), BLOCK_SCOPELESS);
 }
 
-BlockStmt*
-buildAtomicStmt(Expr* stmt) {
-  static bool atomic_warning = false;
-
-  if (!atomic_warning) {
-    atomic_warning = true;
-    USR_WARN(stmt, "atomic statement is ignored (not implemented)");
-  }
-  return buildChapelStmt(new BlockStmt(stmt));
-}
-
 
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign) {
   if (sign == '+') {
@@ -2638,12 +2604,12 @@ CallExpr* buildPreDecIncWarning(Expr* expr, char sign) {
   return NULL;
 }
 
-BlockStmt* convertTypesToExtern(BlockStmt* blk) {
+BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
   for_alist(node, blk->body) {
     if (DefExpr* de = toDefExpr(node)) {
       if (!de->init) {
         Symbol* vs = de->sym;
-        PrimitiveType* pt = new PrimitiveType(NULL);
+        PrimitiveType* pt = new PrimitiveType(nullptr);
 
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
@@ -2655,6 +2621,9 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
         de = newde;
       }
       de->sym->addFlag(FLAG_EXTERN);
+      if (cname != nullptr) {
+        de->sym->cname = astr(cname);
+      }
     } else {
       INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
     }

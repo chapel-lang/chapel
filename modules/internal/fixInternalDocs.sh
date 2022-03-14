@@ -172,7 +172,7 @@ replace "record" "type" $file
 removePrefixFunctions $file
 removePrefixVariables $file
 
-fixTitle "Array Operations" $file
+removeTitle $file
 removeUsage $file
 ## End ChapelArray ##
 
@@ -184,7 +184,7 @@ replace "record" "type" $file
 removePrefixFunctions $file
 removePrefixVariables $file
 
-fixTitle "Domain Operations" $file
+removeTitle $file
 removeUsage $file
 ## End ChapelArray ##
 
@@ -211,17 +211,6 @@ fixTitle "Ranges" $file
 removeUsage $file
 
 # End ChapelRange ##
-
-## ChapelComplex_forDocs ##
-
-file="./ChapelComplex_forDocs.rst"
-
-removePrefixFunctions $file
-removeTitle $file
-removeUsage $file
-replace "_complex" "complex" $file
-
-# End ChapelComplex_forDocs ##
 
 ## String ##
 

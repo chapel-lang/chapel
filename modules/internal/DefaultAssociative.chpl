@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,10 +80,6 @@ module DefaultAssociative {
     proc init(type idxType,
               param parSafe: bool,
               dist: unmanaged DefaultDist) {
-      if !chpl__validDefaultAssocDomIdxType(idxType) then
-        compilerError("Default Associative domains with idxType=",
-                      idxType:string, " are not allowed", 2);
-
       this.idxType = idxType;
       this.parSafe = parSafe;
       this.dist = dist;
@@ -422,6 +418,10 @@ module DefaultAssociative {
           yield slot;
         }
       }
+    }
+
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;

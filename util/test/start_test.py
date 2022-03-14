@@ -648,6 +648,11 @@ def check_environment_with_args():
     host_platform = chpl_platform.get("host")
     host_bin_subdir = chpl_bin_subdir.get("host")
     tgt_platform = chpl_platform.get("target")
+
+    # Adjust the C environment to UTF-8 with C sorting order
+    # This should not affect Chapel program behavior but it might
+    # affect other elements of the test system (e.g. `sort` called
+    # in a prediff).
     if not tgt_platform == "sunos":
         os.environ["LC_COLLATE"] = "C"
         os.environ["LANG"] = "en_US.UTF-8"
@@ -847,6 +852,12 @@ def set_up_general():
         # Stay below valgrind's --max-threads option, which defaults to 500
         if not "CHPL_RT_NUM_THREADS_PER_LOCALE" in os.environ:
             os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE"] = "450";
+        else:
+            logger.write("[Warning: Deadlock is possible since you set CHPL_RT_NUM_THREADS_PER_LOCALE]")
+
+        # Squash the warning about the potential for deadlock when setting
+        # the number of threads, or all tests will fail with that warning
+        os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET"] = "yes"
 
         # Additionally, fail with an error if valgrind testing is running without
         # tasks=fifo, mem=cstdlib, or with re2 built w/o valgrind support
@@ -1057,6 +1068,7 @@ def set_up_executables():
     os.environ["CHPL_LOCALE_MODEL"] = locale_model
 
     os.environ["CHPL_LLVM"] = chpl_llvm.get()
+    os.environ["CHPL_TASKS"] = chpl_tasks.get()
 
     # skip stdin tests for most custom launchers, except for amdprun and slurm
     if (launcher != "none" and launcher != "amudprun" and launcher !=

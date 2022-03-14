@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -116,7 +116,7 @@ issue a POST request:
 
     // This example uses the curl_easy_ interface from libcurl
     // to POST some json data.
-    use SysCTypes, CPtr;
+    use CTypes;
     import Curl;
 
     extern const CURLOPT_CUSTOMREQUEST: Curl.CURLoption;
@@ -127,7 +127,7 @@ issue a POST request:
 
     // Called with the contents of the server's response; does nothing with it.
     // Else libcurl writes it to stdout.
-    proc null_write_callback(ptr: c_ptr(c_char), size: size_t, nmemb: size_t, userdata: c_void_ptr) {
+    proc null_write_callback(ptr: c_ptr(c_char), size: c_size_t, nmemb: c_size_t, userdata: c_void_ptr) {
       return size * nmemb;
     }
 
@@ -156,7 +156,7 @@ Curl Support Types and Functions
 
  */
 module Curl {
-  public use IO, SysCTypes, CPtr;
+  public use IO, CTypes;
   use Sys;
 
   require "curl/curl.h";
@@ -348,9 +348,9 @@ module Curl {
   private extern proc qio_mkerror_errno():syserr;
   private extern proc qio_int_to_err(a:int(32)):syserr;
   private extern proc qio_channel_nbytes_available_unlocked(ch:qio_channel_ptr_t):int(64);
-  private extern proc qio_channel_copy_to_available_unlocked(ch:qio_channel_ptr_t, ptr:c_void_ptr, len:ssize_t):syserr;
+  private extern proc qio_channel_copy_to_available_unlocked(ch:qio_channel_ptr_t, ptr:c_void_ptr, len:c_ssize_t):syserr;
   private extern proc qio_channel_nbytes_write_behind_unlocked(ch:qio_channel_ptr_t):int(64);
-  private extern proc qio_channel_copy_from_buffered_unlocked(ch:qio_channel_ptr_t, ptr:c_void_ptr, len:ssize_t, ref n_written_out:ssize_t):syserr;
+  private extern proc qio_channel_copy_from_buffered_unlocked(ch:qio_channel_ptr_t, ptr:c_void_ptr, len:c_ssize_t, ref n_written_out:c_ssize_t):syserr;
   private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
   private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
   private extern proc qio_channel_writable(ch:qio_channel_ptr_t):bool;
@@ -381,9 +381,9 @@ module Curl {
   // Other Curl constants
   private extern const CURLINFO_CONTENT_LENGTH_DOWNLOAD: c_int;
 
-  private extern const CURL_READFUNC_PAUSE:size_t;
-  private extern const CURL_READFUNC_ABORT:size_t;
-  private extern const CURL_WRITEFUNC_PAUSE:size_t;
+  private extern const CURL_READFUNC_PAUSE:c_size_t;
+  private extern const CURL_READFUNC_ABORT:c_size_t;
+  private extern const CURL_WRITEFUNC_PAUSE:c_size_t;
   private extern const CURLPAUSE_ALL: c_int;
   private extern const CURLPAUSE_CONT: c_int;
 
@@ -504,12 +504,12 @@ module Curl {
     use IO;
     use Curl;
     use Sys;
-    use CPtr;
+    use CTypes;
 
     class CurlFile : QioPluginFile {
 
       var url_c: c_string;     // Path/URL
-      var length: ssize_t;    // length of what we are reading, -1 if we can't get
+      var length: c_ssize_t;    // length of what we are reading, -1 if we can't get
 
       var seekable: bool;
 
@@ -590,10 +590,10 @@ module Curl {
     record curl_iovec_t {
       var vec:c_ptr(qiovec_t); // iovec to read into --
                                // (the iovec passed in curl_readv/curl_preadv)
-      var total_read:size_t;   // total amount read
-      var amt_read:size_t;     // amount read into the current iovec buffer
+      var total_read:c_size_t;   // total amount read
+      var amt_read:c_size_t;     // amount read into the current iovec buffer
       var count:c_int;         // number of buffers in the iovec
-      var offset:size_t;       // offset that we want to skip to
+      var offset:c_size_t;       // offset that we want to skip to
                                // (in the case where we cannot request byteranges)
       var curr:c_int;          // the index of the current buffer
     };
@@ -603,23 +603,23 @@ module Curl {
     // call CURLOPT_WRITEDATA in curl_preadv and curl_readv.
     // FUTURE: If we have filled the iovec, but have not finished reading from the curl
     // handle, pause it (i.e., return CURL_WRITE_PAUSE).
-    private proc pause_writer(ptr:c_void_ptr, size:size_t, nmemb:size_t, userdata:c_void_ptr):size_t
+    private proc pause_writer(ptr:c_void_ptr, size:c_size_t, nmemb:c_size_t, userdata:c_void_ptr):c_size_t
     {
       //writeln("in pause_writer");
       return CURL_WRITEFUNC_PAUSE;
     }
-    private proc pause_reader(ptr:c_void_ptr, size:size_t, nmemb:size_t, userdata:c_void_ptr):size_t
+    private proc pause_reader(ptr:c_void_ptr, size:c_size_t, nmemb:c_size_t, userdata:c_void_ptr):c_size_t
     {
       //writeln("in pause_reader");
       return CURL_READFUNC_PAUSE;
     }
 
 
-    private proc buf_writer(ptr:c_void_ptr, size:size_t, nmemb:size_t, userdata:c_void_ptr):size_t
+    private proc buf_writer(ptr:c_void_ptr, size:c_size_t, nmemb:c_size_t, userdata:c_void_ptr):c_size_t
     {
       var ptr_data = ptr:c_ptr(uint(8));
-      var realsize:size_t = size*nmemb;
-      var real_realsize:size_t = realsize;
+      var realsize:c_size_t = size*nmemb;
+      var real_realsize:c_size_t = realsize;
       var retptr = userdata:c_ptr(curl_iovec_t);
       ref ret = retptr.deref();
 
@@ -689,19 +689,19 @@ module Curl {
 
     record curl_str_buf {
       var mem:c_ptr(uint(8));
-      var len: size_t;
-      var alloced: size_t;
+      var len: c_size_t;
+      var alloced: c_size_t;
     }
 
 
     private proc startsWith(haystack:c_string, needle:c_string) {
-      extern proc strncmp(s1:c_string, s2:c_string, n:size_t):c_int;
+      extern proc strncmp(s1:c_string, s2:c_string, n:c_size_t):c_int;
 
-      return strncmp(haystack, needle, needle.size:size_t) == 0;
+      return strncmp(haystack, needle, needle.size:c_size_t) == 0;
     }
 
-    private proc curl_write_string(contents: c_void_ptr, size:size_t, nmemb:size_t, userp: c_void_ptr) {
-      var realsize:size_t = size * nmemb;
+    private proc curl_write_string(contents: c_void_ptr, size:c_size_t, nmemb:c_size_t, userp: c_void_ptr) {
+      var realsize:c_size_t = size * nmemb;
       var bufptr = userp:c_ptr(curl_str_buf);
       ref buf = bufptr.deref();
 
@@ -846,15 +846,15 @@ module Curl {
       return ENOERR;
     }
 
-    private proc curl_write_received(contents: c_void_ptr, size:size_t, nmemb:size_t, userp: c_void_ptr):size_t {
-      var realsize:size_t = size * nmemb;
+    private proc curl_write_received(contents: c_void_ptr, size:c_size_t, nmemb:c_size_t, userp: c_void_ptr):c_size_t {
+      var realsize:c_size_t = size * nmemb;
       var cc = userp:unmanaged CurlChannel?;
       var err:syserr = ENOERR;
 
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
 
-      var amt = realsize.safeCast(ssize_t);
+      var amt = realsize.safeCast(c_ssize_t);
 
       //writeln("curl_write_received offset=", qio_channel_offset_unlocked(cc!.qio_ch), " len=", amt);
 
@@ -978,20 +978,20 @@ module Curl {
     // Send some data somewhere with curl
     // Returning 0 will signal end-of-file to the curl library
     // and cause it to stop the transfer.
-    private proc curl_read_buffered(contents: c_void_ptr, size:size_t, nmemb:size_t, userp: c_void_ptr):size_t {
-      var realsize:size_t = size * nmemb;
+    private proc curl_read_buffered(contents: c_void_ptr, size:c_size_t, nmemb:c_size_t, userp: c_void_ptr):c_size_t {
+      var realsize:c_size_t = size * nmemb;
       var cc = userp:unmanaged CurlChannel?;
       var err:syserr = ENOERR;
 
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
 
-      var amt = realsize.safeCast(ssize_t);
+      var amt = realsize.safeCast(c_ssize_t);
 
       // Write from the buffer's start position up until the start
       // of the user-visible data.
 
-      var gotamt: ssize_t = 0;
+      var gotamt: c_ssize_t = 0;
       // copy the data from the channel's buffer
       err = qio_channel_copy_from_buffered_unlocked(cc!.qio_ch, contents, amt, gotamt);
 
@@ -1009,7 +1009,7 @@ module Curl {
         return CURL_READFUNC_PAUSE;
       }
 
-      return gotamt:size_t;
+      return gotamt:c_size_t;
     }
 
     private proc write_amount(cc:CurlChannel, requestedAmount:int(64)):syserr {
@@ -1121,7 +1121,7 @@ module Curl {
 
     proc openCurlFile(url:string,
                      mode:iomode = iomode.r,
-                     style:iostyle = defaultIOStyle()) throws {
+                     style:iostyleInternal = defaultIOStyleInternal()) throws {
 
       var err_out: syserr = ENOERR;
       var rc = 0;
@@ -1149,7 +1149,7 @@ module Curl {
         fl.seekable = false;
       } else {
         fl.seekable = seekable(fl, filelength);
-        fl.length = filelength:ssize_t;
+        fl.length = filelength:c_ssize_t;
       }
 
       var err: CURLcode = 0;

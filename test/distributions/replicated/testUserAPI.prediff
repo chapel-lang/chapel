@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# The only difference for a multilocale execution is targetLocales.
+# Make it look like a local execution, so we can reuse the .good file.
+sed 's/targetLocales() = LOCALE. LOCALE. LOCALE. LOCALE./targetLocales() = LOCALE0/' $2 > $2.tmp
+mv $2.tmp $2

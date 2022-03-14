@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,10 +23,12 @@
 
 #include "alist.h"
 #include "baseAST.h"
+#include "ModuleSymbol.h"
 #include "chpl/queries/Context.h"
 #include "chpl/uast/Module.h"
 
 ModuleSymbol* convertToplevelModule(chpl::Context* context,
-                                    const chpl::uast::Module* mod);
+                                    const chpl::uast::Module* mod,
+                                    ModTag modTag);
 
 #endif

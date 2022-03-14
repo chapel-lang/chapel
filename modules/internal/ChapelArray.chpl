@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,145 +20,7 @@
 
 // ChapelArray.chpl
 //
-/* Operations on Domains and Arrays.
 
-   =================================================
-   Distribution, Domain and Array Equality operators
-   =================================================
-
-   Equality operators are defined to test if two distributions
-   are equivalent or not:
-
-   .. code-block:: chapel
-
-     dist1 == dist2
-     dist1 != dist2
-
-   Or to test if two domains are equivalent or not:
-
-   .. code-block:: chapel
-
-     dom1 == dom2
-     dom1 != dom2
-
-   Arrays are promoted, so the result of the equality operators is
-   an array of booleans.  To get a single result use the ``equals``
-   method instead.
-
-   .. code-block:: chapel
-
-     arr1 == arr2 // compare each element resulting in an array of booleans
-     arr1 != arr2 // compare each element resulting in an array of booleans
-     arr1.equals(arr2) // compare entire arrays resulting in a single boolean
-
-   ========================================
-   Miscellaneous Domain and Array Operators
-   ========================================
-
-   The domain count operator ``#``
-   -------------------------------
-
-   The ``#`` operator can be applied to dense rectangular domains
-   with a tuple argument whose size matches the rank of the domain
-   (or optionally an integer in the case of a 1D domain). The operator
-   is equivalent to applying the ``#`` operator to the component
-   ranges of the domain and then using them to slice the domain.
-
-   The array count operator ``#``
-   ------------------------------
-   The ``#`` operator can be applied to dense rectangular arrays
-   with a tuple argument whose size matches the rank of the array
-   (or optionally an integer in the case of a 1D array). The operator
-   is equivalent to applying the ``#`` operator to the array's domain
-   and using the result to slice the array.
-
-   The array swap operator ``<=>``
-   -------------------------------
-   The ``<=>`` operator can be used to swap the contents of two arrays
-   with the same shape.
-
-   ================================================
-   Set Operations on Associative Domains and Arrays
-   ================================================
-
-   Associative domains and arrays support a number of operators for
-   set manipulations.  The supported set operators are:
-
-     =======  ====================
-     \+ , \|  Union
-     &        Intersection
-     \-       Difference
-     ^        Symmetric Difference
-     =======  ====================
-
-   Consider the following code where ``A`` and ``B`` are associative arrays:
-
-   .. code-block:: chapel
-
-     var C = A op B;
-
-   The result ``C`` is a new associative array backed by a new associative
-   domain. The domains of ``A`` and ``B`` are not modified by ``op``.
-
-   There are also ``op=`` variants that store the result into the first operand.
-
-   Consider the following code where ``A`` and ``B`` are associative arrays:
-
-   .. code-block:: chapel
-
-     A op= B;
-
-   ``A`` must not share its domain with another array, otherwise the program
-   will halt with an error message.
-
-   For the ``+=`` and ``|=`` operators, the value from ``B`` will overwrite
-   the existing value in ``A`` when indices overlap.
-
-   ==================================================
-   Parallel Safety with respect to Arrays and Domains
-   ==================================================
-
-   Users must take care when applying operations to arrays and domains
-   concurrently from distinct tasks.  For instance, if one task is
-   modifying the index set of a domain while another task is operating
-   on either the domain itself or an array declared over that domain,
-   this represents a race and could have arbitrary consequences
-   including incorrect results and program crashes.  While making
-   domains and arrays safe with respect to such concurrent operations
-   would be appealing, Chapel's current position is that such safety
-   guarantees would be prohibitively expensive.
-
-   Chapel arrays do support concurrent reads, writes, iterations, and
-   operations as long as their domains are not being modified
-   simultaneously.  Such operations are subject to Chapel's memory
-   consistency model like any other memory accesses.  Similarly, tasks
-   may make concurrent queries and iterations on a domain as long as
-   another task is not simultaneously modifying the domain's index
-   set.
-
-   By default, associative domains permit multiple tasks
-   to modify their index sets concurrently.  This adds some amount of
-   overhead to these operations.  If the user knows that all such
-   modifications will be done serially or in a parallel-safe context,
-   the overheads can be avoided by setting ``parSafe`` to ``false`` in
-   the domain's type declaration.  For example, the following
-   declaration creates an associative domain of strings where the
-   implementation will do nothing to ensure that simultaneous
-   modifications to the domain are parallel-safe:
-
-     .. code-block:: chapel
-
-       var D: domain(string, parSafe=false);
-
-   As with any other domain type, it is not safe to access an
-   associative array while its domain is changing, regardless of
-   whether ``parSafe`` is set to ``true`` or ``false``.
-
-   ===========================================
-   Functions and Methods on Arrays and Domains
-   ===========================================
-
- */
 module ChapelArray {
 
   public use ChapelBase;
@@ -169,7 +31,7 @@ module ChapelArray {
   use ArrayViewReindex;
   import Reflection;
   use ChapelDebugPrint;
-  use SysCTypes;
+  use CTypes;
   use ChapelPrivatization;
   public use ChapelDomain;
 
@@ -183,7 +45,8 @@ module ChapelArray {
   // This permits a user to opt into upcoming behavior to always have
   // .indices return local indices for an array
   pragma "no doc"
-  config param arrayIndicesAlwaysLocal = false;
+  deprecated "'arrayIndicesAlwaysLocal' is deprecated and no longer has an effect"
+  config param arrayIndicesAlwaysLocal = true;
 
   pragma "no doc"
   config param debugBulkTransfer = false;
@@ -332,25 +195,32 @@ module ChapelArray {
   // tuple. If the value is not a tuple and expand is true, copy the value into
   // a rank-tuple. If the value is a scalar and rank is 1, copy it into a 1-tuple.
   //
-  proc _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank == t.size {
+  proc _makeIndexTuple(param rank, t: _tuple, param concept: string,
+                       param expand: bool=false) {
+   if rank == t.size then
     return t;
+   else
+    compilerError("rank of the ", concept, " must match domain rank");
   }
 
-  proc _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank != t.size {
-    compilerError("index rank must match domain rank");
-  }
-
-  proc _makeIndexTuple(param rank, val:integral, param expand: bool=false) {
+  proc _makeIndexTuple(param rank, val:integral, param concept: string,
+                       param expand: bool=false) {
     if expand || rank == 1 {
       var t: rank*val.type;
       for param i in 0..rank-1 do
         t(i) = val;
       return t;
     } else {
-      compilerWarning(val.type:string);
-      compilerError("index rank must match domain rank");
+      compilerWarning(concept, " is of type ", val.type:string);
+      compilerError("rank of the ", concept, " must match domain rank");
       return val;
     }
+  }
+
+  pragma "last resort"
+  proc _makeIndexTuple(param rank, val, param concept: string,
+                       param expand: bool=false) {
+    compilerError("cannot use ", concept, " of type ", val.type:string);
   }
 
   pragma "no copy return"
@@ -378,14 +248,14 @@ module ChapelArray {
   // chpl__buildArrayRuntimeType) are replaced by the compiler to just create a
   // record storing the arguments.  The return type of
   // chpl__build...RuntimeType is what tells the compiler which runtime type it
-  // is creating.  These functions are considered type functions early in
-  // compilation.
+  // is creating. These functions are written to return a value even though
+  // they are marked as type functions.
 
   //
   // Support for array types
   //
   pragma "runtime type init fn"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) type {
     return dom.buildArray(eltType, false);
   }
 
@@ -1018,40 +888,17 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
 
-    /* Return the array's indices as a copy of its domain.
-
-       .. note::
-
-         In a forthcoming release, we expect ``.indices`` to change in
-         behavior to return/yield indices using a local representation
-         rather than as a clone of the array's domain.  In order to
-         preserve the legacy behavior in your program, please use
-         ``.domain`` instead (or a copy thereof).
-
-         If you'd like to opt into a prototype of the new behavior,
-         recompile with ``-sarrayIndicesAlwaysLocal=true``.  For
-         dense, rectangular arrays, this will have the effect of
-         returning a local domain representing the array's indices;
-         for a sparse or associative array, it will invoke a serial
-         iterator that yields the array's indices.
-
-         See https://github.com/chapel-lang/chapel/issues/17883 for
-         further details.
+    /*
+      Return a dense rectangular array's indices as a default domain.
     */
-    deprecated "the current behavior of  '.indices' on arrays is deprecated; see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.indices for details"
-    proc indices where arrayIndicesAlwaysLocal == false {
-      return _dom;
-    }
-
-    pragma "no doc"
-    proc indices where arrayIndicesAlwaysLocal == true &&
-                       !this.isSparse() && !this.isAssociative() {
+    proc indices where !this.isSparse() && !this.isAssociative() {
       return {(..._dom.getIndices())};
     }
 
-    pragma "no doc"
-    iter indices where arrayIndicesAlwaysLocal == true &&
-                       (this.isSparse() || this.isAssociative()) {
+    /*
+      Yield an irregular array's indices.
+    */
+    iter indices where (this.isSparse() || this.isAssociative()) {
       for i in _dom do
         yield i;
     }
@@ -1421,7 +1268,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc dim(param d : int) {
-      return this.domain.dim(d); 
+      return this.domain.dim(d);
     }
 
     pragma "no doc"
@@ -1437,8 +1284,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc localSlice(r... rank)
-    where isSubtype(_value.type, DefaultRectangularArr) &&
-          chpl__isTupleOfRanges(r) {
+    where chpl__isDROrDRView(this) && chpl__isTupleOfRanges(r) {
       if boundsChecking then
         checkSlice((...r), value=_value);
       var dom = _dom((...r));
@@ -1448,8 +1294,7 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc localSlice(d: domain)
-    where isSubtype(_value.type, DefaultRectangularArr) {
+    proc localSlice(d: domain) where chpl__isDROrDRView(this) {
       if boundsChecking then
         checkSlice((...d.getIndices()), value=_value);
 
@@ -1467,8 +1312,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc localSlice(r... rank)
-    where chpl__isTupleOfRanges(r) &&
-          !isSubtype(_value.type, DefaultRectangularArr) {
+    where chpl__isTupleOfRanges(r) && !chpl__isDROrDRView(this) {
       if boundsChecking then
         checkSlice((...r), value=_value);
       return _value.dsiLocalSlice(r);
@@ -1493,7 +1337,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone &&
-            __primitive("method call resolves", _value, "these", tag=tag) {
+            __primitive("resolves", _value.these(tag=tag)) {
       for i in _value.these(tag) do
         yield i;
     }
@@ -1507,9 +1351,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     iter these(param tag: iterKind, followThis, param fast: bool = false) ref
       where tag == iterKind.follower {
-
-      if __primitive("method call resolves", _value, "these",
-                     tag=tag, followThis, fast=fast) {
+      if __primitive("resolves", _value.these(tag=tag, followThis, fast=fast)) {
         for i in _value.these(tag=tag, followThis, fast=fast) do
           yield i;
       } else {
@@ -1836,7 +1678,7 @@ module ChapelArray {
     proc back() {
       return this.last;
     }
-    
+
     /* Return the first element in the array. The array must be a
        rectangular 1-D array.
      */
@@ -2052,6 +1894,22 @@ module ChapelArray {
   operator :(x: [], type t:string) {
     use IO;
     return stringify(x);
+  }
+
+  pragma "fn returns aliasing array"
+  operator #(arr: [], counts: integral) {
+    return arr[arr.domain#counts];
+  }
+
+  pragma "fn returns aliasing array"
+  operator #(arr: [], counts: _tuple) {
+    return arr[arr.domain#counts];
+  }
+
+  pragma "last resort"
+  operator #(arr: [], counts) {
+    compilerError("cannot apply '#' to '", arr.type:string,
+                  "' using count(s) of type ", counts.type:string);
   }
 
   //
@@ -2910,6 +2768,13 @@ module ChapelArray {
     return lhs;
   }
 
+  // TODO: why is the compiler calling chpl__autoCopy on a domain at all?
+  pragma "auto copy fn"
+  proc chpl__autoCopy(const ref x:domain, definedConst: bool) {
+    pragma "no copy" var b = chpl__initCopy(x, definedConst);
+    return b;
+  }
+
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
     pragma "no copy"
@@ -2917,6 +2782,7 @@ module ChapelArray {
     return lhs;
   }
 
+  // TODO: why is the compiler calling chpl__autoCopy on an array at all?
   pragma "auto copy fn" proc chpl__autoCopy(x: [], definedConst: bool) {
     pragma "no copy" var b = chpl__initCopy(x, definedConst);
     return b;
@@ -3434,7 +3300,7 @@ module ChapelArray {
     var r = if shapeful then ir._shape_ else 1..0;
 
     var i  = 0;
-    var size = r.sizeAs(size_t);
+    var size = r.sizeAs(c_size_t);
     type elemType = iteratorToArrayElementType(ir.type);
     var data:_ddata(elemType) = nil;
 
@@ -3565,7 +3431,7 @@ module ChapelArray {
     if (arr._value.locale != here) then
       halt("An array can only be passed to an external routine from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
 
-    use CPtr;
+    use CTypes;
     const ptr = c_pointer_return(arr[arr.domain.alignedLow]);
     if castToVoidStar then
       return ptr: c_void_ptr;

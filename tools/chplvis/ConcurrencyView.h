@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,7 +55,7 @@ class ConcurrencyData : public Fl_Group {
     void setParent(ConcurrencyView *p) { parent = p; }
 
     void buildData (void);
-  
+
 };
 
 //  View for showing concurrency details.
@@ -74,7 +74,7 @@ class ConcurrencyView : public Fl_Group {
     long localeNum;
     long tagNum;
 
-    DataModel::tagData *curTag;  
+    DataModel::tagData *curTag;
 
   public:
     ConcurrencyView (int x, int y, int W, int H, const char *l=0);

@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -153,7 +153,7 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) { return NULL; }
 
 void chpl_comm_broadcast_private(int id, size_t size) { }
 
-void chpl_comm_barrier(const char *msg) { }
+void chpl_comm_impl_barrier(const char *msg) { }
 
 void chpl_comm_pre_task_exit(int all) { }
 
@@ -175,7 +175,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 
 void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstnode,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
-                         int32_t stridelevels, size_t elemSize, int32_t commID, 
+                         int32_t stridelevels, size_t elemSize, int32_t commID,
                          int ln, int32_t fn)
 {
   assert(dstnode==0);
@@ -188,7 +188,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstno
 
 void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcnode,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
-                         int32_t stridelevels, size_t elemSize, int32_t commID, 
+                         int32_t stridelevels, size_t elemSize, int32_t commID,
                          int ln, int32_t fn)
 {
   assert(srcnode==0);

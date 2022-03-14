@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -567,6 +567,7 @@ std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
   for (auto& ii : varMap)
     command += ii.first + "=" + ii.second + " ";
 
+  command += "CHPLENV_SKIP_HOST=true ";
   command += "CHPLENV_SUPPRESS_WARNINGS=true ";
   command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple";
 
@@ -890,6 +891,27 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // List object files needed to compile this deliverable.
   fprintf(makefile.fptr, "CHPLUSEROBJ = \\\n");
+  if (!fLibraryCompile) {
+    // If we're not doing a --library-* compile, we want to add the
+    // file corresponding to CHPLSRC/'mainfile' to CHPLUSEROBJ (the
+    // list of user object files (which currently have no extension).
+    // For an LLVM compile, this file has a .o extension, whereas for
+    // a C back-end compile, it has a .c extension.  The following
+    // accomplishes this by generating either
+    //   CHPLUSEROBJ = $(CHPLSRC:%.o=%)
+    // or
+    //   CHPLUSEROBJ = $(CHPLSRC:%.c=%)'
+    // based on the extension.  Note that with more refactoring in the
+    // Makefiles used to build libraries, this similar change could be
+    // applied there.
+
+    const char* dot = &(mainfile->pathname[strlen(mainfile->pathname)-2]);
+    const char* ext = &(mainfile->pathname[strlen(mainfile->pathname)-1]);
+    if (*dot != '.' || (*ext != 'c' && *ext != 'o' )) {
+      INT_FATAL("Unexpected extension in 'mainfile' for non-library compile");
+    }
+    fprintf(makefile.fptr, "\t$(CHPLSRC:%%.%s=%%) \\\n", ext);
+  }
   for (size_t i = 0; i < splitFiles.size(); i++) {
     fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
   }
@@ -1029,6 +1051,15 @@ void expandInstallationPaths(std::vector<std::string>& args) {
     expandInstallationPaths(s);
     args[i] = s;
   }
+}
+
+bool isDirectory(const char* path)
+{
+  struct stat stats;
+  if (stat(path, &stats) == 0 && (stats.st_mode & S_IFMT) == S_IFDIR)
+    return true;
+
+  return false;
 }
 
 // would just use realpath, but it is not supported on all platforms.

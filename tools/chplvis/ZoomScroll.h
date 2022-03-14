@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,12 +30,12 @@ class ZoomScroll : public Fl_Scroll {
  public:
 
   ZoomScroll (int x, int y, int w, int h, const char *l = 0)
-    : Fl_Scroll::Fl_Scroll (x, y, w, h, l) { zoomWidget = 0; }; 
+    : Fl_Scroll::Fl_Scroll (x, y, w, h, l) { zoomWidget = 0; };
 
   void setZoomWidget (Fl_Widget *zw) { zoomWidget = zw; }
-    
+
   Fl_Widget *getZoomWidget (void) { return zoomWidget; }
-    
+
   void resize (int, int, int, int);
 
   void zoomIn(int zx = -1, int zy=-1);

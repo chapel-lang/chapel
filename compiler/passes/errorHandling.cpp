@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,8 @@
 #include "symbol.h"
 #include "TryStmt.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 #include <stack>
 
@@ -353,6 +355,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         TryInfo info = tryStack.top();
         errorVar = info.errorVar;
 
+        // (a) an enclosing try/try!
         errorPolicy->insertAtTail(gotoHandler());
       } else {
         // without try, need an error variable
@@ -361,10 +364,31 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         insert->insertBefore(new DefExpr(errorVar));
         insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
 
-        if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG && deferDepth == 0)
+        // TODO: if deferDepth > 0, either implement error handling
+        // or make the program halt regardless of insideTry or outError.
+        if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG &&
+            deferDepth == 0 && !node->parentSymbol->hasFlag(FLAG_OUTSIDE_TRY)) {
+          // (b) throw from the enclosing function
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
-        else
-          errorPolicy->insertAtTail(haltExpr(errorVar, false));
+        }
+        else if (calledFn->hasFlag(FLAG_TASK_JOIN_IMPL_FN)) {
+          if (node->parentSymbol->hasFlag(FLAG_ITERATOR_FN))
+            // (c) coforall or similar in a non-throwing iterator
+            // ==> we will propagate the error when the iterator is inlined
+            errorPolicy->insertAtTail(haltExpr(errorVar, false));
+          else if (node->parentSymbol->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN))
+            // (d) coforall/... in a task function in a non-throwing iterator
+            // ==> propagate the error through the task function
+            errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
+          else
+            // (e) coforall or similar in a non-throwing procedure
+            // ==> halt right away
+            errorPolicy->insertAtTail(haltExpr(errorVar, true));
+        }
+        else {
+          // (f) a throwing call in a non-throwing function ==> halt right away
+          errorPolicy->insertAtTail(haltExpr(errorVar, true));
+        }
       }
 
       node->insertAtTail(errorVar); // adding error argument to call
@@ -448,6 +472,7 @@ bool ErrorHandlingVisitor::enterForLoop(ForLoop* node) {
     LabelSymbol* b = new LabelSymbol("forall_break_label");
     // intentionally *not* marked with FLAG_ERROR_LABEL so that
     // we don't auto-destroy everything just before it.
+    b->addFlag(FLAG_FORALL_BREAK_LABEL);
     node->breakLabelSet(b);
     node->insertAfter(new DefExpr(b));
   }
@@ -458,7 +483,7 @@ bool ErrorHandlingVisitor::enterForLoop(ForLoop* node) {
 }
 
 
-static bool canForallStmtThrow(ForallStmt* fs) {
+static void checkTPVs(ForallStmt* fs) {
   // Do this first to check for throwing non-POD initializer exprs.
   for_shadow_vars(svar, temp, fs) {
     if (BlockStmt* IB = svar->initBlock()) {
@@ -470,7 +495,6 @@ static bool canForallStmtThrow(ForallStmt* fs) {
           USR_FATAL_CONT(IB, "the initialization expression of the task-private"
             " variable '%s' throws - this is currently not supported"
             " for variables of non-POD types", svar->name);
-        return true;
       }
     }
     if (BlockStmt* DB = svar->deinitBlock()) {
@@ -480,19 +504,19 @@ static bool canForallStmtThrow(ForallStmt* fs) {
                        " throws - this is currently not supported", svar->name);
     }
   }
-
-  // Now check the loop body.
-  if (canBlockStmtThrow(fs->loopBody()))
-    return true;
-
-  // Did not find anything that throws.
-  return false;
 }
 
 bool ErrorHandlingVisitor::enterForallStmt(ForallStmt* node) {
-  // We assume that fRecIterGetIterator/fRecIterFreeIterator do not throw.
+  checkTPVs(node);
 
-  if (!canForallStmtThrow(node))
+  // If 'node' is outside an error handling context:, the body will need to
+  // halt on an error, so treat this as non-throwing.
+  if (tryStack.empty() &&
+      (outError == NULL || node->parentSymbol->hasFlag(FLAG_OUTSIDE_TRY)))
+    return true;
+
+  // We assume that fRecIterGetIterator/fRecIterFreeIterator do not throw.
+  if (!canBlockStmtThrow(node->loopBody()))
     return true;
 
   SET_LINENO(node);
@@ -502,6 +526,7 @@ bool ErrorHandlingVisitor::enterForallStmt(ForallStmt* node) {
     LabelSymbol* b = new LabelSymbol("forall_break_label");
     // intentionally *not* marked with FLAG_ERROR_LABEL so that
     // we don't auto-destroy everything just before it.
+    b->addFlag(FLAG_FORALL_BREAK_LABEL);
     node->fErrorHandlerLabel = b;
     node->insertAfter(new DefExpr(b));
   }
@@ -931,7 +956,32 @@ static void issueThrowingFnError(FnSymbol* calledFn,
   printReason(node, reasons);
 }
 
-
+/*
+If this is a call to a task function TF:
+* The call itself is (correctly) not checked for errors.
+* If TF is not implicitly-throwing
+  (which happens when all errors inside it, if any, are handled):
+  - no error checking inside TF is performed here;
+  - error checking inside TF is done by checkErrorHandling(TF),
+    at which point TF is treated as a non-throwing function;
+    however the only errors it can generate are an improper catchall
+    or "throwing call without try or try! (strict mode)",
+    if there were any other offenders, it would have been marked
+    implicitly-throwing.
+* If TF is implicitly-throwing:
+  - TF is checked recursively here if its enclosing non-task function
+    is non-throwing, including the case where taskFunctionDepth > 0,
+    which can occur only under this same condition;
+    TODO: simplify this check to 'if (!fnCanThrow)'
+  - TF is checked again by checkErrorHandling(TF),
+    at which point TF is treated as a throwing function; for this reason
+    the only errors it can generate are again an improper catchall
+    or "throwing call without try or try! (strict mode)", all other
+    conditions are acceptable within a throwing function.
+TODO: simplify this logic and do not descend into TF here.
+Instead check inside a TF only in checkErrorHandling(). Use FLAG_OUTSIDE_TRY
+to determine whether the enclosing function is non-throwing.
+*/
 bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = (tryDepth > 0);
 
@@ -956,10 +1006,21 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
             taskFunctionDepth--;
             return true;
           } else {
+            // The above logic never descends into a task function - therefore
+            // never gets to this point - unless the top-most non-task parentFn
+            // is non-throwing. Cf. at this point we are in a throwing task fn.
+            // So, adjust 'inThrowingFunction' to correspond to the top-most
+            // non-task parentFn. This will make it equivalent to 'fnCanThrow'.
             inThrowingFunction = false;
           }
+        } else if (isTaskFun(calledFn)) {
+          // One way or another, we should not be going further
+          // if it is a task function.
+          return true;
+        } else {
         }
       }
+      INT_ASSERT(inThrowingFunction == fnCanThrow);
 
       if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
 
@@ -1173,7 +1234,7 @@ static void lowerErrorHandling(FnSymbol* fn)
 
 void lowerCheckErrorPrimitive()
 {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CHECK_ERROR)) {
       SET_LINENO(call);
 

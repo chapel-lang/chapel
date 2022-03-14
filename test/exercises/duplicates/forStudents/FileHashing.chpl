@@ -30,6 +30,11 @@ module FileHashing {
     proc init(hashVal: 8*uint(32)) {
       this.hashVal = hashVal;
     }
+
+    /* How to compute a hash a SHA256Hash */
+    proc hash() {
+      return hashVal.hash();
+    }
   }
 
   /* Called when assigning between SHA256Hash values */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -194,6 +194,8 @@
 #include "timer.h"
 #include "view.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 #include <map>
 #include <queue>
@@ -925,7 +927,7 @@ static void addKnownWides() {
 
     FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
-    forv_Vec(FnSymbol, indirectlyCalledFn, ftableVec) {
+    for (FnSymbol* indirectlyCalledFn : ftableVec) {
       if (fn == indirectlyCalledFn) {
         debug(arg, "called from ftableVec\n");
         setWide(fn, arg);
@@ -1261,7 +1263,7 @@ static void propagateVar(Symbol* sym) {
             }
           }
           else if (sym->isRefOrWideRef()) {
-            if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) || 
+            if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                 rhs->isPrimitive(PRIM_GET_MEMBER)) {
               SymExpr* field = toSymExpr(rhs->get(2));
               debug(sym, "widening field ref %s (%d)\n", field->symbol()->cname, field->symbol()->id);
@@ -1277,7 +1279,7 @@ static void propagateVar(Symbol* sym) {
                 matchWide(def, field->symbol());
               }
             }
-            else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) || 
+            else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               widenTupleField(rhs, def);
             }
@@ -2469,7 +2471,7 @@ insertWideReferences(void) {
   }
 
   debugTimer.start();
-  forv_Vec(Symbol, sym, heapVars) {
+  for (Symbol* sym : heapVars) {
     DEBUG_PRINTF("Heap var %s (%d) is wide\n", sym->cname, sym->id);
     setWide(sym->defPoint->getModule(), sym);
   }
@@ -2558,4 +2560,3 @@ insertWideReferences(void) {
   printCauses(NULL);
 
 }
-

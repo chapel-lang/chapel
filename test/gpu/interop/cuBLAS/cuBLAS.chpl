@@ -1,9 +1,8 @@
 module cuBLAS {
 
   use C_CUBLAS;
-  public use CPtr;
-  public use SysBasic;
-  public use SysCTypes;
+
+  public use CTypes;
 
   record DevicePtr {
     type eltType;
@@ -18,21 +17,21 @@ module cuBLAS {
     cublas_destroy(handle);
   }
 
-  proc cu_array(size: size_t){
+  proc cu_array(size: c_size_t){
      require "c_cublas.h", "c_cublas.o";
      var x;
      x = cublas_array(size);
      return x;
   }
 
-  proc cpu_to_gpu(src_ptr: c_ptr(?t), size: size_t){
+  proc cpu_to_gpu(src_ptr: c_ptr(?t), size: c_size_t){
     require "c_cublas.h", "c_cublas.o";
     var gpu_ptr: DevicePtr(t);
     gpu_ptr.val = to_gpu(src_ptr, size): c_ptr(t);
     return gpu_ptr;
   }
 
-  proc gpu_to_cpu(dst_ptr: c_void_ptr, src_ptr: DevicePtr, size: size_t){
+  proc gpu_to_cpu(dst_ptr: c_void_ptr, src_ptr: DevicePtr, size: c_size_t){
     require "c_cublas.h", "c_cublas.o";
     to_cpu(dst_ptr, src_ptr.val, size);
   }
@@ -385,17 +384,16 @@ module cuBLAS {
 }
 
   module C_CUBLAS {
-    use CPtr;
-    use SysBasic;
-    use SysCTypes;
+
+    use CTypes;
 
     //extern type complex = complex(64);
 
     extern proc cublas_create(): c_void_ptr;
     extern proc cublas_destroy(handle: c_void_ptr);
-    extern proc cublas_array(size: size_t): c_ptr(c_float);
-    extern proc to_gpu(src_ptr: c_void_ptr, size: size_t): c_ptr(c_float);
-    extern proc to_cpu(dst_ptr: c_void_ptr, src_ptr: c_void_ptr, size: size_t): c_void_ptr;
+    extern proc cublas_array(size: c_size_t): c_ptr(c_float);
+    extern proc to_gpu(src_ptr: c_void_ptr, size: c_size_t): c_ptr(c_float);
+    extern proc to_cpu(dst_ptr: c_void_ptr, src_ptr: c_void_ptr, size: c_size_t): c_void_ptr;
  
     extern proc cublas_saxpy(handle: c_void_ptr, n: c_int, alpha: c_float, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int);
     extern proc cublas_daxpy(handle: c_void_ptr, n: c_int, alpha: c_double, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int);

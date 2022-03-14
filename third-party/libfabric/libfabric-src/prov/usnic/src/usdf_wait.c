@@ -274,7 +274,7 @@ static int usdf_wait_close(struct fid *waitset)
 static int usdf_wait_wait(struct fid_wait *fwait, int timeout)
 {
 	struct usdf_wait *wait;
-	void *context;
+	struct ofi_epollfds_event event;
 	int ret = FI_SUCCESS;
 	int nevents;
 
@@ -289,7 +289,7 @@ static int usdf_wait_wait(struct fid_wait *fwait, int timeout)
 		return ret;
 	}
 
-	nevents = ofi_epoll_wait(wait->object.epfd, &context, 1, timeout);
+	nevents = ofi_epoll_wait(wait->object.epfd, &event, 1, timeout);
 	if (nevents == 0) {
 		ret = -FI_ETIMEDOUT;
 	} else if (nevents < 0) {

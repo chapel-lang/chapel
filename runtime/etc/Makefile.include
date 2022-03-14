@@ -1,15 +1,15 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,11 +19,17 @@
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-
+# When compling a program with the C backend,
+# the compiler generates a Makefile that sets COMP_GEN_WARN,
+# COMP_GEN_USER_CFLAGS, etc,
+# and we combine these in to COMP_GEN_CFLAGS
 MAKE_COMP_GEN_CFLAGS =
 
 # These Make ifdefs are used for printcompileline and printcflags
 # in order to correctly set COMP_GEN_CFLAGS.
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
+  MAKE_COMP_GEN_CFLAGS += $(SHARED_LIB_CFLAGS)
+endif
 ifeq ($(COMP_GEN_WARN), 1)
   MAKE_COMP_GEN_CFLAGS += $(WARN_GEN_CFLAGS)
 endif
@@ -57,40 +63,18 @@ endif
 
 COMP_GEN_CFLAGS = $(MAKE_COMP_GEN_CFLAGS) $(COMP_GEN_USER_CFLAGS)
 
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.locModel-$(CHPL_MAKE_LOCALE_MODEL)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.tasks-$(CHPL_MAKE_TASKS)
+# Note the related GEN_CFLAGS and GEN_LFLAGS.
+# These are also used when compiling the generated code, but
+# unlike the above, they come from the Makefiles here
+# rather than anything in the chpl invocation.
+
+# Makefile.comm-* can set LD which ends up in override-ld
+# TODO: move this logic to printchplenv
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.unwind-$(CHPL_MAKE_UNWIND)
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.gmp-$(CHPL_MAKE_GMP)
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.hwloc-$(CHPL_MAKE_HWLOC)
-# Makefile.jemalloc-$(CHPL_MAKE_JEMALLOC) is included in Makefile.mem-jemalloc
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.re2-$(CHPL_MAKE_RE2)
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.auxFilesys
 
 # Get runtime headers and required -D flags.
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
 include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include
-
-# RUNTIME_CFLAGS e.g. -DCHPL_DEBUG
-#
-# TODO (bradc): Note that the following results in all of our
-# compiler-specific warning flags getting listed as part of GEN_FLAGS
-# for the second time.  Ideally, we could separate all the aspects of
-# the RUNTIME_CFLAGS that we need here (presumably, the -D's based on
-# the above comment) from the overall RUNTIME_CFLAGS -- call it
-# CHPL_DEFINE_FLAGS, say -- and only include those here.  I noticed
-# this just before the release and it felt like too big a change to
-# try and wedge in in the name of shorter compiler lines.
-#
-HEADER_CFLAGS = $(RUNTIME_CFLAGS)
-HEADER_CFLAGS += -I$(CHPL_MAKE_HOME)/modules/standard
-HEADER_CFLAGS += -I$(CHPL_MAKE_HOME)/modules/packages
-
-GEN_CFLAGS += $(HEADER_CFLAGS)
-
-GEN_LFLAGS += $(RUNTIME_LFLAGS)
 
 CHPL_RT_INC_DIR = $(RUNTIME_INCLS)
 
@@ -104,40 +88,50 @@ x:
 	@echo $(CHPL_MAKE_RUNTIME_LIB)
 
 printincludesanddefines:
-	@echo $(CHPL_MAKE_BASE_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS)
+	@echo $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) \
+	      -I. \
+	      $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS)
 
 printcompileline:
-	@echo $(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
+	@echo $(CC) \
+	      $(SANITIZER_CFLAGS) $(CHPL_MAKE_BASE_CFLAGS) $(COMP_GEN_CFLAGS) \
+	      $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) \
+	      -I.
 
 printcxxcompileline:
-	@echo $(CXX) $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS) $(CHPL_RT_INC_DIR)
+	@echo $(CXX) $(SANITIZER_CFLAGS) $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS) $(CHPL_RT_INC_DIR)
 
 printccompiler:
 	@echo $(CC)
 
 printcflags:
-	@echo $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS)
+	@echo $(SANITIZER_CFLAGS) $(CHPL_MAKE_BASE_CFLAGS) $(COMP_GEN_CFLAGS)
 
 printcxxflags:
-	@echo $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS)
+	@echo $(SANITIZER_CFLAGS) $(CHPL_MAKE_BASE_CXXFLAGS) $(COMP_GEN_CXXFLAGS)
 
 printlinkershared:
 	@echo $(LD) $(LIB_DYNAMIC_FLAG)
 
+# For now, compileline --libraries includes -fsanitize=address
+# if we are compiling with CHPL_SANITIZE set. This might not make
+# sense longer term because it's actually a C compiler flag rather
+# than an ld flag.
 printlibraries:
-	@echo $(CHPL_MAKE_BASE_LFLAGS) \
-	      $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-	      -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
-	      $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+	@echo $(SANITIZER_LDFLAGS) $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS)
 
 printlinker:
 	@echo $(LD)
 
 printlinkline:
 	@echo $(LD) $(CHPL_MAKE_BASE_LFLAGS) \
-              $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-              -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
-              $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+              $(COMP_GEN_USER_LDFLAGS) $(COMP_GEN_LFLAGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS) \
+	      $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS)
+
+
 
 printoverrideld:
 	@echo $(LD)
@@ -185,8 +179,8 @@ ifeq ($(CHPL_MODULE_HOME),$(CHPL_HOME))
 	        $$CHPL_HOME/util/printchplenv and request support for this \
 	        configuration)
 else
-	$(error The runtime has not been built for this configuration. Check \
-	        $$CHPL_HOME/util/printchplenv and try rebuilding with \
-	        '$(CHPL_MAKE_MAKE)' from $$CHPL_HOME)
+	$(error The runtime has not been built for this configuration. Run \
+	        $$CHPL_HOME/util/chplenv/printchplbuilds.py for information on \
+	        available runtimes.)
 endif
 endif

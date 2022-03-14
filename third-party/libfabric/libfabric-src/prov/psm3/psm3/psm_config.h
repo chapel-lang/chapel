@@ -145,20 +145,20 @@
 #define CUDA_WINDOW_PREFETCH_DEFAULT	2
 #define GPUDIRECT_THRESH_RV 3
 
-#define GDR_COPY_THRESH_SEND 32
-#define GDR_COPY_THRESH_RECV 64000
+#define GDR_COPY_LIMIT_SEND 128
+#define GDR_COPY_LIMIT_RECV 64000
 /* All GPU transfers beyond this threshold use
  * RNDV protocol. It is mostly a send side knob.
  */
-#define CUDA_THRESH_RNDV 32768
+#define CUDA_THRESH_RNDV 8000
 #endif
 
 #define MQ_HFI_THRESH_TINY		8
-#define MQ_HFI_THRESH_EGR_SDMA_XEON	34000       /* Eager Xeon blocking */
-#define MQ_HFI_THRESH_EGR_SDMA_PHI2	200000      /* Eager Phi2 blocking */
-#define MQ_HFI_THRESH_EGR_SDMA_SQ_XEON	16384    /* Eager Xeon non-blocking */
-#define MQ_HFI_THRESH_EGR_SDMA_SQ_PHI2	65536    /* Eager Phi2 non-blocking */
 
+#define MQ_HFI_THRESH_EGR_SDMA		8192    /* Eager blocking */
+#define MQ_HFI_THRESH_EGR_SDMA_SQ	8192    /* Eager non-blocking */
+#define MQ_HFI_THRESH_GPU_EGR_SDMA	128    /* Eager blocking */
+#define MQ_HFI_THRESH_GPU_EGR_SDMA_SQ	128    /* Eager non-blocking */
 #define MQ_HFI_THRESH_RNDV_PHI2		200000
 #define MQ_HFI_THRESH_RNDV_XEON 	64000
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +20,7 @@
 
 
 use ArgumentParser;
+use ChplConfig;
 use FileSystem;
 use List;
 use Map;
@@ -427,13 +428,13 @@ proc getRuntimeComm() throws {
   var line: string;
   var python: string;
   var findPython = spawn([CHPL_HOME:string+"/util/config/find-python.sh"],
-                         stdout = PIPE);
+                         stdout = pipeStyle.pipe);
   while findPython.stdout.readline(line) {
     python = line.strip();
   }
 
   var checkComm = spawn([python, CHPL_HOME:string+"/util/chplenv/chpl_comm.py"],
-                        stdout = PIPE);
+                        stdout = pipeStyle.pipe);
   while checkComm.stdout.readline(line) {
     comm = line.strip();
   }
@@ -457,7 +458,7 @@ proc getRuntimeComm() throws {
 proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
   var comm_c: c_string;
   try! {
-    var checkChpl = spawn(["which","chpl"],stdout = PIPE);
+    var checkChpl = spawn(["which","chpl"],stdout = pipeStyle.pipe);
     checkChpl.wait();
     var line: string;
     if checkChpl.stdout.readline(line) {
@@ -603,8 +604,8 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   var exec = spawn([executable, "-nl", reqNumLocales: string, "--testNames",
             testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames",
             erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames",
-            skippedTestNamesStr], stdout = PIPE,
-            stderr = PIPE); //Executing the file
+            skippedTestNamesStr], stdout = pipeStyle.pipe,
+            stderr = pipeStyle.pipe); //Executing the file
   //std output pipe
   while exec.stdout.readline(line) {
     if line.strip() == separator1 then sep1Found = true;

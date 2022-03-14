@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -35,11 +35,8 @@ TARGETS = $(PARSER_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
-ifdef CHPL_DEVELOPER
 CLEAN_TARGS += \
                bison-chapel.output
-
-endif
 
 # Don't create rules for bison-chapel.cpp or flex-chapel.cpp since we don't
 # want them to be rebuilt automatically. (This is because of the bison version
@@ -57,13 +54,13 @@ parser: FORCE flex_version_check
 
 # Require that the flex version is at least 2.6.0
 flex_version_check:
-	@if $(CHPL_MAKE_PYTHON) -c "import sys;                           \
-	               from distutils.version import LooseVersion as LV;  \
-	               sys.exit(LV(sys.argv[1]) >= LV(sys.argv[2]))"      \
-	           `flex --version | sed -e 's/flex //' -e 's/ .*//'`     \
-	           "2.6.0";                                               \
-	then echo "PROBLEM: flex version must be at least 2.6.0";         \
-	  exit 1;                                                         \
+	@if $(CHPL_MAKE_PYTHON) -c "import sys;                        \
+	               from pkg_resources import parse_version as PV;  \
+	               sys.exit(PV(sys.argv[1]) >= PV(sys.argv[2]))"   \
+	           `flex --version | sed -e 's/flex //' -e 's/ .*//'`  \
+	           "2.6.0";                                            \
+	then echo "PROBLEM: flex version must be at least 2.6.0";      \
+	  exit 1;                                                      \
 	fi
 
 #

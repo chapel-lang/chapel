@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -71,6 +71,7 @@ proc getSpecFields(spec: string) {
 
 
 private proc inferCompiler() throws {
+  use ChplConfig;
   var compiler = CHPL_TARGET_COMPILER;
   if compiler.size < 1 {
     throw new owned MasonError("Could not infer target compiler");

@@ -1,0 +1,5 @@
+regexMatchFields.chpl:13: warning: field size is deprecated, use numBytes instead
+regexMatchFields.chpl:14: warning: field offset is deprecated, use byteOffset instead
+Search 1
+4
+1

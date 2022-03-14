@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +22,7 @@ pragma "atomic module"
 module NetworkAtomics {
   private use ChapelStandard;
   private use MemConsistency;
-  private use CPtr;
+  private use CTypes;
 
   private proc externFunc(param s: string, type T) param {
     if isInt(T)  then return "chpl_comm_atomic_" + s + "_int"  + numBits(T):string;

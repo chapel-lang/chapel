@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1675,7 +1675,7 @@ module ArgumentParser {
         if arrElt.startsWith("-") && arrElt.find("=") > 0 {
           var elems = new list(arrElt.split("=", 1));
           // replace this opt=val with opt val
-          var idx = argsList.indexOf(arrElt);
+          var idx = argsList.find(arrElt);
           argsList.pop(idx);
           argsList.insert(idx, elems.toArray());
         }

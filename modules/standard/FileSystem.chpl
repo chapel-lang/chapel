@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -95,10 +95,9 @@ module FileSystem {
   public use SysError;
   use Path;
   use HaltWrappers;
-  use SysCTypes;
+  use CTypes;
   use IO;
   use SysBasic;
-  use CPtr;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -872,7 +871,7 @@ proc getUID(out error: syserr, name: string): int {
 private module GlobWrappers {
   import HaltWrappers;
   extern type glob_t;
-  use SysCTypes;
+  use CTypes;
 
   private extern const GLOB_NOMATCH: c_int;
   private extern const GLOB_NOSPACE: c_int;
@@ -897,16 +896,16 @@ private module GlobWrappers {
 
   // glob_num wrapper that takes care of casting
   inline proc glob_num_w(glb: glob_t): int {
-    extern proc chpl_glob_num(glb: glob_t): size_t;
+    extern proc chpl_glob_num(glb: glob_t): c_size_t;
     return chpl_glob_num(glb).safeCast(int);
   }
 
   // glob_index wrapper that takes care of casting
   inline proc glob_index_w(glb: glob_t, idx: int): string {
-    extern proc chpl_glob_index(glb: glob_t, idx: size_t): c_string;
+    extern proc chpl_glob_index(glb: glob_t, idx: c_size_t): c_string;
     try! {
       return createStringWithNewBuffer(chpl_glob_index(glb,
-                                                       idx.safeCast(size_t)),
+                                                       idx.safeCast(c_size_t)),
                                        policy=decodePolicy.escape);
     }
   }
@@ -1622,6 +1621,7 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
    :rtype: `int`
 */
 proc locale.umask(mask: int): int {
+  use Sys;
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
 
   var result: int;

@@ -1,0 +1,9 @@
+isXXX.chpl:29: warning: dfltRectangularBase  true  false  false
+isXXX.chpl:30: warning: dfltAssociativeBase  false  true  false
+isXXX.chpl:31: warning: DistributedBase  true  false  false
+isXXX.chpl:32: warning: dfltRectangularSubdomain  true  false  false
+isXXX.chpl:33: warning: dfltAssociativeSubdomain  false  true  false
+isXXX.chpl:34: warning: DistributedSubdomain  true  false  false
+isXXX.chpl:35: warning: dfltRectangularSparseSub  false  false  true
+isXXX.chpl:37: warning: DistributedSparseSub  false  false  true
+isXXX.chpl:39: error: done

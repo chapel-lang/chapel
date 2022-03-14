@@ -136,12 +136,11 @@ proc verifyResults() {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   //
-  // Reverse the updates by recomputing them, this time using an
-  // atomic statement to ensure no conflicting updates
+  // Reverse the updates by recomputing them
   //
   forall (_, r) in zip(Updates, RAStream()) do
     on TableDist.idxToLocale(r & indexMask) do
-      atomic T(r & indexMask) ^= r;
+      T(r & indexMask) ^= r;
 
   //
   // Print the table again after the updates have been reversed

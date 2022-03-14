@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,6 +43,8 @@
 #include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 #include <algorithm>
 #include <map>
@@ -636,7 +638,7 @@ static void processImportExprs() {
       std::vector<BaseAST*> asts;
 
       // Collect *all* asts within this top-level module in text order
-      collect_asts(topLevelModule, asts);
+      collect_asts_preorder(topLevelModule, asts);
 
       std::stack<ResolveScope*> scopes;
       for_vector(BaseAST, item, asts) {
@@ -798,11 +800,11 @@ static void resolveUnresolvedSymExprs() {
   // that is used to determine visible functions.
   //
 
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     resolveModuleCall(call);
   }
 
-  forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
+  forv_expanding_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     resolveUnresolvedSymExpr(unresolvedSymExpr);
   }
 
@@ -1745,6 +1747,27 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
   }
 }
 
+static void eliminateLastResortSyms(std::vector<Symbol*>& symbols) {
+  bool anyLastResort = false;
+  bool anyNotLastResort = false;
+  for (auto sym : symbols) {
+    if (sym->hasFlag(FLAG_LAST_RESORT))
+      anyLastResort = true;
+    else
+      anyNotLastResort = true;
+  }
+
+  if (anyLastResort && anyNotLastResort) {
+    // Gather the not-last-resort symbols into tmp and swap
+    std::vector<Symbol*> tmp;
+    for (auto sym : symbols) {
+      if (!sym->hasFlag(FLAG_LAST_RESORT))
+        tmp.push_back(sym);
+    }
+    symbols.swap(tmp);
+  }
+}
+
 // Given a name and a calling context, determine the symbol referred to
 // by that name in the context of that call
 Symbol* lookupAndCount(const char*           name,
@@ -1760,6 +1783,10 @@ Symbol* lookupAndCount(const char*           name,
   Symbol*              retval = NULL;
 
   lookup(name, context, symbols, renameLocs, reexportPts, storeRenames);
+
+  // if there were multiple symbols found, and some are last resort,
+  // and others are not, eliminate the last resort ones.
+  eliminateLastResortSyms(symbols);
 
   nSymbolsFound = symbols.size();
 
@@ -1859,7 +1886,7 @@ static void lookup(const char*           name,
           lookup(name, context, standardModule->block, visited, symbols,
                  renameLocs, storeRenames, reexportPts);
           if (symbols.size() == 0) {
-            
+
             lookup(name, context, theProgram->block, visited, symbols,
                    renameLocs, storeRenames, reexportPts);
           }
@@ -2265,7 +2292,7 @@ static void buildBreadthFirstModuleList(
 
   Vec<VisibilityStmt*> next;
 
-  forv_Vec(VisibilityStmt, source, *current) {
+  forv_expanding_Vec(VisibilityStmt, source, *current) {
     if (!source) {
       break;
     } else {
@@ -2637,18 +2664,19 @@ static ModuleSymbol* definesModuleSymbol(Expr* expr) {
 // Find 'unmanaged SomeClass' and 'borrowed SomeClass' and replace these
 // with the compiler's simpler representation (canonical type or unmanaged type)
 void resolveUnmanagedBorrows(CallExpr* call) {
-  if (isClassDecoratorPrimitive(call)) {
 
-    // Give up now if the actual is missing.
-    if (call->numActuals() < 1)
-      return;
+  // Give up now if the actual is missing.
+  if (call->numActuals() < 1)
+    return;
 
-    // Make sure to handle nested calls appropriately
-    if (CallExpr* sub = toCallExpr(call->get(1))) {
-      if (isClassDecoratorPrimitive(sub)) {
-        resolveUnmanagedBorrows(sub);
-      }
+  // Make sure to handle nested calls appropriately
+  if (CallExpr* sub = toCallExpr(call->get(1))) {
+    if (isClassDecoratorPrimitive(sub)) {
+      resolveUnmanagedBorrows(sub);
     }
+  }
+
+  if (isClassDecoratorPrimitive(call)) {
 
     SymExpr* typeSymbolSe = NULL;
     if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2845,9 +2873,17 @@ static void removeUnusedModules() {
   if (printModuleInitModule)
     markUsedModule(usedModules, printModuleInitModule);
 
+  // mark all modules named on the command line
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE))
+      markUsedModule(usedModules, mod);
+  }
+
   // Now remove any module not in the set
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-    if (usedModules.count(mod) == 0) {
+    bool removeIt = (usedModules.count(mod) == 0);
+
+    if (removeIt) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();
 
@@ -2910,7 +2946,7 @@ static bool readNamedArgument(CallExpr* call, const char* name,
   bool ret = defaultValue;
   expectedNames.push_back((std::string)name);
 
-  for (int i = 1; i<= call->numActuals(); i++) { 
+  for (int i = 1; i<= call->numActuals(); i++) {
     NamedExpr* ne = toNamedExpr(call->get(i));
     if (ne && !strcmp(ne->name, name)) {
       SymExpr* se = toSymExpr(ne->actual);
@@ -3016,7 +3052,7 @@ static void processGetVisibleSymbols() {
             continue;
 
           printf("  %s:%d: %s\n", sym->defPoint->fname(),
-                 sym->defPoint->linenum(), sym->name); 
+                 sym->defPoint->linenum(), sym->name);
         }
 
         delete visibleMap[it->c_str()];

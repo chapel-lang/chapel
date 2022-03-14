@@ -2,7 +2,7 @@
 TESTNAME=$1
 OUTFILE=$2
 
-TMPFILE="$outfile.prediff.tmp"
+TMPFILE="$OUTFILE.prediff.tmp"
 
 FILECHECK='FileCheck'
 

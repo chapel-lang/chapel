@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -94,7 +94,7 @@ ssize_t __deque_buf_size(const ssize_t item_size)
   return item_size < _DEQUE_BUFFER_SIZE ? (_DEQUE_BUFFER_SIZE / item_size) : 1;
 }
 
-/** 
+/**
  *  Prepares to traverse new_node.  Sets everything except
  *  _M_cur, which should therefore be set by the caller
  *  immediately afterwards, based on _M_first and _M_last.

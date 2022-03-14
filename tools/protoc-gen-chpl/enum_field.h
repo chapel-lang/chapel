@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,10 +29,10 @@
 #include <field_base.h>
 
 namespace chapel {
-  
+
   using namespace google::protobuf;
   using namespace google::protobuf::io;
-  
+
   class EnumFieldGenerator : public FieldGeneratorBase {
    public:
     EnumFieldGenerator(const FieldDescriptor* descriptor);

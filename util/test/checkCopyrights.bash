@@ -18,6 +18,15 @@
 #  Make*
 #
 
+todate=`date "+%m%d"`
+#This hardcoding is intentional. Date accepts a full date like this, but %m%d cuts off the year so it only compares 0107 to the current date
+cond=`date -d 2022-01-07 "+%m%d"`
+
+if [ $todate -le $cond ];
+then
+ exit 0;
+fi
+
 CWD=$(cd $(dirname $0) ; pwd)
 CHPL_HOME=${CHPL_HOME:-$CWD/../..}
 
@@ -51,10 +60,10 @@ files_wo_copy=$(find $source_dirs -type f \( \
     grep -v compiler/include/bison-chapel.h        | \
     grep -v compiler/include/flex-chapel.h         | \
     grep -v compiler/parser/bison-chapel.cpp       | \
-    grep -v compiler/next/lib/parsing/bison-chpl-lib.h | \
-    grep -v compiler/next/lib/parsing/bison-chpl-lib.cpp | \
-    grep -v compiler/next/lib/parsing/flex-chpl-lib.h | \
-    grep -v compiler/next/lib/parsing/flex-chpl-lib.cpp | \
+    grep -v compiler/dyno/lib/parsing/bison-chpl-lib.h | \
+    grep -v compiler/dyno/lib/parsing/bison-chpl-lib.cpp | \
+    grep -v compiler/dyno/lib/parsing/flex-chpl-lib.h | \
+    grep -v compiler/dyno/lib/parsing/flex-chpl-lib.cpp | \
     grep -v 'modules/standard/gen/.*/SysCTypes.chpl' | \
     xargs grep -i -L "${copyright_pattern}")
 

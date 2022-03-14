@@ -1,15 +1,15 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,17 +33,19 @@ define NEWLINE
 $(BLANK)
 endef
 
-$(TMPBINNAME): $(CHPL_CL_OBJS) checkRtLibDir FORCE
+CHPLUSEROBJFILES = $(CHPLUSEROBJ:%=%.o)
+
+$(TMPDIRNAME)/%.o: $(TMPDIRNAME)/%.c
+	$(CC) $(GEN_CFLAGS) $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) $(COMP_GEN_CFLAGS) -I. $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS) -c -o $@ $(CHPL_RT_INC_DIR) $<
+
+$(TMPBINNAME): $(CHPL_CL_OBJS) checkRtLibDir $(CHPLUSEROBJFILES) FORCE
 	$(TAGS_COMMAND)
 ifneq ($(SKIP_COMPILE_LINK),skip)
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC)
-	$(foreach srcFile, $(CHPLUSEROBJ),$(NEWLINE)$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c ;)
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
-              $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-              -o $(TMPBINNAME) $(TMPBINNAME).o $(CHPLUSEROBJ) \
-              $(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) \
-              -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
-              $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+	$(LD) $(GEN_LFLAGS) -o $(TMPBINNAME) $(CHPLUSEROBJFILES) \
+	      $(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) \
+	      $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
+	      $(COMP_GEN_USER_LDFLAGS) $(COMP_GEN_LFLAGS) $(LIBS) \
+	      $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS)
 endif
 ifneq ($(CHPL_MAKE_LAUNCHER),none)
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) TMPBINNAME=$(TMPBINNAME) BINNAME=$(BINNAME) TMPDIRNAME=$(TMPDIRNAME) CHPL_MAKE_RUNTIME_LIB=$(CHPL_MAKE_RUNTIME_LIB) CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL) CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY)

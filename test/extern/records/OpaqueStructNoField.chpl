@@ -1,8 +1,8 @@
 require "mydata.h";
 require "mydata.c";
 
-use SysCTypes;
-use CPtr;
+use CTypes;
+
 
 extern "struct mydata" record mydata { }
 

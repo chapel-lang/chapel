@@ -1,0 +1,1 @@
+notsupportedOpCount-assoc.chpl:3: error: cannot apply '#' to associative and sparse domains and arrays

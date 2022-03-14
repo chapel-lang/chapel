@@ -164,6 +164,7 @@ process_pending_acks(struct ips_recvhdrq *recvq))
 	}
 }
 
+
 #ifdef RNDV_MOD
 // check for and process RV RDMA sends and RDMA recv
 psm2_error_t check_rv_completion(psm2_ep_t ep, struct ips_proto *proto)
@@ -179,6 +180,7 @@ psm2_error_t check_rv_completion(psm2_ep_t ep, struct ips_proto *proto)
 		switch (ev.event_type) {
 			case RV_WC_RDMA_WRITE:
 				ep->verbs_ep.send_rdma_outstanding--;
+				_HFI_MMDBG("got RV RDMA Write SQ CQE status %u outstanding %u\n", ev.wc.status, ep->verbs_ep.send_rdma_outstanding);
 				if_pf (ev.wc.status || ev.wc.wr_id == 0) {
 					if (PSM2_OK != ips_protoexp_rdma_write_completion_error(
 								ep, ev.wc.wr_id, ev.wc.status))
@@ -193,8 +195,8 @@ psm2_error_t check_rv_completion(psm2_ep_t ep, struct ips_proto *proto)
 					if (ep->rv_reconnect_timeout)
 						break;	/* let sender handle errors */
 					psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-							"failed rv recv RDMA '%s' (%d) on epid 0x%lx\n",
-							ibv_wc_status_str(ev.wc.status), (int)ev.wc.status, ep->epid);
+							"failed rv recv RDMA '%s' (%d) on %s port %u epid 0x%lx\n",
+							ibv_wc_status_str(ev.wc.status), (int)ev.wc.status, ep->dev_name, ep->portnum, ep->epid);
 					return PSM2_INTERNAL_ERR;
 				}
 				_HFI_MMDBG("got RV RDMA Write Immediate RQ CQE %u bytes\n",
@@ -205,9 +207,9 @@ psm2_error_t check_rv_completion(psm2_ep_t ep, struct ips_proto *proto)
 				break;
 			default:
 				psmi_handle_error( PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-					"unexpected rv event %d status '%s' (%d) on epid 0x%lx\n",
+					"unexpected rv event %d status '%s' (%d) on %s port %u epid 0x%lx\n",
 					ev.event_type, ibv_wc_status_str(ev.wc.status),
-					(int)ev.wc.status, ep->epid);
+					(int)ev.wc.status, ep->dev_name, ep->portnum, ep->epid);
 				break;
 			}
 	}
@@ -260,8 +262,8 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 				if (errno == EAGAIN || errno == EWOULDBLOCK
 				    || errno == EBUSY || errno = EINTR)
 					break;
-				_HFI_ERROR("failed ibv_poll_cq '%s' (%d) on epid 0x%lx\n",
-					strerror(errno), errno, ep->epid);
+				_HFI_ERROR("failed ibv_poll_cq '%s' (%d) on %s port %u epid 0x%lx\n",
+					strerror(errno), errno, ep->dev_name, ep->portnum, ep->epid);
 				goto fail;
 			}
 			ep->verbs_ep.recv_wc_count = err;
@@ -293,8 +295,8 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 			if (errno == EAGAIN || errno == EWOULDBLOCK
 			    || errno == EBUSY || errno == EINTR)
 				break;
-			_HFI_ERROR("failed ibv_poll_cq '%s' (%d) on epid 0x%lx\n",
-				strerror(errno), errno, ep->epid);
+			_HFI_ERROR("failed ibv_poll_cq '%s' (%d) on %s port %u epid 0x%lx\n",
+				strerror(errno), errno, ep->dev_name, ep->portnum, ep->epid);
 			goto fail;
 		} else {
 #endif	// VERBS_RECV_CQE_BATCH > 1
@@ -302,8 +304,8 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 			buf = (rbuf_t)WC(wr_id);
 			if_pf (WC(status)) {
 				if (WC(status) != IBV_WC_WR_FLUSH_ERR)
-					_HFI_ERROR("failed recv '%s' (%d) on epid 0x%lx QP %u\n",
-						ibv_wc_status_str(WC(status)), (int)WC(status), ep->epid, WC(qp_num));
+					_HFI_ERROR("failed recv '%s' (%d) on %s port %u epid 0x%lx QP %u\n",
+						ibv_wc_status_str(WC(status)), (int)WC(status), ep->dev_name, ep->portnum, ep->epid, WC(qp_num));
 				goto fail;
 			}
 			switch (WC(opcode)) {
@@ -318,8 +320,8 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 				goto repost;
 				break;
 			default:
-				_HFI_ERROR("unexpected recv opcode %d on epid 0x%lx QP %u\n",
-					WC(opcode), ep->epid, WC(qp_num));
+				_HFI_ERROR("unexpected recv opcode %d on %s port %u epid 0x%lx QP %u\n",
+					WC(opcode), ep->dev_name, ep->portnum, ep->epid, WC(qp_num));
 				goto repost;
 				break;
 			case IBV_WC_RECV:
@@ -332,9 +334,9 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 				// 		slid - remote SLID
 				// 		probably have GRH at start of buffer with remote GID
 				if_pf (_HFI_PDBG_ON)
-					__psm2_dump_buf(rbuf_to_buffer(buf), WC(byte_len));
+					_HFI_PDBG_DUMP(rbuf_to_buffer(buf), WC(byte_len));
 				if_pf (WC(byte_len) < rbuf_addition(buf)+sizeof(struct ips_message_header)) {
-					_HFI_ERROR( "unexpected small recv: %u\n", WC(byte_len));
+					_HFI_ERROR( "unexpected small recv: %u on %s port %u\n", WC(byte_len), ep->dev_name, ep->portnum);
 					goto repost;
 				}
 				rcv_ev.payload_size = WC(byte_len) - rbuf_addition(buf) - sizeof(struct ips_message_header);
@@ -376,7 +378,7 @@ repost:
 		// buffer processing is done, we can requeue it on QP
 		if_pf (PSM2_OK != __psm2_ep_verbs_post_recv(
 									buf))
-			_HFI_ERROR( "unable to post recv\n"); // leak the buffer
+			_HFI_ERROR( "unable to post recv on %s port %u\n", ep->dev_name, ep->portnum); // leak the buffer
 
 		// if we can't process this now (such as an RTS we revisited and
 		// ended up queueing on unexpected queue) we're told

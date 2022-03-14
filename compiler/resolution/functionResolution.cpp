@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,7 +70,9 @@
 #include "WhileStmt.h"
 #include "wrappers.h"
 
-#include "../next/lib/immediates/prim_data.h"
+#include "global-ast-vecs.h"
+
+#include "../dyno/lib/immediates/prim_data.h"
 
 #include <algorithm>
 #include <cmath>
@@ -187,7 +189,7 @@ static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName);
 static Expr* foldTryCond(Expr* expr);
 
 static void unmarkDefaultedGenerics();
-static void resolveUses(ModuleSymbol* mod, const char* path);
+static void resolveUsesAndModule(ModuleSymbol* mod, const char* path);
 static void resolveSupportForModuleDeinits();
 static void resolveExports();
 static void resolveEnumTypes();
@@ -897,10 +899,6 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   }
 
   if (formalType == dtAnyPOD && !propagateNotPOD(actualType)) {
-    return true;
-  }
-
-  if (formalType == dtString && actualType == dtStringC) {
     return true;
   }
 
@@ -2595,6 +2593,7 @@ static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveClassBorrowMethod(CallExpr* call);
 static void resolveCoerceCopyMove(CallExpr* call);
 static void resolvePrimInit(CallExpr* call);
+static void resolveRefDeserialization(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -2642,6 +2641,10 @@ void resolveCall(CallExpr* call) {
       resolveForResolutionPoint(call);
       break;
 
+    case PRIM_REF_DESERIALIZE:
+      resolveRefDeserialization(call);
+      break;
+
     default:
       break;
     }
@@ -2665,6 +2668,36 @@ void resolveCall(CallExpr* call) {
 
     resolveNormalCall(call);
   }
+}
+
+static void resolveRefDeserialization(CallExpr* call) {
+  CallExpr* parentCall = toCallExpr(call->parentExpr);
+  INT_ASSERT(parentCall && parentCall->isPrimitive(PRIM_MOVE));
+
+  SymExpr* lhsSE = toSymExpr(parentCall->get(1));
+  SymExpr* typeSE = toSymExpr(call->get(1));
+  INT_ASSERT(lhsSE && typeSE);
+
+  Type* objType = typeSE->symbol()->type;
+
+  AggregateType* t = toAggregateType(objType);
+  if (!t) {
+    DecoratedClassType* decType = toDecoratedClassType(typeSE->symbol()->type);
+    INT_ASSERT(decType);
+    t = toAggregateType(decType->getCanonicalClass());
+  }
+
+  INT_ASSERT(t);
+
+  Serializers ser = serializeMap[t];
+  INT_ASSERT(ser.deserializer);
+
+  // we need to set the resolved function to the deserializer, so that the move
+  // can resolve. Otherwise, the ref deserialization primitive has return type
+  // c_void_ptr, which is surely not the type of the LHS here.
+  call->setResolvedFunction(ser.deserializer);
+
+  lhsSE->symbol()->type = typeSE->symbol()->getRefType();
 }
 
 static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
@@ -5150,13 +5183,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     bool                         ignoreWhere,
                     Vec<ResolutionCandidate*>&   ambiguous);
 
-
-static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous);
-
 static int  compareSpecificity(ResolutionCandidate*         candidate1,
                                ResolutionCandidate*         candidate2,
                                const DisambiguationContext& DC,
@@ -6118,7 +6144,7 @@ static void captureTaskIntentValues(int        argNum,
 
       } else if (isReferenceType(varActual->type) ==  true &&
                  isReferenceType(capTemp->type)   == false) {
-        marker->insertBefore("'move'(%S,'deref'(%S))", capTemp, varActual);
+        marker->insertBefore(new CallExpr(PRIM_ASSIGN, capTemp, varActual));
 
       } else {
         marker->insertBefore("'move'(%S,%S)", capTemp, varActual);
@@ -8701,10 +8727,37 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
 *                                                                             *
 ************************************** | *************************************/
 
+// Non-normalizable expressions may nest at an arbitrary depth (because
+// they are not normalized), so we have to search upwards in the tree
+// to look for them.
+static Expr* handleNonNormalizableExpr(Expr* expr) {
+
+  // TODO: Ways to limit our search depth?
+  if (Expr* nonNormalRoot = partOfNonNormalizableExpr(expr)) {
+    if (CallExpr* call = toCallExpr(nonNormalRoot)) {
+      if (call->isPrimitive(PRIM_RESOLVES)) {
+
+        // Prefolding will completely replace PRIM_RESOLVES calls, so
+        // further action is not needed here.
+        return preFold(call);
+      }
+    } else {
+      INT_FATAL("Not handled yet!");
+    }
+  }
+
+  return nullptr;
+}
+
 void resolveBlockStmt(BlockStmt* blockStmt) {
   for_exprs_postorder(expr, blockStmt) {
-    expr = resolveExpr(expr);
-    INT_ASSERT(expr != NULL);
+    if (Expr* changed = handleNonNormalizableExpr(expr)) {
+      expr = changed;
+    } else {
+      expr = resolveExpr(expr);
+    }
+
+    INT_ASSERT(expr);
   }
 }
 
@@ -9170,9 +9223,9 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
         break;
 
       if (i <= head &&
-          frame->linenum()                     >  0             &&
+          frame->linenum() > 0                                  &&
           fn->hasFlag(FLAG_COMPILER_GENERATED) == false         &&
-          module->modTag                       != MOD_INTERNAL) {
+          (developer || module->modTag != MOD_INTERNAL)         ) {
         break;
       }
     }
@@ -9407,10 +9460,18 @@ void resolve() {
 
   resolveObviousGlobals();
 
-  resolveUses(ModuleSymbol::mainModule(), "");
+  resolveUsesAndModule(ModuleSymbol::mainModule(), "");
+
+  // Also resolve modules mentioned on command line
+  // Could rely on init calls in chpl_gen_main for this.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
+      resolveUsesAndModule(mod, "");
+    }
+  }
 
   if (printModuleInitModule)
-    resolveUses(printModuleInitModule, "");
+    resolveUsesAndModule(printModuleInitModule, "");
 
   if (chpl_gen_main)
     resolveFunction(chpl_gen_main);
@@ -9537,7 +9598,7 @@ static void unmarkDefaultedGenerics() {
 
 static std::set<ModuleSymbol*> moduleInitResolved;
 
-static void resolveUses(ModuleSymbol* mod, const char* path) {
+static void resolveUsesAndModule(ModuleSymbol* mod, const char* path) {
   if (moduleInitResolved.count(mod) == 0) {
     moduleInitResolved.insert(mod);
 
@@ -9551,12 +9612,12 @@ static void resolveUses(ModuleSymbol* mod, const char* path) {
 
     if (ModuleSymbol* parent = mod->defPoint->getModule()) {
       if (parent != theProgram && parent != rootModule) {
-        resolveUses(parent, path);
+        resolveUsesAndModule(parent, path);
       }
     }
 
     for_vector(ModuleSymbol, usedMod, mod->modUseList) {
-      resolveUses(usedMod, path);
+      resolveUsesAndModule(usedMod, path);
     }
 
     if (fPrintModuleResolution == true) {
@@ -9610,7 +9671,7 @@ static void resolveExports() {
   std::vector<FnSymbol*> exps;
 
   // We need to resolve any additional functions that will be exported.
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn == initStringLiterals) {
       // initStringLiterals is exported but is explicitly resolved last since
       // code may be added to it in postFold calls while resolving other
@@ -9743,6 +9804,12 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
         resolveFunction(deserializeFn);
 
         Type* retType = deserializeFn->retType->getValType();
+
+        // Class decorators shouldn't matter for RVF, right? Or should they
+        // always be unmanaged?
+        if (DecoratedClassType* decType = toDecoratedClassType(retType)) {
+          retType = decType->getCanonicalClass();
+        }
         if (retType == dtVoid) {
           USR_FATAL(deserializeFn, "chpl__deserialize cannot return void");
         } else if (retType != at) {
@@ -9769,6 +9836,7 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
     retval = true;
   }
 
+  // remove the temporary used in resolving
   tmp->defPoint->remove();
 
   return retval;
@@ -9778,6 +9846,13 @@ static void resolveBroadcasters(AggregateType* at) {
   SET_LINENO(at->symbol);
   Serializers& ser = serializeMap[at];
   INT_ASSERT(ser.serializer != NULL);
+
+  if (ser.serializer->hasFlag(FLAG_COMPILER_GENERATED) &&
+     (ser.deserializer->hasFlag(FLAG_COMPILER_GENERATED))) {
+    // this was generated for RVF only. TODO should we be able to broadcast
+    // promotion iterator records?
+    return;
+  }
 
   VarSymbol* tmp = newTemp("global_temp", at);
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
@@ -9804,6 +9879,224 @@ static void resolveBroadcasters(AggregateType* at) {
 
   ser.broadcaster = broadcastFn;
   ser.destroyer   = destroyFn;
+
+  // remove the temporary used to resolve
+  tmp->defPoint->remove();
+}
+
+static FnSymbol* createMethodStub(AggregateType* at, const char* methodName,
+                                  bool isType) {
+  // taken from build_accessor
+  FnSymbol* fn = new FnSymbol(methodName);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+  fn->setMethod(true);
+
+  Type* thisType = at->getValType();
+  if (isClass(at) && isType)
+    thisType = at->getDecoratedClass(ClassTypeDecorator::GENERIC);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
+
+  _this->addFlag(FLAG_ARG_THIS);
+  fn->insertFormalAtTail(_this);
+  if (isType) {
+    _this->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  DefExpr* def = new DefExpr(fn);
+  at->symbol->defPoint->insertBefore(def);
+  at->methods.add(fn);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+  fn->_this = _this;
+
+  return fn;
+}
+
+static bool resolveSerializeDeserialize(AggregateType* at);
+static bool createSerializeDeserialize(AggregateType* at);
+
+static bool ensureSerializersExist(AggregateType* at) {
+  Symbol* ts = at->symbol;
+
+  if (serializeMap.find(at) != serializeMap.end()) {
+    return true;
+  }
+
+  if (ts->hasFlag(FLAG_PROMOTION_ITERATOR_RECORD)) {
+    return createSerializeDeserialize(at);
+  }
+  else if (! ts->hasFlag(FLAG_GENERIC)                &&
+           ! isSingleType(ts->type)                   &&
+           ! isSyncType(ts->type)                     &&
+           ! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
+           ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+    if (at != NULL) {
+      if (isRecord(at) == true ||
+          (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
+        return resolveSerializeDeserialize(at);
+      }
+    }
+  }
+
+  return false;
+}
+
+static AggregateType* getSerializableFieldType(Symbol* field) {
+  AggregateType* fieldAggType = NULL;
+  if (DecoratedClassType* decClassType = toDecoratedClassType(field->type)) {
+    fieldAggType = toAggregateType(decClassType->getCanonicalClass());
+  }
+  else {
+    fieldAggType = toAggregateType(field->type);
+  }
+
+  if (fieldAggType) {
+    fieldAggType = toAggregateType(fieldAggType->getValType());
+  }
+
+  return fieldAggType;
+}
+
+static bool createSerializeDeserialize(AggregateType* at) {
+
+  if (at->numFields() == 0) {
+    return false;
+  }
+
+  SET_LINENO(at);
+  bool retval = true;
+
+  FnSymbol* serializer = createMethodStub(at, "chpl__serialize",
+                                          /*isType=*/false);
+
+  ArgSymbol* _this = toArgSymbol(serializer->_this);
+  INT_ASSERT(_this);
+
+  CallExpr* buildTuple = new CallExpr("_build_tuple");
+
+  std::vector<FnSymbol*> deserializers;
+
+  for_fields (field, at) {
+    if (AggregateType* fieldValType = getSerializableFieldType(field)) {
+      if (ensureSerializersExist(fieldValType)) {
+        Serializers& ser = serializeMap[fieldValType];
+        FnSymbol* fieldSerializer = ser.serializer;
+        deserializers.push_back(ser.deserializer);
+
+        VarSymbol* fieldTmp = newTemp("ser_field_tmp");
+        fieldTmp->addFlag(FLAG_REF);
+        serializer->insertAtTail(new DefExpr(fieldTmp));
+
+        CallExpr* getField;
+        if (field->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+          getField =  new CallExpr(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, _this,
+                                          field);
+        }
+        else {
+          getField =  new CallExpr(PRIM_GET_MEMBER, _this,
+                                          new_CStringSymbol(field->name));
+        }
+        serializer->insertAtTail(new CallExpr(PRIM_ASSIGN, fieldTmp, getField));
+        // update the serializer body
+        buildTuple->insertAtTail(new CallExpr(fieldSerializer, gMethodToken, fieldTmp));
+      }
+      else {
+        retval = false;
+        break;
+      }
+    }
+    else if (isPOD(field->type)) {
+      buildTuple->insertAtTail(new CallExpr(PRIM_GET_MEMBER_VALUE, _this,
+                                            new_CStringSymbol(field->name)));
+      deserializers.push_back(NULL);
+    }
+    else {
+      INT_FATAL("Unhandled case");
+    }
+  }
+
+  if (!retval) {
+    return false;
+  }
+
+  serializer->insertAtTail(new CallExpr(PRIM_RETURN, buildTuple));
+  normalize(serializer);
+  resolveFunction(serializer);
+  Type* serialDataType = serializer->retType;
+
+  FnSymbol* deserializer = createMethodStub(at, "chpl__deserialize",
+                                            /*isType=*/true);
+
+  if (at->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    deserializer->addFlag(FLAG_FN_RETURNS_ITERATOR);
+  }
+
+  ArgSymbol* deserializerFormal = new ArgSymbol(INTENT_CONST_IN, "data", serialDataType);
+  deserializer->insertFormalAtTail(deserializerFormal);
+  VarSymbol* deserializerRet = new VarSymbol("deserializer_return", at);
+
+  deserializer->insertAtTail(new DefExpr(deserializerRet));
+
+  int fieldNum = 0;
+  for_fields (field, at) {
+
+    CallExpr* dataGetField = new CallExpr(PRIM_GET_MEMBER_VALUE, deserializerFormal,
+                                          new_CStringSymbol(astr("x", istr(fieldNum))));
+
+    if (FnSymbol* fieldDeserializer = deserializers[fieldNum]) {
+
+      VarSymbol* deserMarker = newTemp("deser_marker", dtBool);
+      deserMarker->addFlag(FLAG_DESERIALIZATION_BLOCK_MARKER);
+      deserializer->insertAtTail(new DefExpr(deserMarker));
+
+      BlockStmt* varDeser = new BlockStmt();
+      BlockStmt* refDeser = new BlockStmt();
+
+      CondStmt* deserVersions = new CondStmt(new SymExpr(deserMarker),
+                                             varDeser,
+                                             refDeser);
+
+      // create type temp
+      VarSymbol* typeTemp = newTemp("field_type", field->getValType());
+      typeTemp->addFlag(FLAG_TYPE_VARIABLE);
+      varDeser->insertAtTail(new DefExpr(typeTemp));
+
+      // create deserialization call
+      CallExpr* fieldDeserialize = new CallExpr(fieldDeserializer, dataGetField);
+      fieldDeserialize->insertAtHead(typeTemp);
+      fieldDeserialize->insertAtHead(gMethodToken);
+
+      varDeser->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
+                                          field,
+                                          fieldDeserialize));
+
+      refDeser->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
+                                          field,
+                                          new CallExpr(PRIM_REF_DESERIALIZE,
+                                                       typeTemp,
+                                                       deserializerFormal,
+                                                       new_IntSymbol(fieldNum))));
+
+      deserializer->insertAtTail(deserVersions);
+    }
+    else {
+      deserializer->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
+                                         field,
+                                         dataGetField));
+    }
+
+    fieldNum++;
+  }
+
+  deserializer->insertAtTail(new CallExpr(PRIM_RETURN, deserializerRet));
+  normalize(deserializer);
+  resolveFunction(deserializer);
+  INT_ASSERT(deserializer->retType == toDefExpr(deserializer->formals.get(2))->sym->type);
+  retval = resolveSerializeDeserialize(at); // now this should work
+
+  return retval;
 }
 
 static void resolveSerializers() {
@@ -9811,19 +10104,13 @@ static void resolveSerializers() {
     return;
   }
 
-  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (! ts->hasFlag(FLAG_GENERIC)                &&
-        ! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
-        ! isSingleType(ts->type)                   &&
-        ! isSyncType(ts->type)                     &&
-        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
-      if (AggregateType* at = toAggregateType(ts->type)) {
-        if (isRecord(at) == true) {
-          bool success = resolveSerializeDeserialize(at);
-          if (success) {
-            resolveBroadcasters(at);
-          }
-        }
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
+
+    if (AggregateType* at = toAggregateType(ts->type)) {
+      bool hasSerializers = ensureSerializersExist(at);
+
+      if (hasSerializers) {
+        resolveBroadcasters(at);
       }
     }
   }
@@ -9834,7 +10121,7 @@ static void resolveSerializers() {
 static void resolveDestructors() {
   std::set<Type*> wellknown = getWellKnownTypesSet();
 
-  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_REF)                     &&
         ! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
@@ -9858,7 +10145,7 @@ static void resolveDestructors() {
 static const char* autoCopyFnForType(AggregateType* at);
 
 static void resolveAutoCopies() {
-  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
@@ -10183,7 +10470,7 @@ static void insertReturnTemps() {
   // Note that we do not do this for --minimal-modules compilation
   // because we do not support sync/singles for minimal modules.
   //
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_expanding_Vec(CallExpr, call, gCallExprs) {
       if (call->list == NULL && isForallRecIterHelper(call))
         continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
@@ -11621,6 +11908,13 @@ static void replaceRuntimeTypeVariableTypes() {
 
       // Collapse these through the runtimeTypeMap ...
       Type* rt = runtimeTypeMap.get(def->sym->type);
+      // TODO the following is a workaround for arrayviews. They don't get a
+      // RTT in the map above because we use the array's RTT for them. That
+      // mapping is stored in `valueToRuntimeTypeMap`. We probably want RTT for
+      // arrayviews as well.
+      if (!rt) {
+        rt = valueToRuntimeTypeMap.get(def->sym->type)->retType;
+      }
       // This assert might fail for code that is no longer traversed
       // after it is resolved, ex. in where-clauses.
       INT_ASSERT(rt);

@@ -1,6 +1,6 @@
 .. default-domain:: cpp
 
-.. _Chapter-next-chpl-types:
+.. _Chapter-dyno-chpl-types:
 
 Types
 =====

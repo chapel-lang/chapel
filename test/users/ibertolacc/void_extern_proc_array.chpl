@@ -1,6 +1,6 @@
 require "void_extern_proc_array.h", "void_extern_proc_array.c";
 
-use SysCTypes;
+use CTypes;
 
 extern proc voidArrayFunction(array: [] c_int, elems : c_int): void;
 

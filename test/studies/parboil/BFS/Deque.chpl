@@ -1,22 +1,22 @@
 module Deque {
-  use SysCTypes;
+  use CTypes;
 
   extern type deque_t;
   extern type deque_iterator_t;
 
-  extern proc deque_init(eltSize: ssize_t, ref deque: deque_t, initSize: ssize_t);
-  extern proc deque_push_front(eltSize: ssize_t, ref deque: deque_t, ref val);
-  extern proc deque_push_back(eltSize: ssize_t, ref deque: deque_t, ref val);
-  extern proc deque_pop_front(eltSize: ssize_t, ref deque: deque_t);
-  extern proc deque_pop_back(eltSize: ssize_t, ref deque: deque_t);
+  extern proc deque_init(eltSize: c_ssize_t, ref deque: deque_t, initSize: c_ssize_t);
+  extern proc deque_push_front(eltSize: c_ssize_t, ref deque: deque_t, ref val);
+  extern proc deque_push_back(eltSize: c_ssize_t, ref deque: deque_t, ref val);
+  extern proc deque_pop_front(eltSize: c_ssize_t, ref deque: deque_t);
+  extern proc deque_pop_back(eltSize: c_ssize_t, ref deque: deque_t);
   extern proc deque_destroy(ref deque: deque_t);
 
-  extern proc deque_last(eltSize: ssize_t, ref deque: deque_t): deque_iterator_t;
+  extern proc deque_last(eltSize: c_ssize_t, ref deque: deque_t): deque_iterator_t;
   extern proc deque_begin(ref deque: deque_t): deque_iterator_t;
-  extern proc deque_it_get_cur(eltSize: ssize_t, it: deque_iterator_t, ref output);
-  extern proc deque_size(eltSize: ssize_t, ref deque: deque_t): ssize_t;
+  extern proc deque_it_get_cur(eltSize: c_ssize_t, it: deque_iterator_t, ref output);
+  extern proc deque_size(eltSize: c_ssize_t, ref deque: deque_t): c_ssize_t;
 
-  extern proc sizeof(type t): ssize_t;
+  extern proc sizeof(type t): c_ssize_t;
 
   record deque {
     type eltType;

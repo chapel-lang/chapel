@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,6 +35,8 @@
 #include "symbol.h"
 #include "virtualDispatch.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 #include <stack>
 
@@ -182,7 +184,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
 std::vector<Expr *> getLastStmtsForForallUnorderedOps(ForallStmt *forall) {
   std::vector<Expr *> lastStmts;
-  for_vector(BlockStmt, block, forall->loopBodies()) {
+  for (BlockStmt* block : forall->loopBodies()) {
     getLastStmts(block, lastStmts);
   }
   return lastStmts;

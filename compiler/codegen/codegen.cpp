@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,7 @@
 #include "codegen.h"
 
 #include "astutil.h"
+#include "baseAST.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
@@ -45,6 +46,8 @@
 #include "view.h"
 #include "virtualDispatch.h"
 #include "chpl/util/filesystem.h"
+
+#include "global-ast-vecs.h"
 
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
@@ -256,8 +259,13 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
               info->module->getOrInsertGlobal(
                       cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
       auto globalStringIr = info->irBuilder->CreateGlobalString(value);
+      llvm::Type* ty = nullptr;
+#if HAVE_LLVM_VER >= 130
+      ty = llvm::cast<llvm::PointerType>(
+        globalStringIr->getType()->getScalarType())->getElementType();
+#endif
       auto correctlyTypedValue = info->irBuilder->CreateConstInBoundsGEP2_32(
-        NULL, globalStringIr, 0, 0);
+        ty, globalStringIr, 0, 0);
       globalString->setInitializer(llvm::cast<llvm::Constant>(correctlyTypedValue));
       globalString->setConstant(true);
       info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
@@ -882,7 +890,7 @@ static void genUnwindSymbolTable(){
     std::vector<GenRet> table;
     table.reserve(symbols.size() * 2);
 
-    forv_Vec(FnSymbol, fn, symbols) {
+    for (FnSymbol* fn : symbols) {
       table.push_back(codegenStringForTable(fn->cname));
       table.push_back(codegenStringForTable(fn->name));
     }
@@ -905,7 +913,7 @@ static void genUnwindSymbolTable(){
     std::vector<GenRet> table;
     table.reserve(symbols.size() * 2);
 
-    forv_Vec(FnSymbol, fn, symbols) {
+    for (FnSymbol* fn : symbols) {
       int fileno = getFilenameLookupPosition(fn->fname());
       int lineno = fn->linenum();
 
@@ -973,6 +981,16 @@ compareSymbol(const void* v1, const void* v2) {
     if (m1->modTag > m2->modTag)
       return 0;
     return strcmp(m1->cname, m2->cname) < 0;
+  }
+
+  // prefer to place externs earlier in the function list (vector)
+  // this was necessary because in the new parser the order in which
+  // extern and non-externs are identified does not match the old parser.
+  // this keeps things consistent between the old and new parser
+  if (s1->hasFlag(FLAG_EXTERN) != s2->hasFlag(FLAG_EXTERN)) {
+    if (s1->hasFlag(FLAG_EXTERN))
+      return 1;
+    return 0;
   }
 
   if (s1->linenum() != s2->linenum())
@@ -1720,7 +1738,8 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
+    if ((fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) ||
+        fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
       functions.push_back(fn);
     }
   }
@@ -2085,11 +2104,17 @@ codegen_config() {
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
-    forv_Vec(VarSymbol, var, gVarSymbols) {
+    forv_expanding_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (6);
-        args[0] = info->irBuilder->CreateLoad(
-            new_CStringSymbol(var->name)->codegen().val);
+        {
+          GenRet gen = new_CStringSymbol(var->name)->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[0] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
+#else
+          args[0] = info->irBuilder->CreateLoad(gen.val);
+#endif
+        }
 
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -2101,23 +2126,43 @@ codegen_config() {
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           type = type->getField("addr")->type;
         }
-        args[1] = info->irBuilder->CreateLoad(
-            new_CStringSymbol(type->symbol->name)->codegen().val);
+        {
+          GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[1] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
+#else
+          args[1] = info->irBuilder->CreateLoad(gen.val);
+#endif
+        }
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          args[2] = info->irBuilder->CreateLoad(
-              new_CStringSymbol("Built-in")->codegen().val);
+          GenRet gen = new_CStringSymbol("Built-in")->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[2] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
+#else
+          args[2] = info->irBuilder->CreateLoad(gen.val);
+#endif
         }
         else {
-          args[2] =info->irBuilder->CreateLoad(
-              new_CStringSymbol(var->getModule()->name)->codegen().val);
+          GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[2] =info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
+#else
+          args[2] =info->irBuilder->CreateLoad(gen.val);
+#endif
         }
 
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
 
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
-        args[5] = info->irBuilder->CreateLoad(new_CStringSymbol(var->getDeprecationMsg())->codegen().val);
-
+        {
+          GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
+#if HAVE_LLVM_VER >= 130
+          args[5] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
+#else
+          args[5] = info->irBuilder->CreateLoad(gen.val);
+#endif
+        }
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
     }
@@ -2226,14 +2271,9 @@ static void convertSymbolToRefType(Symbol* sym) {
 }
 
 static void convertToRefTypes() {
-#define updateSymbols(SymType) \
-  forv_Vec(SymType, sym, g##SymType##s) { \
-    convertSymbolToRefType(sym); \
-  }
-
-  updateSymbols(VarSymbol);
-  updateSymbols(ArgSymbol);
-  updateSymbols(ShadowVarSymbol);
+  forv_expanding_Vec(VarSymbol, sym, gVarSymbols) convertSymbolToRefType(sym);
+  forv_Vec(ArgSymbol, sym, gArgSymbols) convertSymbolToRefType(sym);
+  forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) convertSymbolToRefType(sym);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->getReturnSymbol()) {
@@ -2673,7 +2713,7 @@ void codegen() {
   codegenPartOne();
 
   if (localeUsesGPU()) {
-    // We use the temp dir to output a fatbin file and read it between the forked and main proccess.
+    // We use the temp dir to output a fatbin file and read it between the forked and main process.
     // We need to generate the name for the temp directory before we do the fork (since this
     // name uses the PID).
     ensureTmpDirExists();
@@ -2692,6 +2732,11 @@ void codegen() {
       int status = 0;
       while (wait(&status) != pid) {
         // wait for child process
+      }
+      // If there was an error in GPU code generation then the .fatbin file (containing
+      // the generated GPU code) was not created and we won't be able to continue.
+      if(status != 0) {
+        clean_exit(status);
       }
     }
   }

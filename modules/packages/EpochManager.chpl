@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,7 +48,7 @@
   any other task could have access to said node *before* it was removed. To further concretize
   this example by applying epochs, imagine that all tasks are in epoch *e*, a node *n* is logically
   removed and therefore pushed on *e*'s data structure, then the epoch is advanced to *e'*,
-  then *n* can be safely deleted once no task is in *e*. 
+  then *n* can be safely deleted once no task is in *e*.
 
   .. note::
 
@@ -60,7 +60,7 @@
   for shared-memory, and the ``EpochManager``, which is optimized for distributed memory.
   The ``LocalEpochManager`` is a shared-memory variant that is implemented entirely as
   a class that enables the user to specify their own lifetime management as you would with
-  any other class. The ``EpochManager`` on the other hand, is a ``record`` that is 
+  any other class. The ``EpochManager`` on the other hand, is a ``record`` that is
   ``forwarding`` to a privatized class instance, which ensures that all field accesses
   and method invocations are forwarded to the an instance that is local to the current locale.
   The ``EpochManager`` and ``LocalEpochManager`` share the same API and semantics in all but
@@ -72,7 +72,7 @@
     var localManager = new owned LocalEpochManager();
     var distManager = new EpochManager();
     // Necessary
-    distManager.destroy();  
+    distManager.destroy();
 
   For a task to enter an epoch, they must first ``register`` their task with the manager.
   Once registered, a *token* specific to that task is returned, which will automatically unregister
@@ -95,10 +95,10 @@
   .. code-block:: chpl
 
     forall i in 1..N with (var token = manager.register()) {
-      token.pin();          
+      token.pin();
       token.deferDelete(new unmanaged object());
-      token.unpin();  
-    }  
+      token.unpin();
+    }
 
 
   To advance the epoch and ensure that objects can be reclaimed, ``tryReclaim`` must
@@ -426,7 +426,7 @@ module EpochManager {
       var arr : [dom] eltType;
       var sz : int;
       var cap : int;
-      
+
       proc init(type eltType, initialSize : integral = 0, growthRate = VectorGrowthRate) {
         this.eltType = eltType;
         this.growthRate = growthRate;
@@ -453,7 +453,7 @@ module EpochManager {
           if oldCap == cap then cap += 1;
           this.dom = {0..#cap};
         }
-        
+
         this.arr[sz] = elt;
         sz += 1;
       }
@@ -467,12 +467,12 @@ module EpochManager {
         this.arr[sz..#elts.size] = elts;
         sz += elts.size;
       }
-      
+
       proc append(ir : _iteratorRecord) {
         if iteratorToArrayElementType(ir.type) != eltType {
           compilerError(
-              "Attempt to append an iterable expression of type '", 
-              iteratorToArrayElementType(ir.type) : string, "' when need type '", 
+              "Attempt to append an iterable expression of type '",
+              iteratorToArrayElementType(ir.type) : string, "' when need type '",
               eltType : string, "'"
           );
         }
@@ -779,7 +779,7 @@ module EpochManager {
 
     pragma "no doc"
     var _pid : int = -1;
-    
+
     /*
       Default initialize with instance of privatized class.
     */
@@ -815,11 +815,11 @@ module EpochManager {
 
     pragma "no doc"
     const INACTIVE : uint = 0;
-    
+
     //  Global Epoch is used to synchronize registered tasks' local epochs
     pragma "no doc"
     var global_epoch : unmanaged GlobalEpoch;
-    
+
     //  Locale Epoch is the copy of Global Epoch on each locale
     pragma "no doc"
     var locale_epoch : atomic uint;
@@ -983,7 +983,7 @@ module EpochManager {
           }
         }
       }
-      
+
       if safeToReclaim {
         const new_epoch = (current_global_epoch % EBR_EPOCHS) + 1;
         global_epoch.write(new_epoch);

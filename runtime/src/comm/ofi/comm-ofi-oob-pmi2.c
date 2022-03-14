@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -294,7 +294,7 @@ int chpl_comm_ofi_oob_locales_on_node(void) {
   int count = 0;
   if (PMI_Get_clique_size != NULL) {
     PMI_CHK(PMI_Get_clique_size(&count));
-    DBG_PRINTF(DBG_OOB, "PMI_Get_clique_size returned %d", count);  
+    DBG_PRINTF(DBG_OOB, "PMI_Get_clique_size returned %d", count);
   } else {
     // do an allgather of hostname hashes to determine the locales on the same node as us
     // assumes each hostname has a unique hash
@@ -309,7 +309,7 @@ int chpl_comm_ofi_oob_locales_on_node(void) {
       if (c == '\0') {
         break;
       }
-      // The hash code is borrowed from gasnet including the comment. 
+      // The hash code is borrowed from gasnet including the comment.
       // See third-party/gasnet/gasnet-src/license.txt.
 
       /* The "c = ..." squeezes ASCII down to 6 bits, while encoding
@@ -337,6 +337,6 @@ int chpl_comm_ofi_oob_locales_on_node(void) {
     }
     CHK_SYS_FREE(hashes);
   }
-  DBG_PRINTF(DBG_OOB, "OOB locales on node: %d", count);  
+  DBG_PRINTF(DBG_OOB, "OOB locales on node: %d", count);
   return count;
 }

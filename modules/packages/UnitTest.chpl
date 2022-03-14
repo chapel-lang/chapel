@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1251,7 +1251,7 @@ module UnitTest {
         // if super test didn't Error or Failed or skipped
         if !testsErrored.getValue(superTest: string) &&
            !testsFailed.getValue(superTest: string) &&
-           !testsSkipped.getValue(superTest: string) { 
+           !testsSkipped.getValue(superTest: string) {
           // checking if super test ran or not.
           if !testStatus.getValue(superTest: string) {
             // Create a test object per test
@@ -1266,7 +1266,7 @@ module UnitTest {
             }
             // if super test failed
             if testsFailed.getValue(superTest: string) {
-              testsSkipped.set(testName, true); 
+              testsSkipped.set(testName, true);
               var skipReason = testName + " skipped because " + superTest: string +" failed";
               testResult.addSkip(testName, skipReason);
               break;

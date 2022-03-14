@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2015-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,8 +27,8 @@
 #include <map>
 #include "StringCache.h"
 
-// This class builds a list of events 
-//   Start, Stop, Pause, and Tag events are grouped together 
+// This class builds a list of events
+//   Start, Stop, Pause, and Tag events are grouped together
 //   Other events are placed in a time sorted group between
 //   the grouped events.
 
@@ -48,7 +48,7 @@ struct commData {
   long numPuts;
   long numForks;
   long commSize;
-  
+
   commData() :  numComms(0), numGets(0), numPuts(0), numForks(0), commSize(0) {};
 };
 
@@ -106,7 +106,7 @@ typedef struct funcInfo {
 
   funcInfo(): name(NULL), fileNo(0), lineNo(0), noOnTasks(0), noTasks(0),
     noGets(0), noPuts(0), clockTime() {};
-  
+
 } funcInfo;
 
 
@@ -143,14 +143,14 @@ class DataModel {
 
   funcInfo *funcTbl;
   int funcTblSize;
-  
+
   std::vector<const char *> tagNames;
 
   typedef std::list<Event*>::iterator evItr;
 
   int numLocales;
   int numTags;
-  
+
   // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
   tagData **tagList;    // 1D array of pointers to tagData
 
@@ -161,30 +161,30 @@ class DataModel {
 
   std::list < Event* > theEvents;
   std::list < Event* >::iterator curEvent;
-  
+
   // Utility routines
-  
+
   int LoadFile (const char *filename, int index, double seq);
-  
+
   void newList ();
-  
+
  public:
-  
+
   // Tag array has two extra entries, one for "All" and
   // one for Start (startVdebug() call) to the first tag.
   // Tags are numbered 0 to numTags-1
-  
+
   static const int TagALL = -2, TagStart = -1;
-  
+
   // Tags and manipulation of them
-  
+
   struct tagData { // a class with public elements the default
     friend class DataModel;
     const long numLocales;
     const char *name;
     localeData *locales;
     commData **comms;
-    
+
     // Local Maxes and Minimums
     double maxCpu;
     double maxClock;
@@ -192,7 +192,7 @@ class DataModel {
     long   maxConc;
     long   maxComms;
     long   maxSize;
-    
+
     tagData(long numLoc) : numLocales(numLoc), name(""),  maxCpu(0), maxClock(0),
                            maxTasks(0),  maxConc(0), maxComms(0), maxSize(0) {
       locales = new localeData[numLocales];
@@ -200,7 +200,7 @@ class DataModel {
       for (int i = 0; i < numLocales; i++ )
         comms[i] = new commData[numLocales];
     }
-    
+
     ~tagData() {
       delete [] locales;
       locales = NULL;
@@ -220,13 +220,13 @@ class DataModel {
   // DataModel methods
 
   bool hasUniqueTags () { return uniqueTags; }
-  
+
   int NumTags () { return numTags; }
 
   int NumUTags () { return name2tag.size(); }
-  
+
   tagData * getTagData(int tagno) {
-    if (tagno < TagALL || tagno >= numTags) 
+    if (tagno < TagALL || tagno >= numTags)
       return NULL;
     return tagList[tagno-TagALL];
   }
@@ -258,7 +258,7 @@ class DataModel {
 
   bool fileIsRel2Home (long fileNo) {
     return (fileNo >= 0 && fileNo < fileTblSize) ?
-      fileTbl[fileNo].rel2Home : false ; 
+      fileTbl[fileNo].rel2Home : false ;
   }
 
   // void CHPL_HOME(const char *h) { chpl_home = h; }
@@ -281,9 +281,9 @@ class DataModel {
       return NULL;
     }
   }
-  
+
   // Constructor for DataModel
-  
+
   DataModel() {
     numLocales = -1;
     numTags = 0;
@@ -294,7 +294,7 @@ class DataModel {
     utagList = NULL;
     tagNames.resize(64);
   }
-  
+
   // Destructor for DataModel
   ~DataModel() {
     if (tagList != NULL) {
@@ -310,18 +310,18 @@ class DataModel {
       delete [] utagList;
     }
   }
-  
+
   //  LoadData loads data from a collection of files
   //  filename of the form  basename-n, where n can
   //  be a multi-digit number
   //  Returns 1 if successful, 0 if not
-  
+
   int LoadData (const char *filename, bool fromArgv);
-  
+
   //  Number of locales found in loading files
-  
+
   int NumLocales () { return numLocales; }
-  
+
 };
 
 #endif

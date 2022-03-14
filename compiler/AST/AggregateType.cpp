@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,7 +39,9 @@
 #include "symbol.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
-#include "../next/lib/immediates/prim_data.h"
+#include "../dyno/lib/immediates/prim_data.h"
+
+#include "global-ast-vecs.h"
 
 #include <queue>
 

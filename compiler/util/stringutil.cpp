@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -109,11 +109,11 @@ const char* asubstr(const char* s, const char* e) {
     if (strcmp(str+startPos, checkStr) != 0) {                    \
       if (userSupplied) {                                         \
         astlocT astloc(line, filename);                           \
-        USR_FATAL(astloc, "Integer literal overflow: %s is too"   \
-                  " big for type " #type, str);                   \
+        USR_FATAL(astloc, "Integer literal overflow: '%s' is too" \
+                  " big for type '" #type "'", str);              \
       } else {                                                    \
-        INT_FATAL("Integer literal overflow: %s is too "          \
-                  "big for type " #type, str);                    \
+        INT_FATAL("Integer literal overflow: '%s' is too "        \
+                  "big for type '" #type "'", str);               \
       }                                                           \
     }                                                             \
     return val;                                                   \
@@ -148,10 +148,10 @@ uint64_t binStr2uint64(const char* str, bool userSupplied,
     if (userSupplied) {
       astlocT astloc(line, filename);
       USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     }
   }
   uint64_t val = 0;
@@ -190,10 +190,10 @@ uint64_t octStr2uint64(const char* str, bool userSupplied,
     if (userSupplied) {
       astlocT astloc(line, filename);
       USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     }
   }
 
@@ -225,10 +225,10 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
     if (userSupplied) {
       astlocT astloc(line, filename);
       USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     }
   }
 

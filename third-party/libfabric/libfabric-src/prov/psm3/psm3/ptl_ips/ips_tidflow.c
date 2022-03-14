@@ -148,7 +148,8 @@ psm2_error_t ips_tf_init(struct ips_protoexp *protoexp,
 					PSMI_STATSTYPE_TIDS,
 					entries,
 					PSMI_STATS_HOWMANY(entries),
-					protoexp->proto->ep->epid, tfc);
+					protoexp->proto->ep->epid, tfc,
+					protoexp->proto->ep->dev_name);
 #else
 	return PSM2_OK;
 #endif

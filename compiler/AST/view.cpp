@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,6 +45,8 @@
 #include "TryStmt.h"
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
+
+#include "global-ast-vecs.h"
 
 #include <inttypes.h>
 
@@ -945,7 +947,7 @@ static const char* summarySymbolKind(Symbol* sym) {
 }
 static void summarySymbolPrint(Symbol* sym, const char* prefix = NULL,
                                const char* suffix = NULL) {
-  printf("%s%s %s[%d] %s", prefix ? prefix : "", 
+  printf("%s%s %s[%d] %s", prefix ? prefix : "",
          summarySymbolKind(sym), sym->name, sym->id, suffix ? suffix : "");
 }
 void blockSummary(BlockStmt* block, Symbol* sym) {
@@ -1334,7 +1336,7 @@ static void whocalls(int id, Symbol* sym) {
   else
     printf("whocalls [%d]  ignoring %s %s[%d]\n",
            id, sym->astTagAsString(), sym->name, sym->id);
-  
+
   int callAll = 0, callMatch = 0, callNonTreeMatch = 0;
   forv_Vec(CallExpr, call, gCallExprs) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {

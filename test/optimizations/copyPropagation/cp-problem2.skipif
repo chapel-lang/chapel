@@ -1,5 +1,0 @@
-# This .skipif should be removed once cp-problem2-no-local.future is resolved
-# Skip this test if not running --local
-
-CHPL_COMM != none
-COMPOPTS <= --no-local

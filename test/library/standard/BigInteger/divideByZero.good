@@ -1,0 +1,1 @@
+divideByZero.chpl:5: error: halt reached - Attempt to divide by zero

@@ -21,7 +21,7 @@
 
    proc getPythonsAbspath() {
      var command = "python3 -c 'import os; print(os.getcwd())'";
-     var sub = spawnshell(command, stdout=PIPE);
+     var sub = spawnshell(command, stdout=pipeStyle.pipe);
 
      var absPath:string;
      sub.stdout.readline(absPath);

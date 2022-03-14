@@ -1,0 +1,1 @@
+notsupportedEq-dr-sparse.chpl:5: error: comparing a sparse domain against a rectangular or associative domain is not currently supported

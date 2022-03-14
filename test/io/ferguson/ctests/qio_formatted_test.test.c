@@ -1248,8 +1248,8 @@ void do_test_utf8(int wchar, char* utf8)
 void test_utf8(void)
 {
   if( verbose )
-    printf("Testing UTF-8 glocale_utf8=%i qbytes_iobuf_size=%i\n",
-         qio_glocale_utf8, (int) qbytes_iobuf_size);
+    printf("Testing UTF-8 qbytes_iobuf_size=%i\n",
+           (int) qbytes_iobuf_size);
 
   do_test_utf8(0x0024, "\x24");
   do_test_utf8(0x00A2, "\xC2\xA2");
@@ -1508,14 +1508,7 @@ int main(int argc, char** argv)
     qbytes_iobuf_size = sizes[i];
 
     if( 0 == strcmp(codeset, "UTF-8") ) {
-#ifndef __CYGWIN__
-      // Cygwin's native functions perform a different encoding for
-      // codepoints outside the Basic Multilingual Plane (16 bits).
-      qio_glocale_utf8 = -1;
-      test_utf8();
-#endif
       // The fast path had better produce the same encoding everywhere.
-      qio_glocale_utf8 = 1;
       test_utf8();
     }
   }

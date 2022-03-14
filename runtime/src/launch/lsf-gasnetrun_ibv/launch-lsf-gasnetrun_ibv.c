@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,7 +50,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
 
   const int maxlargc = 15 + chpl_get_charset_env_nargs();
   char *largv[maxlargc];
-  
+
   sprintf(_nlbuf, "%d", numLocales);
 
   int largc = 15;

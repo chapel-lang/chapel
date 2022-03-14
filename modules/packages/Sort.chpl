@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -91,7 +91,7 @@ themselves like so:
 
 .. code-block:: chapel
 
-  proc op<(a: returnType, b: returnType): bool {
+  operator <(a: returnType, b: returnType): bool {
     ...
   }
 
@@ -254,7 +254,7 @@ module Sort {
 
   private use List;
   private use Reflection;
-  private use CPtr;
+  private use CTypes;
 
 /* Module-defined comparators */
 
@@ -1383,7 +1383,7 @@ module ShellSort {
 pragma "no doc"
 module SampleSortHelp {
   private use Sort;
-  private use CPtr;
+  private use CTypes;
 
   param maxLogBuckets = 8; // not counting equality buckets.
   param classifyUnrollFactor = 7;
@@ -1839,8 +1839,8 @@ module RadixSortHelp {
 
 pragma "no doc"
 module ShallowCopy {
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
+
 
   // The shallowCopy / shallowSwap code needs to be able to copy/swap
   // _array records. But c_ptrTo on an _array will return a pointer to
@@ -1908,7 +1908,7 @@ module ShallowCopy {
 
   // TODO: These shallowCopy functions should handle Block,Cyclic arrays
   inline proc shallowCopy(ref A, dst, src, nElts) {
-    use SysCTypes;
+
     // Ideally this would just be
     //A[dst..#nElts] = A[src..#nElts];
 
@@ -1920,7 +1920,7 @@ module ShallowCopy {
 
     if A._instance.isDefaultRectangular() {
       type st = __primitive("static field type", A._value, "eltType");
-      var size = (nElts:size_t)*c_sizeof(st);
+      var size = (nElts:c_size_t)*c_sizeof(st);
       c_memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ A, {dst..#nElts},
@@ -1934,7 +1934,7 @@ module ShallowCopy {
     }
   }
   inline proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
-    use SysCTypes;
+
     // Ideally this would just be
     //DstA[dst..#nElts] = SrcA[src..#nElts];
 
@@ -1947,7 +1947,7 @@ module ShallowCopy {
     if DstA._instance.isDefaultRectangular() &&
        SrcA._instance.isDefaultRectangular() {
       type st = __primitive("static field type", DstA._value, "eltType");
-      var size = (nElts:size_t)*c_sizeof(st);
+      var size = (nElts:c_size_t)*c_sizeof(st);
       c_memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ DstA, {dst..#nElts},
@@ -1960,7 +1960,7 @@ module ShallowCopy {
       }
     }
   }
-  proc shallowCopyPutGetRefs(ref dst, const ref src, numBytes: size_t) {
+  proc shallowCopyPutGetRefs(ref dst, const ref src, numBytes: c_size_t) {
     if dst.locale.id == here.id {
       __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes);
     } else if src.locale.id == here.id {
@@ -1973,7 +1973,7 @@ module ShallowCopy {
   // For the case in which we know that the source and dest regions
   // are contiguous within a locale
   proc shallowCopyPutGet(ref DstA, dst, const ref SrcA, src, nElts) {
-    var size = (nElts:size_t)*c_sizeof(DstA.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
     shallowCopyPutGetRefs(DstA[dst], SrcA[src], size);
   }
 }
@@ -3196,7 +3196,7 @@ module TwoArraySampleSort {
   private use super.SampleSortHelp;
   private use super.RadixSortHelp;
 
-  private use CPtr;
+  private use CTypes;
 
   proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
 

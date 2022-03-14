@@ -7,6 +7,12 @@ This section documents the various functions and types of the
 new compiler.
 
 .. toctree::
+   :caption: Conceptual Guide
+   :maxdepth: 1
+
+   queries
+
+.. toctree::
    :caption: Symbols by Namespace
    :maxdepth: 2
 

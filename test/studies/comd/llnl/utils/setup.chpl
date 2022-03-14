@@ -20,19 +20,19 @@ record Atom {
   var v : real3;
 }
 
-inline proc >(const ref a : Atom, const ref b : Atom) : bool {
+inline operator Atom.>(const ref a : Atom, const ref b : Atom) : bool {
   return a.gid > b.gid;
 }
 
-inline proc <(const ref a : Atom, const ref b : Atom) : bool {
+inline operator Atom.<(const ref a : Atom, const ref b : Atom) : bool {
   return a.gid < b.gid;
 }
 
-inline proc <=(const ref a : Atom, const ref b : Atom) : bool {
+inline operator Atom.<=(const ref a : Atom, const ref b : Atom) : bool {
   return !(a > b);
 }
 
-inline proc >=(const ref a : Atom, const ref b : Atom) : bool {
+inline operator Atom.>=(const ref a : Atom, const ref b : Atom) : bool {
   return !(a < b);
 }
 

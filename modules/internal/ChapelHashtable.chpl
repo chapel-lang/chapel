@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,7 +31,7 @@ module ChapelHashtable {
 
   use ChapelBase, DSIUtil;
 
-  private use CPtr;
+  private use CTypes;
 
   // empty needs to be 0 so memset 0 sets it
   enum chpl__hash_status { empty=0, full, deleted };
@@ -235,9 +235,11 @@ module ChapelHashtable {
 
     const startingSize: int;
 
-    proc init(type keyType, type valType, resizeThreshold = 0.5,
-              initialCapacity = 32,
+    proc init(type keyType, type valType, resizeThreshold=0.5,
+              initialCapacity=16,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
+      if isDomainType(keyType) then
+        compilerError("Values of 'domain' type do not support hash functions yet", 2);
       this.keyType = keyType;
       this.valType = valType;
       this.tableNumFullSlots = 0;
@@ -619,7 +621,7 @@ module ChapelHashtable {
 
     proc resize(grow:bool) {
       if postponeResize then return;
-      
+
       // double if you are growing, half if you are shrinking
       var newSize = if tableSize == 0 then startingSize else if grow then tableSize << 1 else tableSize >> 1;
 

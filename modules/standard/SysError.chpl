@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,8 +35,7 @@
 module SysError {
 
 use SysBasic;
-private use SysCTypes;
-private use CPtr;
+private use CTypes;
 
 /*
 
@@ -374,10 +373,10 @@ private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:er
 /* This function takes in a string and returns it in double-quotes,
    with internal double-quotes escaped with backslash.
    */
-private proc quote_string(s:string, len:ssize_t) {
+private proc quote_string(s:string, len:c_ssize_t) {
   extern const QIO_STRING_FORMAT_CHPL: uint(8);
   extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
-                               ptr: c_string, len:ssize_t,
+                               ptr: c_string, len:c_ssize_t,
                                ref ret:c_string, ti: c_void_ptr): syserr;
   extern proc qio_strdup(s: c_string): c_string;
 
@@ -413,7 +412,7 @@ pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 {
   if error {
-    const quotedpath = quote_string(path, path.numBytes:ssize_t);
+    const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     var   details    = msg + " with path " + quotedpath +
                        " offset " + offset:string;
     throw SystemError.fromSyserr(error, details);
@@ -426,7 +425,7 @@ pragma "always propagate line file info"
 proc ioerror(error:syserr, msg:string, path:string) throws
 {
   if error {
-    const quotedpath = quote_string(path, path.numBytes:ssize_t);
+    const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     var   details    = msg + " with path " + quotedpath;
     throw SystemError.fromSyserr(error, details);
   }
@@ -454,7 +453,7 @@ pragma "insert line file info"
 pragma "always propagate line file info"
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
-  const quotedpath = quote_string(path, path.numBytes:ssize_t);
+  const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
   const details    = errstr + " " + msg + " with path " + quotedpath +
                      " offset " + offset:string;
   throw SystemError.fromSyserr(EIO:syserr, details);

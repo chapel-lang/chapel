@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-/* 
+/*
   This module contains the implementation of the heap type.
 
   A heap is a specialized tree-based data structure
@@ -33,7 +33,7 @@
   a max-heap. In this case, ``top`` will return the greatest element in the
   heap.
 
-  If a ``reverseComparator`` is passed to ``init``, 
+  If a ``reverseComparator`` is passed to ``init``,
   ``top`` will return the minimal element.
 
 */
@@ -48,7 +48,7 @@ module Heap {
   private use Sort;
 
   // The locker is borrowed from List.chpl
-  // 
+  //
   // We can change the lock type later. Use a spinlock for now, even if it
   // is suboptimal in cases where long critical sections have high
   // contention (IE, lots of tasks trying to call toArray on the heap
@@ -87,7 +87,7 @@ module Heap {
       // In the future we might support it if the list is not default-inited
     }
   }
-    
+
   record heap {
 
     /* The type of the elements contained in this heap. */
@@ -346,7 +346,7 @@ module Heap {
     }
 
     /*
-      Iterate over the elements of this heap in order, 
+      Iterate over the elements of this heap in order,
       while removing the yielded elements.
     */
     iter consume() {
