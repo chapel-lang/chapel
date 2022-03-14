@@ -24,7 +24,7 @@ module load craype-x86-cascadelake
 
 module list
 
-export CHPL_LAUNCHER_CONSTRAINT=CL48
+export CHPL_LAUNCHER_CONSTRAINT="CL48,192GB"
 export CHPL_LAUNCHER_CORES_PER_LOCALE=96
 export CHPL_LAUNCHER=slurm-srun
 nightly_args="${nightly_args} -no-buildcheck"
