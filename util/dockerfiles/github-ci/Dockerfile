@@ -1,4 +1,6 @@
 # This is a container used to run CI jobs on GH
+# An image gets built in .github/workflows/build-CI-container.yml
+# and then used in .github/workflows/CI.yml
 
 # We use 22.04 to get llvm-13
 FROM ubuntu:22.04
