@@ -801,23 +801,13 @@ record regex {
   proc search(text: exprType)
   {
     if (searchReturnsByteIndex == false) {
-      return searchRegexMatch(text);
+      var dummy: int;
+      return _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy); 
     } else {
-      return searchByteIndex(text);
+      var dummy: int;
+      var rm = _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy);
+      return rm.byteOffset;
     }
-  }
-
-  proc searchByteIndex(text: exprType):byteIndex
-  {
-    var dummy: int;
-    var rm = _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy);
-    return rm.byteOffset;
-  }
-
-  proc searchRegexMatch(text: exprType):regexMatch
-  {
-    var dummy: int;
-    return _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy);
   }
 
   /*
