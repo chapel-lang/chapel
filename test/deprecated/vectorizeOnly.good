@@ -1,15 +1,9 @@
 vectorizeOnly.chpl:3: warning: 'vectorizeOnly()' is deprecated; please use 'foreach' loops instead
-Note: This source location is a guess.
 vectorizeOnly.chpl:6: warning: 'vectorizeOnly()' is deprecated; please use 'foreach' loops instead
-Note: This source location is a guess.
 vectorizeOnly.chpl:9: warning: 'vectorizeOnly()' is deprecated; please use 'foreach' loops instead
-Note: This source location is a guess.
 vectorizeOnly.chpl:12: warning: 'vectorizeOnly()' is deprecated; please use 'foreach' loops instead
-Note: This source location is a guess.
 vectorizeOnly.chpl:15: warning: 'vectorizeOnly()' is deprecated; please use 'foreach' loops instead
-Note: This source location is a guess.
 vectorizeOnly.chpl:18: warning: 'vectorizeOnly()' is deprecated; please use 'foreach' loops instead
-Note: This source location is a guess.
 1
 1
 (1, 1)
