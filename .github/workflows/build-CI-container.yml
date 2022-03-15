@@ -5,6 +5,7 @@ env:
   # NOTE: IMAGE_NAME must be lowercase
   IMAGE_NAME: chapel-github-ci
 
+  # NOTE: if this filename changes, also update in the on.paths section below
   DOCKERFILE: util/dockerfiles/github-ci/Dockerfile
 
 on:
@@ -12,7 +13,12 @@ on:
     branches: [ main ]
     # This limits the action so it only builds when this file changes
     paths:
-      - ${{ env.DOCKERFILE }}
+      # NOTE: I can't get either $DOCKERFILE or ${{env.DOCKERFILE}} to work
+      # properly here
+      - util/dockerfiles/github-ci/Dockerfile
+
+  # Adds a "manual run" option in the GH UI
+  workflow_dispatch:
 
 
 jobs:
