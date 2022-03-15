@@ -19,4 +19,9 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/make-chapel-quick.sh"
 
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 4
+  end
+
 end
