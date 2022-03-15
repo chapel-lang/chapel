@@ -21,7 +21,7 @@ Contributors to the Chapel 1.26.0 release
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
-* Divye Nayyar, [GSoC 2021] student from [Indian Institute of Technology Roorkee] (former individual contributor)
+* Divye Nayyar, indvidual contributor and [GSoC 2021] student from [Indian Institute of Technology Roorkee]
 * Sarah Nguyen, [HPE]
 * Xuehai Pan, individual contributor
 * Yash Raj, individual contributor
@@ -32,6 +32,7 @@ Contributors to the Chapel 1.26.0 release
 * Michelle Mills Strout, [HPE]
 * Greg Titus, [HPE]
 * Max Tursi, [HPE]
+* Branch Vincent, individual contributor
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
@@ -125,8 +126,8 @@ Contributors to previous releases
 * Sarthak Munshi, individual contributor / [GSoC 2017] student from [Pune Institute of Computer Technology]
 * Ram Nad, individual contributor
 * Mohammed Nafees, [GSoC 2019] student from [University of Waterloo]
-* Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
 * Jun Nakashima, [University of Tokyo]
+* Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
 * Jacob Nelson, [Cray Inc.] intern from [University of Washington]
 * [Phil Nelson], [Western Washington University] / [Cray Inc.] contractor
 * Michael Noakes, [Cray Inc.]
@@ -154,10 +155,10 @@ Contributors to previous releases
 * Sara Salem, [Cairo University]
 * Alberto Sanz, [Universidad de Málaga (University of Malaga)]
 * Vaibhav Sethia, individual contributor
+* Mohammed Sharfuddin, individual contributor
 * Raj Shekhar, individual contributor
 * Albert Sidelnik, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
 * Marcos Cleison Silva Santana, individual contributor
-* Mohammed Sharfuddin, individual contributor
 * Kushal Singh, [GSoC 2016] student from [International Institute of Information Technology, Hyderabad]
 * Darren Smith, [University of Maryland]
 * Rachel Sobel, [Cray Inc.] intern from [University of Washington]
