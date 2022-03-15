@@ -287,7 +287,7 @@ class CallInfo {
  private:
   UniqueString name_;                   // the name of the called thing
   types::QualifiedType calledType_;     // the type of the called thing
-  bool isMethod_ = false;               // in that case, actuals[0] is receiver
+  bool isMethodCall_ = false;           // then actuals[0] is receiver
   bool hasQuestionArg_ = false;         // includes ? arg for type constructor
   std::vector<CallInfoActual> actuals_; // types/params/names of actuals
 
@@ -296,15 +296,15 @@ class CallInfo {
 
   /** Construct a CallInfo that contains QualifiedTypes for actuals */
   CallInfo(UniqueString name, types::QualifiedType calledType,
-           bool isMethod,
+           bool isMethodCall,
            bool hasQuestionArg,
            std::vector<CallInfoActual> actuals)
       : name_(name), calledType_(calledType),
-        isMethod_(isMethod),
+        isMethodCall_(isMethodCall),
         hasQuestionArg_(hasQuestionArg),
         actuals_(std::move(actuals)) {
     #ifndef NDEBUG
-    if (isMethod) {
+    if (isMethodCall) {
       assert(numActuals() >= 1);
       assert(this->actuals(0).byName() == "this");
     }
@@ -322,7 +322,7 @@ class CallInfo {
   types::QualifiedType calledType() const { return calledType_; }
 
   /** check if the call is a method call */
-  bool isMethod() const { return isMethod_; }
+  bool isMethodCall() const { return isMethodCall_; }
 
   /** check if the call includes ? arg for type constructor */
   bool hasQuestionArg() const { return hasQuestionArg_; }
@@ -344,7 +344,7 @@ class CallInfo {
   bool operator==(const CallInfo& other) const {
     return name_ == other.name_ &&
            calledType_ == other.calledType_ &&
-           isMethod_ == other.isMethod_ &&
+           isMethodCall_ == other.isMethodCall_ &&
            hasQuestionArg_ == other.hasQuestionArg_ &&
            actuals_ == other.actuals_;
   }
@@ -352,7 +352,9 @@ class CallInfo {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(name_, calledType_, isMethod_, hasQuestionArg_, actuals_);
+    return chpl::hash(name_, calledType_, isMethodCall_,
+                      hasQuestionArg_,
+                      actuals_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;

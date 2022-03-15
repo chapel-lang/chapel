@@ -755,8 +755,9 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto newExpr = call->calledExpression()->toNew();
   ResolvedExpression& re = byPostorder.byAst(call);
 
-  // the type of the 'new' call is the type of the 'new' expression
+  // TODO: need to take 'new' expr + actuals and compute concrete type
   ResolvedExpression& reNewExpr = byPostorder.byAst(newExpr);
+
   re.setType(reNewExpr.type());
 
   // exit immediately if the 'new' failed to resolve
@@ -768,7 +769,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   // new calls produce a 'init' call as a side effect
   UniqueString name = USTR("init");
   auto calledType = QualifiedType(QualifiedType::REF, re.type().type());
-  bool isMethod = true;
+  bool isMethodCall = true;
   bool hasQuestionArg = false;
   std::vector<CallInfoActual> actuals;
 
@@ -782,7 +783,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     assert(!hasQuestionArg);
   }
 
-  auto ci = CallInfo(name, calledType, isMethod, hasQuestionArg,
+  auto ci = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
                      std::move(actuals));
   auto inScope = scopeStack.back();
   auto inPoiScope = poiScope;
@@ -790,13 +791,14 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   // note: the resolution machinery will get compiler generated candidates
   auto crr = resolveGeneratedCall(context, call, ci, inScope, inPoiScope);
 
+  assert(crr.mostSpecific().numBest() <= 1);
+
   // there should be one or zero applicable candidates
   if (auto only = crr.mostSpecific().only()) {
-
-    // TODO: do we need to worry about recording POI scope here?
     ResolvedExpression::AssociatedFns associated;
     associated.push_back(only);
     re.setAssociatedFns(associated);
+    poiInfo.accumulate(crr.poiInfo());
   }
 
   return true;
@@ -1245,7 +1247,7 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
   QualifiedType calledType;
-  bool isMethod = false;
+  bool isMethodCall = false;
   bool hasQuestionArg = false;
   std::vector<CallInfoActual> actuals;
 
@@ -1278,7 +1280,7 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
 
           auto receiverInfo = CallInfoActual(qtReceiver, USTR("this"));
           actuals.push_back(std::move(receiverInfo));
-          isMethod = true;
+          isMethodCall = true;
         }
       }
     }
@@ -1293,7 +1295,9 @@ CallInfo Resolver::prepareCallInfoNormalCall(const Call* call) {
   // Prepare the remaining actuals.
   prepareCallInfoActuals(call, actuals, hasQuestionArg);
 
-  auto ret = CallInfo(name, calledType, isMethod, hasQuestionArg, actuals);
+  auto ret = CallInfo(name, calledType, isMethodCall,
+                      hasQuestionArg,
+                      actuals);
 
   return ret;
 }
@@ -1369,7 +1373,6 @@ void Resolver::resolveNewForRecord(const uast::New* node,
                          managementStr,
                          recordNameStr);
   } else {
-
     auto qt = QualifiedType(QualifiedType::VAR, recordType);
     re.setType(qt);
   }
@@ -1387,9 +1390,11 @@ void Resolver::exit(const uast::New* node) {
     context->error(node, "'new' must be followed by a type expression");
   }
 
-  // TODO: Set ErroneousType here.
-  if (qtTypeExpr.type()->isUnknownType()) {
-    assert(false && "Not handled yet!");
+  // if unknown or erroneous, propagate up and do no further work
+  if (qtTypeExpr.isUnknown() || qtTypeExpr.isErroneousType()) {
+    ResolvedExpression& re = byPostorder.byAst(node);
+    re.setType(qtTypeExpr);
+    return;
   }
 
   if (qtTypeExpr.type()->isBasicClassType()) {

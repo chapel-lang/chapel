@@ -1574,7 +1574,7 @@ isUntypedSignatureApplicable(Context* context,
   }
 
   // TODO: more to check for method-ness?
-  if (ci.isMethod() != ufs->isMethod()) {
+  if (ci.isMethodCall() != ufs->isMethod()) {
     return false;
   }
 
@@ -1756,7 +1756,7 @@ filterCandidatesInstantiating(Context* context,
 }
 
 // call can be nullptr; in that event, the CallInfo will be consulted
-// and it will search for something with name calledName.
+// and it will search for something with 'ci.name()'.
 static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
@@ -1765,6 +1765,7 @@ lookupCalledExpr(Context* context,
                  std::unordered_set<const Scope*>& visited) {
   std::vector<BorrowedIdsWithName> ret;
 
+  // TODO: it would be nice if the caller could compute the name instead
   const bool doLookupByName = (call == nullptr || call->isOpCall());
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
@@ -1779,7 +1780,7 @@ lookupCalledExpr(Context* context,
 
   // For method calls, perform an initial lookup starting at the scope for
   // the definition of the receiver type, if it can be found.
-  if (ci.isMethod()) {
+  if (ci.isMethodCall()) {
     assert(ci.numActuals() >= 1);
 
     auto& receiverQualType = ci.actuals(0).type();
@@ -2074,6 +2075,8 @@ resolveFnCallForTypeCtor(Context* context,
 
 using CandidatesVec = std::vector<const TypedFnSignature*>;
 
+// returns true if one or more TypedFnSignature for compiler-generated
+// methods were added to the candidates vector, and false otherwise
 static bool
 considerCompilerGeneratedCandidates(Context* context,
                                     const CallInfo& ci,
@@ -2083,7 +2086,7 @@ considerCompilerGeneratedCandidates(Context* context,
                                     CandidatesVec& candidates) {
 
   // only consider compiler-generated methods, for now
-  if (!ci.isMethod()) return false;
+  if (!ci.isMethodCall()) return false;
 
   // fetch the receiver type info
   assert(ci.numActuals() >= 1);
@@ -2117,7 +2120,7 @@ considerCompilerGeneratedCandidates(Context* context,
                                                            ci,
                                                            poi);
 
-  // TODO: also add POI info?
+  // TODO: also adjust 'poiInfo'.
   candidates.push_back(instantiated);
 
   return true;
@@ -2142,7 +2145,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                       poiInfo,
                                       candidates);
 
-  // first, look for candidates without using POI.
+  // next, look for candidates without using POI.
   {
     // compute the potential functions that it could resolve to
     auto v = lookupCalledExpr(context, inScope, call, ci, visited);
@@ -2498,23 +2501,32 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
   return false;
 }
 
-// TODO: should we grab the parent instantiation here? Doesn't make sense
-// to generate this for partial instantiations.
 static TypedFnSignature*
-generateInitSignature(Context* context, const CompositeType* compType) {
+generateInitSignature(Context* context, const CompositeType* inCompType) {
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
   std::vector<QualifiedType> formalTypes;
+
+  // adjust to refer to fully generic signature if needed
+  auto genericCompType = inCompType->instantiatedFromCompositeType();
+  auto compType = genericCompType ? genericCompType : inCompType;
 
   // start by adding a formal for the receiver
   auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
                                                       false,
                                                       nullptr);
   ufsFormals.push_back(std::move(ufsReceiver));
+
+  // receiver is 'ref' because it is mutated
   formalTypes.push_back(QualifiedType(QualifiedType::REF, compType));
 
   // consult the fields to build up the remaining untyped formals
   const bool useGenericDefaults = false;
   auto& rf = fieldsForTypeDecl(context, compType, useGenericDefaults);
+
+  // TODO: generic types
+  if (rf.isGeneric()) {
+    assert(false && "Not handled yet!");
+  }
 
   // push all fields -> formals in order
   for (int i = 0; i < rf.numFields(); i++) {
@@ -2522,6 +2534,7 @@ generateInitSignature(Context* context, const CompositeType* compType) {
     auto name = rf.fieldName(i);
     bool hasDefault = rf.fieldHasDefaultValue(i);
     const uast::Decl* node = nullptr;
+
     auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, node);
     ufsFormals.push_back(std::move(fd));
 
@@ -2551,8 +2564,6 @@ generateInitSignature(Context* context, const CompositeType* compType) {
   bool needsInstantiation = rf.isGeneric();
   const TypedFnSignature* instantiatedFrom = nullptr;
   const TypedFnSignature* parentFn = nullptr;
-
-  // TODO: not sure when this is non-empty
   Bitmap formalsInstantiated;
 
   auto ret = new TypedFnSignature(ufs, formalTypes, whereClauseResult,

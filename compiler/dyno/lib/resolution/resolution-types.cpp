@@ -122,7 +122,7 @@ CallInfo::CallInfo(const uast::FnCall* call) {
       if (call->isNamedActual(i)) {
         byName = call->actualName(i);
         if (i == 0 && byName == USTR("this"))
-          isMethod_ = true;
+          isMethodCall_ = true;
       }
       actuals_.push_back(CallInfoActual(QualifiedType(), byName));
       i++;
@@ -341,7 +341,7 @@ void CallInfo::stringify(std::ostream& ss,
     calledType_.stringify(ss, stringKind);
   }
   if (stringKind != StringifyKind::CHPL_SYNTAX) {
-    ss << " isMethod=" << isMethod_;
+    ss << " isMethodCall=" << isMethodCall_;
     ss << " hasQuestionArg=" << hasQuestionArg_;
     ss << " ";
   }
