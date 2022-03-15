@@ -47,10 +47,9 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ExportWrappers
-    ChapelAutoAggregation
-     CopyAggregation
-      AggregationPrimitives
     Types
     AlignedTSupport
+    CopyAggregation
+     AggregationPrimitives
    printModuleInitOrder
     moduleInitTest

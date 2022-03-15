@@ -427,7 +427,27 @@ module BigInteger {
       return ret;
     }
 
+    deprecated "get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead"
     proc get_d_2exp() : (uint(32), real) {
+      var (dbl, exp) = getD2Exp();
+      return (exp, dbl);
+    }
+
+    /*
+      Convert ``this`` to a tuple containing a real (truncated if necessary, by
+      rounding towards zero) and the exponent.  The returned tuple fulfills the
+      condition ``d * 2^exp == this`` where ``d`` is the first value in the
+      tuple and ``exp`` is the second.
+
+      :returns: a tuple representing the number in multiple parts, ``(d, exp)``,
+                such that their combination ``d * 2^exp`` is equal to ``this``.
+
+                ``d`` in this case will be in the range ``0.5 <= abs(d) < 1``,
+                unless ``this`` is ``0``, in which case ``d == 0.0`` and
+                ``exp == 0``.
+      :rtype: ``(real, uint(32))``
+     */
+    proc getD2Exp(): (real, uint(32)) {
       var exp: c_long;
       var dbl: c_double;
 
@@ -454,7 +474,7 @@ module BigInteger {
         }
       }
 
-      return (exp.safeCast(uint(32)), dbl: real);
+      return (dbl: real, exp.safeCast(uint(32)));
     }
 
     proc get_str(base: int = 10) : string {
@@ -3286,11 +3306,37 @@ module BigInteger {
 
   // sets this to gcd(a,b)
   // set s and t to to coefficients satisfying a*s + b*t == g
+  deprecated "gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead"
   proc bigint.gcdext(ref s: bigint,
                      ref t: bigint,
                      const ref a: bigint,
                      const ref b: bigint) {
+    this.gcd(a, b, s, t);
+  }
 
+  /* Set ``this`` to the greatest common divisor of ``a`` and ``b``, and
+     set ``s`` and ``t`` to coefficients such that ``a*s + b*t == this``.
+
+     .. note::
+        The result stored in ``this`` is always positive, even if one or
+        both of ``a`` and ``b`` are negative (or zero if both are zero).
+
+     This fulfills the same role as the GMP function ``mpz_gcdext``.
+
+     :arg a: One of the numbers to compute the greatest common divisor of
+     :type a: ``bigint``
+
+     :arg b: One of the numbers to compute the greatest common divisor of
+     :type b: ``bigint``
+
+     :arg s: The returned coefficient that can be multiplied by ``a``.
+     :type s: ``bigint``
+
+     :arg t: The returned coefficient that can be multiplied by ``b``.
+     :type t: ``bigint``
+   */
+  proc bigint.gcd(const ref a: bigint, const ref b: bigint,
+                  ref s: bigint, ref t: bigint): void {
     if _local {
       mpz_gcdext(this.mpz, s.mpz, t.mpz, a.mpz, b.mpz);
 

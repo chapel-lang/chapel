@@ -247,6 +247,56 @@ static void test1(Parser* parser) {
                var x = if foo then bar else baz;
                manage myManager() as myResource do
                  myResource.doSomething();
+               var C = for 1..10 do 5;
+               var C = forall 1..10 do 5;
+
+module DefinesOp {
+  class Foo {
+    var x: int;
+  }
+
+  operator align(r: range(?i), count: Foo) {
+    writeln("In DefinesOp.align");
+    return r align count.x;
+  }
+
+  operator by(r: range(?i), count: Foo) {
+    writeln("In DefinesOp.by");
+    return r by count.x;
+  }
+}
+
+proc main() {
+
+  {
+    use DefinesOp only align, Foo;
+
+    var r1 = 0..6;
+    var a = new Foo(3);
+    var r1b = r1 by 4 align a;
+    writeln(r1b);
+    for i in r1b {
+      writeln(i);
+    }
+  }
+
+  {
+    use DefinesOp only by, Foo;
+
+    var r1 = 0..6;
+    var foo = new Foo(3);
+    writeln(r1 by foo);
+  }
+}
+
+module M2 {
+  proc main() {
+    import M1.{foo};
+    import M1.foo;
+    writeln("In M2's main.");
+    foo();
+  }
+}
              }
              )"""";
   auto parseResult = parser->parseString("Test4.chpl",
@@ -304,7 +354,7 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("proc foo(X: [?Dlocal] real) {\n}\n", "foo(X: [?Dlocal] real)")
   TEST_USER_STRING("proc baz(A: borrowed C) {\n}\n", "baz(A: borrowed C)")
   TEST_USER_STRING("proc test(const ref arg:unmanaged MyClass) {\n}\n", "test(const ref arg: unmanaged MyClass)")
-  TEST_USER_STRING("inline proc (borrowed object?).hash(): uint {\n}\n", "hash(): uint")
+  TEST_USER_STRING("inline proc (borrowed object?).hash(): uint {\n}\n", "hash()")
   TEST_USER_STRING("proc bark(c = new C()) {\n}\n", "bark(c = new C())")
   TEST_USER_STRING("proc ref C.setClt2(rhs: borrowed C) {\n}\n", "ref C.setClt2(rhs: borrowed C)")
   TEST_USER_STRING("proc main(args: [] string) {\n}", "main(args: [] string)")

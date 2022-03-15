@@ -32,9 +32,9 @@ for loc in Locales {
 for elt in lst {
   if verbose then
     writeln("elt.loc=", elt.loc, " elt!.locale=", elt!.locale,
-            " elt.A.targetLocales= ", elt.A.targetLocales);
+            " elt.A.targetLocales()= ", elt.A.targetLocales());
 
   assert(elt.loc == elt!.locale);
-  assert(elt.A.targetLocales.size == 1);
-  assert(elt.A.targetLocales[0] == elt.loc);
+  assert(elt.A.targetLocales().size == 1);
+  assert(elt.A.targetLocales()[0] == elt.loc);
 }

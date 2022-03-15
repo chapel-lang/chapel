@@ -20,11 +20,11 @@ module unload $(module -t list 2>&1 | grep craype-hugepages)
 module load craype-hugepages16M
 module unload perftools-base
 module unload atp
-module load craype-x86-cascadelake
+module load craype-sandybridge # use craype-x86-cascadelake with 1.26
 
 module list
 
-export CHPL_LAUNCHER_CONSTRAINT=CL48
+export CHPL_LAUNCHER_CONSTRAINT="CL48,192GB"
 export CHPL_LAUNCHER_CORES_PER_LOCALE=96
 export CHPL_LAUNCHER=slurm-srun
 nightly_args="${nightly_args} -no-buildcheck"

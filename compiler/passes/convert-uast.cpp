@@ -186,6 +186,12 @@ struct Converter {
       return new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol);
     } else if (name == USTR("complex")) {
       return new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol);
+    } else if (name == USTR("align")) {
+      return new UnresolvedSymExpr("chpl_align");
+    } else if (name == USTR("by")) {
+      return new UnresolvedSymExpr("chpl_by");
+    } else if (name == USTR("_")) {
+      return new UnresolvedSymExpr("chpl__tuple_blank");
     }
 
     return nullptr;
@@ -744,9 +750,10 @@ struct Converter {
         // TODO: Might need to do something different on this path.
         conv = convertAST(decl);
       }
-
-      INT_ASSERT(conv);
-      decls->insertAtTail(conv);
+      if (!decl->isComment()) {
+        INT_ASSERT(conv);
+        decls->insertAtTail(conv);
+      }
     }
 
     Expr* expr = convertAST(node->expression());
@@ -755,8 +762,41 @@ struct Converter {
     return buildLetExpr(decls, expr);
   }
 
+  /*
+   * This helper checks if a conditional node has an assignment op in its
+   * condition expression, and reproduces an error similar to that in the
+   * old parser
+   * NOTE: This checking should move to the dyno resolver in the future
+   */
+  bool checkAssignConditional(const uast::Conditional* node) {
+    bool assignOp = false;
+    if (node->condition()->isOpCall() ) {
+      auto opCall = node->condition()->toOpCall();
+      auto op = opCall->op();
+      if (op == USTR("=")) {
+        assignOp = true;
+        USR_FATAL_CONT(convertAST(opCall->actual(0)), "Assignment is illegal in a conditional");
+        USR_PRINT(convertAST(opCall->actual(0)), "Use == to check for equality in a conditional");
+      } else if (op == USTR("+=") || op == USTR("-=") || op == USTR("*=")
+                 || op == USTR("/=") || op == USTR("%=") || op == USTR("**=")
+                 || op == USTR("&=") || op == USTR("|=") || op == USTR("^=")
+                 || op == USTR(">>=")|| op == USTR("<<=")) {
+        assignOp = true;
+        USR_FATAL_CONT(convertAST(opCall->actual(0)), "Assignment operation %s is illegal in a conditional",
+                       op.c_str());
+      }
+    }
+    return assignOp;
+  }
+
   Expr* visit(const uast::Conditional* node) {
     INT_ASSERT(node->condition());
+
+    /*
+     * NOTE: we need to check for assignment in conditionals as the old parser
+     * was handling this. In the future, this should move to the dyno resolver
+     */
+    if (checkAssignConditional(node)) USR_STOP();
 
     Expr* ret = nullptr;
 
@@ -913,8 +953,12 @@ struct Converter {
 
     // Simple variables just get reverted to UnresolvedSymExpr.
     if (const uast::Variable* var = node->toVariable()) {
-      return new UnresolvedSymExpr(var->name().c_str());
-
+      auto name = var->name();
+      if (auto remap = reservedWordRemapForIdent(name)) {
+        return remap;
+      } else {
+        return new UnresolvedSymExpr(name.c_str());
+      }
     // For tuples, recursively call 'convertLoopIndexDecl' on each element.
     } else if (const uast::TupleDecl* td = node->toTupleDecl()) {
       CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
@@ -952,16 +996,23 @@ struct Converter {
     bool maybeArrayType = isLoopMaybeArrayType(node);
     bool zippered = node->iterand()->isZip();
 
-      // Unpack things differently if body is a conditional.
-      if (auto origCond = node->stmt(0)->toConditional()) {
-        INT_ASSERT(origCond->numThenStmts() == 1);
-        INT_ASSERT(!origCond->hasElseBlock());
-        expr = singleExprFromStmts(origCond->thenStmts());
+    // Unpack things differently if body is a conditional.
+    if (auto origCond = node->stmt(0)->toConditional()) {
+      INT_ASSERT(origCond->numThenStmts() == 1);
+      // a filter expression
+      if (!origCond->hasElseBlock()) {
         cond = convertAST(origCond->condition());
+        expr = singleExprFromStmts(origCond->thenStmts());
         INT_ASSERT(cond);
       } else {
-        expr = singleExprFromStmts(node->stmts());
+        // not a filter
+        INT_ASSERT(origCond->numElseStmts() == 1);
       }
+    }
+
+    if (!expr) {
+      expr = singleExprFromStmts(node->stmts());
+    }
 
     INT_ASSERT(expr != nullptr);
 
@@ -1028,10 +1079,15 @@ struct Converter {
       // Unpack things differently if body is a conditional.
       if (auto origCond = node->stmt(0)->toConditional()) {
         INT_ASSERT(origCond->numThenStmts() == 1);
-        INT_ASSERT(!origCond->hasElseBlock());
-        body = singleExprFromStmts(origCond->thenStmts());
-        cond = toExpr(convertAST(origCond->condition()));
-      } else {
+        if (!origCond->hasElseBlock()) {
+          body = singleExprFromStmts(origCond->thenStmts());
+          cond = toExpr(convertAST(origCond->condition()));
+        } else {
+          INT_ASSERT(origCond->numElseStmts() == 1);
+        }
+      }
+
+      if (!body) {
         body = singleExprFromStmts(node->stmts());
       }
 
@@ -1737,7 +1793,9 @@ struct Converter {
     } else if (node->expr()->isVariable()) {
         auto child = node->expr()->toVariable();
         return buildForwardingDeclStmt((BlockStmt*)visit(child));
-    } else if (node->expr()->isIdentifier() || node->expr()->isFnCall()) {
+    } else if (node->expr()->isIdentifier()
+               || node->expr()->isFnCall()
+               || node->expr()->isOpCall()) {
       return buildForwardingStmt(convertExprOrNull(node->expr()));
     }
 
@@ -2325,7 +2383,18 @@ struct Converter {
       }
     }
 
-    Expr* initExpr = convertExprOrNull(node->initExpression());
+    Expr* initExpr = nullptr;
+
+    if (const uast::Expression* ie = node->initExpression()) {
+      const uast::BracketLoop* bkt = ie->toBracketLoop();
+      if (bkt && node->kind() == uast::Variable::TYPE) {
+          initExpr = convertArrayType(bkt);
+        } else {
+          initExpr = convertAST(ie);
+        }
+    } else {
+      initExpr = convertExprOrNull(node->initExpression());
+    }
 
     auto ret = new DefExpr(varSym, initExpr, typeExpr);
 

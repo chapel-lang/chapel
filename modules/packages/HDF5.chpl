@@ -3934,7 +3934,7 @@ module HDF5 {
                       " requires a block distributed array argument");
       }
 
-      coforall loc in A.domain.targetLocales do on loc {
+      coforall loc in A.domain.targetLocales() do on loc {
         const locFilename = filename;
         const jobSize = commSize(CHPL_COMM_WORLD),
               jobRank = commRank(CHPL_COMM_WORLD);
@@ -4056,7 +4056,7 @@ module HDF5 {
       if !(isBlock(A.dom.dist) || isCyclic(A.dom.dist)) then
         compilerError("hdf5ReadDistributedArray currently only supports block or cyclic distributed arrays");
 
-      coforall loc in A.targetLocales do on loc {
+      coforall loc in A.targetLocales() do on loc {
         // make sure the file name is local
         var filenameCopy = filename;
         var file_id = C_HDF5.H5Fopen(filenameCopy.c_str(),

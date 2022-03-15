@@ -175,6 +175,9 @@ static chpl_bool envUseTxCntr;          // env: tasks use transmit counters
 static chpl_bool envUseAmTxCntr;        // env: AMH uses transmit counters
 static chpl_bool envUseAmRxCntr;        // env: AMH uses receive counters
 static chpl_bool envProgressCntr;       // env: counters must be progressed
+static chpl_bool envInjectRMA;          // env: inject RMA messages
+static chpl_bool envInjectAMO;          // env: inject AMO messages
+static chpl_bool envInjectAM;           // env: inject AM messages
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -1014,6 +1017,10 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   envProgressCntr = chpl_env_rt_get_bool("COMM_OFI_PROGRESS_COUNTER", false);
 
   envUseCxiHybridMR = chpl_env_rt_get_bool("COMM_OFI_CXI_HYBRID_MR", true);
+
+  envInjectRMA = chpl_env_rt_get_bool("COMM_OFI_INJECT_RMA", true);
+  envInjectAMO = chpl_env_rt_get_bool("COMM_OFI_INJECT_AMO", true);
+  envInjectAM = chpl_env_rt_get_bool("COMM_OFI_INJECT_AM", true);
   //
   // The user can specify the provider by setting either the Chapel
   // CHPL_RT_COMM_OFI_PROVIDER environment variable or the libfabric
@@ -3285,7 +3292,8 @@ void init_fixedHeap(void) {
     for (info = infoList; info != NULL; info = info->next) {
       if (isGoodCoreProvider(info)
           && (!isInProvider("verbs", info)
-              || !isInProvider("ofi_rxd", info))) {
+              || !isInProvider("ofi_rxd", info))
+          && isUseableProvider(info)) {
         break;
       }
     }
@@ -4326,7 +4334,8 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     // just collect the completion later.  Otherwise, wait for it here.
     //
     if (!blocking
-        && reqSize <= ofi_info->tx_attr->inject_size) {
+        && reqSize <= ofi_info->tx_attr->inject_size
+        && envInjectAM) {
       void* ctx = txnTrkEncodeId(__LINE__);
       uint64_t flags = FI_FENCE | FI_INJECT;
       (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
@@ -4394,7 +4403,8 @@ void amReqFn_msgOrd(c_nodeid_t node,
   }
 
   if (!blocking
-      && reqSize <= ofi_info->tx_attr->inject_size) {
+      && reqSize <= ofi_info->tx_attr->inject_size
+      && envInjectAM) {
     //
     // Special case: injection is the quickest.  We use that if this is
     // a non-blocking AM and the size doesn't exceed the injection size
@@ -4423,8 +4433,10 @@ static
 void amReqFn_dlvrCmplt(c_nodeid_t node,
                        amRequest_t* req, size_t reqSize, void* mrDesc,
                        chpl_bool blocking, struct perTxCtxInfo_t* tcip) {
-  if (!blocking && (reqSize <= ofi_info->tx_attr->inject_size) &&
-      (ofi_info->tx_attr->msg_order & FI_ORDER_SAS)) {
+  if (!blocking
+      && (reqSize <= ofi_info->tx_attr->inject_size)
+      && (ofi_info->tx_attr->msg_order & FI_ORDER_SAS)
+      && envInjectAM) {
 
     /*
     Special case: injection is the quickest.  We use that if this is a
@@ -5063,9 +5075,14 @@ void amPutDone(c_nodeid_t node, amDone_t* pAmDone) {
 
   uint64_t mrKey = 0;
   uint64_t mrRaddr = 0;
+  uint64_t flags = 0;
+
+  if (envInjectRMA) {
+    flags = FI_INJECT;
+  }
   CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, pAmDone, sizeof(*pAmDone)));
   ofi_put_lowLevel(amDone, mrDesc, node, mrRaddr, mrKey, sizeof(*pAmDone),
-                   txnTrkEncodeId(__LINE__), FI_INJECT, tcip);
+                   txnTrkEncodeId(__LINE__), flags, tcip);
 
   if (amTcip == NULL) {
     tciFree(tcip);
@@ -5718,7 +5735,8 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
   if (tcip->bound
       && size <= ofi_info->tx_attr->inject_size
       && (tcip->amoVisBitmap == NULL
-          || !bitmapTest(tcip->amoVisBitmap, node))) {
+          || !bitmapTest(tcip->amoVisBitmap, node))
+      && envInjectRMA) {
     //
     // Special case: write injection has the least latency.  We can use
     // that if this PUT doesn't need a fence, its size doesn't exceed
@@ -5739,7 +5757,8 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
       // be able to inject the PUT, though.
       //
       uint64_t flags = FI_FENCE;
-      if (size <= ofi_info->tx_attr->inject_size) {
+      if (size <= ofi_info->tx_attr->inject_size
+          && envInjectRMA) {
         flags |= FI_INJECT;
       }
       (void) wrap_fi_writemsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
@@ -5791,7 +5810,8 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrd(void* myAddr, void* mrDesc,
   //
 
   if (tcip->bound
-      && size <= ofi_info->tx_attr->inject_size) {
+      && size <= ofi_info->tx_attr->inject_size
+      && envInjectRMA) {
     //
     // Special case: write injection has the least latency.  We can use
     // that if this PUT's size doesn't exceed the injection size limit
@@ -5920,7 +5940,8 @@ void ofi_put_lowLevel(const void* addr, void* mrDesc, c_nodeid_t node,
                       void* ctx, uint64_t flags,
                       struct perTxCtxInfo_t* tcip) {
   if (flags == FI_INJECT
-      && size <= ofi_info->tx_attr->inject_size) {
+      && size <= ofi_info->tx_attr->inject_size
+      && envInjectRMA) {
     (void) wrap_fi_inject_write(addr, node, mrRaddr, mrKey, size, tcip);
   } else if (flags == 0) {
     (void) wrap_fi_write(addr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
@@ -5960,7 +5981,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   }
 
   for (int vi = 0; vi < v_len; vi++) {
-    (void) wrap_fi_writemsg(addr_v[vi], &local_mr_v[vi],
+    (void) wrap_fi_writemsg(addr_v[vi], local_mr_v[vi],
                             locale_v[vi],
                             (uint64_t) raddr_v[vi], remote_mr_v[vi],
                             size_v[vi], txnTrkEncodeId(__LINE__),
@@ -6551,7 +6572,8 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
       && tcip->bound
       && ab->size <= ofi_info->tx_attr->inject_size
       && (tcip->putVisBitmap == NULL
-          || !bitmapTest(tcip->putVisBitmap, ab->node))) {
+          || !bitmapTest(tcip->putVisBitmap, ab->node))
+      && envInjectAMO) {
     //
     // Special case: injection is the quickest.  We can use that if
     // this is a non-fetching operation, we have a bound tx context so
@@ -6582,7 +6604,8 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
       // AMO.  We may still be able to inject the AMO, however.
       //
       uint64_t flags = FI_FENCE;
-      if (ab->size <= ofi_info->tx_attr->inject_size) {
+      if (ab->size <= ofi_info->tx_attr->inject_size
+          && envInjectAMO) {
         flags |= FI_INJECT;
       }
       (void) wrap_fi_atomicmsg(ab, flags, tcip);
@@ -6630,7 +6653,8 @@ chpl_comm_nb_handle_t amoFn_msgOrd(struct amoBundle_t *ab,
 
   if (tcip->bound
       && ab->iovRes.addr == NULL
-      && ab->size <= ofi_info->tx_attr->inject_size) {
+      && ab->size <= ofi_info->tx_attr->inject_size
+      && envInjectAMO) {
     //
     // Special case: injection is the quickest.  We can use that if this
     // is a non-fetching operation, we have a bound tx context so we can

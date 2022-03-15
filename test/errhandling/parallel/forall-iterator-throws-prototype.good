@@ -1,0 +1,4 @@
+before forall block
+uncaught Error: abc
+  forall-iterator-throws-prototype.chpl:4: thrown here
+  forall-iterator-throws-prototype.chpl:21: uncaught here

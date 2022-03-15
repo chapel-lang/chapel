@@ -1,7 +1,0 @@
-bug: throwing within a forall in a function not caught in try/catch
-
-This test exhibits a behavior in which throwing within a forall in
-a function will not be caught, even if the function call is wrapped
-in a try/catch.
-
-#19378

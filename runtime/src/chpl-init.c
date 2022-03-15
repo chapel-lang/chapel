@@ -28,6 +28,7 @@
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"
+#include "chpl-gpu.h"
 #include "chpl-init.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
@@ -280,6 +281,10 @@ void chpl_rt_init(int argc, char* argv[]) {
   chpl_comm_post_task_init();
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_init();
+#endif
+
+#ifdef HAS_GPU_LOCALE
+  chpl_gpu_init();
 #endif
   chpl_comm_rollcall();
 

@@ -94,7 +94,7 @@ module elemental_cholesky_symmetric_index_ranges_block {
     // processor grid from A's distribution
     // --------------------------------------------
 
-    const A_locale_grid = A.domain.dist.targetLocales; // block version
+    const A_locale_grid = A.domain.dist.targetLocales(); // block version
     const A_grid_domain = A_locale_grid.domain,
           n_processors  = A_grid_domain.size;
 

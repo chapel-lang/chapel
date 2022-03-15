@@ -1,0 +1,3 @@
+warning: 'sizeReturnsInt' is deprecated and no longer has an effect
+note: 'sizeReturnsInt' was set via a compiler flag
+10
