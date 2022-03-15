@@ -21,7 +21,7 @@ proc main() {
 }
 
 proc kernel1for(A) {
-  for i in vectorizeOnly(1..n) {
+  foreach i in 1..n {
     A[i] = i;
   }
 }
@@ -33,7 +33,7 @@ proc kernel1forall(A) {
 }
 
 proc kernel2for(A) {
-  for i in vectorizeOnly(1..n) {
+  foreach i in 1..n {
     A[i] = sqrt(i:real);
   }
 }
@@ -45,7 +45,7 @@ proc kernel2forall(A) {
 }
 
 proc kernel4for(A, B, C) {
-  for i in vectorizeOnly(1..n) {
+  foreach i in 1..n {
     A[i] = B[i] + C[i];
   }
 }

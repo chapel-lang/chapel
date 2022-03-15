@@ -13,7 +13,7 @@ proc end_block() {}
 
 proc loop (A, B, n) {
   //CHECK-LABEL: void @loop
-  for i in vectorizeOnly(1..n) {
+  foreach i in 1..n {
     // CHECK-LABEL: start_block
     start_block();
     // Make sure metadata is generated at start of loop

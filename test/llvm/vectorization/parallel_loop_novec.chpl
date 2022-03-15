@@ -3,7 +3,7 @@
 proc loop (A, B, C, D) {
   // CHECK-NOT: <4 x i32>
   var sum : int(32) = 0;
-  for i in vectorizeOnly(0..511) {
+  foreach i in 0..511 {
      if(C[i] < D[i]) {
        sum += C[i]+5;
      }

@@ -1927,7 +1927,7 @@ module ShallowCopy {
                                        /*src*/ A, {src..#nElts});
       if !ok {
         halt("bulk transfer failed in sorting");
-        for i in vectorizeOnly(0..#nElts) {
+        foreach i in 0..#nElts {
           __primitive("=", A[dst+i], A[src+i]);
         }
       }
@@ -1954,7 +1954,7 @@ module ShallowCopy {
                                        /*src*/ SrcA, {src..#nElts});
       if !ok {
         halt("bulk transfer failed in sorting");
-        for i in vectorizeOnly(0..#nElts) {
+        foreach i in 0..#nElts {
           __primitive("=", DstA[dst+i], SrcA[src+i]);
         }
       }
@@ -2358,7 +2358,7 @@ module TwoArrayPartitioning {
         counts[bin] += 1;
       }
       // Now store the counts into the global counts array
-      for bin in vectorizeOnly(0..#nBuckets) {
+      foreach bin in 0..#nBuckets {
         state.globalCounts[bin*nTasks + tid] = counts[bin];
       }
     }
