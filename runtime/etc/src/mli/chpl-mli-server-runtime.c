@@ -74,8 +74,10 @@ void chpl_mli_smain(const char* setup_conn) {
   int64_t ack = 0;
   int execute = 1;
   int err = 0;
+#ifdef CHPL_MLI_DEBUG_PRINT
   clock_t before = clock();
   double seconds = 0;
+#endif
 
   chpl_mli_server_init(&chpl_server);
 
@@ -139,7 +141,9 @@ void chpl_mli_smain(const char* setup_conn) {
 
   chpl_mli_debugf("Shutdown, code: %s\n", chpl_mli_errstr(id));
 
+#ifdef CHPL_MLI_DEBUG_PRINT
   seconds = (double) (clock() - before) / (double) CLOCKS_PER_SEC;
+#endif
 
   chpl_mli_close(chpl_server.setup_sock);
   chpl_mli_close(chpl_server.main);
