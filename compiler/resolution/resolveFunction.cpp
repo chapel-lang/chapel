@@ -858,7 +858,7 @@ static void markIteratorAndLoops(FnSymbol* fn, CallExpr* call) {
   if (fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS)) {
     USR_WARN(call, "'vectorizeOnly()' is deprecated; please use 'foreach' loops instead");
   }
-  
+
   std::vector<CallExpr*> callExprs;
 
   collectCallExprs(fn->body, callExprs);
