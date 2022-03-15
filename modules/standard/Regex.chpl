@@ -341,6 +341,7 @@ Regular Expression Types and Methods
  */
 module Regex {
   private use SysBasic, SysError, CTypes;
+  config param searchReturnsByteIndex = false;
 
 pragma "no doc"
 extern type qio_regex_t;
@@ -783,14 +784,37 @@ record regex {
                where a match occurred
 
     */
-  proc search(text: exprType, ref captures ...?k):regexMatch
+  //proc search(text: exprType, ref captures ...?k):regexMatch
+
+  proc search(text: exprType, ref captures ...?k)
   {
-    return _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, true, captures);
+    if (searchReturnsByteIndex == false) {
+      return _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, true, captures);
+    } else {
+      var rm = _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, true, captures);
+      return rm.byteOffset; 
+    }
   }
 
   // documented in the captures version
   pragma "no doc"
-  proc search(text: exprType):regexMatch
+  proc search(text: exprType)
+  {
+    if (searchReturnsByteIndex == false) {
+      return searchRegexMatch(text);
+    } else {
+      return searchByteIndex(text);
+    }
+  }
+
+  proc searchByteIndex(text: exprType):byteIndex
+  {
+    var dummy: int;
+    var rm = _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy);
+    return rm.byteOffset;
+  }
+
+  proc searchRegexMatch(text: exprType):regexMatch
   {
     var dummy: int;
     return _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy);
@@ -1223,7 +1247,7 @@ pragma "last resort"
 deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
 proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
 {
-  return needle.search(this, (...captures));
+  return needle.search_rematch(this, (...captures));
 }
 
 /* Search the receiving bytes for a regular expression already compiled
