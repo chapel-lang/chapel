@@ -295,8 +295,8 @@ when one type is a subtype of another.
    *Example (subtype-three.chpl)*.
 
    This example demonstrates a combination of all three rules. Note that
-   ``ParentClass`` is a generic type because it has generic memory
-   management strategy (:ref:`Class_Types`).
+   ``ParentClass`` indicates a generic memory management strategy
+   (:ref:`Class_Types`).
 
    .. code-block:: chapel
 
