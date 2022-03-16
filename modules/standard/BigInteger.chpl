@@ -3341,16 +3341,16 @@ module BigInteger {
      This fulfills the same role as the GMP function ``mpz_gcdext``.
 
      :arg a: One of the numbers to compute the greatest common divisor of
-     :type a: ``bigint``
+     :type a: :record:`bigint`
 
      :arg b: One of the numbers to compute the greatest common divisor of
-     :type b: ``bigint``
+     :type b: :record:`bigint`
 
      :arg s: The returned coefficient that can be multiplied by ``a``.
-     :type s: ``bigint``
+     :type s: :record:`bigint`
 
      :arg t: The returned coefficient that can be multiplied by ``b``.
-     :type t: ``bigint``
+     :type t: :record:`bigint`
    */
   proc bigint.gcd(const ref a: bigint, const ref b: bigint,
                   ref s: bigint, ref t: bigint): void {
