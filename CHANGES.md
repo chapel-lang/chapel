@@ -59,6 +59,7 @@ Deprecated / Removed Library Features
    and https://chapel-lang.org/docs/1.26/modules/standard/CPtr.html)
 * deprecated the automatic 'ChapelEnv' module in favor of 'ChplConfig'  
   (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html)
+* deprecated binary conversion format strings in 'FormattedIO.readf'/'writef'
 * deprecated support for the 'vectorizeOnly' iterator  
   (see https://chapel-lang.org/docs/1.26/modules/standard/VectorizingIterator.html)
 * removed support for the previously deprecated 'range.ident()' method
@@ -81,6 +82,8 @@ Standard Domain Maps (Layouts and Distributions)
 
 Tool Improvements
 -----------------
+* added a script for displaying available runtime configurations  
+  (see '$CHPL_HOME/util/chplenv/printchplbuilds.py')
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -103,6 +106,7 @@ Example Codes
 
 Portability
 -----------
+* implemented several portability improvements for 'CHPL_COMM=ofi'
 
 GPU Computing
 -------------
@@ -125,7 +129,7 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * added an error when applying 'override' to a non-method
-* added an error when using CHPL_LLVM=none with CHPL_TARGET_COMPILER=llvm
+* added an error when using 'CHPL_LLVM=none' with 'CHPL_TARGET_COMPILER=llvm'
 
 Bug Fixes
 ---------
@@ -149,6 +153,7 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of 'libfabric' to version 1.13.2
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -179,6 +184,20 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* implemented several improvements for 'CHPL_COMM=ofi'
+  - changed fetching AMOs to return the result via an active message (AM)
+  - implemented completion counters
+  - added support for per-endpoint address vectors
+  - added the device name to a Chapel executable's '--verbose' output
+  - made use of the hybrid memory registration mode with the 'cxi' provider
+  - added environment variables to control the use of 'fi_inject'
+
+Developer-oriented changes: Platform-specific bug fixes
+-------------------------------------------------------
+* implemented various portability improvements for 'CHPL_COMM=ofi':
+  - ensured that AM receive endpoints progress while transmitting in 'ofi'
+  - cleared 'FI_INJECT' in 'wrap_fi_writemsg' for large messages
+  - fixed the type of the second argument to 'wrap_fi_writemsg'
 
 Developer-oriented changes: Testing System
 ------------------------------------------
