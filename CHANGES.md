@@ -1,16 +1,6 @@
 Release Changes List
 ====================
 
-[*** Tips for contributors:
- - Please provide documentation links using the following base URL:
-   https://chapel-lang.org/docs/1.26/
-  - If you've merged a PR by an external developer, please make sure I
-    add their name to the CONTRIBUTORS file
-  - The first several categories here are for things that a user would
-    care about or could perceive; things that are specific to
-    developers follow at the end.
-  - See the descriptions following each section for how I think of them
-    when deciding where to place items
 
 version 1.26.0
 ==============
@@ -19,198 +9,177 @@ Twenty-ninth public release of Chapel, March 31, 2022
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
-[feel free to leave this to me to roll up]
 
 Packaging / Configuration Changes
 ---------------------------------
-[user-facing changes to how we bundle, distribute, configure Chapel releases]
 
 Syntactic / Naming Changes
 --------------------------
-[user-facing changes to syntax or names of things in the language]
+* extended the set of statement types to which 'try'/'try!' can be applied
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-[changes to existing language features]
+* '.size'/'.shape' queries on ranges, domains, arrays now return 'int's
+  (see https://chapel-lang.org/docs/1.26/builtins/ChapelRange.html#ChapelRange.range.size)
+* '.indices' queries on rectangular arrays now return a local domain of indices  
+  (see https://chapel-lang.org/docs/1.26/language/spec/arrays.html#ChapelArray.indices)
+* stopped auto-creating 'hash()' methods for records w/ custom '=='/'!=' ops  
+  (see https://chapel-lang.org/docs/1.26/language/spec/records.html#hashing-a-record)
 
 New Features
 ------------
-[brand new language features that did not exist before]
+* added support for renaming 'extern type' declarations  
+  (e.g., 'extern "c_name" type chpl_name = ...;'  
+   see https://chapel-lang.org/docs/1.26/language/spec/interoperability.html#referring-to-external-c-types)
 
 Feature Improvements
 --------------------
-[improvements to existing features that didn't change their behavior]
+* extended hash-based collections to support values of range/array type
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
-[language features that have been deprecated, marked unstable, or removed]
+* deprecated support for arrays over bracket-less anonymous associative arrays  
+  (e.g., in 'var A: ["red", "green", "blue"] real;', brackets are now required)
+* deprecated support for 'ChapelEnv.CHPL_AUX_FILESYS'
+* removed all vestiges of the 'atomic' statement
 
 Namespace Changes
 -----------------
-[changes to language-level namespaces (typically moving things from
-internal modules to standard or package)]
 
 Name Changes in Libraries
 -------------------------
-[changes of user-facing names in standard or package modules]
+* renamed C type aliases 'size_t'/'ssize_t' to 'c_size_t'/'c_ssize_t'
 
 Deprecated / Removed Library Features
 -------------------------------------
-[deprecated or removed features within standard or package modules]
+* deprecated C type aliases defined in modules other than 'CTypes'
+* deprecated the automatic 'ChapelEnv' module in favor of 'ChplConfig'  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html)
+* deprecated support for the 'vectorizeOnly' iterator
+* removed support for the previously deprecated 'range.ident()' method
 
 Standard Library Modules
 ------------------------
-[improvements or changes to standard modules]
+* added a new 'CTypes' module that defines Chapel aliases for C types
+* updated 'Math.cproj()' to return a 'complex' rather than 'real' value
+* enabled 'min()'/'max()' routines to be promoted using array arguments
+* added support for a standalone (channel-less) 'IO.readline()' routine
 
 Package Modules
 ---------------
-[improvements or changes to package modules]
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
-[improvements or changes to standard domain map modules]
 
 Tool Improvements
 -----------------
-[improvements to the tools (mason, c2chapel, chplvis, etc.)]
 
 Performance Optimizations / Improvements
 ----------------------------------------
-[improvements to performance of generated executables]
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
-[improvements in compile-time or generated code]
 
 Memory Improvements
 -------------------
-[improvements in memory utilization of generated executables]
+* eliminated a modest amount of memory allocated when iterating over types
 
 Documentation
 -------------
-[improvements to user-facing documentation]
 
 Syntax Highlighting
 -------------------
-[improvements to our syntax highlighters]
 
 Example Codes
 -------------
-[improvements or changes to test/release/examples/*]
 
 Portability
 -----------
-[improvements in terms of the portability of Chapel]
 
 GPU Computing
 -------------
-[improvements in Chapel's ability to target GPUs]
 
 Compiler Improvements
 ---------------------
-[improvements to the compiler that a user would care about or notice]
 
 Compiler Flags
 --------------
-[changes to user-facing compiler flags]
 
 Generated Executable Flags
 --------------------------
-[changes to flags on the generated executables]
 
 Runtime Library Changes
 -----------------------
-[user-facing changes to the runtime library]
 
 Launchers
 ---------
-[user-facing changes to the launchers]
 
 Error Messages / Semantic Checks
 --------------------------------
-[improvements to, or new, error messages or semantic checks]
+* added an error when applying 'override' to a non-method
+* added an error when using CHPL_LLVM=none with CHPL_TARGET_COMPILER=llvm
 
 Bug Fixes
 ---------
-[general bug fixes]
+* fixed a bug preventing 'const in' task intents from being used with arrays
+* fixed a bug in which first-class functions failed to retain return intents
+* fixed a bug in which 'require foo.chpl;' in implicitly used modules failed
+* fixed a bug when calling '.localSlice()' on a slice of a default array
 
 Bug Fixes for Build Issues
 --------------------------
-[bug fixes w.r.t. building Chapel]
 
 Bug Fixes for Libraries
 -----------------------
-[bug fixes w.r.t. the standard/package modules]
 
 Bug Fixes for Tools
 -------------------
-[bug fixes w.r.t. the tools]
+* fixed the naming of 'CHPL_' variables in the output of 'chpl --help-env'
 
 Platform-specific Bug Fixes
 ---------------------------
-[bug fixes that are specific to a given platform]
 
 Third-Party Software Changes
 ----------------------------
-[changes to our bundled third-party software]
-
-[*** The following categories are for things that aren't particularly
-interesting to the end-user, but might be to an external developer
-***]
 
 Developer-oriented changes: Process
 -----------------------------------
-[changes to our process that an external developer would need to know]
 
 Developer-oriented changes: Documentation
 -----------------------------------------
-[changes to documentation that's targeted at developers]
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
-[changes to names that are not user-facing that a developer may want to know]
 
 Developer-oriented changes: Module changes
 ------------------------------------------
-[changes to internal modules, or to other modules that are not user-facing]
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
-[changes to performance that are not user-facing (e.g., enabled by a
-developer flag?)]
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
-[changes to the makefiles or how we build that another developer
-might care about]
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
-[additions or changes to developer-only compiler flags]
+* added support for a '-j'/'--parallel-make' flag for the C back-end
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
-[improvements or major changes to the compiler that another developer
-might care about]
+* updated '--incremental' to compile each module's '.c' file indepdently
+* enabled support for 'make -j' using the C back-end via '-j' / '--incremental'
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
-[improvements or major changes to the runtime that another developer
-might care about]
 
 Developer-oriented changes: Testing System
 ------------------------------------------
-[improvements or major changes to the test system that another
-developer might care about]
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
-[improvements or major changes to a tool that another developer might
-care about]
 
 Developer-oriented changes: Utilities
 -------------------------------------
-[changes to utility scripts that another developer might care about]
 
 
 version 1.25.1
