@@ -23,6 +23,7 @@ Communication (Inter-Locale)
 .. toctree::
    :maxdepth: 1
 
+   AllLocalesBarriers <packages/AllLocalesBarriers>
    CopyAggregation <packages/CopyAggregation>
    MPI <packages/MPI>
    UnorderedAtomics <packages/UnorderedAtomics>
@@ -89,8 +90,8 @@ Parallel Computing
 .. toctree::
    :maxdepth: 1
 
-   AllLocalesBarriers <packages/AllLocalesBarriers>
    AtomicObjects <packages/AtomicObjects>
+   Channel <packages/Channel>
    Futures <packages/Futures>
 
 Tool Support
