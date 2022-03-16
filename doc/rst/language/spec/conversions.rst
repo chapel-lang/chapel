@@ -179,7 +179,7 @@ subtype of the target type.
 Given any two types ``T1`` and ``T2``, the type ``T1`` is considered to be a
 subtype of a type ``T2`` if:
 
- * ``T2`` is a generic type (:ref:`Generic_Types`) and the ``T1`` is an
+ * ``T2`` is a generic type (:ref:`Generic_Types`) and ``T1`` is an
    instantiation that type
  * ``T1`` is a class type that inherits from the the class ``T2``
    (:ref:`Inheritance`)
@@ -295,9 +295,8 @@ when one type is a subtype of another.
    *Example (subtype-three.chpl)*.
 
    This example demonstrates a combination of all three rules. Note that
-   ``ParentClass`` is a generic type meaning the class type
-   ``ParentClass`` with any memory management strategy
-   (:ref:`Class_Types`).
+   ``ParentClass`` is a generic type because it has generic memory
+   management strategy (:ref:`Class_Types`).
 
    .. code-block:: chapel
 
