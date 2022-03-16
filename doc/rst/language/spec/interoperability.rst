@@ -216,10 +216,10 @@ either be expressed:
   .. note::
 
      Note that a challenge to this last approach is that certain C
-     types—particularly integers—can vary in size between
-     implementations, making the second approach safer from a
-     portability perspective, when applicable.
-
+     types—particularly integers—can vary in size across
+     implementations.  As a result, using the type aliases in
+     :mod:`CTypes` for such cases is safer from a portability
+     perspective.
 
 .. _Referring_to_External_C_Types:
 
@@ -243,10 +243,6 @@ for an external type must be supplied by a C header file named on the
 If an optional ``external-name`` is supplied, it provides the name of
 the symbol(s) in C, where the given Chapel identifier(s) are used to
 refer to them within Chapel code.
-
-is the name
-used when interacting with external code, while it is used
-verbatim as the name of the external type alias.
 
 Fixed-size C array types can be described within Chapel using its
 homogeneous tuple type. For example, the C typedef 
