@@ -19,10 +19,10 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-* '.size'/'.shape' queries on ranges, domains, arrays now return 'int's
-  (see https://chapel-lang.org/docs/1.26/builtins/ChapelRange.html#ChapelRange.range.size)
 * '.indices' queries on rectangular arrays now return a local domain of indices  
   (see https://chapel-lang.org/docs/1.26/language/spec/arrays.html#ChapelArray.indices)
+* '.size'/'.shape' queries on ranges, domains, arrays now return 'int's  
+  (see https://chapel-lang.org/docs/1.26/builtins/ChapelRange.html#ChapelRange.range.size)
 * stopped auto-creating 'hash()' methods for records w/ custom '=='/'!=' ops  
   (see https://chapel-lang.org/docs/1.26/language/spec/records.html#hashing-a-record)
 
@@ -30,7 +30,7 @@ New Features
 ------------
 * added support for renaming 'extern type' declarations  
   (e.g., 'extern "c_name" type chpl_name = ...;'  
-   see https://chapel-lang.org/docs/1.26/language/spec/interoperability.html#referring-to-external-c-types)
+   see also https://chapel-lang.org/docs/1.26/language/spec/interoperability.html#referring-to-external-c-types)
 
 Feature Improvements
 --------------------
@@ -40,7 +40,8 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * deprecated support for arrays over bracket-less anonymous associative arrays  
   (e.g., in 'var A: ["red", "green", "blue"] real;', brackets are now required)
-* deprecated support for 'ChapelEnv.CHPL_AUX_FILESYS'
+* deprecated support for 'ChapelEnv.CHPL_AUX_FILESYS'  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html#ChplConfig.CHPL_AUX_FILESYS)
 * removed all vestiges of the 'atomic' statement
 
 Namespace Changes
@@ -48,22 +49,29 @@ Namespace Changes
 
 Name Changes in Libraries
 -------------------------
-* renamed C type aliases 'size_t'/'ssize_t' to 'c_size_t'/'c_ssize_t'
+* renamed C type aliases 'size_t'/'ssize_t' to 'c_size_t'/'c_ssize_t'  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/CTypes.html#CTypes.c_size_t)
 
 Deprecated / Removed Library Features
 -------------------------------------
-* deprecated C type aliases defined in modules other than 'CTypes'
+* deprecated C type aliases defined in modules other than 'CTypes'  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/SysCTypes.html,  
+   and https://chapel-lang.org/docs/1.26/modules/standard/CPtr.html)
 * deprecated the automatic 'ChapelEnv' module in favor of 'ChplConfig'  
   (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html)
-* deprecated support for the 'vectorizeOnly' iterator
+* deprecated support for the 'vectorizeOnly' iterator  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/VectorizingIterator.html)
 * removed support for the previously deprecated 'range.ident()' method
 
 Standard Library Modules
 ------------------------
-* added a new 'CTypes' module that defines Chapel aliases for C types
-* updated 'Math.cproj()' to return a 'complex' rather than 'real' value
+* added a new 'CTypes' module that defines Chapel aliases for C types  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/CTypes.html)
 * enabled 'min()'/'max()' routines to be promoted using array arguments
-* added support for a standalone (channel-less) 'IO.readline()' routine
+* updated 'Math.cproj()' to return a 'complex' rather than 'real' value  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Math.html#Math.cproj)
+* added support for a standalone (channel-less) 'IO.readline()' routine  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/IO.html#IO.readline)
 
 Package Modules
 ---------------
@@ -122,9 +130,9 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed a bug preventing 'const in' task intents from being used with arrays
-* fixed a bug in which first-class functions failed to retain return intents
-* fixed a bug in which 'require foo.chpl;' in implicitly used modules failed
 * fixed a bug when calling '.localSlice()' on a slice of a default array
+* fixed a bug in which 'require foo.chpl;' was ignored within implicit modules 
+* fixed a bug in which first-class functions failed to retain return intents
 
 Bug Fixes for Build Issues
 --------------------------
