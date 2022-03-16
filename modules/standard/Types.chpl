@@ -914,7 +914,8 @@ inline proc _bxor_id(type t) return 0:t;
 // and only used for chpldoc.
 
 /* Returns `true` if the type `from` is coercible to the type `to`,
-   or if ``isSubtype(from, to)`` would return `true`.
+   or if ``isSubtype(from, to)`` would return `true`. See
+   :ref:`Implicit_Conversion_Call`.
  */
 pragma "docs only"
 proc isCoercible(type from, type to) param {
@@ -922,11 +923,15 @@ proc isCoercible(type from, type to) param {
 }
 
 /* Returns `true` if the type `sub` is a subtype of the type `super`.
+   See also :ref:`Subtype`.
+
    In particular, returns `true` in any of these cases:
 
      * `sub` is the same type as `super`
      * `sub` is an instantiation of a generic type `super`
      * `sub` is a class type inheriting from `super`
+     * `sub` is non-nilable class type and `super` is the nilable version of the
+       same class type
 
    Note that ``isSubtype(a,b)`` can also be written as
    ``a <= b`` or ``b >= a``.

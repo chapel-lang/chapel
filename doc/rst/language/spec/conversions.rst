@@ -135,16 +135,24 @@ conversions from ``real`` or ``imag`` to ``complex``.
 Implicit Class Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An expression of class type can be implicitly converted to the borrow
-type; to a nilable type; or to a parent class type. The value ``nil``
-can be implicitly converted to any nilable class type.
+An expression of class type can be implicitly converted to:
+ * to a parent class type,
+ * to a nilable type, or
+ * to the borrow type.
 
-First, class types can be converted to the corresponding ``borrowed``
-type. For example, ``owned C`` can be implicitly converted to
-``borrowed C``, and ``shared C?`` can be implicitly converted to
-``borrowed C?``. This coercion is equivalent to calling the
-``.borrow()`` method. See :ref:`Class_Lifetime_and_Borrows`.
-For example:
+Any combination of these three conversions is allowed.
+
+The value ``nil`` can be implicitly converted to any nilable class type.
+
+Conversion to a parent class type or to a nilable type is a subtype
+conversion and is discussed in the next section
+(:ref:`Subtype_Arg_Conversions`).
+
+Class types can be converted to the corresponding ``borrowed`` type. For
+example, ``owned C`` can be implicitly converted to ``borrowed C``, and
+``shared C?`` can be implicitly converted to ``borrowed C?``. This
+coercion is equivalent to calling the ``.borrow()`` method.
+See :ref:`Class_Lifetime_and_Borrows`.  For example:
 
    *Example (implicit-conversion-to-borrow.chpl)*.
 
@@ -156,28 +164,8 @@ For example:
       proc f(arg: borrowed C) { }
       f(c); // equivalent to f(c.borrow())
 
-Second, an expression of non-nilable class type can be implicitly
-converted to the nilable class type. Continuing the above example:
 
-   *Example (implicit-conversion-to-nilable.chpl)*.
-
-   .. BLOCK-test-chapelpre
-
-      class C { }
-      var c:owned C = new owned C();
-
-   .. code-block:: chapel
-
-      var b:borrowed C = c.borrow();
-
-      proc g(arg: borrowed C?) { }
-      g(b); // equivalent to g(b:borrowed C?)
-
-Third, an implicit conversion from class type ``D`` to another class
-type ``C`` is allowed when ``D`` is a subclass of ``C``.
-
-Any combination of these three conversions is allowed.
-
+.. _Subtype:
 .. _Subtype_Arg_Conversions:
 .. _Implicit_Type_Arg_Conversions:
 .. _Implicit_Generic_Type_Conversions:
@@ -191,48 +179,142 @@ subtype of the target type.
 Given any two types ``T1`` and ``T2``, the type ``T1`` is considered to be a
 subtype of a type ``T2`` if:
 
- * ``T2`` is a generic type (:ref:`Generic_Types`) and
-   the ``T1`` is an instantiation that type
+ * ``T2`` is a generic type (:ref:`Generic_Types`) and the ``T1`` is an
+   instantiation that type
  * ``T1`` is a class type that inherits from the the class ``T2``
- * or a combination of the two.
+   (:ref:`Inheritance`)
+ * ``T1`` is a non-nilable class type (e.g. ``borrowed C``) and ``T2`` is
+   the nilable version of the same class type (e.g. ``borrowed C?``)
+   (:ref:`Nilable_Classes`)
+ * or a combination of the above.
 
-The below examples with the ``type`` intent demonstrate implicit subtype
-conversions.
+The below examples use :proc:`isSubtype <Types.isSubtype>` to demonstrate
+when one type is a subtype of another.
 
-   *Example (type-argument-conversion-error.chpl)*
+   *Example (not-a-subtype.chpl)*
 
-   The following code defines a function ``f`` accepting ``type t: int``
-   and then tries to pass ``int(8)`` to it. This will not compile,
-   because while an ``int(8)`` value can be implicitly converted to
-   ``int``, ``int(8)`` is not a subtype of ``int``.
+   The following code snippet demonstrates that ``int(8)`` is not a
+   subtype of ``int``. Note that, even though an ``int(8)`` value can be
+   implicitly converted to ``int``, ``int(8)`` is not a subtype of
+   ``int``.
+
+   .. BLOCK-test-chapelpre
+
+      param x =
 
    .. code-block:: chapel
 
-      proc f(type t: int) { }
-      f(int(8));
+      isSubtype(int(8), int); // evaluates to false
+
+   .. BLOCK-test-chapelpost
+
+      writeln(x);
 
    .. BLOCK-test-chapeloutput
 
-      type-argument-conversion-error.chpl:2: error: unresolved call 'f(type int(8))'
-      type-argument-conversion-error.chpl:1: note: this candidate did not match: f(type t: int)
-      type-argument-conversion-error.chpl:2: note: because actual argument #1 with type 'int(8)'
-      type-argument-conversion-error.chpl:1: note: is passed to formal 't: int(64)'
+      false
 
-   *Example (type-argument-conversion.chpl)*
+   *Example (subtype-int8-integral.chpl)*
 
-   In contrast, this code demonstrates an implicit conversion that
-   does succeed because a child class is a subtype of a parent class, and
-   an ``owned`` class type is a subtype of an undecorated (generic
-   management) class type.
+   However, ``int(8)`` is a subtype of the generic type ``integral``
+   according to the first rule above (:ref:`Built_in_Generic_types`).
+
+   .. BLOCK-test-chapelpre
+
+      param x =
+
+   .. code-block:: chapel
+
+      isSubtype(int(8), integral); // evaluates to true
+
+   .. BLOCK-test-chapelpost
+
+      writeln(x);
+
+   .. BLOCK-test-chapeloutput
+
+      true
+
+   *Example (subtype-pass-int8-integral.chpl)*
+
+   Since ``int(8)`` is a subtype of ``integral``, the type ``int(8)`` can
+   be passed to the type argument ``type t: integral``
+   (:ref:`Legal_Argument_Mapping`). As a result the following program
+   will compile:
+
+   .. code-block:: chapel
+
+      proc f(type t: integral) { }
+      f(int(8));
+
+   *Example (subtype-parent-class.chpl)*
+
+   This example demonstrates that ``ChildClass`` is a subtype of
+   ``ParentClass``.
 
    .. code-block:: chapel
 
      class ParentClass { }
      class ChildClass : ParentClass { }
 
-     proc g(type t: ParentClass) { }
-     g(owned ChildClass);
+     writeln(isSubtype(ChildClass, ParentClass)); // outputs true
+     writeln(isSubtype(borrowed ChildClass, borrowed ParentClass)); // outputs true
 
+     proc f(type t: ParentClass) { }
+     f(ChildClass); // implicit subtype conversion
+
+     proc g(type t: borrowed ParentClass) { }
+     g(borrowed ChildClass); // implicit subtype conversion
+
+     // The implicit subtype conversion can also apply to non-type arguments:
+     proc h(in arg: owned ParentClass) { }
+     h(new owned ChildClass()); // implicit subtype conversion
+
+   .. BLOCK-test-chapeloutput
+
+     true
+     true
+
+   *Example (subtype-nilable.chpl)*.
+
+   This example shows that a non-nilable class type is a subtype of a
+   nilable class type with the same management.
+
+   .. code-block:: chapel
+
+      class C { }
+
+      writeln(isSubtype(C, C?)); // outputs true
+      writeln(isSubtype(owned C, owned C?)); // outputs true
+
+   .. BLOCK-test-chapeloutput
+
+     true
+     true
+
+   *Example (subtype-three.chpl)*.
+
+   This example demonstrates a combination of all three rules. Note that
+   ``ParentClass`` is a generic type meaning the class type
+   ``ParentClass`` with any memory management strategy
+   (:ref:`Class_Types`).
+
+   .. code-block:: chapel
+
+     class ParentClass { }
+     class ChildClass : ParentClass { }
+
+     writeln(isSubtype(ChildClass, ParentClass?)); // outputs true
+
+     proc f(type t: ParentClass?) { }
+     f(ChildClass); // uses implicit subtype conversion
+
+     proc g(in arg: ParentClass?) { }
+     g(new owned ChildClass()); // uses implicit subtype conversion
+
+   .. BLOCK-test-chapeloutput
+
+     true
 
 .. _Implicit_Conversion_Init_Assign:
 
