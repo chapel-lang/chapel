@@ -813,7 +813,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   UniqueString name;
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<types::QualifiedType> formalTypes;
-  bool idIsClass = false;
+  auto idTag = uast::asttags::AST_TAG_UNKNOWN;
 
   if (auto ct = t->getCompositeType()) {
     id = ct->id();
@@ -848,8 +848,11 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       }
     }
 
-    if (t->isBasicClassType() || t->isClassType())
-      idIsClass = true;
+    if (t->isBasicClassType() || t->isClassType()) {
+      idTag = uast::asttags::Class;
+    } else if (t->isRecordType()) {
+      idTag = uast::asttags::Record;
+    }
   } else {
     assert(false && "case not handled");
   }
@@ -857,8 +860,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   auto untyped = UntypedFnSignature::get(context,
                                          id, name,
                                          /* isMethod */ false,
-                                         /* idIsFunction */ false,
-                                         idIsClass,
+                                         idTag,
                                          /* isTypeConstructor */ true,
                                          Function::PROC,
                                          std::move(formals),
@@ -1473,6 +1475,15 @@ returnTypeForTypeCtorQuery(Context* context,
   return QUERY_END(result);
 }
 
+static
+bool isCompilerGeneratedMethodSignature(const UntypedFnSignature* ufs) {
+  // TODO: consider adding ufs->isCompilerGenerated()
+  if (ufs->idIsRecord() || ufs->idIsClass())
+    if (ufs->isMethod())
+      return isNameOfCompilerGeneratedMethod(ufs->name());
+  return false;
+}
+
 const QualifiedType& returnType(Context* context,
                                 const TypedFnSignature* sig,
                                 const PoiScope* poiScope) {
@@ -1539,17 +1550,15 @@ const QualifiedType& returnType(Context* context,
     }
 
     result = QualifiedType(QualifiedType::TYPE, t);
-  } else if (untyped->idIsClass()) {
-    if (untyped->isMethod() &&
-        isNameOfCompilerGeneratedMethod(untyped->name())) {
-      if (untyped->name() == USTR("init")) {
-        result = QualifiedType(QualifiedType::CONST_VAR,
-                               VoidType::get(context));
-      } else {
-        assert(false && "case not handled");
-      }
+
+  // if method call and the receiver points to a composite type definition,
+  // then it's some sort of compiler-generated method
+  } else if (isCompilerGeneratedMethodSignature(untyped)) {
+    if (untyped->name() == USTR("init")) {
+      result = QualifiedType(QualifiedType::CONST_VAR,
+                             VoidType::get(context));
     } else {
-      assert(false && "case not handled");
+      assert(false && "unhandled compiler-generated method");
     }
   } else {
     assert(false && "case not handled");
@@ -2549,15 +2558,14 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
 
   // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
-                              /*id*/ compType->id(),
-                              /*name*/ USTR("init"),
-                              /*isMethod*/ true,
-                              /*idIsFunction*/ false,
-                              /*idIsClass*/ true,
-                              /*idIsTypeConstructor*/ false,
-                              /*kind*/ uast::Function::Kind::PROC,
-                              /*formals*/ std::move(ufsFormals),
-                              /*whereClause*/ nullptr);
+                        /*id*/ compType->id(),
+                        /*name*/ USTR("init"),
+                        /*isMethod*/ true,
+                        /*idTag*/ parsing::idToTag(context, compType->id()),
+                        /*idIsTypeConstructor*/ false,
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
 
   // now build the other pieces of the typed signature
   auto whereClauseResult = TypedFnSignature::WHERE_NONE;

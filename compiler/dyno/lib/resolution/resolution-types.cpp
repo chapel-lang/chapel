@@ -37,19 +37,18 @@ const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
                                           bool isMethod,
-                                          bool idIsFunction,
-                                          bool idIsClass,
+                                          asttags::ASTTag idTag,
                                           bool isTypeConstructor,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
                                           const Expression* whereClause) {
   QUERY_BEGIN(getUntypedFnSignature, context,
-              id, name, isMethod, idIsFunction, idIsClass, isTypeConstructor,
+              id, name, isMethod, idTag, isTypeConstructor,
               kind, formals, whereClause);
 
   owned<UntypedFnSignature> result =
     toOwned(new UntypedFnSignature(id, name, isMethod,
-                                   idIsFunction, idIsClass, isTypeConstructor,
+                                   idTag, isTypeConstructor,
                                    kind, std::move(formals), whereClause));
 
   return QUERY_END(result);
@@ -59,14 +58,13 @@ const UntypedFnSignature*
 UntypedFnSignature::get(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
-                        bool idIsFunction,
-                        bool idIsClass,
+                        asttags::ASTTag idTag,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
                         const uast::Expression* whereClause) {
   return getUntypedFnSignature(context, id, name, isMethod,
-                               idIsFunction, idIsClass, isTypeConstructor, kind,
+                               idTag, isTypeConstructor, kind,
                                std::move(formals), whereClause).get();
 }
 
@@ -91,8 +89,7 @@ UntypedFnSignature::get(Context* context, const uast::Function* fn) {
     // find the unique-ified untyped signature
     result = get(context, fn->id(),
                  fn->name(), fn->isMethod(),
-                 /* idIsFunction */ true,
-                 /* idIsClass */ false,
+                 /* idTag */ asttags::Function,
                  /* isTypeConstructor */ false,
                  fn->kind(),
                  std::move(formals), fn->whereClause());

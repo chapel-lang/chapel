@@ -49,7 +49,8 @@ enum ASTTag {
   #undef AST_LEAF
   #undef AST_BEGIN_SUBCLASSES
   #undef AST_END_SUBCLASSES
-  NUM_AST_TAGS
+  NUM_AST_TAGS,
+  AST_TAG_UNKNOWN
 };
 
 // define is___ for leaf and regular nodes
@@ -114,6 +115,13 @@ template<> struct update<uast::ASTTag> {
 template<> struct mark<uast::ASTTag> {
   void operator()(Context* context, const uast::ASTTag& keep) const {
     // nothing to do for enum
+  }
+};
+
+template<> struct stringify<uast::ASTTag> {
+  void operator()(std::ostream& streamOut, StringifyKind stringKind,
+                  uast::ASTTag tag) const {
+    streamOut << tagToString(tag);
   }
 };
 

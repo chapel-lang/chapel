@@ -25,8 +25,7 @@ namespace chpl {
 namespace uast {
 
 bool TupleDecl::assertAcceptableTupleDecl() {
-  const auto unsetSentinel = asttags::NUM_AST_TAGS;
-  asttags::ASTTag firstNonTupleTag = unsetSentinel;
+  asttags::ASTTag firstNonTupleTag = asttags::AST_TAG_UNKNOWN;
   int i = 0;
 
   for (const auto& elt: children_) {
@@ -44,7 +43,7 @@ bool TupleDecl::assertAcceptableTupleDecl() {
       }
     } else if (!elt->isTupleDecl()) {
       if (elt->isFormal() || elt->isVariable()) {
-        if (firstNonTupleTag == unsetSentinel) {
+        if (firstNonTupleTag == asttags::AST_TAG_UNKNOWN) {
           firstNonTupleTag = elt->tag();
         }
 

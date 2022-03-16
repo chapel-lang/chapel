@@ -92,8 +92,7 @@ class UntypedFnSignature {
   ID id_;
   UniqueString name_;
   bool isMethod_; // in that case, formals[0] is the receiver
-  bool idIsFunction_; // whether the ID is of a function
-  bool idIsClass_; // whether the ID is of a class
+  uast::asttags::ASTTag idTag_; // concrete tag for ID
   bool isTypeConstructor_;
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
@@ -104,8 +103,7 @@ class UntypedFnSignature {
   UntypedFnSignature(ID id,
                      UniqueString name,
                      bool isMethod,
-                     bool idIsFunction,
-                     bool idIsClass,
+                     uast::asttags::ASTTag idTag,
                      bool isTypeConstructor,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
@@ -113,20 +111,21 @@ class UntypedFnSignature {
     : id_(id),
       name_(name),
       isMethod_(isMethod),
-      idIsFunction_(idIsFunction),
-      idIsClass_(idIsClass),
+      idTag_(idTag),
       isTypeConstructor_(isTypeConstructor),
       kind_(kind),
       formals_(std::move(formals)),
       whereClause_(whereClause) {
+    assert(idTag == uast::asttags::Function ||
+           idTag == uast::asttags::Class ||
+           idTag == uast::asttags::Record);
   }
 
   static const owned<UntypedFnSignature>&
   getUntypedFnSignature(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
-                        bool idIsFunction,
-                        bool idIsClass,
+                        uast::asttags::ASTTag idTag,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
@@ -137,8 +136,7 @@ class UntypedFnSignature {
   static const UntypedFnSignature* get(Context* context, ID id,
                                        UniqueString name,
                                        bool isMethod,
-                                       bool idIsFunction,
-                                       bool idIsClass,
+                                       uast::asttags::ASTTag idTag,
                                        bool isTypeConstructor,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
@@ -154,8 +152,7 @@ class UntypedFnSignature {
     return id_ == other.id_ &&
            name_ == other.name_ &&
            isMethod_ == other.isMethod_ &&
-           idIsFunction_ == other.idIsFunction_ &&
-           idIsClass_ == other.idIsClass_ &&
+           idTag_ == other.idTag_ &&
            isTypeConstructor_ == other.isTypeConstructor_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
@@ -192,12 +189,17 @@ class UntypedFnSignature {
 
   /** Returns true if id() refers to a Function */
   bool idIsFunction() const {
-    return idIsFunction_;
+    return idTag_ == uast::asttags::Function;
   }
 
   /** Returns true if id() refers to a Class */
   bool idIsClass() const {
-    return idIsClass_;
+    return idTag_ == uast::asttags::Class;
+  }
+
+  /** Returns true if id() refers to a Record */
+  bool idIsRecord() const {
+    return idTag_ == uast::asttags::Record;
   }
 
   /** Returns true if this is a type constructor */

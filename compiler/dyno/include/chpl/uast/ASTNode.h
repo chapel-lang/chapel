@@ -230,6 +230,7 @@ class ASTNode {
         #include "chpl/uast/uast-classes-list.h"
 
         IGNORE(NUM_AST_TAGS)
+        IGNORE(AST_TAG_UNKNOWN)
 
         #undef AST_NODE
         #undef AST_LEAF
@@ -269,6 +270,7 @@ class ASTNode {
         #include "chpl/uast/uast-classes-list.h"
 
         IGNORE(NUM_AST_TAGS)
+        IGNORE(AST_TAG_UNKNOWN)
 
         #undef AST_NODE
         #undef AST_LEAF
@@ -386,6 +388,7 @@ class ASTNode {
       #include "chpl/uast/uast-classes-list.h"
       // and also for NUM_AST_TAGS
       CASE_OTHER(NUM_AST_TAGS)
+      CASE_OTHER(AST_TAG_UNKNOWN)
 
       // clear the macros
       #undef AST_NODE

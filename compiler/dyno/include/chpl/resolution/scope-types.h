@@ -202,7 +202,7 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
 class Scope {
  private:
   const Scope* parentScope_ = nullptr;
-  uast::asttags::ASTTag tag_ = uast::asttags::NUM_AST_TAGS;
+  uast::asttags::ASTTag tag_ = uast::asttags::AST_TAG_UNKNOWN;
   bool containsUseImport_ = false;
   bool containsFunctionDecls_ = false;
   ID id_;
