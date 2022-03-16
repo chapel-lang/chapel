@@ -5,7 +5,7 @@ Chapel Language Specification
 |||||||||||||||||||||||||||||
 
 .. toctree::
-   :caption: Chapters
+   :caption: Introductory Material
    :maxdepth: 1
 
    scope
@@ -13,16 +13,32 @@ Chapel Language Specification
    organization
    acknowledgements
    language-overview
+
+.. toctree::
+   :caption: Language Basics
+   :maxdepth: 1
+
    lexical-structure
    types
    variables
    conversions
    expressions
    statements
+
+.. toctree::
+   :caption: Code Encapsulation
+   :maxdepth: 1
+
    modules
    procedures
+   iterators
    methods
    error-handling
+
+.. toctree::
+   :caption: Composite Types
+   :maxdepth: 1
+
    tuples
    classes
    records
@@ -30,14 +46,38 @@ Chapel Language Specification
    ranges
    domains
    arrays
-   iterators
+
+.. toctree::
+   :caption: Generic Programming
+   :maxdepth: 1
+
    generics
-   input-and-output
+
+.. toctree::
+   :caption: Parallel Programming
+   :maxdepth: 1
+
    task-parallelism-and-synchronization
    data-parallelism
+
+.. toctree::
+   :caption: Distributed Programming
+   :maxdepth: 1
+
    locales
    domain-maps
-   user-defined-reductions-and-scans
+
+.. toctree::
+   :caption: Additional Topics
+   :maxdepth: 1
+
+   input-and-output
    memory-consistency-model
    interoperability
+   user-defined-reductions-and-scans
+
+.. toctree::
+   :caption: Appendices
+   :maxdepth: 1
+
    syntax
