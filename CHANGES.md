@@ -76,6 +76,8 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* added a new 'CopyAggregation' module supporting aggregated copies
+  (see https://chapel-lang.org/docs/1.26/modules/packages/CopyAggregation.html)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -137,6 +139,7 @@ Bug Fixes
 * fixed a bug when calling '.localSlice()' on a slice of a default array
 * fixed a bug in which 'require foo.chpl;' was ignored within implicit modules 
 * fixed a bug in which first-class functions failed to retain return intents
+* added a remote cache fence to barrier calls
 
 Bug Fixes for Build Issues
 --------------------------
@@ -166,12 +169,14 @@ Developer-oriented changes: Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* simplified the barrier used to initialize locales
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* removed the `make third-party` target
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -201,6 +206,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* stopped using `distutils`, which is deprecated in Python 3.10
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
