@@ -3304,16 +3304,6 @@ module BigInteger {
     }
   }
 
-  // sets this to gcd(a,b)
-  // set s and t to to coefficients satisfying a*s + b*t == g
-  deprecated "gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead"
-  proc bigint.gcdext(ref s: bigint,
-                     ref t: bigint,
-                     const ref a: bigint,
-                     const ref b: bigint) {
-    this.gcd(a, b, s, t);
-  }
-
   /* Set ``this`` to the greatest common divisor of ``a`` and ``b``, and
      set ``s`` and ``t`` to coefficients such that ``a*s + b*t == this``.
 
@@ -3364,7 +3354,15 @@ module BigInteger {
     }
   }
 
-
+  // sets this to gcd(a,b)
+  // set s and t to to coefficients satisfying a*s + b*t == g
+  deprecated "gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead"
+  proc bigint.gcdext(ref s: bigint,
+                     ref t: bigint,
+                     const ref a: bigint,
+                     const ref b: bigint) {
+    this.gcd(a, b, s, t);
+  }
 
   // lcm
   proc bigint.lcm(const ref a: bigint, const ref b: bigint) {
