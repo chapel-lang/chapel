@@ -98,7 +98,7 @@ rebuild Chapel from source in a different configuration:
   - ensure that you have a compatible version of LLVM installed on
     your system and set ``CHPL_LLVM=system`` (or leave it unset and
     Chapel should find it if it's in your path.) Currently compatible
-    versions are LLVM-11 and LLVM-12.
+    versions are LLVM-11, LLVM-12 and LLVM-13.
 
   - set ``CHPL_LLVM=bundled`` to have Chapel build and use the bundled
     version of LLVM (note that building the bundled version of LLVM
