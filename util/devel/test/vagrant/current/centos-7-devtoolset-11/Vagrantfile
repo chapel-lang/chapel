@@ -6,14 +6,12 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "fedora/32-cloud-base"
+  config.vm.box = "centos/7"
 
   config.vm.provision "shell",
-    path: "../../provision-scripts/dnf-deps.sh"
+    path: "../../provision-scripts/yum-deps-centos-7.sh"
 
-  # installs LLVM 10
-  config.vm.provision "shell",
-    path: "../../provision-scripts/dnf-llvm.sh"
+  # Does not include any LLVM install
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"
@@ -23,7 +21,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 4096
-    #vb.cpus = 2
+    vb.cpus = 4
   end
 
 end

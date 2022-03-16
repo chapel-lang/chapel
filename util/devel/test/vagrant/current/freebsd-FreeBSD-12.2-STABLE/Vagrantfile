@@ -6,20 +6,26 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "fedora/32-cloud-base"
+  config.vm.box = "freebsd/FreeBSD-12.2-STABLE"
+
+  # needs more disk space
+  # have to use this for it to work:
+  #   export VAGRANT_EXPERIMENTAL="disks"
+  config.vm.disk :disk, size: "12GB", primary: true
 
   config.vm.provision "shell",
-    path: "../../provision-scripts/dnf-deps.sh"
+    path: "../../provision-scripts/freebsd-pkg-deps.sh"
 
-  # installs LLVM 10
+  # It comes with clang 10 and pkg install llvm installs 9,
+  # but 13 is available.  E.g. /usr/local/llvm13/bin/llvm-config
   config.vm.provision "shell",
-    path: "../../provision-scripts/dnf-llvm.sh"
+    path: "../../provision-scripts/freebsd-pkg-llvm13.sh"
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"
 
   config.vm.provision "shell", privileged: false,
-    path: "../../provision-scripts/make-chapel-quick.sh"
+    path: "../../provision-scripts/gmake-chapel-quick.sh"
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 4096

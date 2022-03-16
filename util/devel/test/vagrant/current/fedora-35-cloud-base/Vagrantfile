@@ -6,12 +6,12 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "fedora/32-cloud-base"
+  config.vm.box = "fedora/35-cloud-base"
 
   config.vm.provision "shell",
     path: "../../provision-scripts/dnf-deps.sh"
 
-  # installs LLVM 10
+  # installs LLVM 13
   config.vm.provision "shell",
     path: "../../provision-scripts/dnf-llvm.sh"
 
