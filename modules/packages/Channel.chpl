@@ -28,9 +28,9 @@
  buffered channel has a maximum capacity specified by ``bufferSize``. There are
  mainly three operations that can be performed on a channel.
 
-  * :proc:`send` : Send a value to the channel.
-  * :proc:`recv` : Receive a value from the channel.
-  * :proc:`close` : Close a channel such that no other values/data can be sent to it.
+  * :proc:`channel.send` : Send a value to the channel.
+  * :proc:`channel.recv` : Receive a value from the channel.
+  * :proc:`channel.close` : Close a channel such that no other values/data can be sent to it.
 
  The channel operations are blocking, i.e., the calling task will be suspended
  if an operation cannot be completed. The channel follows First-In-First-Out
