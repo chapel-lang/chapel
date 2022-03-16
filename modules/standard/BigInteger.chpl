@@ -1089,14 +1089,32 @@ module BigInteger {
 
 
   // Division
-  operator bigint./(const ref a: bigint, const ref b: bigint) {
+  // Documented in (bigint, integral) version
+  operator bigint./(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
     c.divQ(a, b, round.zero);
 
     return c;
   }
 
-  operator bigint./(const ref a: bigint, b: integral) {
+  /* Divide ``a`` by ``b``, returning the result.
+
+     .. note::
+
+        Because this operator creates a new :record:`bigint` to store the result
+        of the division operation, it may be less efficient than
+        :proc:`bigint./=`, :proc:`bigint.divQ` or the other division methods.
+
+     :arg a: The numerator of the division operation
+     :type a: :record:`bigint`
+
+     :arg b: The denominator of the division operation
+     :type b: :record:`bigint` or ``integral``
+
+     :returns: The result of dividing ``a`` by ``b``
+     :rtype: :record:`bigint`
+   */
+  operator bigint./(const ref a: bigint, b: integral): bigint {
     return a / new bigint(b);
   }
 
@@ -1879,10 +1897,19 @@ module BigInteger {
 
 
   // /=
+  // Documented in (bigint, integral) version
   operator bigint./=(ref a: bigint, const ref b: bigint) {
     a.divQ(a, b, round.zero);
   }
 
+  /* Divide ``a`` by ``b``, storing the result in ``a``.
+
+     :arg a: The numerator of the division operation
+     :type a: :record:`bigint`
+
+     :arg b: The denominator of the division operation
+     :type b: :record:`bigint` or ``integral``
+   */
   operator bigint./=(ref a: bigint, b: integral) {
     a /= new bigint(b);
   }
