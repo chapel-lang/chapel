@@ -58,7 +58,13 @@ module CTypes {
 
   // Former CPtr contents start here
 
-  /* A Chapel type alias for 'void*' in C. */
+  /*
+
+    A Chapel type alias for ``void*`` in C. Casts from integral types to
+    ``c_void_ptr`` as well as casts from ``c_void_ptr`` to integral types are
+    supported and behave similarly to those operations in C.
+
+  */
   extern type c_void_ptr = chpl__c_void_ptr;
 
 
