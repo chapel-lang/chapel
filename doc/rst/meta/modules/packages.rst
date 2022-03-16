@@ -43,7 +43,7 @@ Data Structures
    SortedMap <packages/SortedMap>
    SortedSet <packages/SortedSet>
    UnrolledLinkedList <packages/UnrolledLinkedList>
-   
+
 File Formats and I/O
 --------------------
 .. toctree::
@@ -69,7 +69,7 @@ Memory Management
 -----------------
 .. toctree::
    :maxdepth: 1
-   
+
    Buffers <packages/Buffers>
    EpochManager <packages/EpochManager>
 
@@ -79,7 +79,7 @@ Networking / Inter-Process Communication
 .. toctree::
    :maxdepth: 1
 
-   Curl <packages/Curl>   
+   Curl <packages/Curl>
    Socket <packages/Socket>
    URL <packages/URL>
    ZMQ <packages/ZMQ>
@@ -105,7 +105,7 @@ Utilities
 ---------
 .. toctree::
    :maxdepth: 1
-   
+
    ArgumentParser <packages/ArgumentParser>
    RangeChunk <packages/RangeChunk>
 
@@ -113,7 +113,7 @@ Miscellaneous
 -------------
 .. toctree::
    :maxdepth: 1
-   
+
    Collection <packages/Collection>
    FunctionalOperations <packages/FunctionalOperations>
    PeekPoke <packages/PeekPoke>
