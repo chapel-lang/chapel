@@ -113,6 +113,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
+	packages/Channel.chpl \
 	packages/ConcurrentMap.chpl \
 	packages/CopyAggregation.chpl \
 	packages/Crypto.chpl \
