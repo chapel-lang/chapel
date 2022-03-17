@@ -17,7 +17,7 @@ operator +(a: uint(64), b: int(64)) {
 // this test, though.  Particularly since I'm not convinced
 // that it's a good idea for users to be overloading ==.
 //
-operator int.==(a: int, b: int) {
+operator ==(a: int, b: int) {
   writeln("Found my ==, but it's going to give != instead");
   return a != b;
 } 
