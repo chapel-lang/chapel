@@ -4781,6 +4781,12 @@ Syntax in Detail" section below.
 In this file, we use "integral" to refer to the Chapel types int or uint and
 "floating-point" to refer to real, imaginary, or complex, of any bit width.
 
+.. warning::
+
+   Binary conversions are now deprecated. Binary numeric conversions have been 
+   replaced by :proc:`channel.readBinary` and :proc:`channel.writeBinary`. 
+   Replacements for binary string conversions are under development.
+
 Formatted I/O for C Programmers
 +++++++++++++++++++++++++++++++
 
@@ -4810,6 +4816,7 @@ for numeric conversions; so these are also equivalent to ``%i`` ``%d`` or
 ``%g`` in C. Also note that Chapel format strings includes many capabilities
 not available with C formatted I/O routines - including quoted strings,
 binary numbers, complex numbers, and raw binary I/O.
+
 
 Generic Numeric Conversions
 +++++++++++++++++++++++++++
