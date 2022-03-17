@@ -4784,7 +4784,7 @@ In this file, we use "integral" to refer to the Chapel types int or uint and
 .. warning::
 
    Binary conversions are now deprecated. Binary numeric conversions have been 
-   replaced by :proc:`channel.readBinary` and :proc:`channel.writeBinary`. 
+   replaced by :proc:`IO.channel.readBinary` and :proc:`IO.channel.writeBinary`. 
    Replacements for binary string conversions are under development.
 
 Formatted I/O for C Programmers
@@ -4815,7 +4815,7 @@ that ``%n`` and ``%t`` are equivalent to ``%r`` for real conversions and ``%i``
 for numeric conversions; so these are also equivalent to ``%i`` ``%d`` or
 ``%g`` in C. Also note that Chapel format strings includes many capabilities
 not available with C formatted I/O routines - including quoted strings,
-binary numbers, complex numbers, and raw binary I/O.
+binary numbers, complex numbers, and raw binary I/O *(deprecated)*.
 
 
 Generic Numeric Conversions
@@ -4922,14 +4922,14 @@ Integral Conversions
 ``% i``
  a decimal integer with a space for positive numbers
 ``%|4i``
- output 4 raw, binary bytes of the passed integer in native endianness
+ output 4 raw, binary bytes of the passed integer in native endianness *(deprecated)*
 ``%<4i``
- output 4 raw, binary bytes of the passed integer little endian
+ output 4 raw, binary bytes of the passed integer little endian *(deprecated)*
 ``%>4i``
- output 4 raw, binary bytes of the passed integer big endian
+ output 4 raw, binary bytes of the passed integer big endian *(deprecated)*
 ``%<8i``
  output 8 raw, binary bytes of the passed integer little endian
- (byte widths of 1, 2, 4, and 8 are supported for integral conversions)
+ (byte widths of 1, 2, 4, and 8 are supported for integral conversions) *(deprecated)*
 
 Real Conversions
 ++++++++++++++++
@@ -4975,12 +4975,12 @@ Real Conversions
  hexadecimal number using p to mark exponent e.g. ``6c.3f7p-2a``
 
 ``%|4r``
- emit 4 raw, binary bytes of the passed number in native endianness
+ emit 4 raw, binary bytes of the passed number in native endianness *(deprecated)*
 ``%<8r``
- emit 8 raw, binary bytes of the passed number in little endian
+ emit 8 raw, binary bytes of the passed number in little endian *(deprecated)*
 ``%<4r``
  emit 4 raw, binary bytes of the passed number in little endian
- (``<`` ``|`` and ``>`` are supported for widths 4 or 8)
+ (``<`` ``|`` and ``>`` are supported for widths 4 or 8) *(deprecated)*
 
 Complex and Imaginary Conversions
 +++++++++++++++++++++++++++++++++
@@ -5003,11 +5003,11 @@ Complex and Imaginary Conversions
  print a and b with ``%er``
 
 ``%|4m``
- same as ``%|4r``
+ same as ``%|4r`` *(deprecated)*
 ``%|8z``
- emit 8 raw, binary bytes of native-endian complex (a,b are each 4 bytes)
+ emit 8 raw, binary bytes of native-endian complex (a,b are each 4 bytes) *(deprecated)*
 ``%<16z``
- emit 16 raw, binary bytes of little-endian complex (a,b each 8 bytes)
+ emit 16 raw, binary bytes of little-endian complex (a,b each 8 bytes) *(deprecated)*
 
 String and Bytes Conversions
 ++++++++++++++++++++++++++++
@@ -5064,19 +5064,19 @@ String and Bytes Conversions
   stored native endian. ``<``, ``|``, ``>`` can be used
   to specify the endianness of the length field,
   for example ``%<8S`` is 8 bytes of little-endian length
-  and then string data.
+  and then string data. *(deprecated)*
 ``%|vS``
  as with ``%|1S``-``%|8S`` but the string length is encoded using a
  variable-length byte scheme (which is always the same no matter what
  endianness). In this scheme, the high bit of each encoded length byte
  records whether or not there are more length bytes (and the remaining
- bits encode the length in a big-endian manner).
+ bits encode the length in a big-endian manner). *(deprecated)*
 
 ``%|*vS`` or ``%|*0S``
  read an encoded string but limit it to a number of bytes
  read from the argument before the string; when writing
  cause a runtime error if the string is longer than the
- maximum.
+ maximum. *(deprecated)*
 
 ``%/a+/``
  where any regular expression can be used instead of ``a+``
@@ -5109,11 +5109,11 @@ General Conversions
 ``%ht``
  read or write an object in Chapel syntax using readThis/writeThis
 ``%|t``
- read or write an object in binary native-endian with readThis/writeThis
+ read or write an object in binary native-endian with readThis/writeThis *(deprecated)*
 ``%<t``
- read or write an object little-endian in binary with readThis/writeThis
+ read or write an object little-endian in binary with readThis/writeThis *(deprecated)*
 ``%>t``
- read or write an object big-endian in binary with readThis/writeThis
+ read or write an object big-endian in binary with readThis/writeThis *(deprecated)*
 
 Note About Whitespace
 +++++++++++++++++++++
@@ -5215,7 +5215,7 @@ In general, a ``%`` specifier consists of either text or binary conversions:
 ::
 
  %
- [optional endian flag (binary conversions only)]
+ [optional endian flag (binary conversions only) *(deprecated)*]
  [optional flags]
  [optional field width or size in bytes]
  [optional . then precision]
@@ -5339,7 +5339,7 @@ Going through each section for text conversions:
     means a Unicode character - either the first character in a string
     or an integral character code
 
-For binary conversions:
+For binary conversions *(deprecated)*:
 
 [optional endian flag]
    ``<``
@@ -5384,10 +5384,10 @@ For binary conversions:
     means complex. Note that the size is mandatory for binary complex
     conversions
    ``s``
-    * means string binary I/O
+    * means string binary I/O *(deprecated)*
     * ``%|17s`` means exactly 17 byte string
    ``0S``/``1S``/``2S``/``4S``/``8S``
-    * mean encoded string binary I/O:
+    * mean encoded string binary I/O *(deprecated)*:
     * ``%|0S`` means null-terminated string
     * ``%{|S*}`` means  next-argument specifies string terminator byte
     * ``%|1S`` means a one-byte length and then the string
@@ -5415,42 +5415,42 @@ Formatted I/O Examples
        // outputs:
        // 43.29 + 279.1i
 
-  writef("%<4u", 0x11223344);
+  writef("%<4u", 0x11223344); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 4433 2211
-  writef("%>4u", 0x11223344);
+  writef("%>4u", 0x11223344); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 1122 3344
-  writef("%<4i %<4i", 2, 32);
+  writef("%<4i %<4i", 2, 32); // (deprecated)
        // outputs:
        // (hexdump of the output -- note that spaces after
        //  a binary format specifier are ignored)
        // 0200 0000 2000 0000
 
 
-  writef("%|0S\n", "test");
+  writef("%|0S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 7465 7374 000a
-  writef("%|1S\n", "test");
+  writef("%|1S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 0474 6573 740a
-  writef("%>2S\n", "test");
+  writef("%>2S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 0004 7465 7374 0a
-  writef("%>4S\n", "test");
+  writef("%>4S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 0000 0004 7465 7374 0a
-  writef("%>8S\n", "test");
+  writef("%>8S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 0000 0000 0000 0004 7465 7374 0a
-  writef("%|vS\n", "test");
+  writef("%|vS\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 04 7465 7374 0a
