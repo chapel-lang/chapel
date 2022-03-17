@@ -62,7 +62,15 @@ Name Changes in Libraries
   (see https://chapel-lang.org/docs/1.26/modules/standard/CTypes.html#CTypes.c_size_t)
 * changed the formal names in the `Reflection.getField()` family of functions
   (see https://chapel-lang.org/docs/main/modules/standard/Reflection.html)
-* renamed several set method arguments from `x` to `element`  
+* renamed search arguments `needle`->`pattern` and `region`->`indices`  
+  (see https://chapel-lang.org/docs/main/builtins/Bytes.html,  
+   https://chapel-lang.org/docs/main/builtins/String.html,
+   and https://chapel-lang.org/docs/main/modules/standard/Regex.html)
+* renamed `regexMatch.offset` to `byteOffset` and `size` to `numBytes`
+  (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regexMatch)
+* renamed the `list.indexOf()` method to `find()`  
+  (see https://chapel-lang.org/docs/main/modules/standard/List.html#List.list.indexOf)
+* renamed several `set` method arguments from `x` to `element`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
 * improved the names of many routines and arguments in the 'BigInteger' module
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
@@ -131,6 +139,8 @@ Deprecated / Removed Library Features
 * removed deprecated `CHPL_REGEXP` param from 'ChplConfig' module
 * deprecated support for the 'vectorizeOnly' iterator  
   (see https://chapel-lang.org/docs/1.26/modules/standard/VectorizingIterator.html)
+* removed support for `string.search()` and `bytes.search()` from 'Regex'
+  (TODO: Not deprecated?)
 * removed support for the previously deprecated 'range.ident()' method
 
 Standard Library Modules
