@@ -106,27 +106,8 @@ is likely to achieve better performance than:
 
   x = a + b * c;
 
-In the fall of 2016 the Chapel compiler introduces two short lived
-temporaries for the intermediate results of the binary operators.
-
-
-If peak performance is required, perhaps in a critical loop, then it
-is always possible to invoke the GMP functions directly.  For example
-one might express:
-
-.. code-block:: chapel
-
-  a = a + b * c;
-
-as:
-
-.. code-block:: chapel
-
-  mpz_addmul(a.mpz, b.mpz, c.mpz);
-
-
-As usual the details are application specific and it is best to
-measure when peak performance is required.
+The Chapel compiler currently introduces two short lived temporaries for the
+intermediate results of the binary operators.
 
 The operators on ``bigint`` include variations that accept Chapel
 integers e.g.:
@@ -1098,12 +1079,6 @@ module BigInteger {
   }
 
   /* Divide ``a`` by ``b``, returning the result.
-
-     .. note::
-
-        Because this operator creates a new :record:`bigint` to store the result
-        of the division operation, it may be less efficient than
-        :proc:`bigint./=`, :proc:`bigint.divQ` or the other division methods.
 
      :arg a: The numerator of the division operation
      :type a: :record:`bigint`
