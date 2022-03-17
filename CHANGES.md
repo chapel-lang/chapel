@@ -179,7 +179,8 @@ Example Codes
 
 Portability
 -----------
-* implemented several portability improvements for 'CHPL_COMM=ofi'
+* improved integration of `CHPL_COMM=ofi` with HPE Cray EX workload managers
+* implemented several other portability improvements for `CHPL_COMM=ofi`
 * made `chpldoc` compatible with Python 3.10
 
 GPU Computing
@@ -196,6 +197,7 @@ Generated Executable Flags
 
 Runtime Library Changes
 -----------------------
+* stopped `ofi` from making a fixed heap when no provider could use it
 
 Launchers
 ---------
@@ -284,12 +286,16 @@ Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * implemented several improvements for 'CHPL_COMM=ofi'
   - changed fetching AMOs to return the result via an active message (AM)
+  - refactored code for blocking AM creation to ease maintainability
   - implemented completion counters
   - added support for per-endpoint address vectors
   - added the device name to a Chapel executable's '--verbose' output
   - made use of the hybrid memory registration mode with the 'cxi' provider
   - added environment variables to control the use of 'fi_inject'
+* adjusted comm domain IDs for `ugni` to allow multiple locales per node
+* tightened up `ugni` address checking against memory registrations
 * added a warning for `CHPL_RT_NUM_THREADS_PER_LOCALE` with `CHPL_TASKS=fifo`
+* cleaned up `pthread_once()` usage in the runtime
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
