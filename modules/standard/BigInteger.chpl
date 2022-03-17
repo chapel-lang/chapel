@@ -106,27 +106,8 @@ is likely to achieve better performance than:
 
   x = a + b * c;
 
-In the fall of 2016 the Chapel compiler introduces two short lived
-temporaries for the intermediate results of the binary operators.
-
-
-If peak performance is required, perhaps in a critical loop, then it
-is always possible to invoke the GMP functions directly.  For example
-one might express:
-
-.. code-block:: chapel
-
-  a = a + b * c;
-
-as:
-
-.. code-block:: chapel
-
-  mpz_addmul(a.mpz, b.mpz, c.mpz);
-
-
-As usual the details are application specific and it is best to
-measure when peak performance is required.
+The Chapel compiler currently introduces two short lived temporaries for the
+intermediate results of the binary operators.
 
 The operators on ``bigint`` include variations that accept Chapel
 integers e.g.:
@@ -1089,14 +1070,26 @@ module BigInteger {
 
 
   // Division
-  operator bigint./(const ref a: bigint, const ref b: bigint) {
+  // Documented in (bigint, integral) version
+  operator bigint./(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
     c.divQ(a, b, round.zero);
 
     return c;
   }
 
-  operator bigint./(const ref a: bigint, b: integral) {
+  /* Divide ``a`` by ``b``, returning the result.
+
+     :arg a: The numerator of the division operation
+     :type a: :record:`bigint`
+
+     :arg b: The denominator of the division operation
+     :type b: :record:`bigint` or ``integral``
+
+     :returns: The result of dividing ``a`` by ``b``
+     :rtype: :record:`bigint`
+   */
+  operator bigint./(const ref a: bigint, b: integral): bigint {
     return a / new bigint(b);
   }
 
@@ -1879,10 +1872,19 @@ module BigInteger {
 
 
   // /=
+  // Documented in (bigint, integral) version
   operator bigint./=(ref a: bigint, const ref b: bigint) {
     a.divQ(a, b, round.zero);
   }
 
+  /* Divide ``a`` by ``b``, storing the result in ``a``.
+
+     :arg a: The numerator of the division operation
+     :type a: :record:`bigint`
+
+     :arg b: The denominator of the division operation
+     :type b: :record:`bigint` or ``integral``
+   */
   operator bigint./=(ref a: bigint, b: integral) {
     a /= new bigint(b);
   }
@@ -3304,16 +3306,6 @@ module BigInteger {
     }
   }
 
-  // sets this to gcd(a,b)
-  // set s and t to to coefficients satisfying a*s + b*t == g
-  deprecated "gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead"
-  proc bigint.gcdext(ref s: bigint,
-                     ref t: bigint,
-                     const ref a: bigint,
-                     const ref b: bigint) {
-    this.gcd(a, b, s, t);
-  }
-
   /* Set ``this`` to the greatest common divisor of ``a`` and ``b``, and
      set ``s`` and ``t`` to coefficients such that ``a*s + b*t == this``.
 
@@ -3324,16 +3316,16 @@ module BigInteger {
      This fulfills the same role as the GMP function ``mpz_gcdext``.
 
      :arg a: One of the numbers to compute the greatest common divisor of
-     :type a: ``bigint``
+     :type a: :record:`bigint`
 
      :arg b: One of the numbers to compute the greatest common divisor of
-     :type b: ``bigint``
+     :type b: :record:`bigint`
 
      :arg s: The returned coefficient that can be multiplied by ``a``.
-     :type s: ``bigint``
+     :type s: :record:`bigint`
 
      :arg t: The returned coefficient that can be multiplied by ``b``.
-     :type t: ``bigint``
+     :type t: :record:`bigint`
    */
   proc bigint.gcd(const ref a: bigint, const ref b: bigint,
                   ref s: bigint, ref t: bigint): void {
@@ -3364,7 +3356,15 @@ module BigInteger {
     }
   }
 
-
+  // sets this to gcd(a,b)
+  // set s and t to to coefficients satisfying a*s + b*t == g
+  deprecated "gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead"
+  proc bigint.gcdext(ref s: bigint,
+                     ref t: bigint,
+                     const ref a: bigint,
+                     const ref b: bigint) {
+    this.gcd(a, b, s, t);
+  }
 
   // lcm
   proc bigint.lcm(const ref a: bigint, const ref b: bigint) {
@@ -3724,6 +3724,20 @@ module BigInteger {
     return this.scan0(startBitIdx = starting_bit);
   }
 
+  /*  Scan ``this``, starting from ``startBitIdx``, towards more significant
+      bits until the first ``0`` bit is found.  Return the index of the found
+      bit.
+
+      If the bit at ``startBitIdx`` is ``0``, will return ``startBitIdx``.
+
+      :arg startBitIdx: the index of the first bit to start searching for a
+                        ``0``
+      :type startBitIdx: ``integral``
+
+      :returns: the index of the first ``0`` bit after ``startBitIdx``,
+                inclusive
+      :rtype: ``uint``
+   */
   proc bigint.scan0(startBitIdx: integral): uint {
     const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
@@ -3749,6 +3763,20 @@ module BigInteger {
     return this.scan1(startBitIdx = starting_bit);
   }
 
+  /*  Scan ``this``, starting from ``startBitIdx``, towards more significant
+      bits until the first ``1`` bit is found.  Return the index of the found
+      bit.
+
+      If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
+
+      :arg startBitIdx: the index of the first bit to start searching for a
+                        ``1``
+      :type startBitIdx: ``integral``
+
+      :returns: the index of the first ``1`` bit after ``startBitIdx``,
+                inclusive
+      :rtype: ``uint``
+   */
   proc bigint.scan1(startBitIdx: integral): uint {
     const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
