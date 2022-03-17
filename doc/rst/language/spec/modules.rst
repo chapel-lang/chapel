@@ -577,8 +577,8 @@ enumerated type (unless the module has been renamed to ``_``, as described
 earlier). It is an error to provide a name in a ``limitation-clause`` that does
 not exist or is not visible in the respective module or enumerated type.
 
-If an ``only`` list is left empty or an ``except`` is followed by :math:`*`
-then no symbols are made available to the scope without prefix.
+If an ``only`` list is left empty then no symbols are made available to the
+scope without prefix.
 
 When the ``limitation-clause`` for a use of a module contains a type, the
 visibility of its tertiary methods that are defined in that module, if any, is
