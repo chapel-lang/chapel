@@ -1054,14 +1054,7 @@ in a manage statement.
 
    produces the output
 
-   .. BLOCK-test-chapeloutput
-
-      entering
-      (x = 0)
-      leaving
-      (x = 8)
-
-   .. code-block:: bash
+   .. code-block:: printoutput
 
       entering
       (x = 0)
@@ -1112,6 +1105,8 @@ Resource storage may also be specified explicitly.
 
       proc manageIntWrapper() {
         var wrapper = new IntWrapper();
+
+        // Here we explicitly declare the resource 'val' as 'var'.
         manage wrapper as var val {
           val = 8;
         }
@@ -1120,14 +1115,7 @@ Resource storage may also be specified explicitly.
 
    produces the output
 
-   .. BLOCK-test-chapeloutput
-
-      entering
-      (x = 0)
-      leaving
-      (x = 0)
-
-   .. code-block:: bash
+   .. code-block:: printoutput
 
       entering
       (x = 0)
@@ -1157,7 +1145,8 @@ the error is not ``nil``,  it may be handled within the method. It
 can also be propagated by annotating ``leaveThis()`` with the
 ``throws`` tag and throwing the error.
 
-Manager expressions may also be nested within a manage statement.
+Multiple manager expressions may be present in a single manage
+statement.
 
    *Example (manage3.chpl)*.
 
@@ -1184,6 +1173,8 @@ Manager expressions may also be nested within a manage statement.
       proc manageIntWrapper() {
         var wrapper1 = new IntWrapper(1);
         var wrapper2 = new IntWrapper(2);
+
+        // Here we invoke two managers within a single manage statement.
         manage wrapper1 as val1, wrapper2 as val2 {
           val1 *= -1;
           val2 *= -1;
@@ -1193,7 +1184,7 @@ Manager expressions may also be nested within a manage statement.
 
    produces the output
 
-   .. BLOCK-test-chapeloutput
+   .. code-block:: printoutput
 
       entering
       (x = 1)
@@ -1204,19 +1195,8 @@ Manager expressions may also be nested within a manage statement.
       leaving
       (x = -1)
 
-   .. code-block:: bash
-
-      entering
-      (x = 1)
-      entering
-      (x = 2)
-      leaving
-      (x = -2)
-      leaving
-      (x = -1)
-
-Before entering the scope of a manage statement, nested managers have
-the ``enterThis()`` method called on them from left to right. Upon
-exiting the managed scope, ``leaveThis()`` is called on the nested
-managers in reverse order. The effect is as a stack.
+Before executing the code in the body of the manage statement, the
+``enterThis()`` method is called on each manager from left to right.
+Upon exiting the managed scope, the ``leaveThis()`` method is called
+on each manager from right to left.
 
