@@ -1960,10 +1960,6 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 //
 static MoreVisibleResult
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
-  // Do not consider methods more visible in disambiguation
-  if (fn1->isMethod() || fn2->isMethod())
-    return FOUND_NEITHER;
-
   //
   // common-case check to see if functions have equal visibility
   //
@@ -5644,8 +5640,14 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     prefer2 = DS.fn2MoreSpecific;
 
   } else {
-    // If the decision hasn't been made based on the argument mappings...
-    auto v = isMoreVisible(DC.scope, candidate1->fn, candidate2->fn);
+    MoreVisibleResult v = FOUND_NEITHER;
+    // If the decision hasn't been made based on the argument mappings,
+    // consider visibility...
+    // But, do not consider visibility for methods in disambiguation.
+    if (!(candidate1->fn->isMethod() || candidate2->fn->isMethod())) {
+      v = isMoreVisible(DC.scope, candidate1->fn, candidate2->fn);
+    }
+
     if (v == FOUND_F1_FIRST) {
       EXPLAIN("\nQ: preferring more visible function\n");
       prefer1 = true;
