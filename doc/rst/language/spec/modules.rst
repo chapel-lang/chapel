@@ -438,8 +438,10 @@ The syntax of the use statement is given by:
      'only' rename-list[OPT]
 
    exclude-list:
-     identifier-list
-     $ * $
+     operator-name
+     identifier
+     operator-name , exclude-list
+     identifier , exclude-list
 
    rename-list:
      rename-base
@@ -449,6 +451,7 @@ The syntax of the use statement is given by:
      identifier 'as' identifier
      identifier 'as' _
      identifier
+     operator-name
 
 For example, the program
 
