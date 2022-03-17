@@ -13,8 +13,8 @@ on:
     branches: [ main ]
     # This limits the action so it only builds when this file changes
     paths:
-      # NOTE: I can't get either $DOCKERFILE or ${{env.DOCKERFILE}} to work
-      # properly here
+      # unfortunately we can't use ${{env.DOCKERFILE}} here
+      # see https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
       - util/dockerfiles/github-ci/Dockerfile
 
   # Adds a "manual run" option in the GH UI
