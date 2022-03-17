@@ -1,6 +1,8 @@
 Release Changes List
 ====================
 
+o check compiler flags / man pages
+o check example codes
 
 version 1.26.0
 ==============
@@ -170,6 +172,7 @@ Package Modules
 * added a new 'CopyAggregation' module supporting aggregated copies
   (see https://chapel-lang.org/docs/1.26/modules/packages/CopyAggregation.html)
 * changed 'TOML' package to sort keys when writing them out
+  (see TODO)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -254,8 +257,8 @@ Bug Fixes
 * fixed a bug preventing 'const in' task intents from being used with arrays
 * fixed a bug when calling '.localSlice()' on a slice of a default array
 * fixed a bug in which 'require foo.chpl;' was ignored within implicit modules 
-* fixed a bug in which first-class functions failed to retain return intents
 * fixed a potential issue with arbitrary shell commands in `require` statements
+* fixed a bug in which first-class functions failed to retain return intents
 * added a remote cache fence to barrier calls
 * fixed a bug with overload sets and operators
 
@@ -350,7 +353,6 @@ Developer-oriented changes: Platform-specific bug fixes
 Developer-oriented changes: Testing System
 ------------------------------------------
 * stopped using `distutils`, which is deprecated in Python 3.10
-* added a check for connectivity to `github.com` for `mason` external tests
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
