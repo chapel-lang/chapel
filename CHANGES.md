@@ -169,6 +169,7 @@ Package Modules
 ---------------
 * added a new 'CopyAggregation' module supporting aggregated copies
   (see https://chapel-lang.org/docs/1.26/modules/packages/CopyAggregation.html)
+* changed 'TOML' package to sort keys when writing them out
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -236,6 +237,7 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * added an error when applying 'override' to a non-method
+* added single quotes around values and types in overflow errors for ints/bytes
 * added an error when using 'CHPL_LLVM=none' with 'CHPL_TARGET_COMPILER=llvm'
 * updated error message in `realPath()` to better reflect its interface  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Path.html#Path.realPath)
@@ -253,6 +255,7 @@ Bug Fixes
 * fixed a bug when calling '.localSlice()' on a slice of a default array
 * fixed a bug in which 'require foo.chpl;' was ignored within implicit modules 
 * fixed a bug in which first-class functions failed to retain return intents
+* fixed a potential issue with arbitrary shell commands in `require` statements
 * added a remote cache fence to barrier calls
 * fixed a bug with overload sets and operators
 
@@ -286,7 +289,7 @@ Developer-oriented changes: Documentation
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
-* coined 'dyno' to refer to aspects of the compiler rewrite effort 'dyno'
+* coined 'dyno' to refer to aspects of the compiler rewrite effort
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -306,11 +309,20 @@ Developer-oriented changes: Makefile / Build-time changes
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * added support for a '-j'/'--parallel-make' flag for the C back-end
+* renamed the `--compiler-library-parser` flag to `--dyno`
+* added `--debug-trace` & `--break-on-hash` flags for debugging 'dyno's parser
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * updated '--incremental' to compile each module's '.c' file indepdently
 * enabled support for 'make -j' using the C back-end via '-j' / '--incremental'
+
+Developer-oriented changes: 'dyno' Compiler improvements/changes
+----------------------------------------------------------------
+* the 'dyno' front-end can now parse all primers and modules
+* improved `--dyno` to the point that ~13,222/13,697 tests now pass
+* improved `--dyno` error messages in terms of formatting and clarity
+* added ability to dump a uAST node from 'dyno' using Chapel-like syntax
 * added a prototype pass manager to the 'dyno' compiler (TODO: checkme)
 
 Developer-oriented changes: Runtime improvements
@@ -338,9 +350,13 @@ Developer-oriented changes: Platform-specific bug fixes
 Developer-oriented changes: Testing System
 ------------------------------------------
 * stopped using `distutils`, which is deprecated in Python 3.10
+* added a check for connectivity to `github.com` for `mason` external tests
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* mason `.toml` files have sorted keys as a result of update to TOML package
+  (see TODO)
+
 
 Developer-oriented changes: Utilities
 -------------------------------------
