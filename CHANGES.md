@@ -26,6 +26,8 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.26/builtins/ChapelRange.html#ChapelRange.range.size)
 * stopped auto-creating 'hash()' methods for records w/ custom '=='/'!=' ops  
   (see https://chapel-lang.org/docs/1.26/language/spec/records.html#hashing-a-record)
+* made it an error to overload return intents for the `enterThis()` method
+  (see TODO)
 
 New Features
 ------------
@@ -34,6 +36,8 @@ New Features
 * added support for renaming 'extern type' declarations  
   (e.g., 'extern "c_name" type chpl_name = ...;'  
    see also https://chapel-lang.org/docs/1.26/language/spec/interoperability.html#referring-to-external-c-types)
+* added an `unsafeAssign()` method and context manager to domains  
+  (see https://chapel-lang.org/docs/main/language/spec/domains.html#ChapelDomain.unsafeAssignManager)
 
 Feature Improvements
 --------------------
@@ -56,6 +60,10 @@ Name Changes in Libraries
 -------------------------
 * renamed C type aliases 'size_t'/'ssize_t' to 'c_size_t'/'c_ssize_t'  
   (see https://chapel-lang.org/docs/1.26/modules/standard/CTypes.html#CTypes.c_size_t)
+* changed the formal names in the `Reflection.getField()` family of functions
+  (see https://chapel-lang.org/docs/main/modules/standard/Reflection.html)
+* renamed several set method arguments from `x` to `element`  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
 * improved the names of many routines and arguments in the 'BigInteger' module
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
   - renamed `bigint.mpzStruct()` to `bigint.getImpl()`
@@ -85,6 +93,8 @@ Deprecated / Removed Library Features
    and https://chapel-lang.org/docs/1.26/modules/standard/CPtr.html)
 * deprecated the automatic 'ChapelEnv' module in favor of 'ChplConfig'  
   (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html)
+* deprecated `set.isIntersecting()`  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html#Set.set.isIntersecting)
 * deprecated binary conversion format strings in 'FormattedIO.readf'/'writef'
 * deprecated `iostyle` record from 'IO' module
 * deprecated `stringStyleTerminated()` in 'IO' module
@@ -127,6 +137,12 @@ Standard Library Modules
 ------------------------
 * added a new 'CTypes' module that defines Chapel aliases for C types  
   (see https://chapel-lang.org/docs/1.26/modules/standard/CTypes.html)
+* added optional arguments to `set` initializers for more control over resizing  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html#Set.set)
+* added an overload of `map.getValue()` that accepts a sentinel value  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Map.html#Map.map.getValue)
+* changed `map.getValue()` to throw rather than halting  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Map.html#Map.map.getValue)
 * enabled 'min()'/'max()' routines to be promoted using array arguments
 * updated 'Math.cproj()' to return a 'complex' rather than 'real' value  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Math.html#Math.cproj)
@@ -161,13 +177,18 @@ Compilation-Time / Generated Code Improvements
 Memory Improvements
 -------------------
 * eliminated a modest amount of memory allocated when iterating over types
+* fixed a memory leak for `set.add()` from the 'Set' module
 
 Documentation
 -------------
+* added documentation to the language specification for the `manage` statement
+  (see TODO)
 * added documentation for many methods in the 'BigInteger' module
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
 * stopped documenting the existence of the `bigint.mpz` field
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint)
+* added documentation for which elements win in `set` operations  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
 
 Syntax Highlighting
 -------------------
