@@ -242,7 +242,7 @@ static VarSymbol* generateAssignmentToPrimitive(
 
 static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop) {
   Type* symType = symInLoop->typeInfo();
-  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", symType);
+  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, symInLoop->name, symType);
   info.fn->insertFormalAtTail(newFormal);
 
   info.kernelActuals.push_back(symInLoop);
