@@ -4783,8 +4783,8 @@ In this file, we use "integral" to refer to the Chapel types int or uint and
 
 .. warning::
 
-   Binary conversions are now deprecated. Binary numeric conversions have been 
-   replaced by :proc:`IO.channel.readBinary` and :proc:`IO.channel.writeBinary`. 
+   Binary conversions are now deprecated. Binary numeric conversions have been
+   replaced by :proc:`IO.channel.readBinary` and :proc:`IO.channel.writeBinary`.
    Replacements for binary string conversions are under development.
 
 Formatted I/O for C Programmers
