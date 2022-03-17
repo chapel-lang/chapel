@@ -68,8 +68,9 @@ Name Changes in Libraries
   (see https://chapel-lang.org/docs/main/builtins/Bytes.html,  
    https://chapel-lang.org/docs/main/builtins/String.html,
    and https://chapel-lang.org/docs/main/modules/standard/Regex.html)
-* renamed `regexMatch.offset` to `byteOffset` and `size` to `numBytes`
+* renamed `regexMatch.offset` to `.byteOffset` and `.size` to `.numBytes`
   (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regexMatch)
+* renamed `captures`/`maxmatches` args in 'Regex' to `numCaptures`/`maxMatches`
 * renamed the `list.indexOf()` method to `find()`  
   (see https://chapel-lang.org/docs/main/modules/standard/List.html#List.list.indexOf)
 * renamed several `set` method arguments from `x` to `element`  
@@ -184,6 +185,7 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* made promotions with slices more efficient with '-schpl_serializeSlices=true'
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -197,6 +199,11 @@ Documentation
 -------------
 * added documentation to the language specification for the `manage` statement
   (see TODO)
+* merged domain/array 'built-in types and functions' content into language spec
+  (see https://chapel-lang.org/docs/1.26/language/spec/domains.html#module-ChapelDomain
+   and https://chapel-lang.org/docs/1.26/language/spec/arrays.html#module-ChapelArray)
+* updated GPU technote to expand on currently known limitations
+  (see https://chapel-lang.org/docs/1.26/technotes/gpu.html)
 * added documentation for many methods in the 'BigInteger' module
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
 * stopped documenting the existence of the `bigint.mpz` field
@@ -220,6 +227,16 @@ Portability
 
 GPU Computing
 -------------
+* added support for executing promoted expressions on GPUs
+* added support for using multiple GPUs in one node
+* added primitive to synchronize GPU threads
+* added primitive to statically allocate GPU block shared memory
+* fixed sporadic issue causing illegal memory access
+* fixed bug where `forall` loops executed serially for the GPU locale model
+* fixed a bug with 0-size allocations in GPU memory
+* fixed a bug with repeatedly-used symbols in loop bodies executed on GPUs
+* produce an error when `CHPL_LOCALE_MODEL=gpu` and `CHPL_COMM!=none`
+* added warnings for using an incompatible target compiler
 
 Compiler Improvements
 ---------------------
@@ -353,6 +370,7 @@ Developer-oriented changes: Platform-specific bug fixes
 Developer-oriented changes: Testing System
 ------------------------------------------
 * stopped using `distutils`, which is deprecated in Python 3.10
+* started testing CHAMPS on a nightly basis
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
@@ -861,6 +879,7 @@ Example Codes
 * added an example program demonstrating how to read CSV files in Chapel  
   (see `$CHPL_HOME/examples/patterns/readcsv.chpl`)
 * updated example programs w.r.t. renamings and deprecated features
+* fixed 'primers' Makefile to not build `interopWithC` helper on `make clean`
 
 Portability
 -----------
@@ -1054,6 +1073,7 @@ Developer-oriented changes: Compiler improvements/changes
 * removed support for old-style `_cast` operators from the compiler
 * changed C++ compiler sources to include `cmath` instead of `math.h`
 * removed a non-deterministic behavior during compilation
+* refactored gpu transformation code into a separate source file
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
