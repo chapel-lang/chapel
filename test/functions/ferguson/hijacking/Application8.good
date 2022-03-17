@@ -1,1 +1,4 @@
-In Application.Widget.foo
+Application8.chpl:17: In function 'main':
+Application8.chpl:20: error: ambiguous call 'Widget.run(int(64))'
+Application8.chpl:12: note: candidates are: Widget.run(x: real)
+Application8.chpl:3: note:                 Base.run(x: int)
