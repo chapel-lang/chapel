@@ -246,12 +246,14 @@ Third-Party Software Changes
 
 Developer-oriented changes: Process
 -----------------------------------
+* trailing whitespace is now flagged in CI using GitHub actions
 
 Developer-oriented changes: Documentation
 -----------------------------------------
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
+* coined 'dyno' to refer to aspects of the compiler rewrite effort 'dyno'
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -264,7 +266,9 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* adjusted unique build path for `hwloc` and `re2`
 * removed the `make third-party` target
+* a 'dyno'-specific C++ linter now checks some class methods
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -274,6 +278,7 @@ Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * updated '--incremental' to compile each module's '.c' file indepdently
 * enabled support for 'make -j' using the C back-end via '-j' / '--incremental'
+* added a prototype pass manager to the 'dyno' compiler (TODO: checkme)
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
@@ -284,6 +289,7 @@ Developer-oriented changes: Runtime improvements
   - added the device name to a Chapel executable's '--verbose' output
   - made use of the hybrid memory registration mode with the 'cxi' provider
   - added environment variables to control the use of 'fi_inject'
+* added a warning for `CHPL_RT_NUM_THREADS_PER_LOCALE` with `CHPL_TASKS=fifo`
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
