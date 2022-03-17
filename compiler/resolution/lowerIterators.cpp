@@ -1786,20 +1786,8 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
             if (label->hasFlag(FLAG_ERROR_LABEL) ||
                 (inForall && label->hasFlag(FLAG_FORALL_BREAK_LABEL))) {
               outHandlerLabel = label;
-              // find the error that this block is working with
-              for(Expr* e = def->next; e != NULL; e = e->next) {
-                std::vector<CallExpr*> calls;
-                collectCallExprs(e, calls);
-                for_vector(CallExpr, call, calls) {
-                  if (call->isPrimitive(PRIM_CHECK_ERROR)) {
-                    SymExpr* se = toSymExpr(call->get(1));
-                    INT_ASSERT(se->symbol()->hasFlag(FLAG_ERROR_VARIABLE));
-                    outErrorSymbol = se->symbol();
-                    return true;
-                  }
-                }
-              }
-              INT_FATAL("Could not find error variable for handler");
+              outErrorSymbol = findErrorVarForHandlerLabel(label);
+              return true;
             }
           }
         }
@@ -1919,6 +1907,16 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
 // out of the enclosing loop. See also the PR message for #12963.
 //
 
+// 'bbcopy' may come from an IBB that simulates a throw and so have
+// a goto at the end. If so, remove the goto that we are inserting before.
+// Without this, multiple deinits may occur, ex.
+//   test/errhandling/parallel/forall-calls-throwing-fn2.chpl
+//
+static void adjustMultipleGotos(BlockStmt* bbcopy, GotoStmt* gt) {
+  if (isGotoStmt(bbcopy->body.tail))
+    gt->remove();
+}
+
 // Return an appropriate IBB insertion point for an outbound goto 'gt'.
 // 'loopRef' is the forLoop or its copy for lowering, whichever is inTree().
 // 'IC' is the forLoop's _iteratorClass, or NULL if lowering a ForallStmt.
@@ -1973,6 +1971,7 @@ static void addIteratorBreakBlocks(Expr* loopRef, Symbol* IC,
   for_vector(GotoStmt, gt, exits) {
     BlockStmt* bbcopy = breakBlock->copy();
     ibbInsertPoint(loopRef, IC, gt)->insertBefore(bbcopy);
+    adjustMultipleGotos(bbcopy, gt);
     bbcopy->flattenAndRemove(); // otherwise later ibbInsertPoint may fail
   }
 
@@ -1997,7 +1996,9 @@ void addIteratorBreakBlocksInline(Expr* loopRef, Symbol* IC,
                                                                  yield);
   // Remove the last goto in the breakBlock. The corresponding goto
   // in 'loopBody' will branch to the exit instead.
-  toGotoStmt(breakBlock->body.tail)->remove();
+  if (GotoStmt* tail = toGotoStmt(breakBlock->body.tail))
+    if (tail->gotoTag == GOTO_RETURN)
+      tail->remove();
 
   addIteratorBreakBlocks(loopRef, IC, loopBody, breakBlock);
 }

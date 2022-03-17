@@ -337,6 +337,14 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
   info.tryStmt->replace(tryBody);
 }
 
+static VarSymbol* createAndInsertErrorVar(Expr* insert) {
+  VarSymbol* errorVar = newTemp("error", dtErrorNilable());
+  errorVar->addFlag(FLAG_ERROR_VARIABLE);
+  insert->insertBefore(new DefExpr(errorVar));
+  insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
+  return errorVar;
+}
+
 bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = !tryStack.empty();
 
@@ -359,10 +367,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         errorPolicy->insertAtTail(gotoHandler());
       } else {
         // without try, need an error variable
-        errorVar = newTemp("error", dtErrorNilable());
-        errorVar->addFlag(FLAG_ERROR_VARIABLE);
-        insert->insertBefore(new DefExpr(errorVar));
-        insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
+        errorVar = createAndInsertErrorVar(insert);
 
         // TODO: if deferDepth > 0, either implement error handling
         // or make the program halt regardless of insideTry or outError.
@@ -449,12 +454,7 @@ void ErrorHandlingVisitor::setupForThrowingLoop(Stmt* node,
                                                 LabelSymbol* handlerLabel,
                                                 BlockStmt* body)
 {
-  VarSymbol*   errorVar     = newTemp("error", dtErrorNilable());
-  errorVar->addFlag(FLAG_ERROR_VARIABLE);
-
-  node->insertBefore(new DefExpr(errorVar));
-  node->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
-
+  VarSymbol* errorVar = createAndInsertErrorVar(node);
   TryInfo info = {errorVar, handlerLabel, NULL, node, body};
   tryStack.push(info);
 }
@@ -481,7 +481,6 @@ bool ErrorHandlingVisitor::enterForLoop(ForLoop* node) {
 
   return true;
 }
-
 
 static void checkTPVs(ForallStmt* fs) {
   // Do this first to check for throwing non-POD initializer exprs.
@@ -544,6 +543,8 @@ void ErrorHandlingVisitor::exitForallLoop(Stmt* node)
   TryInfo& info = tryStack.top();
   if (info.throwingForall == NULL)
     return;
+  else
+    INT_ASSERT(info.throwingForall == node);
 
   tryStack.pop();
 
@@ -625,9 +626,18 @@ AList ErrorHandlingVisitor::setOuterErrorAndGotoHandler(VarSymbol* error) {
   return ret;
 }
 
+static AList errorCondHelper(VarSymbol* errorVar,
+                             BlockStmt* thenBlock, BlockStmt* elseBlock);
+
 AList ErrorHandlingVisitor::errorCond(VarSymbol* errorVar,
                                       BlockStmt* thenBlock,
                                       BlockStmt* elseBlock) {
+  return errorCondHelper(errorVar, thenBlock, elseBlock);
+}
+
+static AList errorCondHelper(VarSymbol* errorVar,
+                             BlockStmt* thenBlock, BlockStmt* elseBlock)
+{
   VarSymbol* errorExistsVar = newTemp("shouldHandleError", dtBool);
   CallExpr*  errorExists    = new CallExpr(PRIM_CHECK_ERROR, errorVar);
 
@@ -1071,6 +1081,104 @@ void ErrorCheckingVisitor::exitDeferStmt(DeferStmt* node) {
 
 } /* end anon namespace */
 
+Symbol* findErrorVarForHandlerLabel(LabelSymbol* handlerLabel) {
+  // find the error that this handlerLabel is working with
+  for(Expr* e = handlerLabel->defPoint->next; e != NULL; e = e->next) {
+    std::vector<CallExpr*> calls;
+    collectCallExprs(e, calls);
+    for_vector(CallExpr, call, calls) {
+      if (call->isPrimitive(PRIM_CHECK_ERROR)) {
+        SymExpr* se = toSymExpr(call->get(1));
+        INT_ASSERT(se->symbol()->hasFlag(FLAG_ERROR_VARIABLE));
+        return se->symbol();
+      }
+    }
+  }
+
+  INT_FATAL("Could not find error variable for handler");
+  return NULL;
+}
+
+struct ErrorVarAndGoto { Symbol* errorVar; GotoStmt* gotoHandler; };
+
+static ArgSymbol* errorFormal(FnSymbol* fn) {
+  for_formals(formal, fn)
+    if (formal->hasFlag(FLAG_ERROR_VARIABLE))
+      return formal;
+  return NULL;
+}
+
+//
+// Returns (error variable, goto to the handler label) for the error handling
+// block of 'fs'. If the error handling block does not exist, creates it.
+//
+// The newly-created error handler is to be used for an IBB only, i.e.,
+// to handle an error thrown within loop body, whereas the ForallStmt
+// and the IBB (which is right after a yield) are within an iterator.
+// The error received by this error handler should not be passed to an
+// enclosing try-block because errors thrown within loop body should not be
+// handled by the iterator's try-blocks. Although this will happen currently,
+// for example when the ForallStmt has an existing error handler that passes
+// an error to an enclosing try-block.
+//
+// The label is created analogously to ErrorHandlingVisitor::enterForallStmt().
+// The goto looks like the one created in ErrorHandlingVisitor::gotoHandler().
+//
+static ErrorVarAndGoto forallHandlerForIBB(ForallStmt* fs) {
+  LabelSymbol* handlerLabel = fs->fErrorHandlerLabel;
+  VarSymbol*   errorVar     = NULL;
+  if (handlerLabel == nullptr) {
+    // distinguish its name from regular forall_break_label, for debugging
+    handlerLabel = new LabelSymbol("forall_IBB_break_label");
+    handlerLabel->addFlag(FLAG_FORALL_BREAK_LABEL);
+    fs->fErrorHandlerLabel = handlerLabel;
+    fs->insertAfter(new DefExpr(handlerLabel));
+    // 'fs' not having handlerLabel means it does not have errorVar either.
+    errorVar = createAndInsertErrorVar(fs);
+
+    // Pass errorVar to the enclosing error handling entity:
+    // either the function's out_error or the forall's error.
+    ErrorVarAndGoto parentEG = {NULL, NULL};
+    if (ForallStmt* parentFS = enclosingForallStmt(fs)) {
+      // connect to the enclosing ForallStmt
+      parentEG = forallHandlerForIBB(parentFS);
+    }
+    else {
+      // connect to the function's out_error
+      FnSymbol* parentFn = toFnSymbol(fs->parentSymbol);
+      parentEG.gotoHandler = new GotoStmt(GOTO_ERROR_HANDLING_RETURN,
+                                   parentFn->getOrCreateEpilogueLabel());
+      parentEG.errorVar = errorFormal(parentFn);
+    }
+
+    BlockStmt* errorPolicy = new BlockStmt();
+    if (parentEG.errorVar == nullptr) {
+      errorPolicy->insertAtTail(new CallExpr(gChplPropagateError, errorVar));
+    }
+    else {
+      errorPolicy->insertAtTail(
+                        new CallExpr(PRIM_ASSIGN, parentEG.errorVar, errorVar));
+      errorPolicy->insertAtTail(parentEG.gotoHandler);
+    }
+    handlerLabel->defPoint->insertAfter(
+                                errorCondHelper(errorVar, errorPolicy, NULL));
+  }
+  else {
+    // Find the already-existing errorVar.
+    errorVar = toVarSymbol(findErrorVarForHandlerLabel(handlerLabel));
+  }
+
+  ErrorVarAndGoto result =
+    {errorVar, new GotoStmt(GOTO_BREAK_ERROR_HANDLING, handlerLabel)};
+  return result;
+}
+
+// Returns a new GotoStmt to fs->fErrorHandlerLabel.
+// If the label is not there, creates the label, the error variable,
+// and the error handling block.
+GotoStmt* gotoForallErrorHandler(ForallStmt* fs) {
+  return forallHandlerForIBB(fs).gotoHandler;
+}
 
 bool canFunctionImplicitlyThrow(FnSymbol* fn)
 {
