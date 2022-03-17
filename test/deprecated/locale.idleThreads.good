@@ -1,2 +1,0 @@
-locale.idleThreads.chpl:2: warning: locale.idleThreads() is deprecated; please let us know if this is a problem for you
-true

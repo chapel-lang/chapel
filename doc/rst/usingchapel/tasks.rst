@@ -381,31 +381,6 @@ are running on a given locale.
 In order to use this method, you have to specify the locale you wish to
 query, as in here.runningTasks(), where 'here' is the current locale.
 
-The following methods are also available, but these are all deprecated
-and we expect to remove them in the next release unless a need for
-them is identified.
-
-  queuedTasks()
-    returns the number of tasks that are ready to run, but
-    have not yet begun executing.
-
-  blockedTasks()
-    returns the number of tasks that are blocked because
-    they are waiting on a sync or single variable.
-
-  totalThreads()
-    returns the number of threads that have been created
-    since the program started executing, regardless of whether they
-    are busy or idle.
-
-  idleThreads()
-    returns the number of threads are idle, i.e., not assigned to any task.
-
-(Note that all these methods are available for all tasking options,
-but currently only runningTasks() returns meaningful values in all
-configurations.  The others only return meaningful values for
-``CHPL_TASKS=fifo``, which is partly why they have been deprecated.)
-
 
 -------------------------
 Future Tasking Directions
