@@ -590,16 +590,16 @@ regardless of use statements, see :ref:`Method_Calls`.
 Within an ``only`` list, a visible symbol (that is not an operator) from that
 module may optionally be given a new name using the ``as`` keyword. This new
 name will be usable from the scope of the use in place of the old name unless
-the old name is additionally specified in the ``only`` list. If a use which
-renames a symbol is present at module scope, uses and imports of that module
-will also be able to access that symbol using the new name instead of the old
-name. Renaming does not affect accesses to that symbol via the source module’s
-or enumerated type’s prefix, nor does it affect uses or imports of that module
-or enumerated type from other contexts. It is an error to attempt to rename a
-symbol that does not exist or is not visible in the respective module or
-enumerated type, or to rename a symbol to a name that is already present in the
-same ``only`` list.  It is also an error to attempt to rename an operator, or to
-attempt to rename a symbol to an operator name.  It is, however, perfectly
+the old name is additionally specified in the ``only`` list. If a ``public use``
+which renames a symbol is present at module scope, uses and imports of that
+module will also be able to access that symbol using the new name instead of the
+old name. Renaming does not affect accesses to that symbol via the source
+module’s or enumerated type’s prefix, nor does it affect uses or imports of that
+module or enumerated type from other contexts. It is an error to attempt to
+rename a symbol that does not exist or is not visible in the respective module
+or enumerated type, or to rename a symbol to a name that is already present in
+the same ``only`` list.  It is also an error to attempt to rename an operator,
+or to attempt to rename a symbol to an operator name.  It is, however, perfectly
 acceptable to rename a symbol to a name present in the respective module or
 enumerated type which was not specified via that ``only`` list.
 
