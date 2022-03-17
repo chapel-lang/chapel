@@ -42,7 +42,8 @@ module User {
   }
   proc u3() {
     proc workFun()         { note("User.u3.workFun", 2); }
-    proc MyClass.workMet() { note("User.u3.workMet", 2); }
+    // does not use a local proc MyClass.workMet b/c that would be ambiguous
+    // see #19352
     note("User.u3", 1);
     libFun(myC);      // cannot reuse the cache entry -> create a new one
     myC.libMet(myC);
