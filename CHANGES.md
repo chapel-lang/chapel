@@ -14,6 +14,8 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* UTF-8 support no longer depends on the 'LANG' environment variable
+  (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#character-set)
 * removed support for deprecated `CHPL_REGEXP` environment variable
 
 Syntactic / Naming Changes
@@ -22,6 +24,10 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* modules from files named on the command-line are now always initialized
+  (see https://chapel-lang.org/docs/main/language/spec/modules.html#module-initialization)
+* enabled implicit conversions from non-nilable to nilable for type arguments
+  (see https://chapel-lang.org/docs/language/spec/procedures.html#legal-argument-mapping)
 * '.indices' queries on rectangular arrays now return a local domain of indices  
   (see https://chapel-lang.org/docs/1.26/language/spec/arrays.html#ChapelArray.indices)
 * '.size'/'.shape' queries on ranges, domains, arrays now return 'int's  
@@ -156,6 +162,8 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.26/modules/standard/Map.html#Map.map.getValue)
 * changed `map.getValue()` to throw rather than halting  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Map.html#Map.map.getValue)
+* enabled casts from integral types to `c_void_ptr`
+  (see https://chapel-lang.org/docs/main/modules/standard/CTypes.html#CTypes.c_void_ptr)
 * enabled 'min()'/'max()' routines to be promoted using array arguments
 * updated 'Math.cproj()' to return a 'complex' rather than 'real' value  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Math.html#Math.cproj)
@@ -172,6 +180,10 @@ Package Modules
 ---------------
 * added a new 'CopyAggregation' module supporting aggregated copies
   (see https://chapel-lang.org/docs/1.26/modules/packages/CopyAggregation.html)
+* added a new 'Socket' package module to support network programming
+  (see https://chapel-lang.org/docs/main/modules/packages/Socket.html)
+* added a new 'Channel' package module to support communicating between tasks
+  (see https://chapel-lang.org/docs/main/modules/packages/Channel.html)
 * changed 'TOML' package to sort keys when writing them out
   (see TODO)
 
@@ -223,6 +235,10 @@ Portability
 -----------
 * improved integration of `CHPL_COMM=ofi` with HPE Cray EX workload managers
 * implemented several other portability improvements for `CHPL_COMM=ofi`
+* improved portability of Chapel on FreeBSD and Alpine Linux
+* fixed problems finding a system library when a bundled one was requested
+* enabled pip dependencies to be built from source with 'CHPL_PIP_FROM_SOURCE'
+* addressed issues on a variety of systems when using system LLVM packages
 * made `chpldoc` compatible with Python 3.10
 
 GPU Computing
@@ -276,8 +292,11 @@ Bug Fixes
 * fixed a bug in which 'require foo.chpl;' was ignored within implicit modules 
 * fixed a potential issue with arbitrary shell commands in `require` statements
 * fixed a bug in which first-class functions failed to retain return intents
+* Fixed a problem with combinations of `const ref`, `owned`, and `coforall`
+* Fixed a bug that caused sporadic problems  with the '--memLog' flag
 * added a remote cache fence to barrier calls
 * fixed a bug with overload sets and operators
+
 
 Bug Fixes for Build Issues
 --------------------------
@@ -323,6 +342,8 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * adjusted unique build path for `hwloc` and `re2`
+* `printchplenv --internal` separates system and bundled `-I`/`-L` arguments
+* non-debug builds of `chpl` now use `-DNDEBUG` to disable asserts in C++ code
 * removed the `make third-party` target
 * a 'dyno'-specific C++ linter now checks some class methods
 
@@ -344,6 +365,7 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 * improved `--dyno` error messages in terms of formatting and clarity
 * added ability to dump a uAST node from 'dyno' using Chapel-like syntax
 * added a prototype pass manager to the 'dyno' compiler (TODO: checkme)
+* began the process of restructuring compiler passes to use a pass manager
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
