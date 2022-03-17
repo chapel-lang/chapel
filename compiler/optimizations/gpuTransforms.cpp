@@ -527,14 +527,13 @@ static void outlineGPUKernels() {
 
           // We'll get an end of statement for the index we add. I am not sure
           // how much it matters for the long term, for now just remove it.
-          for_alist (node, outlinedFunction->body->body) {
-            if (CallExpr* call = toCallExpr(node)) {
-              if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
-                call->remove();
-              }
+          std::vector<CallExpr*> callsInBody;
+          collectCallExprs(outlinedFunction, callsInBody);
+          for_vector (CallExpr, call, callsInBody) {
+            if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+              call->remove();
             }
           }
-
 
           VarSymbol *numThreads = generateNumThreads(gpuLaunchBlock, info);
           CallExpr* gpuCall = generateGPUCall(info, numThreads);
