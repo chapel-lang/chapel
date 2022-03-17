@@ -12,6 +12,7 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* removed support for deprecated `CHPL_REGEXP` environment variable
 
 Syntactic / Naming Changes
 --------------------------
@@ -28,6 +29,8 @@ Semantic Changes / Changes to Chapel Language
 
 New Features
 ------------
+* added support for listing operators in `only`, `except`, and `import`
+  (see TODO)
 * added support for renaming 'extern type' declarations  
   (e.g., 'extern "c_name" type chpl_name = ...;'  
    see also https://chapel-lang.org/docs/1.26/language/spec/interoperability.html#referring-to-external-c-types)
@@ -42,6 +45,8 @@ Deprecated / Unstable / Removed Language Features
   (e.g., in 'var A: ["red", "green", "blue"] real;', brackets are now required)
 * deprecated support for 'ChapelEnv.CHPL_AUX_FILESYS'  
   (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html#ChplConfig.CHPL_AUX_FILESYS)
+* removed deprecated support for `use <Mod> except *;`
+* removed deprecated support for operators declared using the `proc` keyword
 * removed all vestiges of the 'atomic' statement
 
 Namespace Changes
@@ -51,6 +56,27 @@ Name Changes in Libraries
 -------------------------
 * renamed C type aliases 'size_t'/'ssize_t' to 'c_size_t'/'c_ssize_t'  
   (see https://chapel-lang.org/docs/1.26/modules/standard/CTypes.html#CTypes.c_size_t)
+* improved the names of many routines and arguments in the 'BigInteger' module
+  (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
+  - renamed `bigint.mpzStruct()` to `bigint.getImpl()`
+  - renamed `bigint.get_d_2exp()` to `bigint.getD2Exp()`
+  - renamed `bigint.divisible_p()` to `bigint.isDivisible()`
+  - renamed `bigint.divisible_2exp_p()` to `bigint.isDivisibleBy2Pow()`
+  - renamed `bigint.congruent_p()` to `bigint.isCongruent()`
+  - renamed `bigint.congruent_2exp_p()` to `bigint.isCongruentBy2Pow()`
+  - renamed `bigint.perfect_power_p()` to `bigint.isPerfectPower()`
+  - renamed `bigint.perfect_square_p()` to `bigint.isPerfectSquare()`
+  - renamed `bigint.probab_prime_p()` to `bigint.probablyPrime()`
+  - renamed `bigint.gcdext()` to new `bigint.gcd()` overload
+  - renamed `bigint.remove()` to `bigint.removeFactor()`
+  - renamed `bigint.even_p()` to `bigint.isEven()`
+  - renamed `bigint.odd_p()` to `bigint.isOdd()
+  - renamed arguments of `bigint.divexact()` to `numer` and `denom`
+  - renamed argument of `bigint.isDivisible()` from `d` to `div`
+  - renamed argument of `bigint.isDivisibleBy2Pow()` from `b` to `exp`
+  - renamed arguments of `bigint.isCongruent()` to `con` and `mod`
+  - renamed arguments of `bigint.isCongruentBy2Pow()` to `con` and `modExp`
+  - renamed argument of `bigint.scan0()` and `bigint.scan1()` to `startBitIdx`
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -60,6 +86,39 @@ Deprecated / Removed Library Features
 * deprecated the automatic 'ChapelEnv' module in favor of 'ChplConfig'  
   (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html)
 * deprecated binary conversion format strings in 'FormattedIO.readf'/'writef'
+* deprecated `iostyle` record from 'IO' module
+* deprecated `stringStyleTerminated()` in 'IO' module
+* deprecated `stringStyleNullTerminated()` in 'IO' module
+* deprecated `stringStyleExactLen()` in 'IO' module
+* deprecated `stringStyleWithVariableLength()` in 'IO' module
+* deprecated `stringStyleWithLength()` in 'IO' module
+* deprecated `defaultIOStyle()` in 'IO' module
+* deprecated `open()` with `style` argument in 'IO' module
+* deprecated `openfd()` with `style` argument in 'IO' module
+* deprecated `openfp()` with `style` argument in 'IO' module
+* deprecated `opentmp()` with `style` argument in 'IO' module
+* deprecated `openmem()` with `style` argument in 'IO' module
+* deprecated `channel._style()` in 'IO' module
+* deprecated `channel._set_style()` argument in 'IO' module
+* deprecated `openreader()` with `style` argument in 'IO' module
+* deprecated `openwriter()` with `style` argument in 'IO' module
+* deprecated `file.reader()` with `style` argument in 'IO' module
+* deprecated `file.lines()` with `local_style` argument in 'IO' module
+* deprecated `file.writer()` with `style` argument in 'IO' module
+* deprecated `channel.read()` with `style` argument in 'IO' module
+* deprecated `channel.readln()` with `style` argument in 'IO' module
+* deprecated `channel.write()` with `style` argument in 'IO' module
+* deprecated `channel.writeln()` with `style` argument in 'IO' module
+* deprecated `open()` with `style` argument in 'HDFS' module
+* deprecated `openUrlReader()` with `style` argument in 'URL' module
+* deprecated `openUrlWriter()` with `style` argument in 'URL' module
+* deprecated `Error` subclass `BadRegexpError` from the 'Regex' module
+* removed deprecated methods on `file` type from `Path` module
+* removed deprecated 'Regexp' module
+* removed deprecated `regexp` type from the 'Regex' module
+* removed deprecated `RecordReader` initializer with `mRegexp` argument
+* removed deprecated `RecordReader.createRegexp()` method from 'RecordParser'
+* removed deprecated `CHPL_REGEXP` param from 'ChplConfig' module
 * deprecated support for the 'vectorizeOnly' iterator  
   (see https://chapel-lang.org/docs/1.26/modules/standard/VectorizingIterator.html)
 * removed support for the previously deprecated 'range.ident()' method
@@ -73,6 +132,12 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.26/modules/standard/Math.html#Math.cproj)
 * added support for a standalone (channel-less) 'IO.readline()' routine  
   (see https://chapel-lang.org/docs/1.26/modules/standard/IO.html#IO.readline)
+
+* updated `bigint.probablyPrime()` to return a new enum `BigInteger.primality`  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.primality  
+  and https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint.probablyPrime)
+* swapped the order of the values returned from `bigint.getD2Exp()`  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint.getD2Exp)
 
 Package Modules
 ---------------
@@ -99,16 +164,23 @@ Memory Improvements
 
 Documentation
 -------------
+* added documentation for many methods in the 'BigInteger' module
+  (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
+* stopped documenting the existence of the `bigint.mpz` field
+  (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint)
 
 Syntax Highlighting
 -------------------
 
 Example Codes
 -------------
+* removed 'SSCA2' from the `test/release/examples/benchmarks` directory
+* removed 'recordio.chpl' from the `test/release/examples/patterns` directory
 
 Portability
 -----------
 * implemented several portability improvements for 'CHPL_COMM=ofi'
+* made `chpldoc` compatible with Python 3.10
 
 GPU Computing
 -------------
@@ -132,6 +204,15 @@ Error Messages / Semantic Checks
 --------------------------------
 * added an error when applying 'override' to a non-method
 * added an error when using 'CHPL_LLVM=none' with 'CHPL_TARGET_COMPILER=llvm'
+* updated error message in `realPath()` to better reflect its interface  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Path.html#Path.realPath)
+* added checks for division by 0 to `bigint` division methods  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint.divexact,  
+  https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint.divQ,  
+  https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint.divR,  
+  https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint.divQR,  
+  https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint./,  
+  and https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint./=)
 
 Bug Fixes
 ---------
@@ -140,12 +221,14 @@ Bug Fixes
 * fixed a bug in which 'require foo.chpl;' was ignored within implicit modules 
 * fixed a bug in which first-class functions failed to retain return intents
 * added a remote cache fence to barrier calls
+* fixed a bug with overload sets and operators
 
 Bug Fixes for Build Issues
 --------------------------
 
 Bug Fixes for Libraries
 -----------------------
+* fixed bug with `bigint.removeFactor()` when `fac` is `0`
 
 Bug Fixes for Tools
 -------------------
@@ -157,6 +240,9 @@ Platform-specific Bug Fixes
 Third-Party Software Changes
 ----------------------------
 * updated the bundled version of 'libfabric' to version 1.13.2
+* updated the Sphinx version used for `chpldoc`
+* updated the Sphinx Chapel domain version used for `chpldoc`
+* updated the breathe version used for `chpldoc`
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -170,6 +256,8 @@ Developer-oriented changes: Naming Changes
 Developer-oriented changes: Module changes
 ------------------------------------------
 * simplified the barrier used to initialize locales
+* updated 'Socket' library operators to use the `operator` keyword
+* added `iostyleInternal` type for use when `iostyle` would have been needed
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
