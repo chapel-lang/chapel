@@ -73,3 +73,158 @@ Optionally include deprecation timeline in comments of deprecation test:
 .. code-block:: chapel
 
     // Deprecated in Chapel 1.14, to be removed in Chapel 1.15
+
+Examples
+--------
+
+The following section contains some examples of how to deprecate symbols in
+unusual situations.
+
+Changing A Function's Return Type
++++++++++++++++++++++++++++++++++
+
+When nothing about a function except its return type needs to change, it can
+be tricky for a user to opt in to the new behavior.
+
+.. code-block:: chapel
+
+   deprecated "foo returning 'int' is deprecated"
+   proc foo(): int { ... }
+
+   // As written, this replacement would conflict with the original, how can a
+   // user call it?
+   proc foo(): bool { ... }
+
+In this situation, we recommend adding a ``config param`` and a ``where`` clause
+that responds to it to the deprecated function and its replacement:
+
+.. code-block:: chapel
+
+   // The default state should result in the deprecated behavior, so users can
+   // adjust their code at their leisure
+   config param fooReturnsBool = false;
+
+   // The deprecation message should alert the user to the new flag
+   deprecated "foo returning 'int' is deprecated, please compile with '-sfooReturnsBool=true' to get the new return type"
+   proc foo(): int where !fooReturnsBool { ... }
+
+   // The new function should also use a 'where' clause to opt in to the new
+   // behavior
+   proc foo(): bool where fooReturnsBool { ... }
+
+When the deprecated function is removed, the flag should also be deprecated (and
+removed from the new function to avoid generating noise for the user:
+
+.. code-block:: chapel
+
+   deprecated "'fooReturnsBool' is deprecated and no longer has an effect"
+   config param fooReturnsBool = false;
+
+   // The old version has been removed, and the flag is no longer needed, so
+   // the new function can be in its final state.
+   proc foo(): bool { ... }
+
+There is a drawback with this approach - config params are not adjustable during
+the lifetime of a program, so updates must be made all at once before they can
+be tested by the user.  So, if you can think of a better solution, please
+suggest it and we will update this example!
+
+Changing A Function's Argument Name
++++++++++++++++++++++++++++++++++++
+
+When only the name of a function argument needs to change and not its type, a
+new overload will encounter conflicts when a user relies solely on positional
+ordering:
+
+.. code-block:: chapel
+
+   deprecated "argument name 'a' is deprecated, use 'b' instead"
+   proc foo(a: int) { ... }
+
+   proc foo(b: int) { ... }
+
+   ...
+
+   // This will obviously use the deprecated version
+   foo(a=3);
+   // And this will obviously use the new version
+   foo(b=3);
+   // But which overload will this call?  The compiler can't choose between them
+   foo(3);
+
+In this case, we still want to generate warnings when the old argument name is
+used, but we want positional ordering to work without indicating anything has
+changed.  To accomplish this, mark the deprecated version with `pragma "last
+resort"` - this will avoid conflicts in the positional ordering case while still
+keeping the old argument name available to generate the deprecation warning:
+
+.. code-block:: chapel
+
+   pragma "last resort"
+   deprecated "argument name 'a' is deprecated, use 'b' instead"
+   proc foo(a: int) { ... }
+
+   proc foo(b: int) { ... }
+
+   ...
+
+   // The behavior of these two calls is unchanged
+   foo(a=3);
+   foo(b=3);
+   // Now this will call the new version without conflict
+   foo(3);
+
+Replacing A Field
++++++++++++++++++
+
+While the obvious strategy for replacing a field would be to add an additional
+one with the new name, following this strategy can lead to a number of problems.
+Maintaining both the old field and the new field impacts the memory footprint of
+the type in which it lives.  In the case of ``param`` and ``type`` fields, it
+can also lead to difficulties storing old and new versions in the same data
+structure or break explicit declarations of the enclosing type.  It can make
+default initializers no longer compatible with the original uses, requiring the
+addition of explicit initializers.  Additionally, keeping the old and new fields
+in sync with each other to maintain behavior and enable incremental replacement
+is burdensome and might trigger deprecation warnings the user can't resolve
+themselves.
+
+With all of that in mind, the ideal strategy for replacing a renamed field with
+another one is to make the old field into a paren-less method.  For instance:
+
+.. code-block:: chapel
+
+   record Foo {
+     type oldName;
+   }
+
+can be transformed into:
+
+.. code-block:: chapel
+
+   record Foo {
+     type newName;
+
+     proc oldName type {
+       return this.newName;
+     }
+   }
+
+When replacing var fields, remember that fields are capable of being explicitly
+set outside of the contents of the type.  Thus, the paren-less method should
+use the ``ref`` return intent so that users are still able to update the field
+using the old name:
+
+.. code-block:: chapel
+
+   record Foo {
+     var newName: int;
+
+     proc oldName ref: int {
+       return this.newName;
+     }
+   }
+
+   var f = new Foo(30);
+   f.oldName += 3; // Should warn, but still function
+   writeln(f.newName); // Should be 33
