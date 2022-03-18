@@ -115,7 +115,7 @@ enum ForallIntentTag {
   TFI_CONST_REF,                   //   "
   TFI_REDUCE,                      //   AS    (for Accumulation State)
   TFI_TASK_PRIVATE,                //   TPV
-  // compiler-added helpers
+  // compiler-added helpers; note isCompilerAdded()
   TFI_IN_PARENT,                   //   INP
   TFI_REDUCE_OP,                   //   RP    (for Reduce oP)
   TFI_REDUCE_PARENT_AS,            //   PAS
@@ -456,6 +456,7 @@ public:
   const char* intentDescrString() const;
   bool  isReduce()          const { return intent == TFI_REDUCE;       }
   bool  isTaskPrivate()     const { return intent == TFI_TASK_PRIVATE; }
+  bool  isCompilerAdded()   const;
 
   static ShadowVarSymbol* buildForPrefix(ShadowVarPrefix prefix,
                                          Expr* name, Expr* type, Expr* init);
@@ -712,6 +713,19 @@ inline bool Symbol::isWideRef() {
 
 inline bool Symbol::isRefOrWideRef() {
   return isRef() || isWideRef();
+}
+
+// Is this a compiler-added helper / not to be reported to user?
+inline bool ShadowVarSymbol::isCompilerAdded() const {
+  switch (intent) {
+    case TFI_IN_PARENT:
+    case TFI_REDUCE_OP:
+    case TFI_REDUCE_PARENT_AS:
+    case TFI_REDUCE_PARENT_OP:
+      return true;
+    default:
+      return false;
+  }
 }
 
 

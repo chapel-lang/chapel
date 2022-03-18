@@ -1205,12 +1205,9 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
     return chpl_rt_direntptr_getname(this);
   }
 
-  var dir: DIRptr;
-  var ent: direntptr;
-  var err:syserr = ENOERR;
-  dir = opendir(unescape(path).c_str());
+  var dir: DIRptr = opendir(unescape(path).c_str());
   if (!is_c_nil(dir)) {
-    ent = readdir(dir);
+    var ent: direntptr = readdir(dir);
     while (!is_c_nil(ent)) {
       var filename: string;
       try! {
@@ -1243,7 +1240,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
     closedir(dir);
   } else {
     extern proc perror(s: c_string);
-    perror("error in listdir(): ");
+    perror(("error in listdir(): " + path).c_str());
   }
 }
 
