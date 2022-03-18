@@ -306,6 +306,10 @@ def llvm_enabled():
 def get_gcc_prefix():
     gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
 
+    # allow CHPL_LLVM_GCC_PREFIX=none to disable inferring it
+    if gcc_prefix == 'none':
+        return ''
+
     if not gcc_prefix:
         # darwin and FreeBSD default to clang
         # so shouldn't need GCC prefix
