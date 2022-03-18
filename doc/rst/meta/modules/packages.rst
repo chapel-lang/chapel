@@ -17,11 +17,3 @@ inclusion there.
    :glob:
 
    packages/*
-
-
-Index
------
-
-* :ref:`Chapel Online Documentation Index <genindex>`
-
-.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`
