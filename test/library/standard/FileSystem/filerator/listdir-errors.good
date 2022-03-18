@@ -1,0 +1,2 @@
+error in listdir(): no/such/dir/ever: No such file or directory
+error in listdir(): listdir-errors.chpl: Not a directory
