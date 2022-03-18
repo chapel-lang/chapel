@@ -1525,11 +1525,10 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
   }
 }
 
-/// \param call A for loop block primitive.
-static bool
 // Returns true if the given ForLoop was handled (converted and removed from
 // the tree); false otherwise.
-expandIteratorInline(ForLoop* forLoop) {
+static bool expandIteratorInline(ForLoop* forLoop)
+{
   Symbol*   ic       = forLoop->iteratorGet()->symbol();
   FnSymbol* iterator = getTheIteratorFn(ic);
 
@@ -1541,7 +1540,6 @@ expandIteratorInline(ForLoop* forLoop) {
               mod->name, iterator->fname(), iterator->linenum());
     }
   }
-
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
@@ -1907,6 +1905,27 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
 // out of the enclosing loop. See also the PR message for #12963.
 //
 
+// If we are in a recursive iterator, an IBB may return to the end of the
+// enclosing function. Redirect it to the end of the iterator instead.
+// See #18218.
+//
+static void adjustIbbGotoTarget(GotoStmt* gt, DefExpr*& gtTarget,
+                                Expr* loopRef) {
+  // Normally, the goto's target is in the forLoop's function.
+  if (gtTarget->parentSymbol == loopRef->parentSymbol)
+    return;
+
+  // If this is not for a recursive iterator, let us know.
+  INT_ASSERT(!strncmp(loopRef->parentSymbol->name, "_rec_", 5));
+
+  LabelSymbol* redirect = toFnSymbol(loopRef->parentSymbol)->
+    getOrCreateEpilogueLabel();
+
+  INT_ASSERT(!gt->inTree()); // otherwise gt->label->replace(redirect)
+  gt->label = new SymExpr(redirect);
+  gtTarget = redirect->defPoint;
+}
+
 // 'bbcopy' may come from an IBB that simulates a throw and so have
 // a goto at the end. If so, remove the goto that we are inserting before.
 // Without this, multiple deinits may occur, ex.
@@ -1923,7 +1942,7 @@ static void adjustMultipleGotos(BlockStmt* bbcopy, GotoStmt* gt) {
 //
 static Expr* ibbInsertPoint(Expr* loopRef, Symbol* IC, GotoStmt* gt) {
   DefExpr* gtTarget = toSymExpr(gt->label)->symbol()->defPoint;
-  // Sanity: the goto's target is in the forLoop's function.
+  adjustIbbGotoTarget(gt, gtTarget, loopRef);
   INT_ASSERT(gtTarget->parentSymbol == loopRef->parentSymbol);
 
   // When lowering a ForallStmt, there is no IC.
