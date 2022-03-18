@@ -150,6 +150,19 @@ bool UseStmt::hasOnlyList() const {
   return isPlainUse() == false && except == false;
 }
 
+bool UseStmt::hasOnlyNothing() const {
+  if (hasOnlyList()) {
+    if (named.size() == 0)
+      return true;
+
+    // also check for named containing just the empty string
+    if (named.size() == 1 && named[0][0] == '\0')
+      return true;
+  }
+
+  return false;
+}
+
 bool UseStmt::hasExceptList() const {
   return isPlainUse() == false && except == true;
 }

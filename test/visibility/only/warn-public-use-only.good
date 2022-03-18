@@ -1,0 +1,2 @@
+warn-public-use-only.chpl:3: warning: 'public use A only;' has no effect
+note: try 'public import A;' or 'public use A as A only;'
