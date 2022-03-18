@@ -34,11 +34,11 @@ Data Structures
 .. toctree::
    :maxdepth: 1
 
-   LinkedLists <packages/LinkedLists>
    ConcurrentMap <packages/ConcurrentMap>
    DistributedBag <packages/DistributedBag>
    DistributedDeque <packages/DistributedDeque>
    DistributedIters <packages/DistributedIters>
+   LinkedLists <packages/LinkedLists>
    LockFreeQueue <packages/LockFreeQueue>
    LockFreeStack <packages/LockFreeStack>
    SortedMap <packages/SortedMap>
