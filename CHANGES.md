@@ -1,6 +1,10 @@
 Release Changes List
 ====================
 
+o spellcheck
+o quotes check
+o URL docs check (1.26)
+o linebreak check
 o check compiler flags / man pages
 o check example codes
 
@@ -155,8 +159,7 @@ Deprecated / Removed Library Features
 * removed deprecated `CHPL_REGEXP` param from 'ChplConfig' module
 * deprecated support for the 'vectorizeOnly' iterator  
   (see https://chapel-lang.org/docs/1.26/modules/standard/VectorizingIterator.html)
-* removed support for `string.search()` and `bytes.search()` from 'Regex'
-  (TODO: Not deprecated?)
+* removed non-working `string.search()`/`bytes.search()` routines from 'Regex'
 * removed support for the previously deprecated 'range.ident()' method
 
 Standard Library Modules
@@ -194,7 +197,7 @@ Package Modules
 * added a new 'Channel' package module to support communicating between tasks
   (see https://chapel-lang.org/docs/main/modules/packages/Channel.html)
 * changed 'TOML' package to sort keys when writing them out
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.26/modules/packages/TOML.html)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -381,7 +384,6 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 * improved `--dyno` to the point that ~13,222/13,697 tests now pass
 * improved `--dyno` error messages in terms of formatting and clarity
 * added ability to dump a uAST node from 'dyno' using Chapel-like syntax
-* added a prototype pass manager to the 'dyno' compiler (TODO: checkme)
 * began the process of restructuring compiler passes to use a pass manager
 
 Developer-oriented changes: Runtime improvements
@@ -414,7 +416,7 @@ Developer-oriented changes: Testing System
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 * mason `.toml` files have sorted keys as a result of update to TOML package
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.26/modules/packages/TOML.html)
 
 
 Developer-oriented changes: Utilities
