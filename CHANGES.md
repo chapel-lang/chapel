@@ -18,29 +18,30 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
-* when multiple supported llvm versions are found, choose the most latest one
-* updated error message when unable to find LLVM to list supported versions
-* UTF-8 support no longer depends on the 'LANG' environment variable
-  (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#character-set)
-* removed support for deprecated `CHPL_REGEXP` environment variable
+* Chapel's LLVM back-end now supports versions 11, 12, and 13
+* when multiple supported LLVM versions are found, the latest one is now chosen
+* updated error message when unable to find LLVM to list the supported versions
+* UTF-8 support no longer depends on the `LANG` environment variable  
+  (see https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#character-set)
+* removed support for the deprecated `CHPL_REGEXP` environment variable
 
 Syntactic / Naming Changes
 --------------------------
-* extended the set of statement types to which 'try'/'try!' can be applied
+* extended the set of statement types to which `try`/`try!` can be applied
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-* modules from files named on the command-line are now always initialized
-  (see https://chapel-lang.org/docs/main/language/spec/modules.html#module-initialization)
-* enabled implicit conversions from non-nilable to nilable for type arguments
-  (see https://chapel-lang.org/docs/language/spec/procedures.html#legal-argument-mapping)
-* '.indices' queries on rectangular arrays now return a local domain of indices  
+* modules from files listed on the command-line are now always initialized  
+  (see https://chapel-lang.org/docs/1.26/language/spec/modules.html#module-initialization)
+* enabled implicit conversions from non-nilable to nilable for type arguments  
+  (see https://chapel-lang.org/docs/1.26/language/spec/procedures.html#legal-argument-mapping)
+* `.indices` queries on rectangular arrays now return a local domain of indices  
   (see https://chapel-lang.org/docs/1.26/language/spec/arrays.html#ChapelArray.indices)
-* '.size'/'.shape' queries on ranges, domains, arrays now return 'int's  
+* `.size`/`.shape` queries on ranges, domains, arrays now return `int`s  
   (see https://chapel-lang.org/docs/1.26/builtins/ChapelRange.html#ChapelRange.range.size)
-* stopped auto-creating 'hash()' methods for records w/ custom '=='/'!=' ops  
+* stopped auto-creating `hash()` methods for records w/ custom `==`/`!=` ops  
   (see https://chapel-lang.org/docs/1.26/language/spec/records.html#hashing-a-record)
-* made it an error to overload return intents for the `enterThis()` method
+* made it an error to overload return intents for the `enterThis()` method  
   (see TODO)
 
 New Features
@@ -48,11 +49,11 @@ New Features
 * added support for listing operators in `only`, `except`, and `import`  
   (see https://chapel-lang.org/docs/1.26/language/spec/modules.html#using-modules  
    and https://chapel-lang.org/docs/1.26/language/spec/modules.html#importing-modules)
-* added support for renaming 'extern type' declarations  
-  (e.g., 'extern "c_name" type chpl_name = ...;'  
-   see also https://chapel-lang.org/docs/1.26/language/spec/interoperability.html#referring-to-external-c-types)
 * added an `unsafeAssign()` method and context manager to domains  
-  (see https://chapel-lang.org/docs/main/language/spec/domains.html#ChapelDomain.unsafeAssignManager)
+  (see https://chapel-lang.org/docs/1.26/language/spec/domains.html#ChapelDomain.unsafeAssignManager)
+* added support for renaming `extern type` declarations  
+  (e.g., `extern "c_name" type chpl_name = ...;`  
+   see also https://chapel-lang.org/docs/1.26/language/spec/interoperability.html#referring-to-external-c-types)
 
 Feature Improvements
 --------------------
@@ -61,33 +62,33 @@ Feature Improvements
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * deprecated support for arrays over bracket-less anonymous associative arrays  
-  (e.g., in 'var A: ["red", "green", "blue"] real;', brackets are now required)
-* deprecated support for 'ChapelEnv.CHPL_AUX_FILESYS'  
+  (e.g., in `var A: ["red", "green", "blue"] real;`, brackets are now required)
+* deprecated support for `ChapelEnv.CHPL_AUX_FILESYS`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html#ChplConfig.CHPL_AUX_FILESYS)
 * removed deprecated support for `use <Mod> except *;`
 * removed deprecated support for operators declared using the `proc` keyword
-* removed all vestiges of the 'atomic' statement
+* removed all vestiges of the `atomic` statement
 
 Namespace Changes
 -----------------
 
 Name Changes in Libraries
 -------------------------
-* renamed C type aliases 'size_t'/'ssize_t' to 'c_size_t'/'c_ssize_t'  
+* renamed C type aliases `size_t`/`ssize_t` to `c_size_t`/`c_ssize_t`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/CTypes.html#CTypes.c_size_t)
-* changed the formal names in the `Reflection.getField()` family of functions
-  (see https://chapel-lang.org/docs/main/modules/standard/Reflection.html)
 * renamed search arguments `needle`->`pattern` and `region`->`indices`  
-  (see https://chapel-lang.org/docs/main/builtins/Bytes.html,  
-   https://chapel-lang.org/docs/main/builtins/String.html,
-   and https://chapel-lang.org/docs/main/modules/standard/Regex.html)
-* renamed `regexMatch.offset` to `.byteOffset` and `.size` to `.numBytes`
-  (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regexMatch)
+  (see https://chapel-lang.org/docs/1.26/builtins/Bytes.html,  
+   https://chapel-lang.org/docs/1.26/builtins/String.html,  
+   and https://chapel-lang.org/docs/1.26/modules/standard/Regex.html)
+* renamed `regexMatch.offset` to `.byteOffset` and `.size` to `.numBytes`  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Regex.html#Regex.regexMatch)
 * renamed `captures`/`maxmatches` args in 'Regex' to `numCaptures`/`maxMatches`
 * renamed the `list.indexOf()` method to `find()`  
-  (see https://chapel-lang.org/docs/main/modules/standard/List.html#List.list.indexOf)
+  (see https://chapel-lang.org/docs/1.26/modules/standard/List.html#List.list.indexOf)
 * renamed several `set` method arguments from `x` to `element`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
+* changed the formal names in the `Reflection.getField()` family of functions  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Reflection.html)
 * improved the names of many routines and arguments in the 'BigInteger' module
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
   - renamed `bigint.mpzStruct()` to `bigint.getImpl()`
@@ -109,58 +110,36 @@ Name Changes in Libraries
   - renamed arguments of `bigint.isCongruent()` to `con` and `mod`
   - renamed arguments of `bigint.isCongruentBy2Pow()` to `con` and `modExp`
   - renamed argument of `bigint.scan0()` and `bigint.scan1()` to `startBitIdx`
-* renamed `Subprocess.send_signal()` to `Subprocess.sendPosixSignal()`
+* renamed `Subprocess.send_signal()` to `Subprocess.sendPosixSignal()`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Subprocess.html#Subprocess.subprocess.sendPosixSignal)
-* changed 'Subprocess' pipe styles from a set of constants to an enum
+* changed 'Subprocess' pipe styles from a set of constants to an enum  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Subprocess.html#Subprocess.pipeStyle)
 
 Deprecated / Removed Library Features
 -------------------------------------
+* deprecated the automatic 'ChapelEnv' module in favor of 'ChplConfig'  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html)
 * deprecated C type aliases defined in modules other than 'CTypes'  
   (see https://chapel-lang.org/docs/1.26/modules/standard/SysCTypes.html,  
    and https://chapel-lang.org/docs/1.26/modules/standard/CPtr.html)
-* deprecated the automatic 'ChapelEnv' module in favor of 'ChplConfig'  
-  (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html)
 * deprecated `set.isIntersecting()`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html#Set.set.isIntersecting)
-* deprecated binary conversion format strings in 'FormattedIO.readf'/'writef'
-* deprecated `iostyle` record from 'IO' module
-* deprecated `stringStyleTerminated()` in 'IO' module
-* deprecated `stringStyleNullTerminated()` in 'IO' module
-* deprecated `stringStyleExactLen()` in 'IO' module
-* deprecated `stringStyleWithVariableLength()` in 'IO' module
-* deprecated `stringStyleWithLength()` in 'IO' module
+* deprecated binary conversion format strings in `FormattedIO.readf`/`writef`
+* deprecated the `iostyle` record in the 'IO' module
+* deprecated the `stringStyle*()` family of routines in the 'IO' module
 * deprecated `defaultIOStyle()` in 'IO' module
-* deprecated `open()` with `style` argument in 'IO' module
-* deprecated `openfd()` with `style` argument in 'IO' module
-* deprecated `openfp()` with `style` argument in 'IO' module
-* deprecated `opentmp()` with `style` argument in 'IO' module
-* deprecated `openmem()` with `style` argument in 'IO' module
-* deprecated `channel._style()` in 'IO' module
-* deprecated `channel._set_style()` argument in 'IO' module
-* deprecated `openreader()` with `style` argument in 'IO' module
-* deprecated `openwriter()` with `style` argument in 'IO' module
-* deprecated `file.reader()` with `style` argument in 'IO' module
-* deprecated `file.lines()` with `local_style` argument in 'IO' module
-* deprecated `file.writer()` with `style` argument in 'IO' module
-* deprecated `channel.read()` with `style` argument in 'IO' module
-* deprecated `channel.readln()` with `style` argument in 'IO' module
-* deprecated `channel.write()` with `style` argument in 'IO' module
-* deprecated `channel.writeln()` with `style` argument in 'IO' module
-* deprecated `open()` with `style` argument in 'HDFS' module
-* deprecated `openUrlReader()` with `style` argument in 'URL' module
-* deprecated `openUrlWriter()` with `style` argument in 'URL' module
+* deprecated `style: iostyle` arguments from routines in 'IO', 'URL', 'Path'
 * deprecated `Error` subclass `BadRegexpError` from the 'Regex' module
+* deprecated support for the `vectorizeOnly()` iterator  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/VectorizingIterator.html)
+* removed non-working `string.search()`/`bytes.search()` routines from 'Regex'
 * removed deprecated methods on `file` type from `Path` module
 * removed deprecated 'Regexp' module
 * removed deprecated `regexp` type from the 'Regex' module
 * removed deprecated `RecordReader` initializer with `mRegexp` argument
 * removed deprecated `RecordReader.createRegexp()` method from 'RecordParser'
 * removed deprecated `CHPL_REGEXP` param from 'ChplConfig' module
-* deprecated support for the 'vectorizeOnly' iterator  
-  (see https://chapel-lang.org/docs/1.26/modules/standard/VectorizingIterator.html)
-* removed non-working `string.search()`/`bytes.search()` routines from 'Regex'
-* removed support for the previously deprecated 'range.ident()' method
+* removed support for the previously deprecated `range.ident()` method
 
 Standard Library Modules
 ------------------------
@@ -172,15 +151,15 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.26/modules/standard/Map.html#Map.map.getValue)
 * changed `map.getValue()` to throw rather than halting  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Map.html#Map.map.getValue)
-* enabled casts from integral types to `c_void_ptr`
-  (see https://chapel-lang.org/docs/main/modules/standard/CTypes.html#CTypes.c_void_ptr)
-* enabled 'min()'/'max()' routines to be promoted using array arguments
-* added 'subprocess.abort()' and `subprocess.alarm()` to 'Subprocess'  
+* enabled casts from integral types to `c_void_ptr`  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/CTypes.html#CTypes.c_void_ptr)
+* enabled `min()`/`max()` routines to be promoted using array arguments
+* added `subprocess.abort()` and `subprocess.alarm()` to 'Subprocess'  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Subprocess.html#Subprocess.subprocess.abort  
    and https://chapel-lang.org/docs/1.26/modules/standard/Subprocess.html#Subprocess.subprocess.alarm)
-* updated 'Math.cproj()' to return a 'complex' rather than 'real' value  
+* updated `Math.cproj()` to return a `complex` rather than `real` value  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Math.html#Math.cproj)
-* added support for a standalone (channel-less) 'IO.readline()' routine  
+* added support for a standalone (channel-less) `IO.readline()` routine  
   (see https://chapel-lang.org/docs/1.26/modules/standard/IO.html#IO.readline)
 * updated `bigint.probablyPrime()` to return a new enum `BigInteger.primality`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.primality  
@@ -190,13 +169,13 @@ Standard Library Modules
 
 Package Modules
 ---------------
-* added a new 'CopyAggregation' module supporting aggregated copies
+* added a new 'CopyAggregation' module supporting aggregated copies  
   (see https://chapel-lang.org/docs/1.26/modules/packages/CopyAggregation.html)
-* added a new 'Socket' package module to support network programming
-  (see https://chapel-lang.org/docs/main/modules/packages/Socket.html)
-* added a new 'Channel' package module to support communicating between tasks
-  (see https://chapel-lang.org/docs/main/modules/packages/Channel.html)
-* changed 'TOML' package to sort keys when writing them out
+* added a new 'Socket' package module to support network programming  
+  (see https://chapel-lang.org/docs/1.26/modules/packages/Socket.html)
+* added a new 'Channel' package module to support communicating between tasks  
+  (see https://chapel-lang.org/docs/1.26/modules/packages/Channel.html)
+* changed 'TOML' package to sort keys when writing them out  
   (see https://chapel-lang.org/docs/1.26/modules/packages/TOML.html)
 
 Standard Domain Maps (Layouts and Distributions)
@@ -205,34 +184,34 @@ Standard Domain Maps (Layouts and Distributions)
 Tool Improvements
 -----------------
 * added a script for displaying available runtime configurations  
-  (see '$CHPL_HOME/util/chplenv/printchplbuilds.py')
+  (see `$CHPL_HOME/util/chplenv/printchplbuilds.py`)
 
 Performance Optimizations / Improvements
 ----------------------------------------
-* made promotions with slices more efficient with '-schpl_serializeSlices=true'
+* made promotions with slices more efficient with `-schpl_serializeSlices=true`
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
 
 Memory Improvements
 -------------------
-* eliminated a modest amount of memory allocated when iterating over types
-* fixed a memory leak for `set.add()` from the 'Set' module
+* eliminated a minor amount of memory allocated/freed when iterating over types
+* fixed a memory leak for `set.add()` in the 'Set' module
 
 Documentation
 -------------
-* added documentation to the language specification for the `manage` statement
+* added documentation to the language specification for the `manage` statement  
   (see TODO)
-* merged domain/array 'built-in types and functions' content into language spec
-  (see https://chapel-lang.org/docs/1.26/language/spec/domains.html#module-ChapelDomain
+* merged domain/array 'built-in types and functions' content into language spec  
+  (see https://chapel-lang.org/docs/1.26/language/spec/domains.html#module-ChapelDomain  
    and https://chapel-lang.org/docs/1.26/language/spec/arrays.html#module-ChapelArray)
-* updated GPU technote to expand on currently known limitations
+* updated GPU technote to expand on currently known limitations  
   (see https://chapel-lang.org/docs/1.26/technotes/gpu.html)
-* added documentation for many methods in the 'BigInteger' module
+* added documentation for many methods in the 'BigInteger' module  
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
-* stopped documenting the existence of the `bigint.mpz` field
+* stopped documenting the existence of the `bigint.mpz` field  
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint)
-* added documentation for which elements win in `set` operations  
+* added documentation for which elements are preserved in `set` operations  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
 
 Syntax Highlighting
@@ -241,7 +220,7 @@ Syntax Highlighting
 Example Codes
 -------------
 * removed 'SSCA2' from the `test/release/examples/benchmarks` directory
-* removed 'recordio.chpl' from the `test/release/examples/patterns` directory
+* removed `recordio.chpl` from the `test/release/examples/patterns` directory
 
 Portability
 -----------
@@ -249,7 +228,7 @@ Portability
 * implemented several other portability improvements for `CHPL_COMM=ofi`
 * improved portability of Chapel on FreeBSD and Alpine Linux
 * fixed problems finding a system library when a bundled one was requested
-* enabled pip dependencies to be built from source with 'CHPL_PIP_FROM_SOURCE'
+* enabled pip dependencies to be built from source with `CHPL_PIP_FROM_SOURCE`
 * addressed issues on a variety of systems when using system LLVM packages
 * made `chpldoc` compatible with Python 3.10
 
@@ -270,8 +249,8 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
-* updated compiler to support LLVM versions 12 and 13
-  (see https://chapel-lang.org/docs/1.26/usingchapel/prereqs.html#chapel-prerequisites
+* updated compiler to support LLVM versions 12 and 13, while also supporting 11  
+  (see https://chapel-lang.org/docs/1.26/usingchapel/prereqs.html#chapel-prerequisites  
    and https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#readme-chplenv-chpl-llvm)
 
 Compiler Flags
@@ -289,9 +268,9 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
-* added an error when applying 'override' to a non-method
+* added an error when applying `override` to a non-method
 * added single quotes around values and types in overflow errors for ints/bytes
-* added an error when using 'CHPL_LLVM=none' with 'CHPL_TARGET_COMPILER=llvm'
+* added an error when using `CHPL_LLVM=none` with `CHPL_TARGET_COMPILER=llvm`
 * updated error message in `realPath()` to better reflect its interface  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Path.html#Path.realPath)
 * added checks for division by 0 to `bigint` division methods  
@@ -305,13 +284,13 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed a compiler bug causing incorrect results for dynamic dispatch
-* fixed a bug preventing 'const in' task intents from being used with arrays
-* fixed a bug when calling '.localSlice()' on a slice of a default array
-* fixed a bug in which 'require foo.chpl;' was ignored within implicit modules 
+* fixed a bug preventing `const in` task intents from being used with arrays
+* fixed a bug when calling `.localSlice()` on a slice of a default array
+* fixed a bug in which `require foo.chpl;` was ignored within implicit modules 
 * fixed a potential issue with arbitrary shell commands in `require` statements
 * fixed a bug in which first-class functions failed to retain return intents
 * Fixed a problem with combinations of `const ref`, `owned`, and `coforall`
-* Fixed a bug that caused sporadic problems  with the '--memLog' flag
+* Fixed a bug that caused sporadic problems  with the `--memLog` flag
 * added a remote cache fence to barrier calls
 * fixed a bug with overload sets and operators
 
@@ -326,7 +305,7 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
-* fixed the naming of 'CHPL_' variables in the output of 'chpl --help-env'
+* fixed the naming of `CHPL_` variables in the output of `chpl --help-env`
 
 Platform-specific Bug Fixes
 ---------------------------
@@ -334,7 +313,7 @@ Platform-specific Bug Fixes
 Third-Party Software Changes
 ----------------------------
 * updated the bundled LLVM and clang to version 13
-* updated the bundled version of 'libfabric' to version 1.13.2
+* updated the bundled version of `libfabric` to version 1.13.2
 * updated the Sphinx version used for `chpldoc`
 * updated the Sphinx Chapel domain version used for `chpldoc`
 * updated the breathe version used for `chpldoc`
@@ -369,14 +348,14 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
-* added support for a '-j'/'--parallel-make' flag for the C back-end
+* added support for a `-j`/`--parallel-make` flag for the C back-end
 * renamed the `--compiler-library-parser` flag to `--dyno`
 * added `--debug-trace` & `--break-on-hash` flags for debugging 'dyno's parser
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
-* updated '--incremental' to compile each module's '.c' file indepdently
-* enabled support for 'make -j' using the C back-end via '-j' / '--incremental'
+* updated `--incremental` to compile each module's `.c` file indepdently
+* enabled support for `make -j` using the C back-end via `-j` / `--incremental`
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
@@ -388,14 +367,14 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
-* implemented several improvements for 'CHPL_COMM=ofi'
+* implemented several improvements for `CHPL_COMM=ofi`
   - changed fetching AMOs to return the result via an active message (AM)
   - refactored code for blocking AM creation to ease maintainability
   - implemented completion counters
   - added support for per-endpoint address vectors
-  - added the device name to a Chapel executable's '--verbose' output
-  - made use of the hybrid memory registration mode with the 'cxi' provider
-  - added environment variables to control the use of 'fi_inject'
+  - added the device name to a Chapel executable's `--verbose` output
+  - made use of the hybrid memory registration mode with the `cxi` provider
+  - added environment variables to control the use of `fi_inject`
 * adjusted comm domain IDs for `ugni` to allow multiple locales per node
 * tightened up `ugni` address checking against memory registrations
 * added a warning for `CHPL_RT_NUM_THREADS_PER_LOCALE` with `CHPL_TASKS=fifo`
@@ -403,10 +382,10 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
-* implemented various portability improvements for 'CHPL_COMM=ofi':
-  - ensured that AM receive endpoints progress while transmitting in 'ofi'
-  - cleared 'FI_INJECT' in 'wrap_fi_writemsg' for large messages
-  - fixed the type of the second argument to 'wrap_fi_writemsg'
+* implemented various portability improvements for `CHPL_COMM=ofi`:
+  - ensured that AM receive endpoints progress while transmitting in `ofi`
+  - cleared `FI_INJECT` in `wrap_fi_writemsg` for large messages
+  - fixed the type of the second argument to `wrap_fi_writemsg`
 
 Developer-oriented changes: Testing System
 ------------------------------------------
@@ -415,7 +394,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
-* mason `.toml` files have sorted keys as a result of update to TOML package
+* mason `.toml` files have sorted keys as a result of update to TOML package  
   (see https://chapel-lang.org/docs/1.26/modules/packages/TOML.html)
 
 
