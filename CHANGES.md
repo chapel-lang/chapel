@@ -39,8 +39,9 @@ Semantic Changes / Changes to Chapel Language
 
 New Features
 ------------
-* added support for listing operators in `only`, `except`, and `import`
-  (see TODO)
+* added support for listing operators in `only`, `except`, and `import`  
+  (see https://chapel-lang.org/docs/1.26/language/spec/modules.html#using-modules  
+   and https://chapel-lang.org/docs/1.26/language/spec/modules.html#importing-modules)
 * added support for renaming 'extern type' declarations  
   (e.g., 'extern "c_name" type chpl_name = ...;'  
    see also https://chapel-lang.org/docs/1.26/language/spec/interoperability.html#referring-to-external-c-types)
