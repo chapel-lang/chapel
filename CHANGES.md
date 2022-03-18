@@ -42,7 +42,7 @@ Semantic Changes / Changes to Chapel Language
 * stopped auto-creating `hash()` methods for records w/ custom `==`/`!=` ops  
   (see https://chapel-lang.org/docs/1.26/language/spec/records.html#hashing-a-record)
 * made it an error to overload return intents for the `enterThis()` method  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.26/language/spec/statements.html#the-manage-statement)
 
 New Features
 ------------
@@ -103,7 +103,7 @@ Name Changes in Libraries
   - renamed `bigint.gcdext()` to new `bigint.gcd()` overload
   - renamed `bigint.remove()` to `bigint.removeFactor()`
   - renamed `bigint.even_p()` to `bigint.isEven()`
-  - renamed `bigint.odd_p()` to `bigint.isOdd()
+  - renamed `bigint.odd_p()` to `bigint.isOdd()`
   - renamed arguments of `bigint.divexact()` to `numer` and `denom`
   - renamed argument of `bigint.isDivisible()` from `d` to `div`
   - renamed argument of `bigint.isDivisibleBy2Pow()` from `b` to `exp`
@@ -202,7 +202,7 @@ Memory Improvements
 Documentation
 -------------
 * added documentation to the language specification for the `manage` statement  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.26/language/spec/statements.html#the-manage-statement)
 * merged domain/array 'built-in types and functions' content into language spec  
   (see https://chapel-lang.org/docs/1.26/language/spec/domains.html#module-ChapelDomain  
    and https://chapel-lang.org/docs/1.26/language/spec/arrays.html#module-ChapelArray)
@@ -328,7 +328,7 @@ Developer-oriented changes: Documentation
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
-* coined 'dyno' to refer to aspects of the compiler rewrite effort
+* coined the name 'dyno' to refer to aspects of the compiler rewrite effort
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -342,7 +342,8 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * adjusted unique build path for `hwloc` and `re2`
-* `printchplenv --internal` separates system and bundled `-I`/`-L` arguments
+* stopped inappropriately building the bundled GMP when `CHPL_GMP=system`
+* improved ordering of `-I`/`-L` arguments for bundled vs. system versions
 * non-debug builds of `chpl` now use `-DNDEBUG` to disable asserts in C++ code
 * removed the `make third-party` target
 * a 'dyno'-specific C++ linter now checks some class methods
@@ -360,10 +361,18 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
-* the 'dyno' front-end can now parse all primers and modules
+* the dyno front-end can now parse all primers and modules
 * improved `--dyno` to the point that ~13,222/13,697 tests now pass
 * improved `--dyno` error messages in terms of formatting and clarity
-* added ability to dump a uAST node from 'dyno' using Chapel-like syntax
+* added ability to dump a uAST node from dyno using Chapel-like syntax
+* significantly improved the coverage of the prototype incremental resolver:
+  - tuple types
+  - implicit conversions
+  - function disambiguation
+  - type queries like `proc f(arg: ?t)`
+  - generic types passed as type arguments
+  - construction for recursive types (e.g., linked lists)
+  - multi-variable and tuple-style declarations
 * began the process of restructuring compiler passes to use a pass manager
 
 Developer-oriented changes: Runtime improvements
