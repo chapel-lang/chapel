@@ -26,9 +26,10 @@ Language Basics
    conversions
    expressions
    statements
+   input-and-output
 
-Code Encapsulation
-------------------
+Code Structures
+---------------
 .. toctree::
    :maxdepth: 1
 
@@ -79,7 +80,6 @@ Additional Topics
 .. toctree::
    :maxdepth: 1
 
-   input-and-output
    memory-consistency-model
    interoperability
    user-defined-reductions-and-scans
