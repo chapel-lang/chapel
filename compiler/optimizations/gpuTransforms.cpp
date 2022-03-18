@@ -242,7 +242,7 @@ static VarSymbol* generateAssignmentToPrimitive(
 
 static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop) {
   Type* symType = symInLoop->typeInfo();
-  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", symType);
+  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, symInLoop->name, symType);
   info.fn->insertFormalAtTail(newFormal);
 
   info.kernelActuals.push_back(symInLoop);
@@ -525,16 +525,21 @@ static void outlineGPUKernels() {
           update_symbols(outlinedFunction->body, &info.copyMap);
           normalize(outlinedFunction);
 
-          // We'll get an end of statement for the index we add. I am not sure
-          // how much it matters for the long term, for now just remove it.
-          for_alist (node, outlinedFunction->body->body) {
-            if (CallExpr* call = toCallExpr(node)) {
-              if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
-                call->remove();
-              }
+          // normalization above adds PRIM_END_OF_STATEMENTs. It is probably too
+          // wide of a brush. We can:
+          //  (a) generate the AST we are generating from scratch inside some
+          //      block, normalize that block, weed out these primitives inside
+          //      that block only, flatten and remove
+          //  (b) generate the new AST in the normalized form and never call
+          //      normalize
+          //  (c) keep things as is until this becomes an issue
+          std::vector<CallExpr*> callsInBody;
+          collectCallExprs(outlinedFunction, callsInBody);
+          for_vector (CallExpr, call, callsInBody) {
+            if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+              call->remove();
             }
           }
-
 
           VarSymbol *numThreads = generateNumThreads(gpuLaunchBlock, info);
           CallExpr* gpuCall = generateGPUCall(info, numThreads);

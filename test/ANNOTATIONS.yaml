@@ -492,6 +492,9 @@ all:
   02/22/22:
     - text: OS reinstall
       config: chapcs
+  03/14/22:
+    - text: LLVM 13 upgrade
+      config: chapcs
 
 # End all
 
@@ -2284,3 +2287,5 @@ arkouda-comp:
     - Add support for arrays of unsigned integers (Bears-R-Us/arkouda#1070)
   02/10/22:
     - Add in1d and setops support for uint pdarrays (Bears-R-Us/arkouda#1085)
+  03/14/22:
+    - Only read necessary elements in Chapel array for Parquet (Bears-R-Us/arkouda#1204)

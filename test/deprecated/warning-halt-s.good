@@ -1,4 +1,0 @@
-warning-halt-s.chpl:1: warning: warning(s=...) is deprecated, use warning(msg=...)
-warning-halt-s.chpl:2: warning: halt(s=...) is deprecated, use halt(msg=...)
-warning-halt-s.chpl:1: warning: warning message
-warning-halt-s.chpl:2: error: halt reached - halt message

@@ -119,11 +119,3 @@ Miscellaneous
    FunctionalOperations <packages/FunctionalOperations>
    PeekPoke <packages/PeekPoke>
    ReplicatedVar <packages/ReplicatedVar>
-
-
-Index
------
-
-* :ref:`Chapel Online Documentation Index <genindex>`
-
-.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`

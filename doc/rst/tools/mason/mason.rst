@@ -349,13 +349,13 @@ Tests can be listed in the ``Mason.toml`` as a TOML array of strings for the
 .. code-block:: text
 
    [brick]
-   name = "myPackage"
-   version = "0.1.0"
    chplVersion = "1.18.0"
    license = "None"
+   name = "myPackage"
    tests = ["test1.chpl",
             "test2.chpl",
             "test3.chpl"]
+   version = "0.1.0"
 
 An user may also set the ``CHPL_COMM`` value for running the tests, e.g. ``none``, ``gasnet``, ``ugni`` using ``mason test --setComm``.
 
@@ -425,10 +425,10 @@ in their ``Mason.toml`` as follows:
 .. code-block:: text
 
    [brick]
-   name = "myPackage"
-   version = "0.1.0"
    chplVersion = "1.18.0"
    license = "None"
+   name = "myPackage"
+   version = "0.1.0"
 
    [dependencies]
 
@@ -436,8 +436,8 @@ in their ``Mason.toml`` as follows:
    examples = ["myPackageExample.chpl"]
 
    [examples.myPackageExample]
-   execopts = "--count=20"
    compopts = "--savec tmp"
+   execopts = "--count=20"
 
 
 Documenting a Package
@@ -467,10 +467,10 @@ file of the package as follows:
 
 
    [brick]
-   name = "myPackage"
-   version = "0.1.0"
    chplVersion = "1.18.0"
    license = "None"
+   name = "myPackage"
+   version = "0.1.0"
 
    [dependencies]
    MatrixMarket = 0.1.0
@@ -546,10 +546,10 @@ The ``Mason.toml`` now looks like:
 .. code-block:: text
 
    [brick]
-   name = "myPackage"
-   version = "0.1.0"
    chplVersion = "1.18.0"
    license = "None"
+   name = "myPackage"
+   version = "0.1.0"
 
    [system]
    openSSL = "0.9.8zh"
@@ -765,10 +765,10 @@ The ``Mason.toml`` now looks like:
 .. code-block:: text
 
    [brick]
-   name = "myPackage"
-   version = "0.1.0"
    chplVersion = "1.18.0"
    license = "None"
+   name = "myPackage"
+   version = "0.1.0"
 
    [external]
    openSSL = "1.0.2k"
@@ -824,12 +824,12 @@ Continuing the example from before, the 'registry' ``0.1.0.toml`` would include 
 .. code-block:: text
 
      [brick]
-     name = "MyPackage"
-     version = "0.1.0"
+     authors = ["Sam Partee <Sam@Partee.com>"]
      chplVersion = "1.16.0"
      license = "None"
-     authors = ["Sam Partee <Sam@Partee.com>"]
+     name = "MyPackage"
      source = "https://github.com/Spartee/MyPackage"
+     version = "0.1.0"
 
      [dependencies]
      curl = '1.0.0'
@@ -967,11 +967,11 @@ For example, ``Mason.toml``:
 .. code-block:: text
 
     [brick]
-    name = "MyPackage"
-    version = "0.1.0"
+    authors = ["Sam Partee <Sam@Partee.com>"]
     chplVersion = "1.16.0"
     license = "None"
-    authors = ["Sam Partee <Sam@Partee.com>"]
+    name = "MyPackage"
+    version = "0.1.0"
 
     [dependencies]
     curl = '1.0.0'
@@ -1095,22 +1095,22 @@ a lock file is written below as if generated from the earlier example of a ``Mas
 
 .. code-block:: text
 
-     [curl]
-     name = 'curl'
-     version = '1.0.0'
-     chplVersion = "1.16.0..1.16.0"
-     license = "None"
-     source = 'https://github.com/username/curl'
-
-
      [root]
+     authors = ["Sam Partee <Sam@Partee.com>"]
+     chplVersion = "1.16.0..1.16.0"
+     dependencies = ['curl 1.0.0 https://github.com/username/curl']
+     license = "None"
      name = "MyPackage"
+     source = "https://github.com/Spartee/MyPackage"
      version = "0.1.0"
+
+
+     [curl]
      chplVersion = "1.16.0..1.16.0"
      license = "None"
-     authors = ["Sam Partee <Sam@Partee.com>"]
-     source = "https://github.com/Spartee/MyPackage"
-     dependencies = ['curl 1.0.0 https://github.com/username/curl']
+     name = 'curl'
+     source = 'https://github.com/username/curl'
+     version = '1.0.0'
 
 
 Dependency Code

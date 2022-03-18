@@ -351,21 +351,6 @@ size_t chpl_task_getCallStackSize(void);
 //
 chpl_bool chpl_task_guardPagesInUse(void);
 
-//
-// returns the number of tasks that are ready to run on the current locale,
-// not including any that have already started running.
-//
-uint32_t chpl_task_getNumQueuedTasks(void);
-
-//
-// returns the number of tasks that are blocked waiting on a sync or single
-// variable.
-// Note that this information may only available if the program is run with
-// the -b switch, which enables block reporting and deadlock detection.
-// If this switch is not specified, -1 may be returned.
-//
-int32_t chpl_task_getNumBlockedTasks(void);
-
 
 // Threads
 
@@ -412,17 +397,6 @@ static inline
 uint32_t chpl_task_canMigrateThreads(void) {
   return CHPL_TASK_IMPL_CAN_MIGRATE_THREADS();
 }
-
-//
-// returns the total number of threads that currently exist, whether running,
-// blocked, or idle
-//
-uint32_t chpl_task_getNumThreads(void);
-
-//
-// returns the number of threads that are currently idle
-//
-uint32_t chpl_task_getNumIdleThreads(void);
 
 //
 // Warn about a num threads setting
