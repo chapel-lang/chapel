@@ -4815,7 +4815,7 @@ that ``%n`` and ``%t`` are equivalent to ``%r`` for real conversions and ``%i``
 for numeric conversions; so these are also equivalent to ``%i`` ``%d`` or
 ``%g`` in C. Also note that Chapel format strings includes many capabilities
 not available with C formatted I/O routines - including quoted strings,
-binary numbers, complex numbers, and raw binary I/O *(deprecated)*.
+binary numbers, and complex numbers.
 
 
 Generic Numeric Conversions
