@@ -188,6 +188,7 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* significantly improved fine-grained communication on Slingshot-11 networks
 * made promotions with slices more efficient with `-schpl_serializeSlices=true`
 
 Compilation-Time / Generated Code Improvements
