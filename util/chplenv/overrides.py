@@ -51,6 +51,7 @@ chplvars = [
              'CHPL_SANITIZE',
              'CHPL_SANITIZE_EXE',
              'CHPL_LLVM_GCC_PREFIX',
+             'CHPL_HOMEBREW_WORKAROUND',
            ]
 
 

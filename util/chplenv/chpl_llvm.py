@@ -448,6 +448,13 @@ def get_system_llvm_built_sdkroot():
                             return path
     return None
 
+@memoize
+def apply_homebrew_workaround():
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    homebrew_var = overrides.get('CHPL_HOMEBREW_WORKAROUND', '')
+
+    return (homebrew_prefix or homebrew_var)
+
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
 #  * when PrgEnv-gnu is loaded on an XC, we should provide
@@ -610,9 +617,8 @@ def get_host_compile_args():
         # This avoids finding headers in the libc++ installed by llvm@12 e.g.
         host_platform = chpl_platform.get('host')
         if host_platform == "darwin":
-            homebrew_prefix = chpl_platform.get_homebrew_prefix()
             sdkroot = get_system_llvm_built_sdkroot()
-            if homebrew_prefix and sdkroot:
+            if sdkroot and apply_homebrew_workaround():
                 system.append("-isysroot")
                 system.append(sdkroot)
                 system.append("-I" + os.path.join(sdkroot, "usr", "include"))
@@ -682,9 +688,8 @@ def get_host_link_args():
         # This avoids linking with the libc++ installed by llvm@12 e.g.
         host_platform = chpl_platform.get('host')
         if host_platform == "darwin":
-            homebrew_prefix = chpl_platform.get_homebrew_prefix()
             sdkroot = get_system_llvm_built_sdkroot()
-            if homebrew_prefix and sdkroot:
+            if sdkroot and apply_homebrew_workaround():
                 # Note: -isysroot only affects includes and -Wl,-syslibroot seems to have no effect
                 system.append("-L" + os.path.join(sdkroot, "usr", "lib"))
 
