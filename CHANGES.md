@@ -14,6 +14,8 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* when multiple supported llvm versions are found, choose the most latest one
+* updated error message when unable to find LLVM to list supported versions
 * UTF-8 support no longer depends on the 'LANG' environment variable
   (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#character-set)
 * removed support for deprecated `CHPL_REGEXP` environment variable
@@ -103,6 +105,10 @@ Name Changes in Libraries
   - renamed arguments of `bigint.isCongruent()` to `con` and `mod`
   - renamed arguments of `bigint.isCongruentBy2Pow()` to `con` and `modExp`
   - renamed argument of `bigint.scan0()` and `bigint.scan1()` to `startBitIdx`
+* renamed `Subprocess.send_signal()` to `Subprocess.sendPosixSignal()`
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Subprocess.html#Subprocess.subprocess.sendPosixSignal)
+* changed 'Subprocess' pipe styles from a set of constants to an enum
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Subprocess.html#Subprocess.pipeStyle)
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -166,11 +172,13 @@ Standard Library Modules
 * enabled casts from integral types to `c_void_ptr`
   (see https://chapel-lang.org/docs/main/modules/standard/CTypes.html#CTypes.c_void_ptr)
 * enabled 'min()'/'max()' routines to be promoted using array arguments
+* added 'subprocess.abort()' and `subprocess.alarm()` to 'Subprocess'  
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Subprocess.html#Subprocess.subprocess.abort  
+   and https://chapel-lang.org/docs/1.26/modules/standard/Subprocess.html#Subprocess.subprocess.alarm)
 * updated 'Math.cproj()' to return a 'complex' rather than 'real' value  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Math.html#Math.cproj)
 * added support for a standalone (channel-less) 'IO.readline()' routine  
   (see https://chapel-lang.org/docs/1.26/modules/standard/IO.html#IO.readline)
-
 * updated `bigint.probablyPrime()` to return a new enum `BigInteger.primality`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.primality  
   and https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint.probablyPrime)
@@ -244,6 +252,8 @@ Portability
 
 GPU Computing
 -------------
+* enabled calls to simple functions from GPU kernels  
+  (see https://chapel-lang.org/docs/1.26/technotes/gpu.html#overview)
 * added support for executing promoted expressions on GPUs
 * added support for using multiple GPUs in one node
 * added primitive to synchronize GPU threads
@@ -257,6 +267,9 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
+* updated compiler to support LLVM versions 12 and 13
+  (see https://chapel-lang.org/docs/1.26/usingchapel/prereqs.html#chapel-prerequisites
+   and https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#readme-chplenv-chpl-llvm)
 
 Compiler Flags
 --------------
@@ -288,6 +301,7 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
+* fixed a compiler bug causing incorrect results for dynamic dispatch
 * fixed a bug preventing 'const in' task intents from being used with arrays
 * fixed a bug when calling '.localSlice()' on a slice of a default array
 * fixed a bug in which 'require foo.chpl;' was ignored within implicit modules 
@@ -301,6 +315,7 @@ Bug Fixes
 
 Bug Fixes for Build Issues
 --------------------------
+* enabled building with GPU support for host compilers other than clang
 
 Bug Fixes for Libraries
 -----------------------
@@ -315,6 +330,7 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled LLVM and clang to version 13
 * updated the bundled version of 'libfabric' to version 1.13.2
 * updated the Sphinx version used for `chpldoc`
 * updated the Sphinx Chapel domain version used for `chpldoc`
