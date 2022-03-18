@@ -15,10 +15,19 @@ Twenty-ninth public release of Chapel, March 31, 2022
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* updated the Chapel compiler to support LLVM versions 11, 12, and 13
+* added a prototype ability to resize arrays of elements without default values
+* made stabilizing improvements to methods on ranges, domains, and arrays
+* added new 'CopyAggregation', 'Socket', and 'Channel' package modules
+* made stabilizing improvements to most standard library module interfaces
+* improved the portability, robustness, and performance of 'ofi' communication
+* expanded the generality of Chapel's ability to generate code for GPUs
+* added a new script for displaying available runtime configurations
+* many other bug fixes and improvements to error messages and documentation
 
 Packaging / Configuration Changes
 ---------------------------------
-* Chapel's LLVM back-end now supports versions 11, 12, and 13
+* the Chapel compiler's LLVM back-end now supports versions 11, 12, and 13
 * when multiple supported LLVM versions are found, the latest one is now chosen
 * updated error message when unable to find LLVM to list the supported versions
 * UTF-8 support no longer depends on the `LANG` environment variable  
@@ -262,6 +271,7 @@ Generated Executable Flags
 
 Runtime Library Changes
 -----------------------
+* made several portability and robustness improvements to `CHPL_COMM=ofi`
 * stopped `ofi` from making a fixed heap when no provider could use it
 
 Launchers
