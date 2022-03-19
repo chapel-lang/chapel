@@ -41,7 +41,7 @@ In Chapel code
   - Both functions accept an arbitrary number of additional arguments,
     which are printed as part of the error message.
     
-    ``(modules/internal/ChapelIO.chpl)``
+    ``(modules/standard/ChapelIO.chpl)``
 
 
 In the runtime library
