@@ -673,6 +673,9 @@
   "2c37162c-1a84-11e7-980e-10ddb1d4c3d5": [
     "compiler/passes/initializerRules.cpp"
   ],
+  "66fb22e4-a729-11ec-866d-111c8d7a1817": [
+    "compiler/passes/insertLineNumbers.cpp"
+  ],
   "e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/normalize.cpp"
   ],
@@ -903,6 +906,9 @@
   "f824f208-a3e4-11ea-8acb-843835579daa": [
     "doc/rst/technotes/globalvars.rst"
   ],
+  "70eb8f46-a729-11ec-866d-111c8d7a1817": [
+    "doc/rst/technotes/gpu.rst"
+  ],
   "22cf2998-09c4-11eb-b2e8-10ddb1d4c3d5": [
     "doc/rst/technotes/index.rst"
   ],
@@ -1080,6 +1086,9 @@
   ],
   "191d3db4-544f-11ec-8674-e995e73200ed": [
     "modules/packages/ConcurrentMap.chpl"
+  ],
+  "757a38be-a729-11ec-866d-111c8d7a1817": [
+    "modules/packages/CopyAggregation.chpl"
   ],
   "527abebe-9db6-11e7-a204-10ddb1d4c3d5": [
     "modules/packages/Crypto.chpl"

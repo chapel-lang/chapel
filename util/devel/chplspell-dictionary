@@ -6194,6 +6194,15 @@ userhash
 FILEID: a074aca8-9f80-11ec-866d-111c8d7a1817
 ndrst
 
+FILEID: 66fb22e4-a729-11ec-866d-111c8d7a1817
+filenamelookupposition
+
+FILEID: 70eb8f46-a729-11ec-866d-111c8d7a1817
+vidia
+
+FILEID: 757a38be-a729-11ec-866d-111c8d7a1817
+strval
+
 NATURAL:
 aarch
 abcd
@@ -6249,6 +6258,7 @@ analyses
 anded
 anderson
 andrea
+andrew
 andy
 angeles
 aniket
@@ -6450,6 +6460,7 @@ builtins
 bulleted
 bynodeset
 byref
+byrne
 bytecount
 byteorder
 byteranges
@@ -6604,6 +6615,7 @@ condwait
 confchpldoc
 configs
 conjg
+consroe
 constexpr
 constness
 constructible
@@ -6956,6 +6968,7 @@ enotsup
 enotty
 enotuniq
 enqueue
+enqueued
 enqueuer
 enqueues
 entrypoints
@@ -8273,6 +8286,7 @@ primorial
 prims
 primtags
 princeton
+printchplbuilds
 printchplenv
 printcmp
 printf
@@ -8392,6 +8406,7 @@ realstart
 rearchitected
 reassignable
 rebase
+recomputation
 reconverge
 recordio
 recurses
@@ -8497,6 +8512,7 @@ rttv
 rtype
 runcmd
 runtest
+runtimes
 rvalue
 rvalues
 rwlock
@@ -9122,6 +9138,7 @@ verma
 versioned
 versioning
 vienna
+vincent
 vinschen
 virtualenv
 virtualenvs
@@ -9212,6 +9229,7 @@ xfers
 xhtml
 xopen
 xterm
+xuehai
 xxxx
 yacc
 yale
@@ -9234,6 +9252,7 @@ zguide
 zhang
 zhou
 zima
+zinsky
 zipcall
 zixian
 zlib
