@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# collapse all "./somefile.ext" entries into one
+cat $2 | sed 's@^\./.*@./xxx@' | uniq > $2.tmp
+mv $2.tmp $2
