@@ -21,7 +21,7 @@ Contributors to the Chapel 1.26.0 release
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
-* Divye Nayyar, indvidual contributor and [GSoC 2021] student from [Indian Institute of Technology Roorkee]
+* Divye Nayyar, individual contributor and [GSoC 2021] student from [Indian Institute of Technology Roorkee]
 * Sarah Nguyen, [HPE]
 * Xuehai Pan, individual contributor
 * Yash Raj, individual contributor
