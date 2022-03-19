@@ -39,56 +39,43 @@ operator).
 
   use Sort;
   class C { }
-  var A : [1..10] C;
-  QuickSort(A);
+  var A : [1..10] unmanaged C;
+  sort(A);
 
 The Chapel compiler emits the following error message:
 
 ::
 
-  $CHPL_HOME/modules/standard/Sort.chpl:37: error: unresolved call '<(C, C)'
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:309: note: candidates are: <(param a: enumerated, param b: enumerated)
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:1406: note:                 <(a: uint(64), b: int(64))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:1407: note:                 <(a: int(64), b: uint(64))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:1410: note:                 <(a: uint(64), param b: uint(64))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:1413: note:                 <(param a: uint(64), b: uint(64))
-  $CHPL_HOME/modules/internal/String.chpl:91: note:                 <(a: string, b: string)
-  $CHPL_HOME/modules/internal/String.chpl:398: note:                 <(a: c_string, b: c_string)
-  $CHPL_HOME/modules/internal/String.chpl:402: note:                 <(param a: c_string, param b: c_string)
-  $CHPL_HOME/modules/internal/ChapelTuple.chpl:549: note:                 <(a: _tuple, b: _tuple)
-  $CHPL_HOME/modules/standard/NewString.chpl:590: note:                 <(a: string_rec, b: string_rec)
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:289: note:                 <(a: int(8), b: int(8))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:289: note:                 <(a: int(16), b: int(16))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:289: note:                 <(a: int(32), b: int(32))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:289: note:                 <(a: int(64), b: int(64))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:290: note:                 <(a: uint(8), b: uint(8))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:290: note:                 <(a: uint(16), b: uint(16))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:290: note:                 <(a: uint(32), b: uint(32))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:290: note:                 <(a: uint(64), b: uint(64))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:291: note:                 <(a: real(32), b: real(32))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:291: note:                 <(a: real(64), b: real(64))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:292: note:                 <(a: imag(32), b: imag(32))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:292: note:                 <(a: imag(64), b: imag(64))
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:307: note:                 <(param a, param b)
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:307: note:                 <(param a, param b)
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:307: note:                 <(param a, param b)
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:307: note:                 <(param a, param b)
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:308: note:                 <(param a, param b)
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:308: note:                 <(param a, param b)
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:308: note:                 <(param a, param b)
-  $CHPL_HOME/modules/internal/ChapelBase.chpl:308: note:                 <(param a, param b)
+$CHPL_HOME/modules/packages/Sort.chpl:3510: In method 'compare':
+$CHPL_HOME/modules/packages/Sort.chpl:3511: error: unresolved call '<(unmanaged C, unmanaged C)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:189: note: this candidate did not match: <(a: enum, b: enum)
+$CHPL_HOME/modules/packages/Sort.chpl:3511: note: because actual argument #1 with type 'unmanaged C'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:189: note: is passed to formal 'a: enum'
+$CHPL_HOME/modules/packages/Sort.chpl:3511: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:193: note:   <(a: enum, b: enum)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:2203: note:   <(a: uint(64), b: int(64))
+note: and 68 other candidates, use --print-all-candidates to see them
+  $CHPL_HOME/modules/standard/Reflection.chpl:449: called as DefaultComparator.compare(a: unmanaged C, b: unmanaged C) from function 'canResolveMethod'
+  $CHPL_HOME/modules/packages/Sort.chpl:333: called as canResolveMethod(obj: DefaultComparator, param fname = "compare", args(0): unmanaged C, args(1): unmanaged C)
+  within internal functions (use --print-callstack-on-error to see)
+  $CHPL_HOME/modules/packages/Sort.chpl:1252: called as insertionSortMoveElts(Data: [domain(1,int(64),false)] unmanaged C, comparator: DefaultComparator, lo: int(64), hi: int(64)) from function 'quickSortImpl'
+  $CHPL_HOME/modules/packages/Sort.chpl:1230: called as quickSortImpl(Data: [domain(1,int(64),false)] unmanaged C, minlen: int(64), comparator: DefaultComparator, start: int(64), end: int(64)) from function 'quickSort'
+  $CHPL_HOME/modules/packages/Sort.chpl:476: called as quickSort(Data: [domain(1,int(64),false)] unmanaged C, minlen: int(64), comparator: DefaultComparator) from function 'sort'
+  foo.chpl:4: called as sort(Data: [domain(1,int(64),false)] unmanaged C, comparator: DefaultComparator)
+note: generic instantiations are underlined in the above callstack
 
-The main problem with the error message is that it points to line 37 of
+
+The main problem with the error message is that it points to line 3510 of
 ``Sort.chpl`` as the origin of the problem, when in fact the problem is the use
-of array ``A`` in the call to ``QuickSort``. A secondary problem with the error
-message is that it exposes the internals of the ``QuickSort`` function to the
-user, reducing the modularity of the ``QuickSort`` function. In more complex
+of array ``A`` in the call to ``sort``. A secondary problem with the error
+message is that it exposes the internals of the ``sort`` function to the
+user, reducing the modularity of the ``sort`` function. In more complex
 library functions, the error may originate from within deeply nested auxiliary
 functions, resulting in exceedingly long and impenetrable error messages (C++
 template libraries have become infamous for this problem [1]).
 
 The Chapel compiler needs more information in order to determine whether the
-error is in the implementation of QuickSort or in the call to it.
+error is in the implementation of sort or in the call to it.
 
 .. [1] R. Garcia, J. Järvi, A. Lumsdaine, J. G. Siek, and J. Willcock. An extended comparative study of language support for generic programming. Journal of Functional Programming, 17(2):145-205, March 2007.
 
@@ -118,8 +105,8 @@ Over the years, there were likely many users who tried to use ``replace_copy``
 with types that were not convertible and received an impenetrable error message
 from the compiler. Such an error is doubly confusing because the user doesn't
 know whose fault it is. The user could be looking at a situation in which they
-misused the generic function, as was the previous case with ``QuickSort``, or
-it could be the fault of the generic function's author, as was the case with
+misused the generic function, as was the previous case with ``sort``, or it
+could be the fault of the generic function's author, as was the case with
 ``replace_copy``.
 
 Hijacked Function Calls Inside Generics
