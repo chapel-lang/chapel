@@ -138,7 +138,7 @@ class UniqueString final {
   }
 
   /** return a std::string containing the string */
-  // diffs from stringify, converts the uniquestring into a string
+  // diffs from stringify, converts the UniqueString into a string
   // representation similar to std::ostream.str()
   std::string str() const {
     return std::string(c_str(), length());
