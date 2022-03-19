@@ -37,7 +37,7 @@ class astlocT {
 private:
   mutable const char* filename_;  // filename of location
   mutable int         lineno_;    // line number of location
-  chpl::ID            id_;        // id from compiler/next
+  chpl::ID            id_;        // id from compiler/dyno
 
 public:
   astlocT(int linenoArg, const char* filenameArg)
