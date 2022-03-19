@@ -39,9 +39,9 @@ def check_path(p):
     """returns True if p exists, False if it doesn't"""
 
     # These are common written-out alternatives, not paths
-    if p == "compiler/runtime":
-        return True
-    if p == "compiler/module":
+    if (p == "compiler/runtime" or p == "compiler/module" or
+        p == "runtime/library" or p == "runtime/lib" or
+        p == "module/files" or p == "test/directory" ):
         return True
 
     # These show up in generated html files relative to a "modules"
@@ -82,7 +82,7 @@ def check_token(t):
     if t.startswith("CHPL_HOME/"):
         t = t[10:]
     elif t.startswith("//github.com/chapel-lang/chapel/blob/main/"):
-        t = t[44:]
+        t = t[42:]
 
     # People like to say: "For details, see the README...".
     while t.endswith("."):
@@ -109,14 +109,26 @@ def check_token(t):
 
 def special_exception(filename, token):
     """Exception is a synonym of hack"""
-    if filename == "doc/rst/developer/adding-a-tasking-model.txt":
+    if filename == "doc/rst/developer/implementation/adding-a-tasking-model.rst":
         # Allow this file's wonderful paths
         if "wonderful" in token:
             return True
-    elif filename == "doc/rst/developer/adding-a-comm-layer.txt":
+    elif filename == "doc/rst/developer/implementation/adding-a-comm-layer.rst":
         # And this one's speedy paths
         if "speedy" in token:
             return True
+    elif filename == "doc/rst/developer/implementation/adding-a-launcher.rst":
+        # And this one's <name>s
+        if "<name>" in token:
+            return True
+    elif filename == "doc/rst/developer/bestPractices/SpellChecking.rst":
+        # And this one's examples of files being deleted
+        if "obsolete" in token or "archaic" in token:
+            return True
+    elif filename == "doc/rst/developer/bestPractices/RuntimeLibrary.rst":
+        if "MORE-DIRS" in token:
+            return True
+
     return False
 
 def check_line(filename, lineno, l):
@@ -124,7 +136,7 @@ def check_line(filename, lineno, l):
 
     # Replace punctuation with spaces for the l.split() call below
     splitters = [ ",", ":", "\"", "\'", "`", "(", ")", "[", "]", "{", "}",
-                  "#", ";", "$" ]
+                  "#", ";", "$", "<", ">", "**" ]
     for s in splitters:
         l = l.replace(s, " ")
 
