@@ -42,10 +42,6 @@ a comm layer implementation.
   Defines the macro ``CHPL_COMM_PRELAUNCH`` to be executed before launching the user
   program.
 
-- **runtime/include/comm/chpl-comm-heap-macros.h**: 
-
-  Defines the macro ``CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA`` which is used to do anything special needed to register global heap variables.
-
 - **runtime/include/comm/chpl-comm-impl.h**: 
 
   This file contains any additional runtime interface declarations that need to be provided by the specific comm layer implementation.
