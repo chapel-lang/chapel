@@ -1561,9 +1561,13 @@ module ChapelDomain {
 
       /*
         Initialize a newly added array element at an index with a new value.
-        If the array element at `idx` has already been initialized, this
-        method will silently perform assignment instead. This method will
-        error if `idx` is not a valid indice in `arr`.
+
+        If checks is ``true`` and the array element at `idx` has already
+        been initialized, this method will halt. If checks is ``false``,
+        then this method will overwrite the memory at `arr[idx]` in a
+        potentially unsafe manner.
+
+        It is an error if `idx` is not a valid indice in `arr`.
       */
       proc initialize(arr: [?d], idx, in value: arr.eltType) {
 
@@ -1598,22 +1602,14 @@ module ChapelDomain {
         // Get a reference to the array slot.
         ref elem = arr[idx];
 
-        // If there are checks, we can fall back on assignment should a slot
-        // already be move-initialized.
         if _checks {
-          if !isElementInitialized(arr, idx) {
-            _moveInitializeElement(arr, idx, value);
-          } else {
-
-            // TODO: Halt instead of assigning?
-            elem = value;
+          if isElementInitialized(arr, idx) {
+            halt('Element at array index \'' + idx:string + '\' ' +
+                 'is already initialized');
           }
-
-        // If there are no checks, all we can do is destructively
-        // move-initialize.
-        } else {
-          _moveInitializeElement(arr, idx, value);
         }
+
+        _moveInitializeElement(arr, idx, value);
       }
 
       pragma "no doc"
