@@ -184,7 +184,7 @@ print "[gen_release] CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
 if (not exists($ENV{"CHPL_GEN_RELEASE_SKIP_DOCS"})) {
   print "[gen_release] Building the html docs...\n";
-  SystemOrDie("make -j docs");
+  SystemOrDie("make docs");
 
   # TODO - make this more elegant / maintainable
   print "[gen_release] Pruning the docs directory...\n";
