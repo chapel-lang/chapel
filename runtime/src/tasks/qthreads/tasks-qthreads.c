@@ -1008,4 +1008,10 @@ uint32_t chpl_task_impl_getFixedNumThreads(void) {
     return (uint32_t)qthread_num_workers();
 }
 
+chpl_bool chpl_task_impl_hasFixedNumThreads(void)
+{
+  return true;
+}
+
+
 /* vim:set expandtab: */
