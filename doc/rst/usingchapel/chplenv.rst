@@ -777,11 +777,15 @@ CHPL_LLVM
    See :ref:`readme-prereqs` for more information about currently
    supported LLVM versions.
 
+   **CHPL_LLVM_CONFIG**
+
    In some cases, it is useful to be able to select a particular LLVM
    installation for use with ``CHPL_LLVM=system``. In that event, in
    addition to setting ``CHPL_LLVM=system``, you can set
    ``CHPL_LLVM_CONFIG`` to the llvm-config command from the LLVM
    installation you wish to use.
+
+   **CHPL_LLVM_GCC_PREFIX**
 
    Additionally, in some cases, the configured ``clang`` will not work
    correctly without a ``--gcc-toolchain`` flag. The Chapel compiler
