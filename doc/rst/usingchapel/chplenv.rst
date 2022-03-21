@@ -783,6 +783,14 @@ CHPL_LLVM
    ``CHPL_LLVM_CONFIG`` to the llvm-config command from the LLVM
    installation you wish to use.
 
+   Additionally, in some cases, the configured ``clang`` will not work
+   correctly without a ``--gcc-toolchain`` flag. The Chapel compiler
+   tries to infer this flag but it does not always do so correctly. As a
+   result, it is sometimes necessary to override it.  You can set
+   ``CHPL_LLVM_GCC_PREFIX`` to ``none`` to  disable passing the
+   ``--gcc-toolchain`` flag; or you can set it to a directory to pass to
+   ``clang`` with the ``--gcc-toolchain`` flag.
+
 .. _readme-chplenv.CHPL_UNWIND:
 
 CHPL_UNWIND
