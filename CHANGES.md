@@ -36,6 +36,8 @@ Packaging / Configuration Changes
   (see https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#character-set)
 * removed support for the deprecated `CHPL_REGEXP` environment variable
 * added an error when using `CHPL_LLVM=none` with `CHPL_TARGET_COMPILER=llvm`
+* `CHPL_LLVM_GCC_PREFIX` can now be set in a `chplconfig` file  
+  (see https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#chpl-llvm)
 
 Syntactic / Naming Changes
 --------------------------
@@ -155,6 +157,7 @@ Deprecated / Removed Library Features
 * removed deprecated `RecordReader.createRegexp()` method from 'RecordParser'
 * removed deprecated `CHPL_REGEXP` param from 'ChplConfig' module
 * removed support for the previously deprecated `range.ident()` method
+* removed deprecated forms of `warning()` and `halt()`
 
 Standard Library Modules
 ------------------------
@@ -221,6 +224,8 @@ Documentation
 * merged domain/array 'built-in types and functions' content into language spec  
   (see https://chapel-lang.org/docs/1.26/language/spec/domains.html#module-ChapelDomain  
    and https://chapel-lang.org/docs/1.26/language/spec/arrays.html#module-ChapelArray)
+* improved the definition of 'subtype' in the language specification  
+  (see https://chapel-lang.org/docs/1.26/language/spec/conversions.html#implicit-subtype-conversions
 * updated GPU technote to expand on currently known limitations  
   (see https://chapel-lang.org/docs/1.26/technotes/gpu.html)
 * added chapter groupings to the language specification  
@@ -231,10 +236,14 @@ Documentation
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
 * stopped documenting the `bigint.mpz` field  
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint)
+* improved the description of `c_void_ptr` in the 'Ctypes' documentation  
+  (see https://chapel-lang.org/docs/main/modules/standard/CTypes.html#CTypes.c_void_ptr)
 * documented which elements are preserved in `set` operations with overlap  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
 * added a link to the online documentation index at the bottom of its sidebar  
   (see https://chapel-lang.org/docs//1.26/index.html)
+* added documentation for the `CHPL_LLVM_GCC_PREFIX` environment variable  
+  (see https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#chpl-llvm)
 
 Syntax Highlighting
 -------------------
