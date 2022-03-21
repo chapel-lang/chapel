@@ -36,7 +36,7 @@ namespace chpl {
     of the uAST in Chapel syntax. The goal is to generate strings that could
     be copy/pasted and compiled back to the same uAST.
   */
-  void printChapelSyntax(std::ostream& os, const uast::ASTNode* node);
+  void printChapelSyntax(std::ostream& os, const uast::AstNode* node);
 
 
   /*

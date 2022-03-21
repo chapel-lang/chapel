@@ -64,7 +64,7 @@ class Class final : public AggregateDecl {
            child(parentClassChildNum_)->isIdentifier());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Class* lhs = this;
     const Class* rhs = (const Class*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs) &&

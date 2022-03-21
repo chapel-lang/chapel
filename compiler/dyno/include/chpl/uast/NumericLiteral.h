@@ -41,7 +41,7 @@ class NumericLiteral : public Literal {
       text_(text)
   { }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     auto lhs = this;
     auto* rhs = (const NumericLiteral<ValueT, ParamT>*) other;
     return lhs->literalContentsMatchInner(rhs) &&

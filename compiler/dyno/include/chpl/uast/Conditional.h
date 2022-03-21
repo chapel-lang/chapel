@@ -81,7 +81,7 @@ class Conditional final : public Expression {
     assert(thenBodyChildNum_ < (int) children_.size());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Conditional* lhs = this;
     const Conditional* rhs = other->toConditional();
 

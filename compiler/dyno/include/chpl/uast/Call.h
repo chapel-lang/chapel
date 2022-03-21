@@ -72,7 +72,7 @@ class Call : public Expression {
     return this->numChildren() - hasCalledExpression_;
   }
   const Expression* actual(int i) const {
-    const ASTNode* ast = this->child(i+hasCalledExpression_);
+    const AstNode* ast = this->child(i+hasCalledExpression_);
     assert(ast->isExpression());
     return (const Expression*) ast;
   }
@@ -87,7 +87,7 @@ class Call : public Expression {
     if (hasCalledExpression_ == 0) {
       return nullptr;
     } else {
-      const ASTNode* ast = this->child(0);
+      const AstNode* ast = this->child(0);
       assert(ast->isExpression());
       return (const Expression*) ast;
     }

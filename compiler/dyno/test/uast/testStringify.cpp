@@ -72,12 +72,12 @@ using namespace parsing;
 }
 
 
-static void stringifyNode(const ASTNode* node, chpl::StringifyKind kind) {
+static void stringifyNode(const AstNode* node, chpl::StringifyKind kind) {
   // recurse through the nodes and make sure each can call stringify()
   // and produce a non-empty result (for now)
-  // this is a little convoluted as each ASTNode is also calling
-  // ASTNode.dumpHelper() on all of its children
-  for (const ASTNode* child : node->children()) {
+  // this is a little convoluted as each AstNode is also calling
+  // AstNode.dumpHelper() on all of its children
+  for (const AstNode* child : node->children()) {
     stringifyNode(child, kind);
   }
   std::ostringstream ss;

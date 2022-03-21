@@ -63,7 +63,7 @@ class For final : public IndexableLoop {
     assert(withClause() == nullptr);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const For* lhs = this;
     const For* rhs = (const For*) other;
 

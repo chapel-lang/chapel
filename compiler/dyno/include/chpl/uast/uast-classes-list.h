@@ -45,7 +45,7 @@
 /// \cond DO_NOT_DOCUMENT
 
 // TODO: since everything inherits from Expression
-// should we just remove it? Or rename ASTNode to Expression?
+// should we just remove it? Or rename AstNode to Expression?
 AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_NODE(As)                         //

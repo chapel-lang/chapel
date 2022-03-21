@@ -59,7 +59,7 @@ class Import final : public Expression {
     #endif
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Import* rhs = other->toImport();
     return this->visibility_ == rhs->visibility_ &&
       this->expressionContentsMatchInner(rhs);

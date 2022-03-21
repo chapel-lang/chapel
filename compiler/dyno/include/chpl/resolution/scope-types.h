@@ -21,7 +21,7 @@
 #define CHPL_RESOLUTION_SCOPE_TYPES_H
 
 #include "chpl/types/Type.h"
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/iteration.h"
 
@@ -216,7 +216,7 @@ class Scope {
 
   /** Construct a Scope for a particular AST node
       and with a particular parent. */
-  Scope(const uast::ASTNode* ast, const Scope* parentScope);
+  Scope(const uast::AstNode* ast, const Scope* parentScope);
 
   /** Add a builtin type with the provided name. This needs to
       be called to populate the root scope with builtins. */

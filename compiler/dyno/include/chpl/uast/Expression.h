@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_EXPRESSION_H
 #define CHPL_UAST_EXPRESSION_H
 
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -29,13 +29,13 @@ namespace uast {
 /**
   This is an abstract base class for expressions
  */
-class Expression : public ASTNode {
+class Expression : public AstNode {
  protected:
   Expression(asttags::ASTTag tag)
-    : ASTNode(tag) {
+    : AstNode(tag) {
   }
   Expression(asttags::ASTTag tag, ASTList children)
-    : ASTNode(tag, std::move(children)) {
+    : AstNode(tag, std::move(children)) {
   }
   bool expressionContentsMatchInner(const Expression* other) const {
     return true;

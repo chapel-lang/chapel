@@ -64,7 +64,7 @@ class VarArgFormal final : public VarLikeDecl {
       countChildNum_(countChildNum) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const VarArgFormal* lhs = this;
     const VarArgFormal* rhs = (const VarArgFormal*) other;
     return lhs->varLikeDeclContentsMatchInner(rhs) &&

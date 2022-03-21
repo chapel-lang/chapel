@@ -24,7 +24,7 @@ DYNO_UAST_SRCS =                                 \
   AggregateDecl.cpp \
   Array.cpp \
   ASTList.cpp \
-  ASTNode.cpp \
+  AstNode.cpp \
   ASTTag.cpp \
   As.cpp \
   Attributes.cpp \

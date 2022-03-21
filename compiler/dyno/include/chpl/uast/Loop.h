@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_LOOP_H
 #define CHPL_UAST_LOOP_H
 
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Expression.h"

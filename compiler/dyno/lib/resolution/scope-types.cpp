@@ -27,7 +27,7 @@ namespace chpl {
 namespace resolution {
 
 
-Scope::Scope(const uast::ASTNode* ast, const Scope* parentScope) {
+Scope::Scope(const uast::AstNode* ast, const Scope* parentScope) {
   parentScope_ = parentScope;
   tag_ = ast->tag();
   id_ = ast->id();

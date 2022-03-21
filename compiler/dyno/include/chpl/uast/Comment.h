@@ -49,7 +49,7 @@ class Comment final : public Expression {
     : Expression(asttags::Comment), comment_(std::move(s)) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Comment* lhs = this;
     const Comment* rhs = (const Comment*) other;
     return lhs->expressionContentsMatchInner(rhs) &&
@@ -92,7 +92,7 @@ class Comment final : public Expression {
 
 /**
  Defines an iterator over the AST list elements that ignores comments.
- The iterator hides the ownership (it always returns a pointer e.g. ASTNode*)
+ The iterator hides the ownership (it always returns a pointer e.g. AstNode*)
  and casts elements to a particular type.
  */
 template<typename CastToType>

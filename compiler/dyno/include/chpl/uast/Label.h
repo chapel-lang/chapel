@@ -51,7 +51,7 @@ class Label final : public Expression {
     assert(numChildren() == 1);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Label* lhs = this;
     const Label* rhs = other->toLabel();
 

@@ -62,7 +62,7 @@ void Builder::addError(ErrorMessage e) {
   this->errors_.push_back(std::move(e));
 }
 
-void Builder::noteLocation(ASTNode* ast, Location loc) {
+void Builder::noteLocation(AstNode* ast, Location loc) {
   notedLocations_[ast] = loc;
 }
 
@@ -133,7 +133,7 @@ void Builder::assignIDs() {
   int commentIndex = 0;
 
   for (auto const& ownedExpression: topLevelExpressions_) {
-    ASTNode* ast = ownedExpression.get();
+    AstNode* ast = ownedExpression.get();
     if (ast->isModule() || ast->isComment()) {
       UniqueString emptyString;
       doAssignIDs(ast, emptyString, i, commentIndex, pathVec, duplicates);
@@ -180,7 +180,7 @@ void Builder::assignIDs() {
   Comments can work with the parse result and look up comments with
   BuilderResult::commentToLocation
  */
-void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
+void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
                           int& commentIndex, pathVecT& pathVec,
                           declaredHereT& duplicates) {
   if (Comment* comment = ast->toComment()) {
@@ -241,7 +241,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     int freshId = 0;
     declaredHereT freshMap;
     for (auto & child : ast->children_) {
-      ASTNode* ptr = child.get();
+      AstNode* ptr = child.get();
       this->doAssignIDs(ptr, newSymbolPath, freshId, commentIndex, pathVec, freshMap);
     }
 
@@ -261,7 +261,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
 
     // visit the children now to get integer part of ids in postorder
     for (auto & child : ast->children_) {
-      ASTNode* ptr = child.get();
+      AstNode* ptr = child.get();
       this->doAssignIDs(ptr, symbolPath, i, commentIndex, pathVec, duplicates);
     }
 

@@ -58,7 +58,7 @@ class SimpleBlockLike : public Expression {
     assert(isExpressionASTList(children_));
   }
 
-  bool simpleBlockLikeContentsMatchInner(const ASTNode* other) const {
+  bool simpleBlockLikeContentsMatchInner(const AstNode* other) const {
     const SimpleBlockLike* lhs = this;
     const SimpleBlockLike* rhs = other->toSimpleBlockLike();
 
@@ -109,7 +109,7 @@ class SimpleBlockLike : public Expression {
   */
   const Expression* stmt(int i) const {
     assert(i >= 0 && i < numBodyStmts_);
-    const ASTNode* ast = this->child(i + bodyChildNum_);
+    const AstNode* ast = this->child(i + bodyChildNum_);
     assert(ast->isExpression());
     return (const Expression*)ast;
   }

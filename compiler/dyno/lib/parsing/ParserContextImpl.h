@@ -1847,7 +1847,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
       } else {
         if (optInherit->size() > 1)
           noteError(inheritLoc, "only single inheritance is supported");
-        ASTNode* ast = (*optInherit)[0];
+        AstNode* ast = (*optInherit)[0];
         if (ast->isIdentifier()) {
           inheritIdentifier = toOwned(ast->toIdentifier());
           (*optInherit)[0] = nullptr;

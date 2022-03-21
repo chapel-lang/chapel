@@ -48,7 +48,7 @@ class Break : public Expression {
     assert(numChildren() <= 1);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Break* lhs = this;
     const Break* rhs = other->toBreak();
 

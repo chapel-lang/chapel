@@ -24,7 +24,7 @@
 #include "chpl/queries/Context.h"
 #include "chpl/queries/ID.h"
 #include "chpl/queries/Location.h"
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Function.h"
@@ -96,7 +96,7 @@ const Location& locateId(Context* context, ID id);
  This function just runs locateId on ast->id(). Similarly to locateID,
  it cannot be used to get a Location for a Comment.
  */
-const Location& locateAst(Context* context, const uast::ASTNode* ast);
+const Location& locateAst(Context* context, const uast::AstNode* ast);
 
 using ModuleVec = std::vector<const uast::Module*>;
 /**
@@ -124,7 +124,7 @@ const uast::Module* getToplevelModule(Context* context, UniqueString name);
 /**
  Returns the uast node with the given ID.
  */
-const uast::ASTNode* idToAst(Context* context, ID id);
+const uast::AstNode* idToAst(Context* context, ID id);
 
 /**
  Returns the tag for the node with the given ID.

@@ -67,7 +67,7 @@ class Enum final : public TypeDecl {
     return attributes() ? 1 : 0;
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Enum* lhs = this;
     const Enum* rhs = (const Enum*) other;
     return lhs->typeDeclContentsMatchInner(rhs);
@@ -108,7 +108,7 @@ class Enum final : public TypeDecl {
    */
   const Expression* declOrComment(int i) const {
     assert(0 <= i && i < numDeclOrComments());
-    const ASTNode* ast = this->child(declOrCommentChildNum() + i);
+    const AstNode* ast = this->child(declOrCommentChildNum() + i);
     assert(ast->isDecl() || ast->isComment());
     return (const Expression*)ast;
   }

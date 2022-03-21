@@ -104,7 +104,7 @@ class AggregateDecl : public TypeDecl {
    */
   const Expression* declOrComment(int i) const {
     assert(0 <= i && i < numElements_);
-    const ASTNode* ast = this->child(elementsChildNum_ + i);
+    const AstNode* ast = this->child(elementsChildNum_ + i);
     assert(ast->isExpression());
     return (const Expression*)ast;
   }

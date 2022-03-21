@@ -320,7 +320,7 @@ typedSignatureInitialQuery(Context* context,
   QUERY_BEGIN(typedSignatureInitialQuery, context, untypedSig);
 
   const TypedFnSignature* result = nullptr;
-  const ASTNode* ast = parsing::idToAst(context, untypedSig->id());
+  const AstNode* ast = parsing::idToAst(context, untypedSig->id());
   const Function* fn = ast->toFunction();
 
   if (fn != nullptr) {
@@ -500,7 +500,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 
 // initedInParent is true if the decl variable is inited due to a parent
 // uast node.  This comes up for TupleDecls.
-static void helpSetFieldTypes(const ASTNode* ast,
+static void helpSetFieldTypes(const AstNode* ast,
                               ResolutionResultByPostorderID& r,
                               bool initedInParent,
                               ResolvedFields& fields) {
@@ -1016,7 +1016,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
   assert(sig->needsInstantiation());
 
   const UntypedFnSignature* untypedSignature = sig->untyped();
-  const ASTNode* ast = nullptr;
+  const AstNode* ast = nullptr;
   const Function* fn = nullptr;
   const AggregateDecl* ad = nullptr;
 
@@ -1198,7 +1198,7 @@ resolveFunctionByInfoQuery(Context* context,
   QUERY_BEGIN(resolveFunctionByInfoQuery, context, sig, poiInfo);
 
   const UntypedFnSignature* untypedSignature = sig->untyped();
-  const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
+  const AstNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
   const PoiScope* poiScope = poiInfo.poiScope();
@@ -1386,10 +1386,10 @@ struct ReturnTypeInferrer {
   void exit(const Yield* ret) {
   }
 
-  bool enter(const ASTNode* ast) {
+  bool enter(const AstNode* ast) {
     return true;
   }
-  void exit(const ASTNode* ast) {
+  void exit(const AstNode* ast) {
   }
 };
 
@@ -1486,7 +1486,7 @@ const QualifiedType& returnType(Context* context,
     // this should only be applied to concrete fns or instantiations
     assert(!sig->needsInstantiation());
 
-    const ASTNode* ast = parsing::idToAst(context, untyped->id());
+    const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
     assert(fn);
     if (const Expression* retType = fn->returnType()) {
@@ -1553,7 +1553,7 @@ static const TypedFnSignature*
 doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& call) {
-  const ASTNode* ast = nullptr;
+  const AstNode* ast = nullptr;
   const Function* fn = nullptr;
 
   if (!candidateId.isEmpty()) {
@@ -1779,7 +1779,7 @@ void accumulatePoisUsedByResolvingBody(Context* context,
 // return the result or ErroneousType.
 // returns nullptr if the class type is not handled here.
 static const Type* getManagedClassType(Context* context,
-                                       const ASTNode* astForErr,
+                                       const AstNode* astForErr,
                                        const CallInfo& ci) {
   UniqueString name = ci.name();
 
@@ -1849,7 +1849,7 @@ static const Type* getManagedClassType(Context* context,
 }
 
 static const Type* getNumericType(Context* context,
-                                  const ASTNode* astForErr,
+                                  const AstNode* astForErr,
                                   const CallInfo& ci) {
   UniqueString name = ci.name();
 
@@ -1910,7 +1910,7 @@ static const Type* getNumericType(Context* context,
 // Resolving compiler-supported type-returning patterns
 // 'call' and 'inPoiScope' are used for the location for error reporting.
 static const Type* resolveFnCallSpecialType(Context* context,
-                                            const ASTNode* astForErr,
+                                            const AstNode* astForErr,
                                             const CallInfo& ci) {
 
   if (ci.name() == USTR("?")) {
@@ -1950,7 +1950,7 @@ static const Type* resolveFnCallSpecialType(Context* context,
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
 static bool resolveFnCallSpecial(Context* context,
-                                 const ASTNode* astForErr,
+                                 const AstNode* astForErr,
                                  const CallInfo& ci,
                                  QualifiedType& exprTypeOut) {
   // TODO: type comparisons
@@ -2289,7 +2289,7 @@ CallResolutionResult resolveCall(Context* context,
 }
 
 CallResolutionResult resolveGeneratedCall(Context* context,
-                                          const ASTNode* astForErr,
+                                          const AstNode* astForErr,
                                           const CallInfo& ci,
                                           const Scope* inScope,
                                           const PoiScope* inPoiScope) {

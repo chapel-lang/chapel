@@ -50,7 +50,7 @@ class Identifier final : public Expression {
     assert(!name.isEmpty());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Identifier* lhs = this;
     const Identifier* rhs = (const Identifier*) other;
     return lhs->expressionContentsMatchInner(rhs) &&

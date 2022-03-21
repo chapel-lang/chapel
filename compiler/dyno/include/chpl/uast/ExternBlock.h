@@ -55,7 +55,7 @@ class ExternBlock final : public Expression {
     assert(numChildren() == 0);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     ExternBlock* rhs = (ExternBlock*)other;
     return this->code_ == rhs->code_ &&
         expressionContentsMatchInner(other->toExpression());

@@ -97,7 +97,7 @@ class TupleDecl final : public Decl {
 
   bool assertAcceptableTupleDecl();
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const TupleDecl* lhs = this;
     const TupleDecl* rhs = (const TupleDecl*) other;
     return lhs->declContentsMatchInner(rhs) &&
@@ -155,7 +155,7 @@ class TupleDecl final : public Decl {
    */
   const Decl* decl(int i) const {
     assert(i >= 0 && i < numDecls());
-    const ASTNode* ast = this->child(i + declChildNum());
+    const AstNode* ast = this->child(i + declChildNum());
     assert(ast->isVariable() || ast->isTupleDecl());
     assert(ast->isDecl());
     return (const Decl*)ast;
@@ -167,7 +167,7 @@ class TupleDecl final : public Decl {
   */
   const Expression* typeExpression() const {
     if (typeExpressionChildNum_ >= 0) {
-      const ASTNode* ast = this->child(typeExpressionChildNum_);
+      const AstNode* ast = this->child(typeExpressionChildNum_);
       assert(ast->isExpression());
       return (const Expression*)ast;
     } else {
@@ -181,7 +181,7 @@ class TupleDecl final : public Decl {
   */
   const Expression* initExpression() const {
     if (initExpressionChildNum_ >= 0) {
-      const ASTNode* ast = this->child(initExpressionChildNum_);
+      const AstNode* ast = this->child(initExpressionChildNum_);
       assert(ast->isExpression());
       return (const Expression*)ast;
     } else {

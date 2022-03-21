@@ -53,7 +53,7 @@ class PrimCall final : public Call {
       prim_(prim) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const PrimCall* lhs = this;
     const PrimCall* rhs = (const PrimCall*) other;
 

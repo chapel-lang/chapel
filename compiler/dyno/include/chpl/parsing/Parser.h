@@ -22,7 +22,7 @@
 
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/Location.h"
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/util/memory.h"

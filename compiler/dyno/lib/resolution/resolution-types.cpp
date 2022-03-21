@@ -130,7 +130,7 @@ CallInfo::CallInfo(const uast::FnCall* call) {
   }
 }
 
-void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {
+void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
   vec.resize(ast->id().numContainedChildren());
 

@@ -60,7 +60,7 @@ class Serial final : public SimpleBlockLike {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Serial* lhs = this;
     const Serial* rhs = (const Serial*) other;
 

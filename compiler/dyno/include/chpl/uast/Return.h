@@ -50,7 +50,7 @@ class Return final : public Expression {
     assert(valueChildNum_ <= 0);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Return* lhs = this;
     const Return* rhs = (const Return*) other;
 

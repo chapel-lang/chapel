@@ -60,7 +60,7 @@ class Local final : public SimpleBlockLike {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Local* lhs = this;
     const Local* rhs = (const Local*) other;
 

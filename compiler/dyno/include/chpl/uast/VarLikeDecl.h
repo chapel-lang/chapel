@@ -66,7 +66,7 @@ class VarLikeDecl : public NamedDecl {
     }
   }
 
-  bool varLikeDeclContentsMatchInner(const ASTNode* other) const {
+  bool varLikeDeclContentsMatchInner(const AstNode* other) const {
     const VarLikeDecl* lhs = this;
     const VarLikeDecl* rhs = (const VarLikeDecl*) other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
@@ -97,7 +97,7 @@ class VarLikeDecl : public NamedDecl {
   */
   const Expression* typeExpression() const {
     if (typeExpressionChildNum_ >= 0) {
-      const ASTNode* ast = this->child(typeExpressionChildNum_);
+      const AstNode* ast = this->child(typeExpressionChildNum_);
       assert(ast->isExpression());
       return (const Expression*)ast;
     } else {
@@ -111,7 +111,7 @@ class VarLikeDecl : public NamedDecl {
   */
   const Expression* initExpression() const {
     if (initExpressionChildNum_ >= 0) {
-      const ASTNode* ast = this->child(initExpressionChildNum_);
+      const AstNode* ast = this->child(initExpressionChildNum_);
       assert(ast->isExpression());
       return (const Expression*)ast;
     } else {

@@ -52,7 +52,7 @@ class Select final : public Expression {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Select* rhs = other->toSelect();
     return this->numWhenStmts_ == rhs->numWhenStmts_ &&
       this->expressionContentsMatchInner(rhs);

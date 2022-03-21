@@ -84,7 +84,7 @@ class Variable final : public VarLikeDecl {
         isField_(isField) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Variable* lhs = this;
     const Variable* rhs = (const Variable*) other;
     return lhs->isConfig_ == rhs->isConfig_ &&

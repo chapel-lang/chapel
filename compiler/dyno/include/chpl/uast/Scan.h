@@ -49,7 +49,7 @@ class Scan final : public Call {
     assert(!op_.isEmpty());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Scan* rhs = other->toScan();
     return this->op_ == rhs->op_ &&
       this->callContentsMatchInner(rhs);

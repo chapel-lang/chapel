@@ -59,7 +59,7 @@ class Range final : public Expression {
     }
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Range* rhs = other->toRange();
     return this->opKind_ == rhs->opKind_ &&
       this->lowerBoundChildNum_ == rhs->lowerBoundChildNum_ &&

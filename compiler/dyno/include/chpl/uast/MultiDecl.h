@@ -69,7 +69,7 @@ class MultiDecl final : public Decl {
     return attributes() ? 1 : 0;
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const MultiDecl* lhs = this;
     const MultiDecl* rhs = (const MultiDecl*) other;
     return lhs->declContentsMatchInner(rhs);
@@ -111,7 +111,7 @@ class MultiDecl final : public Decl {
    */
   const Expression* declOrComment(int i) const {
     assert(i >= 0 && i < numDeclOrComments());
-    const ASTNode* ast = this->child(i + declOrCommentChildNum());
+    const AstNode* ast = this->child(i + declOrCommentChildNum());
     assert(ast->isVariable() || ast->isTupleDecl() || ast->isComment());
     return (const Expression*)ast;
   }

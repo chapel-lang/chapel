@@ -46,7 +46,7 @@ class OpCall final : public Call {
       op_(op) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const OpCall* lhs = this;
     const OpCall* rhs = (const OpCall*) other;
 

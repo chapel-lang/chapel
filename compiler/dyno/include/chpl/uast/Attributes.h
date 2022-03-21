@@ -58,7 +58,7 @@ class Attributes final : public Expression {
     assert(pragmas_.size() <= NUM_KNOWN_PRAGMAS);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Attributes* rhs = (const Attributes*)other;
     return this->pragmas_ == rhs->pragmas_ &&
       this->isDeprecated_ == rhs->isDeprecated_ &&

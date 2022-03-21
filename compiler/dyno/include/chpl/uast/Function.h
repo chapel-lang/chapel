@@ -164,7 +164,7 @@ class Function final : public NamedDecl {
     #endif
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Function* lhs = this;
     const Function* rhs = (const Function*) other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
@@ -258,7 +258,7 @@ class Function final : public NamedDecl {
    */
   const Formal* thisFormal() const {
     if (thisFormalChildNum_ >= 0) {
-      const ASTNode* ast = this->child(thisFormalChildNum_);
+      const AstNode* ast = this->child(thisFormalChildNum_);
       assert(ast->isFormal());
       const Formal* f = (const Formal*) ast;
       return f;
@@ -279,7 +279,7 @@ class Function final : public NamedDecl {
    */
   const Expression* returnType() const {
     if (returnTypeChildNum_ >= 0) {
-      const ASTNode* ast = this->child(returnTypeChildNum_);
+      const AstNode* ast = this->child(returnTypeChildNum_);
       assert(ast->isExpression());
       return (Expression*) ast;
     } else {
@@ -292,7 +292,7 @@ class Function final : public NamedDecl {
    */
   const Expression* whereClause() const {
     if (whereChildNum_ >= 0) {
-      const ASTNode* ast = this->child(whereChildNum_);
+      const AstNode* ast = this->child(whereChildNum_);
       assert(ast->isExpression());
       return (const Expression*) ast;
     } else {
@@ -325,7 +325,7 @@ class Function final : public NamedDecl {
   const Expression* lifetimeClause(int i) const {
     assert(numLifetimeClauses() > 0 && lifetimeChildNum_ >= 0);
     assert(0 <= i && i < numLifetimeClauses());
-    const ASTNode* ast = this->child(lifetimeChildNum_ + i);
+    const AstNode* ast = this->child(lifetimeChildNum_ + i);
     assert(ast->isExpression());
     return (const Expression*) ast;
   }

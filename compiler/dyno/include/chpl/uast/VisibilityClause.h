@@ -80,7 +80,7 @@ class VisibilityClause final : public Expression {
   }
 
   // No need to check 'symbolChildNum_' or 'limitationChildNum_'.
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const VisibilityClause* rhs = other->toVisibilityClause();
     return this->limitationKind_ == rhs->limitationKind_ &&
       this->numLimitations_ == rhs->numLimitations_ &&
@@ -158,7 +158,7 @@ class VisibilityClause final : public Expression {
   */
   const Expression* limitation(int i) const {
     assert(i >= 0 && i < numLimitations_);
-    const ASTNode* ast = this->child(limitationChildNum_+i);
+    const AstNode* ast = this->child(limitationChildNum_+i);
     assert(ast->isExpression());
     return (const Expression*)ast;
   }

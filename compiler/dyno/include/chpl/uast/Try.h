@@ -68,7 +68,7 @@ class Try final : public Expression {
     }
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Try* rhs = other->toTry();
     return this->numBodyStmts_ == rhs->numBodyStmts_ &&
       this->numHandlers_ == rhs->numHandlers_ &&

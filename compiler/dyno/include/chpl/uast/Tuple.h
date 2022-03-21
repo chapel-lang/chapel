@@ -48,7 +48,7 @@ class Tuple final : public Call {
     assert(numChildren() >= 1);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return this->callContentsMatchInner(other->toCall());
   }
 

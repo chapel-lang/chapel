@@ -48,7 +48,7 @@ class As final : public Expression {
   }
 
   // No need to match 'symbolChildNum_' or 'renameChildNum_', they are const.
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return expressionContentsMatchInner(other->toExpression());
   }
 

@@ -58,7 +58,7 @@ class Include final : public Expression {
     assert(!name_.isEmpty());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Include* lhs = this;
     const Include* rhs = other->toInclude();
     return lhs->visibility_ == rhs->visibility_ &&

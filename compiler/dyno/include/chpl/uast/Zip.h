@@ -37,7 +37,7 @@ class Zip final : public Call {
            /*hasCalledExpression*/ false) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return callContentsMatchInner(other->toCall());
   }
 

@@ -54,7 +54,7 @@ class Catch final : public Expression {
       hasParensAroundError_(hasParensAroundError) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Catch* rhs = other->toCatch();
     return this->errorChildNum_ == rhs->errorChildNum_ &&
       this->bodyChildNum_ == rhs->bodyChildNum_ &&

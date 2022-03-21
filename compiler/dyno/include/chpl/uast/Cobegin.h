@@ -56,7 +56,7 @@ class Cobegin final : public Expression {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Cobegin* lhs = this;
     const Cobegin* rhs = (const Cobegin*) other;
 
@@ -124,7 +124,7 @@ class Cobegin final : public Expression {
   */
   const Expression* taskBody(int i) const {
     assert(i >= 0 && i < numTaskBodies_);
-    const ASTNode* ast = this->child(i + bodyChildNum_);
+    const AstNode* ast = this->child(i + bodyChildNum_);
     assert(ast->isExpression());
     return (const Expression*)ast;
   }

@@ -54,7 +54,7 @@ class EnumElement final : public NamedDecl {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const EnumElement* lhs = (const EnumElement*) this;
     const EnumElement* rhs = (const EnumElement*) other;
     return lhs->namedDeclContentsMatchInner(rhs);
@@ -86,7 +86,7 @@ class EnumElement final : public NamedDecl {
    */
   const Expression* initExpression() const {
     if (children_.size() > 0) {
-      const ASTNode* ast = this->child(initExpressionChildNum());
+      const AstNode* ast = this->child(initExpressionChildNum());
       assert(ast->isExpression());
       return (const Expression*)ast;
     } else {

@@ -41,7 +41,7 @@ class Reduce final : public Call {
     assert(!op_.isEmpty());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Reduce* rhs = other->toReduce();
     return this->op_ == rhs->op_ &&
       this->callContentsMatchInner(rhs);

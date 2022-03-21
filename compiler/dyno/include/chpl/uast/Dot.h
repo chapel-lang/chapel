@@ -56,7 +56,7 @@ class Dot final : public Expression {
     assert(children_.size() == 1);
     assert(children_[0]->isExpression());
   }
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Dot* lhs = this;
     const Dot* rhs = (const Dot*) other;
 
@@ -82,7 +82,7 @@ class Dot final : public Expression {
 
   /** Returns the left-hand-side of the Dot expression */
   const Expression* receiver() const {
-    const ASTNode* ast = child(0);
+    const AstNode* ast = child(0);
     assert(ast->isExpression());
     return (const Expression*) ast;
   }

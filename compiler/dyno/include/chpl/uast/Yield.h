@@ -49,7 +49,7 @@ class Yield final : public Expression {
     assert(children_.size() == 1);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     // The 'valueChildNum_' is const and does not need to be compared.
     return this->expressionContentsMatchInner(other->toExpression());
   }

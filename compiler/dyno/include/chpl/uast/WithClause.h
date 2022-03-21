@@ -50,7 +50,7 @@ class WithClause final : public Expression {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return expressionContentsMatchInner(other->toExpression());
   }
 
@@ -85,7 +85,7 @@ class WithClause final : public Expression {
     Return the i'th expression in this with clause.
   */
   const Expression* expr(int i) const {
-    const ASTNode* ast = this->child(i);
+    const AstNode* ast = this->child(i);
     assert(ast->isExpression());
     return (const Expression*)ast;
   }

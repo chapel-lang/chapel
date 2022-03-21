@@ -70,7 +70,7 @@ private:
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const ForwardingDecl* lhs = (const ForwardingDecl*) this;
     const ForwardingDecl* rhs = (const ForwardingDecl*) other;
     return lhs->declContentsMatchInner(rhs);
@@ -102,7 +102,7 @@ private:
   */
   const Expression* expr() const {
     if (children_.size() > 0) {
-      const ASTNode* ast = this->child(exprChildNum());
+      const AstNode* ast = this->child(exprChildNum());
       assert(ast->isExpression());
       return (const Expression*)ast;
     } else {

@@ -51,7 +51,7 @@ class Let final : public Expression {
     assert(1 <= numDecls && (numDecls == numChildren() - 1));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Let* lhs = this;
     const Let* rhs = other->toLet();
     return lhs->numDecls_ == rhs->numDecls_ &&

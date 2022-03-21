@@ -65,7 +65,7 @@ class Use final : public Expression {
     #endif
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Use* rhs = other->toUse();
     return this->visibility_ == rhs->visibility_ &&
       this->expressionContentsMatchInner(rhs);

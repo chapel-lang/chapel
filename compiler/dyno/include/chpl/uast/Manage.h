@@ -68,7 +68,7 @@ class Manage final : public SimpleBlockLike {
     #endif
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Manage* lhs = this;
     const Manage* rhs = (const Manage*) other;
     return lhs->managerExprChildNum_ == rhs->managerExprChildNum_ &&

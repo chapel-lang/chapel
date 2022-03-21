@@ -258,7 +258,7 @@ static bool isNoDoc(const Decl* e) {
 }
 
 /**
- Converts an ASTNode into an RST format that is suitable for the RHS of
+ Converts an AstNode into an RST format that is suitable for the RHS of
 something like:
 
 Function:
@@ -500,17 +500,17 @@ struct RstSignatureVisitor {
     return true;
   }
 
-  bool enter(const ASTNode* a) {
+  bool enter(const AstNode* a) {
     printf("unhandled enter on PrettyPrintVisitor of %s\n", asttags::tagToString(a->tag()));
     a->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
     gUnhandled.insert(a->tag());
     return false;
   }
-  void exit(const ASTNode* a) {}
+  void exit(const AstNode* a) {}
 };
 
 /**
- Stores the rst docs result of an ASTNode and its children.
+ Stores the rst docs result of an AstNode and its children.
  `doc` looks like: (using Python's triple quote syntax)
 '''.. function:: proc procName(arg1: int): bool
 
@@ -597,7 +597,7 @@ struct RstResultBuilder {
     }
     os_ << '\n';
   }
-  void showComment(const ASTNode* node, bool indent=true) {
+  void showComment(const AstNode* node, bool indent=true) {
     showComment(previousComment(context_, node->id()), indent);
   }
 
@@ -621,7 +621,7 @@ struct RstResultBuilder {
     }
   }
 
-  void visitChildren(const ASTNode* n) {
+  void visitChildren(const AstNode* n) {
     for (auto child : n->children()) {
       if (auto &r = rstDoc(context_, child->id())) {
         children_.push_back(r.get());
@@ -676,7 +676,7 @@ struct RstResultBuilder {
   }
 
   // TODO all these nullptr gets stored in the query map... can we avoid that?
-  owned<RstResult> visit(const ASTNode* n) { return {}; }
+  owned<RstResult> visit(const AstNode* n) { return {}; }
 
   owned<RstResult> getResult(bool indentChildren = false) {
     return std::make_unique<RstResult>(os_.str(), children_, indentChildren);
@@ -695,7 +695,7 @@ struct CommentVisitor {
   CommentMap& map;
   const Comment* lastComment_ = nullptr;
 
-  void put(const ASTNode* n) {
+  void put(const AstNode* n) {
     if (lastComment_) {
       map.emplace(n->id(), lastComment_);
     }
@@ -706,7 +706,7 @@ struct CommentVisitor {
     return false;
   }
   void exit(const Comment* ast) {}
-  void exit(const ASTNode* ast) { lastComment_ = nullptr; }
+  void exit(const AstNode* ast) { lastComment_ = nullptr; }
 
 #define DEF_ENTER(type, recurse)                                               \
   bool enter(const type* node) {                                               \
@@ -721,7 +721,7 @@ struct CommentVisitor {
 
 #undef DEF_ENTER
 
-  bool enter(const ASTNode* ast) {
+  bool enter(const AstNode* ast) {
     return false;
   }
 };
@@ -766,7 +766,7 @@ static const owned<RstResult>& rstDoc(Context* context, ID id) {
   owned<RstResult> result;
   // Comments have empty id
   if (!id.isEmpty()) {
-    const ASTNode* node = idToAst(context, id);
+    const AstNode* node = idToAst(context, id);
     RstResultBuilder cqv{context};
     result = node->dispatch<owned<RstResult>>(cqv);
   }

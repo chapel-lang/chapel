@@ -62,7 +62,7 @@ class Module final : public NamedDecl {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Module* lhs = this;
     const Module* rhs = (const Module*) other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
@@ -115,7 +115,7 @@ class Module final : public NamedDecl {
   */
   const Expression* stmt(int i) const {
     assert(0 <= i && i < numStmts());
-    const ASTNode* ast = this->child(i + stmtChildNum());
+    const AstNode* ast = this->child(i + stmtChildNum());
     assert(ast->isExpression());
     return (Expression*) ast;
   }

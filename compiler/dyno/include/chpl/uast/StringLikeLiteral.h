@@ -47,7 +47,7 @@ class StringLikeLiteral : public Literal {
       quotes_(quotes)
   { }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const StringLikeLiteral* lhs = this;
     const StringLikeLiteral* rhs = (const StringLikeLiteral*) other;
     return lhs->literalContentsMatchInner(rhs) &&

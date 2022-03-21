@@ -57,7 +57,7 @@ class New : public Expression {
     : Expression(asttags::New, std::move(children)),
       management_(management) {}
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const New* lhs = this;
     const New* rhs = (const New*) other;
 

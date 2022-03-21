@@ -60,7 +60,7 @@ class Coforall final : public IndexableLoop {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
   }
 

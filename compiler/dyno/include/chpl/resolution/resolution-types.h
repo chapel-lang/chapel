@@ -25,7 +25,7 @@
 #include "chpl/types/CompositeType.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
 #include "chpl/util/bitmap.h"
 #include "chpl/util/memory.h"
@@ -943,7 +943,7 @@ class ResolutionResultByPostorderID {
 
  public:
   /** prepare to resolve the contents of the passed symbol */
-  void setupForSymbol(const uast::ASTNode* ast);
+  void setupForSymbol(const uast::AstNode* ast);
   /** prepare to resolve the signature of the passed function */
   void setupForSignature(const uast::Function* func);
   /** prepare to resolve the body of the passed function */
@@ -960,7 +960,7 @@ class ResolutionResultByPostorderID {
     }
     return vec[postorder];
   }
-  ResolvedExpression& byAstExpanding(const uast::ASTNode* ast) {
+  ResolvedExpression& byAstExpanding(const uast::AstNode* ast) {
     return byIdExpanding(ast->id());
   }
   ResolvedExpression& byId(const ID& id) {
@@ -974,10 +974,10 @@ class ResolutionResultByPostorderID {
     assert(0 <= postorder && (size_t) postorder < vec.size());
     return vec[postorder];
   }
-  ResolvedExpression& byAst(const uast::ASTNode* ast) {
+  ResolvedExpression& byAst(const uast::AstNode* ast) {
     return byId(ast->id());
   }
-  const ResolvedExpression& byAst(const uast::ASTNode* ast) const {
+  const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byId(ast->id());
   }
 
@@ -1068,7 +1068,7 @@ class ResolvedFunction {
   const ResolvedExpression& byId(const ID& id) const {
     return resolutionById_.byId(id);
   }
-  const ResolvedExpression& byAst(const uast::ASTNode* ast) const {
+  const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return resolutionById_.byAst(ast);
   }
 

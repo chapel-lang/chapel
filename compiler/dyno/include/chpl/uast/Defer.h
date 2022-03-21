@@ -58,7 +58,7 @@ class Defer final : public SimpleBlockLike {
     assert(bodyChildNum_ >= 0);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
   }
 

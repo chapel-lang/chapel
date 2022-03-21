@@ -271,7 +271,7 @@ struct ChplSyntaxVisitor {
     ss_ << ")";
   }
 
-  void visit(const uast::ASTNode* node) {
+  void visit(const uast::AstNode* node) {
     assert(false && "Unhandled uAST node");
   }
 
@@ -987,7 +987,7 @@ struct ChplSyntaxVisitor {
 
 namespace chpl {
   /* Generic printer calling the above functions */
-  void printChapelSyntax(std::ostream& os, const ASTNode* node) {
+  void printChapelSyntax(std::ostream& os, const AstNode* node) {
     auto visitor = ChplSyntaxVisitor{};
     node->dispatch<void>(visitor);
     // when using << with ss_.rdbuf(), if nothing gets added to os, then

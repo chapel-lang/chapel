@@ -35,7 +35,7 @@ class ErroneousExpression final : public Expression {
   ErroneousExpression()
     : Expression(asttags::ErroneousExpression) {
   }
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const ErroneousExpression* lhs = this;
     const ErroneousExpression* rhs = (const ErroneousExpression*) other;
     return lhs->expressionContentsMatchInner(rhs);

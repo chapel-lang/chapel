@@ -63,7 +63,7 @@ class Union final : public AggregateDecl {
     assert(linkage != Decl::EXPORT);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Union* lhs = this;
     const Union* rhs = (const Union*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs);

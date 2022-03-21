@@ -60,7 +60,7 @@ class Record final : public AggregateDecl {
                     numElements) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Record* lhs = this;
     const Record* rhs = (const Record*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs);

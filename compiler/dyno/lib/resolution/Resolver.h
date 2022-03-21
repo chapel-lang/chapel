@@ -30,7 +30,7 @@ namespace resolution {
 struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;
-  const uast::ASTNode* symbol = nullptr;
+  const uast::AstNode* symbol = nullptr;
   const PoiScope* poiScope = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
   bool useGenericFormalDefaults = false;
@@ -63,7 +63,7 @@ struct Resolver {
 
  private:
   Resolver(Context* context,
-           const uast::ASTNode* symbol,
+           const uast::AstNode* symbol,
            ResolutionResultByPostorderID& byPostorder,
            const PoiScope* poiScope)
     : context(context), symbol(symbol), poiScope(poiScope),
@@ -152,8 +152,8 @@ struct Resolver {
   // helper for getTypeForDecl -- checks the Kinds are compatible
   // if so, returns false.
   // if not, issues error(s) and returns true.
-  bool checkForKindError(const uast::ASTNode* typeForErr,
-                         const uast::ASTNode* initForErr,
+  bool checkForKindError(const uast::AstNode* typeForErr,
+                         const uast::AstNode* initForErr,
                          types::QualifiedType::Kind declKind,
                          types::QualifiedType declaredType,
                          types::QualifiedType initExprType);
@@ -162,9 +162,9 @@ struct Resolver {
   // that can have both a declared type and an init expression.
   // If both are provided, checks that they are compatible.
   // Returns the type to use for the declaration.
-  types::QualifiedType getTypeForDecl(const uast::ASTNode* declForErr,
-                                      const uast::ASTNode* typeForErr,
-                                      const uast::ASTNode* initForErr,
+  types::QualifiedType getTypeForDecl(const uast::AstNode* declForErr,
+                                      const uast::AstNode* typeForErr,
+                                      const uast::AstNode* initForErr,
                                       types::QualifiedType::Kind declKind,
                                       types::QualifiedType declaredType,
                                       types::QualifiedType initExprType);
@@ -175,7 +175,7 @@ struct Resolver {
                         const types::Type* useType);
 
   // issue ambiguity / no matching candidates / etc error
-  void issueErrorForFailedCallResolution(const uast::ASTNode* astForErr,
+  void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                          const CallInfo& ci,
                                          const CallResolutionResult& c);
 
@@ -210,8 +210,8 @@ struct Resolver {
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */
-  void enterScope(const uast::ASTNode* ast);
-  void exitScope(const uast::ASTNode* ast);
+  void enterScope(const uast::AstNode* ast);
+  void exitScope(const uast::AstNode* ast);
 
   // the visitor methods
   bool enter(const uast::Literal* literal);
@@ -240,8 +240,8 @@ struct Resolver {
   void exit(const uast::Dot* dot);
 
   // if none of the above is called, fall back on this one
-  bool enter(const uast::ASTNode* ast);
-  void exit(const uast::ASTNode* ast);
+  bool enter(const uast::AstNode* ast);
+  void exit(const uast::AstNode* ast);
 };
 
 
