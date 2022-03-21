@@ -129,7 +129,7 @@ const uast::AstNode* idToAst(Context* context, ID id);
 /**
  Returns the tag for the node with the given ID.
  */
-uast::ASTTag idToTag(Context* context, ID id);
+uast::AstTag idToTag(Context* context, ID id);
 
 /**
  Returns the parent ID given an ID

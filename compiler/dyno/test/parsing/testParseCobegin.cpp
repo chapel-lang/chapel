@@ -74,7 +74,7 @@ static void test0(Parser* parser) {
   // Make sure the task bodies iterator works as expected.
   {
     // Include comments even if they have no meaning.
-    ASTTag taskBodyList[] = {
+    AstTag taskBodyList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment

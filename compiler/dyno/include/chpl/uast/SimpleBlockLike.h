@@ -47,7 +47,7 @@ namespace uast {
  */
 class SimpleBlockLike : public Expression {
  protected:
-  SimpleBlockLike(ASTTag tag, ASTList children, BlockStyle blockStyle,
+  SimpleBlockLike(AstTag tag, ASTList children, BlockStyle blockStyle,
                   int bodyChildNum,
                   int numBodyStmts)
     : Expression(tag, std::move(children)),

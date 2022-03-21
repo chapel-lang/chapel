@@ -82,7 +82,7 @@ static void test0(Parser* parser) {
 
   // Make sure the then iterator works as expected.
   {
-    ASTTag thenStmtList[] = {
+    AstTag thenStmtList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment
@@ -96,7 +96,7 @@ static void test0(Parser* parser) {
 
   // Make sure the else iterator works as expected.
   {
-    ASTTag elseStmtList[] = {
+    AstTag elseStmtList[] = {
       asttags::Comment,
       asttags::FnCall
     };
@@ -151,7 +151,7 @@ static void test1(Parser* parser) {
 
   // Make sure the then iterator works as expected.
   {
-    ASTTag thenStmtList[] = {
+    AstTag thenStmtList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment,
@@ -165,7 +165,7 @@ static void test1(Parser* parser) {
 
   // Make sure the else iterator works as expected.
   {
-    ASTTag elseStmtList[] = {
+    AstTag elseStmtList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment,
@@ -242,7 +242,7 @@ static void test3(Parser* parser) {
 
   // Make sure the then iterator works as expected.
   {
-    ASTTag thenStmtList[] = {
+    AstTag thenStmtList[] = {
       asttags::Comment,
       asttags::FnCall
     };

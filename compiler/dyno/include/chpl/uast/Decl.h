@@ -55,7 +55,7 @@ class Decl : public Expression {
   int linkageNameChildNum_;
 
  protected:
-  Decl(ASTTag tag, int attributesChildNum, Visibility visibility,
+  Decl(AstTag tag, int attributesChildNum, Visibility visibility,
        Linkage linkage)
     : Expression(tag),
       attributesChildNum_(attributesChildNum),
@@ -64,7 +64,7 @@ class Decl : public Expression {
       linkageNameChildNum_(-1) {
   }
 
-  Decl(ASTTag tag, ASTList children, int attributesChildNum,
+  Decl(AstTag tag, ASTList children, int attributesChildNum,
        Visibility visibility,
        Linkage linkage,
        int linkageNameChildNum)

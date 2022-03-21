@@ -91,7 +91,7 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
   if (postOrderId >= 0) {
     // Find the parent scope for the ID - i.e. where the id is declared
     ID parentSymbolId = id.parentSymbolId(context);
-    ASTTag parentTag = parsing::idToTag(context, parentSymbolId);
+    AstTag parentTag = parsing::idToTag(context, parentSymbolId);
     if (asttags::isModule(parentTag)) {
       auto& partial = partiallyResolvedModule(context, parentSymbolId);
       result = partial.byId(id).type();

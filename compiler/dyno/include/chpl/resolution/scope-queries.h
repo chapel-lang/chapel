@@ -29,7 +29,7 @@ namespace resolution {
   /**
     Returns true if this AST type can create a scope.
    */
-  bool createsScope(uast::ASTTag tag);
+  bool createsScope(uast::AstTag tag);
 
   /**
     Returns the Scope for an ID.

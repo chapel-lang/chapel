@@ -25,7 +25,7 @@ DYNO_UAST_SRCS =                                 \
   Array.cpp \
   ASTList.cpp \
   AstNode.cpp \
-  ASTTag.cpp \
+  AstTag.cpp \
   As.cpp \
   Attributes.cpp \
   Begin.cpp \

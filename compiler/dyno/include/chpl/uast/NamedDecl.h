@@ -36,14 +36,14 @@ class NamedDecl : public Decl {
   UniqueString name_;
 
  protected:
-  NamedDecl(ASTTag tag, Decl::Visibility visibility, Decl::Linkage linkage,
+  NamedDecl(AstTag tag, Decl::Visibility visibility, Decl::Linkage linkage,
             int attributesChildNum,
             UniqueString name)
     : Decl(tag, attributesChildNum, visibility, linkage),
       name_(name) {
   }
 
-  NamedDecl(ASTTag tag, ASTList children, int attributesChildNum,
+  NamedDecl(AstTag tag, ASTList children, int attributesChildNum,
             Decl::Visibility visibility,
             Decl::Linkage linkage,
             int linkageNameChildNum,

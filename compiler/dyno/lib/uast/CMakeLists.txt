@@ -22,7 +22,7 @@ target_sources(libdyno-obj
                Array.cpp
                ASTList.cpp
                AstNode.cpp
-               ASTTag.cpp
+               AstTag.cpp
                As.cpp
                Attributes.cpp
                Begin.cpp

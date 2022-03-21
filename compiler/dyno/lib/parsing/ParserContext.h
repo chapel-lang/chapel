@@ -90,7 +90,7 @@ struct ParserContext {
   // this type and stack helps the parser know if a function
   // declaration is a method.
   struct ParserScope {
-    asttags::ASTTag tag;
+    asttags::AstTag tag;
     UniqueString name;
   };
   std::vector<ParserScope> scopeStack;
@@ -156,10 +156,10 @@ struct ParserContext {
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
 
-  void enterScope(asttags::ASTTag tag, UniqueString name);
+  void enterScope(asttags::AstTag tag, UniqueString name);
   ParserScope currentScope();
   bool currentScopeIsAggregate();
-  void exitScope(asttags::ASTTag tag, UniqueString name);
+  void exitScope(asttags::AstTag tag, UniqueString name);
 
   // Given a location, create a new one pointing to the end of it.
   YYLTYPE makeLocationAtLast(YYLTYPE location) {
@@ -521,7 +521,7 @@ struct ParserContext {
 
   TypeDeclParts enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
                                                 PODUniqueString name,
-                                                asttags::ASTTag tag);
+                                                asttags::AstTag tag);
 
   void validateExternTypeDeclParts(YYLTYPE locStart, TypeDeclParts& parts);
 

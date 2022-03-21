@@ -266,10 +266,10 @@ const AstNode* idToAst(Context* context, ID id) {
   return astForIDQuery(context, id);
 }
 
-static const ASTTag& idToTagQuery(Context* context, ID id) {
+static const AstTag& idToTagQuery(Context* context, ID id) {
   QUERY_BEGIN(idToTagQuery, context, id);
 
-  ASTTag result = asttags::NUM_AST_TAGS;
+  AstTag result = asttags::NUM_AST_TAGS;
 
   const AstNode* ast = astForIDQuery(context, id);
   if (ast != nullptr)
@@ -278,7 +278,7 @@ static const ASTTag& idToTagQuery(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-ASTTag idToTag(Context* context, ID id) {
+AstTag idToTag(Context* context, ID id) {
   return idToTagQuery(context, id);
 }
 

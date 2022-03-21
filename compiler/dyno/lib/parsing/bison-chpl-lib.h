@@ -170,7 +170,7 @@ extern int yychpl_debug;
     Expression* linkageName;
     Attributes* attributes;
     PODUniqueString name;
-    asttags::ASTTag tag;
+    asttags::AstTag tag;
   };
 
   // This is produced by do_stmt. It records whether the do_stmt statements
@@ -219,7 +219,7 @@ extern int yychpl_debug;
 
     // integer/enum values
 
-    asttags::ASTTag astTag;
+    asttags::AstTag astTag;
     Formal::Intent intentTag;
     Function::Kind functionKind;
     Function::ReturnIntent returnTag;

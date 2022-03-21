@@ -36,10 +36,10 @@ namespace uast {
 class Call : public Expression {
  protected:
   bool hasCalledExpression_;
-  Call(ASTTag tag)
+  Call(AstTag tag)
     : Expression(tag), hasCalledExpression_(false) {
   }
-  Call(ASTTag tag, ASTList children, bool hasCalledExpression)
+  Call(AstTag tag, ASTList children, bool hasCalledExpression)
     : Expression(tag, std::move(children)),
       hasCalledExpression_(hasCalledExpression) {
 

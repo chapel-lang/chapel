@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ASTTag.h"
+#include "chpl/uast/AstTag.h"
 
 namespace chpl {
 namespace uast {
@@ -42,7 +42,7 @@ static const char* tagToStringTable[NUM_AST_TAGS] = {
 #undef NAMESTR
 };
 
-const char* tagToString(ASTTag tag) {
+const char* tagToString(AstTag tag) {
   if (0 <= tag && tag < NUM_AST_TAGS)
     return tagToStringTable[tag];
   else

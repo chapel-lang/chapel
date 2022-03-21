@@ -109,7 +109,7 @@ class Builder final {
     all create a new ID scope. This function returns `true` for AST tags
     with this property.
    */
-  static bool astTagIndicatesNewIdScope(asttags::ASTTag tag);
+  static bool astTagIndicatesNewIdScope(asttags::AstTag tag);
 
   // build methods are actually type methods on the individual AST
   // elements. This prevents the Builder API from growing unreasonably large.

@@ -44,7 +44,7 @@
 #include "chpl/queries/query-impl.h"
 #include "chpl/queries/stringify-functions.h"
 #include "chpl/queries/update-functions.h"
-#include "chpl/uast/ASTTag.h"
+#include "chpl/uast/AstTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
@@ -56,7 +56,7 @@ using namespace parsing;
 
 using CommentMap = std::unordered_map<ID, const Comment*>;
 
-std::unordered_set<asttags::ASTTag> gUnhandled;
+std::unordered_set<asttags::AstTag> gUnhandled;
 static const int indentPerDepth = 3;
 
 const std::string templateUsage = R"RAW(**Usage**

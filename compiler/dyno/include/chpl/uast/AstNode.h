@@ -22,7 +22,7 @@
 
 #include "chpl/queries/ID.h"
 #include "chpl/uast/ASTList.h"
-#include "chpl/uast/ASTTag.h"
+#include "chpl/uast/AstTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/util/memory.h"
 #include "chpl/queries/stringify-functions.h"
@@ -56,7 +56,7 @@ class AstNode {
  friend class Builder;
 
  private:
-  ASTTag tag_;
+  AstTag tag_;
   ID id_;
 
  protected:
@@ -79,10 +79,10 @@ class AstNode {
   virtual void markUniqueStringsInner(Context* context) const = 0;
 
  protected:
-  AstNode(ASTTag tag)
+  AstNode(AstTag tag)
     : tag_(tag), id_(), children_() {
   }
-  AstNode(ASTTag tag, ASTList children)
+  AstNode(AstTag tag, ASTList children)
     : tag_(tag), id_(), children_(std::move(children)) {
   }
 
@@ -95,7 +95,7 @@ class AstNode {
   /**
     Returns the tag indicating which AstNode subclass this is.
    */
-  ASTTag tag() const {
+  AstTag tag() const {
     return tag_;
   }
 

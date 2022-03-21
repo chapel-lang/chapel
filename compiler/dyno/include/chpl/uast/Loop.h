@@ -34,7 +34,7 @@ namespace uast {
  */
 class Loop: public Expression {
  protected:
-  Loop(asttags::ASTTag tag, ASTList children, BlockStyle blockStyle,
+  Loop(asttags::AstTag tag, ASTList children, BlockStyle blockStyle,
        int loopBodyChildNum)
     : Expression(tag, std::move(children)),
       blockStyle_(blockStyle),

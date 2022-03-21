@@ -42,7 +42,7 @@ class StringLikeLiteral : public Literal {
  protected:
   QuoteStyle quotes_;
 
-  StringLikeLiteral(ASTTag tag, const types::Param* value, QuoteStyle quotes)
+  StringLikeLiteral(AstTag tag, const types::Param* value, QuoteStyle quotes)
     : Literal(tag, value),
       quotes_(quotes)
   { }

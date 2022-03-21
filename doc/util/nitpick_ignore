@@ -26,8 +26,8 @@ cpp:identifier chpl
 cpp:identifier UniqueString
 cpp:identifier ID
 cpp:identifier Location
-cpp:identifier ASTTag
-cpp:identifier uast::ASTTag
+cpp:identifier AstTag
+cpp:identifier uast::AstTag
 cpp:identifier ASTList::const_iterator
 cpp:identifier size_t
 cpp:identifier detail

@@ -86,7 +86,7 @@ BuilderResult Builder::result() {
   return ret;
 }
 
-bool Builder::astTagIndicatesNewIdScope(asttags::ASTTag tag) {
+bool Builder::astTagIndicatesNewIdScope(asttags::AstTag tag) {
   return asttags::isNamedDecl(tag) &&
         (asttags::isFunction(tag) ||
          asttags::isModule(tag) ||

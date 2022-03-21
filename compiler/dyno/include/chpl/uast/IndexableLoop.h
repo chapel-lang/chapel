@@ -34,7 +34,7 @@ namespace uast {
  */
 class IndexableLoop : public Loop {
  protected:
-  IndexableLoop(ASTTag tag, ASTList children,
+  IndexableLoop(AstTag tag, ASTList children,
                 int8_t indexChildNum,
                 int8_t iterandChildNum,
                 int8_t withClauseChildNum,

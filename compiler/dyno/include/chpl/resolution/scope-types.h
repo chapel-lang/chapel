@@ -202,7 +202,7 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
 class Scope {
  private:
   const Scope* parentScope_ = nullptr;
-  uast::asttags::ASTTag tag_ = uast::asttags::NUM_AST_TAGS;
+  uast::asttags::AstTag tag_ = uast::asttags::NUM_AST_TAGS;
   bool containsUseImport_ = false;
   bool containsFunctionDecls_ = false;
   ID id_;
@@ -226,7 +226,7 @@ class Scope {
   const Scope* parentScope() const { return parentScope_; }
 
   /** Returns the AST tag of the construct that this Scope represents. */
-  uast::asttags::ASTTag tag() const { return tag_; }
+  uast::asttags::AstTag tag() const { return tag_; }
 
   /** Return the ID of the Block or other AST node construct that this Scope
       represents. An empty ID indicates that this Scope is the root scope. */

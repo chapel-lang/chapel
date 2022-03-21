@@ -33,7 +33,7 @@ namespace asttags {
 
   This enum is used to identify which AST class a node is.
  */
-enum ASTTag {
+enum AstTag {
   // define the enum for all of the non-virtual AST nodes
   // using macros and uast-classes-list.h
   /// \cond DO_NOT_DOCUMENT
@@ -56,7 +56,7 @@ enum ASTTag {
 // (not yet for abstract parent classes)
 /// \cond DO_NOT_DOCUMENT
 #define IS_AST(NAME) \
-  static inline bool is##NAME(ASTTag tag) { \
+  static inline bool is##NAME(AstTag tag) { \
     return tag == NAME; \
   }
 #define AST_NODE(NAME) IS_AST(NAME)
@@ -76,7 +76,7 @@ enum ASTTag {
 // define is___ for abstract parent classes
 /// \cond DO_NOT_DOCUMENT
 #define IS_BASE_CLASS_AST(NAME) \
-  static inline bool is##NAME(ASTTag tag) { \
+  static inline bool is##NAME(AstTag tag) { \
     return START_##NAME < tag && tag < END_##NAME; \
   }
 #define AST_NODE(NAME)
@@ -93,26 +93,26 @@ enum ASTTag {
 #undef AST_END_SUBCLASSES
 #undef IS_BASE_CLASS_AST
 
-const char* tagToString(ASTTag tag);
+const char* tagToString(AstTag tag);
 
 
 } // end namespace asttags
 
-// Enable ASTTag to be used as chpl::uast::ASTTag
-using chpl::uast::asttags::ASTTag;
+// Enable AstTag to be used as chpl::uast::AstTag
+using chpl::uast::asttags::AstTag;
 
 } // end namespace uast
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<uast::ASTTag> {
-  bool operator()(uast::ASTTag& keep,
-                  uast::ASTTag& addin) const {
+template<> struct update<uast::AstTag> {
+  bool operator()(uast::AstTag& keep,
+                  uast::AstTag& addin) const {
     return defaultUpdateBasic(keep, addin);
   }
 };
 
-template<> struct mark<uast::ASTTag> {
-  void operator()(Context* context, const uast::ASTTag& keep) const {
+template<> struct mark<uast::AstTag> {
+  void operator()(Context* context, const uast::AstTag& keep) const {
     // nothing to do for enum
   }
 };

@@ -292,7 +292,7 @@ void ParserContext::resetDeclState() {
   this->isBuildingFormal = false;
 }
 
-void ParserContext::enterScope(asttags::ASTTag tag, UniqueString name) {
+void ParserContext::enterScope(asttags::AstTag tag, UniqueString name) {
   ParserScope entry = {tag, name};
   scopeStack.push_back(entry);
 }
@@ -309,7 +309,7 @@ bool ParserContext::currentScopeIsAggregate() {
           scope.tag == asttags::Record ||
           scope.tag == asttags::Union);
 }
-void ParserContext::exitScope(asttags::ASTTag tag, UniqueString name) {
+void ParserContext::exitScope(asttags::AstTag tag, UniqueString name) {
   assert(scopeStack.size() > 0);
   assert(scopeStack.back().tag == tag);
   assert(scopeStack.back().name == name);
@@ -1762,7 +1762,7 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
 TypeDeclParts
 ParserContext::enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
                                                PODUniqueString name,
-                                               asttags::ASTTag tag) {
+                                               asttags::AstTag tag) {
   auto loc = declStartLoc(locStart);
 
   enterScope(tag, name);

@@ -62,7 +62,7 @@ class AggregateDecl : public TypeDecl {
   }
 
  public:
-  AggregateDecl(ASTTag tag, ASTList children, int attributesChildNum,
+  AggregateDecl(AstTag tag, ASTList children, int attributesChildNum,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
                 int linkageNameChildNum,

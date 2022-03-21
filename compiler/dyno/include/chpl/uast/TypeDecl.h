@@ -32,7 +32,7 @@ namespace uast {
  */
 class TypeDecl : public NamedDecl {
  protected:
-  TypeDecl(asttags::ASTTag tag, ASTList children, int attributesChildNum,
+  TypeDecl(asttags::AstTag tag, ASTList children, int attributesChildNum,
            Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,

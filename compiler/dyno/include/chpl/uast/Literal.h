@@ -35,7 +35,7 @@ class Literal : public Expression {
  protected:
   const types::Param* value_ = nullptr;
 
-  Literal(ASTTag tag, const types::Param* value)
+  Literal(AstTag tag, const types::Param* value)
     : Expression(tag), value_(value) {
 
     assert(value_ != nullptr);

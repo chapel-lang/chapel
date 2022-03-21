@@ -148,7 +148,7 @@ void gatherDeclsWithin(const uast::AstNode* ast,
   containsFunctionDecls = visitor.containsFunctionDecls;
 }
 
-bool createsScope(asttags::ASTTag tag) {
+bool createsScope(asttags::AstTag tag) {
   return Builder::astTagIndicatesNewIdScope(tag)
          || asttags::isSimpleBlockLike(tag)
          || asttags::isLoop(tag)

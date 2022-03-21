@@ -26,7 +26,7 @@ namespace uast {
 
 bool TupleDecl::assertAcceptableTupleDecl() {
   const auto unsetSentinel = asttags::NUM_AST_TAGS;
-  asttags::ASTTag firstNonTupleTag = unsetSentinel;
+  asttags::AstTag firstNonTupleTag = unsetSentinel;
   int i = 0;
 
   for (const auto& elt: children_) {

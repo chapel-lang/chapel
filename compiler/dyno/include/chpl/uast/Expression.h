@@ -31,10 +31,10 @@ namespace uast {
  */
 class Expression : public AstNode {
  protected:
-  Expression(asttags::ASTTag tag)
+  Expression(asttags::AstTag tag)
     : AstNode(tag) {
   }
-  Expression(asttags::ASTTag tag, ASTList children)
+  Expression(asttags::AstTag tag, ASTList children)
     : AstNode(tag, std::move(children)) {
   }
   bool expressionContentsMatchInner(const Expression* other) const {

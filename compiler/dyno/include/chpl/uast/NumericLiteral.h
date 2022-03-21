@@ -36,7 +36,7 @@ class NumericLiteral : public Literal {
  protected:
   UniqueString text_;
 
-  NumericLiteral(ASTTag tag, const ParamT* value, UniqueString text)
+  NumericLiteral(AstTag tag, const ParamT* value, UniqueString text)
     : Literal(tag, value),
       text_(text)
   { }
