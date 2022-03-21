@@ -67,9 +67,12 @@ New Features
 Feature Improvements
 --------------------
 * extended hash-based collections to support values of range/array type
+* improved support for core operations across rectangular array implementations
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated support for `|`, `&`, and `^` on rectangular domains
+* deprecated `domain.isSuper()` and `.isSubset()` for `domain.contains()`
 * deprecated support for arrays over bracket-less anonymous associative arrays  
   (e.g., in `var A: ["red", "green", "blue"] real;`, brackets are now required)
 * deprecated support for `ChapelEnv.CHPL_AUX_FILESYS`  
@@ -282,6 +285,11 @@ Error Messages / Semantic Checks
 * added an error when applying `override` to a non-method
 * added single quotes around values and types in overflow errors for ints/bytes
 * added an error when using `CHPL_LLVM=none` with `CHPL_TARGET_COMPILER=llvm`
+* improved error messages for `|=`, `&=`, and `^=` on rectangular domains
+* added an error when trying to create sparse non-rectangular domains
+* added an error for `==` and `!=` between domains of differing kinds
+* improved error messages for certain unsupported domain operations
+* improved error messages for calling `min`/`max(type t)` on unsupported types
 * updated error message in `realPath()` to better reflect its interface  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Path.html#Path.realPath)
 * added checks for division by 0 to `bigint` division methods  
@@ -295,6 +303,7 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed a compiler bug causing incorrect results for dynamic dispatch
+* fixed several problems with error handling in the context of parallel loops
 * fixed a bug preventing `const in` task intents from being used with arrays
 * fixed a bug when calling `.localSlice()` on a slice of a default array
 * fixed a bug in which `require foo.chpl;` was ignored within implicit modules 
@@ -304,7 +313,6 @@ Bug Fixes
 * Fixed a bug that caused sporadic problems  with the `--memLog` flag
 * added a remote cache fence to barrier calls
 * fixed a bug with overload sets and operators
-
 
 Bug Fixes for Build Issues
 --------------------------
@@ -368,6 +376,7 @@ Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * updated `--incremental` to compile each module's `.c` file indepdently
 * enabled support for `make -j` using the C back-end via `-j` / `--incremental`
+* added internal modules to the output of `--devel --print-callstack-on-error`
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
