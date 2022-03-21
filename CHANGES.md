@@ -350,6 +350,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* removed references to outdated files from `chplspell` documentation
+* fixed path to 'ChapelIO' in 'How To Generate Warnings And Error Messages'
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
@@ -372,6 +374,7 @@ Developer-oriented changes: Makefile / Build-time changes
 * non-debug builds of `chpl` now use `-DNDEBUG` to disable asserts in C++ code
 * removed the `make third-party` target
 * a 'dyno'-specific C++ linter now checks some class methods
+* stopped relying on `distutils`, which is deprecated in Python 3.10
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -384,6 +387,7 @@ Developer-oriented changes: Compiler improvements/changes
 * updated `--incremental` to compile each module's `.c` file indepdently
 * enabled support for `make -j` using the C back-end via `-j` / `--incremental`
 * added internal modules to the output of `--devel --print-callstack-on-error`
+* stopped relying on `distutils`, which is deprecated in Python 3.10
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
@@ -425,7 +429,6 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
-* stopped using `distutils`, which is deprecated in Python 3.10
 * started testing CHAMPS on a nightly basis
 
 Developer-oriented changes: Tool Improvements
