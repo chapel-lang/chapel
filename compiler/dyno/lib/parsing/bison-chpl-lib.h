@@ -90,7 +90,7 @@ extern int yychpl_debug;
     LinkageTag_EXPORT,
   };
 
-  using ParserExprList = std::vector<Expression*>;
+  using ParserExprList = std::vector<AstNode*>;
   using UniqueStrList = std::vector<PODUniqueString>;
 
   // these structures do not use constructors to avoid
@@ -98,11 +98,11 @@ extern int yychpl_debug;
   // they only have pointer or numeric fields.
 
   struct WhereAndLifetime {
-    Expression* where;
+    AstNode* where;
     ParserExprList* lifetime;
   };
   static inline
-  WhereAndLifetime makeWhereAndLifetime(Expression* w, ParserExprList* lt) {
+  WhereAndLifetime makeWhereAndLifetime(AstNode* w, ParserExprList* lt) {
     WhereAndLifetime ret = {w, lt};
     return ret;
   }
@@ -111,17 +111,17 @@ extern int yychpl_debug;
   // upwards through parser rules.
   struct CommentsAndStmt {
     std::vector<ParserComment>* comments;
-    Expression* stmt;
+    AstNode* stmt;
   };
   static inline
   CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
-                                      Expression* stmt) {
+                                      AstNode* stmt) {
     CommentsAndStmt ret = {comments, stmt};
     return ret;
   }
   static inline
   CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
-                                      owned<Expression> stmt) {
+                                      owned<AstNode> stmt) {
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
@@ -137,7 +137,7 @@ extern int yychpl_debug;
     Attributes* attributes;
     Decl::Visibility visibility;
     Decl::Linkage linkage;
-    Expression* linkageNameExpr;
+    AstNode* linkageNameExpr;
     bool isInline;
     bool isOverride;
     Function::Kind kind;
@@ -147,8 +147,8 @@ extern int yychpl_debug;
     Function::ReturnIntent returnIntent;
     bool throws;
     ParserExprList* formals;
-    Expression* returnType;
-    Expression* where;
+    AstNode* returnType;
+    AstNode* where;
     ParserExprList* lifetime;
     ParserExprList* body;
   };
@@ -167,7 +167,7 @@ extern int yychpl_debug;
     std::vector<ParserComment>* comments;
     Decl::Visibility visibility;
     Decl::Linkage linkage;
-    Expression* linkageName;
+    AstNode* linkageName;
     Attributes* attributes;
     PODUniqueString name;
     asttags::AstTag tag;
@@ -187,17 +187,17 @@ extern int yychpl_debug;
   };
 
   struct MaybeNamedActual {
-    Expression* expr;
+    AstNode* expr;
     PODUniqueString name;
   };
   static inline
-  MaybeNamedActual makeMaybeNamedActual(Expression* expr,
+  MaybeNamedActual makeMaybeNamedActual(AstNode* expr,
                                         PODUniqueString name) {
     MaybeNamedActual ret = {expr, name};
     return ret;
   }
   static inline
-  MaybeNamedActual makeMaybeNamedActual(Expression* expr) {
+  MaybeNamedActual makeMaybeNamedActual(AstNode* expr) {
     PODUniqueString emptyName = PODUniqueString::get();
     MaybeNamedActual ret = {expr, emptyName};
     return ret;
@@ -213,7 +213,7 @@ extern int yychpl_debug;
     // The lexer only uses these
     PODUniqueString uniqueStr;
     SizedStr sizedStr;
-    Expression* expr;
+    AstNode* expr;
 
     // The remaining types are used only in parser productions
 
