@@ -71,7 +71,7 @@ Deprecated / Unstable / Removed Language Features
 * deprecated `domain.isSuper()` and `.isSubset()` for `domain.contains()`
 * deprecated support for arrays over brace-less anonymous associative domains  
   (e.g., in `var A: ["red", "green", "blue"] real;`, braces are now required)
-* deprecated support for `ChapelEnv.CHPL_AUX_FILESYS`  
+* deprecated support for `ChapelEnv`/`ChplConfig.CHPL_AUX_FILESYS`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html#ChplConfig.CHPL_AUX_FILESYS)
 * removed deprecated support for `use <Mod> except *;`
 * removed deprecated support for operators declared using the `proc` keyword
@@ -211,9 +211,9 @@ Documentation
 * updated GPU technote to expand on currently known limitations  
   (see https://chapel-lang.org/docs/1.26/technotes/gpu.html)
 * added chapter groupings to the language specification  
-  (see https://chapel-lang.org/docs//1.26/language/spec/index.html)
+  (see https://chapel-lang.org/docs/1.26/language/spec/index.html)
 * grouped package modules by topic  
-  (see https://chapel-lang.org/docs//1.26/modules/packages.html)
+  (see https://chapel-lang.org/docs/1.26/modules/packages.html)
 * added documentation for many methods in the 'BigInteger' module  
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
 * stopped documenting the `bigint.mpz` field  
@@ -223,7 +223,7 @@ Documentation
 * documented which elements are preserved in `set` operations with overlap  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
 * added a link to the online documentation index at the bottom of its sidebar  
-  (see https://chapel-lang.org/docs//1.26/index.html)
+  (see https://chapel-lang.org/docs/1.26/index.html)
 * added documentation for the `CHPL_LLVM_GCC_PREFIX` environment variable  
   (see https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#chpl-llvm)
 
@@ -267,7 +267,7 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
-* updated compiler to support LLVM versions 12 and 13 (in addition to 11)  
+* updated the compiler to support LLVM versions 12 and 13 (in addition to 11)  
   (see https://chapel-lang.org/docs/1.26/usingchapel/prereqs.html#chapel-prerequisites  
    and https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#readme-chplenv-chpl-llvm)
 
@@ -342,7 +342,6 @@ Developer-oriented changes: Naming Changes
 Developer-oriented changes: Module changes
 ------------------------------------------
 * simplified the barrier used to initialize locales
-* updated the 'Socket' module's operators to use the `operator` keyword
 * added `iostyleInternal` type for use when `iostyle` is required by developers
 
 Developer-oriented changes: Makefile / Build-time changes
@@ -371,7 +370,7 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
 * the 'dyno' front-end can now parse all primers and modules
-* improved `--dyno` to the point that ~13,222/13,697 tests now pass
+* improved `--dyno` to the point that 96% of our tests now pass
 * improved `--dyno` error messages in terms of formatting and clarity
 * added an ability to dump uAST nodes from 'dyno' using Chapel-like syntax
 * significantly improved the prototype incremental resolver to support:
@@ -3194,7 +3193,7 @@ Packaging / Configuration Changes
    see https://chapel-lang.org/docs/1.19/usingchapel/chplenv.html#chpl-target-arch
    and https://chapel-lang.org/docs/1.19/usingchapel/chplenv.html#chpl-target-cpu)
 * made `cstdlib` atomics the default for gcc, clang and llvm compilers
-  (see https://chapel-lang.org/docs//1.19/usingchapel/chplenv.html#chpl-atomics)
+  (see https://chapel-lang.org/docs/1.19/usingchapel/chplenv.html#chpl-atomics)
 
 Syntactic/Naming Changes
 ------------------------
