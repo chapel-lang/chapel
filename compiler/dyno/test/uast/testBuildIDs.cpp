@@ -21,9 +21,9 @@
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Builder.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 

@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -57,7 +57,6 @@ class Serial final : public SimpleBlockLike {
                       bodyChildNum,
                       numBodyStmts),
       condChildNum_(condChildNum) {
-    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -94,7 +93,7 @@ class Serial final : public SimpleBlockLike {
     containing the passed statements.
   */
   static owned<Serial> build(Builder* builder, Location loc,
-                             owned<Expression> condition,
+                             owned<AstNode> condition,
                              BlockStyle blockStyle,
                              AstList stmts);
 
@@ -102,9 +101,8 @@ class Serial final : public SimpleBlockLike {
     Returns the condition of this serial statement, or nullptr if there
     is none.
   */
-  const Expression* condition() const {
-    return condChildNum_ < 0 ? nullptr
-      : (const Expression*)child(condChildNum_);
+  const AstNode* condition() const {
+    return condChildNum_ < 0 ? nullptr : child(condChildNum_);
   }
 
 };

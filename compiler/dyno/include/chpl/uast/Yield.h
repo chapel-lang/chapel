@@ -21,7 +21,7 @@
 #define CHPL_UAST_YIELD_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -41,21 +41,19 @@ namespace uast {
   \endrst
 
  */
-class Yield final : public Expression {
+class Yield final : public AstNode {
  private:
   Yield(AstList children)
-    : Expression(asttags::Yield, std::move(children)) {
-    assert(isExpressionAstList(children_));
+    : AstNode(asttags::Yield, std::move(children)) {
     assert(children_.size() == 1);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     // The 'valueChildNum_' is const and does not need to be compared.
-    return this->expressionContentsMatchInner(other->toExpression());
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   // Value always exists, and its position is always the same.
@@ -68,15 +66,15 @@ class Yield final : public Expression {
     Create and return a yield statement. The value formal cannot be nullptr.
   */
   static owned<Yield> build(Builder* builder, Location loc,
-                            owned<Expression> value);
+                            owned<AstNode> value);
 
   /**
     Returns the value of this yield statement.
   */
-  const Expression* value() const {
+  const AstNode* value() const {
     auto ret = child(valueChildNum_);
-    assert(ret && ret->isExpression());
-    return (const Expression*) ret;
+    assert(ret);
+    return ret;
   }
 
 };

@@ -68,12 +68,12 @@ class OpCall final : public Call {
   static owned<OpCall> build(Builder* builder,
                              Location loc,
                              UniqueString op,
-                             owned<Expression> lhs,
-                             owned<Expression> rhs);
+                             owned<AstNode> lhs,
+                             owned<AstNode> rhs);
   static owned<OpCall> build(Builder* builder,
                              Location loc,
                              UniqueString op,
-                             owned<Expression> expr);
+                             owned<AstNode> expr);
 
   /** Returns the name of the operator called */
   UniqueString op() const { return op_; }

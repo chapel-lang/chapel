@@ -21,8 +21,8 @@
 #define CHPL_UAST_LET_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Decl.h"
-#include "chpl/uast/Expression.h"
 
 namespace chpl {
 namespace uast {
@@ -40,12 +40,12 @@ namespace uast {
   \endrst
 
  */
-class Let final : public Expression {
+class Let final : public AstNode {
  private:
   int numDecls_;
 
   Let(AstList children, int numDecls)
-    : Expression(asttags::Let, std::move(children)),
+    : AstNode(asttags::Let, std::move(children)),
       numDecls_(numDecls) {
     assert(numChildren() >= 2);
     assert(1 <= numDecls && (numDecls == numChildren() - 1));
@@ -54,12 +54,10 @@ class Let final : public Expression {
   bool contentsMatchInner(const AstNode* other) const override {
     const Let* lhs = this;
     const Let* rhs = other->toLet();
-    return lhs->numDecls_ == rhs->numDecls_ &&
-      lhs->expressionContentsMatchInner(rhs);
+    return lhs->numDecls_ == rhs->numDecls_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -70,7 +68,7 @@ class Let final : public Expression {
   */
   static owned<Let> build(Builder* builder, Location loc,
                           AstList decls,
-                          owned<Expression> expression);
+                          owned<AstNode> expression);
 
   /**
     Iterate over the declarations in this let statement.
@@ -101,10 +99,10 @@ class Let final : public Expression {
   /**
     Return the expression of this let statement.
   */
-  const Expression* expression() const {
+  const AstNode* expression() const {
     auto ret = child(numDecls_);
-    assert(ret && ret->isExpression());
-    return (const Expression*) ret;
+    assert(ret);
+    return ret;
   }
 
 };

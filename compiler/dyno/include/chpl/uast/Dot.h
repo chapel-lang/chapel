@@ -45,16 +45,15 @@ namespace uast {
   where the `x.f` is a Dot expression.
 
  */
-class Dot final : public Expression {
+class Dot final : public AstNode {
  private:
   // which field
  UniqueString fieldName_;
 
   Dot(AstList children, UniqueString fieldName)
-    : Expression(asttags::Dot, std::move(children)),
+    : AstNode(asttags::Dot, std::move(children)),
       fieldName_(fieldName) {
     assert(children_.size() == 1);
-    assert(children_[0]->isExpression());
   }
   bool contentsMatchInner(const AstNode* other) const override {
     const Dot* lhs = this;
@@ -63,13 +62,9 @@ class Dot final : public Expression {
     if (lhs->fieldName_ != rhs->fieldName_)
       return false;
 
-    if (!lhs->expressionContentsMatchInner(rhs))
-      return false;
-
     return true;
   }
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
     fieldName_.mark(context);
   }
 
@@ -77,14 +72,13 @@ class Dot final : public Expression {
   ~Dot() override = default;
   static owned<Dot> build(Builder* builder,
                           Location loc,
-                          owned<Expression> receiver,
+                          owned<AstNode> receiver,
                           UniqueString fieldName);
 
   /** Returns the left-hand-side of the Dot expression */
-  const Expression* receiver() const {
+  const AstNode* receiver() const {
     const AstNode* ast = child(0);
-    assert(ast->isExpression());
-    return (const Expression*) ast;
+    return ast;
   }
   /** Returns the name of the field or method accessed by the Dot expression */
   UniqueString field() const {

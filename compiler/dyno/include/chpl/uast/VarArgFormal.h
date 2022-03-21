@@ -82,8 +82,8 @@ class VarArgFormal final : public VarLikeDecl {
                                    owned<Attributes> attributes,
                                    UniqueString name,
                                    Formal::Intent intent,
-                                   owned<Expression> typeExpression,
-                                   owned<Expression> count);
+                                   owned<AstNode> typeExpression,
+                                   owned<AstNode> count);
 
   /**
     Returns the intent of the varargs formal, e.g. in
@@ -100,11 +100,10 @@ class VarArgFormal final : public VarLikeDecl {
 
     If the count expression does not exist then nullptr is returned.
   */
-  const Expression* count() const {
+  const AstNode* count() const {
     if (countChildNum_ < 0) return nullptr;
     auto ret = child(countChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
 };

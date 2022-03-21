@@ -21,7 +21,7 @@
 #define CHPL_UAST_DECL_H
 
 #include "chpl/uast/Attributes.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -32,7 +32,7 @@ namespace uast {
   Note that most Decls inherit from NamedDecl,
   however these declarations might be contained in MultiDecl or TupleDecl.
  */
-class Decl : public Expression {
+class Decl : public AstNode {
  public:
   enum Visibility {
     DEFAULT_VISIBILITY,
@@ -57,7 +57,7 @@ class Decl : public Expression {
  protected:
   Decl(AstTag tag, int attributesChildNum, Visibility visibility,
        Linkage linkage)
-    : Expression(tag),
+    : AstNode(tag),
       attributesChildNum_(attributesChildNum),
       visibility_(visibility),
       linkage_(linkage),
@@ -68,7 +68,7 @@ class Decl : public Expression {
        Visibility visibility,
        Linkage linkage,
        int linkageNameChildNum)
-    : Expression(tag, std::move(children)),
+    : AstNode(tag, std::move(children)),
       attributesChildNum_(attributesChildNum),
       visibility_(visibility),
       linkage_(linkage),
@@ -96,12 +96,10 @@ class Decl : public Expression {
     return this->visibility_ == other->visibility_ &&
            this->linkage_ == other->linkage_ &&
            this->linkageNameChildNum_ == other->linkageNameChildNum_ &&
-           this->attributesChildNum_ == other->attributesChildNum_ &&
-           expressionContentsMatchInner(other);
+           this->attributesChildNum_ == other->attributesChildNum_;
   }
 
   void declMarkUniqueStringsInner(Context* context) const {
-    expressionMarkUniqueStringsInner(context);
   }
 
 
@@ -136,11 +134,10 @@ class Decl : public Expression {
         extern "f_c_name" proc f(arg) { }
     \endrst
    */
-  const Expression* linkageName() const {
+  const AstNode* linkageName() const {
     if (linkageNameChildNum_ < 0) return nullptr;
     auto ret = child(linkageNameChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
   /**

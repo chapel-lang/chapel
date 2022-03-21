@@ -27,7 +27,7 @@ namespace uast {
 
 owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
                                       owned<Decl> index,
-                                      owned<Expression> iterand,
+                                      owned<AstNode> iterand,
                                       owned<WithClause> withClause,
                                       BlockStyle blockStyle,
                                       owned<Block> body,

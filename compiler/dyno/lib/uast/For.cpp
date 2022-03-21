@@ -28,7 +28,7 @@ namespace uast {
 owned<For> For::build(Builder* builder,
                       Location loc,
                       owned<Decl> index,
-                      owned<Expression> iterand,
+                      owned<AstNode> iterand,
                       BlockStyle blockStyle,
                       owned<Block> body,
                       bool isExpressionLevel,

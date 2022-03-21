@@ -70,7 +70,7 @@ class Scan final : public Call {
   */
   static owned<Scan> build(Builder* builder, Location loc,
                            UniqueString op,
-                           owned<Expression> expr);
+                           owned<AstNode> expr);
 
   /**
     Returns the scan operator. It may be either a regular operator

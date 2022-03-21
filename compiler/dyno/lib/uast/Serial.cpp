@@ -49,7 +49,7 @@ owned<Serial> Serial::build(Builder* builder,
 
 owned<Serial> Serial::build(Builder* builder,
                           Location loc,
-                          owned<Expression> condition,
+                          owned<AstNode> condition,
                           BlockStyle blockStyle,
                           AstList stmts) {
   assert(condition.get() != nullptr);

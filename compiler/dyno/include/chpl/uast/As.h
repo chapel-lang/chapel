@@ -21,7 +21,7 @@
 #define CHPL_UAST_AS_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Identifier.h"
 
 namespace chpl {
@@ -40,20 +40,19 @@ namespace uast {
 
   \endrst
  */
-class As final : public Expression {
+class As final : public AstNode {
  private:
   As(AstList children)
-    : Expression(asttags::As, std::move(children)) {
+    : AstNode(asttags::As, std::move(children)) {
     assert(rename()->isIdentifier() || rename()->isVariable());
   }
 
   // No need to match 'symbolChildNum_' or 'renameChildNum_', they are const.
   bool contentsMatchInner(const AstNode* other) const override {
-    return expressionContentsMatchInner(other->toExpression());
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   // These always exist and their position will never change.
@@ -67,25 +66,23 @@ class As final : public Expression {
     Create and return an as expression.
   */
   static owned<As> build(Builder* builder, Location loc,
-                         owned<Expression> symbol,
-                         owned<Expression> rename);
+                         owned<AstNode> symbol,
+                         owned<AstNode> rename);
 
   /**
     Return the original name specified by this as expression.
   */
-  const Expression* symbol() const {
+  const AstNode* symbol() const {
     auto ret = child(symbolChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
   /**
     Return the rename specified by this as expression.
   */
-  const Expression* rename() const {
+  const AstNode* rename() const {
     auto ret = child(renameChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
 };

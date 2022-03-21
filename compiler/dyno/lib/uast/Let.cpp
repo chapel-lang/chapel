@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<Let> Let::build(Builder* builder, Location loc, AstList decls,
-                      owned<Expression> expression) {
+                      owned<AstNode> expression) {
   assert(decls.size() >= 1);
   assert(expression.get() != nullptr);
 

@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<Select> Select::build(Builder* builder, Location loc,
-                            owned<Expression> expr,
+                            owned<AstNode> expr,
                             AstList whenStmts) {
   assert(expr.get() != nullptr);
 

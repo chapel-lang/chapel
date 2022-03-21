@@ -21,7 +21,7 @@
 #define CHPL_UAST_BLOCK_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -38,7 +38,6 @@ class Block final : public SimpleBlockLike {
                       BlockStyle::EXPLICIT,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(isExpressionAstList(children_));
     assert(blockStyle_ == BlockStyle::EXPLICIT);
     assert(bodyChildNum_ >= 0);
   }

@@ -92,18 +92,18 @@ class FnCall : public Call {
   ~FnCall() override = default;
   static owned<FnCall> build(Builder* builder,
                              Location loc,
-                             owned<Expression> calledExpression,
+                             owned<AstNode> calledExpression,
                              AstList actuals,
                              std::vector<UniqueString> actualNames,
                              bool callUsedSquareBrackets);
   static owned<FnCall> build(Builder* builder,
                              Location loc,
-                             owned<Expression> calledExpression,
+                             owned<AstNode> calledExpression,
                              AstList actuals,
                              bool callUsedSquareBrackets);
   static owned<FnCall> build(Builder* builder,
                              Location loc,
-                             owned<Expression> calledExpression,
+                             owned<AstNode> calledExpression,
                              bool callUsedSquareBrackets);
 
   /** Returns whether actual i is named as with 'f(a=3)'

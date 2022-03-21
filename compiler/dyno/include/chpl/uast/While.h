@@ -52,7 +52,6 @@ class While final : public Loop {
     : Loop(asttags::While, std::move(children), blockStyle,
            loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
-    assert(isExpressionAstList(children_));
     assert(condition());
   }
 
@@ -82,7 +81,7 @@ class While final : public Loop {
     Create and return a while loop.
   */
   static owned<While> build(Builder* builder, Location loc,
-                            owned<Expression> condition,
+                            owned<AstNode> condition,
                             BlockStyle blockStyle,
                             owned<Block> stmts);
 
@@ -90,10 +89,9 @@ class While final : public Loop {
   /**
     Return the condition of this while loop.
   */
-  const Expression* condition() const {
+  const AstNode* condition() const {
     auto ret = child(conditionChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
 };

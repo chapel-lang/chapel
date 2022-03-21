@@ -91,12 +91,12 @@ class MultiDecl final : public Decl {
   /**
     Return a way to iterate over the contained VariableDecls and Comments.
    */
-  AstListIteratorPair<Expression> declOrComments() const {
+  AstListIteratorPair<AstNode> declOrComments() const {
     auto begin = numDeclOrComments()
         ? children_.begin() + declOrCommentChildNum()
         : children_.end();
     auto end = begin + numDeclOrComments();
-    return AstListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -109,11 +109,11 @@ class MultiDecl final : public Decl {
   /**
    Return the i'th contained VariableDecl or Comment.
    */
-  const Expression* declOrComment(int i) const {
+  const AstNode* declOrComment(int i) const {
     assert(i >= 0 && i < numDeclOrComments());
     const AstNode* ast = this->child(i + declOrCommentChildNum());
     assert(ast->isVariable() || ast->isTupleDecl() || ast->isComment());
-    return (const Expression*)ast;
+    return ast;
   }
 
   /**

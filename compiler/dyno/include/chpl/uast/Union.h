@@ -80,7 +80,7 @@ class Union final : public AggregateDecl {
                             owned<Attributes> attributes,
                             Decl::Visibility vis,
                             Decl::Linkage linkage,
-                            owned<Expression> linkageName,
+                            owned<AstNode> linkageName,
                             UniqueString name,
                             AstList contents);
 };

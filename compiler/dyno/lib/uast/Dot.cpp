@@ -27,7 +27,7 @@ namespace uast {
 
 owned<Dot> Dot::build(Builder* builder,
                       Location loc,
-                      owned<Expression> receiver,
+                      owned<AstNode> receiver,
                       UniqueString fieldName) {
   AstList list;
 

@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 #include "chpl/uast/WithClause.h"
 
@@ -45,15 +45,14 @@ namespace uast {
   \endrst
 
  */
-class Cobegin final : public Expression {
+class Cobegin final : public AstNode {
  private:
   Cobegin(AstList children, int8_t withClauseChildNum, int bodyChildNum,
           int numTaskBodies)
-    : Expression(asttags::Cobegin, std::move(children)),
+    : AstNode(asttags::Cobegin, std::move(children)),
       withClauseChildNum_(withClauseChildNum),
       bodyChildNum_(bodyChildNum),
       numTaskBodies_(numTaskBodies) {
-    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -69,14 +68,10 @@ class Cobegin final : public Expression {
     if (lhs->numTaskBodies_ != rhs->numTaskBodies_)
       return false;
 
-    if (!lhs->expressionContentsMatchInner(rhs))
-      return false;
-
     return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   int8_t withClauseChildNum_;
@@ -106,10 +101,10 @@ class Cobegin final : public Expression {
   /**
     Return a way to iterate over the task bodies.
    */
-  AstListIteratorPair<Expression> taskBodies() const {
+  AstListIteratorPair<AstNode> taskBodies() const {
     auto begin = children_.begin() + bodyChildNum_;
     auto end = begin + numTaskBodies_;
-    return AstListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -122,11 +117,10 @@ class Cobegin final : public Expression {
   /**
     Return the i'th task body in this.
   */
-  const Expression* taskBody(int i) const {
+  const AstNode* taskBody(int i) const {
     assert(i >= 0 && i < numTaskBodies_);
     const AstNode* ast = this->child(i + bodyChildNum_);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+    return ast;
   }
 
 };

@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 #include "chpl/uast/WithClause.h"
 
@@ -54,7 +54,6 @@ class Begin final : public SimpleBlockLike {
                       bodyChildNum,
                       numBodyStmts),
       withClauseChildNum_(withClauseChildNum) {
-    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

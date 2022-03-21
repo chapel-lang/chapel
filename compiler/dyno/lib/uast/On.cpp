@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<On> On::build(Builder* builder, Location loc,
-                    owned<Expression> destination,
+                    owned<AstNode> destination,
                     BlockStyle blockStyle,
                     AstList stmts) {
   assert(destination.get() != nullptr);

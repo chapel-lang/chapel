@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_REQUIRE_H
 #define CHPL_UAST_REQUIRE_H
 
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/queries/Location.h"
 
 namespace chpl {
@@ -38,18 +38,17 @@ namespace uast {
 
   \endrst
 */
-class Require final : public Expression {
+class Require final : public AstNode {
  private:
   Require(AstList children)
-    : Expression(asttags::Require, std::move(children)) {
+    : AstNode(asttags::Require, std::move(children)) {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    return expressionContentsMatchInner(other->toExpression());
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -64,8 +63,8 @@ class Require final : public Expression {
   /**
     Return a way to iterate over the expressions of this require statement.
   */
-  AstListIteratorPair<Expression> exprs() const {
-    return AstListIteratorPair<Expression>(children_.begin(),
+  AstListIteratorPair<AstNode> exprs() const {
+    return AstListIteratorPair<AstNode>(children_.begin(),
                                            children_.end());
   }
 
@@ -79,10 +78,9 @@ class Require final : public Expression {
   /**
     Return the i'th expression in this require statement.
   */
-  const Expression* expr(int i) const {
+  const AstNode* expr(int i) const {
     const AstNode* ast = this->child(i);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+    return ast;
   }
 
 };

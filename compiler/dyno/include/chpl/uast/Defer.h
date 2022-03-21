@@ -21,7 +21,7 @@
 #define CHPL_UAST_DEFER_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -54,7 +54,6 @@ class Defer final : public SimpleBlockLike {
     : SimpleBlockLike(asttags::Defer, std::move(stmts), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(isExpressionAstList(children_));
     assert(bodyChildNum_ >= 0);
   }
 

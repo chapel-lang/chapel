@@ -21,7 +21,7 @@
 #define CHPL_UAST_WITHCLAUSE_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -43,19 +43,17 @@ namespace uast {
   Creates a forall loop that has a with clause which declares a single
   task variable named 'x'.
 */
-class WithClause final : public Expression {
+class WithClause final : public AstNode {
  private:
   WithClause(AstList exprs)
-    : Expression(asttags::WithClause, std::move(exprs)) {
-    assert(isExpressionAstList(children_));
+    : AstNode(asttags::WithClause, std::move(exprs)) {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    return expressionContentsMatchInner(other->toExpression());
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -69,8 +67,8 @@ class WithClause final : public Expression {
   /**
     Return a way to iterate over the expressions of this with clause.
   */
-  AstListIteratorPair<Expression> exprs() const {
-    return AstListIteratorPair<Expression>(children_.begin(),
+  AstListIteratorPair<AstNode> exprs() const {
+    return AstListIteratorPair<AstNode>(children_.begin(),
                                            children_.end());
   }
 
@@ -84,10 +82,9 @@ class WithClause final : public Expression {
   /**
     Return the i'th expression in this with clause.
   */
-  const Expression* expr(int i) const {
+  const AstNode* expr(int i) const {
     const AstNode* ast = this->child(i);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+    return ast;
   }
 };
 

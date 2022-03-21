@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -45,17 +45,16 @@ namespace uast {
   flow is slightly more complex than "conditionally execute entire block".
   This is because the conditional may have an else block.
  */
-class SimpleBlockLike : public Expression {
+class SimpleBlockLike : public AstNode {
  protected:
   SimpleBlockLike(AstTag tag, AstList children, BlockStyle blockStyle,
                   int bodyChildNum,
                   int numBodyStmts)
-    : Expression(tag, std::move(children)),
+    : AstNode(tag, std::move(children)),
       blockStyle_(blockStyle),
       bodyChildNum_(bodyChildNum),
       numBodyStmts_(numBodyStmts) {
 
-    assert(isExpressionAstList(children_));
   }
 
   bool simpleBlockLikeContentsMatchInner(const AstNode* other) const {
@@ -71,14 +70,10 @@ class SimpleBlockLike : public Expression {
     if (lhs->numBodyStmts_ != rhs->numBodyStmts_)
       return false;
 
-    if (!lhs->expressionContentsMatchInner(rhs))
-      return false;
-
     return true;
   }
 
   void simpleBlockLikeMarkUniqueStringsInner(Context* context) const {
-    expressionMarkUniqueStringsInner(context);
   }
 
   BlockStyle blockStyle_;
@@ -91,10 +86,10 @@ class SimpleBlockLike : public Expression {
   /**
     Return a way to iterate over the statements.
    */
-  AstListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<AstNode> stmts() const {
     auto begin = children_.begin() + bodyChildNum_;
     auto end = begin + numBodyStmts_;
-    return AstListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -107,11 +102,10 @@ class SimpleBlockLike : public Expression {
   /**
     Return the i'th statement in this.
   */
-  const Expression* stmt(int i) const {
+  const AstNode* stmt(int i) const {
     assert(i >= 0 && i < numBodyStmts_);
     const AstNode* ast = this->child(i + bodyChildNum_);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+    return ast;
   }
 
   /**

@@ -275,7 +275,7 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
                                      const ResolutionResultByPostorderID& r,
                                      bool needsInstantiation) {
   auto whereClauseResult = TypedFnSignature::WHERE_TBD;
-  if (const Expression* where = fn->whereClause()) {
+  if (const AstNode* where = fn->whereClause()) {
     const QualifiedType& qt = r.byAst(where).type();
     if (qt.isParam() && qt.type()->isBoolType()) {
       // OK, we know the result of the where clause
@@ -408,7 +408,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 
   if (const Class* c = ad->toClass()) {
     const BasicClassType* parentClassType = nullptr;
-    if (const Expression* parentClassExpr = c->parentClass()) {
+    if (const AstNode* parentClassExpr = c->parentClass()) {
       // Resolve the parent class type expression
       bool useGenericFormalDefaults = true; // doesn't matter, won't use fields
       ResolutionResultByPostorderID r;
@@ -1270,7 +1270,7 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
 }
 
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
-                                              const ResolvedExpression& r) {
+                                             const ResolvedExpression& r) {
   const TypedFnSignature* sig = r.mostSpecific().only();
   const PoiScope* poiScope = r.poiScope();
 
@@ -1302,7 +1302,7 @@ struct ReturnTypeInferrer {
   void exit(const Function* fn) {
   }
 
-  void checkReturn(const Expression* inExpr, const QualifiedType& qt) {
+  void checkReturn(const AstNode* inExpr, const QualifiedType& qt) {
     if (qt.type()->isVoidType()) {
       if (returnIntent == Function::REF) {
         context->error(inExpr, "Cannot return void with ref return intent");
@@ -1328,13 +1328,13 @@ struct ReturnTypeInferrer {
     }
   }
 
-  void noteVoidReturnType(const Expression* inExpr) {
+  void noteVoidReturnType(const AstNode* inExpr) {
     auto voidType = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
     returnedTypes.push_back(voidType);
 
     checkReturn(inExpr, voidType);
   }
-  void noteReturnType(const Expression* expr, const Expression* inExpr) {
+  void noteReturnType(const AstNode* expr, const AstNode* inExpr) {
     QualifiedType qt = resolutionById.byAst(expr).type();
 
     QualifiedType::Kind kind = qt.kind();
@@ -1369,7 +1369,7 @@ struct ReturnTypeInferrer {
   }
 
   bool enter(const Return* ret) {
-    if (const Expression* expr = ret->value()) {
+    if (const AstNode* expr = ret->value()) {
       noteReturnType(expr, ret);
     } else {
       noteVoidReturnType(ret);
@@ -1489,7 +1489,7 @@ const QualifiedType& returnType(Context* context,
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
     assert(fn);
-    if (const Expression* retType = fn->returnType()) {
+    if (const AstNode* retType = fn->returnType()) {
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
       auto visitor = Resolver::functionResolver(context, fn, poiScope, sig,
@@ -1741,7 +1741,7 @@ lookupCalledExpr(Context* context,
     auto vec = lookupNameInScopeWithSet(context, scope, calledName, config,
                                         visited);
     ret.swap(vec);
-  } else if (const Expression* called = call->calledExpression()) {
+  } else if (const AstNode* called = call->calledExpression()) {
     auto vec = lookupInScopeWithSet(context, scope, called, config,
                                     visited);
     ret.swap(vec);

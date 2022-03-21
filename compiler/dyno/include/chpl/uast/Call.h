@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_CALL_H
 #define CHPL_UAST_CALL_H
 
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -33,17 +33,15 @@ namespace uast {
   For example `f(1,2)`, `f` is the called expression and `1`, `2`
   are the actuals.
  */
-class Call : public Expression {
+class Call : public AstNode {
  protected:
   bool hasCalledExpression_;
   Call(AstTag tag)
-    : Expression(tag), hasCalledExpression_(false) {
+    : AstNode(tag), hasCalledExpression_(false) {
   }
   Call(AstTag tag, AstList children, bool hasCalledExpression)
-    : Expression(tag, std::move(children)),
+    : AstNode(tag, std::move(children)),
       hasCalledExpression_(hasCalledExpression) {
-
-    assert(isExpressionAstList(children_));
   }
 
   bool callContentsMatchInner(const Call* other) const {
@@ -58,9 +56,9 @@ class Call : public Expression {
   /**
    Returns an iterable expression over the actuals of a call.
    */
-  AstListIteratorPair<Expression> actuals() const {
+  AstListIteratorPair<AstNode> actuals() const {
     return
-      AstListIteratorPair<Expression>(children_.begin()+hasCalledExpression_,
+      AstListIteratorPair<AstNode>(children_.begin()+hasCalledExpression_,
                                       children_.end());
   }
 
@@ -71,10 +69,9 @@ class Call : public Expression {
   int numActuals() const {
     return this->numChildren() - hasCalledExpression_;
   }
-  const Expression* actual(int i) const {
+  const AstNode* actual(int i) const {
     const AstNode* ast = this->child(i+hasCalledExpression_);
-    assert(ast->isExpression());
-    return (const Expression*) ast;
+    return ast;
   }
 
   /**
@@ -83,13 +80,12 @@ class Call : public Expression {
     Note that some subclasses of Call will never have a called expression
     and will always return nullptr from this function.
    */
-  const Expression* calledExpression() const {
+  const AstNode* calledExpression() const {
     if (hasCalledExpression_ == 0) {
       return nullptr;
     } else {
       const AstNode* ast = this->child(0);
-      assert(ast->isExpression());
-      return (const Expression*) ast;
+      return ast;
     }
   }
 };

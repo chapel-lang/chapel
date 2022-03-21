@@ -20,11 +20,11 @@
 #include "chpl/uast/AstNode.h"
 
 
-#include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/chpl-syntax-printer.h"
 
 #include <iomanip>
 

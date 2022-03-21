@@ -58,11 +58,9 @@ class VarLikeDecl : public NamedDecl {
     assert(numChildren() <= 3);
     if (typeExpressionChildNum >= 0) {
       assert(typeExpressionChildNum <= 3);
-      assert(child(typeExpressionChildNum)->isExpression());
     }
     if (initExpressionChildNum >= 0) {
       assert(initExpressionChildNum <= 3);
-      assert(child(initExpressionChildNum)->isExpression());
     }
   }
 
@@ -95,11 +93,10 @@ class VarLikeDecl : public NamedDecl {
     Returns the type expression used in this VarLikeDecl's declaration, or
     nullptr if there wasn't one.
   */
-  const Expression* typeExpression() const {
+  const AstNode* typeExpression() const {
     if (typeExpressionChildNum_ >= 0) {
       const AstNode* ast = this->child(typeExpressionChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      return ast;
     } else {
       return nullptr;
     }
@@ -109,11 +106,10 @@ class VarLikeDecl : public NamedDecl {
     Returns the init expression used in this VarLikeDecl's declaration, or
     nullptr if there wasn't one.
   */
-  const Expression* initExpression() const {
+  const AstNode* initExpression() const {
     if (initExpressionChildNum_ >= 0) {
       const AstNode* ast = this->child(initExpressionChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      return ast;
     } else {
       return nullptr;
     }

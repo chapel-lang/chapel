@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/VisibilityClause.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/Variable.h"
 
@@ -67,7 +67,6 @@ private:
                 ) {
 
     assert(children_.size() >= 0 && children_.size() <= 2);
-    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -90,21 +89,20 @@ private:
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
                                      owned<Attributes> attributes,
-                                     owned<Expression> expr);
+                                     owned<AstNode> expr);
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
                                      owned<Attributes> attributes,
-                                     owned<Expression> expr,
+                                     owned<AstNode> expr,
                                      Decl::Visibility visibility);
 
   /**
     Returns the child for this ForwardingDecl or nullptr if there was none.
   */
-  const Expression* expr() const {
+  const AstNode* expr() const {
     if (children_.size() > 0) {
       const AstNode* ast = this->child(exprChildNum());
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      return ast;
     } else {
       return nullptr;
     }

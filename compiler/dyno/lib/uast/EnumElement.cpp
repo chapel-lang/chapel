@@ -28,7 +28,7 @@ namespace uast {
 owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
                                       owned<Attributes> attributes,
                                       UniqueString name,
-                                      owned<Expression> initExpression) {
+                                      owned<AstNode> initExpression) {
   AstList lst;
   int attributesChildNum = -1;
 

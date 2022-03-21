@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<Return> Return::build(Builder* builder, Location loc,
-                            owned<Expression> value) {
+                            owned<AstNode> value) {
   AstList lst;
   int8_t valueChildNum = -1;
 

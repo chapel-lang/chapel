@@ -48,7 +48,6 @@ class IndexableLoop : public Loop {
       withClauseChildNum_(withClauseChildNum),
       isExpressionLevel_(isExpressionLevel) {
 
-    assert(isExpressionAstList(children_));
     assert(iterandChildNum >= 0);
   }
 
@@ -100,11 +99,10 @@ class IndexableLoop : public Loop {
   /**
     Returns the iterand of this indexable loop.
   */
-  const Expression* iterand() const {
+  const AstNode* iterand() const {
     if (iterandChildNum_ < 0) return nullptr;
     const AstNode* ast = child(iterandChildNum_);
-    assert(ast->isExpression());
-    return (const Expression*) ast;
+    return ast;
   }
 
   /**

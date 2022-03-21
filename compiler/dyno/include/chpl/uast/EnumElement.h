@@ -51,7 +51,6 @@ class EnumElement final : public NamedDecl {
                 name) {
 
     assert(children_.size() <= 2);
-    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -74,7 +73,7 @@ class EnumElement final : public NamedDecl {
   static owned<EnumElement> build(Builder* builder, Location loc,
                                   owned<Attributes> attributes,
                                   UniqueString name,
-                                  owned<Expression> initExpression);
+                                  owned<AstNode> initExpression);
 
   static owned<EnumElement> build(Builder* builder, Location loc,
                                   owned<Attributes> attributes,
@@ -84,11 +83,10 @@ class EnumElement final : public NamedDecl {
     Returns the init expression for this EnumElement or nullptr if there was
     none.
    */
-  const Expression* initExpression() const {
+  const AstNode* initExpression() const {
     if (children_.size() > 0) {
       const AstNode* ast = this->child(initExpressionChildNum());
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      return ast;
     } else {
       return nullptr;
     }

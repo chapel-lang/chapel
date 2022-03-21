@@ -26,7 +26,6 @@
 #include "chpl/queries/Location.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Builder.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Module.h"
 

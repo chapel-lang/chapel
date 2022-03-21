@@ -27,7 +27,7 @@ namespace uast {
 
 owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
                                             owned<Attributes> attributes,
-                                            owned<Expression> expr) {
+                                            owned<AstNode> expr) {
   assert(expr.get() != nullptr);
 
   return ForwardingDecl::build(builder, loc, std::move(attributes),
@@ -37,7 +37,7 @@ owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
 
 owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
                                             owned<Attributes> attributes,
-                                            owned<Expression> expr,
+                                            owned<AstNode> expr,
                                             Decl::Visibility visibility) {
   assert(expr.get() != nullptr);
   int attributesChildNum = -1;

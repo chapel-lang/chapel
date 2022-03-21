@@ -57,7 +57,6 @@ class Coforall final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     /*isExpressionLevel*/ false) {
-    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -76,7 +75,7 @@ class Coforall final : public IndexableLoop {
   */
   static owned<Coforall> build(Builder* builder, Location loc,
                                owned<Decl> index,
-                               owned<Expression> iterand,
+                               owned<AstNode> iterand,
                                owned<WithClause> withClause,
                                BlockStyle blockStyle,
                                owned<Block> body);

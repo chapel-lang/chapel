@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -44,14 +44,14 @@ namespace uast {
   Includes the contents of the module Memory so that they are privately
   visible within the module Foo.
 */
-class Include final : public Expression {
+class Include final : public AstNode {
  private:
   Decl::Visibility visibility_;
   bool isPrototype_;
   UniqueString name_;
 
   Include(Decl::Visibility visibility, bool isPrototype, UniqueString name)
-    : Expression(asttags::Include),
+    : AstNode(asttags::Include),
       visibility_(visibility),
       isPrototype_(isPrototype),
       name_(name) {
@@ -63,13 +63,11 @@ class Include final : public Expression {
     const Include* rhs = other->toInclude();
     return lhs->visibility_ == rhs->visibility_ &&
       lhs->isPrototype_ == rhs->isPrototype_ &&
-      lhs->name_ == rhs->name_ &&
-      lhs->expressionContentsMatchInner(rhs);
+      lhs->name_ == rhs->name_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
     name_.mark(context);
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:

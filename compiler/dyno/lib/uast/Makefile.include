@@ -55,7 +55,6 @@ DYNO_UAST_SRCS =                                 \
   Enum.cpp \
   EnumElement.cpp \
   ErroneousExpression.cpp \
-  Expression.cpp \
   ExternBlock.cpp \
   FnCall.cpp \
   For.cpp \

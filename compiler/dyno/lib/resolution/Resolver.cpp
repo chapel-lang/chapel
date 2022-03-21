@@ -232,7 +232,7 @@ bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
 }
 
 // helper for resolveTypeQueriesFromFormalType
-void Resolver::resolveTypeQueries(const Expression* formalTypeExpr,
+void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                                   const Type* actualType) {
 
   // Give up if the type is nullptr or UnknownType or AnyType

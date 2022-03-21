@@ -27,8 +27,8 @@ namespace uast {
 
 owned<Range> Range::build(Builder* builder, Location loc,
                           OpKind opKind,
-                          owned<Expression> lowerBound,
-                          owned<Expression> upperBound) {
+                          owned<AstNode> lowerBound,
+                          owned<AstNode> upperBound) {
   AstList lst;
   int8_t lowerBoundChildNum = -1;
   int8_t upperBoundChildNum = -1;

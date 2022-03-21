@@ -21,7 +21,7 @@
 #define CHPL_UAST_RETURN_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -41,12 +41,11 @@ namespace uast {
   \endrst
 
  */
-class Return final : public Expression {
+class Return final : public AstNode {
  private:
   Return(AstList children,  int8_t valueChildNum)
-    : Expression(asttags::Return, std::move(children)),
+    : AstNode(asttags::Return, std::move(children)),
       valueChildNum_(valueChildNum) {
-    assert(isExpressionAstList(children_));
     assert(valueChildNum_ <= 0);
   }
 
@@ -57,14 +56,10 @@ class Return final : public Expression {
     if (lhs->valueChildNum_ != rhs->valueChildNum_)
       return false;
 
-    if (!lhs->expressionContentsMatchInner(rhs))
-      return false;
-
     return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   int8_t valueChildNum_;
@@ -77,17 +72,16 @@ class Return final : public Expression {
     is no return value.
   */
   static owned<Return> build(Builder* builder, Location loc,
-                             owned<Expression> value);
+                             owned<AstNode> value);
 
   /**
     Returns the value of this return statement, or nullptr if there
     is none.
   */
-  const Expression* value() const {
+  const AstNode* value() const {
     if (valueChildNum_ < 0) return nullptr;
     auto ret = child(valueChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*) ret;
+    return ret;
   }
 
 };

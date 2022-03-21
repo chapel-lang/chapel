@@ -42,7 +42,6 @@ class TypeDecl : public NamedDecl {
                 linkageNameChildNum,
                 name) {
 
-    assert(isExpressionAstList(children_));
   }
 
   bool typeDeclContentsMatchInner(const TypeDecl* other) const {

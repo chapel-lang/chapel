@@ -82,20 +82,19 @@ class Class final : public AggregateDecl {
                             owned<Attributes> attributes,
                             Decl::Visibility vis,
                             UniqueString name,
-                            owned<Expression> parentClass,
+                            owned<AstNode> parentClass,
                             AstList contents);
 
   /**
-    Return the Expression indicating the parent class or nullptr
+    Return the AstNode indicating the parent class or nullptr
     if there was none.
    */
-  const Expression* parentClass() const {
+  const AstNode* parentClass() const {
     if (parentClassChildNum_ < 0)
       return nullptr;
 
     auto ret = child(parentClassChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 };
 

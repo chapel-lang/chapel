@@ -27,7 +27,7 @@ namespace uast {
 
 owned<VisibilityClause>
 VisibilityClause::build(Builder* builder, Location loc,
-                        owned<Expression> symbol,
+                        owned<AstNode> symbol,
                         LimitationKind limitationKind,
                         AstList limitations) {
   assert(symbol.get() != nullptr);
@@ -53,7 +53,7 @@ VisibilityClause::build(Builder* builder, Location loc,
 
 owned<VisibilityClause>
 VisibilityClause::build(Builder* builder, Location loc,
-                        owned<Expression> symbol) {
+                        owned<AstNode> symbol) {
   return build(builder, loc, std::move(symbol),
                VisibilityClause::NONE,
                AstList());

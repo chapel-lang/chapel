@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/As.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -57,7 +57,6 @@ class Manage final : public SimpleBlockLike {
                       numBodyStmts),
       managerExprChildNum_(managerExprChildNum),
       numManagerExprs_(numManagerExprs) {
-    assert(isExpressionAstList(children_));
     assert(0 <= managerExprChildNum_);
     assert(managerExprChildNum_ < numChildren());
 
@@ -97,10 +96,10 @@ class Manage final : public SimpleBlockLike {
     the right-hand-side component is guaranteed to be a variable
     representing the managed resource.
   */
-  AstListIteratorPair<Expression> managers() const {
+  AstListIteratorPair<AstNode> managers() const {
     auto begin = children_.begin() + managerExprChildNum_;
     auto end = begin + numManagerExprs_;
-    return AstListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -113,11 +112,10 @@ class Manage final : public SimpleBlockLike {
   /**
     Return the i'th manager in this manage statement.
   */
-  const Expression* manager(int i) const {
+  const AstNode* manager(int i) const {
     assert(0 <= i && i < numManagerExprs_);
     auto ret = child(managerExprChildNum_ + i);
-    assert(ret->isExpression());
-    return (const Expression*) ret;
+    return ret;
   }
 };
 

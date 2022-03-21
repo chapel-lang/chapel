@@ -27,7 +27,7 @@ namespace uast {
 
 owned<Forall> Forall::build(Builder* builder, Location loc,
                             owned<Decl> index,
-                            owned<Expression> iterand,
+                            owned<AstNode> iterand,
                             owned<WithClause> withClause,
                             BlockStyle blockStyle,
                             owned<Block> body,

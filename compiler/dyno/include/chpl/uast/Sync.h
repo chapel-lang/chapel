@@ -21,7 +21,7 @@
 #define CHPL_UAST_SYNC_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -57,7 +57,6 @@ class Sync final : public SimpleBlockLike {
     : SimpleBlockLike(asttags::Sync, std::move(stmts), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(isExpressionAstList(children_));
     assert(bodyChildNum_ >= 0);
   }
 

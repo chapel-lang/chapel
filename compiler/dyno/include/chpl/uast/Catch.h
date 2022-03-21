@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Block.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Variable.h"
 
 namespace chpl {
@@ -44,11 +44,11 @@ namespace uast {
   \endrst
 
  */
-class Catch final : public Expression {
+class Catch final : public AstNode {
  private:
   Catch(AstList children, int8_t errorChildNum, int8_t bodyChildNum,
         bool hasParensAroundError)
-    : Expression(asttags::Catch, std::move(children)),
+    : AstNode(asttags::Catch, std::move(children)),
       errorChildNum_(errorChildNum),
       bodyChildNum_(bodyChildNum),
       hasParensAroundError_(hasParensAroundError) {
@@ -57,13 +57,11 @@ class Catch final : public Expression {
   bool contentsMatchInner(const AstNode* other) const override {
     const Catch* rhs = other->toCatch();
     return this->errorChildNum_ == rhs->errorChildNum_ &&
-      this->bodyChildNum_ == rhs->bodyChildNum_ &&
-      this->hasParensAroundError_ == rhs->hasParensAroundError_ &&
-      this->expressionContentsMatchInner(rhs);
+           this->bodyChildNum_ == rhs->bodyChildNum_ &&
+           this->hasParensAroundError_ == rhs->hasParensAroundError_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   int8_t errorChildNum_;
@@ -103,7 +101,7 @@ class Catch final : public Expression {
   /**
     Iterate over the statements contained in the body of this catch.
   */
-  AstListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<AstNode> stmts() const {
     return this->body()->stmts();
   }
 
@@ -117,7 +115,7 @@ class Catch final : public Expression {
   /**
     Return the i'th statement contained in the body of this catch.
   */
-  const Expression* stmt(int i) const {
+  const AstNode* stmt(int i) const {
     return this->body()->stmt(i);
   }
 

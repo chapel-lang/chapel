@@ -63,7 +63,7 @@ class Reduce final : public Call {
   static owned<Reduce> build(Builder* builder,
                              Location loc,
                              UniqueString op,
-                             owned<Expression> expr);
+                             owned<AstNode> expr);
 
   /**
     Returns the reduction operator. It may be either a regular operator

@@ -50,7 +50,7 @@ owned<Try> Try::build(Builder* builder, Location loc, AstList stmts,
 }
 
 owned<Try> Try::build(Builder* builder, Location loc,
-                      owned<Expression> expr,
+                      owned<AstNode> expr,
                       bool isTryBang,
                       bool isExpressionLevel) {
   AstList lst;

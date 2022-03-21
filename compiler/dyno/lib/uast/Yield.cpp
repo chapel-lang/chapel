@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<Yield> Yield::build(Builder* builder, Location loc,
-                          owned<Expression> value) {
+                          owned<AstNode> value) {
   assert(value.get() != nullptr);
 
   AstList lst;

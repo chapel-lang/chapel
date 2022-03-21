@@ -124,8 +124,8 @@ class TupleDecl final : public Decl {
                                 Decl::Linkage linkage,
                                 IntentOrKind intentOrKind,
                                 AstList elements,
-                                owned<Expression> typeExpression,
-                                owned<Expression> initExpression);
+                                owned<AstNode> typeExpression,
+                                owned<AstNode> initExpression);
 
   /**
     Returns the intent or kind of the tuple (`var` / `in` / `param` etc).
@@ -165,11 +165,10 @@ class TupleDecl final : public Decl {
     Returns the type expression used in this TupleDecl's declaration, or
     nullptr if there wasn't one.
   */
-  const Expression* typeExpression() const {
+  const AstNode* typeExpression() const {
     if (typeExpressionChildNum_ >= 0) {
       const AstNode* ast = this->child(typeExpressionChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      return ast;
     } else {
       return nullptr;
     }
@@ -179,11 +178,10 @@ class TupleDecl final : public Decl {
     Returns the init expression used in this TupleDecl's declaration, or
     nullptr if there wasn't one.
   */
-  const Expression* initExpression() const {
+  const AstNode* initExpression() const {
     if (initExpressionChildNum_ >= 0) {
       const AstNode* ast = this->child(initExpressionChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      return ast;
     } else {
       return nullptr;
     }

@@ -21,9 +21,9 @@
 
 #include "chpl/queries/Context.h"
 #include "chpl/queries/ErrorMessage.h"
-#include "chpl/uast/Expression.h"
-#include "chpl/uast/Module.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
+#include "chpl/uast/Module.h"
 
 #include <cstring>
 #include <string>
@@ -54,7 +54,7 @@ owned<Builder> Builder::build(Context* context, const char* filepath) {
   return toOwned(b);
 }
 
-void Builder::addToplevelExpression(owned<Expression> e) {
+void Builder::addToplevelExpression(owned<AstNode> e) {
   this->topLevelExpressions_.push_back(std::move(e));
 }
 

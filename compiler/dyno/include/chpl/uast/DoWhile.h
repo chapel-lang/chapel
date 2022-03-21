@@ -53,7 +53,6 @@ class DoWhile final : public Loop {
            blockStyle,
            loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
-    assert(isExpressionAstList(children_));
     assert(condition());
   }
 
@@ -85,16 +84,15 @@ class DoWhile final : public Loop {
   static owned<DoWhile> build(Builder* builder, Location loc,
                               BlockStyle blockStyle,
                               owned<Block> body,
-                              owned<Expression> condition);
+                              owned<AstNode> condition);
 
 
   /**
     Return the condition of this do-while loop.
   */
-  const Expression* condition() const {
+  const AstNode* condition() const {
     auto ret = child(conditionChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
 };

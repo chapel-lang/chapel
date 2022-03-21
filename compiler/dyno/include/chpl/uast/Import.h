@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/VisibilityClause.h"
 
 namespace chpl {
@@ -43,10 +43,10 @@ namespace uast {
   This creates an import statement that has two visibility clauses, 'Foo'
   and 'Bar as A'.
 */
-class Import final : public Expression {
+class Import final : public AstNode {
  private:
   Import(AstList children, Decl::Visibility visibility)
-    : Expression(asttags::Import, std::move(children)),
+    : AstNode(asttags::Import, std::move(children)),
       visibility_(visibility) {
     assert(numChildren() >= 1);
 
@@ -61,12 +61,10 @@ class Import final : public Expression {
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Import* rhs = other->toImport();
-    return this->visibility_ == rhs->visibility_ &&
-      this->expressionContentsMatchInner(rhs);
+    return this->visibility_ == rhs->visibility_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   Decl::Visibility visibility_;

@@ -21,7 +21,7 @@
 #define CHPL_UAST_SELECT_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/When.h"
 
 namespace chpl {
@@ -44,22 +44,19 @@ namespace uast {
   \endrst
 
  */
-class Select final : public Expression {
+class Select final : public AstNode {
  private:
   Select(AstList children, int numWhenStmts)
-    : Expression(asttags::Select, std::move(children)),
+    : AstNode(asttags::Select, std::move(children)),
       numWhenStmts_(numWhenStmts) {
-    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Select* rhs = other->toSelect();
-    return this->numWhenStmts_ == rhs->numWhenStmts_ &&
-      this->expressionContentsMatchInner(rhs);
+    return this->numWhenStmts_ == rhs->numWhenStmts_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   // The position of these never change.
@@ -74,16 +71,15 @@ class Select final : public Expression {
     Create and return a select statement.
   */
   static owned<Select> build(Builder* builder, Location loc,
-                             owned<Expression> expr,
+                             owned<AstNode> expr,
                              AstList whenStmts);
 
   /**
     Returns the expression of this select statement.
   */
-  const Expression* expr() const {
+  const AstNode* expr() const {
     auto ret = child(exprChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
   /**

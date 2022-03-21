@@ -21,7 +21,7 @@
 
 #include "chpl/queries/Context.h"
 #include "chpl/queries/ErrorMessage.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Comment.h"
 

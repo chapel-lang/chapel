@@ -59,7 +59,6 @@ class Forall final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     isExpressionLevel) {
-    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -78,7 +77,7 @@ class Forall final : public IndexableLoop {
   */
   static owned<Forall> build(Builder* builder, Location loc,
                              owned<Decl> index,
-                             owned<Expression> iterand,
+                             owned<AstNode> iterand,
                              owned<WithClause> withClause,
                              BlockStyle blockStyle,
                              owned<Block> body,

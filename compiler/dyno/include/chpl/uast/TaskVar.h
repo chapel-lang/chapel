@@ -91,8 +91,8 @@ class TaskVar final : public VarLikeDecl {
                               owned<Attributes> attributes,
                               UniqueString name,
                               TaskVar::Intent intent,
-                              owned<Expression> typeExpression,
-                              owned<Expression> initExpression);
+                              owned<AstNode> typeExpression,
+                              owned<AstNode> initExpression);
 
   /**
     Returns the intent of this task variable.

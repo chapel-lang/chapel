@@ -89,8 +89,8 @@ class Formal final : public VarLikeDecl {
                              owned<Attributes> attributes,
                              UniqueString name,
                              Formal::Intent intent,
-                             owned<Expression> typeExpression,
-                             owned<Expression> initExpression);
+                             owned<AstNode> typeExpression,
+                             owned<AstNode> initExpression);
 
   /**
    Returns the intent of the formal, e.g. in `proc f(const ref y: int)`,

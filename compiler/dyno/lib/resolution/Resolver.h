@@ -47,7 +47,7 @@ struct Resolver {
 
   // results of the resolution process
 
-  // the resolution results for the contained Expressions
+  // the resolution results for the contained AstNodes
   ResolutionResultByPostorderID& byPostorder;
   // the set of POI scopes from which POI functions were used --
   // these are gathered here during resolution in order to
@@ -131,7 +131,7 @@ struct Resolver {
   bool shouldUseUnknownTypeForGeneric(const ID& id);
 
   // helper for resolveTypeQueriesFromFormalType
-  void resolveTypeQueries(const uast::Expression* formalTypeExpr,
+  void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
                           const types::Type* actualType);
 
   /* When resolving a function with a TypeQuery, we need to

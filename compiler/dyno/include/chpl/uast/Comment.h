@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_COMMENT_H
 #define CHPL_UAST_COMMENT_H
 
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/queries/Location.h"
 #include "chpl/queries/CommentID.h"
 
@@ -38,7 +38,7 @@ class Builder;
   go anywhere and that would be hard to represent). However, comments that
   are at a statement level will be represented with this type.
  */
-class Comment final : public Expression {
+class Comment final : public AstNode {
   friend Builder;
 
  private:
@@ -46,17 +46,15 @@ class Comment final : public Expression {
   CommentID commentId_;
 
   Comment(std::string s)
-    : Expression(asttags::Comment), comment_(std::move(s)) {
+    : AstNode(asttags::Comment), comment_(std::move(s)) {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Comment* lhs = this;
     const Comment* rhs = (const Comment*) other;
-    return lhs->expressionContentsMatchInner(rhs) &&
-           lhs->comment_ == rhs->comment_ ;
+    return lhs->comment_ == rhs->comment_ ;
   }
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:

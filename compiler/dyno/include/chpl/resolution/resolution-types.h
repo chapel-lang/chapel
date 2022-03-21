@@ -99,7 +99,7 @@ class UntypedFnSignature {
   std::vector<FormalDetail> formals_;
 
   // this will not be present for compiler-generated functions
-  const uast::Expression* whereClause_;
+  const uast::AstNode* whereClause_;
 
   UntypedFnSignature(ID id,
                      UniqueString name,
@@ -109,7 +109,7 @@ class UntypedFnSignature {
                      bool isTypeConstructor,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
-                     const uast::Expression* whereClause)
+                     const uast::AstNode* whereClause)
     : id_(id),
       name_(name),
       isMethod_(isMethod),
@@ -130,7 +130,7 @@ class UntypedFnSignature {
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
-                        const uast::Expression* whereClause);
+                        const uast::AstNode* whereClause);
 
  public:
   /** Get the unique UntypedFnSignature containing these components */
@@ -142,7 +142,7 @@ class UntypedFnSignature {
                                        bool isTypeConstructor,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
-                                       const uast::Expression* whereClause);
+                                       const uast::AstNode* whereClause);
 
   /** Get the unique UntypedFnSignature representing a Function's
       signature. */

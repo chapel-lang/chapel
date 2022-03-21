@@ -52,7 +52,6 @@ target_sources(libdyno-obj
                Enum.cpp
                EnumElement.cpp
                ErroneousExpression.cpp
-               Expression.cpp
                ExternBlock.cpp
                FnCall.cpp
                For.cpp

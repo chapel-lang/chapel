@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<While> While::build(Builder* builder, Location loc,
-                      owned<Expression> condition,
+                      owned<AstNode> condition,
                       BlockStyle blockStyle,
                       owned<Block> body) {
 

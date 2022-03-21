@@ -38,7 +38,7 @@ class Location;
 
 namespace uast {
 
-class Expression;
+class AstNode;
 
 /**
   This class helps to build AST. It should only build AST
@@ -85,7 +85,7 @@ class Builder final {
     Save a toplevel expression in to the builder.
     This is called by the parser.
    */
-  void addToplevelExpression(owned<Expression> e);
+  void addToplevelExpression(owned<AstNode> e);
 
   /**
     Save an error.

@@ -29,7 +29,7 @@ owned<Record> Record::build(Builder* builder, Location loc,
                             owned<Attributes> attributes,
                             Decl::Visibility vis,
                             Decl::Linkage linkage,
-                            owned<Expression> linkageName,
+                            owned<AstNode> linkageName,
                             UniqueString name,
                             AstList contents) {
   AstList lst;

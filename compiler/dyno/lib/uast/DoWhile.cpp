@@ -28,7 +28,7 @@ namespace uast {
 owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
                               BlockStyle blockStyle,
                               owned<Block> body,
-                              owned<Expression> condition) {
+                              owned<AstNode> condition) {
 
   assert(condition.get() != nullptr);
   assert(body.get() != nullptr);

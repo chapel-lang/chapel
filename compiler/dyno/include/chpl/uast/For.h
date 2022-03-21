@@ -59,7 +59,6 @@ class For final : public IndexableLoop {
                     isExpressionLevel),
       isParam_(isParam) {
 
-    assert(isExpressionAstList(children_));
     assert(withClause() == nullptr);
   }
 
@@ -90,7 +89,7 @@ class For final : public IndexableLoop {
   */
   static owned<For> build(Builder* builder, Location loc,
                           owned<Decl> index,
-                          owned<Expression> iterand,
+                          owned<AstNode> iterand,
                           BlockStyle blockStyle,
                           owned<Block> body,
                           bool isExpressionLevel,

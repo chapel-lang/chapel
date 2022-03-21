@@ -18,11 +18,11 @@
  */
 
 #include "chpl/uast/Array.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Defer.h"
 #include "chpl/uast/Domain.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/IntLiteral.h"
 #include "chpl/uast/Module.h"

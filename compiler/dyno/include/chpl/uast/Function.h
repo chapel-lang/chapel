@@ -153,7 +153,6 @@ class Function final : public NamedDecl {
     } else {
       assert(bodyChildNum_ == -1);
     }
-    assert(isExpressionAstList(children_));
 
     #ifndef NDEBUG
       for (auto decl : formals()) {
@@ -196,7 +195,7 @@ class Function final : public NamedDecl {
                                owned<Attributes> attributes,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
-                               owned<Expression> linkageName,
+                               owned<AstNode> linkageName,
                                UniqueString name,
                                bool inline_,
                                bool override_,
@@ -207,8 +206,8 @@ class Function final : public NamedDecl {
                                bool primaryMethod,
                                bool parenless,
                                AstList formals,
-                               owned<Expression> returnType,
-                               owned<Expression> where,
+                               owned<AstNode> returnType,
+                               owned<AstNode> where,
                                AstList lifetime,
                                owned<Block> body);
 
@@ -277,11 +276,10 @@ class Function final : public NamedDecl {
   /**
    Returns the expression for the return type or nullptr if there was none.
    */
-  const Expression* returnType() const {
+  const AstNode* returnType() const {
     if (returnTypeChildNum_ >= 0) {
       const AstNode* ast = this->child(returnTypeChildNum_);
-      assert(ast->isExpression());
-      return (Expression*) ast;
+      return ast;
     } else {
       return nullptr;
     }
@@ -290,11 +288,10 @@ class Function final : public NamedDecl {
   /**
    Returns the expression for the where clause or nullptr if there was none.
    */
-  const Expression* whereClause() const {
+  const AstNode* whereClause() const {
     if (whereChildNum_ >= 0) {
       const AstNode* ast = this->child(whereChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*) ast;
+      return ast;
     } else {
       return nullptr;
     }
@@ -303,12 +300,12 @@ class Function final : public NamedDecl {
   /**
    Return a way to iterate over the lifetime clauses.
    */
-  AstListIteratorPair<Expression> lifetimeClauses() const {
+  AstListIteratorPair<AstNode> lifetimeClauses() const {
     if (numLifetimeClauses() == 0) {
-      return AstListIteratorPair<Expression>(children_.end(), children_.end());
+      return AstListIteratorPair<AstNode>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + lifetimeChildNum_;
-      return AstListIteratorPair<Expression>(start, start + numLifetimeParts_);
+      return AstListIteratorPair<AstNode>(start, start + numLifetimeParts_);
     }
   }
 
@@ -322,12 +319,11 @@ class Function final : public NamedDecl {
   /**
    Return the i'th lifetime clause
    */
-  const Expression* lifetimeClause(int i) const {
+  const AstNode* lifetimeClause(int i) const {
     assert(numLifetimeClauses() > 0 && lifetimeChildNum_ >= 0);
     assert(0 <= i && i < numLifetimeClauses());
     const AstNode* ast = this->child(lifetimeChildNum_ + i);
-    assert(ast->isExpression());
-    return (const Expression*) ast;
+    return ast;
   }
 
   /**
@@ -344,10 +340,10 @@ class Function final : public NamedDecl {
   /**
     Return a way to iterate over the statements in the function body.
    */
-  AstListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<AstNode> stmts() const {
     const Block* b = body();
     if (b == nullptr) {
-      return AstListIteratorPair<Expression>(children_.end(), children_.end());
+      return AstListIteratorPair<AstNode>(children_.end(), children_.end());
     }
 
     return b->stmts();
@@ -370,7 +366,7 @@ class Function final : public NamedDecl {
     Return the i'th statement in the function body.
     It is an error to call this function if there isn't one.
    */
-  const Expression* stmt(int i) const {
+  const AstNode* stmt(int i) const {
     const Block* b = body();
     assert(b != nullptr);
     return b->stmt(i);

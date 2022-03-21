@@ -46,7 +46,7 @@ class AggregateDecl : public TypeDecl {
   int elementsChildNum_;
   int numElements_;
 
-  static bool validAggregateChildren(AstListIteratorPair<Expression> it);
+  static bool validAggregateChildren(AstListIteratorPair<AstNode> it);
 
  protected:
   bool aggregateDeclContentsMatchInner(const AggregateDecl* other) const {
@@ -83,11 +83,11 @@ class AggregateDecl : public TypeDecl {
   /**
     Return a way to iterate over the contained Decls and Comments.
    */
-  AstListIteratorPair<Expression> declOrComments() const {
+  AstListIteratorPair<AstNode> declOrComments() const {
     if (elementsChildNum_ < 0)
-      return AstListIteratorPair<Expression>(children_.end(), children_.end());
+      return AstListIteratorPair<AstNode>(children_.end(), children_.end());
 
-    return AstListIteratorPair<Expression>(
+    return AstListIteratorPair<AstNode>(
               children_.begin() + elementsChildNum_,
               children_.begin() + elementsChildNum_ + numElements_);
   }
@@ -102,11 +102,10 @@ class AggregateDecl : public TypeDecl {
   /**
    Return the i'th Decl in this AggregateDecl.
    */
-  const Expression* declOrComment(int i) const {
+  const AstNode* declOrComment(int i) const {
     assert(0 <= i && i < numElements_);
     const AstNode* ast = this->child(elementsChildNum_ + i);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+    return ast;
   }
 
   /**

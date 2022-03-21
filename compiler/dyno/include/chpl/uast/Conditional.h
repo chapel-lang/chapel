@@ -23,7 +23,7 @@
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -42,17 +42,16 @@ namespace uast {
   \endrst
 
  */
-class Conditional final : public Expression {
+class Conditional final : public AstNode {
  private:
   Conditional(AstList children,
               BlockStyle thenBlockStyle,
               BlockStyle elseBlockStyle,
               bool isExpressionLevel)
-      : Expression(asttags::Conditional, std::move(children)),
+      : AstNode(asttags::Conditional, std::move(children)),
         thenBlockStyle_(thenBlockStyle),
         elseBlockStyle_(elseBlockStyle),
         isExpressionLevel_(isExpressionLevel) {
-    assert(isExpressionAstList(children_));
 
     assert(children_[thenBodyChildNum_]->isBlock());
 
@@ -94,14 +93,10 @@ class Conditional final : public Expression {
     if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
       return false;
 
-    if (!lhs->expressionContentsMatchInner(rhs))
-      return false;
-
     return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   // Condition always exists, and its position is always the same.
@@ -122,7 +117,7 @@ class Conditional final : public Expression {
     Create and return a conditional.
   */
   static owned<Conditional> build(Builder* builder, Location loc,
-                                  owned<Expression> condition,
+                                  owned<AstNode> condition,
                                   BlockStyle thenBlockStyle,
                                   owned<Block> thenBlock,
                                   BlockStyle elseBlockStyle,
@@ -133,7 +128,7 @@ class Conditional final : public Expression {
     Create and return a conditional without an else block.
   */
   static owned<Conditional> build(Builder* builder, Location loc,
-                                  owned<Expression> condition,
+                                  owned<AstNode> condition,
                                   BlockStyle thenBlockStyle,
                                   owned<Block> thenBlock,
                                   bool isExpressionLevel);
@@ -141,9 +136,9 @@ class Conditional final : public Expression {
   /**
     Get the condition of this conditional.
   */
-  const Expression* condition() const {
+  const AstNode* condition() const {
     auto ret = child(conditionChildNum_);
-    return (const Expression*)ret;
+    return ret;
   }
 
   /**
@@ -157,7 +152,7 @@ class Conditional final : public Expression {
   /**
     Iterate over the statements in the then block of this conditional.
   */
-  AstListIteratorPair<Expression> thenStmts() const {
+  AstListIteratorPair<AstNode> thenStmts() const {
     return thenBlock()->stmts();
   }
 
@@ -171,7 +166,7 @@ class Conditional final : public Expression {
   /**
     Get the i'th statement in the then block of this conditional.
   */
-  const Expression* thenStmt(int i) const {
+  const AstNode* thenStmt(int i) const {
     return thenBlock()->stmt(i);
   }
 
@@ -206,12 +201,12 @@ class Conditional final : public Expression {
   /**
     Iterate over the statements in the else block of this conditional.
   */
-  AstListIteratorPair<Expression> elseStmts() const {
+  AstListIteratorPair<AstNode> elseStmts() const {
     const Block* elseB = elseBlock();
 
     if (elseB == nullptr) {
-      return AstListIteratorPair<Expression>(children_.end(),
-                                             children_.end());
+      return AstListIteratorPair<AstNode>(children_.end(),
+                                          children_.end());
     }
 
     return elseB->stmts();
@@ -235,7 +230,7 @@ class Conditional final : public Expression {
     Get the i'th statement in the else block of this conditional.
     It is an error to call this function if there is no else block.
   */
-  const Expression* elseStmt(int i) const {
+  const AstNode* elseStmt(int i) const {
     const Block* elseB = elseBlock();
     assert(elseB != nullptr);
 

@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -42,7 +42,6 @@ class When final : public SimpleBlockLike {
                       bodyChildNum,
                       numBodyStmts),
       numCaseExprs_(numCaseExprs) {
-    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -81,21 +80,20 @@ class When final : public SimpleBlockLike {
   /**
     Returns the i'th case of this when statement.
   */
-  const Expression* caseExpr(int i) const {
+  const AstNode* caseExpr(int i) const {
     if (numCaseExprs_ <= 0) return nullptr;
     assert(i >= 0 && i < numCaseExprs_);
     auto ret = child(i);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
   /**
     Return a way to iterate over the cases of this when statement.
   */
-  AstListIteratorPair<Expression> caseExprs() const {
+  AstListIteratorPair<AstNode> caseExprs() const {
     auto begin = (numCaseExprs_ >= 0) ? children_.begin() : children_.end();
     auto end = begin + numCaseExprs_;
-    return AstListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**

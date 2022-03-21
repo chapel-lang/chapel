@@ -21,7 +21,7 @@
 #define CHPL_UAST_THROW_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -40,19 +40,18 @@ namespace uast {
 
   \endrst
 */
-class Throw final : public Expression {
+class Throw final : public AstNode {
  private:
   Throw(AstList children)
-      : Expression(asttags::Throw, std::move(children)) {
+      : AstNode(asttags::Throw, std::move(children)) {
     assert(numChildren() == 1);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    return expressionContentsMatchInner(other->toExpression());
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   // Always exists, position of the first and only element.
@@ -64,15 +63,14 @@ class Throw final : public Expression {
     Create and return a throw statement.
   */
   static owned<Throw> build(Builder* builder, Location loc,
-                            owned<Expression> expr);
+                            owned<AstNode> expr);
 
   /**
     Return the error expression of this throw statement.
   */
-  const Expression* errorExpression() const {
+  const AstNode* errorExpression() const {
     const AstNode* ast = this->child(errorExprChildNum_);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+    return ast;
   }
 
 };

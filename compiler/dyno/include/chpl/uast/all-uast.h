@@ -45,7 +45,6 @@
 #include "chpl/uast/Enum.h"
 #include "chpl/uast/EnumElement.h"
 #include "chpl/uast/ErroneousExpression.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/ExternBlock.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/For.h"

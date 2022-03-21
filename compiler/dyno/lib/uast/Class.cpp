@@ -29,7 +29,7 @@ owned<Class> Class::build(Builder* builder, Location loc,
                           owned<Attributes> attributes,
                           Decl::Visibility vis,
                           UniqueString name,
-                          owned<Expression> parentClass,
+                          owned<AstNode> parentClass,
                           AstList contents) {
   AstList lst;
   int attributesChildNum = -1;

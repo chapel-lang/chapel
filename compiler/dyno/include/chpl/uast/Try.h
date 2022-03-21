@@ -24,7 +24,7 @@
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Catch.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -52,12 +52,12 @@ namespace uast {
   Catch uAST node), while a try expression will never contain a catch
   block.
  */
-class Try final : public Expression {
+class Try final : public AstNode {
  private:
   Try(AstList children, int numBodyStmts, int numHandlers,
       bool isExpressionLevel,
       bool isTryBang)
-        : Expression(asttags::Try, std::move(children)),
+        : AstNode(asttags::Try, std::move(children)),
           numBodyStmts_(numBodyStmts),
           numHandlers_(numHandlers),
           isExpressionLevel_(isExpressionLevel),
@@ -73,12 +73,10 @@ class Try final : public Expression {
     return this->numBodyStmts_ == rhs->numBodyStmts_ &&
       this->numHandlers_ == rhs->numHandlers_ &&
       this->isExpressionLevel_ == rhs->isExpressionLevel_ &&
-      this->isTryBang_ == rhs->isTryBang_ &&
-      this->expressionContentsMatchInner(rhs);
+      this->isTryBang_ == rhs->isTryBang_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   // If this exists, its position is always the same.
@@ -103,18 +101,18 @@ class Try final : public Expression {
     Create and return a try expression.
   */
   static owned<Try> build(Builder* builder, Location loc,
-                          owned<Expression> expr,
+                          owned<AstNode> expr,
                           bool isTryBang,
                           bool isExpressionLevel);
 
   /**
     Iterate over the statements contained in this try.
   */
-  AstListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<AstNode> stmts() const {
     auto begin = numBodyStmts_ ? children_.begin() + bodyChildNum_
                                : children_.end();
     auto end = begin + numBodyStmts_;
-    return AstListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -127,11 +125,11 @@ class Try final : public Expression {
   /**
     Get the i'th statement in the body of this try.
   */
-  const Expression* stmt(int i) const {
+  const AstNode* stmt(int i) const {
     assert(i >= bodyChildNum_ && i < numBodyStmts_);
     auto ret = child(bodyChildNum_ + i);
-    assert(ret && ret->isExpression());
-    return (const Expression*)ret;
+    assert(ret);
+    return ret;
   }
 
   /**

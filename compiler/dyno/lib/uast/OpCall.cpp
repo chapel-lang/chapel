@@ -28,8 +28,8 @@ namespace uast {
 owned<OpCall> OpCall::build(Builder* builder,
                             Location loc,
                             UniqueString op,
-                            owned<Expression> lhs,
-                            owned<Expression> rhs) {
+                            owned<AstNode> lhs,
+                            owned<AstNode> rhs) {
   AstList list;
 
   list.push_back(std::move(lhs));
@@ -42,7 +42,7 @@ owned<OpCall> OpCall::build(Builder* builder,
 owned<OpCall> OpCall::build(Builder* builder,
                             Location loc,
                             UniqueString op,
-                            owned<Expression> expr) {
+                            owned<AstNode> expr) {
   AstList list;
 
   list.push_back(std::move(expr));

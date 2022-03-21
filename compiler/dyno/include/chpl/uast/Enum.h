@@ -89,12 +89,12 @@ class Enum final : public TypeDecl {
   /**
     Return a way to iterate over the EnumElements and Comments.
    */
-  AstListIteratorPair<Expression> declOrComments() const {
+  AstListIteratorPair<AstNode> declOrComments() const {
     auto begin = declOrCommentChildNum() >= 0
           ? children_.begin() + declOrCommentChildNum()
           : children_.end();
     auto end = begin + numDeclOrComments();
-    return AstListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -106,11 +106,11 @@ class Enum final : public TypeDecl {
   /**
    Return the i'th EnumElement or Comment in this Enum.
    */
-  const Expression* declOrComment(int i) const {
+  const AstNode* declOrComment(int i) const {
     assert(0 <= i && i < numDeclOrComments());
     const AstNode* ast = this->child(declOrCommentChildNum() + i);
     assert(ast->isDecl() || ast->isComment());
-    return (const Expression*)ast;
+    return ast;
   }
 
   /**

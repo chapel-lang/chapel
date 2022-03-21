@@ -21,7 +21,7 @@
 #define CHPL_UAST_DELETE_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -39,19 +39,17 @@ namespace uast {
 
   \endrst
 */
-class Delete final : public Expression {
+class Delete final : public AstNode {
  private:
   Delete(AstList children)
-    : Expression(asttags::Delete, std::move(children)) {
-    assert(isExpressionAstList(children_));
+    : AstNode(asttags::Delete, std::move(children)) {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    return expressionContentsMatchInner(other->toExpression());
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -65,8 +63,8 @@ class Delete final : public Expression {
   /**
     Return a way to iterate over the expressions of this delete statement.
   */
-  AstListIteratorPair<Expression> exprs() const {
-    return AstListIteratorPair<Expression>(children_.begin(),
+  AstListIteratorPair<AstNode> exprs() const {
+    return AstListIteratorPair<AstNode>(children_.begin(),
                                            children_.end());
   }
 
@@ -80,10 +78,9 @@ class Delete final : public Expression {
   /**
     Return the i'th expression in this delete statement.
   */
-  const Expression* expr(int i) const {
+  const AstNode* expr(int i) const {
     const AstNode* ast = this->child(i);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+    return ast;
   }
 };
 

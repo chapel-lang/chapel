@@ -33,15 +33,9 @@ bool TupleDecl::assertAcceptableTupleDecl() {
     if (elt.get() == attributes()) {
       // TODO: Make sure it is equivalent to components?
     } else if (i == typeExpressionChildNum_) {
-      if (!elt->isExpression()) {
-        assert(false && "type expression child is not expression");
-        return false;
-      }
+      // no checking needed
     } else if (i == initExpressionChildNum_) {
-      if (!elt->isExpression()) {
-        assert(false && "init expression child is not expression");
-        return false;
-      }
+      // no checking needed
     } else if (!elt->isTupleDecl()) {
       if (elt->isFormal() || elt->isVariable()) {
         if (firstNonTupleTag == unsetSentinel) {
@@ -70,8 +64,8 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
                                   Decl::Linkage linkage,
                                   TupleDecl::IntentOrKind intentOrKind,
                                   AstList elements,
-                                  owned<Expression> typeExpression,
-                                  owned<Expression> initExpression) {
+                                  owned<AstNode> typeExpression,
+                                  owned<AstNode> initExpression) {
   AstList list;
   int attributesChildNum = -1;
   int numElements = 0;

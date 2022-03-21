@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<Throw> Throw::build(Builder* builder, Location loc,
-                          owned<Expression> expr) {
+                          owned<AstNode> expr) {
   AstList lst;
 
   lst.push_back(std::move(expr));

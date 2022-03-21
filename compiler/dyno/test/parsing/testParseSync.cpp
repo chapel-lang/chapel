@@ -18,10 +18,10 @@
  */
 
 #include "chpl/parsing/Parser.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Begin.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Sync.h"

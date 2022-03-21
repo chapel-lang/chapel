@@ -293,7 +293,7 @@ class AstNode {
      It is a template and the Visitor argument should provide functions
      like
 
-        MyReturnType MyVisitor::visit(const uast::Expression* ast);
+        MyReturnType MyVisitor::visit(const uast::AstNode* ast);
         MyReturnType MyVisitor::visit(const uast::Variable* ast);
 
      and these will be invoked according to C++ overload resolution
@@ -319,8 +319,8 @@ class AstNode {
      It is a template and the Visitor argument should provide functions
      like
 
-        bool MyTraverser::enter(const uast::Expression* ast);
-        void MyTraverser::exit(const uast::Expression* ast);
+        bool MyTraverser::enter(const uast::AstNode* ast);
+        void MyTraverser::exit(const uast::AstNode* ast);
         bool MyTraverser::enter(const uast::Variable* ast);
         void MyTraverser::exit(const uast::Variable* ast);
 

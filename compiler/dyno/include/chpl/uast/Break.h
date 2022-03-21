@@ -40,10 +40,10 @@ namespace uast {
     }
   \endrst
 */
-class Break : public Expression {
+class Break : public AstNode {
  private:
   Break(AstList children, int8_t targetChildNum)
-    : Expression(asttags::Break, std::move(children)),
+    : AstNode(asttags::Break, std::move(children)),
       targetChildNum_(targetChildNum) {
     assert(numChildren() <= 1);
   }
@@ -55,14 +55,10 @@ class Break : public Expression {
     if (lhs->targetChildNum_ != rhs->targetChildNum_)
       return false;
 
-    if (!lhs->expressionContentsMatchInner(rhs))
-      return false;
-
     return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   int8_t targetChildNum_;

@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_ERRONEOUSEXPRESSION_H
 #define CHPL_UAST_ERRONEOUSEXPRESSION_H
 
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/queries/Location.h"
 
 namespace chpl {
@@ -30,18 +30,15 @@ namespace uast {
 /**
   This class represents some missing AST due to an error.
  */
-class ErroneousExpression final : public Expression {
+class ErroneousExpression final : public AstNode {
  private:
   ErroneousExpression()
-    : Expression(asttags::ErroneousExpression) {
+    : AstNode(asttags::ErroneousExpression) {
   }
   bool contentsMatchInner(const AstNode* other) const override {
-    const ErroneousExpression* lhs = this;
-    const ErroneousExpression* rhs = (const ErroneousExpression*) other;
-    return lhs->expressionContentsMatchInner(rhs);
+    return true;
   }
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:

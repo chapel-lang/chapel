@@ -26,7 +26,7 @@ namespace uast {
 
 owned<New> New::build(Builder* builder,
                       Location loc,
-                      owned<Expression> typeExpression,
+                      owned<AstNode> typeExpression,
                       New::Management management) {
   AstList lst;
 

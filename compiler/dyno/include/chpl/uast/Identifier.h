@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -39,13 +39,13 @@ namespace uast {
       f(x);      // here, 'f' and 'x' are Identifiers
   \endrst
  */
-class Identifier final : public Expression {
+class Identifier final : public AstNode {
 
  private:
   UniqueString name_;
 
   Identifier(UniqueString name)
-    : Expression(asttags::Identifier), name_(name) {
+    : AstNode(asttags::Identifier), name_(name) {
 
     assert(!name.isEmpty());
   }
@@ -53,11 +53,9 @@ class Identifier final : public Expression {
   bool contentsMatchInner(const AstNode* other) const override {
     const Identifier* lhs = this;
     const Identifier* rhs = (const Identifier*) other;
-    return lhs->expressionContentsMatchInner(rhs) &&
-           lhs->name_ == rhs->name_;
+    return lhs->name_ == rhs->name_;
   }
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
     this->name_.mark(context);
   }
 

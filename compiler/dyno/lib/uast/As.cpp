@@ -26,8 +26,8 @@ namespace uast {
 
 
 owned<As> As::build(Builder* builder, Location loc,
-                    owned<Expression> symbol,
-                    owned<Expression> rename) {
+                    owned<AstNode> symbol,
+                    owned<AstNode> rename) {
   assert(symbol.get() != nullptr);
   assert(rename.get() != nullptr);
 

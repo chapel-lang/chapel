@@ -256,7 +256,7 @@ static bool doLookupInScope(Context* context,
 
 static bool doLookupExprInScope(Context* context,
                                 const Scope* scope,
-                                const Expression* expr,
+                                const AstNode* expr,
                                 LookupConfig config,
                                 std::unordered_set<const Scope*>& checkedScopes,
                                 std::vector<BorrowedIdsWithName>& result,
@@ -409,7 +409,7 @@ static bool doLookupInScope(Context* context,
 
 static bool doLookupExprInScope(Context* context,
                                 const Scope* scope,
-                                const Expression* expr,
+                                const AstNode* expr,
                                 LookupConfig config,
                                 std::unordered_set<const Scope*>& checkedScopes,
                                 std::vector<BorrowedIdsWithName>& result,
@@ -425,7 +425,7 @@ static bool doLookupExprInScope(Context* context,
                            checkedScopes, result);
 
   } else if (auto dot = expr->toDot()) {
-    const Expression* rcv = dot->receiver();
+    const AstNode* rcv = dot->receiver();
     UniqueString fieldName = dot->field();
 
     std::vector<BorrowedIdsWithName> rcvResult;
@@ -486,7 +486,7 @@ enum VisibilityStmtKind {
 //     (which is only different from 'scope' for a Dot expression)
 static bool lookupInScopeViz(Context* context,
                              const Scope* scope,
-                             const Expression* expr,
+                             const AstNode* expr,
                              VisibilityStmtKind inUseEtc,
                              std::vector<BorrowedIdsWithName>& result,
                              UniqueString& nameOfResult,
@@ -523,7 +523,7 @@ static bool lookupInScopeViz(Context* context,
 // note: expr must be Dot or Identifier
 std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                const Scope* scope,
-                                               const Expression* expr,
+                                               const AstNode* expr,
                                                LookupConfig config) {
   std::unordered_set<const Scope*> checkedScopes;
 
@@ -542,7 +542,7 @@ std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
 std::vector<BorrowedIdsWithName>
 lookupInScopeWithSet(Context* context,
                      const Scope* scope,
-                     const Expression* expr,
+                     const AstNode* expr,
                      LookupConfig config,
                      std::unordered_set<const Scope*>& visited) {
   std::vector<BorrowedIdsWithName> vec;
@@ -645,7 +645,7 @@ struct ImportsResolver {
   std::vector<std::pair<UniqueString,UniqueString>>
   convertLimitations(const VisibilityClause* clause) {
     std::vector<std::pair<UniqueString,UniqueString>> ret;
-    for (const Expression* e : clause->limitations()) {
+    for (const AstNode* e : clause->limitations()) {
       if (auto ident = e->toIdentifier()) {
         UniqueString name = ident->name();
         ret.push_back(std::make_pair(name, name));
@@ -681,7 +681,7 @@ struct ImportsResolver {
 
     for (auto clause : use->visibilityClauses()) {
       // Figure out what was use'd
-      const Expression* expr = clause->symbol();
+      const AstNode* expr = clause->symbol();
 
       std::vector<BorrowedIdsWithName> vec;
       UniqueString n;
@@ -731,7 +731,7 @@ struct ImportsResolver {
 
     for (auto clause : imp->visibilityClauses()) {
       // Figure out what was imported
-      const Expression* expr = clause->symbol();
+      const AstNode* expr = clause->symbol();
 
       std::vector<BorrowedIdsWithName> vec;
       UniqueString n;
