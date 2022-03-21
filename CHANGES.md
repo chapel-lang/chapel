@@ -219,6 +219,10 @@ Documentation
 * merged domain/array 'built-in types and functions' content into language spec  
   (see https://chapel-lang.org/docs/1.26/language/spec/domains.html#module-ChapelDomain  
    and https://chapel-lang.org/docs/1.26/language/spec/arrays.html#module-ChapelArray)
+* added chapter groupings to the language specification  
+  (see https://chapel-lang.org/docs//1.26/language/spec/index.html)
+* grouped package modules by topic  
+  (see https://chapel-lang.org/docs//1.26/modules/packages.html)
 * updated GPU technote to expand on currently known limitations  
   (see https://chapel-lang.org/docs/1.26/technotes/gpu.html)
 * added documentation for many methods in the 'BigInteger' module  
@@ -227,6 +231,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint)
 * added documentation for which elements are preserved in `set` operations  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
+* added a link to the online documentation index at the bottom of its sidebar  
+  (see https://chapel-lang.org/docs//1.26/index.html)
 
 Syntax Highlighting
 -------------------
