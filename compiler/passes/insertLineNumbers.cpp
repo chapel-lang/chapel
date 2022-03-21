@@ -117,7 +117,7 @@ static Vec<FnSymbol*>* rootsOrChildren(FnSymbol* fn) {
 // ---------- InsertLineNumbers ----------
 
 // NOTE, shouldPreferASTLine, makeASTLine, and insertLineNumber are static
-// functions so that we might unit test or otherwise execercise them on their
+// functions so that we might unit test or otherwise exercise them on their
 // own them one day in the future
 
 // Should we prefer to use the AST's line and file info
@@ -263,7 +263,7 @@ void InsertLineNumbers::precondition(FnSymbol* fn) {
 //   * a regular fn -> add formals to fn
 //
 // Since adding additional args (in any form) imposes work on all of fn's
-// callers, we enqueue each callsite to get procesed later. We don't fix them
+// callers, we enqueue each callsite to get processed later. We don't fix them
 // immediately so that we aren't modifying someone else's FnSymbol
 //
 // If we have virtual roots or children, we also need them to to take line/file
