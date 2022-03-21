@@ -1357,9 +1357,19 @@ module ChapelDomain {
     }
 
     /*
-      This manager is returned by ``unsafeAssign()`` and can be used in
-      managed blocks to help resize arrays of non-default-initializable
-      elements.
+      An instance of this type is a context manager that can be used in
+      manage statements to resize arrays of non-default-initializable
+      element types after resizing their underlying domain.
+
+      Using this type in a manage statement will cause domain assignment
+      to occur before executing the statement body. The left-hand-side
+      of the assignment is the receiver domain that had ``unsafeAssign()``
+      called on it, while the right-hand-side is the `dom` formal of the
+      same call.
+
+      Methods on this type can be used within the manage statement body
+      to initialize new elements of non-default-initializable arrays
+      declared over the left-hand-side domain.
     */
     record unsafeAssignManager {
       pragma "no doc"
@@ -1406,11 +1416,11 @@ module ChapelDomain {
       }
 
       /*
-        Returns 'true' if this manager has runtime safety checks enabled.
+        Returns ``true`` if this manager has runtime safety checks enabled.
       */
       inline proc checks return _checks;
 
-      // Type overload. Not documented, but provided for convenience.
+      // Called by implementation code.
       pragma "no doc"
       proc type isClassReferenceNil(const ref x) {
         if isClassType(x.type) {
@@ -1422,10 +1432,8 @@ module ChapelDomain {
         }
       }
 
-      /*
-        Check if a given class reference is ``nil`` without triggering
-        runtime nilability checks.
-      */
+      // TODO: Make 'nonNilClass == nil' avoid runtime nil checks.
+      pragma "no doc"
       proc isClassReferenceNil(const ref x) {
         return this.type.isClassReferenceNil(x);
       }
@@ -1530,6 +1538,7 @@ module ChapelDomain {
         }
       }
 
+      pragma "no doc"
       proc deinit() {
         _ensureNoLongerManagingThis();
       }
@@ -1564,8 +1573,8 @@ module ChapelDomain {
 
         If checks is ``true`` and the array element at `idx` has already
         been initialized, this method will halt. If checks is ``false``,
-        then this method will overwrite the memory at `arr[idx]` in a
-        potentially unsafe manner.
+        then calling this method on an already initialized element will
+        result in undefined behavior.
 
         It is an error if `idx` is not a valid indice in `arr`.
       */
@@ -1685,21 +1694,56 @@ module ChapelDomain {
     }
 
     /*
-      Perform an unsafe assignment on this domain within the scope of a
-      manage statement. Within the managed scope, arrays of non-default-
-      initializable (e.g., an array of non-nilable classes) types
-      declared over this domain will not initialize new elements.
+      Return an instance of a :type:`unsafeAssignManager`.
 
-      The context manager returned by this method can be used to initialize
-      arrays of non-default-initializable elements. If `checks` is true,
-      the manager will ensure that all new elements have been initialized
-      in non-default-initializable arrays declared over this domain.
+      The returned context manager can be used in a manage statement to
+      assign the indices of `dom` into the receiver domain. Within the body
+      of the manage statement, the manager can update elements of
+      non-default-initializable arrays declared over the receiver domain.
+
+      If the assignment adds new indices to the receiver domain, then
+      corresponding elements are added to arrays declared over it.
+      If an array's element type is non-default-initializable, then any
+      newly added elements remain uninitialized.
+
+      Within the body of the manage statement, the ``initialize()`` method
+      of the :type:`unsafeAssignManager` may be used to initialize new
+      elements for arrays with non-default-initializable element types.
+
+      If `checks` is ``true``, this method will guarantee:
+
+        - That newly added elements of any non-default-initializable arrays
+          declared over the receiver domain have been initialized by the
+          end of the manage statement
+        - That newly added elements are only initialized once
+
+      These guarantees only hold if all initialization is done through
+      calls to the ``initialize()`` method. Performing operations on a newly
+      added array element causes undefined behavior until after
+      ``initialize()`` has been called.
+
+      For example:
+
+      .. code-block:: chapel
+
+        var D = {0..0};
+        var A: [D] shared C = [new shared C(0)];
+        manage D.unsafeAssign({0..1}, checks=true) as mgr {
+          // 'D' has a new index '1', so 'A' has a new element at '1',
+          // which we need to initialize:
+          mgr.initialize(A, 1, new shared C(1));
+        }
 
       .. note::
 
-        Checks are not currently supported for arrays with
-        non-default-initializable element types that are not non-nilable
-        classes.
+        Checks are not currently supported for arrays of
+        non-default-initializable element types other than arrays of
+        non-nilable classes.
+
+      :arg dom: The domain to assign to the receiver
+      :arg checks: If this manager should provide runtime safety checks
+
+      :returns: A :type:`unsafeAssignManager` for use in manage statements
     */
     proc ref unsafeAssign(const ref dom: domain, param checks: bool=false) {
       return new unsafeAssignManager(_lhsInstance=_value,
