@@ -9,6 +9,7 @@ o check compiler flags / man pages
 o check example codes
 o remove blank sections
 o initial caps?
+o no changes to 1.25.1 (other than two that were post-dated)
 
 version 1.26.0
 ==============
@@ -79,7 +80,7 @@ Deprecated / Unstable / Removed Language Features
 * deprecated support for `|`, `&`, and `^` on rectangular domains
 * deprecated `domain.isSuper()` and `.isSubset()` for `domain.contains()`
 * deprecated support for arrays over brace-less anonymous associative domains  
-  (e.g., in `var A: ["red", "green", "blue"] real;`, brackets are now required)
+  (e.g., in `var A: ["red", "green", "blue"] real;`, braces are now required)
 * deprecated support for `ChapelEnv.CHPL_AUX_FILESYS`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html#ChplConfig.CHPL_AUX_FILESYS)
 * removed deprecated support for `use <Mod> except *;`
@@ -250,7 +251,7 @@ Syntax Highlighting
 
 Example Codes
 -------------
-* removed 'benchmarks/ssca2' due to its use of old styles and lack of upkeep
+* removed `benchmarks/ssca2` due to its use of old styles and lack of upkeep
 * removed `patterns/recordio.chpl` due to its use of `iostyle` (now deprecated)
 
 Portability
