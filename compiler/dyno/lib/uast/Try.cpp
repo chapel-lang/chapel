@@ -25,10 +25,10 @@ namespace chpl {
 namespace uast {
 
 
-owned<Try> Try::build(Builder* builder, Location loc, ASTList stmts,
-                      ASTList catches,
+owned<Try> Try::build(Builder* builder, Location loc, AstList stmts,
+                      AstList catches,
                       bool isTryBang) {
-  ASTList lst;
+  AstList lst;
   int numBodyStmts = stmts.size();
   int numHandlers = catches.size();
   bool isExpressionLevel = false;
@@ -53,7 +53,7 @@ owned<Try> Try::build(Builder* builder, Location loc,
                       owned<Expression> expr,
                       bool isTryBang,
                       bool isExpressionLevel) {
-  ASTList lst;
+  AstList lst;
   int numBodyStmts = 1;
   int numHandlers = 0;
 

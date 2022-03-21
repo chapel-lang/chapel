@@ -105,7 +105,7 @@ bool AstNode::update(owned<AstNode>& keep, owned<AstNode>& addin) {
     // now keep is a new pointer
     // keep.children are the child nodes from keep
 
-    updateASTList(keep->children_, addin->children_);
+    updateAstList(keep->children_, addin->children_);
     return true; // updated
   } else {
     // swap the AST
@@ -119,8 +119,8 @@ void AstNode::mark(Context* context) const {
   id_.mark(context);
   // run markUniqueStrings on the node
   markUniqueStringsInner(context);
-  // run markASTList on the child list
-  markASTList(context, children_);
+  // run markAstList on the child list
+  markAstList(context, children_);
 }
 
 static std::string getIdStr(const AstNode* ast) {

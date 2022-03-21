@@ -33,12 +33,12 @@ namespace uast {
  */
 class Block final : public SimpleBlockLike {
  private:
-  Block(ASTList stmts, int bodyChildNum, int numBodyStmts)
+  Block(AstList stmts, int bodyChildNum, int numBodyStmts)
     : SimpleBlockLike(asttags::Block, std::move(stmts),
                       BlockStyle::EXPLICIT,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(blockStyle_ == BlockStyle::EXPLICIT);
     assert(bodyChildNum_ >= 0);
   }
@@ -57,7 +57,7 @@ class Block final : public SimpleBlockLike {
   /**
    Create and return a Block containing the passed stmts.
    */
-  static owned<Block> build(Builder* builder, Location loc, ASTList stmts);
+  static owned<Block> build(Builder* builder, Location loc, AstList stmts);
 
 };
 

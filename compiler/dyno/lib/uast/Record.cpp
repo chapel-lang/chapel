@@ -31,8 +31,8 @@ owned<Record> Record::build(Builder* builder, Location loc,
                             Decl::Linkage linkage,
                             owned<Expression> linkageName,
                             UniqueString name,
-                            ASTList contents) {
-  ASTList lst;
+                            AstList contents) {
+  AstList lst;
   int attributesChildNum = -1;
   int elementsChildNum = -1;
   int numElements = contents.size();

@@ -50,7 +50,7 @@ class Dot final : public Expression {
   // which field
  UniqueString fieldName_;
 
-  Dot(ASTList children, UniqueString fieldName)
+  Dot(AstList children, UniqueString fieldName)
     : Expression(asttags::Dot, std::move(children)),
       fieldName_(fieldName) {
     assert(children_.size() == 1);

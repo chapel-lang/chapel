@@ -30,8 +30,8 @@ Module::build(Builder* builder, Location loc,
               owned<Attributes> attributes,
               Decl::Visibility vis,
               UniqueString name,
-              Module::Kind kind, ASTList stmts) {
-  ASTList lst;
+              Module::Kind kind, AstList stmts) {
+  AstList lst;
   int attributesChildNum = -1;
 
   if (attributes.get() != nullptr) {

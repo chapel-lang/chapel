@@ -3405,7 +3405,7 @@ call_base_expr:
 call_expr:
   call_base_expr TLP opt_actual_ls TRP
     {
-      ASTList actuals;
+      AstList actuals;
       std::vector<UniqueString> actualNames;
       context->consumeNamedActuals($3, actuals, actualNames);
       auto fnCall = FnCall::build(BUILDER, LOC(@$),
@@ -3417,7 +3417,7 @@ call_expr:
     }
 | call_base_expr TLSBR opt_actual_ls TRSBR
     {
-      ASTList actuals;
+      AstList actuals;
       std::vector<UniqueString> actualNames;
       context->consumeNamedActuals($3, actuals, actualNames);
       auto fnCall = FnCall::build(BUILDER, LOC(@$),

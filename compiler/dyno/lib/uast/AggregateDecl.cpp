@@ -25,7 +25,7 @@ namespace chpl {
 namespace uast {
 
 
-bool AggregateDecl::validAggregateChildren(ASTListIteratorPair<Expression> it) {
+bool AggregateDecl::validAggregateChildren(AstListIteratorPair<Expression> it) {
   for (auto elt: it) {
     if (elt->isComment() || elt->isErroneousExpression()) {
       // OK

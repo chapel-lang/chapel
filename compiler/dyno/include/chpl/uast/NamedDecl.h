@@ -43,7 +43,7 @@ class NamedDecl : public Decl {
       name_(name) {
   }
 
-  NamedDecl(AstTag tag, ASTList children, int attributesChildNum,
+  NamedDecl(AstTag tag, AstList children, int attributesChildNum,
             Decl::Visibility visibility,
             Decl::Linkage linkage,
             int linkageNameChildNum,

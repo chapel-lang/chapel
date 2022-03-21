@@ -41,7 +41,7 @@ static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
     auto strA = UniqueString::get(ctx, "a");
     auto strB = UniqueString::get(ctx, "b");
     auto strC = UniqueString::get(ctx, "c");
-    ASTList children;
+    AstList children;
 
     children.push_back(Identifier::build(b, dummyLoc, strA));
     children.push_back(Identifier::build(b, dummyLoc, strB));

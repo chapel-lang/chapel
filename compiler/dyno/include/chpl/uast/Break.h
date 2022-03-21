@@ -42,7 +42,7 @@ namespace uast {
 */
 class Break : public Expression {
  private:
-  Break(ASTList children, int8_t targetChildNum)
+  Break(AstList children, int8_t targetChildNum)
     : Expression(asttags::Break, std::move(children)),
       targetChildNum_(targetChildNum) {
     assert(numChildren() <= 1);

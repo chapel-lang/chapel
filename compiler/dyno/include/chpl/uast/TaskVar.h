@@ -58,7 +58,7 @@ class TaskVar final : public VarLikeDecl {
   };
 
  private:
-  TaskVar(ASTList children, int attributesChildNum, UniqueString name,
+  TaskVar(AstList children, int attributesChildNum, UniqueString name,
           TaskVar::Intent intent,
           int8_t typeExpressionChildNum,
           int8_t initExpressionChildNum)

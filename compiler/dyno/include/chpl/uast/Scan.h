@@ -42,7 +42,7 @@ namespace uast {
 */
 class Scan final : public Call {
  private:
-  Scan(ASTList children, UniqueString op)
+  Scan(AstList children, UniqueString op)
     : Call(asttags::Scan, std::move(children), false),
       op_(op) {
     assert(numChildren() == 1);

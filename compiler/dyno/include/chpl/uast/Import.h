@@ -45,7 +45,7 @@ namespace uast {
 */
 class Import final : public Expression {
  private:
-  Import(ASTList children, Decl::Visibility visibility)
+  Import(AstList children, Decl::Visibility visibility)
     : Expression(asttags::Import, std::move(children)),
       visibility_(visibility) {
     assert(numChildren() >= 1);
@@ -78,7 +78,7 @@ class Import final : public Expression {
   */
   static owned<Import> build(Builder* builder, Location loc,
                              Decl::Visibility visibility,
-                             ASTList visibilityClauses);
+                             AstList visibilityClauses);
 
   /**
     Return the visibility of this import statement.
@@ -90,8 +90,8 @@ class Import final : public Expression {
   /**
     Return a way to iterate over the visibility clauses.
   */
-  ASTListIteratorPair<VisibilityClause> visibilityClauses() const {
-    return ASTListIteratorPair<VisibilityClause>(children_.begin(),
+  AstListIteratorPair<VisibilityClause> visibilityClauses() const {
+    return AstListIteratorPair<VisibilityClause>(children_.begin(),
                                                  children_.end());
   }
 

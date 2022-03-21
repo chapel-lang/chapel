@@ -49,7 +49,7 @@ class Module final : public NamedDecl {
  private:
   Kind kind_;
 
-  Module(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Module(AstList children, int attributesChildNum, Decl::Visibility vis,
          UniqueString name,
          Kind kind)
     : NamedDecl(asttags::Module, std::move(children), attributesChildNum,
@@ -59,7 +59,7 @@ class Module final : public NamedDecl {
                 name),
                 kind_(kind) {
 
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -85,7 +85,7 @@ class Module final : public NamedDecl {
                              Decl::Visibility vis,
                              UniqueString name,
                              Module::Kind kind,
-                             ASTList stmts);
+                             AstList stmts);
 
   /**
     Return the kind of this module (e.g. 'PROTOTYPE' or 'IMPLICIT');
@@ -95,12 +95,12 @@ class Module final : public NamedDecl {
   /**
     Iterate over the statements in this module.
   */
-  ASTListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<Expression> stmts() const {
     auto begin = numStmts()
         ? children_.begin() + stmtChildNum()
         : children_.end();
     auto end = begin + numStmts();
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<Expression>(begin, end);
   }
 
   /**

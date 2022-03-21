@@ -46,13 +46,13 @@ namespace uast {
  */
 class While final : public Loop {
  private:
-  While(ASTList children, int8_t conditionChildNum,
+  While(AstList children, int8_t conditionChildNum,
         BlockStyle blockStyle,
         int loopBodyChildNum)
     : Loop(asttags::While, std::move(children), blockStyle,
            loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(condition());
   }
 

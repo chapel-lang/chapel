@@ -46,10 +46,10 @@ namespace uast {
  */
 class Select final : public Expression {
  private:
-  Select(ASTList children, int numWhenStmts)
+  Select(AstList children, int numWhenStmts)
     : Expression(asttags::Select, std::move(children)),
       numWhenStmts_(numWhenStmts) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -75,7 +75,7 @@ class Select final : public Expression {
   */
   static owned<Select> build(Builder* builder, Location loc,
                              owned<Expression> expr,
-                             ASTList whenStmts);
+                             AstList whenStmts);
 
   /**
     Returns the expression of this select statement.
@@ -106,12 +106,12 @@ class Select final : public Expression {
   /**
     Iterate over the when statements in this select statement.
   */
-  ASTListIteratorPair<When> whenStmts() const {
+  AstListIteratorPair<When> whenStmts() const {
     auto begin = numWhenStmts_ > 0
         ? children_.begin() + whenStmtStartChildNum_
         : children_.end();
     auto end = begin + numWhenStmts_;
-    return ASTListIteratorPair<When>(begin, end);
+    return AstListIteratorPair<When>(begin, end);
   }
 
 };

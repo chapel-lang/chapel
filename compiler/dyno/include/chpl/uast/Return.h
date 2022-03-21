@@ -43,10 +43,10 @@ namespace uast {
  */
 class Return final : public Expression {
  private:
-  Return(ASTList children,  int8_t valueChildNum)
+  Return(AstList children,  int8_t valueChildNum)
     : Expression(asttags::Return, std::move(children)),
       valueChildNum_(valueChildNum) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(valueChildNum_ <= 0);
   }
 

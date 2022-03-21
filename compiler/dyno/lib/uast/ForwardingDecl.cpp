@@ -41,7 +41,7 @@ owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
                                             Decl::Visibility visibility) {
   assert(expr.get() != nullptr);
   int attributesChildNum = -1;
-  ASTList lst;
+  AstList lst;
 
   // store the attributes and the location of the attributes node if one exists
   if (attributes.get() != nullptr) {

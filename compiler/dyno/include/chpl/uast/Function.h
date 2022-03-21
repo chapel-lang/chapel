@@ -89,7 +89,7 @@ class Function final : public NamedDecl {
   int numLifetimeParts_;
   int bodyChildNum_;
 
-  Function(ASTList children,
+  Function(AstList children,
            int attributesChildNum,
            Decl::Visibility vis,
            Decl::Linkage linkage,
@@ -153,7 +153,7 @@ class Function final : public NamedDecl {
     } else {
       assert(bodyChildNum_ == -1);
     }
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
 
     #ifndef NDEBUG
       for (auto decl : formals()) {
@@ -206,10 +206,10 @@ class Function final : public NamedDecl {
                                bool throws,
                                bool primaryMethod,
                                bool parenless,
-                               ASTList formals,
+                               AstList formals,
                                owned<Expression> returnType,
                                owned<Expression> where,
-                               ASTList lifetime,
+                               AstList lifetime,
                                owned<Block> body);
 
   Kind kind() const { return this->kind_; }
@@ -225,12 +225,12 @@ class Function final : public NamedDecl {
    receiver, if present, as the first formal. This iterator may yield
    nodes of type Formal, TupleDecl, or VarArgFormal.
    */
-  ASTListIteratorPair<Decl> formals() const {
+  AstListIteratorPair<Decl> formals() const {
     if (numFormals() == 0) {
-      return ASTListIteratorPair<Decl>(children_.end(), children_.end());
+      return AstListIteratorPair<Decl>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + formalsChildNum_;
-      return ASTListIteratorPair<Decl>(start, start + numFormals_);
+      return AstListIteratorPair<Decl>(start, start + numFormals_);
     }
   }
 
@@ -303,12 +303,12 @@ class Function final : public NamedDecl {
   /**
    Return a way to iterate over the lifetime clauses.
    */
-  ASTListIteratorPair<Expression> lifetimeClauses() const {
+  AstListIteratorPair<Expression> lifetimeClauses() const {
     if (numLifetimeClauses() == 0) {
-      return ASTListIteratorPair<Expression>(children_.end(), children_.end());
+      return AstListIteratorPair<Expression>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + lifetimeChildNum_;
-      return ASTListIteratorPair<Expression>(start, start + numLifetimeParts_);
+      return AstListIteratorPair<Expression>(start, start + numLifetimeParts_);
     }
   }
 
@@ -344,10 +344,10 @@ class Function final : public NamedDecl {
   /**
     Return a way to iterate over the statements in the function body.
    */
-  ASTListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<Expression> stmts() const {
     const Block* b = body();
     if (b == nullptr) {
-      return ASTListIteratorPair<Expression>(children_.end(), children_.end());
+      return AstListIteratorPair<Expression>(children_.end(), children_.end());
     }
 
     return b->stmts();

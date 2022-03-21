@@ -49,12 +49,12 @@ namespace uast {
  */
 class Defer final : public SimpleBlockLike {
  private:
-  Defer(ASTList stmts, BlockStyle blockStyle, int bodyChildNum,
+  Defer(AstList stmts, BlockStyle blockStyle, int bodyChildNum,
         int numBodyStmts)
     : SimpleBlockLike(asttags::Defer, std::move(stmts), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(bodyChildNum_ >= 0);
   }
 
@@ -74,7 +74,7 @@ class Defer final : public SimpleBlockLike {
    */
   static owned<Defer> build(Builder* builder, Location loc,
                             BlockStyle blockStyle,
-                            ASTList stmts);
+                            AstList stmts);
 
 };
 

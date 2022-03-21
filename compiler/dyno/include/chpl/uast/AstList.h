@@ -33,16 +33,16 @@ namespace uast {
 
 
 /**
-  ASTList is just a list that owns some AST nodes.
+  AstList is just a list that owns some AST nodes.
  */
-using ASTList = std::vector<owned<AstNode>>;
+using AstList = std::vector<owned<AstNode>>;
 
 /**
-  Create an ASTList containing a single ast element, transferring
+  Create an AstList containing a single ast element, transferring
   ownership of that element to the list.
  */
-static inline ASTList makeASTList(owned<AstNode> ast) {
-  ASTList lst;
+static inline AstList makeAstList(owned<AstNode> ast) {
+  AstList lst;
   lst.push_back(std::move(ast));
   return lst;
 }
@@ -63,17 +63,17 @@ static inline ASTList makeASTList(owned<AstNode> ast) {
 
  The function returns 'true' if anything changed in 'keep'.
  */
-bool updateASTList(ASTList& keep, ASTList& addin);
+bool updateAstList(AstList& keep, AstList& addin);
 
 /**
  Mark UniqueStrings in an AST list.
  */
-void markASTList(Context* context, const ASTList& keep);
+void markAstList(Context* context, const AstList& keep);
 
 /**
  Returns true if this list only contains Expressions.
  */
-bool isExpressionASTList(const ASTList& list);
+bool isExpressionAstList(const AstList& list);
 
 /**
  Defines an iterator over the AST list elements.
@@ -81,31 +81,31 @@ bool isExpressionASTList(const ASTList& list);
  and casts elements to a particular type.
  */
 template<typename CastToType>
-class ASTListIterator {
+class AstListIterator {
  public:
   using iterator_category = std::random_access_iterator_tag;
   using value_type = const CastToType*;
-  using difference_type = ASTList::const_iterator::difference_type;
+  using difference_type = AstList::const_iterator::difference_type;
   using pointer = const CastToType**;
   using reference = const CastToType*&;
 
  private:
-  ASTList::const_iterator it;
+  AstList::const_iterator it;
 
  public:
   // needs to be default-constructible, copy-constructible,
   // copy-assignable and destructible
-  ASTListIterator() = default;
-  explicit ASTListIterator(ASTList::const_iterator it) : it(it) { }
-  ~ASTListIterator() = default;
+  AstListIterator() = default;
+  explicit AstListIterator(AstList::const_iterator it) : it(it) { }
+  ~AstListIterator() = default;
 
-  ASTListIterator<CastToType>& operator=(const ASTListIterator<CastToType>& it) = default;
+  AstListIterator<CastToType>& operator=(const AstListIterator<CastToType>& it) = default;
 
   // needs to be support == and !=
-  bool operator==(const ASTListIterator<CastToType> rhs) const {
+  bool operator==(const AstListIterator<CastToType> rhs) const {
     return this->it == rhs.it;
   }
-  bool operator!=(const ASTListIterator<CastToType> rhs) const {
+  bool operator!=(const AstListIterator<CastToType> rhs) const {
     return this->it != rhs.it;
   }
 
@@ -118,58 +118,58 @@ class ASTListIterator {
   }
 
   // needs to support preincrement and postincrement
-  ASTListIterator<CastToType>& operator++() {
+  AstListIterator<CastToType>& operator++() {
     ++this->it;
     return *this;
   }
-  ASTListIterator<CastToType> operator++(int) {
-    ASTListIterator<CastToType> tmp = *this;
+  AstListIterator<CastToType> operator++(int) {
+    AstListIterator<CastToType> tmp = *this;
     ++this->it;
     return tmp;
   }
 
   // needs to support predecrement and postdecrement
-  ASTListIterator<CastToType>& operator--() {
+  AstListIterator<CastToType>& operator--() {
     --this->it;
     return *this;
   }
-  ASTListIterator<CastToType> operator--(int) {
-    ASTListIterator<CastToType> tmp = *this;
+  AstListIterator<CastToType> operator--(int) {
+    AstListIterator<CastToType> tmp = *this;
     --this->it;
     return tmp;
   }
 
   // needs to support + and -
-  ASTListIterator<CastToType> operator+(const difference_type rhs) const {
-    return ASTListIterator<CastToType>(this->it + rhs);
+  AstListIterator<CastToType> operator+(const difference_type rhs) const {
+    return AstListIterator<CastToType>(this->it + rhs);
   }
-  ASTListIterator<CastToType> operator-(const difference_type rhs) const {
-    return ASTListIterator<CastToType>(this->it - rhs);
+  AstListIterator<CastToType> operator-(const difference_type rhs) const {
+    return AstListIterator<CastToType>(this->it - rhs);
   }
-  difference_type operator-(const ASTListIterator<CastToType> rhs) const {
-    return ASTListIterator<CastToType>(this->it - rhs.it);
+  difference_type operator-(const AstListIterator<CastToType> rhs) const {
+    return AstListIterator<CastToType>(this->it - rhs.it);
   }
 
   // needs to support < > <= >=
-  bool operator<(const ASTListIterator<CastToType> rhs) const {
+  bool operator<(const AstListIterator<CastToType> rhs) const {
     return this->it < rhs.it;
   }
-  bool operator>(const ASTListIterator<CastToType> rhs) const {
+  bool operator>(const AstListIterator<CastToType> rhs) const {
     return this->it > rhs.it;
   }
-  bool operator<=(const ASTListIterator<CastToType> rhs) const {
+  bool operator<=(const AstListIterator<CastToType> rhs) const {
     return this->it <= rhs.it;
   }
-  bool operator>=(const ASTListIterator<CastToType> rhs) const {
+  bool operator>=(const AstListIterator<CastToType> rhs) const {
     return this->it >= rhs.it;
   }
 
   // needs to support += and -=
-  const ASTListIterator<CastToType>& operator+=(const difference_type& rhs) {
+  const AstListIterator<CastToType>& operator+=(const difference_type& rhs) {
     this->it += rhs;
     return *this;
   }
-  const ASTListIterator<CastToType>& operator-=(const difference_type& rhs) {
+  const AstListIterator<CastToType>& operator-=(const difference_type& rhs) {
     this->it -= rhs;
     return *this;
   }
@@ -183,20 +183,20 @@ class ASTListIterator {
 };
 
 template<typename CastToType>
-struct ASTListIteratorPair {
-  ASTListIterator<CastToType> begin_;
-  ASTListIterator<CastToType> end_;
+struct AstListIteratorPair {
+  AstListIterator<CastToType> begin_;
+  AstListIterator<CastToType> end_;
 
-  ASTListIteratorPair(ASTList::const_iterator begin,
-                      ASTList::const_iterator end)
+  AstListIteratorPair(AstList::const_iterator begin,
+                      AstList::const_iterator end)
     : begin_(begin), end_(end) {
   }
-  ~ASTListIteratorPair() = default;
+  ~AstListIteratorPair() = default;
 
-  ASTListIterator<CastToType> begin() const {
+  AstListIterator<CastToType> begin() const {
     return begin_;
   }
-  ASTListIterator<CastToType> end() const {
+  AstListIterator<CastToType> end() const {
     return end_;
   }
 };

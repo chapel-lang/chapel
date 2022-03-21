@@ -44,7 +44,7 @@ namespace uast {
  */
 class For final : public IndexableLoop {
  private:
-  For(ASTList children,  int8_t indexChildNum,
+  For(AstList children,  int8_t indexChildNum,
       int8_t iterandChildNum,
       BlockStyle blockStyle,
       int loopBodyChildNum,
@@ -59,7 +59,7 @@ class For final : public IndexableLoop {
                     isExpressionLevel),
       isParam_(isParam) {
 
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(withClause() == nullptr);
   }
 

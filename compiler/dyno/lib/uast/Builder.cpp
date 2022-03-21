@@ -114,7 +114,7 @@ void Builder::createImplicitModuleIfNeeded() {
     std::string modname = filenameToModulename(filepath_.c_str());
     auto inferredModuleName = UniqueString::get(context_, modname);
     // create a new module containing all of the statements
-    ASTList stmts;
+    AstList stmts;
     stmts.swap(topLevelExpressions_);
     auto implicitModule = Module::build(this, Location(filepath_),
                                         /*attributes*/ nullptr,
@@ -285,8 +285,8 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   }
 }
 
-ASTList Builder::flattenTopLevelBlocks(ASTList lst) {
-  ASTList ret;
+AstList Builder::flattenTopLevelBlocks(AstList lst) {
+  AstList ret;
 
   for (auto& ast : lst) {
     if (ast->isBlock()) {

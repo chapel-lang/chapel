@@ -42,7 +42,7 @@ namespace uast {
  */
 class As final : public Expression {
  private:
-  As(ASTList children)
+  As(AstList children)
     : Expression(asttags::As, std::move(children)) {
     assert(rename()->isIdentifier() || rename()->isVariable());
   }

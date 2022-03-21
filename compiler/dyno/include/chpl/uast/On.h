@@ -44,12 +44,12 @@ namespace uast {
  */
 class On final : public SimpleBlockLike {
  private:
-  On(ASTList children, BlockStyle blockStyle, int bodyChildNum,
+  On(AstList children, BlockStyle blockStyle, int bodyChildNum,
      int numBodyStmts)
     : SimpleBlockLike(asttags::On, std::move(children), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -70,7 +70,7 @@ class On final : public SimpleBlockLike {
   static owned<On> build(Builder* builder, Location loc,
                          owned<Expression> destination,
                          BlockStyle blockStyle,
-                         ASTList stmts);
+                         AstList stmts);
 
   /**
     Returns the destination of this on statement.

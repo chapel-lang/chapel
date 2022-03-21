@@ -35,14 +35,14 @@ namespace uast {
  */
 class When final : public SimpleBlockLike {
  private:
-  When(ASTList children, int numCaseExprs, BlockStyle blockStyle,
+  When(AstList children, int numCaseExprs, BlockStyle blockStyle,
        int bodyChildNum,
        int numBodyStmts)
     : SimpleBlockLike(asttags::When, std::move(children), blockStyle,
                       bodyChildNum,
                       numBodyStmts),
       numCaseExprs_(numCaseExprs) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -67,9 +67,9 @@ class When final : public SimpleBlockLike {
     'isOtherwise()' will evaluate to true.
   */
   static owned<When> build(Builder* builder, Location loc,
-                           ASTList caseExprs,
+                           AstList caseExprs,
                            BlockStyle blockStyle,
-                           ASTList stmts);
+                           AstList stmts);
 
   /**
     Returns the number of case expressions for this when statement.
@@ -92,10 +92,10 @@ class When final : public SimpleBlockLike {
   /**
     Return a way to iterate over the cases of this when statement.
   */
-  ASTListIteratorPair<Expression> caseExprs() const {
+  AstListIteratorPair<Expression> caseExprs() const {
     auto begin = (numCaseExprs_ >= 0) ? children_.begin() : children_.end();
     auto end = begin + numCaseExprs_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<Expression>(begin, end);
   }
 
   /**

@@ -46,7 +46,7 @@ namespace uast {
  */
 class Forall final : public IndexableLoop {
  private:
-  Forall(ASTList children, int8_t indexChildNum,
+  Forall(AstList children, int8_t indexChildNum,
          int8_t iterandChildNum,
          int8_t withClauseChildNum,
          BlockStyle blockStyle,
@@ -59,7 +59,7 @@ class Forall final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     isExpressionLevel) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

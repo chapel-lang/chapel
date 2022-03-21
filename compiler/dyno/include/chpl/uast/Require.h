@@ -40,7 +40,7 @@ namespace uast {
 */
 class Require final : public Expression {
  private:
-  Require(ASTList children)
+  Require(AstList children)
     : Expression(asttags::Require, std::move(children)) {
   }
 
@@ -59,13 +59,13 @@ class Require final : public Expression {
     Create and return a require statement.
   */
   static owned<Require> build(Builder* builder, Location loc,
-                              ASTList exprs);
+                              AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this require statement.
   */
-  ASTListIteratorPair<Expression> exprs() const {
-    return ASTListIteratorPair<Expression>(children_.begin(),
+  AstListIteratorPair<Expression> exprs() const {
+    return AstListIteratorPair<Expression>(children_.begin(),
                                            children_.end());
   }
 

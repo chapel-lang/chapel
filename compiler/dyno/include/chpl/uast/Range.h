@@ -47,7 +47,7 @@ class Range final : public Expression {
   };
 
  private:
-  Range(ASTList children, OpKind opKind,
+  Range(AstList children, OpKind opKind,
         int8_t lowerBoundChildNum,
         int8_t upperBoundChildNum)
     : Expression(asttags::Range, std::move(children)),

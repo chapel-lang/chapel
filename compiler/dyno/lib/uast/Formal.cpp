@@ -31,7 +31,7 @@ Formal::build(Builder* builder, Location loc, owned<Attributes> attributes,
               Formal::Intent intent,
               owned<Expression> typeExpression,
               owned<Expression> initExpression) {
-  ASTList lst;
+  AstList lst;
   int attributesChildNum = -1;
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;

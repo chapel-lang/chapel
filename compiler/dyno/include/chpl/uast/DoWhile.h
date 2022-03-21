@@ -46,14 +46,14 @@ namespace uast {
  */
 class DoWhile final : public Loop {
  private:
-  DoWhile(ASTList children, BlockStyle blockStyle,
+  DoWhile(AstList children, BlockStyle blockStyle,
           int loopBodyChildNum,
           int conditionChildNum)
     : Loop(asttags::DoWhile, std::move(children),
            blockStyle,
            loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(condition());
   }
 

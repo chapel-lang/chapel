@@ -41,7 +41,7 @@ namespace uast {
 */
 class Continue : public Expression {
  private:
-  Continue(ASTList children, int8_t targetChildNum)
+  Continue(AstList children, int8_t targetChildNum)
     : Expression(asttags::Continue, std::move(children)),
       targetChildNum_(targetChildNum) {
     assert(numChildren() <= 1);

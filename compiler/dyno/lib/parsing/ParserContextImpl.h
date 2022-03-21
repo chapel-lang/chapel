@@ -420,8 +420,8 @@ ParserExprList* ParserContext::appendList(ParserExprList* dst,
   return dst;
 }
 
-ASTList ParserContext::consumeList(ParserExprList* lst) {
-  ASTList ret;
+AstList ParserContext::consumeList(ParserExprList* lst) {
+  AstList ret;
   if (lst != nullptr) {
     for (Expression* e : *lst) {
       if (e != nullptr) {
@@ -433,14 +433,14 @@ ASTList ParserContext::consumeList(ParserExprList* lst) {
   return ret;
 }
 
-ASTList ParserContext::consume(Expression* e) {
-  ASTList ret;
+AstList ParserContext::consume(Expression* e) {
+  AstList ret;
   ret.push_back(toOwned(e));
   return ret;
 }
 
 void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
-                                        ASTList& actualsOut,
+                                        AstList& actualsOut,
                                         std::vector<UniqueString>& namesOut) {
   bool anyActualNames = false;
   if (lst != nullptr) {
@@ -594,7 +594,7 @@ Identifier* ParserContext::buildIdent(YYLTYPE location, PODUniqueString name) {
 Expression* ParserContext::buildPrimCall(YYLTYPE location,
                                          MaybeNamedActualList* lst) {
   Location loc = convertLocation(location);
-  ASTList actuals;
+  AstList actuals;
   std::vector<UniqueString> actualNames;
   UniqueString primName;
 
@@ -699,8 +699,8 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
                     locBlockOrDo,
                     blockOrDo);
 
-  ASTList managers = consumeList(managerExprs);
-  ASTList stmts = consumeList(stmtExprList);
+  AstList managers = consumeList(managerExprs);
+  AstList stmts = consumeList(stmtExprList);
 
   auto node = Manage::build(builder, convertLocation(location),
                             std::move(managers),
@@ -864,7 +864,7 @@ ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
                               Expression* typeExpr) {
 
   // In some cases the 'domainExprs' may not exist (think array formal).
-  auto domainBody = domainExprs ? consumeList(domainExprs) : ASTList();
+  auto domainBody = domainExprs ? consumeList(domainExprs) : AstList();
 
   auto domain = Domain::build(builder, convertLocation(locDomainExprs),
                               std::move(domainBody));
@@ -945,7 +945,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*initExpression*/ nullptr);
 
   } else if (const uast::Tuple* tup = e->toTuple()) {
-    ASTList elements;
+    AstList elements;
     for (auto expr : tup->actuals()) {
       auto decl = buildLoopIndexDecl(location, expr);
       if (decl.get() != nullptr) {
@@ -1063,7 +1063,7 @@ ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
     }
   }
 
-  auto stmts = (!lst || !lst->size()) ? ASTList() : consumeList(lst);
+  auto stmts = (!lst || !lst->size()) ? AstList() : consumeList(lst);
 
   // if it consists of other non-block statements, create a new block
   return Block::build(builder, convertLocation(blockLoc),
@@ -1076,7 +1076,7 @@ ParserContext::consumeToBlock(YYLTYPE blockLoc, Expression* e) {
   return consumeToBlock(blockLoc, list);
 }
 
-ASTList
+AstList
 ParserContext::consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst) {
   return builder->flattenTopLevelBlocks(consumeList(exprLst));
 }
@@ -1518,7 +1518,7 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
 Expression* ParserContext::
 buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
                       VisibilityClause::LimitationKind limitationKind,
-                      ASTList limitations) {
+                      AstList limitations) {
   if (!symbol->isAs() && !symbol->isIdentifier() && !symbol->isDot()) {
     auto msg = "Expected symbol in visibility clause";
     return raiseError(location, msg);
@@ -1548,7 +1548,7 @@ Expression* ParserContext::
 buildVisibilityClause(YYLTYPE location, owned<Expression> symbol) {
   return buildVisibilityClause(location, std::move(symbol),
                                VisibilityClause::NONE,
-                               ASTList());
+                               AstList());
 }
 
 
@@ -1568,7 +1568,7 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
     return { .comments=comments, .stmt=node.release() };
   }
 
-  auto limitationsList = limitations ? consumeList(limitations) : ASTList();
+  auto limitationsList = limitations ? consumeList(limitations) : AstList();
 
   auto visClause = buildVisibilityClause(location, std::move(expr),
                                          limitationKind,
@@ -1699,7 +1699,7 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
     return { .comments=comments, .stmt=node.release() };
   }
 
-  ASTList uses;
+  AstList uses;
   uses.push_back(toOwned(visClause));
 
   auto node = Use::build(builder, convertLocation(locEverything),
@@ -1971,7 +1971,7 @@ buildTypeConstructor(YYLTYPE location, PODUniqueString baseType,
                      MaybeNamedActualList* maybeNamedActuals) {
   auto ident = buildIdent(location, baseType);
   std::vector<UniqueString> actualNames;
-  ASTList actuals;
+  AstList actuals;
 
   consumeNamedActuals(maybeNamedActuals, actuals, actualNames);
 
@@ -2091,7 +2091,7 @@ ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
     blockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
   }
 
-  auto caseList = caseExprs ? consumeList(caseExprs) : ASTList();
+  auto caseList = caseExprs ? consumeList(caseExprs) : AstList();
 
   auto stmtExprs = stmt ? makeList(stmt) : makeList();
   auto stmtList = consumeAndFlattenTopLevelBlocks(stmtExprs);

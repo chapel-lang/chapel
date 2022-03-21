@@ -58,7 +58,7 @@ class ForwardingDecl final : public Decl {
 
 
 private:
-  ForwardingDecl(ASTList children, Decl::Visibility visibility,
+  ForwardingDecl(AstList children, Decl::Visibility visibility,
                  int attributesChildNum)
     : Decl(asttags::ForwardingDecl, std::move(children), attributesChildNum,
                 visibility,
@@ -67,7 +67,7 @@ private:
                 ) {
 
     assert(children_.size() >= 0 && children_.size() <= 2);
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

@@ -47,14 +47,14 @@ namespace uast {
  */
 class Begin final : public SimpleBlockLike {
  private:
-  Begin(ASTList children, int8_t withClauseChildNum, BlockStyle blockStyle,
+  Begin(AstList children, int8_t withClauseChildNum, BlockStyle blockStyle,
         int bodyChildNum,
         int numBodyStmts)
     : SimpleBlockLike(asttags::Begin, std::move(children), blockStyle,
                       bodyChildNum,
                       numBodyStmts),
       withClauseChildNum_(withClauseChildNum) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -84,7 +84,7 @@ class Begin final : public SimpleBlockLike {
   static owned<Begin> build(Builder* builder, Location loc,
                             owned<WithClause> withClause,
                             BlockStyle blockStyle,
-                            ASTList stmts);
+                            AstList stmts);
 
   /**
     Returns the with clause of this begin statement, or nullptr if there

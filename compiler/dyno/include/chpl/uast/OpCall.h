@@ -40,7 +40,7 @@ class OpCall final : public Call {
   // which operator
   UniqueString op_;
 
-  OpCall(ASTList children, UniqueString op)
+  OpCall(AstList children, UniqueString op)
     : Call(asttags::OpCall, std::move(children),
            /* hasCalledExpression */ false),
       op_(op) {

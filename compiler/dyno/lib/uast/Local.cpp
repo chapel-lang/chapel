@@ -28,9 +28,9 @@ namespace uast {
 owned<Local> Local::build(Builder* builder,
                           Location loc,
                           BlockStyle blockStyle,
-                          ASTList stmts) {
+                          AstList stmts) {
 
-  ASTList lst;
+  AstList lst;
   int8_t condChildNum = -1;
 
   const int bodyChildNum = lst.size();
@@ -51,10 +51,10 @@ owned<Local> Local::build(Builder* builder,
                           Location loc,
                           owned<Expression> condition,
                           BlockStyle blockStyle,
-                          ASTList stmts) {
+                          AstList stmts) {
   assert(condition.get() != nullptr);
 
-  ASTList lst;
+  AstList lst;
   int8_t condChildNum = -1;
 
   if (condition.get() != nullptr) {

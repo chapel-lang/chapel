@@ -44,10 +44,10 @@ namespace uast {
 */
 class Label final : public Expression {
  private:
-  Label(ASTList children, UniqueString name)
+  Label(AstList children, UniqueString name)
     : Expression(asttags::Label, std::move(children)),
       name_(name) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(numChildren() == 1);
   }
 

@@ -29,7 +29,7 @@ owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
                                       owned<Attributes> attributes,
                                       UniqueString name,
                                       owned<Expression> initExpression) {
-  ASTList lst;
+  AstList lst;
   int attributesChildNum = -1;
 
   if (attributes.get() != nullptr) {

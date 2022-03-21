@@ -33,7 +33,7 @@ namespace uast {
 */
 class Reduce final : public Call {
  private:
-  Reduce(ASTList children, UniqueString op)
+  Reduce(AstList children, UniqueString op)
     : Call(asttags::Reduce, std::move(children),
            /*hasCalledExpression*/ false),
       op_(op) {

@@ -44,7 +44,7 @@ class Let final : public Expression {
  private:
   int numDecls_;
 
-  Let(ASTList children, int numDecls)
+  Let(AstList children, int numDecls)
     : Expression(asttags::Let, std::move(children)),
       numDecls_(numDecls) {
     assert(numChildren() >= 2);
@@ -69,16 +69,16 @@ class Let final : public Expression {
    Create a Let containing the passed declarations and expression.
   */
   static owned<Let> build(Builder* builder, Location loc,
-                          ASTList decls,
+                          AstList decls,
                           owned<Expression> expression);
 
   /**
     Iterate over the declarations in this let statement.
   */
-  ASTListIteratorPair<Decl> decls() const {
+  AstListIteratorPair<Decl> decls() const {
     auto begin = children_.begin();
     auto end = begin + numDecls_;
-    return ASTListIteratorPair<Decl>(begin, end);
+    return AstListIteratorPair<Decl>(begin, end);
   }
 
   /**

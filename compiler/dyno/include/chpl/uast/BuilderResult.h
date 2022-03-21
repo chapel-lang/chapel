@@ -59,7 +59,7 @@ class BuilderResult final {
 
  private:
   UniqueString filePath_;
-  ASTList topLevelExpressions_;
+  AstList topLevelExpressions_;
   std::vector<ErrorMessage> errors_;
 
   // Given an ID, what is the AstNode?
@@ -100,8 +100,8 @@ class BuilderResult final {
   }
 
   /** iterate over the parsed top-level expressions */
-  ASTListIteratorPair<AstNode> topLevelExpressions() const {
-    return ASTListIteratorPair<AstNode>(topLevelExpressions_.begin(),
+  AstListIteratorPair<AstNode> topLevelExpressions() const {
+    return AstListIteratorPair<AstNode>(topLevelExpressions_.begin(),
                                         topLevelExpressions_.end());
   }
 

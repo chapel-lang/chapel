@@ -43,7 +43,7 @@ namespace uast {
  */
 class BracketLoop final : public IndexableLoop {
  private:
-  BracketLoop(ASTList children, int8_t indexChildNum,
+  BracketLoop(AstList children, int8_t indexChildNum,
               int8_t iterandChildNum,
               int8_t withClauseChildNum,
               BlockStyle blockStyle,
@@ -56,7 +56,7 @@ class BracketLoop final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     isExpressionLevel) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

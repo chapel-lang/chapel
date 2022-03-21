@@ -47,7 +47,7 @@ class VarArgFormal final : public VarLikeDecl {
  private:
   int countChildNum_;
 
-  VarArgFormal(ASTList children, int attributesChildNum, UniqueString name,
+  VarArgFormal(AstList children, int attributesChildNum, UniqueString name,
                Formal::Intent intent,
                int8_t typeExpressionChildNum,
                int8_t countChildNum)

@@ -52,12 +52,12 @@ namespace uast {
 
 class Sync final : public SimpleBlockLike {
  private:
-  Sync(ASTList stmts, BlockStyle blockStyle, int bodyChildNum,
+  Sync(AstList stmts, BlockStyle blockStyle, int bodyChildNum,
        int numBodyStmts)
     : SimpleBlockLike(asttags::Sync, std::move(stmts), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(bodyChildNum_ >= 0);
   }
 
@@ -77,7 +77,7 @@ class Sync final : public SimpleBlockLike {
    */
   static owned<Sync> build(Builder* builder, Location loc,
                            BlockStyle blockStyle,
-                           ASTList stmts);
+                           AstList stmts);
 };
 
 

@@ -44,7 +44,7 @@ namespace uast {
  */
 class Record final : public AggregateDecl {
  private:
-  Record(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Record(AstList children, int attributesChildNum, Decl::Visibility vis,
          Decl::Linkage linkage,
          int linkageNameChildNum,
          UniqueString name,
@@ -79,7 +79,7 @@ class Record final : public AggregateDecl {
                              Decl::Linkage linkage,
                              owned<Expression> linkageName,
                              UniqueString name,
-                             ASTList contents);
+                             AstList contents);
 };
 
 

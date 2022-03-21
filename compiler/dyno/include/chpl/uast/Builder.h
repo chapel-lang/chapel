@@ -51,7 +51,7 @@ class Builder final {
 
   Context* context_;
   UniqueString filepath_;
-  ASTList topLevelExpressions_;
+  AstList topLevelExpressions_;
   std::vector<ErrorMessage> errors_;
 
   // note: notedLocations_ might have keys pointing to deleted uAST
@@ -119,20 +119,20 @@ class Builder final {
   // Use this in the parser to get a mutable view of a node's children so
   // that the node can be modified in place. Later we can also add a method
   // such as 'swapChildren' if we need it.
-  ASTList& mutableRefToChildren(AstNode* ast) {
+  AstList& mutableRefToChildren(AstNode* ast) {
     return ast->children_;
   }
 
   // Use this to take the children of an AST node. The AST node is marked
   // as owned because it is consumed.
-  ASTList takeChildren(owned<AstNode> ast) {
+  AstList takeChildren(owned<AstNode> ast) {
     auto ret = std::move(ast->children_);
     assert(ast->children_.size() == 0);
     return ret;
   }
 
-  // Use this to flatten top level blocks within an ASTList.
-  ASTList flattenTopLevelBlocks(ASTList lst);
+  // Use this to flatten top level blocks within an AstList.
+  AstList flattenTopLevelBlocks(AstList lst);
 
   /// \endcond
 };

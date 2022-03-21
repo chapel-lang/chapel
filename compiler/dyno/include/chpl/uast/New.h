@@ -53,7 +53,7 @@ class New : public Expression {
   };
 
  private:
-  New(ASTList children, New::Management management)
+  New(AstList children, New::Management management)
     : Expression(asttags::New, std::move(children)),
       management_(management) {}
 

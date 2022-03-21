@@ -53,7 +53,7 @@ namespace uast {
  */
 class MultiDecl final : public Decl {
  private:
-  MultiDecl(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  MultiDecl(AstList children, int attributesChildNum, Decl::Visibility vis,
             Decl::Linkage linkage)
     : Decl(asttags::MultiDecl, std::move(children), attributesChildNum,
            vis,
@@ -86,17 +86,17 @@ class MultiDecl final : public Decl {
                                 owned<Attributes> attributes,
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
-                                ASTList varDecls);
+                                AstList varDecls);
 
   /**
     Return a way to iterate over the contained VariableDecls and Comments.
    */
-  ASTListIteratorPair<Expression> declOrComments() const {
+  AstListIteratorPair<Expression> declOrComments() const {
     auto begin = numDeclOrComments()
         ? children_.begin() + declOrCommentChildNum()
         : children_.end();
     auto end = begin + numDeclOrComments();
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<Expression>(begin, end);
   }
 
   /**
@@ -119,12 +119,12 @@ class MultiDecl final : public Decl {
   /**
    Return a way to iterate over the contained Decls (ignoring Comments)
    */
-  ASTListNoCommentsIteratorPair<Decl> decls() const {
+  AstListNoCommentsIteratorPair<Decl> decls() const {
     auto begin = numDeclOrComments()
         ? children_.begin() + declOrCommentChildNum()
         : children_.end();
     auto end = begin + numDeclOrComments();
-    return ASTListNoCommentsIteratorPair<Decl>(begin, end);
+    return AstListNoCommentsIteratorPair<Decl>(begin, end);
   }
 
 };

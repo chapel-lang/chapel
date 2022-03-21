@@ -44,7 +44,7 @@ namespace uast {
  */
 class Union final : public AggregateDecl {
  private:
-  Union(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Union(AstList children, int attributesChildNum, Decl::Visibility vis,
         Decl::Linkage linkage,
         int linkageNameChildNum,
         UniqueString name,
@@ -82,7 +82,7 @@ class Union final : public AggregateDecl {
                             Decl::Linkage linkage,
                             owned<Expression> linkageName,
                             UniqueString name,
-                            ASTList contents);
+                            AstList contents);
 };
 
 

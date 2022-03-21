@@ -48,7 +48,7 @@ class Manage final : public SimpleBlockLike {
   int managerExprChildNum_;
   int numManagerExprs_;
 
-  Manage(ASTList stmts, int managerExprChildNum, int numManagerExprs,
+  Manage(AstList stmts, int managerExprChildNum, int numManagerExprs,
          BlockStyle blockStyle,
          int bodyChildNum,
          int numBodyStmts)
@@ -57,7 +57,7 @@ class Manage final : public SimpleBlockLike {
                       numBodyStmts),
       managerExprChildNum_(managerExprChildNum),
       numManagerExprs_(numManagerExprs) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(0 <= managerExprChildNum_);
     assert(managerExprChildNum_ < numChildren());
 
@@ -87,9 +87,9 @@ class Manage final : public SimpleBlockLike {
     Create and return a Manage containing the passed managers and statements.
   */
   static owned<Manage> build(Builder* builder, Location loc,
-                             ASTList managers,
+                             AstList managers,
                              BlockStyle blockStyle,
-                             ASTList stmts);
+                             AstList stmts);
 
   /**
     Iterate over the managers of this manage statement. They may be either
@@ -97,10 +97,10 @@ class Manage final : public SimpleBlockLike {
     the right-hand-side component is guaranteed to be a variable
     representing the managed resource.
   */
-  ASTListIteratorPair<Expression> managers() const {
+  AstListIteratorPair<Expression> managers() const {
     auto begin = children_.begin() + managerExprChildNum_;
     auto end = begin + numManagerExprs_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<Expression>(begin, end);
   }
 
   /**

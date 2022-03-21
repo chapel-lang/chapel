@@ -29,7 +29,7 @@ owned<Dot> Dot::build(Builder* builder,
                       Location loc,
                       owned<Expression> receiver,
                       UniqueString fieldName) {
-  ASTList list;
+  AstList list;
 
   list.push_back(std::move(receiver));
 

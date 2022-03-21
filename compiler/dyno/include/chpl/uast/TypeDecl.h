@@ -32,7 +32,7 @@ namespace uast {
  */
 class TypeDecl : public NamedDecl {
  protected:
-  TypeDecl(asttags::AstTag tag, ASTList children, int attributesChildNum,
+  TypeDecl(asttags::AstTag tag, AstList children, int attributesChildNum,
            Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
@@ -42,7 +42,7 @@ class TypeDecl : public NamedDecl {
                 linkageNameChildNum,
                 name) {
 
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool typeDeclContentsMatchInner(const TypeDecl* other) const {

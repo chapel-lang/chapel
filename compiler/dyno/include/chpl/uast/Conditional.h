@@ -44,7 +44,7 @@ namespace uast {
  */
 class Conditional final : public Expression {
  private:
-  Conditional(ASTList children,
+  Conditional(AstList children,
               BlockStyle thenBlockStyle,
               BlockStyle elseBlockStyle,
               bool isExpressionLevel)
@@ -52,7 +52,7 @@ class Conditional final : public Expression {
         thenBlockStyle_(thenBlockStyle),
         elseBlockStyle_(elseBlockStyle),
         isExpressionLevel_(isExpressionLevel) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
 
     assert(children_[thenBodyChildNum_]->isBlock());
 
@@ -157,7 +157,7 @@ class Conditional final : public Expression {
   /**
     Iterate over the statements in the then block of this conditional.
   */
-  ASTListIteratorPair<Expression> thenStmts() const {
+  AstListIteratorPair<Expression> thenStmts() const {
     return thenBlock()->stmts();
   }
 
@@ -206,11 +206,11 @@ class Conditional final : public Expression {
   /**
     Iterate over the statements in the else block of this conditional.
   */
-  ASTListIteratorPair<Expression> elseStmts() const {
+  AstListIteratorPair<Expression> elseStmts() const {
     const Block* elseB = elseBlock();
 
     if (elseB == nullptr) {
-      return ASTListIteratorPair<Expression>(children_.end(),
+      return AstListIteratorPair<Expression>(children_.end(),
                                              children_.end());
     }
 

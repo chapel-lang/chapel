@@ -34,7 +34,7 @@ namespace uast {
  */
 class IndexableLoop : public Loop {
  protected:
-  IndexableLoop(AstTag tag, ASTList children,
+  IndexableLoop(AstTag tag, AstList children,
                 int8_t indexChildNum,
                 int8_t iterandChildNum,
                 int8_t withClauseChildNum,
@@ -48,7 +48,7 @@ class IndexableLoop : public Loop {
       withClauseChildNum_(withClauseChildNum),
       isExpressionLevel_(isExpressionLevel) {
 
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(iterandChildNum >= 0);
   }
 

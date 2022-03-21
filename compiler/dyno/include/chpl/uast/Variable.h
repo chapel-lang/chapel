@@ -62,7 +62,7 @@ class Variable final : public VarLikeDecl {
   };
 
  private:
-  Variable(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Variable(AstList children, int attributesChildNum, Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
            UniqueString name,

@@ -40,12 +40,12 @@ owned<Function> Function::build(Builder* builder, Location loc,
                                 bool throws,
                                 bool primaryMethod,
                                 bool parenless,
-                                ASTList formals,
+                                AstList formals,
                                 owned<Expression> returnType,
                                 owned<Expression> where,
-                                ASTList lifetime,
+                                AstList lifetime,
                                 owned<Block> body) {
-  ASTList lst;
+  AstList lst;
 
   int attributesChildNum = -1;
   int linkageNameExprChildNum = -1;

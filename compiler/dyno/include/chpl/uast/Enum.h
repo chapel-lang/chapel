@@ -44,7 +44,7 @@ namespace uast {
  */
 class Enum final : public TypeDecl {
  private:
-  Enum(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Enum(AstList children, int attributesChildNum, Decl::Visibility vis,
        UniqueString name)
     : TypeDecl(asttags::Enum, std::move(children), attributesChildNum,
                vis,
@@ -84,17 +84,17 @@ class Enum final : public TypeDecl {
                            owned<Attributes> attributes,
                            Decl::Visibility vis,
                            UniqueString name,
-                           ASTList stmts);
+                           AstList stmts);
 
   /**
     Return a way to iterate over the EnumElements and Comments.
    */
-  ASTListIteratorPair<Expression> declOrComments() const {
+  AstListIteratorPair<Expression> declOrComments() const {
     auto begin = declOrCommentChildNum() >= 0
           ? children_.begin() + declOrCommentChildNum()
           : children_.end();
     auto end = begin + numDeclOrComments();
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<Expression>(begin, end);
   }
 
   /**
@@ -116,12 +116,12 @@ class Enum final : public TypeDecl {
   /**
    Return a way to iterate over the EnumElements (ignoring Comments)
    */
-  ASTListNoCommentsIteratorPair<EnumElement> enumElements() const {
+  AstListNoCommentsIteratorPair<EnumElement> enumElements() const {
     auto begin = declOrCommentChildNum() >= 0
           ? children_.begin() + declOrCommentChildNum()
           : children_.end();
     auto end = begin + numDeclOrComments();
-    return ASTListNoCommentsIteratorPair<EnumElement>(begin, end);
+    return AstListNoCommentsIteratorPair<EnumElement>(begin, end);
   }
 };
 

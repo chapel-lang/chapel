@@ -46,7 +46,7 @@ namespace uast {
  */
 class Catch final : public Expression {
  private:
-  Catch(ASTList children, int8_t errorChildNum, int8_t bodyChildNum,
+  Catch(AstList children, int8_t errorChildNum, int8_t bodyChildNum,
         bool hasParensAroundError)
     : Expression(asttags::Catch, std::move(children)),
       errorChildNum_(errorChildNum),
@@ -103,7 +103,7 @@ class Catch final : public Expression {
   /**
     Iterate over the statements contained in the body of this catch.
   */
-  ASTListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<Expression> stmts() const {
     return this->body()->stmts();
   }
 

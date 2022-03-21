@@ -43,9 +43,9 @@ namespace uast {
 class Domain final : public Expression {
  private:
   // TODO: Record if initializer list has trailing comma?
-  Domain(ASTList children)
+  Domain(AstList children)
     : Expression(asttags::Domain, std::move(children)) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -63,13 +63,13 @@ class Domain final : public Expression {
    Create and return a Domain expression.
    */
   static owned<Domain> build(Builder* builder, Location loc,
-                             ASTList exprs);
+                             AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this domain.
   */
-  ASTListIteratorPair<Expression> exprs() const {
-    return ASTListIteratorPair<Expression>(children_.begin(),
+  AstListIteratorPair<Expression> exprs() const {
+    return AstListIteratorPair<Expression>(children_.begin(),
                                            children_.end());
   }
 

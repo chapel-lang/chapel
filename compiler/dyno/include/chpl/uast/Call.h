@@ -39,11 +39,11 @@ class Call : public Expression {
   Call(AstTag tag)
     : Expression(tag), hasCalledExpression_(false) {
   }
-  Call(AstTag tag, ASTList children, bool hasCalledExpression)
+  Call(AstTag tag, AstList children, bool hasCalledExpression)
     : Expression(tag, std::move(children)),
       hasCalledExpression_(hasCalledExpression) {
 
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool callContentsMatchInner(const Call* other) const {
@@ -58,9 +58,9 @@ class Call : public Expression {
   /**
    Returns an iterable expression over the actuals of a call.
    */
-  ASTListIteratorPair<Expression> actuals() const {
+  AstListIteratorPair<Expression> actuals() const {
     return
-      ASTListIteratorPair<Expression>(children_.begin()+hasCalledExpression_,
+      AstListIteratorPair<Expression>(children_.begin()+hasCalledExpression_,
                                       children_.end());
   }
 

@@ -32,7 +32,7 @@ namespace uast {
 */
 class Zip final : public Call {
  private:
-  Zip(ASTList children)
+  Zip(AstList children)
     : Call(asttags::Zip, std::move(children),
            /*hasCalledExpression*/ false) {
   }
@@ -51,7 +51,7 @@ class Zip final : public Call {
   /**
     Create and return a zip expression.
   */
-  static owned<Zip> build(Builder* builder, Location loc, ASTList actuals);
+  static owned<Zip> build(Builder* builder, Location loc, AstList actuals);
 
 };
 

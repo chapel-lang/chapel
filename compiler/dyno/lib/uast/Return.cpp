@@ -27,7 +27,7 @@ namespace uast {
 
 owned<Return> Return::build(Builder* builder, Location loc,
                             owned<Expression> value) {
-  ASTList lst;
+  AstList lst;
   int8_t valueChildNum = -1;
 
   if (value.get() != nullptr) {

@@ -26,7 +26,7 @@ namespace chpl {
 namespace uast {
 
 
-bool updateASTList(ASTList& keep, ASTList& addin) {
+bool updateAstList(AstList& keep, AstList& addin) {
   /*
    It's kind of like swapping 'keep' and 'addin' but it tries
    to keep old AST nodes when they are the same. This allows
@@ -59,8 +59,8 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
     return AstNode::update(keep[0], addin[0]);
   }
 
-  ASTList newList;
-  ASTList junkList;
+  AstList newList;
+  AstList junkList;
 
   // Append the elements from addin to newList, but
   // if we find an existing element that matches,
@@ -178,13 +178,13 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
   return anyChanged;
 }
 
-void markASTList(Context* context, const ASTList& keep) {
+void markAstList(Context* context, const AstList& keep) {
   for (const auto& elt: keep) {
     context->markPointer(elt);
   }
 }
 
-bool isExpressionASTList(const ASTList& list) {
+bool isExpressionAstList(const AstList& list) {
   for (const auto& elt: list) {
     if (!elt->isExpression())
       return false;

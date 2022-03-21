@@ -41,9 +41,9 @@ namespace uast {
 */
 class Delete final : public Expression {
  private:
-  Delete(ASTList children)
+  Delete(AstList children)
     : Expression(asttags::Delete, std::move(children)) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -60,13 +60,13 @@ class Delete final : public Expression {
     Create and return a delete statement.
   */
   static owned<Delete> build(Builder* builder, Location loc,
-                             ASTList exprs);
+                             AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this delete statement.
   */
-  ASTListIteratorPair<Expression> exprs() const {
-    return ASTListIteratorPair<Expression>(children_.begin(),
+  AstListIteratorPair<Expression> exprs() const {
+    return AstListIteratorPair<Expression>(children_.begin(),
                                            children_.end());
   }
 

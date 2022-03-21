@@ -77,7 +77,7 @@ class TupleDecl final : public Decl {
   int typeExpressionChildNum_;
   int initExpressionChildNum_;
 
-  TupleDecl(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  TupleDecl(AstList children, int attributesChildNum, Decl::Visibility vis,
             Decl::Linkage linkage,
             IntentOrKind intentOrKind,
             int numElements,
@@ -123,7 +123,7 @@ class TupleDecl final : public Decl {
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
                                 IntentOrKind intentOrKind,
-                                ASTList elements,
+                                AstList elements,
                                 owned<Expression> typeExpression,
                                 owned<Expression> initExpression);
 
@@ -136,12 +136,12 @@ class TupleDecl final : public Decl {
     Return a way to iterate over the contained Decls
     (which are each Variables or TupleDecls).
    */
-  ASTListIteratorPair<Decl> decls() const {
+  AstListIteratorPair<Decl> decls() const {
     auto begin = numDecls()
         ? children_.begin() + declChildNum()
         : children_.end();
     auto end = begin + numDecls();
-    return ASTListIteratorPair<Decl>(begin, end);
+    return AstListIteratorPair<Decl>(begin, end);
   }
 
   /**

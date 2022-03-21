@@ -54,7 +54,7 @@ namespace uast {
  */
 class Try final : public Expression {
  private:
-  Try(ASTList children, int numBodyStmts, int numHandlers,
+  Try(AstList children, int numBodyStmts, int numHandlers,
       bool isExpressionLevel,
       bool isTryBang)
         : Expression(asttags::Try, std::move(children)),
@@ -95,8 +95,8 @@ class Try final : public Expression {
   /**
     Create and return a try statement.
   */
-  static owned<Try> build(Builder* builder, Location loc, ASTList stmts,
-                          ASTList catches,
+  static owned<Try> build(Builder* builder, Location loc, AstList stmts,
+                          AstList catches,
                           bool isTryBang);
 
   /**
@@ -110,11 +110,11 @@ class Try final : public Expression {
   /**
     Iterate over the statements contained in this try.
   */
-  ASTListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<Expression> stmts() const {
     auto begin = numBodyStmts_ ? children_.begin() + bodyChildNum_
                                : children_.end();
     auto end = begin + numBodyStmts_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<Expression>(begin, end);
   }
 
   /**
@@ -137,11 +137,11 @@ class Try final : public Expression {
   /**
     Iterate over the catch blocks contained in this try.
   */
-  ASTListIteratorPair<Catch> handlers() const {
+  AstListIteratorPair<Catch> handlers() const {
     auto begin = numHandlers_ ? children_.begin() + numBodyStmts_
                               : children_.end();
     auto end = begin + numHandlers_;
-    return ASTListIteratorPair<Catch>(begin, end);
+    return AstListIteratorPair<Catch>(begin, end);
   }
 
   /**

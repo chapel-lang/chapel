@@ -47,13 +47,13 @@ namespace uast {
  */
 class Cobegin final : public Expression {
  private:
-  Cobegin(ASTList children, int8_t withClauseChildNum, int bodyChildNum,
+  Cobegin(AstList children, int8_t withClauseChildNum, int bodyChildNum,
           int numTaskBodies)
     : Expression(asttags::Cobegin, std::move(children)),
       withClauseChildNum_(withClauseChildNum),
       bodyChildNum_(bodyChildNum),
       numTaskBodies_(numTaskBodies) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -90,7 +90,7 @@ class Cobegin final : public Expression {
   */
   static owned<Cobegin> build(Builder* builder, Location loc,
                               owned<WithClause> withClause,
-                              ASTList taskBodies);
+                              AstList taskBodies);
 
   /**
     Returns the with clause of this cobegin statement, or nullptr if there
@@ -106,10 +106,10 @@ class Cobegin final : public Expression {
   /**
     Return a way to iterate over the task bodies.
    */
-  ASTListIteratorPair<Expression> taskBodies() const {
+  AstListIteratorPair<Expression> taskBodies() const {
     auto begin = children_.begin() + bodyChildNum_;
     auto end = begin + numTaskBodies_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<Expression>(begin, end);
   }
 
   /**

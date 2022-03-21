@@ -10810,7 +10810,7 @@ yyreduce:
   case 642: /* call_expr: call_base_expr TLP opt_actual_ls TRP  */
 #line 3407 "chpl.ypp"
     {
-      ASTList actuals;
+      AstList actuals;
       std::vector<UniqueString> actualNames;
       context->consumeNamedActuals((yyvsp[-1].maybeNamedActualList), actuals, actualNames);
       auto fnCall = FnCall::build(BUILDER, LOC((yyloc)),
@@ -10826,7 +10826,7 @@ yyreduce:
   case 643: /* call_expr: call_base_expr TLSBR opt_actual_ls TRSBR  */
 #line 3419 "chpl.ypp"
     {
-      ASTList actuals;
+      AstList actuals;
       std::vector<UniqueString> actualNames;
       context->consumeNamedActuals((yyvsp[-1].maybeNamedActualList), actuals, actualNames);
       auto fnCall = FnCall::build(BUILDER, LOC((yyloc)),

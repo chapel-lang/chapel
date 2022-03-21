@@ -258,11 +258,11 @@ struct ParserContext {
   ParserExprList* appendList(ParserExprList* dst,
                              std::vector<ParserComment>* comments);
   ParserExprList* appendList(ParserExprList* dst, CommentsAndStmt cs);
-  ASTList consumeList(ParserExprList* lst);
-  ASTList consume(Expression* e);
+  AstList consumeList(ParserExprList* lst);
+  AstList consume(Expression* e);
 
   void consumeNamedActuals(MaybeNamedActualList* lst,
-                           ASTList& actualsOut,
+                           AstList& actualsOut,
                            std::vector<UniqueString>& namesOut);
 
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
@@ -376,7 +376,7 @@ struct ParserContext {
 
   BlockStyle determineBlockStyle(BlockOrDo blockOrDo);
 
-  ASTList consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst);
+  AstList consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst);
 
   owned<Block> consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst);
   owned<Block> consumeToBlock(YYLTYPE blockLoc, Expression* e);
@@ -498,7 +498,7 @@ struct ParserContext {
   Expression*
   buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
                         VisibilityClause::LimitationKind limitationKind,
-                        ASTList limitations);
+                        AstList limitations);
 
   CommentsAndStmt
   buildImportStmt(YYLTYPE locEverything, Decl::Visibility visibility,

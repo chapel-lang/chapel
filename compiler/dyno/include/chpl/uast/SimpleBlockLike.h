@@ -47,7 +47,7 @@ namespace uast {
  */
 class SimpleBlockLike : public Expression {
  protected:
-  SimpleBlockLike(AstTag tag, ASTList children, BlockStyle blockStyle,
+  SimpleBlockLike(AstTag tag, AstList children, BlockStyle blockStyle,
                   int bodyChildNum,
                   int numBodyStmts)
     : Expression(tag, std::move(children)),
@@ -55,7 +55,7 @@ class SimpleBlockLike : public Expression {
       bodyChildNum_(bodyChildNum),
       numBodyStmts_(numBodyStmts) {
 
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool simpleBlockLikeContentsMatchInner(const AstNode* other) const {
@@ -91,10 +91,10 @@ class SimpleBlockLike : public Expression {
   /**
     Return a way to iterate over the statements.
    */
-  ASTListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<Expression> stmts() const {
     auto begin = children_.begin() + bodyChildNum_;
     auto end = begin + numBodyStmts_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<Expression>(begin, end);
   }
 
   /**

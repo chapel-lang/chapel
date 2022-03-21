@@ -50,14 +50,14 @@ namespace uast {
  */
 class Serial final : public SimpleBlockLike {
  private:
-  Serial(ASTList children, int8_t condChildNum, BlockStyle blockStyle,
+  Serial(AstList children, int8_t condChildNum, BlockStyle blockStyle,
          int bodyChildNum,
          int numBodyStmts)
     : SimpleBlockLike(asttags::Serial, std::move(children), blockStyle,
                       bodyChildNum,
                       numBodyStmts),
       condChildNum_(condChildNum) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -86,7 +86,7 @@ class Serial final : public SimpleBlockLike {
   */
   static owned<Serial> build(Builder* builder, Location loc,
                              BlockStyle blockStyle,
-                             ASTList stmts);
+                             AstList stmts);
 
 
   /**
@@ -96,7 +96,7 @@ class Serial final : public SimpleBlockLike {
   static owned<Serial> build(Builder* builder, Location loc,
                              owned<Expression> condition,
                              BlockStyle blockStyle,
-                             ASTList stmts);
+                             AstList stmts);
 
   /**
     Returns the condition of this serial statement, or nullptr if there

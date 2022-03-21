@@ -45,9 +45,9 @@ namespace uast {
 */
 class WithClause final : public Expression {
  private:
-  WithClause(ASTList exprs)
+  WithClause(AstList exprs)
     : Expression(asttags::WithClause, std::move(exprs)) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -64,13 +64,13 @@ class WithClause final : public Expression {
     Create and return a with clause.
   */
   static owned<WithClause> build(Builder* builder, Location loc,
-                                 ASTList exprs);
+                                 AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this with clause.
   */
-  ASTListIteratorPair<Expression> exprs() const {
-    return ASTListIteratorPair<Expression>(children_.begin(),
+  AstListIteratorPair<Expression> exprs() const {
+    return AstListIteratorPair<Expression>(children_.begin(),
                                            children_.end());
   }
 

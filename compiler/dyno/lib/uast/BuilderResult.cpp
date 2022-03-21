@@ -88,7 +88,7 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   changed |= defaultUpdate(keep.errors_, addin.errors_);
 
   // update the ASTs
-  changed |= updateASTList(keep.topLevelExpressions_,
+  changed |= updateAstList(keep.topLevelExpressions_,
                            addin.topLevelExpressions_);
 
   std::unordered_map<ID, const AstNode*> newIdToAst;
@@ -114,10 +114,10 @@ void BuilderResult::mark(Context* context) const {
   filePath_.mark(context);
 
   // mark UniqueStrings in the ASTs
-  markASTList(context, topLevelExpressions_);
+  markAstList(context, topLevelExpressions_);
 
   // NOTE: pair.first.mark(context) is redundant in each of these b/c any
-  // ID (pair.first) will be marked by markASTList above
+  // ID (pair.first) will be marked by markAstList above
 
   // mark UniqueStrings in the Locations
   for (const auto& pair : idToLocation_) {

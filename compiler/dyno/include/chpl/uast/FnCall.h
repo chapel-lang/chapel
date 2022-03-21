@@ -56,7 +56,7 @@ class FnCall : public Call {
   std::vector<UniqueString> actualNames_;
   bool callUsedSquareBrackets_;
 
-  FnCall(ASTList children, std::vector<UniqueString> actualNames,
+  FnCall(AstList children, std::vector<UniqueString> actualNames,
          bool callUsedSquareBrackets)
     : Call(asttags::FnCall, std::move(children), /* hasCalledExpression */ 1),
       actualNames_(std::move(actualNames)),
@@ -93,13 +93,13 @@ class FnCall : public Call {
   static owned<FnCall> build(Builder* builder,
                              Location loc,
                              owned<Expression> calledExpression,
-                             ASTList actuals,
+                             AstList actuals,
                              std::vector<UniqueString> actualNames,
                              bool callUsedSquareBrackets);
   static owned<FnCall> build(Builder* builder,
                              Location loc,
                              owned<Expression> calledExpression,
-                             ASTList actuals,
+                             AstList actuals,
                              bool callUsedSquareBrackets);
   static owned<FnCall> build(Builder* builder,
                              Location loc,

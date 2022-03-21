@@ -38,7 +38,7 @@ class VarLikeDecl : public NamedDecl {
   int8_t typeExpressionChildNum_;
   int8_t initExpressionChildNum_;
 
-  VarLikeDecl(AstTag tag, ASTList children, int attributesChildNum,
+  VarLikeDecl(AstTag tag, AstList children, int attributesChildNum,
               Decl::Visibility vis,
               Decl::Linkage linkage,
               int linkageNameChildNum,

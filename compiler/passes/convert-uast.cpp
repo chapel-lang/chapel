@@ -214,7 +214,7 @@ struct Converter {
   /// SimpleBlockLikes ///
 
   BlockStmt*
-  createBlockWithStmts(uast::ASTListIteratorPair<uast::Expression> stmts) {
+  createBlockWithStmts(uast::AstListIteratorPair<uast::Expression> stmts) {
     BlockStmt* block = new BlockStmt();
     for (auto stmt: stmts) {
       Expr* e = convertAST(stmt);
@@ -226,7 +226,7 @@ struct Converter {
   }
 
   Expr*
-  singleExprFromStmts(uast::ASTListIteratorPair<uast::Expression> stmts) {
+  singleExprFromStmts(uast::AstListIteratorPair<uast::Expression> stmts) {
     Expr* ret = nullptr;
 
     for (auto stmt: stmts) {
@@ -1782,7 +1782,7 @@ struct Converter {
       else if (child->limitationKind() == uast::VisibilityClause::EXCEPT) {
         except=true;
       }
-      // convert the ASTList of renames
+      // convert the AstList of renames
       std::vector<PotentialRename*>* names = new std::vector<PotentialRename*>;
       for (auto lim:child->limitations()) {
         PotentialRename* name = convertRename(lim);

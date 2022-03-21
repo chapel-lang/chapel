@@ -42,7 +42,7 @@ namespace uast {
 class Tuple final : public Call {
  private:
   // TODO: Record trailing comma?
-  Tuple(ASTList children)
+  Tuple(AstList children)
     : Call(asttags::Tuple, std::move(children),
            /*hasCalledExpression*/ false) {
     assert(numChildren() >= 1);
@@ -64,7 +64,7 @@ class Tuple final : public Call {
   */
   static owned<Tuple> build(Builder* builder,
                             Location loc,
-                            ASTList exprs);
+                            AstList exprs);
 
 };
 

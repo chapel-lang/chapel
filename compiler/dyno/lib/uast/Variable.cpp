@@ -37,7 +37,7 @@ Variable::build(Builder* builder, Location loc,
                 bool isField,
                 owned<Expression> typeExpression,
                 owned<Expression> initExpression) {
-  ASTList lst;
+  AstList lst;
   int attributesChildNum = -1;
   int linkageNameChildNum = -1;
   int8_t typeExpressionChildNum = -1;

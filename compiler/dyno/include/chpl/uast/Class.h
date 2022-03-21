@@ -46,7 +46,7 @@ class Class final : public AggregateDecl {
  private:
   int parentClassChildNum_;
 
-  Class(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Class(AstList children, int attributesChildNum, Decl::Visibility vis,
         UniqueString name,
         int elementsChildNum,
         int numElements,
@@ -83,7 +83,7 @@ class Class final : public AggregateDecl {
                             Decl::Visibility vis,
                             UniqueString name,
                             owned<Expression> parentClass,
-                            ASTList contents);
+                            AstList contents);
 
   /**
     Return the Expression indicating the parent class or nullptr

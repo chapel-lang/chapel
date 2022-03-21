@@ -65,7 +65,7 @@ class VisibilityClause final : public Expression {
   };
 
  private:
-  VisibilityClause(ASTList children,  LimitationKind limitationKind,
+  VisibilityClause(AstList children,  LimitationKind limitationKind,
                    int numLimitations)
     : Expression(asttags::VisibilityClause, std::move(children)),
       limitationKind_(limitationKind),
@@ -113,7 +113,7 @@ class VisibilityClause final : public Expression {
   static owned<VisibilityClause> build(Builder* builder, Location loc,
                                        owned<Expression> symbol,
                                        LimitationKind limitationKind,
-                                       ASTList limitations);
+                                       AstList limitations);
 
   /**
     Get the symbol of this visibility clause. It may be a Dot, As,
@@ -135,12 +135,12 @@ class VisibilityClause final : public Expression {
   /**
     Return a way to iterate over the limitations of this visibility clause.
   */
-  ASTListIteratorPair<Expression> limitations() const {
+  AstListIteratorPair<Expression> limitations() const {
     auto begin = (numLimitations() > 0)
         ? children_.begin() + limitationChildNum_
         : children_.end();
     auto end = begin + numLimitations_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<Expression>(begin, end);
   }
 
   /**

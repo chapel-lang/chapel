@@ -25,7 +25,7 @@ namespace chpl {
 namespace uast {
 
 
-owned<Block> Block::build(Builder* builder, Location loc, ASTList stmts) {
+owned<Block> Block::build(Builder* builder, Location loc, AstList stmts) {
   const int bodyChildNum = 0;
   const int numBodyStmts = stmts.size();
 

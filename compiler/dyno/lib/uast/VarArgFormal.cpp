@@ -31,7 +31,7 @@ owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
                                         Formal::Intent intent,
                                         owned<Expression> typeExpression,
                                         owned<Expression> count) {
-  ASTList lst;
+  AstList lst;
   int attributesChildNum = -1;
   int8_t typeExpressionChildNum = -1;
   int8_t countChildNum = -1;

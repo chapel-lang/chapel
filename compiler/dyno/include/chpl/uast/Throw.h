@@ -42,7 +42,7 @@ namespace uast {
 */
 class Throw final : public Expression {
  private:
-  Throw(ASTList children)
+  Throw(AstList children)
       : Expression(asttags::Throw, std::move(children)) {
     assert(numChildren() == 1);
   }

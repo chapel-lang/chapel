@@ -32,7 +32,7 @@ owned<Reduce> Reduce::build(Builder* builder,
   assert(expr.get() != nullptr);
   assert(!op.isEmpty());
 
-  ASTList lst;
+  AstList lst;
 
   lst.push_back(std::move(expr));
 

@@ -43,9 +43,9 @@ namespace uast {
  */
 class Yield final : public Expression {
  private:
-  Yield(ASTList children)
+  Yield(AstList children)
     : Expression(asttags::Yield, std::move(children)) {
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
     assert(children_.size() == 1);
   }
 

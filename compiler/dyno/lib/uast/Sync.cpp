@@ -27,7 +27,7 @@ namespace uast {
 
 owned<Sync> Sync::build(Builder* builder, Location loc,
                         BlockStyle blockStyle,
-                        ASTList stmts) {
+                        AstList stmts) {
   const int bodyChildNum = 0;
   const int numBodyStmts = stmts.size();
 

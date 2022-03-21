@@ -69,10 +69,10 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
                                   TupleDecl::IntentOrKind intentOrKind,
-                                  ASTList elements,
+                                  AstList elements,
                                   owned<Expression> typeExpression,
                                   owned<Expression> initExpression) {
-  ASTList list;
+  AstList list;
   int attributesChildNum = -1;
   int numElements = 0;
   int typeExpressionChildNum = -1;

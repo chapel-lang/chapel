@@ -23,7 +23,7 @@ ALL_SRCS += dyno/lib/uast/*.cpp
 DYNO_UAST_SRCS =                                 \
   AggregateDecl.cpp \
   Array.cpp \
-  ASTList.cpp \
+  AstList.cpp \
   AstNode.cpp \
   AstTag.cpp \
   As.cpp \

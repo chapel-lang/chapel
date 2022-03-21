@@ -34,7 +34,7 @@ class Expression : public AstNode {
   Expression(asttags::AstTag tag)
     : AstNode(tag) {
   }
-  Expression(asttags::AstTag tag, ASTList children)
+  Expression(asttags::AstTag tag, AstList children)
     : AstNode(tag, std::move(children)) {
   }
   bool expressionContentsMatchInner(const Expression* other) const {

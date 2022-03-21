@@ -31,7 +31,7 @@ owned<Scan> Scan::build(Builder* builder, Location loc,
   assert(expr.get() != nullptr);
   assert(!op.isEmpty());
 
-  ASTList lst;
+  AstList lst;
 
   lst.push_back(std::move(expr));
 

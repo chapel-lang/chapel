@@ -45,7 +45,7 @@ namespace uast {
 */
 class Use final : public Expression {
  private:
-  Use(ASTList children, Decl::Visibility visibility)
+  Use(AstList children, Decl::Visibility visibility)
     : Expression(asttags::Use, std::move(children)),
       visibility_(visibility) {
     assert(numChildren() >= 1);
@@ -84,7 +84,7 @@ class Use final : public Expression {
   */
   static owned<Use> build(Builder* builder, Location loc,
                           Decl::Visibility visibility,
-                          ASTList visibilityClauses);
+                          AstList visibilityClauses);
 
   /**
     Return the visibility of this use statement.
@@ -96,8 +96,8 @@ class Use final : public Expression {
   /**
     Return a way to iterate over the visibility clauses.
   */
-  ASTListIteratorPair<VisibilityClause> visibilityClauses() const {
-    return ASTListIteratorPair<VisibilityClause>(children_.begin(),
+  AstListIteratorPair<VisibilityClause> visibilityClauses() const {
+    return AstListIteratorPair<VisibilityClause>(children_.begin(),
                                                  children_.end());
   }
 

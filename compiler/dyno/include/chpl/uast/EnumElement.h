@@ -41,7 +41,7 @@ namespace uast {
  */
 class EnumElement final : public NamedDecl {
  private:
-  EnumElement(ASTList children, int attributesChildNum,
+  EnumElement(AstList children, int attributesChildNum,
               UniqueString name)
     : NamedDecl(asttags::EnumElement, std::move(children),
                 attributesChildNum,
@@ -51,7 +51,7 @@ class EnumElement final : public NamedDecl {
                 name) {
 
     assert(children_.size() <= 2);
-    assert(isExpressionASTList(children_));
+    assert(isExpressionAstList(children_));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

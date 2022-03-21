@@ -57,7 +57,7 @@ class Formal final : public VarLikeDecl {
   };
 
  private:
-  Formal(ASTList children, int attributesChildNum, UniqueString name,
+  Formal(AstList children, int attributesChildNum, UniqueString name,
          Formal::Intent intent,
          int8_t typeExpressionChildNum,
          int8_t initExpressionChildNum)

@@ -21,7 +21,7 @@
 #define CHPL_UAST_ASTNODE_H
 
 #include "chpl/queries/ID.h"
-#include "chpl/uast/ASTList.h"
+#include "chpl/uast/AstList.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/util/memory.h"
@@ -60,7 +60,7 @@ class AstNode {
   ID id_;
 
  protected:
-  ASTList children_;
+  AstList children_;
 
   /**
     This function needs to be defined by subclasses.
@@ -82,7 +82,7 @@ class AstNode {
   AstNode(AstTag tag)
     : tag_(tag), id_(), children_() {
   }
-  AstNode(AstTag tag, ASTList children)
+  AstNode(AstTag tag, AstList children)
     : tag_(tag), id_(), children_(std::move(children)) {
   }
 
@@ -116,8 +116,8 @@ class AstNode {
   /**
     Return a way to iterate over the children.
     */
-  ASTListIteratorPair<AstNode> children() const {
-    return ASTListIteratorPair<AstNode>(children_.begin(), children_.end());
+  AstListIteratorPair<AstNode> children() const {
+    return AstListIteratorPair<AstNode>(children_.begin(), children_.end());
   }
 
   /**

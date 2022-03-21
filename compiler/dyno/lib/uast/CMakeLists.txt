@@ -20,7 +20,7 @@ target_sources(libdyno-obj
 
                AggregateDecl.cpp
                Array.cpp
-               ASTList.cpp
+               AstList.cpp
                AstNode.cpp
                AstTag.cpp
                As.cpp

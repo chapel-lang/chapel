@@ -386,7 +386,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Comment* node) {
-    // TODO: create a way to filter comments using an adapted ASTListIterator
+    // TODO: create a way to filter comments using an adapted AstListIterator
     // TODO: how to control when we want comments on/off
 
     //    do nothing for now, can be enabled with code below
