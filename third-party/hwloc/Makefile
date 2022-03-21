@@ -70,8 +70,9 @@ hwloc-config: FORCE
 # newer than $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag prevents make from
 # trying to do that step.
 #
-	touch -m -r  $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -d '+1 sec' $(HWLOC_SUBDIR)/README 2>/dev/null || \
-		touch -m -r $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -A '01' $(HWLOC_SUBDIR)/README
+	-touch -m -r  $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -d '+1 sec' $(HWLOC_SUBDIR)/README 2>/dev/null || \
+		touch -m -r $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -A '01' $(HWLOC_SUBDIR)/README 2>/dev/null || \
+		touch $(HWLOC_SUBDIR)/README
 #
 # Then configure
 #
