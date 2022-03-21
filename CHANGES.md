@@ -7,6 +7,7 @@ o URL docs check (1.26)
 o linebreak check
 o check compiler flags / man pages
 o check example codes
+o remove blank sections
 
 version 1.26.0
 ==============
@@ -19,7 +20,7 @@ Highlights (see subsequent sections for further details)
 * added a prototype ability to resize arrays of elements without default values
 * made stabilizing improvements to methods on ranges, domains, and arrays
 * added new 'CopyAggregation', 'Socket', and 'Channel' package modules
-* made stabilizing improvements to most standard library module interfaces
+* made stabilizing improvements to several standard library module interfaces
 * improved the portability, robustness, and performance of 'ofi' communication
 * expanded the generality of Chapel's ability to generate code for GPUs
 * added a new script for displaying available runtime configurations
@@ -40,7 +41,7 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-* modules from files listed on the command-line are now always initialized  
+* top-level modules defined in files on `chpl`'s command-line are now inited  
   (see https://chapel-lang.org/docs/1.26/language/spec/modules.html#module-initialization)
 * enabled implicit conversions from non-nilable to nilable for type arguments  
   (see https://chapel-lang.org/docs/1.26/language/spec/procedures.html#legal-argument-mapping)
@@ -73,7 +74,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * deprecated support for `|`, `&`, and `^` on rectangular domains
 * deprecated `domain.isSuper()` and `.isSubset()` for `domain.contains()`
-* deprecated support for arrays over bracket-less anonymous associative arrays  
+* deprecated support for arrays over brace-less anonymous associative domains  
   (e.g., in `var A: ["red", "green", "blue"] real;`, brackets are now required)
 * deprecated support for `ChapelEnv.CHPL_AUX_FILESYS`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/ChplConfig.html#ChplConfig.CHPL_AUX_FILESYS)
@@ -95,7 +96,7 @@ Name Changes in Libraries
 * renamed `regexMatch.offset` to `.byteOffset` and `.size` to `.numBytes`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Regex.html#Regex.regexMatch)
 * renamed `captures`/`maxmatches` args in 'Regex' to `numCaptures`/`maxMatches`
-* renamed the `list.indexOf()` method to `find()`  
+* renamed the `list.indexOf()` method to `list.find()`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/List.html#List.list.indexOf)
 * renamed several `set` method arguments from `x` to `element`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
@@ -195,7 +196,7 @@ Standard Domain Maps (Layouts and Distributions)
 
 Tool Improvements
 -----------------
-* added a script for displaying available runtime configurations  
+* added a new script for displaying available runtime configurations  
   (see `$CHPL_HOME/util/chplenv/printchplbuilds.py`)
 
 Performance Optimizations / Improvements
@@ -232,8 +233,8 @@ Syntax Highlighting
 
 Example Codes
 -------------
-* removed 'SSCA2' from the `test/release/examples/benchmarks` directory
-* removed `recordio.chpl` from the `test/release/examples/patterns` directory
+* removed 'benchmarks/ssca2' due to its use of old styles and lack of upkeep
+* removed `patterns/recordio.chpl` due to its use of `iostyle` (now deprecated)
 
 Portability
 -----------
