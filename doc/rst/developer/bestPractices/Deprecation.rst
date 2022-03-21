@@ -113,7 +113,7 @@ that responds to it to the deprecated function and its replacement:
    proc foo(): bool where fooReturnsBool { ... }
 
 When the deprecated function is removed, the flag should also be deprecated (and
-removed from the new function to avoid generating noise for the user:
+removed from the new function to avoid generating noise for the user):
 
 .. code-block:: chapel
 
@@ -154,9 +154,10 @@ ordering:
 
 In this case, we still want to generate warnings when the old argument name is
 used, but we want positional ordering to work without indicating anything has
-changed.  To accomplish this, mark the deprecated version with `pragma "last
-resort"` - this will avoid conflicts in the positional ordering case while still
-keeping the old argument name available to generate the deprecation warning:
+changed.  To accomplish this, mark the deprecated version with ``pragma "last
+resort"`` - this will avoid conflicts in the positional ordering case while
+still keeping the old argument name available to generate the deprecation
+warning:
 
 .. code-block:: chapel
 
@@ -230,7 +231,7 @@ using the old name:
    writeln(f.newName); // Should be 33
 
 While this strategy enables positional initialization calls to continue to work
-without adjustment, it does break named initialization calls, e.g ``new
+without adjustment, it does still break named initialization calls, e.g ``new
 Foo(oldName=30)``.  The only solution for this is to add an initializer overload
 with the old name that will generate a deprecation warning.  However, without
 support for opting in to maintaining the default initializer (which is planned
