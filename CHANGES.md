@@ -87,9 +87,6 @@ Deprecated / Unstable / Removed Language Features
 * removed deprecated support for operators declared using the `proc` keyword
 * removed all remaining vestiges of the `atomic` statement
 
-Namespace Changes
------------------
-
 Name Changes in Libraries
 -------------------------
 * renamed C type aliases `size_t`/`ssize_t` to `c_size_t`/`c_ssize_t`  
@@ -197,9 +194,6 @@ Package Modules
 * changed the 'TOML' package to sort keys when writing them out  
   (see https://chapel-lang.org/docs/1.26/modules/packages/TOML.html)
 
-Standard Domain Maps (Layouts and Distributions)
-------------------------------------------------
-
 Tool Improvements
 -----------------
 * added a new script for displaying available runtime configurations  
@@ -209,9 +203,6 @@ Performance Optimizations / Improvements
 ----------------------------------------
 * significantly improved fine-grained communication on Slingshot-11 networks
 * made promotions with slices more efficient with `-schpl_serializeSlices=true`
-
-Compilation-Time / Generated Code Improvements
-----------------------------------------------
 
 Memory Improvements
 -------------------
@@ -245,9 +236,6 @@ Documentation
   (see https://chapel-lang.org/docs//1.26/index.html)
 * added documentation for the `CHPL_LLVM_GCC_PREFIX` environment variable  
   (see https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#chpl-llvm)
-
-Syntax Highlighting
--------------------
 
 Example Codes
 -------------
@@ -285,19 +273,10 @@ Compiler Improvements
   (see https://chapel-lang.org/docs/1.26/usingchapel/prereqs.html#chapel-prerequisites  
    and https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#readme-chplenv-chpl-llvm)
 
-Compiler Flags
---------------
-
-Generated Executable Flags
---------------------------
-
 Runtime Library Changes
 -----------------------
 * made several portability and robustness improvements to `CHPL_COMM=ofi`
 * stopped `ofi` from making a fixed heap when no provider could use it
-
-Launchers
----------
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -341,12 +320,6 @@ Bug Fixes for Libraries
 -----------------------
 * fixed a bug with `bigint.removeFactor()` when `fac` is `0`
 
-Bug Fixes for Tools
--------------------
-
-Platform-specific Bug Fixes
----------------------------
-
 Third-Party Software Changes
 ----------------------------
 * updated the bundled copy of LLVM and clang to version 13
@@ -373,9 +346,6 @@ Developer-oriented changes: Module changes
 * simplified the barrier used to initialize locales
 * updated the 'Socket' module's operators to use the `operator` keyword
 * added `iostyleInternal` type for use when `iostyle` is required by developers
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -438,16 +408,10 @@ Developer-oriented changes: Platform-specific bug fixes
   - cleared `FI_INJECT` in `wrap_fi_writemsg()` for large messages
   - fixed the type of the second argument to `wrap_fi_writemsg()`
 
-Developer-oriented changes: Testing System
-------------------------------------------
-
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 * mason `.toml` files have sorted keys as a result of update to TOML package  
   (see https://chapel-lang.org/docs/1.26/modules/packages/TOML.html)
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 version 1.25.1
