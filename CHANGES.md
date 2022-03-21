@@ -1,16 +1,6 @@
 Release Changes List
 ====================
 
-o spellcheck
-o quotes check
-o URL docs check (1.26)
-o linebreak check
-o check compiler flags / man pages
-o check example codes
-o remove blank sections
-o initial caps?
-o no changes to 1.25.1 (other than two that were post-dated)
-
 version 1.26.0
 ==============
 
@@ -23,7 +13,7 @@ Highlights (see subsequent sections for further details)
 * made stabilizing improvements to methods on ranges, domains, and arrays
 * added new 'CopyAggregation', 'Socket', and 'Channel' package modules
 * made stabilizing improvements to several standard library module interfaces
-* improved the portability, robustness, and performance of 'ofi' communication
+* improved the portability, robustness, and performance of `ofi` communication
 * expanded the generality of Chapel's ability to generate code for GPUs
 * added a new script for displaying available runtime configurations
 * many other bug fixes and improvements to error messages and documentation
@@ -148,7 +138,7 @@ Deprecated / Removed Library Features
 * deprecated support for the `vectorizeOnly()` iterator  
   (see https://chapel-lang.org/docs/1.26/modules/standard/VectorizingIterator.html)
 * removed non-working `string.search()`/`bytes.search()` routines from 'Regex'
-* removed deprecated methods on the `file` type from the `Path` module
+* removed deprecated methods on the `file` type from the 'Path' module
 * removed deprecated 'Regexp' module
 * removed deprecated `regexp` type from the 'Regex' module
 * removed deprecated `RecordReader` initializer with `mRegexp` argument
@@ -229,7 +219,7 @@ Documentation
 * stopped documenting the `bigint.mpz` field  
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html#BigInteger.bigint)
 * improved the description of `c_void_ptr` in the 'Ctypes' documentation  
-  (see https://chapel-lang.org/docs/main/modules/standard/CTypes.html#CTypes.c_void_ptr)
+  (see https://chapel-lang.org/docs/1.26/modules/standard/CTypes.html#CTypes.c_void_ptr)
 * documented which elements are preserved in `set` operations with overlap  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
 * added a link to the online documentation index at the bottom of its sidebar  
@@ -239,7 +229,15 @@ Documentation
 
 Example Codes
 -------------
-* removed `benchmarks/ssca2` due to its use of old styles and lack of upkeep
+* updated the special methods primer to reflect when `hash()` methods are added  
+  (see https://chapel-lang.org/docs/1.26/primers/specialMethods.html)
+* updated the interoperability primer to make use of the new 'CTypes' module  
+  (see https://chapel-lang.org/docs/1.26/primers/interopWithC.html)
+* updated the list primer to reflect the new `.find()` method  
+  (see https://chapel-lang.org/docs/1.26/primers/listOps.html)
+* updated various `benchmarks` codes to use the new 'ChplConfig' module
+* updated `benchmarks/lcals/` to reduce usage of `vectorizeOnly()` (deprecated)
+* removed `benchmarks/ssca2/` due to its use of old styles and lack of upkeep
 * removed `patterns/recordio.chpl` due to its use of `iostyle` (now deprecated)
 
 Portability
