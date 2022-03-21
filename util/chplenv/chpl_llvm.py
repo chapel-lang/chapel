@@ -448,12 +448,32 @@ def get_system_llvm_built_sdkroot():
                             return path
     return None
 
+# Returns True if the workaround for issue #19217 should be applied
+# and False otherwise.
+# That workaround adds the Mac OS X system libc++ before the linker
+# search paths so that the system libc++ is used rather than a
+# libc++ that came with the system install of LLVM (e.g. from Homebrew).
+# Whether or not to try the workaround can be controlled by the variable
+#  CHPL_HOST_USE_SYSTEM_LIBCXX
 @memoize
-def apply_homebrew_workaround():
-    homebrew_prefix = chpl_platform.get_homebrew_prefix()
-    homebrew_var = overrides.get('CHPL_HOMEBREW_WORKAROUND', '')
+def use_system_libcxx_workaround():
+    host_platform = chpl_platform.get('host')
+    if host_platform == "darwin":
+        # If the variable for this is set to something other that '0' or 'no'
+        # then do the workaround.
+        # This variable exists to support building the Homebrew formula
+        # from source because during that build, `brew` is not available.
+        override_var = overrides.get('CHPL_HOST_USE_SYSTEM_LIBCXX', '')
+        if override_var != '':
+            return (override_var != "0" and override_var != "no")
 
-    return (homebrew_prefix or homebrew_var)
+        # otherwise, do the workaround if we detect homebrew
+        homebrew_prefix = chpl_platform.get_homebrew_prefix()
+
+        if homebrew_prefix:
+            return True
+
+    return False
 
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
@@ -615,10 +635,9 @@ def get_host_compile_args():
     if llvm_val == 'system':
         # On Mac OS X with Homebrew, apply a workaround for issue #19217.
         # This avoids finding headers in the libc++ installed by llvm@12 e.g.
-        host_platform = chpl_platform.get('host')
-        if host_platform == "darwin":
+        if use_system_libcxx_workaround():
             sdkroot = get_system_llvm_built_sdkroot()
-            if sdkroot and apply_homebrew_workaround():
+            if sdkroot:
                 system.append("-isysroot")
                 system.append(sdkroot)
                 system.append("-I" + os.path.join(sdkroot, "usr", "include"))
@@ -686,11 +705,11 @@ def get_host_link_args():
     if llvm_val == 'system':
         # On Mac OS X with Homebrew, apply a workaround for issue #19217.
         # This avoids linking with the libc++ installed by llvm@12 e.g.
-        host_platform = chpl_platform.get('host')
-        if host_platform == "darwin":
+        if use_system_libcxx_workaround():
             sdkroot = get_system_llvm_built_sdkroot()
-            if sdkroot and apply_homebrew_workaround():
-                # Note: -isysroot only affects includes and -Wl,-syslibroot seems to have no effect
+            if sdkroot:
+                # Note: -isysroot only affects includes
+                # and -Wl,-syslibroot seems to have no effect
                 system.append("-L" + os.path.join(sdkroot, "usr", "lib"))
 
         # Decide whether to try to link statically or dynamically.
