@@ -59,9 +59,9 @@ struct Converter {
     : context(context),
       modTag(modTag) {}
 
-  Expr* convertAST(const uast::ASTNode* node);
+  Expr* convertAST(const uast::AstNode* node);
 
-  Expr* convertExprOrNull(const uast::ASTNode* node) {
+  Expr* convertExprOrNull(const uast::AstNode* node) {
     if (node == nullptr)
       return nullptr;
 
@@ -70,7 +70,7 @@ struct Converter {
     return ret;
   }
 
-  Flag convertFlagForDeclLinkage(const uast::ASTNode* node) {
+  Flag convertFlagForDeclLinkage(const uast::AstNode* node) {
     if (auto decl = node->toDecl()) {
       switch (decl->linkage()) {
         case uast::Decl::EXTERN: return FLAG_EXTERN;
@@ -82,7 +82,7 @@ struct Converter {
     return FLAG_UNKNOWN;
   }
 
-  const char* astrFromStringLiteral(const uast::ASTNode* node) {
+  const char* astrFromStringLiteral(const uast::AstNode* node) {
     if (auto strLit = node->toStringLiteral()) {
       const char* ret = astr(strLit->str().c_str());
       return ret;
@@ -214,7 +214,7 @@ struct Converter {
   /// SimpleBlockLikes ///
 
   BlockStmt*
-  createBlockWithStmts(uast::AstListIteratorPair<uast::Expression> stmts) {
+  createBlockWithStmts(uast::AstListIteratorPair<uast::AstNode> stmts) {
     BlockStmt* block = new BlockStmt();
     for (auto stmt: stmts) {
       Expr* e = convertAST(stmt);
@@ -226,7 +226,7 @@ struct Converter {
   }
 
   Expr*
-  singleExprFromStmts(uast::AstListIteratorPair<uast::Expression> stmts) {
+  singleExprFromStmts(uast::AstListIteratorPair<uast::AstNode> stmts) {
     Expr* ret = nullptr;
 
     for (auto stmt: stmts) {
@@ -550,7 +550,7 @@ struct Converter {
     return nullptr;
   }
 
-  PotentialRename* convertRename(const uast::Expression* node) {
+  PotentialRename* convertRename(const uast::AstNode* node) {
     astlocMarker markAstLoc(node->id());
 
     PotentialRename* ret = new PotentialRename();
@@ -662,7 +662,7 @@ struct Converter {
   // 'addForallIntent' when adding converted children to the list, while
   // everything else will want to call 'addTaskIntent'.
   CallExpr* convertWithClause(const uast::WithClause* node,
-                              const uast::ASTNode* parent) {
+                              const uast::AstNode* parent) {
     if (node == nullptr) return nullptr;
 
     astlocMarker markAstLoc(node->id());
@@ -892,7 +892,7 @@ struct Converter {
     if (node->isExpressionLevel()) {
 
       INT_ASSERT(node->numStmts() == 1);
-      INT_ASSERT(node->stmt(0)->isExpression() && !node->stmt(0)->isBlock());
+      INT_ASSERT(!node->stmt(0)->isBlock());
       Expr* expr = convertAST(node->stmt(0));
 
       // Use this instead of 'TryStmt::build'.
@@ -1362,7 +1362,7 @@ struct Converter {
 
   /// Calls ///
 
-  Expr* convertCalledKeyword(const uast::Expression* node) {
+  Expr* convertCalledKeyword(const uast::AstNode* node) {
     astlocMarker markAstLoc(node->id());
 
     Expr* ret = nullptr;
@@ -1435,7 +1435,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::FnCall* node) {
-    const uast::Expression* calledExpression = node->calledExpression();
+    const uast::AstNode* calledExpression = node->calledExpression();
     INT_ASSERT(calledExpression);
 
     CallExpr* ret = nullptr;
@@ -1864,7 +1864,7 @@ struct Converter {
     return ret;
   }
 
-  Expr* convertLifetimeClause(const uast::Expression* node) {
+  Expr* convertLifetimeClause(const uast::AstNode* node) {
     astlocMarker markAstLoc(node->id());
 
     INT_ASSERT(node->isOpCall() || node->isReturn());
@@ -2375,7 +2375,7 @@ struct Converter {
 
     // If there is a bracket loop it is almost certainly an array type, so
     // special case it. Otherwise, just use the generic conversion call.
-    if (const uast::Expression* te = node->typeExpression()) {
+    if (const uast::AstNode* te = node->typeExpression()) {
       if (const uast::BracketLoop* bkt = te->toBracketLoop()) {
         typeExpr = convertArrayType(bkt);
       } else {
@@ -2385,7 +2385,7 @@ struct Converter {
 
     Expr* initExpr = nullptr;
 
-    if (const uast::Expression* ie = node->initExpression()) {
+    if (const uast::AstNode* ie = node->initExpression()) {
       const uast::BracketLoop* bkt = ie->toBracketLoop();
       if (bkt && node->kind() == uast::Variable::TYPE) {
           initExpr = convertArrayType(bkt);
@@ -2549,7 +2549,7 @@ struct Converter {
 };
 
 /// Generic conversion calling the above functions ///
-Expr* Converter::convertAST(const uast::ASTNode* node) {
+Expr* Converter::convertAST(const uast::AstNode* node) {
   astlocMarker markAstLoc(node->id());
   return node->dispatch<Expr*>(*this);
 }
