@@ -1361,15 +1361,20 @@ module ChapelDomain {
       manage statements to resize arrays of non-default-initializable
       element types after resizing their underlying domain.
 
-      Using this type in a manage statement will cause domain assignment
-      to occur before executing the statement body. The left-hand-side
-      of the assignment is the receiver domain that had ``unsafeAssign()``
-      called on it, while the right-hand-side is the `dom` formal of the
-      same call.
+      Using an instance of this type in a manage statement will cause domain
+      assignment to occur before executing the statement body. The
+      left-hand-side of the assignment is the receiver domain that had
+      ``unsafeAssign()`` called on it, while the right-hand-side is the
+      `dom` formal of the same call.
 
-      Methods on this type can be used within the manage statement body
-      to initialize new elements of non-default-initializable arrays
-      declared over the left-hand-side domain.
+      If the assignment adds new indices to the assigned domain, then
+      corresponding elements are added to arrays declared over it.
+      If an array's element type is non-default-initializable, then any
+      newly added elements remain uninitialized.
+
+      The ``initialize()`` method can be used within the manage statement
+      body to initialize new elements of non-default-initializable arrays
+      declared over the assigned domain.
     */
     record unsafeAssignManager {
       pragma "no doc"
@@ -1418,7 +1423,7 @@ module ChapelDomain {
       /*
         Returns ``true`` if this manager has runtime safety checks enabled.
       */
-      inline proc checks return _checks;
+      inline proc checks param return _checks;
 
       // Called by implementation code.
       pragma "no doc"
@@ -1571,12 +1576,12 @@ module ChapelDomain {
       /*
         Initialize a newly added array element at an index with a new value.
 
-        If checks is ``true`` and the array element at `idx` has already
-        been initialized, this method will halt. If checks is ``false``,
+        If `checks` is ``true`` and the array element at `idx` has already
+        been initialized, this method will halt. If `checks` is ``false``,
         then calling this method on an already initialized element will
         result in undefined behavior.
 
-        It is an error if `idx` is not a valid indice in `arr`.
+        It is an error if `idx` is not a valid index in `arr`.
       */
       proc initialize(arr: [?d], idx, in value: arr.eltType) {
 
@@ -1694,33 +1699,24 @@ module ChapelDomain {
     }
 
     /*
-      Return an instance of a :type:`unsafeAssignManager`.
+      Returns an instance of :type:`unsafeAssignManager`.
 
       The returned context manager can be used in a manage statement to
       assign the indices of `dom` into the receiver domain. Within the body
-      of the manage statement, the manager can update elements of
+      of the manage statement, the manager can initialize elements of
       non-default-initializable arrays declared over the receiver domain.
 
-      If the assignment adds new indices to the receiver domain, then
-      corresponding elements are added to arrays declared over it.
-      If an array's element type is non-default-initializable, then any
-      newly added elements remain uninitialized.
+      If `checks` is ``true``, this method will guarantee that:
 
-      Within the body of the manage statement, the ``initialize()`` method
-      of the :type:`unsafeAssignManager` may be used to initialize new
-      elements for arrays with non-default-initializable element types.
-
-      If `checks` is ``true``, this method will guarantee:
-
-        - That newly added elements of any non-default-initializable arrays
+        - Newly added elements of any non-default-initializable arrays
           declared over the receiver domain have been initialized by the
           end of the manage statement
-        - That newly added elements are only initialized once
+        - Newly added elements are only initialized once
 
-      These guarantees only hold if all initialization is done through
-      calls to the ``initialize()`` method. Performing operations on a newly
-      added array element causes undefined behavior until after
-      ``initialize()`` has been called.
+      These guarantees hold only for initialization done through calls to
+      the ``initialize()`` method on the context manager. Performing
+      any other operation on a newly added array element causes undefined
+      behavior until after ``initialize()`` has been called.
 
       For example:
 
