@@ -341,7 +341,6 @@ Regular Expression Types and Methods
  */
 module Regex {
   private use SysBasic, SysError, CTypes;
-  config param searchReturnsByteIndex = false;
 
 pragma "no doc"
 extern type qio_regex_t;
@@ -786,29 +785,28 @@ record regex {
     */
   //proc search(text: exprType, ref captures ...?k):regexMatch
 
-  proc search(text: exprType, ref captures ...?k)
+  proc search(text: exprType, ref captures ...?k):regexMatch
   {
-    if (searchReturnsByteIndex == false) {
-      return _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, true, captures);
-    } else {
-      var rm = _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, true, captures);
-      return rm.byteOffset; 
-    }
+    return _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, true, captures);
   }
+
 
   // documented in the captures version
   pragma "no doc"
-  proc search(text: exprType)
-  {
-    if (searchReturnsByteIndex == false) {
-      var dummy: int;
-      return _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy); 
-    } else {
+  proc search(text: exprType):regexMatch {
+    var dummy: int;
+    return _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy);
+
+  }
+
+
+  pragma "no doc"
+  proc find(text: exprType):byteIndex {
       var dummy: int;
       var rm = _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy);
       return rm.byteOffset;
-    }
   }
+
 
   /*
      Check for a match to this regular expression at the start of the passed
@@ -1184,17 +1182,31 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
   return compile(x);
 }
 
+// documented in the captures version
+pragma "no doc"
+proc string.find(pattern: regex(string)):byteIndex
+{
+    return pattern.find(this);
+}
+
 pragma "no doc"
 pragma "last resort"
 proc string.search(needle: regex(string)):regexMatch
 {
-  return needle.search(this);
+    return needle.search(this);
 }
-// documented in the captures version
+
 pragma "no doc"
 proc string.search(pattern: regex(string)):regexMatch
 {
-  return pattern.search(this);
+    return pattern.search(this);
+}
+
+// documented in the captures version
+pragma "no doc"
+proc bytes.find(pattern: regex(bytes)):byteIndex
+{
+  return pattern.find(this);
 }
 
 pragma "no doc"
@@ -1204,7 +1216,6 @@ proc bytes.search(needle: regex(bytes)):regexMatch
   return needle.search(this);
 }
 
-// documented in the captures version
 pragma "no doc"
 proc bytes.search(pattern: regex(bytes)):regexMatch
 {
@@ -1219,39 +1230,50 @@ proc string.search(needle: regex(string), ref captures ...?k):regexMatch
   return needle.search(this, (...captures));
 }
 
+deprecated "the search procedure is deprecated, use 'find' instead"
+proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
+{
+  return pattern.search(this, (...captures));
+}
+
 /* Search the receiving string for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
    :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
                   should be strings or types that strings can cast to.
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving string where a match occurred
+   :returns: a byteIndex representing the offset in the receiving string
+             where a match occurred
  */
-proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
+proc string.find(pattern: regex(string), ref captures ...?k):byteIndex
 {
-  return pattern.search(this, (...captures));
+  return pattern.find(this, (...captures));
 }
 
 pragma "last resort"
 deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
 proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
 {
-  return needle.search_rematch(this, (...captures));
+  return needle.search(this, (...captures));
 }
 
+proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
+{
+  return pattern.search(this, (...captures));
+}
 /* Search the receiving bytes for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
    :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
                   should be bytes or types that bytes can cast to.
-   :returns: an :record:`regexMatch` object representing the offset in the
+   :returns: a byteIndex representing the offset in the
              receiving bytes where a match occurred
  */
-proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
+deprecated "the search procedure is deprecated, use find instead"
+proc bytes.find(pattern: regex(bytes), ref captures ...?k):byteIndex
 {
-  return pattern.search(this, (...captures));
+  return pattern.find(this, (...captures));
 }
 
 // documented in the captures version
