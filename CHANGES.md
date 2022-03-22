@@ -43,8 +43,8 @@ Semantic Changes / Changes to Chapel Language
 * `.indices` queries on rectangular arrays now return a local domain of indices  
   (see https://chapel-lang.org/docs/1.26/language/spec/arrays.html#ChapelArray.indices)
 * `.size`/`.shape` queries on ranges, domains, arrays now return `int` values  
-  (see https://chapel-lang.org/docs/1.26/builtins/ChapelRange.html#ChapelRange.range.size,
-   https://chapel-lang.org/docs/1.26/language/spec/domains.html#ChapelDomain.size, and
+  (see https://chapel-lang.org/docs/1.26/builtins/ChapelRange.html#ChapelRange.range.size,  
+   https://chapel-lang.org/docs/1.26/language/spec/domains.html#ChapelDomain.size, and  
    https://chapel-lang.org/docs/1.26/language/spec/domains.html#ChapelDomain.shape, etc.)
 * stopped auto-creating `hash()` methods for records w/ custom `==`/`!=` ops  
   (see https://chapel-lang.org/docs/1.26/language/spec/records.html#hashing-a-record)
