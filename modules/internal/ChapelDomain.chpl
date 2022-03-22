@@ -1361,8 +1361,8 @@ module ChapelDomain {
       manage statements to resize arrays of non-default-initializable
       element types after resizing their underlying domain.
 
-      Using an instance of this type in a manage statement will cause domain
-      assignment to occur before executing the statement body. The
+      Using an instance of this type in a manage statement will cause a
+      domain assignment to occur before executing the statement body. The
       left-hand-side of the assignment is the receiver domain that had
       ``unsafeAssign()`` called on it, while the right-hand-side is the
       `dom` formal of the same call.
@@ -1375,6 +1375,10 @@ module ChapelDomain {
       The ``initialize()`` method can be used within the manage statement
       body to initialize new elements of non-default-initializable arrays
       declared over the assigned domain.
+
+      The new elements of default-initializable arrays over the assigned
+      domain will be default-initialized. They can be set to desired
+      values as usual, for example using an assignment operator.
     */
     record unsafeAssignManager {
       pragma "no doc"
