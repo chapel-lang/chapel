@@ -43,7 +43,9 @@ Semantic Changes / Changes to Chapel Language
 * `.indices` queries on rectangular arrays now return a local domain of indices  
   (see https://chapel-lang.org/docs/1.26/language/spec/arrays.html#ChapelArray.indices)
 * `.size`/`.shape` queries on ranges, domains, arrays now return `int` values  
-  (see https://chapel-lang.org/docs/1.26/builtins/ChapelRange.html#ChapelRange.range.size)
+  (see https://chapel-lang.org/docs/1.26/builtins/ChapelRange.html#ChapelRange.range.size,
+   https://chapel-lang.org/docs/1.26/language/spec/domains.html#ChapelDomain.size, and
+   https://chapel-lang.org/docs/1.26/language/spec/domains.html#ChapelDomain.shape, etc.)
 * stopped auto-creating `hash()` methods for records w/ custom `==`/`!=` ops  
   (see https://chapel-lang.org/docs/1.26/language/spec/records.html#hashing-a-record)
 * made it an error to overload return intents for the `enterThis()` method  
@@ -93,12 +95,12 @@ Name Changes in Libraries
 * renamed several `set` method arguments from `x` to `element`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
 * changed the formal names in the `Reflection.getField()` family of functions  
-  (see https://chapel-lang.org/docs/1.26/modules/standard/Reflection.html)
+  (see https://chapel-lang.org/docs/1.26/modules/standard/Reflection.html#Reflection.getFieldName)
 * renamed `Subprocess.send_signal()` to `Subprocess.sendPosixSignal()`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Subprocess.html#Subprocess.subprocess.sendPosixSignal)
 * changed 'Subprocess' pipe styles from a set of constants to an `enum`  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Subprocess.html#Subprocess.pipeStyle)
-* improved the names of many routines and arguments in the 'BigInteger' module
+* improved the names of many routines and arguments in the 'BigInteger' module  
   (see https://chapel-lang.org/docs/1.26/modules/standard/BigInteger.html)
   - renamed `bigint.mpzStruct()` to `bigint.getImpl()`
   - renamed `bigint.get_d_2exp()` to `bigint.getD2Exp()`
@@ -136,7 +138,7 @@ Deprecated / Removed Library Features
 * deprecated `style: iostyle` arguments from routines in 'IO', 'URL', 'Path'
 * deprecated `Error` subclass `BadRegexpError` from the 'Regex' module
 * deprecated support for the `vectorizeOnly()` iterator  
-  (see https://chapel-lang.org/docs/1.26/modules/standard/VectorizingIterator.html)
+  (see https://chapel-lang.org/docs/1.26/modules/standard/VectorizingIterator.html#VectorizingIterator.vectorizeOnly)
 * removed non-working `string.search()`/`bytes.search()` routines from 'Regex'
 * removed deprecated methods on the `file` type from the 'Path' module
 * removed deprecated 'Regexp' module
