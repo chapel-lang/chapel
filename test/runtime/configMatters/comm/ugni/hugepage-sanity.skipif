@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+
+# The .wrap file for this test is a bash script that needs the module
+# system to be set up already, although it's okay if it's set up for
+# some other shell.
+
+import os
+print(os.getenv('MODULESHOME') != None)
+
