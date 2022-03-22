@@ -1186,20 +1186,20 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
 pragma "no doc"
 proc string.find(pattern: regex(string)):byteIndex
 {
-    return pattern.find(this);
+  return pattern.find(this);
 }
 
 pragma "no doc"
 pragma "last resort"
 proc string.search(needle: regex(string)):regexMatch
 {
-    return needle.search(this);
+  return needle.search(this);
 }
 
 pragma "no doc"
 proc string.search(pattern: regex(string)):regexMatch
 {
-    return pattern.search(this);
+  return pattern.search(this);
 }
 
 // documented in the captures version
