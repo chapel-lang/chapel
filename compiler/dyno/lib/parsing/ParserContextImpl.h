@@ -1040,8 +1040,13 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
       // try to capture case of new A; (new without parens)
       this->raiseError(location, "type in 'new' expression is missing its argument list");
     } else if (expr->isDot() ) {
-      // try to capture case of new M.Q;
-      this->raiseError(location, "type in 'new' expression is missing its argument list");
+      // try to capture case of var z20a = new C().tmeth; and var z20c = new C()?.tmeth;
+      if (expr->toDot()->receiver()->isFnCall() || expr->toDot()->receiver()->isOpCall()) {
+        this->raiseError(location, "Please use parentheses to disambiguate dot expression after new");
+      } else {
+        // try to capture case of new M.Q;
+        this->raiseError(location, "type in 'new' expression is missing its argument list");
+      }
     } else {
       // It's an error for one reason or another. TODO: Specialize these
       // errors later (e.g. 'new a.field' would require parens around
