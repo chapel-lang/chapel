@@ -52,6 +52,7 @@ Chapel provides the following statements:
      serial-statement
      forall-statement
      delete-statement
+     manage-statement
 
 Individual statements are defined in the remainder of this chapter and
 additionally as follows:
@@ -89,6 +90,8 @@ additionally as follows:
 -  forall :ref:`Chapter-Data_Parallelism`
 
 -  delete :ref:`Class_Delete`
+
+-  manage :ref:`The_Manage_Statement`
 
 .. _Blocks:
 
@@ -992,4 +995,208 @@ given by
 
    empty-statement:
      ;
+
+.. _The_Manage_Statement:
+
+The Manage Statement
+--------------------
+
+The manage statement enables participating types to be used as
+context managers. The syntax of the manage statement is given by
+
+.. code-block:: syntax
+
+  manage-statement:
+    'manage' manager-expression-list 'do' statement
+    'manage' manager-expression-list block-statement
+
+  manager-expression-list:
+    manager-expression
+    manager-expression-list ',' manager-expression
+
+  manager-expression:
+    expression 'as' variable-kind identifier
+    expression 'as' identifier
+    expression
+
+Classes or records that wish to be used as context managers must
+define two special methods. The code sample below turns a record
+type named ``IntWrapper`` into a context manager and then uses it
+in a manage statement.
+
+   *Example (manage1.chpl)*.
+
+
+
+   .. code-block:: chapel
+
+      record IntWrapper {
+        var x: int;
+      }
+
+      proc IntWrapper.enterThis() ref: int {
+        writeln('entering');
+        writeln(this);
+        return this.x;
+      }
+
+      proc IntWrapper.leaveThis(in error: owned Error?) throws {
+        if error then throw error;
+        writeln('leaving');
+        writeln(this);
+      }
+
+      proc manageIntWrapper() {
+        var wrapper = new IntWrapper();
+        manage wrapper as val do val = 8;
+      }
+      manageIntWrapper();
+
+   produces the output
+
+   .. code-block:: printoutput
+
+      entering
+      (x = 0)
+      leaving
+      (x = 8)
+
+The ``enterThis()`` special method is called on the manager expression
+before executing the managed block (in the above example the manager
+expression is ``wrapper``). The method may return a type or value, or
+it may return ``void``.
+
+The resource returned by ``enterThis()`` can be captured by name so
+that it can be referred to within the scope of the managed block
+(in the above example the captured resource is ``val``).
+
+Capturing a returned resource is optional, and the syntax may be
+omitted. It is an error to try to capture a resource if
+``enterThis()`` returns ``void``.
+
+The storage of a captured resource may also be omitted, in which
+case it will be inferred from the return intent of the ``enterThis()``
+method (in the above example the storage of ``val`` is inferred
+to be ``ref``).
+
+Resource storage may also be specified explicitly.
+
+   *Example (manage2.chpl)*.
+
+
+
+   .. code-block:: chapel
+
+      record IntWrapper {
+        var x: int;
+      }
+
+      proc IntWrapper.enterThis() ref: int {
+        writeln('entering');
+        writeln(this);
+        return this.x;
+      }
+
+      proc IntWrapper.leaveThis(in error: owned Error?) throws {
+        if error then throw error;
+        writeln('leaving');
+        writeln(this);
+      }
+
+      proc manageIntWrapper() {
+        var wrapper = new IntWrapper();
+
+        // Here we explicitly declare the resource 'val' as 'var'.
+        manage wrapper as var val {
+          val = 8;
+        }
+      }
+      manageIntWrapper();
+
+   produces the output
+
+   .. code-block:: printoutput
+
+      entering
+      (x = 0)
+      leaving
+      (x = 0)
+
+Because the storage of ``val`` was specified as ``var``, the integer
+field of ``wrapper`` was not modified even though ``enterThis()``
+returns by ``ref``.
+
+.. note::
+
+  *Open issue:*
+
+    The ``enterThis()`` special method does not currently support the
+    use of return intent overloading (see :ref:`Return_Intent_Overloads`)
+    when the storage of a resource is omitted. Adding such support would
+    require additional disambiguation rules, and the value of doing so
+    is unclear at this time.
+
+Participating types must also define the ``leaveThis()`` method,
+which is called implicitly when the scope of the managed block
+is exited.
+
+The ``leaveThis()`` method takes an ``Error?`` by ``in`` intent. If
+the error is not ``nil``,  it may be handled within the method. It
+can also be propagated by annotating ``leaveThis()`` with the
+``throws`` tag and throwing the error.
+
+Multiple manager expressions may be present in a single manage
+statement.
+
+   *Example (manage3.chpl)*.
+
+
+
+   .. code-block:: chapel
+
+      record IntWrapper {
+        var x: int;
+      }
+
+      proc IntWrapper.enterThis() ref: int {
+        writeln('entering');
+        writeln(this);
+        return this.x;
+      }
+
+      proc IntWrapper.leaveThis(in error: owned Error?) throws {
+        if error then throw error;
+        writeln('leaving');
+        writeln(this);
+      }
+
+      proc manageIntWrapper() {
+        var wrapper1 = new IntWrapper(1);
+        var wrapper2 = new IntWrapper(2);
+
+        // Here we invoke two managers within a single manage statement.
+        manage wrapper1 as val1, wrapper2 as val2 {
+          val1 *= -1;
+          val2 *= -1;
+        }
+      }
+      manageIntWrapper();
+
+   produces the output
+
+   .. code-block:: printoutput
+
+      entering
+      (x = 1)
+      entering
+      (x = 2)
+      leaving
+      (x = -2)
+      leaving
+      (x = -1)
+
+Before executing the code in the body of the manage statement, the
+``enterThis()`` method is called on each manager from left to right.
+Upon exiting the managed scope, the ``leaveThis()`` method is called
+on each manager from right to left.
 

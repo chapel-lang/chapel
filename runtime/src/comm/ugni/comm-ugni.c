@@ -575,6 +575,7 @@ static mem_region_table_t** mem_regions_all_my_entry_map;
 static chpl_bool can_register_memory = false;
 
 static chpl_bool do_mr_extent_checks;
+static int cache_pagesize;
 
 //
 // The high bit of the 'len' member of a mem_region_t in the table
@@ -1900,6 +1901,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 
   do_mr_extent_checks = chpl_env_rt_get_bool("COMM_UGNI_DO_MR_EXTENT_CHECKS",
                                              true);
+  cache_pagesize = chpl_cache_pagesize();
 
   //
   // We have to create the local memory region table before the first
@@ -2772,7 +2774,7 @@ mem_region_t* mreg_for_local_addr(void* addr, size_t size)
   }
   if (do_mr_extent_checks && mr != NULL) {
     size_t mrLen = chpl_cache_enabled()
-                   ? ALIGN_UP(mrtl_len(mr->len), CACHE_LINE_SIZE)
+                   ? ALIGN_UP(mrtl_len(mr->len), cache_pagesize)
                    : mrtl_len(mr->len);
     if ((uint64_t) addr + size > mr->addr + mrLen) {
       CHPL_INTERNAL_ERROR("local xfer size extends beyond MR!");
@@ -2809,7 +2811,7 @@ mem_region_t* mreg_for_remote_addr(void* addr, size_t size, c_nodeid_t locale)
   }
   if (do_mr_extent_checks && mr != NULL) {
     size_t mrLen = chpl_cache_enabled()
-                   ? ALIGN_UP(mrtl_len(mr->len), CACHE_LINE_SIZE)
+                   ? ALIGN_UP(mrtl_len(mr->len), cache_pagesize)
                    : mrtl_len(mr->len);
     if ((uint64_t) addr + size > mr->addr + mrLen) {
       CHPL_INTERNAL_ERROR("remote xfer size extends beyond MR!");

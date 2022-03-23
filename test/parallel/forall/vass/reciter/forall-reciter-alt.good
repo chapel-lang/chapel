@@ -1,0 +1,7 @@
+forall-reciter-alt.chpl:13: error: forall loop over a recursive parallel iterator
+forall-reciter-alt.chpl:13: note: such loops are currently implemented only if
+  all their shadow variables have a ref or const ref intent
+$CHPL_HOME/modules/standard/FileSystem.chpl:nnnn: note: the parallel iterator is here
+forall-reciter-alt.chpl:13: note: a shadow variable may be implicit
+forall-reciter-alt.chpl:13: note: 'debug' shadow variable has 'const in' intent
+forall-reciter-alt.chpl:13: note: 'minCount' shadow variable has 'const in' intent

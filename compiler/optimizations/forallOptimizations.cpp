@@ -2354,6 +2354,10 @@ static void removeAggregationFromRecursiveForallHelp(BlockStmt *block) {
   for_alist(stmt, block->body) {
     if (CondStmt *condStmt = toCondStmt(stmt)) {
       SymExpr *condExpr = toSymExpr(condStmt->condExpr);
+      if (condExpr == nullptr)
+        if (CallExpr* call = toCallExpr(condStmt->condExpr))
+          if (call->isPrimitive(PRIM_CHECK_ERROR))
+            continue; // error check blocks should not have aggregation code
       INT_ASSERT(condExpr);
 
       Symbol *aggMarkerSym = condExpr->symbol();

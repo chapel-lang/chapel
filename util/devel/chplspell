@@ -87,7 +87,13 @@ DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst"
 # Any files whose full path relative to $CHPL_HOME has one of these as
 # a prefix will be skipped.  This setting has no impact on files
 # specified specifically on the command line.
-FILTEROUT="compiler/include/bison-chapel.h  \
+FILTEROUT="compiler/dyno/lib/parsing/bison-chpl-lib.cpp \
+           compiler/dyno/lib/parsing/bison-chpl-lib.h   \
+           compiler/dyno/lib/parsing/lexer-help.h       \
+           compiler/dyno/lib/parsing/flex-chpl-lib.cpp  \
+           compiler/dyno/lib/parsing/flex-chpl-lib.h    \
+           compiler/dyno/test               \
+           compiler/include/bison-chapel.h  \
            compiler/include/flex-chapel.h   \
            compiler/parser/bison-chapel.cpp \
            compiler/parser/flex-chapel.cpp  \
@@ -97,8 +103,7 @@ FILTEROUT="compiler/include/bison-chapel.h  \
            doc/rst/examples                 \
            modules/packages/HDF5.chpl       \
            modules/packages/LAPACK.chpl     \
-           modules/packages/NetCDF.chpl     \
-           compiler/next"
+           modules/packages/NetCDF.chpl"
 
 
 # Here endeth the configuration options.  The rest of the script

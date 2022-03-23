@@ -228,7 +228,7 @@ struct ChplSyntaxVisitor {
    * the old parser's `userSignature` field.
   */
   void printFunctionSignature(const Function* node) {
-    // TODO: Determine how the function signature should be formated
+    // TODO: Determine how the function signature should be formatted
     // e.g print return type and intent? what about where clause?
     // github issue: https://github.com/chapel-lang/chapel/issues/19411
     if (node->visibility() != Function::Visibility::DEFAULT_VISIBILITY) {

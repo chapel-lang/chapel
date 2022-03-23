@@ -23,8 +23,11 @@
 
 class BlockStmt;
 class BaseAST;
+class GotoStmt;
 class Expr;
 class FnSymbol;
+class ForallStmt;
+class LabelSymbol;
 class Symbol;
 
 void lowerErrorHandling();
@@ -36,5 +39,8 @@ Symbol* getErrorSymbolFromCheckErrorStmt(Expr* e);
 // Returns true for functions which should propagate errors
 // if they have throws within (i.e. are automatically throwing).
 bool canFunctionImplicitlyThrow(FnSymbol* fn);
+Symbol* findErrorVarForHandlerLabel(LabelSymbol* handlerLabel);
+// Builds the error handler if there isn't one.
+GotoStmt* gotoForallErrorHandler(ForallStmt* fs);
 
 #endif

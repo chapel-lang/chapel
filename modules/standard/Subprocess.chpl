@@ -1082,7 +1082,7 @@ module Subprocess {
   /*
     Request an abnormal termination of the child process.  The
     associated signal, `SIGABRT`, may be caught and handled by
-    the child process. See :proc:`subprocess.send_signal`.
+    the child process. See :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.abort() throws {
     try _throw_on_launch_error();
@@ -1091,7 +1091,7 @@ module Subprocess {
 
   /* Send the child process an alarm signal. The associated signal,
      `SIGALRM`, may be caught and handled by the child process. See
-     :proc:`subprocess.send_signal`.
+     :proc:`subprocess.sendPosixSignal`.
    */
   proc subprocess.alarm() throws {
     try _throw_on_launch_error();

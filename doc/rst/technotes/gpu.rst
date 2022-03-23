@@ -2,15 +2,14 @@
 
 .. default-domain:: chpl
 
-Support for GPU targeted code
-=============================
+GPU Programming
+===============
 
-Chapel includes preliminary work to target Nvidia GPUs using CUDA. This work is
+Chapel includes preliminary work to target NVidia GPUs using CUDA. This work is
 under active development and has not yet been tested under a wide variety of
-environments. We have tested it on systems with Nvidia Tesla P100 GPUs and CUDA
-11.0 and a system with Nvidia Tesla K20 GPUs with CUDA 10.2. The current
-implementation does not support multiple GPUs on one node and will only apply
-to certain ``forall`` and ``foreach`` loops.
+environments. We have tested it on systems with NVidia Tesla P100 GPUs and CUDA
+11.0 and a system with NVidia Ampere A100 GPUs with CUDA 11.6. The current
+implementation will only apply to certain ``forall`` and ``foreach`` loops.
 
 We also (currently) only support single-locale execution (i.e. Chapel must be
 compiled with ``CHPL_COMM=none``). We also require ``LLVM`` to be used as
@@ -21,9 +20,9 @@ Settings <readme-chplenv>`.
 Overview
 --------
 
-To deploy code to a GPU, put the relevant code in an 'on' statement targeting
+To deploy code to a GPU, put the relevant code in an ``on`` statement targeting
 the GPU locale (i.e. ``here.getChild(1)``). For a given locale, we represent the
-CPU as sublocale 0 and GPU(s) on the system as sublocales with positive IDs.
+CPU(s) as sublocale 0 and GPU(s) on the system as sublocales with positive IDs.
 
 Any arrays that are declared in the body of this ``on`` statement will be
 allocated into unified memory and will be accessible on the GPU. Chapel will
@@ -56,8 +55,8 @@ To compile a program simply execute ``chpl`` as normal. By default the generated
 code will target compute capability 6.0 (specifically by passing
 ``--cuda-gpu-arch=sm_60`` when invoking clang). If you would like to target a
 different compute capability (necessary for example, when targeting Tesla K20
-GPUs) you can pass ``--gpu-arch`` to ``chpl`` and specify a different value there.
-This may also be set using the ``CHPL_CUDA_ARCH`` environment variable.
+GPUs) you can pass ``--gpu-arch`` to ``chpl`` and specify a different value
+there.  This may also be set using the ``CHPL_CUDA_ARCH`` environment variable.
 
 If you would like to view debugging information you can pass ``--verbose`` to
 your generated executable. This output will show the invocation of CUDA kernel
@@ -68,9 +67,9 @@ Example
 -------
 
 The following example illustrates running a computation on a GPU as well as a
-CPU. When ``jacobi`` is called with a GPU locale it will allocate the arrays ``A``
-and ``B`` on the device memory of the GPU and we generate three GPU kernels for
-the ``forall`` loops in the function.
+CPU. When ``jacobi`` is called with a GPU locale it will allocate the arrays
+``A`` and ``B`` on the device memory of the GPU and we generate three GPU
+kernels for the ``forall`` loops in the function.
 
 .. code-block:: chapel
 
