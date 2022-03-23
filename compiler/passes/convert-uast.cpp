@@ -1472,6 +1472,7 @@ struct Converter {
       addArgsTo = ret;
     } else {
       ret = new CallExpr(convertAST(calledExpression));
+      ret->square = node->callUsedSquareBrackets();
       addArgsTo = ret;
     }
 
