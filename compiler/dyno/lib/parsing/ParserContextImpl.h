@@ -1039,6 +1039,9 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
     if (expr->isIdentifier() && expr->toIdentifier()->numChildren() == 0) {
       // try to capture case of new A; (new without parens)
       this->raiseError(location, "type in 'new' expression is missing its argument list");
+    } else if (expr->isDot() ) {
+      // try to capture case of new M.Q;
+      this->raiseError(location, "type in 'new' expression is missing its argument list");
     } else {
       // It's an error for one reason or another. TODO: Specialize these
       // errors later (e.g. 'new a.field' would require parens around
