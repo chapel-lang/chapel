@@ -5,5 +5,5 @@
 # some other shell.
 
 import os
-print(os.getenv('MODULESHOME') != None)
+print(os.getenv('MODULESHOME') == None)
 
