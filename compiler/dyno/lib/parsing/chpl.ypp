@@ -1207,10 +1207,10 @@ opt_label_ident:
 
 ident_fn_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = $1; ERROR(@$, "redefining reserved word 'none'"); }
+| TNONE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'none'"); }
 | TTHIS                    { $$ = $1; }
-| TFALSE                   { $$ = $1; ERROR(@$, "redefining reserved word 'false'"); }
-| TTRUE                    { $$ = $1; ERROR(@$, "redefining reserved word 'true'"); }
+| TFALSE                   { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'false'"); }
+| TTRUE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'true'"); }
 | internal_type_ident_def  { std::string msg = "attempt to redefine reserved type '";
                              msg += $1.c_str();
                              msg += "'";
@@ -1218,10 +1218,10 @@ ident_fn_def:
 
 ident_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = $1; ERROR(@$, "redefining reserved word 'none'"); }
+| TNONE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'none'"); }
 | TTHIS                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'this'"); }
-| TFALSE                   { $$ = $1; ERROR(@$, "redefining reserved word 'false'"); }
-| TTRUE                    { $$ = $1; ERROR(@$, "redefining reserved word 'true'"); }
+| TFALSE                   { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'false'"); }
+| TTRUE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'true'"); }
 | internal_type_ident_def  { std::string msg = "attempt to redefine reserved type '";
                              msg += $1.c_str();
                              msg += "'";
