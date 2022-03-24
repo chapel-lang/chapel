@@ -94,17 +94,15 @@ proc advance(dt) {
   for param i in 0..<numBodies {
     for param j in i+1..<numBodies {
       const dpos = bodies[i].pos - bodies[j].pos,
-            sumOfSq = sumOfSquares(dpos),
-            mag = dt / (sumOfSq*sqrt(sumOfSq));
+            mag = dt / sqrt(sumOfSquares(dpos))**3;
 
       bodies[i].vel -= dpos * bodies[j].mass * mag;
       bodies[j].vel += dpos * bodies[i].mass * mag;
     }
   }
 
-  for param i in 0..<numBodies {
+  for param i in 0..<numBodies do
     bodies[i].pos += dt * bodies[i].vel;
-  }
 }
 
 //
