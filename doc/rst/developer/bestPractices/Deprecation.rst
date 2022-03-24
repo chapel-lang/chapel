@@ -163,7 +163,9 @@ warning:
 
    pragma "last resort"
    deprecated "argument name 'a' is deprecated, use 'b' instead"
-   proc foo(a: int) { ... }
+   proc foo(a: int) {
+     foo(a); // Call function with new argument name
+   }
 
    proc foo(b: int) { ... }
 
