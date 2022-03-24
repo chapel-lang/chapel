@@ -66,7 +66,7 @@ var bodies = (/* sun */
                       mass =   5.15138902046611451e-05 * solarMass)
               );
 
-param numBodies = bodies.size;
+param numBodies = bodies.size;    // the number of bodies being simulated
 
 proc main() {
   initSun();                      // initialize the sun's velocity
