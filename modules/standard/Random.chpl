@@ -1191,14 +1191,8 @@ module Random {
         _lock();
 
         // Fisher-Yates shuffle
-        var count = PCGRandomStreamPrivate_count;
         for i in 0..#D.sizeAs(D.idxType) by -1 {
-          count += 1;
-          var k = randlc_bounded(D.idxType,
-                                 PCGRandomStreamPrivate_rngs,
-                                 seed, count,
-                                 0, i);
-
+          var k = PCGRandomStreamPrivate_getNext_noLock(D.idxType, 0, i);
           var j = i;
 
           // Strided case
@@ -1213,8 +1207,6 @@ module Random {
 
           arr[k] <=> arr[j];
         }
-
-        PCGRandomStreamPrivate_count = count;
 
         _unlock();
       }
@@ -1238,18 +1230,12 @@ module Random {
 
         _lock();
 
-        var count = PCGRandomStreamPrivate_count;
         for i in low..high {
-          count += 1;
-          var j = randlc_bounded(arr.domain.idxType,
-                                 PCGRandomStreamPrivate_rngs,
-                                 seed, count,
-                                 low, i);
+          var j = PCGRandomStreamPrivate_getNext_noLock(arr.domain.idxType,
+                                                        low, i);
           arr[i] = arr[j];
           arr[j] = i;
         }
-
-        PCGRandomStreamPrivate_count = count;
 
         _unlock();
       }
