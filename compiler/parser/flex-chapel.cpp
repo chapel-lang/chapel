@@ -3460,21 +3460,10 @@ static int processToken(yyscan_t scanner, int t) {
     }
 
     // this is here to remove extra space added between
-    // the end of an array formal and the closing paren.
+    // the end of a recognized keyword from the list below
+    // and a closing paren or dot.
     // e.g print maxIndex(A: [?D]) instead of maxIndex(A: [?D] )
-    if (t == TRP) {
-      auto last = captureString.back();
-      if (last == ' ' && captureString.length() > 1) {
-        if (captureString[captureString.length() - 2] == ']') {
-          captureString.pop_back();
-        }
-      }
-    }
-
-    // this is to remove an extra space that would be left behind
-    // if the word prior to the dot was one of the recognized keywords
-    // in the list below.
-    if (t == TDOT) {
+    if (t == TRP || t == TDOT) {
       auto last = captureString.back();
       if (last == ' ' && captureString.length() > 1) {
         captureString.pop_back();
