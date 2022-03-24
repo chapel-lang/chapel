@@ -167,8 +167,9 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
 
     if (tag == PRAGMA_UNKNOWN) {
       std::string msg;
-      msg += "Unrecognized compiler pragma: ";
+      msg += "unknown pragma: \"";
       msg += ret.c_str();
+      msg += "\"";
       noteError(loc, msg.c_str());
     } else {
 
