@@ -1459,6 +1459,8 @@ memleaksfull:
     - CG Adjust in-intent handling to fix a memleak (#17480)
   11/24/21:
     - Add module ConcurrentMap (#16704)
+  03/18/22:
+    - Avoid double-deinit upon throws from a forall loop (#19479)
 # End memleaksfull
 
 meteor:
