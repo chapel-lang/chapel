@@ -793,20 +793,12 @@ record regex {
 
   // documented in the captures version
   pragma "no doc"
-  proc search(text: exprType):regexMatch {
+  proc search(text: exprType):regexMatch
+  {
     var dummy: int;
     return _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy);
 
   }
-
-
-  pragma "no doc"
-  proc find(text: exprType):byteIndex {
-      var dummy: int;
-      var rm = _search_match(text, QIO_REGEX_ANCHOR_UNANCHORED, false, dummy);
-      return rm.byteOffset;
-  }
-
 
   /*
      Check for a match to this regular expression at the start of the passed
@@ -1186,7 +1178,7 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
 pragma "no doc"
 proc string.find(pattern: regex(string)):byteIndex
 {
-  return pattern.find(this);
+  return (pattern.search(this)).byteOffset;
 }
 
 pragma "no doc"
@@ -1206,7 +1198,7 @@ proc string.search(pattern: regex(string)):regexMatch
 pragma "no doc"
 proc bytes.find(pattern: regex(bytes)):byteIndex
 {
-  return pattern.find(this);
+  return (pattern.search(this)).byteOffset;
 }
 
 pragma "no doc"
@@ -1247,7 +1239,7 @@ proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
  */
 proc string.find(pattern: regex(string), ref captures ...?k):byteIndex
 {
-  return pattern.find(this, (...captures));
+  return (pattern.search(this, (...captures))).byteOffset;
 }
 
 pragma "last resort"
@@ -1257,6 +1249,7 @@ proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
   return needle.search(this, (...captures));
 }
 
+deprecated "the search procedure is deprecated, use find instead"
 proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
 {
   return pattern.search(this, (...captures));
@@ -1270,10 +1263,9 @@ proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
    :returns: a byteIndex representing the offset in the
              receiving bytes where a match occurred
  */
-deprecated "the search procedure is deprecated, use find instead"
 proc bytes.find(pattern: regex(bytes), ref captures ...?k):byteIndex
 {
-  return pattern.find(this, (...captures));
+  return (pattern.search(this, (...captures))).byteOffset;
 }
 
 // documented in the captures version
@@ -1359,7 +1351,7 @@ iter string.split(sep: regex(string), maxsplit: int = 0)
 }
 
 pragma "no doc"
-pragma "last resport"
+pragma "last resort"
 deprecated "the split function with pattern argument is deprecated use sep instead"
 iter bytes.split(pattern: regex(bytes), maxsplit: int = 0)
 {
