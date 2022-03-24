@@ -3471,6 +3471,16 @@ static int processToken(yyscan_t scanner, int t) {
       }
     }
 
+    // this is to remove an extra space that would be left behind
+    // if the word prior to the dot was one of the recognized keywords
+    // in the list below.
+    if (t == TDOT) {
+      auto last = captureString.back();
+      if (last == ' ' && captureString.length() > 1) {
+        captureString.pop_back();
+      }
+    }
+
     if (t != TLCBR && t != TRETURN) {
       captureString.append(yyget_text(scanner));
     }
