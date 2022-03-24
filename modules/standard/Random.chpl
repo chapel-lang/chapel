@@ -1643,8 +1643,8 @@ module Random {
       var cursor = randlc_skipto(resultType, seed, start);
       var count = start;
       for i in D {
-        count += 1;
         yield randlc_bounded(resultType, cursor, seed, count, min, max);
+        count += 1;
       }
     }
 
@@ -1679,8 +1679,8 @@ module Random {
           var cursor = randlc_skipto(resultType, seed, myStart);
           var count = myStart;
           for i in innerRange {
-            count += 1;
             yield randlc_bounded(resultType, cursor, seed, count, min, max);
+            count += 1;
           }
         } else {
           myStart -= innerRange.low.safeCast(int(64));
