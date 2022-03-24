@@ -1627,13 +1627,11 @@ struct Converter {
   }
 
   Expr* visit(const uast::PrimCall* node) {
-    CallExpr* call = new CallExpr(PRIM_ACTUALS_LIST);
-    SymExpr* se = buildStringLiteral(primTagToName(node->prim()));
-    call->insertAtTail(se);
-    for (auto actual : node->actuals()) {
-      call->insertAtTail(convertAST(actual));
-    }
-    return buildPrimitiveExpr(call);
+    CallExpr* call = new CallExpr(node->prim());
+      for (auto actual : node->actuals()) {
+        call->insertAtTail(convertAST(actual));
+      }
+    return call;
   }
 
   // Note that this conversion is for the reduce expression, and not for

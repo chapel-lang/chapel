@@ -82,7 +82,7 @@ iter DefaultRectangularArr.dsiPartialThese(param onlyDim,
     otherIdx,
     param tag: iterKind) where tag == iterKind.standalone &&
       __primitive("method call resolves", dom, "dsiPartialThese",
-                                          onlyDim, otherIdx, tag=tag) {
+                                          onlyDim, otherIdx, tag) {
     if rank == 1 then
       compilerError("dsiPartialThese on 1D array");
   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) do
@@ -257,7 +257,7 @@ iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx,
 iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag) where tag==iterKind.standalone &&
       __primitive("method call resolves", dom, "dsiPartialThese",
-                                          onlyDim, otherIdx, tag=tag) {
+                                          onlyDim, otherIdx, tag) {
   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
@@ -415,7 +415,7 @@ iter CSArr.dsiPartialThese(param onlyDim, otherIdx,
 iter CSArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag) where tag==iterKind.standalone &&
       __primitive("method call resolves", dom, "dsiPartialThese",
-                                          onlyDim, otherIdx[0], tag=tag) {
+                                          onlyDim, otherIdx[0], tag) {
   for i in dom.dsiPartialThese(onlyDim, otherIdx[0], tag=tag) {
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
@@ -579,7 +579,7 @@ iter LocCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
 iter LocCyclicDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
     where tag==iterKind.standalone &&
       __primitive("method call resolves", myBlock._value, "dsiPartialThese",
-                                          onlyDim, otherIdx, tag=tag) {
+                                          onlyDim, otherIdx, tag) {
 
   for i in myBlock._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
     yield i;
@@ -618,7 +618,7 @@ iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
 iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx, param tag)
     where tag==iterKind.standalone &&
           __primitive("method call resolves", locDom, "dsiPartialThese",
-                                              onlyDim, otherIdx, tag=tag) {
+                                              onlyDim, otherIdx, tag) {
 
   for i in locDom.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
     yield this(otherIdx.withIdx(onlyDim,i));
@@ -720,7 +720,7 @@ iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
 iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.standalone &&
       __primitive("method call resolves", myElems._value, "dsiPartialThese",
-                                          onlyDim, otherIdx, tag=tag) {
+                                          onlyDim, otherIdx, tag) {
 
   for i in indexDom.dsiPartialThese(onlyDim, otherIdx) {
     yield this(otherIdx.withIdx(onlyDim, i));

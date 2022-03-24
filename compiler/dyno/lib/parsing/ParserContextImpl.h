@@ -612,9 +612,13 @@ AstNode* ParserContext::buildPrimCall(YYLTYPE location,
       anyNames = true;
     }
   }
-  // first argument must be a string literal
+  // first argument must be a string literal, might be a cstring tho
   if (actuals.size() > 0) {
-    if (auto lit = actuals[0]->toStringLiteral()) {
+    if (auto lit = actuals[0]->toCStringLiteral()) {
+      primName = lit->str();
+      // and erase that element
+      actuals.erase(actuals.begin());
+    } else if (auto lit = actuals[0]->toStringLiteral()) {
       primName = lit->str();
       // and erase that element
       actuals.erase(actuals.begin());
