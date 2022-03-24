@@ -386,6 +386,10 @@ struct Converter {
       return new CallExpr(PRIM_TYPEOF, base);
     } else if (member == USTR("domain")) {
       return buildDotExpr(base, "_dom");
+    } else if (member == USTR("align")) {
+      return buildDotExpr(base, "chpl_align");
+    } else if (member == USTR("by")) {
+      return buildDotExpr(base, "chpl_by");
     } else {
       return buildDotExpr(base, member.c_str());
     }
