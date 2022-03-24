@@ -1577,7 +1577,7 @@ module Random {
     //
     pragma "no doc"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                               start: int(64)) {
+                                  start: int(64)) {
       var cursor = randlc_skipto(resultType, seed, start);
       for i in D do
         yield randlc(resultType, cursor);
@@ -1585,7 +1585,7 @@ module Random {
 
     pragma "no doc"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                               start: int(64), param tag: iterKind)
+                                  start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
       for block in D.these(tag=iterKind.leader) do
         yield block;
@@ -1593,7 +1593,8 @@ module Random {
 
     pragma "no doc"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                 start: int(64), param tag: iterKind, followThis)
+                                 start: int(64), param tag: iterKind,
+                                 followThis)
           where tag == iterKind.follower {
       use DSIUtil;
       param multiplier = 1;
