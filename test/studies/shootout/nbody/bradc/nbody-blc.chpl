@@ -5,11 +5,11 @@
    derived from the Chapel version by Albert Sidelnik and myself
 */
 
+use Math;                     // to get access to 'pi'
 
 config const n = 10000;       // The number of timesteps to simulate
 
-param pi = 3.141592653589793,
-      solarMass = 4 * pi * pi,
+param solarMass = 4 * pi * pi,
       daysPerYear = 365.24;
 
 
@@ -66,7 +66,7 @@ var bodies = (/* sun */
                       mass =   5.15138902046611451e-05 * solarMass)
               );
 
-param numBodies = 5;
+param numBodies = bodies.size;
 
 proc main() {
   initSun();                      // initialize the sun's velocity
