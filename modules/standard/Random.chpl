@@ -1045,7 +1045,7 @@ module Random {
         than creating a new stream for the purpose of the call.
 
         :arg arr: The array to be filled
-        :type arr: []
+        :type arr: `[] T`
       */
       proc fillRandom(arr: []) {
         if(!arr.isRectangular()) then
