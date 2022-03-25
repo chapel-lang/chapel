@@ -12,7 +12,7 @@ module B {
 }
 
 module C {
-  public use A only;
+  public use A only; // intentionally does nothing
 }
 
 module D {

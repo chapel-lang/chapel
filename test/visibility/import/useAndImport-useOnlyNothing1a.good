@@ -1,2 +1,4 @@
+useAndImport-useOnlyNothing1a.chpl:11: warning: 'public use A only;' has no effect
+note: try 'public import A;' or 'public use A as A only;'
 useAndImport-useOnlyNothing1a.chpl:21: In function 'main':
 useAndImport-useOnlyNothing1a.chpl:23: error: 'A' undeclared (first use this function)
