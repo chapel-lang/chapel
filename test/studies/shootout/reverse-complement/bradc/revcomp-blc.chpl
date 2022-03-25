@@ -9,7 +9,7 @@
 use IO;
 
 param eol = "\n".toByte();      // end-of-line, as an integer
-//             01234567890
+
 param cmpl = b"          \n                                                 "
             //      ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
            + b"     TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
