@@ -55,9 +55,10 @@ printstuff:
 #
 include src/Makefile.include
 
-
-# find children of src/$1 excluding the Makefile
-FIND_SUBDIRS = $(filter-out Makefile,$(notdir $(wildcard src/$(1)/*)))
+# find children of src/$1 excluding the Makefile. Result is comma-separated and quoted.
+COMMA :=,
+FIND_SUBDIRS = $(subst " ","$(COMMA) ",\
+	$(patsubst %,"%",$(sort $(strip $(filter-out Makefile,$(notdir $(wildcard src/$(1)/*)))))))
 
 # returns the makefile path if it exists, otherwise show error message with valid values
 # $1 - variable suffix, e.g. TASKS
@@ -66,7 +67,7 @@ FIND_MAKEFILE =\
     $(if $(wildcard src/$(2)/$(CHPL_MAKE_$(1))/Makefile.include),\
 		src/$(2)/$(CHPL_MAKE_$(1))/Makefile.include,\
 		$(error CHPL_$(1) = "$(CHPL_MAKE_$(1))" is invalid. \
-			Possible values are: $(call FIND_SUBDIRS,$(2))))
+			Possible values are:$(call FIND_SUBDIRS,$(2))))
 
 include $(call FIND_MAKEFILE,TASKS,tasks)
 include $(call FIND_MAKEFILE,THREADS,threads)
