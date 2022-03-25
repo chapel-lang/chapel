@@ -9,12 +9,10 @@
 use IO;
 
 param eol = "\n".toByte();      // end-of-line, as an integer
-
-var table: [0..127] uint(8);  // a table of complements
-
-for (src, dst) in zip(b"AaCcGgTtUuMmRrWwSsYyKkVvHhDdBbNn\n",
-                      b"TTGGCCAAAAKKYYWWSSRRMMBBDDHHVVNN\n") do
-  table[src] = dst;
+//             01234567890
+param cmpl = b"          \n                                                 "
+            //      ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
+           + b"     TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
 
 proc main(args: []) {
   const stdinBin = openfd(0).reader(iokind.native, locking=false,
@@ -79,5 +77,5 @@ proc revcomp(buf, start, hi) {
 
   // walk from both ends of the sequence, complementing and swapping
   forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
-    (buf[i], buf[j]) = (table[buf[j]], table[buf[i]]);
+    (buf[i], buf[j]) = (cmpl[buf[j]], cmpl[buf[i]]);
 }
