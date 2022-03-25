@@ -8,5 +8,5 @@ export CHPL_MEM=cstdlib
 export CHPL_TASKS=fifo
 export CHPL_LLVM=none
 export CHPL_SANITIZE=address
-export ASAN_OPTIONS=detect_leaks=0
+export ASAN_OPTIONS="use_sigaltstack=0,detect_leaks=0"
 export CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET=yes
