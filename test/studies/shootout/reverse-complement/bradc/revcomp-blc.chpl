@@ -6,12 +6,17 @@
    and the Chapel #2 version by myself and Ben Harshbarger
 */
 
+use IO;
+
 param eol = "\n".toByte();      // end-of-line, as an integer
 
-const table = createTable();    // create the table of code complements
+var table: 128*uint(8);  // a table of complements
 
-proc main(args: [] string) {
-  use IO;
+for (src, dst) in zip(b"AaCcGgTtUuMmRrWwSsYyKkVvHhDdBbNn\n",
+                      b"TTGGCCAAAAKKYYWWSSRRMMBBDDHHVVNN\n") do
+  table(src) = dst;
+
+proc main(args: []) {
   const stdinBin = openfd(0).reader(iokind.native, locking=false,
                                  hints = QIO_CH_ALWAYS_UNBUFFERED),
         stdoutBin = openfd(1).writer(iokind.native, locking=false,
@@ -23,14 +28,12 @@ proc main(args: [] string) {
       buf: [bufDom] uint(8),
       end = 0;
 
-  do {
-    const more = stdinBin.read(buf[end..]);
-    if more {
-      end = bufLen;
-      bufLen += min(1024**2, bufLen);
-      bufDom = {0..<bufLen};
-    }
-  } while more;
+  while true {
+    if !stdinBin.read(buf[end..]) then break;
+    end = bufLen;
+    bufLen += min(1024**2, bufLen);
+    bufDom = {0..<bufLen};
+  }
   end = stdinBin.offset()-1;
 
   // process the buffer a sequence at a time, working from the end
@@ -42,7 +45,7 @@ proc main(args: [] string) {
       lo -= 1;
 
     // reverse and complement the sequence once we find it
-    revcomp(buf[lo..hi]);
+    revcomp(buf, lo, hi);
 
     hi = lo - 1;
   }
@@ -52,10 +55,9 @@ proc main(args: [] string) {
 }
 
 
-proc revcomp(buf: [?inds]) {
+proc revcomp(buf, in start, hi) {
   param cols = 61;  // the number of characters per full row (including '\n')
-  var lo = inds.low,
-      hi = inds.high;
+  var lo = start;
 
   // skip past header line
   do {
@@ -77,27 +79,5 @@ proc revcomp(buf: [?inds]) {
 
   // walk from both ends of the sequence, complementing and swapping
   forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
-    (buf[i], buf[j]) = (table[buf[j]], table[buf[i]]);
-}
-
-
-proc createTable() {
-  // `pairs` compactly represents the table we're creating, where the
-  // first byte of each pair (in either case) maps to the second:
-  //   A|a -> T, C|c -> G, G|g -> C, T|t -> A, etc.
-  param pairs = b"ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN",
-        upperToLower = "a".toByte() - "A".toByte();
-
-  var table: [0..127] uint(8);
-
-  for i in pairs.indices by 2 {
-    const src = pairs[i],
-          dst = pairs[i+1];
-
-    table[src] = dst;
-    table[src+upperToLower] = dst;
-  }
-  table[eol] = eol;
-
-  return table;
+    (buf[i], buf[j]) = (table(buf[j]), table(buf[i]));
 }
