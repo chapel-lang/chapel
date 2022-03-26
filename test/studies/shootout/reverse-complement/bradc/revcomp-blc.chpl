@@ -8,13 +8,13 @@
 
 use IO;
 
-param eol = "\n".toByte();      // end-of-line, as an integer
+param eol = '\n'.toByte();      // end-of-line, as an integer
 
 param cmpl = b"          \n                                                 "
             //      ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
            + b"     TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
 
-config const readSize = 10;  // TODO: replace with 16384
+config const readSize = 16384; // 10000; // 10;  // 16384;  // TODO: replace with 16384
 
 proc main(args: []) {
   const stdinBin = openfd(0).reader(iokind.native, locking=false,
@@ -71,15 +71,15 @@ proc main(args: []) {
 //      stdoutBin.writeln("Fell off the end");
 //      stdoutBin.writeln("Fell off the end");
       seqNum += 1;
-      end = stdinBin.offset()-totProcessed;
+      const len = stdinBin.offset()-totProcessed;
       ////      stdoutBin.write("Sequence ", seqNum:string, " is:\n", buf[seqStart..<end]);
       /*
       stdoutBin.writeln("Final sequence starts at: ", seqStart:string);
-      stdoutBin.writeln("Final sequence ends at: ", end:string);
+      stdoutBin.writeln("Final sequence ends at: ", len:string);
       stdoutBin.writeln("Offset in stdin was: ", stdinBin.offset():string);
       stdoutBin.writeln("Tot read was: ", totProcessed:string);
 */
-      revcomp(stdoutBin, buf[seqStart..<end]);
+      revcomp(stdoutBin, buf[seqStart..#len]);
     }
   } while more;
 //  end = stdinBin.offset()-1;
