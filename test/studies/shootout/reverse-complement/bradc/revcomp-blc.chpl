@@ -35,7 +35,7 @@ proc main() {
     const start = end + 1,
           more = stdinBin.read(buf[start..#readSize]);
     if !more then
-      readSize = stdinBin.offset() - totRead;
+      readSize = stdinBin.offset() - totRead + 1;
     else
       totRead += readSize;
     if debug {
@@ -92,7 +92,7 @@ proc main() {
     } else {
       if debug then
         stdoutBin.writeln("*** Fell off the end");
-      end += 1;
+//      end += 1;
       seqNum += 1;
       const len = stdinBin.offset()-totProcessed;
       if debug {
