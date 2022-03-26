@@ -10,20 +10,22 @@ use IO;
 
 config const debug = false, rc = !debug;
 
-param eol = '\n'.toByte();      // end-of-line, as an integer
-
-param cmpl = b"          \n                                                 "
-            //      ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
-           + b"     TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
+param cmpl = b"                                                             " +
+             b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
+            //     ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
+            //     ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
 config var readSize = 16384, n: int; // 10;  // 16384;  // TODO: replace with 16384
 
-proc main() {
-  const stdinBin = openfd(0).reader(iokind.native, locking=false,
-                                 hints = QIO_CH_ALWAYS_UNBUFFERED),
-        stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                  hints=QIO_CH_ALWAYS_UNBUFFERED);
+const stdinBin  = openfd(0).reader(iokind.native, locking=false,
+                                   hints = QIO_CH_ALWAYS_UNBUFFERED),
+      stdoutBin = openfd(1).writer(iokind.native, locking=false,
+                                   hints=QIO_CH_ALWAYS_UNBUFFERED);
 
+var nextToPrint: atomic int = 1,
+    arrayCopied: atomic bool = false;
+
+proc main() {
   // read in the data using an incrementally growing buffer
   var bufSize = readSize,
       bufDom = {0..<bufSize},
@@ -57,8 +59,14 @@ proc main() {
           stdoutBin.writeln("*** Incrementing totProcessed by ", (end-seqStart):string);
         }
         totProcessed += end-seqStart;
-        if rc then
-          revcompCopy(stdoutBin, buf[seqStart..<end]);
+        // really want:
+        //   begin with (var seq = buf[seqStart..<end]) revcomp(stdoutBin, seq);
+        // Works, but shouldn't be necessary:
+//        sync {
+        begin revcomp(seqNum, buf[seqStart..<end]);
+        arrayCopied.waitFor(true);
+        arrayCopied.write(false);
+//        }
         seqStart = end;
         if debug then
           stdoutBin.writeln("*** looking for another");
@@ -109,21 +117,20 @@ proc main() {
 > Tot read was: 10262
 */
       if rc then
-        revcomp(stdoutBin, buf[seqStart..<end]);
+        revcomp(seqNum, buf[seqStart..<end]);
     }
   } while more;
 //  end = stdinBin.offset()-1;
 //  revcomp(stdoutBin, buf[0..end]);
 }
 
-proc revcompCopy(stdoutBin, in buf) {
-  revcomp(stdoutBin, buf);
-}
-
-proc revcomp(stdoutBin, buf) {
-  param cols = 61;  // the number of characters per full row (including '\n')
-  var lo = buf.indices.low,
-      hi = buf.indices.high;
+proc revcomp(seqID, in buf) {
+  var seq = buf;
+  arrayCopied.waitFor(false);
+  arrayCopied.write(true);
+  param eol  = '\n'.toByte();      // end-of-line, as an integer
+  var lo = seq.indices.low,
+      hi = seq.indices.high;
 
   if lo > hi then return;
   
@@ -145,5 +152,7 @@ proc revcomp(stdoutBin, buf) {
 //    stdoutBin.writeln("buf[lo] = ", buf[lo]);
 //    stdoutBin.writeln("buf[hi] = ", buf[hi]);
   }
+  nextToPrint.waitFor(seqID);
   stdoutBin.write(buf);
+  nextToPrint.add(1);
 }
