@@ -71,12 +71,14 @@ proc main(args: []) {
 //      stdoutBin.writeln("Fell off the end");
 //      stdoutBin.writeln("Fell off the end");
       seqNum += 1;
-      end = stdinBin.offset()-totProcessed+1;
+      end = stdinBin.offset()-totProcessed;
       ////      stdoutBin.write("Sequence ", seqNum:string, " is:\n", buf[seqStart..<end]);
+      /*
       stdoutBin.writeln("Final sequence starts at: ", seqStart:string);
       stdoutBin.writeln("Final sequence ends at: ", end:string);
       stdoutBin.writeln("Offset in stdin was: ", stdinBin.offset():string);
       stdoutBin.writeln("Tot read was: ", totProcessed:string);
+*/
       revcomp(stdoutBin, buf[seqStart..<end]);
     }
   } while more;
