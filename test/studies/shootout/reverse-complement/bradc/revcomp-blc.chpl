@@ -16,7 +16,7 @@ param cmpl = b"          \n                                                 "
             //      ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
            + b"     TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
 
-config var n, readSize = 16384; // 10;  // 16384;  // TODO: replace with 16384
+config var readSize = 16384, n: int; // 10;  // 16384;  // TODO: replace with 16384
 
 proc main() {
   const stdinBin = openfd(0).reader(iokind.native, locking=false,
@@ -28,27 +28,27 @@ proc main() {
   var bufSize = readSize,
       bufDom = {0..<bufSize},
       buf: [bufDom] uint(8),
-      seqNum, seqStart, totProcessed = 0, totRead = 0,
+      seqNum, seqStart, totProcessed, totRead = 0,
       end = -1;
 
   do {
-    const start = end+1,
+    const start = end + 1,
           more = stdinBin.read(buf[start..#readSize]);
     if !more then
-      readSize = stdinBin.offset() - totRead - 1;
+      readSize = stdinBin.offset() - totRead + 1;
     else
       totRead += readSize;
     if debug {
       stdoutBin.writeln("*** Reading into buffer from ", start:string, "..", (start+readSize-1):string);
-      stdoutBin.writeln("*** Read: ", buf[start..#readSize]);
+      if readSize > 0 then
+        stdoutBin.writeln("*** Read: ", buf[start..#readSize]);
       stdoutBin.writeln("*** Looking for '>'");
     }
-    end+=1;
     do {
       end += 1;
       // TODO: Problem: We re-read the old leftover '>' from having
       // shifted the buffer
-      if buf[end] == '>'.toByte() {
+      if end != 0 && buf[end] == '>'.toByte() {
         if debug then
           stdoutBin.writeln("*** found one!");
         seqNum += 1;
@@ -92,13 +92,12 @@ proc main() {
     } else {
       if debug then
         stdoutBin.writeln("*** Fell off the end");
-      end+=2;
       seqNum += 1;
       const len = stdinBin.offset()-totProcessed;
       if debug {
         stdoutBin.write("*** Sequence ", seqNum:string, " is:\n", buf[seqStart..<end]);
         stdoutBin.writeln("*** Final sequence starts at: ", seqStart:string);
-        stdoutBin.writeln("*** Final sequence ends at: ", len:string);
+        stdoutBin.writeln("*** Final sequence ends at: ", (end-1):string);
         stdoutBin.writeln("*** Offset in stdin was: ", stdinBin.offset():string);
         stdoutBin.writeln("*** Tot read was: ", totProcessed:string);
       }
