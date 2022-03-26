@@ -46,7 +46,7 @@ def check_path(p):
     # These are common written-out alternatives, not paths
     if (p == "compiler/runtime" or p == "compiler/module" or
         p == "runtime/library" or p == "runtime/lib" or
-        p == "module/files" or p == "test/directory" ):
+        p == "modules/files" or p == "test/directory" ):
         return True
 
     # These show up in generated html files relative to a "modules"
