@@ -25,34 +25,42 @@ proc main(args: []) {
   var bufSize = readSize,
       bufDom = {0..<bufSize},
       buf: [bufDom] uint(8),
-      seqNum, seqStart, end = 0;
+      seqNum, seqStart, end, totRead = 0;
 
   do {
     const start = end,
           more = stdinBin.read(buf[start..#readSize]);
-    stdoutBin.writeln("Looking for '>'");
+//    stdoutBin.writeln("Looking for '>'");
     do {
       end += 1;
       if buf[end] == '>'.toByte() {
         seqNum += 1;
-        stdoutBin.write("Sequence ", seqNum:string, " is:\n", buf[seqStart..<end]);
-//        revcompCopy(stdoutBin, buf[seqStart..<end]);
+//        stdoutBin.write("Sequence ", seqNum:string, " is:\n", buf[seqStart..<end]);
+        revcompCopy(stdoutBin, buf[seqStart..<end]);
         seqStart = end;
       }
     } while end < start+readSize-1;
 
-    // if we processed one or more sequences, shift leftovers down
-    if (seqStart != 0) then
-      for (d,s) in zip(seqStart..<end, 0..) do
-        buf[d] = buf[s];
+    if more {
+      totRead += readSize;
+      // if we processed one or more sequences, shift leftovers down
+      if seqStart != 0 then
+        for (d,s) in zip(seqStart..<end, 0..) do
+          buf[d] = buf[s];
 
-    // resize if necessary
-    if end + readSize > bufSize {
-      bufSize *= 2;
-      bufDom = {0..<bufSize};
+      // resize if necessary
+      if end + readSize > bufSize {
+        bufSize *= 2;
+        bufDom = {0..<bufSize};
+      }
+    } else {
+//      stdoutBin.writeln("Fell off the end");
+      seqNum += 1;
+      end = stdinBin.offset()-totRead;
+//      stdoutBin.write("Sequence ", seqNum:string, " is:\n", buf[seqStart..<end]);
+      revcomp(stdoutBin, buf[seqStart..<end]);
     }
   } while more;
-  stdoutBin.writeln("Fell off the end");
 //  end = stdinBin.offset()-1;
 //  revcomp(stdoutBin, buf[0..end]);
 }
@@ -63,21 +71,21 @@ proc revcompCopy(stdoutBin, in buf) {
 
 proc revcomp(stdoutBin, buf) {
   param cols = 61;  // the number of characters per full row (including '\n')
-  var lo = 0,
-      hi = buf.size-1;
+  var lo = buf.indices.low,
+      hi = buf.indices.high;
 
   // skip past header line
   while buf[lo] != eol do
     lo += 1;
 
-  while lo <= hi {
+  while lo < hi {
     do {
       lo += 1;
     } while buf[lo] == eol;
     do {
       hi -= 1;
     } while buf[hi] == eol;
-
+    if lo < hi then
 //    stdoutBin.writeln("buf[lo] = ", buf[lo]);
 //    stdoutBin.writeln("buf[hi] = ", buf[hi]);
     (buf[lo], buf[hi]) = (cmpl(buf[hi]), cmpl(buf[lo]));
