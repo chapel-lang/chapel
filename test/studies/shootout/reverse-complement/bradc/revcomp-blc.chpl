@@ -2,8 +2,7 @@
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Brad Chamberlain
-   based on the C gcc #5 version by Mr Ledrug
-   and the Chapel #2 version by myself and Ben Harshbarger
+   based on the C gcc #6 version by Jeremy Zerfas
 */
 
 use IO;
@@ -12,26 +11,28 @@ const stdinBin  = openfd(0).reader(iokind.native, locking=false,
                                    hints = QIO_CH_ALWAYS_UNBUFFERED),
       stdoutBin = openfd(1).writer(iokind.native, locking=false,
                                    hints=QIO_CH_ALWAYS_UNBUFFERED);
+
+// A 'bytes' value that stores the complement of a base at its given index
 param cmpl = b"                                                             " +
              b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
             //     ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
             //     ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-config var readSize = 16384, n: int;
+config var readSize = 16384, // how much to read at a time
+           n = 0;            // a dummy variable to match the CLBG framework
 
-var nextToPrint: atomic int = 1,
-    arrayCopied: atomic bool = false;
+var seqToPrint, nextSeqID: atomic int = 0;
 
 proc main() {
   // read in the data using an incrementally growing buffer
   var bufSize = readSize,
       bufDom = {0..<bufSize},
       buf: [bufDom] uint(8),
-      seqNum, seqStart, totRead = 0,
+      seqStart, totRead = 0,
       end = -1;  // TODO: Can this be made into a 0...
 
   do {
-    const start = end + 1,  // TODO: ...to rop this + 1...
+    const start = end + 1,  // TODO: ...to drop this + 1...
           more = stdinBin.read(buf[start..#readSize]);
     if !more then
       readSize = stdinBin.offset() - totRead + 1;
@@ -41,13 +42,15 @@ proc main() {
     do {
       end += 1; // TODO: If we move this to the bottom of the loop?
       if end != 0 && buf[end] == '>'.toByte() {  // TODO: and drop this !=?
-        seqNum += 1;
-        // really want:
+        const seqID = nextSeqID.read();
+        // TODO: This latch is heavy-handed... we really want:
         //   begin with (var seq = buf[seqStart..<end])
         //     revcomp(stdoutBin, seq);
-        begin revcomp(seqNum, buf[seqStart..<end]);
-        arrayCopied.waitFor(true);
-        arrayCopied.write(false);
+        // or maybe even just:
+        //   begin revcomp(stoutBin, seq); ???
+        //
+        begin revcomp(seqID, buf[seqStart..<end]);
+        nextSeqID.waitFor(seqID+1);
         seqStart = end;
       }
     } while end < start+readSize-1;
@@ -68,15 +71,15 @@ proc main() {
       }
     }
   } while more;
-  seqNum += 1;
-  revcomp(seqNum, buf[seqStart..<end]);
+  revcomp(nextSeqID.read(), buf[seqStart..<end]);
 }
 
 proc revcomp(seqID, in buf) {
-  var seq = buf;
-  arrayCopied.waitFor(false);
-  arrayCopied.write(true);
   param eol  = '\n'.toByte();      // end-of-line, as an integer
+
+  var seq = buf;
+  nextSeqID.write(seqID+1);
+
   var lo = seq.indices.low,
       hi = seq.indices.high;
 
@@ -100,7 +103,7 @@ proc revcomp(seqID, in buf) {
 //    stdoutBin.writeln("buf[lo] = ", buf[lo]);
 //    stdoutBin.writeln("buf[hi] = ", buf[hi]);
   }
-  nextToPrint.waitFor(seqID);
+  seqToPrint.waitFor(seqID);
   stdoutBin.write(buf);
-  nextToPrint.add(1);
+  seqToPrint.add(1);
 }
