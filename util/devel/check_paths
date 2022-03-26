@@ -18,6 +18,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO: skip chips when not specifically invoked on one.  See
+# https://github.com/chapel-lang/chapel/pull/19513
+# Probably this will mean pulling the filesystem traversal into this
+# script instead of having -h suggest a find command.
+
 
 """Try to identify references to non-existent files, e.g. doc/foo
 instead of doc/rst/foo.  This script recognizes potential file
