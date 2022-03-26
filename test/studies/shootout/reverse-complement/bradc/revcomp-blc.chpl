@@ -21,61 +21,68 @@ proc main(args: []) {
                                   hints=QIO_CH_ALWAYS_UNBUFFERED);
 
   // read in the data using an incrementally growing buffer
-  var bufLen = 8 * 1024,
-      bufDom = {0..<bufLen},
+  param readSize = 16384;
+  var bufSize = readSize,
+      bufDom = {0..<bufSize},
       buf: [bufDom] uint(8),
-      end = 0;
+      seqNum, seqStart, end = 0;
 
-  while true {
-    if !stdinBin.read(buf[end..]) then break;
-    end = bufLen;
-    bufLen += min(1024**2, bufLen);
-    bufDom = {0..<bufLen};
-  }
-  end = stdinBin.offset()-1;
+  do {
+    const start = end,
+          more = stdinBin.read(buf[start..#readSize]);
+    stdoutBin.writeln("Looking for '>'");
+    do {
+      end += 1;
+      if buf[end] == '>'.toByte() {
+        seqNum += 1;
+        stdoutBin.write("Sequence ", seqNum:string, " is:\n", buf[seqStart..<end]);
+//        revcompCopy(stdoutBin, buf[seqStart..<end]);
+        seqStart = end;
+      }
+    } while end < start+readSize-1;
 
-  // process the buffer a sequence at a time, working from the end
-  var hi = end;
-  while (hi >= 0) {
-    // search for the '>' that marks the start of a sequence
-    var lo = hi;
-    while buf[lo] != '>'.toByte() do
-      lo -= 1;
+    // if we processed one or more sequences, shift leftovers down
+    if (seqStart != 0) then
+      for (d,s) in zip(seqStart..<end, 0..) do
+        buf[d] = buf[s];
 
-    // reverse and complement the sequence once we find it
-    revcomp(buf, lo, hi);
-
-    hi = lo - 1;
-  }
-
-  // write out the transformed buffer
-  stdoutBin.write(buf[..end]);
+    // resize if necessary
+    if end + readSize > bufSize {
+      bufSize *= 2;
+      bufDom = {0..<bufSize};
+    }
+  } while more;
+  stdoutBin.writeln("Fell off the end");
+//  end = stdinBin.offset()-1;
+//  revcomp(stdoutBin, buf[0..end]);
 }
 
+proc revcompCopy(stdoutBin, in buf) {
+  revcomp(stdoutBin, buf);
+}
 
-proc revcomp(buf, start, hi) {
+proc revcomp(stdoutBin, buf) {
   param cols = 61;  // the number of characters per full row (including '\n')
-  var lo = start;
+  var lo = 0,
+      hi = buf.size-1;
 
   // skip past header line
-  do {
+  while buf[lo] != eol do
     lo += 1;
-  } while buf[lo-1] != eol;
 
-  // shift all of the linefeeds into the right places
-  const len = hi - lo + 1,
-        off = (len - 1) % cols,
-        shift = cols - off - 1;
+  while lo <= hi {
+    do {
+      lo += 1;
+    } while buf[lo] == eol;
+    do {
+      hi -= 1;
+    } while buf[hi] == eol;
 
-  if off {
-    forall m in lo+off..<hi by cols {
-      for i in m..#shift by -1 do
-        buf[i+1] = buf[i];
-      buf[m] = eol;
-    }
+//    stdoutBin.writeln("buf[lo] = ", buf[lo]);
+//    stdoutBin.writeln("buf[hi] = ", buf[hi]);
+    (buf[lo], buf[hi]) = (cmpl(buf[hi]), cmpl(buf[lo]));
+//    stdoutBin.writeln("buf[lo] = ", buf[lo]);
+//    stdoutBin.writeln("buf[hi] = ", buf[hi]);
   }
-
-  // walk from both ends of the sequence, complementing and swapping
-  forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
-    (buf[i], buf[j]) = (cmpl[buf[j]], cmpl[buf[i]]);
+  stdoutBin.write(buf);
 }
