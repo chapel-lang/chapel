@@ -122,10 +122,6 @@ def special_exception(filename, token):
         # And this one's speedy paths
         if "speedy" in token:
             return True
-    elif filename == "doc/rst/developer/implementation/adding-a-launcher.rst":
-        # And this one's <name>s
-        if "<name>" in token:
-            return True
     elif filename == "doc/rst/developer/bestPractices/SpellChecking.rst":
         # And this one's examples of files being deleted
         if "obsolete" in token or "archaic" in token:
