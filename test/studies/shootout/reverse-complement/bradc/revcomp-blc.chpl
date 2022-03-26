@@ -21,8 +21,6 @@ param cmpl = b"                                                             " +
 config var readSize = 16384, // how much to read at a time
            n = 0;            // a dummy variable to match the CLBG framework
 
-var seqToPrint, nextSeqID: atomic int = 0;
-
 proc main() {
   // read in the data using an incrementally growing buffer
   var bufSize = readSize,
@@ -42,15 +40,7 @@ proc main() {
     do {
       end += 1; // TODO: If we move this to the bottom of the loop?
       if end != 0 && buf[end] == '>'.toByte() {  // TODO: and drop this !=?
-        const seqID = nextSeqID.read();
-        // TODO: This latch is heavy-handed... we really want:
-        //   begin with (var seq = buf[seqStart..<end])
-        //     revcomp(stdoutBin, seq);
-        // or maybe even just:
-        //   begin revcomp(stoutBin, seq); ???
-        //
-        begin revcomp(seqID, buf, seqStart, end);
-        nextSeqID.waitFor(seqID+1);
+        revcomp(buf, seqStart, end);
         seqStart = end;
       }
     } while end < start+readSize-1;
@@ -71,32 +61,29 @@ proc main() {
       }
     }
   } while more;
-  revcomp(nextSeqID.read(), buf, seqStart, end);
+  revcomp(buf, seqStart, end);
 }
 
-proc revcomp(seqID, buf, in lo, in hi) {
+proc revcomp(buf, in lo, in hi) {
   param eol  = '\n'.toByte();      // end-of-line, as an integer
 
   if lo >= hi then return;
 
-  var seq = buf[lo..<hi];
-  nextSeqID.write(seqID+1);
+  ref seq = buf[lo..<hi];
 
   // skip past header line
-  while seq[lo] != eol do
+  while buf[lo] != eol do
     lo += 1;
 
   while lo < hi {
     do {
       lo += 1;
-    } while seq[lo] == eol;
+    } while buf[lo] == eol;
     do {
       hi -= 1;
-    } while seq[hi] == eol;
+    } while buf[hi] == eol;
     if lo < hi then
-      (seq[lo], seq[hi]) = (cmpl(seq[hi]), cmpl(seq[lo]));
+      (buf[lo], buf[hi]) = (cmpl(buf[hi]), cmpl(buf[lo]));
   }
-  seqToPrint.waitFor(seqID);
   stdoutBin.write(seq);
-  seqToPrint.add(1);
 }
