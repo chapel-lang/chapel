@@ -49,7 +49,7 @@ proc main() {
         // or maybe even just:
         //   begin revcomp(stoutBin, seq); ???
         //
-        begin revcomp(seqID, buf[seqStart..<end]);
+        begin revcomp(seqID, buf, seqStart, end);
         nextSeqID.waitFor(seqID+1);
         seqStart = end;
       }
@@ -71,39 +71,32 @@ proc main() {
       }
     }
   } while more;
-  revcomp(nextSeqID.read(), buf[seqStart..<end]);
+  revcomp(nextSeqID.read(), buf, seqStart, end);
 }
 
-proc revcomp(seqID, in buf) {
+proc revcomp(seqID, buf, in lo, in hi) {
   param eol  = '\n'.toByte();      // end-of-line, as an integer
 
-  var seq = buf;
+  if lo >= hi then return;
+
+  var seq = buf[lo..<hi];
   nextSeqID.write(seqID+1);
 
-  var lo = seq.indices.low,
-      hi = seq.indices.high;
-
-  if lo > hi then return;
-  
   // skip past header line
-  while buf[lo] != eol do
+  while seq[lo] != eol do
     lo += 1;
 
   while lo < hi {
     do {
       lo += 1;
-    } while buf[lo] == eol;
+    } while seq[lo] == eol;
     do {
       hi -= 1;
-    } while buf[hi] == eol;
+    } while seq[hi] == eol;
     if lo < hi then
-//    stdoutBin.writeln("buf[lo] = ", buf[lo]);
-//    stdoutBin.writeln("buf[hi] = ", buf[hi]);
-    (buf[lo], buf[hi]) = (cmpl(buf[hi]), cmpl(buf[lo]));
-//    stdoutBin.writeln("buf[lo] = ", buf[lo]);
-//    stdoutBin.writeln("buf[hi] = ", buf[hi]);
+      (seq[lo], seq[hi]) = (cmpl(seq[hi]), cmpl(seq[lo]));
   }
   seqToPrint.waitFor(seqID);
-  stdoutBin.write(buf);
+  stdoutBin.write(seq);
   seqToPrint.add(1);
 }
