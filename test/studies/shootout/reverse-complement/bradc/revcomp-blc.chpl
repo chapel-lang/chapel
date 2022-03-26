@@ -8,19 +8,16 @@
 
 use IO;
 
-config const debug = false, rc = !debug;
-
+const stdinBin  = openfd(0).reader(iokind.native, locking=false,
+                                   hints = QIO_CH_ALWAYS_UNBUFFERED),
+      stdoutBin = openfd(1).writer(iokind.native, locking=false,
+                                   hints=QIO_CH_ALWAYS_UNBUFFERED);
 param cmpl = b"                                                             " +
              b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
             //     ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
             //     ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-config var readSize = 16384, n: int; // 10;  // 16384;  // TODO: replace with 16384
-
-const stdinBin  = openfd(0).reader(iokind.native, locking=false,
-                                   hints = QIO_CH_ALWAYS_UNBUFFERED),
-      stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                   hints=QIO_CH_ALWAYS_UNBUFFERED);
+config var readSize = 16384, n: int;
 
 var nextToPrint: atomic int = 1,
     arrayCopied: atomic bool = false;
@@ -40,88 +37,43 @@ proc main() {
       readSize = stdinBin.offset() - totRead + 1;
     else
       totRead += readSize;
-    if debug {
-      stdoutBin.writeln("*** Reading into buffer from ", start:string, "..", (start+readSize-1):string);
-      if readSize > 0 then
-        stdoutBin.writeln("*** Read: ", buf[start..#readSize]);
-      stdoutBin.writeln("*** Looking for '>'");
-    }
+
     do {
       end += 1;
       // TODO: Problem: We re-read the old leftover '>' from having
       // shifted the buffer
       if end != 0 && buf[end] == '>'.toByte() {
-        if debug then
-          stdoutBin.writeln("*** found one!");
         seqNum += 1;
-        if debug {
-          stdoutBin.write("*** Sequence ", seqNum:string, " is:\n", buf[seqStart..<end]);
-          stdoutBin.writeln("*** Incrementing totProcessed by ", (end-seqStart):string);
-        }
         totProcessed += end-seqStart;
         // really want:
-        //   begin with (var seq = buf[seqStart..<end]) revcomp(stdoutBin, seq);
-        // Works, but shouldn't be necessary:
-//        sync {
+        //   begin with (var seq = buf[seqStart..<end])
+        //     revcomp(stdoutBin, seq);
         begin revcomp(seqNum, buf[seqStart..<end]);
         arrayCopied.waitFor(true);
         arrayCopied.write(false);
-//        }
         seqStart = end;
-        if debug then
-          stdoutBin.writeln("*** looking for another");
       }
     } while end < start+readSize-1;
-    if debug then
-      stdoutBin.writeln("*** didn't find one");
 
     if more {
-      if debug then
-        stdoutBin.writeln("*** The file holds more");
       // if we processed one or more sequences, shift leftovers down
       if seqStart != 0 {
-        if debug then
-          stdoutBin.writeln("*** Shift what we've read");
         for (s,d) in zip(seqStart..<start+readSize, 0..) do
           buf[d] = buf[s];
         end -= seqStart;
         seqStart = 0;
-        if debug then
-          stdoutBin.writeln("*** Leftovers:\n", buf[0..<end]);
       }
 
       // resize if necessary
       if end + readSize >= bufSize {
-        if debug then
-          stdoutBin.writeln("*** Resize the buffer");
         bufSize *= 2;
         bufDom = {0..<bufSize};
       }
-    } else {
-      if debug then
-        stdoutBin.writeln("*** Fell off the end");
-//      end += 1;
-      seqNum += 1;
-      const len = stdinBin.offset()-totProcessed;
-      if debug {
-        stdoutBin.write("*** Sequence ", seqNum:string, " is:\n", buf[seqStart..<end]);
-        stdoutBin.writeln("*** Final sequence starts at: ", seqStart:string);
-        stdoutBin.writeln("*** Final sequence ends at: ", (end-1):string);
-        stdoutBin.writeln("*** Offset in stdin was: ", stdinBin.offset():string);
-        stdoutBin.writeln("*** Tot read was: ", totProcessed:string);
-      }
-      /*
-> Final sequence starts at: 5131
-> Final sequence ends at: -17
-> Offset in stdin was: 10245
-> Tot read was: 10262
-*/
-      if rc then
-        revcomp(seqNum, buf[seqStart..<end]);
     }
   } while more;
-//  end = stdinBin.offset()-1;
-//  revcomp(stdoutBin, buf[0..end]);
+  seqNum += 1;
+  const len = stdinBin.offset()-totProcessed;
+  revcomp(seqNum, buf[seqStart..<end]);
 }
 
 proc revcomp(seqID, in buf) {
