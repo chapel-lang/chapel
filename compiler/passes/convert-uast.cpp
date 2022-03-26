@@ -949,7 +949,12 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::While* node) {
-    Expr* condExpr = toExpr(convertAST(node->condition()));
+    Expr* condExpr = nullptr;
+    if (auto condVar = node->condition()->toVariable()) {
+      condExpr = buildIfVar(condVar->name().c_str(), toExpr(convertAST(condVar->initExpression())) ,condVar->kind() == chpl::uast::Variable::CONST);
+    } else {
+      condExpr = toExpr(convertAST(node->condition()));
+    }
     BlockStmt* body = createBlockWithStmts(node->stmts());
     return WhileDoStmt::build(condExpr, body);
   }
