@@ -27,11 +27,11 @@ proc main() {
   var bufSize = readSize,
       bufDom = {0..<bufSize},
       buf: [bufDom] uint(8),
-      seqNum, seqStart, totProcessed, totRead = 0,
-      end = -1;
+      seqNum, seqStart, totRead = 0,
+      end = -1;  // TODO: Can this be made into a 0...
 
   do {
-    const start = end + 1,
+    const start = end + 1,  // TODO: ...to rop this + 1...
           more = stdinBin.read(buf[start..#readSize]);
     if !more then
       readSize = stdinBin.offset() - totRead + 1;
@@ -39,12 +39,9 @@ proc main() {
       totRead += readSize;
 
     do {
-      end += 1;
-      // TODO: Problem: We re-read the old leftover '>' from having
-      // shifted the buffer
-      if end != 0 && buf[end] == '>'.toByte() {
+      end += 1; // TODO: If we move this to the bottom of the loop?
+      if end != 0 && buf[end] == '>'.toByte() {  // TODO: and drop this !=?
         seqNum += 1;
-        totProcessed += end-seqStart;
         // really want:
         //   begin with (var seq = buf[seqStart..<end])
         //     revcomp(stdoutBin, seq);
@@ -72,7 +69,6 @@ proc main() {
     }
   } while more;
   seqNum += 1;
-  const len = stdinBin.offset()-totProcessed;
   revcomp(seqNum, buf[seqStart..<end]);
 }
 
