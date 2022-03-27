@@ -1189,6 +1189,7 @@ proc string.search(needle: regex(string)):regexMatch
 }
 
 pragma "no doc"
+deprecated "string.search is deprecated, use find instead"
 proc string.search(pattern: regex(string)):regexMatch
 {
   return pattern.search(this);
@@ -1209,6 +1210,7 @@ proc bytes.search(needle: regex(bytes)):regexMatch
 }
 
 pragma "no doc"
+deprecated "bytes.search is deprecated, use find instead"
 proc bytes.search(pattern: regex(bytes)):regexMatch
 {
   return pattern.search(this);
@@ -1222,12 +1224,6 @@ proc string.search(needle: regex(string), ref captures ...?k):regexMatch
   return needle.search(this, (...captures));
 }
 
-deprecated "the search procedure is deprecated, use 'find' instead"
-proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
-{
-  return pattern.search(this, (...captures));
-}
-
 /* Search the receiving string for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
@@ -1237,10 +1233,13 @@ proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
    :returns: a byteIndex representing the offset in the receiving string
              where a match occurred
  */
-proc string.find(pattern: regex(string), ref captures ...?k):byteIndex
+
+deprecated "the search procedure with captures is deprecated"
+proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
 {
-  return (pattern.search(this, (...captures))).byteOffset;
+  return pattern.search(this, (...captures));
 }
+
 
 pragma "last resort"
 deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
@@ -1249,11 +1248,6 @@ proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
   return needle.search(this, (...captures));
 }
 
-deprecated "the search procedure is deprecated, use find instead"
-proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
-{
-  return pattern.search(this, (...captures));
-}
 /* Search the receiving bytes for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
@@ -1263,9 +1257,10 @@ proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
    :returns: a byteIndex representing the offset in the
              receiving bytes where a match occurred
  */
-proc bytes.find(pattern: regex(bytes), ref captures ...?k):byteIndex
+deprecated "the bytes.search procedure with a captures argument is deprecated"
+proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
 {
-  return (pattern.search(this, (...captures))).byteOffset;
+  return pattern.search(this, (...captures));
 }
 
 // documented in the captures version
@@ -1295,7 +1290,7 @@ proc bytes.match(pattern: regex(bytes)):regexMatch
 proc string.startsWith(pattern: regex(string)):bool
 {
   var rm = pattern.match(this);
-  return rm.byteIndex == 0;
+  return rm.byteOffset == 0;
 }
 
 
@@ -1310,7 +1305,7 @@ proc string.startsWith(pattern: regex(string)):bool
 proc bytes.startsWith(pattern: regex(bytes)):bool
 {
   var rm = pattern.match(this);
-  return rm.byteIndex == 0;
+  return rm.byteOffset == 0;
 }
 
 
