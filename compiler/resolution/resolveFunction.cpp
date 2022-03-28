@@ -718,9 +718,9 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     checkInitEq = false;
     checkCast = false;
 
-    // Checked for '=' on classes in user modules in
-    // checkForUnsupportedOverload called from resolveSignature
-    // so don't need to check that here.
+    // We already checked for '=' on classes in user modules in
+    // checkForUnsupportedOverload (called from resolveSignature).
+    // So, we don't need to check that here.
   }
 
   // Don't worry about checking for 'init=' for tuples or types
