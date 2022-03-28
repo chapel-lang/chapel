@@ -392,6 +392,10 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("inline operator ==(a: _nilType, b: _nilType) param return true;", "==(a: _nilType, b: _nilType)")
   TEST_USER_STRING("private proc param R.prm2(arg) param : string { }", "private param R.prm2(arg)")
   TEST_USER_STRING("proc procRefC(ref arg: borrowed C?) { }", "procRefC(ref arg: borrowed C?)")
+  TEST_USER_STRING("operator =(ref r3:R, r4:R){}", " = (ref r3: R, r4: R)")
+  TEST_USER_STRING("proc foo(x...) {}", "foo(x ...)")
+  TEST_USER_STRING("proc bar(type x...) {}", "bar(type x ...)")
+  TEST_USER_STRING("proc bar(type x...?k) {}", "bar(type x ...?k)")
 }
 
 static void test4(Parser* parser) {

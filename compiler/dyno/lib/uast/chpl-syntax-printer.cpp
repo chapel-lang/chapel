@@ -209,8 +209,18 @@ struct ChplSyntaxVisitor {
       ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
     }
 
-    // Function Name
-    ss_ << node->name().str();
+    if (node->kind() == Function::Kind::OPERATOR && node->name() == USTR("=")) {
+      // TODO: remove this once the old parser is out of the question
+      // TODO: this is only here to support tests from the old parser
+      // printing extra spaces around an assignment operator
+      ss_ << " ";
+      // Function Name
+      ss_ << node->name().str();
+      ss_ << " ";
+    } else {
+      // Function Name
+      ss_ << node->name().str();
+    }
 
     // Formals
     int numThisFormal = node->thisFormal() ? 1 : 0;
@@ -916,8 +926,8 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, ie);
     }
 
+    ss_ << " ...";
     if (const AstNode* ce = node->count()) {
-      ss_ << " ...";
       if (const TypeQuery* tq = ce->toTypeQuery()) {
         printChapelSyntax(ss_, tq);
       } else {
