@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,66 +18,48 @@
  * limitations under the License.
  */
 
+use ArgumentParser;
 use FileSystem;
-use Path;
-use Spawn;
-use TOML;
-private use List;
-
-use MasonEnv;
-use MasonNew;
+use List;
 use MasonBuild;
-use MasonHelp;
-use MasonUtils;
+use MasonEnv;
 use MasonExample;
+use MasonHelp;
 use MasonModify;
+use MasonNew;
+use MasonUtils;
+use Path;
+use Subprocess;
+use TOML;
 
 /*
-Initialises a library project in a project directory
+Initializes a library project in a project directory
   mason init <dirName/path>
   or mason init (inside project directory)
 */
 proc masonInit(args: [] string) throws {
+
+  var parser = new argumentParser(helpHandler=new MasonInitHelpHandler());
+
+  var defaultFlag = parser.addFlag(name="default",
+                                   opts=["-d","--default"],
+                                   defaultValue=false);
+  var nameOpt = parser.addOption(name="legalname",
+                                 opts=["--name"]);
+
+  var showFlag = parser.addFlag(name="show", defaultValue=false);
+  var dirArg = parser.addArgument(name="directory", numArgs=0..1);
+
+
+  parser.parseArgs(args);
+
   try! {
     var dirName = '';
-    var show = false;
+    var show = showFlag.valueAsBool();
     var packageName = '';
-    var countArgs = args.domain.low + 2;
-    var defaultBehavior = false;
-    for arg in args[args.domain.low+2..] {
-      countArgs += 1;
-      select (arg) {
-        when '-h' {
-          masonInitHelp();
-          exit();
-        }
-        when '--help' {
-          masonInitHelp();
-          exit();
-        }
-        when '--show' {
-          show = true;
-        }
-        when '-d' {
-          defaultBehavior = true;
-        }
-        when '--default' {
-          defaultBehavior = true;
-        }
-        when '--name' {
-          packageName = args[countArgs];
-        }
-        otherwise {
-          if arg.startsWith('--name=') {
-            var res = arg.split("=");
-            packageName = res[1];
-          }
-          else {
-            if args[countArgs - 2] != "--name" then dirName = arg;
-          }
-        }
-      }
-    }
+    var defaultBehavior = defaultFlag.valueAsBool();
+    if nameOpt.hasValue() then packageName = nameOpt.value();
+    if dirArg.hasValue() then dirName = dirArg.value();
 
     if dirName == '' {
       if defaultBehavior {
@@ -101,21 +83,21 @@ proc masonInit(args: [] string) throws {
         var defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense, moduleName: string;
         if isMasonTomlPresent then
           (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense) = readPartialManifest();
-        if isSrcPresent then 
+        if isSrcPresent then
           moduleName = readPartialSrc();
        // begin interactive session and get values input by user
-        var result = beginInteractiveSession(defaultPackageName, defaultVersion, 
+        var result = beginInteractiveSession(defaultPackageName, defaultVersion,
                                               defaultChplVersion, defaultLicense);
         const newPackageName = result[0],
               newVersion = result[1],
               newChplVersion = result[2],
               newLicense = result[3];
-        // validate Mason.toml file 
+        // validate Mason.toml file
         validateMasonFile('.', newPackageName, show);
         isMasonTomlPresent = true;
         // overwrite to update existing values in Mason.toml
-        overwriteTomlFileValues(isMasonTomlPresent, newPackageName, 
-          newVersion, newChplVersion, newLicense, defaultPackageName, defaultVersion, 
+        overwriteTomlFileValues(isMasonTomlPresent, newPackageName,
+          newVersion, newChplVersion, newLicense, defaultPackageName, defaultVersion,
           defaultChplVersion, defaultLicense);
         if newPackageName + '.chpl' != moduleName {
           if isFile('./src/' + moduleName) then rename('src/' + moduleName, 'src/' + newPackageName + '.chpl');
@@ -125,7 +107,7 @@ proc masonInit(args: [] string) throws {
       }
     }
     else {
-      // if the target directory in path doesnt exist, throw error
+      // if the target directory in path doesn't exist, throw error
       // if target directory exists, check for files && validate
       // create folders and toml file without overwriting anything
       // if TOML file exists, check for values in it and validate
@@ -153,8 +135,8 @@ proc masonInit(args: [] string) throws {
 }
 
 // Overwrites values of existing Mason.toml file
-proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion, 
-    newChplVersion, newLicense, defaultPackageName, defaultVersion, 
+proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion,
+    newChplVersion, newLicense, defaultPackageName, defaultVersion,
     defaultChplVersion, defaultLicense) {
   const tomlPath = "./Mason.toml";
   const toParse = open(tomlPath, iomode.r);
@@ -165,7 +147,7 @@ proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion,
     if newVersion != defaultVersion then
       tomlFile["brick"]!.set("version", newVersion);
     if newChplVersion != defaultChplVersion then
-      tomlFile["brick"]!.set("chplVersion", newChplVersion); 
+      tomlFile["brick"]!.set("chplVersion", newChplVersion);
     if newLicense != defaultLicense then
       tomlFile["brick"]!.set("license", newLicense);
   }
@@ -189,7 +171,7 @@ proc readPartialManifest() {
     defaultVersion = tomlFile["brick"]!["version"]!.s;
   if tomlFile.pathExists("brick.chplVersion") then
     defaultChplVersion = tomlFile["brick"]!["chplVersion"]!.s;
-  if tomlFile.pathExists("brick.license") then 
+  if tomlFile.pathExists("brick.license") then
     defaultLicense = tomlFile["brick"]!["license"]!.s;
   return (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense);
 }

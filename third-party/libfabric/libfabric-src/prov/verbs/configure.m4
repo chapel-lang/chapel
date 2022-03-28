@@ -47,6 +47,10 @@ AC_DEFUN([FI_VERBS_CONFIGURE],[
 	AS_IF([test $verbs_ibverbs_happy -eq 1 && \
 	       test $verbs_rdmacm_happy -eq 1], [$1], [$2])
 
+	#Set CPPFLAGS to allow correct include path to be used by AC_CHECK_DECL()
+	fi_verbs_configure_save_CPPFLAGS=$CPPFLAGS
+	CPPFLAGS=$verbs_ibverbs_CPPFLAGS
+
 	#See if we have extended verbs calls
 	VERBS_HAVE_QUERY_EX=0
 	AS_IF([test $verbs_ibverbs_happy -eq 1],[
@@ -78,6 +82,18 @@ AC_DEFUN([FI_VERBS_CONFIGURE],[
 		])
 	AC_DEFINE_UNQUOTED([VERBS_HAVE_RDMA_ESTABLISH],[$VERBS_HAVE_RDMA_ESTABLISH],
 		[Whether rdma/rdma_cma.h has rdma_establish() support or not])
+
+	#See if we have rdma-core dmabuf mr support
+	VERBS_HAVE_DMABUF_MR=0
+	AS_IF([test $verbs_ibverbs_happy -eq 1],[
+		AC_CHECK_DECL([ibv_reg_dmabuf_mr],
+			[VERBS_HAVE_DMABUF_MR=1],[],
+			[#include <infiniband/verbs.h>])
+		])
+	AC_DEFINE_UNQUOTED([VERBS_HAVE_DMABUF_MR],[$VERBS_HAVE_DMABUF_MR],
+		[Whether infiniband/verbs.h has ibv_reg_dmabuf_mr() support or not])
+
+	CPPFLAGS=$fi_verbs_configure_save_CPPFLAGS
 
 	# Technically, verbs_ibverbs_CPPFLAGS and
 	# verbs_rdmacm_CPPFLAGS could be different, but it is highly

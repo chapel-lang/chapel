@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,40 +19,37 @@
  */
 
 #include "chplvis.h"
-#include <sstream>
+#include <string>
 #include <FL/Fl_File_Chooser.H>
 #include <FL/fl_ask.H>
-
-#define SSTR( x ) dynamic_cast< std::ostringstream & >( \
-                    ( std::ostringstream() << std::dec << x ) ).str()
 
 // Utility routine
 
 bool open_data_set (const char *name, bool fromArgv)
 {
   // printf("open_data_set ...\n");
-  
+
   if (!VisData.LoadData(name,true)) {
     return false;
   }
-  
+
   DataField->selectChild(GraphGrp);
-  
+
   Menus.makeMenusFor(VIEW_GRAPH);
   Menus.setCurrentDataView(Graph_View);
   Menus.addPopUpTo(GraphGrp);
   Menus.setCurrentZoom(Graph_Scroll);
   Menus.setCurrentTag(DataModel::TagALL);
-  
+
   Graph_View->setNumLocales(VisData.NumLocales());
   Graph_View->selectData(DataModel::TagALL);
-  
+
   Grid_View->setNumLocales(VisData.NumLocales());
   Grid_View->selectData(DataModel::TagALL);
-  
+
   Info->setFileName(name);
   Info->clearTagName();
-  
+
   return true;
 }
 
@@ -207,7 +204,7 @@ static void cb_selectLocale(Fl_Widget *w, void *p)
   concView->updateData (ix, Menus.currentTag());
   MainWindow->redraw();
 }
-  
+
 static Fl_Menu_Item GridGraphMenu[] = {
  {"File", 0,  0, 0, FL_SUBMENU, FL_NORMAL_LABEL, 0, 14, 0},
  {"Open", 0x4006f,  (Fl_Callback*)menu_cb_Open, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
@@ -290,7 +287,7 @@ static Fl_Menu_Item empty_popupMenu[] = {
  {0,0,0,0,0,0,0,0,0},
  {0,0,0,0,0,0,0,0,0},
 };
-  
+
 
 
 MenuManager::MenuManager()
@@ -315,7 +312,7 @@ void MenuManager::toggleUTags ()
 void MenuManager::makeLocaleMenu (void)
 {
   for (long ix = 0; ix < VisData.NumLocales(); ix++) {
-    std::string entryName = "Locale/" + SSTR(ix);
+    std::string entryName = "Locale/" + std::to_string(ix);
     MainMenuBar->add(entryName.c_str(), 0, cb_selectLocale, (void *)ix);
     popup->add(entryName.c_str(), 0, cb_selectLocale, (void *)ix);
   }
@@ -325,7 +322,7 @@ void MenuManager::makeTagsMenu(void)
 {
   // Remove the old one if it exists
   int tagMenu = MainMenuBar->find_index("Tags");
-  int tagPopup; 
+  int tagPopup;
 
   if (tagMenu > 0) {
     MainMenuBar->remove(tagMenu);
@@ -337,24 +334,24 @@ void MenuManager::makeTagsMenu(void)
     popup->box(FL_NO_BOX);
   }
 
-  if (curView <= VIEW_GRID) 
+  if (curView <= VIEW_GRID)
     popup->menu(gg_popup_Menu);
   else if (curView == VIEW_PROFILE)
     popup->menu(profile_popupMenu);
   else
     popup->menu(empty_popupMenu);
-  
+
   if (curView == VIEW_CONCURRENCY) {
     useUTags = false;
     makeLocaleMenu();
   }
-  
+
   if (curView <= VIEW_CONCURRENCY && VisData.NumTags() >= 1) {
-    
+
     // printf("Make tags menu, %d tags\n", VisData.NumTags());
-    
+
     // Build the menu
-    
+
     tagMenu = MainMenuBar->add("Tags", 0, 0, 0, FL_SUBMENU);
     if (tagMenu < 1) {
       printf ("Menu problem!\n");
@@ -379,7 +376,7 @@ void MenuManager::makeTagsMenu(void)
     popup->add("Tags/All", 0, cb_selTag, (void *)DataModel::TagALL);
     MainMenuBar->add("Tags/Start", 0, cb_selTag, (void *)DataModel::TagStart);
     popup->add("Tags/Start", 0, cb_selTag, (void *)DataModel::TagStart);
-    
+
     long ix;
     long numTags;
     if (useUTags)
@@ -397,7 +394,7 @@ void MenuManager::makeTagsMenu(void)
       if (VisData.hasUniqueTags() || useUTags)
         menuName = "Tags/" + std::string(tagName);
       else
-        menuName = "Tags/tag " + SSTR(ix) + " (" + tagName + ")";
+        menuName = "Tags/tag " + std::to_string(ix) + " (" + tagName + ")";
       MainMenuBar->add(menuName.c_str(), 0, cb_selTag, (void *)ix, 0);
       popup->add(menuName.c_str(), 0, cb_selTag, (void *)ix, 0);
     }
@@ -427,7 +424,7 @@ void MenuManager::makeMenusFor(ViewKind viewkind)
       addPopUpTo(DataField);
       Info->showTag();
       break;
-      
+
     case VIEW_GRID:
       MainMenuBar->menu(GridGraphMenu);
       curDataView = Grid_View;
@@ -445,7 +442,7 @@ void MenuManager::makeMenusFor(ViewKind viewkind)
       addPopUpTo(DataField);
       Info->showTag();
       break;
-      
+
     case VIEW_PROFILE:
       MainMenuBar->menu(ProfileMenu);
       curDataView = NULL;

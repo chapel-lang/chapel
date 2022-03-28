@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -353,7 +353,7 @@ module ChapelIO {
           // Try reading a comma. If we don't, break out of the loop.
           try {
             reader.readwrite(comma);
-            needsComma = false; 
+            needsComma = false;
           } catch err: BadFormatError {
             break;
           }
@@ -420,7 +420,7 @@ module ChapelIO {
         while numRead < numToRead {
 
           // Try reading a comma. If we don't, then break.
-          if needsComma then 
+          if needsComma then
             try {
               var comma = new ioLiteral(",", true);
               reader.readwrite(comma);
@@ -432,7 +432,7 @@ module ChapelIO {
 
           //
           // Find a field name that matches.
-          // 
+          //
           // TODO: this is not particularly efficient. If we have a lot of
           // fields, this is O(n**2), and there are other potential problems
           // with string reallocation.
@@ -542,7 +542,7 @@ module ChapelIO {
 
           var eq = if st == QIO_AGGREGATE_FORMAT_JSON
             then new ioLiteral(":", true)
-            else new ioLiteral("=", true); 
+            else new ioLiteral("=", true);
 
           // TODO: Why not a `readwrite` call here?
           try readIt(eq);
@@ -622,59 +622,6 @@ module ChapelIO {
         try reader.readwrite(end);
       }
     }
-
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
-  pragma "function terminates program"
-  pragma "always propagate line file info"
-  proc halt() {
-    __primitive("chpl_error", c"halt reached");
-  }
-
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
-  pragma "function terminates program"
-  pragma "always propagate line file info"
-  proc halt(s:string) {
-    halt(s.localize().c_str());
-  }
-
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
-  pragma "function terminates program"
-  pragma "always propagate line file info"
-  proc halt(args ...?numArgs) {
-    var tmpstring = "halt reached - " + stringify((...args));
-    __primitive("chpl_error", tmpstring.c_str());
-  }
-
-  /*
-    Prints a warning to stderr giving the location of the call to ``warning``
-    in the Chapel source, followed by the argument(s) to the call.
-  */
-  pragma "always propagate line file info"
-  proc warning(s:string) {
-    __primitive("chpl_warning", s.localize().c_str());
-  }
-
-  /*
-    Prints a warning to stderr giving the location of the call to ``warning``
-    in the Chapel source, followed by the argument(s) to the call.
-  */
-  pragma "always propagate line file info"
-  proc warning(args ...?numArgs) {
-    var tmpstring = stringify((...args));
-    warning(tmpstring);
-  }
 
   pragma "no doc"
   proc locale.writeThis(f) throws {
@@ -851,6 +798,12 @@ module ChapelIO {
     try! {
       return stdout.writef(fmt);
     }
+  }
+
+  pragma "no doc"
+  proc chpl_stringify_wrapper(const args ...):string {
+    use IO only stringify;
+    return stringify((...args));
   }
 
   //

@@ -1,3 +1,5 @@
 #! /bin/sh
-grep -v 'Reduced numThreadsPerLocale' < $2 |
-  sed -e 's/^[-.:/A-Za-z0-9]*: //' >$1.prediff.tmp && mv $1.prediff.tmp $2
+sed -e 's/limit is [0-9]\+/limit is NNNN/' \
+    -e 's/to [0-9]\+ to prevent/to NNNN to prevent/' \
+    -e 's/numThreadsPerLocale=[0-9]\+/numThreadsPerLocale=NNNN/' \
+    <$2 >$1.blah.tmp && cp $2 $1.prediff.tmp && mv $1.blah.tmp $2

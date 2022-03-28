@@ -17,6 +17,7 @@ import chpl_launcher
 import chpl_libfabric
 import chpl_llvm
 import chpl_locale_model
+import chpl_gpu
 import chpl_arch
 import chpl_mem
 import chpl_qthreads
@@ -32,3 +33,4 @@ import chpl_python_version
 import compiler_utils
 import overrides
 import utils
+import compile_link_args_utils

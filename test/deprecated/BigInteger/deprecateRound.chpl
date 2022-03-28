@@ -73,3 +73,18 @@ writeln(d, " ", b);
 d.div_q_2exp(c, 3, zero);
 b.div_r_2exp(c, 3, zero);
 writeln(d, " ", b);
+
+writeln();
+// Check default arguments, too
+d.div_q(c, a); // same as UP   for negative integers
+b.div_r(c, a); // same as DOWN for positive integers
+writeln(d, " ", b);
+
+c.neg(c);
+d.div_qr(b, c, a); // same as DOWN for positive integers
+writeln(d, " ", b);
+
+c.neg(c);
+d.div_q_2exp(c, 3);
+b.div_r_2exp(c, 3);
+writeln(d, " ", b);

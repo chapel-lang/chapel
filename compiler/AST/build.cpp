@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,6 +40,8 @@
 #include "stringutil.h"
 #include "TryStmt.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 #include <map>
 #include <utility>
@@ -127,29 +129,10 @@ void checkControlFlow(Expr* expr, const char* context) {
 static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
   forv_Vec(const char, str, *pragmas) {
     Flag flag = pragma2flag(str);
-    if (flag == FLAG_UNKNOWN)
+    if (flag == FLAG_UNKNOWN) {
       USR_FATAL_CONT(sym, "unknown pragma: \"%s\"", str);
-    else {
+    } else {
       sym->addFlag(flag);
-
-      if (flag == FLAG_RUNTIME_TYPE_INIT_FN) {
-        //
-        // These functions must be marked as type functions early in
-        // compilation, as calls to them are inserted by the compiler
-        // at the declaration points for arrays and domains.  In the
-        // past, they had to be defined as type functions in the
-        // modules, but most of us found that very confusing because
-        // the code in the functions actually returns a value.  See
-        // buildRuntimTypeToValueFns() in functionResolution.cpp for
-        // more info on what happens to these functions.
-        //
-        FnSymbol* fn = toFnSymbol(sym);
-        INT_ASSERT(fn);
-        if (fn->retTag != RET_VALUE) {
-          USR_WARN(fn, "function's return type is not a value type.  Ignoring.");
-        }
-        fn->retTag = RET_TYPE;
-      }
     }
   }
 }
@@ -198,7 +181,7 @@ static const char* toImmediateString(Expr* expr) {
       if (var->isImmediate()) {
         Immediate* imm = var->immediate;
         if (imm->const_kind == CONST_KIND_STRING) {
-          return imm->v_string;
+          return astr(imm->v_string.c_str());
         }
       }
     }
@@ -485,17 +468,6 @@ BlockStmt* buildUseStmt(Expr* mod, const char * rename,
                         bool privateUse) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
-
-  // Catch the 'except *' case and turn it into 'only <nothing>'.  This
-  // case will have a single UnresolvedSymExpr named "".
-  if (except && names->size() == 1) {
-    PotentialRename* listElem = (*names)[0];
-    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
-      if (name->unresolved[0] == '\0') {
-        except = false;
-      }
-    }
-  }
 
   // Iterate through the list of names to exclude when using mod
   for_vector(PotentialRename, listElem, *names) {
@@ -824,12 +796,10 @@ BlockStmt*
 buildExternBlockStmt(const char* c_code) {
   bool privateUse = true;
 
-  // use CPtr, SysBasic, SysCTypes to get c_ptr, c_int, c_double etc.
+  // use CTypes to get c_ptr, c_int, c_double etc.
   // (System error codes do not need to be part of this).
-  BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CPtr"), "",
+  BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CTypes"), "",
                                      NULL, privateUse);
-  buildUseList(new UnresolvedSymExpr("SysCTypes"), "", useBlock, privateUse);
-  buildUseList(new UnresolvedSymExpr("SysBasic"), "", useBlock, privateUse);
 
   useBlock->insertAtTail(new ExternBlockStmt(c_code));
   BlockStmt* ret = buildChapelStmt(useBlock);
@@ -861,10 +831,6 @@ ModuleSymbol* buildModule(const char* name,
                           bool        prototype,
                           const char* docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
-
-  if (currentFileNamedOnCommandLine) {
-    mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-  }
 
   if (priv == true) {
     mod->addFlag(FLAG_PRIVATE);
@@ -1210,7 +1176,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
   if (bounded) {
     if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
-    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_coforallSize", iterator)));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_boundedCoforallSize", iterator, zippered ? gTrue : gFalse)));
     block->insertAtHead(new DefExpr(numTasks));
     block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks, numTasks));
@@ -1242,10 +1208,10 @@ static void removeWrappingBlock(BlockStmt*& block) {
 // This effectively builds up:
 //
 //     var tmpIter = iterator;
-//     param bounded = isBoundedRange(tmpIter) || isDomain(tmpIter) || isArray(tmpIter);
+//     param isBounded = chpl_supportsBoundedCoforall(tmpIter);
 //     param useLocalEndCount, countRunningTasks = !bodyContainsOnStmt();
-//     if bounded {
-//       var numTasks = tmpIter.size;
+//     if isBounded {
+//       var numTasks = chpl_boundedCoforallSize(tmpIter);
 //       var _coforallCount = _endCountAlloc(useLocalEndCount);
 //       // only bump EndCount once, instead of once per task
 //       _upEndCount(_coforallCount, countRunningTasks, numTasks);
@@ -1307,15 +1273,13 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   BlockStmt* vectorCoforallBlk = buildLoweredCoforall(indices, tmpIter, copyByrefVars(byref_vars), body->copy(), zippered, /*bounded=*/true);
   BlockStmt* nonVectorCoforallBlk = buildLoweredCoforall(indices, tmpIter, byref_vars, body, zippered, /*bounded=*/false);
 
-  VarSymbol* isRngDomArr = newTemp("isRngDomArr");
-  isRngDomArr->addFlag(FLAG_MAYBE_PARAM);
-  coforallBlk->insertAtTail(new DefExpr(isRngDomArr));
+  VarSymbol* isBounded = newTemp("isBounded");
+  isBounded->addFlag(FLAG_MAYBE_PARAM);
+  coforallBlk->insertAtTail(new DefExpr(isBounded));
 
-  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isRngDomArr,
-                            new CallExpr("||", new CallExpr("isBoundedRange", tmpIter),
-                            new CallExpr("||", new CallExpr("isDomain", tmpIter), new CallExpr("isArray", tmpIter)))));
+  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isBounded, new CallExpr("chpl_supportsBoundedCoforall", tmpIter, zippered ? gTrue : gFalse)));
 
-  coforallBlk->insertAtTail(new CondStmt(new SymExpr(isRngDomArr),
+  coforallBlk->insertAtTail(new CondStmt(new SymExpr(isBounded),
                                          vectorCoforallBlk,
                                          nonVectorCoforallBlk));
   return coforallBlk;
@@ -1564,7 +1528,7 @@ static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
 
 // first try looking up cfgname;
 // if it fails, try looking up currentModuleName.cfgname
-static Expr* lookupConfigVal(VarSymbol* var) {
+Expr* lookupConfigVal(VarSymbol* var) {
   extern bool parsingPrivate;
   const char* cfgname = var->name;
   Expr* configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
@@ -1586,22 +1550,6 @@ static Expr* lookupConfigVal(VarSymbol* var) {
   return configInit;
 }
 
-// take care of any config param, const, vars, overriding the expression
-// in the source code with what was provided on the command-line
-static void handleConfigVals(VarSymbol* var, DefExpr* defExpr, Expr* stmt) {
-  if (Expr *configInit = lookupConfigVal(var)) {
-    // config var initialized on the command line
-    // drop the original init expression on the floor
-    if (Expr* a = toExpr(configInit))
-      defExpr->init = a;
-    else if (Symbol* a = toSymbol(configInit))
-      defExpr->init = new SymExpr(a);
-    else
-      INT_FATAL(stmt, "DefExpr initialized with bad exprType config ast");
-  }
-}
-
-
 //
 // This helper function will return the string literal that a
 // cnameExpr evaluates to if it is one; otherwise, the expression
@@ -1612,7 +1560,7 @@ static const char* cnameExprToString(Expr* cnameExpr) {
     if (VarSymbol* v = toVarSymbol(se->symbol()))
       if (v->isImmediate())
         if (v->immediate->const_kind == CONST_KIND_STRING)
-          return v->immediate->v_string;
+          return astr(v->immediate->v_string.c_str());
   return NULL;
 }
 
@@ -1651,7 +1599,9 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
         }
 
         if (var->hasFlag(FLAG_CONFIG)) {
-          handleConfigVals(var, defExpr, stmt);
+          if (Expr* commandLineInit = lookupConfigVal(var)) {
+            defExpr->init = commandLineInit;
+          }
         }
 
         var->doc = docs;
@@ -2080,17 +2030,6 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names,
   std::set<const char*> namesSet;
   std::map<const char*, const char*> renameMap;
 
-  // Catch the 'except *' case and turn it into 'only <nothing>'.  This
-  // case will have a single UnresolvedSymExpr named "".
-  if (except && names->size() == 1) {
-    PotentialRename* listElem = (*names)[0];
-    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
-      if (name->unresolved[0] == '\0') {
-        except = false;
-      }
-    }
-  }
-
   // Iterate through the list of names to exclude when using mod
   for_vector(PotentialRename, listElem, *names) {
     switch (listElem->tag) {
@@ -2183,6 +2122,182 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
 BlockStmt* buildLocalStmt(Expr* condExpr, Expr *stmt) {
   return buildIfStmt(new CallExpr("_cond_test", condExpr),
       buildLocalStmt(stmt->copy()), stmt);
+}
+
+/*
+  Builds the try/catch part of the manager block:
+
+  try {
+    // Insertion point for next manager or user block.
+  } catch chpl_tmp_err {
+    errorCaught = true;
+    manager.leaveThis(chpl_tmp_err);
+  }
+
+*/
+static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
+                                             VarSymbol* errorCaught) {
+  const char* errName = "chpl_tmp_err";
+
+  // Build the catch block.
+  auto catchBlock = new BlockStmt();
+
+  // BUILD: errorCaught = true;
+  auto seErrorCaught = new SymExpr(errorCaught);
+  auto seTrue = new SymExpr(gTrue);
+  auto errorCaughtToTrue = new CallExpr(PRIM_MOVE, seErrorCaught, seTrue);
+  catchBlock->insertAtTail(errorCaughtToTrue);
+
+  // BUILD: manager.leaveThis(chpl_tmp_err);
+  auto leave = new CallExpr("leaveThis",
+                            gMethodToken,
+                            new SymExpr(managerHandle),
+                            new UnresolvedSymExpr(errName));
+  catchBlock->insertAtTail(leave);
+
+  // BUILD: catch chpl_tmp_err { ... }
+  auto catchStmt = CatchStmt::build(errName, catchBlock);
+
+  // Build the entire try/catch.
+  auto catchList = new BlockStmt();
+  catchList->insertAtTail(catchStmt);
+
+  auto ret = new TryStmt(false, new BlockStmt(), catchList);
+
+  return ret;
+}
+
+/*
+  The fragment 'myManager() as myResource' is lowered into something like:
+
+  {
+    TEMP ref manager = PRIM_ADDR_OF(myManager());
+    USER [var/ref/const] myResource = manager.enterThis();
+    TEMP errorCaught = false;
+
+    try {
+      // Insertion point for next manager or user block.
+    } catch chpl_temp_err {
+      errorCaught = true;
+      manager.leaveThis(chpl_tmp_err);
+    }
+
+    if !errorCaught then manager.leaveThis(nil);
+  }
+
+*/
+BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
+                             const char* resourceName) {
+
+  // Scopeless because we'll flatten this into place later.
+  auto ret = new BlockStmt(BLOCK_SCOPELESS);
+
+  // BUILD: TEMP ref manager = PRIM_ADDR_OF(myManager());
+  auto managerHandle = newTemp("manager");
+  managerHandle->addFlag(FLAG_MANAGER_HANDLE);
+  ret->insertAtTail(new DefExpr(managerHandle));
+
+  auto addrOfExpr = new CallExpr(PRIM_ADDR_OF, managerExpr);
+  auto moveIntoHandle = new CallExpr(PRIM_MOVE, managerHandle, addrOfExpr);
+  ret->insertAtTail(moveIntoHandle);
+
+  // Build call to 'enterThis()', but don't insert into the tree yet.
+  auto seManager = new SymExpr(managerHandle);
+  auto enterThis = new CallExpr("enterThis", gMethodToken, seManager);
+
+  // BUILD: [var/ref/const ref] myResource = manager.enterThis();
+  if (resourceName != nullptr) {
+    const bool isResourceStorageKindInferred = (flags == nullptr);
+    auto resource = new VarSymbol(resourceName);
+
+    if (isResourceStorageKindInferred) {
+      resource->addFlag(FLAG_MANAGER_RESOURCE_INFER_STORAGE);
+    } else {
+      for (auto f: *flags) resource->addFlag(f);
+      delete flags;
+      flags = nullptr;
+    }
+
+    ret->insertAtTail(new DefExpr(resource, enterThis));
+
+  } else {
+
+    // Otherwise, just make the call to 'enterThis()'.
+    ret->insertAtTail(enterThis);
+  }
+
+  // BUILD: TEMP var errorCaught = false;
+  auto errorCaught = newTemp("errorCaught");
+  ret->insertAtTail(new DefExpr(errorCaught, gFalse));
+
+  // Call helper to construct try/catch block.
+  auto tryCatch = buildTryCatchForManagerBlock(managerHandle, errorCaught);
+  ret->insertAtTail(tryCatch);
+
+  // BUILD: if !errorCaught then manager.leaveThis(nil);
+  auto ifCond = new CallExpr(PRIM_UNARY_LNOT, new SymExpr(errorCaught));
+  auto ifBranch = new CallExpr("leaveThis",
+                               gMethodToken,
+                               new SymExpr(managerHandle),
+                               gNil);
+  auto ifStmt = new CondStmt(ifCond, ifBranch);
+  ret->insertAtTail(ifStmt);
+
+  return ret;
+}
+
+/*
+  Each manager block declares some temporary variables, and then calls the
+  'enterThis()' method on the manager before executing the next block.
+  Managers are nested from left to right, and the final innermost scope is
+  the block containing user code.
+
+  Managers call 'leaveThis()' and are deinitialized in the reverse order of
+  their initialization.
+
+  TODO (dlongnecke-cray): In cleanup, recursively lift up the manager out of
+  its try block if we detect exception handling is not needed (e.g. we're
+  not in a throwing function, and not in a try).
+*/
+BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block) {
+  auto ret = new BlockStmt();
+
+  if (fWarnUnstable) {
+    USR_WARN(managers, "manage statements are not stable and may change");
+  }
+
+  // Used to thread context managers. Start by inserting into outer block.
+  BlockStmt* insertionPoint = ret;
+
+  for_alist(manager, managers->body) {
+    BlockStmt* managerBlock = toBlockStmt(manager);
+    INT_ASSERT(managerBlock);
+
+    // Insert the manager block at the appropriate point.
+    managerBlock->remove();
+    insertionPoint->insertAtTail(managerBlock);
+
+    BlockStmt* lastInsertionPoint = insertionPoint;
+
+    // Scroll forward looking for the next insertion point.
+    for_alist(stmt, managerBlock->body) {
+      if (TryStmt* tryStmt = toTryStmt(stmt)) {
+        insertionPoint = tryStmt->body();
+        break;
+      }
+    }
+
+    INT_ASSERT(insertionPoint != lastInsertionPoint);
+
+    // Flatten the manager block once we've found the insertion point.
+    managerBlock->flattenAndRemove();
+  }
+
+  // Lastly, insert the managed block (containing user code).
+  insertionPoint->insertAtTail(block);
+  block->flattenAndRemove();
+
+  return ret;
 }
 
 // builds an unconditional local statement. Used by the conditional
@@ -2475,17 +2590,6 @@ BlockStmt* buildDeleteStmt(CallExpr* exprlist) {
   return new BlockStmt(new CallExpr("chpl__delete", exprlist), BLOCK_SCOPELESS);
 }
 
-BlockStmt*
-buildAtomicStmt(Expr* stmt) {
-  static bool atomic_warning = false;
-
-  if (!atomic_warning) {
-    atomic_warning = true;
-    USR_WARN(stmt, "atomic statement is ignored (not implemented)");
-  }
-  return buildChapelStmt(new BlockStmt(stmt));
-}
-
 
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign) {
   if (sign == '+') {
@@ -2500,12 +2604,12 @@ CallExpr* buildPreDecIncWarning(Expr* expr, char sign) {
   return NULL;
 }
 
-BlockStmt* convertTypesToExtern(BlockStmt* blk) {
+BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
   for_alist(node, blk->body) {
     if (DefExpr* de = toDefExpr(node)) {
       if (!de->init) {
         Symbol* vs = de->sym;
-        PrimitiveType* pt = new PrimitiveType(NULL);
+        PrimitiveType* pt = new PrimitiveType(nullptr);
 
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
@@ -2517,8 +2621,13 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
         de = newde;
       }
       de->sym->addFlag(FLAG_EXTERN);
+      if (cname != nullptr) {
+        de->sym->cname = astr(cname);
+      }
+    } else if (BlockStmt* blk2 = toBlockStmt(node)) {
+      convertTypesToExtern(blk2, cname);
     } else {
-      INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
+      INT_FATAL(blk, "Got unexpected expr type in type_alias_decl_stmt");
     }
   }
   return blk;

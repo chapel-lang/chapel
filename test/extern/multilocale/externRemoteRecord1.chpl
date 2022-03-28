@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 extern record R {
   var x: c_int;

@@ -1,7 +1,7 @@
-use Spawn;
+use Subprocess;
 
 proc f(s: string) {
-  var p = spawnshell(s, stdout=PIPE, stderr=PIPE);
+  var p = spawnshell(s, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
   p.communicate();
   return p;
 }

@@ -1,0 +1,28 @@
+ReflectionFormalNames.chpl:17: warning: Formal 'i' is deprecated, please use 'idx' instead
+ReflectionFormalNames.chpl:18: warning: Formal 'i' is deprecated, please use 'idx' instead
+ReflectionFormalNames.chpl:27: warning: The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead
+ReflectionFormalNames.chpl:28: warning: The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead
+ReflectionFormalNames.chpl:29: warning: The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead
+ReflectionFormalNames.chpl:36: warning: The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead
+ReflectionFormalNames.chpl:37: warning: The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead
+ReflectionFormalNames.chpl:38: warning: The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead
+ReflectionFormalNames.chpl:45: warning: The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead
+ReflectionFormalNames.chpl:46: warning: The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead
+ReflectionFormalNames.chpl:47: warning: The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead
+ReflectionFormalNames.chpl:54: warning: The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead
+ReflectionFormalNames.chpl:55: warning: The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead
+ReflectionFormalNames.chpl:56: warning: The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead
+ReflectionFormalNames.chpl:63: warning: The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead
+ReflectionFormalNames.chpl:64: warning: The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead
+ReflectionFormalNames.chpl:65: warning: The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead
+ReflectionFormalNames.chpl:72: warning: The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead
+ReflectionFormalNames.chpl:73: warning: The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead
+ReflectionFormalNames.chpl:74: warning: The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead
+ReflectionFormalNames.chpl:81: warning: The formal 's' is deprecated, please use 'name' instead
+ReflectionFormalNames.chpl:82: warning: The formal 's' is deprecated, please use 'name' instead
+ReflectionFormalNames.chpl:89: warning: The formal 's' is deprecated, please use 'name' instead
+ReflectionFormalNames.chpl:90: warning: The formal 's' is deprecated, please use 'name' instead
+ReflectionFormalNames.chpl:97: warning: The formal 'i' is deprecated, please use 'idx' instead
+ReflectionFormalNames.chpl:98: warning: The formal 'i' is deprecated, please use 'idx' instead
+ReflectionFormalNames.chpl:105: warning: The formal 's' is deprecated, please use 'name' instead
+ReflectionFormalNames.chpl:106: warning: The formal 's' is deprecated, please use 'name' instead

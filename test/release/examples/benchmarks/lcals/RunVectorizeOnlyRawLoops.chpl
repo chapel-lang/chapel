@@ -28,10 +28,10 @@ module RunVectorizeOnlyRawLoops {
             const eosvmax = loop_data.RealArray_scalars[3];
             ltimer.start();
             for 0..#num_samples {
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 bvc[i] = cls * (compression[i] + 1.0);
               }
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 p_new[i] = bvc[i] * e_old[i];
                 if ( abs(p_new[i]) <  p_cut ) then p_new[i] = 0.0;
                 if ( vnewc[i] >= eosvmax ) then p_new[i] = 0.0;
@@ -72,11 +72,11 @@ module RunVectorizeOnlyRawLoops {
 
             ltimer.start();
             for 0..#num_samples {
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 e_new[i] = e_old[i] - 0.5 * delvc[i] *
                            (p_old[i] + q_old[i]) + 0.5 * work[i];
               }
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 if delvc[i] > 0.0 {
                   q_new[i] = 0.0;
                 } else {
@@ -91,15 +91,15 @@ module RunVectorizeOnlyRawLoops {
                   q_new[i] = ssc*ql_old[i] + qq_old[i];
                 }
               }
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 e_new[i] = e_new[i] + 0.5 * delvc[i] * (3.0*(p_old[i] + q_old[i]) - 4.0*(pHalfStep[i] + q_new[i]));
               }
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 e_new[i] += 0.5 * work[i];
                 if abs(e_new[i]) < e_cut then e_new[i] = 0.0;
                 if e_new[i] < emin then e_new[i] = emin;
               }
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 var q_tilde = 0.0;
                 if delvc[i] > 0.0 {
                   q_tilde = 0;
@@ -116,7 +116,7 @@ module RunVectorizeOnlyRawLoops {
                 if abs(e_new[i]) < e_cut then e_new[i] = 0.0;
                 if e_new[i] < emin then e_new[i] = emin;
               }
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 if delvc[i] <= 0.0 {
                   var ssc = (pbvc[i] * e_new[i]
                              + vnewc[i] * vnewc[i] * bvc[i] * p_new[i]) / rho0;
@@ -175,7 +175,7 @@ module RunVectorizeOnlyRawLoops {
             const vnormq = 0.083333333333333333;
             ltimer.start();
             for 0..#num_samples {
-              for i in vectorizeOnly(dom.fpz..dom.lpz) {
+              foreach i in dom.fpz..dom.lpz {
                 const x71 = x7[i] - x1[i],
                       x72 = x7[i] - x2[i],
                       x74 = x7[i] - x4[i],
@@ -265,7 +265,7 @@ module RunVectorizeOnlyRawLoops {
             const half = 0.5;
             ltimer.start();
             for 0..#num_samples {
-              for ii in vectorizeOnly(0..#dom.n_real_zones) {
+              foreach ii in 0..#dom.n_real_zones {
                 const i  = dom.real_zones[ii];
 
                 const xi  = half * (x1[i]  + x2[i]  - x3[i]  - x4[i]);
@@ -316,7 +316,7 @@ module RunVectorizeOnlyRawLoops {
             const ireal = 0.0 + 1.0i;
             ltimer.start();
             for 0..#num_samples {
-              for k in vectorizeOnly(kmin..kmax-1) {
+              foreach k in kmin..kmax-1 {
                 for j in jmin..jmax-1 {
                   var it0    = (k*(jmax+1) + j) * (imax+1);
                   var idenac = (k*(jmax+2) + j) * (imax+2);
@@ -378,7 +378,7 @@ module RunVectorizeOnlyRawLoops {
 
             ltimer.start();
             for isamp in 0..#num_samples {
-              for i in vectorizeOnly(0..#len_minus_coeff) {
+              foreach i in 0..#len_minus_coeff {
                 var sum = 0.0;
                 for j in 0..#coefflen {
                   sum += coeff[j]*input[i+j];
@@ -400,7 +400,7 @@ module RunVectorizeOnlyRawLoops {
             ref in2  = loop_data.RealArray_1D[4];
             ltimer.start();
             for 0..#num_samples {
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 const res = -in1[i] - in2[i];
                 out3[i] = res;
                 out2[i] = res;
@@ -419,7 +419,7 @@ module RunVectorizeOnlyRawLoops {
             ref in2  = loop_data.RealArray_1D[4];
             ltimer.start();
             for 0..#num_samples {
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 out1[i] = in1[i] * in2[i];
                 out2[i] = in1[i] + in2[i];
                 out3[i] = in1[i] - in2[i];
@@ -437,7 +437,7 @@ module RunVectorizeOnlyRawLoops {
             ref x2 = loop_data.RealArray_1D[4];
             ltimer.start();
             for 0..#num_samples {
-              for i in vectorizeOnly(0..#len) {
+              foreach i in 0..#len {
                 var s = b[i]*b[i] - 4.0*a[i]*c[i];
                 if s >= 0 {
                   s = sqrt(s);
@@ -509,7 +509,7 @@ module RunVectorizeOnlyRawLoops {
               return (i+j/25, j%25);
             }
             for 0..#num_samples {
-              forall ip in vectorizeOnly(0..#len) {
+              foreach ip in 0..#len {
                 var i1, j1, i2, j2: int;
                 // These casts to int(32) overflow and behave differently
                 // than if they were cast to default sized int (int(64)).

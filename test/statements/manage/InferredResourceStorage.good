@@ -1,0 +1,28 @@
+T1A: only VALUE overload with NO mutation
+default-init (ptr = {x = 0})
+proc man1.enterThis(): res
+const action with resource
+leaving
+deinit (ptr = {x = 0})
+
+T1B: only VALUE overload with mutation
+default-init (ptr = {x = 1})
+proc man1.enterThis(): res
+mutating resource
+leaving
+deinit (ptr = {x = 1})
+
+T2: only REF overload with mutation
+default-init (ptr = {x = 2})
+proc man2.enterThis() ref: res
+mutating resource
+leaving
+deinit (ptr = {x = 2})
+
+T3: only CONST-REF overload with NO mutation
+default-init (ptr = {x = 3})
+proc man3.enterThis() const ref: res
+const action with resource
+leaving
+deinit (ptr = {x = 3})
+

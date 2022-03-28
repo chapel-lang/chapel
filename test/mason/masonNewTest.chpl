@@ -1,10 +1,8 @@
-
-use MasonUtils;
 use FileSystem;
 use MasonNew;
 
 proc main() {
-  const args = ['mason', 'new', 'Test'];
+  const args = ['new', 'Test'];
   masonNew(args);
 
   // Confirm structure

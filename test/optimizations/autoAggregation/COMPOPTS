@@ -1,2 +1,2 @@
---auto-aggregation --report-auto-aggregation -sverboseAggregation=true
---auto-aggregation --report-auto-aggregation -sverboseAggregation=true --no-auto-local-access
+--auto-aggregation --report-auto-aggregation -sCopyAggregation.verboseAggregation=true
+--auto-aggregation --report-auto-aggregation -sCopyAggregation.verboseAggregation=true --no-auto-local-access

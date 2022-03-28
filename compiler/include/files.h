@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -53,6 +53,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
 
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 const char* getCwd();
+void ensureTmpDirExists();
 const char* makeTempDir(const char* dirPrefix);
 void deleteDir(const char* dirname);
 void deleteTmpDir();
@@ -108,6 +109,8 @@ bool readArgsFromFile(std::string path, std::vector<std::string>& cmds,
                       bool errFatal=true);
 void expandInstallationPaths(std::string& arg);
 void expandInstallationPaths(std::vector<std::string>& args);
+
+bool isDirectory(const char* path);
 
 char*       chplRealPath(const char* path);
 char*       dirHasFile(const char* dir, const char* file);

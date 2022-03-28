@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,59 +18,22 @@
  * limitations under the License.
  */
 
+// NOTE: the docs below are intended to be included
+// in the relevant spec section
+
 /*
-  A *locale* is a Chapel abstraction for a piece of a target
-  architecture that has processing and storage capabilities.
-  Generally speaking, the tasks running within a locale have
-  roughly uniform access to values stored in the locale's local
-  memory and longer latencies for accessing the memories of other
-  locales.  As examples, a single shared memory machine would be
-  defined as a single locale, while in a system consisting of a
-  group of network-connected multicore nodes or SMPs each node
-  would be defined as a locale.
-
-  Chapel provides several predefined methods on locales, as well as
-  a few variables that describe the locales upon which a program is
-  running.
-
-  In addition to what is documented below, ``numLocales``, ``LocaleSpace``,
-  and ``Locales`` are available as global variables.
-
-  ``numLocales`` is the number of top-level (network connected) locales.
-
-  .. code-block:: chapel
-
-    config const numLocales: int;
-
-  ``LocaleSpace`` is the domain over which the global ``Locales`` array is
-  defined.
-
-  .. code-block:: chapel
-
-    const LocaleSpace = {0..numLocales-1};
-
-  The global ``Locales`` array contains an entry for each top-level locale.
-
-  .. code-block:: chapel
-
-    const Locales: [LocaleSpace] locale;
-
-
-  One common code idiom in Chapel is the following, which spreads parallel
-  tasks across the network-connected locales upon which the program is running:
-
-    .. code-block:: chapel
-
-      coforall loc in Locales { on loc { ... } }
-
-  The default value for a ``locale`` variable is ``Locales[0]``
 
  */
 module ChapelLocale {
 
   public use LocaleModel;
   import HaltWrappers;
-  use SysCTypes, CPtr;
+  use CTypes;
+
+  compilerAssert(!(!localeModelHasSublocales &&
+   localeModelPartitionsIterationOnSublocales),
+   "Locale model without sublocales can not have " +
+   "localeModelPartitionsIterationOnSublocales set to true.");
 
   //
   // Node and sublocale types and special sublocale values.
@@ -92,7 +55,7 @@ module ChapelLocale {
     return (subloc != c_sublocid_none
             && subloc != c_sublocid_any
             && subloc != c_sublocid_all);
-  
+
   /*
     regular: Has a concrete BaseLocale instance
     any: Placeholder to represent the notion of "anywhere"
@@ -211,6 +174,7 @@ module ChapelLocale {
     :return: current locale
     :rtype: locale
   */
+  pragma "no doc" // because the spec covers it in a different section
   inline proc here {
     return chpl_localeID_to_locale(here_id);
   }
@@ -240,7 +204,7 @@ module ChapelLocale {
   }
 
   /*
-    Get the integer identifier for this locale.
+    Get the unique integer identifier for this locale.
 
     :returns: locale number, in the range ``0..numLocales-1``
     :rtype: int
@@ -373,7 +337,7 @@ module ChapelLocale {
 
     var maxTaskPar: int;
 
-    var callStackSize: size_t;
+    var callStackSize: c_size_t;
 
     proc id : int return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 
@@ -492,20 +456,20 @@ module ChapelLocale {
       HaltWrappers.pureVirtualMethodHalt();
       return 0;
     }
-  
+
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
 //    iter getChildIndices() : int {
 //      for idx in this.getChildSpace do
 //        yield idx;
 //    }
-  
+
     pragma "no doc"
     proc addChild(loc:locale)
     {
       HaltWrappers.pureVirtualMethodHalt();
     }
-  
+
     pragma "no doc"
     proc getChild(idx:int) : locale {
       HaltWrappers.pureVirtualMethodHalt();
@@ -529,7 +493,7 @@ module ChapelLocale {
    */
   pragma "no doc"
   class DummyLocale : BaseLocale {
-    proc init() { 
+    proc init() {
       super.init(nilLocale);
     }
 
@@ -646,7 +610,6 @@ module ChapelLocale {
     // initialize the LocaleModel.  The calling loop body cannot
     // contain any non-local code, since the rootLocale is not yet
     // initialized.
-    pragma "not order independent yielding loops"
     iter chpl_initOnLocales() {
       if numLocales > 1 then
         halt("The locales must be initialized in parallel");
@@ -661,19 +624,23 @@ module ChapelLocale {
     // opportunity to initialize any global private variables we
     // either need (e.g., defaultDist) or can do at this point in
     // initialization (e.g., rootLocale).
-    pragma "not order independent yielding loops"
     iter chpl_initOnLocales(param tag: iterKind)
       where tag==iterKind.standalone {
-      // Simple locales barrier, see implementation below for notes
-      var b: localesBarrier;
-      var flags: [1..#numLocales-1] unmanaged localesSignal?;
-      coforall locIdx in 0..#numLocales /*ref(b)*/ {
+      // Split into 2 coforalls to barrier after the yield. Ideally, we would
+      // just use a real barrier, but `chpl_comm_barrier` is in use and other
+      // custom barriers have been non-scalable in the past.
+      coforall locIdx in 0..#numLocales {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
                                           c_sublocid_any)) {
           chpl_defaultDistInitPrivate();
           yield locIdx;
-          b.wait(locIdx, flags);
+        }
+      } // Relying on barrier at join, do NOT fuse these loops
+      coforall locIdx in 0..#numLocales  {
+        on __primitive("chpl_on_locale_num",
+                       chpl_buildLocaleID(locIdx:chpl_nodeID_t,
+                                          c_sublocid_any)) {
           chpl_rootLocaleInitPrivate(locIdx);
           chpl_defaultLocaleInitPrivate();
           chpl_singletonCurrentLocaleInitPrivate(locIdx);
@@ -695,70 +662,6 @@ module ChapelLocale {
       c_free(p);
     }
   }
-
-  //
-  // Simple locales barrier
-  //
-  // This sits outside of the abstract root locale definition above
-  // because the compiler cannot resolve the constructor (known issues
-  // with nested classes/records).  In addition, we cannot have the
-  // flags array in the record, because the initCopy function needs
-  // the dataPar* configs declared in ChapelDistribution.
-  //
-  // Each non-0 locale increments the count, and then waits on a
-  // *local* atomic.  This is done by creating an array of type
-  // class localesSignal, one per locale, and allocating each locale's
-  // copy before updating the count.  Locale 0 waits for the others to
-  // arrive and then set the signals to true.  We can't do anything
-  // too complicated this early on, so we are using a for loop to
-  // broadcast that we are done.
-  pragma "no doc"
-  class localesSignal {
-    var s: atomic bool;
-
-    // Override default initializer; this could go away when the
-    // compiler's default initializer creates a version that takes a
-    // bool rather than an 'atomic bool' (which generates a
-    // '--warn-unstable' warning otherwise)
-    proc init() {
-    }
-  }
-  pragma "no doc"
-  record localesBarrier {
-    proc wait(locIdx, flags) {
-      if locIdx==0 {
-        // locale 0 has nothing else to do, so check flags
-        while (true) {
-          // This fence ensures that writes to the count variables
-          // are available to this task. (Note that they aren't
-          // atomic if they're 128-bit writes though - so we
-          // have some risk of getting part of a wide pointer).
-          // Without this fence, there is a race condition on
-          // a weakly-ordered architecture.
-          atomicFence();
-          var count = 0;
-          for f in flags do
-            if f then count += 1;
-          if count==numLocales-1 then break;
-          // Give time to other tasks/threads/processes
-          // like we do in waitFor
-          chpl_task_yield();
-        }
-        // Let the others go
-        for f in flags do
-          f!.s.testAndSet();
-      } else {
-        var f = new unmanaged localesSignal();
-        // expose my flag to locale 0
-        flags[locIdx] = f;
-        // wait (locally) for locale 0 to set my flag
-        f.s.waitFor(true);
-        // clean up
-        delete f;
-      }
-    }
-  }
-
 
   // This function is called in the LocaleArray module to initialize
   // the rootLocale.  It sets up the origRootLocale and also includes
@@ -802,8 +705,8 @@ module ChapelLocale {
       __primitive("chpl_comm_array_get",
                   __primitive("array_get", newRL, 0),
                   0 /* locale 0 */,
-                  __primitive("array_get", origRL, 0), 
-                  numLocales:size_t);
+                  __primitive("array_get", origRL, 0),
+                  numLocales:c_size_t);
       // Set the rootLocale to the local copy
       rootLocale._instance = newRootLocale;
     }
@@ -881,49 +784,13 @@ module ChapelLocale {
       // For code prior to rootLocale initialization
       // in cases where we capture functions as FCF, module initialization order
       // changes in a way that IO is inited too early. In that scenario, we
-      // somehow don't get dummyLocale set up correctly in this scheme 
+      // somehow don't get dummyLocale set up correctly in this scheme
       // remove this check, and test/exits/albrecht/exitWithNoCall fails
       if dummyLocale._instance == nil {
         dummyLocale._instance = new unmanaged DummyLocale();
       }
       return dummyLocale;
     }
-  }
-
-//########################################################################{
-//# Locale diagnostics
-//#
-
-  pragma "no doc"
-  proc locale.totalThreads() {
-    var totalThreads: int;
-    extern proc chpl_task_getNumThreads() : uint(32);
-    on this do totalThreads = chpl_task_getNumThreads();
-    return totalThreads;
-  }
-  
-  pragma "no doc"
-  proc locale.idleThreads() {
-    var idleThreads: int;
-    extern proc chpl_task_getNumIdleThreads() : uint(32);
-    on this do idleThreads = chpl_task_getNumIdleThreads();
-    return idleThreads;
-  }
-  
-  pragma "no doc"
-  proc locale.queuedTasks() {
-    var queuedTasks: int;
-    extern proc chpl_task_getNumQueuedTasks() : uint(32);
-    on this do queuedTasks = chpl_task_getNumQueuedTasks();
-    return queuedTasks;
-  }
-
-  pragma "no doc"
-  proc locale.blockedTasks() {
-    var blockedTasks: int;
-    extern proc chpl_task_getNumBlockedTasks() : int(32);
-    on this do blockedTasks = chpl_task_getNumBlockedTasks();
-    return blockedTasks;
   }
 
 //########################################################################}

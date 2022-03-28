@@ -275,11 +275,11 @@ proc shallowCopy(ref A, dst, src, nElts) {
   // Ideally this would just be
   //A[dst..#nElts] = A[src..#nElts];
 
-    var size = (nElts:size_t)*c_sizeof(A.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(A.eltType);
     c_memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size);
     /*
   if A._instance.isDefaultRectangular() {
-    var size = (nElts:size_t)*c_sizeof(A.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(A.eltType);
     c_memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size);
   } else {
     var ok = chpl__bulkTransferArray(/*dst*/ A._instance, {dst..#nElts},
@@ -294,11 +294,11 @@ proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
   // Ideally this would just be
   //DstA[dst..#nElts] = SrcA[src..#nElts];
 
-    var size = (nElts:size_t)*c_sizeof(DstA.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
     c_memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size);
     /*
   if DstA._instance.isDefaultRectangular() && SrcA._instance.isDefaultRectangular() {
-    var size = (nElts:size_t)*c_sizeof(DstA.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
     c_memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size);
   } else {
     var ok = chpl__bulkTransferArray(/*dst*/ DstA._instance, {dst..#nElts},

@@ -6,13 +6,13 @@ hosts = ["alpha", "omega"]
 
 [database]
 connection_max = 5000
+enabled = true
 ports = [8001, 8001, 8002]
 server = "192.168.1.1"
-enabled = true
 
 [owner]
-name = "Tom Preston-Werner"
 dob = 1979-05-27T07:32:00
+name = "Tom Preston-Werner"
 
 [servers]
 
@@ -27,8 +27,8 @@ ip = "10.0.0.2"
 [servers.beta.zeta]
 
 [servers.beta.zeta.intable]
-supported = true
 still = "annoying"
+supported = true
 
 [table]
 holds = "stuff"

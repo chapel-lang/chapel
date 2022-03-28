@@ -1,6 +1,22 @@
 /*
- * Copyright (c) 2016 Los Alamos National Security, LLC. All rights reserved.
+ * Copyright (c) 2004-2007 The Trustees of Indiana University and Indiana
+ *                         University Research and Technology
+ *                         Corporation.  All rights reserved.
+ * Copyright (c) 2004-2005 The University of Tennessee and The University
+ *                         of Tennessee Research Foundation.  All rights
+ *                         reserved.
+ * Copyright (c) 2004-2005 High Performance Computing Center Stuttgart,
+ *                         University of Stuttgart.  All rights reserved.
+ * Copyright (c) 2004-2005 The Regents of the University of California.
+ *                         All rights reserved.
+ * Copyright (c) 2009-2017 Cisco Systems, Inc.  All rights reserved
+ * Copyright (c) 2013-2018 Los Alamos National Security, LLC. All rights
+ *                         reserved.
+ * Copyright (c) 2016-2017 Research Organization for Information Science
+ *                         and Technology (RIST). All rights reserved.
+ * Copyright (c) 2016-2020 IBM Corporation.  All rights reserved.
  * Copyright (c) 2019 Intel Corporation, Inc.  All rights reserved.
+ * Copyright (c) 2020 Amazon.com, Inc. or its affiliates. All rights reserved.
  *
  * License text from Open-MPI (www.open-mpi.org/community/license.php)
  *
@@ -41,40 +57,68 @@
  */
 
 #include <ofi_mr.h>
+#include <ofi_mem.h>
 
-struct ofi_memhooks memhooks;
+static int ofi_memhooks_start(struct ofi_mem_monitor *monitor);
+static void ofi_memhooks_stop(struct ofi_mem_monitor *monitor);
+
+struct ofi_memhooks memhooks = {
+	.monitor.iface = FI_HMEM_SYSTEM,
+	.monitor.init = ofi_monitor_init,
+	.monitor.cleanup = ofi_monitor_cleanup,
+	.monitor.start = ofi_memhooks_start,
+	.monitor.stop = ofi_memhooks_stop,
+};
 struct ofi_mem_monitor *memhooks_monitor = &memhooks.monitor;
 
 
-#if defined(__linux__) && defined(HAVE_ELF_H) && defined(HAVE_SYS_AUXV_H)
+/* memhook support checks */
+#if HAVE_MEMHOOKS_MONITOR
 
-#include <elf.h>
-#include <sys/auxv.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/shm.h>
+#include <sys/ipc.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <link.h>
 
+#if HAVE_DECL___SYSCALL && defined(HAVE___SYSCALL)
+/* calling __syscall is preferred on some systems when some arguments may be 64-bit. it also
+ * has the benefit of having an off_t return type */
+#define ofi_memhooks_syscall __syscall
+#else
+#define ofi_memhooks_syscall syscall
+#endif
+
+// These op codes used to be in bits/ipc.h but were removed in glibc in 2015
+// with a comment saying they should be defined in internal headers:
+// https://sourceware.org/bugzilla/show_bug.cgi?id=18560
+// and when glibc uses that syscall it seems to do so from its own definitions:
+// https://github.com/bminor/glibc/search?q=IPCOP_shmat&unscoped_q=IPCOP_shmat
+#if (!defined(SYS_shmat) && !defined(IPCOP_shmat))
+#define IPCOP_shmat                21
+#endif
+#if (!defined(SYS_shmdt) && !defined(IPCOP_shmdt))
+#define IPCOP_shmdt                22
+#endif
+
+#define OFI_INTERCEPT_MAX_PATCH 32
 
 struct ofi_intercept {
 	struct dlist_entry 		entry;
 	const char			*symbol;
 	void				*our_func;
+	void				*orig_func;
+	unsigned char			patch_data[OFI_INTERCEPT_MAX_PATCH];
+	unsigned char			patch_orig_data[OFI_INTERCEPT_MAX_PATCH];
+	unsigned			patch_data_size;
 	struct dlist_entry		dl_intercept_list;
 };
 
-struct ofi_dl_intercept {
-	struct dlist_entry 		entry;
-	void 				**dl_func_addr;
-	void				*dl_func;
-};
-
 enum {
-	OFI_INTERCEPT_DLOPEN,
 	OFI_INTERCEPT_MMAP,
 	OFI_INTERCEPT_MUNMAP,
 	OFI_INTERCEPT_MREMAP,
@@ -85,7 +129,6 @@ enum {
 	OFI_INTERCEPT_MAX
 };
 
-static void *ofi_intercept_dlopen(const char *filename, int flag);
 static void *ofi_intercept_mmap(void *start, size_t length,
 				int prot, int flags, int fd, off_t offset);
 static int ofi_intercept_munmap(void *start, size_t length);
@@ -97,8 +140,6 @@ static int ofi_intercept_shmdt(const void *shmaddr);
 static int ofi_intercept_brk(const void *brkaddr);
 
 static struct ofi_intercept intercepts[] = {
-	[OFI_INTERCEPT_DLOPEN] = { .symbol = "dlopen",
-				.our_func = ofi_intercept_dlopen},
 	[OFI_INTERCEPT_MMAP] = { .symbol = "mmap",
 				.our_func = ofi_intercept_mmap},
 	[OFI_INTERCEPT_MUNMAP] = { .symbol = "munmap",
@@ -115,206 +156,102 @@ static struct ofi_intercept intercepts[] = {
 				.our_func = ofi_intercept_brk},
 };
 
-struct ofi_mem_calls {
-	void *(*dlopen) (const char *, int);
-	void *(*mmap)(void *, size_t, int, int, int, off_t);
-	int (*munmap)(void *, size_t);
-	void *(*mremap)(void *old_address, size_t old_size,
-			size_t new_size, int flags, ... /* void *new_address */ );
-	int (*madvise)(void *addr, size_t length, int advice);
-	void *(*shmat)(int shmid, const void *shmaddr, int shmflg);
-	int (*shmdt)(const void *shmaddr);
-	int (*brk)(const void *brkaddr);
-};
-
-static struct ofi_mem_calls real_calls;
-
-
-static const ElfW(Phdr) *
-ofi_get_phdr_dynamic(const ElfW(Phdr) *phdr, uint16_t phnum, int phent)
-{
-	uint16_t i;
-
-	for (i = 0 ; i < phnum; i++) {
-		if (phdr->p_type == PT_DYNAMIC)
-			return phdr;
-		phdr = (ElfW(Phdr)*) ((intptr_t) phdr + phent);
-	}
-
-	return NULL;
-}
-
-static void *ofi_get_dynentry(ElfW(Addr) base, const ElfW(Phdr) *pdyn,
-			      ElfW(Sxword) type)
-{
-	ElfW(Dyn) *dyn;
-
-	for (dyn = (ElfW(Dyn)*) (base + pdyn->p_vaddr); dyn->d_tag; ++dyn) {
-		if (dyn->d_tag == type)
-			return (void *) (uintptr_t) dyn->d_un.d_val;
-	}
-
-	return NULL;
-}
-
-#if SIZE_MAX > UINT_MAX
-#define OFI_ELF_R_SYM ELF64_R_SYM
-#else
-#define OFI_ELF_R_SYM ELF32_R_SYM
+#ifdef HAVE___CURBRK
+extern void *__curbrk; /* in libc */
 #endif
 
-static void *ofi_dl_func_addr(ElfW(Addr) base, const ElfW(Phdr) *phdr,
-			      int16_t phnum, int phent, const char *symbol)
+#if HAVE___CLEAR_CACHE
+/*
+ * Used on ARM64 platforms, see https://github.com/open-mpi/ompi/issues/5631
+ */
+static inline void ofi_clear_instruction_cache(uintptr_t address, size_t data_size)
 {
-	const ElfW(Phdr) *dphdr;
-	ElfW(Rela) *reloc;
-	void *jmprel, *strtab;
-	char *elf_sym;
-	uint32_t relsymidx;
-	ElfW(Sym) *symtab;
-	size_t pltrelsz;
+	/* do not allow global declaration of compiler intrinsic */
+	void __clear_cache(void* beg, void* end);
 
-	dphdr = ofi_get_phdr_dynamic(phdr, phnum, phent);
-	jmprel = ofi_get_dynentry(base, dphdr, DT_JMPREL);
-	symtab = (ElfW(Sym) *) ofi_get_dynentry(base, dphdr, DT_SYMTAB);
-	strtab = ofi_get_dynentry (base, dphdr, DT_STRTAB);
-	pltrelsz = (uintptr_t) ofi_get_dynentry(base, dphdr, DT_PLTRELSZ);
-
-	for (reloc = jmprel; (intptr_t) reloc < (intptr_t) jmprel + pltrelsz;
-	     reloc++) {
-		relsymidx = OFI_ELF_R_SYM(reloc->r_info);
-		elf_sym = (char *) strtab + symtab[relsymidx].st_name;
-		if (!strcmp(symbol, elf_sym))
-			return (void *) (base + reloc->r_offset);
-        }
-
-        return NULL;
+	__clear_cache ((void *) address, (void *) (address + data_size));
 }
-
-static int ofi_intercept_dl_calls(ElfW(Addr) base, const ElfW(Phdr) *phdr,
-				  const char *phname, int16_t phnum, int phent,
-				  struct ofi_intercept *intercept)
+#else
+static inline void ofi_clear_instruction_cache(uintptr_t address, size_t data_size)
 {
-	struct ofi_dl_intercept *dl_entry;
-	long page_size = ofi_get_page_size();
-	void **func_addr, *page;
-	int ret;
+	size_t i;
+	size_t offset_jump = 16;
+#if defined(__aarch64__)
+	offset_jump = 32;
+#endif
+	/* align the address */
+	address &= ~(offset_jump - 1);
 
-	FI_DBG(&core_prov, FI_LOG_MR,
-	       "intercepting symbol %s from dl\n", intercept->symbol);
-	func_addr = ofi_dl_func_addr(base, phdr, phnum, phent, intercept->symbol);
-	if (!func_addr)
-		return FI_SUCCESS;
+	for (i = 0 ; i < data_size ; i += offset_jump) {
+#if (defined(__x86_64__) || defined(__amd64__))
+		__asm__ volatile("mfence;clflush %0;mfence"::
+				 "m" (*((char*) address + i)));
+#elif defined(__aarch64__)
+		__asm__ volatile ("dc cvau, %0\n\t"
+			  "dsb ish\n\t"
+			  "ic ivau, %0\n\t"
+			  "dsb ish\n\t"
+			  "isb":: "r" (address + i));
+#endif
+	}
+}
+#endif
 
-	page = (void *) ((intptr_t) func_addr & ~(page_size - 1));
-	ret = mprotect(page, page_size, PROT_READ | PROT_WRITE);
-	if (ret < 0)
-		return -FI_ENOSYS;
+static inline int ofi_write_patch(unsigned char *patch_data, void *address,
+				  size_t data_size)
+{
+	long page_size;
+	void *base;
+	void *bound;
+	size_t length;
 
-	if (*func_addr != intercept->our_func) {
-		dl_entry = malloc(sizeof(*dl_entry));
-		if (!dl_entry)
-			return -FI_ENOMEM;
-
-		dl_entry->dl_func_addr = func_addr;
-		dl_entry->dl_func = *func_addr;
-		*func_addr = intercept->our_func;
-		dlist_insert_tail(&dl_entry->entry, &intercept->dl_intercept_list);
+	page_size = ofi_get_page_size();
+	if (page_size < 0) {
+		FI_WARN(&core_prov, FI_LOG_MR,
+			"failed to get page size: %s\n", fi_strerror(-page_size));
+		return page_size;
 	}
 
-	return FI_SUCCESS;
-}
+	base = ofi_get_page_start(address, page_size);
+	bound = ofi_get_page_end(address, page_size);
+	length = (uintptr_t) bound - (uintptr_t) base;
 
-static int ofi_intercept_phdr_handler(struct dl_phdr_info *info,
-                                    size_t size, void *data)
-{
-	struct ofi_intercept *intercept = data;
-	int phent, ret;
-
-	phent = getauxval(AT_PHENT);
-	if (phent <= 0) {
-		FI_DBG(&core_prov, FI_LOG_MR, "failed to read phent size");
-		return -FI_EINVAL;
+	if (mprotect(base, length, PROT_EXEC|PROT_READ|PROT_WRITE)) {
+		FI_WARN(&core_prov, FI_LOG_MR,
+			"mprotect to set PROT_WRITE on %p len %lu failed: %s\n",
+			(void *) base, length, strerror(errno));
+		return -errno;
 	}
 
-	ret = ofi_intercept_dl_calls(info->dlpi_addr, info->dlpi_phdr,
-				     info->dlpi_name, info->dlpi_phnum,
-				     phent, intercept);
-	return ret;
+	memcpy(address, patch_data, data_size);
+
+	ofi_clear_instruction_cache((uintptr_t) address, data_size);
+
+	/*
+	 * Nothing we can do here if this fails so ignore the return code. It
+	 * shouldn't due to alignment since the parameters are the same as
+	 * before.
+	 */
+	if (mprotect(base, length, PROT_EXEC|PROT_READ))
+		FI_WARN(&core_prov, FI_LOG_MR,
+			"mprotect to drop PROT_WRITE on %p len %lu failed: %s\n",
+			 base, length, strerror(errno));
+
+	return 0;
 }
 
-static void *ofi_intercept_dlopen(const char *filename, int flag)
+static int ofi_apply_patch(struct ofi_intercept *intercept)
 {
-	struct ofi_intercept  *intercept;
-	void *handle;
-
-	handle = real_calls.dlopen(filename, flag);
-	if (!handle)
-		return NULL;
-
-	pthread_mutex_lock(&memhooks_monitor->lock);
-	dlist_foreach_container(&memhooks.intercept_list, struct ofi_intercept,
-		intercept, entry) {
-		dl_iterate_phdr(ofi_intercept_phdr_handler, intercept);
-	}
-	pthread_mutex_unlock(&memhooks_monitor->lock);
-	return handle;
+	memcpy(intercept->patch_orig_data, intercept->orig_func,
+	       intercept->patch_data_size);
+	return ofi_write_patch(intercept->patch_data, intercept->orig_func,
+			       intercept->patch_data_size);
 }
 
-static int ofi_restore_dl_calls(ElfW(Addr) base, const ElfW(Phdr) *phdr,
-				const char *phname, int16_t phnum, int phent,
-				struct ofi_intercept *intercept)
+static int ofi_remove_patch(struct ofi_intercept *intercept)
 {
-	struct ofi_dl_intercept *dl_entry;
-	long page_size = ofi_get_page_size();
-	void **func_addr, *page;
-	int ret;
-
-	FI_DBG(&core_prov, FI_LOG_MR,
-	       "releasing symbol %s from dl\n", intercept->symbol);
-	func_addr = ofi_dl_func_addr(base, phdr, phnum, phent, intercept->symbol);
-	if (!func_addr)
-		return FI_SUCCESS;
-
-	page = (void *) ((intptr_t) func_addr & ~(page_size - 1));
-	ret = mprotect(page, page_size, PROT_READ | PROT_WRITE);
-	if (ret < 0)
-		return -FI_ENOSYS;
-
-	dlist_foreach_container_reverse(&intercept->dl_intercept_list,
-		struct ofi_dl_intercept, dl_entry, entry) {
-
-		if (dl_entry->dl_func_addr != func_addr)
-			continue;
-
-		assert(*func_addr == intercept->our_func);
-		*func_addr = dl_entry->dl_func;
-		dlist_remove(&dl_entry->entry);
-		free(dl_entry);
-		FI_DBG(&core_prov, FI_LOG_MR,
-		       "dl symbol %s restored\n", intercept->symbol);
-		break;
-	}
-
-	return FI_SUCCESS;
-}
-
-static int ofi_restore_phdr_handler(struct dl_phdr_info *info,
-                                    size_t size, void *data)
-{
-	struct ofi_intercept *intercept = data;
-	int phent, ret;
-
-	phent = getauxval(AT_PHENT);
-	if (phent <= 0) {
-		FI_DBG(&core_prov, FI_LOG_MR, "failed to read phent size");
-		return -FI_EINVAL;
-	}
-
-	ret = ofi_restore_dl_calls(info->dlpi_addr, info->dlpi_phdr,
-				   info->dlpi_name, info->dlpi_phnum,
-				   phent, intercept);
-	return ret;
+	return ofi_write_patch(intercept->patch_orig_data, intercept->orig_func,
+			       intercept->patch_data_size);
 }
 
 static void ofi_restore_intercepts(void)
@@ -322,101 +259,192 @@ static void ofi_restore_intercepts(void)
 	struct ofi_intercept *intercept;
 
 	dlist_foreach_container(&memhooks.intercept_list, struct ofi_intercept,
-		intercept, entry) {
-		dl_iterate_phdr(ofi_restore_phdr_handler, intercept);
-	}
+		intercept, entry)
+		ofi_remove_patch(intercept);
 }
 
-static int ofi_intercept_symbol(struct ofi_intercept *intercept, void **real_func)
+#if (defined(__x86_64___) || defined(__amd64__))
+static int ofi_patch_function(struct ofi_intercept *intercept)
 {
+	intercept->patch_data_size = 13;
+	*(unsigned short*)(intercept->patch_data + 0) = 0xbb49;
+	*(unsigned long* )(intercept->patch_data + 2) =
+		(unsigned long) intercept->our_func;
+	*(unsigned char*) (intercept->patch_data +10) = 0x41;
+	*(unsigned char*) (intercept->patch_data +11) = 0xff;
+	*(unsigned char*) (intercept->patch_data +12) = 0xe3;
+
+	return ofi_apply_patch(intercept);
+}
+#elif defined(__aarch64__)
+/**
+ * @brief Generate a mov immediate instruction
+ *
+ * @param[in] reg   register number (0-31)
+ * @param[in] shift shift amount (0-3) * 16-bits
+ * @param[in] value immediate value
+ */
+static uint32_t mov(unsigned int reg, uint16_t shift, uint16_t value)
+{
+	return (0x1a5 << 23) + ((uint32_t) shift << 21) + ((uint32_t) value << 5) + reg;
+}
+
+/**
+ * @brief Generate a mov immediate with keep instruction
+ *
+ * @param[in] reg   register number (0-31)
+ * @param[in] shift shift amount (0-3) * 16-bits
+ * @param[in] value immediate value
+ */
+static uint32_t movk(unsigned int reg, uint16_t shift, uint16_t value)
+{
+	return (0x1e5 << 23) + ((uint32_t) shift << 21) + ((uint32_t) value << 5) + reg;
+}
+
+/**
+ * @brief Generate a branch to register instruction
+ *
+ * @param[in] reg   register number (0-31)
+ */
+static uint32_t br(unsigned int reg)
+{
+	return (0xd61f << 16) + (reg << 5);
+}
+
+static int ofi_patch_function(struct ofi_intercept *intercept)
+{
+	/*
+	 * r15 is the highest numbered temporary register. I am
+	 * assuming this one is safe to use.
+	 */
+	const unsigned int gr = 15;
+	uintptr_t addr = (uintptr_t) intercept->patch_data;
+	uintptr_t value = (uintptr_t) intercept->our_func;
+
+	*(uint32_t *) (addr +  0) = mov(gr, 3, value >> 48);
+	*(uint32_t *) (addr +  4) = movk(gr, 2, value >> 32);
+	*(uint32_t *) (addr +  8) = movk(gr, 1, value >> 16);
+	*(uint32_t *) (addr + 12) = movk(gr, 0, value);
+	intercept->patch_data_size = 16;
+
+	*(uint32_t *) ((uintptr_t) intercept->patch_data +
+		       intercept->patch_data_size) = br(gr);
+	intercept->patch_data_size = intercept->patch_data_size + 4;
+
+	return ofi_apply_patch(intercept);
+}
+#endif
+
+/*
+ * This implementation intercepts syscalls by overwriting the beginning of
+ * glibc's functions with a jump to our intercept function. After notifying the
+ * cache we will make the syscall directly. We store the original instructions
+ * and restore them when memhooks is unloaded.
+ */
+static int ofi_intercept_symbol(struct ofi_intercept *intercept)
+{
+	void *func_addr;
 	int ret;
 
 	FI_DBG(&core_prov, FI_LOG_MR,
-	       "intercepting symbol %s\n", intercept->symbol);
-	ret = dl_iterate_phdr(ofi_intercept_phdr_handler, intercept);
-	if (ret)
-		return ret;
+	       "overwriting function %s\n", intercept->symbol);
 
-	*real_func = dlsym(RTLD_DEFAULT, intercept->symbol);
-	if (*real_func == intercept->our_func) {
-		(void) dlerror();
-		*real_func = dlsym(RTLD_NEXT, intercept->symbol);
+	func_addr = dlsym(RTLD_NEXT, intercept->symbol);
+	if (!func_addr) {
+		func_addr = dlsym(RTLD_DEFAULT, intercept->symbol);
+		if (!func_addr) {
+			FI_DBG(&core_prov, FI_LOG_MR,
+			       "could not find symbol %s\n", intercept->symbol);
+			ret = -FI_ENOMEM;
+			return ret;
+		}
 	}
 
-	if (!*real_func) {
-		FI_DBG(&core_prov, FI_LOG_MR,
-		       "could not find symbol %s\n", intercept->symbol);
-		ret = -FI_ENOMEM;
-		return ret;
-	}
-	dlist_insert_tail(&intercept->entry, &memhooks.intercept_list);
+	intercept->orig_func = func_addr;
+
+	ret = ofi_patch_function(intercept);
+
+	if (!ret)
+		dlist_insert_tail(&intercept->entry, &memhooks.intercept_list);
 
 	return ret;
 }
 
 void ofi_intercept_handler(const void *addr, size_t len)
 {
-	pthread_mutex_lock(&memhooks_monitor->lock);
+	pthread_rwlock_rdlock(&mm_list_rwlock);
+	pthread_mutex_lock(&mm_lock);
 	ofi_monitor_notify(memhooks_monitor, addr, len);
-	pthread_mutex_unlock(&memhooks_monitor->lock);
+	pthread_mutex_unlock(&mm_lock);
+	pthread_rwlock_unlock(&mm_list_rwlock);
 }
 
 static void *ofi_intercept_mmap(void *start, size_t length,
                             int prot, int flags, int fd, off_t offset)
 {
-	FI_DBG(&core_prov, FI_LOG_MR,
-	       "intercepted mmap start %p len %zu\n", start, length);
-	ofi_intercept_handler(start, length);
+	if ((flags & MAP_FIXED) && start)
+		ofi_intercept_handler(start, length);
 
-	return real_calls.mmap(start, length, prot, flags, fd, offset);
+	return (void *)(intptr_t) ofi_memhooks_syscall(SYS_mmap, start, length,
+						       prot, flags, fd, offset);
 }
 
 static int ofi_intercept_munmap(void *start, size_t length)
 {
-	FI_DBG(&core_prov, FI_LOG_MR,
-	       "intercepted munmap start %p len %zu\n", start, length);
 	ofi_intercept_handler(start, length);
 
-	return real_calls.munmap(start, length);
+	return ofi_memhooks_syscall(SYS_munmap, start, length);
 }
 
 static void *ofi_intercept_mremap(void *old_address, size_t old_size,
 		size_t new_size, int flags, void *new_address)
 {
-	FI_DBG(&core_prov, FI_LOG_MR,
-	       "intercepted mremap old_addr %p old_size %zu\n",
-	       old_address, old_size);
 	ofi_intercept_handler(old_address, old_size);
 
-	return real_calls.mremap(old_address, old_size, new_size, flags,
-				 new_address);
+#ifdef MREMAP_FIXED
+	/*
+	 * new_address is an optional argument. Explicitly set it to NULL
+	 * if it is not applicable.
+	 */
+	if (!(flags & MREMAP_FIXED))
+		new_address = NULL;
+#endif
+
+	return (void *)(intptr_t) ofi_memhooks_syscall(SYS_mremap, old_address,
+						       old_size, new_size,
+						       flags, new_address);
 }
 
 static int ofi_intercept_madvise(void *addr, size_t length, int advice)
 {
-	FI_DBG(&core_prov, FI_LOG_MR,
-	       "intercepted madvise addr %p len %zu\n", addr, length);
-	ofi_intercept_handler(addr, length);
+	if (advice == MADV_DONTNEED ||
+#ifdef MADV_FREE
+	    advice == MADV_FREE ||
+#endif
+#ifdef MADV_REMOVE
+	    advice == MADV_REMOVE ||
+#endif
+	    advice == POSIX_MADV_DONTNEED) {
+		ofi_intercept_handler(addr, length);
+	}
 
-	return real_calls.madvise(addr, length, advice);
+	return ofi_memhooks_syscall(SYS_madvise, addr, length, advice);
 }
 
 static void *ofi_intercept_shmat(int shmid, const void *shmaddr, int shmflg)
 {
 	struct shmid_ds ds;
 	const void *start;
+	void *result;
 	size_t len;
 	int ret;
 
-	FI_DBG(&core_prov, FI_LOG_MR,
-	       "intercepted shmat addr %p\n", shmaddr);
-
-	if (shmflg & SHM_REMAP) {
+	if (shmaddr && (shmflg & SHM_REMAP)) {
 		ret = shmctl(shmid, IPC_STAT, &ds);
 		len = (ret < 0) ? 0 : ds.shm_segsz;
 
 		if (shmflg & SHM_RND) {
-			start = (char *) shmaddr + ((uintptr_t) shmaddr) % SHMLBA;
+			start = (char *) shmaddr - ((uintptr_t) shmaddr) % SHMLBA;
 			len += ((uintptr_t) shmaddr) % SHMLBA;
 		} else {
 			start = shmaddr;
@@ -425,50 +453,92 @@ static void *ofi_intercept_shmat(int shmid, const void *shmaddr, int shmflg)
 		ofi_intercept_handler(start, len);
 	}
 
-	return real_calls.shmat(shmid, shmaddr, shmflg);
+#ifdef SYS_shmat
+	result = (void *) ofi_memhooks_syscall(SYS_shmat, shmid, shmaddr, shmflg);
+#else // IPCOP_shmat
+	unsigned long sysret;
+	sysret = ofi_memhooks_syscall(SYS_ipc, IPCOP_shmat,
+				      shmid, shmflg, &shmaddr, shmaddr);
+	result = (sysret > -(unsigned long)SHMLBA) ? (void *)sysret :
+						     (void *)shmaddr;
+#endif
+	return result;
 }
 
 static int ofi_intercept_shmdt(const void *shmaddr)
 {
-	FI_DBG(&core_prov, FI_LOG_MR,
-	       "intercepted shmdt addr %p\n", shmaddr);
-	/* Overly aggressive, but simple.  Invalidate everything after shmaddr */
+	int ret;
+
+	/*
+	 * Overly aggressive, but simple.  Invalidate everything after shmaddr.
+	 * We could choose to find the shared memory segment size in /proc but
+	 * that seems like a great way to deadlock ourselves.
+	 */
 	ofi_intercept_handler(shmaddr, SIZE_MAX - (uintptr_t) shmaddr);
 
-	return real_calls.shmdt(shmaddr);
+#ifdef SYS_shmdt
+	ret = ofi_memhooks_syscall(SYS_shmdt, shmaddr);
+#else // IPCOP_shmdt
+	ret = ofi_memhooks_syscall(SYS_ipc, IPCOP_shmdt, 0, 0, 0, shmaddr);
+#endif
+	return ret;
 }
 
 static int ofi_intercept_brk(const void *brkaddr)
 {
-	void *old_addr;
+	void *old_addr, *new_addr;
 
-	FI_DBG(&core_prov, FI_LOG_MR,
-	      "intercepted brk addr %p\n", brkaddr);
+#ifdef HAVE___CURBRK
+	old_addr = __curbrk;
+#else
+	old_addr = sbrk(0);
+#endif
+	new_addr = (void *) (intptr_t) ofi_memhooks_syscall(SYS_brk, brkaddr);
 
-	old_addr = sbrk (0);
+#ifdef HAVE___CURBRK
+	/*
+	 * Note: if we were using glibc brk/sbrk, their __curbrk would get
+	 * updated, but since we're going straight to the syscall, we have
+	 * to update __curbrk or else glibc won't see it.
+	 */
+	__curbrk = new_addr;
+#endif
 
-	if(brkaddr > old_addr) {
-		ofi_intercept_handler(brkaddr, (intptr_t) brkaddr -
-							  (intptr_t) old_addr);
+	if (new_addr < brkaddr) {
+		errno = ENOMEM;
+		return -1;
+	} else if (new_addr < old_addr) {
+		ofi_intercept_handler(new_addr, (intptr_t) old_addr -
+				      (intptr_t) new_addr);
 	}
 
-	return real_calls.brk(brkaddr);
+	return 0;
 }
 
 static int ofi_memhooks_subscribe(struct ofi_mem_monitor *monitor,
-				 const void *addr, size_t len)
+				  const void *addr, size_t len,
+				  union ofi_mr_hmem_info *hmem_info)
 {
 	/* no-op */
 	return FI_SUCCESS;
 }
 
 static void ofi_memhooks_unsubscribe(struct ofi_mem_monitor *monitor,
-				    const void *addr, size_t len)
+				     const void *addr, size_t len,
+				     union ofi_mr_hmem_info *hmem_info)
 {
 	/* no-op */
 }
 
-int ofi_memhooks_init(void)
+static bool ofi_memhooks_valid(struct ofi_mem_monitor *monitor,
+			       const void *addr, size_t len,
+			       union ofi_mr_hmem_info *hmem_info)
+{
+	/* no-op */
+	return true;
+}
+
+static int ofi_memhooks_start(struct ofi_mem_monitor *monitor)
 {
 	int i, ret;
 
@@ -477,69 +547,55 @@ int ofi_memhooks_init(void)
 
 	memhooks_monitor->subscribe = ofi_memhooks_subscribe;
 	memhooks_monitor->unsubscribe = ofi_memhooks_unsubscribe;
+	memhooks_monitor->valid = ofi_memhooks_valid;
 	dlist_init(&memhooks.intercept_list);
 
 	for (i = 0; i < OFI_INTERCEPT_MAX; ++i)
 		dlist_init(&intercepts[i].dl_intercept_list);
 
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_DLOPEN],
-				   (void **) &real_calls.dlopen);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-		       "intercept dlopen failed %d %s\n", ret, fi_strerror(ret));
-		return ret;
-	}
-
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MMAP],
-				   (void **) &real_calls.mmap);
+	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MMAP]);
 	if (ret) {
 		FI_WARN(&core_prov, FI_LOG_MR,
 		       "intercept mmap failed %d %s\n", ret, fi_strerror(ret));
 		return ret;
 	}
 
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MUNMAP],
-				   (void **) &real_calls.munmap);
+	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MUNMAP]);
 	if (ret) {
 		FI_WARN(&core_prov, FI_LOG_MR,
 		       "intercept munmap failed %d %s\n", ret, fi_strerror(ret));
 		return ret;
 	}
 
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MREMAP],
-				   (void **) &real_calls.mremap);
+	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MREMAP]);
 	if (ret) {
 		FI_WARN(&core_prov, FI_LOG_MR,
 		       "intercept mremap failed %d %s\n", ret, fi_strerror(ret));
 		return ret;
 	}
 
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MADVISE],
-				   (void **) &real_calls.madvise);
+	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MADVISE]);
 	if (ret) {
 		FI_WARN(&core_prov, FI_LOG_MR,
 		       "intercept madvise failed %d %s\n", ret, fi_strerror(ret));
 		return ret;
 	}
 
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_SHMAT],
-				   (void **) &real_calls.shmat);
+	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_SHMAT]);
 	if (ret) {
 		FI_WARN(&core_prov, FI_LOG_MR,
 		       "intercept shmat failed %d %s\n", ret, fi_strerror(ret));
 		return ret;
 	}
 
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_SHMDT],
-				   (void **) &real_calls.shmdt);
+	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_SHMDT]);
 	if (ret) {
 		FI_WARN(&core_prov, FI_LOG_MR,
 		       "intercept shmdt failed %d %s\n", ret, fi_strerror(ret));
 		return ret;
 	}
 
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_BRK],
-				   (void **) &real_calls.brk);
+	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_BRK]);
 	if (ret) {
 		FI_WARN(&core_prov, FI_LOG_MR,
 		       "intercept brk failed %d %s\n", ret, fi_strerror(ret));
@@ -549,7 +605,7 @@ int ofi_memhooks_init(void)
 	return 0;
 }
 
-void ofi_memhooks_cleanup(void)
+static void ofi_memhooks_stop(struct ofi_mem_monitor *monitor)
 {
 	ofi_restore_intercepts();
 	memhooks_monitor->subscribe = NULL;
@@ -558,13 +614,13 @@ void ofi_memhooks_cleanup(void)
 
 #else
 
-int ofi_memhooks_init(void)
+static int ofi_memhooks_start(struct ofi_mem_monitor *monitor)
 {
 	return -FI_ENOSYS;
 }
 
-void ofi_memhooks_cleanup(void)
+static void ofi_memhooks_stop(struct ofi_mem_monitor *monitor)
 {
 }
 
-#endif
+#endif /* memhook support checks */

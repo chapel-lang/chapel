@@ -33,7 +33,9 @@ struct fid_ep*        gasnetc_ofi_request_epfd;
 struct fid_ep*        gasnetc_ofi_reply_epfd;
 struct fid_cq*        gasnetc_ofi_request_cqfd;
 struct fid_cq*        gasnetc_ofi_reply_cqfd;
+#if GASNET_SEGMENT_EVERYTHING
 struct fid_mr*        gasnetc_segment_mrfd = NULL;
+#endif
 struct fid_mr*        gasnetc_auxseg_mrfd = NULL;
 size_t gasnetc_ofi_bbuf_threshold;
 
@@ -97,10 +99,11 @@ static uint64_t* gasnetc_ofi_target_aux_keys;
 
 #define OFI_WRITE(ep, src_addr, nbytes, dest, dest_addr, ctxt_ptr)\
     do {\
-        int _is_auxseg = GASNETC_OFI_IS_AUX(dest_addr, dest); /* also the SCALABLE key */\
+        int _is_auxseg = GASNETC_OFI_IS_AUX(dest_addr, dest); \
         if (GASNETC_OFI_HAS_MR_SCALABLE){\
+            uint64_t key = !_is_auxseg; \
             ret = fi_write(ep, src_addr, nbytes, NULL, GET_RDMA_DEST(dest), \
-                GET_REMOTEADDR_AUX(dest_addr, dest, _is_auxseg), _is_auxseg, ctxt_ptr);\
+                GET_REMOTEADDR_AUX(dest_addr, dest, _is_auxseg), key, ctxt_ptr);\
         }\
         else {\
             ret = fi_write(ep, src_addr, nbytes, NULL, GET_RDMA_DEST(dest), \
@@ -110,10 +113,11 @@ static uint64_t* gasnetc_ofi_target_aux_keys;
 
 #define OFI_READ(ep, dest_buf, nbytes, src, src_addr, ctxt_ptr)\
     do {\
-        int _is_auxseg = GASNETC_OFI_IS_AUX(src_addr, src); /* also the SCALABLE key */\
+        int _is_auxseg = GASNETC_OFI_IS_AUX(src_addr, src); \
         if (GASNETC_OFI_HAS_MR_SCALABLE) {\
+            uint64_t key = !_is_auxseg; \
             ret = fi_read(ep, dest_buf, nbytes, NULL, GET_RDMA_DEST(src), \
-                GET_REMOTEADDR_AUX(src_addr, src, _is_auxseg), _is_auxseg, ctxt_ptr);\
+                GET_REMOTEADDR_AUX(src_addr, src, _is_auxseg), key, ctxt_ptr);\
         }\
         else {\
             ret = fi_read(ep, dest_buf, nbytes, NULL, GET_RDMA_DEST(src), \
@@ -138,11 +142,10 @@ static int rdma_periodic_poll_threshold; /* Set via environment variable in init
 #define OFI_INJECT_RETRY(lock, fxn, poll_type)\
     do {\
         GASNETC_OFI_LOCK_EXPR(lock, fxn);\
-        while (ret == -FI_EAGAIN) {\
-            GASNETI_WAITHOOK();\
-            GASNETC_OFI_POLL_SELECTIVE(poll_type);\
-            GASNETC_OFI_LOCK_EXPR(lock, fxn);\
-        }\
+        GASNETI_SPIN_WHILE(ret == -FI_EAGAIN, {\
+          GASNETC_OFI_POLL_SELECTIVE(poll_type);\
+          GASNETC_OFI_LOCK_EXPR(lock, fxn);\
+        });\
     }while(0)
 
 static gasneti_lifo_head_t ofi_am_request_pool = GASNETI_LIFO_INITIALIZER;
@@ -748,12 +751,9 @@ void gasnetc_ofi_exit(void)
   // Attempt to obtain (and *never* release) the big_lock in bounded time
   const uint64_t timeout_ns = 10 * 1000000000L; // TODO: arbitrary 10s
   const gasneti_tick_t t_start = gasneti_ticks_now();
-  while (EBUSY == GASNETC_OFI_TRYLOCK(&gasnetc_ofi_locks.big_lock)) {
-    if (timeout_ns < gasneti_ticks_to_ns(gasneti_ticks_now() - t_start)) {
-      return; // Give up after time out
-    }
-    GASNETI_WAITHOOK();
-  }
+  GASNETI_SPIN_WHILE(EBUSY == GASNETC_OFI_TRYLOCK(&gasnetc_ofi_locks.big_lock), {
+    if (timeout_ns < gasneti_ticks_to_ns(gasneti_ticks_now() - t_start)) return;
+  });
 #endif
 
     for(i = 0; i < num_multirecv_buffs; i++) {
@@ -970,11 +970,9 @@ gasnetc_ofi_am_buf_t *gasnetc_ofi_am_header(int isreq GASNETI_THREAD_FARG)
     }
 ofi_spin_for_buffer:
     poll_type = isreq ? OFI_POLL_ALL : OFI_POLL_REPLY;
-    do {
-        GASNETC_OFI_POLL_SELECTIVE(poll_type);
-        GASNETI_WAITHOOK();
-        header = gasneti_lifo_pop(pool);
-    } while(NULL == header);
+    // This is "DOUNTIL" since already know buffer pool is oversubscribed.  
+    GASNETI_SPIN_DOUNTIL((header = gasneti_lifo_pop(pool)),
+                         GASNETC_OFI_POLL_SELECTIVE(poll_type));
     return header;
 }
 
@@ -1011,22 +1009,37 @@ void gasnetc_ofi_handle_bounce_rdma(void *buf)
 // Local registration of segment memory
 int gasnetc_segment_register(gasnetc_Segment_t segment)
 {
+    void *segbase;
+    uintptr_t segsize;
+    struct fid_mr** mrfd_p;
+
 #if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
-    void *segbase = segment->_addr;
-    uintptr_t segsize = segment->_size;
-    struct fid_mr** mrfd_p = &segment->mrfd;
+    gasneti_assert(segment);
+    segbase = segment->_addr;
+    segsize = segment->_size;
+    mrfd_p = &segment->mrfd;
 #else
-    void *segbase = (void *)0;
-    uintptr_t segsize = UINT64_MAX;
-    struct fid_mr** mrfd_p = &gasnetc_segment_mrfd;
     if (!GASNETC_OFI_HAS_MR_SCALABLE) {
         gasneti_fatalerror("GASNET_SEGMENT_EVERYTHING is not supported when using FI_MR_BASIC.\n"
                            "Pick an OFI provider that supports FI_MR_SCALABLE if EVERYTHING\n"
                            "is needed.\n");
     }
+    if (!segment) {
+        segbase = (void *)0;
+        segsize = UINT64_MAX;
+        mrfd_p = &gasnetc_segment_mrfd;
+    } else if (gasneti_i_segment_kind_is_host((gasneti_Segment_t) segment)) {
+        // No additional host memory registration required
+        return GASNET_OK;
+    } else {
+        gasneti_unreachable_error(("ofi-conduit does not yet support non-host memory kinds"));
+    }
 #endif
+
+    static gasneti_weakatomic64_t key_counter = gasneti_weakatomic64_init(0);
+    uint64_t key = gasneti_weakatomic64_add(&key_counter, 1, 0);
     int ret = fi_mr_reg(gasnetc_ofi_domainfd, segbase, segsize,
-                        FI_REMOTE_READ | FI_REMOTE_WRITE, 0ULL, 0ULL, 0ULL,
+                        FI_REMOTE_READ | FI_REMOTE_WRITE, 0ULL, key, 0ULL,
                         mrfd_p, NULL);
     if (FI_SUCCESS != ret) {
       gasneti_fatalerror("fi_mr_reg for rdma failed: %d(%s)\n", ret, fi_strerror(-ret));
@@ -1057,6 +1070,7 @@ void gasnetc_segment_exchange(gex_TM_t tm, gex_EP_t *eps, size_t num_eps)
     if (! segment) continue;
     p->loc.gex_rank = gasneti_mynode;
     p->loc.gex_ep_index = gex_EP_QueryIndex(ep);
+    gasneti_assert(segment->mrfd);
     p->mr_key = fi_mr_key(segment->mrfd);
     ++p;
   }
@@ -1085,7 +1099,7 @@ void gasnetc_segment_exchange(gex_TM_t tm, gex_EP_t *eps, size_t num_eps)
 void gasnetc_auxseg_register(gasnet_seginfo_t si)
 {
   int ret = fi_mr_reg(gasnetc_ofi_domainfd, si.addr, si.size,
-                      FI_REMOTE_READ | FI_REMOTE_WRITE, 0ULL, 1ULL, 0ULL,
+                      FI_REMOTE_READ | FI_REMOTE_WRITE, 0ULL, 0ULL, 0ULL,
                       &gasnetc_auxseg_mrfd, NULL);
   if (FI_SUCCESS != ret) {
     gasneti_fatalerror("fi_mr_reg for aux_seg failed: %d(%s)\n", ret, fi_strerror(-ret));

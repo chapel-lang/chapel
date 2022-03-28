@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,6 +39,8 @@
 
 #include "comm-ofi-internal.h"
 
+// these are declared here because of the difficulty of including pmi2.h
+// on all platforms
 
 #define PMI2_SUCCESS 0
 #define PMI2_ID_NULL -1
@@ -56,6 +58,8 @@ extern int PMI2_KVS_Get(const char* jobid, int src_pmi_id,
                         const char key[], char value[],
                         int maxvalue, int* vallen)
            __attribute__((weak));
+extern int PMI_Get_clique_size(int* size)
+    __attribute__((weak));
 
 #define PMI2_CHK(expr) CHK_EQ_TYPED(expr, PMI2_SUCCESS, int, "d")
 
@@ -284,4 +288,55 @@ void decode_kvs(char* raw, const char* enc, size_t size) {
     raw[i] =   ((enc[2 * i + 0] - 'a') << (0 * 4))
              | ((enc[2 * i + 1] - 'a') << (1 * 4));
   }
+}
+
+int chpl_comm_ofi_oob_locales_on_node(void) {
+  int count = 0;
+  if (PMI_Get_clique_size != NULL) {
+    PMI_CHK(PMI_Get_clique_size(&count));
+    DBG_PRINTF(DBG_OOB, "PMI_Get_clique_size returned %d", count);
+  } else {
+    // do an allgather of hostname hashes to determine the locales on the same node as us
+    // assumes each hostname has a unique hash
+
+    char hostname[HOST_NAME_MAX+1];
+    int rc = gethostname(hostname, sizeof(hostname));
+    CHK_TRUE(rc == 0);
+
+    uint64_t hash = 0;
+    for (int i = 0; i < sizeof(hostname); i++) {
+      char c = hostname[i];
+      if (c == '\0') {
+        break;
+      }
+      // The hash code is borrowed from gasnet including the comment.
+      // See third-party/gasnet/gasnet-src/license.txt.
+
+      /* The "c = ..." squeezes ASCII down to 6 bits, while encoding
+       * all chars valid in hostnames and IP addresses (IPV4 and IPV6).
+       * A unique value is assigned to each of the digits, the lower
+       * case letters, '-', '.' and ':'.  The upper case letters map
+       * to the same values as the corresponding lower-case.
+       */
+      c = ((c & 0x40) >> 1) | (c & 0x1f);
+      hash = ((hash << 6) | ((hash >> 58) & 0x3F)) ^ c;
+    }
+
+    // get the hashes for all locales
+
+    uint64_t *hashes = NULL;
+    CHK_SYS_CALLOC(hashes, chpl_numNodes);
+    chpl_comm_ofi_oob_allgather(&hash, hashes, sizeof(*hashes));
+
+    // count the number of hashes that match ours
+
+    for (int i = 0; i < chpl_numNodes; i++) {
+      if (hashes[i] == hash) {
+        count++;
+      }
+    }
+    CHK_SYS_FREE(hashes);
+  }
+  DBG_PRINTF(DBG_OOB, "OOB locales on node: %d", count);
+  return count;
 }

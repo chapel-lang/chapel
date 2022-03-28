@@ -147,6 +147,21 @@ out:
   return retval;
 }
 
+static void gasneti_MK_Segment_Destroy_cuda_uva(
+            gasneti_Segment_t                i_segment)
+{
+  CUdeviceptr to_free = (CUdeviceptr)(i_segment->_opaque_mk_use);
+
+  if (to_free) {
+    my_MK_t kind = (my_MK_t) gasneti_import_mk_nonhost(i_segment->_kind);
+    CUcontext prev_ctx;
+    gasneti_check_cudacall( cuCtxPushCurrent(kind->ctx) );
+    gasneti_check_cudacall( cuMemFree(to_free) );
+    gasneti_check_cudacall( cuCtxPopCurrent(&prev_ctx) );
+    gasneti_assert(prev_ctx == kind->ctx);
+  }
+}
+
 //
 // Class-specific "impl(ementation)": constants and function pointers.
 //
@@ -169,11 +184,15 @@ static gasneti_mk_impl_t *get_impl(void) {
       the_impl.mk_destroy   = &gasneti_MK_Destroy_cuda_uva;
       the_impl.mk_segment_create
                             = &gasneti_MK_Segment_Create_cuda_uva;
+      the_impl.mk_segment_destroy
+                            = &gasneti_MK_Segment_Destroy_cuda_uva;
 
       gasneti_sync_writes();
       result = &the_impl;
     }
     gasneti_mutex_unlock(&lock);
+  } else {
+    gasneti_sync_reads();
   }
 
   gasneti_assert(result);

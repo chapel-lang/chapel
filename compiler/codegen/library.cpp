@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -685,8 +685,8 @@ static void makePYFile() {
     }
 
     // Imports
-    fprintf(py.fptr, "from distutils.core import setup\n");
-    fprintf(py.fptr, "from distutils.core import Extension\n");
+    fprintf(py.fptr, "from setuptools import setup\n");
+    fprintf(py.fptr, "from setuptools import Extension\n");
     fprintf(py.fptr, "from Cython.Build import cythonize\n");
     fprintf(py.fptr, "import numpy\n\n");
 
@@ -759,7 +759,7 @@ static void makePYInitFile() {
              "existing file", libDir);
     return;
   }
- 
+
   openLibraryHelperFile(&py, "__init__", "py");
 
   if (py.fptr != NULL) {

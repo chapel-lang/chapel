@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,8 @@
 #include "passes.h"
 #include "resolution.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 static void clearDefaultInitFns(FnSymbol* unusedFn) {
   AggregateType* at = toAggregateType(unusedFn->retType);
@@ -81,7 +83,7 @@ static void removeUnusedFunctions() {
 
           collectDefExprs(fn, defExprs);
 
-          forv_Vec(DefExpr, def, defExprs) {
+          for (DefExpr* def : defExprs) {
             if (TypeSymbol* typeSym = toTypeSymbol(def->sym)) {
               Type* refType = typeSym->type->refType;
 
@@ -232,7 +234,7 @@ static void removeRandomPrimitive(CallExpr* call) {
 }
 
 static void removeRandomPrimitives() {
-  for_alive_in_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_expanding_Vec(CallExpr, call, gCallExprs)
     if (call->isPrimitive())
       removeRandomPrimitive(call);
 }
@@ -402,12 +404,13 @@ static void removeAggTypeFieldInfo() {
 
 // Remove module level variables if they are not defined or used
 // With the exception of variables that are defined in the rootModule
+// or in the string literals module.
 static void removeUnusedModuleVariables() {
   forv_Vec(DefExpr, def, gDefExprs) {
     if (VarSymbol* var = toVarSymbol(def->sym)) {
       if (ModuleSymbol* module = toModuleSymbol(def->parentSymbol)) {
         if (var->isDefined() == false && var->isUsed() == false) {
-          if (module != rootModule) {
+          if (module != rootModule && module != stringLiteralModule) {
             def->remove();
           }
         }
@@ -485,9 +488,11 @@ bool isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
   //  unmanaged class types can have borrow/canonical class type used
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      for (int i = 0; i < NUM_DECORATED_CLASS_TYPES; i++) {
-        ClassTypeDecorator decorator = (ClassTypeDecorator)i;
-        if (Type* dt = at->getDecoratedClass(decorator))
+      for (int i = 0;
+           i < ClassTypeDecorator::NUM_DECORATORS;
+           i++) {
+        ClassTypeDecoratorEnum d = ClassTypeDecorator::getIthDecorator(i);
+        if (Type* dt = at->getDecoratedClass(d))
           retval &= do_isUnusedClass(dt, wellknown);
       }
     }
@@ -504,7 +509,7 @@ static void removeUnusedTypes() {
   std::set<Type*> wellknown = getWellKnownTypesSet();
 
   // Remove unused aggregate types.
-  for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
+  for_alive_in_expanding_Vec(TypeSymbol, type, gTypeSymbols) {
     if (! type->hasFlag(FLAG_REF)                &&
         ! type->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
       if (AggregateType* at = toAggregateType(type->type)) {
@@ -615,9 +620,9 @@ static void removeTypedefParts() {
       bool removeIt = true;
       if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
         if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
-          ClassTypeDecorator d = dt->getDecorator();
+          ClassTypeDecoratorEnum d = dt->getDecorator();
           if ((isDecoratorUnknownNilability(d) ||
-              isDecoratorUnknownManagement(d)) &&
+               isDecoratorUnknownManagement(d)) &&
               dt->getCanonicalClass()->inTree()) {
             // After resolution, can't consider it generic anymore...
             // The generic-ness will be moot though because later
@@ -750,10 +755,11 @@ static bool isNothingType(Type* type) {
 
 static void cleanupNothingVarsAndFields() {
   // Remove most uses of nothing variables and fields
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_expanding_Vec(CallExpr, call, gCallExprs) {
      if (call->isPrimitive())
       switch (call->primitive->tag) {
       case PRIM_MOVE:
+      case PRIM_ASSIGN:
         if (isNothingType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtNothing->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());

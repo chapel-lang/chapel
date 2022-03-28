@@ -485,7 +485,7 @@ uintptr_t gasneti_segmentLimit(uintptr_t localLimit, uint64_t sharedLimit,
 void gasneti_segmentInit(uintptr_t localSegmentLimit,
                          gasneti_bootstrapExchangefn_t exchangefn,
                          gex_Flags_t flags);
-gasnet_seginfo_t gasneti_segmentAttach(
+int gasneti_segmentAttach(
                 gex_Segment_t                 *segment_p,
                 gex_TM_t                      tm,
                 uintptr_t                     segsize,
@@ -497,6 +497,9 @@ int gasneti_segmentCreate(
                 uintptr_t               length,
                 gex_MK_t                kind,
                 gex_Flags_t             flags);
+int gasneti_segmentDestroy(
+                gasneti_Segment_t       i_segment,
+                int                     create_hook_succeeded);
 
 int gasneti_EP_PublishBoundSegment(
             gex_TM_t       tm,
@@ -552,9 +555,74 @@ void gasneti_auxseg_attach(gasnet_seginfo_t *auxseg_info);
 gasnet_seginfo_t gasneti_auxsegAttach(uint64_t maxsize, gasneti_bootstrapExchangefn_t exchangefn);
 
 /* ------------------------------------------------------------------------------------ */
+// Hooks to invoke conduit-specific functionality from common conduit-independent code.
+// Conduits requiring use of one or more of these should define the
+// corresponding preprocessor identifier in their gasnet_core_fwd.h.
+
+#if GASNETC_SEGMENT_CREATE_HOOK
+// Called after all conduit-independent segment creation steps in
+// gex_Segment_Create().  Typical use of this hook includes (purely local)
+// memory registration.
+//
+// All relevant options to the Create call (such as addr, len, and flags) are
+// accessible as fields of the sole argument (of type gex_Segment_t).
+//
+// On success, returns GASNET_OK and the infrastructure will call the
+// matching destroy hook (if any), when the segment is destroyed.
+// On failure, returns any other value and the infrastructure will NOT call
+// any matching destroy hook, leaving this hook responsible for cleanup of
+// any conduit-specific state prior to such an error return.
+extern int gasnetc_segment_create_hook(gex_Segment_t e_segment);
+#endif
+
+#if GASNETC_SEGMENT_DESTROY_HOOK
+// Called prior to any conduit-independent segment destruction steps, for
+// instance in gex_Segment_Destroy().  Typical use of this hook includes
+// (purely local) memory deregistration.
+//
+// The hook may assume that a prior gasnetc_segment_create_hook() (if any)
+// has returned GASNET_OK.
+extern void gasnetc_segment_destroy_hook(gasneti_Segment_t i_segment);
+#endif
+
+#if GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK
+// Called after all conduit-independent segment creation steps in
+// gex_EP_PublishBoundSegment().  Typical use of this hook includes
+// communication of memory registration keys.
+//
+// All arguments provided to gex_EP_PublishBoundSegment() are also
+// provided to this hook.
+// Calls to this hook are collective over the given team.
+//
+// NOTE: subject to replacement by a pack/unpack pair of hooks when
+// gex_EP_PublishBoundSegment() is enhanced to merge conduit-specific
+// and conduit-independent communications.
+extern int gasnetc_ep_publishboundsegment_hook(
+                gex_TM_t               tm,
+                gex_EP_t               *eps,
+                size_t                 num_eps,
+                gex_Flags_t            flags);
+#endif
+
+#if GASNETC_SEGMENT_ATTACH_HOOK
+// Called after all conduit-independent segment attach steps in
+// gex_Segment_Attach() and gasnet_attach().  Typical use of this hook
+// includes memory registration and propagation of the registration keys.
+//
+// Arguments are the segment and the (currently always primordial) team.
+// Other relevant options (addr, len, flags) are accessible as fields
+// in the argument of type gex_Segment_t.
+// Calls to this hook are collective over the given team.
+//
+// NOTE: subject to removal if/when the "attach" calls are reimplemented
+// in terms of gex_Segment_Create() and gex_EP_PublishBoundSegment().
+extern int gasnetc_segment_attach_hook(gex_Segment_t e_segment, gex_TM_t e_tm);
+#endif
+
+/* ------------------------------------------------------------------------------------ */
 /* GASNET-Internal OP Interface - provides a mechanism for conduit-independent services (like VIS)
    to expose non-blocking operations that utilize the regular GASNet op sync mechanisms
-   Conduits provide two opaque scalar types: gasneti_eop_t and gasneti_iop_t
+   Conduits provide three opaque scalar types: gasneti_eop_t, gasneti_iop_t and gasneti_aop_t
    and the following manipulator functions
  */
 
@@ -577,6 +645,12 @@ struct _gasneti_iop_S;
 typedef const struct _gasneti_iop_S gasneti_iop_t;
 #endif
 
+#ifndef _GASNETI_AOP_T
+#define _GASNETI_AOP_T
+struct _gasneti_aop_S;
+typedef const struct _gasneti_aop_S gasneti_aop_t;
+#endif
+
 /* create a new explicit-event NB operation
    represented with abstract type gasneti_eop_t
    and mark it in-flight */
@@ -592,7 +666,7 @@ gasneti_eop_t *gasneti_eop_create(GASNETI_THREAD_FARG_ALONE);
 #endif
 
 /* register noperations in-flight operations on the currently selected 
-   implicit-event NB context represented with abstract type gasneti_iop_t, 
+   implicit-event (NBI) context represented with abstract type gasneti_iop_t, 
    and return a pointer to that context
    if isput is non-zero, the registered operations are puts, otherwise they are gets */
 gasneti_iop_t *gasneti_iop_register(unsigned int noperations, int isget GASNETI_THREAD_FARG);
@@ -611,7 +685,7 @@ int gasneti_op_is_eop(void *op);
 void gasneti_eop_markdone(gasneti_eop_t *eop);
 
 /* given an gasneti_iop_t* returned by an earlier call from any thread
-   to gasneti_iop_register(), increment that implicit-event NB context
+   to gasneti_iop_register(), increment that implicit-event (NBI) context
    to indicate that noperations have completed.
    if isput is non-zero, the operations are puts, otherwise they are gets
    noperations must not exceed the number of isput-type operations initiated
@@ -619,6 +693,53 @@ void gasneti_eop_markdone(gasneti_eop_t *eop);
    Caller is responsible for calling gasneti_sync_writes before calling this fn, if necessary
    AMSAFE: must be safe to call in AM context */
 void gasneti_iop_markdone(gasneti_iop_t *iop, unsigned int noperations, int isget);
+
+// "aop" interfaces for manipulating implicit-event (NBI) contexts
+//
+// The abstract type gasneti_aop_t allows replacement of the currently selected
+// implicit-event (NBI) context.
+//
+// An aop is thread-specific, and thus can only be operated on by the creating
+// thread.  This may be relaxed in the future.
+//
+// Use of push and pop must be properly nested. To help detect violations, it is
+// recommended to assert that the value returned by pop is the one your code
+// pushed.
+//
+// The lifetime of an internal-use aop begins with a call to
+// gasneti_aop_create() and ends with conversion to an event by a call to
+// gasneti_aop_to_event().  It is invalid to pass an aop to any gasneti_aop_*
+// functions after its conversion to an event.
+
+// Create an aop.
+// This call returns an gasneti_aop_t* which can be made current for this
+// thread by calling gasneti_aop_push().
+gasneti_aop_t *gasneti_aop_create(GASNETI_THREAD_FARG_ALONE);
+
+// Convert an aop to an event.
+// This call converts an aop allocated using gasneti_aop_create() to an
+// gex_Event_t suitable to later pass to gex_Event_Wait and friends.
+// The aop will be reaped when the event is synced in the normal manner.
+// It is invalid to use an aop after conversion to an event.
+// The aop must not be on the thread's stack of implicit-event (NBI) contexts.
+gex_Event_t gasneti_aop_to_event(gasneti_aop_t *aop);
+
+// Push an aop.
+// The aop argument becomes the calling thread's active implicit-event (NBI)
+// context, pushing it on a stack of such contexts to be subsequently removed
+// from the top of that stack using gasneti_aop_pop().
+void gasneti_aop_push(gasneti_aop_t *aop GASNETI_THREAD_FARG);
+
+// Pop the current aop.
+// The calling thread's active implicit-event (NBI) context is removed from its
+// stack of such contexts and returned.  This context must have been created via
+// gasneti_aop_create().
+// It is erroneous to pop the implicit iop, or one created by the client's
+// calls to gex_NBI_BeginAccessRegion().
+// The only valid operations on a popped (paused) aop are to call
+// gasneti_aop_push() or gasneti_aop_to_event().
+gasneti_aop_t *gasneti_aop_pop(GASNETI_THREAD_FARG_ALONE);
+
 
 // TODO-EX: EOP_INTERFACE
 //   These next two are a stop-gap measure pending proper generalization.
@@ -639,6 +760,8 @@ int gasneti_MK_Segment_Create(
             uintptr_t         length,
             gex_MK_t          e_kind,
             gex_Flags_t       flags);
+void gasneti_MK_Segment_Destroy(
+            gasneti_Segment_t i_segment);
 
 /* ------------------------------------------------------------------------------------ */
 /* macros for returning errors that allow verbose error tracking */
@@ -883,6 +1006,10 @@ typedef struct _gasneti_threaddata_t {
   gasnete_eop_t *foreign_eops;
   gasnete_iop_t *foreign_iops;
 
+  // For use by conduit-independent logic desiring fire-and-forget implict ops.
+  // This includes, at least, the RDMADISSEM barrier.
+  gasneti_aop_t *nbi_ff_aop;
+
   //
   // Conduit-specific data
   // Owned by [CONDUIT]-conduie/gasnet_extended_fwd.h
@@ -891,6 +1018,31 @@ typedef struct _gasneti_threaddata_t {
   GASNETE_CONDUIT_THREADDATA_FIELDS
   #endif
 } gasneti_threaddata_t;
+
+/* ------------------------------------------------------------------------------------ */
+// A "NBI fire-and-forget" facility using aops is provided for convenience of
+// conduit-independent logic with no need to test or wait for completions.
+
+GASNETI_INLINE(gasneti_begin_nbi_ff)
+void gasneti_begin_nbi_ff(GASNETI_THREAD_FARG_ALONE)
+{
+  gasneti_aop_t *aop = GASNETI_MYTHREAD->nbi_ff_aop;
+  if_pf (aop == NULL) {
+    aop = gasneti_aop_create(GASNETI_THREAD_PASS_ALONE);
+    GASNETI_MYTHREAD->nbi_ff_aop = aop;
+  }
+  gasneti_aop_push(aop GASNETI_THREAD_PASS);
+}
+GASNETI_INLINE(gasneti_end_nbi_ff)
+void gasneti_end_nbi_ff(GASNETI_THREAD_FARG_ALONE)
+{
+  gasneti_aop_t *aop = gasneti_aop_pop(GASNETI_THREAD_PASS_ALONE);
+  gasneti_assert(aop == GASNETI_MYTHREAD->nbi_ff_aop);
+}
+
+// DO NOT USE THIS!
+// This exists only to permit "safe" testing in gasnet_diagnostic.c.
+extern void gasneti_nbi_ff_drain_(GASNETI_THREAD_FARG_ALONE);
 
 /* ------------------------------------------------------------------------------------ */
 /* Simple container of segments

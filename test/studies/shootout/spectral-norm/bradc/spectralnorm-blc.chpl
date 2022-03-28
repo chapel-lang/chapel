@@ -2,14 +2,14 @@
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Brad Chamberlain
-   a serial version derived from the Chapel version by Lydia Duncan,
-   Albert Sidelnik, and Brad Chamberlain
+   derived from the Chapel version by Lydia Duncan et al.
+   and the Julia version by Adam Beckmeyer and Vincent Yu
 */
 
 config const n = 500;           // the size of A (n x n), u and v (n-vectors)
 
 proc main() {
-  var tmp, u, v: [0..#n] real;
+  var tmp, u, v: [0..<n] real;
 
   u = 1.0;
 
@@ -22,7 +22,7 @@ proc main() {
 }
 
 //
-// Compute A-transpose * A * v ('AtAv').
+// Compute A-transpose * A * v ('AtAv')
 //
 proc multiplyAtAv(v, tmp, AtAv) {
   multiplyAv(v, tmp);
@@ -30,32 +30,24 @@ proc multiplyAtAv(v, tmp, AtAv) {
 }
 
 //
-// Compute A * v ('Av').
+// Compute A * v ('Av')
 //
 proc multiplyAv(v: [?Dv], Av: [?DAv]) {
-  for i in DAv {
-    var av = 0.0;
-    for j in Dv do
-      av += A[i,j] * v[j];
-    Av[i] = av;
-  }
+  forall i in DAv do
+    Av[i] = + reduce (for j in Dv by 2 do (A[i,j]*v[j] + A[i,j+1]*v[j+1]));
 }
 
 //
-// Compute A-tranpose * v ('Atv').
+// Compute A-tranpose * v ('Atv')
 //
 proc multiplyAtv(v: [?Dv], Atv: [?DAtv]) {
-  for i in DAtv {
-    var atv = 0.0;
-    for j in Dv do
-      atv += A[j,i] * v[j];
-    Atv[i] = atv;
-  }
+  forall i in DAtv do
+    Atv[i] = + reduce (for j in Dv by 2 do (A[j,i]*v[j] + A[j+1,i]*v[j+1]));
 }
 
 //
-// Compute element i,j of the conceptually infinite matrix A.
+// Compute element i,j of the conceptually infinite matrix A
 //
-inline proc A(i, j) {
-  return 1.0 / ((((i+j) * (i+j+1)) / 2) + i + 1);
+inline proc A(i: real, j: real) {
+  return 1.0 / ((((i+j) * (i+j+1)) * 0.5) + i + 1);
 }

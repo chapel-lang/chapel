@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,7 +43,7 @@ namespace chapel {
   Generate(
       const FileDescriptor *file, const string &parameter,
       GeneratorContext *generator_context, string *error) const {
-        
+
         string filename_error = "";
         string filename = GetOutputFile(file, &filename_error);
 
@@ -54,7 +54,7 @@ namespace chapel {
         unique_ptr< ZeroCopyOutputStream> output(
             generator_context->Open(filename));
         Printer printer(output.get(), '$');
-          
+
         GenerateFile(file, &printer);
 
         return true;

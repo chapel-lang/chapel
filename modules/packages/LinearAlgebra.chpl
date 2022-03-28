@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -219,6 +219,262 @@ class LinearAlgebraError : Error {
       else
         return "LinearAlgebra error : " + info;
     }
+}
+
+pragma "no doc"
+/*
+This class promotes lazy computation of required
+Helper matrices to evaluate matrix exponential.
+
+High precision of expm requires smaller computations,
+hence we do a lazy computation depending on the norm value
+of the matrix.
+*/
+class ExpmPadeHelper {
+  type matType;
+  var A : matType;
+  var A2 : matType;
+  var A4 : matType;
+  var A6 : matType;
+  var A8 : matType;
+  var A10 : matType;
+  var exactD4 : real;
+  var exactD6 : real;
+  var exactD8 : real;
+  var exactD10 : real;
+  var approxD4 : real;
+  var approxD6 : real;
+  var approxD8 : real;
+  var approxD10 : real;
+  var ident : matType;
+  var useExactOneNorm : bool;
+  // Boolean arrays to know if A, Exactd, Approxd
+  // have been computed.
+  var isAComputed : [{"A2", "A4", "A6", "A8", "A10"}] bool;
+  var isExactdComputed : [{"A4", "A6", "A8", "A10"}] bool;
+  var isApproxdComputed : [{"A4", "A6", "A8", "A10"}] bool;
+
+  /*
+    :arg A: Expects an N*N square matrix.
+    :type A: `A`
+
+    :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact.
+    :type useExactOneNorm: bool
+  */
+  proc init(A, useExactOneNorm: bool) {
+    this.matType = A.type;
+    this.A = A;
+    this.ident = eye(A.domain);
+    this.useExactOneNorm = useExactOneNorm;
+  }
+
+  proc comp_A2(){
+    if !isAComputed["A2"] then {
+      this.A2 = dot(this.A, this.A);
+      isAComputed["A2"] = true;
+    }
+    return this.A2;
+  }
+
+  proc comp_A4(){
+    if !isAComputed["A4"] then {
+      this.A4 = dot(comp_A2(), comp_A2());
+      isAComputed["A4"] = true;
+    }
+    return this.A4;
+  }
+
+  proc comp_A6(){
+    if !isAComputed["A6"] then {
+      this.A6 = dot(comp_A4(), comp_A2());
+      isAComputed["A6"] = true;
+    }
+    return this.A6;
+  }
+
+  proc comp_A8(){
+    if !isAComputed["A8"] then {
+      this.A8 = dot(comp_A6(), comp_A2());
+      isAComputed["A8"] = true;
+    }
+    return this.A8;
+  }
+
+  proc comp_A10(){
+    if !isAComputed["A10"] then {
+      this.A10 = dot(comp_A8(), comp_A2());
+      isAComputed["A10"] = true;
+    }
+    return this.A10;
+  }
+
+  proc comp_exactD4(){
+    if !isExactdComputed["A4"] then {
+      this.exactD4 = norm(comp_A4(), normType.norm1)**(1/4.0);
+      isExactdComputed["A4"] = true;
+    }
+    return this.exactD4;
+  }
+
+  proc comp_exactD6(){
+    if !isExactdComputed["A6"] then {
+      this.exactD6 = norm(comp_A6(), normType.norm1)**(1/6.0);
+      isExactdComputed["A6"] = true;
+    }
+    return this.exactD6;
+  }
+
+  proc comp_exactD8(){
+    if !isExactdComputed["A8"] then {
+      this.exactD8 = norm(comp_A8(), normType.norm1)**(1/8.0);
+      isExactdComputed["A8"] = true;
+    }
+    return this.exactD8;
+  }
+
+  proc comp_exactD10(){
+    if !isExactdComputed["A10"] then {
+      this.exactD10 = norm(comp_A10(), normType.norm1)**(1/10.0);
+      isExactdComputed["A10"] = true;
+    }
+    return this.exactD10;
+  }
+
+  proc comp_looseD4(){
+    if this.useExactOneNorm then{
+      return comp_exactD4();
+    }
+    else {
+      if !isApproxdComputed["A4"] then {
+        //TODO: Need to write a function to compute the
+        // estimated norm (change the below function)
+        // Right now, just returns the exact norm
+        this.approxD4 = norm(comp_A4(), normType.norm1)**(1/4.0);
+        isApproxdComputed["A4"] = true;
+      }
+      return this.approxD4;
+    }
+  }
+
+  proc comp_looseD6(){
+    if this.useExactOneNorm then{
+      return comp_exactD6();
+    }
+    else {
+      if !isApproxdComputed["A6"] then {
+        //TODO: Need to write a function to compute the
+        // estimated norm (change the below function)
+        // Right now, just returns the exact norm
+        this.approxD6 = norm(comp_A6(), normType.norm1)**(1/6.0);
+        isApproxdComputed["A6"] = true;
+      }
+      return this.approxD6;
+    }
+  }
+
+  proc comp_looseD8(){
+    if this.useExactOneNorm then{
+      return comp_exactD8();
+    }
+    else {
+      if !isApproxdComputed["A8"] then {
+        //TODO: Need to write a function to compute the
+        // estimated norm (change the below function)
+        // Right now, just returns the exact norm
+        this.approxD8 = norm(comp_A8(), normType.norm1)**(1/8.0);
+        isApproxdComputed["A8"] = true;
+      }
+      return this.approxD8;
+    }
+  }
+
+  proc comp_looseD10(){
+    if this.useExactOneNorm then{
+      return comp_exactD10();
+    }
+    else {
+      if !isApproxdComputed["A10"] then {
+        //TODO: Need to write a function to compute the
+        // estimated norm (change the below function)
+        // Right now, just returns the exact norm
+        this.approxD10 = norm(comp_A10(), normType.norm1)**(1/10.0);
+        isApproxdComputed["A10"] = true;
+      }
+      return this.approxD10;
+    }
+  }
+
+  proc pade3(){
+    const b = [120.0, 60.0, 12.0, 1.0];
+    var temp = b[3]*comp_A2() + b[1]*this.ident;
+    var U = dot(this.A, temp);
+    var V = b[2]*comp_A2() + b[0]*this.ident;
+    return (U,V);
+  }
+
+  proc pade5(){
+    const b = [30240.0, 15120.0, 3360.0, 420.0, 30.0, 1.0];
+    var temp = b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var U = dot(this.A, temp);
+    var V = b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
+    return (U,V);
+  }
+
+  proc pade7(){
+    const b = [17297280.0, 8648640.0, 1995840.0, 277200.0, 25200.0, 1512.0, 56.0, 1.0];
+    var temp = b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var U = dot(this.A, temp);
+    var V = b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
+    return (U,V);
+  }
+
+  proc pade9(){
+    const b = [17643225600.0, 8821612800.0, 2075673600.0, 302702400.0, 30270240.0,
+                2162160.0, 110880.0, 3960.0, 90.0, 1.0];
+    var temp = b[9]*comp_A8() + b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var U = dot(this.A, temp);
+    var V = b[8]*comp_A8() + b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
+    return (U,V);
+  }
+
+  proc pade13_scaled(s: real){
+    const b = [64764752532480000.0, 32382376266240000.0, 7771770303897600.0,
+                1187353796428800.0, 129060195264000.0, 10559470521600.0,
+                670442572800.0, 33522128640.0, 1323241920.0, 40840800.0, 960960.0,
+                16380.0, 182.0, 1.0];
+
+    var B = this.A * 2**-s;
+    var B2 = comp_A2() * 2**(-2*s);
+    var B4 = comp_A4() * 2**(-4*s);
+    var B6 = comp_A6() * 2**(-6*s);
+
+    var temp2 = b[13]*B6 + b[11]*B4 + b[9]*B2;
+    var U2 = dot(B6, temp2);
+    var temp = U2 + b[7]*B6 + b[5]*B4 + b[3]*B2 + b[1]*this.ident;
+    var U = dot(B, temp);
+    var temp3 = b[12]*B6 + b[10]*B4 + b[8]*B2;
+    var V2 = dot(B6, temp3);
+    var V = V2 + b[6]*B6 + b[4]*B4 + b[2]*B2 + b[0]*this.ident;
+    return (U,V);
+  }
+
+  proc printFields() {
+    writeln("A2 = ", comp_A2());
+    writeln("A4 = ", comp_A4());
+    writeln("A6 = ", comp_A6());
+    writeln("A8 = ", comp_A8());
+    writeln("A10 = ", comp_A10());
+
+    writeln("exact_d4 = ", comp_exactD4());
+    writeln("exact_d6 = ", comp_exactD6());
+    writeln("exact_d8 = ", comp_exactD8());
+    writeln("exact_d10 = ", comp_exactD10());
+
+    writeln("loose_d4 = ", comp_looseD4());
+    writeln("loose_d6 = ", comp_looseD6());
+    writeln("loose_d8 = ", comp_looseD8());
+    writeln("loose_d10 = ", comp_looseD10());
+  }
 }
 
 //
@@ -638,7 +894,13 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
              else {Adom.dim(0)};
 
   var Y: [Ydom] eltType;
-  BLAS.gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
+
+  if chpl__isArrayView(X) {
+    var temp = X;
+    BLAS.gemv(A, temp, Y, 1:eltType, 0:eltType, opA=op);
+  } else {
+    BLAS.gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
+  }
   return Y;
 }
 
@@ -670,7 +932,7 @@ proc isDistributed(a) param {
     // array that falls entirely in a single locale
     return !chpl__getActualArray(a).isDefaultRectangular();
   }
-  else if isSparseDom(a.domain) {
+  else if a.domain.isSparse() {
     // TODO: is there a better way to check for distributed sparse domains?
     use BlockDist;
     return isSubtype(a.domain.dist.type, Block);
@@ -882,7 +1144,7 @@ proc inv(ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   if isDistributed(A) then
     compilerError("inv does not support distributed vectors/matrices");
 
-  use SysCTypes;
+  use CTypes;
   if Adom.rank != 2 then
     halt("Wrong rank for matrix inverse");
 
@@ -1544,7 +1806,7 @@ proc solve(A: [?Adom] ?eltType, b: [?bdom] eltType) {
 proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   where usingLAPACK && isLAPACKType(t)
 {
-  use SysCTypes;
+  use CTypes;
   use IO; // for string.format
   import LAPACK;
   require LAPACK.header;
@@ -2063,6 +2325,184 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   return C;
 }
 
+/*
+  Matrix exponential using Pade approximation. This method returns N*N matrix which
+  is Matrix exponential of `A`
+
+  :arg A: Expects an N*N square matrix.
+  :type A: `A`
+
+  :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact. Defaults to true.
+  :type useExactOneNorm: bool
+
+  :throws LinearAlgebraError: If Input Matrix is not Square Matrix.
+
+  :returns: Matrix exponential of the given matrix.
+  :rtype: `A`
+
+  .. note::
+
+    [1] Awad H. Al-Mohy and Nicholas J. Higham (2009)
+    "A New Scaling and Squaring Algorithm for the Matrix Exponential."
+    SIAM Journal on Matrix Analysis and Applications.
+    31 (3). pp. 970-989. ISSN 1095-7162
+*/
+proc expm(A: [], param useExactOneNorm=true) throws {
+
+  if A.rank != 2 || A.domain.dim(0) != A.domain.dim(1) then {
+    throw new LinearAlgebraError('Square Matrix Expected');
+  }
+
+  var h = new ExpmPadeHelper(A, useExactOneNorm);
+
+  // Try Pade order 3
+  var eta_1 = max(abs(h.comp_looseD4()), abs(h.comp_looseD6()));
+  if eta_1 < 1.495585217958292e-002 then {
+    var (U,V) = h.pade3();
+    return solvePQ(U, V);
+  }
+
+  // Try Pade order 5
+  var eta_2 = max(abs(h.comp_exactD4()), abs(h.comp_looseD6()));
+  if eta_2 < 2.539398330063230e-001 then {
+    var (U,V) = h.pade5();
+    return solvePQ(U, V);
+  }
+
+  // Try Pade order 7 and 9
+  var eta_3 = max(abs(h.comp_exactD6()), abs(h.comp_looseD8()));
+  if eta_3 < 9.504178996162932e-001 then {
+    var (U,V) = h.pade7();
+    return solvePQ(U, V);
+  }
+
+  if eta_3 < 2.097847961257068e+000 then {
+    var (U,V) = h.pade9();
+    return solvePQ(U, V);
+  }
+
+  // Use Pade order 13.
+  var eta_4 = max(abs(h.comp_looseD8()), abs(h.comp_looseD10()));
+  var eta_5 = min(eta_3, eta_4);
+  var theta_13 = 4.25;
+
+  var s = 0;
+  // choose smallest s such that s>=0 and 2**(-s) eta_5 <= theta_13
+  if eta_5 == 0 then {
+    // Nilpotent special case
+    s = 0;
+  }
+  else {
+    s = max(ceil(log2(eta_5 / theta_13)): int, 0);
+  }
+  var mat = h.pade13_scaled(s);
+  var U = mat[0];
+  var V = mat[1];
+  var X = solvePQ(U, V);
+  // According to the paper X = r_13(A)^(2^s): achieved by repeated squaring.
+  for i in 1..s {
+    X = dot(X, X);
+  }
+  return X;
+}
+
+/*
+This method finds P Q Matrices, where P = U + V and Q = -U + V
+it then returns X where Q*X = P.
+*/
+private proc solvePQ(U: [?D], V: [D]) where usingLAPACK {
+  use CTypes;
+
+  var P = U + V;
+  var Q = -U + V;
+  var ipiv : [0..<D.shape(0)] c_int;
+
+  var info = LAPACK.gesv(lapack_memory_order.row_major, Q, ipiv, P);
+
+  return P;
+}
+
+private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
+  var P = U + V;
+  var Q = -U + V;
+
+  // This is a potential performance issue:
+  // The solve method is called N times and
+  // every solve call does an LU factorization on
+  // Matrix Q (which is redundant in this case
+  // since we could get away with a single LU calls
+  // for all the N iterations).
+  forall j in D.dim(1) {
+      P[.., j] = solve(Q, P[.., j]);
+    }
+
+  return P;
+}
+
+/*
+  This method returns both sine and cosine of the matrix A.
+
+  :arg A: Expects an N*N square matrix.
+  :type A: `A`
+
+  :returns: Matrix a tuple of sin and cosine of the given matrix.
+  :rtype: (`A`, `A`)
+*/
+proc sincos(A: []) throws {
+  if A.eltType == real {
+    var exp = expm(1.0i * A);
+    return (exp.im, exp.re);
+  }
+  else{
+    var U = 1.0i * A;
+    var exp_U = expm(U);
+    var V = -1.0i * A;
+    var exp_V = expm(V);
+    var sin = -0.5i * (exp_U - exp_V);
+    var cos = 0.5 * (exp_U + exp_V);
+    return (sin, cos);
+  }
+}
+
+/*
+This method returns the sine of the matrix A.
+
+  :arg A: Expects an N*N square matrix.
+  :type A: `A`
+
+  :returns: Matrix returns the sine of the given matrix.
+  :rtype: `A`
+*/
+proc sinm(A: []) throws {
+  if A.eltType == real {
+    return expm(1.0i * A).im;
+  }
+  else{
+    var U = 1.0i * A;
+    var V = -1.0i * A;
+    return -0.5i * (expm(U) - expm(V));
+  }
+}
+
+/*
+This method returns the cosine of the matrix A.
+
+  :arg A: Expects an N*N square matrix.
+  :type A: `A`
+
+  :returns: Matrix returns the cosine of the given matrix.
+  :rtype: `A`
+*/
+proc cosm(A: []) throws {
+  if A.eltType == real {
+    return expm(1.0i * A).re;
+  }
+  else{
+    var U = 1.0i * A;
+    var V = -1.0i * A;
+    return 0.5 * (expm(U) + expm(V));
+  }
+}
 
 //
 // Type helpers
@@ -2079,7 +2519,7 @@ proc isDenseArr(A: [?D]) param : bool {
 pragma "no doc"
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isDenseDom(D: domain) param : bool {
-  return isRectangularDom(D);
+  return D.isRectangular();
 }
 
 // TODO: Add this to public interface eventually
@@ -2117,7 +2557,7 @@ proc type _array.rank param {
 pragma "no doc"
 /* Returns ``true`` if the domain is ``DefaultSparse`` */
 private proc isDefaultSparseDom(D: domain) param {
-  return isSubtype(_to_borrowed(D.dist.type), DefaultDist) && isSparseDom(D);
+  return isSubtype(_to_borrowed(D.dist.type), DefaultDist) && D.isSparse();
 }
 
 pragma "no doc"
@@ -2372,13 +2812,13 @@ module Sparse {
         passing ``A`` and ``B`` in the reverse order.
 
   */
-  proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isSparseArr(B) || isSparseArr(A) {
+  proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where B.isSparse() || A.isSparse() {
     // Assumes matrix-(vector|matrix) case
     return matMult(A, B);
   }
 
   /* CSR matrix-(matrix|vector) multiplication */
-  private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) where (isSparseArr(A) || isSparseArr(B)) {
+  private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) where (A.isSparse() || B.isSparse()) {
     // matrix-vector
     if Adom.rank == 2 && Bdom.rank == 1 {
       if !isCSArr(A) then
@@ -2393,12 +2833,37 @@ module Sparse {
     }
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
-      if !isCSArr(A) || !isCSArr(B) then
-        compilerError("Only CSR format is supported for sparse multiplication");
-      return _csrmatmatMult(A, B);
+      if !isCSArr(A) || !isCSArr(B) then {
+        return sparseDenseMatmul(A, B);
+      }
+      else {
+        return _csrmatmatMult(A, B);
+      }
     }
     else {
       compilerError("Ranks are not 1 or 2");
+    }
+  }
+
+  // Method returns the product of a Sparse and a Dense Matrix.
+  private proc sparseDenseMatmul(A: [?ADom], B: [?BDom]) where !isCSArr(A) || !isCSArr(B) {
+    if ADom.dim(1) != BDom.dim(0) then
+        halt("Mismatched shape in sparse-dense matrix multiplication");
+
+    var resDom = {0..<A.domain.shape(0), 0..<B.domain.shape(1)};
+    var C: [resDom] A.eltType;
+
+    if isCSArr(A) && !isCSArr(B) {
+      forall i in 0..<B.domain.shape(1) {
+        C[.., i] = dot(A, B[.., i]);
+      }
+      return C;
+    }
+    else {
+      forall i in 0..<A.domain.shape(0) {
+        C[i, ..] = dot(A[i, ..], B);
+      }
+      return C;
     }
   }
 
@@ -2691,8 +3156,8 @@ module Sparse {
   }
 
   pragma "no doc"
-  proc _array.plus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
-                                              && isSparseArr(A) && !isCSArr(A) {
+  proc _array.plus(A: [?Adom] ?eltType) where this.isSparse() && !isCSArr(this)
+                                              && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     var sps: sparse subdomain(Adom.parentDom);
@@ -2720,8 +3185,8 @@ module Sparse {
   }
 
   pragma "no doc"
-  proc _array.minus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
-                                               && isSparseArr(A) && !isCSArr(A) {
+  proc _array.minus(A: [?Adom] ?eltType) where this.isSparse() && !isCSArr(this)
+                                               && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     var sps: sparse subdomain(Adom.parentDom);
@@ -2756,8 +3221,8 @@ module Sparse {
   }
 
   pragma "no doc"
-  proc _array.times(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
-                                               && isSparseArr(A) && !isCSArr(A) {
+  proc _array.times(A: [?Adom] ?eltType) where this.isSparse() && !isCSArr(this)
+                                               && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     // TODO: sps should only contain non-zero entries in resulting array,
@@ -2795,8 +3260,8 @@ module Sparse {
 
   pragma "no doc"
   proc _array.elementDiv(A: [?Adom] ?eltType) where
-                                            isSparseArr(this) && !isCSArr(this)
-                                            && isSparseArr(A) && !isCSArr(A) {
+                                            this.isSparse() && !isCSArr(this)
+                                            && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     // TODO: sps should only contain non-zero entries in resulting array
@@ -2865,7 +3330,7 @@ module Sparse {
 
   pragma "no doc"
   proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
-                where isSparseArr(X) {
+                where X.isSparse() {
       if D.rank != 2 then
         halt("Wrong rank for setDiag");
 
@@ -2893,13 +3358,13 @@ module Sparse {
 
 
   /* Return ``true`` if sparse matrix is diagonal. Supports CSR and COO arrays. */
-  proc isDiag(A: [?D] ?eltType) where isSparseArr(A) {
+  proc isDiag(A: [?D] ?eltType) where A.isSparse() {
     return _isDiag(A);
   }
 
 
   /* Return ``true`` if matrix is Hermitian. Supports CSR and COO arrays. */
-  proc isHermitian(A: [?D]) where isSparseArr(A) {
+  proc isHermitian(A: [?D]) where A.isSparse() {
     if D.rank != 2 then
       compilerError("Rank is not 2");
     if !isSquare(A) then
@@ -2913,7 +3378,7 @@ module Sparse {
 
 
   /* Return ``true`` if sparse matrix is symmetric. Supports CSR and COO arrays. */
-  proc isSymmetric(A: [?D]) where isSparseArr(A): bool {
+  proc isSymmetric(A: [?D]) where A.isSparse(): bool {
     if D.rank != 2 then
       compilerError("Rank is not 2");
     if !isSquare(A) then

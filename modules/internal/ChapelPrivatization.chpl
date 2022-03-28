@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,7 +20,7 @@
 
 module ChapelPrivatization {
 
-  private use CPtr;
+  private use CTypes;
 
   // the type of elements in chpl_privateObjects.
   pragma "no doc"

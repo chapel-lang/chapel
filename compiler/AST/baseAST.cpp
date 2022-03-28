@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,6 +37,7 @@
 #include "ParamForLoop.h"
 #include "parser.h"
 #include "passes.h"
+#include "resolution.h"
 #include "runpasses.h"
 #include "scopeResolve.h"
 #include "stmt.h"
@@ -228,6 +229,19 @@ static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
 }
 
 void cleanAst() {
+
+  std::vector<Type*> keysToRm;
+
+  for (auto it = serializeMap.begin() ; it != serializeMap.end() ; it++) {
+    if (!isAlive(it->first)) {
+      keysToRm.push_back(it->first);
+    }
+  }
+
+  for_vector (Type, key, keysToRm) {
+    serializeMap.erase(key);
+  }
+
   // Important: Sometimes scopeResolve will create dummy UseStmts that are
   // never inserted into the tree, and will be deleted in between passes.
   //
@@ -533,7 +547,7 @@ void BaseAST::printTabs(std::ostream *file, unsigned int tabs) {
 
 
 // This method is the same for several subclasses of BaseAST, so it is defined
-// her on BaseAST. 'doc' is not defined as a member of BaseAST, so it must be
+// here on BaseAST. 'doc' is not defined as a member of BaseAST, so it must be
 // taken as an argument here.
 //
 // TODO: Can BaseAST define a 'doc' member? What if `chpl --doc` went away and
@@ -549,6 +563,37 @@ void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned
       *file << line;
       *file << std::endl;
     }
+  }
+}
+
+// This method is the same for several subclasses of BaseAST, so it is defined
+// here on BaseAST. 'doc' is not defined as a member of BaseAST, so it must be
+// taken as an argument here.
+//
+// Will print a deprecation warning in the documentation, if one is not already
+// present.  Checks for "deprecat" in the original documentation string if it
+// exists and returns without adding a message.  This method assumes that we've
+// already checked that the symbol is deprecated.
+void BaseAST::printDocsDeprecation(const char *doc, std::ostream *file,
+                                   unsigned int tabs,
+                                   const char* deprecationMsg, bool extraLine) {
+  // The current documentation may already mention deprecation
+  if (doc != NULL) {
+    // If the documentation already mentions deprecation in some form, no need
+    // for further action
+    if (strstr(doc, "deprecat")) {
+      return;
+    }
+  }
+  this->printTabs(file, tabs);
+  *file << ".. warning::" << std::endl;
+  *file << std::endl;
+  this->printTabs(file, tabs+1); // Indent further for the deprecation message
+  *file << deprecationMsg << std::endl;
+
+  // Only add this extra line if we added lines for the deprecation warning
+  if (extraLine) {
+    *file << std::endl;
   }
 }
 

@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,7 @@ class rather than ZPL's generic_stack class.
 
 The original code is:
 
-Copyright (c) 2004 University of Washington 
+Copyright (c) 2004 University of Washington
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -91,7 +91,7 @@ static void update_state(char *line) {
 
   while (cp[0] != '\0') {
     switch (*cp) {
-    case '\\': 
+    case '\\':
       escaped = !escaped;
       stuff++;
       break;
@@ -192,7 +192,7 @@ void beautify(fileinfo* origfile) {
   fileinfo* tmpfile;
 
   zline = -1;
-  
+
   openfile(origfile, "r");
   inputfile = origfile->fptr;
 
@@ -274,7 +274,7 @@ void beautify(fileinfo* origfile) {
 
   command = astr("mv ", tmpfile->pathname, " ", origfile->pathname);
   mysystem(command, "moving beautified file", false, true);
-  
+
   if (justification.size() != 0) {
     INT_FATAL( "Parentheses or curly braces are not balanced "
                "in codegen for %s.", origfile->pathname);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,6 +36,14 @@ class CallExpr;
 class SymExpr;
 class Expr;
 
+// NOTE: historically, `collect_asts` has been used in call sites for both an
+// iteration of the preorder asts and an arbitrary order. As we begin
+// refactoring more of the compiler, this type of knowledge will be very useful.
+// In randomized testing, (by modifying each call site of collect_asts), all but
+// 1 call sites rely on the preorder, so I've broken these apart
+// The other functions have a similar ambiguity and should enjoy the
+// same treatment in due time
+
 // return vec of CallExprs of FnSymbols (no primitives)
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls);
 // same as above but also allows for virtual function calls
@@ -46,9 +54,14 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
                                                  std::vector<CondStmt*>& IBBs);
 void computeHasToplevelYields(BaseAST* ast, bool& result);
 
-// collect Stmts and Exprs in the AST and return them in vectors
+// collect children asts in _an_ order. Today this is preorder
+// but callsites should transition to using collect_asts_{pre,post,un}order
 void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
+
+void collect_asts_unorder(BaseAST*, std::vector<BaseAST*>& asts);
+void collect_asts_preorder(BaseAST*, std::vector<BaseAST*>& asts);
 void collect_asts_postorder(BaseAST*, std::vector<BaseAST*>& asts);
+
 void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
 void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs);
 void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts);

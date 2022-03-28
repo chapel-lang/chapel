@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,7 +28,7 @@
 // duplication. If necessary, a locale model using this file
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpRuntime {
-  private use ChapelStandard, SysCTypes, CPtr;
+  private use ChapelStandard, CTypes;
 
   // The chpl_localeID_t type is used internally.  It should not be exposed to
   // the user.  The runtime defines the actual type, as well as a functional
@@ -96,16 +96,16 @@ module LocaleModelHelpRuntime {
   //
   pragma "insert line file info"
   extern proc chpl_comm_execute_on(loc_id: int, subloc_id: int, fn: int,
-                                   args: chpl_comm_on_bundle_p, arg_size: size_t);
+                                   args: chpl_comm_on_bundle_p, arg_size: c_size_t);
   pragma "insert line file info"
   extern proc chpl_comm_execute_on_fast(loc_id: int, subloc_id: int, fn: int,
-                                        args: chpl_comm_on_bundle_p, args_size: size_t);
+                                        args: chpl_comm_on_bundle_p, args_size: c_size_t);
   pragma "insert line file info"
   extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
-                                      args: chpl_comm_on_bundle_p, args_size: size_t);
+                                      args: chpl_comm_on_bundle_p, args_size: c_size_t);
   pragma "insert line file info"
     extern proc chpl_comm_taskCallFTable(fn: int,
-                                         args: chpl_comm_on_bundle_p, args_size: size_t,
+                                         args: chpl_comm_on_bundle_p, args_size: c_size_t,
                                          subloc_id: int): void;
   extern proc chpl_ftable_call(fn: int, args: chpl_comm_on_bundle_p): void;
   extern proc chpl_ftable_call(fn: int, args: chpl_task_bundle_p): void;
@@ -119,50 +119,41 @@ module LocaleModelHelpRuntime {
   // runtime interface
   //
   pragma "insert line file info"
-  extern proc chpl_task_addToTaskList(fn: int,
-                                      args: chpl_task_bundle_p, args_size: size_t,
-                                      subloc_id: int,
-                                      ref tlist: c_void_ptr, tlist_node_id: int,
-                                      is_begin: bool);
-  extern proc chpl_task_executeTasksInList(ref tlist: c_void_ptr);
+  extern proc chpl_task_addTask(fn: int,
+                                args: chpl_task_bundle_p, args_size: c_size_t,
+                                subloc_id: int);
   extern proc chpl_task_yield();
 
   //
-  // add a task to a list of tasks being built for a begin statement
+  // Add a task for a begin statement.
   //
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_taskListAddBegin(subloc_id: int,        // target sublocale
-                             fn: int,               // task body function idx
-                             args: chpl_task_bundle_p,      // function args
-                             args_size: size_t,     // args size
-                             ref tlist: c_void_ptr, // task list
-                             tlist_node_id: int     // task list owner node
-                            ) {
+  proc chpl_taskAddBegin(subloc_id: int,            // target sublocale
+                         fn: int,                   // task body function idx
+                         args: chpl_task_bundle_p,  // function args
+                         args_size: c_size_t          // args size
+                        ) {
     var tls = chpl_task_getInfoChapel();
     var isSerial = chpl_task_data_getSerial(tls);
     if isSerial {
       chpl_ftable_call(fn, args);
     } else {
       chpl_task_data_setup(args, tls);
-      chpl_task_addToTaskList(fn, args, args_size,
-                              subloc_id, tlist, tlist_node_id, true);
+      chpl_task_addTask(fn, args, args_size, subloc_id);
     }
   }
 
   //
-  // add a task to a list of tasks being built for a cobegin or coforall
-  // statement
+  // Add a task for a cobegin or coforall statement.
   //
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_taskListAddCoStmt(subloc_id: int,        // target sublocale
-                              fn: int,               // task body function idx
-                              args: chpl_task_bundle_p,      // function args
-                              args_size: size_t,     // args size
-                              ref tlist: c_void_ptr, // task list
-                              tlist_node_id: int     // task list owner node
-                             ) {
+  proc chpl_taskAddCoStmt(subloc_id: int,            // target sublocale
+                          fn: int,                   // task body function idx
+                          args: chpl_task_bundle_p,  // function args
+                          args_size: c_size_t          // args size
+                         ) {
     var tls = chpl_task_getInfoChapel();
     var isSerial = chpl_task_data_getSerial(tls);
     if chpl_task_data_getNextCoStmtSerial(tls) {
@@ -173,21 +164,8 @@ module LocaleModelHelpRuntime {
       chpl_ftable_call(fn, args);
     } else {
       chpl_task_data_setup(args, tls);
-      chpl_task_addToTaskList(fn, args, args_size,
-                              subloc_id, tlist, tlist_node_id, false);
+      chpl_task_addTask(fn, args, args_size, subloc_id);
      }
-  }
-
-  //
-  // make sure all tasks in a list have an opportunity to run
-  //
-  pragma "insert line file info"
-  pragma "always resolve function"
-  proc chpl_taskListExecute(ref task_list: c_void_ptr) {
-    // note: if we're serial, all of the tasks have already
-    // been executed. Tasking layers should tolerate empty task
-    // lists for this reason.
-    chpl_task_executeTasksInList(task_list);
   }
 
   // wrap around runtime's chpl__initCopy

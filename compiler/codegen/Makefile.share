@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -21,17 +21,17 @@ GEN_HEADERS = \
 
 CODEGEN_SRCS =                                          \
                codegen.cpp                              \
-               expr.cpp                                 \
-               CForLoop.cpp                             \
-               DoWhileStmt.cpp                          \
-               LoopStmt.cpp                             \
-               WhileDoStmt.cpp                          \
-               alist.cpp                                \
+               cg-expr.cpp                              \
+               cg-CForLoop.cpp                          \
+               cg-DoWhileStmt.cpp                       \
+               cg-LoopStmt.cpp                          \
+               cg-WhileDoStmt.cpp                       \
+               cg-alist.cpp                             \
                library.cpp                              \
                mli.cpp                                  \
-               stmt.cpp                                 \
-               symbol.cpp                               \
-               type.cpp
+               cg-stmt.cpp                              \
+               cg-symbol.cpp                            \
+               cg-type.cpp
 
 
 SRCS = $(CODEGEN_SRCS)

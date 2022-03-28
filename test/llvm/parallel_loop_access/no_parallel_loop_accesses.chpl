@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 config const n = 11;
 config param nn = 11;
@@ -34,7 +34,7 @@ proc loop1(A, B) {
 
 // CHECK: void @loop2
 proc loop2() {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     // CHECK: store i32 %
     // CHECK-NOT: !llvm.access.group
     var tmp: int(32) = i:int(32);
@@ -48,7 +48,7 @@ loop2();
 
 // CHECK: void @loop3
 proc loop3() {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     var tmp: c_array(int(32), nn);
     // CHECK: mark
     mark();
@@ -64,7 +64,7 @@ loop3();
 
 // CHECK: void @loop4
 proc loop4() {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     var tmp: nn*int(32);
     // CHECK: mark
     mark();
@@ -84,7 +84,7 @@ record R {
 
 // CHECK: void @loop5
 proc loop5() {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     var tmp: R;
     // CHECK: mark
     mark();
@@ -100,7 +100,7 @@ loop5();
 
 // CHECK: void @loop6
 proc loop6() {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     var tmp: R;
     // CHECK: mark
     mark();
@@ -116,7 +116,7 @@ loop6();
 
 // CHECK: void @loop7
 proc loop7() {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     var tmp: R;
     // CHECK: mark
     mark();
@@ -133,7 +133,7 @@ loop7();
 
 // CHECK: void @loop8
 proc loop8() {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     var tmp: R;
     // CHECK: mark
     mark();

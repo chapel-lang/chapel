@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -50,6 +50,7 @@
 #include "chpl-external-array.h"
 #include "chpl-file-utils.h"
 #include <chplfp.h>
+#include "chpl-gpu.h"
 #include "chplglob.h"
 #include "chplio.h"
 #include "chplmath.h"
@@ -61,7 +62,6 @@
 #include "chpl-prefetch.h"
 #include "chpl-privatization.h"
 #include "chpl-string.h"
-#include "chpl-strptime.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpltimers.h"
@@ -73,5 +73,9 @@
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-wide-ptr-fns.h"
 #include "chpl-mem-consistency.h"
+
+#ifdef HAS_GPU_LOCALE
+#include "chpl-gpu-gen-includes.h"
+#endif
 
 #endif

@@ -93,14 +93,6 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     export CHPL_LLVM=bundled       # llvm requires py27 and cmake
     export CHPL_AUX_FILESYS=none
 
-    # We default to CHPL_LIBFABRIC=system for EX.  We need to point to
-    # a libfabric install for the builds.  On EX a module will supply
-    # this but on XC we have to reference a private build.
-    if ! pkg-config --exists libfabric ; then
-      private_libfab_dir=/cray/css/users/chapelu/libfabric/install
-      export PKG_CONFIG_PATH=${PKG_CONFIG_PATH:+${PKG_CONFIG_PATH}:}${private_libfab_dir}/cray-xc/lib/pkgconfig
-    fi
-
     # As a general rule, more CPUs --> faster make.
     # To use all available CPUs, export CHPL_MAKE_MAX_CPU_COUNT=0 before running this setenv.
 
@@ -157,17 +149,6 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
         # NOTE: don't rebuild compiler above (or else problems with switching GCC versions)
         # NOTE: "--target-compiler" values shown above will be discarded by the setenv callback.
-
-        if [ $private_libfab_dir ] ; then
-          # Remove references to our private libfabric directory from
-          # the list* files in the built runtime library subdirs.  Our
-          # private dir won't be present in that environment and we'll
-          # be using the system libfabric module anyway.
-          log_info "Wipe $private_libfab_dir refs in $CHPL_HOME/lib/.../list-*"
-          find $CHPL_HOME/lib/. -type f -name list-\* \
-            | grep '\(list-includes-and-defines\|list-libraries\)$' \
-            | xargs sed --in-place "s= *[^ ]*${private_libfab_dir}/[^ ]*==g"
-        fi
         ;;
     ( * )
         log_info "NO building Chapel component: runtime"
@@ -326,9 +307,9 @@ else
         list_loaded_modules
     fi
 
-    gen_version_gcc=10.2.0
+    gen_version_gcc=10.3.0
     #[TODO] gen_version_intel=16.0.3.210
-    gen_version_cce=10.0.2
+    gen_version_cce=12.0.2
 
     target_cpu_module=craype-x86-rome
 

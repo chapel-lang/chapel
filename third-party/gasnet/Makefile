@@ -86,6 +86,12 @@ GASNET_CFLAGS += $(SHARED_LIB_CFLAGS)
 MPI_CC += $(SHARED_LIB_CFLAGS)
 endif
 
+# Disable hwloc until https://github.com/chapel-lang/chapel/issues/18050
+CHPL_GASNET_CFG_OPTIONS += --disable-hwloc
+
+# Disable IBV ODP due to https://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4008
+CHPL_GASNET_CFG_OPTIONS += --disable-ibv-odp
+
 CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)' MPI_CC='$(MPI_CC)' CFLAGS='$(GASNET_CFLAGS)' CXXFLAGS='$(GASNET_CFLAGS)'
 
 CHPL_GASNET_CFG_OPTIONS += $(CHPL_GASNET_MORE_CFG_OPTIONS)

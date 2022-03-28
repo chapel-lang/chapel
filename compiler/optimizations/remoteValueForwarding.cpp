@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +28,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+#include "global-ast-vecs.h"
+
 //#define DEBUG_SYNC_ACCESS_FUNCTION_SET
 
 static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
@@ -54,6 +56,11 @@ DotInfo::DotInfo() : finalized(false), usesDotLocale(false) { }
 
 static std::map<Symbol*, DotInfo*> dotLocaleMap;
 typedef std::map<Symbol*, DotInfo*>::iterator DotInfoIter;
+
+// deserializers for types that don't have any ref fields. This is used as a
+// cache of functions that don't need to be analyzed in
+// `handleRefDeserializers`.
+static std::set<FnSymbol*> regularDeserializers;
 
 static void computeUsesDotLocale();
 
@@ -212,13 +219,10 @@ static void insertSerialization(FnSymbol*  fn,
 
 static bool shouldSerialize(ArgSymbol* arg) {
   bool retval = false;
-  bool hasSerializer = serializeMap.find(arg->getValType()) != serializeMap.end();
   Type* argType = arg->getValType();
 
-  if (hasSerializer == false) {
+  if (!argType->isSerializable()) {
     retval = false;
-  } else if (argType->symbol->hasFlag(FLAG_ARRAY)) {
-    retval = hasSerializer;
   } else if (isRecordWrappedType(argType)) {
     // OK to serialize if the record-wrapped type's underlying class is not
     // modified.
@@ -232,7 +236,7 @@ static bool shouldSerialize(ArgSymbol* arg) {
     // FLAG_REF_TO_IMMUTABLE? That said, we don't seem to be leaking...
     retval = arg->intent == INTENT_CONST_REF && arg->hasFlag(FLAG_REF_TO_IMMUTABLE);
   } else {
-    retval = hasSerializer;
+    retval = true;
   }
 
   return retval;
@@ -377,7 +381,8 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
 // adjust its intent as well.
 static void adjustArgIntentForDeref(ArgSymbol* arg) {
   INT_ASSERT(!arg->type->isRef());
-  INT_ASSERT(arg->intent & INTENT_FLAG_REF);
+  if (!(arg->intent & INTENT_FLAG_REF))
+    return;
 
   arg->intent = (IntentTag)((arg->intent & ~INTENT_FLAG_REF) | INTENT_FLAG_IN);
 
@@ -459,6 +464,306 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
   }
 }
 
+/*
+ *  This function handles deserialization of AggregateTypes that have ref
+ *  fields. Those fields need to point to data that is local for RVF to be
+ *  meaningful. However, if the data is created inside the deserializer of that
+ *  aggregate type, it'll be freed at the end of deserialization. Therefore, we
+ *  hoist the deserialization of that data out of the main deserializer and into
+ *  the `on` function. This is repeated recursively. The transformation is
+ *  complicated and looks like the following for a single-ref-field record:
+ *
+ *  Before:
+ *  -------
+ *
+ *  proc type chpl__deserialize1(data) {
+ *    var ret: this;
+ *    if <deserialization block marker> {
+ *      var deserializedField = this.field.type.chpl__deserialize2(data[0]);
+ *      this.field = deserializedField;
+ *    }
+ *    else {
+ *      var deserializedField = this.field.type.chpl__deserialize2(data[0]);
+ *      this.field = &deserializedField;
+ *    }
+ *    return ret;
+ *  }
+ *
+ *  proc on_fn(... rvfData ...) {
+ *    var deserialized = chpl__deserialize1(rvfData);
+ *
+ *    ...
+ *
+ *    autoDestroy(deserialized);
+ *  }
+ *
+ *  After:
+ *  ------
+ *
+ *  proc type chpl__deserialize1(data, newArgRef) {
+ *    var ret: this;
+ *    this.field = newArgRef;
+ *    return ret;
+ *  }
+ *
+ *  proc on_fn(... rvfData ...) {
+ *    var deserializedField = this.field.type.chpl__deserialize2(rvfData[0]);
+ *    ref newArgRef = &deserializedField;
+ *    var deserialized = chpl__deserialize1(rvfData, newArgRef);
+ *
+ *    ...
+ *
+ *    autoDestroy(deserializedField);
+ *    autoDestroy(deserialized);
+ *  }
+ *
+ *  Roughly the changes are:
+ *  - The thenStmt of the conditional is hoisted from inside chpl__deserialize1
+ *    to the on_fn
+ *  - The result of this sub-deserialization is passed by reference to the main
+ *    deserializer.
+ *  - This ref is directly assigned to the field inside the main deserializer.
+ *
+ */
+static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
+                                        FnSymbol* baseDeserializeFn,
+                                        Symbol* arg) {
+
+  // if no changes are necessary, we'll just return this
+  CallExpr* baseCall = new CallExpr(baseDeserializeFn, arg);
+
+  if (regularDeserializers.count(baseDeserializeFn) == 1) {
+    return baseCall;
+  }
+
+  FnSymbol* deserializeFn = baseDeserializeFn->copy();
+  CallExpr* modifiedCall = new CallExpr(deserializeFn, arg);
+
+  bool modified = false;
+  for_alist (stmt, deserializeFn->body->body) {
+    if (CondStmt* cond = toCondStmt(stmt)) {
+      SymExpr* flagExpr = toSymExpr(cond->condExpr);
+      if (flagExpr->symbol()->hasFlag(FLAG_DESERIALIZATION_BLOCK_MARKER)) {
+        if (!modified) {
+          modified = true;
+          baseDeserializeFn->defPoint->insertBefore(new DefExpr(deserializeFn));
+        }
+
+        // Phase 1: figure out which field we are deserializing for
+        bool useThenBlock = true;
+        CallExpr* setMemberCall = NULL;
+        Type* fieldType = NULL;
+        for_alist_backward (innerStmt, cond->elseStmt->body) {
+          if (CallExpr* call = toCallExpr(innerStmt)) {
+            if (call->isPrimitive(PRIM_SET_MEMBER)) {
+              setMemberCall = call;
+
+              SymExpr* field = toSymExpr(call->get(2));
+              INT_ASSERT(field);
+
+              if (field->symbol()->isRef()) {
+                useThenBlock = false;
+                fieldType = field->symbol()->type;
+                break;
+              }
+              else {
+                useThenBlock = true;
+                break;
+              }
+            }
+          }
+        }
+
+        // Phase 2: Choose val or ref deserialization
+        if (useThenBlock) {
+          // Phase 2a: We are not doing ref deserialization for this
+          // field. Put all the statements in the `then` block in before the
+          // conditional. The conditional will be discarded later.
+          for_alist (stmt, cond->thenStmt->body) {
+            cond->insertBefore(stmt->remove());
+          }
+        }
+        else {
+          // Phase 2b: We are doing ref deserialization for this field. Find the
+          // symbol used for the serial data. (It is typically replaced with a
+          // formal temp). We will have to replace that symbol with the actual
+          // argument, when we hoist the val serialization block.
+
+          SymbolMap map;
+          Symbol* partialData = NULL;  // part of the serial buffer used
+          for_alist (innerStmt, cond->thenStmt->body) {
+            if (CallExpr* call = toCallExpr(innerStmt)) {
+              if (call->isPrimitive(PRIM_MOVE)) {
+                if (CallExpr* rhs = toCallExpr(call->get(2))) {
+                  if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                    if (SymExpr* lhs = toSymExpr(call->get(1))) {
+                      partialData = lhs->symbol();
+                      map.put(toSymExpr(rhs->get(1))->symbol(), arg);
+                    }
+                  }
+                  if (rhs->isNamed("chpl__deserialize")) {
+                    INT_ASSERT(partialData == toSymExpr(rhs->get(1))->symbol());
+                  }
+                }
+              }
+            }
+          }
+
+          // Phase 3: Actually hoist the val deserialization outside of this
+          // deserializer. While doing so, update the serial buffer argument.
+          BlockStmt* hoistedDeser = cond->thenStmt;
+          anchor->insertBefore(hoistedDeser->remove());
+          update_symbols(hoistedDeser, &map);
+
+          // Phase 4: Replace the call that sets the field with a PRIM_ADDROF.
+          // Later on, we will pass that address (`hoistedRefField`) as an
+          // argument to the main deserializer.
+          VarSymbol* hoistedRefField = NULL;
+          CallExpr* nestedDeser = NULL;
+          for_alist_backward (hoistedDeserStmt, hoistedDeser->body) {
+            if (CallExpr* call = toCallExpr(hoistedDeserStmt)) {
+              if (call->isPrimitive(PRIM_SET_MEMBER)) {
+                hoistedRefField = new VarSymbol("hoisted_ref",
+                                                fieldType->getRefType());
+
+                // probably not necessary, but just in case:
+                hoistedRefField->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+                SymExpr* hoistedField = toSymExpr(call->get(3)->remove());
+
+                call->insertBefore(new DefExpr(hoistedRefField));
+                call->insertBefore(new CallExpr(PRIM_MOVE, hoistedRefField,
+                                                new CallExpr(PRIM_ADDR_OF,
+                                                             hoistedField)));
+                call->remove();
+
+                // destroy the val at the end of the `on_fn`
+                if (FnSymbol* destroy = getAutoDestroy(hoistedField->getValType())) {
+                  CallExpr* lastExpr = toCallExpr(fn->body->body.tail);
+                  INT_ASSERT(lastExpr && lastExpr->isPrimitive(PRIM_RETURN));
+
+                  lastExpr->insertBefore(new CallExpr(destroy,
+                                                      hoistedField->copy()));
+                }
+              }
+              else if (call->isNamed("chpl__autoDestroy")) {
+                call->remove(); // we'll destroy in the outer scope (above)
+              }
+              else if (call->isNamed("chpl__deserialize")) {
+                // if there is any nested deserializer in the deserializer that
+                // we just hoisted, we need to recursively check for that.
+                // However, this is not a very clean recursion. See below.
+                nestedDeser = call;
+              }
+            }
+          }
+
+          // Phase 5: If we have nested deserializers, recurse.
+          if (nestedDeser) {
+            Symbol* argToNestedCall = NULL;
+
+            // Find the serial data argument to the nested call:
+            for_actuals (actual, nestedDeser) {
+              SymExpr* actualSE = toSymExpr(actual);
+              INT_ASSERT(actualSE);
+              Symbol *sym = actualSE->symbol();
+
+              if (isTypeSymbol(sym)) {
+                continue;
+              }
+              else if (sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+                continue;
+              }
+
+              argToNestedCall = actualSE->symbol();
+              break;
+            }
+
+            // find the first move in the hoisted block. This move must be
+            // the def of the argument to the deserialize call. This is where we
+            // have a meaningful symbol to pass to the nested deserializer when
+            // we hoist it out. So, basically the statement after this move is
+            // going to be our anchor.
+            CallExpr* moveToArg = NULL;
+            for_alist (stmt, hoistedDeser->body) {
+              if (CallExpr* call = toCallExpr(stmt)) {
+                if (call->isPrimitive(PRIM_MOVE)) {
+                  SymExpr* lhs = toSymExpr(call->get(1));
+                  INT_ASSERT(lhs->symbol() == argToNestedCall);
+                  moveToArg = call;
+                  break;
+                }
+              }
+            }
+
+
+            // recurse
+            FnSymbol* curDeserializer = nestedDeser->resolvedFunction();
+            CallExpr* replCall = handleRefDeserializers(moveToArg->next,
+                                                        fn,
+                                                        curDeserializer,
+                                                        argToNestedCall);
+
+            // handle retargs and rtts in the call. This is similar to the logic
+            // in `insertSerialization`. There might be a refactor where we
+            // don't have the same code again. But I don't think what that is is
+            // obvious.
+            if (curDeserializer->hasFlag(FLAG_FN_RETARG)) {
+              INT_ASSERT(replCall->resolvedFunction()->hasFlag(FLAG_FN_RETARG));
+              replCall->insertAtTail(nestedDeser->argList.tail->remove());
+            }
+
+            if (DefExpr* firstFormal = toDefExpr(curDeserializer->formals.head)) {
+              if (firstFormal->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+                replCall->insertAtHead(nestedDeser->argList.head->remove());
+              }
+            }
+            nestedDeser->replace(replCall);
+          }
+
+          // We have bunch of stuff that we hoisted up, but it is still all in a
+          // block. Flatten it.
+          hoistedDeser->flattenAndRemove();
+
+          // Phase 6: Adjust the existing "base" deserializer. This means adding
+          // an argument to the function, changing the call to have the ref
+          // field as an argument, changing the setMemberCall to make use of
+          // this argument to the function. Note that `modifiedCall` will
+          // receive its retarg/rtt in `insertSerialization`.
+          ArgSymbol *newArg = new ArgSymbol(INTENT_REF, "hoisted_field",
+                                            hoistedRefField->type);
+          if (deserializeFn->hasFlag(FLAG_FN_RETARG)) {
+            Expr* retArg = deserializeFn->formals.tail->remove();
+            deserializeFn->insertFormalAtTail(newArg);
+            deserializeFn->insertFormalAtTail(retArg);
+          }
+          else {
+            deserializeFn->insertFormalAtTail(newArg);
+          }
+          modifiedCall->insertAtTail(new SymExpr(hoistedRefField));
+
+          setMemberCall->get(3)->replace(new SymExpr(newArg));
+          cond->insertBefore(setMemberCall->remove());
+
+        }
+
+        // cleanup
+        flagExpr->symbol()->defPoint->remove();
+        cond->remove();
+      }
+    }
+  }
+
+  if (!modified) {
+    regularDeserializers.insert(baseDeserializeFn);
+    return baseCall;
+  }
+  else {
+    modifiedCall->setResolvedFunction(deserializeFn);
+    return modifiedCall;
+  }
+}
+
 // Insert and return the temp that will hold the deserialized
 // instance of 'arg'.
 // Replace all references to 'arg' within the task function
@@ -477,7 +782,10 @@ static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
   anchor->insertBefore(new DefExpr(deserialized));
   anchor->insertBefore(new DefExpr(dsRef));
 
-  CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
+  // TODO we should probably create the call as normal, then replace it. It'll
+  // help with easier recursion w.r.t retarg functions
+  CallExpr* deserializeCall = handleRefDeserializers(anchor, fn, deserializeFn,
+                                                     arg);
   CallExpr* callToAdd = NULL;
 
   if (needsRuntimeType) {

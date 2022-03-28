@@ -641,7 +641,7 @@ static int util_coll_scatter(struct util_coll_operation *coll_op, const void *da
 			// according to destination rank. if we're rank 3, data intended for
 			// ranks 0-2 will be moved to the end
 			*temp = malloc(cur_cnt * ofi_datatype_size(datatype));
-			if (!temp)
+			if (!*temp)
 				return -FI_ENOMEM;
 			ret = util_coll_sched_copy(coll_op,
 						   (char *) data + nbytes * local_rank, *temp,
@@ -871,11 +871,10 @@ void util_coll_collective_comp(struct util_coll_operation *coll_op)
 static int util_coll_proc_reduce_item(struct util_coll_reduce_item *reduce_item)
 {
 	if (FI_MIN <= reduce_item->op && FI_BXOR >= reduce_item->op) {
-		ofi_atomic_write_handlers[reduce_item->op]
-					 [reduce_item->datatype](
-						 reduce_item->inout_buf,
-						 reduce_item->in_buf,
-						 reduce_item->count);
+		ofi_atomic_write_handler(reduce_item->op, reduce_item->datatype,
+					 reduce_item->inout_buf,
+					 reduce_item->in_buf,
+					 reduce_item->count);
 	} else {
 		return -FI_ENOSYS;
 	}
@@ -1146,8 +1145,8 @@ static int util_coll_av_init(struct util_av *av)
 	if (ret)
 		goto err3;
 
-	coll_mc->av_set->fi_addr_array =
-		calloc(av->count, sizeof(*coll_mc->av_set->fi_addr_array));
+	coll_mc->av_set->fi_addr_array = calloc(ofi_av_size(av),
+					 sizeof(*coll_mc->av_set->fi_addr_array));
 	if (!coll_mc->av_set->fi_addr_array) {
 		ret = -FI_ENOMEM;
 		goto err2;
@@ -1179,7 +1178,9 @@ int ofi_av_set(struct fid_av *av, struct fi_av_set_attr *attr,
 {
 	struct util_av *util_av = container_of(av, struct util_av, av_fid);
 	struct util_av_set *av_set;
-	int ret, iter;
+	size_t max_size;
+	uint64_t i;
+	int ret;
 
 	if (!util_av->coll_mc) {
 		ret = util_coll_av_init(util_av);
@@ -1187,7 +1188,7 @@ int ofi_av_set(struct fid_av *av, struct fi_av_set_attr *attr,
 			return ret;
 	}
 
-	av_set = calloc(1,sizeof(*av_set));
+	av_set = calloc(1, sizeof(*av_set));
 	if (!av_set)
 		return -FI_ENOMEM;
 
@@ -1195,15 +1196,17 @@ int ofi_av_set(struct fid_av *av, struct fi_av_set_attr *attr,
 	if (ret)
 		goto err1;
 
-	av_set->fi_addr_array = calloc(util_av->count, sizeof(*av_set->fi_addr_array));
+	max_size = attr->count ? attr->count : ofi_av_size(util_av);
+	av_set->fi_addr_array = calloc(max_size,
+				       sizeof(*av_set->fi_addr_array));
 	if (!av_set->fi_addr_array)
 		goto err2;
 
-	for (iter = 0; iter < attr->count; iter++) {
-		av_set->fi_addr_array[iter] =
-			util_av->coll_mc->av_set->fi_addr_array[iter * attr->stride];
-		av_set->fi_addr_count++;
+	for (i = attr->start_addr; i <= attr->end_addr; i += attr->stride) {
+		av_set->fi_addr_array[av_set->fi_addr_count++] =
+			util_av->coll_mc->av_set->fi_addr_array[i];
 	}
+	assert(av_set->fi_addr_count <= max_size);
 
 	util_coll_mc_init(&av_set->coll_mc, av_set, NULL, context);
 

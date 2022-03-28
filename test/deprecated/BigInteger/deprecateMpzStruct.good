@@ -1,0 +1,1 @@
+deprecateMpzStruct.chpl:7: warning: mpzStruct is deprecated, please use getImpl instead

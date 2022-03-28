@@ -1964,6 +1964,7 @@ extern void gex_EP_BindSegment(
   // TODO: macros for formatting when naming endpoints in tracing?
   GASNETI_TRACE_PRINTF(O,("gex_EP_BindSegment: segment=%p, EP index=%d, flags=%d",
                           (void *)segment, i_ep->_index, flags));
+  GASNETI_CHECK_INJECT();
 
   if (segment == GEX_SEGMENT_INVALID) {
     gasneti_fatalerror("Invalid call to gex_EP_BindSegment() with GEX_SEGMENT_INVALID");
@@ -1982,7 +1983,7 @@ extern void gex_EP_BindSegment(
 }
 
 /* ------------------------------------------------------------------------------------ */
-extern int gasneti_EP_PublishBoundSegment(
+extern int gex_EP_PublishBoundSegment(
                 gex_TM_t               tm,
                 gex_EP_t               *eps,
                 size_t                 num_eps,
@@ -1990,6 +1991,7 @@ extern int gasneti_EP_PublishBoundSegment(
 {
   GASNETI_TRACE_PRINTF(O,("gex_EP_PublishBoundSegment: tm="GASNETI_TMSELFFMT", num_ep=%"PRIuSZ", flags=%d",
                           GASNETI_TMSELFSTR(tm), num_eps, flags));
+  GASNETI_CHECK_INJECT();
 
   if (flags) {
     gasneti_fatalerror("Invalid call to gex_EP_PublishBoundSegment() with non-zero flags");
@@ -2051,11 +2053,17 @@ extern int gasneti_EP_PublishBoundSegment(
   //     reasons).
 #endif
 
+#if GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK
+  // TODO: this should be at least two distict hooks for pack and unpack
+  // of data in the exchange operation above, instead of a distinct exchange.
+  return gasnetc_ep_publishboundsegment_hook(tm, eps, num_eps, flags);
+#else
   return GASNET_OK;
+#endif
 }
 
 /* ------------------------------------------------------------------------------------ */
-gasnet_seginfo_t gasneti_segmentAttach(
+int gasneti_segmentAttach(
                 gex_Segment_t                 *segment_p,
                 gex_TM_t                      tm,
                 uintptr_t                     segsize,
@@ -2100,9 +2108,10 @@ gasnet_seginfo_t gasneti_segmentAttach(
   gasneti_assert_ptr(gasneti_seginfo[gasneti_mynode].addr ,==, segbase);
   gasneti_assert_uint(gasneti_seginfo[gasneti_mynode].size ,==, segsize);
 
-  // Two "outputs":
+  // output:
   *segment_p = gasneti_export_segment(i_segment);
-  return myseg;
+
+  return GASNET_OK;
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -2115,23 +2124,12 @@ int gasneti_segmentCreate(
                 gex_MK_t                kind,
                 gex_Flags_t             flags)
 {
-  GASNETI_TRACE_PRINTF(O,("gex_Segment_Create: addr="GASNETI_LADDRFMT" len=%"PRIuPTR" flags=%d",
-                          GASNETI_LADDRSTR(address), length, flags));
-
-  if (!segment_p) {
-    gasneti_fatalerror("Invalid call to gex_Segment_Create() with NULL segment_p");
-  }
-  if (flags) {
-    gasneti_fatalerror("Invalid call to gex_Segment_Create() with non-zero flags");
-  }
-  if (! length) {
-    gasneti_fatalerror("Invalid call to gex_Segment_Create() with zero length");
-  }
-  if (kind == GEX_MK_INVALID) {
-    gasneti_fatalerror("Invalid call to gex_Segment_Create() with kind = GEX_MK_INVALID");
-  }
-
   gasneti_Segment_t segment = gasneti_import_segment(GEX_SEGMENT_INVALID);
+
+  gasneti_assert(segment_p);
+  gasneti_assert(! flags);
+  gasneti_assert(length);
+  gasneti_assert(kind != GEX_MK_INVALID);
 
   if (kind == GEX_MK_HOST) {
     if (address) {
@@ -2167,6 +2165,34 @@ int gasneti_segmentCreate(
   gasneti_segtbl_add(segment);
 
   *segment_p = gasneti_export_segment(segment);
+  return GASNET_OK;
+}
+
+int gasneti_segmentDestroy(
+                gasneti_Segment_t       i_segment,
+                int                     create_hook_succeeded)
+{
+  gasneti_assert(i_segment);
+
+#if GASNETC_SEGMENT_DESTROY_HOOK
+  // Call conduit-specific hook ONLY if create hook has run
+  // successfully (and there is a destroy hook)
+  if (create_hook_succeeded) {
+    gasnetc_segment_destroy_hook(i_segment);
+  }
+#endif
+
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+  if (i_segment->_kind != GEX_MK_HOST) {
+    gasneti_MK_Segment_Destroy(i_segment);
+  }
+#else
+  gasneti_assert_ptr(i_segment->_kind ,==, GEX_MK_HOST);
+#endif
+
+  gasneti_segtbl_del(i_segment);
+  gasneti_free_segment(i_segment);
+
   return GASNET_OK;
 }
 /* ------------------------------------------------------------------------------------ */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,72 +19,59 @@
  */
 
 
-use Path;
-use IO;
-use Spawn;
-use MasonModify;
+use ArgumentParser;
 use FileSystem;
-use MasonUtils;
-use MasonUpdate;
-use MasonHelp;
+use IO;
 use MasonEnv;
+use MasonHelp;
+use MasonModify;
+use MasonUpdate;
+use MasonUtils;
+use Path;
+use Subprocess;
+
 
 /*
   Creates a new library project at a given directory
   mason new <projectName/directoryName>
 */
 proc masonNew(args: [] string) throws {
-  var vcs = true;
-  var show = false;
+
+  var parser = new argumentParser(helpHandler=new MasonNewHelpHandler());
+
+  var vcsFlag = parser.addFlag(name="vcs",
+                               opts=["--no-vcs"],
+                               defaultValue=false);
+  var nameOpt = parser.addOption(name="legalname",
+                                 opts=["--name"]);
+
+  var showFlag = parser.addFlag(name="show", defaultValue=false);
+  var dirArg = parser.addArgument(name="directory", numArgs=0..1);
+
+  parser.parseArgs(args);
+
+  var vcs = !vcsFlag.valueAsBool();
+  var show = showFlag.valueAsBool();
   var packageName = '';
   var dirName = '';
   var version = '';
   var chplVersion = '';
   var license = 'None';
+
   try! {
-    if args.size < 3 {
+    if args.size == 1 {
       var metadata = beginInteractiveSession('','','','');
       packageName = metadata[0];
       dirName = packageName;
       version = metadata[1];
       chplVersion = metadata[2];
       license = metadata[3];
-    }
-    else {
-      var countArgs = args.domain.low + 2;
-      for arg in args[args.domain.low+2..] {
-        countArgs += 1;
-        select (arg) {
-          when '-h' {
-            masonNewHelp();
-            exit();
-          }
-          when '--help' {
-            masonNewHelp();
-            exit();
-          }
-          when '--no-vcs' {
-            vcs = false;
-          }
-          when '--show' {
-            show = true;
-          }
-          when '--name' {
-              packageName = args[countArgs];
-          }
-          otherwise {
-            if arg.startsWith('--name=') {
-              var res = arg.split("=");
-              packageName = res[1];
-            }
-            else {
-              if args[countArgs - 2] != '--name' then
-              dirName = arg;
-              if packageName.size == 0 then
-              packageName = arg;
-            }
-          }
-        }
+    } else {
+      if dirArg.hasValue() then dirName = dirArg.value();
+      if nameOpt.hasValue() {
+        packageName = nameOpt.value();
+      } else {
+        packageName = dirName;
       }
     }
     if validatePackageName(dirName=packageName) {
@@ -104,7 +91,7 @@ proc masonNew(args: [] string) throws {
   Starts an interactive session to create a
   new library project.
 */
-proc beginInteractiveSession(defaultPackageName: string, defVer: string, 
+proc beginInteractiveSession(defaultPackageName: string, defVer: string,
             defChplVer: string, license: string) throws {
   writeln("""This is an interactive session to walk you through creating a library
 project using Mason. The following queries covers the common items required to
@@ -144,10 +131,10 @@ considered if no input is given.""");
         }
         if !isIllegalName {
           if isDir('./' + packageName) then
-            throw new owned MasonError("Bad package name. A package with the name '" 
+            throw new owned MasonError("Bad package name. A package with the name '"
                               + packageName + "' already exists.");
           if validatePackageName(packageName) then
-            gotCorrectPackageName = true; 
+            gotCorrectPackageName = true;
         }
       }
       if !gotCorrectPackageVersion {
@@ -283,7 +270,7 @@ proc InitProject(dirName, packageName, vcs, show,
     makeSrcDir(dirName);
     makeModule(dirName, fileName=packageName);
     makeTestDir(dirName);
-    makeExampleDir(dirName);  
+    makeExampleDir(dirName);
     writeln("Created new library project: " + dirName);
   }
   else {
@@ -321,7 +308,7 @@ license = "%s"
 }
 
 /* Creates the Mason.toml file */
-proc makeBasicToml(dirName: string, path: string, version: string, 
+proc makeBasicToml(dirName: string, path: string, version: string,
             chplVersion: string, license: string) {
   var defaultVersion: string = "0.1.0";
   var defaultChplVersion: string = getChapelVersionStr();

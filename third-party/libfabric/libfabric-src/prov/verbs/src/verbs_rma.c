@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2018 Intel Corporation, Inc.  All rights reserved.
+ * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -55,7 +56,7 @@ vrb_msg_ep_rma_write(struct fid_ep *ep_fid, const void *buf, size_t len,
 		.opcode = IBV_WR_RDMA_WRITE,
 		.wr.rdma.remote_addr = addr,
 		.wr.rdma.rkey = (uint32_t)key,
-		.send_flags = VERBS_INJECT(ep, len),
+		.send_flags = VERBS_INJECT(ep, len, desc),
 	};
 
 	return vrb_send_buf(ep, &wr, buf, len, desc);
@@ -75,7 +76,8 @@ vrb_msg_ep_rma_writev(struct fid_ep *ep_fid, const struct iovec *iov, void **des
 		.wr.rdma.rkey = (uint32_t)key,
 	};
 
-	return vrb_send_iov(ep, &wr, iov, desc, count);
+	return vrb_send_iov(ep, &wr, iov, desc, count,
+			    ep->util_ep.tx_op_flags);
 }
 
 static ssize_t
@@ -97,7 +99,8 @@ vrb_msg_ep_rma_writemsg(struct fid_ep *ep_fid, const struct fi_msg_rma *msg,
 		wr.opcode = IBV_WR_RDMA_WRITE;
 	}
 
-	return vrb_send_msg(ep, &wr, msg, flags);
+	return vrb_send_iov(ep, &wr, msg->msg_iov, msg->desc,
+			    msg->iov_count, flags);
 }
 
 static ssize_t
@@ -132,9 +135,8 @@ vrb_msg_ep_rma_readv(struct fid_ep *ep_fid, const struct iovec *iov, void **desc
 		.num_sge = count,
 	};
 
-	vrb_set_sge_iov(wr.sg_list, iov, count, desc);
-
-	return vrb_post_send(ep, &wr);
+	vrb_iov_dupa(wr.sg_list, iov, desc, count);
+	return vrb_post_send(ep, &wr, 0);
 }
 
 static ssize_t
@@ -151,9 +153,8 @@ vrb_msg_ep_rma_readmsg(struct fid_ep *ep_fid, const struct fi_msg_rma *msg,
 		.num_sge = msg->iov_count,
 	};
 
-	vrb_set_sge_iov(wr.sg_list, msg->msg_iov, msg->iov_count, msg->desc);
-
-	return vrb_post_send(ep, &wr);
+	vrb_iov_dupa(wr.sg_list, msg->msg_iov, msg->desc, msg->iov_count);
+	return vrb_post_send(ep, &wr, 0);
 }
 
 static ssize_t
@@ -166,11 +167,12 @@ vrb_msg_ep_rma_writedata(struct fid_ep *ep_fid, const void *buf, size_t len,
 	struct ibv_send_wr wr = {
 		.wr_id = VERBS_COMP(ep, (uintptr_t)context),
 		.opcode = IBV_WR_RDMA_WRITE_WITH_IMM,
-		.imm_data = htonl((uint32_t)data),
 		.wr.rdma.remote_addr = addr,
 		.wr.rdma.rkey = (uint32_t)key,
-		.send_flags = VERBS_INJECT(ep, len),
+		.send_flags = VERBS_INJECT(ep, len, desc),
 	};
+
+	wr.imm_data = htonl((uint32_t)data);
 
 	return vrb_send_buf(ep, &wr, buf, len, desc);
 }
@@ -189,7 +191,7 @@ vrb_msg_ep_rma_inject_write(struct fid_ep *ep_fid, const void *buf, size_t len,
 		.send_flags = IBV_SEND_INLINE,
 	};
 
-	return vrb_send_buf_inline(ep, &wr, buf, len);
+	return vrb_send_buf(ep, &wr, buf, len, NULL);
 }
 
 static ssize_t
@@ -206,7 +208,7 @@ vrb_rma_write_fast(struct fid_ep *ep_fid, const void *buf, size_t len,
 	ep->wrs->sge.addr = (uintptr_t) buf;
 	ep->wrs->sge.length = (uint32_t) len;
 
-	return vrb_post_send(ep, &ep->wrs->rma_wr);
+	return vrb_post_send(ep, &ep->wrs->rma_wr, 0);
 }
 
 static ssize_t
@@ -219,13 +221,14 @@ vrb_msg_ep_rma_inject_writedata(struct fid_ep *ep_fid, const void *buf, size_t l
 	struct ibv_send_wr wr = {
 		.wr_id = VERBS_NO_COMP_FLAG,
 		.opcode = IBV_WR_RDMA_WRITE_WITH_IMM,
-		.imm_data = htonl((uint32_t)data),
 		.wr.rdma.remote_addr = addr,
 		.wr.rdma.rkey = (uint32_t)key,
 		.send_flags = IBV_SEND_INLINE,
 	};
 
-	return vrb_send_buf_inline(ep, &wr, buf, len);
+	wr.imm_data = htonl((uint32_t)data);
+
+	return vrb_send_buf(ep, &wr, buf, len, NULL);
 }
 
 static ssize_t
@@ -245,7 +248,7 @@ vrb_msg_ep_rma_inject_writedata_fast(struct fid_ep *ep_fid, const void *buf, siz
 	ep->wrs->sge.addr = (uintptr_t) buf;
 	ep->wrs->sge.length = (uint32_t) len;
 
-	ret = vrb_post_send(ep, &ep->wrs->rma_wr);
+	ret = vrb_post_send(ep, &ep->wrs->rma_wr, 0);
 	ep->wrs->rma_wr.opcode = IBV_WR_RDMA_WRITE;
 	return ret;
 }
@@ -288,7 +291,7 @@ vrb_msg_xrc_ep_rma_write(struct fid_ep *ep_fid, const void *buf,
 		.opcode = IBV_WR_RDMA_WRITE,
 		.wr.rdma.remote_addr = addr,
 		.wr.rdma.rkey = (uint32_t)key,
-		.send_flags = VERBS_INJECT(&ep->base_ep, len),
+		.send_flags = VERBS_INJECT(&ep->base_ep, len, desc),
 	};
 
 	VRB_SET_REMOTE_SRQN(wr, ep->peer_srqn);
@@ -312,7 +315,8 @@ vrb_msg_xrc_ep_rma_writev(struct fid_ep *ep_fid, const struct iovec *iov,
 
 	VRB_SET_REMOTE_SRQN(wr, ep->peer_srqn);
 
-	return vrb_send_iov(&ep->base_ep, &wr, iov, desc, count);
+	return vrb_send_iov(&ep->base_ep, &wr, iov, desc, count,
+			    ep->base_ep.util_ep.tx_op_flags);
 }
 
 static ssize_t
@@ -336,7 +340,8 @@ vrb_msg_xrc_ep_rma_writemsg(struct fid_ep *ep_fid,
 		wr.opcode = IBV_WR_RDMA_WRITE;
 	}
 
-	return vrb_send_msg(&ep->base_ep, &wr, msg, flags);
+	return vrb_send_iov(&ep->base_ep, &wr, msg->msg_iov, msg->desc,
+			    msg->iov_count, flags);
 }
 
 static ssize_t
@@ -375,9 +380,8 @@ vrb_msg_xrc_ep_rma_readv(struct fid_ep *ep_fid, const struct iovec *iov,
 
 	VRB_SET_REMOTE_SRQN(wr, ep->peer_srqn);
 
-	vrb_set_sge_iov(wr.sg_list, iov, count, desc);
-
-	return vrb_post_send(&ep->base_ep, &wr);
+	vrb_iov_dupa(wr.sg_list, iov, desc, count);
+	return vrb_post_send(&ep->base_ep, &wr, 0);
 }
 
 static ssize_t
@@ -397,9 +401,8 @@ vrb_msg_xrc_ep_rma_readmsg(struct fid_ep *ep_fid,
 
 	VRB_SET_REMOTE_SRQN(wr, ep->peer_srqn);
 
-	vrb_set_sge_iov(wr.sg_list, msg->msg_iov, msg->iov_count, msg->desc);
-
-	return vrb_post_send(&ep->base_ep, &wr);
+	vrb_iov_dupa(wr.sg_list, msg->msg_iov, msg->desc, msg->iov_count);
+	return vrb_post_send(&ep->base_ep, &wr, flags);
 }
 
 static ssize_t
@@ -412,11 +415,12 @@ vrb_msg_xrc_ep_rma_writedata(struct fid_ep *ep_fid, const void *buf,
 	struct ibv_send_wr wr = {
 		.wr_id = VERBS_COMP(&ep->base_ep, (uintptr_t)context),
 		.opcode = IBV_WR_RDMA_WRITE_WITH_IMM,
-		.imm_data = htonl((uint32_t)data),
 		.wr.rdma.remote_addr = addr,
 		.wr.rdma.rkey = (uint32_t)key,
-		.send_flags = VERBS_INJECT(&ep->base_ep, len),
+		.send_flags = VERBS_INJECT(&ep->base_ep, len, desc),
 	};
+
+	wr.imm_data = htonl((uint32_t)data);
 
 	VRB_SET_REMOTE_SRQN(wr, ep->peer_srqn);
 
@@ -440,7 +444,7 @@ vrb_msg_xrc_ep_rma_inject_write(struct fid_ep *ep_fid, const void *buf,
 
 	VRB_SET_REMOTE_SRQN(wr, ep->peer_srqn);
 
-	return vrb_send_buf_inline(&ep->base_ep, &wr, buf, len);
+	return vrb_send_buf(&ep->base_ep, &wr, buf, len, NULL);
 }
 
 static ssize_t
@@ -456,7 +460,7 @@ vrb_xrc_rma_write_fast(struct fid_ep *ep_fid, const void *buf,
 	ep->base_ep.wrs->sge.addr = (uintptr_t) buf;
 	ep->base_ep.wrs->sge.length = (uint32_t) len;
 
-	return vrb_post_send(&ep->base_ep, &ep->base_ep.wrs->rma_wr);
+	return vrb_post_send(&ep->base_ep, &ep->base_ep.wrs->rma_wr, 0);
 }
 
 static ssize_t
@@ -470,15 +474,16 @@ vrb_msg_xrc_ep_rma_inject_writedata(struct fid_ep *ep_fid,
 	struct ibv_send_wr wr = {
 		.wr_id = VERBS_NO_COMP_FLAG,
 		.opcode = IBV_WR_RDMA_WRITE_WITH_IMM,
-		.imm_data = htonl((uint32_t)data),
 		.wr.rdma.remote_addr = addr,
 		.wr.rdma.rkey = (uint32_t)key,
 		.send_flags = IBV_SEND_INLINE,
 	};
 
+	wr.imm_data = htonl((uint32_t)data);
+
 	VRB_SET_REMOTE_SRQN(wr, ep->peer_srqn);
 
-	return vrb_send_buf_inline(&ep->base_ep, &wr, buf, len);
+	return vrb_send_buf(&ep->base_ep, &wr, buf, len, NULL);
 }
 
 static ssize_t
@@ -499,7 +504,7 @@ vrb_msg_xrc_ep_rma_inject_writedata_fast(struct fid_ep *ep_fid,
 	ep->base_ep.wrs->sge.addr = (uintptr_t) buf;
 	ep->base_ep.wrs->sge.length = (uint32_t) len;
 
-	ret = vrb_post_send(&ep->base_ep, &ep->base_ep.wrs->rma_wr);
+	ret = vrb_post_send(&ep->base_ep, &ep->base_ep.wrs->rma_wr, 0);
 	ep->base_ep.wrs->rma_wr.opcode = IBV_WR_RDMA_WRITE;
 	return ret;
 }

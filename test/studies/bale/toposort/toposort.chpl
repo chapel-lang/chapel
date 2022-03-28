@@ -22,7 +22,7 @@ config param warnDimIterMethod = false;
 
 config param useDimIter = true;
 config param useDimIterRow = useDimIter; // supported for CSC domains
-config param useDimIterCol = false; // not currently supported on master
+config param useDimIterCol = false; // not currently supported on main
 
 config param useDimIterDistributed = false; //SparseBlockDom.dimIter not supported on any rank
 config param useDimIterRowDistributed = useDimIterDistributed;
@@ -480,7 +480,7 @@ class PermutationMap {
   }
 
   proc permuteDomain( D : domain )
-  where D.rank == 2 && isSparseDom( D )
+  where D.rank == 2 && D.isSparse()
   {
     // Timer for debugging purposes
     var timer : Timer;
@@ -677,7 +677,7 @@ proc createSparseUpperTriangluarIndexList(
 }
 
 proc checkIsUperTriangularDomain( D : domain ) : bool
-where D.rank == 2 && isSparseDom( D )
+where D.rank == 2 && D.isSparse()
 {
   var isUT = true;
   for (i,j) in D {

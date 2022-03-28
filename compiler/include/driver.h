@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,6 +54,7 @@ extern bool fNoCastChecks;
 extern bool fNoDivZeroChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
+extern bool fEnableMemInterleaving;
 extern bool fLLVMWideOpt;
 
 extern bool fAutoLocalAccess;
@@ -133,6 +134,13 @@ extern const char* CHPL_RUNTIME_SUBDIR;
 extern const char* CHPL_LAUNCHER_SUBDIR;
 extern const char* CHPL_SYS_MODULES_SUBDIR;
 extern const char* CHPL_LLVM_UNIQ_CFG_PATH;
+extern const char* CHPL_LLVM_CLANG_C;
+extern const char* CHPL_LLVM_CLANG_CXX;
+
+extern const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS;
+extern const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS;
+extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
+extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
@@ -240,6 +248,9 @@ extern bool preserveInlinedLineNumbers;
 extern int breakOnID;
 extern int breakOnRemoveID;
 
+extern int fGPUBlockSize;
+extern char fCUDAArch[16];
+
 extern char stopAfterPass[128];
 
 // code generation strings
@@ -250,6 +261,12 @@ extern char compileVersion[64];
 // the compiler but breaks the language!
 extern bool fMinimalModules;
 
+// This flag sets the make -j value
+// <=0 == don't use -j
+//        (in the future, we may want to make < 0 mean "#cores")
+//  >0 == make -j <val>
+extern int fParMake;
+
 // Set to true if we want to enable incremental compilation.
 extern bool fIncrementalCompilation;
 
@@ -258,7 +275,10 @@ extern std::string llvmFlags;
 
 extern bool fPrintAdditionalErrors;
 
-extern bool fCompilerLibraryParser;
+extern bool fDynoCompilerLibrary;
+extern bool fDynoDebugTrace;
+
+extern size_t fDynoBreakOnHash;
 
 namespace chpl {
   class Context;

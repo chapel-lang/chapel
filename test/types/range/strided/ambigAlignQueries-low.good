@@ -1,0 +1,1 @@
+ambigAlignQueries.chpl:6: error: halt reached - Can't query the aligned bounds of an ambiguously aligned range

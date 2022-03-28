@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,7 +39,9 @@
 #include "symbol.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
-#include "../ifa/prim_data.h"
+#include "../dyno/lib/immediates/prim_data.h"
+
+#include "global-ast-vecs.h"
 
 #include <queue>
 
@@ -236,13 +238,13 @@ int AggregateType::numFields() const {
 }
 
 struct DecoratorTypePair {
-  ClassTypeDecorator d;
+  ClassTypeDecoratorEnum d;
   Type* t;
-  DecoratorTypePair(ClassTypeDecorator d, Type* t) : d(d), t(t) { }
+  DecoratorTypePair(ClassTypeDecoratorEnum d, Type* t) : d(d), t(t) { }
 };
 
 // Inspects a type expression and returns (class decorator, class type).
-// For non-class types, returns (CLASS_TYPE_UNMANAGED_NILABLE, NULL)
+// For non-class types, returns (ClassTypeDecorator::UNMANAGED_NILABLE, NULL)
 static DecoratorTypePair getTypeExprDecorator(Expr* e) {
   if (SymExpr* se = toSymExpr(e))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
@@ -253,23 +255,23 @@ static DecoratorTypePair getTypeExprDecorator(Expr* e) {
   if (CallExpr* call = toCallExpr(e)) {
     if (isClassDecoratorPrimitive(call) && call->numActuals() >= 1) {
       DecoratorTypePair p = getTypeExprDecorator(call->get(1));
-      ClassTypeDecorator d = p.d;
+      ClassTypeDecoratorEnum d = p.d;
       if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
           call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
         if (isDecoratorNonNilable(d))
-          d = CLASS_TYPE_UNMANAGED_NONNIL;
+          d = ClassTypeDecorator::UNMANAGED_NONNIL;
         else if (isDecoratorNilable(d))
-          d = CLASS_TYPE_UNMANAGED_NILABLE;
+          d = ClassTypeDecorator::UNMANAGED_NILABLE;
         else
-          d = CLASS_TYPE_UNMANAGED;
+          d = ClassTypeDecorator::UNMANAGED;
       } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
                  call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
         if (isDecoratorNonNilable(d))
-          d = CLASS_TYPE_BORROWED_NONNIL;
+          d = ClassTypeDecorator::BORROWED_NONNIL;
         else if (isDecoratorNilable(d))
-          d = CLASS_TYPE_BORROWED_NILABLE;
+          d = ClassTypeDecorator::BORROWED_NILABLE;
         else
-          d = CLASS_TYPE_BORROWED;
+          d = ClassTypeDecorator::BORROWED;
       } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
                  call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
         d = addNilableToDecorator(d);
@@ -283,13 +285,19 @@ static DecoratorTypePair getTypeExprDecorator(Expr* e) {
     }
   }
 
-  return DecoratorTypePair(CLASS_TYPE_UNMANAGED_NILABLE, NULL);
+  return DecoratorTypePair(ClassTypeDecorator::UNMANAGED_NILABLE,
+                           nullptr);
 }
+
+static bool doFieldIsGeneric(Symbol* field,
+                             bool &hasDefault,
+                             std::set<AggregateType*>& visited);
 
 // Note that a field with generic type where that type has
 // default values for all of its generic fields is considered concrete
 // for the purposes of this function.
-static bool isFieldTypeExprGeneric(Expr* typeExpr) {
+static bool isFieldTypeExprGeneric(Expr* typeExpr,
+                                   std::set<AggregateType*>& visited) {
   // Look in the field declaration for a concrete type
   Symbol* sym = NULL;
 
@@ -325,6 +333,10 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   if (sym) {
     Type* t = sym->type;
     if (AggregateType* at = toAggregateType(t)) {
+      auto pair = visited.insert(at);
+      if (!pair.second) {
+        return false; // it was already present
+      }
       if (at->isGeneric()) {
         // If it's a generic type that has default values
         // for all of it's generic attributes, it won't
@@ -332,7 +344,7 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
         bool foundGenericWithoutInit = false;
         for_fields(field, at) {
           bool hasDefault = false;
-          bool fieldGeneric = at->fieldIsGeneric(field, hasDefault);
+          bool fieldGeneric = doFieldIsGeneric(field, hasDefault, visited);
           if (fieldGeneric && !hasDefault)
             foundGenericWithoutInit = true;
         }
@@ -346,7 +358,9 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   return false;
 }
 
-bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
+static bool doFieldIsGeneric(Symbol* field,
+                             bool &hasDefault,
+                             std::set<AggregateType*>& visited) {
   bool retval = false;
 
   DefExpr* def = field->defPoint;
@@ -370,14 +384,9 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
 
         retval = true;
       } else if (def->exprType != NULL) {
-        // Temporarily mark the aggregate type as generic with defaults
-        // in order to avoid infinite recursion.
-        bool wasGenericWithDefaults = mIsGenericWithDefaults;
-        mIsGenericWithDefaults = true;
-        if (isFieldTypeExprGeneric(def->exprType)) {
+        if (isFieldTypeExprGeneric(def->exprType, visited)) {
           retval = true;
         }
-        mIsGenericWithDefaults = wasGenericWithDefaults;
       }
 
     }
@@ -386,6 +395,12 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
   hasDefault = (def->init != NULL);
 
   return retval;
+}
+
+bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
+  std::set<AggregateType*> visited;
+
+  return doFieldIsGeneric(field, hasDefault, visited);
 }
 
 DefExpr* AggregateType::toSuperField(const char*  name) const {
@@ -525,7 +540,7 @@ DefExpr* AggregateType::toLocalField(CallExpr* expr) const {
           var                                    != NULL &&
           var->immediate                         != NULL &&
           var->immediate->const_kind             == CONST_KIND_STRING) {
-        retval = toLocalField(var->immediate->v_string);
+        retval = toLocalField(var->immediate->v_string.c_str());
       }
     }
   }
@@ -841,13 +856,6 @@ static void checkNumArgsErrors(AggregateType* at, CallExpr* call, const char* ca
     USR_STOP();
   }
 
-  unsigned int numWithoutDefaults = 0;
-  for_vector(Symbol, sym, genericFields) {
-    if (sym->defPoint->init == NULL) {
-      numWithoutDefaults += 1;
-    }
-  }
-
   unsigned int numArgs = call->numActuals();
   if (numArgs > genericFields.size()) {
     USR_FATAL_CONT(call, "invalid type specifier '%s'", callString);
@@ -1013,7 +1021,7 @@ static Expr* resolveFieldExpr(Expr* expr, bool addCopy) {
   } else {
     // If the field's type expression is already a BlockStmt, then some
     // recursive case was not handled correctly.
-    INT_ASSERT(false);
+    USR_FATAL("this recursive type construction is not yet handled");
   }
 
   BlockStmt* block = toBlockStmt(expr);
@@ -1645,9 +1653,9 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
   // Normalize `_owned(anymanaged-MyClass)` to `_owned(borrowed MyClass)`
   if (isManagedPtrType(this)) {
     if (isClassLikeOrManaged(symType)) {
-      ClassTypeDecorator d = CLASS_TYPE_BORROWED_NONNIL;
+      ClassTypeDecoratorEnum d = ClassTypeDecorator::BORROWED_NONNIL;
       if (isNilableClassType(symType))
-        d = CLASS_TYPE_BORROWED_NILABLE;
+        d = ClassTypeDecorator::BORROWED_NILABLE;
 
       if (isManagedPtrType(symType))
         checkDuplicateDecorators(this, symType, insnPoint);
@@ -1709,7 +1717,7 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym, Type* symType) {
         Immediate result;
         Immediate* lhs = getSymbolImmediate(at->substitutions.get(field));
         Immediate* rhs = getSymbolImmediate(sym);
-        fold_constant(P_prim_equal, lhs, rhs, &result);
+        fold_constant(gContext, P_prim_equal, lhs, rhs, &result);
         if (result.v_bool) {
           retval = at;
         }
@@ -1778,7 +1786,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
         fieldType != sym->getValType()) {
       Immediate coerce = getDefaultImmediate(fieldType);
       Immediate* from = toVarSymbol(sym)->immediate;
-      coerce_immediate(from, &coerce);
+      coerce_immediate(gContext, from, &coerce);
       sym = new_ImmediateSymbol(&coerce);
       symType = sym->type;
     }
@@ -2028,11 +2036,11 @@ QualifiedType AggregateType::getFieldType(Expr* e) {
 
   // Typical case: field is identified by its name
   if (var && var->immediate)
-    name = var->immediate->v_string;
+    name = var->immediate->v_string.c_str();
 
   // Special case: star tuples can have run-time integer field access
   if (name == NULL && this->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-    name = astr("x0"); // get the initial field's type; they're all the same
+    name = "x0"; // get the initial field's type; they're all the same
   }
 
   Symbol* fs = NULL;
@@ -2080,6 +2088,12 @@ void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
     if (!fDocsTextOnly) {
       *file << std::endl;
     }
+  }
+
+  if (this->symbol->hasFlag(FLAG_DEPRECATED)) {
+    this->printDocsDeprecation(this->doc, file, tabs + 1,
+                               this->symbol->getDeprecationMsg(),
+                               !fDocsTextOnly);
   }
 }
 
@@ -2175,6 +2189,8 @@ void AggregateType::processGenericFields() {
     return;
   }
 
+  std::set<AggregateType*> visited;
+
   foundGenericFields = true;
   bool isGenericWithDefaults = mIsGeneric;
 
@@ -2209,7 +2225,7 @@ void AggregateType::processGenericFields() {
       if (field->defPoint->exprType == NULL) {
         genericFields.push_back(field); // "var x;"
         isGenericWithDefaults = false;
-      } else if (isFieldTypeExprGeneric(field->defPoint->exprType)) {
+      } else if (isFieldTypeExprGeneric(field->defPoint->exprType, visited)) {
         genericFields.push_back(field); // "var x : integral;"
         isGenericWithDefaults = false;
       }
@@ -2345,7 +2361,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
               CallExpr* copy = new CallExpr(astr_initCopy);
               defPoint->init->replace(copy);
 
-              Symbol *definedConst = defPoint->sym->hasFlag(FLAG_CONST) ? 
+              Symbol *definedConst = defPoint->sym->hasFlag(FLAG_CONST) ?
                                      gTrue : gFalse;
               copy->insertAtTail(fe);
               copy->insertAtTail(definedConst);
@@ -2899,7 +2915,7 @@ Symbol* AggregateType::getSubstitution(const char* name) const {
   return retval;
 }
 
-Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
+Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
 
   int packedDecorator = -1;
   // -1 -> just use the canonical type (e.g. MyClass == borrowed MyClass!)
@@ -2910,18 +2926,18 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
   //  4 -> generic-management MyClass!
   //  5 -> generic-management MyClass?
   switch (d) {
-    case CLASS_TYPE_BORROWED:          packedDecorator = -1; break;
-    case CLASS_TYPE_BORROWED_NONNIL:   packedDecorator = -1; break;
-    case CLASS_TYPE_BORROWED_NILABLE:  packedDecorator =  0; break;
-    case CLASS_TYPE_UNMANAGED:         packedDecorator =  1; break;
-    case CLASS_TYPE_UNMANAGED_NONNIL:  packedDecorator =  1; break;
-    case CLASS_TYPE_UNMANAGED_NILABLE: packedDecorator =  2; break;
-    case CLASS_TYPE_MANAGED:           packedDecorator = -1; break;
-    case CLASS_TYPE_MANAGED_NONNIL:    packedDecorator =  1; break;
-    case CLASS_TYPE_MANAGED_NILABLE:   packedDecorator =  2; break;
-    case CLASS_TYPE_GENERIC:           packedDecorator =  3; break;
-    case CLASS_TYPE_GENERIC_NONNIL:    packedDecorator =  4; break;
-    case CLASS_TYPE_GENERIC_NILABLE:   packedDecorator =  5; break;
+    case ClassTypeDecorator::BORROWED:          packedDecorator = -1; break;
+    case ClassTypeDecorator::BORROWED_NONNIL:   packedDecorator = -1; break;
+    case ClassTypeDecorator::BORROWED_NILABLE:  packedDecorator =  0; break;
+    case ClassTypeDecorator::UNMANAGED:         packedDecorator =  1; break;
+    case ClassTypeDecorator::UNMANAGED_NONNIL:  packedDecorator =  1; break;
+    case ClassTypeDecorator::UNMANAGED_NILABLE: packedDecorator =  2; break;
+    case ClassTypeDecorator::MANAGED:           packedDecorator = -1; break;
+    case ClassTypeDecorator::MANAGED_NONNIL:    packedDecorator =  1; break;
+    case ClassTypeDecorator::MANAGED_NILABLE:   packedDecorator =  2; break;
+    case ClassTypeDecorator::GENERIC:           packedDecorator =  3; break;
+    case ClassTypeDecorator::GENERIC_NONNIL:    packedDecorator =  4; break;
+    case ClassTypeDecorator::GENERIC_NILABLE:   packedDecorator =  5; break;
       // intentionally no default
   }
 
@@ -2934,8 +2950,8 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
   AggregateType* at = this;
 
   if (isManagedPtrType(this)) {
-    if (d != CLASS_TYPE_MANAGED_NONNIL &&
-        d != CLASS_TYPE_MANAGED_NILABLE) {
+    if (d != ClassTypeDecorator::MANAGED_NONNIL &&
+        d != ClassTypeDecorator::MANAGED_NILABLE) {
       // Get the class type underneath
       Type* bt = getManagedPtrBorrowType(this);
       if (bt && bt != dtUnknown && isAggregateType(bt))
@@ -2947,7 +2963,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     return at;
 
   // borrowed == canonical class type
-  if (d == CLASS_TYPE_BORROWED) {
+  if (d == ClassTypeDecorator::BORROWED) {
     if (aggregateTag == AGGREGATE_CLASS)
       return at;
     else

@@ -4,7 +4,7 @@ MAKEFLAGS = --no-print-directory
 CHPL = chpl
 
 TARGETS = \
-	recordio \
+	readcsv \
 
 REALS = $(TARGETS:%=%_real)
 

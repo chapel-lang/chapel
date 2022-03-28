@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +25,8 @@
 #include "stringutil.h"
 
 #include "baseAST.h"
+#include "chpl/queries/Context.h"
+#include "driver.h"
 #include "map.h"
 #include "misc.h"
 #include "symbol.h"
@@ -37,128 +39,25 @@
 
 #include <inttypes.h>
 
-struct MyStrEqual {
-  bool operator()(const char* lhs, const char* rhs) const {
-    return strcmp(lhs, rhs) == 0;
-  }
-};
-
-struct MyStrHash : StringHashFns {
-  std::size_t operator()(const char* k) const {
-    return hash(k);
-  }
-};
-
-std::unordered_map<const char*, const char*, MyStrHash, MyStrEqual> chapelStringsTable;
-
-static const char* canonicalize_allocated_string(char *s) {
-  // add s to the table if it is not present
-  // if s is already in the present, get the value from the table
-  auto pair = chapelStringsTable.insert( {s, s} );
-  const char* ret = pair.first->second; // return the value now in the table
-
-  if (ret != s) {
-    // free the argument if we found an existing string in the table
-    free(s);
-  }
-
-  return ret;
-}
-
 const char*
 astr(const char* s1, const char* s2, const char* s3, const char* s4,
      const char* s5, const char* s6, const char* s7, const char* s8,
      const char* s9) {
-  int len, len1, len2, len3, len4, len5, len6, len7, len8, len9;
-  len = len1 = len2 = len3 = len4 = len5 = len6 = len7 = len8 = len9 = 0;
-
-  if (s1)
-    len1 = strlen(s1);
-  if (s2)
-    len2 = strlen(s2);
-  if (s3)
-    len3 = strlen(s3);
-  if (s4)
-    len4 = strlen(s4);
-  if (s5)
-    len5 = strlen(s5);
-  if (s6)
-    len6 = strlen(s6);
-  if (s7)
-    len7 = strlen(s7);
-  if (s8)
-    len8 = strlen(s8);
-  if (s9)
-    len9 = strlen(s9);
-
-  len = len1 + len2 + len3 + len4 + len5 + len6 + len7 + len8 + len9;
-
-  // allocate the total memory
-  char* s = (char*)malloc(len+1);
-
-  len = 0;
-
-  // copy each non-empty string
-  if (len1 > 0) {
-    memcpy(&s[len], s1, len1);
-    len += len1;
-  }
-  if (len2 > 0) {
-    memcpy(&s[len], s2, len2);
-    len += len2;
-  }
-  if (len3 > 0) {
-    memcpy(&s[len], s3, len3);
-    len += len3;
-  }
-  if (len4 > 0) {
-    memcpy(&s[len], s4, len4);
-    len += len4;
-  }
-  if (len5 > 0) {
-    memcpy(&s[len], s5, len5);
-    len += len5;
-  }
-  if (len6 > 0) {
-    memcpy(&s[len], s6, len6);
-    len += len6;
-  }
-  if (len7 > 0) {
-    memcpy(&s[len], s7, len7);
-    len += len7;
-  }
-  if (len8 > 0) {
-    memcpy(&s[len], s8, len8);
-    len += len8;
-  }
-  if (len9 > 0) {
-    memcpy(&s[len], s9, len9);
-    len += len9;
-  }
-
-  // add the null terminator
-  s[len] = '\0';
-
-  return canonicalize_allocated_string(s);
+  return gContext->uniqueCStringConcat(s1, s2, s3, s4, s5, s6, s7, s8, s9);
 }
 
 const char* astr(const char* s1)
 {
-  auto search = chapelStringsTable.find(s1);
-  if (search != chapelStringsTable.end()) {
-    // return an existing entry
-    return search->second;
-  }
-
-  // add a new entry - always a fresh malloc
-  char* s = strdup(s1);
-  chapelStringsTable.insert(search, {s, s});
-  return s;
+  return gContext->uniqueCString(s1);
 }
 
 const char* astr(const std::string& s)
 {
   return astr(s.c_str());
+}
+const char* astr(UniqueString s)
+{
+  return s.astr(gContext);
 }
 
 const char*
@@ -172,20 +71,14 @@ istr(int i) {
 //
 // returns a canonicalized substring that contains the first part of
 // 's' up to 'e'
-// note: e must be a pointer that points within in s
+// note: e must be a pointer that points within s
 //
 const char* asubstr(const char* s, const char* e) {
-  char* ss = (char*)malloc(e-s+1);
-  strncpy(ss, s, e-s);
-  ss[e-s] = '\0';
-  return canonicalize_allocated_string(ss);
-}
-
-
-void deleteStrings() {
-  for (auto pair: chapelStringsTable) {
-    free(const_cast<char*>(pair.second));
-  }
+  ssize_t uselen = e-s;
+  assert(0 <= uselen && (size_t)uselen <= strlen(s));
+  if (uselen < 0)
+    return astr("");
+  return gContext->uniqueCString(s, uselen);
 }
 
 
@@ -216,11 +109,11 @@ void deleteStrings() {
     if (strcmp(str+startPos, checkStr) != 0) {                    \
       if (userSupplied) {                                         \
         astlocT astloc(line, filename);                           \
-        USR_FATAL(astloc, "Integer literal overflow: %s is too"   \
-                  " big for type " #type, str);                   \
+        USR_FATAL(astloc, "Integer literal overflow: '%s' is too" \
+                  " big for type '" #type "'", str);              \
       } else {                                                    \
-        INT_FATAL("Integer literal overflow: %s is too "          \
-                  "big for type " #type, str);                    \
+        INT_FATAL("Integer literal overflow: '%s' is too "        \
+                  "big for type '" #type "'", str);               \
       }                                                           \
     }                                                             \
     return val;                                                   \
@@ -255,10 +148,10 @@ uint64_t binStr2uint64(const char* str, bool userSupplied,
     if (userSupplied) {
       astlocT astloc(line, filename);
       USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     }
   }
   uint64_t val = 0;
@@ -297,10 +190,10 @@ uint64_t octStr2uint64(const char* str, bool userSupplied,
     if (userSupplied) {
       astlocT astloc(line, filename);
       USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     }
   }
 
@@ -332,10 +225,10 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
     if (userSupplied) {
       astlocT astloc(line, filename);
       USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for type uint64", str);
+                "for type 'uint64'", str);
     }
   }
 
@@ -497,6 +390,10 @@ void splitString(const std::string& s, std::vector<std::string>& vec, const char
  */
 void splitStringWhitespace(const std::string& s, std::vector<std::string>& vec) {
   splitString(s, vec, " \t\n\r\f\v");
+}
+
+void splitStringWhitespace(const char* s, std::vector<std::string>& vec) {
+  splitStringWhitespace(std::string(s), vec);
 }
 
 void removeTrailingNewlines(std::string& str) {

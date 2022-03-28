@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -178,7 +178,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
   VarSymbol* result = newTemp();
   Expr* resultExpr = NULL;
   if (isClass(type)) {
-    Type* uct = type->getDecoratedClass(CLASS_TYPE_UNMANAGED_NONNIL);
+    Type* uct = type->getDecoratedClass(ClassTypeDecorator::UNMANAGED_NONNIL);
     resultExpr = new CallExpr(PRIM_CAST, uct->symbol, initTemp);
   } else {
     resultExpr = new SymExpr(initTemp);

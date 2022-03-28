@@ -226,12 +226,12 @@ vrb_cq_sread(struct fid_cq *cq, void *buf, size_t count, const void *cond,
 	return cur ? cur : ret;
 }
 
-/* Must be called with CQ lock held. */
 int vrb_poll_cq(struct vrb_cq *cq, struct ibv_wc *wc)
 {
 	struct vrb_context *ctx;
 	int ret;
 
+	assert(fastlock_held(&cq->util_cq.cq_lock));
 	do {
 		ret = ibv_poll_cq(cq->cq, 1, wc);
 		if (ret <= 0)
@@ -241,7 +241,7 @@ int vrb_poll_cq(struct vrb_cq *cq, struct ibv_wc *wc)
 		wc->wr_id = (uintptr_t) ctx->user_ctx;
 		if (ctx->flags & FI_TRANSMIT) {
 			cq->credits++;
-			ctx->ep->tx_credits++;
+			ctx->ep->sq_credits++;
 		}
 
 		if (wc->status) {
@@ -263,11 +263,11 @@ int vrb_poll_cq(struct vrb_cq *cq, struct ibv_wc *wc)
 	return ret;
 }
 
-/* Must be called with CQ lock held. */
 int vrb_save_wc(struct vrb_cq *cq, struct ibv_wc *wc)
 {
 	struct vrb_wc_entry *wce;
 
+	assert(fastlock_held(&cq->util_cq.cq_lock));
 	wce = ofi_buf_alloc(cq->wce_pool);
 	if (!wce) {
 		FI_WARN(&vrb_prov, FI_LOG_CQ,
@@ -568,6 +568,7 @@ int vrb_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 	size_t size;
 	int ret;
 	struct fi_cq_attr tmp_attr = *attr;
+	int comp_vector = 0;
 
 	cq = calloc(1, sizeof(*cq));
 	if (!cq)
@@ -592,6 +593,19 @@ int vrb_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 	default:
 		ret = -FI_ENOSYS;
 		goto err4;
+	}
+
+	if (attr->flags & FI_AFFINITY) {
+		if (attr->signaling_vector < 0 ||
+		    attr->signaling_vector > domain->verbs->num_comp_vectors)  {
+
+			VERBS_WARN(FI_LOG_CQ,
+				   "Invalid value for the CQ attribute signaling_vector: %d\n",
+				   attr->signaling_vector);
+			ret = -FI_EINVAL;
+			goto err4;
+		}
+		comp_vector = attr->signaling_vector;
 	}
 
 	if (cq->wait_obj != FI_WAIT_NONE) {
@@ -629,7 +643,7 @@ int vrb_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 	 * num_qp_per_cq = ibv_device_attr->max_cqe / (qp_send_wr + qp_recv_wr)
 	 */
 	cq->cq = ibv_create_cq(domain->verbs, size, cq, cq->channel,
-			       attr->signaling_vector);
+			       comp_vector);
 	if (!cq->cq) {
 		ret = -errno;
 		VERBS_WARN(FI_LOG_CQ, "Unable to create verbs CQ\n");

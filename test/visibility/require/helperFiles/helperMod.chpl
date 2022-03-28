@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 config param baz_h = "baz.h",
              baz_c = "baz.c";

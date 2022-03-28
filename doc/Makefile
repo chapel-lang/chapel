@@ -38,9 +38,7 @@ SPEC_BUILD_DIR = ../build/doc/language/spec
 SPEC_RST_DIR = $(SOURCEDIR)/language/spec
 
 COMPILER_INTERNALS_DOXYGEN = ../build/doc/doxygen
-COMPILER_INTERNALS_SRC_DOXYGEN = $(SOURCEDIR)/../templates/compiler-internals-doxygen
-COMPILER_INTERNALS_SRC_NO_DOXYGEN = $(SOURCEDIR)/../templates/compiler-internals-no-doxygen
-COMPILER_INTERNALS = $(SOURCEDIR)/compiler-internals
+COMPILER_INTERNALS = $(SOURCEDIR)/developer/compiler-internals
 
 help: help-sphinx help-source
 
@@ -60,7 +58,16 @@ help-source:
 
 
 docs: FORCE
-	@$(MAKE) html-release || $(MAKE) error_docs
+	@COMP_DOCS_ERROR=0 ; \
+	(cd ../compiler/dyno && $(MAKE) -f Makefile.help dyno-docs) || \
+	 COMP_DOCS_ERROR=1 ; \
+	$(MAKE) html-release && \
+	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
+	  then \
+	  echo ; \
+	  echo " This docs build does not include compiler library API docs" ; \
+	  echo " Try 'make clobber-dyno && make dyno-docs'" ; \
+	fi
 
 
 man-chapel: FORCE
@@ -98,7 +105,6 @@ primers:
 	@cp -f $(SOURCEDIR)/meta/primers/* $(CHPL_DOC_PRIMERS_BUILD_DIR)
 	@$(COPY_IF_DIFFERENT) $(CHPL_DOC_PRIMERS_BUILD_DIR) $(CHPL_DOC_PRIMERS_RST_DIR)
 
-
 examples:
 	@echo
 	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/examples"
@@ -122,10 +128,11 @@ symlinks:
 
 compiler-internals: FORCE
 	@echo "Updating compiler-internals"
+	rm -rf "$(COMPILER_INTERNALS)"
 	@if [ -d $(COMPILER_INTERNALS_DOXYGEN) ]; then \
-	  $(COPY_IF_DIFFERENT) "$(COMPILER_INTERNALS_SRC_DOXYGEN)" "$(COMPILER_INTERNALS)" ; \
+	  ln -s ../meta/compiler-internals-doxygen "$(COMPILER_INTERNALS)" ; \
 	else \
-	  $(COPY_IF_DIFFERENT) "$(COMPILER_INTERNALS_SRC_NO_DOXYGEN)" "$(COMPILER_INTERNALS)" ; \
+	  ln -s ../meta/compiler-internals-no-doxygen "$(COMPILER_INTERNALS)" ; \
 	fi
 
 checkdocs: FORCE
@@ -136,23 +143,26 @@ checkdocs: FORCE
 
 prunedocs: FORCE
 	rm -f html/_downloads/quickReference.pdf
-	rm -f html/_downloads/chapelLanguageSpec.pdf
 	if [ -d "html" ]; then \
 	ln -s ../../$(SOURCEDIR)/language/quickReference.pdf html/_downloads/quickReference.pdf; \
-	ln -s ../../$(SOURCEDIR)/language/chapelLanguageSpec.pdf html/_downloads/chapelLanguageSpec.pdf; \
 	fi
 
 
-clean: clean-source clean-build clean-build-dir
+clean: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-cleanall: clean-source clean-build clean-build-dir
+cleanall: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-clobber: clean-source clean-build clean-build-dir
+clobber: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax
+clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals FORCE
 
 clean-build-dir: FORCE
 	rm -rf ../build/doc
+
+clean-compiler-internals: FORCE
+	@echo
+	@echo "Removing compiler-internals .rst files"
+	rm -rf "$(COMPILER_INTERNALS)"
 
 clean-collect-syntax: FORCE
 	@echo
@@ -180,9 +190,8 @@ clean-symlinks: FORCE
 	@echo "Removing all symbolic links"
 	find $(SOURCEDIR) -type l -delete
 
-error_docs: FORCE
-	@exit 1 # Note that 'make' will return exit code of 2, despite exit 1
-
+clean-doxygen: FORCE
+	cd ../compiler/dyno && $(MAKE) -f Makefile.help clean-dyno-docs
 
 FORCE:
 

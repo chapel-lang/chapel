@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,10 +80,6 @@ module DefaultAssociative {
     proc init(type idxType,
               param parSafe: bool,
               dist: unmanaged DefaultDist) {
-      if !chpl__validDefaultAssocDomIdxType(idxType) then
-        compilerError("Default Associative domains with idxType=",
-                      idxType:string, " are not allowed", 2);
-
       this.idxType = idxType;
       this.parSafe = parSafe;
       this.dist = dist;
@@ -208,9 +204,8 @@ module DefaultAssociative {
       return table.table[slot].isFull();
     }
 
-    pragma "order independent yielding loops"
     iter these() {
-      for slot in table.allSlots() {
+      foreach slot in table.allSlots() {
         ref aSlot = table.table[slot];
         if aSlot.status == chpl__hash_status.full {
           yield aSlot.key;
@@ -218,13 +213,12 @@ module DefaultAssociative {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone {
       if debugDefaultAssoc {
         writeln("*** In associative domain standalone iterator");
       }
 
-      for slot in table.allSlots(tag=tag) {
+      foreach slot in table.allSlots(tag=tag) {
         ref aSlot = table.table[slot];
         if aSlot.status == chpl__hash_status.full {
           yield aSlot.key;
@@ -240,7 +234,6 @@ module DefaultAssociative {
         yield (chunk, this);
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
 
@@ -254,7 +247,7 @@ module DefaultAssociative {
           halt("zippered associative domains do not match");
 
       const otherTable = followThisDom.table.table;
-      for slot in chunk {
+      foreach slot in chunk {
         const ref aSlot = otherTable[slot];
         if aSlot.isFull() {
           var idx = slot;
@@ -407,7 +400,6 @@ module DefaultAssociative {
       }
     }
 
-    pragma "order independent yielding loops"
     iter dsiSorted(comparator) {
       use Sort;
 
@@ -416,17 +408,20 @@ module DefaultAssociative {
 
       sort(tableCopy, comparator=comparator);
 
-      for ind in tableCopy do
+      foreach ind in tableCopy do
         yield ind;
     }
 
-    pragma "order independent yielding loops"
     iter _fullSlots() {
-      for slot in table.allSlots() {
+      foreach slot in table.allSlots() {
         if table.isSlotFull(slot) {
           yield slot;
         }
       }
+    }
+
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
@@ -570,8 +565,7 @@ module DefaultAssociative {
     }
 
     // const ref version for strings, records with copy ctor
-    proc dsiAccess(idx : idxType) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+    proc dsiAccess(idx : idxType) const ref {
       // no lock needed
       var (found, slotNum) = dom.table.findFullSlot(idx);
       if found {
@@ -582,8 +576,7 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiAccess(idx : 1*idxType) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+    proc dsiAccess(idx : 1*idxType) const ref {
       return dsiAccess(idx(0));
     }
 
@@ -595,26 +588,23 @@ module DefaultAssociative {
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i) const ref
-    where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
 
 
-    pragma "order independent yielding loops"
     iter these() ref {
-      for slot in dom.table.allSlots() {
+      foreach slot in dom.table.allSlots() {
         if dom._isSlotFull(slot) {
           yield data[slot];
         }
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       if debugDefaultAssoc {
         writeln("*** In associative array standalone iterator");
       }
 
-      for slot in dom.table.allSlots(tag=tag) {
+      foreach slot in dom.table.allSlots(tag=tag) {
         if dom._isSlotFull(slot) {
           yield data[slot];
         }
@@ -626,7 +616,6 @@ module DefaultAssociative {
         yield followThis;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
 
@@ -640,7 +629,7 @@ module DefaultAssociative {
           halt("zippered associative array does not match the iterated domain");
 
       const otherTable = followThisDom.table.table;
-      for slot in chunk {
+      foreach slot in chunk {
         const ref aSlot = otherTable[slot];
         if aSlot.isFull() {
           var idx = slot;
@@ -736,7 +725,6 @@ module DefaultAssociative {
     // Associative array interface
     //
 
-    pragma "order independent yielding loops"
     iter dsiSorted(comparator) {
       use Sort;
 
@@ -745,7 +733,7 @@ module DefaultAssociative {
 
       sort(tableCopy, comparator=comparator);
 
-      for elem in tableCopy do
+      foreach elem in tableCopy do
         yield elem;
     }
 

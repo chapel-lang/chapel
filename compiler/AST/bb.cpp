@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,7 @@ int                                          BasicBlock::nextID     = 0;
 BasicBlock*                                  BasicBlock::basicBlock = NULL;
 Map<LabelSymbol*, std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
 Map<LabelSymbol*, BasicBlock*>               BasicBlock::labelMaps;
+std::vector<BaseAST *>                       BasicBlock::asts;
 
 BasicBlock::BasicBlock() {
   id = nextID++;
@@ -53,6 +54,9 @@ void BasicBlock::reset(FnSymbol* fn) {
   fn->basicBlocks = new std::vector<BasicBlock*>();
 
   nextID = 0;
+
+  asts.clear();
+  asts.shrink_to_fit();
 }
 
 void BasicBlock::clear(FnSymbol* fn) {
@@ -231,8 +235,8 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
   } else {
     DefExpr*              def = toDefExpr(stmt);
-    std::vector<BaseAST*> asts;
 
+    asts.clear();
     collect_asts(stmt, asts);
 
     for_vector(BaseAST, ast, asts) {

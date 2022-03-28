@@ -1,0 +1,12 @@
+feature request: maxloc should work with string indices
+
+While working on this, I really found myself wanting to do a maxloc
+reduce over an associative array with string indices, but
+unfortunately this wasn't possible because our current implementation
+relies on the ability to do a 'max(type idxType)' operation on the
+idxType, and strings don't support it.  (Note that this error message
+also isn't particularly clear to someone who doesn't already know the
+'maxloc' implementation details, though here I'm asking for the
+capability rather than a better error message).
+
+Related: #6312

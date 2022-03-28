@@ -1,6 +1,6 @@
-use Spawn;
+use Subprocess;
 
-var sub = spawn(["cat"], stdin=BUFFERED_PIPE, stdout=PIPE, stderr=FORWARD);
+var sub = spawn(["cat"], stdin=pipeStyle.bufferAll, stdout=pipeStyle.pipe, stderr=pipeStyle.forward);
 
 config const n = 10000;
 for i in 1..n {
@@ -19,7 +19,7 @@ while sub.stdout.read(x) {
 }
 
 assert(sub.running == false);
-assert(sub.exit_status == 0);
+assert(sub.exitCode == 0);
 
 sub.close();
 

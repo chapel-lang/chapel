@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,6 +44,15 @@ For example, the following program downloads a web-page from http://example.com 
 module URL {
   public use IO;
 
+  deprecated "openUrlReader with a style argument is deprecated"
+  proc openUrlReader(url:string,
+                     param kind=iokind.dynamic, param locking=true,
+                     start:int(64) = 0, end:int(64) = max(int(64)),
+                     style:iostyle)
+                    : channel(false, kind, locking) throws {
+    return openUrlReaderHelper(url, kind, locking, start, end,
+                               style: iostyleInternal);
+  }
   /*
 
   Open a channel reading from a particular URL.
@@ -66,13 +75,20 @@ module URL {
   :returns: an open reading channel to the requested resource.
 
   :throws SystemError: Thrown if a reading channel could not be returned.
-
    */
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
-                     start:int(64) = 0, end:int(64) = max(int(64)),
-                     style:iostyle = defaultIOStyle())
+                     start:int(64) = 0, end:int(64) = max(int(64)))
                     : channel(false, kind, locking) throws {
+    return openUrlReaderHelper(url, kind, locking, start, end);
+  }
+
+  private
+  proc openUrlReaderHelper(url:string,
+                           param kind=iokind.dynamic, param locking=true,
+                           start:int(64) = 0, end:int(64) = max(int(64)),
+                           style:iostyleInternal = defaultIOStyleInternal())
+    : channel(false, kind, locking) throws {
     use Curl;
     use CurlQioIntegration;
     var f = openCurlFile(url, iomode.r, style);
@@ -80,6 +96,15 @@ module URL {
                     start=start, end=end);
   }
 
+  deprecated "openUrlWriter with a style argument is deprecated"
+  proc openUrlWriter(url:string,
+                 param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 style:iostyle)
+                : channel(true, kind, locking) throws {
+    return openUrlWriterHelper(url, kind, locking, start, end,
+                               style: iostyleInternal);
+  }
   /*
 
   Open a channel writing to a particular URL.
@@ -105,9 +130,18 @@ module URL {
   */
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 style:iostyle = defaultIOStyle())
+                 start:int(64) = 0, end:int(64) = max(int(64)))
                 : channel(true, kind, locking) throws {
+    return openUrlWriterHelper(url, kind, locking, start, end);
+  }
+
+  private proc openUrlWriterHelper(url:string,
+                                   param kind=iokind.dynamic,
+                                   param locking=true,
+                                   start:int(64) = 0,
+                                   end:int(64) = max(int(64)),
+                                   style:iostyleInternal = defaultIOStyleInternal())
+    : channel(true, kind, locking) throws {
     use Curl;
     use CurlQioIntegration;
     var f = openCurlFile(url, iomode.cw, style);

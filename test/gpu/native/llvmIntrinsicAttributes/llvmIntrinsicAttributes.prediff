@@ -1,0 +1,6 @@
+#!/bin/bash
+
+LINE1=`grep "declare i32 @llvm.nvvm.read.ptx.sreg.tid.x() #2" $2`
+LINE2=`grep "attributes #2" $2`
+echo $LINE1 > $2
+echo $LINE2 >> $2

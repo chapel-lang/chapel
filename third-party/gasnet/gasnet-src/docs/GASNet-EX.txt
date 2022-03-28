@@ -32,14 +32,14 @@
 // This takes the form YEAR.MONTH.PATCH in GASNet-EX releases,
 // providing a clear distinction from GASNet-1 with MAJOR==1.
 #define GASNET_RELEASE_VERSION_MAJOR 2021
-#define GASNET_RELEASE_VERSION_MINOR 3
+#define GASNET_RELEASE_VERSION_MINOR 9
 #define GASNET_RELEASE_VERSION_PATCH 0
 
 // Major and Minor versions of the GASNet-EX specification.
 //
 // This is currently a version number for *this* document.
 #define GEX_SPEC_VERSION_MAJOR 0
-#define GEX_SPEC_VERSION_MINOR 13
+#define GEX_SPEC_VERSION_MINOR 14
 
 // Major and Minor versions of the GASNet-1 specification.
 //
@@ -53,7 +53,7 @@
 //
 // This is the spec version for the GASNet Tools
 #define GASNETT_SPEC_VERSION_MAJOR 1
-#define GASNETT_SPEC_VERSION_MINOR 17
+#define GASNETT_SPEC_VERSION_MINOR 18
 
 //
 // Relationship to GASNet-1 APIs:
@@ -119,7 +119,7 @@ extern void gasnet_QueryGexObjects(gex_Client_t      *client_p,
 // gex_*_{Set,Query}CData(), gex_{Client,Segment,EP,TM,AD}_Query*(), gex_TM_Pair(),
 // gex_AM_Max*(), gex_AM_LUB*(), gex_Token_Max*(), gex_Token_Info(),
 // gex_System_GetVerboseErrors(), gex_System_SetVerboseErrors(),
-// gex_System_QueryMaxThreads()
+// gex_System_QueryMaxThreads(), gex_System_QueryHiddenAMConcurrencyLevel()
 // 
 // The following are conditionally permitted in handler context, the condition being the 
 // caller must be within an AMRequest handler and not holding a handler-safe lock:
@@ -342,6 +342,40 @@ typedef [some integer type] gex_Flags_t;
 // specification
 #define GEX_FLAG_LC_COPY_YES ((gex_Flags_t)???) [UNIMPLEMENTED]
 #define GEX_FLAG_LC_COPY_NO  ((gex_Flags_t)???) [UNIMPLEMENTED]
+//
+// PEER_NEVER_{SELF,NBRHD}
+// [Since spec v0.14]
+//
+// These flags, passed to a supporting communication initiation API, assert to
+// the GASNet-EX library that the '(tm,rank)' tuple (or equivalent) does NOT
+// name an endpoint in certain processes.
+//
+// Use of these flags *may* allow the library to omit its own checks for the
+// asserted condition.  However, to have this desired impact, the compiler must
+// be capable of statically deciding their presence in the 'flags' argument.
+// Therefore, non-trivial logic to determine whether or not to pass either of
+// these flags is strongly discouraged.  The intended use case for these flags
+// is in situations where the asserted property is known without additional
+// logic at the specific call site.
+//
+// Providing an assertion which is untrue will yield undefined results (though
+// in a high-quality implementation, a debug build will report the discrepancy).
+//
+// SELF  - Asserts that the "remote" peer in a communication call is not
+//         an endpoint in the initiating process.
+// NBRHD - Asserts that the "remote" peer in a communication call is not
+//         an endpoint in any process in the initiator's nbrhd.
+//
+// Use of GEX_FLAG_PEER_NEVER_NBRHD implies GEX_FLAG_PEER_NEVER_SELF.
+// However, their use is not mutually exclusive.
+//
+// Currently these flags are valid to pass to:
+//   gex_RMA_*()
+//
+// A future revision may permit these flags for additional communication
+// injection calls.
+#define GEX_FLAG_PEER_NEVER_SELF    ((gex_Flags_t)???)
+#define GEX_FLAG_PEER_NEVER_NBRHD   ((gex_Flags_t)???)
 //
 // AD_MY_{RANK,NBRHD}
 //
@@ -956,11 +990,13 @@ size_t gex_TM_Split(gex_TM_t *new_tm_p, gex_TM_t parent_tm, int color, int key,
 // + The mutually exclusive choice of
 //   GEX_FLAG_TM_{SYMMETRIC,LOCAL,GLOBAL,NO}_SCRATCH in flags must be
 //   single-valued over the output team.
-// + This call is guaranteed to provide sufficient synchronization that the
+// + This call is guaranteed to provide sufficient synchronization that each
 //   caller may begin using the new handles in new_tms[] immediately following
-//   return.  The implementation is permitted but not required to include
-//   barrier synchronization, which may or may not be necessary to provide this
-//   guarantee.
+//   return. If flags included GEX_FLAG_TM_LOCAL_SCRATCH then this call provides
+//   barrier synchronization individually over each new team created by the call. 
+//   In all other cases the implementation is permitted but not required to include
+//   barrier synchronization, which may or may not be necessary to allow immediate
+//   use of the resulting team.
 //
 // NOTE: The current implementation only supports creation of teams composed
 // entirely of primordial endpoints, even with conduits which support creation
@@ -1368,6 +1404,13 @@ extern int gex_EP_PublishBoundSegment(
 // mode multiple client threads concurrently entering GASNet may result
 // in AM handler concurrency, independent of this value.
 #define GASNET_HIDDEN_AM_CONCURRENCY_LEVEL ???
+
+// Returns the runtime value of AM concurrency level for the calling process
+// which may be more precise than the conservative static value provided by
+// GASNET_HIDDEN_AM_CONCURRENCY_LEVEL
+// Only valid after gex_Client_Init()
+// [Since spec v0.14]
+int gex_System_QueryHiddenAMConcurrencyLevel(void);
 
 // Client-facing type for describing one AM handler
 // This type is an alternative to (*not* interchangeable with) gasnet_handlerentry_t
@@ -2259,13 +2302,23 @@ gex_Event_t gex_NBI_EndAccessRegion(gex_Flags_t flags);
 // The operation is indicated by the suffix
 //  + _Test: no Poll call is made, returns zero on success, and non-zero otherwise.
 //  + _Wait: Polls until success, void return
+//
+// In general it is not permitted to test or wait on a leaf event after
+// synchronization of its corresponding root event because synchronization of a
+// root event *implicitly* synchronizes any/all leaves.
+// However, when using NB event array APIs gex_Event_{Test,Wait}{Some,All}()
+// one may mix leaf events with their corresponding root events in the same
+// array without concern for their relative order.  In other words, placement
+// of a leaf event later in the array than its corresponding root event is
+// not "test or wait on a leaf event after synchronization of its corresponding
+// root event".
 
 // Completion of a single NB event
 // Success is defined as when the passed event is complete.
 int  gex_Event_Test (gex_Event_t event);
 void gex_Event_Wait (gex_Event_t event);
 
-// Completion of an event array - "some"
+// Completion of an NB event array - "some"
 // Success is defined as one or more events have been completed, OR
 // the input array contains only GEX_EVENT_INVALID (which are otherwise ignored).
 // Completed events, if any, are overwritten with GEX_EVENT_INVALID.
@@ -2479,8 +2532,7 @@ int  gex_HSL_Trylock(gex_HSL_t *hsl);
 // opaque user-defined data type in the context of a reduction operation.
 //     GEX_DT_USER
 //
-// It is guaranteed that all GEX_DT_* values can be combined via bit-wise OR
-// without loss of information.
+// It is guaranteed that all GEX_DT_* values are represented by disjoint non-zero bits.
 //
 // Currently, Remote Atomics support all built-in data types listed above.
 // Currently, Reductions support all data types (built-in and user-defined)
@@ -2583,8 +2635,7 @@ typedef [some integer type] gex_DT_t;
 //    - Non-commutative User-Defined Reduction Operation
 //        GEX_OP_USER_NC
 //
-// It is guaranteed that all GEX_OP_* values can be combined via bit-wise OR without
-// loss of information.
+// It is guaranteed that all GEX_OP_* values are represented by disjoint non-zero bits.
 
 typedef [some integer type] gex_OP_t;
 #define GEX_OP_??? ((gex_OP_t)???) // For each GEX_OP_* above
@@ -3703,17 +3754,13 @@ gex_Event_t gex_Coll_ReduceToAllNB(
 
 // [PROPOSED]
 // This section of this document covers APIs described in more detail in
-//   GASNet-EX API Proposal: Memory Kinds, Revision 2020.11.0
+//   GASNet-EX API Proposal: Memory Kinds, Revision 2021.9.0
 //
 // For functions, only prototypes and supported flags are provided here.
 // For function semantics, one should consult the document cited above.
 // Copies of the most recent revision of that document are available on
 // request from gasnet-staff@lbl.gov.
 
-// NOTE: Changes relative to the 2020.6.1 Multi-EP API proposal include:
-//  + `gex_Segment_Create()` takes a `client` argument
-//  + the `gex_MemKind_t` type has been renamed to `gex_MK_t`
-//  + the `GEX_MEMKIND_HOST` constant has been renamed to `GEX_MK_HOST`.
 int gex_Segment_Create(
             gex_Segment_t   *segment_p,  // OUT
             gex_Client_t    client,
@@ -3724,9 +3771,6 @@ int gex_Segment_Create(
       // Valid flags:
       //   NONE - zero is currently required
 
-// NOTE: Changes relative to the 2020.6.1 Multi-EP API proposal include:
-//  + this is a renamed and argument-permuted replacement for the API
-//    `gex_Segment_EP_Bind()`
 void gex_EP_BindSegment(
             gex_EP_t        ep,
             gex_Segment_t   segment,
@@ -3739,7 +3783,8 @@ typedef [some integer type] gex_EP_Capabilities_t;
 
 #define GEX_FLAG_HINT_ACCEL_{AD,COLL,ALL} ???
 
-// NOTE: implemented only by ibv-conduit and GEX_EP_CAPABILITY_RMA
+// NOTE: implemented only by ibv-conduit and ucx-conduit, and
+// only for capabilities == GEX_EP_CAPABILITY_RMA
 int gex_EP_Create(
             gex_EP_t               *ep_p,        // OUT
             gex_Client_t           client,
@@ -3766,7 +3811,8 @@ typedef ... gex_MK_t;
 // It includes at least the following values (in unspecified order):
 typedef enum {
     GEX_MK_CLASS_HOST,      // "normal" memory (eg GEX_MK_HOST)
-    GEX_MK_CLASS_CUDA_UVA,  // CUDA UVA memory
+    GEX_MK_CLASS_CUDA_UVA,  // CUDA UVA memory     [since 2020.11.0]
+    GEX_MK_CLASS_HIP,       // HIP device memory   [since 2021.9.0]
     ???
 } gex_MK_Class_t;
 
@@ -3777,9 +3823,12 @@ typedef struct {
     uint64_t            gex_flags; // Reserved.  Must be 0 currently.
     gex_MK_Class_t      gex_class;
     union {
-        struct {
+        struct {// CUDA UVA memory [since 2020.11.0]
             int                    gex_CUdevice;
         }                    gex_class_cuda_uva;
+        struct {// HIP device memory [since 2021.9.0]
+            int                    gex_hipDevice;
+        }                    gex_class_hip;
     }                    gex_args;
 } gex_MK_Create_args_t;
 
@@ -3803,7 +3852,7 @@ void gex_MK_Destroy(
 // End of APIs provided by gasnet_mk.h
 // ****
 
-// End of "GASNet-EX API Proposal: Memory Kinds, Revision 2020.11.0" section
+// End of "GASNet-EX API Proposal: Memory Kinds, Revision 2021.9.0" section
 //----------------------------------------------------------------------
 
 // vim: syntax=c

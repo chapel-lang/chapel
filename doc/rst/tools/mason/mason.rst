@@ -35,7 +35,7 @@ Basic Usage
 Starting a New Package
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To initialize a new mason package, run ``mason new``. The same can also be done using ``mason init`` as follows: 
+To initialize a new mason package, run ``mason new``. The same can also be done using ``mason init`` as follows:
 
   .. code-block:: sh
 
@@ -44,7 +44,7 @@ To initialize a new mason package, run ``mason new``. The same can also be done 
     mason init
 
 
-This starts an interactive session which walks an user through the process of creating a project using Mason. This is highly recommended for new users.
+This starts an interactive session which walks a user through the process of creating a project using Mason. This is highly recommended for new users.
 
 A more advanced user may use the ``mason new [ options ] <project name>`` command, for example::
 
@@ -53,19 +53,19 @@ A more advanced user may use the ``mason new [ options ] <project name>`` comman
 This creates a git repository by default, unless ``--no-vcs`` is included.
 
 Mason packages can also be initialized using the ``mason init [options] [directory path]``.
-To avoid the interactive session while initializing the project, run ``mason init -d | --default``. 
+To avoid the interactive session while initializing the project, run ``mason init -d | --default``.
 
 
-For example, for an existing directory named MyPackage, 
-    
+For example, for an existing directory named MyPackage,
+
   .. code-block:: sh
-    
-    mason init MyPackage 
 
-    # OR 
+    mason init MyPackage
+
+    # OR
 
     cd MyPackage
-    mason init -d  
+    mason init -d
 
 
 The package will have the following hierarchy::
@@ -91,10 +91,10 @@ additional functionality that comes with these folders later.
 Mason enforces that the main file be named after the package to enforce namespacing.
 ``MyPackage.chpl`` will be the first file listed in ``src/``.
 
-You can create a package in a directory that differs from the mason 
+You can create a package in a directory that differs from the mason
 package name with the `mason {new,init} --name` flag.
-This may be useful when creating a package in a directory that 
-is an illegal Mason package name, such as names with dashes. For example, 
+This may be useful when creating a package in a directory that
+is an illegal Mason package name, such as names with dashes. For example,
 
   .. code-block:: sh
 
@@ -224,16 +224,17 @@ For an example of forwarding arguments in a call to ``mason run``, a chapel prog
 mason might have a ``config const number`` that corresponds to a value used in ``MyPackage.chpl``.
 To try out different values at runtime, pass the values for ``number`` to ``mason run`` as follows::
 
-      mason run --number=100
-      mason run --number=1000
+      mason run -- --number=100
+      mason run -- --number=1000
 
 
 .. note::
 
-   For the case when a flag intended for the ``chpl`` compiler or executable is recognized by
-   ``mason build`` or ``mason run``, respectively, the flag can be thrown after ``--``
-   to override this conflict. For example, ``mason run -- -nl 4``. Instead of mason recognizing
-   this argument, this command will run the executable over 4 locales.
+   Previous releases allowed flags meant for the compiler or chapel program to be mixed with
+   those meant for ``mason build`` or ``mason run``, respectively. As of Chapel 1.25 and
+   mason 0.2.0, flags not intended for ``mason`` must follow a double dash ``--`` regardless
+   of if they conflict or not.
+
 
 
 Testing your Package
@@ -348,13 +349,13 @@ Tests can be listed in the ``Mason.toml`` as a TOML array of strings for the
 .. code-block:: text
 
    [brick]
-   name = "myPackage"
-   version = "0.1.0"
    chplVersion = "1.18.0"
    license = "None"
+   name = "myPackage"
    tests = ["test1.chpl",
             "test2.chpl",
             "test3.chpl"]
+   version = "0.1.0"
 
 An user may also set the ``CHPL_COMM`` value for running the tests, e.g. ``none``, ``gasnet``, ``ugni`` using ``mason test --setComm``.
 
@@ -424,10 +425,10 @@ in their ``Mason.toml`` as follows:
 .. code-block:: text
 
    [brick]
-   name = "myPackage"
-   version = "0.1.0"
    chplVersion = "1.18.0"
    license = "None"
+   name = "myPackage"
+   version = "0.1.0"
 
    [dependencies]
 
@@ -435,8 +436,8 @@ in their ``Mason.toml`` as follows:
    examples = ["myPackageExample.chpl"]
 
    [examples.myPackageExample]
-   execopts = "--count=20"
    compopts = "--savec tmp"
+   execopts = "--count=20"
 
 
 Documenting a Package
@@ -466,10 +467,10 @@ file of the package as follows:
 
 
    [brick]
-   name = "myPackage"
-   version = "0.1.0"
    chplVersion = "1.18.0"
    license = "None"
+   name = "myPackage"
+   version = "0.1.0"
 
    [dependencies]
    MatrixMarket = 0.1.0
@@ -545,10 +546,10 @@ The ``Mason.toml`` now looks like:
 .. code-block:: text
 
    [brick]
-   name = "myPackage"
-   version = "0.1.0"
    chplVersion = "1.18.0"
    license = "None"
+   name = "myPackage"
+   version = "0.1.0"
 
    [system]
    openSSL = "0.9.8zh"
@@ -764,10 +765,10 @@ The ``Mason.toml`` now looks like:
 .. code-block:: text
 
    [brick]
-   name = "myPackage"
-   version = "0.1.0"
    chplVersion = "1.18.0"
    license = "None"
+   name = "myPackage"
+   version = "0.1.0"
 
    [external]
    openSSL = "1.0.2k"
@@ -823,12 +824,12 @@ Continuing the example from before, the 'registry' ``0.1.0.toml`` would include 
 .. code-block:: text
 
      [brick]
-     name = "MyPackage"
-     version = "0.1.0"
+     authors = ["Sam Partee <Sam@Partee.com>"]
      chplVersion = "1.16.0"
      license = "None"
-     authors = ["Sam Partee <Sam@Partee.com>"]
+     name = "MyPackage"
      source = "https://github.com/Spartee/MyPackage"
+     version = "0.1.0"
 
      [dependencies]
      curl = '1.0.0'
@@ -966,11 +967,11 @@ For example, ``Mason.toml``:
 .. code-block:: text
 
     [brick]
-    name = "MyPackage"
-    version = "0.1.0"
+    authors = ["Sam Partee <Sam@Partee.com>"]
     chplVersion = "1.16.0"
     license = "None"
-    authors = ["Sam Partee <Sam@Partee.com>"]
+    name = "MyPackage"
+    version = "0.1.0"
 
     [dependencies]
     curl = '1.0.0'
@@ -1094,22 +1095,22 @@ a lock file is written below as if generated from the earlier example of a ``Mas
 
 .. code-block:: text
 
-     [curl]
-     name = 'curl'
-     version = '1.0.0'
-     chplVersion = "1.16.0..1.16.0"
-     license = "None"
-     source = 'https://github.com/username/curl'
-
-
      [root]
+     authors = ["Sam Partee <Sam@Partee.com>"]
+     chplVersion = "1.16.0..1.16.0"
+     dependencies = ['curl 1.0.0 https://github.com/username/curl']
+     license = "None"
      name = "MyPackage"
+     source = "https://github.com/Spartee/MyPackage"
      version = "0.1.0"
+
+
+     [curl]
      chplVersion = "1.16.0..1.16.0"
      license = "None"
-     authors = ["Sam Partee <Sam@Partee.com>"]
-     source = "https://github.com/Spartee/MyPackage"
-     dependencies = ['curl 1.0.0 https://github.com/username/curl']
+     name = 'curl'
+     source = 'https://github.com/username/curl'
+     version = '1.0.0'
 
 
 Dependency Code

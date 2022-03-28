@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -67,19 +67,12 @@
 module AllLocalesBarriers {
   use BlockDist, Barriers;
 
+  private const BarrierSpace = LocaleSpace dmapped Block(LocaleSpace);
+  private var globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(1, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
+  private proc deinit() { [b in globalBarrier] delete b; }
+
   pragma "no doc"
   class AllLocalesBarrier: BarrierBaseType {
-
-    const BarrierSpace = LocaleSpace dmapped Block(LocaleSpace);
-    var globalBarrier: [BarrierSpace] unmanaged aBarrier(reusable=true, procAtomics=true, hackIntoCommBarrier=true);
-
-    proc init(numTasksPerLocale: int) {
-      globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(numTasksPerLocale, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
-    }
-
-    proc deinit() {
-      [b in globalBarrier] delete b;
-    }
 
     override proc barrier() {
       globalBarrier.localAccess[here.id].barrier();
@@ -89,6 +82,5 @@ module AllLocalesBarriers {
       [b in globalBarrier] b.reset(numTasksPerLocale);
     }
   }
-
-  const allLocalesBarrier: AllLocalesBarrier = new AllLocalesBarrier(1);
+  const allLocalesBarrier: AllLocalesBarrier = new AllLocalesBarrier();
 }

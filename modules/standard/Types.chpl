@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -209,32 +209,37 @@ proc chpl__maxIntTypeSameSign(type t) type {
 // due to lack of consensus for the name.
 //
 
-pragma "no doc"
+/* Returns `true` if the argument is a `bool` value. */
 proc isBoolValue(e)      param  return isBoolType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `int` value. */
 proc isIntValue(e)       param  return isIntType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `uint` value. */
 proc isUintValue(e)      param  return isUintType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `real` value. */
 proc isRealValue(e)      param  return isRealType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `imag` value. */
 proc isImagValue(e)      param  return isImagType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `complex` value. */
 proc isComplexValue(e)   param  return isComplexType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `string` value. */
 proc isStringValue(e)    param  return isStringType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `bytes` value. */
 proc isBytesValue(e)     param  return isBytesType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of one the following types:
+`int`, `uint`. */
 proc isIntegralValue(e)  param  return isIntegralType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of one the following types:
+`real`, `imag`. */
 proc isFloatValue(e)     param  return isFloatType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of one the following types:
+`int`, `uint`, `real`, `imag`, `complex`. */
 proc isNumericValue(e)   param  return isNumericType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of primitive type. */
 proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `enum` value. */
 proc isEnumValue(e)      param  return isEnumType(e.type);
+/* Returns `true` if the argument is a `nothing` value (i.e., `none`) */
+proc isNothingValue(e)   param return isNothingType(e.type);
 //Defined elsewhere:
 // isTupleValue
 // isHomogeneousTupleValue
@@ -717,6 +722,11 @@ proc min(type t) where isComplexType(t) {
   return (min(real(floatwidth)), min(real(floatwidth))): t;
 }
 
+pragma "last resort" pragma "no doc"
+proc min(type t) {
+  compilerError("'min(type t)' is not defined for t=", t:string);
+}
+
 // joint documentation, for user convenience
 /*
 Returns the maximum value the type `t` can store.
@@ -755,17 +765,15 @@ proc max(type t) where isComplexType(t) {
   return (max(real(floatwidth)), max(real(floatwidth))): t;
 }
 
-pragma "no doc"
-pragma "order independent yielding loops"
-iter chpl_enumerate(type t: enum) {
-  const enumTuple = chpl_enum_enumerate(t);
-  for i in 0..enumTuple.size-1 do
-    yield enumTuple(i);
+pragma "last resort" pragma "no doc"
+proc max(type t) {
+  compilerError("'max(type t)' is not defined for t=", t:string);
 }
+
 pragma "no doc"
 iter type enum.these(){
-  for i in chpl_enumerate(this) do
-    yield i;
+  foreach i in 0..<this.size do
+    yield chpl__orderToEnum(i, this);
 }
 
 pragma "no doc"
@@ -906,7 +914,8 @@ inline proc _bxor_id(type t) return 0:t;
 // and only used for chpldoc.
 
 /* Returns `true` if the type `from` is coercible to the type `to`,
-   or if ``isSubtype(from, to)`` would return `true`.
+   or if ``isSubtype(from, to)`` would return `true`. See
+   :ref:`Implicit_Conversion_Call`.
  */
 pragma "docs only"
 proc isCoercible(type from, type to) param {
@@ -914,11 +923,15 @@ proc isCoercible(type from, type to) param {
 }
 
 /* Returns `true` if the type `sub` is a subtype of the type `super`.
+   See also :ref:`Subtype`.
+
    In particular, returns `true` in any of these cases:
 
      * `sub` is the same type as `super`
      * `sub` is an instantiation of a generic type `super`
      * `sub` is a class type inheriting from `super`
+     * `sub` is non-nilable class type and `super` is the nilable version of the
+       same class type
 
    Note that ``isSubtype(a,b)`` can also be written as
    ``a <= b`` or ``b >= a``.

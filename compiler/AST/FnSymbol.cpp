@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "visibleFunctions.h"
+
+#include "global-ast-vecs.h"
 
 FnSymbol*                 chpl_gen_main         = NULL;
 FnSymbol*                 initStringLiterals    = NULL;
@@ -1189,6 +1191,11 @@ void FnSymbol::printDocs(std::ostream* file, unsigned int tabs) {
     if (this->doc != NULL) {
       this->printDocsDescription(this->doc, file, tabs + 1);
       *file << std::endl;
+    }
+
+    if (this->hasFlag(FLAG_DEPRECATED)) {
+      this->printDocsDeprecation(this->doc, file, tabs + 1,
+                                 this->getDeprecationMsg(), true);
     }
   }
 }

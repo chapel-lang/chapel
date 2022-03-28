@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,7 @@
 #include "wellknown.h"
 #include "WhileStmt.h"
 
+#include "global-ast-vecs.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -286,14 +287,6 @@ void Expr::verifyParent(const Expr* child) {
   if (child && child->parentExpr != this)
     INT_FATAL(this, "bad parent of a child node");
 }
-
-bool Expr::inTree() {
-  if (parentSymbol)
-    return true;
-  else
-    return false;
-}
-
 
 QualifiedType Expr::qualType() {
   INT_FATAL(this, "Illegal call to Expr::qualType()");
@@ -619,8 +612,11 @@ void SymExpr::prettyPrint(std::ostream *o) {
   if (strcmp(var->name, "nil") != 0) {
     if (var->isImmediate()) {
       if (VarSymbol *sym = toVarSymbol(var)) {
-        if (sym->immediate->const_kind == CONST_KIND_STRING)
-          *o << "\"" << sym->immediate->v_string << "\"";
+        if (sym->immediate->const_kind == CONST_KIND_STRING) {
+          *o << "\"";
+          *o << sym->immediate->v_string.str();
+          *o << "\"";
+        }
         else if (sym->immediate->const_kind == NUM_KIND_BOOL)
           *o << sym->immediate->bool_value();
         else if (sym->immediate->const_kind == NUM_KIND_INT)
@@ -1133,7 +1129,7 @@ get_string(Expr *e, const char **s) {
   }
 
   if (imm && imm->const_kind == CONST_KIND_STRING) {
-    *s = imm->v_string;
+    *s = astr(imm->v_string.c_str());
     return true;
   }
 

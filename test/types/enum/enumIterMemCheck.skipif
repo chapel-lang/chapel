@@ -1,0 +1,2 @@
+# without inlining, this test's memory check will not come back clean
+COMPOPTS <= --baseline

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,6 +36,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()
@@ -105,7 +107,7 @@ static int broadcastGlobalID = 0;
 static void insertEndCounts();
 static void passArgsToNestedFns();
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode);
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& varSet, Vec<Symbol*>& varVec);
 static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg, FnSymbol* fn);
@@ -471,70 +473,12 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
                                    new CallExpr(PRIM_SIZEOF_BUNDLE,
                                                 ctype->symbol)));
 
-  // Find the _EndCount argument so we can pass that explicitly as the
-  // first argument to a task launch function.
-  Symbol* endCount = NULL;
-  VarSymbol *taskList = NULL;
-  VarSymbol *taskListNode = NULL;
-
-  if (!fn->hasFlag(FLAG_ON)) {
-    for_actuals(arg, fcall) {
-
-      Type* baseType = arg->getValType();
-      if (baseType->symbol->hasFlag(FLAG_END_COUNT)) {
-        SymExpr* symexp = toSymExpr(arg);
-        endCount = symexp->symbol();
-
-        // Turns out there can be more than one such field. See e.g.
-        //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
-        // INT_ASSERT(endCountField == 0);
-        // We have historically picked the first such field.
-        break;
-      }
-    }
-
-    if (!fn->hasFlag(FLAG_BEGIN))
-      INT_ASSERT(endCount);
-
-    if (endCount != NULL) {
-      // Now get the taskList field out of the end count.
-
-      taskList = newTemp(astr("_taskList", fn->name), QualifiedType(QUAL_REF, dtCVoidPtr));
-
-      // If the end count is a reference, dereference it.
-      // EndCount is a class.
-      if (endCount->isRef()) {
-        VarSymbol *endCountDeref = newTemp(astr("_end_count_deref", fn->name),
-                                           endCount->getValType());
-        fcall->insertBefore(new DefExpr(endCountDeref));
-        fcall->insertBefore(new CallExpr(PRIM_MOVE, endCountDeref,
-                                           new CallExpr(PRIM_DEREF, endCount)));
-        endCount = endCountDeref;
-      }
-
-      fcall->insertBefore(new DefExpr(taskList));
-      fcall->insertBefore(new CallExpr(PRIM_MOVE, taskList,
-                                       new CallExpr(PRIM_GET_MEMBER,
-                                                    endCount,
-                                                    endCount->typeInfo()->getField("taskList"))));
-
-
-      // Now get the node ID field for the end count,
-      // which is where the task list is stored.
-      taskListNode = newTemp(astr("_taskListNode", fn->name), dtInt[INT_SIZE_DEFAULT]);
-      fcall->insertBefore(new DefExpr(taskListNode));
-      fcall->insertBefore(new CallExpr(PRIM_MOVE, taskListNode,
-                                       new CallExpr(PRIM_WIDE_GET_NODE,
-                                                    endCount)));
-    }
-  }
-
   // create wrapper-function that uses the class instance
   if (firstCall)
     create_block_fn_wrapper(fn, fcall, baData);
 
   // call wrapper-function
-  call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn, taskList, taskListNode);
+  call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn);
   baData.firstCall = false;
 }
 
@@ -764,16 +708,6 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     // (see the last if (fn->hasFlag(FLAG_ON)) clause in passArgsToNestedFns()).
     localeArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(localeArg);
-  } else {
-    // create a task list argument.
-    ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList",
-                                            dtCVoidPtr->refType );
-    taskListArg->addFlag(FLAG_NO_CODEGEN);
-    wrap_fn->insertFormalAtTail(taskListArg);
-    ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode",
-                                             dtInt[INT_SIZE_DEFAULT]);
-    taskListNode->addFlag(FLAG_NO_CODEGEN);
-    wrap_fn->insertFormalAtTail(taskListNode);
   }
 
   ArgSymbol *allocated_args = new ArgSymbol( INTENT_IN, "buf", dtCVoidPtr);
@@ -876,8 +810,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 }
 
 static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol*
-    args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn,
-    Symbol* taskList, Symbol* taskListNode)
+    args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn)
 {
   // The wrapper function is called with the bundled argument list.
   if (fn->hasFlag(FLAG_ON)) {
@@ -886,11 +819,7 @@ static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol*
     // The forking function uses this to fork a task on the target locale.
     fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), args_buf, args_buf_len, tempc));
   } else {
-    // For non-on blocks, the task list is passed directly to the function
-    // (so that codegen can find it).
-    // We need the taskList.
-    INT_ASSERT(taskList);
-    fcall->insertBefore(new CallExpr(wrap_fn, new SymExpr(taskList), new SymExpr(taskListNode), args_buf, args_buf_len, tempc));
+    fcall->insertBefore(new CallExpr(wrap_fn, args_buf, args_buf_len, tempc));
   }
 
   fcall->remove();                     // rm orig. call
@@ -1151,7 +1080,8 @@ makeHeapAllocations() {
           } else {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->symbol(), heapType->getField(1)));
           }
-        } else if (call->isResolved()) {
+        } else if (call->isResolved() ||
+                   call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
           ArgSymbol* formal = actual_to_formal(use);
           if (formal->type != heapType) {
 
@@ -1258,6 +1188,9 @@ static void replaceRecordWrappedRefs() {
     if (aggType->symbol->hasFlag(FLAG_REF)) {
       // ignore the reference type itself
     } else {
+      if (aggType->isSerializable()) {
+        continue; // this type will be serialized and RVF'ed
+      }
       for_fields(field, aggType) {
         if (field->isRef() && isRecordWrappedType(field->getValType())) {
           field->type = field->getValType();
@@ -1370,7 +1303,7 @@ static void insertEndCounts()
   Vec<FnSymbol*> queue;
   Map<FnSymbol*,Symbol*> endCountMap;
 
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     SET_LINENO(call);
     if (call->isPrimitive(PRIM_GET_END_COUNT)) {
       FnSymbol* pfn = call->getFunction();
@@ -1468,7 +1401,7 @@ CallExpr* createConditionalForDirectOn(CallExpr* call, FnSymbol* fn)
 // call that are accessed within the body of the nested function (recursively,
 // of course).
 static void passArgsToNestedFns() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     if (isTaskFun(fn)) {
       BundleArgsFnData baData = bundleArgsFnDataInit;
 
@@ -1582,4 +1515,3 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   }
   return wide;
 }
-

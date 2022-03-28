@@ -147,18 +147,24 @@ char *check_suffixed(const char *keyname)
 // ------------------------------------------------------------------------------------
 // gasneti_getenv_hwloc_withdefault()
 //
+// In the steps below "return the value of keyname from the environment" means:
+//    Return getenv(keyname) if non-NULL, otherwise return
+//    gasneti_getenv_withdefault(keyname, dflt_val).
+//    In either case the value is traced as if obtained by the latter.
+//    This gives precedence to the local environment (see bug 4303).
+//
 // 1. Check for suffixed env vars.
-//    If none, return result of gasneti_getenv_withdefault(keyname, dflt_val).
+//    If none, return the value of keyname from the environment.
 // 2. Check for env var "[keyname]_TYPE" equal to "None" (case insensitive).
-//    If YES, return result of gasneti_getenv_withdefault(keyname, dflt_val).
+//    If YES, return the value of keyname from the environment.
 // With hwloc support:
 //   3. Look for a hwloc object type in env var "[keyname]_TYPE", or dflt_type if none.
 //   4. Find the intersection of this proc's cpu binding with options of the given type.
 //   5. Return the value of env var "[keyname]_[binding]", if any,
-//      otherwise return the result of gasneti_getenv_withdefault(keyname, dflt_val).
+//      otherwise return the value of keyname from the environment
 // Without hwloc support:
-//   3. If we get this far, warn at most once about lack ofhwloc support
-//   4. Return the result of gasneti_getenv_withdefault(keyname, dflt_val).
+//   3. If we get this far, warn at most once about lack of hwloc support
+//   4. Return the value of keyname from the environment.
 //
 // Detected hwloc errors result in a warning (at most once per "step")
 // and use of the unsuffixed variable.
@@ -170,7 +176,7 @@ char *gasneti_getenv_hwloc_withdefault(const char *keyname, const char *dflt_val
   char *firstkey = check_suffixed(keyname);
   if (! firstkey) {
     // short-cut w/o using hwloc if there are no suffixed variables
-    return gasneti_getenv_withdefault(keyname, dflt_val);
+    goto out_return_unsuffixed;
   }
 
   // Step 2 - check env var "[keyname]_TYPE" for "None" (which disables all additional intelligence)
@@ -189,7 +195,7 @@ char *gasneti_getenv_hwloc_withdefault(const char *keyname, const char *dflt_val
     if (match) {
       // short-cut w/o using hwloc if TYPE is "none"
       gasneti_free(firstkey);
-      return gasneti_getenv_withdefault(keyname, dflt_val);
+      goto out_return_unsuffixed;
     }
   }
           
@@ -309,7 +315,9 @@ out:
   #endif
 
   // Return the suffixed variable's value if any, else use unsuffixed
-  return result ? result : gasneti_getenv_withdefault(keyname, dflt_val);
+  if (result) return result;
+  else goto out_return_unsuffixed;
+
 
 out_bad_cpuset:
   {
@@ -354,6 +362,19 @@ out_bad_intersect:
   gasneti_free(firstkey);
 
   // Step 4.  Return the only thing we can
-  return gasneti_getenv_withdefault(keyname, dflt_val);
+  goto out_return_unsuffixed;
 #endif
+
+
+out_return_unsuffixed:
+  // Return the unsuffixed "keyname" value from the environment.
+  // Here we give precedence to the local environment (bug 4303).
+  // TODO: hoist this logic (or similar) for general use
+  { char *local_envval = getenv(keyname);
+    if (local_envval) {
+      gasneti_envstr_display(keyname, local_envval, 0);
+      return local_envval;
+    }
+  }
+  return gasneti_getenv_withdefault(keyname, dflt_val);
 }

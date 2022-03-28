@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,7 +26,7 @@
 #include "alist.h"
 #include "genret.h"
 
-#include "../ifa/num.h"
+#include "../dyno/lib/immediates/num.h"
 
 #include <cstdio>
 #include <map>
@@ -110,6 +110,11 @@ public:
 
   SymbolMap              substitutions;
   SymbolNameVec          substitutionsPostResolve;
+
+  // whether the type has chpl__serialize and chpl__deserialize
+  // this should be called after resolution (or after serializeMap is populated)
+  bool                   isSerializable();
+
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
@@ -583,7 +588,7 @@ void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);
 
-Immediate getDefaultImmediate(Type* t);
+const Immediate& getDefaultImmediate(Type* t);
 
 
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]

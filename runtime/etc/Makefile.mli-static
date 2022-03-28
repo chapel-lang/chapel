@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -49,11 +49,12 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY) \
 		CHPL_MAKE_IS_MLI=1
 # Compile the client bundle.
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+	$(CC) $(GEN_CFLAGS) \
+	        $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) $(COMP_GEN_CFLAGS) \
+	        -I. $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS) \
 		-c -o $(TMPBINNAME).o \
 		$(CHPLSRC) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
-		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INC_DIRS)
 # Throw the client object file and launcher object file into an archive.
 	$(AR) -c -r -s $(TMPBINNAME) \

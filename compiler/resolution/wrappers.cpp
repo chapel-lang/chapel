@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -693,7 +693,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     // when we didn't, tests like release/examples/primers/associative.chpl
     // and reductions/bradc/manual/promote.chpl failed their '--verify'
     // test runs for reasons that seemed puzzling and related to the
-    // intracacies of the _toFollower() code path; and it seemed unlikely
+    // intricacies of the _toFollower() code path; and it seemed unlikely
     // that they would care about default arguments and inheritance.
     //
     bool classDefaultArgCase = (fn->_this &&
@@ -762,15 +762,27 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   return ret;
 }
 
+// returns a defaultExprFn for the passed formal, or NULL if none was created
+FnSymbol* findExistingDefaultedActualFn(FnSymbol* fn, ArgSymbol* formal) {
+  DefaultExprFnEntry* entry = nullptr;
+  formalToDefaultExprEntryMap::iterator it;
 
-static Symbol* createDefaultedActual(FnSymbol*  fn,
-                                     ArgSymbol* formal,
-                                     CallExpr*  call,
-                                     BlockStmt* body,
-                                     SymbolMap& copyMap) {
+  it = formalToDefaultExprEntry.find(formal);
+  if (it != formalToDefaultExprEntry.end()) {
+    // Use the existing entry
+    entry = &it->second;
+    FnSymbol* ret = entry->defaultExprFn;
+    INT_ASSERT(ret->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION));
+    return ret;
+  }
 
-  // Find the function we are to call, and call it
-  DefaultExprFnEntry* entry = NULL;
+  return nullptr;
+}
+
+static DefaultExprFnEntry* getOrCreateDefaultedActualFnEntry(FnSymbol*  fn,
+                                                             ArgSymbol* formal)
+{
+  DefaultExprFnEntry* entry = nullptr;
   formalToDefaultExprEntryMap::iterator it;
 
   it = formalToDefaultExprEntry.find(formal);
@@ -785,6 +797,26 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   }
 
   INT_ASSERT(entry);
+
+  return entry;
+}
+
+// This one is called in virtual dispatch handling
+FnSymbol* getOrCreateDefaultedActualFn(FnSymbol* fn, ArgSymbol* formal) {
+  DefaultExprFnEntry* entry = getOrCreateDefaultedActualFnEntry(fn, formal);
+  FnSymbol* ret = entry->defaultExprFn;
+  INT_ASSERT(ret->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION));
+  return ret;
+}
+
+static Symbol* createDefaultedActual(FnSymbol*  fn,
+                                     ArgSymbol* formal,
+                                     CallExpr*  call,
+                                     BlockStmt* body,
+                                     SymbolMap& copyMap) {
+
+  // Find the function we are to call, and call it
+  DefaultExprFnEntry* entry = getOrCreateDefaultedActualFnEntry(fn, formal);
 
   // TODO - can't we get the param formals out of paramMap?
   // Or fn->substitutions?
@@ -1199,7 +1231,7 @@ static void handleCoercion(FnSymbol* fn, CallExpr* call,
           // There also is no cast defined for string->c_string on purpose (you
           // need to use .c_str()) so the common case below does not work.
           VarSymbol*  var       = toVarSymbol(actualSym);
-          const char* str       = var->immediate->v_string;
+          const char* str       = var->immediate->v_string.c_str();
           actual->setSymbol(new_CStringSymbol(str));
         } else {
           addArgCoercion(fn, call, formal, actual, c2);
@@ -1628,7 +1660,7 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
 }
 
 static bool isFormalTempConst(FnSymbol *fn, ArgSymbol *formal) {
-  
+
   // Today, if we generate a default initializer for a type with const fields,
   // the formals that correspond to those fields have `in` intents. However, we
   // still need to set those temporaries that will be passed to those formals to
@@ -1748,7 +1780,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
         tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       }
-      
+
       CallExpr* copy = NULL;
 
       Symbol *definedConst = isFormalTempConst(fn, formal) ?  gTrue : gFalse;
@@ -1854,7 +1886,7 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
     resolveFunction(fn, call);
   }
 
- 
+
   for_formals(formal, fn) {
     SET_LINENO(currActual);
     nextActual = currActual->next;
@@ -2399,7 +2431,7 @@ static void buildLeaderIterator(PromotionInfo& promotion,
     CallExpr *iterCall = toCallExpr(iterator);
     INT_ASSERT(iterCall);
     INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
-    
+
     toLeader = new CallExpr("_toLeader", iterCall->get(1)->copy(&leaderMap));
   }
   else {

@@ -1,0 +1,2 @@
+ErrorInitializeElementIsDI.chpl:7: In function 'test':
+ErrorInitializeElementIsDI.chpl:13: error: Cannot call 'initialize' on array with default-initializable element type 'foo'

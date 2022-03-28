@@ -1,3 +1,5 @@
+.. _best-practices-compiler-debugging:
+
 ===============================
 Tips On Debugging The Compiler
 ===============================

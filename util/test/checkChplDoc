@@ -108,7 +108,7 @@ if [ ! -d $chpl_dir ] ; then
     mkdir -p $chpl_dir || { log_error "Failed to create ${chpl_dir}." && exit 10 ; }
 fi
 
-TMP_TEST_DIR=$(mktemp -d ${chpl_dir}/chapel-test-XXXXX)
+TMP_TEST_DIR=$(mktemp -d ${chpl_dir}/chapel-test-XXXXXX)
 log_debug "TMP_TEST_DIR: ${TMP_TEST_DIR}"
 
 # Ensure the tmp dir is deleted when script exits.

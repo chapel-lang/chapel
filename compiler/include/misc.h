@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,7 @@
 #include "baseAST.h"
 
 #include "astlocs.h"
+#include "chpl/util/break.h"
 
 #ifdef HAVE_LLVM
 #define exit(x) clean_exit(x)
@@ -88,15 +89,26 @@ class BaseAST;
 bool        forceWidePtrsForLocal();
 bool        requireWideReferences();
 bool        requireOutlinedOn();
+bool        localeUsesGPU();
 
 const char* cleanFilename(const BaseAST* ast);
 const char* cleanFilename(const char*    name);
 
+//
+// Error tag values:
+//
+//  1 = INT_FATAL
+//  2 = USR_FATAL
+//  3 = USR_FATAL_CONT
+//  4 = USR_WARN
+//  5 = USR_PRINT
+//
 void        setupError(const char* subdir, const char* filename, int lineno, int tag);
 
 void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
 void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
 void        handleError(astlocT astloc, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
+void        handleError(chpl::Location, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
 
 void        exitIfFatalErrorsEncountered();
 
@@ -122,9 +134,6 @@ astlocT getUserInstantiationLocation(const BaseAST* ast);
 // (e.g. with USR_FATAL(ast, ...)) would print out
 // a user line number.
 bool        printsUserLocation(const BaseAST* ast);
-
-// must be exported to avoid dead-code elimination by C++ compiler
-void        gdbShouldBreakHere();
 
 // Supporting bold / colorful output to terminals
 // These are "" if stderr is not a tty we think supports them

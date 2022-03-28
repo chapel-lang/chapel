@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -67,7 +67,7 @@ static ConversionsTable conversionsTable;
 
 static void resolveFormals(FnSymbol* fn);
 
-static void markIterator(FnSymbol* fn);
+static void markIteratorAndLoops(FnSymbol* fn, CallExpr* call);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn);
 
@@ -420,7 +420,7 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
     USR_FATAL(fn, "extern name expression must be param");
   }
   if (var->type == dtString || var->type == dtStringC) {
-    fn->cname = var->immediate->v_string;
+    fn->cname = astr(var->immediate->v_string.c_str());
   } else {
     USR_FATAL(fn, "extern name expression must be a string");
   }
@@ -536,7 +536,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
     } else {
       if (fn->isIterator() == true) {
-        markIterator(fn);
+        markIteratorAndLoops(fn, forCall);
       }
 
       if (needsCapture(fn))
@@ -580,7 +580,13 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
 
   if (fn->name == astrSassign &&
       fn->numFormals() >= 1) {
-    ArgSymbol* lhs = fn->getFormal(1);
+    int lhsNum = 1;
+    if (fn->getFormal(1)->typeInfo() == dtMethodToken) {
+      // Operator methods have a "_this" and method token argument, but
+      // standalone operators do not.  Need to consider both here.
+      lhsNum += 2;
+    }
+    ArgSymbol* lhs = fn->getFormal(lhsNum);
     Type* t = lhs->getValType();
     if (fn->hasFlag(FLAG_COMPILER_GENERATED))
       t->symbol->addFlag(FLAG_TYPE_DEFAULT_ASSIGN);
@@ -614,12 +620,6 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     // arg 1 is the method token
     toType = fn->getFormal(2)->getValType();
     fromType = fn->getFormal(3)->getValType();
-  } else if (fn->name == astr_cast) {
-    int i = 1;
-    if (fn->getFormal(i)->typeInfo() == dtMethodToken) i++;
-    if (fn->getFormal(i)->hasFlag(FLAG_ARG_THIS)) i++;
-    toType = fn->getFormal(i)->getValType(); i++;
-    fromType = fn->getFormal(i)->getValType();
   } else {
     // Nothing to do if it's not one of the above cases.
     return;
@@ -641,8 +641,6 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
       val.assign = fn;
     else if (fn->name == astrInitEquals)
       val.initEq = fn;
-    else if (fn->name == astr_cast)
-      val.cast = fn;
     else
       INT_FATAL("unexpected case");
 
@@ -847,7 +845,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
 static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag);
 static bool isLoopBodyJustYield(LoopStmt* loop);
 
-static void markIterator(FnSymbol* fn) {
+static void markIteratorAndLoops(FnSymbol* fn, CallExpr* call) {
   /* Marks loops in iterators as order-independent:
        * if a pragma says to do so
        * or, if the body of the loop is just a yield
@@ -857,57 +855,33 @@ static void markIterator(FnSymbol* fn) {
                               fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS) ||
                               markOrderIndep;
 
-  bool allYieldingLoopsJustYield = true;
-  bool anyNotMarked = false;
-  bool anyMarked = false;
+  if (fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS)) {
+    USR_WARN(call, "'vectorizeOnly()' is deprecated; please use 'foreach' loops instead");
+  }
 
   std::vector<CallExpr*> callExprs;
 
   collectCallExprs(fn->body, callExprs);
 
   for_vector(CallExpr, call, callExprs) {
-    if (call->isPrimitive(PRIM_YIELD) == true) {
+    if (call->isPrimitive(PRIM_YIELD)) {
       if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
-        if (loop->isCoforallLoop() == false) {
+        if (!loop->isCoforallLoop() && !loop->isOrderIndependent()) {
           bool justYield = isLoopBodyJustYield(loop);
-          allYieldingLoopsJustYield = allYieldingLoopsJustYield && justYield;
           if (justYield || markAllYieldingLoops) {
             loop->orderIndependentSet(true);
-            anyMarked = true;
           } else {
-            anyNotMarked = true;
+            if (fReportVectorizedLoops && fExplainVerbose) {
+              if (!isLeaderIterator(fn)) {
+                ModuleSymbol *mod = toModuleSymbol(fn->getModule());
+                if (developer || mod->modTag == MOD_USER) {
+                  USR_WARN(loop, "not a foreach loop, will not be vectorized");
+                }
+              }
+            }
           }
         }
       }
-    }
-  }
-
-  if (fVerify) {
-    ModuleSymbol *mod = toModuleSymbol(fn->getModule());
-    if (mod->modTag != MOD_USER) {
-      if (markOrderIndep && allYieldingLoopsJustYield && anyMarked &&
-          !fn->hasFlag(FLAG_INSTANTIATED_GENERIC) &&
-          !fn->hasFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING)) {
-        // can't do this check for instantiated generics because
-        // other instantiations of the generic might have a different
-        // outcome.
-        USR_WARN(fn, "order independent pragma unnecessary");
-      }
-      if (anyNotMarked &&
-          !fn->hasFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS) &&
-          !isLeaderIterator(fn)) {
-        USR_WARN(fn, "add pragma \"not order independent yielding loops\" "
-                     "or pragma \"order independent yielding loops\"");
-      }
-    }
-  }
-  if (anyNotMarked && fReportVectorizedLoops && fExplainVerbose) {
-    if (!isLeaderIterator(fn)) {
-      ModuleSymbol *mod = toModuleSymbol(fn->getModule());
-      if (developer || mod->modTag == MOD_USER)
-        USR_WARN(fn,
-                 "should iterator %s be marked order independent?",
-                 fn->name);
     }
   }
 
@@ -1404,10 +1378,20 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
         // returning into a user var?
         if (lhsSe != NULL) {
           VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
-          if (lhs != NULL && lhs != v && !lhs->hasFlag(FLAG_TEMP)) {
+          if (lhs != NULL && lhs != v) {
+
             // Used in initializing a user var, so mark end of block
-            makeThemEndOfBlock = true;
-            break;
+            if (!lhs->hasFlag(FLAG_TEMP)) {
+              makeThemEndOfBlock = true;
+              break;
+
+            // For e.g. 'manage new foo() do ...;'
+            // The manager handle is a temp that refers to 'new foo()', so
+            // what it refers to should live until the end of the block.
+            } else if (lhs->hasFlag(FLAG_MANAGER_HANDLE)) {
+              makeThemEndOfBlock = true;
+              break;
+            }
           }
         }
         // out intent setting a user var?
@@ -1628,6 +1612,22 @@ static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType) {
   }
 
   retval->scalarPromotionType = yieldedType;
+
+  if (fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    sym->addFlag(FLAG_PROMOTION_ITERATOR_RECORD);
+    for_formals (formal, fn) {
+      if (formal->type != gMethodToken->type &&
+          formal->type != gFollowerTag->type) {
+        if (isAggregateType(formal->type)) {
+          VarSymbol* protoField = new VarSymbol(formal->name, formal->type);
+          protoField->addFlag(FLAG_PROMOTION_PROTO_FIELD);
+
+          retval->fields.insertAtTail(new DefExpr(protoField));
+        }
+      }
+    }
+  }
+
 
   return retval;
 }

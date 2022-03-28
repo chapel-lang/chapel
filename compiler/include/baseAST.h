@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -90,9 +90,6 @@
 #define foreach_ast(macro)                         \
   foreach_ast_sep(macro, ;)
 
-#define for_alive_in_Vec(TYPE, VAR, VEC)           \
-  forv_Vec(TYPE, VAR, VEC) if (VAR->inTree())
-
 class BaseAST;
 class AstVisitor;
 class Expr;
@@ -127,17 +124,7 @@ def_vec_hash(BaseAST);
 
 #undef def_vec_hash
 
-//
-// declare global vectors for all AST node types
-//
-// These global vectors, named gSymExprs, gCallExprs, gFnSymbols, ...,
-// contain all existing nodes of the given AST node type; they are
-// updated automatically as new AST nodes are constructed.  Nodes are
-// removed from these vectors between passes.
-//
-#define decl_gvecs(type) extern Vec<type*> g##type##s
-foreach_ast(decl_gvecs);
-#undef decl_gvecs
+// global vectors now defined in global-ast-vecs.h
 
 //
 // type definitions for common maps
@@ -281,6 +268,10 @@ public:
 
   void              printTabs(std::ostream *file, unsigned int tabs);
   void              printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
+  void              printDocsDeprecation(const char *doc, std::ostream *file,
+                                         unsigned int tabs,
+                                         const char* deprecationMsg,
+                                         bool extraLine);
 
   static  const     std::string tabText;
 

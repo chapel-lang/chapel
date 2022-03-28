@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -107,15 +107,22 @@ module ChapelDistribution {
       }
     }
 
+    proc dsiDisplayRepresentation() {
+      writeln("<no way to display representation>");
+    }
+
+    pragma "no doc" pragma "last resort"
     proc dsiNewRectangularDom(param rank: int, type idxType,
                               param stridable: bool, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
 
+    pragma "no doc" pragma "last resort"
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
       compilerError("associative domains not supported by this distribution");
     }
 
+    pragma "no doc" pragma "last resort"
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
       compilerError("sparse domains not supported by this distribution");
     }
@@ -124,8 +131,6 @@ module ChapelDistribution {
     proc dsiRequiresPrivatization() param return false;
 
     proc dsiDestroyDist() { }
-
-    proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
 
     // Does the distribution keep a list of domains? Can the domains
     // keep the distribution alive longer? false for DefaultDist.
@@ -168,7 +173,6 @@ module ChapelDistribution {
     proc deinit() {
     }
 
-    pragma "order independent yielding loops"
     iter _arrs: unmanaged BaseArr {
       var tmp = _arrs_head;
       while tmp != nil {
@@ -182,6 +186,47 @@ module ChapelDistribution {
       pragma "unsafe" var ret: unmanaged BaseDist; // nil
       return ret;
     }
+
+    // default overloads to provide clear compile-time error messages
+
+    proc dnsError(param op: string) {
+      compilerError("this domain type does not support '", op, "'");
+    }
+
+    pragma "no doc" pragma "last resort"
+    proc parSafe                  { dnsError("parSafe"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiLow                   { dnsError("low"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiHigh                  { dnsError("high"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiAlignedlow            { dnsError("alignedLow"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiAlignedhigh           { dnsError("alignedHigh"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiFirst                 { dnsError("first"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiLast                  { dnsError("last"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiStride                { dnsError("stride"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiAlignment             { dnsError("alignment"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiIndexOrder(i)         { dnsError("indexOrder"); }
+
+    pragma "no doc" pragma "last resort"
+    proc dsiMakeIndexBuffer(size) { dnsError("makeIndexBuffer"); }
+
+    // end of default overloads to provide clear compile-time error messages
 
     inline proc trackArrays() {
       return disableConstDomainOpt || !this.definedConst;
@@ -329,6 +374,10 @@ module ChapelDistribution {
       return false;
     }
 
+    proc isRectangular() param return false;
+    proc isAssociative() param return false;
+    proc isSparse()      param return false;
+
     proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
 
@@ -366,6 +415,8 @@ module ChapelDistribution {
     param rank : int;
     type idxType;
     param stridable: bool;
+
+    override proc isRectangular() param return true;
 
     proc getBaseArrType() type {
       var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
@@ -595,6 +646,8 @@ module ChapelDistribution {
 
     /*var nnz = 0; //: int;*/
 
+    override proc isSparse() param return true;
+
     proc getNNZ(): int {
       halt("nnz queried on base class");
     }
@@ -623,10 +676,10 @@ module ChapelDistribution {
     }
 
     proc canDoDirectAssignment(rhs: domain) {
-      if isRectangularDom(this.parentDom) &&
-         isRectangularDom(rhs.parentDom) {
+      if this.parentDom.isRectangular() &&
+         rhs.parentDom.isRectangular() {
         if this.dsiNumIndices == 0 {
-          if rhs.parentDom.isSubset(this.parentDom) {
+          if this.parentDom.contains(rhs.parentDom) {
             return true;
           }
         }
@@ -656,7 +709,7 @@ module ChapelDistribution {
     proc dsiAlignedLow { return parentDom.alignedLow; }
     proc dsiAlignedHigh { return parentDom.alignedHigh; }
 
-    proc dsiMakeIndexBuffer(size) {
+    override proc dsiMakeIndexBuffer(size) {
       return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);
     }
 
@@ -664,6 +717,8 @@ module ChapelDistribution {
 
 
   class BaseAssociativeDom : BaseDom {
+    override proc isAssociative() param return true;
+
     proc deinit() {
       // this is a bug workaround
     }
@@ -690,8 +745,9 @@ module ChapelDistribution {
     var prev: unmanaged BaseArr?;
     var next: unmanaged BaseArr?;
 
-    var pid:int = nullPid; // privatized ID, if privatization is supported
+    var pid: int = nullPid; // privatized ID, if privatization is supported
     var _decEltRefCounts : bool = false;
+    var _resizePolicy = chpl_ddataResizePolicy.normalInit;
 
     proc chpl__rvfMe() param {
       return false;
@@ -742,6 +798,29 @@ module ChapelDistribution {
         ret_dom = dom;
 
       return (ret_arr, ret_dom);
+    }
+
+    proc chpl_setResizePolicy(policy: chpl_ddataResizePolicy) {
+      _resizePolicy = policy;
+    }
+
+    proc chpl_isElementTypeDefaultInitializable(): bool {
+      halt("chpl_isElementTypeDefaultInitializable must be defined");
+      return false;
+    }
+
+    proc chpl_isElementTypeNonNilableClass(): bool {
+      halt("chpl_isElementTypeNonNilableClass must be defined");
+      return false;
+    }
+
+    proc chpl_unsafeAssignIsClassElementNil(manager, idx) {
+      halt("chpl_unsafeAssignIsClassElementNil must be defined");
+      return false;
+    }
+
+    proc chpl_unsafeAssignHaltUninitializedElement(idx) {
+      halt("chpl_haltUnsafeAssignmentUninitializedElement must be defined");
     }
 
     proc dsiElementInitializationComplete() {
@@ -818,12 +897,15 @@ module ChapelDistribution {
       halt("_moveElementDuringRehash() not supported for non-associative arrays");
     }
 
+    proc dsiDisplayRepresentation() {
+      writeln("<no way to display representation>");
+    }
+
     proc dsiSupportsAlignedFollower() param return false;
 
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
 
-    proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
     proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
 
@@ -900,6 +982,22 @@ module ChapelDistribution {
 
     proc deinit() {
       // this is a bug workaround
+    }
+
+    override proc chpl_isElementTypeDefaultInitializable(): bool {
+      return isDefaultInitializable(eltType);
+    }
+
+    override proc chpl_isElementTypeNonNilableClass(): bool {
+      return isNonNilableClass(eltType);
+    }
+
+    // TODO: Consult 'chpl_do_fix_thrown_error' for help pinning location.
+    override proc chpl_unsafeAssignHaltUninitializedElement(idx) {
+      var msg = 'Upon finishing unsafe assignment, one or more elements ' +
+                'of a non-default-initializable array of type \'' +
+                eltType:string + '\' remain uninitialized';
+      halt(msg);
     }
 
     override proc decEltCountsIfNeeded() {

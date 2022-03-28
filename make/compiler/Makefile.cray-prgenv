@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -24,8 +24,8 @@
 # tools.
 #
 
-CC = $(CHPL_MAKE_COMPILER_COMMAND_C)     # normally cc
-CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX)  # normally CC
+CC = $(CHPL_MAKE_CC)     # normally cc
+CXX = $(CHPL_MAKE_CXX)   # normally CC
 
 RANLIB = ranlib
 
@@ -81,4 +81,4 @@ SPECIALIZE_CFLAGS =
 
 export PE_PKGCONFIG_PRODUCTS := PE_CHAPEL:$(PE_PKGCONFIG_PRODUCTS)
 export PE_CHAPEL_MODULE_NAME := chapel
-export PE_CHAPEL_PKGCONFIG_LIBS := $(shell $(CHPL_MAKE_HOME)/util/config/gather-pe-chapel-pkgconfig-libs.bash "$(CHPL_MAKE_TARGET_PLATFORM)" "$(CHPL_MAKE_COMM)" "$(CHPL_MAKE_COMM_SUBSTRATE)" "$(CHPL_MAKE_AUXFS)")
+export PE_CHAPEL_PKGCONFIG_LIBS := $(CHPL_MAKE_PE_CHPL_PKGCONFIG_LIBS)

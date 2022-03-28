@@ -7,13 +7,10 @@ Also verify there are the correct setchplenv.* scripts and error if new ones
 show up without updating this test.
 """
 
-from __future__ import print_function
-
-import distutils.spawn
 import glob
 import os
 import os.path
-import shlex
+import shutil
 import subprocess
 import sys
 import unittest
@@ -177,7 +174,7 @@ class SetChplEnvTests(unittest.TestCase):
         """Verify csh versions of setchplenv.* work as expected."""
         self.check_scripts('csh', 'source', ':', post_source_cmd='rehash', shell_cmd='tcsh')
 
-    @_skip_if(distutils.spawn.find_executable('fish') is None,
+    @_skip_if(shutil.which('fish') is None,
               'fish is not installed on system.')
     def test_setchplenv__fish(self):
         """Verify fish versions of setchplenv.* work as expected."""
@@ -187,7 +184,7 @@ class SetChplEnvTests(unittest.TestCase):
         """Verify sh versions of setchplenv.* work as expected."""
         self.check_scripts('sh', '.', ':')
 
-    @_skip_if(distutils.spawn.find_executable('zsh') is None,
+    @_skip_if(shutil.which('zsh') is None,
               'zsh is not installed on system.')
     def test_setchplenv__zsh(self):
         """Verify bash versions of setchplenv.* work as expected with zsh."""

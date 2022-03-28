@@ -1,5 +1,5 @@
 use Prefetch;
-use CPtr;
+use CTypes;
 
 var x = 8;
 var y = c_ptrTo(x);

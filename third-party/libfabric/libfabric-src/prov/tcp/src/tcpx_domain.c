@@ -87,14 +87,12 @@ static int tcpx_srx_ctx(struct fid_domain *domain, struct fi_rx_attr *attr,
 		goto err1;
 
 	ret = ofi_bufpool_create(&srx_ctx->buf_pool,
-				 sizeof(struct tcpx_xfer_entry), 16, 0, 1024,
-				 OFI_BUFPOOL_HUGEPAGES);
+				 sizeof(struct tcpx_xfer_entry),
+				 16, attr->size, 1024, 0);
 	if (ret)
 		goto err2;
 
-	if (attr)
-		srx_ctx->op_flags = attr->op_flags;
-
+	srx_ctx->op_flags = attr->op_flags;
 	*rx_ep = &srx_ctx->rx_fid;
 	return FI_SUCCESS;
 err2:
@@ -118,6 +116,29 @@ static struct fi_ops_domain tcpx_domain_ops = {
 	.query_collective = fi_no_query_collective,
 };
 
+static int tcpx_set_ops(struct fid *fid, const char *name,
+			uint64_t flags, void *ops, void *context)
+{
+	struct tcpx_domain *domain;
+
+	domain = container_of(fid, struct tcpx_domain,
+			      util_domain.domain_fid.fid);
+	if (flags)
+		return -FI_EBADFLAGS;
+
+	if (!strcasecmp(name, OFI_OPS_DYNAMIC_RBUF)) {
+		domain->dynamic_rbuf = ops;
+		if (domain->dynamic_rbuf->size != sizeof(*domain->dynamic_rbuf)) {
+			domain->dynamic_rbuf = NULL;
+			return -FI_ENOSYS;
+		}
+
+		return 0;
+	}
+
+	return -FI_ENOSYS;
+}
+
 static int tcpx_domain_close(fid_t fid)
 {
 	struct tcpx_domain *tcpx_domain;
@@ -137,9 +158,11 @@ static int tcpx_domain_close(fid_t fid)
 static struct fi_ops tcpx_domain_fi_ops = {
 	.size = sizeof(struct fi_ops),
 	.close = tcpx_domain_close,
-	.bind = fi_no_bind,
+	.bind = ofi_domain_bind,
 	.control = fi_no_control,
 	.ops_open = fi_no_ops_open,
+	.tostr = NULL,
+	.ops_set = tcpx_set_ops,
 };
 
 static struct fi_ops_mr tcpx_domain_fi_ops_mr = {

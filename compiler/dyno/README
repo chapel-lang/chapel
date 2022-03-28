@@ -1,0 +1,107 @@
+This directory contains a start towards work on the revamped compiler.
+This directory uses a different directory structure from the old compiler
+- see below for rationale.
+
+The effort of creating a revamped compiler is called "dyno".
+
+For now, this work is being done in this directory but the expectation is
+that eventually it will swap places with the compiler/ directory (so any
+old-compiler code still used is put into subdirectories according to the
+organization described below).
+
+Part of improving the compiler will involve adjusting the directory
+structure used to store sources and headers. This addresses three problems:
+
+ 1. it's not always clear where to find a header/source file - the
+    convention varies within the compiler
+ 2. the current structure is not compatible with refactoring the compiler
+    into a library and multiple tools using that library
+ 3. the current structure makes namespacing harder
+
+### old compiler structure
+
+The current structure is to
+ * separate out the .cpp files into subdirectories by topic (AST,
+   resolution, optimizations). These are currently stored under
+   `compiler` so, for example, we have `compiler/AST`.
+ * store all include files used by multiple topics in `compiler/include`.
+ * store include files used only within a single topic within that topic
+   directory. For example, we have some header files in
+   `compiler/resolution`.
+
+### dyno structure
+
+We generally try to follow the LLVM project's directory structure. The
+structure (for each LLVM project) is this:
+
+ * For code that goes into the library:
+   * store .cpp files in `lib/<topic>`
+   * store C++ `.h` files forming the library API into
+     `include/<project-name>/ and C API `.h` files (if any) in
+     `include/<project-name>-c/`. Header files that are relevant to a
+     particular topic go into `include/<project-name>/<topic>` and almost
+     all header files go into these topic subdirectories. The
+     <project-name> here is something like 'chpl' for us and this just
+     makes it so that the headers included have the same path as if they
+     were installed in e.g. `/usr/include`. So you can have e.g.
+     #include "chpl/uast/BlockStmt.h".
+   * store `.h` files that are for use only within the project in
+     `lib/<topic>`
+   * For example, within the LLVM project there is
+     `include/llvm/Analysis/AliasAnalysis.h` and
+     `llvm/lib/Analysis/AliasAnalysis.cpp`.
+
+ * For code that does not go into a library and only supports a tool,
+   store it in `tool/<tool-name>`. For example, there is an LLVM tool
+   called `opt` and the sources for it are stored in `tools/opt`.
+
+In particular, for our project, I would expect we end up with this structure:
+```
+  runtime/ (could also be called chpl-rt/ in the future)
+  compiler/  (could also be called chpl/ in the future)
+     include/chpl
+       uast/ (new AST headers forming library API will go here)
+       resolution/ (headers forming API for new resolver)
+       (nothing from the old compiler since it does not present a library interface)
+
+     lib/
+       uast/ (new AST source code)
+       resolution/ (resolution code)
+       ...
+
+     tools/
+        chpl/
+          include/ (current contents of compiler/include)
+          AST/ (current contents of compiler/AST)
+          ...
+          main/ (source code only used in `chpl` and not in compiler-as-a-library - could contain contents of `compiler/main` today)
+```
+
+Please note that when we `#include` a header we will do so assuming that
+`dyno/include` is in the `-I` path and so is the current `lib` subdir.
+
+
+### a note about namespaces
+
+Unless there is a good reason not to, the Chapel compiler library code
+should be in the chpl namespace.
+
+Other than that, it is a style matter to decide when to introduce a new
+namespace. Here is some guidance about when to do so:
+ * when creating a bunch of similar types that we'd like to be able to
+   easily distinguish (e.g. uast vs old ast)
+ * when creating a bunch of free functions that we'd like to be able to
+   bundle since they are related
+
+In particular, all topic directories need to have a namespace.
+ * today we make an exception for `util`
+
+### a note about file names
+
+.h and .cpp files defining primarily a specific type should go into a
+file sharing that type name. Type names in dyno use an InitialUpperCase.
+So we have e.g. NumericLiteral.h / NumericLiteral.cpp.
+
+In contrast, .h and .cpp files defining a collection of things that
+aren't a specific type should go into a file using lower case and dashes.
+For example, we have scope-queries.h and scope-queries.cpp.

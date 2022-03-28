@@ -303,13 +303,13 @@ cd ..
 for dir in $THIRD_PARTY_DIRS
 do
   #echo "Considering 3p dir $dir"
-  if [ -f third-party/"$dir"/Makefile.include ]
-  then
-    for f in third-party/"$dir"/Makefile*
-    do
+  for f in third-party/"$dir"/Makefile*
+  do
+    if [ -f "$f" ]
+    then
       myinstallfile "$f"  "$DEST_THIRD_PARTY"/"$dir"
-    done
-  fi
+    fi
+  done
   if [ -d third-party/"$dir"/install ]
   then
     myinstalldir "third-party/$dir/install" "$DEST_THIRD_PARTY/$dir/install/"
@@ -318,12 +318,6 @@ done
 
 # copy filter-llvm-config.awk
 myinstallfile third-party/llvm/filter-llvm-config.awk "$DEST_THIRD_PARTY"/llvm
-
-# copy find-llvm-config.sh
-myinstallfile third-party/llvm/find-llvm-config.sh "$DEST_THIRD_PARTY"/llvm
-
-# copy LLVM_VERSION
-myinstallfile third-party/llvm/LLVM_VERSION "$DEST_THIRD_PARTY"/llvm
 
 # copy utf8-decoder header
 myinstallfile third-party/utf8-decoder/utf8-decoder.h "$DEST_THIRD_PARTY"/utf8-decoder/

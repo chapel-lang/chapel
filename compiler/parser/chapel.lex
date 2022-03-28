@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -171,6 +171,7 @@ let              return processToken(yyscanner, TLET);
 lifetime         return processToken(yyscanner, TLIFETIME);
 local            return processToken(yyscanner, TLOCAL);
 locale           return processToken(yyscanner, TLOCALE);
+manage           return processToken(yyscanner, TMANAGE);
 module           return processToken(yyscanner, TMODULE);
 new              return processToken(yyscanner, TNEW);
 nil              return processToken(yyscanner, TNIL);
@@ -408,7 +409,7 @@ static int processToken(yyscan_t scanner, int t) {
       captureString.push_back(' ');
     }
 
-    if (t != TLCBR) {
+    if (t != TLCBR && t != TRETURN) {
       captureString.append(yyget_text(scanner));
     }
 
@@ -427,7 +428,8 @@ static int processToken(yyscan_t scanner, int t) {
         t == TBORROWED ||
         t == TUNMANAGED ||
         t == TOWNED ||
-        t == TSHARED) {
+        t == TSHARED ||
+        t == TNEW) {
       captureString.push_back(' ');
     }
   }
@@ -887,7 +889,7 @@ static int processBlockComment(yyscan_t scanner) {
       }
       else
         depth--;
-      
+
       d = 1;
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;

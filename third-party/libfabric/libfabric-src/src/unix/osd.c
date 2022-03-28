@@ -91,6 +91,21 @@ int fi_fd_nonblock(int fd)
 	return 0;
 }
 
+int fi_fd_block(int fd)
+{
+	long flags = 0;
+
+	flags = fcntl(fd, F_GETFL);
+	if (flags < 0) {
+		return -errno;
+	}
+
+	if(fcntl(fd, F_SETFL, flags & ~O_NONBLOCK))
+		return -errno;
+
+	return 0;
+}
+
 int fi_wait_cond(pthread_cond_t *cond, pthread_mutex_t *mut, int timeout_ms)
 {
 	uint64_t t;
@@ -112,16 +127,17 @@ int ofi_shm_map(struct util_shm *shm, const char *name, size_t size,
 	int i, ret = FI_SUCCESS;
 	int flags = O_RDWR | (readonly ? 0 : O_CREAT);
 	struct stat mapstat;
+	int fname_size = 0;
 
 	*mapped = MAP_FAILED;
 	memset(shm, 0, sizeof(*shm));
 
-	fname = calloc(1, strlen(name) + 2); /* '/' + %s + trailing 0 */
+	fname_size = strlen(name) + 2; /* '/' + %s + trailing 0 */
+	fname = calloc(1, fname_size);
 	if (!fname)
 		return -FI_ENOMEM;
 
-	strcpy(fname, "/");
-	strcat(fname, name);
+	snprintf(fname, fname_size, "/%s", name);
 	shm->name = fname;
 
 	for (i = 0; i < strlen(fname); i++) {
@@ -279,4 +295,46 @@ int ofi_set_thread_affinity(const char *s)
 	OFI_UNUSED(s);
 	return -FI_ENOSYS;
 #endif
+}
+
+
+void ofi_pollfds_do_add(struct ofi_pollfds *pfds,
+			struct ofi_pollfds_work_item *item)
+{
+	if (item->fd >= pfds->size) {
+		if (ofi_pollfds_grow(pfds, item->fd))
+			return;
+	}
+
+	pfds->fds[item->fd].fd = item->fd;
+	pfds->fds[item->fd].events = item->events;
+	pfds->fds[item->fd].revents = 0;
+	pfds->context[item->fd] = item->context;
+	if (item->fd >= pfds->nfds)
+		pfds->nfds = item->fd + 1;
+}
+
+int ofi_pollfds_do_mod(struct ofi_pollfds *pfds, int fd, uint32_t events,
+		       void *context)
+{
+	if ((fd < pfds->nfds) && (pfds->fds[fd].fd == fd)) {
+		pfds->fds[fd].events = events;
+		pfds->context[fd] = context;
+		return FI_SUCCESS;
+	}
+
+	return -FI_ENOENT;
+}
+
+void ofi_pollfds_do_del(struct ofi_pollfds *pfds,
+			struct ofi_pollfds_work_item *item)
+{
+	if (item->fd >= pfds->nfds)
+		return;
+
+	pfds->fds[item->fd].fd = INVALID_SOCKET;
+	pfds->fds[item->fd].events = 0;
+	pfds->fds[item->fd].revents = 0;
+	while (pfds->nfds && pfds->fds[pfds->nfds - 1].fd == INVALID_SOCKET)
+		pfds->nfds--;
 }

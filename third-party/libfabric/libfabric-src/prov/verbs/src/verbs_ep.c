@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2018 Intel Corporation, Inc.  All rights reserved.
+ * Copyright (c) 2019 System Fabric Works, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -37,15 +38,32 @@
 static struct fi_ops_msg vrb_srq_msg_ops;
 
 
+void vrb_add_credits(struct fid_ep *ep_fid, size_t credits)
+{
+	struct vrb_ep *ep;
+	struct util_cq *cq;
+
+	ep = container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
+	cq = ep->util_ep.tx_cq;
+
+	cq->cq_fastlock_acquire(&cq->cq_lock);
+	ep->peer_rq_credits += credits;
+	cq->cq_fastlock_release(&cq->cq_lock);
+}
+
 /* Receive CQ credits are pre-allocated */
 ssize_t vrb_post_recv(struct vrb_ep *ep, struct ibv_recv_wr *wr)
 {
+	struct vrb_domain *domain;
 	struct vrb_context *ctx;
 	struct vrb_cq *cq;
 	struct ibv_recv_wr *bad_wr;
+	uint64_t credits_to_give;
 	int ret;
 
 	cq = container_of(ep->util_ep.rx_cq, struct vrb_cq, util_cq);
+	domain = vrb_ep_to_domain(ep);
+
 	cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
 	ctx = ofi_buf_alloc(cq->ctx_pool);
 	if (!ctx)
@@ -60,7 +78,22 @@ ssize_t vrb_post_recv(struct vrb_ep *ep, struct ibv_recv_wr *wr)
 	wr->wr_id = (uintptr_t) ctx->user_ctx;
 	if (ret)
 		goto freebuf;
+
+	if (++ep->rq_credits_avail >= ep->threshold) {
+		credits_to_give = ep->rq_credits_avail;
+		ep->rq_credits_avail = 0;
+	} else {
+		credits_to_give = 0;
+	}
 	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+
+	if (credits_to_give &&
+	    domain->send_credits(&ep->util_ep.ep_fid, credits_to_give)) {
+		cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
+		ep->rq_credits_avail += credits_to_give;
+		cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	}
+
 	return 0;
 
 freebuf:
@@ -70,42 +103,54 @@ unlock:
 	return -FI_EAGAIN;
 }
 
-ssize_t vrb_post_send(struct vrb_ep *ep, struct ibv_send_wr *wr)
+ssize_t vrb_post_send(struct vrb_ep *ep, struct ibv_send_wr *wr, uint64_t flags)
 {
 	struct vrb_context *ctx;
+	struct vrb_domain *domain;
 	struct vrb_cq *cq;
+	struct vrb_cq *cq_rx;
 	struct ibv_send_wr *bad_wr;
 	struct ibv_wc wc;
+	size_t credits_to_give = 0;
 	int ret;
 
 	cq = container_of(ep->util_ep.tx_cq, struct vrb_cq, util_cq);
+	domain = vrb_ep_to_domain(ep);
 	cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
 	ctx = ofi_buf_alloc(cq->ctx_pool);
 	if (!ctx)
 		goto unlock;
 
-	if (!cq->credits || !ep->tx_credits) {
+	if (!cq->credits || !ep->sq_credits || !ep->peer_rq_credits) {
 		ret = vrb_poll_cq(cq, &wc);
 		if (ret > 0)
 			vrb_save_wc(cq, &wc);
 
-		if (!cq->credits || !ep->tx_credits)
+		if (!cq->credits || !ep->sq_credits || !ep->peer_rq_credits) {
 			goto freebuf;
+		}
+	}
+
+	if (vrb_wr_consumes_recv(wr) && !--ep->peer_rq_credits &&
+	    !(flags & FI_PRIORITY)) {
+		/* Last credit is reserved for credit update */
+		ep->peer_rq_credits++;
+		goto freebuf;
 	}
 
 	cq->credits--;
-	ep->tx_credits--;
+	ep->sq_credits--;
 
 	ctx->ep = ep;
 	ctx->user_ctx = (void *) (uintptr_t) wr->wr_id;
-	ctx->flags = FI_TRANSMIT;
+	ctx->flags = FI_TRANSMIT | flags;
 	wr->wr_id = (uintptr_t) ctx;
 
 	ret = ibv_post_send(ep->ibv_qp, wr, &bad_wr);
 	wr->wr_id = (uintptr_t) ctx->user_ctx;
 	if (ret) {
-		VERBS_WARN(FI_LOG_EP_DATA,
-			   "Post send failed - %zd\n", vrb_convert_ret(ret));
+		VERBS_WARN(FI_LOG_EP_DATA, "Post send failed - %zd\n",
+			   vrb_convert_ret(ret));
 		goto credits;
 	}
 	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
@@ -113,34 +158,106 @@ ssize_t vrb_post_send(struct vrb_ep *ep, struct ibv_send_wr *wr)
 	return 0;
 
 credits:
+	if (vrb_wr_consumes_recv(wr))
+		ep->peer_rq_credits++;
 	cq->credits++;
-	ep->tx_credits++;
+	ep->sq_credits++;
 freebuf:
 	ofi_buf_free(ctx);
 unlock:
 	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	cq_rx = container_of(ep->util_ep.rx_cq, struct vrb_cq, util_cq);
+	cq_rx->util_cq.cq_fastlock_acquire(&cq_rx->util_cq.cq_lock);
+	if (ep->rq_credits_avail >= ep->threshold) {
+		credits_to_give = ep->rq_credits_avail;
+		ep->rq_credits_avail = 0;
+	}
+	cq_rx->util_cq.cq_fastlock_release(&cq_rx->util_cq.cq_lock);
+	if (credits_to_give &&
+	    domain->send_credits(&ep->util_ep.ep_fid, credits_to_give)) {
+		cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
+		ep->rq_credits_avail += credits_to_give;
+		cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	}
 	return -FI_EAGAIN;
+}
+
+ssize_t vrb_send_iov(struct vrb_ep *ep, struct ibv_send_wr *wr,
+		     const struct iovec *iov, void **desc, int count,
+		     uint64_t flags)
+{
+	enum fi_hmem_iface iface;
+	uint64_t device;
+	void *bounce_buf;
+	void *send_desc;
+	size_t i, len = 0;
+	ssize_t ret;
+
+	wr->sg_list = alloca(sizeof(*wr->sg_list) * count);
+	for (i = 0; i < count; i++) {
+		wr->sg_list[i].addr = (uintptr_t) iov[i].iov_base;
+		wr->sg_list[i].length = iov[i].iov_len;
+		wr->sg_list[i].lkey =
+			desc ? ((struct vrb_mem_desc *) desc[i])->lkey : 0;
+		len += iov[i].iov_len;
+	}
+
+	if (desc) {
+		iface = ((struct vrb_mem_desc *) desc[0])->info.iface;
+		device = ((struct vrb_mem_desc *) desc[0])->info.device;
+		send_desc = desc[0];
+
+		wr->send_flags = VERBS_INJECT_FLAGS(ep, len, flags, send_desc);
+	} else {
+		iface = FI_HMEM_SYSTEM;
+		device = 0;
+		send_desc = NULL;
+
+		wr->send_flags = IBV_SEND_INLINE;
+	}
+
+	if (wr->send_flags & IBV_SEND_INLINE) {
+		bounce_buf = alloca(len);
+		ret = ofi_copy_from_hmem_iov(bounce_buf, len, iface, device,
+					     iov, count, 0);
+		if (ret != len) {
+			VERBS_WARN(FI_LOG_EP_DATA, "hmem copy error");
+			return -FI_EIO;
+		}
+
+		wr->sg_list[0] = vrb_init_sge(bounce_buf, len, NULL);
+		wr->num_sge = 1;
+	} else {
+		wr->num_sge = count;
+	}
+
+	wr->wr_id = VERBS_COMP_FLAGS(ep, flags, wr->wr_id);
+	if (flags & FI_FENCE)
+		wr->send_flags |= IBV_SEND_FENCE;
+
+	ret = vrb_post_send(ep, wr, flags);
+	return ret;
 }
 
 static inline int vrb_msg_ep_cmdata_size(fid_t fid)
 {
 	struct vrb_pep *pep;
 	struct vrb_ep *ep;
-	struct fi_info *info;
+	bool is_xrc;
 
 	switch (fid->fclass) {
 	case FI_CLASS_PEP:
 		pep = container_of(fid, struct vrb_pep, pep_fid.fid);
-		info = pep->info;
+		is_xrc = vrb_is_xrc_info(pep->info);
 		break;
 	case FI_CLASS_EP:
 		ep = container_of(fid, struct vrb_ep, util_ep.ep_fid.fid);
-		info = ep->info;
+		is_xrc = vrb_is_xrc_ep(ep);
 		break;
 	default:
-		info = NULL;
+		is_xrc = 0;
 	};
-	if (vrb_is_xrc(info))
+	if (is_xrc)
 		return VERBS_CM_DATA_SIZE - sizeof(struct vrb_xrc_cm_data);
 	else
 		return VERBS_CM_DATA_SIZE;
@@ -243,7 +360,7 @@ vrb_alloc_init_ep(struct fi_info *info, struct vrb_domain *domain,
 	struct vrb_xrc_ep *xrc_ep;
 	int ret;
 
-	if (vrb_is_xrc(info)) {
+	if (vrb_is_xrc_info(info)) {
 		xrc_ep = calloc(1, sizeof(*xrc_ep));
 		if (!xrc_ep)
 			return NULL;
@@ -255,13 +372,15 @@ vrb_alloc_init_ep(struct fi_info *info, struct vrb_domain *domain,
 			return NULL;
 	}
 
-	ep->info = fi_dupinfo(info);
-	if (!ep->info)
-		goto err1;
+	// When we are enabling flow control, we artificially inject
+	// a credit so that the credit messaging itself is not blocked
+	// by a lack of credits.  To counter this, we will adjust the number
+	// of credit we send the first time by initializing to -1.
+	ep->rq_credits_avail = -1;
 
 	if (domain->util_domain.threading != FI_THREAD_SAFE) {
 		if (vrb_alloc_wrs(ep))
-			goto err2;
+			goto err1;
 	}
 
 	ret = ofi_endpoint_init(&domain->util_domain.domain_fid, &vrb_util_prov, info,
@@ -269,20 +388,18 @@ vrb_alloc_init_ep(struct fi_info *info, struct vrb_domain *domain,
 	if (ret) {
 		VERBS_WARN(FI_LOG_EP_CTRL,
 			   "Unable to initialize EP, error - %d\n", ret);
-		goto err3;
+		goto err2;
 	}
 
 	ep->util_ep.ep_fid.msg = calloc(1, sizeof(*ep->util_ep.ep_fid.msg));
 	if (!ep->util_ep.ep_fid.msg)
-		goto err4;
+		goto err3;
 
 	return ep;
-err4:
-	(void) ofi_endpoint_close(&ep->util_ep);
 err3:
-	vrb_free_wrs(ep);
+	(void) ofi_endpoint_close(&ep->util_ep);
 err2:
-	fi_freeinfo(ep->info);
+	vrb_free_wrs(ep);
 err1:
 	free(ep);
 	return NULL;
@@ -295,7 +412,7 @@ static int vrb_close_free_ep(struct vrb_ep *ep)
 
 	free(ep->util_ep.ep_fid.msg);
 	ep->util_ep.ep_fid.msg = NULL;
-	free(ep->cm_hdr);
+	free(ep->cm_priv_data);
 
 	if (ep->util_ep.rx_cq) {
 		cq = container_of(ep->util_ep.rx_cq, struct vrb_cq, util_cq);
@@ -308,18 +425,19 @@ static int vrb_close_free_ep(struct vrb_ep *ep)
 		return ret;
 
 	vrb_free_wrs(ep);
-	fi_freeinfo(ep->info);
+	free(ep->info_attr.src_addr);
+	free(ep->info_attr.dest_addr);
 	free(ep);
 
 	return 0;
 }
 
-/* Caller must hold eq:lock */
-static inline void vrb_ep_xrc_close(struct vrb_ep *ep)
+static void vrb_ep_xrc_close(struct vrb_ep *ep)
 {
 	struct vrb_xrc_ep *xrc_ep = container_of(ep, struct vrb_xrc_ep,
-						    base_ep);
+						 base_ep);
 
+	assert(fastlock_held(&ep->eq->lock));
 	if (xrc_ep->conn_setup)
 		vrb_free_xrc_conn_setup(xrc_ep, 0);
 
@@ -352,7 +470,7 @@ static int vrb_ep_close(fid_t fid)
 			vrb_eq_remove_events(ep->eq, fid);
 		}
 
-		if (vrb_is_xrc(ep->info))
+		if (vrb_is_xrc_ep(ep))
 			vrb_ep_xrc_close(ep);
 		else
 			rdma_destroy_ep(ep->id);
@@ -424,7 +542,7 @@ static int vrb_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 				VERBS_WARN(FI_LOG_DOMAIN,
 					   "Rx CQ is fully reserved\n");
 				ep->rx_cq_size = 0;
-			} 
+			}
 			cq->credits -= ep->rx_cq_size;
 			cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
 		}
@@ -445,7 +563,7 @@ static int vrb_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 
 		/* Make sure EQ channel is not polled during migrate */
 		fastlock_acquire(&ep->eq->lock);
-		if (vrb_is_xrc(ep->info))
+		if (vrb_is_xrc_ep(ep))
 			ret = vrb_ep_xrc_set_tgt_chan(ep);
 		else
 			ret = rdma_migrate_id(ep->id, ep->eq->channel);
@@ -569,7 +687,6 @@ static int vrb_create_dgram_ep(struct vrb_domain *domain, struct vrb_ep *ep,
 	return 0;
 }
 
-/* vrb_srq_ep::xrc.prepost_lock must be held */
 FI_VERBS_XRC_ONLY
 static int vrb_process_xrc_preposted(struct vrb_srq_ep *srq_ep)
 {
@@ -577,6 +694,7 @@ static int vrb_process_xrc_preposted(struct vrb_srq_ep *srq_ep)
 	struct slist_entry *entry;
 	int ret;
 
+	assert(fastlock_held(&srq_ep->xrc.prepost_lock));
 	/* The pre-post SRQ function ops have been replaced so the
 	 * posting here results in adding the RX entries to the SRQ */
 	while (!slist_empty(&srq_ep->xrc.prepost_list)) {
@@ -627,6 +745,14 @@ static int vrb_ep_enable_xrc(struct vrb_ep *ep)
 		goto done;
 	}
 
+	if (cq->credits < srq_ep->xrc.max_recv_wr) {
+		VERBS_WARN(FI_LOG_EP_CTRL,
+			   "CQ credits %" PRId64 " insufficient\n",
+			   cq->credits);
+		ret = -FI_EINVAL;
+		goto done;
+	}
+
 	memset(&attr, 0, sizeof(attr));
 	attr.attr.max_wr = srq_ep->xrc.max_recv_wr;
 	attr.attr.max_sge = srq_ep->xrc.max_sge;
@@ -648,6 +774,7 @@ static int vrb_ep_enable_xrc(struct vrb_ep *ep)
 	cq->util_cq.cq_fastlock_acquire(&cq->xrc.srq_list_lock);
 	dlist_insert_tail(&srq_ep->xrc.srq_entry, &cq->xrc.srq_list);
 	srq_ep->xrc.cq = cq;
+	cq->credits -= srq_ep->xrc.max_recv_wr;
 	cq->util_cq.cq_fastlock_release(&cq->xrc.srq_list_lock);
 
 	ibv_get_srq_num(srq_ep->srq, &xrc_ep->srqn);
@@ -665,7 +792,7 @@ done:
 }
 
 void vrb_msg_ep_get_qp_attr(struct vrb_ep *ep,
-			       struct ibv_qp_init_attr *attr)
+			    struct ibv_qp_init_attr *attr)
 {
 	attr->qp_context = ep;
 
@@ -673,8 +800,8 @@ void vrb_msg_ep_get_qp_attr(struct vrb_ep *ep,
 		struct vrb_cq *cq = container_of(ep->util_ep.tx_cq,
 						    struct vrb_cq, util_cq);
 
-		attr->cap.max_send_wr = ep->info->tx_attr->size;
-		attr->cap.max_send_sge = ep->info->tx_attr->iov_limit;
+		attr->cap.max_send_wr = ep->info_attr.tx_size;
+		attr->cap.max_send_sge = ep->info_attr.tx_iov_limit;
 		attr->send_cq = cq->cq;
 	} else {
 		struct vrb_cq *cq =
@@ -687,8 +814,8 @@ void vrb_msg_ep_get_qp_attr(struct vrb_ep *ep,
 		struct vrb_cq *cq =
 			container_of(ep->util_ep.rx_cq, struct vrb_cq, util_cq);
 
-		attr->cap.max_recv_wr = ep->info->rx_attr->size;
-		attr->cap.max_recv_sge = ep->info->rx_attr->iov_limit;
+		attr->cap.max_recv_wr = ep->info_attr.rx_size;
+		attr->cap.max_recv_sge = ep->info_attr.rx_iov_limit;
 		attr->recv_cq = cq->cq;
 	} else {
 		struct vrb_cq *cq =
@@ -696,7 +823,7 @@ void vrb_msg_ep_get_qp_attr(struct vrb_ep *ep,
 
 		attr->recv_cq = cq->cq;
 	}
-	attr->cap.max_inline_data = ep->info->tx_attr->inject_size;
+	attr->cap.max_inline_data = ep->info_attr.inject_size;
 	attr->qp_type = IBV_QPT_RC;
 	attr->sq_sig_all = 1;
 
@@ -728,15 +855,14 @@ static int vrb_ep_enable(struct fid_ep *ep_fid)
 		return -FI_ENOCQ;
 	}
 
-	if (!ep->util_ep.tx_cq && (ofi_send_allowed(ep->util_ep.caps) ||
-				ofi_rma_initiate_allowed(ep->util_ep.caps))) {
+	if (!ep->util_ep.tx_cq && (ofi_needs_tx(ep->util_ep.caps))) {
 		VERBS_WARN(FI_LOG_EP_CTRL, "Endpoint is not bound to "
 			   "a send completion queue when it has transmit "
 			   "capabilities enabled (FI_SEND | FI_RMA).\n");
 		return -FI_ENOCQ;
 	}
 
-	if (!ep->util_ep.rx_cq && ofi_recv_allowed(ep->util_ep.caps)) {
+	if (!ep->util_ep.rx_cq && ofi_needs_rx(ep->util_ep.caps)) {
 		VERBS_WARN(FI_LOG_EP_CTRL, "Endpoint is not bound to "
 			   "a receive completion queue when it has receive "
 			   "capabilities enabled. (FI_RECV)\n");
@@ -749,7 +875,7 @@ static int vrb_ep_enable(struct fid_ep *ep_fid)
 		if (ep->srq_ep) {
 			/* Override receive function pointers to prevent the user from
 			 * posting Receive WRs to a QP where a SRQ is attached to it */
-			if (domain->flags & VRB_USE_XRC) {
+			if (domain->ext_flags & VRB_USE_XRC) {
 				*ep->util_ep.ep_fid.msg = vrb_msg_srq_xrc_ep_msg_ops;
 				return vrb_ep_enable_xrc(ep);
 			} else {
@@ -757,7 +883,7 @@ static int vrb_ep_enable(struct fid_ep *ep_fid)
 				ep->util_ep.ep_fid.msg->recvv = fi_no_msg_recvv;
 				ep->util_ep.ep_fid.msg->recvmsg = fi_no_msg_recvmsg;
 			}
-		} else if (domain->flags & VRB_USE_XRC) {
+		} else if (domain->ext_flags & VRB_USE_XRC) {
 			VERBS_WARN(FI_LOG_EP_CTRL, "XRC EP_MSG not bound "
 				   "to srx_context\n");
 			return -FI_EINVAL;
@@ -821,30 +947,30 @@ static int vrb_dgram_ep_setname(fid_t ep_fid, void *addr, size_t addrlen)
 	int ret = FI_SUCCESS;
 
 	ep = container_of(ep_fid, struct vrb_ep, util_ep.ep_fid.fid);
-	if (addrlen < ep->info->src_addrlen) {
+	if (addrlen < ep->info_attr.src_addrlen) {
 		VERBS_INFO(FI_LOG_EP_CTRL,
 			   "addrlen expected: %zu, got: %zu\n",
-			   ep->info->src_addrlen, addrlen);
+			   ep->info_attr.src_addrlen, addrlen);
 		return -FI_ETOOSMALL;
 	}
 	/*
 	 * save previous address to be able make
 	 * a roll back on the previous one
 	 */
-	save_addr = ep->info->src_addr;
+	save_addr = ep->info_attr.src_addr;
 
-	ep->info->src_addr = calloc(1, ep->info->src_addrlen);
-	if (!ep->info->src_addr) {
-		ep->info->src_addr = save_addr;
+	ep->info_attr.src_addr = calloc(1, ep->info_attr.src_addrlen);
+	if (!ep->info_attr.src_addr) {
+		ep->info_attr.src_addr = save_addr;
 		ret = -FI_ENOMEM;
 		goto err;
 	}
 
-	memcpy(ep->info->src_addr, addr, ep->info->src_addrlen);
-	memcpy(&ep->ep_name, addr, ep->info->src_addrlen);
+	memcpy(ep->info_attr.src_addr, addr, ep->info_attr.src_addrlen);
+	memcpy(&ep->ep_name, addr, ep->info_attr.src_addrlen);
 
 err:
-	ep->info->src_addr = save_addr;
+	ep->info_attr.src_addr = save_addr;
 	return ret;
 }
 
@@ -888,6 +1014,39 @@ static struct fi_ops_cm vrb_dgram_cm_ops = {
 	.shutdown = fi_no_shutdown,
 	.join = fi_no_join,
 };
+
+static int vrb_ep_save_info_attr(struct vrb_ep *ep, struct fi_info *info)
+{
+	ep->info_attr.protocol = info->ep_attr ? info->ep_attr->protocol:
+	    FI_PROTO_UNSPEC;
+	ep->info_attr.inject_size = info->tx_attr->inject_size;
+	ep->info_attr.tx_size = info->tx_attr->size;
+	ep->info_attr.tx_iov_limit = info->tx_attr->iov_limit;
+	ep->info_attr.rx_size = info->rx_attr->size;
+	ep->info_attr.rx_iov_limit = info->rx_attr->iov_limit;
+	ep->info_attr.addr_format = info->addr_format;
+	ep->info_attr.handle = info->handle;
+
+	if (info->src_addr) {
+		ep->info_attr.src_addr = mem_dup(info->src_addr, info->src_addrlen);
+		if (ep->info_attr.src_addr == NULL) {
+			VERBS_WARN(FI_LOG_EP_CTRL, "Memory error save src addr\n");
+			return -FI_ENOMEM;
+		}
+		ep->info_attr.src_addrlen = info->src_addrlen;
+	}
+	if (info->dest_addr) {
+		ep->info_attr.dest_addr = mem_dup(info->dest_addr, info->dest_addrlen);
+		if (ep->info_attr.dest_addr == NULL) {
+			VERBS_WARN(FI_LOG_EP_CTRL, "Memory error save dest addr\n");
+			free(ep->info_attr.src_addr);
+			ep->info_attr.src_addr = NULL;
+			return -FI_ENOMEM;
+		}
+		ep->info_attr.dest_addrlen = info->dest_addrlen;
+	}
+	return FI_SUCCESS;
+}
 
 int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 		   struct fid_ep **ep_fid, void *context)
@@ -946,11 +1105,17 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 		return -FI_ENOMEM;
 	}
 
-	ep->inject_limit = ep->info->tx_attr->inject_size;
+	ep->peer_rq_credits = UINT64_MAX;
+	ep->threshold = INT64_MAX; /* disables RQ flow control */
+	ep->hmem_enabled = !!(ep->util_ep.caps & FI_HMEM);
+
+	ret = vrb_ep_save_info_attr(ep, info);
+	if (ret)
+		goto err1;
 
 	switch (info->ep_attr->type) {
 	case FI_EP_MSG:
-		if (dom->flags & VRB_USE_XRC) {
+		if (dom->ext_flags & VRB_USE_XRC) {
 			if (dom->util_domain.threading == FI_THREAD_SAFE) {
 				*ep->util_ep.ep_fid.msg = vrb_msg_xrc_ep_msg_ops_ts;
 				ep->util_ep.ep_fid.rma = &vrb_msg_xrc_ep_rma_ops_ts;
@@ -974,9 +1139,9 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 
 		if (!info->handle) {
 			/* Only RC, XRC active RDMA CM ID is created at connect */
-			if (!(dom->flags & VRB_USE_XRC)) {
-				ret = vrb_create_ep(info, RDMA_PS_TCP,
-						       &ep->id);
+			if (!(dom->ext_flags & VRB_USE_XRC)) {
+				ret = vrb_create_ep(ep,
+					vrb_get_port_space(info->addr_format), &ep->id);
 				if (ret)
 					goto err1;
 				ep->id->context = &ep->util_ep.ep_fid.fid;
@@ -984,7 +1149,7 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 		} else if (info->handle->fclass == FI_CLASS_CONNREQ) {
 			connreq = container_of(info->handle,
 					       struct vrb_connreq, handle);
-			if (dom->flags & VRB_USE_XRC) {
+			if (dom->ext_flags & VRB_USE_XRC) {
 				assert(connreq->is_xrc);
 
 				if (!connreq->xrc.is_reciprocal) {
@@ -994,7 +1159,12 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 						goto err1;
 				}
 			} else {
+				/* ep now owns this rdma cm id, prevent trying to access
+				 * it outside of ep operations to avoid possible use-after-
+				 * free bugs in case the ep is closed
+				 */
 				ep->id = connreq->id;
+				connreq->id = NULL;
 				ep->ibv_qp = ep->id->qp;
 				ep->id->context = &ep->util_ep.ep_fid.fid;
 			}
@@ -1036,13 +1206,17 @@ int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 		goto err1;
 	}
 
-	if (info->ep_attr->rx_ctx_cnt == 0 || 
-	    info->ep_attr->rx_ctx_cnt == 1)
-		ep->rx_cq_size = info->rx_attr->size;
-	
-	if (info->ep_attr->tx_ctx_cnt == 0 || 
-	    info->ep_attr->tx_ctx_cnt == 1)
-		ep->tx_credits = info->tx_attr->size;
+	if (info->ep_attr->rx_ctx_cnt == 0 ||
+	    info->ep_attr->rx_ctx_cnt == 1) {
+		ep->rx_cq_size = info->rx_attr ? info->rx_attr->size :
+				 fi->rx_attr->size;
+	}
+
+	if (info->ep_attr->tx_ctx_cnt == 0 ||
+	    info->ep_attr->tx_ctx_cnt == 1) {
+		ep->sq_credits = info->tx_attr ? info->tx_attr->size :
+				 fi->tx_attr->size;
+	}
 
 	*ep_fid = &ep->util_ep.ep_fid;
 	ep->util_ep.ep_fid.fid.ops = &vrb_ep_ops;
@@ -1075,20 +1249,20 @@ static int vrb_pep_bind(fid_t fid, struct fid *bfid, uint64_t flags)
 	 * it limits an EQ to a single passive endpoint. TODO: implement
 	 * a more general solution.
 	 */
-	if (vrb_is_xrc(pep->info)) {
-	       if (pep->eq->xrc.pep_port) {
+	if (vrb_is_xrc_info(pep->info)) {
+		if (pep->eq->xrc.pep_port) {
 			VERBS_WARN(FI_LOG_EP_CTRL,
 				   "XRC limits EQ binding to a single PEP\n");
 			return -FI_EINVAL;
-	       }
-	       pep->eq->xrc.pep_port = ntohs(rdma_get_src_port(pep->id));
+		}
+		pep->eq->xrc.pep_port = ntohs(rdma_get_src_port(pep->id));
 	}
 
 	ret = rdma_migrate_id(pep->id, pep->eq->channel);
 	if (ret)
 		return -errno;
 
-	if (vrb_is_xrc(pep->info)) {
+	if (vrb_is_xrc_info(pep->info)) {
 		ret = rdma_migrate_id(pep->xrc_ps_udp_id, pep->eq->channel);
 		if (ret)
 			return -errno;
@@ -1177,7 +1351,8 @@ int vrb_passive_ep(struct fid_fabric *fabric, struct fi_info *info,
 		_pep->info->dest_addrlen = 0;
 	}
 
-	ret = rdma_create_id(NULL, &_pep->id, &_pep->pep_fid.fid, RDMA_PS_TCP);
+	ret = rdma_create_id(NULL, &_pep->id, &_pep->pep_fid.fid,
+			     vrb_get_port_space(_pep->info->addr_format));
 	if (ret) {
 		VERBS_INFO(FI_LOG_DOMAIN, "Unable to create PEP rdma_cm_id\n");
 		goto err2;
@@ -1193,7 +1368,7 @@ int vrb_passive_ep(struct fid_fabric *fabric, struct fi_info *info,
 	}
 
 	/* XRC listens on both RDMA_PS_TCP and RDMA_PS_UDP */
-	if (vrb_is_xrc(info)) {
+	if (vrb_is_xrc_info(info)) {
 		ret = rdma_create_id(NULL, &_pep->xrc_ps_udp_id,
 				     &_pep->pep_fid.fid, RDMA_PS_UDP);
 		if (ret) {
@@ -1331,7 +1506,7 @@ vrb_srq_ep_recvmsg(struct fid_ep *ep_fid, const struct fi_msg *msg, uint64_t fla
 		.next = NULL,
 	};
 
-	vrb_set_sge_iov(wr.sg_list, msg->msg_iov, msg->iov_count, msg->desc);
+	vrb_iov_dupa(wr.sg_list, msg->msg_iov, msg->desc, msg->iov_count);
 	return vrb_post_srq(ep, &wr);
 }
 
@@ -1456,12 +1631,12 @@ static void vrb_cleanup_prepost_bufs(struct vrb_srq_ep *srq_ep)
 	}
 }
 
-/* Must hold the associated CQ lock cq::xrc.srq_list_lock */
 int vrb_xrc_close_srq(struct vrb_srq_ep *srq_ep)
 {
 	int ret;
 
-	assert(srq_ep->domain->flags & VRB_USE_XRC);
+	assert(fastlock_held(&srq_ep->xrc.cq->xrc.srq_list_lock));
+	assert(srq_ep->domain->ext_flags & VRB_USE_XRC);
 	if (!srq_ep->xrc.cq || !srq_ep->srq)
 		return FI_SUCCESS;
 
@@ -1470,6 +1645,7 @@ int vrb_xrc_close_srq(struct vrb_srq_ep *srq_ep)
 		VERBS_WARN(FI_LOG_EP_CTRL, "Cannot destroy SRQ rc=%d\n", ret);
 		return -ret;
 	}
+	srq_ep->xrc.cq->credits += srq_ep->xrc.max_recv_wr;
 	srq_ep->srq = NULL;
 	srq_ep->xrc.cq = NULL;
 	dlist_remove(&srq_ep->xrc.srq_entry);
@@ -1482,13 +1658,14 @@ static int vrb_srq_close(fid_t fid)
 {
 	struct vrb_srq_ep *srq_ep = container_of(fid, struct vrb_srq_ep,
 						 ep_fid.fid);
+	struct vrb_cq *cq = srq_ep->xrc.cq;
 	int ret;
 
-	if (srq_ep->domain->flags & VRB_USE_XRC) {
-		if (srq_ep->xrc.cq) {
-			fastlock_acquire(&srq_ep->xrc.cq->xrc.srq_list_lock);
+	if (srq_ep->domain->ext_flags & VRB_USE_XRC) {
+		if (cq) {
+			fastlock_acquire(&cq->xrc.srq_list_lock);
 			ret = vrb_xrc_close_srq(srq_ep);
-			fastlock_release(&srq_ep->xrc.cq->xrc.srq_list_lock);
+			fastlock_release(&cq->xrc.srq_list_lock);
 			if (ret)
 				goto err;
 		}
@@ -1552,7 +1729,7 @@ int vrb_srq_context(struct fid_domain *domain, struct fi_rx_attr *attr,
 
 	/* XRC SRQ creation is delayed until the first endpoint it is bound
 	 * to is enabled.*/
-	if (dom->flags & VRB_USE_XRC) {
+	if (dom->ext_flags & VRB_USE_XRC) {
 		fastlock_init(&srq_ep->xrc.prepost_lock);
 		slist_init(&srq_ep->xrc.prepost_list);
 		dlist_init(&srq_ep->xrc.srq_entry);
@@ -1586,26 +1763,26 @@ free_ep:
 }
 
 
-#define vrb_atomicvalid(name, flags)					\
+#define VRB_DEF_ATOMICVALID(name, flags)				\
 static int vrb_msg_ep_atomic_ ## name(struct fid_ep *ep_fid,		\
 					 enum fi_datatype datatype,	\
 					 enum fi_op op, size_t *count)	\
 {									\
-	struct vrb_ep *ep = container_of(ep_fid, struct vrb_ep,	\
+	struct vrb_ep *ep = container_of(ep_fid, struct vrb_ep,		\
 					    util_ep.ep_fid);		\
 	struct fi_atomic_attr attr;					\
 	int ret;							\
 									\
-	ret = vrb_query_atomic(&ep->util_ep.domain->domain_fid,	\
+	ret = vrb_query_atomic(&ep->util_ep.domain->domain_fid,		\
 				  datatype, op, &attr, flags);		\
 	if (!ret)							\
 		*count = attr.count;					\
 	return ret;							\
 }
 
-vrb_atomicvalid(writevalid, 0);
-vrb_atomicvalid(readwritevalid, FI_FETCH_ATOMIC);
-vrb_atomicvalid(compwritevalid, FI_COMPARE_ATOMIC);
+VRB_DEF_ATOMICVALID(writevalid, 0)
+VRB_DEF_ATOMICVALID(readwritevalid, FI_FETCH_ATOMIC)
+VRB_DEF_ATOMICVALID(compwritevalid, FI_COMPARE_ATOMIC)
 
 int vrb_query_atomic(struct fid_domain *domain_fid, enum fi_datatype datatype,
 			enum fi_op op, struct fi_atomic_attr *attr,
@@ -1688,7 +1865,7 @@ vrb_msg_ep_atomic_write(struct fid_ep *ep_fid, const void *buf, size_t count,
 		.opcode = IBV_WR_RDMA_WRITE,
 		.wr.rdma.remote_addr = addr,
 		.wr.rdma.rkey = (uint32_t)(uintptr_t)key,
-		.send_flags = VERBS_INJECT(ep, sizeof(uint64_t)) |
+		.send_flags = VERBS_INJECT(ep, sizeof(uint64_t), desc) |
 			      IBV_SEND_FENCE,
 	};
 	size_t count_copy;
@@ -1732,7 +1909,7 @@ vrb_msg_ep_atomic_writemsg(struct fid_ep *ep_fid,
 		.wr_id = VERBS_COMP_FLAGS(ep, flags, (uintptr_t)msg->context),
 		.wr.rdma.remote_addr = msg->rma_iov->addr,
 		.wr.rdma.rkey = (uint32_t)(uintptr_t)msg->rma_iov->key,
-		.send_flags = VERBS_INJECT_FLAGS(ep, sizeof(uint64_t), flags) |
+		.send_flags = VERBS_INJECT_FLAGS(ep, sizeof(uint64_t), flags, msg->desc[0]) |
 			      IBV_SEND_FENCE,
 	};
 	size_t count_copy;
@@ -1998,7 +2175,7 @@ vrb_msg_xrc_ep_atomic_write(struct fid_ep *ep_fid, const void *buf,
 		.opcode = IBV_WR_RDMA_WRITE,
 		.wr.rdma.remote_addr = addr,
 		.wr.rdma.rkey = (uint32_t)(uintptr_t)key,
-		.send_flags = VERBS_INJECT(&ep->base_ep, sizeof(uint64_t)) |
+		.send_flags = VERBS_INJECT(&ep->base_ep, sizeof(uint64_t), desc) |
 			      IBV_SEND_FENCE,
 	};
 	size_t count_copy;
@@ -2033,7 +2210,7 @@ vrb_msg_xrc_ep_atomic_writemsg(struct fid_ep *ep_fid,
 		.wr.rdma.remote_addr = msg->rma_iov->addr,
 		.wr.rdma.rkey = (uint32_t)(uintptr_t)msg->rma_iov->key,
 		.send_flags = VERBS_INJECT_FLAGS(&ep->base_ep,
-				sizeof(uint64_t), flags) | IBV_SEND_FENCE,
+				sizeof(uint64_t), flags, msg->desc[0]) | IBV_SEND_FENCE,
 	};
 	size_t count_copy;
 	int ret;

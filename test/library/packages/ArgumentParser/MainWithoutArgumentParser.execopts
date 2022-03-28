@@ -1,0 +1,1 @@
+--some --opts that --should --be=seen # MainWithoutArgumentParser

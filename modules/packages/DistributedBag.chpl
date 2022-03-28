@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -125,8 +125,7 @@ module DistributedBag {
 
   public use Collection;
   use BlockDist;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   use IO only channel;
 
   /*
@@ -256,9 +255,9 @@ module DistributedBag {
       }
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
-  
+
     pragma "no doc"
-    /* Read/write the contents of DistBag from/to a channel */ 
+    /* Read/write the contents of DistBag from/to a channel */
     proc readWriteThis(ch: channel) throws {
       ch <~> "[";
       var size = this.getSize();
@@ -268,7 +267,7 @@ module DistributedBag {
       }
       ch <~> "]";
     }
-    
+
     forwarding _value;
   }
 
@@ -333,9 +332,8 @@ module DistributedBag {
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter targetLocalesNotHere() {
-      for loc in targetLocales {
+      foreach loc in targetLocales {
         if loc != here {
           yield loc;
         }
@@ -546,7 +544,6 @@ module DistributedBag {
         parallel iteration, for both performance and memory benefit.
 
     */
-    pragma "order independent yielding loops"
     override iter these() : eltType {
       for loc in targetLocales {
         for segmentIdx in 0..#here.maxTaskPar {
@@ -573,7 +570,7 @@ module DistributedBag {
           }
 
           // Process this chunk if we have one...
-          for elem in buffer {
+          foreach elem in buffer {
             yield elem;
           }
         }
@@ -611,10 +608,9 @@ module DistributedBag {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag : iterKind, followThis) where tag == iterKind.follower {
       var (bufferSz, buffer) = followThis;
-      for i in 0 .. #bufferSz {
+      foreach i in 0 .. #bufferSz {
         yield buffer[i];
       }
     }
@@ -1180,7 +1176,7 @@ module DistributedBag {
                                   break;
                                 }
 
-                                extern proc sizeof(type x): size_t;
+                                extern proc sizeof(type x): c_size_t;
                                 // We steal at most 1MB worth of data. If the user has less than that, we steal a %, at least 1.
                                 const mb = distributedBagWorkStealingMemCap * 1024 * 1024;
                                 var toSteal = max(distributedBagWorkStealingMinElems, min(mb / sizeof(eltType), targetSegment.nElems.read() * distributedBagWorkStealingRatio)) : int;

@@ -107,4 +107,18 @@ static inline int ofi_detect_endianness(void)
 	}
 }
 
+#define OFI_MAGIC_64 (0x0F1C0DE0F1C0DE64)
+#define OFI_MAGIC_PTR ((void *) (uintptr_t) OFI_MAGIC_64)
+#define OFI_MAGIC_SIZE_T ((size_t) OFI_MAGIC_64)
+
+#ifndef NDEBUG
+#define OFI_DBG_VAR(type, name) type name;
+#define OFI_DBG_SET(name, val) name = val
+#define OFI_DBG_ADD(name, val) name += val
+#else
+#define OFI_DBG_VAR(type, name)
+#define OFI_DBG_SET(name, val)
+#define OFI_DBG_ADD(name, val)
+#endif
+
 #endif /* _OFI_OSD_H_ */

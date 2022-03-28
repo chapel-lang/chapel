@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,10 +47,10 @@ class BasicBlock;
 class BlockStmt;
 class DefExpr;
 class FnSymbol;
-class Immediate;
 class IteratorInfo;
 class Stmt;
 class SymExpr;
+struct InterfaceReps;
 
 const int INTENT_FLAG_IN          = 0x01;
 const int INTENT_FLAG_OUT         = 0x02;
@@ -115,7 +115,7 @@ enum ForallIntentTag {
   TFI_CONST_REF,                   //   "
   TFI_REDUCE,                      //   AS    (for Accumulation State)
   TFI_TASK_PRIVATE,                //   TPV
-  // compiler-added helpers
+  // compiler-added helpers; note isCompilerAdded()
   TFI_IN_PARENT,                   //   INP
   TFI_REDUCE_OP,                   //   RP    (for Reduce oP)
   TFI_REDUCE_PARENT_AS,            //   PAS
@@ -237,6 +237,8 @@ public:
   std::string deprecationMsg;
 
   const char* getDeprecationMsg() const;
+  const char* getSanitizedDeprecationMsg() const;
+
   void generateDeprecationWarning(Expr* context);
 
 protected:
@@ -454,6 +456,7 @@ public:
   const char* intentDescrString() const;
   bool  isReduce()          const { return intent == TFI_REDUCE;       }
   bool  isTaskPrivate()     const { return intent == TFI_TASK_PRIVATE; }
+  bool  isCompilerAdded()   const;
 
   static ShadowVarSymbol* buildForPrefix(ShadowVarPrefix prefix,
                                          Expr* name, Expr* type, Expr* init);
@@ -587,6 +590,7 @@ public:
   static DefExpr* buildDef(const char* name, CallExpr* formals, BlockStmt* body);
   static DefExpr* buildFormal(const char* name, IntentTag intent);
   InterfaceSymbol(const char* name, BlockStmt* body);
+ ~InterfaceSymbol() override;
 
   DECLARE_SYMBOL_COPY(InterfaceSymbol);
   InterfaceSymbol* copyInner(SymbolMap* map)             override;
@@ -611,6 +615,9 @@ public:
 
   // constraints to be checked for each implementation
   std::vector<IfcConstraint*> associatedConstraints;
+
+  // representatives for the symbols in associatedConstraints' interfaces
+  std::vector<InterfaceReps*> ifcReps;
 
   // each FnSymbol for the interface's required function is mapped
   //  - to itself, if there is a default implementation
@@ -669,6 +676,58 @@ public:
   void  replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
   void  codegenDef()                                      override;
 };
+
+inline bool Symbol::hasFlag(Flag flag) const {
+  CHECK_FLAG(flag);
+  return flags[flag];
+}
+
+inline void Symbol::addFlag(Flag flag) {
+  CHECK_FLAG(flag);
+  flags.set(flag);
+}
+
+inline void Symbol::copyFlags(const Symbol* other) {
+  flags |= other->flags;
+  qual   = other->qual;
+}
+
+inline void Symbol::removeFlag(Flag flag) {
+  CHECK_FLAG(flag);
+  flags.reset(flag);
+}
+
+inline bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
+  return hasFlag(aflag) || hasFlag(bflag);
+}
+
+inline bool Symbol::isRef() {
+  QualifiedType q = qualType();
+  return (type != NULL) && (q.isRef() || type->symbol->hasFlag(FLAG_REF));
+}
+
+inline bool Symbol::isWideRef() {
+  QualifiedType q = qualType();
+  return (q.isWideRef() || type->symbol->hasFlag(FLAG_WIDE_REF));
+}
+
+inline bool Symbol::isRefOrWideRef() {
+  return isRef() || isWideRef();
+}
+
+// Is this a compiler-added helper / not to be reported to user?
+inline bool ShadowVarSymbol::isCompilerAdded() const {
+  switch (intent) {
+    case TFI_IN_PARENT:
+    case TFI_REDUCE_OP:
+    case TFI_REDUCE_PARENT_AS:
+    case TFI_REDUCE_PARENT_OP:
+      return true;
+    default:
+      return false;
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -761,7 +820,6 @@ extern const char* astrSlt;     // <
 extern const char* astrSlte;    // <=
 extern const char* astrSswap;   // <=>
 extern const char* astrScolon;  // :
-extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;
 extern const char* astrInitEquals;
@@ -787,6 +845,7 @@ extern const char* astr_initCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
+extern const char* astr_autoDestroy;
 
 bool isAstrOpName(const char* name);
 

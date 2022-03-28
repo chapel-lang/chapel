@@ -118,6 +118,18 @@ var branchInfo = [
                   { "release" : "1.24",
                     "releaseDate": "2021-03-18",
                     "branchDate" : "2021-03-11",
+                    "revision" : -1},
+                  { "release" : "1.24.1",
+                    "releaseDate": "2021-04-15",
+                    "branchDate" : "2021-04-05",
+                    "revision" : -1},
+                  { "release" : "1.25",
+                    "releaseDate": "2021-09-23",
+                    "branchDate" : "2021-09-15",
+                    "revision" : -1},
+                  { "release" : "1.25.1",
+                    "releaseDate": "2021-12-09",
+                    "branchDate" : "2021-12-06",
                     "revision" : -1}
                   ];
 
@@ -516,9 +528,9 @@ function computeGitHubLinks(text) {
     return "<a target='_blank' href='" + url + "'>" + m + "</a>";
   });
 
-  var ak_re = /\(mhmerrill\/arkouda#([0-9]+)\)/gi;
+  var ak_re = /\(Bears-R-Us\/arkouda#([0-9]+)\)/gi;
   text = text.replace(ak_re, function(m, num) {
-    var url = "https://github.com/mhmerrill/arkouda/pull/" + num;
+    var url = "https://github.com/Bears-R-Us/arkouda/pull/" + num;
     return "<a target='_blank' href='" + url + "'>" + m + "</a>";
   });
 

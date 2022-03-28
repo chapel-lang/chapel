@@ -124,6 +124,7 @@ struct sock_rx_entry *sock_rx_new_buffered_entry(struct sock_rx_ctx *rx_ctx,
 
 	rx_ctx->buffered_len += len;
 	dlist_insert_tail(&rx_entry->entry, &rx_ctx->rx_buffered_list);
+	rx_ctx->progress_start = &rx_ctx->rx_buffered_list;
 
 	return rx_entry;
 }

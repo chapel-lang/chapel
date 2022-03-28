@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -490,6 +490,30 @@ proc DimensionalDist2D.dsiClone(): _to_unmanaged(this.type) {
   return _to_unmanaged(this);
 }
 
+//== targetLocales, localSubdomain
+
+proc DimensionalDist2D.dsiTargetLocales() const ref return targetLocales;
+proc DimensionalDom.dsiTargetLocales()    const ref return dist.targetLocales;
+proc DimensionalArr.dsiTargetLocales()    const ref return dom.dist.targetLocales;
+
+proc DimensionalDom.dsiHasSingleLocalSubdomain() param return true;
+proc DimensionalArr.dsiHasSingleLocalSubdomain() param return true;
+
+proc DimensionalDom.dsiLocalSubdomain(loc: locale) {
+  import ChplConfig;
+  if ChplConfig.CHPL_COMM != "none" then
+    compilerError("DimensionalDist2D.dsiLocalSubdomain() is currently not implemented for non-local compilation");
+  return whole;
+  // for multilocale, start here:
+  // const (locIds, foundIt) = _CurrentLocaleToLocIDs(dist.targetLocales, loc);
+  // var result: whole.type;
+  // if !foundIt then return empty result;
+}
+
+proc DimensionalArr.dsiLocalSubdomain(loc: locale) {
+  return dom.dsiLocalSubdomain(loc);
+}
+
 
 //== privatization
 
@@ -605,13 +629,14 @@ proc DimensionalDist2D.dsiIndexToLocale(indexx: indexT): locale {
 // when the targetLocales array is assigned, so this is at most a constant
 // factor of extra time on top of that.
 //
-proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
+private proc _CurrentLocaleToLocIDs(targetLocales, desiredLocale)
+                                     : (targetLocales.rank*locIdT, bool)
 {
   var result: targetLocales.rank * locIdT;
   // guard updates to 'result' to ensure atomicity of updates
   var gotresult$: sync bool = false;
   forall (lls, loc) in zip(targetLocales.domain, targetLocales) with (ref result) do
-    if loc == here {
+    if loc == desiredLocale {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
       gotresult$.readFE();
@@ -619,7 +644,7 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
       gotresult$.writeEF(true);
     }
   // instead of crashing right away, return a flag
-  //if !gotresult$.readXX() then halt("DimensionalDist2D: the current locale ", here, " is not among the target locales ", targetLocales);
+  //if !gotresult$.readXX() then halt("DimensionalDist2D: the current locale ", desiredLocale, " is not among the target locales ", targetLocales);
 
   return (result, gotresult$.readXX());
 }
@@ -638,7 +663,7 @@ proc _passLocalLocIDsDist(ref d1, param doD1:bool, ref d2, param doD2:bool,
      if gotHint && targetLocales(hint) == here
        then (hint, true)
      else
-       _CurrentLocaleToLocIDs(targetLocales);
+       _CurrentLocaleToLocIDs(targetLocales, here);
 
    if d1.dsiUsesLocalLocID1d() && doD1 then d1.dsiStoreLocalLocID1d(lIds(0),l);
    if d2.dsiUsesLocalLocID1d() && doD2 then d2.dsiStoreLocalLocID1d(lIds(1),l);
@@ -749,27 +774,8 @@ proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
 
 //== miscellanea
 
-override proc DimensionalDom.dsiMyDist() return dist;
-
-proc DimensionalDom.dsiDims()             return whole.dims();
-proc DimensionalDom.dsiDim(d)             return whole.dim(d);
-proc DimensionalDom.dsiDim(param d)       return whole.dim(d);
-proc DimensionalDom.dsiLow                return whole.low;
-proc DimensionalDom.dsiHigh               return whole.high;
-proc DimensionalDom.dsiStride             return whole.stride;
-proc DimensionalDom.dsiNumIndices         return whole.sizeAs(uint);
-proc DimensionalDom.dsiMember(indexx)     return whole.contains(indexx);
-proc DimensionalDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
-
 proc DimensionalDom.dimSpecifier(param dim: int) {
   return dist.dimSpecifier(dim);
-}
-
-
-//== writing
-
-proc DimensionalDom.dsiSerialWrite(f): void {
-  f <~> whole;
 }
 
 
@@ -836,6 +842,27 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   result.dsiSetIndices(inds);
   return result;
 }
+
+// common redirects
+proc DimensionalDom.dsiLow           return whole.low;
+proc DimensionalDom.dsiHigh          return whole.high;
+proc DimensionalDom.dsiAlignedLow    return whole.alignedLow;
+proc DimensionalDom.dsiAlignedHigh   return whole.alignedHigh;
+proc DimensionalDom.dsiFirst         return whole.first;
+proc DimensionalDom.dsiLast          return whole.last;
+proc DimensionalDom.dsiStride        return whole.stride;
+proc DimensionalDom.dsiAlignment     return whole.alignment;
+proc DimensionalDom.dsiNumIndices    return whole.sizeAs(uint);
+proc DimensionalDom.dsiDim(d)        return whole.dim(d);
+proc DimensionalDom.dsiDim(param d)  return whole.dim(d);
+proc DimensionalDom.dsiDims()        return whole.dims();
+//proc DimensionalDom.dsiGetIndices()  return whole.getIndices();
+proc DimensionalDom.dsiMember(i)     return whole.contains(i);
+proc DimensionalDom.doiToString()    return whole:string;
+proc DimensionalDom.dsiSerialWrite(x) { x.write(whole); }
+proc DimensionalDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
+override proc DimensionalDom.dsiIndexOrder(i)              return whole.indexOrder(i);
+override proc DimensionalDom.dsiMyDist()                   return dist;
 
 proc DimensionalDom.dsiSetIndices(newIndices: domainT): void {
   whole = newIndices;
@@ -1028,21 +1055,20 @@ proc DimensionalArr.dsiSerialWrite(f): void {
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
 
-  pragma "order independent yielding loops"
   iter iHelp(param d) {
     if this.isAlias {
        // Go to the original array and invoke the follower iterator on it,
        // giving the alias's entire domain as the index set to follow.
        // (NB dsiFollowerArrayIterator1d's argument is not densified.)
       const dom1d = if d == 0 then this.allocDom.dom1 else this.allocDom.dom2;
-      for l_i in dom1d.dsiFollowerArrayIterator1d(this.dom.whole.dim(d)) do
+      foreach l_i in dom1d.dsiFollowerArrayIterator1d(this.dom.whole.dim(d)) do
         yield l_i;
 
     } else {
       const alDom = this.dom;
       const dom1d = if d == 0 then alDom.dom1 else alDom.dom2;
-      for (l,r) in dom1d.dsiSerialArrayIterator1d() do
-        for i in r do
+      foreach (l,r) in dom1d.dsiSerialArrayIterator1d() do
+        foreach i in r do
           yield (l,i);
     }
   }
@@ -1247,7 +1273,6 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
           // produce, collectively, all the indices in this dimension.
           // For 'parDim' - only the 'taskid'-th share of all indices.
           //
-          pragma "order independent yielding loops"
           iter iter1d(param dd, dom1d, loc1d) {
             const dummy: followT;
             type resultT = dummy(dd).type;
@@ -1256,16 +1281,15 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
               yield loc1d.dsiMyDensifiedRangeForTaskID1d
                 (dom1d, taskid, numTasks) : resultT;
             } else {
-              for r in loc1d.dsiMyDensifiedRangeForSingleTask1d(dom1d) do
+              foreach r in loc1d.dsiMyDensifiedRangeForSingleTask1d(dom1d) do
                 yield r: resultT;
             }
           }
 
           // Bug note: computing 'myDims(dd)' instead of passing 'myDim'
           // would trip an assertion in the compiler.
-          pragma "order independent yielding loops"
           iter iter1dCheck(param dd, dom1d, loc1d, myDim) {
-            for myPiece in iter1d(dd, dom1d, loc1d) {
+            foreach myPiece in iter1d(dd, dom1d, loc1d) {
 
               // ensure we got a subset, if applicable
               if dom1d.dsiStorageUsesUserIndices() then
@@ -1316,7 +1340,6 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
 //== serial iterator - array
 
 // note: no 'on' clauses - they not allowed by the compiler
-pragma "order independent yielding loops"
 iter DimensionalArr.these() ref {
   _traceddd(this, ".serial iterator",
             if this.isAlias then "  (alias)" else "");
@@ -1326,7 +1349,7 @@ iter DimensionalArr.these() ref {
      // Go to the original array and invoke the follower iterator on it,
      // giving the alias's entire domain as the index set to follow.
      // (NB dsiFollowerArrayIterator1d's argument is not densified.)
-    for v in this._dsiIteratorHelper(this.allocDom, this.dom.whole.dims()) do
+    foreach v in this._dsiIteratorHelper(this.allocDom, this.dom.whole.dims()) do
       yield v;
 
     return;
@@ -1356,7 +1379,7 @@ iter DimensionalArr.these() ref {
           const locAdesc = this.localAdescs[l1,l2];
           _traceddc(traceDimensionalDistIterators,
                     "  locAdesc", (l1,l2), " on ", locAdesc.locale);
-          for i2 in r2 do
+          foreach i2 in r2 do
             yield locAdesc.myStorageArr(i1, i2);
         }
 }
@@ -1392,7 +1415,6 @@ iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iter
 }
 
 // factor our some common code
-pragma "not order independent yielding loops"
 iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
   // single-element cache of localAdescs[l1,l2]
   var lastl1 = invalidLocID, lastl2 = invalidLocID;

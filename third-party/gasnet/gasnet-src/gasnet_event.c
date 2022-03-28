@@ -202,6 +202,71 @@ void gasnete_iop_free(gasnete_iop_t *iop GASNETI_THREAD_FARG) {
 
 #endif // GASNETI_DISABLE_REFERENCE_EOP
 
+// ------------------------------------------------------------------------------------
+// Inlines for "aop" and "nbi_accessregion" interfaces
+// Used by "gasneti_aop" portion of the GASNET-Internal OP Interface
+// and by begin/end nbi_accessregion
+
+GASNETI_INLINE(gasnete_aop_push)
+void gasnete_aop_push(gasnete_iop_t *iop, gasneti_threaddata_t * const thread)
+{
+  gasneti_assert(iop != NULL);
+  gasnete_iop_check(iop);
+  gasneti_assert(thread == gasnete_threadtable[iop->threadidx]);
+  gasneti_assert(iop->next == iop); // Distinguishes an iop returned from access region
+  iop->next = thread->current_iop;
+  thread->current_iop = iop;
+}
+
+// TODO: enforce prohibition against pop of client-created aop?
+GASNETI_INLINE(gasnete_aop_pop)
+gasnete_iop_t *gasnete_aop_pop(gasneti_threaddata_t * const thread)
+{
+  gasnete_iop_t * const iop = thread->current_iop;
+  gasneti_assert(iop->next != NULL); // Cannot pop the implicit iop
+  thread->current_iop = iop->next;
+  iop->next = iop; // Identify as returned from access region
+  return iop;
+}
+
+GASNETI_INLINE(gasnete_aop_create)
+gasnete_iop_t *gasnete_aop_create(gasneti_threaddata_t * const thread)
+{
+  gasnete_iop_t *iop = gasnete_iop_new(thread);
+
+  // "Arm" all events and offset the counters to prevent them "firing" prematurely
+  // TODO: should merge SET_EVENT_TYPE() calls into one write.
+  iop->initiated_put_cnt++;
+  iop->initiated_get_cnt++;
+  iop->initiated_rmw_cnt++;
+  SET_EVENT_TYPE(iop, gasnete_iop_event_put, gasnete_event_type_iop);
+  SET_EVENT_TYPE(iop, gasnete_iop_event_get, gasnete_event_type_iop);
+  SET_EVENT_TYPE(iop, gasnete_iop_event_rmw, gasnete_event_type_iop);
+#if GASNETE_HAVE_LC
+  iop->initiated_alc_cnt++;
+  SET_EVENT_TYPE(iop, gasnete_iop_event_alc, gasnete_event_type_lc);
+#endif
+
+  iop->next = iop; // mark as returned from access region
+  return iop;
+}
+
+GASNETI_INLINE(gasnete_aop_to_event)
+gex_Event_t gasnete_aop_to_event(gasnete_iop_t *iop)
+{
+  gasneti_assert(iop->next == iop); // Distinguishes an iop returned from access region
+
+  // Balance the offsets applied to each counter at creation
+  GASNETE_IOP_CNT_FINISH_REG(iop, put, 1, 0);
+  GASNETE_IOP_CNT_FINISH_REG(iop, get, 1, 0);
+  GASNETE_IOP_CNT_FINISH_REG(iop, rmw, 1, 0);
+#if GASNETE_HAVE_LC
+  GASNETE_IOP_CNT_FINISH_REG(iop, alc, 1, 0);
+#endif
+
+  return (gex_Event_t)iop;
+}
+
 /* ------------------------------------------------------------------------------------ */
 /* GASNET-Internal OP Interface */
 
@@ -243,6 +308,34 @@ void gasneti_iop_markdone(gasneti_iop_t *iop, unsigned int noperations, int isge
   else       GASNETE_IOP_CNT_FINISH(op, put, noperations, 0);
   gasnete_iop_check(op);
 }
+
+gasneti_aop_t *gasneti_aop_create(GASNETI_THREAD_FARG_ALONE) {
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  return (gasneti_aop_t*) gasnete_aop_create(mythread);
+}
+gex_Event_t gasneti_aop_to_event(gasneti_aop_t *aop) {
+  return gasnete_aop_to_event((gasnete_iop_t*) aop);
+}
+void gasneti_aop_push(gasneti_aop_t *aop GASNETI_THREAD_FARG) {
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  gasnete_aop_push((gasnete_iop_t*) aop, mythread );
+}
+gasneti_aop_t *gasneti_aop_pop(GASNETI_THREAD_FARG_ALONE) {
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  return (gasneti_aop_t*) gasnete_aop_pop(mythread);
+}
+
+// DO NOT USE THIS!
+// This exists only to permit "safe" testing in gasnet_diagnostic.c.
+void gasneti_nbi_ff_drain_(GASNETI_THREAD_FARG_ALONE)
+{
+  gasneti_aop_t *aop = GASNETI_MYTHREAD->nbi_ff_aop;
+  if (aop) {
+    gex_Event_Wait( gasneti_aop_to_event(aop) );
+    GASNETI_MYTHREAD->nbi_ff_aop = NULL;
+  }
+}
+
 
 // TODO-EX: EOP_INTERFACE
 //   These next two are a stop-gap pending proper generalization.
@@ -624,59 +717,37 @@ extern int gasnete_test_syncnbi_mask(gex_EC_t mask, gex_Flags_t flags GASNETI_TH
 #ifndef gasnete_begin_nbi_accessregion
 extern void gasnete_begin_nbi_accessregion(gex_Flags_t flags, int allowrecursion GASNETI_THREAD_FARG) {
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-  gasnete_iop_t *iop = gasnete_iop_new(mythread); /*  push an iop */
   GASNETI_TRACE_PRINTF(S,("BEGIN_NBI_ACCESSREGION"));
   #if GASNET_DEBUG
     if (!allowrecursion && mythread->current_iop->next != NULL)
       gasneti_fatalerror("VIOLATION: tried to initiate a recursive NBI access region");
   #endif
 
-  // "Arm" all events and offset the counters to prevent them "firing" prematurely
-  // TODO: should merge SET_EVENT_TYPE() calls into one write.
-  iop->initiated_put_cnt++;
-  iop->initiated_get_cnt++;
-  iop->initiated_rmw_cnt++;
-  SET_EVENT_TYPE(iop, gasnete_iop_event_put, gasnete_event_type_iop);
-  SET_EVENT_TYPE(iop, gasnete_iop_event_get, gasnete_event_type_iop);
-  SET_EVENT_TYPE(iop, gasnete_iop_event_rmw, gasnete_event_type_iop);
-#if GASNETE_HAVE_LC
-  iop->initiated_alc_cnt++;
-  SET_EVENT_TYPE(iop, gasnete_iop_event_alc, gasnete_event_type_lc);
-#endif
-
-  iop->next = mythread->current_iop;
-  mythread->current_iop = iop;
+  gasnete_aop_push(gasnete_aop_create(mythread), mythread);
 }
 #endif
 
 #ifndef gasnete_end_nbi_accessregion
 extern gex_Event_t gasnete_end_nbi_accessregion(gex_Flags_t flags GASNETI_THREAD_FARG) {
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
-  gasnete_iop_t *iop = mythread->current_iop; /*  pop an iop */
-  GASNETI_TRACE_EVENT_VAL(S,END_NBI_ACCESSREGION,iop->initiated_get_cnt + iop->initiated_put_cnt);
-
-  // Balance the offsets applied to each counter by begin_nbi_accessregion
-  GASNETE_IOP_CNT_FINISH_REG(iop, put, 1, 0);
-  GASNETE_IOP_CNT_FINISH_REG(iop, get, 1, 0);
-  GASNETE_IOP_CNT_FINISH_REG(iop, rmw, 1, 0);
-#if GASNETE_HAVE_LC
-  GASNETE_IOP_CNT_FINISH_REG(iop, alc, 1, 0);
-#endif
-
   #if GASNET_DEBUG
-    if (iop->next == NULL)
+    if (mythread->current_iop->next == NULL)
       gasneti_fatalerror("VIOLATION: call to gasnete_end_nbi_accessregion() outside access region");
   #endif
-  mythread->current_iop = iop->next;
-  iop->next = iop; /* Identifies an iop returned from access region */
-  return (gex_Event_t)iop;
+
+  gasnete_iop_t *iop = gasnete_aop_pop(mythread);
+  GASNETI_TRACE_EVENT_VAL(S,END_NBI_ACCESSREGION,iop->initiated_get_cnt + iop->initiated_put_cnt);
+
+  return gasnete_aop_to_event(iop);
 }
 #endif
 
 #ifndef gasnete_Event_QueryLeaf
 #if GASNET_DEBUG
 static void _gasnete_get_leaf_check(gasnete_op_t *op, gex_EC_t event_id) {
-  gasneti_assert(! gasneti_event_idx(op));
+  if (gasneti_event_idx(op)) {
+    gasneti_fatalerror("Non-root event passed to gex_Event_QueryLeaf()");
+  }
   switch (OPTYPE(op)) {
     case OPTYPE_IMPLICIT: {
       gasnete_iop_t *iop = (gasnete_iop_t*)op;

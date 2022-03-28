@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -91,7 +91,7 @@ explainInstantiation(FnSymbol* fn) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
             len += sprintf(msg+len, "%" PRId64, vs->immediate->int_value());
           else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
-            len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string);
+            len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string.c_str());
           else
             len += sprintf(msg+len, "%s", vs->name);
         }

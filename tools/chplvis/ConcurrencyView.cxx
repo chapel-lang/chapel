@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,16 +36,16 @@ void backCallback (Fl_Widget *w, void *p) {
   ConcurrencyView *view = (ConcurrencyView *)w->parent();
   view->showTaskBox();
   //printf ("backButtonClicked\n");
-  //printf ("w is 0x%lx\n", (long)w); 
-  //printf ("v is 0x%lx\n", (long)view); 
+  //printf ("w is 0x%lx\n", (long)w);
+  //printf ("v is 0x%lx\n", (long)view);
 }
 
 void taskCallback (Fl_Widget *w, void *p) {
   ConcurrencyView *view = (ConcurrencyView *)w->parent()->parent()->parent();
   view->showCommListFor((taskData *)p);
   //printf ("task box clicked.\n");
-  //printf ("w is 0x%lx\n", (long)w); 
-  //printf ("v is 0x%lx\n", (long)view); 
+  //printf ("w is 0x%lx\n", (long)w);
+  //printf ("v is 0x%lx\n", (long)view);
 }
 
 ConcurrencyView::ConcurrencyView (int x, int y, int W, int H, const char *l)
@@ -76,10 +76,10 @@ void ConcurrencyView::showCommListFor(taskData *task)
 
     SubView *commList = new SubView(x(),y(),w(),h());
     commList->showBackButton();
-    
+
    // Title
     char tmpText[2048];
-    if (task->taskRec) 
+    if (task->taskRec)
       snprintf (tmpText, sizeof(tmpText), "Communications for task %ld on locale %d.",
                 task->taskRec->taskId(), task->taskRec->nodeId());
     else // Main should be the only one without a taskRec
@@ -90,7 +90,7 @@ void ConcurrencyView::showCommListFor(taskData *task)
       fl_alert("Internal error?");
       delete commList;
     }
-     
+
     DataField->pushNewChild(commList, true);
   }
 }
@@ -110,7 +110,7 @@ void ConcurrencyView::showTaskBox() {
 }
 
 
-// Concurrency Data 
+// Concurrency Data
 void ConcurrencyData::draw (void) {
 
   int s_x, s_y, s_w, s_h, s_xpos, s_ypos;  // Scroll information
@@ -145,7 +145,7 @@ void ConcurrencyData::draw (void) {
 
     // Translate to window coords
     l_x = l_x - s_xpos;
-    l_y1 = l_y1-s_ypos; 
+    l_y1 = l_y1-s_ypos;
     l_y2 = l_y2-s_ypos;
     if (l_y2 > s_h) {
       l_y2 = s_h;
@@ -226,7 +226,7 @@ void ConcurrencyData::buildData(void) {
 
     // counting the number of lines if in the tag
     while (tl_itr !=  VisData.taskTimeline[parent->localeNum].end()) {
-      if (tl_itr->first != DataModel::Tl_Tag && tmpTagNo == parent->tagNum) 
+      if (tl_itr->first != DataModel::Tl_Tag && tmpTagNo == parent->tagNum)
         numLines++;
       switch (tl_itr->first) {
 
@@ -255,7 +255,7 @@ void ConcurrencyData::buildData(void) {
                 assert (i+1 != progMaxConc);
               }
             } else {
-              if (theTask && theTask->taskRec == NULL) 
+              if (theTask && theTask->taskRec == NULL)
                 printf ("Didn't find task %ld/%ld in tag %ld\n", parent->localeNum,
                         tl_itr->second, tmpTagNo);
             }
@@ -274,7 +274,7 @@ void ConcurrencyData::buildData(void) {
   // Get correct number of lines and height of data area
   if (greedy[0]) numLines++;
   height = 40 + 25 * numLines;
-                                   
+
   // Reset scroll
   parent->scroll->scroll_to(0,0);
 
@@ -337,12 +337,12 @@ void ConcurrencyData::buildData(void) {
   if (curCol)
     curLine++;
 
-  done = false; 
+  done = false;
 
   while (!done && tl_itr !=  VisData.taskTimeline[parent->localeNum].end()) {
 
     switch (tl_itr->first) {
-      
+
       case DataModel::Tl_Tag:
         if (parent->tagNum != DataModel::TagALL) {
           done = true;
@@ -351,7 +351,7 @@ void ConcurrencyData::buildData(void) {
         curCol = 0;
         tmpTagNo = tl_itr->second;
         while (greedy[curCol] != 0) curCol++;
-        snprintf (tmp, sizeof(tmp), "TAG: %s", 
+        snprintf (tmp, sizeof(tmp), "TAG: %s",
                   VisData.getTagData(tmpTagNo)->name);
         b = new Fl_Box(FL_BORDER_BOX, x()+10+60*curCol, y()+40+25*curLine,
                                8+7*strlen(tmp), 20, NULL);
@@ -407,9 +407,9 @@ void ConcurrencyData::buildData(void) {
         greedy[curCol] = 0;
         curLine++;
         break;
-    }    
+    }
     tl_itr++;
-  } 
+  }
 
   // Update drawing information for any element still in greedy
   lineDrawData.endLine = curLine;
@@ -422,5 +422,5 @@ void ConcurrencyData::buildData(void) {
     }
 
   redraw();
-  
+
 }

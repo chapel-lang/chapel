@@ -50,7 +50,7 @@ section of :ref:`chapelhome-quickstart` for next steps.
 .. note::
 
    It is also possible for developers to use Homebrew to build and
-   install a development version based on the master branch on
+   install a development version based on the main branch on
    GitHub::
 
     brew install chapel --HEAD

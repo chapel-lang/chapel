@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,7 +38,7 @@ public:
   BlockStmt* nextPOI;
 
   // for CalledFunInfo
-  std::vector<BlockStmt*> visitedScopes; // in visited order  
+  std::vector<BlockStmt*> visitedScopes; // in visited order
   std::vector<BlockStmt*> instnPoints;   // one per POI depth
   int poiDepth;
   CallExpr* call;

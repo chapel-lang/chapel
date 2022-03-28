@@ -180,7 +180,7 @@ static int ofi_wait_match_fd(struct dlist_entry *item, const void *arg)
 	return fd_entry->fd == *(int *) arg;
 }
 
-static int ofi_wait_fdset_del(struct util_wait_fd *wait_fd, int fd)
+int ofi_wait_fdset_del(struct util_wait_fd *wait_fd, int fd)
 {
 	wait_fd->change_index++;
 
@@ -190,7 +190,7 @@ static int ofi_wait_fdset_del(struct util_wait_fd *wait_fd, int fd)
 }
 
 static int ofi_wait_fdset_add(struct util_wait_fd *wait_fd, int fd,
-			       uint32_t events, void *context)
+			      uint32_t events, void *context)
 {
 	int ret;
 
@@ -383,9 +383,9 @@ release:
 
 static int util_wait_fd_run(struct fid_wait *wait_fid, int timeout)
 {
+	struct ofi_epollfds_event event;
 	struct util_wait_fd *wait;
 	uint64_t endtime;
-	void *ep_context[1];
 	int ret;
 
 	wait = container_of(wait_fid, struct util_wait_fd, util_wait.wait_fid);
@@ -400,12 +400,17 @@ static int util_wait_fd_run(struct fid_wait *wait_fid, int timeout)
 			return -FI_ETIMEDOUT;
 
 		ret = (wait->util_wait.wait_obj == FI_WAIT_FD) ?
-		      ofi_epoll_wait(wait->epoll_fd, ep_context, 1, timeout) :
-		      ofi_pollfds_wait(wait->pollfds, ep_context, 1, timeout);
+		      ofi_epoll_wait(wait->epoll_fd, &event, 1, timeout) :
+		      ofi_pollfds_wait(wait->pollfds, &event, 1, timeout);
 		if (ret > 0)
 			return FI_SUCCESS;
 
 		if (ret < 0) {
+#if ENABLE_DEBUG
+			/* ignore interrupts in order to enable debugging */
+			if (ret == -FI_EINTR)
+				continue;
+#endif
 			FI_WARN(wait->util_wait.prov, FI_LOG_FABRIC,
 				"poll failed\n");
 			return ret;
@@ -484,7 +489,7 @@ static int util_wait_fd_close(struct fid *fid)
 	if (wait->util_wait.wait_obj == FI_WAIT_FD)
 		ofi_epoll_close(wait->epoll_fd);
 	else
-		ofi_epoll_close(wait->epoll_fd);
+		ofi_pollfds_close(wait->pollfds);
 	free(wait);
 	return 0;
 }

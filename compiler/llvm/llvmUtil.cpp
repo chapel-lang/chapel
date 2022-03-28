@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,11 +30,6 @@
 bool isArrayVecOrStruct(llvm::Type* t)
 {
   return t->isArrayTy() || t->isVectorTy() || t->isStructTy();
-}
-
-llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
-{
-  return llvm::ConstantExpr::getSizeOf(type);
 }
 
 llvm::AllocaInst* makeAlloca(llvm::Type* type,
@@ -177,7 +172,7 @@ PromotedPair convertValuesToLarger(
       return PromotedPair(value1,
                           irBuilder->CreateFPExt(value2, type1), true);
     } else {
-      return PromotedPair(irBuilder->CreateFPTrunc(value1, type2),
+      return PromotedPair(irBuilder->CreateFPExt(value1, type2),
                           value2, true);
     }
   }
@@ -346,8 +341,18 @@ int64_t arrayVecN(llvm::Type *t)
     unsigned n = at->getNumElements();
     return n;
   } else if( t->isVectorTy() ) {
+#if HAVE_LLVM_VER >= 120
+    unsigned n;
+    if (llvm::FixedVectorType *vt = llvm::dyn_cast<llvm::FixedVectorType>(t)) {
+      n = vt->getNumElements();
+    } else {
+      // Scalable vector type not handled here
+      return -1;
+    }
+#else
     llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
     unsigned n = vt->getNumElements();
+#endif
     return n;
   } else {
     return -1;
@@ -516,7 +521,11 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
       llvm::Value* tmp_new = irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
       irBuilder->CreateStore(value, tmp_cur);
+#if HAVE_LLVM_VER >= 130
+      return irBuilder->CreateLoad(tmp_new->getType()->getPointerElementType(), tmp_new);
+#else
       return irBuilder->CreateLoad(tmp_new);
+#endif
     }
   }
 

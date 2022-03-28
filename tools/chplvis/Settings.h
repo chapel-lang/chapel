@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,7 +64,7 @@ class SettingsData {
 };
 
 class Settings : public Fl_Group {
-  public: 
+  public:
     Settings (int x, int y, int W, int H, const char *l=0);
 
     void setCoolColor(void);

@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 proc test_nil(x) {
   writeln(x != nil);
   writeln(nil != x);

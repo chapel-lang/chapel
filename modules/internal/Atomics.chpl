@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -65,20 +65,62 @@
    generated for records containing atomic fields.
 */
 
+// Note -- the next docs comment is intended to be included
+// directly in the appropriate language spec section.
+
 /*
-   Atomic variables are variables that support atomic operations. Chapel
-   currently supports atomic operations for bools, all supported sizes of
-   signed and unsigned integers, as well as all supported sizes of reals.
 
-   Most atomic methods accept an optional argument named ``order`` of type
-   ``memoryOrder``. The ``order`` argument is used to specify the ordering
-   constraints of atomic operations. The supported values are:
+For example, the following code declares an atomic variable ``x`` that
+stores an ``int``:
 
-     * memoryOrder.relaxed
-     * memoryOrder.acquire
-     * memoryOrder.release
-     * memoryOrder.acqRel
-     * memoryOrder.seqCst
+.. code-block:: chapel
+
+      var x: atomic int;
+
+Such an atomic variable that is declared without an initialization expression
+will store the default value of the contained type (i.e. ``0`` or ``false``).
+
+Atomic variables can also be declared with an initial value:
+
+.. code-block:: chapel
+
+      var y: atomic int = 1;
+
+
+Chapel currently supports atomic operations for bools, all supported sizes of
+signed and unsigned integers, as well as all supported sizes of reals.  Note
+that not all operations are supported for all atomic types. The supported types
+are listed for each operation.
+
+  *Rationale*.
+
+  The choice of supported atomic variable types as well as the atomic
+  operations was strongly influenced by the C11 standard.
+
+Most atomic methods accept an optional argument named ``order`` of type
+``memoryOrder``. The ``order`` argument is used to specify the ordering
+constraints of atomic operations. The supported memoryOrder values are:
+
+ * memoryOrder.relaxed
+ * memoryOrder.acquire
+ * memoryOrder.release
+ * memoryOrder.acqRel
+ * memoryOrder.seqCst
+
+
+See also :ref:`Chapter-Memory_Consistency_Model` and in particular
+:ref:`non_sc_atomics` for more information on the meaning of these memory
+orders.
+
+Unless specified, the default for the memoryOrder parameter is
+memoryOrder.seqCst.
+
+   *Implementors’ note*.
+
+   Not all architectures or implementations may support all memoryOrder
+   values. In these cases, the implementation should default to a more
+   conservative ordering than specified.
+
 */
 pragma "atomic module"
 module Atomics {
@@ -166,6 +208,7 @@ module Atomics {
   // Parser hook
   pragma "no doc"
   proc chpl__atomicType(type T) type {
+    use ChplConfig;
     if CHPL_NETWORK_ATOMICS == "none" {
       return chpl__processorAtomicType(T);
     } else {
@@ -281,6 +324,10 @@ module Atomics {
        Similar to :proc:`compareExchange`, except that this function may
        return `false` even if the original value was equal to `expected`. This
        may happen if the value could not be updated atomically.
+
+       This weak version is allowed to spuriously fail, but when
+       compareExchange is already in a loop, it can offer better
+       performance on some platforms.
     */
     inline proc compareExchangeWeak(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchangeWeak(expected, desired, order, readableOrder(order));
@@ -471,6 +518,10 @@ module Atomics {
        Similar to :proc:`compareExchange`, except that this function may
        return `false` even if the original value was equal to `expected`. This
        may happen if the value could not be updated atomically.
+
+       This weak version is allowed to spuriously fail, but when
+       compareExchange is already in a loop, it can offer better
+       performance on some platforms.
     */
     inline proc compareExchangeWeak(ref expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchangeWeak(expected, desired, order, readableOrder(order));
@@ -700,35 +751,45 @@ module Atomics {
   // We need to explicitly define these for all types because the atomic
   // types are records and unless explicitly defined, it will resolve
   // to the normal record version of the function.  Sigh.
-  inline operator =(ref a:AtomicBool, const ref b:AtomicBool) {
+
+  /* Equivalent to ``a.write(b.read())`` */
+  inline operator AtomicBool.=(ref a:AtomicBool, const ref b:AtomicBool) {
     a.write(b.read());
   }
-  inline operator =(ref a:AtomicBool, b) {
+  pragma "no doc"
+  inline operator AtomicBool.=(ref a:AtomicBool, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline operator =(ref a:AtomicT, const ref b:AtomicT) {
+  /* Equivalent to ``a.write(b.read())`` */
+  inline operator AtomicT.=(ref a:AtomicT, const ref b:AtomicT) {
     a.write(b.read());
   }
-  inline operator =(ref a:AtomicT, b) {
+  pragma "no doc"
+  inline operator AtomicT.=(ref a:AtomicT, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline operator +(a:AtomicT, b) {
+  pragma "no doc"
+  inline operator AtomicT.+(a:AtomicT, b) {
     compilerError("Cannot directly add atomic variables");
     return a;
   }
-  inline operator -(a:AtomicT, b) {
+  pragma "no doc"
+  inline operator AtomicT.-(a:AtomicT, b) {
     compilerError("Cannot directly subtract atomic variables");
     return a;
   }
-  inline operator *(a:AtomicT, b) {
+  pragma "no doc"
+  inline operator AtomicT.*(a:AtomicT, b) {
     compilerError("Cannot directly multiply atomic variables");
     return a;
   }
-  inline operator /(a:AtomicT, b) {
+  pragma "no doc"
+  inline operator AtomicT./(a:AtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
-  inline operator %(a:AtomicT, b) {
+  pragma "no doc"
+  inline operator AtomicT.%(a:AtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }

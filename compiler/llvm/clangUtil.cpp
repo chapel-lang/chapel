@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,14 +34,9 @@
 #ifdef HAVE_LLVM
 #include "clang/AST/GlobalDecl.h"
 
-// rely on CodeGenOptions.h being included from CompilerInstance.h
-// if we need to change that, LLVM 6 named it
-//   clang/Frontend/CodeGenOptions.h
-// but LLVM 8 named it
-//   clang/Basic/CodeGenOptions.h
-
-#include "clang/Basic/Version.h"
+#include "clang/Basic/CodeGenOptions.h"
 #include "clang/Basic/TargetInfo.h"
+#include "clang/Basic/Version.h"
 #include "clang/CodeGen/BackendUtil.h"
 #include "clang/CodeGen/CodeGenABITypes.h"
 #include "clang/CodeGen/ModuleBuilder.h"
@@ -59,6 +54,7 @@
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
@@ -68,6 +64,7 @@
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 #if HAVE_LLVM_VER >= 90
@@ -101,7 +98,9 @@
 #include "llvmDebug.h"
 #include "llvmVer.h"
 
-#include "../ifa/prim_data.h"
+#include "../dyno/lib/immediates/prim_data.h"
+
+#include "global-ast-vecs.h"
 
 typedef Type ChapelType;
 
@@ -151,8 +150,25 @@ struct ClangInfo {
 
   std::string clangCC;
   std::string clangCXX;
+  // arguments to C/C++ compiler
+  // including -I for bundled paths
+  // these will apply when compiling C files as well
   std::vector<std::string> clangCCArgs;
+
+  // other arguments to C/C++ compiler, passed after the above ones.
+  // these tend to be the arguments indicating what to compile etc.
+  // and these arguments don't apply when compiling C files named
+  // on the command line
   std::vector<std::string> clangOtherArgs;
+
+  // arguments to the linker from CC/CXX variable overrides
+  std::vector<std::string> clangLDArgs;
+
+  // the following 3 are here to make sure of no memory errors
+  // when clang has const char* pointers to these strings
+  std::string clangexe;
+  std::vector<std::string> driverArgs;
+  std::vector<const char*> driverArgsCStrings;
 
   clang::CodeGenOptions codegenOptions;
   llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> diagOptions;
@@ -187,6 +203,7 @@ struct ClangInfo {
     std::string clangCxxIn,
     std::vector<std::string> clangCCArgsIn,
     std::vector<std::string> clangOtherArgsIn,
+    std::vector<std::string> clangLDArgsIn,
     bool parseOnlyIn);
 };
 
@@ -195,19 +212,21 @@ ClangInfo::ClangInfo(
     std::string clangCxxIn,
     std::vector<std::string> clangCCArgsIn,
     std::vector<std::string> clangOtherArgsIn,
+    std::vector<std::string> clangLDArgsIn,
     bool parseOnlyIn)
        : parseOnly(parseOnlyIn),
-         clangCC(clangCcIn),
-         clangCXX(clangCxxIn),
-         clangCCArgs(clangCCArgsIn),
-         clangOtherArgs(clangOtherArgsIn),
-         codegenOptions(), diagOptions(NULL),
-         DiagClient(NULL),
-         DiagID(NULL),
-         Diags(NULL),
-         Clang(NULL),
-         Ctx(NULL),
-         cCodeGen(NULL), cCodeGenAction(NULL),
+         clangCC(std::move(clangCcIn)),
+         clangCXX(std::move(clangCxxIn)),
+         clangCCArgs(std::move(clangCCArgsIn)),
+         clangOtherArgs(std::move(clangOtherArgsIn)),
+         clangLDArgs(std::move(clangLDArgsIn)),
+         codegenOptions(), diagOptions(nullptr),
+         DiagClient(nullptr),
+         DiagID(nullptr),
+         Diags(nullptr),
+         Clang(nullptr),
+         Ctx(nullptr),
+         cCodeGen(nullptr), cCodeGenAction(nullptr),
          asmTargetLayoutStr(),
          intSizeInBits(0),
          longSizeInBits(0),
@@ -265,7 +284,7 @@ static
 void addMinMax(const char* prefix, int nbits, bool isSigned)
 {
   GenInfo* info = gGenInfo;
-  LayeredValueTable *lvt = info->lvt;
+  LayeredValueTable *lvt = info->lvt.get();
 
   astlocT prevloc = currentAstLoc;
 
@@ -389,6 +408,7 @@ static astlocT getClangDeclLocation(clang::Decl* d) {
 static const bool debugPrintMacros = false;
 
 static void handleMacroExpr(const MacroInfo* inMacro,
+                            const IdentifierInfo* origID,
                             MacroInfo::tokens_iterator start,
                             MacroInfo::tokens_iterator end,
                             VarSymbol*& varRet,
@@ -396,6 +416,85 @@ static void handleMacroExpr(const MacroInfo* inMacro,
                             ValueDecl*& cValueRet,
                             const char*& cCastToTypeRet);
 
+static void handleCallMacro(const IdentifierInfo* origID,
+                            const MacroInfo* inMacro,
+                            const MacroInfo* calledMacro) {
+  if (inMacro->getNumTokens() != 6)
+    return;
+  if (calledMacro->getNumParams() != 2)
+    return;
+  if (calledMacro->getNumTokens() != 3)
+    return;
+
+  // expect 'LAPACK_GLOBAL' '(' 'actual1' ',' 'actual2' ')'
+  Token actual1, actual2;
+  int count = 0;
+  for (MacroInfo::tokens_iterator tok = inMacro->tokens_begin();
+       tok != inMacro->tokens_end(); ++tok) {
+    count++;
+    if (count == 3)
+      actual1 = *tok;
+    if (count == 5)
+      actual2 = *tok;
+  }
+
+  IdentifierInfo* formal1;
+  IdentifierInfo* formal2;
+  count = 0;
+  for (MacroInfo::param_iterator param = calledMacro->param_begin();
+       param != calledMacro->param_end(); ++param) {
+    count++;
+    if (count == 1)
+      formal1 = *param;
+    if (count == 2)
+      formal2 = *param;
+  }
+
+  // expecting 'identifier' ## '_'
+  count = 0;
+  Token body1, body2, body3;
+  for (MacroInfo::tokens_iterator tok = calledMacro->tokens_begin();
+       tok != calledMacro->tokens_end(); ++tok) {
+    count++;
+    if (count == 1) {
+      if (tok->getKind() != tok::identifier)
+        return;
+      body1 = *tok;
+    }
+    if (count == 2) {
+      if (tok->getKind() != tok::hashhash)
+        return;
+      body2 = *tok;
+    }
+    if (count == 3) {
+      if (tok->getKind() != tok::identifier)
+        return;
+      body3 = *tok;
+    }
+  }
+
+  llvm::StringRef lhsName;
+  if (body1.getIdentifierInfo()->getName() == formal1->getName()) {
+    lhsName = actual1.getIdentifierInfo()->getName();
+  } else if (body1.getIdentifierInfo()->getName() == formal2->getName()) {
+    lhsName = actual2.getIdentifierInfo()->getName();
+  } else {
+    return;
+  }
+
+  std::string replacement = lhsName.str() +
+                            body3.getIdentifierInfo()->getName().str();
+
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+
+  info->lvt->addForwardName(origID->getName(), replacement.c_str());
+
+  if (debugPrintMacros) {
+    printf("replacing: %s with %s\n", origID->getName().str().c_str(),
+                                      replacement.c_str());
+  }
+}
 
 // Adds a mapping from id->getName() to a variable or CDecl to info->lvt
 static
@@ -406,9 +505,10 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
+  std::string name = id->getName().str();
   const bool debugPrint = debugPrintMacros;
 
-  if (debugPrint) printf("Working on macro %s\n", id->getName().str().c_str());
+  if (debugPrint) printf("Working on macro %s\n", name.c_str());
 
   //Handling only simple string or integer defines
   if (macro->getNumParams() > 0)
@@ -416,7 +516,11 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
     if( debugPrint) {
       printf("the macro takes arguments\n");
     }
-    return; // TODO -- handle macro functions.
+    if (name == "LAPACK_GLOBAL") {
+      info->lvt->addMacro(name, macro);
+    } else {
+      return; // TODO -- handle macro functions.
+    }
   }
 
   VarSymbol* varRet = NULL;
@@ -424,7 +528,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   ValueDecl* cValueRet = NULL;
   const char* cCastToTypeRet = NULL;
 
-  handleMacroExpr(macro,
+  handleMacroExpr(macro, id,
                   macro->tokens_begin(), macro->tokens_end(),
                   varRet, cTypeRet, cValueRet, cCastToTypeRet);
 
@@ -520,9 +624,11 @@ static bool findParenthesizedExpr(const MacroInfo* inMacro,
 
 // Returns a type/identifier/macro name or NULL if it was not handled
 static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
+                                              const IdentifierInfo* origID,
                                               MacroInfo::tokens_iterator start,
                                               MacroInfo::tokens_iterator end,
                                               IdentifierInfo*& ii) {
+  GenInfo* info = gGenInfo;
   ii = NULL;
 
   // handle things like 'unsigned int'
@@ -578,14 +684,28 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
     Token tok = *start; // the main token
     ++start;
 
-    // Give up if there are any tokens beyond the main token
-    if (start != end)
-      return NULL;
+    if (start != end) {
+      /* return NULL unless it's a specific pattern we know how to handle */
+      bool canHandle = false;
+      if (tok.getKind() == tok::identifier) {
+        IdentifierInfo* tokId = tok.getIdentifierInfo();
+        if (info->lvt->getMacro(tokId->getName()))
+          canHandle = true;
+      }
+      if (!canHandle)
+        return NULL;
+    }
 
     if (tok.getKind() == tok::identifier) {
       IdentifierInfo* tokId = tok.getIdentifierInfo();
       ii = tokId;
-      return astr(tokId->getNameStart());
+      if (const clang::MacroInfo* macro =
+            info->lvt->getMacro(tokId->getName())) {
+        INT_ASSERT(origID != NULL);
+        handleCallMacro(origID, inMacro, macro);
+      } else {
+        return astr(tokId->getNameStart());
+      }
     }
   } else {
     // Give up if we didn't handle all the tokens in the above loop
@@ -738,7 +858,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
 
     const char* castTo = NULL;
     clang::IdentifierInfo* ii = NULL;
-    castTo = handleTypeOrIdentifierExpr(inMacro, castStart, castEnd, ii);
+    castTo = handleTypeOrIdentifierExpr(inMacro, NULL, castStart, castEnd, ii);
     if (castTo == NULL)
       return false;
     start = castEnd;
@@ -750,7 +870,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
     ValueDecl* tmpVal = NULL;
     const char* tmpCastToType = NULL;
 
-    handleMacroExpr(inMacro, castStart, castEnd,
+    handleMacroExpr(inMacro, NULL, castStart, castEnd,
                     tmpVar, tmpType, tmpVal, tmpCastToType);
 
     if (tmpType == NULL || tmpCastToType != NULL)
@@ -774,9 +894,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
         return false;
 
       Immediate dstImm = getDefaultImmediate(t);
-
-      coerce_immediate(&rhsImm, &dstImm);
-
+      coerce_immediate(gContext, &rhsImm, &dstImm);
       retImm = dstImm;
     }
 
@@ -789,7 +907,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
 
     if (doCastToType != NULL) {
       Immediate dstImm = getDefaultImmediate(doCastToType);
-      coerce_immediate(&retImm, &dstImm);
+      coerce_immediate(gContext, &retImm, &dstImm);
       *imm = dstImm;
       cCastToTypeRet = NULL; // cast already handled
     } else {
@@ -829,7 +947,7 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
         INT_FATAL("unhandled case");
     }
 
-    fold_constant(p, &rhsImm, NULL, imm);
+    fold_constant(gContext, p, &rhsImm, NULL, imm);
     return true;
   }
 
@@ -1013,11 +1131,12 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
       return false; // this operator not handled
   }
 
-  fold_constant(p, &lhsImm, &rhsImm, imm);
+  fold_constant(gContext, p, &lhsImm, &rhsImm, imm);
   return true;
 }
 
 static void handleMacroExpr(const MacroInfo* inMacro,
+                            const IdentifierInfo* origID,
                             MacroInfo::tokens_iterator start,
                             MacroInfo::tokens_iterator end,
                             VarSymbol*& varRet,
@@ -1049,12 +1168,13 @@ static void handleMacroExpr(const MacroInfo* inMacro,
          cur != end;
          ++cur) {
       Token t = *cur;
-      printf("Found token type %i\n", t.getKind());
+      printf("Found token type %i name %s\n", t.getKind(), t.getName());
     }
   }
 
   clang::IdentifierInfo* ii = NULL;
-  const char* idName = handleTypeOrIdentifierExpr(inMacro, start, end, ii);
+  const char* idName = handleTypeOrIdentifierExpr(inMacro, origID,
+                                                  start, end, ii);
   if (idName != NULL) {
     if( debugPrint) {
       printf("id = %s\n", idName);
@@ -1122,7 +1242,7 @@ void readMacrosClang(void) {
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  LayeredValueTable *lvt = info->lvt;
+  LayeredValueTable *lvt = info->lvt.get();
 
   SET_LINENO(rootModule);
 
@@ -1435,32 +1555,55 @@ static void cleanupClang(ClangInfo* clangInfo)
   deleteClang(clangInfo);
 }
 
+// Initialize LLVM targets if needed
+static void initializeLlvmTargets() {
+  static bool targetsInited = false;
+  if (targetsInited == false) {
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmPrinters();
+    llvm::InitializeAllAsmParsers();
+
+    targetsInited = true;
+  }
+}
+
+// Get a string corresponding to the LLVM target triple
+// for the current configuration
+static std::string getConfiguredTargetTriple() {
+  // TODO: use a different triple when cross compiling
+  // TODO: look at CHPL_TARGET_ARCH
+  return llvm::sys::getDefaultTargetTriple();
+}
+
+
 void setupClang(GenInfo* info, std::string mainFile)
 {
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-  std::string clangexe = clangInfo->clangCC;
-  std::vector<const char*> clangArgs;
+  clangInfo->clangexe = clangInfo->clangCC;
+  clangInfo->driverArgs.clear();
 
-  clangArgs.push_back("<chapel clang driver invocation>");
+  clangInfo->driverArgs.push_back("<chapel clang driver invocation>");
 
   for( size_t i = 0; i < clangInfo->clangCCArgs.size(); ++i ) {
-    clangArgs.push_back(clangInfo->clangCCArgs[i].c_str());
+    clangInfo->driverArgs.push_back(clangInfo->clangCCArgs[i]);
   }
   for( size_t i = 0; i < clangInfo->clangOtherArgs.size(); ++i ) {
-    clangArgs.push_back(clangInfo->clangOtherArgs[i].c_str());
+    clangInfo->driverArgs.push_back(clangInfo->clangOtherArgs[i]);
   }
 
-  clangArgs.push_back("-c");
-  clangArgs.push_back(mainFile.c_str()); // chpl - always compile rt file
+  clangInfo->driverArgs.push_back("-c");
+  // chpl - always compile rt file
+  clangInfo->driverArgs.push_back(mainFile.c_str());
 
   if (!fLlvmCodegen)
-    clangArgs.push_back("-fsyntax-only");
+    clangInfo->driverArgs.push_back("-fsyntax-only");
 
   if( printSystemCommands && developer ) {
-    for( size_t i = 0; i < clangArgs.size(); i++ ) {
-      printf("%s ", clangArgs[i]);
+    for( size_t i = 0; i < clangInfo->driverArgs.size(); i++ ) {
+      printf("%s ", clangInfo->driverArgs[i].c_str());
     }
     printf("\n");
   }
@@ -1468,12 +1611,8 @@ void setupClang(GenInfo* info, std::string mainFile)
   // Initialize LLVM targets so that the clang commands can know if the
   // target CPU supports vectorization, avx, etc, etc
   // Also important for generating assembly from this program.
-  if (fLlvmCodegen) {
-    llvm::InitializeAllTargets();
-    llvm::InitializeAllTargetMCs();
-    llvm::InitializeAllAsmPrinters();
-    llvm::InitializeAllAsmParsers();
-  }
+  initializeLlvmTargets();
+  std::string triple = getConfiguredTargetTriple();
 
   // Create a compiler instance to handle the actual work.
   CompilerInstance* Clang = new CompilerInstance();
@@ -1488,11 +1627,16 @@ void setupClang(GenInfo* info, std::string mainFile)
   clangInfo->Diags = Diags;
   clangInfo->Clang = Clang;
 
-  clang::driver::Driver TheDriver(clangexe, llvm::sys::getDefaultTargetTriple(), *Diags);
+  clang::driver::Driver TheDriver(clangInfo->clangexe, triple, *Diags);
 
   //   SetInstallDir(argv, TheDriver);
 
-  std::unique_ptr<clang::driver::Compilation> C(TheDriver.BuildCompilation(clangArgs));
+  for (auto & arg : clangInfo->driverArgs) {
+    clangInfo->driverArgsCStrings.push_back(arg.c_str());
+  }
+
+  std::unique_ptr<clang::driver::Compilation> C(
+      TheDriver.BuildCompilation(clangInfo->driverArgsCStrings));
 
   clang::driver::Command* job = NULL;
 
@@ -1571,7 +1715,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     SmallString<128> P;
     SmallString<128> P2; // avoids a valgrind overlapping memcpy
 
-    P = clangexe;
+    P = clangInfo->clangexe;
     // Remove /clang from foo/bin/clang
     P2 = sys::path::parent_path(P);
     // Remove /bin   from foo/bin
@@ -1634,6 +1778,168 @@ void setupClang(GenInfo* info, std::string mainFile)
   }
 }
 
+
+// copied from clang's BackendUtil.cpp
+static Optional<llvm::CodeModel::Model>
+getCodeModel(const CodeGenOptions &CodeGenOpts) {
+  unsigned CodeModel = llvm::StringSwitch<unsigned>(CodeGenOpts.CodeModel)
+                           .Case("tiny", llvm::CodeModel::Tiny)
+                           .Case("small", llvm::CodeModel::Small)
+                           .Case("kernel", llvm::CodeModel::Kernel)
+                           .Case("medium", llvm::CodeModel::Medium)
+                           .Case("large", llvm::CodeModel::Large)
+                           .Case("default", ~1u)
+                           .Default(~0u);
+  assert(CodeModel != ~0u && "invalid code model!");
+  if (CodeModel == ~1u)
+    return None;
+  return static_cast<llvm::CodeModel::Model>(CodeModel);
+}
+
+// this function is substantially similar to clang's
+// initTargetOptions from BackendUtil.cpp
+static llvm::TargetOptions getTargetOptions(
+    const clang::CodeGenOptions& CodeGenOpts,
+    const clang::TargetOptions& TargetOpts) {
+
+  llvm::TargetOptions Options;
+
+  // Chapel is always multithreaded
+  Options.ThreadModel = llvm::ThreadModel::POSIX;
+
+  // Set float ABI type.
+  assert((CodeGenOpts.FloatABI == "soft" || CodeGenOpts.FloatABI == "softfp" ||
+          CodeGenOpts.FloatABI == "hard" || CodeGenOpts.FloatABI.empty()) &&
+         "Invalid Floating Point ABI!");
+  Options.FloatABIType =
+      llvm::StringSwitch<llvm::FloatABI::ABIType>(CodeGenOpts.FloatABI)
+          .Case("soft", llvm::FloatABI::Soft)
+          .Case("softfp", llvm::FloatABI::Soft)
+          .Case("hard", llvm::FloatABI::Hard)
+          .Default(llvm::FloatABI::Default);
+
+
+  // Set the floating point optimization level
+  // see also code setting FastMathFlags
+  // This uses ffloatOpt rather than using clang's LangOpts.
+  if (ffloatOpt == 1) {
+    // --no-ieee-float
+    // Allow unsafe fast floating point optimization
+    Options.UnsafeFPMath = 1; // e.g. FSIN instruction
+    Options.NoInfsFPMath = 1;
+    Options.NoNaNsFPMath = 1;
+    Options.NoTrappingFPMath = 1;
+    Options.NoSignedZerosFPMath = 1;
+    Options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+  } else if (ffloatOpt == 0) {
+    // Target default floating point optimization
+    Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
+  } else if (ffloatOpt == -1) {
+    // --ieee-float
+    // Should this set targetOptions.HonorSignDependentRoundingFPMathOption ?
+    // Allow fused multiply-adds
+    Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
+  }
+
+#if HAVE_LLVM_VER >= 120
+  Options.BinutilsVersion =
+      llvm::TargetMachine::parseBinutilsVersion(CodeGenOpts.BinutilsVersion);
+#endif
+
+  Options.UseInitArray = CodeGenOpts.UseInitArray;
+  Options.DisableIntegratedAS = CodeGenOpts.DisableIntegratedAS;
+  Options.CompressDebugSections = CodeGenOpts.getCompressDebugSections();
+  Options.RelaxELFRelocations = CodeGenOpts.RelaxELFRelocations;
+
+  // Set EABI version.
+  Options.EABIVersion = TargetOpts.EABIVersion;
+
+  Options.ExceptionModel = llvm::ExceptionHandling::None;
+
+  //Options.NoInfsFPMath = LangOpts.NoHonorInfs; -- set above
+  //Options.NoNaNsFPMath = LangOpts.NoHonorNaNs; -- set above
+  Options.NoZerosInBSS = CodeGenOpts.NoZeroInitializedInBSS;
+  //Options.UnsafeFPMath = LangOpts.UnsafeFPMath; -- set above
+#if HAVE_LLVM_VER <= 110
+  Options.StackAlignmentOverride = CodeGenOpts.StackAlignment;
+#endif
+
+  Options.BBSections =
+    llvm::StringSwitch<llvm::BasicBlockSection>(CodeGenOpts.BBSections)
+        .Case("all", llvm::BasicBlockSection::All)
+        .Case("labels", llvm::BasicBlockSection::Labels)
+        .StartsWith("list=", llvm::BasicBlockSection::List)
+        .Case("none", llvm::BasicBlockSection::None)
+        .Default(llvm::BasicBlockSection::None);
+
+  if (Options.BBSections == llvm::BasicBlockSection::List) {
+    INT_FATAL("this clang configuration not supported");
+  }
+
+#if HAVE_LLVM_VER >= 120
+  Options.EnableMachineFunctionSplitter = CodeGenOpts.SplitMachineFunctions;
+#endif
+
+  Options.FunctionSections = CodeGenOpts.FunctionSections;
+  Options.DataSections = CodeGenOpts.DataSections;
+#if LLVM_VERSION_MAJOR == 120
+  // clang::CodeGenOptions::IgnoreXCOFFVisibility first appeared in
+  // LLVM version 12 and then went away in version 13.
+  Options.IgnoreXCOFFVisibility = CodeGenOpts.IgnoreXCOFFVisibility;
+#endif
+  Options.UniqueSectionNames = CodeGenOpts.UniqueSectionNames;
+  Options.UniqueBasicBlockSectionNames =
+      CodeGenOpts.UniqueBasicBlockSectionNames;
+  Options.TLSSize = CodeGenOpts.TLSSize;
+  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
+  Options.ExplicitEmulatedTLS = CodeGenOpts.ExplicitEmulatedTLS;
+  Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
+  Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
+#if HAVE_LLVM_VER >= 130
+  Options.StackUsageOutput = CodeGenOpts.StackUsageOutput;
+#endif
+  Options.EmitAddrsig = CodeGenOpts.Addrsig;
+  Options.ForceDwarfFrameSection = CodeGenOpts.ForceDwarfFrameSection;
+  Options.EmitCallSiteInfo = CodeGenOpts.EmitCallSiteInfo;
+#if HAVE_LLVM_VER >= 120
+  Options.EnableAIXExtendedAltivecABI = CodeGenOpts.EnableAIXExtendedAltivecABI;
+  Options.PseudoProbeForProfiling = CodeGenOpts.PseudoProbeForProfiling;
+  Options.ValueTrackingVariableLocations =
+      CodeGenOpts.ValueTrackingVariableLocations;
+#endif
+  Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
+#if HAVE_LLVM_VER >= 140
+  Options.LoopAlignment = CodeGenOpts.LoopAlignment;
+#endif
+
+  Options.MCOptions.SplitDwarfFile = CodeGenOpts.SplitDwarfFile;
+  Options.MCOptions.MCRelaxAll = CodeGenOpts.RelaxAll;
+  Options.MCOptions.MCSaveTempLabels = CodeGenOpts.SaveTempLabels;
+  Options.MCOptions.MCUseDwarfDirectory = !CodeGenOpts.NoDwarfDirectoryAsm;
+  Options.MCOptions.MCNoExecStack = CodeGenOpts.NoExecStack;
+  Options.MCOptions.MCIncrementalLinkerCompatible =
+      CodeGenOpts.IncrementalLinkerCompatible;
+  Options.MCOptions.MCFatalWarnings = CodeGenOpts.FatalWarnings;
+  Options.MCOptions.MCNoWarn = CodeGenOpts.NoWarn;
+  Options.MCOptions.AsmVerbose = CodeGenOpts.AsmVerbose;
+#if HAVE_LLVM_VER >= 120
+  Options.MCOptions.Dwarf64 = CodeGenOpts.Dwarf64;
+#endif
+  Options.MCOptions.PreserveAsmComments = CodeGenOpts.PreserveAsmComments;
+  Options.MCOptions.ABIName = TargetOpts.ABI;
+
+  // consider setting Options.MCOptions.IASSearchPaths
+  // if .include directives with integrated assembler are needed
+
+  Options.MCOptions.Argv0 = CodeGenOpts.Argv0;
+  Options.MCOptions.CommandLineArgs = CodeGenOpts.CommandLineArgs;
+#if HAVE_LLVM_VER >= 130
+  Options.DebugStrictDwarf = CodeGenOpts.DebugStrictDwarf;
+#endif
+
+  return Options;
+}
+
 static void setupModule()
 {
   GenInfo* info = gGenInfo;
@@ -1645,8 +1951,13 @@ static void setupModule()
 
   INT_ASSERT(info->module);
 
+#if HAVE_LLVM_VER >= 130
+  clangInfo->asmTargetLayoutStr =
+    clangInfo->Clang->getTarget().getDataLayoutString();
+#else
   clangInfo->asmTargetLayoutStr =
     clangInfo->Clang->getTarget().getDataLayout().getStringRepresentation();
+#endif
 
   // Set the target triple.
   const llvm::Triple &Triple =
@@ -1669,6 +1980,7 @@ static void setupModule()
 
 
   const clang::TargetOptions & ClangOpts = clangInfo->Clang->getTargetOpts();
+  const clang::CodeGenOptions& ClangCodeGenOpts = clangInfo->codegenOptions;
 
   std::string cpu = ClangOpts.CPU;
   std::vector<std::string> clangFeatures = ClangOpts.Features;
@@ -1685,32 +1997,10 @@ static void setupModule()
   }
 
   // Set up the TargetOptions
-  llvm::TargetOptions targetOptions;
-  targetOptions.ThreadModel = llvm::ThreadModel::POSIX;
-
-  // Set the floating point optimization level
-  // see also code setting FastMathFlags
-  if (ffloatOpt == 1) {
-    // --no-ieee-float
-    // Allow unsafe fast floating point optimization
-    targetOptions.UnsafeFPMath = 1; // e.g. FSIN instruction
-    targetOptions.NoInfsFPMath = 1;
-    targetOptions.NoNaNsFPMath = 1;
-    targetOptions.NoTrappingFPMath = 1;
-    targetOptions.NoSignedZerosFPMath = 1;
-    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Fast;
-  } else if (ffloatOpt == 0) {
-    // Target default floating point optimization
-    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Standard;
-  } else if (ffloatOpt == -1) {
-    // --ieee-float
-    // Should this set targetOptions.HonorSignDependentRoundingFPMathOption ?
-    // Allow fused multiply-adds
-    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Standard;
-  }
+  llvm::TargetOptions Options = getTargetOptions(ClangCodeGenOpts, ClangOpts);
 
   if (!fFastFlag)
-    targetOptions.EnableFastISel = 1;
+    Options.EnableFastISel = 1;
   else {
     // things to consider:
     // EnableIPRA  -- InterProcedural Register Allocation (IPRA).
@@ -1718,13 +2008,15 @@ static void setupModule()
   }
 
   llvm::Reloc::Model relocModel = llvm::Reloc::Model::Static;
+  // a reasonable alternative would be
+  // llvm::Reloc::Model RM = CodeGenOpts.RelocationModel;
 
   if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
     relocModel = llvm::Reloc::Model::PIC_;
   }
 
   // Choose the code model
-  llvm::Optional<CodeModel::Model> codeModel = None;
+  llvm::Optional<CodeModel::Model> codeModel = getCodeModel(ClangCodeGenOpts);
 
   llvm::CodeGenOpt::Level optLevel =
     fFastFlag ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
@@ -1733,7 +2025,7 @@ static void setupModule()
   info->targetMachine = Target->createTargetMachine(Triple.str(),
                                                     cpu,
                                                     featuresString,
-                                                    targetOptions,
+                                                    Options,
                                                     relocModel,
                                                     codeModel,
                                                     optLevel);
@@ -1835,43 +2127,53 @@ static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
 }
 #endif
 
+// This has code based on clang's EmitAssemblyHelper::CreatePasses
+// in BackendUtil.cpp.
 static
 void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, int optLevel=-1) {
   ClangInfo* clangInfo = gGenInfo->clangInfo;
   INT_ASSERT(clangInfo);
-  clang::CodeGenOptions &opts = clangInfo->codegenOptions;
+  clang::CodeGenOptions &CodeGenOpts = clangInfo->codegenOptions;
 
   if (optLevel < 0)
-    optLevel = opts.OptimizationLevel;
+    optLevel = CodeGenOpts.OptimizationLevel;
 
   if( fFastFlag ) {
     // TODO -- remove this assert
-    INT_ASSERT(opts.OptimizationLevel >= 2);
+    INT_ASSERT(CodeGenOpts.OptimizationLevel >= 2);
   }
 
-  if (optLevel >= 1)
-    PMBuilder.Inliner = createFunctionInliningPass(optLevel,
-                                                   opts.OptimizeSize,
-                                                   /*DisableInlineHotCallsite*/
-                                                   false
-                                                  );
+  if (optLevel <= 1) {
+      bool InsertLifetimeIntrinsics = (CodeGenOpts.OptimizationLevel != 0 &&
+                                       !CodeGenOpts.DisableLifetimeMarkers);
+      // TODO: insert lifetime intrinsics if Coroutines are used
+    PMBuilder.Inliner = createAlwaysInlinerLegacyPass(InsertLifetimeIntrinsics);
+  } else {
+    PMBuilder.Inliner = createFunctionInliningPass(
+        CodeGenOpts.OptimizationLevel, CodeGenOpts.OptimizeSize,
+        (!CodeGenOpts.SampleProfileFile.empty() &&
+         CodeGenOpts.PrepareForThinLTO));
+  }
 
   PMBuilder.OptLevel = optLevel;
-  PMBuilder.SizeLevel = opts.OptimizeSize;
-  PMBuilder.SLPVectorize = opts.VectorizeSLP;
-  PMBuilder.LoopVectorize = opts.VectorizeLoop;
+  PMBuilder.SizeLevel = CodeGenOpts.OptimizeSize;
+  PMBuilder.SLPVectorize = CodeGenOpts.VectorizeSLP;
+  PMBuilder.LoopVectorize = CodeGenOpts.VectorizeLoop;
+  PMBuilder.CallGraphProfile = !CodeGenOpts.DisableIntegratedAS;
 
-  PMBuilder.DisableUnrollLoops = !opts.UnrollLoops;
-  PMBuilder.MergeFunctions = opts.MergeFunctions;
+  PMBuilder.DisableUnrollLoops = !CodeGenOpts.UnrollLoops;
+  PMBuilder.LoopsInterleaved = CodeGenOpts.UnrollLoops;
+  PMBuilder.MergeFunctions = CodeGenOpts.MergeFunctions;
 #if HAVE_LLVM_VER > 60
-  PMBuilder.PrepareForThinLTO = opts.PrepareForThinLTO;
+  PMBuilder.PrepareForThinLTO = CodeGenOpts.PrepareForThinLTO;
 #else
-  PMBuilder.PrepareForThinLTO = opts.EmitSummaryIndex;
+  PMBuilder.PrepareForThinLTO = CodeGenOpts.EmitSummaryIndex;
 #endif
+  PMBuilder.PrepareForLTO = CodeGenOpts.PrepareForLTO;
+  PMBuilder.RerollLoops = CodeGenOpts.RerollLoops;
 
-  PMBuilder.PrepareForLTO = opts.PrepareForLTO;
-  PMBuilder.RerollLoops = opts.RerollLoops;
-
+  if (gGenInfo->targetMachine)
+    gGenInfo->targetMachine->adjustPassManager(PMBuilder);
 
   // Enable Region Vectorizer aka Outer Loop Vectorizer
 #ifdef HAVE_LLVM_RV
@@ -1976,8 +2278,67 @@ bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name)
   return module->extern_info->gen_info->lvt->markAddedToChapelAST(name);
 }
 
+static bool isTargetCpuValid(const char* targetCpu) {
+  if (0 == strcmp(targetCpu, "native")) {
+    return true;
+  } else {
+    initializeLlvmTargets();
+    std::string triple = getConfiguredTargetTriple();
+    std::string err;
+    const llvm::Target* tgt = llvm::TargetRegistry::lookupTarget(triple, err);
+    if (tgt == nullptr || !err.empty()) {
+      return false;
+    }
+    bool targetCpuValid = false;
+    auto ptr = tgt->createMCSubtargetInfo(triple, "", "");
+    targetCpuValid = ptr->isCPUStringValid(CHPL_TARGET_BACKEND_CPU);
+    delete ptr;
 
+    return targetCpuValid;
+  }
+}
+
+// If we are parsing an extern block with clang, we might
+// be configured to use a target compiler that is not clang.
+// In that event, filter out everything but the -D and -I arguments,
+// since other arguments might not be understood by clang.
+//
+// This could filter out more aggressively but we do need the
+// paths and defines for the runtime headers to work.
+static void addFilteredArgs(std::vector<std::string>& dst,
+                            std::vector<std::string>& src,
+                            bool parseOnly) {
+  bool clang = 0 == strcmp(CHPL_TARGET_COMPILER, "llvm") ||
+               0 == strcmp(CHPL_TARGET_COMPILER, "clang");
+  bool filter = parseOnly && !clang;
+
+  if (filter) {
+    for (size_t i = 0; i < src.size(); i++) {
+      const auto& arg = src[i];
+      const char* s = arg.c_str();
+      if (startsWith(s, "-D") || startsWith(s, "-I")) {
+        dst.push_back(arg);
+        if (arg.size() == 2 && i+1 < src.size()) {
+          // if it was just "-D" or "-I", add the next argument too
+          i++;
+          dst.push_back(src[i]);
+        }
+      }
+    }
+
+  } else {
+    // add all of the arguments without filtering
+    for (size_t i = 0; i < src.size(); i++) {
+      dst.push_back(src[i]);
+    }
+  }
+}
+
+// if just_parse_filename != NULL, it is a file
+// containing an extern block to parse only
+// (and in that setting there is no need to work with the runtime).
 void runClang(const char* just_parse_filename) {
+  bool parseOnly = (just_parse_filename != NULL);
   static bool is_installed_fatal_error_handler = false;
 
   const char* clang_warn[] = {"-Wall", "-Werror", "-Wpointer-arith",
@@ -1993,125 +2354,84 @@ void runClang(const char* just_parse_filename) {
   const char* clang_fast_float = "-ffast-math";
   const char* clang_ieee_float = "-fno-fast-math";
 
-  std::vector<std::string> args;
+  std::vector<std::string> split;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangOtherArgs;
+  std::vector<std::string> clangLDArgs;
 
   // find the path to clang and clang++
-  std::string llvm_install, clangCC, clangCXX;
+  std::string clangCC, clangCXX;
 
-  if (0 == strcmp(CHPL_LLVM, "system")) {
-    clangCC = get_clang_cc();
-    clangCXX = get_clang_cxx();
-  } else if (0 == strcmp(CHPL_LLVM, "llvm") ||
-             0 == strcmp(CHPL_LLVM, "bundled")) {
-    llvm_install += CHPL_THIRD_PARTY;
-    llvm_install += "/llvm/install/";
-    llvm_install += CHPL_LLVM_UNIQ_CFG_PATH;
-    llvm_install += "/bin/";
-    clangCC = llvm_install + "clang";
-    clangCXX = llvm_install + "clang++";
-  } else {
-    USR_FATAL("Unsupported CHPL_LLVM setting %s", CHPL_LLVM);
-  }
-
-  // read clang-sysroot-arguments
-  std::string sysroot_arguments(CHPL_THIRD_PARTY);
-  sysroot_arguments += "/llvm/install/";
-  sysroot_arguments += CHPL_LLVM_UNIQ_CFG_PATH;
-  sysroot_arguments += "/configured-clang-sysroot-arguments";
-
-  // read arguments from configured-clang-sysroot-arguments
-  // these might include a key -isysroot argument on Mac OS X
-  readArgsFromFile(sysroot_arguments, args);
-
-  // read arguments that we captured at compile time
-  splitStringWhitespace(get_clang_sysroot_args(), args);
-
-  std::string runtime_includes(CHPL_RUNTIME_LIB);
-  runtime_includes += "/";
-  runtime_includes += CHPL_RUNTIME_SUBDIR;
-  runtime_includes += "/list-includes-and-defines";
-
-  bool rtOk = readArgsFromFile(runtime_includes, args, /*errFatal*/ false);
-  if (rtOk == false) {
-    std::string runtime_dir(CHPL_RUNTIME_LIB);
-    runtime_dir += "/";
-    runtime_dir += CHPL_RUNTIME_SUBDIR;
-
-    if (developer)
-      USR_FATAL_CONT("Expected runtime library in %s", runtime_dir.c_str());
-
-    const char* module_home = getenv("CHPL_MODULE_HOME");
-    if (module_home) {
-      USR_FATAL("The requested configuration is not included in the module. "
-                "Please send the package maintainer the output of "
-                "$CHPL_HOME/util/printchplenv and request support for this "
-                "configuration.");
+  // get any args passed to CC/CXX and add them to the builtin clang invocation
+  splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+  // set clangCC / clangCXX to just the first argument
+  for (size_t i = 0; i < split.size(); i++) {
+    if (i == 0) {
+      clangCC = split[i];
     } else {
-      USR_FATAL("The runtime has not been built for this configuration. "
-                "Check $CHPL_HOME/util/printchplenv and try rebuilding "
-                "with $CHPL_MAKE from $CHPL_HOME.");
+      // arguments from CHPL_LLVM_CLANG_C to both CC args and LD args.
+      clangCCArgs.push_back(split[i]);
+      clangLDArgs.push_back(split[i]);
     }
   }
-
-  // Remove -DCHPL_DEBUG, -DCHPL_OPTIMIZE, -DNDEBUG from the args
-  // They are settings from the runtime build and we want to
-  // use flags appropriate to the compilation instead of the runtime build
-  std::vector<std::string>::iterator pos =
-    std::find(args.begin(), args.end(), "-DCHPL_DEBUG");
-  if (pos != args.end())
-    args.erase(pos);
-
-  pos = std::find(args.begin(), args.end(), "-DCHPL_OPTIMIZE");
-  if (pos != args.end())
-    args.erase(pos);
-
-
-  pos = std::find(args.begin(), args.end(), "-DNDEBUG");
-  if (pos != args.end())
-    args.erase(pos);
-
-  std::string dashImodules = "-I";
-  dashImodules += CHPL_HOME;
-  dashImodules += "/modules";
-
-  args.push_back(dashImodules + "/standard");
-  args.push_back(dashImodules + "/packages");
-
-  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
-  expandInstallationPaths(args);
-
-  if (compilingWithPrgEnv()) {
-    std::string gather_prgenv(CHPL_HOME);
-    gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash compile '";
-    gather_prgenv += CHPL_TARGET_PLATFORM;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_COMM;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_COMM_SUBSTRATE;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_AUX_FILESYS;
-    gather_prgenv += "'";
-    readArgsFromCommand(gather_prgenv, args);
+  split.clear();
+  splitStringWhitespace(CHPL_LLVM_CLANG_CXX, split);
+  if (split.size() > 0) {
+    clangCXX = split[0];
   }
 
+
+  // add -fPIC if CHPL_LIB_PIC indicates we should
+  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
+    clangCCArgs.push_back("-fPIC");
+  }
+
+  // after arguments provided in CC/CXX
+  // add include paths to anything builtin or in CHPL_HOME
+  {
+    std::vector<std::string> args;
+    std::string dashI = "-I";
+
+    // add -I$CHPL_HOME/modules/standard/
+    // add -I$CHPL_HOME/modules/packages/
+    args.push_back(dashI + CHPL_HOME + "/modules/standard");
+    args.push_back(dashI + CHPL_HOME + "/modules/packages");
+
+    // add arguments from CHPL_TARGET_BUNDLED_COMPILE_ARGS
+    splitStringWhitespace(CHPL_TARGET_BUNDLED_COMPILE_ARGS, args);
+    // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+    expandInstallationPaths(args);
+
+    // add the arguments, filtering if parsing an extern block
+    addFilteredArgs(clangCCArgs, args, parseOnly);
+  }
+
+  // add a -I. so we can find headers named on command line in same dir
+  clangCCArgs.push_back("-I.");
+
+  // add a -I for the generated code directory
+  clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
+
+  // Add warnings flags
   if (ccwarnings) {
     for (int i = 0; clang_warn[i]; i++) {
-      args.push_back(clang_warn[i]);
+      clangCCArgs.push_back(clang_warn[i]);
     }
   }
 
+  // Add debug flags
   if (debugCCode) {
-    args.push_back(clang_debug);
-    args.push_back("-DCHPL_DEBUG");
+    clangCCArgs.push_back(clang_debug);
+    clangCCArgs.push_back("-DCHPL_DEBUG");
   }
 
+  // Add optimize flags
   if (optimizeCCode) {
-    args.push_back(clang_opt);
-    args.push_back("-DCHPL_OPTIMIZE");
+    clangCCArgs.push_back(clang_opt);
+    clangCCArgs.push_back("-DCHPL_OPTIMIZE");
   }
 
+  // Add specialization flags
   if (specializeCCode &&
       CHPL_TARGET_CPU_FLAG != NULL &&
       CHPL_TARGET_BACKEND_CPU != NULL &&
@@ -2120,52 +2440,58 @@ void runClang(const char* just_parse_filename) {
       0 != strcmp(CHPL_TARGET_CPU_FLAG, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_CPU, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_CPU, "unknown")) {
-    std::string march = "-m";
-    march += CHPL_TARGET_CPU_FLAG;
-    march += "=";
-    march += CHPL_TARGET_BACKEND_CPU;
-    args.push_back(march);
+
+    // Check that the requested CPU is valid
+    bool targetCpuValid = isTargetCpuValid(CHPL_TARGET_BACKEND_CPU);
+    if (!targetCpuValid) {
+      USR_WARN("Unknown target CPU %s -- not specializing",
+               CHPL_TARGET_BACKEND_CPU);
+      std::string triple = getConfiguredTargetTriple();
+      USR_PRINT("To see available CPU types, run "
+                "%s --target=%s --print-supported-cpus",
+                clangCC.c_str(), triple.c_str());
+
+    } else {
+      std::string march = "-m";
+      march += CHPL_TARGET_CPU_FLAG;
+      march += "=";
+      march += CHPL_TARGET_BACKEND_CPU;
+      clangCCArgs.push_back(march);
+    }
   }
 
   // Passing -ffast-math is important to get approximate versions
   // of cabs but it appears to slow down simple complex multiplication.
   if (ffloatOpt > 0) // --no-ieee-float
-    args.push_back(clang_fast_float); // --ffast-math
+    clangCCArgs.push_back(clang_fast_float); // --ffast-math
 
   if (ffloatOpt < 0) // --ieee-float
-    args.push_back(clang_ieee_float); // -fno-fast-math
+    clangCCArgs.push_back(clang_ieee_float); // -fno-fast-math
 
-  // Gather information from readargsfrom into clangArgs.
-
-  // Note that these CC arguments will be saved in info->clangCCArgs
-  // and will be used when compiling C files as well.
-  bool saw_sysroot = false;
-  for( size_t i = 0; i < args.size(); ++i ) {
-    clangCCArgs.push_back(args[i]);
-    if (args[i] == "-isysroot")
-      saw_sysroot = true;
-  }
-
+  // Add include directories specified on the command line
   for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
-  clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
-  if (saw_sysroot) {
-    // Work around a bug in some versions of Clang that forget to
-    // search /usr/local/include if there is a -isysroot argument.
-    clangCCArgs.push_back(std::string("-I/usr/local/include"));
-  }
 
-  //split ccflags by spaces
+  // Add C compilation flags from the command line (--ccflags arguments)
   splitStringWhitespace(ccflags, clangCCArgs);
-
-  clangCCArgs.push_back("-pthread");
 
   // Library directories/files and ldflags are handled during linking later.
   // Skip this in multi-locale libraries because the C blob that is built
   // already defines this.
   if (!fMultiLocaleInterop) {
     clangCCArgs.push_back("-DCHPL_GEN_CODE");
+  }
+
+  // add -pthread since we will use pthreads
+  clangCCArgs.push_back("-pthread");
+
+  // add system compiler args from printchplenv
+  {
+    std::vector<std::string> args;
+    splitStringWhitespace(CHPL_TARGET_SYSTEM_COMPILE_ARGS, args);
+    // add the arguments, filtering if parsing an extern block
+    addFilteredArgs(clangCCArgs, args, parseOnly);
   }
 
   // tell clang to use CUDA support
@@ -2176,6 +2502,9 @@ void runClang(const char* just_parse_filename) {
     // activate the GPU target
     clangOtherArgs.push_back("-x");
     clangOtherArgs.push_back("cuda");
+
+    std::string cudaGPUArch = std::string("--cuda-gpu-arch=") + fCUDAArch;
+    clangOtherArgs.push_back(cudaGPUArch);
   }
 
   // Always include sys_basic because it might change the
@@ -2183,8 +2512,7 @@ void runClang(const char* just_parse_filename) {
   clangOtherArgs.push_back("-include");
   clangOtherArgs.push_back("sys_basic.h");
 
-  if (!just_parse_filename) {
-
+  if (!parseOnly) {
     if (localeUsesGPU()) {
       //create a header file to include header files from the command line
       std::string genHeaderFilename;
@@ -2210,7 +2538,7 @@ void runClang(const char* just_parse_filename) {
       fprintf(fp, "%s", ifdefStrEnd);
       closefile(fp);
       clangOtherArgs.push_back("-include");
-      clangOtherArgs.push_back(genHeaderFilename.c_str());
+      clangOtherArgs.push_back(genHeaderFilename);
     }
 
     // Running clang to compile all runtime and extern blocks
@@ -2256,7 +2584,7 @@ void runClang(const char* just_parse_filename) {
   }
 
   if( printSystemCommands ) {
-    if (just_parse_filename != NULL)
+    if (parseOnly)
       printf("<internal clang parsing %s> ", just_parse_filename);
     else
       printf("<internal clang code generation> ");
@@ -2270,7 +2598,6 @@ void runClang(const char* just_parse_filename) {
     printf("\n");
   }
 
-  bool parseOnly = (just_parse_filename != NULL);
 
   // Initialize gGenInfo
   // Toggle LLVM code generation in our clang run;
@@ -2284,12 +2611,12 @@ void runClang(const char* just_parse_filename) {
     INT_ASSERT(gGenInfo != NULL);
   }
 
-  gGenInfo->lvt = new LayeredValueTable();
+  gGenInfo->lvt = std::make_unique<LayeredValueTable>();
 
 
   ClangInfo* clangInfo = NULL;
   clangInfo = new ClangInfo(clangCC, clangCXX,
-                            clangCCArgs, clangOtherArgs,
+                            clangCCArgs, clangOtherArgs, clangLDArgs,
                             parseOnly);
 
   gGenInfo->clangInfo = clangInfo;
@@ -2317,7 +2644,7 @@ void runClang(const char* just_parse_filename) {
     // and does the code generation.
     clangInfo->cCodeGenAction = new CCodeGenAction();
     if (!clangInfo->Clang->ExecuteAction(*clangInfo->cCodeGenAction)) {
-      if (just_parse_filename) {
+      if (parseOnly) {
         USR_FATAL("error running clang on extern block");
       } else {
         USR_FATAL("error running clang during code generation");
@@ -2468,7 +2795,12 @@ clang::FunctionDecl* getFunctionDeclClang(const char* name)
 llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
+#if HAVE_LLVM_VER >= 120
+  llvm::Type* t = llvm::StructType::getTypeByName(info->llvmContext, name);
+#else
   llvm::Type* t = info->module->getTypeByName(name);
+#endif
+
   if( t ) return t;
 
   t = info->lvt->getType(name);
@@ -2495,8 +2827,12 @@ llvm::Type* codegenCType(const TypeDecl* td)
     qType = ed->getCanonicalDecl()->getIntegerType();
   } else if( const RecordDecl* rd = dyn_cast<RecordDecl>(td) ) {
     RecordDecl *def = rd->getDefinition();
-    INT_ASSERT(def);
-    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    if (def == nullptr) {
+      // it's an opaque type - definition of fields not available
+      qType=rd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    } else {
+      qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    }
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
@@ -2707,8 +3043,25 @@ void LayeredValueTable::addBlock(StringRef name, llvm::BasicBlock *block) {
   (*blockLayer)[name] = store;
 }
 
+void LayeredValueTable::addMacro(StringRef name,
+                                 const clang::MacroInfo *macro) {
+  Storage store;
+  store.u.macro = macro;
+  (layers.back())[name] = store;
+}
+
+void LayeredValueTable::addForwardName(llvm::StringRef name, const char* forwardName) {
+  Storage store;
+  store.u.forwardToName = astr(forwardName);
+  (layers.back())[name] = store;
+}
+
 GenRet LayeredValueTable::getValue(StringRef name) {
   if(Storage *store = get(name)) {
+    if (store->u.forwardToName) {
+      store = get(store->u.forwardToName);
+    }
+
     if( store->u.value ) {
       INT_ASSERT(isa<Value>(store->u.value));
       GenRet ret;
@@ -2797,6 +3150,9 @@ void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
   if (cCastedToTypeOut) *cCastedToTypeOut = NULL;
 
   if(Storage *store = get(name)) {
+    if (store->u.forwardToName) {
+      store = get(store->u.forwardToName);
+    }
     if( store->u.cValueDecl ) {
       INT_ASSERT(isa<ValueDecl>(store->u.cValueDecl));
       // we have a clang value decl.
@@ -2834,6 +3190,16 @@ VarSymbol* LayeredValueTable::getVarSymbol(StringRef name) {
       // maybe immediate number or string, possibly variable reference.
       // These come from macros.
       return store->u.chplVar;
+    }
+  }
+  return NULL;
+}
+
+const clang::MacroInfo* LayeredValueTable::getMacro(StringRef name) {
+  if (Storage *store = get(name)) {
+    if (store->u.macro) {
+      INT_ASSERT(isa<clang::MacroInfo>(store->u.macro));
+      return store->u.macro;
     }
   }
   return NULL;
@@ -2919,6 +3285,15 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
       break;
     }
   }
+
+  // TODO (dlongnecke): Try to move this to a spot before codegen? It would
+  // also be cool if we could point this to the location in the source code
+  // where the field is being accessed.
+  if (!field) {
+    auto fmt = "Definition of '%s.%s' not visible in external C code";
+    USR_FATAL(fmt, typeName, fieldName);
+  }
+
   INT_ASSERT(field);
 
   isCArrayField = field->getType()->isArrayType();
@@ -3473,22 +3848,19 @@ static void makeLLVMStaticLibrary(std::string moduleFilename,
 static void makeLLVMDynamicLibrary(std::string useLinkCXX, std::string options,
                             std::string moduleFilename, const char* tmpbinname,
                             std::vector<std::string> dotOFiles,
-                            std::vector<std::string> clangLDArgs,
-                            bool sawSysroot);
+                            std::vector<std::string> clangLDArgs);
 static std::string buildLLVMLinkCommand(std::string useLinkCXX,
                                         std::string options,
                                         std::string moduleFilename,
                                         std::string maino,
                                         const char* tmpbinname,
                                         std::vector<std::string> dotOFiles,
-                                        std::vector<std::string> clangLDArgs,
-                                        bool sawSysroot);
+                                        std::vector<std::string> clangLDArgs);
 static void runLLVMLinking(std::string useLinkCXX, std::string options,
                            std::string moduleFilename, std::string maino,
                            const char* tmpbinname,
                            std::vector<std::string> dotOFiles,
-                           std::vector<std::string> clangLDArgs,
-                           bool sawSysroot);
+                           std::vector<std::string> clangLDArgs);
 static std::string getLibraryOutputPath();
 static void moveGeneratedLibraryFile(const char* tmpbinname);
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
@@ -3526,8 +3898,11 @@ void makeBinaryLLVM(void) {
   if( saveCDir[0] != '\0' ) {
     std::error_code tmpErr;
     // Save the generated LLVM before optimization.
-    ToolOutputFile output (preOptFilename.c_str(),
-                             tmpErr, sys::fs::F_None);
+#if HAVE_LLVM_VER >= 120
+    ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::OF_None);
+#else
+    ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::F_None);
+#endif
     if (tmpErr)
       USR_FATAL("Could not open output file %s", preOptFilename.c_str());
 #if HAVE_LLVM_VER < 70
@@ -3557,7 +3932,11 @@ void makeBinaryLLVM(void) {
 
   // Open the output file
   std::error_code error;
+#if HAVE_LLVM_VER >= 120
+  llvm::sys::fs::OpenFlags flags = llvm::sys::fs::OF_None;
+#else
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
+#endif
 
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
@@ -3635,8 +4014,14 @@ void makeBinaryLLVM(void) {
     if( saveCDir[0] != '\0' ) {
       // Save the generated LLVM after first chunk of optimization
       std::error_code tmpErr;
+#if HAVE_LLVM_VER >= 120
+      ToolOutputFile output1 (opt1Filename.c_str(),
+                               tmpErr, sys::fs::OF_None);
+#else
       ToolOutputFile output1 (opt1Filename.c_str(),
                                tmpErr, sys::fs::F_None);
+#endif
+
       if (tmpErr)
         USR_FATAL("Could not open output file %s", opt1Filename.c_str());
 #if HAVE_LLVM_VER < 70
@@ -3672,8 +4057,13 @@ void makeBinaryLLVM(void) {
       if( saveCDir[0] != '\0' ) {
         // Save the generated LLVM after second chunk of optimization
         std::error_code tmpErr;
+#if HAVE_LLVM_VER >= 120
+        ToolOutputFile output2 (opt2Filename.c_str(),
+                                 tmpErr, sys::fs::OF_None);
+#else
         ToolOutputFile output2 (opt2Filename.c_str(),
                                  tmpErr, sys::fs::F_None);
+#endif
         if (tmpErr)
           USR_FATAL("Could not open output file %s", opt2Filename.c_str());
 #if HAVE_LLVM_VER < 70
@@ -3773,25 +4163,35 @@ void makeBinaryLLVM(void) {
 
       outputASMfile.close();
 
-      if (mysystem("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
+      if (myshell("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
         USR_FATAL("Command 'ptxas' not found\n");
       }
 
-      if (mysystem("which fatbinary > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
+      if (myshell("which fatbinary > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
         USR_FATAL("Command 'fatbinary' not found\n");
       }
 
 
-      std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") +
-                           std::string("sm_60 --output-file ") + ptxObjectFilename.c_str() +
+      std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + fCUDAArch +
+                           std::string(" --output-file ") +
+                           ptxObjectFilename.c_str() +
                            " " + asmFilename.c_str();
 
       mysystem(ptxCmd.c_str(), "PTX to  object file");
 
+      if (strncmp(fCUDAArch, "sm_", 3) != 0 || strlen(fCUDAArch) != 5) {
+        USR_FATAL("Unrecognized CUDA arch");
+      }
+
+      std::string computeCap = std::string("compute_") + fCUDAArch[3] +
+                                                         fCUDAArch[4];
       std::string fatbinaryCmd = std::string("fatbinary -64 ") +
-                                 std::string("--create ") + fatbinFilename.c_str() +
-                                 std::string(" --image=profile=sm_60,file=") + ptxObjectFilename.c_str() +
-                                 std::string(" --image=profile=compute_60,file=") + asmFilename.c_str();
+                                 std::string("--create ") +
+                                 fatbinFilename.c_str() +
+                                 std::string(" --image=profile=") + fCUDAArch +
+                                 ",file=" + ptxObjectFilename.c_str() +
+                                 std::string(" --image=profile=") + computeCap +
+                                 ",file=" + asmFilename.c_str();
 
       mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
 
@@ -3814,84 +4214,7 @@ void makeBinaryLLVM(void) {
   maino += CHPL_RUNTIME_SUBDIR;
   maino += "/main.o";
 
-  std::string runtime_libs(CHPL_RUNTIME_LIB);
-  runtime_libs += "/";
-  runtime_libs += CHPL_RUNTIME_SUBDIR;
-  runtime_libs += "/list-libraries";
-
-  std::vector<std::string> runtimeArgs;
-  readArgsFromFile(runtime_libs, runtimeArgs);
-
-  std::vector<std::string> clangLDArgs;
-
-  if (compilingWithPrgEnv()) {
-    std::string gather_prgenv(CHPL_HOME);
-    gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash link '";
-
-    gather_prgenv += CHPL_TARGET_PLATFORM;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_COMM;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_COMM_SUBSTRATE;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_AUX_FILESYS;
-    gather_prgenv += "'";
-
-    std::vector<std::string> gatheredArgs;
-    readArgsFromCommand(gather_prgenv, gatheredArgs);
-
-    if (fLinkStyle == LS_DEFAULT) {
-      // check for indication that the PrgEnv defaults to dynamic linking
-      bool defaultDynamic = false;
-      for(size_t i = 0; i < gatheredArgs.size(); i++)
-        if (gatheredArgs[i].find("-Wl,-Bdynamic") != std::string::npos)
-          defaultDynamic = true;
-
-      // Older Cray PrgEnv defaults to static linking.  If we are asking for
-      // the default link type, and we don't find an explicit dynamic
-      // flag in the gathered PrgEnv arguments, then force static linking
-      // because LLVM's default (dynamic) is different from the PrgEnv
-      // default (static).
-      if (defaultDynamic == false)
-        fLinkStyle = LS_STATIC;
-    }
-
-    // Replace -lchpl_lib_token with the runtime arguments
-    // but don't add a redundant -lhugetlbfs because that
-    // library is already included
-    bool found = false;
-    for(size_t i = 0; i < gatheredArgs.size(); ++i) {
-      if (gatheredArgs[i] == "-lchpl_lib_token") {
-        found = true;
-        for(size_t j = 0; j < runtimeArgs.size(); ++j) {
-          if (runtimeArgs[j] != "-lhugetlbfs")
-            clangLDArgs.push_back(runtimeArgs[j]);
-        }
-      } else {
-        clangLDArgs.push_back(gatheredArgs[i]);
-      }
-    }
-
-    if (!found) INT_FATAL("could not find -lchpl_lib_token in gathered arguments");
-
-  } else {
-    clangLDArgs = runtimeArgs;
-  }
-
-  // Grab extra dependencies for multilocale libraries if needed.
-  if (fMultiLocaleInterop) {
-    std::string cmd = std::string(CHPL_HOME);
-    cmd += "/util/config/compileline --multilocale-lib-deps";
-    std::string libs = runCommand(cmd);
-    // Erase trailing newline.
-    libs.erase(libs.size() - 1);
-    clangLDArgs.push_back(libs);
-  }
-
-  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
-  expandInstallationPaths(clangLDArgs);
-
-
+  // TODO: move this logic to printchplenv
   std::string runtime_ld_override(CHPL_RUNTIME_LIB);
   runtime_ld_override += "/";
   runtime_ld_override += CHPL_RUNTIME_SUBDIR;
@@ -3908,6 +4231,34 @@ void makeBinaryLLVM(void) {
 
   if (ldOverride.size() > 0)
     useLinkCXX = ldOverride[0];
+
+  // start with arguments from CHPL_LLVM_CLANG_C unless
+  // using a non-clang compiler to link
+  std::vector<std::string> clangLDArgs = clangInfo->clangLDArgs;
+  if (useLinkCXX != clangCXX)
+    clangLDArgs.clear();
+
+  // Add runtime libs arguments
+  //readArgsFromFile(runtime_libs, clangLDArgs);
+
+  // add the bundled link args from printchplenv
+  splitStringWhitespace(CHPL_TARGET_BUNDLED_LINK_ARGS, clangLDArgs);
+
+  // add the system link args from printchplenv
+  splitStringWhitespace(CHPL_TARGET_SYSTEM_LINK_ARGS, clangLDArgs);
+
+  // Grab extra dependencies for multilocale libraries if needed.
+  if (fMultiLocaleInterop) {
+    std::string cmd = std::string(CHPL_HOME);
+    cmd += "/util/config/compileline --multilocale-lib-deps";
+    std::string libs = runCommand(cmd);
+    // Erase trailing newline.
+    libs.erase(libs.size() - 1);
+    clangLDArgs.push_back(libs);
+  }
+
+  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+  expandInstallationPaths(clangLDArgs);
 
 
   std::vector<std::string> dotOFiles;
@@ -3941,41 +4292,12 @@ void makeBinaryLLVM(void) {
   // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
   // to avoid unused argument errors for optimization flags.
 
-  std::vector<std::string> sysroot_args;
-  std::string sysroot_arguments(CHPL_THIRD_PARTY);
-  sysroot_arguments += "/llvm/install/";
-  sysroot_arguments += CHPL_LLVM_UNIQ_CFG_PATH;
-  sysroot_arguments += "/configured-clang-sysroot-arguments";
-
-  readArgsFromFile(sysroot_arguments, sysroot_args);
-
-  // add arguments from configured-clang-sysroot-arguments
-  bool sawSysroot = false;
-  for (auto &s : sysroot_args) {
-    options += " ";
-    options += s;
-    if (s == "-isysroot")
-      sawSysroot = true;
-  }
-
-  // only use clang sysroot args if we haven't overridden the linker
-  if (clangCXX == useLinkCXX) {
-    // add arguments that we captured at compile time
-    options += " ";
-    options += get_clang_sysroot_args();
-  }
-
   if(debugCCode) {
     options += " -g";
   }
 
   // We used to supply link args here *and* later on
   // in the link line. I think the later position is sufficient.
-  /*
-  for( size_t i = 0; i < clangLDArgs.size(); ++i ) {
-    options += " ";
-    options += clangLDArgs[i].c_str();
-  }*/
 
   // note: currently ldflags are not stored into clangLDArgs.
   // If they were, these lines would need to be removed.
@@ -4015,7 +4337,7 @@ void makeBinaryLLVM(void) {
       break;
     case LS_DYNAMIC:
       makeLLVMDynamicLibrary(useLinkCXX, options, moduleFilename, tmpbinname,
-                             dotOFiles, clangLDArgs, sawSysroot);
+                             dotOFiles, clangLDArgs);
       break;
     default:
       INT_FATAL("Unsupported library link mode");
@@ -4026,7 +4348,7 @@ void makeBinaryLLVM(void) {
 
     // Runs the LLVM link command for executables.
     runLLVMLinking(useLinkCXX, options, moduleFilename, maino, outbin,
-                   dotOFiles, clangLDArgs, sawSysroot);
+                   dotOFiles, clangLDArgs);
   }
 
   // If we're not using a launcher, copy the program here
@@ -4073,8 +4395,7 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
                                    std::string moduleFilename,
                                    const char* tmpbinname,
                                    std::vector<std::string> dotOFiles,
-                                   std::vector<std::string> clangLDArgs,
-                                   bool sawSysroot) {
+                                   std::vector<std::string> clangLDArgs) {
 
   INT_ASSERT(fLibraryCompile && fLinkStyle == LS_DYNAMIC);
 
@@ -4099,8 +4420,7 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
   // No main object file for this call, since we're building a library.
   std::string command = buildLLVMLinkCommand(useLinkCXX, options,
                                              moduleFilename, "", tmpbinname,
-                                             dotOFiles, clangLDArgs,
-                                             sawSysroot);
+                                             dotOFiles, clangLDArgs);
 
   mysystem(command.c_str(), "Make Dynamic Library - Linking");
 }
@@ -4172,8 +4492,7 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
                                         std::string maino,
                                         const char* tmpbinname,
                                         std::vector<std::string> dotOFiles,
-                                        std::vector<std::string> clangLDArgs,
-                                        bool sawSysroot) {
+                                        std::vector<std::string> clangLDArgs) {
   // Run the linker. We always use a C++ compiler because some third-party
   // libraries are written in C++. Here we use clang++ or possibly a
   // linker override specified by the Makefiles (e.g. setting it to mpicxx)
@@ -4212,12 +4531,6 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
     command += dirName;
   }
 
-  if (sawSysroot) {
-    // Work around a bug in some versions of Clang that forget to
-    // search /usr/local/lib if there is a -isysroot argument.
-    command += " -L/usr/local/lib";
-  }
-
   for_vector(const char, libName, libFiles) {
     command += " -l";
     command += libName;
@@ -4230,8 +4543,7 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                            std::string moduleFilename, std::string maino,
                            const char* tmpbinname,
                            std::vector<std::string> dotOFiles,
-                           std::vector<std::string> clangLDArgs,
-                           bool sawSysroot) {
+                           std::vector<std::string> clangLDArgs) {
 
   // This code is general enough to use elsewhere, thus the move.
   std::string command = buildLLVMLinkCommand(useLinkCXX,
@@ -4240,8 +4552,7 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                                              maino,
                                              tmpbinname,
                                              dotOFiles,
-                                             clangLDArgs,
-                                             sawSysroot);
+                                             clangLDArgs);
 
   mysystem(command.c_str(), "Make Binary - Linking");
 }
@@ -4271,7 +4582,7 @@ static void moveGeneratedLibraryFile(const char* tmpbinname) {
   moveResultFromTmp(outputPath.c_str(), tmpbinname);
 }
 
-void print_clang(clang::Type* t) {
+void print_clang(const clang::Type* t) {
   if (t == NULL)
     fprintf(stderr, "NULL");
   else
@@ -4280,7 +4591,7 @@ void print_clang(clang::Type* t) {
   fprintf(stderr, "\n");
 }
 
-void print_clang(clang::Decl* d) {
+void print_clang(const clang::Decl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
   else
@@ -4289,7 +4600,7 @@ void print_clang(clang::Decl* d) {
   fprintf(stderr, "\n");
 }
 
-void print_clang(clang::TypeDecl* d) {
+void print_clang(const clang::TypeDecl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
   else
@@ -4297,7 +4608,7 @@ void print_clang(clang::TypeDecl* d) {
 
   fprintf(stderr, "\n");
 }
-void print_clang(clang::ValueDecl* d) {
+void print_clang(const clang::ValueDecl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
   else

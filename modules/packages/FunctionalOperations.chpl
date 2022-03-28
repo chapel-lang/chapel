@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,18 +25,16 @@ module FunctionalOperations {
   /* Apply `fn` to each element yielded by this iterator and yield the value
      returned by `fn`.  `fn` must take a single argument and return a value.
    */
-  pragma "order independent yielding loops"
   iter _iteratorRecord.map(fn) {
-    for x in this do yield fn(x);
+    foreach x in this do yield fn(x);
   }
 
   /* Apply `fn` to each element yielded by this iterator and yield the values
      it returns `true` for.  `fn` must take a single argument and return a
      boolean value.
    */
-  pragma "order independent yielding loops"
   iter _iteratorRecord.filter(fn) {
-    for x in this do if fn(x) then yield x;
+    foreach x in this do if fn(x) then yield x;
   }
 
   /* Apply `fn` to each element yielded by this iterator and ignore the return

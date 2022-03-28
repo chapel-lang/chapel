@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -159,13 +159,12 @@ public:
 
   Symbol*                     getSubstitution(const char* name)          const;
 
-  Type*                       getDecoratedClass(ClassTypeDecorator d);
+  Type*                       getDecoratedClass(ClassTypeDecoratorEnum d);
 
   // Returns true if a field is considered generic
   // (i.e. it needs a type constructor argument)
   bool                        fieldIsGeneric(Symbol* field,
                                              bool &hasDefault);
-
 
   Type*                       cArrayElementType()                        const;
   int64_t                     cArrayLength()                             const;

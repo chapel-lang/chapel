@@ -25,10 +25,8 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-gl \
                           --disable-pci
 
-# Libnuma requires dynamic linking, so for the flat locale model where
-# we have no need for NUMA info, disable it so we can link statically.
-ifeq ($(CHPL_MAKE_LOCALE_MODEL),flat)
-CHPL_HWLOC_CFG_OPTIONS += --disable-libnuma
+ifdef CHPL_HWLOC_PREFIX
+   CHPL_HWLOC_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)
 endif
 
 ifeq ($(CHPL_LIB_PIC),pic)
@@ -72,8 +70,9 @@ hwloc-config: FORCE
 # newer than $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag prevents make from
 # trying to do that step.
 #
-	touch -m -r  $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -d '+1 sec' $(HWLOC_SUBDIR)/README 2>/dev/null || \
-		touch -m -r $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -A '01' $(HWLOC_SUBDIR)/README
+	-touch -m -r  $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -d '+1 sec' $(HWLOC_SUBDIR)/README 2>/dev/null || \
+		touch -m -r $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -A '01' $(HWLOC_SUBDIR)/README 2>/dev/null || \
+		touch $(HWLOC_SUBDIR)/README
 #
 # Then configure
 #

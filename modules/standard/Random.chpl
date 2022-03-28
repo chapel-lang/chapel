@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -352,11 +352,11 @@ module Random {
   {
     import Search;
     import Sort;
-    
+
     if prob.size != X.sizeAs(idxType) {
       throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
     }
-    
+
     if prob.size == 0 then
       throw new owned IllegalArgumentError('choice() prob array cannot be empty');
 
@@ -1048,7 +1048,7 @@ module Random {
         :type arr: [] :type:`eltType`
       */
       proc fillRandom(arr: [] eltType) {
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
@@ -1121,7 +1121,7 @@ module Random {
      */
       proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
-      { 
+      {
         var dom: domain(1,stridable=true);
 
         if !isBoundedRange(x) {
@@ -1170,7 +1170,7 @@ module Random {
       /* Randomly shuffle a 1-D array. */
       proc shuffle(arr: [?D] ?eltType ) {
 
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("shuffle does not support non-rectangular arrays");
 
         if D.rank != 1 then
@@ -1214,7 +1214,7 @@ module Random {
          */
       proc permutation(arr: [] eltType) {
 
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("permutation does not support non-rectangular arrays");
 
         var low = arr.domain.dim(0).low;
@@ -1555,14 +1555,13 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    pragma "order independent yielding loops"
     private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
-        for i in ranges(dim) do
+        foreach i in ranges(dim) do
           yield (i,);
       } else if dim + 2 < ranges.size {
-        for i in ranges(dim) do
-          for j in outer(ranges, dim+1) do
+        foreach i in ranges(dim) do
+          foreach j in outer(ranges, dim+1) do
             yield (i, (...j));
       } else {
         yield 0; // 1D case is a noop
@@ -1573,7 +1572,6 @@ module Random {
     // PCGRandomStream iterator implementation
     //
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                                start: int(64)) {
       var cursor = randlc_skipto(resultType, seed, start);
@@ -1590,7 +1588,6 @@ module Random {
     }
 
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
@@ -2627,7 +2624,7 @@ module Random {
       proc getNth(n: integral): eltType throws {
         if (n < 0) then
           throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with negative 'n' value " + n:string);
-        _lock(); 
+        _lock();
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         const result = NPBRandomStreamPrivate_getNext_noLock();
         _unlock();
@@ -2645,7 +2642,7 @@ module Random {
         :type arr: [] :type:`eltType`
       */
       proc fillRandom(arr: [] eltType) {
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
@@ -2830,14 +2827,13 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    pragma "order independent yielding loops"
     private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
-        for i in ranges(dim) do
+        foreach i in ranges(dim) do
           yield (i,);
       } else if dim + 2 < ranges.size {
-        for i in ranges(dim) do
-          for j in outer(ranges, dim+1) do
+        foreach i in ranges(dim) do
+          foreach j in outer(ranges, dim+1) do
             yield (i, (...j));
       } else {
         yield 0; // 1D case is a noop
@@ -2848,7 +2844,6 @@ module Random {
     // RandomStream iterator implementation
     //
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                          start: int(64)) {
       var cursor = randlc_skipto(seed, start);
@@ -2866,7 +2861,6 @@ module Random {
     }
 
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {

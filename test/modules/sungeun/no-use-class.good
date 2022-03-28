@@ -1,3 +1,5 @@
+no-use-class-other-file.chpl:2: In function 'f':
+no-use-class-other-file.chpl:3: error: 'X' undeclared (first use this function)
 no-use-class.chpl:6: In function 'main':
 no-use-class.chpl:7: error: 'X' undeclared (first use this function)
 no-use-class.chpl:10: error: 'Z' undeclared (first use this function)

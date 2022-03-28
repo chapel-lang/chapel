@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 const myDom = {0..5};
 
 record things {

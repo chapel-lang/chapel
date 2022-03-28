@@ -1,0 +1,8 @@
+sync-casting.chpl:4: In function 'test16':
+sync-casting.chpl:7: warning: Casting sync variables is deprecated
+sync-casting.chpl:7: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
+sync-casting.chpl:7: warning: Casting sync variables is deprecated
+sync-casting.chpl:21: In function 'test18':
+sync-casting.chpl:24: warning: Casting single variables is deprecated
+sync-casting.chpl:24: warning: Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side
+sync-casting.chpl:24: warning: Casting single variables is deprecated

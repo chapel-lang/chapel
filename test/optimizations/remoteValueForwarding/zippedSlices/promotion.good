@@ -1,0 +1,16 @@
+3 slice creation:
+| locale |
+| -----: |
+|      0 |
+|      1 |
+|      2 |
+|      3 |
+
+Stream:
+| locale |      amo | execute_on_nb |
+| -----: | -------: | ------------: |
+|      0 | unstable |             3 |
+|      1 | unstable |             0 |
+|      2 | unstable |             0 |
+|      3 | unstable |             0 |
+0

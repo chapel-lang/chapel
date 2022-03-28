@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -166,14 +166,8 @@ module ChapelRange {
   pragma "no doc"
   config param useOptimizedRangeIterators = true;
 
-  /* Chapel is in the process of changing ``range(idxType).size`` away
-     from returning the range's size as an ``idxType`` value in favor
-     of returning an ``int`` value.  Setting ``sizeReturnsInt`` to
-     ``true`` permits a user to opt into this new behavior now rather
-     than having it change out from under them in a future release.
-     The old behavior can be retained by using the new
-     :proc:`range.sizeAs` method.  */
-
+  pragma "no doc"
+  deprecated "'sizeReturnsInt' is deprecated and no longer has an effect"
   config param sizeReturnsInt = false;
 
 
@@ -700,6 +694,9 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.alignedLowAsInt {
+    if isAmbiguous() {
+      halt("Can't query the aligned bounds of an ambiguously aligned range");
+    }
     if !stridable then
       return _low;
     else
@@ -726,6 +723,9 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.alignedHighAsInt {
+    if isAmbiguous() {
+      halt("Can't query the aligned bounds of an ambiguously aligned range");
+    }
     if ! stridable then
       return _high;
     else
@@ -751,26 +751,12 @@ module ChapelRange {
   }
 
   /* Returns the number of elements in this range as an integer.
-     Historically, and by default for now, the return type is
-     represented as an ``intIdxType`` value.  However, Chapel is in
-     the process of changing to always return an ``int`` value, and so
-     will generate a warning if ``intIdxType != int`` to alert users
-     to the change.  :param:`sizeReturnsInt` can be used to opt into
-     the new behavior now.  Or :proc:`range.sizeAs` can be used to
-     request a different return type.
 
-     If the size exceeds ``max(intIdxType)``/``max(int)``, this
-     procedure will halt when bounds checks are on.
+     If the size exceeds ``max(int)``, this procedure will halt when
+     bounds checks are on.
    */
-  proc range.size {
-    if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
-      compilerWarning("'range("+idxType:string+").size' is changing to return 'int' values rather than '"+idxType:string+"'\n" +
-                      "  (to get the value as a different type, call the new method '.sizeAs(type t)')\n" +
-                      "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')");
-      return this.sizeAs(this.intIdxType);
-    } else {
-      return this.sizeAs(int);
-    }
+  proc range.size: int {
+    return this.sizeAs(int);
   }
 
   /* Returns the number of elements in this range as the specified
@@ -941,7 +927,7 @@ module ChapelRange {
 
     // As a special case, two ambiguous ranges compare equal
     // if their representations are identical.
-    if r1.isAmbiguous() then return ident(r1, r2);
+    if r1.isAmbiguous() then return chpl_ident(r1, r2);
 
     if isBoundedRange(r1) {
 
@@ -971,11 +957,7 @@ module ChapelRange {
 
   operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
 
-  /* Returns true if the two ranges are the same in every respect: i.e. the
-     two ranges have the same ``idxType``, ``boundedType``, ``stridable``,
-     ``low``, ``high``, ``stride`` and ``alignment`` values.
-   */
-  proc ident(r1: range(?), r2: range(?))
+  proc chpl_ident(r1: range(?), r2: range(?))
     where r1.idxType == r2.idxType &&
     r1.boundedType == r2.boundedType &&
     r1.stridable == r2.stridable
@@ -994,10 +976,16 @@ module ChapelRange {
     return true;
   }
 
+  proc chpl_ident(r1: range(?), r2: range(?)) param {
+    return false;
+  }
+
   // If the parameters don't match, then the two ranges cannot be identical.
   pragma "no doc"
-  proc ident(r1: range(?), r2: range(?)) param
+  deprecated "ident() on ranges is deprecated; please let us know if this is problematic for you"
+  proc ident(r1: range(?), r2: range(?)) param {
     return false;
+  }
 
   //////////////////////////////////////////////////////////////////////////////////
   // Range Casts
@@ -1015,7 +1003,7 @@ proc range.safeCast(type t: range(?)) {
   }
 
   if tmp.stridable {
-    tmp._stride = this.stride;
+    tmp._stride = this.stride.safeCast(tmp.strType);
     tmp._alignment = chpl__idxToInt(this.alignment).safeCast(tmp.intIdxType);
     tmp._aligned = this.aligned;
   } else if this.stride != 1 {
@@ -1485,28 +1473,13 @@ operator :(r: range(?), type t: range(?)) {
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
 
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_by(r, step) { ... }
-   *
-   * because the parser renames the routine since 'by' is a keyword.
-   */
+  // This is the definition of the 'by' operator for ranges.
   pragma "no doc"
-  inline operator by(r, step) {
-    if !isRange(r) then
-      compilerError("the first argument of the 'by' operator is not a range");
+  inline operator by(r : range(?), step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step);
   }
 
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_by(r: range(?), param step) { ... }
-   *
-   * because the parser renames the routine since 'by' is a keyword.
-   */
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
   pragma "no doc"
@@ -1515,14 +1488,11 @@ operator :(r: range(?), type t: range(?)) {
     return chpl_by_help(r, step:r.strType);
   }
 
+  pragma "last resort"
+  inline operator by(r, step) {
+    compilerError("cannot apply 'by' to '", r.type:string, "'");
+  }
 
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_align(r: range(?i, ?b, ?s), algn: i) { ... }
-   *
-   * because the parser renames the routine since 'align' is a keyword.
-   */
   // This is the definition of the 'align' operator for ranges.
   // It produces a new range with the specified alignment.
   // By definition, alignment is relative to the low bound of the range.
@@ -1535,19 +1505,15 @@ operator :(r: range(?), type t: range(?)) {
                      r._low, r._high, r.stride, chpl__idxToInt(algn), true);
   }
 
-
-  /*
-   * The following procedure is effectively equivalent to:
-   *
-  inline proc chpl_align(r: range(?i, ?b, ?s), algn) { ... }
-   *
-   * because the parser renames the routine since 'align' is a keyword.
-   */
-  pragma "no doc"
+  pragma "no doc" pragma "last resort"
   inline operator align(r : range(?i, ?b, ?s), algn) {
     compilerError("can't align a range with idxType ", i:string,
                   " using a value of type ", algn.type:string);
-    return r;
+  }
+
+  pragma "last resort"
+  inline operator align(r, algn) {
+    compilerError("cannot apply 'align' to '", r.type:string, "'");
   }
 
   /* Returns a range whose alignment is this range's first index plus ``offset``.
@@ -1875,11 +1841,16 @@ operator :(r: range(?), type t: range(?)) {
     return chpl_count_help(r, count);
   }
 
+  pragma "last resort"
   operator #(r: range(?i), count) {
     compilerError("can't apply '#' to a range with idxType ",
                   i:string, " using a count of type ",
                   count.type:string);
-    return r;
+  }
+
+  pragma "last resort"
+  operator #(r, count) {
+    compilerError("cannot apply '#' to '", r.type:string, "'");
   }
 
   // This function checks if a bounded iterator will overflow. This is basic
@@ -2236,7 +2207,7 @@ operator :(r: range(?), type t: range(?)) {
         yield chpl_intToIdx(i);
       }
     } else {
-      for i in this.generalIterator() do yield i;
+      foreach i in this.generalIterator() do yield i;
     }
   }
 
@@ -2262,7 +2233,7 @@ operator :(r: range(?), type t: range(?)) {
         yield chpl_intToIdx(i);
       }
     } else {
-      for i in this.generalIterator() do yield i;
+      foreach i in this.generalIterator() do yield i;
     }
   }
 
@@ -2306,9 +2277,8 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   pragma "no doc"
-  pragma "order independent yielding loops"
   iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
-                                              !localeModelHasSublocales
+    !localeModelPartitionsIterationOnSublocales
   {
     if ! isBoundedRange(this) {
       compilerError("parallel iteration is not supported over unbounded ranges");
@@ -2338,12 +2308,12 @@ operator :(r: range(?), type t: range(?)) {
         var low = orderToIndex(lo);
         var high = chpl_intToIdx(chpl__idxToInt(low):strType + stride * (mylen - 1):strType);
         if stride < 0 then low <=> high;
-        for i in low..high by stride {
+        foreach i in low..high by stride {
           yield i;
         }
       } else {
         const (lo, hi) = _computeBlock(len, numChunks, chunk, this._high, this._low, this._low);
-        for i in lo..hi {
+        foreach i in lo..hi {
           yield chpl_intToIdx(i);
         }
       }
@@ -2363,7 +2333,7 @@ operator :(r: range(?), type t: range(?)) {
       chpl_debug_writeln("*** In range leader:"); // ", this);
     const numSublocs = here.getChildCount();
 
-    if localeModelHasSublocales && numSublocs != 0 {
+    if localeModelPartitionsIterationOnSublocales && numSublocs != 0 {
       const len = this.sizeAs(intIdxType);
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
@@ -2455,7 +2425,8 @@ operator :(r: range(?), type t: range(?)) {
       compilerError("iteration over a range with no first index");
 
     if followThis.size != 1 then
-      compilerError("iteration over a range with multi-dimensional iterator");
+      compilerError("rank mismatch in zippered iteration (can't zip a " +
+                    followThis.size:string + "D expression with a range, which is 1D)");
 
     if debugChapelRange then
       chpl_debug_writeln("In range follower code: Following ", followThis);
@@ -2482,14 +2453,17 @@ operator :(r: range(?), type t: range(?)) {
        myFollowThis.hasLast()
     {
       const flwlen = myFollowThis.sizeAs(myFollowThis.intIdxType);
-      if boundsChecking && this.hasLast() {
-        // this check is for typechecking only
-        if isBoundedRange(this) {
-          if this.sizeAs(intIdxType) < flwlen then
-            HaltWrappers.boundsCheckHalt("zippered iteration over a range with too few indices");
-        } else
-          assert(false, "hasFirst && hasLast do not imply isBoundedRange");
+      if boundsChecking {
+        if this.hasLast() {
+          // this check is for typechecking only
+          if !isBoundedRange(this) then
+            assert(false, "hasFirst && hasLast do not imply isBoundedRange");
+        }
+        if flwlen != 0 then
+          if isBoundedRange(this) && myFollowThis.last >= this.sizeAs(uint) then
+            HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration");
       }
+
       if this.stridable || myFollowThis.stridable {
         var r: range(idxType, stridable=true);
 

@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,7 +52,7 @@ qioerr _deque_reallocate_map(const ssize_t item_size, const ssize_t buf_size, de
   const ssize_t old_num_nodes = d->finish.node - d->start.node + 1;
   const ssize_t new_num_nodes = old_num_nodes + nodes_to_add;
 
-  deque_node_t* new_nstart; 
+  deque_node_t* new_nstart;
 
   if( d->map_size > 2 * new_num_nodes ) {
     new_nstart = d->map + (d->map_size - new_num_nodes) / 2 + (add_at_front ? nodes_to_add : 0 );
@@ -69,7 +69,7 @@ qioerr _deque_reallocate_map(const ssize_t item_size, const ssize_t buf_size, de
     if( ! new_map ) return QIO_ENOMEM;
 
     new_nstart = new_map + (new_map_size - new_num_nodes ) / 2 + (add_at_front ? nodes_to_add : 0 );
-    // copy from d->start.node to d->finish.node + 1 to new_nstart 
+    // copy from d->start.node to d->finish.node + 1 to new_nstart
     _deque_map_copy_forward(d->start.node, d->finish.node + 1, new_nstart);
     deque_free(d->map);
 

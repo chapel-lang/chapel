@@ -1,0 +1,1 @@
+notsupportedOpAlign-assoc.chpl:3: error: cannot apply 'align' to associative and sparse domains

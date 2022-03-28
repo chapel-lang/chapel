@@ -27,11 +27,3 @@ and describe how domains and arrays are stored across them.
    :glob:
 
    dists/**
-
-
-Index
------
-
-* :ref:`Chapel Online Documentation Index <genindex>`
-
-.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`

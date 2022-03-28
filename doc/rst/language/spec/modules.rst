@@ -2,6 +2,7 @@
 
 .. _Chapter-Modules:
 
+=======
 Modules
 =======
 
@@ -404,8 +405,8 @@ Symbols brought in directly by a ``public import`` are treated as though defined
 *at* the scope with the ``public import`` for the purpose of determining
 conflicts (see :ref:`Reexporting`).  This means that if the ``public use`` in
 module B of the previous example was instead replaced with a ``public import
-A.x``, A's x would conflict with ``C.x`` when resolving the main function's
-body.
+A.x``, A's x would conflict with ``C.x`` when resolving the ``main``
+procedure's body.
 
 .. _Using_Modules:
 
@@ -437,8 +438,10 @@ The syntax of the use statement is given by:
      'only' rename-list[OPT]
 
    exclude-list:
-     identifier-list
-     $ * $
+     operator-name
+     identifier
+     operator-name , exclude-list
+     identifier , exclude-list
 
    rename-list:
      rename-base
@@ -448,6 +451,7 @@ The syntax of the use statement is given by:
      identifier 'as' identifier
      identifier 'as' _
      identifier
+     operator-name
 
 For example, the program
 
@@ -573,8 +577,8 @@ enumerated type (unless the module has been renamed to ``_``, as described
 earlier). It is an error to provide a name in a ``limitation-clause`` that does
 not exist or is not visible in the respective module or enumerated type.
 
-If an ``only`` list is left empty or an ``except`` is followed by :math:`*`
-then no symbols are made available to the scope without prefix.
+If an ``only`` list is left empty then no symbols are made available to the
+scope without prefix.
 
 When the ``limitation-clause`` for a use of a module contains a type, the
 visibility of its tertiary methods that are defined in that module, if any, is
@@ -583,19 +587,21 @@ methods cannot be specified in a ``limitation-clause`` on their own.  Fields,
 and primary and secondary methods are visible to any instance of the type
 regardless of use statements, see :ref:`Method_Calls`.
 
-Within an ``only`` list, a visible symbol from that module may optionally be
-given a new name using the ``as`` keyword. This new name will be usable from the
-scope of the use in place of the old name unless the old name is additionally
-specified in the ``only`` list. If a use which renames a symbol is present at
-module scope, uses and imports of that module will also be able to access
-that symbol using the new name instead of the old name. Renaming does not affect
-accesses to that symbol via the source module’s or enumerated type’s prefix, nor
-does it affect uses or imports of that module or enumerated type from other
-contexts. It is an error to attempt to rename a symbol that does not exist or is
-not visible in the respective module or enumerated type, or to rename a symbol
-to a name that is already present in the same ``only`` list. It is, however,
-perfectly acceptable to rename a symbol to a name present in the respective
-module or enumerated type which was not specified via that ``only`` list.
+Within an ``only`` list, a visible symbol (that is not an operator) from that
+module may optionally be given a new name using the ``as`` keyword. This new
+name will be usable from the scope of the use in place of the old name unless
+the old name is additionally specified in the ``only`` list. If a ``public use``
+which renames a symbol is present at module scope, uses and imports of that
+module will also be able to access that symbol using the new name instead of the
+old name. Renaming does not affect accesses to that symbol via the source
+module’s or enumerated type’s prefix, nor does it affect uses or imports of that
+module or enumerated type from other contexts. It is an error to attempt to
+rename a symbol that does not exist or is not visible in the respective module
+or enumerated type, or to rename a symbol to a name that is already present in
+the same ``only`` list.  It is also an error to attempt to rename an operator,
+or to attempt to rename a symbol to an operator name.  It is, however, perfectly
+acceptable to rename a symbol to a name present in the respective module or
+enumerated type which was not specified via that ``only`` list.
 
 If a use statement mentions multiple modules or enumerated types or a
 mix of these symbols, only the last module or enumerated type can have a
@@ -749,9 +755,9 @@ A submodule may not be imported without either the full path to it, or a
 ``super`` or ``this`` prefix at the beginning of the path.
 
 A module or a public module-level symbol being imported may optionally be given
-a new name using the ``as`` keyword.  This new name will be usable from the
-scope of the import in place of the old name.  This new name does not affect
-imports or uses of that module from other contexts.
+a new name using the ``as`` keyword, unless it is an operator.  This new name
+will be usable from the scope of the import in place of the old name.  This new
+name does not affect imports or uses of that module from other contexts.
 
 Import statements may be explicitly declared ``public`` or ``private``.  By
 default, imports are ``private``.  Making an import ``public`` causes its
@@ -775,18 +781,20 @@ secondary methods are visible to any instance of the type regardless of import
 statements, see :ref:`Method_Calls`.
 
 Within an ``unqualified-list``, a visible symbol from that module may optionally
-be given a new name using the ``as`` keyword.  This new name will be usable from
-the scope of the import in place of the old name unless the old name is
-additionally specified in the ``unqualified-list``.  If an import which renames
-a symbol is present at module scope, imports and uses of that module will also
-be able to access that symbol using the new name instead of the old name.
-Renaming does not affect accesses to that symbol via the source module's prefix,
-nor does it affect imports or uses of that module from other contexts.  It is an
-error to attempt to rename a symbol that does not exist or is not visible in the
-respective module, or to rename a symbol to a name that is already present in
-the same ``unqualified-list``.  It is, however, perfectly acceptable to rename a
-symbol to a name present in the respective module which was not specified via
-that ``unqualified-list``.
+be given a new name using the ``as`` keyword, except for any operators.  This
+new name will be usable from the scope of the import in place of the old name
+unless the old name is additionally specified in the ``unqualified-list``.  If
+an import which renames a symbol is present at module scope, imports and uses of
+that module will also be able to access that symbol using the new name instead
+of the old name.  Renaming does not affect accesses to that symbol via the
+source module's prefix, nor does it affect imports or uses of that module from
+other contexts.  It is an error to attempt to rename a symbol that does not
+exist or is not visible in the respective module, or to rename a symbol to a
+name that is already present in the same ``unqualified-list``.  It is also an
+error to attempt to rename an operator, or to attempt to rename another symbol
+to an operator name.  It is, however, perfectly acceptable to rename a symbol to
+a name present in the respective module which was not specified via that
+``unqualified-list``.
 
 The list of symbols for unqualified access can also be applied transitively -
 in the second example of re-exporting, if module A's import of B only allowed
@@ -1129,11 +1137,13 @@ subexpressions.
 Module Initialization
 ~~~~~~~~~~~~~~~~~~~~~
 
-Module initialization occurs at program start-up. All module-scope
-statements within a module other than function and type declarations are
-executed during module initialization. Modules that are not referred to,
-including both top-level modules and sub-modules, will not be
-initialized.
+Module initialization occurs at program start-up. Modules that are not
+referred to, including both top-level modules and sub-modules, will not
+be initialized. Top-level modules that are in files named on the command
+line will be initialized.
+
+When a module is initialized, all module-scope statements within that
+module, other than function and type declarations, are executed.
 
    *Example (init.chpl)*.
 
@@ -1161,7 +1171,7 @@ initialized.
 
       Hi!
 
-   The function foo() will be invoked and its result assigned to x. Then
+   The procedure foo() will be invoked and its result assigned to x. Then
    “Hi!” will be printed.
 
 Module initialization order is discussed
@@ -1176,7 +1186,7 @@ Module deinitialization occurs at program tear-down. During module
 deinitialization:
 
 -  If the module contains a deinitializer, which is a module-scope
-   function named ``deinit()``, it is executed first.
+   procedure named ``deinit()``, it is executed first.
 
 -  If the module declares module-scope variables, they are deinitialized in
    the reverse order of their initialization.
@@ -1190,33 +1200,35 @@ Program Execution
 -----------------
 
 Chapel programs start by initializing all modules and then executing the
-main function (:ref:`The_main_Function`).
+``main`` procedure (:ref:`The_main_Procedure`).
 
-.. _The_main_Function:
+.. _The_main_Module:
 
-The *main* Function
-~~~~~~~~~~~~~~~~~~~
+The *main* Module
+~~~~~~~~~~~~~~~~~
 
-The main function must be called ``main`` and must have zero arguments.
-It can be specified with or without parentheses. In any Chapel program,
-there is a single main function that defines the program’s entry point.
-If a program defines multiple potential entry points, the implementation
-may provide a compiler flag that disambiguates between main functions in
-multiple modules.
+Each Chapel program has a single module that is identified as the main
+module. The compiler identifies the main module by checking for each of
+the following situations in order:
+
+ * if a command line option indicates the name of the main module is used
+   then that will determine the main module
+ * if there is a single module in a file named on the compile command
+   line that contains a ``main`` procedure, the module containing that
+   ``main`` procedure is the main module
+ * if there is a single module in a file named on the command line, that
+   single module is the main module
 
    *Implementation Notes*.
 
-   In the current Chapel compiler implementation, the *– –main-module* flag
-   can be used to specify the module from which the main function
-   definition will be used.
-
-..
+   The *––main-module* flag can be used to specify the main module. This
+   is particularly useful in the event that multiple modules define a
+   ``main`` procedure.
 
    *Example (main-module.chpl)*.
 
-   Because it defines two ``main`` functions, the following code will
+   Because it defines two ``main`` procedures, the following code will
    yield an error unless a main module is specified on the command line.
-   
 
    .. code-block:: chapel
 
@@ -1245,42 +1257,49 @@ multiple modules.
       --main-module M2 # main_module.M2.good
 
    If M1 is specified as the main module, the program will output:
-   
 
    .. BLOCK-test-chapeloutputname
 
       main_module.M1.good
 
-   
 
    .. code-block:: printoutput
 
       M1's main
 
    If M2 is specified as the main module the program will output:
-   
 
    .. BLOCK-test-chapeloutputname
 
       main_module.M2.good
 
-   
 
    .. code-block:: printoutput
 
       M1's main
       M2's main
 
-   Notice that main is treated like just another function if it is not
+   Notice that ``main`` is treated like just another procedure if it is not
    in the main module and can be called as such.
 
-To aid in exploratory programming, a default main function is created if
-the program does not contain a user-defined main function. The default
-main function is equivalent to 
+.. _The_main_Procedure:
+
+The *main* Procedure
+~~~~~~~~~~~~~~~~~~~~
+
+The main procedure must be called ``main`` and can either have zero
+arguments or a single argument that is an array of strings. A
+zero-argument ``main`` can be declared with or without parentheses. If
+the identified main module (:ref:`The_main_Module`) does not have a
+``main`` procedure, then the compiler will add a default one.
+
+The default ``main`` procedure aids exploratory programming. It is
+created if the main module does not contain a user-defined ``main``
+procedure. The default main function is equivalent to:
 
 .. code-block:: chapel
 
-   proc main() {}
+     proc main() { }
 
 ..
 
@@ -1292,18 +1311,19 @@ main function is equivalent to
 
       writeln("hello, world");
 
-   
 
    .. BLOCK-test-chapeloutput
 
       hello, world
 
-   is a legal and complete Chapel program. The startup code for a Chapel
-   program first calls the module initialization code for the main
-   module and then calls ``main()``. This program’s initialization
-   function is the file-scope writeln() statement. The module
-   declaration is taken to be the entire file, as described
-   in :ref:`Implicit_Modules`.
+   is a legal and complete Chapel program. When it runs, that Chapel
+   program will start out by initializing the main module and then it
+   will run the ``main()`` procedure. For this program, there is an
+   implicit module containing everything in the file
+   (:ref:`Implicit_Modules`) and that module is the main module. The
+   initialization of this module will execute the ``writeln`` statement.
+   The compiler adds an empty default ``main`` which runs after that
+   module is initialized.
 
 .. _Module_Initialization_Order:
 
@@ -1312,7 +1332,7 @@ Module Initialization Order
 
 Module initialization is performed using the following algorithm.
 
-Starting from the module that defines the main function, the modules named in
+Starting from the module that defines the main procedure, the modules named in
 its use and import statements are visited depth-first and initialized in
 post-order. If a use or import statement names a module that has already been
 visited, it is not visited a second time. Thus, infinite recursion is avoided.
@@ -1361,7 +1381,7 @@ uses are initialized before the nested module and its uses or imports.
    M1, the main module, uses M2.M3 and then M2, thus M2.M3 must be
    initialized. Because M2.M3 is a nested module, M4 (which is used by
    M2) must be initialized first. M2 itself is initialized, followed by
-   M2.M3. Finally M1 is initialized, and the main function is run.
+   M2.M3. Finally M1 is initialized, and the main procedure is run.
 
 .. _Module_Deinitialization_Order:
 

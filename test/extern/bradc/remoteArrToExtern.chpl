@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 require "cprintarr.h";
 

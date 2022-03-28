@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -197,7 +197,7 @@ const char* CallInfo::toString() {
 
     } else if (var != NULL && var->immediate != NULL) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
-        retval = astr(retval, "\"", var->immediate->v_string, "\"");
+        retval = astr(retval, "\"", var->immediate->v_string.c_str(), "\"");
 
       } else {
         const size_t bufSize = 512;

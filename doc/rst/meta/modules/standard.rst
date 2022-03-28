@@ -16,8 +16,8 @@ default:
 .. toctree::
    :maxdepth: 1
 
-   Builtins <standard/Builtins>
    Chapel Environment Variables <standard/ChapelEnv>
+   Errors <standard/Errors>
    IO Support <standard/ChapelIO>
    Math <standard/Math>
    Types <standard/Types>
@@ -96,7 +96,9 @@ System/Interoperability
    :maxdepth: 1
 
    CPtr <standard/CPtr>
+   CTypes <standard/CTypes>
    Spawn <standard/Spawn>
+   Subprocess <standard/Subprocess>
    Sys <standard/Sys>
    SysBasic <standard/SysBasic>
    SysCTypes <standard/SysCTypes>
@@ -108,17 +110,9 @@ Utilities
 .. toctree::
    :maxdepth: 1
 
+   ChplConfig <standard/ChplConfig>
    DateTime <standard/DateTime>
    Help <standard/Help>
    Regex <standard/Regex>
    Time <standard/Time>
    Version <standard/Version>
-
-
-
-Index
------
-
-* :ref:`Chapel Online Documentation Index <genindex>`
-
-.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`

@@ -198,6 +198,13 @@ Common Slurm Settings
 
     export CHPL_LAUNCHER_PARTITION=debug
 
+* Optionally, you can specify a slurm nodelist by setting the environment
+  variable ``CHPL_LAUNCHER_NODELIST``. For example, to use node nid00001, set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_NODELIST=nid00001
+
 * Optionally, you can specify a slurm constraint by setting the environment
   variable ``CHPL_LAUNCHER_CONSTRAINT``. For example, to use nodes with the
   'cal' feature (as defined in the slurm.conf file), set:
@@ -205,6 +212,14 @@ Common Slurm Settings
   .. code-block:: bash
 
     export CHPL_LAUNCHER_CONSTRAINT=cal
+
+* Optionally, you can specify a slurm account by setting the environment
+  variable ``CHPL_LAUNCHER_ACCOUNT``. For example, to use the account 'acct',
+  set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_ACCOUNT=acct
 
 * If the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` is defined then
   sbatch is used to launch the job to the queue system, rather than

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -17,12 +17,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /*
   Holder for test result information.
-  Test results are automatically managed by the TestLauncher, and do not 
-  need to be explicitly manipulated by writers of tests.  
-  Each instance holds the total number of tests run, and collections of 
+  Test results are automatically managed by the TestLauncher, and do not
+  need to be explicitly manipulated by writers of tests.
+  Each instance holds the total number of tests run, and collections of
   failures and errors that occurred among those test runs. The collections
   contain tuples of (testcase, exceptioninfo), where exceptioninfo is the
   formatted traceback of the error that occurred.
@@ -43,7 +43,7 @@ module TestResult {
     proc testRan() {
       this.testsRun += 1;
     }
-    
+
     /*Called when an error has occurred.*/
     proc addError(testName: string, fileName: string, errMsg: string) {
       this.testRan();
@@ -75,7 +75,7 @@ module TestResult {
     proc wasSuccessful() {
       return this.failures.size == 0 && this.errors.size == 0;
     }
-    
+
     /* Indicates that the tests should be aborted. */
     proc stop() {
       this.shouldStop = true;
@@ -120,7 +120,7 @@ module TestResult {
         writeln("Ran ", run, " ", printTest(run)," in ",timeTaken," seconds");
         writeln();
         var infos: list((string));
-        if testsPassed != 0 then 
+        if testsPassed != 0 then
           infos.append("passed = " + testsPassed: string);
         if !this.wasSuccessful() {
           write("FAILED");

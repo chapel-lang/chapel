@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -23,8 +23,8 @@
 #
 # Tools
 #
-CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX) # normally g++
-CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally gcc
+CXX = $(CHPL_MAKE_CXX) # normally g++
+CC = $(CHPL_MAKE_CC)    # normally gcc
 
 RANLIB = ranlib
 
@@ -47,8 +47,9 @@ include $(CHPL_MAKE_HOME)/make/compiler/Makefile.sanitizers
 CFLAGS += $(SANITIZER_CFLAGS)
 CXXFLAGS += $(SANITIZER_CFLAGS)
 LDFLAGS += $(SANITIZER_LDFLAGS)
-GEN_LFLAGS += $(SANITIZER_LDFLAGS)
 OPT_CFLAGS += $(SANITIZER_OPT_CFLAGS)
+GEN_CFLAGS += $(SANITIZER_CFLAGS)
+GEN_LFLAGS += $(SANITIZER_LDFLAGS)
 
 #
 # Flags for compiler, runtime, and generated code
@@ -63,16 +64,18 @@ OPT_CFLAGS += $(SANITIZER_OPT_CFLAGS)
 #  COMP_CFLAGS, COMP_CXXFLAGS,       (compiling C/C++ code in compiler/)
 #  RUNTIME_CFLAGS, RUNTIME_CXXFLAGS  (compiling C/C++ code in runtime/)
 # in a way that respects the above user-provide-able variables.
+#
+# We set
+#  GEN_CFLAGS and GEN_LFLAGS etc ignoring the above variables
+#  since adjustments to these should be provided on the chpl command line.
 COMP_CFLAGS = $(CPPFLAGS) $(CFLAGS)
 COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
 # Appended after COMP_CXXFLAGS when compiling parser/lexer
 COMP_CXXFLAGS_NONCHPL = -Wno-error
+
 RUNTIME_CFLAGS = $(CPPFLAGS) $(CFLAGS)
 RUNTIME_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
-# For compiling the generated code
-# Note, user-provided CPPFLAGS / CFLAGS are not provided to generated code.
-# Instead, such flags would be provided on the chpl command line.
-GEN_CFLAGS =
+
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
 LIB_STATIC_FLAG =
@@ -164,7 +167,7 @@ GEN_CFLAGS += $(C_STD)
 # of Clang header files.
 #
 WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
-WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment
+WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment -Wmissing-braces
 WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
@@ -220,13 +223,19 @@ OPT_CFLAGS += -fno-ipa-cp-clone
 endif
 
 #
-# Avoid false positives for allocation size, memcpy, and string truncation.
+# Avoid false positives for allocation size, memcpy, and string and
+# unchecked bounded formatted conversion (snprintf()) truncation.
 # Note that we use -Walloc-size-larger-than=SIZE_MAX instead of
 # `-Wno-alloc-size-larger-than` since that did not exist in gcc 8.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 7; echo "$$?"),0)
 WARN_CXXFLAGS += -Walloc-size-larger-than=18446744073709551615
-WARN_CXXFLAGS += -Wno-stringop-truncation
+WARN_CXXFLAGS += -Wno-stringop-truncation -Wno-format-truncation
+endif
+
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -gt 7; echo "$$?"),0)
+WARN_CFLAGS += -Walloc-size-larger-than=18446744073709551615
+WARN_CFLAGS += -Wno-stringop-truncation -Wno-format-truncation
 SQUASH_WARN_GEN_CFLAGS += -Walloc-size-larger-than=18446744073709551615 -Wno-restrict
 endif
 
@@ -237,6 +246,9 @@ endif
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-class-memaccess
+endif
+
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -eq 8; echo "$$?"),0)
 RUNTIME_CFLAGS += -Wno-stringop-overflow
 SQUASH_WARN_GEN_CFLAGS += -Wno-array-bounds
 endif
@@ -321,6 +333,9 @@ endif
 #
 # Look for the libmvec.a static library
 #
+#
+# If found, and static linking is used, then
+# it will be included in the generated Makefile LIBS line
 ifneq ($(WANT_LIBMVEC), no)
   # Try known locations.
   ifeq ($(CHPL_MAKE_TARGET_PLATFORM), linux64)

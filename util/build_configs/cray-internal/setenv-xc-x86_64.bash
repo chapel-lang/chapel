@@ -104,6 +104,11 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         $CHPL_HOME/util/printchplenv --all --no-tidy --anonymize || echo >&2 ignore error
     fi
 
+    # Load a more recent cmake version. Required for building LLVM 12 or newer.
+    if [ -f /cray/css/users/chapelu/setup_cmake_nightly.bash ] ; then
+      source /cray/css/users/chapelu/setup_cmake_nightly.bash
+    fi
+
     # NOTE: The --target-compiler values used in this setenv project will never be
     #       seen by Chapel make. They will be recognized (and discarded) in the
     #       setenv callback script in the lower section of this file.
@@ -305,9 +310,9 @@ else
         list_loaded_modules
     fi
 
-    gen_version_gcc=8.3.0
-    gen_version_intel=16.0.3.210
-    gen_version_cce=10.0.2
+    gen_version_gcc=8.1.0
+    gen_version_intel=19.1.2.254
+    gen_version_cce=10.0.3
 
     target_cpu_module=craype-sandybridge
 

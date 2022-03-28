@@ -5,7 +5,7 @@ var socket = context.socket(ZMQ.REP);
 socket.bind("tcp://*:*");
 var x = socket.getLastEndpoint();
 
-use Spawn;
+use Subprocess;
 var sub = spawn(["./getLastEndpointHelper", "--node=" + x]);
 
 var val = socket.recv(int);

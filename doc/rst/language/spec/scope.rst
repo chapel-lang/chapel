@@ -2,6 +2,7 @@
 
 .. _Chapter-Scope:
 
+=====
 Scope
 =====
 

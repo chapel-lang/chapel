@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2013-2017 Intel Corporation. All rights reserved.
  * Copyright (c) 2018 Cray Inc. All rights reserved.
+ * Copyright (c) 2018 System Fabric Works, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -48,11 +49,14 @@ static const size_t ofi_datatype_size_table[] = {
 	[FI_DOUBLE_COMPLEX] = sizeof(ofi_complex_double),
 	[FI_LONG_DOUBLE]    = sizeof(long double),
 	[FI_LONG_DOUBLE_COMPLEX] = sizeof(ofi_complex_long_double),
+	/* Compute 128-bit integer size, since compiler may not support type. */
+	[FI_INT128]  = sizeof(int64_t) * 2,
+	[FI_UINT128] = sizeof(uint64_t) * 2,
 };
 
 size_t ofi_datatype_size(enum fi_datatype datatype)
 {
-	if (datatype >= FI_DATATYPE_LAST) {
+	if (datatype >= ARRAY_SIZE(ofi_datatype_size_table)) {
 		errno = FI_EINVAL;
 		return 0;
 	}
@@ -820,7 +824,7 @@ OFI_DEFINE_ALL_HANDLERS(WRITEEXT, FUNC, OFI_OP_LXOR)
 OFI_DEFINE_INT_HANDLERS(WRITE, FUNC, OFI_OP_BXOR)
 OFI_DEFINE_ALL_HANDLERS(WRITE, FUNC, OFI_OP_WRITE)
 
-void (*ofi_atomic_write_handlers[OFI_WRITE_OP_LAST][FI_DATATYPE_LAST])
+void (*ofi_atomic_write_handlers[OFI_WRITE_OP_CNT][FI_DATATYPE_LAST])
 	(void *dst, const void *src, size_t cnt) =
 {
 	{ OFI_DEFINE_REALNO_HANDLERS(WRITEEXT_CMP, NAME, OFI_OP_MIN) },
@@ -854,7 +858,7 @@ OFI_DEFINE_INT_HANDLERS(READWRITE, FUNC, OFI_OP_BXOR)
 OFI_DEFINE_ALL_HANDLERS(READ, FUNC, OFI_OP_READ)
 OFI_DEFINE_ALL_HANDLERS(EXCHANGE, FUNC, OFI_OP_READWRITE)
 
-void (*ofi_atomic_readwrite_handlers[OFI_READWRITE_OP_LAST][FI_DATATYPE_LAST])
+void (*ofi_atomic_readwrite_handlers[OFI_READWRITE_OP_CNT][FI_DATATYPE_LAST])
 	(void *dst, const void *src, void *res, size_t cnt) =
 {
 	{ OFI_DEFINE_REALNO_HANDLERS(READWRITEEXT_CMP, NAME, OFI_OP_MIN) },
@@ -883,7 +887,7 @@ OFI_DEFINE_REALNO_HANDLERS(CSWAPEXT_CMP, FUNC, OFI_OP_CSWAP_GE)
 OFI_DEFINE_REALNO_HANDLERS(CSWAPEXT_CMP, FUNC, OFI_OP_CSWAP_GT)
 OFI_DEFINE_INT_HANDLERS(CSWAPEXT, FUNC, OFI_OP_MSWAP)
 
-void (*ofi_atomic_swap_handlers[OFI_SWAP_OP_LAST][FI_DATATYPE_LAST])
+void (*ofi_atomic_swap_handlers[OFI_SWAP_OP_CNT][FI_DATATYPE_LAST])
 	(void *dst, const void *src, const void *cmp, void *res, size_t cnt) =
 {
 	{ OFI_DEFINE_ALL_HANDLERS(CSWAP, NAME, OFI_OP_CSWAP_EQ) },
@@ -918,7 +922,7 @@ OFI_DEFINE_ALL_HANDLERS(WRITE, FUNC, OFI_OP_LXOR)
 OFI_DEFINE_INT_HANDLERS(WRITE, FUNC, OFI_OP_BXOR)
 OFI_DEFINE_ALL_HANDLERS(WRITE, FUNC, OFI_OP_WRITE)
 
-void (*ofi_atomic_write_handlers[OFI_WRITE_OP_LAST][FI_DATATYPE_LAST])
+void (*ofi_atomic_write_handlers[OFI_WRITE_OP_CNT][FI_DATATYPE_LAST])
 	(void *dst, const void *src, size_t cnt) =
 {
 	{ OFI_DEFINE_REALNO_HANDLERS(WRITE, NAME, OFI_OP_MIN) },
@@ -952,7 +956,7 @@ OFI_DEFINE_INT_HANDLERS(READWRITE, FUNC, OFI_OP_BXOR)
 OFI_DEFINE_ALL_HANDLERS(READ, FUNC, OFI_OP_READ)
 OFI_DEFINE_ALL_HANDLERS(READWRITE, FUNC, OFI_OP_WRITE)
 
-void (*ofi_atomic_readwrite_handlers[OFI_READWRITE_OP_LAST][FI_DATATYPE_LAST])
+void (*ofi_atomic_readwrite_handlers[OFI_READWRITE_OP_CNT][FI_DATATYPE_LAST])
 	(void *dst, const void *src, void *res, size_t cnt) =
 {
 	{ OFI_DEFINE_REALNO_HANDLERS(READWRITE, NAME, OFI_OP_MIN) },
@@ -981,7 +985,7 @@ OFI_DEFINE_REALNO_HANDLERS(CSWAP, FUNC, OFI_OP_CSWAP_GE)
 OFI_DEFINE_REALNO_HANDLERS(CSWAP, FUNC, OFI_OP_CSWAP_GT)
 OFI_DEFINE_INT_HANDLERS(CSWAP, FUNC, OFI_OP_MSWAP)
 
-void (*ofi_atomic_swap_handlers[OFI_SWAP_OP_LAST][FI_DATATYPE_LAST])
+void (*ofi_atomic_swap_handlers[OFI_SWAP_OP_CNT][FI_DATATYPE_LAST])
 	(void *dst, const void *src, const void *cmp, void *res, size_t cnt) =
 {
 	{ OFI_DEFINE_ALL_HANDLERS(CSWAP, NAME, OFI_OP_CSWAP_EQ) },
@@ -1028,19 +1032,19 @@ int ofi_atomic_valid(const struct fi_provider *prov,
 	}
 
 	if (flags & FI_FETCH_ATOMIC) {
-		if (op >= OFI_READWRITE_OP_LAST) {
+		if (!ofi_atomic_isreadwrite_op(op)) {
 			FI_INFO(prov, FI_LOG_DOMAIN, "Invalid fetch operation\n");
 			return -FI_EOPNOTSUPP;
 		}
 		have_func = ofi_atomic_readwrite_handlers[op][datatype] != NULL;
 	} else if (flags & FI_COMPARE_ATOMIC) {
-		if (op < FI_CSWAP || op > FI_MSWAP) {
+		if (!ofi_atomic_isswap_op(op)) {
 			FI_INFO(prov, FI_LOG_DOMAIN, "Invalid swap operation\n");
 			return -FI_EOPNOTSUPP;
 		}
 		have_func = ofi_atomic_swap_handlers[op - FI_CSWAP][datatype] != NULL;
 	} else {
-		if (op >= OFI_WRITE_OP_LAST) {
+		if (!ofi_atomic_iswrite_op(op)) {
 			FI_INFO(prov, FI_LOG_DOMAIN, "Invalid write operation\n");
 			return -FI_EOPNOTSUPP;
 		}

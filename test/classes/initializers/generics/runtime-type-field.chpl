@@ -5,7 +5,7 @@ class Map {
   type domain_type;
   var parent_domain : domain_type;
   proc init( in_domain : ?T )
-    where isRectangularDom( in_domain ) || isSparseDom( in_domain )
+    where in_domain.isRectangular() || in_domain.isSparse()
     {
       writeln( "Creating Map(", T : string, ")" );
       this.domain_type = T;

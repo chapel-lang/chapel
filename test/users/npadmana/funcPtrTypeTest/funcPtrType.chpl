@@ -1,4 +1,4 @@
-use SysCTypes;
+use CTypes;
 
 extern {
   typedef struct {

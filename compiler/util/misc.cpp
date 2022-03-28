@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,8 @@
 #include "astlocs.h"
 #include "baseAST.h"
 #include "chpl.h"
+#include "chpl/queries/Context.h"
+#include "codegen.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -64,11 +66,6 @@ astlocT            last_error_loc(0, NULL);
 
 static bool forceWidePtrs();
 
-// must be non-static to avoid dead-code elim. when compiling -O3
-void gdbShouldBreakHere() {
-
-}
-
 void setupError(const char* subdir, const char* filename, int lineno, int tag) {
   err_subdir        = subdir;
   err_filename      = filename;
@@ -98,6 +95,11 @@ bool requireWideReferences() {
 //
 bool requireOutlinedOn() {
   return requireWideReferences();
+}
+
+// Return true if the current locale model needs GPU code generation
+bool localeUsesGPU() {
+  return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
 }
 
 const char* cleanFilename(const char* name) {
@@ -131,7 +133,15 @@ const char* cleanFilename(const BaseAST* ast) {
 
 
 static void cleanup_for_exit() {
-  deleteTmpDir();
+  closeCodegenFiles();
+
+  // Currently, gpu code generation is done in on forked process. This
+  // forked process produces some files in the tmp directory that are
+  // later read by the main process, so we want the main process
+  // to clean up the temp dir and not the forked process.
+  if (!gCodegenGPU) {
+    deleteTmpDir();
+  }
   stopCatchingSignals();
 }
 
@@ -648,7 +658,7 @@ static void printErrorFooter(bool guess) {
   if (!developer && !err_user) {
     print_error("\n\n"
       "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
-      "and we're sorry for the hassle.  We would appreciate your reporting this bug -- \n"
+      "and we're sorry for the hassle.  We would appreciate your reporting this bug --\n"
       "please see %s for instructions.  In the meantime,\n"
       "the filename + line number above may be useful in working around the issue.\n\n",
       help_url);
@@ -776,6 +786,18 @@ void handleError(const BaseAST* ast, const char *fmt, ...) {
 }
 
 void handleError(astlocT astloc, const char *fmt, ...) {
+  va_list args;
+
+  va_start(args, fmt);
+
+  vhandleError(NULL, astloc, fmt, args);
+
+  va_end(args);
+}
+
+void handleError(chpl::Location loc, const char *fmt, ...) {
+  astlocT astloc(loc.firstLine(), loc.path().c_str());
+
   va_list args;
 
   va_start(args, fmt);
@@ -1013,7 +1035,13 @@ void clean_exit(int status) {
 
   cleanup_for_exit();
 
-  deleteStrings();
+  delete gContext;
+  gContext = nullptr;
+
+  if (gGenInfo) {
+    delete gGenInfo;
+    gGenInfo = nullptr;
+  }
 
   exit(status);
 }

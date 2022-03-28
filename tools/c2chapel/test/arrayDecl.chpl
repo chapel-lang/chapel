@@ -5,7 +5,7 @@ require "arrayDecl.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
+use CTypes;
 extern var intArr : c_ptr(c_int);
 
 extern var stringList : c_ptr(c_string);
@@ -18,7 +18,7 @@ extern proc sized(x : c_ptr(c_int), ref y : c_int) : void;
 
 extern proc sized(x : c_ptr(c_int), y : c_ptr(c_int)) : void;
 
-extern record foobar {
+extern "struct foobar" record foobar {
   var x : c_int;
   var y : c_ptr(c_int);
   var z : c_ptr(c_ptr(c_int));

@@ -53,6 +53,15 @@ int fi_no_ops_open(struct fid *fid, const char *name,
 {
 	return -FI_ENOSYS;
 }
+int fi_no_tostr(const struct fid *fid, char *buf, size_t len)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_ops_set(struct fid *fid, const char *name, uint64_t flags,
+		  void *ops, void *context)
+{
+	return -FI_ENOSYS;
+}
 
 /*
  * struct fi_ops_fabric

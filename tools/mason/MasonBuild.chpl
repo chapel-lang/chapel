@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,12 +19,10 @@
  */
 
 
-private use List;
-private use Map;
-
-use TOML;
-use Spawn;
+use ArgumentParser;
 use FileSystem;
+use List;
+use Map;
 use MasonUtils;
 use MasonHelp;
 use MasonEnv;
@@ -32,73 +30,59 @@ use MasonUpdate;
 use MasonSystem;
 use MasonExternal;
 use MasonExample;
+use Subprocess;
+use TOML;
 
 proc masonBuild(args: [] string) throws {
-  var show = false;
-  var release = false;
-  var force = false;
+
+  var parser = new argumentParser(helpHandler=new MasonBuildHelpHandler());
+
+  var showFlag = parser.addFlag(name="show", defaultValue=false);
+  var releaseFlag = parser.addFlag(name="release", defaultValue=false);
+  var forceFlag = parser.addFlag(name="force", defaultValue=false);
+  var exampleOpts = parser.addOption(name="example", numArgs=0..);
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+
+  var passArgs = parser.addPassThrough();
+
+  parser.parseArgs(args);
+
+  if passArgs.hasValue() && exampleOpts._present {
+    throw new owned MasonError("Examples do not support `--` syntax");
+  }
+
+  var show = showFlag.valueAsBool();
+  var release = releaseFlag.valueAsBool();
+  var force = forceFlag.valueAsBool();
   var compopts: list(string);
-  var opt = false;
   var example = false;
   var skipUpdate = MASON_OFFLINE;
 
-  if args.size > 2 {
+  // when --example provided with or without a value
+  if exampleOpts._present then example = true;
 
-    // strip off the first two indices
-    for i in args.indices#-(args.size-2) {
-      var arg = args[i];
-      if opt == true {
-        compopts.append(arg);
-      }
-      else if arg == '-h' || arg == '--help' {
-        masonBuildHelp();
-        exit(0);
-      }
-      else if arg == '--' {
-        if example then
-          throw new owned MasonError("Examples do not support `--` syntax");
-        opt = true;
-      }
-      else if arg == '--release' {
-        release = true;
-      }
-      else if arg == '--force' {
-        force = true;
-      }
-      else if arg == '--show' {
-        show = true;
-      }
-      else if arg.startsWith('--example=') {
-        example = true;
-        compopts.append(arg);
-      }
-      else if arg == '--example' {
-        example = true;
-      }
-      else if arg == '--update' {
-        skipUpdate = false;
-      }
-      else if arg == '--no-update' {
-        skipUpdate = true;
-      }
-      else {
-        compopts.append(arg);
-      }
-    }
+  if updateFlag.hasValue() {
+    if updateFlag.valueAsBool() then skipUpdate = false;
+    else skipUpdate = true;
   }
+
   if example {
-    // compopts become test names. Build never runs examples
+    // compopts become example names. Build never runs examples
+    for val in exampleOpts.values() do compopts.append(val);
     compopts.append("--no-run");
     if skipUpdate then compopts.append('--no-update');
                   else compopts.append('--update');
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
+    // add expected arguments for masonExample
+    compopts.insert(0,["example", "--example"]);
     masonExample(compopts.toArray());
   }
   else {
-    var argsList = new list(string);
-    for x in args do argsList.append(x);
+    if passArgs.hasValue() {
+      for val in passArgs.values() do compopts.append(val);
+    }
     const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
     const lockName = configNames[1];
@@ -118,7 +102,6 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
 
 proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: list(string),
                   tomlName="Mason.toml", lockName="Mason.lock") throws {
-
 
   try! {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -77,7 +77,6 @@ module VisualDebug
 pragma "no doc"
   enum vis_op {v_start, v_stop, v_tag, v_pause};
 
-pragma "not order independent yielding loops"
 private iter hc_id2com ( id: int, off: int ) {
    var offset = off;
    var ix = 1;

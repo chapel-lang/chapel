@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -79,6 +79,7 @@ extern "C" {
   m(TCIPS,                  "tx context alloc/free")                    \
   m(OOB,                    "out-of-band calls")                        \
   m(BARRIER,                "barriers")                                 \
+  m(SLINGSHOT,              "Slingshot")                                \
   m(TSTAMP,                 "timestamp output")
 
 //
@@ -235,6 +236,12 @@ extern int chpl_comm_ofi_abort_on_error;
       }                                                                 \
     } while (0)
 
+#define CHK_SYS_FREE(p)                                                 \
+  do {                                                                  \
+    sys_free(p);                                                        \
+    p = NULL;                                                           \
+  } while (0)
+
 #define CHPL_CALLOC_SZ(p, n, s)                                         \
   do {                                                                  \
     p = chpl_mem_calloc((n), (s), CHPL_RT_MD_COMM_UTIL, 0, 0);          \
@@ -248,6 +255,9 @@ extern int chpl_comm_ofi_abort_on_error;
     p = NULL;                                                           \
   } while (0)
 
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+#endif
 
 //
 // Out-of-band support
@@ -263,6 +273,7 @@ void chpl_comm_ofi_oob_fini(void);
 void chpl_comm_ofi_oob_barrier(void);
 void chpl_comm_ofi_oob_allgather(const void*, void*, size_t);
 void chpl_comm_ofi_oob_bcast(void*, size_t);
+int  chpl_comm_ofi_oob_locales_on_node(void);
 
 
 //

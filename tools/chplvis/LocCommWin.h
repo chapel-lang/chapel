@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,7 +35,7 @@ class LocCommWin : public Fl_Double_Window {
 
  private:
   LocCommBox *LCBox;
-  
+
 
  public:
   LocCommWin (int x, int y, int W, int H, const char *l=0);
@@ -45,7 +45,7 @@ class LocCommWin : public Fl_Double_Window {
   void setAsLocale (int Loc, localeData *l);
 
   void setAsComm(int L1, int L2, commData *c);
-  
+
 };
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,7 +37,10 @@
 #include "stringutil.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <algorithm>
+#include <regex>
 
 //
 // The function that represents the compiler-generated entry point
@@ -231,53 +234,11 @@ bool Symbol::isRenameable() const {
   return true;
 }
 
-bool Symbol::isRef() {
-  QualifiedType q = qualType();
-  return (type != NULL) && (q.isRef() || type->symbol->hasFlag(FLAG_REF));
-}
-
-bool Symbol::isWideRef() {
-  QualifiedType q = qualType();
-  return (q.isWideRef() || type->symbol->hasFlag(FLAG_WIDE_REF));
-}
-
-bool Symbol::isRefOrWideRef() {
-  return isRef() || isWideRef();
-}
-
-
 // Returns the scope in which the given symbol is declared; NULL otherwise.
 BlockStmt* Symbol::getDeclarationScope() const {
   return (defPoint != NULL) ? defPoint->getScopeBlock() : NULL;
 }
 
-
-bool Symbol::hasFlag(Flag flag) const {
-  CHECK_FLAG(flag);
-  return flags[flag];
-}
-
-
-void Symbol::addFlag(Flag flag) {
-  CHECK_FLAG(flag);
-  flags.set(flag);
-}
-
-
-void Symbol::copyFlags(const Symbol* other) {
-  flags |= other->flags;
-  qual   = other->qual;
-}
-
-
-void Symbol::removeFlag(Flag flag) {
-  CHECK_FLAG(flag);
-  flags.reset(flag);
-}
-
-bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
-  return hasFlag(aflag) || hasFlag(bflag);
-}
 
 bool Symbol::isKnownToBeGeneric() {
   if (FnSymbol* fn = toFnSymbol(this))
@@ -493,6 +454,22 @@ const char* Symbol::getDeprecationMsg() const {
   }
 }
 
+// When printing the deprecation message to the console we typically
+// want to filter out inline markup used for Sphinx (which is useful
+// for when generating the docs). See:
+// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+// for information on the markup.
+const char* Symbol::getSanitizedDeprecationMsg() const {
+  std::string msg = getDeprecationMsg();
+  // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
+  //       show up in sanitized message).
+  // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
+  // TODO: Allow prefixing content with ~ (and having it only display last component of target)
+  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
+  msg = std::regex_replace(msg, std::regex(reStr), "$2");
+  return astr(msg.c_str());
+}
+
 void Symbol::generateDeprecationWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
@@ -511,7 +488,7 @@ void Symbol::generateDeprecationWarning(Expr* context) {
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
   if (!compilerGenerated && !parentDeprecated) {
-    USR_WARN(context, "%s", getDeprecationMsg());
+    USR_WARN(context, "%s", getSanitizedDeprecationMsg());
   }
 }
 
@@ -719,6 +696,11 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     if (!fDocsTextOnly) {
       *file << std::endl;
     }
+  }
+
+  if (this->hasFlag(FLAG_DEPRECATED)) {
+    this->printDocsDeprecation(this->doc, file, tabs + 1,
+                               this->getDeprecationMsg(), !fDocsTextOnly);
   }
 }
 
@@ -1495,9 +1477,12 @@ HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 // stringLiteralsHash should never contain any invalid string
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> bytesLiteralsHash;
+typedef MapElem<Immediate*, VarSymbol*> StringLiteralHashElem;
 
 LabelSymbol* initStringLiteralsEpilogue = NULL;
 
+// This is called after all of the string literals are accumulated
+// and after they are dead-code-eliminated.
 void createInitStringLiterals() {
   SET_LINENO(stringLiteralModule);
   initStringLiterals = new FnSymbol("chpl__initStringLiterals");
@@ -1508,6 +1493,111 @@ void createInitStringLiterals() {
   initStringLiterals->retType = dtVoid;
   initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
+
+  initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
+
+  if (fMinimalModules) {
+    return;
+  }
+
+  // accumulate the string/bytes and prepare to sort them
+  std::vector<std::pair<std::string, VarSymbol*>> literals;
+
+  for_alist(expr, stringLiteralModule->block->body) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      if (VarSymbol* s = toVarSymbol(def->sym)) {
+        if (s->hasFlag(FLAG_CHAPEL_STRING_LITERAL) ||
+            s->hasFlag(FLAG_CHAPEL_BYTES_LITERAL)) {
+          Immediate* imm = s->immediate;
+          INT_ASSERT(imm);
+          literals.push_back({imm->to_string(), s});
+        }
+      }
+    }
+  }
+
+  // sort the strings/bytes so that they can be stored in a reliable order
+  std::sort(literals.begin(), literals.end());
+
+  // now emit initialization for them
+  Expr* insertPt = initStringLiteralsEpilogue->defPoint;
+
+  VarSymbol* buffer = new VarSymbol("literalsBuf", dtStringC);
+  DefExpr* bufferDef = new DefExpr(buffer);
+  insertPt->insertBefore(bufferDef);
+
+  VarSymbol* offset = new VarSymbol("offset", SIZE_TYPE);
+  insertPt->insertBefore(new DefExpr(offset));
+  insertPt->insertBefore(new CallExpr(PRIM_MOVE, offset, new_IntSymbol(0)));
+
+  VarSymbol* one = new_IntSymbol(1);
+
+  int64_t bufferSize = 0;
+
+  INT_ASSERT(gChplCreateStringWithLiteral != NULL);
+  INT_ASSERT(gChplCreateBytesWithLiteral != NULL);
+
+  // initialize the strings
+  for (auto pair : literals) {
+    VarSymbol* s = pair.second;
+
+    // unescape the string and compute its length
+    std::string unescapedString =
+      unescapeString(s->immediate->to_string().c_str(), s);
+    int64_t numCodepoints = 0;
+
+    if (s->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+      // make sure the string is valid UTF-8
+      const bool ok = isValidString(unescapedString, &numCodepoints);
+      INT_ASSERT(ok); // should be checked earlier
+    }
+
+    int64_t strLength = unescapedString.length();
+    const char* cstr = s->immediate->string_value();
+
+    VarSymbol* strLenVar = new_IntSymbol(strLength);
+    VarSymbol* cstrTemp = newTemp("call_tmp", dtStringC);
+    CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp,
+                                      new_CStringSymbol(cstr));
+
+    CallExpr *initCall = nullptr;
+
+    // call a function to initialize it appropriately
+    if (s->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+      initCall = new CallExpr(gChplCreateStringWithLiteral,
+                              buffer,
+                              offset,
+                              cstrTemp,
+                              strLenVar,
+                              new_IntSymbol(numCodepoints));
+    } else {
+      INT_ASSERT(s->hasFlag(FLAG_CHAPEL_BYTES_LITERAL));
+      initCall = new CallExpr(gChplCreateBytesWithLiteral,
+                              buffer,
+                              offset,
+                              cstrTemp,
+                              strLenVar);
+    }
+
+    CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
+    CallExpr* addCall = new CallExpr(PRIM_ADD_ASSIGN, offset, strLenVar);//data
+    CallExpr* incCall = new CallExpr(PRIM_ADD_ASSIGN, offset, one); //null
+
+    insertPt->insertBefore(new DefExpr(cstrTemp));
+    insertPt->insertBefore(cstrMove);
+    insertPt->insertBefore(moveCall);
+    insertPt->insertBefore(addCall);
+    insertPt->insertBefore(incCall);
+
+    bufferSize += strLength+1; // string data and null
+  }
+
+  // emit the call to allocate_string_literals_buf and put it
+  // just after the buffer is defined
+  CallExpr *allocCall = new CallExpr(gAllocateStringLiteralsBuf,
+                                     new_IntSymbol(bufferSize));
+  CallExpr *moveBuf = new CallExpr(PRIM_MOVE, buffer, allocCall);
+  bufferDef->insertAfter(moveBuf);
 }
 
 bool isValidString(std::string str, int64_t* numCodepoints) {
@@ -1521,10 +1611,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
-  Immediate imm;
-  imm.const_kind = CONST_KIND_STRING;
-  imm.string_kind = STRING_KIND_STRING;
-  imm.v_string = astr(str);
+  size_t len = strlen(str);
+  Immediate imm(gContext, str, len, STRING_KIND_STRING);
   VarSymbol *s = stringLiteralsHash.get(&imm);
   if (s) {
     return s;
@@ -1541,28 +1629,6 @@ VarSymbol *new_StringSymbol(const char *str) {
   // after normalization we need to insert everything in normalized form. We
   // also need to disable parts of normalize from running on literals inserted
   // at parse time.
-
-  VarSymbol* cstrTemp = newTemp("call_tmp");
-  CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp, new_CStringSymbol(str));
-
-  std::string unescapedString = unescapeString(str, cstrMove);
-
-  int64_t numCodepoints = 0;
-  const bool ret = isValidString(unescapedString, &numCodepoints);
-  if (!ret) {
-    USR_FATAL_CONT(cstrMove, "Invalid string literal");
-
-    // We want to keep the compilation going here so that we can catch other
-    // invalid string literals without having to compile again. However,
-    // returning `s` (i.e. NULL at this point) does not work well with the rest
-    // of the compilation. At the same time we should avoid adding invalid
-    // sequences to stringLiteralsHash. Therefore, set a flag to note that this
-    // string is invalid and should not be added to stringLiteralsHash.
-    invalid = true;
-  }
-
-  int strLength = unescapedString.length();
-
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
@@ -1573,43 +1639,38 @@ VarSymbol *new_StringSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
-  Expr* initFn = NULL;
-  if (gChplCreateStringWithLiteral != NULL)
-    initFn = new SymExpr(gChplCreateStringWithLiteral);
-  else
-    initFn = new UnresolvedSymExpr("chpl_createStringWithLiteral");
-
-  CallExpr *initCall = new CallExpr(initFn,
-                                    cstrTemp,
-                                    new_IntSymbol(strLength),
-                                    new_IntSymbol(numCodepoints));
-
-  CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
-
-  if (initStringLiterals == NULL) {
-    createInitStringLiterals();
-    initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
-  }
-
-  Expr* insertPt = initStringLiteralsEpilogue->defPoint;
-
-  insertPt->insertBefore(new DefExpr(cstrTemp));
-  insertPt->insertBefore(cstrMove);
-  insertPt->insertBefore(moveCall);
-
   s->immediate = new Immediate;
   *s->immediate = imm;
+
+  std::string unescapedString = unescapeString(str, s);
+  int64_t numCodepoints = 0;
+  const bool ret = isValidString(unescapedString, &numCodepoints);
+  if (!ret) {
+    USR_FATAL_CONT(s, "Invalid string literal");
+
+    // We want to keep the compilation going here so that we can catch other
+    // invalid string literals without having to compile again. However,
+    // returning `s` (i.e. NULL at this point) does not work well with the rest
+    // of the compilation. At the same time we should avoid adding invalid
+    // sequences to stringLiteralsHash. Therefore, set a flag to note that this
+    // string is invalid and should not be added to stringLiteralsHash.
+    invalid = true;
+  }
+
   if (!invalid) {
     stringLiteralsHash.put(s->immediate, s);
   }
+
+  // String literal init function should be not created yet.
+  // Otherwise, the new string global will not be initialized.
+  INT_ASSERT(initStringLiterals == NULL);
   return s;
 }
 
+
 VarSymbol *new_BytesSymbol(const char *str) {
-  Immediate imm;
-  imm.const_kind = CONST_KIND_STRING;
-  imm.string_kind = STRING_KIND_BYTES;
-  imm.v_string = astr(str);
+  size_t len = strlen(str);
+  Immediate imm(gContext, str, len, STRING_KIND_BYTES);
   VarSymbol *s = bytesLiteralsHash.get(&imm);
   if (s) {
     return s;
@@ -1624,10 +1685,6 @@ VarSymbol *new_BytesSymbol(const char *str) {
   // after normalization we need to insert everything in normalized form. We
   // also need to disable parts of normalize from running on literals inserted
   // at parse time.
-  VarSymbol* bytesTemp = newTemp("call_tmp");
-  CallExpr *bytesMove = new CallExpr(PRIM_MOVE, bytesTemp, new_CStringSymbol(str));
-
-  int bytesLength = unescapeString(str, bytesMove).length();
   s = new VarSymbol(astr("_bytes_literal_", istr(literal_id++)), dtBytes);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
@@ -1638,34 +1695,14 @@ VarSymbol *new_BytesSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(bytesLitDef);
 
-  Expr* initFn = NULL;
-  if (gChplCreateBytesWithLiteral != NULL)
-    initFn = new SymExpr(gChplCreateBytesWithLiteral);
-  else
-    initFn = new UnresolvedSymExpr("chpl_createBytesWithLiteral");
-
-
-  CallExpr *initCall = new CallExpr(initFn,
-                                    bytesTemp,
-                                    new_IntSymbol(bytesLength));
-
-
-  CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
-
-  if (initStringLiterals == NULL) {
-    createInitStringLiterals();
-    initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
-  }
-
-  Expr* insertPt = initStringLiteralsEpilogue->defPoint;
-
-  insertPt->insertBefore(new DefExpr(bytesTemp));
-  insertPt->insertBefore(bytesMove);
-  insertPt->insertBefore(moveCall);
-
   s->immediate = new Immediate;
   *s->immediate = imm;
   bytesLiteralsHash.put(s->immediate, s);
+
+  // String literal init function should be not created yet.
+  // Otherwise, the new bytes global will not be initialized.
+  INT_ASSERT(initStringLiterals == NULL);
+
   return s;
 }
 
@@ -1684,10 +1721,8 @@ VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
 }
 
 VarSymbol *new_CStringSymbol(const char *str) {
-  Immediate imm;
-  imm.const_kind = CONST_KIND_STRING;
-  imm.string_kind = STRING_KIND_C_STRING;
-  imm.v_string = astr(str);
+  size_t len = strlen(str);
+  Immediate imm(gContext, str, len, STRING_KIND_C_STRING);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtStringC;
   if (s) {
@@ -1952,11 +1987,13 @@ VarSymbol* new_ImmediateSymbol(Immediate *imm) {
   const size_t bufSize = 512;
   char str[bufSize];
   const char* ss = str;
-  if (imm->const_kind == CONST_KIND_STRING)
-    ss = imm->v_string;
-  else
+  if (imm->const_kind == CONST_KIND_STRING) {
+    ss = astr(imm->v_string.c_str());
+  } else {
     snprint_imm(str, bufSize, *imm);
-  s->cname = astr(ss);
+    ss = astr(ss);
+  }
+  s->cname = ss;
   *s->immediate = *imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
@@ -2044,7 +2081,6 @@ const char* astrSlt = NULL;
 const char* astrSlte = NULL;
 const char* astrSswap = NULL;
 const char* astrScolon = NULL;
-const char* astr_cast = NULL;
 const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
 const char* astrInitEquals = NULL;
@@ -2069,6 +2105,7 @@ const char* astr_autoCopy = NULL;
 const char* astr_initCopy = NULL;
 const char* astr_coerceCopy = NULL;
 const char* astr_coerceMove = NULL;
+const char* astr_autoDestroy = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -2081,7 +2118,6 @@ void initAstrConsts() {
   astrSlte = astr("<=");
   astrSswap = astr("<=>");
   astrScolon = astr(":");
-  astr_cast   = astr("_cast");
   astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
   astrInitEquals = astr("init=");
@@ -2110,6 +2146,8 @@ void initAstrConsts() {
   astr_initCopy = astr("chpl__initCopy");
   astr_coerceCopy = astr("chpl__coerceCopy");
   astr_coerceMove = astr("chpl__coerceMove");
+
+  astr_autoDestroy = astr("chpl__autoDestroy");
 }
 
 bool isAstrOpName(const char* name) {
@@ -2128,8 +2166,9 @@ bool isAstrOpName(const char* name) {
       strcmp(name, "**=") == 0 || strcmp(name, "&=") == 0 ||
       strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
       strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
-      strcmp(name, "#") == 0 || strcmp(name, "by") == 0 ||
-      strcmp(name, "align") == 0 || name == astrScolon) {
+      strcmp(name, "#") == 0 || strcmp(name, "chpl_by") == 0 ||
+      strcmp(name, "by") == 0 || strcmp(name, "align") == 0 ||
+      strcmp(name, "chpl_align") == 0 || name == astrScolon) {
     return true;
   } else {
     return false;
@@ -2326,7 +2365,7 @@ const char* toString(VarSymbol* var, bool withType) {
               if (VarSymbol* v = toVarSymbol(sym))
                 if (v->immediate)
                   if (v->immediate->const_kind == CONST_KIND_STRING)
-                    name = astr("field ", v->immediate->v_string);
+                    name = astr("field ", v->immediate->v_string.c_str());
 
               if (name == NULL)
                 name = astr("field ", sym->name);

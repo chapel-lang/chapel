@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,8 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "view.h"
+
+#include "global-ast-vecs.h"
 
 /* This pass implements a backwards (uses to defs) analysis
    to determine if certain reference Symbols are constant.
@@ -246,9 +248,13 @@ bool symbolIsUsedAsConstRef(Symbol* sym) {
 static
 bool symExprIsSet(SymExpr* se)
 {
-  // The ref is necessary if it is for an explicit ref var
-  if (se->symbol()->hasFlag(FLAG_REF_VAR)) {
-    return true;
+  Symbol* sym = se->symbol();
+
+  // The ref is necessary if it is for an explicit ref var. But if marked
+  // with REF_IF_MODIFIED, then it is still possible for the symbol to be
+  // const (so we can't just return true).
+  if (sym->hasFlag(FLAG_REF_VAR) && !sym->hasFlag(FLAG_REF_IF_MODIFIED)) {
+      return true;
   }
 
   // a ref is not necessary if the LHS is a value
@@ -447,6 +453,11 @@ void markSymbolConst(Symbol* sym)
   sym->qual = QualifiedType::qualifierToConst(sym->qual);
   if (arg && arg->intent == INTENT_REF_MAYBE_CONST)
     arg->intent = INTENT_CONST_REF;
+
+  if (sym->hasFlag(FLAG_REF_IF_MODIFIED)) {
+    sym->removeFlag(FLAG_REF_IF_MODIFIED);
+    sym->addFlag(FLAG_CONST);
+  }
 }
 static
 void markSymbolNotConst(Symbol* sym)
@@ -460,6 +471,10 @@ void markSymbolNotConst(Symbol* sym)
   INT_ASSERT(!sym->qualType().isConst());
   if (arg && arg->intent == INTENT_REF_MAYBE_CONST)
     arg->intent = INTENT_REF;
+
+  if (sym->hasFlag(FLAG_REF_IF_MODIFIED)) {
+    sym->removeFlag(FLAG_REF_IF_MODIFIED);
+  }
 }
 
 static
@@ -712,7 +727,7 @@ void CullRefCtx::collectTuplesAndRefMaybeConstArgs(void) {
     if (argAt && argAt->symbol->hasFlag(FLAG_TUPLE) &&
         containsReferenceFields(argAt)) {
 
-      AggregateType* tupleType  = argAt; 
+      AggregateType* tupleType  = argAt;
       int            fieldIndex = 1;
 
       // Collect reference or tuple fields for later.
@@ -751,7 +766,7 @@ void CullRefCtx::collectOrLowerContextCallExprs(void) {
   }
 }
 
-// Loop through all the symbols collected so far and analyze them. 
+// Loop through all the symbols collected so far and analyze them.
 void CullRefCtx::visitCollectedSymbols(void) {
   for (size_t i = 0; i < collectedSymbols.size(); i++) {
     GraphNode node = collectedSymbols[i];
@@ -1149,7 +1164,7 @@ bool CullRefCtx::checkGetRefTupleField(CallExpr* call,
       Symbol*        field      = fieldSe->symbol();
 
       // TODO: Is this safe/invariant? Old is...
-      //    AggregateType* tupType = 
+      //    AggregateType* tupType =
       //      toAggregateType(call->get(1)->getValType());
       SymExpr*       tupleSe    = toSymExpr(call->get(1));
       INT_ASSERT(tupleSe);
@@ -1222,7 +1237,7 @@ bool CullRefCtx::checkSetRefTupleField(CallExpr* call, GraphNode node,
     addDependency(revisitGraph, srcNode, makeNode(rhsSymbol, 0));
     revisit = true;
 
-    return true; 
+    return true;
   }
 
   return false;

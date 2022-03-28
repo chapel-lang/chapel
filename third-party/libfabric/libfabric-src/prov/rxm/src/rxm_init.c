@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2016 Intel Corporation. All rights reserved.
+ * (C) Copyright 2020 Hewlett Packard Enterprise Development LP.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -37,23 +38,27 @@
 
 #include <ofi_prov.h>
 #include "rxm.h"
+#include "ofi_coll.h"
 
-#define RXM_ATOMIC_UNSUPPORTED_MSG_ORDER (FI_ORDER_RAW | FI_ORDER_ATOMIC_RAW | \
-					  FI_ORDER_RAR | FI_ORDER_ATOMIC_RAR | \
-					  FI_ORDER_WAW | FI_ORDER_ATOMIC_WAW | \
-					  FI_ORDER_WAR | FI_ORDER_ATOMIC_WAR | \
+#define RXM_ATOMIC_UNSUPPORTED_MSG_ORDER (FI_ORDER_RAW | FI_ORDER_RAR |  \
+					  FI_ORDER_WAW | FI_ORDER_WAR |  \
 					  FI_ORDER_SAR | FI_ORDER_SAW)
 
 #define RXM_PASSTHRU_CAPS (FI_MSG | FI_RMA | FI_SEND | FI_RECV |	\
 			   FI_READ | FI_WRITE | FI_REMOTE_READ |	\
-			   FI_REMOTE_WRITE)
+			   FI_REMOTE_WRITE | FI_HMEM)
 
-size_t rxm_msg_tx_size		= 128;
-size_t rxm_msg_rx_size		= 128;
-size_t rxm_def_univ_size	= 256;
-size_t rxm_eager_limit		= RXM_BUF_SIZE - sizeof(struct rxm_pkt);
+size_t rxm_msg_tx_size;
+size_t rxm_msg_rx_size;
+size_t rxm_def_rx_size = 2048;
+size_t rxm_def_tx_size = 2048;
+
+size_t rxm_buffer_size = 16384;
+size_t rxm_packet_size;
+
 int force_auto_progress		= 0;
-enum fi_wait_obj def_wait_obj	= FI_WAIT_FD;
+int rxm_use_write_rndv		= 0;
+enum fi_wait_obj def_wait_obj = FI_WAIT_FD, def_tcp_wait_obj = FI_WAIT_UNSPEC;
 
 char *rxm_proto_state_str[] = {
 	RXM_PROTO_STATES(OFI_STR)
@@ -86,14 +91,33 @@ void rxm_info_to_core_mr_modes(uint32_t version, const struct fi_info *hints,
 		else
 			core_info->domain_attr->mr_mode |=
 				hints->domain_attr->mr_mode;
+
+		/* RxM is setup to support FI_HMEM with the core provider requiring
+		 * FI_MR_HMEM. Always set this MR mode bit.
+		 */
+		if (hints && hints->caps & FI_HMEM)
+			core_info->domain_attr->mr_mode |= FI_MR_HMEM;
 	}
+}
+static bool rxm_use_srx(const struct fi_info *hints,
+			const struct fi_info *base_info)
+{
+	const struct fi_info *info;
+	int ret, use_srx = 0;
+
+	ret = fi_param_get_bool(&rxm_prov, "use_srx", &use_srx);
+	if (ret != -FI_ENODATA)
+		return use_srx;
+
+	info = base_info ? base_info : hints;
+
+	return info && info->fabric_attr && info->fabric_attr->prov_name &&
+	       strcasestr(info->fabric_attr->prov_name, "tcp");
 }
 
 int rxm_info_to_core(uint32_t version, const struct fi_info *hints,
-		     struct fi_info *core_info)
+		     const struct fi_info *base_info, struct fi_info *core_info)
 {
-	int use_srx = 0;
-
 	rxm_info_to_core_mr_modes(version, hints, core_info);
 
 	core_info->mode |= FI_RX_CQ_DATA | FI_CONTEXT;
@@ -104,12 +128,15 @@ int rxm_info_to_core(uint32_t version, const struct fi_info *hints,
 			core_info->caps |= FI_MSG | FI_SEND | FI_RECV;
 
 		/* FI_RMA cap is needed for large message transfer protocol */
-		if (core_info->caps & FI_MSG)
-			core_info->caps |= FI_RMA | FI_READ | FI_REMOTE_READ;
+		if (core_info->caps & FI_MSG) {
+			core_info->caps |= FI_RMA | FI_READ |
+					   FI_REMOTE_READ | FI_REMOTE_WRITE;
+		}
 
 		if (hints->domain_attr) {
 			core_info->domain_attr->caps |= hints->domain_attr->caps;
-			core_info->domain_attr->threading = hints->domain_attr->threading;
+			core_info->domain_attr->threading =
+				hints->domain_attr->threading;
 		}
 		if (hints->tx_attr) {
 			core_info->tx_attr->op_flags =
@@ -124,58 +151,87 @@ int rxm_info_to_core(uint32_t version, const struct fi_info *hints,
 			core_info->rx_attr->comp_order = hints->rx_attr->comp_order;
 		}
 	}
+
 	core_info->ep_attr->type = FI_EP_MSG;
-	if (!fi_param_get_bool(&rxm_prov, "use_srx", &use_srx) && use_srx) {
+
+	if (rxm_use_srx(hints, base_info)) {
 		FI_DBG(&rxm_prov, FI_LOG_FABRIC,
 		       "Requesting shared receive context from core provider\n");
 		core_info->ep_attr->rx_ctx_cnt = FI_SHARED_CONTEXT;
+		core_info->rx_attr->size = rxm_msg_rx_size ?
+					   rxm_msg_rx_size : RXM_MSG_SRX_SIZE;
+	} else {
+		core_info->rx_attr->size = rxm_msg_rx_size ?
+					   rxm_msg_rx_size : RXM_MSG_RXTX_SIZE;
 	}
 
 	core_info->tx_attr->op_flags &= ~RXM_TX_OP_FLAGS;
-	core_info->tx_attr->size = rxm_msg_tx_size;
+	core_info->tx_attr->size = rxm_msg_tx_size ?
+				   rxm_msg_tx_size : RXM_MSG_RXTX_SIZE;
 
 	core_info->rx_attr->op_flags &= ~FI_MULTI_RECV;
-	core_info->rx_attr->size = rxm_msg_rx_size;
 
 	return 0;
 }
 
 int rxm_info_to_rxm(uint32_t version, const struct fi_info *core_info,
-		    struct fi_info *info)
+		    const struct fi_info *base_info, struct fi_info *info)
 {
-	info->caps = rxm_info.caps;
-	// TODO find which other modes should be filtered
-	info->mode = (core_info->mode & ~FI_RX_CQ_DATA) | rxm_info.mode;
+	info->caps = base_info->caps;
+	info->mode = (core_info->mode & ~FI_RX_CQ_DATA) | base_info->mode;
 
-	info->tx_attr->caps		= rxm_info.tx_attr->caps;
+	info->tx_attr->caps		= base_info->tx_attr->caps;
 	info->tx_attr->mode		= info->mode;
 	info->tx_attr->msg_order 	= core_info->tx_attr->msg_order;
-	info->tx_attr->comp_order 	= rxm_info.tx_attr->comp_order;
-	info->tx_attr->inject_size	= rxm_info.tx_attr->inject_size;
-	info->tx_attr->size 		= rxm_info.tx_attr->size;
-	info->tx_attr->iov_limit 	= MIN(rxm_info.tx_attr->iov_limit,
+	info->tx_attr->comp_order 	= base_info->tx_attr->comp_order;
+
+	/* If the core provider requires registering send buffers, it's
+	 * usually faster to copy small transfer through bounce buffers
+	 * than requiring the user to register the buffers.  Bump the
+	 * inject size up to the rxm limit (eager buffer size) in this
+	 * case.  If registration is not required, use the core provider's
+	 * limit, which avoids potential extra data copies.
+	 *
+	 * If we report the size of the bounce buffer, apps may call inject
+	 * rather than send, which hampers our ability to use the direct
+	 * send feature that avoids data copies.
+	 */
+	if (ofi_mr_local(info) ||
+	    (core_info->tx_attr->inject_size <= sizeof(struct rxm_pkt))) {
+		info->tx_attr->inject_size = base_info->tx_attr->inject_size;
+	} else {
+		info->tx_attr->inject_size = core_info->tx_attr->inject_size -
+					     sizeof(struct rxm_pkt);
+	}
+
+	/* User hints will override the modified info attributes through
+	 * ofi_alter_info.  Set default sizes lower than supported maximums.
+	 */
+	info->tx_attr->size = MIN(base_info->tx_attr->size, rxm_def_tx_size);
+	info->rx_attr->size = MIN(base_info->rx_attr->size, rxm_def_rx_size);
+
+	info->tx_attr->iov_limit 	= MIN(base_info->tx_attr->iov_limit,
 					      core_info->tx_attr->iov_limit);
-	info->tx_attr->rma_iov_limit	= MIN(rxm_info.tx_attr->rma_iov_limit,
+	info->tx_attr->rma_iov_limit	= MIN(base_info->tx_attr->rma_iov_limit,
 					      core_info->tx_attr->rma_iov_limit);
 
-	info->rx_attr->caps		= rxm_info.rx_attr->caps;
+	info->rx_attr->caps		= base_info->rx_attr->caps;
 	info->rx_attr->mode		= info->rx_attr->mode & ~FI_RX_CQ_DATA;
 	info->rx_attr->msg_order 	= core_info->rx_attr->msg_order;
-	info->rx_attr->comp_order 	= rxm_info.rx_attr->comp_order;
-	info->rx_attr->size 		= rxm_info.rx_attr->size;
-	info->rx_attr->iov_limit 	= MIN(rxm_info.rx_attr->iov_limit,
+	info->rx_attr->comp_order 	= base_info->rx_attr->comp_order;
+	info->rx_attr->iov_limit 	= MIN(base_info->rx_attr->iov_limit,
 					      core_info->rx_attr->iov_limit);
 
-	*info->ep_attr = *rxm_info.ep_attr;
+	*info->ep_attr = *base_info->ep_attr;
 	info->ep_attr->max_msg_size = core_info->ep_attr->max_msg_size;
 	info->ep_attr->max_order_raw_size = core_info->ep_attr->max_order_raw_size;
 	info->ep_attr->max_order_war_size = core_info->ep_attr->max_order_war_size;
 	info->ep_attr->max_order_waw_size = core_info->ep_attr->max_order_waw_size;
 
-	*info->domain_attr = *rxm_info.domain_attr;
+	*info->domain_attr = *base_info->domain_attr;
 	info->domain_attr->mr_mode |= core_info->domain_attr->mr_mode;
 	info->domain_attr->cq_data_size = MIN(core_info->domain_attr->cq_data_size,
-					      rxm_info.domain_attr->cq_data_size);
+					      base_info->domain_attr->cq_data_size);
 	info->domain_attr->mr_key_size = core_info->domain_attr->mr_key_size;
 
 	if (core_info->nic) {
@@ -184,25 +240,56 @@ int rxm_info_to_rxm(uint32_t version, const struct fi_info *core_info,
 			return -FI_ENOMEM;
 	}
 
+	/* FI_HMEM is only supported if core provider supports it. */
+	if (!(core_info->caps & FI_HMEM)) {
+		info->caps &= ~FI_HMEM;
+		info->tx_attr->caps &= ~FI_HMEM;
+		info->rx_attr->caps &= ~FI_HMEM;
+	}
+
 	return 0;
 }
 
-static int rxm_init_info(void)
+static void rxm_init_infos(void)
 {
-	size_t param;
+	struct fi_info *cur;
+	size_t buf_size, tx_size = 0, rx_size = 0;
 
-	if (!fi_param_get_size_t(&rxm_prov, "buffer_size", &param)) {
-		if (param < sizeof(struct rxm_pkt) + sizeof(struct rxm_rndv_hdr)) {
+	/* Historically, 'buffer_size' was the name given for the eager message
+	 * size.  Maintain the name for backwards compatability.
+	 */
+	if (!fi_param_get_size_t(&rxm_prov, "buffer_size", &buf_size)) {
+		/* We need enough space to carry extra headers */
+		if (buf_size < sizeof(struct rxm_rndv_hdr) ||
+		    buf_size < sizeof(struct rxm_atomic_hdr)) {
 			FI_WARN(&rxm_prov, FI_LOG_CORE,
 				"Requested buffer size too small\n");
-			return -FI_EINVAL;
+			buf_size = MAX(sizeof(struct rxm_rndv_hdr),
+				       sizeof(struct rxm_atomic_hdr));
 		}
 
-		rxm_eager_limit = param - sizeof(struct rxm_pkt);
+		if (buf_size > INT32_MAX)
+			buf_size = INT32_MAX;
+
+		rxm_buffer_size = buf_size;
 	}
-	rxm_info.tx_attr->inject_size = rxm_eager_limit;
-	rxm_util_prov.info = &rxm_info;
-	return 0;
+
+	rxm_packet_size = sizeof(struct rxm_pkt) + rxm_buffer_size;
+
+	fi_param_get_size_t(&rxm_prov, "tx_size", &tx_size);
+	fi_param_get_size_t(&rxm_prov, "rx_size", &rx_size);
+	if (tx_size)
+		rxm_def_tx_size = tx_size;
+	if (rx_size)
+		rxm_def_rx_size = rx_size;
+
+	for (cur = (struct fi_info *) rxm_util_prov.info; cur; cur = cur->next) {
+		cur->tx_attr->inject_size = rxm_buffer_size;
+		if (tx_size)
+			cur->tx_attr->size = tx_size;
+		if (rx_size)
+			cur->rx_attr->size = rx_size;
+	}
 }
 
 static void rxm_alter_info(const struct fi_info *hints, struct fi_info *info)
@@ -210,12 +297,6 @@ static void rxm_alter_info(const struct fi_info *hints, struct fi_info *info)
 	struct fi_info *cur;
 
 	for (cur = info; cur; cur = cur->next) {
-		/* RxM can support higher inject size without any big
-		 * performance penalty even if app had requested lower value
-		 * in hints. App is still free to reduce this when opening an
-		 * endpoint. This overrides setting by ofi_alter_info */
-		cur->tx_attr->inject_size = rxm_eager_limit;
-
 		/* Remove the following caps if they are not requested as they
 		 * may affect performance in fast-path */
 		if (!hints) {
@@ -264,7 +345,7 @@ static void rxm_alter_info(const struct fi_info *hints, struct fi_info *info)
 				cur->domain_attr->data_progress = FI_PROGRESS_MANUAL;
 
 			if (hints->ep_attr && hints->ep_attr->mem_tag_format &&
-			    (info->caps & FI_TAGGED)) {
+			    (info->caps & (FI_TAGGED | FI_COLLECTIVE))) {
 				FI_INFO(&rxm_prov, FI_LOG_CORE,
 					"mem_tag_format requested: 0x%" PRIx64
 					" (note: provider doesn't optimize "
@@ -274,6 +355,7 @@ static void rxm_alter_info(const struct fi_info *hints, struct fi_info *info)
 					hints->ep_attr->mem_tag_format;
 			}
 		}
+
 		if (cur->domain_attr->data_progress == FI_PROGRESS_AUTO ||
 		    force_auto_progress)
 			cur->domain_attr->threading = FI_THREAD_SAFE;
@@ -321,6 +403,7 @@ static int rxm_getinfo(uint32_t version, const char *node, const char *service,
 			port_save = ofi_addr_get_port(ai->ai_addr);
 			freeaddrinfo(ai);
 			service = NULL;
+			flags &= ~FI_SOURCE;
 		} else {
 			port_save = ofi_addr_get_port(hints->src_addr);
 			ofi_addr_set_port(hints->src_addr, 0);
@@ -349,7 +432,10 @@ static int rxm_getinfo(uint32_t version, const char *node, const char *service,
 
 static void rxm_fini(void)
 {
-	/* yawn */
+#if HAVE_RXM_DL
+	ofi_hmem_cleanup();
+	ofi_mem_fini();
+#endif
 }
 
 struct fi_provider rxm_prov = {
@@ -361,28 +447,53 @@ struct fi_provider rxm_prov = {
 	.cleanup = rxm_fini
 };
 
-static void rxm_param_get_def_wait(void)
+static void rxm_get_def_wait(void)
 {
 	char *wait_str = NULL;
+
+	fi_param_define(&rxm_prov, "def_wait_obj", FI_PARAM_STRING,
+			"Specifies the default wait object used for blocking "
+			"operations (e.g. fi_cq_sread).  Supported values "
+			"are: fd and pollfd (default: fd).");
+
+	fi_param_define(&rxm_prov, "def_tcp_wait_obj", FI_PARAM_STRING,
+			"See def_wait_obj for description.  If set, this "
+			"overrides the def_wait_obj when running over the "
+			"tcp provider.  See def_wait_obj for valid values. "
+			"(default: UNSPEC, tcp provider will select).");
 
 	fi_param_get_str(&rxm_prov, "def_wait_obj", &wait_str);
 	if (wait_str && !strcasecmp(wait_str, "pollfd"))
 		def_wait_obj = FI_WAIT_POLLFD;
+
+	wait_str = NULL;
+	fi_param_get_str(&rxm_prov, "def_tcp_wait_obj", &wait_str);
+	if (wait_str) {
+		def_tcp_wait_obj = (!strcasecmp(wait_str, "pollfd")) ?
+				   FI_WAIT_POLLFD : FI_WAIT_FD;
+	}
 }
 
 RXM_INI
 {
 	fi_param_define(&rxm_prov, "buffer_size", FI_PARAM_SIZE_T,
-			"Defines the transmit buffer size / inject size "
-			"(default: 16 KB). Eager protocol would be used to "
-			"transmit messages of size less than eager limit "
-			"(FI_OFI_RXM_BUFFER_SIZE - RxM header size (%zu B)). "
-			"Any message whose size is greater than eager limit would"
-			" be transmitted via rendezvous or SAR "
-			"(Segmentation And Reassembly) protocol depending on "
-			"the value of FI_OFI_RXM_SAR_LIMIT). Also, transmit data "
-			" would be copied up to eager limit.",
-			sizeof(struct rxm_pkt));
+			"Defines the allocated buffer size used for bounce "
+			"buffers, including buffers posted at the receive side "
+			"to handle unexpected messages.  This value "
+			"corresponds to the rxm inject limit, and is also "
+			"typically used as the eager message size. "
+			"(default %zu)", rxm_buffer_size);
+
+	fi_param_define(&rxm_prov, "eager_limit", FI_PARAM_SIZE_T,
+			"Specifies the maximum size transfer that the eager "
+			"protocol will be used.  For transfers smaller than "
+			"this limit, data may be copied into a bounce "
+			"buffer on the transmit side and received into "
+			"bounce buffer at the receiver.  The eager_limit must "
+			"be equal to the buffer_size when using rxm over "
+			"verbs, but may differ in the case of tcp."
+			"(default: %zu)", rxm_buffer_size);
+			/* rxm_buffer_size is correct here */
 
 	fi_param_define(&rxm_prov, "comp_per_progress", FI_PARAM_INT,
 			"Defines the maximum number of MSG provider CQ entries "
@@ -390,13 +501,14 @@ RXM_INI
 			"(RxM CQ read).");
 
 	fi_param_define(&rxm_prov, "sar_limit", FI_PARAM_SIZE_T,
-			"Set this environment variable to enable and control "
-			"RxM SAR (Segmentation And Reassembly) protocol "
-			"(default: 128 KB). This value should be set greater than "
-			" eager limit (FI_OFI_RXM_BUFFER_SIZE - RxM protocol "
-			"header size (%zu B)) for SAR to take effect. Messages "
-			"of size greater than this would be transmitted via "
-			"rendezvous protocol.", sizeof(struct rxm_pkt));
+			"Specifies the maximum size transfer that the SAR "
+			"Segmentation And Reassembly) protocol "
+			"For transfers smaller than SAR, data may be copied "
+			"into multiple bounce buffers on the transmit side "
+			"and received into bounce buffers at the receiver. "
+			"The sar_limit value must be greater than the "
+			"eager_limit to take effect.  (default %zu).",
+			rxm_buffer_size * 8);
 
 	fi_param_define(&rxm_prov, "use_srx", FI_PARAM_BOOL,
 			"Set this environment variable to control the RxM "
@@ -406,20 +518,18 @@ RXM_INI
 			"latency as a side-effect.");
 
 	fi_param_define(&rxm_prov, "tx_size", FI_PARAM_SIZE_T,
-			"Defines default tx context size (default: 1024).");
+			"Defines default tx context size (default: 2048).");
 
 	fi_param_define(&rxm_prov, "rx_size", FI_PARAM_SIZE_T,
-			"Defines default rx context size (default: 1024).");
+			"Defines default rx context size (default: 2048).");
 
 	fi_param_define(&rxm_prov, "msg_tx_size", FI_PARAM_SIZE_T,
 			"Defines FI_EP_MSG tx size that would be requested "
-			"(default: 128). Setting this to 0 would get default "
-			"value defined by the MSG provider.");
+			"(default: 128).");
 
 	fi_param_define(&rxm_prov, "msg_rx_size", FI_PARAM_SIZE_T,
-			"Defines FI_EP_MSG rx size that would be requested "
-			"(default: 128). Setting this to 0 would get default "
-			"value defined by the MSG provider.");
+			"Defines FI_EP_MSG rx or srx size that would be requested. "
+			"(default: 128, 4096 with srx");
 
 	fi_param_define(&rxm_prov, "cm_progress_interval", FI_PARAM_INT,
 			"Defines the number of microseconds to wait between "
@@ -429,8 +539,8 @@ RXM_INI
 			"longer connection establishment times. (default: 10000).");
 
 	fi_param_define(&rxm_prov, "cq_eq_fairness", FI_PARAM_INT,
-			"Defines the maximum number of message provider CQ entries"
-			" that can be consecutively read across progress calls "
+			"Defines the maximum number of message provider CQ entries "
+			"that can be consecutively read across progress calls "
 			"without checking to see if the CM progress interval has "
 			"been reached. (default: 128).");
 
@@ -438,16 +548,31 @@ RXM_INI
 			"Force auto-progress for data transfers even if app "
 			"requested manual progress (default: false/no).");
 
-	fi_param_define(&rxm_prov, "def_wait_obj", FI_PARAM_STRING,
-			"Specifies the default wait object used for blocking "
-			"operations (e.g. fi_cq_sread).  Supported values "
-			"are: fd and pollfd (default: fd).");
+	fi_param_define(&rxm_prov, "use_rndv_write", FI_PARAM_BOOL,
+			"Set this environment variable to control the  "
+			"RxM Rendezvous protocol.  If set (1), RxM will use "
+			"RMA writes rather than RMA reads during Rendezvous "
+			"transactions. (default: false/no).");
 
-	fi_param_get_size_t(&rxm_prov, "tx_size", &rxm_info.tx_attr->size);
-	fi_param_get_size_t(&rxm_prov, "rx_size", &rxm_info.rx_attr->size);
+	fi_param_define(&rxm_prov, "enable_dyn_rbuf", FI_PARAM_BOOL,
+			"Enable support for dynamic receive buffering, if "
+			"available by the message endpoint provider. "
+			"This allows direct placement of received messages "
+			"into application buffers, bypassing RxM bounce "
+			"buffers.  This feature targets using tcp sockets "
+			"for the message transport.  (default: true)");
+
+	fi_param_define(&rxm_prov, "enable_direct_send", FI_PARAM_BOOL,
+			"Enable support to pass application buffers directly "
+			"to the core provider when possible.  This avoids "
+			"copying application buffers through bounce buffers "
+			"before passing them to the core provider.  This "
+			"feature targets small to medium size message "
+			"transfers over the tcp provider.  (default: true)");
+
+	rxm_init_infos();
 	fi_param_get_size_t(&rxm_prov, "msg_tx_size", &rxm_msg_tx_size);
 	fi_param_get_size_t(&rxm_prov, "msg_rx_size", &rxm_msg_rx_size);
-	fi_param_get_size_t(NULL, "universe_size", &rxm_def_univ_size);
 	if (fi_param_get_int(&rxm_prov, "cm_progress_interval",
 				(int *) &rxm_cm_progress_interval))
 		rxm_cm_progress_interval = 10000;
@@ -455,17 +580,19 @@ RXM_INI
 				(int *) &rxm_cq_eq_fairness))
 		rxm_cq_eq_fairness = 128;
 	fi_param_get_bool(&rxm_prov, "data_auto_progress", &force_auto_progress);
-	rxm_param_get_def_wait();
+	fi_param_get_bool(&rxm_prov, "use_rndv_write", &rxm_use_write_rndv);
+
+	rxm_get_def_wait();
 
 	if (force_auto_progress)
 		FI_INFO(&rxm_prov, FI_LOG_CORE, "auto-progress for data requested "
 			"(FI_OFI_RXM_DATA_AUTO_PROGRESS = 1), domain threading "
 			"level would be set to FI_THREAD_SAFE\n");
 
-	if (rxm_init_info()) {
-		FI_WARN(&rxm_prov, FI_LOG_CORE, "Unable to initialize rxm_info\n");
-		return NULL;
-	}
+#if HAVE_RXM_DL
+	ofi_mem_init();
+	ofi_hmem_init();
+#endif
 
 	return &rxm_prov;
 }

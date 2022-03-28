@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +22,7 @@
 //
 module MemTracking
 {
-  private use ChapelStandard, SysCTypes;
+  private use ChapelStandard, CTypes;
 
   config const
     memTrack: bool = false,
@@ -54,9 +54,9 @@ module MemTracking
   config const
     memLeaksByDesc: string;
 
-  // Safely cast to size_t instances of memMax and memThreshold.
-  const cMemMax = memMax.safeCast(size_t),
-    cMemThreshold = memThreshold.safeCast(size_t);
+  // Safely cast to c_size_t instances of memMax and memThreshold.
+  const cMemMax = memMax.safeCast(c_size_t),
+    cMemThreshold = memThreshold.safeCast(c_size_t);
 
   //
   // This communicates the settings of the various memory tracking
@@ -76,8 +76,8 @@ module MemTracking
                                          ref ret_memLeaksByType: bool,
                                          ref ret_memLeaksByDesc: c_string,
                                          ref ret_memLeaks: bool,
-                                         ref ret_memMax: size_t,
-                                         ref ret_memThreshold: size_t,
+                                         ref ret_memMax: c_size_t,
+                                         ref ret_memThreshold: c_size_t,
                                          ref ret_memLog: c_string,
                                          ref ret_memLeaksLog: c_string) {
     ret_memTrack = memTrack;
@@ -88,7 +88,7 @@ module MemTracking
     ret_memThreshold = cMemThreshold;
 
     if (here.id != 0) {
-      if memLeaksByDesc.size != 0 {
+      if !memLeaksByDesc.isEmpty() {
         var local_memLeaksByDesc = memLeaksByDesc;
         // Intentionally leak the string to persist the underlying buffer
         local_memLeaksByDesc.isOwned = false;
@@ -97,7 +97,7 @@ module MemTracking
         ret_memLeaksByDesc = nil;
       }
 
-      if memLog.size != 0 {
+      if !memLog.isEmpty() {
         var local_memLog = memLog;
         // Intentionally leak the string to persist the underlying buffer
         local_memLog.isOwned = false;
@@ -106,7 +106,7 @@ module MemTracking
         ret_memLog = nil;
       }
 
-      if memLeaksLog.size != 0 {
+      if !memLeaksLog.isEmpty() {
         var local_memLeaksLog = memLeaksLog;
         // Intentionally leak the string to persist the underlying buffer
         local_memLeaksLog.isOwned = false;

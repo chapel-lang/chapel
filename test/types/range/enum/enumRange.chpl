@@ -27,8 +27,6 @@ proc testRange(r) {
   writeln("isAmbiguous = ", r.isAmbiguous());
   writeln("contains(blue) = ", r.contains(color.blue));
   writeln("contains(red) = ", r.contains(color.red));
-  writeln("ident(color.red..color.violet) = ", ident(r, color.red..color.violet));
-  writeln("ident(color.yellow..color.indigo) = ", ident(r, color.yellow..color.indigo));
   writeln("indexOrder(color.yellow) = ", r.indexOrder(color.yellow));
   writeln("indexOrder(color.green) = ", r.indexOrder(color.green));
   if (r.size > 1) then

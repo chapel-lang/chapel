@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,8 @@ class FnSymbol;
 class ImportStmt;
 class ModuleSymbol;
 class Type;
+
+Expr* lookupConfigVal(VarSymbol* var);
 
 BlockStmt* buildPragmaStmt(Vec<const char*>*, BlockStmt*);
 DefExpr* buildPragmaDefExpr(Vec<const char*>*, DefExpr*);
@@ -185,14 +187,16 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names,
 BlockStmt* buildForwardingDeclStmt(BlockStmt*);
 BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
+BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
+                             const char* resourceName);
+BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);
 BlockStmt* buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block);
-BlockStmt* buildAtomicStmt(Expr* stmt);
 BlockStmt* buildExternBlockStmt(const char* c_code);
 CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
-BlockStmt* convertTypesToExtern(BlockStmt*);
+BlockStmt* convertTypesToExtern(BlockStmt*, const char* cname=nullptr);
 BlockStmt* handleConfigTypes(BlockStmt*);
 
 // In the following routines 'open[high|low]' are used to indicate

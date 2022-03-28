@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,7 +28,7 @@ module ChapelBase {
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
-  use ChapelEnv, SysCTypes, CPtr;
+  use ChapelEnv, CTypes;
 
   config param enablePostfixBangChecks = false;
 
@@ -460,8 +460,14 @@ module ChapelBase {
     }
   }
 
-  operator **(param a: int(?w), param b: int(w)) param return __primitive("**", a, b);
-  operator **(param a: uint(?w), param b: uint(w)) param return __primitive("**", a, b);
+  operator **(param a: int(?w), param b: int(w)) param {
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+    return __primitive("**", a, b);
+  }
+  operator **(param a: uint(?w), param b: uint(w)) param {
+    return __primitive("**", a, b);
+  }
 
   inline proc _expHelp(a, param b: integral) {
     if b == 0 {
@@ -521,7 +527,7 @@ module ChapelBase {
   //
   // logical operations on primitive types
   //
-  inline operator !(a: bool) return __primitive("!", a);
+  inline operator !(a: bool) return __primitive("u!", a);
   inline operator !(a: int(?w)) return (a == 0);
   inline operator !(a: uint(?w)) return (a == 0);
 
@@ -530,7 +536,7 @@ module ChapelBase {
 
   proc isTrue(a: integral) { compilerError("short-circuiting logical operators not supported on integers"); }
 
-  inline operator !(param a: bool) param return __primitive("!", a);
+  inline operator !(param a: bool) param return __primitive("u!", a);
   inline operator !(param a: int(?w)) param return (a == 0);
   inline operator !(param a: uint(?w)) param return (a == 0);
 
@@ -911,6 +917,9 @@ module ChapelBase {
   pragma "no doc"
   extern type chpl_mem_descInt_t = int(16);
 
+  pragma "no doc"
+  enum chpl_ddataResizePolicy { normalInit, skipInit, skipInitButClearMem }
+
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
   //  and defined in SysBasic.chpl)
@@ -939,11 +948,11 @@ module ChapelBase {
     return ret;
   }
 
-  inline proc _ddata_sizeof_element(type t: _ddata): size_t {
-    return __primitive("sizeof_ddata_element", t):size_t;
+  inline proc _ddata_sizeof_element(type t: _ddata): c_size_t {
+    return __primitive("sizeof_ddata_element", t):c_size_t;
   }
 
-  inline proc _ddata_sizeof_element(x: _ddata): size_t {
+  inline proc _ddata_sizeof_element(x: _ddata): c_size_t {
     return _ddata_sizeof_element(x.type);
   }
 
@@ -970,11 +979,11 @@ module ChapelBase {
                                      subloc = c_sublocid_none) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
+    extern proc chpl_mem_array_alloc(nmemb: c_size_t, eltSize: c_size_t,
                                      subloc: chpl_sublocID_t,
                                      ref callPostAlloc: bool): c_void_ptr;
     var ret: _ddata(eltType);
-    ret = chpl_mem_array_alloc(size:size_t, _ddata_sizeof_element(ret),
+    ret = chpl_mem_array_alloc(size:c_size_t, _ddata_sizeof_element(ret),
                                subloc, callPostAlloc):ret.type;
     return ret;
   }
@@ -982,22 +991,20 @@ module ChapelBase {
   inline proc _ddata_allocate_postalloc(data:_ddata, size: integral) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
-                                         eltSize: size_t);
-    chpl_mem_array_postAlloc(data:c_void_ptr, size:size_t,
+    extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: c_size_t,
+                                         eltSize: c_size_t);
+    chpl_mem_array_postAlloc(data:c_void_ptr, size:c_size_t,
                              _ddata_sizeof_element(data));
   }
 
   inline proc _ddata_allocate(type eltType, size: integral,
-                              subloc = c_sublocid_none,
-                              param initElts: bool=true) {
+                              subloc = c_sublocid_none) {
     var callPostAlloc: bool;
     var ret: _ddata(eltType);
 
     ret = _ddata_allocate_noinit(eltType, size, callPostAlloc, subloc);
 
-    if initElts then
-      init_elts(ret, size, eltType);
+    init_elts(ret, size, eltType);
 
     if callPostAlloc {
       _ddata_allocate_postalloc(ret, size);
@@ -1006,17 +1013,51 @@ module ChapelBase {
     return ret;
   }
 
+  inline proc _ddata_supports_reallocate(oldDdata,
+                                         type eltType,
+                                         oldSize: integral,
+                                         newSize: integral) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_supports_realloc(ptr: c_void_ptr,
+                                                oldNmemb: c_size_t, newNmemb:
+                                                c_size_t, eltSize: c_size_t): bool;
+      return chpl_mem_array_supports_realloc(oldDdata: c_void_ptr,
+                                             oldSize.safeCast(c_size_t),
+                                             newSize.safeCast(c_size_t),
+                                             _ddata_sizeof_element(oldDdata));
+  }
+
+  inline proc _ddata_fill(ddata,
+                          type eltType,
+                          lo: integral,
+                          hi: integral,
+                          fill: int(8)=0) {
+    if hi > lo {
+      const elemWidthInBytes: uint  = _ddata_sizeof_element(ddata);
+      const numElems = (hi - lo).safeCast(uint);
+      if safeMul(numElems, elemWidthInBytes) {
+        const numBytes = numElems * elemWidthInBytes;
+        const shiftedPtr = _ddata_shift(eltType, ddata, lo);
+        c_memset(shiftedPtr:c_void_ptr, fill, numBytes);
+      } else {
+        halt('internal error: Unsigned integer overflow during ' +
+             'memset of dynamic block');
+      }
+    }
+  }
 
   inline proc _ddata_reallocate(oldDdata,
                                 type eltType,
                                 oldSize: integral,
                                 newSize: integral,
-                                subloc = c_sublocid_none) {
+                                subloc = c_sublocid_none,
+                                policy = chpl_ddataResizePolicy.normalInit) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
-                                       oldNmemb: size_t, newNmemb: size_t,
-                                       eltSize: size_t,
+                                       oldNmemb: c_size_t, newNmemb: c_size_t,
+                                       eltSize: c_size_t,
                                        subloc: chpl_sublocID_t,
                                        ref callPostAlloc: bool): c_void_ptr;
     var callPostAlloc: bool;
@@ -1034,23 +1075,38 @@ module ChapelBase {
       }
     }
 
-    const newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr, oldSize.safeCast(size_t),
-                                   newSize.safeCast(size_t),
-                                   _ddata_sizeof_element(oldDdata),
-                                   subloc, callPostAlloc): oldDdata.type;
+    var newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr,
+                                          oldSize.safeCast(c_size_t),
+                                          newSize.safeCast(c_size_t),
+                                          _ddata_sizeof_element(oldDdata),
+                                          subloc,
+                                          callPostAlloc): oldDdata.type;
 
-    init_elts(newDdata, newSize, eltType, lo=oldSize);
+    // The resize policy dictates whether or not we should default-init,
+    // skip initializing, or zero out the memory of new slots.
+    select policy {
+      when chpl_ddataResizePolicy.normalInit do
+        if !isDefaultInitializable(eltType) {
+          halt('internal error: Attempt to resize dynamic block ' +
+               'containing non-default-initializable elements');
+        } else {
+          init_elts(newDdata, newSize, eltType, lo=oldSize);
+        }
+      when chpl_ddataResizePolicy.skipInit do;
+      when chpl_ddataResizePolicy.skipInitButClearMem do
+        _ddata_fill(newDdata, eltType, oldSize, newSize);
+    }
 
     if (callPostAlloc) {
       pragma "fn synchronization free"
       pragma "insert line file info"
       extern proc chpl_mem_array_postRealloc(oldData: c_void_ptr,
-                                             oldNmemb: size_t,
+                                             oldNmemb: c_size_t,
                                              newData: c_void_ptr,
-                                             newNmemb: size_t,
-                                             eltSize: size_t);
-      chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(size_t),
-                                 newDdata:c_void_ptr, newSize.safeCast(size_t),
+                                             newNmemb: c_size_t,
+                                             eltSize: c_size_t);
+      chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(c_size_t),
+                                 newDdata:c_void_ptr, newSize.safeCast(c_size_t),
                                  _ddata_sizeof_element(oldDdata));
     }
     return newDdata;
@@ -1058,12 +1114,16 @@ module ChapelBase {
 
 
   inline proc _ddata_free(data: _ddata, size: integral) {
+    var subloc = chpl_sublocFromLocaleID(__primitive("_wide_get_locale", data));
+
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_free(data: c_void_ptr,
-                                    nmemb: size_t, eltSize: size_t);
-    chpl_mem_array_free(data:c_void_ptr, size:size_t,
-                        _ddata_sizeof_element(data));
+                                    nmemb: c_size_t, eltSize: c_size_t,
+                                    subloc: chpl_sublocID_t);
+    chpl_mem_array_free(data:c_void_ptr, size:c_size_t,
+                        _ddata_sizeof_element(data),
+                        subloc);
   }
 
   inline operator ==(a: _ddata, b: _ddata)
@@ -1126,7 +1186,12 @@ module ChapelBase {
     }
   }
 
-  config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
+  config param useAtomicTaskCnt = defaultAtomicTaskCount();
+
+  proc defaultAtomicTaskCount() param {
+    use ChplConfig;
+    return ChplConfig.CHPL_NETWORK_ATOMICS != "none";
+  }
 
   // Parent class for _EndCount instances so that it's easy
   // to add non-generic fields here.
@@ -1134,7 +1199,6 @@ module ChapelBase {
   pragma "no default functions"
   class _EndCountBase {
     var errors: chpl_TaskErrors;
-    var taskList: c_void_ptr;
   }
 
   pragma "end count"
@@ -1266,9 +1330,6 @@ module ChapelBase {
     // re-added after the waitFor().
     here.runningTaskCntSub(1);
 
-    // See if we can help with any of the started tasks
-    chpl_taskListExecute(e.taskList);
-
     // Wait for all tasks to finish
     e.i.waitFor(0, memoryOrder.acquire);
 
@@ -1291,9 +1352,6 @@ module ChapelBase {
   pragma "task join impl fn"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {
-    // See if we can help with any of the started tasks
-    chpl_taskListExecute(e.taskList);
-
     // Wait for all tasks to finish
     e.i.waitFor(0, memoryOrder.acquire);
 
@@ -1914,12 +1972,6 @@ module ChapelBase {
     lhs = lhs << rhs;
   }
 
-  /* domain += and -= add and remove indices */
-  inline operator +=(ref D: domain, idx) { D.add(idx); }
-  inline operator -=(ref D: domain, idx) { D.remove(idx); }
-  inline operator +=(ref D: domain, param idx) { D.add(idx); }
-  inline operator -=(ref D: domain, param idx) { D.remove(idx); }
-
   /* swap operator */
   pragma "ignore transfer errors"
   inline operator <=>(ref lhs, ref rhs) {
@@ -2374,17 +2426,26 @@ module ChapelBase {
     return x;
   }
 
-
-  // This is a helper function that I injected to reduce the
-  // compiler's reliance on 'iterable.size' for coforall loops because
-  // we started generating warnings for the return type of
-  // '[range|domain|array].size' changing.
   //
-  proc chpl_coforallSize(iterable) {
-    if (isRange(iterable) || isDomain(iterable) || isArray(iterable)) then
+  // Support for bounded coforall task counting optimizations
+  //
+
+  proc chpl_supportsBoundedCoforall(iterable, param zippered) param {
+    if zippered && isTuple(iterable) then
+      return chpl_supportsBoundedCoforall(iterable[0], zippered=false);
+    else if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
+      return true;
+    else
+      return false;
+  }
+
+  proc chpl_boundedCoforallSize(iterable, param zippered) {
+    if zippered && isTuple(iterable) then
+      return chpl_boundedCoforallSize(iterable[0], zippered=false);
+    else if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
       return iterable.sizeAs(iterable.intIdxType);
     else
-      return iterable.size;
+      compilerError("Called chpl_boundedCoforallSize on an unsupported type");
   }
 
   /* The following chpl_field_*() overloads support compiler-generated
@@ -2412,5 +2473,19 @@ module ChapelBase {
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
+  }
+
+  // c_fn_ptr stuff
+  pragma "no doc"
+  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
+    __primitive("=", a, b);
+  }
+  pragma "no doc"
+  proc c_fn_ptr.this() {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+  pragma "no doc"
+  proc c_fn_ptr.this(args...) {
+    compilerError("Can't call a C function pointer within Chapel");
   }
 }

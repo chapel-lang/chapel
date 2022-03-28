@@ -1,24 +1,13 @@
 use Regex;
 
 {
-  var re : regexp(string);
-  writeln(re.ok);
+  var re : regex(string);
   writeln("111111111111111111111");
   try! {
     re = compile("*");
     writeln("Should not reach here");
-  } catch (e: BadRegexError) {
-    writeln("222222222222222222222");
-    writeln(re.ok);
-    writeln("333333333333333333333");
-    writeln(re.error());
-    writeln("444444444444444444444");
+  } catch (e: BadRegexpError) {
     writeln(e.message());
   }
 }
 
-{
-  writeln("555555555555555555555");
-  var re = compile(".");
-  writeln(re.ok);
-}

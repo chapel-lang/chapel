@@ -1,0 +1,4 @@
+In foo, r is: (x = (0, 0))
+In foo, r is: (x = (0.0, 0.0))
+In foo, r is: (x = (0, 0, 0))
+

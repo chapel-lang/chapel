@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,68 +19,55 @@
  */
 
 
-
-private use List;
-private use Map;
-use TOML;
-use Spawn;
-use Path;
+use ArgumentParser;
 use FileSystem;
-
-use MasonUtils;
-use MasonHelp;
-use MasonUpdate;
+use List;
+use Map;
 use MasonBuild;
 use MasonEnv;
+use MasonHelp;
+use MasonUpdate;
+use MasonUtils;
+use Path;
+use Subprocess;
+use TOML;
+
 
 /* Runs the .chpl files found within the /example directory */
 proc masonExample(args: [] string) {
 
-  var show = false;
-  var run = true;
-  var build = true;
-  var release = false;
-  var force = false;
-  var skipUpdate = MASON_OFFLINE;
-  var update = false;
-  var examples: list(string);
-  for arg in args {
-    if arg == '--show' {
-      show = true;
-    }
-    else if arg == '--no-run' {
-      run = false;
-    }
-    else if arg == '--no-build' {
-      build = false;
-    }
-    else if arg == '--release' {
-      release = true;
-    }
-    else if arg == '--force' {
-      force = true;
-    }
-    else if arg == '--no-update' {
-      skipUpdate = true;
-    }
-    else if arg == '--update' {
-      skipUpdate = false;
-    }
-    else if arg.startsWith('--example=') {
-      var exampleProgram = arg.split("=");
-      examples.append(exampleProgram[1]);
-      continue;
-    }
-    else if arg == '--example' {
-      continue;
-    }
-    else if arg == '--build' {
-      continue;
-    }
-    else {
-      examples.append(arg);
-    }
+  var parser = new argumentParser();
+
+  var runFlag = parser.addFlag(name="run",
+                               defaultValue=true,
+                               flagInversion=true);
+  var buildFlag = parser.addFlag(name="build",
+                                 defaultValue=true,
+                                 flagInversion=true);
+
+  var showFlag = parser.addFlag(name="show", defaultValue=false);
+  var releaseFlag = parser.addFlag(name="release", defaultValue=false);
+  var forceFlag = parser.addFlag(name="force", defaultValue=false);
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var exampleOpts = parser.addOption(name="example", numArgs=0..);
+
+  try! {
+    parser.parseArgs(args);
   }
+  catch ex : ArgumentError {
+    stderr.writeln(ex.message());
+    exit(1);
+  }
+  var show = showFlag.valueAsBool();
+  var run = runFlag.valueAsBool();
+  var build = buildFlag.valueAsBool();
+  var release = releaseFlag.valueAsBool();
+  var force = forceFlag.valueAsBool();
+  var skipUpdate = MASON_OFFLINE;
+  if updateFlag.hasValue() {
+    skipUpdate = !updateFlag.valueAsBool();
+  }
+  var examples = new list(exampleOpts.values());
   updateLock(skipUpdate);
   runExamples(show, run, build, release, force, examples);
 }
@@ -93,7 +80,7 @@ private proc getBuildInfo(projectHome: string) {
   const toml = open(projectHome + "/Mason.toml", iomode.r);
   const lockFile = owned.create(parseToml(lock));
   const tomlFile = owned.create(parseToml(toml));
-  
+
   // Get project source code and dependencies
   const sourceList = genSourceList(lockFile);
 
@@ -105,7 +92,7 @@ private proc getBuildInfo(projectHome: string) {
   getSrcCode(sourceList, false);
   const project = lockFile["root"]!["name"]!.s;
   const projectPath = "".join(projectHome, "/src/", project, ".chpl");
-  
+
   // get the example names from lockfile or from example directory
   const exampleNames = getExamples(tomlFile.borrow(), projectHome);
 
@@ -207,7 +194,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     const exampleNames = buildInfo[3];
     const perExampleOptions = buildInfo[4];
     const projectName = basename(stripExt(projectPath, ".chpl"));
-    
+
     var numExamples = exampleNames.size;
     var examplesToRun = determineExamples(exampleNames, examplesRequested);
 
@@ -220,15 +207,15 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
         const examplePath = "".join(projectHome, '/example/', example);
         const exampleName = basename(stripExt(example, ".chpl"));
 
-        // retrieves compopts and execopts found per example in the toml file      
+        // retrieves compopts and execopts found per example in the toml file
         const optsFromToml = perExampleOptions[exampleName];
         var exampleCompopts = optsFromToml[0];
         var exampleExecopts = optsFromToml[1];
 
         if release then exampleCompopts += " --fast";
 
-        if build {  
-          if exampleModified(projectHome, projectName, example) || force { 
+        if build {
+          if exampleModified(projectHome, projectName, example) || force {
 
             // remove old binary
             removeExampleBinary(projectHome, exampleName);
@@ -288,13 +275,13 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
     else writeln("Executing [debug] target: " + command);
   }
 
-  const exampleResult = runWithStatus(command, true);
+  const exampleResult = runWithStatus(command);
   if exampleResult != 0 {
     throw new owned MasonError("Example has not been compiled: " + exampleName + ".chpl\n" +
     "Try running: mason build --example " + exampleName + ".chpl\n" +
     "         or: mason run --example " + exampleName + ".chpl --build");
   }
-}  
+}
 
 
 private proc getMasonDependencies(sourceList: list(3*string),

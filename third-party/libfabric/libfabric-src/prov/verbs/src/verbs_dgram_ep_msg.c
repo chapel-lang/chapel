@@ -59,7 +59,7 @@ vrb_dgram_ep_recvmsg(struct fid_ep *ep_fid, const struct fi_msg *msg,
 		.next = NULL,
 	};
 
-	vrb_set_sge_iov(wr.sg_list, msg->msg_iov, msg->iov_count, msg->desc);
+	vrb_iov_dupa(wr.sg_list, msg->msg_iov, msg->desc, msg->iov_count);
 	return vrb_post_recv(ep, &wr);
 }
 
@@ -111,7 +111,8 @@ vrb_dgram_ep_sendmsg(struct fid_ep *ep_fid, const struct fi_msg *msg,
 	if (vrb_dgram_ep_set_addr(ep, msg->addr, &wr))
 		return -FI_ENOENT;
 
-	return vrb_send_msg(ep, &wr, msg, flags);
+	return vrb_send_iov(ep, &wr, msg->msg_iov, msg->desc,
+			    msg->iov_count, flags);
 }
 
 static inline ssize_t
@@ -129,7 +130,8 @@ vrb_dgram_ep_sendv(struct fid_ep *ep_fid, const struct iovec *iov,
 	if (vrb_dgram_ep_set_addr(ep, dest_addr, &wr))
 		return -FI_ENOENT;
 
-	return vrb_send_iov(ep, &wr, iov, desc, count);
+	return vrb_send_iov(ep, &wr, iov, desc, count,
+			    ep->util_ep.tx_op_flags);
 }
 
 static ssize_t
@@ -141,7 +143,7 @@ vrb_dgram_ep_send(struct fid_ep *ep_fid, const void *buf, size_t len,
 	struct ibv_send_wr wr = {
 		.wr_id = VERBS_COMP(ep, (uintptr_t)context),
 		.opcode = IBV_WR_SEND,
-		.send_flags = VERBS_INJECT(ep, len),
+		.send_flags = VERBS_INJECT(ep, len, desc),
 	};
 
 	if (vrb_dgram_ep_set_addr(ep, dest_addr, &wr))
@@ -160,9 +162,10 @@ vrb_dgram_ep_senddata(struct fid_ep *ep_fid, const void *buf,
 	struct ibv_send_wr wr = {
 		.wr_id = VERBS_COMP(ep, (uintptr_t)context),
 		.opcode = IBV_WR_SEND_WITH_IMM,
-		.imm_data = htonl((uint32_t)data),
-		.send_flags = VERBS_INJECT(ep, len),
+		.send_flags = VERBS_INJECT(ep, len, desc),
 	};
+
+	wr.imm_data = htonl((uint32_t)data);
 
 	if (vrb_dgram_ep_set_addr(ep, dest_addr, &wr))
 		return -FI_ENOENT;
@@ -179,14 +182,15 @@ vrb_dgram_ep_injectdata(struct fid_ep *ep_fid, const void *buf, size_t len,
 	struct ibv_send_wr wr = {
 		.wr_id = VERBS_NO_COMP_FLAG,
 		.opcode = IBV_WR_SEND_WITH_IMM,
-		.imm_data = htonl((uint32_t)data),
 		.send_flags = IBV_SEND_INLINE,
 	};
+
+	wr.imm_data = htonl((uint32_t)data);
 
 	if (vrb_dgram_ep_set_addr(ep, dest_addr, &wr))
 		return -FI_ENOENT;
 
-	return vrb_send_buf_inline(ep, &wr, buf, len);
+	return vrb_send_buf(ep, &wr, buf, len, NULL);
 }
 
 static ssize_t
@@ -206,7 +210,7 @@ vrb_dgram_ep_injectdata_fast(struct fid_ep *ep_fid, const void *buf, size_t len,
 	if (vrb_dgram_ep_set_addr(ep, dest_addr, &ep->wrs->msg_wr))
 		return -FI_ENOENT;
 
-	ret = vrb_post_send(ep, &ep->wrs->msg_wr);
+	ret = vrb_post_send(ep, &ep->wrs->msg_wr, 0);
 	ep->wrs->msg_wr.opcode = IBV_WR_SEND;
 	return ret;
 }
@@ -226,7 +230,7 @@ vrb_dgram_ep_inject(struct fid_ep *ep_fid, const void *buf, size_t len,
 	if (vrb_dgram_ep_set_addr(ep, dest_addr, &wr))
 		return -FI_ENOENT;
 
-	return vrb_send_buf_inline(ep, &wr, buf, len);
+	return vrb_send_buf(ep, &wr, buf, len, NULL);
 }
 
 static ssize_t
@@ -242,7 +246,7 @@ vrb_dgram_ep_inject_fast(struct fid_ep *ep_fid, const void *buf, size_t len,
 	if (vrb_dgram_ep_set_addr(ep, dest_addr, &ep->wrs->msg_wr))
 		return -FI_ENOENT;
 
-	return vrb_post_send(ep, &ep->wrs->msg_wr);
+	return vrb_post_send(ep, &ep->wrs->msg_wr, 0);
 }
 
 const struct fi_ops_msg vrb_dgram_msg_ops = {

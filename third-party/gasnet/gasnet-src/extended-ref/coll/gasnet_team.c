@@ -126,6 +126,7 @@ static void initialize_team_fields(
     gasneti_assert(! team->scratch_addrs);
     team->scratch_segs = gasneti_seginfo_aux;
     team->symmetric_scratch_offset = gasnete_coll_auxseg_offset;
+    team->aux_seg_flag = GASNETI_FLAG_PEER_SEG_AUX;
     gasneti_assert(! team->rel2act_map);
     GASNETI_TRACE_PRINTF(W,("Team TM0:%i scratch: size=%"PRIuSZ" symmetric_offset=%"PRIuPTR" (auxseg)",
                             gasneti_mynode, scratch_size, gasnete_coll_auxseg_offset));
@@ -149,7 +150,7 @@ static void initialize_team_fields(
   team->autotune_info = gasnete_coll_autotune_init(team GASNETI_THREAD_PASS);
   team->consensus_id = team->consensus_issued_id = 0xfffffff8;  // Intentionally near to wrap-around
   gasnete_coll_alloc_new_scratch_status(team);
-  team->scratch_free_list = NULL;
+  gasneti_lifo_init(&team->scratch_free_list);
   gex_HSL_Init(&team->child.lock);
   gex_HSL_Init(&team->rexchgv.lock);
   

@@ -1,15 +1,15 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,19 +20,33 @@
 # settings for the build
 #
 
+# Set CHPL_DEVELOPER to 0 if it is not set yet
+CHPL_DEVELOPER ?= 0
+# set DYNO_ENABLE_ASSERTIONS to 0 if it is not set yet
+DYNO_ENABLE_ASSERTIONS ?= 0
+
 ifneq ($(NO_DEPEND), 1)
 DEPEND=1
 endif
 
-ifdef CHPL_DEVELOPER
+ifeq ($(CHPL_DEVELOPER), 0)
+OPTIMIZE=1
+else
 DEBUG=1
 WARNINGS=1
 TAGS=1
-else
-OPTIMIZE=1
+# always enable assertions in CHPL_DEVELOPER/debug mode
+DYNO_ENABLE_ASSERTIONS=1
 endif
 #PROFILE=1
 
+ifeq ($(DYNO_ENABLE_ASSERTIONS), 0)
+  # disable assertions
+  ASSERTIONS_FLAG:=-DNDEBUG
+else
+  # leave assertions enabled
+  ASSERTIONS_FLAG:=
+endif
 
 #
 # include the standard Chapel Makefile.base
@@ -44,11 +58,11 @@ RUNTIME_ROOT = $(COMPILER_ROOT)/../runtime
 
 INCL_CFLAGS = -I. \
               -I$(COMPILER_ROOT)/include/$(CHPL_MAKE_HOST_PLATFORM) \
-              -I$(COMPILER_ROOT)/include $(LLVM_INCLUDES) \
+              -I$(COMPILER_ROOT)/include \
               -I$(COMPILER_BUILD) \
               -I$(RUNTIME_ROOT)/include/encoding \
               -I$(THIRD_PARTY_DIR)/utf8-decoder \
-              -I$(COMPILER_ROOT)/next/include \
+              -I$(COMPILER_ROOT)/dyno/include \
 
 
 COMP_CXXFLAGS += $(INCL_CFLAGS)
@@ -74,7 +88,12 @@ endif
 endif
 
 
-COMP_CXXFLAGS := $(COMP_CXXFLAGS) $(ONLYCXXFLAGS) $(LLVM_CXXFLAGS)
+COMP_CXXFLAGS := $(COMP_CXXFLAGS) \
+                 $(ONLYCXXFLAGS) \
+                 $(CHPL_MAKE_HOST_BUNDLED_COMPILE_ARGS) \
+                 $(LLVM_EXTRA_CFLAGS) \
+                 $(CHPL_MAKE_HOST_SYSTEM_COMPILE_ARGS) \
+                 $(ASSERTIONS_FLAG)
 
 
 #

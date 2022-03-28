@@ -16,7 +16,7 @@
 *************************************************************/
 
 #include <gasnetex.h>
-#if GASNET_HAVE_MK_CLASS_CUDA_UVA
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
   #include <gasnet_mk.h>
 #endif
 
@@ -172,11 +172,12 @@ void bulk_test(int iters) {GASNET_BEGIN_FUNCTION();
 
 }
 
-void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
+void bulk_test_nbi(int iters, int doalc) {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin, end;
     stat_struct_t stget, stput;
     size_t payload;
+    gex_Event_t *lc_opt = doalc ? GEX_EVENT_GROUP : GEX_EVENT_DEFER;
     
 	for (payload = min_payload; payload <= max_payload && payload > 0; ) {
 		init_stat(&stput, payload);
@@ -187,9 +188,9 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 			/* measure the throughput of sending a message */
 			begin = TIME();
 			for (i = 0; i < iters; i++) {
-				gex_RMA_PutNBI(myteam, peerproc, tgtmem, msgbuf, payload, GEX_EVENT_DEFER, 0);
+				gex_RMA_PutNBI(myteam, peerproc, tgtmem, msgbuf, payload, lc_opt, 0);
 			}
-			gex_NBI_Wait(GEX_EC_PUT,0);
+			gex_NBI_Wait(doalc ? GEX_EC_ALL : GEX_EC_PUT, 0);
 			end = TIME();
 		 	update_stat(&stput, (end - begin), iters);
 		}
@@ -197,12 +198,13 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && doputs) {
-			print_stat(myproc, &stput, "PutNBI+DEFER throughput", PRINT_THROUGHPUT);
+			const char *name = doalc ? "PutNBI+GROUP throughput" : "PutNBI+DEFER throughput";
+			print_stat(myproc, &stput, name, PRINT_THROUGHPUT);
 		}	
 	
 		init_stat(&stget, payload);
 
-		if (iamsender && dogets) {
+		if (iamsender && dogets && !doalc) {
 			/* measure the throughput of receiving a message */
 			begin = TIME();
 			for (i = 0; i < iters; i++) {
@@ -215,7 +217,7 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 	
 		BARRIER();
 
-		if (iamsender && dogets) {
+		if (iamsender && dogets && !doalc) {
 			print_stat(myproc, &stget, "GetNBI throughput", PRINT_THROUGHPUT);
 		}	
 
@@ -224,14 +226,15 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 
 }
 
-void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
+void bulk_test_nb(int iters, int doalc) {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin, end;
     stat_struct_t stget, stput;
     gex_Event_t *events;
     size_t payload;
+    int nevents = iters * (doalc ? 2 : 1);
     
-	events = (gex_Event_t *) test_malloc(sizeof(gex_Event_t) * iters);
+	events = (gex_Event_t *) test_malloc(sizeof(gex_Event_t) * nevents);
 
 	for (payload = min_payload; payload <= max_payload && payload > 0; ) {
 		init_stat(&stput, payload);
@@ -240,11 +243,12 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
 	
 		if (iamsender && doputs) {
 			/* measure the throughput of sending a message */
+			gex_Event_t *lc_opt = doalc ? (events+iters) : GEX_EVENT_DEFER;
 			begin = TIME();
-			for (i = 0; i < iters; i++) {
-				events[i] = gex_RMA_PutNB(myteam, peerproc, tgtmem, msgbuf, payload, GEX_EVENT_DEFER, 0);
+			for (i = 0; i < iters; i++, lc_opt += doalc) {
+				events[i] = gex_RMA_PutNB(myteam, peerproc, tgtmem, msgbuf, payload, lc_opt, 0);
 			}
-			gex_Event_WaitAll(events, iters, 0);
+			gex_Event_WaitAll(events, nevents, 0);
 			end = TIME();
 		 	update_stat(&stput, (end - begin), iters);
 		}
@@ -252,12 +256,13 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
        
 		if (iamsender && doputs) {
-			print_stat(myproc, &stput, "PutNB+DEFER throughput", PRINT_THROUGHPUT);
+			const char *name = doalc ? "PutNB+event throughput" : "PutNB+DEFER throughput";
+			print_stat(myproc, &stput, name, PRINT_THROUGHPUT);
 		}	
 	
 		init_stat(&stget, payload);
 
-		if (iamsender && dogets) {
+		if (iamsender && dogets && !doalc) {
 			/* measure the throughput of receiving a message */
 			begin = TIME();
 			for (i = 0; i < iters; i++) {
@@ -270,7 +275,7 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
 	
 		BARRIER();
 
-		if (iamsender && dogets) {
+		if (iamsender && dogets && !doalc) {
 			print_stat(myproc, &stget, "GetNB throughput", PRINT_THROUGHPUT);
 		}	
 
@@ -292,6 +297,7 @@ int main(int argc, char **argv)
     int crossmachinemode = 0;
     int skipwarmup = 0;
     int use_cuda_uva = 0;
+    int use_hip = 0;
     int help = 0;   
 
     /* call startup */
@@ -335,6 +341,14 @@ int main(int argc, char **argv)
       // UNDOCUMENTED
       } else if (!strcmp(argv[arg], "-cuda-uva")) {
         use_cuda_uva = 1;
+        use_hip = 0;
+        ++arg;
+#endif
+#if GASNET_HAVE_MK_CLASS_HIP
+      // UNDOCUMENTED
+      } else if (!strcmp(argv[arg], "-hip")) {
+        use_hip = 1;
+        use_cuda_uva = 0;
         ++arg;
 #endif
       } else if (argv[arg][0] == '-') {
@@ -413,18 +427,35 @@ int main(int argc, char **argv)
     tgtmem = (numprocs > 1) ? TEST_SEG(peerproc)
                             : (void*)(alignup(maxsz,PAGESZ) + (uintptr_t)myseg);
 
-#if GASNET_HAVE_MK_CLASS_CUDA_UVA
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+    test_static_assert(GASNET_MAXEPS >= 2);
+
     gex_EP_t gpu_ep;
     gex_MK_t kind;
+    gex_Segment_t d_segment = GEX_SEGMENT_INVALID;
+    gex_MK_Create_args_t args;
+    args.gex_flags = 0;
+    int use_device = 0;
+
     if (use_cuda_uva) {
       MSG0("***NOTICE***: Using EXPERIMENTAL support for CUDA UVA remote memory");
-      test_static_assert(GASNET_MAXEPS >= 2);
-
-      gex_MK_Create_args_t args;
-      args.gex_flags = 0;
       args.gex_class = GEX_MK_CLASS_CUDA_UVA;
       args.gex_args.gex_class_cuda_uva.gex_CUdevice = 0;
-      gex_Segment_t d_segment = GEX_SEGMENT_INVALID;
+      use_device = 1;
+    }
+    if (use_hip) {
+      MSG0("***NOTICE***: Using EXPERIMENTAL support for HIP remote memory");
+      args.gex_class = GEX_MK_CLASS_HIP;
+      args.gex_args.gex_class_hip.gex_hipDevice = 0;
+      use_device = 1;
+    }
+
+    if (use_device) {
+      // Due to bug 4149, single-process + use_device is currently unsupported
+      if (numprocs == 1) {
+        MSG0("WARNING: Device memory mode requires more than one process. Test skipped.\n");
+        gasnet_exit(0);
+      }
 
       GASNET_Safe( gex_MK_Create(&kind, myclient, &args, 0) );
       GASNET_Safe( gex_Segment_Create(&d_segment, myclient, NULL, TEST_SEGSZ_REQUEST, kind, 0) );
@@ -478,8 +509,10 @@ int main(int argc, char **argv)
         BARRIER();
 
 	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test(iters);
-	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nbi(iters);
-	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nb(iters);
+	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nbi(iters,0);
+	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nb(iters,0);
+	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nbi(iters,1);
+	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nb(iters,1);
 
         BARRIER();
         if (alloc) test_free(alloc);

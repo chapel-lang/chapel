@@ -1,0 +1,2 @@
+some sort of compilation error
+line 14: can't make D.method virtually dispatched with only a tertiary method

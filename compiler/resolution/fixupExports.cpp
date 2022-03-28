@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -192,7 +192,7 @@ static void attemptFixups(FnSymbol* fn) {
     // pull the formal/return type validation out into a separate set of
     // routines that could occur in a pass before this, for the sake of
     // clarity.
-    // 
+    //
     if (validateFormalIntent(fn, as) && needsFixup(as->type)) {
       if (wrapper == NULL) { wrapper = createWrapper(fn); }
       VarSymbol* tmp = fixupFormal(wrapper, i);
@@ -378,7 +378,7 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
     }
 
     as->intent=newIntent;
-  } 
+  }
 
   // Adjust the wrapper type.
   as->type = wrapt;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,6 +41,12 @@ public:
                                        bool       zippered,
                                        bool       isForExpr);
 
+  static BlockStmt*      buildForeachLoop (Expr*      indices,
+                                           Expr*      iteratorExpr,
+                                           BlockStmt* body,
+                                           bool       zippered,
+                                           bool       isForExpr);
+
   static BlockStmt*      buildCoforallLoop (Expr*      indices,
                                             Expr*      iteratorExpr,
                                             BlockStmt* body,
@@ -60,7 +66,8 @@ private:
                                          bool       coforall,
                                          bool       zippered,
                                          bool       isLoweredForall,
-                                         bool       isForExpr);
+                                         bool       isForExpr,
+                                         bool       isForeach);
 
 
 

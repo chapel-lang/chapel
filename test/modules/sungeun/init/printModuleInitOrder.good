@@ -18,12 +18,15 @@ Initializing Modules:
        DefaultRectangular
         ChapelArray
          ChapelPrivatization
+         ChapelDomain
+          Initialization
+           Memory
+          IO
+           FormattedIO
+            Regex
          Sort
           List
            ChapelLocks
-           IO
-            FormattedIO
-             Regex
           MSBRadixSort
            RadixSortHelp
            ShellSort
@@ -35,22 +38,19 @@ Initializing Modules:
         ExternalArray
         RangeChunk
        ChapelNumLocales
-       Sys
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
     ChapelIO
     LocaleTree
     ChapelTaskTable
+     Errors
     MemTracking
     ChapelUtil
-    ChapelError
     ExportWrappers
-    ChapelAutoAggregation
-     CopyAggregation
-      AggregationPrimitives
-    Builtins
     Types
     AlignedTSupport
+    CopyAggregation
+     AggregationPrimitives
    printModuleInitOrder
     moduleInitTest

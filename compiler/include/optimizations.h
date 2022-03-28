@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,7 @@
 #include "vec.h"
 
 #include "flags.h"
+#include "symbol.h"
 
 #include <set>
 #include <map>
@@ -57,6 +58,7 @@ void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                         Map<Symbol*,Vec<SymExpr*>*>& useMap,
                                         Symbol* var);
 size_t singleAssignmentRefPropagation(FnSymbol* fn);
+void cleanupLoopBlocks(FnSymbol* fn);
 void deadVariableElimination(FnSymbol* fn);
 void deadExpressionElimination(FnSymbol* fn);
 
@@ -85,7 +87,10 @@ void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
                                     Symbol *isConst);
 void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
                                            std::set<Flag>* flags);
+void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
+                                           FlagSet* flags);
 void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
 void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
 
+void gpuTransforms();
 #endif

@@ -1,0 +1,1 @@
+externUnionRecordErrorLLVM.chpl:1: error: C union type '_someUnion' should be declared as 'extern union' and not as 'extern record'

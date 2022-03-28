@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,16 +18,16 @@
  * limitations under the License.
  */
 
-private use List;
-private use Map;
-
-use TOML;
 use FileSystem;
-use MasonUtils;
+use List;
+use Map;
+use ArgumentParser;
 use MasonEnv;
-use MasonSystem;
 use MasonExternal;
 use MasonHelp;
+use MasonSystem;
+use MasonUtils;
+use TOML;
 
 
 /*
@@ -52,26 +52,16 @@ proc masonUpdate(args: [?d] string) {
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
 
-  var listArgs: list(string);
-  for arg in args {
-    listArgs.append(arg);
-    select (arg) {
-      when '-h' {
-        masonUpdateHelp();
-        exit(0);
-      }
-      when '--help' {
-        masonUpdateHelp();
-        exit(0);
-      }
-      when '--no-update' {
-        skipUpdate = true;
-      }
-      when '--update' {
-        skipUpdate = false;
-      }
-    }
+  var parser = new argumentParser(helpHandler=new MasonUpdateHelpHandler());
+
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+
+  parser.parseArgs(args);
+
+  if updateFlag.hasValue() {
+    skipUpdate = !updateFlag.valueAsBool();
   }
+
   return updateLock(skipUpdate, tf, lf);
 }
 
@@ -99,7 +89,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
       }
     }
     if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
-      if getSpackVersion != spackVersion then
+      if getSpackVersion < spackVersion then
       throw new owned MasonError("Mason has been updated. " +
                   "To install Spack, call: mason external --setup.");
     }
@@ -168,7 +158,6 @@ proc checkRegistryChanged() {
 
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(skipUpdate: bool) {
-
   if skipUpdate then return;
 
   checkRegistryChanged();

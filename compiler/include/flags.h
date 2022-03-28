@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,8 @@
 
 //
 // HOW TO ADD A FLAG:
-// - add an entry (sorted alphabetically) to the list in flags_list.h
+// - add an entry (sorted alphabetically) to the list in
+//   compiler/dyno/include/chpl/uast/PragmaList.h
 // - to add the flag to a symbol, use Symbol::addFlag(Flag)
 // - to check whether a symbol has a flag, use Symbol::hasFlag(Flag)
 //
@@ -50,9 +51,10 @@ class TypeSymbol;
 
 enum Flag {
   FLAG_UNKNOWN = 0,
-# define symbolFlag(NAME,PRAGMA,MAPNAME,COMMENT) NAME,
-# include "flags_list.h"
-# undef symbolFlag
+#define PRAGMA(name__, canParse__, parseStr__, desc__) \
+  FLAG_ ## name__,
+#include "chpl/uast/PragmaList.h"
+#undef PRAGMA
   NUM_FLAGS,
   FLAG_FIRST = FLAG_UNKNOWN + 1, // index of the first flag
   FLAG_LAST  = NUM_FLAGS - 1     // index of the last flag

@@ -469,6 +469,32 @@ all:
       config: 16-node-cs, 16-node-cs-hdr
   05/14/21:
     - Use LLVM by default if LLVM is available either as system or bundled (#17079)
+  08/05/21:
+    - Extend bounded coforall optimization to zippered loops (#18162)
+  08/19/21:
+    - text: Upgrade to GASNet-EX 2021.8.0 snapshot (#18243)
+      config: 16-node-cs, 16-node-cs-hdr
+  09/28/21:
+    - Change ChapelHashtable to use power-of-2 table size (#18427)
+  12/17/21:
+    - Set memory leak found due to not calling chpl__autoDestroy (#18842)
+  12/22/21:
+    - Set tests that were leaking memory moved to future tests (#18889)
+  01/19/22:
+    - text: Disable AV
+      config: chapcs
+  01/24/22:
+    - text: Enable AV
+      config: chapcs
+  01/27/22:
+    - text: Switch to new AV
+      config: chapcs
+  02/22/22:
+    - text: OS reinstall
+      config: chapcs
+  03/14/22:
+    - text: LLVM 13 upgrade
+      config: chapcs
 
 # End all
 
@@ -581,6 +607,10 @@ assign.1024:
   05/30/19:
     - Respect "always rvf" for module-scope variables (#13092)
 
+autoAggNegativeImpact.ml-perf:
+  09/02/21:
+    - Bring in aggregation optimizations we used in Arkouda (#18326)
+
 bfs:
   09/25/14:
     - addition of octal to, reformatting of format printing.
@@ -634,6 +664,8 @@ build-associative:
     - Extend parallel array initialization to POD arrays (#6675)
   06/03/20:
     - Factor hashtable used by DefaultAssociative out of it (#15739)
+  11/02/21:
+    - Add an initialCapacity keyword argument to map initializers (#18634)
 
 cast-from-string:
   12/14/18:
@@ -821,6 +853,8 @@ empty-chpl-barrier.ml-time:
     - Optimize the atomic barrier implementation for network atomics (#10633)
   11/03/20:
     - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+  06/26/21:
+    - Optimize allLocalesBarrier by reducing communication (#17978)
 
 
 exchange:
@@ -927,6 +961,10 @@ hpl_performance:
     - text: Improvements to inferConstRefs (#4904)
       config: 16-node-xc
 
+ig-agg.ml-perf:
+  09/02/21:
+    - Bring in aggregation optimizations we used in Arkouda (#18326)
+
 ig-variants.ml-perf:
   01/30/20:
     - Address deinit point and param loops and conditionals (#14825)
@@ -968,6 +1006,9 @@ isx.ml-time: &isx-ml-base
     - Stop forcing serial initialization for isx-hand-optimized (#8290)
   08/02/18:
     - Optimize the atomic barrier implementation for network atomics (#10633)
+  08/27/21:
+    - text: Allow jemalloc to merge/split chunks to reduce fixed heap fragmentation (#18299)
+      config: 16-node-cs-hdr
 isx-hand-optimized.ml-time:
   <<: *isx-ml-base
 isx-release.ml-time:
@@ -1041,6 +1082,8 @@ knucleotide: &knucleotide-base
     - Optimize the method map.this(k) (#14065)
   07/29/20:
     - Optimize ASCII strings (#16092)
+  09/03/21:
+    - Two little string optimizations (#18323)
 knucleotide-submitted:
   <<: *knucleotide-base
 
@@ -1414,6 +1457,8 @@ memleaksfull:
     - Two fixes in OrderedMap (#17463)
   03/27/21:
     - CG Adjust in-intent handling to fix a memleak (#17480)
+  11/24/21:
+    - Add module ConcurrentMap (#16704)
 # End memleaksfull
 
 meteor:
@@ -1796,6 +1841,8 @@ spectralnorm:
     - qthreads updated to yield every ~100 uncontested sync var locks
   12/18/18:
     - brad version changed to serial implementation (#11904)
+  02/18/22:
+    - A spectral norm variant that avoids a reciprocal and unrolls by two (#19271)
 
 spectral-norm-specify-step:
   01/21/15:
@@ -2077,10 +2124,24 @@ compilerAndTestingStats: &compiler-perf-base
   02/25/21:
     - Restore timing for makeBinary (#17253)
     - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
+  05/14/21:
+    - Resolve some issues with finding primary and secondary operator methods (#17684)
   05/22/21:
     - Change range.size to return int; add range.sizeAs (#17628)
   06/01/21:
     - Add explicit string casts for common/easy cases (#17855)
+  06/16/21:
+    - Translate uAST to old AST (#17919)
+  09/01/21:
+    - Heap allocate string literals (#18307)
+  11/03/21:
+    - buildDefaultFunctions perf improvement (#18624)
+  01/13/22:
+    - Simplify locale setup barrier (#18868)
+  01/19/22:
+    - Move some method definitions into headers (#18961)
+  01/25/22:
+    - Move SSCA out of release/examples (#19054)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2093,59 +2154,111 @@ topPasses:
 
 arkouda: &arkouda-base
   04/22/20:
-    - Optimize coargsort for numeric arrays (mhmerrill/arkouda#330)
+    - Optimize coargsort for numeric arrays (Bears-R-Us/arkouda#330)
   04/28/20:
-    - text: Improve comm=none build and execution speed (mhmerrill/arkouda#358)
+    - text: Improve comm=none build and execution speed (Bears-R-Us/arkouda#358)
       config: chapcs
     - text: Move XC testing from login to elogin node
       config: 16-node-xc
   05/20/20:
     - Upgrade Arkouda release testing from 1.20 to 1.22 (#15690)
   07/01/20:
-    - Translate pdarray setops to server-side operations (mhmerrill/arkouda#392)
+    - Translate pdarray setops to server-side operations (Bears-R-Us/arkouda#392)
   07/02/20:
     - Reduce fragmentation for large allocations (#15992)
   09/23/20:
-    - text: Optimize DstAggregator by caching remote allocations (mhmerrill/arkouda#485)
+    - text: Optimize DstAggregator by caching remote allocations (Bears-R-Us/arkouda#485)
       config: 16-node-cs, 16-node-xc
   10/02/20:
-    - text: Optimize SrcAggregator by caching remote allocations (mhmerrill/arkouda#503)
+    - text: Optimize SrcAggregator by caching remote allocations (Bears-R-Us/arkouda#503)
       config: 16-node-cs
   10/03/20:
-    - text: Enable SrcAggregator under ugni (mhmerrill/arkouda#507)
+    - text: Enable SrcAggregator under ugni (Bears-R-Us/arkouda#507)
       config: 16-node-xc
     - text: Move XC testing from elogin back to login node
       config: 16-node-xc
   10/06/20:
-    - text: Optimize aggregators by yielding more often (mhmerrill/arkouda#509)
+    - text: Optimize aggregators by yielding more often (Bears-R-Us/arkouda#509)
       config: 16-node-cs, 16-node-xc
   10/21/20:
     - Upgrade Arkouda release testing from 1.22 to 1.23 (#16599)
   01/08/21:
-    - Benchmark improvements (mhmerrill/arkouda#616)
+    - Benchmark improvements (Bears-R-Us/arkouda#616)
   01/14/21:
     - Optimize scans by using noinit for the result array (#16919)
   01/15/21:
-    - Optimize int64 prod reduce (mhmerrill/arkouda#628)
+    - Optimize int64 prod reduce (Bears-R-Us/arkouda#628)
   02/12/21:
-    - 624 convert message format to json (mhmerrill/arkouda#639)
+    - 624 convert message format to json (Bears-R-Us/arkouda#639)
   02/16/21:
-    - Optimize string argsort (mhmerrill/arkouda#671)
+    - Optimize string argsort (Bears-R-Us/arkouda#671)
   02/18/21:
-    - Increase the problem size for string benchmarks (mhmerrill/arkouda#676)
+    - Increase the problem size for string benchmarks (Bears-R-Us/arkouda#676)
   02/19/21:
-    - Skip long string partitioning in string argsort (mhmerrill/arkouda#681)
+    - Skip long string partitioning in string argsort (Bears-R-Us/arkouda#681)
   03/23/21:
     - A few communication micro-optimizations to improve Block array creation (#17354)
   03/25/21:
-    - fix groupby benchmark bug (mhmerrill/arkouda#712)
+    - fix groupby benchmark bug (Bears-R-Us/arkouda#712)
   04/07/21:
-    - Increase the aggregation buffer sizes for non-ugni configurations (mhmerrill/arkouda#732)
+    - Increase the aggregation buffer sizes for non-ugni configurations (Bears-R-Us/arkouda#732)
     - Revert a recent change in block array creation that caused performance regression (#17531)
+  05/01/21:
+    - Optimize the aggregation copy routines (Bears-R-Us/arkouda#783)
   05/19/21:
     - Upgrade Arkouda release testing from 1.23.0 to 1.24.1 (#17773)
   06/02/21:
-    - Make the array values in groupby and aggregate benchmarks consistent (mhmerrill/arkouda#832)
+    - Make the array values in groupby and aggregate benchmarks consistent (Bears-R-Us/arkouda#832)
+  06/29/21:
+    - Improve the performance of client-server array transfers (Bears-R-Us/arkouda#856)
+  07/10/21:
+    - Optimize client conversions for client-server array transfers (Bears-R-Us/arkouda#870)
+  07/15/21:
+    - Optimize server conversions for client-server array transfers (Bears-R-Us/arkouda#880)
+  07/28/21:
+    - Optimize the number of copies for client-server array transfers (Bears-R-Us/arkouda#885)
+  07/31/21:
+    - Optimize out a copy in ZMQ recv for local operations (#18126)
+  08/04/21:
+    - Further reduce the number of copies for client-server array transfers (Bears-R-Us/arkouda#893)
+  08/05/21:
+    - Parallelize bytes copies over a certain threshold in ZMQ (#18140)
+    - Upgrade to PyZMQ 22.2.0 (includes mutable pyzmq improvement)
+  08/27/21:
+    - text: Allow jemalloc to merge/split chunks to reduce fixed heap fragmentation (#18299)
+      config: 16-node-cs-hdr
+  10/01/21:
+    - Avoid tracking small allocations by setting memThreshold (Bears-R-Us/arkouda#935)
+    - Optimize memory tracking with a memThreshold (#18465)
+  10/05/21:
+    - Optimize how segmented array slices are interpreted as strings/bytes (Bears-R-Us/arkouda#931)
+  10/28/21:
+    - Upgrade Arkouda release testing from 1.24.1 to 1.25.0 (#18613)
+  11/03/21:
+    - Closes 957 Mimic re library functionality applied to SegStrings (Bears-R-Us/arkouda#958)
+  11/17/21:
+    - Closes 963 Performance drop in substring search methods (Bears-R-Us/arkouda#965)
+  01/12/22:
+    - Switch to batch reading for Parquet files (Bears-R-Us/arkouda#1014)
+  01/19/22:
+    - Upgrade Arkouda release testing from 1.25.0 to 1.25.1 (#19033)
+    - Optimize Parquet file writing with WriteBatch function (Bears-R-Us/arkouda#1028)
+  01/21/22:
+    - Bump substring_search problem size back to 10**8 (Bears-R-Us/arkouda#1038)
+  01/26/22:
+    - Optimize small and medium int in1d operations (Bears-R-Us/arkouda#1044)
+  02/02/22:
+    - Fix sum precision for real this time (Bears-R-Us/arkouda#1055)
+  02/05/22:
+    - Optimize sorting calls when both keys and ranks are needed (Bears-R-Us/arkouda#1063)
+  02/10/22:
+    - String ops follow byte locality (Bears-R-Us/arkouda#1060)
+  02/17/22:
+    - Closes 1109 Scale substring_search.py and flatten.py benchmarks with numLocales (Bears-R-Us/arkouda#1112)
+  02/24/22:
+    - Use int in1d to implement the hashed based string in1d (Bears-R-Us/arkouda#1132)
+    - Tune int in1d threshold (Bears-R-Us/arkouda#1131)
+
 
 arkouda-string:
   <<: *arkouda-base
@@ -2168,3 +2281,11 @@ arkouda-comp:
     - Fix some issues with constant domain optimization (#16397)
   02/25/21:
     - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
+  02/02/22:
+    - Issue 1049 Adds capability to print server commands from the client. (Bears-R-Us/arkouda#1049)
+  02/07/22:
+    - Add support for arrays of unsigned integers (Bears-R-Us/arkouda#1070)
+  02/10/22:
+    - Add in1d and setops support for uint pdarrays (Bears-R-Us/arkouda#1085)
+  03/14/22:
+    - Only read necessary elements in Chapel array for Parquet (Bears-R-Us/arkouda#1204)

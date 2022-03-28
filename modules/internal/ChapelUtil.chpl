@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -123,9 +123,9 @@ module ChapelUtil {
     }
     // //if all the case are false then multiplication is safe
     return true;
- 
+
   }
-  
+
   pragma "no default functions"
   extern record chpl_main_argument {
     var argc: int(64);
@@ -175,6 +175,9 @@ module ChapelUtil {
   extern proc chpl_rt_preUserCodeHook();
   extern proc chpl_rt_postUserCodeHook();
 
+  extern proc allocate_string_literals_buf(s: int): c_string;
+  extern proc deallocate_string_literals_buf(): void;
+
   // Support for module deinit functions.
   config param printModuleDeinitOrder = false;
 
@@ -201,5 +204,8 @@ module ChapelUtil {
     }
 
     chpl_moduleDeinitFuns = nil;
+
+    // after all other modules are deinited, deallocate string literals
+    deallocate_string_literals_buf();
   }
 }

@@ -25,4 +25,14 @@ as follows:
 * We added a simple mechanism to reset the automatic task spawning
   order for better affinity between consecutive parallel loops.
 
-* We fixed a bug in the binders topology layer.
+* Pulled in an upstream fix for the binders topology layer.
+  https://github.com/Qthreads/qthreads/pull/82
+
+* Pulled in an upstream fix for handling signals during configure.
+  https://github.com/Qthreads/qthreads/pull/84
+
+* Pulled in an upstream --with-hwloc-symbol-prefix configuration option.
+  https://github.com/Qthreads/qthreads/pull/87
+
+* Pulled in an upstream fix for errno with syscalls.
+  https://github.com/Qthreads/qthreads/pull/89

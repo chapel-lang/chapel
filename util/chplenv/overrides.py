@@ -6,19 +6,25 @@ Checks environment variables first, then chplconfig file for definitions
 import os
 import sys
 
-from utils import memoize
+from utils import memoize, warning
 
 # List of Chapel Environment Variables
 chplvars = [
              'CHPL_HOME',
              'CHPL_HOST_PLATFORM',
+             'CHPL_HOST_COMPILER',
+             'CHPL_HOST_CC',
+             'CHPL_HOST_CXX',
              'CHPL_HOST_ARCH',
              'CHPL_HOST_CPU',
-             'CHPL_HOST_COMPILER',
+             'CHPL_HOST_MEM',
              'CHPL_TARGET_PLATFORM',
+             'CHPL_TARGET_COMPILER',
+             'CHPL_TARGET_CC',
+             'CHPL_TARGET_CXX',
              'CHPL_TARGET_ARCH',
              'CHPL_TARGET_CPU',
-             'CHPL_TARGET_COMPILER',
+             'CHPL_TARGET_MEM',
              'CHPL_LOCALE_MODEL',
              'CHPL_COMM',
              'CHPL_COMM_SUBSTRATE',
@@ -35,12 +41,17 @@ chplvars = [
              'CHPL_GMP',
              'CHPL_HWLOC',
              'CHPL_JEMALLOC',
+             'CHPL_HOST_JEMALLOC',
+             'CHPL_TARGET_JEMALLOC',
              'CHPL_RE2',
              'CHPL_LLVM',
+             'CHPL_LLVM_CONFIG',
              'CHPL_AUX_FILESYS',
              'CHPL_LIB_PIC',
              'CHPL_SANITIZE',
              'CHPL_SANITIZE_EXE',
+             'CHPL_LLVM_GCC_PREFIX',
+             'CHPL_HOST_USE_SYSTEM_LIBCXX',
            ]
 
 
@@ -118,8 +129,8 @@ class ChapelConfig(object):
             if name == 'CHPL_CONFIG':
                 self.warnings.append(
                 (
-                    'Warning: No chplconfig or .chplconfig file is found in '
-                    'the defined $CHPL_CONFIG\n'
+                    'No chplconfig or .chplconfig file is found in '
+                    'the defined $CHPL_CONFIG'
                 ))
         return False
 
@@ -157,7 +168,7 @@ class ChapelConfig(object):
                 'Syntax Error: {0}:line {1}\n'
                 '              > {2}\n'
                 '              Expected format is:\n'
-                '              > CHPL_VAR = VALUE\n'
+                '              > CHPL_VAR = VALUE'
             ).format(self.prettypath, linenum, line.strip('\n')))
             return True
 
@@ -165,8 +176,7 @@ class ChapelConfig(object):
         if var not in chplvars:
             self.warnings.append(
             (
-                'Warning: {0}:line {1}: '
-                '"{2}" is not an acceptable variable\n'
+                '{0}:line {1}: "{2}" is not an acceptable variable'
             ).format(self.prettypath, linenum, var))
             return True
 
@@ -174,8 +184,7 @@ class ChapelConfig(object):
         elif var in self.chplconfig.keys():
             self.warnings.append(
             (
-                'Warning: {0}:line {1}: '
-                'Duplicate entry of "{2}"\n'
+                '{0}:line {1}: Duplicate entry of "{2}"'
             ).format(self.prettypath, linenum, var))
 
         # If we reach here, this is a valid assignment, so don't skip
@@ -184,8 +193,8 @@ class ChapelConfig(object):
     def printwarnings(self):
         """ Print any warnings accumulated throughout constructor """
         sys.stderr.write('\n')
-        for warning in self.warnings:
-            sys.stderr.write(warning)
+        for msg in self.warnings:
+            warning(msg)
         sys.stderr.write('\n')
 
 

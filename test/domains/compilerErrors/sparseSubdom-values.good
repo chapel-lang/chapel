@@ -1,0 +1,1 @@
+sparseSubdom-values.chpl:7: error: sparse subdomains are currently supported only for rectangular domains

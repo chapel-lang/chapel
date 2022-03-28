@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,6 +35,8 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
+
 #include <set>
 
 // We use RefVector to store a list of symbols that are aliases for the return
@@ -49,7 +51,6 @@ static void checkReturnPaths(FnSymbol* fn);
 static void checkCalls();
 static void checkExternProcs();
 static void checkExportedProcs();
-
 
 static void
 checkConstLoops() {
@@ -550,7 +551,7 @@ static bool isExternType(Type* t) {
   if (t->isWideRef())
     return false;
 
-  ClassTypeDecorator d = CLASS_TYPE_UNMANAGED_NONNIL;
+  ClassTypeDecoratorEnum d = ClassTypeDecorator::UNMANAGED_NONNIL;
   // unmanaged or borrowed classes are OK
   if (isClassLikeOrManaged(t) || isClassLikeOrPtr(t))
     d = removeNilableFromDecorator(classTypeDecorator(t));
@@ -560,8 +561,8 @@ static bool isExternType(Type* t) {
   EnumType* et = toEnumType(t);
 
   return t->isRef() ||
-         d == CLASS_TYPE_BORROWED ||
-         d == CLASS_TYPE_UNMANAGED ||
+         d == ClassTypeDecorator::BORROWED ||
+         d == ClassTypeDecorator::UNMANAGED ||
          (et && et->isConcrete()) ||
          (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_STAR_TUPLE)) ||
          ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||

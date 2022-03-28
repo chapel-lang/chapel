@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +25,7 @@
 #include <cstring>
 
 #include "chpl/queries/ID.h"
+#include "chpl/queries/Location.h"
 #include "stringutil.h"
 
 class BaseAST;
@@ -131,6 +132,7 @@ class astlocMarker {
 public:
   astlocMarker(astlocT newAstLoc);
   astlocMarker(int lineno, const char* filename);
+  astlocMarker(chpl::Location location);
   ~astlocMarker();
 
   astlocT previousAstLoc;

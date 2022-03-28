@@ -2,6 +2,7 @@
 
 .. _Chapter-Records:
 
+=======
 Records
 =======
 
@@ -192,10 +193,13 @@ for details on when a record becomes dead.
 Record Initialization
 ~~~~~~~~~~~~~~~~~~~~~
 
-A variable of a record type declared without an initialization
-expression is initialized through a call to the record’s default
-initializer, passing no arguments. The default initializer for a record
-is defined in the same way as the default initializer for a class
+When default initializing a record (see :ref:`Variable_Lifetimes`), an
+``init`` method on the record will be called. For a concrete record,
+``init`` wil be called with no arguments. For an instantiated generic
+record, the ``type`` and ``param`` arguments are passed by name.
+
+The compiler-generated default initializer for a record is defined in the
+same way as the default initializer for a class
 (:ref:`The_Compiler_Generated_Initializer`).
 
 To create a record as an expression, i.e. without binding it to a
@@ -557,7 +561,7 @@ the signature:
 
 .. code-block:: chapel
 
-   proc =(ref lhs:R, rhs:R) : void where lhs.type == rhs.type;
+   operator =(ref lhs:R, rhs:R) : void where lhs.type == rhs.type;
 
 In it, the value of each field of the record on the right-hand side is
 assigned to the corresponding field of the record on the left-hand side.
@@ -633,6 +637,54 @@ check the corresponding lexicographical order based on pair-wise comparisons
 between the arguments' fields.  The operators ``==`` and ``!=`` check whether
 the two arguments are pair-wise equal or not.  The fields are compared in the
 order they are declared in the record definition.
+
+.. _Hashing_a_Record:
+
+Hashing a Record
+~~~~~~~~~~~~~~~~
+
+For any record that does not have a user-defined ``==`` or ``!=``
+operator, the compiler will automatically define a default hash method
+for it.  This allows values of that record type to be used as the
+indices of an associative domain, the elements of a set, or the keys
+of a map.  The user can override this default hash method (or provide
+one in cases that the compiler does not) by defining their own method
+named ``hash`` on the record which takes no arguments and returns a
+``uint`` or ``int``.
+
+   *Example (userhash.chpl)*.
+
+   .. code-block:: chapel
+
+
+      record R {
+        var i: uint;
+
+        proc hash(): uint {
+          writeln("In custom hash function");
+          return i;
+        }
+      }
+
+      // Creating an associative domain with an 'idxType' of 'R'
+      // invokes R.hash() as part of its implementation
+
+      var D: domain(R);
+      var r = new R(42);
+      D += r;
+      writeln(D);
+
+   .. BLOCK-test-chapeloutput
+
+      In custom hash function
+      {(i = 42)}
+
+Note that the compiler-generated ``hash`` can only be overridden for
+records that have been defined in user code.  As an result, this
+feature cannot be used to override the default hash for built-in types
+like ``int``.
+
+
 
 .. _Class_and_Record_Differences:
 

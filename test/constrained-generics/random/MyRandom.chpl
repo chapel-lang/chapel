@@ -11,26 +11,6 @@ The changes here are:
 */
 
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
- * Copyright 2004-2019 Cray Inc.
- * Other additional copyright holders may be indicated within.
- *
- * The entirety of this work is licensed under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License.
- *
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/*
    Support for pseudorandom number generation
 
    This module defines an abstraction for a stream of pseudorandom numbers,
@@ -1060,7 +1040,7 @@ module MyRandom {
         :type arr: [] :type:`eltType`
       */
       proc fillRandom(arr: [] eltType) {
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
@@ -1182,7 +1162,7 @@ module MyRandom {
       /* Randomly shuffle a 1-D array. */
       proc shuffle(arr: [?D] ?eltType ) {
 
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("shuffle does not support non-rectangular arrays");
 
         if D.rank != 1 then
@@ -1226,7 +1206,7 @@ module MyRandom {
          */
       proc permutation(arr: [] eltType) {
 
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("permutation does not support non-rectangular arrays");
 
         var low = arr.domain.dim(0).low;
@@ -2657,7 +2637,7 @@ module MyRandom {
         :type arr: [] :type:`eltType`
       */
       proc fillRandom(arr: [] eltType) {
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do

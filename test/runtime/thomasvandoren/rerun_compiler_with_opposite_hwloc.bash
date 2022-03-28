@@ -22,7 +22,7 @@ esac
 
 #main_o=$($CHPL_HOME/util/config/compileline --main.o)
 
-# /Users/tvandoren/src/chapel/runtime/etc/Makefile.include:83: *** The runtime has not been built for this configuration. Check $CHPL_HOME/util/printchplenv and try (re)building runtime.  Stop.
+# /Users/tvandoren/src/chapel/runtime/etc/Makefile.include:83: *** error: The runtime has not been built for this configuration. Run $CHPL_HOME/util/chplenv/printchplbuilds.py for information on available runtimes.
 $compiler "${test_executable}.chpl" 2>&1 | \
     grep '^error\|runtime/etc/Makefile.include' | \
     grep -v 'Expected runtime library' | \

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,6 +43,8 @@
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 #include <cctype>
 #include <set>
@@ -147,7 +149,7 @@ void normalize() {
     preNormalizePostInit(at);
   }
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
 
     if (fn->hasFlag(FLAG_EXPORT) &&
@@ -429,26 +431,32 @@ static void moveAndCheckInterfaceConstraints() {
       continue;  // this node is part of an ImplementsStmt, do not move it
 
     FnSymbol* fn = toFnSymbol(icon->parentSymbol);
-    if (BlockStmt* block = toBlockStmt(icon->parentExpr)) {
-      if (fn != NULL && fn->where == block) {
-        icon->remove();
-        fn->addInterfaceConstraint(icon);
-        if (block->body.empty())
-          block->remove();
-        continue;
-      }
-    } else if (CallExpr* call = toCallExpr(icon->parentExpr)) {
-      if (isInWhereBlock(fn, call)) {
-        if (! call->isNamed("&&")) {
-          USR_FATAL_CONT(icon, "combining an 'implements' constraint"
-                " with others is currently supported only using '&&'");
+    if (fn != nullptr) {
+      if (BlockStmt* block = toBlockStmt(icon->parentExpr)) {
+        if (fn->where == block) {
+          icon->remove();
+          fn->addInterfaceConstraint(icon);
+          if (block->body.empty())
+            block->remove();
           continue;
         }
-        INT_ASSERT(call->numActuals() == 2);
-        icon->remove();
-        fn->addInterfaceConstraint(icon);
-        call->replace(call->get(1)->remove());
-        continue;
+      } else if (CallExpr* call = toCallExpr(icon->parentExpr)) {
+        if (isInWhereBlock(fn, call)) {
+          if (! call->isNamed("&&")) {
+            USR_FATAL_CONT(icon, "combining an 'implements' constraint"
+                  " with others is currently supported only using '&&'");
+            continue;
+          }
+          INT_ASSERT(call->numActuals() == 2);
+          icon->remove();
+          fn->addInterfaceConstraint(icon);
+          call->replace(call->get(1)->remove());
+          continue;
+        }
+      } else if (InterfaceInfo* ifcInfo = fn->interfaceInfo) {
+        if (icon->list == &(ifcInfo->interfaceConstraints))
+          continue; // this constraint is already in the right spot, due to
+                    // handleReceiverFormals() -> desugarInterfaceAsType()
       }
     }
 
@@ -663,6 +671,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   collectCallExprs(base, calls2);
 
   for_vector(CallExpr, call, calls2) {
+    if (partOfNonNormalizableExpr(call->parentExpr)) continue;
     applyGetterTransform(call);
     insertCallTemps(call);
     transformIfVar(call);
@@ -672,6 +681,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
 
   // Handle calls to "type" constructor or "value" constructor
   for_vector(CallExpr, call, calls2) {
+    if (partOfNonNormalizableExpr(call->parentExpr)) continue;
     if (isAlive(call) == true) {
       if (isCallToConstructor(call) == true) {
         normalizeCallToConstructor(call);
@@ -875,12 +885,6 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 ************************************** | *************************************/
 
 static std::set<VarSymbol*> globalTemps;
-
-static void insertResolutionPoint(Expr* ref, Symbol* sym) {
-  SET_LINENO(sym);
-  ref->insertBefore(new CallExpr(PRIM_RESOLUTION_POINT, sym));
-  ref->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
-}
 
 static void moveGlobalDeclarationsToModuleScope() {
 
@@ -1203,7 +1207,7 @@ static void processManagedNew(CallExpr* newCall) {
       INT_ASSERT(ts);
       Type* t = ts->type;
       if (isManagedPtrType(t))
-        t = getDecoratedClass(t, CLASS_TYPE_MANAGED_NILABLE);
+        t = getDecoratedClass(t, ClassTypeDecorator::MANAGED_NILABLE);
       else if (t == dtBorrowed)
         t = dtBorrowedNilable;
       else if (t == dtUnmanaged)
@@ -1549,6 +1553,23 @@ static void addEndOfStatementMarkers(BaseAST* base) {
   base->accept(&visitor);
 }
 
+// A non-normalizable expression cannot have it or any of its sub-expressions
+// changed beyond parse-time. These expressions are handled specially by
+// the resolver (e.g. for PRIM_RESOLVES). Anything contained in a
+// non-normalized expression is also non-normalizable. Locate the root of
+// the non-normalized expression.
+Expr* partOfNonNormalizableExpr(Expr* expr) {
+
+  // Anything contained in a non-normalizable expr is non-normalizable.
+  for (Expr* node = expr; node; node = node->parentExpr) {
+    if (CallExpr* call = toCallExpr(node)) {
+      const bool isResolvePrim = call->isPrimitive(PRIM_RESOLVES);
+      if (isResolvePrim) return node;
+    }
+  }
+
+  return nullptr;
+}
 
 static void addTypeBlocksForParentTypeOf(CallExpr* call) {
   Expr* stmt = getCallTempInsertPoint(call);
@@ -2266,7 +2287,7 @@ static void applyGetterTransform(CallExpr* call) {
 
       if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
         if (var->immediate->const_kind == CONST_KIND_STRING) {
-          const char* str = var->immediate->v_string;
+          const char* str = var->immediate->v_string.c_str();
 
           call->baseExpr->replace(new UnresolvedSymExpr(str));
 
@@ -2944,7 +2965,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
       // can't default init a generic management/nilability
       if (isClassLikeOrManaged(ts->type)) {
-        ClassTypeDecorator d = classTypeDecorator(ts->type);
+        ClassTypeDecoratorEnum d = classTypeDecorator(ts->type);
         if (isDecoratorUnknownManagement(d) ||
             isDecoratorUnknownNilability(d)) {
           canDefaultInit = false;
@@ -2993,7 +3014,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
         Type* type = nonNilableType;
         AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-        ClassTypeDecorator d = classTypeDecorator(type);
+        ClassTypeDecoratorEnum d = classTypeDecorator(type);
         Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
         USR_PRINT("Consider using the type %s instead", toString(suggestedType));
       } else if (genericType != NULL) {
@@ -4362,9 +4383,9 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
             if (SymExpr* se2 = toSymExpr(call->get(1))) {
               if (TypeSymbol* ts2 = toTypeSymbol(se2->symbol())) {
                 // e.g. owned MyGenericClass
-                ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+                ClassTypeDecoratorEnum d = ClassTypeDecorator::GENERIC_NONNIL;
                 if (isNilableClassType(ts2->type))
-                  d = CLASS_TYPE_GENERIC_NILABLE;
+                  d = ClassTypeDecorator::GENERIC_NILABLE;
                 Type* genericMgmt = getDecoratedClass(ts2->type, d);
                 CallExpr* c = new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                            genericMgmt->symbol, queried);
@@ -4565,8 +4586,18 @@ static void find_printModuleInit_stuff() {
 
     // TODO -- move this logic to wellknown.cpp
     if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
+      // assert that we haven't set this already this loop, b/c duplicates
+      // would be an error
+      INT_ASSERT(!gModuleInitIndentLevel);
       gModuleInitIndentLevel = toVarSymbol(symbol);
-      INT_ASSERT(gModuleInitIndentLevel);
+
+      // NOTE: we do not `break` here b/c we'd like to verify there is only
+      // one such var with that pragma. This is only walking over PrintModuleInitOrder.chpl
+      // so the number of symbols is small
     }
+  }
+  // assert that we actually found such a symbol unless in minimal modules mode
+  if (!fMinimalModules) {
+    INT_ASSERT(gModuleInitIndentLevel);
   }
 }

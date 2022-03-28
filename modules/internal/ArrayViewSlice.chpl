@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -108,7 +108,7 @@ module ArrayViewSlice {
     // domain and array
     //
     proc chpl__serialize() where chpl__rvfMe() {
-      use SysCTypes;
+      use CTypes;
       if chpl_debugSerializeSlice {
         // use printf to avoid messing up tests checking comm counts
         extern proc printf(x...);
@@ -177,7 +177,7 @@ module ArrayViewSlice {
 
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
-           __primitive("method call resolves", privDom, "these", tag) {
+           __primitive("resolves", privDom.these(tag)) {
       const ref myarr = arr;
       forall i in privDom do yield myarr.dsiAccess(i);
     }
@@ -188,11 +188,10 @@ module ArrayViewSlice {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       const ref myarr = arr;
-      for i in privDom.these(tag, followThis) {
+      foreach i in privDom.these(tag, followThis) {
         yield myarr.dsiAccess[i];
       }
     }
@@ -240,8 +239,7 @@ module ArrayViewSlice {
       return dsiAccess(i);
     }
 
-    inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i: idxType ...rank) const ref {
       return dsiAccess(i);
     }
 
@@ -264,8 +262,7 @@ module ArrayViewSlice {
       }
     }
 
-    inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i) const ref {
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -349,7 +346,7 @@ module ArrayViewSlice {
     // routines relating to the underlying domains and arrays
     //
 
-    inline proc privDom {
+    inline proc privDom: dom.type {
       if _isPrivatized(dom) {
         return chpl_getPrivatizedCopy(dom.type, _DomPid);
       } else {

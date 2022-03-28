@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "view.h"
+
+#include "global-ast-vecs.h"
 
 #include <map>
 #include <set>
@@ -268,7 +270,7 @@ void initTypeHelperNames() {
   typeHelperNames.insert(astrNew);
   typeHelperNames.insert(astr_initCopy);
   typeHelperNames.insert(astr_autoCopy);
-  typeHelperNames.insert(astr("chpl__autoDestroy"));
+  typeHelperNames.insert(astr_autoDestroy);
 }
 
 /************************************* | **************************************
@@ -714,8 +716,18 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
           }
         }
       }
-      if (use->skipSymbolSearch(name) && namedTypes.size() == 0)
-        continue;
+      if (use->skipSymbolSearch(name)) {
+        if (use->hasOnlyList() && namedTypes.size() == 0) {
+          // The name might not be included on the only list directly, but if
+          // there are still related types that should be checked, we should
+          // still check
+          continue;
+        } else if (use->hasExceptList()) {
+          // If the name is explicitly excluded, we should just skip this use
+          // statement.
+          continue;
+        }
+      }
       se = toSymExpr(use->src);
     } else if (ImportStmt* import = toImportStmt(expr)) {
       if (!needToTraverseUse(firstVisit, inUseChain, import->isPrivate))
@@ -1152,7 +1164,7 @@ static void getVisibleFnsFromUseList(const char*      name,
                 getVisibleFunctionsImpl(use->getRenamedSym(name),
                   call, mod->block, visInfo, visited, visibleFns, true);
               } else {
-                getVisibleFunctionsImpl(name, call, mod->block, visInfo, 
+                getVisibleFunctionsImpl(name, call, mod->block, visInfo,
                                     visited, visibleFns, true);
               }
             }

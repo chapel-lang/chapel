@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -58,7 +58,7 @@ namespace chapel {
     for (int i = 0; i < descriptor_->field_count(); i++) {
       const FieldDescriptor* fieldDescriptor = descriptor_->field(i);
       FieldGeneratorBase* field_obj;
-      
+
       vars[i]["field_name"] = GetFieldName(fieldDescriptor);
       vars[i]["field_number"] = std::to_string(fieldDescriptor->number());
       vars[i]["type_name"] = field_obj->type_name(fieldDescriptor);

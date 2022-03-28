@@ -67,6 +67,7 @@
 #define RXR_EOR_PKT		7
 #define RXR_ATOMRSP_PKT         8
 #define RXR_HANDSHAKE_PKT	9
+#define RXR_RECEIPT_PKT 10
 
 #define RXR_REQ_PKT_BEGIN		64
 #define RXR_BASELINE_REQ_PKT_BEGIN	64
@@ -90,7 +91,19 @@
 #define RXR_READ_TAGRTM_PKT		129
 #define RXR_READ_RTW_PKT		130
 #define RXR_READ_RTR_PKT		131
-#define RXR_EXTRA_REQ_PKT_END		132
+
+#define RXR_DC_REQ_PKT_BEGIN		132
+#define RXR_DC_EAGER_MSGRTM_PKT 	133
+#define RXR_DC_EAGER_TAGRTM_PKT 	134
+#define RXR_DC_MEDIUM_MSGRTM_PKT 	135
+#define RXR_DC_MEDIUM_TAGRTM_PKT 	136
+#define RXR_DC_LONG_MSGRTM_PKT  	137
+#define RXR_DC_LONG_TAGRTM_PKT  	138
+#define RXR_DC_EAGER_RTW_PKT    	139
+#define RXR_DC_LONG_RTW_PKT     	140
+#define RXR_DC_WRITE_RTA_PKT    	141
+#define RXR_DC_REQ_PKT_END		142
+#define RXR_EXTRA_REQ_PKT_END   	142
 
 /*
  *  Packet fields common to all rxr packets. The other packet headers below must
@@ -112,7 +125,7 @@ static inline struct rxr_base_hdr *rxr_get_base_hdr(void *pkt)
 }
 
 struct rxr_ep;
-struct rxr_peer;
+struct rdm_peer;
 struct rxr_tx_entry;
 struct rxr_rx_entry;
 struct rxr_read_entry;
@@ -144,9 +157,10 @@ ssize_t rxr_pkt_init_handshake(struct rxr_ep *ep,
 			       struct rxr_pkt_entry *pkt_entry,
 			       fi_addr_t addr);
 
-void rxr_pkt_post_handshake(struct rxr_ep *ep,
-			    struct rxr_peer *peer,
-			    fi_addr_t addr);
+ssize_t rxr_pkt_post_handshake(struct rxr_ep *ep, struct rdm_peer *peer);
+
+void rxr_pkt_post_handshake_or_queue(struct rxr_ep *ep,
+				     struct rdm_peer *peer);
 
 void rxr_pkt_handle_handshake_recv(struct rxr_ep *ep,
 				   struct rxr_pkt_entry *pkt_entry);
@@ -180,7 +194,7 @@ struct rxr_cts_hdr *rxr_get_cts_hdr(void *pkt)
 	return (struct rxr_cts_hdr *)pkt;
 }
 
-void rxr_pkt_calc_cts_window_credits(struct rxr_ep *ep, struct rxr_peer *peer,
+void rxr_pkt_calc_cts_window_credits(struct rxr_ep *ep, struct rdm_peer *peer,
 				     uint64_t size, int request,
 				     int *window, int *credits);
 
@@ -234,11 +248,11 @@ ssize_t rxr_pkt_send_data_desc(struct rxr_ep *ep,
 			       struct rxr_tx_entry *tx_entry,
 			       struct rxr_pkt_entry *pkt_entry);
 
-int rxr_pkt_proc_data(struct rxr_ep *ep,
-		      struct rxr_rx_entry *rx_entry,
-		      struct rxr_pkt_entry *pkt_entry,
-		      char *data, size_t seg_offset,
-		      size_t seg_size);
+void rxr_pkt_proc_data(struct rxr_ep *ep,
+		       struct rxr_rx_entry *rx_entry,
+		       struct rxr_pkt_entry *pkt_entry,
+		       char *data, size_t seg_offset,
+		       size_t seg_size);
 
 void rxr_pkt_handle_data_send_completion(struct rxr_ep *ep,
 					 struct rxr_pkt_entry *pkt_entry);
@@ -341,14 +355,18 @@ struct rxr_eor_hdr {
 static_assert(sizeof(struct rxr_eor_hdr) == 12, "rxr_eor_hdr check");
 #endif
 
+static inline
+struct rxr_eor_hdr *rxr_get_eor_hdr(void *pkt)
+{
+	return (struct rxr_eor_hdr *)pkt;
+}
+
 int rxr_pkt_init_eor(struct rxr_ep *ep,
 		     struct rxr_rx_entry *rx_entry,
 		     struct rxr_pkt_entry *pkt_entry);
 
-static inline
-void rxr_pkt_handle_eor_sent(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry)
-{
-}
+
+void rxr_pkt_handle_eor_sent(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry);
 
 void rxr_pkt_handle_eor_send_completion(struct rxr_ep *ep,
 					struct rxr_pkt_entry *pkt_entry);
@@ -383,6 +401,36 @@ static inline struct rxr_atomrsp_hdr *rxr_get_atomrsp_hdr(void *pkt)
 {
 	return (struct rxr_atomrsp_hdr *)pkt;
 }
+
+/* receipt packet headers */
+struct rxr_receipt_hdr {
+	uint8_t type;
+	uint8_t version;
+	uint16_t flags;
+	/* end of rxr_base_hdr */
+	uint32_t tx_id;
+	uint32_t msg_id;
+	int32_t padding;
+};
+
+static inline
+struct rxr_receipt_hdr *rxr_get_receipt_hdr(void *pkt)
+{
+	return (struct rxr_receipt_hdr *)pkt;
+}
+
+/* receipt packet functions: init, handle_sent, handle_send_completion, recv*/
+int rxr_pkt_init_receipt(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
+			 struct rxr_pkt_entry *pkt_entry);
+
+void rxr_pkt_handle_receipt_sent(struct rxr_ep *ep,
+				 struct rxr_pkt_entry *pkt_entry);
+
+void rxr_pkt_handle_receipt_send_completion(struct rxr_ep *ep,
+					    struct rxr_pkt_entry *pkt_entry);
+
+void rxr_pkt_handle_receipt_recv(struct rxr_ep *ep,
+				 struct rxr_pkt_entry *pkt_entry);
 
 /* atomrsp functions: init, handle_sent, handle_send_completion, recv */
 int rxr_pkt_init_atomrsp(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,

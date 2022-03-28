@@ -283,7 +283,9 @@ static void util_set_netif_names(struct fi_info *info,
  * given fi_info input.
  */
 #if HAVE_GETIFADDRS
-static void util_getinfo_ifs(const struct util_prov *prov, struct fi_info *src_info,
+static void util_getinfo_ifs(const struct util_prov *prov,
+			     const struct fi_info *hints,
+			     struct fi_info *src_info,
 			     struct fi_info **head, struct fi_info **tail)
 {
 	struct fi_info *cur;
@@ -301,6 +303,10 @@ static void util_getinfo_ifs(const struct util_prov *prov, struct fi_info *src_i
 	(void) prev; /* Makes compiler happy */
 	slist_foreach(&addr_list, entry, prev) {
 		addr_entry = container_of(entry, struct ofi_addr_list_entry, entry);
+
+		if (hints && ((hints->caps & addr_entry->comm_caps) !=
+		    (hints->caps & (FI_LOCAL_COMM | FI_REMOTE_COMM))))
+			continue;
 
 		cur = fi_dupinfo(src_info);
 		if (!cur)
@@ -328,6 +334,8 @@ static void util_getinfo_ifs(const struct util_prov *prov, struct fi_info *src_i
 			continue;
 		}
 
+		cur->caps = (cur->caps & ~(FI_LOCAL_COMM | FI_REMOTE_COMM)) |
+			    addr_entry->comm_caps;
 		cur->src_addr = mem_dup(&addr_entry->ipaddr, addrlen);
 		if (cur->src_addr) {
 			cur->src_addrlen = addrlen;
@@ -343,7 +351,9 @@ static void util_getinfo_ifs(const struct util_prov *prov, struct fi_info *src_i
 	}
 }
 #else
-static void util_getinfo_ifs(const struct util_prov *prov, struct fi_info *src_info,
+static void util_getinfo_ifs(const struct util_prov *prov,
+			     const struct fi_info *hints,
+			     struct fi_info *src_info,
 			     struct fi_info **head, struct fi_info **tail)
 {
 	*head = src_info;
@@ -377,7 +387,7 @@ int ofi_ip_getinfo(const struct util_prov *prov, uint32_t version,
 	prev = info;
 	for (cur = *info; cur; cur = cur->next) {
 		if (!cur->src_addr && !cur->dest_addr) {
-			util_getinfo_ifs(prov, cur, &head, &tail);
+			util_getinfo_ifs(prov, hints, cur, &head, &tail);
 			if (head != cur) {
 				tail->next = (*prev)->next;
 				*prev = head;

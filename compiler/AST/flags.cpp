@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,14 +46,16 @@ pragma2flag(const char* str) {
 
 void
 initFlags() {
-# define symbolFlag(NAME,PRAGMA,MAPNAME,COMMENT) \
-    flagMap.put(astr(MAPNAME), NAME); \
-    flagNames[NAME] = #NAME; \
-    flagShortNames[NAME] = astr(MAPNAME); \
-    flagComments[NAME] = COMMENT; \
-    flagPragma[NAME] = PRAGMA;
-# include "flags_list.h"
-# undef symbolFlag
+#define STRINGIFY(x__) #x__
+#define PRAGMA(name__, canParse__, parseStr__, desc__) \
+    flagMap.put(astr(parseStr__), FLAG_ ## name__); \
+    flagNames[FLAG_ ## name__] = STRINGIFY(FLAG_ ## name__); \
+    flagShortNames[FLAG_ ## name__] = astr(parseStr__); \
+    flagComments[FLAG_ ## name__] = desc__; \
+    flagPragma[FLAG_ ## name__] = canParse__;
+#include "chpl/uast/PragmaList.h"
+#undef STRINGIFY
+#undef PRAGMA
 
   // FLAG_UNKNOWN - limited representation; NUM_FLAGS - no representation
   flagNames[FLAG_UNKNOWN] = "FLAG_UNKNOWN";
@@ -160,7 +162,7 @@ static void viewFlagsHelper(BaseAST* ast, Symbol* sym, const char* msg) {
   printf("%d: %s %d\n", ast->id, msg, sym->id);
   viewSymbolFlags(sym);
 }
-  
+
 void viewFlags(BaseAST* ast) {
   if (!viewFlagsShort && !viewFlagsComment)
     viewFlagsName = true;

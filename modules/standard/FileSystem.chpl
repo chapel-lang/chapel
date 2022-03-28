@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -95,10 +95,9 @@ module FileSystem {
   public use SysError;
   use Path;
   use HaltWrappers;
-  use SysCTypes;
+  use CTypes;
   use IO;
   use SysBasic;
-  use CPtr;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -700,20 +699,18 @@ proc exists(out error: syserr, name: string): bool {
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
-pragma "order independent yielding loops"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
-    for subdir in walkdirs(startdir, hidden=hidden) do
-      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+    foreach subdir in walkdirs(startdir, hidden=hidden) do
+      foreach file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+    foreach file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
 }
 
 pragma "no doc"
-pragma "order independent yielding loops"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -722,10 +719,10 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
     // [const] ref intents in forall loops over recursive parallel iterators
     // such as walkdirs().
     forall subdir in walkdirs(startdir, hidden=hidden) with (ref hidden) do
-      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+      foreach file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+    foreach file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
 }
 
@@ -874,7 +871,7 @@ proc getUID(out error: syserr, name: string): int {
 private module GlobWrappers {
   import HaltWrappers;
   extern type glob_t;
-  use SysCTypes;
+  use CTypes;
 
   private extern const GLOB_NOMATCH: c_int;
   private extern const GLOB_NOSPACE: c_int;
@@ -899,16 +896,16 @@ private module GlobWrappers {
 
   // glob_num wrapper that takes care of casting
   inline proc glob_num_w(glb: glob_t): int {
-    extern proc chpl_glob_num(glb: glob_t): size_t;
+    extern proc chpl_glob_num(glb: glob_t): c_size_t;
     return chpl_glob_num(glb).safeCast(int);
   }
 
   // glob_index wrapper that takes care of casting
   inline proc glob_index_w(glb: glob_t, idx: int): string {
-    extern proc chpl_glob_index(glb: glob_t, idx: size_t): c_string;
+    extern proc chpl_glob_index(glb: glob_t, idx: c_size_t): c_string;
     try! {
       return createStringWithNewBuffer(chpl_glob_index(glb,
-                                                       idx.safeCast(size_t)),
+                                                       idx.safeCast(c_size_t)),
                                        policy=decodePolicy.escape);
     }
   }
@@ -929,7 +926,6 @@ private module GlobWrappers {
 
    :yield: The matching filenames as strings
 */
-pragma "order independent yielding loops"
 iter glob(pattern: string = "*"): string {
   use GlobWrappers;
   var glb : glob_t;
@@ -937,7 +933,7 @@ iter glob(pattern: string = "*"): string {
   glob_w(pattern, glb);
   const num = glob_num_w(glb);
 
-  for i in 0..num-1 do
+  foreach i in 0..num-1 do
     yield glob_index_w(glb, i);
 
   globfree_w(glb);
@@ -945,7 +941,6 @@ iter glob(pattern: string = "*"): string {
 
 
 pragma "no doc"
-pragma "order independent yielding loops"
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   use GlobWrappers;
@@ -987,7 +982,6 @@ iter glob(pattern: string = "*", param tag: iterKind)
 }
 
 pragma "no doc"
-pragma "order independent yielding loops"
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
   use GlobWrappers;
@@ -1001,7 +995,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
   if (r.high >= num) then
     HaltWrappers.zipLengthHalt("glob() is being zipped with something too big; it only has " + num:string + " matches");
 
-  for i in r do
+  foreach i in r do
     yield glob_index_w(glb, i);
 
   globfree_w(glb);
@@ -1197,7 +1191,6 @@ proc isMount(out error:syserr, name: string): bool {
 
    :yield: The names of the specified directory's contents, as strings
 */
-pragma "not order independent yielding loops"
 iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;
@@ -1212,12 +1205,9 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
     return chpl_rt_direntptr_getname(this);
   }
 
-  var dir: DIRptr;
-  var ent: direntptr;
-  var err:syserr = ENOERR;
-  dir = opendir(unescape(path).c_str());
+  var dir: DIRptr = opendir(unescape(path).c_str());
   if (!is_c_nil(dir)) {
-    ent = readdir(dir);
+    var ent: direntptr = readdir(dir);
     while (!is_c_nil(ent)) {
       var filename: string;
       try! {
@@ -1250,7 +1240,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
     closedir(dir);
   } else {
     extern proc perror(s: c_string);
-    perror("error in listdir(): ");
+    perror(("error in listdir(): " + path).c_str());
   }
 }
 
@@ -1628,6 +1618,7 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
    :rtype: `int`
 */
 proc locale.umask(mask: int): int {
+  use Sys;
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
 
   var result: int;

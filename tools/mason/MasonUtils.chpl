@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,14 +21,13 @@
 
 
 /* A helper file of utilities for Mason */
+public use FileSystem;
 private use List;
 private use Map;
-
-public use Spawn;
-public use FileSystem;
-public use TOML;
-public use Path;
+public use Subprocess;
 public use MasonEnv;
+public use Path;
+public use TOML;
 
 
 /* Gets environment variables for spawn commands */
@@ -95,17 +94,17 @@ proc stripExt(toStrip: string, ext: string) : string {
 }
 
 
-/* Uses the Spawn module to create a subprocess */
+/* Uses the Subprocess module to create a subprocess */
 proc runCommand(cmd, quiet=false) : string throws {
   var ret : string;
   try {
 
     var splitCmd = cmd.split();
-    var process = spawn(splitCmd, stdout=PIPE);
+    var process = spawn(splitCmd, stdout=pipeStyle.pipe);
 
     for line in process.stdout.lines() {
       ret += line;
-      if quiet == false {
+      if !quiet {
         write(line);
       }
     }
@@ -119,19 +118,19 @@ proc runCommand(cmd, quiet=false) : string throws {
 
 /* Same as runCommand but for situations where an
    exit status is needed */
-proc runWithStatus(command, show=true): int {
+proc runWithStatus(command, quiet=false): int {
 
   try {
     var cmd = command.split();
-    var sub = spawn(cmd, stdout=PIPE, stderr=PIPE);
+    var sub = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     var line:string;
-    if show {
+    if !quiet {
       while sub.stdout.readline(line) do write(line);
       while sub.stderr.readline(line) do write(line);
     }
     sub.wait();
-    return sub.exit_status;
+    return sub.exitCode;
   }
   catch {
     return -1;
@@ -141,7 +140,7 @@ proc runWithStatus(command, show=true): int {
 proc runWithProcess(command, quiet=false) throws {
   try {
     var cmd = command.split();
-    var process = spawn(cmd, stdout=PIPE, stderr=PIPE);
+    var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     return process;
   }
@@ -161,7 +160,7 @@ proc SPACK_ROOT : string {
 }
 /*
 This fetches the mason-installed spack registry only.
-Users that define SPACK_ROOT to their own spack installation will use 
+Users that define SPACK_ROOT to their own spack installation will use
 the registry of their spack installation.
 */
 proc getSpackRegistry : string {
@@ -171,7 +170,7 @@ proc getSpackRegistry : string {
 /* uses spawnshell and the prefix to setup Spack before
    calling the spack command. This also returns the stdout
    of the spack call.
-   TODO: get to work with Spawn */
+   TODO: get to work with Subprocess */
 proc getSpackResult(cmd, quiet=false) : string throws {
   var ret : string;
   try {
@@ -179,7 +178,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
     var splitCmd = prefix + cmd;
-    var process = spawnshell(splitCmd, stdout=PIPE, executable="bash");
+    var process = spawnshell(splitCmd, stdout=pipeStyle.pipe, executable="bash");
 
     for line in process.stdout.lines() {
       ret += line;
@@ -198,55 +197,33 @@ proc getSpackResult(cmd, quiet=false) : string throws {
 
 /* Sets up spack by prefixing command with spack env vars
    Only returns the exit status of the command
-   TODO: get to work with Spawn */
-proc runSpackCommand(command) {
+   TODO: get to work with Subprocess */
+proc runSpackCommand(command, quiet=false) {
 
   var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
 
   var cmd = (prefix + command);
-  var sub = spawnshell(cmd, stderr=PIPE, executable="bash");
+  var sub = spawnshell(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe, executable="bash");
+
+  // quiet flag necessary for tests to be portable
+  if !quiet {
+    var line:string;
+    while sub.stdout.readline(line) {
+      write(line);
+    }
+  }
   sub.wait();
 
   for line in sub.stderr.lines() {
     write(line);
   }
 
-  return sub.exit_status;
+  return sub.exitCode;
 }
 
-
-proc hasOptions(args: list(string), const opts: string ...) {
-  var ret = false;
-
-  for o in opts {
-    const found = args.count(o) != 0;
-    if found {
-      ret = true;
-      break;
-    }
-  }
-
-  return ret;
-}
-
-
-proc hasOptions(args : [] string, const opts : string ...) {
-  var ret = false;
-
-  for o in opts {
-    const (found, idx) = args.find(o);
-    if found {
-      ret = true;
-      break;
-    }
-  }
-
-  return ret;
-}
-
-
+// TODO: Can we get away with the Chapel Version object instead?
 record VersionInfo {
   var major = -1, minor = -1, bug = 0;
 
@@ -307,6 +284,15 @@ record VersionInfo {
   proc containsMax() {
     return this.major == max(int) || this.minor == max(int) || this.bug == max(int);
   }
+
+  proc isCompatible(other:VersionInfo) : bool {
+    // checks that a version is compatible with this version
+    // versions are assumed compatible if major and minor versions match
+    // and patch/bug level is the same or greater
+    return this.major == other.major
+           && this.minor == other.minor
+           && this.bug <= other.bug;
+  }
 }
 
 operator VersionInfo.=(ref lhs:VersionInfo, const ref rhs:VersionInfo) {
@@ -346,9 +332,9 @@ proc getChapelVersionInfo(): VersionInfo {
 
       var ret : VersionInfo;
 
-      var process = spawn(["chpl", "--version"], stdout=PIPE);
+      var process = spawn(["chpl", "--version"], stdout=pipeStyle.pipe);
       process.wait();
-      if process.exit_status != 0 {
+      if process.exitCode != 0 {
         throw new owned MasonError("Failed to run 'chpl --version'");
       }
 
@@ -433,7 +419,7 @@ extern "struct timespec" record chpl_timespec {
 }
 
 proc getLastModified(filename: string) : int {
-  use SysCTypes;
+  use CTypes;
 
   extern proc sys_stat(filename: c_string, ref chpl_stat): c_int;
 

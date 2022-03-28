@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -89,7 +89,7 @@ module ChapelReduce {
       var d: eltType;
       // + preserves the type for associative domains.
       // Todo: any other easy-to-compute cases?
-      return isAssociativeDom(d);
+      return d.isAssociative();
 
     } else if isArray(eltType) {
       // Follow the lead of chpl_buildStandInRTT. Thankfully, this code

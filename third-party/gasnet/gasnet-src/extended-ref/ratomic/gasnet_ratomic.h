@@ -576,11 +576,11 @@ gex_Rank_t gasnete_ratomic_self(gasneti_AD_t _ad, gex_Flags_t _flags) {
     GASNETI_INLINE(fname) _GASNETE_RATOMIC_DISP_WARN##nbnbi              \
     rettype fname(_GASNETE_RATOMIC_DISP_ARGS(type))                      \
     {                                                                    \
-        GASNETI_CHECK_INJECT();                                          \
         GASNETE_TRACE_RATOMIC##nbnbi(_ad, dtcode##_dtype, _result_p,     \
                                      _tgt_rank,_tgt_addr,_opcode,_flags, \
                                      dtcode##_fmt,dtcode##_fmt_cast,     \
                                      _operand1,_operand2);               \
+        GASNETI_CHECK_INJECT();                                          \
         gasnete_ratomic_validate(_ad,_result_p,_tgt_rank,_tgt_addr,      \
                                  _opcode, dtcode##_dtype, _flags);       \
         gasneti_AD_t _real_ad = gasneti_import_ad(_ad);                  \
@@ -614,10 +614,13 @@ gex_Rank_t gasnete_ratomic_self(gasneti_AD_t _ad, gex_Flags_t _flags) {
 // Note that _GASNETE_RATOMIC_DISP_TOOLS_SAFE has unusually "flow" in that it
 // EITHER completes the operation synchronously using tools and *returns*
 // OR it continues through to the next statement.
+// Also note that the computation of _fences is correct only because
+//   (GEX_FLAG_AD_ACQ == GASNETI_ATOMIC_ACQ)
+//   (GEX_FLAG_AD_REL == GASNETI_ATOMIC_REL)
+// as checked via gasneti_static_assert() elsewhere.
 #define _GASNETE_RATOMIC_DISP_TOOLS_SAFE(dtcode,type,retdone) do { \
         _GASNETE_RATOMIC_DISP_TOOLS_CHECK(dtcode)                            \
-        const int _fences = ((_flags & GEX_FLAG_AD_ACQ) ? GASNETI_ATOMIC_ACQ : 0) \
-                          | ((_flags & GEX_FLAG_AD_REL) ? GASNETI_ATOMIC_REL : 0);\
+        const int _fences = (_flags) & (GEX_FLAG_AD_ACQ | GEX_FLAG_AD_REL);  \
         type _result = gasnete_ratomicfn##dtcode((type *)_tgt_addr,          \
                                                  _operand1, _operand2,       \
                                                  _opcode, _fences);          \
@@ -627,19 +630,25 @@ gex_Rank_t gasnete_ratomic_self(gasneti_AD_t _ad, gex_Flags_t _flags) {
         return retdone;                                                      \
     } while (0)
 #if GASNET_PSHM
+  // TODO?? use of GASNETI_NBRHD_MAPPED_ADDR{,_OR_NULL}() precludes ratomics in auxseg
+  #if GASNET_CONDUIT_SMP
+    // With smp-conduit there is only a single nbrhd
+    #define _GASNETE_RATOMIC_DISP_MY_NBRHD_FLAG(_flags) 1
+  #else
+    #define _GASNETE_RATOMIC_DISP_MY_NBRHD_FLAG(_flags) (_flags & GEX_FLAG_AD_MY_NBRHD)
+  #endif
   #define _GASNETE_RATOMIC_DISP_TOOLS_CHECK(dtcode) \
     if (_flags & GEX_FLAG_AD_MY_RANK) {                                  \
         gasneti_assert(_tgt_rank == gasnete_ratomic_self(_real_ad,_flags));\
         /* Will use tools */                                             \
     } else if (GASNETE_RATOMIC_PSHMSAFE##dtcode) {                       \
-        if (_flags & GEX_FLAG_AD_MY_NBRHD) {                             \
+        if (_GASNETE_RATOMIC_DISP_MY_NBRHD_FLAG(_flags)) {               \
             gex_TM_t _tm = gasnete_ratomic_e_tm(_real_ad,_flags);        \
-            gasneti_assert(GASNETI_NBRHD_LOCAL(_tm,_tgt_rank));          \
-            _tgt_addr = GASNETI_NBRHD_LOCAL_ADDR(_tm,_tgt_rank,_tgt_addr);\
+            _tgt_addr = GASNETI_NBRHD_MAPPED_ADDR(_tm,_tgt_rank,_tgt_addr);\
             /* Will use tools */                                         \
         } else {                                                         \
             gex_TM_t _tm = gasnete_ratomic_e_tm(_real_ad,_flags);        \
-            void *_tmp_addr = GASNETI_NBRHD_LOCAL_ADDR_OR_NULL(_tm,_tgt_rank,_tgt_addr);\
+            void *_tmp_addr = GASNETI_NBRHD_MAPPED_ADDR_OR_NULL(_tm,_tgt_rank,_tgt_addr);\
             if (!_tmp_addr) break; /* Leave enclosing do/while w/o using tools */ \
             _tgt_addr = (dtcode##_type *)_tmp_addr;                      \
             /* Will use tools */                                         \
@@ -648,8 +657,16 @@ gex_Rank_t gasnete_ratomic_self(gasneti_AD_t _ad, gex_Flags_t _flags) {
        break; /* Leave enclosing do/while w/o using tools */             \
     }
 #else
+  #if GASNET_CONDUIT_SMP
+    // With smp-conduit (and w/o PSHM) there is only a single process
+    #define _GASNETE_RATOMIC_DISP_MY_RANK_FLAG(_flags) 1
+  #else
+    // Without PSHM, GEX_FLAG_AD_MY_NBRHD implies GEX_FLAG_AD_MY_RANK
+    #define _GASNETE_RATOMIC_DISP_MY_RANK_FLAG(_flags) \
+            (_flags & (GEX_FLAG_AD_MY_RANK|GEX_FLAG_AD_MY_NBRHD))
+  #endif
   #define _GASNETE_RATOMIC_DISP_TOOLS_CHECK(dtcode) \
-    if ((_flags & (GEX_FLAG_AD_MY_RANK|GEX_FLAG_AD_MY_NBRHD)) ||         \
+    if (_GASNETE_RATOMIC_DISP_MY_RANK_FLAG(_flags) ||                    \
         (_tgt_rank == gasnete_ratomic_self(_real_ad,_flags))) {          \
         gasneti_assert(_tgt_rank == gasnete_ratomic_self(_real_ad,_flags));\
         /* Will use tools */                                             \

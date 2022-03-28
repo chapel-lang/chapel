@@ -5,7 +5,7 @@ require "cstrvoid.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
+use CTypes;
 extern proc arg_c_string(str : c_string, n : c_int) : void;
 
 extern proc arg_c_void_ptr(ptr : c_void_ptr) : void;

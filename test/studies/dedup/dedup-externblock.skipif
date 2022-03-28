@@ -1,2 +1,23 @@
-CHPL_TARGET_PLATFORM != linux64
-CHPL_LLVM == none
+#!/usr/bin/env python3
+
+import os
+import subprocess
+from pkg_resources import parse_version
+
+
+llvm = os.getenv('CHPL_LLVM')
+platform = os.getenv('CHPL_TARGET_PLATFORM')
+
+Ok = False
+
+if llvm == 'none' or platform != 'linux64':
+    Ok = False  # not linux / no llvm
+else:
+    output = subprocess.check_output(['openssl', 'version']).rstrip()
+    output = str(output, encoding='utf-8', errors='surrogateescape')
+    output = output.replace("OpenSSL", "")
+    output = output.strip()
+    if parse_version(output) >= parse_version('1.1'):
+        Ok = True
+
+print(not Ok)

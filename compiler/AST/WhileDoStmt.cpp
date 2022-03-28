@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,7 +52,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
     DefExpr* varDef = toDefExpr(condIV->get(1)->remove());
     Expr*  condExpr = condIV->get(1)->remove();
     INT_ASSERT(! varDef->init && ! varDef->exprType); // from parser
-    
+
     // The construction follows the non-IfVar case below, adding the following:
     //
     //  // at start of 'retval' block

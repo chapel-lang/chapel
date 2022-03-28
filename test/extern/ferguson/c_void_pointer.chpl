@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 extern proc mytest(x: c_void_ptr):c_void_ptr;
 

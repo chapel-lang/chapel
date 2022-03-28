@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -115,7 +115,7 @@ module ArrayViewRankChange {
     }
 
     proc dsiEqualDMaps(that: ArrayViewRankChangeDist(?)) {
-      return (this.collapsedDim == that.collapsedDim && 
+      return (this.collapsedDim == that.collapsedDim &&
               this.idx == that.idx &&
               this.downDist.dsiEqualDMaps(that.downDist));
     }
@@ -141,7 +141,7 @@ module ArrayViewRankChange {
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
     var upDomInst: unmanaged DefaultRectangularDom(rank, idxType, stridable)?;
-    forwarding upDom except these;
+    forwarding upDom except these, chpl__serialize, chpl__deserialize;
 
     // the collapsed dimensions and indices in those dimensions
     //
@@ -171,11 +171,11 @@ module ArrayViewRankChange {
       return collapsedDim.size;
     }
 
-    inline proc upDom {
+    inline proc upDom: upDomInst!.type {
       return upDomInst!;
     }
 
-    inline proc downDom {
+    inline proc downDom: downDomInst!.type {
       if _isPrivatized(downDomInst!) then
         return chpl_getPrivatizedCopy(downDomInst!.type, downDomPid);
       else
@@ -223,13 +223,12 @@ module ArrayViewRankChange {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    pragma "order independent yielding loops"
     iter these() {
       if chpl__isDROrDRView(downDom) {
-        for i in upDom do
+        foreach i in upDom do
           yield i;
       } else {
-        for i in downDom do
+        foreach i in downDom do
           yield downIdxToUpIdx(i);
       }
     }
@@ -237,17 +236,16 @@ module ArrayViewRankChange {
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !localeModelHasSublocales
       && chpl__isDROrDRView(downDom)
-      && __primitive("method call resolves", upDom, "these", tag)
+      && __primitive("resolves", upDom.these(tag))
     {
       forall i in upDom do
         yield i;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !localeModelHasSublocales
       && !chpl__isDROrDRView(downDom)
-      && __primitive("method call resolves", downDom, "these", tag)
+      && __primitive("resolves", downDom.these(tag))
     {
       forall i in downDom do
         yield downIdxToUpIdx(i);
@@ -265,15 +263,14 @@ module ArrayViewRankChange {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis)
       where tag == iterKind.follower {
       if chpl__isDROrDRView(downDom) {
-        for i in upDom.these(tag, followThis) do
+        foreach i in upDom.these(tag, followThis) do
           yield i;
       } else {
         const followThisHiD = chpl_rankChangeConvertLoDTupleToHiD(followThis);
-        for i in downDom.these(tag, followThisHiD) {
+        foreach i in downDom.these(tag, followThisHiD) {
           yield chpl_rankChangeConvertIdxHiDToLoD(i, collapsedDim, idx, rank);
         }
       }
@@ -391,6 +388,21 @@ module ArrayViewRankChange {
       if downDomInst != nil then
         _delete_dom(downDomInst!, _isPrivatized(downDomInst!));
     }
+
+    // These would be forwarded to 'upDom' automatically,
+    // except the "last resort" overloads BaseDom take precedence
+    // over forwarding. So, define these explicitly.
+    proc parSafe return upDom.parSafe;
+    proc dsiLow return upDom.dsiLow;
+    proc dsiHigh return upDom.dsiHigh;
+    proc dsiStride return upDom.dsiStride;
+    proc dsiAlignment return upDom.dsiAlignment;
+    proc dsiFirst return upDom.dsiFirst;
+    proc dsiLast return upDom.dsiLast;
+    proc dsiAlignedlow return upDom.dsiAlignedlow;
+    proc dsiAlignedhigh return upDom.dsiAlignedhigh;
+    proc dsiIndexOrder return upDom.dsiIndexOrder;
+    proc dsiMakeIndexBuffer return upDom.dsiMakeIndexBuffer;
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
@@ -562,10 +574,9 @@ module ArrayViewRankChange {
 
     // TODO: We seem to run into compile-time bugs when using multiple yields.
     // For now, work around them by using an if-expr
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
-           __primitive("method call resolves", privDom, "these", tag) {
+           __primitive("resolves", privDom.these(tag)) {
       forall i in privDom {
         yield if shouldUseIndexCache()
                 then indexCache.getDataElem(indexCache.getDataIndex(i))
@@ -579,10 +590,9 @@ module ArrayViewRankChange {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
-      for i in privDom.these(tag, followThis) {
+      foreach i in privDom.these(tag, followThis) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getDataIndex(i);
           yield indexCache.getDataElem(dataIdx);
@@ -632,8 +642,7 @@ module ArrayViewRankChange {
       return dsiAccess(i);
     }
 
-    inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i: idxType ...rank) const ref {
       return dsiAccess(i);
     }
 
@@ -656,8 +665,7 @@ module ArrayViewRankChange {
       }
     }
 
-    inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i) const ref {
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -674,7 +682,6 @@ module ArrayViewRankChange {
       return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
 
     inline proc dsiLocalAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
 
     inline proc dsiBoundsCheck(i) {
@@ -749,7 +756,7 @@ module ArrayViewRankChange {
     // routines relating to the underlying domains and arrays
     //
 
-    inline proc privDom {
+    inline proc privDom: dom.type {
       if _isPrivatized(dom) {
         return chpl_getPrivatizedCopy(dom.type, _DomPid);
       } else {

@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -105,7 +105,7 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
 
 static inline
 void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
-                       void *srcstr, void *count, int32_t strlevels, 
+                       void *srcstr, void *count, int32_t strlevels,
                        size_t elemSize, int32_t commID, int ln, int32_t fn)
 {
   if( 0 ) {
@@ -120,7 +120,7 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
 
 static inline
 void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
-                       void *srcstr, void *count, int32_t strlevels, 
+                       void *srcstr, void *count, int32_t strlevels,
                        size_t elemSize, int32_t commID, int ln, int32_t fn)
 {
   if( 0 ) {
@@ -199,7 +199,7 @@ chpl_bool chpl_is_node_local(c_nodeid_t node)
 
 // Assert that the given node ID matches that of the currently-running image
 // If not, format the given error message with the given filename and line number
-// and then halt the current task.  (The exact behavior is dictated by 
+// and then halt the current task.  (The exact behavior is dictated by
 // chpl_error()).
 static inline
 void chpl_check_local(c_nodeid_t node, int32_t ln, int32_t file, const char* error)

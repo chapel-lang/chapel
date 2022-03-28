@@ -1,0 +1,2 @@
+# --practice=true   # day23a-test.good  # takes too long
+--practice=false  # day23a.good

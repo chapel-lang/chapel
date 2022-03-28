@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -64,7 +64,7 @@ static const char* getTmpDir(void) {
   return "/tmp";
 }
 
-// Check what version of slurm is on the system 
+// Check what version of slurm is on the system
 static sbatchVersion determineSlurmVersion(void) {
   const int buflen = 256;
   char version[buflen];
@@ -98,8 +98,8 @@ static int nomultithread(int batch) {
   return 0;
 }
 
-// Get the number of locales from the environment variable or if that is not 
-// set just use sinfo to get the number of cpus. 
+// Get the number of locales from the environment variable or if that is not
+// set just use sinfo to get the number of cpus.
 static int getCoresPerLocale(int nomultithread) {
   int numCores = -1;
   int threadsPerCore = -1;
@@ -149,9 +149,9 @@ static int getCoresPerLocale(int nomultithread) {
   return numCores;
 }
 #define MAX_COM_LEN (FILENAME_MAX + 128)
-// create the command that will actually launch the program and 
-// create any files needed for the launch like the batch script 
-static char* chpl_launch_create_command(int argc, char* argv[], 
+// create the command that will actually launch the program and
+// create any files needed for the launch like the batch script
+static char* chpl_launch_create_command(int argc, char* argv[],
                                         int32_t numLocales) {
   int i;
   int size;
@@ -233,7 +233,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
     basenamePtr++;
   }
-  
+
   chpl_compute_real_binary_name(argv[0]);
 
   if (debug) {
@@ -248,21 +248,21 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // --nodes ..." and afterwards split on ' ' and then add #SBATCH and a
   // newline for batch mode and leave it as is for interactive"
 
-  // if were running a batch job 
+  // if were running a batch job
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL || generate_sbatch_script) {
     // set the sbatch filename
     sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
-    // open the batch file and create the header 
+    // open the batch file and create the header
     slurmFile = fopen(slurmFilename, "w");
     fprintf(slurmFile, "#!/bin/sh\n\n");
-    
-    // set the job name 
+
+    // set the job name
     fprintf(slurmFile, "#SBATCH --job-name=Chpl-%.10s\n", basenamePtr);
- 
-    // suppress informational messages, will still display errors 
+
+    // suppress informational messages, will still display errors
     fprintf(slurmFile, "#SBATCH --quiet\n");
-    
+
     // request the number of locales, with 1 task per node, and number of cores
     // cpus-per-task. We probably don't need --nodes and --ntasks specified
     // since 1 task-per-node with n --tasks implies -n nodes
@@ -270,7 +270,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
     fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", getCoresPerLocale(nomultithread(true)));
-    
+
     // request specified node access
     if (nodeAccessStr != NULL)
       fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
@@ -278,8 +278,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // request access to all memory
     fprintf(slurmFile, "#SBATCH --mem=0\n");
 
-    // Set the walltime if it was specified 
-    if (walltime) { 
+    // Set the walltime if it was specified
+    if (walltime) {
       fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
     }
 
@@ -303,7 +303,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --constraint=%s\n", constraint);
     }
 
-    // set the account name if one was provided  
+    // set the account name if one was provided
     if (account && strlen(account) > 0) {
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
     }
@@ -337,7 +337,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(slurmFile, "srun --kill-on-bad-exit %s %s ",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
 
-    // add any arguments passed to the launcher to the binary 
+    // add any arguments passed to the launcher to the binary
     for (i=1; i<argc; i++) {
       fprintf(slurmFile, "'%s' ", argv[i]);
     }
@@ -356,7 +356,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "rm  %s &> /dev/null\n", tmpStdoutFileNoFmt);
     }
 
-    // close the batch file and change permissions 
+    // close the batch file and change permissions
     fclose(slurmFile);
     chmod(slurmFilename, 0755);
 
@@ -365,20 +365,20 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     }
 
     // the baseCommand is what will call the batch file
-    // that was just created 
+    // that was just created
     sprintf(baseCommand, "sbatch %s\n", slurmFilename);
   }
-  // else we're running an interactive job 
+  // else we're running an interactive job
   else {
     char iCom[1024];
     int len;
 
     len = 0;
 
-    // set the job name 
+    // set the job name
     len += sprintf(iCom+len, "--job-name=CHPL-%.10s ",basenamePtr);
-    
-    // suppress informational messages, will still display errors 
+
+    // suppress informational messages, will still display errors
     len += sprintf(iCom+len, "--quiet ");
 
     // request the number of locales, with 1 task per node, and number of cores
@@ -388,7 +388,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     len += sprintf(iCom+len, "--ntasks=%d ", numLocales);
     len += sprintf(iCom+len, "--ntasks-per-node=%d ", procsPerNode);
     len += sprintf(iCom+len, "--cpus-per-task=%d ", getCoresPerLocale(nomultithread(false)));
-    
+
     // request specified node access
     if (nodeAccessStr != NULL)
       len += sprintf(iCom+len, "--%s ", nodeAccessStr);
@@ -398,8 +398,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // kill the job if any program instance halts with non-zero exit status
     len += sprintf(iCom+len, "--kill-on-bad-exit ");
-    
-    // Set the walltime if it was specified 
+
+    // Set the walltime if it was specified
     if (walltime) {
       len += sprintf(iCom+len, "--time=%s ",walltime);
     }
@@ -419,37 +419,37 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += sprintf(iCom+len, "--exclude=%s ", exclude);
     }
 
-    // set any constraints 
+    // set any constraints
     if (constraint) {
       len += sprintf(iCom+len, "--constraint=%s ", constraint);
     }
-    
-    // set the account name if one was provided  
+
+    // set the account name if one was provided
     if (account && strlen(account) > 0) {
       len += sprintf(iCom+len, "--account=%s ", account);
     }
-    
+
     // add the (possibly wrapped) binary name
     len += sprintf(iCom+len, "%s %s ",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
 
-    // add any arguments passed to the launcher to the binary 
+    // add any arguments passed to the launcher to the binary
     for (i=1; i<argc; i++) {
       len += sprintf(iCom+len, "%s ", argv[i]);
     }
-   
+
     // launch the job using srun
     sprintf(baseCommand, "srun %s ", iCom);
   }
 
-  // copy baseCommand into command and return it 
+  // copy baseCommand into command and return it
   size = strlen(baseCommand) + 1;
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   sprintf(command, "%s", baseCommand);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
-  
+
   return command;
 }
 
@@ -461,7 +461,7 @@ static void genSBatchScript(int argc, char *argv[], int numLocales) {
 
 // clean up the batch file
 static void chpl_launch_cleanup(void) {
-  // leave file around if we're debugging 
+  // leave file around if we're debugging
   if (!debug) {
     // remove sbatch file unless it was explicitly generated by the user
     if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL && !generate_sbatch_script) {
@@ -478,18 +478,18 @@ static void chpl_launch_cleanup(void) {
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   int retcode;
-  
-  // check the slurm version before continuing 
+
+  // check the slurm version before continuing
   sbatchVersion sVersion = determineSlurmVersion();
   if (sVersion != slurm) {
     printf("Error: This launcher is only compatible with native slurm\n");
     printf("Slurm version was %d\n", sVersion);
     return 1;
   }
- 
+
   debug = getenv("CHPL_LAUNCHER_DEBUG");
- 
-  // generate a batch script and exit if user wanted to 
+
+  // generate a batch script and exit if user wanted to
   if (generate_sbatch_script) {
     genSBatchScript(argc, argv, numLocales);
     retcode = 0;
@@ -498,7 +498,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   else {
     retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv,
           numLocales), argv[0]);
-  
+
     chpl_launch_cleanup();
   }
   return retcode;

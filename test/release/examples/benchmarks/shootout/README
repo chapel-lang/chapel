@@ -188,7 +188,7 @@ o It would be nice to be able to write:
 nbody
 -----
 o explore possibility of enabling vectorization (perhaps by applying
-  'vectorizeOnly() to tuple operations?)
+  'foreach' to tuple operations?)
   - explore padding to better align velocity field
 
 o support sum-of-squares library function for all tuples?  (collections?)
@@ -249,7 +249,7 @@ o open question: What would it take to (efficiently) have the helper
   about returning arrays and records and optimizing such returns...
 
 o do we have an opportunity to take advantage of vectorization?
-  (could it be as simple as 'vectorizeOnly-ing' the reduction loops?
+  (could it be as simple as 'foreach'-ing the reduction loops?
   Or unrolling them?)
 
 o are our reductions overly heavyweight in the serial case?  (e.g., do

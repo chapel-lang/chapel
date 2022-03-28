@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,42 +19,41 @@
  */
 
 
-private use List;
-private use Map;
-use Path;
-use MasonUtils;
+use ArgumentParser;
+use List;
+use Map;
 use MasonHelp;
+use MasonUtils;
+use Path;
 use Regex;
 
 /* Entry point for mason system commands */
 proc masonSystem(args: [] string) {
+
+  var parser = new argumentParser(helpHandler=new MasonSystemHelpHandler());
+
+  var pcCmd = parser.addSubCommand("pc");
+  var searchCmd = parser.addSubCommand("search");
+
+  parser.parseArgs(args);
+
   try! {
-    if args.size < 3 {
-      masonSystemHelp();
-      exit(0);
+    if pcCmd.hasValue() {
+      pkgConfigExists();
+      var pcArgs = pcCmd.values();
+      printPkgPc(pcArgs);
     }
-    else if args[2] == "--help" || args[2] == "-h" {
-      masonSystemHelp();
-      exit(0);
+    else if searchCmd.hasValue() {
+      pkgConfigExists();
+      var searchArgs = searchCmd.values();
+      pkgSearch(searchArgs);
     }
-    else if pkgConfigExists() {
-      if args[2] == "pc" {
-        printPkgPc(args);
-      }
-      else if args[2] == "search" {
-        pkgSearch(args);
-      }
-      else {
-        masonSystemHelp();
-        exit(0);
-      }
-    }
-    else {
+    else { // no valid sub-command given
       masonSystemHelp();
       exit(0);
     }
   }
-  catch e: MasonError {
+  catch e: MasonError { // likely pkg-config wasn't found on system
     stderr.writeln(e.message());
     exit(1);
   }
@@ -63,7 +62,7 @@ proc masonSystem(args: [] string) {
 
 /* Checks to see that pkg-config is installed */
 proc pkgConfigExists() throws {
-  var status = runWithStatus("pkg-config --version", false);
+  var status = runWithStatus("pkg-config --version", true);
   if status != 0 {
     throw new owned MasonError("pkg-config is not installed");
   }
@@ -73,39 +72,33 @@ proc pkgConfigExists() throws {
 /* Searches available system packages */
 proc pkgSearch(args) throws {
 
-  var desc = false;
-  var quiet = false;
+  var parser = new argumentParser(helpHandler=new MasonSystemSearchHelpHandler());
+
+  var quietFlag = parser.addFlag(name="no-show-desc", defaultValue=false);
+  var descFlag = parser.addFlag(name="desc", defaultValue=false);
+  var pkgNameArg = parser.addArgument(name="package", numArgs=0..1);
+
+  parser.parseArgs(args);
+
+  var desc = descFlag.valueAsBool();
+  var quiet = quietFlag.valueAsBool();
   var pkgName = "";
-  if args.size < 4 {
+
+  if pkgNameArg.hasValue() {
+    pkgName = pkgNameArg.value();
+  }
+  else {
     listAllPkgs();
     exit(0);
   }
-  else {
-    for arg in args[3..] {
-      if arg == '-h' || arg == '--help' {
-        masonSystemSearchHelp();
-        exit(0);
-      }
-      else if arg == "--desc" {
-        desc=true;
-      }
-      else if arg == "--no-show-desc" {
-        quiet = true;
-      }
-      else {
-        pkgName = arg;
-      }
-    }
-  }
-  if pkgName == "" {
-    throw new owned MasonError("Must include a package name");
-  }
+
   const pattern = compile(pkgName, ignoreCase=true);
   const command = "pkg-config --list-all";
   const cmd = command.split();
-  var sub = spawn(cmd, stdout=PIPE);
+  var sub = spawn(cmd, stdout=pipeStyle.pipe);
   sub.wait();
 
+  // TODO: Test if this ever worked
   for line in sub.stdout.lines() {
     const toSearch = line.partition(" ");
     if desc {
@@ -137,43 +130,43 @@ proc listAllPkgs() {
 
 /* Prints a pc for user debugging */
 proc printPkgPc(args) throws {
-  if args.size < 4 {
+  var parser = new argumentParser(helpHandler=new MasonSystemPcHelpHandler());
+
+  var pkgNameArg = parser.addArgument(name="package", numArgs=0..1);
+
+  parser.parseArgs(args);
+
+  if !pkgNameArg.hasValue() {
     masonSystemPcHelp();
-    exit(0);
+    exit(1);
   }
-  else if args[3] == "-h" || args[3] == "--help" {
-    masonSystemPcHelp();
-    exit(0);
+  try! {
+    const pkgName = pkgNameArg.value();
+    if pkgExists(pkgName) {
+      //
+      // Add a these call, since `string.join` has an iterator overload but
+      // not one for list.
+      //
+      var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir").these()).strip();
+      var pcFile = joinPath(pcDir, pkgName + ".pc");
+      var pc = open(pcFile, iomode.r);
+      writeln("\n------- " + pkgName + ".pc -------\n");
+      for line in pc.lines() {
+        write(line);
+      }
+      writeln("\n-------------------\n");
+    }
+    else {
+      throw new owned MasonError("Mason could not find " + pkgName + " on your system");
+    }
   }
-  else {
-    try! {
-      const pkgName = args[3];
-      if pkgExists(pkgName) {
-        //
-        // Add a these call, since `string.join` has an iterator overload but
-        // not one for list.
-        //
-        var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir").these()).strip();
-        var pcFile = joinPath(pcDir, pkgName + ".pc");
-        var pc = open(pcFile, iomode.r);
-        writeln("\n------- " + pkgName + ".pc -------\n");
-        for line in pc.lines() {
-          write(line);
-        }
-        writeln("\n-------------------\n");
-      }
-      else {
-        throw new owned MasonError("Mason could not find " + pkgName + " on your system");
-      }
-    }
-    catch e: FileNotFoundError {
-      stderr.writeln("Package exists but Mason could not find it's .pc file");
-      exit(1);
-    }
-    catch e: MasonError {
-      stderr.writeln(e.message());
-      exit(1);
-    }
+  catch e: FileNotFoundError {
+    stderr.writeln("Package exists but Mason could not find it's .pc file");
+    exit(1);
+  }
+  catch e: MasonError {
+    stderr.writeln(e.message());
+    exit(1);
   }
 }
 
@@ -186,7 +179,7 @@ proc getPkgVariable(pkgName: string, option: string) {
 
   var lines: list(string);
   var cmd = command.split();
-  var sub = spawn(cmd, stdout=PIPE);
+  var sub = spawn(cmd, stdout=pipeStyle.pipe);
   sub.wait();
 
   var line:string;

@@ -31,12 +31,12 @@ forall (a,b,c) in zip(A,B,C) {
 var sum = new bigint(0);
 
 for c in C {
-  writeln(c.sizeinbase(10));
+  writeln(c.sizeInBase(10));
 
   sum.add(sum, c);
 }
 
-writeln(sum.sizeinbase(10));
+writeln(sum.sizeInBase(10));
 
 var modulus = new bigint("10000000000000000000000000000000000000000");
 

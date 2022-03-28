@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -66,17 +66,17 @@ comprt: FORCE
 notcompiler: FORCE
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) always-build-test-venv
-	@$(MAKE) always-build-chpldoc
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
-libchplcomp: FORCE
+dyno: FORCE
 	@echo "Making the compiler library..."
-	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp
+	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno
 
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm
+	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
 	@cd compiler && $(MAKE)
 
 parser: FORCE
@@ -91,21 +91,13 @@ runtime: FORCE
 	@echo "Making the runtime..."
 	@cd runtime && $(MAKE)
 
-third-party: FORCE
-	@echo "Making the third-party libraries..."
-	@cd third-party && $(MAKE)
-
 third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
 third-party-try-re2: FORCE
-	-@if [ "$$CHPL_RE2" != none ]; then \
-	cd third-party && $(MAKE) try-re2; \
-	fi
+	cd third-party && $(MAKE) try-re2;
 
 third-party-try-gmp: FORCE
-	-@if [ -z "$$CHPL_GMP" ]; then \
-	cd third-party && $(MAKE) try-gmp; \
-	fi
+	cd third-party && $(MAKE) try-gmp;
 
 third-party-test-venv: FORCE
 	@if [ -z "$$CHPL_DONT_BUILD_TEST_VENV" ]; then \

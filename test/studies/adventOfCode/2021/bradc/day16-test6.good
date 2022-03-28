@@ -1,0 +1,26 @@
+C0015000016115A2E0802F182340
+1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 0 1 1 0 1 0 0 0 1 0 1 1 1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1 0 0 0 1 1 0 0 0 0 0 1 0 0 0 1 1 0 1 0 0 0 0 0 0
+version = 6
+packet type = 0
+totBitLength = 84
+version = 0
+packet type = 0
+totBitLength = 22
+version = 0
+packet type = 4
+Value = 10
+version = 6
+packet type = 4
+Value = 11
+version = 4
+packet type = 0
+numSubPackets = 2
+sub-packet 0
+version = 7
+packet type = 4
+Value = 12
+sub-packet 1
+version = 0
+packet type = 4
+Value = 13
+VERSION SUM: 23

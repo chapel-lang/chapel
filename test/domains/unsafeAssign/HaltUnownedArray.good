@@ -1,0 +1,1 @@
+HaltUnownedArray.chpl:13: error: halt reached - Can only initialize elements of arrays declared over the domain being resized

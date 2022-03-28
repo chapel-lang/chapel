@@ -1,14 +1,10 @@
-
 private use List;
 use MasonUpdate;
 use MasonUtils;
 use TOML;
 use FileSystem;
 
-config const goodLock: string;
-config const tf: string;
-
-proc main() {
+proc test(goodLock: string, tf: string) {
   // In order to avoid updating the .good/lock file every release we store
   // a sentinel 'CHPL_CUR_FULL' representing the current Chapel version. Before
   // passing anything to updateLock we need to replace that sentinel with the

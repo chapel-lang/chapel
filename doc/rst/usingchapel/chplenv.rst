@@ -7,9 +7,9 @@ To get started with Chapel, there are three environment settings that are
 strongly recommended for effective use of the release, and a number of
 other optional settings that are useful for cross-compiling or overriding
 the default settings.  To check the values of the Chapel environment
-variables that are set or can be inferred, run the script::
+variables that are set or can be inferred, run the command::
 
-  $CHPL_HOME/util/printchplenv
+  $CHPL_HOME/util/printchplenv --all
 
 The ``setchplenv.*`` source scripts in the ``$CHPL_HOME/util/quickstart/`` and
 ``$CHPL_HOME/util/`` directories contain commands that set the following
@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.24.0
+        export CHPL_HOME=~/chapel-1.26.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -105,7 +105,8 @@ CHPL_HOST_PLATFORM
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
         cray-xc      Cray XC\ |trade|
-        hpe-cray-ex  HPE Cray EX\ |trade|
+        hpe-cray-ex  HPE Cray EX
+        hpe-apollo   HPE Apollo
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -114,10 +115,9 @@ CHPL_HOST_PLATFORM
    The Chapel Makefiles and sources are designed to work for any UNIX-compatible
    environment that supports a GNU-compatible make utility.  The list above
    represents the set of platforms that we have access to and can test easily.
-   We are interested in making our code framework portable to other platforms --
-   if you are using Chapel on a platform other than the ones listed above,
-   please refer to :ref:`platform-specific-settings` for ways to set up a
-   Makefile for this platform.
+   We are interested in making our code framework portable to other
+   platforms—if you are using Chapel on a platform other than the ones
+   listed above, please contact us for help with the effort.
 
 
 .. _readme-chplenv.CHPL_TARGET_PLATFORM:
@@ -195,8 +195,73 @@ CHPL_*_COMPILER
         pgi                 The PGI compiler suite -- pgcc and pgc++
         =================== ===================================================
 
-   The default for ``CHPL_*_COMPILER`` is llvm, except on linux32 where
-   it is gnu.
+   The default for ``CHPL_HOST_COMPILER`` depends on the value of the
+   corresponding ``CHPL_HOST_PLATFORM`` environment variable:
+
+        +----------------+----------------------------------------------+
+        | Host Platform  | Compiler                                     |
+        +================+==============================================+
+        | hpe-cray-ex    |                                              |
+        |                | gnu                                          |
+        | cray-xc        |                                              |
+        +----------------+----------------------------------------------+
+        | darwin         |                                              |
+        |                | clang if available, otherwise gnu            |
+        | freebsd        |                                              |
+        +----------------+----------------------------------------------+
+        | pwr6           | ibm                                          |
+        +----------------+----------------------------------------------+
+        | other          | gnu                                          |
+        +----------------+----------------------------------------------+
+
+   The default for ``CHPL_TARGET_COMPILER`` is:
+
+     * ``llvm`` if the compiler is configured with LLVM support (see
+       :ref:`readme-chplenv.CHPL_LLVM`)
+     * ``cray-prgenv-$PE_ENV`` on ``cray-xc`` and ``hpe-cray-ex``
+       platforms (where ``PE_ENV`` is set by ``PrgEnv-*`` modules)
+     * ``CHPL_HOST_COMPILER`` if the host and target platforms are the
+       same
+     * ``gnu`` otherwise.
+
+   In cases where the LLVM code generation strategy is the default,
+   setting ``CHPL_TARGET_COMPILER`` to something other than ``llvm`` will
+   request that the C backend be used with that compiler. For example, to
+   select the C backend with the PrgEnv-gnu compiler, set
+   ``CHPL_TARGET_COMPILER=cray-prgenv-gnu``.
+
+   It is sometimes important to be able to provide a particular command
+   to run for C or C++ compilation. The following variables are available
+   to help with that:
+
+        =============== =======================================================
+        Variable        Description
+        =============== =======================================================
+        CC              indicates the C compiler to use (but see note below)
+        CXX             indicates the CXX compiler to use (but see note below)
+        CHPL_HOST_CC    indicates the C compiler for building ``chpl`` itself
+        CHPL_HOST_CXX   indicates the C++ compiler for building ``chpl`` itself
+        CHPL_TARGET_CC  indicates the C compiler used by ``chpl``
+        CHPL_TARGET_CXX indicates the C++ compiler used by ``chpl``
+        =============== =======================================================
+
+   .. note::
+
+     If the ``CC`` and ``CXX`` variables are set, the other variables in
+     the above table can be inferred. When these variables are used, the
+     following variables can be inferred from them:
+
+       * ``CHPL_HOST_COMPILER``, ``CHPL_HOST_CC``, ``CHPL_HOST_CXX``
+       * ``CHPL_TARGET_COMPILER``, ``CHPL_TARGET_CC``, ``CHPL_TARGET_CXX``
+
+     However:
+
+       * Setting any of these inferred variables will disable the
+         inference for all of them
+       * The ``*TARGET*`` variables above are not inferred from ``CC`` /
+         ``CXX`` when ``CHPL_TARGET_COMPILER=llvm`` or when working with
+         a PrgEnv compiler.
+
 
 .. _readme-chplenv.CHPL_TARGET_CPU:
 
@@ -401,6 +466,9 @@ CHPL_MEM
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
+   ``CHPL_TARGET_MEM`` will be replacing ``CHPL_MEM`` in the
+   future. ``CHPL_TARGET_MEM`` takes precedence over ``CHPL_MEM``.
+
    .. note::
      Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
      ofi with the gni provider) register the heap to improve communication
@@ -408,6 +476,52 @@ CHPL_MEM
      that not all allocators provide.  Currently only ``jemalloc`` is capable
      of supporting configurations that require a registered heap.
 
+.. _readme-chplenv.CHPL_HOST_MEM:
+
+CHPL_HOST_MEM
+~~~~~~~~~~~~~
+   Optionally, the ``CHPL_HOST_MEM`` environment variable can be used to select
+   a memory management layer for the ``chpl`` compiler.
+
+        ========= =======================================================
+        Value     Description
+        ========= =======================================================
+        cstdlib   use the standard C malloc/free commands
+        jemalloc  use Jason Evan's memory allocator
+        ========= =======================================================
+
+   If unset, ``CHPL_HOST_MEM`` defaults to ``cstdlib``.
+
+.. _readme-chplenv.CHPL_HOST_JEMALLOC:
+
+CHPL_HOST_JEMALLOC
+~~~~~~~~~~~~~~~~~~
+
+    Optionally, the ``CHPL_HOST_JEMALLOC`` environment variable can select
+    between no jemalloc, or using the jemalloc distributed with Chapel in
+    third-party. This setting is intended to elaborate upon
+    ``CHPL_HOST_MEM=jemalloc``.
+
+        ======== ==============================================================
+        Value    Description
+        ======== ==============================================================
+        none     do not build or use jemalloc
+        bundled  use the jemalloc distribution bundled with Chapel in third-party
+        system   use jemalloc found on system. requires ``jemalloc-config`` in PATH
+        ======== ==============================================================
+
+
+    Currently, the only supported combinations of host target are:
+
+        ======== ==============================================================
+        Host     Source
+        ======== ==============================================================
+        darwin   system
+        linux    bundled
+        ======== ==============================================================
+
+    If unset, ``CHPL_HOST_JEMALLOC`` defaults to one of the above support combinations,
+    or ``none`` if :ref:`readme-chplenv.CHPL_HOST_MEM` is ``cstdlib``.
 
 .. _readme-chplenv.CHPL_LAUNCHER:
 
@@ -471,7 +585,6 @@ CHPL_GMP
                 (#include gmp.h, -lgmp)
        none     do not build GMP support into the Chapel runtime
        bundled  use the GMP distribution bundled with Chapel in third-party
-       gmp      deprecated - use bundled instead
        =======  ============================================================
 
    If unset, Chapel will attempt to build GMP using
@@ -506,7 +619,6 @@ CHPL_HWLOC
        ======== ==============================================================
        none     do not build hwloc support into the Chapel runtime
        bundled  use the hwloc distribution bundled with Chapel in third-party
-       hwloc    deprecated - use bundled instead
        ======== ==============================================================
 
    If unset, ``CHPL_HWLOC`` defaults to ``bundled`` if
@@ -540,7 +652,6 @@ CHPL_HWLOC
           ======== ==============================================================
           none     do not build or use jemalloc
           bundled  use the jemalloc distribution bundled with Chapel in third-party
-          jemalloc deprecated - use bundled instead
           ======== ==============================================================
 
       If unset, ``CHPL_JEMALLOC`` defaults to ``bundled`` if
@@ -570,7 +681,6 @@ CHPL_HWLOC
           ========= ==============================================================
           none      do not build or use libfabric
           bundled   use the libfabric distribution bundled with Chapel in third-party
-          libfabric deprecated - use bundled instead
           ========= ==============================================================
 
       If unset, ``CHPL_LIBFABRIC`` defaults to ``bundled`` if
@@ -635,43 +745,55 @@ CHPL_AUX_FILESYS
 
 CHPL_LLVM
 ~~~~~~~~~
-   Optionally, the ``CHPL_LLVM`` environment variable can be used to
-   enable support for the LLVM back-end to the Chapel compiler (see
-   :ref:`readme-llvm`) or to support extern blocks in Chapel code via
-   the Clang compiler (see :ref:`readme-extern`).  Current options are:
+
+   The ``CHPL_LLVM`` environment variable enables support for the LLVM
+   back-end to the Chapel compiler (see :ref:`readme-llvm`) and
+   support for extern blocks in Chapel code via the Clang compiler (see
+   :ref:`readme-extern`). Current options are:
 
        ============== ======================================================
        Value          Description
        ============== ======================================================
        bundled        use the llvm/clang distribution in third-party
-       llvm           deprecated - use bundled instead
        system         find a compatible LLVM in system libraries;
                       note: the LLVM must be a version supported by Chapel
        none           do not support llvm/clang-related features
+       unset          indicates that no reasonable default has been
+                      inferred, requiring the user to intentionally select
+                      another option
        ============== ======================================================
 
-   .. (comment) -minimal can be used but is only interesting for developers
-       llvm-minimal   as above, but only build and link LLVM ADTs
-       system-minimal as above, but only link LLVM ADTs
+   If unset, ``CHPL_LLVM`` defaults to:
 
-   If unset, ``CHPL_LLVM`` defaults to ``bundled`` if you've already installed
-   llvm in third-party and ``none`` otherwise.
+     * ``none`` on linux32 where Chapel LLVM support is not yet implemented
+     * ``bundled`` if you've already built the bundled llvm in
+       `third-party/llvm`
+     *  ``system`` if a compatible system-wide installation of LLVM is detected
+     * ``unset`` otherwise
 
-   Chapel currently supports LLVM 11.0.
+   If CHPL_LLVM is ``unset`` you will need to either add a system-wide
+   installation of LLVM or set ``CHPL_LLVM`` to ``bundled`` or ``none``.
 
-   .. note::
+   See :ref:`readme-prereqs` for more information about currently
+   supported LLVM versions.
 
-       We have had success with this procedure to install LLVM 11.0
-       dependencies on Ubuntu.
+   **CHPL_LLVM_CONFIG**
 
-       First, follow the instructions at ``https://apt.llvm.org`` that
-       explain how to place the appropriate lines into
-       ``/etc/apt/sources.list.d/llvm-toolchain.list`` and retrieve
-       the archive signature, then do the following.
+   In some cases, it is useful to be able to select a particular LLVM
+   installation for use with ``CHPL_LLVM=system``. In that event, in
+   addition to setting ``CHPL_LLVM=system``, you can set
+   ``CHPL_LLVM_CONFIG`` to the llvm-config command from the LLVM
+   installation you wish to use.
 
-        .. code-block:: sh
+   **CHPL_LLVM_GCC_PREFIX**
 
-            apt-get install llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libedit-dev
+   Additionally, in some cases, the configured ``clang`` will not work
+   correctly without a ``--gcc-toolchain`` flag. The Chapel compiler
+   tries to infer this flag but it does not always do so correctly. As a
+   result, it is sometimes necessary to override it.  You can set
+   ``CHPL_LLVM_GCC_PREFIX`` to ``none`` to  disable passing the
+   ``--gcc-toolchain`` flag; or you can set it to a directory to pass to
+   ``clang`` with the ``--gcc-toolchain`` flag.
 
 .. _readme-chplenv.CHPL_UNWIND:
 
@@ -684,7 +806,6 @@ CHPL_UNWIND
        Value     Description
        ========= =======================================================
        bundled   use the libunwind bundled with Chapel in third-party
-       libunwind deprecated - use bundled instead
        system    assume libunwind is already installed on the system
        none      don't use an unwind library, disabling stack tracing
        ========= =======================================================
@@ -713,19 +834,10 @@ CHPL_LIB_PIC
 
 Character Set
 -------------
-   Chapel works with the Unicode character set with UTF-8 encoding and the
-   traditional C collating sequence. Users are responsible for making sure that
-   they are running Chapel in a suitable environment. For example, for `en_US`
-   locale, the following environment variables should be set:
 
-   .. code-block:: sh
-
-       LANG=en_US.UTF-8
-       LC_COLLATE=C
-       LC_ALL=""
-
-   .. note::
-       Other character sets may be supported in the future.
+Chapel works with the Unicode character set with the UTF-8 encoding.
+Chapel programs will use the UTF-8 encoding regardless of the LANG and
+LC_ALL environment variable settings that the C library uses.
 
 Compiler Command Line Option Defaults
 -------------------------------------
@@ -738,8 +850,8 @@ value selects that flag.
 
 .. _readme-chplenv.chplconfig:
 
-Chapel Configuration File
--------------------------
+Chapel Configuration Files
+--------------------------
 
 The Chapel configuration file is a file named either ``chplconfig`` or
 ``.chplconfig`` that can store overrides of the inferred environment variables

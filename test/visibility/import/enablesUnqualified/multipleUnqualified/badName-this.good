@@ -1,0 +1,1 @@
+badName-this.chpl:5: error: Bad identifier, no known 'this' defined in 'Foo'

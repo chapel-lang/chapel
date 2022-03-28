@@ -62,7 +62,8 @@ do
       echo "     " $*
       echo
       echo
-      exit 1
+      #uncomment the below line to make errors fatal
+      #exit 1
       ;;
     esac
     vagrant halt 2>&1 | tee -a "$DIR"/log

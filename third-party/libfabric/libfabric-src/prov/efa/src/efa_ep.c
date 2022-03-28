@@ -93,11 +93,14 @@ static int efa_ep_modify_qp_state(struct efa_qp *qp, enum ibv_qp_state qp_state,
 	if (attr_mask & IBV_QP_QKEY)
 		attr.qkey = qp->qkey;
 
+	if (attr_mask & IBV_QP_RNR_RETRY)
+		attr.rnr_retry = rxr_env.rnr_retry;
+
 	return -ibv_modify_qp(qp->ibv_qp, &attr, attr_mask);
 
 }
 
-static int efa_ep_modify_qp_rst2rts(struct efa_qp *qp)
+static int efa_ep_modify_qp_rst2rts(struct efa_ep *ep, struct efa_qp *qp)
 {
 	int err;
 
@@ -110,6 +113,11 @@ static int efa_ep_modify_qp_rst2rts(struct efa_qp *qp)
 	err = efa_ep_modify_qp_state(qp, IBV_QPS_RTR, IBV_QP_STATE);
 	if (err)
 		return err;
+
+	if (ep->util_ep.type != FI_EP_DGRAM &&
+	    efa_ep_support_rnr_retry_modify(&ep->util_ep.ep_fid))
+		return efa_ep_modify_qp_state(qp, IBV_QPS_RTS,
+			IBV_QP_STATE | IBV_QP_SQ_PSN | IBV_QP_RNR_RETRY);
 
 	return efa_ep_modify_qp_state(qp, IBV_QPS_RTS,
 				      IBV_QP_STATE | IBV_QP_SQ_PSN);
@@ -146,7 +154,7 @@ static int efa_ep_create_qp_ex(struct efa_ep *ep,
 
 	qp->ibv_qp_ex = ibv_qp_to_qp_ex(qp->ibv_qp);
 	qp->qkey = efa_generate_qkey();
-	err = efa_ep_modify_qp_rst2rts(qp);
+	err = efa_ep_modify_qp_rst2rts(ep, qp);
 	if (err)
 		goto err_destroy_qp;
 
@@ -221,6 +229,9 @@ err:
 
 static void efa_ep_destroy(struct efa_ep *ep)
 {
+	if (ep->self_ah)
+		ibv_destroy_ah(ep->self_ah);
+
 	efa_ep_destroy_qp(ep->qp);
 	fi_freeinfo(ep->info);
 	free(ep->src_addr);
@@ -289,6 +300,15 @@ static int efa_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 		break;
 	case FI_CLASS_AV:
 		av = container_of(bfid, struct efa_av, util_av.av_fid.fid);
+		/*
+		 * Binding multiple endpoints to a single AV is currently not
+		 * supported.
+		 */
+		if (av->ep) {
+			EFA_WARN(FI_LOG_EP_CTRL,
+				 "Address vector already has endpoint bound to it.\n");
+			return -FI_ENOSYS;
+		}
 		if (ep->domain != av->domain) {
 			EFA_WARN(FI_LOG_EP_CTRL,
 				 "Address vector doesn't belong to same domain as EP.\n");
@@ -367,13 +387,34 @@ static int efa_ep_setflags(struct fid_ep *ep_fid, uint64_t flags)
 	return 0;
 }
 
+/* efa_ep_create_self_ah() create an address handler for
+ * an EP's own address. The address handler is used by
+ * an EP to read from itself. It is used to
+ * copy data from host memory to GPU memory.
+ */
+static inline
+int efa_ep_create_self_ah(struct efa_ep *ep, struct ibv_pd *ibv_pd)
+{
+	struct ibv_ah_attr ah_attr;
+	struct efa_ep_addr *self_addr;
+
+	self_addr = (struct efa_ep_addr *)ep->src_addr;
+
+	memset(&ah_attr, 0, sizeof(ah_attr));
+	ah_attr.port_num = 1;
+	ah_attr.is_global = 1;
+	memcpy(ah_attr.grh.dgid.raw, self_addr->raw, sizeof(self_addr->raw));
+	ep->self_ah = ibv_create_ah(ibv_pd, &ah_attr);
+	return ep->self_ah ? 0 : -FI_EINVAL;
+}
+
 static int efa_ep_enable(struct fid_ep *ep_fid)
 {
 	struct ibv_qp_init_attr_ex attr_ex = { 0 };
 	const struct fi_info *efa_info;
 	struct ibv_pd *ibv_pd;
 	struct efa_ep *ep;
-
+	int err;
 	ep = container_of(ep_fid, struct efa_ep, util_ep.ep_fid);
 
 	if (!ep->scq && !ep->rcq) {
@@ -436,7 +477,18 @@ static int efa_ep_enable(struct fid_ep *ep_fid)
 	attr_ex.qp_context = ep;
 	attr_ex.sq_sig_all = 1;
 
-	return efa_ep_create_qp_ex(ep, ibv_pd, &attr_ex);
+	err = efa_ep_create_qp_ex(ep, ibv_pd, &attr_ex);
+	if (err)
+		return err;
+
+	err = efa_ep_create_self_ah(ep, ibv_pd);
+	if (err) {
+		EFA_WARN(FI_LOG_EP_CTRL,
+			 "Endpoint cannot create ah for its own address\n");
+		efa_ep_destroy_qp(ep->qp);
+	}
+
+	return err;
 }
 
 static int efa_ep_control(struct fid *fid, int command, void *arg)

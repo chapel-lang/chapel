@@ -27,9 +27,30 @@ cpp:identifier UniqueString
 cpp:identifier ID
 cpp:identifier Location
 cpp:identifier ASTTag
+cpp:identifier uast::ASTTag
 cpp:identifier ASTList::const_iterator
 cpp:identifier size_t
 cpp:identifier detail
 cpp:identifier detail::PODUniqueString
 cpp:identifier ASTList::const_iterator::difference_type
 cpp:identifier uint64_t
+cpp:identifier int64_t
+cpp:identifier va_list
+# TODO: Expand macros before generating docs to remove these.
+cpp:identifier ParamTag
+cpp:identifier PragmaTag
+cpp:identifier TypeTag
+cpp:identifier PrimitiveTag
+cpp:identifier chpl::uast::PrimitiveTag
+cpp:identifier types::RealParam
+cpp:identifier types::IntParam
+cpp:identifier types::UintParam
+# Breaks because of (e.g.): WhereClauseResult whereClauseResult = WHERE_TBD;
+# Doxygen can't handle a class/struct field initialized with an enum.
+cpp:identifier WHERE_TBD
+cpp:identifier ZERO
+cpp:identifier SYMBOL_ONLY
+cpp:identifier uast::asttags::NUM_AST_TAGS
+cpp:identifier uast::Function::DEFAULT_RETURN_INTENT
+# Common symbols used as template typenames.
+cpp:identifier T

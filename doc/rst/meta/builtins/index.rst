@@ -11,9 +11,14 @@ amenable to being documented using **chpldoc**:
 
 .. toctree::
    :maxdepth: 1
-   :glob:
 
-   **
+   OwnedObject
+   Bytes
+   ChapelRange
+   SharedObject
+   ChapelSyncvar
+   String
+   ChapelTuple
 
 
 Index

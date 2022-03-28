@@ -1,4 +1,4 @@
-use BlockDist;
+use BlockDist, ChplConfig;
 
 config const b = 3;
 config const n = 5;

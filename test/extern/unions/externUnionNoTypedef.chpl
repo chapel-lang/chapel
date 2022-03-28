@@ -3,7 +3,7 @@
 /* $CHPL_HOME/doc/rst/language/spec/interoperability.rst  */
 /**********************************************************/
 
-extern "union _noTypedefUnion" record _noTypedefUnion {
+extern "union _noTypedefUnion" union _noTypedefUnion {
     var x: real(32);
     var y: real(64);
     var z: int(64);

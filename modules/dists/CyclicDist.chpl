@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -325,7 +325,7 @@ proc Cyclic.init(other: Cyclic, privateData,
   dataParIgnoreRunningTasks = privateData[3];
   dataParMinGranularity = privateData[4];
 }
-                 
+
 override proc Cyclic.dsiSupportsPrivatization() param return true;
 
 proc Cyclic.dsiGetPrivatizeData() return (startIdx,
@@ -551,35 +551,28 @@ override proc CyclicDom.dsiDisplayRepresentation() {
   dist.dsiDisplayRepresentation();
 }
 
-proc CyclicDom.dsiLow return whole.low;
-
-proc CyclicDom.dsiHigh return whole.high;
-
-proc CyclicDom.dsiAlignedLow return whole.alignedLow;
-
-proc CyclicDom.dsiAlignedHigh return whole.alignedHigh;
-
-proc CyclicDom.dsiAlignment return whole.alignment;
-
-proc CyclicDom.dsiStride return whole.stride;
-
-proc CyclicDom.dsiMember(i) return whole.contains(i);
-
-proc CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
-
-proc CyclicDom.dsiDims() return whole.dims();
-
-proc CyclicDom.dsiDim(d: int) return whole.dim(d);
+// common redirects
+proc CyclicDom.dsiLow           return whole.low;
+proc CyclicDom.dsiHigh          return whole.high;
+proc CyclicDom.dsiAlignedLow    return whole.alignedLow;
+proc CyclicDom.dsiAlignedHigh   return whole.alignedHigh;
+proc CyclicDom.dsiFirst         return whole.first;
+proc CyclicDom.dsiLast          return whole.last;
+proc CyclicDom.dsiStride        return whole.stride;
+proc CyclicDom.dsiAlignment     return whole.alignment;
+proc CyclicDom.dsiNumIndices    return whole.sizeAs(uint);
+proc CyclicDom.dsiDim(d)        return whole.dim(d);
+proc CyclicDom.dsiDim(param d)  return whole.dim(d);
+proc CyclicDom.dsiDims()        return whole.dims();
+proc CyclicDom.dsiGetIndices()  return whole.getIndices();
+proc CyclicDom.dsiMember(i)     return whole.contains(i);
+proc CyclicDom.doiToString()    return whole:string;
+//proc CyclicDom.dsiSerialWrite(x) { x.write(whole); }
+proc CyclicDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
+override proc CyclicDom.dsiIndexOrder(i)              return whole.indexOrder(i);
+override proc CyclicDom.dsiMyDist()                   return dist;
 
 proc CyclicDom.getLocDom(localeIdx) return locDoms(localeIdx);
-
-override proc CyclicDom.dsiMyDist() return dist;
-
-
-
-proc CyclicDom.dsiGetIndices() {
-  return whole.getIndices();
-}
 
 proc CyclicDom.dsiSetIndices(x: domain) {
   whole = x;
@@ -607,12 +600,6 @@ proc CyclicDom.dsiSerialWrite(x) {
     x <~> whole;
   }
 }
-
-proc CyclicDom.doiToString() {
-  return whole:string;
-}
-
-proc CyclicDom.dsiNumIndices return whole.sizeAs(uint);
 
 iter CyclicDom.these() {
   for i in whole do
@@ -724,10 +711,6 @@ proc CyclicDom.dsiReprivatize(other, reprivatizeData) {
   whole = other.whole;
 }
 
-proc CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
-  return whole((...ranges));
-}
-
 
 class LocCyclicDom {
   param rank: int;
@@ -837,7 +820,8 @@ override proc CyclicArr.dsiDestroyArr(deinitElts:bool) {
   }
 }
 
-proc CyclicArr.chpl__serialize() {
+proc CyclicArr.chpl__serialize()
+    where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 
@@ -947,9 +931,8 @@ proc CyclicArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }
 
-pragma "order independent yielding loops"
 iter CyclicArr.these() ref {
-  for i in dom do
+  foreach i in dom do
     yield dsiAccess(i);
 }
 
@@ -974,7 +957,6 @@ proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain) {
   return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
-pragma "order independent yielding loops"
 iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
@@ -1008,10 +990,10 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
 
     if arrSection.locale.id == here.id {
       local {
-        for i in chunk do yield i;
+        foreach i in chunk do yield i;
       }
     } else {
-      for i in chunk do yield i;
+      foreach i in chunk do yield i;
     }
   } else {
     proc accessHelper(i) ref {
@@ -1022,7 +1004,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
       return dsiAccess(i);
     }
 
-    for i in myFollowThisDom {
+    foreach i in myFollowThisDom {
       yield accessHelper(i);
     }
   }

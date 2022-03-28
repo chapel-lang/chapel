@@ -89,14 +89,14 @@ static void hook_debug_trace_exit(struct fid *fid, struct fid *hfid,
 
 	if (ret > 0) {
 		FI_TRACE(hook_to_hprov(fid), subsys, "%s (fid: %p) returned: "
-			 "%zd\n", fn, hfid, ret);
+			 "%zd\n", fn, (void *) hfid, ret);
 		goto out;
 	}
 
 	if (ret != -FI_EAGAIN || !eagain_count ||
 	    !((*eagain_count)++ % HOOK_DEBUG_EAGAIN_LOG))
 		FI_TRACE(hook_to_hprov(fid), subsys, "%s (fid: %p) returned: "
-			 "%zd (%s)\n", fn, hfid, ret, fi_strerror(-ret));
+			 "%zd (%s)\n", fn, (void *) hfid, ret, fi_strerror(-ret));
 out:
 	if (eagain_count && ret != -FI_EAGAIN)
 		*eagain_count = 0;
@@ -105,8 +105,8 @@ out:
 static void
 hook_debug_trace_exit_eq(struct hook_debug_eq *eq, const char *fn, ssize_t ret)
 {
-	return hook_debug_trace_exit(&eq->hook_eq.eq.fid, &eq->hook_eq.heq->fid,
-				     FI_LOG_EQ, fn, ret, &eq->eagain_count);
+	hook_debug_trace_exit(&eq->hook_eq.eq.fid, &eq->hook_eq.heq->fid,
+			      FI_LOG_EQ, fn, ret, &eq->eagain_count);
 }
 
 static void
@@ -143,7 +143,7 @@ static void hook_debug_rx_end(struct hook_debug_ep *ep, char *fn,
 			ep->rx_outs++;
 			FI_TRACE(hook_to_hprov(&ep->hook_ep.ep.fid),
 				 FI_LOG_EP_DATA, "ep: %p rx_outs: %zu\n",
-				 ep->hook_ep.hep, ep->rx_outs);
+				 (void *) ep->hook_ep.hep, ep->rx_outs);
 		} else {
 			rx_entry = mycontext;
 			ofi_buf_free(rx_entry);
@@ -238,7 +238,7 @@ static void hook_debug_tx_end(struct hook_debug_ep *ep, char *fn,
 			ep->tx_outs++;
 			FI_TRACE(hook_to_hprov(&ep->hook_ep.ep.fid),
 				 FI_LOG_EP_DATA, "ep: %p tx_outs: %zu\n",
-				 ep->hook_ep.hep, ep->tx_outs);
+				 (void *) ep->hook_ep.hep, ep->tx_outs);
 		} else {
 			tx_entry = mycontext;
 			ofi_buf_free(tx_entry);
@@ -522,7 +522,7 @@ static void hook_debug_cq_process_entry(struct hook_debug_cq *mycq,
 				rx_entry->ep->rx_outs--;
 				FI_TRACE(hook_to_hprov(&mycq->hook_cq.cq.fid),
 					 FI_LOG_CQ, "ep: %p rx_outs: %zu\n",
-					 rx_entry->ep->hook_ep.hep,
+					 (void *) rx_entry->ep->hook_ep.hep,
 					 rx_entry->ep->rx_outs);
 				ofi_buf_free(rx_entry);
 			}
@@ -535,7 +535,7 @@ static void hook_debug_cq_process_entry(struct hook_debug_cq *mycq,
 			tx_entry->ep->tx_outs--;
 			FI_TRACE(hook_to_hprov(&mycq->hook_cq.cq.fid),
 				 FI_LOG_CQ, "ep: %p tx_outs: %zu\n",
-				 tx_entry->ep->hook_ep.hep,
+				 (void *) tx_entry->ep->hook_ep.hep,
 				 tx_entry->ep->tx_outs);
 			ofi_buf_free(tx_entry);
 		}
@@ -565,7 +565,7 @@ static ssize_t hook_debug_cq_readfrom(struct fid_cq *cq, void *buf, size_t count
 	return ret;
 }
 
-int hook_debug_cq_close(struct fid *fid)
+static int hook_debug_cq_close(struct fid *fid)
 {
 	struct hook_debug_cq *mycq =
 		container_of(fid, struct hook_debug_cq, hook_cq.cq.fid);
@@ -601,11 +601,13 @@ static void hook_debug_cq_attr_log(struct hook_domain *dom,
 	HOOK_DEBUG_TRACE(dom->fabric, FI_LOG_CQ, "\tsignaling_vector: %d\n",
 			 attr->signaling_vector);
 	HOOK_DEBUG_TRACE(dom->fabric, FI_LOG_CQ, "\twait_cond: %s\n", "TBD");
-	HOOK_DEBUG_TRACE(dom->fabric, FI_LOG_CQ, "\twait_set: %p\n", attr->wait_set);
+	HOOK_DEBUG_TRACE(dom->fabric, FI_LOG_CQ, "\twait_set: %p\n",
+			 (void *) attr->wait_set);
 }
 
-int hook_debug_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
-		       struct fid_cq **cq, void *context)
+static int
+hook_debug_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
+		   struct fid_cq **cq, void *context)
 {
 	struct hook_domain *domain = container_of(domain_fid, struct hook_domain,
 						  domain);
@@ -633,7 +635,7 @@ int hook_debug_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 		goto err;
 
 	FI_TRACE(hook_fabric_to_hprov(mycq->hook_cq.domain->fabric), FI_LOG_CQ,
-		 "cq opened, fid: %p\n", &mycq->hook_cq.hcq->fid);
+		 "cq opened, fid: %p\n", (void *) &mycq->hook_cq.hcq->fid);
 
 	mycq->hook_cq.cq.fid.ops = &hook_debug_cq_fid_ops;
 	mycq->hook_cq.cq.ops = &hook_debug_cq_ops;
@@ -667,7 +669,7 @@ static int hook_debug_ep_close(struct fid *fid)
 	return ret;
 }
 
-int hook_debug_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
+static int hook_debug_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 {
 	struct fid *hfid, *hbfid;
 	struct hook_cntr *cntr;
@@ -682,13 +684,14 @@ int hook_debug_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 	case FI_CLASS_CQ:
 		cq = container_of(bfid, struct hook_cq, cq.fid);
 		HOOK_DEBUG_TRACE(cq->domain->fabric, FI_LOG_EP_CTRL,
-				 "cq: %p bind flags: %s\n", cq->hcq,
+				 "cq: %p bind flags: %s\n", (void *) cq->hcq,
 				 fi_tostr(&flags, FI_TYPE_CAPS));
 		break;
 	case FI_CLASS_CNTR:
 		cntr = container_of(bfid, struct hook_cntr, cntr.fid);
 		HOOK_DEBUG_TRACE(cntr->domain->fabric, FI_LOG_EP_CTRL,
-				 "cntr: %p bind flags: %s\n", cntr->hcntr,
+				 "cntr: %p bind flags: %s\n",
+				 (void *) cntr->hcntr,
 				 fi_tostr(&flags, FI_TYPE_CAPS));
 		break;
 	}
@@ -729,8 +732,9 @@ struct fi_ops_tagged hook_debug_tagged_ops = {
 	.injectdata	= hook_debug_tinjectdata,
 };
 
-int hook_debug_endpoint(struct fid_domain *domain, struct fi_info *info,
-			struct fid_ep **ep, void *context)
+static int
+hook_debug_endpoint(struct fid_domain *domain, struct fi_info *info,
+		    struct fid_ep **ep, void *context)
 {
 	struct hook_debug_ep *myep;
 	struct ofi_bufpool_attr bufpool_attr = {
@@ -779,7 +783,7 @@ int hook_debug_endpoint(struct fid_domain *domain, struct fi_info *info,
 		goto err;
 
 	FI_TRACE(hook_to_hprov(&myep->hook_ep.ep.fid), FI_LOG_EP_CTRL,
-		 "endpoint opened, fid: %p\n", &myep->hook_ep.hep->fid);
+		 "endpoint opened, fid: %p\n", (void *) &myep->hook_ep.hep->fid);
 
 	myep->hook_ep.ep.fid.ops = &hook_debug_ep_fid_ops;
 	myep->hook_ep.ep.msg = &hook_debug_msg_ops;
@@ -852,8 +856,9 @@ static int hook_debug_eq_close(struct fid *fid)
 static struct fi_ops_eq hook_debug_eq_ops;
 static struct fi_ops hook_debug_eq_fid_ops;
 
-int hook_debug_eq_open(struct fid_fabric *fabric, struct fi_eq_attr *attr,
-		 struct fid_eq **eq, void *context)
+static int
+hook_debug_eq_open(struct fid_fabric *fabric, struct fi_eq_attr *attr,
+		   struct fid_eq **eq, void *context)
 {
 	struct hook_debug_eq *myeq;
 	int i, ret;
@@ -863,8 +868,10 @@ int hook_debug_eq_open(struct fid_fabric *fabric, struct fi_eq_attr *attr,
 		return -FI_ENOMEM;
 
 	ret = hook_eq_init(fabric, attr, eq, context, &myeq->hook_eq);
-	if (ret)
+	if (ret) {
 		free(myeq);
+		return ret;
+	}
 
 	myeq->hook_eq.eq.ops = &hook_debug_eq_ops;
 	myeq->hook_eq.eq.fid.ops = &hook_debug_eq_fid_ops;
@@ -930,7 +937,7 @@ static int hook_debug_cntr_wait(struct fid_cntr *cntr, uint64_t threshold, int t
 
 	HOOK_DEBUG_TRACE(mycntr->domain->fabric, FI_LOG_CNTR,
 			 "cntr: %p, threshold: %" PRIu64 ", timeout: %d\n",
-			 mycntr->hcntr, threshold, timeout);
+			 (void *) mycntr->hcntr, threshold, timeout);
 
 	ret = fi_cntr_wait(mycntr->hcntr, threshold, timeout);
 
@@ -940,18 +947,18 @@ static int hook_debug_cntr_wait(struct fid_cntr *cntr, uint64_t threshold, int t
 
 static struct fi_ops_cntr hook_debug_cntr_ops;
 
-int hook_debug_cntr_init(struct fid *fid)
+static int hook_debug_cntr_init(struct fid *fid)
 {
 	struct hook_cntr *mycntr = container_of(fid, struct hook_cntr, cntr.fid);
 	HOOK_DEBUG_TRACE(mycntr->domain->fabric, FI_LOG_CNTR,
-			 "fi_cntr_open: %p\n", mycntr->hcntr);
+			 "fi_cntr_open: %p\n", (void *) mycntr->hcntr);
 	mycntr->cntr.ops = &hook_debug_cntr_ops;
 	return 0;
 }
 
 static struct fi_ops_domain hook_debug_domain_ops;
 
-int hook_debug_domain_init(struct fid *fid)
+static int hook_debug_domain_init(struct fid *fid)
 {
 	struct fid_domain *domain = container_of(fid, struct fid_domain, fid);
 	domain->ops = &hook_debug_domain_ops;

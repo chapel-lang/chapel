@@ -1,0 +1,8 @@
+#! /bin/sh
+
+# Use sed(1) to do effectively basename(1) on paths (expr 1) and
+# anonymize line numbers (expr 2).
+sed -e 's,\([^ /]*/\)*,,' \
+    -e 's/\.chpl:[0-9]*/.chpl:N/' < $2 | \
+  sort > $2.tmp-2 && \
+  mv $2.tmp-2 $2

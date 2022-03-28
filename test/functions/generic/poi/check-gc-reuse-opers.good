@@ -1,15 +1,3 @@
-check-gc-reuse-opers.chpl:66: warning: _cast is deprecated syntax for declaring a cast
-note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
-check-gc-reuse-opers.chpl:67: warning: _cast is deprecated syntax for declaring a cast
-note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
-check-gc-reuse-opers.chpl:111: warning: _cast is deprecated syntax for declaring a cast
-note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
-check-gc-reuse-opers.chpl:112: warning: _cast is deprecated syntax for declaring a cast
-note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
-check-gc-reuse-opers.chpl:159: warning: _cast is deprecated syntax for declaring a cast
-note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
-check-gc-reuse-opers.chpl:160: warning: _cast is deprecated syntax for declaring a cast
-note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
 check-gc-reuse-opers.chpl:40: In function 'u1':
 check-gc-reuse-opers.chpl:41: warning: User.u1
 check-gc-reuse-opers.chpl:22: In function 'libIN':

@@ -362,6 +362,10 @@ GSTACK_PATH = @GSTACK_PATH@
 HAVE_INTTYPES_H = @HAVE_INTTYPES_H@
 HAVE_STDINT_H = @HAVE_STDINT_H@
 HAVE_SYS_TYPES_H = @HAVE_SYS_TYPES_H@
+HIP_CFLAGS = @HIP_CFLAGS@
+HIP_LDFLAGS = @HIP_LDFLAGS@
+HIP_LIBS = @HIP_LIBS@
+HIP_guess_prog = @HIP_guess_prog@
 HWLOC_CFLAGS = @HWLOC_CFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -567,6 +571,7 @@ CONDUITMODE_EXTRA_DIST = \
 	gasnet_trace.c
 
 CONDUITMODE_INSTALL_DOCS = \
+	docs/memory_kinds.md  \
 	docs/GASNet-EX.txt
 
 # GASNET_TOOLSONLY_FALSE_END
@@ -650,6 +655,10 @@ recurse_local = $(CONDUITS:%=%-recurse) recurse_local_dummy
 SPECIAL_SUBDIRS = mpi-conduit/contrib
 @TOOLSONLY_MODE_FALSE@TESTDIST = `find . -print | grep -v ^./mpi`
 @TOOLSONLY_MODE_TRUE@TESTDIST = README testtools.c test.h Makefile.in
+@TOOLSONLY_MODE_FALSE@GIT_DESCRIBE_DIRTY = --dirty
+# A tools-only git clone is *always* dirty, but we don't want to see the
+# string '-dirty' in version info of distributed tarballs and resuting installs.
+@TOOLSONLY_MODE_TRUE@GIT_DESCRIBE_DIRTY = 
 @USE_PSHM_FALSE@PSHM_CONFIG_FLAG = 
 
 # If we've enabled PSHM, also enabled for 'make distcheck'
@@ -1445,7 +1454,7 @@ dist-hook:
            exit 1 ; \
         fi
 	if test -d $(srcdir)/.git ; then \
-	  GASNET_DESC=`( cd $(srcdir) && $${GIT=git} describe --long --dirty --always ) 2>/dev/null | head -n 1`; \
+	  GASNET_DESC=`( cd $(srcdir) && $${GIT=git} describe --long --always $(GIT_DESCRIBE_DIRTY) ) 2>/dev/null | head -n 1`; \
 	  if test -z "$$GASNET_DESC"; then \
 	    echo 'Use of git describe failed even though .git exists' 1>&2; \
 	    exit 1;                        \

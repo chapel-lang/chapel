@@ -1,6 +1,6 @@
-use SysCTypes;
+use CTypes;
 
-extern proc sizeof(e): size_t;
+extern proc sizeof(e): c_size_t;
 
 writeln("sizes of bool literals");
 writeln(sizeof(true:bool(8)));

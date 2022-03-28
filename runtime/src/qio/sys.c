@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,15 +92,76 @@
 
 #endif
 
-
+// to use qthread sys calls when available
+#ifdef QTHREAD_VERSION
+#include <qthread/qt_syscalls.h>
+#endif
 
 // Should be available in sys_xsi_strerror_r.c
 extern int sys_xsi_strerror_r(int errnum, char* buf, size_t buflen);
 
-void sys_init_sys_sockaddr(sys_sockaddr_t* addr)
+void sys_init_sys_sockaddr_t(sys_sockaddr_t* addr)
 {
   memset(addr, 0, sizeof(sys_sockaddr_t));
   addr->len = sizeof(sys_sockaddr_storage_t);
+}
+
+int sys_getsockaddr_family(sys_sockaddr_t* addr){
+  return addr->addr.ss_family;
+}
+
+int sys_set_sys_sockaddr_t(sys_sockaddr_t* addr, const char* host, u_int16_t port, int family)
+{
+  if(family == AF_INET){
+    struct sockaddr_in *addr_inet = (struct sockaddr_in *)&addr->addr;
+    addr_inet->sin_family = AF_INET;
+    addr_inet->sin_port = htons(port);
+    return inet_aton(host, &addr_inet->sin_addr);
+  }
+  else if(family == AF_INET6){
+    struct sockaddr_in6 *addr_inet6 = (struct sockaddr_in6 *)&addr->addr;
+    addr_inet6->sin6_family = AF_INET6;
+    addr_inet6->sin6_port = htons(port);
+    return inet_pton(AF_INET6, host, &addr_inet6->sin6_addr);
+  }
+
+  return 0;
+}
+
+void sys_set_sys_sockaddr_in_t(sys_sockaddr_t* addr, sys_in_addr_t host, u_int16_t port)
+{
+  struct sockaddr_in *addr_inet = (struct sockaddr_in *)&addr->addr;
+  addr_inet->sin_family = AF_INET;
+  addr_inet->sin_port = htons(port);
+  addr_inet->sin_addr.s_addr = htonl(host);
+}
+
+void sys_set_sys_sockaddr_in6_t(sys_sockaddr_t* addr, sys_in6_addr_t host, u_int16_t port)
+{
+  struct sockaddr_in6 *addr_inet6 = (struct sockaddr_in6 *)&addr->addr;
+  addr_inet6->sin6_family = AF_INET6;
+  addr_inet6->sin6_port = htons(port);
+  addr_inet6->sin6_addr = host;
+}
+
+int sys_host_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, socklen_t hostlen, int* length){
+  err_t err_out = 0;
+
+  err_out = getnameinfo((struct sockaddr *)&addr->addr, addr->len, host, hostlen, NULL, 0, NI_NUMERICHOST);
+
+  *length = strlen(host);
+  return err_out;
+}
+
+int sys_port_sys_sockaddr_t(sys_sockaddr_t* addr, uint16_t* numericport){
+  err_t err_out = 0;
+
+  char port[NI_MAXSERV];
+  err_out = getnameinfo((struct sockaddr *)&addr->addr, addr->len, NULL, 0, port, sizeof(port), NI_NUMERICSERV);
+
+  *numericport = atoi(port);
+
+  return err_out;
 }
 
 // -------------------  system call wrappers -----------------------------
@@ -350,7 +411,6 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
   char* buf = NULL;
   char* newbuf;
   const char* errmsg;
-  int got;
   err_t err_out;
 
   err_out = 0;
@@ -375,18 +435,16 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
       return ENOMEM;
     }
     buf = newbuf;
-    got = sys_xsi_strerror_r(error, buf, buf_sz);
-    if( got == 0 ) break;
-    if( got == -1 && errno != ERANGE ) {
-      err_out = errno;
-      break;
-    }
-    buf_sz *= 2; // try again with a bigger buffer.
+    err_out = sys_xsi_strerror_r(error, buf, buf_sz);
+    if (err_out == 0) break;
+    if (err_out != ERANGE) break;
+    // otherwise, the error was ERANGE so try again with a bigger buffer
+    buf_sz *= 2;
   }
 
   // maybe it's a EAI/gai error, which we add GAI_ERROR_OFFSET to.
 #ifdef HAS_GETADDRINFO
-  if( got == -1 && err_out == EINVAL ) {
+  if( err_out == EINVAL ) {
     const char* gai_str;
     int len;
     gai_str = gai_strerror(error - GAI_ERROR_OFFSET);
@@ -653,6 +711,11 @@ err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
   qio_free(lum);
 
   return err;
+}
+#else
+err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
+{
+  return ENOSYS;
 }
 #endif
 
@@ -1372,7 +1435,8 @@ err_t sys_accept(fd_t sockfd, sys_sockaddr_t* addr_out, fd_t* fd_out)
 
   STARTING_SLOW_SYSCALL;
 
-  got = accept(sockfd, (struct sockaddr*) & addr_out->addr, &addr_len);
+  got = accept(sockfd, (struct sockaddr *)&addr_out->addr, &addr_len);
+
   if( got != -1 ) {
     if( addr_len > (socklen_t) sizeof(sys_sockaddr_storage_t) ) {
       fprintf(stderr, "Warning: address truncated in sys_accept\n");
@@ -1416,7 +1480,8 @@ err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr)
 
   STARTING_SLOW_SYSCALL;
 
-  got = connect(sockfd, (const struct sockaddr*) & addr->addr, addr->len);
+  got = connect(sockfd, (const struct sockaddr *)&addr->addr, addr->len);
+
   if( got != -1 ) {
     err_out = 0;
   } else {
@@ -1466,6 +1531,7 @@ int sys_getaddrinfo_flags(sys_addrinfo_ptr_t a) {return a->ai_flags;}
 int sys_getaddrinfo_family(sys_addrinfo_ptr_t a) {return a->ai_family;}
 int sys_getaddrinfo_socktype(sys_addrinfo_ptr_t a) {return a->ai_socktype;}
 int sys_getaddrinfo_protocol(sys_addrinfo_ptr_t a) {return a->ai_protocol;}
+socklen_t sys_getaddrinfo_addrlen(sys_addrinfo_ptr_t a) {return a->ai_addrlen;}
 sys_sockaddr_t sys_getaddrinfo_addr(sys_addrinfo_ptr_t a) {
   sys_sockaddr_t ret;
   qio_memcpy(&ret.addr, a->ai_addr, a->ai_addrlen);
@@ -1474,10 +1540,9 @@ sys_sockaddr_t sys_getaddrinfo_addr(sys_addrinfo_ptr_t a) {
 }
 sys_addrinfo_ptr_t sys_getaddrinfo_next(sys_addrinfo_ptr_t a) {return a->ai_next;}
 
-void sys_freeaddr_info(sys_addrinfo_ptr_t *p)
+void sys_freeaddrinfo(sys_addrinfo_ptr_t p)
 {
-  freeaddrinfo(*p);
-  *p = NULL;
+  freeaddrinfo(p);
 }
 
 err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_out, int flags)
@@ -1807,45 +1872,62 @@ err_t sys_socketpair(int domain, int type, int protocol, fd_t* sockfd_out_a, fd_
 extern void chpl_task_yield(void);
 
 err_t sys_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout, int* nset) {
-
   int got_nset;
   err_t err_out = 0;
-  struct timeval deadline;
-  struct timeval now;
-  struct timeval real_timeout;
-  long wait_usec = 5;
 
-  if (timeout != NULL) {
-    gettimeofday(&deadline, NULL);
-    deadline.tv_sec += timeout->tv_sec;
-    deadline.tv_usec += timeout->tv_usec;
-    if (deadline.tv_usec > 1000000) {
-      deadline.tv_sec++;
-      deadline.tv_usec -= 1000000;
+  struct timeval first_timeout;
+  struct timeval second_timeout = {0};
+  if(timeout != NULL) {
+    second_timeout = *timeout;
+  }
+
+  first_timeout.tv_sec = 0;
+  // 64 milliseconds allows instantaneous connections whereas 32000 doesn't
+  // and is small enough to not block process for longtime
+  first_timeout.tv_usec = 64000;
+
+  // calculate available timeout
+  if (timeout != NULL){
+    first_timeout.tv_usec = (second_timeout.tv_usec > 64000 || second_timeout.tv_sec >= 1) ? 64000 : second_timeout.tv_usec;
+
+    second_timeout.tv_usec -= first_timeout.tv_usec;
+    if(second_timeout.tv_usec < 0){
+      second_timeout.tv_sec -= 1;
+      second_timeout.tv_usec += 1000000;
     }
-  } else if (timeout->tv_sec == 0) {
-    if (timeout->tv_usec < wait_usec)
-      wait_usec = timeout->tv_usec;
   }
 
-  real_timeout.tv_sec = 0;
-  real_timeout.tv_usec = wait_usec;
+  // create new fd_sets otherwise original will be overwritten
+  fd_set temp_readfds, temp_writefds, temp_exceptfds;
+  FD_ZERO(&temp_readfds);
+  FD_ZERO(&temp_writefds);
+  FD_ZERO(&temp_exceptfds);
+  if(readfds != NULL)
+    temp_readfds = *readfds;
+  if(writefds != NULL)
+    temp_writefds = *writefds;
+  if(exceptfds != NULL)
+    temp_exceptfds = *exceptfds;
 
-  while (1) {
-    // It would be nicer if the tasking layer supported a select
-    // call and knew to wait in the select call if no task was waiting
-    got_nset = select(nfds, readfds, writefds, exceptfds, &real_timeout);
-    if (got_nset == -1) err_out = errno; // save error
-    if (got_nset != 0) break; // exit loop if something happened
-#ifndef CHPL_RT_UNIT_TEST
-    chpl_task_yield();
+  got_nset = select(nfds, &temp_readfds, &temp_writefds, &temp_exceptfds, &first_timeout);
+  if (got_nset == -1) err_out = errno; // save error
+
+  // check for error/success else check if first_timeout subtracted all the timeout.
+  if(got_nset != 0 || (timeout != NULL && second_timeout.tv_sec == 0 && second_timeout.tv_usec == 0)){
+    *nset = got_nset;
+    return err_out;
+  }
+
+  struct timeval* second_timeout_ptr = NULL;
+  if (timeout != NULL)
+    second_timeout_ptr = &second_timeout;
+
+#if defined(QTHREAD_VERSION) && !defined(CHPL_RT_UNIT_TEST)
+  got_nset = qt_select(nfds, readfds, writefds, exceptfds, second_timeout_ptr);
+#else
+  got_nset = select(nfds, readfds, writefds, exceptfds, second_timeout_ptr);
 #endif
-    gettimeofday(&now, NULL);
-    if (now.tv_sec > deadline.tv_sec ||
-        (now.tv_sec == deadline.tv_sec && now.tv_usec > deadline.tv_usec))
-      break;
-  }
-
+  if (got_nset == -1) err_out = errno; // save error
   *nset = got_nset;
   return err_out;
 }

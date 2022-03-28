@@ -1,0 +1,6 @@
+InferredConstRefResourceMutation.chpl:14: error: cannot determine storage for 'myResource' due to multiple return intents for 'man.enterThis()'
+InferredConstRefResourceMutation.chpl:14: note: specify an explicit storage (e.g., 'const ref') to disambiguate
+InferredConstRefResourceMutation.chpl:4: note: return by 'const ref' defined here
+InferredConstRefResourceMutation.chpl:3: note: return by 'value' defined here
+InferredConstRefResourceMutation.chpl:21: error: cannot determine storage for 'myResource' due to multiple return intents for 'man.enterThis()'
+InferredConstRefResourceMutation.chpl:21: note: specify an explicit storage (e.g., 'const ref') to disambiguate

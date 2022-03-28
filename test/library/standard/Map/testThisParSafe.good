@@ -1,0 +1,2 @@
+testThisParSafe.chpl:5: In function 'test':
+testThisParSafe.chpl:9: error: cannot index into a map initialized with `parSafe=true`

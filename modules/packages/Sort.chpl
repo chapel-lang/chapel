@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -91,7 +91,7 @@ themselves like so:
 
 .. code-block:: chapel
 
-  proc op<(a: returnType, b: returnType): bool {
+  operator <(a: returnType, b: returnType): bool {
     ...
   }
 
@@ -254,7 +254,7 @@ module Sort {
 
   private use List;
   private use Reflection;
-  private use CPtr;
+  private use CTypes;
 
 /* Module-defined comparators */
 
@@ -428,6 +428,12 @@ Sort the elements in a 1D rectangular array.  The choice of sorting
 algorithm used is made by the implementation.
 
 .. note::
+
+  This function does not run a stable sort. Elements that compare
+  the same can be rearranged by this call.
+
+.. note::
+
   This function currently either uses a parallel radix sort or a serial
   quickSort. The algorithms used will change over time.
 
@@ -475,7 +481,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 pragma "no doc"
 /* Error message for multi-dimension arrays */
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 || !isRectangularArr(Data) {
+  where Dom.rank != 1 || !Data.isRectangular() {
     compilerError("sort() is currently only supported for 1D rectangular arrays");
 }
 
@@ -493,7 +499,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   chpl_check_comparator(comparator, eltType);
 
-  const stride = if Dom.stridable then abs(Dom.stride) else 1;
+  const stride = if Dom.stridable then abs(Dom.stride) else 1:Dom.idxType;
   var sorted = true;
   forall (element, i) in zip(Data, Dom) with (&& reduce sorted) {
     if i > Dom.alignedLow {
@@ -1241,7 +1247,7 @@ module QuickSort {
         var mid = lo + (hi - lo + 1) / 2;
         var piv = mid;
 
-        if hi - lo < 0 { // minlen {
+        if hi - lo < minlen {
           // base case -- use insertion sort
           InsertionSort.insertionSortMoveElts(Data, comparator=comparator, lo, hi);
           return;
@@ -1377,7 +1383,7 @@ module ShellSort {
 pragma "no doc"
 module SampleSortHelp {
   private use Sort;
-  private use CPtr;
+  private use CTypes;
 
   param maxLogBuckets = 8; // not counting equality buckets.
   param classifyUnrollFactor = 7;
@@ -1504,7 +1510,6 @@ module SampleSortHelp {
       return bk - (if equalBuckets then 2*numBuckets else numBuckets);
     }
     // yields (index, bucket index) for A[start_n..end_n]
-    pragma "not order independent yielding loops"
     iter classify(A, start_n, end_n, criterion, startbit) {
       const paramEqualBuckets = equalBuckets;
       const paramLogBuckets = logBuckets;
@@ -1816,7 +1821,6 @@ module RadixSortHelp {
     }
 
     // yields (index, bucket index) for A[start_n..end_n]
-    pragma "not order independent yielding loops"
     iter classify(A, start_n, end_n, criterion, startbit) {
       var cur = start_n;
       while cur <= end_n-(classifyUnrollFactor-1) {
@@ -1835,8 +1839,8 @@ module RadixSortHelp {
 
 pragma "no doc"
 module ShallowCopy {
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
+
 
   // The shallowCopy / shallowSwap code needs to be able to copy/swap
   // _array records. But c_ptrTo on an _array will return a pointer to
@@ -1904,7 +1908,7 @@ module ShallowCopy {
 
   // TODO: These shallowCopy functions should handle Block,Cyclic arrays
   inline proc shallowCopy(ref A, dst, src, nElts) {
-    use SysCTypes;
+
     // Ideally this would just be
     //A[dst..#nElts] = A[src..#nElts];
 
@@ -1916,21 +1920,21 @@ module ShallowCopy {
 
     if A._instance.isDefaultRectangular() {
       type st = __primitive("static field type", A._value, "eltType");
-      var size = (nElts:size_t)*c_sizeof(st);
+      var size = (nElts:c_size_t)*c_sizeof(st);
       c_memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ A, {dst..#nElts},
                                        /*src*/ A, {src..#nElts});
       if !ok {
         halt("bulk transfer failed in sorting");
-        for i in vectorizeOnly(0..#nElts) {
+        foreach i in 0..#nElts {
           __primitive("=", A[dst+i], A[src+i]);
         }
       }
     }
   }
   inline proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
-    use SysCTypes;
+
     // Ideally this would just be
     //DstA[dst..#nElts] = SrcA[src..#nElts];
 
@@ -1943,20 +1947,20 @@ module ShallowCopy {
     if DstA._instance.isDefaultRectangular() &&
        SrcA._instance.isDefaultRectangular() {
       type st = __primitive("static field type", DstA._value, "eltType");
-      var size = (nElts:size_t)*c_sizeof(st);
+      var size = (nElts:c_size_t)*c_sizeof(st);
       c_memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ DstA, {dst..#nElts},
                                        /*src*/ SrcA, {src..#nElts});
       if !ok {
         halt("bulk transfer failed in sorting");
-        for i in vectorizeOnly(0..#nElts) {
+        foreach i in 0..#nElts {
           __primitive("=", DstA[dst+i], SrcA[src+i]);
         }
       }
     }
   }
-  proc shallowCopyPutGetRefs(ref dst, const ref src, numBytes: size_t) {
+  proc shallowCopyPutGetRefs(ref dst, const ref src, numBytes: c_size_t) {
     if dst.locale.id == here.id {
       __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes);
     } else if src.locale.id == here.id {
@@ -1969,7 +1973,7 @@ module ShallowCopy {
   // For the case in which we know that the source and dest regions
   // are contiguous within a locale
   proc shallowCopyPutGet(ref DstA, dst, const ref SrcA, src, nElts) {
-    var size = (nElts:size_t)*c_sizeof(DstA.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
     shallowCopyPutGetRefs(DstA[dst], SrcA[src], size);
   }
 }
@@ -2156,20 +2160,18 @@ module TwoArrayPartitioning {
       return lastLocaleId - firstLocaleId + 1;
     }
     // yields tuples of (loc, tid) for the locales involved with this bucket
-    pragma "order independent yielding loops"
     iter localeAndIds(A) {
       const ref tgtLocs = A.targetLocales();
-      for tid in firstLocaleId..lastLocaleId {
+      foreach tid in firstLocaleId..lastLocaleId {
         const loc = tgtLocs[tid];
         yield (loc, tid);
       }
     }
     // yield the other ids but do so in an order that depends on myId
     //  myId + 1 will be the first id.
-    pragma "order independent yielding loops"
     iter otherIds(myId) {
       const nIds = lastLocaleId-firstLocaleId+1;
-      for i in 1..#nIds {
+      foreach i in 1..#nIds {
         yield firstLocaleId + ((myId + i) % nIds);
       }
     }
@@ -2208,9 +2210,8 @@ module TwoArrayPartitioning {
     }
     // yield (loc, locId, task) for each non-empty bucket
     // loc is the locale "owning" the bucket.
-    pragma "order independent yielding loops"
     iter localesAndTasks(A) {
-      for t in tasks {
+      foreach t in tasks {
         const locId = t.firstLocaleId;
         const loc = A.targetLocales()[locId];
         yield (loc, locId, t);
@@ -2357,7 +2358,7 @@ module TwoArrayPartitioning {
         counts[bin] += 1;
       }
       // Now store the counts into the global counts array
-      for bin in vectorizeOnly(0..#nBuckets) {
+      foreach bin in 0..#nBuckets {
         state.globalCounts[bin*nTasks + tid] = counts[bin];
       }
     }
@@ -3195,7 +3196,7 @@ module TwoArraySampleSort {
   private use super.SampleSortHelp;
   private use super.RadixSortHelp;
 
-  private use CPtr;
+  private use CTypes;
 
   proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
 

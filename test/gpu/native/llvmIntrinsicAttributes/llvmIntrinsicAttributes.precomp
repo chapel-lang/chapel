@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+TARGET_CC=`$CHPL_HOME/util/printchplenv --all | sed -ne 's/ *CHPL_TARGET_CC: //p' | sed -e 's/ *[*+]*$//'`
+
+$TARGET_CC -S -emit-llvm llvmIntrinsicAttributes.cu --cuda-gpu-arch=sm_60 -L/global/opt/nvidia/cuda-11.0/lib64/ -lcudart_static -pthread
+
+# We're expecting to see the following declaration for the intrinsic to get 
+# a thread ID from the CUDA kernel.  I'm locking down that this intrinsic has
+# id #2 as I use this id to later search for the attributes on the intrinsic.
+#
+# declare i32 @llvm.nvvm.read.ptx.sreg.tid.x() #2
+#
+# We generate a good file that includes the declaration line and the line for
+# the attributes on that declaration.
+
+CLANG_IR_DUMP_FILE="llvmIntrinsicAttributes-cuda-nvptx64-nvidia-cuda-sm_60.ll"
+grep "declare i32 @llvm.nvvm.read.ptx.sreg.tid.x() #2" $CLANG_IR_DUMP_FILE > llvmIntrinsicAttributes.good
+grep "attributes #2" $CLANG_IR_DUMP_FILE >> llvmIntrinsicAttributes.good

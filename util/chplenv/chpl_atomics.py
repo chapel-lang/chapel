@@ -43,7 +43,7 @@ def get(flag='target'):
             # For pgi or 32-bit platforms with an older gcc, we fall back to
             # locks
             if compiler_val in ['gnu', 'cray-prgenv-gnu', 'mpi-gnu']:
-                version = get_compiler_version('gnu')
+                version = get_compiler_version(flag)
                 if version >= CompVersion('5.0'):
                     atomics_val = 'cstdlib'
                 elif version >= CompVersion('4.8'):
@@ -57,7 +57,7 @@ def get(flag='target'):
             elif compiler_val in ['allinea', 'cray-prgenv-allinea']:
                 atomics_val = 'cstdlib'
             elif compiler_val == 'clang':
-                if has_std_atomics(compiler_val):
+                if has_std_atomics():
                     atomics_val = 'cstdlib'
                 else:
                     atomics_val = 'intrinsics'

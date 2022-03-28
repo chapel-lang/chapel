@@ -43,7 +43,6 @@ _chpl ()
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
---compiler-library-parser \
 --copy-elision \
 --copy-propagation \
 --copyright \
@@ -58,6 +57,9 @@ _chpl ()
 --div-by-zero-checks \
 --dynamic \
 --dynamic-auto-local-access \
+--dyno \
+--dyno-break-on-hash \
+--dyno-debug-trace \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -71,6 +73,8 @@ _chpl ()
 --gdb \
 --gen-ids \
 --gmp \
+--gpu-arch \
+--gpu-block-size \
 --hdr-search-path \
 --help \
 --help-env \
@@ -96,6 +100,7 @@ _chpl ()
 --inline-iterators \
 --inline-iterators-yield-limit \
 --instantiate-max \
+--interleave-memory \
 --interprocedural-alias-analysis \
 --launcher \
 --ldflags \
@@ -152,7 +157,6 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
---no-compiler-library-parser \
 --no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
@@ -164,6 +168,8 @@ _chpl ()
 --no-devel \
 --no-div-by-zero-checks \
 --no-dynamic-auto-local-access \
+--no-dyno \
+--no-dyno-debug-trace \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
@@ -184,6 +190,7 @@ _chpl ()
 --no-infer-local-fields \
 --no-inline \
 --no-inline-iterators \
+--no-interleave-memory \
 --no-interprocedural-alias-analysis \
 --no-library-ml-debug \
 --no-lifetime-checking \
@@ -256,6 +263,7 @@ _chpl ()
 --output \
 --overload-sets-checks \
 --override-checking \
+--parallel-make \
 --parse-only \
 --parser-debug \
 --permit-unhandled-module-errors \
@@ -338,6 +346,7 @@ _chpl ()
 -O \
 -g \
 -h \
+-j \
 -l \
 -o \
 -s"

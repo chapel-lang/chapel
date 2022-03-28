@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,7 +20,7 @@
 
 #include "astlocs.h"
 
-#include "chpl/frontend/frontend-queries.h" // for locateID
+#include "chpl/parsing/parsing-queries.h" // for locateId
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -57,7 +57,7 @@ int astlocT::compare(const astlocT& other) const {
 void astlocT::convertIdToFileLine(const char*& filename, int& lineno) const {
   if (!this->id_.isEmpty()) {
     // figure out the location from the ID
-    chpl::Location loc = chpl::frontend::locateID(gContext, this->id_);
+    chpl::Location loc = chpl::parsing::locateId(gContext, this->id_);
     filename = astr(loc.path().c_str());
     lineno = loc.line();
   } else {
@@ -96,6 +96,13 @@ astlocMarker::astlocMarker(int lineno, const char* filename)
   : previousAstLoc(currentAstLoc)
 {
   currentAstLoc = astlocT(lineno, astr(filename));
+}
+
+// constructor, for compiler/next Locations
+astlocMarker::astlocMarker(chpl::Location location)
+  : previousAstLoc(currentAstLoc)
+{
+  currentAstLoc = astlocT(location.line(), astr(location.path().c_str()));
 }
 
 // destructor, invoked upon leaving SET_LINENO's scope

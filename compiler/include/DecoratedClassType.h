@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,13 +45,13 @@
 ************************************** | *************************************/
 
 
-const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className);
+const char* decoratedTypeAstr(ClassTypeDecoratorEnum d, const char* className);
 
 class DecoratedClassType final : public Type {
 
 public:
                           DecoratedClassType(AggregateType* cls,
-                                             ClassTypeDecorator d);
+                                             ClassTypeDecoratorEnum d);
                          ~DecoratedClassType() override = default;
 
   void                    accept(AstVisitor* visitor) override;
@@ -72,13 +72,13 @@ public:
   }
 
   bool                    isBorrowed() const {
-    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_BORROWED;
+    return isDecoratorBorrowed(decorator);
   }
   bool                    isUnmanaged() const {
-    return (decorator & CLASS_TYPE_MANAGEMENT_MASK) == CLASS_TYPE_UNMANAGED;
+    return isDecoratorUnmanaged(decorator);
   }
 
-  ClassTypeDecorator      getDecorator() const {
+  ClassTypeDecoratorEnum  getDecorator() const {
     return decorator;
   }
 
@@ -87,7 +87,7 @@ private:
   // or to dtOwned/dtShared/etc
   // (dtBorrowed and dtUnmanaged are handled elsewhere)
   AggregateType*              canonicalClass;
-  ClassTypeDecorator          decorator;
+  ClassTypeDecoratorEnum      decorator;
 };
 
 bool classesWithSameKind(Type* a, Type* b);
@@ -100,8 +100,8 @@ Type* canonicalDecoratedClassType(Type* t);
 // and for managed types like owned SomeClass?, returns SomeClass.
 Type* canonicalClassType(Type* t);
 
-Type* getDecoratedClass(Type* t, ClassTypeDecorator d);
-ClassTypeDecorator classTypeDecorator(Type* t);
+Type* getDecoratedClass(Type* t, ClassTypeDecoratorEnum d);
+ClassTypeDecoratorEnum classTypeDecorator(Type* t);
 bool isNonNilableClassType(Type* t);
 bool isNilableClassType(Type* t);
 

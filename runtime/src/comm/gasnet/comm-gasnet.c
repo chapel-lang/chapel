@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -792,6 +792,21 @@ static void stop_polling(chpl_bool wait) {
   }
 }
 
+static void setup_ibv(void) {
+#if defined(GASNET_CONDUIT_IBV)
+  // Quiet warnings about not having enough firehose regions. By default gasnet
+  // sets this to a fraction of how many pinned regions the hardware supports
+  // where that fraction comes from how much memory can be pinned/registered
+  // (GASNET_PHYSMEM_MAX) divided by the amount of physical memory. On systems
+  // with a high amount of memory this can result in artificially lowering the
+  // number of regions, so here we just tell gasnet to give us 95% of them.
+  chpl_env_set("GASNET_PINNED_REGIONS_MAX", "0.95", 0);
+  // Quiet multi-rail warnings until we can address
+  // https://github.com/chapel-lang/chapel/issues/18255
+  chpl_env_set("GASNET_IBV_PORTS_VERBOSE", "0", 0);
+#endif
+}
+
 static void set_max_segsize_env_var(size_t size) {
   chpl_env_set_uint("GASNET_MAX_SEGSIZE", size, 1);
 }
@@ -835,6 +850,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   set_max_segsize();
   set_num_comm_domains();
+  setup_ibv();
   setup_polling();
 
   assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));
@@ -915,6 +931,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 
+  // not supported on this platform
+  chpl_set_num_locales_on_node(1);
 }
 
 void chpl_comm_post_mem_init(void) {
@@ -1036,13 +1054,9 @@ void chpl_comm_broadcast_private(int id, size_t size) {
   chpl_mem_free(done, 0, 0);
 }
 
-void chpl_comm_barrier(const char *msg) {
+void chpl_comm_impl_barrier(const char *msg) {
   int id = (int) msg[0];
   int retval;
-
-#ifdef CHPL_COMM_DEBUG
-  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
-#endif
 
   //
   // We don't want to just do a gasnet_barrier_wait() here, because
@@ -1083,8 +1097,11 @@ void chpl_comm_pre_task_exit(int all) {
 void chpl_comm_exit(int all, int status) {
   stop_polling(/*wait*/ false);
 
-  if (all)
-    chpl_comm_barrier("exit_comm_gasnet");
+  if (all) {
+    // chpl_comm_barrier needs the tasking layer (for cache fence) and since
+    // it's shutdown already just directly call the barrier impl.
+    chpl_comm_impl_barrier("exit_comm_gasnet");
+  }
 
   gasnet_exit(status);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,7 +47,7 @@ exception will be generated.
 pragma "module included by default"
 module Math {
   import HaltWrappers;
-  private use SysCTypes;
+  private use CTypes;
 
   //////////////////////////////////////////////////////////////////////////
   // Constants (included in chpldocs)
@@ -459,11 +459,11 @@ module Math {
   }
 
   /* Returns the projection of `z` on a Riemann sphere. */
-  inline proc cproj(z: complex(?w)): real(w/2) {
+  inline proc cproj(z: complex(?w)): complex(w) {
     pragma "fn synchronization free"
-    extern proc cprojf(z: complex(64)): real(32);
+    extern proc cprojf(z: complex(64)): complex(64);
     pragma "fn synchronization free"
-    extern proc cproj(z: complex(128)): real(64);
+    extern proc cproj(z: complex(128)): complex(128);
     if w == 64 then
       return cprojf(z);
     else
@@ -902,7 +902,7 @@ module Math {
 
      :rtype: The type of `x`.
    */
-  inline proc max(x, y) {
+  inline proc max(x, y) where !isArray(x) && !isArray(y) {
     if isAtomic(x) || isAtomic(y) {
       compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
     }
@@ -933,7 +933,7 @@ module Math {
 
      :rtype: The type of `x`.
    */
-  inline proc min(x, y) {
+  inline proc min(x, y) where !isArray(x) && !isArray(y) {
     if isAtomic(x) || isAtomic(y) {
       compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
     }

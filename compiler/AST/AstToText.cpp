@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -793,7 +793,7 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
 
       else if (var->immediate->const_kind == CONST_KIND_STRING)
       {
-        if (strcmp(var->immediate->v_string, "_dom") == 0)
+        if (strcmp(var->immediate->v_string.c_str(), "_dom") == 0)
           strcpy(imm, "domain");
 
         else if (quoteStrings == true)
@@ -805,14 +805,14 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
           else if (var->immediate->string_kind == STRING_KIND_BYTES)
             *ptr++ = 'b';
           *ptr++ = '"';
-          strcpy(ptr, var->immediate->v_string);
+          strcpy(ptr, var->immediate->v_string.c_str());
           ptr = strchr(ptr, '\0');
           *ptr++ = '"';
           *ptr++ = '\0';
         }
 
         else
-          strcpy(imm, var->immediate->v_string);
+          strcpy(imm, var->immediate->v_string.c_str());
       }
 
       else
@@ -904,7 +904,7 @@ static int opToPrecedence(const char *op, bool unary, bool postfix) {
   // new is precedence 19, but doesn't come through this path.
   if (postfix && (strcmp(op, "?") == 0 || strcmp(op, "!") == 0))
     return 18;
-  else if (strcmp(op, ":") == 0 || op == astr_cast)
+  else if (strcmp(op, ":") == 0)
     return 17;
   else if (strcmp(op, "**") == 0)
     return 16;
@@ -1469,9 +1469,9 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
         if (i > 1)
           mText += ", ";
 
-        if (isSymExpr(expr->get(i)) 
-          && isVarSymbol(toSymExpr(expr->get(i))->symbol()) 
-          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() 
+        if (isSymExpr(expr->get(i))
+          && isVarSymbol(toSymExpr(expr->get(i))->symbol())
+          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate()
           && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
         {
           mText += "\"";
@@ -1776,9 +1776,9 @@ void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType
     if (i > 1)
       mText += ", ";
 
-    if (isSymExpr(expr->get(i)) 
-      && isVarSymbol(toSymExpr(expr->get(i))->symbol()) 
-      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() 
+    if (isSymExpr(expr->get(i))
+      && isVarSymbol(toSymExpr(expr->get(i))->symbol())
+      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate()
       && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
     {
       mText += "\"";

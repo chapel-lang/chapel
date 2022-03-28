@@ -808,6 +808,7 @@ ssize_t psmx2_atomic_write_generic(struct fid_ep *ep,
 	psm2_epid_t psm2_epid;
 	int am_flags = PSM2_AM_FLAG_ASYNC;
 	int chunk_size, len;
+	int err;
 
 	ep_priv = container_of(ep, struct psmx2_fid_ep, ep);
 
@@ -873,9 +874,15 @@ ssize_t psmx2_atomic_write_generic(struct fid_ep *ep,
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	psm2_am_request_short(psm2_epaddr,
-			      PSMX2_AM_ATOMIC_HANDLER, args, 5,
-			      (void *)buf, len, am_flags, NULL, NULL);
+	err = psm2_am_request_short(psm2_epaddr,
+				    PSMX2_AM_ATOMIC_HANDLER, args, 5,
+				    (void *)buf, len, am_flags, NULL, NULL);
+	if (err) {
+		free(req->tmpbuf);
+		psmx2_am_request_free(ep_priv->tx, req);
+		return psmx2_errno(err);
+	}
+
 	psmx2_am_poll(ep_priv->tx);
 	return 0;
 }
@@ -982,9 +989,15 @@ ssize_t psmx2_atomic_writev_generic(struct fid_ep *ep,
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	psm2_am_request_short(psm2_epaddr,
-			      PSMX2_AM_ATOMIC_HANDLER, args, 5,
-			      (void *)buf, len, am_flags, NULL, NULL);
+	err = psm2_am_request_short(psm2_epaddr,
+				    PSMX2_AM_ATOMIC_HANDLER, args, 5,
+				    (void *)buf, len, am_flags, NULL, NULL);
+	if (err) {
+		free(req->tmpbuf);
+		psmx2_am_request_free(ep_priv->tx, req);
+		return psmx2_errno(err);
+	}
+
 	psmx2_am_poll(ep_priv->tx);
 	return 0;
 }
@@ -1097,6 +1110,7 @@ ssize_t psmx2_atomic_readwrite_generic(struct fid_ep *ep,
 	psm2_epid_t psm2_epid;
 	int am_flags = PSM2_AM_FLAG_ASYNC;
 	int chunk_size, len;
+	int err;
 
 	ep_priv = container_of(ep, struct psmx2_fid_ep, ep);
 
@@ -1168,9 +1182,16 @@ ssize_t psmx2_atomic_readwrite_generic(struct fid_ep *ep,
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	psm2_am_request_short(psm2_epaddr,
-			      PSMX2_AM_ATOMIC_HANDLER, args, 5,
-			      (void *)buf, (buf?len:0), am_flags, NULL, NULL);
+	err = psm2_am_request_short(psm2_epaddr,
+				    PSMX2_AM_ATOMIC_HANDLER, args, 5,
+				    (void *)buf, (buf?len:0), am_flags, NULL,
+				    NULL);
+	if (err) {
+		free(req->tmpbuf);
+		psmx2_am_request_free(ep_priv->tx, req);
+		return psmx2_errno(err);
+	}
+
 	psmx2_am_poll(ep_priv->tx);
 	return 0;
 }
@@ -1341,9 +1362,16 @@ ssize_t psmx2_atomic_readwritev_generic(struct fid_ep *ep,
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	psm2_am_request_short(psm2_epaddr,
-			      PSMX2_AM_ATOMIC_HANDLER, args, 5,
-			      (void *)buf, (buf?len:0), am_flags, NULL, NULL);
+	err = psm2_am_request_short(psm2_epaddr,
+				    PSMX2_AM_ATOMIC_HANDLER, args, 5,
+				    (void *)buf, (buf?len:0), am_flags, NULL,
+				    NULL);
+	if (err) {
+		free(req->tmpbuf);
+		psmx2_am_request_free(ep_priv->tx, req);
+		return psmx2_errno(err);
+	}
+
 	psmx2_am_poll(ep_priv->tx);
 	return 0;
 }
@@ -1476,6 +1504,7 @@ ssize_t psmx2_atomic_compwrite_generic(struct fid_ep *ep,
 	psm2_epid_t psm2_epid;
 	int am_flags = PSM2_AM_FLAG_ASYNC;
 	int chunk_size, len;
+	int err;
 
 	ep_priv = container_of(ep, struct psmx2_fid_ep, ep);
 
@@ -1548,10 +1577,16 @@ ssize_t psmx2_atomic_compwrite_generic(struct fid_ep *ep,
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	psm2_am_request_short(psm2_epaddr,
-			      PSMX2_AM_ATOMIC_HANDLER, args, 5,
-			      (void *)buf, len * 2, am_flags,
-			      NULL, NULL);
+	err = psm2_am_request_short(psm2_epaddr,
+				    PSMX2_AM_ATOMIC_HANDLER, args, 5,
+				    (void *)buf, len * 2, am_flags,
+				    NULL, NULL);
+	if (err) {
+		free(req->tmpbuf);
+		psmx2_am_request_free(ep_priv->tx, req);
+		return psmx2_errno(err);
+	}
+
 	psmx2_am_poll(ep_priv->tx);
 	return 0;
 }
@@ -1745,9 +1780,15 @@ ssize_t psmx2_atomic_compwritev_generic(struct fid_ep *ep,
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	psm2_am_request_short(psm2_epaddr,
-			      PSMX2_AM_ATOMIC_HANDLER, args, 5,
-			      buf, len * 2, am_flags, NULL, NULL);
+	err = psm2_am_request_short(psm2_epaddr,
+				    PSMX2_AM_ATOMIC_HANDLER, args, 5,
+				    buf, len * 2, am_flags, NULL, NULL);
+	if (err) {
+		free(req->tmpbuf);
+		psmx2_am_request_free(ep_priv->tx, req);
+		return psmx2_errno(err);
+	}
+
 	psmx2_am_poll(ep_priv->tx);
 	return 0;
 }

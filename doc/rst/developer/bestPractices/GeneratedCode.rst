@@ -1,3 +1,5 @@
+.. _best-practices-generated-code:
+
 =================================
 All About Compiler-Generated Code
 =================================

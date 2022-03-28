@@ -1,0 +1,12 @@
+9C005AC2F8F0
+1 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 1 0 1 1 0 0 0 0 1 0 1 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0
+version = 4
+packet type = 7
+totBitLength = 22
+version = 5
+packet type = 4
+Value = 5
+version = 7
+packet type = 4
+Value = 15
+Final result = 0

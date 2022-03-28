@@ -121,7 +121,7 @@ gex_Event_t gasnete_get_nb(
                      size_t nbytes,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
+  gasneti_assert(! gasnete_mapped_at(tm,rank,src)); // else PSHM/loopback
 
   gasnete_eop_t *eop = gasnete_eop_new(GASNETI_MYTHREAD);
   gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
@@ -142,7 +142,7 @@ gex_Event_t gasnete_put_nb(
                      size_t nbytes, gex_Event_t *lc_opt,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
+  gasneti_assert(! gasnete_mapped_at(tm,rank,dest)); // else PSHM/loopback
   gasnetc_counter_t counter = GASNETC_COUNTER_INITIALIZER;
 
   gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
@@ -195,8 +195,7 @@ extern
 int gasnete_get_nbi (gex_TM_t tm, void *dest, gex_Rank_t rank, void *src,
                      size_t nbytes, gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
-  int ret;
+  gasneti_assert(! gasnete_mapped_at(tm,rank,src)); // else PSHM/loopback
 
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *op = mythread->current_iop;
@@ -204,12 +203,12 @@ int gasnete_get_nbi (gex_TM_t tm, void *dest, gex_Rank_t rank, void *src,
   gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
 
   GASNETC_LOCK_ACQUIRE(GASNETC_LOCK_REGULAR);
-  ret = gasnetc_ucx_putget_inner(
-        0, jobrank, dest, nbytes, src, &op->initiated_get_cnt,
-        op->next ? gasnetc_cb_nar_get : gasnetc_cb_iop_get,
-        NULL, NULL);
+  gasnetc_ucx_putget_inner(0, jobrank, dest, nbytes, src,
+                           &op->initiated_get_cnt,
+                           op->next ? gasnetc_cb_nar_get : gasnetc_cb_iop_get,
+                           NULL, NULL);
   GASNETC_LOCK_RELEASE(GASNETC_LOCK_REGULAR);
-  return ret;
+  return 0;
 }
 
 extern
@@ -217,7 +216,7 @@ int gasnete_put_nbi (gex_TM_t tm, gex_Rank_t rank, void *dest,
                      void *src, size_t nbytes, gex_Event_t *lc_opt,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
+  gasneti_assert(! gasnete_mapped_at(tm,rank,dest)); // else PSHM/loopback
 
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *op = mythread->current_iop;

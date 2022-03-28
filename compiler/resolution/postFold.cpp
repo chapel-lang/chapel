@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-#include "../ifa/prim_data.h"
+#include "../dyno/lib/immediates/prim_data.h"
 
 static Expr* postFoldNormal(CallExpr* call);
 
@@ -50,7 +50,7 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
     if (Immediate* imm = getSymbolImmediate(sym)) {                     \
       Immediate i3;                                                     \
                                                                         \
-      fold_constant(prim, imm, NULL, &i3);                              \
+      fold_constant(gContext, prim, imm, NULL, &i3);                    \
                                                                         \
       retval = new SymExpr(new_ImmediateSymbol(&i3));                   \
                                                                         \
@@ -80,7 +80,7 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
           if (Immediate* rhs = getSymbolImmediate(rhsSym)) {            \
             Immediate i3;                                               \
                                                                         \
-            fold_constant(prim, lhs, rhs, &i3);                         \
+            fold_constant(gContext, prim, lhs, rhs, &i3);               \
                                                                         \
             retval = new SymExpr(new_ImmediateSymbol(&i3));             \
                                                                         \
@@ -407,15 +407,17 @@ static Expr* postFoldPrimop(CallExpr* call) {
     INT_ASSERT(lhs && rhs);
 
     if (lhs->symbol()->isParameter() && rhs->symbol()->isParameter()) {
-      const char* lstr = get_string(lhs);
-      const char* rstr = get_string(rhs);
+      std::string lstr = unescapeString(get_string(lhs), lhs);
+      std::string rstr = unescapeString(get_string(rhs), rhs);
+
+      std::string concat = chpl::quoteStringForC(lstr+rstr);
 
       if (lhs->symbol()->type == dtString) {
-        retval = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+        retval = new SymExpr(new_StringSymbol(astr(concat)));
       } else if (lhs->symbol()->type == dtBytes) {
-        retval = new SymExpr(new_BytesSymbol(astr(lstr, rstr)));
+        retval = new SymExpr(new_BytesSymbol(astr(concat)));
       } else {
-        retval = new SymExpr(new_CStringSymbol(astr(lstr, rstr)));
+        retval = new SymExpr(new_CStringSymbol(astr(concat)));
       }
 
       call->replace(retval);

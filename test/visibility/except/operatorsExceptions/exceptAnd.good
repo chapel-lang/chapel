@@ -1,0 +1,9 @@
+exceptAnd.chpl:5: In function 'main':
+exceptAnd.chpl:8: error: unresolved call '&(owned Foo2, owned Foo2)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: &(a: bool, b: bool)
+exceptAnd.chpl:8: note: because actual argument #1 with type 'owned Foo2'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: bool'
+exceptAnd.chpl:8: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   &(a: int(8), b: int(8))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   &(a: int(16), b: int(16))
+note: and 37 other candidates, use --print-all-candidates to see them

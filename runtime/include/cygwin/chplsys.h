@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,24 +26,24 @@
 #define chplGetPageSize() 4096
 
 // Why do we hardcode the pagesize into the cygwin implementation?
-// 
+//
 // From the Cygwin mailing list archives:
 //
 // On Jun 15 15:09, Dave Korn wrote:
 // > On 15 June 2006 14:56, Ehren Jarosek wrote:
-// > 
+// >
 // > > I don't know if this is something I am doing wrong or an issue.
-// > > 
+// > >
 // > > When compiling under cygwin sysconf(_SC_PAGESIZE) returns 65536 (64k)
 // > > memory page size.  My understanding is that:
-// > > 
+// > >
 // > > sysconf(_SC_PAGESIZE) * sysconf(_SC_PHYS_PAGES)
-// > > 
+// > >
 // > > should yield the total physical memory size of the machine.  However,
 // > > when I do this it yields a very large number (actually overflows my
 // > > long).  However, if I multiply sysconf(_SC_PHYS_PAGES) * 4096 it yields
 // > > the correct size.
-// > 
+// >
 // > Alas there is a problem with the definition of sysconf: it is
 // > supposed to be the size of the unit of granularity of mmap'ing, but
 // > it is also supposed to be the size of a single pageframe of memory.
@@ -83,7 +83,7 @@
 //
 // Corinna
 //
-// -- 
+// --
 // Corinna Vinschen                  Please, send mails regarding Cygwin to
 // Cygwin Project Co-Leader          cygwin AT cygwin DOT com
 // Red Hat

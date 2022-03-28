@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017 Intel Corporation. All rights reserved.
+ * Copyright (c) 2015-2021 Intel Corporation. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -35,10 +35,12 @@
 #include <ofi_prov.h>
 #include "smr.h"
 #include "smr_signal.h"
+#include <ofi_hmem.h>
 
 extern struct sigaction *old_action;
 struct smr_env smr_env = {
 	.sar_threshold = SIZE_MAX,
+	.disable_cma = false,
 };
 
 static void smr_init_env(void)
@@ -46,26 +48,27 @@ static void smr_init_env(void)
 	fi_param_get_size_t(&smr_prov, "sar_threshold", &smr_env.sar_threshold);
 	fi_param_get_size_t(&smr_prov, "tx_size", &smr_info.tx_attr->size);
 	fi_param_get_size_t(&smr_prov, "rx_size", &smr_info.rx_attr->size);
+	fi_param_get_bool(&smr_prov, "disable_cma", &smr_env.disable_cma);
 }
 
 static void smr_resolve_addr(const char *node, const char *service,
 			     char **addr, size_t *addrlen)
 {
-	char temp_name[NAME_MAX];
+	char temp_name[SMR_NAME_MAX];
 
 	if (service) {
 		if (node)
-			snprintf(temp_name, NAME_MAX - 1, "%s%s:%s",
+			snprintf(temp_name, SMR_NAME_MAX - 1, "%s%s:%s",
 				 SMR_PREFIX_NS, node, service);
 		else
-			snprintf(temp_name, NAME_MAX - 1, "%s%s",
+			snprintf(temp_name, SMR_NAME_MAX - 1, "%s%s",
 				 SMR_PREFIX_NS, service);
 	} else {
 		if (node)
-			snprintf(temp_name, NAME_MAX - 1, "%s%s",
+			snprintf(temp_name, SMR_NAME_MAX - 1, "%s%s",
 				 SMR_PREFIX, node);
 		else
-			snprintf(temp_name, NAME_MAX - 1, "%s%d",
+			snprintf(temp_name, SMR_NAME_MAX - 1, "%s%d",
 				 SMR_PREFIX, getpid());
 	}
 
@@ -98,7 +101,8 @@ static int smr_shm_space_check(size_t tx_count, size_t rx_count)
 	shm_size_needed = num_of_core *
 			  smr_calculate_size_offsets(tx_count, rx_count,
 						     NULL, NULL, NULL,
-						     NULL, NULL, NULL);
+						     NULL, NULL, NULL,
+						     NULL);
 	err = statvfs(shm_fs, &stat);
 	if (err) {
 		FI_WARN(&smr_prov, FI_LOG_CORE,
@@ -125,7 +129,7 @@ static int smr_getinfo(uint32_t version, const char *node, const char *service,
 	int ret;
 
 	mr_mode = hints && hints->domain_attr ? hints->domain_attr->mr_mode :
-						FI_MR_VIRT_ADDR;
+						FI_MR_VIRT_ADDR | FI_MR_HMEM;
 	msg_order = hints && hints->tx_attr ? hints->tx_attr->msg_order : 0;
 	fast_rma = smr_fast_rma_enabled(mr_mode, msg_order);
 
@@ -160,12 +164,24 @@ static int smr_getinfo(uint32_t version, const char *node, const char *service,
 			cur->ep_attr->max_order_waw_size = 0;
 			cur->ep_attr->max_order_war_size = 0;
 		}
+		if (cur->caps & FI_HMEM) {
+			if (!(mr_mode & FI_MR_HMEM)) {
+				fi_freeinfo(cur);
+				return -FI_ENODATA;
+			}
+			cur->domain_attr->mr_mode |= FI_MR_HMEM;
+		} else {
+			cur->domain_attr->mr_mode &= ~FI_MR_HMEM;
+		}
 	}
 	return 0;
 }
 
 static void smr_fini(void)
 {
+#if HAVE_SHM_DL
+	ofi_hmem_cleanup();
+#endif
 	smr_cleanup();
 	free(old_action);
 }
@@ -187,6 +203,9 @@ struct util_prov smr_util_prov = {
 
 SHM_INI
 {
+#if HAVE_SHM_DL
+	ofi_hmem_init();
+#endif
 	fi_param_define(&smr_prov, "sar_threshold", FI_PARAM_SIZE_T,
 			"Max size to use for alternate SAR protocol if CMA \
 			 is not available before switching to mmap protocol \
@@ -197,6 +216,8 @@ SHM_INI
 	fi_param_define(&smr_prov, "rx_size", FI_PARAM_SIZE_T,
 			"Max number of outstanding rx operations \
 			 Default: 1024");
+	fi_param_define(&smr_prov, "disable_cma", FI_PARAM_BOOL,
+			"Manually disables CMA. Default: false");
 
 	smr_init_env();
 

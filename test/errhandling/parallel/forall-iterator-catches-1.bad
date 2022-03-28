@@ -1,0 +1,3 @@
+before forall block
+myiter caught TaskErrors: 2 errors: Error:  ... Error: 
+after forall block

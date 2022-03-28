@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,8 +35,7 @@
 
 module DateTime {
   import HaltWrappers;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;
@@ -90,6 +89,7 @@ module DateTime {
   }
 
   private proc tm_zoneType type {
+    use ChplConfig;
     if CHPL_TARGET_PLATFORM == "darwin" then
       return c_ptr(c_char); // char *
     else
@@ -417,8 +417,8 @@ module DateTime {
 
   /* Return a formatted `string` matching the `format` argument and the date */
   proc date.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: size_t, format: c_string, ref timeStruct: tm);
-    const bufLen: size_t = 100;
+    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+    const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 
@@ -660,8 +660,8 @@ module DateTime {
 
   /* Return a `string` matching the `format` argument for this `time` */
   proc time.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: size_t, format: c_string, ref timeStruct: tm);
-    const bufLen: size_t = 100;
+    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+    const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 
@@ -1164,61 +1164,26 @@ module DateTime {
     return strftime(year + "-%m-%d" + sep + "%H:%M:%S" + micro + offset);
   }
 
-  /* Create a `datetime` as described by the `date_string` and `format`
-     string. Fields not specified by format will have defaults. This is
-     deprecated. */
-  pragma "no doc"
-  proc type datetime.strptime(date_string: string, format: string = "%a %b %d %H:%M:%S %Y") {
-    compilerWarning("proc type datetype.strptime() is deprecated.\nPlease use proc datetime.strptime() instead.");
-    /* intialization to epoch time */
-    var dt: datetime = new datetime(1970, 1, 1);
-    try! dt.strptime(date_string, format);
-    return dt;
-  }
-
-  /* Modify a `datetime` as described by the `date_string` and `format`
-     string. Fields not specified by format are not modified. */
-  proc ref datetime.strptime(date_string: string, format: string = "%a %b %d %H:%M:%S %Y") throws {
-    extern proc chpl_strptime(buf: c_string, format: c_string, ref ts: tm, ref ms: c_ulong): c_string;
+  /* Create a `datetime` as described by the `date_string` and
+     `format` string.  Note that this routine currently only supports
+     the format strings of C's strptime().
+  */
+  proc type datetime.strptime(date_string: string, format: string) {
+    extern proc strptime(buf: c_string, format: c_string, ref ts: tm);
     var timeStruct: tm;
-
-    timeStruct.tm_year = (chpl_date.year - 1900) : int(32);
-    timeStruct.tm_mon  = (chpl_date.month - 1) : int(32);
-    timeStruct.tm_mday = chpl_date.day : int(32);
-    timeStruct.tm_hour = chpl_time.hour : int(32);
-    timeStruct.tm_min  = chpl_time.minute : int(32);
-    timeStruct.tm_sec  = chpl_time.second : int(32);
-    var microSeconds   = chpl_time.microsecond : c_ulong;
-
-    if tzinfo.borrow() != nil {
-      timeStruct.tm_gmtoff = abs(utcoffset()).seconds: c_long;
-      timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
-      timeStruct.tm_isdst = dst().seconds: int(32);
-    } else {
-      timeStruct.tm_gmtoff = 0;
-      timeStruct.tm_zone = __primitive("cast", tm_zoneType, "".c_str());
-      timeStruct.tm_isdst = -1;
-    }
-
-    const checkNil = chpl_strptime(date_string.c_str(), format.c_str(), timeStruct, microSeconds);
-    if is_c_nil(checkNil) {
-      throw new owned IllegalArgumentError("Invalid Arguments Provided");
-    }
-
-    chpl_date.chpl_year   = timeStruct.tm_year + 1900;
-    chpl_date.chpl_month  = timeStruct.tm_mon + 1;
-    chpl_date.chpl_day    = timeStruct.tm_mday;
-    chpl_time.chpl_hour   = timeStruct.tm_hour;
-    chpl_time.chpl_minute = timeStruct.tm_min;
-    chpl_time.chpl_second = timeStruct.tm_sec;
-    chpl_time.chpl_microsecond = microSeconds : int(64);
-    // TODO: How to handle tm_zone
+    strptime(date_string.c_str(), format.c_str(), timeStruct);
+    return new datetime(timeStruct.tm_year + 1900,
+                        timeStruct.tm_mon + 1,
+                        timeStruct.tm_mday,
+                        timeStruct.tm_hour,
+                        timeStruct.tm_min,
+                        timeStruct.tm_sec);
   }
 
   /* Create a `string` from a `datetime` matching the `format` string */
   proc datetime.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: size_t, format: c_string, ref timeStruct: tm);
-    const bufLen: size_t = 100;
+    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+    const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 
@@ -1243,7 +1208,6 @@ module DateTime {
     timeStruct.tm_yday = (this.replace(tzinfo=nil) - new datetime(year, 1, 1)).days: int(32);
 
     // Iterate over format specifiers in strftime(), replacing %f with microseconds
-    pragma "not order independent yielding loops"
     iter strftok(const ref s: string)
     {
       var per = "";

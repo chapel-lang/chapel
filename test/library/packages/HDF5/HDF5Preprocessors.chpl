@@ -15,7 +15,7 @@ module HDF5Preprocessors {
     const script: string;
 
     override proc preprocess(A: []) {
-      use FileSystem, Path, Spawn;
+      use FileSystem, Path, Subprocess;
 
       try! {
         // opentmp() doesn't seem to give me a file I can get the name of :(
@@ -38,7 +38,7 @@ module HDF5Preprocessors {
         chmod(scriptName, 0o755);
 
         // spawn the script, connect stdin and stdout
-        var sub = spawn([scriptName], stdin=PIPE, stdout=PIPE);
+        var sub = spawn([scriptName], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
 
         cobegin {
           // dump the array to the script's stdin

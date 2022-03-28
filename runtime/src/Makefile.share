@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -41,6 +41,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-external-array.c \
 	chpl-file-utils.c \
 	chpl-format.c \
+	chpl-gpu.c \
 	chplio.c \
 	chpl-mem.c \
 	chpl-mem-desc.c \
@@ -48,7 +49,6 @@ COMMON_NOGEN_SRCS = \
 	chplmemtrack.c \
 	chpl-privatization.c \
 	chpl-string.c \
-	chpl-strptime.c \
 	chplsys.c \
 	chpl-tasks.c \
 	chpl-tasks-callbacks.c \
@@ -99,3 +99,4 @@ endif
 
 RUNTIME_MALLOC_OBJS = \
 	$(RUNTIME_MALLOC_SRCS:%.c=$(COMMON_OBJDIR)/%.o)
+

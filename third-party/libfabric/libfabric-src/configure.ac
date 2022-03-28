@@ -1,12 +1,13 @@
 dnl
 dnl Copyright (c) 2016 Cisco Systems, Inc.  All rights reserved.
-dnl Copyright (c) 2019 Intel, Inc.  All rights reserved.
+dnl Copyright (c) 2019-2021 Intel, Inc.  All rights reserved.
 dnl Copyright (c) 2019-2020 Amazon.com, Inc. or its affiliates. All rights reserved.
+dnl (C) Copyright 2020 Hewlett Packard Enterprise Development LP
 dnl
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.60])
-AC_INIT([libfabric], [1.10.1], [ofiwg@lists.openfabrics.org])
+AC_INIT([libfabric], [1.13.2], [ofiwg@lists.openfabrics.org])
 AC_CONFIG_SRCDIR([src/fabric.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR(config)
@@ -14,6 +15,7 @@ AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE([1.11 dist-bzip2 foreign -Wall -Werror subdir-objects parallel-tests tar-pax])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 m4_include(config/fi_check_package.m4)
+m4_include(config/fi_strip_optflags.m4)
 
 AC_CANONICAL_HOST
 
@@ -84,6 +86,12 @@ AC_ARG_ENABLE([direct],
 	[],
 	[enable_direct=no])
 
+AC_ARG_ENABLE([only],
+	[AS_HELP_STRING([--enable-only],
+		[Only build explicitly specified fabric providers])
+	],
+	[],
+	[enable_only=no])
 
 AC_ARG_ENABLE([atomics],
 	[AS_HELP_STRING([--enable-atomics],
@@ -131,6 +139,16 @@ AS_IF([test x"$enable_debug" != x"no"],
 AC_DEFINE_UNQUOTED([ENABLE_DEBUG],[$dbg],
                    [defined to 1 if libfabric was configured with --enable-debug, 0 otherwise])
 
+AC_ARG_ENABLE([asan],
+	      [AS_HELP_STRING([--enable-asan],
+			      [Enable address sanitizer @<:@default=no@:>@])
+	      ],
+	      [],
+	      [enable_asan=no])
+
+AS_IF([test x"$enable_asan" != x"no"],
+      [CFLAGS="-fsanitize=address $CFLAGS"])
+
 dnl Checks for header files.
 AC_HEADER_STDC
 
@@ -146,7 +164,7 @@ AC_ARG_WITH([dlopen],
 		       [dl-loadable provider support @<:@default=yes@:>@]),
 	)
 
-if test "$freebsd" == "0"; then
+if test "$freebsd" = "0"; then
 AS_IF([test x"$with_dlopen" != x"no"], [
 AC_CHECK_LIB(dl, dlopen, [],
     AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.]))
@@ -362,8 +380,8 @@ AS_IF([test "$icc_symver_hack"],
 	[AC_MSG_RESULT(disabled)],
 [
 
-AC_TRY_LINK([],
-	[__asm__(".symver main_, main@ABIVER_1.0");],
+AC_TRY_LINK([__asm__(".symver main_, main@ABIVER_1.0");],
+	[],
 	[
 		AC_MSG_RESULT(yes)
 		ac_asm_symver_support=1
@@ -385,7 +403,7 @@ AC_TRY_LINK(
 		int foo(int arg) { return arg + 3; };
 		int foo2(int arg) __attribute__ (( __alias__("foo")));
 	],
-	[ /* empty main */ ],
+	[ foo2(1); ],
 	[
 		AC_MSG_RESULT(yes)
 		ac_prog_cc_alias_symbols=1
@@ -485,24 +503,223 @@ AC_ARG_WITH([cuda],
 			    and runtime libraries are installed.])],
 	    [], [])
 
-FI_CHECK_PACKAGE([cuda],
-		 [cuda_runtime.h],
-		 [cudart],
-		 [cudaMemcpy],
-		 [-lcuda],
-		 [$with_cuda],
-		 [],
-		 [AC_DEFINE([HAVE_LIBCUDA], [1],[CUDA support])],
-		 [], [])
+have_libcuda=0
+AS_IF([test x"$with_cuda" != x"no"],
+	    [FI_CHECK_PACKAGE([cuda],
+			      [cuda_runtime.h],
+			      [cudart],
+			      [cudaMemcpy],
+			      [-lcuda],
+			      [$with_cuda],
+			      [],
+			      [have_libcuda=1],
+			      [],
+			      [])],
+	    [])
+
+AS_IF([test x"$with_cuda" != x"no" && test -n "$with_cuda" && test "$have_libcuda" = "0" ],
+	[AC_MSG_ERROR([CUDA support requested but CUDA runtime not available.])],
+	[])
+AC_DEFINE_UNQUOTED([HAVE_LIBCUDA], [$have_libcuda], [Whether we have CUDA runtime or not])
+
+AC_ARG_ENABLE([cuda-dlopen],
+    [AS_HELP_STRING([--enable-cuda-dlopen],
+        [Enable dlopen of CUDA libraries @<:@default=no@:>@])
+    ],
+    [
+        AS_IF([test "$freebsd" = "0"], [
+            AC_CHECK_LIB(dl, dlopen, [],
+                [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
+        ])
+        AC_DEFINE([ENABLE_CUDA_DLOPEN], [1], [dlopen CUDA libraries])
+    ],
+    [enable_cuda_dlopen=no])
+
+AC_ARG_WITH([ze],
+	AC_HELP_STRING([--with-ze=DIR], [Provide path to where the ZE
+					 libraries and headers are installed.]),
+	[], [])
+
+have_ze=0
+AS_IF([test x"$with_ze" != x"no"],
+      [FI_CHECK_PACKAGE([ze],
+			[level_zero/ze_api.h],
+			[ze_loader],
+			[zeInit],
+			[],
+			[$with_ze],
+			[],
+			[have_ze=1],
+			[], [])],
+      [])
+
+have_drm=0
+AS_IF([test "$have_ze" = "1"],
+      [AC_CHECK_HEADER(drm/i915_drm.h, [have_drm=1], [])]
+      [])
+
+AS_IF([test x"$with_ze" != x"no" && test -n "$with_ze" && test "$have_ze" = "0" ],
+	[AC_MSG_ERROR([ZE support requested but ZE runtime not available.])],
+	[])
+
+AC_DEFINE_UNQUOTED([HAVE_LIBZE], [$have_ze], [ZE support])
+AC_DEFINE_UNQUOTED([HAVE_DRM], [$have_drm], [i915 DRM header])
+
+AC_ARG_ENABLE([ze-dlopen],
+    [AS_HELP_STRING([--enable-ze-dlopen],
+        [Enable dlopen of ZE libraries @<:@default=no@:>@])
+    ],
+    [
+        AS_IF([test "$freebsd" = "0"], [
+            AC_CHECK_LIB(dl, dlopen, [],
+                [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
+        ])
+        AC_DEFINE([ENABLE_ZE_DLOPEN], [1], [dlopen ZE libraries])
+    ],
+    [enable_ze_dlopen=no])
+
+AS_IF([test x"$enable_ze_dlopen" != x"yes"], [LIBS="$LIBS $ze_LIBS"])
+AS_IF([test "$have_ze" = "1" && test x"$with_ze" != x"yes"],
+      [CPPFLAGS="$CPPFLAGS $ze_CPPFLAGS"
+       LDFLAGS="$LDFLAGS $ze_LDFLAGS"])
+
+enable_memhooks=1
+AC_ARG_ENABLE([memhooks-monitor],
+              [AC_HELP_STRING([--disable-memhooks-monitor],
+                              [Determine whether memhooks memory monitor is disabled.])],
+              [enable_memhooks=0],
+              [])
+
+AC_DEFINE_UNQUOTED(ENABLE_MEMHOOKS_MONITOR, [$enable_memhooks],
+	[Define to 1 to enable memhooks memory monitor])
+
+AS_IF([test "$enable_memhooks" = "1"], [
+	AC_CHECK_FUNCS([__curbrk __clear_cache])
+	AC_CHECK_HEADERS([linux/mman.h sys/syscall.h])
+	AC_CHECK_DECLS([__syscall], [], [], [#include <sys/syscall.h>])
+	AC_CHECK_FUNCS([__syscall])
+	], [])
+
+enable_uffd=1
+AC_ARG_ENABLE([uffd-monitor],
+              [AC_HELP_STRING([--disable-uffd-monitor],
+                              [Determine whether uffd memory monitor is disabled.])],
+              [enable_uffd=0],
+              [])
+
+AC_DEFINE_UNQUOTED(ENABLE_UFFD_MONITOR, [$enable_uffd],
+	[Define to 1 to enable uffd memory monitor])
+
+
+AH_BOTTOM([
+#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__)) && ENABLE_MEMHOOKS_MONITOR
+#define HAVE_MEMHOOKS_MONITOR 1
+#else
+#define HAVE_MEMHOOKS_MONITOR 0
+#endif
+
+#if HAVE_UFFD_UNMAP && ENABLE_UFFD_MONITOR
+#define HAVE_UFFD_MONITOR 1
+#else
+#define HAVE_UFFD_MONITOR 0
+#endif
+])
 
 CPPFLAGS="$CPPFLAGS $cuda_CPPFLAGS"
 LDFLAGS="$LDFLAGS $cuda_LDFLAGS"
-LIBS="$LIBS $cuda_LIBS"
+
+AS_IF([test x"$enable_cuda_dlopen" != x"yes"], [LIBS="$LIBS $cuda_LIBS"])
+
+#gdrcopy related configs
+AC_ARG_WITH([gdrcopy],
+	    [AC_HELP_STRING([--with-gdrcopy=DIR],
+			    [Provide path to where the gdrcopy development
+			    and runtime libraries are installed.])],
+	    [], [])
+
+AS_IF([test -n "$with_gdrcopy" && test x"$with_gdrcopy" != x"no" && test "$have_libcuda" = "0"],
+	[AC_MSG_ERROR([gdrcopy is requested but cuda is not requested or cuda runtime is not available.])],
+	[])
+
+have_gdrcopy=0
+AS_IF([test "$have_libcuda" = "1" && test x"$with_gdrcopy" != x"no"],
+	[AS_IF([test x"$with_gdrcopy" = x"yes"],[gdrcopy_dir=""],[gdrcopy_dir=$with_gdrcopy])
+	 FI_CHECK_PACKAGE([gdrcopy],
+			  [gdrapi.h],
+			  [gdrapi],
+			  [gdr_open],
+			  [],
+			  [$gdrcopy_dir],
+			  [],
+			  [have_gdrcopy=1],
+			  [],
+			  [])],
+	[])
+
+AS_IF([test x"$with_gdrcopy" != x"no" && test -n "$with_gdrcopy" && test "$have_gdrcopy" = "0" ],
+	[AC_MSG_ERROR([gdrcopy support requested but gdrcopy development library is not available.])],
+	[])
+
+AC_DEFINE_UNQUOTED([HAVE_GDRCOPY], [$have_gdrcopy], [Whether we have gdrcopy development library or not])
+
+AC_ARG_ENABLE([gdrcopy-dlopen],
+    [AS_HELP_STRING([--enable-gdrcopy-dlopen],
+        [Enable dlopen of gdrcopy libraries @<:@default=no@:>@])
+    ],
+    [
+        AS_IF([test "$freebsd" = "0"], [
+            AC_CHECK_LIB(dl, dlopen, [],
+                [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
+        ])
+        AC_DEFINE([ENABLE_GDRCOPY_DLOPEN], [1], [dlopen CUDA libraries])
+    ],
+    [enable_gdrcopy_dlopen=no])
+
+CPPFLAGS="$CPPFLAGS $gdrcopy_CPPFLAGS"
+LDFLAGS="$LDFLAGS $gdrcopy_LDFLAGS"
+AS_IF([test x"$enable_gdrcopy_dlopen" != x"yes"], [LIBS="$LIBS $gdrcopy_LIBS"])
+#end gdrcopy configures
+
+dnl Check for ROCR runtime libraries.
+AC_ARG_WITH([rocr],
+	    [AC_HELP_STRING([--with-rocr=DIR],
+			    [Provide path to where the ROCR/HSA development
+			    and runtime libraries are installed.])],
+	    [], [])
+
+AC_ARG_ENABLE([rocr-dlopen],
+    [AS_HELP_STRING([--enable-rocr-dlopen],
+        [Enable dlopen of ROCR libraries @<:@default=no@:>@])
+    ],
+    [
+        AS_IF([test "$freebsd" = "0"], [
+            AC_CHECK_LIB(dl, dlopen, [],
+                [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
+        ])
+        AC_DEFINE([ENABLE_ROCR_DLOPEN], [1], [dlopen ROCR libraries])
+    ],
+    [enable_rocr_dlopen=no])
+
+FI_CHECK_PACKAGE([rocr],
+		 [hsa/hsa_ext_amd.h],
+		 [hsa-runtime64],
+		 [hsa_amd_pointer_info],
+		 [],
+		 [$with_rocr],
+		 [$with_rocr/lib],
+		 [AC_DEFINE([HAVE_ROCR], [1], [ROCR HSA support])],
+		 [], [])
+
+CPPFLAGS="$CPPFLAGS $rocr_CPPFLAGS"
+LDFLAGS="$LDFLAGS $rocr_LDFLAGS"
+
+AS_IF([test x"$enable_rocr_dlopen" != x"yes"], [LIBS="$LIBS $rocr_LIBS"])
 
 dnl Provider-specific checks
 FI_PROVIDER_INIT
 FI_PROVIDER_SETUP([psm])
 FI_PROVIDER_SETUP([psm2])
+FI_PROVIDER_SETUP([psm3])
 FI_PROVIDER_SETUP([sockets])
 FI_PROVIDER_SETUP([verbs])
 FI_PROVIDER_SETUP([efa])
@@ -557,7 +774,7 @@ fi
 
 for i in $PROVIDERS_TO_BUILD; do
 	v=${i}_dl
-	if test `eval echo \\$${v}` == "1"; then
+	if test `eval echo \\$${v}` = "1"; then
 		dso="$i ${dso}"
 	else
 		builtin="$i ${builtin}"

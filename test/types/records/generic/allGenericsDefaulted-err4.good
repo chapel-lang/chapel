@@ -1,0 +1,3 @@
+allGenericsDefaulted.chpl:50: error: unresolved call 'boo(R(int(64),3))'
+allGenericsDefaulted.chpl:21: note: this candidate did not match: boo(r: R(?t, 2))
+allGenericsDefaulted.chpl:21: note: because an argument was incompatible

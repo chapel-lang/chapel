@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,7 +31,7 @@
  * denormalize pass and functionality is rather simple.
  *
  * Its main use in the pass is to decide if expressions are movable
- * during denormalization. 
+ * during denormalization.
  *
  * For now, this is a very conservative analysis. A more precise
  * analysis could distinguish between reads and writes to memory and

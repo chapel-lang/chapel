@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,7 +44,7 @@ chpl_main_argument chpl_gen_main_arg;
 // This variable is normally declared in config.h
 // and comes from the generated code.
 extern const int mainHasArgs;
-
+extern const int mainPreserveDelimiter;
 extern const int launcher_is_mli;
 extern const char* launcher_mli_real_name;
 
@@ -95,7 +95,6 @@ void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
 int
 chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int outbuflen) {
   const int buflen = 1024;
-  int curlen;
   char buf[buflen];
   char *cur;
   int fdo[2], outfd;
@@ -149,7 +148,6 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     close(fdo[1]);
     close(fde[1]);
     numRead = 0;
-    curlen = buflen > outbuflen ? outbuflen : buflen;
     cur = buf;
     while (numRead < buflen) {
       struct timeval tv = { 1, 0 };
@@ -165,7 +163,6 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
         } else if (rv > 0) {
           cur += rv;
           numRead += rv;
-          curlen -= rv;
         } else {
           sprintf(buf, "Unable to run '%s' (read failed): %s",
                   command, strerror(errno));
@@ -181,7 +178,6 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
         } else if (rv > 0) {
           cur += rv;
           numRead += rv;
-          curlen -= rv;
         } else {
           sprintf(buf, "Unable to run '%s' (read failed): %s",
                   command, strerror(errno));
@@ -245,6 +241,28 @@ chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen) {
   }
 
   return retVal;
+}
+
+
+//
+// Find the named executable in the PATH, if it's there.
+//
+char *chpl_find_executable(const char *prog_name) {
+  const char *cmd_fmt = "/usr/bin/which --skip-alias --skip-functions %s";
+  const int cmd_len
+            = strlen(cmd_fmt)     // 'which' command, as printf() format
+              - 2                 //   length of "%s" specifier
+              + strlen(prog_name) //   length of prog_name
+              + 1;                //   length of trailing '\0'
+  char cmd[cmd_len];
+  (void) snprintf(cmd, sizeof(cmd), cmd_fmt, prog_name);
+
+  // hopefully big enough; PATH_MAX is problematic, but what's better?
+  const size_t path_len = PATH_MAX;
+  char *path = chpl_mem_alloc(path_len,
+                              CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+
+  return (chpl_run_cmdstr(cmd, path, path_len) > 0) ? path : NULL;
 }
 
 
@@ -319,16 +337,10 @@ void get_debugger_wrapper(int* argc, char*** argv) {
     dbg_term = "xterm";
   }
 
-  // hopefully big enough; PATH_MAX is problematic, but what's better?  
-  const size_t term_path_size = PATH_MAX;
-  char *term_path = chpl_mem_alloc(term_path_size,
-                                   CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-
-  static char cmd[16] = "";
-  snprintf(cmd, sizeof(cmd), "which %s", dbg_term);
-  if (chpl_run_cmdstr(cmd, term_path, term_path_size) <= 0) {
+  char *term_path;
+  if ((term_path = chpl_find_executable(dbg_term)) == NULL) {
     static char err_msg[128] = "";
-    snprintf(err_msg, sizeof(err_msg), 
+    snprintf(err_msg, sizeof(err_msg),
              "CHPL_COMM_USE_(G|LL)DB ignored because no %s", dbg_term);
     chpl_warning(err_msg, 0, 0);
     return;
@@ -585,9 +597,9 @@ int chpl_get_charset_env_args(char *argv[])
   return charset_env_nargs;
 }
 
-int handleNonstandardArg(int* argc, char* argv[], int argNum, 
+int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
-  int numHandled = chpl_launch_handle_arg(*argc, argv, argNum, 
+  int numHandled = chpl_launch_handle_arg(*argc, argv, argNum,
                                           lineno, filename);
   if (numHandled == 0) {
     if (mainHasArgs) {

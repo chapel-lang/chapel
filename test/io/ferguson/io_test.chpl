@@ -3,7 +3,7 @@ use IO;
 config type dataType = string;
 config const noisy = false;
 
-proc testio(param typ:iokind, style:iostyle, x)
+proc testio(param typ:iokind, style:iostyleInternal, x)
 {
   if noisy then writeln("Testing ",typ:int(64)," ",x.type:string," ",style.binary:int(64)," ",style.byteorder:int(64)," ",style.str_style);
   var f = opentmp();
@@ -36,7 +36,7 @@ proc testio(param typ:iokind, style:iostyle, x)
 proc testio(x)
 {
   // Set up some I/O styles.
-  var styles = ( defaultIOStyle().native(), defaultIOStyle().little(), defaultIOStyle().big(), defaultIOStyle().text() );
+  var styles = ( defaultIOStyleInternal().native(), defaultIOStyleInternal().little(), defaultIOStyleInternal().big(), defaultIOStyleInternal().text() );
 
   for i in 0..#styles.size {
     var style = styles[i];
@@ -81,7 +81,7 @@ proc test_readlines()
 
   if noisy then writeln("Testing readlines: itemReader");
   {
-    var style = defaultIOStyle();
+    var style = defaultIOStyleInternal();
     style.string_format = iostringformat.toend:uint(8);
     style.string_end = 0x0a;
     var ch = f.reader(style=style);

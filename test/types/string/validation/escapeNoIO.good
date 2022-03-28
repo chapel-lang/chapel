@@ -2,3 +2,4 @@ Correct error was caught
 Correct error was caught
 í³¿
 writef('%|s') should be successful
+escapeNoIO.chpl:29: warning: binary conversion "%|*s" is deprecated.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,6 +31,8 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "view.h"
+
+#include "global-ast-vecs.h"
 
 //#############################################################################
 //# COPY PROPAGATION
@@ -216,6 +218,34 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
 
     return false;
   }
+  else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+  {
+    // skip the "base" symbol
+    if (se == call->get(1))
+      return false;
+
+    // skip the "_virtual_method_tmp_" argument
+    if (se == call->get(2))
+      return false;
+
+    ArgSymbol* arg = actual_to_formal(se);
+
+    if (arg->intent == INTENT_OUT   ||
+        arg->intent == INTENT_INOUT ||
+        arg->intent == INTENT_REF   ||
+        arg->hasFlag(FLAG_ARG_THIS)) // Todo: replace with arg intent check?
+    {
+      liveRefs.insert(se->symbol());
+      return true;
+    }
+
+    if (isRecordWrappedType(arg->type))
+    {
+      return true;
+    }
+
+    return false;
+  }
   else
   {
     const bool isFirstActual = call->get(1) == se;
@@ -319,7 +349,23 @@ static bool isUse(SymExpr* se)
         (arg->intent & INTENT_FLAG_REF))
       return false;
   }
+  else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+  {
+    // skip the "base" symbol
+    if (se == call->get(1))
+      return false;
 
+    // skip the "_virtual_method_tmp_" argument
+    if (se == call->get(2))
+      return false;
+
+    ArgSymbol* arg = actual_to_formal(se);
+
+    if (arg->intent == INTENT_OUT ||
+        (arg->intent & INTENT_FLAG_REF))
+      return false;
+
+  }
   else
   {
     INT_ASSERT(call->primitive);
@@ -534,7 +580,7 @@ static bool maybeVolatile(SymExpr* se)
   // See Note #1.
 
   // The function containing the SymExpr referencing the variable.
-  Symbol* fn = se->parentSymbol; 
+  Symbol* fn = se->parentSymbol;
   // Where the variable is defined.
   Symbol* defScope = se->symbol()->defPoint->parentSymbol;
   if (defScope != fn)
@@ -679,7 +725,7 @@ static void destroyPairSet(std::vector<BitVec*> set)
 // one long vector: availablePairs.
 // The ending index for each block is stored in ends[i].
 static void extractAvailablePairs(FnSymbol* fn,
-                                  std::vector<AvailablePair>& availablePairs, 
+                                  std::vector<AvailablePair>& availablePairs,
                                   std::vector<size_t>& ends)
 {
   std::set<Symbol*> liveRefs;
@@ -756,7 +802,7 @@ static void initCopySets(std::vector<BitVec*>& COPY, std::vector<size_t>& ends,
                          size_t nbbs)
 {
   size_t j = 0;
-  for(size_t i = 0; i < nbbs; ++i) 
+  for(size_t i = 0; i < nbbs; ++i)
   {
     // Initialize each copy set: Just set the string of bits corresponding to
     // the pairs generated in block i.
@@ -959,7 +1005,7 @@ void copyPropagation(void) {
 //# pessimistic to prevent copy propagation merely because a variable is
 //# shared.  Copy propagation assumes that the value has not changed, which is
 //# tantamount to delaying recognition of an external change.  In many
-//# routines, this delay is acceptable and may result in simpler code.  
+//# routines, this delay is acceptable and may result in simpler code.
 //# One place where the delay would not be acceptable is in a tight loop that
 //# is waiting for the named variable to change.  In that case, CP might
 //# replace the variable with a constant, and execution will get stuck in an
@@ -976,4 +1022,3 @@ void copyPropagation(void) {
 //# to be changed.  Allowing the substitution collapses the two variables onto
 //# one.
 //#
-

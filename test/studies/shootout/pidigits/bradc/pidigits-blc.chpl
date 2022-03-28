@@ -14,7 +14,7 @@ var i, ns, x = 0,
     a, t, u: bigint;
 
 for k in (1..) {
-  t = num * 2;
+  t = num*2;
   num *= k;
   a += t;
   const k1 = 2*k + 1;
@@ -22,7 +22,7 @@ for k in (1..) {
   den *= k1;
 
   if a >= num {
-    t.div_qr(u, 3*num + a, den);
+    t.divQR(u, 3*num + a, den);
     u += num;
     if den > u {
       ns = 10*ns + t:int;

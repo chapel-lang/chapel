@@ -868,7 +868,6 @@ static gasnete_coll_tree_geom_t *gasnete_coll_tree_geom_fetch_helper(gasnete_col
  */
     
 gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_tree_type_t type, gex_Rank_t root,  gasnete_coll_team_t team) {
-  gasnete_coll_tree_geom_t *geom_cache_head = team->tree_geom_cache_head;
   gasnete_coll_local_tree_geom_t *ret;
   gasnete_coll_tree_geom_t *curr_geom;
   
@@ -895,6 +894,7 @@ gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_
 #endif
     /*	curr_geom->root = root; */
     /* link it into the cache*/
+    gasnete_coll_tree_geom_t *geom_cache_head = team->tree_geom_cache_head;
     if(geom_cache_head == NULL) {
       /*cache is empty*/
       curr_geom->prev = NULL;
@@ -903,8 +903,8 @@ gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_
       team->tree_geom_cache_tail = curr_geom;
     } else {
       curr_geom->prev = NULL; /* new head */
-      curr_geom->next = team->tree_geom_cache_head;
-      team->tree_geom_cache_head->prev = curr_geom;
+      curr_geom->next = geom_cache_head;
+      geom_cache_head->prev = curr_geom;
       team->tree_geom_cache_head = curr_geom;
     }
     curr_geom->local_views[root] = gasnete_coll_tree_geom_create_local(type, root, team, curr_geom);

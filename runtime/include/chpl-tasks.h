@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -186,29 +186,24 @@ void chpl_task_callMain(void (*chpl_main)(void));
 #endif
 
 
-typedef struct chpl_task_list* chpl_task_list_p;
-
 //
-// Task list processing.  These are called by the compiler-emitted
-// code for all parallel constructs.  addToTaskList() is called for
-// each task and builds a list of all of them.  processTaskList()
-// actually adds the tasks to the task pool.  executeTasksInList()
-// makes sure all the tasks have at least started.  freeTaskList()
-// just reclaims space associated with the list.
+// Task creation.  chpl_task_addTask adds a new task to the pool of
+// runnable candidate tasks.  It is called by Chapel tasking support
+// functions in the internal modules, which are in turn called by the
+// compiler-emitted code for all task-parallel constructs.  Tasking
+// layer implementations distribute tasks among processors as they
+// deem appropriate.
 //
 // Note that the tasking layer must generally copy the arguments
 // as it cannot assume anything about the lifetime of that memory.
-void chpl_task_addToTaskList(
+//
+void chpl_task_addTask(
          chpl_fn_int_t,      // function to call for task
          chpl_task_bundle_t*,// argument to the function
          size_t,             // length of the argument
          c_sublocid_t,       // desired sublocale
-         void**,             // task list
-         c_nodeid_t,         // locale (node) where task list resides
-         chpl_bool,          // is begin{} stmt?  (vs. cobegin or coforall)
          int,                // line at which function begins
          int32_t);           // name of file containing function
-void chpl_task_executeTasksInList(void**);
 
 //
 // Call a chpl_ftable[] function in a task.
@@ -356,21 +351,6 @@ size_t chpl_task_getCallStackSize(void);
 //
 chpl_bool chpl_task_guardPagesInUse(void);
 
-//
-// returns the number of tasks that are ready to run on the current locale,
-// not including any that have already started running.
-//
-uint32_t chpl_task_getNumQueuedTasks(void);
-
-//
-// returns the number of tasks that are blocked waiting on a sync or single
-// variable.
-// Note that this information may only available if the program is run with
-// the -b switch, which enables block reporting and deadlock detection.
-// If this switch is not specified, -1 may be returned.
-//
-int32_t chpl_task_getNumBlockedTasks(void);
-
 
 // Threads
 
@@ -419,16 +399,9 @@ uint32_t chpl_task_canMigrateThreads(void) {
 }
 
 //
-// returns the total number of threads that currently exist, whether running,
-// blocked, or idle
+// Warn about a num threads setting
 //
-uint32_t chpl_task_getNumThreads(void);
-
-//
-// returns the number of threads that are currently idle
-//
-uint32_t chpl_task_getNumIdleThreads(void);
-
+void chpl_task_warnNumThreadsPerLocale(const char*);
 
 //
 // This gets any per-locale thread count specified in the environment.
@@ -451,6 +424,14 @@ size_t chpl_task_getEnvCallStackSize(void);
 // in runtime/src/chpl-tasks.c.
 //
 size_t chpl_task_getDefaultCallStackSize(void);
+
+//
+// This returns whether or not to do a report of all known tasks,
+// running, blocked, queued, or otherwise, when a SIGINT (^C) is
+// received.  It should be common to all tasking implementations
+// but is currently only implemented when using tasks=fifo.
+//
+chpl_bool chpl_task_doTaskReport(void);
 
 //
 // These are service functions provided to the runtime by the module

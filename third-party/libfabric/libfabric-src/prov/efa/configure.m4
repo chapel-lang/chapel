@@ -29,7 +29,7 @@ AC_DEFUN([FI_EFA_CONFIGURE],[
 		],
 		[efa_h_enable_poisoning=$enableval],
 		[efa_h_enable_poisoning=no])
-	AS_IF([test x"$efa_h_enable_poisoning" == x"yes"],
+	AS_IF([test x"$efa_h_enable_poisoning" = x"yes"],
 		[AC_DEFINE([ENABLE_EFA_POISONING], [1],
 			[EFA memory poisoning support for debugging])],
 		[])
@@ -75,7 +75,29 @@ AC_DEFUN([FI_EFA_CONFIGURE],[
 			      [],
 			      [[#include <infiniband/efadv.h>]])
 	      ])
+
+	AS_IF([test x"$enable_efa" != x"no"],
+	      [AC_CHECK_DECL(EFADV_DEVICE_ATTR_CAPS_RNR_RETRY,
+			    [AC_DEFINE([HAVE_CAPS_RNR_RETRY], [1], [EFADV_DEVICE_ATTR_CAPS_RNR_RETRY is defined])],
+			    [],
+			    [[#include <infiniband/efadv.h>]])
+	      ])
 	CPPFLAGS=$save_CPPFLAGS
+
+	dnl Check for ibv_is_fork_initialized() in libibverbs
+	have_ibv_is_fork_initialized=0
+	AS_IF([test $efa_happy -eq 1],
+		[AC_CHECK_DECL([ibv_is_fork_initialized],
+			[have_ibv_is_fork_initialized=1],
+			[],
+			[[#include <infiniband/verbs.h>]])
+		])
+
+	AC_DEFINE_UNQUOTED([HAVE_IBV_IS_FORK_INITIALIZED],
+		[$have_ibv_is_fork_initialized],
+		[Define to 1 if libibverbs has ibv_is_fork_initialized])
+
+	AS_IF([test "$enable_efa" = "no"], [efa_happy=0])
 
 	AS_IF([test $efa_happy -eq 1 ], [$1], [$2])
 

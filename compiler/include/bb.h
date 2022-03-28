@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,7 @@
 #ifndef _BB_H_
 #define _BB_H_
 
+class BaseAST;
 class BitVec;
 class Expr;
 class FnSymbol;
@@ -122,6 +123,8 @@ private:
   static bool        verifyBasicBlocks(FnSymbol* fn);
 
   static int         nextID;
+
+  static std::vector<BaseAST*> asts;
 
   //
   // Instance methods/variables

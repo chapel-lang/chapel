@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,7 +86,7 @@ The default intent for :record:`shared` types is ``const ref``.
  */
 module SharedObject {
 
-  use ChapelError, Atomics, ChapelBase;
+  use Errors, Atomics, ChapelBase;
   use OwnedObject;
 
   // TODO unify with RefCountBase. Even though that one is for
@@ -172,8 +172,6 @@ module SharedObject {
 
       this.chpl_p = _to_borrowed(p);
       this.chpl_pn = rc;
-
-      this.complete();
 
       // Boost includes a mechanism for classes inheriting from
       // enable_shared_from_this to record a weak pointer back to the

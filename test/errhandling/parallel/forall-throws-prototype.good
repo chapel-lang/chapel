@@ -1,0 +1,4 @@
+before forall block
+uncaught Error: abc
+  forall-throws-prototype.chpl:4: thrown here
+  forall-throws-prototype.chpl:10: uncaught here

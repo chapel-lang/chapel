@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -76,7 +76,7 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
           std::vector<SymExpr*> syms;
           collectSymExprsFor(exprToMove, toSymExpr(ce->get(1))->symbol(), syms);
           for_vector(SymExpr, s, syms) {
-              safeExprCache[e] = false;
+              safeExprCache[s] = false;
               return false;
           }
         }
@@ -275,6 +275,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_WIDE_GET_LOCALE:
     case PRIM_WIDE_GET_NODE:
     case PRIM_WIDE_GET_ADDR:
+    case PRIM_GET_REQUESTED_SUBLOC:
     case PRIM_IS_WIDE_PTR:
     case PRIM_CAPTURE_FN_FOR_CHPL:
     case PRIM_CAPTURE_FN_FOR_C:
@@ -286,15 +287,13 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_NO_ALIAS_SET:
     case PRIM_COPIES_NO_ALIAS_SET:
       return true;
-    case PRIM_UNKNOWN:
-      if(strcmp(prim->name, "string_length_bytes") == 0 ||
-          strcmp(prim->name, "string_length_codepoints") == 0 ||
-          strcmp(prim->name, "object2int") == 0 ||
-          strcmp(prim->name, "real2int") == 0) {
-        return true;
-      }
-      //else fall through
+    case PRIM_STRING_LENGTH_BYTES:
+    case PRIM_STRING_LENGTH_CODEPOINTS:
+    case PRIM_OBJECT_TO_INT:
+    case PRIM_REAL_TO_INT:
+      return true;
     default:
+      // handle all primitives not handled here, including PRIM_UNKNOWN
       std::cout << "Unknown primitive : " << prim->name << std::endl;
       INT_ASSERT(false); // should not be getting those
       // that are !isEssential and not listed above

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,88 +18,45 @@
  * limitations under the License.
  */
 
-use Regex;
+use ArgumentParser;
 use FileSystem;
-use TOML;
+use Map;
 use MasonUtils;
-private use Map;
+use Regex;
+use TOML;
+
 
 /* Modify manifest file */
 proc masonModify(args: [] string) throws {
-  try! {
 
-    // Check for help flags
-    for arg in args[1..] {
-      if arg == '-h' || arg == '--help' {
-        masonModifyHelp();
-        exit(0);
-      }
-    }
+  var parser = new argumentParser(helpHandler=new MasonModifyHelpHandler());
 
-    // Check for incorrect usage
-    if args.size < 3 {
-      masonModifyHelp();
-      exit(0);
-    }
+  var extFlag = parser.addFlag("external", defaultValue=false);
+  var sysFlag = parser.addFlag("system", defaultValue=false);
+  var depArg = parser.addArgument("dep", numArgs=0..1);
 
-    // Parse arguments
-    var external = false;
-    var system = false;
-    var add = false;
-    var remove = false;
-    var dep = "";
-    for arg in args[1..] {
-      if arg.startsWith('-') {
-        // Parse optional arguments
-        select (arg) {
-          when '--system' {
-            system = true;
-          }
-          when '--external' {
-            external = true;
-          }
-          otherwise {
-            throw new owned MasonError("Unrecognized flag: " + arg);
-          }
-        }
-      } else {
-        // Parse positional arguments
-        select (arg) {
-          when 'add' {
-            add = true;
-          }
-          when 'rm' {
-            remove = true;
-          } otherwise {
-            if dep.isEmpty() then dep = arg;
-            else throw new owned MasonError("More than one package specified: " + dep + ', ' + arg);
-          }
-        }
-      }
-    }
+  parser.parseArgs(args);
 
-    // Check for errors in argument values
-    if external && system then
-      throw new owned MasonError("Use only '--external' or '--system'");
-    if dep == "" then
-      throw new owned MasonError("Must enter a dependency");
-    if add && remove then
-      throw new owned MasonError("Use only 'add' or 'rm'");
-    // Note: We don't need to check for !add && !remove because
-    //       this function is only executed when 'add' or 'rm' is passed
-
-    // Modify the manifest file based on arguments
-    const cwd = here.cwd();
-    const projectHome = getProjectHome(cwd, "Mason.toml");
-
-    const result = modifyToml(add, dep, external, system, projectHome);
-    generateToml(result[0], result[1]);
-    delete result[0];
-  }
-  catch e: MasonError {
-    writeln(e.message());
+  if !depArg.hasValue() {
+    stderr.writeln("package name missing value");
+    masonModifyHelp();
     exit(1);
   }
+  var add = false;
+  if args[0] == "add" then add = true;
+  // TODO: remove this once argument parser supports mutual exclusivity
+  if extFlag.valueAsBool() && sysFlag.valueAsBool() {
+    throw new owned MasonError("Use only '--external' or '--system'");
+  }
+
+  // Modify the manifest file based on arguments
+  const cwd = here.cwd();
+  const projectHome = getProjectHome(cwd, "Mason.toml");
+
+  const result = modifyToml(add, depArg.value(), extFlag.valueAsBool(),
+                            sysFlag.valueAsBool(), projectHome);
+  generateToml(result[0], result[1]);
+  delete result[0];
 }
 
 proc modifyToml(add: bool, spec: string, external: bool, system: bool,

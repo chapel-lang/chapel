@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -524,7 +524,10 @@ module List {
 
     pragma "no doc"
     proc _makeArray(size: int) {
-      return _ddata_allocate(eltType, size, initElts=false);
+      var callPostAlloc = false;
+      var ret = _ddata_allocate_noinit(eltType, size, callPostAlloc);
+      if callPostAlloc then _ddata_allocate_postalloc(ret, size);
+      return ret;
     }
 
     pragma "no doc"
@@ -1249,6 +1252,18 @@ module List {
       return;
     }
 
+    pragma "no doc"
+    proc _clearLocked() {
+      _fireAllDestructors();
+      _freeAllArrays();
+      _sanity(_totalCapacity == 0);
+      _sanity(_size == 0);
+      _sanity(_arrays == nil);
+
+      // All array operations assume a consistent initial state.
+      _firstTimeInitializeArrays();
+    }
+
     /*
       Clear the contents of this list.
 
@@ -1260,31 +1275,19 @@ module List {
     proc ref clear() {
       on this {
         _enter();
-
-        _fireAllDestructors();
-        _freeAllArrays();
-        _sanity(_totalCapacity == 0);
-        _sanity(_size == 0);
-        _sanity(_arrays == nil);
-
-        // All array operations assume a consistent initial state.
-        _firstTimeInitializeArrays();
-
+        _clearLocked();
         _leave();
       }
     }
 
     /*
       Return a zero-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found this method returns
-      the value `-1`.
+      is equal to `x`. If no such element can be found or if the list is empty,
+      this method returns the value `-1`.
 
       .. warning::
 
-        Calling this method on an empty list or with values of `start` or
-        `end` that are out of bounds will cause the currently running program
-        to halt. If the `--fast` flag is used, no safety checks will be
-        performed.
+        indexOf on lists is deprecated, use :proc:`find` instead.
 
       :arg x: An element to search for.
       :type x: `eltType`
@@ -1299,15 +1302,43 @@ module List {
       :return: The index of the element to search for, or `-1` on error.
       :rtype: `int`
     */
+    deprecated "indexOf on lists is deprecated, use :proc:`find` instead; please let us know if this is problematic for you."
     proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
-      
+      return find(x, start, end);
+    }
+
+    /*
+      Return a zero-based index into this list of the first item whose value
+      is equal to `x`. If no such element can be found or if the list is empty,
+      this method returns the value `-1`.
+
+      .. warning::
+
+        Calling this method with values of `start` or `end` that are out of bounds
+        will cause the currently running program to halt. If the `--fast` flag is
+        used, no safety checks will be performed.
+
+      :arg x: An element to search for.
+      :type x: `eltType`
+
+      :arg start: The start index to start searching from.
+      :type start: `int`
+
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
+      :type end: `int`
+
+      :return: The index of the element to search for, or `-1` on error.
+      :rtype: `int`
+    */
+    proc const find(x: eltType, start: int=0, end: int=-1): int {
       param error = -1;
 
       if _size == 0 then
         return error;
 
       if boundsChecking {
-        const msg = " index for \"list.indexOf\" out of bounds: ";
+        const msg = " index for \"list.find\" out of bounds: ";
 
         if end >= 0 && !_withinBounds(end) then
           boundsCheckHalt("End" + msg + end:string);
@@ -1315,7 +1346,7 @@ module List {
         if !_withinBounds(start) then
           boundsCheckHalt("Start" + msg + start:string);
       }
-        
+
       if end >= 0 && end < start then
         return error;
 
@@ -1586,15 +1617,13 @@ module List {
 
       :yields: A reference to one of the elements contained in this list.
     */
-    pragma "order independent yielding loops"
     iter these() ref {
       // TODO: We can just iterate through the _ddata directly here.
-      for i in 0..#_size do
+      foreach i in 0..#_size do
         yield _getRef(i);
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 64;
@@ -1605,7 +1634,7 @@ module List {
 
       coforall tid in 0..#numTasks {
         var chunk = _computeChunk(tid, chunkSize, trailing);
-        for i in chunk(0) {
+        foreach i in chunk(0) {
           ref result = _getRef(i);
           yield result;
         }
@@ -1644,14 +1673,13 @@ module List {
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter these(param tag, followThis) ref where tag == iterKind.follower {
 
       //
       // TODO: A faster scheme would access the _ddata directly to avoid
       // the penalty of logarithmic indexing over and over again.
       //
-      for i in followThis(0) do
+      foreach i in followThis(0) do
         yield _getRef(i);
     }
 
@@ -1660,18 +1688,100 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) throws {
+    proc writeThis(ch: channel) throws {
+      var isBinary = ch.binary();
+
       _enter();
 
-      ch <~> "[";
+      if isBinary {
+        // Write the number of elements
+        ch <~> _size;
+      } else {
+        ch <~> new ioLiteral("[");
+      }
 
-      for i in 0..(_size - 2) do
-        ch <~> _getRef(i) <~> ", ";
+      for i in 0..(_size - 2) {
+        ch <~> _getRef(i);
+        if !isBinary {
+          ch <~> new ioLiteral(", ");
+        }
+      }
 
       if _size > 0 then
         ch <~> _getRef(_size-1);
 
-      ch <~> "]";
+      if !isBinary {
+        ch <~> new ioLiteral("]");
+      }
+
+      _leave();
+    }
+
+    /*
+     Read the contents of this list from a channel.
+
+     :arg ch: A channel to read from.
+     */
+    proc readThis(ch: channel) throws {
+      //
+      // Special handling for reading in order to handle reading an arbitrary
+      // size.
+      //
+      const isBinary = ch.binary();
+
+      _enter();
+
+      _clearLocked();
+
+      if isBinary {
+        // How many elements should we read (for binary mode)?
+        var num = 0;
+        ch <~> num;
+        for i in 0..#num {
+          pragma "no auto destroy"
+          var elt: eltType;
+          ch <~> elt;
+          _appendByRef(elt);
+        }
+      } else {
+        var isFirst = true;
+        var hasReadEnd = false;
+
+        ch <~> new ioLiteral("[");
+
+        while !hasReadEnd {
+          if isFirst {
+            isFirst = false;
+
+            // Try reading an end bracket. If we don't, then continue on.
+            try {
+              ch <~> new ioLiteral("]");
+              hasReadEnd = true;
+              break;
+            } catch err: BadFormatError {
+              // Continue on if we didn't read an end bracket.
+            }
+          } else {
+
+            // Try to read a comma. Break if we don't.
+            try {
+              ch <~> new ioLiteral(",");
+            } catch err: BadFormatError {
+              break;
+            }
+          }
+
+          // read an element
+          pragma "no auto destroy"
+          var elt: eltType;
+          ch <~> elt;
+          _appendByRef(elt);
+        }
+
+        if !hasReadEnd {
+          ch <~> new ioLiteral("]");
+        }
+      }
 
       _leave();
     }

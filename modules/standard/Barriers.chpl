@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -60,6 +60,7 @@
 */
 module Barriers {
   import HaltWrappers;
+  import ChplConfig;
 
   /* An enumeration of the different barrier implementations.  Used to choose
      the implementation to use when constructing a new barrier object.
@@ -210,7 +211,7 @@ module Barriers {
     pragma "no doc"
     var n: int;
     pragma "no doc"
-    param procAtomics = if CHPL_NETWORK_ATOMICS == "none" then true else false;
+    param procAtomics = if ChplConfig.CHPL_NETWORK_ATOMICS == "none" then true else false;
     pragma "no doc"
     var count: if procAtomics then chpl__processorAtomicType(int) else atomic int;
     pragma "no doc"
@@ -259,7 +260,7 @@ module Barriers {
         if myc<=1 {
           if hackIntoCommBarrier {
             extern proc chpl_comm_barrier(msg: c_string);
-            chpl_comm_barrier("local barrier call".localize().c_str());
+            chpl_comm_barrier(c"local barrier call");
           }
           const alreadySet = done.testAndSet();
           if boundsChecking && alreadySet {

@@ -9,5 +9,5 @@ for i in 1..testIters do
 
 lst.pop();
 
-var idx = lst.indexOf(testIters, 1, testIters);
+var idx = lst.find(testIters, 1, testIters);
 

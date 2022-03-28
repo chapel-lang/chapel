@@ -11,6 +11,10 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell",
     path: "../../provision-scripts/dnf-deps.sh"
 
+  # installs LLVM 9 on this version
+  config.vm.provision "shell",
+    path: "../../provision-scripts/dnf-llvm.sh"
+
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"
 
@@ -18,7 +22,7 @@ Vagrant.configure("2") do |config|
     path: "../../provision-scripts/make-chapel-quick.sh"
 
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = 1024
+    vb.memory = 4096
     #vb.cpus = 2
   end
 

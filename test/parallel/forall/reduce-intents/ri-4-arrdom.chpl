@@ -1,6 +1,6 @@
 // Stress test for parallel correctness.
 
-use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
+use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist, ChplConfig;
 
 const defR = if CHPL_COMM=="none" then 3000 else 1500;
 

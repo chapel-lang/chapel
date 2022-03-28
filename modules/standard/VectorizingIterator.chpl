@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,6 +70,11 @@ module VectorizingIterator {
   //
 
   /*
+     .. warning::
+
+        The :iter:`vectorizeOnly()` iterator is deprecated.
+        Please use ``foreach`` loops instead.
+
      Vectorize only "wrapper" iterator:
 
      This iterator wraps and vectorizes other iterators. It takes one or more
@@ -123,6 +128,7 @@ module VectorizingIterator {
      Note that the use of ``zip`` is not explicitly prevented, but all
      iterators being zipped must be wrapped by a ``vectorizeOnly`` iterator.
      Future releases may explicitly prevent the use ``zip`` with this iterator.
+
   */
   pragma "vectorize yielding loops"
   iter vectorizeOnly(iterables...) where singleValIter(iterables) {

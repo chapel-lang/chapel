@@ -47,7 +47,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_TMPDIR"})) {
 }
 $user = `whoami`;
 chomp($user);
-$tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLEANUP => 1);
+$tmpdir = tempdir("chapel-release.$user.deleteme.XXXXXX", DIR => $basetmpdir, CLEANUP => 1);
 $archive_dir = "$tmpdir/$reldir";
 SystemOrDie("rm -rf $tmpdir");
 SystemOrDie("mkdir -pv $archive_dir");
@@ -71,7 +71,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
         $git_url = "https://github.com/chapel-lang/chapel";
     }
 
-    $git_branch = "master";
+    $git_branch = "main";
     if (exists($ENV{'CHPL_GEN_RELEASE_BRANCH'})) {
         $git_branch = $ENV{'CHPL_GEN_RELEASE_BRANCH'};
     }
@@ -184,7 +184,7 @@ print "[gen_release] CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
 if (not exists($ENV{"CHPL_GEN_RELEASE_SKIP_DOCS"})) {
   print "[gen_release] Building the html docs...\n";
-  SystemOrDie("make -j docs");
+  SystemOrDie("make docs");
 
   # TODO - make this more elegant / maintainable
   print "[gen_release] Pruning the docs directory...\n";

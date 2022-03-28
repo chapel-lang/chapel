@@ -5,7 +5,7 @@ require "enum.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
+use CTypes;
 // Enum: anonymous
 extern const TEST_STATUS_PASSED :c_int;
 extern const TEST_STATUS_FAILED :c_int;
@@ -25,7 +25,7 @@ extern const FAILED :c_int;
 
 extern proc test_file(e : test_error) : c_int;
 
-extern record test_status {
+extern "struct test_status" record test_status {
   var current_status : test_error;
 }
 

@@ -8,7 +8,7 @@ proc main {
   var file_id: hid_t,
       data: [0..#6] c_int,
       dims: [0..#2] hsize_t,
-      i, j, nrow, n_values: size_t;
+      i, j, nrow, n_values: c_size_t;
 
   const filename = "ex_lite2_input.h5";
   var pathPrefix = readPrefixEnv();
@@ -28,8 +28,8 @@ proc main {
   H5LTget_dataset_info_WAR(file_id, c"/dset", c_ptrTo(dims), nil, nil);
 
   /* print it by rows */
-  n_values = (dims[0]*dims[1]): size_t;
-  nrow = dims[1]: size_t;
+  n_values = (dims[0]*dims[1]): c_size_t;
+  nrow = dims[1]: c_size_t;
   for i in 0..#n_values/nrow {
     for j in 0..#nrow {
       write("  ", data[i*nrow:int + j]);

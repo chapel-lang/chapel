@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -148,8 +148,18 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
 
   // Return early if instantiating the function resulted in the same function.
   // This avoids infinite recursion.
-  if (fn == oldFn)
+  if (fn == oldFn) {
+    if (evaluateWhereClause(fn) == false) {
+      if (fn->hasFlag(FLAG_COMPILER_ADDED_WHERE))
+        // RESOLUTION_CANDIDATE_WHERE_FAILED is not helpful to the user
+        // if they did not write the where clause.
+        reason = RESOLUTION_CANDIDATE_IMPLICIT_WHERE_FAILED;
+      else
+        reason = RESOLUTION_CANDIDATE_WHERE_FAILED;
+      return false;
+    }
     return true;
+  }
 
   return isApplicable(info, visInfo);
 }
@@ -161,21 +171,29 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
                                          VisibilityInfo* visInfo) {
   int indx = 0;
   for_alist(iconExpr, fn->interfaceInfo->interfaceConstraints) {
-    ConstraintSat csat = constraintIsSatisfiedAtCallSite(info.call,
+    ConstraintSat csat = constraintIsSatisfiedAtCallSite(info.call, nullptr,
                              toIfcConstraint(iconExpr), substitutions);
     if (csat.istm != nullptr) {
       // satisfied with an implements statement
       witnessIstms.push_back(csat.istm);
-      cgAddRepsToSubstitutions(fn, substitutions, csat.istm, indx++);
+      if (fn->hasFlag(FLAG_CG_REPRESENTATIVE)) {
+        isInterimInstantiation = true;
+        // todo: do we need cgAddInterimRepsToSubstitutions() ?
+      } else {
+        cgAddRepsToSubstitutions(fn, substitutions, csat.istm, indx);
+      }
 
     } else if (csat.icon != nullptr) {
       // satisfied with a constraint of the enclosing GC function
       isInterimInstantiation = true;
+      cgAddInterimRepsToSubstitutions(fn, substitutions,
+        toIfcConstraint(iconExpr), indx, csat.icon, csat.indx);
 
     } else {
       // not satisfied, making this CG fn not applicable
       return false;
     }
+    indx++;
   }
 
   cgConvertAggregateTypes(fn, info.call, substitutions);
@@ -194,13 +212,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   formalIdxToActual.clear();
   actualIdxToFormal.clear();
 
-  for (int i = 0; i < fn->numFormals(); i++) {
-    formalIdxToActual.push_back(NULL);
-  }
-
-  for (int i = 0; i < info.actuals.n; i++) {
-    actualIdxToFormal.push_back(NULL);
-  }
+  formalIdxToActual.resize(fn->numFormals(), nullptr);
+  actualIdxToFormal.resize(info.actuals.n, nullptr);
 
   // Match named actuals against formal names in the function signature.
   // Record successful matches.
@@ -532,14 +545,14 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
 static bool shouldAllowCoercionsType(Type* actualType, Type* formalType) {
   if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
     Type* canonicalActual = canonicalClassType(actualType);
-    ClassTypeDecorator actualD = classTypeDecorator(actualType);
+    ClassTypeDecoratorEnum actualD = classTypeDecorator(actualType);
 
     Type* canonicalFormal = canonicalClassType(formalType);
-    ClassTypeDecorator formalD = classTypeDecorator(formalType);
+    ClassTypeDecoratorEnum formalD = classTypeDecorator(formalType);
 
     AggregateType* at = toAggregateType(canonicalActual);
 
-    if (canInstantiateOrCoerceDecorators(actualD, formalD, false, false)) {
+    if (canInstantiateOrCoerceDecorators(actualD, formalD, true, false)) {
       if (canonicalActual == canonicalFormal ||
           isDispatchParent(canonicalActual, canonicalFormal) ||
           (at && at->instantiatedFrom &&
@@ -659,13 +672,13 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
 
   if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
     Type* canonicalActual = canonicalClassType(actualType);
-    ClassTypeDecorator actualDec = classTypeDecorator(actualType);
+    ClassTypeDecoratorEnum actualDec = classTypeDecorator(actualType);
     AggregateType* actualManager = NULL;
     if (isManagedPtrType(actualType))
       actualManager = getManagedPtrManagerType(actualType);
 
     Type* canonicalFormal = canonicalClassType(formalType);
-    ClassTypeDecorator formalDec = classTypeDecorator(formalType);
+    ClassTypeDecoratorEnum formalDec = classTypeDecorator(formalType);
     AggregateType* formalManager = NULL;
     if (isManagedPtrType(formalType))
       formalManager = getManagedPtrManagerType(formalType);
@@ -679,7 +692,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
 
       // Adjust the formalDec to use when instantiating
       // according to the actual decorator, when formalDec is generic.
-      ClassTypeDecorator useDec = combineDecorators(formalDec, actualDec);
+      ClassTypeDecoratorEnum useDec = combineDecorators(formalDec, actualDec);
       Type* useType = NULL;
       AggregateType* useManager = actualManager ? actualManager : formalManager;
 

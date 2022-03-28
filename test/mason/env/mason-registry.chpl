@@ -1,12 +1,12 @@
 
-private use List;
+use List;
 use MasonEnv;
 use MasonSearch;
 use MasonUtils;
 
 use FileSystem;
-use Spawn;
-use SysCTypes;
+use Subprocess;
+use CTypes;
 
 proc setEnv(name : string, val : string) {
   extern proc setenv(name : c_string, val : c_string, overwrite : c_int) : c_int;
@@ -83,10 +83,10 @@ proc main() {
 
   buildFakeRegistry(altRegistry);
 
-  masonEnv(["foo", "env"]);
+  masonEnv(["env"]);
 
   var args1: list(string);
-  for x in ["foo", "search"] do args1.append(x);
+  for x in ["search"] do args1.append(x);
   masonSearch(args1);
 
   assert(isDir(altRegistry));

@@ -21,6 +21,7 @@ declared to return an integer in which case the value returned serves
 as the status value.
 
 
+.. _technote-mainWithArgs:
 
 Having main() accept command-line arguments
 ===========================================
@@ -58,7 +59,7 @@ When main is so declared, Chapel's default command line argument
 processing changes. Rather than generate an error message when an
 unknown argument is encountered, that argument will instead be passed
 on to this main(args) function. Arguments corresponding to config
-variables or Chapel's predefined flags (like ``-nl``, ``-b``, etc) will still
+variables or Chapel's predefined flags (like ``-nl``, etc.) will still
 be processed and will not be passed on to the main(args) function.
 
 To be clear, the arguments that would be handled without using this

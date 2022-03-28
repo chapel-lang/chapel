@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -165,9 +165,9 @@ proc Replicated.dsiPrivatize(privatizeData)
   // make private copy of targetLocales and its domain
   const privDom = otherTargetLocales.domain;
   const privTargetLocales: [privDom] locale = otherTargetLocales;
- 
+
   const nonNilWrapper: [0..#privTargetLocales.sizeAs(int)] locale =
-    for loc in otherTargetLocales do loc; 
+    for loc in otherTargetLocales do loc;
 
   return new unmanaged Replicated(nonNilWrapper, "used during privatization");
 }
@@ -186,7 +186,7 @@ class ReplicatedDom : BaseRectangularDom {
   const dist : unmanaged Replicated; // must be a Replicated
 
   // this is our index set; we store it here so we can get to it easily
-  var domRep: domain(rank, idxType, stridable);
+  var whole: domain(rank, idxType, stridable);
 
   // local domain objects
   // NOTE: if they ever change after the initializer - Reprivatize them
@@ -205,7 +205,6 @@ class ReplicatedDom : BaseRectangularDom {
     // Force unwrap this reference for ease of use.
     return localDoms[here.id]!;
   }
-
 }
 
 //
@@ -223,20 +222,7 @@ class LocReplicatedDom {
 
 
 // No explicit ReplicatedDom initializer - use the default one.
-// proc ReplicatedDom.ReplicatedDom(...){...}
-
-// Since we piggy-back on (default-mapped) Chapel domains, we can redirect
-// a few operations to those. This function returns a Chapel domain
-// that's fastest to access from the current locale.
-// With privatization this is in the privatized copy of the ReplicatedDom.
-//
-// Not a parentheses-less method because of a bug as of r18460
-// (see generic-parenthesesless-3.chpl).
-proc ReplicatedDom.redirectee(): domain(rank, idxType, stridable)
-  return domRep;
-
-// The same across all domain maps
-override proc ReplicatedDom.dsiMyDist() return dist;
+// proc ReplicatedDom.init(...){...}
 
 
 // privatization
@@ -245,14 +231,14 @@ override proc ReplicatedDom.dsiSupportsPrivatization() param return true;
 
 record ReplicatedDomPrvData {
   var distpid;
-  var domRep;
+  var whole;
   var localDoms;
 }
 
 proc ReplicatedDom.dsiGetPrivatizeData() {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiGetPrivatizeData");
 
-  return new ReplicatedDomPrvData(dist.pid, domRep, localDoms);
+  return new ReplicatedDomPrvData(dist.pid, whole, localDoms);
 }
 
 proc ReplicatedDom.dsiPrivatize(privatizeData) {
@@ -261,12 +247,12 @@ proc ReplicatedDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(this.dist.type, privatizeData.distpid);
   return new unmanaged ReplicatedDom(rank=rank, idxType=idxType, stridable=stridable,
                            dist = privdist,
-                           domRep = privatizeData.domRep,
+                           whole = privatizeData.whole,
                            localDoms = privatizeData.localDoms);
 }
 
 proc ReplicatedDom.dsiGetReprivatizeData() {
-  return domRep;
+  return whole;
 }
 
 proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
@@ -274,7 +260,7 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
          this.idxType == other.idxType &&
          this.stridable == other.stridable);
 
-  this.domRep = reprivatizeData;
+  this.whole = reprivatizeData;
 }
 
 
@@ -315,6 +301,27 @@ proc Replicated.dsiIndexToLocale(indexx): locale {
   return here;
 }
 
+// common redirects
+proc ReplicatedDom.dsiLow           return whole.low;
+proc ReplicatedDom.dsiHigh          return whole.high;
+proc ReplicatedDom.dsiAlignedLow    return whole.alignedLow;
+proc ReplicatedDom.dsiAlignedHigh   return whole.alignedHigh;
+proc ReplicatedDom.dsiFirst         return whole.first;
+proc ReplicatedDom.dsiLast          return whole.last;
+proc ReplicatedDom.dsiStride        return whole.stride;
+proc ReplicatedDom.dsiAlignment     return whole.alignment;
+proc ReplicatedDom.dsiNumIndices    return whole.sizeAs(uint);
+proc ReplicatedDom.dsiDim(d)        return whole.dim(d);
+proc ReplicatedDom.dsiDim(param d)  return whole.dim(d);
+proc ReplicatedDom.dsiDims()        return whole.dims();
+//proc ReplicatedDom.dsiGetIndices()  return whole.getIndices();
+proc ReplicatedDom.dsiMember(i)     return whole.contains(i);
+proc ReplicatedDom.doiToString()    return whole:string;
+proc ReplicatedDom.dsiSerialWrite(x) { x.write(whole); }
+proc ReplicatedDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
+override proc ReplicatedDom.dsiIndexOrder(i)              return whole.indexOrder(i);
+override proc ReplicatedDom.dsiMyDist()                   return dist;
+
 // Call 'setIndices' in order to leverage DefaultRectangular's handling of
 // assignments from unstrided domains to strided domains.
 proc ReplicatedDom.dsiSetIndices(x) where isTuple(x) && isRange(x(0)) {
@@ -326,7 +333,7 @@ proc ReplicatedDom.dsiSetIndices(x) where isTuple(x) && isRange(x(0)) {
 proc ReplicatedDom.dsiSetIndices(domArg: domain): void {
   if traceReplicatedDist then
     writeln("ReplicatedDom.dsiSetIndices on domain ", domArg);
-  domRep = domArg;
+  whole = domArg;
   coforall locDom in localDoms do
     on locDom do
       locDom!.domLocalRep = domArg;
@@ -336,7 +343,7 @@ proc ReplicatedDom.dsiGetIndices(): rank * range(idxType,
                                                  BoundedRangeType.bounded,
                                                  stridable) {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiGetIndices");
-  return redirectee().getIndices();
+  return whole.getIndices();
 }
 
 // Iterators over the domain's indices (serial, leader, follower).
@@ -344,8 +351,7 @@ proc ReplicatedDom.dsiGetIndices(): rank * range(idxType,
 
 // Serial iterator
 iter ReplicatedDom.these() {
-  var dom = redirectee();
-  for i in dom do
+  for i in whole do
     yield i;
 }
 
@@ -357,57 +363,9 @@ iter ReplicatedDom.these(param tag: iterKind) where tag == iterKind.leader {
 
 iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for i in redirectee().these(tag, followThis) do
+  for i in whole.these(tag, followThis) do
     yield i;
 }
-
-/* Write the domain out to the given Writer serially. */
-proc ReplicatedDom.dsiSerialWrite(f): void {
-  // redirect to DefaultRectangular
-  redirectee()._value.dsiSerialWrite(f);
-}
-
-proc ReplicatedDom.doiToString() {
-  return redirectee()._value.doiToString();
-}
-
-proc ReplicatedDom.dsiDims(): rank * range(idxType,
-                                           BoundedRangeType.bounded,
-                                           stridable)
-  return redirectee().dims();
-
-proc ReplicatedDom.dsiDim(dim: int): range(idxType,
-                                           BoundedRangeType.bounded,
-                                           stridable)
-  return redirectee().dim(dim);
-
-proc ReplicatedDom.dsiLow
-  return redirectee().low;
-
-proc ReplicatedDom.dsiHigh
-  return redirectee().high;
-
-proc ReplicatedDom.dsiStride
-  return redirectee().stride;
-
-proc ReplicatedDom.dsiAlignedLow
-  return redirectee().alignedLow;
-
-proc ReplicatedDom.dsiAlignedHigh
-  return redirectee().alignedHigh;
-
-proc ReplicatedDom.dsiAlignment
-  return redirectee().alignment;
-
-// here replication is visible
-proc ReplicatedDom.dsiNumIndices
-  return redirectee().sizeAs(uint);
-
-proc ReplicatedDom.dsiMember(indexx)
-  return redirectee().contains(indexx);
-
-proc ReplicatedDom.dsiIndexOrder(indexx)
-  return redirectee().dsiIndexOrder(indexx);
 
 override proc ReplicatedDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom {
@@ -698,7 +656,7 @@ in this.dom.dsiSetIndices(). In our case, that's nothing.
 /* no longer called
 proc ReplicatedArr.dsiReallocate(d: domain): void {
   if traceReplicatedDist then
-    writeln("ReplicatedArr.dsiReallocate ", dom.domRep, " -> ", d, " (no-op)");
+    writeln("ReplicatedArr.dsiReallocate ", dom.whole, " -> ", d, " (no-op)");
 }
 */
 
@@ -718,7 +676,7 @@ proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 
 proc ReplicatedDom.dsiLocalSubdomain(loc: locale) {
   if localDoms.domain.contains(loc.id) then
-    return domRep;
+    return whole;
   else {
     var d: domain(rank, idxType, stridable);
     return d;
@@ -727,7 +685,7 @@ proc ReplicatedDom.dsiLocalSubdomain(loc: locale) {
 
 proc ReplicatedArr.dsiLocalSubdomain(loc: locale) {
   if localArrs.domain.contains(loc.id) then
-    return dom.domRep;
+    return dom.whole;
   else {
     var d: domain(rank, idxType, stridable);
     return d;

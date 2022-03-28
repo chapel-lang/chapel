@@ -1,0 +1,20 @@
+borrowed - borrowed
+true
+true
+false
+true
+owned - owned
+true
+true
+false
+true
+borrowed - generic
+true
+true
+false
+true
+owned - generic
+true
+true
+false
+true

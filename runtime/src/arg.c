@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,8 +42,6 @@
 
 static int gdbFlag = 0;
 static int lldbFlag = 0;
-int32_t blockreport = 0; // report locations of blocked threads on SIGINT
-int32_t taskreport = 0;  // report thread hierarchy on SIGINT
 
 
 typedef struct _flagType {
@@ -62,10 +60,6 @@ static const flagType flagList[] = {
     "(equivalent to setting the numLocales config const)", 'g' },
   { "q", "", "quiet", "run program in quiet mode", 'g' },
   { "v", "", "verbose", "run program in verbose mode", 'g' },
-  { "b", "", "blockreport",
-    "report location of blocked threads on SIGINT", 'g' },
-  { "t", "", "taskreport",
-    "report list of pending and executing tasks on SIGINT", 'g' },
   { "", "", "gdb", "run program in gdb", 'g' },
   { "", "", "lldb", "run program in lldb", 'g' },
   { "E", "<envVar>=<val>", "",
@@ -311,6 +305,12 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
      */
     if (mainHasArgs && strcmp(currentArg, "--") == 0) {
       stop_parsing = 1;
+      // if the ArgumentParser was also included, copy the -- through so it
+      // may use it as a passthrough delimiter
+      if (mainPreserveDelimiter) {
+        chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = currentArg;
+        chpl_gen_main_arg.argc++;
+      }
       continue;
     }
 
@@ -349,14 +349,6 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
           }
           if (strcmp(flag, "verbose") == 0) {
             verbosity=2;
-            break;
-          }
-          if (strcmp(flag, "blockreport") == 0) {
-            blockreport = 1;
-            break;
-          }
-          if (strcmp(flag, "taskreport") == 0) {
-            taskreport = 1;
             break;
           }
           if (strcmp(flag, "quiet") == 0) {
@@ -400,14 +392,6 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
       case 'a':
         if (currentArg[2] == '\0') {
           printAbout = 1;
-        } else {
-          i += handleNonstandardArg(argc, argv, i, lineno, filename);
-        }
-        break;
-
-      case 'b':
-        if (currentArg[2] == '\0') {
-          blockreport = 1;
         } else {
           i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
@@ -488,14 +472,6 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
           i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
         }
-
-      case 't':
-        if (currentArg[2] == '\0') {
-          taskreport = 1;
-        } else {
-          i += handleNonstandardArg(argc, argv, i, lineno, filename);
-        }
-        break;
 
       case 'v':
         if (currentArg[2] == '\0') {

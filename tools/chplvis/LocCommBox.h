@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -50,7 +50,7 @@ class LocCommBox : public Fl_Group {
  public:
 
   enum LCBoxKind { I_None, I_Locale, I_Comm } what;
-  
+
   LocCommBox (int X, int Y, int W, int H, char *l = 0);
 
   enum LCBoxKind boxKind (void) { return what; }

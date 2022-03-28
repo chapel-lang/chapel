@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -61,14 +61,13 @@ module ChapelStandard {
   public use ChapelTaskTable;
   public use MemTracking;
   public use ChapelUtil;
-  public use ChapelError;
+  public use Errors;
   public use ChapelTaskData;
   public use ChapelSerializedBroadcast;
   public use ExportWrappers;
   public use ChapelAutoAggregation;
 
   // Standard modules.
-  public use Builtins;
   public use Types;
   public use Math;
   public use VectorizingIterator;

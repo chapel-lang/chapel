@@ -67,15 +67,13 @@ int ofi_bufpool_grow(struct ofi_bufpool *pool)
 		ret = ofi_alloc_hugepage_buf((void **) &buf_region->alloc_region,
 					     pool->alloc_size);
 		/* If we can't allocate huge pages, fall back to normal
-		 * allocations if this is the first allocation attempt.
+		 * allocations for all future attempts.
 		 */
-		if (ret && !pool->entry_cnt) {
+		if (ret) {
 			pool->attr.flags &= ~OFI_BUFPOOL_HUGEPAGES;
-			pool->alloc_size = (pool->attr.chunk_cnt + 1) *
-					   pool->entry_size;
-			pool->region_size = pool->alloc_size - pool->entry_size;
 			goto retry;
 		}
+		buf_region->flags = OFI_BUFPOOL_HUGEPAGES;
 	} else {
 retry:
 		ret = ofi_memalign((void **) &buf_region->alloc_region,
@@ -116,26 +114,18 @@ retry:
 		buf_hdr = ofi_buf_hdr(buf);
 		buf_hdr->region = buf_region;
 		buf_hdr->index = pool->entry_cnt + i;
+		OFI_DBG_SET(buf_hdr->magic, OFI_MAGIC_SIZE_T);
+		OFI_DBG_SET(buf_hdr->ftr,
+			    (struct ofi_bufpool_ftr *) ((char *) buf +
+			    pool->entry_size - sizeof(struct ofi_bufpool_ftr)));
+		OFI_DBG_SET(buf_hdr->ftr->magic, OFI_MAGIC_SIZE_T);
+
 		if (pool->attr.init_fn) {
-#if ENABLE_DEBUG
-			if (pool->attr.flags & OFI_BUFPOOL_INDEXED) {
-				buf_hdr->entry.dlist.next = (void *) OFI_MAGIC_64;
-				buf_hdr->entry.dlist.prev = (void *) OFI_MAGIC_64;
-
-				pool->attr.init_fn(buf_region, buf);
-
-				assert((buf_hdr->entry.dlist.next == (void *) OFI_MAGIC_64) &&
-				       (buf_hdr->entry.dlist.prev == (void *) OFI_MAGIC_64));
-			} else {
-				buf_hdr->entry.slist.next = (void *) OFI_MAGIC_64;
-
-				pool->attr.init_fn(buf_region, buf);
-
-				assert(buf_hdr->entry.slist.next == (void *) OFI_MAGIC_64);
-			}
-#else
+			OFI_DBG_SET(buf_hdr->entry.dlist.next, OFI_MAGIC_PTR);
+			OFI_DBG_SET(buf_hdr->entry.dlist.prev, OFI_MAGIC_PTR);
 			pool->attr.init_fn(buf_region, buf);
-#endif
+			assert((buf_hdr->entry.dlist.next == OFI_MAGIC_PTR) &&
+			       (buf_hdr->entry.dlist.prev == OFI_MAGIC_PTR));
 		}
 		if (pool->attr.flags & OFI_BUFPOOL_INDEXED) {
 			dlist_insert_tail(&buf_hdr->entry.dlist,
@@ -156,7 +146,7 @@ err3:
 	if (pool->attr.free_fn)
 	    pool->attr.free_fn(buf_region);
 err2:
-	if (pool->attr.flags & OFI_BUFPOOL_HUGEPAGES)
+	if (buf_region->flags & OFI_BUFPOOL_HUGEPAGES)
 		ofi_free_hugepage_buf(buf_region->alloc_region, pool->alloc_size);
 	else
 		ofi_freealign(buf_region->alloc_region);
@@ -179,7 +169,10 @@ int ofi_bufpool_create_attr(struct ofi_bufpool_attr *attr,
 	pool->attr = *attr;
 
 	entry_sz = (attr->size + sizeof(struct ofi_bufpool_hdr));
-	pool->entry_size = ofi_get_aligned_size(entry_sz, attr->alignment);
+	OFI_DBG_ADD(entry_sz, sizeof(struct ofi_bufpool_ftr));
+	if (!attr->alignment)
+		pool->attr.alignment = entry_sz;
+	pool->entry_size = ofi_get_aligned_size(entry_sz, pool->attr.alignment);
 
 	if (!attr->chunk_cnt) {
 		pool->attr.chunk_cnt =
@@ -221,7 +214,7 @@ void ofi_bufpool_destroy(struct ofi_bufpool *pool)
 		if (pool->attr.free_fn)
 			pool->attr.free_fn(buf_region);
 
-		if (pool->attr.flags & OFI_BUFPOOL_HUGEPAGES) {
+		if (buf_region->flags & OFI_BUFPOOL_HUGEPAGES) {
 			ret = ofi_free_hugepage_buf(buf_region->alloc_region,
 						    pool->alloc_size);
 			if (ret) {

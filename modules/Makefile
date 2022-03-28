@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -34,8 +34,8 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
-SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
-SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
+SYS_CTYPES_MODULE_DOC=standard/ChapelSysCTypes.chpl
+SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/ChapelSysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC_BUILD=${CHPL_MAKE_HOME}/build/doc
@@ -71,13 +71,15 @@ MODULES_TO_DOCUMENT = \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
-	standard/Builtins.chpl \
 	standard/ChapelEnv.chpl \
 	standard/ChapelIO.chpl \
+	standard/ChplConfig.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/CPtr.chpl \
+	standard/CTypes.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
+	standard/Errors.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
 	standard/Heap.chpl \
@@ -95,22 +97,31 @@ MODULES_TO_DOCUMENT = \
 	standard/Regex.chpl \
 	standard/Set.chpl \
 	standard/Spawn.chpl \
+	standard/Subprocess.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
+	standard/SysCTypes.chpl \
 	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
-	standard/Version.chpl \
-	$(SYS_CTYPES_MODULE_DOC)
+	standard/Version.chpl
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
+	packages/ArgumentParser.chpl \
 	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
+	packages/Channel.chpl \
+	packages/Collection.chpl \
+	packages/ConcurrentMap.chpl \
+	packages/CopyAggregation.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
+	packages/DistributedBag.chpl \
+	packages/DistributedDeque.chpl \
+	packages/DistributedIters.chpl \
 	packages/EpochManager.chpl \
 	packages/FFTW.chpl \
 	packages/FunctionalOperations.chpl \
@@ -124,27 +135,24 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
-	packages/Norm.chpl \
-	packages/OrderedMap.chpl \
-	packages/OrderedSet.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
+	packages/Socket.chpl \
 	packages/Sort.chpl \
-	packages/UnrolledLinkedList.chpl \
-	packages/VisualDebug.chpl \
-	packages/ZMQ.chpl \
-	packages/Collection.chpl \
-	packages/DistributedBag.chpl \
-	packages/DistributedDeque.chpl \
-	packages/DistributedIters.chpl \
+	packages/SortedMap.chpl \
+	packages/SortedSet.chpl \
 	packages/TOML.chpl \
+	packages/URL.chpl \
 	packages/UnitTest.chpl \
 	packages/UnorderedAtomics.chpl \
 	packages/UnorderedCopy.chpl \
-	packages/URL.chpl
+	packages/UnrolledLinkedList.chpl \
+	packages/VisualDebug.chpl \
+	packages/ZMQ.chpl \
+
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -160,25 +168,25 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCS.chpl \
 
+
 INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/Atomics.chpl                 \
+	internal/Bytes.chpl                   \
 	internal/ChapelArray.chpl             \
-	internal/ChapelComplex_forDocs.chpl   \
-	internal/ChapelError.chpl             \
+	internal/ChapelDomain.chpl            \
 	internal/ChapelLocale.chpl            \
 	internal/ChapelRange.chpl             \
-	internal/Bytes.chpl                   \
-	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
 	internal/OwnedObject.chpl             \
-	internal/SharedObject.chpl
+	internal/SharedObject.chpl            \
+	internal/String.chpl                  \
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
 	@export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
-	  $(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
+	  $(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT) $(SYS_CTYPES_MODULE_DOC)
 	@echo "Running post-processing scripts"
 	@./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	@./dists/fixDistDocs.perl      ${MODULE_SPHINX}

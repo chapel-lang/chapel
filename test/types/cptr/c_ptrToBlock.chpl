@@ -1,4 +1,4 @@
-use BlockDist, CPtr;
+use BlockDist, CTypes;
 
 var B = newBlockArr({1..10}, real);
 

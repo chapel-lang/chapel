@@ -1,15 +1,15 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,16 +25,14 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 all: $(TMPBINNAME)
 
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+	$(CC) $(GEN_CFLAGS) $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) $(COMP_GEN_CFLAGS) -I. $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS) \
 		-c -o $(TMPBINNAME).o \
-		$(CHPLSRC) \
-		$(CHPL_RT_INC_DIR)
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
-	        $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+		$(CHPLSRC)
+	$(LD) $(GEN_LFLAGS) \
 		-o $(TMPBINNAME) $(TMPBINNAME).o $(CHPLUSEROBJ) \
 		$(CHPL_CL_OBJS) \
-		-L$(CHPL_RT_LIB_DIR) -lchpl -lm \
-		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+		$(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS) \
+		$(COMP_GEN_USER_LDFLAGS) $(COMP_GEN_LFLAGS) $(LIBS)
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)

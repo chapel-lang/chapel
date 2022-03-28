@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -156,6 +156,7 @@ module UnorderedAtomics {
      Fence any pending unordered atomics issued by the current task.
    */
   inline proc unorderedAtomicTaskFence(): void {
+    use ChplConfig;
     if CHPL_NETWORK_ATOMICS != "none" {
       extern proc chpl_comm_atomic_unordered_task_fence();
       chpl_comm_atomic_unordered_task_fence();

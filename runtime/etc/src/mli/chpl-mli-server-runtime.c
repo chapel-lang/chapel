@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,8 +74,10 @@ void chpl_mli_smain(const char* setup_conn) {
   int64_t ack = 0;
   int execute = 1;
   int err = 0;
+#ifdef CHPL_MLI_DEBUG_PRINT
   clock_t before = clock();
   double seconds = 0;
+#endif
 
   chpl_mli_server_init(&chpl_server);
 
@@ -109,7 +111,7 @@ void chpl_mli_smain(const char* setup_conn) {
   while (execute) {
 
     chpl_mli_debugf("%s\n", "Listening...");
-    
+
     // Every transaction starts by reading an int64 off the wire.
     err = chpl_mli_pull(chpl_server.main, &id, sizeof(id));
 
@@ -127,7 +129,7 @@ void chpl_mli_smain(const char* setup_conn) {
       chpl_mli_debugf("Received request for ID: %lld\n", id);
       ack = CHPL_MLI_CODE_NONE;
     }
- 
+
     chpl_mli_debugf("Responding with code: %s\n", chpl_mli_errstr(0));
     err = chpl_mli_push(chpl_server.main, &ack, sizeof(ack));
 
@@ -139,7 +141,9 @@ void chpl_mli_smain(const char* setup_conn) {
 
   chpl_mli_debugf("Shutdown, code: %s\n", chpl_mli_errstr(id));
 
+#ifdef CHPL_MLI_DEBUG_PRINT
   seconds = (double) (clock() - before) / (double) CLOCKS_PER_SEC;
+#endif
 
   chpl_mli_close(chpl_server.setup_sock);
   chpl_mli_close(chpl_server.main);

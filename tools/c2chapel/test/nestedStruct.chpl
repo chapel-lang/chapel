@@ -5,18 +5,18 @@ require "nestedStruct.h";
 
 // Note: Generated with fake std headers
 
-use CPtr;
-extern record first {
+use CTypes;
+extern "struct first" record first {
   var a : c_int;
   var b : c_string;
 }
 
-extern record second {
+extern "struct second" record second {
   var a : c_ptr(c_int);
   var b : c_ptr(c_int);
 }
 
-extern record Outer {
+extern "struct Outer" record Outer {
   var structField : first;
   var fieldPtr : c_ptr(second);
 }

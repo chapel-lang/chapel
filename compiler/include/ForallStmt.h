@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,7 +51,7 @@ class ForallOptimizationInfo {
 
     // the static check control symbol added for symbol
     std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
-    
+
     // the dynamic check call added for symbol
     std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
 
@@ -206,7 +206,6 @@ inline bool ForallStmt::fromReduce()            const { return  fFromReduce;  }
 inline bool ForallStmt::overTupleExpand()       const { return fOverTupleExpand;       }
 inline bool ForallStmt::allowSerialIterator()   const { return fAllowSerialIterator;   }
 inline bool ForallStmt::requireSerialIterator() const { return fRequireSerialIterator; }
-
 /// conveniences ///
 
 inline int   ForallStmt::numInductionVars()  const { return fIterVars.length; }

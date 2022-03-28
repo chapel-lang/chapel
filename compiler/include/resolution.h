@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -110,14 +110,14 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
                                     Type* formalType,
                                     Symbol* formalSym);
 
-bool canCoerceDecorators(ClassTypeDecorator actual,
-                         ClassTypeDecorator formal,
+bool canCoerceDecorators(ClassTypeDecoratorEnum actual,
+                         ClassTypeDecoratorEnum formal,
                          bool allowNonSubtypes,
                          bool implicitBang);
-bool canInstantiateDecorators(ClassTypeDecorator actual,
-                              ClassTypeDecorator formal);
-bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
-                                      ClassTypeDecorator formal,
+bool canInstantiateDecorators(ClassTypeDecoratorEnum actual,
+                              ClassTypeDecoratorEnum formal);
+bool canInstantiateOrCoerceDecorators(ClassTypeDecoratorEnum actual,
+                                      ClassTypeDecoratorEnum formal,
                                       bool allowNonSubtypes,
                                       bool implicitBang);
 
@@ -180,13 +180,18 @@ void resolveImplementsStmt(ImplementsStmt* istm);
 void resolveConstrainedGenericFun(FnSymbol* fn);
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
 Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
-class ConstraintSat { public: ImplementsStmt* istm; IfcConstraint* icon;
-  ConstraintSat(ImplementsStmt* s, IfcConstraint* c): istm(s), icon(c) { } };
-ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call,
-                                                IfcConstraint* constraint,
-                                                SymbolMap& substitutions);
+struct ConstraintSat { ImplementsStmt* istm; IfcConstraint* icon; int indx;
+  ConstraintSat(ImplementsStmt* s): istm(s), icon(0), indx(0) { }
+  ConstraintSat(IfcConstraint* c, int i): istm(0), icon(c), indx(i) { } };
+ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call, Expr* addlSite,
+                                              IfcConstraint* constraint,
+                                              SymbolMap& substitutions);
 void cgAddRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
                               ImplementsStmt* istm, int indx);
+void cgAddInterimRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
+                                     IfcConstraint* tgtIcon,  int tgtIndx,
+                                     IfcConstraint* callIcon, int callIndx);
+
 void cgConvertAggregateTypes(FnSymbol* fn, Expr* anchor,
                              SymbolMap& substitutions);
 void recordCGInterimInstantiations(CallExpr* call, ResolutionCandidate* best1,
@@ -364,7 +369,7 @@ void trimVisibleCandidates(CallInfo& call,
 void resolveGenericActuals(CallExpr* call);
 
 Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
-                                  ClassTypeDecorator useDec,
+                                  ClassTypeDecoratorEnum useDec,
                                   AggregateType* manager,
                                   Expr* ctx);
 

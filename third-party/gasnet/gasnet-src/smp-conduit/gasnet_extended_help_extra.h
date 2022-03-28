@@ -24,7 +24,6 @@ gex_Event_t gasnete_get_nb(
                      size_t nbytes,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
   gasneti_unreachable();
   return GEX_EVENT_INVALID;
 }
@@ -38,7 +37,6 @@ gex_Event_t gasnete_put_nb(
                      size_t nbytes, gex_Event_t *lc_opt,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
   gasneti_unreachable();
   return GEX_EVENT_INVALID;
 }
@@ -57,7 +55,6 @@ int gasnete_get_nbi (gex_TM_t tm,
                      size_t nbytes,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
   gasneti_unreachable();
   return 0;
 }
@@ -70,7 +67,6 @@ int gasnete_put_nbi (gex_TM_t tm,
                      size_t nbytes, gex_Event_t *lc_opt,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
   gasneti_unreachable();
   return 0;
 }
@@ -91,7 +87,6 @@ int gasnete_put_val(
                 size_t nbytes, gex_Flags_t flags
                 GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUTVAL(tm,rank,dest,value,nbytes);
   gasneti_unreachable();
   return 0;
 }
@@ -105,7 +100,6 @@ gex_Event_t gasnete_put_nb_val(
                 size_t nbytes, gex_Flags_t flags
                 GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUTVAL(tm,rank,dest,value,nbytes);
   gasneti_unreachable();
   return GEX_EVENT_INVALID;
 }
@@ -127,7 +121,6 @@ gex_RMA_Value_t gasnete_get_val(
                 size_t nbytes, gex_Flags_t flags
                 GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GETVAL(tm,rank,src,nbytes);
   gasneti_unreachable();
   return 0;
 }
@@ -138,22 +131,10 @@ gex_RMA_Value_t gasnete_get_val(
   ====================
 */
 
-// Get trivially identical to nb plus gasneti_sync_reads())
-GASNETI_INLINE(gasnete_get) GASNETI_WARN_UNUSED_RESULT
-int gasnete_get(
-                     gex_TM_t tm,
-                     void *dest,
-                     gex_Rank_t rank, void *src,
-                     size_t nbytes,
-                     gex_Flags_t flags GASNETI_THREAD_FARG)
-{
-  gex_Event_t e = gasnete_get_nb(tm,dest,rank,src,nbytes,flags GASNETI_THREAD_PASS);
-  gasneti_sync_reads();
-  return 0;
-}
-#define gasnete_get gasnete_get
+// Blocking Get identical to nbi
+#define gasnete_get gasnete_get_nbi
 
-// Put identical to nbi (w/o any need to sync_reads) except for lack of lc_opt argument
+// Blocking Put identical to nbi except for lack of lc_opt argument
 #define gasnete_put(tm,rank,dest,src,nbytes,flags_and_TI) \
         gasnete_put_nbi(tm,rank,dest,src,nbytes,GEX_EVENT_NOW,flags_and_TI)
 

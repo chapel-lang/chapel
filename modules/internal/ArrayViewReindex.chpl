@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -107,7 +107,7 @@ module ArrayViewReindex {
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
     var updomInst: unmanaged DefaultRectangularDom(rank, idxType, stridable)?;
-    forwarding updom except these;
+    forwarding updom except these, chpl__serialize, chpl__deserialize;
 
     // the old original index set that we're equivalent to
     var downdomPid;
@@ -124,8 +124,8 @@ module ArrayViewReindex {
       else
         return distInst;
     }
-    
-    inline proc updom {
+
+    inline proc updom: updomInst!.type {
       return updomInst!;
     }
 
@@ -140,7 +140,7 @@ module ArrayViewReindex {
       return a.type;
     }
 
-    inline proc downdom {
+    inline proc downdom: downdomInst.type {
       if _isPrivatized(downdomInst) then
         return chpl_getPrivatizedCopy(downdomInst.type, downdomPid);
       else
@@ -199,30 +199,27 @@ module ArrayViewReindex {
       ownsDownDomInst = true;
     }
 
-    pragma "order independent yielding loops"
     iter these() {
       if chpl__isDROrDRView(downdom) {
-        for i in updom do
+        foreach i in updom do
           yield i;
       } else {
-        for i in downdom do
+        foreach i in downdom do
           yield downIdxToUpIdx(i);
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && chpl__isDROrDRView(downdom)
-      && __primitive("method call resolves", updom, "these", tag)
+      && __primitive("resolves", updom.these(tag))
     {
       forall i in updom do
           yield i;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !chpl__isDROrDRView(downdom)
-      && __primitive("method call resolves", downdom, "these", tag)
+      && __primitive("resolves", downdom.these(tag))
     {
       forall i in downdom do
         yield downIdxToUpIdx(i);
@@ -303,6 +300,21 @@ module ArrayViewReindex {
       _delete_dom(updomInst!, false);
       _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
+
+    // These would be forwarded to 'updom' automatically,
+    // except the "last resort" overloads BaseDom take precedence
+    // over forwarding. So, define these explicitly.
+    proc parSafe return updom.parSafe;
+    proc dsiLow return updom.dsiLow;
+    proc dsiHigh return updom.dsiHigh;
+    proc dsiStride return updom.dsiStride;
+    proc dsiAlignment return updom.dsiAlignment;
+    proc dsiFirst return updom.dsiFirst;
+    proc dsiLast return updom.dsiLast;
+    proc dsiAlignedlow return updom.dsiAlignedlow;
+    proc dsiAlignedhigh return updom.dsiAlignedhigh;
+    proc dsiIndexOrder return updom.dsiIndexOrder;
+    proc dsiMakeIndexBuffer return updom.dsiMakeIndexBuffer;
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
@@ -403,7 +415,7 @@ module ArrayViewReindex {
                       doiBulkTransferFromAny,  doiBulkTransferToAny, doiScan,
                       chpl__serialize, chpl__deserialize;
 
-    proc downdom {
+    proc downdom: arr.dom.type {
       // TODO: This routine may get a remote domain if this is a view
       // of a view and is called on a locale other than the
       // originating one for the domain.  Relax the requirement that
@@ -451,10 +463,9 @@ module ArrayViewReindex {
         yield elem;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
-           __primitive("method call resolves", privDom, "these", tag) {
+           __primitive("resolves", privDom.these(tag)) {
       forall i in privDom {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getDataIndex(i);
@@ -471,10 +482,9 @@ module ArrayViewReindex {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
-      for i in privDom.these(tag, followThis) {
+      foreach i in privDom.these(tag, followThis) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getDataIndex(i);
           yield indexCache.getDataElem(dataIdx);
@@ -520,8 +530,7 @@ module ArrayViewReindex {
       return dsiAccess(i);
     }
 
-    inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i: idxType ...rank) const ref {
       return dsiAccess(i);
     }
 
@@ -544,8 +553,7 @@ module ArrayViewReindex {
       }
     }
 
-    inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i) const ref {
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -562,7 +570,6 @@ module ArrayViewReindex {
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiLocalAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiBoundsCheck(i) {
@@ -633,7 +640,7 @@ module ArrayViewReindex {
     // routines relating to the underlying domains and arrays
     //
 
-    inline proc privDom {
+    inline proc privDom: dom.type {
       if _isPrivatized(dom) {
         return chpl_getPrivatizedCopy(dom.type, _DomPid);
       } else {

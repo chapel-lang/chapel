@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Build SysCTypes.chpl module.
+"""Build ChapelSysCTypes.chpl module.
 
 Determines the size of various C types (e.g. long, size_t, etc) and creates a
 Chapel module with 'extern types' declaration so Chapel code can refer to the
@@ -8,7 +8,7 @@ types.
 
 Specify the output file as a positional argument, e.g.:
 
-    %prog path/to/SysCTypes.chpl
+    %prog path/to/ChapelSysCTypes.chpl
 """
 
 from __future__ import print_function
@@ -43,8 +43,10 @@ _types = [
     ('INTPTR_MAX', 'c_intptr', 'intptr_t'),
     ('UINTPTR_MAX', 'c_uintptr', 'uintptr_t'),
     ('PTRDIFF_MAX', 'c_ptrdiff', 'ptrdiff_t'),
-    ('SSIZE_MAX', 'ssize_t', 'ssize_t'),
+    ('SIZE_MAX', 'c_size_t', 'size_t'),
+    ('SSIZE_MAX', 'c_ssize_t', 'ssize_t'),
     ('SIZE_MAX', 'size_t', 'size_t'),
+    ('SSIZE_MAX', 'ssize_t', 'ssize_t'),
 ]
 
 # Map of max values to chapel types.
@@ -84,7 +86,7 @@ def main():
 
 
 def get_sys_c_types(docs=False):
-    """Returns a string with the SysCTypes.chpl module content."""
+    """Returns a string with the ChapelSysCTypes.chpl module content."""
 
     # Find the $CHPL_HOME/util/config/ dir.
     util_cfg_dir = os.path.abspath(os.path.dirname(__file__))
@@ -171,9 +173,10 @@ def get_sys_c_types(docs=False):
     logging.debug('Evaluated all {0} expressions from '
                   'preprocessor.'.format(len(max_values)))
 
-    # Iterate through the chapel types/max values and print out the SysCTypes
-    # Chapel module code. Each line takes the form "extern type <chpl_type>=
-    # <chpl_value>;" where <chpl_value> is found by looking up the max value
+    # Iterate through the chapel types/max values and print out the
+    # ChapelSysCTypes module code. Each line takes the form
+    #   "extern type <chpl_type>=<chpl_value>;"
+    # where <chpl_value> is found by looking up the max value
     # (from evaluated expression above) in the _max_value_to_chpl_type map.
     sys_c_types = []
     handled_c_ptr = False
@@ -185,9 +188,13 @@ def get_sys_c_types(docs=False):
                           '_max_value_to_chpl_type dict.'.format(max_value))
             sys.exit(1)
 
-        sys_c_types.append('/* The type corresponding to the C {c_type} type'
+        sys_c_types.append('/* The Chapel type corresponding to the C \'{c_type}\' type'
                            ' */'.format(**locals()))
-        stmt = 'extern type {chpl_type}= '.format(**locals())
+        if not chpl_type.startswith('c_'):
+            stmt = 'deprecated "\'{c_type}\' has been deprecated in favor of \'c_{c_type}\'"\n'.format(**locals())
+        else:
+            stmt = ''
+        stmt += 'extern type {chpl_type}= '.format(**locals())
         if docs:
             stmt += 'integral'
         else:
@@ -210,13 +217,14 @@ def get_sys_c_types(docs=False):
     #
     sys_c_types.append("""
 {
-  extern proc sizeof(type t): size_t;
+  extern proc sizeof(type t): c_size_t;
 """)
     for i, max_value in enumerate(max_values):
         _, chpl_type, _ = _types[i]
-        chpl_value = _max_value_to_chpl_type.get(str(max_value))
-        sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
-              ';'.format(**locals()))
+        if chpl_type.startswith('c_'):
+            chpl_value = _max_value_to_chpl_type.get(str(max_value))
+            sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
+                               ';'.format(**locals()))
     sys_c_types.append('}')
 
     return '\n'.join(sys_c_types)
@@ -242,7 +250,7 @@ def _parse_args():
             return text
 
     parser = optparse.OptionParser(
-        usage='usage: %prog [--doc] [--verbose] <SysCTypes_filename>',
+        usage='usage: %prog [--doc] [--verbose] <ChapelSysCTypes_filename>',
         description=__doc__,
         formatter=NoWrapHelpFormatter()
     )
@@ -253,7 +261,7 @@ def _parse_args():
     )
     parser.add_option(
         '--doc', action='store_true',
-        help='Build SysCTypes module for chpldoc.'
+        help='Build ChapelSysCTypes module for chpldoc.'
     )
 
     opts, args = parser.parse_args()

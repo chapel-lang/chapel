@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,8 +41,10 @@
 #include <string.h>
 #include <unistd.h>
 
-int32_t chpl_nodeID = -1;
-int32_t chpl_numNodes = -1;
+int32_t          chpl_nodeID = -1;
+int32_t          chpl_numNodes = -1;
+static int32_t   numLocalesOnNode = -1;
+static chpl_bool oversubscribed = false;
 
 
 //
@@ -239,4 +241,31 @@ void chpl_wait_for_shutdown(void) {
     pthread_cond_wait(&shutdown_cond, &shutdown_mutex);
   }
   pthread_mutex_unlock(&shutdown_mutex);
+}
+
+// Sets numLocalesOnNode and determines if node is oversubscribed based
+// on the number of locales and the CHPL_RT_OVERSUBSCRIBED environment
+// variable.
+
+void chpl_set_num_locales_on_node(int32_t count) {
+  if (count <= 0) {
+    chpl_internal_error_v("count (%d) must be > 0", count);
+  }
+  numLocalesOnNode = count;
+  oversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED",
+                                        numLocalesOnNode > 1);
+}
+
+int32_t chpl_get_num_locales_on_node(void) {
+  if (numLocalesOnNode < 1) {
+      chpl_internal_error("chpl_set_num_locales_on_node has not been called");
+  }
+  return numLocalesOnNode;
+}
+
+chpl_bool chpl_get_oversubscribed(void) {
+  if (numLocalesOnNode < 1) {
+      chpl_internal_error("chpl_set_num_locales_on_node has not been called");
+  }
+  return oversubscribed;
 }

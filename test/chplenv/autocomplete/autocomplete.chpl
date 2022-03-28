@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess, ChplConfig;
 
 /* This test runs a script to generate a bash autocomplete script from
    the output of `chpl --help --devel`.  It diffs the generated script
@@ -13,8 +13,8 @@ var home = CHPL_HOME;
 var genScript = home + "/util/devel/gen-chpl-bash-completion";
 var completeScript = home + "/util/chpl-completion.bash";
 
-var diff = spawn(["diff", "-", completeScript], stdin=PIPE);
-var runScript = spawn([genScript], stdout=PIPE);
+var diff = spawn(["diff", "-", completeScript], stdin=pipeStyle.pipe);
+var runScript = spawn([genScript], stdout=pipeStyle.pipe);
 
 for line in runScript.stdout.lines() {
   diff.stdin.write(line);
@@ -23,7 +23,7 @@ for line in runScript.stdout.lines() {
 runScript.wait();
 diff.wait();
 
-if diff.exit_status != 0 {
+if diff.exitCode != 0 {
   writeln();
   writeln("diff failed. You may need to run ", genScript,
           " to regenerate ", completeScript, ". Try:");

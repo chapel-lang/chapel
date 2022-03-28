@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -191,7 +191,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
           myTypeDescriptors[type] = N;
           return llvm::cast_or_null<llvm::DIType>(N);
         }
-        // handle qio_channel_ptr_t, _task_list, qio_file_ptr_t, syserr, _file
+        // handle qio_channel_ptr_t, qio_file_ptr_t, syserr, _file
         else if(PointeeTy->isStructTy()) {
           llvm::DIType* pteStrDIType; //create the DI-pointeeType
           pteStrDIType = this->dibuilder.createStructType(
@@ -650,10 +650,16 @@ llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
       true/*AlwaysPreserve, won't be removed when optimized*/
       ); //omit the  Flags and ArgNo
 
+#if HAVE_LLVM_VER >= 120
+    this->dibuilder.insertDeclare(varSym->codegen().val, localVariable,
+      this->dibuilder.createExpression(), llvm::DILocation::get(
+        scope->getContext(), line_number, 0, scope, nullptr, false),
+      gGenInfo->irBuilder->GetInsertBlock());
+#else
     this->dibuilder.insertDeclare(varSym->codegen().val, localVariable,
       this->dibuilder.createExpression(), llvm::DebugLoc::get(line_number, 0, scope),
       gGenInfo->irBuilder->GetInsertBlock());
-
+#endif
     return localVariable;
   }
   else {

@@ -21,12 +21,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHPL_VERSION master
+ENV CHPL_VERSION main
 ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
 ENV CHPL_GMP     system
 
 RUN mkdir -p /opt/chapel \
-    && wget -q -O - https://github.com/chapel-lang/chapel/archive/master.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
+    && wget -q -O - https://github.com/chapel-lang/chapel/archive/main.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
     && make -C $CHPL_HOME \
     && make -C $CHPL_HOME chpldoc \
     && make -C $CHPL_HOME test-venv \

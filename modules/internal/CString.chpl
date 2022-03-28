@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,8 +24,7 @@
 // In terms of how they are used, c_strings are a "close to the metal"
 // representation, being in essence the common NUL-terminated C string.
 module CString {
-  private use ChapelStandard, SysCTypes;
-  private use CPtr;
+  private use ChapelStandard, CTypes;
 
   //inline proc c_string.c_str() return this;
 

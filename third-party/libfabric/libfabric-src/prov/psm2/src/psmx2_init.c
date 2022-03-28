@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2019 Intel Corporation. All rights reserved.
+ * Copyright (c) 2013-2020 Intel Corporation. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -70,8 +70,28 @@ int	 psmx2_tag_layout_locked = 0;
 
 static void psmx2_init_env(void)
 {
+	char *ompi_job_key;
+	psm2_uuid_t uuid = {};
+	unsigned long long *u = (unsigned long long *)uuid;
+
 	if (getenv("OMPI_COMM_WORLD_RANK") || getenv("PMI_RANK") || getenv("PMIX_RANK"))
 		psmx2_env.name_server = 0;
+
+	/*
+	 * Check for Open MPI job key. If set, convert it to the default uuid
+	 * string. This will be overridden by the FI_PSM2_UUID variable, and
+	 * both will have lower priority than the auth_key passed via ep_attr.
+	 */
+	ompi_job_key = getenv("OMPI_MCA_orte_precondition_transports");
+	if (ompi_job_key) {
+		FI_INFO(&psmx2_prov, FI_LOG_CORE,
+			"Open MPI job key: %s.\n", ompi_job_key);
+		if (sscanf(ompi_job_key, "%016llx-%016llx", &u[0], &u[1]) == 2)
+			psmx2_env.uuid = strdup(psmx2_uuid_to_string(uuid));
+		else
+			FI_INFO(&psmx2_prov, FI_LOG_CORE,
+				"Invalid Open MPI job key format.\n");
+	}
 
 	fi_param_get_bool(&psmx2_prov, "name_server", &psmx2_env.name_server);
 	fi_param_get_bool(&psmx2_prov, "tagged_rma", &psmx2_env.tagged_rma);
@@ -286,6 +306,7 @@ static int psmx2_update_hfi_info(void)
 	char unit_name[8];
 	uint32_t cnt = 0;
 	int tmp_nctxts, tmp_nfreectxts;
+	int offset = 0;
 
 #if HAVE_PSM2_INFO_QUERY
 	int unit_active;
@@ -387,10 +408,13 @@ static int psmx2_update_hfi_info(void)
 		psmx2_hfi_info.unit_nfreectxts[i] = tmp_nfreectxts;
 		psmx2_hfi_info.active_units[psmx2_hfi_info.num_active_units++] = i;
 
-		sprintf(unit_name, "hfi1_%hu", i);
+		snprintf(unit_name, sizeof(unit_name), "hfi1_%hu", i);
 		if (psmx2_hfi_info.num_active_units > 1)
-			strcat(psmx2_hfi_info.default_domain_name, ";");
-		strcat(psmx2_hfi_info.default_domain_name, unit_name);
+			offset = snprintf(psmx2_hfi_info.default_domain_name,
+				sizeof(psmx2_hfi_info.default_domain_name), ";");
+		snprintf(psmx2_hfi_info.default_domain_name,
+			sizeof(psmx2_hfi_info.default_domain_name) - offset,
+			"%s", unit_name);
 
 		if (multirail)
 			break;
@@ -430,7 +454,7 @@ static void psmx2_update_hfi_nic_info(struct fi_info *info)
 	char buffer[80];
 	char *s;
 	ssize_t n;
-	int a, b, c, d;
+	unsigned int a, b, c, d;
 	int unit;
 
 	for ( ; info; info = info->next) {
@@ -477,10 +501,10 @@ static void psmx2_update_hfi_nic_info(struct fi_info *info)
 		}
 
 		info->nic->bus_attr->bus_type = FI_BUS_PCI;
-		info->nic->bus_attr->attr.pci.domain_id = a;
-		info->nic->bus_attr->attr.pci.bus_id = b;
-		info->nic->bus_attr->attr.pci.device_id = c;
-		info->nic->bus_attr->attr.pci.function_id = d;
+		info->nic->bus_attr->attr.pci.domain_id = (uint16_t) a;
+		info->nic->bus_attr->attr.pci.bus_id =  (uint8_t) b;
+		info->nic->bus_attr->attr.pci.device_id = (uint8_t) c;
+		info->nic->bus_attr->attr.pci.function_id = (uint8_t) d;
 	}
 }
 
@@ -559,7 +583,7 @@ static int psmx2_getinfo(uint32_t api_version, const char *node,
 
 	/* Check that the src address contains valid unit */
 	if (src_addr->unit != PSMX2_DEFAULT_UNIT) {
-		if (src_addr->unit < 0 || src_addr->unit > PSMX2_MAX_UNITS) {
+		if (src_addr->unit < 0 || src_addr->unit >= PSMX2_MAX_UNITS) {
 			FI_INFO(&psmx2_prov, FI_LOG_CORE,
 				"invalid source address: unit %d out of range\n", src_addr->unit);
 			goto err_out;

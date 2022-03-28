@@ -1,0 +1,66 @@
+searchL
+(matched = true, byteOffset = 0, numBytes = 5)
+aaa
+bb
+
+searchR(rvf=true)
+(matched = true, byteOffset = 0, numBytes = 5)
+aaa
+bb
+
+searchR(rvf=false)
+(matched = true, byteOffset = 0, numBytes = 5)
+aaa
+bb
+
+splitL
+
+a
+b
+aa
+b
+aaa
+b
+
+splitR(rvf=true)
+
+a
+b
+aa
+b
+aaa
+b
+
+splitR(rvf=false)
+
+a
+b
+aa
+b
+aaa
+b
+
+matchesL
+((matched = true, byteOffset = 0, numBytes = 2), (matched = true, byteOffset = 0, numBytes = 1), (matched = true, byteOffset = 1, numBytes = 1))
+((matched = true, byteOffset = 2, numBytes = 3), (matched = true, byteOffset = 2, numBytes = 2), (matched = true, byteOffset = 4, numBytes = 1))
+((matched = true, byteOffset = 5, numBytes = 4), (matched = true, byteOffset = 5, numBytes = 3), (matched = true, byteOffset = 8, numBytes = 1))
+
+matchesR(rvf=true)
+((matched = true, byteOffset = 0, numBytes = 2), (matched = true, byteOffset = 0, numBytes = 1), (matched = true, byteOffset = 1, numBytes = 1))
+((matched = true, byteOffset = 2, numBytes = 3), (matched = true, byteOffset = 2, numBytes = 2), (matched = true, byteOffset = 4, numBytes = 1))
+((matched = true, byteOffset = 5, numBytes = 4), (matched = true, byteOffset = 5, numBytes = 3), (matched = true, byteOffset = 8, numBytes = 1))
+
+matchesR(rvf=false)
+((matched = true, byteOffset = 0, numBytes = 2), (matched = true, byteOffset = 0, numBytes = 1), (matched = true, byteOffset = 1, numBytes = 1))
+((matched = true, byteOffset = 2, numBytes = 3), (matched = true, byteOffset = 2, numBytes = 2), (matched = true, byteOffset = 4, numBytes = 1))
+((matched = true, byteOffset = 5, numBytes = 4), (matched = true, byteOffset = 5, numBytes = 3), (matched = true, byteOffset = 8, numBytes = 1))
+
+subL
+AbAbAb
+
+subR(rvf=true)
+AbAbAb
+
+subR(rvf=false)
+AbAbAb
+

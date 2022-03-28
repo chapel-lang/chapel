@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,7 +34,7 @@ module MatrixMarket {
   }
 
   proc high(d){
-    if isSparseDom(d) then
+    if d.isSparse() then
       return d._value.parentDom.high;
     else
       return d.high;
@@ -157,7 +157,7 @@ module MatrixMarket {
            }
          }
 
-         last_rowno = i; 
+         last_rowno = i;
          var ret:(int,int);
          if jvec.size < 1 { ret = (-1, 0); } else { ret = (Djvec.size, jvec.size); }
          return ret;
@@ -184,7 +184,7 @@ proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
      const matvec = [ j in dom ] mat(r,j);
      mw.write_vector(r, matvec);
      n_cols = max(n_cols, DmatHighCol);
-     nnz += DmatHighCol; 
+     nnz += DmatHighCol;
      ncols = r;
    }
 
@@ -244,7 +244,7 @@ class MMReader {
    }
 
    proc read_sparse_data(toret:[] ?T, ref spDom:domain) {
-      param isSparse = isSparseDom(toret.domain);
+      param isSparse = toret.domain.isSparse();
       var done:bool = true;
       var tfmt :string;
 
@@ -265,7 +265,7 @@ class MMReader {
 
       }
       else {
-        if T == real { 
+        if T == real {
           tfmt = "%r";
         }
         else if T == int {
@@ -287,7 +287,7 @@ class MMReader {
    }
 
    proc read_dense_data(toret:[] ?T, ref spDom:domain) {
-      param isSparse = isSparseDom(toret.domain);
+      param isSparse = toret.domain.isSparse();
       var tfmt :string;
 
       if T == complex {
@@ -388,9 +388,9 @@ class MMReader {
      return toret;
    }
 
-   proc close() { 
-      fin.close(); 
-      fd.close(); 
+   proc close() {
+      fin.close();
+      fd.close();
    }
 
    proc deinit() { this.close(); }

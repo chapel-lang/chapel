@@ -1,12 +1,11 @@
-use MasonPublish;
-private use List;
 use FileSystem;
-	
-	
+use List;
+use MasonPublish;
+
+
 proc main() {
   var args: list(string);
-  args.append('mason');
   args.append('publish');
   here.chdir('offlinePackage');
   masonPublish(args);
-} 
+}

@@ -36,6 +36,7 @@
 #include <ofi_prov.h>
 #include "rxr.h"
 #include "efa.h"
+#include "ofi_hmem.h"
 
 struct fi_info *shm_info;
 
@@ -50,9 +51,15 @@ struct rxr_env rxr_env = {
 	.tx_queue_size = 0,
 	.enable_shm_transfer = 1,
 	.use_device_rdma = 0,
+	.use_zcpy_rx = 1,
+	.zcpy_rx_seed = 0,
 	.shm_av_size = 128,
 	.shm_max_medium_size = 4096,
 	.recvwin_size = RXR_RECVWIN_SIZE,
+	.ooo_pool_chunk_size = 64,
+	.unexp_pool_chunk_size = 1024,
+	.readcopy_pool_size = 256,
+	.atomrsp_pool_size = 1024,
 	.cq_size = RXR_DEF_CQ_SIZE,
 	.max_memcpy_size = 4096,
 	.mtu_size = 0,
@@ -62,26 +69,35 @@ struct rxr_env rxr_env = {
 	.rx_iov_limit = 0,
 	.rx_copy_unexp = 1,
 	.rx_copy_ooo = 1,
-	.max_timeout = RXR_DEF_RNR_MAX_TIMEOUT,
-	.timeout_interval = 0, /* 0 is random timeout */
+	.rnr_backoff_wait_time_cap = RXR_DEFAULT_RNR_BACKOFF_WAIT_TIME_CAP,
+	.rnr_backoff_initial_wait_time = 0, /* 0 is random wait time  */
 	.efa_cq_read_size = 50,
 	.shm_cq_read_size = 50,
 	.efa_max_medium_msg_size = 65536,
+	.efa_min_read_msg_size = 1048576,
 	.efa_min_read_write_size = 65536,
 	.efa_read_segment_size = 1073741824,
+	.rnr_retry = 3, /* Setting this value to EFA_RNR_INFINITE_RETRY makes the firmware retry indefinitey */
 };
 
+/* @brief Read and store the FI_EFA_* environment variables.
+ */
 static void rxr_init_env(void)
 {
+	int fork_safe = 0;
+
 	fi_param_get_int(&rxr_prov, "rx_window_size", &rxr_env.rx_window_size);
 	fi_param_get_int(&rxr_prov, "tx_max_credits", &rxr_env.tx_max_credits);
 	fi_param_get_int(&rxr_prov, "tx_min_credits", &rxr_env.tx_min_credits);
 	fi_param_get_int(&rxr_prov, "tx_queue_size", &rxr_env.tx_queue_size);
 	fi_param_get_int(&rxr_prov, "enable_shm_transfer", &rxr_env.enable_shm_transfer);
 	fi_param_get_int(&rxr_prov, "use_device_rdma", &rxr_env.use_device_rdma);
+	fi_param_get_int(&rxr_prov, "use_zcpy_rx", &rxr_env.use_zcpy_rx);
+	fi_param_get_int(&rxr_prov, "zcpy_rx_seed", &rxr_env.zcpy_rx_seed);
 	fi_param_get_int(&rxr_prov, "shm_av_size", &rxr_env.shm_av_size);
 	fi_param_get_int(&rxr_prov, "shm_max_medium_size", &rxr_env.shm_max_medium_size);
 	fi_param_get_int(&rxr_prov, "recvwin_size", &rxr_env.recvwin_size);
+	fi_param_get_int(&rxr_prov, "readcopy_pool_size", &rxr_env.readcopy_pool_size);
 	fi_param_get_int(&rxr_prov, "cq_size", &rxr_env.cq_size);
 	fi_param_get_size_t(&rxr_prov, "max_memcpy_size",
 			    &rxr_env.max_memcpy_size);
@@ -101,50 +117,93 @@ static void rxr_init_env(void)
 			  &rxr_env.rx_copy_unexp);
 	fi_param_get_bool(&rxr_prov, "rx_copy_ooo",
 			  &rxr_env.rx_copy_ooo);
-	fi_param_get_int(&rxr_prov, "max_timeout", &rxr_env.max_timeout);
+
+	fi_param_get_int(&rxr_prov, "max_timeout", &rxr_env.rnr_backoff_wait_time_cap);
+	if (rxr_env.rnr_backoff_wait_time_cap > RXR_MAX_RNR_BACKOFF_WAIT_TIME_CAP)
+		rxr_env.rnr_backoff_wait_time_cap = RXR_MAX_RNR_BACKOFF_WAIT_TIME_CAP;
+
 	fi_param_get_int(&rxr_prov, "timeout_interval",
-			 &rxr_env.timeout_interval);
+			 &rxr_env.rnr_backoff_initial_wait_time);
 	fi_param_get_size_t(&rxr_prov, "efa_cq_read_size",
 			 &rxr_env.efa_cq_read_size);
 	fi_param_get_size_t(&rxr_prov, "shm_cq_read_size",
 			 &rxr_env.shm_cq_read_size);
 	fi_param_get_size_t(&rxr_prov, "inter_max_medium_message_size",
 			    &rxr_env.efa_max_medium_msg_size);
+	fi_param_get_size_t(&rxr_prov, "inter_min_read_message_size",
+			    &rxr_env.efa_min_read_msg_size);
 	fi_param_get_size_t(&rxr_prov, "inter_min_read_write_size",
 			    &rxr_env.efa_min_read_write_size);
 	fi_param_get_size_t(&rxr_prov, "inter_read_segment_size",
 			    &rxr_env.efa_read_segment_size);
+
+	/* Initialize EFA's fork support flag based on the environment and
+	 * system support. */
+	efa_fork_status = EFA_FORK_SUPPORT_OFF;
+
+#if HAVE_IBV_IS_FORK_INITIALIZED == 1
+	if (ibv_is_fork_initialized() == IBV_FORK_UNNEEDED)
+		efa_fork_status = EFA_FORK_SUPPORT_UNNEEDED;
+#endif
+
+	if (efa_fork_status != EFA_FORK_SUPPORT_UNNEEDED) {
+		fi_param_get_bool(&rxr_prov, "fork_safe", &fork_safe);
+
+		/*
+		 * Check if any environment variables which would trigger
+		 * libibverbs' fork support are set. These variables are
+		 * defined by ibv_fork_init(3).
+		 */
+		if (fork_safe || getenv("RDMAV_FORK_SAFE") || getenv("IBV_FORK_SAFE"))
+			efa_fork_status = EFA_FORK_SUPPORT_ON;
+	}
 }
 
-/*
- * Stringify the void *addr to a string smr_name formatted as `gid_qpn`, which
- * will be used to insert into shm provider's AV. Then shm uses smr_name as
- * ep_name to create the shared memory region.
+/* @brief convert raw address to an unique shm endpoint name (smr_name)
  *
- * The IPv6 address length is 46, but the max supported name length for shm is 32.
- * The string `gid_qpn` could be truncated during snprintf.
- * The current way works because the IPv6 addresses starting with FE in hexadecimals represent
- * link local IPv6 addresses, which has reserved first 64 bits (FE80::/64).
- * e.g., fe80:0000:0000:0000:0436:29ff:fe8e:ceaa -> fe80::436:29ff:fe8e:ceaa
- * And the length of string `gid_qpn` (fe80::436:29ff:fe8e:ceaa_***) will not exceed 32.
- * If the address is NOT link local, we need to think another reasonable way to
- * generate the string.
+ * Note even though all shm endpoints are on same instance. But because
+ * one instance can have multiple EFA device, it is still necessary
+ * to include GID on the name.
+ *
+ * a smr name consist of the following 4 parts:
+ *
+ *    GID:   ipv6 address from inet_ntop
+ *    QPN:   %04x format
+ *    QKEY:  %08x format
+ *    UID:   %04x format
+ *
+ * each part is connected via an underscore.
+ *
+ * The following is an example:
+ *
+ *    fe80::4a5:28ff:fe98:e500_0001_12918366_03e8
+ *
+ * @param[in]	ptr		pointer to raw address (struct efa_ep_addr)
+ * @param[out]	smr_name	an unique name for shm ep
+ * @return	0 on success.
+ * 		negative error code on failure.
  */
-int rxr_ep_efa_addr_to_str(const void *addr, char *smr_name)
+int rxr_raw_addr_to_smr_name(void *ptr, char *smr_name)
 {
-	char gid[INET6_ADDRSTRLEN] = { 0 };
-	uint16_t qpn;
+	struct efa_ep_addr *raw_addr;
+	char gidstr[INET6_ADDRSTRLEN] = { 0 };
 	int ret;
 
-	if (!inet_ntop(AF_INET6, ((struct efa_ep_addr *)addr)->raw, gid, INET6_ADDRSTRLEN)) {
-		printf("Failed to get current EFA's GID, errno: %d\n", errno);
-		return 0;
+	raw_addr = (struct efa_ep_addr *)ptr;
+	if (!inet_ntop(AF_INET6, raw_addr->raw, gidstr, INET6_ADDRSTRLEN)) {
+		FI_WARN(&rxr_prov, FI_LOG_CQ, "Failed to convert GID to string errno: %d\n", errno);
+		return -errno;
 	}
-	qpn = ((struct efa_ep_addr *)addr)->qpn;
 
-	ret = snprintf(smr_name, NAME_MAX, "%ld_%s_%d", (size_t) getuid(), gid, qpn);
+	ret = snprintf(smr_name, EFA_SHM_NAME_MAX, "%s_%04x_%08x_%04x",
+		       gidstr, raw_addr->qpn, raw_addr->qkey, getuid());
+	if (ret <= 0)
+		return ret;
 
-	return (ret <= 0) ? ret : FI_SUCCESS;
+	if (ret >= EFA_SHM_NAME_MAX)
+		return -FI_EINVAL;
+
+	return FI_SUCCESS;
 }
 
 void rxr_info_to_core_mr_modes(uint32_t version,
@@ -169,7 +228,7 @@ void rxr_info_to_core_mr_modes(uint32_t version,
 					hints->domain_attr->mr_mode & OFI_MR_BASIC_MAP;
 			core_info->addr_format = hints->addr_format;
 		}
-#ifdef HAVE_LIBCUDA
+#if HAVE_LIBCUDA
 		core_info->domain_attr->mr_mode |= FI_MR_HMEM;
 #endif
 	}
@@ -212,6 +271,9 @@ static int rxr_copy_attr(const struct fi_info *info, struct fi_info *dup)
 		if (!dup->nic)
 			return -FI_ENOMEM;
 	}
+	if (info->caps & FI_HMEM)
+		dup->caps |= FI_HMEM;
+
 	return 0;
 }
 
@@ -241,7 +303,7 @@ static int rxr_info_to_core(uint32_t version, const struct fi_info *rxr_info,
 }
 
 /* Explicitly set all necessary bits before calling shm provider's getinfo function */
-void rxr_set_shm_hints(struct fi_info *shm_hints)
+static void rxr_set_shm_hints(const struct fi_info *app_hints, struct fi_info *shm_hints)
 {
 	shm_hints->caps = FI_MSG | FI_TAGGED | FI_RECV | FI_SEND | FI_READ
 			   | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE
@@ -254,6 +316,18 @@ void rxr_set_shm_hints(struct fi_info *shm_hints)
 	shm_hints->fabric_attr->name = strdup("shm");
 	shm_hints->fabric_attr->prov_name = strdup("shm");
 	shm_hints->ep_attr->type = FI_EP_RDM;
+
+	/*
+	 * We validate whether FI_HMEM is supported before this function is
+	 * called, so it's safe to check for this via the app hints directly.
+	 * We should combine this and the earlier FI_HMEM validation when we
+	 * clean up the getinfo path. That's not possible at the moment as we
+	 * only have one SHM info for the entire provider which isn't right.
+	 */
+	if (app_hints && (app_hints->caps & FI_HMEM)) {
+		shm_hints->caps |= FI_HMEM;
+		shm_hints->domain_attr->mr_mode |= FI_MR_HMEM;
+	}
 }
 
 /* Pass tx/rx attr that user specifies down to core provider */
@@ -276,6 +350,10 @@ void rxr_reset_rx_tx_to_core(const struct fi_info *user_info,
 		user_info->tx_attr->size : core_info->tx_attr->size;
 }
 
+/*
+ * Used to set tx/rx attributes that are characteristic of the device for the
+ * two endpoint types and not emulated in software.
+ */
 void rxr_set_rx_tx_size(struct fi_info *info,
 			const struct fi_info *core_info)
 {
@@ -308,6 +386,7 @@ static int rxr_info_to_rxr(uint32_t version, const struct fi_info *core_info,
 {
 	uint64_t atomic_ordering;
 	uint64_t max_atomic_size;
+	uint64_t min_pkt_size;
 
 	info->caps = rxr_info.caps;
 	info->mode = rxr_info.mode;
@@ -317,14 +396,35 @@ static int rxr_info_to_rxr(uint32_t version, const struct fi_info *core_info,
 	*info->ep_attr = *rxr_info.ep_attr;
 	*info->domain_attr = *rxr_info.domain_attr;
 
-	/* TODO: update inject_size when we implement inject */
-	info->tx_attr->inject_size = 0;
+	/*
+	 * The requirement for inject is: upon return, the user buffer can be reused immediately.
+	 *
+	 * For EFA, inject is implement as: construct a packet entry, copy user data to packet entry
+	 * then send the packet entry. Therefore the maximum inject size is
+	 *    pkt_entry_size - maximum_header_size.
+	 */
+	if (rxr_env.enable_shm_transfer)
+		min_pkt_size = MIN(core_info->ep_attr->max_msg_size, rxr_env.shm_max_medium_size);
+	else
+		min_pkt_size = core_info->ep_attr->max_msg_size;
+
+	info->tx_attr->inject_size = min_pkt_size - rxr_pkt_max_header_size();
 	rxr_info.tx_attr->inject_size = info->tx_attr->inject_size;
 
 	info->addr_format = core_info->addr_format;
 	info->domain_attr->ep_cnt = core_info->domain_attr->ep_cnt;
 	info->domain_attr->cq_cnt = core_info->domain_attr->cq_cnt;
 	info->domain_attr->mr_key_size = core_info->domain_attr->mr_key_size;
+
+	/*
+	 * Do not advertise FI_HMEM capabilities when the core can not support
+	 * it or when the application passes NULL hints (given this is a primary
+	 * cap). The logic for device-specific checks pertaining to HMEM comes
+	 * further along this path.
+	 */
+	if ((core_info && !(core_info->caps & FI_HMEM)) || !hints) {
+		info->caps &= ~FI_HMEM;
+	}
 
 	/*
 	 * Handle user-provided hints and adapt the info object passed back up
@@ -364,11 +464,7 @@ static int rxr_info_to_rxr(uint32_t version, const struct fi_info *core_info,
 			info->domain_attr->data_progress = FI_PROGRESS_MANUAL;
 		}
 
-		/* Use a table for AV if the app has no strong requirement */
-		if (!hints->domain_attr || hints->domain_attr->av_type == FI_AV_UNSPEC)
-			info->domain_attr->av_type = FI_AV_TABLE;
-
-#ifdef HAVE_LIBCUDA
+#if HAVE_LIBCUDA
 		/* If the application requires HMEM support, we will add FI_MR_HMEM
 		 * to mr_mode, because we need application to provide descriptor
 		 * for cuda buffer.
@@ -381,29 +477,77 @@ static int rxr_info_to_rxr(uint32_t version, const struct fi_info *core_info,
 		 * which means FI_MR_HMEM implies FI_MR_LOCAL for cuda buffer
 		 */
 		if (hints->caps & FI_HMEM) {
+
+			if (!efa_device_support_rdma_read()) {
+				FI_WARN(&rxr_prov, FI_LOG_CORE,
+				        "FI_HMEM capability requires RDMA, which this device does not support.\n");
+				return -FI_ENODATA;
+
+			}
+
+			if (!rxr_env.use_device_rdma) {
+				FI_WARN(&rxr_prov, FI_LOG_CORE,
+				        "FI_HMEM capability requires RDMA, which is turned off. You can turn it on by set environment variable FI_EFA_USE_DEVICE_RDMA to 1.\n");
+				return -FI_ENODATA;
+			}
+
 			if (hints->domain_attr &&
 			    !(hints->domain_attr->mr_mode & FI_MR_HMEM)) {
-				FI_INFO(&rxr_prov, FI_LOG_CORE,
+				FI_WARN(&rxr_prov, FI_LOG_CORE,
 				        "FI_HMEM capability requires device registrations (FI_MR_HMEM)\n");
 				return -FI_ENODATA;
 			}
 
 			info->domain_attr->mr_mode |= FI_MR_HMEM;
 
+		} else {
 			/*
-			 * If in this case application add FI_MR_LOCAL to hints,
-			 * it would mean that application want provide descriptor
-			 * for system memory too, which we are able to use, so
-			 * we add FI_MR_LOCAL to mr_mode.
-			 *
-			 * TODO: add FI_MR_LOCAL to mr_mode for any applcations
-			 * the requested it, not just CUDA application.
+			 * FI_HMEM is a primary capability. Providers should
+			 * only enable it if requested by applications.
 			 */
-			if (hints->domain_attr->mr_mode & FI_MR_LOCAL)
-				info->domain_attr->mr_mode |= FI_MR_LOCAL;
+			info->caps &= ~FI_HMEM;
 		}
 #endif
+		/*
+		 * The provider does not force applications to register buffers
+		 * with the device, but if an application is able to, reuse
+		 * their registrations and avoid the bounce buffers.
+		 */
+		if (hints->domain_attr && hints->domain_attr->mr_mode & FI_MR_LOCAL)
+			info->domain_attr->mr_mode |= FI_MR_LOCAL;
+
+		/*
+		 * Same goes for prefix mode, where the protocol does not
+		 * absolutely need a prefix before receive buffers, but it can
+		 * use it when available to optimize transfers with endpoints
+		 * having the following profile:
+		 *	- Requires FI_MSG and not FI_TAGGED/FI_ATOMIC/FI_RMA
+		 *	- Can handle registrations (FI_MR_LOCAL)
+		 *	- No need for FI_DIRECTED_RECV
+		 *	- Guaranteed to send msgs smaller than info->nic->link_attr->mtu
+		 */
+		if (hints->mode & FI_MSG_PREFIX) {
+			FI_INFO(&rxr_prov, FI_LOG_CORE,
+				"FI_MSG_PREFIX supported by application.\n");
+			info->mode |= FI_MSG_PREFIX;
+			info->tx_attr->mode |= FI_MSG_PREFIX;
+			info->rx_attr->mode |= FI_MSG_PREFIX;
+			info->ep_attr->msg_prefix_size = RXR_MSG_PREFIX_SIZE;
+			FI_INFO(&rxr_prov, FI_LOG_CORE,
+				"FI_MSG_PREFIX size = %ld\n", info->ep_attr->msg_prefix_size);
+		}
 	}
+
+	/* Use a table for AV if the app has no strong requirement */
+	if (!hints || !hints->domain_attr ||
+	    hints->domain_attr->av_type == FI_AV_UNSPEC)
+		info->domain_attr->av_type = FI_AV_TABLE;
+
+	if (!hints || !hints->domain_attr ||
+	    hints->domain_attr->resource_mgmt == FI_RM_UNSPEC)
+		info->domain_attr->resource_mgmt = FI_RM_ENABLED;
+	else
+		info->domain_attr->resource_mgmt = hints->domain_attr->resource_mgmt;
 
 	rxr_set_rx_tx_size(info, core_info);
 	return 0;
@@ -590,9 +734,9 @@ dgram_info:
 		ret = 0;
 
 	if (!ret && rxr_env.enable_shm_transfer && !shm_info) {
-		shm_info = fi_allocinfo();
+		shm_info = NULL;
 		shm_hints = fi_allocinfo();
-		rxr_set_shm_hints(shm_hints);
+		rxr_set_shm_hints(hints, shm_hints);
 		ret = fi_getinfo(FI_VERSION(1, 8), NULL, NULL,
 		                 OFI_GETINFO_HIDDEN, shm_hints, &shm_info);
 		fi_freeinfo(shm_hints);
@@ -635,15 +779,16 @@ static void rxr_fini(void)
 	}
 
 #if HAVE_EFA_DL
-	ofi_monitor_cleanup();
+	ofi_monitors_cleanup();
+	ofi_hmem_cleanup();
 	ofi_mem_fini();
 #endif
 }
 
 struct fi_provider rxr_prov = {
 	.name = "efa",
-	.version = FI_VERSION(RXR_MAJOR_VERSION, RXR_MINOR_VERSION),
-	.fi_version = RXR_FI_VERSION,
+	.version = OFI_VERSION_DEF_PROV,
+	.fi_version = OFI_VERSION_LATEST,
 	.getinfo = rxr_getinfo,
 	.fabric = rxr_fabric,
 	.cleanup = rxr_fini
@@ -663,12 +808,18 @@ EFA_INI
 			"Enable using SHM provider to provide the communication between processes on the same system. (Default: 1)");
 	fi_param_define(&rxr_prov, "use_device_rdma", FI_PARAM_INT,
 			"whether to use device's RDMA functionality for one-sided and two-sided transfer.");
+	fi_param_define(&rxr_prov, "use_zcpy_rx", FI_PARAM_INT,
+			"Enables the use of application's receive buffers in place of bounce-buffers when feasible. (Default: 1)");
+	fi_param_define(&rxr_prov, "zcpy_rx_seed", FI_PARAM_INT,
+			"Defines the number of bounce-buffers the provider will prepost during EP initialization.  (Default: 0)");
 	fi_param_define(&rxr_prov, "shm_av_size", FI_PARAM_INT,
 			"Defines the maximum number of entries in SHM provider's address vector (Default 128).");
 	fi_param_define(&rxr_prov, "shm_max_medium_size", FI_PARAM_INT,
 			"Defines the switch point between small/medium message and large message. The message larger than this switch point will be transferred with large message protocol (Default 4096).");
 	fi_param_define(&rxr_prov, "recvwin_size", FI_PARAM_INT,
 			"Defines the size of sliding receive window. (Default: 16384)");
+	fi_param_define(&rxr_prov, "readcopy_pool_size", FI_PARAM_INT,
+			"Defines the size of readcopy packet pool size. (Default: 256)");
 	fi_param_define(&rxr_prov, "cq_size", FI_PARAM_INT,
 			"Define the size of completion queue. (Default: 8192)");
 	fi_param_define(&rxr_prov, "mr_cache_enable", FI_PARAM_BOOL,
@@ -702,16 +853,23 @@ EFA_INI
 	fi_param_define(&rxr_prov, "shm_cq_read_size", FI_PARAM_SIZE_T,
 			"Set the number of SHM completion entries to read for one loop for one iteration of the progress engine. (Default: 50)");
 	fi_param_define(&rxr_prov, "inter_max_medium_message_size", FI_PARAM_INT,
-			"The maximum message size for inter EFA medium message protocol, messages whose size is larger than this value will be sent either by read message protocol (depend on firmware support), or long message protocol (Default 65536).");
+			"The maximum message size for inter EFA medium message protocol (Default 65536).");
+	fi_param_define(&rxr_prov, "inter_min_read_message_size", FI_PARAM_INT,
+			"The minimum message size for inter EFA read message protocol. If instance support RDMA read, messages whose size is larger than this value will be sent by read message protocol (Default 1048576).");
+
 	fi_param_define(&rxr_prov, "inter_min_read_write_size", FI_PARAM_INT,
 			"The mimimum message size for inter EFA write to use read write protocol. If firmware support RDMA read, and FI_EFA_USE_DEVICE_RDMA is 1, write requests whose size is larger than this value will use the read write protocol (Default 65536).");
 	fi_param_define(&rxr_prov, "inter_read_segment_size", FI_PARAM_INT,
 			"Calls to RDMA read is segmented using this value.");
+	fi_param_define(&rxr_prov, "fork_safe", FI_PARAM_BOOL,
+			"Enables fork support and disables internal usage of huge pages. Has no effect on kernels which set copy-on-fork for registered pages, generally 5.13 and later. (Default: false)");
+
 	rxr_init_env();
 
 #if HAVE_EFA_DL
 	ofi_mem_init();
-	ofi_monitor_init();
+	ofi_hmem_init();
+	ofi_monitors_init();
 #endif
 
 	lower_efa_prov = init_lower_efa_prov();

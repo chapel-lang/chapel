@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,8 +20,7 @@
 
 module ByteBufferHelpers {
   private use ChapelStandard;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   pragma "no doc"
   type byteType = uint(8);
@@ -56,7 +55,7 @@ module ByteBufferHelpers {
 
   inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
                                    src_addr: bufferType, len: integral) {
-    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
+    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(c_size_t));
   }
 
   private inline proc getGoodAllocSize(requestedSize: int): int {
@@ -67,21 +66,14 @@ module ByteBufferHelpers {
 
   inline proc bufferAlloc(requestedSize): (bufferType, int) {
     const allocSize = getGoodAllocSize(requestedSize);
-    var buf = chpl_here_alloc(allocSize,
-                              offset_STR_COPY_DATA): bufferType;
+    var buf = chpl_here_alloc(allocSize, offset_STR_COPY_DATA): bufferType;
     return (buf, allocSize);
-  }
-
-  proc bufferAllocExact(requestedSize: int) {
-    var buf = chpl_here_alloc(requestedSize,
-                              offset_STR_COPY_DATA): bufferType;
-    return buf;
   }
 
   proc bufferRealloc(buf: bufferType, requestedSize: int) {
     const allocSize = getGoodAllocSize(requestedSize+1);
     var newBuff = chpl_here_realloc(buf, allocSize,
-                                offset_STR_COPY_DATA): bufferType;
+                                    offset_STR_COPY_DATA): bufferType;
     return (newBuff, allocSize);
   }
 
@@ -94,11 +86,10 @@ module ByteBufferHelpers {
 
   proc bufferCopyRemote(src_loc_id: int(64), src_addr: bufferType,
                         len: int): bufferType {
-      const allocSize = getGoodAllocSize(len+1);
-      const dest = chpl_here_alloc(allocSize, offset_STR_COPY_REMOTE): bufferType;
-      chpl_string_comm_get(dest, src_loc_id, src_addr, len);
-      dest[len] = 0;
-      return dest;
+      const (dst, allocSize) = bufferAlloc(len+1);
+      chpl_string_comm_get(dst, src_loc_id, src_addr, len);
+      dst[len] = 0;
+      return dst;
   }
 
   inline proc bufferCopyLocal(src_addr: bufferType, len: int) {
@@ -187,7 +178,7 @@ module ByteBufferHelpers {
     if loc1 == chpl_nodeID && loc2 == chpl_nodeID {
       // it's local
       return _strcmp_local(buf1, len1, buf2, len2);
-    } 
+    }
     else if loc1 != chpl_nodeID && loc2 == chpl_nodeID {
       var locBuf1 = bufferCopyRemote(loc1, buf1, len1);
       const ret = _strcmp_local(locBuf1, len1, buf2, len2);

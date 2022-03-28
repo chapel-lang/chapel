@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2015-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,7 +37,7 @@ class StringCache {
    const char *getString(char *str) {
       std::string strstr (str);
       std::set<std::string>::iterator got = storage.find (strstr);
-      
+
       if (got == storage.end()) {
          (void) storage.insert(strstr);
          got = storage.find (strstr);
@@ -45,9 +45,9 @@ class StringCache {
             assert(false);
          }
       }
-      
+
       return got->c_str();
-      
+
       return str;
    }
 

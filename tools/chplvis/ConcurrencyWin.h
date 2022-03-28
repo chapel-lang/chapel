@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2015-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,7 +21,7 @@
 #ifndef CONCURRENCYWIN_H
 #define CONCURRENCYWIN_H
 
-class ConcurrencyWin; 
+class ConcurrencyWin;
 
 #include <FL/Fl_Double_Window.H>
 #include "ConcurrencyView.h"

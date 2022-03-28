@@ -83,10 +83,10 @@ module LCALSChecksums {
     var suite_run_info = getLoopSuiteRunInfo();
     for variant in run_variants.domain {
       const varStr = (variant:string).toLower();
-      for loopKernel in chpl_enumerate(LoopKernelID) {
+      for loopKernel in LoopKernelID {
         const kerStr = (loopKernel:string).toLower();
         var stat = suite_run_info.getLoopStats(variant)[loopKernel].borrow();
-        for length in chpl_enumerate(LoopLength) {
+        for length in LoopLength {
           const lenStr = (length:string).toLower();
           if run_loop[loopKernel] && stat.loop_is_run && stat.loop_run_count[length] > 0 {
             if run_loop_length[length] {

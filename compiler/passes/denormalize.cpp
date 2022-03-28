@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,8 @@
 #include "symbol.h"
 #include "type.h"
 #include "WhileStmt.h"
+
+#include "global-ast-vecs.h"
 
 //helper datastructures/types
 typedef std::pair<Expr*, Type*> DefCastPair;
@@ -433,6 +435,11 @@ bool isDenormalizable(Symbol* sym,
                   ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   ce->isPrimitive(PRIM_RETURN) ||
                   (ce->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER) && ce->get(1) == se) ||
+
+                  // We want to pass symbols to kernel launches for now. This
+                  // simplifies its codegen.
+                  ce->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT) ||
+
                   isBadMove(ce) ||
                   isValPassedByRef(ce, se) ||
                   isFloatComparisonPrimitive(ce))) {

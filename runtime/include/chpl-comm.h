@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,6 +30,7 @@
 #include "chpl-tasks.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-comm-locales.h"
+#include "chpl-mem-consistency.h"
 #include "chpl-mem-desc.h"
 
 #ifdef __cplusplus
@@ -167,6 +168,12 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 // this function always returns 0 since although any address is in the
 // segment, not all addresses are readable without causing a segmentation
 // violation on the remote locale.
+//
+// Note that this call is asking if a future GET will be safe, so in cases
+// where memory is registered dynamically or on-demand it's possible that
+// another task might deregister memory between this call and the GET so it
+// should also return 0 in such configurations.
+//
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len);
 
 //
@@ -397,7 +404,20 @@ void chpl_comm_broadcast_private(int id, size_t size);
 // resources and prevent making progress. This barrier must be available
 // for use in module code, so it cannot be tied up in the runtime
 //
-void chpl_comm_barrier(const char *msg);
+void chpl_comm_impl_barrier(const char *msg);
+static inline void chpl_comm_barrier(const char *msg) {
+
+#ifdef CHPL_COMM_DEBUG
+  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
+#endif
+
+  if (chpl_numNodes == 1) {
+    return;
+  }
+
+  chpl_rmem_consist_fence(memory_order_seq_cst, 0, 0);
+  chpl_comm_impl_barrier(msg);
+}
 
 //
 // Do exit processing that has to occur before the tasking layer is
@@ -560,6 +580,18 @@ void* chpl_get_global_serialize_table(int64_t idx);
 // Used to park and wake up the main process
 void chpl_signal_shutdown(void);
 void chpl_wait_for_shutdown(void);
+
+// Sets the number of locales on the local node and determines if the node is
+// oversubscribed.
+void chpl_set_num_locales_on_node(int32_t count);
+
+// Returns the number of locales on the local node.
+
+int32_t chpl_get_num_locales_on_node(void);
+
+// Returns true if node is oversubscribed, false otherwise.
+
+chpl_bool chpl_get_oversubscribed(void);
 
 #ifdef __cplusplus
 }

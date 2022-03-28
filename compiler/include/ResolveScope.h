@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -157,6 +157,7 @@ private:
                                           SymList&    symbols)           const;
 
   void buildBreadthFirstUseImportList(UseImportList& useList) const;
+  void buildBfsUseImportRespectPrivate(UseImportList& useImportList) const;
 
   void buildBreadthFirstUseImportList(UseImportList& modules,
                                       UseImportList& current,

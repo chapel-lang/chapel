@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -114,7 +114,7 @@ static size_t totalEntries = 0;     /* number of entries in hash table */
 // is only safe if we cannot switch tasks on a pthread while holding the
 // mutex and then try to lock it recursively.  Currently that is the
 // case, since we do not yield while holding the mutex.
-// 
+//
 static pthread_mutex_t memTrack_lockVar = PTHREAD_MUTEX_INITIALIZER;
 
 static inline
@@ -157,14 +157,14 @@ void chpl_setMemFlags(void) {
                                     &memLog,
                                     &memLeaksLog);
 
-  chpl_memTrack = (local_memTrack
+  local_memTrack = (local_memTrack
                    || memStats
                    || memLeaksByType
                    || (memLeaksByDesc && strcmp(memLeaksByDesc, ""))
                    || memLeaks
                    || memMax > 0
                    || memLeaksLog != NULL);
-  
+
 
   if (!memLog) {
     memLogFile = stdout;
@@ -179,10 +179,13 @@ void chpl_setMemFlags(void) {
     }
   }
 
-  if (chpl_memTrack) {
+  if (local_memTrack) {
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
     memTable = sys_calloc(hashSize, sizeof(memTableEntry*));
+    chpl_atomic_thread_fence(memory_order_release);
+    chpl_memTrack = local_memTrack;
+    chpl_atomic_thread_fence(memory_order_release);
   }
 }
 
@@ -681,26 +684,38 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 }
 
 
-void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename) {
-  memTableEntry* memEntry = NULL;
-  if (chpl_memTrack) {
-    memTrack_lock();
-    memEntry = removeMemTableEntry(memAlloc);
-    if (memEntry) {
-      if (chpl_verbose_mem) {
-        fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
-                            ": free %zuB of %s at %p\n",
-                chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
-                lineno, memEntry->number * memEntry->size,
-                chpl_mem_descString(memEntry->description), memAlloc);
+
+// Since it's subtle -- approximateSize is used as an optimization to skip the
+// table lock when an allocation is below the tracking threshold. However, we
+// don't always know the exact size since we don't store the size of all
+// allocations. Since we can't always know the exact size, it can be 0 if the
+// size is unknown and otherwise it must be at least as large as the initial
+// allocation size. This allows us to pass the initial size if we have it, but
+// otherwise we can ask the allocator for the size of a pointer if it supports
+// that query, which isn't free but is much cheaper than grabbing a lock.
+void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
+                     int32_t filename) {
+  if (approximateSize == 0 || approximateSize > memThreshold) {
+    memTableEntry* memEntry = NULL;
+    if (chpl_memTrack) {
+      memTrack_lock();
+      memEntry = removeMemTableEntry(memAlloc);
+      if (memEntry) {
+        if (chpl_verbose_mem) {
+          fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
+                              ": free %zuB of %s at %p\n",
+                  chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+                  lineno, memEntry->number * memEntry->size,
+                  chpl_mem_descString(memEntry->description), memAlloc);
+        }
+        sys_free(memEntry);
       }
-      sys_free(memEntry);
+      memTrack_unlock();
+    } else if (chpl_verbose_mem && !memEntry) {
+      fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32 ": free at %p\n",
+              chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+              lineno, memAlloc);
     }
-    memTrack_unlock();
-  } else if (chpl_verbose_mem && !memEntry) {
-    fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32 ": free at %p\n",
-            chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
-            lineno, memAlloc);
   }
 }
 

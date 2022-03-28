@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2016 Cray Inc. All rights reserved.
  * Copyright (c) 2017 Los Alamos National Security, LLC. All rights reserved.
- * Copyright (c) 2019 Triad National Security, LLC. All rights reserved.
+ * Copyright (c) 2019-2020 Triad National Security, LLC.
+ *                         All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -117,7 +118,7 @@ _gnix_resolve_gni_ep_name(const char *ep_name, int idx,
 	int ret = FI_SUCCESS;
 	static size_t addr_size = sizeof(struct gnix_ep_name);
 
-	GNIX_TRACE(FI_LOG_TRACE, "\n");
+	GNIX_TRACE(FI_LOG_EP_CTRL, "\n");
 
 	/*TODO (optimization): Just return offset into ep_name */
 	memcpy(addr, &ep_name[addr_size * idx], addr_size);
@@ -138,7 +139,7 @@ _gnix_resolve_str_ep_name(const char *ep_name, int idx,
 	int ret = FI_SUCCESS;
 	static size_t addr_size = GNIX_FI_ADDR_STR_LEN;
 
-	GNIX_TRACE(FI_LOG_TRACE, "\n");
+	GNIX_TRACE(FI_LOG_EP_CTRL, "\n");
 
 	ret = _gnix_ep_name_from_str(&ep_name[addr_size * idx], addr);
 	return ret;

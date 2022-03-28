@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -128,7 +128,7 @@ module LocaleModel {
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
     proc init() {
-      use SysCTypes;
+      use CTypes;
       _node_id = chpl_nodeID: int;
       extern proc chpl_topo_getNumNumaDomains(): c_int;
       numSublocales = chpl_topo_getNumNumaDomains();
@@ -155,7 +155,7 @@ module LocaleModel {
       //
       //      this.init();
 
-      use SysCTypes;
+      use CTypes;
       _node_id = chpl_nodeID: int;
       extern proc chpl_topo_getNumNumaDomains(): c_int;
       numSublocales = chpl_topo_getNumNumaDomains();

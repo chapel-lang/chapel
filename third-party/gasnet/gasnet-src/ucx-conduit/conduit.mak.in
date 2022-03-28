@@ -19,8 +19,8 @@
 # Some platforms need extra -libs for the socket calls in ssh-spawner:
 @HAVE_BOOTSTRAP_SSH_TRUE@SSH_LIBS = @SSH_SPAWNER_LIBS@
 
-CONDUIT_LDFLAGS = @UCX_LDFLAGS@ @PMI_SPAWNER_LDFLAGS@
-CONDUIT_LIBS = @UCX_LIBS@ $(MPI_COMPAT_LIBS) $(SSH_LIBS) @PMI_SPAWNER_LIBS@
+CONDUIT_LDFLAGS = @UCX_LDFLAGS@ @PMI_SPAWNER_LDFLAGS@ @CUDA_UVA_LDFLAGS@ @HIP_LDFLAGS@
+CONDUIT_LIBS = @UCX_LIBS@ $(MPI_COMPAT_LIBS) $(SSH_LIBS) @PMI_SPAWNER_LIBS@ @CUDA_UVA_LIBS@ @HIP_LIBS@
 
 # (###) If this conduit has internal conduit threads, then it needs 
 # threading flags and libs - even in GASNET_SEQ mode

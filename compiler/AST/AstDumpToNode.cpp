@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,6 +39,8 @@
 #include "type.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
+
+#include "global-ast-vecs.h"
 
 bool        AstDumpToNode::compact      = false;
 const char* AstDumpToNode::delimitEnter = "#<"; // or { } or ( ) etc.
@@ -272,7 +274,7 @@ void AstDumpToNode::exitModSym(ModuleSymbol* node)
 
     fputs("ModUseList:", mFP);
 
-    forv_Vec(ModuleSymbol, mod, node->modUseList)
+    for (ModuleSymbol* mod : node->modUseList)
     {
       fprintf(mFP, " %s", mod->name);
     }

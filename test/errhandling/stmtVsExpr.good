@@ -1,0 +1,25 @@
+Hi
+0
+1
+Bye
+In foo
+In foo
+In foo
+In foo
+In foo
+In foo
+In foo
+Hi
+0
+1
+Bye
+In foo
+In foo
+In foo
+In foo
+In foo
+In foo
+In foo
+uncaught Error: goofy
+  stmtVsExpr.chpl:44: thrown here
+  stmtVsExpr.chpl:44: uncaught here

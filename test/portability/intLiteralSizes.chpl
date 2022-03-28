@@ -1,6 +1,6 @@
-use SysCTypes;
+use CTypes;
 
-extern proc sizeof(e): size_t;
+extern proc sizeof(e): c_size_t;
 
 writeln("sizes of signed integer literals");
 writeln(sizeof(1:int(8)));

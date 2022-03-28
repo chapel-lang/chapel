@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -514,6 +514,28 @@ void alignAddrSize(void* p, size_t size, chpl_bool onlyInside,
   *p_pgSize = pgSize;
   *p_pPgLo = pPgLo;
   *p_nPages = nPages;
+}
+
+
+void chpl_topo_interleaveMemLocality(void* p, size_t size) {
+  int flags;
+
+  if (!haveTopology) {
+    return;
+  }
+
+  if (!topoSupport->membind->set_area_membind ||
+      !topoSupport->membind->interleave_membind) {
+    return;
+  }
+
+  hwloc_bitmap_t set;
+  hwloc_obj_t obj;
+  obj = hwloc_get_root_obj(topology);
+  set = hwloc_bitmap_dup(obj->cpuset);
+
+  flags = 0;
+  CHK_ERR_ERRNO(hwloc_set_area_membind(topology, p, size, set, HWLOC_MEMBIND_INTERLEAVE, flags) == 0);
 }
 
 

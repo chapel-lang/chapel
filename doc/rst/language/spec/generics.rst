@@ -2,6 +2,7 @@
 
 .. _Chapter-Generics:
 
+========
 Generics
 ========
 
@@ -902,8 +903,8 @@ being generic over any other argument that is generic.
 
 .. _Generic_Compiler_Generated_Initializers:
 
-The Compiler-Generated Initializer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The Compiler-Generated Generic Initializer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If no user-defined initializers are supplied for a given generic class,
 the compiler generates one in a manner similar to that for

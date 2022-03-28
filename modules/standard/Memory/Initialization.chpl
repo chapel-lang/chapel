@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,7 +37,7 @@ module Initialization {
 
   // Mark as "unsafe" to silence lifetime errors.
   pragma "unsafe"
-  private inline proc _move(ref dst: ?t, const ref src: t) {
+  private inline proc _move(ref dst, const ref src) {
     __primitive("=", dst, src);
   }
 
@@ -47,7 +47,7 @@ module Initialization {
     :arg t: A type to check for deinitialization
     :type t: `type`
 
-    :return: ``true`` if ``t`` needs to be deinitialized 
+    :return: ``true`` if ``t`` needs to be deinitialized
     :rtype: param bool
   */
   proc needsDeinit(type t) param {
@@ -83,15 +83,18 @@ module Initialization {
       first. Call :proc:`explicitDeinit()` to deinitialize ``lhs`` if
       necessary.
 
-    :arg lhs: A variable to move-initialize
+    :arg lhs: A variable to move-initialize, whose type matches ``rhs``
 
     :arg rhs: A value to move-initialize from
   */
-  proc moveInitialize(ref lhs: ?t,
+  proc moveInitialize(ref lhs,
                       pragma "no auto destroy"
-                      pragma "error on copy" in rhs: t) {
-    if lhs.type != nothing then
+                      pragma "error on copy" in rhs) {
+    if __primitive("static typeof", lhs) != __primitive("static typeof", rhs) {
+      compilerError("type mismatch move-initializing an expression of type '"+lhs.type:string+"' from one of type '"+rhs.type:string+"'");
+    } else if __primitive("static typeof", lhs) != nothing {
       _move(lhs, rhs);
+    }
   }
 
   /*
@@ -220,7 +223,7 @@ module Initialization {
                                    numElements: int) {
     _errorNot1DRectangularArray(a);
 
-    if boundsChecking { 
+    if boundsChecking {
       _haltBadElementRange(a, dstStartIndex, numElements);
       _haltBadIndex(a, dstStartIndex, 'dstStartIndex');
       _haltBadIndex(a, srcStartIndex, 'srcStartIndex');
@@ -266,7 +269,7 @@ module Initialization {
     :arg dstStartIndex: Destination index of elements to move-initialize
     :type dstStartIndex: `dstA.idxType`
 
-    :arg srcA: The array with source elements 
+    :arg srcA: The array with source elements
     :type srcA: An array with the same element type as `dstA.eltType`
 
     :arg srcStartIndex: Source index of elements to move-initialize from

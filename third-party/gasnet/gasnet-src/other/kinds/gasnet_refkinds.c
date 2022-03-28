@@ -77,6 +77,7 @@ int gex_MK_Create(
 
   GASNETI_TRACE_PRINTF(O,("gex_MK_Create: client='%s' flags=%d",
                           client ? client->_name : "(NULL)", flags));
+  GASNETI_CHECK_INJECT();
 
   if (! client) {
     gasneti_fatalerror("Invalid call to gex_MK_Create with NULL client");
@@ -104,6 +105,14 @@ int gex_MK_Create(
       rc = gasneti_MK_Create_cuda_uva(&result, client, args, flags);
     #else
       GASNETI_RETURN_ERRR(BAD_ARG,"This build lacks support for GEX_MK_CLASS_CUDA_UVA");
+    #endif
+      break;
+
+    case GEX_MK_CLASS_HIP:
+    #if GASNET_HAVE_MK_CLASS_HIP
+      rc = gasneti_MK_Create_hip(&result, client, args, flags);
+    #else
+      GASNETI_RETURN_ERRR(BAD_ARG,"This build lacks support for GEX_MK_CLASS_HIP");
     #endif
       break;
 
@@ -141,6 +150,7 @@ void gex_MK_Destroy(
 
   GASNETI_TRACE_PRINTF(O,("gex_MK_Destroy: memkind=%p, class='%s' flags=%d",
                           (void*)e_mk, MK_IMPL(i_mk,name), flags));
+  GASNETI_CHECK_INJECT();
 
   if (flags) {
     gasneti_fatalerror("Invalid call to gex_MK_Destroy with non-zero flags");
@@ -183,4 +193,19 @@ int gasneti_MK_Segment_Create(
 
   gasneti_weakatomic32_increment(&i_mk->_ref_count, 0);
   return GASNET_OK;
+}
+
+void gasneti_MK_Segment_Destroy(
+            gasneti_Segment_t i_segment)
+{
+  gasneti_assert(i_segment);
+
+  gasneti_MK_t i_mk = gasneti_import_mk_nonhost(i_segment->_kind);
+
+  // Class-specific hook, if any
+  if (MK_IMPL(i_mk,segment_destroy)) {
+    MK_IMPL(i_mk,segment_destroy)(i_segment);
+  }
+
+  gasneti_weakatomic32_decrement(&i_mk->_ref_count, 0);
 }

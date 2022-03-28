@@ -3,7 +3,7 @@ import optparse
 import sys
 
 import chpl_cpu, overrides
-from utils import error, memoize
+from utils import error, memoize, warning
 
 @memoize
 def get(flag='host'):
@@ -22,24 +22,7 @@ def get(flag='host'):
     return chpl_cpu.get_default_machine(flag)
 
 def validate(flag='host'):
-    arch_flag = "CHPL_TARGET_ARCH"
-    cpu_flag = "CHPL_TARGET_CPU"
-    if flag == 'host':
-      arch_flag = "CHPL_HOST_ARCH"
-      cpu_flag = "CHPL_HOST_CPU"
-
-    cpu_val = chpl_cpu.get(flag).cpu
-    cpuarch = chpl_cpu.arch_for_cpu(cpu_val, flag)
-    machine = chpl_cpu.get_default_machine(flag)
-    if cpuarch:
-        if cpuarch != machine:
-            sys.stderr.write('Warning: Cross compilation not yet supported. '
-                             'Inferred {0}={1} based upon {2}={3} '
-                             'but running on {4}.\n'.format(arch_flag,
-                                                            cpuarch,
-                                                            cpu_flag,
-                                                            cpu_val,
-                                                            machine))
+    pass
 
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target]")

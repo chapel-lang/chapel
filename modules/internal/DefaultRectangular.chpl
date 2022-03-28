@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,8 @@
 // DefaultRectangular.chpl
 //
 module DefaultRectangular {
+  import HaltWrappers;
+
   config const dataParTasksPerLocale = 0;
   config const dataParIgnoreRunningTasks = false;
   config const dataParMinGranularity: int = 1;
@@ -30,7 +32,7 @@ module DefaultRectangular {
 
   use DSIUtil;
   public use ChapelArray;
-  use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes, CPtr;
+  use ChapelDistribution, ChapelRange, SysBasic, SysError, CTypes, CTypes;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
   public use ExternalArray; // OK: currently expected to be available by
@@ -106,6 +108,9 @@ module DefaultRectangular {
 
     override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
       return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
+
+    proc dsiTargetLocales() const ref
+      return chpl_getSingletonLocaleArray(this.locale);
 
     proc dsiIndexToLocale(ind) return this.locale;
 
@@ -206,18 +211,17 @@ module DefaultRectangular {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    pragma "order independent yielding loops"
     iter these_help(param d: int) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == rank-1 {
-        for i in ranges(d) do
+        foreach i in ranges(d) do
           yield i;
       } else if d == rank - 2 {
-        for i in ranges(d) do
-          for j in these_help(rank-1) do
+        foreach i in ranges(d) do
+          foreach j in these_help(rank-1) do
             yield (i, j);
       } else {
-        for i in ranges(d) do
-          for j in these_help(d+1) do
+        foreach i in ranges(d) do
+          foreach j in these_help(d+1) do
             yield (i, (...j));
       }
     }
@@ -239,18 +243,17 @@ module DefaultRectangular {
     }
 */
 
-    pragma "order independent yielding loops"
     iter these_help(param d: int, block) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == block.size-1 {
-        for i in block(d) do
+        foreach i in block(d) do
           yield i;
       } else if d == block.size - 2 {
-        for i in block(d) do
-          for j in these_help(block.size-1, block) do
+        foreach i in block(d) do
+          foreach j in these_help(block.size-1, block) do
             yield (i, j);
       } else {
-        for i in block(d) do
-          for j in these_help(d+1, block) do
+        foreach i in block(d) do
+          foreach j in these_help(d+1, block) do
             yield (i, (...j));
       }
     }
@@ -359,7 +362,7 @@ module DefaultRectangular {
 
       const numSublocs = here.getChildCount();
 
-      if localeModelHasSublocales && numSublocs != 0 {
+      if localeModelPartitionsIterationOnSublocales && numSublocs != 0 {
         var dptpl = if tasksPerLocale==0 then here.maxTaskPar
                     else tasksPerLocale;
         if !ignoreRunning {
@@ -479,13 +482,17 @@ module DefaultRectangular {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
                offset=createTuple(rank, intIdxType, 0:intIdxType))
       where tag == iterKind.follower {
+
+      if followThis.size != this.rank then
+        compilerError("rank mismatch in zippered iteration (can't zip a " +
+                      followThis.size:string + "D expression with a " +
+                      this.rank:string + "D domain)");
 
       proc anyStridable(rangeTuple, param i: int = 0) param
         return if i == rangeTuple.size-1 then rangeTuple(i).stridable
@@ -498,6 +505,10 @@ module DefaultRectangular {
 
       param stridable = this.stridable || anyStridable(followThis);
       var block: rank*range(idxType=intIdxType, stridable=stridable);
+      if boundsChecking then
+        for param i in 0..rank-1 do
+          if followThis(i).high >= ranges(i).sizeAs(uint) then
+            HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration (dimension " + i:string + ")");
       if stridable {
         type strType = chpl__signedType(intIdxType);
         for param i in 0..rank-1 {
@@ -525,11 +536,11 @@ module DefaultRectangular {
       }
 
       if rank == 1 {
-        for i in zip((...block)) {
+        foreach i in zip((...block)) {
           yield chpl_intToIdx(i);
         }
       } else {
-        for i in these_help(0, block) {
+        foreach i in these_help(0, block) {
           yield chpl_intToIdx(i);
         }
       }
@@ -704,7 +715,6 @@ module DefaultRectangular {
       }
     }
 
-    pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
     }
@@ -1076,6 +1086,21 @@ module DefaultRectangular {
       deinitElts = false;
     }
 
+    //
+    // This small kernel must be implemented by different array shapes due
+    // to 'BaseArr' having no notion of indexing scheme.
+    //
+    // TODO: Without this where clause any code using `unsafeAssign` to
+    // resize a 2D+ array will explode, because the 'locales' array tries
+    // to reuse an existing instantiation. Comment this out and run
+    // 'test/domains/unsafeAssign/TestUnsafeAssign2D.chpl' to see.
+    //
+    override proc chpl_unsafeAssignIsClassElementNil(manager, idx)
+    where idx.type == (rank*idxType) {
+      ref elem = this.dsiAccess(idx);
+      return manager.isClassReferenceNil(elem);
+    }
+
     override proc dsiDestroyArr(deinitElts:bool) {
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
@@ -1127,7 +1152,6 @@ module DefaultRectangular {
       for elem in chpl__serialViewIter(this, dom) do yield elem;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -1136,7 +1160,7 @@ module DefaultRectangular {
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr simple-dd standalone iterator");
       }
-      for i in dom.these(tag, tasksPerLocale,
+      foreach i in dom.these(tag, tasksPerLocale,
                          ignoreRunning, minIndicesPerTask) {
         yield dsiAccess(i);
       }
@@ -1157,18 +1181,22 @@ module DefaultRectangular {
         yield followThis;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
       ref where tag == iterKind.follower {
+      if followThis.size != this.rank then
+        compilerError("rank mismatch in zippered iteration (can't zip a " +
+                      followThis.size:string + "D expression with a " +
+                      this.rank:string + "D array)");
+
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr simple-dd follower iterator: ",
                            followThis);
       }
 
-      for i in dom.these(tag=iterKind.follower, followThis,
+      foreach i in dom.these(tag=iterKind.follower, followThis,
                          tasksPerLocale,
                          ignoreRunning,
                          minIndicesPerTask) do
@@ -1234,7 +1262,7 @@ module DefaultRectangular {
           chpl_debug_writeln("*** DR alloc ", eltType:string, " ", size);
         }
 
-        if !localeModelHasSublocales {
+        if !localeModelPartitionsIterationOnSublocales {
           data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
         } else {
           data = _ddata_allocate_noinit(eltType, size,
@@ -1317,7 +1345,7 @@ module DefaultRectangular {
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind: idxType ...1) const ref
-    where rank == 1 && shouldReturnRvalueByConstRef(eltType)
+    where rank == 1
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind : rank*idxType) ref {
@@ -1333,8 +1361,7 @@ module DefaultRectangular {
       return theData(dataInd);
     }
 
-    inline proc dsiAccess(ind : rank*idxType) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(ind : rank*idxType) const ref {
       // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
@@ -1394,10 +1421,12 @@ module DefaultRectangular {
       if !actuallyResizing then
         return;
 
-      if !isDefaultInitializable(eltType) {
-        halt("Can't resize domains whose arrays' elements don't " +
-             "have default values");
-      } else if this.locale != here {
+      if _resizePolicy == chpl_ddataResizePolicy.normalInit then
+        if !isDefaultInitializable(eltType) then
+          halt("Can't resize domains whose arrays' elements don't " +
+               "have default values");
+
+      if this.locale != here {
         halt("internal error: dsiReallocate() can only be called " +
              "from an array's home locale");
       } else {
@@ -1407,28 +1436,58 @@ module DefaultRectangular {
         // the low bounds and strides of the old and new domains
         // match; and when the element type is POD or the array is
         // growing (i.e.,(doesn't require deinit to be called).
+        const oldSize = dom.dsiNumIndices;
+        const newSize = reallocD.sizeAs(oldSize.type);
         if (!disableArrRealloc && rank == 1 &&
             reallocD.low == dom.dsiLow && reallocD.stride == dom.dsiStride &&
-            dom.dsiNumIndices > 0 && reallocD.size > 0) {
+            dom.dsiNumIndices > 0 && reallocD.size > 0 &&
+            _ddata_supports_reallocate(data, eltType, oldSize, newSize)) {
 
           if reportInPlaceRealloc then
             writeln("reallocating in-place");
 
           sizesPerDim(0) = reallocD.dsiDim(0).sizeAs(int);
-          const oldSize = dom.dsiNumIndices;
-          data = _ddata_reallocate(data,
-                                   eltType,
-                                   oldSize,
-                                   newSize=reallocD.sizeAs(oldSize.type));
+          data = _ddata_reallocate(oldDdata=data,
+                                   eltType=eltType,
+                                   oldSize=oldSize,
+                                   newSize=newSize,
+                                   subloc=c_sublocid_none,
+                                   policy=_resizePolicy);
           initShiftedData();
         } else {
-          var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
-                                                         rank=rank,
-                                                         idxType=idxType,
-                                                         stridable=reallocD._value.stridable,
-                                                         dom=reallocD._value);
+
+          // Should have been checked above.
+          param initElts = isDefaultInitializable(eltType);
+
+          var copy = new unmanaged
+              DefaultRectangularArr(eltType=eltType,
+                                    rank=rank,
+                                    idxType=idxType,
+                                    stridable=reallocD._value.stridable,
+                                    dom=reallocD._value,
+                                    initElts=initElts);
+
+          // May have to prepare the buffer based on the resize policy,
+          // but only if the element type is non-default-initializable.
+          if !initElts {
+            select _resizePolicy {
+
+              // User-facing error occurs above this scope.
+              when chpl_ddataResizePolicy.normalInit do
+                halt("internal error: bad resize policy for array of " +
+                     "non-default-initializable elements");
+
+              // Do nothing.
+              when chpl_ddataResizePolicy.skipInit do;
+
+              // TODO: An upgrade would be to zero out only new slots.
+              when chpl_ddataResizePolicy.skipInitButClearMem do
+                _ddata_fill(copy.data, eltType, 0, reallocD.size);
+            }
+          }
 
           var keep = reallocD((...dom.ranges));
+
           // Copy the preserved elements
           forall i in keep {
             // "move" from the old buffer to the new one
@@ -1519,7 +1578,6 @@ module DefaultRectangular {
       }
     }
 
-    pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
     }
@@ -1529,7 +1587,6 @@ module DefaultRectangular {
     }
   }
 
-  pragma "order independent yielding loops"
   iter chpl__serialViewIter(arr, viewDom) ref
     where chpl__isDROrDRView(arr) {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
@@ -1554,7 +1611,7 @@ module DefaultRectangular {
         const second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, chpl__idxToInt(viewDom.dsiLow)+1));
         const step   = (second-first);
         const last   = first + (viewDom.dsiNumIndices:step.type-1) * step;
-        for i in chpl_direct_pos_stride_range_iter(first, last, step) {
+        foreach i in chpl_direct_pos_stride_range_iter(first, last, step) {
           yield info.theData(i);
         }
       } else {
@@ -1572,16 +1629,16 @@ module DefaultRectangular {
           last <=> first;
 
         var data = info.theData;
-        for i in first..last by step do
+        foreach i in first..last by step do
           yield data(i);
       }
     } else if useCache {
-      for i in viewDom {
+      foreach i in viewDom {
         const dataIdx = info.getDataIndex(i);
         yield info.getDataElem(dataIdx);
       }
     } else {
-      for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+      foreach elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
     }
   }
 
@@ -1589,9 +1646,8 @@ module DefaultRectangular {
     for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
   }
 
-  pragma "order independent yielding loops"
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
-    for i in viewDom {
+    foreach i in viewDom {
       const dataIdx = if arr.isReindexArrayView() then chpl_reindexConvertIdx(i, arr.dom, arr.downdom)
                       else if arr.isRankChangeArrayView() then chpl_rankChangeConvertIdx(i, arr.collapsedDim, arr.idx)
                       else i;
@@ -1663,6 +1719,7 @@ module DefaultRectangular {
     }
 
     proc recursiveArrayWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -1718,7 +1775,6 @@ module DefaultRectangular {
         }
         else f <~> new ioLiteral("]");
       }
-
     }
 
     if false && !f.writing && !f.binary() &&
@@ -1816,6 +1872,7 @@ module DefaultRectangular {
     } else if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
               _isSimpleIoType(arr.eltType) && f.binary() &&
               isNative && arr.isDataContiguous(dom) {
+
       // If we can, we would like to read/write the array as a single write op
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the
@@ -1823,14 +1880,14 @@ module DefaultRectangular {
       const elemSize = c_sizeof(arr.eltType);
       if boundsChecking {
         var rw = if f.writing then "write" else "read";
-        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
-               "length of array to ", rw, " is greater than ssize_t can hold");
+        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(c_ssize_t):uint,
+               "length of array to ", rw, " is greater than c_ssize_t can hold");
       }
 
       const len = dom.dsiNumIndices;
       const src = arr.theData;
       const idx = arr.getDataIndex(dom.dsiLow);
-      const size = len:ssize_t*elemSize:ssize_t;
+      const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
         if f.writing {
           f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
@@ -1931,7 +1988,7 @@ module DefaultRectangular {
     for param i in 0..rank-1 do
       Blo(i) = Bdims(i).first;
 
-    const len = aView.sizeAs(aView.intIdxType).safeCast(size_t);
+    const len = aView.sizeAs(aView.intIdxType).safeCast(c_size_t);
 
     if len == 0 then return;
 
@@ -2111,7 +2168,7 @@ module DefaultRectangular {
     // each level. It will ultimately be an array of size `stridelevels+1`.
     //
     var countDom = {1..inferredRank+1};
-    var count : [countDom] size_t;
+    var count : [countDom] c_size_t;
     for c in count do c = 1; // serial to avoid task creation overhead
 
     //
@@ -2120,7 +2177,7 @@ module DefaultRectangular {
     // it can be aggregated. Will ultimately be of size `stridelevels`.
     //
     var strideDom = {1..inferredRank};
-    var dstStride, srcStride : [strideDom] size_t;
+    var dstStride, srcStride : [strideDom] c_size_t;
 
     //
     // If the last dimension is strided then we can only copy one element at a
@@ -2134,8 +2191,8 @@ module DefaultRectangular {
     if LBlk(inferredRank-1) > 1 || RBlk(inferredRank-1) > 1 {
       stridelevels           += 1;
       count[stridelevels]     = 1;
-      dstStride[stridelevels] = LBlk(inferredRank-1).safeCast(size_t);
-      srcStride[stridelevels] = RBlk(inferredRank-1).safeCast(size_t);
+      dstStride[stridelevels] = LBlk(inferredRank-1).safeCast(c_size_t);
+      srcStride[stridelevels] = RBlk(inferredRank-1).safeCast(c_size_t);
     }
 
     //
@@ -2147,21 +2204,21 @@ module DefaultRectangular {
     for i in 2..inferredRank by -1 {
       // Each corresponding dimension in A and B should have the same length,
       // so it doesn't matter which we use here.
-      count[stridelevels+1] *= DimSizes(i).safeCast(size_t);
+      count[stridelevels+1] *= DimSizes(i).safeCast(c_size_t);
 
       const bothReuse = canReuseStride(LBlk, i, stridelevels, count, dstStride) &&
                         canReuseStride(RBlk, i, stridelevels, count, srcStride);
 
       if !bothReuse {
         stridelevels += 1;
-        dstStride[stridelevels] = LBlk(i-2).safeCast(size_t);
-        srcStride[stridelevels] = RBlk(i-2).safeCast(size_t);
+        dstStride[stridelevels] = LBlk(i-2).safeCast(c_size_t);
+        srcStride[stridelevels] = RBlk(i-2).safeCast(c_size_t);
       }
     }
-    count[stridelevels+1] *= DimSizes(1).safeCast(size_t);
+    count[stridelevels+1] *= DimSizes(1).safeCast(c_size_t);
 
     assert(stridelevels <= inferredRank, "BulkTransferStride: stride levels greater than rank.");
-    if stridelevels == 0 then assert(count[1] == LViewDom.sizeAs(size_t), "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.sizeAs(size_t));
+    if stridelevels == 0 then assert(count[1] == LViewDom.sizeAs(c_size_t), "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.sizeAs(c_size_t));
 
     countDom  = {1..stridelevels+1};
     strideDom = {1..stridelevels};
@@ -2285,11 +2342,11 @@ module DefaultRectangular {
     var size2: rank*int;
     for (i, r) in zip(0..#other.dom.ranges.size, other.dom.ranges) do
       size2(i) = r.sizeAs(int);
-    
+
     if(this.locale == other.locale &&
        size1 == size2) {
       if debugOptimizedSwap {
-        writeln("DefaultRectangular doing optimized swap. Domains: ", 
+        writeln("DefaultRectangular doing optimized swap. Domains: ",
                 this.dom.ranges, " ", other.dom.ranges);
       }
       this.data <=> other.data;
@@ -2298,7 +2355,7 @@ module DefaultRectangular {
       return true;
     }
     if debugOptimizedSwap {
-      writeln("DefaultRectangular doing unoptimized swap. Domains: ", 
+      writeln("DefaultRectangular doing unoptimized swap. Domains: ",
               this.dom.ranges, " ", other.dom.ranges);
     }
     return false;
@@ -2331,10 +2388,10 @@ module DefaultRectangular {
       writeln("Whose chunks are: ", rngs);
     }
 
-    var state: [rngs.indices] resType;
+    var state: [rngs.domain] resType;
 
     // Take first pass over data doing per-chunk scans
-    coforall tid in rngs.indices {
+    coforall tid in rngs.domain {
       const current: resType;
       const myop = op.clone();
       for i in rngs[tid] {
@@ -2354,7 +2411,7 @@ module DefaultRectangular {
     // Scan state vector itself
     const metaop = op.clone();
     var next: resType = metaop.identity;
-    for i in rngs.indices {
+    for i in rngs.domain {
       state[i] <=> next;
       metaop.accumulateOntoState(next, state[i]);
     }
@@ -2370,7 +2427,7 @@ module DefaultRectangular {
   // tasks.  This is broken out into a helper function in order to be
   // made use of by distributed array scans.
   proc DefaultRectangularArr.chpl__postScan(op, res, numTasks, rngs, state) {
-    coforall tid in rngs.indices {
+    coforall tid in rngs.domain {
       const myadjust = state[tid];
       for i in rngs[tid] {
         op.accumulateOntoState(res[i], myadjust);

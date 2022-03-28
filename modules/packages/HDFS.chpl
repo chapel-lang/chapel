@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -125,8 +125,8 @@ HDFS Support Types and Functions
  */
 module HDFS {
 
-  use IO, SysBasic, SysError, Sys, CPtr;
-  public use SysCTypes;
+  use IO, SysBasic, SysError, Sys;
+  public use CTypes;
 
   require "hdfs.h";
 
@@ -170,10 +170,10 @@ module HDFS {
   // QIO extern stuff
   private extern proc qio_strdup(s: c_string): c_string;
   private extern proc qio_mkerror_errno():syserr;
-  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_void_ptr, ref len_out:ssize_t, ref offset_out:int(64)):syserr;
-  private extern proc qio_channel_advance_available_end_unlocked(ch:qio_channel_ptr_t, len:ssize_t);
-  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_void_ptr, ref len_out:ssize_t, ref offset_out:int(64)):syserr;
-  private extern proc qio_channel_advance_write_behind_unlocked(ch:qio_channel_ptr_t, len:ssize_t);
+  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_void_ptr, ref len_out:c_ssize_t, ref offset_out:int(64)):syserr;
+  private extern proc qio_channel_advance_available_end_unlocked(ch:qio_channel_ptr_t, len:c_ssize_t);
+  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_void_ptr, ref len_out:c_ssize_t, ref offset_out:int(64)):syserr;
+  private extern proc qio_channel_advance_write_behind_unlocked(ch:qio_channel_ptr_t, len:c_ssize_t);
 
   private param verbose = false;
 
@@ -265,6 +265,17 @@ module HDFS {
       return oldValue - 1;
     }
 
+    deprecated "open with a style argument is deprecated"
+    proc open(path:string, mode:iomode,
+              style:iostyle,
+              in flags:c_int = 0, // default to based on mode
+              bufferSize:c_int = 0,    // 0 -> use hdfs default value
+              replication:c_short = 0, // 0 -> use hdfs default value
+              blockSize:tSize = 0      // 0 -> use hdfs default value
+             ) throws {
+      return openHelper(path, mode, style: iostyleInternal, flags, bufferSize,
+                  replication, blockSize);
+    }
     /*
 
       Open an HDFS file stored at a particular path.  Note that once the file is
@@ -273,19 +284,29 @@ module HDFS {
 
       :arg path: which file to open (for example, "some/file.txt").
       :arg iomode: specify whether to open the file for reading or writing and whether or not to create the file if it doesn't exist.  See :type:`IO.iomode`.
-      :arg style: optional argument to specify I/O style associated with this file.  The provided style will be the default for any channels created for on this file, and that in turn will be the default for all I/O operations performed with those channels.
       :arg flags: flags to pass to the HDFS open call. Uses flags appropriate for ``mode`` if not provided.
       :arg bufferSize: buffer size to pass to the HDFS open call.  Uses the HDFS default value if not provided.
       :arg replication: replication factor to pass to the HDFS open call.  Uses the HDFS default value if not provided.
       :arg blockSize: blockSize to pass to the HDFS open call.  Uses the HDFS default value if not provided.
      */
     proc open(path:string, mode:iomode,
-              style:iostyle = defaultIOStyle(),
               in flags:c_int = 0, // default to based on mode
               bufferSize:c_int = 0,    // 0 -> use hdfs default value
               replication:c_short = 0, // 0 -> use hdfs default value
               blockSize:tSize = 0      // 0 -> use hdfs default value
              ) throws {
+      return openHelper(path, mode, flags=flags, bufferSize=bufferSize,
+                        replication=replication, blockSize=blockSize);
+    }
+
+    pragma "no doc"
+    proc openHelper(path:string, mode:iomode,
+                    style:iostyleInternal = defaultIOStyleInternal(),
+                    in flags:c_int = 0, // default to based on mode
+                    bufferSize:c_int = 0,    // 0 -> use hdfs default value
+                    replication:c_short = 0, // 0 -> use hdfs default value
+                    blockSize:tSize = 0      // 0 -> use hdfs default value
+                    ) throws {
 
       if flags == 0 {
         // set flags based upon iomode
@@ -456,7 +477,7 @@ module HDFS {
       var remaining = amt;
       while remaining > 0 {
         var ptr:c_void_ptr = c_nil;
-        var len = 0:ssize_t;
+        var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_allocated_ptr_unlocked(qio_ch, amt, ptr, len, offset);
         if err then
@@ -495,7 +516,7 @@ module HDFS {
       var remaining = amt;
       while remaining > 0 {
         var ptr:c_void_ptr = c_nil;
-        var len = 0:ssize_t;
+        var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_write_behind_ptr_unlocked(qio_ch, ptr, len, offset);
         if err then
@@ -503,7 +524,7 @@ module HDFS {
         if ptr == nil || len == 0 then
           return EINVAL;
 
-        len = min(len, amt.safeCast(ssize_t));
+        len = min(len, amt.safeCast(c_ssize_t));
         if len >= max(int(32)) then
           len = max(int(32));
 

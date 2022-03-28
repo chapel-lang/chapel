@@ -187,18 +187,26 @@ GASNETI_BEGIN_NOWARN
 #endif
 
 /* GASNETI_CONDUIT_THREADS = GASNet conduit has one or more private threads
-                             which may be used to run AM handlers */
+                             which may be used to run conduit and/or client code */
 #if defined(GASNETI_CONDUIT_THREADS) && (GASNETI_CONDUIT_THREADS != 1)
   #error bad defn of GASNETI_CONDUIT_THREADS
 #endif
 
-/* GASNET_HIDDEN_AM_CONCURRENCY_LEVEL: non-zero iff the conduit may run AM
- * handlers on a thread not owned by the client 
- */
-#if GASNETI_CONDUIT_THREADS
+// GASNET_HIDDEN_AM_CONCURRENCY_LEVEL: non-zero iff the conduit *may* run AM
+// handlers on a thread not owned by the client.
+//
+// gex_System_QueryHiddenAMConcurrencyLevel(): more precise query at runtime
+// which can consider things like the environment or library/hardware
+// capabilities.
+#ifdef GASNET_HIDDEN_AM_CONCURRENCY_LEVEL
+  // Trust conduit's definitions of macro and function
+  extern int gex_System_QueryHiddenAMConcurrencyLevel(void);
+#elif GASNETI_CONDUIT_THREADS
   #define GASNET_HIDDEN_AM_CONCURRENCY_LEVEL 1
+  #define gex_System_QueryHiddenAMConcurrencyLevel() 1
 #else
   #define GASNET_HIDDEN_AM_CONCURRENCY_LEVEL 0
+  #define gex_System_QueryHiddenAMConcurrencyLevel() 0
 #endif
 
 /* GASNETI_THREADS = Threads exist at conduit and/or client level, 
@@ -640,16 +648,16 @@ extern int gex_EP_Create(
             gex_EP_Capabilities_t  _capabilities,
             gex_Flags_t            _flags);
 
+extern int gex_EP_RegisterHandlers(
+            gex_EP_t       _ep,
+            gex_AM_Entry_t *_table,
+            size_t         _numentries);
+
 extern void gex_EP_BindSegment(
             gex_EP_t       _ep,
             gex_Segment_t  _segment,
             gex_Flags_t    _flags);
 
-#if GASNETC_HAVE_EP_PUBLISHBOUNDSEGMENT
-  #define gex_EP_PublishBoundSegment gasnetc_EP_PublishBoundSegment
-#else
-  #define gex_EP_PublishBoundSegment gasneti_EP_PublishBoundSegment
-#endif
 extern int gex_EP_PublishBoundSegment(
             gex_TM_t       _tm,
             gex_EP_t       *_eps,
@@ -671,6 +679,19 @@ extern gex_Event_t gex_EP_QueryBoundSegmentNB(
             void           **_localaddr_p,
             uintptr_t      *_size_p,
             gex_Flags_t    _flags) GASNETI_WARN_UNUSED_RESULT;
+
+extern int gex_Segment_Attach(
+            gex_Segment_t  *_segment_p,
+            gex_TM_t       _tm,
+            uintptr_t      _length);
+
+extern int gex_Segment_Create(
+            gex_Segment_t  *_segment_p,
+            gex_Client_t   _client,
+            gex_Addr_t     _address,
+            uintptr_t      _length,
+            gex_MK_t       _kind,
+            gex_Flags_t    _flags);
 
 /* ------------------------------------------------------------------------------------ */
 /* extended types */
@@ -831,11 +852,19 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
 
 
 /* ------------------------------------------------------------------------------------ */
-/* internal flags (others in gasnet_fwd.h) */
+/* conditional and internal flags (others in gasnet_fwd.h) */
+
+#define GEX_FLAG_PEER_NEVER_NBRHD       (1U << 14)
+#if GASNET_PSHM
+  #define GEX_FLAG_PEER_NEVER_SELF      (1U << 15)
+#else
+  #define GEX_FLAG_PEER_NEVER_SELF      GEX_FLAG_PEER_NEVER_NBRHD
+#endif
 
 #if defined(_IN_GASNET_INTERNAL_H)
   #define GASNETI_FLAG_LC_OPT_IN             (1U << 31)
   #define GASNETI_FLAG_COLL_SUBORDINATE      (1U << 30)
+  #define GASNETI_FLAG_PEER_SEG_AUX          (1U << 29)
 #endif
 
 #define GASNETI_FLAG_INIT_LEGACY           (1U << 31)
@@ -992,6 +1021,7 @@ extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC32_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG);
+extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_HIP_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN));
@@ -1027,6 +1057,7 @@ static int *gasneti_linkconfig_idiotcheck(void) {
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG)
+        + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_HIP_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN))

@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -38,6 +38,11 @@ ifndef CHPL_MAKE_HOST_TARGET
 CHPL_MAKE_HOST_TARGET = --host
 endif
 
+ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--target)
+# allow printchplenv to skip some host computations
+export CHPLENV_SKIP_HOST := 1
+endif
+
 #
 # Set all configuration variables provided by
 # printchplenv. This magically sets e.g.
@@ -69,7 +74,6 @@ endif
 # CHPL_MAKE_RUNTIME_SUBDIR=linux64/gnu/loc-flat/udp/everything/tasks-fifo/pthreads/tmr-generic/mem-default/atomics-intrinsics/none/gmp-none/hwloc-none/re-none/wide-struct/fs-none/lib_pic-none/
 # CHPL_MAKE_LAUNCHER_SUBDIR=linux64/gnu/loc-flat/udp/everything/tasks-fifo/pthreads/launch-amudprun/tmr-generic/mem-default/atomics-intrinsics/none/wide-struct
 # CHPL_MAKE_JEMALLOC_UNIQ_CFG_PATH etc
-# CHPL_MAKE_THIRD_PARTY_LINK_ARGS
 # Don't recompute the settings every time!
 ifndef CHPL_MAKE_CHPLENV_CACHE
 # ... but it involves a little bit of Make-craziness because
@@ -96,6 +100,12 @@ endef
 # set all of the CHPL_MAKE_... configuration-based variables!
 $(eval $(CHPL_MAKE_SETTINGS))
 
+# check a few variables to give a make invocation with an
+# invalid configuration a better error.
+ifndef CHPL_MAKE_HOST_PLATFORM
+  $(error error running util/printchplenv -- please see error above)
+endif
+
 # Try this to debug issues with CHPL_MAKE_* variables
 # $(info $(CHPL_MAKE_CHPLENV_CACHE))
 
@@ -115,19 +125,27 @@ CHPL_MAKE_AUXFS = $(CHPL_MAKE_AUX_FILESYS)
 # on CHPL_MAKE_HOST_TARGET to the HOST or TARGET versions.
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--target)
 CHPL_MAKE_COMPILER = $(CHPL_MAKE_TARGET_COMPILER)
-CHPL_MAKE_COMPILER_COMMAND_C = $(CHPL_MAKE_TARGET_COMPILER_COMMAND_C)
-CHPL_MAKE_COMPILER_COMMAND_CXX = $(CHPL_MAKE_TARGET_COMPILER_COMMAND_CXX)
+CHPL_MAKE_CC = $(CHPL_MAKE_TARGET_CC)
+CHPL_MAKE_CXX = $(CHPL_MAKE_TARGET_CXX)
 CHPL_MAKE_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)
 CHPL_MAKE_ARCH = $(CHPL_MAKE_TARGET_ARCH)
 CHPL_MAKE_MEM = $(CHPL_MAKE_TARGET_MEM)
 CHPL_MAKE_SANITIZE = $(CHPL_MAKE_SANITIZE_EXE)
+CHPL_MAKE_BUNDLED_COMPILE_ARGS = $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS)
+CHPL_MAKE_SYSTEM_COMPILE_ARGS = $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS)
+CHPL_MAKE_BUNDLED_LINK_ARGS = $(CHPL_MAKE_TARGET_BUNDLED_LINK_ARGS)
+CHPL_MAKE_SYSTEM_LINK_ARGS = $(CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS)
 else
 CHPL_MAKE_COMPILER = $(CHPL_MAKE_HOST_COMPILER)
-CHPL_MAKE_COMPILER_COMMAND_C = $(CHPL_MAKE_HOST_COMPILER_COMMAND_C)
-CHPL_MAKE_COMPILER_COMMAND_CXX = $(CHPL_MAKE_HOST_COMPILER_COMMAND_CXX)
+CHPL_MAKE_CC = $(CHPL_MAKE_HOST_CC)
+CHPL_MAKE_CXX = $(CHPL_MAKE_HOST_CXX)
 CHPL_MAKE_PLATFORM = $(CHPL_MAKE_HOST_PLATFORM)
 CHPL_MAKE_ARCH = $(CHPL_MAKE_HOST_ARCH)
 CHPL_MAKE_MEM = $(CHPL_MAKE_HOST_MEM)
+CHPL_MAKE_BUNDLED_COMPILE_ARGS = $(CHPL_MAKE_HOST_BUNDLED_COMPILE_ARGS)
+CHPL_MAKE_SYSTEM_COMPILE_ARGS = $(CHPL_MAKE_HOST_SYSTEM_COMPILE_ARGS)
+CHPL_MAKE_BUNDLED_LINK_ARGS = $(CHPL_MAKE_HOST_BUNDLED_LINK_ARGS)
+CHPL_MAKE_SYSTEM_LINK_ARGS = $(CHPL_MAKE_HOST_SYSTEM_LINK_ARGS)
 endif
 
 #
@@ -162,14 +180,6 @@ CXXFLAGS += $(PROFILE_CFLAGS)
 LDFLAGS += $(PROFILE_LFLAGS)
 endif
 
-# These variables are for C flags that are really coming from the C compiler
-# itself or from or 3rd-party configurations.
-# They might be set it make/compiler Makefiles or in third-party Makefiles
-# for example.
-CHPL_MAKE_BASE_CFLAGS =
-CHPL_MAKE_BASE_LFLAGS =
-
-#
 # Third-party package stuff
 #
 ifdef CHPL_MAKE_THIRD_PARTY
@@ -180,7 +190,12 @@ endif
 
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
 include $(THIRD_PARTY_DIR)/qthread/Makefile.include
-include $(THIRD_PARTY_DIR)/jemalloc/Makefile.include
+include $(THIRD_PARTY_DIR)/jemalloc/Makefile.common.include
+ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
+include $(THIRD_PARTY_DIR)/jemalloc/Makefile.host.include-$(CHPL_MAKE_HOST_JEMALLOC)
+else
+include $(THIRD_PARTY_DIR)/jemalloc/Makefile.target.include
+endif
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include
@@ -203,8 +218,8 @@ printplatform:
 	@echo "CHPL_MAKE_HOST_PLATFORM   = $(CHPL_MAKE_HOST_PLATFORM)"
 	@echo "CHPL_MAKE_TARGET_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)"
 	@echo "CHPL_MAKE_COMPILER        = $(CHPL_MAKE_COMPILER)"
-	@echo "CHPL_MAKE_COMPILER_COMMAND_C = $(CHPL_MAKE_COMPILER_COMMAND_C)"
-	@echo "CHPL_MAKE_COMPILER_COMMAND_CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX)"
+	@echo "CHPL_MAKE_CC              = $(CHPL_MAKE_CC)"
+	@echo "CHPL_MAKE_CXX             = $(CHPL_MAKE_CXX)"
 	@echo "CHPL_MAKE_LOCALE_MODEL    = $(CHPL_MAKE_LOCALE_MODEL)"
 	@echo "CHPL_MAKE_TASKS           = $(CHPL_MAKE_TASKS)"
 	@echo "CHPL_MAKE_THREADS         = $(CHPL_MAKE_THREADS)"
@@ -296,13 +311,13 @@ EXE_SUFFIX =
 
 # in case something goes wrong and we don't have a compiler, try
 # falling back on gcc.
-ifeq ($(CHPL_MAKE_COMPILER_COMMAND_CXX),)
-  $(warning CHPL_MAKE_COMPILER_COMMAND_CXX is not set so setting it to g++)
-  CHPL_MAKE_COMPILER_COMMAND_CXX = g++
+ifeq ($(CHPL_MAKE_CXX),)
+  $(warning CHPL_MAKE_CXX is not set so setting it to g++)
+  CHPL_MAKE_CXX = g++
 endif
-ifeq ($(CHPL_MAKE_COMPILER_COMMAND_C),)
-  $(warning CHPL_MAKE_COMPILER_COMMAND_C is not set so setting it to gcc)
-  CHPL_MAKE_COMPILER_COMMAND_C = gcc
+ifeq ($(CHPL_MAKE_CC),)
+  $(warning CHPL_MAKE_CC is not set so setting it to gcc)
+  CHPL_MAKE_CC = gcc
 endif
 
 #

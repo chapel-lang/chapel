@@ -2,6 +2,7 @@
 
 .. _Chapter-Memory_Consistency_Model:
 
+========================
 Memory Consistency Model
 ========================
 
@@ -529,11 +530,3 @@ Examples
         x.waitFor(1);
         x.write(1);
       }
-
-   .. note::
-
-      *Future:*
-
-      Upon completion, Chapel’s atomic
-      statement (:ref:`Atomic_Statement`) will serve as an
-      additional means of correctly synchronizing between tasks.

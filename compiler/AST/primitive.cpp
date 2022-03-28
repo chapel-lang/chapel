@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,8 @@
 #include "type.h"
 #include "resolution.h"
 #include "wellknown.h"
+
+#include "global-ast-vecs.h"
 
 static QualifiedType
 returnInfoUnknown(CallExpr* call) {
@@ -192,7 +194,7 @@ returnInfoStaticFieldType(CallExpr* call) {
   VarSymbol* nameSym = toVarSymbol(toSymExpr(call->get(2))->symbol());
   // caller's responsibility
   INT_ASSERT(nameSym->immediate->const_kind == CONST_KIND_STRING);
-  Symbol* field = at->getField(nameSym->immediate->v_string, true);
+  Symbol* field = at->getField(nameSym->immediate->v_string.c_str(), true);
   return field->qualType().toVal();
 }
 
@@ -308,8 +310,7 @@ returnInfoGetMember(CallExpr* call) {
     Symbol* field = NULL;
     if (imm->const_kind == CONST_KIND_STRING)
     {
-      const char* name = var->immediate->v_string;
-      field = ct->getField(name);
+      field = ct->getField(var->immediate->v_string.c_str());
     }
     if (imm->const_kind == NUM_KIND_INT)
     {
@@ -328,7 +329,10 @@ returnInfoGetMember(CallExpr* call) {
 static QualifiedType
 returnInfoGetTupleMember(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->getValType());
-  INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
+  INT_ASSERT(ct);
+  if (!ct->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    USR_FATAL(call, "invalid access of non-homogeneous tuple by runtime value");
+  }
   return ct->getField("x0")->qualType();
 }
 
@@ -362,8 +366,7 @@ returnInfoGetMemberRef(CallExpr* call) {
     Symbol* field = NULL;
     if (imm->const_kind == CONST_KIND_STRING)
     {
-      const char* name = var->immediate->v_string;
-      field = ct->getField(name);
+      field = ct->getField(var->immediate->v_string.c_str());
     }
     if (imm->const_kind == NUM_KIND_INT)
     {
@@ -416,7 +419,7 @@ returnInfoError(CallExpr* call) {
   AggregateType* at = toAggregateType(dtError);
   INT_ASSERT(isClass(at));
   Type* unmanaged =
-    at->getDecoratedClass(CLASS_TYPE_UNMANAGED); // TODO: nilable
+    at->getDecoratedClass(ClassTypeDecorator::UNMANAGED); // TODO: nilable
   INT_ASSERT(unmanaged);
   return QualifiedType(unmanaged, QUAL_VAL);
 }
@@ -456,11 +459,11 @@ static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::UNMANAGED;
   if (isNilableClassType(t))
-    decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+    decorator = ClassTypeDecorator::UNMANAGED_NILABLE;
   else if (isNonNilableClassType(t))
-    decorator = CLASS_TYPE_UNMANAGED_NONNIL;
+    decorator = ClassTypeDecorator::UNMANAGED_NONNIL;
 
   if (AggregateType* at = toAggregateType(canonicalClassType(t))) {
     if (isClass(at)) {
@@ -474,11 +477,11 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED;
   if (isNilableClassType(t))
-    decorator = CLASS_TYPE_BORROWED_NILABLE;
+    decorator = ClassTypeDecorator::BORROWED_NILABLE;
   else if (isNonNilableClassType(t))
-    decorator = CLASS_TYPE_BORROWED_NONNIL;
+    decorator = ClassTypeDecorator::BORROWED_NONNIL;
 
   if (AggregateType* at = toAggregateType(canonicalClassType(t)))
     if (isClass(at))
@@ -491,11 +494,11 @@ static QualifiedType
 returnInfoToUndecorated(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_GENERIC;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::GENERIC;
   if (isNilableClassType(t))
-    decorator = CLASS_TYPE_GENERIC_NILABLE;
+    decorator = ClassTypeDecorator::GENERIC_NILABLE;
   else if (isNonNilableClassType(t))
-    decorator = CLASS_TYPE_GENERIC_NONNIL;
+    decorator = ClassTypeDecorator::GENERIC_NONNIL;
 
   if (AggregateType* at = toAggregateType(canonicalClassType(t)))
     if (isClass(at))
@@ -510,7 +513,7 @@ returnInfoToNilable(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
   if (isClassLikeOrManaged(t)) {
-    ClassTypeDecorator decorator = classTypeDecorator(t);
+    ClassTypeDecoratorEnum decorator = classTypeDecorator(t);
     decorator = addNilableToDecorator(decorator);
 
     if (isManagedPtrType(t)) {
@@ -538,7 +541,7 @@ returnInfoToNonNilable(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
   if (isClassLikeOrManaged(t)) {
-    ClassTypeDecorator decorator = classTypeDecorator(t);
+    ClassTypeDecoratorEnum decorator = classTypeDecorator(t);
     decorator = addNonNilToDecorator(decorator);
 
     if (isManagedPtrType(t)) {
@@ -611,22 +614,39 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
   primitives_map.put(name, this);
 }
 
+/* Primitive names appear both in prim-ops-list.h as well as
+   here. This routine checks that the name matches in both.
+ */
+static void checkPrimName(PrimitiveTag tag, const char* name) {
+  // Check name matches the string in prim-ops-list.h
+  switch (tag) {
+#define PRIMITIVE(macroTag, macroName) \
+    case PRIM_ ## macroTag: \
+      INT_ASSERT(0 == strcmp(name, macroName)); \
+      break;
+
+#define PRIMITIVE_R(macroTag, macroName) PRIMITIVE(macroTag, macroName)
+#define PRIMITIVE_G(macroTag, macroName) PRIMITIVE(macroTag, macroName)
+
+#include "chpl/uast/prim-ops-list.h"
+#undef PRIMITIVE
+#undef PRIMITIVE_R
+#undef PRIMITIVE_G
+
+    default:
+      INT_FATAL("case not handled");
+  }
+}
+
+
 static void
 prim_def(PrimitiveTag tag, const char* name, QualifiedType (*returnInfo)(CallExpr*),
          bool isEssential = false, bool passLineno = false) {
+  checkPrimName(tag, name);
   primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
   primitives[tag]->isEssential = isEssential;
   primitives[tag]->passLineno = passLineno;
 }
-
-static void
-prim_def(const char* name, QualifiedType (*returnInfo)(CallExpr*),
-         bool isEssential = false, bool passLineno = false) {
-  PrimitiveOp* prim = new PrimitiveOp(PRIM_UNKNOWN, name, returnInfo);
-  prim->isEssential = isEssential;
-  prim->passLineno = passLineno;
-}
-
 
 /*
  * The routine below, using the routines just above, define primitives
@@ -695,7 +715,7 @@ initPrimitive() {
   prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_NOT, "u~", returnInfoFirstDeref);
-  prim_def(PRIM_UNARY_LNOT, "!", returnInfoBool);
+  prim_def(PRIM_UNARY_LNOT, "u!", returnInfoBool);
   prim_def(PRIM_ADD, "+", returnInfoNumericUp);
   prim_def(PRIM_SUBTRACT, "-", returnInfoNumericUp);
   prim_def(PRIM_MULT, "*", returnInfoNumericUp);
@@ -798,7 +818,47 @@ initPrimitive() {
   prim_def(PRIM_GET_DYNAMIC_END_COUNT, "get dynamic end count", returnInfoEndCount);
   prim_def(PRIM_SET_DYNAMIC_END_COUNT, "set dynamic end count", returnInfoVoid, true);
 
+  // this assumes the grid and the blocks are 1D
+  prim_def(PRIM_GPU_KERNEL_LAUNCH_FLAT, "gpu kernel launch flat", returnInfoVirtualMethodCall, true);
+
+  // this requires sizes in all 3D to be specified. For 2D launches, 1 can be
+  // passed as one or more of these arguments.
   prim_def(PRIM_GPU_KERNEL_LAUNCH, "gpu kernel launch", returnInfoVirtualMethodCall, true);
+
+  // Primitive functions to access thread, block, and grid information:
+  //
+  // Threads, blocks, and grids are CUDA terminology; the corresponding terms
+  // in OpenCL are: workitems, workgroups, and n-dimensional ranges.
+  //
+  // Threads correspond to a stream of instructions to execute on one core
+  // of a GPU. A streaming multiprocessor (SM) may operate on multiple threads
+  // simultaneously in a SIMT (single instruction multiple threads) manner.
+  //
+  // When launching a kernel the user specifies a 3-dimensional block size.
+  // Blocks are groups of threads. Grids are groups of blocks and when
+  // launching a kernel the user specifies a 3-dimensional grid size.
+  //
+  // Threads can be indexed as a 3-dimensional location within a block,
+  // which itself can be indexed as a 3-dimensional location within a grid.
+  prim_def(PRIM_GPU_THREADIDX_X, "gpu threadIdx x", returnInfoInt32, true);
+  prim_def(PRIM_GPU_THREADIDX_Y, "gpu threadIdx y", returnInfoInt32, true);
+  prim_def(PRIM_GPU_THREADIDX_Z, "gpu threadIdx z", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKIDX_X, "gpu blockIdx x", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKIDX_Y, "gpu blockIdx y", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKIDX_Z, "gpu blockIdx z", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKDIM_X, "gpu blockDim x", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKDIM_Y, "gpu blockDim y", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKDIM_Z, "gpu blockDim z", returnInfoInt32, true);
+  prim_def(PRIM_GPU_GRIDDIM_X, "gpu gridDim x", returnInfoInt32, true);
+  prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
+  prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
+
+  // allocate data into shared memory (takes one parameter: number of bytes to allocate)
+  // and returns a c_void_ptr
+  prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
+
+  // synchronize threads in a GPU kernel (equivalent to CUDA __syncThreads)
+  prim_def(PRIM_GPU_SYNC_THREADS, "gpu syncThreads", returnInfoVoid, true);
 
   // task primitives
   // get serial state
@@ -966,6 +1026,9 @@ initPrimitive() {
   // specify a particular localeID for an on clause.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
+  // call the 'chpl_task_getRequestedSubloc' runtime function
+  prim_def(PRIM_GET_REQUESTED_SUBLOC, "chpl_task_getRequestedSubloc", returnInfoInt64);
+
   prim_def(PRIM_REGISTER_GLOBAL_VAR, "_register_global_var", returnInfoVoid, true, true);
   prim_def(PRIM_BROADCAST_GLOBAL_VARS, "_broadcast_global_vars", returnInfoVoid, true, true);
   // ('_private_broadcast' sym)
@@ -980,21 +1043,21 @@ initPrimitive() {
   prim_def(PRIM_CAPTURE_FN_FOR_C, "capture fn for C", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
-  prim_def("string_compare", returnInfoDefaultInt, true);
-  prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_concat", returnInfoStringC, true, true);
-  prim_def("string_length_bytes", returnInfoDefaultInt);
-  prim_def("string_length_codepoints", returnInfoDefaultInt);
-  prim_def("ascii", returnInfoUInt8);
-  prim_def("string_index", returnInfoStringC, true, true);
+  prim_def(PRIM_STRING_COMPARE, "string_compare", returnInfoDefaultInt, true);
+  prim_def(PRIM_STRING_CONTAINS, "string_contains", returnInfoBool, true);
+  prim_def(PRIM_STRING_CONCAT, "string_concat", returnInfoStringC, true, true);
+  prim_def(PRIM_STRING_LENGTH_BYTES, "string_length_bytes", returnInfoDefaultInt);
+  prim_def(PRIM_STRING_LENGTH_CODEPOINTS, "string_length_codepoints", returnInfoDefaultInt);
+  prim_def(PRIM_ASCII, "ascii", returnInfoUInt8);
+  prim_def(PRIM_STRING_INDEX, "string_index", returnInfoStringC, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
-  prim_def("string_select", returnInfoStringC, true, true);
-  prim_def("sleep", returnInfoVoid, true);
-  prim_def("real2int", returnInfoDefaultInt);
-  prim_def("object2int", returnInfoDefaultInt);
-  prim_def("chpl_exit_any", returnInfoVoid, true);
+  prim_def(PRIM_STRING_SELECT, "string_select", returnInfoStringC, true, true);
+  prim_def(PRIM_SLEEP, "sleep", returnInfoVoid, true);
+  prim_def(PRIM_REAL_TO_INT, "real2int", returnInfoDefaultInt);
+  prim_def(PRIM_OBJECT_TO_INT, "object2int", returnInfoDefaultInt);
+  prim_def(PRIM_CHPL_EXIT_ANY, "chpl_exit_any", returnInfoVoid, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
@@ -1061,6 +1124,7 @@ initPrimitive() {
   // Like the previous two but also always attempts to resolve the called fn
   prim_def(PRIM_CALL_AND_FN_RESOLVES, "call and fn resolves", returnInfoBool);
   prim_def(PRIM_METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves", returnInfoBool);
+  prim_def(PRIM_RESOLVES, "resolves", returnInfoBool);
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);
@@ -1074,6 +1138,10 @@ initPrimitive() {
   // Allocate a class instance on the stack (where normally it
   // would be allocated on the heap). The only argument is the class type.
   prim_def(PRIM_STACK_ALLOCATE_CLASS, "stack allocate class", returnInfoFirst);
+
+  // zero the memory a variable points to. only argument is the variable
+  prim_def(PRIM_ZERO_VARIABLE, "zero variable", returnInfoVoid, true);
+
   prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
   prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 
@@ -1139,7 +1207,7 @@ initPrimitive() {
 
   // Argument is a symbol and we attach flags to that symbol to
   // indicate optimization information.
-  // That symbol includes OPT_INFO_... flags.
+  // That symbol includes FLAG_OPT_INFO_... flags.
   prim_def(PRIM_OPTIMIZATION_INFO, "optimization info", returnInfoVoid, true, false);
 
   prim_def(PRIM_GATHER_TESTS, "gather tests", returnInfoDefaultInt);
@@ -1151,6 +1219,8 @@ initPrimitive() {
   prim_def(PRIM_VERSION_MINOR, "version minor", returnInfoDefaultInt);
   prim_def(PRIM_VERSION_UPDATE, "version update", returnInfoDefaultInt);
   prim_def(PRIM_VERSION_SHA, "version sha", returnInfoString);
+
+  prim_def(PRIM_REF_DESERIALIZE, "deserialize for ref fields", returnInfoCVoidPtr);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

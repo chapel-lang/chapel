@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,7 @@
 #include <stdio.h>
 
 #include "chplrt.h"
+#include "chplcgfns.h"
 #include "chpl-comm-launch.h"
 #include "chpl-env.h"
 
@@ -40,11 +41,12 @@ void chpl_comm_preLaunch(int32_t numLocales) {
   // during comm layer initialization.  At this point we cannot tell
   // whether we'll do so, but it won't hurt anything to set it anyway.
   //
-  // Based on limited experimentation, it looks like the actual value we
-  // need is ((numLocales * 5) + 3).  (numLocales * 7) is a ceiling.
-  //
+  // Based on limited experimentation, numLocales * 10 works with
+  // small-scale runs. The cray-pmi{,-lib} modules are likely to be
+  // loaded for large-scale runs in which case KVS isn't even used.
+
   {
-    int32_t newVal = numLocales * 7;
+    int32_t newVal = numLocales * 10;
 
     const char* evName = "PMI_MAX_KVS_ENTRIES";
     char* evStr;
@@ -66,5 +68,20 @@ void chpl_comm_preLaunch(int32_t numLocales) {
     // won't hurt anything.
     //
     chpl_env_set("FI_SOCKETS_PE_WAITTIME", "0", 0);
+  }
+
+  if (strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") == 0) {
+    //
+    // On HPE Cray EX systems, temporarily work around a PMI bug by
+    // setting PMI_NO_PREINITIALIZE=y which prevents PMI initializing
+    // itself more than once and thus getting into the bug situation.
+    //
+    // The fix for the bug is in the PMI module version that follows
+    // 6.1.0, so this workaround can be removed as soon as no system
+    // has that or earlier.  (PMI_NO_PREINITIALIZE actually defaults
+    // to "y" in PMI 6.0.17 and later, but even with that we have to
+    // override the user if they set it otherwise.)
+    //
+    chpl_env_set("PMI_NO_PREINITIALIZE", "y", 1);
   }
 }

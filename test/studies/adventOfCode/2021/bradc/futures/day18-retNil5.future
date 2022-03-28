@@ -1,0 +1,4 @@
+bug: compiler can't unify non-nil class and 'nil'
+
+It seems like the compiler should be able to unify 'owned C?' and 'nil'
+to 'owned C?'

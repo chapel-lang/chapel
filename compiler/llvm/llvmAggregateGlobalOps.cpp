@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,6 +56,7 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
+#include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/InstIterator.h"
 
 #if HAVE_LLVM_VER < 90
@@ -812,7 +813,11 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Type* SrcTy = origSrcTy->getPointerElementType()->getPointerTo(0);
         Value* Src = irBuilder.CreatePointerCast(i8Src, SrcTy);
 
+#if HAVE_LLVM_VER >= 130
+        LoadInst* newLoad = irBuilder.CreateLoad(Src->getType()->getPointerElementType(), Src);
+#else
         LoadInst* newLoad = irBuilder.CreateLoad(Src);
+#endif
 #if HAVE_LLVM_VER >= 100
         newLoad->setAlignment(oldLoad->getAlign());
 #else

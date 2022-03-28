@@ -1,7 +1,7 @@
 // Verifies the behavior of use chains that start with an 'only' and have
 // an 'except' in them
 module Outer {
-  use Inner except a;
+  public use Inner except a;
 
   var b: bool;
   var c = 14.7;

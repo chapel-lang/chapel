@@ -1,12 +1,29 @@
 """Utility functions for chplenv modules"""
+
 import os
 import subprocess
 import sys
 
+try:
+    # Module `distutils` is deprecated in Python 3.10 and will be removed in Python 3.12
+    # Prefer `shutil.which` in Python 3.2+
+    from shutil import which
+except ImportError:
+    # Backport for pre Python 3.2
+    from distutils.spawn import find_executable as which
+
+
+def warning(msg):
+    if not os.environ.get('CHPLENV_SUPPRESS_WARNINGS'):
+        sys.stderr.write('Warning: ')
+        sys.stderr.write(msg)
+        sys.stderr.write('\n')
+
 
 def error(msg, exception=Exception):
     """Exception raising wrapper that differentiates developer-mode output"""
-    if os.environ.get('CHPL_DEVELOPER'):
+    developer = os.environ.get('CHPL_DEVELOPER')
+    if developer and developer != "0":
         raise exception(msg)
     else:
         sys.stderr.write('\nError: ')

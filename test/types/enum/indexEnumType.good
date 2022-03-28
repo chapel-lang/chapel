@@ -1,0 +1,2 @@
+indexEnumType.chpl:2: error: illegal type index expression 'testEnum[0]'
+indexEnumType.chpl:2: note: enum type 'testEnum' cannot be used in an index expression

@@ -1,6 +1,6 @@
-use Spawn;
+use Subprocess;
 
-var sub = spawn(["cat", "test.txt"], stdout=PIPE);
+var sub = spawn(["cat", "test.txt"], stdout=pipeStyle.pipe);
 
 var line:string;
 while sub.stdout.readline(line) {
@@ -9,6 +9,6 @@ while sub.stdout.readline(line) {
 
 sub.wait();
 assert(sub.running == false);
-assert(sub.exit_status == 0);
+assert(sub.exitCode == 0);
 
 sub.close();

@@ -191,6 +191,7 @@ module initialization function.  This function will be named
    before calling any of the exported functions in your library.  You do not
    need to do this more than once per program.
 
+.. _readme-libraries-linking:
 
 Compiling C Code with the Library
 ---------------------------------

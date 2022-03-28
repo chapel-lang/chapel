@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,6 @@ struct PromotedPair {
 };
 
 bool isArrayVecOrStruct(llvm::Type* t);
-llvm::Constant* codegenSizeofLLVM(llvm::Type* type);
 
 // 0 means undefined alignment
 llvm::AllocaInst* makeAlloca(llvm::Type* type, const char* name, llvm::Instruction* insertBefore, unsigned n=1, unsigned align=0);

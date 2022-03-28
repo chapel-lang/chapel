@@ -39,6 +39,9 @@
   "d551f4f6-d1a9-11e8-954d-10ddb1d4c3d5": [
     "compiler/AST/LoopExpr.cpp"
   ],
+  "e1c3d7ee-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/AST/ParamForLoop.cpp"
+  ],
   "93ca6f88-fd34-11e9-98b5-10ddb1d4c3d5": [
     "compiler/AST/astutil.cpp"
   ],
@@ -63,6 +66,9 @@
   ],
   "e2d7df7c-1d0c-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/iterator.cpp"
+  ],
+  "dbcaace6-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/AST/primitive.cpp"
   ],
   "0846cc78-1d0d-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/stmt.cpp"
@@ -92,6 +98,12 @@
   "661b62ac-1d7e-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/backend/beautify.cpp"
   ],
+  "ca2e1636-f55f-11eb-bb15-35b7469d4b43": [
+    "compiler/codegen/cg-expr.cpp"
+  ],
+  "65cc59e0-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/codegen/cg-symbol.cpp"
+  ],
   "75f1ecaa-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/codegen/codegen.cpp"
   ],
@@ -101,8 +113,413 @@
   "de897ffc-9315-11e9-a422-10ddb1d4c3d5": [
     "compiler/codegen/mli.cpp"
   ],
+  "a7eb801c-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/dyno/README"
+  ],
+  "8f8948a2-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/queries/Context-detail.h"
+  ],
+  "772f06cb-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/queries/Context.h"
+  ],
+  "885d2288-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/queries/ErrorMessage.h"
+  ],
+  "2fa2d27c-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/queries/UniqueString-detail.h"
+  ],
+  "772f06ca-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/queries/UniqueString.h"
+  ],
+  "b21ab428-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/queries/all-global-strings.h"
+  ],
+  "28bcfa5a-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/queries/global-strings.h"
+  ],
+  "b6d19b44-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/queries/query-impl.h"
+  ],
+  "6804c1bc-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/queries/stringify-functions.h"
+  ],
+  "7fabd8d0-9f70-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/AnyType.h"
+  ],
+  "a8a34048-9f70-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/BoolType.h"
+  ],
+  "8ee06334-9f70-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/BuiltinType.h"
+  ],
+  "a9aa4b59-9f70-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/BytesType.h"
+  ],
+  "e045c08a-9f6f-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/CStringType.h"
+  ],
+  "092689de-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/ComplexType.h"
+  ],
+  "9ae680c8-9f70-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/CompositeType.h"
+  ],
+  "9dba0644-9f70-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/ErroneousType.h"
+  ],
+  "7d5a9986-9f70-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/ImagType.h"
+  ],
+  "e9f785aa-9f6f-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/IntType.h"
+  ],
+  "0a7c5278-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/NothingType.h"
+  ],
+  "894be330-9f70-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/Param.h"
+  ],
+  "e5093692-9f6f-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/ParamTag.h"
+  ],
+  "082123be-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/QualifiedType.h"
+  ],
+  "a9aa4b58-9f70-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/RealType.h"
+  ],
+  "db34a282-9f6f-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/StringType.h"
+  ],
+  "16268030-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/UnknownType.h"
+  ],
+  "8085b514-9f70-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/VoidType.h"
+  ],
+  "111b0bc4-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/types/type-classes-list.h"
+  ],
+  "3be03bb2-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/ASTList.h"
+  ],
+  "1f633326-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/ASTNode.h"
+  ],
+  "b2d3a318-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/ASTTypes.h"
+  ],
+  "c6d33490-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/AggregateDecl.h"
+  ],
+  "398ec004-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Array.h"
+  ],
+  "ca94ec3c-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/As.h"
+  ],
+  "d743109e-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Begin.h"
+  ],
+  "f36f73b6-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/BlockStyle.h"
+  ],
+  "3a4a084a-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/BoolLiteral.h"
+  ],
+  "ed23284e-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/BracketLoop.h"
+  ],
+  "358c21ae-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Break.h"
+  ],
+  "4a72881e-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/BuilderResult.h"
+  ],
+  "09cc7194-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/BytesLiteral.h"
+  ],
+  "d56e1494-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/CStringLiteral.h"
+  ],
+  "3aae948c-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Catch.h"
+  ],
+  "f6c35dca-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Class.h"
+  ],
+  "d0f16e38-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Cobegin.h"
+  ],
+  "3e40f74c-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Coforall.h"
+  ],
+  "26bbfbfe-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Conditional.h"
+  ],
+  "0163ea46-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Continue.h"
+  ],
+  "22c5fcf2-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Decl.h"
+  ],
+  "fc6af246-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Defer.h"
+  ],
+  "f1585970-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Delete.h"
+  ],
+  "ded2da32-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/DoWhile.h"
+  ],
+  "4bb86216-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Domain.h"
+  ],
+  "bb77b0c6-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Enum.h"
+  ],
+  "cc832ba2-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/EnumElement.h"
+  ],
+  "b9e8cbd2-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/ErroneousExpression.h"
+  ],
+  "f38e8b92-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/ExternBlock.h"
+  ],
+  "2fe3c446-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/FnCall.h"
+  ],
+  "c8b99538-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/For.h"
+  ],
+  "c8b99539-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Forall.h"
+  ],
+  "bb35557e-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Foreach.h"
+  ],
+  "ed76a74a-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Formal.h"
+  ],
+  "df9b832a-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/ForwardingDecl.h"
+  ],
+  "e35a9ff0-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Function.h"
+  ],
+  "cfbceba0-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Identifier.h"
+  ],
+  "315b55b8-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/ImagLiteral.h"
+  ],
+  "373799b6-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Import.h"
+  ],
+  "2cb7747a-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Include.h"
+  ],
+  "c010ed0a-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/IndexableLoop.h"
+  ],
+  "32ad6e7e-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/IntLiteral.h"
+  ],
+  "e9ef4e78-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/IntentList.h"
+  ],
+  "0c514296-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Label.h"
+  ],
+  "2e59a00e-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Let.h"
+  ],
+  "3327c724-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Local.h"
+  ],
+  "25416ab6-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Manage.h"
+  ],
+  "bf51d6dc-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Module.h"
+  ],
+  "4e749aec-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/MultiDecl.h"
+  ],
+  "c2094ef0-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/NamedDecl.h"
+  ],
+  "c461eff4-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/New.h"
+  ],
+  "52dcfb24-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/NumericLiteral.h"
+  ],
+  "2fc07314-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/On.h"
+  ],
+  "cdf2efbe-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/OpCall.h"
+  ],
+  "2b010178-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Pragma.h"
+  ],
+  "ef4d808e-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/PrimCall.h"
+  ],
+  "d0f16e39-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Range.h"
+  ],
+  "fe2ad90c-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/RealLiteral.h"
+  ],
+  "e9ef4e79-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Record.h"
+  ],
+  "a074aca8-9f80-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Require.h"
+  ],
+  "ded2da33-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Return.h"
+  ],
+  "cc49bb0c-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Scan.h"
+  ],
+  "c1821d12-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Select.h"
+  ],
+  "3f2f81e6-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Serial.h"
+  ],
+  "c4ba33ac-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/SimpleBlockLike.h"
+  ],
+  "e2ddb174-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/StringLikeLiteral.h"
+  ],
+  "388ac7a6-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/StringLiteral.h"
+  ],
+  "35a13476-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Sync.h"
+  ],
+  "dcd1606e-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/TaskVar.h"
+  ],
+  "e791e8ca-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Throw.h"
+  ],
+  "27dd52c6-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Try.h"
+  ],
+  "50840840-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Tuple.h"
+  ],
+  "b56cc532-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/TupleDecl.h"
+  ],
+  "2ea504c8-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/TypeDecl.h"
+  ],
+  "036aa00a-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/TypeQuery.h"
+  ],
+  "1e463c3c-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/UintLiteral.h"
+  ],
+  "e5530b8e-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Union.h"
+  ],
+  "387bc64e-9f72-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Use.h"
+  ],
+  "06937e78-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/VarArgFormal.h"
+  ],
+  "1d9efc3c-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/VarLikeDecl.h"
+  ],
+  "4cec2a3c-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Variable.h"
+  ],
+  "0f67ca54-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/VisibilityClause.h"
+  ],
+  "4bb86217-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/While.h"
+  ],
+  "3bab9b90-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/WithClause.h"
+  ],
+  "3f2f81e7-9f73-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/Yield.h"
+  ],
+  "d2eb1668-9f71-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/uast/prim-ops-list.h"
+  ],
+  "6e8fb3ba-9f6f-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/include/chpl/util/iteration.h"
+  ],
+  "360f852e-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/immediates/num.cpp"
+  ],
+  "95534796-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/parsing/Parser.cpp"
+  ],
+  "a96a12f0-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/parsing/ParserContext.h"
+  ],
+  "495be19a-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/parsing/ParserContextImpl.h"
+  ],
+  "8af2955e-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/parsing/parser-help.h"
+  ],
+  "45947086-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/parsing/parsing-queries.cpp"
+  ],
+  "8c459914-9f75-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/queries/Context.cpp"
+  ],
+  "bc2f95d0-9f75-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/queries/ErrorMessage.cpp"
+  ],
+  "0cc92926-9f75-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/resolution/Resolver.h"
+  ],
+  "fcb9430e-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/resolution/can-pass.cpp"
+  ],
+  "0ebe9126-9f75-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/resolution/disambiguation.cpp"
+  ],
+  "c662e13e-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/types/ClassType.cpp"
+  ],
+  "bd49d274-9f74-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/types/Param.cpp"
+  ],
+  "87f2bc0c-9f75-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/uast/ASTNode.cpp"
+  ],
+  "82e3c60c-9f75-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/uast/Pragma.cpp"
+  ],
+  "7415e1e6-9f75-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/lib/uast/chpl-syntax-printer.cpp"
+  ],
+  "c2297db6-9f75-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/tools/chpldoc/chpldoc.cpp"
+  ],
+  "5e93026e-9f6f-11ec-866d-111c8d7a1817": [
+    "compiler/dyno/util/linters/fieldsUsed.cpp"
+  ],
   "d20c5afc-1d7e-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/ifa/num.cpp"
+  ],
+  "a4a99de4-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/include/ResolutionCandidate.h"
   ],
   "82c1d8e6-e581-11e8-954d-10ddb1d4c3d5": [
     "compiler/include/baseAST.h"
@@ -143,14 +560,26 @@
   "8e2d4094-e581-11e8-954d-10ddb1d4c3d5": [
     "compiler/include/misc.h"
   ],
+  "0eb4f01e-3f83-11ec-81f0-3de99c714400": [
+    "compiler/include/mysystem.h"
+  ],
   "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/parser.h"
+  ],
+  "9431bc08-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/include/primitive_list.h"
   ],
   "a8be55e8-7b38-11eb-91c9-15da80cfac4b": [
     "compiler/include/resolution.h"
   ],
   "7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5": [
     "compiler/include/symbol.h"
+  ],
+  "9ae97fd6-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/include/tmpdirname.h"
+  ],
+  "34addaee-9f76-11ec-866d-111c8d7a1817": [
+    "compiler/include/vec.h"
   ],
   "f765ca54-d1a9-11e8-954d-10ddb1d4c3d5": [
     "compiler/llvm/clangUtil.cpp"
@@ -184,6 +613,9 @@
   "7356b18e-62e2-11eb-a43d-6f93f4244f4b": [
     "compiler/optimizations/forallOptimizations.cpp"
   ],
+  "e72aeca4-45ab-11ec-a187-336475c959d4": [
+    "compiler/optimizations/gpuTransforms.cpp"
+  ],
   "fcd32732-b78b-11e6-9740-843835579daa": [
     "compiler/optimizations/inferConstRefs.cpp"
   ],
@@ -195,6 +627,9 @@
   ],
   "eb10d276-d1a9-11e8-954d-10ddb1d4c3d5": [
     "compiler/optimizations/noAliasSets.cpp"
+  ],
+  "ec0917b4-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/optimizations/optimizeOnClauses.cpp"
   ],
   "ee09a666-09c3-11eb-b2e8-10ddb1d4c3d5": [
     "compiler/optimizations/preNormalizeOptimizations.cpp"
@@ -223,6 +658,9 @@
   "732b6fa0-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/cleanup.cpp"
   ],
+  "e818580e-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/passes/convert-uast.cpp"
+  ],
   "98c778e4-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/docs.cpp"
   ],
@@ -234,6 +672,9 @@
   ],
   "2c37162c-1a84-11e7-980e-10ddb1d4c3d5": [
     "compiler/passes/initializerRules.cpp"
+  ],
+  "66fb22e4-a729-11ec-866d-111c8d7a1817": [
+    "compiler/passes/insertLineNumbers.cpp"
   ],
   "e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/normalize.cpp"
@@ -313,8 +754,14 @@
   "61835ab6-5f64-11ea-b972-843835579daa": [
     "compiler/util/misc.cpp"
   ],
+  "f2f5a59e-3f82-11ec-81f0-3de99c714400": [
+    "compiler/util/mysystem.cpp"
+  ],
   "9627af8c-e581-11e8-954d-10ddb1d4c3d5": [
     "compiler/util/stringutil.cpp"
+  ],
+  "bfdd8b4e-f55f-11eb-bb15-35b7469d4b43": [
+    "compiler/util/tmpdirname.cpp"
   ],
   "97641a68-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/CompilerDebugging.rst"
@@ -328,9 +775,6 @@
   "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/Potpourri.rst"
   ],
-  "7b9a1e46-8ab8-11e6-b915-843835579daa": [
-    "doc/rst/developer/bestPractices/README.rst"
-  ],
   "53b60e8e-d6dc-11ea-8acb-843835579daa": [
     "doc/rst/developer/bestPractices/Sanitizers.rst"
   ],
@@ -340,8 +784,14 @@
   "a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/TestSystem.rst"
   ],
+  "6f3fc5b8-3f87-11ec-81f0-3de99c714400": [
+    "doc/rst/developer/bestPractices/buildingdocs.rst"
+  ],
   "c05642c4-62e2-11eb-a43d-6f93f4244f4b": [
     "doc/rst/developer/bestPractices/git.rst"
+  ],
+  "7b9a1e46-8ab8-11e6-b915-843835579daa": [
+    "doc/rst/developer/bestPractices/index.rst"
   ],
   "72774460-69c5-11e6-90f0-10ddb1d4c3d5": [
     "doc/rst/developer/chips/15.rst"
@@ -393,6 +843,15 @@
   "d819ca0c-1e45-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/hdfs_and_chapel/intro.tex"
   ],
+  "69462c94-f561-11eb-bb15-35b7469d4b43": [
+    "doc/rst/developer/implementation/Interfaces-new.md"
+  ],
+  "324bcc62-f561-11eb-bb15-35b7469d4b43": [
+    "doc/rst/developer/implementation/Interfaces.md"
+  ],
+  "80a8005e-f563-11eb-bb15-35b7469d4b43": [
+    "doc/rst/developer/implementation/compilerOverview/compiler.tex"
+  ],
   "d667ed16-fd34-11e9-98b5-10ddb1d4c3d5": [
     "doc/rst/language/spec.rst"
   ],
@@ -420,6 +879,9 @@
   "1c00d998-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/ranges.rst"
   ],
+  "1beb4f5e-9f77-11ec-866d-111c8d7a1817": [
+    "doc/rst/language/spec/records.rst"
+  ],
   "1381859c-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/statements.rst"
   ],
@@ -443,6 +905,9 @@
   ],
   "f824f208-a3e4-11ea-8acb-843835579daa": [
     "doc/rst/technotes/globalvars.rst"
+  ],
+  "70eb8f46-a729-11ec-866d-111c8d7a1817": [
+    "doc/rst/technotes/gpu.rst"
   ],
   "22cf2998-09c4-11eb-b2e8-10ddb1d4c3d5": [
     "doc/rst/technotes/index.rst"
@@ -480,11 +945,17 @@
   "55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/usingchapel/executing.rst"
   ],
+  "f235c39e-3f89-11ec-81f0-3de99c714400": [
+    "doc/rst/usingchapel/launcher.rst"
+  ],
   "c32754ea-8068-11e6-ab60-00a0cc3ee663": [
     "doc/rst/usingchapel/multilocale.rst"
   ],
   "cd28f34a-a1b9-11e7-a204-10ddb1d4c3d5": [
     "doc/rst/usingchapel/prereqs.rst"
+  ],
+  "2e841d3c-f561-11eb-bb15-35b7469d4b43": [
+    "doc/templates/compiler-internals-doxygen/index.rst"
   ],
   "d741a952-4110-11e8-af7e-10ddb1d4c3d5": [
     "man/chpl.rst"
@@ -556,6 +1027,9 @@
   "5853ce2a-7b39-11eb-91c9-15da80cfac4b": [
     "modules/internal/ChapelDistribution.chpl"
   ],
+  "5bc3089e-62df-11ec-8674-e995e73200ed": [
+    "modules/internal/ChapelDomain.chpl"
+  ],
   "6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5": [
     "modules/internal/ChapelError.chpl"
   ],
@@ -598,6 +1072,9 @@
   "d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5": [
     "modules/internal/tasktable/on/ChapelTaskTable.chpl"
   ],
+  "d954a0c6-3f88-11ec-81f0-3de99c714400": [
+    "modules/packages/ArgumentParser.chpl"
+  ],
   "a6c246da-cac9-11e9-8464-10ddb1d4c3d5": [
     "modules/packages/AtomicObjects.chpl"
   ],
@@ -606,6 +1083,12 @@
   ],
   "ebcca246-1f2f-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/Buffers.chpl"
+  ],
+  "191d3db4-544f-11ec-8674-e995e73200ed": [
+    "modules/packages/ConcurrentMap.chpl"
+  ],
+  "757a38be-a729-11ec-866d-111c8d7a1817": [
+    "modules/packages/CopyAggregation.chpl"
   ],
   "527abebe-9db6-11e7-a204-10ddb1d4c3d5": [
     "modules/packages/Crypto.chpl"
@@ -658,6 +1141,9 @@
   "10db92e8-fecb-11ea-b2e8-10ddb1d4c3d5": [
     "modules/packages/ProtobufProtocolSupport.chpl"
   ],
+  "9be43b4a-9f6c-11ec-866d-111c8d7a1817": [
+    "modules/packages/Socket.chpl"
+  ],
   "c0ac0568-bd81-11e9-8464-10ddb1d4c3d5": [
     "modules/packages/Sort.chpl"
   ],
@@ -681,8 +1167,14 @@
   "076e82b2-624e-11e9-b712-843835579daa": [
     "modules/packages/ZMQHelper/zmq_helper.h"
   ],
+  "2de80716-9f6c-11ec-866d-111c8d7a1817": [
+    "modules/standard/CTypes.chpl"
+  ],
   "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
     "modules/standard/DateTime.chpl"
+  ],
+  "b6ed298e-f561-11eb-bb15-35b7469d4b43": [
+    "modules/standard/Errors.chpl"
   ],
   "fbc85e3e-1f2e-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/FileSystem.chpl"
@@ -714,6 +1206,12 @@
   "f8d11ee0-1f2f-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Regex.chpl"
   ],
+  "796d72aa-3f88-11ec-81f0-3de99c714400": [
+    "modules/standard/Subprocess.chpl"
+  ],
+  "83e8f86a-f561-11eb-bb15-35b7469d4b43": [
+    "modules/standard/Sys.chpl"
+  ],
   "d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/SysBasic.chpl"
   ],
@@ -722,6 +1220,12 @@
   ],
   "e9347814-1f30-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Types.chpl"
+  ],
+  "d0707fc2-f562-11eb-bb15-35b7469d4b43": [
+    "runtime/etc/src/mli/chpl-mli-common-runtime.c"
+  ],
+  "ceac0ff8-f562-11eb-bb15-35b7469d4b43": [
+    "runtime/etc/src/mli/chpl-mli-server-runtime.c"
   ],
   "7238a240-9317-11e9-a422-10ddb1d4c3d5": [
     "runtime/etc/src/mli/common_code.c"
@@ -762,8 +1266,14 @@
   "0ebaef5a-2409-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-cache.c"
   ],
+  "14aecce8-f563-11eb-bb15-35b7469d4b43": [
+    "runtime/src/chpl-gpu.c"
+  ],
   "9410539a-9317-11e9-a422-10ddb1d4c3d5": [
     "runtime/src/chpl-launcher-common.c"
+  ],
+  "2fe4a316-f563-11eb-bb15-35b7469d4b43": [
+    "runtime/src/chpl-strptime.c"
   ],
   "8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-timers.c"
@@ -783,6 +1293,9 @@
   ],
   "91c58b86-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-oob-pmi.c"
+  ],
+  "77a59142-f563-11eb-bb15-35b7469d4b43": [
+    "runtime/src/comm/ofi/comm-ofi-oob-pmi2.c"
   ],
   "38c20924-fd35-11e9-98b5-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-oob-slurm-pmi2.c"
@@ -1016,6 +1529,9 @@
   "d86303d0-4d88-11e6-907f-843835579daa": [
     "test/release/examples/hello4-datapar-dist.chpl"
   ],
+  "04789d34-3f89-11ec-81f0-3de99c714400": [
+    "test/release/examples/patterns/readcsv.chpl"
+  ],
   "8c00fe52-31db-11e6-a3a6-10ddb1d4c3d5": [
     "test/release/examples/primers/LAPACKlib.chpl"
   ],
@@ -1030,6 +1546,9 @@
   ],
   "5d456562-31db-11e6-a3a6-10ddb1d4c3d5": [
     "test/release/examples/primers/domains.chpl"
+  ],
+  "7d741f12-f563-11eb-bb15-35b7469d4b43": [
+    "test/release/examples/primers/interopWithC.chpl"
   ],
   "9b2d18d4-31db-11e6-a3a6-10ddb1d4c3d5": [
     "test/release/examples/primers/learnChapelInYMinutes.chpl"

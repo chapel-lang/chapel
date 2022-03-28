@@ -1,16 +1,16 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -104,7 +104,7 @@
   support both `in-place` and `out-of-place` versions of the
   transforms, where the former versions use a single array for both
   input and output, and the latter use two distinct arrays.
-  
+
   In future versions of this module, we anticipate improving the
   plan_dft*() interfaces to make better use of Chapel features and
   move further away from C-isms (like the overloaded role of `flags`
@@ -123,13 +123,12 @@ module FFTW {
   */
   config param isFFTW_MKL=false;
 
-  use SysCTypes;
-  use CPtr;
+  use CTypes;
   require "fftw3.h"; // This is common
   if (isFFTW_MKL) {
     require "fftw3_mkl.h";
   }
-  
+
   /*
     Set this config parameter to `true` to automatically initialize
     FFTW for thread support, and setup FFTW to generate multi-threaded
@@ -182,7 +181,7 @@ module FFTW {
 
   // Planner functions
   // Complex : 4.3.1
-  // NOTE : We pass in arrays using ref 
+  // NOTE : We pass in arrays using ref
 
   // TODO: Can we have the plan_dft() routine below take in native
   // Chapel types without changing the external C constants from
@@ -208,7 +207,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft(input: [?Din] complex(128), output: [?Dout] complex(128), 
+  proc plan_dft(input: [?Din] complex(128), output: [?Dout] complex(128),
                  sign: FFTW_Direction, flags: FFTW_Flag) : fftw_plan
   {
     if !noFFTWsizeChecks {
@@ -256,7 +255,7 @@ module FFTW {
     for param i in 0..<rank do
       dims(i) = input.domain.dim(i).size.safeCast(c_int);
 
-    return C_FFTW.fftw_plan_dft(rank.safeCast(c_int), dims, c_ptrTo(input), 
+    return C_FFTW.fftw_plan_dft(rank.safeCast(c_int), dims, c_ptrTo(input),
                                      c_ptrTo(output), sign, flags);
   }
 
@@ -279,7 +278,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft_r2c(input : [?Din] real(64), output : [?Dout] complex(128), 
+  proc plan_dft_r2c(input : [?Din] real(64), output : [?Dout] complex(128),
                     flags : FFTW_Flag) : fftw_plan
   {
     param rank = input.rank: c_int;
@@ -326,7 +325,7 @@ module FFTW {
     if !noFFTWsizeChecks then
       if checkInPlaceDimMismatch(realDom, D, "plan_dft_r2c()", t == real) then
         halt("Incorrect array sizes in plan_dft_r2c()");
-        
+
     param rank = realDom.rank: c_int;
     var dims: c_array(c_int, rank);
     for param i in 0..<rank do
@@ -353,13 +352,13 @@ module FFTW {
 
     :arg output: The output array
     :type output: [] `real(64)`
-    
+
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
     :type flags: `FFTW_Flag`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft_c2r(input : [?Din] complex(128), output : [?Dout] real(64), 
+  proc plan_dft_c2r(input : [?Din] complex(128), output : [?Dout] real(64),
                     flags : FFTW_Flag) : fftw_plan
   {
     param rank = output.rank: c_int; // The dimensions are that of the real array
@@ -397,7 +396,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_c2r(realDom : domain, arr: [?D] ?t, flags : FFTW_Flag) : fftw_plan 
+  proc plan_dft_c2r(realDom : domain, arr: [?D] ?t, flags : FFTW_Flag) : fftw_plan
     where t == real || t == complex
   {
     if !noFFTWsizeChecks then
@@ -531,7 +530,7 @@ module FFTW {
   extern const FFTW_UNALIGNED : FFTW_Flag;
 
   // More FFTW type flags.
-  
+
   /* Use the halfcomplex form of array storage */
   extern const FFTW_R2HC :FFTW_R2R;
   extern const FFTW_HC2R :FFTW_R2R;
@@ -651,7 +650,7 @@ module FFTW {
     coforall loc in Locales {
       on loc do {
         if (C_FFTW.fftw_init_threads() == 0) then
-          halt("Failed to properly initialize FFTW threads on locale ", 
+          halt("Failed to properly initialize FFTW threads on locale ",
                here.id);
       }
     }
@@ -697,7 +696,7 @@ module FFTW {
 
      Please refer to the FFTW documentation for more details. */
   module C_FFTW {
-    public use SysCTypes, SysBasic, CPtr;
+    public use CTypes, CTypes;
     extern proc fftw_execute(p : fftw_plan) : void;
     import FFTW.fftw_plan;
 
@@ -821,11 +820,11 @@ module FFTW {
 
     extern proc fftw_sprint_plan(p : fftw_plan) : c_string;
 
-    extern proc fftw_malloc(n : size_t) : c_void_ptr;
+    extern proc fftw_malloc(n : c_size_t) : c_void_ptr;
 
-    extern proc fftw_alloc_real(n : size_t) : c_ptr(c_double);
+    extern proc fftw_alloc_real(n : c_size_t) : c_ptr(c_double);
 
-    extern proc fftw_alloc_complex(n : size_t) : c_ptr(fftw_complex);
+    extern proc fftw_alloc_complex(n : c_size_t) : c_ptr(fftw_complex);
 
     extern proc fftw_free(p : c_void_ptr) : void;
 

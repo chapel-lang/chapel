@@ -1,4 +1,4 @@
-use Spawn only spawnshell, PIPE, subprocess;
+use Subprocess only spawnshell, pipeStyle, subprocess;
 use IO;
 
 proc main() throws {
@@ -6,6 +6,6 @@ proc main() throws {
   p = run('ls');
 }
 proc run(cmd: string): subprocess(kind=iokind.dynamic, locking=true) throws {
-  var p = spawnshell(cmd, stdout=PIPE, stderr=PIPE);
+  var p = spawnshell(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
   return p;
 }

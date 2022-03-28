@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,6 +42,7 @@ extern "C" {
 #define CHPL_JE_RALLOCX CHPL_JE_(rallocx)
 #define CHPL_JE_DALLOCX CHPL_JE_(dallocx)
 #define CHPL_JE_NALLOCX CHPL_JE_(nallocx)
+#define CHPL_JE_SALLOCX CHPL_JE_(sallocx)
 #define CHPL_JE_MALLCTL CHPL_JE_(mallctl)
 
 
@@ -106,6 +107,14 @@ static inline size_t chpl_good_alloc_size(size_t minSize) {
   }
   return CHPL_JE_NALLOCX(minSize, MALLOCX_NO_FLAGS);
 }
+
+static inline size_t chpl_real_alloc_size(void* ptr) {
+  if (ptr == NULL) {
+    return 0;
+  }
+  return CHPL_JE_SALLOCX(ptr, MALLOCX_NO_FLAGS);
+}
+
 
 #ifdef __cplusplus
 }

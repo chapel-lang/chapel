@@ -1,6 +1,6 @@
 require "externLong.h";
 
-use SysCTypes;
+use CTypes;
 
 extern record hasLong {
   var i: c_long;

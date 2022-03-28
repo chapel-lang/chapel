@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,6 +56,9 @@ static child type could end up calling something in the parent.
 #include "resolveFunction.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "wrappers.h"
+
+#include "global-ast-vecs.h"
 
 #include <set>
 #include <vector>
@@ -154,7 +157,7 @@ static AggregateType* getReceiverClassType(FnSymbol* fn);
 static bool buildVirtualMaps() {
   int numTypes = gTypeSymbols.n;
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
     if (AggregateType* at = fn->getReceiverType()) {
       if (at->isClass() == true) {
         if (at->isGeneric() == false) {
@@ -242,13 +245,28 @@ static void addToVirtualMaps(FnSymbol*      pfn,
                              FnSymbol*      cfn) {
 
   FnSymbol* fn = getInstantiatedFunction(pfn, ct, cfn);
+
   resolveOverride(pfn, fn);
 }
 
+// skips the first 2 formals (for method token and `this`)
+static int getNumUserFormals(FnSymbol* fn) {
+  int fnN = fn->numFormals();
+  if (fnN < 2)
+    INT_FATAL("expected method token and this");
+  return fnN-2;
+}
+
+// formal index starts from 1 but skips the first 2 formals
+// (for method token and `this`)
+static ArgSymbol* getUserFormal(FnSymbol* fn, int idx) {
+  return fn->getFormal(idx+2);
+}
+
 static void collectMethods(FnSymbol*               pfn,
-                           AggregateType*          pct,
+                           AggregateType*          ct,
                            std::vector<FnSymbol*>& methods) {
-  AggregateType* fromType = pct;
+  AggregateType* fromType = ct;
 
   while (fromType != NULL) {
     forv_Vec(FnSymbol, cfn, fromType->methods) {
@@ -277,20 +295,6 @@ static void collectMethods(FnSymbol*               pfn,
 
     fromType = fromType->instantiatedFrom;
   }
-}
-
-// skips the first 2 formals (for method token and `this`)
-static int getNumUserFormals(FnSymbol* fn) {
-  int fnN = fn->numFormals();
-  if (fnN < 2)
-    INT_FATAL("expected method token and this");
-  return fnN-2;
-}
-
-// formal index starts from 1 but skips the first 2 formals
-// (for method token and `this`)
-static ArgSymbol* getUserFormal(FnSymbol* fn, int idx) {
-  return fn->getFormal(idx+2);
 }
 
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
@@ -447,6 +451,31 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
       evaluateWhereClause(pfn)) {
 
     resolveFunction(cfn);
+
+    // check to see if we are using defaulted actual fns
+    // for any of the formals in pfn. If so, make sure the
+    // corresponding ones exist for the child.
+    int nUserFormals = getNumUserFormals(pfn);
+    for (int i = 1; i <= nUserFormals; i++) {
+      ArgSymbol* pFormal = getUserFormal(pfn, i);
+      ArgSymbol* cFormal = getUserFormal(cfn, i);
+      FnSymbol* pDefFn = findExistingDefaultedActualFn(pfn, pFormal);
+      if (pDefFn) {
+        FnSymbol* cDefFn = getOrCreateDefaultedActualFn(cfn, cFormal);
+        if (cDefFn) {
+          if (pFormal->hasFlag(FLAG_INSTANTIATED_PARAM) &&
+              cFormal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            USR_FATAL_CONT(cfn, "param default arguments in overridden methods"
+                                " are not yet supported.");
+          }
+          if (pFormal->hasFlag(FLAG_TYPE_VARIABLE) &&
+              cFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
+            USR_FATAL_CONT(cfn, "type default arguments in overridden methods"
+                                " are not yet supported.");
+          }
+        }
+      }
+    }
 
     if (checkOverrides(cfn) &&
         !ignoreOverrides(cfn) &&
@@ -739,7 +768,7 @@ static void buildVirtualMethodTable() {
     }
   }
 
-  forv_Vec(Type, t, ctq) {
+  forv_expanding_Vec(Type, t, ctq) {
     if (Vec<FnSymbol*>* parentFns = virtualMethodTable.get(t)) {
       forv_Vec(FnSymbol, pfn, *parentFns) {
         Vec<Type*> childSet;
@@ -1064,6 +1093,11 @@ static void checkMethodsOverride() {
     // output error for overriding for non-class methods
     if (aFn->hasFlag(FLAG_OVERRIDE)) {
 
+      if (aFn->_this == NULL) {
+        USR_FATAL("'override' cannot be applied to non-method '%s'",
+                  aFn->name);
+      }
+
       //
       // Type methods may have managed receiver types, which would normally
       // not be recognized as a class.
@@ -1284,7 +1318,7 @@ static void checkMethodsOverride() {
 static bool wasSuperDot(CallExpr* call);
 
 void insertDynamicDispatchCalls() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
       if (FnSymbol* fn = call->resolvedFunction()) {
 

@@ -37,8 +37,24 @@
 #include <ofi_iov.h>
 #include "efa.h"
 
-static
-ssize_t efa_rma_post_read(struct efa_ep *ep, const struct fi_msg_rma *msg, uint64_t flags)
+
+/*
+ * efa_rma_post_read() will post a read request.
+ *
+ * Input:
+ *     ep: endpoint
+ *     msg: read operation information
+ *     flags: currently no flags is taken
+ *     self_comm: indicate whether the read is toward
+ *                the end point itself. If self_comm is true,
+ *                caller must set msg->addr to FI_ADDR_NOTAVAIL.
+ *                
+ * On success return 0,
+ * If read iov and rma_iov count out of device limit, return -FI_EINVAL
+ * If read failed, return the error of read operation
+ */
+ssize_t efa_rma_post_read(struct efa_ep *ep, const struct fi_msg_rma *msg,
+			  uint64_t flags, bool self_comm)
 {
 	struct efa_qp *qp;
 	struct efa_mr *efa_mr;
@@ -80,8 +96,17 @@ ssize_t efa_rma_post_read(struct efa_ep *ep, const struct fi_msg_rma *msg, uint6
 	}
 
 	ibv_wr_set_sge_list(qp->ibv_qp_ex, msg->iov_count, sge_list);
-	conn = ep->av->addr_to_conn(ep->av, msg->addr);
-	ibv_wr_set_ud_addr(qp->ibv_qp_ex, conn->ah.ibv_ah, conn->ep_addr.qpn, conn->ep_addr.qkey);
+	if (self_comm) {
+		assert(msg->addr == FI_ADDR_NOTAVAIL);
+		ibv_wr_set_ud_addr(qp->ibv_qp_ex, ep->self_ah,
+				   qp->qp_num, qp->qkey);
+	} else {
+		conn = efa_av_addr_to_conn(ep->av, msg->addr);
+		assert(conn && conn->ep_addr);
+		ibv_wr_set_ud_addr(qp->ibv_qp_ex, conn->ah->ibv_ah,
+				   conn->ep_addr->qpn, conn->ep_addr->qkey);
+	}
+
 	return ibv_wr_complete(qp->ibv_qp_ex);
 }
 
@@ -90,7 +115,7 @@ ssize_t efa_rma_readmsg(struct fid_ep *ep_fid, const struct fi_msg_rma *msg, uin
 {
 	struct efa_ep *ep = container_of(ep_fid, struct efa_ep, util_ep.ep_fid);
 
-	return efa_rma_post_read(ep, msg, flags);
+	return efa_rma_post_read(ep, msg, flags, false);
 }
 
 static

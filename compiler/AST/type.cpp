@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,10 +36,13 @@
 #include "iterator.h"
 #include "misc.h"
 #include "passes.h"
+#include "resolution.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
+
+#include "global-ast-vecs.h"
 
 #include <cmath>
 
@@ -119,6 +122,14 @@ FnSymbol* Type::getDestructor() const {
 
 void Type::setDestructor(FnSymbol* fn) {
   destructor = fn;
+}
+
+bool Type::isSerializable() {
+  if (isAggregateType(this)) {
+    return serializeMap.find(this->getValType()) != serializeMap.end();
+  }
+
+  return false;
 }
 
 Symbol* Type::getSubstitutionWithName(const char* name) const {
@@ -404,6 +415,12 @@ void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
       *file << std::endl;
     }
   }
+
+  if (this->symbol->hasFlag(FLAG_DEPRECATED)) {
+    this->printDocsDeprecation(this->symbol->doc, file, tabs + 1,
+                               this->symbol->getDeprecationMsg(),
+                               !fDocsTextOnly);
+  }
 }
 
 
@@ -623,6 +640,12 @@ void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
     if (!fDocsTextOnly) {
       *file << std::endl;
     }
+  }
+
+  if (this->symbol->hasFlag(FLAG_DEPRECATED)) {
+    this->printDocsDeprecation(this->doc, file, tabs + 1,
+                               this->symbol->getDeprecationMsg(),
+                               !fDocsTextOnly);
   }
 }
 
@@ -1430,10 +1453,10 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
   if (borrowType == NULL)
     INT_FATAL("Could not determine borrow type");
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
 
   if (isNilableClassType(borrowType))
-    decorator = CLASS_TYPE_BORROWED_NILABLE;
+    decorator = ClassTypeDecorator::BORROWED_NILABLE;
 
   borrowType = canonicalDecoratedClassType(borrowType);
 
@@ -1583,6 +1606,8 @@ bool typeNeedsCopyInitDeinit(Type* type) {
     } else {
       retval = true;
     }
+  } else if (isConstrainedType(type)) {
+    retval = true;
   }
 
   return retval;
@@ -1789,8 +1814,7 @@ bool isNonGenericRecord(Type* type) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isRecord()                   == true  &&
-        at->isGeneric()                  == false &&
-        at->symbol->hasFlag(FLAG_EXTERN) == false) {
+        at->isGeneric()                  == false) {
       retval = true;
     }
   }
@@ -1805,7 +1829,9 @@ bool isNonGenericRecordWithInitializers(Type* type) {
     if (AggregateType* at = toAggregateType(type)) {
       if (at->hasUserDefinedInit == true) {
         retval = true;
-      } else if (at->wantsDefaultInitializer()) {
+      } else if (at->wantsDefaultInitializer() &&
+                 // don't count compiler-generated init for extern records
+                 !at->symbol->hasFlag(FLAG_EXTERN)) {
         retval = true;
       }
     }
@@ -1881,7 +1907,7 @@ bool needsGenericRecordInitializer(Type* type) {
   return retval;
 }
 
-Immediate getDefaultImmediate(Type* t) {
+const Immediate& getDefaultImmediate(Type* t) {
   VarSymbol* defaultVar = toVarSymbol(t->defaultValue);
   // (or anything handled by coerce_immediate)
   if (defaultVar == NULL || defaultVar->immediate == NULL)
@@ -1891,8 +1917,7 @@ Immediate getDefaultImmediate(Type* t) {
   if (defaultVar->type != t)
     INT_FATAL(t->symbol, "does not have a default of the same type");
 
-  Immediate ret = *defaultVar->immediate;
-  return ret;
+  return *defaultVar->immediate;
 }
 
 // Returns 'true' for types that are the type of numeric literals.

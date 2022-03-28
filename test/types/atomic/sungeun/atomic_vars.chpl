@@ -137,7 +137,7 @@ proc doit(type myType) {
   }
   if printResults then writeln(A);
 }
-
+use ChplConfig;
 if CHPL_NETWORK_ATOMICS == "none" {
   doit(uint(8));
   doit(uint(16));

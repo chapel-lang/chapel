@@ -59,8 +59,6 @@ module test {
   writef("%*S\n":t, "'", "test");
   writef("%{(S)}\n":t, "test");
 
-  writef("%|4s\n":t, "test");
-
   writeln("Part 7");
   writef("%@bi\n":t, -3);
   writef("%@bu\n":t, 3);

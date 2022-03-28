@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -291,7 +291,7 @@ class BlockCyclic : BaseDist {
 proc BlockCyclic._locsize {
   var ret : rank*int;
   for param i in 0..rank-1 {
-    ret(i) = targetLocDom.dim(i).size;
+    ret(i) = targetLocDom.dim(i).sizeAs(int);
   }
   return ret;
 }
@@ -455,7 +455,7 @@ class LocBlockCyclic {
   const myStarts: rank*range(idxType, BoundedRangeType.boundedLow, stridable=true);
 
   //
-  // Constructor computes what chunk of index(0) is owned by the
+  // Initializer computes what chunk of index(0) is owned by the
   // current locale
   //
   proc init(param rank: int,
@@ -465,19 +465,14 @@ class LocBlockCyclic {
     this.rank = rank;
     this.idxType = idxType;
 
-    this.complete();
-
-    if rank == 1 {
-      const lo = lowIdx(0) + (locid * blocksize(0));
-      const str = blocksize(0) * targetLocDom.size;
-      myStarts(0) = lo.. by str;
-    } else {
+    var myStarts: rank*range(idxType, BoundedRangeType.boundedLow, stridable=true);
       for param i in 0..rank-1 {
-        const lo = lowIdx(i) + (locid(i) * blocksize(i));
+        const locid_i = if isTuple(locid) then locid(i) else locid;
+        const lo = lowIdx(i) + (locid_i * blocksize(i));
         const str = blocksize(i) * targetLocDom.dim(i).size;
-        myStarts(i) = lo.. by str;
+        myStarts(i) = (lo.. by str).safeCast(myStarts(i).type);
       }
-    }
+    this.myStarts = myStarts;
   }
 
   // Used to create a dummy instance.
@@ -513,17 +508,12 @@ class BlockCyclicDom: BaseRectangularDom {
 
   inline proc locDoms(idx) return locDomsNil(idx)!;
 
-
   //
   // a domain describing the complete domain
   //
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   //  const startLoc: index(dist.targetLocDom);
 }
-
-proc BlockCyclicDom.dsiDims() return whole.dims();
-
-proc BlockCyclicDom.dsiDim(d: int) return whole.dim(d);
 
 iter BlockCyclicDom.these() {
   for i in whole do
@@ -551,12 +541,12 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
 
           var temp : range(idxType, stridable=stridable);
           temp = max(lo, dimLow)..
-                     min(lo + dist.blocksize(j)-1, dim.high);
+                     min(lo + dist.blocksize(j):idxType-1, dim.high);
           temp     = dim[temp];
           temp     = temp.chpl__unTranslate(dimLow);
 
           retblock(j) = (temp.low / dim.stride:idxType)..
-                        #temp.size;
+                        #temp.sizeAs(idxType);
         }
         yield retblock;
       }
@@ -582,22 +572,15 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
   for param i in 0..rank-1 {
     const curFollow = followThis(i);
     const dim       = whole.dim(i);
-    const stride    = dim.stride: idxType;
-    const low       = stride * curFollow.low;
-    const high      = stride * curFollow.high;
-    t(i) = ((low..high by stride:int) + dim.low).safeCast(t(i).type);
+    const stride    = dim.stride;
+    const low       = (stride * curFollow.low): idxType;
+    const high      = (stride * curFollow.high): idxType;
+    t(i) = ((low..high by stride) + dim.low).safeCast(t(i).type);
   }
 
   for i in {(...t)} {
     yield i;
   }
-}
-
-//
-// output domain
-//
-proc BlockCyclicDom.dsiSerialWrite(x) {
-  x <~> whole;
 }
 
 //
@@ -634,10 +617,26 @@ proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc BlockCyclicDom.dsiNumIndices return whole.size;
-proc BlockCyclicDom.dsiLow return whole.low;
-proc BlockCyclicDom.dsiHigh return whole.high;
-proc BlockCyclicDom.dsiStride return whole.stride;
+// common redirects
+proc BlockCyclicDom.dsiLow           return whole.low;
+proc BlockCyclicDom.dsiHigh          return whole.high;
+proc BlockCyclicDom.dsiAlignedLow    return whole.alignedLow;
+proc BlockCyclicDom.dsiAlignedHigh   return whole.alignedHigh;
+proc BlockCyclicDom.dsiFirst         return whole.first;
+proc BlockCyclicDom.dsiLast          return whole.last;
+proc BlockCyclicDom.dsiStride        return whole.stride;
+proc BlockCyclicDom.dsiAlignment     return whole.alignment;
+proc BlockCyclicDom.dsiNumIndices    return whole.sizeAs(uint);
+proc BlockCyclicDom.dsiDim(d)        return whole.dim(d);
+proc BlockCyclicDom.dsiDim(param d)  return whole.dim(d);
+proc BlockCyclicDom.dsiDims()        return whole.dims();
+proc BlockCyclicDom.dsiGetIndices()  return whole.getIndices();
+proc BlockCyclicDom.dsiMember(i)     return whole.contains(i);
+proc BlockCyclicDom.doiToString()    return whole:string;
+proc BlockCyclicDom.dsiSerialWrite(x) { x.write(whole); }
+proc BlockCyclicDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
+override proc BlockCyclicDom.dsiIndexOrder(i)              return whole.indexOrder(i);
+override proc BlockCyclicDom.dsiMyDist()                   return dist;
 
 //
 // INTERFACE NOTES: Could we make setIndices() for a rectangular
@@ -667,12 +666,6 @@ proc BlockCyclicDom.dsiSetIndices(x) {
 proc BlockCyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
   chpl_assignDomainWithGetSetIndices(this, rhs);
 }
-
-proc BlockCyclicDom.dsiGetIndices() {
-  return whole.getIndices();
-}
-
-override proc BlockCyclicDom.dsiMyDist() return dist;
 
 proc BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do
@@ -735,14 +728,6 @@ proc BlockCyclicDom.dsiReprivatize(other, reprivatizeData) {
   whole = other.whole;
 }
 
-proc BlockCyclicDom.dsiMember(i) {
-  return whole.contains(i);
-}
-
-proc BlockCyclicDom.dsiIndexOrder(i) {
-  return whole.indexOrder(i);
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Domain Class
@@ -777,7 +762,7 @@ proc LocBlockCyclicDom.postinit() {
 //
 proc LocBlockCyclicDom.computeFlatInds() {
   //  writeln("myStarts = ", myStarts);
-  const numBlocks = * reduce [d in 0..rank-1] (myStarts.dim(d).size),
+  const numBlocks = * reduce [d in 0..rank-1] (myStarts.dim(d).sizeAs(int)),
     indsPerBlk = * reduce [d in 0..rank-1] (globDom.dist.blocksize(d));
   //  writeln("Total number of inds = ", numBlocks * indsPerBlk);
   return numBlocks * indsPerBlk;
@@ -832,7 +817,7 @@ proc LocBlockCyclicDom.high {
 proc LocBlockCyclicDom._lens {
   var ret : rank*int;
   for param i in 0..rank-1 {
-    ret(i) = myStarts.dim(i).size;
+    ret(i) = myStarts.dim(i).sizeAs(int);
   }
   return ret;
 }
@@ -846,7 +831,7 @@ proc LocBlockCyclicDom._sizes {
     var sizes : (rank+1)*int;
     sizes(rank) = 1;
     for i in 0..rank-1 by -1 do
-      sizes(i) = sizes(i+1) * (globDom.dist.blocksize(i) * myStarts.dim(i).size);
+      sizes(i) = sizes(i+1) * (globDom.dist.blocksize(i) * myStarts.dim(i).sizeAs(int));
     return sizes;
 }
 
@@ -921,7 +906,8 @@ override proc BlockCyclicArr.dsiDestroyArr(deinitElts:bool) {
 
 override proc BlockCyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
 
-proc BlockCyclicArr.chpl__serialize() {
+proc BlockCyclicArr.chpl__serialize()
+    where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 
@@ -995,9 +981,8 @@ proc BlockCyclicArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }
 
-pragma "order independent yielding loops"
 iter BlockCyclicArr.these() ref {
-  for i in dom do
+  foreach i in dom do
     yield dsiAccess(i);
 }
 
@@ -1006,7 +991,6 @@ iter BlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield yieldThis;
 }
 
-pragma "order independent yielding loops"
 iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   var myFollowThis: rank*range(idxType=idxType, stridable=stridable);
 
@@ -1033,7 +1017,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
   //
   // we don't own all the elements we're following
   //
-  for i in myFollowThisDom {
+  foreach i in myFollowThisDom {
     yield dsiAccess(i);
   }
 }
@@ -1065,14 +1049,13 @@ proc BlockCyclicDom.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
-pragma "order independent yielding loops"
 private
 iter do_dsiLocalSubdomains(indexDom) {
   param rank = indexDom.rank;
   type idxType = indexDom.idxType;
   const blockSizes = indexDom.globDom.dist.blocksize;
   const globDims = indexDom.globDom.whole.dims();
-  for i in indexDom.myStarts {
+  foreach i in indexDom.myStarts {
     var temp : rank*range(idxType);
     for param j in 0..rank-1 {
       var lo: idxType;
@@ -1255,7 +1238,7 @@ proc LocBlockCyclicArr.flatInd2mdInd(in idx:int) {
     const localBlockOff = localIdx % blksize;
     const globalBlockNum = localBlockNum * locsize(d) + localeIndex;
     const globalBlockStart = globalBlockNum * blksize;
-    return low + globalBlockStart + localBlockOff;
+    return (low + globalBlockStart + localBlockOff): idxType;
   } else {
     var i: rank*idxType;
     for param d in 0..rank-1 {
@@ -1266,7 +1249,7 @@ proc LocBlockCyclicArr.flatInd2mdInd(in idx:int) {
       const localBlockOff = localIdx % blksize;
       const globalBlockNum = localBlockNum * locsize(d) + localeIndex(d);
       const globalBlockStart = globalBlockNum * blksize;
-      i(d) = low(d) + globalBlockStart + localBlockOff;
+      i(d) = (low(d) + globalBlockStart + localBlockOff): idxType;
     }
     return i;
   }

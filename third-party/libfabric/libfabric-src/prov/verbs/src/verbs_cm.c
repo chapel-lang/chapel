@@ -37,7 +37,7 @@
 
 static int vrb_copy_addr(void *dst_addr, size_t *dst_addrlen, void *src_addr)
 {
-	size_t src_addrlen = vrb_sockaddr_len(src_addr);
+	size_t src_addrlen = ofi_sizeofaddr(src_addr);
 
 	if (*dst_addrlen == 0) {
 		*dst_addrlen = src_addrlen;
@@ -61,24 +61,24 @@ static int vrb_msg_ep_setname(fid_t ep_fid, void *addr, size_t addrlen)
 	struct vrb_ep *ep =
 		container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
 
-	if (addrlen != ep->info->src_addrlen) {
+	if (addrlen != ep->info_attr.src_addrlen) {
 		VERBS_INFO(FI_LOG_EP_CTRL,"addrlen expected: %zu, got: %zu.\n",
-			   ep->info->src_addrlen, addrlen);
+			   ep->info_attr.src_addrlen, addrlen);
 		return -FI_EINVAL;
 	}
 
-	save_addr = ep->info->src_addr;
+	save_addr = ep->info_attr.src_addr;
 
-	ep->info->src_addr = malloc(ep->info->src_addrlen);
-	if (!ep->info->src_addr) {
+	ep->info_attr.src_addr = malloc(ep->info_attr.src_addrlen);
+	if (!ep->info_attr.src_addr) {
 		VERBS_WARN(FI_LOG_EP_CTRL, "memory allocation failure\n");
 		ret = -FI_ENOMEM;
 		goto err1;
 	}
 
-	memcpy(ep->info->src_addr, addr, ep->info->src_addrlen);
+	memcpy(ep->info_attr.src_addr, addr, ep->info_attr.src_addrlen);
 
-	ret = vrb_create_ep(ep->info, RDMA_PS_TCP, &id);
+	ret = vrb_create_ep(ep, RDMA_PS_TCP, &id);
 	if (ret)
 		goto err2;
 
@@ -91,17 +91,16 @@ static int vrb_msg_ep_setname(fid_t ep_fid, void *addr, size_t addrlen)
 
 	return 0;
 err2:
-	free(ep->info->src_addr);
+	free(ep->info_attr.src_addr);
 err1:
-	ep->info->src_addr = save_addr;
+	ep->info_attr.src_addr = save_addr;
 	return ret;
 }
 
 static int vrb_msg_ep_getname(fid_t ep, void *addr, size_t *addrlen)
 {
 	struct sockaddr *sa;
-	struct vrb_ep *_ep =
-		container_of(ep, struct vrb_ep, util_ep.ep_fid);
+	struct vrb_ep *_ep = container_of(ep, struct vrb_ep, util_ep.ep_fid);
 	sa = rdma_get_local_addr(_ep->id);
 	return vrb_copy_addr(addr, addrlen, sa);
 }
@@ -109,8 +108,7 @@ static int vrb_msg_ep_getname(fid_t ep, void *addr, size_t *addrlen)
 static int vrb_msg_ep_getpeer(struct fid_ep *ep, void *addr, size_t *addrlen)
 {
 	struct sockaddr *sa;
-	struct vrb_ep *_ep =
-		container_of(ep, struct vrb_ep, util_ep.ep_fid);
+	struct vrb_ep *_ep = container_of(ep, struct vrb_ep, util_ep.ep_fid);
 	sa = rdma_get_peer_addr(_ep->id);
 	return vrb_copy_addr(addr, addrlen, sa);
 }
@@ -125,15 +123,33 @@ vrb_msg_ep_prepare_cm_data(const void *param, size_t param_size,
 
 static inline void
 vrb_ep_prepare_rdma_cm_param(struct rdma_conn_param *conn_param,
-				struct vrb_cm_data_hdr *cm_hdr,
-				size_t cm_hdr_data_size)
+				void *priv_data, size_t priv_data_size)
 {
-	conn_param->private_data = cm_hdr;
-	conn_param->private_data_len = (uint8_t)cm_hdr_data_size;
+	conn_param->private_data = priv_data;
+	conn_param->private_data_len = (uint8_t)priv_data_size;
 	conn_param->responder_resources = RDMA_MAX_RESP_RES;
 	conn_param->initiator_depth = RDMA_MAX_INIT_DEPTH;
 	conn_param->flow_control = 1;
 	conn_param->rnr_retry_count = 7;
+}
+
+static void
+vrb_msg_ep_prepare_rdma_cm_hdr(void *priv_data,
+				const struct rdma_cm_id *id)
+{
+	struct vrb_rdma_cm_hdr *rdma_cm_hdr = priv_data;
+
+	/* ip_version=6 would requires IPoIB to be installed and the IP link
+	 * to be UP, which we don't want. As a work-around, we set ip_version to 0,
+	 * which let the CMA kernel code to skip any requirement for IPoIB. */
+	rdma_cm_hdr->ip_version = 0;
+	rdma_cm_hdr->port = htons(ofi_addr_get_port(&id->route.addr.src_addr));
+
+	/* Record the GIDs */
+	memcpy(rdma_cm_hdr->src_addr,
+		   &((struct ofi_sockaddr_ib *)&id->route.addr.src_addr)->sib_addr, 16);
+	memcpy(rdma_cm_hdr->dst_addr,
+		   &((struct ofi_sockaddr_ib *)&id->route.addr.dst_addr)->sib_addr, 16);
 }
 
 static int
@@ -142,6 +158,9 @@ vrb_msg_ep_connect(struct fid_ep *ep_fid, const void *addr,
 {
 	struct vrb_ep *ep =
 		container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
+	size_t priv_data_len;
+	struct vrb_cm_data_hdr *cm_hdr;
+	off_t rdma_cm_hdr_len = 0;
 	int ret;
 
 	if (OFI_UNLIKELY(paramlen > VERBS_CM_DATA_SIZE))
@@ -153,13 +172,21 @@ vrb_msg_ep_connect(struct fid_ep *ep_fid, const void *addr,
 			return ret;
 	}
 
-	ep->cm_hdr = malloc(sizeof(*(ep->cm_hdr)) + paramlen);
-	if (!ep->cm_hdr)
+	if (ep->id->route.addr.src_addr.sa_family == AF_IB)
+		rdma_cm_hdr_len = sizeof(struct vrb_rdma_cm_hdr);
+
+	priv_data_len = sizeof(*cm_hdr) + paramlen + rdma_cm_hdr_len;
+	ep->cm_priv_data = malloc(priv_data_len);
+	if (!ep->cm_priv_data)
 		return -FI_ENOMEM;
 
-	vrb_msg_ep_prepare_cm_data(param, paramlen, ep->cm_hdr);
-	vrb_ep_prepare_rdma_cm_param(&ep->conn_param, ep->cm_hdr,
-					sizeof(*(ep->cm_hdr)) + paramlen);
+	if (rdma_cm_hdr_len)
+		vrb_msg_ep_prepare_rdma_cm_hdr(ep->cm_priv_data, ep->id);
+
+	cm_hdr = (void *)((char *)ep->cm_priv_data + rdma_cm_hdr_len);
+	vrb_msg_ep_prepare_cm_data(param, paramlen, cm_hdr);
+	vrb_ep_prepare_rdma_cm_param(&ep->conn_param, ep->cm_priv_data,
+					priv_data_len);
 	ep->conn_param.retry_count = 15;
 
 	if (ep->srq_ep)
@@ -170,8 +197,8 @@ vrb_msg_ep_connect(struct fid_ep *ep_fid, const void *addr,
 		FI_WARN(&vrb_prov, FI_LOG_EP_CTRL,
 			"rdma_resolve_route failed: %s (%d)\n",
 			strerror(-ret), -ret);
-		free(ep->cm_hdr);
-		ep->cm_hdr = NULL;
+		free(ep->cm_priv_data);
+		ep->cm_priv_data = NULL;
 		return ret;
 	}
 	return 0;
@@ -208,7 +235,7 @@ vrb_msg_ep_accept(struct fid_ep *ep, const void *param, size_t paramlen)
 	if (ret)
 		return -errno;
 
-	connreq = container_of(_ep->info->handle, struct vrb_connreq, handle);
+	connreq = container_of(_ep->info_attr.handle, struct vrb_connreq, handle);
 	free(connreq);
 
 	return 0;
@@ -279,12 +306,15 @@ vrb_msg_ep_reject(struct fid_pep *pep, fid_t handle,
 	vrb_msg_ep_prepare_cm_data(param, paramlen, cm_hdr);
 
 	fastlock_acquire(&_pep->eq->lock);
-	if (connreq->is_xrc)
+	if (connreq->is_xrc) {
 		ret = vrb_msg_xrc_ep_reject(connreq, cm_hdr,
 				(uint8_t)(sizeof(*cm_hdr) + paramlen));
-	else
+	} else if (connreq->id) {
 		ret = rdma_reject(connreq->id, cm_hdr,
 			(uint8_t)(sizeof(*cm_hdr) + paramlen)) ? -errno : 0;
+	} else {
+		ret = -FI_EBUSY;
+	}
 	fastlock_release(&_pep->eq->lock);
 
 	free(connreq);
@@ -318,7 +348,7 @@ vrb_msg_xrc_cm_common_verify(struct vrb_xrc_ep *ep, size_t paramlen)
 {
 	int ret;
 
-	if (!vrb_is_xrc(ep->base_ep.info)) {
+	if (!vrb_is_xrc_ep(&ep->base_ep)) {
 		VERBS_WARN(FI_LOG_EP_CTRL, "EP is not using XRC\n");
 		return -FI_EINVAL;
 	}
@@ -487,15 +517,14 @@ static int vrb_pep_listen(struct fid_pep *pep_fid)
 	pep = container_of(pep_fid, struct vrb_pep, pep_fid);
 
 	addr = rdma_get_local_addr(pep->id);
-	if (addr)
-		ofi_straddr_log(&vrb_prov, FI_LOG_INFO,
-				FI_LOG_EP_CTRL, "listening on", addr);
+	ofi_straddr_log(&vrb_prov, FI_LOG_INFO,
+			FI_LOG_EP_CTRL, "listening on", addr);
 
 	ret = rdma_listen(pep->id, pep->backlog);
 	if (ret)
 		return -errno;
 
-	if (vrb_is_xrc(pep->info)) {
+	if (vrb_is_xrc_info(pep->info)) {
 		ret = rdma_listen(pep->xrc_ps_udp_id, pep->backlog);
 		if (ret)
 			ret = -errno;

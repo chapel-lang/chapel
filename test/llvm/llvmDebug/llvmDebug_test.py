@@ -14,6 +14,7 @@ chplenv = subprocess.check_output([chpl_home + "/util/printchplenv",
 CHPL_LLVM=None
 CHPL_HOST_BIN_SUBDIR=None
 CHPL_LLVM_UNIQ_CFG_PATH=None
+CHPL_LLVM_CONFIG=None
 
 for line in chplenv.splitlines():
   line_str = str(line, encoding='utf-8', errors='surrogateescape')
@@ -21,11 +22,13 @@ for line in chplenv.splitlines():
   key = kv[0]
   val = kv[1]
   if key == 'CHPL_HOST_BIN_SUBDIR':
-    CHPL_HOST_BIN_SUBDIR= val
+    CHPL_HOST_BIN_SUBDIR=val
   if key == 'CHPL_LLVM_UNIQ_CFG_PATH':
-    CHPL_LLVM_UNIQ_CFG_PATH= val
+    CHPL_LLVM_UNIQ_CFG_PATH=val
   if key == 'CHPL_LLVM':
-    CHPL_LLVM= val
+    CHPL_LLVM=val
+  if key == 'CHPL_LLVM_CONFIG':
+    CHPL_LLVM_CONFIG=val
 
 build_options = '--baseline -g'
 source_path = os.getcwd() #same as target path
@@ -39,26 +42,12 @@ else:
     print ('Build Failed')
     os._exit(1) #exit without raising an exception
 
-# Determine syntax from LLVM version
-llvm_vers_maj = 0
-with open(chpl_home + '/third-party/llvm/LLVM_VERSION', 'r') as f:
-    llvm_vers_maj = int(f.readline().split('.')[0])
-if llvm_vers_maj < 6:
-    debug_option = ' -debug-dump=str '
-else:
-    debug_option = ' -debug-str '
+debug_option = ' -debug-str '
 
-llvm_dwarfdump = None
-if CHPL_LLVM == "bundled":
-    llvm_dwarfdump = (chpl_home + '/third-party/llvm/install/' +
-                      CHPL_LLVM_UNIQ_CFG_PATH + '/bin/llvm-dwarfdump')
-else:
-    llvm_dwarfdump = "llvm-dwarfdump-" + str(llvm_vers_maj)
-    if not shutil.which(llvm_dwarfdump):
-        llvm_dwarfdump = "llvm-dwarfdump"
-        if not shutil.which(llvm_dwarfdump):
-            print ('Could not find llvm-dwarfdump')
-            os._exit(1) #exit without raising an exception
+llvm_bin_bytes = subprocess.check_output([CHPL_LLVM_CONFIG, '--bindir'])
+llvm_bin = str(llvm_bin_bytes, encoding='utf-8', errors='surrogateescape')
+llvm_bin = llvm_bin.strip()
+llvm_dwarfdump = llvm_bin + '/llvm-dwarfdump'
 
 # Check Debug Info Existence
 Command_check = llvm_dwarfdump + debug_option + target

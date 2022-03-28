@@ -1,2 +1,4 @@
 nonpod-tpvs.chpl:58: In function 'main':
 nonpod-tpvs.chpl:61: error: the initialization expression of the task-private variable 'tp1' throws - this is currently not supported for variables of non-POD types
+nonpod-tpvs.chpl:62: error: the initialization expression of the task-private variable 'tp2' throws - this is currently not supported for variables of non-POD types
+nonpod-tpvs.chpl:63: error: the initialization expression of the task-private variable 'tp3' throws - this is currently not supported for variables of non-POD types

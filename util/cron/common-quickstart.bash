@@ -8,3 +8,4 @@ source ${CHPL_HOME}/util/quickstart/setchplenv.bash
 
 # Skip $CHPL_HOME/test/regex/elliot/I-fail-without-re2
 export CHPL_TEST_REGEX=none
+export CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET=yes

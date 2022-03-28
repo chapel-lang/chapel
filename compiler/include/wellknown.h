@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -91,6 +91,7 @@ extern FnSymbol *gChplSaveTaskError;
 extern FnSymbol *gChplForallError;
 extern FnSymbol *gAtomicFenceFn;
 extern FnSymbol *gChplAfterForallFence;
+extern FnSymbol *gAllocateStringLiteralsBuf;
 extern FnSymbol *gChplCreateStringWithLiteral;
 extern FnSymbol *gChplCreateBytesWithLiteral;
 extern FnSymbol *gChplBuildLocaleId;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,8 @@
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
+
+#include "global-ast-vecs.h"
 
 #define DEBUG_RAAWRT 0
 
@@ -139,7 +141,7 @@ void replaceArrayAccessesWithRefTemps() {
                 if (toSymExpr(call->get(1))->symbol()->hasFlag(FLAG_TEMP)) {
                   loopIdx = toSymExpr(call->get(1));
                 } else {
-                  assert(indexMove == NULL && indexVar == NULL);
+                  INT_ASSERT(indexMove == NULL && indexVar == NULL);
                   indexMove = call;
                   indexVar = toSymExpr(call->get(1))->symbol();
                 }
@@ -175,7 +177,7 @@ void replaceArrayAccessesWithRefTemps() {
 
           if (FnSymbol* fn = call->resolvedFunction()) {
             if (fn->hasFlag(FLAG_REMOVABLE_ARRAY_ACCESS)) {
-              assert(isSymExpr(call->get(1)));
+              INT_ASSERT(isSymExpr(call->get(1)));
 
               Symbol* arraySym = toSymExpr(call->get(1))->symbol();
 
@@ -289,4 +291,3 @@ void replaceArrayAccessesWithRefTemps() {
     }
   }
 }
-

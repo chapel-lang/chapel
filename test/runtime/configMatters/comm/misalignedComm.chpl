@@ -1,12 +1,12 @@
 // this test was motivated by a bug report from Arkouda:
 //
-//   https://github.com/mhmerrill/arkouda/issues/236
+//   https://github.com/Bears-R-Us/arkouda/issues/236
 //
 // before the PR that this got in, this code used to get segfaults with ugni,
 // due to a bug
 
 
-use BlockDist;
+use BlockDist, ChplConfig;
 
 // without this we are allocating way too much memory for VMs
 config var n = if CHPL_COMM=="ugni" then 600_000_001 else 60_000_001;

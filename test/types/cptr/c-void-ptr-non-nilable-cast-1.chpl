@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 class MyClass { var x: int; }
 proc main() {
   var c = new MyClass();

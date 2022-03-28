@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,7 @@
 #include "stringutil.h"
 #include "wellknown.h"
 
+#include "global-ast-vecs.h"
 
 static void callExprHelper(CallExpr* call, BaseAST* arg);
 
@@ -144,22 +145,6 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
   }
 }
 
-bool CallExpr::isEmpty() const {
-  return primitive == NULL && baseExpr == NULL;
-}
-
-bool CallExpr::isPrimitive() const {
-  return primitive != NULL;
-}
-
-bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
-  return primitive && primitive->tag == primitiveTag;
-}
-
-bool CallExpr::isPrimitive(const char* primitiveName) const {
-  return primitive && !strcmp(primitive->name, primitiveName);
-}
-
 Expr* CallExpr::getFirstExpr() {
   Expr* retval = NULL;
 
@@ -262,8 +247,9 @@ void CallExpr::verify() {
   } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
     // Confirm that this is a partial call, but only if the call is not
     // within a DefExpr (indicated by not having a stmt-expr)
-    if (normalized && subCall->getStmtExpr() != NULL)
-      INT_ASSERT(subCall->partialTag == true);
+    if (!partOfNonNormalizableExpr(this))
+      if (normalized && subCall->getStmtExpr() != NULL)
+        INT_ASSERT(subCall->partialTag == true);
   }
 
   verifyNotOnList(baseExpr);
@@ -425,15 +411,6 @@ bool CallExpr::isNamedAstr(const char* name) const {
   }
 
   return retval;
-}
-
-int CallExpr::numActuals() const {
-  return argList.length;
-}
-
-
-Expr* CallExpr::get(int index) const {
-  return argList.get(index);
 }
 
 

@@ -1,0 +1,2 @@
+--no-checks      # flags-no-checks.good
+--warn-unstable  # flags-warn-unstable.good

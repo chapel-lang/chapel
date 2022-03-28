@@ -1,0 +1,6 @@
+-scase=1 # zipRankMismatch-2Darr-1Darr.good
+-scase=2 # zipRankMismatch-1Darr-2Darr.good
+-scase=3 # zipRankMismatch-2Ddom-1Ddom.good
+-scase=4 # zipRankMismatch-1Ddom-2Ddom.good
+-scase=5 # zipRankMismatch-range-2D.good
+-scase=6 # zipRankMismatch-2D-range.good

@@ -11,10 +11,18 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell",
     path: "../../provision-scripts/apt-get-deps.sh"
 
+  # has up to LLVM 10, this one we will try having
+  # no LLVM deps
+
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/make-chapel-quick.sh"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    #vb.cpus = 2
+  end
 
 end

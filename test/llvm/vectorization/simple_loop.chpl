@@ -2,7 +2,7 @@
 //This loop is trivial case for loop vectorizer and if
 //vectorization shouldn't happen it definitely won't happen in this case
 proc loop (A, B, n) {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     // CHECK: <4 x i32>
     A[i] = 3*B[i];
   }

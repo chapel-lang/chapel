@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -58,9 +58,9 @@ to access to the following TOML file's project name,
 .. code-block:: yaml
 
      [root]
+     author = "Sam Partee"
      name = "example"
      version = "1.0.0"
-     author = "Sam Partee"
 
 Use the following code in chapel.
 
@@ -73,6 +73,16 @@ Use the following code in chapel.
      const projectName = ["root"]["name"] // returns a TOML object
      writeln(projectName.toString());     // to turn TOML object into string representation
 
+
+.. note::
+
+  As of Chapel 1.26.0, TOML objects will print their values in the following manner:
+  If the object contains a `root` table, it will be printed first.
+  Keys within the root table will be printed in sorted order.
+  All other tables will be printed in a sorted order after `root`, if it exists.
+  All table keys will be printed in a sorted order. Prior to this change, the `root`
+  table would print first, followed by keys and other tables in what may have been
+  a non-deterministic manner.
 
 */
 proc parseToml(input: file) : unmanaged Toml {
@@ -127,6 +137,7 @@ module TomlParser {
   import IO.channel;
   private use TOML.TomlReader;
   import TOML.TomlError;
+  use Sort;
 
   /* Prints a line by line output of parsing process */
   config const debugTomlParser = false;
@@ -354,8 +365,7 @@ module TomlParser {
         }
         // DateTime
         else if dt.match(val) {
-          var date : datetime;
-          date.strptime(getToken(source), "%Y-%m-%dT%H:%M:%S");
+          var date = datetime.strptime(getToken(source), "%Y-%m-%dT%H:%M:%SZ");
           return new unmanaged Toml(date);
         }
         // Date
@@ -532,12 +542,12 @@ pragma "no doc"
 
  pragma "no doc"
  operator Toml.=(ref t: unmanaged Toml,
-                 A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+                 A: [?D] unmanaged Toml) where D.isAssociative() {
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, A);
  }
  pragma "no doc"
- proc setupToml(ref t: unmanaged Toml, A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+ proc setupToml(ref t: unmanaged Toml, A: [?D] unmanaged Toml) where D.isAssociative() {
    if t == nil {
      t = new unmanaged Toml(A);
    } else {
@@ -548,7 +558,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc setupToml(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom){
+ proc setupToml(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !dom.isAssociative(){
    if t == nil {
      t = new unmanaged Toml(arr);
    } else {
@@ -560,7 +570,7 @@ pragma "no doc"
 
 
  pragma "no doc"
- operator Toml.=(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom){
+ operator Toml.=(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !dom.isAssociative(){
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, arr);
  }
@@ -597,14 +607,14 @@ used to recursively hold tables and respective values
     }
 
     // Toml
-    proc init(A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+    proc init(A: [?D] unmanaged Toml) where D.isAssociative() {
       this.complete();
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
 
     pragma "no doc"
-    proc init(A: [?D] unmanaged Toml?) where isAssociativeDom(D) {
+    proc init(A: [?D] unmanaged Toml?) where D.isAssociative() {
       this.complete();
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
@@ -647,14 +657,14 @@ used to recursively hold tables and respective values
     }
 
     // Array
-    proc init(arr: [?dom] unmanaged Toml) where isAssociativeDom(dom) == false  {
+    proc init(arr: [?dom] unmanaged Toml) where dom.isAssociative() == false  {
       this.dom = dom;
       this.arr = arr;
       this.tag = fieldArr;
     }
 
     pragma "no doc"
-    proc init(arr: [?dom] unmanaged Toml?) where isAssociativeDom(dom) == false  {
+    proc init(arr: [?dom] unmanaged Toml?) where dom.isAssociative() == false  {
       this.dom = dom;
       this.arr = arr;
       this.tag = fieldArr;
@@ -816,7 +826,7 @@ used to recursively hold tables and respective values
         t!.dt = dt;
       }
     }
-    proc set(tbl: string, A: [?D] unmanaged Toml?) where isAssociativeDom(D) {
+    proc set(tbl: string, A: [?D] unmanaged Toml?) where D.isAssociative() {
       ref t = this(tbl);
       if t == nil {
         t = new unmanaged Toml(A);
@@ -825,7 +835,7 @@ used to recursively hold tables and respective values
         for i in D do t!.A[i] = A[i];
       }
     }
-    proc set(tbl: string, arr: [?dom] unmanaged Toml?) where !isAssociativeDom(dom) {
+    proc set(tbl: string, arr: [?dom] unmanaged Toml?) where !dom.isAssociative() {
       ref t = this(tbl);
       if t == nil {
         t = new unmanaged Toml(arr);
@@ -920,8 +930,10 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValues(f: channel, v: borrowed Toml) throws {
-      for (key, val) in v.A.items() {
-        var value = val!;
+      var keys = v.A.keysToArray();
+      sort(keys);
+      for key in keys {
+        var value = v.A[key]!;
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
@@ -975,8 +987,10 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValuesJSON(f: channel, v: borrowed Toml, in indent=0) throws {
-      for ((key, val), i) in zip(v.A.items(), 1..v.A.size) {
-        var value = val!;
+      var keys = v.A.keysToArray();
+      sort(keys);
+      for (key, i) in zip(keys, 1..v.A.size) {
+        var value = v.A[key]!;
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -175,28 +175,6 @@ automatically as `multipart messages
 :chpl:mod:`Reflection` module.  Currently, the ZMQ module can serialize records
 of primitive numeric types, strings, bytes and other serializable records.
 
-.. note::
-
-   The serialization protocol for strings changed in Chapel 1.16 in order to
-   support inter-language messaging through ZeroMQ. (See
-   :ref:`notes on interoperability <interop>` below.)
-   As a result, programs using ZMQ that were compiled by Chapel 1.15 or
-   earlier cannot communicate using strings with programs compiled by
-   Chapel 1.16 or later, although such communication can be used between
-   programs compiled by the same version without issue.
-
-   Prior to Chapel 1.16, ZMQ would send a string as two multipart messages:
-   the first sent the length as `int`; the second sent the character array
-   (in bytes).  It was identified that this scheme was incompatible with how
-   other language bindings for ZeroMQ serialize and send strings.
-
-   As of Chapel 1.16, the ZMQ module uses the C-level ``zmq_msg_send()`` and
-   ``zmq_msg_recv()`` API for :proc:`Socket.send()` and :proc:`Socket.recv()`,
-   respectively, when transmitting strings.  Further, ZMQ sends the string as
-   a single message of only the byte stream of the string's character array.
-   (Recall that Chapel's ``string`` type currently only supports ASCII
-   strings, not full Unicode strings.)
-
 .. _interop:
 
 Interoperability
@@ -266,8 +244,7 @@ module ZMQ {
   private use Reflection;
   private use ExplicitRefCount;
   private use IO;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   use SysError;
 
   private extern proc chpl_macro_int_errno():c_int;
@@ -286,26 +263,26 @@ module ZMQ {
   private extern proc zmq_errno(): c_int;
   private extern proc zmq_msg_init(ref msg: zmq_msg_t): c_int;
   private extern proc zmq_msg_init_size(ref msg: zmq_msg_t,
-                                        size: size_t): c_int;
+                                        size: c_size_t): c_int;
   private extern proc zmq_msg_init_data(ref msg: zmq_msg_t,
                                         data: c_void_ptr,
-                                        size: size_t,
+                                        size: c_size_t,
                                         ffn: c_fn_ptr,
                                         hint: c_void_ptr): c_int;
   private extern proc zmq_msg_data(ref msg: zmq_msg_t): c_void_ptr;
-  private extern proc zmq_msg_size(ref msg: zmq_msg_t): size_t;
+  private extern proc zmq_msg_size(ref msg: zmq_msg_t): c_size_t;
   private extern proc zmq_msg_send(ref msg: zmq_msg_t, sock: c_void_ptr,
                                    flags: c_int): c_int;
   private extern proc zmq_msg_recv(ref msg: zmq_msg_t, sock: c_void_ptr,
                                    flags: c_int): c_int;
   private extern proc zmq_msg_close(ref msg: zmq_msg_t): c_int;
   private extern proc zmq_recv(sock: c_void_ptr, buf: c_void_ptr,
-                               len: size_t, flags: c_int): c_int;
+                               len: c_size_t, flags: c_int): c_int;
   private extern proc zmq_send(sock: c_void_ptr, buf: c_void_ptr,
-                               len: size_t, flags: c_int): c_int;
+                               len: c_size_t, flags: c_int): c_int;
   private extern proc zmq_setsockopt (sock: c_void_ptr, option_name: int,
                                       const option_value: c_void_ptr,
-                                      option_len: size_t): c_int;
+                                      option_len: c_size_t): c_int;
   private extern proc zmq_socket(ctx: c_void_ptr, socktype: c_int): c_void_ptr;
   private extern proc zmq_strerror(errnum: c_int): c_string;
   private extern proc zmq_version(major: c_ptr(c_int),
@@ -357,7 +334,7 @@ module ZMQ {
    */
   const PULL = ZMQ_PULL;
 
-  /* 
+  /*
     The exclusive pair pattern socket type.
   */
   const PAIR = ZMQ_PAIR;
@@ -442,7 +419,7 @@ module ZMQ {
   const unset = -42;
 
   pragma "no doc"
-  proc free_helper(data: c_void_ptr, hint: c_void_ptr) {
+  export proc free_helper(data: c_void_ptr, hint: c_void_ptr) {
     chpl_here_free(data);
   }
 
@@ -824,7 +801,7 @@ module ZMQ {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
                                  value.c_str(): c_void_ptr,
-                                 value.numBytes:size_t): int;
+                                 value.numBytes:c_size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
           // It would be good to use a factory method for a ZMQError subclass,
@@ -864,7 +841,7 @@ module ZMQ {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
                                  value.c_str(): c_void_ptr,
-                                 value.numBytes:size_t): int;
+                                 value.numBytes:c_size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
           // It would be good to use a factory method for a ZMQError subclass,
@@ -910,16 +887,17 @@ module ZMQ {
         //
         // TODO: If *not crossing locales*, check for ownership and
         // conditionally have ZeroMQ free the memory.
-        // 
+        //
         // Note: the string factory below can throw DecodeError
         var copy = if isString(T) then createStringWithNewBuffer(x=data)
-                                  else createBytesWithNewBuffer(x=data);
+                   else parallelCreateBytesWithNewBuffer(data.localize().buff,
+                                                         length=data.size);
         copy.isOwned = false;
 
         // Create the ZeroMQ message from the data buffer
         var msg: zmq_msg_t;
         if (0 != zmq_msg_init_data(msg, copy.c_str():c_void_ptr,
-                                   copy.numBytes:size_t, c_ptrTo(free_helper),
+                                   copy.numBytes:c_size_t, c_ptrTo(free_helper),
                                    c_nil)) {
           try throw_socket_error(errno, "send");
         }
@@ -942,7 +920,7 @@ module ZMQ {
       on classRef.home {
         var copy = data;
         while (-1 == zmq_send(classRef.socket, c_ptrTo(copy):c_void_ptr,
-                              numBytes(T):size_t,
+                              numBytes(T):c_size_t,
                               (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
             chpl_task_yield();
@@ -962,7 +940,7 @@ module ZMQ {
     // send, records (of other supported things)
     pragma "no doc"
     proc send(data: ?T, flags: int = 0) throws where (isRecordType(T) &&
-                                                     (!isString(T)) && 
+                                                     (!isString(T)) &&
                                                      (!isBytes(T))) {
       on classRef.home {
         var copy = data;
@@ -994,8 +972,7 @@ module ZMQ {
     // recv, strings and bytes
     pragma "no doc"
     proc recv(type T, flags: int = 0) throws where isString(T) || isBytes(T) {
-      var ret: T;
-      on classRef.home {
+      proc innerRecv() throws {
         // Initialize an empty ZeroMQ message
         var msg: zmq_msg_t;
         if (0 != zmq_msg_init(msg)) {
@@ -1015,20 +992,25 @@ module ZMQ {
         // Construct the value on the current locale, copying the data buffer
         // from the message object; then, release the message object
         var len = zmq_msg_size(msg):int;
-        const val = if isString(T) then 
+        const val = if isString(T) then
                       createStringWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
                                                 length=len, size=len+1)
                     else
-                      createBytesWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
-                                               length=len, size=len+1);
+                      parallelCreateBytesWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
+                                                       length=len, size=len+1);
         if (0 != zmq_msg_close(msg)) {
           try throw_socket_error(errno, "recv");
         }
-
-        // Return the value to the calling locale
-        ret = val;
+        return val;
       }
-      return ret;
+
+      if here == classRef.home {
+        return innerRecv();
+      } else {
+        var localRet: T;
+        on classRef.home do localRet = innerRecv();
+        return localRet;
+      }
     }
 
     // recv, numeric types
@@ -1038,7 +1020,7 @@ module ZMQ {
       on classRef.home {
         var data: T;
         while (-1 == zmq_recv(classRef.socket, c_ptrTo(data):c_void_ptr,
-                              numBytes(T):size_t,
+                              numBytes(T):c_size_t,
                               (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
             chpl_task_yield();
@@ -1097,6 +1079,41 @@ module ZMQ {
     }
     // Assign
     lhs.classRef = rhs.classRef;
+  }
+
+  // Note: The bytes copies are parallelized in this file
+  // only temporarily, where long term we would like to do that
+  // parallelization in the internal bytes module, but are having
+  // to delay that due to some resolution issues. Also, the string
+  // assignment can likely be parallelized similarly, but was not
+  // included in this temporary effort.
+  private proc parallelCreateBytesWithNewBuffer(x: c_ptr(?t), length: int, size=length+1) {
+    if size < parallelAssignThreshold then return createBytesWithNewBuffer(x, length, size);
+    use ByteBufferHelpers;
+    use DSIUtil;
+    var ret: bytes;
+    if length == 0 then return ret;
+
+    ret.isOwned = true;
+    ret.buffLen = length;
+    const (dst, allocSize) = bufferAlloc(length+1);
+
+    const numTasks = if __primitive("task_get_serial") then 1 else _computeNumChunks(length);
+
+    const lenPerTask = length/numTasks;
+
+    coforall tid in 0..#numTasks {
+      const myOffset = tid*lenPerTask;
+      const myLen = if tid == numTasks-1 then length:int-myOffset else lenPerTask;
+
+      c_memmove(dst+myOffset,x+myOffset,myLen);
+    }
+
+    dst[length] = 0;
+    ret.buff = dst;
+    ret.buffSize = allocSize;
+
+    return ret;
   }
 
   /*

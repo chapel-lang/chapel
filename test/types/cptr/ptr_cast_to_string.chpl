@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 use Regex;
 
 var mem = c_calloc(uint(8), 4096);

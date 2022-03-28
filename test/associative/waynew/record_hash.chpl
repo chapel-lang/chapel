@@ -17,12 +17,12 @@ var r6 = new R(1, 0, 1);
 writeln( r6);
 
 
-var h1 = chpl__defaultHash(r1);
-var h2 = chpl__defaultHash(r2);
-var h3 = chpl__defaultHash(r3);
-var h4 = chpl__defaultHash(r4);
-var h5 = chpl__defaultHash(r5);
-var h6 = chpl__defaultHash(r6);
+var h1 = r1.hash();
+var h2 = r2.hash();
+var h3 = r3.hash();
+var h4 = r4.hash();
+var h5 = r5.hash();
+var h6 = r6.hash();
 
 
 if (h1==h2 || h1==h3 || h1==h4 || h1==h5 || h1==h6 ||

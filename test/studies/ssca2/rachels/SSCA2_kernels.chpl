@@ -164,7 +164,7 @@ module SSCA2_kernels
     } // end of rooted_heavy_subgraphs
 
 
-  use BlockDist;
+  use BlockDist, ChplConfig;
   config param useAtomicReal = CHPL_NETWORK_ATOMICS!="none";
   config param useOnClause = CHPL_NETWORK_ATOMICS=="none";
   // For task-private temporary variables
@@ -501,7 +501,8 @@ module SSCA2_kernels
 
 	const n_edges          = G.num_edges;
 	const N_VERTICES       = vertex_domain.size;
-	const N_START_VERTICES = if starting_vertices == G.vertices
+	const N_START_VERTICES = if chpl_sameDomainKind(starting_vertices, G.vertices) &&
+	                            starting_vertices == G.vertices
                                  then N_VERTICES
                                       - + reduce [v in vertex_domain]
                                         (G.n_Neighbors (v) == 0)

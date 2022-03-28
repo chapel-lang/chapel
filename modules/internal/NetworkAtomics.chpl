@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +22,7 @@ pragma "atomic module"
 module NetworkAtomics {
   private use ChapelStandard;
   private use MemConsistency;
-  private use CPtr;
+  private use CTypes;
 
   private proc externFunc(param s: string, type T) param {
     if isInt(T)  then return "chpl_comm_atomic_" + s + "_int"  + numBits(T):string;
@@ -340,35 +340,35 @@ module NetworkAtomics {
     return lhs;
   }
 
-  inline operator =(ref a:RAtomicBool, const b:RAtomicBool) {
+  inline operator RAtomicBool.=(ref a:RAtomicBool, const b:RAtomicBool) {
     a.write(b.read());
   }
-  inline operator =(ref a:RAtomicBool, b) {
+  inline operator RAtomicBool.=(ref a:RAtomicBool, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline operator =(ref a:RAtomicT, const b:RAtomicT) {
+  inline operator RAtomicT.=(ref a:RAtomicT, const b:RAtomicT) {
     a.write(b.read());
   }
-  inline operator =(ref a:RAtomicT, b) {
+  inline operator RAtomicT.=(ref a:RAtomicT, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline operator +(a:RAtomicT, b) {
+  inline operator RAtomicT.+(a:RAtomicT, b) {
     compilerError("Cannot directly add atomic variables");
     return a;
   }
-  inline operator -(a:RAtomicT, b) {
+  inline operator RAtomicT.-(a:RAtomicT, b) {
     compilerError("Cannot directly subtract atomic variables");
     return a;
   }
-  inline operator *(a:RAtomicT, b) {
+  inline operator RAtomicT.*(a:RAtomicT, b) {
     compilerError("Cannot directly multiply atomic variables");
     return a;
   }
-  inline operator /(a:RAtomicT, b) {
+  inline operator RAtomicT./(a:RAtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
-  inline operator %(a:RAtomicT, b) {
+  inline operator RAtomicT.%(a:RAtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }

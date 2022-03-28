@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,7 +20,7 @@
 
 /*
   This module contains the implementation of the map type which is a container
-  that stores key-value associations. 
+  that stores key-value associations.
 
   Maps are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any map constructor. When
@@ -29,8 +29,9 @@
 */
 module Map {
   import ChapelLocks;
-  private use HaltWrappers;
   private use ChapelHashtable;
+  private use HaltWrappers;
+  private use IO;
 
   // Lock code lifted from modules/standard/List.chpl.
   // Maybe they should be combined into a Locks module.
@@ -50,14 +51,22 @@ module Map {
     }
   }
 
-  private use IO;
-
-  pragma "no doc"
-  inline proc checkForNonNilableClass(type t) type {
-    if isNonNilableClass(t) {
-      return t?;
-    } else {
-      return t;
+  private proc _checkKeyAndValType(type K, type V) {
+    if isGenericType(K) {
+      compilerWarning('creating a map with key type ', K:string, 2);
+      if isClassType(K) && !isGenericType(borrowed K) {
+        compilerWarning('which now means class type with generic ',
+                        'management', 2);
+      }
+      compilerError('map key type cannot currently be generic', 2);
+    }
+    if isGenericType(V) {
+      compilerWarning('creating a map with value type ', V:string, 2);
+      if isClassType(V) && !isGenericType(borrowed V) {
+        compilerWarning('which now means class type with generic ',
+                        'management', 2);
+      }
+      compilerError('map value type cannot currently be generic', 2);
     }
   }
 
@@ -69,6 +78,17 @@ module Map {
 
     /* If `true`, this map will perform parallel safe operations. */
     param parSafe = false;
+
+    /*
+       Fractional value that specifies how full this map can be
+       before requesting additional memory. The default value of
+       0.5 means that the map will not resize until the map is more
+       than 50% full. The acceptable values for this argument are
+       between 0 and 1, exclusive, meaning (0,1). This is useful
+       when you would like to reduce memory impact or potentially
+       speed up how fast the map finds a slot.
+    */
+    const resizeThreshold = 0.5;
 
     pragma "no doc"
     var table: chpl__hashtable(keyType, valType);
@@ -88,61 +108,53 @@ module Map {
         _lock$.unlock();
     }
 
+
+
     /*
       Initializes an empty map containing keys and values of given types.
 
       :arg keyType: The type of the keys of this map.
       :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
+      :arg resizeThreshold: Fractional value that specifies how full this map
+                            can be before requesting additional memory.
+      :arg initialCapacity: Integer value that specifies starting map size. The
+                            map can hold at least this many values before
+                            attempting to resize.
     */
-    proc init(type keyType, type valType, param parSafe=false) {
-      if isGenericType(keyType) {
-        compilerWarning("creating a map with key type " +
-                        keyType:string);
-        if isClassType(keyType) && !isGenericType(borrowed keyType) {
-          compilerWarning("which now means class type with generic management");
-        }
-        compilerError("map key type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
-      }
-      if isGenericType(valType) {
-        compilerWarning("creating a map with value type " +
-                        valType:string);
-        if isClassType(valType) && !isGenericType(borrowed valType) {
-          compilerWarning("which now means class type with generic management");
-        }
-        compilerError("map value type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
-      }
+    proc init(type keyType, type valType, param parSafe=false,
+              resizeThreshold=0.5, initialCapacity=16) {
+      _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
+                                  initialCapacity);
     }
 
-    proc init(type keyType, type valType, param parSafe=false)
+    proc init(type keyType, type valType, param parSafe=false,
+              resizeThreshold=0.5, initialCapacity=16)
     where isNonNilableClass(valType) {
-      if isGenericType(keyType) {
-        compilerWarning("creating a map with key type " +
-                        keyType:string);
-        if isClassType(keyType) && !isGenericType(borrowed keyType) {
-          compilerWarning("which now means class type with generic management");
-        }
-        compilerError("map key type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
-      }
-      if isGenericType(valType) {
-        compilerWarning("creating a map with value type " +
-                        valType:string);
-        if isClassType(valType) && !isGenericType(borrowed valType) {
-          compilerWarning("which now means class type with generic management");
-        }
-        compilerError("map value type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
-      }
-
+      _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
+                                  initialCapacity);
     }
 
     /*
@@ -167,6 +179,9 @@ module Map {
                         this.type.valType else vt;
       this.parSafe = if this.type.parSafe != ? then
                         this.type.parSafe else ps;
+      this.resizeThreshold = other.resizeThreshold;
+      this.table = new chpl__hashtable(keyType, valType,
+                                       resizeThreshold);
       this.complete();
 
       if keyType != kt {
@@ -274,25 +289,6 @@ module Map {
     }
 
     /*
-      Updates this map with the contents of the other, overwriting the values
-      for already-existing keys.
-
-      .. warning::
-
-        Adding to a map using :proc:`update` is deprecated. Please use
-        the :proc:`extend` method instead.
-
-      :arg m: The other map
-      :type m: map(keyType, valType)
-    */
-    proc update(pragma "intent ref maybe const formal"
-                m: map(keyType, valType, parSafe)) {
-      compilerWarning('Adding to a map using `update()` is deprecated - ' +
-                      'use `extend()` instead');
-      extend(m);
-    }
-
-    /*
       Update a value in this map in a parallel safe manner via an updater
       object.
 
@@ -339,8 +335,8 @@ module Map {
     pragma "no doc"
     inline proc _warnForParSafeIndexing() {
       if parSafe then
-        compilerWarning('indexing a map initialized with `parSafe=true` ' +
-                        'has been deprecated, use `update()` instead', 2);
+        compilerError('cannot index into a map initialized with ',
+                      '`parSafe=true`', 2);
     }
 
     /*
@@ -380,7 +376,7 @@ module Map {
 
     pragma "no doc"
     proc const this(k: keyType) const ref
-    where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
+    where !isNonNilableClass(valType) {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -421,9 +417,8 @@ module Map {
      */
     proc getReference(k: keyType) ref {
       if parSafe then
-        compilerWarning('use of `getReference()` on maps initialized ' +
-                        'with `parSafe=true` has been deprecated, ' +
-                        'use `update()` instead');
+        compilerError('cannot call `getReference()` on maps initialized ',
+                      'with `parSafe=true`');
 
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
@@ -434,8 +429,14 @@ module Map {
     }
 
     /* Get a copy of the element stored at position `k`.
+
+      :arg k: The key to lookup in the map
+
+      :throws: `KeyNotFoundError` if `k` not in map
+
+      :returns: A copy of the value at position `k`
      */
-    proc getValue(k: keyType) const {
+    proc getValue(k: keyType) const throws {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
                       'map value type: ' + valType:string);
@@ -443,7 +444,32 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
+        throw new KeyNotFoundError(k: string);
+      try! {
+        const result = table.table[slot].val: valType;
+        return result;
+      }
+    }
+
+    /* Get a copy of the element stored at position `k` or a sentinel
+       value if an element at position `k` does not exist.
+
+      :arg k: The key to lookup in the map
+      :arg sentinel: The value to return if the map does not contain an
+                     entry at position `k`
+
+      :returns: A copy of the value at position `k` or a sentinel value
+                if the map does not have an entry at position `k`
+    */
+    proc getValue(k: keyType, const sentinel: valType) const {
+      if !isCopyableType(valType) then
+        compilerError('cannot call `getValue()` for non-copyable ' +
+                      'map value type: ' + valType:string);
+
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        return sentinel;
       try! {
         const result = table.table[slot].val: valType;
         return result;
@@ -481,9 +507,8 @@ module Map {
 
       :yields: A reference to one of the keys contained in this map.
     */
-    pragma "order independent yielding loops"
     iter keys() const ref {
-      for slot in table.allSlots() {
+      foreach slot in table.allSlots() {
         if table.isSlotFull(slot) then
           yield table.table[slot].key;
       }
@@ -495,7 +520,6 @@ module Map {
       :yields: A tuple whose elements are a copy of one of the key-value
                pairs contained in this map.
     */
-    pragma "order independent yielding loops"
     iter items() {
       if !isCopyableType(keyType) then
         compilerError('in map.items(): map key type ' + keyType:string +
@@ -505,7 +529,7 @@ module Map {
         compilerError('in map.items(): map value type ' + valType:string +
                       ' is not copyable');
 
-      for slot in table.allSlots() {
+      foreach slot in table.allSlots() {
         if table.isSlotFull(slot) {
           ref tabEntry = table.table[slot];
           yield (tabEntry.key, tabEntry.val);
@@ -518,20 +542,18 @@ module Map {
 
       :yields: A reference to one of the values contained in this map.
     */
-    pragma "order independent yielding loops"
     iter values() ref
     where !isNonNilableClass(valType) {
-      for slot in table.allSlots() {
+      foreach slot in table.allSlots() {
         if table.isSlotFull(slot) then
           yield table.table[slot].val;
       }
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter values() const where isNonNilableClass(valType) {
       try! {
-        for slot in table.allSlots() {
+        foreach slot in table.allSlots() {
           if table.isSlotFull(slot) then
             yield table.table[slot].val: valType;
         }
@@ -542,7 +564,7 @@ module Map {
       Writes the contents of this map to a channel. The format looks like:
 
         .. code-block:: chapel
-    
+
            {k1: v1, k2: v2, .... , kn: vn}
 
       :arg ch: A channel to write to.
@@ -550,19 +572,19 @@ module Map {
     proc readWriteThis(ch: channel) throws {
       _enter(); defer _leave();
       var first = true;
-      ch <~> "{";
+      ch <~> new ioLiteral("{");
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
           if first {
             first = false;
           } else {
-            ch <~> ", ";
+            ch <~> new ioLiteral(", ");
           }
           ref tabEntry = table.table[slot];
-          ch <~> tabEntry.key <~> ": " <~> tabEntry.val;
+          ch <~> tabEntry.key <~> new ioLiteral(": ") <~> tabEntry.val;
         }
       }
-      ch <~> "}";
+      ch <~> new ioLiteral("}");
     }
 
     /*
@@ -630,7 +652,7 @@ module Map {
 
     /*
       Removes a key-value pair from the map, with the given key.
-      
+
      :arg k: The key to remove from the map
 
      :returns: `false` if `k` was not in the map.  `true` if it was and removed.
@@ -720,15 +742,17 @@ module Map {
       `lhs`.
 
     :arg lhs: The map to assign to.
-    :arg rhs: The map to assign from. 
+    :arg rhs: The map to assign from.
   */
   operator map.=(ref lhs: map(?kt, ?vt, ?), const ref rhs: map(kt, vt, ?)) {
     if !isCopyableType(kt) || !isCopyableType(vt) then
       compilerError("assigning map with non-copyable type");
 
     lhs.clear();
-    for key in rhs.keys() {
-      lhs.add(key, rhs.getValue(key));
+    try! {
+      for key in rhs.keys() {
+        lhs.add(key, rhs.getValue(key));
+      }
     }
   }
 
@@ -810,8 +834,8 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a do newMap.add(k, a.getValue(k));
-    for k in b do newMap.add(k, b.getValue(k));
+    try! { for k in a do newMap.add(k, a.getValue(k)); }
+    try! { for k in b do newMap.add(k, b.getValue(k)); }
     return newMap;
   }
 
@@ -821,7 +845,7 @@ module Map {
   operator map.|=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
     // add keys/values from b to a if they weren't already in a
-    for k in b do a.add(k, b.getValue(k));
+    try! { for k in b do a.add(k, b.getValue(k)); }
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
@@ -829,9 +853,11 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a.keys() do
-      if b.contains(k) then
-        newMap.add(k, a.getValue(k));
+    try! {
+      for k in a.keys() do
+        if b.contains(k) then
+          newMap.add(k, a.getValue(k));
+    }
 
     return newMap;
   }
@@ -848,9 +874,11 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for ak in a.keys() {
-      if !b.contains(ak) then
-        newMap.add(ak, a.getValue(ak));
+    try! {
+      for ak in a.keys() {
+        if !b.contains(ak) then
+          newMap.add(ak, a.getValue(ak));
+      }
     }
 
     return newMap;
@@ -879,10 +907,14 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a.keys() do
-      if !b.contains(k) then newMap.add(k, a.getValue(k));
-    for k in b do
-      if !a.contains(k) then newMap.add(k, b.getValue(k));
+    try! {
+      for k in a.keys() do
+        if !b.contains(k) then newMap.add(k, a.getValue(k));
+    }
+    try! {
+      for k in b do
+        if !a.contains(k) then newMap.add(k, b.getValue(k));
+    }
     return newMap;
   }
 
@@ -890,9 +922,25 @@ module Map {
      left-hand map or the right-hand map, but not both. */
   operator map.^=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
-    for k in b.keys() {
-      if a.contains(k) then a.remove(k);
-      else a.add(k, b.getValue(k));
+    try! {
+      for k in b.keys() {
+        if a.contains(k) then a.remove(k);
+        else a.add(k, b.getValue(k));
+      }
+    }
+  }
+
+  /*
+   A `KeyNotFoundError` is thrown at runtime if an attempt is made
+   to access a map value at a given key that is not in the current
+   state of the `map`. An example of this is calling `map.getValue()`.
+   */
+  class KeyNotFoundError : Error {
+    proc init() {}
+
+    proc init(k: string) {
+      var msg = "key '" + k + "' not found";
+      super.init(msg);
     }
   }
 }
