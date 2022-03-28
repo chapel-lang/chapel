@@ -1604,7 +1604,7 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
                     ParserExprList* limitations) {
 
   auto comments = gatherComments(location);
-  if (attributes->isDeprecated()) {
+  if (attributes && attributes->isDeprecated()) {
     raiseError(location, "Can't deprecate a forwarding statement");
   }
   if (limitationKind == VisibilityClause::NONE) {
