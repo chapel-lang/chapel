@@ -67,8 +67,6 @@ static ConversionsTable conversionsTable;
 
 static void resolveFormals(FnSymbol* fn);
 
-static void checkForUnsupportedOverload(FnSymbol* fn);
-
 static void markIteratorAndLoops(FnSymbol* fn, CallExpr* call);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn);
@@ -190,7 +188,6 @@ static void resolveFormals(FnSymbol* fn) {
       storeDefaultValuesForPython(fn, formal);
     }
   }
-  checkForUnsupportedOverload(fn);
 }
 
 // When compiling for Python interoperability, default values for arguments
@@ -608,7 +605,10 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
   }
 }
 
-static void checkForUnsupportedOverload(FnSymbol* fn) {
+void checkForUnsupportedOverload(FnSymbol* fn) {
+  // Just error for each function once
+  static std::set<astlocT> alreadyErrored;
+
   Type* toType = NULL;
 
   if (fn->name == astrSassign) {
@@ -623,12 +623,16 @@ static void checkForUnsupportedOverload(FnSymbol* fn) {
       // don't allow '=' on these types to be defined
       // outside of the standard/internal modules
       if (fn->defPoint->getModule()->modTag == MOD_USER) {
-        if (isClassLikeOrManaged(toType)) {
-          USR_FATAL_CONT(fn->defPoint,
-                         "Can't overload assignments for class types");
-        } else {
-          USR_FATAL_CONT(fn->defPoint,
-                         "Can't overload assignments for pointer types");
+        astlocT loc = fn->defPoint->astloc;
+        if (alreadyErrored.count(loc) == 0) {
+          if (isClassLikeOrManaged(toType)) {
+            USR_FATAL_CONT(fn->defPoint,
+                           "Can't overload assignments for class types");
+          } else {
+            USR_FATAL_CONT(fn->defPoint,
+                           "Can't overload assignments for pointer types");
+          }
+          alreadyErrored.insert(loc);
         }
       }
     }

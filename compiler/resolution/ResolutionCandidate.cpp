@@ -957,6 +957,9 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
     return false;
   }
 
+  // if it is a candidate, check for unsupported overload
+  checkForUnsupportedOverload(fn);
+
   return true;
 }
 
