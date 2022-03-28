@@ -1484,7 +1484,7 @@ qioerr _qio_channel_needbuffer_unlocked(qio_channel_t* ch)
 }
 
 
-qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style)
+qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style, int64_t bufIoMax)
 {
   qioerr err;
   size_t i;
@@ -1532,13 +1532,17 @@ qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hi
       }
     }
   }
-
+  if (bufIoMax > 0) {
+    ch->bufIoMax = bufIoMax;
+  } else {
+    ch->bufIoMax = 64 * 1024; // use a reasonable default
+  }
   //_qio_buffered_setup_cached(ch);
 
   return 0;
 }
 
-qioerr qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style)
+qioerr qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style, int64_t bufIoMax)
 {
   qio_channel_t* ret;
   qioerr err = 0;
@@ -1547,7 +1551,7 @@ qioerr qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t h
   if( !ret ) return QIO_ENOMEM;
 
 
-  err = _qio_channel_init_file(ret, file, hints, readable, writeable, start, end, style);
+  err = _qio_channel_init_file(ret, file, hints, readable, writeable, start, end, style, bufIoMax);
   if( err ) {
     qio_free(ret);
     return err;
@@ -2636,7 +2640,7 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
   write_start = qbuffer_begin(&ch->buf);
   write_end = _av_start_iter(ch);
 
-  if( !flushall ) {
+  if( !flushall && !qbuffer_iter_at_part_end(&ch->buf, &write_end)) {
     // Move write_end back to the start of the chunk
     // we're working on.
     qbuffer_iter_floor_part(&ch->buf, &write_end);
@@ -2768,8 +2772,10 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   qbuffer_iter_t start;
   qbuffer_iter_t end;
   int64_t gotlen = 0;
+  int64_t toRead = 0;
+  int64_t remaining = len;
   qioerr err;
-  int eof;
+  int eof = 0;
 
   // Include whatever data we got in cached_cur/cached_end
   //_qio_buffered_advance_cached(ch);
@@ -2778,40 +2784,53 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
   if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
 
-  // do the actual read. (require calls advance_cached)
-  err = _qio_channel_require_unlocked(ch, len, 0);
-  eof = 0;
-  if( qio_err_to_int(err) == EEOF ) eof = 1;
-  else if( err ) goto error;
+  while ((remaining > 0) && !eof) {
+    if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
+      toRead = ch->bufIoMax;
+    } else {
+      toRead = remaining;
+    }
 
-  // figure out the end of the data to copy
-  gotlen = ch->av_end - _right_mark_start(ch);
-  start = _right_mark_start_iter(ch);
-  if( len < gotlen ) {
-    gotlen = len;
-    end = start;
-    qbuffer_iter_advance(&ch->buf, &end, len);
-  } else {
-    end = _av_end_iter(ch);
+    // do the actual read. (require calls advance_cached)
+    err = _qio_channel_require_unlocked(ch, toRead, 0);
+    eof = 0;
+    if( qio_err_to_int(err) == EEOF ) eof = 1;
+    else if( err ) goto error;
+
+    // figure out the end of the data to copy
+    gotlen = ch->av_end - _right_mark_start(ch);
+    start = _right_mark_start_iter(ch);
+    if( toRead < gotlen ) {
+      gotlen = toRead;
+      end = start;
+      qbuffer_iter_advance(&ch->buf, &end, gotlen);
+    } else {
+      end = _av_end_iter(ch);
+    }
+
+    // Now copy out the data.
+    err = qbuffer_copyout(&ch->buf, start, end, (char *) ptr + (len-remaining),
+                          gotlen);
+    if( err ) goto error;
+
+    // now advance the start of the available buffer by the amount.
+    _set_right_mark_start(ch, end.offset);
+
+    // move the iterator for the next read
+    qbuffer_iter_advance(&ch->buf, &start, gotlen);
+
+    // did we get to a different part? if so, we can release some
+    // buffers.
+    err = _qio_buffered_behind(ch, false);
+    if( err ) goto error;
+    remaining -= gotlen;
   }
-
-  // Now copy out the data.
-  err = qbuffer_copyout(&ch->buf, start, end, ptr, gotlen);
-  if( err ) goto error;
-
-  // now advance the start of the available buffer by the amount.
-  _set_right_mark_start(ch, end.offset);
-
-  // did we get to a different part? if so, we can release some
-  // buffers.
-  err = _qio_buffered_behind(ch, false);
-  if( err ) goto error;
 
   err = 0;
   if( eof ) err = QIO_EEOF;
 
 error:
-  *amt_read = gotlen;
+  *amt_read = len - remaining;
   return err;
 }
 
@@ -2828,8 +2847,10 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   qbuffer_iter_t start;
   qbuffer_iter_t end;
   int64_t gotlen = 0;
+  int64_t toWrite = 0;
+  int64_t remaining = len;
   qioerr err;
-  int eof;
+  int eof = 0;
 
   // Include whatever data we got in cached_cur/cached_end
   //_qio_buffered_advance_cached(ch);
@@ -2838,34 +2859,44 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
   if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
 
-  // make sure we have buffer space. (require calls advance_cached)
-  err = _qio_channel_require_unlocked(ch, len, 1);
-  eof = 0;
-  if( qio_err_to_int(err) == EEOF ) eof = 1;
-  else if( err ) goto error;
+  while ((remaining > 0) && !eof) {
+    if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
+      toWrite = ch->bufIoMax;
+    } else {
+      toWrite = remaining;
+    }
 
-  // figure out the end of the data to copy
-  start = _right_mark_start_iter(ch);
-  end = start;
-  gotlen = qbuffer_iter_num_bytes_after(&ch->buf, end);
-  if( len < gotlen ) gotlen = len;
-  qbuffer_iter_advance(&ch->buf, &end, gotlen);
+    // make sure we have buffer space. (require calls advance_cached)
+    err = _qio_channel_require_unlocked(ch, toWrite, 1);
+    eof = 0;
+    if( qio_err_to_int(err) == EEOF ) eof = 1;
+    else if( err ) goto error;
 
-  // now copy the data in to the buffer.
-  err = qbuffer_copyin(&ch->buf, start, end, ptr, gotlen);
-  if( err ) goto error;
+    // figure out the end of the data to copy
+    start = _right_mark_start_iter(ch);
+    end = start;
+    gotlen = qbuffer_iter_num_bytes_after(&ch->buf, end);
+    if( toWrite < gotlen ) gotlen = toWrite;
+    qbuffer_iter_advance(&ch->buf, &end, gotlen);
 
-  // now move start forward.
-  _set_right_mark_start(ch, end.offset);
+    // now copy the data in to the buffer.
+    err = qbuffer_copyin(&ch->buf, start, end, (char *) ptr + (len-remaining),
+                         gotlen);
+    if( err ) goto error;
 
-  // did we get to a different part? If so, call write()
-  err = _qio_buffered_behind(ch, false);
-  if( err ) goto error;
+    // now move start forward.
+    _set_right_mark_start(ch, end.offset);
+
+    // did we get to a different part? If so, call write()
+    err = _qio_buffered_behind(ch, false);
+    if( err ) goto error;
+    remaining -= gotlen;
+  }
 
   err = 0;
   if( eof ) err = QIO_EEOF;
 error:
-  *amt_written = gotlen;
+  *amt_written = len - remaining;
   return err;
 }
 

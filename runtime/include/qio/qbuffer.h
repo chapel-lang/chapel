@@ -316,6 +316,10 @@ char qbuffer_iter_same_part(qbuffer_iter_t a, qbuffer_iter_t b) {
   return deque_it_equals(a.iter, b.iter);
 }
 
+/* is the iterator at the end of a part?
+ */
+int qbuffer_iter_at_part_end(qbuffer_t* buf, qbuffer_iter_t* iter);
+
 /* Moves to the beginning of the next part
  */
 void qbuffer_iter_next_part(qbuffer_t* buf, qbuffer_iter_t* iter);
@@ -471,7 +475,7 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
 #define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
 #define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
-#define qio_memalign(boundary, size)  chpl_memalign(boundary, size)
+#define qio_memalign(boundary, size)  chpl_mem_memalign(boundary, size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
 #define qio_free(ptr) chpl_mem_free(ptr, __LINE__, 0)
 #define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 

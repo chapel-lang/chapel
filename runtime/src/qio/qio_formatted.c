@@ -171,11 +171,13 @@ qioerr _peek_until_byte(qio_channel_t* restrict ch, uint8_t term_byte, int64_t* 
 static
 qioerr _peek_until_len(qio_channel_t* restrict ch, ssize_t len, int64_t* restrict amt_read_out)
 {
+
+#define BUFSIZE (16 * 1024)
   qioerr err;
   int64_t mark_offset = 0;
   int64_t end_offset = 0;
   uint64_t num = 0;
-  uint8_t byte = 0;
+  uint8_t buf[BUFSIZE];
   ssize_t count;
 
   mark_offset = qio_channel_offset_unlocked(ch);
@@ -183,8 +185,12 @@ qioerr _peek_until_len(qio_channel_t* restrict ch, ssize_t len, int64_t* restric
   err = qio_channel_mark(false, ch);
   if( err ) return err;
 
-  for( count = 0; count < len; count++ ) {
-    err = qio_channel_read_uint8(false, ch, &byte);
+  for( count = 0; count < len; count += BUFSIZE) {
+    ssize_t amt = BUFSIZE;
+    if (count + amt > len) {
+      amt = len - count;
+    }
+    err = qio_channel_read_amt(false, ch, buf, amt);
     if( err ) break;
   }
 
@@ -350,13 +356,14 @@ qioerr _append_char(char* restrict * restrict buf, size_t* restrict buf_len, siz
 //  + -- nonzero positive -- read exactly this length.
 qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict* restrict out, int64_t* restrict len_out, ssize_t maxlen)
 {
-  qioerr err;
+  qioerr err = 0;
   uint8_t term = 0;
   uint8_t num8 = 0;
   uint16_t num16 = 0;
   uint32_t num32 = 0;
   uint64_t num = 0;
   int64_t peek_amt = 0;
+  int64_t file_len = 0;
   char* restrict ret = NULL;
   int found_term=0;
   ssize_t len=0;
@@ -370,9 +377,15 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
     if( err ) return err;
   }
 
-  err = qio_channel_mark(false, ch);
-  if( err ) goto unlock;
-
+  // don't mark the channel if we are going to read the entire file
+  // as a binary string. There's no need to ever revert the read
+  // and the mark will cause the entire file to be buffered.
+  bool marked = false;
+  if (str_style != QIO_BINARY_STRING_STYLE_TOEOF) {
+      err = qio_channel_mark(false, ch);
+      if( err ) goto unlock;
+      marked = true;
+  }
 
   // read a string length.
   switch (str_style) {
@@ -394,14 +407,30 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
     case QIO_BINARY_STRING_STYLE_LENvB_DATA:
       err = qio_channel_read_uvarint(false, ch, &num);
       break;
-    case QIO_BINARY_STRING_STYLE_TOEOF:
+    case QIO_BINARY_STRING_STYLE_TOEOF: {
       // read until the end of the file.
       // Figure out how many bytes are available.
-      err = _peek_until_len(ch, maxlen, &peek_amt);
-      num = peek_amt;
+
+      int64_t offset = qio_channel_offset_unlocked(ch);
+      err = qio_file_length(ch->file, &file_len);
+      num = file_len - offset;
+      if (num < 0) {
+        num = 0;
+      }
+      if (err) {
+        // if we can't get the file length directly then peek ahead to
+        // compute the length
+        err = _peek_until_len(ch, maxlen, &peek_amt);
+        num = peek_amt;
+      } else if (num > maxlen) {
+        num = maxlen;
+      } else if (num == 0) {
+        err = QIO_EEOF;
+      }
       // Ignore EOF errors as long as we read something.
       if( err && qio_err_to_int(err) == EEOF && num > 0 ) err = 0;
       break;
+    }
     default:
       if( str_style >= 0 ) {
         // just read the suggested length
@@ -455,10 +484,12 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
 
   err = 0;
 rewind:
-  if( err ) {
-    qio_channel_revert_unlocked(ch);
-  } else {
-    qio_channel_commit_unlocked(ch);
+  if(marked) {
+      if( err ) {
+        qio_channel_revert_unlocked(ch);
+      } else {
+        qio_channel_commit_unlocked(ch);
+      }
   }
 unlock:
   _qio_channel_set_error_unlocked(ch, err);
@@ -1214,8 +1245,16 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
     if( err ) return err;
   }
 
-  err = qio_channel_mark(false, ch);
-  if( err ) goto unlock;
+  // Don't mark the channel if we are going to write the entire string.
+  // There's no need to ever revert the write and the mark will cause
+  // the entire file to be buffered.
+
+  bool marked = false;
+  if (str_style != QIO_BINARY_STRING_STYLE_TOEOF) {
+      err = qio_channel_mark(false, ch);
+      if( err ) goto unlock;
+      marked = true;
+  }
 
   // write a string length if necessary.
   switch (str_style) {
@@ -1251,6 +1290,7 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
       break;
     case QIO_BINARY_STRING_STYLE_TOEOF:
       // Just don't worry about the length - write len bytes.
+      err = 0;
       break;
     default:
       if( str_style >= 0 ) {
@@ -1286,17 +1326,18 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
 
   err = 0;
 rewind:
-  if( err ) {
-    qio_channel_revert_unlocked(ch);
-  } else {
-    qio_channel_commit_unlocked(ch);
+  if (marked) {
+    if( err ) {
+      qio_channel_revert_unlocked(ch);
+    } else {
+      qio_channel_commit_unlocked(ch);
+    }
   }
 unlock:
   _qio_channel_set_error_unlocked(ch, err);
   if( threadsafe ) {
     qio_unlock(&ch->lock);
   }
-
   return err;
 }
 
