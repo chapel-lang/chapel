@@ -623,8 +623,13 @@ static void checkForUnsupportedOverload(FnSymbol* fn) {
       // don't allow '=' on these types to be defined
       // outside of the standard/internal modules
       if (fn->defPoint->getModule()->modTag == MOD_USER) {
-        USR_FATAL_CONT(fn->defPoint,
-                       "Can't overload assignments for class types");
+        if (isClassLikeOrManaged(toType)) {
+          USR_FATAL_CONT(fn->defPoint,
+                         "Can't overload assignments for class types");
+        } else {
+          USR_FATAL_CONT(fn->defPoint,
+                         "Can't overload assignments for pointer types");
+        }
       }
     }
   }
