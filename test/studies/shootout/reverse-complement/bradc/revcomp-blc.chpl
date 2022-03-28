@@ -21,14 +21,14 @@ param cmpl = b"                                                             " +
 config var readSize = 16384, // how much to read at a time
            n = 0;            // a dummy variable to match the CLBG framework
 
-var seqToPrint, nextSeqID: atomic int = 0;
+var seqToPrint: atomic int = 0;
 
 proc main() {
   // read in the data using an incrementally growing buffer
   var bufSize = readSize,
       bufDom = {0..<bufSize},
       buf: [bufDom] uint(8),
-      seqStart, totRead = 0,
+      seqStart, totRead, nextSeqID = 0,
       end = -1;  // TODO: Can this be made into a 0...
 
   do {
@@ -42,15 +42,22 @@ proc main() {
     do {
       end += 1; // TODO: If we move this to the bottom of the loop?
       if end != 0 && buf[end] == '>'.toByte() {  // TODO: and drop this !=?
-        const seqID = nextSeqID.read();
         // TODO: This latch is heavy-handed... we really want:
         //   begin with (var seq = buf[seqStart..<end])
         //     revcomp(stdoutBin, seq);
         // or maybe even just:
         //   begin revcomp(stoutBin, seq); ???
         //
-        begin revcomp(seqID, buf, seqStart, end);
-        nextSeqID.waitFor(seqID+1);
+        // Unfortunate: Have to make a double copy of seq (to avoid
+        // sharing a domain with buf and possibly getting resized
+        // within our begin when it does.  TPVs would help with
+        // this.
+        var seq = buf[seqStart..<end];
+        begin with (in nextSeqID, in seq, in seqStart, in end)
+          revcomp(nextSeqID, seq, seqStart, end);
+//        use Time;
+//        sleep(2);
+        nextSeqID += 1;
         seqStart = end;
       }
     } while end < start+readSize-1;
@@ -71,16 +78,13 @@ proc main() {
       }
     }
   } while more;
-  revcomp(nextSeqID.read(), buf, seqStart, end);
+  revcomp(nextSeqID, buf[seqStart..<end], seqStart, end);
 }
 
-proc revcomp(seqID, buf, in lo, in hi) {
+proc revcomp(seqID, seq, in lo, in hi) {
   param eol  = '\n'.toByte();      // end-of-line, as an integer
 
   if lo >= hi then return;
-
-  var seq = buf[lo..<hi];
-  nextSeqID.write(seqID+1);
 
   // skip past header line
   while seq[lo] != eol do
