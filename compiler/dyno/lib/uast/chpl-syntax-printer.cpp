@@ -476,7 +476,13 @@ struct ChplSyntaxVisitor {
     printChapelSyntax(ss_, callee);
     if (isCalleeReservedWord(callee)) {
       ss_ << " ";
-      printChapelSyntax(ss_, node->actual(0));
+      if (auto op = node->actual(0)->toOpCall()) {
+        assert(op->isUnaryOp() && op->op() == USTR("?"));
+        printChapelSyntax(ss_, op->actual(0));
+          ss_ << op->op();
+      } else {
+        printChapelSyntax(ss_, node->actual(0));
+      }
     } else {
       if (node->callUsedSquareBrackets()) {
         interpose(node->actuals(), ", ", "[", "]");
