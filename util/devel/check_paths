@@ -22,6 +22,8 @@
 # https://github.com/chapel-lang/chapel/pull/19513
 # Probably this will mean pulling the filesystem traversal into this
 # script instead of having -h suggest a find command.
+# At that time, also skip doc/html, which is all generated and full of
+# references to e.g. modules/ dirs that aren't the ones in $CHPL_HOME.
 
 
 """Try to identify references to non-existent files, e.g. doc/foo
@@ -64,6 +66,12 @@ def check_path(p):
 
     return os.path.isfile(p) or os.path.isdir(p)
 
+# As of python 3.9, use string.removeprefix()
+def remove_prefix(s, prefix):
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    return s
+
 @memoize
 def check_token(t):
     """If t "looks like" a path but doesn't exist, return False.
@@ -84,14 +92,11 @@ def check_token(t):
         return True
 
     # Strip off these two prefixes to get a path relative to $CHPL_HOME
-    if t.startswith("CHPL_HOME/"):
-        t = t[10:]
-    elif t.startswith("//github.com/chapel-lang/chapel/blob/main/"):
-        t = t[42:]
+    t = remove_prefix(t, "CHPL_HOME/")
+    t = remove_prefix(t, "//github.com/chapel-lang/chapel/blob/main/")
 
     # People like to say: "For details, see the README...".
-    while t.endswith("."):
-        t = t[:-1]
+    t = t.rstrip(".")
 
     # Don't worry if it was "CHPL_HOME/..."
     if t == "":
@@ -160,6 +165,9 @@ def check_line(filename, lineno, l):
 
 def check_file(fn):
     """Check every line in file"""
+    if fn.endswith((".docx", ".pdf", ".png", ".pptx", ".pyc")):
+        return
+
     try:
         with open(fn, "r") as f:
             for lineno, line in enumerate(f, 1):
