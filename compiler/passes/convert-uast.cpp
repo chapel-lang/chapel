@@ -2546,6 +2546,11 @@ struct Converter {
 
     return ret;
   }
+
+  Expr* visit(const uast::EmptyStmt* node) {
+    return buildChapelStmt(new BlockStmt());
+  }
+
 };
 
 /// Generic conversion calling the above functions ///

@@ -49,6 +49,7 @@ target_sources(libdyno-obj
                Domain.cpp
                Dot.cpp
                DoWhile.cpp
+               EmptyStmt.cpp
                Enum.cpp
                EnumElement.cpp
                ErroneousExpression.cpp

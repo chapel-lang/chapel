@@ -42,6 +42,7 @@
 #include "chpl/uast/Domain.h"
 #include "chpl/uast/Dot.h"
 #include "chpl/uast/DoWhile.h"
+#include "chpl/uast/EmptyStmt.h"
 #include "chpl/uast/Enum.h"
 #include "chpl/uast/EnumElement.h"
 #include "chpl/uast/ErroneousExpression.h"

@@ -7644,7 +7644,7 @@ yyreduce:
   case 162: /* class_level_stmt: TSEMI  */
 #line 1342 "chpl.ypp"
     {
-      (yyval.commentsAndStmt) = STMT((yyloc), nullptr);
+      (yyval.commentsAndStmt) = STMT((yyloc), context->buildEmptyStmt((yyloc)));
     }
 #line 7650 "bison-chpl-lib.cpp"
     break;

@@ -2030,6 +2030,12 @@ ParserContext::buildTryExpr(YYLTYPE location, AstNode* expr,
   return node.release();
 }
 
+AstNode*
+ParserContext::buildEmptyStmt(YYLTYPE location) {
+  auto node = EmptyStmt::build(builder, convertLocation(location));
+  return node.release();
+}
+
 CommentsAndStmt
 ParserContext::buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
                                  ParserExprList* handlers,

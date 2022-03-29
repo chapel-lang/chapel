@@ -52,6 +52,7 @@ DYNO_UAST_SRCS =                                 \
   Domain.cpp \
   Dot.cpp \
   DoWhile.cpp \
+  EmptyStmt.cpp \
   Enum.cpp \
   EnumElement.cpp \
   ErroneousExpression.cpp \

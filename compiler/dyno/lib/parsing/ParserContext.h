@@ -565,6 +565,8 @@ struct ParserContext {
   AstNode* buildTryExpr(YYLTYPE location, AstNode* expr,
                         bool isTryBang);
 
+  AstNode* buildEmptyStmt(YYLTYPE location);
+
   CommentsAndStmt buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
                                     ParserExprList* handlers,
                                     bool isTryBang);
