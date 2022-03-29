@@ -15,13 +15,13 @@ proc main() {
 
 
 proc kernel3for(A) {
-  for (i,j) in vectorizeOnly(1..n, 2..) {
+  foreach (i,j) in zip(1..n, 2..) {
     A[i] = j:real;
   }
 }
 
 proc kernel5for(A, B, C) {
-  for (a,b,c) in vectorizeOnly(A, B, C) {
+  foreach (a,b,c) in zip(A, B, C) {
     a = b + c;
   }
 }

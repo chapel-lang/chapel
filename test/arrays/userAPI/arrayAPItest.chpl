@@ -67,7 +67,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln("X is:\n", X);
   writeln();
   // Test locality interface
-  writeln("target locales: ", X.targetLocales);
+  writeln("target locales: ", X.targetLocales());
   if (X.hasSingleLocalSubdomain()) then
     writeln("local subdomain: ", X.localSubdomain());
   writeln("local subdomains:");
@@ -192,7 +192,7 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
 
   // Test locality interface
-  writeln("target locales: ", X.targetLocales);
+  writeln("target locales: ", X.targetLocales());
   if (X.hasSingleLocalSubdomain()) then
     writeln("local subdomain: ", X.localSubdomain());
   writeln("local subdomains:");

@@ -795,6 +795,18 @@ void handleError(astlocT astloc, const char *fmt, ...) {
   va_end(args);
 }
 
+void handleError(chpl::Location loc, const char *fmt, ...) {
+  astlocT astloc(loc.firstLine(), loc.path().c_str());
+
+  va_list args;
+
+  va_start(args, fmt);
+
+  vhandleError(NULL, astloc, fmt, args);
+
+  va_end(args);
+}
+
 
 static void vhandleError(const BaseAST* ast,
                          astlocT        astloc,

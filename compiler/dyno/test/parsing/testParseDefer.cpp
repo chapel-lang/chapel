@@ -19,10 +19,10 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/Context.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Defer.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
@@ -60,7 +60,7 @@ static void test0(Parser* parser) {
 
   // Make sure the statements iterator works as expected.
   {
-    ASTTag stmtList[] = {
+    AstTag stmtList[] = {
       asttags::Comment,
       asttags::FnCall
     };
@@ -98,7 +98,7 @@ static void test1(Parser* parser) {
 
   // Make sure the statements iterator works as expected.
   {
-    ASTTag stmtList[] = {
+    AstTag stmtList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment

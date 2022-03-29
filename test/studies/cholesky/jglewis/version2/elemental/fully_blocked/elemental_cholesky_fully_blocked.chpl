@@ -91,7 +91,7 @@ module elemental_cholesky_fully_blocked {
     // processor grid from A's distribution
     // --------------------------------------------
 
-    const A_locale_grid = A.domain.dist.targetLocales;
+    const A_locale_grid = A.domain.dist.targetLocales();
     const A_grid_domain = A_locale_grid.domain,
           n_processors  = A_grid_domain.size;
 

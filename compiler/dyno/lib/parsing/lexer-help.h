@@ -116,7 +116,7 @@ static int processStringLiteral(yyscan_t scanner,
   if (startChar && startChar[0] == '"')
     quotes = StringLiteral::DOUBLE;
 
-  Expression* lit = nullptr;
+  AstNode* lit = nullptr;
   if (erroneous) {
     lit = ErroneousExpression::build(context->builder,
                                      context->convertLocation(*loc)).release();
@@ -162,7 +162,7 @@ static int processTripleStringLiteral(yyscan_t scanner,
   if (startChar && startChar[0] == '"')
     quotes = StringLiteral::TRIPLE_DOUBLE;
 
-  Expression* lit = nullptr;
+  AstNode* lit = nullptr;
 
   if (erroneous) {
     lit = ErroneousExpression::build(context->builder,
@@ -332,7 +332,10 @@ static std::string eatStringLiteral(yyscan_t scanner,
         s += "\\";
         break; // EOF reached, so stop
       } else {
-        noteErrInString(scanner, nLines, nCols, "unexpected string escape");
+        std::string msg = "Unexpected string escape: '\\";
+        msg+=c;
+        msg+="'";
+        noteErrInString(scanner, nLines, nCols, msg.c_str());
         isErroneousOut = true;
       }
     } else {

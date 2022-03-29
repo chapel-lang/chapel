@@ -43,15 +43,21 @@ export proc add_nums(dst_ptr: c_ptr(real(64))){
   dst_ptr[0] = dst_ptr[0]+5;
 }
 
-
 proc main() {
 
 var output: real(64);
-var deviceBuffer = getDeviceBufferPointer();
 
-// arguments are: fatbin path, function name, grid size, block size, arguments
-__primitive("gpu kernel launch flat", c"add_nums", 1, 1, deviceBuffer);
-output = getDataFromDevice(deviceBuffer);
+
+on here.getChild(1) {
+
+  var dummy = [1,2,3]; // to ensure that the CUDA context is attached to the
+                       // thread
+
+  var deviceBuffer = getDeviceBufferPointer();
+  // arguments are: fatbin path, function name, grid size, block size, arguments
+  __primitive("gpu kernel launch flat", c"add_nums", 1, 1, deviceBuffer);
+  output = getDataFromDevice(deviceBuffer);
+}
 
 writeln(output);
 }

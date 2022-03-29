@@ -49,7 +49,7 @@ Parallel Language Features
    Reduce Intents <reduceIntents>
    Runtime Support for Atomics <atomics>
    The 'foreach' Loop <foreach>
-   Prototyped Support for GPU-Targeted code <gpu>
+   GPU Programming <gpu>
 
 Interoperability
 ----------------

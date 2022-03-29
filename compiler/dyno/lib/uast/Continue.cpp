@@ -27,7 +27,7 @@ namespace uast {
 
 owned<Continue> Continue::build(Builder* builder, Location loc,
                                 owned<Identifier> target) {
-  ASTList lst;
+  AstList lst;
   int8_t targetChildNum = -1;
 
   if (target.get() != nullptr) {

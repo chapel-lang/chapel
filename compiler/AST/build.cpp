@@ -2624,8 +2624,10 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
       if (cname != nullptr) {
         de->sym->cname = astr(cname);
       }
+    } else if (BlockStmt* blk2 = toBlockStmt(node)) {
+      convertTypesToExtern(blk2, cname);
     } else {
-      INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
+      INT_FATAL(blk, "Got unexpected expr type in type_alias_decl_stmt");
     }
   }
   return blk;

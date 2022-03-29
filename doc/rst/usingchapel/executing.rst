@@ -405,13 +405,13 @@ error. For example, when compiling and running the following program:
 
    .. code-block:: sh
 
-        test/outofbounds.chpl:2: error: halt reached - array index out of bounds
+        outofbounds.chpl:2: error: halt reached - array index out of bounds
         note: index was 5 but array bounds are 1..3
         Stacktrace
 
         halt() at $CHPL_HOME/modules/standard/Errors.chpl:741
         checkAccess() at $CHPL_HOME/modules/internal/ChapelArray.chpl:2675
-        chpl__init_outofbounds() at test/outofbounds.chpl:1
+        chpl__init_outofbounds() at outofbounds.chpl:1
 
 The stacktrace will be printed. This behavior can also be disabled at runtime
 with the environment variable

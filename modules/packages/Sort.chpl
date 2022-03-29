@@ -1927,7 +1927,7 @@ module ShallowCopy {
                                        /*src*/ A, {src..#nElts});
       if !ok {
         halt("bulk transfer failed in sorting");
-        for i in vectorizeOnly(0..#nElts) {
+        foreach i in 0..#nElts {
           __primitive("=", A[dst+i], A[src+i]);
         }
       }
@@ -1954,7 +1954,7 @@ module ShallowCopy {
                                        /*src*/ SrcA, {src..#nElts});
       if !ok {
         halt("bulk transfer failed in sorting");
-        for i in vectorizeOnly(0..#nElts) {
+        foreach i in 0..#nElts {
           __primitive("=", DstA[dst+i], SrcA[src+i]);
         }
       }
@@ -2161,7 +2161,7 @@ module TwoArrayPartitioning {
     }
     // yields tuples of (loc, tid) for the locales involved with this bucket
     iter localeAndIds(A) {
-      const ref tgtLocs = A.targetLocales;
+      const ref tgtLocs = A.targetLocales();
       foreach tid in firstLocaleId..lastLocaleId {
         const loc = tgtLocs[tid];
         yield (loc, tid);
@@ -2213,7 +2213,7 @@ module TwoArrayPartitioning {
     iter localesAndTasks(A) {
       foreach t in tasks {
         const locId = t.firstLocaleId;
-        const loc = A.targetLocales[locId];
+        const loc = A.targetLocales()[locId];
         yield (loc, locId, t);
       }
     }
@@ -2358,7 +2358,7 @@ module TwoArrayPartitioning {
         counts[bin] += 1;
       }
       // Now store the counts into the global counts array
-      for bin in vectorizeOnly(0..#nBuckets) {
+      foreach bin in 0..#nBuckets {
         state.globalCounts[bin*nTasks + tid] = counts[bin];
       }
     }
@@ -3021,7 +3021,7 @@ module TwoArrayPartitioning {
               small = true;
             }
             theLocaleId = theLocale.id;
-            assert(A.targetLocales[theLocaleId] == theLocale);
+            assert(A.targetLocales()[theLocaleId] == theLocale);
 
             if debugDist then
               writeln(bktLocId,
@@ -3043,12 +3043,12 @@ module TwoArrayPartitioning {
               // Create a distributed sorting task
               var firstLocId = firstLoc.id;
               var lastLocId = lastLoc.id;
-              assert(A.targetLocales[firstLocId] == firstLoc);
-              assert(A.targetLocales[lastLocId] == lastLoc);
+              assert(A.targetLocales()[firstLocId] == firstLoc);
+              assert(A.targetLocales()[lastLocId] == lastLoc);
               if debugDist {
                 // the above assumes something block-like.
                 // check that the bin only involves firstLoc..lastLoc
-                for (loc,tid) in zip(A.targetLocales,0..) {
+                for (loc,tid) in zip(A.targetLocales(),0..) {
                   if !(firstLocId..lastLocId).contains(tid) {
                     assert(A.localSubdomain(loc)[binStart..binEnd].size == 0);
                   }
@@ -3100,7 +3100,7 @@ module TwoArrayPartitioning {
 
     // Always use state 1 for small subproblems...
     ref state = state1;
-    coforall (loc,tid) in zip(A.targetLocales,0:idxType..) with (ref state) do
+    coforall (loc,tid) in zip(A.targetLocales(),0:idxType..) with (ref state) do
     on loc {
       // Get the tasks to sort here
 
@@ -3168,13 +3168,13 @@ module TwoArrayRadixSort {
     } else {
       var state1 = new TwoArrayDistributedBucketizerSharedState(
         bucketizerType=RadixBucketizer,
-        numLocales=Data.targetLocales.size,
+        numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
         distributedBaseCaseSize=distributedBaseCaseSize,
         endbit=endbit);
       var state2 = new TwoArrayDistributedBucketizerSharedState(
         bucketizerType=RadixBucketizer,
-        numLocales=Data.targetLocales.size,
+        numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
         distributedBaseCaseSize=distributedBaseCaseSize,
         endbit=endbit);
@@ -3223,7 +3223,7 @@ module TwoArraySampleSort {
     } else {
       var state = new TwoArrayDistributedBucketizerSharedState(
         bucketizerType=SampleBucketizer(Data.eltType),
-        numLocales=Data.targetLocales.size,
+        numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
         distributedBaseCaseSize=distributedBaseCaseSize,
         endbit=endbit);

@@ -261,6 +261,12 @@ extern char compileVersion[64];
 // the compiler but breaks the language!
 extern bool fMinimalModules;
 
+// This flag sets the make -j value
+// <=0 == don't use -j
+//        (in the future, we may want to make < 0 mean "#cores")
+//  >0 == make -j <val>
+extern int fParMake;
+
 // Set to true if we want to enable incremental compilation.
 extern bool fIncrementalCompilation;
 

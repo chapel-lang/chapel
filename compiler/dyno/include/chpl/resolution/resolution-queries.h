@@ -203,7 +203,7 @@ CallResolutionResult resolveCall(Context* context,
   as the point-of-instantiation scopes that were used when resolving them.
  */
 CallResolutionResult resolveGeneratedCall(Context* context,
-                                          const uast::ASTNode* astForErr,
+                                          const uast::AstNode* astForErr,
                                           const CallInfo& ci,
                                           const Scope* inScope,
                                           const PoiScope* inPoiScope);

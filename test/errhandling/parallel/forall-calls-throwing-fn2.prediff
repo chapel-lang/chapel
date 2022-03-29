@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Suppress the output of -memleaks testing.
+
+grep -v -E '^$|^===================|^Allocated Memory|0x[0-9a-f]*' < $2 > $2.tmp
+mv $2.tmp $2

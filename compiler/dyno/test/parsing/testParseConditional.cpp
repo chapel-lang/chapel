@@ -19,11 +19,11 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/Context.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Conditional.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Forall.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
@@ -82,7 +82,7 @@ static void test0(Parser* parser) {
 
   // Make sure the then iterator works as expected.
   {
-    ASTTag thenStmtList[] = {
+    AstTag thenStmtList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment
@@ -96,7 +96,7 @@ static void test0(Parser* parser) {
 
   // Make sure the else iterator works as expected.
   {
-    ASTTag elseStmtList[] = {
+    AstTag elseStmtList[] = {
       asttags::Comment,
       asttags::FnCall
     };
@@ -151,7 +151,7 @@ static void test1(Parser* parser) {
 
   // Make sure the then iterator works as expected.
   {
-    ASTTag thenStmtList[] = {
+    AstTag thenStmtList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment,
@@ -165,7 +165,7 @@ static void test1(Parser* parser) {
 
   // Make sure the else iterator works as expected.
   {
-    ASTTag elseStmtList[] = {
+    AstTag elseStmtList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment,
@@ -242,7 +242,7 @@ static void test3(Parser* parser) {
 
   // Make sure the then iterator works as expected.
   {
-    ASTTag thenStmtList[] = {
+    AstTag thenStmtList[] = {
       asttags::Comment,
       asttags::FnCall
     };

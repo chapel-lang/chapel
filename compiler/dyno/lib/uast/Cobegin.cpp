@@ -28,8 +28,8 @@ namespace uast {
 owned<Cobegin> Cobegin::build(Builder* builder,
                               Location loc,
                               owned<WithClause> withClause,
-                              ASTList taskBodies) {
-  ASTList lst;
+                              AstList taskBodies) {
+  AstList lst;
   int8_t withClauseChildNum = -1;
 
   if (withClause.get() != nullptr) {

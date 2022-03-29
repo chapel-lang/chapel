@@ -201,6 +201,7 @@ bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
+int fParMake = 0;
 bool fIncrementalCompilation = false;
 bool fNoOptimizeForallUnordered = false;
 
@@ -938,6 +939,11 @@ static void setPythonAndLibmode(const ArgumentDescription* desc,
   fLibraryPython = true;
 }
 
+static void turnIncrementalOn(const ArgumentDescription* desc,
+                              const char* unused) {
+  fIncrementalCompilation = true;
+}
+
 /*
 Flag types:
 
@@ -1191,6 +1197,7 @@ static ArgumentDescription arg_desc[] = {
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
+ {"parallel-make", 'j', NULL, "Specify degree of parallelism for C back-end", "I", &fParMake, "CHPL_PAR_MAKE", &turnIncrementalOn},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"print-additional-errors", ' ', NULL, "Print additional errors", "F", &fPrintAdditionalErrors, NULL,NULL},
  {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
@@ -1556,15 +1563,22 @@ static void setGPUFlags() {
 
 static void checkLLVMCodeGen() {
 #ifdef HAVE_LLVM
-  // LLVM does not currently work on 32-bit x86
-  bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
-  if (fLlvmCodegen && unsupportedLlvmConfiguration)
-    USR_FATAL("CHPL_TARGET_COMPILER=llvm not yet supported for this architecture");
+  if (fLlvmCodegen) {
+    // LLVM does not currently work on 32-bit x86
+    bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
+    if (unsupportedLlvmConfiguration) {
+      USR_FATAL("CHPL_TARGET_COMPILER=llvm not yet supported for this architecture");
+    }
+
+    if (fIncrementalCompilation)
+      USR_FATAL("Incremental compilation is not yet supported with LLVM");
+  }
 
   if (0 == strcmp(CHPL_LLVM, "none")) {
     if (fLlvmCodegen)
       USR_FATAL("CHPL_TARGET_COMPILER=llvm not supported when CHPL_LLVM=none");
   }
+
 #else
   // compiler wasn't built with LLVM, so if LLVM is enabled, error
   if (fLlvmCodegen)
@@ -1586,9 +1600,9 @@ static void checkIncrementalAndOptimized() {
   std::size_t optimizationsEnabled = ccflags.find("-O");
   if(fIncrementalCompilation && ( optimizeCCode ||
       optimizationsEnabled!=std::string::npos ))
-    USR_WARN("Compiling with --incremental along with optimizations enabled"
-              " may lead to a slower execution time compared to --fast or"
-              " using -O optimizations directly.");
+    USR_WARN("Compiling with '--incremental' or '--parallel-make' with "
+             "optimizations enabled may lead to a slower execution time "
+             "due to the use of separate compilation in the back-end.");
 }
 
 static void checkUnsupportedConfigs(void) {
@@ -1634,8 +1648,8 @@ static void checkRuntimeBuilt(void) {
                 "configuration.");
     } else {
       USR_FATAL_CONT("The runtime has not been built for this configuration. "
-                     "Check $CHPL_HOME/util/printchplenv and try rebuilding "
-                     "with $CHPL_MAKE from $CHPL_HOME.");
+                     "Run $CHPL_HOME/util/chplenv/printchplbuilds.py for information "
+                     "on available runtimes.");
     }
     if (developer) {
       USR_PRINT("Expected runtime library in %s", runtime_dir.c_str());

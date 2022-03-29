@@ -3,7 +3,7 @@ config const n = 11;
 
 // CHECK: void @loop1
 proc loop1 (A, B) {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     // CHECK: load i32,
     // CHECK-SAME: !llvm.access.group ![[GROUP:[0-9]+]]
     // CHECK: store i32 %

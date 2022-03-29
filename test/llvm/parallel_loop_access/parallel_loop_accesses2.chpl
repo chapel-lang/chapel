@@ -4,9 +4,9 @@ config const n = 11;
 // CHECK: void @nestedLoops
 proc nestedLoops (A, B) {
   for i in 0..n {
-    for j in vectorizeOnly(0..n) {
+    foreach j in 0..n {
       for k in 0..n {
-        for z in vectorizeOnly(0..n) {
+        foreach z in 0..n {
           // CHECK: load i32,
           // CHECK-SAME: !llvm.access.group ![[GROUPZ:[0-9]+]]
           // CHECK: mul nsw i32 %{{[^,]+}}, 11111

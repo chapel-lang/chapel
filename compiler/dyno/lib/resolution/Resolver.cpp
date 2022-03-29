@@ -90,8 +90,8 @@ struct GatherFieldsOrFormals {
   void exit(const MultiDecl* d) { }
 
   // don't go in to anything else
-  bool enter(const ASTNode* ast) { return false; }
-  void exit(const ASTNode* ast) { }
+  bool enter(const AstNode* ast) { return false; }
+  void exit(const AstNode* ast) { }
 };
 
 Resolver
@@ -232,7 +232,7 @@ bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
 }
 
 // helper for resolveTypeQueriesFromFormalType
-void Resolver::resolveTypeQueries(const Expression* formalTypeExpr,
+void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                                   const Type* actualType) {
 
   // Give up if the type is nullptr or UnknownType or AnyType
@@ -306,8 +306,8 @@ void Resolver::resolveTypeQueriesFromFormalType(const Formal* formal,
   }
 }
 
-bool Resolver::checkForKindError(const ASTNode* typeForErr,
-                                 const ASTNode* initForErr,
+bool Resolver::checkForKindError(const AstNode* typeForErr,
+                                 const AstNode* initForErr,
                                  QualifiedType::Kind declKind,
                                  QualifiedType declaredType,
                                  QualifiedType initExprType) {
@@ -342,9 +342,9 @@ bool Resolver::checkForKindError(const ASTNode* typeForErr,
 }
 
 
-QualifiedType Resolver::getTypeForDecl(const ASTNode* declForErr,
-                                       const ASTNode* typeForErr,
-                                       const ASTNode* initForErr,
+QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
+                                       const AstNode* typeForErr,
+                                       const AstNode* initForErr,
                                        QualifiedType::Kind declKind,
                                        QualifiedType declaredType,
                                        QualifiedType initExprType) {
@@ -583,7 +583,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
 }
 
 void
-Resolver::issueErrorForFailedCallResolution(const uast::ASTNode* astForErr,
+Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                             const CallInfo& ci,
                                             const CallResolutionResult& c) {
   if (c.mostSpecific().isEmpty()) {
@@ -796,7 +796,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   return typeForModuleLevelSymbol(context, id);
 }
 
-void Resolver::enterScope(const ASTNode* ast) {
+void Resolver::enterScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
     scopeStack.push_back(scopeForId(context, ast->id()));
   }
@@ -804,7 +804,7 @@ void Resolver::enterScope(const ASTNode* ast) {
     declStack.push_back(d);
   }
 }
-void Resolver::exitScope(const ASTNode* ast) {
+void Resolver::exitScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
     assert(!scopeStack.empty());
     scopeStack.pop_back();
@@ -977,9 +977,9 @@ void Resolver::exit(const NamedDecl* decl) {
   exitScope(decl);
 }
 
-static void getVarLikeOrTupleTypeInit(const ASTNode* ast,
-                                      const ASTNode*& typeExpr,
-                                      const ASTNode*& initExpr) {
+static void getVarLikeOrTupleTypeInit(const AstNode* ast,
+                                      const AstNode*& typeExpr,
+                                      const AstNode*& initExpr) {
   typeExpr = nullptr;
   initExpr = nullptr;
   if (auto v = ast->toVarLikeDecl()) {
@@ -1007,8 +1007,8 @@ bool Resolver::enter(const MultiDecl* decl) {
   for (auto d : decl->decls()) {
     enterScope(d);
 
-    const ASTNode* typeExpr = nullptr;
-    const ASTNode* initExpr = nullptr;
+    const AstNode* typeExpr = nullptr;
+    const AstNode* initExpr = nullptr;
     getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
 
     if (typeExpr != nullptr) {
@@ -1033,8 +1033,8 @@ void Resolver::exit(const MultiDecl* decl) {
     --it;
 
     auto d = it->toDecl();
-    const ASTNode* typeExpr = nullptr;
-    const ASTNode* initExpr = nullptr;
+    const AstNode* typeExpr = nullptr;
+    const AstNode* initExpr = nullptr;
     getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
 
     // if it has neither init nor type, use the type from the
@@ -1239,13 +1239,13 @@ void Resolver::exit(const Dot* dot) {
   // TODO: resolve field accessors / parenless methods
 }
 
-bool Resolver::enter(const ASTNode* ast) {
+bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);
 
   bool skipChildren = signatureOnly && ast == fnBody;
   return !skipChildren;
 }
-void Resolver::exit(const ASTNode* ast) {
+void Resolver::exit(const AstNode* ast) {
   exitScope(ast);
 }
 

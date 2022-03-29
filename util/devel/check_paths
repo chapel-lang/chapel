@@ -18,6 +18,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO: skip chips when not specifically invoked on one.  See
+# https://github.com/chapel-lang/chapel/pull/19513
+# Probably this will mean pulling the filesystem traversal into this
+# script instead of having -h suggest a find command.
+# At that time, also skip doc/html, which is all generated and full of
+# references to e.g. modules/ dirs that aren't the ones in $CHPL_HOME.
+
 
 """Try to identify references to non-existent files, e.g. doc/foo
 instead of doc/rst/foo.  This script recognizes potential file
@@ -39,9 +46,9 @@ def check_path(p):
     """returns True if p exists, False if it doesn't"""
 
     # These are common written-out alternatives, not paths
-    if p == "compiler/runtime":
-        return True
-    if p == "compiler/module":
+    if (p == "compiler/runtime" or p == "compiler/module" or
+        p == "runtime/library" or p == "runtime/lib" or
+        p == "modules/files" or p == "test/directory" ):
         return True
 
     # These show up in generated html files relative to a "modules"
@@ -58,6 +65,12 @@ def check_path(p):
         return True
 
     return os.path.isfile(p) or os.path.isdir(p)
+
+# As of python 3.9, use string.removeprefix()
+def remove_prefix(s, prefix):
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    return s
 
 @memoize
 def check_token(t):
@@ -79,14 +92,11 @@ def check_token(t):
         return True
 
     # Strip off these two prefixes to get a path relative to $CHPL_HOME
-    if t.startswith("CHPL_HOME/"):
-        t = t[10:]
-    elif t.startswith("//github.com/chapel-lang/chapel/blob/main/"):
-        t = t[44:]
+    t = remove_prefix(t, "CHPL_HOME/")
+    t = remove_prefix(t, "//github.com/chapel-lang/chapel/blob/main/")
 
     # People like to say: "For details, see the README...".
-    while t.endswith("."):
-        t = t[:-1]
+    t = t.rstrip(".")
 
     # Don't worry if it was "CHPL_HOME/..."
     if t == "":
@@ -109,14 +119,22 @@ def check_token(t):
 
 def special_exception(filename, token):
     """Exception is a synonym of hack"""
-    if filename == "doc/rst/developer/adding-a-tasking-model.txt":
+    if filename == "doc/rst/developer/implementation/adding-a-tasking-model.rst":
         # Allow this file's wonderful paths
         if "wonderful" in token:
             return True
-    elif filename == "doc/rst/developer/adding-a-comm-layer.txt":
+    elif filename == "doc/rst/developer/implementation/adding-a-comm-layer.rst":
         # And this one's speedy paths
         if "speedy" in token:
             return True
+    elif filename == "doc/rst/developer/bestPractices/SpellChecking.rst":
+        # And this one's examples of files being deleted
+        if "obsolete" in token or "archaic" in token:
+            return True
+    elif filename == "doc/rst/developer/bestPractices/RuntimeLibrary.rst":
+        if "MORE-DIRS" in token:
+            return True
+
     return False
 
 def check_line(filename, lineno, l):
@@ -124,7 +142,7 @@ def check_line(filename, lineno, l):
 
     # Replace punctuation with spaces for the l.split() call below
     splitters = [ ",", ":", "\"", "\'", "`", "(", ")", "[", "]", "{", "}",
-                  "#", ";", "$" ]
+                  "#", ";", "$", "<", ">", "**" ]
     for s in splitters:
         l = l.replace(s, " ")
 
@@ -147,6 +165,9 @@ def check_line(filename, lineno, l):
 
 def check_file(fn):
     """Check every line in file"""
+    if fn.endswith((".docx", ".pdf", ".png", ".pptx", ".pyc")):
+        return
+
     try:
         with open(fn, "r") as f:
             for lineno, line in enumerate(f, 1):

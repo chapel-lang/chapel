@@ -5,7 +5,7 @@
 
 // CHECK: @loop_chpl
 proc loop (A, B, n) {
-  for i in vectorizeOnly(1..n) {
+  foreach i in 1..n {
     // CHECK-NOT: <4 x i32>
     A[i] = 3*B[i];
   }

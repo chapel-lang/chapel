@@ -45,7 +45,7 @@ namespace uast {
  */
 class Coforall final : public IndexableLoop {
  private:
-  Coforall(ASTList children, int8_t indexChildNum,
+  Coforall(AstList children, int8_t indexChildNum,
            int8_t iterandChildNum,
            int8_t withClauseChildNum,
            BlockStyle blockStyle,
@@ -57,10 +57,9 @@ class Coforall final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     /*isExpressionLevel*/ false) {
-    assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
   }
 
@@ -76,7 +75,7 @@ class Coforall final : public IndexableLoop {
   */
   static owned<Coforall> build(Builder* builder, Location loc,
                                owned<Decl> index,
-                               owned<Expression> iterand,
+                               owned<AstNode> iterand,
                                owned<WithClause> withClause,
                                BlockStyle blockStyle,
                                owned<Block> body);

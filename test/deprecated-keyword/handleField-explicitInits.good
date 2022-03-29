@@ -1,0 +1,6 @@
+handleField-explicitInits.chpl:28: In function 'main':
+handleField-explicitInits.chpl:29: warning: 'new Foo(oldName=val)' is deprecated, please use 'new Foo(newName=val)' or 'new Foo(val)' instead
+(newName = 30)
+(newName = 30)
+(newName = 30)
+(newName = 0)

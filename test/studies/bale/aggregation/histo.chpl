@@ -29,7 +29,6 @@ proc stopTimer(name) {
 proc main() {
   const D = if useBlockArr then newBlockDom(0..#tableSize)
                            else newCyclicDom(0..#tableSize);
-  var A: [D] atomic int;
   var AggA: [D] AggregatedAtomic(int);
 
   const D2 = newBlockDom(0..#numUpdates);
@@ -44,6 +43,5 @@ proc main() {
   }
   stopTimer("AGP");
 
-  assert(numUpdates == +reduce A.read());
   assert(numUpdates == +reduce AggA.read());
 }

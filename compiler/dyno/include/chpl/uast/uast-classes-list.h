@@ -44,10 +44,6 @@
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
 
-// TODO: since everything inherits from Expression
-// should we just remove it? Or rename ASTNode to Expression?
-AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
-
   AST_NODE(As)                         //
   AST_NODE(Array)                      //
   AST_LEAF(Attributes)                 //
@@ -169,8 +165,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_END_SUBCLASSES(NamedDecl)
 
   AST_END_SUBCLASSES(Decl)
-
-AST_END_SUBCLASSES(Expression)
 
 
 /// \endcond

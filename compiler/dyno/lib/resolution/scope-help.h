@@ -24,12 +24,12 @@
 
 namespace chpl {
 namespace uast {
-  class ASTNode;
+  class AstNode;
 }
 namespace resolution {
 
 
-void gatherDeclsWithin(const uast::ASTNode* ast,
+void gatherDeclsWithin(const uast::AstNode* ast,
                        DeclMap& declared,
                        bool& containsUseImport,
                        bool& containsFunctionDecls);

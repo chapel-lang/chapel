@@ -23,9 +23,9 @@ ALL_SRCS += dyno/lib/uast/*.cpp
 DYNO_UAST_SRCS =                                 \
   AggregateDecl.cpp \
   Array.cpp \
-  ASTList.cpp \
-  ASTNode.cpp \
-  ASTTag.cpp \
+  AstList.cpp \
+  AstNode.cpp \
+  AstTag.cpp \
   As.cpp \
   Attributes.cpp \
   Begin.cpp \
@@ -55,7 +55,6 @@ DYNO_UAST_SRCS =                                 \
   Enum.cpp \
   EnumElement.cpp \
   ErroneousExpression.cpp \
-  Expression.cpp \
   ExternBlock.cpp \
   FnCall.cpp \
   For.cpp \

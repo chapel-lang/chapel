@@ -62,7 +62,7 @@ class Variable final : public VarLikeDecl {
   };
 
  private:
-  Variable(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Variable(AstList children, int attributesChildNum, Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
            UniqueString name,
@@ -84,7 +84,7 @@ class Variable final : public VarLikeDecl {
         isField_(isField) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Variable* lhs = this;
     const Variable* rhs = (const Variable*) other;
     return lhs->isConfig_ == rhs->isConfig_ &&
@@ -105,13 +105,13 @@ class Variable final : public VarLikeDecl {
                                owned<Attributes> attributes,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
-                               owned<Expression> linkageName,
+                               owned<AstNode> linkageName,
                                UniqueString name,
                                Variable::Kind kind,
                                bool isConfig,
                                bool isField,
-                               owned<Expression> typeExpression,
-                               owned<Expression> initExpression);
+                               owned<AstNode> typeExpression,
+                               owned<AstNode> initExpression);
 
   /**
     Returns the kind of the variable (`var` / `const` / `param` etc).
