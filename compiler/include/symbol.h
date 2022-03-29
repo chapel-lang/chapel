@@ -969,4 +969,45 @@ struct SymbolMapKeyValue {
 typedef std::vector<SymbolMapKeyValue> SymbolMapVector;
 SymbolMapVector sortedSymbolMapElts(const SymbolMap& map);
 
+static Qualifier qualifierForArgIntent(IntentTag intent)
+{
+  switch (intent) {
+    case INTENT_IN:        return QUAL_VAL;
+    case INTENT_OUT:       return QUAL_REF;
+    case INTENT_INOUT:     return QUAL_REF;
+    case INTENT_CONST:     return QUAL_CONST;
+    case INTENT_CONST_IN:  return QUAL_CONST_VAL;
+    case INTENT_REF:       return QUAL_REF;
+    case INTENT_CONST_REF: return QUAL_CONST_REF;
+    case INTENT_PARAM:     return QUAL_PARAM; // TODO
+    case INTENT_TYPE:      return QUAL_UNKNOWN; // TODO
+    case INTENT_BLANK:     return QUAL_UNKNOWN;
+    case INTENT_REF_MAYBE_CONST:
+           return QUAL_REF; // a white lie until cullOverReferences
+
+    // no default to get compiler warning if other intents are added
+  }
+  INT_FATAL("unknown intent");
+  return QUAL_UNKNOWN;
+}
+
+inline QualifiedType Symbol::qualType() {
+  QualifiedType ret(dtUnknown, QUAL_UNKNOWN);
+
+  if (ArgSymbol* arg = toArgSymbol(this)) {
+    Qualifier q = qualifierForArgIntent(arg->intent);
+    if (qual == QUAL_WIDE_REF && (q == QUAL_REF || q == QUAL_CONST_REF)) {
+      q = QUAL_WIDE_REF;
+      // MPF: Should this be CONST_WIDE_REF in some cases?
+    }
+    ret = QualifiedType(type, q);
+  } else {
+    ret = QualifiedType(type, qual);
+    if (hasFlag(FLAG_CONST))
+      ret = ret.toConst();
+  }
+
+  return ret;
+}
+
 #endif
