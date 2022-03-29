@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 
 
-#include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/chpl-syntax-printer.h"
 
 #include <iomanip>
 
@@ -32,12 +32,12 @@ namespace chpl {
 namespace uast {
 
 
-ASTNode::~ASTNode() {
+AstNode::~AstNode() {
 }
 
-bool ASTNode::shallowMatch(const ASTNode* other) const {
-  const ASTNode* lhs = this;
-  const ASTNode* rhs = other;
+bool AstNode::shallowMatch(const AstNode* other) const {
+  const AstNode* lhs = this;
+  const AstNode* rhs = other;
   if (lhs->tag() != rhs->tag())
     return false;
   if (lhs->id().symbolPath() != rhs->id().symbolPath())
@@ -48,9 +48,9 @@ bool ASTNode::shallowMatch(const ASTNode* other) const {
   return true;
 }
 
-bool ASTNode::completeMatch(const ASTNode* other) const {
-  const ASTNode* lhs = this;
-  const ASTNode* rhs = other;
+bool AstNode::completeMatch(const AstNode* other) const {
+  const AstNode* lhs = this;
+  const AstNode* rhs = other;
 
   // check the node itself
   if (!lhs->shallowMatch(rhs)) {
@@ -68,8 +68,8 @@ bool ASTNode::completeMatch(const ASTNode* other) const {
   bool allMatch = true;
   size_t nChildren = lhs->children_.size();
   for (size_t i = 0; i < nChildren; i++) {
-    const ASTNode* lhsChild = lhs->children_[i].get();
-    const ASTNode* rhsChild = rhs->children_[i].get();
+    const AstNode* lhsChild = lhs->children_[i].get();
+    const AstNode* rhsChild = rhs->children_[i].get();
     bool childMatch = lhsChild->completeMatch(rhsChild);
     if (!childMatch) {
       allMatch = false;
@@ -79,7 +79,7 @@ bool ASTNode::completeMatch(const ASTNode* other) const {
   return allMatch;
 }
 
-bool ASTNode::update(owned<ASTNode>& keep, owned<ASTNode>& addin) {
+bool AstNode::update(owned<AstNode>& keep, owned<AstNode>& addin) {
   // If any of the children changed, it's important to create
   // a new AST node for the parent, so that any queries referring
   // to that AST node get a new version.
@@ -105,7 +105,7 @@ bool ASTNode::update(owned<ASTNode>& keep, owned<ASTNode>& addin) {
     // now keep is a new pointer
     // keep.children are the child nodes from keep
 
-    updateASTList(keep->children_, addin->children_);
+    updateAstList(keep->children_, addin->children_);
     return true; // updated
   } else {
     // swap the AST
@@ -114,16 +114,16 @@ bool ASTNode::update(owned<ASTNode>& keep, owned<ASTNode>& addin) {
   }
 }
 
-void ASTNode::mark(Context* context) const {
+void AstNode::mark(Context* context) const {
   // mark the unique string stored in the ID
   id_.mark(context);
   // run markUniqueStrings on the node
   markUniqueStringsInner(context);
-  // run markASTList on the child list
-  markASTList(context, children_);
+  // run markAstList on the child list
+  markAstList(context, children_);
 }
 
-static std::string getIdStr(const ASTNode* ast) {
+static std::string getIdStr(const AstNode* ast) {
   std::string idStr;
   if (ast == nullptr || ast->id().isEmpty()) {
     idStr = "<no id>";
@@ -136,20 +136,20 @@ static std::string getIdStr(const ASTNode* ast) {
   return idStr;
 }
 
-static void dumpMaxIdLen(const ASTNode* ast, int& maxIdLen) {
+static void dumpMaxIdLen(const AstNode* ast, int& maxIdLen) {
   std::string idStr = getIdStr(ast);
   if ((int) idStr.length() > maxIdLen)
     maxIdLen = idStr.length();
 
   if (ast != nullptr) {
-    for (const ASTNode* child : ast->children()) {
+    for (const AstNode* child : ast->children()) {
       dumpMaxIdLen(child, maxIdLen);
     }
   }
 }
 
 static void dumpHelper(std::ostream& ss,
-                       const ASTNode* ast,
+                       const AstNode* ast,
                        int maxIdLen,
                        int depth) {
   std::string idStr = getIdStr(ast);
@@ -179,12 +179,12 @@ static void dumpHelper(std::ostream& ss,
   //printf("%p", ast);
   ss << "\n";
 
-  for (const ASTNode* child : ast->children()) {
+  for (const AstNode* child : ast->children()) {
     dumpHelper(ss, child, maxIdLen, depth+1);
   }
 }
 
-void ASTNode::stringify(std::ostream& ss,
+void AstNode::stringify(std::ostream& ss,
                         StringifyKind stringKind) const {
 
   if (stringKind == StringifyKind::CHPL_SYNTAX) {
@@ -198,7 +198,7 @@ void ASTNode::stringify(std::ostream& ss,
   }
 }
 
-IMPLEMENT_DUMP(ASTNode);
+IMPLEMENT_DUMP(AstNode);
 
 } // end namespace uast
 } // end namespace chpl

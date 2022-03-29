@@ -17,41 +17,39 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_EXPRESSION_H
-#define CHPL_UAST_EXPRESSION_H
-
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstTag.h"
 
 namespace chpl {
 namespace uast {
+namespace asttags {
 
 
-/**
-  This is an abstract base class for expressions
- */
-class Expression : public ASTNode {
- protected:
-  Expression(asttags::ASTTag tag)
-    : ASTNode(tag) {
-  }
-  Expression(asttags::ASTTag tag, ASTList children)
-    : ASTNode(tag, std::move(children)) {
-  }
-  bool expressionContentsMatchInner(const Expression* other) const {
-    return true;
-  }
-  void expressionMarkUniqueStringsInner(Context* context) const {
-  }
-
- public:
-  virtual ~Expression() = 0; // this is an abstract base class
+static const char* tagToStringTable[NUM_AST_TAGS] = {
+// define tag to string conversion
+#define NAMESTR(NAME) \
+  #NAME,
+#define AST_NODE(NAME) NAMESTR(NAME)
+#define AST_LEAF(NAME) NAMESTR(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) NAMESTR(START_##NAME)
+#define AST_END_SUBCLASSES(NAME) NAMESTR(END_##NAME)
+// Apply the above macros to uast-classes-list.h
+#include "chpl/uast/uast-classes-list.h"
+// clear the macros
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+#undef NAMESTR
 };
 
+const char* tagToString(AstTag tag) {
+  if (0 <= tag && tag < NUM_AST_TAGS)
+    return tagToStringTable[tag];
+  else
+    return "<unknown-tag>";
+}
 
+
+} // end namespace asttags
 } // end namespace uast
-
-
-
 } // end namespace chpl
-
-#endif

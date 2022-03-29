@@ -44,7 +44,7 @@ namespace uast {
  */
 class Union final : public AggregateDecl {
  private:
-  Union(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Union(AstList children, int attributesChildNum, Decl::Visibility vis,
         Decl::Linkage linkage,
         int linkageNameChildNum,
         UniqueString name,
@@ -63,7 +63,7 @@ class Union final : public AggregateDecl {
     assert(linkage != Decl::EXPORT);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Union* lhs = this;
     const Union* rhs = (const Union*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs);
@@ -80,9 +80,9 @@ class Union final : public AggregateDecl {
                             owned<Attributes> attributes,
                             Decl::Visibility vis,
                             Decl::Linkage linkage,
-                            owned<Expression> linkageName,
+                            owned<AstNode> linkageName,
                             UniqueString name,
-                            ASTList contents);
+                            AstList contents);
 };
 
 

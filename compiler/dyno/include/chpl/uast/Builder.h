@@ -24,7 +24,7 @@
 #include "chpl/queries/UniqueString.h"
 #include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/BuilderResult.h"
 
 #include <vector>
@@ -38,7 +38,7 @@ class Location;
 
 namespace uast {
 
-class Expression;
+class AstNode;
 
 /**
   This class helps to build AST. It should only build AST
@@ -51,18 +51,18 @@ class Builder final {
 
   Context* context_;
   UniqueString filepath_;
-  ASTList topLevelExpressions_;
+  AstList topLevelExpressions_;
   std::vector<ErrorMessage> errors_;
 
   // note: notedLocations_ might have keys pointing to deleted uAST
   // nodes in the event one is created temporarily during parsing.
   // These are removed in the astToLocation_ map.
-  std::unordered_map<const ASTNode*, Location> notedLocations_;
+  std::unordered_map<const AstNode*, Location> notedLocations_;
 
   // the following maps are computed during assignIDs
   std::unordered_map<ID, Location> idToLocation_;
   std::vector<Location> commentToLocation_;
-  std::unordered_map<ID, const ASTNode*> idToAst_;
+  std::unordered_map<ID, const AstNode*> idToAst_;
   std::unordered_map<ID, ID> idToParent_;
 
   Builder(Context* context, UniqueString filepath)
@@ -72,7 +72,7 @@ class Builder final {
 
   void createImplicitModuleIfNeeded();
   void assignIDs();
-  void doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
+  void doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
                    int& commentIndex, pathVecT& pathVec,
                    declaredHereT& duplicates);
 
@@ -85,7 +85,7 @@ class Builder final {
     Save a toplevel expression in to the builder.
     This is called by the parser.
    */
-  void addToplevelExpression(owned<Expression> e);
+  void addToplevelExpression(owned<AstNode> e);
 
   /**
     Save an error.
@@ -95,7 +95,7 @@ class Builder final {
   /**
     Record the location of an AST element.
    */
-  void noteLocation(ASTNode* ast, Location loc);
+  void noteLocation(AstNode* ast, Location loc);
 
   /**
     Assign IDs to all of the AST elements added as toplevel expressions
@@ -109,7 +109,7 @@ class Builder final {
     all create a new ID scope. This function returns `true` for AST tags
     with this property.
    */
-  static bool astTagIndicatesNewIdScope(asttags::ASTTag tag);
+  static bool astTagIndicatesNewIdScope(asttags::AstTag tag);
 
   // build methods are actually type methods on the individual AST
   // elements. This prevents the Builder API from growing unreasonably large.
@@ -119,20 +119,20 @@ class Builder final {
   // Use this in the parser to get a mutable view of a node's children so
   // that the node can be modified in place. Later we can also add a method
   // such as 'swapChildren' if we need it.
-  ASTList& mutableRefToChildren(ASTNode* ast) {
+  AstList& mutableRefToChildren(AstNode* ast) {
     return ast->children_;
   }
 
   // Use this to take the children of an AST node. The AST node is marked
   // as owned because it is consumed.
-  ASTList takeChildren(owned<ASTNode> ast) {
+  AstList takeChildren(owned<AstNode> ast) {
     auto ret = std::move(ast->children_);
     assert(ast->children_.size() == 0);
     return ret;
   }
 
-  // Use this to flatten top level blocks within an ASTList.
-  ASTList flattenTopLevelBlocks(ASTList lst);
+  // Use this to flatten top level blocks within an AstList.
+  AstList flattenTopLevelBlocks(AstList lst);
 
   /// \endcond
 };

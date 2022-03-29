@@ -40,7 +40,7 @@
 
 // A note about memory management within the parser:
 //
-//  Several grammar rules produce an allocated type (e.g. Expression*
+//  Several grammar rules produce an allocated type (e.g. AstNode*
 //  pointing to some sort of allocated expression). When one of these
 //  rules produces a result, that result needs to be either
 //  freed or wired up into another structure to be freed later.
@@ -117,7 +117,7 @@
     LinkageTag_EXPORT,
   };
 
-  using ParserExprList = std::vector<Expression*>;
+  using ParserExprList = std::vector<AstNode*>;
   using UniqueStrList = std::vector<PODUniqueString>;
 
   // these structures do not use constructors to avoid
@@ -125,11 +125,11 @@
   // they only have pointer or numeric fields.
 
   struct WhereAndLifetime {
-    Expression* where;
+    AstNode* where;
     ParserExprList* lifetime;
   };
   static inline
-  WhereAndLifetime makeWhereAndLifetime(Expression* w, ParserExprList* lt) {
+  WhereAndLifetime makeWhereAndLifetime(AstNode* w, ParserExprList* lt) {
     WhereAndLifetime ret = {w, lt};
     return ret;
   }
@@ -138,17 +138,17 @@
   // upwards through parser rules.
   struct CommentsAndStmt {
     std::vector<ParserComment>* comments;
-    Expression* stmt;
+    AstNode* stmt;
   };
   static inline
   CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
-                                      Expression* stmt) {
+                                      AstNode* stmt) {
     CommentsAndStmt ret = {comments, stmt};
     return ret;
   }
   static inline
   CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
-                                      owned<Expression> stmt) {
+                                      owned<AstNode> stmt) {
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
@@ -164,7 +164,7 @@
     Attributes* attributes;
     Decl::Visibility visibility;
     Decl::Linkage linkage;
-    Expression* linkageNameExpr;
+    AstNode* linkageNameExpr;
     bool isInline;
     bool isOverride;
     Function::Kind kind;
@@ -174,8 +174,8 @@
     Function::ReturnIntent returnIntent;
     bool throws;
     ParserExprList* formals;
-    Expression* returnType;
-    Expression* where;
+    AstNode* returnType;
+    AstNode* where;
     ParserExprList* lifetime;
     ParserExprList* body;
   };
@@ -194,10 +194,10 @@
     std::vector<ParserComment>* comments;
     Decl::Visibility visibility;
     Decl::Linkage linkage;
-    Expression* linkageName;
+    AstNode* linkageName;
     Attributes* attributes;
     PODUniqueString name;
-    asttags::ASTTag tag;
+    asttags::AstTag tag;
   };
 
   // This is produced by do_stmt. It records whether the do_stmt statements
@@ -214,17 +214,17 @@
   };
 
   struct MaybeNamedActual {
-    Expression* expr;
+    AstNode* expr;
     PODUniqueString name;
   };
   static inline
-  MaybeNamedActual makeMaybeNamedActual(Expression* expr,
+  MaybeNamedActual makeMaybeNamedActual(AstNode* expr,
                                         PODUniqueString name) {
     MaybeNamedActual ret = {expr, name};
     return ret;
   }
   static inline
-  MaybeNamedActual makeMaybeNamedActual(Expression* expr) {
+  MaybeNamedActual makeMaybeNamedActual(AstNode* expr) {
     PODUniqueString emptyName = PODUniqueString::get();
     MaybeNamedActual ret = {expr, emptyName};
     return ret;
@@ -240,13 +240,13 @@
     // The lexer only uses these
     PODUniqueString uniqueStr;
     SizedStr sizedStr;
-    Expression* expr;
+    AstNode* expr;
 
     // The remaining types are used only in parser productions
 
     // integer/enum values
 
-    asttags::ASTTag astTag;
+    asttags::AstTag astTag;
     Formal::Intent intentTag;
     Function::Kind functionKind;
     Function::ReturnIntent returnTag;
@@ -1435,7 +1435,7 @@ extern_export_decl_stmt:
   {
     auto loc = context->declStartLoc(@1);
 
-    Expression* optExpr = $2;
+    AstNode* optExpr = $2;
     FunctionParts fp = $3;
 
     auto commentList = context->appendList(context->makeList(),
@@ -1547,7 +1547,7 @@ loop_stmt:
     ParserExprList* exprLst;
     BlockStyle blockStyle;
     context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @6, $6);
-    Expression* ident = context->buildIdent(@3, $3);
+    AstNode* ident = context->buildIdent(@3, $3);
     auto index = context->buildLoopIndexDecl(@3, toOwned(ident));
     auto body = context->consumeToBlock(@6, exprLst);
     auto node = For::build(BUILDER, LOC(@1), std::move(index),
@@ -3071,7 +3071,7 @@ for_expr:
       const char* msg = "Invalid iterand expression";
       $$ = context->raiseError(@2, msg);
     } else {
-      auto iterand = context->consumeList($2)[0].release()->toExpression();
+      auto iterand = context->consumeList($2)[0].release();
       assert(iterand);
       $$ = BracketLoop::build(BUILDER, LOC(@$), /*index*/ nullptr,
                               toOwned(iterand),
@@ -3405,7 +3405,7 @@ call_base_expr:
 call_expr:
   call_base_expr TLP opt_actual_ls TRP
     {
-      ASTList actuals;
+      AstList actuals;
       std::vector<UniqueString> actualNames;
       context->consumeNamedActuals($3, actuals, actualNames);
       auto fnCall = FnCall::build(BUILDER, LOC(@$),
@@ -3417,7 +3417,7 @@ call_expr:
     }
 | call_base_expr TLSBR opt_actual_ls TRSBR
     {
-      ASTList actuals;
+      AstList actuals;
       std::vector<UniqueString> actualNames;
       context->consumeNamedActuals($3, actuals, actualNames);
       auto fnCall = FnCall::build(BUILDER, LOC(@$),

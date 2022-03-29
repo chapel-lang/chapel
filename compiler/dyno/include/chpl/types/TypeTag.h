@@ -94,7 +94,7 @@ const char* tagToString(TypeTag tag);
 
 } // end namespace typetags
 
-// Enable ASTTag to be used as chpl::types::TypeTag
+// Enable AstTag to be used as chpl::types::TypeTag
 using chpl::types::typetags::TypeTag;
 
 } // end namespace types

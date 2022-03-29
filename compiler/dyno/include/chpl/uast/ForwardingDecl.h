@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/VisibilityClause.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/Variable.h"
 
@@ -58,7 +58,7 @@ class ForwardingDecl final : public Decl {
 
 
 private:
-  ForwardingDecl(ASTList children, Decl::Visibility visibility,
+  ForwardingDecl(AstList children, Decl::Visibility visibility,
                  int attributesChildNum)
     : Decl(asttags::ForwardingDecl, std::move(children), attributesChildNum,
                 visibility,
@@ -67,10 +67,9 @@ private:
                 ) {
 
     assert(children_.size() >= 0 && children_.size() <= 2);
-    assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const ForwardingDecl* lhs = (const ForwardingDecl*) this;
     const ForwardingDecl* rhs = (const ForwardingDecl*) other;
     return lhs->declContentsMatchInner(rhs);
@@ -90,21 +89,20 @@ private:
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
                                      owned<Attributes> attributes,
-                                     owned<Expression> expr);
+                                     owned<AstNode> expr);
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
                                      owned<Attributes> attributes,
-                                     owned<Expression> expr,
+                                     owned<AstNode> expr,
                                      Decl::Visibility visibility);
 
   /**
     Returns the child for this ForwardingDecl or nullptr if there was none.
   */
-  const Expression* expr() const {
+  const AstNode* expr() const {
     if (children_.size() > 0) {
-      const ASTNode* ast = this->child(exprChildNum());
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      const AstNode* ast = this->child(exprChildNum());
+      return ast;
     } else {
       return nullptr;
     }

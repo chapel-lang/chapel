@@ -21,7 +21,7 @@
 #define CHPL_UAST_LITERAL_H
 
 #include "chpl/types/Param.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -31,22 +31,20 @@ namespace uast {
   This is an abstract base class for literals.
   Literals are fixed values in the source code, like 1, 30.24, and "x".
  */
-class Literal : public Expression {
+class Literal : public AstNode {
  protected:
   const types::Param* value_ = nullptr;
 
-  Literal(ASTTag tag, const types::Param* value)
-    : Expression(tag), value_(value) {
+  Literal(AstTag tag, const types::Param* value)
+    : AstNode(tag), value_(value) {
 
     assert(value_ != nullptr);
   }
 
   bool literalContentsMatchInner(const Literal* other) const {
-    return expressionContentsMatchInner(other) &&
-           this->value_ == other->value_;
+    return this->value_ == other->value_;
   }
   void literalMarkUniqueStringsInner(Context* context) const {
-    expressionMarkUniqueStringsInner(context);
     value_->mark(context);
   }
 

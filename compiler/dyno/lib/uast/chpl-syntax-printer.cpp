@@ -183,7 +183,7 @@ struct ChplSyntaxVisitor {
    * helper to check if the called expression is actually a
    * management kind. Helps FnCalls not to print () in this case
   */
-  bool isCalleeManagementKind(const Expression* callee) {
+  bool isCalleeManagementKind(const AstNode* callee) {
     if (callee->isIdentifier() &&
       (callee->toIdentifier()->name() == "borrowed"
        || callee->toIdentifier()->name() == "owned"
@@ -257,11 +257,11 @@ struct ChplSyntaxVisitor {
         printTupleContents(decl->toTupleDecl());
       } else {
         ss_ << decl->toVarLikeDecl()->name();
-        if (const Expression *te = decl->toVarLikeDecl()->typeExpression()) {
+        if (const AstNode *te = decl->toVarLikeDecl()->typeExpression()) {
           ss_ << ": ";
           printChapelSyntax(ss_, te);
         }
-        if (const Expression *ie = decl->toVarLikeDecl()->initExpression()) {
+        if (const AstNode *ie = decl->toVarLikeDecl()->initExpression()) {
           ss_ << " = ";
           printChapelSyntax(ss_, ie);
         }
@@ -271,7 +271,7 @@ struct ChplSyntaxVisitor {
     ss_ << ")";
   }
 
-  void visit(const uast::ASTNode* node) {
+  void visit(const uast::AstNode* node) {
     assert(false && "Unhandled uAST node");
   }
 
@@ -339,7 +339,7 @@ struct ChplSyntaxVisitor {
     if (node->error()) {
       if (node->hasParensAroundError()) ss_ << "(";
       ss_ << node->error()->name();
-      if (const Expression* te = node->error()->typeExpression()) {
+      if (const AstNode* te = node->error()->typeExpression()) {
         ss_ << " : ";
         printChapelSyntax(ss_, te);
       }
@@ -386,7 +386,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Comment* node) {
-    // TODO: create a way to filter comments using an adapted ASTListIterator
+    // TODO: create a way to filter comments using an adapted AstListIterator
     // TODO: how to control when we want comments on/off
 
     //    do nothing for now, can be enabled with code below
@@ -447,7 +447,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const EnumElement* node) {
     ss_ << node->name();
-    if (const Expression* ie = node->initExpression()) {
+    if (const AstNode* ie = node->initExpression()) {
       ss_ <<  " = ";
       printChapelSyntax(ss_, ie);
     }
@@ -464,7 +464,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const FnCall* node) {
-    const Expression* callee = node->calledExpression();
+    const AstNode* callee = node->calledExpression();
     assert(callee);
     printChapelSyntax(ss_, callee);
     if (isCalleeManagementKind(callee)) {
@@ -526,11 +526,11 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString((IntentList) node->intent()) << " ";
     }
     ss_ << node->name().str();
-    if (const Expression* te = node->typeExpression()) {
+    if (const AstNode* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
     }
-    if (const Expression* ie = node->initExpression()) {
+    if (const AstNode* ie = node->initExpression()) {
       ss_ << " = ";
       printChapelSyntax(ss_, ie);
     }
@@ -571,7 +571,7 @@ struct ChplSyntaxVisitor {
     }
 
     // Return type
-    if (const Expression* e = node->returnType()) {
+    if (const AstNode* e = node->returnType()) {
       ss_ << ": ";
       printChapelSyntax(ss_, e);
     }
@@ -634,11 +634,11 @@ struct ChplSyntaxVisitor {
     for (auto decl : node->decls()) {
       const Variable* var = decl->toVariable();
       ss_ << var->name();
-      if (const Expression *te = var->typeExpression()) {
+      if (const AstNode *te = var->typeExpression()) {
         ss_ << ": ";
         printChapelSyntax(ss_, te);
       }
-      if (const Expression *ie = var->initExpression()) {
+      if (const AstNode *ie = var->initExpression()) {
         ss_ << " = ";
         printChapelSyntax(ss_, ie);
       }
@@ -683,11 +683,11 @@ struct ChplSyntaxVisitor {
     for (auto decl : node->decls()) {
       ss_ << delimiter;
       ss_ << decl->toVariable()->name();
-      if (const Expression* te = decl->toVariable()->typeExpression()) {
+      if (const AstNode* te = decl->toVariable()->typeExpression()) {
         ss_ << ": ";
         printChapelSyntax(ss_, te);
       }
-      if (const Expression* ie = decl->toVariable()->initExpression()) {
+      if (const AstNode* ie = decl->toVariable()->initExpression()) {
         ss_ << " = ";
         printChapelSyntax(ss_, ie);
       }
@@ -849,11 +849,11 @@ struct ChplSyntaxVisitor {
 
     printTupleContents(node);
 
-    if (const Expression* te = node->typeExpression()) {
+    if (const AstNode* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
     }
-    if (const Expression* ie = node->initExpression()) {
+    if (const AstNode* ie = node->initExpression()) {
       ss_ << " = ";
       printChapelSyntax(ss_, ie);
     }
@@ -893,16 +893,16 @@ struct ChplSyntaxVisitor {
     }
 
     ss_ << node->name();
-    if (const Expression* te = node->typeExpression()) {
+    if (const AstNode* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
     }
-    if (const Expression* ie = node->initExpression()) {
+    if (const AstNode* ie = node->initExpression()) {
       ss_ << " = ";
       printChapelSyntax(ss_, ie);
     }
 
-    if (const Expression* ce = node->count()) {
+    if (const AstNode* ce = node->count()) {
       ss_ << " ...";
       if (const TypeQuery* tq = ce->toTypeQuery()) {
         printChapelSyntax(ss_, tq);
@@ -923,11 +923,11 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString((IntentList) node->kind()) << " ";
     }
     ss_ << node->name();
-    if (const Expression* te = node->typeExpression()) {
+    if (const AstNode* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
     }
-    if (const Expression* ie = node->initExpression()) {
+    if (const AstNode* ie = node->initExpression()) {
       ss_ << " = ";
       printChapelSyntax(ss_, ie);
     }
@@ -987,7 +987,7 @@ struct ChplSyntaxVisitor {
 
 namespace chpl {
   /* Generic printer calling the above functions */
-  void printChapelSyntax(std::ostream& os, const ASTNode* node) {
+  void printChapelSyntax(std::ostream& os, const AstNode* node) {
     auto visitor = ChplSyntaxVisitor{};
     node->dispatch<void>(visitor);
     // when using << with ss_.rdbuf(), if nothing gets added to os, then

@@ -122,7 +122,7 @@ static const char* genPragma(int idx) {
   return ret;
 }
 
-static std::string genAggregateAttributesTest(asttags::ASTTag aggKind,
+static std::string genAggregateAttributesTest(asttags::AstTag aggKind,
                                               bool isDeprecated,
                                               bool hasDeprecationMsg,
                                               int numPragmas,
@@ -178,7 +178,7 @@ static std::string genAggregateAttributesTest(asttags::ASTTag aggKind,
 }
 
 static void testAggregateAttributes(Parser* parser,
-                                    asttags::ASTTag aggKind,
+                                    asttags::AstTag aggKind,
                                     bool isDeprecated,
                                     bool hasDeprecationMsg,
                                     int numPragmas,

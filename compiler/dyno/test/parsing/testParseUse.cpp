@@ -20,15 +20,15 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/Context.h"
 #include "chpl/uast/As.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/Dot.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Use.h"
-#include "chpl/uast/VisibilityClause.h"
 #include "chpl/uast/Variable.h"
+#include "chpl/uast/VisibilityClause.h"
 
 // always check assertions in this test
 #ifdef NDEBUG

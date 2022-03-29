@@ -20,13 +20,13 @@
 #include "chpl/uast/ASTTypes.h"
 
 #include "chpl/queries/Context.h"
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
 
 
-bool updateASTList(ASTList& keep, ASTList& addin) {
+bool updateAstList(AstList& keep, AstList& addin) {
   /*
    It's kind of like swapping 'keep' and 'addin' but it tries
    to keep old AST nodes when they are the same. This allows
@@ -56,11 +56,11 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
     keep.swap(addin);
     return true;
   } else if (keepSize == 1 && addinSize == 1) {
-    return ASTNode::update(keep[0], addin[0]);
+    return AstNode::update(keep[0], addin[0]);
   }
 
-  ASTList newList;
-  ASTList junkList;
+  AstList newList;
+  AstList junkList;
 
   // Append the elements from addin to newList, but
   // if we find an existing element that matches,
@@ -74,12 +74,12 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
     bool eltChanged = true;
     if (keepIdx < keepSize &&
         keep[keepIdx]->shallowMatch(addin[addinIdx].get())) {
-      owned<ASTNode> keepElt;
-      owned<ASTNode> addinElt;
+      owned<AstNode> keepElt;
+      owned<AstNode> addinElt;
       keepElt.swap(keep[keepIdx]);
       addinElt.swap(addin[addinIdx]);
       // it seems like a close enough match, so update it
-      eltChanged = ASTNode::update(keepElt, addinElt);
+      eltChanged = AstNode::update(keepElt, addinElt);
       // updateAST might have swapped the elements but
       // now keepElt is the one to put in newList.
       newList.push_back(std::move(keepElt));
@@ -91,15 +91,15 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
                keep[keepIdx]->shallowMatch(addin[addinIdx+1].get())) {
       // like an element was added in addin,
       // so add two elements from addin and pass 1 keep element
-      owned<ASTNode> keepElt;
-      owned<ASTNode> addinEltOne;
-      owned<ASTNode> addinEltTwo;
+      owned<AstNode> keepElt;
+      owned<AstNode> addinEltOne;
+      owned<AstNode> addinEltTwo;
       keepElt.swap(keep[keepIdx]);
       addinEltOne.swap(addin[addinIdx]);
       addinEltTwo.swap(addin[addinIdx+1]);
 
       // keepElt matched addinEltTwo so try to update them
-      ASTNode::update(keepElt, addinEltTwo);
+      AstNode::update(keepElt, addinEltTwo);
       // now keepElt is the one to keep and addinEltTwo is junk
       newList.push_back(std::move(addinEltOne));
       newList.push_back(std::move(keepElt));
@@ -110,15 +110,15 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
                keep[keepIdx+1]->shallowMatch(addin[addinIdx].get())) {
       // like an element was deleted from keep,
       // so add an element from addin but pass 2 keep elements
-      owned<ASTNode> addinElt;
-      owned<ASTNode> keepEltOne;
-      owned<ASTNode> keepEltTwo;
+      owned<AstNode> addinElt;
+      owned<AstNode> keepEltOne;
+      owned<AstNode> keepEltTwo;
       addinElt.swap(addin[addinIdx]);
       keepEltOne.swap(keep[keepIdx]);
       keepEltTwo.swap(keep[keepIdx+1]);
 
       // keepEltTwo matched addinElt so try to update them
-      ASTNode::update(keepEltTwo, addinElt);
+      AstNode::update(keepEltTwo, addinElt);
       // now keepEltTwo is the one to keep and addinElt is junk
       newList.push_back(std::move(keepEltTwo));
       junkList.push_back(std::move(keepEltOne));
@@ -129,17 +129,17 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
                keep[keepIdx+1]->shallowMatch(addin[addinIdx+1].get())) {
       // like an element was replaced from keep,
       // so add 2 elements from addin and pass 2 keep elements
-      owned<ASTNode> addinEltOne;
-      owned<ASTNode> addinEltTwo;
-      owned<ASTNode> keepEltOne;
-      owned<ASTNode> keepEltTwo;
+      owned<AstNode> addinEltOne;
+      owned<AstNode> addinEltTwo;
+      owned<AstNode> keepEltOne;
+      owned<AstNode> keepEltTwo;
       addinEltOne.swap(addin[addinIdx]);
       addinEltTwo.swap(addin[addinIdx+1]);
       keepEltOne.swap(keep[keepIdx]);
       keepEltTwo.swap(keep[keepIdx+1]);
 
       // keepEltTwo matched addinEltTwo so try to update them
-      ASTNode::update(keepEltTwo, addinEltTwo);
+      AstNode::update(keepEltTwo, addinEltTwo);
       // now keepEltTwo is the one to keep and addinEltTwo is junk
       newList.push_back(std::move(addinEltOne));
       newList.push_back(std::move(keepEltTwo));
@@ -158,13 +158,13 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
 
   // if we gave up trying to match things, we end up in this loop
   for (; addinIdx < addinSize; addinIdx++) {
-    owned<ASTNode> addinElt;
+    owned<AstNode> addinElt;
     addinElt.swap(addin[addinIdx]);
     newList.push_back(std::move(addinElt));
     anyChanged = true;
   }
   for (; keepIdx < keepSize; keepIdx++) {
-    owned<ASTNode> keepElt;
+    owned<AstNode> keepElt;
     keepElt.swap(keep[keepIdx]);
     junkList.push_back(std::move(keepElt));
     anyChanged = true;
@@ -178,18 +178,10 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
   return anyChanged;
 }
 
-void markASTList(Context* context, const ASTList& keep) {
+void markAstList(Context* context, const AstList& keep) {
   for (const auto& elt: keep) {
     context->markPointer(elt);
   }
-}
-
-bool isExpressionASTList(const ASTList& list) {
-  for (const auto& elt: list) {
-    if (!elt->isExpression())
-      return false;
-  }
-  return true;
 }
 
 

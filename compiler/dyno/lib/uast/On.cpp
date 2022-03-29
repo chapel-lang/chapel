@@ -26,12 +26,12 @@ namespace uast {
 
 
 owned<On> On::build(Builder* builder, Location loc,
-                    owned<Expression> destination,
+                    owned<AstNode> destination,
                     BlockStyle blockStyle,
-                    ASTList stmts) {
+                    AstList stmts) {
   assert(destination.get() != nullptr);
 
-  ASTList lst;
+  AstList lst;
 
   lst.push_back(std::move(destination));
 
