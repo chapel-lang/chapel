@@ -995,8 +995,7 @@ struct Converter {
   // Deduced by looking at 'buildForallLoopExpr' calls in for_expr:
   bool isLoopMaybeArrayType(const uast::IndexableLoop* node) {
     return node->isBracketLoop() && !node->index() &&
-        !node->iterand()->isZip() &&
-        !node->stmt(0)->isConditional();
+           !node->iterand()->isZip() ;
   }
 
   Expr* convertBracketLoopExpr(const uast::BracketLoop* node) {
