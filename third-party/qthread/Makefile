@@ -113,9 +113,9 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
 # determine which scheduler to use. Use nemesis for flat and distrib for
 # non-flat.  Override with a user provided option if they requested one
-SCHEDULER = nemesis
-ifneq ($(CHPL_MAKE_LOCALE_MODEL),flat)
 SCHEDULER = distrib
+ifneq ($(CHPL_MAKE_LOCALE_MODEL),numa)
+SCHEDULER = nemesis
 endif
 ifneq (, $(CHPL_QTHREAD_SCHEDULER))
 SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
