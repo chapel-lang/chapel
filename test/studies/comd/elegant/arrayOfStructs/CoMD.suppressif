@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+
+# https://github.com/Cray/chapel-private/issues/3235
+
+import os
+
+platform = os.getenv('CHPL_TARGET_PLATFORM')
+
+print(platform == 'linux32')
