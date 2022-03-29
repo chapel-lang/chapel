@@ -31,6 +31,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "view.h"
+#include "llvm/ADT/SmallPtrSet.h"
 
 #include "global-ast-vecs.h"
 
@@ -656,14 +657,14 @@ localCopyPropagationCore(BasicBlock*          bb,
                          ReverseAvailableMap& ravailable,
                          std::set<Symbol*>& liveRefs)
 {
-  for_vector(Expr, expr, bb->exprs)
-  {
+  std::vector<SymExpr*> symExprs;
+  symExprs.reserve(16);
+  for_vector(Expr, expr, bb->exprs) {
 #if DEBUG_CP
     if (debug > 0)
       nprint_view(expr);
 #endif
-
-    std::vector<SymExpr*> symExprs;
+    symExprs.clear();
 
     // TODO: do not collect references or symbols that are not LcnSymbols
     collectSymExprs(expr, symExprs);
@@ -760,16 +761,19 @@ static void computeKillSets(FnSymbol* fn,
                             std::vector<BitVec*>& KILL,
                             std::set<Symbol*>& liveRefs)
 {
+  std::vector<SymExpr*> symExprs;
+  llvm::SmallPtrSet<Symbol*, 32> killSet;
+
   size_t nbbs = fn->basicBlocks->size();
   for (size_t i = 0; i < nbbs; ++i)
   {
     BasicBlock* bb2 = (*fn->basicBlocks)[i];
 
     // Collect up the set of symbols killed in this block in killSet.
-    std::set<Symbol*> killSet;
+    killSet.clear();
     for_vector(Expr, expr, bb2->exprs)
     {
-      std::vector<SymExpr*> symExprs;
+      symExprs.clear();
       collectSymExprs(expr, symExprs);
 
       for_vector(SymExpr, se, symExprs)

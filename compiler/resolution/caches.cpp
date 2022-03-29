@@ -473,7 +473,7 @@ static void visitMorePOIs(std::vector<CalledFunInfo*>& toProcess,
   advanceCurrStart(visInfo);
 
   Vec<FnSymbol*> visibleFns;
-  std::set<BlockStmt*> visited(visInfoOrig.visitedScopes.begin(),
+  PtrSet<BlockStmt*> visited(visInfoOrig.visitedScopes.begin(),
                                visInfoOrig.visitedScopes.end());
   do {
     visInfo.poiDepth++;

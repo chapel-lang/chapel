@@ -48,6 +48,7 @@
 #include "TryStmt.h"
 #include "view.h"
 #include "WhileStmt.h"
+#include "llvm/ADT/DenseSet.h"
 
 #include <set>
 

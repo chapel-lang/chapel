@@ -40,6 +40,7 @@
 #include "visibleFunctions.h"
 #include "wellknown.h"
 #include "wrappers.h"
+#include <llvm/ADT/SmallVector.h>
 
 static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL, bool forNewExpr = false);
 
@@ -52,7 +53,7 @@ static void resolveInitializerMatch(FnSymbol* fn);
 static void makeRecordInitWrappers(CallExpr* call);
 
 static void makeActualsVector(const CallInfo&          info,
-                              std::vector<ArgSymbol*>& actualIdxToFormal);
+                              llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal);
 
 static AggregateType* resolveNewFindType(CallExpr* newExpr);
 
@@ -349,7 +350,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
     info.haltNotWellFormed();
   }
 
-  std::vector<ArgSymbol*> actualIdxToFormal;
+  llvm::SmallVector<ArgSymbol*, 8> actualIdxToFormal;
 
   makeActualsVector(info, actualIdxToFormal);
 
@@ -711,7 +712,7 @@ static void makeRecordInitWrappers(CallExpr* call) {
   CallInfo info;
 
   if (info.isWellFormed(call) == true) {
-    std::vector<ArgSymbol*> actualIdxToFormal;
+    llvm::SmallVector<ArgSymbol*, 8> actualIdxToFormal;
     FnSymbol*               wrap = NULL;
 
     makeActualsVector(info, actualIdxToFormal);
@@ -739,7 +740,7 @@ static void makeRecordInitWrappers(CallExpr* call) {
 // so the "failure" modes should never get triggered.  The information we need
 // was cleaned up, though, so we are just going to recreate the parts we need.
 static void makeActualsVector(const CallInfo&          info,
-                              std::vector<ArgSymbol*>& actualIdxToFormal) {
+                              llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal) {
   const CallExpr*   call = info.call;
   FnSymbol*         fn   = call->resolvedFunction();
   std::vector<bool> formalIdxToActual;

@@ -702,9 +702,9 @@ static void noteUse(VarSymbol* var, VarToCopyElisionState& map) {
 }
 
 static void noteUses(Expr* e, VarToCopyElisionState& map) {
-  std::vector<SymExpr*> symExprs;
+  llvm::SmallVector<SymExpr*, 16> symExprs;
   collectSymExprs(e, symExprs);
-  for_vector (SymExpr, se, symExprs) {
+  for (SymExpr* se : symExprs) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       noteUse(var, map);
     }

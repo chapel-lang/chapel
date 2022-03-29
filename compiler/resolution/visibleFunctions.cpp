@@ -41,6 +41,8 @@
 #include <vector>
 
 
+#include "llvm/ADT/SmallPtrSet.h"
+
 /*
    The process of finding visible functions works with some global
    tables. The global tables map
@@ -78,7 +80,7 @@ static int                                    nVisibleFunctions       = 0;
 *                                                                             *
 ************************************** | *************************************/
 
-static std::set<const char*> typeHelperNames;
+static PtrSet<const char*> typeHelperNames;
 
 static bool useMethodVisibilityRules(CallExpr* call, const char* name) {
   return (call->numActuals() >=2 &&
@@ -134,7 +136,7 @@ static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
 static void getVisibleFunctionsVI(const char*         name,
                                 CallExpr*             call,
                                 VisibilityInfo*       visInfo,
-                                std::set<BlockStmt*>* visited,
+                                PtrSet<BlockStmt*>* visited,
                                 Vec<FnSymbol*>&       visibleFns);
 
 static void getVisibleMethods(const char* name, CallExpr* call,
@@ -143,7 +145,7 @@ static void getVisibleMethods(const char* name, CallExpr* call,
 static void getVisibleMethodsVI(const char*           name,
                                 CallExpr*             call,
                                 VisibilityInfo*       visInfo,
-                                std::set<BlockStmt*>* visited,
+                                PtrSet<BlockStmt*>* visited,
                                 Vec<FnSymbol*>&       visibleFns);
 
 static void  buildVisibleFunctionMap();
@@ -153,7 +155,7 @@ static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr);
 void getMoreVisibleFunctionsOrMethods(const char*     name,
                                 CallExpr*             call,
                                 VisibilityInfo*       visInfo,
-                                std::set<BlockStmt*>* visited,
+                                PtrSet<BlockStmt*>* visited,
                                 Vec<FnSymbol*>&       visibleFns) {
   if (visInfo->useMethodVisibility)
     getVisibleMethodsVI(name, call, visInfo, visited, visibleFns);
@@ -168,7 +170,7 @@ void findVisibleFunctionsAllPOIs(CallInfo&       info,
 
 void findVisibleFunctions(CallInfo&             info,
                           VisibilityInfo*       visInfo,
-                          std::set<BlockStmt*>* visited,
+                          PtrSet<BlockStmt*>* visited,
                           int*                  numVisitedP,
                           Vec<FnSymbol*>&       visibleFns) {
   CallExpr* call = info.call;
@@ -392,21 +394,21 @@ static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
 
 static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
                                       BlockStmt* block, VisibilityInfo* visInfo,
-                                      std::set<BlockStmt*>& visited,
+                                      PtrSet<BlockStmt*>& visited,
                                       Vec<FnSymbol*>& visibleFns,
                                       bool inUseChain,
-                                      std::set<const char*> typeNames);
+                                      PtrSet<const char*> typeNames);
 
 static void getVisibleMethodsImpl(const char* name, CallExpr* call,
                                   BlockStmt*            block,
                                   VisibilityInfo*       visInfo,
-                                  std::set<BlockStmt*>& visited,
+                                  PtrSet<BlockStmt*>& visited,
                                   Vec<FnSymbol*>&       visibleFns,
                                   bool inUseChain);
 
 static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
                             VisibilityInfo*       visInfo,
-                            std::set<BlockStmt*>& visited,
+                            PtrSet<BlockStmt*>& visited,
                             Vec<FnSymbol*>&       visibleFns);
 
 static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block);
@@ -416,7 +418,7 @@ static void getVisibleFnsShowBlock(const char* context, BlockStmt* block,
 
 static void getVisibleMethodsVI(const char* name, CallExpr* call,
                                 VisibilityInfo*       visInfo,
-                                std::set<BlockStmt*>* visited,
+                                PtrSet<BlockStmt*>* visited,
                                 Vec<FnSymbol*>&       visibleFns)
 {
   INT_ASSERT(visited->empty() == !visInfo->inPOI()); //fyi
@@ -434,7 +436,7 @@ static void getVisibleMethodsVI(const char* name, CallExpr* call,
 static void getVisibleMethods(const char* name, CallExpr* call,
                               Vec<FnSymbol*>& visibleFns) {
   BlockStmt*           block    = getVisibilityScope(call);
-  std::set<BlockStmt*> visited;
+  PtrSet<BlockStmt*> visited;
 
   lookAtTypeFirst(name, call, block, NULL, visited, visibleFns);
 
@@ -444,7 +446,7 @@ static void getVisibleMethods(const char* name, CallExpr* call,
 static void lookAtTypeFirstHelper(const char* name, CallExpr* call,
                                   BlockStmt* block, Type* curType,
                                   VisibilityInfo* visInfo,
-                                  std::set<BlockStmt*>& visited,
+                                  PtrSet<BlockStmt*>& visited,
                                   Vec<FnSymbol*>& visibleFns) {
   BlockStmt* typeScope = getVisibilityScope(curType->symbol->defPoint);
   // When searching the type scope, don't follow private uses and imports if we
@@ -466,7 +468,7 @@ static void lookAtTypeFirstHelper(const char* name, CallExpr* call,
 
 static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
                             VisibilityInfo*       visInfo,
-                            std::set<BlockStmt*>& visited,
+                            PtrSet<BlockStmt*>& visited,
                             Vec<FnSymbol*>&       visibleFns)
 {
   INT_ASSERT(call->numActuals() >= 1);
@@ -541,7 +543,7 @@ static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
 static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
                                         BlockStmt* block,
                                         VisibilityInfo* visInfo,
-                                        std::set<BlockStmt*>& visited,
+                                        PtrSet<BlockStmt*>& visited,
                                         Vec<FnSymbol*>& visibleFns) {
   // The following statement causes this to apply to all blocks,
   // and not just module or function blocks.
@@ -581,9 +583,9 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
                                                 CallExpr* call,
                                                 BlockStmt* block,
                                                 VisibilityInfo* visInfo,
-                                                std::set<BlockStmt*>& visited,
+                                                PtrSet<BlockStmt*>& visited,
                                                 Vec<FnSymbol*>& visibleFns,
-                                                std::set<const char*> typeNames)
+                                                PtrSet<const char*> typeNames)
 {
   // Why does the following statement apply to all blocks,
   // and not just module or function blocks?
@@ -617,7 +619,7 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
               }
             }
           }
-          std::set<const char*>::iterator it =
+          PtrSet<const char*>::iterator it =
             typeNames.find(nameToCheck);
           if (it != typeNames.end()) {
             // This method is defined on a type that is in the filter list.
@@ -637,22 +639,22 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
                                                  CallExpr* call,
                                                  BlockStmt* block,
                                                  VisibilityInfo* visInfo,
-                                                 std::set<BlockStmt*>& visited,
+                                                 PtrSet<BlockStmt*>& visited,
                                                  Vec<FnSymbol*>& visibleFns,
                                                  bool inUseChain,
                                                  bool firstVisit,
-                                                 std::set<const char*> filter);
-static void mergeFilters(std::set<const char*> outer,
-                         std::set<const char*> inner,
-                         std::set<const char*>* merged);
+                                                 PtrSet<const char*> filter);
+static void mergeFilters(PtrSet<const char*> outer,
+                         PtrSet<const char*> inner,
+                         PtrSet<const char*>* merged);
 
 static void getVisibleMethodsFromUseList(const char* name, CallExpr* call,
                                          BlockStmt* block,
                                          VisibilityInfo* visInfo,
-                                         std::set<BlockStmt*>& visited,
+                                         PtrSet<BlockStmt*>& visited,
                                          Vec<FnSymbol*>& visibleFns,
                                          bool inUseChain, bool firstVisit) {
-  std::set<const char*> filter;
+  PtrSet<const char*> filter;
   getVisibleMethodsFromUseListFiltered(name, call, block, visInfo, visited,
                                        visibleFns, inUseChain, firstVisit,
                                        filter);
@@ -662,15 +664,15 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
                                                  CallExpr* call,
                                                  BlockStmt* block,
                                                  VisibilityInfo* visInfo,
-                                                 std::set<BlockStmt*>& visited,
+                                                 PtrSet<BlockStmt*>& visited,
                                                  Vec<FnSymbol*>& visibleFns,
                                                  bool inUseChain,
                                                  bool firstVisit,
-                                                 std::set<const char*> filter) {
+                                                 PtrSet<const char*> filter) {
   // the block uses other modules
   for_actuals(expr, block->useList) {
     SymExpr* se = NULL;
-    std::set<const char*> namedTypes;
+    PtrSet<const char*> namedTypes;
 
     if (UseStmt* use = toUseStmt(expr)) {
       if (!needToTraverseUse(firstVisit, inUseChain, use->isPrivate))
@@ -774,7 +776,7 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
     if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
       if (mod->isVisible(call)) {
         if (filter.size() > 0 && namedTypes.size() > 0) {
-          std::set<const char*> intersection;
+          PtrSet<const char*> intersection;
           mergeFilters(filter, namedTypes, &intersection);
           // should we call namedTypes.clear() for space concerns?
 
@@ -805,25 +807,33 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
 // This function returns a set containing the intersection of outer and inner.
 // Any symbol that is solely in one list and not the other is not valid and
 // should not be returned.
-static void mergeFilters(std::set<const char*> outer,
-                         std::set<const char*> inner,
-                         std::set<const char*>* merged) {
+static void mergeFilters(PtrSet<const char*> outer,
+                         PtrSet<const char*> inner,
+                         PtrSet<const char*>* merged) {
   INT_ASSERT(outer.size() > 0 && inner.size() > 0);
-  std::set<const char*>::iterator it;
 
-  for (it = outer.begin(); it != outer.end(); ++it) {
-    if (inner.find(*it) != inner.end()) {
-      merged->insert(*it);
+  if (outer.size() < inner.size()) {
+    for (auto elt : outer) {
+      if (inner.find(elt) != inner.end()) {
+        merged->insert(elt);
+      }
+    }
+
+  } else {
+    for (auto elt : inner) {
+      if (outer.find(elt) != outer.end()) {
+        merged->insert(elt);
+      }
     }
   }
 }
 
 static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
                                       BlockStmt* block, VisibilityInfo* visInfo,
-                                      std::set<BlockStmt*>& visited,
+                                      PtrSet<BlockStmt*>& visited,
                                       Vec<FnSymbol*>& visibleFns,
                                       bool inUseChain,
-                                      std::set<const char*> typeNames) {
+                                      PtrSet<const char*> typeNames) {
   if (block == rootBlock) return; // nothing there
   //
   // avoid infinite recursion due to modules with mutual uses
@@ -902,7 +912,7 @@ static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
 
 static void getVisibleMethodsImpl(const char* name, CallExpr* call,
                                   BlockStmt* block, VisibilityInfo* visInfo,
-                                  std::set<BlockStmt*>& visited,
+                                  PtrSet<BlockStmt*>& visited,
                                   Vec<FnSymbol*>& visibleFns, bool inUseChain) {
   if (block == rootBlock) return; // nothing there
   //
@@ -987,14 +997,14 @@ static void getVisibleFunctionsImpl(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 VisibilityInfo*       visInfo,
-                                std::set<BlockStmt*>& visited,
+                                PtrSet<BlockStmt*>& visited,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool                  inUseChain);
 
 static void getVisibleFunctionsVI(const char*            name,
                                 CallExpr*                call,
                                 VisibilityInfo*          visInfo,
-                                std::set<BlockStmt*>*    visited,
+                                PtrSet<BlockStmt*>*    visited,
                                 Vec<FnSymbol*>&          visibleFns)
 {
   getVisibleFunctionsImpl(name, call, visInfo->currStart, visInfo,
@@ -1005,7 +1015,7 @@ void getVisibleFunctions(const char*      name,
                          CallExpr*        call,
                          Vec<FnSymbol*>&  visibleFns) {
   BlockStmt*           block    = getVisibilityScope(call);
-  std::set<BlockStmt*> visited;
+  PtrSet<BlockStmt*> visited;
 
   getVisibleFunctionsImpl(name, call, block, NULL,
                           visited, visibleFns, false);
@@ -1062,7 +1072,7 @@ static void getVisibleFnsFirstVisit(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 VisibilityInfo*       visInfo,
-                                std::set<BlockStmt*>& visited,
+                                PtrSet<BlockStmt*>& visited,
                                 Vec<FnSymbol*>&       visibleFns)
 {
   // Why does the following statement apply to all blocks,
@@ -1141,7 +1151,7 @@ static void getVisibleFnsFromUseList(const char*      name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 VisibilityInfo*       visInfo,
-                                std::set<BlockStmt*>& visited,
+                                PtrSet<BlockStmt*>& visited,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool                  inUseChain,
                                 bool                  firstVisit)
@@ -1203,7 +1213,7 @@ static void getVisibleFunctionsImpl(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 VisibilityInfo*       visInfo,
-                                std::set<BlockStmt*>& visited,
+                                PtrSet<BlockStmt*>& visited,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool                  inUseChain)
 {

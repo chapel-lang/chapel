@@ -52,10 +52,11 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "view.h"
+#include "llvm/ADT/DenseMap.h"
 
 ResolveScope* rootScope;
 
-static std::map<BaseAST*, ResolveScope*> sScopeMap;
+static llvm::DenseMap<BaseAST*, ResolveScope*> sScopeMap;
 
 ResolveScope* ResolveScope::getRootModule() {
   ResolveScope* retval = new ResolveScope(theProgram, NULL);
@@ -1203,7 +1204,7 @@ ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
               bool followUses) {
   if (!this->canReexport) return NULL;
 
-  std::vector<Symbol *> symbols;
+  llvm::SmallVector<Symbol *, 4> symbols;
 
   bool traversedRenames = false;
   bool hasPublicVisStmt = false;

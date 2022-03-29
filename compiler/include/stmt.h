@@ -28,6 +28,8 @@
 #include <map>
 #include <set>
 
+#include "llvm/ADT/SmallPtrSet.h"
+
 #ifdef HAVE_LLVM
 
 #define FNAME(str) (llvm::Twine(getFunction()->cname)            + \
@@ -60,6 +62,9 @@ class ResolveScope;
 
 // parent base class for UseStmt and ImportStmt
 class VisibilityStmt : public Stmt {
+
+  template <typename T, size_t N = 8> using PtrSet = llvm::SmallPtrSet<T, N>;
+
  public:
   VisibilityStmt(AstTag astTag);
  ~VisibilityStmt() override = default;
@@ -69,7 +74,7 @@ class VisibilityStmt : public Stmt {
   const char* getRename() const;
   const char* getRenamedSym(const char* name) const;
 
-  virtual std::set<const char*> typeWasNamed(Type* t) const = 0;
+  virtual PtrSet<const char*> typeWasNamed(Type* t) const = 0;
 
   virtual bool skipSymbolSearch(const char* name) const = 0;
 

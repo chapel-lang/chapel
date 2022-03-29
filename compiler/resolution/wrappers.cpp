@@ -65,15 +65,16 @@
 #include "TransformLogicalShortCircuit.h"
 #include "visibleFunctions.h"
 
+#include <llvm/ADT/SmallVector.h>
 #include <map>
 #include <utility>
 
 static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
-                                    std::vector<ArgSymbol*>& actualFormals);
+                                    llvm::SmallVectorImpl<ArgSymbol*>& actualFormals);
 
 static void addDefaultTokensAndReorder(FnSymbol *fn,
                                        CallInfo& info,
-                                       std::vector<ArgSymbol*>& actualIdxToFml);
+                                       llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFml);
 
 static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
                              ArgSymbol* formal, SymExpr* actual,
@@ -84,7 +85,7 @@ static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
 
 static void       reorderActuals(FnSymbol*                fn,
                                  CallInfo&                info,
-                                 std::vector<ArgSymbol*>& actualIdxToFormal);
+                                 llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal);
 
 static void removeNamedExprs(FnSymbol* fn, CallExpr* call);
 
@@ -102,11 +103,11 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
                              SymbolMap& inTmpToActualMap);
 
 bool       isPromotionRequired(FnSymbol* fn, CallInfo& info,
-                               std::vector<ArgSymbol*>& actualIdxToFormal);
+                               llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal);
 
 static FnSymbol*  promotionWrap(FnSymbol* fn,
                                 CallInfo& info,
-                                std::vector<ArgSymbol*>& actualIdxToFormal,
+                                llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
                                 bool      buildFastFollowerChecks);
 
 static FnSymbol*  buildEmptyWrapper(FnSymbol* fn);
@@ -156,7 +157,7 @@ static bool isNestedNewOrDefault(FnSymbol* innerFn, CallExpr* innerCall) {
 
 FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 CallInfo&                info,
-                                std::vector<ArgSymbol*>& actualIdxToFormal,
+                                llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
                                 bool                     fastFollowerChecks) {
   int       numActuals = static_cast<int>(actualIdxToFormal.size());
   FnSymbol* retval     = fn;
@@ -285,7 +286,7 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
                                      SymbolMap& copyMap);
 
 static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
-                                    std::vector<ArgSymbol*>& actualFormals) {
+                                    llvm::SmallVectorImpl<ArgSymbol*>& actualFormals) {
   if (fn->hasFlag(FLAG_OPERATOR)) {
     if (fn->hasFlag(FLAG_METHOD)) {
       int numFormals = fn->numFormals();
@@ -336,10 +337,10 @@ static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
 static
 void addDefaultTokensAndReorder(FnSymbol *fn,
                                 CallInfo& info,
-                                std::vector<ArgSymbol*>& actualFormals) {
+                                llvm::SmallVectorImpl<ArgSymbol*>& actualFormals) {
 
   int numFormals = fn->numFormals();
-  std::vector<Symbol*> newActuals(numFormals);
+  llvm::SmallVector<Symbol*, 8> newActuals(numFormals);
 
   // Gather the actuals into newActuals with NULLs where
   // we need to fill in a default. This also happens
@@ -348,7 +349,7 @@ void addDefaultTokensAndReorder(FnSymbol *fn,
   for_formals(formal, fn) {
     Symbol* actualSym = NULL;
     int j = 0;
-    for_vector(ArgSymbol, arg, actualFormals) {
+    for (ArgSymbol *arg: actualFormals) {
       if (arg == formal) {
         actualSym = info.actuals.v[j];
       }
@@ -367,7 +368,7 @@ void addDefaultTokensAndReorder(FnSymbol *fn,
 
   // Add the actuals back in the call along with gUnknown for
   // defaulted arguments (we'll fix that in replaceDefaultTokensWithDefaults)
-  for_vector_allowing_0s(Symbol, actual, newActuals) {
+  for (Symbol *actual: newActuals) {
     if (actual != NULL) {
       info.call->insertAtTail(actual);
     } else {
@@ -1073,7 +1074,7 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
 
 static void reorderActuals(FnSymbol*                fn,
                            CallInfo&                info,
-                           std::vector<ArgSymbol*>& actualFormals) {
+                           llvm::SmallVectorImpl<ArgSymbol*>& actualFormals) {
   int              numArgs       = actualFormals.size();
   std::vector<int> formalsToFormals(numArgs);
   bool             needToReorder = false;
@@ -1084,7 +1085,7 @@ static void reorderActuals(FnSymbol*                fn,
 
     i++;
 
-    for_vector(ArgSymbol, af, actualFormals) {
+    for (ArgSymbol *af : actualFormals) {
       j++;
 
       if (af == formal) {
@@ -1997,7 +1998,7 @@ namespace {
 
     PromotionInfo(FnSymbol* fn,
                   CallInfo& info,
-                  std::vector<ArgSymbol*>& actualFormals);
+                  llvm::SmallVectorImpl<ArgSymbol*>& actualFormals);
   };
 }
 
@@ -2152,7 +2153,7 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
 
 
 bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
-                         std::vector<ArgSymbol*>& actualFormals) {
+                         llvm::SmallVectorImpl<ArgSymbol*>& actualFormals) {
   bool retval = false;
 
   if (fn->name != astrSassign) {
@@ -2192,7 +2193,7 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
 
 static FnSymbol* promotionWrap(FnSymbol* fn,
                                CallInfo& info,
-                               std::vector<ArgSymbol*>& actualIdxToFormal,
+                               llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
                                bool      fastFollowerChecks) {
   SymbolMap subs;
   FnSymbol* retval = NULL;
@@ -2230,7 +2231,7 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
  */
 PromotionInfo::PromotionInfo(FnSymbol* fn,
                              CallInfo& info,
-                             std::vector<ArgSymbol*>& actualFormals) :
+                             llvm::SmallVectorImpl<ArgSymbol*>& actualFormals) :
   fn(fn),
   // these are established later along with wrapperFormals
   wrapperFn(NULL),
