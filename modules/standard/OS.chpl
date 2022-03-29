@@ -39,9 +39,41 @@ module OS {
   */
   pragma "no doc"
   module POSIX {
+    use CTypes;
+
+    // sys/types.h: types
+    extern type mode_t;
+
+    // For sure we need mode_t|mode_t, maybe others in the future.
+    inline operator :(x:mode_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:int, type t:mode_t) return __primitive("cast", t, x);
+    inline operator |(a: mode_t, b: mode_t) return (a:int | b:int):mode_t;
 
     // stdlib.h: functions
     extern proc getenv(name:c_string):c_string;
+
+    // sys/stat.h: constants
+    extern const S_IRWXU: mode_t;
+    extern const S_IRUSR: mode_t;
+    extern const S_IWUSR: mode_t;
+    extern const S_IXUSR: mode_t;
+
+    extern const S_IRWXG: mode_t;
+    extern const S_IRGRP: mode_t;
+    extern const S_IWGRP: mode_t;
+    extern const S_IXGRP: mode_t;
+
+    extern const S_IRWXO: mode_t;
+    extern const S_IROTH: mode_t;
+    extern const S_IWOTH: mode_t;
+    extern const S_IXOTH: mode_t;
+
+    extern const S_ISUID: mode_t;
+    extern const S_ISGID: mode_t;
+    extern const S_ISVTX: mode_t;
+
+    // sys/stat.h: functions
+    extern proc chmod(path:c_string, mode:mode_t):c_int;
 
   } // end POSIX
 }
