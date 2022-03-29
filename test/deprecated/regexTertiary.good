@@ -1,0 +1,37 @@
+regexTertiary.chpl:11: warning: string.search is deprecated, use find instead
+regexTertiary.chpl:12: warning: bytes.search is deprecated, use find instead
+regexTertiary.chpl:14: warning: string.search is deprecated, use find instead
+regexTertiary.chpl:15: warning: bytes.search is deprecated, use find instead
+regexTertiary.chpl:31: warning: string.match is deprecated
+regexTertiary.chpl:50: warning: bytes.match is deprecated
+regexTertiary.chpl:62: warning: the matches function is deprecated
+regexTertiary.chpl:73: warning: the matches function is deprecated
+regexTertiary.chpl:82: warning: the split function with pattern argument is deprecated, use sep instead
+regexTertiary.chpl:91: warning: the split function with pattern argument is deprecated use sep instead
+Search
+(matched = true, byteOffset = 0, numBytes = 8)
+(matched = true, byteOffset = 0, numBytes = 8)
+(matched = false, byteOffset = -1, numBytes = 0)
+(matched = false, byteOffset = -1, numBytes = 0)
+Match 1
+(matched = true, byteOffset = 0, numBytes = 4)
+test
+(matched = true, byteOffset = 0, numBytes = 4)
+Match 2
+(matched = true, byteOffset = 0, numBytes = 4)
+test
+(matched = true, byteOffset = 0, numBytes = 4)
+Matches 1
+((matched = true, byteOffset = 4, numBytes = 3))
+Matches 2
+((matched = true, byteOffset = 4, numBytes = 3))
+Split 1
+Words
+words
+words
+
+Split 2
+Words
+words
+words
+
