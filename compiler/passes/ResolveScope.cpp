@@ -102,10 +102,9 @@ ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
 }
 
 ResolveScope* ResolveScope::getScopeFor(BaseAST* ast) {
-  std::map<BaseAST*, ResolveScope*>::iterator it;
   ResolveScope*                               retval = NULL;
 
-  it = sScopeMap.find(ast);
+  auto it = sScopeMap.find(ast);
 
   if (it != sScopeMap.end()) {
     retval = it->second;
@@ -115,9 +114,7 @@ ResolveScope* ResolveScope::getScopeFor(BaseAST* ast) {
 }
 
 void ResolveScope::destroyAstMap() {
-  std::map<BaseAST*, ResolveScope*>::iterator it;
-
-  for (it = sScopeMap.begin(); it != sScopeMap.end(); it++) {
+  for (auto it = sScopeMap.begin(); it != sScopeMap.end(); it++) {
     delete it->second;
   }
 
