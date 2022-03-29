@@ -20,11 +20,10 @@ writeln("Search 1");
     writeln(str[match]);
   }
   {
-    var match = str.search(r);
+    var match = str.find(r);
 
     writeln(match);
 
-    writeln(str[match]);
   }
 }
 
@@ -43,12 +42,9 @@ writeln("Search 2");
     writeln(str[match]);
   }
   {
-    var match = str.search(r, cap);
+    var match = str.find(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
@@ -67,12 +63,9 @@ writeln("Search 3");
     writeln(str[match]);
   }
   {
-    var match = str.search(r, cap);
+    var match = str.find(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
@@ -90,12 +83,9 @@ writeln("Search 4");
 
     writeln(str[match]);
   }{
-    var match = str.search(r, cap);
+    var match = str.find(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
@@ -114,12 +104,9 @@ writeln("Search 5");
     writeln(str[match]);
   }
   {
-    var match = str.search(r, cap);
+    var match = str.find(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
@@ -136,11 +123,9 @@ writeln("Match 1");
     writeln(str[match]);
   }
   {
-    var match = str.match(r);
+    var match = str.startsWith(r);
 
     writeln(match);
-
-    writeln(str[match]);
   }
 }
 
@@ -159,12 +144,9 @@ writeln("Match 2");
     writeln(str[match]);
   }
   {
-    var match = str.match(r, cap);
+    var match = str.startsWith(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
@@ -183,12 +165,9 @@ writeln("Match 3");
     writeln(str[match]);
   }
   {
-    var match = str.match(r, cap);
+    var match = str.startsWith(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
@@ -261,34 +240,6 @@ writeln("Split 6");
   }
   for s in str.split(split, 2) {
     writeln(s);
-  }
-}
-
-
-writeln("Matches 1");
-{
-  var re = compile("\\w+":t);
-  var str = "Words, words, word.":t;
-  for s in re.matches(str, 0) {
-    writeln(str[s[0]]);
-  }
-  for s in str.matches(re, 0) {
-    writeln(str[s[0]]);
-  }
-}
-writeln("Matches 2");
-{
-  var re = compile("(w)(\\w+)":t);
-  var str = "Words, words, word.":t;
-  for s in re.matches(str, 2) {
-    writeln(str[s[0]]);
-    writeln(str[s[1]]);
-    writeln(str[s[2]]);
-  }
-  for s in str.matches(re, 2) {
-    writeln(str[s[0]]);
-    writeln(str[s[1]]);
-    writeln(str[s[2]]);
   }
 }
 

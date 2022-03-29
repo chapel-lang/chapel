@@ -1326,7 +1326,9 @@ pragma "last resort"
 deprecated "the split function with pattern argument is deprecated, use sep instead"
 iter string.split(pattern: regex(string), maxsplit: int = 0)
 {
-  this.split(pattern, maxsplit);
+   for v in pattern.split(this, maxsplit) {
+    yield v;
+  }
 }
 
 
@@ -1350,7 +1352,9 @@ pragma "last resort"
 deprecated "the split function with pattern argument is deprecated use sep instead"
 iter bytes.split(pattern: regex(bytes), maxsplit: int = 0)
 {
-  this.split(pattern, maxsplit);
+   for v in pattern.split(this, maxsplit) {
+    yield v;
+  }
 }
 
 
