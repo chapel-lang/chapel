@@ -4886,7 +4886,7 @@ static void filterCandidate(CallInfo&                  info,
                             VisibilityInfo&            visInfo,
                             FnSymbol*                  fn,
                             Vec<ResolutionCandidate*>& candidates) {
-  ResolutionCandidate* candidate = new ResolutionCandidate(fn);
+  ResolutionCandidate candidate(fn);
 
   if (fExplainVerbose &&
       ((explainCallLine && explainCallMatch(info.call)) ||
@@ -4898,10 +4898,8 @@ static void filterCandidate(CallInfo&                  info,
     }
   }
 
-  if (candidate->isApplicable(info, &visInfo)) {
-    candidates.add(candidate);
-  } else {
-    delete candidate;
+  if (candidate.isApplicable(info, &visInfo)) {
+    candidates.add(new ResolutionCandidate(candidate));
   }
 }
 
