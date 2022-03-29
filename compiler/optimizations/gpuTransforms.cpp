@@ -334,6 +334,8 @@ class GpuKernel {
   SymbolMap copyMap_;
 
   public:
+  SymExpr* blockSize_;
+
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
   FnSymbol* fn() const { return fn_; }
   const std::vector<Symbol*>& kernelActuals() { return kernelActuals_; }
@@ -353,6 +355,7 @@ class GpuKernel {
 
 GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   : gpuLoop(gpuLoop)
+  , blockSize_(nullptr)
 {
   buildStubOutlinedFunction(insertionPoint);
   populateBody(gpuLoop.loop(), fn_);
@@ -482,7 +485,11 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     std::vector<SymExpr*> symExprsInBody;
     collectSymExprs(node, symExprsInBody);
 
-    if (DefExpr* def = toDefExpr(node)) {
+    CallExpr* call = toCallExpr(node);
+    if(call && call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+        blockSize_ = toSymExpr(call->get(1));
+    }
+    else if (DefExpr* def = toDefExpr(node)) {
       copyNode = false; // we'll do it here to adjust our symbol map
 
       DefExpr* newDef = def->copy();
@@ -529,7 +536,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
               if (symExpr == parent->get(2)) {  // this is a field
                 // do nothing
               }
-              else if (symExpr == parent->get(1)  ||
+              else if (symExpr == parent->get(1) ||
                 (parent->numActuals() >= 3 && symExpr == parent->get(3)))
               {
                 addKernelArgument(sym);
@@ -538,7 +545,10 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
                 INT_FATAL("Malformed PRIM_GET_MEMBER_*");
               }
             }
-            else if (parent->isPrimitive()) {
+           else if(parent->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+              // This is handled at kernel launch time, don't pass into the kernel
+           }
+           else if (parent->isPrimitive()) {
               addKernelArgument(sym);
             }
             else if (FnSymbol* calledFn = parent->resolvedFunction()) {
@@ -648,14 +658,18 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
 }
 
 static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
-  CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
+  CallExpr *call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
 
   call->insertAtTail(info.fn());
 
   call->insertAtTail(numThreads);  // total number of GPU threads
 
-  int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize:512;
-  call->insertAtTail(new_IntSymbol(blockSize));
+  if (info.blockSize_) {
+    call->insertAtTail(info.blockSize_->copy());
+  } else {
+    int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize : 512;
+    call->insertAtTail(new_IntSymbol(blockSize));
+  }
 
   for_vector (Symbol, actual, info.kernelActuals()) {
     call->insertAtTail(new SymExpr(actual));
