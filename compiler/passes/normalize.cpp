@@ -590,7 +590,9 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   // Phase 1
   //
   {
-    std::vector<CallExpr*> calls1;
+    // static variable here is only for performance
+    static std::vector<CallExpr*> calls1;
+    calls1.clear();
 
     collectCallExprs(base, calls1);
 
@@ -607,7 +609,9 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   //
   // Phase 2
   //
-  std::vector<Symbol*> symbols;
+  // static variable here is only for performance
+  static std::vector<Symbol*> symbols;
+  symbols.clear();
 
   collectSymbols(base, symbols);
 
@@ -666,7 +670,9 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   //
   // Phase 4
   //
-  std::vector<CallExpr*> calls2;
+  // static variable here is only for performance
+  static std::vector<CallExpr*> calls2;
+  calls2.clear();
 
   collectCallExprs(base, calls2);
 
@@ -707,15 +713,19 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
 static Symbol* theDefinedSymbol(BaseAST* ast);
 
 void checkUseBeforeDefs(FnSymbol* fn) {
+  // static variables here are just intended to be a performance improvement
+  static std::set<Symbol*> defined; // typically 32
+  static std::set<Symbol*> undefined;      // typically 0
+  static std::set<const char*> undeclared; // typically 0
+  static std::vector<BaseAST*> asts; // typically large
+
   if (fn->defPoint->parentSymbol) {
     ModuleSymbol*         mod = fn->getModule();
 
-    std::set<Symbol*>     defined;
-
-    std::set<Symbol*>     undefined;
-    std::set<const char*> undeclared;
-
-    std::vector<BaseAST*> asts;
+    defined.clear();
+    undefined.clear();
+    undeclared.clear();
+    asts.clear();
 
     collect_asts_postorder(fn, asts);
 
