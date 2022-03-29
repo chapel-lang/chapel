@@ -444,7 +444,7 @@ Methods on classes are referred to as *class methods*.
 See :ref:`Chapter-Methods` for more information about methods.
 
 Within a class method, the type of ``this`` is generally the non-nilable
-``borrowed`` variant of the class type. It is different for type methods
+``borrowed`` variant of the class type. It is different for methods on types
 (see below) and it might be a different type if the class method is
 declared as a secondary method with a type expression.
 
@@ -493,9 +493,14 @@ For example:
       x.secondaryMethodWithTypeExpression(); // within the method, this: owned C?
 
 
-For type methods on a class, ``this`` will accept any management or
-nilability variant of the class type and it will refer to that type in
-the body of the method. For example:
+.. _Methods_on_Types:
+
+Methods on Types
+~~~~~~~~~~~~~~~~
+
+For class methods marked with the ``type`` receiver intent, ``this``
+will accept any management or nilability variant of the class type and it
+will refer to that type in the body of the method. For example:
 
    *Example (class-type-method-this.chpl)*.
 
@@ -520,8 +525,8 @@ the body of the method. For example:
       owned C
       borrowed C?
 
-When a type method is defined only in a parent class, the type will be
-the corresponding variant of the parent class. For example:
+When a method on a type is defined only for the parent class, the type will
+be the corresponding variant of the parent class. For example:
 
    *Example (class-type-method-inherit.chpl)*.
 
@@ -621,12 +626,13 @@ class’s method. Such methods may be considered for dynamic dispatch if
 certain criteria are met. In particular, dynamic dispatch will be used
 when the method receiver has a static type of the base class but refers
 to an instance of a derived class type. Additionally, a method eligible
-for dynamic dispatch must not be a class method (see :ref:`Class_Methods`),
-must not return ``type``, and must not return ``param``.
+for dynamic dispatch must not be a method on a type
+(see :ref:`Methods_on_Types`), must not return ``type``, and must not
+return ``param``.
 
    *Rationale*.
 
-   Class methods, methods that return ``type``, and methods that return
+   Methods on types, methods that return ``type``, and methods that return
    ``param`` are not considered as candidates for dynamic dispatch because
    they are resolved at compile-time based on the static type of the
    method receiver.
