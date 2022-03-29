@@ -39,5 +39,9 @@ module OS {
   */
   pragma "no doc"
   module POSIX {
+
+    // stdlib.h: functions
+    extern proc getenv(name:c_string):c_string;
+
   } // end POSIX
 }
