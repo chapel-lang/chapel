@@ -1,0 +1,3 @@
+The function `bar` should probably generate an error message because it returns
+a ref to the local variable which goes out of scope. See
+https://github.com/chapel-lang/chapel/pull/19357#issuecomment-1062868709
