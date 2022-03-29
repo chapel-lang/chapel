@@ -495,9 +495,26 @@ struct ChplSyntaxVisitor {
       }
     } else {
       if (node->callUsedSquareBrackets()) {
-        interpose(node->actuals(), ", ", "[", "]");
+        ss_ << "[";
       } else {
-        interpose(node->actuals(), ", ", "(", ")");
+        ss_ << "(";
+      }
+      std::string sep;
+      for (int i = 0; i < node->numActuals(); i++) {
+        ss_ << sep;
+        if (node->isNamedActual(i)) {
+          ss_ << node->actualName(i);
+          // The spaces around = are just to satisfy old tests
+          // TODO: Remove spaces around `=` when removing old parser
+          ss_ << " = ";
+        }
+        printChapelSyntax(ss_, node->actual(i));
+        sep = ", ";
+      }
+      if (node->callUsedSquareBrackets()) {
+        ss_ << "]";
+      } else {
+        ss_ << ")";
       }
     }
   }

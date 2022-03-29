@@ -396,6 +396,7 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("proc foo(x...) {}", "foo(x ...)")
   TEST_USER_STRING("proc bar(type x...) {}", "bar(type x ...)")
   TEST_USER_STRING("proc bar(type x...?k) {}", "bar(type x ...?k)")
+  TEST_USER_STRING("proc foo(x: borrowed C(t=?tt, r=?rr), y: borrowed C(tt, rr)) {}", "foo(x: borrowed C(t = ?tt, r = ?rr), y: borrowed C(tt, rr))")
 }
 
 static void test4(Parser* parser) {
