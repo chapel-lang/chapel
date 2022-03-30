@@ -1,2 +1,4 @@
 Array: 38 39 40 41 42 43 44 45 46 47
+In DefaultRectangular._simpleTransfer(): Alo=(1), Blo=(1), len=10, elemSize=8
+In DefaultRectangular._simpleTransfer(): Alo=(1), Blo=(1), len=10, elemSize=8
 Number of kernel launches: 1
