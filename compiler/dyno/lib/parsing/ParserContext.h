@@ -37,10 +37,14 @@ struct ParserError {
   std::string message;
   ParserError(YYLTYPE location, std::string message,
               ErrorMessage::Kind kind)
-    : kind(kind), location(location), message(message) { }
+    : kind(kind), location(location), message(message) {
+    gdbShouldBreakHere();
+  }
   ParserError(YYLTYPE location, const char* message,
               ErrorMessage::Kind kind)
-    : kind(kind), location(location), message(message) { }
+    : kind(kind), location(location), message(message) {
+    gdbShouldBreakHere();
+  }
 };
 
 struct ParserComment {
