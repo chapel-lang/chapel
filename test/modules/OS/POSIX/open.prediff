@@ -1,0 +1,7 @@
+#! /usr/bin/env bash
+if [[ $(ls -l open.file-1 | tr -s ' \t' | cut -d' ' -f5) == '6' ]] ; then
+  echo ok 1 >> $2
+fi
+if [[ $(ls -l open.file-2 | tr -s ' \t' | cut -d' ' -f5) == '8' ]] ; then
+  echo ok 2 >> $2
+fi

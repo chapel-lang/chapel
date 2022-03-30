@@ -27,6 +27,7 @@
 // runtime and so are already included elsewhere, but here we make
 // sure we have them.
 //
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -34,6 +35,17 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+//
+// fcntl.h
+//
+
+// This is needed because POSIX declares: open(const char*, int, ...)
+// and Chapel varargs functions are actually generic, thus mismatch.
+static inline
+int chpl_os_posix_open(const char* path, int oflag, mode_t mode) {
+  return open(path, oflag, mode);
+}
 
 #ifdef __cplusplus
 } // end extern "C"

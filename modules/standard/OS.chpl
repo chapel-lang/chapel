@@ -63,6 +63,37 @@ module OS {
       return __primitive("cast", t, x);
 
     //
+    // fcntl.h
+    //
+    extern const O_ACCMODE:c_int;
+    extern const O_APPEND:c_int;
+    extern const O_CLOEXEC:c_int;
+    extern const O_CREAT:c_int;
+    extern const O_DIRECTORY:c_int;
+    extern const O_DSYNC:c_int;
+    extern const O_EXCL:c_int;
+    extern const O_EXEC:c_int;
+    extern const O_NOCTTY:c_int;
+    extern const O_NOFOLLOW:c_int;
+    extern const O_NONBLOCK:c_int;
+    extern const O_RDONLY:c_int;
+    extern const O_RDWR:c_int;
+    extern const O_RSYNC:c_int;
+    extern const O_SEARCH:c_int;
+    extern const O_SYNC:c_int;
+    extern const O_TRUNC:c_int;
+    extern const O_TTY_INIT:c_int;
+    extern const O_WRONLY:c_int;
+
+    extern proc creat(path:c_string, mode:mode_t = 0):c_int;
+    inline proc open(path:c_string, oflag:c_int, mode:mode_t = 0:mode_t)
+                  :c_int {
+      extern proc chpl_os_posix_open(path:c_string, oflag:c_int, mode:mode_t)
+                    :c_int;
+      return chpl_os_posix_open(path, oflag, mode);
+    }
+
+    //
     // stdlib.h
     //
     extern proc getenv(name:c_string):c_string;
@@ -105,6 +136,13 @@ module OS {
     };
 
     extern proc gettimeofday(ref tp: timeval, tzp:c_void_ptr):c_int;
+
+    //
+    // unistd.h
+    //
+    extern proc close(fildes:c_int):c_int;
+    extern proc read(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
+    extern proc write(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
 
   } // end POSIX
 }
