@@ -40,6 +40,7 @@ static const char* kindToString(Function::Kind kind) {
     case Function::Kind::PROC: return "proc";
     case Function::Kind::ITER: return "iter";
     case Function::Kind::OPERATOR: return "operator";
+    case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
