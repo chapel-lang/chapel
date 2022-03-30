@@ -351,7 +351,7 @@ struct RstSignatureVisitor {
 
   bool enter(const EnumElement* e) {
     os_ << e->name().c_str();
-    if (const Expression* ie = e->initExpression()) {
+    if (const AstNode* ie = e->initExpression()) {
       os_ <<  " = ";
       ie->traverse(*this);
     }
@@ -366,11 +366,11 @@ struct RstSignatureVisitor {
       os_ << kindToString(v->kind()) << " ";
     }
     os_ << v->name().c_str();
-    if (const Expression* te = v->typeExpression()) {
+    if (const AstNode* te = v->typeExpression()) {
       os_ << ": ";
       te->traverse(*this);
     }
-    if (const Expression* ie = v->initExpression()) {
+    if (const AstNode* ie = v->initExpression()) {
       os_ << " = ";
       ie->traverse(*this);
     }
@@ -382,11 +382,11 @@ struct RstSignatureVisitor {
       os_ << kindToString(f->intent()) << " ";
     }
     os_ << f->name().c_str();
-    if (const Expression* te = f->typeExpression()) {
+    if (const AstNode* te = f->typeExpression()) {
       os_ << ": ";
       te->traverse(*this);
     }
-    if (const Expression* ie = f->initExpression()) {
+    if (const AstNode* ie = f->initExpression()) {
       os_ << "=";
       ie->traverse(*this);
     }
@@ -415,7 +415,7 @@ struct RstSignatureVisitor {
     }
 
     // Return type
-    if (const Expression* e = f->returnType()) {
+    if (const AstNode* e = f->returnType()) {
       os_ << ": ";
       e->traverse(*this);
     }
@@ -443,7 +443,7 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const Call* call) {
-    const Expression* callee = call->calledExpression();
+    const AstNode* callee = call->calledExpression();
     if (!callee) {
       printf("ERROR %s\n", asttags::tagToString(call->tag()));
       call->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
