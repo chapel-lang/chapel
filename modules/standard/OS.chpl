@@ -41,18 +41,25 @@ module OS {
   module POSIX {
     use CTypes;
 
-    // sys/types.h: types
+    //
+    // sys/types.h
+    //
     extern type mode_t;
 
-    // For sure we need mode_t|mode_t, maybe others in the future.
+    // Users definitely need |(mode_t, mode_t).  We may want others in
+    // the future.
     inline operator :(x:mode_t, type t:int) return __primitive("cast", t, x);
     inline operator :(x:int, type t:mode_t) return __primitive("cast", t, x);
     inline operator |(a: mode_t, b: mode_t) return (a:int | b:int):mode_t;
 
-    // stdlib.h: functions
+    //
+    // stdlib.h
+    //
     extern proc getenv(name:c_string):c_string;
 
-    // sys/stat.h: constants
+    //
+    // sys/stat.h
+    //
     extern const S_IRWXU: mode_t;
     extern const S_IRUSR: mode_t;
     extern const S_IWUSR: mode_t;
@@ -72,7 +79,6 @@ module OS {
     extern const S_ISGID: mode_t;
     extern const S_ISVTX: mode_t;
 
-    // sys/stat.h: functions
     extern proc chmod(path:c_string, mode:mode_t):c_int;
 
   } // end POSIX
