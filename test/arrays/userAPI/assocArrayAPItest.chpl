@@ -103,7 +103,7 @@ proc testAssocArrayAPI(X: []) {
   writeln();
 
   // Test locality interface
-  writeln("target locales: ", X.targetLocales);
+  writeln("target locales: ", X.targetLocales());
   if (X.hasSingleLocalSubdomain()) then
     writeln("local subdomain: ", X.localSubdomain());
   writeln("local subdomains:");

@@ -58,9 +58,9 @@ to access to the following TOML file's project name,
 .. code-block:: yaml
 
      [root]
+     author = "Sam Partee"
      name = "example"
      version = "1.0.0"
-     author = "Sam Partee"
 
 Use the following code in chapel.
 
@@ -73,6 +73,16 @@ Use the following code in chapel.
      const projectName = ["root"]["name"] // returns a TOML object
      writeln(projectName.toString());     // to turn TOML object into string representation
 
+
+.. note::
+
+  As of Chapel 1.26.0, TOML objects will print their values in the following manner:
+  If the object contains a `root` table, it will be printed first.
+  Keys within the root table will be printed in sorted order.
+  All other tables will be printed in a sorted order after `root`, if it exists.
+  All table keys will be printed in a sorted order. Prior to this change, the `root`
+  table would print first, followed by keys and other tables in what may have been
+  a non-deterministic manner.
 
 */
 proc parseToml(input: file) : unmanaged Toml {

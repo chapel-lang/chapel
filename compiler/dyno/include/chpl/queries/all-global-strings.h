@@ -88,10 +88,12 @@ X(logicalOr      , "||")
 X(plus           , "+")
 X(times          , "*")
 X(compareEqual   , "==")
-X(greaterOrEqual , ">=" )
+X(greaterOrEqual , ">=")
 X(greaterThan    , ">")
 X(lessThan       , "<")
 X(lessOrEqual    , "<=")
+X(underscore     , "_")
+X(postfixBang    , "postfix!")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */

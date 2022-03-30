@@ -53,7 +53,7 @@ namespace uast {
  */
 class MultiDecl final : public Decl {
  private:
-  MultiDecl(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  MultiDecl(AstList children, int attributesChildNum, Decl::Visibility vis,
             Decl::Linkage linkage)
     : Decl(asttags::MultiDecl, std::move(children), attributesChildNum,
            vis,
@@ -69,7 +69,7 @@ class MultiDecl final : public Decl {
     return attributes() ? 1 : 0;
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const MultiDecl* lhs = this;
     const MultiDecl* rhs = (const MultiDecl*) other;
     return lhs->declContentsMatchInner(rhs);
@@ -86,17 +86,17 @@ class MultiDecl final : public Decl {
                                 owned<Attributes> attributes,
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
-                                ASTList varDecls);
+                                AstList varDecls);
 
   /**
     Return a way to iterate over the contained VariableDecls and Comments.
    */
-  ASTListIteratorPair<Expression> declOrComments() const {
+  AstListIteratorPair<AstNode> declOrComments() const {
     auto begin = numDeclOrComments()
         ? children_.begin() + declOrCommentChildNum()
         : children_.end();
     auto end = begin + numDeclOrComments();
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -109,22 +109,22 @@ class MultiDecl final : public Decl {
   /**
    Return the i'th contained VariableDecl or Comment.
    */
-  const Expression* declOrComment(int i) const {
+  const AstNode* declOrComment(int i) const {
     assert(i >= 0 && i < numDeclOrComments());
-    const ASTNode* ast = this->child(i + declOrCommentChildNum());
+    const AstNode* ast = this->child(i + declOrCommentChildNum());
     assert(ast->isVariable() || ast->isTupleDecl() || ast->isComment());
-    return (const Expression*)ast;
+    return ast;
   }
 
   /**
    Return a way to iterate over the contained Decls (ignoring Comments)
    */
-  ASTListNoCommentsIteratorPair<Decl> decls() const {
+  AstListNoCommentsIteratorPair<Decl> decls() const {
     auto begin = numDeclOrComments()
         ? children_.begin() + declOrCommentChildNum()
         : children_.end();
     auto end = begin + numDeclOrComments();
-    return ASTListNoCommentsIteratorPair<Decl>(begin, end);
+    return AstListNoCommentsIteratorPair<Decl>(begin, end);
   }
 
 };

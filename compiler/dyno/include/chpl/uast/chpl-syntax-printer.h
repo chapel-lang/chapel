@@ -22,7 +22,7 @@
 #define CHPL_UAST_CHPL_SYNTAX_VISITOR_H
 
 #include "chpl/queries/Context.h"
-#include "chpl/uast/ASTTag.h"
+#include "chpl/uast/AstTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/uast/all-uast.h"
 
@@ -32,11 +32,11 @@
 namespace chpl {
 
   /*
-    With this function we are tyring to create a faithful representation
+    With this function we are trying to create a faithful representation
     of the uAST in Chapel syntax. The goal is to generate strings that could
     be copy/pasted and compiled back to the same uAST.
   */
-  void printChapelSyntax(std::ostream& os, const uast::ASTNode* node);
+  void printChapelSyntax(std::ostream& os, const uast::AstNode* node);
 
 
   /*

@@ -22,6 +22,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PatternMatch.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Support/SourceMgr.h"
 #include "gtest/gtest.h"
 
 namespace llvm {
@@ -117,20 +118,7 @@ TEST_F(ScalarEvolutionExpanderTest, ExpandPtrTypeSCEV) {
 
   ScalarEvolution SE = buildSE(*F);
   auto *S = SE.getSCEV(CastB);
-  SCEVExpander Exp(SE, M.getDataLayout(), "expander");
-  Value *V =
-      Exp.expandCodeFor(cast<SCEVAddExpr>(S)->getOperand(1), nullptr, Br);
-
-  // Expect the expansion code contains:
-  //   %0 = bitcast i32* %bitcast2 to i8*
-  //   %uglygep = getelementptr i8, i8* %0, i64 -1
-  //   %1 = bitcast i8* %uglygep to i32*
-  EXPECT_TRUE(isa<BitCastInst>(V));
-  Instruction *Gep = cast<Instruction>(V)->getPrevNode();
-  EXPECT_TRUE(isa<GetElementPtrInst>(Gep));
-  EXPECT_TRUE(isa<ConstantInt>(Gep->getOperand(1)));
-  EXPECT_EQ(cast<ConstantInt>(Gep->getOperand(1))->getSExtValue(), -1);
-  EXPECT_TRUE(isa<BitCastInst>(Gep->getPrevNode()));
+  EXPECT_TRUE(isa<SCEVUnknown>(S));
 }
 
 // Make sure that SCEV doesn't introduce illegal ptrtoint/inttoptr instructions
@@ -947,24 +935,31 @@ TEST_F(ScalarEvolutionExpanderTest, ExpandNonIntegralPtrWithNullBase) {
     Value *V = Exp.expandCodeFor(PtrPlus1, I.getType(), &I);
     I.replaceAllUsesWith(V);
 
-    // Check the expander created bitcast (gep i8* null, %offset).
+    // Check that the expander created:
+    // define float addrspace(1)* @test(i64 %off) {
+    //   %scevgep = getelementptr float, float addrspace(1)* null, i64 %off
+    //   %scevgep1 = bitcast float addrspace(1)* %scevgep to i8 addrspace(1)*
+    //   %uglygep = getelementptr i8, i8 addrspace(1)* %scevgep1, i64 1
+    //   %uglygep2 = bitcast i8 addrspace(1)* %uglygep to float addrspace(1)*
+    //   %ptr = getelementptr inbounds float, float addrspace(1)* null, i64 %off
+    //   ret float addrspace(1)* %uglygep2
+    // }
+
     auto *Cast = dyn_cast<BitCastInst>(V);
     EXPECT_TRUE(Cast);
     EXPECT_EQ(Cast->getType(), I.getType());
     auto *GEP = dyn_cast<GetElementPtrInst>(Cast->getOperand(0));
     EXPECT_TRUE(GEP);
-    EXPECT_TRUE(cast<Constant>(GEP->getPointerOperand())->isNullValue());
-    EXPECT_EQ(cast<PointerType>(GEP->getPointerOperand()->getType())
+    EXPECT_TRUE(match(GEP->getOperand(1), m_SpecificInt(1)));
+    auto *Cast1 = dyn_cast<BitCastInst>(GEP->getPointerOperand());
+    EXPECT_TRUE(Cast1);
+    auto *GEP1 = dyn_cast<GetElementPtrInst>(Cast1->getOperand(0));
+    EXPECT_TRUE(GEP1);
+    EXPECT_TRUE(cast<Constant>(GEP1->getPointerOperand())->isNullValue());
+    EXPECT_EQ(GEP1->getOperand(1), &*F.arg_begin());
+    EXPECT_EQ(cast<PointerType>(GEP1->getPointerOperand()->getType())
                   ->getAddressSpace(),
               cast<PointerType>(I.getType())->getAddressSpace());
-
-    // Check the expander created the expected index computation: add (shl
-    // %offset, 2), 1.
-    Value *Arg;
-    EXPECT_TRUE(
-        match(GEP->getOperand(1),
-              m_Add(m_Shl(m_Value(Arg), m_SpecificInt(2)), m_SpecificInt(1))));
-    EXPECT_EQ(Arg, &*F.arg_begin());
     EXPECT_FALSE(verifyFunction(F, &errs()));
   });
 }

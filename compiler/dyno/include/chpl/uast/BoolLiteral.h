@@ -37,7 +37,7 @@ class BoolLiteral final : public Literal {
     : Literal(asttags::BoolLiteral, value) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const BoolLiteral* rhs = (const BoolLiteral*) other;
     return literalContentsMatchInner(rhs);
   }

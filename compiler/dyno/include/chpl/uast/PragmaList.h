@@ -235,6 +235,9 @@ PRAGMA(FN_RETARG, npr, "fn returns via _retArg", ncm)
 PRAGMA(FOLLOWER_INDEX, npr,
        "follower index",
        "a variable representing a follower loop index")
+PRAGMA(FORALL_BREAK_LABEL, npr,
+       "forall break label",
+       "target of error handling in the forall")
 PRAGMA(FORMAL_TEMP, npr,
        "formal temp",
        "a formal temp requiring write-back for an out or inout argument")
@@ -434,6 +437,9 @@ PRAGMA(OVERRIDE, npr, "method overrides", ncm)
 
 // variables added by flatten functions
 PRAGMA(OUTER_VARIABLE, npr, "outer variable", ncm)
+
+// this (task) function is not within a try or try! or a 'throws' function
+PRAGMA(OUTSIDE_TRY, npr, "outside try", ncm)
 
 // This means that the yielding loops themselves within an iterator
 // are order independent. It does not mean that all uses of the iterator

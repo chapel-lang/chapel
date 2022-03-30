@@ -100,7 +100,7 @@ class ClassType final : public Type {
     return basicType_;
   }
 
-  /** Returns the verison this ClassType with the passed decorator */
+  /** Returns the version of this ClassType with the passed decorator */
   const ClassType* withDecorator(Context* context,
                                  ClassTypeDecorator decorator) const;
 };

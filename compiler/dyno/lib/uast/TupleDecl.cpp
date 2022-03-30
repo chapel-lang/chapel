@@ -25,22 +25,16 @@ namespace chpl {
 namespace uast {
 
 bool TupleDecl::assertAcceptableTupleDecl() {
-  asttags::ASTTag firstNonTupleTag = asttags::AST_TAG_UNKNOWN;
+  asttags::AstTag firstNonTupleTag = asttags::AST_TAG_UNKNOWN;;
   int i = 0;
 
   for (const auto& elt: children_) {
     if (elt.get() == attributes()) {
       // TODO: Make sure it is equivalent to components?
     } else if (i == typeExpressionChildNum_) {
-      if (!elt->isExpression()) {
-        assert(false && "type expression child is not expression");
-        return false;
-      }
+      // no checking needed
     } else if (i == initExpressionChildNum_) {
-      if (!elt->isExpression()) {
-        assert(false && "init expression child is not expression");
-        return false;
-      }
+      // no checking needed
     } else if (!elt->isTupleDecl()) {
       if (elt->isFormal() || elt->isVariable()) {
         if (firstNonTupleTag == asttags::AST_TAG_UNKNOWN) {
@@ -68,10 +62,10 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
                                   TupleDecl::IntentOrKind intentOrKind,
-                                  ASTList elements,
-                                  owned<Expression> typeExpression,
-                                  owned<Expression> initExpression) {
-  ASTList list;
+                                  AstList elements,
+                                  owned<AstNode> typeExpression,
+                                  owned<AstNode> initExpression) {
+  AstList list;
   int attributesChildNum = -1;
   int numElements = 0;
   int typeExpressionChildNum = -1;

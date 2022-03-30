@@ -1,6 +1,6 @@
 //Check whether we add parallel_loop_access metadata for loops at all
 proc loop (A, B, n) {
-  for i in vectorizeOnly(1..n) {
+  foreach i in 1..n {
     // CHECK: !llvm.access.group ![[GROUP1:[0-9]+]]
     A[i] = 3*B[i];
     // CHECK: br i1

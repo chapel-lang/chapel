@@ -42,14 +42,14 @@ namespace uast {
 */
 class Scan final : public Call {
  private:
-  Scan(ASTList children, UniqueString op)
+  Scan(AstList children, UniqueString op)
     : Call(asttags::Scan, std::move(children), false),
       op_(op) {
     assert(numChildren() == 1);
     assert(!op_.isEmpty());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Scan* rhs = other->toScan();
     return this->op_ == rhs->op_ &&
       this->callContentsMatchInner(rhs);
@@ -70,7 +70,7 @@ class Scan final : public Call {
   */
   static owned<Scan> build(Builder* builder, Location loc,
                            UniqueString op,
-                           owned<Expression> expr);
+                           owned<AstNode> expr);
 
   /**
     Returns the scan operator. It may be either a regular operator

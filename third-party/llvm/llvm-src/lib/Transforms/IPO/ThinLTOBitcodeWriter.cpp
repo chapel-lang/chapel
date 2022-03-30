@@ -33,6 +33,19 @@ using namespace llvm;
 
 namespace {
 
+// Determine if a promotion alias should be created for a symbol name.
+static bool allowPromotionAlias(const std::string &Name) {
+  // Promotion aliases are used only in inline assembly. It's safe to
+  // simply skip unusual names. Subset of MCAsmInfo::isAcceptableChar()
+  // and MCAsmInfoXCOFF::isAcceptableChar().
+  for (const char &C : Name) {
+    if (isAlnum(C) || C == '_' || C == '.')
+      continue;
+    return false;
+  }
+  return true;
+}
+
 // Promote each local-linkage entity defined by ExportM and used by ImportM by
 // changing visibility and appending the given ModuleId.
 void promoteInternals(Module &ExportM, Module &ImportM, StringRef ModuleId,
@@ -55,6 +68,7 @@ void promoteInternals(Module &ExportM, Module &ImportM, StringRef ModuleId,
       }
     }
 
+    std::string OldName = Name.str();
     std::string NewName = (Name + ModuleId).str();
 
     if (const auto *C = ExportGV.getComdat())
@@ -68,6 +82,13 @@ void promoteInternals(Module &ExportM, Module &ImportM, StringRef ModuleId,
     if (ImportGV) {
       ImportGV->setName(NewName);
       ImportGV->setVisibility(GlobalValue::HiddenVisibility);
+    }
+
+    if (isa<Function>(&ExportGV) && allowPromotionAlias(OldName)) {
+      // Create a local alias with the original name to avoid breaking
+      // references from inline assembly.
+      std::string Alias = ".set " + OldName + "," + NewName + "\n";
+      ExportM.appendModuleInlineAsm(Alias);
     }
   }
 
@@ -158,7 +179,11 @@ void simplifyExternals(Module &M) {
     Function *NewF =
         Function::Create(EmptyFT, GlobalValue::ExternalLinkage,
                          F.getAddressSpace(), "", &M);
-    NewF->setVisibility(F.getVisibility());
+    NewF->copyAttributesFrom(&F);
+    // Only copy function attribtues.
+    NewF->setAttributes(
+        AttributeList::get(M.getContext(), AttributeList::FunctionIndex,
+                           F.getAttributes().getFnAttributes()));
     NewF->takeName(&F);
     F.replaceAllUsesWith(ConstantExpr::getBitCast(NewF, F.getType()));
     F.eraseFromParent();
@@ -193,6 +218,26 @@ void forEachVirtualFunction(Constant *C, function_ref<void(Function *)> Fn) {
     return;
   for (Value *Op : C->operands())
     forEachVirtualFunction(cast<Constant>(Op), Fn);
+}
+
+// Clone any @llvm[.compiler].used over to the new module and append
+// values whose defs were cloned into that module.
+static void cloneUsedGlobalVariables(const Module &SrcM, Module &DestM,
+                                     bool CompilerUsed) {
+  SmallVector<GlobalValue *, 4> Used, NewUsed;
+  // First collect those in the llvm[.compiler].used set.
+  collectUsedGlobalVariables(SrcM, Used, CompilerUsed);
+  // Next build a set of the equivalent values defined in DestM.
+  for (auto *V : Used) {
+    auto *GV = DestM.getNamedValue(V->getName());
+    if (GV && !GV->isDeclaration())
+      NewUsed.push_back(GV);
+  }
+  // Finally, add them to a llvm[.compiler].used variable in DestM.
+  if (CompilerUsed)
+    appendToCompilerUsed(DestM, NewUsed);
+  else
+    appendToUsed(DestM, NewUsed);
 }
 
 // If it's possible to split M into regular and thin LTO parts, do so and write
@@ -286,6 +331,11 @@ void splitAndWriteThinLTOBitcode(
       }));
   StripDebugInfo(*MergedM);
   MergedM->setModuleInlineAsm("");
+
+  // Clone any llvm.*used globals to ensure the included values are
+  // not deleted.
+  cloneUsedGlobalVariables(M, *MergedM, /*CompilerUsed*/ false);
+  cloneUsedGlobalVariables(M, *MergedM, /*CompilerUsed*/ true);
 
   for (Function &F : *MergedM)
     if (!F.isDeclaration()) {

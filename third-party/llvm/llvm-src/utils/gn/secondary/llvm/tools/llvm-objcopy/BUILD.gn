@@ -62,13 +62,11 @@ executable("llvm-objcopy") {
   ]
   include_dirs = [ "." ]
   sources = [
-    "Buffer.cpp",
     "COFF/COFFObjcopy.cpp",
     "COFF/Object.cpp",
     "COFF/Reader.cpp",
     "COFF/Writer.cpp",
-    "CopyConfig.cpp",
-    "ELF/ELFConfig.cpp",
+    "ConfigManager.cpp",
     "ELF/ELFObjcopy.cpp",
     "ELF/Object.cpp",
     "MachO/MachOLayoutBuilder.cpp",

@@ -1,5 +1,5 @@
 // This test verifies that an iterator in a follower
-// loop isn't inherently marked vectorized. vectorizeOnly
+// loop isn't inherently marked vectorized. 'foreach'
 // must be used to opt in to it.
 
 config const n = 1000;
@@ -50,7 +50,7 @@ forall_testiterz();
 proc vec_testiter() {
   var A:[1..n] real;
   // should not be vectorized because of loop carried dependency in testiter
-  for x in vectorizeOnly(testiter()) {
+  foreach x in testiter() {
   }
 }
 vec_testiter();
@@ -58,7 +58,7 @@ vec_testiter();
 proc vec_testiterz() {
   var A:[1..n] real;
   // should not be vectorized because of loop carried dependency in testiter
-  for (x,i) in vectorizeOnly(testiter(), 1..n) {
+  foreach (x,i) in zip(testiter(), 1..n) {
     A[i] = x;
   }
 }
@@ -105,7 +105,7 @@ forall_testveciterz();
 proc vec_testveciter() {
   var A:[1..n] real;
   // vectorization OK because testveciter has no loop carried dependency
-  for x in vectorizeOnly(testveciter()) {
+  foreach x in testveciter() {
   }
 }
 vec_testveciter();
@@ -113,7 +113,7 @@ vec_testveciter();
 proc vec_testveciterz() {
   var A:[1..n] real;
   // vectorization OK because testveciter has no loop carried dependency
-  for (x,i) in vectorizeOnly(testveciter(), 1..n) {
+  foreach (x,i) in zip(testveciter(), 1..n) {
     A[i] = x;
   }
 }

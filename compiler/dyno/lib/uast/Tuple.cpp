@@ -25,7 +25,7 @@ namespace chpl {
 namespace uast {
 
 
-owned<Tuple> Tuple::build(Builder* builder, Location loc, ASTList exprs) {
+owned<Tuple> Tuple::build(Builder* builder, Location loc, AstList exprs) {
   Tuple* ret = new Tuple(std::move(exprs));
   builder->noteLocation(ret, loc);
   return toOwned(ret);

@@ -9,6 +9,7 @@ add_llvm_component_library(LLVMScalarOpts
   CorrelatedValuePropagation.cpp
   DCE.cpp
   DeadStoreElimination.cpp
+  DFAJumpThreading.cpp
   DivRemPairs.cpp
   EarlyCSE.cpp
   FlattenCFGPass.cpp
@@ -25,6 +26,7 @@ add_llvm_component_library(LLVMScalarOpts
   JumpThreading.cpp
   LICM.cpp
   LoopAccessAnalysisPrinter.cpp
+  LoopBoundSplit.cpp
   LoopSink.cpp
   LoopDeletion.cpp
   LoopDataPrefetch.cpp
@@ -72,7 +74,6 @@ add_llvm_component_library(LLVMScalarOpts
   SimplifyCFGPass.cpp
   Sink.cpp
   SpeculativeExecution.cpp
-  SpeculateAroundPHIs.cpp
   StraightLineStrengthReduce.cpp
   StructurizeCFG.cpp
   TailRecursionElimination.cpp

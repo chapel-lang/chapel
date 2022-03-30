@@ -68,6 +68,13 @@ protected:
                         const SCEV *&RHS) {
     return SE.matchURem(Expr, LHS, RHS);
   }
+
+  static bool isImpliedCond(
+      ScalarEvolution &SE, ICmpInst::Predicate Pred, const SCEV *LHS,
+      const SCEV *RHS, ICmpInst::Predicate FoundPred, const SCEV *FoundLHS,
+      const SCEV *FoundRHS) {
+    return SE.isImpliedCond(Pred, LHS, RHS, FoundPred, FoundLHS, FoundRHS);
+  }
 };
 
 TEST_F(ScalarEvolutionsTest, SCEVUnknownRAUW) {
@@ -89,13 +96,13 @@ TEST_F(ScalarEvolutionsTest, SCEVUnknownRAUW) {
   const SCEV *S1 = SE.getSCEV(V1);
   const SCEV *S2 = SE.getSCEV(V2);
 
-  const SCEV *P0 = SE.getAddExpr(S0, S0);
-  const SCEV *P1 = SE.getAddExpr(S1, S1);
-  const SCEV *P2 = SE.getAddExpr(S2, S2);
+  const SCEV *P0 = SE.getAddExpr(S0, SE.getConstant(S0->getType(), 2));
+  const SCEV *P1 = SE.getAddExpr(S1, SE.getConstant(S0->getType(), 2));
+  const SCEV *P2 = SE.getAddExpr(S2, SE.getConstant(S0->getType(), 2));
 
-  const SCEVMulExpr *M0 = cast<SCEVMulExpr>(P0);
-  const SCEVMulExpr *M1 = cast<SCEVMulExpr>(P1);
-  const SCEVMulExpr *M2 = cast<SCEVMulExpr>(P2);
+  auto *M0 = cast<SCEVAddExpr>(P0);
+  auto *M1 = cast<SCEVAddExpr>(P1);
+  auto *M2 = cast<SCEVAddExpr>(P2);
 
   EXPECT_EQ(cast<SCEVConstant>(M0->getOperand(0))->getValue()->getZExtValue(),
             2u);
@@ -384,7 +391,7 @@ TEST_F(ScalarEvolutionsTest, CompareValueComplexity) {
 
 TEST_F(ScalarEvolutionsTest, SCEVAddExpr) {
   Type *Ty32 = Type::getInt32Ty(Context);
-  Type *ArgTys[] = {Type::getInt64Ty(Context), Ty32};
+  Type *ArgTys[] = {Type::getInt64Ty(Context), Ty32, Ty32, Ty32, Ty32, Ty32};
 
   FunctionType *FTy =
       FunctionType::get(Type::getVoidTy(Context), ArgTys, false);
@@ -412,6 +419,45 @@ TEST_F(ScalarEvolutionsTest, SCEVAddExpr) {
   ReturnInst::Create(Context, nullptr, EntryBB);
   ScalarEvolution SE = buildSE(*F);
   EXPECT_NE(nullptr, SE.getSCEV(Mul1));
+
+  Argument *A3 = &*(std::next(F->arg_begin(), 2));
+  Argument *A4 = &*(std::next(F->arg_begin(), 3));
+  Argument *A5 = &*(std::next(F->arg_begin(), 4));
+  Argument *A6 = &*(std::next(F->arg_begin(), 5));
+
+  auto *AddWithNUW = cast<SCEVAddExpr>(SE.getAddExpr(
+      SE.getAddExpr(SE.getSCEV(A2), SE.getSCEV(A3), SCEV::FlagNUW),
+      SE.getConstant(APInt(/*numBits=*/32, 5)), SCEV::FlagNUW));
+  EXPECT_EQ(AddWithNUW->getNumOperands(), 3u);
+  EXPECT_EQ(AddWithNUW->getNoWrapFlags(), SCEV::FlagNUW);
+
+  auto *AddWithAnyWrap =
+      SE.getAddExpr(SE.getSCEV(A3), SE.getSCEV(A4), SCEV::FlagAnyWrap);
+  auto *AddWithAnyWrapNUW = cast<SCEVAddExpr>(
+      SE.getAddExpr(AddWithAnyWrap, SE.getSCEV(A5), SCEV::FlagNUW));
+  EXPECT_EQ(AddWithAnyWrapNUW->getNumOperands(), 3u);
+  EXPECT_EQ(AddWithAnyWrapNUW->getNoWrapFlags(), SCEV::FlagAnyWrap);
+
+  auto *AddWithNSW = SE.getAddExpr(
+      SE.getSCEV(A2), SE.getConstant(APInt(32, 99)), SCEV::FlagNSW);
+  auto *AddWithNSW_NUW = cast<SCEVAddExpr>(
+      SE.getAddExpr(AddWithNSW, SE.getSCEV(A5), SCEV::FlagNUW));
+  EXPECT_EQ(AddWithNSW_NUW->getNumOperands(), 3u);
+  EXPECT_EQ(AddWithNSW_NUW->getNoWrapFlags(), SCEV::FlagAnyWrap);
+
+  auto *AddWithNSWNUW =
+      SE.getAddExpr(SE.getSCEV(A2), SE.getSCEV(A4),
+                    ScalarEvolution::setFlags(SCEV::FlagNUW, SCEV::FlagNSW));
+  auto *AddWithNSWNUW_NUW = cast<SCEVAddExpr>(
+      SE.getAddExpr(AddWithNSWNUW, SE.getSCEV(A5), SCEV::FlagNUW));
+  EXPECT_EQ(AddWithNSWNUW_NUW->getNumOperands(), 3u);
+  EXPECT_EQ(AddWithNSWNUW_NUW->getNoWrapFlags(), SCEV::FlagNUW);
+
+  auto *AddWithNSW_NSWNUW = cast<SCEVAddExpr>(
+      SE.getAddExpr(AddWithNSW, SE.getSCEV(A6),
+                    ScalarEvolution::setFlags(SCEV::FlagNUW, SCEV::FlagNSW)));
+  EXPECT_EQ(AddWithNSW_NSWNUW->getNumOperands(), 3u);
+  EXPECT_EQ(AddWithNSW_NSWNUW->getNoWrapFlags(), SCEV::FlagAnyWrap);
 }
 
 static Instruction &GetInstByName(Function &F, StringRef Name) {
@@ -661,6 +707,7 @@ TEST_F(ScalarEvolutionsTest, SCEVZeroExtendExpr) {
   ReturnInst::Create(Context, nullptr, EndBB);
   ScalarEvolution SE = buildSE(*F);
   const SCEV *S = SE.getSCEV(Accum);
+  S = SE.getLosslessPtrToIntExpr(S);
   Type *I128Ty = Type::getInt128Ty(Context);
   SE.getZeroExtendExpr(S, I128Ty);
 }
@@ -1368,6 +1415,45 @@ TEST_F(ScalarEvolutionsTest, ProveImplicationViaNarrowing) {
   });
 }
 
+TEST_F(ScalarEvolutionsTest, ImpliedCond) {
+  LLVMContext C;
+  SMDiagnostic Err;
+  std::unique_ptr<Module> M = parseAssemblyString(
+      "define void @foo(i32 %len) { "
+      "entry: "
+      "  br label %loop "
+      "loop: "
+      "  %iv = phi i32 [ 0, %entry], [%iv.next, %loop] "
+      "  %iv.next = add nsw i32 %iv, 1 "
+      "  %cmp = icmp slt i32 %iv, %len "
+      "  br i1 %cmp, label %loop, label %exit "
+      "exit:"
+      "  ret void "
+      "}",
+      Err, C);
+
+  ASSERT_TRUE(M && "Could not parse module?");
+  ASSERT_TRUE(!verifyModule(*M) && "Must have been well formed!");
+
+  runWithSE(*M, "foo", [](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+    Instruction *IV = getInstructionByName(F, "iv");
+    Type *Ty = IV->getType();
+    const SCEV *Zero = SE.getZero(Ty);
+    const SCEV *MinusOne = SE.getMinusOne(Ty);
+    // {0,+,1}<nuw><nsw>
+    const SCEV *AddRec_0_1 = SE.getSCEV(IV);
+    // {0,+,-1}<nw>
+    const SCEV *AddRec_0_N1 = SE.getNegativeSCEV(AddRec_0_1);
+
+    // {0,+,1}<nuw><nsw> > 0  ->  {0,+,-1}<nw> < 0
+    EXPECT_TRUE(isImpliedCond(SE, ICmpInst::ICMP_SLT, AddRec_0_N1, Zero,
+                                  ICmpInst::ICMP_SGT, AddRec_0_1, Zero));
+    // {0,+,-1}<nw> < -1  ->  {0,+,1}<nuw><nsw> > 0
+    EXPECT_TRUE(isImpliedCond(SE, ICmpInst::ICMP_SGT, AddRec_0_1, Zero,
+                                  ICmpInst::ICMP_SLT, AddRec_0_N1, MinusOne));
+  });
+}
+
 TEST_F(ScalarEvolutionsTest, MatchURem) {
   LLVMContext C;
   SMDiagnostic Err;
@@ -1418,6 +1504,37 @@ TEST_F(ScalarEvolutionsTest, MatchURem) {
                   ->getZExtValue());
     EXPECT_EQ(LHS->getType(), S->getType());
     EXPECT_EQ(RHS->getType(), S->getType());
+  });
+}
+
+TEST_F(ScalarEvolutionsTest, SCEVUDivFloorCeiling) {
+  LLVMContext C;
+  SMDiagnostic Err;
+  std::unique_ptr<Module> M = parseAssemblyString("define void @foo() { "
+                                                  "  ret void "
+                                                  "} ",
+                                                  Err, C);
+
+  ASSERT_TRUE(M && "Could not parse module?");
+  ASSERT_TRUE(!verifyModule(*M) && "Must have been well formed!");
+
+  runWithSE(*M, "foo", [](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+    // Check that SCEV's udiv and uceil handling produce the correct results
+    // for all 8 bit options. Div-by-zero is deliberately excluded.
+    for (unsigned N = 0; N < 256; N++)
+      for (unsigned D = 1; D < 256; D++) {
+        APInt NInt(8, N);
+        APInt DInt(8, D);
+        using namespace llvm::APIntOps;
+        APInt FloorInt = RoundingUDiv(NInt, DInt, APInt::Rounding::DOWN);
+        APInt CeilingInt = RoundingUDiv(NInt, DInt, APInt::Rounding::UP);
+        auto *NS = SE.getConstant(NInt);
+        auto *DS = SE.getConstant(DInt);
+        auto *FloorS = cast<SCEVConstant>(SE.getUDivExpr(NS, DS));
+        auto *CeilingS = cast<SCEVConstant>(SE.getUDivCeilSCEV(NS, DS));
+        ASSERT_TRUE(FloorS->getAPInt() == FloorInt);
+        ASSERT_TRUE(CeilingS->getAPInt() == CeilingInt);
+      }
   });
 }
 

@@ -438,8 +438,10 @@ The syntax of the use statement is given by:
      'only' rename-list[OPT]
 
    exclude-list:
-     identifier-list
-     $ * $
+     operator-name
+     identifier
+     operator-name , exclude-list
+     identifier , exclude-list
 
    rename-list:
      rename-base
@@ -449,6 +451,7 @@ The syntax of the use statement is given by:
      identifier 'as' identifier
      identifier 'as' _
      identifier
+     operator-name
 
 For example, the program
 
@@ -574,8 +577,8 @@ enumerated type (unless the module has been renamed to ``_``, as described
 earlier). It is an error to provide a name in a ``limitation-clause`` that does
 not exist or is not visible in the respective module or enumerated type.
 
-If an ``only`` list is left empty or an ``except`` is followed by :math:`*`
-then no symbols are made available to the scope without prefix.
+If an ``only`` list is left empty then no symbols are made available to the
+scope without prefix.
 
 When the ``limitation-clause`` for a use of a module contains a type, the
 visibility of its tertiary methods that are defined in that module, if any, is
@@ -584,19 +587,21 @@ methods cannot be specified in a ``limitation-clause`` on their own.  Fields,
 and primary and secondary methods are visible to any instance of the type
 regardless of use statements, see :ref:`Method_Calls`.
 
-Within an ``only`` list, a visible symbol from that module may optionally be
-given a new name using the ``as`` keyword. This new name will be usable from the
-scope of the use in place of the old name unless the old name is additionally
-specified in the ``only`` list. If a use which renames a symbol is present at
-module scope, uses and imports of that module will also be able to access
-that symbol using the new name instead of the old name. Renaming does not affect
-accesses to that symbol via the source module’s or enumerated type’s prefix, nor
-does it affect uses or imports of that module or enumerated type from other
-contexts. It is an error to attempt to rename a symbol that does not exist or is
-not visible in the respective module or enumerated type, or to rename a symbol
-to a name that is already present in the same ``only`` list. It is, however,
-perfectly acceptable to rename a symbol to a name present in the respective
-module or enumerated type which was not specified via that ``only`` list.
+Within an ``only`` list, a visible symbol (that is not an operator) from that
+module may optionally be given a new name using the ``as`` keyword. This new
+name will be usable from the scope of the use in place of the old name unless
+the old name is additionally specified in the ``only`` list. If a ``public use``
+which renames a symbol is present at module scope, uses and imports of that
+module will also be able to access that symbol using the new name instead of the
+old name. Renaming does not affect accesses to that symbol via the source
+module’s or enumerated type’s prefix, nor does it affect uses or imports of that
+module or enumerated type from other contexts. It is an error to attempt to
+rename a symbol that does not exist or is not visible in the respective module
+or enumerated type, or to rename a symbol to a name that is already present in
+the same ``only`` list.  It is also an error to attempt to rename an operator,
+or to attempt to rename a symbol to an operator name.  It is, however, perfectly
+acceptable to rename a symbol to a name present in the respective module or
+enumerated type which was not specified via that ``only`` list.
 
 If a use statement mentions multiple modules or enumerated types or a
 mix of these symbols, only the last module or enumerated type can have a
@@ -750,9 +755,9 @@ A submodule may not be imported without either the full path to it, or a
 ``super`` or ``this`` prefix at the beginning of the path.
 
 A module or a public module-level symbol being imported may optionally be given
-a new name using the ``as`` keyword.  This new name will be usable from the
-scope of the import in place of the old name.  This new name does not affect
-imports or uses of that module from other contexts.
+a new name using the ``as`` keyword, unless it is an operator.  This new name
+will be usable from the scope of the import in place of the old name.  This new
+name does not affect imports or uses of that module from other contexts.
 
 Import statements may be explicitly declared ``public`` or ``private``.  By
 default, imports are ``private``.  Making an import ``public`` causes its
@@ -776,18 +781,20 @@ secondary methods are visible to any instance of the type regardless of import
 statements, see :ref:`Method_Calls`.
 
 Within an ``unqualified-list``, a visible symbol from that module may optionally
-be given a new name using the ``as`` keyword.  This new name will be usable from
-the scope of the import in place of the old name unless the old name is
-additionally specified in the ``unqualified-list``.  If an import which renames
-a symbol is present at module scope, imports and uses of that module will also
-be able to access that symbol using the new name instead of the old name.
-Renaming does not affect accesses to that symbol via the source module's prefix,
-nor does it affect imports or uses of that module from other contexts.  It is an
-error to attempt to rename a symbol that does not exist or is not visible in the
-respective module, or to rename a symbol to a name that is already present in
-the same ``unqualified-list``.  It is, however, perfectly acceptable to rename a
-symbol to a name present in the respective module which was not specified via
-that ``unqualified-list``.
+be given a new name using the ``as`` keyword, except for any operators.  This
+new name will be usable from the scope of the import in place of the old name
+unless the old name is additionally specified in the ``unqualified-list``.  If
+an import which renames a symbol is present at module scope, imports and uses of
+that module will also be able to access that symbol using the new name instead
+of the old name.  Renaming does not affect accesses to that symbol via the
+source module's prefix, nor does it affect imports or uses of that module from
+other contexts.  It is an error to attempt to rename a symbol that does not
+exist or is not visible in the respective module, or to rename a symbol to a
+name that is already present in the same ``unqualified-list``.  It is also an
+error to attempt to rename an operator, or to attempt to rename another symbol
+to an operator name.  It is, however, perfectly acceptable to rename a symbol to
+a name present in the respective module which was not specified via that
+``unqualified-list``.
 
 The list of symbols for unqualified access can also be applied transitively -
 in the second example of re-exporting, if module A's import of B only allowed

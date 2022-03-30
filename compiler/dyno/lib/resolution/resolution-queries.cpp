@@ -91,7 +91,7 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
   if (postOrderId >= 0) {
     // Find the parent scope for the ID - i.e. where the id is declared
     ID parentSymbolId = id.parentSymbolId(context);
-    ASTTag parentTag = parsing::idToTag(context, parentSymbolId);
+    AstTag parentTag = parsing::idToTag(context, parentSymbolId);
     if (asttags::isModule(parentTag)) {
       auto& partial = partiallyResolvedModule(context, parentSymbolId);
       result = partial.byId(id).type();
@@ -275,7 +275,7 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
                                      const ResolutionResultByPostorderID& r,
                                      bool needsInstantiation) {
   auto whereClauseResult = TypedFnSignature::WHERE_TBD;
-  if (const Expression* where = fn->whereClause()) {
+  if (const AstNode* where = fn->whereClause()) {
     const QualifiedType& qt = r.byAst(where).type();
     if (qt.isParam() && qt.type()->isBoolType()) {
       // OK, we know the result of the where clause
@@ -320,7 +320,7 @@ typedSignatureInitialQuery(Context* context,
   QUERY_BEGIN(typedSignatureInitialQuery, context, untypedSig);
 
   const TypedFnSignature* result = nullptr;
-  const ASTNode* ast = parsing::idToAst(context, untypedSig->id());
+  const AstNode* ast = parsing::idToAst(context, untypedSig->id());
   const Function* fn = ast->toFunction();
 
   if (fn != nullptr) {
@@ -408,7 +408,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 
   if (const Class* c = ad->toClass()) {
     const BasicClassType* parentClassType = nullptr;
-    if (const Expression* parentClassExpr = c->parentClass()) {
+    if (const AstNode* parentClassExpr = c->parentClass()) {
       // Resolve the parent class type expression
       bool useGenericFormalDefaults = true; // doesn't matter, won't use fields
       ResolutionResultByPostorderID r;
@@ -500,7 +500,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 
 // initedInParent is true if the decl variable is inited due to a parent
 // uast node.  This comes up for TupleDecls.
-static void helpSetFieldTypes(const ASTNode* ast,
+static void helpSetFieldTypes(const AstNode* ast,
                               ResolutionResultByPostorderID& r,
                               bool initedInParent,
                               ResolvedFields& fields) {
@@ -1018,7 +1018,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
   assert(sig->needsInstantiation());
 
   const UntypedFnSignature* untypedSignature = sig->untyped();
-  const ASTNode* ast = nullptr;
+  const AstNode* ast = nullptr;
   const Function* fn = nullptr;
   const AggregateDecl* ad = nullptr;
 
@@ -1154,7 +1154,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
       QualifiedType sigType = sig->formalType(i);
 
       // use the same kind as the old formal type but update the type, param
-      // to reflect how instantiation occured.
+      // to reflect how instantiation occurred.
       formalTypes.push_back(QualifiedType(sigType.kind(),
                                           fieldType.type(),
                                           fieldType.param()));
@@ -1200,7 +1200,7 @@ resolveFunctionByInfoQuery(Context* context,
   QUERY_BEGIN(resolveFunctionByInfoQuery, context, sig, poiInfo);
 
   const UntypedFnSignature* untypedSignature = sig->untyped();
-  const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
+  const AstNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
   const PoiScope* poiScope = poiInfo.poiScope();
@@ -1272,7 +1272,7 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
 }
 
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
-                                              const ResolvedExpression& r) {
+                                             const ResolvedExpression& r) {
   const TypedFnSignature* sig = r.mostSpecific().only();
   const PoiScope* poiScope = r.poiScope();
 
@@ -1282,7 +1282,7 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
   return resolveFunction(context, sig, poiScope);
 }
 
-struct ReturnTypeInferer {
+struct ReturnTypeInferrer {
   // input
   Context* context;
   Function::ReturnIntent returnIntent;
@@ -1291,8 +1291,8 @@ struct ReturnTypeInferer {
   // output
   std::vector<QualifiedType> returnedTypes;
 
-  ReturnTypeInferer(Context* context,
-                    const ResolvedFunction& resolvedFn)
+  ReturnTypeInferrer(Context* context,
+                     const ResolvedFunction& resolvedFn)
     : context(context),
       returnIntent(resolvedFn.returnIntent()),
       resolutionById(resolvedFn.resolutionById()) {
@@ -1304,7 +1304,7 @@ struct ReturnTypeInferer {
   void exit(const Function* fn) {
   }
 
-  void checkReturn(const Expression* inExpr, const QualifiedType& qt) {
+  void checkReturn(const AstNode* inExpr, const QualifiedType& qt) {
     if (qt.type()->isVoidType()) {
       if (returnIntent == Function::REF) {
         context->error(inExpr, "Cannot return void with ref return intent");
@@ -1330,13 +1330,13 @@ struct ReturnTypeInferer {
     }
   }
 
-  void noteVoidReturnType(const Expression* inExpr) {
+  void noteVoidReturnType(const AstNode* inExpr) {
     auto voidType = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
     returnedTypes.push_back(voidType);
 
     checkReturn(inExpr, voidType);
   }
-  void noteReturnType(const Expression* expr, const Expression* inExpr) {
+  void noteReturnType(const AstNode* expr, const AstNode* inExpr) {
     QualifiedType qt = resolutionById.byAst(expr).type();
 
     QualifiedType::Kind kind = qt.kind();
@@ -1371,7 +1371,7 @@ struct ReturnTypeInferer {
   }
 
   bool enter(const Return* ret) {
-    if (const Expression* expr = ret->value()) {
+    if (const AstNode* expr = ret->value()) {
       noteReturnType(expr, ret);
     } else {
       noteVoidReturnType(ret);
@@ -1388,10 +1388,10 @@ struct ReturnTypeInferer {
   void exit(const Yield* ret) {
   }
 
-  bool enter(const ASTNode* ast) {
+  bool enter(const AstNode* ast) {
     return true;
   }
-  void exit(const ASTNode* ast) {
+  void exit(const AstNode* ast) {
   }
 };
 
@@ -1497,10 +1497,10 @@ const QualifiedType& returnType(Context* context,
     // this should only be applied to concrete fns or instantiations
     assert(!sig->needsInstantiation());
 
-    const ASTNode* ast = parsing::idToAst(context, untyped->id());
+    const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
     assert(fn);
-    if (const Expression* retType = fn->returnType()) {
+    if (const AstNode* retType = fn->returnType()) {
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
       auto visitor = Resolver::functionResolver(context, fn, poiScope, sig,
@@ -1511,7 +1511,7 @@ const QualifiedType& returnType(Context* context,
       // resolve the function body
       const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);
       // infer the return type
-      ReturnTypeInferer visitor(context, *rFn);
+      ReturnTypeInferrer visitor(context, *rFn);
       fn->body()->traverse(visitor);
       result = visitor.returnedType();
     }
@@ -1630,7 +1630,7 @@ static const TypedFnSignature*
 doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& ci) {
-  const ASTNode* ast = nullptr;
+  const AstNode* ast = nullptr;
   const Function* fn = nullptr;
 
   if (!candidateId.isEmpty()) {
@@ -1816,7 +1816,7 @@ lookupCalledExpr(Context* context,
   if (doLookupByName) {
     vec = lookupNameInScopeWithSet(context, scope, ci.name(), config,
                                    visited);
-  } else if (const Expression* called = call->calledExpression()) {
+  } else if (const AstNode* called = call->calledExpression()) {
     vec = lookupInScopeWithSet(context, scope, called, config,
                                visited);
   }
@@ -1859,7 +1859,7 @@ void accumulatePoisUsedByResolvingBody(Context* context,
 // return the result or ErroneousType.
 // returns nullptr if the class type is not handled here.
 static const Type* getManagedClassType(Context* context,
-                                       const ASTNode* astForErr,
+                                       const AstNode* astForErr,
                                        const CallInfo& ci) {
   UniqueString name = ci.name();
 
@@ -1929,7 +1929,7 @@ static const Type* getManagedClassType(Context* context,
 }
 
 static const Type* getNumericType(Context* context,
-                                  const ASTNode* astForErr,
+                                  const AstNode* astForErr,
                                   const CallInfo& ci) {
   UniqueString name = ci.name();
 
@@ -1990,7 +1990,7 @@ static const Type* getNumericType(Context* context,
 // Resolving compiler-supported type-returning patterns
 // 'call' and 'inPoiScope' are used for the location for error reporting.
 static const Type* resolveFnCallSpecialType(Context* context,
-                                            const ASTNode* astForErr,
+                                            const AstNode* astForErr,
                                             const CallInfo& ci) {
 
   if (ci.name() == USTR("?")) {
@@ -2030,7 +2030,7 @@ static const Type* resolveFnCallSpecialType(Context* context,
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
 static bool resolveFnCallSpecial(Context* context,
-                                 const ASTNode* astForErr,
+                                 const AstNode* astForErr,
                                  const CallInfo& ci,
                                  QualifiedType& exprTypeOut) {
   // TODO: type comparisons
@@ -2426,7 +2426,7 @@ CallResolutionResult resolveCall(Context* context,
 }
 
 CallResolutionResult resolveGeneratedCall(Context* context,
-                                          const ASTNode* astForErr,
+                                          const AstNode* astForErr,
                                           const CallInfo& ci,
                                           const Scope* inScope,
                                           const PoiScope* inPoiScope) {

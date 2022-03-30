@@ -24,6 +24,7 @@
 #include "FnSymbol.h"
 #include "symbol.h"
 #include "PassManager.h"
+#include <unordered_set>
 
 extern bool parsed;
 extern bool normalized;
@@ -142,7 +143,7 @@ bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr);
 
 // lowerIterators.cpp, lowerForalls.cpp
 void lowerForallStmtsInline();
-void handleChplPropagateErrorCall(CallExpr* call);
+void handleChplPropagateErrorCall(CallExpr* call, bool allowForall = false);
 void fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller);
 void addDummyErrorArgumentToCall(CallExpr* call);
 bool isVirtualIterator(FnSymbol* iterFn);
@@ -163,6 +164,9 @@ CallExpr* findDownEndCount(FnSymbol* fn);
 Expr*     resolveExpr(Expr* expr);
 void      resolveBlockStmt(BlockStmt* blockStmt);
 
+// --- Pass Manager passes ---
+
+// returnStarTuplesByRefArgs
 class returnStarTuplesByRefArgsPass1 : public PassT<FnSymbol*> {
   bool shouldProcess(FnSymbol* fn) override;
   void process(FnSymbol* fn) override;
@@ -173,11 +177,13 @@ class returnStarTuplesByRefArgsPass2 : public PassT<CallExpr*> {
   void process(CallExpr* fn) override;
 };
 
+// general
 class ComputeCallSitesPass : public PassT<FnSymbol*> {
   bool shouldProcess(FnSymbol* fn) override;
   void process(FnSymbol* fn) override;
 };
 
+// flattenClasses.cpp
 class FlattenClasses : public PassT<TypeSymbol*> {
   void process(TypeSymbol* ts) override;
 };
@@ -190,7 +196,7 @@ class AddInitGuards : public PassT<ModuleSymbol*> {
   void process(ModuleSymbol* mod) override;
 
   static FnSymbol* getOrCreatePreInitFn();
-  static void addInitGuard(FnSymbol* fn, FnSymbol* preInitfn);
+  static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn);
   static void addPrintModInitOrder(FnSymbol* fn);
 
  private:
@@ -239,6 +245,36 @@ class RemoveUnnecessaryAutoCopyCalls : public PassT<FnSymbol*> {
 
  private:
   std::vector<CallExpr*> calls;
+};
+
+// insertLineNumbers.cpp
+class InsertNilChecksPass : public PassT<CallExpr*> {
+ public:
+  bool shouldProcess(CallExpr* call) override;
+  void process(CallExpr* call) override;
+};
+
+struct LineAndFile {
+  Symbol* line;
+  Symbol* file;
+};
+
+class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
+ public:
+  void process(FnSymbol* fn) override;
+  void process(FnSymbol* fn, CallExpr* call) override;
+
+  static bool shouldPreferASTLine(/*const*/ FnSymbol* fn, ModuleSymbol* mod = nullptr);
+  static LineAndFile makeASTLine(CallExpr* call);
+  static void insertLineNumber(CallExpr* call, LineAndFile lineAndFile);
+
+ private:
+
+  static void precondition(FnSymbol *fn);
+
+  LineAndFile getLineAndFileForFn(FnSymbol *fn);
+
+  std::unordered_map<FnSymbol*, LineAndFile> lineAndFilenameMap;
 };
 
 #endif

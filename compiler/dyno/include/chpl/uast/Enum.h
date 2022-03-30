@@ -44,7 +44,7 @@ namespace uast {
  */
 class Enum final : public TypeDecl {
  private:
-  Enum(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Enum(AstList children, int attributesChildNum, Decl::Visibility vis,
        UniqueString name)
     : TypeDecl(asttags::Enum, std::move(children), attributesChildNum,
                vis,
@@ -67,7 +67,7 @@ class Enum final : public TypeDecl {
     return attributes() ? 1 : 0;
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Enum* lhs = this;
     const Enum* rhs = (const Enum*) other;
     return lhs->typeDeclContentsMatchInner(rhs);
@@ -84,17 +84,17 @@ class Enum final : public TypeDecl {
                            owned<Attributes> attributes,
                            Decl::Visibility vis,
                            UniqueString name,
-                           ASTList stmts);
+                           AstList stmts);
 
   /**
     Return a way to iterate over the EnumElements and Comments.
    */
-  ASTListIteratorPair<Expression> declOrComments() const {
+  AstListIteratorPair<AstNode> declOrComments() const {
     auto begin = declOrCommentChildNum() >= 0
           ? children_.begin() + declOrCommentChildNum()
           : children_.end();
     auto end = begin + numDeclOrComments();
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -106,22 +106,22 @@ class Enum final : public TypeDecl {
   /**
    Return the i'th EnumElement or Comment in this Enum.
    */
-  const Expression* declOrComment(int i) const {
+  const AstNode* declOrComment(int i) const {
     assert(0 <= i && i < numDeclOrComments());
-    const ASTNode* ast = this->child(declOrCommentChildNum() + i);
+    const AstNode* ast = this->child(declOrCommentChildNum() + i);
     assert(ast->isDecl() || ast->isComment());
-    return (const Expression*)ast;
+    return ast;
   }
 
   /**
    Return a way to iterate over the EnumElements (ignoring Comments)
    */
-  ASTListNoCommentsIteratorPair<EnumElement> enumElements() const {
+  AstListNoCommentsIteratorPair<EnumElement> enumElements() const {
     auto begin = declOrCommentChildNum() >= 0
           ? children_.begin() + declOrCommentChildNum()
           : children_.end();
     auto end = begin + numDeclOrComments();
-    return ASTListNoCommentsIteratorPair<EnumElement>(begin, end);
+    return AstListNoCommentsIteratorPair<EnumElement>(begin, end);
   }
 };
 

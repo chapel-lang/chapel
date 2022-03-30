@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_COMMENT_H
 #define CHPL_UAST_COMMENT_H
 
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/queries/Location.h"
 #include "chpl/queries/CommentID.h"
 
@@ -38,7 +38,7 @@ class Builder;
   go anywhere and that would be hard to represent). However, comments that
   are at a statement level will be represented with this type.
  */
-class Comment final : public Expression {
+class Comment final : public AstNode {
   friend Builder;
 
  private:
@@ -46,17 +46,15 @@ class Comment final : public Expression {
   CommentID commentId_;
 
   Comment(std::string s)
-    : Expression(asttags::Comment), comment_(std::move(s)) {
+    : AstNode(asttags::Comment), comment_(std::move(s)) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Comment* lhs = this;
     const Comment* rhs = (const Comment*) other;
-    return lhs->expressionContentsMatchInner(rhs) &&
-           lhs->comment_ == rhs->comment_ ;
+    return lhs->comment_ == rhs->comment_ ;
   }
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -92,43 +90,43 @@ class Comment final : public Expression {
 
 /**
  Defines an iterator over the AST list elements that ignores comments.
- The iterator hides the ownership (it always returns a pointer e.g. ASTNode*)
+ The iterator hides the ownership (it always returns a pointer e.g. AstNode*)
  and casts elements to a particular type.
  */
 template<typename CastToType>
-class ASTListNoCommentsIterator {
+class AstListNoCommentsIterator {
  public:
   using iterator_category = std::forward_iterator_tag;
   using value_type = const CastToType*;
-  using difference_type = ASTList::const_iterator::difference_type;
+  using difference_type = AstList::const_iterator::difference_type;
   using pointer = const CastToType**;
   using reference = const CastToType*&;
 
  private:
-  ASTList::const_iterator it;
-  ASTList::const_iterator end;
+  AstList::const_iterator it;
+  AstList::const_iterator end;
 
  public:
   // needs to be default-constructible, copy-constructible,
   // copy-assignable and destructible
-  ASTListNoCommentsIterator() = default;
-  explicit ASTListNoCommentsIterator(ASTList::const_iterator start,
-                                     ASTList::const_iterator end)
+  AstListNoCommentsIterator() = default;
+  explicit AstListNoCommentsIterator(AstList::const_iterator start,
+                                     AstList::const_iterator end)
     : it(start), end(end) {
 
     while (this->it != this->end && this->it->get()->isComment()) {
       ++this->it;
     }
   }
-  ~ASTListNoCommentsIterator() = default;
+  ~AstListNoCommentsIterator() = default;
 
-  ASTListNoCommentsIterator<CastToType>& operator=(const ASTListNoCommentsIterator<CastToType>& it) = default;
+  AstListNoCommentsIterator<CastToType>& operator=(const AstListNoCommentsIterator<CastToType>& it) = default;
 
   // needs to be support == and !=
-  bool operator==(const ASTListNoCommentsIterator<CastToType> rhs) const {
+  bool operator==(const AstListNoCommentsIterator<CastToType> rhs) const {
     return this->it == rhs.it;
   }
-  bool operator!=(const ASTListNoCommentsIterator<CastToType> rhs) const {
+  bool operator!=(const AstListNoCommentsIterator<CastToType> rhs) const {
     return this->it != rhs.it;
   }
 
@@ -141,14 +139,14 @@ class ASTListNoCommentsIterator {
   }
 
   // needs to support preincrement and postincrement
-  ASTListNoCommentsIterator<CastToType>& operator++() {
+  AstListNoCommentsIterator<CastToType>& operator++() {
     do {
       ++this->it;
     } while (this->it != this->end && this->it->get()->isComment());
     return *this;
   }
-  ASTListNoCommentsIterator<CastToType> operator++(int) {
-    ASTListNoCommentsIterator<CastToType> tmp = *this;
+  AstListNoCommentsIterator<CastToType> operator++(int) {
+    AstListNoCommentsIterator<CastToType> tmp = *this;
     do {
       ++this->it;
     } while (this->it != this->end && this->it->get()->isComment());
@@ -156,16 +154,16 @@ class ASTListNoCommentsIterator {
   }
 
   // needs to support < > <= >=
-  bool operator<(const ASTListNoCommentsIterator<CastToType> rhs) const {
+  bool operator<(const AstListNoCommentsIterator<CastToType> rhs) const {
     return this->it < rhs.it;
   }
-  bool operator>(const ASTListNoCommentsIterator<CastToType> rhs) const {
+  bool operator>(const AstListNoCommentsIterator<CastToType> rhs) const {
     return this->it > rhs.it;
   }
-  bool operator<=(const ASTListNoCommentsIterator<CastToType> rhs) const {
+  bool operator<=(const AstListNoCommentsIterator<CastToType> rhs) const {
     return this->it <= rhs.it;
   }
-  bool operator>=(const ASTListNoCommentsIterator<CastToType> rhs) const {
+  bool operator>=(const AstListNoCommentsIterator<CastToType> rhs) const {
     return this->it >= rhs.it;
   }
 
@@ -173,20 +171,20 @@ class ASTListNoCommentsIterator {
 };
 
 template<typename CastToType>
-struct ASTListNoCommentsIteratorPair {
-  ASTListNoCommentsIterator<CastToType> begin_;
-  ASTListNoCommentsIterator<CastToType> end_;
+struct AstListNoCommentsIteratorPair {
+  AstListNoCommentsIterator<CastToType> begin_;
+  AstListNoCommentsIterator<CastToType> end_;
 
-  ASTListNoCommentsIteratorPair(ASTList::const_iterator begin,
-                                ASTList::const_iterator end)
+  AstListNoCommentsIteratorPair(AstList::const_iterator begin,
+                                AstList::const_iterator end)
     : begin_(begin, end), end_(end, end) {
   }
-  ~ASTListNoCommentsIteratorPair() = default;
+  ~AstListNoCommentsIteratorPair() = default;
 
-  ASTListNoCommentsIterator<CastToType> begin() const {
+  AstListNoCommentsIterator<CastToType> begin() const {
     return begin_;
   }
-  ASTListNoCommentsIterator<CastToType> end() const {
+  AstListNoCommentsIterator<CastToType> end() const {
     return end_;
   }
 };

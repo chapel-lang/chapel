@@ -805,9 +805,45 @@ TEST_F(ValueTrackingTest, ComputeNumSignBits_Shuffle_Pointers) {
 }
 
 TEST(ValueTracking, propagatesPoison) {
-  std::string AsmHead = "declare i32 @g(i32)\n"
-                        "define void @f(i32 %x, i32 %y, float %fx, float %fy, "
-                        "i1 %cond, i8* %p) {\n";
+  std::string AsmHead =
+      "declare i32 @g(i32)\n"
+      "declare {i32, i1} @llvm.sadd.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare {i32, i1} @llvm.ssub.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare {i32, i1} @llvm.smul.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare {i32, i1} @llvm.uadd.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare {i32, i1} @llvm.usub.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare {i32, i1} @llvm.umul.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare float @llvm.sqrt.f32(float)\n"
+      "declare float @llvm.powi.f32.i32(float, i32)\n"
+      "declare float @llvm.sin.f32(float)\n"
+      "declare float @llvm.cos.f32(float)\n"
+      "declare float @llvm.pow.f32(float, float)\n"
+      "declare float @llvm.exp.f32(float)\n"
+      "declare float @llvm.exp2.f32(float)\n"
+      "declare float @llvm.log.f32(float)\n"
+      "declare float @llvm.log10.f32(float)\n"
+      "declare float @llvm.log2.f32(float)\n"
+      "declare float @llvm.fma.f32(float, float, float)\n"
+      "declare float @llvm.fabs.f32(float)\n"
+      "declare float @llvm.minnum.f32(float, float)\n"
+      "declare float @llvm.maxnum.f32(float, float)\n"
+      "declare float @llvm.minimum.f32(float, float)\n"
+      "declare float @llvm.maximum.f32(float, float)\n"
+      "declare float @llvm.copysign.f32(float, float)\n"
+      "declare float @llvm.floor.f32(float)\n"
+      "declare float @llvm.ceil.f32(float)\n"
+      "declare float @llvm.trunc.f32(float)\n"
+      "declare float @llvm.rint.f32(float)\n"
+      "declare float @llvm.nearbyint.f32(float)\n"
+      "declare float @llvm.round.f32(float)\n"
+      "declare float @llvm.roundeven.f32(float)\n"
+      "declare i32 @llvm.lround.f32(float)\n"
+      "declare i64 @llvm.llround.f32(float)\n"
+      "declare i32 @llvm.lrint.f32(float)\n"
+      "declare i64 @llvm.llrint.f32(float)\n"
+      "declare float @llvm.fmuladd.f32(float, float, float)\n"
+      "define void @f(i32 %x, i32 %y, float %fx, float %fy, "
+      "i1 %cond, i8* %p) {\n";
   std::string AsmTail = "  ret void\n}";
   // (propagates poison?, IR instruction)
   SmallVector<std::pair<bool, std::string>, 32> Data = {
@@ -815,6 +851,12 @@ TEST(ValueTracking, propagatesPoison) {
       {true, "add nsw nuw i32 %x, %y"},
       {true, "ashr i32 %x, %y"},
       {true, "lshr exact i32 %x, 31"},
+      {true, "fadd float %fx, %fy"},
+      {true, "fsub float %fx, %fy"},
+      {true, "fmul float %fx, %fy"},
+      {true, "fdiv float %fx, %fy"},
+      {true, "frem float %fx, %fy"},
+      {true, "fneg float %fx"},
       {true, "fcmp oeq float %fx, %fy"},
       {true, "icmp eq i32 %x, %y"},
       {true, "getelementptr i8, i8* %p, i32 %x"},
@@ -826,7 +868,42 @@ TEST(ValueTracking, propagatesPoison) {
       {true, "urem i32 %x, %y"},
       {true, "sdiv exact i32 %x, %y"},
       {true, "srem i32 %x, %y"},
-      {false, "call i32 @g(i32 %x)"}};
+      {false, "call i32 @g(i32 %x)"},
+      {true, "call {i32, i1} @llvm.sadd.with.overflow.i32(i32 %x, i32 %y)"},
+      {true, "call {i32, i1} @llvm.ssub.with.overflow.i32(i32 %x, i32 %y)"},
+      {true, "call {i32, i1} @llvm.smul.with.overflow.i32(i32 %x, i32 %y)"},
+      {true, "call {i32, i1} @llvm.uadd.with.overflow.i32(i32 %x, i32 %y)"},
+      {true, "call {i32, i1} @llvm.usub.with.overflow.i32(i32 %x, i32 %y)"},
+      {true, "call {i32, i1} @llvm.umul.with.overflow.i32(i32 %x, i32 %y)"},
+      {false, "call float @llvm.sqrt.f32(float %fx)"},
+      {false, "call float @llvm.powi.f32.i32(float %fx, i32 %x)"},
+      {false, "call float @llvm.sin.f32(float %fx)"},
+      {false, "call float @llvm.cos.f32(float %fx)"},
+      {false, "call float @llvm.pow.f32(float %fx, float %fy)"},
+      {false, "call float @llvm.exp.f32(float %fx)"},
+      {false, "call float @llvm.exp2.f32(float %fx)"},
+      {false, "call float @llvm.log.f32(float %fx)"},
+      {false, "call float @llvm.log10.f32(float %fx)"},
+      {false, "call float @llvm.log2.f32(float %fx)"},
+      {false, "call float @llvm.fma.f32(float %fx, float %fx, float %fy)"},
+      {false, "call float @llvm.fabs.f32(float %fx)"},
+      {false, "call float @llvm.minnum.f32(float %fx, float %fy)"},
+      {false, "call float @llvm.maxnum.f32(float %fx, float %fy)"},
+      {false, "call float @llvm.minimum.f32(float %fx, float %fy)"},
+      {false, "call float @llvm.maximum.f32(float %fx, float %fy)"},
+      {false, "call float @llvm.copysign.f32(float %fx, float %fy)"},
+      {false, "call float @llvm.floor.f32(float %fx)"},
+      {false, "call float @llvm.ceil.f32(float %fx)"},
+      {false, "call float @llvm.trunc.f32(float %fx)"},
+      {false, "call float @llvm.rint.f32(float %fx)"},
+      {false, "call float @llvm.nearbyint.f32(float %fx)"},
+      {false, "call float @llvm.round.f32(float %fx)"},
+      {false, "call float @llvm.roundeven.f32(float %fx)"},
+      {false, "call i32 @llvm.lround.f32(float %fx)"},
+      {false, "call i64 @llvm.llround.f32(float %fx)"},
+      {false, "call i32 @llvm.lrint.f32(float %fx)"},
+      {false, "call i64 @llvm.llrint.f32(float %fx)"},
+      {false, "call float @llvm.fmuladd.f32(float %fx, float %fx, float %fy)"}};
 
   std::string AssemblyStr = AsmHead;
   for (auto &Itm : Data)
@@ -992,6 +1069,12 @@ TEST(ValueTracking, canCreatePoisonOrUndef) {
   std::string AsmHead =
       "@s = external dso_local global i32, align 1\n"
       "declare i32 @g(i32)\n"
+      "declare {i32, i1} @llvm.sadd.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare {i32, i1} @llvm.ssub.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare {i32, i1} @llvm.smul.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare {i32, i1} @llvm.uadd.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare {i32, i1} @llvm.usub.with.overflow.i32(i32 %a, i32 %b)\n"
+      "declare {i32, i1} @llvm.umul.with.overflow.i32(i32 %a, i32 %b)\n"
       "define void @f(i32 %x, i32 %y, float %fx, float %fy, i1 %cond, "
       "<4 x i32> %vx, <4 x i32> %vx2, <vscale x 4 x i32> %svx, i8* %p) {\n";
   std::string AsmTail = "  ret void\n}";
@@ -1053,7 +1136,19 @@ TEST(ValueTracking, canCreatePoisonOrUndef) {
       {{true, false},
        "ashr <4 x i32> %vx, select (i1 icmp sgt (i32 ptrtoint (i32* @s to "
        "i32), i32 1), <4 x i32> zeroinitializer, <4 x i32> <i32 0, i32 1, i32 "
-       "2, i32 3>)"}};
+       "2, i32 3>)"},
+      {{false, false},
+       "call {i32, i1} @llvm.sadd.with.overflow.i32(i32 %x, i32 %y)"},
+      {{false, false},
+       "call {i32, i1} @llvm.ssub.with.overflow.i32(i32 %x, i32 %y)"},
+      {{false, false},
+       "call {i32, i1} @llvm.smul.with.overflow.i32(i32 %x, i32 %y)"},
+      {{false, false},
+       "call {i32, i1} @llvm.uadd.with.overflow.i32(i32 %x, i32 %y)"},
+      {{false, false},
+       "call {i32, i1} @llvm.usub.with.overflow.i32(i32 %x, i32 %y)"},
+      {{false, false},
+       "call {i32, i1} @llvm.umul.with.overflow.i32(i32 %x, i32 %y)"}};
 
   std::string AssemblyStr = AsmHead;
   for (auto &Itm : Data)
@@ -1108,7 +1203,7 @@ TEST_F(ValueTrackingTest, computePtrAlignment) {
                 "}");
   AssumptionCache AC(*F);
   DominatorTree DT(*F);
-  DataLayout DL = M->getDataLayout();
+  const DataLayout &DL = M->getDataLayout();
   EXPECT_EQ(getKnownAlignment(A, DL, CxtI, &AC, &DT), Align(1));
   EXPECT_EQ(getKnownAlignment(A, DL, CxtI2, &AC, &DT), Align(1));
   EXPECT_EQ(getKnownAlignment(A, DL, CxtI3, &AC, &DT), Align(16));
@@ -1142,6 +1237,27 @@ TEST_F(ComputeKnownBitsTest, ComputeKnownMulBits) {
   expectKnownBits(/*zero*/ 95u, /*one*/ 32u);
 }
 
+TEST_F(ValueTrackingTest, isNonZeroRecurrence) {
+  parseAssembly(R"(
+    define i1 @test(i8 %n, i8 %r) {
+    entry:
+      br label %loop
+    loop:
+      %p = phi i8 [ -1, %entry ], [ %next, %loop ]
+      %next = add nsw i8 %p, -1
+      %cmp1 = icmp eq i8 %p, %n
+      br i1 %cmp1, label %exit, label %loop
+    exit:
+      %A = or i8 %p, %r
+      %CxtI = icmp eq i8 %A, 0
+      ret i1 %CxtI
+    }
+  )");
+  const DataLayout &DL = M->getDataLayout();
+  AssumptionCache AC(*F);
+  EXPECT_TRUE(isKnownNonZero(A, DL, 0, &AC, CxtI));
+}
+
 TEST_F(ValueTrackingTest, KnownNonZeroFromDomCond) {
   parseAssembly(R"(
     declare i8* @f_i8()
@@ -1161,7 +1277,7 @@ TEST_F(ValueTrackingTest, KnownNonZeroFromDomCond) {
   )");
   AssumptionCache AC(*F);
   DominatorTree DT(*F);
-  DataLayout DL = M->getDataLayout();
+  const DataLayout &DL = M->getDataLayout();
   EXPECT_EQ(isKnownNonZero(A, DL, 0, &AC, CxtI, &DT), true);
   EXPECT_EQ(isKnownNonZero(A, DL, 0, &AC, CxtI2, &DT), false);
 }
@@ -1185,7 +1301,7 @@ TEST_F(ValueTrackingTest, KnownNonZeroFromDomCond2) {
   )");
   AssumptionCache AC(*F);
   DominatorTree DT(*F);
-  DataLayout DL = M->getDataLayout();
+  const DataLayout &DL = M->getDataLayout();
   EXPECT_EQ(isKnownNonZero(A, DL, 0, &AC, CxtI, &DT), true);
   EXPECT_EQ(isKnownNonZero(A, DL, 0, &AC, CxtI2, &DT), false);
 }
@@ -1203,7 +1319,7 @@ TEST_F(ValueTrackingTest, IsImpliedConditionAnd) {
       ret void
     }
   )");
-  DataLayout DL = M->getDataLayout();
+  const DataLayout &DL = M->getDataLayout();
   EXPECT_EQ(isImpliedCondition(A, A2, DL), true);
   EXPECT_EQ(isImpliedCondition(A, A3, DL), false);
   EXPECT_EQ(isImpliedCondition(A, A4, DL), None);
@@ -1222,7 +1338,7 @@ TEST_F(ValueTrackingTest, IsImpliedConditionAnd2) {
       ret void
     }
   )");
-  DataLayout DL = M->getDataLayout();
+  const DataLayout &DL = M->getDataLayout();
   EXPECT_EQ(isImpliedCondition(A, A2, DL), true);
   EXPECT_EQ(isImpliedCondition(A, A3, DL), false);
   EXPECT_EQ(isImpliedCondition(A, A4, DL), None);
@@ -1241,7 +1357,7 @@ TEST_F(ValueTrackingTest, IsImpliedConditionOr) {
       ret void
     }
   )");
-  DataLayout DL = M->getDataLayout();
+  const DataLayout &DL = M->getDataLayout();
   EXPECT_EQ(isImpliedCondition(A, A2, DL, false), false);
   EXPECT_EQ(isImpliedCondition(A, A3, DL, false), true);
   EXPECT_EQ(isImpliedCondition(A, A4, DL, false), None);
@@ -1260,7 +1376,7 @@ TEST_F(ValueTrackingTest, IsImpliedConditionOr2) {
       ret void
     }
   )");
-  DataLayout DL = M->getDataLayout();
+  const DataLayout &DL = M->getDataLayout();
   EXPECT_EQ(isImpliedCondition(A, A2, DL, false), false);
   EXPECT_EQ(isImpliedCondition(A, A3, DL, false), true);
   EXPECT_EQ(isImpliedCondition(A, A4, DL, false), None);
@@ -1807,8 +1923,8 @@ const std::pair<const char *, const char *> IsBytewiseValueTests[] = {
     },
 };
 
-INSTANTIATE_TEST_CASE_P(IsBytewiseValueParamTests, IsBytewiseValueTest,
-                        ::testing::ValuesIn(IsBytewiseValueTests),);
+INSTANTIATE_TEST_SUITE_P(IsBytewiseValueParamTests, IsBytewiseValueTest,
+                         ::testing::ValuesIn(IsBytewiseValueTests));
 
 TEST_P(IsBytewiseValueTest, IsBytewiseValue) {
   auto M = parseModule(std::string("@test = global ") + GetParam().second);
@@ -2130,5 +2246,5 @@ TEST_P(FindAllocaForValueTest, findAllocaForValueZeroOffset) {
   EXPECT_EQ(!!AI, GetParam().ZeroOffsetResult);
 }
 
-INSTANTIATE_TEST_CASE_P(FindAllocaForValueTest, FindAllocaForValueTest,
-                        ::testing::ValuesIn(FindAllocaForValueTests), );
+INSTANTIATE_TEST_SUITE_P(FindAllocaForValueTest, FindAllocaForValueTest,
+                         ::testing::ValuesIn(FindAllocaForValueTests));

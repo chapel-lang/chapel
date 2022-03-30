@@ -1,0 +1,45 @@
+name: build-CI-container
+
+env:
+  REGISTRY: ghcr.io
+  # NOTE: IMAGE_NAME must be lowercase
+  IMAGE_NAME: chapel-github-ci
+
+  # NOTE: if this filename changes, also update in the on.paths section below
+  DOCKERFILE: util/dockerfiles/github-ci/Dockerfile
+
+on:
+  push:
+    branches: [ main ]
+    # This limits the action so it only builds when this file changes
+    paths:
+      # unfortunately we can't use ${{env.DOCKERFILE}} here
+      # see https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
+      - util/dockerfiles/github-ci/Dockerfile
+
+  # Adds a "manual run" option in the GH UI
+  workflow_dispatch:
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1.14.1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v2.9.0
+        with:
+          file: ${{ env.DOCKERFILE }}
+          push: true
+          # example: ghcr.io/chapel-lang/chapel-github-ci:latest
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest

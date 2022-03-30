@@ -853,7 +853,7 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
-  // allocate data into shared memory (takes one paremter: number of bytes to allocate)
+  // allocate data into shared memory (takes one parameter: number of bytes to allocate)
   // and returns a c_void_ptr
   prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
 

@@ -37,11 +37,11 @@ const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
                                           bool isMethod,
-                                          asttags::ASTTag idTag,
+                                          asttags::AstTag idTag,
                                           bool isTypeConstructor,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
-                                          const Expression* whereClause) {
+                                          const AstNode* whereClause) {
   QUERY_BEGIN(getUntypedFnSignature, context,
               id, name, isMethod, idTag, isTypeConstructor,
               kind, formals, whereClause);
@@ -58,11 +58,11 @@ const UntypedFnSignature*
 UntypedFnSignature::get(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
-                        asttags::ASTTag idTag,
+                        asttags::AstTag idTag,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
-                        const uast::Expression* whereClause) {
+                        const uast::AstNode* whereClause) {
   return getUntypedFnSignature(context, id, name, isMethod,
                                idTag, isTypeConstructor, kind,
                                std::move(formals), whereClause).get();
@@ -127,7 +127,7 @@ CallInfo::CallInfo(const uast::FnCall* call) {
   }
 }
 
-void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {
+void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
   vec.resize(ast->id().numContainedChildren());
 

@@ -51,7 +51,7 @@ void ClassType::stringify(std::ostream& ss,
   if (decorator_.isNilable()) {
     ss << "?";
   } else if (decorator_.isUnknownNilability()) {
-    ss << " <unknown-nilablity>";
+    ss << " <unknown-nilability>";
   }
 
 }

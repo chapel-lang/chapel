@@ -10,5 +10,9 @@ proc availMem() {
   chpl_comm_regMemHeapInfo(unused, heap_size);
   if heap_size != 0 then
     return heap_size.safeCast(int);
-  return here.physicalMemory(unit = MemUnits.Bytes);
+
+  var physMem = here.physicalMemory(unit = MemUnits.Bytes);
+  if numBits(c_size_t) < 64 then
+    physMem = min(physMem, 2**30);
+  return physMem;
 }

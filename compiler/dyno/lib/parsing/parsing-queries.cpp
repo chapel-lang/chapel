@@ -22,7 +22,7 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/query-impl.h"
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
@@ -129,7 +129,7 @@ const Location& locateId(Context* context, ID id) {
 }
 
 // this is just a convenient wrapper around locating with the id
-const Location& locateAst(Context* context, const ASTNode* ast) {
+const Location& locateAst(Context* context, const AstNode* ast) {
   assert(!ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
@@ -243,7 +243,7 @@ const Module* getToplevelModule(Context* context, UniqueString name) {
   return getToplevelModuleQuery(context, name);
 }
 
-static const ASTNode* const& astForIDQuery(Context* context, ID id) {
+static const AstNode* const& astForIDQuery(Context* context, ID id) {
   QUERY_BEGIN(astForIDQuery, context, id);
 
   // Ask the context for the filename from the ID
@@ -252,12 +252,12 @@ static const ASTNode* const& astForIDQuery(Context* context, ID id) {
   // Get the result of parsing
   const BuilderResult& p = parseFile(context, path);
 
-  const ASTNode* result = p.idToAst(id);
+  const AstNode* result = p.idToAst(id);
 
   return QUERY_END(result);
 }
 
-const ASTNode* idToAst(Context* context, ID id) {
+const AstNode* idToAst(Context* context, ID id) {
   if (id.isEmpty()) {
     assert(false && "bad query of uAST for empty ID");
     return nullptr;
@@ -266,19 +266,19 @@ const ASTNode* idToAst(Context* context, ID id) {
   return astForIDQuery(context, id);
 }
 
-static const ASTTag& idToTagQuery(Context* context, ID id) {
+static const AstTag& idToTagQuery(Context* context, ID id) {
   QUERY_BEGIN(idToTagQuery, context, id);
 
-  ASTTag result = asttags::AST_TAG_UNKNOWN;
+  AstTag result = asttags::AST_TAG_UNKNOWN;
 
-  const ASTNode* ast = astForIDQuery(context, id);
+  const AstNode* ast = astForIDQuery(context, id);
   if (ast != nullptr)
     result = ast->tag();
 
   return QUERY_END(result);
 }
 
-ASTTag idToTag(Context* context, ID id) {
+AstTag idToTag(Context* context, ID id) {
   return idToTagQuery(context, id);
 }
 
@@ -286,7 +286,7 @@ const ID& idToParentId(Context* context, ID id) {
   // Performance: Would it be better to have the parse query
   // set this query as an alternative to computing maps
   // in Builder::Result and then redundantly setting them here?
-  // Or, should we store parent ID as a field in ASTNode?
+  // Or, should we store parent ID as a field in AstNode?
 
   QUERY_BEGIN(idToParentId, context, id);
 
@@ -305,7 +305,7 @@ static const Function::ReturnIntent&
 idToFnReturnIntentQuery(Context* context, ID id) {
   QUERY_BEGIN(idToFnReturnIntentQuery, context, id);
 
-  const ASTNode* ast = idToAst(context, id);
+  const AstNode* ast = idToAst(context, id);
   Function::ReturnIntent result = Function::DEFAULT_RETURN_INTENT;
 
   if (ast != nullptr) {
@@ -325,7 +325,7 @@ static const bool&
 functionWithIdHasWhereQuery(Context* context, ID id) {
   QUERY_BEGIN(functionWithIdHasWhereQuery, context, id);
 
-  const ASTNode* ast = idToAst(context, id);
+  const AstNode* ast = idToAst(context, id);
   bool result = false;
 
   if (ast != nullptr) {

@@ -67,7 +67,7 @@ static ConversionsTable conversionsTable;
 
 static void resolveFormals(FnSymbol* fn);
 
-static void markIteratorAndLoops(FnSymbol* fn);
+static void markIteratorAndLoops(FnSymbol* fn, CallExpr* call);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn);
 
@@ -536,7 +536,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
     } else {
       if (fn->isIterator() == true) {
-        markIteratorAndLoops(fn);
+        markIteratorAndLoops(fn, forCall);
       }
 
       if (needsCapture(fn))
@@ -845,7 +845,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
 static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag);
 static bool isLoopBodyJustYield(LoopStmt* loop);
 
-static void markIteratorAndLoops(FnSymbol* fn) {
+static void markIteratorAndLoops(FnSymbol* fn, CallExpr* call) {
   /* Marks loops in iterators as order-independent:
        * if a pragma says to do so
        * or, if the body of the loop is just a yield
@@ -854,6 +854,10 @@ static void markIteratorAndLoops(FnSymbol* fn) {
   bool markAllYieldingLoops = fn->hasFlag(FLAG_PROMOTION_WRAPPER) ||
                               fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS) ||
                               markOrderIndep;
+
+  if (fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS)) {
+    USR_WARN(call, "'vectorizeOnly()' is deprecated; please use 'foreach' loops instead");
+  }
 
   std::vector<CallExpr*> callExprs;
 

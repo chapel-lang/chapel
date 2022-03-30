@@ -26,12 +26,12 @@ namespace uast {
 
 
   owned<FnCall> FnCall::build(Builder* builder,
-                            Location loc,
-                            owned<Expression> calledExpression,
-                            ASTList actuals,
-                            std::vector<UniqueString> actualNames,
-                            bool callUsedSquareBrackets) {
-  ASTList lst;
+                              Location loc,
+                              owned<AstNode> calledExpression,
+                              AstList actuals,
+                              std::vector<UniqueString> actualNames,
+                              bool callUsedSquareBrackets) {
+  AstList lst;
 
   lst.push_back(std::move(calledExpression));
   for (auto& actual : actuals) {
@@ -46,8 +46,8 @@ namespace uast {
 }
 owned<FnCall> FnCall::build(Builder* builder,
                             Location loc,
-                            owned<Expression> calledExpression,
-                            ASTList actuals,
+                            owned<AstNode> calledExpression,
+                            AstList actuals,
                             bool callUsedSquareBrackets) {
   std::vector<UniqueString> emptyActualNames;
 
@@ -59,9 +59,9 @@ owned<FnCall> FnCall::build(Builder* builder,
 }
 owned<FnCall> FnCall::build(Builder* builder,
                             Location loc,
-                            owned<Expression> calledExpression,
+                            owned<AstNode> calledExpression,
                             bool callUsedSquareBrackets) {
-  ASTList emptyActuals;
+  AstList emptyActuals;
   std::vector<UniqueString> emptyActualNames;
 
   return FnCall::build(builder, loc,

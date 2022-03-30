@@ -126,6 +126,8 @@ void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                       int ln, int32_t fn);
 void chpl_cache_comm_getput_unordered_task_fence(void);
 
+int chpl_cache_pagesize(void);
+
 // For debugging.
 void chpl_cache_print(void);
 void chpl_cache_assert_released(void);

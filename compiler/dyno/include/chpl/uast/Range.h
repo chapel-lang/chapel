@@ -21,7 +21,7 @@
 #define CHPL_UAST_RANGE_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -39,7 +39,7 @@ namespace uast {
   \endrst
 
  */
-class Range final : public Expression {
+class Range final : public AstNode {
  public:
   enum OpKind {
     DEFAULT,
@@ -47,10 +47,10 @@ class Range final : public Expression {
   };
 
  private:
-  Range(ASTList children, OpKind opKind,
+  Range(AstList children, OpKind opKind,
         int8_t lowerBoundChildNum,
         int8_t upperBoundChildNum)
-    : Expression(asttags::Range, std::move(children)),
+    : AstNode(asttags::Range, std::move(children)),
       opKind_(opKind),
       lowerBoundChildNum_(lowerBoundChildNum),
       upperBoundChildNum_(upperBoundChildNum) {
@@ -59,16 +59,14 @@ class Range final : public Expression {
     }
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Range* rhs = other->toRange();
     return this->opKind_ == rhs->opKind_ &&
       this->lowerBoundChildNum_ == rhs->lowerBoundChildNum_ &&
-      this->upperBoundChildNum_ == rhs->upperBoundChildNum_ &&
-      this->expressionContentsMatchInner(rhs);
+      this->upperBoundChildNum_ == rhs->upperBoundChildNum_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   OpKind opKind_;
@@ -83,11 +81,11 @@ class Range final : public Expression {
   */
   static owned<Range> build(Builder* builder, Location loc,
                             OpKind opKind,
-                            owned<Expression> lowerBound,
-                            owned<Expression> upperBound);
+                            owned<AstNode> lowerBound,
+                            owned<AstNode> upperBound);
 
   /**
-    Returns the operator kind used to constrct this range.
+    Returns the operator kind used to construct this range.
   */
   OpKind opKind() const {
     return this->opKind_;
@@ -96,21 +94,19 @@ class Range final : public Expression {
   /**
     Returns the lower bound of this range, or nullptr if there is none.
   */
-  const Expression* lowerBound() const {
+  const AstNode* lowerBound() const {
     if (lowerBoundChildNum_ < 0) return nullptr;
     auto ret = child(lowerBoundChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
   /**
     Returns the upper bound of this range, or nullptr if there is none.
   */
-  const Expression* upperBound() const {
+  const AstNode* upperBound() const {
     if (upperBoundChildNum_ < 0) return nullptr;
     auto ret = child(upperBoundChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
 };

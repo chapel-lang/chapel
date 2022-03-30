@@ -153,7 +153,7 @@ char* Context::setupStringMetadata(char* buf, size_t len) {
   // set the GC mark
   *buf = gcMark;
   buf++;
-  // set the doNotcollectMark
+  // set the doNotCollectMark
   *buf = 0;
   buf++;
   return buf;
@@ -590,7 +590,7 @@ static void logErrorInContext(Context* context, ID id,
 }
 
 static void logErrorInContext(Context* context,
-                              const uast::ASTNode* ast,
+                              const uast::AstNode* ast,
                               ErrorMessage::Kind kind,
                               const char* fmt,
                               va_list vl) {
@@ -617,12 +617,12 @@ void Context::error(ID id, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, id, ErrorMessage::ERROR, fmt);
 }
 
-void Context::error(const uast::ASTNode* ast, const char* fmt, ...) {
+void Context::error(const uast::AstNode* ast, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ast, ErrorMessage::ERROR, fmt);
 }
 
 void Context::error(const resolution::TypedFnSignature* inFn,
-                    const uast::ASTNode* ast,
+                    const uast::AstNode* ast,
                     const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ast, ErrorMessage::ERROR, fmt);
   // TODO: add note about instantiation & POI stack
