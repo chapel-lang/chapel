@@ -3267,19 +3267,54 @@ new_expr:
                 see if we can remove them. */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned($4),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::OWNED, call.release());
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned($4),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::SHARED, call.release());
   }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto base = context->buildUnaryOp(@4, $9, $4);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned(base),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::OWNED, call.release());
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto base = context->buildUnaryOp(@4, $9, $4);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned(base),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::SHARED, call.release());
+
   }
 ;
 
