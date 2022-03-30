@@ -53,10 +53,12 @@ ErrorMessage::ErrorMessage()
 ErrorMessage::ErrorMessage(ID id, Location location, std::string message,
                            Kind kind)
   : kind_(kind), location_(location), message_(message), id_(id) {
+  gdbShouldBreakHere();
 }
 ErrorMessage::ErrorMessage(ID id, Location location, const char* message,
                            Kind kind)
   : kind_(kind), location_(location), message_(message), id_(id) {
+  gdbShouldBreakHere();
 }
 
 ErrorMessage ErrorMessage::vbuild(ID id, Location loc, Kind kind,

@@ -1,6 +1,6 @@
 var x = 4;
 
-var get_x = lambda() ref { return x; }
+var get_x = lambda() ref { return x; };
 
 f() = 5;
 

@@ -1,1 +1,1 @@
-error: 'ref' return types are not allowed in lambdas
+lambda_ref_ret_type.chpl:3: error: 'ref' return types are not allowed in lambdas

@@ -53,6 +53,7 @@ class Function final : public NamedDecl {
     PROC,
     ITER,
     OPERATOR,
+    LAMBDA,
   };
 
   enum ReturnIntent {

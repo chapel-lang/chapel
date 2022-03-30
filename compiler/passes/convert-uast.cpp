@@ -1845,7 +1845,23 @@ struct Converter {
             name == USTR("<<="));
   }
 
-  const char* convertFunctionNameAndAstr(UniqueString name) {
+  const char* convertFunctionNameAndAstr(UniqueString name,
+                                         uast::Function::Kind kind) {
+
+    if (kind == uast::Function::LAMBDA) {
+      static unsigned int nextId = 0;
+      char buffer[100];
+
+      /*
+       Use sprintf to prevent buffer overflow if there are too many lambdas
+       */
+      if (snprintf(buffer, 100, "chpl_lambda_%i", nextId++) >= 100) {
+        INT_FATAL("Too many lambdas.");
+      }
+
+      return astr(buffer);
+    }
+
     const char* ret = nullptr;
     if (name == USTR("by")) {
       ret = "chpl_by";
@@ -2004,7 +2020,8 @@ struct Converter {
       }
     }
 
-    const char* convName = convertFunctionNameAndAstr(node->name());
+    const char* convName = convertFunctionNameAndAstr(node->name(),
+                                                      node->kind());
     fn = buildFunctionSymbol(fn, convName, thisTag, receiverType);
 
     if (isAssignOp(node->name())) {
@@ -2014,19 +2031,29 @@ struct Converter {
     RetTag retTag = convertRetTag(node->returnIntent());
 
     if (node->kind() == uast::Function::ITER) {
-
       // TODO (dlongnecke): Move me to new frontend!
       if (fn->hasFlag(FLAG_EXTERN))
         USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
       fn->addFlag(FLAG_ITERATOR_FN);
-    }
 
-    if (node->kind() == uast::Function::OPERATOR) {
+    } else if (node->kind() == uast::Function::OPERATOR) {
       fn->addFlag(FLAG_OPERATOR);
       if (fn->_this != NULL) {
         updateOpThisTagOrErr(fn);
         setupTypeIntentArg(toArgSymbol(fn->_this));
       }
+
+    } else if (node->kind() == uast::Function::LAMBDA) {
+      fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+
+      // TODO: move these to new frontend if they continue
+      // to be relevant as FCFs are improved.
+      if (retTag == RET_REF || retTag == RET_CONST_REF)
+        USR_FATAL(fn, "'ref' return types are not allowed in lambdas");
+      if (retTag == RET_PARAM)
+        USR_FATAL(fn, "'param' return types are not allowed in lambdas");
+      if (retTag == RET_TYPE)
+        USR_FATAL(fn, "'type' return types are not allowed in lambdas");
     }
 
     Expr* retType = nullptr;
@@ -2078,6 +2105,15 @@ struct Converter {
       Flag linkageFlag = convertFlagForDeclLinkage(node);
       Expr* linkageName = convertExprOrNull(node->linkageName());
       ret = buildExternExportFunctionDecl(linkageFlag, linkageName, ret);
+    }
+
+    // For lambdas, return a DefExpr instead of a BlockStmt
+    // containing a DefExpr because this is the pattern expected
+    // by the production compiler.
+    if (node->kind() == uast::Function::LAMBDA) {
+      // leaves the BlockStmt ret and other DefExpr to be GC'd
+      DefExpr* def = new DefExpr(fn);
+      return def;
     }
 
     return ret;
