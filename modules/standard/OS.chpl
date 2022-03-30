@@ -52,6 +52,16 @@ module OS {
     inline operator :(x:int, type t:mode_t) return __primitive("cast", t, x);
     inline operator |(a: mode_t, b: mode_t) return (a:int | b:int):mode_t;
 
+    extern type time_t;
+    inline operator :(x:time_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:int, type t:time_t) return __primitive("cast", t, x);
+
+    extern type suseconds_t;
+    inline operator :(x:suseconds_t, type t:int)
+      return __primitive("cast", t, x);
+    inline operator :(x:int, type t:suseconds_t)
+      return __primitive("cast", t, x);
+
     //
     // stdlib.h
     //
@@ -80,6 +90,21 @@ module OS {
     extern const S_ISVTX: mode_t;
 
     extern proc chmod(path:c_string, mode:mode_t):c_int;
+
+    //
+    // sys/time.h
+    //
+    extern "struct timeval" record timeval {
+      var tv_sec:time_t;       // seconds since Jan. 1, 1970
+      var tv_usec:suseconds_t; // and microseconds
+    }
+
+    extern "struct timezone" record timezone {
+      var tz_minuteswest:c_int; // of Greenwich
+      var tz_dsttime:c_int;     // type of dst correction to apply
+    };
+
+    extern proc gettimeofday(ref tp: timeval, tzp:c_void_ptr):c_int;
 
   } // end POSIX
 }

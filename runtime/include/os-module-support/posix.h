@@ -28,6 +28,7 @@
 // sure we have them.
 //
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 
 #ifdef __cplusplus
