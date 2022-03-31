@@ -37,10 +37,14 @@ struct ParserError {
   std::string message;
   ParserError(YYLTYPE location, std::string message,
               ErrorMessage::Kind kind)
-    : kind(kind), location(location), message(message) { }
+    : kind(kind), location(location), message(message) {
+    gdbShouldBreakHere();
+  }
   ParserError(YYLTYPE location, const char* message,
               ErrorMessage::Kind kind)
-    : kind(kind), location(location), message(message) { }
+    : kind(kind), location(location), message(message) {
+    gdbShouldBreakHere();
+  }
 };
 
 struct ParserComment {
@@ -343,6 +347,8 @@ struct ParserContext {
 
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
+  AstNode* buildLambda(YYLTYPE location, FunctionParts& fp);
+
   AstNode* buildLetExpr(YYLTYPE location, ParserExprList* decls,
                         AstNode* expr);
 
@@ -564,6 +570,8 @@ struct ParserContext {
 
   AstNode* buildTryExpr(YYLTYPE location, AstNode* expr,
                         bool isTryBang);
+
+  AstNode* buildEmptyStmt(YYLTYPE location);
 
   CommentsAndStmt buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
                                     ParserExprList* handlers,

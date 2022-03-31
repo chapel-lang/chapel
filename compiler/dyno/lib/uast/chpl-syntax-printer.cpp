@@ -40,6 +40,7 @@ static const char* kindToString(Function::Kind kind) {
     case Function::Kind::PROC: return "proc";
     case Function::Kind::ITER: return "iter";
     case Function::Kind::OPERATOR: return "operator";
+    case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
@@ -438,6 +439,10 @@ struct ChplSyntaxVisitor {
     printBlockWithStyle(node->blockStyle(), node->stmts());
     ss_ << " while ";
     printChapelSyntax(ss_, node->condition());
+  }
+
+  void visit(const EmptyStmt* node) {
+    ss_ << ";";
   }
 
   void visit(const Enum* node) {

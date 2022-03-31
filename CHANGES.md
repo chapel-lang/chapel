@@ -1,6 +1,14 @@
 Release Changes List
 ====================
 
+version 1.26.0.1
+================
+
+This version is a slight variation on the 1.26.0 release containing a
+late-breaking bug fix that is specific to CHPL_COMM='ofi' when using the
+'cxi' provider.
+
+
 version 1.26.0
 ==============
 

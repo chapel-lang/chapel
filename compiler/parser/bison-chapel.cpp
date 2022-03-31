@@ -8582,11 +8582,11 @@ yyreduce:
     {
       (yyvsp[-5].pfnsymbol)->retTag = (yyvsp[-3].retTag);
       if ((yyvsp[-3].retTag) == RET_REF || (yyvsp[-3].retTag) == RET_CONST_REF)
-        USR_FATAL("'ref' return types are not allowed in lambdas");
+        USR_FATAL((yyvsp[-5].pfnsymbol), "'ref' return types are not allowed in lambdas");
       if ((yyvsp[-3].retTag) == RET_PARAM)
-        USR_FATAL("'param' return types are not allowed in lambdas");
+        USR_FATAL((yyvsp[-5].pfnsymbol), "'param' return types are not allowed in lambdas");
       if ((yyvsp[-3].retTag) == RET_TYPE)
-        USR_FATAL("'type' return types are not allowed in lambdas");
+        USR_FATAL((yyvsp[-5].pfnsymbol), "'type' return types are not allowed in lambdas");
       if ((yyvsp[-2].pexpr))
         (yyvsp[-5].pfnsymbol)->retExprType = new BlockStmt((yyvsp[-2].pexpr), BLOCK_SCOPELESS);
       if ((yyvsp[-1].lifetimeAndWhere).where)

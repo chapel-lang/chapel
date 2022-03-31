@@ -827,6 +827,45 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   return cs;
 }
 
+AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
+  // drop any comments before the lambda
+  clearComments(fp.comments);
+
+  AstNode* ret = nullptr;
+
+  if (fp.errorExpr == nullptr) {
+    owned<Block> body;
+    if (fp.body != nullptr) {
+      body = consumeToBlock(location, fp.body);
+    }
+
+    auto f = Function::build(builder, this->convertLocation(location),
+                             toOwned(fp.attributes),
+                             Decl::DEFAULT_VISIBILITY,
+                             Decl::DEFAULT_LINKAGE,
+                             /* linkageName */ nullptr,
+                             fp.name,
+                             /* inline */ false,
+                             /* override */ false,
+                             Function::LAMBDA,
+                             /* receiver */ nullptr,
+                             fp.returnIntent,
+                             /* throws */ false,
+                             /* primaryMethod */ false,
+                             /* parenless */ false,
+                             this->consumeList(fp.formals),
+                             toOwned(fp.returnType),
+                             toOwned(fp.where),
+                             this->consumeList(fp.lifetime),
+                             std::move(body));
+    ret = f.release();
+  } else {
+    ret = fp.errorExpr;
+  }
+  this->clearComments();
+  return ret;
+}
+
 AstNode*
 ParserContext::buildLetExpr(YYLTYPE location, ParserExprList* decls,
                             AstNode* expr) {
@@ -2027,6 +2066,12 @@ ParserContext::buildTryExpr(YYLTYPE location, AstNode* expr,
   auto node = Try::build(builder, convertLocation(location), toOwned(expr),
                          isTryBang,
                          /*isExpressionLevel*/ true);
+  return node.release();
+}
+
+AstNode*
+ParserContext::buildEmptyStmt(YYLTYPE location) {
+  auto node = EmptyStmt::build(builder, convertLocation(location));
   return node.release();
 }
 

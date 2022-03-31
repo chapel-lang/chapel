@@ -297,6 +297,22 @@ module M2 {
     foo();
   }
 }
+while true do
+ ;
+
+proc noOp(x:int);
+{
+// not the body
+}
+proc noOp() { }
+hi();
+;
+;
+tester();
+;
+;
+;
+bye();
              }
              )"""";
   auto parseResult = parser->parseString("Test4.chpl",

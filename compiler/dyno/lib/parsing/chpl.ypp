@@ -553,7 +553,9 @@
 
 %type <expr> array_type
 %type <expr> opt_type opt_ret_type ret_array_type
-%type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
+%type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type
+%type <functionParts> lambda_decl_start
+%type <expr> lambda_decl_expr
 %type <typeDeclParts> enum_header_lcbr
 %type <exprList> enum_ls
 
@@ -1336,7 +1338,7 @@ deprecated_class_level_stmt:
 class_level_stmt:
   TSEMI
     {
-      $$ = STMT(@$, nullptr);
+      $$ = STMT(@$, context->buildEmptyStmt(@$));
     }
 | inner_class_level_stmt
     {
@@ -2119,13 +2121,50 @@ enum_item:
     }
 ;
 
+lambda_decl_start:
+  TLAMBDA
+    {
+      FunctionParts fp = context->makeFunctionParts(false, false);
+      context->noteDeclStartLoc(@1);
+      // Preserve the first location, to avoid desync on start line number.
+      auto loc = context->declStartLoc(@1);
+      fp.startLocFirstLine = loc.first_line;
+      fp.startLocFirstColumn = loc.first_column;
+      fp.comments = context->gatherComments(loc);
+      fp.attributes = context->buildAttributes(@$).release();
+      fp.visibility = context->visibility;
+      context->resetAttributePartsState();
+      fp.kind = Function::PROC;
+      $$ = fp;
+    }
+;
+
 lambda_decl_expr:
-  TLAMBDA req_formal_ls opt_ret_tag opt_type opt_lifetime_where function_body_stmt
-  {
-    // TODO (dlongnecke): Leave this unimplemented for now? Since we will
-    // be addressing FCFs in 1.26...
-    $$ = TODOEXPR(@$);
-  }
+  lambda_decl_start req_formal_ls opt_ret_tag opt_type
+  opt_lifetime_where
+    {
+      context->clearComments();
+      context->resetDeclState();
+      context->enterScope(asttags::Function, STR("lambda"));
+    }
+  function_body_stmt
+    {
+      FunctionParts fp = $1;
+      fp.name = STR("lambda");
+      fp.formals = $2;
+      fp.returnIntent = $3;
+      fp.returnType = $4;
+      WhereAndLifetime wl = $5;
+      fp.body = $7;
+
+      fp.lifetime = wl.lifetime;
+      fp.where = wl.where;
+
+      context->clearComments();
+      context->exitScope(asttags::Function, STR("lambda"));
+
+      $$ = context->buildLambda(@$, fp);
+    }
 ;
 
 linkage_spec_empty:
@@ -3263,19 +3302,54 @@ new_expr:
                 see if we can remove them. */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned($4),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::OWNED, call.release());
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned($4),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::SHARED, call.release());
   }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto base = context->buildUnaryOp(@4, $9, $4);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned(base),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::OWNED, call.release());
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto base = context->buildUnaryOp(@4, $9, $4);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned(base),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::SHARED, call.release());
+
   }
 ;
 
