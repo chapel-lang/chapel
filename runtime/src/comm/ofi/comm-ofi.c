@@ -4288,8 +4288,7 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
   // to any node are visible.  Similarly, for GETs we have to ensure
   // that previous AMOs and PUTs to the target node are visible, and for
   // PUTs we have to ensure that previous AMOs to the target node are
-  // visible.  Do that here for all nodes except this op's target.  For
-  // that node, we'll use a fenced send instead.
+  // visible.  Do that here for all nodes.
   //
   chpl_bool havePutsOut = false;
   chpl_bool haveAmosOut = false;
@@ -4298,7 +4297,7 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
   case am_opExecOn:
   case am_opExecOnLrg:
     forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
-                          node /*skipNode*/, tcip);
+                          -1 /*skipNode*/, tcip);
     havePutsOut = (tcip->putVisBitmap != NULL
                    && bitmapTest(tcip->putVisBitmap, node));
     haveAmosOut = (tcip->amoVisBitmap != NULL
@@ -4308,7 +4307,7 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     {
       chpl_bool amoHasMemFx = (req->amo.ofiOp != FI_ATOMIC_READ);
       forceMemFxVisAllNodes(amoHasMemFx /*checkPuts*/, true /*checkAmos*/,
-                            node /*skipNode*/, tcip);
+                            -1 /*skipNode*/, tcip);
       havePutsOut = (amoHasMemFx
                      && tcip->putVisBitmap != NULL
                      && bitmapTest(tcip->putVisBitmap, node));
