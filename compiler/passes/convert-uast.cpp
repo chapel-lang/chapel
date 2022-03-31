@@ -2548,7 +2548,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::EmptyStmt* node) {
-    return buildChapelStmt(new BlockStmt());
+    return new BlockStmt();
   }
 
 };
