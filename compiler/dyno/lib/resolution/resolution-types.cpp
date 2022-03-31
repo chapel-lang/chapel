@@ -42,7 +42,7 @@ UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           bool isTypeConstructor,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
-                                          const Expression* whereClause) {
+                                          const AstNode* whereClause) {
   QUERY_BEGIN(getUntypedFnSignature, context,
               id, name, isMethod, idIsFunction, idIsClass, isTypeConstructor,
               kind, formals, whereClause);
@@ -64,7 +64,7 @@ UntypedFnSignature::get(Context* context, ID id,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
-                        const uast::Expression* whereClause) {
+                        const uast::AstNode* whereClause) {
   return getUntypedFnSignature(context, id, name, isMethod,
                                idIsFunction, idIsClass, isTypeConstructor, kind,
                                std::move(formals), whereClause).get();
@@ -130,7 +130,7 @@ CallInfo::CallInfo(const uast::FnCall* call) {
   }
 }
 
-void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {
+void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
   vec.resize(ast->id().numContainedChildren());
 
@@ -315,6 +315,50 @@ void TypedFnSignature::stringify(std::ostream& ss,
     formalType(i).stringify(ss, stringKind);
   }
   ss << ")";
+}
+
+void CallInfoActual::stringify(std::ostream& ss,
+                               chpl::StringifyKind stringKind) const {
+  if (!byName_.isEmpty()) {
+    byName_.stringify(ss, stringKind);
+    ss << "=";
+  }
+
+  type_.stringify(ss, stringKind);
+}
+
+void CallInfo::stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const {
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << "CallInfo with name '";
+    name_.stringify(ss, stringKind);
+    ss << "'";
+  } else {
+    name_.stringify(ss, stringKind);
+  }
+  if (calledType_ != QualifiedType()) {
+    ss << " receiver type: ";
+    calledType_.stringify(ss, stringKind);
+  }
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << " isMethod=" << isMethod_;
+    ss << " hasQuestionArg=" << hasQuestionArg_;
+    ss << " ";
+  }
+  ss << "(";
+  bool first = true;
+  for (auto actual: actuals()) {
+    if (first) {
+      first = false;
+    } else {
+      ss << ",";
+    }
+    actual.stringify(ss, stringKind);
+  }
+  ss << ")";
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << "\n";
+  }
 }
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {

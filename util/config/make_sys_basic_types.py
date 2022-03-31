@@ -43,8 +43,10 @@ _types = [
     ('INTPTR_MAX', 'c_intptr', 'intptr_t'),
     ('UINTPTR_MAX', 'c_uintptr', 'uintptr_t'),
     ('PTRDIFF_MAX', 'c_ptrdiff', 'ptrdiff_t'),
-    ('SSIZE_MAX', 'ssize_t', 'ssize_t'),
+    ('SIZE_MAX', 'c_size_t', 'size_t'),
+    ('SSIZE_MAX', 'c_ssize_t', 'ssize_t'),
     ('SIZE_MAX', 'size_t', 'size_t'),
+    ('SSIZE_MAX', 'ssize_t', 'ssize_t'),
 ]
 
 # Map of max values to chapel types.
@@ -186,9 +188,13 @@ def get_sys_c_types(docs=False):
                           '_max_value_to_chpl_type dict.'.format(max_value))
             sys.exit(1)
 
-        sys_c_types.append('/* The type corresponding to the C {c_type} type'
+        sys_c_types.append('/* The Chapel type corresponding to the C \'{c_type}\' type'
                            ' */'.format(**locals()))
-        stmt = 'extern type {chpl_type}= '.format(**locals())
+        if not chpl_type.startswith('c_'):
+            stmt = 'deprecated "\'{c_type}\' has been deprecated in favor of \'c_{c_type}\'"\n'.format(**locals())
+        else:
+            stmt = ''
+        stmt += 'extern type {chpl_type}= '.format(**locals())
         if docs:
             stmt += 'integral'
         else:
@@ -211,13 +217,14 @@ def get_sys_c_types(docs=False):
     #
     sys_c_types.append("""
 {
-  extern proc sizeof(type t): size_t;
+  extern proc sizeof(type t): c_size_t;
 """)
     for i, max_value in enumerate(max_values):
         _, chpl_type, _ = _types[i]
-        chpl_value = _max_value_to_chpl_type.get(str(max_value))
-        sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
-              ';'.format(**locals()))
+        if chpl_type.startswith('c_'):
+            chpl_value = _max_value_to_chpl_type.get(str(max_value))
+            sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
+                               ';'.format(**locals()))
     sys_c_types.append('}')
 
     return '\n'.join(sys_c_types)

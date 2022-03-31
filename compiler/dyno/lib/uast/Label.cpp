@@ -28,7 +28,7 @@ namespace uast {
 owned<Label> Label::build(Builder* builder, Location loc, UniqueString name,
                           owned<Loop> loop) {
   assert(loop.get() != nullptr);
-  ASTList lst;
+  AstList lst;
 
   lst.push_back(std::move(loop));
 

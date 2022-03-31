@@ -1022,6 +1022,37 @@ TEST_F(PatternMatchTest, VectorOps) {
   EXPECT_TRUE(A == Val);
 }
 
+TEST_F(PatternMatchTest, UndefPoisonMix) {
+  Type *ScalarTy = IRB.getInt8Ty();
+  ArrayType *ArrTy = ArrayType::get(ScalarTy, 2);
+  StructType *StTy = StructType::get(ScalarTy, ScalarTy);
+  StructType *StTy2 = StructType::get(ScalarTy, StTy);
+  StructType *StTy3 = StructType::get(StTy, ScalarTy);
+  Constant *Zero = ConstantInt::getNullValue(ScalarTy);
+  UndefValue *U = UndefValue::get(ScalarTy);
+  UndefValue *P = PoisonValue::get(ScalarTy);
+
+  EXPECT_TRUE(match(ConstantVector::get({U, P}), m_Undef()));
+  EXPECT_TRUE(match(ConstantVector::get({P, U}), m_Undef()));
+
+  EXPECT_TRUE(match(ConstantArray::get(ArrTy, {U, P}), m_Undef()));
+  EXPECT_TRUE(match(ConstantArray::get(ArrTy, {P, U}), m_Undef()));
+
+  auto *UP = ConstantStruct::get(StTy, {U, P});
+  EXPECT_TRUE(match(ConstantStruct::get(StTy2, {U, UP}), m_Undef()));
+  EXPECT_TRUE(match(ConstantStruct::get(StTy2, {P, UP}), m_Undef()));
+  EXPECT_TRUE(match(ConstantStruct::get(StTy3, {UP, U}), m_Undef()));
+  EXPECT_TRUE(match(ConstantStruct::get(StTy3, {UP, P}), m_Undef()));
+
+  EXPECT_FALSE(match(ConstantStruct::get(StTy, {U, Zero}), m_Undef()));
+  EXPECT_FALSE(match(ConstantStruct::get(StTy, {Zero, U}), m_Undef()));
+  EXPECT_FALSE(match(ConstantStruct::get(StTy, {P, Zero}), m_Undef()));
+  EXPECT_FALSE(match(ConstantStruct::get(StTy, {Zero, P}), m_Undef()));
+
+  EXPECT_FALSE(match(ConstantStruct::get(StTy2, {Zero, UP}), m_Undef()));
+  EXPECT_FALSE(match(ConstantStruct::get(StTy3, {UP, Zero}), m_Undef()));
+}
+
 TEST_F(PatternMatchTest, VectorUndefInt) {
   Type *ScalarTy = IRB.getInt8Ty();
   Type *VectorTy = FixedVectorType::get(ScalarTy, 4);
@@ -1605,12 +1636,32 @@ TEST_F(PatternMatchTest, InsertValue) {
   EXPECT_FALSE(match(IRB.getInt64(99), m_InsertValue<0>(m_Value(), m_Value())));
 }
 
+TEST_F(PatternMatchTest, VScale) {
+  DataLayout DL = M->getDataLayout();
+
+  Type *VecTy = ScalableVectorType::get(IRB.getInt8Ty(), 1);
+  Type *VecPtrTy = VecTy->getPointerTo();
+  Value *NullPtrVec = Constant::getNullValue(VecPtrTy);
+  Value *GEP = IRB.CreateGEP(VecTy, NullPtrVec, IRB.getInt64(1));
+  Value *PtrToInt = IRB.CreatePtrToInt(GEP, DL.getIntPtrType(GEP->getType()));
+  EXPECT_TRUE(match(PtrToInt, m_VScale(DL)));
+
+  // Prior to this patch, this case would cause assertion failures when attempting to match m_VScale
+  Type *VecTy2 = ScalableVectorType::get(IRB.getInt8Ty(), 2);
+  Value *NullPtrVec2 = Constant::getNullValue(VecTy2->getPointerTo());
+  Value *BitCast = IRB.CreateBitCast(NullPtrVec2, VecPtrTy);
+  Value *GEP2 = IRB.CreateGEP(VecTy, BitCast, IRB.getInt64(1));
+  Value *PtrToInt2 =
+      IRB.CreatePtrToInt(GEP2, DL.getIntPtrType(GEP2->getType()));
+  EXPECT_FALSE(match(PtrToInt2, m_VScale(DL)));
+}
+
 template <typename T> struct MutableConstTest : PatternMatchTest { };
 
 typedef ::testing::Types<std::tuple<Value*, Instruction*>,
                          std::tuple<const Value*, const Instruction *>>
     MutableConstTestTypes;
-TYPED_TEST_CASE(MutableConstTest, MutableConstTestTypes);
+TYPED_TEST_SUITE(MutableConstTest, MutableConstTestTypes, );
 
 TYPED_TEST(MutableConstTest, ICmp) {
   auto &IRB = PatternMatchTest::IRB;

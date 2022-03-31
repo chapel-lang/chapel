@@ -337,7 +337,7 @@ module ChapelLocale {
 
     var maxTaskPar: int;
 
-    var callStackSize: size_t;
+    var callStackSize: c_size_t;
 
     proc id : int return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 
@@ -706,7 +706,7 @@ module ChapelLocale {
                   __primitive("array_get", newRL, 0),
                   0 /* locale 0 */,
                   __primitive("array_get", origRL, 0),
-                  numLocales:size_t);
+                  numLocales:c_size_t);
       // Set the rootLocale to the local copy
       rootLocale._instance = newRootLocale;
     }
@@ -791,46 +791,6 @@ module ChapelLocale {
       }
       return dummyLocale;
     }
-  }
-
-//########################################################################{
-//# Locale diagnostics
-//#
-
-  pragma "no doc"
-  deprecated "locale.totalThreads() is deprecated; please let us know if this is a problem for you"
-  proc locale.totalThreads() {
-    var totalThreads: int;
-    extern proc chpl_task_getNumThreads() : uint(32);
-    on this do totalThreads = chpl_task_getNumThreads();
-    return totalThreads;
-  }
-
-  pragma "no doc"
-  deprecated "locale.idleThreads() is deprecated; please let us know if this is a problem for you"
-  proc locale.idleThreads() {
-    var idleThreads: int;
-    extern proc chpl_task_getNumIdleThreads() : uint(32);
-    on this do idleThreads = chpl_task_getNumIdleThreads();
-    return idleThreads;
-  }
-
-  pragma "no doc"
-  deprecated "locale.queuedTasks() is deprecated; please let us know if this is a problem for you"
-  proc locale.queuedTasks() {
-    var queuedTasks: int;
-    extern proc chpl_task_getNumQueuedTasks() : uint(32);
-    on this do queuedTasks = chpl_task_getNumQueuedTasks();
-    return queuedTasks;
-  }
-
-  pragma "no doc"
-  deprecated "locale.blockedTasks() is deprecated; please let us know if this is a problem for you"
-  proc locale.blockedTasks() {
-    var blockedTasks: int;
-    extern proc chpl_task_getNumBlockedTasks() : int(32);
-    on this do blockedTasks = chpl_task_getNumBlockedTasks();
-    return blockedTasks;
   }
 
 //########################################################################}

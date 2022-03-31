@@ -219,7 +219,7 @@ inline Expr* AList::only(void) {
 }
 
 // This header has to go here because we want AList::get to be inlined.
-// AList::get accesses expr->next, so it needs the full defintion of Expr.
+// AList::get accesses expr->next, so it needs the full definition of Expr.
 // Expr has methods with AList formals so needs the full definition of AList.
 #include "expr-class-def.h"
 

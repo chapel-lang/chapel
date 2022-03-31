@@ -23,6 +23,8 @@
    the conversion.
  */
 
+#include <iostream>
+
 #include "convert-uast.h"
 
 #include "build.h"
@@ -42,6 +44,7 @@
 #include "chpl/util/string-escapes.h"
 #include "chpl/queries/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/uast/chpl-syntax-printer.h"
 
 using namespace chpl;
 
@@ -56,9 +59,9 @@ struct Converter {
     : context(context),
       modTag(modTag) {}
 
-  Expr* convertAST(const uast::ASTNode* node);
+  Expr* convertAST(const uast::AstNode* node);
 
-  Expr* convertExprOrNull(const uast::ASTNode* node) {
+  Expr* convertExprOrNull(const uast::AstNode* node) {
     if (node == nullptr)
       return nullptr;
 
@@ -67,7 +70,7 @@ struct Converter {
     return ret;
   }
 
-  Flag convertFlagForDeclLinkage(const uast::ASTNode* node) {
+  Flag convertFlagForDeclLinkage(const uast::AstNode* node) {
     if (auto decl = node->toDecl()) {
       switch (decl->linkage()) {
         case uast::Decl::EXTERN: return FLAG_EXTERN;
@@ -79,7 +82,7 @@ struct Converter {
     return FLAG_UNKNOWN;
   }
 
-  const char* astrFromStringLiteral(const uast::ASTNode* node) {
+  const char* astrFromStringLiteral(const uast::AstNode* node) {
     if (auto strLit = node->toStringLiteral()) {
       const char* ret = astr(strLit->str().c_str());
       return ret;
@@ -117,11 +120,11 @@ struct Converter {
     if (!attr) return;
 
     if (!attr->isDeprecated()) {
-      assert(attr->deprecationMessage().isEmpty());
+      INT_ASSERT(attr->deprecationMessage().isEmpty());
     }
 
     if (attr->isDeprecated()) {
-      assert(!sym->hasFlag(FLAG_DEPRECATED));
+      INT_ASSERT(!sym->hasFlag(FLAG_DEPRECATED));
       sym->addFlag(FLAG_DEPRECATED);
 
       auto msg = attr->deprecationMessage();
@@ -183,6 +186,12 @@ struct Converter {
       return new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol);
     } else if (name == USTR("complex")) {
       return new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol);
+    } else if (name == USTR("align")) {
+      return new UnresolvedSymExpr("chpl_align");
+    } else if (name == USTR("by")) {
+      return new UnresolvedSymExpr("chpl_by");
+    } else if (name == USTR("_")) {
+      return new UnresolvedSymExpr("chpl__tuple_blank");
     }
 
     return nullptr;
@@ -205,7 +214,7 @@ struct Converter {
   /// SimpleBlockLikes ///
 
   BlockStmt*
-  createBlockWithStmts(uast::ASTListIteratorPair<uast::Expression> stmts) {
+  createBlockWithStmts(uast::AstListIteratorPair<uast::AstNode> stmts) {
     BlockStmt* block = new BlockStmt();
     for (auto stmt: stmts) {
       Expr* e = convertAST(stmt);
@@ -217,7 +226,7 @@ struct Converter {
   }
 
   Expr*
-  singleExprFromStmts(uast::ASTListIteratorPair<uast::Expression> stmts) {
+  singleExprFromStmts(uast::AstListIteratorPair<uast::AstNode> stmts) {
     Expr* ret = nullptr;
 
     for (auto stmt: stmts) {
@@ -225,7 +234,7 @@ struct Converter {
       ret = convertAST(stmt);
     }
 
-    assert(ret != nullptr);
+    INT_ASSERT(ret != nullptr);
 
     return ret;
   }
@@ -233,7 +242,7 @@ struct Converter {
   Expr* visit(const uast::Begin* node) {
     CallExpr* byrefVars = convertWithClause(node->withClause(), node);
     Expr* stmt = createBlockWithStmts(node->stmts());
-    assert(stmt);
+    INT_ASSERT(stmt);
     return buildBeginStmt(byrefVars, stmt);
   }
 
@@ -270,8 +279,8 @@ struct Converter {
         managerExpr = convertAST(as->symbol());
 
         auto var = as->rename()->toVariable();
-        assert(var);
-        assert(!var->initExpression() && !var->typeExpression());
+        INT_ASSERT(var);
+        INT_ASSERT(!var->initExpression() && !var->typeExpression());
 
         resourceName = astr(var->name().c_str());
 
@@ -390,7 +399,7 @@ struct Converter {
     CallExpr* actuals = new CallExpr(PRIM_ACTUALS_LIST);
     for (auto expr : node->exprs()) {
       Expr* conv = convertAST(expr);
-      assert(conv);
+      INT_ASSERT(conv);
       actuals->insertAtTail(conv);
     }
 
@@ -405,7 +414,7 @@ struct Converter {
     bool isPrototype = node->isPrototype();
 
     auto& loc = chpl::parsing::locateAst(gContext, node);
-    assert(!loc.isEmpty());
+    INT_ASSERT(!loc.isEmpty());
     auto path = astr(loc.path().c_str());
 
     ModuleSymbol* mod = parseIncludedSubmodule(name, path);
@@ -445,13 +454,13 @@ struct Converter {
 
       switch (vc->limitationKind()) {
         case uast::VisibilityClause::NONE: {
-          assert(vc->numLimitations() == 0);
+          INT_ASSERT(vc->numLimitations() == 0);
 
           // Handles case: 'import foo as bar'
           if (auto as = vc->symbol()->toAs()) {
             Expr* mod = convertAST(as->symbol());
             auto ident = as->rename()->toIdentifier();
-            assert(ident);
+            INT_ASSERT(ident);
             const char* rename = astr(ident->name().c_str());
             conv = buildImportStmt(mod, rename);
 
@@ -475,11 +484,11 @@ struct Converter {
           conv = buildImportStmt(mod, names);
         } break;
         default:
-          assert(0 == "Not possible!");
+          INT_FATAL("Not possible!");
           break;
       }
 
-      assert(conv != nullptr);
+      INT_ASSERT(conv != nullptr);
 
       ret->insertAtTail(conv);
     }
@@ -509,10 +518,10 @@ struct Converter {
       case uast::New::SHARED: symManager = dtShared->symbol; break;
       case uast::New::UNMANAGED: symManager = dtUnmanaged->symbol; break;
       case uast::New::BORROWED: symManager = dtBorrowed->symbol; break;
-      default: assert(0 == "Not handled!"); break;
+      default: INT_FATAL("Not handled!"); break;
     }
 
-    assert(symManager);
+    INT_ASSERT(symManager);
 
     /*
     2238 | TNEW TUNMANAGED
@@ -541,7 +550,7 @@ struct Converter {
     return nullptr;
   }
 
-  PotentialRename* convertRename(const uast::Expression* node) {
+  PotentialRename* convertRename(const uast::AstNode* node) {
     astlocMarker markAstLoc(node->id());
 
     PotentialRename* ret = new PotentialRename();
@@ -653,7 +662,7 @@ struct Converter {
   // 'addForallIntent' when adding converted children to the list, while
   // everything else will want to call 'addTaskIntent'.
   CallExpr* convertWithClause(const uast::WithClause* node,
-                              const uast::ASTNode* parent) {
+                              const uast::AstNode* parent) {
     if (node == nullptr) return nullptr;
 
     astlocMarker markAstLoc(node->id());
@@ -717,7 +726,7 @@ struct Converter {
       ret = CatchStmt::build(body);
     }
 
-    assert(ret != nullptr);
+    INT_ASSERT(ret != nullptr);
 
     return ret;
   }
@@ -741,9 +750,10 @@ struct Converter {
         // TODO: Might need to do something different on this path.
         conv = convertAST(decl);
       }
-
-      INT_ASSERT(conv);
-      decls->insertAtTail(conv);
+      if (!decl->isComment()) {
+        INT_ASSERT(conv);
+        decls->insertAtTail(conv);
+      }
     }
 
     Expr* expr = convertAST(node->expression());
@@ -752,23 +762,56 @@ struct Converter {
     return buildLetExpr(decls, expr);
   }
 
+  /*
+   * This helper checks if a conditional node has an assignment op in its
+   * condition expression, and reproduces an error similar to that in the
+   * old parser
+   * NOTE: This checking should move to the dyno resolver in the future
+   */
+  bool checkAssignConditional(const uast::Conditional* node) {
+    bool assignOp = false;
+    if (node->condition()->isOpCall() ) {
+      auto opCall = node->condition()->toOpCall();
+      auto op = opCall->op();
+      if (op == USTR("=")) {
+        assignOp = true;
+        USR_FATAL_CONT(convertAST(opCall->actual(0)), "Assignment is illegal in a conditional");
+        USR_PRINT(convertAST(opCall->actual(0)), "Use == to check for equality in a conditional");
+      } else if (op == USTR("+=") || op == USTR("-=") || op == USTR("*=")
+                 || op == USTR("/=") || op == USTR("%=") || op == USTR("**=")
+                 || op == USTR("&=") || op == USTR("|=") || op == USTR("^=")
+                 || op == USTR(">>=")|| op == USTR("<<=")) {
+        assignOp = true;
+        USR_FATAL_CONT(convertAST(opCall->actual(0)), "Assignment operation %s is illegal in a conditional",
+                       op.c_str());
+      }
+    }
+    return assignOp;
+  }
+
   Expr* visit(const uast::Conditional* node) {
-    assert(node->condition());
+    INT_ASSERT(node->condition());
+
+    /*
+     * NOTE: we need to check for assignment in conditionals as the old parser
+     * was handling this. In the future, this should move to the dyno resolver
+     */
+    if (checkAssignConditional(node)) USR_STOP();
 
     Expr* ret = nullptr;
 
     if (node->isExpressionLevel()) {
       auto cond = toExpr(convertAST(node->condition()));
-      assert(cond);
+      INT_ASSERT(cond);
       auto thenExpr = singleExprFromStmts(node->thenStmts());
-      assert(thenExpr);
+      INT_ASSERT(thenExpr);
       auto elseExpr = singleExprFromStmts(node->elseStmts());
-      assert(elseExpr);
+      INT_ASSERT(elseExpr);
       ret = new IfExpr(cond, thenExpr, elseExpr);
 
     } else {
       auto thenBlock = createBlockWithStmts(node->thenStmts());
-      assert(thenBlock);
+      INT_ASSERT(thenBlock);
       auto elseBlock = node->hasElseBlock()
             ? createBlockWithStmts(node->elseStmts())
             : nullptr;
@@ -777,9 +820,9 @@ struct Converter {
 
       // TODO: Can 'ifVars' happen in expression-level conditionals?
       if (auto ifVar = node->condition()->toVariable()) {
-        assert(ifVar->kind() == uast::Variable::CONST ||
-               ifVar->kind() == uast::Variable::VAR);
-        assert(ifVar->initExpression());
+        INT_ASSERT(ifVar->kind() == uast::Variable::CONST ||
+                   ifVar->kind() == uast::Variable::VAR);
+        INT_ASSERT(ifVar->initExpression());
         // astr() varNameStr so it doesn't go out of scope when passed to
         // buildIfVar
         auto varNameStr = astr(ifVar->name().c_str());
@@ -790,12 +833,12 @@ struct Converter {
         cond = toExpr(convertAST(node->condition()));
       }
 
-      assert(cond);
+      INT_ASSERT(cond);
 
       ret = buildIfStmt(cond, thenBlock, elseBlock);
     }
 
-    assert(ret != nullptr);
+    INT_ASSERT(ret != nullptr);
 
     return ret;
   }
@@ -809,7 +852,7 @@ struct Converter {
   Expr* visit(const uast::Label* node) {
     const char* name = astr(node->name().c_str());
     Expr* stmt = toExpr(convertAST(node->loop()));
-    assert(stmt);
+    INT_ASSERT(stmt);
     return buildLabelStmt(name, stmt);
   }
 
@@ -848,13 +891,13 @@ struct Converter {
   Expr* visit(const uast::Try* node) {
     if (node->isExpressionLevel()) {
 
-      assert(node->numStmts() == 1);
-      assert(node->stmt(0)->isExpression() && !node->stmt(0)->isBlock());
+      INT_ASSERT(node->numStmts() == 1);
+      INT_ASSERT(!node->stmt(0)->isBlock());
       Expr* expr = convertAST(node->stmt(0));
 
       // Use this instead of 'TryStmt::build'.
       auto ret = node->isTryBang() ? tryBangExpr(expr) : tryExpr(expr);
-      assert(ret);
+      INT_ASSERT(ret);
 
       return ret;
 
@@ -865,7 +908,7 @@ struct Converter {
       bool isSyncTry = false; // TODO: When can this be true?
 
       for (auto handler : node->handlers()) {
-        assert(handler->isCatch());
+        INT_ASSERT(handler->isCatch());
         auto conv = toExpr(convertAST(handler));
         catches->insertAtTail(conv);
       }
@@ -910,8 +953,12 @@ struct Converter {
 
     // Simple variables just get reverted to UnresolvedSymExpr.
     if (const uast::Variable* var = node->toVariable()) {
-      return new UnresolvedSymExpr(var->name().c_str());
-
+      auto name = var->name();
+      if (auto remap = reservedWordRemapForIdent(name)) {
+        return remap;
+      } else {
+        return new UnresolvedSymExpr(name.c_str());
+      }
     // For tuples, recursively call 'convertLoopIndexDecl' on each element.
     } else if (const uast::TupleDecl* td = node->toTupleDecl()) {
       CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
@@ -938,8 +985,8 @@ struct Converter {
   Expr* convertBracketLoopExpr(const uast::BracketLoop* node) {
     astlocMarker markAstLoc(node->id());
 
-    assert(node->isExpressionLevel());
-    assert(node->numStmts() == 1);
+    INT_ASSERT(node->isExpressionLevel());
+    INT_ASSERT(node->numStmts() == 1);
 
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
@@ -949,18 +996,25 @@ struct Converter {
     bool maybeArrayType = isLoopMaybeArrayType(node);
     bool zippered = node->iterand()->isZip();
 
-      // Unpack things differently if body is a conditional.
-      if (auto origCond = node->stmt(0)->toConditional()) {
-        assert(origCond->numThenStmts() == 1);
-        assert(!origCond->hasElseBlock());
-        expr = singleExprFromStmts(origCond->thenStmts());
+    // Unpack things differently if body is a conditional.
+    if (auto origCond = node->stmt(0)->toConditional()) {
+      INT_ASSERT(origCond->numThenStmts() == 1);
+      // a filter expression
+      if (!origCond->hasElseBlock()) {
         cond = convertAST(origCond->condition());
-        assert(cond);
+        expr = singleExprFromStmts(origCond->thenStmts());
+        INT_ASSERT(cond);
       } else {
-        expr = singleExprFromStmts(node->stmts());
+        // not a filter
+        INT_ASSERT(origCond->numElseStmts() == 1);
       }
+    }
 
-    assert(expr != nullptr);
+    if (!expr) {
+      expr = singleExprFromStmts(node->stmts());
+    }
+
+    INT_ASSERT(expr != nullptr);
 
     return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
                                maybeArrayType,
@@ -1020,19 +1074,24 @@ struct Converter {
     bool isForExpr = node->isExpressionLevel();
 
     if (node->isExpressionLevel()) {
-      assert(node->numStmts() == 1);
+      INT_ASSERT(node->numStmts() == 1);
 
       // Unpack things differently if body is a conditional.
       if (auto origCond = node->stmt(0)->toConditional()) {
-        assert(origCond->numThenStmts() == 1);
-        assert(!origCond->hasElseBlock());
-        body = singleExprFromStmts(origCond->thenStmts());
-        cond = toExpr(convertAST(origCond->condition()));
-      } else {
+        INT_ASSERT(origCond->numThenStmts() == 1);
+        if (!origCond->hasElseBlock()) {
+          body = singleExprFromStmts(origCond->thenStmts());
+          cond = toExpr(convertAST(origCond->condition()));
+        } else {
+          INT_ASSERT(origCond->numElseStmts() == 1);
+        }
+      }
+
+      if (!body) {
         body = singleExprFromStmts(node->stmts());
       }
 
-      assert(body);
+      INT_ASSERT(body);
 
       ret = buildForLoopExpr(index, iteratorExpr, body, cond,
                              maybeArrayType,
@@ -1040,25 +1099,25 @@ struct Converter {
 
     // Param loops use the index variable name as 'const char*'.
     } else if (node->isParam()) {
-      assert(node->index() && node->index()->isVariable());
+      INT_ASSERT(node->index() && node->index()->isVariable());
 
       const char* indexStr = astr(node->index()->toVariable()->name().c_str());
       body = createBlockWithStmts(node->stmts());
       BlockStmt* block = toBlockStmt(body);
-      assert(block);
+      INT_ASSERT(block);
 
       ret = buildParamForLoopStmt(indexStr, iteratorExpr, block);
 
     } else {
       body = createBlockWithStmts(node->stmts());
       BlockStmt* block = toBlockStmt(body);
-      assert(block);
+      INT_ASSERT(block);
 
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
                                   isForExpr);
     }
 
-    assert(ret != nullptr);
+    INT_ASSERT(ret != nullptr);
 
     return ret;
   }
@@ -1067,8 +1126,8 @@ struct Converter {
   Expr* convertForallLoopExpr(const uast::Forall* node) {
     astlocMarker markAstLoc(node->id());
 
-    assert(node->isExpressionLevel());
-    assert(node->numStmts() == 1);
+    INT_ASSERT(node->isExpressionLevel());
+    INT_ASSERT(node->numStmts() == 1);
 
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
@@ -1080,16 +1139,16 @@ struct Converter {
 
       // Unpack things differently if body is a conditional.
       if (auto origCond = node->stmt(0)->toConditional()) {
-        assert(origCond->numThenStmts() == 1);
-        assert(!origCond->hasElseBlock());
+        INT_ASSERT(origCond->numThenStmts() == 1);
+        INT_ASSERT(!origCond->hasElseBlock());
         expr = singleExprFromStmts(origCond->thenStmts());
         cond = toExpr(convertAST(origCond->condition()));
-        assert(cond);
+        INT_ASSERT(cond);
       } else {
         expr = singleExprFromStmts(node->stmts());
       }
 
-    assert(expr != nullptr);
+    INT_ASSERT(expr != nullptr);
 
     return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
                                maybeArrayType,
@@ -1118,7 +1177,7 @@ struct Converter {
   BlockStmt* visit(const uast::Foreach* node) {
 
     // Does not appear possible right now, from reading the grammar.
-    assert(!node->isExpressionLevel());
+    INT_ASSERT(!node->isExpressionLevel());
 
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
@@ -1156,14 +1215,14 @@ struct Converter {
       if (auto opCall = expr->toOpCall()) {
         if (opCall->op() == USTR("=>")) {
           isAssociativeList = true;
-          assert(opCall->numActuals() == 2);
+          INT_ASSERT(opCall->numActuals() == 2);
           Expr* lhs = convertAST(opCall->actual(0));
           Expr* rhs = convertAST(opCall->actual(1));
           actualList->insertAtTail(lhs);
           actualList->insertAtTail(rhs);
           hasConvertedThisIter = true;
         } else {
-          if (isAssociativeList) assert(0 == "Not possible!");
+          if (isAssociativeList) INT_FATAL("Not possible!");
         }
       }
 
@@ -1181,7 +1240,7 @@ struct Converter {
                          new SymExpr(gTrue));
     }
 
-    assert(ret != nullptr);
+    INT_ASSERT(ret != nullptr);
 
     return ret;
   }
@@ -1303,7 +1362,7 @@ struct Converter {
 
   /// Calls ///
 
-  Expr* convertCalledKeyword(const uast::Expression* node) {
+  Expr* convertCalledKeyword(const uast::AstNode* node) {
     astlocMarker markAstLoc(node->id());
 
     Expr* ret = nullptr;
@@ -1347,20 +1406,20 @@ struct Converter {
     astlocMarker markAstLoc(node->id());
 
     auto calledExpression = node->calledExpression();
-    assert(calledExpression);
+    INT_ASSERT(calledExpression);
     CallExpr* ret = nullptr;
 
     if (auto kwSparse = calledExpression->toIdentifier()) {
       if (kwSparse->name() == USTR("sparse")) {
-        assert(node->numActuals() == 1);
+        INT_ASSERT(node->numActuals() == 1);
 
         if (auto innerCall = node->actual(0)->toFnCall()) {
           auto innerCalledExpression = innerCall->calledExpression();
-          assert(innerCalledExpression);
+          INT_ASSERT(innerCalledExpression);
 
           if (auto kwSubdomain = innerCalledExpression->toIdentifier()) {
             if (kwSubdomain->name() == USTR("subdomain")) {
-              assert(innerCall->numActuals() == 1);
+              INT_ASSERT(innerCall->numActuals() == 1);
 
               ret = new CallExpr
                       ("chpl__buildSparseDomainRuntimeTypeForParentDomain");
@@ -1376,7 +1435,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::FnCall* node) {
-    const uast::Expression* calledExpression = node->calledExpression();
+    const uast::AstNode* calledExpression = node->calledExpression();
     INT_ASSERT(calledExpression);
 
     CallExpr* ret = nullptr;
@@ -1384,7 +1443,7 @@ struct Converter {
 
     if (auto newExpression = calledExpression->toNew()) {
       CallExpr* newExprStart = convertNewManagement(newExpression);
-      assert(newExprStart);
+      INT_ASSERT(newExprStart);
 
       // TODO: Need to check for special identifiers?
       Expr* typeExpr = convertAST(newExpression->typeExpression());
@@ -1472,10 +1531,10 @@ struct Converter {
     Expr* expr = convertAST(node->actual(0));
     if (auto call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_NEW)) {
-        assert(call->numActuals() <= 2);
+        INT_ASSERT(call->numActuals() <= 2);
         Expr* child = nullptr;
         if (call->numActuals() == 2) {
-          assert(isNamedExpr(call->get(1)));
+          INT_ASSERT(isNamedExpr(call->get(1)));
           child = call->get(2);
         } else if (call->numActuals() == 1) {
           child = call->get(1);
@@ -1553,7 +1612,7 @@ struct Converter {
       ret = convertRegularBinaryOrUnaryOp(node);
     }
 
-    assert(ret != nullptr);
+    INT_ASSERT(ret != nullptr);
 
     return ret;
   }
@@ -1571,7 +1630,7 @@ struct Converter {
   // Note that this conversion is for the reduce expression, and not for
   // the reduce intent (see conversion for 'WithClause').
   Expr* visit(const uast::Reduce* node) {
-    assert(node->numActuals() == 1);
+    INT_ASSERT(node->numActuals() == 1);
     Expr* opExpr = convertScanReduceOp(node->op());
     Expr* dataExpr = convertAST(node->actual(0));
     bool zippered = node->actual(0)->isZip();;
@@ -1579,7 +1638,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Scan* node) {
-    assert(node->numActuals() == 1);
+    INT_ASSERT(node->numActuals() == 1);
     Expr* opExpr = convertScanReduceOp(node->op());
     Expr* dataExpr = convertAST(node->actual(0));
     bool zippered = node->actual(0)->isZip();;
@@ -1606,7 +1665,7 @@ struct Converter {
     (void) node->linkageName();
 
     for (auto decl : node->decls()) {
-      assert(decl->linkage() == node->linkage());
+      INT_ASSERT(decl->linkage() == node->linkage());
 
       Expr* conv = nullptr;
       if (auto var = decl->toVariable()) {
@@ -1620,12 +1679,12 @@ struct Converter {
         conv = convertAST(decl);
       }
 
-      assert(conv);
+      INT_ASSERT(conv);
       ret->insertAtTail(conv);
     }
 
     if (!fDocs) {
-      assert(!inTupleDecl);
+      INT_ASSERT(!inTupleDecl);
       CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
       ret->insertAtTail(end);
     }
@@ -1647,9 +1706,9 @@ struct Converter {
 
       // Formals are converted into variables.
       if (auto formal = decl->toFormal()) {
-        assert(formal->intent() == uast::Formal::DEFAULT_INTENT);
-        assert(!formal->initExpression());
-        assert(!formal->typeExpression());
+        INT_ASSERT(formal->intent() == uast::Formal::DEFAULT_INTENT);
+        INT_ASSERT(!formal->initExpression());
+        INT_ASSERT(!formal->typeExpression());
         conv = new DefExpr(new VarSymbol(formal->name().c_str()));
 
       // Do not use the visitor because it produces a block statement.
@@ -1658,7 +1717,7 @@ struct Converter {
         conv = convertVariable(var, useLinkageName);
       // It must be a tuple.
       } else {
-        assert(decl->isTupleDecl());
+        INT_ASSERT(decl->isTupleDecl());
         conv = convertTupleDeclComponents(decl->toTupleDecl());
       }
 
@@ -1702,7 +1761,7 @@ struct Converter {
 
     // Add a PRIM_END_OF_STATEMENT.
     if (!fDocs) {
-      assert(!inTupleDecl);
+      INT_ASSERT(!inTupleDecl);
       CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
       ret->insertAtTail(end);
     }
@@ -1713,7 +1772,7 @@ struct Converter {
   /// ForwardingDecl ///
   Expr* visit(const uast::ForwardingDecl* node) {
     // ForwardingDecl may contain a VisibilityClause, an Expression,
-    // or a Variable declartion
+    // or a Variable declaration
     if (node->expr()->isVisibilityClause()){
       auto child = node->expr()->toVisibilityClause();
       bool except=false;
@@ -1723,7 +1782,7 @@ struct Converter {
       else if (child->limitationKind() == uast::VisibilityClause::EXCEPT) {
         except=true;
       }
-      // convert the ASTList of renames
+      // convert the AstList of renames
       std::vector<PotentialRename*>* names = new std::vector<PotentialRename*>;
       for (auto lim:child->limitations()) {
         PotentialRename* name = convertRename(lim);
@@ -1734,7 +1793,9 @@ struct Converter {
     } else if (node->expr()->isVariable()) {
         auto child = node->expr()->toVariable();
         return buildForwardingDeclStmt((BlockStmt*)visit(child));
-    } else if (node->expr()->isIdentifier() || node->expr()->isFnCall()) {
+    } else if (node->expr()->isIdentifier()
+               || node->expr()->isFnCall()
+               || node->expr()->isOpCall()) {
       return buildForwardingStmt(convertExprOrNull(node->expr()));
     }
 
@@ -1794,7 +1855,7 @@ struct Converter {
       ret = name.c_str();
     }
 
-    assert(ret);
+    INT_ASSERT(ret);
 
     // We have to uniquify the name now because it may be inlined (and thus
     // stack allocated).
@@ -1803,42 +1864,43 @@ struct Converter {
     return ret;
   }
 
-  Expr* convertLifetimeClause(const uast::Expression* node) {
+  Expr* convertLifetimeClause(const uast::AstNode* node) {
     astlocMarker markAstLoc(node->id());
 
-    assert(node->isOpCall() || node->isReturn());
+    INT_ASSERT(node->isOpCall() || node->isReturn());
     if (auto opCall = node->toOpCall()) {
-      assert(opCall->numActuals()==2);
+      INT_ASSERT(opCall->numActuals()==2);
       auto lhsIdent = opCall->actual(0)->toIdentifier();
       auto rhsIdent = opCall->actual(1)->toIdentifier();
-      assert(lhsIdent && rhsIdent);
-      assert(opCall->op() == USTR("=") ||
-             opCall->op() == USTR("<") ||
-             opCall->op() == USTR(">") ||
-             opCall->op() == USTR("==")||
-             opCall->op() == USTR("<=")||
-             opCall->op() == USTR(">="));
+      INT_ASSERT(lhsIdent && rhsIdent);
+      INT_ASSERT(opCall->op() == USTR("=") ||
+                 opCall->op() == USTR("<") ||
+                 opCall->op() == USTR(">") ||
+                 opCall->op() == USTR("==")||
+                 opCall->op() == USTR("<=")||
+                 opCall->op() == USTR(">="));
       Expr* lhs = convertLifetimeIdent(lhsIdent);
       Expr* rhs = convertLifetimeIdent(rhsIdent);
       return new CallExpr(opCall->op().c_str(), lhs, rhs);
     } else if (auto ret = node->toReturn()) {
-      assert(ret->value() && ret->value()->isIdentifier());
+      INT_ASSERT(ret->value() && ret->value()->isIdentifier());
       auto ident = ret->value()->toIdentifier();
 
       Expr* val = convertLifetimeIdent(ident);
       return new CallExpr(PRIM_RETURN, val);
 
     } else {
-      assert(false); // should not arrive here, or else we missed something
+      // should not arrive here, or else we missed something
+      INT_FATAL("should not be reached");
+      return nullptr;
     }
-
   }
 
   CallExpr* convertLifetimeIdent(const uast::Identifier* node) {
     astlocMarker markAstLoc(node->id());
 
     auto ident = node->toIdentifier();
-    assert(ident);
+    INT_ASSERT(ident);
     CallExpr* callExpr = new CallExpr(PRIM_LIFETIME_OF,
                                       convertExprOrNull(node));
     return callExpr;
@@ -1846,6 +1908,15 @@ struct Converter {
 
   Expr* visit(const uast::Function* node) {
     FnSymbol* fn = new FnSymbol("_");
+
+    // build up the userString as in old parser
+    // needed to match up some error outputs
+    // NOTE:
+    // parentheses may have been discarded from the original user declaration,
+    // and if so, we are not able to reconstruct them at this time
+    std::stringstream ss;
+    printFunctionSignature(ss, node);
+    fn->userString = astr(ss.str().c_str());
 
     attachSymbolAttributes(node, fn);
     attachSymbolVisibility(node, fn);
@@ -1883,7 +1954,7 @@ struct Converter {
 
           // Special handling for implicit receiver formal.
           if (formal->name() == USTR("this")) {
-            assert(!hasConvertedReceiver);
+            INT_ASSERT(!hasConvertedReceiver);
             hasConvertedReceiver = true;
 
             thisTag = convertFormalIntent(formal->intent());
@@ -1899,21 +1970,21 @@ struct Converter {
           // Else convert it like normal.
           } else {
             conv = toDefExpr(convertAST(formal));
-            assert(conv);
+            INT_ASSERT(conv);
           }
 
         // A varargs formal.
         } else if (auto formal = decl->toVarArgFormal()) {
-          assert(formal->name() != USTR("this"));
+          INT_ASSERT(formal->name() != USTR("this"));
           conv = toDefExpr(convertAST(formal));
-          assert(conv);
+          INT_ASSERT(conv);
 
         // A tuple decl, where components are formals or tuple decls.
         } else if (auto formal = decl->toTupleDecl()) {
           auto castIntent = (uast::Formal::Intent)formal->intentOrKind();
           IntentTag tag = convertFormalIntent(castIntent);
           BlockStmt* tuple = convertTupleDeclComponents(formal);
-          assert(tuple);
+          INT_ASSERT(tuple);
 
           Expr* type = convertExprOrNull(formal->typeExpression());
           Expr* init = convertExprOrNull(formal->initExpression());
@@ -1921,9 +1992,9 @@ struct Converter {
           // TODO: Move this specialization into visitor? We can just
           // detect if components are formals.
           conv = buildTupleArgDefExpr(tag, tuple, type, init);
-          assert(conv);
+          INT_ASSERT(conv);
         } else {
-          assert(0 == "Not handled yet!");
+          INT_FATAL("Not handled yet!");
         }
 
         // Attaches def to function's formal list.
@@ -2091,7 +2162,7 @@ struct Converter {
                                 typeExpr,
                                 initExpr,
                                 /*varargsVariable*/ nullptr);
-    assert(ret->sym);
+    INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
 
@@ -2148,7 +2219,7 @@ struct Converter {
                                typeExpr,
                                initExpr,
                                varargsVariable);
-    assert(ret->sym);
+    INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
 
@@ -2165,7 +2236,7 @@ struct Converter {
 
     auto ret = ShadowVarSymbol::buildForPrefix(prefix, nameExp, type, init);
 
-    assert(ret != nullptr);
+    INT_ASSERT(ret != nullptr);
 
     attachSymbolAttributes(node, ret);
 
@@ -2205,7 +2276,7 @@ struct Converter {
         vs->addFlag(FLAG_TYPE_VARIABLE);
         break;
       case uast::Variable::INDEX:
-        assert(false && "Index variables should be handled elsewhere");
+        INT_FATAL("Index variables should be handled elsewhere");
         break;
     }
   }
@@ -2293,9 +2364,9 @@ struct Converter {
     // TODO (dlongnecke): Should be sanitized by the new parser.
     if (useLinkageName) {
       if (auto linkageName = node->linkageName()) {
-        assert(linkageFlag != FLAG_UNKNOWN);
+        INT_ASSERT(linkageFlag != FLAG_UNKNOWN);
         auto strLit = linkageName->toStringLiteral();
-        assert(strLit);
+        INT_ASSERT(strLit);
         varSym->cname = astr(strLit->str().c_str());
       }
     }
@@ -2304,7 +2375,7 @@ struct Converter {
 
     // If there is a bracket loop it is almost certainly an array type, so
     // special case it. Otherwise, just use the generic conversion call.
-    if (const uast::Expression* te = node->typeExpression()) {
+    if (const uast::AstNode* te = node->typeExpression()) {
       if (const uast::BracketLoop* bkt = te->toBracketLoop()) {
         typeExpr = convertArrayType(bkt);
       } else {
@@ -2312,7 +2383,18 @@ struct Converter {
       }
     }
 
-    Expr* initExpr = convertExprOrNull(node->initExpression());
+    Expr* initExpr = nullptr;
+
+    if (const uast::AstNode* ie = node->initExpression()) {
+      const uast::BracketLoop* bkt = ie->toBracketLoop();
+      if (bkt && node->kind() == uast::Variable::TYPE) {
+          initExpr = convertArrayType(bkt);
+        } else {
+          initExpr = convertAST(ie);
+        }
+    } else {
+      initExpr = convertExprOrNull(node->initExpression());
+    }
 
     auto ret = new DefExpr(varSym, initExpr, typeExpr);
 
@@ -2339,14 +2421,14 @@ struct Converter {
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
 
     auto defExpr = convertVariable(node, true);
-    assert(defExpr);
+    INT_ASSERT(defExpr);
 
     stmts->insertAtTail(defExpr);
 
     // Special handling for extern type variables.
     if (node->kind() == uast::Variable::TYPE) {
       if (node->linkage() == uast::Decl::EXTERN) {
-        assert(!node->isConfig());
+        INT_ASSERT(!node->isConfig());
         stmts = convertTypesToExtern(stmts);
       }
     }
@@ -2410,7 +2492,7 @@ struct Converter {
                                  decls,
                                  externFlag,
                                  /*docs*/ nullptr);
-    assert(ret->sym);
+    INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
 
@@ -2427,14 +2509,14 @@ struct Converter {
     // TODO (dlongnecke): This should be sanitized by the new parser.
     if (node->linkageName()) {
       cname = astrFromStringLiteral(node->linkageName());
-      assert(cname);
+      INT_ASSERT(cname);
     }
 
     auto ret = buildClassDefExpr(name, cname, AGGREGATE_RECORD, inherit,
                                  decls,
                                  linkageFlag,
                                  /*docs*/ nullptr);
-    assert(ret->sym);
+    INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
 
@@ -2451,14 +2533,14 @@ struct Converter {
     // TODO (dlongnecke): This should be sanitized by the new parser.
     if (node->linkageName()) {
       cname = astrFromStringLiteral(node->linkageName());
-      assert(cname);
+      INT_ASSERT(cname);
     }
 
     auto ret = buildClassDefExpr(name, cname, AGGREGATE_UNION, inherit,
                                  decls,
                                  linkageFlag,
                                  /*docs*/ nullptr);
-    assert(ret->sym);
+    INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
 
@@ -2467,7 +2549,7 @@ struct Converter {
 };
 
 /// Generic conversion calling the above functions ///
-Expr* Converter::convertAST(const uast::ASTNode* node) {
+Expr* Converter::convertAST(const uast::AstNode* node) {
   astlocMarker markAstLoc(node->id());
   return node->dispatch<Expr*>(*this);
 }

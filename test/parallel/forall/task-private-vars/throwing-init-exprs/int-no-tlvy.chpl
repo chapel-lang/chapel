@@ -41,12 +41,12 @@ proc asdf(adx: int) throws {
 }
 
 proc main {
-  forall idx in RR()
+  try! { forall idx in RR()
     with (
       var tp1 = asdf(cnt.fetchAdd(1)),
       var tp2 = asdf(tp1 * 10)
           )
   {
     writeln(tp1, tp2, asdf(tp2*100));
-  }
+  } }
 }

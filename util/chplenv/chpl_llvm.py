@@ -8,13 +8,14 @@ import re
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
 from utils import which, memoize, error, run_command, try_run_command, warning
+from collections import defaultdict
 
 # returns a tuple of supported major LLVM versions as strings
 def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('12', '11',)
+    return ('13','12','11',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val):
@@ -134,26 +135,20 @@ def find_system_llvm_config():
     if homebrew_prefix:
         paths.append(homebrew_prefix + "/opt/llvm/bin/llvm-config")
 
-    all_found = [ ]
+    by_version = defaultdict(list)
+    errs = []
 
     for command in paths:
-        found_version, found_config_err = check_llvm_config(command)
-        all_found.append((command, found_version, found_config_err))
+        version, config_err = check_llvm_config(command)
+        if not config_err:
+            by_version[version].append(command)
+        else:
+            errs.append((command, config_err))
 
-    found = ('', '', '')
-    for vers in llvm_versions():
-        for entry in all_found:
-            if entry[1] == vers:
-                found = entry
-                break
-
-    # command set, version > 0, no error
-    command = found[0]
-    version = found[1]
-    config_err = found[2]
-
-    if command and version and not config_err:
-        return found[0]
+    for version in llvm_versions():
+        commands = by_version[version]
+        if commands:
+            return commands[0]
 
     return ''
 
@@ -186,24 +181,25 @@ def validate_llvm_config():
                   " with one of the supported versions: {0}".format(
                   llvm_versions_string()))
 
-        else:
-            bindir = get_system_llvm_config_bindir()
-            if not (bindir and os.path.isdir(bindir)):
-                error("llvm-config command {0} provides missing bin dir {0}"
-                      .format(llvm_config, bindir))
-            clang_c = get_llvm_clang('c')[0]
-            clang_cxx = get_llvm_clang('c++')[0]
-            if not os.path.exists(clang_c):
-                error("Missing clang command at {0}".format(clang_c))
-            if not os.path.exists(clang_cxx):
-                error("Missing clang++ command at {0}".format(clang_cxx))
-
     if (llvm_val == 'system' or
         (llvm_val == 'bundled' and os.path.exists(llvm_config))):
         version, config_error = check_llvm_config(llvm_config)
         if config_error:
             error("Problem with llvm-config at {0} -- {1}"
                   .format(llvm_config, config_error))
+
+    if llvm_val == 'system':
+        bindir = get_system_llvm_config_bindir()
+        if not (bindir and os.path.isdir(bindir)):
+            error("llvm-config command {0} provides missing bin dir {1}"
+                  .format(llvm_config, bindir))
+        clang_c = get_llvm_clang('c')[0]
+        clang_cxx = get_llvm_clang('c++')[0]
+        if not os.path.exists(clang_c):
+            error("Missing clang command at {0}".format(clang_c))
+        if not os.path.exists(clang_cxx):
+            error("Missing clang++ command at {0}".format(clang_cxx))
+
 
 
 @memoize
@@ -310,6 +306,10 @@ def llvm_enabled():
 def get_gcc_prefix():
     gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
 
+    # allow CHPL_LLVM_GCC_PREFIX=none to disable inferring it
+    if gcc_prefix == 'none':
+        return ''
+
     if not gcc_prefix:
         # darwin and FreeBSD default to clang
         # so shouldn't need GCC prefix
@@ -364,12 +364,15 @@ def get_gcc_prefix():
 
     return gcc_prefix
 
+
 # The bundled LLVM does not currently know to look in a particular Mac OS X SDK
 # so we provide a -isysroot arg to indicate which is used.
 #
 # Potential alternatives to -isysroot here include:
 #  * using the environment variable SDKROOT
 #  * providing a cmake argument to adjust the clang build
+#    e.g.
+#      DCMAKE_OSX_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 #  * using -mmacosx-version-min=11.2 e.g.
 #
 # Additionally the -resource-dir arg indicates where to find some clang
@@ -403,6 +406,74 @@ def get_sysroot_resource_dir_args():
             args.append(found.group(1).strip())
 
     return args
+
+# When a system LLVM is installed with Homebrew, it's very important
+# to use the same Mac OS X libraries as what the Homebrew LLVM used.
+# This function helps us to do that.
+# Note that the goal here is to find the Mac OS X system libraries
+# version that the system LLVM was built with, rather than
+# to find out what it is currently configured to compile for;
+# so e.g. setting SDKROOT should not change the value returned here.
+@memoize
+def get_system_llvm_built_sdkroot():
+    # Homebrew installs of clang configure it with DEFAULT_SYSROOT
+    # set to the SDKROOT being used when building.
+    #
+    # We could alternatively run
+    #   dyld_info -platform /usr/local/opt/llvm@12/lib/libLLVM.dylib
+    #     (on Monterey or later), or
+    #   otool -lL /usr/local/opt/llvm@12/lib/libLLVM.dylib | grep sdk
+    #
+    # and then give that version to xcrun (say it is 12.1):
+    #   xcrun --sdk macosx12.1 --show-sdk-path
+    # and this should be the same as the DEFAULT_SYSROOT but
+    # there might be a symlink pointing to the same place.
+
+    llvm_val = get()
+    host_platform = chpl_platform.get('host')
+    if llvm_val == 'system' and host_platform == 'darwin':
+        llvm_config = get_llvm_config()
+        include_dir = run_command([llvm_config, '--includedir']).strip()
+        if os.path.isdir(include_dir):
+            clang_config = os.path.join(include_dir,
+                                       'clang', 'Config', 'config.h')
+            if os.path.exists(clang_config):
+                with open(clang_config) as f:
+                    for line in f.readlines():
+                        # Looking for /some/path in #define DEFAULT_SYSROOT "/some/path"
+                        if 'DEFAULT_SYSROOT' in line:
+                            path = line.split('DEFAULT_SYSROOT')[1].strip()
+                            # remove quotes around it
+                            path = path.strip('"')
+                            return path
+    return None
+
+# Returns True if the workaround for issue #19217 should be applied
+# and False otherwise.
+# That workaround adds the Mac OS X system libc++ before the linker
+# search paths so that the system libc++ is used rather than a
+# libc++ that came with the system install of LLVM (e.g. from Homebrew).
+# Whether or not to try the workaround can be controlled by the variable
+#  CHPL_HOST_USE_SYSTEM_LIBCXX
+@memoize
+def use_system_libcxx_workaround():
+    host_platform = chpl_platform.get('host')
+    if host_platform == "darwin":
+        # If the variable for this is set to something other that '0' or 'no'
+        # then do the workaround.
+        # This variable exists to support building the Homebrew formula
+        # from source because during that build, `brew` is not available.
+        override_var = overrides.get('CHPL_HOST_USE_SYSTEM_LIBCXX', '')
+        if override_var != '':
+            return (override_var != "0" and override_var != "no")
+
+        # otherwise, do the workaround if we detect homebrew
+        homebrew_prefix = chpl_platform.get_homebrew_prefix()
+
+        if homebrew_prefix:
+            return True
+
+    return False
 
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
@@ -562,6 +633,15 @@ def get_host_compile_args():
     llvm_config = get_llvm_config()
 
     if llvm_val == 'system':
+        # On Mac OS X with Homebrew, apply a workaround for issue #19217.
+        # This avoids finding headers in the libc++ installed by llvm@12 e.g.
+        if use_system_libcxx_workaround():
+            sdkroot = get_system_llvm_built_sdkroot()
+            if sdkroot:
+                system.append("-isysroot")
+                system.append(sdkroot)
+                system.append("-I" + os.path.join(sdkroot, "usr", "include"))
+
         # Ubuntu 16.04 needed -fno-rtti for LLVM 3.7
         # tested on that system after installing
         #   llvm-3.7-dev llvm-3.7 clang-3.7 libclang-3.7-dev libedit-dev
@@ -623,6 +703,15 @@ def get_host_link_args():
 
 
     if llvm_val == 'system':
+        # On Mac OS X with Homebrew, apply a workaround for issue #19217.
+        # This avoids linking with the libc++ installed by llvm@12 e.g.
+        if use_system_libcxx_workaround():
+            sdkroot = get_system_llvm_built_sdkroot()
+            if sdkroot:
+                # Note: -isysroot only affects includes
+                # and -Wl,-syslibroot seems to have no effect
+                system.append("-L" + os.path.join(sdkroot, "usr", "lib"))
+
         # Decide whether to try to link statically or dynamically.
         # Future work: consider using 'llvm-config --shared-mode'
         # to make this choice.

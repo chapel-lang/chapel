@@ -44,6 +44,21 @@ const types::QualifiedType& typeForModuleLevelSymbol(Context* context, ID id);
  */
 const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
 
+/**
+  Compute the type for a literal
+ */
+types::QualifiedType typeForLiteral(Context* context,
+                                    const uast::Literal* literal);
+
+/**
+  Returns the type that results when instantiating formalType,
+  which must be generic, with actualType.
+ */
+types::QualifiedType getInstantiationType(Context* context,
+                                          types::QualifiedType actualType,
+                                          types::QualifiedType formalType);
+
+
 /////// function resolution
 
 /**
@@ -170,7 +185,7 @@ filterCandidatesInstantiating(Context* context,
                               std::vector<const TypedFnSignature*>& result);
 
 /**
-  Given a CallInfo representing a call, a Scope representing the
+  Given a uast::Call, a CallInfo representing the call, a Scope representing the
   scope of that call, and a PoiScope representing the point-of-instantiation
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
@@ -180,6 +195,18 @@ CallResolutionResult resolveCall(Context* context,
                                  const CallInfo& ci,
                                  const Scope* inScope,
                                  const PoiScope* inPoiScope);
+
+/**
+  Given a CallInfo representing a call, a Scope representing the
+  scope of that call, and a PoiScope representing the point-of-instantiation
+  scope of that call, find the most specific candidates as well
+  as the point-of-instantiation scopes that were used when resolving them.
+ */
+CallResolutionResult resolveGeneratedCall(Context* context,
+                                          const uast::AstNode* astForErr,
+                                          const CallInfo& ci,
+                                          const Scope* inScope,
+                                          const PoiScope* inPoiScope);
 
 
 } // end namespace resolution

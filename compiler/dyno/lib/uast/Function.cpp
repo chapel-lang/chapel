@@ -30,7 +30,7 @@ owned<Function> Function::build(Builder* builder, Location loc,
                                 owned<Attributes> attributes,
                                 Decl::Visibility vis,
                                 Function::Linkage linkage,
-                                owned<Expression> linkageNameExpr,
+                                owned<AstNode> linkageNameExpr,
                                 UniqueString name,
                                 bool inline_,
                                 bool override_,
@@ -40,12 +40,12 @@ owned<Function> Function::build(Builder* builder, Location loc,
                                 bool throws,
                                 bool primaryMethod,
                                 bool parenless,
-                                ASTList formals,
-                                owned<Expression> returnType,
-                                owned<Expression> where,
-                                ASTList lifetime,
+                                AstList formals,
+                                owned<AstNode> returnType,
+                                owned<AstNode> where,
+                                AstList lifetime,
                                 owned<Block> body) {
-  ASTList lst;
+  AstList lst;
 
   int attributesChildNum = -1;
   int linkageNameExprChildNum = -1;

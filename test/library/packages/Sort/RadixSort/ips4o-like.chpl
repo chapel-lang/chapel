@@ -275,11 +275,11 @@ proc shallowCopy(ref A, dst, src, nElts) {
   // Ideally this would just be
   //A[dst..#nElts] = A[src..#nElts];
 
-    var size = (nElts:size_t)*c_sizeof(A.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(A.eltType);
     c_memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size);
     /*
   if A._instance.isDefaultRectangular() {
-    var size = (nElts:size_t)*c_sizeof(A.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(A.eltType);
     c_memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size);
   } else {
     var ok = chpl__bulkTransferArray(/*dst*/ A._instance, {dst..#nElts},
@@ -294,11 +294,11 @@ proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
   // Ideally this would just be
   //DstA[dst..#nElts] = SrcA[src..#nElts];
 
-    var size = (nElts:size_t)*c_sizeof(DstA.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
     c_memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size);
     /*
   if DstA._instance.isDefaultRectangular() && SrcA._instance.isDefaultRectangular() {
-    var size = (nElts:size_t)*c_sizeof(DstA.eltType);
+    var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
     c_memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size);
   } else {
     var ok = chpl__bulkTransferArray(/*dst*/ DstA._instance, {dst..#nElts},
@@ -675,7 +675,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
   const nBuckets = bucketizer.getNumBuckets();
 
   type eltType = A.eltType;
-  const nLocales = A.targetLocales.size; //max(1, A.targetLocales.size);
+  const nLocales = A.targetLocales().size; //max(1, A.targetLocales().size);
   const nTasksPerLocale = if dataParTasksPerLocale>0 then dataParTasksPerLocale
                                                      else here.maxTaskPar;
 
@@ -694,7 +694,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
   const nTasks = nLocales*nTasksPerLocale; // aka 't' in the paper
   const DistributedTasks = {0..#nTasks};
 //                             dmapped Block(boundingBox={0..#nTasks},
-//                                           targetLocales=A.targetLocales);
+//                                           targetLocales=A.targetLocales());
 
   if debug {
     writeln("nTasksPerLocale ", nTasksPerLocale);
@@ -727,7 +727,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
   // The coforall here allows for per-task AllBuffers
   // but I would prefer to write it in a different way.
   // Additionally it allows easy setup of per-task data...
-  coforall (loc,lid) in zip(A.targetLocales,0..) with (ref overflowBucket)
+  coforall (loc,lid) in zip(A.targetLocales(),0..) with (ref overflowBucket)
     do on loc {
 
     coforall tid in 0..#nTasksPerLocale with (ref overflowBucket)
@@ -1668,7 +1668,7 @@ proc distSortWithScratchSpace(start_n:int, end_n:int,
     writeln("in distributed sort ", start_n, "..", end_n);
   }
 
-  const nlocales = src.targetLocales.size;
+  const nlocales = src.targetLocales().size;
   const tasksPerLocale = 2 * dataParTasksPerLocale;
   const nbins = nlocales * tasksPerLocale;
 
@@ -1680,7 +1680,7 @@ proc distSortWithScratchSpace(start_n:int, end_n:int,
 
   // Step 1: Each locale sorts local portions and gathers
   // nbins elements into the global sample array
-  coforall (loc,lid) in zip(src.targetLocales,0..) {
+  coforall (loc,lid) in zip(src.targetLocales(),0..) {
     on loc do {
       ref localSlice = src.localSlice(src.localSubdomain()[start_n..end_n]);
       // Sort the local slice
@@ -1725,7 +1725,7 @@ proc distSortWithScratchSpace(start_n:int, end_n:int,
   // In particular, bin i from task j should be stored into
   // globalEnds[i*ntasks+j-1] .. globalEnds[i*ntasks+j] - 1
   // (because the scan is inclusive)
-  coforall (loc,tid) in zip(src.targetLocales,0..) {
+  coforall (loc,tid) in zip(src.targetLocales(),0..) {
     on loc do {
       const localSubdomain = src.localSubdomain()[start_n..end_n];
       // Compute localOffsets array based on the counts here
@@ -1767,7 +1767,7 @@ proc distSortWithScratchSpace(start_n:int, end_n:int,
   // sort it on that locale.
   var doneBins:[0..radix] bool;
 
-  coforall (loc,tid) in zip(src.targetLocales,0..) {
+  coforall (loc,tid) in zip(src.targetLocales(),0..) {
     on loc do {
       forall bin in 0..radix {
         var globalStart = if bin*ntasks > 0

@@ -10,7 +10,7 @@ proc end_loop3() {}
 //Check whether we generate different metadata number for loops
 proc loop (A, B, n) {
   //CHECK-LABEL: void @loop
-  for i in vectorizeOnly(1..n) {
+  foreach i in 1..n {
     //CHECK-LABEL: start_loop1
     start_loop1();
 
@@ -24,14 +24,14 @@ proc loop (A, B, n) {
     // CHECK-SAME: !llvm.loop ![[LOOP1:[0-9]+]]
   }
 
-  for i in vectorizeOnly(1..n) {
+  foreach i in 1..n {
     //CHECK-LABEL: loop2
     start_loop2();
 
     //CHECK: !llvm.access.group ![[GROUP2:[0-9]+]]
     //CHECK-NOT: !llvm.access.group ![[GROUP1]]
     A[i] = 5*B[i];
-    for j in vectorizeOnly(1..n) {
+    foreach j in 1..n {
       //CHECK-LABEL: start_loop3
       start_loop3();
 

@@ -85,8 +85,6 @@ static volatile task_pool_p
                            task_pool_tail;     // tail of task pool
 
 static int                 queued_task_cnt;    // number of tasks in task pool
-static atomic_uint_least64_t
-                           blocked_task_cnt;   // number of blocked tasks
 static int                 idle_thread_cnt;    // number of threads looking
                                                //   for work
 
@@ -144,7 +142,6 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
   suspend_using_cond = (chpl_thread_getNumThreads() >=
                         chpl_topo_getNumCPUsLogical(true));
 
-  chpl_bool waited = false;
   while (s->is_full != want_full) {
     if (!suspend_using_cond) {
       chpl_thread_mutexUnlock(&s->lock);
@@ -157,14 +154,6 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
     } while (s->is_full != want_full);
     if (!suspend_using_cond)
       chpl_thread_mutexLock(&s->lock);
-    if (!waited) {
-      waited = true;
-      (void) atomic_fetch_add_uint_least64_t(&blocked_task_cnt, 1);
-    }
-  }
-
-  if (waited) {
-    (void) atomic_fetch_sub_uint_least64_t(&blocked_task_cnt, 1);
   }
 }
 
@@ -291,7 +280,6 @@ void chpl_task_init(void) {
   chpl_thread_mutexInit(&threading_lock);
   chpl_thread_mutexInit(&task_id_lock);
   queued_task_cnt = 0;
-  atomic_init_uint_least64_t(&blocked_task_cnt, 0);
   idle_thread_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
 
@@ -659,14 +647,6 @@ chpl_bool chpl_task_guardPagesInUse(void) {
   return chpl_use_guard_page;
 }
 
-uint32_t chpl_task_getNumQueuedTasks(void) {
-  return queued_task_cnt;
-}
-
-int32_t chpl_task_getNumBlockedTasks(void) {
-  return atomic_load_uint_least64_t(&blocked_task_cnt);
-}
-
 
 // Internal utility functions for task management
 
@@ -981,15 +961,4 @@ task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
   }
 
   return ptask;
-}
-
-
-// Threads
-
-uint32_t chpl_task_getNumThreads(void) {
-  return chpl_thread_getNumThreads();
-}
-
-uint32_t chpl_task_getNumIdleThreads(void) {
-  return idle_thread_cnt;
 }

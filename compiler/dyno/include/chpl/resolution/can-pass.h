@@ -25,11 +25,12 @@
 
 namespace chpl {
 namespace uast {
-  class ASTNode;
+  class AstNode;
 }
 namespace types {
   class QualifiedType;
   class ClassType;
+  class TupleType;
 }
 namespace resolution {
 
@@ -109,6 +110,10 @@ class CanPassResult {
   static CanPassResult canPassSubtype(Context* context,
                                       const types::Type* actualT,
                                       const types::Type* formalT);
+
+  static CanPassResult canConvertTuples(Context* context,
+                                        const types::TupleType* aT,
+                                        const types::TupleType* fT);
 
   static CanPassResult canConvert(Context* context,
                                   const types::QualifiedType& actualType,

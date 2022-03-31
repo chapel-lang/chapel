@@ -14,13 +14,14 @@ from utils import memoize, run_command, warning
 # It is intended to map from PrgEnv target cpus (e.g. craype-sandybridge)
 # when these names differ from the LLVM ones.
 cpu_llvm_synonyms = {
-  'knc':           'none',
-  'mic-knl':       'knl',
-  'x86-skylake':   'skylake-avx512',
-  'x86-rome':      'znver2',
-  'x86-milan':     'znver3',
-  'arm-thunderx':  'thunderx',
-  'arm-thunderx2': 'thunderx2t99',
+  'knc':             'none',
+  'mic-knl':         'knl',
+  'x86-skylake':     'skylake-avx512',
+  'x86-cascadelake': 'cascadelake',
+  'x86-rome':        'znver2',
+  'x86-milan':       'znver3',
+  'arm-thunderx':    'thunderx',
+  'arm-thunderx2':   'thunderx2t99',
 }
 
 # This gets the generic machine type, e.g. x86_64, i686, aarch64.
@@ -99,8 +100,7 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
         else:
             # for C compilation, CPU needs to be set by cray-prgenv-*
             # and not by e.g. CHPL_TARGET_CPU.
-            cpu = cray_cpu
-            if has_cpu:
+            if has_cpu and cpu != cray_cpu:
                 warning("Setting the processor type through environment "
                         "variables is not supported for cray-prgenv-*. "
                         "Please use the appropriate craype-* module for your "
@@ -109,6 +109,7 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
                 warning("No craype-* processor type module was detected, "
                         "please load the appropriate one if you want any "
                         "specialization to occur.")
+            cpu = cray_cpu
 
         if get_lcd:
             cpu = get_module_lcd_cpu(platform_val, cpu)

@@ -16,5 +16,4 @@ fi
 
 echo "Checking out github branch $GITHUB_USER/$GITHUB_BRANCH"
 
-./tryit.sh "cd chapel && git remote add $GITHUB_USER https://github.com/$GITHUB_USER/chapel && git fetch $GITHUB_USER $GITHUB_BRANCH && git reset --hard $GITHUB_USER/$GITHUB_BRANCH"
-
+./tryit.sh "cd chapel && git remote add $GITHUB_USER https://github.com/$GITHUB_USER/chapel && git fetch --depth=1 $GITHUB_USER $GITHUB_BRANCH && git reset --hard FETCH_HEAD"

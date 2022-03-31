@@ -1,0 +1,4 @@
+deprecateScanArg.chpl:5: warning: The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead
+deprecateScanArg.chpl:8: warning: The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead
+79's first 0 bit is in position 4
+96's first 1 bit is in position 5

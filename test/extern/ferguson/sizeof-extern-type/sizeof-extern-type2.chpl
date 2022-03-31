@@ -1,7 +1,7 @@
 {
   use CTypes;
 
-  extern proc sizeof(type t): size_t;
+  extern proc sizeof(type t): c_size_t;
 
   // We just want to check that this gets code
   // generated as sizeof(c_int) vs e.g. sizeof(int32_t);

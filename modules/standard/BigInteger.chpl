@@ -106,27 +106,8 @@ is likely to achieve better performance than:
 
   x = a + b * c;
 
-In the fall of 2016 the Chapel compiler introduces two short lived
-temporaries for the intermediate results of the binary operators.
-
-
-If peak performance is required, perhaps in a critical loop, then it
-is always possible to invoke the GMP functions directly.  For example
-one might express:
-
-.. code-block:: chapel
-
-  a = a + b * c;
-
-as:
-
-.. code-block:: chapel
-
-  mpz_addmul(a.mpz, b.mpz, c.mpz);
-
-
-As usual the details are application specific and it is best to
-measure when peak performance is required.
+The Chapel compiler currently introduces two short lived temporaries for the
+intermediate results of the binary operators.
 
 The operators on ``bigint`` include variations that accept Chapel
 integers e.g.:
@@ -304,8 +285,8 @@ module BigInteger {
          bigint.size() is deprecated
     */
     deprecated "bigint.size() is deprecated"
-    proc size() : size_t {
-      var ret: size_t;
+    proc size() : c_size_t {
+      var ret: c_size_t;
 
       if _local {
         ret = mpz_size(this.mpz);
@@ -351,7 +332,7 @@ module BigInteger {
      */
     proc sizeInBase(base: int) : int {
       const base_ = base.safeCast(c_int);
-      var   ret: size_t;
+      var   ret: c_size_t;
 
       if _local {
         ret = mpz_sizeinbase(this.mpz, base_);
@@ -427,7 +408,27 @@ module BigInteger {
       return ret;
     }
 
+    deprecated "get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead"
     proc get_d_2exp() : (uint(32), real) {
+      var (dbl, exp) = getD2Exp();
+      return (exp, dbl);
+    }
+
+    /*
+      Convert ``this`` to a tuple containing a real (truncated if necessary, by
+      rounding towards zero) and the exponent.  The returned tuple fulfills the
+      condition ``d * 2^exp == this`` where ``d`` is the first value in the
+      tuple and ``exp`` is the second.
+
+      :returns: a tuple representing the number in multiple parts, ``(d, exp)``,
+                such that their combination ``d * 2^exp`` is equal to ``this``.
+
+                ``d`` in this case will be in the range ``0.5 <= abs(d) < 1``,
+                unless ``this`` is ``0``, in which case ``d == 0.0`` and
+                ``exp == 0``.
+      :rtype: ``(real, uint(32))``
+     */
+    proc getD2Exp(): (real, uint(32)) {
       var exp: c_long;
       var dbl: c_double;
 
@@ -454,7 +455,7 @@ module BigInteger {
         }
       }
 
-      return (exp.safeCast(uint(32)), dbl: real);
+      return (dbl: real, exp.safeCast(uint(32)));
     }
 
     proc get_str(base: int = 10) : string {
@@ -1069,26 +1070,26 @@ module BigInteger {
 
 
   // Division
-  operator bigint./(const ref a: bigint, const ref b: bigint) {
+  // Documented in (bigint, integral) version
+  operator bigint./(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-
-    if _local {
-      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_tdiv_q(c.mpz, a.mpz, b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      mpz_tdiv_q(c.mpz, a_.mpz, b_.mpz);
-    }
+    c.divQ(a, b, round.zero);
 
     return c;
   }
 
-  operator bigint./(const ref a: bigint, b: integral) {
+  /* Divide ``a`` by ``b``, returning the result.
+
+     :arg a: The numerator of the division operation
+     :type a: :record:`bigint`
+
+     :arg b: The denominator of the division operation
+     :type b: :record:`bigint` or ``integral``
+
+     :returns: The result of dividing ``a`` by ``b``
+     :rtype: :record:`bigint`
+   */
+  operator bigint./(const ref a: bigint, b: integral): bigint {
     return a / new bigint(b);
   }
 
@@ -1871,24 +1872,19 @@ module BigInteger {
 
 
   // /=
+  // Documented in (bigint, integral) version
   operator bigint./=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_tdiv_q(a.mpz, a.mpz, b_.mpz);
-      }
-    }
+    a.divQ(a, b, round.zero);
   }
 
+  /* Divide ``a`` by ``b``, storing the result in ``a``.
+
+     :arg a: The numerator of the division operation
+     :type a: :record:`bigint`
+
+     :arg b: The denominator of the division operation
+     :type b: :record:`bigint` or ``integral``
+   */
   operator bigint./=(ref a: bigint, b: integral) {
     a /= new bigint(b);
   }
@@ -2386,6 +2382,10 @@ module BigInteger {
 
   // documented in bigint, integral version
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       mpz_divexact(this.mpz, numer.mpz, denom.mpz);
 
@@ -3179,7 +3179,7 @@ module BigInteger {
     return ret;
   }
 
-  /* An enumeration of the different possibilitites of a number being prime, for use with e.g.
+  /* An enumeration of the different possibilities of a number being prime, for use with e.g.
      :proc:`~bigint.probablyPrime` to determine if a number is prime or not.
 
      - ``primality.notPrime`` indicates that the number is not a prime.
@@ -3306,13 +3306,29 @@ module BigInteger {
     }
   }
 
-  // sets this to gcd(a,b)
-  // set s and t to to coefficients satisfying a*s + b*t == g
-  proc bigint.gcdext(ref s: bigint,
-                     ref t: bigint,
-                     const ref a: bigint,
-                     const ref b: bigint) {
+  /* Set ``this`` to the greatest common divisor of ``a`` and ``b``, and
+     set ``s`` and ``t`` to coefficients such that ``a*s + b*t == this``.
 
+     .. note::
+        The result stored in ``this`` is always positive, even if one or
+        both of ``a`` and ``b`` are negative (or zero if both are zero).
+
+     This fulfills the same role as the GMP function ``mpz_gcdext``.
+
+     :arg a: One of the numbers to compute the greatest common divisor of
+     :type a: :record:`bigint`
+
+     :arg b: One of the numbers to compute the greatest common divisor of
+     :type b: :record:`bigint`
+
+     :arg s: The returned coefficient that can be multiplied by ``a``.
+     :type s: :record:`bigint`
+
+     :arg t: The returned coefficient that can be multiplied by ``b``.
+     :type t: :record:`bigint`
+   */
+  proc bigint.gcd(const ref a: bigint, const ref b: bigint,
+                  ref s: bigint, ref t: bigint): void {
     if _local {
       mpz_gcdext(this.mpz, s.mpz, t.mpz, a.mpz, b.mpz);
 
@@ -3340,7 +3356,15 @@ module BigInteger {
     }
   }
 
-
+  // sets this to gcd(a,b)
+  // set s and t to to coefficients satisfying a*s + b*t == g
+  deprecated "gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead"
+  proc bigint.gcdext(ref s: bigint,
+                     ref t: bigint,
+                     const ref a: bigint,
+                     const ref b: bigint) {
+    this.gcd(a, b, s, t);
+  }
 
   // lcm
   proc bigint.lcm(const ref a: bigint, const ref b: bigint) {
@@ -3694,8 +3718,28 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
+  pragma "last resort"
+  deprecated "The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead"
   proc bigint.scan0(starting_bit: integral) : uint {
-    const sb_ = starting_bit.safeCast(c_ulong);
+    return this.scan0(startBitIdx = starting_bit);
+  }
+
+  /*  Scan ``this``, starting from ``startBitIdx``, towards more significant
+      bits until the first ``0`` bit is found.  Return the index of the found
+      bit.
+
+      If the bit at ``startBitIdx`` is ``0``, will return ``startBitIdx``.
+
+      :arg startBitIdx: the index of the first bit to start searching for a
+                        ``0``
+      :type startBitIdx: ``integral``
+
+      :returns: the index of the first ``0`` bit after ``startBitIdx``,
+                inclusive
+      :rtype: ``uint``
+   */
+  proc bigint.scan0(startBitIdx: integral): uint {
+    const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
 
     if _local {
@@ -3713,8 +3757,28 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
+  pragma "last resort"
+  deprecated "The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead"
   proc bigint.scan1(starting_bit: integral) : uint {
-    const sb_ = starting_bit.safeCast(c_ulong);
+    return this.scan1(startBitIdx = starting_bit);
+  }
+
+  /*  Scan ``this``, starting from ``startBitIdx``, towards more significant
+      bits until the first ``1`` bit is found.  Return the index of the found
+      bit.
+
+      If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
+
+      :arg startBitIdx: the index of the first bit to start searching for a
+                        ``1``
+      :type startBitIdx: ``integral``
+
+      :returns: the index of the first ``1`` bit after ``startBitIdx``,
+                inclusive
+      :rtype: ``uint``
+   */
+  proc bigint.scan1(startBitIdx: integral): uint {
+    const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
 
     if _local {
@@ -4546,6 +4610,10 @@ module BigInteger {
   proc bigint.divQ(const ref numer: bigint,
                    const ref denom: bigint,
                    param rounding = round.zero) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       select rounding {
         when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
@@ -4649,6 +4717,10 @@ module BigInteger {
   proc bigint.divR(const ref numer: bigint,
                    const ref denom: bigint,
                    param     rounding = round.zero) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       select rounding {
         when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
@@ -4754,6 +4826,10 @@ module BigInteger {
                     const ref numer: bigint,
                     const ref denom: bigint,
                     param     rounding = round.zero) {
+    if (chpl_checkDivByZero) then
+      if denom == 0 then
+        halt("Attempt to divide by zero");
+
     if _local {
       select rounding {
         when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,

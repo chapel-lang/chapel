@@ -25,7 +25,8 @@
 #include "bitVec.h"
 #include "CForLoop.h"
 #include "driver.h"
-#include "expr.h"
+#include "errorHandling.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "optimizations.h"
 #include "passes.h"
@@ -1205,15 +1206,27 @@ buildZip4(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) 
 //
 // See also isIBBCondStmt() and the PR message for #12963.
 //
+// Update: if the yield is inside a forall loop, IBB should not pretend to
+// return out of the enclosing function, see #18773. Instead, it should
+// pretend to throw an error into the forall's error handler. Mimicking
+// the control flow is sufficient for that.
+//
 void createIteratorBreakBlocks() {
   for_alive_in_Vec(CallExpr, yield, gCallExprs)
     if (yield->isPrimitive(PRIM_YIELD))
       if (FnSymbol* parent = toFnSymbol(yield->parentSymbol)) {
         SET_LINENO(yield);
-        // An empty IBB is: if gIteratorBreakToken then return;
-        Symbol* epLab = parent->getOrCreateEpilogueLabel();
+        BlockStmt* ibbBody = new BlockStmt();
+        if (ForallStmt* fs = enclosingForallStmt(yield)) {
+          // An empty IBB is: if gIteratorBreakToken then throw;
+          ibbBody->insertAtTail(gotoForallErrorHandler(fs));
+        } else {
+          // An empty IBB is: if gIteratorBreakToken then return;
+          Symbol* epLab = parent->getOrCreateEpilogueLabel();
+          ibbBody->insertAtTail(new GotoStmt(GOTO_RETURN, epLab));
+        }
         yield->insertAfter(new CondStmt(new SymExpr(gIteratorBreakToken),
-                             new BlockStmt(new GotoStmt(GOTO_RETURN, epLab))));
+                                        ibbBody));
       }
 }
 
@@ -1986,7 +1999,7 @@ void cleanupPrimIRFieldValByFormal() {
 static void fixPromotionProtoField(AggregateType* at, Symbol* locSym,
                                    VarSymbol* newField) {
 
-  if ((at->numFields() == 0 || !at->isSerializeable())) {
+  if ((at->numFields() == 0 || !at->isSerializable())) {
     return;
   }
 
@@ -2018,7 +2031,7 @@ static void cleanupProtoFields(AggregateType* at) {
     return;
   }
 
-  if (!at->isSerializeable()) {
+  if (!at->isSerializable()) {
     for_fields (field, at) {
       if (field->hasFlag(FLAG_PROMOTION_PROTO_FIELD)) {
         field->defPoint->remove();

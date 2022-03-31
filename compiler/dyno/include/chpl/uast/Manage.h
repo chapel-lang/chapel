@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/As.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -48,7 +48,7 @@ class Manage final : public SimpleBlockLike {
   int managerExprChildNum_;
   int numManagerExprs_;
 
-  Manage(ASTList stmts, int managerExprChildNum, int numManagerExprs,
+  Manage(AstList stmts, int managerExprChildNum, int numManagerExprs,
          BlockStyle blockStyle,
          int bodyChildNum,
          int numBodyStmts)
@@ -57,16 +57,17 @@ class Manage final : public SimpleBlockLike {
                       numBodyStmts),
       managerExprChildNum_(managerExprChildNum),
       numManagerExprs_(numManagerExprs) {
-    assert(isExpressionASTList(children_));
     assert(0 <= managerExprChildNum_);
     assert(managerExprChildNum_ < numChildren());
 
-    for (auto mgr : managers()) {
-      if (auto as = mgr->toAs()) assert(as->rename()->isVariable());
-    }
+    #ifndef NDEBUG
+      for (auto mgr : managers()) {
+        if (auto as = mgr->toAs()) assert(as->rename()->isVariable());
+      }
+    #endif
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Manage* lhs = this;
     const Manage* rhs = (const Manage*) other;
     return lhs->managerExprChildNum_ == rhs->managerExprChildNum_ &&
@@ -85,9 +86,9 @@ class Manage final : public SimpleBlockLike {
     Create and return a Manage containing the passed managers and statements.
   */
   static owned<Manage> build(Builder* builder, Location loc,
-                             ASTList managers,
+                             AstList managers,
                              BlockStyle blockStyle,
-                             ASTList stmts);
+                             AstList stmts);
 
   /**
     Iterate over the managers of this manage statement. They may be either
@@ -95,10 +96,10 @@ class Manage final : public SimpleBlockLike {
     the right-hand-side component is guaranteed to be a variable
     representing the managed resource.
   */
-  ASTListIteratorPair<Expression> managers() const {
+  AstListIteratorPair<AstNode> managers() const {
     auto begin = children_.begin() + managerExprChildNum_;
     auto end = begin + numManagerExprs_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -111,11 +112,10 @@ class Manage final : public SimpleBlockLike {
   /**
     Return the i'th manager in this manage statement.
   */
-  const Expression* manager(int i) const {
+  const AstNode* manager(int i) const {
     assert(0 <= i && i < numManagerExprs_);
     auto ret = child(managerExprChildNum_ + i);
-    assert(ret->isExpression());
-    return (const Expression*) ret;
+    return ret;
   }
 };
 

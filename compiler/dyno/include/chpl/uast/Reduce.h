@@ -33,7 +33,7 @@ namespace uast {
 */
 class Reduce final : public Call {
  private:
-  Reduce(ASTList children, UniqueString op)
+  Reduce(AstList children, UniqueString op)
     : Call(asttags::Reduce, std::move(children),
            /*hasCalledExpression*/ false),
       op_(op) {
@@ -41,7 +41,7 @@ class Reduce final : public Call {
     assert(!op_.isEmpty());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Reduce* rhs = other->toReduce();
     return this->op_ == rhs->op_ &&
       this->callContentsMatchInner(rhs);
@@ -63,7 +63,7 @@ class Reduce final : public Call {
   static owned<Reduce> build(Builder* builder,
                              Location loc,
                              UniqueString op,
-                             owned<Expression> expr);
+                             owned<AstNode> expr);
 
   /**
     Returns the reduction operator. It may be either a regular operator

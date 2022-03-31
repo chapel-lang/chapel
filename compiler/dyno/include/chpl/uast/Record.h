@@ -44,7 +44,7 @@ namespace uast {
  */
 class Record final : public AggregateDecl {
  private:
-  Record(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Record(AstList children, int attributesChildNum, Decl::Visibility vis,
          Decl::Linkage linkage,
          int linkageNameChildNum,
          UniqueString name,
@@ -60,7 +60,7 @@ class Record final : public AggregateDecl {
                     numElements) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Record* lhs = this;
     const Record* rhs = (const Record*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs);
@@ -77,9 +77,9 @@ class Record final : public AggregateDecl {
                              owned<Attributes> attributes,
                              Decl::Visibility vis,
                              Decl::Linkage linkage,
-                             owned<Expression> linkageName,
+                             owned<AstNode> linkageName,
                              UniqueString name,
-                             ASTList contents);
+                             AstList contents);
 };
 
 

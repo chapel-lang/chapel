@@ -28,9 +28,9 @@
  buffered channel has a maximum capacity specified by ``bufferSize``. There are
  mainly three operations that can be performed on a channel.
 
-  * :proc:`send` : Send a value to the channel.
-  * :proc:`recv` : Receive a value from the channel.
-  * :proc:`close` : Close a channel such that no other values/data can be sent to it.
+  * :proc:`channel.send` : Send a value to the channel.
+  * :proc:`channel.recv` : Receive a value from the channel.
+  * :proc:`channel.close` : Close a channel such that no other values/data can be sent to it.
 
  The channel operations are blocking, i.e., the calling task will be suspended
  if an operation cannot be completed. The channel follows First-In-First-Out
@@ -165,7 +165,7 @@ module Channel {
       }
       else {
       // This function is also used specifically by select statements.
-      // It may happen that the waiter is already dequed from the queue.
+      // It may happen that the waiter is already dequeued from the queue.
       // In that case we don't have to do anything.
       }
 
@@ -499,7 +499,7 @@ module Channel {
       else return (try! selectChannel.send(val.deref(), false));
     }
 
-    /* Retreive the address of the involved channel */
+    /* Retrieve the address of the involved channel */
     override proc getAddr() : c_uintptr {
       return ((selectChannel.channelObj : c_void_ptr) : c_uintptr);
     }
@@ -551,7 +551,7 @@ module Channel {
     var numCases = cases.domain.size;
 
     var addrCmp : Comparator;
-    // Sort all cases according to their channel adresses
+    // Sort all cases according to their channel addresses
     sort(cases, comparator = addrCmp);
 
     /*
@@ -585,7 +585,7 @@ module Channel {
       return done;
     }
 
-    /* If none of the channels was ready, enqueueue the select task to each
+    /* If none of the channels was ready, enqueue the select task to each
     channel's waiting queue and wait for other task to awaken us.
     */
     var isDone : atomic int = -1;

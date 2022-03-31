@@ -67,7 +67,7 @@ static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
 {
   if (keep.size() == addin.size()) {
     bool anyUpdated = false;
-    // try updating the elements indivdually
+    // try updating the elements individually
     size_t nElts = keep.size();
     for (size_t i = 0; i < nElts; i++) {
       chpl::update<T> combiner;

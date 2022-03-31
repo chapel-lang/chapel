@@ -21,9 +21,9 @@
 
 #include "chpl/queries/Context.h"
 #include "chpl/queries/ErrorMessage.h"
-#include "chpl/uast/Expression.h"
-#include "chpl/uast/Module.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
+#include "chpl/uast/Module.h"
 
 #include <cstring>
 #include <string>
@@ -54,7 +54,7 @@ owned<Builder> Builder::build(Context* context, const char* filepath) {
   return toOwned(b);
 }
 
-void Builder::addToplevelExpression(owned<Expression> e) {
+void Builder::addToplevelExpression(owned<AstNode> e) {
   this->topLevelExpressions_.push_back(std::move(e));
 }
 
@@ -62,7 +62,7 @@ void Builder::addError(ErrorMessage e) {
   this->errors_.push_back(std::move(e));
 }
 
-void Builder::noteLocation(ASTNode* ast, Location loc) {
+void Builder::noteLocation(AstNode* ast, Location loc) {
   notedLocations_[ast] = loc;
 }
 
@@ -86,7 +86,7 @@ BuilderResult Builder::result() {
   return ret;
 }
 
-bool Builder::astTagIndicatesNewIdScope(asttags::ASTTag tag) {
+bool Builder::astTagIndicatesNewIdScope(asttags::AstTag tag) {
   return asttags::isNamedDecl(tag) &&
         (asttags::isFunction(tag) ||
          asttags::isModule(tag) ||
@@ -114,7 +114,7 @@ void Builder::createImplicitModuleIfNeeded() {
     std::string modname = filenameToModulename(filepath_.c_str());
     auto inferredModuleName = UniqueString::get(context_, modname);
     // create a new module containing all of the statements
-    ASTList stmts;
+    AstList stmts;
     stmts.swap(topLevelExpressions_);
     auto implicitModule = Module::build(this, Location(filepath_),
                                         /*attributes*/ nullptr,
@@ -133,7 +133,7 @@ void Builder::assignIDs() {
   int commentIndex = 0;
 
   for (auto const& ownedExpression: topLevelExpressions_) {
-    ASTNode* ast = ownedExpression.get();
+    AstNode* ast = ownedExpression.get();
     if (ast->isModule() || ast->isComment()) {
       UniqueString emptyString;
       doAssignIDs(ast, emptyString, i, commentIndex, pathVec, duplicates);
@@ -145,7 +145,7 @@ void Builder::assignIDs() {
 
 /* A note about ID assignment
 
-  This ID assigment tries to balance several competing goals:
+  This ID assignment tries to balance several competing goals:
    * would like postorder Ids to be available to make it easy to store e.g.
      resolution results for a function in a vector
    * would like incremental recompilation to minimize recomputation if code is
@@ -180,7 +180,7 @@ void Builder::assignIDs() {
   Comments can work with the parse result and look up comments with
   BuilderResult::commentToLocation
  */
-void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
+void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
                           int& commentIndex, pathVecT& pathVec,
                           declaredHereT& duplicates) {
   if (Comment* comment = ast->toComment()) {
@@ -241,7 +241,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     int freshId = 0;
     declaredHereT freshMap;
     for (auto & child : ast->children_) {
-      ASTNode* ptr = child.get();
+      AstNode* ptr = child.get();
       this->doAssignIDs(ptr, newSymbolPath, freshId, commentIndex, pathVec, freshMap);
     }
 
@@ -261,7 +261,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
 
     // visit the children now to get integer part of ids in postorder
     for (auto & child : ast->children_) {
-      ASTNode* ptr = child.get();
+      AstNode* ptr = child.get();
       this->doAssignIDs(ptr, symbolPath, i, commentIndex, pathVec, duplicates);
     }
 
@@ -285,8 +285,8 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
   }
 }
 
-ASTList Builder::flattenTopLevelBlocks(ASTList lst) {
-  ASTList ret;
+AstList Builder::flattenTopLevelBlocks(AstList lst) {
+  AstList ret;
 
   for (auto& ast : lst) {
     if (ast->isBlock()) {

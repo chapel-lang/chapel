@@ -130,6 +130,10 @@ var branchInfo = [
                   { "release" : "1.25.1",
                     "releaseDate": "2021-12-09",
                     "branchDate" : "2021-12-06",
+                    "revision" : -1},
+                  { "release": "1.26.0",
+                    "releaseDate": "2022-03-31",
+                    "branchDate" : "2022-03-22",
                     "revision" : -1}
                   ];
 

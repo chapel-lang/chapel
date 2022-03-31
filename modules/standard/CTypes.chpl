@@ -50,15 +50,21 @@ module CTypes {
                     "'use'/'import' statements accordingly.", errorDepth=2);
   }
 
-  /* The type corresponding to a C float */
+  /* The Chapel type corresponding to the C 'float' type */
   extern type c_float = real(32);
 
-  /* The type corresponding to a C double */
+  /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
   // Former CPtr contents start here
 
-  /* A Chapel type alias for 'void*' in C. */
+  /*
+
+    A Chapel type alias for ``void*`` in C. Casts from integral types to
+    ``c_void_ptr`` as well as casts from ``c_void_ptr`` to integral types are
+    supported and behave similarly to those operations in C.
+
+  */
   extern type c_void_ptr = chpl__c_void_ptr;
 
 
@@ -536,9 +542,9 @@ module CTypes {
          * Behavior of ``c_sizeof`` with Chapel types may change
          * Behavior given a Chapel class type is not well-defined
    */
-  inline proc c_sizeof(type x): size_t {
+  inline proc c_sizeof(type x): c_size_t {
     pragma "fn synchronization free"
-    extern proc sizeof(type x): size_t;
+    extern proc sizeof(type x): c_size_t;
     return sizeof(x);
   }
 
@@ -555,13 +561,13 @@ module CTypes {
       * Behavior of ``c_offsetof`` may change
       * Behavior given a Chapel class type field is not well-defined
    */
-  proc c_offsetof(type t, param fieldname : string): size_t where isRecordType(t) {
+  proc c_offsetof(type t, param fieldname : string): c_size_t where isRecordType(t) {
     use Reflection;
     pragma "no auto destroy"
     pragma "no init"
     var x: t;
 
-    return c_ptrTo(getFieldRef(x, fieldname)):size_t - c_ptrTo(x):size_t;
+    return c_ptrTo(getFieldRef(x, fieldname)):c_size_t - c_ptrTo(x):c_size_t;
   }
 
   pragma "no doc"
@@ -580,7 +586,7 @@ module CTypes {
     :returns: a c_ptr(eltType) to allocated memory
     */
   inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
-    const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
+    const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
     return chpl_here_calloc(alloc_size, 1, offset_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
@@ -593,7 +599,7 @@ module CTypes {
     :returns: a c_ptr(eltType) to allocated memory
     */
   inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
-    const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
+    const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
     return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
@@ -616,9 +622,9 @@ module CTypes {
                               size: integral) : c_ptr(eltType) {
     // check alignment, size restriction
     if boundsChecking {
-      var one:size_t = 1;
+      var one:c_size_t = 1;
       // Round the alignment up to the nearest power of 2
-      var aln = alignment.safeCast(size_t);
+      var aln = alignment.safeCast(c_size_t);
       if aln == 0 then
         halt("c_aligned_alloc called with alignment of 0");
       var p = log2(aln); // power of 2 rounded down
@@ -632,8 +638,8 @@ module CTypes {
         halt("c_aligned_alloc called with alignment smaller than pointer size");
     }
 
-    const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
-    return chpl_here_aligned_alloc(alignment.safeCast(size_t),
+    const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
+    return chpl_here_aligned_alloc(alignment.safeCast(c_size_t),
                                    alloc_size,
                                    offset_ARRAY_ELEMENTS):c_ptr(eltType);
   }
@@ -668,8 +674,8 @@ module CTypes {
   pragma "fn synchronization free"
   inline proc c_memmove(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
     pragma "fn synchronization free"
-    extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: size_t);
-    memmove(dest, src, n.safeCast(size_t));
+    extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
+    memmove(dest, src, n.safeCast(c_size_t));
   }
 
   /*
@@ -685,8 +691,8 @@ module CTypes {
   pragma "fn synchronization free"
   inline proc c_memcpy(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
     pragma "fn synchronization free"
-    extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: size_t);
-    memcpy(dest, src, n.safeCast(size_t));
+    extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
+    memcpy(dest, src, n.safeCast(c_size_t));
   }
 
   /*
@@ -701,8 +707,8 @@ module CTypes {
   pragma "fn synchronization free"
   inline proc c_memcmp(const s1:c_void_ptr, const s2:c_void_ptr, n: integral) {
     pragma "fn synchronization free"
-    extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: size_t) : c_int;
-    return memcmp(s1, s2, n.safeCast(size_t)).safeCast(int);
+    extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: c_size_t) : c_int;
+    return memcmp(s1, s2, n.safeCast(c_size_t)).safeCast(int);
   }
 
   /*
@@ -719,8 +725,8 @@ module CTypes {
   pragma "fn synchronization free"
   inline proc c_memset(s:c_void_ptr, c:integral, n: integral) {
     pragma "fn synchronization free"
-    extern proc memset(s: c_void_ptr, c: c_int, n: size_t) : c_void_ptr;
-    memset(s, c.safeCast(c_int), n.safeCast(size_t));
+    extern proc memset(s: c_void_ptr, c: c_int, n: c_size_t) : c_void_ptr;
+    memset(s, c.safeCast(c_int), n.safeCast(c_size_t));
     return s;
   }
 }

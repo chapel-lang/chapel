@@ -28,7 +28,7 @@ namespace uast {
 owned<For> For::build(Builder* builder,
                       Location loc,
                       owned<Decl> index,
-                      owned<Expression> iterand,
+                      owned<AstNode> iterand,
                       BlockStyle blockStyle,
                       owned<Block> body,
                       bool isExpressionLevel,
@@ -37,7 +37,7 @@ owned<For> For::build(Builder* builder,
   assert(body.get() != nullptr);
   if (isParam) assert(!isExpressionLevel);
 
-  ASTList lst;
+  AstList lst;
   int8_t indexChildNum = -1;
   int8_t iterandChildNum = -1;
 

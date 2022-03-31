@@ -45,7 +45,8 @@ module ChapelArray {
   // This permits a user to opt into upcoming behavior to always have
   // .indices return local indices for an array
   pragma "no doc"
-  config param arrayIndicesAlwaysLocal = false;
+  deprecated "'arrayIndicesAlwaysLocal' is deprecated and no longer has an effect"
+  config param arrayIndicesAlwaysLocal = true;
 
   pragma "no doc"
   config param debugBulkTransfer = false;
@@ -195,12 +196,10 @@ module ChapelArray {
   // a rank-tuple. If the value is a scalar and rank is 1, copy it into a 1-tuple.
   //
   proc _makeIndexTuple(param rank, t: _tuple, param concept: string,
-                       param expand: bool=false) where rank == t.size {
+                       param expand: bool=false) {
+   if rank == t.size then
     return t;
-  }
-
-  proc _makeIndexTuple(param rank, t: _tuple, param concept: string,
-                       param expand: bool=false) where rank != t.size {
+   else
     compilerError("rank of the ", concept, " must match domain rank");
   }
 
@@ -796,7 +795,7 @@ module ChapelArray {
     /*
        Return an array of locales over which this distribution was declared.
     */
-    proc targetLocales const ref {
+    proc targetLocales() const ref {
       return _value.dsiTargetLocales();
     }
   }  // record _distribution
@@ -889,40 +888,17 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
 
-    /* Return the array's indices as a copy of its domain.
-
-       .. note::
-
-         In a forthcoming release, we expect ``.indices`` to change in
-         behavior to return/yield indices using a local representation
-         rather than as a clone of the array's domain.  In order to
-         preserve the legacy behavior in your program, please use
-         ``.domain`` instead (or a copy thereof).
-
-         If you'd like to opt into a prototype of the new behavior,
-         recompile with ``-sarrayIndicesAlwaysLocal=true``.  For
-         dense, rectangular arrays, this will have the effect of
-         returning a local domain representing the array's indices;
-         for a sparse or associative array, it will invoke a serial
-         iterator that yields the array's indices.
-
-         See https://github.com/chapel-lang/chapel/issues/17883 for
-         further details.
+    /*
+      Return a dense rectangular array's indices as a default domain.
     */
-    deprecated "the current behavior of  '.indices' on arrays is deprecated; see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.indices for details"
-    proc indices where arrayIndicesAlwaysLocal == false {
-      return _dom;
-    }
-
-    pragma "no doc"
-    proc indices where arrayIndicesAlwaysLocal == true &&
-                       !this.isSparse() && !this.isAssociative() {
+    proc indices where !this.isSparse() && !this.isAssociative() {
       return {(..._dom.getIndices())};
     }
 
-    pragma "no doc"
-    iter indices where arrayIndicesAlwaysLocal == true &&
-                       (this.isSparse() || this.isAssociative()) {
+    /*
+      Yield an irregular array's indices.
+    */
+    iter indices where (this.isSparse() || this.isAssociative()) {
       for i in _dom do
         yield i;
     }
@@ -1385,10 +1361,10 @@ module ChapelArray {
     }
 
     /* Return the number of elements in the array */
-    proc size return _dom.size;
+    proc size: int return _dom.size;
 
     /* Return the number of elements in the array as the specified type. */
-    proc sizeAs(type t: integral) return _dom.sizeAs(t);
+    proc sizeAs(type t: integral): t return _dom.sizeAs(t);
 
     //
     // This routine determines whether an actual array argument
@@ -1603,7 +1579,7 @@ module ChapelArray {
     /*
        Return an array of locales over which this array has been distributed.
     */
-    proc targetLocales const ref {
+    proc targetLocales() const ref {
       //
       // TODO: Is it really appropriate that the array should provide
       // this dsi routine rather than having this call forward to the
@@ -1752,8 +1728,22 @@ module ChapelArray {
 
    /* Return a tuple of integers describing the size of each dimension.
       For a sparse array, returns the shape of the parent domain.*/
-    proc shape {
+    proc shape: rank*int where this.isRectangular() || this.isSparse() {
       return this.domain.shape;
+    }
+
+    pragma "no doc"
+    /* Associative domains assumed to be 1-D. */
+    proc shape where this.isAssociative() {
+      var s: (size.type,);
+      s[0] = size;
+      return s;
+    }
+
+    pragma "no doc"
+    /* Unsupported case */
+    proc shape {
+      compilerError(".shape not supported on this array");
     }
 
     pragma "no doc"
@@ -1918,6 +1908,22 @@ module ChapelArray {
   operator :(x: [], type t:string) {
     use IO;
     return stringify(x);
+  }
+
+  pragma "fn returns aliasing array"
+  operator #(arr: [], counts: integral) {
+    return arr[arr.domain#counts];
+  }
+
+  pragma "fn returns aliasing array"
+  operator #(arr: [], counts: _tuple) {
+    return arr[arr.domain#counts];
+  }
+
+  pragma "last resort"
+  operator #(arr: [], counts) {
+    compilerError("cannot apply '#' to '", arr.type:string,
+                  "' using count(s) of type ", counts.type:string);
   }
 
   //
@@ -2776,6 +2782,13 @@ module ChapelArray {
     return lhs;
   }
 
+  // TODO: why is the compiler calling chpl__autoCopy on a domain at all?
+  pragma "auto copy fn"
+  proc chpl__autoCopy(const ref x:domain, definedConst: bool) {
+    pragma "no copy" var b = chpl__initCopy(x, definedConst);
+    return b;
+  }
+
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
     pragma "no copy"
@@ -2783,6 +2796,7 @@ module ChapelArray {
     return lhs;
   }
 
+  // TODO: why is the compiler calling chpl__autoCopy on an array at all?
   pragma "auto copy fn" proc chpl__autoCopy(x: [], definedConst: bool) {
     pragma "no copy" var b = chpl__initCopy(x, definedConst);
     return b;
@@ -3300,7 +3314,7 @@ module ChapelArray {
     var r = if shapeful then ir._shape_ else 1..0;
 
     var i  = 0;
-    var size = r.sizeAs(size_t);
+    var size = r.sizeAs(c_size_t);
     type elemType = iteratorToArrayElementType(ir.type);
     var data:_ddata(elemType) = nil;
 

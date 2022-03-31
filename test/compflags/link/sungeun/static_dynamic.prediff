@@ -7,9 +7,8 @@ import subprocess
 from pkg_resources import parse_version
 
 def testFailed(f, output):
-    logfile = file(f, 'a')
-    logfile.write('%s' % (output))
-    logfile.close()
+    with open(f, 'w') as logfile:
+        logfile.write('%s' % (output))
 
 
 execname = sys.argv[1]

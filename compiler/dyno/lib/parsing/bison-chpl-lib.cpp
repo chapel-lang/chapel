@@ -7782,7 +7782,7 @@ yyreduce:
   {
     auto loc = context->declStartLoc((yylsp[-2]));
 
-    Expression* optExpr = (yyvsp[-1].expr);
+    AstNode* optExpr = (yyvsp[-1].expr);
     FunctionParts fp = (yyvsp[0].functionParts);
 
     auto commentList = context->appendList(context->makeList(),
@@ -7944,7 +7944,7 @@ yyreduce:
     ParserExprList* exprLst;
     BlockStyle blockStyle;
     context->prepareStmtPieces(comments, exprLst, blockStyle, (yylsp[-5]), (yylsp[0]), (yyvsp[0].blockOrDo));
-    Expression* ident = context->buildIdent((yylsp[-3]), (yyvsp[-3].uniqueStr));
+    AstNode* ident = context->buildIdent((yylsp[-3]), (yyvsp[-3].uniqueStr));
     auto index = context->buildLoopIndexDecl((yylsp[-3]), toOwned(ident));
     auto body = context->consumeToBlock((yylsp[0]), exprLst);
     auto node = For::build(BUILDER, LOC((yylsp[-5])), std::move(index),
@@ -10213,7 +10213,7 @@ yyreduce:
   case 556: /* for_expr: TFOR expr TDO expr  */
 #line 2950 "chpl.ypp"
   {
-    (yyval.expr) = For::build(BUILDER, LOC((yyloc)), /*index*/ nullptr, toOwned((yyvsp[0].expr)),
+    (yyval.expr) = For::build(BUILDER, LOC((yyloc)), /*index*/ nullptr, toOwned((yyvsp[-2].expr)),
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock((yylsp[0]), (yyvsp[0].expr)),
                     /*isExpressionLevel*/ true,
@@ -10305,7 +10305,7 @@ yyreduce:
   case 562: /* for_expr: TFORALL expr TDO expr  */
 #line 3018 "chpl.ypp"
   {
-    (yyval.expr) = Forall::build(BUILDER, LOC((yyloc)), /*index*/ nullptr, toOwned((yyvsp[0].expr)),
+    (yyval.expr) = Forall::build(BUILDER, LOC((yyloc)), /*index*/ nullptr, toOwned((yyvsp[-2].expr)),
                        /*withClause*/ nullptr,
                        BlockStyle::IMPLICIT,
                        context->consumeToBlock((yylsp[0]), (yyvsp[0].expr)),
@@ -10376,7 +10376,7 @@ yyreduce:
       const char* msg = "Invalid iterand expression";
       (yyval.expr) = context->raiseError((yylsp[-2]), msg);
     } else {
-      auto iterand = context->consumeList((yyvsp[-2].exprList))[0].release()->toExpression();
+      auto iterand = context->consumeList((yyvsp[-2].exprList))[0].release();
       assert(iterand);
       (yyval.expr) = BracketLoop::build(BUILDER, LOC((yyloc)), /*index*/ nullptr,
                               toOwned(iterand),
@@ -10810,7 +10810,7 @@ yyreduce:
   case 642: /* call_expr: call_base_expr TLP opt_actual_ls TRP  */
 #line 3407 "chpl.ypp"
     {
-      ASTList actuals;
+      AstList actuals;
       std::vector<UniqueString> actualNames;
       context->consumeNamedActuals((yyvsp[-1].maybeNamedActualList), actuals, actualNames);
       auto fnCall = FnCall::build(BUILDER, LOC((yyloc)),
@@ -10826,7 +10826,7 @@ yyreduce:
   case 643: /* call_expr: call_base_expr TLSBR opt_actual_ls TRSBR  */
 #line 3419 "chpl.ypp"
     {
-      ASTList actuals;
+      AstList actuals;
       std::vector<UniqueString> actualNames;
       context->consumeNamedActuals((yyvsp[-1].maybeNamedActualList), actuals, actualNames);
       auto fnCall = FnCall::build(BUILDER, LOC((yyloc)),
@@ -11195,13 +11195,13 @@ yyreduce:
 
   case 699: /* unary_op_expr: TMINUSMINUS expr  */
 #line 3568 "chpl.ypp"
-                                 { (yyval.expr) = TODOEXPR((yyloc)); /* warn */ }
+                                 { (yyval.expr) = context->buildUnaryOp((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
 #line 11200 "bison-chpl-lib.cpp"
     break;
 
   case 700: /* unary_op_expr: TPLUSPLUS expr  */
 #line 3569 "chpl.ypp"
-                                 { (yyval.expr) = TODOEXPR((yyloc)); /* warn */ }
+                                 { (yyval.expr) = context->buildUnaryOp((yyloc), (yyvsp[-1].uniqueStr), (yyvsp[0].expr)); }
 #line 11206 "bison-chpl-lib.cpp"
     break;
 

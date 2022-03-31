@@ -25,7 +25,7 @@ namespace uast {
 
 
 // forward declare the various AST types
-// using macros and ASTClassesList.h
+// using macros and uast-classes-list.h
 /// \cond DO_NOT_DOCUMENT
 #define AST_DECL(NAME) class NAME;
 #define AST_NODE(NAME) AST_DECL(NAME)
@@ -33,8 +33,8 @@ namespace uast {
 #define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
 #define AST_END_SUBCLASSES(NAME)
 /// \endcond
-// Apply the above macros to ASTClassesList.h
-#include "chpl/uast/ASTClassesList.h"
+// Apply the above macros to uast-classes-list.h
+#include "chpl/uast/uast-classes-list.h"
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF
@@ -43,7 +43,7 @@ namespace uast {
 #undef AST_DECL
 
 // forward declare other classes
-class ASTNode;
+class AstNode;
 class Builder;
 
 

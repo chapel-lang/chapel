@@ -792,7 +792,7 @@ private extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
 pragma "no doc"
 extern record qiovec_t {
   var iov_base: c_void_ptr;
-  var iov_len: size_t;
+  var iov_len: c_size_t;
 }
 
 pragma "no doc"
@@ -1140,20 +1140,20 @@ private extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):sy
 pragma "no doc"
 extern proc qio_channel_isclosed(threadsafe:c_int, ch:qio_channel_ptr_t):bool;
 
-private extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t, ref amt_read:ssize_t):syserr;
-private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t):syserr;
+private extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_ssize_t, ref amt_read:c_ssize_t):syserr;
+private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_ssize_t):syserr;
 pragma "no doc"
 // A specialization is needed for _ddata as the value is the pointer its memory
-private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:_ddata, len:ssize_t):syserr;
+private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:_ddata, len:c_ssize_t):syserr;
 // and for c_ptr
-private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:c_ptr, len:ssize_t):syserr;
+private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:c_ptr, len:c_ssize_t):syserr;
 private extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t):int(32);
 
-private extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t, ref amt_written:ssize_t):syserr;
-private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t):syserr;
+private extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_ssize_t, ref amt_written:c_ssize_t):syserr;
+private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_ssize_t):syserr;
 pragma "no doc"
 // A specialization is needed for _ddata as the value is the pointer its memory
-private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:_ddata, len:ssize_t):syserr;
+private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:_ddata, len:c_ssize_t):syserr;
 private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):syserr;
 
 private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
@@ -1223,43 +1223,43 @@ private extern proc qio_channel_write_float64(threadsafe:c_int, byteorder:c_int,
 private extern proc qio_channel_read_float64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:imag(64)):syserr;
 private extern proc qio_channel_write_float64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:imag(64)):syserr;
 
-private extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string, ref len:int(64), maxlen:ssize_t):syserr;
-private extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):syserr;
+private extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string, ref len:int(64), maxlen:c_ssize_t):syserr;
+private extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:c_ssize_t):syserr;
 
-private extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
-private extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t, issigned:c_int):syserr;
+private extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_size_t, issigned:c_int):syserr;
+private extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_size_t, issigned:c_int):syserr;
 
-private extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):syserr;
-private extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):syserr;
+private extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_size_t):syserr;
+private extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_size_t):syserr;
 
 // These are the same as scan/print float but they assume an 'i' afterwards.
-private extern proc qio_channel_scan_imag(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):syserr;
-private extern proc qio_channel_print_imag(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):syserr;
+private extern proc qio_channel_scan_imag(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_size_t):syserr;
+private extern proc qio_channel_print_imag(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_size_t):syserr;
 
 
-private extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):syserr;
-private extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):syserr;
+private extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:c_size_t):syserr;
+private extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:c_size_t):syserr;
 
 
 private extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):syserr;
 
 private extern proc qio_nbytes_char(chr:int(32)):c_int;
 private extern proc qio_encode_to_string(chr:int(32)):c_string;
-private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
+private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:c_ssize_t):syserr;
 
 private extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):syserr;
 private extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):syserr;
 private extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
-private extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
-private extern proc qio_channel_scan_bytes(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
-private extern proc qio_channel_print_bytes(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
-private extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
+private extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:c_ssize_t):syserr;
+private extern proc qio_channel_scan_bytes(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:c_ssize_t):syserr;
+private extern proc qio_channel_print_bytes(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:c_ssize_t):syserr;
+private extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:c_ssize_t):syserr;
 
-private extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipwsbefore:c_int):syserr;
-private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t, skipwsbefore:c_int):syserr;
-private extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):syserr;
-private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):syserr;
+private extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:c_ssize_t, skipwsbefore:c_int):syserr;
+private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:c_ssize_t, skipwsbefore:c_int):syserr;
+private extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:c_ssize_t):syserr;
+private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:c_ssize_t):syserr;
 
 private extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
@@ -1314,7 +1314,7 @@ private extern const QIO_CONV_SET_CAPTURE:c_int;
 private extern const QIO_CONV_SET_DONE:c_int;
 
 pragma "insert line file info"
-private extern proc qio_conv_parse(const fmt:c_string, start:size_t, ref end:uint(64), scanning:c_int, ref spec:qio_conv_t, ref style:iostyleInternal):syserr;
+private extern proc qio_conv_parse(const fmt:c_string, start:c_size_t, ref end:uint(64), scanning:c_int, ref spec:qio_conv_t, ref style:iostyleInternal):syserr;
 
 private extern proc qio_format_error_too_many_args():syserr;
 private extern proc qio_format_error_too_few_args():syserr;
@@ -2974,12 +2974,12 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var err:syserr = ENOERR;
     var got:bool = false;
 
-    err = qio_channel_scan_literal(false, _channel_internal, c"true", "true".numBytes:ssize_t, 1);
+    err = qio_channel_scan_literal(false, _channel_internal, c"true", "true".numBytes:c_ssize_t, 1);
     if !err {
       got = true;
     } else if err == EFORMAT {
       // try reading false instead.
-      err = qio_channel_scan_literal(false, _channel_internal, c"false", "false".numBytes:ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, c"false", "false".numBytes:c_ssize_t, 1);
       // got is already false, so we don't need to set it.
     }
     if !err then x = got;
@@ -3021,7 +3021,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
       { // try to read e.g. red for colorenum.red
         var str = i:string;
         if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
-        var slen:ssize_t = str.numBytes.safeCast(ssize_t);
+        var slen:c_ssize_t = str.numBytes.safeCast(c_ssize_t);
         err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
         if !err {
           x = i;
@@ -3032,7 +3032,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
       { // try to read e.g. colorenum.red for colorenum.red
         var str = t:string + "." + i:string;
         if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
-        var slen:ssize_t = str.numBytes.safeCast(ssize_t);
+        var slen:c_ssize_t = str.numBytes.safeCast(c_ssize_t);
         err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
         if !err {
           x = i;
@@ -3050,9 +3050,9 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
 private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
-      return qio_channel_print_literal(false, _channel_internal, c"true", "true".numBytes:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, c"true", "true".numBytes:c_ssize_t);
     } else {
-      return qio_channel_print_literal(false, _channel_internal, c"false", "false".numBytes:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, c"false", "false".numBytes:c_ssize_t);
     }
   } else if isIntegralType(t) {
     // handles int types
@@ -3075,16 +3075,16 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
     if local_x.hasEscapes {
       return EILSEQ;
     }
-    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
+    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:c_ssize_t);
   } else if t == bytes {
     // handle bytes
     const local_x = x.localize();
-    return qio_channel_print_bytes(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
+    return qio_channel_print_bytes(false, _channel_internal, local_x.c_str(), local_x.numBytes:c_ssize_t);
   } else if isEnumType(t) {
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
     if st == QIO_AGGREGATE_FORMAT_JSON then s = '"'+s+'"';
-    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.numBytes:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.numBytes:c_ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", t:string);
   }
@@ -3254,10 +3254,10 @@ private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param b
     if local_x.hasEscapes {
       return EILSEQ;
     }
-    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
+    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: c_ssize_t);
   } else if t == bytes {
     var local_x = x.localize();
-    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
+    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: c_ssize_t);
   } else if isEnumType(t) {
     var i = chpl__enumToOrder(x):chpl_enum_mintype(t);
     // call the integer version
@@ -3328,7 +3328,7 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
   } else if t == ioLiteral {
     return qio_channel_scan_literal(false, _channel_internal,
                                     x.val.localize().c_str(),
-                                    x.val.numBytes: ssize_t, x.ignoreWhiteSpace);
+                                    x.val.numBytes: c_ssize_t, x.ignoreWhiteSpace);
   } else if t == ioBits {
     return qio_channel_read_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
@@ -3380,7 +3380,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   } else if t == ioChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:c_ssize_t);
   } else if t == ioBits {
     return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
@@ -3645,7 +3645,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
 
      :throws SystemError: Thrown if the byte sequence could not be written.
    */
-  proc channel.writeBytes(x, len:ssize_t):bool throws {
+  proc channel.writeBytes(x, len:c_ssize_t):bool throws {
     var err:syserr = ENOERR;
     on this.home {
       try this.lock(); defer { this.unlock(); }
@@ -3726,7 +3726,7 @@ proc stringify(const args ...?k):string {
       var r = f.reader(locking=false);
       defer try! r.close();
 
-      r.readBytes(buf, offset:ssize_t);
+      r.readBytes(buf, offset:c_ssize_t);
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
@@ -3956,12 +3956,12 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
     var tx:c_string;
     var lentmp:int(64);
     var actlen:int(64);
-    var uselen:ssize_t;
+    var uselen:c_ssize_t;
 
-    if len == -1 then uselen = max(ssize_t);
+    if len == -1 then uselen = max(c_ssize_t);
     else {
-      uselen = len:ssize_t;
-      if ssize_t != int(64) then assert( len == uselen );
+      uselen = len:c_ssize_t;
+      if c_ssize_t != int(64) then assert( len == uselen );
     }
 
     try ch.lock(); defer { ch.unlock(); }
@@ -4467,7 +4467,7 @@ proc channel.isclosed() {
 // in the type of the argument will only be caught by a type mismatch
 // in the call to qio_channel_read_amt.
 pragma "no doc"
-proc channel.readBytes(x, len:ssize_t) throws {
+proc channel.readBytes(x, len:c_ssize_t) throws {
   if here != this.home then
     throw new owned IllegalArgumentError("bad remote channel.readBytes");
   var err = qio_channel_read_amt(false, _channel_internal, x, len);
@@ -4554,10 +4554,24 @@ extern proc chpl_cstderr():_file;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:channel(true, iokind.dynamic, true);
 stderr = try! openfp(chpl_cstderr()).writer();
-
 /* Equivalent to ``stdin.read``. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {
   return stdin.read((...args));
+}
+/* Equivalent to ``stdin.read``. See :proc:`channel.read` for types */
+proc read(type t ...?numTypes) throws {
+  return stdin.read((...t));
+}
+/* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
+              amount = arg.domain.high - start + 1) : bool throws
+                where arg.rank == 1 && arg.isRectangular() {
+  return stdin.readline(arg, numRead, start, amount);
+}
+
+/* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
+  return stdin.readline(arg);
 }
 /* Equivalent to ``stdin.readln``. See :proc:`channel.readln` */
 proc readln(ref args ...?n):bool throws {
@@ -4572,10 +4586,6 @@ proc readln():bool throws {
 /* Equivalent to ``stdin.readln``. See :proc:`channel.readln` for types */
 proc readln(type t ...?numTypes) throws {
   return stdin.readln((...t));
-}
-/* Equivalent to ``stdin.read``. See :proc:`channel.read` for types */
-proc read(type t ...?numTypes) throws {
-  return stdin.read((...t));
 }
 
 
@@ -4597,8 +4607,7 @@ proc unlink(path:string) throws {
    :returns: `true` if this version of the Chapel runtime supports UTF-8 output.
  */
 proc unicodeSupported():bool {
-  extern proc qio_unicode_supported():c_int;
-  return qio_unicode_supported() > 0;
+  return true;
 }
 
 
@@ -4772,6 +4781,12 @@ Syntax in Detail" section below.
 In this file, we use "integral" to refer to the Chapel types int or uint and
 "floating-point" to refer to real, imaginary, or complex, of any bit width.
 
+.. warning::
+
+   Binary conversions are now deprecated. Binary numeric conversions have been
+   replaced by :proc:`IO.channel.readBinary` and :proc:`IO.channel.writeBinary`.
+   Replacements for binary string conversions are under development.
+
 Formatted I/O for C Programmers
 +++++++++++++++++++++++++++++++
 
@@ -4800,7 +4815,8 @@ that ``%n`` and ``%t`` are equivalent to ``%r`` for real conversions and ``%i``
 for numeric conversions; so these are also equivalent to ``%i`` ``%d`` or
 ``%g`` in C. Also note that Chapel format strings includes many capabilities
 not available with C formatted I/O routines - including quoted strings,
-binary numbers, complex numbers, and raw binary I/O.
+binary numbers, and complex numbers.
+
 
 Generic Numeric Conversions
 +++++++++++++++++++++++++++
@@ -4906,14 +4922,14 @@ Integral Conversions
 ``% i``
  a decimal integer with a space for positive numbers
 ``%|4i``
- output 4 raw, binary bytes of the passed integer in native endianness
+ output 4 raw, binary bytes of the passed integer in native endianness *(deprecated)*
 ``%<4i``
- output 4 raw, binary bytes of the passed integer little endian
+ output 4 raw, binary bytes of the passed integer little endian *(deprecated)*
 ``%>4i``
- output 4 raw, binary bytes of the passed integer big endian
+ output 4 raw, binary bytes of the passed integer big endian *(deprecated)*
 ``%<8i``
  output 8 raw, binary bytes of the passed integer little endian
- (byte widths of 1, 2, 4, and 8 are supported for integral conversions)
+ (byte widths of 1, 2, 4, and 8 are supported for integral conversions) *(deprecated)*
 
 Real Conversions
 ++++++++++++++++
@@ -4959,12 +4975,12 @@ Real Conversions
  hexadecimal number using p to mark exponent e.g. ``6c.3f7p-2a``
 
 ``%|4r``
- emit 4 raw, binary bytes of the passed number in native endianness
+ emit 4 raw, binary bytes of the passed number in native endianness *(deprecated)*
 ``%<8r``
- emit 8 raw, binary bytes of the passed number in little endian
+ emit 8 raw, binary bytes of the passed number in little endian *(deprecated)*
 ``%<4r``
  emit 4 raw, binary bytes of the passed number in little endian
- (``<`` ``|`` and ``>`` are supported for widths 4 or 8)
+ (``<`` ``|`` and ``>`` are supported for widths 4 or 8) *(deprecated)*
 
 Complex and Imaginary Conversions
 +++++++++++++++++++++++++++++++++
@@ -4987,11 +5003,11 @@ Complex and Imaginary Conversions
  print a and b with ``%er``
 
 ``%|4m``
- same as ``%|4r``
+ same as ``%|4r`` *(deprecated)*
 ``%|8z``
- emit 8 raw, binary bytes of native-endian complex (a,b are each 4 bytes)
+ emit 8 raw, binary bytes of native-endian complex (a,b are each 4 bytes) *(deprecated)*
 ``%<16z``
- emit 16 raw, binary bytes of little-endian complex (a,b each 8 bytes)
+ emit 16 raw, binary bytes of little-endian complex (a,b each 8 bytes) *(deprecated)*
 
 String and Bytes Conversions
 ++++++++++++++++++++++++++++
@@ -5048,19 +5064,19 @@ String and Bytes Conversions
   stored native endian. ``<``, ``|``, ``>`` can be used
   to specify the endianness of the length field,
   for example ``%<8S`` is 8 bytes of little-endian length
-  and then string data.
+  and then string data. *(deprecated)*
 ``%|vS``
  as with ``%|1S``-``%|8S`` but the string length is encoded using a
  variable-length byte scheme (which is always the same no matter what
  endianness). In this scheme, the high bit of each encoded length byte
  records whether or not there are more length bytes (and the remaining
- bits encode the length in a big-endian manner).
+ bits encode the length in a big-endian manner). *(deprecated)*
 
 ``%|*vS`` or ``%|*0S``
  read an encoded string but limit it to a number of bytes
  read from the argument before the string; when writing
  cause a runtime error if the string is longer than the
- maximum.
+ maximum. *(deprecated)*
 
 ``%/a+/``
  where any regular expression can be used instead of ``a+``
@@ -5093,11 +5109,11 @@ General Conversions
 ``%ht``
  read or write an object in Chapel syntax using readThis/writeThis
 ``%|t``
- read or write an object in binary native-endian with readThis/writeThis
+ read or write an object in binary native-endian with readThis/writeThis *(deprecated)*
 ``%<t``
- read or write an object little-endian in binary with readThis/writeThis
+ read or write an object little-endian in binary with readThis/writeThis *(deprecated)*
 ``%>t``
- read or write an object big-endian in binary with readThis/writeThis
+ read or write an object big-endian in binary with readThis/writeThis *(deprecated)*
 
 Note About Whitespace
 +++++++++++++++++++++
@@ -5199,7 +5215,7 @@ In general, a ``%`` specifier consists of either text or binary conversions:
 ::
 
  %
- [optional endian flag (binary conversions only)]
+ [optional endian flag (binary conversions only) *(deprecated)*]
  [optional flags]
  [optional field width or size in bytes]
  [optional . then precision]
@@ -5323,7 +5339,7 @@ Going through each section for text conversions:
     means a Unicode character - either the first character in a string
     or an integral character code
 
-For binary conversions:
+For binary conversions *(deprecated)*:
 
 [optional endian flag]
    ``<``
@@ -5368,10 +5384,10 @@ For binary conversions:
     means complex. Note that the size is mandatory for binary complex
     conversions
    ``s``
-    * means string binary I/O
+    * means string binary I/O *(deprecated)*
     * ``%|17s`` means exactly 17 byte string
    ``0S``/``1S``/``2S``/``4S``/``8S``
-    * mean encoded string binary I/O:
+    * mean encoded string binary I/O *(deprecated)*:
     * ``%|0S`` means null-terminated string
     * ``%{|S*}`` means  next-argument specifies string terminator byte
     * ``%|1S`` means a one-byte length and then the string
@@ -5399,42 +5415,42 @@ Formatted I/O Examples
        // outputs:
        // 43.29 + 279.1i
 
-  writef("%<4u", 0x11223344);
+  writef("%<4u", 0x11223344); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 4433 2211
-  writef("%>4u", 0x11223344);
+  writef("%>4u", 0x11223344); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 1122 3344
-  writef("%<4i %<4i", 2, 32);
+  writef("%<4i %<4i", 2, 32); // (deprecated)
        // outputs:
        // (hexdump of the output -- note that spaces after
        //  a binary format specifier are ignored)
        // 0200 0000 2000 0000
 
 
-  writef("%|0S\n", "test");
+  writef("%|0S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 7465 7374 000a
-  writef("%|1S\n", "test");
+  writef("%|1S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 0474 6573 740a
-  writef("%>2S\n", "test");
+  writef("%>2S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 0004 7465 7374 0a
-  writef("%>4S\n", "test");
+  writef("%>4S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 0000 0004 7465 7374 0a
-  writef("%>8S\n", "test");
+  writef("%>8S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 0000 0000 0000 0004 7465 7374 0a
-  writef("%|vS\n", "test");
+  writef("%|vS\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
        // 04 7465 7374 0a
@@ -5772,7 +5788,7 @@ proc _toChar(x:?t) where t == string
   var chr:int(32);
   var nbytes:c_int;
   var local_x = x.localize();
-  qio_decode_char_buf(chr, nbytes, local_x.c_str(), local_x.numBytes:ssize_t);
+  qio_decode_char_buf(chr, nbytes, local_x.c_str(), local_x.numBytes:c_ssize_t);
   return (chr, true);
 }
 private inline
@@ -5903,7 +5919,7 @@ class _channel_regex_info {
 }
 
 pragma "no doc"
-proc channel._match_regex_if_needed(cur:size_t, len:size_t, ref error:syserr,
+proc channel._match_regex_if_needed(cur:c_size_t, len:c_size_t, ref error:syserr,
     ref style:iostyleInternal, r:unmanaged _channel_regex_info)
 {
   if qio_regex_ok(r.theRegex) {
@@ -5968,7 +5984,7 @@ proc channel._match_regex_if_needed(cur:size_t, len:size_t, ref error:syserr,
 //  in readf. (used in the regex handling here).
 pragma "no doc"
 proc channel._format_reader(
-    fmtStr:?fmtType, ref cur:size_t, len:size_t, ref error:syserr,
+    fmtStr:?fmtType, ref cur:c_size_t, len:c_size_t, ref error:syserr,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal,
     ref r:unmanaged _channel_regex_info?,
     isReadf:bool)
@@ -5983,7 +5999,7 @@ proc channel._format_reader(
       error = qio_conv_parse(fmt, cur, end, isReadf, conv, style);
       if error {
       }
-      cur = end:size_t;
+      cur = end:c_size_t;
       if error then break;
       if conv.argType == QIO_CONV_ARG_TYPE_NONE_LITERAL {
         // Print whitespace or I/O literal.
@@ -6011,11 +6027,11 @@ proc channel._format_reader(
               error = EFORMAT;
             }
           } else {
-            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, conv.literal_length:ssize_t, 0);
+            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, conv.literal_length:c_ssize_t, 0);
           }
         } else {
           // when printing we don't care if it's just whitespace.
-          error = qio_channel_print_literal_2(false, _channel_internal, conv.literal, conv.literal_length:ssize_t);
+          error = qio_channel_print_literal_2(false, _channel_internal, conv.literal, conv.literal_length:c_ssize_t);
         }
       } else if conv.argType == QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL {
         if ! isReadf {
@@ -6409,12 +6425,12 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 // for which we have already created and instantiation of this.
 pragma "no doc"
 proc channel._writefOne(fmtStr, ref arg, i: int,
-                        ref cur: size_t, ref j: int,
+                        ref cur: c_size_t, ref j: int,
                         ref r: unmanaged _channel_regex_info?,
                         argType: c_ptr(c_int), argTypeLen: int,
                         ref conv: qio_conv_t, ref gotConv: bool,
                         ref style: iostyleInternal, ref err: syserr,
-                        origLocale: locale, len: size_t) throws {
+                        origLocale: locale, len: c_size_t) throws {
   if boundsChecking {
     if i >= argTypeLen {
       halt("Index ", i, " is accessed on argType of length ", argTypeLen);
@@ -6545,8 +6561,8 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     defer {
       this._set_styleInternal(save_style);
     }
-    var cur:size_t = 0;
-    var len:size_t = fmtStr.size:size_t;
+    var cur:c_size_t = 0;
+    var len:c_size_t = fmtStr.size:c_size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyleInternal;
@@ -6603,12 +6619,12 @@ proc channel.writef(fmtStr:?t): bool throws
     defer {
       this._set_styleInternal(save_style);
     }
-    var cur:size_t = 0;
-    var len:size_t = fmtStr.size:size_t;
+    var cur:c_size_t = 0;
+    var len:c_size_t = fmtStr.size:c_size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyleInternal;
-    var end:size_t;
+    var end:c_size_t;
     var dummy:c_int;
 
     var r:unmanaged _channel_regex_info?;
@@ -6673,12 +6689,12 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     defer {
       this._set_styleInternal(save_style);
     }
-    var cur:size_t = 0;
-    var len:size_t = fmtStr.size:size_t;
+    var cur:c_size_t = 0;
+    var len:c_size_t = fmtStr.size:c_size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyleInternal;
-    var end:size_t;
+    var end:c_size_t;
 
     param argTypeLen = k+5;
     // we don't use a tuple here for being able to use conv_helper. This will be
@@ -6951,12 +6967,12 @@ proc channel.readf(fmtStr:?t) throws
     defer {
       this._set_styleInternal(save_style);
     }
-    var cur:size_t = 0;
-    var len:size_t = fmtStr.size:size_t;
+    var cur:c_size_t = 0;
+    var len:c_size_t = fmtStr.size:c_size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyleInternal;
-    var end:size_t;
+    var end:c_size_t;
     var dummy:c_int;
 
     var r:unmanaged _channel_regex_info?;
@@ -7121,7 +7137,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     } catch { /* ignore deferred close error */ }
   }
 
-  try r.readBytes(buf, offset:ssize_t);
+  try r.readBytes(buf, offset:c_ssize_t);
 
   // close errors are thrown instead of ignored
   try r.close();
@@ -7158,8 +7174,8 @@ proc channel._extractMatch(m:regexMatch, ref arg:regexMatch, ref error:syserr) {
 pragma "no doc"
 proc channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:syserr) {
   var cur:int(64);
-  var target = m.offset:int;
-  var len = m.size;
+  var target = m.byteOffset:int;
+  var len = m.numBytes;
 
   // If there was no match, return the default value of the type
   if !m.matched {
@@ -7185,7 +7201,7 @@ proc channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:syserr) {
     var ts: c_string;
     error =
         qio_channel_read_string(false, iokind.native:c_int, len: int(64),
-                                _channel_internal, ts, gotlen, len: ssize_t);
+                                _channel_internal, ts, gotlen, len: c_ssize_t);
     s = createBytesWithOwnedBuffer(ts, length=gotlen);
   }
 
@@ -7309,7 +7325,7 @@ proc channel.search(re:regex(?), ref error:syserr):regexMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at EOF
@@ -7375,7 +7391,7 @@ proc channel.search(re:regex(?), ref captures ...?k): regexMatch throws
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         err = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at EOF
@@ -7417,7 +7433,7 @@ proc channel.match(re:regex(?), ref error:syserr):regexMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at start
@@ -7471,7 +7487,7 @@ proc channel.match(re:regex(?), ref captures ...?k, ref error:syserr):regexMatch
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.offset:int;
+        var target = m.byteOffset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at start
@@ -7572,7 +7588,7 @@ iter channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
           error = qio_channel_mark(false, _channel_internal);
           if !error {
             var cur = qio_channel_offset_unlocked(_channel_internal);
-            var target = m.offset:int;
+            var target = m.byteOffset:int;
             error = qio_channel_advance(false, _channel_internal, target - cur);
           }
         } else {

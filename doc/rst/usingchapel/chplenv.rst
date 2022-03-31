@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.25.1
+        export CHPL_HOME=~/chapel-1.26.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -777,11 +777,23 @@ CHPL_LLVM
    See :ref:`readme-prereqs` for more information about currently
    supported LLVM versions.
 
+   **CHPL_LLVM_CONFIG**
+
    In some cases, it is useful to be able to select a particular LLVM
    installation for use with ``CHPL_LLVM=system``. In that event, in
    addition to setting ``CHPL_LLVM=system``, you can set
    ``CHPL_LLVM_CONFIG`` to the llvm-config command from the LLVM
    installation you wish to use.
+
+   **CHPL_LLVM_GCC_PREFIX**
+
+   Additionally, in some cases, the configured ``clang`` will not work
+   correctly without a ``--gcc-toolchain`` flag. The Chapel compiler
+   tries to infer this flag but it does not always do so correctly. As a
+   result, it is sometimes necessary to override it.  You can set
+   ``CHPL_LLVM_GCC_PREFIX`` to ``none`` to  disable passing the
+   ``--gcc-toolchain`` flag; or you can set it to a directory to pass to
+   ``clang`` with the ``--gcc-toolchain`` flag.
 
 .. _readme-chplenv.CHPL_UNWIND:
 
@@ -822,19 +834,10 @@ CHPL_LIB_PIC
 
 Character Set
 -------------
-   Chapel works with the Unicode character set with UTF-8 encoding and the
-   traditional C collating sequence. Users are responsible for making sure that
-   they are running Chapel in a suitable environment. For example, for `en_US`
-   locale, the following environment variables should be set:
 
-   .. code-block:: sh
-
-       LANG=en_US.UTF-8
-       LC_COLLATE=C
-       LC_ALL=""
-
-   .. note::
-       Other character sets may be supported in the future.
+Chapel works with the Unicode character set with the UTF-8 encoding.
+Chapel programs will use the UTF-8 encoding regardless of the LANG and
+LC_ALL environment variable settings that the C library uses.
 
 Compiler Command Line Option Defaults
 -------------------------------------

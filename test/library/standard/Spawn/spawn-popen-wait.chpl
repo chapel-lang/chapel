@@ -19,7 +19,7 @@ config const showtime = false;
 
 var timer:Timer;
 
-var sub = spawn(["bash", "waiting.bash"], stdout=PIPE);
+var sub = spawn(["bash", "waiting.bash"], stdout=pipeStyle.pipe);
 
 timer.start();
 

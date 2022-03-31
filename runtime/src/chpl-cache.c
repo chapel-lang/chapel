@@ -4049,6 +4049,11 @@ void chpl_cache_comm_getput_unordered_task_fence(void)
   chpl_comm_getput_unordered_task_fence();
 }
 
+int chpl_cache_pagesize(void)
+{
+  return CACHEPAGE_SIZE;
+}
+
 // This is for debugging.
 void chpl_cache_print(void)
 {

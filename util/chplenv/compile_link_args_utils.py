@@ -39,12 +39,16 @@ def get_runtime_includes_and_defines():
     bundled.append("-I" + os.path.join(incl, "qio"))
     bundled.append("-I" + os.path.join(incl, "atomics", atomics))
     bundled.append("-I" + os.path.join(incl, "mem", mem))
-    bundled.append("-I" + os.path.join(incl, "mem", mem))
     bundled.append("-I" + os.path.join(third_party, "utf8-decoder"))
 
     if platform.startswith("cygwin"):
         # w32api is provided by cygwin32-w32api-runtime
         system.append("-I" + os.path.join("usr", "include", "w32api"))
+
+    if os.environ.get('CHPL_COMM_DEBUG', None):
+        # add -DCHPL_COMM_DEBUG_
+        # this is needed since it affects code inside of headers
+        bundled.append("-DCHPL_COMM_DEBUG")
 
     if locale_model == "gpu":
         # this -D is needed since it affects code inside of headers

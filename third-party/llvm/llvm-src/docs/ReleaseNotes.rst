@@ -1,12 +1,12 @@
 =========================
-LLVM 12.0.0 Release Notes
+LLVM 13.0.0 Release Notes
 =========================
 
 .. contents::
     :local:
 
 .. warning::
-   These are in-progress notes for the upcoming LLVM 12 release.
+   These are in-progress notes for the upcoming LLVM 13 release.
    Release notes for previous releases can be found on
    `the Download Page <https://releases.llvm.org/download.html>`_.
 
@@ -15,7 +15,7 @@ Introduction
 ============
 
 This document contains the release notes for the LLVM Compiler Infrastructure,
-release 12.0.0.  Here we describe the status of LLVM, including major improvements
+release 13.0.0.  Here we describe the status of LLVM, including major improvements
 from the previous release, improvements in various subprojects of LLVM, and
 some of the current users of the code.  All LLVM releases may be downloaded
 from the `LLVM releases web site <https://llvm.org/releases/>`_.
@@ -40,9 +40,6 @@ Non-comprehensive list of changes in this release
    functionality, or simply have a lot to talk about), see the `NOTE` below
    for adding a new subsection.
 
-* The ConstantPropagation pass was removed. Users should use the InstSimplify
-  pass instead.
-
 
 .. NOTE
    If you would like to document a larger change, then you can add a
@@ -54,180 +51,84 @@ Non-comprehensive list of changes in this release
 
    Makes programs 10x faster by doing Special New Thing.
 
+* Windows Control-flow Enforcement Technology: the ``-ehcontguard`` option now
+  emits valid unwind entrypoints which are validated when the context is being
+  set during exception handling.
+
+* Flang is now included in the binary packages released by LLVM.
+
+* The debuginfo-test project has been renamed cross-project-tests and is now
+  intended for testing components from multiple projects, not just debug
+  information. The new "cross-project-tests" name replaces "debuginfo-test" in
+  LLVM_ENABLE_PROJECTS, and a new check-cross-project-tests target has been
+  added for running all tests in the project. The pre-existing check-debuginfo-
+  test target remains for running just the debug information tests.
+  (`D95339 <https://reviews.llvm.org/D95339>`_ and
+  `D96513 <https://reviews.llvm.org/D96513>`_)
 
 Changes to the LLVM IR
 ----------------------
 
-* ...
+* The ``inalloca`` attribute now has a mandatory type field, similar
+  to ``byval`` and ``sret``.
 
-* Added the ``byref`` attribute to better represent argument passing
-  for the `amdgpu_kernel` calling convention.
+* The opaque pointer type ``ptr`` has been introduced. It is still in the
+  process of being worked on and should not be used yet.
 
-* Added type parameter to the ``sret`` attribute to continue work on
-  removing pointer element types.
-
-* The ``llvm.experimental.vector.reduce`` family of intrinsics have been renamed
-  to drop the "experimental" from the name, reflecting their now fully supported
-  status in the IR.
-
+* Using the legacy pass manager for the optimization pipeline is deprecated and
+  will be removed after LLVM 14. In the meantime, only minimal effort will be
+  made to maintain the legacy pass manager for the optimization pipeline.
 
 Changes to building LLVM
 ------------------------
 
-* The internal ``llvm-build`` Python script and the associated ``LLVMBuild.txt``
-  files used to describe the LLVM component structure have been removed and
-  replaced by a pure ``CMake`` approach, where each component stores extra
-  properties in the created targets. These properties are processed once all
-  components are defined to resolve library dependencies and produce the header
-  expected by llvm-config.
+* The build system now supports building multiple distributions, so that you can
+  e.g. have one distribution containing just tools and another for libraries (to
+  enable development). See :ref:`Multi-distribution configurations` for details.
 
 Changes to TableGen
 -------------------
 
-* The new "TableGen Programmer's Reference" replaces the "TableGen Language
-  Introduction" and "TableGen Language Reference" documents.
-
-* The syntax for specifying an integer range in a range list has changed.
-  The old syntax used a hyphen in the range (e.g., ``{0-9}``). The new syntax
-  uses the "`...`" range punctuation (e.g., ``{0...9}``). The hyphen syntax
-  is deprecated.
-
 Changes to the AArch64 Backend
---------------------------
+------------------------------
 
-During this release ...
+* Introduced assembly support for Armv9-A's Realm Management Extension (RME)
+  and Scalable Matrix Extension (SME).
 
-* Lots of improvements to generation of Windows unwind data; the unwind
-  data is optimized and written in packed form where possible, reducing
-  the size of unwind data (pdata and xdata sections) by around 60%
-  compared with LLVM 11. The generation of prologs/epilogs is tweaked
-  when targeting Windows, to increase the chances of being able to use
-  the packed unwind info format.
+* Produce proper cross-section relative relocations on COFF
 
-* Support for creating Windows unwind data using ``.seh_*`` assembler
-  directives.
-
-* Produce proper assembly output for the Windows target, including
-  ``:lo12:`` relocation specifiers, to allow the assembly output
-  to actually be assembled.
-
-* Changed the assembly comment string for MSVC targets to ``//`` (consistent
-  with the MinGW and ELF targets), freeing up ``;`` to be used as
-  statement separator.
+* Fixed the calling convention on Windows for variadic functions involving
+  floats in the fixed arguments
 
 Changes to the ARM Backend
 --------------------------
 
-During this release ...
+* Produce proper cross-section relative relocations on COFF
 
 Changes to the MIPS Target
 --------------------------
 
 During this release ...
 
+Changes to the Hexagon Target
+-----------------------------
+
+* The Hexagon target now supports V68/HVX ISA.
 
 Changes to the PowerPC Target
 -----------------------------
 
-Optimization:
-
-* Made improvements to loop unroll-and-jam including fix to respect user
-  provided #pragma unroll-and-jam for loops on targets other than ARM.
-* Improved PartialInliner allowing it to handle code regions in a switch
-  statements.
-* Improved PGO support on AIX by building and linking with compiler-rt profile
-  library.
-* Add support for Epilogue Vectorization and enabled it by default.
-
-CodeGen:
-
-* POWER10 support
-  * Implementation of PC Relative addressing in LLD including the associated
-    linker optimizations.
-  * Add support for the new matrix multiplication (MMA) instructions to Clang
-    and LLVM.
-  * Implementation of Power10 builtins.
-
-* Scheduling enhancements
-  * Add a new algorithm to cluster more loads/stores if the DAG is not too
-    complicated.
-  * Enable the PowerPC scheduling heuristic for Power10.
-
-* Target dependent passes tuning
-  * Enhance LoopStrengthReduce/PPCLoopInstrFormPrep pass for PowerPC,
-    especially for P10 intrinsics.
-  * Enhance machine combiner pass to reduce register pressure for PowerPC.
-  * Improve MachineSink to do more sinking based on register pressure and alias
-    analysis.
-
-* General improvements
-  * Complete the constrained floating point operations support.
-  * Improve the llvm-exegesis support.
-  * Improve the stack clash protection to probe the gap between stackptr and
-    realigned stackptr.
-  * Improve the IEEE long double support for Power8.
-  * Enable MemorySSA for LoopSink.
-  * Enhance LLVM debugging functionality via options such as -print-changed and
-    -print-before-changed.
-  * Add builtins for Power9 (i.e. darn, xvtdiv, xvtsqrt etc).
-  * Add options to disable all or part of LoopIdiomRecognizePass.
-  * Add support for printing the DDG in DOT form allowing for visual inspection
-    of the Data Dependence Graph.
-  * Remove the QPX support.
-  * Significant number of bug fixes including all the fixes necessary to
-    achieve a clean test run for Julia.
-
-AIX Support:
-
-* Compiler-rt support
-  * Add support for building compiler-rt for AIX and 32-bit Power targets.
-  * Made compiler-rt the default rtlib for AIX.
-
-* General Improvements
-  * Enable the AIX extended AltiVec ABI under option -mabi=vec-extabi.
-  * Add partial C99 complex type support.
-  * Implemente traceback table for functions (encodes vector information,
-    emits exception handling).
-  * Implemente code generation for C++ dynamic initialization and finalization.
-    of non-local variables for use with the -bcdtors option of the AIX linker.
-  * Add new option -mignore-xcoff-visibility.
-  * Enable explicit sections on AIX.
-  * Enable -f[no-]data-sections on AIX and set -fdata-sections to be the default
-    on AIX.
-  * Enable -f[no-]function-sections.
-  * Add support for relocation generation using the large code model.
-  * Add pragma align natural and sorted out pragma pack stack effect.
-
+During this release ...
 
 Changes to the X86 Target
 -------------------------
 
 During this release ...
 
-* The 'mpx' feature was removed from the backend. It had been removed from clang
-  frontend in 10.0. Mention of the 'mpx' feature in an IR file will print a
-  message to stderr, but IR should still compile.
-* Support for ``-march=alderlake``, ``-march=sapphirerapids``,
-  ``-march=znver3`` and ``-march=x86-64-v[234]`` has been added.
-* The assembler now has support for {disp32} and {disp8} pseudo prefixes for
-  controlling displacement size for memory operands and jump displacements. The
-  assembler also supports the .d32 and .d8 mnemonic suffixes to do the same.
-* A new function attribute "tune-cpu" has been added to support -mtune like gcc.
-  This allows microarchitectural optimizations to be applied independent from
-  the "target-cpu" attribute or TargetMachine CPU which will be used to select
-  Instruction Set. If the attribute is not present, the tune CPU will follow
-  the target CPU.
-* Support for ``HRESET`` instructions has been added.
-* Support for ``UINTR`` instructions has been added.
-* Support for ``AVXVNNI`` instructions has been added.
-
 Changes to the AMDGPU Target
 -----------------------------
 
 During this release ...
-
-* The new ``byref`` attribute is now the preferred method for
-  representing aggregate kernel arguments.
 
 Changes to the AVR Target
 -----------------------------
@@ -246,10 +147,82 @@ Changes to the OCaml bindings
 Changes to the C API
 --------------------
 
+* The C API functions ``LLVMGetAlignment`` and ``LLVMSetAlignment`` now allow
+  changing alignment on atomicrmw and cmpxchg instructions
+
+* A new entry ``LLVMDIArgListMetadataKind`` was added to the
+  ``LLVMMetadataKind`` enum, representing DIArgLists
+  (`D88175 <https://reviews.llvm.org/D88175>`_)
+
+* Type attributes have been added to LLVM-C, introducing
+  LLVMCreateTypeAttribute, LLVMGetTypeAttributeValue and LLVMIsTypeAttribute.
+  (`D977763' <https://reviews.llvm.org/D97763>`_)
+
+* The ``LTO_API_VERSION`` was bumped to 28, introducing a new function
+  ``lto_set_debug_options`` for parsing LTO debug options
+  (`D92611 <https://reviews.llvm.org/D92611>`_)
+
+* ``LLVMJITTargetSymbolFlags`` was renamed to ``LLVMJITSymbolTargetFlags``
+  (`rG8d718a0bff73af066675a6258c01307937c33cf9
+  <https://reviews.llvm.org/rG8d718a0bff73af066675a6258c01307937c33cf9>`_)
+
+* The C API received support for creating custom ORCv2 MaterializationUnits and
+  APIs to retrieve an LLJIT instance's linking layers. An ABI breaking change
+  for ``LLVMOrcAbsoluteSymbols`` was introduced to make it consistent with
+  ``LLVMOrcCreateCustomMaterializationUnit``.
+  (`rGc8fc5e3ba942057d6c4cdcd1faeae69a28e7b671
+  <https://reviews.llvm.org/rGc8fc5e3ba942057d6c4cdcd1faeae69a28e7b671>`_)
+
+* The C API received support for adding ORCv2 object buffers directly to an object
+  layer. (`rG7b73cd684a8d5fb44d34064200f10e2723085c33
+  <https://reviews.llvm.org/rG7b73cd684a8d5fb44d34064200f10e2723085c33>`_)
+
+* A breaking change to ``LLVMGetInlineAsm`` was introduced, adding a ninth
+  argument ``LLVMBool CanThrow`` (`D95745 <https://reviews.llvm.org/D95745>`_)
+
+* The C API received support for calling into the new pass manager.
+  (`D102136 <https://reviews.llvm.org/D102136>`_)
+
+* The C API function ``LLVMIntrinsicCopyOverloadedName`` has been deprecated.
+  Please migrate to ``LLVMIntrinsicCopyOverloadedName2`` which takes an extra
+  module argument and which also handles unnamed types.
+  (`D99173 <https://reviews.llvm.org/D99173>`_)
+
+* The C API received support for dumping objects from ORCv2
+  (`rGcec8e69f01c3374cb38c6683058381b96fab8f89
+  <https://reviews.llvm.org/rGcec8e69f01c3374cb38c6683058381b96fab8f89>`_)
+
+* A breaking change to ``LLVMOrcObjectTransformLayerTransformFunction`` was
+  introduced, changing the order of the function pointer's arguments.
+  (`rG8962c68ad007a525f9daa987c99eda57e0d0069a
+  <https://reviews.llvm.org/rG8962c68ad007a525f9daa987c99eda57e0d0069a>`_)
+
+* The C API received support for accessing utilities from the LLJIT
+  ``IRTransformLayer`` and ``ThreadSafeModule`` classes. (`D103855
+  <https://reviews.llvm.org/D103855>`_)
+
+* The C API received support for creating lazy-export MaterializationUnits
+  (`D104672 <https://reviews.llvm.org/D104672>`_)
+
+* The C API function ``LLVMPassBuilderOptionsSetCoroutines`` was removed because
+  couroutine passes have been enabled by default. (`D105877
+  <https://reviews.llvm.org/D105877>`_)
+
+* ``comdat noduplicates`` was renamed to ``comdat nodeduplicate`` and as a
+  result, ``LLVMNoDuplicatesComdatSelectionKind`` was renamed to
+  ``LLVMNoDeduplicateComdatSelectionKind``. (`D106319
+  <https://reviews.llvm.org/D106319>`_)
 
 Changes to the Go bindings
 --------------------------
 
+
+Changes to the FastISel infrastructure
+--------------------------------------
+
+* FastISel no longer tracks killed registers, and instead leaves this to the
+  register allocator. This means that ``hasTrivialKill()`` is removed, as well
+  as the ``OpNIsKill`` parameters to the ``fastEmit_*()`` family of functions.
 
 Changes to the DAG infrastructure
 ---------------------------------
@@ -260,38 +233,62 @@ Changes to the Debug Info
 
 During this release ...
 
-* The DIModule metadata is extended with a field to indicate if it is a
-  module declaration. This extension enables the emission of debug info
-  for a Fortran 'use <external module>' statement. For more information
-  on what the debug info entries should look like and how the debugger
-  can use them, please see test/DebugInfo/X86/dimodule-external-fortran.ll.
-
 Changes to the LLVM tools
 ---------------------------------
 
-* llvm-readobj and llvm-readelf behavior has changed to report an error when
-  executed with no input files instead of reading an input from stdin.
-  Reading from stdin can still be achieved by specifying `-` as an input file.
+* The options ``--build-id-link-{dir,input,output}`` have been deleted.
+  (`D96310 <https://reviews.llvm.org/D96310>`_)
 
-* llvm-mca supports serialization of the timeline and summary views.
-  The `--json` command line option prints a JSON representation of
-  these views to stdout.
+* Support for in-order processors has been added to ``llvm-mca``.
+  (`D94928 <https://reviews.llvm.org/D94928>`_)
+
+* llvm-objdump supports ``-M {att,intel}`` now.
+  ``--x86-asm-syntax`` is a deprecated internal option which will be removed in LLVM 14.0.0.
+  (`D101695 <https://reviews.llvm.org/D101695>`_)
+
+* The llvm-readobj short aliases ``-s`` (previously ``--sections``) and ``-t``
+  (previously ``--syms``) have been changed to ``--syms`` and
+  ``--section-details`` respectively, to match llvm-readelf.
+  (`D105055 <https://reviews.llvm.org/D105055>`_)
+
+* The llvm-nm short aliases ``-M`` (``--print-armap``), ``-U``
+  (``--defined-only``), and ``-W`` (``--no-weak``) are now deprecated.
+  Use the long form versions instead.
+  The alias ``--just-symbol-name`` is now deprecated in favor of
+  ``--format=just-symbols`` and ``-j``.
+  (`D105330 <https://reviews.llvm.org/D105330>`_)
+
+* In lli the default JIT engine switched from MCJIT (``-jit-kind=mcjit``) to ORC (``-jit-kind=orc``).
+  (`D98931 <https://reviews.llvm.org/D98931>`_)
+
+* llvm-rc got support for invoking Clang to preprocess its input.
+  (`D100755 <https://reviews.llvm.org/D100755>`_)
+
+* llvm-rc got a GNU windres compatible frontend, llvm-windres.
+  (`D100756 <https://reviews.llvm.org/D100756>`_)
+
+* llvm-ml has improved compatibility with MS ml.exe, managing to assemble
+  more asm files.
 
 Changes to LLDB
 ---------------------------------
 
+* LLDB executable is now included in pre-built LLVM binaries.
+
+* LLDB now includes full featured support for AArch64 SVE register access.
+
+* LLDB now supports AArch64 Pointer Authentication, allowing stack unwind with signed return address.
+
+* LLDB now supports debugging programs on AArch64 Linux that use memory tagging (MTE).
+* Added ``memory tag read`` and ``memory tag write`` commands.
+* The ``memory region`` command will note when a region has memory tagging enabled.
+* Synchronous and asynchronous tag faults are recognised.
+* Synchronous tag faults have memory tag annotations in addition to the usual fault address.
+
 Changes to Sanitizers
 ---------------------
 
-The integer sanitizer `-fsanitize=integer` now has a new sanitizer:
-`-fsanitize=unsigned-shift-base`. It's not undefined behavior for an unsigned
-left shift to overflow (i.e. to shift bits out), but it has been the source of
-bugs and exploits in certain codebases in the past.
-
-Many Sanitizers (asan, cfi, lsan, msan, tsan, ubsan) have support for
-musl-based Linux distributions. Some of them may be rudimentary.
-
-External Open Source Projects Using LLVM 12
+External Open Source Projects Using LLVM 13
 ===========================================
 
 * A project...

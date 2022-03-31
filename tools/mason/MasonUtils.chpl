@@ -100,7 +100,7 @@ proc runCommand(cmd, quiet=false) : string throws {
   try {
 
     var splitCmd = cmd.split();
-    var process = spawn(splitCmd, stdout=PIPE);
+    var process = spawn(splitCmd, stdout=pipeStyle.pipe);
 
     for line in process.stdout.lines() {
       ret += line;
@@ -122,7 +122,7 @@ proc runWithStatus(command, quiet=false): int {
 
   try {
     var cmd = command.split();
-    var sub = spawn(cmd, stdout=PIPE, stderr=PIPE);
+    var sub = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     var line:string;
     if !quiet {
@@ -140,7 +140,7 @@ proc runWithStatus(command, quiet=false): int {
 proc runWithProcess(command, quiet=false) throws {
   try {
     var cmd = command.split();
-    var process = spawn(cmd, stdout=PIPE, stderr=PIPE);
+    var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     return process;
   }
@@ -178,7 +178,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
     var splitCmd = prefix + cmd;
-    var process = spawnshell(splitCmd, stdout=PIPE, executable="bash");
+    var process = spawnshell(splitCmd, stdout=pipeStyle.pipe, executable="bash");
 
     for line in process.stdout.lines() {
       ret += line;
@@ -205,7 +205,7 @@ proc runSpackCommand(command, quiet=false) {
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
 
   var cmd = (prefix + command);
-  var sub = spawnshell(cmd, stdout=PIPE, stderr=PIPE, executable="bash");
+  var sub = spawnshell(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe, executable="bash");
 
   // quiet flag necessary for tests to be portable
   if !quiet {
@@ -332,7 +332,7 @@ proc getChapelVersionInfo(): VersionInfo {
 
       var ret : VersionInfo;
 
-      var process = spawn(["chpl", "--version"], stdout=PIPE);
+      var process = spawn(["chpl", "--version"], stdout=pipeStyle.pipe);
       process.wait();
       if process.exitCode != 0 {
         throw new owned MasonError("Failed to run 'chpl --version'");

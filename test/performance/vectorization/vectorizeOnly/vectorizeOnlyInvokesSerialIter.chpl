@@ -1,4 +1,4 @@
-// ensure that the serial iterator is called no matter which vectorizeOnly is called
+// ensure that the serial iterator is called no matter which 'foreach' is called
 
 iter myIter() {
   writeln("Serial Iter");
@@ -20,15 +20,15 @@ iter myIter(param tag: iterKind, followThis) where tag == iterKind.follower {
   for i in followThis do yield i;
 }
 
-for i in vectorizeOnly(myIter()) do writeln(i);
+foreach i in myIter() do writeln(i);
 
-for i in vectorizeOnly(myIter(), myIter()) do writeln(i);
+foreach i in zip(myIter(), myIter()) do writeln(i);
 
-for i in zip(vectorizeOnly(myIter(), myIter())) do writeln(i);
+foreach i in zip(myIter(), myIter()) do writeln(i);
 
 
-forall i in vectorizeOnly(myIter()) do writeln(i);
+foreach i in myIter() do writeln(i);
 
-forall i in vectorizeOnly(myIter(), myIter()) do writeln(i);
+foreach i in zip(myIter(), myIter()) do writeln(i);
 
-forall i in zip(vectorizeOnly(myIter(), myIter())) do writeln(i);
+foreach i in zip(myIter(), myIter()) do writeln(i);

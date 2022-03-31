@@ -15,13 +15,18 @@ from utils import which, error, memoize, warning
 # and CXX to compile things, for better or worse.
 #
 @memoize
-def validate_compiler(compiler_val):
+def validate_compiler(compiler_val, flag):
     if compiler_val != 'llvm':
         import chpl_home_utils
         chpl_home = chpl_home_utils.get_chpl_home()
         comp_makefile = os.path.join(chpl_home, 'make', 'compiler', 'Makefile.{0}'.format(compiler_val))
         if not os.path.isfile(comp_makefile):
             warning('Unknown compiler: "{0}"'.format(compiler_val))
+
+    if chpl_locale_model.get() == 'gpu' and flag == 'target':
+        if compiler_val != 'llvm':
+            error("The 'gpu' locale model can only be used with "
+                  "CHPL_TARGET_COMPILER=llvm.")
 
 
 
@@ -164,7 +169,7 @@ def get(flag='host'):
             compiler_val = get_compiler_from_cc_cxx()
 
     if compiler_val:
-        validate_compiler(compiler_val)
+        validate_compiler(compiler_val, flag)
         return compiler_val
 
     prgenv_compiler = get_prgenv_compiler()
@@ -183,7 +188,6 @@ def get(flag='host'):
 
     else:
         platform_val = chpl_platform.get(flag)
-        locale_model_val = chpl_locale_model.get()
         # Normal compilation (not "cross-compiling")
         # inherit the host compiler if the target compiler is not set and
         # the host and target platforms are the same
@@ -200,7 +204,7 @@ def get(flag='host'):
         else:
             compiler_val = 'gnu'
 
-    validate_compiler(compiler_val)
+    validate_compiler(compiler_val, flag)
     return compiler_val
 
 @memoize

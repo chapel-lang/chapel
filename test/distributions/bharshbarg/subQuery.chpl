@@ -26,9 +26,9 @@ proc test(Dist) {
   forall d in Data do d = here.id;
 
   // check targetLocales
-  for (distloc, domloc, arrloc) in zip(Dist.dist.targetLocales,
-                                       Dist.targetLocales,
-                                       Data.targetLocales) {
+  for (distloc, domloc, arrloc) in zip(Dist.dist.targetLocales(),
+                                       Dist.targetLocales(),
+                                       Data.targetLocales()) {
     assert( distloc == domloc );
     assert( domloc == arrloc );
   }

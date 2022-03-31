@@ -614,11 +614,11 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
   primitives_map.put(name, this);
 }
 
-/* Primitive names appear both in PrimOpsList as well as
+/* Primitive names appear both in prim-ops-list.h as well as
    here. This routine checks that the name matches in both.
  */
 static void checkPrimName(PrimitiveTag tag, const char* name) {
-  // Check name matches the string in PrimOpsList.h
+  // Check name matches the string in prim-ops-list.h
   switch (tag) {
 #define PRIMITIVE(macroTag, macroName) \
     case PRIM_ ## macroTag: \
@@ -628,7 +628,7 @@ static void checkPrimName(PrimitiveTag tag, const char* name) {
 #define PRIMITIVE_R(macroTag, macroName) PRIMITIVE(macroTag, macroName)
 #define PRIMITIVE_G(macroTag, macroName) PRIMITIVE(macroTag, macroName)
 
-#include "chpl/uast/PrimOpsList.h"
+#include "chpl/uast/prim-ops-list.h"
 #undef PRIMITIVE
 #undef PRIMITIVE_R
 #undef PRIMITIVE_G
@@ -853,7 +853,7 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
-  // allocate data into shared memory (takes one paremter: number of bytes to allocate)
+  // allocate data into shared memory (takes one parameter: number of bytes to allocate)
   // and returns a c_void_ptr
   prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
 

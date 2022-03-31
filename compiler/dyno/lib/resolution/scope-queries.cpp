@@ -65,10 +65,10 @@ struct GatherQueryDecls {
   }
   void exit(const TypeQuery* ast) { }
 
-  bool enter(const ASTNode* ast) {
+  bool enter(const AstNode* ast) {
     return true;
   }
-  void exit(const ASTNode* ast) { }
+  void exit(const AstNode* ast) { }
 };
 
 struct GatherDecls {
@@ -124,13 +124,13 @@ struct GatherDecls {
   void exit(const Import* d) { }
 
   // ignore other AST nodes
-  bool enter(const ASTNode* ast) {
+  bool enter(const AstNode* ast) {
     return false;
   }
-  void exit(const ASTNode* ast) { }
+  void exit(const AstNode* ast) { }
 };
 
-void gatherDeclsWithin(const uast::ASTNode* ast,
+void gatherDeclsWithin(const uast::AstNode* ast,
                        DeclMap& declared,
                        bool& containsUseImport,
                        bool& containsFunctionDecls) {
@@ -139,7 +139,7 @@ void gatherDeclsWithin(const uast::ASTNode* ast,
   // Visit child nodes to e.g. look inside a Function
   // rather than collecting it as a NamedDecl
   // Or, look inside a Block for its declarations
-  for (const ASTNode* child : ast->children()) {
+  for (const AstNode* child : ast->children()) {
     child->traverse(visitor);
   }
 
@@ -148,7 +148,7 @@ void gatherDeclsWithin(const uast::ASTNode* ast,
   containsFunctionDecls = visitor.containsFunctionDecls;
 }
 
-bool createsScope(asttags::ASTTag tag) {
+bool createsScope(asttags::AstTag tag) {
   return Builder::astTagIndicatesNewIdScope(tag)
          || asttags::isSimpleBlockLike(tag)
          || asttags::isLoop(tag)
@@ -182,7 +182,7 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
     // populate it with builtins
     populateScopeWithBuiltins(context, result);
   } else {
-    const uast::ASTNode* ast = parsing::idToAst(context, id);
+    const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
       assert(false && "could not find ast for id");
       result = new Scope();
@@ -211,7 +211,7 @@ static const Scope* const& scopeForIdQuery(Context* context, ID id) {
     // decide whether or not to create a new scope
     bool newScope = false;
 
-    const uast::ASTNode* ast = parsing::idToAst(context, id);
+    const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
       assert(false && "could not find ast for id");
     } else if (createsScope(ast->tag())) {
@@ -256,7 +256,7 @@ static bool doLookupInScope(Context* context,
 
 static bool doLookupExprInScope(Context* context,
                                 const Scope* scope,
-                                const Expression* expr,
+                                const AstNode* expr,
                                 LookupConfig config,
                                 std::unordered_set<const Scope*>& checkedScopes,
                                 std::vector<BorrowedIdsWithName>& result,
@@ -409,7 +409,7 @@ static bool doLookupInScope(Context* context,
 
 static bool doLookupExprInScope(Context* context,
                                 const Scope* scope,
-                                const Expression* expr,
+                                const AstNode* expr,
                                 LookupConfig config,
                                 std::unordered_set<const Scope*>& checkedScopes,
                                 std::vector<BorrowedIdsWithName>& result,
@@ -425,7 +425,7 @@ static bool doLookupExprInScope(Context* context,
                            checkedScopes, result);
 
   } else if (auto dot = expr->toDot()) {
-    const Expression* rcv = dot->receiver();
+    const AstNode* rcv = dot->receiver();
     UniqueString fieldName = dot->field();
 
     std::vector<BorrowedIdsWithName> rcvResult;
@@ -486,7 +486,7 @@ enum VisibilityStmtKind {
 //     (which is only different from 'scope' for a Dot expression)
 static bool lookupInScopeViz(Context* context,
                              const Scope* scope,
-                             const Expression* expr,
+                             const AstNode* expr,
                              VisibilityStmtKind inUseEtc,
                              std::vector<BorrowedIdsWithName>& result,
                              UniqueString& nameOfResult,
@@ -523,7 +523,7 @@ static bool lookupInScopeViz(Context* context,
 // note: expr must be Dot or Identifier
 std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                const Scope* scope,
-                                               const Expression* expr,
+                                               const AstNode* expr,
                                                LookupConfig config) {
   std::unordered_set<const Scope*> checkedScopes;
 
@@ -542,7 +542,7 @@ std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
 std::vector<BorrowedIdsWithName>
 lookupInScopeWithSet(Context* context,
                      const Scope* scope,
-                     const Expression* expr,
+                     const AstNode* expr,
                      LookupConfig config,
                      std::unordered_set<const Scope*>& visited) {
   std::vector<BorrowedIdsWithName> vec;
@@ -645,7 +645,7 @@ struct ImportsResolver {
   std::vector<std::pair<UniqueString,UniqueString>>
   convertLimitations(const VisibilityClause* clause) {
     std::vector<std::pair<UniqueString,UniqueString>> ret;
-    for (const Expression* e : clause->limitations()) {
+    for (const AstNode* e : clause->limitations()) {
       if (auto ident = e->toIdentifier()) {
         UniqueString name = ident->name();
         ret.push_back(std::make_pair(name, name));
@@ -681,7 +681,7 @@ struct ImportsResolver {
 
     for (auto clause : use->visibilityClauses()) {
       // Figure out what was use'd
-      const Expression* expr = clause->symbol();
+      const AstNode* expr = clause->symbol();
 
       std::vector<BorrowedIdsWithName> vec;
       UniqueString n;
@@ -731,7 +731,7 @@ struct ImportsResolver {
 
     for (auto clause : imp->visibilityClauses()) {
       // Figure out what was imported
-      const Expression* expr = clause->symbol();
+      const AstNode* expr = clause->symbol();
 
       std::vector<BorrowedIdsWithName> vec;
       UniqueString n;
@@ -794,7 +794,7 @@ struct ImportsResolver {
     }
   }
   // ignore other AST nodes
-  void visit(const ASTNode* ast) { }
+  void visit(const AstNode* ast) { }
 };
 
 
@@ -812,12 +812,12 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
   // Walk through the use/imports statements in this scope.
   ImportsResolver visitor(context, scope, partialResult.get());
 
-  const ASTNode* ast = parsing::idToAst(context, scope->id());
+  const AstNode* ast = parsing::idToAst(context, scope->id());
   assert(ast != nullptr);
   if (ast != nullptr) {
     // Visit child nodes to e.g. look inside a Module
     // rather than collecting it as a NamedDecl
-    for (const ASTNode* child : ast->children()) {
+    for (const AstNode* child : ast->children()) {
       child->dispatch<void>(visitor);
     }
   }

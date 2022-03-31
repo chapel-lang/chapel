@@ -159,14 +159,14 @@ record ipAddr {
     return try! _addressStorage.port();
   }
 
-  proc =(in other: ipAddr) {
+  operator =(in other: ipAddr) {
     this._addressStorage = new sys_sockaddr_t(other._addressStorage);
   }
 }
 
 
 /*
-  Returns a new record of type :type:`ipAddr` prvoided `host`, `port`
+  Returns a new record of type :type:`ipAddr` provided `host`, `port`
   and `family`. this function is equivalent to the following code:
 
   :arg host: address string in dot-dash or colon notation depending on family.
@@ -188,7 +188,7 @@ proc type ipAddr.create(host: string = "127.0.0.1", port: uint(16) = 8000,
 }
 
 /*
-  Returns a new record of type `ipAddr` prvoided `host` and `port`.
+  Returns a new record of type `ipAddr` provided `host` and `port`.
   The family type is assumed based on `host` which is a standard address.
   this function is equivalent to the following code:
 
@@ -241,7 +241,7 @@ proc ipAddr.writeThis(f) throws {
 }
 
 pragma "no doc"
-proc timeval.=(other: real) {
+operator timeval.=(other: real) {
   this.tv_sec = other:c_long;
   this.tv_usec = (other - this.tv_sec) * 1000000;
 }
@@ -324,7 +324,7 @@ proc tcpConn.writeThis(f) throws {
 }
 
 pragma "no doc"
-private extern proc sizeof(e): size_t;
+private extern proc sizeof(e): c_size_t;
 
 pragma "no doc"
 extern "struct event_base" record event_base {};
@@ -775,7 +775,7 @@ proc udpSocket.close throws {
 }
 
 pragma "no doc"
-private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:ssize_t):err_t;
+private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):err_t;
 
 /*
   Reads upto `bufferLen` bytes from the socket, and
@@ -801,9 +801,9 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0),
                         flags:c_int = 0):(bytes, ipAddr) throws {
   var err_out:err_t = 0;
   var buffer = c_calloc(c_uchar, bufferLen);
-  var length:ssize_t;
+  var length:c_ssize_t;
   var addressStorage = new sys_sockaddr_t();
-  err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:size_t, 0, addressStorage, length);
+  err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:c_size_t, 0, addressStorage, length);
   if err_out == 0 {
     return (createBytesWithOwnedBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
   }
@@ -832,7 +832,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0),
       throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
     }
     var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
-    err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:size_t, 0, addressStorage, length);
+    err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:c_size_t, 0, addressStorage, length);
     if err_out != 0 {
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
         c_free(buffer);
@@ -888,7 +888,7 @@ proc udpSocket.recv(bufferLen: int, timeout: real) throws {
 }
 
 pragma "no doc"
-private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:ssize_t):err_t;
+private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):err_t;
 
 /*
   Send `data` over socket to the provided address and
@@ -907,14 +907,14 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
   :arg timeout: time to wait for data to arrive.
   :type timeval: :type:`~Sys.timeval`
   :return: sentBytes
-  :rtype: `ssize_t`
+  :rtype: `c_ssize_t`
   :throws SystemError: Upon failure to send any data
                         within given `timeout`.
 */
 proc udpSocket.send(data: bytes, in address: ipAddr,
-                    in timeout = new timeval(-1,0)):ssize_t throws {
+                    in timeout = new timeval(-1,0)):c_ssize_t throws {
   var err_out:err_t = 0;
-  var length:ssize_t;
+  var length:c_ssize_t;
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
   if err_out == 0 {
     return length;
@@ -1164,7 +1164,7 @@ proc getPeerName(socketFD: fd_t) throws {
 }
 
 /*
-  Returns the remote addressto which socket is connected. This is
+  Returns the remote address to which socket is connected. This is
   useful to find out the address and port number of a
   remote IPv4/v6 socket, for instance.
 

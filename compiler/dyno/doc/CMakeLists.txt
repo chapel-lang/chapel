@@ -23,7 +23,7 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_GENERATE_XML YES)
   set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doxygen")
   # the following exclude avoids errors in the sphinx build
-  set(DOXYGEN_EXCLUDE "${CHPL_MAIN_INCLUDE_DIR}/chpl/AST/ASTClassesList.h")
+  set(DOXYGEN_EXCLUDE "${CHPL_MAIN_INCLUDE_DIR}/chpl/AST/uast-classes-list.h")
   # these aliases allow \rst and \endrst in docs comments
   set(DOXYGEN_ALIASES
      "rst=\\verbatim embed:rst"

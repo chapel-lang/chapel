@@ -166,14 +166,8 @@ module ChapelRange {
   pragma "no doc"
   config param useOptimizedRangeIterators = true;
 
-  /* Chapel is in the process of changing ``range(idxType).size`` away
-     from returning the range's size as an ``idxType`` value in favor
-     of returning an ``int`` value.  Setting ``sizeReturnsInt`` to
-     ``true`` permits a user to opt into this new behavior now rather
-     than having it change out from under them in a future release.
-     The old behavior can be retained by using the new
-     :proc:`range.sizeAs` method.  */
-
+  pragma "no doc"
+  deprecated "'sizeReturnsInt' is deprecated and no longer has an effect"
   config param sizeReturnsInt = false;
 
 
@@ -757,26 +751,12 @@ module ChapelRange {
   }
 
   /* Returns the number of elements in this range as an integer.
-     Historically, and by default for now, the return type is
-     represented as an ``intIdxType`` value.  However, Chapel is in
-     the process of changing to always return an ``int`` value, and so
-     will generate a warning if ``intIdxType != int`` to alert users
-     to the change.  :param:`sizeReturnsInt` can be used to opt into
-     the new behavior now.  Or :proc:`range.sizeAs` can be used to
-     request a different return type.
 
-     If the size exceeds ``max(intIdxType)``/``max(int)``, this
-     procedure will halt when bounds checks are on.
+     If the size exceeds ``max(int)``, this procedure will halt when
+     bounds checks are on.
    */
-  proc range.size {
-    if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
-      compilerWarning("'range("+idxType:string+").size' is changing to return 'int' values rather than '"+idxType:string+"'\n" +
-                      "  (to get the value as a different type, call the new method '.sizeAs(type t)')\n" +
-                      "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')");
-      return this.sizeAs(this.intIdxType);
-    } else {
-      return this.sizeAs(int);
-    }
+  proc range.size: int {
+    return this.sizeAs(int);
   }
 
   /* Returns the number of elements in this range as the specified
@@ -977,20 +957,6 @@ module ChapelRange {
 
   operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
 
-  /*
-    .. warning::
-      This procedure is deprecated - please let us know if you were
-      relying on it.
-
-    Returns true if the two ranges are the same in every respect: i.e. the
-     two ranges have the same ``idxType``, ``boundedType``, ``stridable``,
-     ``low``, ``high``, ``stride`` and ``alignment`` values.
-   */
-  deprecated "ident() on ranges is deprecated; please let us know if this is problematic for you"
-  proc ident(r1: range(?), r2: r1.type) {
-    return chpl_ident(r1, r2);
-  }
-
   proc chpl_ident(r1: range(?), r2: range(?))
     where r1.idxType == r2.idxType &&
     r1.boundedType == r2.boundedType &&
@@ -1037,7 +1003,7 @@ proc range.safeCast(type t: range(?)) {
   }
 
   if tmp.stridable {
-    tmp._stride = this.stride;
+    tmp._stride = this.stride.safeCast(tmp.strType);
     tmp._alignment = chpl__idxToInt(this.alignment).safeCast(tmp.intIdxType);
     tmp._aligned = this.aligned;
   } else if this.stride != 1 {
@@ -1509,9 +1475,7 @@ operator :(r: range(?), type t: range(?)) {
 
   // This is the definition of the 'by' operator for ranges.
   pragma "no doc"
-  inline operator by(r, step) {
-    if !isRange(r) then
-      compilerError("the first argument of the 'by' operator is not a range");
+  inline operator by(r : range(?), step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step);
   }
@@ -1522,6 +1486,11 @@ operator :(r: range(?), type t: range(?)) {
   inline operator by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step:r.strType);
+  }
+
+  pragma "last resort"
+  inline operator by(r, step) {
+    compilerError("cannot apply 'by' to '", r.type:string, "'");
   }
 
   // This is the definition of the 'align' operator for ranges.
@@ -1536,11 +1505,15 @@ operator :(r: range(?), type t: range(?)) {
                      r._low, r._high, r.stride, chpl__idxToInt(algn), true);
   }
 
-  pragma "no doc"
+  pragma "no doc" pragma "last resort"
   inline operator align(r : range(?i, ?b, ?s), algn) {
     compilerError("can't align a range with idxType ", i:string,
                   " using a value of type ", algn.type:string);
-    return r;
+  }
+
+  pragma "last resort"
+  inline operator align(r, algn) {
+    compilerError("cannot apply 'align' to '", r.type:string, "'");
   }
 
   /* Returns a range whose alignment is this range's first index plus ``offset``.
@@ -1868,11 +1841,16 @@ operator :(r: range(?), type t: range(?)) {
     return chpl_count_help(r, count);
   }
 
+  pragma "last resort"
   operator #(r: range(?i), count) {
     compilerError("can't apply '#' to a range with idxType ",
                   i:string, " using a count of type ",
                   count.type:string);
-    return r;
+  }
+
+  pragma "last resort"
+  operator #(r, count) {
+    compilerError("cannot apply '#' to '", r.type:string, "'");
   }
 
   // This function checks if a bounded iterator will overflow. This is basic

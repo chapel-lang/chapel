@@ -74,6 +74,11 @@
 #include <rdma/fi_errno.h>
 #include <rdma/fi_rma.h>
 
+#ifdef __has_include
+#if __has_include(<rdma/fi_cxi_ext.h>)
+#include <rdma/fi_cxi_ext.h>
+#endif
+#endif
 
 ////////////////////////////////////////
 //
@@ -170,6 +175,9 @@ static chpl_bool envUseTxCntr;          // env: tasks use transmit counters
 static chpl_bool envUseAmTxCntr;        // env: AMH uses transmit counters
 static chpl_bool envUseAmRxCntr;        // env: AMH uses receive counters
 static chpl_bool envProgressCntr;       // env: counters must be progressed
+static chpl_bool envInjectRMA;          // env: inject RMA messages
+static chpl_bool envInjectAMO;          // env: inject AMO messages
+static chpl_bool envInjectAM;           // env: inject AM messages
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -209,8 +217,8 @@ struct memEntry {
   void* addr;
   uint64_t base;
   size_t size;
-  void* desc;
-  uint64_t key;
+  void* desc;       // returned by fi_mr_desc
+  uint64_t key;     // returned by fi_mr_key
 };
 
 #define MAX_MEM_REGIONS 10
@@ -224,6 +232,7 @@ static memTab_t* memTabMap;
 
 static struct fid_mr* ofiMrTab[MAX_MEM_REGIONS];
 
+static chpl_bool  envUseCxiHybridMR;
 //
 // Messaging (AM) support.
 //
@@ -292,6 +301,11 @@ static const char* mcmModeNames[] = { "undefined",
                                       "message-order",
                                       "delivery-complete", };
 
+//
+// Provider-specific support.
+//
+
+static bool cxiHybridMRMode = false;
 
 ////////////////////////////////////////
 //
@@ -519,6 +533,7 @@ typedef enum {
   provType_rxd,
   provType_rxm,
   provType_tcp,
+  provType_cxi,
   provTypeCount
 } provider_t;
 
@@ -567,6 +582,8 @@ void init_providerInUse(void) {
     providerSetSet(&providerInUseSet, provType_tcp);
   } else if (isInProvName("verbs", pn)) {
     providerSetSet(&providerInUseSet, provType_verbs);
+  } else if (isInProvName("cxi", pn)) {
+    providerSetSet(&providerInUseSet, provType_cxi);
   }
 
   //
@@ -998,6 +1015,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   envUseAmTxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_TX_COUNTER", false);
   envUseAmRxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_RX_COUNTER", false);
   envProgressCntr = chpl_env_rt_get_bool("COMM_OFI_PROGRESS_COUNTER", false);
+
+  envUseCxiHybridMR = chpl_env_rt_get_bool("COMM_OFI_CXI_HYBRID_MR", true);
+
+  envInjectRMA = chpl_env_rt_get_bool("COMM_OFI_INJECT_RMA", true);
+  envInjectAMO = chpl_env_rt_get_bool("COMM_OFI_INJECT_AMO", true);
+  envInjectAM = chpl_env_rt_get_bool("COMM_OFI_INJECT_AM", true);
   //
   // The user can specify the provider by setting either the Chapel
   // CHPL_RT_COMM_OFI_PROVIDER environment variable or the libfabric
@@ -1166,7 +1189,8 @@ void debugOverrideHints(struct fi_info* hints) {
                                   CFG_HINT(FI_TAGGED),
                                   CFG_HINT(FI_TRIGGER),
                                   CFG_HINT(FI_VARIABLE_MSG),
-                                  CFG_HINT(FI_WRITE), };
+                                  CFG_HINT(FI_WRITE),
+                                  CFG_HINT_NULL, };
     if (getCfgHint("COMM_OFI_HINTS_CAPS",
                    hintVals, false /*justOne*/, &val)) {
       hints->caps = val;
@@ -1912,8 +1936,9 @@ void init_ofiFabricDomain(void) {
       size_t size;
       chpl_comm_regMemHeapInfo(&start, &size);
       char buf[10];
-      printf("COMM=ofi: %s MCM mode, \"%s\" provider, %s fixed heap\n",
+      printf("COMM=ofi: %s MCM mode, \"%s\" provider, \"%s\" device, %s fixed heap\n",
              mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name,
+             ofi_info->domain_attr->name,
              ((size == 0)
               ? "no"
               : chpl_snprintf_KMG_z(buf, sizeof(buf), size)));
@@ -2246,6 +2271,35 @@ void init_ofiEp(void) {
 
   tciTabLen = numTxCtxs;
   CHPL_CALLOC(tciTab, tciTabLen);
+
+  // Use "hybrid" MR mode for the cxi provider if it's available
+
+  if (providerInUse(provType_cxi)) {
+    if (envUseCxiHybridMR) {
+#ifdef FI_CXI_DOM_OPS_3
+      struct fi_cxi_dom_ops *dom_ops;
+      int rc;
+      rc = fi_open_ops(&ofi_domain->fid, FI_CXI_DOM_OPS_3, 0,
+                          (void **)&dom_ops, NULL);
+      if (rc == FI_SUCCESS) {
+        rc = dom_ops->enable_hybrid_mr_desc(&ofi_domain->fid, true);
+        if (rc == FI_SUCCESS) {
+          cxiHybridMRMode = true;
+        } else {
+          DBG_PRINTF(DBG_PROV, "enable_hybrid_mr_desc failed: %s",
+                     fi_strerror(rc));
+        }
+      } else {
+        DBG_PRINTF(DBG_PROV, "fi_open_ops failed: %s", fi_strerror(rc));
+      }
+#endif
+    }
+    if (cxiHybridMRMode) {
+      DBG_PRINTF(DBG_PROV, "cxi hybrid MR mode enabled");
+    } else {
+      DBG_PRINTF(DBG_PROV, "cxi hybrid MR mode disabled");
+    }
+  }
 
   //
   // Create transmit contexts.
@@ -2624,7 +2678,9 @@ void init_ofiForMem(void) {
     ((ofi_info->domain_attr->mr_mode & FI_MR_PROV_KEY) != 0);
 
   uint64_t bufAcc = FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE;
-  if ((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) != 0) {
+
+  if (((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) != 0) ||
+       cxiHybridMRMode) {
     bufAcc |= FI_SEND | FI_READ | FI_WRITE;
   }
 
@@ -2940,9 +2996,13 @@ void chpl_comm_rollcall(void) {
 
   //
   // Only node 0 in multi-node programs does liveness checks, and only
-  // after we're sure all the other nodes' AM handlers are running.
+  // after we're sure all the other nodes' AM handlers are running. By default
+  // we only do liveness checks with the rxm utility provider to turn hangs
+  // into hard failures.
   //
-  if (chpl_numNodes > 1 && chpl_nodeID == 0) {
+  bool envLivenessChecks = chpl_env_rt_get_bool("COMM_OFI_LIVENESS_CHECKS",
+                                                providerInUse(provType_rxm));
+  if (envLivenessChecks && chpl_numNodes > 1 && chpl_nodeID == 0) {
     amDoLivenessChecks = true;
   }
 }
@@ -3233,7 +3293,8 @@ void init_fixedHeap(void) {
     for (info = infoList; info != NULL; info = info->next) {
       if (isGoodCoreProvider(info)
           && (!isInProvider("verbs", info)
-              || !isInProvider("ofi_rxd", info))) {
+              || !isInProvider("ofi_rxd", info))
+          && isUseableProvider(info)) {
         break;
       }
     }
@@ -4274,7 +4335,8 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     // just collect the completion later.  Otherwise, wait for it here.
     //
     if (!blocking
-        && reqSize <= ofi_info->tx_attr->inject_size) {
+        && reqSize <= ofi_info->tx_attr->inject_size
+        && envInjectAM) {
       void* ctx = txnTrkEncodeId(__LINE__);
       uint64_t flags = FI_FENCE | FI_INJECT;
       (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
@@ -4342,7 +4404,8 @@ void amReqFn_msgOrd(c_nodeid_t node,
   }
 
   if (!blocking
-      && reqSize <= ofi_info->tx_attr->inject_size) {
+      && reqSize <= ofi_info->tx_attr->inject_size
+      && envInjectAM) {
     //
     // Special case: injection is the quickest.  We use that if this is
     // a non-blocking AM and the size doesn't exceed the injection size
@@ -4371,8 +4434,10 @@ static
 void amReqFn_dlvrCmplt(c_nodeid_t node,
                        amRequest_t* req, size_t reqSize, void* mrDesc,
                        chpl_bool blocking, struct perTxCtxInfo_t* tcip) {
-  if (!blocking && (reqSize <= ofi_info->tx_attr->inject_size) &&
-      (ofi_info->tx_attr->msg_order & FI_ORDER_SAS)) {
+  if (!blocking
+      && (reqSize <= ofi_info->tx_attr->inject_size)
+      && (ofi_info->tx_attr->msg_order & FI_ORDER_SAS)
+      && envInjectAM) {
 
     /*
     Special case: injection is the quickest.  We use that if this is a
@@ -4443,7 +4508,7 @@ ssize_t wrap_fi_sendmsg(c_nodeid_t node,
   const struct iovec msg_iov = { .iov_base = req,
                                  .iov_len = reqSize };
   const struct fi_msg msg = { .msg_iov = &msg_iov,
-                              .desc = mrDesc,
+                              .desc = &mrDesc,
                               .iov_count = 1,
                               .addr = rxAddr(tcip, node),
                               .context = ctx };
@@ -5011,9 +5076,14 @@ void amPutDone(c_nodeid_t node, amDone_t* pAmDone) {
 
   uint64_t mrKey = 0;
   uint64_t mrRaddr = 0;
+  uint64_t flags = 0;
+
+  if (envInjectRMA) {
+    flags = FI_INJECT;
+  }
   CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, pAmDone, sizeof(*pAmDone)));
   ofi_put_lowLevel(amDone, mrDesc, node, mrRaddr, mrKey, sizeof(*pAmDone),
-                   txnTrkEncodeId(__LINE__), FI_INJECT, tcip);
+                   txnTrkEncodeId(__LINE__), flags, tcip);
 
   if (amTcip == NULL) {
     tciFree(tcip);
@@ -5666,7 +5736,8 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
   if (tcip->bound
       && size <= ofi_info->tx_attr->inject_size
       && (tcip->amoVisBitmap == NULL
-          || !bitmapTest(tcip->amoVisBitmap, node))) {
+          || !bitmapTest(tcip->amoVisBitmap, node))
+      && envInjectRMA) {
     //
     // Special case: write injection has the least latency.  We can use
     // that if this PUT doesn't need a fence, its size doesn't exceed
@@ -5687,7 +5758,8 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
       // be able to inject the PUT, though.
       //
       uint64_t flags = FI_FENCE;
-      if (size <= ofi_info->tx_attr->inject_size) {
+      if (size <= ofi_info->tx_attr->inject_size
+          && envInjectRMA) {
         flags |= FI_INJECT;
       }
       (void) wrap_fi_writemsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
@@ -5739,7 +5811,8 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrd(void* myAddr, void* mrDesc,
   //
 
   if (tcip->bound
-      && size <= ofi_info->tx_attr->inject_size) {
+      && size <= ofi_info->tx_attr->inject_size
+      && envInjectRMA) {
     //
     // Special case: write injection has the least latency.  We can use
     // that if this PUT's size doesn't exceed the injection size limit
@@ -5841,12 +5914,16 @@ ssize_t wrap_fi_writemsg(const void* addr, void* mrDesc,
                                 .key = mrKey };
   struct fi_msg_rma msg = (struct fi_msg_rma)
                           { .msg_iov = &msg_iov,
-                            .desc = mrDesc,
+                            .desc = &mrDesc,
                             .iov_count = 1,
                             .addr = rxAddr(tcip, node),
                             .rma_iov = &rma_iov,
                             .rma_iov_count = 1,
                             .context = ctx };
+
+  if ((flags & FI_INJECT) && (size > ofi_info->tx_attr->inject_size)) {
+    flags &= ~FI_INJECT;
+  }
   DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
              "tx write msg: %d:%#" PRIx64 " <= %p, size %zd, ctx %p, "
              "flags %#" PRIx64,
@@ -5864,7 +5941,8 @@ void ofi_put_lowLevel(const void* addr, void* mrDesc, c_nodeid_t node,
                       void* ctx, uint64_t flags,
                       struct perTxCtxInfo_t* tcip) {
   if (flags == FI_INJECT
-      && size <= ofi_info->tx_attr->inject_size) {
+      && size <= ofi_info->tx_attr->inject_size
+      && envInjectRMA) {
     (void) wrap_fi_inject_write(addr, node, mrRaddr, mrKey, size, tcip);
   } else if (flags == 0) {
     (void) wrap_fi_write(addr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
@@ -5904,7 +5982,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   }
 
   for (int vi = 0; vi < v_len; vi++) {
-    (void) wrap_fi_writemsg(addr_v[vi], &local_mr_v[vi],
+    (void) wrap_fi_writemsg(addr_v[vi], local_mr_v[vi],
                             locale_v[vi],
                             (uint64_t) raddr_v[vi], remote_mr_v[vi],
                             size_v[vi], txnTrkEncodeId(__LINE__),
@@ -6213,7 +6291,7 @@ ssize_t wrap_fi_readmsg(void* addr, void* mrDesc,
                                 .key = mrKey };
   struct fi_msg_rma msg = (struct fi_msg_rma)
                           { .msg_iov = &msg_iov,
-                            .desc = mrDesc,
+                            .desc = &mrDesc,
                             .iov_count = 1,
                             .addr = rxAddr(tcip, node),
                             .rma_iov = &rma_iov,
@@ -6495,7 +6573,8 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
       && tcip->bound
       && ab->size <= ofi_info->tx_attr->inject_size
       && (tcip->putVisBitmap == NULL
-          || !bitmapTest(tcip->putVisBitmap, ab->node))) {
+          || !bitmapTest(tcip->putVisBitmap, ab->node))
+      && envInjectAMO) {
     //
     // Special case: injection is the quickest.  We can use that if
     // this is a non-fetching operation, we have a bound tx context so
@@ -6526,7 +6605,8 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
       // AMO.  We may still be able to inject the AMO, however.
       //
       uint64_t flags = FI_FENCE;
-      if (ab->size <= ofi_info->tx_attr->inject_size) {
+      if (ab->size <= ofi_info->tx_attr->inject_size
+          && envInjectAMO) {
         flags |= FI_INJECT;
       }
       (void) wrap_fi_atomicmsg(ab, flags, tcip);
@@ -6574,7 +6654,8 @@ chpl_comm_nb_handle_t amoFn_msgOrd(struct amoBundle_t *ab,
 
   if (tcip->bound
       && ab->iovRes.addr == NULL
-      && ab->size <= ofi_info->tx_attr->inject_size) {
+      && ab->size <= ofi_info->tx_attr->inject_size
+      && envInjectAMO) {
     //
     // Special case: injection is the quickest.  We can use that if this
     // is a non-fetching operation, we have a bound tx context so we can
@@ -6825,7 +6906,7 @@ void amCheckRxTxCmpls(chpl_bool* pHadRxEvent, chpl_bool* pHadTxEvent,
 
     // The provider can't do poll sets.  Consume transmit completions,
     // and progress the receive endpoint as required by some providers
-    // (e.g. EFA, which may exhange handshake messages in the background
+    // (e.g. EFA, which may exchange handshake messages in the background
     // during a transmit and therefore requires progressing the receive
     // checkpoint so that handshakes are received). Inbound operations
     // will be handled by the main loop. Also, avoid CPU monopolization

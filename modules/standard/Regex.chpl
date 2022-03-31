@@ -412,6 +412,7 @@ class BadRegexError : Error {
 }
 
 // Until Issue 17275 is fixed:
+deprecated "Regex: 'BadRegexpError' is deprecated; please use 'BadRegexError' instead"
 type BadRegexpError = owned BadRegexError;
 
 // When Issue 17275 is fixed:
@@ -528,14 +529,30 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
       if m then do_something_if_matched();
       if !m then do_something_if_not_matched();
 
+    .. warning::
+      offset field is deprecated, use byteOffset instead
+    .. warning::
+      size field is deprecated, use numBytes instead
  */
 record regexMatch {
   /* true if the regular expression search matched successfully */
   var matched:bool;
   /* 0-based offset into the string or channel that matched; -1 if matched=false */
-  var offset:byteIndex; // 0-based, -1 if matched==false
+  var byteOffset:byteIndex;
   /* the length of the match. 0 if matched==false */
-  var size:int; // 0 if matched==false
+  var numBytes:int;
+
+  pragma "no doc"
+  deprecated "field offset is deprecated, use byteOffset instead"
+  proc offset:byteIndex {
+    return this.byteOffset;
+  }
+
+  pragma "no doc"
+  deprecated "field size is deprecated, use numBytes instead"
+  proc size:int {
+    return this.numBytes;
+  }
 }
 
 pragma "no doc"
@@ -569,7 +586,7 @@ inline proc regexMatch.chpl_cond_test_method() return this.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:regexMatch) {
-  if m.matched then return this[m.offset..#m.size];
+  if m.matched then return this[m.byteOffset..#m.numBytes];
   else return "";
 }
 
@@ -582,7 +599,7 @@ proc string.this(m:regexMatch) {
     :returns: the portion of ``this`` referred to by the match
  */
 proc bytes.this(m:regexMatch) {
-  if m.matched then return this[m.offset:int..#m.size];
+  if m.matched then return this[m.byteOffset:int..#m.numBytes];
   else return b"";
 }
 
@@ -691,23 +708,6 @@ record regex {
     var ret:regex(exprType);
     ret._deserialize(data);
     return ret;
-  }
-
-  /* did this regular expression compile ? */
-  pragma "no doc"
-  proc ok:bool {
-    compilerWarning("regex: 'ok' is deprecated; errors are used to detect regex compile errors");
-    return qio_regex_ok(_regex);
-  }
-  /*
-     returns a string describing any error encountered when compiling this
-               regular expression
-   */
-  pragma "no doc"
-  proc error():string {
-    param msg = "regex: 'error()' is deprecated; errors are used to detect regex compile errors";
-    compilerWarning(msg);
-    return msg;
   }
 
   // note - more = overloads are below.
@@ -1092,13 +1092,6 @@ record regex {
 }
 
 pragma "no doc"
-proc regexp type
-{
-   compilerWarning("Regex: 'regexp' is deprecated; please use 'regex' instead");
-   return regex;
-}
-
-pragma "no doc"
 operator regex.=(ref ret:regex(?t), x:regex(t))
 {
   // retain -- release
@@ -1160,30 +1153,58 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
   return compile(x);
 }
 
-// documented in the captures version
 pragma "no doc"
+pragma "last resort"
 proc string.search(needle: regex(string)):regexMatch
 {
   return needle.search(this);
 }
-
 // documented in the captures version
 pragma "no doc"
+proc string.search(pattern: regex(string)):regexMatch
+{
+  return pattern.search(this);
+}
+
+pragma "no doc"
+pragma "last resort"
 proc bytes.search(needle: regex(bytes)):regexMatch
 {
   return needle.search(this);
 }
 
+// documented in the captures version
+pragma "no doc"
+proc bytes.search(pattern: regex(bytes)):regexMatch
+{
+  return pattern.search(this);
+}
+
+
+pragma "last resort"
+deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
+proc string.search(needle: regex(string), ref captures ...?k):regexMatch
+{
+  return needle.search(this, (...captures));
+}
+
 /* Search the receiving string for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   :arg needle: the compiled regular expression to search for
+   :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
                   should be strings or types that strings can cast to.
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving string where a match occurred
  */
-proc string.search(needle: regex(string), ref captures ...?k):regexMatch
+proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
+{
+  return pattern.search(this, (...captures));
+}
+
+pragma "last resort"
+deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
+proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
 {
   return needle.search(this, (...captures));
 }
@@ -1191,15 +1212,15 @@ proc string.search(needle: regex(string), ref captures ...?k):regexMatch
 /* Search the receiving bytes for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   :arg needle: the compiled regular expression to search for
+   :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
                   should be bytes or types that bytes can cast to.
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving bytes where a match occurred
  */
-proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
+proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
 {
-  return needle.search(this, (...captures));
+  return pattern.search(this, (...captures));
 }
 
 // documented in the captures version

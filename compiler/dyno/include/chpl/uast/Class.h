@@ -46,7 +46,7 @@ class Class final : public AggregateDecl {
  private:
   int parentClassChildNum_;
 
-  Class(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Class(AstList children, int attributesChildNum, Decl::Visibility vis,
         UniqueString name,
         int elementsChildNum,
         int numElements,
@@ -64,7 +64,7 @@ class Class final : public AggregateDecl {
            child(parentClassChildNum_)->isIdentifier());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Class* lhs = this;
     const Class* rhs = (const Class*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs) &&
@@ -82,20 +82,19 @@ class Class final : public AggregateDecl {
                             owned<Attributes> attributes,
                             Decl::Visibility vis,
                             UniqueString name,
-                            owned<Expression> parentClass,
-                            ASTList contents);
+                            owned<AstNode> parentClass,
+                            AstList contents);
 
   /**
-    Return the Expression indicating the parent class or nullptr
+    Return the AstNode indicating the parent class or nullptr
     if there was none.
    */
-  const Expression* parentClass() const {
+  const AstNode* parentClass() const {
     if (parentClassChildNum_ < 0)
       return nullptr;
 
     auto ret = child(parentClassChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 };
 

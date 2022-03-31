@@ -254,7 +254,7 @@ The Loop Vectorizer can vectorize loops that count backwards.
 
 .. code-block:: c++
 
-  int foo(int *A, int n) {
+  void foo(int *A, int n) {
     for (int i = n; i > 0; --i)
       A[i] +=1;
   }
@@ -267,7 +267,7 @@ that scatter/gathers memory.
 
 .. code-block:: c++
 
-  int foo(int * A, int * B, int n) {
+  void foo(int * A, int * B, int n) {
     for (intptr_t i = 0; i < n; ++i)
         A[i] += B[i * 4];
   }
@@ -284,7 +284,7 @@ vectorization is profitable.
 
 .. code-block:: c++
 
-  int foo(int *A, char *B, int n) {
+  void foo(int *A, char *B, int n) {
     for (int i = 0; i < n; ++i)
       A[i] += 4 * B[i];
   }
@@ -303,7 +303,7 @@ ignored (as other compilers do) are still being left un-vectorized.
 
   struct { int A[100], K, B[100]; } Foo;
 
-  int foo() {
+  void foo() {
     for (int i = 0; i < 100; ++i)
       Foo.A[i] = Foo.B[i] + 100;
   }
@@ -393,7 +393,7 @@ Performance
 -----------
 
 This section shows the execution time of Clang on a simple benchmark:
-`gcc-loops <https://github.com/llvm/llvm-test-suite/tree/master/SingleSource/UnitTests/Vectorizer>`_.
+`gcc-loops <https://github.com/llvm/llvm-test-suite/tree/main/SingleSource/UnitTests/Vectorizer>`_.
 This benchmarks is a collection of loops from the GCC autovectorization
 `page <http://gcc.gnu.org/projects/tree-ssa/vectorization.html>`_ by Dorit Nuzman.
 

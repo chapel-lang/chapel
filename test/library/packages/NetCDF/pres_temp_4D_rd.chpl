@@ -39,7 +39,7 @@ proc main {
 
   /* The start and count arrays will tell the netCDF library where to
      read our data. */
-  var start, count: [0..#ndims] size_t;
+  var start, count: [0..#ndims] c_size_t;
 
   /* Program variables to hold the data we will read. We will only
      need enough space to hold one timestep of data; one record. */
@@ -94,8 +94,8 @@ proc main {
 
   /* Read and check one record at a time. */
   for rec in 0..#nrec {
-    start[0] = rec: size_t;
-    extern proc nc_get_vara_float_WAR(ncid: c_int, pres_varid: c_int, ref start: size_t, ref count: size_t, ref pres_out: real(32)): c_int;
+    start[0] = rec: c_size_t;
+    extern proc nc_get_vara_float_WAR(ncid: c_int, pres_varid: c_int, ref start: c_size_t, ref count: c_size_t, ref pres_out: real(32)): c_int;
     cdfError(nc_get_vara_float_WAR(ncid, pres_varid, start[0],
                                    count[0], pres_in[0, 0, 0]));
     cdfError(nc_get_vara_float_WAR(ncid, temp_varid, start[0],

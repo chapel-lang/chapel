@@ -2291,29 +2291,6 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
   return noop;
 }
 
-// Returns true if 'actual' is defined by:
-//   move( actual, call( targetLocales, _mt, tlArg) )
-// where tlArg is a (Chapel) array or domain or distribution.
-static bool isResultOfTargetLocalesCall(Symbol* actual) {
-  if (! actual->hasFlag(FLAG_TEMP)) return false;
-  SymExpr* def = actual->getSingleDef();
-  if (def == nullptr) return false;
-
-  if (CallExpr* move = toCallExpr(def->parentExpr))
-   if (move->isPrimitive(PRIM_MOVE))
-    if (CallExpr* tlCall = toCallExpr(move->get(2)))
-     if (tlCall->isNamed("targetLocales"))
-      if (tlCall->get(1)->typeInfo() == dtMethodToken)
-       if (tlCall->numActuals() == 2)
-        if (SymExpr* tlArgSE = toSymExpr(tlCall->get(2)))
-         if (Symbol* tlArgTS = tlArgSE->getValType()->symbol)
-          if (tlArgTS->hasFlag(FLAG_ARRAY)       ||
-              tlArgTS->hasFlag(FLAG_DOMAIN)      ||
-              tlArgTS->hasFlag(FLAG_DISTRIBUTION) )
-            return true;
-
-  return false;
-}
 
 static bool isMethodCall(CallExpr* call) {
   // The first argument could be DefExpr for a query expr, see
@@ -2384,11 +2361,6 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (Expr* expr = resolveTupleIndexing(call, base->symbol())) {
           retval = expr;  // call was replaced by expr
         }
-      } else if (call->numActuals() == 2 &&
-                 isResultOfTargetLocalesCall(sym)) {
-        USR_WARN(call, "'targetLocales' method on arrays, domains, and distributions is now paren-less; please invoke it without parentheses");
-        retval = new SymExpr(sym);
-        call->replace(retval);
       }
     }
 

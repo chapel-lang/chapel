@@ -19,7 +19,7 @@ on Locales[numLocales-1] {
 
 proc testit(lbl, obj) {
   writeln(lbl);
-  writeln("targetLocales = ", obj.targetLocales);
+  writeln("targetLocales = ", obj.targetLocales());
   if obj.hasSingleLocalSubdomain() then
     writeln("local subdomain = ", obj.localSubdomain());
   write("local subdomains =");

@@ -148,7 +148,7 @@ module NetCDF {
     extern const NC_FORMAT_DAP4 : c_int;
     extern const NC_FORMAT_UNDEFINED : c_int;
     extern const NC_SIZEHINT_DEFAULT : c_int;
-    extern const NC_ALIGN_CHUNK : size_t;
+    extern const NC_ALIGN_CHUNK : c_size_t;
     extern const NC_UNLIMITED : c_int;
     extern const NC_GLOBAL : c_int;
     extern const NC_MAX_DIMS : c_int;
@@ -285,15 +285,15 @@ module NetCDF {
 
     extern proc nc_strerror(ncerr : c_int) : c_string;
 
-    extern proc nc__create(path : c_string, cmode : c_int, initialsz : size_t, ref chunksizehintp : size_t, ref ncidp : c_int) : c_int;
+    extern proc nc__create(path : c_string, cmode : c_int, initialsz : c_size_t, ref chunksizehintp : c_size_t, ref ncidp : c_int) : c_int;
 
     extern proc nc_create(path : c_string, cmode : c_int, ref ncidp : c_int) : c_int;
 
-    extern proc nc__open(path : c_string, mode : c_int, ref chunksizehintp : size_t, ref ncidp : c_int) : c_int;
+    extern proc nc__open(path : c_string, mode : c_int, ref chunksizehintp : c_size_t, ref ncidp : c_int) : c_int;
 
     extern proc nc_open(path : c_string, mode : c_int, ref ncidp : c_int) : c_int;
 
-    extern proc nc_inq_path(ncid : c_int, ref pathlen : size_t, path : c_string) : c_int;
+    extern proc nc_inq_path(ncid : c_int, ref pathlen : c_size_t, path : c_string) : c_int;
 
     extern proc nc_inq_ncid(ncid : c_int, name : c_string, ref grp_ncid : c_int) : c_int;
 
@@ -301,9 +301,9 @@ module NetCDF {
 
     extern proc nc_inq_grpname(ncid : c_int, name : c_string) : c_int;
 
-    extern proc nc_inq_grpname_full(ncid : c_int, ref lenp : size_t, full_name : c_string) : c_int;
+    extern proc nc_inq_grpname_full(ncid : c_int, ref lenp : c_size_t, full_name : c_string) : c_int;
 
-    extern proc nc_inq_grpname_len(ncid : c_int, ref lenp : size_t) : c_int;
+    extern proc nc_inq_grpname_len(ncid : c_int, ref lenp : c_size_t) : c_int;
 
     extern proc nc_inq_grp_parent(ncid : c_int, ref parent_ncid : c_int) : c_int;
 
@@ -323,31 +323,31 @@ module NetCDF {
 
     extern proc nc_rename_grp(grpid : c_int, name : c_string) : c_int;
 
-    extern proc nc_def_compound(ncid : c_int, size : size_t, name : c_string, ref typeidp : nc_type) : c_int;
+    extern proc nc_def_compound(ncid : c_int, size : c_size_t, name : c_string, ref typeidp : nc_type) : c_int;
 
-    extern proc nc_insert_compound(ncid : c_int, xtype : nc_type, name : c_string, offset : size_t, field_typeid : nc_type) : c_int;
+    extern proc nc_insert_compound(ncid : c_int, xtype : nc_type, name : c_string, offset : c_size_t, field_typeid : nc_type) : c_int;
 
-    extern proc nc_insert_array_compound(ncid : c_int, xtype : nc_type, name : c_string, offset : size_t, field_typeid : nc_type, ndims : c_int, ref dim_sizes : c_int) : c_int;
+    extern proc nc_insert_array_compound(ncid : c_int, xtype : nc_type, name : c_string, offset : c_size_t, field_typeid : nc_type, ndims : c_int, ref dim_sizes : c_int) : c_int;
 
-    extern proc nc_inq_type(ncid : c_int, xtype : nc_type, name : c_string, ref size : size_t) : c_int;
+    extern proc nc_inq_type(ncid : c_int, xtype : nc_type, name : c_string, ref size : c_size_t) : c_int;
 
     extern proc nc_inq_typeid(ncid : c_int, name : c_string, ref typeidp : nc_type) : c_int;
 
-    extern proc nc_inq_compound(ncid : c_int, xtype : nc_type, name : c_string, ref sizep : size_t, ref nfieldsp : size_t) : c_int;
+    extern proc nc_inq_compound(ncid : c_int, xtype : nc_type, name : c_string, ref sizep : c_size_t, ref nfieldsp : c_size_t) : c_int;
 
     extern proc nc_inq_compound_name(ncid : c_int, xtype : nc_type, name : c_string) : c_int;
 
-    extern proc nc_inq_compound_size(ncid : c_int, xtype : nc_type, ref sizep : size_t) : c_int;
+    extern proc nc_inq_compound_size(ncid : c_int, xtype : nc_type, ref sizep : c_size_t) : c_int;
 
-    extern proc nc_inq_compound_nfields(ncid : c_int, xtype : nc_type, ref nfieldsp : size_t) : c_int;
+    extern proc nc_inq_compound_nfields(ncid : c_int, xtype : nc_type, ref nfieldsp : c_size_t) : c_int;
 
-    extern proc nc_inq_compound_field(ncid : c_int, xtype : nc_type, fieldid : c_int, name : c_string, ref offsetp : size_t, ref field_typeidp : nc_type, ref ndimsp : c_int, ref dim_sizesp : c_int) : c_int;
+    extern proc nc_inq_compound_field(ncid : c_int, xtype : nc_type, fieldid : c_int, name : c_string, ref offsetp : c_size_t, ref field_typeidp : nc_type, ref ndimsp : c_int, ref dim_sizesp : c_int) : c_int;
 
     extern proc nc_inq_compound_fieldname(ncid : c_int, xtype : nc_type, fieldid : c_int, name : c_string) : c_int;
 
     extern proc nc_inq_compound_fieldindex(ncid : c_int, xtype : nc_type, name : c_string, ref fieldidp : c_int) : c_int;
 
-    extern proc nc_inq_compound_fieldoffset(ncid : c_int, xtype : nc_type, fieldid : c_int, ref offsetp : size_t) : c_int;
+    extern proc nc_inq_compound_fieldoffset(ncid : c_int, xtype : nc_type, fieldid : c_int, ref offsetp : c_size_t) : c_int;
 
     extern proc nc_inq_compound_fieldtype(ncid : c_int, xtype : nc_type, fieldid : c_int, ref field_typeidp : nc_type) : c_int;
 
@@ -357,21 +357,21 @@ module NetCDF {
 
     extern proc nc_def_vlen(ncid : c_int, name : c_string, base_typeid : nc_type, ref xtypep : nc_type) : c_int;
 
-    extern proc nc_inq_vlen(ncid : c_int, xtype : nc_type, name : c_string, ref datum_sizep : size_t, ref base_nc_typep : nc_type) : c_int;
+    extern proc nc_inq_vlen(ncid : c_int, xtype : nc_type, name : c_string, ref datum_sizep : c_size_t, ref base_nc_typep : nc_type) : c_int;
 
     extern proc nc_free_vlen(ref vl : nc_vlen_t) : c_int;
 
-    extern proc nc_free_vlens(len : size_t, vlens : c_ptr(nc_vlen_t)) : c_int;
+    extern proc nc_free_vlens(len : c_size_t, vlens : c_ptr(nc_vlen_t)) : c_int;
 
-    extern proc nc_put_vlen_element(ncid : c_int, typeid1 : c_int, vlen_element : c_void_ptr, len : size_t, data : c_void_ptr) : c_int;
+    extern proc nc_put_vlen_element(ncid : c_int, typeid1 : c_int, vlen_element : c_void_ptr, len : c_size_t, data : c_void_ptr) : c_int;
 
-    extern proc nc_get_vlen_element(ncid : c_int, typeid1 : c_int, vlen_element : c_void_ptr, ref len : size_t, data : c_void_ptr) : c_int;
+    extern proc nc_get_vlen_element(ncid : c_int, typeid1 : c_int, vlen_element : c_void_ptr, ref len : c_size_t, data : c_void_ptr) : c_int;
 
-    extern proc nc_free_string(len : size_t, ref data : c_string) : c_int;
+    extern proc nc_free_string(len : c_size_t, ref data : c_string) : c_int;
 
-    extern proc nc_inq_user_type(ncid : c_int, xtype : nc_type, name : c_string, ref size : size_t, ref base_nc_typep : nc_type, ref nfieldsp : size_t, ref classp : c_int) : c_int;
+    extern proc nc_inq_user_type(ncid : c_int, xtype : nc_type, name : c_string, ref size : c_size_t, ref base_nc_typep : nc_type, ref nfieldsp : c_size_t, ref classp : c_int) : c_int;
 
-    extern proc nc_put_att(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, op : c_void_ptr) : c_int;
+    extern proc nc_put_att(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, op : c_void_ptr) : c_int;
 
     extern proc nc_get_att(ncid : c_int, varid : c_int, name : c_string, ip : c_void_ptr) : c_int;
 
@@ -379,35 +379,35 @@ module NetCDF {
 
     extern proc nc_insert_enum(ncid : c_int, xtype : nc_type, name : c_string, value : c_void_ptr) : c_int;
 
-    extern proc nc_inq_enum(ncid : c_int, xtype : nc_type, name : c_string, ref base_nc_typep : nc_type, ref base_sizep : size_t, ref num_membersp : size_t) : c_int;
+    extern proc nc_inq_enum(ncid : c_int, xtype : nc_type, name : c_string, ref base_nc_typep : nc_type, ref base_sizep : c_size_t, ref num_membersp : c_size_t) : c_int;
 
     extern proc nc_inq_enum_member(ncid : c_int, xtype : nc_type, idx : c_int, name : c_string, value : c_void_ptr) : c_int;
 
     extern proc nc_inq_enum_ident(ncid : c_int, xtype : nc_type, value : c_longlong, identifier : c_string) : c_int;
 
-    extern proc nc_def_opaque(ncid : c_int, size : size_t, name : c_string, ref xtypep : nc_type) : c_int;
+    extern proc nc_def_opaque(ncid : c_int, size : c_size_t, name : c_string, ref xtypep : nc_type) : c_int;
 
-    extern proc nc_inq_opaque(ncid : c_int, xtype : nc_type, name : c_string, ref sizep : size_t) : c_int;
+    extern proc nc_inq_opaque(ncid : c_int, xtype : nc_type, name : c_string, ref sizep : c_size_t) : c_int;
 
     extern proc nc_put_var(ncid : c_int, varid : c_int, op : c_void_ptr) : c_int;
 
     extern proc nc_get_var(ncid : c_int, varid : c_int, ip : c_void_ptr) : c_int;
 
-    extern proc nc_put_var1(ncid : c_int, varid : c_int, ref indexp : size_t, op : c_void_ptr) : c_int;
+    extern proc nc_put_var1(ncid : c_int, varid : c_int, ref indexp : c_size_t, op : c_void_ptr) : c_int;
 
-    extern proc nc_get_var1(ncid : c_int, varid : c_int, ref indexp : size_t, ip : c_void_ptr) : c_int;
+    extern proc nc_get_var1(ncid : c_int, varid : c_int, ref indexp : c_size_t, ip : c_void_ptr) : c_int;
 
-    extern proc nc_put_vara(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, op : c_void_ptr) : c_int;
+    extern proc nc_put_vara(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, op : c_void_ptr) : c_int;
 
-    extern proc nc_get_vara(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ip : c_void_ptr) : c_int;
+    extern proc nc_get_vara(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ip : c_void_ptr) : c_int;
 
-    extern proc nc_put_vars(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, op : c_void_ptr) : c_int;
+    extern proc nc_put_vars(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, op : c_void_ptr) : c_int;
 
-    extern proc nc_get_vars(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ip : c_void_ptr) : c_int;
+    extern proc nc_get_vars(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ip : c_void_ptr) : c_int;
 
-    extern proc nc_put_varm(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, op : c_void_ptr) : c_int;
+    extern proc nc_put_varm(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, op : c_void_ptr) : c_int;
 
-    extern proc nc_get_varm(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ip : c_void_ptr) : c_int;
+    extern proc nc_get_varm(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ip : c_void_ptr) : c_int;
 
     extern proc nc_def_var_deflate(ncid : c_int, varid : c_int, shuffle : c_int, deflate : c_int, deflate_level : c_int) : c_int;
 
@@ -419,9 +419,9 @@ module NetCDF {
 
     extern proc nc_inq_var_fletcher32(ncid : c_int, varid : c_int, ref fletcher32p : c_int) : c_int;
 
-    extern proc nc_def_var_chunking(ncid : c_int, varid : c_int, storage : c_int, ref chunksizesp : size_t) : c_int;
+    extern proc nc_def_var_chunking(ncid : c_int, varid : c_int, storage : c_int, ref chunksizesp : c_size_t) : c_int;
 
-    extern proc nc_inq_var_chunking(ncid : c_int, varid : c_int, ref storagep : c_int, ref chunksizesp : size_t) : c_int;
+    extern proc nc_inq_var_chunking(ncid : c_int, varid : c_int, ref storagep : c_int, ref chunksizesp : c_size_t) : c_int;
 
     extern proc nc_def_var_fill(ncid : c_int, varid : c_int, no_fill : c_int, fill_value : c_void_ptr) : c_int;
 
@@ -431,25 +431,25 @@ module NetCDF {
 
     extern proc nc_inq_var_endian(ncid : c_int, varid : c_int, ref endianp : c_int) : c_int;
 
-    extern proc nc_def_var_filter(ncid : c_int, varid : c_int, id : c_uint, nparams : size_t, ref parms : c_uint) : c_int;
+    extern proc nc_def_var_filter(ncid : c_int, varid : c_int, id : c_uint, nparams : c_size_t, ref parms : c_uint) : c_int;
 
-    extern proc nc_inq_var_filter(ncid : c_int, varid : c_int, ref idp : c_uint, ref nparams : size_t, ref params : c_uint) : c_int;
+    extern proc nc_inq_var_filter(ncid : c_int, varid : c_int, ref idp : c_uint, ref nparams : c_size_t, ref params : c_uint) : c_int;
 
     extern proc nc_set_fill(ncid : c_int, fillmode : c_int, ref old_modep : c_int) : c_int;
 
     extern proc nc_set_default_format(format : c_int, ref old_formatp : c_int) : c_int;
 
-    extern proc nc_set_chunk_cache(size : size_t, nelems : size_t, preemption : c_float) : c_int;
+    extern proc nc_set_chunk_cache(size : c_size_t, nelems : c_size_t, preemption : c_float) : c_int;
 
-    extern proc nc_get_chunk_cache(ref sizep : size_t, ref nelemsp : size_t, ref preemptionp : c_float) : c_int;
+    extern proc nc_get_chunk_cache(ref sizep : c_size_t, ref nelemsp : c_size_t, ref preemptionp : c_float) : c_int;
 
-    extern proc nc_set_var_chunk_cache(ncid : c_int, varid : c_int, size : size_t, nelems : size_t, preemption : c_float) : c_int;
+    extern proc nc_set_var_chunk_cache(ncid : c_int, varid : c_int, size : c_size_t, nelems : c_size_t, preemption : c_float) : c_int;
 
-    extern proc nc_get_var_chunk_cache(ncid : c_int, varid : c_int, ref sizep : size_t, ref nelemsp : size_t, ref preemptionp : c_float) : c_int;
+    extern proc nc_get_var_chunk_cache(ncid : c_int, varid : c_int, ref sizep : c_size_t, ref nelemsp : c_size_t, ref preemptionp : c_float) : c_int;
 
     extern proc nc_redef(ncid : c_int) : c_int;
 
-    extern proc nc__enddef(ncid : c_int, h_minfree : size_t, v_align : size_t, v_minfree : size_t, r_align : size_t) : c_int;
+    extern proc nc__enddef(ncid : c_int, h_minfree : c_size_t, v_align : c_size_t, v_minfree : c_size_t, r_align : c_size_t) : c_int;
 
     extern proc nc_enddef(ncid : c_int) : c_int;
 
@@ -475,25 +475,25 @@ module NetCDF {
 
     extern proc nc_inq_format_extended(ncid : c_int, ref formatp : c_int, ref modep : c_int) : c_int;
 
-    extern proc nc_def_dim(ncid : c_int, name : c_string, len : size_t, ref idp : c_int) : c_int;
+    extern proc nc_def_dim(ncid : c_int, name : c_string, len : c_size_t, ref idp : c_int) : c_int;
 
     extern proc nc_inq_dimid(ncid : c_int, name : c_string, ref idp : c_int) : c_int;
 
-    extern proc nc_inq_dim(ncid : c_int, dimid : c_int, name : c_string, ref lenp : size_t) : c_int;
+    extern proc nc_inq_dim(ncid : c_int, dimid : c_int, name : c_string, ref lenp : c_size_t) : c_int;
 
     extern proc nc_inq_dimname(ncid : c_int, dimid : c_int, name : c_string) : c_int;
 
-    extern proc nc_inq_dimlen(ncid : c_int, dimid : c_int, ref lenp : size_t) : c_int;
+    extern proc nc_inq_dimlen(ncid : c_int, dimid : c_int, ref lenp : c_size_t) : c_int;
 
     extern proc nc_rename_dim(ncid : c_int, dimid : c_int, name : c_string) : c_int;
 
-    extern proc nc_inq_att(ncid : c_int, varid : c_int, name : c_string, ref xtypep : nc_type, ref lenp : size_t) : c_int;
+    extern proc nc_inq_att(ncid : c_int, varid : c_int, name : c_string, ref xtypep : nc_type, ref lenp : c_size_t) : c_int;
 
     extern proc nc_inq_attid(ncid : c_int, varid : c_int, name : c_string, ref idp : c_int) : c_int;
 
     extern proc nc_inq_atttype(ncid : c_int, varid : c_int, name : c_string, ref xtypep : nc_type) : c_int;
 
-    extern proc nc_inq_attlen(ncid : c_int, varid : c_int, name : c_string, ref lenp : size_t) : c_int;
+    extern proc nc_inq_attlen(ncid : c_int, varid : c_int, name : c_string, ref lenp : c_size_t) : c_int;
 
     extern proc nc_inq_attname(ncid : c_int, varid : c_int, attnum : c_int, name : c_string) : c_int;
 
@@ -503,55 +503,55 @@ module NetCDF {
 
     extern proc nc_del_att(ncid : c_int, varid : c_int, name : c_string) : c_int;
 
-    extern proc nc_put_att_text(ncid : c_int, varid : c_int, name : c_string, len : size_t, op : c_string) : c_int;
+    extern proc nc_put_att_text(ncid : c_int, varid : c_int, name : c_string, len : c_size_t, op : c_string) : c_int;
 
     extern proc nc_get_att_text(ncid : c_int, varid : c_int, name : c_string, ip : c_string) : c_int;
 
-    extern proc nc_put_att_string(ncid : c_int, varid : c_int, name : c_string, len : size_t, ref op : c_string) : c_int;
+    extern proc nc_put_att_string(ncid : c_int, varid : c_int, name : c_string, len : c_size_t, ref op : c_string) : c_int;
 
     extern proc nc_get_att_string(ncid : c_int, varid : c_int, name : c_string, ref ip : c_string) : c_int;
 
-    extern proc nc_put_att_uchar(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_uchar) : c_int;
+    extern proc nc_put_att_uchar(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_uchar) : c_int;
 
     extern proc nc_get_att_uchar(ncid : c_int, varid : c_int, name : c_string, ref ip : c_uchar) : c_int;
 
-    extern proc nc_put_att_schar(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_schar) : c_int;
+    extern proc nc_put_att_schar(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_schar) : c_int;
 
     extern proc nc_get_att_schar(ncid : c_int, varid : c_int, name : c_string, ref ip : c_schar) : c_int;
 
-    extern proc nc_put_att_short(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_short) : c_int;
+    extern proc nc_put_att_short(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_short) : c_int;
 
     extern proc nc_get_att_short(ncid : c_int, varid : c_int, name : c_string, ref ip : c_short) : c_int;
 
-    extern proc nc_put_att_int(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_int) : c_int;
+    extern proc nc_put_att_int(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_int) : c_int;
 
     extern proc nc_get_att_int(ncid : c_int, varid : c_int, name : c_string, ref ip : c_int) : c_int;
 
-    extern proc nc_put_att_long(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_long) : c_int;
+    extern proc nc_put_att_long(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_long) : c_int;
 
     extern proc nc_get_att_long(ncid : c_int, varid : c_int, name : c_string, ref ip : c_long) : c_int;
 
-    extern proc nc_put_att_float(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_float) : c_int;
+    extern proc nc_put_att_float(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_float) : c_int;
 
     extern proc nc_get_att_float(ncid : c_int, varid : c_int, name : c_string, ref ip : c_float) : c_int;
 
-    extern proc nc_put_att_double(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_double) : c_int;
+    extern proc nc_put_att_double(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_double) : c_int;
 
     extern proc nc_get_att_double(ncid : c_int, varid : c_int, name : c_string, ref ip : c_double) : c_int;
 
-    extern proc nc_put_att_ushort(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_ushort) : c_int;
+    extern proc nc_put_att_ushort(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_ushort) : c_int;
 
     extern proc nc_get_att_ushort(ncid : c_int, varid : c_int, name : c_string, ref ip : c_ushort) : c_int;
 
-    extern proc nc_put_att_uint(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_uint) : c_int;
+    extern proc nc_put_att_uint(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_uint) : c_int;
 
     extern proc nc_get_att_uint(ncid : c_int, varid : c_int, name : c_string, ref ip : c_uint) : c_int;
 
-    extern proc nc_put_att_longlong(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_longlong) : c_int;
+    extern proc nc_put_att_longlong(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_longlong) : c_int;
 
     extern proc nc_get_att_longlong(ncid : c_int, varid : c_int, name : c_string, ref ip : c_longlong) : c_int;
 
-    extern proc nc_put_att_ulonglong(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_ulonglong) : c_int;
+    extern proc nc_put_att_ulonglong(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_ulonglong) : c_int;
 
     extern proc nc_get_att_ulonglong(ncid : c_int, varid : c_int, name : c_string, ref ip : c_ulonglong) : c_int;
 
@@ -575,213 +575,213 @@ module NetCDF {
 
     extern proc nc_copy_var(ncid_in : c_int, varid : c_int, ncid_out : c_int) : c_int;
 
-    extern proc nc_put_var1_text(ncid : c_int, varid : c_int, ref indexp : size_t, op : c_string) : c_int;
+    extern proc nc_put_var1_text(ncid : c_int, varid : c_int, ref indexp : c_size_t, op : c_string) : c_int;
 
-    extern proc nc_get_var1_text(ncid : c_int, varid : c_int, ref indexp : size_t, ip : c_string) : c_int;
+    extern proc nc_get_var1_text(ncid : c_int, varid : c_int, ref indexp : c_size_t, ip : c_string) : c_int;
 
-    extern proc nc_put_var1_uchar(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_uchar) : c_int;
+    extern proc nc_put_var1_uchar(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_uchar) : c_int;
 
-    extern proc nc_get_var1_uchar(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_uchar) : c_int;
+    extern proc nc_get_var1_uchar(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_uchar) : c_int;
 
-    extern proc nc_put_var1_schar(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_schar) : c_int;
+    extern proc nc_put_var1_schar(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_schar) : c_int;
 
-    extern proc nc_get_var1_schar(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_schar) : c_int;
+    extern proc nc_get_var1_schar(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_schar) : c_int;
 
-    extern proc nc_put_var1_short(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_short) : c_int;
+    extern proc nc_put_var1_short(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_short) : c_int;
 
-    extern proc nc_get_var1_short(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_short) : c_int;
+    extern proc nc_get_var1_short(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_short) : c_int;
 
-    extern proc nc_put_var1_int(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_int) : c_int;
+    extern proc nc_put_var1_int(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_int) : c_int;
 
-    extern proc nc_get_var1_int(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_int) : c_int;
+    extern proc nc_get_var1_int(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_int) : c_int;
 
-    extern proc nc_put_var1_long(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_long) : c_int;
+    extern proc nc_put_var1_long(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_long) : c_int;
 
-    extern proc nc_get_var1_long(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_long) : c_int;
+    extern proc nc_get_var1_long(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_long) : c_int;
 
-    extern proc nc_put_var1_float(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_float) : c_int;
+    extern proc nc_put_var1_float(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_float) : c_int;
 
-    extern proc nc_get_var1_float(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_float) : c_int;
+    extern proc nc_get_var1_float(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_float) : c_int;
 
-    extern proc nc_put_var1_double(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_double) : c_int;
+    extern proc nc_put_var1_double(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_double) : c_int;
 
-    extern proc nc_get_var1_double(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_double) : c_int;
+    extern proc nc_get_var1_double(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_double) : c_int;
 
-    extern proc nc_put_var1_ushort(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_ushort) : c_int;
+    extern proc nc_put_var1_ushort(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_ushort) : c_int;
 
-    extern proc nc_get_var1_ushort(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_ushort) : c_int;
+    extern proc nc_get_var1_ushort(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_ushort) : c_int;
 
-    extern proc nc_put_var1_uint(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_uint) : c_int;
+    extern proc nc_put_var1_uint(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_uint) : c_int;
 
-    extern proc nc_get_var1_uint(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_uint) : c_int;
+    extern proc nc_get_var1_uint(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_uint) : c_int;
 
-    extern proc nc_put_var1_longlong(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_longlong) : c_int;
+    extern proc nc_put_var1_longlong(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_longlong) : c_int;
 
-    extern proc nc_get_var1_longlong(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_longlong) : c_int;
+    extern proc nc_get_var1_longlong(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_longlong) : c_int;
 
-    extern proc nc_put_var1_ulonglong(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_ulonglong) : c_int;
+    extern proc nc_put_var1_ulonglong(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_ulonglong) : c_int;
 
-    extern proc nc_get_var1_ulonglong(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_ulonglong) : c_int;
+    extern proc nc_get_var1_ulonglong(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_ulonglong) : c_int;
 
-    extern proc nc_put_var1_string(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_string) : c_int;
+    extern proc nc_put_var1_string(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_string) : c_int;
 
-    extern proc nc_get_var1_string(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_string) : c_int;
+    extern proc nc_get_var1_string(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_string) : c_int;
 
-    extern proc nc_put_vara_text(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, op : c_string) : c_int;
+    extern proc nc_put_vara_text(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, op : c_string) : c_int;
 
-    extern proc nc_get_vara_text(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ip : c_string) : c_int;
+    extern proc nc_get_vara_text(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ip : c_string) : c_int;
 
-    extern proc nc_put_vara_uchar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_uchar) : c_int;
+    extern proc nc_put_vara_uchar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_uchar) : c_int;
 
-    extern proc nc_get_vara_uchar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_uchar) : c_int;
+    extern proc nc_get_vara_uchar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_uchar) : c_int;
 
-    extern proc nc_put_vara_schar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_schar) : c_int;
+    extern proc nc_put_vara_schar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_schar) : c_int;
 
-    extern proc nc_get_vara_schar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_schar) : c_int;
+    extern proc nc_get_vara_schar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_schar) : c_int;
 
-    extern proc nc_put_vara_short(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_short) : c_int;
+    extern proc nc_put_vara_short(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_short) : c_int;
 
-    extern proc nc_get_vara_short(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_short) : c_int;
+    extern proc nc_get_vara_short(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_short) : c_int;
 
-    extern proc nc_put_vara_int(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_int) : c_int;
+    extern proc nc_put_vara_int(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_int) : c_int;
 
-    extern proc nc_get_vara_int(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_int) : c_int;
+    extern proc nc_get_vara_int(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_int) : c_int;
 
-    extern proc nc_put_vara_long(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_long) : c_int;
+    extern proc nc_put_vara_long(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_long) : c_int;
 
-    extern proc nc_get_vara_long(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_long) : c_int;
+    extern proc nc_get_vara_long(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_long) : c_int;
 
-    extern proc nc_put_vara_float(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_float) : c_int;
+    extern proc nc_put_vara_float(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_float) : c_int;
 
-    extern proc nc_get_vara_float(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_float) : c_int;
+    extern proc nc_get_vara_float(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_float) : c_int;
 
-    extern proc nc_put_vara_double(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_double) : c_int;
+    extern proc nc_put_vara_double(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_double) : c_int;
 
-    extern proc nc_get_vara_double(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_double) : c_int;
+    extern proc nc_get_vara_double(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_double) : c_int;
 
-    extern proc nc_put_vara_ushort(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_ushort) : c_int;
+    extern proc nc_put_vara_ushort(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_ushort) : c_int;
 
-    extern proc nc_get_vara_ushort(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_ushort) : c_int;
+    extern proc nc_get_vara_ushort(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_ushort) : c_int;
 
-    extern proc nc_put_vara_uint(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_uint) : c_int;
+    extern proc nc_put_vara_uint(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_uint) : c_int;
 
-    extern proc nc_get_vara_uint(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_uint) : c_int;
+    extern proc nc_get_vara_uint(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_uint) : c_int;
 
-    extern proc nc_put_vara_longlong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_longlong) : c_int;
+    extern proc nc_put_vara_longlong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_longlong) : c_int;
 
-    extern proc nc_get_vara_longlong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_longlong) : c_int;
+    extern proc nc_get_vara_longlong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_longlong) : c_int;
 
-    extern proc nc_put_vara_ulonglong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_ulonglong) : c_int;
+    extern proc nc_put_vara_ulonglong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_ulonglong) : c_int;
 
-    extern proc nc_get_vara_ulonglong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_ulonglong) : c_int;
+    extern proc nc_get_vara_ulonglong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_ulonglong) : c_int;
 
-    extern proc nc_put_vara_string(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_string) : c_int;
+    extern proc nc_put_vara_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_string) : c_int;
 
-    extern proc nc_get_vara_string(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_string) : c_int;
+    extern proc nc_get_vara_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_string) : c_int;
 
-    extern proc nc_put_vars_text(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, op : c_string) : c_int;
+    extern proc nc_put_vars_text(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, op : c_string) : c_int;
 
-    extern proc nc_get_vars_text(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ip : c_string) : c_int;
+    extern proc nc_get_vars_text(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ip : c_string) : c_int;
 
-    extern proc nc_put_vars_uchar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_uchar) : c_int;
+    extern proc nc_put_vars_uchar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_uchar) : c_int;
 
-    extern proc nc_get_vars_uchar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_uchar) : c_int;
+    extern proc nc_get_vars_uchar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_uchar) : c_int;
 
-    extern proc nc_put_vars_schar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_schar) : c_int;
+    extern proc nc_put_vars_schar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_schar) : c_int;
 
-    extern proc nc_get_vars_schar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_schar) : c_int;
+    extern proc nc_get_vars_schar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_schar) : c_int;
 
-    extern proc nc_put_vars_short(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_short) : c_int;
+    extern proc nc_put_vars_short(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_short) : c_int;
 
-    extern proc nc_get_vars_short(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_short) : c_int;
+    extern proc nc_get_vars_short(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_short) : c_int;
 
-    extern proc nc_put_vars_int(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_int) : c_int;
+    extern proc nc_put_vars_int(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_int) : c_int;
 
-    extern proc nc_get_vars_int(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_int) : c_int;
+    extern proc nc_get_vars_int(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_int) : c_int;
 
-    extern proc nc_put_vars_long(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_long) : c_int;
+    extern proc nc_put_vars_long(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_long) : c_int;
 
-    extern proc nc_get_vars_long(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_long) : c_int;
+    extern proc nc_get_vars_long(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_long) : c_int;
 
-    extern proc nc_put_vars_float(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_float) : c_int;
+    extern proc nc_put_vars_float(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_float) : c_int;
 
-    extern proc nc_get_vars_float(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_float) : c_int;
+    extern proc nc_get_vars_float(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_float) : c_int;
 
-    extern proc nc_put_vars_double(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_double) : c_int;
+    extern proc nc_put_vars_double(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_double) : c_int;
 
-    extern proc nc_get_vars_double(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_double) : c_int;
+    extern proc nc_get_vars_double(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_double) : c_int;
 
-    extern proc nc_put_vars_ushort(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_ushort) : c_int;
+    extern proc nc_put_vars_ushort(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_ushort) : c_int;
 
-    extern proc nc_get_vars_ushort(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_ushort) : c_int;
+    extern proc nc_get_vars_ushort(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_ushort) : c_int;
 
-    extern proc nc_put_vars_uint(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_uint) : c_int;
+    extern proc nc_put_vars_uint(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_uint) : c_int;
 
-    extern proc nc_get_vars_uint(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_uint) : c_int;
+    extern proc nc_get_vars_uint(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_uint) : c_int;
 
-    extern proc nc_put_vars_longlong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_longlong) : c_int;
+    extern proc nc_put_vars_longlong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_longlong) : c_int;
 
-    extern proc nc_get_vars_longlong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_longlong) : c_int;
+    extern proc nc_get_vars_longlong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_longlong) : c_int;
 
-    extern proc nc_put_vars_ulonglong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_ulonglong) : c_int;
+    extern proc nc_put_vars_ulonglong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_ulonglong) : c_int;
 
-    extern proc nc_get_vars_ulonglong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_ulonglong) : c_int;
+    extern proc nc_get_vars_ulonglong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_ulonglong) : c_int;
 
-    extern proc nc_put_vars_string(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_string) : c_int;
+    extern proc nc_put_vars_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_string) : c_int;
 
-    extern proc nc_get_vars_string(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_string) : c_int;
+    extern proc nc_get_vars_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_string) : c_int;
 
-    extern proc nc_put_varm_text(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, op : c_string) : c_int;
+    extern proc nc_put_varm_text(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, op : c_string) : c_int;
 
-    extern proc nc_get_varm_text(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ip : c_string) : c_int;
+    extern proc nc_get_varm_text(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ip : c_string) : c_int;
 
-    extern proc nc_put_varm_uchar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_uchar) : c_int;
+    extern proc nc_put_varm_uchar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_uchar) : c_int;
 
-    extern proc nc_get_varm_uchar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_uchar) : c_int;
+    extern proc nc_get_varm_uchar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_uchar) : c_int;
 
-    extern proc nc_put_varm_schar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_schar) : c_int;
+    extern proc nc_put_varm_schar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_schar) : c_int;
 
-    extern proc nc_get_varm_schar(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_schar) : c_int;
+    extern proc nc_get_varm_schar(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_schar) : c_int;
 
-    extern proc nc_put_varm_short(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_short) : c_int;
+    extern proc nc_put_varm_short(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_short) : c_int;
 
-    extern proc nc_get_varm_short(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_short) : c_int;
+    extern proc nc_get_varm_short(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_short) : c_int;
 
-    extern proc nc_put_varm_int(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_int) : c_int;
+    extern proc nc_put_varm_int(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_int) : c_int;
 
-    extern proc nc_get_varm_int(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_int) : c_int;
+    extern proc nc_get_varm_int(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_int) : c_int;
 
-    extern proc nc_put_varm_long(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_long) : c_int;
+    extern proc nc_put_varm_long(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_long) : c_int;
 
-    extern proc nc_get_varm_long(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_long) : c_int;
+    extern proc nc_get_varm_long(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_long) : c_int;
 
-    extern proc nc_put_varm_float(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_float) : c_int;
+    extern proc nc_put_varm_float(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_float) : c_int;
 
-    extern proc nc_get_varm_float(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_float) : c_int;
+    extern proc nc_get_varm_float(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_float) : c_int;
 
-    extern proc nc_put_varm_double(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_double) : c_int;
+    extern proc nc_put_varm_double(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_double) : c_int;
 
-    extern proc nc_get_varm_double(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_double) : c_int;
+    extern proc nc_get_varm_double(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_double) : c_int;
 
-    extern proc nc_put_varm_ushort(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_ushort) : c_int;
+    extern proc nc_put_varm_ushort(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_ushort) : c_int;
 
-    extern proc nc_get_varm_ushort(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_ushort) : c_int;
+    extern proc nc_get_varm_ushort(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_ushort) : c_int;
 
-    extern proc nc_put_varm_uint(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_uint) : c_int;
+    extern proc nc_put_varm_uint(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_uint) : c_int;
 
-    extern proc nc_get_varm_uint(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_uint) : c_int;
+    extern proc nc_get_varm_uint(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_uint) : c_int;
 
-    extern proc nc_put_varm_longlong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_longlong) : c_int;
+    extern proc nc_put_varm_longlong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_longlong) : c_int;
 
-    extern proc nc_get_varm_longlong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_longlong) : c_int;
+    extern proc nc_get_varm_longlong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_longlong) : c_int;
 
-    extern proc nc_put_varm_ulonglong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_ulonglong) : c_int;
+    extern proc nc_put_varm_ulonglong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_ulonglong) : c_int;
 
-    extern proc nc_get_varm_ulonglong(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_ulonglong) : c_int;
+    extern proc nc_get_varm_ulonglong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_ulonglong) : c_int;
 
-    extern proc nc_put_varm_string(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_string) : c_int;
+    extern proc nc_put_varm_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_string) : c_int;
 
-    extern proc nc_get_varm_string(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_string) : c_int;
+    extern proc nc_get_varm_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_string) : c_int;
 
     extern proc nc_put_var_text(ncid : c_int, varid : c_int, op : c_string) : c_int;
 
@@ -835,25 +835,25 @@ module NetCDF {
 
     extern proc nc_get_var_string(ncid : c_int, varid : c_int, ref ip : c_string) : c_int;
 
-    extern proc nc_put_att_ubyte(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : size_t, ref op : c_uchar) : c_int;
+    extern proc nc_put_att_ubyte(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, ref op : c_uchar) : c_int;
 
     extern proc nc_get_att_ubyte(ncid : c_int, varid : c_int, name : c_string, ref ip : c_uchar) : c_int;
 
-    extern proc nc_put_var1_ubyte(ncid : c_int, varid : c_int, ref indexp : size_t, ref op : c_uchar) : c_int;
+    extern proc nc_put_var1_ubyte(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_uchar) : c_int;
 
-    extern proc nc_get_var1_ubyte(ncid : c_int, varid : c_int, ref indexp : size_t, ref ip : c_uchar) : c_int;
+    extern proc nc_get_var1_ubyte(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_uchar) : c_int;
 
-    extern proc nc_put_vara_ubyte(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref op : c_uchar) : c_int;
+    extern proc nc_put_vara_ubyte(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_uchar) : c_int;
 
-    extern proc nc_get_vara_ubyte(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref ip : c_uchar) : c_int;
+    extern proc nc_get_vara_ubyte(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_uchar) : c_int;
 
-    extern proc nc_put_vars_ubyte(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref op : c_uchar) : c_int;
+    extern proc nc_put_vars_ubyte(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_uchar) : c_int;
 
-    extern proc nc_get_vars_ubyte(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref ip : c_uchar) : c_int;
+    extern proc nc_get_vars_ubyte(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_uchar) : c_int;
 
-    extern proc nc_put_varm_ubyte(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_uchar) : c_int;
+    extern proc nc_put_varm_ubyte(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_uchar) : c_int;
 
-    extern proc nc_get_varm_ubyte(ncid : c_int, varid : c_int, ref startp : size_t, ref countp : size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_uchar) : c_int;
+    extern proc nc_get_varm_ubyte(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_uchar) : c_int;
 
     extern proc nc_put_var_ubyte(ncid : c_int, varid : c_int, ref op : c_uchar) : c_int;
 
@@ -861,9 +861,9 @@ module NetCDF {
 
     extern proc nc_show_metadata(ncid : c_int) : c_int;
 
-    extern proc nc__create_mp(path : c_string, cmode : c_int, initialsz : size_t, basepe : c_int, ref chunksizehintp : size_t, ref ncidp : c_int) : c_int;
+    extern proc nc__create_mp(path : c_string, cmode : c_int, initialsz : c_size_t, basepe : c_int, ref chunksizehintp : c_size_t, ref ncidp : c_int) : c_int;
 
-    extern proc nc__open_mp(path : c_string, mode : c_int, basepe : c_int, ref chunksizehintp : size_t, ref ncidp : c_int) : c_int;
+    extern proc nc__open_mp(path : c_string, mode : c_int, basepe : c_int, ref chunksizehintp : c_size_t, ref ncidp : c_int) : c_int;
 
     extern proc nc_delete(path : c_string) : c_int;
 
@@ -961,7 +961,7 @@ module NetCDF {
     extern type nc_type = c_int;
 
     extern record nc_vlen_t {
-      var len : size_t;
+      var len : c_size_t;
       var p : c_void_ptr;
     }
 

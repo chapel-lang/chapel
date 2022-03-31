@@ -20,19 +20,33 @@
 # settings for the build
 #
 
+# Set CHPL_DEVELOPER to 0 if it is not set yet
+CHPL_DEVELOPER ?= 0
+# set DYNO_ENABLE_ASSERTIONS to 0 if it is not set yet
+DYNO_ENABLE_ASSERTIONS ?= 0
+
 ifneq ($(NO_DEPEND), 1)
 DEPEND=1
 endif
 
-ifdef CHPL_DEVELOPER
+ifeq ($(CHPL_DEVELOPER), 0)
+OPTIMIZE=1
+else
 DEBUG=1
 WARNINGS=1
 TAGS=1
-else
-OPTIMIZE=1
+# always enable assertions in CHPL_DEVELOPER/debug mode
+DYNO_ENABLE_ASSERTIONS=1
 endif
 #PROFILE=1
 
+ifeq ($(DYNO_ENABLE_ASSERTIONS), 0)
+  # disable assertions
+  ASSERTIONS_FLAG:=-DNDEBUG
+else
+  # leave assertions enabled
+  ASSERTIONS_FLAG:=
+endif
 
 #
 # include the standard Chapel Makefile.base
@@ -79,6 +93,7 @@ COMP_CXXFLAGS := $(COMP_CXXFLAGS) \
                  $(CHPL_MAKE_HOST_BUNDLED_COMPILE_ARGS) \
                  $(LLVM_EXTRA_CFLAGS) \
                  $(CHPL_MAKE_HOST_SYSTEM_COMPILE_ARGS) \
+                 $(ASSERTIONS_FLAG)
 
 
 #

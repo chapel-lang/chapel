@@ -14,9 +14,9 @@ proc BlockArr.TestGetsPuts(B)
 
   param stridelevels=1;
   //Errors below if stridelevels=0 !!
-  var dststrides:[1..#stridelevels] size_t;
-  var srcstrides: [1..#stridelevels] size_t;
-  var count: [1..#(stridelevels+1)] size_t;
+  var dststrides:[1..#stridelevels] c_size_t;
+  var srcstrides: [1..#stridelevels] c_size_t;
+  var count: [1..#(stridelevels+1)] c_size_t;
   var lid=0; //local locale id
 
   on Locales[0] {

@@ -24,7 +24,7 @@ const LocDom = {1..n  , 1..n  },
 //
 // query out the domain and array of the locales we're targeting
 //
-const LocaleGrid = Dom.targetLocales,
+const LocaleGrid = Dom.targetLocales(),
       LocaleGridDom = LocaleGrid.domain;
 
 if printLocaleData {
@@ -43,7 +43,7 @@ if printLocaleData {
   //
   // query the sub-block of the whole problem space that each locale owns
   //
-  // TODO: See the TODO above about querying the targetLocales from
+  // TODO: See the TODO above about querying the targetLocales() from
   // Dom.  By that same argument, we could use localSubdomain() here.
   //
   for (lr,lc) in LocaleGridDom {

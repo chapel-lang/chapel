@@ -578,99 +578,129 @@ module Bytes {
   /*
     Checks if the :mod:`bytes <Bytes>` starts with any of the given arguments.
 
-    :arg needles: :mod:`bytes <Bytes>` (s) to match against.
+    :arg patterns: :mod:`bytes <Bytes>` (s) to match against.
 
     :returns: * `true`--when the :mod:`bytes <Bytes>` begins with one or more of
-                the `needles`
+                the `patterns`
               * `false`--otherwise
    */
-  inline proc bytes.startsWith(needles: bytes ...) : bool {
-    return startsEndsWith(this, needles, fromLeft=true);
+  inline proc bytes.startsWith(patterns: bytes ...) : bool {
+    return startsEndsWith(this, patterns, fromLeft=true);
   }
 
   /*
     Checks if the :mod:`bytes <Bytes>` ends with any of the given arguments.
 
-    :arg needles: :mod:`bytes <Bytes>` (s) to match against.
+    :arg patterns: :mod:`bytes <Bytes>` (s) to match against.
 
     :returns: * `true`--when the :mod:`bytes <Bytes>` ends with one or more of
-                the `needles`
+                the `patterns`
               * `false`--otherwise
    */
-  inline proc bytes.endsWith(needles: bytes ...) : bool {
-    return startsEndsWith(this, needles, fromLeft=false);
+  inline proc bytes.endsWith(patterns: bytes ...) : bool {
+    return startsEndsWith(this, patterns, fromLeft=false);
+  }
+
+  pragma "last resort"
+  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
+  inline proc bytes.find(needle: bytes,
+                         region: range(?) = this.indices) : idxType {
+    return this.find(needle, region);
   }
 
   /*
     Finds the argument in the :mod:`bytes <Bytes>`
 
-    :arg needle: :mod:`bytes <Bytes>` to search for
+    :arg pattern: :mod:`bytes <Bytes>` to search for
 
-    :arg region: an optional range defining the indices to search
+    :arg indices: an optional range defining the indices to search
                  within, default is the whole. Halts if the range is not
                  within ``this.indices``
 
-    :returns: the index of the first occurrence from the left of `needle`
-              within the :mod:`bytes <Bytes>`, or -1 if the `needle` is not in the
+    :returns: the index of the first occurrence from the left of `pattern`
+              within the :mod:`bytes <Bytes>`, or -1 if the `pattern` is not in the
               :mod:`bytes <Bytes>`.
    */
-  inline proc bytes.find(needle: bytes,
-                         region: range(?) = this.indices) : idxType {
-    return doSearchNoEnc(this, needle, region, count=false): idxType;
+  inline proc bytes.find(pattern: bytes,
+                         indices: range(?) = this.indices) : idxType {
+    return doSearchNoEnc(this, pattern, indices, count=false): idxType;
+  }
+
+  pragma "last resort"
+  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
+  inline proc bytes.rfind(needle: bytes,
+                          region: range(?) = this.indices) : idxType {
+    return this.rfind(needle, region);
   }
 
   /*
     Finds the argument in the :mod:`bytes <Bytes>`
 
-    :arg needle: The :mod:`bytes <Bytes>` to search for
+    :arg pattern: The :mod:`bytes <Bytes>` to search for
 
-    :arg region: an optional range defining the indices to search within,
+    :arg indices: an optional range defining the indices to search within,
                  default is the whole. Halts if the range is not
                  within ``this.indices``
 
-    :returns: the index of the first occurrence from the right of `needle`
-              within the :mod:`bytes <Bytes>`, or -1 if the `needle` is not in the
+    :returns: the index of the first occurrence from the right of `pattern`
+              within the :mod:`bytes <Bytes>`, or -1 if the `pattern` is not in the
               :mod:`bytes <Bytes>`.
    */
-  inline proc bytes.rfind(needle: bytes,
-                          region: range(?) = this.indices) : idxType {
-    return doSearchNoEnc(this, needle, region, count=false,
+  inline proc bytes.rfind(pattern: bytes,
+                          indices: range(?) = this.indices) : idxType {
+    return doSearchNoEnc(this, pattern, indices, count=false,
                          fromLeft=false): idxType;
+  }
+
+  pragma "last resort"
+  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
+  inline proc bytes.count(needle: bytes,
+                          region: range(?) = this.indices) : int {
+    return this.count(needle, region);
   }
 
   /*
     Counts the number of occurrences of the argument in the :mod:`bytes <Bytes>`
 
-    :arg needle: The :mod:`bytes <Bytes>` to search for
+    :arg pattern: The :mod:`bytes <Bytes>` to search for
 
-    :arg region: an optional range defining the substring to search within,
+    :arg indices: an optional range defining the substring to search within,
                  default is the whole. Halts if the range is not
                  within ``this.indices``
 
-    :returns: the number of times `needle` occurs in the :mod:`bytes <Bytes>`
+    :returns: the number of times `pattern` occurs in the :mod:`bytes <Bytes>`
    */
-  inline proc bytes.count(needle: bytes,
-                          region: range(?) = this.indices) : int {
-    return doSearchNoEnc(this, needle, region, count=true);
+  inline proc bytes.count(pattern: bytes,
+                          indices: range(?) = this.indices) : int {
+    return doSearchNoEnc(this, pattern, indices, count=true);
   }
+
+  pragma "last resort"
+  deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
+  inline proc bytes.replace(needle: bytes,
+                            replacement: bytes,
+                            count: int = -1) : bytes {
+    return this.replace(needle, replacement, count);
+  }
+
 
   /*
     Replaces occurrences of a :mod:`bytes <Bytes>` with another.
 
-    :arg needle: The :mod:`bytes <Bytes>` to search for
+    :arg pattern: The :mod:`bytes <Bytes>` to search for
 
-    :arg replacement: The :mod:`bytes <Bytes>` to replace `needle` with
+    :arg replacement: The :mod:`bytes <Bytes>` to replace `pattern` with
 
     :arg count: an optional argument specifying the number of replacements to
                 make, values less than zero will replace all occurrences
 
     :returns: a copy of the :mod:`bytes <Bytes>` where `replacement` replaces
-              `needle` up to `count` times
+              `pattern` up to `count` times
    */
-  inline proc bytes.replace(needle: bytes,
+  inline proc bytes.replace(pattern: bytes,
                             replacement: bytes,
                             count: int = -1) : bytes {
-    return doReplace(this, needle, replacement, count);
+    return doReplace(this, pattern, replacement, count);
   }
 
   /*
@@ -744,7 +774,7 @@ module Bytes {
     // this overload serves as a catch-all for unsupported types.
     // for the implementation of array and tuple overloads, see
     // join() methods in the _bytes record.
-    compilerError("bytes.join() accepts any number of bytes, homogenous "
+    compilerError("bytes.join() accepts any number of bytes, homogeneous "
                     + "tuple of bytes, or array of bytes as an argument");
   }
 

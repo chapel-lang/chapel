@@ -124,7 +124,7 @@ void Type::setDestructor(FnSymbol* fn) {
   destructor = fn;
 }
 
-bool Type::isSerializeable() {
+bool Type::isSerializable() {
   if (isAggregateType(this)) {
     return serializeMap.find(this->getValType()) != serializeMap.end();
   }

@@ -1,7 +1,7 @@
 use CTypes;
 
 
-extern proc chpl_gpu_get_alloc_size(arg): size_t;
+extern proc chpl_gpu_get_alloc_size(arg): c_size_t;
 extern proc chpl_gpu_copy_device_to_host(dst: c_void_ptr, src: c_void_ptr, n): void;
 extern proc chpl_gpu_copy_host_to_device(dst: c_void_ptr, src: c_void_ptr, n): void;
 extern proc chpl_gpu_is_device_ptr(ptr): bool;

@@ -2,6 +2,8 @@ This directory contains a start towards work on the revamped compiler.
 This directory uses a different directory structure from the old compiler
 - see below for rationale.
 
+The effort of creating a revamped compiler is called "dyno".
+
 For now, this work is being done in this directory but the expectation is
 that eventually it will swap places with the compiler/ directory (so any
 old-compiler code still used is put into subdirectories according to the
@@ -16,7 +18,7 @@ structure used to store sources and headers. This addresses three problems:
     into a library and multiple tools using that library
  3. the current structure makes namespacing harder
 
-### current structure (old compiler structure)
+### old compiler structure
 
 The current structure is to
  * separate out the .cpp files into subdirectories by topic (AST,
@@ -27,10 +29,11 @@ The current structure is to
    directory. For example, we have some header files in
    `compiler/resolution`.
 
-### proposed structure (new compiler structure)
+### dyno structure
 
-I'm proposing that we generally try to follow the LLVM project's
-directory structure. The structure (for each LLVM project) is this:
+We generally try to follow the LLVM project's directory structure. The
+structure (for each LLVM project) is this:
+
  * For code that goes into the library:
    * store .cpp files in `lib/<topic>`
    * store C++ `.h` files forming the library API into
@@ -41,7 +44,7 @@ directory structure. The structure (for each LLVM project) is this:
      <project-name> here is something like 'chpl' for us and this just
      makes it so that the headers included have the same path as if they
      were installed in e.g. `/usr/include`. So you can have e.g.
-     #include "chpl/AST/BlockStmt.h".
+     #include "chpl/uast/BlockStmt.h".
    * store `.h` files that are for use only within the project in
      `lib/<topic>`
    * For example, within the LLVM project there is
@@ -58,12 +61,12 @@ In particular, for our project, I would expect we end up with this structure:
   compiler/  (could also be called chpl/ in the future)
      include/chpl
        uast/ (new AST headers forming library API will go here)
+       resolution/ (headers forming API for new resolver)
        (nothing from the old compiler since it does not present a library interface)
 
      lib/
        uast/ (new AST source code)
-       oast/ (current AST source code and headers)
-       resolution/ (resolution code as well as resolution.h)
+       resolution/ (resolution code)
        ...
 
      tools/
@@ -71,11 +74,11 @@ In particular, for our project, I would expect we end up with this structure:
           include/ (current contents of compiler/include)
           AST/ (current contents of compiler/AST)
           ...
-          main/.cpp files implementing (source code only used in `chpl` and not in compiler-as-a-library - could contain contents of `compiler/main` today)
+          main/ (source code only used in `chpl` and not in compiler-as-a-library - could contain contents of `compiler/main` today)
 ```
 
 Please note that when we `#include` a header we will do so assuming that
-`chpl/include` is in the `-I` path and also the current `lib` subdir.
+`dyno/include` is in the `-I` path and so is the current `lib` subdir.
 
 
 ### a note about namespaces
@@ -91,3 +94,14 @@ namespace. Here is some guidance about when to do so:
    bundle since they are related
 
 In particular, all topic directories need to have a namespace.
+ * today we make an exception for `util`
+
+### a note about file names
+
+.h and .cpp files defining primarily a specific type should go into a
+file sharing that type name. Type names in dyno use an InitialUpperCase.
+So we have e.g. NumericLiteral.h / NumericLiteral.cpp.
+
+In contrast, .h and .cpp files defining a collection of things that
+aren't a specific type should go into a file using lower case and dashes.
+For example, we have scope-queries.h and scope-queries.cpp.

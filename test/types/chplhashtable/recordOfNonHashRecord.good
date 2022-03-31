@@ -1,11 +1,11 @@
-$CHPL_HOME/modules/standard/Set.chpl:277: In method '_addElem':
-$CHPL_HOME/modules/standard/Set.chpl:290: error: unresolved call 'R.hash()'
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: In method '_addElem':
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: error: unresolved call 'R.hash()'
 recordOfNonHashRecord.chpl:22: note: this candidate did not match: WrapR.hash()
 recordOfNonHashRecord.chpl:22: note: because method call receiver with type 'R'
 recordOfNonHashRecord.chpl:22: note: is passed to formal 'this: WrapR'
-$CHPL_HOME/modules/standard/Set.chpl:290: note: other candidates are:
-$CHPL_HOME/modules/internal/Bytes.chpl:1251: note:   bytes.hash()
-$CHPL_HOME/modules/internal/String.chpl:2521: note:   string.hash()
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: note: other candidates are:
+$CHPL_HOME/modules/internal/Bytes.chpl:nnnn: note:   bytes.hash()
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note:   string.hash()
 note: and 38 other candidates, use --print-all-candidates to see them
-  $CHPL_HOME/modules/standard/Set.chpl:335: called as (set(WrapR,false))._addElem(elem: WrapR) from method 'add'
+  $CHPL_HOME/modules/standard/Set.chpl:nnnn: called as (set(WrapR,false))._addElem(elem: WrapR) from method 'add'
   recordOfNonHashRecord.chpl:32: called as (set(WrapR,false)).add(element: WrapR)

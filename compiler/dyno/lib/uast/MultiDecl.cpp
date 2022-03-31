@@ -39,8 +39,8 @@ owned<MultiDecl> MultiDecl::build(Builder* builder, Location loc,
                                   owned<Attributes> attributes,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
-                                  ASTList varDecls) {
-  ASTList lst;
+                                  AstList varDecls) {
+  AstList lst;
   int attributesChildNum = -1;
 
   if (attributes.get() != nullptr) {

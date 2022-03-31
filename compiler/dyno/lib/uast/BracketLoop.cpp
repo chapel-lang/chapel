@@ -27,7 +27,7 @@ namespace uast {
 
 owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
                                       owned<Decl> index,
-                                      owned<Expression> iterand,
+                                      owned<AstNode> iterand,
                                       owned<WithClause> withClause,
                                       BlockStyle blockStyle,
                                       owned<Block> body,
@@ -36,7 +36,7 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
   assert(iterand.get() != nullptr);
   assert(body.get() != nullptr);
 
-  ASTList lst;
+  AstList lst;
   int8_t indexChildNum = -1;
   int8_t iterandChildNum = -1;
   int8_t withClauseChildNum = -1;

@@ -11,6 +11,9 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell",
     path: "../../provision-scripts/apt-get-deps.sh"
 
+  # llvm package is 3.8 but 8 is available
+  # leave LLVM uninstalled
+
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"
 

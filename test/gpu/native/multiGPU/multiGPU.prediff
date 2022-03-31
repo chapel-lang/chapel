@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# create the good file based on the number of children reported by the locale
+# model
+num_gpus=$(awk '/Number of sublocales.*/ {print $NF;}' < $2)
+num_gpus=$((num_gpus-1))
+
+for i in $(seq 1 $num_gpus);
+do
+  echo "      4 Kernel launcher called. (subloc $i)" > $1.good
+done
+
+# filter kernel launches and count them
+grep 'Kernel launch' $2 | sort | uniq -c > $2.new
+mv $2.new $2

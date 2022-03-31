@@ -1089,15 +1089,6 @@ can be examined, for example, by iterating over the range in a for loop
    behavior is undefined. See also ``hasLast``.
 
 
-
-.. function:: proc range.length : idxType
-
-   Returns the number of indices in the range’s represented sequence. If
-   the represented sequence is infinite or is undefined, an error is
-   generated.
-
-
-
 .. function:: proc range.low : idxType
 
    Returns the range’s low bound. If the low bound is -:math:`\infty`, the
@@ -1105,9 +1096,11 @@ can be examined, for example, by iterating over the range in a for loop
 
 
 
-.. function:: proc range.size : idxType
+.. function:: proc range.size : int
 
-   Same as :math:`range`.length.
+   Returns the number of indices in the range’s represented sequence. If
+   the represented sequence is infinite or is undefined, an error is
+   generated.
 
 
 

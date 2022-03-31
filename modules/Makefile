@@ -61,7 +61,6 @@ MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/make_sys_basic_types.py
 
 $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-	rm -f $(@D)/SysCTypes.chpl # TODO: Can remove once people are caught up
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) $(@F)
 
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
@@ -109,14 +108,20 @@ MODULES_TO_DOCUMENT = \
 	standard/Version.chpl
 
 PACKAGES_TO_DOCUMENT = \
-	packages/ArgumentParser.chpl \
 	packages/AllLocalesBarriers.chpl \
+	packages/ArgumentParser.chpl \
 	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
+	packages/Channel.chpl \
+	packages/Collection.chpl \
 	packages/ConcurrentMap.chpl \
+	packages/CopyAggregation.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
+	packages/DistributedBag.chpl \
+	packages/DistributedDeque.chpl \
+	packages/DistributedIters.chpl \
 	packages/EpochManager.chpl \
 	packages/FFTW.chpl \
 	packages/FunctionalOperations.chpl \
@@ -130,8 +135,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
-	packages/SortedMap.chpl \
-	packages/SortedSet.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
@@ -139,18 +142,16 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Search.chpl \
 	packages/Socket.chpl \
 	packages/Sort.chpl \
-	packages/UnrolledLinkedList.chpl \
-	packages/VisualDebug.chpl \
-	packages/ZMQ.chpl \
-	packages/Collection.chpl \
-	packages/DistributedBag.chpl \
-	packages/DistributedDeque.chpl \
-	packages/DistributedIters.chpl \
+	packages/SortedMap.chpl \
+	packages/SortedSet.chpl \
 	packages/TOML.chpl \
+	packages/URL.chpl \
 	packages/UnitTest.chpl \
 	packages/UnorderedAtomics.chpl \
 	packages/UnorderedCopy.chpl \
-	packages/URL.chpl \
+	packages/UnrolledLinkedList.chpl \
+	packages/VisualDebug.chpl \
+	packages/ZMQ.chpl \
 
 
 DISTS_TO_DOCUMENT = \

@@ -20,9 +20,9 @@ target_sources(libdyno-obj
 
                AggregateDecl.cpp
                Array.cpp
-               ASTList.cpp
-               ASTNode.cpp
-               ASTTag.cpp
+               AstList.cpp
+               AstNode.cpp
+               AstTag.cpp
                As.cpp
                Attributes.cpp
                Begin.cpp
@@ -35,6 +35,7 @@ target_sources(libdyno-obj
                BytesLiteral.cpp
                Call.cpp
                Catch.cpp
+               chpl-syntax-printer.cpp
                Class.cpp
                Cobegin.cpp
                Coforall.cpp
@@ -51,7 +52,6 @@ target_sources(libdyno-obj
                Enum.cpp
                EnumElement.cpp
                ErroneousExpression.cpp
-               Expression.cpp
                ExternBlock.cpp
                FnCall.cpp
                For.cpp

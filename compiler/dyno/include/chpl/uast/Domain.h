@@ -21,7 +21,7 @@
 #define CHPL_UAST_DOMAIN_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -40,20 +40,18 @@ namespace uast {
 
   A domain expression will never contain comments.
  */
-class Domain final : public Expression {
+class Domain final : public AstNode {
  private:
   // TODO: Record if initializer list has trailing comma?
-  Domain(ASTList children)
-    : Expression(asttags::Domain, std::move(children)) {
-    assert(isExpressionASTList(children_));
+  Domain(AstList children)
+    : AstNode(asttags::Domain, std::move(children)) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
-    return expressionContentsMatchInner(other->toExpression());
+  bool contentsMatchInner(const AstNode* other) const override {
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -63,13 +61,13 @@ class Domain final : public Expression {
    Create and return a Domain expression.
    */
   static owned<Domain> build(Builder* builder, Location loc,
-                             ASTList exprs);
+                             AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this domain.
   */
-  ASTListIteratorPair<Expression> exprs() const {
-    return ASTListIteratorPair<Expression>(children_.begin(),
+  AstListIteratorPair<AstNode> exprs() const {
+    return AstListIteratorPair<AstNode>(children_.begin(),
                                            children_.end());
   }
 
@@ -83,10 +81,9 @@ class Domain final : public Expression {
   /**
     Return the i'th expression in this domain.
   */
-  const Expression* expr(int i) const {
-    const ASTNode* ast = this->child(i);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+  const AstNode* expr(int i) const {
+    const AstNode* ast = this->child(i);
+    return ast;
   }
 
 };

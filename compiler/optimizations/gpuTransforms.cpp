@@ -38,7 +38,7 @@
 #include "global-ast-vecs.h"
 
 bool debugPrintGPUChecks = false;
-bool allowFnCallsFromGPU = false;
+bool allowFnCallsFromGPU = true;
 int indentGPUChecksLevel = 0;
 
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
@@ -74,11 +74,44 @@ static bool shouldOutlineLoopHelp(BlockStmt* blk,
                                   std::set<FnSymbol*> visitedFns,
                                   bool allowFnCalls);
 
+static SymExpr* hasOuterVarAccesses(FnSymbol* fn);
 static void markGPUSuitableLoops();
 
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
   return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
+}
+
+// This is primarily to handle the indexOfInterest generated for promoted
+// expressions. That symbol is a ref that's defined outside the for loop, but it
+// is def'd and use'd only inside the block. Moreover, one of its defs is
+// actually redundant and should be removed. However at this stage in the
+// compilation it is not. The bottom line is, that ref could actually just be a
+// local variable in the loop body. So, we handle that specially to avoid
+// passing that as an argument to the GPU kernel.
+// TODO: investigate whether that def is removed later in the compilation.
+// Ideally move GPU transforms after that pass
+static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
+  if (isDefinedInTheLoop(sym, loop) ||
+      !sym->hasFlag(FLAG_TEMP)      ||
+      !sym->isRef()                 ||
+      !isVarSymbol(sym)) {
+    return false;
+  }
+
+  for_SymbolUses(use, sym) {
+    if (LoopStmt::findEnclosingLoop(use) != loop) {
+      return false;
+    }
+  }
+
+  for_SymbolDefs(def, sym) {
+    if (LoopStmt::findEnclosingLoop(def) != loop) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 static bool isIndexVariable(OutlineInfo& info, Symbol* sym) {
@@ -166,7 +199,7 @@ static OutlineInfo collectOutlineInfo(CForLoop* loop) {
 }
 
 /**
- * Given a CForLoop with lowerbound lb and upper bound ub
+ * Given a CForLoop with lower bound lb and upper bound ub
  * (See extractUpperBound\extractIndicesAndLowerBound to
  * see what we pattern match and extract), generate the
  * following AST and insert it into gpuLaunchBlock:
@@ -209,7 +242,7 @@ static VarSymbol* generateAssignmentToPrimitive(
 
 static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop) {
   Type* symType = symInLoop->typeInfo();
-  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", symType);
+  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, symInLoop->name, symType);
   info.fn->insertFormalAtTail(newFormal);
 
   info.kernelActuals.push_back(symInLoop);
@@ -218,12 +251,23 @@ static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop) {
   return newFormal;
 }
 
+static Symbol* addLocalVariable(OutlineInfo& info, Symbol* symInLoop) {
+  VarSymbol* newSym = toVarSymbol(symInLoop->copy());
+
+  INT_ASSERT(newSym);
+
+  info.fn->insertAtHead(new DefExpr(newSym));
+  info.copyMap.put(symInLoop, newSym);
+
+  return newSym;
+}
+
 /**
  *  For each loopIndex, generates and inserts the following AST into fn:
  *
- *  blockIdxX  = __primitve('gpu blockIdx x')
- *  blockDimX  = __primitve('gpu blockDim x')
- *  threadIdxX = __primitve('gpu threadIdx x')
+ *  blockIdxX  = __primitive('gpu blockIdx x')
+ *  blockDimX  = __primitive('gpu blockDim x')
+ *  threadIdxX = __primitive('gpu threadIdx x')
  *  t0 = varBlockIdxX * varBlockDimX
  *  t1 = t0 + threadIdxX
  *  index = t1 + lowerBound
@@ -318,6 +362,49 @@ static  CallExpr* generateGPUCall(OutlineInfo& info, VarSymbol* numThreads) {
   return call;
 }
 
+// If any SymExpr is referring to a variable defined outside the
+// function return the SymExpr. Otherwise return nullptr
+static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
+  std::vector<SymExpr*> ses;
+  collectSymExprs(fn, ses);
+  for_vector(SymExpr, se, ses) {
+    if (VarSymbol* var = toVarSymbol(se->symbol())) {
+      if (var->defPoint->parentSymbol != fn) {
+        if (!var->isParameter() && var != gVoid) {
+          return se;
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+static void errorForOuterVarAccesses(FnSymbol* fn) {
+  if (SymExpr* se = hasOuterVarAccesses(fn)) {
+    VarSymbol* var = toVarSymbol(se->symbol());
+    INT_ASSERT(var);
+    USR_FATAL(se, "variable '%s' must be defined in the function it"
+              " is used in for GPU usage", var->name);
+  }
+}
+
+static void markGPUSubCalls(FnSymbol* fn) {
+  if (!fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+    fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
+    fn->addFlag(FLAG_GPU_CODEGEN);
+  }
+
+  errorForOuterVarAccesses(fn);
+
+  std::vector<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  for_vector(CallExpr, call, calls) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
+      markGPUSubCalls(fn);
+    }
+  }
+}
+
 static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<BaseAST*> asts;
@@ -325,7 +412,7 @@ static void outlineGPUKernels() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        if (shouldOutlineLoop(loop, /*allowFnCalls=*/false)) {
+        if (shouldOutlineLoop(loop, allowFnCallsFromGPU)) {
           SET_LINENO(loop);
 
           OutlineInfo info = collectOutlineInfo(loop);
@@ -352,6 +439,8 @@ static void outlineGPUKernels() {
           thenBlock->insertAtHead(gpuLaunchBlock);
           elseBlock->insertAtHead(loop->remove());
 
+          std::set<Symbol*> handledSymbols;
+
           for_alist(node, loop->body) {
 
             bool copyNode = true;
@@ -370,12 +459,20 @@ static void outlineGPUKernels() {
               for_vector(SymExpr, symExpr, symExprsInBody) {
                 Symbol* sym = symExpr->symbol();
 
+                if (handledSymbols.count(sym) == 1) {
+                  continue;
+                }
+                handledSymbols.insert(sym);
+
                 if (isDefinedInTheLoop(sym, loop)) {
                   // looks like this symbol was declared within the loop body,
                   // so do nothing. TODO: I am hoping that we don't need to
                   // check the type of the variable here, and we'll know that it
                   // is a valid variable to declare on the gpu via the loop body
                   // analysis
+                }
+                else if (isDegenerateOuterRef(sym, loop)) {
+                  addLocalVariable(info, sym);
                 }
                 else if (sym->isImmediate()) {
                   // nothing to do
@@ -403,6 +500,15 @@ static void outlineGPUKernels() {
                     else if (parent->isPrimitive()) {
                       addKernelArgument(info, sym);
                     }
+                    else if (FnSymbol* calledFn = parent->resolvedFunction()) {
+                      if (!toFnSymbol(sym)) {
+                        addKernelArgument(info, sym);
+                      }
+
+                      if (!calledFn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+                         markGPUSubCalls(calledFn);
+                      }
+                    }
                     else {
                       INT_FATAL("Unexpected call expression");
                     }
@@ -419,16 +525,21 @@ static void outlineGPUKernels() {
           update_symbols(outlinedFunction->body, &info.copyMap);
           normalize(outlinedFunction);
 
-          // We'll get an end of statement for the index we add. I am not sure
-          // how much it matters for the long term, for now just remove it.
-          for_alist (node, outlinedFunction->body->body) {
-            if (CallExpr* call = toCallExpr(node)) {
-              if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
-                call->remove();
-              }
+          // normalization above adds PRIM_END_OF_STATEMENTs. It is probably too
+          // wide of a brush. We can:
+          //  (a) generate the AST we are generating from scratch inside some
+          //      block, normalize that block, weed out these primitives inside
+          //      that block only, flatten and remove
+          //  (b) generate the new AST in the normalized form and never call
+          //      normalize
+          //  (c) keep things as is until this becomes an issue
+          std::vector<CallExpr*> callsInBody;
+          collectCallExprs(outlinedFunction, callsInBody);
+          for_vector (CallExpr, call, callsInBody) {
+            if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+              call->remove();
             }
           }
-
 
           VarSymbol *numThreads = generateNumThreads(gpuLaunchBlock, info);
           CallExpr* gpuCall = generateGPUCall(info, numThreads);
@@ -497,6 +608,10 @@ static bool shouldOutlineLoopHelp(BlockStmt* blk,
         return false;
 
       FnSymbol* fn = call->resolvedFunction();
+
+      if (hasOuterVarAccesses(fn))
+        return false;
+
       indentGPUChecksLevel += 2;
       if (okFns.count(fn) != 0 ||
           shouldOutlineLoopHelp(fn->body, okFns,

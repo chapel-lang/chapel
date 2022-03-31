@@ -8,6 +8,7 @@
 
 #include "llvm/Support/InstructionCost.h"
 #include "gtest/gtest.h"
+#include <limits>
 
 using namespace llvm;
 
@@ -19,12 +20,21 @@ struct CostTest : public testing::Test {
 
 } // namespace
 
+TEST_F(CostTest, DefaultCtor) {
+  InstructionCost DefaultCost;
+
+  ASSERT_TRUE(DefaultCost.isValid());
+  EXPECT_EQ(*(DefaultCost.getValue()), 0);
+}
+
 TEST_F(CostTest, Operators) {
+
   InstructionCost VThree = 3;
   InstructionCost VNegTwo = -2;
   InstructionCost VSix = 6;
   InstructionCost IThreeA = InstructionCost::getInvalid(3);
   InstructionCost IThreeB = InstructionCost::getInvalid(3);
+  InstructionCost ITwo = InstructionCost::getInvalid(2);
   InstructionCost TmpCost;
 
   EXPECT_NE(VThree, VNegTwo);
@@ -33,10 +43,15 @@ TEST_F(CostTest, Operators) {
   EXPECT_EQ(IThreeA, IThreeB);
   EXPECT_GE(IThreeA, VNegTwo);
   EXPECT_LT(VSix, IThreeA);
+  EXPECT_LT(VThree, ITwo);
+  EXPECT_GE(ITwo, VThree);
   EXPECT_EQ(VSix - IThreeA, IThreeB);
   EXPECT_EQ(VThree - VNegTwo, 5);
   EXPECT_EQ(VThree * VNegTwo, -6);
   EXPECT_EQ(VSix / VThree, 2);
+  EXPECT_NE(IThreeA, ITwo);
+  EXPECT_LT(ITwo, IThreeA);
+  EXPECT_GT(IThreeA, ITwo);
 
   EXPECT_FALSE(IThreeA.isValid());
   EXPECT_EQ(IThreeA.getState(), InstructionCost::Invalid);
@@ -61,4 +76,20 @@ TEST_F(CostTest, Operators) {
 
   EXPECT_EQ(std::min(VThree, VNegTwo), -2);
   EXPECT_EQ(std::max(VThree, VSix), 6);
+
+  // Test saturation
+  auto Max = InstructionCost::getMax();
+  auto Min = InstructionCost::getMin();
+  auto MinusOne = InstructionCost(-1);
+  auto MinusTwo = InstructionCost(-2);
+  auto One = InstructionCost(1);
+  auto Two = InstructionCost(2);
+  EXPECT_EQ(Max + One, Max);
+  EXPECT_EQ(Min + MinusOne, Min);
+  EXPECT_EQ(Min - One, Min);
+  EXPECT_EQ(Max - MinusOne, Max);
+  EXPECT_EQ(Max * Two, Max);
+  EXPECT_EQ(Min * Two, Min);
+  EXPECT_EQ(Max * MinusTwo, Min);
+  EXPECT_EQ(Min * MinusTwo, Max);
 }

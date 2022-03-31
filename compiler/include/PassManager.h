@@ -22,6 +22,7 @@
 #define _PASS_MANAGER_H_
 
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 //
@@ -32,7 +33,7 @@
 // be used in the future. A PassT processes a single item of type T so
 // that the caller can drive the execution.
 //
-// There might be a useful baseclass for this that has more general `run` method
+// There might be a useful base class for this that has more general `run` method
 // for instance, but for now having it templated over its input type is too useful.
 //
 // Run could equally be spelled operator() but I find the name more clear.
@@ -68,6 +69,93 @@ template <typename T, typename ResultType = void> class PassT {
   virtual ResultType getResult() {
     // return nothing
   }
+
+  virtual bool hasNext() {
+    return false;
+  }
+
+  virtual void processNext() {
+    // do nothing
+  }
+
+  virtual bool alreadyProcessed(T x) {
+    auto it = processed_.find(x);
+    bool ret = it != processed_.end();
+    processed_.emplace_hint(it, x);
+    return ret;
+  }
+
+ private:
+  std::unordered_set<T> processed_;
+};
+
+//
+// A PassTU is a PassT that is concerned with processing things of type T and U
+//
+// A common example of this two type pass is FnSymbol and CallExpr and the
+// following documentation uses it as a running example.
+//
+// There are two overloads of the `process` method that should be overridden:
+//      general             | example
+//   1) process(T x)        | process(FnSymbol* fn)
+//   2) process(T x, U, y)  | process(FnSymbol* fn, CallExpr* call)
+//
+// The first overload serves to process the "primary" unit of work and can
+// modify itself, but if/when it discovers more work to be done, it should use
+// the appropriate overload of `enqueue`:
+//      general             | example
+//   1) enqueue(T x)        | enqueue(FnSymbol* fn)
+//   2) enqueue(T x, U, y)  | enqueue(FnSymbol* fn, CallExpr* call)
+//
+// Each `enqueue` overload corresponds to a `process` overload and is in effect
+// a delayed function call.
+//
+// The second overload is called to process a `call` in its enclosing `fn`
+//
+template <typename T, typename U, typename ResultType = void>
+class PassTU : public PassT<T, ResultType> {
+ public:
+
+  // We need this to get an overload of an inherited method
+  using PassT<T, ResultType>::process;
+
+  virtual void process(T x, U y) {
+    // do nothing
+  }
+
+  void enqueue(T x) { TQueue_.push_back(x); }
+
+  void enqueue(T x, U y) { TUQueue_.push_back({x, y}); }
+
+  bool hasNext() override {
+    return !TQueue_.empty() || !TUQueue_.empty();
+  }
+
+  void processNext() override {
+    if (!TQueue_.empty()) {
+      auto x = TQueue_.back();
+      TQueue_.pop_back();
+      process(x);
+
+    } else if (!TUQueue_.empty()) {
+      auto pair = TUQueue_.back();
+      TUQueue_.pop_back();
+      process(pair.first, pair.second);
+    }
+  }
+
+ private:
+  // This might be different for different ordering guarantees
+  template<typename QT>
+  using Queue = std::vector<QT>;
+
+  Queue<T> TQueue_;
+  Queue<std::pair<T, U>> TUQueue_;
+
+  // another queueing method is something like
+  // std::unordered_map<T, std::vector<U>>
+  // which might give you better locality and/or visibility
+  // into whether there are remaining tasks for a specific T
 };
 
 template <typename T> using PassTList = std::vector<std::unique_ptr<PassT<T>>>;
@@ -94,34 +182,39 @@ class PassManager {
  private:
   // Run pass over many and return it's results (if any)
   template <typename T, typename R, typename Container>
-  R runPass(PassT<T, R>& pass, const Container& xs) {
+  R runPassImpl(PassT<T, R>& pass, const Container& xs) {
     for (auto& x : xs) {
       pass.run(x);
     }
+
+    while (pass.hasNext()) {
+      pass.processNext();
+    }
+
     return pass.getResult();
   }
 
  public:
   // We take pass by && in these for the common case where the caller
-  // sinks their argument; like runPass(myPassName(), ...);
+  // sinks their argument; like runPass(myPassName(), ...); Also
+  // because a pass list should get moved in so we can own it
 
-  // Run pass on a single item and return it's results (if any)
-  template <typename T, typename R>
-  R runPass(PassT<T, R>&& pass, T x) {
-    return runPass(pass, {x});
+  template <typename T, typename R, typename Container>
+  R runPass(PassT<T, R>& pass, const Container& xs) {
+    return runPassImpl(pass, xs);
   }
 
   // Run pass on many items and return it's results (if any)
   template <typename T, typename R, typename Container>
   R runPass(PassT<T, R>&& pass, const Container& xs) {
-    return runPass(pass, xs);
+    return runPassImpl(pass, xs);
   }
 
   // Run multiple passes on many items, pass at a time. Does not return results
   template <typename T, typename Container>
   void runPass(PassTList<T>&& passes, const Container& xs) {
     for (auto& p : passes) {
-      runPass(*p, xs);
+      runPassImpl(*p, xs);
     }
   }
 
@@ -132,6 +225,17 @@ class PassManager {
   void runPassChained(PassTList<T>&& passes, Container& xs) {
     for (auto& x : xs) {
       for (auto& p : passes) {
+        // NOTE: these passes can't currently have leftovers:
+        // In other words, it's not as easy to run multiple PassTU chained
+        // together because we don't know for sure that at its legal to do
+        //   p1.run(x); p2.run(x);
+        // without
+        //   p1.run(x); while (p1.hasNext()); p1.processNext(); p2.run(x)
+        // and in the latter case, you're not guaranteed that another
+        // call to
+        //   p1.run(y)
+        // for some y would have enqueued more work for x that should
+        // be processed before p2.run(x).
         p.run(x);
       }
     }

@@ -32,6 +32,16 @@
 
 using chpl::types::Param;
 
+static const char* kindToString(VisibilityClause::LimitationKind kind) {
+  switch (kind) {
+    case VisibilityClause::LimitationKind::ONLY: return "only";
+    case VisibilityClause::LimitationKind::EXCEPT: return "except";
+    case VisibilityClause::LimitationKind::BRACES: assert(false);
+    case VisibilityClause::LimitationKind::NONE: assert(false);
+    default: return "";
+  }
+}
+
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
          (lhs.first_line == rhs.first_line &&
@@ -113,12 +123,12 @@ Variable::Kind ParserContext::noteVarDeclKind(Variable::Kind varDeclKind) {
   return this->varDeclKind;
 }
 
-void ParserContext::storeVarDeclLinkageName(Expression* linkageName) {
+void ParserContext::storeVarDeclLinkageName(AstNode* linkageName) {
   assert(this->varDeclLinkageName == nullptr);
   this->varDeclLinkageName = linkageName;
 }
 
-owned<Expression> ParserContext::consumeVarDeclLinkageName(void) {
+owned<AstNode> ParserContext::consumeVarDeclLinkageName(void) {
   auto ret = this->varDeclLinkageName;
   this->varDeclLinkageName = nullptr;
   return toOwned(ret);
@@ -145,7 +155,7 @@ owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
 }
 
 PODUniqueString ParserContext::notePragma(YYLTYPE loc,
-                                          Expression* pragmaStr) {
+                                          AstNode* pragmaStr) {
   auto ret = PODUniqueString::get();
 
   // Extract the string literal and convert it into a pragma flag.
@@ -177,7 +187,7 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
   return ret;
 }
 
-void ParserContext::noteDeprecation(YYLTYPE loc, Expression* messageStr) {
+void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
   if (!hasAttributeParts) {
     hasAttributeParts = true;
   } else {
@@ -282,7 +292,7 @@ void ParserContext::resetDeclState() {
   this->isBuildingFormal = false;
 }
 
-void ParserContext::enterScope(asttags::ASTTag tag, UniqueString name) {
+void ParserContext::enterScope(asttags::AstTag tag, UniqueString name) {
   ParserScope entry = {tag, name};
   scopeStack.push_back(entry);
 }
@@ -299,7 +309,7 @@ bool ParserContext::currentScopeIsAggregate() {
           scope.tag == asttags::Record ||
           scope.tag == asttags::Union);
 }
-void ParserContext::exitScope(asttags::ASTTag tag, UniqueString name) {
+void ParserContext::exitScope(asttags::AstTag tag, UniqueString name) {
   assert(scopeStack.size() > 0);
   assert(scopeStack.back().tag == tag);
   assert(scopeStack.back().name == name);
@@ -335,7 +345,7 @@ void ParserContext::clearComments(std::vector<ParserComment>* comments) {
 
 void ParserContext::clearComments(ParserExprList* comments) {
   if (comments != nullptr) {
-    for (Expression* expr : *comments) {
+    for (AstNode* expr : *comments) {
       assert(expr->isComment());
       delete expr;
     }
@@ -358,7 +368,7 @@ ParserExprList* ParserContext::makeList() {
 ParserExprList* ParserContext::makeList(ParserExprList* lst) {
   return lst;
 }
-ParserExprList* ParserContext::makeList(Expression* e) {
+ParserExprList* ParserContext::makeList(AstNode* e) {
   assert(e != nullptr);
   ParserExprList* ret = new ParserExprList();
   ret->push_back(e);
@@ -373,14 +383,14 @@ ParserExprList* ParserContext::makeList(CommentsAndStmt cs) {
 ParserExprList* ParserContext::appendList(ParserExprList* dst,
                                           ParserExprList* lst) {
   if (lst == nullptr) return dst;
-  for (Expression* elt : *lst) {
+  for (AstNode* elt : *lst) {
     dst->push_back(elt);
   }
   delete lst;
   return dst;
 }
 
-ParserExprList* ParserContext::appendList(ParserExprList* dst, Expression* e) {
+ParserExprList* ParserContext::appendList(ParserExprList* dst, AstNode* e) {
   assert(e != nullptr);
   dst->push_back(e);
   return dst;
@@ -410,10 +420,10 @@ ParserExprList* ParserContext::appendList(ParserExprList* dst,
   return dst;
 }
 
-ASTList ParserContext::consumeList(ParserExprList* lst) {
-  ASTList ret;
+AstList ParserContext::consumeList(ParserExprList* lst) {
+  AstList ret;
   if (lst != nullptr) {
-    for (Expression* e : *lst) {
+    for (AstNode* e : *lst) {
       if (e != nullptr) {
         ret.push_back(toOwned(e));
       }
@@ -423,14 +433,14 @@ ASTList ParserContext::consumeList(ParserExprList* lst) {
   return ret;
 }
 
-ASTList ParserContext::consume(Expression* e) {
-  ASTList ret;
+AstList ParserContext::consume(AstNode* e) {
+  AstList ret;
   ret.push_back(toOwned(e));
   return ret;
 }
 
 void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
-                                        ASTList& actualsOut,
+                                        AstList& actualsOut,
                                         std::vector<UniqueString>& namesOut) {
   bool anyActualNames = false;
   if (lst != nullptr) {
@@ -457,7 +467,7 @@ ParserContext::gatherCommentsFromList(ParserExprList* lst,
 
   size_t nToMove = 0;
   while (lst->size() > nToMove) {
-    Expression* e = (*lst)[nToMove];
+    AstNode* e = (*lst)[nToMove];
     if (Comment* c = e->toComment()) {
       auto search = this->commentLocations.find(c);
       assert(search != this->commentLocations.end());
@@ -551,7 +561,7 @@ CommentsAndStmt ParserContext::finishStmt(YYLTYPE location,
   return cs;
 }
 
-CommentsAndStmt ParserContext::finishStmt(Expression* e) {
+CommentsAndStmt ParserContext::finishStmt(AstNode* e) {
   this->clearComments();
   return makeCommentsAndStmt(NULL, e);
 }
@@ -581,10 +591,10 @@ Identifier* ParserContext::buildIdent(YYLTYPE location, PODUniqueString name) {
   return Identifier::build(builder, convertLocation(location), name).release();
 }
 
-Expression* ParserContext::buildPrimCall(YYLTYPE location,
-                                         MaybeNamedActualList* lst) {
+AstNode* ParserContext::buildPrimCall(YYLTYPE location,
+                                      MaybeNamedActualList* lst) {
   Location loc = convertLocation(location);
-  ASTList actuals;
+  AstList actuals;
   std::vector<UniqueString> actualNames;
   UniqueString primName;
 
@@ -625,15 +635,15 @@ Expression* ParserContext::buildPrimCall(YYLTYPE location,
 }
 
 OpCall* ParserContext::buildBinOp(YYLTYPE location,
-                                  Expression* lhs,
+                                  AstNode* lhs,
                                   PODUniqueString op,
-                                  Expression* rhs) {
+                                  AstNode* rhs) {
   return OpCall::build(builder, convertLocation(location),
                        op, toOwned(lhs), toOwned(rhs)).release();
 }
 OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
                                     PODUniqueString op,
-                                    Expression* expr) {
+                                    AstNode* expr) {
   auto ustrOp = UniqueString(op);
 
   if (ustrOp == "++") {
@@ -646,11 +656,11 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
                        op, toOwned(expr)).release();
 }
 
-Expression* ParserContext::buildManagerExpr(YYLTYPE location,
-                                            Expression* expr,
-                                            Variable::Kind kind,
-                                            YYLTYPE locResourceName,
-                                            UniqueString resourceName) {
+AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
+                                         AstNode* expr,
+                                         Variable::Kind kind,
+                                         YYLTYPE locResourceName,
+                                         UniqueString resourceName) {
   auto var = Variable::build(builder, convertLocation(locResourceName),
                              nullptr,
                              Decl::DEFAULT_VISIBILITY,
@@ -668,10 +678,10 @@ Expression* ParserContext::buildManagerExpr(YYLTYPE location,
   return as.release();
 }
 
-Expression* ParserContext::buildManagerExpr(YYLTYPE location,
-                                            Expression* expr,
-                                            YYLTYPE locResourceName,
-                                            UniqueString resourceName) {
+AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
+                                         AstNode* expr,
+                                         YYLTYPE locResourceName,
+                                         UniqueString resourceName) {
   return buildManagerExpr(location, expr, Variable::INDEX,
                           locResourceName,
                           resourceName);
@@ -689,8 +699,8 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
                     locBlockOrDo,
                     blockOrDo);
 
-  ASTList managers = consumeList(managerExprs);
-  ASTList stmts = consumeList(stmtExprList);
+  AstList managers = consumeList(managerExprs);
+  AstList stmts = consumeList(stmtExprList);
 
   auto node = Manage::build(builder, convertLocation(location),
                             std::move(managers),
@@ -817,9 +827,9 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   return cs;
 }
 
-Expression*
+AstNode*
 ParserContext::buildLetExpr(YYLTYPE location, ParserExprList* decls,
-                            Expression* expr) {
+                            AstNode* expr) {
   auto declExprs = consumeList(decls);
   auto node = Let::build(builder, convertLocation(location),
                          std::move(declExprs),
@@ -838,23 +848,23 @@ ParserContext::buildLetExpr(YYLTYPE location, ParserExprList* decls,
 1926              new CallExpr("chpl__ensureDomainExpr", $4->copy()));
 1927     }
 */
-Expression*
+AstNode*
 ParserContext::buildArrayTypeWithIndex(YYLTYPE location,
                                        YYLTYPE locIndexExprs,
                                        ParserExprList* indexExprs,
-                                       Expression* domainExpr,
-                                       Expression* typeExpr) {
+                                       AstNode* domainExpr,
+                                       AstNode* typeExpr) {
   assert(false && "Not handled yet!");
   return nullptr;
 }
 
-Expression*
+AstNode*
 ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
                               ParserExprList* domainExprs,
-                              Expression* typeExpr) {
+                              AstNode* typeExpr) {
 
   // In some cases the 'domainExprs' may not exist (think array formal).
-  auto domainBody = domainExprs ? consumeList(domainExprs) : ASTList();
+  auto domainBody = domainExprs ? consumeList(domainExprs) : AstList();
 
   auto domain = Domain::build(builder, convertLocation(locDomainExprs),
                               std::move(domainBody));
@@ -873,9 +883,9 @@ ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
   return node.release();
 }
 
-Expression* ParserContext::
+AstNode* ParserContext::
 buildTupleComponent(YYLTYPE location, PODUniqueString name) {
-  Expression* ret = nullptr;
+  AstNode* ret = nullptr;
 
   if (isBuildingFormal) {
     auto node = Formal::build(builder, convertLocation(location),
@@ -905,7 +915,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
   return ret;
 }
 
-Expression* ParserContext::
+AstNode* ParserContext::
 buildTupleComponent(YYLTYPE location, ParserExprList* exprs) {
   auto node = TupleDecl::build(builder, convertLocation(location),
                                /*attributes*/ nullptr,
@@ -919,7 +929,7 @@ buildTupleComponent(YYLTYPE location, ParserExprList* exprs) {
 }
 
 owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
-                                              const Expression* e) {
+                                              const AstNode* e) {
   auto convLoc = convertLocation(location);
 
   if (const Identifier* ident = e->toIdentifier()) {
@@ -935,7 +945,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*initExpression*/ nullptr);
 
   } else if (const uast::Tuple* tup = e->toTuple()) {
-    ASTList elements;
+    AstList elements;
     for (auto expr : tup->actuals()) {
       auto decl = buildLoopIndexDecl(location, expr);
       if (decl.get() != nullptr) {
@@ -963,7 +973,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
 
 // TODO: Need way to clear location of 'e' in the builder.
 owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
-                                              owned<Expression> e) {
+                                              owned<AstNode> e) {
   return buildLoopIndexDecl(location, e.get());
 }
 
@@ -977,15 +987,15 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
     return nullptr;
   } else {
     auto uncastedIndexExpr = consumeList(indexExprs)[0].release();
-    auto indexExpr = uncastedIndexExpr->toExpression();
+    auto indexExpr = uncastedIndexExpr;
     assert(indexExpr);
     return buildLoopIndexDecl(location, toOwned(indexExpr));
   }
 }
 
-Expression* ParserContext::buildNewExpr(YYLTYPE location,
+AstNode* ParserContext::buildNewExpr(YYLTYPE location,
                          New::Management management,
-                         Expression* expr) {
+                         AstNode* expr) {
   if (FnCall* fnCall = expr->toFnCall()) {
     return this->wrapCalledExpressionInNew(location, management, fnCall);
   } else if (OpCall* opCall = expr->toOpCall()) {
@@ -1015,19 +1025,24 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
                                                  New::Management management,
                                                  FnCall* fnCall) {
   assert(fnCall->calledExpression());
-  bool wrappedBaseExpression = false;
+
+  #ifndef NDEBUG
+    bool wrappedBaseExpression = false;
+  #endif
 
   // Find the child slot containing the called expression. Then remove it,
   // wrap it in a new expression, and swap in the new expression.
   for (auto& child : builder->mutableRefToChildren(fnCall)) {
     if (child.get() == fnCall->calledExpression()) {
-      auto calledExpr = std::move(child).release()->toExpression();
+      auto calledExpr = std::move(child).release();
       assert(calledExpr);
       auto newExpr = New::build(builder, convertLocation(location),
                                 toOwned(calledExpr),
                                 management);
       child = std::move(newExpr);
-      wrappedBaseExpression = true;
+      #ifndef NDEBUG
+        wrappedBaseExpression = true;
+      #endif
       break;
     }
   }
@@ -1048,7 +1063,7 @@ ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
     }
   }
 
-  auto stmts = (!lst || !lst->size()) ? ASTList() : consumeList(lst);
+  auto stmts = (!lst || !lst->size()) ? AstList() : consumeList(lst);
 
   // if it consists of other non-block statements, create a new block
   return Block::build(builder, convertLocation(blockLoc),
@@ -1056,12 +1071,12 @@ ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
 }
 
 owned<Block>
-ParserContext::consumeToBlock(YYLTYPE blockLoc, Expression* e) {
+ParserContext::consumeToBlock(YYLTYPE blockLoc, AstNode* e) {
   auto list = e ? makeList(e) : nullptr;
   return consumeToBlock(blockLoc, list);
 }
 
-ASTList
+AstList
 ParserContext::consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst) {
   return builder->flattenTopLevelBlocks(consumeList(exprLst));
 }
@@ -1133,7 +1148,7 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                     YYLTYPE locIndex,
                                     YYLTYPE locBodyAnchor,
                                     ParserExprList* indexExprs,
-                                    Expression* iterandExpr,
+                                    AstNode* iterandExpr,
                                     WithClause* withClause,
                                     CommentsAndStmt cs) {
   // Should not be nullptr, use other overload instead.
@@ -1148,14 +1163,14 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                     locBodyAnchor,
                     cs);
 
-  Expression* indexExpr = nullptr;
+  AstNode* indexExpr = nullptr;
 
   if (indexExprs->size() > 1) {
     const char* msg = "Invalid index expression";
     return { .comments=comments, .stmt=raiseError(locIndex, msg) };
   } else {
     auto uncastedIndexExpr = consumeList(indexExprs)[0].release();
-    indexExpr = uncastedIndexExpr->toExpression();
+    indexExpr = uncastedIndexExpr;
   }
 
   assert(indexExpr);
@@ -1191,14 +1206,14 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                     locBodyAnchor,
                     cs);
 
-  Expression* iterandExpr = nullptr;
+  AstNode* iterandExpr = nullptr;
 
   if (iterExprs->size() > 1) {
     const char* msg = "Invalid iterand expression";
     return { .comments=comments, .stmt=raiseError(locIterExprs, msg) };
   } else {
     auto uncastedIterandExpr = consumeList(iterExprs)[0].release();
-    iterandExpr = uncastedIterandExpr->toExpression();
+    iterandExpr = uncastedIterandExpr;
   }
 
   assert(iterandExpr);
@@ -1219,8 +1234,8 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
 CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
                                                    YYLTYPE locIndex,
                                                    YYLTYPE locBodyAnchor,
-                                                   Expression* indexExpr,
-                                                   Expression* iterandExpr,
+                                                   AstNode* indexExpr,
+                                                   AstNode* iterandExpr,
                                                    WithClause* withClause,
                                                    BlockOrDo blockOrDo) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
@@ -1250,8 +1265,8 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
 CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
                                                     YYLTYPE locIndex,
                                                     YYLTYPE locBodyAnchor,
-                                                    Expression* indexExpr,
-                                                    Expression* iterandExpr,
+                                                    AstNode* indexExpr,
+                                                    AstNode* iterandExpr,
                                                     WithClause* withClause,
                                                     BlockOrDo blockOrDo) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
@@ -1280,8 +1295,8 @@ CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
 CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                                                 YYLTYPE locIndex,
                                                 YYLTYPE locBodyAnchor,
-                                                Expression* indexExpr,
-                                                Expression* iterandExpr,
+                                                AstNode* indexExpr,
+                                                AstNode* iterandExpr,
                                                 BlockOrDo blockOrDo) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
@@ -1310,8 +1325,8 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
 CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                                                      YYLTYPE locIndex,
                                                      YYLTYPE locBodyAnchor,
-                                                     Expression* indexExpr,
-                                                     Expression* iterandExpr,
+                                                     AstNode* indexExpr,
+                                                     AstNode* iterandExpr,
                                                      WithClause* withClause,
                                                      BlockOrDo blockOrDo) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
@@ -1340,7 +1355,7 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
 CommentsAndStmt
 ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                     YYLTYPE locThenBodyAnchor,
-                                    Expression* condition,
+                                    AstNode* condition,
                                     CommentsAndStmt thenCs) {
 
   std::vector<ParserComment>* comments;
@@ -1369,7 +1384,7 @@ CommentsAndStmt
 ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                     YYLTYPE locThenBodyAnchor,
                                     YYLTYPE locElse,
-                                    Expression* condition,
+                                    AstNode* condition,
                                     CommentsAndStmt thenCs,
                                     CommentsAndStmt elseCs) {
 
@@ -1427,9 +1442,9 @@ CommentsAndStmt ParserContext::buildExternBlockStmt(YYLTYPE locEverything,
   return { .comments=comments, .stmt=node.release() };
 }
 
-Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
-                                               PODUniqueString str,
-                                               int type) {
+AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
+                                            PODUniqueString str,
+                                            int type) {
   UniqueString text = str;
   const char* pch = str.c_str();
   uint64_t ull;
@@ -1446,7 +1461,7 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
   noUnderscores[noUnderscoresLen] = '\0';
 
   std::string err;
-  Expression* ret = nullptr;
+  AstNode* ret = nullptr;
   auto loc = convertLocation(location);
 
   if (type == INTLITERAL) {
@@ -1475,7 +1490,7 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
     if (type == IMAGLITERAL) {
       // Remove the trailing `i` from the noUnderscores number
       if (noUnderscores[noUnderscoresLen-1] != 'i') {
-        err = "invalig imag literal - does not end in i";
+        err = "invalid imag literal - does not end in i";
       }
       noUnderscoresLen--;
       noUnderscores[noUnderscoresLen] = '\0';
@@ -1500,10 +1515,10 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
   return ret;
 }
 
-Expression* ParserContext::
-buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
+AstNode* ParserContext::
+buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
                       VisibilityClause::LimitationKind limitationKind,
-                      ASTList limitations) {
+                      AstList limitations) {
   if (!symbol->isAs() && !symbol->isIdentifier() && !symbol->isDot()) {
     auto msg = "Expected symbol in visibility clause";
     return raiseError(location, msg);
@@ -1514,7 +1529,9 @@ buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
         expr->isComment()) {
       continue;
     } else {
-      auto msg = "Expected symbol in limitation list";
+      std::string msg = "incorrect expression in '";
+      msg += kindToString(limitationKind);
+      msg += "' list, identifier expected";
       return raiseError(location, msg);
     }
   }
@@ -1527,17 +1544,17 @@ buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
   return node.release();
 }
 
-Expression* ParserContext::
-buildVisibilityClause(YYLTYPE location, owned<Expression> symbol) {
+AstNode* ParserContext::
+buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol) {
   return buildVisibilityClause(location, std::move(symbol),
                                VisibilityClause::NONE,
-                               ASTList());
+                               AstList());
 }
 
 
 CommentsAndStmt ParserContext::
 buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
-                    owned<Expression> expr,
+                    owned<AstNode> expr,
                     VisibilityClause::LimitationKind limitationKind,
                     ParserExprList* limitations) {
 
@@ -1551,7 +1568,7 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
     return { .comments=comments, .stmt=node.release() };
   }
 
-  auto limitationsList = limitations ? consumeList(limitations) : ASTList();
+  auto limitationsList = limitations ? consumeList(limitations) : AstList();
 
   auto visClause = buildVisibilityClause(location, std::move(expr),
                                          limitationKind,
@@ -1588,9 +1605,9 @@ buildForwardingDecl(YYLTYPE location,
 
 
 
-Expression* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
-                                       owned<Expression> name,
-                                       owned<Expression> rename) {
+AstNode* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
+                                    owned<AstNode> name,
+                                    owned<AstNode> rename) {
   if (!rename->isIdentifier()) {
     const char* msg = "Rename in as expression must be identifier";
     return raiseError(locRename, msg);
@@ -1666,7 +1683,7 @@ buildMultiUseStmt(YYLTYPE locEverything, Decl::Visibility visibility,
 CommentsAndStmt ParserContext::
 buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
                    Decl::Visibility visibility,
-                   owned<Expression> name,
+                   owned<AstNode> name,
                    VisibilityClause::LimitationKind limitationKind,
                    ParserExprList* limitationExprs) {
   auto comments = gatherComments(locEverything);
@@ -1682,7 +1699,7 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
     return { .comments=comments, .stmt=node.release() };
   }
 
-  ASTList uses;
+  AstList uses;
   uses.push_back(toOwned(visClause));
 
   auto node = Use::build(builder, convertLocation(locEverything),
@@ -1745,7 +1762,7 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
 TypeDeclParts
 ParserContext::enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
                                                PODUniqueString name,
-                                               asttags::ASTTag tag) {
+                                               asttags::AstTag tag) {
   auto loc = declStartLoc(locStart);
 
   enterScope(tag, name);
@@ -1823,13 +1840,14 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
       if (parts.tag == asttags::Record) {
-        noteError(inheritLoc, "records cannot inherit");
+        noteError(inheritLoc, "inheritance is not currently supported for records");
+        noteNote(inheritLoc, "thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851");
       } else if (parts.tag == asttags::Union) {
         noteError(inheritLoc, "unions cannot inherit");
       } else {
         if (optInherit->size() > 1)
           noteError(inheritLoc, "only single inheritance is supported");
-        ASTNode* ast = (*optInherit)[0];
+        AstNode* ast = (*optInherit)[0];
         if (ast->isIdentifier()) {
           inheritIdentifier = toOwned(ast->toIdentifier());
           (*optInherit)[0] = nullptr;
@@ -1841,7 +1859,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
     consumeList(optInherit); // just to delete it
   }
 
-  Expression* decl = nullptr;
+  AstNode* decl = nullptr;
   if (parts.tag == asttags::Class) {
 
     // These should have been cleared when validated above (the Class node
@@ -1884,10 +1902,10 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   return cs;
 }
 
-Expression* ParserContext::buildCustomReduce(YYLTYPE location,
-                                             YYLTYPE locIdent,
-                                             Expression* lhs,
-                                             Expression* rhs) {
+AstNode* ParserContext::buildCustomReduce(YYLTYPE location,
+                                          YYLTYPE locIdent,
+                                          AstNode* lhs,
+                                          AstNode* rhs) {
   if (!lhs->isIdentifier()) {
     const char* msg = "Expected identifier for reduction name";
     return raiseError(locIdent, msg);
@@ -1900,10 +1918,10 @@ Expression* ParserContext::buildCustomReduce(YYLTYPE location,
   }
 }
 
-Expression* ParserContext::buildCustomScan(YYLTYPE location,
-                                           YYLTYPE locIdent,
-                                           Expression* lhs,
-                                           Expression* rhs) {
+AstNode* ParserContext::buildCustomScan(YYLTYPE location,
+                                        YYLTYPE locIdent,
+                                        AstNode* lhs,
+                                        AstNode* rhs) {
   if (!lhs->isIdentifier()) {
     const char* msg = "Expected identifier for scan name";
     return raiseError(locIdent, msg);
@@ -1916,8 +1934,8 @@ Expression* ParserContext::buildCustomScan(YYLTYPE location,
   }
 }
 
-Expression* ParserContext::buildTypeQuery(YYLTYPE location,
-                                          PODUniqueString queriedIdent) {
+AstNode* ParserContext::buildTypeQuery(YYLTYPE location,
+                                       PODUniqueString queriedIdent) {
   assert(!queriedIdent.isEmpty() && queriedIdent.c_str()[0] == '?');
   assert(queriedIdent.length() >= 2);
   const char* adjust = queriedIdent.c_str() + 1;
@@ -1926,17 +1944,17 @@ Expression* ParserContext::buildTypeQuery(YYLTYPE location,
   return node.release();
 }
 
-Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
-                                                PODUniqueString baseType,
-                                                MaybeNamedActual actual) {
+AstNode* ParserContext::buildTypeConstructor(YYLTYPE location,
+                                             PODUniqueString baseType,
+                                             MaybeNamedActual actual) {
   auto maybeNamedActuals = new MaybeNamedActualList();
   maybeNamedActuals->push_back(actual);
   return buildTypeConstructor(location, baseType, maybeNamedActuals);
 }
 
-Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
-                                                PODUniqueString baseType,
-                                                Expression* subType) {
+AstNode* ParserContext::buildTypeConstructor(YYLTYPE location,
+                                             PODUniqueString baseType,
+                                             AstNode* subType) {
   auto maybeNamedActuals = new MaybeNamedActualList();
 
   MaybeNamedActual actual = {
@@ -1948,12 +1966,12 @@ Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
   return buildTypeConstructor(location, baseType, maybeNamedActuals);
 }
 
-Expression* ParserContext::
+AstNode* ParserContext::
 buildTypeConstructor(YYLTYPE location, PODUniqueString baseType,
                      MaybeNamedActualList* maybeNamedActuals) {
   auto ident = buildIdent(location, baseType);
   std::vector<UniqueString> actualNames;
-  ASTList actuals;
+  AstList actuals;
 
   consumeNamedActuals(maybeNamedActuals, actuals, actualNames);
 
@@ -1970,7 +1988,7 @@ buildTypeConstructor(YYLTYPE location, PODUniqueString baseType,
 }
 
 CommentsAndStmt
-ParserContext::buildTryExprStmt(YYLTYPE location, Expression* expr,
+ParserContext::buildTryExprStmt(YYLTYPE location, AstNode* expr,
                                 bool isTryBang) {
   auto comments = gatherComments(location);
   auto node = Try::build(builder, convertLocation(location), toOwned(expr),
@@ -2003,8 +2021,8 @@ ParserContext::buildTryExprStmt(YYLTYPE location, CommentsAndStmt cs,
   return ret;
 }
 
-Expression*
-ParserContext::buildTryExpr(YYLTYPE location, Expression* expr,
+AstNode*
+ParserContext::buildTryExpr(YYLTYPE location, AstNode* expr,
                             bool isTryBang) {
   auto node = Try::build(builder, convertLocation(location), toOwned(expr),
                          isTryBang,
@@ -2039,9 +2057,9 @@ ParserContext::buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
   return ret;
 }
 
-Expression* ParserContext::buildCatch(YYLTYPE location, Expression* error,
-                                      CommentsAndStmt cs,
-                                      bool hasParensAroundError) {
+AstNode* ParserContext::buildCatch(YYLTYPE location, AstNode* error,
+                                   CommentsAndStmt cs,
+                                   bool hasParensAroundError) {
   assert(cs.stmt->isBlock());
   if (error != nullptr) assert(error->isVariable());
 
@@ -2073,7 +2091,7 @@ ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
     blockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
   }
 
-  auto caseList = caseExprs ? consumeList(caseExprs) : ASTList();
+  auto caseList = caseExprs ? consumeList(caseExprs) : AstList();
 
   auto stmtExprs = stmt ? makeList(stmt) : makeList();
   auto stmtList = consumeAndFlattenTopLevelBlocks(stmtExprs);
@@ -2089,7 +2107,7 @@ ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
 }
 
 CommentsAndStmt
-ParserContext::buildSelectStmt(YYLTYPE location, owned<Expression> expr,
+ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
                                ParserExprList* whenStmts) {
   auto comments = gatherCommentsFromList(whenStmts, location);
 

@@ -38,7 +38,7 @@ module HDF5Preprocessors {
         chmod(scriptName, 0o755);
 
         // spawn the script, connect stdin and stdout
-        var sub = spawn([scriptName], stdin=PIPE, stdout=PIPE);
+        var sub = spawn([scriptName], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
 
         cobegin {
           // dump the array to the script's stdin

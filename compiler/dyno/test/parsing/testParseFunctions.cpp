@@ -19,8 +19,8 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/Context.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Call.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Function.h"

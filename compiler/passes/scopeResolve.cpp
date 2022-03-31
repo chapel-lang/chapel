@@ -1747,6 +1747,27 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
   }
 }
 
+static void eliminateLastResortSyms(std::vector<Symbol*>& symbols) {
+  bool anyLastResort = false;
+  bool anyNotLastResort = false;
+  for (auto sym : symbols) {
+    if (sym->hasFlag(FLAG_LAST_RESORT))
+      anyLastResort = true;
+    else
+      anyNotLastResort = true;
+  }
+
+  if (anyLastResort && anyNotLastResort) {
+    // Gather the not-last-resort symbols into tmp and swap
+    std::vector<Symbol*> tmp;
+    for (auto sym : symbols) {
+      if (!sym->hasFlag(FLAG_LAST_RESORT))
+        tmp.push_back(sym);
+    }
+    symbols.swap(tmp);
+  }
+}
+
 // Given a name and a calling context, determine the symbol referred to
 // by that name in the context of that call
 Symbol* lookupAndCount(const char*           name,
@@ -1762,6 +1783,10 @@ Symbol* lookupAndCount(const char*           name,
   Symbol*              retval = NULL;
 
   lookup(name, context, symbols, renameLocs, reexportPts, storeRenames);
+
+  // if there were multiple symbols found, and some are last resort,
+  // and others are not, eliminate the last resort ones.
+  eliminateLastResortSyms(symbols);
 
   nSymbolsFound = symbols.size();
 

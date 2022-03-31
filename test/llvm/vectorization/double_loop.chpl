@@ -1,7 +1,7 @@
 //Check whether vectorization occurs for nested loops
 proc loop (A, B) {
-  for i in vectorizeOnly(0..511) {
-    for j in vectorizeOnly(0..511) {
+  foreach i in 0..511 {
+    foreach j in 0..511 {
       // CHECK: <4 x i32>
       A[i,j] = B[i,j]*3;
     }

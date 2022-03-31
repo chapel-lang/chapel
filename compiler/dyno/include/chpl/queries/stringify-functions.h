@@ -392,7 +392,7 @@ template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
 };
 
 /**
- macros that define methods to write the object to std::cout
+ macros that define methods to write the object to std::cerr
  */
 #define DECLARE_DUMP \
   void dump() const; \

@@ -891,6 +891,27 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // List object files needed to compile this deliverable.
   fprintf(makefile.fptr, "CHPLUSEROBJ = \\\n");
+  if (!fLibraryCompile) {
+    // If we're not doing a --library-* compile, we want to add the
+    // file corresponding to CHPLSRC/'mainfile' to CHPLUSEROBJ (the
+    // list of user object files (which currently have no extension).
+    // For an LLVM compile, this file has a .o extension, whereas for
+    // a C back-end compile, it has a .c extension.  The following
+    // accomplishes this by generating either
+    //   CHPLUSEROBJ = $(CHPLSRC:%.o=%)
+    // or
+    //   CHPLUSEROBJ = $(CHPLSRC:%.c=%)'
+    // based on the extension.  Note that with more refactoring in the
+    // Makefiles used to build libraries, this similar change could be
+    // applied there.
+
+    const char* dot = &(mainfile->pathname[strlen(mainfile->pathname)-2]);
+    const char* ext = &(mainfile->pathname[strlen(mainfile->pathname)-1]);
+    if (*dot != '.' || (*ext != 'c' && *ext != 'o' )) {
+      INT_FATAL("Unexpected extension in 'mainfile' for non-library compile");
+    }
+    fprintf(makefile.fptr, "\t$(CHPLSRC:%%.%s=%%) \\\n", ext);
+  }
   for (size_t i = 0; i < splitFiles.size(); i++) {
     fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
   }

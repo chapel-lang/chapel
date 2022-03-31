@@ -28,7 +28,7 @@
 #define LOC2(STARTLOC, ENDLOC) \
   context->convertLocation(context->makeSpannedLocation(STARTLOC, ENDLOC))
 
-// ERROR creates an error and returns an error sentinel Expression
+// ERROR creates an error and returns an error sentinel AstNode
 #define ERROR(LOC,MSG) context->raiseError(LOC, MSG)
 
 #define TODOEXPR(LOC) context->raiseError(LOC, "not implemented yet")

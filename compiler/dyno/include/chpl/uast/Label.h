@@ -42,16 +42,15 @@ namespace uast {
   \endrst
 
 */
-class Label final : public Expression {
+class Label final : public AstNode {
  private:
-  Label(ASTList children, UniqueString name)
-    : Expression(asttags::Label, std::move(children)),
+  Label(AstList children, UniqueString name)
+    : AstNode(asttags::Label, std::move(children)),
       name_(name) {
-    assert(isExpressionASTList(children_));
     assert(numChildren() == 1);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Label* lhs = this;
     const Label* rhs = other->toLabel();
 
@@ -60,14 +59,10 @@ class Label final : public Expression {
     if (lhs->name_ != rhs->name_)
       return false;
 
-    if (!lhs->expressionContentsMatchInner(rhs))
-      return false;
-
     return true;
   }
   void markUniqueStringsInner(Context* context) const override {
     name_.mark(context);
-    expressionMarkUniqueStringsInner(context);
   }
   // This always exists and its position can never change.
   static const int8_t loopChildNum_ = 0;

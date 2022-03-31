@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_RESOLUTION_DISAMBUGATION_H
-#define CHPL_RESOLUTION_DISAMBUGATION_H
+#ifndef CHPL_RESOLUTION_DISAMBIGUATION_H
+#define CHPL_RESOLUTION_DISAMBIGUATION_H
 
 #include "chpl/resolution/resolution-types.h"
 

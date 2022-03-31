@@ -23,7 +23,7 @@
 namespace chpl {
 namespace types {
 
-// implement the subclasses using macros and TypeClassesList.h
+// implement the subclasses using macros and type-classes-list.h
 #define TYPE_NODE(NAME)
 #define TYPE_BEGIN_SUBCLASSES(NAME)
 #define TYPE_END_SUBCLASSES(NAME)
@@ -35,8 +35,8 @@ namespace types {
     return QUERY_END(result); \
   }
 
-// Apply the above macros to TypeClassesList.h
-#include "chpl/types/TypeClassesList.h"
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
 
 // clear the macros
 #undef TYPE_NODE
@@ -54,7 +54,7 @@ static void gatherType(Context* context,
 void BuiltinType::gatherBuiltins(Context* context,
                                  std::unordered_map<UniqueString,const Type*>& map) {
 
-  // call gatherType for each Kind using macros and TypeClassesList.h
+  // call gatherType for each Kind using macros and type-classes-list.h
   #define TYPE_NODE(NAME)
   #define TYPE_BEGIN_SUBCLASSES(NAME)
   #define TYPE_END_SUBCLASSES(NAME)
@@ -62,8 +62,8 @@ void BuiltinType::gatherBuiltins(Context* context,
   #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
     gatherType(context, map, NAME::get(context));
 
-  // Apply the above macros to TypeClassesList.h
-  #include "chpl/types/TypeClassesList.h"
+  // Apply the above macros to type-classes-list.h
+  #include "chpl/types/type-classes-list.h"
 
   // clear the macros
   #undef TYPE_NODE
@@ -73,7 +73,7 @@ void BuiltinType::gatherBuiltins(Context* context,
 }
 
 const char* BuiltinType::c_str() const {
-  // create switch statement using macros and TypeClassesList.h
+  // create switch statement using macros and type-classes-list.h
   #define TYPE_NODE(NAME)
   #define TYPE_BEGIN_SUBCLASSES(NAME)
   #define TYPE_END_SUBCLASSES(NAME)
@@ -82,8 +82,8 @@ const char* BuiltinType::c_str() const {
     case typetags::NAME: return CHPL_NAME_STR;
 
   switch (tag()) {
-    // Apply the above macros to TypeClassesList.h
-    #include "chpl/types/TypeClassesList.h"
+    // Apply the above macros to type-classes-list.h
+    #include "chpl/types/type-classes-list.h"
     // Default case should not be reachable
     default:
       assert(false && "should not be reachable");

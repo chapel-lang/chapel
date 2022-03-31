@@ -348,7 +348,7 @@ public:
       if (isTaskFun(calledFn)) {
         expandTaskFn(this, node, calledFn);
       } else if (calledFn == gChplPropagateError) {
-        handleChplPropagateErrorCall(node);
+        handleChplPropagateErrorCall(node, true);
       }
     }
     // There shouldn't be anything interesting inside the call.
@@ -844,7 +844,7 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   // No need for taskFnCopies.
 
   // This holds because we flatten everything right away.
-  // We need it so that we can place the def of 'fcopy' anywhere
+  // We need it so that we can place the def of 'cloneTaskFn' anywhere
   // while preserving correct scoping of its SymExprs.
   INT_ASSERT(isGlobal(taskFn));
 
@@ -1134,6 +1134,26 @@ static void reorderShadowVsTaskPrivateVars(ForallStmt* fs) {
 
 /////////// recursive iterators ///////////
 
+static void warnRecursiveIterNonrefSVar(ForallStmt* fs, FnSymbol* parIterFn,
+                                        ShadowVarSymbol* svar,
+                                        bool& gotNonRefs, bool& implWarn) {
+  if (gotNonRefs == false) {
+    USR_FATAL_CONT(fs, "forall loop over a recursive parallel iterator");
+    USR_PRINT(fs, "such loops are currently implemented only if\n"
+                  "  all their shadow variables have a ref or const ref intent");
+    USR_PRINT(parIterFn, "the parallel iterator is here");
+  }
+  gotNonRefs = true;
+
+  if (! svar->isCompilerAdded()) {
+    if (implWarn == false)
+      USR_PRINT(fs, "a shadow variable may be implicit");
+    implWarn = true;
+    USR_PRINT(svar, "'%s' shadow variable has %s", svar->name,
+                                                   svar->intentDescrString());
+  }
+}
+
 //
 // If 'fs' has only ref intents, or none at all,
 // revert to old iterator-record-based implementation.
@@ -1150,20 +1170,14 @@ static void handleRecursiveIter(ForallStmt* fs,
 
   // Check for non-ref intents.
   SymbolMap sv2ov;
-  bool gotNonRefs = false;
+  bool gotNonRefs = false, implWarn = false;;
   for_shadow_vars(svar, temp, fs) {
     if (svar->intent == TFI_REF || svar->intent == TFI_CONST_REF)
       sv2ov.put(svar, svar->outerVarSym());
     else
-      { gotNonRefs = true; break; }
+      warnRecursiveIterNonrefSVar(fs, parIterFn, svar, gotNonRefs, implWarn);
   }
-
-  if (gotNonRefs) {
-    USR_FATAL_CONT(fs, "forall loops over recursive parallel iterators are currently not implemented");
-    USR_PRINT(fs, "in the presence of non-ref intents");
-    USR_PRINT(parIterFn, "the parallel iterator is here");
-    return;
-  }
+  if (gotNonRefs) return; // currently not implemented
 
   // We assume these in the foregoing.
   INT_ASSERT(parIterCall == fs->firstIteratedExpr());

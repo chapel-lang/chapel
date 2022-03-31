@@ -58,7 +58,7 @@ module LocaleModelHelpFlat {
   proc chpl_executeOn(in loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: chpl_comm_on_bundle_p,     // function args
-                      args_size: size_t     // args size
+                      args_size: c_size_t     // args size
                      ) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
@@ -84,7 +84,7 @@ module LocaleModelHelpFlat {
   proc chpl_executeOnFast(in loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: chpl_comm_on_bundle_p,     // function args
-                          args_size: size_t     // args size
+                          args_size: c_size_t     // args size
                          ) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
@@ -106,7 +106,7 @@ module LocaleModelHelpFlat {
   proc chpl_executeOnNB(in loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: chpl_comm_on_bundle_p,     // function args
-                        args_size: size_t     // args size
+                        args_size: c_size_t     // args size
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than

@@ -3478,7 +3478,8 @@ static int processToken(yyscan_t scanner, int t) {
         t == TBORROWED ||
         t == TUNMANAGED ||
         t == TOWNED ||
-        t == TSHARED) {
+        t == TSHARED ||
+        t == TNEW) {
       captureString.push_back(' ');
     }
   }
@@ -3938,7 +3939,7 @@ static int processBlockComment(yyscan_t scanner) {
       }
       else
         depth--;
-      
+
       d = 1;
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
