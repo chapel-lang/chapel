@@ -269,7 +269,7 @@ const AstNode* idToAst(Context* context, ID id) {
 static const AstTag& idToTagQuery(Context* context, ID id) {
   QUERY_BEGIN(idToTagQuery, context, id);
 
-  AstTag result = asttags::NUM_AST_TAGS;
+  AstTag result = asttags::AST_TAG_UNKNOWN;
 
   const AstNode* ast = astForIDQuery(context, id);
   if (ast != nullptr)

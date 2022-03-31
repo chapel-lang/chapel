@@ -195,6 +195,13 @@ struct Resolver {
   void resolveTupleDecl(const uast::TupleDecl* td,
                         const types::Type* useType);
 
+  // e.g. new shared C(a, 0)
+  // also resolves initializer call as a side effect
+  bool resolveSpecialNewCall(const uast::Call* call);
+
+  // resolve a special op call such as tuple unpack assign
+  bool resolveSpecialOpCall(const uast::Call* call);
+
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
   // if it is a regular call.
@@ -207,6 +214,23 @@ struct Resolver {
      for initial resolution of such functions/types.
    */
   types::QualifiedType typeForId(const ID& id, bool localGenericToUnknown);
+
+  // prepare the CallInfoActuals by inspecting the actuals of a call
+  // includes special handling for operators and tuple literals
+  void prepareCallInfoActuals(const uast::Call* call,
+                              std::vector<CallInfoActual>& actuals,
+                              bool& hasQuestionArg);
+
+  // prepare a CallInfo by inspecting the called expression and actuals
+  CallInfo prepareCallInfoNormalCall(const uast::Call* call);
+
+  // resolve 'new R' for a given record type 'R'
+  void resolveNewForRecord(const uast::New* node,
+                           const types::RecordType* recordType);
+
+  // resolve 'new C' for a given class type 'C', including management
+  void resolveNewForClass(const uast::New* node,
+                          const types::ClassType* classType);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */
@@ -238,6 +262,9 @@ struct Resolver {
 
   bool enter(const uast::Dot* dot);
   void exit(const uast::Dot* dot);
+
+  bool enter(const uast::New* node);
+  void exit(const uast::New* node);
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);
