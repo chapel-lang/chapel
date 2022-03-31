@@ -484,7 +484,7 @@ struct ChplSyntaxVisitor {
     const AstNode* callee = node->calledExpression();
     assert(callee);
     printChapelSyntax(ss_, callee);
-    if (isCalleeReservedWord(callee)) {
+    if (isCalleeManagementKind(callee)) {
       ss_ << " ";
       if (auto op = node->actual(0)->toOpCall()) {
         assert(op->isUnaryOp() && op->op() == USTR("?"));
