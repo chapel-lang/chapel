@@ -2128,8 +2128,17 @@ considerCompilerGeneratedCandidates(Context* context,
                                                            tfs,
                                                            ci,
                                                            poi);
+  assert(instantiated->untyped()->idIsFunction());
+  assert(instantiated->instantiatedFrom());
 
-  // TODO: also adjust 'poiInfo'.
+  auto instantiationScope = pointOfInstantiationScope(context, inScope,
+                                                      inPoiScope);
+  poiInfo.setPoiScope(instantiationScope);
+
+  accumulatePoisUsedByResolvingBody(context, instantiated,
+                                    instantiationScope,
+                                    poiInfo);
+
   candidates.push_back(instantiated);
 
   return true;
