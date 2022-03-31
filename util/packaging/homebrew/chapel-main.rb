@@ -1,10 +1,11 @@
 class Chapel < Formula
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "<URL of Chapel tarball>"
-  sha256 "<sha256 sum for the associated tarball>"
+  url "https://chapel-lang.org/tmp/chapel-1.26.0.tar.gz"
+  sha256 "77b0aebdb948507314a91bdf2c5969ec2cc7a1b0e4be93df7cfb3c3d8caa0d4a"
+#  url "<URL of Chapel tarball>"
+#  sha256 "<sha256 sum for the associated tarball>"
   license "Apache-2.0"
-  revision 1
 
   bottle do
     sha256 arm64_monterey: "229f22e29b0cc7a904841636c924d0c94c00299f817ed294247957d43c128cf3"
@@ -16,9 +17,12 @@ class Chapel < Formula
   end
 
   depends_on "gmp"
-  depends_on "llvm@13"
-  depends_on "python@3.10"
+  depends_on "llvm"
+  depends_on "python@3.10" 
 
+  # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
+  fails_with gcc: "5"
+  
   def install
     libexec.install Dir["*"]
     # Chapel uses this ENV to work out where to install.
@@ -31,8 +35,10 @@ class Chapel < Formula
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
     cd libexec do
-      system "echo CHPL_RE2=bundled > chplconfig"
-      system "echo CHPL_GMP=system >> chplconfig"
+      (libexec/"chplconfig").write <<~EOS
+        CHPL_RE2=bundled
+        CHPL_GMP=system
+      EOS
       system "echo CHPL_LLVM_CONFIG=#{HOMEBREW_PREFIX}/opt/llvm@13/bin/llvm-config >> chplconfig"
       # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm@13
       # package should be configured to use a reasonable GCC
