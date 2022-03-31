@@ -143,7 +143,7 @@ UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 $(BUILD_VERSION_FILE): FORCE
 	@({ test -e $(CHPL_MAKE_HOME)/.git ; } && \
 	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@ $(CHPL_MAKE_HOME)) || \
-	test -r $(BUILD_VERSION_FILE) || (echo '"0"' > $@);
+	test -r $(BUILD_VERSION_FILE) || (echo '"1"' > $@);
 
 $(CHPL_MAKE_HOME)/configured-prefix:
 	echo > $(CHPL_MAKE_HOME)/configured-prefix
