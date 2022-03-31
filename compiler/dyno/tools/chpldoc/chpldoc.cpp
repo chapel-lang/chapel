@@ -49,6 +49,8 @@
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
+#include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/queries/global-strings.h"
 
 using namespace chpl;
 using namespace uast;
@@ -257,6 +259,16 @@ static bool isNoDoc(const Decl* e) {
   return false;
 }
 
+static bool isCalleeManagementKind(const AstNode* callee) {
+  if (callee->isIdentifier() &&
+    (callee->toIdentifier()->name() == "borrowed"
+      || callee->toIdentifier()->name() == "owned"
+      || callee->toIdentifier()->name() == "unmanaged"
+      || callee->toIdentifier()->name() == "shared"))
+      return true;
+    return false;
+}
+
 /**
  Converts an AstNode into an RST format that is suitable for the RHS of
 something like:
@@ -399,21 +411,11 @@ struct RstSignatureVisitor {
       os_ << kindToString(f->visibility()) << " ";
     }
 
-    // Function Name
-    os_ << kindToString(f->kind()) << " " << f->name().c_str();
+    // // Function Name
+    os_ << kindToString(f->kind());
+    os_ << " ";
 
-    // Formals
-    int numThisFormal = f->thisFormal() ? 1 : 0;
-    int nFormals = f->numFormals() - numThisFormal;
-    if (nFormals == 0 && f->isParenless()) {
-      // pass
-    } else if (nFormals == 0) {
-      os_ << "()";
-    } else {
-      auto it = f->formals();
-      interpose(it.begin() + numThisFormal, it.end(), ", ", "(", ")");
-    }
-
+    printFunctionSignature(os_, f);
     // Return type
     if (const AstNode* e = f->returnType()) {
       os_ << ": ";
@@ -424,34 +426,50 @@ struct RstSignatureVisitor {
     if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
       os_ << " " << kindToString(f->returnIntent());
     }
+
     return false;
   }
 
   bool enter(const OpCall* call) {
     if (call->isUnaryOp()) {
-      os_ << call->op().c_str();
       assert(call->numActuals() == 1);
+      if (call->op() == USTR("postfix!")) {
+        call->actual(0)->traverse(*this);
+        os_ << "!";
+        return false;
+      } else if (call->op() == USTR("?")) {
+        os_ << "nilable ";
+      } else {
+        os_ << call->op().c_str();
+      }
       call->actual(0)->traverse(*this);
-
     } else if (call->isBinaryOp()) {
       assert(call->numActuals() == 2);
       call->actual(0)->traverse(*this);
+      if (call->op() != USTR("**") && call->op() != USTR(":"))
+        os_ << " ";
       os_ << call->op().c_str();
+      if (call->op() != USTR("**"))
+        os_ << " ";
       call->actual(1)->traverse(*this);
     }
     return false;
   }
 
-  bool enter(const Call* call) {
+  bool enter(const FnCall* call) {
     const AstNode* callee = call->calledExpression();
-    if (!callee) {
-      printf("ERROR %s\n", asttags::tagToString(call->tag()));
-      call->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
-    }
-    assert(callee);  // This should be true because OpCall is handled
+    assert(callee);
     callee->traverse(*this);
-    interpose(call->actuals(), ", ", "(", ")");
-
+    if (isCalleeManagementKind(callee)) {
+      os_ << " ";
+      call->actual(0)->traverse(*this);
+    } else {
+      if (call->callUsedSquareBrackets()) {
+        interpose(call->actuals(), ", ", "[", "]");
+      } else {
+        interpose(call->actuals(), ", ", "(", ")");
+      }
+    }
     return false;
   }
 
@@ -461,7 +479,20 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const Tuple* tup) {
-    interpose(tup->children(), ", ", "(", ")");
+    // interpose(tup->children(), ", ", "(", ")");
+    os_ << "(";
+    bool first = true;
+    for (auto it = tup->children().begin(); it != tup->children().end(); it++) {
+      if (!first) os_ << ", ";
+      (*it)->traverse(*this);
+      first = false;
+    }
+    // TODO: This is an errant comma present in the current chpldocs
+    // remove it once we don't need to match the old tests
+    if (tup->numChildren() == 1) {
+      os_ << ",";
+    }
+    os_ << ")";
     return false;
   }
 
@@ -500,9 +531,24 @@ struct RstSignatureVisitor {
     return true;
   }
 
+  bool enter(const VarArgFormal* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
+  bool enter(const TypeQuery* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
+  bool enter(const Conditional* node) {
+    node->stringify(os_, StringifyKind::CHPL_SYNTAX);
+    return false;
+  }
+
   bool enter(const AstNode* a) {
     printf("unhandled enter on PrettyPrintVisitor of %s\n", asttags::tagToString(a->tag()));
-    a->stringify(std::cerr, StringifyKind::DEBUG_DETAIL);
+    a->stringify(os_, StringifyKind::CHPL_SYNTAX);
     gUnhandled.insert(a->tag());
     return false;
   }
@@ -917,7 +963,14 @@ int main(int argc, char** argv) {
   for (auto cpath : args.files) {
     UniqueString path = UniqueString::get(ctx, cpath);
     const BuilderResult& builderResult = parseFile(ctx, path);
-
+    // just display the first error message right now
+    // this is a quick fix to stop the program from dying
+    // in  a gross way when a file can't be located
+    if (builderResult.numErrors() > 0) {
+      std::cerr << "Error parsing " << path << ": "
+                << builderResult.error(0).message() << "\n";
+      return 1;
+    }
     std::ofstream ofs;
     if (!args.stdout) {
       auto name = moduleName(builderResult);
