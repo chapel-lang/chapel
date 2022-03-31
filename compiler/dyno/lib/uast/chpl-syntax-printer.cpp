@@ -441,6 +441,10 @@ struct ChplSyntaxVisitor {
     printChapelSyntax(ss_, node->condition());
   }
 
+  void visit(const EmptyStmt* node) {
+    ss_ << ";";
+  }
+
   void visit(const Enum* node) {
     ss_ << "enum " << node->name() << " ";
     interpose(node->enumElements(), ", ", "{ ", " }");

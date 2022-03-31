@@ -1342,7 +1342,7 @@ deprecated_class_level_stmt:
 class_level_stmt:
   TSEMI
     {
-      $$ = STMT(@$, nullptr);
+      $$ = STMT(@$, context->buildEmptyStmt(@$));
     }
 | inner_class_level_stmt
     {
