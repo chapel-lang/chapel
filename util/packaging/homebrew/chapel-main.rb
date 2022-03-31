@@ -17,12 +17,18 @@ class Chapel < Formula
   end
 
   depends_on "gmp"
-  depends_on "llvm"
-  depends_on "python@3.10" 
+  depends_on "python@3.10"
+  on_macos do
+    depends_on "llvm" if MacOS.version > :catalina
+    depends_on "llvm@11" if MacOS.version <= :catalina
+  end
+  on_linux do
+    depends_on "llvm"
+  end
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
   fails_with gcc: "5"
-  
+
   def install
     libexec.install Dir["*"]
     # Chapel uses this ENV to work out where to install.
@@ -39,7 +45,17 @@ class Chapel < Formula
         CHPL_RE2=bundled
         CHPL_GMP=system
       EOS
-      system "echo CHPL_LLVM_CONFIG=#{HOMEBREW_PREFIX}/opt/llvm@13/bin/llvm-config >> chplconfig"
+
+      if OS.mac?
+        if MacOS.version > :catalina
+          system "echo CHPL_LLVM_CONFIG=#{HOMEBREW_PREFIX}/opt/llvm@13/bin/llvm-config >> chplconfig"
+        else
+          system "echo CHPL_LLVM_CONFIG=#{HOMEBREW_PREFIX}/opt/llvm@11/bin/llvm-config >> chplconfig"
+        end
+      else
+        system "echo CHPL_LLVM_CONFIG=#{HOMEBREW_PREFIX}/opt/llvm@13/bin/llvm-config >> chplconfig"
+      end
+
       # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm@13
       # package should be configured to use a reasonable GCC
       system 'echo CHPL_LLVM_GCC_PREFIX="none" >> chplconfig'
