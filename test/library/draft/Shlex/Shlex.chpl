@@ -429,7 +429,7 @@ module Shlex {
     if(s == '') {
       return '""';
     }
-    if(!s.search(_find_unsafe)) {
+    if(!_find_unsafe.search(s)) {
       return s;
     }
     return "'" + s.replace("'", "'\"'\"'") + "'";
@@ -461,7 +461,7 @@ module Shlex {
     for ele in x do {
       if beginning then res += " ";
       else  beginning = true;
-      if (!ele.search(_find_unsafe)) {
+      if (!_find_unsafe.search(ele)) {
         res += ele;
       }
       else {
