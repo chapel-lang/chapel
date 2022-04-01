@@ -184,7 +184,7 @@ struct ChplSyntaxVisitor {
    * helper to check if the called expression is actually a
    * reserved word. Helps FnCalls not to print () in this case
   */
-  bool isCalleeManagementKind(const AstNode* callee) {
+  bool isCalleeReservedWord(const AstNode* callee) {
     if (callee->isIdentifier() &&
       (callee->toIdentifier()->name() == "borrowed"
        || callee->toIdentifier()->name() == "owned"
@@ -484,7 +484,7 @@ struct ChplSyntaxVisitor {
     const AstNode* callee = node->calledExpression();
     assert(callee);
     printChapelSyntax(ss_, callee);
-    if (isCalleeManagementKind(callee)) {
+    if (isCalleeReservedWord(callee)) {
       ss_ << " ";
       if (auto op = node->actual(0)->toOpCall()) {
         assert(op->isUnaryOp() && op->op() == USTR("?"));
