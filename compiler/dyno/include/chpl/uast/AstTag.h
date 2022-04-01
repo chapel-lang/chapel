@@ -130,4 +130,18 @@ template<> struct stringify<uast::AstTag> {
 
 } // end namespace chpl
 
+namespace std {
+
+
+template<> struct hash<chpl::uast::AstTag>
+{
+  size_t operator()(const chpl::uast::AstTag& key) const {
+    return key;
+  }
+};
+
+
+} // end namespace std
+
+
 #endif
