@@ -714,9 +714,7 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
 
 FunctionParts ParserContext::makeFunctionParts(bool isInline,
                                                bool isOverride) {
-  FunctionParts fp = {-1,
-                      -1,
-                      nullptr,
+  FunctionParts fp = {nullptr,
                       nullptr,
                       nullptr,
                       this->visibility,
@@ -743,29 +741,7 @@ ParserContext::buildExternExportFunctionDecl(YYLTYPE location,
 
 CommentsAndStmt
 ParserContext::buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp) {
-
-  //
-  // The location for regular function decls seems to include blank lines
-  // following the last production in the 'first_line' of location. As a
-  // quick, hacky workaround, store the 'first_line' and 'first_column' of
-  // the start keyword when building up 'fp' and use that to compute an
-  // accurate location.
-  // Note that we also can't just store a YYLTYPE in 'FunctionParts',
-  // because a weird circular dependency causes C++ to explode.
-  // I think that the proper fix for this is to massage the grammar so that
-  // the 'fn_decl_complete' rule includes a terminal on its LHS, but I'm
-  // not going to fiddle with grammar rules right now.
-  //
-  YYLTYPE startLoc = {
-    .first_line = fp.startLocFirstLine,
-    .first_column = fp.startLocFirstColumn,
-    .last_line = fp.startLocFirstLine,
-    .last_column = fp.startLocFirstColumn
-  };
-
-  auto accurateLoc = makeSpannedLocation(startLoc, location);
-
-  return buildFunctionDecl(accurateLoc, fp);
+  return buildFunctionDecl(location, fp);
 }
 
 CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,

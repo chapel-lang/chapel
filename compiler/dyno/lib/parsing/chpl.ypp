@@ -150,8 +150,6 @@
   // It is just saving some components of a function to be used
   // when building the FunctionDecl.
   struct FunctionParts {
-    int startLocFirstLine;
-    int startLocFirstColumn;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
     Attributes* attributes;
@@ -2126,10 +2124,7 @@ lambda_decl_start:
     {
       FunctionParts fp = context->makeFunctionParts(false, false);
       context->noteDeclStartLoc(@1);
-      // Preserve the first location, to avoid desync on start line number.
-      auto loc = context->declStartLoc(@1);
-      fp.startLocFirstLine = loc.first_line;
-      fp.startLocFirstColumn = loc.first_column;
+      auto loc = context->declStartLoc(@$);
       fp.comments = context->gatherComments(loc);
       fp.attributes = context->buildAttributes(@$).release();
       fp.visibility = context->visibility;
@@ -2265,10 +2260,7 @@ fn_decl_stmt_start:
     {
       FunctionParts fp = $1;
       context->noteDeclStartLoc(@2);
-      // Preserve the first location, to avoid desync on start line number.
-      auto loc = context->declStartLoc(@2);
-      fp.startLocFirstLine = loc.first_line;
-      fp.startLocFirstColumn = loc.first_column;
+      auto loc = context->declStartLoc(@$);
       fp.comments = context->gatherComments(loc);
       fp.attributes = context->buildAttributes(@$).release();
       fp.visibility = context->visibility;
