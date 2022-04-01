@@ -24,8 +24,9 @@ include "{{ pathto('',1) }}/versionButton.php";
 
 {% block menu %}
   {{ super() }}
-  <p class="caption" role="heading"><span class="caption-text">Chapel Documentation Index</span></p>
+  <p class="caption" role="heading"><span class="caption-text">Indexes</span></p>
   <ul>
-    <li class="toctree-11"><a class="reference internal" href="{{pathto('genindex.html', 1)}}">Index</a></li>
+    <li class="toctree-11"><a class="reference internal" href="{{pathto('chpl-modindex.html', 1)}}">Chapel Module Index</a></li>
+    <li class="toctree-11"><a class="reference internal" href="{{pathto('genindex.html', 1)}}">Complete Docs Index</a></li>
   </ul>
 {% endblock %}
