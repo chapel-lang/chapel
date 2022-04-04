@@ -38,7 +38,7 @@ proc main(args: [] string) {
       lo -= 1;
 
     // reverse and complement the sequence once we find it
-    revcomp(buf[lo..hi]);
+    revcomp(buf, lo, hi);
 
     hi = lo - 1;
   }
@@ -48,7 +48,7 @@ proc main(args: [] string) {
 }
 
 
-proc revcomp(buf: [?inds]) {
+proc revcomp(buf, bufflo, hi) {
   param eol = "\n".toByte(),  // end-of-line, as an integer
         cols = 61,            // # of characters per full row (including '\n')
         // A 'bytes' value that stores the complement of each base at its index
@@ -57,10 +57,8 @@ proc revcomp(buf: [?inds]) {
               //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
               //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-  var lo = inds.low,
-      hi = inds.high;
+  var lo = bufflo;
 
-  // skip past header line
   do {
     lo += 1;
   } while buf[lo-1] != eol;
