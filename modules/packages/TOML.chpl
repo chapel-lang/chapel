@@ -1258,12 +1258,12 @@ module TomlReader {
           const toke = strippedToken;
           const isWhiteSpace = compile("\\s");
           var dateTimeToken = isWhiteSpace.split(toke);
-          if strippedToken.startsWith(compile('|'.join(dt,ti,ld))) then
+          if (compile('|'.join(dt,ti,ld))).match(strippedToken).matched then
             strippedToken = dateTimeToken[0];
-          var isComment = strippedToken.startsWith(compile(comments));
-          if isComment && idx <= 1 {
+          var isComment = (compile(comments)).match(strippedToken);
+          if isComment.matched && idx <= 1 {
             linetokens.append(strippedToken);
-          } else if !isComment {
+          } else if !isComment.matched {
             linetokens.append(strippedToken);
           }
         }

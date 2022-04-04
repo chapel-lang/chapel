@@ -1341,7 +1341,7 @@ iter string.split(sep: regex(string), maxsplit: int = 0)
 
 pragma "no doc"
 pragma "last resort"
-deprecated "the split function with pattern argument is deprecated use sep instead"
+deprecated "the split function with pattern argument is deprecated, use sep instead"
 iter bytes.split(pattern: regex(bytes), maxsplit: int = 0)
 {
   for v in pattern.split(this, maxsplit) {
