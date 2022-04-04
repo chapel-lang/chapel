@@ -19,7 +19,7 @@
  */
 
 /*
-   Support for pseudorandom number generation
+   Support for pseudorandom number generation.
 
    This module defines an abstraction for a stream of pseudorandom numbers,
    :class:`~RandomStreamInterface`. Use :proc:`createRandomStream` to
@@ -696,7 +696,7 @@ module Random {
 
 
   /*
-     Seed generation for pseudorandom number generation
+     Seed generation for pseudorandom number generation.
 
 
      .. note::
@@ -2427,7 +2427,7 @@ module Random {
   } // end PCGRandomLib
 
   /*
-     NAS Parallel Benchmark RNG
+     NAS Parallel Benchmark Random Number Generator.
 
      The pseudorandom number generator (PRNG) implemented by
      this module uses the algorithm from the NAS Parallel Benchmarks

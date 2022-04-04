@@ -18,8 +18,11 @@
  * limitations under the License.
  */
 
-/*  A cryptographic library based on `OpenSSL <https://www.openssl.org/>`_, targeted at
-    flexible encryption purposes.
+/*  A cryptographic library based on 'OpenSSL'.
+
+    This module provides a cryptographic library based on `OpenSSL
+    <https://www.openssl.org/>`_, targeted at flexible encryption
+    purposes.
 
     The Crypto module focuses on providing various cryptographic utilities such as
 
@@ -1180,7 +1183,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
   }
 
   /*
-      Support for low-level native C_OpenSSL bindings.
+      Support for low-level native OpenSSL bindings in C.
       This submodule wraps the C_OpenSSL implementation, providing access to
       most of the C_OpenSSL calls.
 

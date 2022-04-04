@@ -20,7 +20,7 @@
 
 /*
 
-Low-level support for many network protocols with libcurl
+Low-level support for many network protocols with 'libcurl'.
 
 This module provides support for libcurl, enabling Chapel programs
 to work with many network protocols. This module is a low-level C

@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/* HDF5 bindings for Chapel
+/* HDF5 bindings for Chapel.
 
 This module implements the C-API for HDF5 version 1.10.1, as well as some
 functionality for reading and writing HDF5 files built on top of the C-API.
@@ -69,7 +69,7 @@ module HDF5 {
     C_HDF5.H5open();
   }
 
-  /* The C_HDF5 module defines the interface to the HDF5 library.
+  /* Defines the C interface to the HDF5 library.
      Documentation for its functions, types, and constants can be found
      at the official HDF5 web site:
      https://portal.hdfgroup.org/display/HDF5/HDF5
@@ -3901,7 +3901,9 @@ module HDF5 {
     var A: [D] eltType;
   }
 
-  /* A module to encapsulate functions that use the MPI module so that it
+  /* HDF5 routines that rely on MPI.
+
+     A module to encapsulate functions that use the MPI module so that it
      is not initialized unless these functions are actually used.
    */
   module IOusingMPI {

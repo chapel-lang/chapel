@@ -21,7 +21,8 @@
 
 
 
-/*
+/* Support for routines related to measuring the passing of time.
+
    This module provides support for querying wall time in the local
    timezone and implements a record :record:`~Timer` that provides basic
    stopwatch behavior.  The stopwatch has the potential for microsecond

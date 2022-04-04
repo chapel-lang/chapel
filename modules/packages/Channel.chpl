@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for channels that can transfer typed data between tasks.
+
  This module contains the implementation of channels which can be used to move
  typed data between Chapel tasks.
 

@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/*
+/* Support for reflecting about properties of a Chapel program's code.
 
    Functions for reflecting about language elements, such as fields,
    functions, and methods.

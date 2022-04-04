@@ -18,7 +18,7 @@
  */
 
 /*
-  This module contains the implementation of the ``sortedSet`` type.
+  This module contains the implementation of the 'sortedSet' type.
 
   An ``sortedSet`` is a collection of unique and sorted elements. The
   ``sortedSet`` accepts a :ref:`comparator <comparators>` to determine how

@@ -19,7 +19,8 @@
  */
 
 
-/*
+/* Support for a lock-free Treiber stack.
+
   .. warning::
 
     This module relies on the :mod:`AtomicObjects` package module, which

@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Utility routines for splitting a range into multiple chunks.
+
    The ``RangeChunk`` module assists with dividing a bounded ``range`` of any ``idxType``
    and stride into ``numChunks``. Chunks are 0-based, with the ``0`` index chunk including
    ``range.low`` and the ``numChunks - 1`` index chunk including ``range.high``.

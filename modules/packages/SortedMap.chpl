@@ -18,9 +18,7 @@
  * limitations under the License.
  */
 
-/*
-  This module contains the implementation of the sortedMap type
-  which is a container that stores key-value associations.
+/* Provides the 'sortedMap' type for storing sorted key-value associations.
 
   sortedMaps are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any sortedMap constructor. When

@@ -18,11 +18,12 @@
  * limitations under the License.
  */
 
-/*
+/* Support for the 'chplvis' visualization tool.
 
-   Support for the visualization tool :ref:`chplvis`.
+   This module provides support for the execution visualization tool
+   :ref:`chplvis`.
 
-   This module provides access to and enables hooks to dump out
+   It provides access to and enables hooks to dump out
    task and communication information for post-run visualization
    of the tasks and communication.
 

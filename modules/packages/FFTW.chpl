@@ -38,7 +38,7 @@
 //
 
 /*
-  FFT computations via key routines from FFTW (version 3)
+  FFT computations via key routines from FFTW (version 3).
 
   This module defines Chapel wrappers for key 64-bit
   routines from FFTW (http://www.fftw.org), version 3. The routines

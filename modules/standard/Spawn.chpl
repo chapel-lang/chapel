@@ -19,7 +19,7 @@
  */
 
 /*
-Support launching and interacting with other programs.
+Support launching and interacting with other programs (deprecated).
 
 .. warning::
 

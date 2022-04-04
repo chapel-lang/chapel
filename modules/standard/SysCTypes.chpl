@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/*
+/* Support for C integer types (deprecated).
 
 In previous releases, this module contained Chapel types that
 represent C integer types.  It has been deprecated and its contents

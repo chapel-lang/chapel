@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/* A file utilities library, specifically related to path operations
+/* A file utilities library focusing on path operations.
 
    The Path module focuses on manipulation of the path to a file or directory.
    Also provided are constant values representing common idioms that may vary

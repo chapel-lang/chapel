@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/*
+/* Support for the Hadoop Distributed File System.
 
 This module implements support for the
 `Hadoop <http://hadoop.apache.org/>`_

@@ -19,7 +19,7 @@
  */
 
 /*
-  This module contains the implementation of the set type.
+  This module contains the implementation of Chapel's standard 'set' type.
 
   A set is a collection of unique elements. Sets are unordered and unindexed.
 

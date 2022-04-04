@@ -19,7 +19,7 @@
  */
 
 /*
-The UnitTest module provides support for automated testing in Chapel.
+Support for automated testing in Chapel.
 
 The UnitTest module is intended to be used with the `mason test
 <https://chapel-lang.org/docs/tools/mason/mason.html>`_ command, which

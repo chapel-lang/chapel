@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/*
+/* Support for reasoning about version numbers.
 
 .. highlight:: chapel
 

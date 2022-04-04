@@ -24,7 +24,7 @@
 
 /*
 
-Defines C types and related routines to support interoperability
+Defines C types and related routines to support interoperability.
 
 This module provides access to common C types for the purpose of
 calling between Chapel and C, declaring variables using C's types,

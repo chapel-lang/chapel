@@ -18,9 +18,7 @@
  * limitations under the License.
  */
 
-/*
-   The `Search` module is designed to support standard search routines on 1D
-   arrays
+/* Support for standard search routines on 1D arrays.
  */
 module Search {
   public use Sort only defaultComparator, DefaultComparator,

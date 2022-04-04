@@ -18,7 +18,9 @@
  * limitations under the License.
  */
 
-/* The `FunctionalOperations` module provides operations that act on
+/* Support for acting on iterators in a functional style.
+
+   The `FunctionalOperations` module provides operations that act on
    iterators in a functional programming style.
  */
 module FunctionalOperations {

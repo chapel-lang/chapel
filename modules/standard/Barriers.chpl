@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/* Support for task barriers.
+/* Support for barriers between tasks.
 
    The Barrier type provided in this module can be used to prevent tasks
    from proceeding until all other related tasks have also reached the

@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for dynamic distribution of a 'forall' loop's iterations.
+
   This module contains several iterators that can be used to drive a `forall`
   loop by performing dynamic and adaptive splitting of a range's iterations.
 

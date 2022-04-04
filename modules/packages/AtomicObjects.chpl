@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/*  Support for atomic operations on pointers to 'unmanaged' classes.
+
   .. warning::
 
     This module has several platform restrictions in its current state:

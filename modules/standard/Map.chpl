@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Chapel's standard 'map' type for key-value storage.
+
   This module contains the implementation of the map type which is a container
   that stores key-value associations.
 

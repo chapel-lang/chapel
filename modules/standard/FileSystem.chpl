@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/* A file utilities library
+/* A file utilities library.
 
    The FileSystem module focuses on file and directory properties and
    operations.  It does not cover every interaction involving a file--- for

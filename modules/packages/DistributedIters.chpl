@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for dynamic iterators distributed across multiple locales.
+
   This module contains iterators that can be used to distribute a `forall`
   loop for a range or domain by dynamically splitting iterations between
   locales.

@@ -18,7 +18,7 @@
  */
 
 /*
-  Socket Module library, specifically related to IP Sockets.
+  Supports inter-process communication through IP sockets.
 
   The Socket module focuses on connecting, accepting sockets and providing interface for
   communication between them. Also provided are some constant values representing

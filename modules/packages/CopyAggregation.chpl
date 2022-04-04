@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Provides support for aggregated copies/assignments for trivial types.
+
    .. warning::
      This module represents work in progress. The API is unstable and likely to
      change over time.

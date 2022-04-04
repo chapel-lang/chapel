@@ -18,7 +18,9 @@
  * limitations under the License.
  */
 
-/* Support for representing dates, times, combined dates and times and
+/* This module supports reasoning about real-world dates and times.
+
+   Support for representing dates, times, combined dates and times and
    timedeltas.  This module is modeled heavily off of the python module
    'datetime'.
 

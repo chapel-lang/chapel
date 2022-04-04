@@ -22,7 +22,7 @@
 // TODO -- performance test sort routines and optimize (see other TODO's)
 /*
 
-The Sort module is designed to support standard sort routines.
+Supports standard algorithms for sorting data.
 
 .. _comparators:
 

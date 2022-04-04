@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/*
+/* Provides an abstract class representing a 'Collection' interface.
 
   Summary
   _______

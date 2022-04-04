@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for error conditions and error-handling.
+
    This module contains several features related to error conditions and error
    handling:
 

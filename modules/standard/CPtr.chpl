@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/*
+/* Support for C pointers and related routines (deprecated).
 
 In previous releases, this module contained Chapel types that
 represent C pointers and related routines.  It has been deprecated and
