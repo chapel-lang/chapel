@@ -1,0 +1,11 @@
+BootStrap: library
+From: ubuntu:16.04
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/apt-get-deps.sh
+
+%runscript
+    ../../provision-scripts/run.sh
