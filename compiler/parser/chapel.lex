@@ -428,7 +428,8 @@ static int processToken(yyscan_t scanner, int t) {
         t == TBORROWED ||
         t == TUNMANAGED ||
         t == TOWNED ||
-        t == TSHARED) {
+        t == TSHARED ||
+        t == TNEW) {
       captureString.push_back(' ');
     }
   }

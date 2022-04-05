@@ -70,7 +70,7 @@ def get_exclusive_nodes():
                  '--partition=chapel',
                  '--noheader',
                  '--responding',
-                 '--format="NO;%D;%N;%N"',
+                 '--format="NO;%D;%N;%N;None"',
                  '--states=DRAINING']
     sinfo_out = run_command_wrapper(sinfo_cmd)
 

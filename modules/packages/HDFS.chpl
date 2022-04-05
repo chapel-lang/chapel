@@ -125,8 +125,8 @@ HDFS Support Types and Functions
  */
 module HDFS {
 
-  use IO, SysBasic, SysError, Sys, CPtr;
-  public use SysCTypes;
+  use IO, SysBasic, SysError, Sys;
+  public use CTypes;
 
   require "hdfs.h";
 
@@ -170,10 +170,10 @@ module HDFS {
   // QIO extern stuff
   private extern proc qio_strdup(s: c_string): c_string;
   private extern proc qio_mkerror_errno():syserr;
-  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_void_ptr, ref len_out:ssize_t, ref offset_out:int(64)):syserr;
-  private extern proc qio_channel_advance_available_end_unlocked(ch:qio_channel_ptr_t, len:ssize_t);
-  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_void_ptr, ref len_out:ssize_t, ref offset_out:int(64)):syserr;
-  private extern proc qio_channel_advance_write_behind_unlocked(ch:qio_channel_ptr_t, len:ssize_t);
+  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_void_ptr, ref len_out:c_ssize_t, ref offset_out:int(64)):syserr;
+  private extern proc qio_channel_advance_available_end_unlocked(ch:qio_channel_ptr_t, len:c_ssize_t);
+  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_void_ptr, ref len_out:c_ssize_t, ref offset_out:int(64)):syserr;
+  private extern proc qio_channel_advance_write_behind_unlocked(ch:qio_channel_ptr_t, len:c_ssize_t);
 
   private param verbose = false;
 
@@ -477,7 +477,7 @@ module HDFS {
       var remaining = amt;
       while remaining > 0 {
         var ptr:c_void_ptr = c_nil;
-        var len = 0:ssize_t;
+        var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_allocated_ptr_unlocked(qio_ch, amt, ptr, len, offset);
         if err then
@@ -516,7 +516,7 @@ module HDFS {
       var remaining = amt;
       while remaining > 0 {
         var ptr:c_void_ptr = c_nil;
-        var len = 0:ssize_t;
+        var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_write_behind_ptr_unlocked(qio_ch, ptr, len, offset);
         if err then
@@ -524,7 +524,7 @@ module HDFS {
         if ptr == nil || len == 0 then
           return EINVAL;
 
-        len = min(len, amt.safeCast(ssize_t));
+        len = min(len, amt.safeCast(c_ssize_t));
         if len >= max(int(32)) then
           len = max(int(32));
 

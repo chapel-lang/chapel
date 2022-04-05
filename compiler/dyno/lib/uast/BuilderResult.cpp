@@ -21,7 +21,7 @@
 
 #include "chpl/queries/Context.h"
 #include "chpl/queries/ErrorMessage.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Comment.h"
 
@@ -45,12 +45,12 @@ BuilderResult::BuilderResult(UniqueString filePath)
 // Computes idToAst and idToParent maps by visiting all uAST nodes
 static
 void computeIdMaps(
-    const ASTNode* ast,
-    const ASTNode* parentAst,
-    std::unordered_map<ID, const ASTNode*>& idToAst,
+    const AstNode* ast,
+    const AstNode* parentAst,
+    std::unordered_map<ID, const AstNode*>& idToAst,
     std::unordered_map<ID, ID>& idToParentId) {
 
-  for (const ASTNode* child : ast->children()) {
+  for (const AstNode* child : ast->children()) {
     computeIdMaps(child, ast, idToAst, idToParentId);
   }
 
@@ -74,6 +74,8 @@ void BuilderResult::swap(BuilderResult& other) {
   idToAst_.swap(other.idToAst_);
   idToLocation_.swap(other.idToLocation_);
   commentIdToLocation_.swap(other.commentIdToLocation_);
+  idToParentId_.swap(other.idToParentId_);
+  idToAst_.swap(other.idToAst_);
 }
 
 bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
@@ -86,10 +88,10 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   changed |= defaultUpdate(keep.errors_, addin.errors_);
 
   // update the ASTs
-  changed |= updateASTList(keep.topLevelExpressions_,
+  changed |= updateAstList(keep.topLevelExpressions_,
                            addin.topLevelExpressions_);
 
-  std::unordered_map<ID, const ASTNode*> newIdToAst;
+  std::unordered_map<ID, const AstNode*> newIdToAst;
   std::unordered_map<ID, ID> newIdToParent;
 
   // recompute locationsVec by traversing the AST and using the maps
@@ -111,32 +113,48 @@ void BuilderResult::mark(Context* context) const {
   // mark the UniqueString file path
   filePath_.mark(context);
 
-  // UniqueStrings in the AST IDs will be marked in markASTList below
+  // mark UniqueStrings in the ASTs
+  markAstList(context, topLevelExpressions_);
+
+  // NOTE: pair.first.mark(context) is redundant in each of these b/c any
+  // ID (pair.first) will be marked by markAstList above
 
   // mark UniqueStrings in the Locations
   for (const auto& pair : idToLocation_) {
+    //pair.first.mark(context); // redundant
     pair.second.mark(context);
+  }
+
+  for (const auto& pair : idToParentId_) {
+    // pair.first.mark(context); // redundant
+    pair.second.mark(context);
+  }
+
+  for (const auto& pair : idToAst_) {
+    // pair.first.mark(context); // redundant
+    context->markPointer(pair.second);
   }
 
   for (const Location& loc : commentIdToLocation_) {
     loc.mark(context);
   }
 
-  // mark UniqueStrings in the ASTs
-  markASTList(context, topLevelExpressions_);
+  for (const auto& em : errors_) {
+    em.mark(context);
+  }
 
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
 }
 
 static void updateFilePathsForModulesRecursively(Context* context,
-                                                 const ASTNode* ast,
+                                                 const AstNode* ast,
                                                  UniqueString path) {
   if (const Module* mod = ast->toModule()) {
     context->setFilePathForModuleID(mod->id(), path);
   }
 
-  for (const ASTNode* child : ast->children()) {
+  for (const AstNode* child : ast->children()) {
     updateFilePathsForModulesRecursively(context, child, path);
   }
 }
@@ -150,8 +168,8 @@ void BuilderResult::updateFilePaths(Context* context,
   }
 }
 
-const ASTNode* BuilderResult::idToAst(ID id) const {
-  const ASTNode* ast = nullptr;
+const AstNode* BuilderResult::idToAst(ID id) const {
+  const AstNode* ast = nullptr;
   auto search = idToAst_.find(id);
   if (search != idToAst_.end()) {
     ast = search->second;

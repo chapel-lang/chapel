@@ -8,7 +8,7 @@ var A: [D] cuc;
 var numrows, numcols = 0;
 
 var line: string;
-while stdin.readline(line) {
+while readline(line) {
   line = line.strip();
   numcols = line.size;
   D = {0..numrows, 0..<numcols};

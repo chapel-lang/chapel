@@ -29,9 +29,11 @@ owned<Attributes> Attributes::build(Builder* builder, Location loc,
                                     std::set<PragmaTag> pragmas,
                                     bool isDeprecated,
                                     UniqueString deprecationMessage) {
-  for (auto tag : pragmas) {
-    assert(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
-  }
+  #ifndef NDEBUG
+    for (auto tag : pragmas) {
+      assert(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
+    }
+  #endif
 
   Attributes* ret = new Attributes(std::move(pragmas), isDeprecated,
                                    deprecationMessage);

@@ -1,5 +1,5 @@
-perfkeys: real, real
-graphkeys: release, submitted
-files: revcomp.dat, revcomp-submitted.dat
+perfkeys: real, real, real
+graphkeys: release, submitted (2), submitted (3)
+files: revcomp.dat, revcomp-submitted.dat, revcomp3-submitted.dat
 graphtitle: Submitted Reverse-complement Shootout Benchmark
 ylabel: Time (seconds)

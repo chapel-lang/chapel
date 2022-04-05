@@ -20,8 +20,7 @@
 
 module ByteBufferHelpers {
   private use ChapelStandard;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   pragma "no doc"
   type byteType = uint(8);
@@ -56,7 +55,7 @@ module ByteBufferHelpers {
 
   inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
                                    src_addr: bufferType, len: integral) {
-    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
+    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(c_size_t));
   }
 
   private inline proc getGoodAllocSize(requestedSize: int): int {

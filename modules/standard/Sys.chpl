@@ -45,8 +45,7 @@
 module Sys {
   // get basic types from SysBasic
   use SysBasic;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   private use SysError;
 
 
@@ -71,6 +70,9 @@ module Sys {
   extern const O_RDWR:c_int;
 
   // POSIX flags
+  // It is expected that a new module for Posix interface functionality
+  // will likely be introduced. Much of this code would be moved to that
+  // module at that time.
   extern const O_APPEND:c_int;
   extern const O_CREAT:c_int;
   extern const O_DSYNC:c_int;
@@ -80,6 +82,42 @@ module Sys {
   extern const O_RSYNC:c_int;
   extern const O_SYNC:c_int;
   extern const O_TRUNC:c_int;
+
+  // Signals as required by POSIX.1-2008, 2013 edition
+  // See note below about signals intentionally not included
+  extern const SIGABRT: c_int;
+  extern const SIGALRM: c_int;
+  extern const SIGBUS: c_int;
+  extern const SIGCHLD: c_int;
+  extern const SIGCONT: c_int;
+  extern const SIGFPE: c_int;
+  extern const SIGHUP: c_int;
+  extern const SIGILL: c_int;
+  extern const SIGINT: c_int;
+  extern const SIGKILL: c_int;
+  extern const SIGPIPE: c_int;
+  extern const SIGQUIT: c_int;
+  extern const SIGSEGV: c_int;
+  extern const SIGSTOP: c_int;
+  extern const SIGTERM: c_int;
+  extern const SIGTRAP: c_int;
+  extern const SIGTSTP: c_int;
+  extern const SIGTTIN: c_int;
+  extern const SIGTTOU: c_int;
+  extern const SIGURG: c_int;
+  extern const SIGUSR1: c_int;
+  extern const SIGUSR2: c_int;
+  extern const SIGXCPU: c_int;
+  extern const SIGXFSZ: c_int;
+
+  // These signals are not strictly required by POSIX.1.2008 2013 edition
+  // and so should not be included here:
+
+  // SIGPOLL is Obsolescent and optional as part of XSI STREAMS
+  // SIGPROF is Obsolescent and optional as part of XSI STREAMS
+  // SIGSYS is optional as part of X/Open Systems Interface
+  // SIGVTALRM is optional as part of X/Open Systems Interface
+
 
   // Linux flags (make them 0 if not on linux, please)
   //extern const O_ASYNC:c_int;
@@ -255,6 +293,8 @@ module Sys {
   extern type sys_in6_addr_t;
 
   extern type sys_sockaddr_storage_t;
+  /* The type corresponding to C's socklen_t */
+  extern type socklen_t = int(32);
   extern record sys_sockaddr_t {
     var addr:sys_sockaddr_storage_t;
     var len:socklen_t;
@@ -420,11 +460,16 @@ module Sys {
     :rtype: `c_int`
    */
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+  /* The type corresponding to C's mode_t */
+  extern type mode_t = uint(32);
   extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):err_t;
   extern proc sys_close(fd:fd_t):err_t;
 
-  extern proc sys_mmap(addr:c_void_ptr, length:size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, ref ret_out:c_void_ptr):err_t;
-  extern proc sys_munmap(addr:c_void_ptr, length:size_t):err_t;
+  /* The type corresponding to C's off_t */
+  extern type off_t = int(64);
+
+  extern proc sys_mmap(addr:c_void_ptr, length:c_size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, ref ret_out:c_void_ptr):err_t;
+  extern proc sys_munmap(addr:c_void_ptr, length:c_size_t):err_t;
 
   // readv, writev, preadv, pwritev -- can't (yet) pass array.
 

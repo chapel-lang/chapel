@@ -31,6 +31,9 @@
 // This pass must be run after parallel().
 //
 
+#include "ModuleSymbol.h"
+#include "baseAST.h"
+#include "misc.h"
 #include "passes.h"
 
 #include "astutil.h"
@@ -39,64 +42,10 @@
 #include "stringutil.h"
 #include "wellknown.h"
 
-#include "global-ast-vecs.h"
+#include "PassManager.h"
 
-static void addModuleInitBlocks();
-static void addInitGuards();
-static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn);
-static void addPrintModInitOrder(FnSymbol* fn);
-
-void addInitCalls()
-{
-  addModuleInitBlocks();
-  addInitGuards();
-}
-
-
-void addModuleInitBlocks() {
-  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-    // Not for the root module
-    if (mod == rootModule) continue;
-
-    FnSymbol* fn = toFnSymbol(mod->initFn);
-    if (!fn) {
-      INT_ASSERT(!mod->deinitFn); // otherwise need to reinstate initFn
-      // Sometimes a module parsed on the command line
-      // is not actually used, so its initializer is pruned during resolution.
-      continue;
-    }
-
-    SET_LINENO(mod);
-    if (mod->deinitFn)
-      // This needs to go after initBlock: we want addModule(mod)
-      // to be called *after* addModule on modules used by mod.
-      fn->insertAtHead(new CallExpr(gAddModuleFn,
-                                    buildCStringLiteral(mod->name),
-                                    mod->deinitFn));
-
-    BlockStmt* initBlock = new BlockStmt();
-
-    // If I have a parent, I need it initialized first,
-    // since all of its symbols are visible to me.
-    if (ModuleSymbol* parent = mod->defPoint->getModule())
-      // The initializer for theProgram is called specially in main.c,
-      // so we don't have to call it here.
-      if (parent != theProgram && parent != rootModule)
-        initBlock->insertAtTail(new CallExpr(parent->initFn));
-
-    // Call the initializer for each module I use.
-    for_vector(ModuleSymbol, usedMod, mod->modUseList) {
-      if (usedMod != standardModule) {
-        initBlock->insertAtTail(new CallExpr(usedMod->initFn));
-      }
-    }
-
-    if (initBlock->body.length > 0) fn->insertAtHead(initBlock);
-  }
-}
-
-
-// This function makes the initialization functions idempotent --
+// ---------- AddInitGuards ----------
+// This pass makes the initialization functions idempotent --
 // meaning that they can be executed any number of times, but the net
 // effect is as if they were only called once.  That is done using the
 // idiom:
@@ -109,6 +58,7 @@ void addModuleInitBlocks() {
 // The guard code is added only if the initialization function has a
 // nontrivial body.
 //
+//
 // This pass also creates the function "chpl__init_preInit()", which
 // initializes all of the initialization flags to false.
 //
@@ -116,8 +66,12 @@ void addModuleInitBlocks() {
 // being initialized if the config const --printModuleInitOrder is set
 // at run time.
 //
-static void addInitGuards(void) {
-  // We need a function to drop the initializers into.
+
+
+// TODO GLOBALS theProgram and baseModule
+// TODO IDEMPOTENT
+// We need a function to drop the initializers into.
+FnSymbol* AddInitGuards::getOrCreatePreInitFn() {
   SET_LINENO(baseModule);
   FnSymbol* preInitFn = new FnSymbol(astr("chpl__init_preInit"));
   preInitFn->retType = dtVoid;
@@ -127,29 +81,37 @@ static void addInitGuards(void) {
   theProgram->block->insertAtTail(new DefExpr(preInitFn));
   normalize(preInitFn);
 
-  // Iterate all modules and select their module initialization functions.
-  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-    if (mod == rootModule)
-      continue;
-
-    FnSymbol* fn = toFnSymbol(mod->initFn);
-    if (!fn)
-      // Sometimes a module parsed on the command line
-      // is not actually used, so its initializer is pruned.
-      continue;
-
-    // Test if this fn has a nontrivial body.
-    BlockStmt* body = fn->body;
-    if (body->length() < 1)
-      continue;
-
-    // Alright then, add the guard.
-    addInitGuard(fn, preInitFn);
-  }
+  return preInitFn;
+}
+AddInitGuards::AddInitGuards() {
+  preInitFn = getOrCreatePreInitFn();
 }
 
-static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn)
-{
+bool AddInitGuards::shouldProcess(ModuleSymbol* mod) {
+  if (mod == rootModule)
+    return false;
+
+  FnSymbol* fn = toFnSymbol(mod->initFn);
+  if (!fn)
+    // Sometimes a module parsed on the command line
+    // is not actually used, so its initializer is pruned.
+    return false;
+
+  // Test if this fn has a nontrivial body.
+  BlockStmt* body = fn->body;
+  if (body->length() < 1)
+    return false;
+
+  return true;
+}
+
+void AddInitGuards::process(ModuleSymbol* mod) {
+  FnSymbol* init = toFnSymbol(mod->initFn);
+  assert(init); // precondition from shouldProcess
+  addInitGuard(init, preInitFn);
+}
+
+void AddInitGuards::addInitGuard(FnSymbol* fn, FnSymbol* preInitFn) {
     SET_LINENO(fn);
     // The declaration:
     //      var <init_fn_name>_p : bool;
@@ -187,6 +149,7 @@ static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn)
     fn->insertAtHead(ifStmt);
 }
 
+// TODO GLOBALS gPrintModuleInitFn, gModuleInitIndentLevel
 //
 // Insert code that prints out the name of the module as it is
 // initialized.  We do this by inserting a call to printModInitOrder()
@@ -194,8 +157,7 @@ static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn)
 // (but after the guard) and then decrementing the indent level at the
 // end of the function.
 //
-static void addPrintModInitOrder(FnSymbol* fn)
-{
+void AddInitGuards::addPrintModInitOrder(FnSymbol* fn) {
   //
   // Only do this if gPrintModuleInitFn exists.  It won't exist when
   // compiling --minimal-modules
@@ -203,12 +165,12 @@ static void addPrintModInitOrder(FnSymbol* fn)
   if (gPrintModuleInitFn == NULL)
     return;
 
-  // The function printModuleIInit() takes 3 arguments:
+  // The function printModuleInitFn() takes 3 arguments:
   //   s1:  the format string "%*s"
   //   s2:  string to be printed
   //   len: length of s2
   // Since no other modules are initialized prior to this
-  // PrintModuleinitOrder, we'll be conservative and generate s1 and
+  // PrintModuleInitOrder, we'll be conservative and generate s1 and
   // len here.
   VarSymbol* s1tmp = newTemp("modFormatStr", dtStringC);
   VarSymbol* s2tmp = newTemp("modStr", dtStringC);
@@ -248,4 +210,67 @@ static void addPrintModInitOrder(FnSymbol* fn)
   fn->insertAtHead(new DefExpr(s2tmp));
   fn->insertAtHead(new DefExpr(s1tmp));
   fn->insertBeforeEpilogue(decIndentLevel);
+}
+
+
+// ---------- AddModuleInitBlocks ----------
+
+bool AddModuleInitBlocks::shouldProcess(ModuleSymbol* mod) {
+  if (mod == rootModule)
+    return false;
+
+  FnSymbol* fn = toFnSymbol(mod->initFn);
+  if (!fn) {
+    INT_ASSERT(!mod->deinitFn); // otherwise need to reinstate initFn
+    // Sometimes a module parsed on the command line
+    // is not actually used, so its initializer is pruned during resolution.
+    return false;
+  }
+  return true;
+}
+
+// TODO GLOBALS standardModule gAddModuleFn
+void AddModuleInitBlocks::process(ModuleSymbol* mod) {
+  FnSymbol* fn = toFnSymbol(mod->initFn);
+  INT_ASSERT(fn); // precondition from shouldProcess
+
+  SET_LINENO(mod);
+  if (mod->deinitFn)
+    // This needs to go after initBlock: we want addModule(mod)
+    // to be called *after* addModule on modules used by mod.
+    fn->insertAtHead(new CallExpr(gAddModuleFn, buildCStringLiteral(mod->name),
+                                  mod->deinitFn));
+
+  BlockStmt* initBlock = new BlockStmt();
+
+  // If I have a parent, I need it initialized first,
+  // since all of its symbols are visible to me.
+  if (ModuleSymbol* parent = mod->defPoint->getModule())
+    // The initializer for theProgram is called specially in main.c,
+    // so we don't have to call it here.
+    if (parent != theProgram && parent != rootModule)
+      initBlock->insertAtTail(new CallExpr(parent->initFn));
+
+  // Call the initializer for each module I use.
+  for (ModuleSymbol* usedMod : mod->modUseList) {
+    if (usedMod != standardModule) {
+      initBlock->insertAtTail(new CallExpr(usedMod->initFn));
+    }
+  }
+
+  // TODO REFACTOR Q can't we check this before and only create all the above if its true?
+  if (initBlock->body.length > 0)
+    fn->insertAtHead(initBlock);
+}
+
+#include "global-ast-vecs.h"
+
+void addInitCalls() {
+  PassManager pm;
+
+  PassTList<ModuleSymbol*> passes;
+  passes.push_back(std::make_unique<AddModuleInitBlocks>());
+  passes.push_back(std::make_unique<AddInitGuards>());
+  // TODO these are good candidates for runPassChained
+  pm.runPass(std::move(passes), gModuleSymbols);
 }

@@ -46,13 +46,6 @@
 extern "C" {
 #endif
 
-extern int qio_glocale_utf8; // for testing use.
-#define QIO_GLOCALE_UTF8 1
-#define QIO_GLOCALE_ASCII 2
-#define QIO_GLOCALE_OTHER -1
-
-void qio_set_glocale(void);
-
 // Read/Write methods for Binary I/O
 
 static inline
@@ -453,30 +446,22 @@ qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, i
 
   // Fast path: an entire multi-byte sequence
   // is stored in the buffers.
-  if( qio_glocale_utf8 > 0 &&
-      qio_space_in_ptr_diff(4, ch->cached_end, ch->cached_cur) ) {
-    if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
-      state = 0;
-      while( 1 ) {
-        chpl_enc_utf8_decode(&state,
-                             &codepoint,
-                             *(unsigned char*)ch->cached_cur);
-        ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
-        if (state <= 1) {
-          break;
-        }
-      }
-      if( state == UTF8_ACCEPT ) {
-        *chr = codepoint;
-      } else {
-        *chr = 0xfffd; // replacement character
-        QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
-      }
-    } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
-      // character == byte.
-      *chr = *(unsigned char*)ch->cached_cur;
+  if( qio_space_in_ptr_diff(4, ch->cached_end, ch->cached_cur) ) {
+    state = 0;
+    while( 1 ) {
+      chpl_enc_utf8_decode(&state,
+                           &codepoint,
+                           *(unsigned char*)ch->cached_cur);
       ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
-      err = 0;
+      if (state <= 1) {
+        break;
+      }
+    }
+    if( state == UTF8_ACCEPT ) {
+      *chr = codepoint;
+    } else {
+      *chr = 0xfffd; // replacement character
+      QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
     }
   } else {
     err = _qio_channel_read_char_slow_unlocked(ch, chr);
@@ -496,43 +481,20 @@ qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, i
 static inline
 int qio_nbytes_char(int32_t chr)
 {
-  if( qio_glocale_utf8 > 0 ) {
-    if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
-      if( chr < 0 ) {
-        return 0;
-      } else if( chr < 0x80 ) {
-        // OK, we got a 1-byte character; case #1
-        return 1;
-      } else if( chr < 0x800 ) {
-        // OK, we got a fits-in-2-bytes character; case #2
-        return 2;
-      } else if( chr < 0x10000 ) {
-        // OK, we got a fits-in-3-bytes character; case #3
-        return 3;
-      } else {
-        // OK, we got a fits-in-4-bytes character; case #4
-        return 4;
-      }
-    } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
-      return 1;
-    }
-  } else {
-#ifdef HAS_WCTYPE_H
-    char buf[MB_CUR_MAX];
-    mbstate_t ps;
-    size_t got;
-    memset(&ps, 0, sizeof(mbstate_t));
-    // The buf argument is never used, but if we put NULL there,
-    // wcrtomb ignores chr and assumes L'\0' per the C standard.
-    got = wcrtomb(buf, chr, &ps);
-    if( got == (size_t) -1 ) {
-      return 0;
-    } else {
-      return got;
-    }
-#else
+  if( chr < 0 ) {
     return 0;
-#endif
+  } else if( chr < 0x80 ) {
+    // OK, we got a 1-byte character; case #1
+    return 1;
+  } else if( chr < 0x800 ) {
+    // OK, we got a fits-in-2-bytes character; case #2
+    return 2;
+  } else if( chr < 0x10000 ) {
+    // OK, we got a fits-in-3-bytes character; case #3
+    return 3;
+  } else {
+    // OK, we got a fits-in-4-bytes character; case #4
+    return 4;
   }
   return 0;
 }
@@ -542,44 +504,26 @@ static inline
 qioerr qio_encode_char_buf(char* dst, int32_t chr)
 {
   qioerr err = 0;
-  if( qio_glocale_utf8 > 0 ) {
-    if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
-      if( chr < 0 ) {
-        QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
-      } else if( chr < 0x80 ) {
-        // OK, we got a 1-byte character; case #1
-        *(unsigned char*)dst = (unsigned char) chr;
-      } else if( chr < 0x800 ) {
-        // OK, we got a fits-in-2-bytes character; case #2
-        *(unsigned char*)dst = (0xc0 | (chr >> 6));
-        *(((unsigned char*)dst)+1) = (0x80 | (chr & 0x3f));
-      } else if( chr < 0x10000 ) {
-        // OK, we got a fits-in-3-bytes character; case #3
-        *(unsigned char*)dst = (0xe0 | (chr >> 12));
-        *(((unsigned char*)dst)+1) = (0x80 | ((chr >> 6) & 0x3f));
-        *(((unsigned char*)dst)+2) = (0x80 | (chr & 0x3f));
-      } else {
-        // OK, we got a fits-in-4-bytes character; case #4
-        *(unsigned char*)dst = (0xf0 | (chr >> 18));
-        *(((unsigned char*)dst)+1) = (0x80 | ((chr >> 12) & 0x3f));
-        *(((unsigned char*)dst)+2) = (0x80 | ((chr >> 6) & 0x3f));
-        *(((unsigned char*)dst)+3) = (0x80 | (chr & 0x3f));
-      }
-    } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
-      *(unsigned char*)dst = (unsigned char) chr;
-    }
+  if( chr < 0 ) {
+    QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
+  } else if( chr < 0x80 ) {
+    // OK, we got a 1-byte character; case #1
+    *(unsigned char*)dst = (unsigned char) chr;
+  } else if( chr < 0x800 ) {
+    // OK, we got a fits-in-2-bytes character; case #2
+    *(unsigned char*)dst = (0xc0 | (chr >> 6));
+    *(((unsigned char*)dst)+1) = (0x80 | (chr & 0x3f));
+  } else if( chr < 0x10000 ) {
+    // OK, we got a fits-in-3-bytes character; case #3
+    *(unsigned char*)dst = (0xe0 | (chr >> 12));
+    *(((unsigned char*)dst)+1) = (0x80 | ((chr >> 6) & 0x3f));
+    *(((unsigned char*)dst)+2) = (0x80 | (chr & 0x3f));
   } else {
-#ifdef HAS_WCTYPE_H
-    mbstate_t ps;
-    size_t got;
-    memset(&ps, 0, sizeof(mbstate_t));
-    got = wcrtomb(dst, chr, &ps);
-    if( got == (size_t) -1 ) {
-      QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
-    }
-#else
-    QIO_GET_CONSTANT_ERROR(err, ENOSYS, "missing wctype.h");
-#endif
+    // OK, we got a fits-in-4-bytes character; case #4
+    *(unsigned char*)dst = (0xf0 | (chr >> 18));
+    *(((unsigned char*)dst)+1) = (0x80 | ((chr >> 12) & 0x3f));
+    *(((unsigned char*)dst)+2) = (0x80 | ((chr >> 6) & 0x3f));
+    *(((unsigned char*)dst)+3) = (0x80 | (chr & 0x3f));
   }
   return err;
 }
@@ -594,36 +538,12 @@ qioerr do_qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes,
 {
   // Fast path: an entire multi-byte sequence
   // is stored in the buffers.
-  if( qio_glocale_utf8 > 0 ) {
-    if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
-      const int ret = chpl_enc_decode_char_buf_utf8(chr, nbytes, buf, buflen,
-                                                    allow_escape);
-      if (ret == 0) {
-        return 0;
-      }
-      else {
-        QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
-      }
-    } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
-      const int ret = chpl_enc_decode_char_buf_ascii(chr, nbytes, buf, buflen);
-      if (ret == 0) {
-        return 0;
-      }
-      else {
-        QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
-      }
-    }
+  const int ret = chpl_enc_decode_char_buf_utf8(chr, nbytes, buf, buflen,
+                                                allow_escape);
+  if (ret == 0) {
+    return 0;
   } else {
-    const int ret = chpl_enc_decode_char_buf_wctype(chr, nbytes, buf, buflen);
-    if (ret == 0) {
-      return 0;
-    }
-    else if (ret == -1) {
-      QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
-    }
-    else {  // -2
-      QIO_RETURN_CONSTANT_ERROR(ENOSYS, "missing wctype.h");
-    }
+    QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
   }
   *chr = 0; // Makes GCC stop complaining about *chr not being set in other locations
   chpl_internal_error("qio_decode_char_buf");
@@ -660,37 +580,31 @@ qioerr qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, 
 
   err = 0;
 
-  if( qio_glocale_utf8 > 0 &&
-      qio_space_in_ptr_diff(4, ch->cached_end, ch->cached_cur) ) {
-    if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
-      if( chr < 0 ) {
-        QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
-      } else if( chr < 0x80 ) {
-        // OK, we got a 1-byte character; case #1
-        *(unsigned char*)ch->cached_cur = (unsigned char) chr;
-        ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
-      } else if( chr < 0x800 ) {
-        // OK, we got a fits-in-2-bytes character; case #2
-        *(unsigned char*)ch->cached_cur = (0xc0 | (chr >> 6));
-        *(((unsigned char*)ch->cached_cur)+1) = (0x80 | (chr & 0x3f));
-        ch->cached_cur = qio_ptr_add(ch->cached_cur,2);
-      } else if( chr < 0x10000 ) {
-        // OK, we got a fits-in-3-bytes character; case #3
-        *(unsigned char*)ch->cached_cur = (0xe0 | (chr >> 12));
-        *(((unsigned char*)ch->cached_cur)+1) = (0x80 | ((chr >> 6) & 0x3f));
-        *(((unsigned char*)ch->cached_cur)+2) = (0x80 | (chr & 0x3f));
-        ch->cached_cur = qio_ptr_add(ch->cached_cur,3);
-      } else {
-        // OK, we got a fits-in-4-bytes character; case #4
-        *(unsigned char*)ch->cached_cur = (0xf0 | (chr >> 18));
-        *(((unsigned char*)ch->cached_cur)+1) = (0x80 | ((chr >> 12) & 0x3f));
-        *(((unsigned char*)ch->cached_cur)+2) = (0x80 | ((chr >> 6) & 0x3f));
-        *(((unsigned char*)ch->cached_cur)+3) = (0x80 | (chr & 0x3f));
-        ch->cached_cur = qio_ptr_add(ch->cached_cur,4);
-      }
-    } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
+  if( qio_space_in_ptr_diff(4, ch->cached_end, ch->cached_cur) ) {
+    if( chr < 0 ) {
+      QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
+    } else if( chr < 0x80 ) {
+      // OK, we got a 1-byte character; case #1
       *(unsigned char*)ch->cached_cur = (unsigned char) chr;
       ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
+    } else if( chr < 0x800 ) {
+      // OK, we got a fits-in-2-bytes character; case #2
+      *(unsigned char*)ch->cached_cur = (0xc0 | (chr >> 6));
+      *(((unsigned char*)ch->cached_cur)+1) = (0x80 | (chr & 0x3f));
+      ch->cached_cur = qio_ptr_add(ch->cached_cur,2);
+    } else if( chr < 0x10000 ) {
+      // OK, we got a fits-in-3-bytes character; case #3
+      *(unsigned char*)ch->cached_cur = (0xe0 | (chr >> 12));
+      *(((unsigned char*)ch->cached_cur)+1) = (0x80 | ((chr >> 6) & 0x3f));
+      *(((unsigned char*)ch->cached_cur)+2) = (0x80 | (chr & 0x3f));
+      ch->cached_cur = qio_ptr_add(ch->cached_cur,3);
+    } else {
+      // OK, we got a fits-in-4-bytes character; case #4
+      *(unsigned char*)ch->cached_cur = (0xf0 | (chr >> 18));
+      *(((unsigned char*)ch->cached_cur)+1) = (0x80 | ((chr >> 12) & 0x3f));
+      *(((unsigned char*)ch->cached_cur)+2) = (0x80 | ((chr >> 6) & 0x3f));
+      *(((unsigned char*)ch->cached_cur)+3) = (0x80 | (chr & 0x3f));
+      ch->cached_cur = qio_ptr_add(ch->cached_cur,4);
     }
   } else {
     err = _qio_channel_write_char_slow_unlocked(ch, chr);
@@ -703,11 +617,6 @@ qioerr qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, 
   }
 
   return err;
-}
-
-static inline
-int qio_unicode_supported(void) {
-  return qio_glocale_utf8 == QIO_GLOCALE_UTF8;
 }
 
 qioerr qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restrict ch, int skipOnlyWs);
@@ -816,7 +725,7 @@ typedef struct qio_conv_s {
 
 void qio_conv_destroy(qio_conv_t* spec);
 void qio_conv_init(qio_conv_t* spec_out);
-qioerr qio_conv_parse(c_string fmt, size_t start, uint64_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out);
+qioerr qio_conv_parse(c_string fmt, size_t start, uint64_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out, int32_t lineno, int32_t filename);
 
 // These error codes can be used by callers to qio_conv_parse
 qioerr qio_format_error_too_many_args(void);

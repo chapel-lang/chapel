@@ -18,6 +18,8 @@ Initializing Modules:
         ChapelArray
          ChapelPrivatization
          ChapelDomain
+          Initialization
+           Memory
           IO
            FormattedIO
             Regex
@@ -32,12 +34,9 @@ Initializing Modules:
            InsertionSort
         ChapelDistribution
          ChapelHashtable
-          Initialization
-           Memory
         ExternalArray
         RangeChunk
        ChapelNumLocales
-       Sys
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
@@ -48,10 +47,9 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ExportWrappers
-    ChapelAutoAggregation
-     CopyAggregation
-      AggregationPrimitives
     Types
     AlignedTSupport
+    CopyAggregation
+     AggregationPrimitives
    printModuleInitOrder
     moduleInitTest

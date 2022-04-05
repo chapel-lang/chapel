@@ -20,10 +20,10 @@
 #ifndef CHPL_UAST_LOOP_H
 #define CHPL_UAST_LOOP_H
 
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -32,11 +32,11 @@ namespace uast {
 /**
   This abstract class represents some sort of loop.
  */
-class Loop: public Expression {
+class Loop: public AstNode {
  protected:
-  Loop(asttags::ASTTag tag, ASTList children, BlockStyle blockStyle,
+  Loop(asttags::AstTag tag, AstList children, BlockStyle blockStyle,
        int loopBodyChildNum)
-    : Expression(tag, std::move(children)),
+    : AstNode(tag, std::move(children)),
       blockStyle_(blockStyle),
       loopBodyChildNum_(loopBodyChildNum) {
 
@@ -55,14 +55,10 @@ class Loop: public Expression {
     if (lhs->blockStyle_ != rhs->blockStyle_)
       return false;
 
-    if (!lhs->expressionContentsMatchInner(rhs))
-      return false;
-
     return true;
   }
 
   void loopMarkUniqueStringsInner(Context* context) const {
-    expressionMarkUniqueStringsInner(context);
   }
 
   BlockStyle blockStyle_;
@@ -82,7 +78,7 @@ class Loop: public Expression {
   /**
     Return a way to iterate over the statements of this loop.
    */
-  ASTListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<AstNode> stmts() const {
     return body()->stmts();
   }
 
@@ -96,7 +92,7 @@ class Loop: public Expression {
   /**
    Return the i'th statement in the loop.
    */
-  const Expression* stmt(int i) const {
+  const AstNode* stmt(int i) const {
     return body()->stmt(i);
   }
 

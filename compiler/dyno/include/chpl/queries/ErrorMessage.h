@@ -90,7 +90,7 @@ class ErrorMessage final {
 
   const std::vector<ErrorMessage>& details() const { return details_; }
 
-  const Kind kind() const { return kind_; }
+  Kind kind() const { return kind_; }
 
   inline bool operator==(const ErrorMessage& other) const {
     return kind_ == other.kind_ &&

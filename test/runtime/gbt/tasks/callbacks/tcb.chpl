@@ -1,5 +1,5 @@
 proc main {
-  use SysCTypes;
+  use CTypes;
 
   extern proc tcb_install_callbacks_1();
   extern proc tcb_uninstall_callbacks_1();

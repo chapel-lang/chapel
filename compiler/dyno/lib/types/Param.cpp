@@ -355,8 +355,8 @@ void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
       ss << Param::valueToString(value); \
       break; \
     }
-// Apply the above macros to ParamClassesList.h
-#include "chpl/types/ParamClassesList.h"
+// Apply the above macros to param-classes-list.h
+#include "chpl/types/param-classes-list.h"
 // clear the macros
 #undef PARAM_NODE
   }
@@ -383,7 +383,7 @@ uint64_t Param::binStr2uint64(const char* str, size_t len, std::string& err) {
   if (len-startPos > 64) {
     err = "Integer literal overflow: '";
     err += str;
-    err += "' is too big for type uint64";
+    err += "' is too big for type 'uint64'";
     return 0;
   }
   uint64_t val = 0;
@@ -424,7 +424,7 @@ uint64_t Param::octStr2uint64(const char* str, size_t len, std::string& err) {
   if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
     err = "Integer literal overflow: '";
     err += str;
-    err += "' is too big for type uint64";
+    err += "' is too big for type 'uint64'";
     return 0;
   }
 
@@ -489,7 +489,7 @@ uint64_t Param::decStr2uint64(const char* str, size_t len, std::string& err) {
   if (strcmp(str+startPos, checkStr) != 0) {
     err = "Integer literal overflow: '";
     err += str;
-    err += "' is too big for type uint64";
+    err += "' is too big for type 'uint64'";
     return 0;
   }
   free(checkStr);
@@ -543,7 +543,7 @@ int64_t Param::decStr2int64(const char* str, size_t len, std::string& err) {
   if (strcmp(str+startPos, checkStr) != 0) {
     err = "Integer literal overflow: '";
     err += str;
-    err += "' is too big for type uint64";
+    err += "' is too big for type 'uint64'";
     return 0;
   }
   free(checkStr);
@@ -577,7 +577,7 @@ uint64_t Param::hexStr2uint64(const char* str, size_t len, std::string &err) {
   if (len-startPos > 16) {
     err = "Integer literal overflow: '";
     err += str;
-    err += "' is too big for type uint64";
+    err += "' is too big for type 'uint64'";
     return 0;
   }
 
@@ -633,7 +633,7 @@ double Param::str2double(const char* str, size_t len, std::string& err) {
 
 IMPLEMENT_DUMP(Param);
 
-// implement the subclasses using macros and ParamClassesList.h
+// implement the subclasses using macros and param-classes-list.h
 #define PARAM_NODE(NAME, VALTYPE) \
   const owned<NAME>& NAME::get##NAME(Context* context, VALTYPE value) { \
     QUERY_BEGIN(get##NAME, context, value); \
@@ -641,8 +641,8 @@ IMPLEMENT_DUMP(Param);
     return QUERY_END(result); \
   }
 
-// Apply the above macros to ParamClassesList.h
-#include "chpl/types/ParamClassesList.h"
+// Apply the above macros to param-classes-list.h
+#include "chpl/types/param-classes-list.h"
 
 // clear the macros
 #undef PARAM_NODE

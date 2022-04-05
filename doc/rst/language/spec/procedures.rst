@@ -1342,7 +1342,8 @@ according to the concrete intent of :math:`F_X`:
  * if :math:`F_X` uses ``ref`` intent, then :math:`T_A`
    must be the same type as :math:`T_X`
  * if :math:`F_X` uses ``const ref`` intent, then :math:`T_A` and
-   :math:`T_X` must be the same type or a subtype of :math:`T_X`
+   :math:`T_X` must be the same type or a subtype of :math:`T_X` (see
+   :ref:`Subtype_Arg_Conversions`)
  * if :math:`F_X` uses ``in`` or ``inout`` intent, then :math:`T_A`
    must be the same type, a subtype of, or implicitly convertible to
    :math:`T_X`.
@@ -1352,7 +1353,8 @@ according to the concrete intent of :math:`F_X`:
    possible then a compilation error will be emitted if this function
    is chosen as the best candidate.
  * if :math:`F_X` uses the ``type`` intent, then :math:`T_A`
-   must be the same type or a subtype of :math:`T_X`.
+   must be the same type or a subtype of :math:`T_X` (see
+   :ref:`Subtype_Arg_Conversions`).
 
 Finally, if the above compatibility cannot be established, the mapping is
 checked for promotion. If :math:`T_A` is scalar promotable to :math:`T_X`

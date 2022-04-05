@@ -18,6 +18,7 @@
 target_sources(libdyno-obj
                PRIVATE
 
+               Resolver.cpp
                can-pass.cpp
                disambiguation.cpp
                intents.cpp

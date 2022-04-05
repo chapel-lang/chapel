@@ -20,8 +20,7 @@
 
 module BytesStringCommon {
   private use ChapelStandard;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
 
@@ -236,19 +235,19 @@ module BytesStringCommon {
     extern proc qio_decode_char_buf(ref chr:int(32),
                                     ref nBytes:c_int,
                                     buf:c_string,
-                                    buflen:ssize_t): syserr;
+                                    buflen:c_ssize_t): syserr;
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf_esc(ref chr:int(32),
                                         ref nBytes:c_int,
                                         buf:c_string,
-                                        buffLen:ssize_t): syserr;
+                                        buffLen:c_ssize_t): syserr;
     // esc chooses between qio_decode_char_buf_esc and
     // qio_decode_char_buf as a single wrapper function
     var chr: int(32);
     var nBytes: c_int;
     var start = offset:c_int;
     var multibytes = (buff + start): c_string;
-    var maxbytes = (buffLen - start): ssize_t;
+    var maxbytes = (buffLen - start): c_ssize_t;
     var decodeRet: syserr;
     if(allowEsc) then
       decodeRet = qio_decode_char_buf_esc(chr, nBytes,

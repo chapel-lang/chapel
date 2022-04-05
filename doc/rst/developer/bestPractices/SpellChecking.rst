@@ -102,12 +102,11 @@ the project dictionary or corrected, which make a good example:
 
      $ chplspell --report-only
 
-     doc/rst/developer/bestPractices/README:50: 'chplspell' not found in dictionary (from token 'chplspell')
+     doc/rst/developer/bestPractices/README.md:50: 'chplspell' not found in dictionary (from token 'chplspell')
      CHANGES.md:445: 'chpldocumentation' not found in dictionary (from token 'chpldocumentation')
      CHANGES.md:2001: 'pshm' not found in dictionary (from token 'pshm')
      CHANGES.md:2341: 'pshm' not found in dictionary (from token 'pshm')
      CHANGES.md:3360: 'circularities' not found in dictionary (from token 'circularities')
-     spec/Domains.tex:367: 'parsafe' not found in dictionary (from token 'parsafe')
 
 
 ``chplspell`` may also be invoked on only particular files or directories
@@ -179,15 +178,14 @@ represented to ``scspell``:
 2. There is an entry in the "file id mapping file",
    ``$CHPL_HOME/util/devel/chplspell-dictionary.fileids.json``,
    associating the file name to the file id.  For example, the
-   following file id is associated with three files in the Chapel
+   following file id is associated with two files in the Chapel
    repository:
 
 .. code-block:: text
 
   "63b96a22-1e46-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/hdfs_and_chapel/API.tex",
-    "doc/rst/developer/hdfs_and_chapel/examples.tex",
-    "modules/packages/HDFSiterator.chpl"
+    "doc/rst/developer/hdfs_and_chapel/examples.tex"
   ],
 
 If a file has a file id associated, when ``scspell`` offers to add an

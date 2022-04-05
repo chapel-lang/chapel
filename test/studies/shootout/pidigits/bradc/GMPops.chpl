@@ -1,4 +1,4 @@
-use GMP, SysCTypes;
+use GMP, CTypes;
 
 inline operator mpz_t.+=(ref x: mpz_t, ref y: mpz_t) {
   mpz_add(x, x, y);

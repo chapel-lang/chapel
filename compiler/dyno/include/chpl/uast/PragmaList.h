@@ -235,6 +235,9 @@ PRAGMA(FN_RETARG, npr, "fn returns via _retArg", ncm)
 PRAGMA(FOLLOWER_INDEX, npr,
        "follower index",
        "a variable representing a follower loop index")
+PRAGMA(FORALL_BREAK_LABEL, npr,
+       "forall break label",
+       "target of error handling in the forall")
 PRAGMA(FORMAL_TEMP, npr,
        "formal temp",
        "a formal temp requiring write-back for an out or inout argument")
@@ -257,7 +260,8 @@ PRAGMA(GET_MODULE_NAME, ypr, "get module name", "replace calls to this function 
 
 PRAGMA(GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible through a global type variable")
 PRAGMA(GLOBAL_VAR_BUILTIN, ypr, "global var builtin", "is accessible through a global symbol variable")
-PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "generate GPU code")
+PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "generate GPU code and set function calling convention to kernel launch")
+PRAGMA(GPU_AND_CPU_CODEGEN, npr, "", "generate both GPU and CPU code")
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
 PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
 
@@ -356,7 +360,10 @@ PRAGMA(C_MEMORY_ORDER_TYPE, ypr, "c memory order type", "type implementing c mem
 PRAGMA(METHOD, npr, "method", "function that is a method")
 PRAGMA(METHOD_PRIMARY, npr, "primary method", "function that is a method and defined in type declaration")
 PRAGMA(MODIFIES_CONST_FIELDS, npr, "modifies const fields", "... of 'this' argument")
+
+// marks top-level modules mentioned on the compiler command line
 PRAGMA(MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")
+
 PRAGMA(MODULE_INIT, npr, "module init", "a module init function")
 
 PRAGMA(MODULE_INCLUDED_BY_DEFAULT, ypr, "module included by default", "module is included by default")
@@ -430,6 +437,9 @@ PRAGMA(OVERRIDE, npr, "method overrides", ncm)
 
 // variables added by flatten functions
 PRAGMA(OUTER_VARIABLE, npr, "outer variable", ncm)
+
+// this (task) function is not within a try or try! or a 'throws' function
+PRAGMA(OUTSIDE_TRY, npr, "outside try", ncm)
 
 // This means that the yielding loops themselves within an iterator
 // are order independent. It does not mean that all uses of the iterator

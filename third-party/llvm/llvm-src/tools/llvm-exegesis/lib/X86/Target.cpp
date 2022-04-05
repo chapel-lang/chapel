@@ -194,9 +194,25 @@ static const char *isInvalidOpcode(const Instruction &Instr) {
   const auto OpcodeName = Instr.Name;
   if ((Instr.Description.TSFlags & X86II::FormMask) == X86II::Pseudo)
     return "unsupported opcode: pseudo instruction";
-  if (OpcodeName.startswith("POP") || OpcodeName.startswith("PUSH") ||
-      OpcodeName.startswith("ADJCALLSTACK") || OpcodeName.startswith("LEAVE"))
+  if ((OpcodeName.startswith("POP") && !OpcodeName.startswith("POPCNT")) ||
+      OpcodeName.startswith("PUSH") || OpcodeName.startswith("ADJCALLSTACK") ||
+      OpcodeName.startswith("LEAVE"))
     return "unsupported opcode: Push/Pop/AdjCallStack/Leave";
+  switch (Instr.Description.Opcode) {
+  case X86::LFS16rm:
+  case X86::LFS32rm:
+  case X86::LFS64rm:
+  case X86::LGS16rm:
+  case X86::LGS32rm:
+  case X86::LGS64rm:
+  case X86::LSS16rm:
+  case X86::LSS32rm:
+  case X86::LSS64rm:
+  case X86::SYSENTER:
+    return "unsupported opcode";
+  default:
+    break;
+  }
   if (const auto reason = isInvalidMemoryInstr(Instr))
     return reason;
   // We do not handle instructions with OPERAND_PCREL.
@@ -902,9 +918,9 @@ std::vector<InstructionTemplate> ExegesisX86Target::generateInstructionVariants(
       continue;
     case X86::OperandType::OPERAND_COND_CODE: {
       Exploration = true;
-      auto CondCodes = seq((int)X86::CondCode::COND_O,
-                           1 + (int)X86::CondCode::LAST_VALID_COND);
-      Choices.reserve(std::distance(CondCodes.begin(), CondCodes.end()));
+      auto CondCodes =
+          seq_inclusive(X86::CondCode::COND_O, X86::CondCode::LAST_VALID_COND);
+      Choices.reserve(CondCodes.size());
       for (int CondCode : CondCodes)
         Choices.emplace_back(MCOperand::createImm(CondCode));
       break;

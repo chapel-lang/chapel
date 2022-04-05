@@ -38,6 +38,47 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
+# generate the compile_commands.json compilation database
+# tools like the fieldsUsed linter require this
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# add an option to enable/disable assertions
+# this is based upon LLVM cmake files
+string(TOUPPER "${CMAKE_BUILD_TYPE}" uppercase_CMAKE_BUILD_TYPE)
+if( NOT uppercase_CMAKE_BUILD_TYPE STREQUAL "DEBUG" )
+  option(DYNO_ENABLE_ASSERTIONS "Enable assertions" OFF)
+else()
+  option(DYNO_ENABLE_ASSERTIONS "Enable assertions" ON)
+endif()
+
+# adjust C/C++ flags to remove -DNDEBUG if assertions is enabled
+# this is based upon LLVM cmake files
+if( DYNO_ENABLE_ASSERTIONS )
+  # MSVC doesn't like _DEBUG on release builds. See PR 4379.
+  if( NOT MSVC )
+    add_definitions( -D_DEBUG )
+  endif()
+  # On non-Debug builds cmake automatically defines NDEBUG, so we
+  # explicitly undefine it:
+  if( NOT uppercase_CMAKE_BUILD_TYPE STREQUAL "DEBUG" )
+    # NOTE: use `add_compile_options` rather than `add_definitions` since
+    # `add_definitions` does not support generator expressions.
+    add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:-UNDEBUG>)
+
+    # Also remove /D NDEBUG to avoid MSVC warnings about conflicting defines.
+    foreach (flags_var_to_scrub
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        CMAKE_CXX_FLAGS_MINSIZEREL
+        CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_RELWITHDEBINFO
+        CMAKE_C_FLAGS_MINSIZEREL)
+      string (REGEX REPLACE "(^| )[/-]D *NDEBUG($| )" " "
+        "${flags_var_to_scrub}" "${${flags_var_to_scrub}}")
+    endforeach()
+  endif()
+endif()
+
 # set include directories for -I
 #include_directories(include)
 
@@ -47,8 +88,10 @@ add_subdirectory(lib)
 add_subdirectory(include/chpl)
 # Support for documentation of AST header
 add_subdirectory(doc)
-
+# Tools like chpldoc
 add_subdirectory(tools)
+# Utils like C++ linters for this codebase
+add_subdirectory(util)
 
 # Support for C++ compiler unit tests
 # Needs to happen in this file for ctest to work in this dir

@@ -128,6 +128,11 @@ class CompositeType : public Type {
     return MAYBE_GENERIC;
   }
 
+  /** Check to see if the substitutions of `this` are all instantiations
+      of the substitution types of `partial` */
+  bool areSubsInstantiationOf(Context* context,
+                              const CompositeType* partial) const;
+
  public:
   virtual ~CompositeType() = 0; // this is an abstract base class
 
@@ -156,9 +161,22 @@ class CompositeType : public Type {
   }
 
   /** Returns true if 'this' is an instantiation of genericType */
-  bool isInstantiationOf(const CompositeType* genericType) const {
-    auto from = instantiatedFromCompositeType();
-    return (from != nullptr && from == genericType);
+  bool isInstantiationOf(Context* context,
+                         const CompositeType* genericType) const {
+    auto thisFrom = instantiatedFromCompositeType();
+    auto argFrom = genericType->instantiatedFromCompositeType();
+    if (argFrom == nullptr) {
+      // if genericType is not a partial instantiation
+      return (thisFrom != nullptr && thisFrom == genericType);
+    }
+
+    if (thisFrom == argFrom) {
+      // handle the case of genericType being partly instantiated
+      // (or instantiated with a generic type)
+      return areSubsInstantiationOf(context, genericType);
+    }
+
+    return false;
   }
 
   /** Returns the substitutions map */

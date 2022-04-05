@@ -1,4 +1,4 @@
-use CPtr;
+use CTypes;
 
 config const n = 11;
 config param nn = 11;
@@ -12,7 +12,7 @@ proc load(arg: int(32)) {
 // CHECK: void @loop1
 proc loop1() {
   var outer: c_array(int(32), nn);
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     // CHECK: store i32 %
     // CHECK-SAME: !llvm.access.group ![[GROUP1:[0-9]+]]
     outer[i] = i:int(32);
@@ -32,7 +32,7 @@ var globalCArray: c_array(int(32), nn);
 
 // CHECK: void @loop2
 proc loop2() {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     // CHECK: store i32 %
     // CHECK-SAME: !llvm.access.group ![[GROUP2:[0-9]+]]
     globalCArray[i] = i:int(32);
@@ -50,7 +50,7 @@ loop2();
 // CHECK: void @loop3
 proc loop3() {
   var tup: nn * int(32);
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     // CHECK: store i32 %
     // CHECK-SAME: !llvm.access.group ![[GROUP3:[0-9]+]]
     tup[i] = i:int(32);
@@ -69,7 +69,7 @@ var globalTup: nn * int(32);
 
 // CHECK: void @loop4
 proc loop4() {
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     // CHECK: store i32 %
     // CHECK-SAME: !llvm.access.group ![[GROUP4:[0-9]+]]
     globalTup[i] = i:int(32);
@@ -90,7 +90,7 @@ record R {
 
 proc loop5() {
   var outer: c_array(R, nn);
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     // CHECK: store i32 %
     // CHECK-SAME: !llvm.access.group ![[GROUP5:[0-9]+]]
     outer[i].x = i:int(32);
@@ -111,7 +111,7 @@ class C {
 
 proc loop6() {
   var outer: c_array(int(32), nn);
-  for i in vectorizeOnly(0..n) {
+  foreach i in 0..n {
     var c = new unmanaged C();
     // CHECK: store i32 %
     // CHECK-SAME: !llvm.access.group ![[GROUP6:[0-9]+]]

@@ -18,12 +18,8 @@
  * limitations under the License.
  */
 
-//
-// ChapelEnv.chpl
-//
-
 /*
-Access to Configuration information for the ``chpl`` compiler
+Access to configuration information for the ``chpl`` compiler
 
 This module's contents provide access to compile-time aspects of
 Chapel's configuration, such as those specified by ``CHPL_*``
@@ -143,10 +139,6 @@ module ChplConfig {
   /* See :ref:`readme-chplenv.CHPL_JEMALLOC` for more information. */
   param CHPL_JEMALLOC:string;
   CHPL_JEMALLOC = __primitive("get compiler variable", "CHPL_TARGET_JEMALLOC");
-
-  pragma "no doc"
-  deprecated "CHPL_REGEXP is deprecated, please use CHPL_RE2 instead"
-  param CHPL_REGEXP:string = __primitive("get compiler variable", "CHPL_RE2");
 
   /* See :ref:`readme-chplenv.CHPL_RE2` for more information. */
   param CHPL_RE2:string;

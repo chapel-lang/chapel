@@ -38,7 +38,7 @@
 namespace chpl {
 
 namespace uast {
-  class ASTNode;
+  class AstNode;
 }
 
 namespace resolution {
@@ -440,7 +440,7 @@ class Context {
     This version takes in an AST node and a printf-style format string.
     The AST node is used to compute a Location by using a parsing::locateAst.
    */
-  void error(const uast::ASTNode* ast, const char* fmt, ...)
+  void error(const uast::AstNode* ast, const char* fmt, ...)
   #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
@@ -457,7 +457,7 @@ class Context {
     The TypedFnSignature is used to print out instantiation information.
    */
   void error(const resolution::TypedFnSignature* inFn,
-             const uast::ASTNode* ast,
+             const uast::AstNode* ast,
              const char* fmt, ...)
   #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'

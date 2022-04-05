@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/NamedDecl.h"
 
 namespace chpl {
 namespace uast {
@@ -40,28 +40,31 @@ namespace uast {
       }
 
   \endrst
+
+  It is a NamedDecl because, as you can see above, D is available
+  within the body of `foo`. So, `?D` is represented as a TypeQuery
+  with name `D`.
+
+  Note that, at present, `proc bar(arg: ?)` uses an Identifier `?`
+  rather than a TypeQuery.
  */
-class TypeQuery final : public Expression {
+class TypeQuery final : public NamedDecl {
 
  private:
-  UniqueString name_;
-
-  // TODO: Intercept TQUESTION productions so that TypeQuery can be empty?
   TypeQuery(UniqueString name)
-    : Expression(asttags::TypeQuery), name_(name) {
+    : NamedDecl(asttags::TypeQuery, DEFAULT_VISIBILITY, DEFAULT_LINKAGE,
+                /* attributesChildNum */ -1, name) {
     assert(!name.isEmpty() && name.c_str()[0] != '?');
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const TypeQuery* lhs = this;
     const TypeQuery* rhs = (const TypeQuery*) other;
-    return lhs->expressionContentsMatchInner(rhs) &&
-           lhs->name_ == rhs->name_;
+    return lhs->namedDeclContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
-    this->name_.mark(context);
+    namedDeclMarkUniqueStringsInner(context);
   }
 
  public:
@@ -69,14 +72,6 @@ class TypeQuery final : public Expression {
 
   static owned<TypeQuery> build(Builder* builder, Location loc,
                                 UniqueString name);
-
-  /**
-    Returns the name of this type query, e.g. in `proc foo(?x)`, this
-    method would return the `x` portion of the type query `?x`.
-  */
-  UniqueString name() const {
-    return name_;
-  }
 };
 
 

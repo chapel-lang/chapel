@@ -221,7 +221,7 @@ static bool shouldSerialize(ArgSymbol* arg) {
   bool retval = false;
   Type* argType = arg->getValType();
 
-  if (!argType->isSerializeable()) {
+  if (!argType->isSerializable()) {
     retval = false;
   } else if (isRecordWrappedType(argType)) {
     // OK to serialize if the record-wrapped type's underlying class is not

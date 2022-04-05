@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Array.h"
 #include "chpl/uast/As.h"
 #include "chpl/uast/Attributes.h"
@@ -42,10 +42,10 @@
 #include "chpl/uast/Domain.h"
 #include "chpl/uast/Dot.h"
 #include "chpl/uast/DoWhile.h"
+#include "chpl/uast/EmptyStmt.h"
 #include "chpl/uast/Enum.h"
 #include "chpl/uast/EnumElement.h"
 #include "chpl/uast/ErroneousExpression.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/ExternBlock.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/For.h"

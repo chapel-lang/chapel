@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Time, SysCTypes;
+use Memory.Diagnostics, Time, CTypes;
 
 enum op_t {
   opGet,
@@ -30,7 +30,7 @@ if xferMem > maxMem {
 }
 
 // apply limiting due to addressability
-const maxAlloc = (if numBits(size_t) == 64 then 2**48 else 2**30);
+const maxAlloc = (if numBits(c_size_t) == 64 then 2**48 else 2**30);
 if xferMem > maxAlloc {
   xferMem = maxAlloc;
   if verboseLimiting then

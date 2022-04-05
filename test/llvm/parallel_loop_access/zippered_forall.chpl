@@ -20,5 +20,4 @@ proc loop(A) {
 // CHECK: ![[LOOP2]] = distinct !{![[LOOP2]], ![[PA2:[0-9]+]]
 // CHECK: ![[PA2]] = !{!"llvm.loop.parallel_accesses",
 // CHECK-SAME: ![[GROUP2]]
-// CHECK-NOT: ![[GROUP1]]
 // CHECK-SAME: }

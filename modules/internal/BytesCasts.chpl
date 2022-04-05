@@ -21,8 +21,7 @@
 module BytesCasts {
   private use ChapelStandard;
   private use BytesStringCommon;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
 
   //
@@ -62,7 +61,7 @@ module BytesCasts {
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool,
                                      ref err: bool) : c_string;
     pragma "fn synchronization free"
-    extern proc strlen(const str: c_string) : size_t;
+    extern proc strlen(const str: c_string) : c_size_t;
 
     var isErr: bool;
     var csc = integral_to_c_string(x:int(64), numBytes(x.type),
@@ -161,7 +160,7 @@ module BytesCasts {
     pragma "fn synchronization free"
     extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
     pragma "fn synchronization free"
-    extern proc strlen(const str: c_string) : size_t;
+    extern proc strlen(const str: c_string) : c_size_t;
 
     var csc = real_to_c_string(x:real(64), isImag);
 

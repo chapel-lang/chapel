@@ -31,7 +31,6 @@ extern bool        chplParseString;
 extern const char* chplParseStringMsg;
 
 extern ModTag      currentModuleType;
-extern bool        currentFileNamedOnCommandLine;
 extern const char* currentModuleName;
 
 extern int         yystartlineno;

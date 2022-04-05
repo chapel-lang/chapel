@@ -60,7 +60,7 @@ function test_compile() {
   local kind=$@
 
   test_start "make $kind"
-  make MOD=$kind 2> $kind.comp.out.tmp
+  make release MOD=$kind 2> $kind.comp.out.tmp
   local status=$?
   cat $kind.comp.out.tmp
 

@@ -648,6 +648,11 @@ def check_environment_with_args():
     host_platform = chpl_platform.get("host")
     host_bin_subdir = chpl_bin_subdir.get("host")
     tgt_platform = chpl_platform.get("target")
+
+    # Adjust the C environment to UTF-8 with C sorting order
+    # This should not affect Chapel program behavior but it might
+    # affect other elements of the test system (e.g. `sort` called
+    # in a prediff).
     if not tgt_platform == "sunos":
         os.environ["LC_COLLATE"] = "C"
         os.environ["LANG"] = "en_US.UTF-8"

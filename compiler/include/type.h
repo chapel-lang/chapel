@@ -113,7 +113,7 @@ public:
 
   // whether the type has chpl__serialize and chpl__deserialize
   // this should be called after resolution (or after serializeMap is populated)
-  bool                   isSerializeable();
+  bool                   isSerializable();
 
 
   // Only used for LLVM.

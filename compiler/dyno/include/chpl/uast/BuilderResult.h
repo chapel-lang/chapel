@@ -24,7 +24,7 @@
 #include "chpl/queries/UniqueString.h"
 #include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/util/iteration.h"
 #include "chpl/queries/stringify-functions.h"
 
@@ -59,11 +59,11 @@ class BuilderResult final {
 
  private:
   UniqueString filePath_;
-  ASTList topLevelExpressions_;
+  AstList topLevelExpressions_;
   std::vector<ErrorMessage> errors_;
 
-  // Given an ID, what is the ASTNode?
-  std::unordered_map<ID, const ASTNode*> idToAst_;
+  // Given an ID, what is the AstNode?
+  std::unordered_map<ID, const AstNode*> idToAst_;
 
   // Given an ID, what is the parent ID?
   std::unordered_map<ID, ID> idToParentId_;
@@ -94,14 +94,14 @@ class BuilderResult final {
   }
 
   /** return the i'th top-level expression */
-  const ASTNode* topLevelExpression(int i) const {
+  const AstNode* topLevelExpression(int i) const {
     assert(0 <= i && (size_t) i < topLevelExpressions_.size());
     return topLevelExpressions_[i].get();
   }
 
   /** iterate over the parsed top-level expressions */
-  ASTListIteratorPair<ASTNode> topLevelExpressions() const {
-    return ASTListIteratorPair<ASTNode>(topLevelExpressions_.begin(),
+  AstListIteratorPair<AstNode> topLevelExpressions() const {
+    return AstListIteratorPair<AstNode>(topLevelExpressions_.begin(),
                                         topLevelExpressions_.end());
   }
 
@@ -136,9 +136,9 @@ class BuilderResult final {
     return ErrorIterable(errors_);
   }
 
-  /** Find the ASTNode* corresponding to a particular ID, or return
+  /** Find the AstNode* corresponding to a particular ID, or return
       nullptr if there is not one in this result. */
-  const ASTNode* idToAst(ID id) const;
+  const AstNode* idToAst(ID id) const;
   /** Find the Location for a particular ID.
       Returns a location just to path if none is found. */
   Location idToLocation(ID id, UniqueString path) const;

@@ -35,8 +35,7 @@
 
 module DateTime {
   import HaltWrappers;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;
@@ -418,8 +417,8 @@ module DateTime {
 
   /* Return a formatted `string` matching the `format` argument and the date */
   proc date.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: size_t, format: c_string, ref timeStruct: tm);
-    const bufLen: size_t = 100;
+    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+    const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 
@@ -661,8 +660,8 @@ module DateTime {
 
   /* Return a `string` matching the `format` argument for this `time` */
   proc time.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: size_t, format: c_string, ref timeStruct: tm);
-    const bufLen: size_t = 100;
+    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+    const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 
@@ -1183,8 +1182,8 @@ module DateTime {
 
   /* Create a `string` from a `datetime` matching the `format` string */
   proc datetime.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: size_t, format: c_string, ref timeStruct: tm);
-    const bufLen: size_t = 100;
+    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+    const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 

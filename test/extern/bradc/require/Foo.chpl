@@ -2,4 +2,4 @@ proc foo() {
   writeln("In Foo.chpl's foo");
 }
 
-writeln("In foo's init");
+writeln("In Foo.chpl's module init");

@@ -36,13 +36,15 @@ Please note that the developer responsible for a patch is also
 responsible for making all necessary review-related changes, including
 those requested during any post-commit review.
 
+.. _post_commit_review:
+
 Can Code Be Reviewed After It Is Committed?
 -------------------------------------------
 
 Post-commit review is encouraged, and can be accomplished using any of the
 tools detailed below. There is a strong expectation that authors respond
 promptly to post-commit feedback and address it. Failure to do so is cause for
-the patch to be reverted.
+the patch to be :ref:`reverted <revert_policy>`.
 
 If a community member expresses a concern about a recent commit, and this
 concern would have been significant enough to warrant a conversation during
@@ -76,9 +78,10 @@ author, for example, might no longer be an active contributor to the project.
 What Tools Are Used for Code Review?
 ------------------------------------
 
-Code reviews are conducted, in order of preference, on our web-based
-code-review tool (see :doc:`Phabricator`), by email on the relevant project's
-commit mailing list, on the project's development list, or on the bug tracker.
+Pre-commit code reviews are conducted on our web-based code-review tool (see
+:doc:`Phabricator`). Post-commit reviews can be done on Phabricator, by email
+on the relevant project's commit mailing list, on the project's development
+list, or on the bug tracker.
 
 When Is an RFC Required?
 ------------------------

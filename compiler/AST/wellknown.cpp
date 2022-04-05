@@ -167,8 +167,8 @@ static WellKnownType sWellKnownTypes[] = {
   { "c_intptr",              &dt_c_intptr    },
   { "c_uintptr",             &dt_c_uintptr   },
   { "c_ptrdiff",             &dt_c_ptrdiff   },
-  { "ssize_t",               &dt_ssize_t     },
-  { "size_t",                &dt_size_t      },
+  { "c_ssize_t",             &dt_ssize_t     },
+  { "c_size_t",              &dt_size_t      },
 };
 
 static void removeIfUndefinedGlobalType(AggregateType*& t) {

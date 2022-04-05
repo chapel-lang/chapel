@@ -41,7 +41,7 @@ static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
     auto strA = UniqueString::get(ctx, "a");
     auto strB = UniqueString::get(ctx, "b");
     auto strC = UniqueString::get(ctx, "c");
-    ASTList children;
+    AstList children;
 
     children.push_back(Identifier::build(b, dummyLoc, strA));
     children.push_back(Identifier::build(b, dummyLoc, strB));
@@ -70,7 +70,7 @@ static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
 
 static void logAction(std::vector<std::string>& actionsLog,
                       const char* note,
-                      const uast::ASTNode* ast) {
+                      const uast::AstNode* ast) {
   std::ostringstream ss;
   ss << note << " " << asttags::tagToString(ast->tag()) << " ";
   ast->id().stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
@@ -80,8 +80,8 @@ static void logAction(std::vector<std::string>& actionsLog,
 struct Visitor1 {
   std::vector<std::string> actionsLog;
 
-  double visit(const uast::ASTNode* ast) {
-    logAction(actionsLog, "in visit(ASTNode)", ast);
+  double visit(const uast::AstNode* ast) {
+    logAction(actionsLog, "in visit(AstNode)", ast);
     return 10.0;
   }
 };
@@ -96,7 +96,7 @@ static void test1() {
   double got = mod->dispatch<double>(v);
   assert(got == 10.0);
   assert(v.actionsLog.size()==1);
-  assert(v.actionsLog[0] == "in visit(ASTNode) Module test");
+  assert(v.actionsLog[0] == "in visit(AstNode) Module test");
 }
 
 struct Visitor2 {
@@ -106,8 +106,8 @@ struct Visitor2 {
     logAction(actionsLog, "in visit(NamedDecl)", ast);
     return 10.0;
   }
-  double visit(const uast::ASTNode* ast) {
-    logAction(actionsLog, "in visit(ASTNode)", ast);
+  double visit(const uast::AstNode* ast) {
+    logAction(actionsLog, "in visit(AstNode)", ast);
     return 11.0;
   }
 };
@@ -117,7 +117,7 @@ static void test2() {
   const uast::Module* mod = nullptr;
 
   auto result = makeAST(&context, mod);
-  const ASTNode* ast = mod;
+  const AstNode* ast = mod;
 
   Visitor2 v;
   double got = ast->dispatch<double>(v);
@@ -133,8 +133,8 @@ struct Visitor3 {
     logAction(actionsLog, "in visit(Module)", ast);
     return 10.0;
   }
-  double visit(const uast::ASTNode* ast) {
-    logAction(actionsLog, "in visit(ASTNode)", ast);
+  double visit(const uast::AstNode* ast) {
+    logAction(actionsLog, "in visit(AstNode)", ast);
     return 11.0;
   }
 };
@@ -144,7 +144,7 @@ static void test3() {
   const uast::Module* mod = nullptr;
 
   auto result = makeAST(&context, mod);
-  const ASTNode* ast = mod;
+  const AstNode* ast = mod;
 
   Visitor3 v;
   double got = ast->dispatch<double>(v);
@@ -163,12 +163,12 @@ struct Visitor4 {
   void exit(const uast::Module* ast) {
     logAction(actionsLog, "in exit(Module)", ast);
   }
-  bool enter(const uast::ASTNode* ast) {
-    logAction(actionsLog, "in enter(ASTNode)", ast);
+  bool enter(const uast::AstNode* ast) {
+    logAction(actionsLog, "in enter(AstNode)", ast);
     return false;
   }
-  void exit(const uast::ASTNode* ast) {
-    logAction(actionsLog, "in exit(ASTNode)", ast);
+  void exit(const uast::AstNode* ast) {
+    logAction(actionsLog, "in exit(AstNode)", ast);
   }
 };
 
@@ -177,14 +177,14 @@ static void test4() {
   const uast::Module* mod = nullptr;
 
   auto result = makeAST(&context, mod);
-  const ASTNode* ast = mod;
+  const AstNode* ast = mod;
 
   Visitor4 v;
   ast->traverse(v);
   assert(v.actionsLog.size()==4);
   assert(v.actionsLog[0] == "in enter(Module) Module test");
-  assert(v.actionsLog[1] == "in enter(ASTNode) Block test@3");
-  assert(v.actionsLog[2] == "in exit(ASTNode) Block test@3");
+  assert(v.actionsLog[1] == "in enter(AstNode) Block test@3");
+  assert(v.actionsLog[2] == "in exit(AstNode) Block test@3");
   assert(v.actionsLog[3] == "in exit(Module) Module test");
 }
 
@@ -205,12 +205,12 @@ struct Visitor5 {
   void exit(const uast::Identifier* ast) {
     logAction(actionsLog, "in exit(Identifier)", ast);
   }
-  bool enter(const uast::ASTNode* ast) {
-    logAction(actionsLog, "in enter(ASTNode)", ast);
+  bool enter(const uast::AstNode* ast) {
+    logAction(actionsLog, "in enter(AstNode)", ast);
     return true;
   }
-  void exit(const uast::ASTNode* ast) {
-    logAction(actionsLog, "in exit(ASTNode)", ast);
+  void exit(const uast::AstNode* ast) {
+    logAction(actionsLog, "in exit(AstNode)", ast);
   }
 };
 
@@ -219,20 +219,20 @@ static void test5() {
   const uast::Module* mod = nullptr;
 
   auto result = makeAST(&context, mod);
-  const ASTNode* ast = mod;
+  const AstNode* ast = mod;
 
   Visitor5 v;
   ast->traverse(v);
   assert(v.actionsLog.size()==10);
   assert(v.actionsLog[0] == "in enter(Module) Module test");
-  assert(v.actionsLog[1] == "in enter(ASTNode) Block test@3");
+  assert(v.actionsLog[1] == "in enter(AstNode) Block test@3");
   assert(v.actionsLog[2] == "in enter(Identifier) Identifier test@0");
   assert(v.actionsLog[3] == "in exit(Identifier) Identifier test@0");
   assert(v.actionsLog[4] == "in enter(Identifier) Identifier test@1");
   assert(v.actionsLog[5] == "in exit(Identifier) Identifier test@1");
   assert(v.actionsLog[6] == "in enter(Identifier) Identifier test@2");
   assert(v.actionsLog[7] == "in exit(Identifier) Identifier test@2");
-  assert(v.actionsLog[8] == "in exit(ASTNode) Block test@3");
+  assert(v.actionsLog[8] == "in exit(AstNode) Block test@3");
   assert(v.actionsLog[9] == "in exit(Module) Module test");
 }
 

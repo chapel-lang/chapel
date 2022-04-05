@@ -276,6 +276,15 @@ def expandvars_chpl(path):
     expand_env.update(get_chplenv())
     return string.Template(path).safe_substitute(expand_env)
 
+# Wait up to timeout seconds for files to exist. Useful on systems where file
+# IO may only complete after the launcher returns
+def WaitForFiles(files, timeout=int(os.getenv('CHPL_TEST_WAIT_FOR_FILES_TIMEOUT', '10'))):
+    waited = 0
+    for f in files:
+        while not os.path.exists(f) and waited < timeout:
+            time.sleep(1)
+            waited += 1
+
 # Read a file or if the file is executable read its output. If the file is
 # executable, the current chplenv is copied into the env before executing.
 # Expands shell and chplenv variables and strip out comments/whitespace.
@@ -365,13 +374,22 @@ def KillProc(p, timeout):
     return
 
 # clean up after the test has been built
-def cleanup(execname):
+def cleanup(execname, test_ran_and_more_compopts=False):
     try:
         if execname is not None:
             if os.path.isfile(execname):
                 os.unlink(execname)
             if os.path.isfile(execname+'_real'):
                 os.unlink(execname+'_real')
+            # Hopefully short term workaround on cygwin where we've been seeing
+            # an issue where after a test is run, some other process has a
+            # handle on the executable and we can't create a new executable
+            # with the same name for a bit. If a test ran and we have
+            # additional compopts (which means the exec name will be reused)
+            # wait a second while cleaning up the executable to give the other
+            # process time to release its handle.
+            if test_ran_and_more_compopts and 'cygwin' in platform:
+                time.sleep(1)
     except (IOError, OSError) as ex:
         # If the error is "Device or resource busy", call lsof on the file (or
         # handle for windows) to see what is holding the file handle, to help
@@ -1561,7 +1579,7 @@ for testname in testsrc:
         # Run the precompile script
         #
         if globalPrecomp:
-            sys.stdout.write('[Executing ./PRECOMP]\n')
+            sys.stdout.write('[Executing ./PRECOMP %s %s %s]\n'%(execname, complog, compiler))
             sys.stdout.flush()
             p = py3_compat.Popen(['./PRECOMP', execname, complog, compiler],
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -1722,6 +1740,7 @@ for testname in testsrc:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
                                  (test_filename+'.catfiles'))
                 sys.stdout.flush()
+                WaitForFiles(catfiles.split())
                 p = py3_compat.Popen(['cat']+catfiles.split(),
                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 catoutput = p.communicate()[0]
@@ -2240,6 +2259,7 @@ for testname in testsrc:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%
                                     (test_filename+'.catfiles'))
                     sys.stdout.flush()
+                    WaitForFiles(catfiles.split())
                     p = py3_compat.Popen(['cat']+catfiles.split(),
                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                     cat_output = p.communicate()[0]
@@ -2394,7 +2414,7 @@ for testname in testsrc:
                     if exectimeout or status != 0:
                         break
 
-        cleanup(execname)
+        cleanup(execname, len(compoptslist) > 1)
 
     del execoptslist
     del compoptslist

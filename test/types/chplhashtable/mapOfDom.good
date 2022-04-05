@@ -1,0 +1,1 @@
+mapOfDom.chpl:3: error: Values of 'domain' type do not support hash functions yet

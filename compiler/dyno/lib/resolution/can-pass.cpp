@@ -579,6 +579,59 @@ CanPassResult CanPassResult::canPassSubtype(Context* context,
   return fail();
 }
 
+CanPassResult CanPassResult::canConvertTuples(Context* context,
+                                              const TupleType* aT,
+                                              const TupleType* fT) {
+
+  // passing to generic tuple type
+  if (fT == TupleType::getGenericTupleType(context)) {
+    return instantiate();
+  }
+
+  if (aT->numElements() != fT->numElements()) {
+    // Number of fields differs, so not convertible.
+    return fail();
+  }
+
+  if (aT->isStarTuple() != fT->isStarTuple()) {
+    // Star-tuple-ness differs, so not convertible.
+    return fail();
+  }
+
+  int n = aT->numElements();
+  if (aT->isStarTuple())
+    n = 1; // only need to consider one type
+
+  bool instantiates = false;
+  bool converts = false;
+
+  for (int i = 0; i < n; i++) {
+    // check to see if the types are not the same and can't convert
+    QualifiedType aElt = aT->elementType(i);
+    QualifiedType fElt = fT->elementType(i);
+
+    if (aElt != fElt) {
+      auto got = canPass(context, aElt, fElt);
+      if (!got.passes() || got.promotes()) {
+        return fail();
+      } else {
+        instantiates = instantiates || got.instantiates();
+        converts = converts || got.converts();
+      }
+    }
+  }
+
+  if (converts == true && instantiates == true) {
+    return convertAndInstantiate(OTHER);
+  } else if (converts == true && instantiates == false) {
+    return convert(OTHER);
+  } else if (converts == false && instantiates == true) {
+    return instantiate();
+  } else { // (converts == false && instantiates == false)
+    return passAsIs();
+  }
+}
+
 CanPassResult CanPassResult::canConvert(Context* context,
                                         const QualifiedType& actualQT,
                                         const QualifiedType& formalQT) {
@@ -605,8 +658,12 @@ CanPassResult CanPassResult::canConvert(Context* context,
 
   // can we convert tuples?
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
-    assert(false && "not implemented yet");
-    // TODO: port canCoerceTuples from production compiler
+    auto aT = actualQT.type()->toTupleType();
+    auto fT = formalQT.type()->toTupleType();
+    auto got = canConvertTuples(context, aT, fT);
+    if (got.passes()) {
+      return got;
+    }
   }
 
   // TODO: check for conversion to copy type
@@ -758,10 +815,10 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
         return got;
       }
     }
-  } else if (auto actualAt = actualT->toCompositeType()) {
+  } else if (auto actualCt = actualT->toCompositeType()) {
     // check for instantiating records/unions/tuples
-    if (auto formalAt = formalT->toCompositeType()) {
-      if (actualAt->isInstantiationOf(formalAt)) {
+    if (auto formalCt = formalT->toCompositeType()) {
+      if (actualCt->isInstantiationOf(context, formalCt)) {
         return instantiate();
       }
     }

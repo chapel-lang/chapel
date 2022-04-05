@@ -1,0 +1,2 @@
+{x = 0}
+HaltChecksDuplicateInit.chpl:13: error: halt reached - Element at array index '1' is already initialized

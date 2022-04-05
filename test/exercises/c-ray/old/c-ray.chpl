@@ -500,7 +500,7 @@ proc loadScene() {
 // its results are portable, and it can optionally be used in parallel).
 //
 proc initRands() {
-  use SysCTypes;
+  use CTypes;
 
   if useCRand {
     // extern declarations of C's random number generators.

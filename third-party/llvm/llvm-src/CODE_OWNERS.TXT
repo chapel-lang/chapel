@@ -58,14 +58,6 @@ N: Greg Clayton
 E: clayborg@gmail.com
 D: LLDB
 
-N: Pete Couperus
-E: petecoup@synopsys.com
-D: ARC backend (lib/Target/ARC/*)
-
-N: Philip Reames
-E: listmail@philipreames.com
-D: IndVar Simplify, Scalar Evolution
-
 N: Marshall Clow
 E: mclow.lists@gmail.com
 D: libc++
@@ -122,6 +114,11 @@ D: NVPTX Target (lib/Target/NVPTX/*)
 N: Lang Hames
 E: lhames@gmail.com
 D: MCJIT, RuntimeDyld and JIT event listeners, Orcish Warchief
+
+N: Min-Yih Hsu
+E: minyihh@uci.edu
+E: yihshyng223@gmail.com
+D: M68k Target (lib/Target/M68k/*)
 
 N: Teresa Johnson
 E: tejohnson@google.com
@@ -184,6 +181,10 @@ N: Jacques Pienaar
 E: jpienaar@google.com
 D: Lanai Backend
 
+N: Philip Reames
+E: listmail@philipreames.com
+D: IndVar Simplify, Scalar Evolution
+
 N: Paul Robinson
 E: paul_robinson@playstation.sony.com
 D: Sony PlayStation®4 support
@@ -195,6 +196,10 @@ D: Fast-Isel
 N: Duncan Sands
 E: baldrick@free.fr
 D: DragonEgg
+
+N: Mark Schimmel
+E: marksl@synopsys.com
+D: ARC backend (lib/Target/ARC/*)
 
 N: Kostya Serebryany
 E: kcc@google.com

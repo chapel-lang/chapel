@@ -138,7 +138,7 @@ class UniqueString final {
   }
 
   /** return a std::string containing the string */
-  // diffs from stringify, converts the uniquestring into a string
+  // diffs from stringify, converts the UniqueString into a string
   // representation similar to std::ostream.str()
   std::string str() const {
     return std::string(c_str(), length());
@@ -201,6 +201,7 @@ class UniqueString final {
     \endrst
    */
   inline bool operator==(const char* other) const {
+    (void)s;                    // mark field as used for linter
     return 0 == this->compare(other);
   }
   inline bool operator!=(const UniqueString other) const {
@@ -250,6 +251,7 @@ class UniqueString final {
 
 };
 
+std::ostream& operator<<(std::ostream&, const chpl::UniqueString&);
 
 } // end namespace chpl
 

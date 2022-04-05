@@ -32,7 +32,7 @@ module DefaultRectangular {
 
   use DSIUtil;
   public use ChapelArray;
-  use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes, CPtr;
+  use ChapelDistribution, ChapelRange, SysBasic, SysError, CTypes, CTypes;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
   public use ExternalArray; // OK: currently expected to be available by
@@ -108,6 +108,9 @@ module DefaultRectangular {
 
     override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
       return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
+
+    proc dsiTargetLocales() const ref
+      return chpl_getSingletonLocaleArray(this.locale);
 
     proc dsiIndexToLocale(ind) return this.locale;
 
@@ -1083,6 +1086,21 @@ module DefaultRectangular {
       deinitElts = false;
     }
 
+    //
+    // This small kernel must be implemented by different array shapes due
+    // to 'BaseArr' having no notion of indexing scheme.
+    //
+    // TODO: Without this where clause any code using `unsafeAssign` to
+    // resize a 2D+ array will explode, because the 'locales' array tries
+    // to reuse an existing instantiation. Comment this out and run
+    // 'test/domains/unsafeAssign/TestUnsafeAssign2D.chpl' to see.
+    //
+    override proc chpl_unsafeAssignIsClassElementNil(manager, idx)
+    where idx.type == (rank*idxType) {
+      ref elem = this.dsiAccess(idx);
+      return manager.isClassReferenceNil(elem);
+    }
+
     override proc dsiDestroyArr(deinitElts:bool) {
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
@@ -1403,10 +1421,12 @@ module DefaultRectangular {
       if !actuallyResizing then
         return;
 
-      if !isDefaultInitializable(eltType) {
-        halt("Can't resize domains whose arrays' elements don't " +
-             "have default values");
-      } else if this.locale != here {
+      if _resizePolicy == chpl_ddataResizePolicy.normalInit then
+        if !isDefaultInitializable(eltType) then
+          halt("Can't resize domains whose arrays' elements don't " +
+               "have default values");
+
+      if this.locale != here {
         halt("internal error: dsiReallocate() can only be called " +
              "from an array's home locale");
       } else {
@@ -1427,16 +1447,47 @@ module DefaultRectangular {
             writeln("reallocating in-place");
 
           sizesPerDim(0) = reallocD.dsiDim(0).sizeAs(int);
-          data = _ddata_reallocate(data, eltType, oldSize, newSize);
+          data = _ddata_reallocate(oldDdata=data,
+                                   eltType=eltType,
+                                   oldSize=oldSize,
+                                   newSize=newSize,
+                                   subloc=c_sublocid_none,
+                                   policy=_resizePolicy);
           initShiftedData();
         } else {
-          var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
-                                                         rank=rank,
-                                                         idxType=idxType,
-                                                         stridable=reallocD._value.stridable,
-                                                         dom=reallocD._value);
+
+          // Should have been checked above.
+          param initElts = isDefaultInitializable(eltType);
+
+          var copy = new unmanaged
+              DefaultRectangularArr(eltType=eltType,
+                                    rank=rank,
+                                    idxType=idxType,
+                                    stridable=reallocD._value.stridable,
+                                    dom=reallocD._value,
+                                    initElts=initElts);
+
+          // May have to prepare the buffer based on the resize policy,
+          // but only if the element type is non-default-initializable.
+          if !initElts {
+            select _resizePolicy {
+
+              // User-facing error occurs above this scope.
+              when chpl_ddataResizePolicy.normalInit do
+                halt("internal error: bad resize policy for array of " +
+                     "non-default-initializable elements");
+
+              // Do nothing.
+              when chpl_ddataResizePolicy.skipInit do;
+
+              // TODO: An upgrade would be to zero out only new slots.
+              when chpl_ddataResizePolicy.skipInitButClearMem do
+                _ddata_fill(copy.data, eltType, 0, reallocD.size);
+            }
+          }
 
           var keep = reallocD((...dom.ranges));
+
           // Copy the preserved elements
           forall i in keep {
             // "move" from the old buffer to the new one
@@ -1829,14 +1880,14 @@ module DefaultRectangular {
       const elemSize = c_sizeof(arr.eltType);
       if boundsChecking {
         var rw = if f.writing then "write" else "read";
-        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
-               "length of array to ", rw, " is greater than ssize_t can hold");
+        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(c_ssize_t):uint,
+               "length of array to ", rw, " is greater than c_ssize_t can hold");
       }
 
       const len = dom.dsiNumIndices;
       const src = arr.theData;
       const idx = arr.getDataIndex(dom.dsiLow);
-      const size = len:ssize_t*elemSize:ssize_t;
+      const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
         if f.writing {
           f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
@@ -1937,7 +1988,7 @@ module DefaultRectangular {
     for param i in 0..rank-1 do
       Blo(i) = Bdims(i).first;
 
-    const len = aView.sizeAs(aView.intIdxType).safeCast(size_t);
+    const len = aView.sizeAs(aView.intIdxType).safeCast(c_size_t);
 
     if len == 0 then return;
 
@@ -2117,7 +2168,7 @@ module DefaultRectangular {
     // each level. It will ultimately be an array of size `stridelevels+1`.
     //
     var countDom = {1..inferredRank+1};
-    var count : [countDom] size_t;
+    var count : [countDom] c_size_t;
     for c in count do c = 1; // serial to avoid task creation overhead
 
     //
@@ -2126,7 +2177,7 @@ module DefaultRectangular {
     // it can be aggregated. Will ultimately be of size `stridelevels`.
     //
     var strideDom = {1..inferredRank};
-    var dstStride, srcStride : [strideDom] size_t;
+    var dstStride, srcStride : [strideDom] c_size_t;
 
     //
     // If the last dimension is strided then we can only copy one element at a
@@ -2140,8 +2191,8 @@ module DefaultRectangular {
     if LBlk(inferredRank-1) > 1 || RBlk(inferredRank-1) > 1 {
       stridelevels           += 1;
       count[stridelevels]     = 1;
-      dstStride[stridelevels] = LBlk(inferredRank-1).safeCast(size_t);
-      srcStride[stridelevels] = RBlk(inferredRank-1).safeCast(size_t);
+      dstStride[stridelevels] = LBlk(inferredRank-1).safeCast(c_size_t);
+      srcStride[stridelevels] = RBlk(inferredRank-1).safeCast(c_size_t);
     }
 
     //
@@ -2153,21 +2204,21 @@ module DefaultRectangular {
     for i in 2..inferredRank by -1 {
       // Each corresponding dimension in A and B should have the same length,
       // so it doesn't matter which we use here.
-      count[stridelevels+1] *= DimSizes(i).safeCast(size_t);
+      count[stridelevels+1] *= DimSizes(i).safeCast(c_size_t);
 
       const bothReuse = canReuseStride(LBlk, i, stridelevels, count, dstStride) &&
                         canReuseStride(RBlk, i, stridelevels, count, srcStride);
 
       if !bothReuse {
         stridelevels += 1;
-        dstStride[stridelevels] = LBlk(i-2).safeCast(size_t);
-        srcStride[stridelevels] = RBlk(i-2).safeCast(size_t);
+        dstStride[stridelevels] = LBlk(i-2).safeCast(c_size_t);
+        srcStride[stridelevels] = RBlk(i-2).safeCast(c_size_t);
       }
     }
-    count[stridelevels+1] *= DimSizes(1).safeCast(size_t);
+    count[stridelevels+1] *= DimSizes(1).safeCast(c_size_t);
 
     assert(stridelevels <= inferredRank, "BulkTransferStride: stride levels greater than rank.");
-    if stridelevels == 0 then assert(count[1] == LViewDom.sizeAs(size_t), "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.sizeAs(size_t));
+    if stridelevels == 0 then assert(count[1] == LViewDom.sizeAs(c_size_t), "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.sizeAs(c_size_t));
 
     countDom  = {1..stridelevels+1};
     strideDom = {1..stridelevels};

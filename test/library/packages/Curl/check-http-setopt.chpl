@@ -96,8 +96,8 @@ module CheckHttpSetOpt {
   }
 
   // Test a string-type option, CURLOPT_URL, via the libcurl-based API
-  proc write_callback(ptr: c_ptr(c_char), size: size_t,
-		      nmemb: size_t, userdata: c_void_ptr) {
+  proc write_callback(ptr: c_ptr(c_char), size: c_size_t,
+		      nmemb: c_size_t, userdata: c_void_ptr) {
     writeln("callback called");
     var str = try! createStringWithBorrowedBuffer(ptr:c_string,
                                                   (size * nmemb):int);

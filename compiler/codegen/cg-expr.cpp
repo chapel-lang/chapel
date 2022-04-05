@@ -340,7 +340,7 @@ static llvm::Value* createInBoundsGEP(llvm::Value* ptr,
   }
 
 #if HAVE_LLVM_VER >= 130
-  return info->irBuilder->CreateInBoundsGEP(ptr->getType(), ptr, idxList);
+  return info->irBuilder->CreateInBoundsGEP(llvm::cast<llvm::PointerType>(ptr->getType()->getScalarType())->getElementType(), ptr, idxList);
 #else
   return info->irBuilder->CreateInBoundsGEP(ptr, idxList);
 #endif
@@ -420,10 +420,14 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       info->cStatements.push_back(addrAssign);
     } else {
 #ifdef HAVE_LLVM
+      llvm::Type* ty = nullptr;
+#if HAVE_LLVM_VER >= 130
+      ty = llvm::cast<llvm::PointerType>(ret.val->getType()->getScalarType())->getElementType();
+#endif
       llvm::Value* adr = info->irBuilder->CreateStructGEP(
-          NULL, ret.val, WIDE_GEP_ADDR);
+          ty, ret.val, WIDE_GEP_ADDR);
       llvm::Value* loc = info->irBuilder->CreateStructGEP(
-          NULL, ret.val, WIDE_GEP_LOC);
+          ty, ret.val, WIDE_GEP_LOC);
 
       // cast address if needed. This is necessary for building a wide
       // NULL pointer since NULL is actually an i8*.
@@ -605,7 +609,7 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
 {
   GenInfo* info = gGenInfo;
 #if HAVE_LLVM_VER >= 130
-  llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr->getType(), ptr);
+  llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
 #else
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
 #endif
@@ -869,8 +873,13 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
     if ( !fLLVMWideOpt ) {
       if (ws.val->getType()->isPointerTy()){
         ret.isLVPtr = GEN_PTR;
+        llvm::Type* ty = nullptr;
+#if HAVE_LLVM_VER >= 130
+        ty = llvm::cast<llvm::PointerType>(
+          ws.val->getType()->getScalarType())->getElementType();
+#endif
         ret.val = info->irBuilder->CreateConstInBoundsGEP2_32(
-                                            NULL, ws.val, 0, field);
+                                            ty, ws.val, 0, field);
       } else {
         ret.isLVPtr = GEN_VAL;
         ret.val = info->irBuilder->CreateExtractValue(ws.val, field);
@@ -1149,8 +1158,12 @@ GenRet doCodegenFieldPtr(
     if( isUnion(ct) && !ct->symbol->hasFlag(FLAG_EXTERN) && !special ) {
       // Get a pointer to the union data then cast it to the right type
       bool unused;
+      llvm::Type* eltTy = nullptr;
+#if HAVE_LLVM_VER >= 130
+      eltTy = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getElementType();
+#endif
       ret.val = info->irBuilder->CreateStructGEP(
-          NULL, baseValue, cBaseType->getMemberGEP("_u", unused));
+          eltTy, baseValue, cBaseType->getMemberGEP("_u", unused));
       llvm::PointerType* ty =
         llvm::PointerType::get(retType.type,
                                baseValue->getType()->getPointerAddressSpace());
@@ -1165,12 +1178,24 @@ GenRet doCodegenFieldPtr(
           ret.chplType->getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
         // Accessing field that is a C array declared with c_ptr(eltType)
         // should result in a pointer to the first element.
-        ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
-        ret.val = info->irBuilder->CreateStructGEP(NULL, ret.val, 0);
+        llvm::Type* baseTy = nullptr;
+        llvm::Type* retTy = nullptr;
+#if HAVE_LLVM_VER >= 130
+        baseTy = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getElementType();
+#endif
+        ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
+#if HAVE_LLVM_VER >= 130
+        retTy = llvm::cast<llvm::PointerType>(ret.val->getType()->getScalarType())->getElementType();
+#endif
+        ret.val = info->irBuilder->CreateStructGEP(retTy, ret.val, 0);
         ret.isLVPtr = GEN_VAL;
       } else {
+#if HAVE_LLVM_VER >= 130
+        llvm::Type* ty = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getElementType();
+        ret.val = info->irBuilder->CreateStructGEP(ty, baseValue, fieldno);
+#else
         ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
-
+#endif
         if ((isClass(ct) || isRecord(ct)) &&
           cBaseType->symbol->llvmTbaaAggTypeDescriptor &&
           ret.chplType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
@@ -2131,7 +2156,7 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
     func->getBasicBlockList().push_back(blockEnd);
     info->irBuilder->SetInsertPoint(blockEnd);
 #if HAVE_LLVM_VER >= 130
-    ret.val = info->irBuilder->CreateLoad(tmp->getType(), tmp);
+    ret.val = info->irBuilder->CreateLoad(tmp->getType()->getPointerElementType(), tmp);
 #else
     ret.val = info->irBuilder->CreateLoad(tmp);
 #endif
@@ -2225,7 +2250,7 @@ GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
 
 #if HAVE_LLVM_VER >= 130
     llvm::Instruction* element =
-      info->irBuilder->CreateLoad(elementPtr->getType(), elementPtr);
+      info->irBuilder->CreateLoad(elementPtr->getType()->getPointerElementType(), elementPtr);
 #else
     llvm::Instruction* element = info->irBuilder->CreateLoad(elementPtr);
 #endif
@@ -2562,10 +2587,11 @@ GenRet codegenCallExprInner(GenRet function,
                 for (unsigned i = 0; i < nElts; i++) {
                   // load to produce the next LLVM argument
 #if HAVE_LLVM_VER >= 130
+                  llvm::Type* ty = llvm::cast<llvm::PointerType>(ptr->getType()->getScalarType())->getElementType();
                   llvm::Value* eltPtr =
-                    irBuilder->CreateStructGEP(ptr->getType(), ptr, i);
+                    irBuilder->CreateStructGEP(ty, ptr, i);
                   llvm::Value* loaded =
-                    irBuilder->CreateLoad(eltPtr->getType(), eltPtr);
+                    irBuilder->CreateLoad(eltPtr->getType()->getPointerElementType(), eltPtr);
 #else
                   llvm::Value* eltPtr = irBuilder->CreateStructGEP(ptr, i);
                   llvm::Value* loaded = irBuilder->CreateLoad(eltPtr);
@@ -2609,7 +2635,7 @@ GenRet codegenCallExprInner(GenRet function,
               llvm::Value* eltPtr =
                 irBuilder->CreateStructGEP(ptr->getType(), ptr, i);
               llvm::Value* loaded =
-                irBuilder->CreateLoad(eltPtr->getType(), eltPtr);
+                irBuilder->CreateLoad(eltPtr->getType()->getPointerElementType(), eltPtr);
 #else
               llvm::Value* eltPtr = irBuilder->CreateStructGEP(ptr, i);
               llvm::Value* loaded = irBuilder->CreateLoad(eltPtr);
@@ -5541,7 +5567,7 @@ DEFINE_PRIM(FTABLE_CALL) {
       GEPLocs[1] = index.val;
       fnPtrPtr   = createInBoundsGEP(ftable.val, GEPLocs);
 #if HAVE_LLVM_VER >= 130
-      fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType(),
+      fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType()->getPointerElementType(),
                                                    fnPtrPtr);
 #else
       fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr);
@@ -5633,7 +5659,7 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
       fnPtrPtr = createInBoundsGEP(table.val, GEPLocs);
 #if HAVE_LLVM_VER >= 130
       llvm::Instruction* fnPtrV =
-        gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType(), fnPtrPtr);
+        gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType()->getPointerElementType(), fnPtrPtr);
 #else
       llvm::Instruction* fnPtrV = gGenInfo->irBuilder->CreateLoad(fnPtrPtr);
 #endif
@@ -5787,7 +5813,7 @@ void CallExpr::registerPrimitivesForCodegen() {
   if (PRIM_ ## NAME != PRIM_UNKNOWN) \
     registerPrimitiveCodegen(PRIM_ ## NAME, codegen ## NAME );
 #define PRIMITIVE_R(NAME, str)
-#include "chpl/uast/PrimOpsList.h"
+#include "chpl/uast/prim-ops-list.h"
 
 #undef PRIMITIVE_G
 #undef PRIMITIVE_R

@@ -1,1 +1,1 @@
-assocArrayIdxType.chpl:1: error: Default Associative domains with idxType=[DefaultAssociativeDom(string,true)] int(64) are not allowed
+assocArrayIdxType.chpl:1: error: halt reached - zippered associative array does not match the iterated domain

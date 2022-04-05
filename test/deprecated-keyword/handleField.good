@@ -1,4 +1,101 @@
-handleField.chpl:11: In function 'main':
-handleField.chpl:13: warning: Field p1 is deprecated, use p2 instead
+handleField.chpl:109: In function 'main':
+handleField.chpl:115: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:119: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:121: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:123: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:131: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:135: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:137: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:139: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:146: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:148: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:156: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:158: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:160: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:167: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:169: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:177: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:179: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:181: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:188: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:190: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:198: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:200: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:202: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:209: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:213: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:215: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:217: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:225: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:229: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:231: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:233: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:240: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:242: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:250: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:252: warning: The field 'oldName' is deprecated, please use 'newName'
+handleField.chpl:254: warning: The field 'oldName' is deprecated, please use 'newName'
+10
+10
 3
-5
+3
+1
+1
+10
+10
+3
+3
+-2
+-2
+uint(64)
+uint(64)
+int(64)
+int(64)
+uint(64)
+uint(64)
+int(64)
+int(64)
+bool
+bool
+4
+4
+2
+2
+4
+4
+2
+2
+1
+1
+3
+3
+17
+17
+3
+3
+17
+17
+0
+0
+10
+10
+3
+3
+1
+1
+10
+10
+3
+3
+-2
+-2
+3
+3
+17
+17
+3
+3
+17
+17
+0
+0

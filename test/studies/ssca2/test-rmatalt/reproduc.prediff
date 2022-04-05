@@ -4,6 +4,15 @@ output=${2:-}
 execopts=${5:-}
 
 function doit {
+  # Wait up to timeout seconds for files to exist. Useful on systems where file
+  # IO may only complete after the launcher returns
+  timeout=${CHPL_TEST_WAIT_FOR_FILES_TIMEOUT:-10}
+  waited=0
+  while [ ! -f rmatalt.weights ] && [ "$waited" -lt "$timeout" ] ; do
+    sleep 1
+    waited=$((waited+1))
+  done
+
   sort rmatalt.weights | { diff rmatalt.weights.good - && echo weights match; }
   sort rmatalt.neis    | { diff rmatalt.neis.good - && echo neis match; }
 }

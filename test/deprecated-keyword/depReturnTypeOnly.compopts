@@ -1,0 +1,3 @@
+ # depReturnTypeOnly.off.good
+-sfooReturnsBool=false # depReturnTypeOnly.off.good
+-sfooReturnsBool=true # depReturnTypeOnly.on.good

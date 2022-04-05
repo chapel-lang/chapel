@@ -5,28 +5,41 @@ on:
     branches: [ main ]
   pull_request:
 
+
 env:
   NIGHTLY_TEST_SETTINGS: true
-  # store the dependencies in one place
-  CHPL_APT_DEPS: gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config cmake llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libclang-cpp11-dev libedit-dev
+
+# NOTE: each job has to specify the container section in its entirety, which is
+# certainly repetetive, but the `defaults` section can't be applied and the `env`
+# context isn't available in the `jobs` section
+#   [1] https://docs.github.com/en/actions/learn-github-actions/contexts#about-contexts
+#   [2] https://docs.github.com/en/actions/using-jobs/setting-default-values-for-jobs
+# And other yml features like anchors and merge aren't supported
+#   [3] https://github.com/actions/starter-workflows/issues/162
 
 jobs:
   make_check:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v2
-    - name: install deps
-      run: sudo apt-get install $CHPL_APT_DEPS
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
 
   make_doc:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v2
-    - name: install deps
-      run: sudo apt-get install cmake doxygen
     - name: make dyno-docs
       run: |
         make dyno-docs
@@ -42,6 +55,11 @@ jobs:
 
   make_mason:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v2
     - name: make mason
@@ -52,22 +70,31 @@ jobs:
 
   check_compiler_dyno_tests:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v2
-    - name: install deps
-      run: sudo apt-get install $CHPL_APT_DEPS
-    - name: make test-dyno
+    - name: make test-dyno-with-asserts
       run: |
-        make test-dyno -j`util/buildRelease/chpl-make-cpu_count`
+        make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
+    - name: run dyno linters
+      run: |
+        CHPL_HOME=$PWD make run-dyno-linters
 
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100000
-    - name: install deps
-      run: sudo apt-get install cscope
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls

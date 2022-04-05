@@ -25,7 +25,7 @@
 #include "chpl/types/CompositeType.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
 #include "chpl/util/bitmap.h"
 #include "chpl/util/memory.h"
@@ -92,57 +92,55 @@ class UntypedFnSignature {
   ID id_;
   UniqueString name_;
   bool isMethod_; // in that case, formals[0] is the receiver
-  bool idIsFunction_; // whether the ID is of a function
-  bool idIsClass_; // whether the ID is of a class
+  uast::asttags::AstTag idTag_; // concrete tag for ID
   bool isTypeConstructor_;
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
 
   // this will not be present for compiler-generated functions
-  const uast::Expression* whereClause_;
+  const uast::AstNode* whereClause_;
 
   UntypedFnSignature(ID id,
                      UniqueString name,
                      bool isMethod,
-                     bool idIsFunction,
-                     bool idIsClass,
+                     uast::asttags::AstTag idTag,
                      bool isTypeConstructor,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
-                     const uast::Expression* whereClause)
+                     const uast::AstNode* whereClause)
     : id_(id),
       name_(name),
       isMethod_(isMethod),
-      idIsFunction_(idIsFunction),
-      idIsClass_(idIsClass),
+      idTag_(idTag),
       isTypeConstructor_(isTypeConstructor),
       kind_(kind),
       formals_(std::move(formals)),
       whereClause_(whereClause) {
+    assert(idTag == uast::asttags::Function ||
+           idTag == uast::asttags::Class    ||
+           idTag == uast::asttags::Record);
   }
 
   static const owned<UntypedFnSignature>&
   getUntypedFnSignature(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
-                        bool idIsFunction,
-                        bool idIsClass,
+                        uast::asttags::AstTag idTag,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
-                        const uast::Expression* whereClause);
+                        const uast::AstNode* whereClause);
 
  public:
   /** Get the unique UntypedFnSignature containing these components */
   static const UntypedFnSignature* get(Context* context, ID id,
                                        UniqueString name,
                                        bool isMethod,
-                                       bool idIsFunction,
-                                       bool idIsClass,
+                                       uast::asttags::AstTag idTag,
                                        bool isTypeConstructor,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
-                                       const uast::Expression* whereClause);
+                                       const uast::AstNode* whereClause);
 
   /** Get the unique UntypedFnSignature representing a Function's
       signature. */
@@ -154,8 +152,7 @@ class UntypedFnSignature {
     return id_ == other.id_ &&
            name_ == other.name_ &&
            isMethod_ == other.isMethod_ &&
-           idIsFunction_ == other.idIsFunction_ &&
-           idIsClass_ == other.idIsClass_ &&
+           idTag_ == other.idTag_ &&
            isTypeConstructor_ == other.isTypeConstructor_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
@@ -192,17 +189,27 @@ class UntypedFnSignature {
 
   /** Returns true if id() refers to a Function */
   bool idIsFunction() const {
-    return idIsFunction_;
+    return idTag_ == uast::asttags::Function;
   }
 
   /** Returns true if id() refers to a Class */
   bool idIsClass() const {
-    return idIsClass_;
+    return idTag_ == uast::asttags::Class;
+  }
+
+  /** Returns true if id() refers to a Record */
+  bool idIsRecord() const {
+    return idTag_ == uast::asttags::Record;
   }
 
   /** Returns true if this is a type constructor */
   bool isTypeConstructor() const {
     return isTypeConstructor_;
+  }
+
+  /** Returns true if this is a method */
+  bool isMethod() const {
+    return isMethod_;
   }
 
   /** Returns the number of formals */
@@ -270,12 +277,7 @@ class CallInfoActual {
     return chpl::hash(type_, byName_);
   }
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-    byName().stringify(ss, stringKind);
-    ss << " ";
-    type().stringify(ss, stringKind);
-    ss << " ";
-  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -286,23 +288,43 @@ class CallInfoActual {
 class CallInfo {
  private:
   UniqueString name_;                   // the name of the called thing
-  bool isMethod_ = false;               // in that case, actuals[0] is receiver
+  types::QualifiedType calledType_;     // the type of the called thing
+  bool isMethodCall_ = false;           // then actuals[0] is receiver
   bool hasQuestionArg_ = false;         // includes ? arg for type constructor
   std::vector<CallInfoActual> actuals_; // types/params/names of actuals
 
  public:
   using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
 
-  CallInfo(UniqueString name, bool hasQuestionArg,
+  /** Construct a CallInfo that contains QualifiedTypes for actuals */
+  CallInfo(UniqueString name, types::QualifiedType calledType,
+           bool isMethodCall,
+           bool hasQuestionArg,
            std::vector<CallInfoActual> actuals)
-      : name_(name), hasQuestionArg_(hasQuestionArg),
-        actuals_(std::move(actuals)) {}
+      : name_(name), calledType_(calledType),
+        isMethodCall_(isMethodCall),
+        hasQuestionArg_(hasQuestionArg),
+        actuals_(std::move(actuals)) {
+    #ifndef NDEBUG
+    if (isMethodCall) {
+      assert(numActuals() >= 1);
+      assert(this->actuals(0).byName() == "this");
+    }
+    #endif
+  }
+
+  /** Construct a CallInfo with unknown types for the actuals
+      that can be used for FormalActualMap but not much else.  */
+  CallInfo(const uast::FnCall* call);
 
   /** return the name of the called thing */
   UniqueString name() const { return name_; }
 
+  /** return the type of the called thing */
+  types::QualifiedType calledType() const { return calledType_; }
+
   /** check if the call is a method call */
-  bool isMethod() const { return isMethod_; }
+  bool isMethodCall() const { return isMethodCall_; }
 
   /** check if the call includes ? arg for type constructor */
   bool hasQuestionArg() const { return hasQuestionArg_; }
@@ -323,7 +345,8 @@ class CallInfo {
 
   bool operator==(const CallInfo& other) const {
     return name_ == other.name_ &&
-           isMethod_ == other.isMethod_ &&
+           calledType_ == other.calledType_ &&
+           isMethodCall_ == other.isMethodCall_ &&
            hasQuestionArg_ == other.hasQuestionArg_ &&
            actuals_ == other.actuals_;
   }
@@ -331,14 +354,12 @@ class CallInfo {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(name_, isMethod_, hasQuestionArg_, actuals_);
+    return chpl::hash(name_, calledType_, isMethodCall_,
+                      hasQuestionArg_,
+                      actuals_);
   }
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-      ss << "CallInfo: ";
-      name().stringify(ss, stringKind);
-      ss << " ";
-  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -394,7 +415,7 @@ class PoiInfo {
 
   // TODO callers copy and store this elsewhere, do we return as is? change the
   // getter to poiFnIdsUsedAsSet? make callers do std::set(poiFnIdsUsed.begin(),
-  // poiFnidsUsed.end()) ?
+  // poiFnIdsUsed.end()) ?
   const std::set<std::pair<ID, ID>> &poiFnIdsUsed() const {
     return poiFnIdsUsed_;
   }
@@ -586,6 +607,9 @@ class TypedFnSignature {
     it was present in the SubstitutionsMap when instantiating.
    */
   bool formalIsInstantiated(int i) const {
+    if (instantiatedFrom_ == nullptr)
+      return false;
+
     return formalsInstantiated_[i];
   }
 
@@ -783,10 +807,9 @@ class MostSpecificCandidates {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    for (const TypedFnSignature* sig : *this) {
+    for (const TypedFnSignature* sig : candidates) {
       context->markPointer(sig);
     }
-    (void) emptyDueToAmbiguity; // no mark needed for bool
   }
 };
 
@@ -860,7 +883,12 @@ class ResolvedExpression {
   // resolving functions in mostSpecific?
   const PoiScope *poiScope_ = nullptr;
 
+  // functions associated with or used to implement this expression
+  std::vector<const TypedFnSignature*> associatedFns_;
+
  public:
+  using AssociatedFns = std::vector<const TypedFnSignature*>;
+
   ResolvedExpression() { }
 
   /** get the qualified type */
@@ -879,6 +907,10 @@ class ResolvedExpression {
 
   const PoiScope* poiScope() const { return poiScope_; }
 
+  const AssociatedFns& associatedFns() const {
+    return associatedFns_;
+  }
+
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
 
@@ -893,11 +925,17 @@ class ResolvedExpression {
   /** set the point-of-instantiation scope */
   void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
 
+  /** set the functions associated with this expression */
+  void setAssociatedFns(const AssociatedFns& fns) {
+    associatedFns_ = fns;
+  }
+
   bool operator==(const ResolvedExpression& other) const {
     return type_ == other.type_ &&
            toId_ == other.toId_ &&
            mostSpecific_ == other.mostSpecific_ &&
-           poiScope_ == other.poiScope_;
+           poiScope_ == other.poiScope_ &&
+           associatedFns_ == other.associatedFns_;
   }
   bool operator!=(const ResolvedExpression& other) const {
     return !(*this == other);
@@ -907,6 +945,7 @@ class ResolvedExpression {
     toId_.swap(other.toId_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
+    std::swap(associatedFns_, other.associatedFns_);
   }
   static bool update(ResolvedExpression& keep, ResolvedExpression& addin) {
     return defaultUpdate(keep, addin);
@@ -916,6 +955,7 @@ class ResolvedExpression {
     toId_.mark(context);
     mostSpecific_.mark(context);
     context->markPointer(poiScope_);
+    for (auto tfs : associatedFns_) tfs->mark(context);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -938,7 +978,7 @@ class ResolutionResultByPostorderID {
 
  public:
   /** prepare to resolve the contents of the passed symbol */
-  void setupForSymbol(const uast::ASTNode* ast);
+  void setupForSymbol(const uast::AstNode* ast);
   /** prepare to resolve the signature of the passed function */
   void setupForSignature(const uast::Function* func);
   /** prepare to resolve the body of the passed function */
@@ -955,7 +995,7 @@ class ResolutionResultByPostorderID {
     }
     return vec[postorder];
   }
-  ResolvedExpression& byAstExpanding(const uast::ASTNode* ast) {
+  ResolvedExpression& byAstExpanding(const uast::AstNode* ast) {
     return byIdExpanding(ast->id());
   }
   ResolvedExpression& byId(const ID& id) {
@@ -969,10 +1009,10 @@ class ResolutionResultByPostorderID {
     assert(0 <= postorder && (size_t) postorder < vec.size());
     return vec[postorder];
   }
-  ResolvedExpression& byAst(const uast::ASTNode* ast) {
+  ResolvedExpression& byAst(const uast::AstNode* ast) {
     return byId(ast->id());
   }
-  const ResolvedExpression& byAst(const uast::ASTNode* ast) const {
+  const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byId(ast->id());
   }
 
@@ -1063,7 +1103,7 @@ class ResolvedFunction {
   const ResolvedExpression& byId(const ID& id) const {
     return resolutionById_.byId(id);
   }
-  const ResolvedExpression& byAst(const uast::ASTNode* ast) const {
+  const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return resolutionById_.byAst(ast);
   }
 
@@ -1178,6 +1218,7 @@ class ResolvedFields {
     void mark(Context* context) const {
       name.mark(context);
       declId.mark(context);
+      type.mark(context);
     }
 
     /*
@@ -1268,6 +1309,7 @@ class ResolvedFields {
     for (auto const &elt : fields_) {
       elt.mark(context);
     }
+    context->markPointer(type_);
   }
 };
 

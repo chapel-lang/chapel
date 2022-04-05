@@ -36,6 +36,18 @@ include Makefile.include
 
 CMAKE ?= cmake
 
+# Get the path to where a ClangConfig.cmake might be found; used by the linters
+# example --cmakedir is /usr/lib/llvm-11/lib/cmake/llvm so then the
+LLVM_CMAKE_DIR  := $(shell $(CHPL_MAKE_LLVM_CONFIG) --cmakedir)
+ifeq ($(LLVM_CMAKE_DIR),)
+CLANG_CMAKE_DIR :=
+else
+CLANG_CMAKE_DIR := $(LLVM_CMAKE_DIR)/..
+endif
+
+$(info CHPL_MAKE_LLVM_CONFIG $(CHPL_MAKE_LLVM_CONFIG))
+$(info CLANG_CMAKE_DIR $(CLANG_CMAKE_DIR))
+
 $(LIBCOMPILER_BUILD_DIR):
 	@echo "Configuring the compiler library..."
 	@mkdir -p $(LIBCOMPILER_BUILD_DIR)
@@ -48,6 +60,7 @@ $(LIBCOMPILER_BUILD_DIR):
 	    -DCMAKE_CXX_FLAGS='$(COMP_CXXFLAGS)' \
 	    -DCMAKE_EXE_LINKER_FLAGS='$(LDFLAGS)' \
 	    -DCMAKE_MODULE_LINKER_FLAGS='$(LDFLAGS)' \
+	    -DDYNO_LINTERS_CLANG_CMAKE_PATH='$(CLANG_CMAKE_DIR)' \
 	    -DBUILD_SHARED_LIBS=OFF
 
 dyno-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
@@ -55,6 +68,12 @@ dyno-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
 
 dyno-chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
 	+cd $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc && $(CMAKE) --build . --target chpldoc
+
+dyno-linters: $(LIBCOMPILER_BUILD_DIR) FORCE
+	+cd $(LIBCOMPILER_BUILD_DIR)/util && $(CMAKE) --build .
+
+run-dyno-linters: dyno-linters
+	@env PATH=$(LIBCOMPILER_BUILD_DIR)/util/linters:$(PATH) ./util/lint --compile-commands $(LIBCOMPILER_BUILD_DIR) --jobs=-1
 
 dyno: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library..."

@@ -21,3 +21,11 @@ include "{{ pathto('',1) }}/versionButton.php";
 {% include "searchbox.html" %}
 
 {% endblock %}
+
+{% block menu %}
+  {{ super() }}
+  <p class="caption" role="heading"><span class="caption-text">Chapel Documentation Index</span></p>
+  <ul>
+    <li class="toctree-11"><a class="reference internal" href="{{pathto('genindex.html', 1)}}">Index</a></li>
+  </ul>
+{% endblock %}

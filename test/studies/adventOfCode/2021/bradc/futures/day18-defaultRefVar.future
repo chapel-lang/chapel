@@ -1,7 +1,12 @@
 feature request/error message: 'ref' arguments with defaults
 
-It seems as though we should support 'ref' arguments that have default
-intents, which can be useful in recursive settings.  Otherwise, either
-the callee must pass in a variable they may not care about, or the
-routine must create a bootstrapping overload of itself that doesn't
-take the additional arg.
+It seems as though we should support 'ref' arguments that have new
+default values, which can be useful in recursive settings like this
+one.  Otherwise, either the callee must pass in a variable they may
+not care about, or the routine must create a bootstrapping overload of
+itself that doesn't take the additional arg.
+
+I was originally thinking that maybe we should just permit '0' to be
+passed in for such cases, but in #19116, Paul and Michael talked me
+down from this, so I'm updating the issue to support the ability to
+say 'new int()' instead.

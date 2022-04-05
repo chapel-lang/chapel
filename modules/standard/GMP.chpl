@@ -106,30 +106,29 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
 
 */
 module GMP {
-  use SysBasic;
+  use CTypes;
   use SysError;
   use BigInteger;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   require "GMPHelper/chplgmp.h";
 
-  proc chpl_gmp_alloc(size:size_t) : c_void_ptr {
+  proc chpl_gmp_alloc(size:c_size_t) : c_void_ptr {
     pragma "insert line file info"
-    extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
     return chpl_mem_alloc(size, CHPL_RT_MD_GMP);
   }
 
   proc chpl_gmp_realloc(ptr:c_void_ptr,
-                               old_size:size_t, new_size:size_t) : c_void_ptr {
+                               old_size:c_size_t, new_size:c_size_t) : c_void_ptr {
     pragma "insert line file info"
-    extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_realloc(ptr:c_void_ptr, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
     return chpl_mem_realloc(ptr, new_size, CHPL_RT_MD_GMP);
   }
 
-  proc chpl_gmp_free(ptr:c_void_ptr, old_size:size_t) {
+  proc chpl_gmp_free(ptr:c_void_ptr, old_size:c_size_t) {
     pragma "insert line file info"
       extern proc chpl_mem_free(ptr:c_void_ptr) : void;
     chpl_mem_free(ptr);
@@ -803,7 +802,7 @@ module GMP {
          proc mpz_even_p(const ref op: mpz_t) : c_int;
 
   extern proc mpz_sizeinbase(const ref op: mpz_t,
-                             base: c_int) : size_t;
+                             base: c_int) : c_size_t;
 
 
   //
@@ -816,7 +815,7 @@ module GMP {
   private extern proc mpz_getlimbn(const ref op: mpz_t,
                                    n: mp_size_t) : mp_limb_t;
 
-  extern proc mpz_size(const ref x: mpz_t): size_t;
+  extern proc mpz_size(const ref x: mpz_t): c_size_t;
 
   extern proc mpz_limbs_write(ref x: mpz_t, n: mp_size_t): c_ptr(mp_limb_t);
   extern proc mpz_limbs_finish(ref x: mpz_t, s: mp_size_t);
@@ -1015,7 +1014,7 @@ module GMP {
 
   extern proc mpf_out_str(stream: _file,
                           base: c_int,
-                          n_digits: size_t,
+                          n_digits: c_size_t,
                           const ref op: mpf_t);
 
   extern proc mpf_inp_str(ref rop: mpf_t,
@@ -1147,7 +1146,7 @@ module GMP {
 
     __primitive("chpl_comm_get", dst_limbs_ptr[0],
                                  src_locale, src_limbs_ptr[0],
-                                 (new_size:size_t)*c_sizeof(mp_limb_t));
+                                 (new_size:c_size_t)*c_sizeof(mp_limb_t));
 
     // Update the sign and size of the number
     chpl_gmp_mpz_set_sign_size(ret, src_sign_size);

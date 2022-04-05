@@ -37,7 +37,7 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
-static UniqueString nameForAst(const ASTNode* ast) {
+static UniqueString nameForAst(const AstNode* ast) {
   UniqueString empty;
 
   if (ast == nullptr) {
@@ -53,14 +53,14 @@ static UniqueString nameForAst(const ASTNode* ast) {
   return empty;
 }
 
-static void printId(const ASTNode* ast) {
+static void printId(const AstNode* ast) {
   std::ostringstream ss;
   ast->id().stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
   printf("%-16s %-8s", ss.str().c_str(), nameForAst(ast).c_str());
 }
 
 static const ResolvedExpression*
-resolvedExpressionForAst(Context* context, const ASTNode* ast,
+resolvedExpressionForAst(Context* context, const AstNode* ast,
                          const ResolvedFunction* inFn) {
   if (!(ast->isLoop() || ast->isBlock())) {
     // compute the parent module or function
@@ -94,11 +94,11 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
 
 static void
 computeAndPrintStuff(Context* context,
-                     const ASTNode* ast,
+                     const AstNode* ast,
                      const ResolvedFunction* inFn,
                      std::set<const ResolvedFunction*>& calledFns) {
 
-  for (const ASTNode* child : ast->children()) {
+  for (const AstNode* child : ast->children()) {
     computeAndPrintStuff(context, child, inFn, calledFns);
   }
 
@@ -209,6 +209,8 @@ int main(int argc, char** argv) {
       }
       searchPath.push_back(argv[i+1]);
       i++;
+    } else if (0 == strcmp(argv[i], "--trace")) {
+      ctx->setDebugTraceFlag(true);
     } else {
       firstfile = i;
       break;

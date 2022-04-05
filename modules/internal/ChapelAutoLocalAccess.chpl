@@ -61,7 +61,8 @@ module ChapelAutoLocalAccess {
   proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
     if chpl__staticAutoLocalCheck(accessBase, loopDomain) {
       // if they're the same domain...
-      if accessBase.domain == loopDomain &&
+      if chpl_sameDomainKind(accessBase.domain, loopDomain) &&
+         accessBase.domain == loopDomain                    &&
          accessBase.domain._value.dist.dsiEqualDMaps(loopDomain._value.dist) then
         return true;
 

@@ -46,17 +46,16 @@ namespace uast {
  */
 class While final : public Loop {
  private:
-  While(ASTList children, int8_t conditionChildNum,
+  While(AstList children, int8_t conditionChildNum,
         BlockStyle blockStyle,
         int loopBodyChildNum)
     : Loop(asttags::While, std::move(children), blockStyle,
            loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
-    assert(isExpressionASTList(children_));
     assert(condition());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const While* lhs = this;
     const While* rhs = (const While*) other;
 
@@ -82,7 +81,7 @@ class While final : public Loop {
     Create and return a while loop.
   */
   static owned<While> build(Builder* builder, Location loc,
-                            owned<Expression> condition,
+                            owned<AstNode> condition,
                             BlockStyle blockStyle,
                             owned<Block> stmts);
 
@@ -90,10 +89,9 @@ class While final : public Loop {
   /**
     Return the condition of this while loop.
   */
-  const Expression* condition() const {
+  const AstNode* condition() const {
     auto ret = child(conditionChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
 };

@@ -152,6 +152,9 @@ const char* InlinedString::astr(Context* context) const {
 }
 
 void InlinedString::mark(Context* context) const {
+  // mark union fields as used for linter
+  (void)v;
+  (void)data;
   if (isInline()) {
     // nothing to do since string data is stored inline, not in map
   } else {
@@ -191,5 +194,11 @@ void UniqueString::stringify(std::ostream& ss,
   ss.write(c_str(),length());
 }
 IMPLEMENT_DUMP(UniqueString);
+
+std::ostream& operator<<(std::ostream& os, const chpl::UniqueString& uStr) {
+  // write obj to stream
+  os << uStr.c_str();
+  return os;
+}
 
 } // end namespace chpl

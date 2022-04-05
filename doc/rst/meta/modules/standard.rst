@@ -96,6 +96,7 @@ System/Interoperability
    :maxdepth: 1
 
    CPtr <standard/CPtr>
+   CTypes <standard/CTypes>
    Spawn <standard/Spawn>
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>
@@ -115,12 +116,3 @@ Utilities
    Regex <standard/Regex>
    Time <standard/Time>
    Version <standard/Version>
-
-
-
-Index
------
-
-* :ref:`Chapel Online Documentation Index <genindex>`
-
-.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`

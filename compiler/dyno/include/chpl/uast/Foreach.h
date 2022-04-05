@@ -46,7 +46,7 @@ namespace uast {
  */
 class Foreach final : public IndexableLoop {
  private:
-  Foreach(ASTList children, int8_t indexChildNum,
+  Foreach(AstList children, int8_t indexChildNum,
           int8_t iterandChildNum,
           int8_t withClauseChildNum,
           BlockStyle blockStyle,
@@ -59,10 +59,9 @@ class Foreach final : public IndexableLoop {
                     loopBodyChildNum,
                     /*isExpressionLevel*/ false) {
 
-    assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
   }
 
@@ -78,7 +77,7 @@ class Foreach final : public IndexableLoop {
   */
   static owned<Foreach> build(Builder* builder, Location loc,
                               owned<Decl> index,
-                              owned<Expression> iterand,
+                              owned<AstNode> iterand,
                               owned<WithClause> withClause,
                               BlockStyle blockStyle,
                               owned<Block> body);

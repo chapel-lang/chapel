@@ -69,7 +69,7 @@ proc printSystemInfo() {
     if ugni || gn_ibv then return "unknown";
 
     use Subprocess;
-    var sub = spawn(["uname", cmd], stdout=PIPE);
+    var sub = spawn(["uname", cmd], stdout=pipeStyle.pipe);
     sub.wait();
 
     if sub.exitCode == 0 {

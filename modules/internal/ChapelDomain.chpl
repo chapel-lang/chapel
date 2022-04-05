@@ -59,6 +59,8 @@ module ChapelDomain {
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType,
                                     param parSafe: bool = true) type {
+    if isDomainType(idxType) then
+      compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");
     return new _domain(dist, idxType, parSafe);
   }
 
@@ -283,6 +285,14 @@ module ChapelDomain {
   deprecated "isSparseDom is deprecated - please use isSparse method on domain"
   proc isSparseDom(d: domain) param return d.isSparse();
 
+  private proc errorIfNotRectangular(dom: domain, param op, param arrays="") {
+    if dom.isAssociative() || dom.isSparse() then
+      compilerError("cannot apply '", op,
+                    "' to associative and sparse domains", arrays);
+    if ! dom.isRectangular() then
+      compilerError("cannot apply '", op, "' to '", dom.type:string, "'");
+  }
+
   // Helper function used to ensure a returned array matches the declared
   // return type when the declared return type specifies a particular domain
   // but not the element type.
@@ -313,29 +323,25 @@ module ChapelDomain {
     return dom[(...ranges)];
   }
 
-  operator #(dom: domain, counts: integral) where dom.isRectangular() &&
-    dom.rank == 1 {
+  operator #(dom: domain, counts: integral) {
+    errorIfNotRectangular(dom, "#", " and arrays");
+    if dom.rank != 1 then compilerError(
+      "cannot apply '#' with an integer to multi-dimensional domains and arrays");
+
     return chpl_countDomHelp(dom, (counts,));
   }
 
-  operator #(dom: domain, counts) where dom.isRectangular() &&
-    isTuple(counts) {
-    if (counts.size != dom.rank) then
-      compilerError("the domain and tuple arguments of # must have the same rank");
+  operator #(dom: domain, counts: _tuple) {
+    errorIfNotRectangular(dom, "#", " and arrays");
+    if (counts.size != dom.rank) then compilerError(
+      "rank mismatch in '#'");
     return chpl_countDomHelp(dom, counts);
   }
 
-  pragma "fn returns aliasing array"
-  operator #(arr: [], counts: integral) where arr.isRectangular() &&
-    arr.rank == 1 {
-    return arr[arr.domain#counts];
-  }
-
-  pragma "fn returns aliasing array"
-  operator #(arr: [], counts) where arr.isRectangular() && isTuple(counts) {
-    if (counts.size != arr.rank) then
-      compilerError("the domain and array arguments of # must have the same rank");
-    return arr[arr.domain#counts];
+  pragma "last resort"
+  operator #(dom: domain, counts) {
+    compilerError("cannot apply '#' to '", dom.type:string,
+                  "' using count(s) of type ", counts.type:string);
   }
 
   operator +(d: domain, i: index(d)) {
@@ -462,13 +468,34 @@ module ChapelDomain {
 
   // any combinations not handled by the above
 
-  inline operator ==(d1: domain, d2: domain) param {
-    return false;
+  private proc cmpError(d1, d2) {
+    if d1.isRectangular() then
+      compilerError("comparing a rectangular domain against",
+        " an associative or sparse domain is not currently supported");
+    if d1.isAssociative() then
+      compilerError("comparing an associative domain against",
+        " a rectangular or sparse domain is not currently supported");
+    if d1.isSparse() then
+      compilerError("comparing a sparse domain against",
+        " a rectangular or associative domain is not currently supported");
+    // we should not get here, however if we do...
+    compilerError("comparing '", d1.type:string, "' against '",
+                  d2.type:string, "' is not currently supported");
   }
 
-  inline operator !=(d1: domain, d2: domain) param {
-    return true;
+  inline operator ==(d1: domain, d2: domain) {
+    cmpError(d1, d2);
   }
+
+  inline operator !=(d1: domain, d2: domain) {
+    cmpError(d1, d2);
+  }
+
+  // check this before comparing two domains with == or !=
+  proc chpl_sameDomainKind(d1: domain, d2: domain) param
+    return (d1.isRectangular() && d2.isRectangular()) ||
+           (d1.isAssociative() && d2.isAssociative()) ||
+           (d1.isSparse()      && d2.isSparse()     );
 
   /* Return true if ``t`` is a domain type. Otherwise return false. */
   proc isDomainType(type t) param {
@@ -707,6 +734,7 @@ module ChapelDomain {
 
   // This is the definition of the 'by' operator for domains.
   operator by(a: domain, b) {
+    errorIfNotRectangular(a, "by");
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
                       true);
@@ -720,6 +748,7 @@ module ChapelDomain {
   // It produces a new domain with the specified alignment.
   // See also: 'align' operator on ranges.
   operator align(a: domain, b) {
+    errorIfNotRectangular(a, "align");
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
                       a.stridable);
@@ -1233,26 +1262,13 @@ module ChapelDomain {
       for i in _value.dimIter(d, ind) do yield i;
     }
 
-   /* Return a tuple of :proc:`intIdxType` describing the size of each
-      dimension.  Note that this routine is in the process of changing
-      to return a tuple of ``int``, similar to the ``.size`` query on
-      ranges, domains, and arrays.  See :proc:`ChapelRange.range.size` for details.
+   /* Return a tuple of ``int`` values representing the size of each
+      dimension.
 
       For a sparse domain, this returns the shape of the parent domain.
     */
-    proc shape where this.isRectangular() || this.isSparse() {
-      use ChapelRange;
-      if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
-        compilerWarning("'.shape' queries for domains and arrays with 'idxType = " +
-                        idxType:string +
-                        "' are changing to return '" + rank:string +
-                        "int' values rather than '" + rank:string + "*" +
-                        idxType:string+"'\n"+
-                        "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'\n");
-        return chpl_shapeAs(idxType);
-      } else {
-        return chpl_shapeAs(int);
-      }
+    proc shape: rank*int where this.isRectangular() || this.isSparse() {
+      return chpl_shapeAs(int);
     }
 
     proc chpl_shapeAs(type t: integral) {
@@ -1340,6 +1356,405 @@ module ChapelDomain {
       return _newArray(x);
     }
 
+    /*
+      An instance of this type is a context manager that can be used in
+      manage statements to resize arrays of non-default-initializable
+      element types after resizing their underlying domain.
+
+      Using an instance of this type in a manage statement will cause a
+      domain assignment to occur before executing the statement body. The
+      left-hand-side of the assignment is the receiver domain that had
+      ``unsafeAssign()`` called on it, while the right-hand-side is the
+      `dom` formal of the same call.
+
+      If the assignment adds new indices to the assigned domain, then
+      corresponding elements are added to arrays declared over it.
+      If an array's element type is non-default-initializable, then any
+      newly added elements remain uninitialized.
+
+      The ``initialize()`` method can be used within the manage statement
+      body to initialize new elements of non-default-initializable arrays
+      declared over the assigned domain.
+
+      The new elements of default-initializable arrays over the assigned
+      domain will be default-initialized. They can be set to desired
+      values as usual, for example using an assignment operator.
+    */
+    record unsafeAssignManager {
+      pragma "no doc"
+      var _lhsInstance;
+
+      pragma "no doc"
+      var _lhsPid: int;
+
+      pragma "no doc"
+      var _rhsInstance;
+
+      pragma "no doc"
+      var _rhsPid: int;
+
+      pragma "no doc"
+      var _oldLhsDomainCopy: domain;
+
+      pragma "no doc"
+      param _checks: bool;
+
+      pragma "no doc"
+      var _isActiveManager: bool;
+
+      pragma "no doc"
+      iter _arraysOverLhsDom() {
+        for baseArr in _lhsInstance._arrs do
+          if !chpl__isArrayView(baseArr) then
+            yield baseArr;
+      }
+
+      pragma "no doc"
+      proc postinit() {
+        for baseArr in _arraysOverLhsDom() {
+          if _checks {
+            if !baseArr.chpl_isElementTypeDefaultInitializable() &&
+               !baseArr.chpl_isElementTypeNonNilableClass() {
+              param msg = 'Checks in \'unsafeAssign\' for arrays of non-' +
+                          'default-initializable elements are not ' +
+                          'supported yet';
+              halt(msg);
+            }
+          }
+        }
+      }
+
+      /*
+        Returns ``true`` if this manager has runtime safety checks enabled.
+      */
+      inline proc checks param return _checks;
+
+      // Called by implementation code.
+      pragma "no doc"
+      proc type isClassReferenceNil(const ref x) {
+        if isClassType(x.type) {
+          return if isBorrowedOrUnmanagedClassType(x.type)
+            then x == nil
+            else x.chpl_p == nil;
+        } else {
+          return false;
+        }
+      }
+
+      // TODO: Make 'nonNilClass == nil' avoid runtime nil checks.
+      pragma "no doc"
+      proc isClassReferenceNil(const ref x) {
+        return this.type.isClassReferenceNil(x);
+      }
+
+      pragma "no doc"
+      proc _checkThatArrayShapeIsSupported(arr) param {
+
+        // TODO: Test associative, ND rectangular with rank 2+.
+        if !arr.isDefaultRectangular() {
+          compilerError('The array shape ' + arr.type:string + ' is ' +
+                        'not supported');
+        }
+      }
+
+      pragma "no doc"
+      proc _checkThatIndexMatchesArrayShape(arr, idx) param {
+        if arr.rank > 1 || idx.type != arr.idxType {
+          if idx.type != (arr.rank*arr.idxType) {
+            compilerError('invalid index type ' + idx.type:string +
+                          ' for array with rank ' + arr.rank:string);
+          }
+        }
+      }
+
+      pragma "no doc"
+      proc _isBaseArrClassElementNil(baseArr: BaseArr, idx) {
+        var idxTup = if isTuple(idx) then idx else (idx,);
+        return baseArr.chpl_unsafeAssignIsClassElementNil(this, idxTup);
+      }
+
+      /*
+        Return ``true`` if the value at a given index in an array has
+        been initialized.
+      */
+      proc isElementInitialized(arr: [?d], idx) {
+
+        // E.g., default rectangular...
+        _checkThatArrayShapeIsSupported(arr);
+
+        // Only certain forms of index are permissible.
+        _checkThatIndexMatchesArrayShape(arr, idx);
+
+        if _checks {
+          type T = arr.eltType;
+          if isNonNilableClassType(T) {
+            var baseArr = chpl__getActualArray(arr);
+            return !_isBaseArrClassElementNil(baseArr, idx);
+          } else if !isDefaultInitializable(T) {
+            halt('Checking if a non-default-initializable element is ' +
+                 'initialized is not supported yet');
+            return false;
+          } else {
+            return true;
+          }
+
+        // No checks, so just issue a compiler error.
+        } else {
+          param msg = 'Cannot check initialization state of non-' +
+                      'default-initializable array elements from a ' +
+                      'manager initialized with \'checks=false\'';
+          compilerError(msg);
+          return false;
+        }
+      }
+
+      pragma "no doc"
+      proc _checkIfAllElementsAreInitialized(baseArr) {
+
+        // Arrays of non-nilable classes.
+        if baseArr.chpl_isElementTypeNonNilableClass() {
+          for idx in newIndices() {
+            if _isBaseArrClassElementNil(baseArr, idx) {
+              baseArr.chpl_unsafeAssignHaltUninitializedElement(idx);
+            }
+          }
+
+        // TODO: For non-default-initializable elements, we'd iterate
+        // through a bitvector mapped to newly added slots.
+        } else if !baseArr.chpl_isElementTypeDefaultInitializable() {
+
+          // Should have already halted in postinit.
+          halt('internal error: checks for arrays of non-default-' +
+               'initializable elements are not supported');
+
+        // Should never reach here.
+        } else {
+          halt('Internal error!');
+        }
+      }
+
+      pragma "no doc"
+      proc _ensureNoLongerManagingThis() {
+        if !_isActiveManager then return; else _isActiveManager = false;
+
+        // Possible runtime checks, reset the resize policy of owned arrays.
+        for baseArr in _arraysOverLhsDom() {
+          if !baseArr.chpl_isElementTypeDefaultInitializable() {
+            if _checks then _checkIfAllElementsAreInitialized(baseArr);
+            const policy = chpl_ddataResizePolicy.normalInit;
+            baseArr.chpl_setResizePolicy(policy);
+          }
+        }
+      }
+
+      pragma "no doc"
+      proc deinit() {
+        _ensureNoLongerManagingThis();
+      }
+
+      pragma "no doc"
+      proc _isArrayOwnedByLhsDomain(arr) {
+        return arr.dsiGetBaseDom() == _lhsInstance;
+      }
+
+      pragma "no doc"
+      proc _moveInitializeElement(arr, idx, in value) {
+        import Memory.Initialization.moveInitialize;
+        ref elem = arr[idx];
+        moveInitialize(elem, value);
+      }
+
+      pragma "no doc"
+      proc _checkNoChecksWhenNonDefaultInitializableEltType(arr) {
+        if _checks {
+          if !isDefaultInitializable(arr.eltType) &&
+             !isNonNilableClass(arr.eltType) {
+            param msg = 'Checks in \'unsafeAssign\' for arrays of non-' +
+                        'default-initializable elements are not ' +
+                        'supported yet';
+            compilerError(msg);
+          }
+        }
+      }
+
+      /*
+        Initialize a newly added array element at an index with a new value.
+
+        If `checks` is ``true`` and the array element at `idx` has already
+        been initialized, this method will halt. If `checks` is ``false``,
+        then calling this method on an already initialized element will
+        result in undefined behavior.
+
+        It is an error if `idx` is not a valid index in `arr`.
+      */
+      proc initialize(arr: [?d], idx, in value: arr.eltType) {
+
+        // Check to make sure value and array element types match.
+        if arr.eltType != value.type then
+          compilerError('Initialization value type \'' + value:string +
+                        '\' does not match array element type \'' +
+                        arr.eltType:string + '\'');
+
+        // E.g., default rectangular...
+        _checkThatArrayShapeIsSupported(arr);
+
+        // Only certain forms of index are permissible.
+        _checkThatIndexMatchesArrayShape(arr, idx);
+
+        // Produce a compiler error.
+        _checkNoChecksWhenNonDefaultInitializableEltType(arr);
+
+        // TODO: Remove this restriction in the future?
+        if isDefaultInitializable(arr.eltType) then
+          compilerError('Cannot call \'initialize\' on array with ' +
+                        'default-initializable element type ' +
+                        '\'' + arr.eltType:string + '\'');
+
+        if !_isArrayOwnedByLhsDomain(arr) then
+          halt('Can only initialize elements of arrays declared over ' +
+               'the domain being resized');
+
+        if !arr.domain.contains(idx) then
+          halt('Array index out of bounds: ' + idx:string);
+
+        // Get a reference to the array slot.
+        ref elem = arr[idx];
+
+        if _checks {
+          if isElementInitialized(arr, idx) {
+            halt('Element at array index \'' + idx:string + '\' ' +
+                 'is already initialized');
+          }
+        }
+
+        _moveInitializeElement(arr, idx, value);
+      }
+
+      pragma "no doc"
+      proc enterThis() ref {
+
+        // TODO: Is it possible to nest unsafe assignments? Future work...
+        if _isActiveManager {
+          halt('Cannot nest a manager for unsafe domain assignment');
+        } else {
+          _isActiveManager = true;
+        }
+
+        for baseArr in _arraysOverLhsDom() {
+
+          // Don't care about arrays with default-initializable elements.
+          if baseArr.chpl_isElementTypeDefaultInitializable() then
+            continue;
+
+          // Array elements are non-nilable classes. In this case, tell
+          // the array to clear new slots when resizing by setting the
+          // resize policy. We can use 'nil' slots as sentinel values.
+          if baseArr.chpl_isElementTypeNonNilableClass() {
+            const policy = if _checks
+              then chpl_ddataResizePolicy.skipInitButClearMem
+              else chpl_ddataResizePolicy.skipInit;
+            baseArr.chpl_setResizePolicy(policy);
+
+          // The array element type is non-default-initializable (but it is
+          // not a non-nilable class).
+          } else {
+
+            // TODO: Future work could handle this case by using a bitvector
+            // to mark slot initialization status. Initialization calls
+            // would have to go through the 'initialize' method in order
+            // for this approach to work.
+            if _checks {
+              halt('Runtime checks are currently only supported for ' +
+                   'arrays of non-nilable classes');
+            } else {
+              const policy = chpl_ddataResizePolicy.skipInitButClearMem;
+              baseArr.chpl_setResizePolicy(policy);
+            }
+          }
+        }
+
+        // Create temporary shells for the LHS and RHS domains so that we
+        // can perform domain assignment.
+        var lhsTmpDom = new _domain(_lhsPid, _lhsInstance, _unowned=true);
+        var rhsTmpDom = new _domain(_rhsPid, _rhsInstance, _unowned=true);
+
+        // Perform the actual assignment.
+        lhsTmpDom = rhsTmpDom;
+
+        return this;
+      }
+
+      pragma "no doc"
+      proc leaveThis(in err: owned Error?) throws {
+        _ensureNoLongerManagingThis();
+        if err then throw err;
+      }
+
+      /*
+        Iterate over any new indices that will be added to this domain as a
+        result of unsafe assignment.
+      */
+      iter newIndices() {
+        var rhsTmpDom = new _domain(_rhsPid, _rhsInstance, _unowned=true);
+        for idx in rhsTmpDom do
+          if !_oldLhsDomainCopy.contains(idx) then
+            yield idx;
+      }
+    }
+
+    /*
+      Returns an instance of :type:`unsafeAssignManager`.
+
+      The returned context manager can be used in a manage statement to
+      assign the indices of `dom` into the receiver domain. Within the body
+      of the manage statement, the manager can initialize elements of
+      non-default-initializable arrays declared over the receiver domain.
+
+      If `checks` is ``true``, this method will guarantee that:
+
+        - Newly added elements of any non-default-initializable arrays
+          declared over the receiver domain have been initialized by the
+          end of the manage statement
+        - Newly added elements are only initialized once
+
+      These guarantees hold only for initialization done through calls to
+      the ``initialize()`` method on the context manager. Performing
+      any other operation on a newly added array element causes undefined
+      behavior until after ``initialize()`` has been called.
+
+      For example:
+
+      .. code-block:: chapel
+
+        var D = {0..0};
+        var A: [D] shared C = [new shared C(0)];
+        manage D.unsafeAssign({0..1}, checks=true) as mgr {
+          // 'D' has a new index '1', so 'A' has a new element at '1',
+          // which we need to initialize:
+          mgr.initialize(A, 1, new shared C(1));
+        }
+
+      .. note::
+
+        Checks are not currently supported for arrays of
+        non-default-initializable element types other than arrays of
+        non-nilable classes.
+
+      :arg dom: The domain to assign to the receiver
+      :arg checks: If this manager should provide runtime safety checks
+
+      :returns: A :type:`unsafeAssignManager` for use in manage statements
+    */
+    proc ref unsafeAssign(const ref dom: domain, param checks: bool=false) {
+      return new unsafeAssignManager(_lhsInstance=_value,
+                                     _lhsPid=_pid,
+                                     _oldLhsDomainCopy=this,
+                                     _rhsInstance=dom._value,
+                                     _rhsPid=dom._pid,
+                                     _checks=checks,
+                                     _isActiveManager=false);
+    }
+
     /* Remove all indices from this domain, leaving it empty */
     proc ref clear() where this.isRectangular() {
       // For rectangular domains, create an empty domain and assign it to this
@@ -1376,6 +1791,8 @@ module ChapelDomain {
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
+      if chpl_warnUnstable then compilerWarning(
+        "bulkAdd() is subject to change in the future.");
 
       if inds.isEmpty() then return 0;
 
@@ -1409,13 +1826,16 @@ module ChapelDomain {
 
        .. note::
 
-          The interface and implementation is not stable and may change in the
+          The interface and implementation are not stable and may change in the
           future.
 
      :arg size: Size of the buffer in number of indices.
      :type size: int
     */
     inline proc makeIndexBuffer(size: int) {
+      if chpl_warnUnstable then compilerWarning(
+        "makeIndexBuffer() is subject to change in the future.");
+
       return _value.dsiMakeIndexBuffer(size);
     }
 
@@ -1441,6 +1861,11 @@ module ChapelDomain {
          addition should occur is unknown. We expect this to change in the
          future.
 
+       .. note::
+
+          The interface and implementation are not stable and may change in the
+          future.
+
        :arg inds: Indices to be added. ``inds`` must be an array of
                   ``rank*idxType``, except for 1-D domains, where it must be
                   an array of ``idxType``.
@@ -1465,6 +1890,8 @@ module ChapelDomain {
     proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
+      if chpl_warnUnstable then compilerWarning(
+        "bulkAdd() is subject to change in the future.");
 
       if inds.isEmpty() then return 0;
 
@@ -1509,23 +1936,11 @@ module ChapelDomain {
       requestCapacity(i);
     }
 
-    /* Return the number of indices in this domain.  For domains whose
-       ``intIdxType != int``, please refer to the note in
-       :proc:`ChapelRange.range.size` about changes to this routine's return type.
+    /*
+      Return the number of indices in this domain as an ``int``.
     */
-    proc size {
-      use ChapelRange;
-      if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
-        compilerWarning("'.size' queries for domains and arrays with 'idxType == " +
-                        idxType:string +
-                        "' are changing to return 'int' values rather than '"+
-                        idxType:string+"'\n"+
-                        "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'\n" +
-                        "  or switch to the new '.sizeAs(type t: integral)' method)");
-        return this.sizeAs(this.intIdxType);
-      } else {
-        return this.sizeAs(int);
-      }
+    proc size: int {
+      return this.sizeAs(int);
     }
 
     /* Return the number of indices in this domain as the specified type */
@@ -1610,7 +2025,7 @@ module ChapelDomain {
       return this.contains(sub);
     }
 
-    /* Returns true if this domain contains all the indicies in the domain
+    /* Returns true if this domain contains all the indices in the domain
        ``other``. */
     proc contains(other: domain) {
       if this.rank != other.rank then
@@ -1683,7 +2098,7 @@ module ChapelDomain {
             currInd+=hi;
           else
             currInd+=lo;
-          idx[i] = currInd;
+          idx[i] = currInd: idxType;
           rankOrder = rankOrder%div;
       }
       if(this.rank==1) then
@@ -2011,7 +2426,7 @@ module ChapelDomain {
     /*
        Return an array of locales over which this domain has been distributed.
     */
-    proc targetLocales const ref {
+    proc targetLocales() const ref {
       return _value.dsiTargetLocales();
     }
 

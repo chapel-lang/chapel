@@ -522,7 +522,7 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       llvm::Value* tmp_new = irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
       irBuilder->CreateStore(value, tmp_cur);
 #if HAVE_LLVM_VER >= 130
-      return irBuilder->CreateLoad(tmp_new->getType(), tmp_new);
+      return irBuilder->CreateLoad(tmp_new->getType()->getPointerElementType(), tmp_new);
 #else
       return irBuilder->CreateLoad(tmp_new);
 #endif

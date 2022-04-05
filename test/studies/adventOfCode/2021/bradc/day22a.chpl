@@ -29,7 +29,7 @@ proc addCube(newCube) {
 var allRegions = readLines();
 
 iter readLines() {
-  while stdin.readf("%s x=%i..%i,y=%i..%i,z=%i..%i", val, xlo, xhi, ylo, yhi, zlo, zhi) {
+  while readf("%s x=%i..%i,y=%i..%i,z=%i..%i", val, xlo, xhi, ylo, yhi, zlo, zhi) {
 //    writeln("Got: ", (val, xlo, xhi, ylo, yhi, zlo, zhi));
     yield new Region(val == "off", {xlo..xhi, ylo..yhi, zlo..zhi});
     xmin = min(xlo, xmin);

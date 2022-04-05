@@ -397,7 +397,7 @@ findMostSpecificCandidatesQuery(Context* context,
   QUERY_BEGIN(findMostSpecificCandidatesQuery, context,
               lst, call, callInScope, callInPoiScope);
 
-  // Construct the DisambuguationContext
+  // Construct the DisambiguationContext
   bool explain = true;
   DisambiguationContext dctx(context, &call,
                              callInScope, callInPoiScope,
@@ -450,7 +450,7 @@ findMostSpecificCandidates(Context* context,
 
 /*
   Find the most specific candidate and returns it, ignoring
-  return intentss.
+  return intents.
 
   If there is not a single most specific candidate, and ambiguousBest is not
   nullptr, appends the possibly-best candidates to ambiguousBest.
@@ -1084,7 +1084,7 @@ static void testArgMapHelper(const DisambiguationContext& dctx,
 }
 
 
-/** Is the formal an instantiaton of the any-type, e.g.
+/** Is the formal an instantiation of the any-type, e.g.
 
     proc f(arg)
 

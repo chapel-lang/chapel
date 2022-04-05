@@ -60,37 +60,49 @@ static void chpl_gpu_cuda_check(int err, const char* file, int line) {
   chpl_gpu_cuda_check((int)call, __FILE__, __LINE__);\
 } while(0);
 
-void chpl_gpu_init() {
-  CUdevice    device;
-  CUcontext   context;
-  int         devCount;
+CUcontext *chpl_gpu_primary_ctx;
 
-  CHPL_GPU_LOG("Initializing GPU\n");
+void chpl_gpu_init() {
+  int         num_devices;
 
   // CUDA initialization
   CUDA_CALL(cuInit(0));
 
-  CUDA_CALL(cuDeviceGetCount(&devCount));
+  CUDA_CALL(cuDeviceGetCount(&num_devices));
 
-  CUDA_CALL(cuDeviceGet(&device, 0));
+  chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*num_devices);
 
-  // Create driver context
-  // TODO CUDA documentation recommends using cuDevicePrimaryCtxRetain instead:
-  //
-  // CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+  int i;
+  for (i=0 ; i<num_devices ; i++) {
+    CUdevice device;
+    CUcontext context;
 
-  CUDA_CALL(cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, device));
+    CUDA_CALL(cuDeviceGet(&device, i));
+    CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+    CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
 
-  CUcontext cuda_context = NULL;
-  cuCtxGetCurrent(&cuda_context);
-  if (cuda_context == NULL) {
-    chpl_internal_error("CUDA context creation failed\n");
+    chpl_gpu_primary_ctx[i] = context;
   }
 }
 
-inline static void chpl_gpu_ensure_context() {
+static void chpl_gpu_ensure_context() {
+  CUcontext next_context = chpl_gpu_primary_ctx[chpl_task_getRequestedSubloc()-1];
+
   if (!chpl_gpu_has_context()) {
-    chpl_gpu_init();
+    CUDA_CALL(cuCtxPushCurrent(next_context));
+  }
+  else {
+    CUcontext cur_context = NULL;
+    cuCtxGetCurrent(&cur_context);
+    if (cur_context == NULL) {
+      chpl_internal_error("Unexpected GPU context error");
+    }
+
+    if (cur_context != next_context) {
+      CUcontext popped;
+      CUDA_CALL(cuCtxPopCurrent(&popped));
+      CUDA_CALL(cuCtxPushCurrent(next_context));
+    }
   }
 }
 
@@ -110,7 +122,7 @@ static void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) 
 }
 
 bool chpl_gpu_is_device_ptr(void* ptr) {
-  chpl_gpu_ensure_context();
+  //chpl_gpu_ensure_context();
 
   unsigned int res;
 
@@ -145,7 +157,7 @@ size_t chpl_gpu_get_alloc_size(void* ptr) {
 }
 
 bool chpl_gpu_running_on_gpu_locale() {
-  return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
+  return chpl_task_getRequestedSubloc()>0;
 }
 
 static void chpl_gpu_launch_kernel_help(const char* fatbinData,
@@ -160,11 +172,12 @@ static void chpl_gpu_launch_kernel_help(const char* fatbinData,
                                         va_list args) {
   chpl_gpu_ensure_context();
 
-  CHPL_GPU_LOG("Kernel launcher called.\n"
+  CHPL_GPU_LOG("Kernel launcher called. (subloc %d)\n"
                "\tKernel: %s\n"
                "\tGrid: %d,%d,%d\n"
                "\tBlock: %d,%d,%d\n"
                "\tNumArgs: %d\n",
+               chpl_task_getRequestedSubloc(),
                name,
                grd_dim_x, grd_dim_y, grd_dim_z,
                blk_dim_x, blk_dim_y, blk_dim_z,

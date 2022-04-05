@@ -83,7 +83,14 @@ char** chpl_create_pals_cmd(int argc, char* argv[], int32_t numLocales,
   int largv_len = 0;
 #define APPEND_LARGV(arg) chpl_append_to_largv(&largc, &largv, &largv_len, arg)
 
-  APPEND_LARGV("cray");
+  //
+  // Some systems using the PALS launcher have it behind a `cray`
+  // utility wrapper, and some do not.  Adapt to circumstances.
+  //
+  if (chpl_find_executable("cray") != NULL) {
+    APPEND_LARGV("cray");
+  }
+
   APPEND_LARGV("mpiexec");
 
   if (verbosity < 2) {

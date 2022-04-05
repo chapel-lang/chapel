@@ -33,7 +33,7 @@ pragma "module included by default"
 module Errors {
   private use ChapelStandard;
   private use ChapelLocks;
-  private use CPtr;
+  private use CTypes;
 
   // Base class for errors
   // TODO: should Error include list pointers for TaskErrors?
@@ -722,15 +722,6 @@ module Errors {
     halt(msg.localize().c_str());
   }
 
-  pragma "no doc"
-  pragma "function terminates program"
-  pragma "always propagate line file info"
-  pragma "last resort"
-  proc halt(s:string) {
-    compilerWarning('halt(s=...) is deprecated, use halt(msg=...)');
-    halt(s.localize().c_str());
-  }
-
   /*
      Prints an error message to stderr giving the location of the call to
      ``halt`` in the Chapel source, followed by the arguments to the call,
@@ -750,14 +741,6 @@ module Errors {
   pragma "always propagate line file info"
   proc warning(msg:string) {
     __primitive("chpl_warning", msg.localize().c_str());
-  }
-
-  pragma "no doc"
-  pragma "always propagate line file info"
-  pragma "last resort"
-  proc warning(s:string) {
-    compilerWarning('warning(s=...) is deprecated, use warning(msg=...)');
-    __primitive("chpl_warning", s.localize().c_str());
   }
 
   /*

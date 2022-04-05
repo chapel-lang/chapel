@@ -53,6 +53,7 @@ class Function final : public NamedDecl {
     PROC,
     ITER,
     OPERATOR,
+    LAMBDA,
   };
 
   enum ReturnIntent {
@@ -89,7 +90,7 @@ class Function final : public NamedDecl {
   int numLifetimeParts_;
   int bodyChildNum_;
 
-  Function(ASTList children,
+  Function(AstList children,
            int attributesChildNum,
            Decl::Visibility vis,
            Decl::Linkage linkage,
@@ -153,16 +154,17 @@ class Function final : public NamedDecl {
     } else {
       assert(bodyChildNum_ == -1);
     }
-    assert(isExpressionASTList(children_));
 
-    for (auto decl : formals()) {
-      bool isAcceptableDecl = decl->isFormal() || decl->isVarArgFormal() ||
-                              decl->isTupleDecl();
-      assert(isAcceptableDecl);
-    }
+    #ifndef NDEBUG
+      for (auto decl : formals()) {
+        bool isAcceptableDecl = decl->isFormal() || decl->isVarArgFormal() ||
+                                decl->isTupleDecl();
+        assert(isAcceptableDecl);
+      }
+    #endif
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Function* lhs = this;
     const Function* rhs = (const Function*) other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
@@ -194,7 +196,7 @@ class Function final : public NamedDecl {
                                owned<Attributes> attributes,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
-                               owned<Expression> linkageName,
+                               owned<AstNode> linkageName,
                                UniqueString name,
                                bool inline_,
                                bool override_,
@@ -204,10 +206,10 @@ class Function final : public NamedDecl {
                                bool throws,
                                bool primaryMethod,
                                bool parenless,
-                               ASTList formals,
-                               owned<Expression> returnType,
-                               owned<Expression> where,
-                               ASTList lifetime,
+                               AstList formals,
+                               owned<AstNode> returnType,
+                               owned<AstNode> where,
+                               AstList lifetime,
                                owned<Block> body);
 
   Kind kind() const { return this->kind_; }
@@ -223,12 +225,12 @@ class Function final : public NamedDecl {
    receiver, if present, as the first formal. This iterator may yield
    nodes of type Formal, TupleDecl, or VarArgFormal.
    */
-  ASTListIteratorPair<Decl> formals() const {
+  AstListIteratorPair<Decl> formals() const {
     if (numFormals() == 0) {
-      return ASTListIteratorPair<Decl>(children_.end(), children_.end());
+      return AstListIteratorPair<Decl>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + formalsChildNum_;
-      return ASTListIteratorPair<Decl>(start, start + numFormals_);
+      return AstListIteratorPair<Decl>(start, start + numFormals_);
     }
   }
 
@@ -256,7 +258,7 @@ class Function final : public NamedDecl {
    */
   const Formal* thisFormal() const {
     if (thisFormalChildNum_ >= 0) {
-      const ASTNode* ast = this->child(thisFormalChildNum_);
+      const AstNode* ast = this->child(thisFormalChildNum_);
       assert(ast->isFormal());
       const Formal* f = (const Formal*) ast;
       return f;
@@ -275,11 +277,10 @@ class Function final : public NamedDecl {
   /**
    Returns the expression for the return type or nullptr if there was none.
    */
-  const Expression* returnType() const {
+  const AstNode* returnType() const {
     if (returnTypeChildNum_ >= 0) {
-      const ASTNode* ast = this->child(returnTypeChildNum_);
-      assert(ast->isExpression());
-      return (Expression*) ast;
+      const AstNode* ast = this->child(returnTypeChildNum_);
+      return ast;
     } else {
       return nullptr;
     }
@@ -288,11 +289,10 @@ class Function final : public NamedDecl {
   /**
    Returns the expression for the where clause or nullptr if there was none.
    */
-  const Expression* whereClause() const {
+  const AstNode* whereClause() const {
     if (whereChildNum_ >= 0) {
-      const ASTNode* ast = this->child(whereChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*) ast;
+      const AstNode* ast = this->child(whereChildNum_);
+      return ast;
     } else {
       return nullptr;
     }
@@ -301,12 +301,12 @@ class Function final : public NamedDecl {
   /**
    Return a way to iterate over the lifetime clauses.
    */
-  ASTListIteratorPair<Expression> lifetimeClauses() const {
+  AstListIteratorPair<AstNode> lifetimeClauses() const {
     if (numLifetimeClauses() == 0) {
-      return ASTListIteratorPair<Expression>(children_.end(), children_.end());
+      return AstListIteratorPair<AstNode>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + lifetimeChildNum_;
-      return ASTListIteratorPair<Expression>(start, start + numLifetimeParts_);
+      return AstListIteratorPair<AstNode>(start, start + numLifetimeParts_);
     }
   }
 
@@ -320,12 +320,11 @@ class Function final : public NamedDecl {
   /**
    Return the i'th lifetime clause
    */
-  const Expression* lifetimeClause(int i) const {
+  const AstNode* lifetimeClause(int i) const {
     assert(numLifetimeClauses() > 0 && lifetimeChildNum_ >= 0);
     assert(0 <= i && i < numLifetimeClauses());
-    const ASTNode* ast = this->child(lifetimeChildNum_ + i);
-    assert(ast->isExpression());
-    return (const Expression*) ast;
+    const AstNode* ast = this->child(lifetimeChildNum_ + i);
+    return ast;
   }
 
   /**
@@ -342,10 +341,10 @@ class Function final : public NamedDecl {
   /**
     Return a way to iterate over the statements in the function body.
    */
-  ASTListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<AstNode> stmts() const {
     const Block* b = body();
     if (b == nullptr) {
-      return ASTListIteratorPair<Expression>(children_.end(), children_.end());
+      return AstListIteratorPair<AstNode>(children_.end(), children_.end());
     }
 
     return b->stmts();
@@ -368,7 +367,7 @@ class Function final : public NamedDecl {
     Return the i'th statement in the function body.
     It is an error to call this function if there isn't one.
    */
-  const Expression* stmt(int i) const {
+  const AstNode* stmt(int i) const {
     const Block* b = body();
     assert(b != nullptr);
     return b->stmt(i);

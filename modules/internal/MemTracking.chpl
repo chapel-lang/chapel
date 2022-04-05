@@ -22,7 +22,7 @@
 //
 module MemTracking
 {
-  private use ChapelStandard, SysCTypes;
+  private use ChapelStandard, CTypes;
 
   config const
     memTrack: bool = false,
@@ -54,9 +54,9 @@ module MemTracking
   config const
     memLeaksByDesc: string;
 
-  // Safely cast to size_t instances of memMax and memThreshold.
-  const cMemMax = memMax.safeCast(size_t),
-    cMemThreshold = memThreshold.safeCast(size_t);
+  // Safely cast to c_size_t instances of memMax and memThreshold.
+  const cMemMax = memMax.safeCast(c_size_t),
+    cMemThreshold = memThreshold.safeCast(c_size_t);
 
   //
   // This communicates the settings of the various memory tracking
@@ -76,8 +76,8 @@ module MemTracking
                                          ref ret_memLeaksByType: bool,
                                          ref ret_memLeaksByDesc: c_string,
                                          ref ret_memLeaks: bool,
-                                         ref ret_memMax: size_t,
-                                         ref ret_memThreshold: size_t,
+                                         ref ret_memMax: c_size_t,
+                                         ref ret_memThreshold: c_size_t,
                                          ref ret_memLog: c_string,
                                          ref ret_memLeaksLog: c_string) {
     ret_memTrack = memTrack;

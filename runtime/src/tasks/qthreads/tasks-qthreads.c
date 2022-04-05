@@ -1001,35 +1001,11 @@ chpl_bool chpl_task_guardPagesInUse(void)
   return guardPagesInUse;
 }
 
-// XXX: Should probably reflect all shepherds
-uint32_t chpl_task_getNumQueuedTasks(void)
-{
-    return qthread_readstate(NODE_BUSYNESS);
-}
-
-int32_t chpl_task_getNumBlockedTasks(void)
-{
-    // This isn't accurate, but in the absence of better information
-    // it's the best we can do.
-    return 0;
-}
-
 // Threads
 
 uint32_t chpl_task_impl_getFixedNumThreads(void) {
     assert(chpl_qthread_done_initializing);
     return (uint32_t)qthread_num_workers();
-}
-
-uint32_t chpl_task_getNumThreads(void)
-{
-    return (uint32_t)qthread_num_workers();
-}
-
-// Ew. Talk about excessive bookkeeping.
-uint32_t chpl_task_getNumIdleThreads(void)
-{
-    return 0;
 }
 
 /* vim:set expandtab: */

@@ -110,7 +110,7 @@ TEST(CommandLineTest, ModifyExisitingOption) {
   ASSERT_NE(Retrieved->Categories.end(),
             find_if(Retrieved->Categories,
                     [&](const llvm::cl::OptionCategory *Cat) {
-                      return Cat == &cl::GeneralCategory;
+                      return Cat == &cl::getGeneralCategory();
                     }))
       << "Incorrect default option category.";
 
@@ -152,10 +152,10 @@ TEST(CommandLineTest, UseOptionCategory) {
 
 TEST(CommandLineTest, UseMultipleCategories) {
   StackOption<int> TestOption2("test-option2", cl::cat(TestCategory),
-                               cl::cat(cl::GeneralCategory),
-                               cl::cat(cl::GeneralCategory));
+                               cl::cat(cl::getGeneralCategory()),
+                               cl::cat(cl::getGeneralCategory()));
 
-  // Make sure cl::GeneralCategory wasn't added twice.
+  // Make sure cl::getGeneralCategory() wasn't added twice.
   ASSERT_EQ(TestOption2.Categories.size(), 2U);
 
   ASSERT_NE(TestOption2.Categories.end(),
@@ -166,9 +166,9 @@ TEST(CommandLineTest, UseMultipleCategories) {
       << "Failed to assign Option Category.";
   ASSERT_NE(TestOption2.Categories.end(),
             find_if(TestOption2.Categories,
-                         [&](const llvm::cl::OptionCategory *Cat) {
-                           return Cat == &cl::GeneralCategory;
-                         }))
+                    [&](const llvm::cl::OptionCategory *Cat) {
+                      return Cat == &cl::getGeneralCategory();
+                    }))
       << "Failed to assign General Category.";
 
   cl::OptionCategory AnotherCategory("Additional test Options", "Description");
@@ -176,9 +176,9 @@ TEST(CommandLineTest, UseMultipleCategories) {
                               cl::cat(AnotherCategory));
   ASSERT_EQ(TestOption.Categories.end(),
             find_if(TestOption.Categories,
-                         [&](const llvm::cl::OptionCategory *Cat) {
-                           return Cat == &cl::GeneralCategory;
-                         }))
+                    [&](const llvm::cl::OptionCategory *Cat) {
+                      return Cat == &cl::getGeneralCategory();
+                    }))
       << "Failed to remove General Category.";
   ASSERT_NE(TestOption.Categories.end(),
             find_if(TestOption.Categories,
@@ -827,8 +827,8 @@ TEST(CommandLineTest, ResponseFiles) {
   llvm::BumpPtrAllocator A;
   llvm::StringSaver Saver(A);
   ASSERT_TRUE(llvm::cl::ExpandResponseFiles(
-      Saver, llvm::cl::TokenizeGNUCommandLine, Argv, false, true, FS,
-      /*CurrentDir=*/StringRef(TestRoot)));
+      Saver, llvm::cl::TokenizeGNUCommandLine, Argv, false, true,
+      /*CurrentDir=*/StringRef(TestRoot), FS));
   EXPECT_THAT(Argv, testing::Pointwise(
                         StringEquality(),
                         {"test/test", "-flag_1", "-option_1", "-option_2",
@@ -889,9 +889,9 @@ TEST(CommandLineTest, RecursiveResponseFiles) {
 #else
   cl::TokenizerCallback Tokenizer = cl::TokenizeGNUCommandLine;
 #endif
-  ASSERT_FALSE(
-      cl::ExpandResponseFiles(Saver, Tokenizer, Argv, false, false, FS,
-                              /*CurrentDir=*/llvm::StringRef(TestRoot)));
+  ASSERT_FALSE(cl::ExpandResponseFiles(Saver, Tokenizer, Argv, false, false,
+                                       /*CurrentDir=*/llvm::StringRef(TestRoot),
+                                       FS));
 
   EXPECT_THAT(Argv,
               testing::Pointwise(StringEquality(),
@@ -929,8 +929,8 @@ TEST(CommandLineTest, ResponseFilesAtArguments) {
   BumpPtrAllocator A;
   StringSaver Saver(A);
   ASSERT_FALSE(cl::ExpandResponseFiles(Saver, cl::TokenizeGNUCommandLine, Argv,
-                                       false, false, FS,
-                                       /*CurrentDir=*/StringRef(TestRoot)));
+                                       false, false,
+                                       /*CurrentDir=*/StringRef(TestRoot), FS));
 
   // ASSERT instead of EXPECT to prevent potential out-of-bounds access.
   ASSERT_EQ(Argv.size(), 1 + NON_RSP_AT_ARGS + 2);
@@ -964,8 +964,8 @@ TEST(CommandLineTest, ResponseFileRelativePath) {
   BumpPtrAllocator A;
   StringSaver Saver(A);
   ASSERT_TRUE(cl::ExpandResponseFiles(Saver, cl::TokenizeGNUCommandLine, Argv,
-                                      false, true, FS,
-                                      /*CurrentDir=*/StringRef(TestRoot)));
+                                      false, true,
+                                      /*CurrentDir=*/StringRef(TestRoot), FS));
   EXPECT_THAT(Argv,
               testing::Pointwise(StringEquality(), {"test/test", "-flag"}));
 }
@@ -984,8 +984,8 @@ TEST(CommandLineTest, ResponseFileEOLs) {
   BumpPtrAllocator A;
   StringSaver Saver(A);
   ASSERT_TRUE(cl::ExpandResponseFiles(Saver, cl::TokenizeWindowsCommandLine,
-                                      Argv, true, true, FS,
-                                      /*CurrentDir=*/StringRef(TestRoot)));
+                                      Argv, true, true,
+                                      /*CurrentDir=*/StringRef(TestRoot), FS));
   const char *Expected[] = {"clang", "-Xclang", "-Wno-whatever", nullptr,
                             "input.cpp"};
   ASSERT_EQ(array_lengthof(Expected), Argv.size());
@@ -1064,7 +1064,7 @@ TEST(CommandLineTest, ReadConfigFile) {
   llvm::SmallString<128> CurrDir;
   std::error_code EC = llvm::sys::fs::current_path(CurrDir);
   EXPECT_TRUE(!EC);
-  EXPECT_TRUE(StringRef(CurrDir) != TestDir.path());
+  EXPECT_NE(CurrDir.str(), TestDir.path());
 
   llvm::BumpPtrAllocator A;
   llvm::StringSaver Saver(A);
@@ -1122,8 +1122,8 @@ TEST(CommandLineTest, GetCommandLineArguments) {
   EXPECT_EQ(llvm::sys::path::is_absolute(argv[0]),
             llvm::sys::path::is_absolute(__argv[0]));
 
-  EXPECT_TRUE(llvm::sys::path::filename(argv[0])
-              .equals_lower("supporttests.exe"))
+  EXPECT_TRUE(
+      llvm::sys::path::filename(argv[0]).equals_insensitive("supporttests.exe"))
       << "Filename of test executable is "
       << llvm::sys::path::filename(argv[0]);
 }

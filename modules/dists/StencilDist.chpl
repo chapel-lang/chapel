@@ -612,7 +612,7 @@ proc Stencil.getChunk(inds, locid) {
   //
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
-    if chunk.size > 0 {
+    if chunk.sizeAs(int) > 0 {
       if targetLocsIdx(chunk.low) != locid then
         writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
                 targetLocsIdx(chunk.low));
@@ -633,10 +633,10 @@ proc Stencil.targetLocsIdx(ind: idxType) where rank == 1 {
 proc Stencil.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
-    result(i) = max(0, min((targetLocDom.dim(i).size-1):int,
+    result(i) = max(0, min((targetLocDom.dim(i).sizeAs(int)-1):int,
                            (((ind(i) - boundingBox.dim(i).low) *
-                             targetLocDom.dim(i).size:idxType) /
-                            boundingBox.dim(i).size):int));
+                             targetLocDom.dim(i).sizeAs(int):idxType) /
+                            boundingBox.dim(i).sizeAs(int)):int));
   return if rank == 1 then result(0) else result;
 }
 
@@ -665,7 +665,7 @@ iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
   foreach i in {(...dims)} {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
     // TODO: Want 'contains' for a domain. Slicing is a workaround.
-    if locSpace[(...chunk)].size > 0 then
+    if locSpace[(...chunk)].sizeAs(int) > 0 then
       yield i;
   }
 }
@@ -678,7 +678,7 @@ proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
     const lo = boundingBox.dim(i).low;
     const hi = boundingBox.dim(i).high;
     const numelems = hi - lo + 1;
-    const numlocs = targetLocBox.dim(i).size;
+    const numlocs = targetLocBox.dim(i).sizeAs(int);
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
                                      max(idxType), min(idxType), lo);
     inds(i) = blo..bhi;
@@ -703,17 +703,11 @@ proc LocStencil.init(param rank, type idxType, param dummy: bool) where dummy {
   this.idxType = idxType;
 }
 
-override proc StencilDom.dsiMyDist() return dist;
-
 override proc StencilDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
 }
-
-proc StencilDom.dsiDims() return whole.dims();
-
-proc StencilDom.dsiDim(d: int) return whole.dim(d);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc StencilDom.getLocDom(localeIdx) return locDoms(localeIdx);
@@ -820,13 +814,6 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
 }
 
 //
-// output domain
-//
-proc StencilDom.dsiSerialWrite(x) {
-  x <~> whole;
-}
-
-//
 // how to allocate a new array over this domain
 //
 proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
@@ -862,10 +849,26 @@ proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc StencilDom.dsiNumIndices return whole.size;
-proc StencilDom.dsiLow return whole.low;
-proc StencilDom.dsiHigh return whole.high;
-proc StencilDom.dsiStride return whole.stride;
+// common redirects
+proc StencilDom.dsiLow           return whole.low;
+proc StencilDom.dsiHigh          return whole.high;
+proc StencilDom.dsiAlignedLow    return whole.alignedLow;
+proc StencilDom.dsiAlignedHigh   return whole.alignedHigh;
+proc StencilDom.dsiFirst         return whole.first;
+proc StencilDom.dsiLast          return whole.last;
+proc StencilDom.dsiStride        return whole.stride;
+proc StencilDom.dsiAlignment     return whole.alignment;
+proc StencilDom.dsiNumIndices    return whole.sizeAs(uint);
+proc StencilDom.dsiDim(d)        return whole.dim(d);
+proc StencilDom.dsiDim(param d)  return whole.dim(d);
+proc StencilDom.dsiDims()        return whole.dims();
+proc StencilDom.dsiGetIndices()  return whole.getIndices();
+//proc StencilDom.dsiMember(i)     return whole.contains(i);
+proc StencilDom.doiToString()    return whole:string;
+proc StencilDom.dsiSerialWrite(x) { x.write(whole); }
+proc StencilDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
+override proc StencilDom.dsiIndexOrder(i)              return whole.indexOrder(i);
+override proc StencilDom.dsiMyDist()                   return dist;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
@@ -877,7 +880,7 @@ proc StencilDom.dsiSetIndices(x: domain) {
   if x._value.idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   whole = x;
-  if whole.size > 0 {
+  if whole.sizeAs(int) > 0 {
     var absFluff : fluff.type;
     for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * x.dim(i).stride);
@@ -900,7 +903,7 @@ proc StencilDom.dsiSetIndices(x) {
   // TODO: This seems weird:
   //
   whole.setIndices(x);
-  if whole.size > 0 {
+  if whole.sizeAs(int) > 0 {
     var absFluff : fluff.type;
     for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * whole.dim(i).stride);
@@ -916,15 +919,6 @@ proc StencilDom.dsiSetIndices(x) {
 
 proc StencilDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
   chpl_assignDomainWithGetSetIndices(this, rhs);
-}
-
-proc StencilDom.dsiGetIndices() {
-  return whole.getIndices();
-}
-
-// dsiLocalSlice
-proc StencilDom.dsiLocalSlice(param stridable: bool, ranges) {
-  return whole((...ranges));
 }
 
 // Create a domain that points to the nearest neighboring locales
@@ -948,13 +942,13 @@ proc StencilDom.setup() {
 
       myLocDom.myBlock = dist.getChunk(whole, localeIdx);
 
-      if !isZeroTuple(fluff) && myLocDom.myBlock.size != 0 then {
+      if !isZeroTuple(fluff) && myLocDom.myBlock.sizeAs(int) != 0 then {
         myLocDom.myFluff = myLocDom.myBlock.expand(fluff*abstr);
       } else {
         myLocDom.myFluff = myLocDom.myBlock;
       }
 
-      if !isZeroTuple(fluff) && myLocDom.myBlock.size > 0 {
+      if !isZeroTuple(fluff) && myLocDom.myBlock.sizeAs(int) > 0 {
         //
         // Recompute Src and Dest domains, later used to update fluff regions
         //
@@ -1011,7 +1005,8 @@ proc StencilDom.setup() {
                 const mult = if rd.low > wd.high then -1
                              else if rd.high < wd.low then 1
                              else 0;
-                offset(i) = mult * wd.size * abstr(i);
+                // todo: what to do when idxType is unsigned and mult==-1 ?
+                offset(i) = (mult * wd.sizeAs(int) * abstr(i)).safeCast(idxType);
               }
               recvS = recvD.translate(offset);
               N = chpl__tuplify(dist.targetLocsIdx(recvS.first));
@@ -1020,7 +1015,7 @@ proc StencilDom.setup() {
               assert(dist.targetLocDom.contains(N), "StencilDist: Error computing neighbor index.");
             } else {
               // No communication needed in this direction
-              assert(recvS.size == 0);
+              assert(recvS.sizeAs(int) == 0);
               N = chpl__tuplify(localeIdx);
 
               // zero out recvD so we can test its size later to determine if
@@ -1028,15 +1023,15 @@ proc StencilDom.setup() {
               recvD = recvS;
             }
 
-            if recvS.size != 0 {
+            if recvS.sizeAs(int) != 0 {
               const offset = -1 * L * fluff * abstr;
               sendS = recvD.translate(offset);
               sendD = recvS.translate(offset);
             }
 
-            bufLen = max(bufLen, recvD.size, recvS.size);
+            bufLen = max(bufLen, recvD.sizeAs(int), recvS.sizeAs(int));
 
-            if recvS.size != 0 && debugStencilDist {
+            if recvS.sizeAs(int) != 0 && debugStencilDist {
               writeln("L = ", L, ": ");
               writeln("RECV: ", here, ".", recvD, " = ", dist.targetLocales[N], ".", recvS);
               writeln("SEND: ", here, ".", sendS, " = ", dist.targetLocales[N], ".", sendD);
@@ -1058,7 +1053,7 @@ proc StencilDom.setup() {
         forall (recvS, recvD, sendS, sendD, N, L) in zip(myLocDom.recvSrc, myLocDom.recvDest,
                                                          myLocDom.sendSrc, myLocDom.sendDest,
                                                          myLocDom.Neighs, ND) {
-          if !isZeroTuple(L) && recvS.size != 0 {
+          if !isZeroTuple(L) && recvS.sizeAs(int) != 0 {
             var other = -1 * L;
 
             proc checker(me, myDom, them, themDom) {
@@ -1084,10 +1079,6 @@ override proc StencilDom.dsiDestroyDom() {
 
 proc StencilDom.dsiMember(i) {
   return wholeFluff.contains(i);
-}
-
-override proc StencilDom.dsiIndexOrder(i) {
-  return whole.indexOrder(i);
 }
 
 //
@@ -1347,7 +1338,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
       arrSection = _to_nonnil(myLocArr);
 
     local {
-      use CPtr; // Needed to cast from c_void_ptr in the next line
+      use CTypes; // Needed to cast from c_void_ptr in the next line
       const narrowArrSection =
         __primitive("_wide_get_addr", arrSection):(arrSection.type?);
       ref myElems = _to_nonnil(narrowArrSection).myElems;
@@ -1581,7 +1572,7 @@ proc StencilArr.naiveUpdateFluff() {
         //
         // if "L" is zero, that indicates we are at the center of the stencil
         // and do not need to update
-        if !isZeroTuple(L) && S.size != 0 {
+        if !isZeroTuple(L) && S.sizeAs(int) != 0 {
           locArr[i].myElems[D] = locArr[N].myElems[S];
         }
       }
@@ -1634,9 +1625,9 @@ proc StencilArr._packedUpdate() {
                                                 myLocDom.Neighs,
                                                 myLocDom.NeighDom) {
         // If S.size == 0, no communication is required
-        if S.size != 0 {
-          const chunkSize  = max(1, S.dim(rank-1).size); // avoid divide by zero
-          const numChunks = S.size / chunkSize;
+        if S.sizeAs(int) != 0 {
+          const chunkSize  = max(1, S.dim(rank-1).sizeAs(int)); // avoid divide by zero
+          const numChunks = S.sizeAs(int) / chunkSize;
           if numChunks >= stencilDistPackedUpdateMinChunks {
             const recvBufIdx = translateIdx(sendBufIdx);
 
@@ -1646,7 +1637,7 @@ proc StencilArr._packedUpdate() {
             // DefaultRectangulars into 1-dimension arrays?
             ref src = locArr[i].myElems[S];
             ref buf = locArr[i].sendBufs[sendBufIdx];
-            local do for (s, i) in zip(src, buf.domain.first..#src.size) do buf[i] = s;
+            local do for (s, i) in zip(src, buf.domain.first..#src.sizeAs(int)) do buf[i] = s;
 
             if debugStencilDist then
               writeln("Filled ", here, ".", S, " for ", dom.dist.targetLocales(recvIdx), "::", recvBufIdx);
@@ -1660,23 +1651,23 @@ proc StencilArr._packedUpdate() {
       forall (D, S, srcIdx, recvBufIdx) in zip(myLocDom.recvDest, myLocDom.recvSrc,
                                                myLocDom.Neighs,
                                                myLocDom.NeighDom) {
-        const chunkSize  = max(1, S.dim(rank-1).size); // avoid divide by zero
-        const numChunks = S.size / chunkSize;
+        const chunkSize  = max(1, S.dim(rank-1).sizeAs(int)); // avoid divide by zero
+        const numChunks = S.sizeAs(int) / chunkSize;
 
         // If we did a naive update in the previous loop, this iteration does
         // not need to do anything.
-        if S.size != 0 && numChunks >= stencilDistPackedUpdateMinChunks {
+        if S.sizeAs(int) != 0 && numChunks >= stencilDistPackedUpdateMinChunks {
           const srcBufIdx = translateIdx(recvBufIdx);
           if debugStencilDist then
             writeln(here, "::", recvBufIdx, " WAITING");
           locArr[i].sendRecvFlag[recvBufIdx].waitFor(true); // Can we read yet?
           locArr[i].sendRecvFlag[recvBufIdx].write(false);  // reset for next call
 
-          locArr[i].recvBufs[recvBufIdx][1..D.size] = locArr[srcIdx].sendBufs[srcBufIdx][1..D.size];
+          locArr[i].recvBufs[recvBufIdx][1..D.sizeAs(int)] = locArr[srcIdx].sendBufs[srcBufIdx][1..D.sizeAs(int)];
 
           ref dest = locArr[i].myElems[D];
           ref buf = locArr[i].recvBufs[recvBufIdx];
-          local do for (d, i) in zip(dest, buf.domain.first..#dest.size) do d = buf[i];
+          local do for (d, i) in zip(dest, buf.domain.first..#dest.sizeAs(int)) do d = buf[i];
         }
       }
     }
@@ -1805,7 +1796,7 @@ proc StencilDom.dsiPrivatize(privatizeData) {
   var c = new unmanaged StencilDom(rank, idxType, stridable, ignoreFluff,
             privdist, locDomsTemp, {(...privatizeData(1))}, fluff, periodic);
 
-  if c.whole.size > 0 {
+  if c.whole.sizeAs(int) > 0 {
     var absFluff : fluff.type;
     for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * c.whole.dim(i).stride);
@@ -1821,7 +1812,7 @@ proc StencilDom.dsiGetReprivatizeData() return whole.dims();
 proc StencilDom.dsiReprivatize(other, reprivatizeData) {
   locDoms = other.locDoms;
   whole = {(...reprivatizeData)};
-  if whole.size > 0 {
+  if whole.sizeAs(int) > 0 {
     var absFluff : fluff.type;
     for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * whole.dim(i).stride);
@@ -1938,12 +1929,12 @@ proc StencilDom.numRemoteElems(viewDom, rlo, rid) {
   // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
   //  below can fit into idxType
   var blo, bhi:dist.idxType;
-  if rid==(dist.targetLocDom.dim(rank-1).size - 1) then
+  if rid==(dist.targetLocDom.dim(rank-1).sizeAs(int) - 1) then
     bhi=viewDom.dim(rank-1).high;
   else {
       bhi = dist.boundingBox.dim(rank-1).low +
         intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1):idxType,
-                       dist.targetLocDom.dim(rank-1).size:idxType) - 1:idxType;
+                       dist.targetLocDom.dim(rank-1).sizeAs(int):idxType) - 1:idxType;
 
   }
 
@@ -2000,7 +1991,7 @@ private proc _doSimpleStencilTransfer(Dest, destDom, Src, srcDom) {
       // Compute the local portion of the destination domain, and find the
       // corresponding indices in the source's domain.
       const localDestBlock = dst.dom.locDoms[i].myBlock[destDom];
-      assert(localDestBlock.size > 0);
+      assert(localDestBlock.sizeAs(int) > 0);
       const corSrcBlock    = bulkCommTranslateDomain(localDestBlock, destDom, srcDom);
       if debugStencilDistBulkTransfer then
         writeln("  Dest[",localDestBlock,"] = Src[", corSrcBlock,"]");
@@ -2080,7 +2071,7 @@ where !disableStencilDistBulkTransfer {
       // Grab privatized copy of 'this' to avoid extra GETs
       const Dest = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
       const inters = Dest.dom.locDoms(j).myBlock[destDom];
-      assert(inters.size > 0);
+      assert(inters.sizeAs(int) > 0);
 
       const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);
 

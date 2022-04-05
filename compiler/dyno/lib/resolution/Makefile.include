@@ -21,6 +21,7 @@ DYNO_RESOLUTION_OBJDIR = $(COMPILER_BUILD)/dyno/lib/resolution
 ALL_SRCS += dyno/lib/resolution/*.cpp
 
 DYNO_RESOLUTION_SRCS =                              \
+           Resolver.cpp                             \
            can-pass.cpp                             \
            disambiguation.cpp                       \
            intents.cpp                              \

@@ -21,6 +21,7 @@
 #include "codegen.h"
 
 #include "astutil.h"
+#include "baseAST.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
@@ -258,8 +259,13 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
               info->module->getOrInsertGlobal(
                       cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
       auto globalStringIr = info->irBuilder->CreateGlobalString(value);
+      llvm::Type* ty = nullptr;
+#if HAVE_LLVM_VER >= 130
+      ty = llvm::cast<llvm::PointerType>(
+        globalStringIr->getType()->getScalarType())->getElementType();
+#endif
       auto correctlyTypedValue = info->irBuilder->CreateConstInBoundsGEP2_32(
-        NULL, globalStringIr, 0, 0);
+        ty, globalStringIr, 0, 0);
       globalString->setInitializer(llvm::cast<llvm::Constant>(correctlyTypedValue));
       globalString->setConstant(true);
       info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
@@ -884,7 +890,7 @@ static void genUnwindSymbolTable(){
     std::vector<GenRet> table;
     table.reserve(symbols.size() * 2);
 
-    forv_Vec(FnSymbol, fn, symbols) {
+    for (FnSymbol* fn : symbols) {
       table.push_back(codegenStringForTable(fn->cname));
       table.push_back(codegenStringForTable(fn->name));
     }
@@ -907,7 +913,7 @@ static void genUnwindSymbolTable(){
     std::vector<GenRet> table;
     table.reserve(symbols.size() * 2);
 
-    forv_Vec(FnSymbol, fn, symbols) {
+    for (FnSymbol* fn : symbols) {
       int fileno = getFilenameLookupPosition(fn->fname());
       int lineno = fn->linenum();
 
@@ -1732,7 +1738,8 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
+    if ((fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) ||
+        fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
       functions.push_back(fn);
     }
   }
@@ -2097,13 +2104,13 @@ codegen_config() {
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
-    forv_Vec(VarSymbol, var, gVarSymbols) {
+    forv_expanding_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (6);
         {
           GenRet gen = new_CStringSymbol(var->name)->codegen();
 #if HAVE_LLVM_VER >= 130
-          args[0] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+          args[0] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
 #else
           args[0] = info->irBuilder->CreateLoad(gen.val);
 #endif
@@ -2122,7 +2129,7 @@ codegen_config() {
         {
           GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
 #if HAVE_LLVM_VER >= 130
-          args[1] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+          args[1] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
 #else
           args[1] = info->irBuilder->CreateLoad(gen.val);
 #endif
@@ -2131,7 +2138,7 @@ codegen_config() {
         if (var->getModule()->modTag == MOD_INTERNAL) {
           GenRet gen = new_CStringSymbol("Built-in")->codegen();
 #if HAVE_LLVM_VER >= 130
-          args[2] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+          args[2] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
 #else
           args[2] = info->irBuilder->CreateLoad(gen.val);
 #endif
@@ -2139,7 +2146,7 @@ codegen_config() {
         else {
           GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
 #if HAVE_LLVM_VER >= 130
-          args[2] =info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+          args[2] =info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
 #else
           args[2] =info->irBuilder->CreateLoad(gen.val);
 #endif
@@ -2151,7 +2158,7 @@ codegen_config() {
         {
           GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
 #if HAVE_LLVM_VER >= 130
-          args[5] = info->irBuilder->CreateLoad(gen.val->getType(), gen.val);
+          args[5] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
 #else
           args[5] = info->irBuilder->CreateLoad(gen.val);
 #endif
@@ -2264,14 +2271,9 @@ static void convertSymbolToRefType(Symbol* sym) {
 }
 
 static void convertToRefTypes() {
-#define updateSymbols(SymType) \
-  forv_Vec(SymType, sym, g##SymType##s) { \
-    convertSymbolToRefType(sym); \
-  }
-
-  updateSymbols(VarSymbol);
-  updateSymbols(ArgSymbol);
-  updateSymbols(ShadowVarSymbol);
+  forv_expanding_Vec(VarSymbol, sym, gVarSymbols) convertSymbolToRefType(sym);
+  forv_Vec(ArgSymbol, sym, gArgSymbols) convertSymbolToRefType(sym);
+  forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) convertSymbolToRefType(sym);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->getReturnSymbol()) {
@@ -2558,9 +2560,6 @@ static void codegenPartTwo() {
   if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
 
-    if(fIncrementalCompilation)
-      USR_FATAL("Incremental compilation is not yet supported with LLVM");
-
     if(debugCCode)
     {
       debug_info = new debug_data(*info->module);
@@ -2607,15 +2606,13 @@ static void codegenPartTwo() {
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         const char* filename = NULL;
         filename = generateFileName(fileNameHashMap, filename, currentModule->name);
-        if(currentModule->modTag == MOD_USER) {
-          openCFile(&modulefile, filename, "c");
-          int modulePathLen = strlen(astr(modulefile.pathname));
-          char path[FILENAME_MAX];
-          strncpy(path, astr(modulefile.pathname), modulePathLen-2);
-          path[modulePathLen-2]='\0';
-          userFileName.push_back(astr(path));
-          closeCFile(&modulefile);
-        }
+        openCFile(&modulefile, filename, "c");
+        int modulePathLen = strlen(astr(modulefile.pathname));
+        char path[FILENAME_MAX];
+        strncpy(path, astr(modulefile.pathname), modulePathLen-2);
+        path[modulePathLen-2]='\0';
+        userFileName.push_back(astr(path));
+        closeCFile(&modulefile);
       }
     }
     codegen_makefile(&mainfile, NULL, NULL, false, userFileName);
@@ -2666,13 +2663,13 @@ static void codegenPartTwo() {
 
       openCFile(&modulefile, filename, "c");
       info->cfile = modulefile.fptr;
-      if(fIncrementalCompilation && (currentModule->modTag == MOD_USER))
+      if(fIncrementalCompilation)
         fprintf(modulefile.fptr, "#include \"chpl__header.h\"\n");
       currentModule->codegenDef();
 
       closeCFile(&modulefile);
 
-      if(!(fIncrementalCompilation && (currentModule->modTag == MOD_USER)))
+      if(!(fIncrementalCompilation))
         fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
     }
 
@@ -2711,7 +2708,7 @@ void codegen() {
   codegenPartOne();
 
   if (localeUsesGPU()) {
-    // We use the temp dir to output a fatbin file and read it between the forked and main proccess.
+    // We use the temp dir to output a fatbin file and read it between the forked and main process.
     // We need to generate the name for the temp directory before we do the fork (since this
     // name uses the PID).
     ensureTmpDirExists();
@@ -2752,8 +2749,12 @@ void makeBinary(void) {
 #endif
   } else {
     const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
+    char parMakeFlags[32] = "";
+    if (fParMake > 0) {
+      sprintf(parMakeFlags, "-j %d ", fParMake);
+    }
     const char* command = astr(astr(CHPL_MAKE, " "),
-                               makeflags,
+                               parMakeFlags, makeflags,
                                getIntermediateDirName(), "/Makefile");
     mysystem(command, "compiling generated source");
   }

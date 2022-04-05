@@ -27,7 +27,6 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
-#include "oldCollectors.h"
 #include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
@@ -1526,11 +1525,10 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
   }
 }
 
-/// \param call A for loop block primitive.
-static bool
 // Returns true if the given ForLoop was handled (converted and removed from
 // the tree); false otherwise.
-expandIteratorInline(ForLoop* forLoop) {
+static bool expandIteratorInline(ForLoop* forLoop)
+{
   Symbol*   ic       = forLoop->iteratorGet()->symbol();
   FnSymbol* iterator = getTheIteratorFn(ic);
 
@@ -1542,7 +1540,6 @@ expandIteratorInline(ForLoop* forLoop) {
               mod->name, iterator->fname(), iterator->linenum());
     }
   }
-
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
@@ -1746,9 +1743,34 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
   }
 }
 
+/*
+Given 'se' - a location in the AST - find the nearest enclosing error handler
+that follows this location. If it was found, then return 'true' and store
+its error label and error symbol in the "out" arguments. If a call to
+_endCountFree was encountered while searching, save it as well so it can be
+cloned. Here is an example of the expected AST structure:
+    {
+      { ... some number of block nests ...
+        if check error( error[1] )
+          {
+            call( fn chpl_propagate_error error[1] )
+          }
+        call( fn _endCountFree _coforallCount )
+        call( fn _freeIterator _iterator )
+       }
+    }
+    ...
+    def handler
+    def val shouldHandleError:bool
+    move( shouldHandleError check error( error[2] ) )
+    if shouldHandleError
+      { ... }
+where 'se' is a reference to 'error[1]'. outHandlerLabel is set to 'handler',
+outErrorSymbol to 'error[2]', endCountFree to the call to _endCountFree.
+*/
 static bool
 findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
-    Symbol*& outErrorSymbol, CallExpr*& endCountFree) {
+    Symbol*& outErrorSymbol, CallExpr*& endCountFree, bool inForall = false) {
   Expr* stmt = se->getStmtExpr(); // aka last scope
   Expr* scope = stmt->parentExpr;
 
@@ -1759,22 +1781,11 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
       for(Expr* cur = stmt->next; cur != NULL; cur = cur->next) {
         if (DefExpr* def = toDefExpr(cur)) {
           if (LabelSymbol* label = toLabelSymbol(def->sym)) {
-            if (label->hasFlag(FLAG_ERROR_LABEL)) {
+            if (label->hasFlag(FLAG_ERROR_LABEL) ||
+                (inForall && label->hasFlag(FLAG_FORALL_BREAK_LABEL))) {
               outHandlerLabel = label;
-              // find the error that this block is working with
-              for(Expr* e = def->next; e != NULL; e = e->next) {
-                std::vector<CallExpr*> calls;
-                collectCallExprs(e, calls);
-                for_vector(CallExpr, call, calls) {
-                  if (call->isPrimitive(PRIM_CHECK_ERROR)) {
-                    SymExpr* se = toSymExpr(call->get(1));
-                    INT_ASSERT(se->symbol()->hasFlag(FLAG_ERROR_VARIABLE));
-                    outErrorSymbol = se->symbol();
-                    return true;
-                  }
-                }
-              }
-              INT_FATAL("Could not find error variable for handler");
+              outErrorSymbol = findErrorVarForHandlerLabel(label);
+              return true;
             }
           }
         }
@@ -1801,13 +1812,13 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
   return false;
 }
 
-void handleChplPropagateErrorCall(CallExpr* call) {
+void handleChplPropagateErrorCall(CallExpr* call, bool inForall) {
   SymExpr* errSe = toSymExpr(call->get(1));
   INT_ASSERT(errSe && errSe->typeInfo() == dtError);
   LabelSymbol* label = NULL;
   Symbol* error = NULL;
   CallExpr *endCountFree = NULL;
-  if (findFollowingCheckErrorBlock(errSe, label, error, endCountFree)) {
+  if (findFollowingCheckErrorBlock(errSe, label, error, endCountFree, inForall)) {
     errSe->remove();
     if (endCountFree != NULL) {
       call->insertBefore(endCountFree->copy());
@@ -1894,13 +1905,44 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
 // out of the enclosing loop. See also the PR message for #12963.
 //
 
+// If we are in a recursive iterator, an IBB may return to the end of the
+// enclosing function. Redirect it to the end of the iterator instead.
+// See #18218.
+//
+static void adjustIbbGotoTarget(GotoStmt* gt, DefExpr*& gtTarget,
+                                Expr* loopRef) {
+  // Normally, the goto's target is in the forLoop's function.
+  if (gtTarget->parentSymbol == loopRef->parentSymbol)
+    return;
+
+  // If this is not for a recursive iterator, let us know.
+  INT_ASSERT(!strncmp(loopRef->parentSymbol->name, "_rec_", 5));
+
+  LabelSymbol* redirect = toFnSymbol(loopRef->parentSymbol)->
+    getOrCreateEpilogueLabel();
+
+  INT_ASSERT(!gt->inTree()); // otherwise gt->label->replace(redirect)
+  gt->label = new SymExpr(redirect);
+  gtTarget = redirect->defPoint;
+}
+
+// 'bbcopy' may come from an IBB that simulates a throw and so have
+// a goto at the end. If so, remove the goto that we are inserting before.
+// Without this, multiple deinits may occur, ex.
+//   test/errhandling/parallel/forall-calls-throwing-fn2.chpl
+//
+static void adjustMultipleGotos(BlockStmt* bbcopy, GotoStmt* gt) {
+  if (isGotoStmt(bbcopy->body.tail))
+    gt->remove();
+}
+
 // Return an appropriate IBB insertion point for an outbound goto 'gt'.
 // 'loopRef' is the forLoop or its copy for lowering, whichever is inTree().
 // 'IC' is the forLoop's _iteratorClass, or NULL if lowering a ForallStmt.
 //
 static Expr* ibbInsertPoint(Expr* loopRef, Symbol* IC, GotoStmt* gt) {
   DefExpr* gtTarget = toSymExpr(gt->label)->symbol()->defPoint;
-  // Sanity: the goto's target is in the forLoop's function.
+  adjustIbbGotoTarget(gt, gtTarget, loopRef);
   INT_ASSERT(gtTarget->parentSymbol == loopRef->parentSymbol);
 
   // When lowering a ForallStmt, there is no IC.
@@ -1948,6 +1990,7 @@ static void addIteratorBreakBlocks(Expr* loopRef, Symbol* IC,
   for_vector(GotoStmt, gt, exits) {
     BlockStmt* bbcopy = breakBlock->copy();
     ibbInsertPoint(loopRef, IC, gt)->insertBefore(bbcopy);
+    adjustMultipleGotos(bbcopy, gt);
     bbcopy->flattenAndRemove(); // otherwise later ibbInsertPoint may fail
   }
 
@@ -1972,7 +2015,9 @@ void addIteratorBreakBlocksInline(Expr* loopRef, Symbol* IC,
                                                                  yield);
   // Remove the last goto in the breakBlock. The corresponding goto
   // in 'loopBody' will branch to the exit instead.
-  toGotoStmt(breakBlock->body.tail)->remove();
+  if (GotoStmt* tail = toGotoStmt(breakBlock->body.tail))
+    if (tail->gotoTag == GOTO_RETURN)
+      tail->remove();
 
   addIteratorBreakBlocks(loopRef, IC, loopBody, breakBlock);
 }
@@ -2514,7 +2559,7 @@ expandForLoop(ForLoop* forLoop) {
       // Need to check if iterator will be inlined, isSingleLoopIterator()
       // doesn't handle arbitrary blockstmts well, so we collapse them first
       iterFn->collapseBlocks();
-      Vec<BaseAST*> asts;
+      std::vector<BaseAST*> asts;
       collect_asts_postorder(iterFn, asts);
 
       // If the iterator cannot be inlined a re-entrant advance function will
@@ -2669,7 +2714,7 @@ static void cleanupLeaderFollowerIteratorCalls()
   // Fixes uses of formals outside of their function.
   // Such formals were temporarily added (e.g. in preFold for PRIM_TO_FOLLOWER)
   //
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
       if (FnSymbol* fn = call->resolvedFunction()) {
         if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
@@ -3012,7 +3057,7 @@ void lowerIterators() {
     }
   }
 
-  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
+  for_alive_in_expanding_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block))
       expandForLoop(loop);
   }

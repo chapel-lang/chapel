@@ -35,7 +35,7 @@ module LocaleModelHelpSetup {
   public use ChapelNumLocales;
   use ChapelEnv;
   use Sys;
-  use SysCTypes;
+  use CTypes;
 
   config param debugLocaleModel = false;
 
@@ -158,7 +158,7 @@ module LocaleModelHelpSetup {
   proc helpSetupLocaleFlat(dst:borrowed LocaleModel, out local_name:string) {
     local_name = getNodeName();
 
-    extern proc chpl_task_getCallStackSize(): size_t;
+    extern proc chpl_task_getCallStackSize(): c_size_t;
     dst.callStackSize = chpl_task_getCallStackSize();
 
     extern proc chpl_topo_getNumCPUsPhysical(accessible_only: bool): c_int;

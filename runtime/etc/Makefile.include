@@ -179,8 +179,8 @@ ifeq ($(CHPL_MODULE_HOME),$(CHPL_HOME))
 	        $$CHPL_HOME/util/printchplenv and request support for this \
 	        configuration)
 else
-	$(error The runtime has not been built for this configuration. Check \
-	        $$CHPL_HOME/util/printchplenv and try rebuilding with \
-	        '$(CHPL_MAKE_MAKE)' from $$CHPL_HOME)
+	$(error The runtime has not been built for this configuration. Run \
+	        $$CHPL_HOME/util/chplenv/printchplbuilds.py for information on \
+	        available runtimes.)
 endif
 endif

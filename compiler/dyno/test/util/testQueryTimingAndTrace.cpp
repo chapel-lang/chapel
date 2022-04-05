@@ -68,7 +68,10 @@ int main(int argc, char** argv) {
   command += " --collapse-regex 'get.*Type'";
 
   printf("Running %s\n", command.c_str());
-  system(command.c_str());
+  int rc = system(command.c_str());
+  if (rc != 0) {
+    printf("Non-zero exit code from running %s\n", command.c_str());
+  }
 
   return 0;
 }

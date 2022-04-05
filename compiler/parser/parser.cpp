@@ -64,8 +64,6 @@ int                  chplLineno                    = 0;
 bool                 chplParseString               = false;
 const char*          chplParseStringMsg            = NULL;
 
-bool                 currentFileNamedOnCommandLine = false;
-
 bool                 parsed                        = false;
 
 static bool          sFirstFile                    = true;
@@ -318,10 +316,10 @@ static void parseInternalModules() {
                             parseMod("ISO_Fortran_binding", true);
     }
 
-    // parse SysCTypes right away to provide well-known types.
-    ModuleSymbol* sysctypes = parseMod("SysCTypes", false);
+    // parse ChapelSysCTypes right away to provide well-known types.
+    ModuleSymbol* sysctypes = parseMod("ChapelSysCTypes", false);
     if (sysctypes == NULL && fMinimalModules == false) {
-      USR_FATAL("Could not find module 'SysCTypes', which should be defined by '%s/SysCTypes.chpl'", stdGenModulesPath);
+      USR_FATAL("Could not find module 'ChapelSysCTypes', which should be defined by '%s/ChapelSysCTypes.chpl'", stdGenModulesPath);
     }
     // ditto Errors
     ModuleSymbol* errors = parseMod("Errors", false);
@@ -569,7 +567,7 @@ static void ensureRequiredStandardModulesAreParsed() {
 ************************************** | *************************************/
 
 static void parseDependentModules(bool isInternal) {
-  forv_Vec(const char*, modName, sModNameList) {
+  forv_expanding_Vec(const char*, modName, sModNameList) {
     if (sModDoneSet.set_in(modName)   == NULL &&
         parseMod(modName, isInternal) != NULL) {
       sModDoneSet.set_add(modName);
@@ -684,7 +682,6 @@ static bool haveAlreadyParsed(const char* path) {
 static void initializeGlobalParserState(const char* path, ModTag modTag,
                                         bool namedOnCommandLine,
                                         YYLTYPE* yylloc) {
-  currentFileNamedOnCommandLine = namedOnCommandLine;
 
   // If this file only contains explicit module declarations, this
   // 'currentModuleName' is not accurate, but also should not be
@@ -717,8 +714,6 @@ static void deinitializeGlobalParserState(YYLTYPE* yylloc) {
 
   yystartlineno                 =    -1;
   chplLineno                    =    -1;
-
-  currentFileNamedOnCommandLine = false;
 }
 
 static ModuleSymbol* parseFile(const char* path,
@@ -822,8 +817,12 @@ static ModuleSymbol* parseFile(const char* path,
 
             defExpr->remove();
 
-            if (include == false)
+            if (include == false) {
               ModuleSymbol::addTopLevelModule(modSym);
+              if (namedOnCommandLine) {
+                modSym->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+              }
+            }
 
             addModuleToDoneList(modSym);
 
@@ -844,8 +843,12 @@ static ModuleSymbol* parseFile(const char* path,
 
       retval = buildModule(modName, modTag, yyblock, yyfilename, false, false, NULL);
 
-      if (include == false)
+      if (include == false) {
         ModuleSymbol::addTopLevelModule(retval);
+        if (namedOnCommandLine) {
+          retval->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+        }
+      }
 
       retval->addFlag(FLAG_IMPLICIT_MODULE);
 
@@ -867,16 +870,18 @@ static ModuleSymbol* parseFile(const char* path,
 }
 
 static void uASTDisplayError(const chpl::ErrorMessage& err) {
-  astlocMarker locMarker(err.location());
+  //astlocMarker locMarker(err.location());
+
+  auto loc = err.location();
 
   const char* msg = err.message().c_str();
 
   switch (err.kind()) {
     case chpl::ErrorMessage::NOTE:
-      USR_PRINT("%s", msg);
+      USR_PRINT(loc,"%s", msg);
       break;
     case chpl::ErrorMessage::WARNING:
-      USR_WARN("%s", msg);
+      USR_WARN(loc,"%s", msg);
       break;
     case chpl::ErrorMessage::SYNTAX: {
       const char* path = err.path().c_str();
@@ -891,7 +896,7 @@ static void uASTDisplayError(const chpl::ErrorMessage& err) {
       }
     } break;
     case chpl::ErrorMessage::ERROR:
-      USR_FATAL_CONT("%s", msg);
+      USR_FATAL_CONT(loc,"%s", msg);
       break;
     default:
       INT_FATAL("Should not reach here!");
@@ -1149,7 +1154,6 @@ ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
   int         s_chplLineno = chplLineno;
   bool        s_chplParseString = chplParseString;
   const char* s_chplParseStringMsg = chplParseStringMsg;
-  bool        s_currentFileNamedOnCommandLine = currentFileNamedOnCommandLine;
 
   std::string curPath = path;
 
@@ -1190,7 +1194,6 @@ ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
   chplLineno = s_chplLineno;
   chplParseString = s_chplParseString;
   chplParseStringMsg = s_chplParseStringMsg;
-  currentFileNamedOnCommandLine = s_currentFileNamedOnCommandLine;
 
   return ret;
 }

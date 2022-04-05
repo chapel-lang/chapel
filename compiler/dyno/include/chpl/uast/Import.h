@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/VisibilityClause.h"
 
 namespace chpl {
@@ -43,28 +43,28 @@ namespace uast {
   This creates an import statement that has two visibility clauses, 'Foo'
   and 'Bar as A'.
 */
-class Import final : public Expression {
+class Import final : public AstNode {
  private:
-  Import(ASTList children, Decl::Visibility visibility)
-    : Expression(asttags::Import, std::move(children)),
+  Import(AstList children, Decl::Visibility visibility)
+    : AstNode(asttags::Import, std::move(children)),
       visibility_(visibility) {
     assert(numChildren() >= 1);
 
-    for (auto vc : visibilityClauses()) {
-      bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
-                        vc->limitationKind() == VisibilityClause::BRACES;
-      assert(acceptable);
-    }
+    #ifndef NDEBUG
+      for (auto vc : visibilityClauses()) {
+        bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
+                          vc->limitationKind() == VisibilityClause::BRACES;
+        assert(acceptable);
+      }
+    #endif
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Import* rhs = other->toImport();
-    return this->visibility_ == rhs->visibility_ &&
-      this->expressionContentsMatchInner(rhs);
+    return this->visibility_ == rhs->visibility_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   Decl::Visibility visibility_;
@@ -76,7 +76,7 @@ class Import final : public Expression {
   */
   static owned<Import> build(Builder* builder, Location loc,
                              Decl::Visibility visibility,
-                             ASTList visibilityClauses);
+                             AstList visibilityClauses);
 
   /**
     Return the visibility of this import statement.
@@ -88,8 +88,8 @@ class Import final : public Expression {
   /**
     Return a way to iterate over the visibility clauses.
   */
-  ASTListIteratorPair<VisibilityClause> visibilityClauses() const {
-    return ASTListIteratorPair<VisibilityClause>(children_.begin(),
+  AstListIteratorPair<VisibilityClause> visibilityClauses() const {
+    return AstListIteratorPair<VisibilityClause>(children_.begin(),
                                                  children_.end());
   }
 

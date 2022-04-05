@@ -21,9 +21,9 @@
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Builder.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
@@ -156,7 +156,7 @@ static  void test2() {
     auto strA = UniqueString::get(ctx, "a");
     auto strB = UniqueString::get(ctx, "b");
     auto strC = UniqueString::get(ctx, "c");
-    ASTList children;
+    AstList children;
 
     children.push_back(Identifier::build(b, dummyLoc, strA));
     children.push_back(Identifier::build(b, dummyLoc, strB));
@@ -263,14 +263,14 @@ static void test3() {
     auto strB = UniqueString::get(ctx, "b");
     auto strC = UniqueString::get(ctx, "c");
 
-    ASTList outer;
+    AstList outer;
     outer.push_back(Identifier::build(b, dummyLoc, strA));
     {
-      ASTList empty;
+      AstList empty;
       outer.push_back(Block::build(b, dummyLoc, std::move(empty)));
     }
     {
-      ASTList block;
+      AstList block;
       block.push_back(Identifier::build(b, dummyLoc, strB));
       outer.push_back(Block::build(b, dummyLoc, std::move(block)));
     }
@@ -342,9 +342,9 @@ static void test4() {
     auto strM = UniqueString::get(ctx, "M");
     auto strI = UniqueString::get(ctx, "I");
 
-    ASTList inner;
+    AstList inner;
     {
-      ASTList ii;
+      AstList ii;
       ii.push_back(Identifier::build(b, dummyLoc, strA));
       ii.push_back(Identifier::build(b, dummyLoc, strB));
       ii.push_back(Identifier::build(b, dummyLoc, strC));

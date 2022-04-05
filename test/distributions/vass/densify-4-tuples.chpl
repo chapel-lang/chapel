@@ -29,7 +29,7 @@ const samples = (
 );
 
 // If we make things below non-param (to reduce code size),
-// 'samples' above must be homogenous.
+// 'samples' above must be homogeneous.
 // Otherwise it is OK to vary stridability among samples' members.
 
 /*param*/ const nt = samples.size / 2;

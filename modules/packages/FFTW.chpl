@@ -123,8 +123,7 @@ module FFTW {
   */
   config param isFFTW_MKL=false;
 
-  use SysCTypes;
-  use CPtr;
+  use CTypes;
   require "fftw3.h"; // This is common
   if (isFFTW_MKL) {
     require "fftw3_mkl.h";
@@ -697,7 +696,7 @@ module FFTW {
 
      Please refer to the FFTW documentation for more details. */
   module C_FFTW {
-    public use SysCTypes, SysBasic, CPtr;
+    public use CTypes, CTypes;
     extern proc fftw_execute(p : fftw_plan) : void;
     import FFTW.fftw_plan;
 
@@ -821,11 +820,11 @@ module FFTW {
 
     extern proc fftw_sprint_plan(p : fftw_plan) : c_string;
 
-    extern proc fftw_malloc(n : size_t) : c_void_ptr;
+    extern proc fftw_malloc(n : c_size_t) : c_void_ptr;
 
-    extern proc fftw_alloc_real(n : size_t) : c_ptr(c_double);
+    extern proc fftw_alloc_real(n : c_size_t) : c_ptr(c_double);
 
-    extern proc fftw_alloc_complex(n : size_t) : c_ptr(fftw_complex);
+    extern proc fftw_alloc_complex(n : c_size_t) : c_ptr(fftw_complex);
 
     extern proc fftw_free(p : c_void_ptr) : void;
 

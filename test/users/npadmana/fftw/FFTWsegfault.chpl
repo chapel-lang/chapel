@@ -6,7 +6,7 @@ module FFTWsegfault {
   // NOTE: See the three writeln's below which, when uncommented, make
   // the code work
 
-  use SysCTypes;
+  use CTypes;
 
   // Define the various planner flags
   // See Sec. 4.3.2 of FFTW manual "Planner Flags"

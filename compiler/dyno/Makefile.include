@@ -16,9 +16,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Release
-LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/dyno/Release
-ifdef CHPL_DEVELOPER
+# Set CHPL_DEVELOPER to 0 if it is not set yet
+CHPL_DEVELOPER ?= 0
+# set DYNO_ENABLE_ASSERTIONS to 0 if it is not set yet
+DYNO_ENABLE_ASSERTIONS ?= 0
+
+ifeq ($(CHPL_DEVELOPER), 0)
+  ifeq ($(DYNO_ENABLE_ASSERTIONS), 0)
+    LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Release
+    LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/dyno/Release
+  else
+    LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Release -DDYNO_ENABLE_ASSERTIONS=ON
+    LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/dyno/ReleaseWithAsserts
+  endif
+else
   LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Debug
   LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/dyno/Debug
 endif

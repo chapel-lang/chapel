@@ -44,6 +44,21 @@ const types::QualifiedType& typeForModuleLevelSymbol(Context* context, ID id);
  */
 const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
 
+/**
+  Compute the type for a literal
+ */
+types::QualifiedType typeForLiteral(Context* context,
+                                    const uast::Literal* literal);
+
+/**
+  Returns the type that results when instantiating formalType,
+  which must be generic, with actualType.
+ */
+types::QualifiedType getInstantiationType(Context* context,
+                                          types::QualifiedType actualType,
+                                          types::QualifiedType formalType);
+
+
 /////// function resolution
 
 /**
@@ -91,7 +106,7 @@ types::Type::Genericity getTypeGenericity(Context* context,
 
 /**
   Compute an initial TypedFnSignature for a type constructor for a
-  particular type. If some fields of t are still generic,
+  particular type. If some fields of `t` are still generic,
   it will be necessary to call instantiateSignature on it.
  */
 const TypedFnSignature* typeConstructorInitial(Context* context,
@@ -170,7 +185,7 @@ filterCandidatesInstantiating(Context* context,
                               std::vector<const TypedFnSignature*>& result);
 
 /**
-  Given a CallInfo representing a call, a Scope representing the
+  Given a uast::Call, a CallInfo representing the call, a Scope representing the
   scope of that call, and a PoiScope representing the point-of-instantiation
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
@@ -180,6 +195,45 @@ CallResolutionResult resolveCall(Context* context,
                                  const CallInfo& ci,
                                  const Scope* inScope,
                                  const PoiScope* inPoiScope);
+
+/**
+  Given a CallInfo representing a call, a Scope representing the
+  scope of that call, and a PoiScope representing the point-of-instantiation
+  scope of that call, find the most specific candidates as well
+  as the point-of-instantiation scopes that were used when resolving them.
+ */
+CallResolutionResult resolveGeneratedCall(Context* context,
+                                          const uast::AstNode* astForErr,
+                                          const CallInfo& ci,
+                                          const Scope* inScope,
+                                          const PoiScope* inPoiScope);
+
+/**
+  Return true if 'name' is the name of a compiler generated method.
+*/
+bool isNameOfCompilerGeneratedMethod(UniqueString name);
+
+/**
+  Given a type and a UniqueString representing the name of a method,
+  determine if the type needs a method with such a name to be
+  generated for it.
+*/
+bool needCompilerGeneratedMethod(Context* context,
+                                 const types::Type* type,
+                                 UniqueString name);
+
+/**
+  Given a type and a UniqueString representing the name of a method,
+  determine if the type needs a method with such a name to be
+  generated for it, and if so, generates and returns a
+  TypedFnSignature representing the generated method.
+
+  If no method was generated, returns nullptr.
+*/
+const TypedFnSignature*
+getCompilerGeneratedMethod(Context* context,
+                           const types::Type* type,
+                           UniqueString name);
 
 
 } // end namespace resolution

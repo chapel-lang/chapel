@@ -36,12 +36,12 @@ class NumericLiteral : public Literal {
  protected:
   UniqueString text_;
 
-  NumericLiteral(ASTTag tag, const ParamT* value, UniqueString text)
+  NumericLiteral(AstTag tag, const ParamT* value, UniqueString text)
     : Literal(tag, value),
       text_(text)
   { }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     auto lhs = this;
     auto* rhs = (const NumericLiteral<ValueT, ParamT>*) other;
     return lhs->literalContentsMatchInner(rhs) &&

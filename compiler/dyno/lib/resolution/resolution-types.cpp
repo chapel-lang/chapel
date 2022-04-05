@@ -19,10 +19,13 @@
 
 #include "chpl/resolution/resolution-types.h"
 
+#include "chpl/queries/global-strings.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/Builder.h"
+#include "chpl/uast/FnCall.h"
 #include "chpl/uast/Formal.h"
+#include "chpl/uast/Identifier.h"
 
 namespace chpl {
 namespace resolution {
@@ -34,19 +37,18 @@ const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
                                           bool isMethod,
-                                          bool idIsFunction,
-                                          bool idIsClass,
+                                          asttags::AstTag idTag,
                                           bool isTypeConstructor,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
-                                          const Expression* whereClause) {
+                                          const AstNode* whereClause) {
   QUERY_BEGIN(getUntypedFnSignature, context,
-              id, name, isMethod, idIsFunction, idIsClass, isTypeConstructor,
+              id, name, isMethod, idTag, isTypeConstructor,
               kind, formals, whereClause);
 
   owned<UntypedFnSignature> result =
     toOwned(new UntypedFnSignature(id, name, isMethod,
-                                   idIsFunction, idIsClass, isTypeConstructor,
+                                   idTag, isTypeConstructor,
                                    kind, std::move(formals), whereClause));
 
   return QUERY_END(result);
@@ -56,14 +58,13 @@ const UntypedFnSignature*
 UntypedFnSignature::get(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
-                        bool idIsFunction,
-                        bool idIsClass,
+                        asttags::AstTag idTag,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
-                        const uast::Expression* whereClause) {
+                        const uast::AstNode* whereClause) {
   return getUntypedFnSignature(context, id, name, isMethod,
-                               idIsFunction, idIsClass, isTypeConstructor, kind,
+                               idTag, isTypeConstructor, kind,
                                std::move(formals), whereClause).get();
 }
 
@@ -88,8 +89,7 @@ UntypedFnSignature::get(Context* context, const uast::Function* fn) {
     // find the unique-ified untyped signature
     result = get(context, fn->id(),
                  fn->name(), fn->isMethod(),
-                 /* idIsFunction */ true,
-                 /* idIsClass */ false,
+                 /* idTag */ asttags::Function,
                  /* isTypeConstructor */ false,
                  fn->kind(),
                  std::move(formals), fn->whereClause());
@@ -98,7 +98,36 @@ UntypedFnSignature::get(Context* context, const uast::Function* fn) {
   return result;
 }
 
-void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {
+CallInfo::CallInfo(const uast::FnCall* call) {
+  // set the name (simple cases only)
+  if (auto called = call->calledExpression()) {
+    if (auto id = called->toIdentifier())
+      name_ = id->name();
+  }
+
+  int i = 0;
+  for (auto actual : call->actuals()) {
+    bool isQuestionMark = false;
+    if (auto id = actual->toIdentifier())
+      if (id->name() == USTR("?"))
+        isQuestionMark = true;
+
+    if (isQuestionMark) {
+      hasQuestionArg_ = true;
+    } else {
+      UniqueString byName;
+      if (call->isNamedActual(i)) {
+        byName = call->actualName(i);
+        if (i == 0 && byName == USTR("this"))
+          isMethodCall_ = true;
+      }
+      actuals_.push_back(CallInfoActual(QualifiedType(), byName));
+      i++;
+    }
+  }
+}
+
+void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
   vec.resize(ast->id().numContainedChildren());
 
@@ -283,6 +312,50 @@ void TypedFnSignature::stringify(std::ostream& ss,
     formalType(i).stringify(ss, stringKind);
   }
   ss << ")";
+}
+
+void CallInfoActual::stringify(std::ostream& ss,
+                               chpl::StringifyKind stringKind) const {
+  if (!byName_.isEmpty()) {
+    byName_.stringify(ss, stringKind);
+    ss << "=";
+  }
+
+  type_.stringify(ss, stringKind);
+}
+
+void CallInfo::stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const {
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << "CallInfo with name '";
+    name_.stringify(ss, stringKind);
+    ss << "'";
+  } else {
+    name_.stringify(ss, stringKind);
+  }
+  if (calledType_ != QualifiedType()) {
+    ss << " receiver type: ";
+    calledType_.stringify(ss, stringKind);
+  }
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << " isMethodCall=" << isMethodCall_;
+    ss << " hasQuestionArg=" << hasQuestionArg_;
+    ss << " ";
+  }
+  ss << "(";
+  bool first = true;
+  for (auto actual: actuals()) {
+    if (first) {
+      first = false;
+    } else {
+      ss << ",";
+    }
+    actual.stringify(ss, stringKind);
+  }
+  ss << ")";
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << "\n";
+  }
 }
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {

@@ -31,7 +31,7 @@ module ChapelHashtable {
 
   use ChapelBase, DSIUtil;
 
-  private use CPtr;
+  private use CTypes;
 
   // empty needs to be 0 so memset 0 sets it
   enum chpl__hash_status { empty=0, full, deleted };
@@ -238,6 +238,8 @@ module ChapelHashtable {
     proc init(type keyType, type valType, resizeThreshold=0.5,
               initialCapacity=16,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
+      if isDomainType(keyType) then
+        compilerError("Values of 'domain' type do not support hash functions yet", 2);
       this.keyType = keyType;
       this.valType = valType;
       this.tableNumFullSlots = 0;

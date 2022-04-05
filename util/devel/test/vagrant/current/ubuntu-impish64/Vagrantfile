@@ -11,6 +11,10 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell",
     path: "../../provision-scripts/apt-get-deps.sh"
 
+  # installs LLVM 13
+  config.vm.provision "shell",
+    path: "../../provision-scripts/apt-get-llvm.sh"
+
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/git-clone-chapel.sh"
 

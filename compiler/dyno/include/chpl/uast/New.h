@@ -21,7 +21,7 @@
 #define CHPL_UAST_NEW_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -38,7 +38,7 @@ namespace uast {
   The initialization expression of foo is an FnCall where the base expression
   is a New node (representing 'new bar').
 */
-class New : public Expression {
+class New : public AstNode {
  public:
 
   /**
@@ -52,17 +52,16 @@ class New : public Expression {
     UNMANAGED
   };
 
+  static const char* managementToString(Management management);
+
  private:
-  New(ASTList children, New::Management management)
-    : Expression(asttags::New, std::move(children)),
+  New(AstList children, New::Management management)
+    : AstNode(asttags::New, std::move(children)),
       management_(management) {}
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const New* lhs = this;
     const New* rhs = (const New*) other;
-
-    if (!lhs->expressionContentsMatchInner(rhs))
-      return false;
 
     if (lhs->management_ != rhs->management_)
       return false;
@@ -70,7 +69,6 @@ class New : public Expression {
     return true;
   }
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   Management management_;
@@ -82,15 +80,15 @@ class New : public Expression {
     management style.
   */
   static owned<New> build(Builder* builder, Location loc,
-                          owned<Expression> typeExpression,
+                          owned<AstNode> typeExpression,
                           Management management);
 
   /**
     Returns the type expression of this new expression.
   */
-  const Expression* typeExpression() const {
+  const AstNode* typeExpression() const {
     assert(children_.size() > 0);
-    return (const Expression*)children_[0].get();
+    return children_[0].get();
   }
 
   /**

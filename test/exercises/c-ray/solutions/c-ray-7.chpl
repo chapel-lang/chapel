@@ -472,7 +472,7 @@ proc computeDims(sizeString) {
 // its results are portable, and it can optionally be used in parallel).
 //
 proc initRands() {
-  use SysCTypes;
+  use CTypes;
 
   var rands: randNums;
   

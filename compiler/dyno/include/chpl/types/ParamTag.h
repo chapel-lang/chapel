@@ -30,12 +30,12 @@ namespace paramtags {
   This enum is used to identify which union elements a Param stores
  */
 enum ParamTag {
-  // define the enum using macros and ParamClassesList.h
+  // define the enum using macros and param-classes-list.h
   /// \cond DO_NOT_DOCUMENT
   #define PARAM_NODE(NAME, VALTYPE) NAME ,
   /// \endcond
-  // Apply the above macros to ParamClassesList.h
-  #include "chpl/types/ParamClassesList.h"
+  // Apply the above macros to param-classes-list.h
+  #include "chpl/types/param-classes-list.h"
   // clear the macros
   #undef PARAM_NODE
 };
@@ -48,15 +48,15 @@ enum ParamTag {
     return tag == NAME; \
   }
 /// \endcond
-// Apply the above macros to ParamClassesList.h
-#include "chpl/types/ParamClassesList.h"
+// Apply the above macros to param-classes-list.h
+#include "chpl/types/param-classes-list.h"
 // clear the macros
 #undef PARAM_NODE
 
 
 } // end namespace paramtags
 
-// Enable ASTTag to be used as chpl::types::ParamTag
+// Enable AstTag to be used as chpl::types::ParamTag
 using chpl::types::paramtags::ParamTag;
 
 } // end namespace types

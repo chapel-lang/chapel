@@ -190,7 +190,7 @@ MPI Module Documentation
 
 */
 module MPI {
-  public use SysCTypes;
+  public use CTypes;
   require "mpi.h";
 
   use ReplicatedVar;
@@ -440,7 +440,7 @@ module MPI {
 
   {
     pragma "no doc"
-    extern proc sizeof(type t): size_t;
+    extern proc sizeof(type t): c_size_t;
     assert(sizeof(MPI_Aint) == sizeof(c_ptrdiff));
   }
 
@@ -567,7 +567,7 @@ module MPI {
 
    */
    module C_MPI {
-     use SysCTypes, SysBasic;
+     use CTypes, CTypes;
      use MPI;
 
   // Special case MPI_Init -- we will send these null pointers
@@ -729,7 +729,7 @@ module MPI {
 
 
   module C_Env {
-    use SysCTypes;
+    use CTypes;
     // Helper routines to access the environment
     extern proc getenv(name : c_string) : c_string;
     extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;

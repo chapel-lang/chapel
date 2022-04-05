@@ -26,14 +26,14 @@ namespace uast {
 
 
 owned<While> While::build(Builder* builder, Location loc,
-                      owned<Expression> condition,
+                      owned<AstNode> condition,
                       BlockStyle blockStyle,
                       owned<Block> body) {
 
   assert(condition.get() != nullptr);
   assert(body.get() != nullptr);
 
-  ASTList lst;
+  AstList lst;
   int8_t conditionChildNum = lst.size();
 
   lst.push_back(std::move(condition));

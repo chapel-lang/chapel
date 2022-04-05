@@ -1,5 +1,5 @@
-use CPtr;
-use SysCTypes;
+
+use CTypes;
 
 export proc f1(x : real) : real {
   return x;

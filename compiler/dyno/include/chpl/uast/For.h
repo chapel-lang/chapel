@@ -44,7 +44,7 @@ namespace uast {
  */
 class For final : public IndexableLoop {
  private:
-  For(ASTList children,  int8_t indexChildNum,
+  For(AstList children,  int8_t indexChildNum,
       int8_t iterandChildNum,
       BlockStyle blockStyle,
       int loopBodyChildNum,
@@ -59,11 +59,10 @@ class For final : public IndexableLoop {
                     isExpressionLevel),
       isParam_(isParam) {
 
-    assert(isExpressionASTList(children_));
     assert(withClause() == nullptr);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const For* lhs = this;
     const For* rhs = (const For*) other;
 
@@ -90,7 +89,7 @@ class For final : public IndexableLoop {
   */
   static owned<For> build(Builder* builder, Location loc,
                           owned<Decl> index,
-                          owned<Expression> iterand,
+                          owned<AstNode> iterand,
                           BlockStyle blockStyle,
                           owned<Block> body,
                           bool isExpressionLevel,

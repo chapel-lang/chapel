@@ -33,7 +33,7 @@ program with the ``--about`` flag.
 
 .. warning::
 
-    This module has been deprecated - please use :mod:`Subprocess` instead.
+    This module has been deprecated - please use :mod:`ChplConfig` instead.
  */
 pragma "module included by default"
 module ChapelEnv {

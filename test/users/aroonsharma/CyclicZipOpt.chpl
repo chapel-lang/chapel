@@ -826,8 +826,8 @@ proc CyclicZipOptArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
 iter CyclicZipOptArr.these(param tag: iterKind, followThis, param fast: bool = false) var where tag == iterKind.follower {
-  extern proc sizeof(type t): size_t;
-  extern proc memcmp(ref a, ref b, n:size_t):c_int;
+  extern proc sizeof(type t): c_size_t;
+  extern proc memcmp(ref a, ref b, n:c_size_t):c_int;
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
 

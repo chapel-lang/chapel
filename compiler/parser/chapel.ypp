@@ -1462,11 +1462,11 @@ lambda_decl_expr:
     {
       $3->retTag = $5;
       if ($5 == RET_REF || $5 == RET_CONST_REF)
-        USR_FATAL("'ref' return types are not allowed in lambdas");
+        USR_FATAL($3, "'ref' return types are not allowed in lambdas");
       if ($5 == RET_PARAM)
-        USR_FATAL("'param' return types are not allowed in lambdas");
+        USR_FATAL($3, "'param' return types are not allowed in lambdas");
       if ($5 == RET_TYPE)
-        USR_FATAL("'type' return types are not allowed in lambdas");
+        USR_FATAL($3, "'type' return types are not allowed in lambdas");
       if ($6)
         $3->retExprType = new BlockStmt($6, BLOCK_SCOPELESS);
       if ($7.where)
@@ -1775,6 +1775,8 @@ type_alias_decl_stmt:
     { $$ = handleConfigTypes($3); }
 | TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI
     { $$ = convertTypesToExtern($3); }
+| TEXTERN STRINGLITERAL TTYPE type_alias_decl_stmt_inner TSEMI
+    { $$ = convertTypesToExtern($4, $2); }
 ;
 
 type_alias_decl_stmt_inner:

@@ -31,15 +31,15 @@ namespace typetags {
  */
 enum TypeTag {
   // define the enum for all of the non-virtual Type nodes
-  // using macros and TypeClassesList.h
+  // using macros and type-classes-list.h
   /// \cond DO_NOT_DOCUMENT
   #define TYPE_NODE(NAME) NAME ,
   #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) NAME ,
   #define TYPE_BEGIN_SUBCLASSES(NAME) START_##NAME ,
   #define TYPE_END_SUBCLASSES(NAME) END_##NAME ,
   /// \endcond
-  // Apply the above macros to TypeClassesList.h
-  #include "chpl/types/TypeClassesList.h"
+  // Apply the above macros to type-classes-list.h
+  #include "chpl/types/type-classes-list.h"
   // clear the macros
   #undef TYPE_NODE
   #undef BUILTIN_TYPE_NODE
@@ -60,8 +60,8 @@ enum TypeTag {
 #define TYPE_BEGIN_SUBCLASSES(NAME)
 #define TYPE_END_SUBCLASSES(NAME)
 /// \endcond
-// Apply the above macros to TypeClassesList.h
-#include "chpl/types/TypeClassesList.h"
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
 // clear the macros
 #undef TYPE_NODE
 #undef BUILTIN_TYPE_NODE
@@ -81,7 +81,7 @@ enum TypeTag {
 #define TYPE_END_SUBCLASSES(NAME)
 /// \endcond
 // Apply the above macros to TYPEClassesList.h
-#include "chpl/types/TypeClassesList.h"
+#include "chpl/types/type-classes-list.h"
 // clear the macros
 #undef TYPE_NODE
 #undef BUILTIN_TYPE_NODE
@@ -94,7 +94,7 @@ const char* tagToString(TypeTag tag);
 
 } // end namespace typetags
 
-// Enable ASTTag to be used as chpl::types::TypeTag
+// Enable AstTag to be used as chpl::types::TypeTag
 using chpl::types::typetags::TypeTag;
 
 } // end namespace types

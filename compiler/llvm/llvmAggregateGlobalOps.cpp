@@ -814,7 +814,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* Src = irBuilder.CreatePointerCast(i8Src, SrcTy);
 
 #if HAVE_LLVM_VER >= 130
-        LoadInst* newLoad = irBuilder.CreateLoad(Src->getType(), Src);
+        LoadInst* newLoad = irBuilder.CreateLoad(Src->getType()->getPointerElementType(), Src);
 #else
         LoadInst* newLoad = irBuilder.CreateLoad(Src);
 #endif

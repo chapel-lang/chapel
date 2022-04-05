@@ -3,7 +3,7 @@
 // 2.- get some elements from B on locale 0 to A on locale 0
 // 3.- put some elements from A on locale 0 to B on locale 1
 // 4.- put some elements from A on locale 0 to B on locale 0
-use SysCTypes;
+use CTypes;
 
 proc TestGetsPuts(A:[], B:[])
 {
@@ -14,12 +14,12 @@ proc TestGetsPuts(A:[], B:[])
 proc BlockArr.TestGetsPuts(B)
 {
   param stridelevels=0;
-  //  var dststrides:[1..#stridelevels] size_t;
-  var dststrides:[1..1] size_t;
-  //  var srcstrides: [1..#stridelevels] size_t;
-  var srcstrides: [1..1] size_t;
-  //  var count: [1..#(stridelevels+1)] size_t;
-  var count: [1..2] size_t;
+  //  var dststrides:[1..#stridelevels] c_size_t;
+  var dststrides:[1..1] c_size_t;
+  //  var srcstrides: [1..#stridelevels] c_size_t;
+  var srcstrides: [1..1] c_size_t;
+  //  var count: [1..#(stridelevels+1)] c_size_t;
+  var count: [1..2] c_size_t;
   var rid=1; //remote locale id
   var lid=0; //local locale id
 

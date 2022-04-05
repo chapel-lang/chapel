@@ -5,19 +5,19 @@
 */
 use HDFS only;
 use IO;
-use SysCTypes;
+use CTypes;
 
 config const path = "/tmp/lots-of-numbers.txt";
 
 config const n = 10000;
 config const bufsz = 0;
 
-extern var qbytes_iobuf_size:size_t;
+extern var qbytes_iobuf_size:c_size_t;
 
 proc main() {
 
   if bufsz > 0 {
-    qbytes_iobuf_size = bufsz:size_t;
+    qbytes_iobuf_size = bufsz:c_size_t;
   }
 
   var fs = HDFS.connect();

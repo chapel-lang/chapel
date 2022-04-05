@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 #include "chpl/uast/WithClause.h"
 
@@ -47,17 +47,16 @@ namespace uast {
  */
 class Begin final : public SimpleBlockLike {
  private:
-  Begin(ASTList children, int8_t withClauseChildNum, BlockStyle blockStyle,
+  Begin(AstList children, int8_t withClauseChildNum, BlockStyle blockStyle,
         int bodyChildNum,
         int numBodyStmts)
     : SimpleBlockLike(asttags::Begin, std::move(children), blockStyle,
                       bodyChildNum,
                       numBodyStmts),
       withClauseChildNum_(withClauseChildNum) {
-    assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Begin* lhs = this;
     const Begin* rhs = (const Begin*) other;
 
@@ -84,7 +83,7 @@ class Begin final : public SimpleBlockLike {
   static owned<Begin> build(Builder* builder, Location loc,
                             owned<WithClause> withClause,
                             BlockStyle blockStyle,
-                            ASTList stmts);
+                            AstList stmts);
 
   /**
     Returns the with clause of this begin statement, or nullptr if there

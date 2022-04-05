@@ -171,9 +171,9 @@ configuration output.
    export GASNET_IBV_SPAWNER=mpi
 
 
--------------------
-Verifing Job Launch
--------------------
+--------------------
+Verifying Job Launch
+--------------------
 
 Once the above configuration has been done, checking that job
 launching is happening properly is recommended. The following Chapel

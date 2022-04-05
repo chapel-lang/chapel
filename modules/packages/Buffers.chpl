@@ -48,8 +48,7 @@
 module Buffers {
   use SysBasic;
   use SysError;
-  private use SysCTypes;
-  private use CPtr;
+  private use CTypes;
 
   pragma "no doc"
   extern type qbytes_ptr_t;
@@ -696,7 +695,7 @@ module Buffers {
       if !err {
         this.advance(start, numBytes(int));
         this.advance(end, len);
-        var buf = c_calloc(uint(8), (len+1):size_t);
+        var buf = c_calloc(uint(8), (len+1):c_size_t);
         err = qbuffer_copyout(this._buf_internal,
                               start._bufit_internal, end._bufit_internal,
                               buf, len);

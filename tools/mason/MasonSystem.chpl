@@ -95,7 +95,7 @@ proc pkgSearch(args) throws {
   const pattern = compile(pkgName, ignoreCase=true);
   const command = "pkg-config --list-all";
   const cmd = command.split();
-  var sub = spawn(cmd, stdout=PIPE);
+  var sub = spawn(cmd, stdout=pipeStyle.pipe);
   sub.wait();
 
   // TODO: Test if this ever worked
@@ -179,7 +179,7 @@ proc getPkgVariable(pkgName: string, option: string) {
 
   var lines: list(string);
   var cmd = command.split();
-  var sub = spawn(cmd, stdout=PIPE);
+  var sub = spawn(cmd, stdout=pipeStyle.pipe);
   sub.wait();
 
   var line:string;

@@ -1,4 +1,4 @@
-use Time, SysCTypes, CPtr;
+use Time, CTypes;
 
 config const n = 10000;
 extern proc chpl_cache_print();

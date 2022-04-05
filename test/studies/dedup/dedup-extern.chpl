@@ -3,8 +3,8 @@ use Subprocess;
 use Sort;
 use List;
 use IO;
-use SysCTypes;
-use CPtr;
+use CTypes;
+
 
 // a SHA-1 hash is 160 bits, so it fits in 3 64-bit ints.
 type Hash = (20*uint(8));
@@ -15,7 +15,7 @@ require "openssl/sha.h", "-lcrypto", "-lssl";
 // This 'extern proc' declaration tells the Chapel compiler that a C
 // function SHA1 is available and describes the arguments in the
 // Chapel type system.
-extern proc SHA1(d:c_ptr(uint(8)), n:size_t, md:c_ptr(uint(8)));
+extern proc SHA1(d:c_ptr(uint(8)), n:c_size_t, md:c_ptr(uint(8)));
 
 proc main(args:[] string)
 {
