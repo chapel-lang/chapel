@@ -35,7 +35,7 @@ if debug then
 processTemplate(polyTempl, steps);
 
 proc processTemplate(templ: [?templInds], stepsLeft) {
-  if (stepsLeft == 0) {
+  if stepsLeft == 0 {
     writeln(templ);
     writeln(templ.size);
     calcStats(templ);
@@ -49,7 +49,8 @@ proc processTemplate(templ: [?templInds], stepsLeft) {
       if i != templInds.high {
         const second = templ[i+1];
         var substr = first + second;
-//        writeln("Trying to look up ", substr);
+        if debug then
+          writeln("Trying to look up ", substr);
         next[i*2+1] = prodMap.getValue(substr);
       }
     }
@@ -63,7 +64,7 @@ proc calcStats(templ: [?templInds]) {
     forall (ch, count) in zip(allChars, counts) do
       writeln((ch, count));
   // BUG/FEATURE REQUEST: maxloc over string domain -- currently requires max()
-  // on strings to break ties
+  // on strings to break ties.  See futures/day14-maxlocstringinds.chpl
   var largest = max reduce counts;
   var smallest = min reduce counts;
   writeln(largest-smallest);

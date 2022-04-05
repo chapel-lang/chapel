@@ -8,7 +8,6 @@ var D = {1..n, 1..n};
 var BigD = {0..n+1, 0..n+1};
 var Energy: [BigD] atomic int;
 
-//readFirstLine();
 readEnergies();
 writeln("Before any steps:\n", Energy[D]);
 var flashes: atomic int;

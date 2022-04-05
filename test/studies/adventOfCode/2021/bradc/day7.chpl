@@ -3,14 +3,15 @@ use IO;
 var horizontal: [0..8] int;
 
 iter readHorizontals() {
-  do {
-    var pos: int;
-    var success = read(pos);
-    if success {
-      yield pos;
-      try { readf(","); } catch { success = false; }
+  var pos: int;
+  while read(pos) {
+    yield pos;
+    try {
+      readf(",");
+    } catch {
+      return;
     }
-  } while success;
+  }
 }
 
 var positions = readHorizontals();
