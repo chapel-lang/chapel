@@ -77,14 +77,15 @@ static void stringifyNode(const AstNode* node, chpl::StringifyKind kind) {
   // and produce a non-empty result (for now)
   // this is a little convoluted as each AstNode is also calling
   // AstNode.dumpHelper() on all of its children
-  for (const AstNode* child : node->children()) {
-    stringifyNode(child, kind);
-  }
+//  for (const AstNode* child : node->children()) {
+//    stringifyNode(child, kind);
+//  }
   std::ostringstream ss;
   node->stringify(ss, kind);
   // don't test an empty domains as in formal array decls like `proc main(args:[] string)`
   // don't test comments for now as they are not printed by the chpl-syntax-printer
-  if (!(node->isDomain() && node->toDomain()->numChildren() == 0) && !node->isComment())
+  if (!(node->isDomain() && node->toDomain()->numChildren() == 0)
+      && !node->isComment() && !node->isEmptyStmt())
     assert(!ss.str().empty());
   std::cerr << ss.str() << std::endl;
 }
@@ -336,7 +337,7 @@ static void test1(Parser* parser) {
                for i in 1..10 do yield try! i;
              }
              )"""";
-  auto parseResult = parser->parseString("Test4.chpl",
+  auto parseResult = parser->parseString("Test1.chpl",
                                          testCode.c_str());
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
@@ -420,9 +421,9 @@ static void test3(Parser* parser) {
 }
 
 static void test4(Parser* parser) {
-  auto parseResult = parser->parseString("test3.chpl",
-                                                       "class C {\n"
-                                                           "  proc ref setClt(rhs: borrowed C) {\n}\n}\n");
+  auto parseResult = parser->parseString("test4.chpl",
+                                          "class C {\n"
+                                          "  proc ref setClt(rhs: borrowed C) {\n}\n}\n");
   auto mod = parseResult.singleModule();
   std::ostringstream ss;
   auto cDecl = mod->stmt(0)->toClass();
