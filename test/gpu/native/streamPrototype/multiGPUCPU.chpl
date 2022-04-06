@@ -30,16 +30,16 @@ for i in 1..numIters {
     const numGPUs = numPUs-1;
     const chunkDiv = numGPUs+cpuToGpuRatio;
     var chunkSize = (n/chunkDiv):int;
-    var cpuEnd = (chunkSize*cpuToGpuRatio-1):int;
-    cpuEnd += (n-cpuEnd)%numGPUs;
-    var gpuChunkSize = (n-(cpuEnd+1))/numGPUs;
-    const cpuRange = 0..cpuEnd;
+    var cpuSize = (chunkSize*cpuToGpuRatio):int;
+    cpuSize += (n-cpuSize)%numGPUs;
+    var gpuChunkSize = (n-cpuSize)/numGPUs;
+    const cpuRange = 0..#cpuSize;
 
     cobegin {
       A[cpuRange] = B[cpuRange] + alpha * C[cpuRange];
 
       coforall sublocID in 1..#numGPUs do on here.getChild(sublocID) {
-        const myChunk = cpuEnd+(sublocID-1)*gpuChunkSize+1..#gpuChunkSize;
+        const myChunk = cpuSize+(sublocID-1)*gpuChunkSize..#gpuChunkSize;
         if debug then writeln(sublocID, ": ", myChunk);
 
         var Aloc: [myChunk] int;
