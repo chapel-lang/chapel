@@ -19,7 +19,7 @@
  */
 
 /*
-Access to configuration information for the 'chpl' compiler
+Access to configuration information for the 'chpl' compiler.
 
 This module's contents provide access to compile-time aspects of
 Chapel's configuration, such as those specified by ``CHPL_*``

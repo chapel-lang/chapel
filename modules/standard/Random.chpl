@@ -750,7 +750,7 @@ module Random {
 
 
   /*
-     Permuted Linear Congruential Random Number Generator
+     Permuted Linear Congruential Random Number Generator.
 
      This module provides PCG random number generation routines.
      See http://www.pcg-random.org/
