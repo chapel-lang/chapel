@@ -4534,13 +4534,13 @@ static void updateInitMethod(FnSymbol* fn) {
       if (thisArg->typeExpr->body.length == 1) {
         Expr* expr = thisArg->typeExpr->body.only();
         if (UnresolvedSymExpr* se = toUnresolvedSymExpr(expr)) {
-          USR_FATAL(fn, "initializer defined on unrecognized type: '%s'",
-                    se->unresolved);
+          USR_FATAL_CONT(fn, "initializer defined on unrecognized type: '%s'",
+                         se->unresolved);
           return;
         }
       }
     }
-    USR_FATAL(fn, "initializer defined on unrecognized type");
+    USR_FATAL_CONT(fn, "initializer defined on unrecognized type");
   } else {
     USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
   }
