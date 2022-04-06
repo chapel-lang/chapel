@@ -793,7 +793,7 @@ private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, fla
   :arg timeout: time to wait for data to arrive.
   :type timeval: :type:`~Sys.timeval`
   :return: tuple of (data, address)
-  :rtype: `tuple(:mod:`bytes <Bytes>`, :type:ipAddr)`
+  :rtype: (:type:`~Bytes.bytes`, :type:`ipAddr`)
   :throws SystemError: Upon failure to receive any data
                     within given `timeout`.
 */
@@ -874,7 +874,7 @@ proc udpSocket.recvfrom(bufferLen: int, timeout: real, flags:c_int = 0):(bytes, 
   :arg timeout: time to wait for data to arrive.
   :type timeval: :type:`~Sys.timeval`
   :return: data
-  :rtype: :mod:`bytes <Bytes>`
+  :rtype: :type:`~Bytes.bytes`
   :throws SystemError: Upon failure to receive any data
                         within given `timeout`.
 */
@@ -901,7 +901,7 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
     const sentBytes = socket.send("hello world!":bytes, timeout);
 
   :arg data: data to send to address
-  :type data: :mod:`bytes <Bytes>`
+  :type data: :type:`~Bytes.bytes`
   :arg address: socket address for sending data
   :type address: :type:`ipAddr`
   :arg timeout: time to wait for data to arrive.
@@ -1026,10 +1026,10 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, ref value: bytes) t
 }
 
 /*
-  Overload for :proc:`setSockOpt` that allows setting a :mod:`bytes <Bytes>` value
+  Overload for :proc:`setSockOpt` that allows setting a :type:`~Bytes.bytes` value
   on socket option. This is useful for `setsockopt` calls that work with a C struct,
   including `SO_LINGER`, `SO_RCVTIMEO`, and `SO_SNDTIMEO`. It is up to the caller to
-  ensure that the `value` which is a :type::mod:`bytes <Bytes>` parameter contains
+  ensure that the `value` which is a :type:`~Bytes.bytes` parameter contains
   the proper bits.
 
   :arg socket: socket to set option on
@@ -1039,7 +1039,7 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, ref value: bytes) t
   :arg optname: option to set.
   :type optname: `int(32)`
   :arg value: value to set on option
-  :type value: :mod:`bytes <Bytes>`
+  :type value: :type:`~Bytes.bytes`
   :throws SystemError: Upon incompatible arguments
                         and socket.
 */
@@ -1133,7 +1133,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int, buflen: uint(16)) t
 
 /*
   Returns the value of the given socket option which is expected to be of type
-  :mod:`bytes <Bytes>` on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
+  :type:`~Bytes.bytes` on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
   are defined in :mod:`Sys` module.
 
   :arg socket: socket to set option on
@@ -1143,7 +1143,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int, buflen: uint(16)) t
   :arg optname: option to set.
   :type optname: `int(32)`
   :return: value of socket option
-  :rtype: :mod:`bytes <Bytes>`
+  :rtype: :type:`~Bytes.bytes`
   :throws SystemError: Upon incompatible arguments
                         and socket.
 */

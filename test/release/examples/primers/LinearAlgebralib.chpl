@@ -63,8 +63,8 @@ assert(matrix1.type == matrix2.type);    // ... produces same result
   This section demonstrates some of the functionality built into Chapel
   arrays that can be useful in a linear algebra context. None of the operations
   in this section require usage of :mod:`LinearAlgebra`.
-  Learn more about Chapel arrays in the :mod:`ChapelArray` documentation and
-  the :ref:`Array Primer <primers-arrays>`.
+  Learn more about Chapel arrays in the :ref:`Chapter-Arrays` chapter of the
+  language specification and the :ref:`Array Primer <primers-arrays>`.
 
 */
 
