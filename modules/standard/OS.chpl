@@ -213,17 +213,17 @@ module OS {
     //
     // sys/time.h
     //
-    extern "struct timeval" record timeval {
+    extern "struct timeval" record struct_timeval {
       var tv_sec:time_t;       // seconds since Jan. 1, 1970
       var tv_usec:suseconds_t; // and microseconds
     }
 
-    extern "struct timezone" record timezone {
+    extern "struct timezone" record struct_timezone {
       var tz_minuteswest:c_int; // of Greenwich
       var tz_dsttime:c_int;     // type of dst correction to apply
     };
 
-    extern proc gettimeofday(ref tp: timeval, tzp:c_void_ptr):c_int;
+    extern proc gettimeofday(ref tp: struct_timeval, tzp:c_void_ptr):c_int;
 
     //
     // unistd.h
