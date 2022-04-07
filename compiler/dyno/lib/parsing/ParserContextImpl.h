@@ -661,9 +661,19 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
   if (ustrOp == "++") {
     noteWarning(location, "++ is not a pre-increment");
     ustrOp = USTR("+");
+    // conver the ++a to +(+a)
+    auto innerOp = OpCall::build(builder, convertLocation(location),
+                       ustrOp, toOwned(expr)).release();
+    return OpCall::build(builder, convertLocation(location),
+                       ustrOp, toOwned(innerOp)).release();
   } else if (ustrOp == "--") {
     noteWarning(location, "-- is not a pre-decrement");
     ustrOp = USTR("-");
+    // convert the --a to -(-a)
+    auto innerOp = OpCall::build(builder, convertLocation(location),
+                       ustrOp, toOwned(expr)).release();
+    return OpCall::build(builder, convertLocation(location),
+                       ustrOp, toOwned(innerOp)).release();
   }
 
   return OpCall::build(builder, convertLocation(location),
@@ -994,7 +1004,6 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                             /*typeExpression*/ nullptr,
                             /*initExpression*/ nullptr);
   } else {
-    // Cannot handle this kind of index var
     const char* msg = "invalid index expression";
     noteError(location, msg);
     return nullptr;

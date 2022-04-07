@@ -414,8 +414,7 @@ static int processToken(yyscan_t scanner, int t) {
     // and a closing paren or dot.
     // e.g print maxIndex(A: [?D]) instead of maxIndex(A: [?D] )
     if (t == TRP || t == TDOT) {
-      auto last = captureString.back();
-      if (last == ' ' && captureString.length() > 1) {
+      if (captureString.length() > 1 && captureString.back() == ' ') {
         captureString.pop_back();
       }
     }

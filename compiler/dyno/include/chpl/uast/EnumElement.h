@@ -89,8 +89,9 @@ class EnumElement final : public NamedDecl {
   const AstNode* initExpression() const {
     // need to handle the case when an attribute exists but an initExpression does not
     // in this case children_.size() is > 0, but initExpression should still be nullptr
-    if (this->attributesChildNum() > -1 && children_.size() == 1) {
-      assert(this->child(0)->isAttributes());
+    if (initExpressionChildNum() >= (int) children_.size()) {
+      // either there are no children, or there's only an attribute
+      assert(children_.size() == 0 || this->child(0)->isAttributes());
       return nullptr;
     }
 

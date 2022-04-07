@@ -186,12 +186,12 @@ struct ChplSyntaxVisitor {
   */
   bool isCalleeReservedWord(const AstNode* callee) {
     if (callee->isIdentifier() &&
-      (callee->toIdentifier()->name() == "borrowed"
-       || callee->toIdentifier()->name() == "owned"
-       || callee->toIdentifier()->name() == "unmanaged"
-       || callee->toIdentifier()->name() == "shared"
-       || callee->toIdentifier()->name() == "sync"
-       || callee->toIdentifier()->name() == "single"))
+      (callee->toIdentifier()->name() == USTR("borrowed")
+       || callee->toIdentifier()->name() == USTR("owned")
+       || callee->toIdentifier()->name() == USTR("unmanaged")
+       || callee->toIdentifier()->name() == USTR("shared")
+       || callee->toIdentifier()->name() == USTR("sync")
+       || callee->toIdentifier()->name() == USTR("single")))
         return true;
       return false;
   }
@@ -489,7 +489,7 @@ struct ChplSyntaxVisitor {
       if (auto op = node->actual(0)->toOpCall()) {
         assert(op->isUnaryOp() && op->op() == USTR("?"));
         printChapelSyntax(ss_, op->actual(0));
-          ss_ << op->op();
+        ss_ << op->op();
       } else {
         printChapelSyntax(ss_, node->actual(0));
       }
