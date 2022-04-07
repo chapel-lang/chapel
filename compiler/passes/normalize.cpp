@@ -4530,17 +4530,8 @@ static void updateInitMethod(FnSymbol* fn) {
     preNormalizeInitMethod(fn);
 
   } else if (thisType == dtUnknown) {
-    if (ArgSymbol* thisArg = toArgSymbol(fn->_this)) {
-      if (thisArg->typeExpr->body.length == 1) {
-        Expr* expr = thisArg->typeExpr->body.only();
-        if (UnresolvedSymExpr* se = toUnresolvedSymExpr(expr)) {
-          USR_FATAL_CONT(fn, "initializer defined on unrecognized type: '%s'",
-                         se->unresolved);
-          return;
-        }
-      }
-    }
-    USR_FATAL_CONT(fn, "initializer defined on unrecognized type");
+    // we'll issue an error for this case downstream
+    return;
   } else {
     USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
   }
