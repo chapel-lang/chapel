@@ -1,5 +1,5 @@
+badThisType.chpl:7: error: Attempt to 'new' a function or undefined symbol
 badThisType.chpl:8: error: Attempt to 'new' a function or undefined symbol
-badThisType.chpl:9: error: Attempt to 'new' a function or undefined symbol
 badThisType.chpl:1: In initializer:
 badThisType.chpl:1: error: 'R' undeclared (first use this function)
 badThisType.chpl:4: In initializer:
