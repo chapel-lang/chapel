@@ -1,3 +1,4 @@
-The function `bar` should probably generate an error message because it returns
-a ref to the local variable which goes out of scope. See
-https://github.com/chapel-lang/chapel/pull/19357#issuecomment-1062868709
+bug: capturing a const reference to a non-const ref should be an error
+#19614
+The function `bar` should probably generate an error message because it captures
+a non-const ref to a const-ref.
