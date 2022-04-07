@@ -2,6 +2,8 @@ use IO, List;
 
 param bitsPerHex = 4;
 
+config const debug = false;
+
 var line: bytes;
 readline(line);
 line = line.strip();
@@ -9,7 +11,8 @@ writeln(line);
 
 var binary: [0..<bitsPerHex*line.size] uint(8);
 
-// TODO: no leader iterator for bytes?
+// TODO: should be able to iterate in parallel over bytes directly
+// see futures/day16-bytesParIter.chpl
 forall i in 0..<line.size {
   const ch = line[i];
   const val = charToInt(ch);;
@@ -67,12 +70,7 @@ proc processCommand(command: []): int {
       writeln("numSubPackets = ", numSubPackets);
       var subPackets = for i in 0..<numSubPackets do processCommand(command[cursor..]);
       writeln("subPackets: ", subPackets);
-      /*
-      for i in 0..<numSubPackets {
-        writeln("sub-packet ", i);
-        processCommand(command[cursor..]);
-      }
-*/
+
       return processOp(packetTypeID, subPackets);
     }
   }
@@ -100,8 +98,3 @@ proc binArrToVal(binArr: [] ) {
   }
   return val;
 }
-  
-/*
-  for j in 0..<bitsPerHex do
-    binary[i+j] = 
-*/

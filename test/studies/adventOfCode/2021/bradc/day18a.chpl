@@ -45,8 +45,10 @@ class Node {
       if !changed then
         changed=lookForSplits();
     } while changed;
-//    print();
-//    writeln();
+    if debug {
+      print();
+      writeln();
+    }
   }
 
   proc indentedWrite(depth: int, str: string) {
@@ -58,26 +60,30 @@ class Node {
 
   proc lookForExplodes(depth = 0, ref lr = (-1, -1)): bool {
     ref (l,r) = lr;
-//    indentedWrite(depth, "...looking");
+    if debug then
+      indentedWrite(depth, "...looking");
     if val == -1 {
       if depth < 4 {
         var exploded = left!.lookForExplodes(depth+1, lr);
-//	indentedWrite(depth, " looking left gave: " + lr:string);
+        if debug then
+	        indentedWrite(depth, " looking left gave: " + lr:string);
         if r != -1 {
            r = right!.lookForLeftmostUpdate(r);
            return true;
         }
-//        if depth == 0 then writeln("exploded = ", exploded);
+        if debug && depth == 0 then writeln("exploded = ", exploded);
         if !exploded {
           exploded = right!.lookForExplodes(depth+1, lr);
-//   	  indentedWrite(depth, " looking right gave: " + lr:string);
+          if debug then
+   	        indentedWrite(depth, " looking right gave: " + lr:string);
           if l != -1 {
             l = left!.lookForRightmostUpdate(l);
           }
         }
         return exploded;
       } else {
-//        writeln("We need to explode due to ", (left!.val, right!.val));
+        if debug then
+          writeln("We need to explode due to ", (left!.val, right!.val));
         lr = (left!.val, right!.val);
         this.val = 0;
         left = nil;
@@ -90,7 +96,8 @@ class Node {
 
   proc lookForRightmostUpdate(delta: int): int {
     if val != -1 {
-//      writeln("Updating ", val);
+      if debug then
+        writeln("Updating ", val);
       val += delta;
       return -1;
     } else {
@@ -100,7 +107,8 @@ class Node {
 
   proc lookForLeftmostUpdate(delta: int): int {
     if val != -1 {
-//      writeln("Updating ", val);
+      if debug then
+        writeln("Updating ", val);
       val += delta;
       return -1;
     } else {
@@ -145,7 +153,10 @@ proc readNormalizedSnailfish(): Node? throws {
     var pos = 0;
     var tree = lineToTree(line, pos); // TODO: See following TODO
     tree!.process();
-//    tree!.print(); writeln();
+    if debug {
+      tree!.print();
+      writeln();
+    }
     return tree;
   } else {
     // TODO: Wanted to return nil and just making this return nilable,
@@ -180,7 +191,7 @@ for f in allFish {
 
 var highscore = 0;
 forall (i,j) in {0..<allFish.size, 0..<allFish.size} with (max reduce highscore) {
-  if (i != j) {
+  if i != j {
     var sum = new Node(allFish[i].duplicate(), allFish[j].duplicate());
     sum.process();
     highscore = max(highscore, sum.magnitude());
@@ -203,7 +214,7 @@ proc lineToTree(line: string, ref pos): owned Node {
     var left = lineToTree(line, pos);
     pos += 1;  // skip past ","
     var right = lineToTree(line, pos);
-    pos += 1;  // skip pas "]"
+    pos += 1;  // skip past "]"
     return new Node(left, right);
   } else if ch >= "0" && ch <= "9" {
     pos += 1;

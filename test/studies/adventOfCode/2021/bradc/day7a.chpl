@@ -3,14 +3,15 @@ use IO;
 var horizontal: [0..8] int;
 
 iter readHorizontals() {
-  do {
-    var pos: int;
-    var success = read(pos);
-    if success {
-      yield pos;
-      try { readf(","); } catch { success = false; }
+  var pos: int;
+  while read(pos) {
+    yield pos;
+    try {
+      readf(",");
+    } catch {
+      return;
     }
-  } while success;
+  }
 }
 
 var positions = readHorizontals();
@@ -22,8 +23,11 @@ var maxpos = max reduce positions;
 var fuel: [0..maxpos] int;
 
 proc fuelrequired(distance: int) {
-  // TODO: I know there's O(1) math I could do here instead, but...
-  return + reduce [i in 1..distance] i;
+  return distance * (distance+1)/2;
+
+  // Here's a cute, but O(n) way of computing this for those (like
+  // me) who sometimes have trouble remembering the closed form:
+  //  return + reduce [i in 1..distance] i;
 }
 
 forall target in 0..maxpos do

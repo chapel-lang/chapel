@@ -1,17 +1,18 @@
 use IO;
 
-config const days = 80;
+config const days = 80, debug = false;
 
 var fishCount: [0..8] int;
 
-do {
-  var age: int;
-  var success = read(age);
-  if success {
-    fishCount[age] += 1;
-    try { readf(","); } catch { success = false; }
+var age: int;
+while read(age) {
+  fishCount[age] += 1;
+  try {
+    readf(",");
+  } catch {
+    break;
   }
-} while success;
+}
 
 writeln(fishCount);
 
@@ -21,6 +22,5 @@ for i in 1..days {
   newCounts[6] += fishCount[0];
   newCounts[8] += fishCount[0];
   fishCount = newCounts;
-//  writeln("After ", i, " day(s), school is ", school);
   writeln("After ", i, " day(s), school size is ", + reduce fishCount);
 }
