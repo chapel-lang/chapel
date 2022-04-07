@@ -4530,8 +4530,8 @@ static void updateInitMethod(FnSymbol* fn) {
     preNormalizeInitMethod(fn);
 
   } else if (thisType == dtUnknown) {
-    INT_FATAL(fn, "'this' argument has unknown type");
-
+    // we'll issue an error for this case downstream
+    return;
   } else {
     USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
   }
