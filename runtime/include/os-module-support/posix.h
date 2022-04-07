@@ -37,6 +37,15 @@ extern "C" {
 #endif
 
 //
+// errno.h
+//
+static inline
+int chpl_os_posix_errno_val(void) {
+  return errno;
+}
+
+
+//
 // fcntl.h
 //
 

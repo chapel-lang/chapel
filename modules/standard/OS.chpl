@@ -63,6 +63,94 @@ module OS {
       return __primitive("cast", t, x);
 
     //
+    // errno.h
+    //
+    extern const E2BIG:c_int;
+    extern const EACCES:c_int;
+    extern const EADDRINUSE:c_int;
+    extern const EADDRNOTAVAIL:c_int;
+    extern const EAFNOSUPPORT:c_int;
+    extern const EAGAIN:c_int;
+    extern const EALREADY:c_int;
+    extern const EBADF:c_int;
+    extern const EBADMSG:c_int;
+    extern const EBUSY:c_int;
+    extern const ECANCELED:c_int;
+    extern const ECHILD:c_int;
+    extern const ECONNABORTED:c_int;
+    extern const ECONNREFUSED:c_int;
+    extern const ECONNRESET:c_int;
+    extern const EDEADLK:c_int;
+    extern const EDESTADDRREQ:c_int;
+    extern const EDOM:c_int;
+    extern const EDQUOT:c_int;
+    extern const EEXIST:c_int;
+    extern const EFAULT:c_int;
+    extern const EFBIG:c_int;
+    extern const EHOSTUNREACH:c_int;
+    extern const EIDRM:c_int;
+    extern const EILSEQ:c_int;
+    extern const EINPROGRESS:c_int;
+    extern const EINTR:c_int;
+    extern const EINVAL:c_int;
+    extern const EIO:c_int;
+    extern const EISCONN:c_int;
+    extern const EISDIR:c_int;
+    extern const ELOOP:c_int;
+    extern const EMFILE:c_int;
+    extern const EMLINK:c_int;
+    extern const EMSGSIZE:c_int;
+    extern const EMULTIHOP:c_int;
+    extern const ENAMETOOLONG:c_int;
+    extern const ENETDOWN:c_int;
+    extern const ENETRESET:c_int;
+    extern const ENETUNREACH:c_int;
+    extern const ENFILE:c_int;
+    extern const ENOBUFS:c_int;
+    extern const ENODEV:c_int;
+    extern const ENOENT:c_int;
+    extern const ENOEXEC:c_int;
+    extern const ENOLCK:c_int;
+    extern const ENOLINK:c_int;
+    extern const ENOMEM:c_int;
+    extern const ENOMSG:c_int;
+    extern const ENOPROTOOPT:c_int;
+    extern const ENOSPC:c_int;
+    extern const ENOSYS:c_int;
+    extern const ENOTCONN:c_int;
+    extern const ENOTDIR:c_int;
+    extern const ENOTEMPTY:c_int;
+    extern const ENOTRECOVERABLE:c_int;
+    extern const ENOTSOCK:c_int;
+    extern const ENOTSUP:c_int;
+    extern const ENOTTY:c_int;
+    extern const ENXIO:c_int;
+    extern const EOPNOTSUPP:c_int;
+    extern const EOVERFLOW:c_int;
+    extern const EOWNERDEAD:c_int;
+    extern const EPERM:c_int;
+    extern const EPIPE:c_int;
+    extern const EPROTO:c_int;
+    extern const EPROTONOSUPPORT:c_int;
+    extern const EPROTOTYPE:c_int;
+    extern const ERANGE:c_int;
+    extern const EROFS:c_int;
+    extern const ESPIPE:c_int;
+    extern const ESRCH:c_int;
+    extern const ESTALE:c_int;
+    extern const ETIMEDOUT:c_int;
+    extern const ETXTBSY:c_int;
+    extern const EWOULDBLOCK:c_int;
+    extern const EXDEV:c_int;
+
+    // POSIX says that errno is a "modifiable lvalue of type int", but
+    // for now we only support reading from it, not assigning to it.
+    inline proc errno:c_int {
+      extern proc chpl_os_posix_errno_val():c_int;
+      return chpl_os_posix_errno_val();
+    }
+
+    //
     // fcntl.h
     //
     extern const O_ACCMODE:c_int;
