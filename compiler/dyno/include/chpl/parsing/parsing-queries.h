@@ -25,7 +25,7 @@
 #include "chpl/queries/ID.h"
 #include "chpl/queries/Location.h"
 #include "chpl/uast/AstNode.h"
-#include "chpl/uast/Builder.h"
+#include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Module.h"
 
@@ -151,6 +151,14 @@ void setConfigParams(Context* context, std::vector<std::pair<std::string,std::st
 
 const
 std::vector<std::pair<std::string,std::string>>& configParams(Context* context);
+
+// TODO: Should these queries be private
+// use the config param by storing the ID where it was used
+void
+useConfigParam(Context* context, UniqueString name, ID id);
+
+// check if config was used already
+const ID& nameToConfigParamId(Context*, UniqueString name);
 
 } // end namespace parsing
 } // end namespace chpl

@@ -24,6 +24,9 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Module.h"
+#include "chpl/uast/Variable.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/parsing/Parser.h"
 
 #include <cstring>
 #include <string>
@@ -196,6 +199,47 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
       assert(false && "Location for all ast should be set by noteLocation");
     }
     return;
+  }
+
+// TODO: Le extract me
+  auto configs = chpl::parsing::configParams(this->context_);
+  if (auto var = ast->toVariable()) {
+    if (var->isConfig()) {
+      // for config vars, check if they were set from the command line
+      for (auto node : configs) {
+        // TODO: How does this work with module prefixes?
+        if (node.first == var->name().str()) {
+          // found a config that was set via cmd line: replace the node
+          // need to build up a new Variable from the old one, copying all the
+          // internals
+
+          auto parser = parsing::Parser::build(this->context_);
+          parsing::Parser* p = parser.get();
+          // do we need to parse the name for a module path here? Seems likely
+          std::string inputText = (!node.second.empty()) ? node.first + "=" + node.second +";" : node.first + "=true;";
+          // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
+          auto parseResult = p->parseString("CompilationConfigs", inputText.c_str());
+          assert(!parseResult.numErrors());
+          auto mod = parseResult.singleModule();
+          assert(mod);
+          // std::cerr << "dyno parse input: " << dynoText <<std::endl;
+          mod->stringify(std::cerr, CHPL_SYNTAX);
+          // addOrReplaceInitExpr(var, mod->stmt(0)->toVariable()->initExpression());
+          // if (auto initPtr = var->initExpression()) {
+          //   //How to make a new node for init expression? Parser is how I know
+
+          //   for (auto& astListChild : this->mutableRefToChildren(ast)) {
+          //     if (astListChild.get() == initPtr) {
+          //       // child.swap(toOwned(newInitExprNode));
+          //       // just try to see what we find here
+          //       astListChild->dump(DEBUG_DETAIL);
+          //       astListChild->dump(CHPL_SYNTAX);
+          //     }
+          //   }
+          // }
+        }
+      }
+    }
   }
 
   int firstChildID = i;
