@@ -1,0 +1,2 @@
+#! /usr/bin/env bash
+sed -r 's/^[0-9]{10}$/ok/' < $2 > $2.prediff && mv $2.prediff $2

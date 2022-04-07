@@ -226,6 +226,11 @@ module OS {
     extern proc gettimeofday(ref tp: struct_timeval, tzp:c_void_ptr):c_int;
 
     //
+    // time.h
+    //
+    extern proc time(tloc:c_ptr(time_t)):time_t;
+
+    //
     // unistd.h
     //
     extern proc close(fildes:c_int):c_int;
