@@ -2,8 +2,8 @@
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Brad Chamberlain
-   based on the C gcc #5 version by Mr Ledrug
-   and the Chapel #2 version by myself and Ben Harshbarger
+   based on the Chapel #3 version with some inspiration taken from the
+   C gcc #6 version by Jeremy Zerfas
 */
 
 proc main(args: [] string) {
@@ -59,6 +59,7 @@ proc revcomp(buf, bufflo, hi) {
 
   var lo = bufflo;
 
+  // skip past header line
   do {
     lo += 1;
   } while buf[lo-1] != eol;
