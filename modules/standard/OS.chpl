@@ -228,6 +228,24 @@ module OS {
     //
     // time.h
     //
+    extern "struct tm" record struct_tm {
+      var tm_sec:c_int;   // Seconds [0,60] (60 allows for leap seconds)
+      var tm_min:c_int;   // Minutes [0,59]
+      var tm_hour:c_int;  // Hour [0,23]
+      var tm_mday:c_int;  // Day of month [1,31]
+      var tm_mon:c_int;   // Month of year [0,11]
+      var tm_year:c_int;  // Years since 1900
+      var tm_wday:c_int;  // Day of week [0,6] (Sunday =0)
+      var tm_yday:c_int;  // Day of year [0,365]
+      var tm_isdst:c_int; // Daylight Savings flag
+    };
+
+    extern proc asctime(timeptr:c_ptr(struct_tm)):c_ptr(c_char);
+    extern proc asctime_r(timeptr:c_ptr(struct_tm), buf:c_ptr(c_char))
+                  :c_ptr(c_char);
+    extern proc localtime(timer:c_ptr(time_t)):c_ptr(struct_tm);
+    extern proc localtime_r(timer:c_ptr(time_t), result:c_ptr(struct_tm))
+                  :c_ptr(struct_tm);
     extern proc time(tloc:c_ptr(time_t)):time_t;
 
     //
