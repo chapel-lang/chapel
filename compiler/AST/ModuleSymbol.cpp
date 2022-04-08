@@ -353,12 +353,7 @@ void ModuleSymbol::printDocs(std::ostream* file,
     // effect of making references to the :mod: tag for the module
     // illegal, which is appropriate since the modules are not
     // user-facing.
-    if ((strncmp(this->name, "Chapel", 6) == 0 && strcmp(this->name, "ChapelIO") != 0) ||
-        strcmp(this->name, "Atomics") == 0 ||
-        strcmp(this->name, "Bytes") == 0 ||
-        strcmp(this->name, "OwnedObject") == 0 ||
-        strcmp(this->name, "SharedObject") == 0 ||
-        strcmp(this->name, "String") == 0) {
+    if (strncmp(this->filename, "internal/", 9) == 0) {
       *file << "   :noindex:" << std::endl;
     } else if (this->doc != NULL) {
       this->printTabs(file, tabs + 1);
