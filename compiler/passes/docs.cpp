@@ -413,6 +413,19 @@ std::string filenameFromMod(ModuleSymbol *mod, std::string docsWorkDir) {
     size_t location = filename.rfind("/");
     if (location != std::string::npos) {
       filename = filename.substr(0, location + 1);
+
+      // Check for files starting with the CHPL_HOME internal modules
+      // path, and if we find one, chop everything but 'internal/' and
+      // whatever follows out of the path in order to create the
+      // appropriate relative path within the sphinx output directory.
+      // Also label such modules as MOD_INTERNAL for subsequent
+      // checks, like the one in ModuleSymbol::printDocs()
+      static const char* modPath = astr(CHPL_HOME, "/modules/");
+      static const char* intModPath = astr(modPath, "internal/");
+      if (strncmp(intModPath, filename.c_str(), strlen(intModPath)) == 0) {
+        filename = filename.substr(strlen(modPath));
+        mod->modTag = MOD_INTERNAL;
+      }
     } else {
       filename = "";
     }

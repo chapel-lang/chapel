@@ -169,18 +169,18 @@ DISTS_TO_DOCUMENT = \
 	layouts/LayoutCS.chpl \
 
 
-INTERNAL_MODULES_TO_DOCUMENT =                \
-	internal/Atomics.chpl                 \
-	internal/Bytes.chpl                   \
-	internal/ChapelArray.chpl             \
-	internal/ChapelDomain.chpl            \
-	internal/ChapelLocale.chpl            \
-	internal/ChapelRange.chpl             \
-	internal/ChapelSyncvar.chpl           \
-	internal/ChapelTuple.chpl             \
-	internal/OwnedObject.chpl             \
-	internal/SharedObject.chpl            \
-	internal/String.chpl                  \
+INTERNAL_MODULES_TO_DOCUMENT =                        \
+	$(CHPL_MAKE_HOME)/modules/internal/Atomics.chpl       \
+	$(CHPL_MAKE_HOME)/modules/internal/Bytes.chpl         \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelArray.chpl   \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelDomain.chpl  \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelLocale.chpl  \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelRange.chpl   \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelSyncvar.chpl \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelTuple.chpl   \
+	$(CHPL_MAKE_HOME)/modules/internal/OwnedObject.chpl   \
+	$(CHPL_MAKE_HOME)/modules/internal/SharedObject.chpl  \
+	$(CHPL_MAKE_HOME)/modules/internal/String.chpl        \
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)

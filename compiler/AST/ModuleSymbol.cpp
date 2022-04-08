@@ -353,7 +353,7 @@ void ModuleSymbol::printDocs(std::ostream* file,
     // effect of making references to the :mod: tag for the module
     // illegal, which is appropriate since the modules are not
     // user-facing.
-    if (strncmp(this->filename, "internal/", 9) == 0) {
+    if (this->modTag == MOD_INTERNAL) {
       *file << "   :noindex:" << std::endl;
     } else if (this->doc != NULL) {
       this->printTabs(file, tabs + 1);
