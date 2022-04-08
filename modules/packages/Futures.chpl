@@ -20,7 +20,7 @@
 
 /* Containers for accessing the results of asynchronous execution.
 
-.. |---| unicode:: U+2014   TODO: What is this?
+.. |---| unicode:: U+2014
 
 A :record:`Future` object is a container that can store the result of an
 asynchronous operation, which can be retrieved when the result is ready.
