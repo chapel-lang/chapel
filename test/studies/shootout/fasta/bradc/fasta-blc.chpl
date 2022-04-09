@@ -7,8 +7,13 @@
      and Preston Sahabu.
 */
 
+use IO;
+
+config param lineLength = 60;
+
+config type randType = uint(32);  // type to use for random numbers
+
 config const n = 1000,            // the length of the generated strings
-             lineLength = 60,     // the number of columns in the output
              blockSize = 1024,    // the parallelization granularity
              numTasks = min(4, here.maxTaskPar);  // how many tasks to use?
 //
@@ -25,58 +30,34 @@ config const n = 1000,            // the length of the generated strings
 // parallelism to avoid oversubscription.
 //
 
-config type randType = uint(32);  // type to use for random numbers
+param IM = 139968,         // parameters for random number generation
+      IA = 3877,
+      IC = 29573,
 
-config param IM = 139968,         // parameters for random number generation
-             IA = 3877,
-             IC = 29573,
-             seed: randType = 42;
-
-//
-// Nucleotide definitions
-//
-enum nucleotide {
-  A = "A".toByte(), C = "C".toByte(), G = "G".toByte(), T = "T".toByte(),
-  a = "a".toByte(), c = "c".toByte(), g = "g".toByte(), t = "t".toByte(),
-  B = "B".toByte(), D = "D".toByte(), H = "H".toByte(), K = "K".toByte(),
-  M = "M".toByte(), N = "N".toByte(), R = "R".toByte(), S = "S".toByte(),
-  V = "V".toByte(), W = "W".toByte(), Y = "Y".toByte()
-}
-use nucleotide;
-
-//
-// Sequence to be repeated
-//
-const ALU: [0..286] nucleotide = [
-  G, G, C, C, G, G, G, C, G, C, G, G, T, G, G, C, T, C, A, C,
-  G, C, C, T, G, T, A, A, T, C, C, C, A, G, C, A, C, T, T, T,
-  G, G, G, A, G, G, C, C, G, A, G, G, C, G, G, G, C, G, G, A,
-  T, C, A, C, C, T, G, A, G, G, T, C, A, G, G, A, G, T, T, C,
-  G, A, G, A, C, C, A, G, C, C, T, G, G, C, C, A, A, C, A, T,
-  G, G, T, G, A, A, A, C, C, C, C, G, T, C, T, C, T, A, C, T,
-  A, A, A, A, A, T, A, C, A, A, A, A, A, T, T, A, G, C, C, G,
-  G, G, C, G, T, G, G, T, G, G, C, G, C, G, C, G, C, C, T, G,
-  T, A, A, T, C, C, C, A, G, C, T, A, C, T, C, G, G, G, A, G,
-  G, C, T, G, A, G, G, C, A, G, G, A, G, A, A, T, C, G, C, T,
-  T, G, A, A, C, C, C, G, G, G, A, G, G, C, G, G, A, G, G, T,
-  T, G, C, A, G, T, G, A, G, C, C, G, A, G, A, T, C, G, C, G,
-  C, C, A, C, T, G, C, A, C, T, C, C, A, G, C, C, T, G, G, G,
-  C, G, A, C, A, G, A, G, C, G, A, G, A, C, T, C, C, G, T, C,
-  T, C, A, A, A, A, A
-];
+      // Sequence to be repeated
+      ALU = b"GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGGGAGGCCGAGGCGGGCGGA" +
+            b"TCACCTGAGGTCAGGAGTTCGAGACCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACT" +
+            b"AAAAATACAAAAATTAGCCGGGCGTGGTGGCGCGCGCCTGTAATCCCAGCTACTCGGGAG" +
+            b"GCTGAGGCAGGAGAATCGCTTGAACCCGGGAGGCGGAGGTTGCAGTGAGCCGAGATCGCG" +
+            b"CCACTGCACTCCAGCCTGGGCGACAGAGCGAGACTCCGTCTCAAAAA";
 
 //
 // Probability tables for sequences to be randomly generated
 //
-const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
-             (B, 0.02), (D, 0.02), (H, 0.02), (K, 0.02),
-             (M, 0.02), (N, 0.02), (R, 0.02), (S, 0.02),
-             (V, 0.02), (W, 0.02), (Y, 0.02)];
+const IUB = [(b("a"), 0.27), (b("c"), 0.12), (b("g"), 0.12), (b("t"), 0.27),
+             (b("B"), 0.02), (b("D"), 0.02), (b("H"), 0.02), (b("K"), 0.02),
+             (b("M"), 0.02), (b("N"), 0.02), (b("R"), 0.02), (b("S"), 0.02),
+             (b("V"), 0.02), (b("W"), 0.02), (b("Y"), 0.02)],
 
-const HomoSapiens = [(a, 0.3029549426680),
-                     (c, 0.1979883004921),
-                     (g, 0.1975473066391),
-                     (t, 0.3015094502008)];
+      HomoSapiens = [(b("a"), 0.3029549426680),
+                     (b("c"), 0.1979883004921),
+                     (b("g"), 0.1975473066391),
+                     (b("t"), 0.3015094502008)],
+
+      newline = b("\n"),   // newline's byte value
+
+      // Redefine stdout to use lock-free binary I/O
+      stdout = openfd(1).writer(kind=iokind.native, locking=false);
 
 proc main() {
   repeatMake(">ONE Homo sapiens alu", ALU, 2*n);
@@ -85,22 +66,15 @@ proc main() {
 }
 
 //
-// Redefine stdout to use lock-free binary I/O and capture a newline
-//
-use IO;
-const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = "\n".toByte();
-
-//
 // Repeat 'alu' to generate a sequence of length 'n'
 //
 proc repeatMake(desc, alu, n) {
   stdout.writeln(desc);
 
   const r = alu.size,
-        s = [i in 0..(r+lineLength)] alu[i % r]: int(8);
+        s = alu + alu;
 
-  for i in 0..n by lineLength {
+  for i in 0..<n by lineLength {
     const lo = i % r,
           len = min(lineLength, n-i);
     stdout.write(s[lo..#len], newline);
@@ -123,18 +97,18 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
   }
 
   // guard when tasks can access the random numbers or output stream
-  var randGo, outGo: [0..#numTasks] atomic int;
+  var randGo, outGo: [0..<numTasks] atomic int;
 
   // create tasks to pipeline the RNG, computation, and output
-  coforall tid in 0..#numTasks {
+  coforall tid in 0..<numTasks {
     const chunkSize = lineLength*blockSize,
           nextTid = (tid + 1) % numTasks;
 
-    var myBuff: [0..#(lineLength+1)*blockSize] int(8),
+    var myBuff: [0..<(lineLength+1)*blockSize] uint(8),
         myRands: [0..chunkSize] randType;
 
-    // iterate over 0..n-1 in a round-robin fashion across tasks
-    for i in tid*chunkSize..n-1 by numTasks*chunkSize {
+    // iterate over 0..<n in a round-robin fashion across tasks
+    for i in tid*chunkSize..<n by numTasks*chunkSize {
       const nBytes = min(chunkSize, n-i);
 
       // Get 'nBytes' random numbers in a coordinated manner
@@ -152,7 +126,7 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
           nid += (r >= p);
         const (nucl,_) = nuclInfo[nid];
 
-        myBuff[off] = nucl: int(8);
+        myBuff[off] = nucl;
         off += 1;
         col += 1;
 
@@ -169,20 +143,24 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
 
       // Write the output in a coordinated manner
       outGo[tid].waitFor(i);
-      stdout.write(myBuff[0..#off]);
+      stdout.write(myBuff[..<off]);
       outGo[nextTid].write(i+chunkSize);
     }
   }
+}
+
+proc b(s) {
+  return s.toByte();
 }
 
 //
 // Deterministic random number generator
 // (lastRand really wants to be a local static...)
 //
-var lastRand = seed;
+var lastRand = 42: randType;
 
 proc getRands(n, arr) {
-  for i in 0..#n {
+  for i in 0..<n {
     lastRand = (lastRand * IA + IC) % IM;
     arr[i] = lastRand;
   }
