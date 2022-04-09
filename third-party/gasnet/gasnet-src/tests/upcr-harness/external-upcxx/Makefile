@@ -297,7 +297,7 @@ make_test: upcxx-install
 	           TESTS=^test-$(TEST_EXE) EXTRAFLAGS="$(UPCXX_EXTRA_TEST_FLAGS) $(UPCXX_TEST_FLAGS)"
 	@mv $(UPCXX_BLDDIR)/test-$(TEST_EXE)-$(GASNET_CODEMODE)-$(UPCXX_CONDUIT) $(TEST_EXE)
 
-IGNORE_TESTS_PAT=neg-.+|getenv|promise_multiple_results|promise_reused|quiescence_failure|issue105
+IGNORE_TESTS_PAT=neg-.+|getenv|promise_multiple_results|promise_reused|quiescence_failure|issue105|hello_via_shell
 check-testsuite:
 	$(MAKE) -C $(UPCXX_BLDDIR) $(UPCXX_MAKE_J) dev-tests-$(GASNET_CODEMODE) UPCXX_DRY_RUN=1 NETWORKS=$(UPCXX_CONDUIT) > check-testsuite.log
 	@$(PERL) -ne 'BEGIN { open F, "harness.conf" or die $$!; while (<F>) { $$tests{$$1}=1 if (m/^TestName:\s*(\S+)/); }; }' \
@@ -308,6 +308,7 @@ check-testsuite:
 
 VPATH = \
 	$(UPCXX_BLDDIR)/test \
+	$(UPCXX_BLDDIR)/test/ccs \
 	$(UPCXX_BLDDIR)/test/uts \
 	$(UPCXX_BLDDIR)/test/regression \
 	$(UPCXX_BLDDIR)/example \
@@ -316,13 +317,13 @@ VPATH = \
 	$(UPCXX_BLDDIR)/example/serialization \
 	$(UPCXX_BLDDIR)/bench \
 	$(UPCXX_BLDDIR)/extras/extensions/allocator \
-	$(UPCXX_BLDDIR)/extras/extensions/padded_cuda_allocator \
+	$(UPCXX_BLDDIR)/extras/extensions/padded_device_allocator \
 	$(UPCXX_BLDDIR)/extras/examples/rpc_ff_quiescence \
 	$(UPCXX_BLDDIR)/extras/examples/vector_accumulate \
 	$(UPCXX_BLDDIR)/extras/examples/kokkos_montecarlo \
 	$(UPCXX_BLDDIR)/extras/examples/kokkos_3dhalo \
-	$(UPCXX_BLDDIR)/extras/tutorials/2020-11/examples \
-	$(UPCXX_BLDDIR)/extras/tutorials/2020-11/solutions
+	$(UPCXX_BLDDIR)/extras/tutorials/2021-11/examples \
+	$(UPCXX_BLDDIR)/extras/tutorials/2021-11/solutions
 
 # Pattern rule builds tests, using logic dependent on their location
 %-seq %-par :: %.cpp force
@@ -338,6 +339,23 @@ VPATH = \
 	else \
 	  echo "Unrecognized UPCXX_TESTMODE=$$UPCXX_TESTMODE" ; exit 100; \
 	fi 
+
+# tests/ccs
+ccs-%-seq ccs-%-par :: ccs-%.sh force
+	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
+	              *-par) export UPCXX_THREADMODE=par ;; esac; \
+	set -x ; $(DO_ENV) && \
+	$(MAKE) -C $(UPCXX_BLDDIR) $(UPCXX_MAKE_J) dev-tests-$(GASNET_CODEMODE) NETWORKS=$(UPCXX_CONDUIT) \
+	           TESTS=^test-$@ EXTRAFLAGS="$(UPCXX_EXTRA_TEST_FLAGS) $(UPCXX_TEST_FLAGS)"
+	set -e -x; \
+	longname="test-$@-$(GASNET_CODEMODE)-$(UPCXX_CONDUIT)"; \
+	if test -e $(UPCXX_BLDDIR)/$$longname.runcmd ; then \
+	  mv $(UPCXX_BLDDIR)/$$longname .; \
+	  mv $(UPCXX_BLDDIR)/$$longname.runcmd $@.runcmd; \
+	  ln -sf $$longname $@; \
+	else \
+	  mv $(UPCXX_BLDDIR)/$$longname $@; \
+	fi
 
 # upcxx-examples guppie
 guppie-%-seq guppie-%-par :: $(UPCXX_BLDDIR)/extras/examples/gups/upcxx upcxx-install force
@@ -421,13 +439,14 @@ upc-%-seq upc-%-par :: $(UPCXX_BLDDIR)/test/interop upcxx-install force
 	mv $</$* $@
 
 # misc make-based examples
-cuda_vecadd% :: $(UPCXX_BLDDIR)/example/cuda_vecadd/Makefile upcxx-install force
+# cuda_vecadd, hip_vecadd :
+%_vecadd-seq %_vecadd-par :: $(UPCXX_BLDDIR)/example/gpu_vecadd/Makefile upcxx-install force
 	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
 	              *-par) export UPCXX_THREADMODE=par ;; esac; \
 	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $(<D) \
 	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             clean cuda_vecadd
-	mv $(<D)/cuda_vecadd $@
+	             clean $*_vecadd
+	mv $(<D)/$*_vecadd $@
 
 CMAKE ?= cmake
 CMAKE_ARGS ?=

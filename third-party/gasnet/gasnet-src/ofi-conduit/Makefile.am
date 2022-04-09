@@ -44,6 +44,14 @@ pmi_sources = $(pmi_srcdir)/gasnet_bootstrap_pmi.c
 pmi_deps = $(pmi_srcdir)/*.[ch]
 endif
 
+##
+## HWLOC support (unconditional)
+##
+hwloc_srcdir = $(top_srcdir)/other/hwloc
+hwloc_sources = $(hwloc_srcdir)/gasnet_hwloc.c
+hwloc_deps = $(hwloc_srcdir)/*.[ch]
+hwloc_extralibcflags = -I$(hwloc_srcdir) @HWLOC_CFLAGS@
+
 # any conduit-specific subdirectories containing Makefile.am's
 SUBDIRS = contrib
 
@@ -58,19 +66,22 @@ CONDUIT_FILELIST =           \
       gasnet_core.h          \
       gasnet_core_fwd.h      \
       gasnet_core_help.h     \
-      gasnet_core_internal.h
+      gasnet_core_internal.h \
+      gasnet_extended.c      \
+      gasnet_extended_fwd.h
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST =          \
       $(srcdir)/gasnet_core.c \
-      $(top_srcdir)/extended-ref/gasnet_extended.c \
+      $(srcdir)/gasnet_extended.c \
       $(srcdir)/gasnet_ofi.c \
+      $(hwloc_sources) \
       $(ssh_sources) $(pmi_sources)
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @OFI_CFLAGS@ $(ssh_defines) $(mpi_defines) $(pmi_cppflags)
+CONDUIT_EXTRALIBCFLAGS = @OFI_CFLAGS@ $(ssh_defines) $(mpi_defines) $(pmi_cppflags) $(hwloc_extralibcflags)
 
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS =
@@ -80,7 +91,7 @@ CONDUIT_PRIVATEHEADERS =
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(ssh_deps) $(mpi_deps) $(pmi_deps)
+CONDUIT_EXTRADEPS = $(ssh_deps) $(mpi_deps) $(pmi_deps) $(hwloc_deps)
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as

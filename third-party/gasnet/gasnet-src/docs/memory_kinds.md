@@ -29,7 +29,7 @@ implementation and is updated as that status changes.
 This document makes references to an external document, which is available on
 request from gasnet-staff@lbl.gov:  
 
-  + GASNet-EX API Proposal: Memory Kinds, Revision 2021.9.0
+  + GASNet-EX API Proposal: Memory Kinds, Revision 2022.3.0
 
 For brevity, this will be referenced as simply "the API Proposal".
 
@@ -94,13 +94,17 @@ All current memory kinds implementation work is limited to two types of devices:
 2. Devices with the HIP API, which should include all AMD GPUs supported by AMD ROCm.
    Please consult the ROCm documentation for information on supported devices.
 
-Support is further limited to certain conduits on Linux and only when using Mellanox
-InfiniBand hardware and drivers with support for "GPUDirect RDMA" (GDR).  In
-some cases additional optional software, such as "nvidia_peer_memory" must be
-installed.  Please consult Mellanox documentation for assistance determining
-what driver software is needed for your specific hardware and Linux
-distribution.  The Open MPI and MVAPICH projects also have some documentation
-regarding deployment of GPUDirect RDMA for their respective MPI implementations.
+Support is further limited to ibv and ucx conduits on Linux and only when using
+Mellanox InfiniBand hardware and drivers with support for PCIe peer-to-peer
+communication.  In this document we will use "communication offload" in place
+of vendor-specific terms for the relevant technology ("GPUDirect RDMA" for
+NVIDIA or "ROCmRDMA" for AMD), except when a specific vendor's technology is
+intended.  In some cases, additional optional software (such as GPU-specific
+Linux kernel modules) is required.  Please consult your GPU vendor's
+documentation for assistance determining what driver software is needed for
+your specific hardware and Linux distribution.  The Open MPI and MVAPICH
+projects also have some documentation regarding deploying of communication
+offload for their respective MPI implementations.
 
 With ibv-conduit, `GASNET_SEGMENT_FAST` segment mode is supported.  This is the
 default segment mode, but can be specified explicitly at configure time using
@@ -114,10 +118,10 @@ explicitly at configure time using the `--enable-segment-fast` option.  To be
 clear: `--enable-segment-everything` configurations of ucx-conduit do not
 support the memory kinds work in the current implementation.
 
-To the best of our knowledge, Mellanox currently disclaims support for GPUDirect
-RDMA on aarch64 (aka ARM64 or ARMv8).  NVIDIA does not support UVA on 32-bit
-platforms, and AMD does not claim any 32-bit CPU support at all.
-Therefore, this work currently supports only x86-64 and ppc64le.
+To the best of our knowledge communications offload support is not available on
+current aarch64 (aka ARM64 or ARMv8) systems.  NVIDIA does not support UVA on
+32-bit platforms, and AMD does not claim any 32-bit CPU support at all.
+This work currently supports only x86-64 and ppc64le.
 
 For configurations on an unsupported CPU architecture which otherwise appear to
 to satisfy the configure-testable requirements above, a warning will be issued.
@@ -131,16 +135,16 @@ transparently stage transfers through host memory bounce buffers, but that is
 not yet present.
 
 If support is enabled at configure time, then the implementation will attempt
-to determine at runtime if GDR support is present or not.  If it is not, then
-`gex_MK_Create()` will fail with an appropriate message.
+to determine at runtime if communication offload support is present or not.  If
+it is not, then `gex_MK_Create()` will fail with an appropriate message.
 
 ## Limits on GPU segment size
 
-Modern GPUs with GPUDirect utilize a "Base Address Register" mechanism
-to map the device memory into the PCIe address space.  The amount of memory
-which can be mapped by GASNet-EX as a GPU segment is limited by the `BAR`
-capability of your GPU, which can also be severely limited by the motherboard
-and/or BIOS.
+Modern GPUs supporting communication offload utilize a "Base Address Register"
+mechanism to map the device memory into the PCIe address space.  The amount of
+memory which can be mapped by GASNet-EX as a GPU segment is limited by the
+`BAR` capability of your GPU, which can also be severely limited by the
+motherboard and/or BIOS.
 
 To query the BAR capability of an NVIDIA GPU, run `nvidia-smi -q` and look for the
 "Total" value in the "BAR1 Memory Usage" section for an (optimistic) maximum on
@@ -170,6 +174,17 @@ per process have been observed.
 Additionally, the BAR usage is *per-HCA* and thus use of multiple rails may
 limit the size of GPU segments.
 
+## UCX Support for Memory Kinds
+
+The support for CUDA and HIP/ROCm device memory has been *optionally* available
+in UCX since the 1.6.0 release (which is also the oldest supported by
+ucx-conduit).
+
+The ucx-conduit has support for `GEX_MK_CLASS_CUDA_UVA` and `GEX_MK_CLASS_HIP`.
+However, see "UCX and CUDA memory" under "Known Issues", below.
+
+# Known Issues
+
 ## Loopback
 
 The current implementation does not handle RMA operations between combinations
@@ -187,7 +202,7 @@ GASNet-EX to perform such transfers.
 For the most up-to-date information on this issue see
 [bug 4149](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4149)
 
-## GDR and small Gets into device memory
+## Small Gets into device memory
 
 As documented
 [here](https://github.com/linux-rdma/rdma-core/blob/master/providers/mlx5/man/mlx5dv_create_qp.3.md)
@@ -206,52 +221,44 @@ release.
 For the most up-to-date information on this issue see
 [bug 4151](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4151)
 
-## UCX CUDA Support
+## UCX and CUDA memory
 
-The necessary GDR support has been *optionally* available in UCX since the 1.6.0
-release (which is also the oldest supported by ucx-conduit).  However, there is
-no reliable means we are aware of to determine if this support is actually
-enabled.  Therefore, attempts to use `GEX_MK_CLASS_CUDA_UVA` with a build of
-UCX lacking the necessary support (because it was compiled without it or because
-it was disabled at runtime) will likely fail "poorly", crashing at the first
-attempt to perform RMA operations using a device segment.
+Use of GASNet-EX "CUDA_UVA" memory kinds with ucx-conduit may crash due to
+incorrect default algorithm selection inside UCX for RMA transfers involving
+device memory.  For sufficiently recent UCX versions, there are work-arounds
+based on setting environment variables to modify the algorithm selection to be
+correct for device memory at the expense of slowing of host memory RMA.
 
-It is hoped that in the future such crashes can be replaced with a non-fatal
-error return from either the `gex_MK_Create()` or `gex_Segment_Create()` calls.
-
-## CUDA Multi-Process Service (MPS)
-
-Testing conducted to date is insufficient to establish whether the current
-implementation is compatible with the use of CUDA MPS.  Reports (positive or
-negative) regarding such compatibility are welcome.
+For the most up-to-date information on this issue see
+[bug 4384](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4384)
 
 # Tested Configurations
 
 We have yet to establish the minimum required versions of hardware, drivers or
-libraries.  However, the following two platforms are our primary development
+libraries.  However, the following platforms are our primary development
 systems and represent "known good" combinations (modulo those caveats listed
-elsewhere in this document, such as with regards to multi-rail):
+elsewhere in this document):
 
 Summit:  
 
   + ppc64le (IBM POWER9)
-  + CUDA 10.1.243
+  + CUDA 10.1.243 and 11.3
   + Mellanox ConnectX-5 HCAs
   + NVIDIA Volta-class GPUs
 
 Dirac:  
 
-  + x86_64 (Intel Nahalem)
-  + CUDA 11.1
+  + x86_64 (Intel Nehalem)
+  + CUDA 11.1 through 11.6
   + Mellanox ConnectX-5 HCAs
   + NVIDIA Maxwell-class GPUs
 
 AMD GPU systems:
 
-  + x86_64 (Intel Rome and Milan families)
-  + ROCm 4.0 though 4.2
+  + x86_64 (multiple AMD CPU families)
+  + ROCm 4.5
   + Mellanox ConnectX-5 and ConnectX-6 HCAs
-  + AMD Instinct-class (MI50 and MI100) GPUs
+  + AMD Instinct-class (MI50, MI100, MI250X) GPUs
 
 Eventual minimum requirements may be lower than on the platforms listed above, or
 possibly higher.
@@ -260,8 +267,8 @@ possibly higher.
 
 Currently the implementation is sufficient (when hardware, software and
 configuration constraints are met) to use the pseudo-code below to perform RMA
-operations between combinations of host and GPU memory (subject to the
-previously noted temporary prohibitions on loopback and intra-nbrhd transfers).
+operations between combinations of host and GPU memory (subject to any
+previously noted temporary prohibitions, such as on loopback transfers).
 
 Please note that all error checking has been elided from this example.  Proper
 checking of return codes, if any, is especially important when using this
@@ -361,7 +368,7 @@ or demand allocation of memory suitable for intra-nbrhd cross-mapping via PSHM.
 
 ## `gex_Segment_Destroy()`
 
-Not currently implemented.
+This API is fully implemented to the current proposed specification.
 
 ## `gex_EP_Create()`
 
@@ -409,7 +416,7 @@ multi-EP support).
 
 This API is believed to be fully implemented in all conduits and accepted by
 all APIs required to do so by the API Proposal (notably the `gex_RMA_*()`,
-`gex_AM_*()` and `gex_VIS_*() API families).
+`gex_AM_*()` and `gex_VIS_*()` API families).
 
 Since multi-EP support is currently exclusive to ibv and ucx conduits (and only in
 some segment modes), the use in other conduits is effectively limited to aliasing of the
@@ -421,7 +428,7 @@ At this point in time, there is no support for non-primordial endpoints as
 members of teams, and more specifically they are not accepted in the `args`
 passed to `gex_TM_Create()`.  This means all RMA communication involving
 non-primordial endpoints must currently utilize a `gex_TM_t` returned by
-`gex_TM_pair()`.
+`gex_TM_Pair()`.
 
 ## `gex_TM_Dup()`
 
@@ -445,6 +452,5 @@ return `GASNET_ERR_BAD_ARG`, as documented in the API Proposal.
 
 ## `gex_MK_Destroy()`
 
-This API is implemented, but is only legal for a kind not currently in use by
-any segment.  Given the lack of a `gex_Segment_Destroy()` implementation, this
-API is therefore only useful for a kind which has been created but never used.
+This API is implemented, but is currently only allowed for a `gex_MK_t` not
+ever used to create a segment.

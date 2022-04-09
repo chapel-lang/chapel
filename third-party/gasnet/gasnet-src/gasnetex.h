@@ -427,7 +427,8 @@ struct gasneti_endpoint_internal_s;
     uintptr_t          _size;          \
     gex_MK_t           _kind;          \
     void *             _opaque_mk_use; \
-    unsigned int       _opaque_container_use;
+    unsigned int       _opaque_container_use; \
+    int                _client_allocated;
   typedef struct { GASNETI_SEGMENT_COMMON } *gasneti_Segment_t;
   #if GASNET_DEBUG
     extern gasneti_Segment_t gasneti_import_segment(gex_Segment_t _segment);
@@ -691,6 +692,10 @@ extern int gex_Segment_Create(
             gex_Addr_t     _address,
             uintptr_t      _length,
             gex_MK_t       _kind,
+            gex_Flags_t    _flags);
+
+extern void gex_Segment_Destroy(
+            gex_Segment_t  _segment,
             gex_Flags_t    _flags);
 
 /* ------------------------------------------------------------------------------------ */

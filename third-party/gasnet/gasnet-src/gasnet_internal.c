@@ -527,6 +527,7 @@ gasneti_Segment_t gasneti_alloc_segment(
                        void *addr,
                        uintptr_t size,
                        gex_MK_t kind,
+                       int client_allocated,
                        gex_Flags_t flags)
 {
   gasneti_Segment_t segment;
@@ -545,6 +546,7 @@ gasneti_Segment_t gasneti_alloc_segment(
   segment->_addr = addr;
   segment->_ub = (void*)((uintptr_t)addr + size);
   segment->_size = size;
+  segment->_client_allocated = client_allocated;
 #ifdef GASNETC_SEGMENT_INIT_HOOK
   GASNETC_SEGMENT_INIT_HOOK(segment);
 #else
@@ -654,6 +656,26 @@ extern int gex_Segment_Create(
   #endif
 
   GASNETI_RETURN(rc);
+}
+
+extern void gex_Segment_Destroy(
+                gex_Segment_t           e_segment,
+                gex_Flags_t             flags)
+{
+  GASNETI_TRACE_PRINTF(O,("gex_Segment_Destroy: segment=%p flags=%d",
+                          (void*)e_segment, flags));
+  GASNETI_CHECK_INJECT();
+
+  if (!e_segment) {
+    gasneti_fatalerror("Invalid call to gex_Segment_Destroy() with NULL segment");
+  }
+  if (flags) {
+    gasneti_fatalerror("Invalid call to gex_Segment_Destroy() with non-zero flags");
+  }
+  // TODO: check reference count, once implemented
+
+  gasneti_Segment_t i_segment = gasneti_import_segment(e_segment);
+  gasneti_assert_zeroret( gasneti_segmentDestroy(i_segment, 1) );
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -948,6 +970,51 @@ gasneti_Segment_t gasneti_epidx_to_segment(gasneti_TM_t i_tm, gex_EP_Index_t ep_
    gasneti_assert(i_ep);
    return i_ep->_segment;
 }
+
+#if GASNET_DEBUG && GASNET_HAVE_MK_CLASS_MULTIPLE
+// Helper for bounds checking local address range for host-vs-device bound segment.
+// Local address must match kind of bound segment, if any
+//
+// If bound segment kind is device, the local address must be in-segment.
+//   Returns GASNETI_BAD_LOCAL_OUTSIDE_DEVICE_SEGMENT if this constraint is violated
+// Otherwise, the local address must not be in any device segment
+//   Returns GASNETI_BAD_LOCAL_INSIDE_DEVICE_SEGMENT if this constraint is violated
+// Returns 0 in the absence of violations
+// Returns the device segment via *segment_p if either constraint is violated
+int _gasneti_boundscheck_local(gex_TM_t tm, void *addr, size_t len, gasneti_Segment_t *segment_p)
+{
+  gasneti_EP_t i_ep = gasneti_e_tm_to_i_ep(tm);
+  gasneti_Segment_t i_bound_segment = i_ep->_segment;
+  gex_Segment_t e_bound_segment = gasneti_export_segment(i_bound_segment);
+
+  if (!len || (e_bound_segment && _gasneti_in_segment_t(addr, len, e_bound_segment))) {
+    // Zero-length, or in the bound segment (if any) are always OK.
+  } else if (! gasneti_i_segment_kind_is_host(i_bound_segment)) {
+    // Local "device memory" must never be outside the bound segment.
+    *segment_p = i_bound_segment;
+    return GASNETI_BAD_LOCAL_OUTSIDE_DEVICE_SEGMENT;
+  } else if (gasneti_in_local_auxsegment(i_ep, addr, len)) {
+    // When not bound to device segment, local aux segment is OK.
+  } else {
+    // Search segment table for a match
+    // If a match is found, it must not be a device segment, but no match is fine too
+    gasneti_Segment_t i_segment;
+    GASNETI_SEGTBL_LOCK();
+    GASNETI_SEGTBL_FOR_EACH(i_segment) {
+      gex_Segment_t e_segment = gasneti_export_segment(i_segment);
+      if (_gasneti_in_segment_t(addr, len, e_segment)) {
+        if (gasneti_i_segment_kind_is_host(i_segment)) break;
+        GASNETI_SEGTBL_UNLOCK();
+        *segment_p = i_segment;
+        return GASNETI_BAD_LOCAL_INSIDE_DEVICE_SEGMENT;
+      }
+    }
+    GASNETI_SEGTBL_UNLOCK();
+  }
+  *segment_p = NULL;
+  return 0;
+}
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 
@@ -1678,13 +1745,18 @@ static void gasneti_nodemap_helper(const void *ids, size_t sz, size_t stride)) {
   }
 }
 
-/* Last-resort nodemap constructor
- * Used when neither platform nor conduit can provide any IDs,
- * or when no exchangefn is available to disseminate them.
- */
-void gasneti_nodemap_trivial(void) {
-  gex_Rank_t i;
-  for (i = 0; i < gasneti_nodes; ++i) gasneti_nodemap[i] = i;
+// 64-bit FNV-1a, implemented from scratch based on psuedo code and constants in
+// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+static uint64_t fnv1a_64(const uint8_t *buf, size_t len)
+{
+  const uint64_t FNV_offset_basis = 0xcbf29ce484222325ULL;
+  const uint64_t FNV_prime = 0x00000100000001B3ULL;
+  uint64_t x = FNV_offset_basis;
+  for (size_t i = 0; i < len; i++) {
+    x ^= *(buf++);
+    x *= FNV_prime;
+  }
+  return x;
 }
 
 // gasneti_hosthash(): 64-bit hash of hostname
@@ -1697,21 +1769,7 @@ void gasneti_nodemap_trivial(void) {
 // would the pair "172.16.0.6" and "172.18.0.8".
 extern uint64_t gasneti_hosthash(void) {
   const char *myname = gasneti_gethostname();
-  const uint8_t *buf = (uint8_t *)myname;
-  size_t len = strlen(myname);
-  uint64_t csum = 0;
-  for (int i=0;i<len;i++) {
-    uint8_t c = *(buf++);
-    /* The "c = ..." squeezes ASCII down to 6 bits, while encoding
-     * all chars valid in hostnames and IP addresses (IPV4 and IPV6).
-     * A unique value is assigned to each of the digits, the lower
-     * case letters, '-', '.' and ':'.  The upper case letters map
-     * to the same values as the corresponding lower-case.
-     */
-    c = ((c & 0x40) >> 1) | (c & 0x1f);
-    csum = ((csum << 6) | ((csum >> 58) & 0x3F)) ^ c;
-  }
-  return csum;
+  return fnv1a_64((const uint8_t *)myname, strlen(myname));
 }
 
 /* Wrapper around gethostid() */
@@ -1745,29 +1803,6 @@ extern uint32_t gasneti_gethostid(void) {
     }
 
     return myid;
-}
-
-/* Platform-depended default nodemap constructor
- * Used when no conduit-specific IDs are provided.
- */
-static void gasneti_nodemap_dflt(gasneti_bootstrapExchangefn_t exchangefn) {
-#if !HAVE_GETHOSTID
-    /* Nodes are either (at least effectively) single process,
-     * or we don't have a usable gethostid().  So, build a trivial nodemap. */
-    gasneti_nodemap_trivial();
-#else
-    /* Construct nodemap from gethostid and conduit-provided exchangefn 
-     */
-    uint32_t *allids = gasneti_malloc(gasneti_nodes * sizeof(uint32_t));
-    uint32_t myid = gasneti_gethostid();
-  
-    gasneti_assert(exchangefn);
-    (*exchangefn)(&myid, sizeof(uint32_t), allids);
-
-    gasneti_nodemap_helper(allids, sizeof(uint32_t), sizeof(uint32_t));
-
-    gasneti_free(allids);
-#endif
 }
 
 /* gasneti_nodemapParse()
@@ -1894,65 +1929,149 @@ extern void gasneti_nodemapParse(void) {
   
 }
 
-/* gasneti_nodemapInit(exchangefn, ids, sz, stride)
- *
- * Collectively called to construct the gasneti_nodemap[] such that
- *   For all i: gasneti_nodemap[i] is the lowest node number collocated w/ node i
- * GASNet nodes are considered collocated if they have the same node "ID" (see below).
- *
- * Calls gasneti_nodemapParse() after construction of the nodemap.
- *
- * There are 4 possible cases based on the first two arguments:
- *   Case 1: exchangefn == NULL  and  ids != NULL  (PREFERRED)
- *     The conduit has provided a vector of IDs with gasneti_nodes elements:
- *       'ids' is address of first ID
- *       'sz' is length of an ID in bytes
- *       'stride' is bytes between consecutive IDs (>=sz)
- *     The vector of IDs need not be "single valued" across calling nodes, so
- *     long as the resulting nodemap is the same.  This allows, for instance,
- *     the use of "local/relative" IDs as well as "global/absolute" ones.
- *   Case 2: exchangefn != NULL  and  ids == NULL
- *     The conduit has provided no IDs, but does have an exchangefn.
- *     This results in building a nodemap from a platform-specific node ID,
- *     such as gethostid() when available.  If the platform does not support
- *     any node ID, then the trivial [0,1,2,...] nodemap will be generated.
- *     The 'sz' and 'stride' arguments are unused.
- *   Case 3: exchangefn == NULL  and  ids == NULL
- *     The conduit has provided no bootstrapExchange function with
- *     which to communicate the platform-specific IDs (if any).
- *     This results in the trivial [0,1,2,...] nodemap.
- *     The 'sz' and 'stride' arguments are unused.
- *   Case 4: exchangefn != NULL  and  ids != NULL
- *     The conduit has provided an exchange function and a *local* ID:
- *       'ids' is address of the local ID
- *       'sz' is length of an ID in bytes
- *     The 'stride' argument is unused.
- */
+// gasneti_nodemapInit(exchangefn, ids, sz, stride)
+//
+// Collectively called to construct the gasneti_nodemap[] such that
+//   For all i: gasneti_nodemap[i] is the lowest node number collocated w/ node i
+// GASNet nodes are considered collocated if they have the same node "ID" (see below).
+//
+// Calls gasneti_nodemapParse() after construction of the nodemap.
+//
+// A given conduit may fall into one of four cases based on the first two arguments:
+//   if (exchangefn && ids) {
+//     GASNET_HOST_DETECT is honored, and "conduit" is a valid option which will
+//     use `sz` bytes at `*ids` as a local identifier.
+//     The `stride` argument is ignored.
+//   } else if (exchangefn && !ids)
+//     GASNET_HOST_DETECT is honored, but "conduit" is NOT a valid option.
+//     Both `sz` and `stride` are ignored.
+//   } else if (ids) {
+//     GASNET_HOST_DETECT defaults to "conduit", which is the only valid option
+//     (other than undocumented "trivial").
+//     Memory starting at `*ids` is taken as a vector of `gasneti_nodes` local
+//     ids, each of length `sz` bytes, spaced by `stride` bytes.  The vector of
+//     IDs need not be "single valued" across calling nodes, so long as the
+//     resulting nodemap is the same.  This allows, for instance, the use of
+//     "local/relative" IDs as well as "global/absolute" ones.
+//     This should only be used in cases where the conduit-specific identifier
+//     is 100% reliable and/or gasneti_gethostname() and gasnet_gethostid() are
+//     UNreliable (or unavailable).  See also: First TODO note below.
+//   } else {
+//     Lacking both an `exchangefn` and `ids`, this case will always fail unless
+//     (undocumented) GASNET_HOST_DETECT="trivial" is requested.
+//     This may be useful early in conduit development, but is otherwise
+//     very strongly discouraged.
+//     Both `sz` and `stride` are ignored.
+//   }
+//
+// TODO: The "four case" above conflate the scalar/vector nature of `ids`
+// with the availability of an `exchangefn`, with the result that a vector of
+// conduit-specific ids cannot be ignored in favor of one of the standard
+// GASNET_HOST_DETECT options (making "conduit" and "trivial" the only supported
+// options for aries-conduit in particular).  This could be fixed with an
+// adjustment such as making non-zero `stride` the indicator for a vector `ids`.
+//
+// TODO: There is a proposed "greedy" algorithm which uses all of the available
+// IDs (hostid, hostname, conduit, ...).
+//
 extern void gasneti_nodemapInit(gasneti_bootstrapExchangefn_t exchangefn,
                                 const void *ids, size_t sz, size_t stride) {
   gasneti_nodemap = gasneti_malloc(gasneti_nodes * sizeof(gex_Rank_t));
+  enum {
+    gasneti_hostid_alg_invalid = 0,
+    gasneti_hostid_alg_conduit,
+    gasneti_hostid_alg_gethostid,
+    gasneti_hostid_alg_hostname,
+    gasneti_hostid_alg_trivial
+  } gasneti_hostid_alg;
 
-  if (ids) {
-    /* Cases 1 or 4: conduit-provided vector of all IDs or a single local ID*/
-    void *tmp = NULL;
-    if (exchangefn) {
-      // Perform exchange for 'Case 4'
-      tmp = gasneti_malloc(gasneti_nodes * sz);
-      (*exchangefn)((void*)ids, sz, tmp);
-      ids = tmp;
-      stride = sz;
-    }
-    gasneti_nodemap_helper(ids, sz, stride);
-    gasneti_free(tmp);
-  } else if (exchangefn) {
-    /* Case 2: conduit-provided exchange fn, platform-default IDs */
-    gasneti_nodemap_dflt(exchangefn);
+  // First parse GASNET_HOST_DETECT
+  // Default is complicated:
+  // Will use "conduit" if valid (ids is non-NULL)
+  // else use the default selected at configure-time (if any),
+  // else use "gethostid" if available/trusted on this platform,
+  // else use "hostname".
+  #ifdef GASNETI_HOST_DETECT_CONFIGURE
+    #define GASNETI_HOST_DETECT_DEFAULT GASNETI_HOST_DETECT_CONFIGURE
+  #elif HAVE_GETHOSTID && !PLATFORM_OS_CYGWIN
+    // gethostid() is available and not known-broken
+    #define GASNETI_HOST_DETECT_DEFAULT "gethostid"
+  #else
+    #define GASNETI_HOST_DETECT_DEFAULT "hostname"
+  #endif
+  const char *dflt = ids ? "conduit" : GASNETI_HOST_DETECT_DEFAULT;
+  const char *envval = gasneti_getenv_withdefault("GASNET_HOST_DETECT", dflt);
+  char *lowerval = gasneti_strdup(envval);
+  for (char *p = lowerval; *p; ++p) *p = tolower(*p);
+  if (! strcmp(lowerval, "conduit")) {
+    gasneti_hostid_alg = gasneti_hostid_alg_conduit;
+  } else if (! strcmp(lowerval, "gethostid")) {
+    gasneti_hostid_alg = gasneti_hostid_alg_gethostid;
+  } else if (! strcmp(lowerval, "hostname")) {
+    gasneti_hostid_alg = gasneti_hostid_alg_hostname;
+  } else if (! strcmp(lowerval, "trivial")) {
+    // NOTE: this option is intentionally undocumented
+    gasneti_hostid_alg = gasneti_hostid_alg_trivial;
   } else {
-    /* Case 3: conduit provided neither exchangefn nor IDs */
-    gasneti_nodemap_trivial();
+    gasneti_fatalerror("GASNET_HOST_DETECT='%s' is not recognized", envval);
   }
-  /* Perform "common" work w.r.t the nodemap */
+  gasneti_free(lowerval);
+
+  void *tmp = NULL;
+  union {
+    uint64_t hostname;
+    uint32_t hostid;
+  } local_id;
+
+  switch (gasneti_hostid_alg) {
+    case gasneti_hostid_alg_conduit:
+      // If we lack conduit-specific ID(s), then "conduit" is invalid:
+      if (!ids) goto out_bad_alg;
+      // (ids && !exchangefn) means a *full* vector of conduit-specific IDs:
+      if (!exchangefn) goto no_exchange;
+      // otherwise we'll exchange the conduit-specific IDs, below
+      break;
+
+    case gasneti_hostid_alg_gethostid:
+      local_id.hostid = gasneti_gethostid();
+      sz = sizeof(local_id.hostid);
+      ids = &local_id;
+      break;
+
+    case gasneti_hostid_alg_hostname:
+      local_id.hostname = gasneti_hosthash();
+      sz = sizeof(local_id.hostname);
+      ids = &local_id;
+      break;
+
+    case gasneti_hostid_alg_trivial:
+      for (gex_Rank_t i = 0; i < gasneti_nodes; ++i) gasneti_nodemap[i] = i;
+      goto no_helper;
+      break;
+
+    default: gasneti_unreachable_error(("Unknown host detect algorithm %i", (int)gasneti_hostid_alg));
+  }
+
+  // Bail if conduit did not provide an exchangefn
+  if (!exchangefn) goto out_bad_alg;
+
+  // Exchange the chosen local id
+  gasneti_assert(sz);
+  tmp = gasneti_malloc(gasneti_nodes * sz);
+  (*exchangefn)((void*)ids, sz, tmp);
+  ids = tmp;
+  stride = sz;
+no_exchange:
+  gasneti_nodemap_helper(ids, sz, stride);
+  gasneti_free(tmp);
+
+no_helper:
+  // Perform "common" work w.r.t the nodemap
   gasneti_nodemapParse();
+  return;
+
+out_bad_alg:
+  gasneti_fatalerror("This conduit (" GASNET_CORE_NAME_STR ") does not support GASNET_HOST_DETECT='%s'.", envval);
 }
 
 /* Presently just frees the space allocated for the full nodemap.
@@ -2112,7 +2231,7 @@ void gasneti_segtbl_add(gasneti_Segment_t seg) {
 
 void gasneti_segtbl_del(gasneti_Segment_t seg) {
   gasneti_mutex_lock(&_gasneti_segtbl_lock);
-  gasneti_Segment_t last = _gasneti_segtbl[_gasneti_segtbl_count--];
+  gasneti_Segment_t last = _gasneti_segtbl[--_gasneti_segtbl_count];
   last->_opaque_container_use = seg->_opaque_container_use;
   _gasneti_segtbl[last->_opaque_container_use] = last;
   // TODO: realloc to shrink if we think this would lead to significant savings?
@@ -2309,10 +2428,25 @@ void gasneti_segtbl_del(gasneti_Segment_t seg) {
       return buffer;
   }
 
+  // bug 4366: avoid spammy assertions if we are running in the context of a
+  // signal that arrived during a memcheck operation
+  // _gasneti_mutex_trylock_mayberecursive() is a version of gasneti_mutex_trylock
+  // that returns failure instead of asserting on a recursive attempt in DEBUG mode
+  // TODO: possibly promote this to the general gasneti_mutex API?
+  static int _gasneti_mutex_trylock_mayberecursive(gasneti_mutex_t *mut) {
+    #ifdef _gasneti_mutex_heldbyme
+      if (_gasneti_mutex_heldbyme(mut)) {
+        // we know we are already holding this mutex, return failure instead of asserting below
+        return EBUSY;
+      }
+    #endif
+    return gasneti_mutex_trylock(mut);
+  }
+
   extern void _gasneti_memcheck_one(const char *curloc) {
     if (gasneti_memalloc_extracheck) _gasneti_memcheck_all(curloc);
     else {
-      gasneti_mutex_lock(&gasneti_memalloc_lock);
+      if (_gasneti_mutex_trylock_mayberecursive(&gasneti_memalloc_lock)) return;
         if (gasneti_memalloc_pos) {
           _gasneti_memcheck(gasneti_memalloc_pos+1, curloc, 2);
           gasneti_memalloc_pos = gasneti_memalloc_pos->nextdesc;
@@ -2321,7 +2455,7 @@ void gasneti_segtbl_del(gasneti_Segment_t seg) {
     }
   }
   extern void _gasneti_memcheck_all(const char *curloc) {
-    gasneti_mutex_lock(&gasneti_memalloc_lock);
+    if (_gasneti_mutex_trylock_mayberecursive(&gasneti_memalloc_lock)) return;
       if (gasneti_memalloc_pos) {
         gasneti_memalloc_desc_t *begin = gasneti_memalloc_pos;
         uint64_t cnt;
@@ -2648,7 +2782,7 @@ void gasneti_segtbl_del(gasneti_Segment_t seg) {
       gasnett_getheapstats(&stats);
       fprintf(fp, "# GASNet Debug Mallocator Report\n");
       fprintf(fp, "#\n");
-      fprintf(fp, "# program: %s\n",gasneti_exename);
+      fprintf(fp, "# program: %s\n",gasneti_exe_name());
       fprintf(fp, "# date:    %s\n",temp);
       fprintf(fp, "# host:    %s\n",gasnett_gethostname());
       fprintf(fp, "# pid:     %i\n",(int)getpid());

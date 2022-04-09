@@ -4,8 +4,8 @@
  * Terms of use are as specified in license.txt
  */
 
-#ifndef GASNET_UCX_REQ_H
-#define GASNET_UCX_REQ_H
+#ifndef _GASNET_UCX_REQ_H
+#define _GASNET_UCX_REQ_H
 
 #include <gasnet_core_internal.h>
 
@@ -61,6 +61,7 @@ typedef struct {
 
 typedef struct {
   GASNETC_LIST_CLASS;
+  gasneti_list_t       *list;
   gasnetc_sreq_hdr_t   *am_hdr;
   gex_AM_Arg_t         *args;
   gasnetc_buffer_t      buffer;
@@ -116,4 +117,4 @@ extern void gasnetc_req_init(void *request);
 extern int  gasnetc_recv_init(void);
 extern void gasnetc_recv_fini(void);
 
-#endif /* GASNET_UCX_REQ_H */
+#endif /* _GASNET_UCX_REQ_H */

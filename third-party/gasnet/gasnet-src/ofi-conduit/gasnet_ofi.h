@@ -5,8 +5,8 @@
  * Portions copyright 2018-2020, The Regents of the University of California.
  * Terms of use are as specified in license.txt
  */
-#ifndef GASNET_OFI_H
-#define GASNET_OFI_H
+#ifndef _GASNET_OFI_H
+#define _GASNET_OFI_H
 
 #include <gasnet_am.h>
 
@@ -17,6 +17,18 @@
 #include <rdma/fi_rma.h>
 #include <rdma/fi_cm.h>
 #include <rdma/fi_errno.h>
+
+// Fatal error with error code ": number(string)" appended
+#define gasnetc_ofi_fatalerror(desc,ret) do { \
+    int _gof_ret = (ret); \
+    gasneti_fatalerror("%s: %d(%s)", (desc), _gof_ret, fi_strerror(- _gof_ret)); \
+  } while (0)
+
+// IFF ret is not SUCCESS generate a fatal error message with the error code
+#define GASNETC_OFI_CHECK_RET(ret,desc) do { \
+    int _gocr_ret = (ret); \
+    if_pf (FI_SUCCESS != _gocr_ret) gasnetc_ofi_fatalerror(desc,_gocr_ret); \
+  } while (0)
 
 #define OFI_AM_MAX_DATA_LENGTH \
   GASNETI_ALIGNUP_NOASSERT(GASNETC_OFI_MAX_MEDIUM + \
@@ -106,6 +118,7 @@ typedef struct gasnetc_ofi_am_send_buf {
 } gasnetc_ofi_am_send_buf_t;
 
 typedef struct gasnetc_ofi_am_buf {
+  // Conduit code assumes ctxt is the first field
   struct fi_context 	ctxt;
   event_callback_fn 	callback;
   gasnetc_ofi_am_send_buf_t 	sendbuf;
@@ -113,15 +126,20 @@ typedef struct gasnetc_ofi_am_buf {
 
 
 typedef struct gasnetc_ofi_ctxt {
-  struct fi_context 	ctxt;
-  void * metadata;
-  int 					index;
-  char _pad0[GASNETI_CACHE_PAD(sizeof(int))];
-  gasnetc_paratomic_t   consumed_cntr;
-  char _pad1[GASNETI_CACHE_PAD(sizeof(gasnetc_paratomic_t))];
-  uint64_t final_cntr;
-  char _pad2[GASNETI_CACHE_PAD(sizeof(uint64_t))];
+  // Conduit code assumes ctxt is the first field
+  struct fi_context ctxt; // An opaque array of an even number of void*
   uint64_t event_cntr;
+  void * metadata;
+#if GASNETC_OFI_RETRY_RECVMSG
+  struct gasnetc_ofi_ctxt *next;
+  char _pad0[GASNETI_CACHE_PAD(sizeof(struct fi_context) + sizeof(uint64_t) + 2*sizeof(void*))];
+#else
+  char _pad0[GASNETI_CACHE_PAD(sizeof(struct fi_context) + sizeof(uint64_t) +   sizeof(void*))];
+#endif
+
+  // accessed as a pair except when recycling the multi-recv buffer
+  uint64_t final_cntr;
+  gasnetc_paratomic_t   consumed_cntr;
 } gasnetc_ofi_ctxt_t;
 
 
@@ -135,6 +153,7 @@ typedef struct gasnetc_ofi_bounce_buf {
 } gasnetc_ofi_bounce_buf_t;
 
 typedef struct gasnetc_ofi_bounce_op_ctxt {
+    // Conduit code assumes ctxt is the first field
     struct fi_context 	ctxt;
     rdma_callback_fn		callback;
     /* bounce buffers to return to the pool */
@@ -155,6 +174,7 @@ typedef struct gasnetc_Segment_t_ {
 
 void gasnetc_auxseg_register(gasnet_seginfo_t si);
 int gasnetc_segment_register(gasnetc_Segment_t segment);
+int gasnetc_segment_deregister(gasnetc_Segment_t segment);
 void gasnetc_segment_exchange(gex_TM_t tm, gex_EP_t *eps, size_t num_eps);
 
 int gasnetc_ofi_init(void);
@@ -183,11 +203,14 @@ int gasnetc_rdma_put_will_block (size_t nbytes) {
     return nbytes > gasnetc_ofi_bbuf_threshold ? 1 : 0;
 } 
 
-int gasnetc_rdma_put_non_bulk(gex_Rank_t dest, void* dest_addr, void* src_addr, 
+gex_Event_t gasnetc_rdma_put_non_bulk(gex_Rank_t dest, void* dest_addr, void* src_addr,
         size_t nbytes, gasnetc_ofi_op_ctxt_t* ctxt_ptr GASNETI_THREAD_FARG);
-void gasnetc_rdma_put_wait(gex_Event_t op GASNETI_THREAD_FARG);
-void gasnetc_rdma_get_wait(gex_Event_t op GASNETI_THREAD_FARG);
 
 extern int gasnetc_exit_in_progress;
 
-#endif /*GASNET_OFI_H*/
+// Maxium number of events (AMs and multi-recv recycles) per poll
+#ifndef GASNETC_OFI_EVENTS_PER_POLL
+#define GASNETC_OFI_EVENTS_PER_POLL 16
+#endif
+
+#endif /*_GASNET_OFI_H*/

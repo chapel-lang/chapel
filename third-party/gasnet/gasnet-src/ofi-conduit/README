@@ -1,16 +1,6 @@
 GASNet ofi-conduit documentation
 Copyright 2015-2017, Intel Corporation
-Portions copyright 2018-2021, The Regents of the University of California.
-
-**** NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE ****
-*                                                               *
-*  This version of ofi-conduit is a work-in-progress port from  *
-*  GASNet-1 to GASNet-EX and is currently EXPERIMENTAL.         *
-*                                                               * 
-*  Various aspects of this README are either out-of-date or     *
-*  have not been reverified against the current version.        *
-*                                                               *
-**** NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE ****
+Portions copyright 2018-2022, The Regents of the University of California.
 
 User Information:
 ----------------
@@ -20,62 +10,82 @@ OpenFabrics Interfaces (OFI) is a framework focused on exporting fabric
 communication services to applications. OFI is best described as a collection of
 libraries and applications used to export fabric services. 
 
-See more details at: http://ofiwg.github.io/libfabric/
+See more details at: https://ofiwg.github.io/libfabric/
 
-This conduit is currently being re-implemented for GASNet-EX and is
-considered to be EXPERIMENTAL.  Therefore, it is disabled by default.
-It can be enabled at GASNet configure time using the `--enable-ofi` option.
+This conduit is feature-complete and passes tests in recommended configurations.
+Performance tuning is planned as future work.
 
-The re-implementation work completed to date is believed to be functionally
-complete and correct when run with OFI's sockets provider and default settings,
-but it is not performant.  In particular, GASNet-EX RMA is implemented via a
-reference implementation over Active Messages, rather than OFI's RMA APIs.
+Since this conduit is considered "experimental" pending performance-tuning
+work, it is disabled by default.  It can be enabled explicitly at configure
+time using either `--enable-ofi` or `--enable-ofi=probe`.  Either option will
+enable ofi-conduit if `configure` locates the prerequisites.  The difference
+is that the first option makes failure to locate the prerequisites fatal in
+`configure`.
 
 Where this conduit runs:
 -----------------------
 
-The GASNet OFI conduit can run on any OFI provider that supports its
-requirements. At this point in time, it is known to work on the following
-providers (using the provider names in parenthesis):
-  + Sockets (sockets)
-  + Intel(R) Omni-Path Fabric (psm2)
-  + TCP, via "tcp;ofi_rxm", under libfabric 1.7 and higher (tcp)
-  + Verbs, via "verbs;ofi_rxm", under libfabric 1.7 and higher (verbs)
+The GASNet OFI conduit can run on any OFI provider that matches its
+requirements. However, at this time, it is recommended *only* for the
+following networks.
 
-Work has been done to enable the gni provider which runs on Cray XC(TM)
-systems. The author of this conduit has seen good results from the preliminary
-testing of this provider, however has not had enough time to thoroughly
-validate it. As such, the gni provider should be considered experimental.
+  + Intel(R) Omni-Path Fabric  via the "psm2" provider
+  + HPE Slingshot-10 (100 Gb/s ConnectX-5 NIC), via the "verbs;ofi_rxm" provider
+  + HPE Slingshot-11 (200 Gb/s Cassini NIC), via the "cxi" provider
+
+The following providers have been used successfully on networks where other
+GASNet conduits are a more appropriate choice. Therefore we do not recommend
+use of these providers in general.
+
+  + TCP, via the "sockets" provider
+  + UDP, via "udp;ofi_rxd", under libfabric 1.7 and higher
+
+The following providers have not met our expectations (with respect to
+performance or stability) when tested on the listed networks and therefore are
+not currently recommended at all.
+
+  + TCP, via "tcp;ofi_rxm"
+  + InfiniBand, via "verbs;ofi_rxm"
+
+The ofi-conduit is currently known to lack support for the following providers
+as of libfabric v1.14.0. If these providers are important to you, please
+contact us at gasnet-staff@lbl.gov .
+
+  + "psm1" provider for the (end-of-life) TrueScale products
+  + "gni" provider for the Cray XC series Aries network
+  + "opx" provider, an alternative to "psm2" for the Omni-Path fabric
 
 The fi_info command installed with libfabric can be used to query the available
-OFI providers.
-
-While OFI conduit can be considered as a tech-preview for next-generation fabrics,
-it is the recommended conduit for use on the Intel Omni-Path fabric.
+OFI providers on your system.  It is worth noting that the available providers
+on a cluster compute node may differ from those on a front-end node.
 
 Users with InfiniBand hardware should use the GASNet ibv-conduit, rather than
-ofi-conduit with the verbs OFI provider, as the former may provide better performance.
+ofi-conduit with the verbs OFI provider, as the former may provide better
+performance.
 
-Users with Ethernet hardware are encouraged to consider the GASNet udp-conduit as an alternative
-to ofi-conduit with the sockets provider, as the former may provide more favorable performance.
+Users with Ethernet hardware are encouraged to consider the GASNet udp-conduit
+as an alternative to ofi-conduit with the sockets or udp;ofi_rxd providers, as
+the former may provide more favorable performance.
 
 Users with Cray XC hardware are encouraged to consider the GASNet aries-conduit
-as an alternative to ofi-conduit with the GNI provider, as the former may provide better performance.
-
-The psm1 provider (for the end-of-life TrueScale product) is no longer supported.
+as an alternative to ofi-conduit with the GNI provider, as the former may
+provide better performance.
 
 OFI provider requirements to run this conduit:
 -------------------------------------
 Endpoint type: RDM
 Capabilities: FI_RMA and FI_MSG
 Secondary Capabilities: FI_MULTI_RECV
-Memory Registration Mode: FI_MR_SCALABLE (preferred) or FI_MR_BASIC
-    * There is currently no support for providers that require FI_LOCAL_MR
+Memory Registration Mode:
+    * API 1.4 or earlier: FI_MR_SCALABLE (preferred) or FI_MR_BASIC
+    * API 1.5 or newer: all or none (preferred) of FI_MR_{ALLOCATED,VIRT_ADDR,PROV_KEY}
+    * There is currently no support for providers that require FI_LOCAL_MR / FI_MR_LOCAL
 Threading mode: FI_THREAD_SAFE and/or FI_THREAD_DOMAIN
     * In GASNET_{SEQ,PARSYNC} mode, all providers use FI_THREAD_DOMAIN as only one thread makes
       calls into the GASNet library.
-    * In GASNET_PAR mode, FI_THREAD_DOMAIN is used only for the psm2 provider which currently
-      does not support FI_THREAD_SAFE. All other providers use FI_THREAD_SAFE.
+    * By default in GASNET_PAR mode, FI_THREAD_DOMAIN is used only for the psm2 provider (which
+      does not currently support FI_THREAD_SAFE) while all other providers use FI_THREAD_SAFE.
+      See the description of --{en,dis}able-ofi-thread-domain, below, for non-default behaviors.
 
 Building ofi-conduit
 --------------------
@@ -85,49 +95,101 @@ locate or build an install of libfabric. The source code of libfabric can be fou
 
    https://github.com/ofiwg/libfabric
 
-To build GASNet with ofi-conduit enabled:
-./configure --enable-ofi --with-ofihome=[custom libfabric install directory]
+To build GASNet with ofi-conduit enabled, the minimum requirement is
+  [path to]/configure --enable-ofi
 
-ofi-conduit exposes the following configure script flags for GASNet:
-    * --with-ofi-provider=PROVIDER_NAME: As different providers expose different feature sets,
-      this flags exists to specify a provider to assume for compile-time optimization. If this
-      flag is not present, the configure script will attempt to detect an available
-      provider using the fi_info utility, if available. If fi_info is not available, a
-      supported provider not available, or if the argument to this flag is "default",
-      then provider features will be detected at runtime. While this is flexible as to
-      which providers it supports, it will also add branches in critical paths that 
-      may increase software overheads.
-    * --with-ofi-num-completions=VALUE: Specifies the maximum number of
-      transmit completions to be read from the transmit CQ during each call to the
-      polling function. Default: 64
-    * --with-ofi-max-medium=VALUE: Specify the maximum size of AMMedium messages in
-      ofi-conduit. This may be useful for tuning the conduit to different network
-      hardware. Default: 8192
+The following configure options are also available:
+
+    * --with-ofi-home=INSTALL_PREFIX
+      Used to provide the libfabric install prefix.
+      If not used, the default is based on the location of fi_info in $PATH.
+      If fi_info is not found in $PATH, then this option is required.
+
+    * --with-ofi-provider=PROVIDER_NAME
+      Since different providers expose different feature sets, ofi-conduit will
+      use compile-time knowledge of the intended provider to elide unneeded
+      code.  This option can be used to name the provider to optimize for.
+      If this option is not present, the configure script will attempt to detect
+      an available provider using the fi_info utility, if available.
+      If fi_info is not available, or no supported provider is listed by fi_info,
+      or if the argument to this option is "default", then provider features
+      will be detected at runtime. While this is flexible as to which providers
+      it supports, it will add branches in critical paths that may increase
+      software overheads.  This case is referred to as "unknown provider" below.
+
+    * --with-ofi-num-completions=VALUE
+      Specifies the maximum number of transmit completions to be read from the
+      transmit CQ during each call to the polling function.
+      Default: 64
+
+    * --with-ofi-max-medium=VALUE
+      Specify the maximum size of AMMedium messages in ofi-conduit. This may be
+      useful for tuning the conduit to different network hardware.
+      Default: 8192
 
 The following configure flags override options set by provider selection via
-auto-detection or by the --with-ofi-provider=VALUE flag. These are not recommended to be
-used as tuning options.
-    * --enable-ofi-thread-domain: In GASNET_PAR mode, forces the use of FI_THREAD_DOMAIN in the conduit.
-      This results in the use of one global lock to protect calls into libfabric. In GASNET_{SEQ,PARSYNC}
-      mode, this flag has no effect.
-    * --disable-ofi-thread-domain: In GASNET_PAR mode, forces the use of FI_THREAD_SAFE in the conduit.
-      In GASNET_{SEQ,PARSYNC} mode, this flag has no effect.
-        ** Currently, only the psm2 provider requires the use of
-           FI_THREAD_DOMAIN in this conduit. These flags exists to future-proof this
-           version of ofi-conduit against future support for FI_THREAD_SAFE for these
-           providers.
-    * --enable-ofi-mr-scalable: Indicates that FI_MR_SCALABLE memory registration support will be 
-      statically compiled into the conduit. This is the default (and recommended) option for the 
-      psm2 and sockets provider.
-    * --disable-ofi-mr-scalable: Indicates that FI_MR_BASIC memory registration support
-      will be statically compiled into the conduit. This is the default option for the
-      gni provider, which at this time does not support FI_MR_SCALABLE.
+auto-detection or by the --with-ofi-provider=PROVIDER_NAME option. These are not
+recommended to be used as tuning options.
+
+    * --enable-ofi-thread-domain
+      Forces the use of FI_THREAD_DOMAIN in GASNET_PAR mode.
+      This results in one global lock to protect all calls into libfabric.
+      This is the default for psm2 provider.
+    * --disable-ofi-thread-domain
+      Forces the use of FI_THREAD_SAFE in GASNET_PAR mode.
+      This is the default for most providers and for the unknown provider case.
+
+      In GASNET_SEQ and GASNET_PARSYNC modes, the two options above have no
+      effect.
+
+    * --enable-ofi-mr-scalable
+      Indicates that FI_MR_SCALABLE memory registration support will be
+      compiled into the conduit, and FI_MR_BASIC support will not.
+      This is the default (and recommended) option for most providers.
+    * --disable-ofi-mr-scalable
+      Indicates that FI_MR_BASIC memory registration support will be compiled
+      into the conduit, and FI_MR_SCALABLE support will not.
+      Currently only the "verbs;ofi_rxm" provider defaults to use of
+      FI_MR_BASIC.
+
+      For the unknown provider case, both FI_MR_SCALABLE and FI_MR_BASIC
+      memory registration support are compiled and the selection is made at
+      runtime.
+
+    * --enable-ofi-multi-cq
+      Indicates that the provider requires the use of distinct completion
+      queues for the transmit completions of each endpoint.
+      This is the default option for the cxi provider.
+    * --disable-ofi-multi-cq
+      Indicates that the provider supports the use of a single completion
+      queue for the transmit completions of multiple endpoints.
+      This is the default (and recommended) option for most providers.
+
+      For the unknown provider case, the logic for Cq creation and polling
+      adapts at runtime to use a single completion queue if possible, and uses
+      multiple Cqs only if necessary.
+
+    * --enable-ofi-retry-recvmsg
+      Enables logic in ofi-conduit to handle the provider returning `-FI_EAGAIN`
+      from `fi_recvmsg()`.
+      This is the default option for the cxi and udp;ofi_rxd providers and for
+      the unknown provider case.
+    * --disable-ofi-retry-recvmsg
+      Disable logic to handle `-FI_EAGAIN` returns from `fi_recvmsg()`.
+      This is the default (and recommended) option for most providers.
+
 
 The default spawner to be used by the gasnetrun_ofi utility can be
 selected by configuring '--with-ofi-spawner=VALUE', where VALUE is one
 of 'mpi', 'pmi' or 'ssh'.  If this option is not used, mpi is the
 default when available, and ssh otherwise.
 Here are some things to consider when selecting a default spawner:
+  + The choice of spawner only affects the protocol used for parallel job
+    setup and teardown; in particular it is NOT used to implement any part
+    of the steady-state GASNet communication operations. As such, the
+    selected protocol needs to be stable and co-exist with GASNet
+    communication, but its performance efficiency is usually not a
+    practical consideration.
   + mpi-spawner is the default when MPI is available precisely because it
     is so frequently present on systems where GASNet is to be installed.
     Additionally, very little (if any) configuration is required and the
@@ -146,15 +208,17 @@ or
    other/{ssh,mpi,pmi}-spawner/README (source).
 
 Depending on the libfabric provider in use, there may be restrictions on how
-mpi-based spawning is used.  In particular, the psm2 provider has the
-property that each process may only open the network adapter once.  If you
-wish to use mpi-spawner, please consult its README for advice on how to set
-your MPIRUN_CMD to use TCP/IP.
+mpi-based spawning is used. For instance, the psm2 provider has the property
+that each process may only open the network adapter once. Additionally, if the
+MPI implementation also uses libfabric for communication, then there is a risk
+it may adjust settings in a way incompatible with ofi-conduit. If you wish to
+use mpi-spawner, please consult its README for advice on how to set your
+MPIRUN_CMD to use native TCP/IP to avoid these potential problems.
 
 Job Spawning
 ------------
 
-If using UPC, Titanium, etc. the language-specific commands should be used
+If using UPC++, Chapel, etc. the language-specific commands should be used
 to launch applications.  Otherwise, applications can be launched using
 the gasnetrun_ofi utility:
   + usage summary:
@@ -198,7 +262,97 @@ Recognized environment variables:
 * GASNET_OFI_NUM_BBUFS, GASNET_OFI_BBUF_SIZE, GASNET_OFI_BBUF_THRESHOLD - See the
   "Non-bulk, Non-blocking Put Functions" section for detail on these environment variables.
 
+* GASNET_OFI_NUM_RECEIVE_BUFFS and GASNET_OFI_RECEIVE_BUFF_SIZE - Active Message
+  receive resources. These two settings control, respectively, the number and
+  size of the "multi-receive" buffers allocated for the reception of in-bound
+  AMs.  Depending on the given provider's implementation of `FI_MULTI_RECV`,
+  increasing these may improve AM throughput or have no impact.  On some
+  providers, reducing these may severely reduce AM throughput or even lead to
+  crashes.  Defaults: 8 and 1M
+
+* GASNET_OFI_INJECT_LIMIT - limit on size of fi_inject() payload.
+  GASNet Active Messages of total size (at the ofi level) no larger than this
+  parameter value will be sent using fi_inject(), and larger messages are sent
+  using fi_send().  Use of fi_inject() reduces the overall complexity of the
+  operation by ensuring the data is consumed synchronously, usually at the
+  cost of an extra copy.  Meanwhile, fi_send() consumes the data asynchronously,
+  eliminating the extra copy at the expense of signaling an asynchronous local
+  completion.  This setting does not affect payload local completion semantics
+  at the GASNet API level.
+  It too large a value is requested, it will be reduced to the maximum which
+  the OFI provider can support.
+  Default: largest size supported by the provider.
+
+* GASNET_OFI_TX_CQ_SIZE and GASNET_OFI_RX_CQ_SIZE - limits on completion queue
+  length. These settings control the length of the completion queues (CQs) used
+  for transmit and receive operations, respectively.  The default of zero allows
+  the provider to determine the length. Use of this default is recommended unless
+  debugging a possible Cq overrun.
+
+* GASNET_OFI_MAX_REQUEST_BUFFS and GASNET_OFI_MAX_REPLY_BUFFS - limits on the
+  number of buffers allocated for the construction of out-bound AM Requests and
+  Replies, respectively. The default for both settings is 1024.
+
+* GASNET_OFI_NUM_INITIAL_REQUEST_BUFFS and GASNET_OFI_NUM_INITIAL_REPLY_BUFFS -
+  the number of buffers to allocate at startup for the construction of
+  out-bound AM Requests and Replies, respectively. If these values are lower
+  than the corresponding "MAX" values (described immediately above) then the
+  difference *may* be allocated dynamically, but only as needed.
+  The default for each setting is the smaller of 256 or the respective MAX.
+  In other words: with all defaults, 256 buffers are allocated to each pool and
+  each poll is permitted to grow as large as 1024 buffers if the demand exists.
+
+* GASNET_OFI_DEVICE
+  By default, ofi-conduit will open and use the first device enumerated by
+  libfabric as matching the specified provider and required capabilities.
+  This setting can be used to specify a device to be used in place of this
+  default.
+  See also 'GASNET_OFI_DEVICE_*', immediately below.
+
+* GASNET_OFI_DEVICE_*
+  The environment variable 'GASNET_OFI_DEVICE', described immediately above,
+  provides only a single setting and unless one uses some external means to
+  give per-process settings this cannot provide per-process control.  This
+  can make it difficult to get the best performance from multi-rail systems
+  with multiple processes per node and architectural locality properties that
+  affect PCI/adapter access efficiency.
+  However, if 'hwloc' is detected at configure time, then it is possible to
+  give ofi-conduit values for 'GASNET_OFI_DEVICE' which will vary per-process
+  based on cpu-binding and machine topology information as follows.
+   1. The variable 'GASNET_OFI_DEVICE_TYPE' names an object type using hwloc's
+      terminology, with the default being "Socket" (aka "Package").
+      If the value is "None" (case-insensitive) then the logic below is
+      disabled and the value of 'GASNET_OFI_DEVICE' is used by all processes.
+   2. GASNet queries the set of objects of the given type which intersect the
+      process's cpuset, to construct a variable name 'GASNET_OFI_DEVICE_[suff]'
+      where '[suff]' is an underscore-delimited ordered list of logical
+      object ids.  For example, with the default object type, a process bound
+      only to cores in the first socket would have a variable name of
+      'GASNET_OFI_DEVICE_0'.  Meanwhile, if the cpuset spans sockets 0 and 1
+      (such as for an unbound process on a 2-socket system) then the variable
+      'GASNET_OFI_DEVICE_0_1' is used.
+   3. If the environment variable determined in step 2 is set, then it is
+      used.  Otherwise the un-suffixed 'GASNET_OFI_DEVICE' is used.
+  As a concrete example, on OLCF's Crusher there are four NICs -- one per NUMA
+  Node.  Examining the corresponding Quick Start Guide one can construct the
+  following settings to ensure processes bound to cores in a single NUMA Node
+  will use the topologically nearest NIC:
+      GASNET_OFI_DEVICE_TYPE=Node
+      GASNET_OFI_DEVICE_0=cxi2
+      GASNET_OFI_DEVICE_1=cxi1
+      GASNET_OFI_DEVICE_2=cxi3
+      GASNET_OFI_DEVICE_3=cxi0
+  These specific recommendations are appropriate to the specific composition
+  of a node of OLCF's Crusher, and should not be considered as generic advice
+  for use of all multi-NIC systems.
+  Of course, even on the same system, your mileage may vary.
+  By default 'GASNET_OFI_DEVICE_TYPE' is "Socket" and all other variables in
+  this family are unset.
+
 * FI_PROVIDER - set to a provider name to override the default OFI provider selection
+  Note that only in the "unknown provider" case (described with the configure
+  options) can this actually be used to change the provider to one different
+  than selected at configure time.
 
 * FI_PSM2_LOCK_LEVEL - This variable only applies to the psm2 provider and only
   is available in libfabric v1.5.0. This environment variable controls the
@@ -209,7 +363,7 @@ Recognized environment variables:
       and is suitable for programs that limit the access to each PSM2 context to
       a single thread.
     - FI_PSM2_LOCK_LEVEL=2: All locks inside of the provider are enabled.
-  The default setting of this variable is 2. The conduit author recommends using
+  The default setting of this variable is 2. The original author recommends using
   a value of 0 when using GASNet in GASNET_SEQ mode and a value of 1 when running
   in GASNET_PARSYNC mode. For GASNET_PAR mode, a value of 1 should only be used
   if GASNet was configured with --enable-ofi-thread-domain, which only will
@@ -218,6 +372,9 @@ Recognized environment variables:
   only and should be used at your own risk.
 
 * All the environment variables provided by libfabric (see `fi_info -e`)
+  Note that many of these influence provider-specific behaviors, and in some
+  cases setting non-default values may negatively affect the operation of
+  ofi-conduit.
 
 * The environment variables described in the "Non-bulk, Non-blocking Put Functions" 
   section of this file.
@@ -226,7 +383,7 @@ Recognized environment variables:
 
 Non-bulk, Non-blocking Put Functions
 ------------------------------------
-GASNet requires the source buffer used in the gasnet_put_{nb,nbi} functions to be able to be reused as
+For some calls to gex_RMA_Put{NB,NBI}() GASNet-EX requires the source buffer to be able to be reused as
 soon as the function returns. The ofi-conduit implements this by a hybrid approach that uses
 the FI_INJECT flag, bounce buffers, and blocking operations.
 
@@ -248,28 +405,41 @@ The following environment variables may be used to tune this behavior:
   Default: (4 * GASNET_OFI_BBUF_SIZE).
 * The following condition must hold: GASNET_OFI_NUM_BBUFS >= GASNET_OFI_BBUF_THRESHOLD/GASNET_OFI_BBUF_SIZE
 * These defaults are chosen to optimize for a 256K L2 cache, assuming 4K pages. It is recommended to 
-  modify these variables so that GASNET_PAGESIZE * GASNET_OFI_NUM_BBUFS == L2-cache-size. However,
-  these tuning parameters only apply to gasnet_put_{nb,nbi}(). They do not apply to get functions, blocking
-  functions, or bulk put functions.
+  modify these variables so that GASNET_PAGESIZE * GASNET_OFI_NUM_BBUFS == L2-cache-size.
+* These parameters only apply to gex_RMA_Put{NB,NBI}() with (lc_opt != GEX_EVENT_DEFER).
+  They do not apply to gets, nor to blocking or value-based puts.
 
 Known problems:
 ---------------
-* The following bugs are present in libfabric v1.5.0 and will be addressed in a
-  future libfabric release. Until then, patches to correct these issues are
-  listed with the below descriptions.
-  - sockets provider hang
-        * Under atypical conditions of heavy active messaging flood traffic, the
-          sockets provider will occasionally hang.
-        * This bug was also present in libfabric v1.4.0
-        * This has been fixed in upstream libfabric. The patch that corrects
-          this behavior can be found in the link below.
-        * LBNL Bugzilla link: https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3597
-        * libfabric GitHub issue link: https://github.com/ofiwg/libfabric/issues/3217
-        * Patch that fixes the bug: https://github.com/ofiwg/libfabric/pull/3223
-    - gni provider segfault
-        * When using FI_MULTI_RECV (as the ofi-conduit does), the gni provider may segfault.
-        * This bug has been fixed in upstream libfabric.
-        * Patch that fixes the bug: https://github.com/ofiwg/libfabric/pull/3208
+
+* Bug 4413
+  At least cxi provider is known to crash at initialization if the environment
+  variable "FI_UNIVERSE_SIZE" is set.  However, this is a supported variable in
+  some providers, and is even *recommended* for use with verbs;ofi_rxm in runs
+  with more than 256 processes.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4413
+
+* Bug 4420
+  At least verbs;ofi_rxm provider is known to fail when using read-only memory
+  as the source of an RMA Put or AM Long operation.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4420
+
+* Bug 4422
+  Multi-threaded applications run on a single core when using psm2 provider,
+  unless some action is taken to pin the application to subset of the cores.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4422
+
+* Bug 4427
+  The "RDMADISSEM" barrier, used as the default in an RDMA-capable conduit
+  without a conduit-specific barrier, has been observed to be incorrect when
+  used with at least the sockets and udp;ofi_rxd providers.
+  To be cautious, the less efficient "AMDISSEM" barrier is currently the default
+  in ofi-conduit, *independent* of provider.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4427
 
 * See the GASNet Bugzilla server for details on additional known bugs:
   https://gasnet-bugs.lbl.gov/
@@ -291,3 +461,28 @@ Future work:
 ------------
 
 The OFI community is working on increasing the number of providers that can support GASNet.
+
+* Restore "RDMADISSEM" as the default barrier for those providers where it is
+  safe to do so (see bug 4427) or deploy a better alternative (perhaps via
+  FI_COLLECTIVE)
+
+* Implement AMLong via target-side reassembly using fi_writedata()
+
+* Provide non-trivial lc_opt support similar to that in ibv-conduit (which, like
+  OFI, has no distinct event for local completion)
+
+* Implement non-trivial support for `GEX_FLAG_IMMEDIATE` to the extent possible
+  given the opaque nature of resource management in OFI
+
+* Implement native support for Negotiated-Payload Active Message (NPAM)
+
+* Eliminate a buffer copy for AM Medium (and AM Long below the RMA threshold)
+  by using (iov_count > 1) on providers which support it
+
+* Implement native atomics via FI_ATOMIC
+
+* Implement native collectives via FI_COLLECTIVE
+
+* Implement multi-EP/multi-segment support
+
+* Implement Memory Kinds support using the FI_HMEM capability

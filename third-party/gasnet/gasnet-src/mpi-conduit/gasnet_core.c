@@ -508,24 +508,23 @@ extern gex_TI_t gasnetc_Token_Info(
 }
 
 extern int gasnetc_AMPoll(GASNETI_THREAD_FARG_ALONE) {
-  int retval;
   GASNETI_CHECKATTACH();
   CHECKCALLHC();
 #if GASNET_PSHM
   gasneti_AMPSHMPoll(0 GASNETI_THREAD_PASS);
 #endif
-  AMLOCK();
-  static int cntr;
+  static unsigned int cntr;
   // In single-nbrhd case never need to poll the network for client AMs.
   // However, we'll still AM_Poll() every 256th call for orderly exit handling.
+  // Thread race updating cntr is harmless (this is a heuristic)
   if ((gasneti_mysupernode.grp_count > 1) || !(0xff & cntr++)) {
-    GASNETI_AM_SAFE_NORETURN(retval, AM_Poll(gasnetc_bundle));
-  } else {
-    retval = 0;
+    int retval;
+    AMLOCK();
+      GASNETI_AM_SAFE_NORETURN(retval, AM_Poll(gasnetc_bundle));
+    AMUNLOCK();
+    if_pf (retval) GASNETI_RETURN_ERR(RESOURCE);
   }
-  AMUNLOCK();
-  if_pf (retval) GASNETI_RETURN_ERR(RESOURCE);
-  else return GASNET_OK;
+  return GASNET_OK;
 }
 
 /* ------------------------------------------------------------------------------------ */

@@ -31,15 +31,15 @@
 //
 // This takes the form YEAR.MONTH.PATCH in GASNet-EX releases,
 // providing a clear distinction from GASNet-1 with MAJOR==1.
-#define GASNET_RELEASE_VERSION_MAJOR 2021
-#define GASNET_RELEASE_VERSION_MINOR 9
+#define GASNET_RELEASE_VERSION_MAJOR 2022
+#define GASNET_RELEASE_VERSION_MINOR 3
 #define GASNET_RELEASE_VERSION_PATCH 0
 
 // Major and Minor versions of the GASNet-EX specification.
 //
 // This is currently a version number for *this* document.
 #define GEX_SPEC_VERSION_MAJOR 0
-#define GEX_SPEC_VERSION_MINOR 14
+#define GEX_SPEC_VERSION_MINOR 15
 
 // Major and Minor versions of the GASNet-1 specification.
 //
@@ -53,7 +53,7 @@
 //
 // This is the spec version for the GASNet Tools
 #define GASNETT_SPEC_VERSION_MAJOR 1
-#define GASNETT_SPEC_VERSION_MINOR 18
+#define GASNETT_SPEC_VERSION_MINOR 19
 
 //
 // Relationship to GASNet-1 APIs:
@@ -113,18 +113,18 @@ extern void gasnet_QueryGexObjects(gex_Client_t      *client_p,
 // The only GASNet functions which may be called within AM handler context,
 // or while holding a GASNet handler-safe lock are as follows:
 //
-// gasnet_mynode(), gasnet_nodes(), gasnet_hsl_*(), gasnet_exit(), gasnet_AMReply*(), 
+// gasnet_mynode(), gasnet_nodes(), gasnet_hsl_*(), gasnet_exit(), 
 // gasnet_QueryGexObjects(), gex_System_QueryNbrhdInfo(), gex_System_QueryHostInfo(),
 // gex_System_QueryMyPosition(), gex_System_QueryJob{Rank,Size}(), gex_HSL_*(),
 // gex_*_{Set,Query}CData(), gex_{Client,Segment,EP,TM,AD}_Query*(), gex_TM_Pair(),
-// gex_AM_Max*(), gex_AM_LUB*(), gex_Token_Max*(), gex_Token_Info(),
+// gex_AM_Max*(), gex_AM_LUB*(), gex_Token_Max*(), gex_Token_Info(), gasnet_AMGetMsgSource(),
 // gex_System_GetVerboseErrors(), gex_System_SetVerboseErrors(),
 // gex_System_QueryMaxThreads(), gex_System_QueryHiddenAMConcurrencyLevel()
 // 
 // The following are conditionally permitted in handler context, the condition being the 
 // caller must be within an AMRequest handler and not holding a handler-safe lock:
 //
-// gex_AM_Reply*() gex_AM_{Prepare,Commit}Reply*(), gex_AM_SrcDesc*()
+// gasnet_AMReply*(), gex_AM_Reply*() gex_AM_{Prepare,Commit}Reply*(), gex_AM_SrcDesc*()
 //
 // The following are conditionally permitted in handler context, the condition
 // being that the 'flags' argument must include GEX_FLAG_IMMEDIATE:
@@ -1785,6 +1785,12 @@ extern gex_TI_t gex_Token_Info(
 //   address range described by [dest_addr..(dest_addr+nbytes-1)]. Any such
 //   assertions must remain true until the AM handler begins execution at the target.
 //
+// NOTE 4: Overlap
+//
+//   Within a single gex_AM_*Long* operation, if the specified source and destination 
+//   memory regions overlap, behavior is undefined. High-quality implementations
+//   may choose to diagnose such errors.
+//
 // Other arguments behave as in the analogous GASNet-1 functions.
 // Misc semantic strengthening:
 // * dest_addr for Long is guaranteed to be passed to the handler as provided
@@ -2211,6 +2217,12 @@ extern void gex_AM_CommitReplyLong[M](
 //       the address is a device address.
 //     - Otherwise the address is a host address.
 //   In all cases, the remote memory must be in the remote bound segment.
+//
+// NOTE 5: Overlap
+//
+//   Within a single gex_RMA_* operation, if the specified source and destination 
+//   memory regions overlap, behavior is undefined. High-quality implementations
+//   may choose to diagnose such errors.
 
 // Put
 int gex_RMA_PutBlocking(
@@ -3115,7 +3127,7 @@ int gex_AD_OpNBI_[DATATYPE](
 // This API is an updated and expanded version of the VIS prototype offered
 // in GASNet-1, which is documented here: https://gasnet.lbl.gov/pubs/upc_memcpy_gasnet-2.0.pdf
 
-// The following semantics apply to all VIS functions:
+// The following semantics apply to all VIS functions, superseding the above document:
 
 // For NB variants, return type for all functions in this section is gex_Event_t.
 // For NBI/Blocking variants, the return type is int which is non-zero *only* in the
@@ -3131,6 +3143,10 @@ int gex_AD_OpNBI_[DATATYPE](
 // this functionality must be requested using the GEX_FLAG_ENABLE_LEAF_LC flag (see below).
 //
 // A future revision may expose other intermediate completion events [UNIMPLEMENTED]
+//
+// Within a single VIS operation, if any destination location overlaps a source location 
+// or another destination location, then behavior is undefined. 
+// Source locations are permitted to overlap with each other.
 //
 // The 'flags' argument must either be zero, or a bitwise OR of one or more
 // of the following flags:
@@ -3213,15 +3229,6 @@ int gex_AD_OpNBI_[DATATYPE](
 // * If any entry in count[0..stridelevels-1] == 0:
 //   the operation is a no-op and tm, rank, srcaddr, dstaddr are ignored
 //   ({src,dst}strides must still reference valid arrays)
-//
-// Restrictions:
-//
-// * If any destination location overlaps a source location or another destination
-//   location, the result is undefined. Source locations are permitted to overlap
-//   with each other.
-//
-// * Metadata array inputs must remain valid and unchanged until after synchronization
-//   of operation completion (this restriction may eventually be loosened)
 //
 
 {gex_Event_t,int} gex_VIS_StridedGet{NB,NBI,Blocking}(
@@ -3687,7 +3694,8 @@ gex_Event_t gex_Coll_BroadcastNB(
 // LIMITATIONS of the current release:
 //  + The current implementation may limit `dt_sz` for user-defined types to as
 //    little as 32KB bytes in some configurations and with default parameters.
-//    The precise limit depends on the network and sizes of the job and team.
+//    The precise limit depends on the network, the sizes of the job and team,
+//    and the size of the team's collective scratch space.
 
 gex_Event_t gex_Coll_ReduceToOneNB(
             gex_TM_t            tm,           // The team
@@ -3754,7 +3762,7 @@ gex_Event_t gex_Coll_ReduceToAllNB(
 
 // [PROPOSED]
 // This section of this document covers APIs described in more detail in
-//   GASNet-EX API Proposal: Memory Kinds, Revision 2021.9.0
+//   GASNet-EX API Proposal: Memory Kinds, Revision 2022.3.0
 //
 // For functions, only prototypes and supported flags are provided here.
 // For function semantics, one should consult the document cited above.
@@ -3767,6 +3775,12 @@ int gex_Segment_Create(
             gex_Addr_t      address,
             uintptr_t       length,
             gex_MK_t        kind,
+            gex_Flags_t     flags);
+      // Valid flags:
+      //   NONE - zero is currently required
+
+void gex_Segment_Destroy(
+            gex_Segment_t   segment,
             gex_Flags_t     flags);
       // Valid flags:
       //   NONE - zero is currently required
@@ -3852,7 +3866,7 @@ void gex_MK_Destroy(
 // End of APIs provided by gasnet_mk.h
 // ****
 
-// End of "GASNet-EX API Proposal: Memory Kinds, Revision 2021.9.0" section
+// End of "GASNet-EX API Proposal: Memory Kinds, Revision 2022.3.0" section
 //----------------------------------------------------------------------
 
 // vim: syntax=c

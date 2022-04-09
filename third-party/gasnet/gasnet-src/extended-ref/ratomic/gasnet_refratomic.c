@@ -82,14 +82,16 @@ void gasneti_AD_Create(
         gex_OP_t                   ops,
         gex_Flags_t                flags)
 {
-#if GASNET_TRACE
-  char *dtstr = (char *)gasneti_malloc(gasneti_format_dt(NULL, dt));
-  char *opstr = (char *)gasneti_malloc(gasneti_format_op(NULL, ops));
-  gasneti_format_dt(dtstr, dt);
-  gasneti_format_op(opstr, ops);
-  GASNETI_TRACE_PRINTF(O,("gex_AD_Create: tm=" GASNETI_TMFMT " dt=%s ops=%s flags=0x%x",
+  if (GASNETI_TRACE_ENABLED(O)) {
+    char *dtstr = (char *)gasneti_malloc(gasneti_format_dt(NULL, dt));
+    char *opstr = (char *)gasneti_malloc(gasneti_format_op(NULL, ops));
+    gasneti_format_dt(dtstr, dt);
+    gasneti_format_op(opstr, ops);
+    GASNETI_TRACE_PRINTF(O,("gex_AD_Create: tm=" GASNETI_TMFMT " dt=%s ops=%s flags=0x%x",
                           GASNETI_TMSTR(tm), dtstr, opstr, flags));
-#endif
+    gasneti_free(dtstr);
+    gasneti_free(opstr);
+  }
   GASNETI_CHECK_INJECT();
 
   gasneti_TM_t real_tm = gasneti_import_tm_nonpair(tm);

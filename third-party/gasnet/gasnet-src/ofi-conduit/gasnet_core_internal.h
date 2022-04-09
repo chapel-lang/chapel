@@ -57,6 +57,7 @@ typedef enum GASNETC_OFI_OP_TYPE {
 } gasnetc_ofi_op_type;
 
 typedef struct gasnetc_ofi_op_ctxt {
+  // Conduit code assumes ctxt is the first field
   struct fi_context     ctxt;
   rdma_callback_fn      callback;
   gasnetc_ofi_op_type   type;

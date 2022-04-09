@@ -59,8 +59,6 @@ GASNETI_BEGIN_NOWARN
 extern int gasneti_init_done; /*  true after init */
 extern int gasneti_attach_done; /*  true after attach */
 
-extern char gasneti_exename[PATH_MAX];
-
 /* conduit-independent sanity checks */
 extern void gasneti_check_config_preinit(void);
 extern void gasneti_check_config_postattach(void);
@@ -346,6 +344,7 @@ extern gasneti_Segment_t gasneti_alloc_segment(
                        void *addr,
                        uintptr_t len,
                        gex_MK_t kind,
+                       int client_allocated,
                        gex_Flags_t flags);
 void gasneti_free_segment(gasneti_Segment_t segment);
 
@@ -470,6 +469,10 @@ int gasneti_segment_map(gasnet_seginfo_t *segment_p,
                         uintptr_t segsize,
                         int pshm_compat,
                         gex_Flags_t flags);
+// Undo gasneti_segment_map()
+int gasneti_segment_unmap(
+                        gasnet_seginfo_t *segment_p,
+                        int pshm_compat);
 
 #ifndef GASNETI_USE_HIGHSEGMENT
 #define GASNETI_USE_HIGHSEGMENT 1  /* use the high end of mmap segments */
@@ -918,7 +921,12 @@ void gasneti_blockingExchange(gex_TM_t tm, void *src, size_t len, void *dst);
 //
 // "Rotated" because it does NOT generate the data in normal rank order.
 // See comments in extended-ref/coll/gasnet_team.c for details.
-size_t gasneti_blockingRotatedExchangeV(gex_TM_t tm, const void *src, size_t len, void **dst_p, size_t **len_p);
+#if PLATFORM_COMPILER_GNU && PLATFORM_COMPILER_VERSION_GE(11,0,0)
+#define GASNETI_BUG4227_CONST /*const*/
+#else 
+#define GASNETI_BUG4227_CONST const
+#endif
+size_t gasneti_blockingRotatedExchangeV(gex_TM_t tm, GASNETI_BUG4227_CONST void *src, size_t len, void **dst_p, size_t **len_p);
 
 // An AM-based host-scoped barrier
 extern void gasneti_host_barrier(void);
@@ -968,6 +976,7 @@ typedef struct _gasneti_threaddata_t {
 
   gasnete_thread_cleanup_t *thread_cleanup; /* thread cleanup function LIFO */
   int thread_cleanup_delay;
+  int is_undead; // marks leaked threaddata for a thread which has exited
 
   //
   // Active Message fields
@@ -1039,6 +1048,19 @@ void gasneti_end_nbi_ff(GASNETI_THREAD_FARG_ALONE)
   gasneti_aop_t *aop = gasneti_aop_pop(GASNETI_THREAD_PASS_ALONE);
   gasneti_assert(aop == GASNETI_MYTHREAD->nbi_ff_aop);
 }
+
+// Sets the nbi_ff_aop of all threads to NULL and returns (via reference
+// arguments) an array of events and its length.  This array, contains all of
+// the aops which were found to be non-NULL.  The array and count are suitable
+// for calls to gex_Event_{Try,Wait}{All,Some}().
+//
+// The caller is responsible for freeing the array, which may be non-NULL
+// even when the count is zero.
+//
+// NOTE: this does NOT adjust `iop_num` in other threads when stealing their
+// nbi_ff_aop.  This may force the threaddata to leak.  However, this should
+// not be a real issue at process exit (the main intended use of this call).
+extern void gasneti_finalize_all_nbi_ff(gex_Event_t **events_p, size_t *count_p GASNETI_THREAD_FARG);
 
 // DO NOT USE THIS!
 // This exists only to permit "safe" testing in gasnet_diagnostic.c.

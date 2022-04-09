@@ -799,6 +799,11 @@ int gasnetc_segment_create_hook(gex_Segment_t e_segment)
   return GASNET_OK;
 }
 
+void gasnetc_segment_destroy_hook(gasneti_Segment_t i_segment)
+{
+  gasnetc_segment_deregister((gasnetc_Segment_t) i_segment);
+}
+
 int gasnetc_segment_attach_hook(gex_Segment_t e_segment, gex_TM_t e_tm)
 {
   // Register client segment with NIC

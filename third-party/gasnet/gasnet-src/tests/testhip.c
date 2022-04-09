@@ -207,7 +207,13 @@ int main(int argc, char **argv)
         client_gpu2 = (uint8_t *) dptr;
       }
 
-      // Create the Kind
+      // Create and Destroy a kind
+      kind = GEX_MK_INVALID;
+      GASNET_Safe( gex_MK_Create(&kind, myclient, &args, 0) );
+      assert_always(kind != GEX_MK_INVALID);
+      gex_MK_Destroy(kind, 0);
+
+      // Create the Kind "for keeps"
       // TODO: if multiple devices, this should optionally create kinds using two devices
       kind = GEX_MK_INVALID;
       GASNET_Safe( gex_MK_Create(&kind, myclient, &args, 0) );

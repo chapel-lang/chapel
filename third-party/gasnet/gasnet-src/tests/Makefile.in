@@ -104,6 +104,7 @@ testprograms_seq =      \
         testsegment     \
         testtmpair      \
         testreadonly    \
+        testalltoall    \
         testcudauva     \
         testhip         \
         $(CONDUIT_TESTS) \

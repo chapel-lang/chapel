@@ -502,6 +502,19 @@ const char *gasneti_gethostname(void) {
       if (gethostname(hostname, MAXHOSTNAMELEN))
         gasnett_fatalerror("gasneti_gethostname() failed to get hostname: aborting");
       hostname[MAXHOSTNAMELEN - 1] = '\0';
+      size_t len = strlen(hostname);
+      // Scan for chars that suggest anything other than 7-bit ASCII
+      int safe = 1;
+      for (int i = 0; i < len; ++i) {
+        if (iscntrl(hostname[i])) {
+          safe = 0;
+          break;
+        }
+      }
+      // Normalize to lowercase if it looks "safe" to do so
+      if (safe) {
+        for (int i = 0; i < len; ++i) { hostname[i] =  tolower(hostname[i]); }
+      }
       firsttime = 0;
     }
   gasneti_mutex_unlock(&hnmutex);
@@ -1207,6 +1220,333 @@ extern void gasneti_freezeForDebuggerErr(void) {
   if (gasneti_freezeonerr_userenabled)
     gasneti_freezeForDebuggerNow(&gasnet_frozen,"gasnet_frozen"); /* allow user freeze */
 }
+/* ------------------------------------------------------------------------------------ */
+// command-line retrieval support
+
+#if PLATFORM_OS_LINUX || PLATFORM_OS_CNL || PLATFORM_OS_WSL || PLATFORM_OS_CYGWIN || \
+    PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || PLATFORM_OS_OPENBSD
+#define GASNETI_HAVE_ARGV_FROM_PROC 1
+/* Try to get substitute argv from /proc, if available.
+ * Note that /proc is not mounted by default on many/most BSD systems.
+ */
+static void gasneti_argv_from_proc(int **ppargc, char ****ppargv) {
+  static int argc = 0;
+  static char **argv = NULL;
+
+#if PLATFORM_OS_LINUX || PLATFORM_OS_CNL || PLATFORM_OS_WSL || PLATFORM_OS_CYGWIN
+  const char *filename = "/proc/self/cmdline";
+#elif PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || PLATFORM_OS_OPENBSD
+  const char *filename = "/proc/curproc/cmdline";
+#endif
+  int fd;
+  size_t len = 0;
+  char *cmdline;
+
+  if_pf (argc) { /* duplicate call */
+    *ppargc = &argc;
+    *ppargv = &argv;
+    return;
+  }
+
+  if ((fd = open(filename, O_RDONLY)) < 0) return;
+
+  /* Read the whole file, made harder because stat() yields st_size=0 */
+  {
+    ssize_t rc;
+    size_t asize = 32;
+    cmdline = malloc(asize);
+    while (1) {
+      rc = read(fd, cmdline+len, asize-len);
+      if (rc == 0) {
+        break; /* Normal termination */
+      } else if (rc < 0) {
+        if (errno == EINTR) continue;
+        free(cmdline);
+        (void) close(fd);
+        return; /* Fail silently (non-fatal) */
+      }
+      len += rc;
+      if (len == asize) {
+        asize += MIN(asize,1024); /* double up to 1k and linear after */
+        cmdline = realloc(cmdline, asize);
+      }
+    }
+    (void) close(fd);
+  }
+  if (len == 0 || !cmdline[0] || cmdline[len-1]) { // bug 4076: we read an obviously garbled cmdline
+    static int retried = 0;
+    free(cmdline);
+    if (!retried) { // retry at most once
+      gasneti_nsleep(100*1000*1000); // sleep 100ms
+      gasneti_sched_yield();
+      retried = 1;
+      gasneti_argv_from_proc(ppargc, ppargv);
+    } 
+    return; // fail silently
+  }
+  cmdline = realloc(cmdline, len);
+  gasneti_assert(cmdline[len-1] == 0);
+
+  /* Parse the cmdline on '\0' separators */
+  {
+    char *p;
+    int i;
+
+    for (p = cmdline, argc = 0; p < (cmdline+len); ++argc) {
+      p += strlen(p) + 1;
+    }
+
+    argv = malloc((argc+1) * sizeof(char*));
+    for (p = cmdline, i = 0; i < argc; ++i) {
+      argv[i] = p;
+      p += strlen(p) + 1;
+    }
+    argv[argc] = NULL;
+  }
+
+  *ppargc = &argc;
+  *ppargv = &argv;
+}
+#endif
+
+#if PLATFORM_OS_SOLARIS
+#include <procfs.h>
+#define GASNETI_HAVE_ARGV_FROM_PROC 1
+/* Try to get address of true original argv from /proc, if available. */
+static void gasneti_argv_from_proc(int **ppargc, char ****ppargv) {
+  static int argc = 0;
+  static char **argv = NULL;
+
+  int fd;
+  size_t len = 0;
+  psinfo_t psi;
+
+  if_pf (argc) { /* duplicate call */
+    *ppargc = &argc;
+    *ppargv = &argv;
+    return;
+  }
+
+  if ((fd = open("/proc/self/psinfo", O_RDONLY)) < 0) return;
+
+  /* Read the whole file */
+  {
+    ssize_t rc;
+    char *p = (char *)&psi;
+    do {
+      rc = read(fd, p + len, sizeof(psi) - len);
+      if (rc < 0) {
+        if (errno == EINTR) continue;
+        (void) close(fd);
+        return; /* Fail silently (non-fatal) */
+      }
+      len += rc;
+    } while (len != sizeof(psi));
+    (void) close(fd);
+  }
+
+  /* Extract argc and (shallow) copy argv */
+  argc = psi.pr_argc;
+  len = (argc+1) * sizeof(char*);
+  argv = memcpy(malloc(len), (void*)(psi.pr_argv), len);
+
+  *ppargc = &argc;
+  *ppargv = &argv;
+}
+#endif
+
+#if PLATFORM_OS_DARWIN
+#include <sys/sysctl.h>
+#if defined(CTL_KERN) && defined(KERN_PROCARGS2)
+#define GASNETI_HAVE_ARGV_FROM_SYSCTL 1
+/* Try to get substitute argv from the memory above our stack.  */
+static void gasneti_argv_from_sysctl(int **ppargc, char ****ppargv) {
+  static int argc = 0;
+  static char **argv = NULL;
+
+  int i, mib[3];
+  char *argv0, *buf;
+  size_t len;
+
+  if_pf (argc) { /* duplicate call */
+    *ppargc = &argc;
+    *ppargv = &argv;
+    return;
+  }
+
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROCARGS2;
+  mib[2] = getpid();
+
+retry:
+  /* Query for length and allocate space */
+  len = 0;
+  if (sysctl(mib, 3, NULL, &len, NULL, 0) < 0) return;
+  len += 8; /* Empirically determined that we must add at least 1 */
+  buf = malloc(len);
+
+  /* Actual sysctl() query */
+  if (sysctl(mib, 3, buf, &len, NULL, 0) < 0) {
+    free(buf);
+    return;
+  }
+
+  /* Extract argc and the argv array from buf */
+  { char *start, *end;
+
+    if (mib[1] == KERN_PROCARGS2) {
+      /* argc is first int */
+      argc = *(int*)buf;
+      start = buf + sizeof(int);
+    } else {
+      start = buf;
+    }
+
+    /* Skip over execpath and any trailing '\0' to find argv[0] */
+    start += strlen(start) + 1;
+    while ((start - buf < len) && ! *start) start++;
+
+    #if defined(KERN_PROCARGS)
+      if ((start - buf == len) && (mib[1] == KERN_PROCARGS2)) {
+        // Did not find anything after exepath.
+        // So, try again using KERN_PROCARGS (which excludes argc).
+        free(buf);
+        len = 0;
+        mib[1] = KERN_PROCARGS;
+        goto retry;
+      }
+    #endif
+    gasneti_assert_uint(start - buf ,<, len);
+
+    /* Skip over the args to find end */
+    for (end = start, i = 0; i < argc; ++i) {
+      end += strlen(end) + 1;
+      gasneti_assert_uint(end - buf ,<, len);
+    }
+
+    /* Keep a copy of only what we need */
+    len = end - start;
+    argv0 = memcpy(malloc(len), start, len);
+    free(buf);
+  }
+
+  /* Build the argv array */
+  argv = malloc((argc+1) * sizeof(char*));
+  { char *p = argv0;
+    for (i = 0; i < argc; ++i) {
+      argv[i] = p;
+      p += strlen(p) + 1;
+    }
+    argv[argc] = NULL;
+  }
+
+  *ppargc = &argc;
+  *ppargv = &argv;
+}
+#endif
+#endif
+
+#if PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || PLATFORM_OS_OPENBSD
+#include <sys/sysctl.h>
+#if (PLATFORM_OS_FREEBSD && defined(CTL_KERN) && defined(KERN_PROC) && defined(KERN_PROC_ARGS)) || \
+    (PLATFORM_OS_NETBSD && defined(CTL_KERN) && defined(KERN_PROC_ARGS) && defined(KERN_PROC_ARGV)) || \
+    (PLATFORM_OS_OPENBSD && defined(CTL_KERN) && defined(KERN_PROC_ARGS) && defined(KERN_PROC_ARGV))
+#define GASNETI_HAVE_ARGV_FROM_SYSCTL 1
+static void gasneti_argv_from_sysctl(int **ppargc, char ****ppargv) {
+  static int argc = 0;
+  static char **argv = NULL;
+
+  int mib[4];
+  char *buf;
+  size_t len;
+
+  if_pf (argc) { /* duplicate call */
+    *ppargc = &argc;
+    *ppargv = &argv;
+    return;
+  }
+
+  mib[0] = CTL_KERN;
+#if PLATFORM_OS_FREEBSD
+  mib[1] = KERN_PROC;
+  mib[2] = KERN_PROC_ARGS;
+  mib[3] = getpid();
+#elif PLATFORM_OS_NETBSD || PLATFORM_OS_OPENBSD
+  mib[1] = KERN_PROC_ARGS;
+  mib[2] = getpid();
+  mib[3] = KERN_PROC_ARGV;
+#else
+  #error
+#endif
+
+  /* Query for length and allocate space */
+  len = 0;
+  if (sysctl(mib, 4, NULL, &len, NULL, 0) < 0) return;
+  buf = malloc(len);
+
+  /* Actual sysctl() query */
+  if (sysctl(mib, 4, buf, &len, NULL, 0) < 0) {
+    free(buf);
+    return;
+  }
+
+#if PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD
+  /* Extract argc and the argv array from buf */
+  { char *p;
+    int i;
+    buf = realloc(buf, len);
+    for (argc = 0, p = buf ; p - buf < len; ++argc) {
+      p += strlen(p) + 1;
+    }
+    argv = malloc((argc+1) * sizeof(char*));
+    for (i = 0, p = buf; i < argc; ++i) {
+      argv[i] = p;
+      p += strlen(p) + 1;
+    }
+    argv[argc] = NULL;
+  }
+#elif PLATFORM_OS_OPENBSD
+  /* Count and relocate (due to realloc) argv[] array already in buf */
+  argv = realloc(buf, len);
+  for (argc = 0; argv[argc]; ++argc) {
+    argv[argc] += ((uintptr_t)argv - (uintptr_t)buf);
+  }
+#else
+  #error
+#endif
+
+  *ppargc = &argc;
+  *ppargv = &argv;
+}
+#endif
+#endif
+
+// retrieve the argc/argv into the (empty) provided variables
+GASNETI_COLD
+extern void gasneti_argv_from_system(int **pargc, char ****pargv) {
+ gasneti_assert(pargc && pargv);
+ // Some systems may support multiple mechanisms,
+ // and we try them all until we get something.
+ #ifdef GASNETI_HAVE_ARGV_FROM_SYSCTL
+  gasneti_argv_from_sysctl(pargc,pargv);
+ #endif
+ #ifdef GASNETI_HAVE_ARGV_FROM_PROC
+  if (!*pargc || !*pargv) gasneti_argv_from_proc(pargc,pargv);
+ #endif
+}
+
+extern const char *gasneti_exe_name() {
+  static char exename[PATH_MAX] = { 0 };
+  if (*exename) return exename;
+  static int *argc = 0; 
+  static char ***argv = 0;
+  gasneti_argv_from_system(&argc, &argv);
+  if (argc && *argc > 0 && argv && *argv && (*argv)[0] && (*argv)[0][0]) {
+    gasneti_qualify_path(exename, (*argv)[0]);
+  }
+  return exename;
+}
+
 /* ------------------------------------------------------------------------------------ */
 /* Dynamic backtrace support */
 
@@ -3205,6 +3545,13 @@ gasneti_count0s(const void * src, size_t bytes) {
   const uint8_t *s = src;
   size_t zeros = 0;
   while (bytes--) { zeros += !*(s++); }
+#elif (PLATFORM_COMPILER_CLANG && __cray__) && \
+      PLATFORM_COMPILER_VERSION_GE(13,0,0) && \
+      __CRAY_MIC_KNL
+  // Version which works-around a CCE-13 ICE (see bug 4417)
+  const uint8_t *s = src;
+  volatile size_t zeros = 0;
+  while (bytes--) { zeros = zeros + !*(s++); }
 #else /* Carefully optimized (but still portable) word-oriented loop */
   const uintptr_t *s;
   size_t zeros, tmp;

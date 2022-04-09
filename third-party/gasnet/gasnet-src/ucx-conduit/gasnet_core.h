@@ -102,21 +102,20 @@ typedef struct {
   ==========================
 */
 
-size_t gasnetc_AMHeaderSize(void);
+extern size_t gasnetc_ammed_bufsz;
 
 #define GASNETC_MAX_ARGS            16
-#define GASNETC_UCX_HDR_SIZE        gasnetc_AMHeaderSize()
+#define GASNETC_UCX_HDR_SIZE        40
 #define GASNETC_MAX_LONG            INT_MAX
 
 #define GASNETC_ARGS_SIZE(numargs) (sizeof(gex_AM_Arg_t) * (numargs))
 
 #define GASNETC_MAX_MED_(nargs)                                                \
-  (GASNETC_MAX_MED - GASNETI_ALIGNUP_NOASSERT(GASNETC_UCX_HDR_SIZE +           \
-                                              GASNETC_ARGS_SIZE(nargs), 8))
+  (gasnetc_ammed_bufsz - GASNETI_ALIGNUP_NOASSERT(GASNETC_UCX_HDR_SIZE +       \
+                                                  GASNETC_ARGS_SIZE(nargs), 8))
 
 #define GASNETC_MAX_LONG_(nargs)                                                \
-  (GASNETC_MAX_LONG - (GASNETC_UCX_HDR_SIZE +  sizeof(gex_AM_Arg_t)*(nargs) +  \
-                                               sizeof(void*)))
+  (GASNETC_MAX_LONG - (GASNETC_UCX_HDR_SIZE + sizeof(gex_AM_Arg_t)*(nargs)))
 
 #define GASNETC_MAX_ARGS_SIZE (sizeof(gex_AM_Arg_t) * GASNETC_MAX_ARGS)
 

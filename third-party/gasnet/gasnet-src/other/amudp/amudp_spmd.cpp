@@ -898,7 +898,12 @@ pollentry:
                 for (int i=0; i < (int)coordList.getCount(); i++) {
                   sendAll(coordList[i], "E");
                   sendAll(coordList[i], &exitCode_nb, sizeof(int32_t));
-                  close_socket(coordList[i]);
+                  #if PLATFORM_OS_DARWIN 
+                    // bug4211: newer macos needs shutdown() to ensure the remote reliably sees the close
+                    closeGracefully(coordList[i]);
+                  #else
+                    close_socket(coordList[i]);
+                  #endif
                 }
                 /* bug 2029 - wait for any final stdout/stderr to arrive before shutdown */
                 uint64_t wait_iter = 0;
