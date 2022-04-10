@@ -86,6 +86,7 @@ proc repeatMake(desc, param alu, n) {
 // sequence of length 'n'
 //
 proc randomMake(desc, nuclInfo, n) {
+  
   stdout.writeln(desc);
 
   var hash: [0..<IM] uint(8),
@@ -103,8 +104,10 @@ proc randomMake(desc, nuclInfo, n) {
     hash[i] = ch;
   }
 
-  param buffSize = (lineLen+1)*buffLines;
-  const numBuffs = n/lineLen/buffLines;
+  param LfLineLen = lineLen + 1,
+        buffSize = LfLineLen*buffLines;
+  const numLines = n/lineLen,
+        numBuffs = numLines/buffLines;
   var buffer: [0..<buffSize] uint(8);
 
   // add linefeeds
@@ -114,26 +117,26 @@ proc randomMake(desc, nuclInfo, n) {
   for 0..<numBuffs {
     for j in 0..<buffLines do // TODO: make PARAM?
       for k in 0..<lineLen do // TODO: make PARAM?
-        buffer[j*(lineLen+1)+k] = hash[getNextRand()];
+        buffer[j*LfLineLen+k] = hash[getNextRand()];
     stdout.write(buffer);
   }
 
-  const lines = n/lineLen - numBuffs*buffLines;
-  for j in 0..<lines do
+  const extraLines = numLines - numBuffs*buffLines;
+  for j in 0..<extraLines do
     for k in 0..<lineLen do
-      buffer[j*(lineLen+1)+k] = hash[getNextRand()];
-  var extra = lines * lineLen;
+      buffer[j*LfLineLen+k] = hash[getNextRand()];
+  var extra = extraLines * lineLen;
   
-  var partials = n - lineLen*lines - numBuffs*buffLines*lineLen;
+  var partials = n - lineLen*(numBuffs*buffLines + extraLines);
   for k in 0..<partials do
-    buffer[lines*(lineLen+1)+k] = hash[getNextRand()];
+    buffer[extraLines*LfLineLen+k] = hash[getNextRand()];
 
   if (n % lineLen != 0) {
-    buffer[lines*(lineLen+1)+partials] = newline;
+    buffer[extraLines*LfLineLen+partials] = newline;
     partials += 1;
   }
   
-  stdout.write(buffer[0..<lines*(lineLen+1)+partials]);
+  stdout.write(buffer[0..<extraLines*LfLineLen+partials]);
 }
 
 proc b(s) {
