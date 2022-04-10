@@ -86,7 +86,6 @@ proc repeatMake(desc, param alu, n) {
 // sequence of length 'n'
 //
 proc randomMake(desc, nuclInfo, n) {
-  
   stdout.writeln(desc);
 
   var hash: [0..<IM] uint(8),
@@ -95,8 +94,7 @@ proc randomMake(desc, nuclInfo, n) {
 
   var j = 0;
   for i in 0..<IM {
-    var r = 1.0 * i / IM;
-    if r >= sum {
+    if 1.0 * i / IM >= sum {
       j += 1;
       (ch, prob) = nuclInfo[j];
       sum += prob;
@@ -104,8 +102,9 @@ proc randomMake(desc, nuclInfo, n) {
     hash[i] = ch;
   }
 
-  param LfLineLen = lineLen + 1,
-        buffSize = LfLineLen*buffLines;
+  param lfLineLen = lineLen + 1,
+        buffSize = lfLineLen * buffLines;
+
   var numLines = n/lineLen,
       numBuffs = numLines/buffLines,
       buffer: [0..<buffSize] uint(8);
@@ -113,29 +112,35 @@ proc randomMake(desc, nuclInfo, n) {
   // add linefeeds
   for i in lineLen..<buffSize by lineLen+1 do  // TODO: try forall?
     buffer[i] = newline;
-  
+
+  // write out most of the data in full buffers
   for 0..<numBuffs {
     for j in 0..<buffLines do // TODO: make PARAM?
       for k in 0..<lineLen do // TODO: make PARAM?
-        buffer[j*LfLineLen+k] = hash[getNextRand()];
+        buffer[j*lfLineLen + k] = hash[getNextRand()];
     stdout.write(buffer);
   }
-  numLines -= numBuffs*buffLines;
+
+  // fill in any remaining lines
+  numLines -= numBuffs * buffLines;
 
   for j in 0..<numLines do
     for k in 0..<lineLen do
-      buffer[j*LfLineLen+k] = hash[getNextRand()];
-  
-  var partials = n % lineLen;
-  for k in 0..<partials do
-    buffer[numLines*LfLineLen+k] = hash[getNextRand()];
+      buffer[j*lfLineLen + k] = hash[getNextRand()];
 
-  if (partials != 0) {
-    buffer[numLines*LfLineLen+partials] = newline;
-    partials += 1;
+  // and any extra characters on the last line
+  var extra = n % lineLen,
+      offset = numLines * lfLineLen;
+
+  for k in 0..<extra do
+    buffer[offset + k] = hash[getNextRand()];
+
+  if (extra != 0) {
+    buffer[offset + extra] = newline;
+    extra += 1;
   }
-  
-  stdout.write(buffer[0..<numLines*LfLineLen+partials]);
+
+  stdout.write(buffer[0..<offset+extra]);
 }
 
 proc b(s) {
