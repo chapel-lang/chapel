@@ -2,9 +2,8 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Brad Chamberlain
-   derived from the GNU C version by Аноним Легионов and Jeremy Zerfas
-     as well as previous Chapel versions by Casey Battaglino, Kyle Brady,
-     and Preston Sahabu.
+   derived from the Chapel #5 version
+   and the C gcc #9 version by Drake Diedrich
 */
 
 use IO;
