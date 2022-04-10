@@ -111,7 +111,7 @@ proc randomMake(desc, nuclInfo, n) {
       buffer: [0..<buffSize] uint(8);
 
   // add linefeeds
-  for i in lineLen..<buffSize by lineLen+1 do
+  for i in lineLen..<buffSize by lineLen+1 do  // TODO: try forall?
     buffer[i] = newline;
   
   for 0..<numBuffs {
@@ -126,11 +126,11 @@ proc randomMake(desc, nuclInfo, n) {
     for k in 0..<lineLen do
       buffer[j*LfLineLen+k] = hash[getNextRand()];
   
-  var partials = n - lineLen*(numBuffs*buffLines + numLines);
+  var partials = n % lineLen;
   for k in 0..<partials do
     buffer[numLines*LfLineLen+k] = hash[getNextRand()];
 
-  if (n % lineLen != 0) {
+  if (partials != 0) {
     buffer[numLines*LfLineLen+partials] = newline;
     partials += 1;
   }
