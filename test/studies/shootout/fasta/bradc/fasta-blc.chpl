@@ -9,7 +9,8 @@
 
 use IO;
 
-config param lineLength = 60;
+config param lineLen = 60,
+             buffLines = 100;
 
 config type randType = uint(32);  // type to use for random numbers
 
@@ -68,15 +69,14 @@ proc main() {
 //
 // Repeat 'alu' to generate a sequence of length 'n'
 //
-proc repeatMake(desc, alu, n) {
+proc repeatMake(desc, param alu, n) {
   stdout.writeln(desc);
 
-  const r = alu.size,
-        s = alu + alu;
+  param s = alu + alu;
 
-  for i in 0..<n by lineLength {
-    const lo = i % r,
-          len = min(lineLength, n-i);
+  for i in 0..<n by lineLen {
+    const lo = i % alu.size,
+          len = min(lineLen, n-i);
     stdout.write(s[lo..#len], newline);
   }
 }
@@ -85,68 +85,55 @@ proc repeatMake(desc, alu, n) {
 // Use 'nuclInfo's probability distribution to generate a random
 // sequence of length 'n'
 //
-proc randomMake(desc, nuclInfo: [?nuclInds], n) {
+proc randomMake(desc, nuclInfo, n) {
   stdout.writeln(desc);
 
-  // compute the cumulative probabilities of the nucleotides
-  var cumulProb: [nuclInds] randType,
-      p = 0.0;
-  for (cp, (_,prob)) in zip(cumulProb, nuclInfo) {
-    p += prob;
-    cp = 1 + (p*IM): randType;
-  }
+  var hash: [0..<IM] uint(8),
+      (ch, prob) = nuclInfo[0],
+      sum = prob;
 
-  // guard when tasks can access the random numbers or output stream
-  var randGo, outGo: [0..<numTasks] atomic int;
-
-  // create tasks to pipeline the RNG, computation, and output
-  coforall tid in 0..<numTasks {
-    const chunkSize = lineLength*blockSize,
-          nextTid = (tid + 1) % numTasks;
-
-    var myBuff: [0..<(lineLength+1)*blockSize] uint(8),
-        myRands: [0..chunkSize] randType;
-
-    // iterate over 0..<n in a round-robin fashion across tasks
-    for i in tid*chunkSize..<n by numTasks*chunkSize {
-      const nBytes = min(chunkSize, n-i);
-
-      // Get 'nBytes' random numbers in a coordinated manner
-      randGo[tid].waitFor(i);
-      getRands(nBytes, myRands);
-      randGo[nextTid].write(i+chunkSize);
-
-      // Compute 'nBytes' nucleotides and store in 'myBuff'
-      var col = 0,
-          off = 0;
-
-      for r in myRands[..<nBytes] {
-        var nid = 0;
-        for p in cumulProb do
-          nid += (r >= p);
-        const (nucl,_) = nuclInfo[nid];
-
-        myBuff[off] = nucl;
-        off += 1;
-        col += 1;
-
-        if (col == lineLength) {
-          col = 0;
-          myBuff[off] = newline;
-          off += 1;
-        }
-      }
-      if (col != 0) {
-        myBuff[off] = newline;
-        off += 1;
-      }
-
-      // Write the output in a coordinated manner
-      outGo[tid].waitFor(i);
-      stdout.write(myBuff[..<off]);
-      outGo[nextTid].write(i+chunkSize);
+  var j = 0;
+  for i in 0..<IM {
+    var r = 1.0 * i / IM;
+    if r >= sum {
+      j += 1;
+      (ch, prob) = nuclInfo[j];
+      sum += prob;
     }
+    hash[i] = ch;
   }
+
+  param buffSize = (lineLen+1)*buffLines;
+  const numBuffs = n/lineLen/buffLines;
+  var buffer: [0..<buffSize] uint(8);
+
+  // add linefeeds
+  for i in lineLen..<buffSize by lineLen+1 do
+    buffer[i] = newline;
+  
+  for 0..<numBuffs {
+    for j in 0..<buffLines do // TODO: make PARAM?
+      for k in 0..<lineLen do // TODO: make PARAM?
+        buffer[j*(lineLen+1)+k] = hash[getNextRand()];
+    stdout.write(buffer);
+  }
+
+  const lines = n/lineLen - numBuffs*buffLines;
+  for j in 0..<lines do
+    for k in 0..<lineLen do
+      buffer[j*(lineLen+1)+k] = hash[getNextRand()];
+  var extra = lines * lineLen;
+  
+  var partials = n - lineLen*lines - numBuffs*buffLines*lineLen;
+  for k in 0..<partials do
+    buffer[lines*(lineLen+1)+k] = hash[getNextRand()];
+
+  if (n % lineLen != 0) {
+    buffer[lines*(lineLen+1)+partials] = newline;
+    partials += 1;
+  }
+  
+  stdout.write(buffer[0..<lines*(lineLen+1)+partials]);
 }
 
 proc b(s) {
@@ -159,9 +146,7 @@ proc b(s) {
 //
 var lastRand = 42: randType;
 
-proc getRands(n, arr) {
-  for i in 0..<n {
-    lastRand = (lastRand * IA + IC) % IM;
-    arr[i] = lastRand;
-  }
+inline proc getNextRand() {
+  lastRand = (lastRand * IA + IC) % IM;
+  return lastRand;
 }
