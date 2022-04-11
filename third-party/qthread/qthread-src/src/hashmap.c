@@ -4,6 +4,7 @@
 
 /* System Headers */
 #include <stdlib.h>
+#include <sys/types.h>
 
 /* Qthread Headers */
 #include <qthread/hash.h>
