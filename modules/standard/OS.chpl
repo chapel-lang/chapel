@@ -184,7 +184,7 @@ module OS {
     //
     // stdlib.h
     //
-    extern proc getenv(name:c_string):c_string;
+    extern proc getenv(name:c_string):c_ptr(c_char);
 
     //
     // sys/stat.h
