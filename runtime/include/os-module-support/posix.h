@@ -27,10 +27,15 @@
 // runtime and so are already included elsewhere, but here we make
 // sure we have them.
 //
+#include <errno.h>
 #include <fcntl.h>
+#include <stddef.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
