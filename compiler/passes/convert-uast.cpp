@@ -996,6 +996,17 @@ struct Converter {
   bool isLoopMaybeArrayType(const uast::IndexableLoop* node) {
     return node->isBracketLoop() && !node->index() &&
            !node->iterand()->isZip();
+    /*
+      Removed the check for conditionals here because of the following example,
+      taken from test/expressions/if-expr/inside-field.chpl:
+      ```
+      record R3 {
+      type T;
+      var multiple: [1..2] if !isClass(T) then 2*T
+                          else [1..2] if isClass(T) then owned T? else T;
+      }
+      ```
+    */
   }
 
   Expr* convertBracketLoopExpr(const uast::BracketLoop* node) {
