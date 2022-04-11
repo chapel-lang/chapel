@@ -257,6 +257,7 @@ module OS {
     // unistd.h
     //
     extern proc close(fildes:c_int):c_int;
+    extern proc pipe(fildes:c_ptr(2*c_int)):c_int;
     extern proc read(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
     extern proc write(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
 
