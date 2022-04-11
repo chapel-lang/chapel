@@ -8,29 +8,12 @@
 
 use IO;
 
-config param lineLen = 60,
-             buffLines = 100;
+config param lineLen = 60,     // the length of each generated line
+             buffLines = 100;  // the number of lines to buffer
 
-config type randType = uint(32);  // type to use for random numbers
+config const n = 1000;         // the length of the generated sequences
 
-config const n = 1000,            // the length of the generated strings
-             blockSize = 1024,    // the parallelization granularity
-             numTasks = min(4, here.maxTaskPar);  // how many tasks to use?
-//
-// the computational pipeline has 3 distinct stages, so ideally, we'd
-// like to use 3 tasks.  However, there is one stage which does not
-// require any coordination and it tends to be the slowest stage, so
-// we could have multiple tasks working on it simultaneously.  In
-// practice, though, that phase is not that much slower than the sum
-// of the other two, and using too many tasks can just add overhead
-// that isn't helpful.  So we go with 4 tasks to pick up some slack,
-// and because it seems to work best on all the machine we've tried in
-// practice.  If the locale can't support that much parallelism, we'll
-// use a number of tasks equal to its maximum degree of task
-// parallelism to avoid oversubscription.
-//
-
-param IM = 139968,         // parameters for random number generation
+param IM = 139968,             // parameters for random number generation
       IA = 3877,
       IC = 29573,
 
@@ -102,7 +85,7 @@ proc randomMake(desc, nuclInfo, n) {
   }
 
   param lfLineLen = lineLen + 1,
-        buffSize = lfLineLen * buffLines;
+        buffSize = buffLines * lfLineLen;
 
   var numLines = n/lineLen,
       numBuffs = numLines/buffLines,
@@ -114,26 +97,27 @@ proc randomMake(desc, nuclInfo, n) {
 
   // write out most of the data in full buffers
   for 0..<numBuffs {
-    for j in 0..<buffLines do // TODO: make PARAM?
-      for k in 0..<lineLen do // TODO: make PARAM?
+    for j in 0..<buffLines do
+      for k in 0..<lineLen do
         buffer[j*lfLineLen + k] = hash[getNextRand()];
     stdout.write(buffer);
   }
 
-  // fill in any remaining lines
+  // compute number of complete lines remaining and fill them in
   numLines -= numBuffs * buffLines;
 
   for j in 0..<numLines do
     for k in 0..<lineLen do
       buffer[j*lfLineLen + k] = hash[getNextRand()];
 
-  // and any extra characters on the last line
+  // compute number of extra characters and fill them in
   var extra = n % lineLen,
       offset = numLines * lfLineLen;
 
   for k in 0..<extra do
     buffer[offset + k] = hash[getNextRand()];
 
+  // add a final linefeed if needed
   if (extra != 0) {
     buffer[offset + extra] = newline;
     extra += 1;
@@ -142,6 +126,7 @@ proc randomMake(desc, nuclInfo, n) {
   stdout.write(buffer[0..<offset+extra]);
 }
 
+// Utility to convert single-character strings to bytes
 proc b(s) {
   return s.toByte();
 }
@@ -150,7 +135,7 @@ proc b(s) {
 // Deterministic random number generator
 // (lastRand really wants to be a local static...)
 //
-var lastRand = 42: randType;
+var lastRand = 42: uint(32);
 
 inline proc getNextRand() {
   lastRand = (lastRand * IA + IC) % IM;
