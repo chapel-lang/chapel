@@ -186,6 +186,11 @@ module OS {
     extern proc getenv(name:c_string):c_ptr(c_char);
 
     //
+    // string.h
+    //
+    extern proc strlen(s:c_string):c_size_t;
+
+    //
     // sys/stat.h
     //
     extern const S_IRWXU: mode_t;
