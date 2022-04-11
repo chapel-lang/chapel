@@ -32,14 +32,13 @@
    the operating system manual pages.
  */
 module OS {
-
   /*
      Definitions corresponding to POSIX, specifically POSIX.1-2017.
      Standard: https://pubs.opengroup.org/onlinepubs/9699919799/
   */
   pragma "no doc"
   module POSIX {
-    use CTypes;
+    public use CTypes;
 
     //
     // sys/types.h

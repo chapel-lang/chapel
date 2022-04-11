@@ -1,7 +1,6 @@
 // This is really a test of all five basic file I/O functions:
 //   creat(), open(), read(), write(), close()
 use OS.POSIX;
-use CTypes;
 
 // Note that we can't check the access mode values we set here, because
 // we don't know or do anything with the umask.  So really, we're just

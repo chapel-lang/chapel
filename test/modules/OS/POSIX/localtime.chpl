@@ -1,5 +1,4 @@
 use OS.POSIX;
-use CTypes;
 
 var t = time(nil);
 var tLocal = localtime(c_ptrTo(t)).deref();

@@ -1,5 +1,4 @@
 use OS.POSIX;
-use CTypes;
 
 writeln(time(nil):int);
 var tValRefd:time_t;

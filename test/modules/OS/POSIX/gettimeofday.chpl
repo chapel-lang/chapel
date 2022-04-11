@@ -1,5 +1,4 @@
 use OS.POSIX;
-use CTypes;
 use IO.FormattedIO;
 var tv: struct_timeval;
 writeln(gettimeofday(c_ptrTo(tv), c_nil));
