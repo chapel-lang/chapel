@@ -2,35 +2,18 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Brad Chamberlain
-   derived from the GNU C version by Аноним Легионов and Jeremy Zerfas
-     as well as previous Chapel versions by Casey Battaglino, Kyle Brady,
-     and Preston Sahabu.
+   derived from the Chapel #5 version
+   and the C gcc #9 version by Drake Diedrich
 */
 
 use IO;
 
-config param lineLength = 60;
+config param lineLen = 60,     // the length of each generated line
+             buffLines = 100;  // the number of lines to buffer
 
-config type randType = uint(32);  // type to use for random numbers
+config const n = 1000;         // the length of the generated sequences
 
-config const n = 1000,            // the length of the generated strings
-             blockSize = 1024,    // the parallelization granularity
-             numTasks = min(4, here.maxTaskPar);  // how many tasks to use?
-//
-// the computational pipeline has 3 distinct stages, so ideally, we'd
-// like to use 3 tasks.  However, there is one stage which does not
-// require any coordination and it tends to be the slowest stage, so
-// we could have multiple tasks working on it simultaneously.  In
-// practice, though, that phase is not that much slower than the sum
-// of the other two, and using too many tasks can just add overhead
-// that isn't helpful.  So we go with 4 tasks to pick up some slack,
-// and because it seems to work best on all the machine we've tried in
-// practice.  If the locale can't support that much parallelism, we'll
-// use a number of tasks equal to its maximum degree of task
-// parallelism to avoid oversubscription.
-//
-
-param IM = 139968,         // parameters for random number generation
+param IM = 139968,             // parameters for random number generation
       IA = 3877,
       IC = 29573,
 
@@ -68,15 +51,14 @@ proc main() {
 //
 // Repeat 'alu' to generate a sequence of length 'n'
 //
-proc repeatMake(desc, alu, n) {
+proc repeatMake(desc, param alu, n) {
   stdout.writeln(desc);
 
-  const r = alu.size,
-        s = alu + alu;
+  param s = alu + alu;
 
-  for i in 0..<n by lineLength {
-    const lo = i % r,
-          len = min(lineLength, n-i);
+  for i in 0..<n by lineLen {
+    const lo = i % alu.size,
+          len = min(lineLen, n-i);
     stdout.write(s[lo..#len], newline);
   }
 }
@@ -85,70 +67,66 @@ proc repeatMake(desc, alu, n) {
 // Use 'nuclInfo's probability distribution to generate a random
 // sequence of length 'n'
 //
-proc randomMake(desc, nuclInfo: [?nuclInds], n) {
+proc randomMake(desc, nuclInfo, n) {
   stdout.writeln(desc);
 
-  // compute the cumulative probabilities of the nucleotides
-  var cumulProb: [nuclInds] randType,
-      p = 0.0;
-  for (cp, (_,prob)) in zip(cumulProb, nuclInfo) {
-    p += prob;
-    cp = 1 + (p*IM): randType;
-  }
+  var hash: [0..<IM] uint(8),
+      (ch, prob) = nuclInfo[0],
+      sum = prob;
 
-  // guard when tasks can access the random numbers or output stream
-  var randGo, outGo: [0..<numTasks] atomic int;
-
-  // create tasks to pipeline the RNG, computation, and output
-  coforall tid in 0..<numTasks {
-    const chunkSize = lineLength*blockSize,
-          nextTid = (tid + 1) % numTasks;
-
-    var myBuff: [0..<(lineLength+1)*blockSize] uint(8),
-        myRands: [0..chunkSize] randType;
-
-    // iterate over 0..<n in a round-robin fashion across tasks
-    for i in tid*chunkSize..<n by numTasks*chunkSize {
-      const nBytes = min(chunkSize, n-i);
-
-      // Get 'nBytes' random numbers in a coordinated manner
-      randGo[tid].waitFor(i);
-      getRands(nBytes, myRands);
-      randGo[nextTid].write(i+chunkSize);
-
-      // Compute 'nBytes' nucleotides and store in 'myBuff'
-      var col = 0,
-          off = 0;
-
-      for r in myRands[..<nBytes] {
-        var nid = 0;
-        for p in cumulProb do
-          nid += (r >= p);
-        const (nucl,_) = nuclInfo[nid];
-
-        myBuff[off] = nucl;
-        off += 1;
-        col += 1;
-
-        if (col == lineLength) {
-          col = 0;
-          myBuff[off] = newline;
-          off += 1;
-        }
-      }
-      if (col != 0) {
-        myBuff[off] = newline;
-        off += 1;
-      }
-
-      // Write the output in a coordinated manner
-      outGo[tid].waitFor(i);
-      stdout.write(myBuff[..<off]);
-      outGo[nextTid].write(i+chunkSize);
+  var j = 0;
+  for i in 0..<IM {
+    if 1.0 * i / IM >= sum {
+      j += 1;
+      (ch, prob) = nuclInfo[j];
+      sum += prob;
     }
+    hash[i] = ch;
   }
+
+  param lfLineLen = lineLen + 1,
+        buffSize = buffLines * lfLineLen;
+
+  var numLines = n/lineLen,
+      numBuffs = numLines/buffLines,
+      buffer: [0..<buffSize] uint(8);
+
+  // add linefeeds
+  for i in lineLen..<buffSize by lineLen+1 do  // TODO: try forall?
+    buffer[i] = newline;
+
+  // write out most of the data in full buffers
+  for 0..<numBuffs {
+    for j in 0..<buffLines do
+      for k in 0..<lineLen do
+        buffer[j*lfLineLen + k] = hash[getNextRand()];
+    stdout.write(buffer);
+  }
+
+  // compute number of complete lines remaining and fill them in
+  numLines -= numBuffs * buffLines;
+
+  for j in 0..<numLines do
+    for k in 0..<lineLen do
+      buffer[j*lfLineLen + k] = hash[getNextRand()];
+
+  // compute number of extra characters and fill them in
+  var extra = n % lineLen,
+      offset = numLines * lfLineLen;
+
+  for k in 0..<extra do
+    buffer[offset + k] = hash[getNextRand()];
+
+  // add a final linefeed if needed
+  if (extra != 0) {
+    buffer[offset + extra] = newline;
+    extra += 1;
+  }
+
+  stdout.write(buffer[0..<offset+extra]);
 }
 
+// Utility to convert single-character strings to bytes
 proc b(s) {
   return s.toByte();
 }
@@ -157,11 +135,9 @@ proc b(s) {
 // Deterministic random number generator
 // (lastRand really wants to be a local static...)
 //
-var lastRand = 42: randType;
+var lastRand = 42: uint(32);
 
-proc getRands(n, arr) {
-  for i in 0..<n {
-    lastRand = (lastRand * IA + IC) % IM;
-    arr[i] = lastRand;
-  }
+inline proc getNextRand() {
+  lastRand = (lastRand * IA + IC) % IM;
+  return lastRand;
 }
