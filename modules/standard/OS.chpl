@@ -223,7 +223,8 @@ module OS {
       var tz_dsttime:c_int;     // type of dst correction to apply
     };
 
-    extern proc gettimeofday(ref tp: struct_timeval, tzp:c_void_ptr):c_int;
+    extern proc gettimeofday(tp:c_ptr(struct_timeval),
+                             tzp:c_ptr(struct_timezone)):c_int;
 
     //
     // time.h
