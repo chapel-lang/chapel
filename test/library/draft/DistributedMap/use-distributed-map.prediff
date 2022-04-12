@@ -1,4 +1,0 @@
-#!/bin/bash
-
-cat $2 | sed -E "s/0x[0-9a-f]*/prediffed/" | sort > $2.predifftmp
-mv $2.predifftmp $2
