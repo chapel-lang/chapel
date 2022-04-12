@@ -28,17 +28,17 @@ param IM = 139968,                      // values for random number generation
 //
 // Probability tables for sequences to be randomly generated
 //
-const IUB = [(b("a"), 0.27), (b("c"), 0.12), (b("g"), 0.12), (b("t"), 0.27),
-             (b("B"), 0.02), (b("D"), 0.02), (b("H"), 0.02), (b("K"), 0.02),
-             (b("M"), 0.02), (b("N"), 0.02), (b("R"), 0.02), (b("S"), 0.02),
-             (b("V"), 0.02), (b("W"), 0.02), (b("Y"), 0.02)],
+const IUB = [(b"a", 0.27), (b"c", 0.12), (b"g", 0.12), (b"t", 0.27),
+             (b"B", 0.02), (b"D", 0.02), (b"H", 0.02), (b"K", 0.02),
+             (b"M", 0.02), (b"N", 0.02), (b"R", 0.02), (b"S", 0.02),
+             (b"V", 0.02), (b"W", 0.02), (b"Y", 0.02)],
 
-      HomoSapiens = [(b("a"), 0.3029549426680),
-                     (b("c"), 0.1979883004921),
-                     (b("g"), 0.1975473066391),
-                     (b("t"), 0.3015094502008)],
+      HomoSapiens = [(b"a", 0.3029549426680),
+                     (b"c", 0.1979883004921),
+                     (b"g", 0.1975473066391),
+                     (b"t", 0.3015094502008)],
 
-      newline = b("\n"),   // newline's byte value
+      newline = b"\n"[0],   // newline's byte value
 
       // Redefine stdout to use lock-free binary I/O
       stdout = openfd(1).writer(kind=iokind.native, locking=false);
@@ -95,12 +95,12 @@ proc randomMake(nuclInfo, n) {
 
   var j = 0;
   for i in 0..<IM {
-    if 1.0 * i / IM >= sum {
+    if i:real / IM >= sum {
       j += 1;
       (ch, prob) = nuclInfo[j];
       sum += prob;
     }
-    hash[i] = ch;
+    hash[i] = ch[0];
   }
 
   param buffSize = buffLines * bytesPerLine;
@@ -110,10 +110,11 @@ proc randomMake(nuclInfo, n) {
       buffer: [0..<buffSize] uint(8);
 
   // add linefeeds
-  for i in lineLen..<buffSize by bytesPerLine do  // TODO: try forall?
+  for i in lineLen..<buffSize by bytesPerLine {
     buffer[i] = newline;
+  }
 
-  // write out most of the data in full buffers
+  // write out most of the data as full buffers
   for 0..<numBuffs {
     for j in 0..<buffLines {
       for k in 0..<lineLen {
@@ -149,14 +150,8 @@ proc randomMake(nuclInfo, n) {
   stdout.write(buffer[0..<offset+extra]);
 }
 
-// Utility to convert single-character strings to bytes
-proc b(s) {
-  return s.toByte();
-}
-
 //
 // Deterministic random number generator
-// (lastRand really wants to be a local static...)
 //
 var lastRand = 42: uint(32);
 
