@@ -3,7 +3,7 @@ use Map, DistributedMap, Aggregator, BlockDist, Random;
 /////////////////////////////////
 // randomStrings parameters and reference
 config const defaultSeed = 3141592;
-config const numStrings  = 20_000;
+config const numStrings  = 200_000;
 
 // int(8) means the maps will have only 256 keys with large histogram counts
 // use bigger-sized types to have more keys with smaller counts
