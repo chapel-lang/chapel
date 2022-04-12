@@ -1,0 +1,9 @@
+bug: remove value forwarding (or global broadcast) breaks C ptr
+
+https://github.com/Cray/chapel-private/issues/2651
+
+This applied for regex as well (where the C ptr is to the RE2 object), but was fixed implementing chpl__serialize for regex. See:
+  * https://github.com/chapel-lang/chapel/pull/18678
+  * https://github.com/chapel-lang/chapel/pull/18733
+
+This bug disappears when using --no-remote-value-forwarding

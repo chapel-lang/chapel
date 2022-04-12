@@ -1461,6 +1461,8 @@ memleaksfull:
     - Add module ConcurrentMap (#16704)
   03/18/22:
     - Avoid double-deinit upon throws from a forall loop (#19479)
+  04/03/22:
+    - DistributedMap and Aggregator tests added that had leaks (#19554)
 # End memleaksfull
 
 meteor:
@@ -2260,6 +2262,8 @@ arkouda: &arkouda-base
   02/24/22:
     - Use int in1d to implement the hashed based string in1d (Bears-R-Us/arkouda#1132)
     - Tune int in1d threshold (Bears-R-Us/arkouda#1131)
+  04/06/22:
+    - Closes 1241 Use computeOnSegments for substringSearch (Bears-R-Us/arkouda#1248)
 
 
 arkouda-string:

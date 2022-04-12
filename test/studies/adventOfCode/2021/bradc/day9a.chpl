@@ -5,7 +5,6 @@ var rows, cols: int;
 var D: domain(2);
 var Height: [D] int;
 
-//readFirstLine();
 readHeights();
 Height[0, ..] = 9;
 Height[rows+1, ..] = 9;

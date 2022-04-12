@@ -52,6 +52,8 @@ class New : public AstNode {
     UNMANAGED
   };
 
+  static const char* managementToString(Management management);
+
  private:
   New(AstList children, New::Management management)
     : AstNode(asttags::New, std::move(children)),
