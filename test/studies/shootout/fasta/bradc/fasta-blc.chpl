@@ -44,25 +44,27 @@ const IUB = [(b("a"), 0.27), (b("c"), 0.12), (b("g"), 0.12), (b("t"), 0.27),
       stdout = openfd(1).writer(kind=iokind.native, locking=false);
 
 proc main() {
-  // TODO: move writes of descriptions here?
-  repeatMake(">ONE Homo sapiens alu", ALU, 2*n);
-  randomMake(">TWO IUB ambiguity codes", IUB, 3*n);
-  randomMake(">THREE Homo sapiens frequency", HomoSapiens, 5*n);
+  stdout.writeln(">ONE Homo sapiens alu");
+  repeatMake(ALU, 2*n);
+  stdout.writeln(">TWO IUB ambiguity codes");
+  randomMake(IUB, 3*n);
+  stdout.writeln(">THREE Homo sapiens frequency");
+  randomMake(HomoSapiens, 5*n);
 }
 
 //
 // Repeat 'alu' to generate a sequence of length 'n'
 //
-proc repeatMake(desc, param alu, n) {
-  stdout.writeln(desc);
-
+proc repeatMake(param alu, n) {
   param len = alu.size,
         alu2 = alu + alu,
         buffLen = len*bytesPerLine;
 
   var buffer: [0..<buffLen] uint(8);
-  for i in 0..buffLen by bytesPerLine do
-    buffer[i..#lineLen] = alu2[i%len..#lineLen];
+  for i in 0..<len {
+    buffer[i*bytesPerLine..#lineLen] = alu2[(i*lineLen)%len..#lineLen];
+    buffer[i*bytesPerLine+lineLen] = newline;
+  }
 
   const wholeBuffers = n / (len*lineLen);
   for i in 0..<wholeBuffers do
@@ -80,9 +82,7 @@ proc repeatMake(desc, param alu, n) {
 // Use 'nuclInfo's probability distribution to generate a random
 // sequence of length 'n'
 //
-proc randomMake(desc, nuclInfo, n) {
-  stdout.writeln(desc);
-
+proc randomMake(nuclInfo, n) {
   var hash: [0..<IM] uint(8),
       (ch, prob) = nuclInfo[0],
       sum = prob;
@@ -99,12 +99,12 @@ proc randomMake(desc, nuclInfo, n) {
 
   param buffSize = buffLines * bytesPerLine;
 
-  var numLines = n/lineLen,
-      numBuffs = numLines/buffLines,
+  var numLines = n / lineLen,
+      numBuffs = numLines / buffLines,
       buffer: [0..<buffSize] uint(8);
 
   // add linefeeds
-  for i in lineLen..<buffSize by lineLen+1 do  // TODO: try forall?
+  for i in lineLen..<buffSize by bytesPerLine do  // TODO: try forall?
     buffer[i] = newline;
 
   // write out most of the data in full buffers
