@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <sys/select.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -59,6 +60,29 @@ int chpl_os_posix_errno_val(void) {
 static inline
 int chpl_os_posix_open(const char* path, int oflag, mode_t mode) {
   return open(path, oflag, mode);
+}
+
+//
+// sys/select.h
+//
+static inline
+void chpl_os_posix_FD_CLR(int fd, fd_set* fdset) {
+  FD_CLR(fd, fdset);
+}
+
+static inline
+int chpl_os_posix_FD_ISSET(int fd, fd_set* fdset) {
+  return FD_ISSET(fd, fdset);
+}
+
+static inline
+void chpl_os_posix_FD_SET(int fd, fd_set* fdset) {
+  FD_SET(fd, fdset);
+}
+
+static inline
+void chpl_os_posix_FD_ZERO(fd_set* fdset) {
+  FD_ZERO(fdset);
 }
 
 #ifdef __cplusplus

@@ -191,6 +191,33 @@ module OS {
     extern proc strlen(s:c_string):c_size_t;
 
     //
+    // sys/select.h
+    //
+    extern const FD_SETSIZE:c_int;
+
+    extern record fd_set {};
+
+    proc FD_CLR(fd:c_int, fdset:c_ptr(fd_set)) {
+      extern proc chpl_os_posix_FD_CLR(fd:c_int, fdset:c_ptr(fd_set));
+      chpl_os_posix_FD_CLR(fd, fdset);
+    }
+
+    proc FD_ISSET(fd:c_int, fdset:c_ptr(fd_set)):c_int {
+      extern proc chpl_os_posix_FD_ISSET(fd:c_int, fdset:c_ptr(fd_set)):c_int;
+      return chpl_os_posix_FD_ISSET(fd, fdset);
+    }
+
+    proc FD_SET(fd:c_int, fdset:c_ptr(fd_set)) {
+      extern proc chpl_os_posix_FD_SET(fd:c_int, fdset:c_ptr(fd_set));
+      chpl_os_posix_FD_SET(fd, fdset);
+    }
+
+    proc FD_ZERO(fdset:c_ptr(fd_set)) {
+      extern proc chpl_os_posix_FD_ZERO(fdset:c_ptr(fd_set));
+      chpl_os_posix_FD_ZERO(fdset);
+    }
+
+    //
     // sys/stat.h
     //
     extern const S_IRWXU: mode_t;
