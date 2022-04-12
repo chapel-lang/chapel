@@ -2940,26 +2940,6 @@ static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
   }
 }
 
-static bool readNamedArgument(CallExpr* call, const char* name,
-                              bool defaultValue,
-                              std::vector<std::string>& expectedNames) {
-  bool ret = defaultValue;
-  expectedNames.push_back((std::string)name);
-
-  for (int i = 1; i<= call->numActuals(); i++) {
-    NamedExpr* ne = toNamedExpr(call->get(i));
-    if (ne && !strcmp(ne->name, name)) {
-      SymExpr* se = toSymExpr(ne->actual);
-      if (se && (se->symbol() == gTrue || se->symbol() == gFalse)) {
-        ret = se->symbol() == gTrue;
-      } else {
-        USR_FATAL(se, "the arguments to 'get visible symbols' must be either 'true' or 'false'");
-      }
-      break;
-    }
-  }
-  return ret;
-}
 
 static bool symbolInBuiltinModule(Symbol* sym) {
   ModuleSymbol* mod = sym->getModule();
@@ -2968,28 +2948,13 @@ static bool symbolInBuiltinModule(Symbol* sym) {
 }
 
 
-static void errorForUnexpectedArgName(std::vector<std::string> argNames,
-                                      CallExpr* call) {
-  if (((unsigned)call->numActuals()) > argNames.size()) {
-    USR_FATAL(call, "too many arguments to 'get visible symbols'");
-  }
-
-  for (int i = 1; i <= call->numActuals(); i++) {
-    NamedExpr* actual = toNamedExpr(call->get(i));
-    if (!actual) {
-      USR_FATAL(call, "'get visible symbols' requires named arguments");
-    }
-    if (std::find(argNames.begin(), argNames.end(), (std::string)actual->name) == argNames.end()) {
-      USR_FATAL_CONT(actual, "unrecognized argument to 'get visible symbols': %s", actual->name);
-      USR_FATAL_CONT(call, "recognized names are:");
-      for (int i = 0; ((unsigned)i) < argNames.size(); i++) {
-        USR_FATAL_CONT(call, "  %s", argNames[i].c_str());
-      }
-      USR_STOP();
-    }
-  }
+/*
+ * make sure the symbol passed is either 'true' or 'false'
+ */
+static void validateGetVisibleSymbolArg(SymExpr* symExpr) {
+  if (symExpr->symbol() != gTrue && symExpr->symbol() != gFalse)
+    USR_FATAL(symExpr, "the arguments to 'get visible symbols' must be literals 'true' or 'false'");
 }
-
 
 /* Find any "get visible symbols" primitive calls and print out all
    symbols that are visible from that point.
@@ -2997,11 +2962,27 @@ static void errorForUnexpectedArgName(std::vector<std::string> argNames,
 static void processGetVisibleSymbols() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_VISIBLE_SYMBOLS)) {
-      std::vector<std::string> argNames;
-      bool ignoreInternalModules = readNamedArgument(call, "ignoreInternalModules", true, argNames);
-      bool ignoreBuiltinModules = readNamedArgument(call, "ignoreBuiltinModules", false, argNames);
-
-      errorForUnexpectedArgName(argNames, call);
+      for (int i = 1; i<= call->numActuals(); i++) {
+        NamedExpr *ne = toNamedExpr(call->get(i));
+        if (ne) {
+          USR_FATAL(call, "primitive calls cannot use named arguments");
+        }
+      }
+      // set default values then check for valid set of args and update if present
+      bool ignoreInternalModules = true;
+      bool ignoreBuiltinModules = false;
+      if (call->numActuals() == 2) {
+        SymExpr* seInternal = toSymExpr(call->get(1));
+        SymExpr* seBuiltin = toSymExpr(call->get(2));
+        validateGetVisibleSymbolArg(seInternal);
+        validateGetVisibleSymbolArg(seBuiltin);
+        ignoreInternalModules = seInternal->symbol() == gTrue;
+        ignoreBuiltinModules =  seBuiltin->symbol() == gTrue;
+      } else if (call->numActuals() > 2) {
+        USR_FATAL(call, "too many arguments to 'get visible symbols'");
+      } else {
+        USR_FATAL(call, "get visible symbols may only have 0 or 2 arguments");
+      }
 
       std::set<Symbol*> alreadyFound;
       // build a map from filename to set of visible symbols in that file

@@ -675,7 +675,7 @@ stmt:
   }
 | TLABEL ident_def stmt
   {
-    if ($3.stmt->isFor() || $3.stmt->isWhile() || $3.stmt->isDoWhile()) {
+    if ($3.stmt && ($3.stmt->isFor() || $3.stmt->isWhile() || $3.stmt->isDoWhile())) {
       auto exprLst = context->makeList($3);
       auto comments = context->gatherCommentsFromList(exprLst, @1);
       auto astLst = context->consumeList(exprLst);
@@ -1140,10 +1140,8 @@ import_expr:
   }
 | expr TDOT all_op_name
   {
-    auto ident = context->buildIdent(@3, $3);
-    $$ = context->buildVisibilityClause(@$, toOwned($1),
-                                        VisibilityClause::NONE,
-                                        context->consume(ident));
+    auto dot = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release();
+    $$ = context->buildVisibilityClause(@$, toOwned(dot));
   }
 | expr TAS ident_use
   {
@@ -1209,19 +1207,25 @@ opt_label_ident:
 
 ident_fn_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = $1; ERROR(@$, "redefining reserved word 'none'"); }
+| TNONE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'none'"); }
 | TTHIS                    { $$ = $1; }
-| TFALSE                   { $$ = $1; ERROR(@$, "redefining reserved word 'false'"); }
-| TTRUE                    { $$ = $1; ERROR(@$, "redefining reserved word 'true'"); }
-| internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
+| TFALSE                   { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'false'"); }
+| TTRUE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'true'"); }
+| internal_type_ident_def  { std::string msg = "attempt to redefine reserved type '";
+                             msg += $1.c_str();
+                             msg += "'";
+                             $$ = $1; ERROR(@$, msg); }
 
 ident_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = $1; ERROR(@$, "redefining reserved word 'none'"); }
-| TTHIS                    { $$ = $1; ERROR(@$, "redefining reserved word 'this'"); }
-| TFALSE                   { $$ = $1; ERROR(@$, "redefining reserved word 'false'"); }
-| TTRUE                    { $$ = $1; ERROR(@$, "redefining reserved word 'true'"); }
-| internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
+| TNONE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'none'"); }
+| TTHIS                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'this'"); }
+| TFALSE                   { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'false'"); }
+| TTRUE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'true'"); }
+| internal_type_ident_def  { std::string msg = "attempt to redefine reserved type '";
+                             msg += $1.c_str();
+                             msg += "'";
+                             $$ = $1; ERROR(@$, msg); }
 ;
 
 /* Represents a use of an identifier. This is not used as often as you
@@ -3457,8 +3461,8 @@ lhs_expr:
 call_base_expr:
   lhs_expr
 | expr TBANG                    { $$ = context->buildUnaryOp(@$,
-                                                              STR("postfix!"),
-                                                              $1); }
+                                                             STR("postfix!"),
+                                                             $1); }
 | sub_type_level_expr TQUESTION { $$ = context->buildUnaryOp(@$, $2, $1); }
 | lambda_decl_expr
 | str_bytes_literal

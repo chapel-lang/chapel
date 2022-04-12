@@ -182,14 +182,16 @@ struct ChplSyntaxVisitor {
 
   /*
    * helper to check if the called expression is actually a
-   * management kind. Helps FnCalls not to print () in this case
+   * reserved word. Helps FnCalls not to print () in this case
   */
-  bool isCalleeManagementKind(const AstNode* callee) {
+  bool isCalleeReservedWord(const AstNode* callee) {
     if (callee->isIdentifier() &&
-      (callee->toIdentifier()->name() == "borrowed"
-       || callee->toIdentifier()->name() == "owned"
-       || callee->toIdentifier()->name() == "unmanaged"
-       || callee->toIdentifier()->name() == "shared"))
+      (callee->toIdentifier()->name() == USTR("borrowed")
+       || callee->toIdentifier()->name() == USTR("owned")
+       || callee->toIdentifier()->name() == USTR("unmanaged")
+       || callee->toIdentifier()->name() == USTR("shared")
+       || callee->toIdentifier()->name() == USTR("sync")
+       || callee->toIdentifier()->name() == USTR("single")))
         return true;
       return false;
   }
@@ -207,8 +209,18 @@ struct ChplSyntaxVisitor {
       ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
     }
 
-    // Function Name
-    ss_ << node->name().str();
+    if (node->kind() == Function::Kind::OPERATOR && node->name() == USTR("=")) {
+      // TODO: remove this once the old parser is out of the question
+      // TODO: this is only here to support tests from the old parser
+      // printing extra spaces around an assignment operator
+      ss_ << " ";
+      // Function Name
+      ss_ << node->name().str();
+      ss_ << " ";
+    } else {
+      // Function Name
+      ss_ << node->name().str();
+    }
 
     // Formals
     int numThisFormal = node->thisFormal() ? 1 : 0;
@@ -472,14 +484,37 @@ struct ChplSyntaxVisitor {
     const AstNode* callee = node->calledExpression();
     assert(callee);
     printChapelSyntax(ss_, callee);
-    if (isCalleeManagementKind(callee)) {
+    if (isCalleeReservedWord(callee)) {
       ss_ << " ";
-      printChapelSyntax(ss_, node->actual(0));
+      if (auto op = node->actual(0)->toOpCall()) {
+        assert(op->isUnaryOp() && op->op() == USTR("?"));
+        printChapelSyntax(ss_, op->actual(0));
+        ss_ << op->op();
+      } else {
+        printChapelSyntax(ss_, node->actual(0));
+      }
     } else {
       if (node->callUsedSquareBrackets()) {
-        interpose(node->actuals(), ", ", "[", "]");
+        ss_ << "[";
       } else {
-        interpose(node->actuals(), ", ", "(", ")");
+        ss_ << "(";
+      }
+      std::string sep;
+      for (int i = 0; i < node->numActuals(); i++) {
+        ss_ << sep;
+        if (node->isNamedActual(i)) {
+          ss_ << node->actualName(i);
+          // The spaces around = are just to satisfy old tests
+          // TODO: Remove spaces around `=` when removing old parser
+          ss_ << " = ";
+        }
+        printChapelSyntax(ss_, node->actual(i));
+        sep = ", ";
+      }
+      if (node->callUsedSquareBrackets()) {
+        ss_ << "]";
+      } else {
+        ss_ << ")";
       }
     }
   }
@@ -887,6 +922,7 @@ struct ChplSyntaxVisitor {
   void visit(const Use* node) {
     if (node->visibility() != Decl::DEFAULT_VISIBILITY) {
       ss_ << kindToString(node->visibility());
+      ss_ << " ";
     }
     ss_ << "use ";
     interpose(node->visibilityClauses(), ", ");
@@ -907,8 +943,8 @@ struct ChplSyntaxVisitor {
       printChapelSyntax(ss_, ie);
     }
 
+    ss_ << " ...";
     if (const AstNode* ce = node->count()) {
-      ss_ << " ...";
       if (const TypeQuery* tq = ce->toTypeQuery()) {
         printChapelSyntax(ss_, tq);
       } else {
@@ -944,6 +980,10 @@ struct ChplSyntaxVisitor {
     if (limit == VisibilityClause::LimitationKind::BRACES) {
       ss_ << ".";
       interpose(node->limitations(), ", ", "{","}");
+    } else if (limit == VisibilityClause::LimitationKind::NONE && node->numLimitations() == 1) {
+      assert(node->limitation(0)->isIdentifier());
+      ss_ << ".";
+      printChapelSyntax(ss_, node->limitation(0));
     } else {
       ss_ << " ";
       if (limit == VisibilityClause::LimitationKind::ONLY ||
