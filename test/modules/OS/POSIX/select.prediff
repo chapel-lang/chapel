@@ -1,0 +1,4 @@
+#! /usr/bin/env bash
+sed -E 's/((read|write) [0-9]+ (from|to) fd) [0-9]+/\1 N/' < $2 | \
+    sort > $2.prediff && \
+  mv $2.prediff $2

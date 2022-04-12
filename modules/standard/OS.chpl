@@ -188,6 +188,7 @@ module OS {
     //
     // string.h
     //
+    extern proc strerror(errnum:c_int):c_string;
     extern proc strlen(s:c_string):c_size_t;
 
     //
@@ -216,6 +217,13 @@ module OS {
       extern proc chpl_os_posix_FD_ZERO(fdset:c_ptr(fd_set));
       chpl_os_posix_FD_ZERO(fdset);
     }
+
+    // No way around this -- 'select' is a keyword in Chapel.
+    extern 'select' proc select_posix(nfds:c_int,
+                                      readfds:c_ptr(fd_set),
+                                      writefds:c_ptr(fd_set),
+                                      errorfds:c_ptr(fd_set),
+                                      timeout:c_ptr(struct_timeval)):c_int;
 
     //
     // sys/stat.h
