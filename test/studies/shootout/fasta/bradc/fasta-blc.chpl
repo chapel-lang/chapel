@@ -8,12 +8,13 @@
 
 use IO;
 
-config param lineLen = 60,     // the length of each generated line
-             buffLines = 100;  // the number of lines to buffer
+config param lineLen = 60,              // length of each generated line
+             bytesPerLine = lineLen+1,  // ...plus the linefeed
+             buffLines = 100;           // number of lines to buffer
 
-config const n = 1000;         // the length of the generated sequences
+config const n = 1000;                  // length of the generated sequences
 
-param IM = 139968,             // parameters for random number generation
+param IM = 139968,                      // values for random number generation
       IA = 3877,
       IC = 29573,
 
@@ -43,6 +44,7 @@ const IUB = [(b("a"), 0.27), (b("c"), 0.12), (b("g"), 0.12), (b("t"), 0.27),
       stdout = openfd(1).writer(kind=iokind.native, locking=false);
 
 proc main() {
+  // TODO: move writes of descriptions here?
   repeatMake(">ONE Homo sapiens alu", ALU, 2*n);
   randomMake(">TWO IUB ambiguity codes", IUB, 3*n);
   randomMake(">THREE Homo sapiens frequency", HomoSapiens, 5*n);
@@ -54,13 +56,24 @@ proc main() {
 proc repeatMake(desc, param alu, n) {
   stdout.writeln(desc);
 
-  param s = alu + alu;
+  param len = alu.size,
+        alu2 = alu + alu,
+        buffLen = len*bytesPerLine;
 
-  for i in 0..<n by lineLen {
-    const lo = i % alu.size,
-          len = min(lineLen, n-i);
-    stdout.write(s[lo..#len], newline);
-  }
+  var buffer: [0..<buffLen] uint(8);
+  for i in 0..buffLen by bytesPerLine do
+    buffer[i..#lineLen] = alu2[i%len..#lineLen];
+
+  const wholeBuffers = n / (len*lineLen);
+  for i in 0..<wholeBuffers do
+    stdout.write(buffer);
+
+  var extra = n - wholeBuffers * len * lineLen;
+  extra += extra / lineLen;
+  stdout.write(buffer[..<extra]);
+
+  if n % lineLen != 0 then
+    stdout.write("\n");
 }
 
 //
@@ -84,8 +97,7 @@ proc randomMake(desc, nuclInfo, n) {
     hash[i] = ch;
   }
 
-  param lfLineLen = lineLen + 1,
-        buffSize = buffLines * lfLineLen;
+  param buffSize = buffLines * bytesPerLine;
 
   var numLines = n/lineLen,
       numBuffs = numLines/buffLines,
@@ -99,7 +111,7 @@ proc randomMake(desc, nuclInfo, n) {
   for 0..<numBuffs {
     for j in 0..<buffLines do
       for k in 0..<lineLen do
-        buffer[j*lfLineLen + k] = hash[getNextRand()];
+        buffer[j*bytesPerLine + k] = hash[getNextRand()];
     stdout.write(buffer);
   }
 
@@ -108,11 +120,11 @@ proc randomMake(desc, nuclInfo, n) {
 
   for j in 0..<numLines do
     for k in 0..<lineLen do
-      buffer[j*lfLineLen + k] = hash[getNextRand()];
+      buffer[j*bytesPerLine + k] = hash[getNextRand()];
 
   // compute number of extra characters and fill them in
   var extra = n % lineLen,
-      offset = numLines * lfLineLen;
+      offset = numLines * bytesPerLine;
 
   for k in 0..<extra do
     buffer[offset + k] = hash[getNextRand()];
