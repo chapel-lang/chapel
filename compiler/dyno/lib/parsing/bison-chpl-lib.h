@@ -77,17 +77,10 @@ extern int yychpl_debug;
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
+  // TODO: Replace me with bool.
   enum ThrowsTag {
     ThrowsTag_DEFAULT,
     ThrowsTag_THROWS,
-  };
-
-  enum LinkageTag { // TODO: what about combinations of these?
-    LinkageTag_DEFAULT,
-    LinkageTag_INLINE,
-    LinkageTag_OVERRIDE,
-    LinkageTag_EXTERN,
-    LinkageTag_EXPORT,
   };
 
   using ParserExprList = std::vector<AstNode*>;
@@ -130,8 +123,6 @@ extern int yychpl_debug;
   // It is just saving some components of a function to be used
   // when building the FunctionDecl.
   struct FunctionParts {
-    int startLocFirstLine;
-    int startLocFirstColumn;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
     Attributes* attributes;
@@ -256,12 +247,12 @@ extern int yychpl_debug;
   #define YYLTYPE YYCHPL_LTYPE
 
   #endif
-#line 302 "chpl.ypp"
+#line 293 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 265 "bison-chpl-lib.h"
+#line 256 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -488,20 +479,22 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 310 "chpl.ypp"
+#line 301 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 318 "chpl.ypp"
+#line 309 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
   // headers.
   #include "ParserContext.h"
+  // include override of macro used to compute locations
+  #include "parser-yylloc-default.h"
 
-#line 506 "bison-chpl-lib.h"
+#line 499 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

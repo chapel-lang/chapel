@@ -104,17 +104,10 @@
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
+  // TODO: Replace me with bool.
   enum ThrowsTag {
     ThrowsTag_DEFAULT,
     ThrowsTag_THROWS,
-  };
-
-  enum LinkageTag { // TODO: what about combinations of these?
-    LinkageTag_DEFAULT,
-    LinkageTag_INLINE,
-    LinkageTag_OVERRIDE,
-    LinkageTag_EXTERN,
-    LinkageTag_EXPORT,
   };
 
   using ParserExprList = std::vector<AstNode*>;
@@ -157,8 +150,6 @@
   // It is just saving some components of a function to be used
   // when building the FunctionDecl.
   struct FunctionParts {
-    int startLocFirstLine;
-    int startLocFirstColumn;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
     Attributes* attributes;
@@ -320,14 +311,17 @@
   // upon YYLTYPE and other types defined by the generated parser
   // headers.
   #include "ParserContext.h"
+  // include override of macro used to compute locations
+  #include "parser-yylloc-default.h"
 }
 
 %code {
   // include the definition of methods for ParserContext
   #include "ParserContextImpl.h"
-  // include other helper functions for the parser
+  // include helper macros for use in writing productions
   #include "parser-help.h"
-
+  // include implementation of error logging hook
+  #include "parser-yyerror.h"
 }
 
 // Bison 3.7 is not strictly required long-term but requiring it here
@@ -469,7 +463,7 @@
 
 %type <throwsTag> opt_throws_error
 %type <moduleKind> opt_prototype
-%type <visibilityTag> access_control
+%type <visibilityTag> opt_access_control
 %type <intentTag> required_intent_tag opt_formal_intent_tag opt_this_intent_tag
 
 %type <returnTag>  opt_ret_tag
@@ -860,7 +854,7 @@ deprecated_decl_base:
 ;
 
 module_decl_start:
-  access_control opt_prototype TMODULE ident_def
+  opt_access_control opt_prototype TMODULE ident_def
     {
       // take into account location of public/private, if any
       auto loc = context->declStartLoc(@3);
@@ -925,7 +919,7 @@ module_decl_stmt:
     }
 ;
 
-access_control:
+opt_access_control:
            { $$ = context->noteVisibility(Decl::DEFAULT_VISIBILITY); }
 | TPUBLIC  { context->noteDeclStartLoc(@1);
              $$ = context->noteVisibility(Decl::PUBLIC); }
@@ -940,7 +934,7 @@ opt_prototype:
 ;
 
 include_module_stmt:
-  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
+  TINCLUDE opt_access_control opt_prototype TMODULE ident_def TSEMI
   {
     auto node = Include::build(BUILDER, LOC(@$), context->visibility, $3, $5);
     $$ = STMT(@$, node.release());
@@ -1078,18 +1072,18 @@ opt_only_ls:
 ;
 
 use_stmt:
-  access_control TUSE use_renames_ls TSEMI
+  opt_access_control TUSE use_renames_ls TSEMI
   {
     $$ = context->buildMultiUseStmt(@$, $1, $3);
   }
-| access_control TUSE expr TEXCEPT renames_ls TSEMI
+| opt_access_control TUSE expr TEXCEPT renames_ls TSEMI
   {
     auto locVisibilityClause = context->makeSpannedLocation(@3, @5);
     $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned($3),
                                      VisibilityClause::EXCEPT,
                                      $5);
   }
-| access_control TUSE expr TAS expr TEXCEPT renames_ls TSEMI
+| opt_access_control TUSE expr TAS expr TEXCEPT renames_ls TSEMI
   {
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
     auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
@@ -1097,7 +1091,7 @@ use_stmt:
                                      VisibilityClause::EXCEPT,
                                      $7);
   }
-| access_control TUSE expr TAS TUNDERSCORE TEXCEPT renames_ls TSEMI
+| opt_access_control TUSE expr TAS TUNDERSCORE TEXCEPT renames_ls TSEMI
   {
     auto ident = toOwned(context->buildIdent(@5, $5));
     auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
@@ -1106,14 +1100,14 @@ use_stmt:
                                      VisibilityClause::EXCEPT,
                                      $7);
   }
-| access_control TUSE expr TONLY opt_only_ls TSEMI
+| opt_access_control TUSE expr TONLY opt_only_ls TSEMI
   {
     auto locVisibilityClause = context->makeSpannedLocation(@3, @5);
     $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned($3),
                                      VisibilityClause::ONLY,
                                      $5);
   }
-| access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
+| opt_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
   {
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
     auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
@@ -1121,7 +1115,7 @@ use_stmt:
                                      VisibilityClause::ONLY,
                                      $7);
   }
-| access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
+| opt_access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
   {
     auto ident = toOwned(context->buildIdent(@5, $5));
     auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
@@ -1133,7 +1127,7 @@ use_stmt:
 ;
 
 import_stmt:
-  access_control TIMPORT import_ls TSEMI
+  opt_access_control TIMPORT import_ls TSEMI
   {
     $$ = context->buildImportStmt(@$, $1, $3);
   }
@@ -2130,10 +2124,7 @@ lambda_decl_start:
     {
       FunctionParts fp = context->makeFunctionParts(false, false);
       context->noteDeclStartLoc(@1);
-      // Preserve the first location, to avoid desync on start line number.
-      auto loc = context->declStartLoc(@1);
-      fp.startLocFirstLine = loc.first_line;
-      fp.startLocFirstColumn = loc.first_column;
+      auto loc = context->declStartLoc(@$);
       fp.comments = context->gatherComments(loc);
       fp.attributes = context->buildAttributes(@$).release();
       fp.visibility = context->visibility;
@@ -2269,10 +2260,7 @@ fn_decl_stmt_start:
     {
       FunctionParts fp = $1;
       context->noteDeclStartLoc(@2);
-      // Preserve the first location, to avoid desync on start line number.
-      auto loc = context->declStartLoc(@2);
-      fp.startLocFirstLine = loc.first_line;
-      fp.startLocFirstColumn = loc.first_column;
+      auto loc = context->declStartLoc(@$);
       fp.comments = context->gatherComments(loc);
       fp.attributes = context->buildAttributes(@$).release();
       fp.visibility = context->visibility;
