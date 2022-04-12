@@ -1,1 +1,4 @@
 CHPL_COMM == none
+CHPL_GMP == none
+COMPOPTS <= --fast
+COMPOPTS <= --baseline
