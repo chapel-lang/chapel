@@ -8,12 +8,13 @@
 
 use IO;
 
-config param lineLen = 60,     // the length of each generated line
-             buffLines = 100;  // the number of lines to buffer
+config param lineLen = 60,              // length of each generated line
+             bytesPerLine = lineLen+1,  // ...plus the linefeed
+             buffLines = 100;           // number of lines to buffer
 
-config const n = 1000;         // the length of the generated sequences
+config const n = 1000;                  // length of the generated sequences
 
-param IM = 139968,             // parameters for random number generation
+param IM = 139968,                      // values for random number generation
       IA = 3877,
       IC = 29573,
 
@@ -27,39 +28,59 @@ param IM = 139968,             // parameters for random number generation
 //
 // Probability tables for sequences to be randomly generated
 //
-const IUB = [(b("a"), 0.27), (b("c"), 0.12), (b("g"), 0.12), (b("t"), 0.27),
-             (b("B"), 0.02), (b("D"), 0.02), (b("H"), 0.02), (b("K"), 0.02),
-             (b("M"), 0.02), (b("N"), 0.02), (b("R"), 0.02), (b("S"), 0.02),
-             (b("V"), 0.02), (b("W"), 0.02), (b("Y"), 0.02)],
+const IUB = [(b"a", 0.27), (b"c", 0.12), (b"g", 0.12), (b"t", 0.27),
+             (b"B", 0.02), (b"D", 0.02), (b"H", 0.02), (b"K", 0.02),
+             (b"M", 0.02), (b"N", 0.02), (b"R", 0.02), (b"S", 0.02),
+             (b"V", 0.02), (b"W", 0.02), (b"Y", 0.02)],
 
-      HomoSapiens = [(b("a"), 0.3029549426680),
-                     (b("c"), 0.1979883004921),
-                     (b("g"), 0.1975473066391),
-                     (b("t"), 0.3015094502008)],
+      HomoSapiens = [(b"a", 0.3029549426680),
+                     (b"c", 0.1979883004921),
+                     (b"g", 0.1975473066391),
+                     (b"t", 0.3015094502008)],
 
-      newline = b("\n"),   // newline's byte value
+      newline = b"\n"[0],   // newline's byte value
 
       // Redefine stdout to use lock-free binary I/O
       stdout = openfd(1).writer(kind=iokind.native, locking=false);
 
+
 proc main() {
-  repeatMake(">ONE Homo sapiens alu", ALU, 2*n);
-  randomMake(">TWO IUB ambiguity codes", IUB, 3*n);
-  randomMake(">THREE Homo sapiens frequency", HomoSapiens, 5*n);
+  stdout.writeln(">ONE Homo sapiens alu");
+  repeatMake(ALU, 2*n);
+
+  stdout.writeln(">TWO IUB ambiguity codes");
+  randomMake(IUB, 3*n);
+
+  stdout.writeln(">THREE Homo sapiens frequency");
+  randomMake(HomoSapiens, 5*n);
 }
+
 
 //
 // Repeat 'alu' to generate a sequence of length 'n'
 //
-proc repeatMake(desc, param alu, n) {
-  stdout.writeln(desc);
+proc repeatMake(param alu, n) {
+  param len = alu.size,
+        alu2 = alu + alu,
+        buffLen = len * bytesPerLine;
 
-  param s = alu + alu;
+  var buffer: [0..<buffLen] uint(8);
+  for i in 0..<len {
+    buffer[i*bytesPerLine..#lineLen] = alu2[(i*lineLen)%len..#lineLen];
+    buffer[i*bytesPerLine + lineLen] = newline;
+  }
 
-  for i in 0..<n by lineLen {
-    const lo = i % alu.size,
-          len = min(lineLen, n-i);
-    stdout.write(s[lo..#len], newline);
+  const wholeBuffers = n / (len*lineLen);
+  for i in 0..<wholeBuffers {
+    stdout.write(buffer);
+  }
+
+  var extra = n - wholeBuffers*len*lineLen;
+  extra += extra/lineLen;
+  stdout.write(buffer[..<extra]);
+
+  if n % lineLen != 0 {
+    stdout.write("\n");
   }
 }
 
@@ -67,55 +88,58 @@ proc repeatMake(desc, param alu, n) {
 // Use 'nuclInfo's probability distribution to generate a random
 // sequence of length 'n'
 //
-proc randomMake(desc, nuclInfo, n) {
-  stdout.writeln(desc);
-
+proc randomMake(nuclInfo, n) {
   var hash: [0..<IM] uint(8),
       (ch, prob) = nuclInfo[0],
       sum = prob;
 
   var j = 0;
   for i in 0..<IM {
-    if 1.0 * i / IM >= sum {
+    if i:real / IM >= sum {
       j += 1;
       (ch, prob) = nuclInfo[j];
       sum += prob;
     }
-    hash[i] = ch;
+    hash[i] = ch[0];
   }
 
-  param lfLineLen = lineLen + 1,
-        buffSize = buffLines * lfLineLen;
+  param buffSize = buffLines * bytesPerLine;
 
-  var numLines = n/lineLen,
-      numBuffs = numLines/buffLines,
+  var numLines = n / lineLen,
+      numBuffs = numLines / buffLines,
       buffer: [0..<buffSize] uint(8);
 
   // add linefeeds
-  for i in lineLen..<buffSize by lineLen+1 do  // TODO: try forall?
+  for i in lineLen..<buffSize by bytesPerLine {
     buffer[i] = newline;
+  }
 
-  // write out most of the data in full buffers
+  // write out most of the data as full buffers
   for 0..<numBuffs {
-    for j in 0..<buffLines do
-      for k in 0..<lineLen do
-        buffer[j*lfLineLen + k] = hash[getNextRand()];
+    for j in 0..<buffLines {
+      for k in 0..<lineLen {
+        buffer[j*bytesPerLine + k] = hash[getNextRand()];
+      }
+    }
     stdout.write(buffer);
   }
 
   // compute number of complete lines remaining and fill them in
   numLines -= numBuffs * buffLines;
 
-  for j in 0..<numLines do
-    for k in 0..<lineLen do
-      buffer[j*lfLineLen + k] = hash[getNextRand()];
+  for j in 0..<numLines {
+    for k in 0..<lineLen {
+      buffer[j*bytesPerLine + k] = hash[getNextRand()];
+    }
+  }
 
   // compute number of extra characters and fill them in
   var extra = n % lineLen,
-      offset = numLines * lfLineLen;
+      offset = numLines * bytesPerLine;
 
-  for k in 0..<extra do
+  for k in 0..<extra {
     buffer[offset + k] = hash[getNextRand()];
+  }
 
   // add a final linefeed if needed
   if (extra != 0) {
@@ -126,14 +150,8 @@ proc randomMake(desc, nuclInfo, n) {
   stdout.write(buffer[0..<offset+extra]);
 }
 
-// Utility to convert single-character strings to bytes
-proc b(s) {
-  return s.toByte();
-}
-
 //
 // Deterministic random number generator
-// (lastRand really wants to be a local static...)
 //
 var lastRand = 42: uint(32);
 
