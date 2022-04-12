@@ -43,14 +43,18 @@ const IUB = [(b("a"), 0.27), (b("c"), 0.12), (b("g"), 0.12), (b("t"), 0.27),
       // Redefine stdout to use lock-free binary I/O
       stdout = openfd(1).writer(kind=iokind.native, locking=false);
 
+
 proc main() {
   stdout.writeln(">ONE Homo sapiens alu");
   repeatMake(ALU, 2*n);
+
   stdout.writeln(">TWO IUB ambiguity codes");
   randomMake(IUB, 3*n);
+
   stdout.writeln(">THREE Homo sapiens frequency");
   randomMake(HomoSapiens, 5*n);
 }
+
 
 //
 // Repeat 'alu' to generate a sequence of length 'n'
@@ -58,24 +62,26 @@ proc main() {
 proc repeatMake(param alu, n) {
   param len = alu.size,
         alu2 = alu + alu,
-        buffLen = len*bytesPerLine;
+        buffLen = len * bytesPerLine;
 
   var buffer: [0..<buffLen] uint(8);
   for i in 0..<len {
     buffer[i*bytesPerLine..#lineLen] = alu2[(i*lineLen)%len..#lineLen];
-    buffer[i*bytesPerLine+lineLen] = newline;
+    buffer[i*bytesPerLine + lineLen] = newline;
   }
 
   const wholeBuffers = n / (len*lineLen);
-  for i in 0..<wholeBuffers do
+  for i in 0..<wholeBuffers {
     stdout.write(buffer);
+  }
 
-  var extra = n - wholeBuffers * len * lineLen;
-  extra += extra / lineLen;
+  var extra = n - wholeBuffers*len*lineLen;
+  extra += extra/lineLen;
   stdout.write(buffer[..<extra]);
 
-  if n % lineLen != 0 then
+  if n % lineLen != 0 {
     stdout.write("\n");
+  }
 }
 
 //
@@ -109,25 +115,30 @@ proc randomMake(nuclInfo, n) {
 
   // write out most of the data in full buffers
   for 0..<numBuffs {
-    for j in 0..<buffLines do
-      for k in 0..<lineLen do
+    for j in 0..<buffLines {
+      for k in 0..<lineLen {
         buffer[j*bytesPerLine + k] = hash[getNextRand()];
+      }
+    }
     stdout.write(buffer);
   }
 
   // compute number of complete lines remaining and fill them in
   numLines -= numBuffs * buffLines;
 
-  for j in 0..<numLines do
-    for k in 0..<lineLen do
+  for j in 0..<numLines {
+    for k in 0..<lineLen {
       buffer[j*bytesPerLine + k] = hash[getNextRand()];
+    }
+  }
 
   // compute number of extra characters and fill them in
   var extra = n % lineLen,
       offset = numLines * bytesPerLine;
 
-  for k in 0..<extra do
+  for k in 0..<extra {
     buffer[offset + k] = hash[getNextRand()];
+  }
 
   // add a final linefeed if needed
   if (extra != 0) {
