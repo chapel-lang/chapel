@@ -49,6 +49,7 @@ namespace uast {
   each of a-f are Variables.
  */
 class Variable final : public VarLikeDecl {
+ friend class Builder;
  public:
   enum Kind {
     // Use IntentList here for consistent enum values.
@@ -97,6 +98,22 @@ class Variable final : public VarLikeDecl {
 
   bool isConfig_;
   bool isField_;
+
+  void setInitExprForConfig(AstNode* ie) {
+    if (this->initExpressionChildNum_ > -1) {
+      auto lst = makeAstList(toOwned(ie));
+      updateAstList(children_, lst);
+    } else if (this->typeExpressionChildNum_ > -1 || this->attributesChildNum() > -1) {
+      initExpressionChildNum_ = children_.size();
+      children_.push_back(toOwned(ie));
+      assert(numChildren() > 1);
+    } else {
+      initExpressionChildNum_ = children_.size();
+      auto lst = makeAstList(toOwned(ie));
+      assert(updateAstList(children_, lst));
+    }
+
+  }
 
  public:
   ~Variable() override = default;

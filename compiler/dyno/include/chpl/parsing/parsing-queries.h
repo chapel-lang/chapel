@@ -158,7 +158,7 @@ void
 useConfigParam(Context* context, UniqueString name, ID id);
 
 // check if config was used already
-const ID& nameToConfigParamId(Context*, UniqueString name);
+const ID& nameToConfigParamId(Context* context, UniqueString name);
 
 } // end namespace parsing
 } // end namespace chpl

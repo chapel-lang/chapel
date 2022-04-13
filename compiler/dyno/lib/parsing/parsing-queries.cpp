@@ -355,5 +355,18 @@ std::vector<std::pair<std::string,std::string>>& configParams(Context* context) 
   return QUERY_END(result);
 }
 
+void
+useConfigParam(Context* context, UniqueString name, ID id) {
+  QUERY_STORE_INPUT_RESULT(nameToConfigParamId, context, id, name);
+}
+
+// check if config was used already
+const ID& nameToConfigParamId(Context* context, UniqueString name) {
+  QUERY_BEGIN_INPUT(nameToConfigParamId, context, name);
+  ID result;
+  // context->
+  return QUERY_END(result);
+}
+
 } // end namespace parsing
 } // end namespace chpl

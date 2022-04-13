@@ -26,6 +26,7 @@
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/BuilderResult.h"
+#include "chpl/uast/Variable.h"
 
 #include <vector>
 #include <unordered_map>
@@ -123,6 +124,11 @@ class Builder final {
     return ast->children_;
   }
 
+  void addOrReplaceInitExpr(Variable* var, AstNode* ie) {
+    var->setInitExprForConfig(ie);
+  }
+
+
   // Use this to take the children of an AST node. The AST node is marked
   // as owned because it is consumed.
   AstList takeChildren(owned<AstNode> ast) {
@@ -138,6 +144,7 @@ class Builder final {
   Location getLocation(const AstNode* ast);
 
   /// \endcond
+  AstNode *checkAndUpdateConfig(AstNode *ast);
 };
 
 } // end namespace uast

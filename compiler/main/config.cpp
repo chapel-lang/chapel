@@ -72,10 +72,6 @@ void checkConfigs() {
 // the internal scope-less BlockStmt.
 
 void parseCmdLineConfig(const char* name, const char* value) {
-  // Generate a C-string for a nominal Chapel assignment statement
-  const char* stmtText = (value[0] != '\0') ? astr("dummyConfig=", value, ";") : astr("dummyConfig=true;");
-  const char* parseFn  = astr("Command-line arg (", name, ")");
-  const char* parseMsg = astr("parsing '", value, "'");
 
   // unfortunately this is parsed in the order from the command line, so for
   // it to work, --dyno must come before -sConfigVar=Val or it will not try
@@ -86,42 +82,43 @@ void parseCmdLineConfig(const char* name, const char* value) {
     std::string val(value);
     std::pair<std::string, std::string> dynoParam (symbol,val);
     gDynoParams.push_back(dynoParam);
-  }
-
-  // Invoke the parser to generate AST
-  BlockStmt*  stmt     = parseString(stmtText, parseFn, parseMsg);
-
-  // Determine if the body is also a BlockStmt
-  BlockStmt*  b        = toBlockStmt(stmt->body.head);
-  Expr*       newExpr  = NULL;
-
-  // If NO then extract the RHS from the stmt
-  if (b == 0) {
-    if (CallExpr* c = toCallExpr(stmt->body.head)) {
-      newExpr = c->get(2)->copy();
-
-    } else {
-      INT_ASSERT(false);
-    }
-
   } else {
-    if (CallExpr* c = toCallExpr(b->body.head)) {
-      newExpr = c->get(2)->copy();
+
+    // Generate a C-string for a nominal Chapel assignment statement
+    const char* stmtText = (value[0] != '\0') ? astr("dummyConfig=", value, ";") : astr("dummyConfig=true;");
+    const char* parseFn  = astr("Command-line arg (", name, ")");
+    const char* parseMsg = astr("parsing '", value, "'");
+
+    // Invoke the parser to generate AST
+    BlockStmt*  stmt     = parseString(stmtText, parseFn, parseMsg);
+
+    // Determine if the body is also a BlockStmt
+    BlockStmt*  b        = toBlockStmt(stmt->body.head);
+    Expr*       newExpr  = NULL;
+
+    // If NO then extract the RHS from the stmt
+    if (b == 0) {
+      if (CallExpr* c = toCallExpr(stmt->body.head)) {
+        newExpr = c->get(2)->copy();
+
+      } else {
+        INT_ASSERT(false);
+      }
 
     } else {
-      INT_ASSERT(false);
+      if (CallExpr* c = toCallExpr(b->body.head)) {
+        newExpr = c->get(2)->copy();
+
+      } else {
+        INT_ASSERT(false);
+      }
+
     }
 
+    configMap.put(astr(name), newExpr);
+
+    INT_ASSERT(newExpr == configMap.get(astr(name)));
   }
-
-  configMap.put(astr(name), newExpr);
-
-  // print the result of parsing the input
-  std::cerr << astr(name) << "=";
-  newExpr->prettyPrint(&std::cerr);
-  std::cerr << std::endl;
-
-  INT_ASSERT(newExpr == configMap.get(astr(name)));
 }
 
 Expr* getCmdLineConfig(const char* name) {

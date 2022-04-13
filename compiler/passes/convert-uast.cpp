@@ -2673,36 +2673,18 @@ struct Converter {
 
     auto ret = new DefExpr(varSym, initExpr, typeExpr);
 
+    // Handle this when building the AST, so should not need to convert it
+    // with a special case anymore
     // Replace init expressions for config variables with values passed
     // in on the command-line, if necessary.
-    if (node->isConfig()) {
+    // if (node->isConfig()) {
 
-      // Set some global state for module name and privacy.
-      auto savedModuleName = currentModuleName;
-      auto savedParsingPrivate = parsingPrivate;
-      INT_ASSERT(this->modNameStack.size());
-      currentModuleName = this->modNameStack.back();
-      parsingPrivate = node->visibility() == uast::Decl::PRIVATE;
-
-      // TODO (dlongnecke): This call should be replaced by an equivalent
-      // one from the new frontend.
-      if (Expr* commandLineInit = lookupConfigVal(varSym)) {
-        ret->init = commandLineInit;
-      }
-
-      // Restore the state (janky, will be replaced by work from Ahmad).
-      currentModuleName = savedModuleName;
-      parsingPrivate = savedParsingPrivate;
-
-      // Possibly emit a deprecation warning.
-      if (varSym->hasFlag(FLAG_DEPRECATED)) {
-        if (isUsedCmdLineConfig(varSym->name)) {
-          astlocMarker emptyAstLoc(0, nullptr);
-          USR_WARN("%s", varSym->getDeprecationMsg());
-          USR_PRINT("'%s' was set via a compiler flag", varSym->name);
-        }
-      }
-    }
+    //   // TODO (dlongnecke): This call should be replaced by an equivalent
+    //   // one from the new frontend.
+    //   if (Expr* commandLineInit = lookupConfigVal(varSym)) {
+    //     ret->init = commandLineInit;
+    //   }
+    // }
 
     // If the init expression of this variable is a domain and this
     // variable is not const, propagate that information by setting

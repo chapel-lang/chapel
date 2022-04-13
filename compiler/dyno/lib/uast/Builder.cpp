@@ -27,6 +27,7 @@
 #include "chpl/uast/Variable.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/parsing/Parser.h"
+#include "chpl/uast/OpCall.h"
 
 #include <cstring>
 #include <string>
@@ -202,45 +203,8 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   }
 
 // TODO: Le extract me
-  auto configs = chpl::parsing::configParams(this->context_);
-  if (auto var = ast->toVariable()) {
-    if (var->isConfig()) {
-      // for config vars, check if they were set from the command line
-      for (auto node : configs) {
-        // TODO: How does this work with module prefixes?
-        if (node.first == var->name().str()) {
-          // found a config that was set via cmd line: replace the node
-          // need to build up a new Variable from the old one, copying all the
-          // internals
-
-          auto parser = parsing::Parser::build(this->context_);
-          parsing::Parser* p = parser.get();
-          // do we need to parse the name for a module path here? Seems likely
-          std::string inputText = (!node.second.empty()) ? node.first + "=" + node.second +";" : node.first + "=true;";
-          // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
-          auto parseResult = p->parseString("CompilationConfigs", inputText.c_str());
-          assert(!parseResult.numErrors());
-          auto mod = parseResult.singleModule();
-          assert(mod);
-          // std::cerr << "dyno parse input: " << dynoText <<std::endl;
-          mod->stringify(std::cerr, CHPL_SYNTAX);
-          // addOrReplaceInitExpr(var, mod->stmt(0)->toVariable()->initExpression());
-          // if (auto initPtr = var->initExpression()) {
-          //   //How to make a new node for init expression? Parser is how I know
-
-          //   for (auto& astListChild : this->mutableRefToChildren(ast)) {
-          //     if (astListChild.get() == initPtr) {
-          //       // child.swap(toOwned(newInitExprNode));
-          //       // just try to see what we find here
-          //       astListChild->dump(DEBUG_DETAIL);
-          //       astListChild->dump(CHPL_SYNTAX);
-          //     }
-          //   }
-          // }
-        }
-      }
-    }
-  }
+  AstNode* ieNode = nullptr;
+  ieNode = checkAndUpdateConfig(ast);
 
   int firstChildID = i;
 
@@ -325,12 +289,59 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   if (search != notedLocations_.end()) {
     assert(!search->second.isEmpty());
     idToLocation_[ast->id()] = search->second;
+    if (ieNode) {
+      parsing::useConfigParam(this->context(), ast->toVariable()->name(), ast->id());
+    }
   } else {
     assert(false && "Location for all ast should be set by noteLocation");
   }
 }
 
-AstList Builder::flattenTopLevelBlocks(AstList lst) {
+  AstNode *Builder::checkAndUpdateConfig(AstNode *ast) {
+    AstNode * ret = nullptr;
+    auto configs = parsing::configParams(context_);
+    if (auto var = ast->toVariable()) {
+      if (var->isConfig()) {
+        // for config vars, check if they were set from the command line
+        for (auto node : configs) {
+          // TODO: How does this work with module prefixes?
+          if (node.first == var->name().str()) {
+            // found a config that was set via cmd line: replace the node
+            // need to build up a new Variable from the old one, copying all the
+            // internals
+            auto usedId = parsing::nameToConfigParamId(this->context(), var->name());
+            // TODO: Why is this ID always coming back empty?
+            if (!usedId.isEmpty()) {
+              std::string err = "ambiguous config name (";
+              err += var->name().c_str();
+              err += ")";
+              assert(false && err.c_str());
+  //            USR_FATAL_CONT(var, "ambiguous config name (%s)", var->name());
+  //            USR_PRINT(usedId, "also defined here");
+  //            USR_PRINT(usedId, "(disambiguate using -s<modulename>.%s...)", var->name());
+            }
+            auto parser = parsing::Parser::build(context());
+            parsing::Parser* p = parser.get();
+            // do we need to parse the name for a module path here? Seems likely
+            std::string inputText = (!node.second.empty()) ? node.first + "=" + node.second +";" : node.first + "=true;";
+            // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
+            auto parseResult = p->parseString("CompilationConfigs", inputText.c_str());
+            assert(!parseResult.numErrors());
+            auto mod = parseResult.singleModule();
+            assert(mod);
+            assert(mod->stmt(0)->toOpCall()->isBinaryOp());
+            ret = mod->children_[0]->children_[1].release();
+            // TODO: How to handle locations?
+            noteLocation(ret, notedLocations_[ast]);
+            addOrReplaceInitExpr(ast->toVariable(), std::move(ret));
+          }
+        }
+      }
+    }
+    return ret;
+  }
+
+  AstList Builder::flattenTopLevelBlocks(AstList lst) {
   AstList ret;
 
   for (auto& ast : lst) {
