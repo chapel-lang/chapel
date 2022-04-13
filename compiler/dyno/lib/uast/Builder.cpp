@@ -202,7 +202,6 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     return;
   }
 
-// TODO: Le extract me
   AstNode* ieNode = nullptr;
   ieNode = checkAndUpdateConfig(ast);
 
@@ -291,6 +290,17 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     idToLocation_[ast->id()] = search->second;
     if (ieNode) {
       parsing::useConfigParam(this->context(), ast->toVariable()->name(), ast->id());
+      auto usedId = parsing::nameToConfigParamId(this->context(), ast->toVariable()->name());
+      // TODO: Why is this ID always coming back empty?
+      if (usedId != ast->id()) {
+        std::string err = "ambiguous config name (";
+        err += ast->toVariable()->name().c_str();
+        err += ")";
+        assert(false && err.c_str());
+        //            USR_FATAL_CONT(var, "ambiguous config name (%s)", var->name());
+        //            USR_PRINT(usedId, "also defined here");
+        //            USR_PRINT(usedId, "(disambiguate using -s<modulename>.%s...)", var->name());
+      }
     }
   } else {
     assert(false && "Location for all ast should be set by noteLocation");
@@ -309,17 +319,6 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             // found a config that was set via cmd line: replace the node
             // need to build up a new Variable from the old one, copying all the
             // internals
-            auto usedId = parsing::nameToConfigParamId(this->context(), var->name());
-            // TODO: Why is this ID always coming back empty?
-            if (!usedId.isEmpty()) {
-              std::string err = "ambiguous config name (";
-              err += var->name().c_str();
-              err += ")";
-              assert(false && err.c_str());
-  //            USR_FATAL_CONT(var, "ambiguous config name (%s)", var->name());
-  //            USR_PRINT(usedId, "also defined here");
-  //            USR_PRINT(usedId, "(disambiguate using -s<modulename>.%s...)", var->name());
-            }
             auto parser = parsing::Parser::build(context());
             parsing::Parser* p = parser.get();
             // do we need to parse the name for a module path here? Seems likely

@@ -364,7 +364,6 @@ useConfigParam(Context* context, UniqueString name, ID id) {
 const ID& nameToConfigParamId(Context* context, UniqueString name) {
   QUERY_BEGIN_INPUT(nameToConfigParamId, context, name);
   ID result;
-  // context->
   return QUERY_END(result);
 }
 
