@@ -97,6 +97,7 @@ System/Interoperability
 
    CPtr <standard/CPtr>
    CTypes <standard/CTypes>
+   OS <standard/OS>
    Spawn <standard/Spawn>
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>

@@ -19,7 +19,8 @@
  */
 
 /*
-   Support for operating system interfaces.
+   The ``OS`` module provides definitions matching operating system
+   interfaces.
 
    This module provides Chapel declarations for the constants, types,
    and functions defined by various operating systems' programmatic
@@ -28,15 +29,21 @@
    other Chapel modules and user programs.  It is expected to grow as
    needed.  In all respects (naming, capitalization, types, semantics)
    the symbols defined here should match their corresponding operating
-   system definitions.  For documentation on these symbols, please see
-   the operating system manual pages.
+   system definitions to the extent Chapel can do so.  For documentation
+   on these symbols, please see the operating system manual pages.
+
  */
 module OS {
   /*
-     Definitions corresponding to POSIX, specifically POSIX.1-2017.
-     Standard: https://pubs.opengroup.org/onlinepubs/9699919799/
+     The ``OS.POSIX`` module provides definitions matching the POSIX
+     programming interface, specifically POSIX.1-2017.  That standard
+     can be found at <https://pubs.opengroup.org/onlinepubs/9699919799/>.
+
+     There is one unavoidable difference between POSIX and ``OS.POSIX``.
+     POSIX defines a function named ``select()``, which ``OS.POSIX``
+     must define as ``select_posix()`` because ``select`` by itself is
+     a Chapel keyword.
   */
-  pragma "no doc"
   module POSIX {
     public use CTypes;
 
@@ -47,17 +54,24 @@ module OS {
 
     // Users definitely need |(mode_t, mode_t).  We may want others in
     // the future.
+    pragma "no doc"
     inline operator :(x:mode_t, type t:int) return __primitive("cast", t, x);
+    pragma "no doc"
     inline operator :(x:int, type t:mode_t) return __primitive("cast", t, x);
+    pragma "no doc"
     inline operator |(a: mode_t, b: mode_t) return (a:int | b:int):mode_t;
 
     extern type time_t;
+    pragma "no doc"
     inline operator :(x:time_t, type t:int) return __primitive("cast", t, x);
+    pragma "no doc"
     inline operator :(x:int, type t:time_t) return __primitive("cast", t, x);
 
     extern type suseconds_t;
+    pragma "no doc"
     inline operator :(x:suseconds_t, type t:int)
       return __primitive("cast", t, x);
+    pragma "no doc"
     inline operator :(x:int, type t:suseconds_t)
       return __primitive("cast", t, x);
 
