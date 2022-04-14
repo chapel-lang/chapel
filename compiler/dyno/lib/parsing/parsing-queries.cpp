@@ -356,12 +356,12 @@ std::vector<std::pair<std::string,std::string>>& configParams(Context* context) 
 }
 
 void
-useConfigParam(Context* context, UniqueString name, ID id) {
+useConfigParam(Context* context, std::string name, ID id) {
   QUERY_STORE_INPUT_RESULT(nameToConfigParamId, context, id, name);
 }
 
 // check if config was used already
-const ID& nameToConfigParamId(Context* context, UniqueString name) {
+const ID& nameToConfigParamId(Context* context, std::string name) {
   QUERY_BEGIN_INPUT(nameToConfigParamId, context, name);
   ID result;
   return QUERY_END(result);

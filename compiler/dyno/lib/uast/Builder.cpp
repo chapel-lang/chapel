@@ -202,8 +202,8 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     return;
   }
 
-  AstNode* ieNode = nullptr;
-  ieNode = checkAndUpdateConfig(ast);
+  std::tuple<AstNode*, std::string> ieNode;
+  ieNode = checkAndUpdateConfig(ast, pathVec);
 
   int firstChildID = i;
 
@@ -288,15 +288,17 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   if (search != notedLocations_.end()) {
     assert(!search->second.isEmpty());
     idToLocation_[ast->id()] = search->second;
-    if (ieNode) {
-      parsing::useConfigParam(this->context(), ast->toVariable()->name(), ast->id());
-      auto usedId = parsing::nameToConfigParamId(this->context(), ast->toVariable()->name());
-      // TODO: Why is this ID always coming back empty?
+    if (std::get<0>(ieNode)) {
+      parsing::useConfigParam(this->context(), std::get<1>(ieNode), ast->id());
+      auto usedId = parsing::nameToConfigParamId(this->context(), std::get<1>(ieNode));
+
       if (usedId != ast->id()) {
         std::string err = "ambiguous config name (";
-        err += ast->toVariable()->name().c_str();
+        err += std::get<1>(ieNode);
         err += ")";
-        assert(false && err.c_str());
+        // TODO: Add proper error reporting
+        std::cerr << err << std::endl;
+        assert(false);
         //            USR_FATAL_CONT(var, "ambiguous config name (%s)", var->name());
         //            USR_PRINT(usedId, "also defined here");
         //            USR_PRINT(usedId, "(disambiguate using -s<modulename>.%s...)", var->name());
@@ -307,15 +309,27 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   }
 }
 
-  AstNode *Builder::checkAndUpdateConfig(AstNode *ast) {
-    AstNode * ret = nullptr;
-    auto configs = parsing::configParams(context_);
+  std::tuple<AstNode*,std::string> Builder::checkAndUpdateConfig(AstNode* ast, pathVecT& pathVec) {
+    AstNode* ret = nullptr;
+    std::string configUsed;
+    auto configs = parsing::configParams(this->context());
     if (auto var = ast->toVariable()) {
       if (var->isConfig()) {
+        // inspect pathVec
+        std::string possibleModule;
+        if (pathVec.size() > 1) {
+          for (size_t i = 1; i < pathVec.size(); i++) {
+            possibleModule += pathVec[i].first.str();
+            possibleModule += ".";
+          }
+        } else if (pathVec.size() == 1) {
+          possibleModule = pathVec[0].first.str();
+          possibleModule += ".";
+        }
         // for config vars, check if they were set from the command line
         for (auto node : configs) {
-          // TODO: How does this work with module prefixes?
-          if (node.first == var->name().str()) {
+          // TODO: How does this work with module prefixes? What if there is a newSymbolPath value?
+          if (node.first == var->name().str() || node.first == possibleModule + var->name().str()) {
             // found a config that was set via cmd line: replace the node
             // need to build up a new Variable from the old one, copying all the
             // internals
@@ -333,11 +347,12 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             // TODO: How to handle locations?
             noteLocation(ret, notedLocations_[ast]);
             addOrReplaceInitExpr(ast->toVariable(), std::move(ret));
+            configUsed = node.first;
           }
         }
       }
     }
-    return ret;
+    return std::make_tuple(ret, configUsed);
   }
 
   AstList Builder::flattenTopLevelBlocks(AstList lst) {

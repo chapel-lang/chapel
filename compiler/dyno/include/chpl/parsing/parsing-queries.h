@@ -155,10 +155,10 @@ std::vector<std::pair<std::string,std::string>>& configParams(Context* context);
 // TODO: Should these queries be private
 // use the config param by storing the ID where it was used
 void
-useConfigParam(Context* context, UniqueString name, ID id);
+useConfigParam(Context* context, std::string name, ID id);
 
 // check if config was used already
-const ID& nameToConfigParamId(Context* context, UniqueString name);
+const ID& nameToConfigParamId(Context* context, std::string name);
 
 } // end namespace parsing
 } // end namespace chpl

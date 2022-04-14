@@ -142,9 +142,10 @@ class Builder final {
 
   // Use this to get a temporary location while parsing.
   Location getLocation(const AstNode* ast);
+  std::tuple<AstNode*,std::string> checkAndUpdateConfig(AstNode *ast, pathVecT& pathVec);
 
   /// \endcond
-  AstNode *checkAndUpdateConfig(AstNode *ast);
+
 };
 
 } // end namespace uast

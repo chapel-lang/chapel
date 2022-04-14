@@ -26,6 +26,7 @@
 #include "parser.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "chpl/parsing/parsing-queries.h"
 #include <utility>
 
 
@@ -40,18 +41,30 @@ bool                           mainPreserveDelimiter;
 void checkConfigs() {
   if (fMinimalModules == false) {
     bool             anyBadConfigParams = false;
-    Vec<const char*> configParamSetNames;
-
-    configMap.get_keys(configParamSetNames);
-
-    forv_Vec(const char, name, configParamSetNames) {
-      if (usedConfigParams.get(name) == NULL) {
-        USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
-                       name);
-        anyBadConfigParams = true;
+    if (fDynoCompilerLibrary) {
+      // check that all config vars that were set from the command line were assigned
+      auto configs = parsing::configParams(gContext);
+      for (auto config : configs) {
+        auto usedId = parsing::nameToConfigParamId(gContext, config.first);
+        if (usedId.isEmpty()) {
+          USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
+                         config.first.c_str());
+          anyBadConfigParams = true;
+        }
       }
-    }
+    } else {
+      Vec<const char *> configParamSetNames;
 
+      configMap.get_keys(configParamSetNames);
+
+      forv_Vec(const char, name, configParamSetNames) {
+          if (usedConfigParams.get(name) == NULL) {
+            USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
+                           name);
+            anyBadConfigParams = true;
+          }
+        }
+    }
     if (anyBadConfigParams) {
       USR_STOP();
     }
