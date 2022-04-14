@@ -31,23 +31,24 @@ namespace uast {
 
 
 /**
-  This class represents an implements statement.
+  This class represents an 'implements' statement or expression.
+
+  For example:
 
   \rst
   .. code-block:: chapel
 
-      interface example(T) {
-        // TODO: What goes in the body?
-      }
+      T implements Foo(A, B);
 
   \endrst
 
-  Creates an interface named example with a constraint 'T'.
- */
+  Is an implements statement which states that type 'T' implements the
+  interface 'Foo(A, B)'.
+*/
 class Implements final : public AstNode {
  private:
   int8_t typeExprChildNum_;
-  bool isConstraint_;
+  bool isExpressionLevel_;
 
   /* Position of the interface expression when no type name exists. */
   static const int8_t interfaceExprNoTypeChildNum_ = 0;
@@ -60,10 +61,11 @@ class Implements final : public AstNode {
     return ret;
   }
 
-  Implements(AstList children, int8_t typeExprChildNum, bool isConstraint)
+  Implements(AstList children, int8_t typeExprChildNum,
+             bool isExpressionLevel)
       : AstNode(asttags::Implements, std::move(children)),
         typeExprChildNum_(typeExprChildNum),
-        isConstraint_(isConstraint) {
+        isExpressionLevel_(isExpressionLevel) {
     if (typeExprChildNum_ != AstNode::NO_CHILD) {
       assert(children_.size() == 2);
       assert(child(typeExprChildNum_)->isIdentifier());
@@ -80,7 +82,7 @@ class Implements final : public AstNode {
     const Implements* lhs = this;
     const Implements* rhs = (const Implements*) other;
     return lhs->typeExprChildNum_ == rhs->typeExprChildNum_ &&
-           lhs->isConstraint_ == rhs->isConstraint_;
+           lhs->isExpressionLevel_ == rhs->isExpressionLevel_;
   }
 
   void markUniqueStringsInner(Context* context) const override {}
@@ -91,6 +93,17 @@ class Implements final : public AstNode {
   /**
     Returns an Identifier naming the type this implements is for.
     May return nullptr.
+
+    For the following:
+
+    \rst
+    .. code-block:: chapel
+
+        T implements Foo(A, B);
+
+    \endrst
+
+    This method returns the identifier storing 'T'.
   */
   const Identifier* typeExpr() const {
     if (typeExprChildNum_ == AstNode::NO_CHILD) return nullptr;
@@ -100,24 +113,45 @@ class Implements final : public AstNode {
   }
 
   /**
-    Returns true if this implements statement is a constraint.
+    Returns true if this implements statement is at an expression level.
   */
-  bool isConstraint() const {
-    return isConstraint_;
+  bool isExpressionLevel() const {
+    return isExpressionLevel_;
   }
 
   /**
-    Returns the name of the interface this implements is implementing.
+    Returns the name of the interface this is implementing.
 
-    This method is a convenience. If 'interfaceExpr()' returns a FnCall,
-    this method returns the name of the call. If 'interfaceExpr()' is an
-    Identifier, this method returns its name.
+    For the following:
+
+    \rst
+    .. code-block:: chapel
+
+        T implements Foo(A, B);
+        T implements Bar;
+
+    \endrst
+
+    This method returns 'Foo' and 'Bar', respectively.
   */
   UniqueString interfaceName() const;
 
   /**
     Returns the interface expression. This method may return either an
     Identifier or a FnCall.
+
+    For the following:
+
+    \rst
+    .. code-block:: chapel
+
+        T implements Foo(A, B);
+        T implements Bar;
+
+    \endrst
+
+    This method returns the FnCall 'Foo(A, B)' or the Identifier 'Bar',
+    respectively.
   */
   const AstNode* interfaceExpr() const {
     assert(interfaceExprChildNum() != AstNode::NO_CHILD);
@@ -129,7 +163,7 @@ class Implements final : public AstNode {
   static owned<Implements> build(Builder* builder, Location loc,
                                  owned<Identifier> typeExpr,
                                  owned<AstNode> interfaceExpr,
-                                 bool isConstraint);
+                                 bool isExpressionLevel);
 };
 
 

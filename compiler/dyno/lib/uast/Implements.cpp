@@ -47,7 +47,7 @@ owned<Implements>
 Implements::build(Builder* builder, Location loc, 
                   owned<Identifier> typeExpr,
                   owned<AstNode> interfaceExpr,
-                  bool isConstraint) {
+                  bool isExpressionLevel) {
   AstList children;
   int8_t typeExprChildNum = AstNode::NO_CHILD;
 
@@ -61,7 +61,7 @@ Implements::build(Builder* builder, Location loc,
   children.push_back(std::move(interfaceExpr));
 
   Implements* ret = new Implements(std::move(children), typeExprChildNum,
-                                   isConstraint);
+                                   isExpressionLevel);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

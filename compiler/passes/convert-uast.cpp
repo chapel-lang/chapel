@@ -230,7 +230,7 @@ struct Converter {
       }
     }
 
-    if (node->isConstraint()) {
+    if (node->isExpressionLevel()) {
       ret = IfcConstraint::build(name, act);
     } else {
       ret = ImplementsStmt::build(name, act, nullptr);

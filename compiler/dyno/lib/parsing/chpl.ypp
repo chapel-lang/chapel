@@ -1846,9 +1846,7 @@ ifc_constraint:
   }
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP
   {
-    $$ = context->buildImplementsConstraint(@$, @1, $1, YLOC2(@3, @6),
-                                            $3,
-                                            $5);
+    $$ = context->buildImplementsConstraint(@$, @1, $1, YLOC2(@3, @6), $3, $5);
   }
 ;
 

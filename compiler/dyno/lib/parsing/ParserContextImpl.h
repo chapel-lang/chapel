@@ -2259,11 +2259,11 @@ ParserContext::buildImplementsStmt(YYLTYPE location,
                                                 name,
                                                 formals);
 
-  const bool isConstraint = false;
+  const bool isExpressionLevel = false;
   auto node = Implements::build(builder, convertLocation(location),
                                 /*typeExpr*/ nullptr,
                                 std::move(interfaceExpr),
-                                isConstraint);
+                                isExpressionLevel);
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
 
@@ -2285,11 +2285,11 @@ ParserContext::buildImplementsStmt(YYLTYPE location,
 
   auto typeExpr = Identifier::build(builder, convertLocation(locTypeExpr),
                                     type);
-  const bool isConstraint = false;
+  const bool isExpressionLevel = false;
   auto node = Implements::build(builder, convertLocation(location),
                                 std::move(typeExpr),
                                 std::move(interfaceExpr),
-                                isConstraint);
+                                isExpressionLevel);
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
 
   return cs;
@@ -2304,11 +2304,11 @@ ParserContext::buildImplementsConstraint(YYLTYPE location,
                                                           name,
                                                           formals);
 
-  const bool isConstraint = true;
+  const bool isExpressionLevel = true;
   auto node = Implements::build(builder, convertLocation(location),
                                 /*typeExpr*/ nullptr,
                                 std::move(interfaceExpr),
-                                isConstraint);
+                                isExpressionLevel);
 
   return node.release();
 }
@@ -2327,11 +2327,11 @@ ParserContext::buildImplementsConstraint(YYLTYPE location,
   auto typeExpr = Identifier::build(builder, convertLocation(locTypeExpr),
                                     type);
 
-  const bool isConstraint = true;
+  const bool isExpressionLevel = true;
   auto node = Implements::build(builder, convertLocation(location),
                                 std::move(typeExpr),
                                 std::move(interfaceExpr),
-                                isConstraint);
+                                isExpressionLevel);
 
   return node.release();
 }

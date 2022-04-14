@@ -37,13 +37,14 @@ namespace uast {
   .. code-block:: chapel
 
       interface example(T) {
-        // TODO: What goes in the body?
+        operator ==(a: T, b: T): bool;
       }
 
   \endrst
 
-  Creates an interface named example with a constraint 'T'.
- */
+  Creates an interface named 'example' with one interface formal named 'T'.
+  The interface body contains one required function named '=='.
+*/
 class Interface final : public NamedDecl {
  private:
   int interfaceFormalsChildNum_;
@@ -92,20 +93,56 @@ class Interface final : public NamedDecl {
  public:
   ~Interface() override = default;
 
+  /**
+    Returns 'true' if this interface has a formal list.
+
+    For the following:
+
+    \rst
+    .. code-block:: chapel
+
+        interface example(T) {
+          operator ==(a: T, b: T): bool;
+        }
+
+    \endrst
+
+    The formal list '(T)' is present, so this method returns 'true'.
+  */
   bool isFormalListPresent() const {
     return isFormalListPresent_;
   }
 
+  /**
+    Iterate over the formals in the formal list.
+  */
   AstListIteratorPair<AstNode> formals() const {
     auto begin = children_.begin() + interfaceFormalsChildNum_;
     auto end = begin + numInterfaceFormals_;
     return AstListIteratorPair<AstNode>(begin, end);
   }
 
+  /**
+    Return the number of interface formals. For the following:
+
+    \rst
+    .. code-block:: chapel
+
+        interface example(T) {
+          operator ==(a: T, b: T): bool;
+        }
+
+    \endrst
+
+    This method would return '1'.
+  */
   int numFormals() const {
     return numInterfaceFormals_;
   }
 
+  /**
+    Return the i'th interface formal.
+  */
   const AstNode* formal(int i) const {
     assert(i >= 0 && i < numBodyStmts_);
     auto ret = stmt(i + interfaceFormalsChildNum_);
@@ -113,16 +150,25 @@ class Interface final : public NamedDecl {
     return ret;
   }
 
+  /**
+    Iterate over the statements in the body of this interface.
+  */
   AstListIteratorPair<AstNode> stmts() const {
     auto begin = children_.begin() + bodyChildNum_;
     auto end = begin + numBodyStmts_;
     return AstListIteratorPair<AstNode>(begin, end);
   }
 
+  /**
+    Return the number of statements in the body of this interface.
+  */
   int numStmts() const {
     return numBodyStmts_;
   }
 
+  /**
+    Get the i'th statement in the body of this interface.
+  */
   const AstNode* stmt(int i) const {
     assert(i >= 0 && i < numBodyStmts_);
     auto ret = stmt(i + bodyChildNum_);
