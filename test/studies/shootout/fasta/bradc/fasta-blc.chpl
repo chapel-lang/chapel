@@ -1,9 +1,9 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Brad Chamberlain
-   derived from the Chapel #5 version
-   and the C gcc #9 version by Drake Diedrich
+   contributed by Brad Chamberlain and Engin Kayraklioglu
+   derived from the C gcc #9 version by Drake Diedrich
+   and the Chapel #5 version
 */
 
 use IO;
