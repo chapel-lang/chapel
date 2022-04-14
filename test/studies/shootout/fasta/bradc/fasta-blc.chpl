@@ -1,9 +1,9 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Brad Chamberlain
-   derived from the Chapel #5 version
-   and the C gcc #9 version by Drake Diedrich
+   contributed by Brad Chamberlain and Engin Kayraklioglu
+   derived from the C gcc #9 version by Drake Diedrich
+   and the Chapel #5 version
 */
 
 use IO;
@@ -28,17 +28,15 @@ param IM = 139968,                      // values for random number generation
 //
 // Probability tables for sequences to be randomly generated
 //
-const IUB = [(b"a", 0.27), (b"c", 0.12), (b"g", 0.12), (b"t", 0.27),
-             (b"B", 0.02), (b"D", 0.02), (b"H", 0.02), (b"K", 0.02),
-             (b"M", 0.02), (b"N", 0.02), (b"R", 0.02), (b"S", 0.02),
-             (b"V", 0.02), (b"W", 0.02), (b"Y", 0.02)],
+const IUB = [("a", 0.27), ("c", 0.12), ("g", 0.12), ("t", 0.27),
+             ("B", 0.02), ("D", 0.02), ("H", 0.02), ("K", 0.02),
+             ("M", 0.02), ("N", 0.02), ("R", 0.02), ("S", 0.02),
+             ("V", 0.02), ("W", 0.02), ("Y", 0.02)],
 
-      HomoSapiens = [(b"a", 0.3029549426680),
-                     (b"c", 0.1979883004921),
-                     (b"g", 0.1975473066391),
-                     (b"t", 0.3015094502008)],
-
-      newline = b"\n"[0],   // newline's byte value
+      HomoSapiens = [("a", 0.3029549426680),
+                     ("c", 0.1979883004921),
+                     ("g", 0.1975473066391),
+                     ("t", 0.3015094502008)],
 
       // Redefine stdout to use lock-free binary I/O
       stdout = openfd(1).writer(kind=iokind.native, locking=false);
@@ -64,10 +62,9 @@ proc repeatMake(param alu, n) {
         alu2 = alu + alu,
         buffLen = len * bytesPerLine;
 
-  var buffer: [0..<buffLen] uint(8);
+  var buffer: bytes;
   for i in 0..<len {
-    buffer[i*bytesPerLine..#lineLen] = alu2[(i*lineLen)%len..#lineLen];
-    buffer[i*bytesPerLine + lineLen] = newline;
+    buffer += alu2[(i*lineLen)%len..#lineLen] + b"\n";
   }
 
   const wholeBuffers = n / (len*lineLen);
@@ -80,7 +77,7 @@ proc repeatMake(param alu, n) {
   stdout.write(buffer[..<extra]);
 
   if n % lineLen != 0 {
-    stdout.write("\n");
+    stdout.writeln();
   }
 }
 
@@ -100,7 +97,7 @@ proc randomMake(nuclInfo, n) {
       (ch, prob) = nuclInfo[j];
       sum += prob;
     }
-    hash[i] = ch[0];
+    hash[i] = ch.toByte();
   }
 
   param buffSize = buffLines * bytesPerLine;
@@ -111,7 +108,7 @@ proc randomMake(nuclInfo, n) {
 
   // add linefeeds
   for i in lineLen..<buffSize by bytesPerLine {
-    buffer[i] = newline;
+    buffer[i] = "\n".toByte();
   }
 
   // write out most of the data as full buffers
@@ -134,20 +131,20 @@ proc randomMake(nuclInfo, n) {
   }
 
   // compute number of extra characters and fill them in
-  var extra = n % lineLen,
-      offset = numLines * bytesPerLine;
+  const extra = n % lineLen,
+        offset = numLines * bytesPerLine;
 
   for k in 0..<extra {
     buffer[offset + k] = hash[getNextRand()];
   }
 
+  stdout.write(buffer[0..<offset+extra]);
+
   // add a final linefeed if needed
   if (extra != 0) {
-    buffer[offset + extra] = newline;
-    extra += 1;
+    stdout.writeln();
   }
 
-  stdout.write(buffer[0..<offset+extra]);
 }
 
 //
