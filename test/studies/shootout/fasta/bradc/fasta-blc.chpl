@@ -79,7 +79,7 @@ proc repeatMake(param alu, n) {
   stdout.write(buffer[..<extra]);
 
   if n % lineLen != 0 {
-    stdout.write("\n");
+    stdout.write(newline);
   }
 }
 
