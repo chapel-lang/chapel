@@ -38,7 +38,7 @@ const IUB = [("a", 0.27), ("c", 0.12), ("g", 0.12), ("t", 0.27),
                      ("g", 0.1975473066391),
                      ("t", 0.3015094502008)],
 
-      newline = "\n".byte[0],   // newline's byte value
+      newline = "\n".toByte(),   // newline's byte value
 
       // Redefine stdout to use lock-free binary I/O
       stdout = openfd(1).writer(kind=iokind.native, locking=false);
@@ -64,10 +64,9 @@ proc repeatMake(param alu, n) {
         alu2 = alu + alu,
         buffLen = len * bytesPerLine;
 
-  var buffer: [0..<buffLen] uint(8);
+  var buffer: bytes;
   for i in 0..<len {
-    buffer[i*bytesPerLine..#lineLen] = alu2[(i*lineLen)%len..#lineLen];
-    buffer[i*bytesPerLine + lineLen] = newline;
+    buffer += alu2[(i*lineLen)%len..#lineLen];
   }
 
   const wholeBuffers = n / (len*lineLen);
@@ -100,7 +99,7 @@ proc randomMake(nuclInfo, n) {
       (ch, prob) = nuclInfo[j];
       sum += prob;
     }
-    hash[i] = ch.byte[0];
+    hash[i] = ch.toByte();
   }
 
   param buffSize = buffLines * bytesPerLine;
