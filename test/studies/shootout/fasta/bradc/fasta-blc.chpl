@@ -38,8 +38,6 @@ const IUB = [("a", 0.27), ("c", 0.12), ("g", 0.12), ("t", 0.27),
                      ("g", 0.1975473066391),
                      ("t", 0.3015094502008)],
 
-      newline = "\n".toByte(),   // newline's byte value
-
       // Redefine stdout to use lock-free binary I/O
       stdout = openfd(1).writer(kind=iokind.native, locking=false);
 
@@ -79,7 +77,7 @@ proc repeatMake(param alu, n) {
   stdout.write(buffer[..<extra]);
 
   if n % lineLen != 0 {
-    stdout.write(newline);
+    stdout.writeln();
   }
 }
 
@@ -110,7 +108,7 @@ proc randomMake(nuclInfo, n) {
 
   // add linefeeds
   for i in lineLen..<buffSize by bytesPerLine {
-    buffer[i] = newline;
+    buffer[i] = "\n".toByte();
   }
 
   // write out most of the data as full buffers
@@ -133,20 +131,20 @@ proc randomMake(nuclInfo, n) {
   }
 
   // compute number of extra characters and fill them in
-  var extra = n % lineLen,
-      offset = numLines * bytesPerLine;
+  const extra = n % lineLen,
+        offset = numLines * bytesPerLine;
 
   for k in 0..<extra {
     buffer[offset + k] = hash[getNextRand()];
   }
 
+  stdout.write(buffer[0..<offset+extra]);
+
   // add a final linefeed if needed
   if (extra != 0) {
-    buffer[offset + extra] = newline;
-    extra += 1;
+    stdout.writeln();
   }
 
-  stdout.write(buffer[0..<offset+extra]);
 }
 
 //
