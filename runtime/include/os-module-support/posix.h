@@ -85,6 +85,60 @@ void chpl_os_posix_FD_ZERO(fd_set* fdset) {
   FD_ZERO(fdset);
 }
 
+
+//
+// sys/stat.h
+//
+
+// The POSIX spec and Darwin disagree on the names of the timestamp
+// members with type struct timespec. Here we define a common type
+// the module code can use, and a stat(3p) shim that converts from
+// the OS's struct and our common ("POSIX") one.
+struct chpl_os_posix_struct_stat {
+  dev_t st_dev;
+  ino_t st_ino;
+  mode_t st_mode;
+  nlink_t st_nlink;
+  uid_t st_uid;
+  gid_t st_gid;
+  dev_t st_rdev;
+  off_t st_size;
+  struct timespec st_atim;
+  struct timespec st_mtim;
+  struct timespec st_ctim;
+  blksize_t st_blksize;
+  blkcnt_t st_blocks;
+};
+
+static inline
+int chpl_os_posix_stat(const char *restrict path,
+                       struct chpl_os_posix_struct_stat *restrict buf) {
+  struct stat myBuf;
+  int ret = stat(path, &myBuf);
+  buf->st_dev = myBuf.st_dev;
+  buf->st_ino = myBuf.st_ino;
+  buf->st_mode = myBuf.st_mode;
+  buf->st_nlink = myBuf.st_nlink;
+  buf->st_uid = myBuf.st_uid;
+  buf->st_gid = myBuf.st_gid;
+  buf->st_rdev = myBuf.st_rdev;
+  buf->st_size = myBuf.st_size;
+#if defined(__linux__)
+  buf->st_atim = myBuf.st_atim;
+  buf->st_mtim = myBuf.st_mtim;
+  buf->st_ctim = myBuf.st_ctim;
+#elif defined(__APPLE__)
+  buf->st_atim = myBuf.st_atimespec;
+  buf->st_mtim = myBuf.st_mtimespec;
+  buf->st_ctim = myBuf.st_ctimespec;
+#else
+#error Unsupported OS.
+#endif
+  buf->st_blksize = myBuf.st_blksize;
+  buf->st_blocks = myBuf.st_blocks;
+  return ret;
+}
+
 #ifdef __cplusplus
 } // end extern "C"
 #endif

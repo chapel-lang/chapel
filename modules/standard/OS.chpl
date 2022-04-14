@@ -50,22 +50,44 @@ module OS {
     //
     // sys/types.h
     //
-    extern type mode_t;
+    extern type blkcnt_t;
+    pragma "no doc"
+    inline operator :(x:blkcnt_t, type t:int) return __primitive("cast", t, x);
 
-    // Users definitely need |(mode_t, mode_t).  We may want others in
-    // the future.
+    extern type blksize_t;
+    pragma "no doc"
+    inline operator :(x:blksize_t, type t:int)
+      return __primitive("cast", t, x);
+
+    extern type dev_t;
+    pragma "no doc"
+    inline operator :(x:dev_t, type t:int) return __primitive("cast", t, x);
+
+    extern type gid_t;
+    pragma "no doc"
+    inline operator :(x:gid_t, type t:int) return __primitive("cast", t, x);
+
+    extern type ino_t;
+    pragma "no doc"
+    inline operator :(x:ino_t, type t:int) return __primitive("cast", t, x);
+
+    extern type mode_t;
     pragma "no doc"
     inline operator :(x:mode_t, type t:int) return __primitive("cast", t, x);
     pragma "no doc"
     inline operator :(x:int, type t:mode_t) return __primitive("cast", t, x);
+    // Users definitely need |(mode_t, mode_t).  We may want others in
+    // the future.
     pragma "no doc"
     inline operator |(a: mode_t, b: mode_t) return (a:int | b:int):mode_t;
 
-    extern type time_t;
+    extern type nlink_t;
     pragma "no doc"
-    inline operator :(x:time_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:nlink_t, type t:int) return __primitive("cast", t, x);
+
+    extern type off_t;
     pragma "no doc"
-    inline operator :(x:int, type t:time_t) return __primitive("cast", t, x);
+    inline operator :(x:off_t, type t:int) return __primitive("cast", t, x);
 
     extern type suseconds_t;
     pragma "no doc"
@@ -74,6 +96,24 @@ module OS {
     pragma "no doc"
     inline operator :(x:int, type t:suseconds_t)
       return __primitive("cast", t, x);
+
+    extern type time_t;
+    pragma "no doc"
+    inline operator :(x:time_t, type t:int) return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:int, type t:time_t) return __primitive("cast", t, x);
+
+    extern type uid_t;
+    pragma "no doc"
+    inline operator :(x:uid_t, type t:int) return __primitive("cast", t, x);
+
+    //
+    // time.h (pre-decl for struct_timespec, needed in sys/stat.h)
+    //
+    extern "struct timespec" record struct_timespec {
+      var tv_sec:time_t;  // seconds since Jan. 1, 1970
+      var tv_nsec:c_long; // and nanoseconds
+    }
 
     //
     // errno.h
@@ -261,7 +301,25 @@ module OS {
     extern const S_ISGID: mode_t;
     extern const S_ISVTX: mode_t;
 
+    extern 'struct chpl_os_posix_struct_stat' record struct_stat {
+      var st_dev:dev_t;            // Device.
+      var st_ino:ino_t;            // File serial number.
+      var st_mode:mode_t;          // File mode.
+      var st_nlink:nlink_t;        // Link count.
+      var st_uid:uid_t;            // User ID of the file's owner.
+      var st_gid:gid_t;            // Group ID of the file's group.
+      var st_rdev:dev_t;           // Device number, if device.
+      var st_size:off_t;           // Size of file, in bytes.
+      var st_atim:struct_timespec; // Last data access timestamp.
+      var st_mtim:struct_timespec; // Last data modification timestamp.
+      var st_ctim:struct_timespec; // Last file status change timestamp.
+      var st_blksize:blksize_t;    // Optimal block size for I/O.
+      var st_blocks:blkcnt_t;      // Number 512-byte blocks allocated.
+    }
+
     extern proc chmod(path:c_string, mode:mode_t):c_int;
+    extern 'chpl_os_posix_stat' proc stat(path:c_string,
+                                          buf:c_ptr(struct_stat)):c_int;
 
     //
     // sys/time.h

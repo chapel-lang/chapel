@@ -1,0 +1,6 @@
+#! /usr/bin/env bash
+sed -E \
+    -e 's/^(st_(mode|uid|gid|rdev|blksize|blocks)) [0-9]*$/\1 NNN/' \
+    -e 's/(st_[amc]tim) [0-9]{10}\.[0-9]{9}$/\1 SECS.NSECS/' \
+    < $2 > $2.prediff \
+  && mv $2.prediff $2
