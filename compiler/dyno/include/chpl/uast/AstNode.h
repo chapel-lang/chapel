@@ -86,6 +86,9 @@ class AstNode {
     : tag_(tag), id_(), children_(std::move(children)) {
   }
 
+  /* Magic constant to indicate no such child exists. */
+  static const int NO_CHILD = -1;
+
   // called by the Builder
   void setID(ID id) { id_ = id; }
 

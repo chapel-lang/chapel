@@ -63,9 +63,11 @@ target_sources(libdyno-obj
                Function.cpp
                Identifier.cpp
                ImagLiteral.cpp
+               Implements.cpp
                Import.cpp
                Include.cpp
                IndexableLoop.cpp
+               Interface.cpp
                IntLiteral.cpp
                Label.cpp
                Let.cpp

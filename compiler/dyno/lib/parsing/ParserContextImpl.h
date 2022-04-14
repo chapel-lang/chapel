@@ -2185,3 +2185,153 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
 
   return cs;
 }
+
+AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
+                                             PODUniqueString name) {
+  return buildIdent(location, name);
+}
+
+CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
+                                                  PODUniqueString name,
+                                                  ParserExprList* formals,
+                                                  YYLTYPE locBody,
+                                                  CommentsAndStmt body) {
+  std::vector<ParserComment>* comments;
+  ParserExprList* bodyExprLst;
+  BlockStyle blockStyle;
+
+  prepareStmtPieces(comments, bodyExprLst, blockStyle, location,
+                    false,
+                    locBody,
+                    body);
+
+  AstList formalList = formals ? consumeList(formals) : AstList();
+  AstList bodyStmts = bodyExprLst
+      ? consumeAndFlattenTopLevelBlocks(bodyExprLst)
+      : AstList();
+  const bool isFormalListPresent = formals != nullptr;
+
+  auto node = Interface::build(builder, convertLocation(location),
+                               buildAttributes(location),
+                               visibility,
+                               name,
+                               isFormalListPresent,
+                               std::move(formalList),
+                               std::move(bodyStmts));
+
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return cs;
+}
+
+owned<AstNode>
+ParserContext::buildInterfaceExpr(YYLTYPE location,
+                                  PODUniqueString name,
+                                  MaybeNamedActualList* formals) {
+  owned<AstNode> ret = nullptr;
+
+  ret = Identifier::build(builder, convertLocation(location),
+                          name);
+  if (formals != nullptr) {
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    consumeNamedActuals(formals, actuals, actualNames);
+    ret = FnCall::build(builder, convertLocation(location),
+                        std::move(ret),
+                        std::move(actuals),
+                        actualNames,
+                        false);
+  }
+
+  assert(ret.get() != nullptr);
+
+  return ret;
+}
+
+CommentsAndStmt
+ParserContext::buildImplementsStmt(YYLTYPE location,
+                                   YYLTYPE locInterfaceExpr,
+                                   PODUniqueString name,
+                                   MaybeNamedActualList* formals) {
+  auto comments = gatherComments(location);
+  auto interfaceExpr = this->buildInterfaceExpr(locInterfaceExpr,
+                                                name,
+                                                formals);
+
+  const bool isConstraint = false;
+  auto node = Implements::build(builder, convertLocation(location),
+                                /*typeExpr*/ nullptr,
+                                std::move(interfaceExpr),
+                                isConstraint);
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return cs;
+}
+
+CommentsAndStmt
+ParserContext::buildImplementsStmt(YYLTYPE location,
+                                   YYLTYPE locTypeExpr,
+                                   PODUniqueString type,
+                                   YYLTYPE locInterfaceExpr,
+                                   PODUniqueString name,
+                                   MaybeNamedActualList* formals) {
+
+  auto comments = gatherComments(location);
+  auto interfaceExpr = buildInterfaceExpr(locInterfaceExpr,
+                                          name,
+                                          formals);
+
+  auto typeExpr = Identifier::build(builder, convertLocation(locTypeExpr),
+                                    type);
+  const bool isConstraint = false;
+  auto node = Implements::build(builder, convertLocation(location),
+                                std::move(typeExpr),
+                                std::move(interfaceExpr),
+                                isConstraint);
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return cs;
+}
+
+AstNode*
+ParserContext::buildImplementsConstraint(YYLTYPE location,
+                                         YYLTYPE locInterfaceExpr,
+                                         PODUniqueString name,
+                                         MaybeNamedActualList* formals) {
+   owned<AstNode> interfaceExpr = this->buildInterfaceExpr(locInterfaceExpr,
+                                                          name,
+                                                          formals);
+
+  const bool isConstraint = true;
+  auto node = Implements::build(builder, convertLocation(location),
+                                /*typeExpr*/ nullptr,
+                                std::move(interfaceExpr),
+                                isConstraint);
+
+  return node.release();
+}
+
+AstNode*
+ParserContext::buildImplementsConstraint(YYLTYPE location,
+                                         YYLTYPE locTypeExpr,
+                                         PODUniqueString type,
+                                         YYLTYPE locInterfaceExpr,
+                                         PODUniqueString name,
+                                         MaybeNamedActualList* formals) {
+  auto interfaceExpr = buildInterfaceExpr(locInterfaceExpr,
+                                          name,
+                                          formals);
+
+  auto typeExpr = Identifier::build(builder, convertLocation(locTypeExpr),
+                                    type);
+
+  const bool isConstraint = true;
+  auto node = Implements::build(builder, convertLocation(location),
+                                std::move(typeExpr),
+                                std::move(interfaceExpr),
+                                isConstraint);
+
+  return node.release();
+}

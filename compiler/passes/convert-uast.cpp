@@ -211,16 +211,56 @@ struct Converter {
     return ret;
   }
 
+  Expr* visit(const uast::Implements* node) {
+    const char* name = astr(node->interfaceName().c_str());
+    CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST);
+    Expr* ret = nullptr;
+
+    if (node->typeExpr()) {
+      auto conv = convertAST(node->typeExpr());
+      INT_ASSERT(conv);
+      act->insertAtTail(conv);
+    }
+
+    Expr* conv = convertAST(node->interfaceExpr());
+    if (auto call = toCallExpr(conv)) {
+      for_actuals(actual, call) {
+        actual->remove();
+        act->insertAtTail(actual);
+      }
+    }
+
+    if (node->isConstraint()) {
+      ret = IfcConstraint::build(name, act);
+    } else {
+      ret = ImplementsStmt::build(name, act, nullptr);
+    }
+
+    INT_ASSERT(ret);
+
+    return ret;
+  }
+
   /// SimpleBlockLikes ///
 
   BlockStmt*
-  createBlockWithStmts(uast::AstListIteratorPair<uast::AstNode> stmts) {
+  createBlockWithStmts(uast::AstListIteratorPair<uast::AstNode> stmts,
+                       bool flattenTopLevelScopelessBlocks=true) {
     BlockStmt* block = new BlockStmt();
     for (auto stmt: stmts) {
       Expr* e = convertAST(stmt);
-      if (e) {
-        block->insertAtTail(e);
+      bool inserted = false;
+
+      if (e == nullptr) continue;
+
+      if (flattenTopLevelScopelessBlocks) {
+        if (auto childBlock = toBlockStmt(e)) {
+          block->appendChapelStmt(childBlock);
+          inserted = true;
+        }
       }
+
+      if (!inserted) block->insertAtTail(e);
     }
     return block;
   }
@@ -2085,10 +2125,8 @@ struct Converter {
 
     BlockStmt* body = nullptr;
 
-    if (node->linkage() != uast::Decl::EXTERN) {
+    if (node->body() && node->linkage() != uast::Decl::EXTERN) {
       body = createBlockWithStmts(node->stmts());
-
-    // Clear the block statement for the body if function is extern.
     } else {
       if (node->numStmts()) {
         USR_FATAL_CONT("Extern functions cannot have a body");
@@ -2115,6 +2153,33 @@ struct Converter {
       DefExpr* def = new DefExpr(fn);
       return def;
     }
+
+    return ret;
+  }
+
+  Expr* visit(const uast::Interface* node) {
+    const char* name = astr(node->name().c_str());
+    CallExpr* formals = new CallExpr(PRIM_ACTUALS_LIST);
+    BlockStmt* body = createBlockWithStmts(node->stmts());
+
+    if (node->isFormalListPresent()) {
+      for (auto formal : node->formals()) {
+        if (auto ident = formal->toIdentifier()) {
+          const char* name = astr(ident->name().c_str());
+          auto formal = InterfaceSymbol::buildFormal(name, INTENT_TYPE);
+          formals->insertAtTail(formal);
+        } else {
+          INT_FATAL("Expected identifier for interface formal");
+        }
+      }
+    } else {
+      INT_ASSERT(node->numFormals() == 0);
+      DefExpr* formal = InterfaceSymbol::buildFormal("Self", INTENT_TYPE);
+      formals->insertAtTail(formal);
+    }
+
+    auto isym = InterfaceSymbol::buildDef(name, formals, body);
+    auto ret = buildChapelStmt(isym);
 
     return ret;
   }
@@ -2279,7 +2344,7 @@ struct Converter {
     return ret;
   }
 
-  const char* tupleVariableName(const char* name) {
+  const char* sanitizeVarName(const char* name) {
     if (inTupleDecl && name[0] == '_' && name[1] == '\0')
       return "chpl__tuple_blank";
     else
@@ -2379,7 +2444,8 @@ struct Converter {
                            bool useLinkageName) {
     astlocMarker markAstLoc(node->id());
 
-    auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
+    auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
+    const bool isTypeVar = node->kind() == uast::Variable::TYPE;
 
     // Adjust the variable according to its kind, e.g. 'const'/'type'.
     attachVarSymbolStorage(node, varSym);
@@ -2423,7 +2489,7 @@ struct Converter {
 
     if (const uast::AstNode* ie = node->initExpression()) {
       const uast::BracketLoop* bkt = ie->toBracketLoop();
-      if (bkt && node->kind() == uast::Variable::TYPE) {
+      if (bkt && isTypeVar) {
           initExpr = convertArrayType(bkt);
         } else {
           initExpr = convertAST(ie);
@@ -2454,6 +2520,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Variable* node) {
+    const bool isTypeVar = node->kind() == uast::Variable::TYPE;
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
 
     auto defExpr = convertVariable(node, true);
@@ -2462,7 +2529,7 @@ struct Converter {
     stmts->insertAtTail(defExpr);
 
     // Special handling for extern type variables.
-    if (node->kind() == uast::Variable::TYPE) {
+    if (isTypeVar) {
       if (node->linkage() == uast::Decl::EXTERN) {
         INT_ASSERT(!node->isConfig());
         stmts = convertTypesToExtern(stmts);
@@ -2470,7 +2537,7 @@ struct Converter {
     }
 
     // Add a PRIM_END_OF_STATEMENT.
-    if (fDocs == false && inTupleDecl == false) {
+    if (!fDocs && !inTupleDecl && !isTypeVar) {
       CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
       stmts->insertAtTail(end);
     }
@@ -2517,14 +2584,36 @@ struct Converter {
 
   /// AggregateDecls
 
-  Expr* visit(const uast::Class* node) {
+  AggregateTag convertAggregateDeclTag(const uast::AggregateDecl* node) {
+    switch (node->tag()) {
+      case uast::asttags::Class: return AGGREGATE_CLASS;
+      case uast::asttags::Record: return AGGREGATE_RECORD;
+      case uast::asttags::Union: return AGGREGATE_UNION;
+      default: break;
+    }
+    INT_FATAL("Should not reach here!");
+    return AGGREGATE_CLASS;
+  }
+
+  Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
     const char* name = astr(node->name().c_str());
     const char* cname = name;
-    Expr* inherit = convertExprOrNull(node->parentClass());
-    BlockStmt* decls = createBlockWithStmts(node->declOrComments());
-    Flag externFlag = FLAG_UNKNOWN;
+    Expr* inherit = nullptr;
 
-    auto ret = buildClassDefExpr(name, cname, AGGREGATE_CLASS, inherit,
+    if (auto cls = node->toClass()) {
+      inherit = convertExprOrNull(cls->parentClass());
+    }
+
+    auto decls = createBlockWithStmts(node->declOrComments(), false);
+    Flag externFlag = convertFlagForDeclLinkage(node);
+    auto tag = convertAggregateDeclTag(node);
+
+    // Classes cannot be extern or export.
+    if (node->isClass()) {
+      INT_ASSERT(externFlag == FLAG_UNKNOWN);
+    }
+
+    auto ret = buildClassDefExpr(name, cname, tag, inherit,
                                  decls,
                                  externFlag,
                                  /*docs*/ nullptr);
@@ -2535,52 +2624,16 @@ struct Converter {
     return ret;
   }
 
+  Expr* visit(const uast::Class* node) {
+    return convertAggregateDecl(node);
+  }
+
   Expr* visit(const uast::Record* node) {
-    const char* name = astr(node->name().c_str());
-    const char* cname = name;
-    Expr* inherit = nullptr;
-    BlockStmt* decls = createBlockWithStmts(node->declOrComments());
-    Flag linkageFlag = convertFlagForDeclLinkage(node);
-
-    // TODO (dlongnecke): This should be sanitized by the new parser.
-    if (node->linkageName()) {
-      cname = astrFromStringLiteral(node->linkageName());
-      INT_ASSERT(cname);
-    }
-
-    auto ret = buildClassDefExpr(name, cname, AGGREGATE_RECORD, inherit,
-                                 decls,
-                                 linkageFlag,
-                                 /*docs*/ nullptr);
-    INT_ASSERT(ret->sym);
-
-    attachSymbolAttributes(node, ret->sym);
-
-    return ret;
+    return convertAggregateDecl(node);
   }
 
   Expr* visit(const uast::Union* node) {
-    const char* name = astr(node->name().c_str());
-    const char* cname = name;
-    Expr* inherit = nullptr;
-    BlockStmt* decls = createBlockWithStmts(node->declOrComments());
-    Flag linkageFlag = convertFlagForDeclLinkage(node);
-
-    // TODO (dlongnecke): This should be sanitized by the new parser.
-    if (node->linkageName()) {
-      cname = astrFromStringLiteral(node->linkageName());
-      INT_ASSERT(cname);
-    }
-
-    auto ret = buildClassDefExpr(name, cname, AGGREGATE_UNION, inherit,
-                                 decls,
-                                 linkageFlag,
-                                 /*docs*/ nullptr);
-    INT_ASSERT(ret->sym);
-
-    attachSymbolAttributes(node, ret->sym);
-
-    return ret;
+    return convertAggregateDecl(node);
   }
 
   Expr* visit(const uast::EmptyStmt* node) {

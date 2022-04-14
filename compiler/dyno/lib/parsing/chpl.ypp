@@ -1759,9 +1759,13 @@ ifvar:
 
 interface_stmt:
   TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildInterfaceStmt(@$, $2, $4, @6, $6);
+  }
 | TINTERFACE ident_def                       block_stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildInterfaceStmt(@$, $2, nullptr, @3, $3);
+  }
 ;
 
 ifc_formal_ls:
@@ -1771,7 +1775,7 @@ ifc_formal_ls:
 
 ifc_formal:
   // implicitly 'type' intent, could specify explicitly - see #16966
-  ident_def  { $$ = TODOEXPR(@$); }
+  ident_def  { $$ = context->buildInterfaceFormal(@1, $1); }
 ;
 
 // which types are allowed in 'T implements IFC'
@@ -1818,20 +1822,34 @@ implements_type_error_ident:
 
 implements_stmt:
   TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildImplementsStmt(@$, YLOC2(@2, @5), $2, $4);
+  }
 | implements_type_ident TIMPLEMENTS ident_def TSEMI
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildImplementsStmt(@$, @1, $1, @3, $3, nullptr);
+  }
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildImplementsStmt(@$, @1, $1, YLOC2(@3, @6), $3, $5);
+  }
 ;
 
 ifc_constraint:
   TIMPLEMENTS ident_def TLP actual_ls TRP
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildImplementsConstraint(@$, YLOC2(@2, @5), $2, $4);
+  }
 | implements_type_ident TIMPLEMENTS ident_def
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildImplementsConstraint(@$, @1, $1, @3, $3, nullptr);
+  }
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildImplementsConstraint(@$, @1, $1, YLOC2(@3, @6),
+                                            $3,
+                                            $5);
+  }
 ;
 
 try_stmt:

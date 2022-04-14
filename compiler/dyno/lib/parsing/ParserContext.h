@@ -597,4 +597,40 @@ struct ParserContext {
   buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
                       CommentsAndStmt cs);
 
+  AstNode* buildInterfaceFormal(YYLTYPE location, PODUniqueString name);
+
+  CommentsAndStmt buildInterfaceStmt(YYLTYPE location,
+                                     PODUniqueString name,
+                                     ParserExprList* formals,
+                                     YYLTYPE locBody,
+                                     CommentsAndStmt body);
+
+  owned<AstNode>
+  buildInterfaceExpr(YYLTYPE location, PODUniqueString name,
+                     MaybeNamedActualList* formals);
+
+  CommentsAndStmt buildImplementsStmt(YYLTYPE location,
+                                      YYLTYPE locTypeExpr,
+                                      PODUniqueString type,
+                                      YYLTYPE locInterfaceExpr,
+                                      PODUniqueString name,
+                                      MaybeNamedActualList* formals);
+
+  CommentsAndStmt buildImplementsStmt(YYLTYPE location,
+                                      YYLTYPE locInterfaceExpr,
+                                      PODUniqueString name,
+                                      MaybeNamedActualList* formals);
+
+  AstNode* buildImplementsConstraint(YYLTYPE location,
+                                     YYLTYPE locTypeExpr,
+                                     PODUniqueString type,
+                                     YYLTYPE locInterfaceExpr,
+                                     PODUniqueString name,
+                                     MaybeNamedActualList* formals);
+
+  AstNode* buildImplementsConstraint(YYLTYPE location,
+                                     YYLTYPE locInterfaceExpr,
+                                     PODUniqueString name,
+                                     MaybeNamedActualList* formals);
+
 };

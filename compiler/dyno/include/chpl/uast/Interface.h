@@ -50,35 +50,39 @@ class Interface final : public NamedDecl {
   int numInterfaceFormals_;
   int bodyChildNum_;
   int numBodyStmts_;
+  bool isFormalListPresent_;
 
-  Interface(ASTList children, int attributesChildNum,
+  Interface(AstList children, int attributesChildNum,
             Visibility visibility,
             UniqueString name,
             int interfaceFormalsChildNum,
             int numInterfaceFormals,
             int bodyChildNum,
-            int numBodyStmts)
+            int numBodyStmts,
+            bool isFormalListPresent)
       : NamedDecl(asttags::Interface, std::move(children),
                   attributesChildNum,
                   visibility,
                   Decl::DEFAULT_LINKAGE,
-                  /*linkageNameChildNum*/ -1,
+                  /*linkageNameChildNum*/ AstNode::NO_CHILD,
                   name),
         interfaceFormalsChildNum_(interfaceFormalsChildNum),
         numInterfaceFormals_(numInterfaceFormals),
         bodyChildNum_(bodyChildNum),
-        numBodyStmts_(numBodyStmts) {
+        numBodyStmts_(numBodyStmts),
+        isFormalListPresent_(isFormalListPresent) {
     // TODO: Some assertions here...
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Interface* lhs = this;
     const Interface* rhs = (const Interface*) other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
       lhs->interfaceFormalsChildNum_ == rhs->interfaceFormalsChildNum_ &&
       lhs->numInterfaceFormals_ == rhs->numInterfaceFormals_ &&
       lhs->bodyChildNum_ == rhs->bodyChildNum_ &&
-      lhs->numBodyStmts_ == rhs->numBodyStmts_;
+      lhs->numBodyStmts_ == rhs->numBodyStmts_ &&
+      lhs->isFormalListPresent_ == rhs->isFormalListPresent_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -88,12 +92,51 @@ class Interface final : public NamedDecl {
  public:
   ~Interface() override = default;
 
+  bool isFormalListPresent() const {
+    return isFormalListPresent_;
+  }
+
+  AstListIteratorPair<AstNode> formals() const {
+    auto begin = children_.begin() + interfaceFormalsChildNum_;
+    auto end = begin + numInterfaceFormals_;
+    return AstListIteratorPair<AstNode>(begin, end);
+  }
+
+  int numFormals() const {
+    return numInterfaceFormals_;
+  }
+
+  const AstNode* formal(int i) const {
+    assert(i >= 0 && i < numBodyStmts_);
+    auto ret = stmt(i + interfaceFormalsChildNum_);
+    assert(ret);
+    return ret;
+  }
+
+  AstListIteratorPair<AstNode> stmts() const {
+    auto begin = children_.begin() + bodyChildNum_;
+    auto end = begin + numBodyStmts_;
+    return AstListIteratorPair<AstNode>(begin, end);
+  }
+
+  int numStmts() const {
+    return numBodyStmts_;
+  }
+
+  const AstNode* stmt(int i) const {
+    assert(i >= 0 && i < numBodyStmts_);
+    auto ret = stmt(i + bodyChildNum_);
+    assert(ret);
+    return ret;
+  }
+
   static owned<Interface> build(Builder* builder, Location loc,
                                 owned<Attributes> attributes,
                                 Decl::Visibility visibility,
                                 UniqueString name,
-                                ASTList formals,
-                                ASTList bbody);
+                                bool isFormalListPresent,
+                                AstList formals,
+                                AstList body);
 };
 
 
