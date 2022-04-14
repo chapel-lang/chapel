@@ -29,7 +29,7 @@ param IM = 139968,                      // values for random number generation
 // Probability tables for sequences to be randomly generated
 //
 const IUB = [("a", 0.27), ("c", 0.12), ("g", 0.12), ("t", 0.27),
-             ("b", 0.02), ("D", 0.02), ("H", 0.02), ("K", 0.02),
+             ("B", 0.02), ("D", 0.02), ("H", 0.02), ("K", 0.02),
              ("M", 0.02), ("N", 0.02), ("R", 0.02), ("S", 0.02),
              ("V", 0.02), ("W", 0.02), ("Y", 0.02)],
 
@@ -66,7 +66,7 @@ proc repeatMake(param alu, n) {
 
   var buffer: bytes;
   for i in 0..<len {
-    buffer += alu2[(i*lineLen)%len..#lineLen];
+    buffer += alu2[(i*lineLen)%len..#lineLen] + b"\n";
   }
 
   const wholeBuffers = n / (len*lineLen);
