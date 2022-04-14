@@ -28,17 +28,17 @@ param IM = 139968,                      // values for random number generation
 //
 // Probability tables for sequences to be randomly generated
 //
-const IUB = [(b"a", 0.27), (b"c", 0.12), (b"g", 0.12), (b"t", 0.27),
-             (b"B", 0.02), (b"D", 0.02), (b"H", 0.02), (b"K", 0.02),
-             (b"M", 0.02), (b"N", 0.02), (b"R", 0.02), (b"S", 0.02),
-             (b"V", 0.02), (b"W", 0.02), (b"Y", 0.02)],
+const IUB = [("a", 0.27), ("c", 0.12), ("g", 0.12), ("t", 0.27),
+             ("b", 0.02), ("D", 0.02), ("H", 0.02), ("K", 0.02),
+             ("M", 0.02), ("N", 0.02), ("R", 0.02), ("S", 0.02),
+             ("V", 0.02), ("W", 0.02), ("Y", 0.02)],
 
-      HomoSapiens = [(b"a", 0.3029549426680),
-                     (b"c", 0.1979883004921),
-                     (b"g", 0.1975473066391),
-                     (b"t", 0.3015094502008)],
+      HomoSapiens = [("a", 0.3029549426680),
+                     ("c", 0.1979883004921),
+                     ("g", 0.1975473066391),
+                     ("t", 0.3015094502008)],
 
-      newline = b"\n"[0],   // newline's byte value
+      newline = "\n".byte[0],   // newline's byte value
 
       // Redefine stdout to use lock-free binary I/O
       stdout = openfd(1).writer(kind=iokind.native, locking=false);
@@ -100,7 +100,7 @@ proc randomMake(nuclInfo, n) {
       (ch, prob) = nuclInfo[j];
       sum += prob;
     }
-    hash[i] = ch[0];
+    hash[i] = ch.byte[0];
   }
 
   param buffSize = buffLines * bytesPerLine;
