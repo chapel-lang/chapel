@@ -339,6 +339,15 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             // found a config that was set via cmd line: replace the node
             // need to build up a new Variable from the old one, copying all the
             // internals
+            
+            // handle deprecations
+            if (auto attribs = var->attributes()) {
+              if (attribs->isDeprecated()) {
+                std::string msg = "'" + var->name().str() + "' was set via a compiler flag";
+                std::cout << "warning: " + attribs->deprecationMessage().str() << std::endl;
+                std::cout << "note: " + msg << std::endl;
+              }
+            }
             auto parser = parsing::Parser::build(context());
             parsing::Parser* p = parser.get();
             std::string inputText;
