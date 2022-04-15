@@ -146,6 +146,7 @@ class Builder final {
 
   /// \endcond
 
+  void noteChildrenLocations(AstNode *ast, Location loc);
 };
 
 } // end namespace uast

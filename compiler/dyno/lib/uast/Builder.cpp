@@ -338,14 +338,26 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             // do we need to parse the name for a module path here? Seems likely
             std::string inputText = (!node.second.empty()) ? node.first + "=" + node.second +";" : node.first + "=true;";
             // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
+            if (static_cast<IntentList>(var->kind()) == IntentList::TYPE) {
+              inputText = "type " + inputText;
+            }
             auto parseResult = p->parseString("CompilationConfigs", inputText.c_str());
             assert(!parseResult.numErrors());
             auto mod = parseResult.singleModule();
             assert(mod);
-            assert(mod->stmt(0)->toOpCall()->isBinaryOp());
-            ret = mod->children_[0]->children_[1].release();
+            if (mod->stmt(0)->toOpCall()) {
+              assert(mod->stmt(0)->toOpCall()->isBinaryOp());
+              ret = mod->children_[0]->children_[1].release();
+            } else if (mod->stmt(0)->toVariable()) {
+              ret = mod->children_[0]->children_[0].release();
+            } else {
+              assert(false && "should only be an assignment or type initializer");
+            }
             // TODO: How to handle locations?
-            noteLocation(ret, notedLocations_[ast]);
+            noteChildrenLocations(ret, notedLocations_[ast]);
+//            for (auto &child : this->mutableRefToChildren(ret)) {
+//              noteLocation(child.get(), notedLocations_[ast]);
+//            }
             addOrReplaceInitExpr(ast->toVariable(), std::move(ret));
             configUsed = node.first;
           }
@@ -353,6 +365,13 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
       }
     }
     return std::make_tuple(ret, configUsed);
+  }
+
+  void Builder::noteChildrenLocations(AstNode* ast, Location loc) {
+    notedLocations_[ast] = loc;
+    for (auto &child : this->mutableRefToChildren(ast)) {
+      noteChildrenLocations(child.get(), loc);
+    }
   }
 
   AstList Builder::flattenTopLevelBlocks(AstList lst) {
