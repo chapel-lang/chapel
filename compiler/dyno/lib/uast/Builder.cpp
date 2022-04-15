@@ -326,6 +326,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
           possibleModule = pathVec[0].first.str();
           possibleModule += ".";
         }
+
         // for config vars, check if they were set from the command line
         for (auto node : configs) {
           // TODO: How does this work with module prefixes? What if there is a newSymbolPath value?
@@ -335,12 +336,16 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             // internals
             auto parser = parsing::Parser::build(context());
             parsing::Parser* p = parser.get();
+            std::string inputText;
             // do we need to parse the name for a module path here? Seems likely
-            std::string inputText = (!node.second.empty()) ? node.first + "=" + node.second +";" : node.first + "=true;";
-            // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
+            // for types, we can't specify a module name when building the input string
+            // and it's important for the parser to see that it's a type and not just a var assignment
             if (static_cast<IntentList>(var->kind()) == IntentList::TYPE) {
-              inputText = "type " + inputText;
+              inputText = "type " + var->name().str() + "=" + node.second +";";
+            } else {
+              inputText = (!node.second.empty()) ? node.first + "=" + node.second +";" : node.first + "=true;";
             }
+            // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
             auto parseResult = p->parseString("CompilationConfigs", inputText.c_str());
             assert(!parseResult.numErrors());
             auto mod = parseResult.singleModule();
