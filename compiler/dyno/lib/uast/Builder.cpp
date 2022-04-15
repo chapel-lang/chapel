@@ -334,7 +334,8 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
         // for config vars, check if they were set from the command line
         for (auto node : configs) {
           // TODO: How does this work with module prefixes? What if there is a newSymbolPath value?
-          if (node.first == var->name().str() || node.first == possibleModule + var->name().str()) {
+          if ((node.first == var->name().str() && var->visibility() != Decl::PRIVATE)
+              || node.first == possibleModule + var->name().str()) {
             // found a config that was set via cmd line: replace the node
             // need to build up a new Variable from the old one, copying all the
             // internals
@@ -366,6 +367,14 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             // TODO: How to handle locations? The column numbers at least should be updated, no?
             noteChildrenLocations(ret, notedLocations_[ast]);
             addOrReplaceInitExpr(ast->toVariable(), std::move(ret));
+            if (!configUsed.empty() && configUsed != node.first) {
+              std::string errMsg = "config set ambiguously via '-s";
+              errMsg += configUsed;
+              errMsg += "' and '-s";
+              errMsg += node.first + "'";
+              ErrorMessage errorMessage = ErrorMessage(ast->id(), notedLocations_[ast], errMsg, ErrorMessage::ERROR);
+              addError(errorMessage);
+            }
             configUsed = node.first;
           }
         }
