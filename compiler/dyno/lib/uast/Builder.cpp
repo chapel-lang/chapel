@@ -296,12 +296,16 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
         std::string err = "ambiguous config name (";
         err += std::get<1>(ieNode);
         err += ")";
-        // TODO: Add proper error reporting
-        std::cerr << err << std::endl;
-        assert(false);
-        //            USR_FATAL_CONT(var, "ambiguous config name (%s)", var->name());
-        //            USR_PRINT(usedId, "also defined here");
-        //            USR_PRINT(usedId, "(disambiguate using -s<modulename>.%s...)", var->name());
+        std::string otherLoc = "also defined here";
+        std::string disambiguate = "(disambiguate using -s<modulename>.";
+        disambiguate += std::get<1>(ieNode);
+        disambiguate += "...)";
+        ErrorMessage errorMessage = ErrorMessage(ast->id(), search->second, err, ErrorMessage::ERROR );
+        ErrorMessage noteOtherLoc = ErrorMessage(ast->id(), idToLocation_[usedId], otherLoc, ErrorMessage::NOTE);
+        ErrorMessage noteDisambiguate = ErrorMessage(ast->id(), idToLocation_[usedId], disambiguate, ErrorMessage::NOTE);
+        addError(errorMessage);
+        addError(noteOtherLoc);
+        addError(noteDisambiguate);
       }
     }
   } else {
@@ -340,7 +344,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             // do we need to parse the name for a module path here? Seems likely
             // for types, we can't specify a module name when building the input string
             // and it's important for the parser to see that it's a type and not just a var assignment
-            if (static_cast<IntentList>(var->kind()) == IntentList::TYPE) {
+            if (var->kind() == uast::Variable::TYPE) {
               inputText = "type " + var->name().str() + "=" + node.second +";";
             } else {
               inputText = (!node.second.empty()) ? node.first + "=" + node.second +";" : node.first + "=true;";
@@ -350,6 +354,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             assert(!parseResult.numErrors());
             auto mod = parseResult.singleModule();
             assert(mod);
+            // TODO: Could we clean this up by prepending `const` to the inputText for variables?
             if (mod->stmt(0)->toOpCall()) {
               assert(mod->stmt(0)->toOpCall()->isBinaryOp());
               ret = mod->children_[0]->children_[1].release();
@@ -358,11 +363,8 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             } else {
               assert(false && "should only be an assignment or type initializer");
             }
-            // TODO: How to handle locations?
+            // TODO: How to handle locations? The column numbers at least should be updated, no?
             noteChildrenLocations(ret, notedLocations_[ast]);
-//            for (auto &child : this->mutableRefToChildren(ret)) {
-//              noteLocation(child.get(), notedLocations_[ast]);
-//            }
             addOrReplaceInitExpr(ast->toVariable(), std::move(ret));
             configUsed = node.first;
           }
