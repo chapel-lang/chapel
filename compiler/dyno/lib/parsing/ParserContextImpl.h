@@ -2283,11 +2283,11 @@ ParserContext::buildImplementsStmt(YYLTYPE location,
                                           name,
                                           formals);
 
-  auto typeExpr = Identifier::build(builder, convertLocation(locTypeExpr),
-                                    type);
+  auto typeIdent = Identifier::build(builder, convertLocation(locTypeExpr),
+                                     type);
   const bool isExpressionLevel = false;
   auto node = Implements::build(builder, convertLocation(location),
-                                std::move(typeExpr),
+                                std::move(typeIdent),
                                 std::move(interfaceExpr),
                                 isExpressionLevel);
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };

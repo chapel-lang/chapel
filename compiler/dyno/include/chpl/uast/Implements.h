@@ -47,7 +47,7 @@ namespace uast {
 */
 class Implements final : public AstNode {
  private:
-  int8_t typeExprChildNum_;
+  int8_t typeIdentChildNum_;
   bool isExpressionLevel_;
 
   /* Position of the interface expression when no type name exists. */
@@ -55,20 +55,20 @@ class Implements final : public AstNode {
 
   /* Compute the position of the interface expression. */
   int8_t interfaceExprChildNum() const {
-    auto ret = typeExprChildNum_ == AstNode::NO_CHILD
+    auto ret = typeIdentChildNum_ == AstNode::NO_CHILD
       ? interfaceExprNoTypeChildNum_
-      : typeExprChildNum_ + 1;
+      : typeIdentChildNum_ + 1;
     return ret;
   }
 
-  Implements(AstList children, int8_t typeExprChildNum,
+  Implements(AstList children, int8_t typeIdentChildNum,
              bool isExpressionLevel)
       : AstNode(asttags::Implements, std::move(children)),
-        typeExprChildNum_(typeExprChildNum),
+        typeIdentChildNum_(typeIdentChildNum),
         isExpressionLevel_(isExpressionLevel) {
-    if (typeExprChildNum_ != AstNode::NO_CHILD) {
+    if (typeIdentChildNum_ != AstNode::NO_CHILD) {
       assert(children_.size() == 2);
-      assert(child(typeExprChildNum_)->isIdentifier());
+      assert(child(typeIdentChildNum_)->isIdentifier());
     } else {
       assert(children_.size() == 1);
     }
@@ -81,7 +81,7 @@ class Implements final : public AstNode {
   bool contentsMatchInner(const AstNode* other) const override {
     const Implements* lhs = this;
     const Implements* rhs = (const Implements*) other;
-    return lhs->typeExprChildNum_ == rhs->typeExprChildNum_ &&
+    return lhs->typeIdentChildNum_ == rhs->typeIdentChildNum_ &&
            lhs->isExpressionLevel_ == rhs->isExpressionLevel_;
   }
 
@@ -105,9 +105,9 @@ class Implements final : public AstNode {
 
     This method returns the identifier storing 'T'.
   */
-  const Identifier* typeExpr() const {
-    if (typeExprChildNum_ == AstNode::NO_CHILD) return nullptr;
-    auto ret = child(typeExprChildNum_)->toIdentifier();
+  const Identifier* typeIdent() const {
+    if (typeIdentChildNum_ == AstNode::NO_CHILD) return nullptr;
+    auto ret = child(typeIdentChildNum_)->toIdentifier();
     assert(ret);
     return ret; 
   }
@@ -161,7 +161,7 @@ class Implements final : public AstNode {
   }
 
   static owned<Implements> build(Builder* builder, Location loc,
-                                 owned<Identifier> typeExpr,
+                                 owned<Identifier> typeIdent,
                                  owned<AstNode> interfaceExpr,
                                  bool isExpressionLevel);
 };

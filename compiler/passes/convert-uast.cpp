@@ -216,8 +216,8 @@ struct Converter {
     CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST);
     Expr* ret = nullptr;
 
-    if (node->typeExpr()) {
-      auto conv = convertAST(node->typeExpr());
+    if (node->typeIdent()) {
+      auto conv = convertAST(node->typeIdent());
       INT_ASSERT(conv);
       act->insertAtTail(conv);
     }
