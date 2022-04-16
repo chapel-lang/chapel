@@ -1,2 +1,3 @@
 var xyzSymbol = 1;
-__primitive(c"get visible symbols", ignore=true);
+// ambiguous call, not enough args
+__primitive(c"get visible symbols", true);

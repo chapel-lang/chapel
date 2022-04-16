@@ -104,17 +104,10 @@
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
+  // TODO: Replace me with bool.
   enum ThrowsTag {
     ThrowsTag_DEFAULT,
     ThrowsTag_THROWS,
-  };
-
-  enum LinkageTag { // TODO: what about combinations of these?
-    LinkageTag_DEFAULT,
-    LinkageTag_INLINE,
-    LinkageTag_OVERRIDE,
-    LinkageTag_EXTERN,
-    LinkageTag_EXPORT,
   };
 
   using ParserExprList = std::vector<AstNode*>;
@@ -157,8 +150,6 @@
   // It is just saving some components of a function to be used
   // when building the FunctionDecl.
   struct FunctionParts {
-    int startLocFirstLine;
-    int startLocFirstColumn;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
     Attributes* attributes;
@@ -320,14 +311,17 @@
   // upon YYLTYPE and other types defined by the generated parser
   // headers.
   #include "ParserContext.h"
+  // include override of macro used to compute locations
+  #include "parser-yylloc-default.h"
 }
 
 %code {
   // include the definition of methods for ParserContext
   #include "ParserContextImpl.h"
-  // include other helper functions for the parser
+  // include helper macros for use in writing productions
   #include "parser-help.h"
-
+  // include implementation of error logging hook
+  #include "parser-yyerror.h"
 }
 
 // Bison 3.7 is not strictly required long-term but requiring it here
@@ -469,7 +463,7 @@
 
 %type <throwsTag> opt_throws_error
 %type <moduleKind> opt_prototype
-%type <visibilityTag> access_control
+%type <visibilityTag> opt_access_control
 %type <intentTag> required_intent_tag opt_formal_intent_tag opt_this_intent_tag
 
 %type <returnTag>  opt_ret_tag
@@ -557,7 +551,9 @@
 
 %type <expr> array_type
 %type <expr> opt_type opt_ret_type ret_array_type
-%type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
+%type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type
+%type <functionParts> lambda_decl_start
+%type <expr> lambda_decl_expr
 %type <typeDeclParts> enum_header_lcbr
 %type <exprList> enum_ls
 
@@ -679,7 +675,7 @@ stmt:
   }
 | TLABEL ident_def stmt
   {
-    if ($3.stmt->isFor() || $3.stmt->isWhile() || $3.stmt->isDoWhile()) {
+    if ($3.stmt && ($3.stmt->isFor() || $3.stmt->isWhile() || $3.stmt->isDoWhile())) {
       auto exprLst = context->makeList($3);
       auto comments = context->gatherCommentsFromList(exprLst, @1);
       auto astLst = context->consumeList(exprLst);
@@ -858,7 +854,7 @@ deprecated_decl_base:
 ;
 
 module_decl_start:
-  access_control opt_prototype TMODULE ident_def
+  opt_access_control opt_prototype TMODULE ident_def
     {
       // take into account location of public/private, if any
       auto loc = context->declStartLoc(@3);
@@ -923,7 +919,7 @@ module_decl_stmt:
     }
 ;
 
-access_control:
+opt_access_control:
            { $$ = context->noteVisibility(Decl::DEFAULT_VISIBILITY); }
 | TPUBLIC  { context->noteDeclStartLoc(@1);
              $$ = context->noteVisibility(Decl::PUBLIC); }
@@ -938,7 +934,7 @@ opt_prototype:
 ;
 
 include_module_stmt:
-  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
+  TINCLUDE opt_access_control opt_prototype TMODULE ident_def TSEMI
   {
     auto node = Include::build(BUILDER, LOC(@$), context->visibility, $3, $5);
     $$ = STMT(@$, node.release());
@@ -1076,18 +1072,18 @@ opt_only_ls:
 ;
 
 use_stmt:
-  access_control TUSE use_renames_ls TSEMI
+  opt_access_control TUSE use_renames_ls TSEMI
   {
     $$ = context->buildMultiUseStmt(@$, $1, $3);
   }
-| access_control TUSE expr TEXCEPT renames_ls TSEMI
+| opt_access_control TUSE expr TEXCEPT renames_ls TSEMI
   {
     auto locVisibilityClause = context->makeSpannedLocation(@3, @5);
     $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned($3),
                                      VisibilityClause::EXCEPT,
                                      $5);
   }
-| access_control TUSE expr TAS expr TEXCEPT renames_ls TSEMI
+| opt_access_control TUSE expr TAS expr TEXCEPT renames_ls TSEMI
   {
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
     auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
@@ -1095,7 +1091,7 @@ use_stmt:
                                      VisibilityClause::EXCEPT,
                                      $7);
   }
-| access_control TUSE expr TAS TUNDERSCORE TEXCEPT renames_ls TSEMI
+| opt_access_control TUSE expr TAS TUNDERSCORE TEXCEPT renames_ls TSEMI
   {
     auto ident = toOwned(context->buildIdent(@5, $5));
     auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
@@ -1104,14 +1100,14 @@ use_stmt:
                                      VisibilityClause::EXCEPT,
                                      $7);
   }
-| access_control TUSE expr TONLY opt_only_ls TSEMI
+| opt_access_control TUSE expr TONLY opt_only_ls TSEMI
   {
     auto locVisibilityClause = context->makeSpannedLocation(@3, @5);
     $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned($3),
                                      VisibilityClause::ONLY,
                                      $5);
   }
-| access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
+| opt_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
   {
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
     auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
@@ -1119,7 +1115,7 @@ use_stmt:
                                      VisibilityClause::ONLY,
                                      $7);
   }
-| access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
+| opt_access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
   {
     auto ident = toOwned(context->buildIdent(@5, $5));
     auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
@@ -1131,7 +1127,7 @@ use_stmt:
 ;
 
 import_stmt:
-  access_control TIMPORT import_ls TSEMI
+  opt_access_control TIMPORT import_ls TSEMI
   {
     $$ = context->buildImportStmt(@$, $1, $3);
   }
@@ -1144,10 +1140,8 @@ import_expr:
   }
 | expr TDOT all_op_name
   {
-    auto ident = context->buildIdent(@3, $3);
-    $$ = context->buildVisibilityClause(@$, toOwned($1),
-                                        VisibilityClause::NONE,
-                                        context->consume(ident));
+    auto dot = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release();
+    $$ = context->buildVisibilityClause(@$, toOwned(dot));
   }
 | expr TAS ident_use
   {
@@ -1213,19 +1207,25 @@ opt_label_ident:
 
 ident_fn_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = $1; ERROR(@$, "redefining reserved word 'none'"); }
+| TNONE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'none'"); }
 | TTHIS                    { $$ = $1; }
-| TFALSE                   { $$ = $1; ERROR(@$, "redefining reserved word 'false'"); }
-| TTRUE                    { $$ = $1; ERROR(@$, "redefining reserved word 'true'"); }
-| internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
+| TFALSE                   { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'false'"); }
+| TTRUE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'true'"); }
+| internal_type_ident_def  { std::string msg = "attempt to redefine reserved type '";
+                             msg += $1.c_str();
+                             msg += "'";
+                             $$ = $1; ERROR(@$, msg); }
 
 ident_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = $1; ERROR(@$, "redefining reserved word 'none'"); }
-| TTHIS                    { $$ = $1; ERROR(@$, "redefining reserved word 'this'"); }
-| TFALSE                   { $$ = $1; ERROR(@$, "redefining reserved word 'false'"); }
-| TTRUE                    { $$ = $1; ERROR(@$, "redefining reserved word 'true'"); }
-| internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
+| TNONE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'none'"); }
+| TTHIS                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'this'"); }
+| TFALSE                   { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'false'"); }
+| TTRUE                    { $$ = $1; ERROR(@$, "attempt to redefine reserved word 'true'"); }
+| internal_type_ident_def  { std::string msg = "attempt to redefine reserved type '";
+                             msg += $1.c_str();
+                             msg += "'";
+                             $$ = $1; ERROR(@$, msg); }
 ;
 
 /* Represents a use of an identifier. This is not used as often as you
@@ -1340,7 +1340,7 @@ deprecated_class_level_stmt:
 class_level_stmt:
   TSEMI
     {
-      $$ = STMT(@$, nullptr);
+      $$ = STMT(@$, context->buildEmptyStmt(@$));
     }
 | inner_class_level_stmt
     {
@@ -2123,13 +2123,47 @@ enum_item:
     }
 ;
 
+lambda_decl_start:
+  TLAMBDA
+    {
+      FunctionParts fp = context->makeFunctionParts(false, false);
+      context->noteDeclStartLoc(@1);
+      auto loc = context->declStartLoc(@$);
+      fp.comments = context->gatherComments(loc);
+      fp.attributes = context->buildAttributes(@$).release();
+      fp.visibility = context->visibility;
+      context->resetAttributePartsState();
+      fp.kind = Function::PROC;
+      $$ = fp;
+    }
+;
+
 lambda_decl_expr:
-  TLAMBDA req_formal_ls opt_ret_tag opt_type opt_lifetime_where function_body_stmt
-  {
-    // TODO (dlongnecke): Leave this unimplemented for now? Since we will
-    // be addressing FCFs in 1.26...
-    $$ = TODOEXPR(@$);
-  }
+  lambda_decl_start req_formal_ls opt_ret_tag opt_type
+  opt_lifetime_where
+    {
+      context->clearComments();
+      context->resetDeclState();
+      context->enterScope(asttags::Function, STR("lambda"));
+    }
+  function_body_stmt
+    {
+      FunctionParts fp = $1;
+      fp.name = STR("lambda");
+      fp.formals = $2;
+      fp.returnIntent = $3;
+      fp.returnType = $4;
+      WhereAndLifetime wl = $5;
+      fp.body = $7;
+
+      fp.lifetime = wl.lifetime;
+      fp.where = wl.where;
+
+      context->clearComments();
+      context->exitScope(asttags::Function, STR("lambda"));
+
+      $$ = context->buildLambda(@$, fp);
+    }
 ;
 
 linkage_spec_empty:
@@ -2230,10 +2264,7 @@ fn_decl_stmt_start:
     {
       FunctionParts fp = $1;
       context->noteDeclStartLoc(@2);
-      // Preserve the first location, to avoid desync on start line number.
-      auto loc = context->declStartLoc(@2);
-      fp.startLocFirstLine = loc.first_line;
-      fp.startLocFirstColumn = loc.first_column;
+      auto loc = context->declStartLoc(@$);
       fp.comments = context->gatherComments(loc);
       fp.attributes = context->buildAttributes(@$).release();
       fp.visibility = context->visibility;
@@ -3267,19 +3298,54 @@ new_expr:
                 see if we can remove them. */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned($4),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::OWNED, call.release());
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned($4),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::SHARED, call.release());
   }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto base = context->buildUnaryOp(@4, $9, $4);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned(base),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::OWNED, call.release());
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
-    $$ = TODOEXPR(@$);
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    context->consumeNamedActuals($7, actuals, actualNames);
+    auto base = context->buildUnaryOp(@4, $9, $4);
+    auto call = FnCall::build(BUILDER, LOC(@$),
+                              toOwned(base),
+                              std::move(actuals),
+                              std::move(actualNames),
+                              /* square */ false);
+    $$ = context->buildNewExpr(@$, New::SHARED, call.release());
+
   }
 ;
 
@@ -3395,8 +3461,8 @@ lhs_expr:
 call_base_expr:
   lhs_expr
 | expr TBANG                    { $$ = context->buildUnaryOp(@$,
-                                                              STR("postfix!"),
-                                                              $1); }
+                                                             STR("postfix!"),
+                                                             $1); }
 | sub_type_level_expr TQUESTION { $$ = context->buildUnaryOp(@$, $2, $1); }
 | lambda_decl_expr
 | str_bytes_literal

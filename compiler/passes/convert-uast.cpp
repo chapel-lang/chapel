@@ -288,7 +288,7 @@ struct Converter {
         if (var->kind() != uast::Variable::INDEX) {
           flags = new std::set<Flag>;
 
-          // TODO: Duplication here and with 'attachVarSymbolStorage',
+          // TODO: Duplication here and with 'attachSymbolStorage',
           // consider cleaning up after parser is replaced.
           switch (var->kind()) {
             case uast::Variable::CONST:
@@ -386,6 +386,10 @@ struct Converter {
       return new CallExpr(PRIM_TYPEOF, base);
     } else if (member == USTR("domain")) {
       return buildDotExpr(base, "_dom");
+    } else if (member == USTR("align")) {
+      return buildDotExpr(base, "chpl_align");
+    } else if (member == USTR("by")) {
+      return buildDotExpr(base, "chpl_by");
     } else {
       return buildDotExpr(base, member.c_str());
     }
@@ -455,7 +459,6 @@ struct Converter {
       switch (vc->limitationKind()) {
         case uast::VisibilityClause::NONE: {
           INT_ASSERT(vc->numLimitations() == 0);
-
           // Handles case: 'import foo as bar'
           if (auto as = vc->symbol()->toAs()) {
             Expr* mod = convertAST(as->symbol());
@@ -602,7 +605,16 @@ struct Converter {
     for (auto limitation : vc->limitations()) {
       names->push_back(convertRename(limitation));
     }
-
+    // special handling case when visibility is `only` and limitations list
+    // is empty.
+    // old parser expects an empty potential rename to indicate something like
+    // use A only;
+    if (vc->limitationKind() == uast::VisibilityClause::ONLY && vc->numLimitations()==0) {
+      PotentialRename* ret = new PotentialRename();
+      ret->tag = PotentialRename::SINGLE;
+      ret->elem = new UnresolvedSymExpr("");
+      names->push_back(ret);
+    }
     return buildUseStmt(mod, rename, names, except, privateUse);
   }
 
@@ -937,7 +949,12 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::While* node) {
-    Expr* condExpr = toExpr(convertAST(node->condition()));
+    Expr* condExpr = nullptr;
+    if (auto condVar = node->condition()->toVariable()) {
+      condExpr = buildIfVar(condVar->name().c_str(), toExpr(convertAST(condVar->initExpression())) ,condVar->kind() == chpl::uast::Variable::CONST);
+    } else {
+      condExpr = toExpr(convertAST(node->condition()));
+    }
     BlockStmt* body = createBlockWithStmts(node->stmts());
     return WhileDoStmt::build(condExpr, body);
   }
@@ -978,8 +995,18 @@ struct Converter {
   // Deduced by looking at 'buildForallLoopExpr' calls in for_expr:
   bool isLoopMaybeArrayType(const uast::IndexableLoop* node) {
     return node->isBracketLoop() && !node->index() &&
-        !node->iterand()->isZip() &&
-        !node->stmt(0)->isConditional();
+           !node->iterand()->isZip();
+    /*
+      Removed the check for conditionals here because of the following example,
+      taken from test/expressions/if-expr/inside-field.chpl:
+      ```
+      record R3 {
+      type T;
+      var multiple: [1..2] if !isClass(T) then 2*T
+                          else [1..2] if isClass(T) then owned T? else T;
+      }
+      ```
+    */
   }
 
   Expr* convertBracketLoopExpr(const uast::BracketLoop* node) {
@@ -1464,6 +1491,7 @@ struct Converter {
       addArgsTo = ret;
     } else {
       ret = new CallExpr(convertAST(calledExpression));
+      ret->square = node->callUsedSquareBrackets();
       addArgsTo = ret;
     }
 
@@ -1618,13 +1646,11 @@ struct Converter {
   }
 
   Expr* visit(const uast::PrimCall* node) {
-    CallExpr* call = new CallExpr(PRIM_ACTUALS_LIST);
-    SymExpr* se = buildStringLiteral(primTagToName(node->prim()));
-    call->insertAtTail(se);
-    for (auto actual : node->actuals()) {
-      call->insertAtTail(convertAST(actual));
-    }
-    return buildPrimitiveExpr(call);
+    CallExpr* call = new CallExpr(node->prim());
+      for (auto actual : node->actuals()) {
+        call->insertAtTail(convertAST(actual));
+      }
+    return call;
   }
 
   // Note that this conversion is for the reduce expression, and not for
@@ -1751,11 +1777,14 @@ struct Converter {
 
     BlockStmt* ret = buildTupleVarDeclStmt(tuple, typeExpr, initExpr);
 
+    // get the definition of the temporary that was added
+    DefExpr* tmpDef = toDefExpr(ret->body.first());
+    attachSymbolStorage((uast::IntentList)node->intentOrKind(), tmpDef->sym);
+
     // Move the block info around like in 'buildVarDecls'.
     if (auto info = ret->blockInfoGet()) {
       INT_ASSERT(info->isNamed("_check_tuple_var_decl"));
-      SymExpr* tuple = toSymExpr(info->get(1));
-      tuple->symbol()->defPoint->insertAfter(info);
+      tmpDef->insertAfter(info);
       ret->blockInfoSet(NULL);
     }
 
@@ -1845,7 +1874,23 @@ struct Converter {
             name == USTR("<<="));
   }
 
-  const char* convertFunctionNameAndAstr(UniqueString name) {
+  const char* convertFunctionNameAndAstr(UniqueString name,
+                                         uast::Function::Kind kind) {
+
+    if (kind == uast::Function::LAMBDA) {
+      static unsigned int nextId = 0;
+      char buffer[100];
+
+      /*
+       Use sprintf to prevent buffer overflow if there are too many lambdas
+       */
+      if (snprintf(buffer, 100, "chpl_lambda_%i", nextId++) >= 100) {
+        INT_FATAL("Too many lambdas.");
+      }
+
+      return astr(buffer);
+    }
+
     const char* ret = nullptr;
     if (name == USTR("by")) {
       ret = "chpl_by";
@@ -2004,7 +2049,8 @@ struct Converter {
       }
     }
 
-    const char* convName = convertFunctionNameAndAstr(node->name());
+    const char* convName = convertFunctionNameAndAstr(node->name(),
+                                                      node->kind());
     fn = buildFunctionSymbol(fn, convName, thisTag, receiverType);
 
     if (isAssignOp(node->name())) {
@@ -2014,19 +2060,29 @@ struct Converter {
     RetTag retTag = convertRetTag(node->returnIntent());
 
     if (node->kind() == uast::Function::ITER) {
-
       // TODO (dlongnecke): Move me to new frontend!
       if (fn->hasFlag(FLAG_EXTERN))
         USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
       fn->addFlag(FLAG_ITERATOR_FN);
-    }
 
-    if (node->kind() == uast::Function::OPERATOR) {
+    } else if (node->kind() == uast::Function::OPERATOR) {
       fn->addFlag(FLAG_OPERATOR);
       if (fn->_this != NULL) {
         updateOpThisTagOrErr(fn);
         setupTypeIntentArg(toArgSymbol(fn->_this));
       }
+
+    } else if (node->kind() == uast::Function::LAMBDA) {
+      fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+
+      // TODO: move these to new frontend if they continue
+      // to be relevant as FCFs are improved.
+      if (retTag == RET_REF || retTag == RET_CONST_REF)
+        USR_FATAL(fn, "'ref' return types are not allowed in lambdas");
+      if (retTag == RET_PARAM)
+        USR_FATAL(fn, "'param' return types are not allowed in lambdas");
+      if (retTag == RET_TYPE)
+        USR_FATAL(fn, "'type' return types are not allowed in lambdas");
     }
 
     Expr* retType = nullptr;
@@ -2078,6 +2134,15 @@ struct Converter {
       Flag linkageFlag = convertFlagForDeclLinkage(node);
       Expr* linkageName = convertExprOrNull(node->linkageName());
       ret = buildExternExportFunctionDecl(linkageFlag, linkageName, ret);
+    }
+
+    // For lambdas, return a DefExpr instead of a BlockStmt
+    // containing a DefExpr because this is the pattern expected
+    // by the production compiler.
+    if (node->kind() == uast::Function::LAMBDA) {
+      // leaves the BlockStmt ret and other DefExpr to be GC'd
+      DefExpr* def = new DefExpr(fn);
+      return def;
     }
 
     return ret;
@@ -2250,33 +2315,35 @@ struct Converter {
       return name;
   }
 
-  void attachVarSymbolStorage(const uast::Variable* node, VarSymbol* vs) {
-    switch (node->kind()) {
-      case uast::Variable::VAR:
+  void attachSymbolStorage(const uast::IntentList kind, Symbol* vs) {
+    switch (kind) {
+      case uast::IntentList::VAR:
         vs->qual = QUAL_VAL;
         break;
-      case uast::Variable::CONST:
+      case uast::IntentList::CONST_VAR:
         vs->addFlag(FLAG_CONST);
         vs->qual = QUAL_CONST;
         break;
-      case uast::Variable::CONST_REF:
+      case uast::IntentList::CONST_REF:
         vs->addFlag(FLAG_CONST);
         vs->addFlag(FLAG_REF_VAR);
         vs->qual = QUAL_CONST_REF;
         break;
-      case uast::Variable::REF:
+      case uast::IntentList::REF:
         vs->addFlag(FLAG_REF_VAR);
         vs->qual = QUAL_REF;
         break;
-      case uast::Variable::PARAM:
+      case uast::IntentList::PARAM:
         vs->addFlag(FLAG_PARAM);
         vs->qual = QUAL_PARAM;
         break;
-      case uast::Variable::TYPE:
+      case uast::IntentList::TYPE:
         vs->addFlag(FLAG_TYPE_VARIABLE);
         break;
-      case uast::Variable::INDEX:
+      case uast::IntentList::INDEX:
         INT_FATAL("Index variables should be handled elsewhere");
+        break;
+      default:
         break;
     }
   }
@@ -2346,7 +2413,7 @@ struct Converter {
     auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
 
     // Adjust the variable according to its kind, e.g. 'const'/'type'.
-    attachVarSymbolStorage(node, varSym);
+    attachSymbolStorage((uast::IntentList)node->kind(), varSym);
 
     attachSymbolAttributes(node, varSym);
 
@@ -2451,6 +2518,7 @@ struct Converter {
     const char* name = astr(node->name().c_str());
     Expr* initExpr = convertExprOrNull(node->initExpression());
     auto ret = new DefExpr(new EnumSymbol(name), initExpr);
+    attachSymbolAttributes(node, ret->sym);
     return ret;
   }
 
@@ -2546,6 +2614,11 @@ struct Converter {
 
     return ret;
   }
+
+  Expr* visit(const uast::EmptyStmt* node) {
+    return new BlockStmt();
+  }
+
 };
 
 /// Generic conversion calling the above functions ///

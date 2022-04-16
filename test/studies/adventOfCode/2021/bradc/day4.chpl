@@ -4,27 +4,24 @@ config const debug = false;
 
 var numbers: list(int);
 
-var done: bool;
-do {
+while true {
   const num = read(int);
   numbers.append(num);
   try {
     readf(",");
   } catch {
-    done = true;
+    break;
   }
-} while (!done);
+}
 
 if debug then
   writeln(numbers);
 
 iter readBoards() {
   var Board: [1..5, 1..5] int;
-  do {
-    const success = read(Board);
-    if (success) then
-      yield Board;
-  } while success;
+  while read(Board) {
+    yield Board;
+  }
 }
 
 var Boards = readBoards();

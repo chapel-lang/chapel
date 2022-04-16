@@ -49,7 +49,8 @@ enum AstTag {
   #undef AST_LEAF
   #undef AST_BEGIN_SUBCLASSES
   #undef AST_END_SUBCLASSES
-  NUM_AST_TAGS
+  NUM_AST_TAGS,
+  AST_TAG_UNKNOWN
 };
 
 // define is___ for leaf and regular nodes
@@ -117,9 +118,30 @@ template<> struct mark<uast::AstTag> {
   }
 };
 
+template<> struct stringify<uast::AstTag> {
+  void operator()(std::ostream& streamOut, StringifyKind stringKind,
+                  uast::AstTag tag) const {
+    streamOut << tagToString(tag);
+  }
+};
+
 /// \endcond
 
 
 } // end namespace chpl
+
+namespace std {
+
+
+template<> struct hash<chpl::uast::AstTag>
+{
+  size_t operator()(const chpl::uast::AstTag& key) const {
+    return key;
+  }
+};
+
+
+} // end namespace std
+
 
 #endif
