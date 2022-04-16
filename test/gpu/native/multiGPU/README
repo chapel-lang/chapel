@@ -1,0 +1,6 @@
+All tests in this directory must use the same execopts and prediff.
+
+They also have to report number of gpu sublocales in their output.
+
+As the test system only checks for kernel launches, correctness must be ensured
+by asserts in the tests.

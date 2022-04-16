@@ -1,7 +1,9 @@
 use Time;
 
+writeln("Number of sublocales: ", here.getChildCount());
+
 config const validate = true;
-config const printStats = true;
+config const printStats = false;
 config const debug = false;
 config const justCPU = false;
 config const numIters = 100;
@@ -58,12 +60,8 @@ for i in 1..numIters {
 
 
 if validate then
-  if n*(1+alpha*2) == + reduce A then
-    writeln("Validation successful");
-  else
-    writeln("Validation failed");
+  assert(n*(1+alpha*2) == + reduce A);
 
 if printStats {
-  /*writeln("Typical GPU data size (GB) = ", */
   writeln("Performance (GB/s) = ", 3* numBytes(int) * n * 1e-9 / minTime );
 }
