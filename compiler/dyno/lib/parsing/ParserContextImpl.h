@@ -20,6 +20,7 @@
 
 #include "chpl/types/Param.h"
 #include "chpl/uast/Pragma.h"
+#include "chpl/queries/global-strings.h"
 
 #include <cerrno>
 #include <cfloat>
@@ -31,6 +32,7 @@
 #include <vector>
 
 using chpl::types::Param;
+using chpl::owned;
 
 static const char* kindToString(VisibilityClause::LimitationKind kind) {
   switch (kind) {
@@ -165,8 +167,9 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
 
     if (tag == PRAGMA_UNKNOWN) {
       std::string msg;
-      msg += "Unrecognized compiler pragma: ";
+      msg += "unknown pragma: \"";
       msg += ret.c_str();
+      msg += "\"";
       noteError(loc, msg.c_str());
     } else {
 
@@ -234,7 +237,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
   // it was and the counter got reset at some point before this.
   assert(numAttributesBuilt == 0);
 
-  if (cs.stmt->isDecl()) {
+  if (cs.stmt && cs.stmt->isDecl()) {
 
     // If a decl was produced then the attributes should have been reset.
     // If they were _not_ reset, then it means that a deprecated statement
@@ -250,7 +253,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
 
   } else {
     assert(numAttributesBuilt == 0);
-    assert(hasAttributeParts);
+    if(cs.stmt) assert(hasAttributeParts);
     auto msg = "cannot attach pragmas to this statement";
 
     // TODO: The original builder also states the first pragma.
@@ -449,7 +452,11 @@ void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
         anyActualNames = true;
     }
     for (auto& elt : *lst) {
-      actualsOut.push_back(toOwned(elt.expr));
+      // check if expr is not NULL, which can happen in some bad examples
+      // like new A;
+      if (elt.expr) {
+        actualsOut.push_back(toOwned(elt.expr));
+      }
       if (anyActualNames)
         namesOut.push_back(elt.name);
     }
@@ -606,9 +613,13 @@ AstNode* ParserContext::buildPrimCall(YYLTYPE location,
       anyNames = true;
     }
   }
-  // first argument must be a string literal
+  // first argument must be a string literal, might be a cstring tho
   if (actuals.size() > 0) {
-    if (auto lit = actuals[0]->toStringLiteral()) {
+    if (auto lit = actuals[0]->toCStringLiteral()) {
+      primName = lit->str();
+      // and erase that element
+      actuals.erase(actuals.begin());
+    } else if (auto lit = actuals[0]->toStringLiteral()) {
       primName = lit->str();
       // and erase that element
       actuals.erase(actuals.begin());
@@ -645,15 +656,28 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
                                     PODUniqueString op,
                                     AstNode* expr) {
   auto ustrOp = UniqueString(op);
-
+  // may reassign op here to match old parser
+  // as in buildPreDecIncWarning
   if (ustrOp == "++") {
     noteWarning(location, "++ is not a pre-increment");
+    ustrOp = USTR("+");
+    // conver the ++a to +(+a)
+    auto innerOp = OpCall::build(builder, convertLocation(location),
+                       ustrOp, toOwned(expr)).release();
+    return OpCall::build(builder, convertLocation(location),
+                       ustrOp, toOwned(innerOp)).release();
   } else if (ustrOp == "--") {
-    noteWarning(location, "== is not a pre-decrement");
+    noteWarning(location, "-- is not a pre-decrement");
+    ustrOp = USTR("-");
+    // convert the --a to -(-a)
+    auto innerOp = OpCall::build(builder, convertLocation(location),
+                       ustrOp, toOwned(expr)).release();
+    return OpCall::build(builder, convertLocation(location),
+                       ustrOp, toOwned(innerOp)).release();
   }
 
   return OpCall::build(builder, convertLocation(location),
-                       op, toOwned(expr)).release();
+                       ustrOp, toOwned(expr)).release();
 }
 
 AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
@@ -714,9 +738,7 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
 
 FunctionParts ParserContext::makeFunctionParts(bool isInline,
                                                bool isOverride) {
-  FunctionParts fp = {-1,
-                      -1,
-                      nullptr,
+  FunctionParts fp = {nullptr,
                       nullptr,
                       nullptr,
                       this->visibility,
@@ -743,29 +765,7 @@ ParserContext::buildExternExportFunctionDecl(YYLTYPE location,
 
 CommentsAndStmt
 ParserContext::buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp) {
-
-  //
-  // The location for regular function decls seems to include blank lines
-  // following the last production in the 'first_line' of location. As a
-  // quick, hacky workaround, store the 'first_line' and 'first_column' of
-  // the start keyword when building up 'fp' and use that to compute an
-  // accurate location.
-  // Note that we also can't just store a YYLTYPE in 'FunctionParts',
-  // because a weird circular dependency causes C++ to explode.
-  // I think that the proper fix for this is to massage the grammar so that
-  // the 'fn_decl_complete' rule includes a terminal on its LHS, but I'm
-  // not going to fiddle with grammar rules right now.
-  //
-  YYLTYPE startLoc = {
-    .first_line = fp.startLocFirstLine,
-    .first_column = fp.startLocFirstColumn,
-    .last_line = fp.startLocFirstLine,
-    .last_column = fp.startLocFirstColumn
-  };
-
-  auto accurateLoc = makeSpannedLocation(startLoc, location);
-
-  return buildFunctionDecl(accurateLoc, fp);
+  return buildFunctionDecl(location, fp);
 }
 
 CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
@@ -1004,7 +1004,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                             /*typeExpression*/ nullptr,
                             /*initExpression*/ nullptr);
   } else {
-    const char* msg = "Cannot handle this kind of index var";
+    const char* msg = "invalid index expression";
     noteError(location, msg);
     return nullptr;
   }
@@ -1047,15 +1047,28 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
       return expr;
     } else {
       //something wrong, as below
-      this->raiseError(location, "Invalid form for new expression");
+      this->raiseError(location, "Invalid form for 'new' expression");
     }
   } else {
-    // It's an error for one reason or another. TODO: Specialize these
-    // errors later (e.g. 'new a.field' would require parens around
-    // the expression 'a.field'; 'new foo' would require an argument
-    // list for 'foo'; and something like 'new __primitive()' just
-    // doesn't make any sense...
-    this->raiseError(location, "Invalid form for new expression");
+    if (expr->isIdentifier() && expr->toIdentifier()->numChildren() == 0) {
+      // try to capture case of new A; (new without parens)
+      this->raiseError(location, "type in 'new' expression is missing its argument list");
+    } else if (expr->isDot() ) {
+      // try to capture case of var z20a = new C().tmeth; and var z20c = new C()?.tmeth;
+      if (expr->toDot()->receiver()->isFnCall() || expr->toDot()->receiver()->isOpCall()) {
+        this->raiseError(location, "Please use parentheses to disambiguate dot expression after new");
+      } else {
+        // try to capture case of new M.Q;
+        this->raiseError(location, "type in 'new' expression is missing its argument list");
+      }
+    } else {
+      // It's an error for one reason or another. TODO: Specialize these
+      // errors later (e.g. 'new a.field' would require parens around
+      // the expression 'a.field'; 'new foo' would require an argument
+      // list for 'foo'; and something like 'new __primitive()' just
+      // doesn't make any sense...
+      this->raiseError(location, "Invalid form for 'new' expression");
+    }
   }
   return nullptr;
 }
@@ -1559,7 +1572,9 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
                       VisibilityClause::LimitationKind limitationKind,
                       AstList limitations) {
   if (!symbol->isAs() && !symbol->isIdentifier() && !symbol->isDot()) {
-    auto msg = "Expected symbol in visibility clause";
+    // auto msg = "Expected symbol in visibility clause";
+    // TODO: This error message isn't always correct here, might be an import statement that starts this builder
+    auto msg = "'use' statements must refer to module or enum symbols (e.g., 'use <module>[.<submodule>]*;')";
     return raiseError(location, msg);
   }
 
@@ -1598,7 +1613,9 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
                     ParserExprList* limitations) {
 
   auto comments = gatherComments(location);
-
+  if (attributes && attributes->isDeprecated()) {
+    raiseError(location, "Can't deprecate a forwarding statement");
+  }
   if (limitationKind == VisibilityClause::NONE) {
     auto node = ForwardingDecl::build(builder, convertLocation(location),
                                       std::move(attributes),

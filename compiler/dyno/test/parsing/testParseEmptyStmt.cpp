@@ -23,6 +23,9 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/EmptyStmt.h"
+#include "chpl/uast/While.h"
+#include "chpl/uast/BoolLiteral.h"
+#include "chpl/uast/Cobegin.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -88,6 +91,82 @@ static void test0(Parser* parser) {
 
 }
 
+static void test1(Parser* parser) {
+  auto parseResult = parser->parseString("test1.chpl",
+        "while true do\n"
+         ";\n");
+
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto stmt = mod->stmt(0)->toWhile();
+  assert(stmt);
+  auto cond = stmt->condition()->toBoolLiteral();
+  assert(cond->value()==true);
+  assert(stmt->blockStyle() == BlockStyle::IMPLICIT);
+  assert(stmt->numStmts()==1);
+  auto body = stmt->body();
+  assert(body);
+  assert(body->numChildren()==1);
+  // TODO: Why is the body blockstyle EXPLICIT here? Shouldn't it follow
+  // from the parent loop blockstyle?
+  // Yes, but it requires changes to parser and some nodes (like Loop) to get
+  // the blockStyle from the child instead of storing it in the parent
+  // (or at least make sure the styles match when the node is built)
+  assert(body->blockStyle()==BlockStyle::EXPLICIT);
+  auto e1 = body->stmt(0)->toEmptyStmt();
+  assert(e1);
+}
+
+static void test2(Parser* parser) {
+  auto parseResult = parser->parseString("test2.chpl",
+        "cobegin { ; writeln['']; }\n");
+
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto stmt = mod->stmt(0)->toCobegin();
+  assert(stmt);
+  assert(stmt->numTaskBodies() == 2);
+  auto e1 = stmt->taskBody(0)->toEmptyStmt();
+  assert(e1);
+  auto call = stmt->taskBody(1)->toFnCall();
+  assert(call);
+  assert(call->numActuals()==1);
+  assert(call->callUsedSquareBrackets() == true);
+  auto baseExpr = call->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("writeln"));
+}
+
+static void test3(Parser* parser) {
+  // TODO: There is discussion of whether this should be an error or not
+  // Brad says "I’d be most comfortable if it went back to being a syntax error in both the production and dyno compilers"
+  // It originated from test/users/thom/topLevelCode.chpl and causes some
+  // discrepancy in the test result between dyno and production
+  auto parseResult = parser->parseString("test3.chpl",
+        "proc myProc();\n"
+        "{\n //comment;\n"
+        "}");
+
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 2);
+  auto proc = mod->stmt(0)->toFunction();
+  assert(proc);
+  auto blk = mod->stmt(1)->toBlock();
+  assert(blk);
+  assert(blk->numStmts() == 1);
+  auto comm = blk->stmt(0)->toComment();
+  assert(comm);
+
+}
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -96,6 +175,9 @@ int main() {
   Parser* p = parser.get();
 
   test0(p);
+  test1(p);
+  test2(p);
+  test3(p);
 
   return 0;
 }

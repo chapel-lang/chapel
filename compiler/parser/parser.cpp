@@ -1002,6 +1002,15 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
     lastModSym = got;
     numModSyms++;
 
+    if (printModuleFiles && (modTag != MOD_INTERNAL || developer)) {
+      if (sFirstFile) {
+        fprintf(stderr, "Parsing module files:\n");
+
+        sFirstFile = false;
+      }
+
+      fprintf(stderr, "  %s\n", cleanFilename(path.c_str()));
+    }
     deinitializeGlobalParserState();
   }
 

@@ -1,4 +1,4 @@
-printvisibleOptFalse.chpl:2: Printing symbols visible from here:
+printvisibleOptFalse.chpl:3: Printing symbols visible from here:
   modules/minimal/internal/ChapelLocale.chpl:27: chpl_sublocID_t
   modules/minimal/internal/ChapelLocale.chpl:35: chpl_localeModel_sublocToExecutionSubloc
   modules/minimal/internal/ChapelLocale.chpl:41: chpl_localeModel_sublocMerge
