@@ -202,8 +202,10 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     return;
   }
 
-  std::tuple<AstNode*, std::string> ieNode;
-  ieNode = checkAndUpdateConfig(ast, pathVec);
+  std::tuple<AstNode*, std::string> configAssignResult;
+  configAssignResult = checkAndUpdateConfig(ast, pathVec);
+  AstNode* ieNode = std::get<0>(configAssignResult);
+  std::string configNameUsed = std::get<1>(configAssignResult);
 
   int firstChildID = i;
 
@@ -288,30 +290,34 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   if (search != notedLocations_.end()) {
     assert(!search->second.isEmpty());
     idToLocation_[ast->id()] = search->second;
-    if (std::get<0>(ieNode)) {
-      parsing::useConfigParam(this->context(), std::get<1>(ieNode), ast->id());
-      auto usedId = parsing::nameToConfigParamId(this->context(), std::get<1>(ieNode));
-
-      if (usedId != ast->id()) {
-        std::string err = "ambiguous config name (";
-        err += std::get<1>(ieNode);
-        err += ")";
-        std::string otherLoc = "also defined here";
-        std::string disambiguate = "(disambiguate using -s<modulename>.";
-        disambiguate += std::get<1>(ieNode);
-        disambiguate += "...)";
-        ErrorMessage errorMessage = ErrorMessage(ast->id(), search->second, err, ErrorMessage::ERROR );
-        ErrorMessage noteOtherLoc = ErrorMessage(ast->id(), idToLocation_[usedId], otherLoc, ErrorMessage::NOTE);
-        ErrorMessage noteDisambiguate = ErrorMessage(ast->id(), idToLocation_[usedId], disambiguate, ErrorMessage::NOTE);
-        addError(errorMessage);
-        addError(noteOtherLoc);
-        addError(noteDisambiguate);
-      }
+    if (ieNode) {
+      checkConfigPreviouslyUsed(ast, configNameUsed);
     }
   } else {
     assert(false && "Location for all ast should be set by noteLocation");
   }
 }
+
+  void Builder::checkConfigPreviouslyUsed(const AstNode* ast, std::string& configNameUsed) {
+    parsing::useConfigParam(context(), configNameUsed, ast->id());
+    auto usedId = parsing::nameToConfigParamId(context(), configNameUsed);
+
+    if (usedId != ast->id()) {
+      std::string err = "ambiguous config name (";
+      err += configNameUsed;
+      err += ")";
+      std::string otherLoc = "also defined here";
+      std::string disambiguate = "(disambiguate using -s<modulename>.";
+      disambiguate += configNameUsed;
+      disambiguate += "...)";
+      ErrorMessage errorMessage = ErrorMessage(ast->id(), idToLocation_[ast->id()], err, ErrorMessage::ERROR );
+      ErrorMessage noteOtherLoc = ErrorMessage(ast->id(), idToLocation_[usedId], otherLoc, ErrorMessage::NOTE);
+      ErrorMessage noteDisambiguate = ErrorMessage(ast->id(), idToLocation_[usedId], disambiguate, ErrorMessage::NOTE);
+      addError(errorMessage);
+      addError(noteOtherLoc);
+      addError(noteDisambiguate);
+    }
+  }
 
   std::tuple<AstNode*,std::string> Builder::checkAndUpdateConfig(AstNode* ast, pathVecT& pathVec) {
     AstNode* ret = nullptr;
@@ -336,22 +342,19 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
           // TODO: How does this work with module prefixes? What if there is a newSymbolPath value?
           if ((node.first == var->name().str() && var->visibility() != Decl::PRIVATE)
               || node.first == possibleModule + var->name().str()) {
-            // found a config that was set via cmd line: replace the node
-            // need to build up a new Variable from the old one, copying all the
-            // internals
-            
+            // found a config that was set via cmd line: update the node
             // handle deprecations
             if (auto attribs = var->attributes()) {
               if (attribs->isDeprecated()) {
+                // TODO: Need proper message handling here
                 std::string msg = "'" + var->name().str() + "' was set via a compiler flag";
-                std::cout << "warning: " + attribs->deprecationMessage().str() << std::endl;
-                std::cout << "note: " + msg << std::endl;
+                std::cerr << "warning: " + attribs->deprecationMessage().str() << std::endl;
+                std::cerr << "note: " + msg << std::endl;
               }
             }
             auto parser = parsing::Parser::build(context());
             parsing::Parser* p = parser.get();
             std::string inputText;
-            // do we need to parse the name for a module path here? Seems likely
             // for types, we can't specify a module name when building the input string
             // and it's important for the parser to see that it's a type and not just a var assignment
             if (var->kind() == uast::Variable::TYPE) {
@@ -364,11 +367,10 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             assert(!parseResult.numErrors());
             auto mod = parseResult.singleModule();
             assert(mod);
-            // TODO: Could we clean this up by prepending `const` to the inputText for variables?
-            if (mod->stmt(0)->toOpCall()) {
+            if (mod->stmt(0)->isOpCall()) {
               assert(mod->stmt(0)->toOpCall()->isBinaryOp());
               ret = mod->children_[0]->children_[1].release();
-            } else if (mod->stmt(0)->toVariable()) {
+            } else if (mod->stmt(0)->isVariable()) {
               ret = mod->children_[0]->children_[0].release();
             } else {
               assert(false && "should only be an assignment or type initializer");
