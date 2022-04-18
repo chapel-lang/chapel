@@ -2,7 +2,7 @@ use IO;
 use FileSystem;
 use Path;
 use BlockDist;
-use Sys;
+use OS.POSIX;
 
 config const verbose = false;
 
@@ -20,8 +20,7 @@ for f in DistFiles {
   on f {
     var from = f;
     var base = basename(f);
-    var uname:c_string;
-    sys_getenv(c"USER", uname);
+    const uname = getenv(c"USER"):c_string;
     var to = "/tmp/" + createStringWithNewBuffer(uname)+ base;
     if verbose then writeln("on ", here.id, " copying from ", from, " to ", to);
     copy(from, to);
