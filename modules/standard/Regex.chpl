@@ -1198,6 +1198,7 @@ proc bytes.search(needle: regex(bytes)):regexMatch
   return needle.search(this);
 }
 
+pragma "no doc"
 deprecated "bytes.search is deprecated, use regex search instead"
 proc bytes.search(pattern: regex(bytes)):regexMatch
 {
@@ -1206,7 +1207,7 @@ proc bytes.search(pattern: regex(bytes)):regexMatch
 
 
 pragma "last resort"
-deprecated "string.search is deprecated, use regex search instead"
+deprecated "string.search with needle argument is deprecated, use regex search instead"
 proc string.search(needle: regex(string), ref captures ...?k):regexMatch
 {
   return needle.search(this, (...captures));
@@ -1215,7 +1216,7 @@ proc string.search(needle: regex(string), ref captures ...?k):regexMatch
 /* Search the receiving string for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   .. warning:: the search function with a receiving string is deprecated
+   .. warning:: the search function with a receiving string is deprecated,                 use regex search instead
 
    :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
@@ -1232,7 +1233,7 @@ proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
 
 
 pragma "last resort"
-deprecated "bytes.search is deprecated, use regex search instead"
+deprecated "bytes.search with needle argument is deprecated, use regex search instead"
 proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
 {
   return needle.search(this, (...captures));
@@ -1241,7 +1242,8 @@ proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
 /* Search the receiving bytes for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   .. warning:: the search function with receiving bytes is deprecated
+   .. warning:: the search function with receiving bytes is deprecated,
+                use regex search instead
 
    :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
@@ -1274,7 +1276,7 @@ proc bytes.match(pattern: regex(bytes)):regexMatch
 /* Returns true if the start of the string matches the pattern.
 
    :arg pattern: the compiled regular expression to match
-   :returns: true if string starts with :arg: `pattern`, false otherwise
+   :returns: true if string starts with `pattern`, false otherwise
  */
 proc string.startsWith(pattern: regex(string)):bool
 {
@@ -1286,7 +1288,7 @@ proc string.startsWith(pattern: regex(string)):bool
 /* Returns true if the start of the bytes matches the pattern.
 
    :arg pattern: the compiled regular expression to match
-   :returns: true if string starts with :arg pattern;, false otherwise
+   :returns: true if string starts with `pattern`, false otherwise
  */
 proc bytes.startsWith(pattern: regex(bytes)):bool
 {
