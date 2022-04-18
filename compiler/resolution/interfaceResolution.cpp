@@ -1476,11 +1476,11 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
     resolveFunction(target); // aborts if there are errors
                              // 'call' needs to be inTree() in such case
 
-    if (  checkReturnType(isym, istm, target, fml2act, reqFn, reportErrors)
-        & checkReturnIntent(isym, istm, target, reqFn, reportErrors)
-        & checkFormals(isym, istm, target, reqFn, reportErrors)
-        & adjustAndCheckHolder(isym, istm, holder, formalDups,
-                              call, target, reqFn, reportErrors) )
+    if ( (int)checkReturnType(isym, istm, target, fml2act, reqFn, reportErrors)
+        & (int)checkReturnIntent(isym, istm, target, reqFn, reportErrors)
+        & (int)checkFormals(isym, istm, target, reqFn, reportErrors)
+        & (int)adjustAndCheckHolder(isym, istm, holder, formalDups,
+                                    call, target, reqFn, reportErrors) )
       // good, all checks passed
       cgprint("%s   %s      -> %s  %s\n", indent, reqFnIsIC ? "IC" : "  ",
               symstring(target), debugLoc(target));
