@@ -1153,8 +1153,8 @@ inline operator :(x: bytes, type t: regex(bytes)) throws {
   return compile(x);
 }
 
-/* Search the receiving string for a regular expression already compiled
-   by calling :proc:`regex.search`. Search for matches at any offset.
+/* Search the receiving string for the result of a compiled regular
+   expression. Search for matches at any offset.
 
    :arg pattern: the compiled regular expression to search for
    :returns: a byteIndex representing the offset in the receiving string
@@ -1179,8 +1179,8 @@ proc string.search(pattern: regex(string)):regexMatch
   return pattern.search(this);
 }
 
-/* Search the receiving bytes for a regular expression already compiled
-   by calling :proc:`regex.search`. Search for matches at any offset.
+/* Search the receiving bytes for the result of a compiled regular
+   expression. Search for matches at any offset.
 
    :arg pattern: the compiled regular expression to search for
    :returns: a byteIndex representing the offset in the receiving bytes
@@ -1206,7 +1206,7 @@ proc bytes.search(pattern: regex(bytes)):regexMatch
 
 
 pragma "last resort"
-deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
+deprecated "string.search is deprecated, use regex search instead"
 proc string.search(needle: regex(string), ref captures ...?k):regexMatch
 {
   return needle.search(this, (...captures));
@@ -1224,7 +1224,7 @@ proc string.search(needle: regex(string), ref captures ...?k):regexMatch
              receiving string where a match occurred
  */
 
-deprecated "the string.search procedure is deprecated"
+deprecated "string.search is deprecated, use regex search instead"
 proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
 {
   return pattern.search(this, (...captures));
@@ -1232,7 +1232,7 @@ proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
 
 
 pragma "last resort"
-deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
+deprecated "bytes.search is deprecated, use regex search instead"
 proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
 {
   return needle.search(this, (...captures));
@@ -1249,7 +1249,7 @@ proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
    :returns: an :record:`regexMatch` object representing the offset in the
              receiving bytes where a match occurred
  */
-deprecated "the bytes.search procedure is deprecated"
+deprecated "bytes.search is deprecated, use regex search instead"
 proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
 {
   return pattern.search(this, (...captures));
@@ -1271,13 +1271,10 @@ proc bytes.match(pattern: regex(bytes)):regexMatch
   return pattern.match(this);
 }
 
-/* Match the receiving string to a regular expression already compiled by
-   calling :proc:`regex.match`. Note that function only returns a match if
-   the start of the string matches the pattern. Use :proc:`string.search`
-   to search for the pattern at any offset.
+/* Returns true if the start of the string matches the pattern.
 
    :arg pattern: the compiled regular expression to match
-   :returns: true if string starts with :arg pattern:, false otherwise
+   :returns: true if string starts with :arg: `pattern`, false otherwise
  */
 proc string.startsWith(pattern: regex(string)):bool
 {
@@ -1286,10 +1283,7 @@ proc string.startsWith(pattern: regex(string)):bool
 }
 
 
-/* Match the receiving bytes to a regular expression already compiled by
-   calling :proc:`regex.match`. Note that function only returns true if
-   the start of the bytes matches the pattern. Use :proc:`bytes.search`
-   to search for the pattern at any offset.
+/* Returns true if the start of the bytes matches the pattern.
 
    :arg pattern: the compiled regular expression to match
    :returns: true if string starts with :arg pattern;, false otherwise
