@@ -81,6 +81,7 @@ Networking / Inter-Process Communication
    :maxdepth: 1
 
    Curl <packages/Curl>
+   Protobuf <packages/ProtobufProtocolSupport>
    Socket <packages/Socket>
    URL <packages/URL>
    ZMQ <packages/ZMQ>

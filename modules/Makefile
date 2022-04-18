@@ -135,6 +135,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
+	packages/ProtobufProtocolSupport.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
