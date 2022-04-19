@@ -99,23 +99,20 @@ class Variable final : public VarLikeDecl {
   bool isConfig_;
   bool isField_;
 
-  void setInitExprForConfig(AstNode* ie) {
+  void setInitExprForConfig(owned<AstNode> ie) {
     if (this->initExpressionChildNum_ > -1) {
       // have an existing initExpr, swap it
-      auto newInit = toOwned(ie);
-      this->children_[this->initExpressionChildNum_].swap(newInit);
-    } else if (this->typeExpressionChildNum_ > -1 || this->attributesChildNum() > -1) {
-      // no initExpr, but do have either typeExpr or attribute, append children
-      initExpressionChildNum_ = children_.size();
-      children_.push_back(toOwned(ie));
-      assert(numChildren() > 1);
+      this->children_[this->initExpressionChildNum_].swap(ie);
     } else {
       // no initExpr and no typeExpr nor attribute
       initExpressionChildNum_ = children_.size();
-      children_.push_back(toOwned(ie));
-      assert(numChildren() == 1);
+      children_.push_back(std::move(ie));
+      if (this->typeExpressionChildNum_ > -1 || this->attributesChildNum() > -1) {
+        assert(numChildren() > 1);
+      } else {
+        assert(numChildren() == 1);
+      }
     }
-
   }
 
  public:

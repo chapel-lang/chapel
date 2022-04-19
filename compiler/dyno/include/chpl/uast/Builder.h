@@ -124,8 +124,8 @@ class Builder final {
     return ast->children_;
   }
 
-  void addOrReplaceInitExpr(Variable* var, AstNode* ie) {
-    var->setInitExprForConfig(ie);
+  void addOrReplaceInitExpr(Variable* var, owned<AstNode> ie) {
+    var->setInitExprForConfig(std::move(ie));
   }
 
 

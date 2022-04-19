@@ -43,9 +43,9 @@ void checkConfigs() {
     bool             anyBadConfigParams = false;
     if (fDynoCompilerLibrary) {
       // check that all config vars that were set from the command line were assigned
-      auto configs = parsing::configParams(gContext);
+      auto configs = parsing::configSettings(gContext);
       for (auto config : configs) {
-        auto usedId = parsing::nameToConfigParamId(gContext, config.first);
+        auto usedId = parsing::nameToConfigSettingId(gContext, config.first);
         if (usedId.isEmpty()) {
           USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
                          config.first.c_str());
@@ -90,11 +90,8 @@ void parseCmdLineConfig(const char* name, const char* value) {
   // it to work, --dyno must come before -sConfigVar=Val or it will not try
   // to use the dyno parser for command line input
   if (fDynoCompilerLibrary) {
-    // emplace the record for dyno parser
-    std::string symbol(name);
-    std::string val(value);
-    std::pair<std::string, std::string> dynoParam (symbol,val);
-    gDynoParams.push_back(dynoParam);
+    // save the name/value pair for dyno parser
+    gDynoParams.push_back(std::make_pair(std::string(name), std::string(value)));
   } else {
 
     // Generate a C-string for a nominal Chapel assignment statement

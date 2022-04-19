@@ -299,8 +299,15 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
 }
 
   void Builder::checkConfigPreviouslyUsed(const AstNode* ast, std::string& configNameUsed) {
-    parsing::useConfigParam(context(), configNameUsed, ast->id());
-    auto usedId = parsing::nameToConfigParamId(context(), configNameUsed);
+    // If you're reading this and confused about how we can call useConfigSetting
+    // and then call nameToConfigSetting, essentially setting a value and then
+    // asking for it back and comparing against the value we just used, you're not alone.
+    // See the docs in query-impl.h (QUERY_STORE_INPUT_RESULT) that describes
+    // why this works.
+    // "If called multiple times __within the same revision__, only the first
+    // stored result in that revision will be saved."
+    parsing::useConfigSetting(context(), configNameUsed, ast->id());
+    auto usedId = parsing::nameToConfigSettingId(context(), configNameUsed);
 
     if (usedId != ast->id()) {
       std::string err = "ambiguous config name (";
@@ -319,12 +326,12 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
   }
 
-  std::tuple<AstNode*,std::string> Builder::checkAndUpdateConfig(AstNode* ast, pathVecT& pathVec) {
+  std::tuple<AstNode*, std::string> Builder::checkAndUpdateConfig(AstNode* ast, pathVecT& pathVec) {
     AstNode* ret = nullptr;
     std::string configUsed;
-    auto configs = parsing::configParams(this->context());
     if (auto var = ast->toVariable()) {
       if (var->isConfig()) {
+        const auto& configs = parsing::configSettings(this->context());
         // inspect pathVec
         std::string possibleModule;
         if (pathVec.size() > 1) {
@@ -336,13 +343,11 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
           possibleModule = pathVec[0].first.str();
           possibleModule += ".";
         }
-
         // for config vars, check if they were set from the command line
-        for (auto node : configs) {
-          // TODO: How does this work with module prefixes? What if there is a newSymbolPath value?
-          if ((node.first == var->name().str() && var->visibility() != Decl::PRIVATE)
-              || node.first == possibleModule + var->name().str()) {
-            // found a config that was set via cmd line: update the node
+        for (auto configPair : configs) {
+          if ((var->name().str() == configPair.first && var->visibility() != Decl::PRIVATE)
+              || configPair.first == possibleModule + var->name().str()) {
+            // found a config that was set via cmd line: update the configPair
             // handle deprecations
             if (auto attribs = var->attributes()) {
               if (attribs->isDeprecated()) {
@@ -362,35 +367,38 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
             // for types, we can't specify a module name when building the input string
             // and it's important for the parser to see that it's a type and not just a var assignment
             if (var->kind() == uast::Variable::TYPE) {
-              inputText = "type " + var->name().str() + "=" + node.second +";";
+              inputText = "type " + var->name().str() + "=" + configPair.second + ";";
             } else {
-              inputText = (!node.second.empty()) ? node.first + "=" + node.second +";" : node.first + "=true;";
+              inputText = "const " + var->name().str() + "=";
+              inputText += (!configPair.second.empty()) ? configPair.second : "true";
+              inputText += ";";
             }
             // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
-            auto parseResult = p->parseString("CompilationConfigs", inputText.c_str());
+            auto parseResult = p->parseString("<command line>", inputText.c_str());
+            // TODO: add better error handling
             assert(!parseResult.numErrors());
             auto mod = parseResult.singleModule();
             assert(mod);
-            if (mod->stmt(0)->isOpCall()) {
-              assert(mod->stmt(0)->toOpCall()->isBinaryOp());
-              ret = mod->children_[0]->children_[1].release();
-            } else if (mod->stmt(0)->isVariable()) {
-              ret = mod->children_[0]->children_[0].release();
+            owned<AstNode> initNode;
+            if (mod->stmt(0)->isVariable()) {
+              initNode = std::move(mod->children_[0]->children_.back());
+              mod->children_[0]->children_.pop_back();
             } else {
               assert(false && "should only be an assignment or type initializer");
             }
-            // TODO: How to handle locations? The column numbers at least should be updated, no?
+            // TODO: How to handle locations? Right now we are just using the same location as the config
+            ret = initNode.get();
             noteChildrenLocations(ret, notedLocations_[ast]);
-            addOrReplaceInitExpr(ast->toVariable(), std::move(ret));
-            if (!configUsed.empty() && configUsed != node.first) {
+            addOrReplaceInitExpr(ast->toVariable(), std::move(initNode));
+            if (!configUsed.empty() && configUsed != configPair.first) {
               std::string errMsg = "config set ambiguously via '-s";
               errMsg += configUsed;
               errMsg += "' and '-s";
-              errMsg += node.first + "'";
+              errMsg += configPair.first + "'";
               ErrorMessage errorMessage = ErrorMessage(ast->id(), notedLocations_[ast], errMsg, ErrorMessage::ERROR);
               addError(errorMessage);
             }
-            configUsed = node.first;
+            configUsed = configPair.first;
           }
         }
       }

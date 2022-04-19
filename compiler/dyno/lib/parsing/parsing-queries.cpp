@@ -341,28 +341,30 @@ bool functionWithIdHasWhere(Context* context, ID id) {
   return functionWithIdHasWhereQuery(context, id);
 }
 
-void setConfigParams(Context* context, std::vector<std::pair<std::string,std::string>> keys) {
-  QUERY_STORE_INPUT_RESULT(configParams, context, keys);
+void setConfigSettings(Context* context, ConfigSettingsList keys) {
+  QUERY_STORE_INPUT_RESULT(configSettings, context, keys);
 }
 
 const
-std::vector<std::pair<std::string,std::string>>& configParams(Context* context) {
-  QUERY_BEGIN_INPUT(configParams, context);
+ConfigSettingsList& configSettings(Context* context) {
+  QUERY_BEGIN_INPUT(configSettings, context);
 
-  // return empty configParams if not already set using setConfigParams
-  std::vector<std::pair<std::string, std::string>> result;
+  // return empty configSettings if not already set using setConfigSettings
+  ConfigSettingsList result;
 
   return QUERY_END(result);
 }
 
 void
-useConfigParam(Context* context, std::string name, ID id) {
-  QUERY_STORE_INPUT_RESULT(nameToConfigParamId, context, id, name);
+useConfigSetting(Context* context, std::string name, ID id) {
+  QUERY_STORE_INPUT_RESULT(nameToConfigSettingId, context, id, name);
 }
 
 // check if config was used already
-const ID& nameToConfigParamId(Context* context, std::string name) {
-  QUERY_BEGIN_INPUT(nameToConfigParamId, context, name);
+const ID& nameToConfigSettingId(Context* context, std::string name) {
+  QUERY_BEGIN_INPUT(nameToConfigSettingId, context, name);
+
+  // return empty ID if ID not already set using useConfigSetting
   ID result;
   return QUERY_END(result);
 }

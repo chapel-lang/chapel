@@ -34,7 +34,7 @@
 namespace chpl {
 namespace parsing {
 
-using ConfigParamList = std::vector<std::pair<std::string, std::string>>;
+using ConfigSettingsList = std::vector<std::pair<std::string, std::string>>;
 
 /**
  This query returns the contents of a file as the string field in the
@@ -148,18 +148,18 @@ uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id);
  */
 bool functionWithIdHasWhere(Context* context, ID id);
 
-void setConfigParams(Context* context, ConfigParamList keys);
+void setConfigSettings(Context* context, ConfigSettingsList keys);
 
 const
-ConfigParamList& configParams(Context* context);
+ConfigSettingsList& configSettings(Context* context);
 
-// TODO: Should these queries be private
-// use the config param by storing the ID where it was used
+
+// note the ID to which we have associated a config set on the compile command-line
 void
-useConfigParam(Context* context, std::string name, ID id);
+useConfigSetting(Context* context, std::string name, ID id);
 
-// check if config was used already
-const ID& nameToConfigParamId(Context* context, std::string name);
+// check if config set from the commmand-line was used already
+const ID& nameToConfigSettingId(Context* context, std::string name);
 
 } // end namespace parsing
 } // end namespace chpl
