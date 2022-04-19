@@ -1,0 +1,2 @@
+superThisWarning.chpl:5: warning: 'super.this' is redundant, just use 'super'
+0
