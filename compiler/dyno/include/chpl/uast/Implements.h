@@ -109,7 +109,7 @@ class Implements final : public AstNode {
     if (typeIdentChildNum_ == AstNode::NO_CHILD) return nullptr;
     auto ret = child(typeIdentChildNum_)->toIdentifier();
     assert(ret);
-    return ret; 
+    return ret;
   }
 
   /**

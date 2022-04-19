@@ -44,7 +44,7 @@ UniqueString Implements::interfaceName() const {
 }
 
 owned<Implements>
-Implements::build(Builder* builder, Location loc, 
+Implements::build(Builder* builder, Location loc,
                   owned<Identifier> typeExpr,
                   owned<AstNode> interfaceExpr,
                   bool isExpressionLevel) {

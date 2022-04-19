@@ -45,13 +45,13 @@ owned<Interface> Interface::build(Builder* builder, Location loc,
   }
 
   if (formals.size() != 0) {
-    interfaceFormalsChildNum = children.size(); 
+    interfaceFormalsChildNum = children.size();
     numInterfaceFormals = formals.size();
     for (auto& ast : formals) children.push_back(std::move(ast));
   }
 
   if (body.size() != 0) {
-    bodyChildNum = children.size(); 
+    bodyChildNum = children.size();
     numBodyStmts = body.size();
     for (auto& ast : body) children.push_back(std::move(ast));
   }
