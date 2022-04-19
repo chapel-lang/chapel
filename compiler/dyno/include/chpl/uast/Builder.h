@@ -149,6 +149,10 @@ class Builder final {
   void noteChildrenLocations(AstNode* ast, Location loc);
 
   void checkConfigPreviouslyUsed(const AstNode* ast, std::string& configNameUsed);
+
+  std::pair<std::string, std::string> nodeMatchesConfig(AstNode* ast, pathVecT &pathVec);
+
+  AstNode* checkAndUpdateConfig(AstNode* ast, std::pair<std::string, std::string> configPair);
 };
 
 } // end namespace uast
