@@ -19,12 +19,10 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/AstNode.h"
-#include "chpl/uast/Begin.h"
-#include "chpl/uast/Block.h"
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/Identifier.h"
+#include "chpl/uast/Interface.h"
+#include "chpl/uast/Implements.h"
 #include "chpl/uast/Module.h"
-#include "chpl/uast/Sync.h"
 #include "chpl/queries/Context.h"
 
 
@@ -53,6 +51,12 @@ static void test0(Parser* parser) {
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isInterface());
   assert(mod->stmt(2)->isComment());
+  auto intf = mod->stmt(1)->toInterface();
+  assert(intf);
+  assert(intf->isFormalListPresent());
+  assert(intf->numFormals() == 3);
+  assert(intf->numStmts() == 1);
+  assert(intf->stmt(0)->isFunction());
 }
 
 

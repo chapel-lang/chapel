@@ -145,7 +145,7 @@ class Interface final : public NamedDecl {
   */
   const AstNode* formal(int i) const {
     assert(i >= 0 && i < numBodyStmts_);
-    auto ret = stmt(i + interfaceFormalsChildNum_);
+    auto ret = child(i + interfaceFormalsChildNum_);
     assert(ret);
     return ret;
   }
@@ -171,7 +171,7 @@ class Interface final : public NamedDecl {
   */
   const AstNode* stmt(int i) const {
     assert(i >= 0 && i < numBodyStmts_);
-    auto ret = stmt(i + bodyChildNum_);
+    auto ret = child(i + bodyChildNum_);
     assert(ret);
     return ret;
   }
