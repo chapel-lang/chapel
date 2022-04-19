@@ -348,7 +348,11 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
               if (attribs->isDeprecated()) {
                 // TODO: Need proper message handling here
                 std::string msg = "'" + var->name().str() + "' was set via a compiler flag";
-                std::cerr << "warning: " + attribs->deprecationMessage().str() << std::endl;
+                if (attribs->deprecationMessage().isEmpty()) {
+                  std::cerr << "warning: " + var->name().str() + " is deprecated" << std::endl;
+                } else {
+                  std::cerr << "warning: " + attribs->deprecationMessage().str() << std::endl;
+                }
                 std::cerr << "note: " + msg << std::endl;
               }
             }
