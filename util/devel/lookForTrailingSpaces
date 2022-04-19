@@ -9,7 +9,7 @@ cd $CHPL_HOME >& /dev/null
 
 # Look for trailing spaces in files in compiler/runtime/modules.
 # Exclude the generated files bison-chapel.cpp and flex-chapel.cpp and
-# their compiler/next counterparts.
+# their compiler/dyno counterparts.
 git grep -n ' $' -- compiler ':!*bison-chapel.cpp'   ':!*bison-chapel.h' \
                              ':!*bison-chpl-lib.cpp' ':!*bison-chpl-lib.h' \
                              ':!*flex-chapel.cpp'    ':!*flex-chapel.h' \
