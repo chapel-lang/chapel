@@ -543,7 +543,9 @@ Symbol* ResolveScope::followImportUseChains(const char* name) const {
 
         if (ResolveScope* next = getScopeFor(scopeToUse)) {
           if (Symbol* sym = next->lookupNameLocallyForImport(nameToUse)) {
-            if (isRepeat(sym, symbols) == false) {
+            if (sym->hasFlag(FLAG_PRIVATE) == true) {
+              continue;
+            } else if (isRepeat(sym, symbols) == false) {
               if (FnSymbol* fn = toFnSymbol(sym)) {
                 if (fn->isMethod() == false) {
                   symbols.push_back(fn);
@@ -582,7 +584,9 @@ Symbol* ResolveScope::followImportUseChains(const char* name) const {
 
         if (ResolveScope* next = getScopeFor(scopeToUse)) {
           if (Symbol* sym = next->lookupNameLocallyForImport(nameToUse)) {
-            if (isRepeat(sym, symbols) == false) {
+            if (sym->hasFlag(FLAG_PRIVATE) == true) {
+              continue;
+            } else if (isRepeat(sym, symbols) == false) {
               if (FnSymbol* fn = toFnSymbol(sym)) {
                 if (fn->isMethod() == false) {
                   symbols.push_back(fn);
