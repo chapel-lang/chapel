@@ -676,6 +676,17 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
         // to update scope
         if (scope != NULL) curScope = scope;
         curScope->firstImportedModuleName(c->get(2), name, call, scope);
+
+        // name still wasn't set
+        if (name == NULL) {
+          if (astrThis == getNameFrom(c->get(2))) {
+            if (astrSuper == getNameFrom(c->get(1))) {
+              USR_WARN(c, "'super.this' is redundant, just use 'super'");
+            } else if (astrThis == getNameFrom(c->get(1))) {
+              USR_WARN(c, "'this.this' is redundant, just use 'this'");
+            }
+          }
+        }
       }
 
     } else {
@@ -703,8 +714,7 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
       if (isUse) {
         USR_FATAL(expr, "'super.' can only be used as prefix of use");
       }
-    } else
-      INT_FATAL("case not handled");
+    }
   }
 
   ModuleSymbol* outerMod = NULL;
@@ -779,19 +789,13 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
       USR_STOP();
     }
   } else {
-    if (astrSuper == getNameFrom(expr) && !isUse) {
-      // This was `import super;`.  We've already handled the case where this
-      // occurs in a top-level module for which there is no super, so we can be
-      // certain this is okay to return
-      retval = toSymbol(relativeScope->mAstRef);
-      INT_ASSERT(retval != NULL);
-      SymAndReferencedName res(retval, astr(""));
-      return res;
-    } else {
-      // Something other than just `import super;` was let through the check of
-      // the first imported module name
-      INT_FATAL("case not handled");
-    }
+    // This was `import super;` or `import [super.]*super;`.  We've already
+    // handled the case where this occurs in a top-level module for which there
+    // is no super, so we can be certain this is okay to return
+    retval = toSymbol(relativeScope->mAstRef);
+    INT_ASSERT(retval != NULL);
+    SymAndReferencedName res(retval, astr(""));
+    return res;
   }
 
   if (retval == NULL) {
