@@ -1216,7 +1216,8 @@ proc string.search(needle: regex(string), ref captures ...?k):regexMatch
 /* Search the receiving string for a regular expression already compiled
    by calling :proc:`regex.search`. Search for matches at any offset.
 
-   .. warning:: the search function with a receiving string is deprecated,                 use regex search instead
+   .. warning:: the search function with a receiving string is deprecated,
+                use regex search instead
 
    :arg pattern: the compiled regular expression to search for
    :arg captures: (optional) what to capture from the regular expression. These
