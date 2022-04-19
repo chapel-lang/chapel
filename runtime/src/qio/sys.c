@@ -145,7 +145,7 @@ void sys_set_sys_sockaddr_in6_t(sys_sockaddr_t* addr, sys_in6_addr_t host, u_int
 }
 
 int sys_host_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, socklen_t hostlen, int* length){
-  err_t err_out = 0;
+  qio_err_t err_out = 0;
 
   err_out = getnameinfo((struct sockaddr *)&addr->addr, addr->len, host, hostlen, NULL, 0, NI_NUMERICHOST);
 
@@ -154,7 +154,7 @@ int sys_host_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, socklen_t hostlen,
 }
 
 int sys_port_sys_sockaddr_t(sys_sockaddr_t* addr, uint16_t* numericport){
-  err_t err_out = 0;
+  qio_err_t err_out = 0;
 
   char port[NI_MAXSERV];
   err_out = getnameinfo((struct sockaddr *)&addr->addr, addr->len, NULL, 0, port, sizeof(port), NI_NUMERICSERV);
@@ -169,7 +169,7 @@ int sys_port_sys_sockaddr_t(sys_sockaddr_t* addr, uint16_t* numericport){
 size_t sys_page_size(void)
 {
   static long pagesize = -1;
-  err_t err;
+  qio_err_t err;
 
   // Handle already computed page size.
   if( pagesize > 0 ) return pagesize;
@@ -193,10 +193,10 @@ size_t sys_page_size(void)
 
 
 #if 0
-err_t sys_fseeko(FILE* stream, off_t offset, int whence)
+qio_err_t sys_fseeko(FILE* stream, off_t offset, int whence)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = fseeko(stream, offset, whence);
   if( got == 0 ) {
@@ -208,10 +208,10 @@ err_t sys_fseeko(FILE* stream, off_t offset, int whence)
   return err_out;
 }
 
-err_t sys_ftello(FILE* stream, off_t* offset_out)
+qio_err_t sys_ftello(FILE* stream, off_t* offset_out)
 {
   off_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = ftello(stream);
   if( got != (off_t) -1 ) {
@@ -225,10 +225,10 @@ err_t sys_ftello(FILE* stream, off_t* offset_out)
   return err_out;
 }
 
-err_t sys_fopen(const char* path, const char* mode, FILE** file_out)
+qio_err_t sys_fopen(const char* path, const char* mode, FILE** file_out)
 {
   FILE* got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = fopen(path, mode);
   if( got ) {
@@ -242,10 +242,10 @@ err_t sys_fopen(const char* path, const char* mode, FILE** file_out)
   return err_out;
 }
 
-err_t sys_fdopen(fd_t fd, const char* mode, FILE** file_out)
+qio_err_t sys_fdopen(fd_t fd, const char* mode, FILE** file_out)
 {
   FILE* got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = fdopen(fd, mode);
   if( got ) {
@@ -259,10 +259,10 @@ err_t sys_fdopen(fd_t fd, const char* mode, FILE** file_out)
   return err_out;
 }
 
-err_t sys_fclose(FILE* fp)
+qio_err_t sys_fclose(FILE* fp)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   // might block with SO_LINGER
   STARTING_SLOW_SYSCALL;
@@ -277,10 +277,10 @@ err_t sys_fclose(FILE* fp)
   return err_out;
 }
 
-err_t sys_fread(void* ptr, size_t size, size_t nmemb, FILE* stream, size_t* num_read)
+qio_err_t sys_fread(void* ptr, size_t size, size_t nmemb, FILE* stream, size_t* num_read)
 {
   size_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   // might block.
   STARTING_SLOW_SYSCALL;
@@ -297,10 +297,10 @@ err_t sys_fread(void* ptr, size_t size, size_t nmemb, FILE* stream, size_t* num_
   return err_out;
 }
 
-err_t sys_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream, size_t* num_written)
+qio_err_t sys_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream, size_t* num_written)
 {
   size_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   // might block.
   STARTING_SLOW_SYSCALL;
@@ -317,10 +317,10 @@ err_t sys_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream, size_
   return err_out;
 }
 
-err_t sys_fflush(FILE* stream)
+qio_err_t sys_fflush(FILE* stream)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   // might block.
   STARTING_SLOW_SYSCALL;
@@ -336,23 +336,23 @@ err_t sys_fflush(FILE* stream)
 }
 
 
-err_t sys_feof(FILE* stream, int *iseof)
+qio_err_t sys_feof(FILE* stream, int *iseof)
 {
   *iseof = feof(stream);
   return 0;
 }
 
-err_t sys_ferror(FILE* stream)
+qio_err_t sys_ferror(FILE* stream)
 {
   return ferror(stream);
 }
 
 #endif
 
-err_t sys_posix_fadvise(fd_t fd, off_t offset, off_t len, int advice)
+qio_err_t sys_posix_fadvise(fd_t fd, off_t offset, off_t len, int advice)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = 0;
 #if (_XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L)
@@ -365,10 +365,10 @@ err_t sys_posix_fadvise(fd_t fd, off_t offset, off_t len, int advice)
   return err_out;
 }
 
-err_t sys_posix_madvise(void* addr, size_t len, int advice)
+qio_err_t sys_posix_madvise(void* addr, size_t len, int advice)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = 0;
 #ifdef POSIX_MADV_NORMAL
@@ -403,7 +403,7 @@ const char* extended_errors[] = {
 // allocates and returns an error string in *string_out
 // which must be freed.
 static
-err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
+qio_err_t sys_strerror_internal(qio_err_t error, char** string_out, size_t extra_space)
 {
   // normal errors are in normal places.
   // EAI_AGAIN... etc are at 10000 + num.
@@ -411,7 +411,7 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
   char* buf = NULL;
   char* newbuf;
   const char* errmsg;
-  err_t err_out;
+  qio_err_t err_out;
 
   err_out = 0;
 
@@ -470,15 +470,15 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
   return err_out;
 }
 
-err_t sys_strerror(err_t error, const char** string_out)
+qio_err_t sys_strerror(qio_err_t error, const char** string_out)
 {
   return sys_strerror_internal(error, (char**) string_out, 0);
 }
 
-const char* sys_strerror_syserr_str(qioerr error, err_t* err_in_strerror)
+const char* sys_strerror_syserr_str(qioerr error, qio_err_t* err_in_strerror)
 {
   char* ret = NULL;
-  err_t code = qio_err_to_int(error);
+  qio_err_t code = qio_err_to_int(error);
   const char* msg = qio_err_msg(error);
   size_t extra_space = 0;
   size_t start = 0;
@@ -501,13 +501,13 @@ const char* sys_strerror_syserr_str(qioerr error, err_t* err_in_strerror)
 }
 
 // returns an allocated string in string_out, which must be freed.
-err_t sys_readlink(const char* path, const char** string_out)
+qio_err_t sys_readlink(const char* path, const char** string_out)
 {
   ssize_t got;
   char* buf = NULL;
   char* newbuf;
   int buf_sz = 248;
-  err_t ret = EINVAL;
+  qio_err_t ret = EINVAL;
 
   while( 1 ) {
     newbuf = (char*) qio_realloc(buf, buf_sz);
@@ -554,10 +554,10 @@ int sys_getenv(const char* name, const char** string_out)
   }
 }
 
-err_t sys_open(const char* pathname, int flags, mode_t mode, fd_t* fd_out)
+qio_err_t sys_open(const char* pathname, int flags, mode_t mode, fd_t* fd_out)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = open(pathname, flags, mode);
   if( got != -1 ) {
@@ -571,10 +571,10 @@ err_t sys_open(const char* pathname, int flags, mode_t mode, fd_t* fd_out)
   return err_out;
 }
 
-err_t sys_close(fd_t fd)
+qio_err_t sys_close(fd_t fd)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   // might block with SO_LINGER
   STARTING_SLOW_SYSCALL;
@@ -589,10 +589,10 @@ err_t sys_close(fd_t fd)
   return err_out;
 }
 
-err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out)
+qio_err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out)
 {
   off_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = lseek(fd, offset, whence);
   if( got != (off_t) -1 ) {
@@ -639,10 +639,10 @@ void stat_to_sys_stat(const char* path, sys_stat_t* out_buf, struct stat* in_buf
 }
 
 
-err_t sys_stat(const char* path, sys_stat_t* out_buf)
+qio_err_t sys_stat(const char* path, sys_stat_t* out_buf)
 {
   off_t got;
-  err_t err_out;
+  qio_err_t err_out;
   struct stat in_buf;
 
   got = stat(path, &in_buf);
@@ -656,10 +656,10 @@ err_t sys_stat(const char* path, sys_stat_t* out_buf)
   return err_out;
 }
 
-err_t sys_fstat(fd_t fd, struct stat* buf)
+qio_err_t sys_fstat(fd_t fd, struct stat* buf)
 {
   off_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = fstat(fd, buf);
   if( got != -1 ) {
@@ -671,9 +671,9 @@ err_t sys_fstat(fd_t fd, struct stat* buf)
   return err_out;
 }
 
-err_t sys_lstat(const char* path, struct stat* buf)
+qio_err_t sys_lstat(const char* path, struct stat* buf)
 {  off_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = lstat(path, buf);
   if( got != -1 ) {
@@ -686,12 +686,12 @@ err_t sys_lstat(const char* path, struct stat* buf)
 }
 
 #ifdef SYS_HAS_LLAPI
-err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
+qio_err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
 {
   struct lov_user_md_v1 *lum;
   size_t lum_size = sizeof(*lum) + LOV_MAX_STRIPE_COUNT * sizeof(struct lov_user_ost_data_v1);
   int rc = 0;
-  err_t err = 0;
+  qio_err_t err = 0;
 
   lum = qio_calloc(lum_size, 1);
 
@@ -713,7 +713,7 @@ err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
   return err;
 }
 #else
-err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
+qio_err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
 {
   return ENOSYS;
 }
@@ -728,9 +728,9 @@ err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out)
 // given file system are set to 0 (and we handle this in safe_inode_cast).
 #define safe_inode_cast(t) (t < 0 ? 0 : (uint64_t)t)
 
-err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
+qio_err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
 {
-    err_t err_out;
+    qio_err_t err_out;
     int got;
 
 #if SYS_HAS_STATFS
@@ -783,10 +783,10 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     return err_out;
 }
 
-err_t sys_mkstemp(char* template_, fd_t* fd_out)
+qio_err_t sys_mkstemp(char* template_, fd_t* fd_out)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = mkstemp(template_);
   if( got != -1 ) {
@@ -800,10 +800,10 @@ err_t sys_mkstemp(char* template_, fd_t* fd_out)
   return err_out;
 }
 
-err_t sys_ftruncate(fd_t fd, off_t length)
+qio_err_t sys_ftruncate(fd_t fd, off_t length)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = ftruncate(fd, length);
   if( got == 0 ) {
@@ -815,10 +815,10 @@ err_t sys_ftruncate(fd_t fd, off_t length)
   return err_out;
 }
 
-err_t sys_sysconf(int name, long* val_out)
+qio_err_t sys_sysconf(int name, long* val_out)
 {
   long got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = sysconf(name);
   if( got != -1 ) {
@@ -832,9 +832,9 @@ err_t sys_sysconf(int name, long* val_out)
   return err_out;
 }
 
-err_t sys_posix_fallocate(fd_t fd, off_t offset, off_t len)
+qio_err_t sys_posix_fallocate(fd_t fd, off_t offset, off_t len)
 {
-  err_t err_out;
+  qio_err_t err_out;
   STARTING_SLOW_SYSCALL;
 #ifdef __linux__
   err_out = posix_fallocate(fd, offset, len);
@@ -845,10 +845,10 @@ err_t sys_posix_fallocate(fd_t fd, off_t offset, off_t len)
   return err_out;
 }
 
-err_t sys_mmap(void* addr, size_t length, int prot, int flags, fd_t fd, off_t offset, void** ret_out)
+qio_err_t sys_mmap(void* addr, size_t length, int prot, int flags, fd_t fd, off_t offset, void** ret_out)
 {
   void* got;
-  err_t err_out;
+  qio_err_t err_out;
   got = mmap(addr, length, prot, flags, fd, offset);
   if( got != MAP_FAILED ) {
     err_out = 0;
@@ -861,10 +861,10 @@ err_t sys_mmap(void* addr, size_t length, int prot, int flags, fd_t fd, off_t of
   return err_out;
 }
 
-err_t sys_munmap(void* addr, size_t length)
+qio_err_t sys_munmap(void* addr, size_t length)
 {
   int rc;
-  err_t err_out;
+  qio_err_t err_out;
   rc = munmap(addr, length);
   if( rc ) {
     err_out = errno;
@@ -876,10 +876,10 @@ err_t sys_munmap(void* addr, size_t length)
 }
 
 
-err_t sys_read(int fd, void* buf, size_t count, ssize_t* num_read_out)
+qio_err_t sys_read(int fd, void* buf, size_t count, ssize_t* num_read_out)
 {
   ssize_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   got = read(fd, buf, count);
@@ -896,10 +896,10 @@ err_t sys_read(int fd, void* buf, size_t count, ssize_t* num_read_out)
   return err_out;
 }
 
-err_t sys_write(int fd, const void* buf, size_t count, ssize_t* num_written_out)
+qio_err_t sys_write(int fd, const void* buf, size_t count, ssize_t* num_written_out)
 {
   ssize_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   got = write(fd, buf, count);
@@ -918,7 +918,7 @@ err_t sys_write(int fd, const void* buf, size_t count, ssize_t* num_written_out)
 
 #ifdef __CYGWIN__
 static
-err_t get_errcode_from_winerr(DWORD win_error)
+qio_err_t get_errcode_from_winerr(DWORD win_error)
 {
   uintptr_t res = cygwin_internal(CW_GET_ERRNO_FROM_WINERROR,
                                   win_error,
@@ -928,11 +928,11 @@ err_t get_errcode_from_winerr(DWORD win_error)
 #endif
 
 static inline
-err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
+qio_err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
 {
 #ifdef REPLACE_CYGWIN_PREADWRITE
   ssize_t got;
-  err_t error;
+  qio_err_t error;
   HANDLE handle = (HANDLE) _get_osfhandle(fd);
   DWORD win_to_read;
   DWORD win_num_read;
@@ -981,11 +981,11 @@ err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
 }
 
 static inline
-err_t do_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t *num_written)
+qio_err_t do_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t *num_written)
 {
 #ifdef REPLACE_CYGWIN_PREADWRITE
   ssize_t got;
-  err_t error;
+  qio_err_t error;
   HANDLE handle = (HANDLE) _get_osfhandle(fd);
   DWORD win_to_write;
   DWORD win_num_wrote;
@@ -1025,10 +1025,10 @@ err_t do_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t *nu
 #endif
 }
 
-err_t sys_pread(int fd, void* buf, size_t count, off_t offset, ssize_t* num_read_out)
+qio_err_t sys_pread(int fd, void* buf, size_t count, off_t offset, ssize_t* num_read_out)
 {
   ssize_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   got = 0;
@@ -1045,10 +1045,10 @@ err_t sys_pread(int fd, void* buf, size_t count, off_t offset, ssize_t* num_read
   return err_out;
 }
 
-err_t sys_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t* num_written_out)
+qio_err_t sys_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t* num_written_out)
 {
   ssize_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   got = 0;
@@ -1073,11 +1073,11 @@ int64_t sys_iov_total_bytes(const struct iovec* iov, int iovcnt)
   return tot;
 }
 
-err_t sys_readv(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_read_out)
+qio_err_t sys_readv(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_read_out)
 {
   ssize_t got;
   ssize_t got_total;
-  err_t err_out;
+  qio_err_t err_out;
   int i;
   int niovs = IOV_MAX;
 
@@ -1111,11 +1111,11 @@ err_t sys_readv(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_read_
   return err_out;
 }
 
-err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_written_out)
+qio_err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_written_out)
 {
   ssize_t got;
   ssize_t got_total;
-  err_t err_out;
+  qio_err_t err_out;
   int i;
   int niovs = IOV_MAX;
 
@@ -1148,11 +1148,11 @@ err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_writ
 }
 
 #ifdef HAS_PREADV
-err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
+qio_err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
 {
   ssize_t got;
   ssize_t got_total;
-  err_t err_out;
+  qio_err_t err_out;
   int i;
   int niovs = IOV_MAX;
 
@@ -1191,11 +1191,11 @@ err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_off
 
 #else
 
-err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
+qio_err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
 {
   ssize_t got;
   ssize_t got_total;
-  err_t err_out;
+  qio_err_t err_out;
   int i;
 
   STARTING_SLOW_SYSCALL;
@@ -1226,11 +1226,11 @@ err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_off
 
 #endif
 #ifdef HAS_PWRITEV
-err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_written_out)
+qio_err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_written_out)
 {
   ssize_t got;
   ssize_t got_total;
-  err_t err_out;
+  qio_err_t err_out;
   int i;
   int niovs = IOV_MAX;
 
@@ -1264,11 +1264,11 @@ err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_of
 
 #else
 
-err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_written_out)
+qio_err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_written_out)
 {
   ssize_t got;
   ssize_t got_total;
-  err_t err_out;
+  qio_err_t err_out;
   int i;
 
   STARTING_SLOW_SYSCALL;
@@ -1298,10 +1298,10 @@ err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_of
 
 #endif
 
-err_t sys_fsync(fd_t fd)
+qio_err_t sys_fsync(fd_t fd)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   got = fsync(fd);
@@ -1315,10 +1315,10 @@ err_t sys_fsync(fd_t fd)
   return err_out;
 }
 
-err_t sys_fcntl(fd_t fd, int cmd, int* ret_out)
+qio_err_t sys_fcntl(fd_t fd, int cmd, int* ret_out)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = fcntl(fd, cmd);
   if( got != -1 ) {
@@ -1332,10 +1332,10 @@ err_t sys_fcntl(fd_t fd, int cmd, int* ret_out)
   return err_out;
 }
 
-err_t sys_fcntl_long(fd_t fd, int cmd, long arg, int* ret_out)
+qio_err_t sys_fcntl_long(fd_t fd, int cmd, long arg, int* ret_out)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = fcntl(fd, cmd, arg);
   if( got != -1 ) {
@@ -1349,10 +1349,10 @@ err_t sys_fcntl_long(fd_t fd, int cmd, long arg, int* ret_out)
   return err_out;
 }
 
-err_t sys_fcntl_ptr(fd_t fd, int cmd, void* arg, int* ret_out)
+qio_err_t sys_fcntl_ptr(fd_t fd, int cmd, void* arg, int* ret_out)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = fcntl(fd, cmd, arg);
   if( got != -1 ) {
@@ -1366,10 +1366,10 @@ err_t sys_fcntl_ptr(fd_t fd, int cmd, void* arg, int* ret_out)
   return err_out;
 }
 
-err_t sys_dup(fd_t oldfd, fd_t* fd_out)
+qio_err_t sys_dup(fd_t oldfd, fd_t* fd_out)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = dup(oldfd);
   if( got != -1 ) {
@@ -1383,10 +1383,10 @@ err_t sys_dup(fd_t oldfd, fd_t* fd_out)
   return err_out;
 }
 
-err_t sys_dup2(int oldfd, int newfd, fd_t* fd_out)
+qio_err_t sys_dup2(int oldfd, int newfd, fd_t* fd_out)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = dup2(oldfd, newfd);
   if( got != -1 ) {
@@ -1400,10 +1400,10 @@ err_t sys_dup2(int oldfd, int newfd, fd_t* fd_out)
   return err_out;
 }
 
-err_t sys_pipe(fd_t* read_fd_out, fd_t* write_fd_out)
+qio_err_t sys_pipe(fd_t* read_fd_out, fd_t* write_fd_out)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
   fd_t fds[2];
 
   fds[0] = fds[1] = -1;
@@ -1427,10 +1427,10 @@ poll
 epoll
 */
 
-err_t sys_accept(fd_t sockfd, sys_sockaddr_t* addr_out, fd_t* fd_out)
+qio_err_t sys_accept(fd_t sockfd, sys_sockaddr_t* addr_out, fd_t* fd_out)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
   socklen_t addr_len = sizeof(sys_sockaddr_storage_t);
 
   STARTING_SLOW_SYSCALL;
@@ -1454,10 +1454,10 @@ err_t sys_accept(fd_t sockfd, sys_sockaddr_t* addr_out, fd_t* fd_out)
   return err_out;
 }
 
-err_t sys_bind(fd_t sockfd, const sys_sockaddr_t* addr)
+qio_err_t sys_bind(fd_t sockfd, const sys_sockaddr_t* addr)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   if( addr->len == 0 ) {
     return EINVAL;
@@ -1473,10 +1473,10 @@ err_t sys_bind(fd_t sockfd, const sys_sockaddr_t* addr)
   return err_out;
 }
 
-err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr)
+qio_err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
 
@@ -1507,11 +1507,11 @@ err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr)
 
    -BLC */
 
-//  err_t sys_getaddrinfo(const char* node, const char* service,
+//  qio_err_t sys_getaddrinfo(const char* node, const char* service,
 //                       const sys_addrinfo_t* hints, sys_addrinfo_t ** res_out)
 //  {
 //    int got;
-//    err_t err_out;
+//    qio_err_t err_out;
 //
 //    STARTING_SLOW_SYSCALL;
 //
@@ -1545,7 +1545,7 @@ void sys_freeaddrinfo(sys_addrinfo_ptr_t p)
   freeaddrinfo(p);
 }
 
-err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_out, int flags)
+qio_err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_out, int flags)
 {
   char* host_buf=0;
   char* new_host_buf;
@@ -1554,7 +1554,7 @@ err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_o
   int host_buf_sz;
   int serv_buf_sz;
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
 #ifdef NI_MAXHOST
   host_buf_sz = NI_MAXHOST;
@@ -1616,10 +1616,10 @@ error:
 
 #endif
 
-err_t sys_getpeername(fd_t sockfd, sys_sockaddr_t* addr)
+qio_err_t sys_getpeername(fd_t sockfd, sys_sockaddr_t* addr)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = getpeername(sockfd, (struct sockaddr*) & addr->addr, & addr->len);
   if( got != -1 ) {
@@ -1631,10 +1631,10 @@ err_t sys_getpeername(fd_t sockfd, sys_sockaddr_t* addr)
   return err_out;
 }
 
-err_t sys_getsockname(fd_t sockfd, sys_sockaddr_t* addr)
+qio_err_t sys_getsockname(fd_t sockfd, sys_sockaddr_t* addr)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = getsockname(sockfd, (struct sockaddr*) & addr->addr, & addr->len);
   if( got != -1 ) {
@@ -1647,10 +1647,10 @@ err_t sys_getsockname(fd_t sockfd, sys_sockaddr_t* addr)
 }
 
 
-err_t sys_getsockopt(fd_t sockfd, int level, int optname, void* optval, socklen_t* optlen)
+qio_err_t sys_getsockopt(fd_t sockfd, int level, int optname, void* optval, socklen_t* optlen)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = getsockopt(sockfd, level, optname, optval, optlen);
   if( got != -1 ) {
@@ -1662,10 +1662,10 @@ err_t sys_getsockopt(fd_t sockfd, int level, int optname, void* optval, socklen_
   return err_out;
 }
 
-err_t sys_setsockopt(fd_t sockfd, int level, int optname, void* optval, socklen_t optlen)
+qio_err_t sys_setsockopt(fd_t sockfd, int level, int optname, void* optval, socklen_t optlen)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = setsockopt(sockfd, level, optname, optval, optlen);
   if( got != -1 ) {
@@ -1678,10 +1678,10 @@ err_t sys_setsockopt(fd_t sockfd, int level, int optname, void* optval, socklen_
 }
 
 
-err_t sys_listen(fd_t sockfd, int backlog)
+qio_err_t sys_listen(fd_t sockfd, int backlog)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = listen(sockfd, backlog);
   if( got != -1 ) {
@@ -1693,10 +1693,10 @@ err_t sys_listen(fd_t sockfd, int backlog)
   return err_out;
 }
 
-err_t sys_recv(fd_t sockfd, void* buf, size_t len, int flags, ssize_t* num_recvd_out)
+qio_err_t sys_recv(fd_t sockfd, void* buf, size_t len, int flags, ssize_t* num_recvd_out)
 {
   ssize_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   got = recv(sockfd, buf, len, flags);
@@ -1712,10 +1712,10 @@ err_t sys_recv(fd_t sockfd, void* buf, size_t len, int flags, ssize_t* num_recvd
   return err_out;
 }
 
-err_t sys_recvfrom(fd_t sockfd, void* buf, size_t len, int flags, sys_sockaddr_t* src_addr_out, ssize_t* num_recvd_out)
+qio_err_t sys_recvfrom(fd_t sockfd, void* buf, size_t len, int flags, sys_sockaddr_t* src_addr_out, ssize_t* num_recvd_out)
 {
   ssize_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   got = recvfrom(sockfd, buf, len, flags, (struct sockaddr*) &src_addr_out->addr, & src_addr_out->len);
@@ -1731,11 +1731,11 @@ err_t sys_recvfrom(fd_t sockfd, void* buf, size_t len, int flags, sys_sockaddr_t
   return err_out;
 }
 
-err_t sys_recvmsg(fd_t sockfd, struct msghdr *msg, int flags, ssize_t* num_recvd_out)
+qio_err_t sys_recvmsg(fd_t sockfd, struct msghdr *msg, int flags, ssize_t* num_recvd_out)
 
 {
   ssize_t got;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   got = recvmsg(sockfd, msg, flags);
@@ -1753,10 +1753,10 @@ err_t sys_recvmsg(fd_t sockfd, struct msghdr *msg, int flags, ssize_t* num_recvd
   return err_out;
 }
 
-err_t sys_send(fd_t sockfd, const void* buf, int64_t len, int flags, ssize_t* num_sent_out)
+qio_err_t sys_send(fd_t sockfd, const void* buf, int64_t len, int flags, ssize_t* num_sent_out)
 {
   ssize_t sent;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   sent = send(sockfd, buf, len, flags);
@@ -1772,10 +1772,10 @@ err_t sys_send(fd_t sockfd, const void* buf, int64_t len, int flags, ssize_t* nu
   return err_out;
 }
 
-err_t sys_sendto(fd_t sockfd, const void* buf, int64_t len, int flags, const sys_sockaddr_t* dest_addr, ssize_t* num_sent_out)
+qio_err_t sys_sendto(fd_t sockfd, const void* buf, int64_t len, int flags, const sys_sockaddr_t* dest_addr, ssize_t* num_sent_out)
 {
   ssize_t sent;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   sent = sendto(sockfd, buf, len, flags, (const struct sockaddr*) &dest_addr->addr, dest_addr->len);
@@ -1791,10 +1791,10 @@ err_t sys_sendto(fd_t sockfd, const void* buf, int64_t len, int flags, const sys
   return err_out;
 }
 
-err_t sys_sendmsg(fd_t sockfd, const struct msghdr *msg, int flags, ssize_t* num_sent_out)
+qio_err_t sys_sendmsg(fd_t sockfd, const struct msghdr *msg, int flags, ssize_t* num_sent_out)
 {
   ssize_t sent;
-  err_t err_out;
+  qio_err_t err_out;
 
   STARTING_SLOW_SYSCALL;
   sent = sendmsg(sockfd, msg, flags);
@@ -1811,10 +1811,10 @@ err_t sys_sendmsg(fd_t sockfd, const struct msghdr *msg, int flags, ssize_t* num
 }
 
 
-err_t sys_shutdown(fd_t sockfd, int how)
+qio_err_t sys_shutdown(fd_t sockfd, int how)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   // might block with SO_LINGER
   STARTING_SLOW_SYSCALL;
@@ -1830,10 +1830,10 @@ err_t sys_shutdown(fd_t sockfd, int how)
 }
 
 
-err_t sys_socket(int domain, int type, int protocol, fd_t* sockfd_out)
+qio_err_t sys_socket(int domain, int type, int protocol, fd_t* sockfd_out)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = socket(domain, type, protocol);
   if( got != -1 ) {
@@ -1848,10 +1848,10 @@ err_t sys_socket(int domain, int type, int protocol, fd_t* sockfd_out)
 
 }
 
-err_t sys_socketpair(int domain, int type, int protocol, fd_t* sockfd_out_a, fd_t* sockfd_out_b)
+qio_err_t sys_socketpair(int domain, int type, int protocol, fd_t* sockfd_out_a, fd_t* sockfd_out_b)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
   int sv[2];
 
   sv[0] = sv[1] = -1;
@@ -1871,9 +1871,9 @@ err_t sys_socketpair(int domain, int type, int protocol, fd_t* sockfd_out_a, fd_
 
 extern void chpl_task_yield(void);
 
-err_t sys_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout, int* nset) {
+qio_err_t sys_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout, int* nset) {
   int got_nset;
-  err_t err_out = 0;
+  qio_err_t err_out = 0;
 
   struct timeval first_timeout;
   struct timeval second_timeout = {0};
@@ -1932,10 +1932,10 @@ err_t sys_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
   return err_out;
 }
 
-err_t sys_unlink(const char* path)
+qio_err_t sys_unlink(const char* path)
 {
   int got;
-  err_t err_out;
+  qio_err_t err_out;
 
   got = unlink(path);
   if( got == 0 ) err_out = 0;
@@ -1946,11 +1946,11 @@ err_t sys_unlink(const char* path)
 
 // This routine returns a malloc'd string through its path_out pointer.
 // The caller is responsible for freeing that memory.
-err_t sys_getcwd(const char** path_out)
+qio_err_t sys_getcwd(const char** path_out)
 {
   int   sz  = 128;
   char* buf = (char*) qio_malloc(sz);
-  err_t err = (buf == 0) ? ENOMEM : 0;
+  qio_err_t err = (buf == 0) ? ENOMEM : 0;
 
   // getcwd() returns 0 if the provided buffer is too small
   // If this happens, grow the buffer and try again

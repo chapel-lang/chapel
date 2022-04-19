@@ -3058,7 +3058,7 @@ qioerr _qio_unbuffered_read(qio_channel_t* ch, void* ptr, ssize_t len_in, ssize_
 qioerr _qio_channel_flush_qio_unlocked(qio_channel_t* ch)
 {
   qioerr err, saved_err;
-  err_t errcode;
+  qio_err_t errcode;
 
   err = 0;
 
