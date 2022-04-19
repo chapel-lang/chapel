@@ -2673,19 +2673,6 @@ struct Converter {
 
     auto ret = new DefExpr(varSym, initExpr, typeExpr);
 
-    // Handle this when building the AST, so should not need to convert it
-    // with a special case anymore
-    // Replace init expressions for config variables with values passed
-    // in on the command-line, if necessary.
-    // if (node->isConfig()) {
-
-    //   // TODO (dlongnecke): This call should be replaced by an equivalent
-    //   // one from the new frontend.
-    //   if (Expr* commandLineInit = lookupConfigVal(varSym)) {
-    //     ret->init = commandLineInit;
-    //   }
-    // }
-
     // If the init expression of this variable is a domain and this
     // variable is not const, propagate that information by setting
     // 'definedConst' in the domain to false.
