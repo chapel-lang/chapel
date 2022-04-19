@@ -89,10 +89,12 @@ public:
     return line;
   }
 
+  // Compare only file/line. If this/other has an ID, then get the
+  // file/line from the ID and use that to compare.
+  bool hasSameFileLine(const astlocT& other) const;
+
   bool operator==(const astlocT& other) const {
-    return this->filename_ == other.filename_ &&
-           this->lineno_ == other.lineno_ &&
-           this->id_ == other.id_;
+    return this->compare(other) == 0;
   }
   bool operator!=(const astlocT& other) const {
     return !(*this == other);
