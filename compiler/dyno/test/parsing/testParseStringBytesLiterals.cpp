@@ -150,6 +150,7 @@ static void testSingleLiteral(Parser* parser,
 static void testBadLiteral(Parser* parser,
                            const char* testname,
                            const char* str) {
+  if (!strcmp(testname, "test32.chpl")) debuggerBreakHere();
   std::string toparse = "var x = ";
   toparse += str;
   toparse += ";\n";
@@ -189,8 +190,20 @@ int main() {
 
   testTripleLiteral(p, "test12.chpl", "\\x00\\x01", std::string("\\x00\\x01"));
 
+  std::string t20;
+  t20.push_back('\x12');
+  t20.push_back('3');
+  t20.push_back('4');
+  testSingleLiteral(p, "test20.chpl", "\\x1234", t20);
+
+  std::string t21;
+  t21.push_back('\x0a');
+  t21.push_back('g');
+  testSingleLiteral(p, "test21.chpl", "\\xag", t21);
+
   testBadLiteral(p, "test30.chpl", "\"\\q\"");
-  testBadLiteral(p, "test31.chpl", "\"\\xFFFFFFFFFFFFFFFFFFFFFFFFFF\"");
+  testBadLiteral(p, "test31.chpl", "\"\\u1234\"");
+  testBadLiteral(p, "test32.chpl", "\"\\xG\"");
 
   return 0;
 }
