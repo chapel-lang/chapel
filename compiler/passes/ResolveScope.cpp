@@ -789,9 +789,9 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
       USR_STOP();
     }
   } else {
-    // This was `import super;` or `import [super.]*super;`.  We've already
-    // handled the case where this occurs in a top-level module for which there
-    // is no super, so we can be certain this is okay to return
+    // This was a combination of only `super` and `this`.  We've already
+    // verified that such cases are accurate, so use `relativeScope` to set the
+    // return value.
     retval = toSymbol(relativeScope->mAstRef);
     INT_ASSERT(retval != NULL);
     SymAndReferencedName res(retval, astr(""));
