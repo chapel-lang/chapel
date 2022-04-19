@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+cp "$2" $2.tmp
+cat $2.tmp | sort > $2
+rm $2.tmp
+

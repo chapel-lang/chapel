@@ -1512,14 +1512,25 @@ struct Converter {
       CallExpr* newExprStart = convertNewManagement(newExpression);
       INT_ASSERT(newExprStart);
 
-      // TODO: Need to check for special identifiers?
-      Expr* typeExpr = convertAST(newExpression->typeExpression());
+      auto nodeTypeExpr = newExpression->typeExpression();
+      INT_ASSERT(nodeTypeExpr);
 
-      auto initializerCall = new CallExpr(typeExpr);
-      newExprStart->insertAtTail(initializerCall);
+      // Try to convert a called keyword, if not then use defaults.
+      Expr* typeExpr = convertCalledKeyword(nodeTypeExpr);
+      if (!typeExpr) {
+        typeExpr = convertAST(nodeTypeExpr);
+      }
+
+      INT_ASSERT(typeExpr);
+
+      // Ensure type expression is always wrapped in a call.
+      auto initCall = toCallExpr(typeExpr);
+      if (!initCall) initCall = new CallExpr(typeExpr);
+
+      newExprStart->insertAtTail(initCall);
 
       ret = newExprStart;
-      addArgsTo = initializerCall;
+      addArgsTo = initCall;
 
     // Special case 'sparse' since it's weird and can only appear one way.
     } else if (Expr* expr = convertSparseKeyword(node)) {
