@@ -1517,14 +1517,21 @@ struct Converter {
 
       // Try to convert a called keyword, if not then use defaults.
       Expr* typeExpr = convertCalledKeyword(nodeTypeExpr);
+      bool isCalledKeyword = true;
       if (!typeExpr) {
         typeExpr = convertAST(nodeTypeExpr);
+        isCalledKeyword = false;
       }
 
       INT_ASSERT(typeExpr);
 
-      // Ensure type expression is always wrapped in a call.
-      auto initCall = new CallExpr(typeExpr);
+      // Ensure type expression is always wrapped in a call. We can parse
+      // something like 'new borrowed borrowed C', in which case we need
+      // to insert the remaining arguments into the second 'borrowed'
+      // call rather than just inserting them to the right of it.
+      CallExpr* initCall = (isCalledKeyword && isCallExpr(typeExpr))
+          ? toCallExpr(typeExpr)
+          : new CallExpr(typeExpr);
 
       newExprStart->insertAtTail(initCall);
 
@@ -2430,10 +2437,10 @@ struct Converter {
 
     INT_ASSERT(node->isExpressionLevel());
 
-    Expr* domActuals = new SymExpr(gNil);
-
     auto dom = node->iterand()->toDomain();
     INT_ASSERT(dom);
+
+    Expr* domActuals = nullptr;
 
     // If there are no domain expressions, use 'nil'.
     if (!dom->numExprs()) {
@@ -2452,10 +2459,12 @@ struct Converter {
 
     // Use a single argument directly.
     } else {
-      domActuals = convertAST(dom->expr(0));
+      auto expr = dom->expr(0);
+      domActuals = convertAST(expr);
 
-      // But wrap it if it is not a formal type.
-      if (!isFormalType) {
+      // But wrap it if it is not a type query for a formal type.
+      bool isFormalTypeQuery = isFormalType && expr->isTypeQuery();
+      if (!isFormalTypeQuery) {
         domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
       }
     }
