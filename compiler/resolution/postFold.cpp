@@ -504,7 +504,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
       call->replace(retval);
     }
 
-  } else if (call->isPrimitive("codepoint") == true) {
+  } else if (call->isPrimitive("string item") == true) {
     INT_ASSERT(call->numActuals() == 2);
 
     SymExpr* se = toSymExpr(call->get(1));
