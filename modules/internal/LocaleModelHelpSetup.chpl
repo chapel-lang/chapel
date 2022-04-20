@@ -115,7 +115,7 @@ module LocaleModelHelpSetup {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      chpl_task_setSubloc(c_sublocid_any);
+      chpl_task_setSubloc(c_sublocid_none);
       const node = new locale(new unmanaged LocaleModel(new locale (dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
@@ -232,7 +232,7 @@ module LocaleModelHelpSetup {
   }
 
   proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string,
-      numSublocales: int, /*type CPULocale,*/ type GPULocale){
+      numSublocales: int, type GPULocale){
 
     var childSpace = {0..#numSublocales};
 
@@ -240,13 +240,8 @@ module LocaleModelHelpSetup {
 
     for i in childSpace {
       chpl_task_setSubloc(i:chpl_sublocID_t);
-      /*if i == 0 {
-        dst.childLocales[i] = new unmanaged CPULocale(i:chpl_sublocID_t, dst);
-      }
-      else {*/
-        dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
-        dst.childLocales[i].maxTaskPar = 1;
-      //}
+      dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
+      dst.childLocales[i].maxTaskPar = 1;
     }
     chpl_task_setSubloc(origSubloc);
   }

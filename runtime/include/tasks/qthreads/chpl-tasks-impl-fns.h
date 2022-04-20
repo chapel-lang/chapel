@@ -173,8 +173,6 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
 {
     qthread_shepherd_id_t curr_shep;
 
-    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any);
-
     // Only change sublocales if the caller asked for a particular one,
     // which is not the current one, and we're a (movable) task.
     //

@@ -86,7 +86,7 @@ void chpl_gpu_init() {
 }
 
 static void chpl_gpu_ensure_context() {
-  CUcontext next_context = chpl_gpu_primary_ctx[chpl_task_getRequestedSubloc()-1];
+  CUcontext next_context = chpl_gpu_primary_ctx[chpl_task_getRequestedSubloc()];
 
   if (!chpl_gpu_has_context()) {
     CUDA_CALL(cuCtxPushCurrent(next_context));

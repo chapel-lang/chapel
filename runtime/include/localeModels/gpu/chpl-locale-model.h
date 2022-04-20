@@ -42,6 +42,8 @@ typedef struct {
 //
 #define CHPL_LOCALEID_T_INIT  {0, 0}
 
+#define INITIAL_SUBLOCALE -1
+
 //
 // This is the external copy constructor for a chpl_localeID_t, specified
 // by the module code for a numa locale model.

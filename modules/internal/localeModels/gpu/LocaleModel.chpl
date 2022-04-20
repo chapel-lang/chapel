@@ -244,7 +244,7 @@ module LocaleModel {
 
     override proc writeThis(f) throws {
       parent.writeThis(f);
-      f <~> '.'+name + " (gpu locale)";
+      f <~> '.'+name;
     }
 
     override proc getChildCount(): int { return 0; }
@@ -261,6 +261,8 @@ module LocaleModel {
     }
 
     override proc isGpu() : bool { return true; }
+    override proc numGpus() : int { return parent.numGpus(); }
+    override proc getGpu(idx:int) : locale { return parent.getGpu(idx); }
   }
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
@@ -275,9 +277,6 @@ module LocaleModel {
     var local_name : string; // should never be modified after first assignment
 
     var numSublocales: int;
-    var GPU: unmanaged GPULocale?;
-    //var CPU: unmanaged CPULocale?;
-
     const childSpace: domain(1);
     param firstGpuSubLocId = 0;
 
@@ -298,7 +297,7 @@ module LocaleModel {
       var nDevices: int;
       cudaGetDeviceCount(nDevices);
 
-      //1 cpu and number of GPU devices on a node
+      //number of GPU devices on a node
       numSublocales = nDevices;
       childSpace = {0..#numSublocales};
 
@@ -333,7 +332,7 @@ module LocaleModel {
     override proc chpl_id() return _node_id;
 
     override proc chpl_localeid() {
-      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
+      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_none);
     }
     override proc chpl_name() return local_name;
 
@@ -356,9 +355,8 @@ module LocaleModel {
     }
 
     override proc getGpu(idx:int) : locale {
-      if boundsChecking then
-        if (idx < 0) || (idx >= numGpus()) then
-          halt("gpu index out of bounds (",idx,")");
+      if (idx < 0) || (idx >= numGpus()) then
+        halt("gpu index out of bounds (",idx,")");
       return getChild(idx + firstGpuSubLocId);
     }
 
@@ -421,7 +419,7 @@ module LocaleModel {
     proc local_name() return "rootLocale";
 
     override proc writeThis(f) throws {
-      f <~> "rootLocale:" + name;
+      f <~> name;
     }
 
     override proc getChildCount() return this.myLocaleSpace.size;

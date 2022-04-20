@@ -810,8 +810,6 @@ void chpl_task_addTask(chpl_fn_int_t       fid,
 {
     chpl_fn_p requested_fn = chpl_ftable[fid];
 
-    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any);
-
     PROFILE_INCR(profile_task_addTask,1);
 
     c_sublocid_t execution_subloc =
