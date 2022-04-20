@@ -144,15 +144,17 @@ class Builder final {
   Location getLocation(const AstNode* ast);
   std::tuple<AstNode*, std::string> checkAndUpdateConfig(AstNode *ast, pathVecT& pathVec);
 
-  /// \endcond
+  std::pair<std::string, std::string> nodeMatchesConfig(AstNode* ast, pathVecT& pathVec);
+
+  AstNode* checkAndUpdateConfig(AstNode* ast, std::pair<std::string, std::string> configPair);
 
   void noteChildrenLocations(AstNode* ast, Location loc);
 
   void checkConfigPreviouslyUsed(const AstNode* ast, std::string& configNameUsed);
 
-  std::pair<std::string, std::string> nodeMatchesConfig(AstNode* ast, pathVecT &pathVec);
+  /// \endcond
 
-  AstNode* checkAndUpdateConfig(AstNode* ast, std::pair<std::string, std::string> configPair);
+
 };
 
 } // end namespace uast
