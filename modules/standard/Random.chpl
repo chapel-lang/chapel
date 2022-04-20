@@ -1054,6 +1054,17 @@ module Random {
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
           x = r;
       }
+
+      /*
+        Fill the argument array with pseudorandom values within a particular
+        range. Sets each element to a number in [`min`, `max`] (inclusive).
+
+        See also the caveats in the :proc:`PCGRandomStream.getNext` accepting
+        min and max arguments..
+
+        :arg arr: The array to be filled
+        :type arr: `[] T`
+      */
       proc fillRandom(arr: [], min: arr.eltType, max:arr.eltType) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
@@ -1266,6 +1277,27 @@ module Random {
         _unlock();
         return PCGRandomPrivate_iterate(resultType, D, seed, start);
       }
+
+      /*
+
+         Returns an iterable expression for generating `D.size` random
+         numbers within the range [`min`, `max`] (inclusive).
+
+         See also the caveats in the :proc:`PCGRandomStream.getNext` accepting
+         min and max arguments.
+
+         The RNG state will be immediately advanced by `D.size`
+         before the iterable expression yields any values.
+
+         The returned iterable expression is useful in parallel contexts,
+         including standalone and zippered iteration. The domain will determine
+         the parallelization strategy.
+
+         :arg D: a domain
+         :arg resultType: the type of number to yield
+         :return: an iterable expression yielding random `resultType` values
+
+       */
       pragma "fn returns iterator"
       proc iterate(D: domain, type resultType=eltType,
                    min: resultType, max: resultType) {
