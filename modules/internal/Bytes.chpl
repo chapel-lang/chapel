@@ -371,7 +371,13 @@ module Bytes {
 
     inline proc param this(param i: int) param : bytes {
       if i < 0 || i > this.size-1 then
-        compilerError("index " + i:string + " out of bounds for string with " + this.numBytes:string + " characters");
+        compilerError("index " + i:string + " out of bounds for bytes with " + this.numBytes:string + " characters");
+      return __primitive("bytes item", this, i);
+    }
+
+    inline proc param item(param i: int) param : bytes {
+      if i < 0 || i > this.size-1 then
+        compilerError("index " + i:string + " out of bounds for bytes with " + this.numBytes:string + " characters");
       return __primitive("bytes item", this, i);
     }
 

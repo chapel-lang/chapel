@@ -2335,6 +2335,13 @@ module String {
   }
 
   pragma "no doc"
+  inline proc param string.item(param i: int) param : string {
+    if i < 0 || i > this.size-1 then
+      compilerError("index " + i:string + " out of bounds for string with " + this.numBytes:string + " characters");
+    return __primitive("string item", this, i);
+  }
+
+  pragma "no doc"
   inline proc param string.numBytes param
     return __primitive("string_length_bytes", this);
 
