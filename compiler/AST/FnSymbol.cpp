@@ -1588,7 +1588,8 @@ std::string FnSymbol::nameAndArgsToString(const char* sep,
       }
     }
 
-    if (foundThis) {
+    // Don't print "this" for operator methods, but do print it otherwise
+    if (foundThis && !fn->hasFlag(FLAG_OPERATOR)) {
       std::string argString = argToString(fn,
                                           name, thisFormal, thisSubstitution,
                                           /*isThis*/ true,
