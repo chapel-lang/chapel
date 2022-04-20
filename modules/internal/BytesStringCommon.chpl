@@ -363,7 +363,7 @@ module BytesStringCommon {
   //
   // If codepointIndex range was given, converts that to byte index range in the
   // process.
-  proc getView(const ref x: ?t, r: range(?)) {
+  proc getView(const ref x: ?t, r: range(?), param checkMisaligned=true) throws {
     assertArgType(t, "getView");
     if t == bytes && r.idxType == codepointIndex {
       compilerError("codepointIndex ranges cannot be used with bytes in getView");
@@ -388,7 +388,19 @@ module BytesStringCommon {
       }
     }
 
-    if t == bytes || r.idxType == byteIndex {
+    if r.idxType == byteIndex {
+      if checkMisaligned && t == string {
+        if r.hasLowBound()  && !isInitialByte(x.byte[r.low:int]) {
+          throw new MisalignedSliceError("The byte at low boundary " +
+                                         r.low:string +
+                                         " is not the first byte of a UTF-8 codepoint");
+        }
+        if r.hasHighBound()  && !isInitialByte(x.byte[r.high:int]) {
+          throw new MisalignedSliceError("The byte at high boundary " +
+                                         r.high:string +
+                                         " is not the first byte of a UTF-8 codepoint");
+        }
+      }
       return simpleCaseHelper();
     }
     else if t == string && x.isASCII() {
@@ -446,7 +458,7 @@ module BytesStringCommon {
   }
 
   // TODO: I wasn't very good about caching variables locally in this one.
-  proc getSlice(const ref x: ?t, r: range(?)) {
+  proc getSlice(const ref x: ?t, r: range(?)) throws {
     assertArgType(t, "getSlice");
 
     if x.isEmpty() {
@@ -525,8 +537,10 @@ module BytesStringCommon {
 
       found += 1;
 
-      result = result[..idx-1] + localReplacement +
-               result[(idx + localNeedle.numBytes)..];
+      try! {
+        result = result[..idx-1] + localReplacement +
+                 result[(idx + localNeedle.numBytes)..];
+      }
 
       startIdx = idx + localReplacement.numBytes;
     }
@@ -705,7 +719,10 @@ module BytesStringCommon {
       // used because we cant break out of an on-clause early
       var localRet: int = -2;
       const nLen = needle.buffLen;
-      const (view, _) = getView(x, region);
+
+      // we use try! because this function must only be called with ASCII or
+      // random bytes data. getView shouldn't throw in those cases
+      const (view, _) = try! getView(x, region);
       const xLen = view.size;
 
       // Edge cases

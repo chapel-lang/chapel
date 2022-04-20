@@ -126,6 +126,22 @@ module Errors {
     }
   }
 
+  /*
+   A `MisalignedSliceError` is thrown if an attempt to slice a string with
+   byteIndex-based ranges where the range boundaries does not align with
+   codepoint boundaries.
+   */
+  class MisalignedSliceError: Error {
+
+    var msg: string;
+
+    pragma "no doc"
+    override proc message() {
+      return "Byte-based string slice is not aligned to codepoint boundaries. "
+             + msg;
+    }
+  }
+
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support
   // iterating over the errors concurrently. Errors

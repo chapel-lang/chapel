@@ -1088,7 +1088,7 @@ module String {
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
         const nLen = pattern.buffLen;
-        const (view, _) = getView(this, indices);
+        const (view, _) = try! getView(this, indices, checkMisaligned=false);
         const thisLen = view.size;
 
         // Edge cases
@@ -1599,8 +1599,14 @@ module String {
     :returns: a new string that is a substring within ``0..<string.size``. If
               the length of `r` is zero, an empty string is returned.
    */
-  inline proc string.this(r: range(?)) : string {
+  inline proc string.this(r: range(?)): string throws where r.idxType == byteIndex {
     return getSlice(this, r);
+  }
+
+  pragma "no doc"
+  inline proc string.this(r: range(?)): string where r.idxType != byteIndex {
+    // codepoint-based slicing should never throw
+    return try! getSlice(this, r);
   }
 
   /*
@@ -1857,7 +1863,7 @@ module String {
         }
       }
 
-      return localThis[start..end];
+      return try! localThis[start..end];
     }
   }
 
