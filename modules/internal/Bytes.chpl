@@ -369,10 +369,10 @@ module Bytes {
       return this:c_string; // folded out in resolution
     }
 
-    inline proc param this(param i: int) param : bytes {
+    inline proc param this(param i: int) param : int {
       if i < 0 || i > this.size-1 then
         compilerError("index " + i:string + " out of bounds for bytes with " + this.numBytes:string + " characters");
-      return __primitive("bytes item", this, i);
+      return __primitive("ascii", this, i);
     }
 
     inline proc param item(param i: int) param : bytes {
