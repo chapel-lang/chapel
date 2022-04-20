@@ -149,6 +149,8 @@ public:
 
   void                        addRootType();
 
+  void checkSameNameFields(std::map<const char*, Symbol*> &allFields);
+
   void                        addClassToHierarchy();
 
   bool                        wantsDefaultInitializer()                  const;
