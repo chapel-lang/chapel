@@ -221,6 +221,32 @@ static Expr* postFoldNormal(CallExpr* call) {
 
 static bool isSameTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
+static std::string getStringAndIndexFromPrim(CallExpr* call, size_t* idx) {
+  SymExpr* se = toSymExpr(call->get(1));
+
+  INT_ASSERT(se);
+  INT_ASSERT(se->symbol()->isParameter() == true);
+
+  const char*       str       = get_string(se);
+  const std::string unescaped = unescapeString(str, se);
+
+  if (call->numActuals() > 1) {
+    SymExpr* ie = toSymExpr(call->get(2));
+    int64_t val = 0;
+
+    INT_ASSERT(ie && ie->symbol()->isParameter());
+    bool found_int = get_int(ie, &val);
+    INT_ASSERT(found_int);
+
+    *idx = static_cast<size_t>(val);
+  }
+  else {
+    *idx = -1;
+  }
+
+  return unescaped;
+}
+
 static Expr* postFoldPrimop(CallExpr* call) {
   Expr* retval = call;
 
@@ -507,68 +533,27 @@ static Expr* postFoldPrimop(CallExpr* call) {
   } else if (call->isPrimitive("string item") == true) {
     INT_ASSERT(call->numActuals() == 2);
 
-    SymExpr* se = toSymExpr(call->get(1));
+    size_t idx = 0;
+    std::string unescaped = getStringAndIndexFromPrim(call, &idx);
 
-    INT_ASSERT(se);
+    const char* retStr = chpl_enc_codepoint_at_idx(unescaped.c_str(), idx);
+    INT_ASSERT(retStr);
 
-    if (se->symbol()->isParameter() == true) {
-      const char*       str       = get_string(se);
-      const std::string unescaped = unescapeString(str, se);
-      size_t            idx       = 0;
-
-      SymExpr* ie = toSymExpr(call->get(2));
-      int64_t val = 0;
-
-      INT_ASSERT(ie && ie->symbol()->isParameter());
-      bool found_int = get_int(ie, &val);
-      INT_ASSERT(found_int);
-
-      idx = static_cast<size_t>(val);
-
-
-      const char* retStr = chpl_enc_codepoint_at_idx(unescaped.c_str(), idx);
-
-      INT_ASSERT(retStr);
-
-      retval = new SymExpr(new_StringSymbol(retStr));
-
-      call->replace(retval);
-    }
-    else {
-      INT_FATAL("Not ready");
-    }
+    retval = new SymExpr(new_StringSymbol(retStr));
+    call->replace(retval);
 
   } else if (call->isPrimitive("bytes item") == true) {
     INT_ASSERT(call->numActuals() == 2);
 
-    SymExpr* se = toSymExpr(call->get(1));
+    size_t idx = 0;
+    std::string unescaped = getStringAndIndexFromPrim(call, &idx);
 
-    INT_ASSERT(se);
+    char* retStr = (char*)calloc(2, sizeof(unsigned char));
+    retStr[0] = (unsigned char)unescaped[idx];
 
-    if (se->symbol()->isParameter() == true) {
-      const char*       str       = get_string(se);
-      const std::string unescaped = unescapeString(str, se);
-      size_t            idx       = 0;
+    retval = new SymExpr(new_BytesSymbol(retStr));
+    call->replace(retval);
 
-      SymExpr* ie = toSymExpr(call->get(2));
-      int64_t val = 0;
-
-      INT_ASSERT(ie && ie->symbol()->isParameter());
-      bool found_int = get_int(ie, &val);
-      INT_ASSERT(found_int);
-
-      idx = static_cast<size_t>(val);
-
-      char* retStr = (char*)calloc(2, sizeof(unsigned char));
-      retStr[0] = (unsigned char)unescaped[idx];
-
-      retval = new SymExpr(new_BytesSymbol(retStr));
-
-      call->replace(retval);
-    }
-    else {
-      INT_FATAL("Not ready");
-    }
   } else if (call->isPrimitive("string_contains") == true) {
     SymExpr* lhs = toSymExpr(call->get(1));
     SymExpr* rhs = toSymExpr(call->get(2));
