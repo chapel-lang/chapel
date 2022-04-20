@@ -1524,8 +1524,7 @@ struct Converter {
       INT_ASSERT(typeExpr);
 
       // Ensure type expression is always wrapped in a call.
-      auto initCall = toCallExpr(typeExpr);
-      if (!initCall) initCall = new CallExpr(typeExpr);
+      auto initCall = new CallExpr(typeExpr);
 
       newExprStart->insertAtTail(initCall);
 
@@ -2293,7 +2292,8 @@ struct Converter {
 
     if (auto te = node->typeExpression()) {
       if (auto bkt = te->toBracketLoop()) {
-        typeExpr = convertArrayType(bkt);
+        const bool isFormalType = true;
+        typeExpr = convertArrayType(bkt, isFormalType);
       } else {
         typeExpr = convertAST(te);
       }
@@ -2424,7 +2424,8 @@ struct Converter {
     }
   }
 
-  CallExpr* convertArrayType(const uast::BracketLoop* node) {
+  CallExpr* convertArrayType(const uast::BracketLoop* node,
+                             bool isFormalType=false) {
     astlocMarker markAstLoc(node->id());
 
     INT_ASSERT(node->isExpressionLevel());
@@ -2453,8 +2454,8 @@ struct Converter {
     } else {
       domActuals = convertAST(dom->expr(0));
 
-      // But wrap it if it is not a type query.
-      if (!dom->expr(0)->isTypeQuery()) {
+      // But wrap it if it is not a formal type.
+      if (!isFormalType) {
         domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
       }
     }
