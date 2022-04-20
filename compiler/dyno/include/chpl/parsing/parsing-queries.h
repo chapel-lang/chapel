@@ -160,13 +160,6 @@ const
 ConfigSettingsList& configSettings(Context* context);
 
 
-// note the ID to which we have associated a config set on the compile command-line
-void
-useConfigSetting(Context* context, std::string name, ID id);
-
-// check if config set from the commmand-line was used already
-const ID& nameToConfigSettingId(Context* context, std::string name);
-
 } // end namespace parsing
 } // end namespace chpl
 #endif

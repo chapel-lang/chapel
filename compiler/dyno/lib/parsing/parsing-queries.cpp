@@ -355,19 +355,6 @@ ConfigSettingsList& configSettings(Context* context) {
   return QUERY_END(result);
 }
 
-void
-useConfigSetting(Context* context, std::string name, ID id) {
-  QUERY_STORE_INPUT_RESULT(nameToConfigSettingId, context, id, name);
-}
-
-// check if config was used already
-const ID& nameToConfigSettingId(Context* context, std::string name) {
-  QUERY_BEGIN_INPUT(nameToConfigSettingId, context, name);
-
-  // return empty ID if ID not already set using useConfigSetting
-  ID result;
-  return QUERY_END(result);
-}
 
 } // end namespace parsing
 } // end namespace chpl

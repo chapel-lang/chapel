@@ -159,6 +159,9 @@ class Builder final {
   // build a dummy input string and parse it, extracting the initExpr and returning it
   owned <AstNode> parseDummyNodeForInitExpr(Variable* var, std::string value);
 
+  // check that all the configs passed from the command line were consumed
+  static bool checkAllConfigVarsAssigned(Context* context);
+
   /// \endcond
 
 };

@@ -26,7 +26,7 @@
 #include "parser.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "chpl/parsing/parsing-queries.h"
+#include "chpl/uast/Builder.h"
 #include <utility>
 
 
@@ -43,15 +43,7 @@ void checkConfigs() {
     bool             anyBadConfigParams = false;
     if (fDynoCompilerLibrary) {
       // check that all config vars that were set from the command line were assigned
-      auto configs = parsing::configSettings(gContext);
-      for (auto config : configs) {
-        auto usedId = parsing::nameToConfigSettingId(gContext, config.first);
-        if (usedId.isEmpty()) {
-          USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
-                         config.first.c_str());
-          anyBadConfigParams = true;
-        }
-      }
+      anyBadConfigParams = uast::Builder::checkAllConfigVarsAssigned(gContext);
     } else {
       Vec<const char *> configParamSetNames;
 

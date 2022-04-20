@@ -28,6 +28,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/OpCall.h"
+#include "chpl/queries/query-impl.h"
 
 #include <cstring>
 #include <string>
@@ -35,6 +36,35 @@
 namespace chpl {
 namespace uast {
 
+// Query to check if config was used already
+static const ID& nameToConfigSettingId(Context* context, std::string name) {
+  QUERY_BEGIN_INPUT(nameToConfigSettingId, context, name);
+
+  // return empty ID if ID not already set using useConfigSetting
+  ID result;
+  return QUERY_END(result);
+}
+
+// Input query to store the used configs
+static void
+useConfigSetting(Context* context, std::string name, ID id) {
+  QUERY_STORE_INPUT_RESULT(nameToConfigSettingId, context, id, name);
+}
+
+bool Builder::checkAllConfigVarsAssigned(Context* context) {
+   // check that all config vars that were set from the command line were assigned
+   bool anyBadConfigs = false;
+   auto configs = parsing::configSettings(context);
+   for (auto config : configs) {
+     auto usedId = nameToConfigSettingId(context, config.first);
+     if (usedId.isEmpty()) {
+       auto loc = Location();
+       context->error(loc,"Trying to set unrecognized config '%s' via -s flag", config.first.c_str());
+       anyBadConfigs = true;
+     }
+   }
+   return !anyBadConfigs;
+ }
 
 static std::string filenameToModulename(const char* filename) {
   const char* moduleName = filename;
@@ -318,8 +348,8 @@ void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& config
   // return those saved results on subsequent calls to during the same revision.
   // "If called multiple times __within the same revision__, only the first
   // stored result in that revision will be saved."
-  parsing::useConfigSetting(context(), configNameUsed, var->id());
-  auto usedId = parsing::nameToConfigSettingId(context(), configNameUsed);
+  useConfigSetting(context(), configNameUsed, var->id());
+  auto usedId = nameToConfigSettingId(context(), configNameUsed);
 
   if (usedId != var->id()) {
     // TODO: Need a nicer way of constructing errors/notes/warnings without storing them in the context_
