@@ -236,19 +236,24 @@ char* chpl_enc_codepoint_at_idx(const char* buf,
                                       ssize_t idx) {
   int32_t cp;
   int nbytes;
-  int i;
 
-  size_t buflen = strlen(buf);
+  ssize_t buflen = strlen(buf);
   int offset = 0;
-  for (i=0 ; i<idx ; i++) {
+  int at_char = -1;
+  do {
     // you can create a chapel string with a codepoint that represents an
     // escaped byte, so the last argument is true
     if (chpl_enc_decode_char_buf_utf8(&cp, &nbytes, buf+offset,
                                       buflen-offset, true) != 0) {
       return NULL;  // invalid : return EILSEQ
     }
+    at_char += 1;
+    if (at_char == idx) {
+      break;
+    }
     offset += nbytes;
-  }
+  } while (offset<buflen);
+
 
   char* ret_val = (char*)calloc((nbytes+1), sizeof(unsigned char));
   memcpy(ret_val, buf+offset, nbytes);
