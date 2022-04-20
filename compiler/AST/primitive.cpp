@@ -1049,6 +1049,7 @@ initPrimitive() {
   prim_def(PRIM_STRING_LENGTH_BYTES, "string_length_bytes", returnInfoDefaultInt);
   prim_def(PRIM_STRING_LENGTH_CODEPOINTS, "string_length_codepoints", returnInfoDefaultInt);
   prim_def(PRIM_ASCII, "ascii", returnInfoUInt8);
+  prim_def(PRIM_CODEPOINT, "codepoint", returnInfoString);
   prim_def(PRIM_STRING_INDEX, "string_index", returnInfoStringC, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.

@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include "encoding-support.h"
 #include "postFold.h"
 
 #include "astutil.h"
@@ -501,6 +502,40 @@ static Expr* postFoldPrimop(CallExpr* call) {
       retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
 
       call->replace(retval);
+    }
+
+  } else if (call->isPrimitive("codepoint") == true) {
+    INT_ASSERT(call->numActuals() == 2);
+
+    SymExpr* se = toSymExpr(call->get(1));
+
+    INT_ASSERT(se);
+
+    if (se->symbol()->isParameter() == true) {
+      const char*       str       = get_string(se);
+      const std::string unescaped = unescapeString(str, se);
+      size_t            idx       = 0;
+
+      SymExpr* ie = toSymExpr(call->get(2));
+      int64_t val = 0;
+
+      INT_ASSERT(ie && ie->symbol()->isParameter());
+      bool found_int = get_int(ie, &val);
+      INT_ASSERT(found_int);
+
+      idx = static_cast<size_t>(val);
+
+
+      const char* retStr = chpl_enc_codepoint_at_idx(unescaped.c_str(), idx);
+
+      INT_ASSERT(retStr);
+
+      retval = new SymExpr(new_StringSymbol(retStr));
+
+      call->replace(retval);
+    }
+    else {
+      INT_FATAL("Not ready");
     }
 
   } else if (call->isPrimitive("string_contains") == true) {
