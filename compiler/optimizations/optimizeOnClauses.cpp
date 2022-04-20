@@ -89,6 +89,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_STRING_LENGTH_CODEPOINTS:
   case PRIM_ASCII:
   case PRIM_CODEPOINT:
+  case PRIM_BYTES_ITEM:
   case PRIM_STRING_INDEX:
   case PRIM_STRING_SELECT:
   case PRIM_SLEEP:

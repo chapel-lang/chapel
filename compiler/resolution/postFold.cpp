@@ -538,6 +538,37 @@ static Expr* postFoldPrimop(CallExpr* call) {
       INT_FATAL("Not ready");
     }
 
+  } else if (call->isPrimitive("bytes item") == true) {
+    INT_ASSERT(call->numActuals() == 2);
+
+    SymExpr* se = toSymExpr(call->get(1));
+
+    INT_ASSERT(se);
+
+    if (se->symbol()->isParameter() == true) {
+      const char*       str       = get_string(se);
+      const std::string unescaped = unescapeString(str, se);
+      size_t            idx       = 0;
+
+      SymExpr* ie = toSymExpr(call->get(2));
+      int64_t val = 0;
+
+      INT_ASSERT(ie && ie->symbol()->isParameter());
+      bool found_int = get_int(ie, &val);
+      INT_ASSERT(found_int);
+
+      idx = static_cast<size_t>(val);
+
+      char* retStr = (char*)calloc(2, sizeof(unsigned char));
+      retStr[0] = (unsigned char)unescaped[idx];
+
+      retval = new SymExpr(new_BytesSymbol(retStr));
+
+      call->replace(retval);
+    }
+    else {
+      INT_FATAL("Not ready");
+    }
   } else if (call->isPrimitive("string_contains") == true) {
     SymExpr* lhs = toSymExpr(call->get(1));
     SymExpr* rhs = toSymExpr(call->get(2));

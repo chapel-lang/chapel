@@ -56,6 +56,11 @@ returnInfoString(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoBytes(CallExpr* call) {
+  return QualifiedType(dtBytes, QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoStringC(CallExpr* call) {
   return QualifiedType(dtStringC, QUAL_VAL);
 }
@@ -1050,6 +1055,7 @@ initPrimitive() {
   prim_def(PRIM_STRING_LENGTH_CODEPOINTS, "string_length_codepoints", returnInfoDefaultInt);
   prim_def(PRIM_ASCII, "ascii", returnInfoUInt8);
   prim_def(PRIM_CODEPOINT, "codepoint", returnInfoString);
+  prim_def(PRIM_BYTES_ITEM, "bytes item", returnInfoBytes);
   prim_def(PRIM_STRING_INDEX, "string_index", returnInfoStringC, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.
