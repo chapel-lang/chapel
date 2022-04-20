@@ -202,13 +202,16 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     return;
   }
 
-  std::pair<std::string, std::string> configMatched;
+  // check if this is a config var/param/type and if a value was set from the command line
+  // and update the initExpr for this node if so
+  std::string configName;
+  std::string configValue;
   AstNode* ieNode = nullptr;
   if (auto var = ast->toVariable()) {
     if (var->isConfig()) {
-      configMatched = nodeMatchesConfig(ast, pathVec);
-      if (!configMatched.first.empty())
-        ieNode = checkAndUpdateConfig(ast, configMatched);
+     lookupConfigSettingsForVar(var, pathVec, configName, configValue);
+      if (!configName.empty())
+        ieNode = updateConfig(var, configName, configValue);
     }
   }
 
@@ -295,136 +298,166 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   if (search != notedLocations_.end()) {
     assert(!search->second.isEmpty());
     idToLocation_[ast->id()] = search->second;
+    // if a config's initExpr was updated, mark it as used and make sure it wasn't used previously
     if (ieNode) {
-      checkConfigPreviouslyUsed(ast, configMatched.first);
+      assert(ast->isVariable());
+      checkConfigPreviouslyUsed(ast->toVariable(), configName);
     }
   } else {
     assert(false && "Location for all ast should be set by noteLocation");
   }
 }
 
-  void Builder::checkConfigPreviouslyUsed(const AstNode* ast, std::string& configNameUsed) {
-    // If you're reading this and confused about how we can call useConfigSetting
-    // and then call nameToConfigSetting, essentially setting a value and then
-    // asking for it back and comparing against the value we just used, you're not alone.
-    // See the docs in query-impl.h (QUERY_STORE_INPUT_RESULT) that describes
-    // why this works.
-    // "If called multiple times __within the same revision__, only the first
-    // stored result in that revision will be saved."
-    parsing::useConfigSetting(context(), configNameUsed, ast->id());
-    auto usedId = parsing::nameToConfigSettingId(context(), configNameUsed);
+void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& configNameUsed) {
+  // If you're reading this and confused about how we can call useConfigSetting
+  // and then call nameToConfigSetting, essentially setting a value and then
+  // asking for it back and comparing against the value we just used, you're not alone.
+  // See the docs in query-impl.h (QUERY_STORE_INPUT_RESULT) that describes
+  // why this works.
+  // An important aspect is that calling a "Getter" type input query also stores the results and will
+  // return those saved results on subsequent calls to during the same revision.
+  // "If called multiple times __within the same revision__, only the first
+  // stored result in that revision will be saved."
+  parsing::useConfigSetting(context(), configNameUsed, var->id());
+  auto usedId = parsing::nameToConfigSettingId(context(), configNameUsed);
 
-    if (usedId != ast->id()) {
-      std::string err = "ambiguous config name (";
-      err += configNameUsed;
-      err += ")";
-      std::string otherLoc = "also defined here";
-      std::string disambiguate = "(disambiguate using -s<modulename>.";
-      disambiguate += configNameUsed;
-      disambiguate += "...)";
-      ErrorMessage errorMessage = ErrorMessage(ast->id(), idToLocation_[ast->id()], err, ErrorMessage::ERROR );
-      ErrorMessage noteOtherLoc = ErrorMessage(ast->id(), idToLocation_[usedId], otherLoc, ErrorMessage::NOTE);
-      ErrorMessage noteDisambiguate = ErrorMessage(ast->id(), idToLocation_[usedId], disambiguate, ErrorMessage::NOTE);
-      addError(errorMessage);
-      addError(noteOtherLoc);
-      addError(noteDisambiguate);
-    }
+  if (usedId != var->id()) {
+    // TODO: Need a nicer way of constructing errors/notes/warnings without storing them in the context_
+    std::string err = "ambiguous config name (";
+    err += configNameUsed;
+    err += ")";
+    std::string otherLoc = "also defined here";
+    std::string disambiguate = "(disambiguate using -s<modulename>.";
+    disambiguate += configNameUsed;
+    disambiguate += "...)";
+    ErrorMessage errorMessage = ErrorMessage(var->id(), idToLocation_[var->id()], err, ErrorMessage::ERROR );
+    ErrorMessage noteOtherLoc = ErrorMessage(var->id(), idToLocation_[usedId], otherLoc, ErrorMessage::NOTE);
+    ErrorMessage noteDisambiguate = ErrorMessage(var->id(), idToLocation_[usedId], disambiguate, ErrorMessage::NOTE);
+    addError(errorMessage);
+    addError(noteOtherLoc);
+    addError(noteDisambiguate);
   }
+}
 
-  std::pair<std::string, std::string> Builder::nodeMatchesConfig(AstNode* ast, pathVecT& pathVec) {
-    std::pair<std::string, std::string> configMatched;
-    assert(ast->isVariable() && ast->toVariable()->isConfig());
-    auto var = ast->toVariable();
-    const auto &configs = parsing::configSettings(this->context());
-    // inspect pathVec
-    std::string possibleModule;
-    if (pathVec.size() > 1) {
-      for (size_t i = 1; i < pathVec.size(); i++) {
-        possibleModule += pathVec[i].first.str();
-        possibleModule += ".";
-      }
-    } else if (pathVec.size() == 1) {
-      possibleModule = pathVec[0].first.str();
+/**
+ * Check if a config var has a setting passed from the command line and save the name/value into ref args
+ */
+void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::string& name, std::string& value) {
+  std::pair<std::string, std::string> configMatched;
+  assert(var->isConfig());
+  const auto &configs = parsing::configSettings(this->context());
+  // inspect pathVec to build possible matching module prefix
+  std::string possibleModule;
+  if (pathVec.size() > 1) {
+    for (size_t i = 1; i < pathVec.size(); i++) {
+      possibleModule += pathVec[i].first.str();
       possibleModule += ".";
     }
-    // for config vars, check if they were set from the command line
-    for (auto configPair: configs) {
-      if ((var->name().str() == configPair.first && var->visibility() != Decl::PRIVATE)
-          || configPair.first == possibleModule + var->name().str()) {
-        // found a config that was set via cmd line
-        // handle deprecations
-        if (auto attribs = var->attributes()) {
-          if (attribs->isDeprecated()) {
-            // TODO: Need proper message handling here
-            std::string msg = "'" + var->name().str() + "' was set via a compiler flag";
-            if (attribs->deprecationMessage().isEmpty()) {
-              std::cerr << "warning: " + var->name().str() + " is deprecated" << std::endl;
-            } else {
-              std::cerr << "warning: " + attribs->deprecationMessage().str() << std::endl;
-            }
-            std::cerr << "note: " + msg << std::endl;
+  } else if (pathVec.size() == 1) {
+    possibleModule = pathVec[0].first.str();
+    possibleModule += ".";
+  }
+  // for config vars, check if they were set from the command line
+  for (auto configPair: configs) {
+    if ((var->name().str() == configPair.first && var->visibility() != Decl::PRIVATE)
+        || configPair.first == possibleModule + var->name().str()) {
+      // found a config that was set via cmd line
+      // handle deprecations
+      if (auto attribs = var->attributes()) {
+        if (attribs->isDeprecated()) {
+          // TODO: Need proper message handling here
+          std::string msg = "'" + var->name().str() + "' was set via a compiler flag";
+          if (attribs->deprecationMessage().isEmpty()) {
+            std::cerr << "warning: " + var->name().str() + " is deprecated" << std::endl;
+          } else {
+            std::cerr << "warning: " + attribs->deprecationMessage().str() << std::endl;
           }
+          std::cerr << "note: " + msg << std::endl;
         }
-        if (!configMatched.first.empty() && configMatched.first != configPair.first) {
-          std::string errMsg = "config set ambiguously via '-s";
-          errMsg += configMatched.first;
-          errMsg += "' and '-s";
-          errMsg += configPair.first + "'";
-          ErrorMessage errorMessage = ErrorMessage(ast->id(), notedLocations_[ast], errMsg, ErrorMessage::ERROR);
-          addError(errorMessage);
-        }
-        configMatched = configPair;
       }
-    }
-    return configMatched;
-  }
-
-  AstNode* Builder::checkAndUpdateConfig(AstNode* ast, std::pair<std::string,std::string> configPair) {
-    AstNode* ret = nullptr;
-    assert(ast->isVariable() && ast->toVariable()->isConfig());
-    assert(!configPair.first.empty());
-    auto var = ast->toVariable();
-    auto parser = parsing::Parser::build(context());
-    parsing::Parser *p = parser.get();
-    std::string inputText;
-    // for types, it's important for the parser to see that it's a type 
-    if (var->kind() == uast::Variable::TYPE) {
-      inputText = "type " + var->name().str() + "=" + configPair.second + ";";
-    } else {
-      inputText = "const " + var->name().str() + "=";
-      inputText += (!configPair.second.empty()) ? configPair.second : "true";
-      inputText += ";";
-    }
-    // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
-    auto parseResult = p->parseString("<command line>", inputText.c_str());
-    // TODO: add better error handling
-    assert(!parseResult.numErrors());
-    auto mod = parseResult.singleModule();
-    assert(mod);
-    owned<AstNode> initNode;
-    if (mod->stmt(0)->isVariable()) {
-      // steal the init expression, children_ will have nullptr in place
-      initNode = std::move(mod->children_[0]->children_.back());
-      // clean out the nullptr
-      mod->children_[0]->children_.pop_back();
-    } else {
-      assert(false && "should only be an assignment or type initializer");
-    }
-    // TODO: How to handle locations? Right now we are just using the same location as the config
-    ret = initNode.get();
-    noteChildrenLocations(ret, notedLocations_[ast]);
-    addOrReplaceInitExpr(ast->toVariable(), std::move(initNode));
-    return ret;
-  }
-
-  void Builder::noteChildrenLocations(AstNode* ast, Location loc) {
-    notedLocations_[ast] = loc;
-    for (auto &child : this->mutableRefToChildren(ast)) {
-      noteChildrenLocations(child.get(), loc);
+      if (!configMatched.first.empty() && configMatched.first != configPair.first) {
+        std::string errMsg = "config set ambiguously via '-s";
+        errMsg += configMatched.first;
+        errMsg += "' and '-s";
+        errMsg += configPair.first + "'";
+        ErrorMessage errorMessage = ErrorMessage(var->id(), notedLocations_[var], errMsg, ErrorMessage::ERROR);
+        addError(errorMessage);
+      }
+      configMatched = configPair;
     }
   }
+  name = configMatched.first;
+  value = configMatched.second;
+}
 
-  AstList Builder::flattenTopLevelBlocks(AstList lst) {
+/*
+ * Update the initExpr for a config var/param/type
+ */
+AstNode* Builder::updateConfig(Variable* var, std::string configName, std::string configVal) {
+  AstNode* ret = nullptr;
+  assert(var->isConfig());
+  assert(!configName.empty());
+  // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
+  owned<AstNode> initNode = parseDummyNodeForInitExpr(var, configVal);
+  ret = initNode.get();
+  // create a last column value, add 1 for the initial column and 1 for the `=`
+  int lastColumn = configName.length() + configVal.length() + 2;
+  auto loc = Location(ret->id().symbolPath(), 1,1,1,lastColumn);
+  noteChildrenLocations(ret, loc);
+  addOrReplaceInitExpr(var->toVariable(), std::move(initNode));
+  return ret;
+}
+
+/**
+ * Create a dummy input for a variable and parse it to extract the initExpr
+ */
+owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string value) {
+  std::string inputText;
+  // for types, it's important for the parser to see that it's a type
+  if (var->kind() == uast::Variable::TYPE) {
+    inputText = "type " + var->name().str() + "=" + value + ";";
+  } else {
+    inputText = "const " + var->name().str() + "=";
+    inputText += (!value.empty()) ? value : "true";
+    inputText += ";";
+  }
+  auto parser = parsing::Parser::build(context());
+  parsing::Parser *p = parser.get();
+  std::string path = "Command-line arg (";
+  path += var->name().str();
+  path += ")";
+  auto parseResult = p->parseString(path.c_str(), inputText.c_str());
+  // Propagate any parse errors from the dummy node to builder errors
+  if (parseResult.numErrors() > 0) {
+   for (ErrorMessage error : parseResult.errors()) {
+     addError(error);
+   }
+  }
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  owned<AstNode> initNode;
+  if (mod->stmt(0)->isVariable()) {
+    // steal the init expression, children_ will have nullptr in place
+    initNode = std::move(mod->children_[0]->children_.back());
+    // clean out the nullptr
+    mod->children_[0]->children_.pop_back();
+  } else {
+    assert(false && "should only be an assignment or type initializer");
+  }
+  return initNode;
+}
+
+/**
+ * recursively set child locations to `loc`
+ */
+void Builder::noteChildrenLocations(AstNode* ast, Location loc) {
+  notedLocations_[ast] = loc;
+  for (auto &child : this->mutableRefToChildren(ast)) {
+    noteChildrenLocations(child.get(), loc);
+  }
+}
+
+AstList Builder::flattenTopLevelBlocks(AstList lst) {
   AstList ret;
 
   for (auto& ast : lst) {

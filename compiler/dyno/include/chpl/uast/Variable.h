@@ -99,21 +99,11 @@ class Variable final : public VarLikeDecl {
   bool isConfig_;
   bool isField_;
 
-  void setInitExprForConfig(owned<AstNode> ie) {
-    if (this->initExpressionChildNum_ > -1) {
-      // have an existing initExpr, swap it
-      this->children_[this->initExpressionChildNum_].swap(ie);
-    } else {
-      // no initExpr and no typeExpr nor attribute
-      initExpressionChildNum_ = children_.size();
-      children_.push_back(std::move(ie));
-      if (this->typeExpressionChildNum_ > -1 || this->attributesChildNum() > -1) {
-        assert(numChildren() > 1);
-      } else {
-        assert(numChildren() == 1);
-      }
-    }
-  }
+  /**
+   * Allows for setting a new initExpr when this Variable is a config
+   * Can only be used while the uAST is mutable in the Builder
+   */
+  void setInitExprForConfig(owned<AstNode> ie);
 
  public:
   ~Variable() override = default;

@@ -142,18 +142,24 @@ class Builder final {
 
   // Use this to get a temporary location while parsing.
   Location getLocation(const AstNode* ast);
-  std::tuple<AstNode*, std::string> checkAndUpdateConfig(AstNode *ast, pathVecT& pathVec);
 
-  std::pair<std::string, std::string> nodeMatchesConfig(AstNode* ast, pathVecT& pathVec);
+  // check for the existence of new config values (from the command line) for this var
+  void lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::string& name, std::string& value);
 
-  AstNode* checkAndUpdateConfig(AstNode* ast, std::pair<std::string, std::string> configPair);
+  // update the initExpr of a config with values passed from the command line
+  AstNode* updateConfig(Variable* var, std::string configName, std::string configVal);
 
+  // recursively note the location of a nodes children as the location of the parent
+  // used when updating a config with a new initExpr
   void noteChildrenLocations(AstNode* ast, Location loc);
 
-  void checkConfigPreviouslyUsed(const AstNode* ast, std::string& configNameUsed);
+  // used to check if a config assignment was used in a previous assignment
+  void checkConfigPreviouslyUsed(const Variable* var, std::string& configNameUsed);
+
+  // build a dummy input string and parse it, extracting the initExpr and returning it
+  owned <AstNode> parseDummyNodeForInitExpr(Variable* var, std::string value);
 
   /// \endcond
-
 
 };
 
