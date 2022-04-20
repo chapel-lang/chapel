@@ -198,12 +198,16 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* basenamePtr = strrchr(argv[0], '/');
   char* nodeAccessEnv = NULL;
   pid_t mypid;
+  char  jobName[128];
 
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
   } else {
       basenamePtr++;
   }
+
+  chpl_launcher_get_job_name(basenamePtr, jobName, sizeof(jobName));
+
   chpl_compute_real_binary_name(argv[0]);
 
   // command line walltime takes precedence over env var
@@ -252,7 +256,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
     slurmFile = fopen(slurmFilename, "w");
     fprintf(slurmFile, "#!/bin/sh\n\n");
-    fprintf(slurmFile, "#SBATCH -J Chpl-%.10s\n", basenamePtr);
+    fprintf(slurmFile, "#SBATCH -J %s\n", jobName);
     genNumLocalesOptions(slurmFile, determineSlurmVersion(), numLocales, getNumCoresPerLocale());
 
     if (projectString && strlen(projectString) > 0)
@@ -289,7 +293,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     int len = 0;
 
     len += sprintf(iCom+len, "--quiet ");
-    len += sprintf(iCom+len, "-J %.10s ", basenamePtr);
+    len += sprintf(iCom+len, "-J %s ", jobName);
     len += sprintf(iCom+len, "-N %d ", numLocales);
     len += sprintf(iCom+len, "--ntasks-per-node=1 ");
     if (nodeAccessStr != NULL)

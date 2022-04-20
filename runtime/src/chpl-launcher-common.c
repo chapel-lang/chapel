@@ -791,6 +791,22 @@ const char* chpl_get_real_binary_name(void) {
   return &chpl_real_binary_name[0];
 }
 
+void chpl_launcher_get_job_name(char *baseName, char *jobName, int jobLen) {
+  char* prefix = getenv("CHPL_LAUNCHER_JOB_PREFIX");
+  char* name = getenv("CHPL_LAUNCHER_JOB_NAME");
+
+  if (prefix == NULL) {
+    prefix = "CHPL-";
+  }
+  if (name == NULL) {
+    snprintf(jobName, jobLen, "%s%.10s ", prefix, baseName);
+  } else {
+    strncpy(jobName, name, jobLen);
+    jobName[jobLen-1] = '\0';
+  }
+}
+
+
 int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
   //
   // This is a user invocation, so parse the arguments to determine
