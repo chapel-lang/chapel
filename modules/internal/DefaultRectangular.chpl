@@ -585,7 +585,7 @@ module DefaultRectangular {
       // WANT: return * reduce (this(0..rank-1).size);
     }
 
-    proc dsiLow {
+    override proc dsiLow {
       if rank == 1 {
         return ranges(0).lowBound;
       } else {
@@ -596,7 +596,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiHigh {
+    override proc dsiHigh {
       if rank == 1 {
         return ranges(0).highBound;
       } else {
@@ -629,7 +629,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiStride {
+    override proc dsiStride {
       if rank == 1 {
         return ranges(0).stride;
       } else {
@@ -640,7 +640,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiAlignment {
+    override proc dsiAlignment {
       if rank == 1 {
         return ranges(0).alignment;
       } else {
@@ -651,7 +651,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiFirst {
+    override proc dsiFirst {
       if rank == 1 {
         return ranges(0).first;
       } else {
@@ -662,7 +662,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiLast {
+    override proc dsiLast {
       if rank == 1 {
         return ranges(0).last;
       } else {

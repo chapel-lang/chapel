@@ -640,8 +640,7 @@ static bool isOverrideableMethod(FnSymbol* fn) {
     INT_ASSERT(at->isClass());
 
     return fn->name != astrInit &&
-           !fn->hasFlag(FLAG_WRAPPER) &&
-           !fn->hasFlag(FLAG_NO_PARENS);
+           !fn->hasFlag(FLAG_WRAPPER);
   }
 
   return false;
@@ -650,6 +649,7 @@ static bool isOverrideableMethod(FnSymbol* fn) {
 static bool isVirtualizableMethod(FnSymbol *fn) {
   return isOverrideableMethod(fn) &&
          !fn->isTypeMethod() &&
+         !fn->hasFlag(FLAG_NO_PARENS) &&
          fn->retTag != RET_PARAM &&
          fn->retTag != RET_TYPE;
 }
@@ -990,8 +990,8 @@ typedef std::map<AggregateType*, NameToFns > TypeToNameToFns;
 
 static AggregateType* getReceiverClassType(FnSymbol* fn) {
   if (fn->isMethod() && fn->_this != NULL) {
-    if (Type* cct = canonicalClassType(fn->_this->getValType())) {
-      if (AggregateType* at = toAggregateType(cct)) {
+    /*if (Type* cct = canonicalClassType(fn->_this->getValType())) */ {
+      if (AggregateType* at = toAggregateType(fn->_this->getValType())) {
         if (at->isClass()) {
           return at;
         }
@@ -1042,12 +1042,12 @@ static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
   // OwnedObject code. Might be because we discard "owned" in places
   // we should not?
   //
-  if (fn->isTypeMethod()) {
+  /*if (fn->isTypeMethod()) {
     if (AggregateType* at = getReceiverClassType(ret)) {
       INT_ASSERT(at->isClass());
       return ret;
     }
-  } else {
+  } else */ {
     if (ret->_this)
       if (AggregateType* at = toAggregateType(ret->_this->getValType()))
         if (at->isClass())
@@ -1131,9 +1131,7 @@ static void checkMethodsOverride() {
         if (fn->hasFlag(FLAG_OVERRIDE)) {
           const char* msg = NULL;
 
-          if (fn->hasFlag(FLAG_NO_PARENS))
-            msg = "parentheses-less methods cannot override";
-          else if (!isOverrideableMethod(fn))
+          if (!isOverrideableMethod(fn))
             msg = "signature is not overrideable";
 
           if (msg != NULL) {

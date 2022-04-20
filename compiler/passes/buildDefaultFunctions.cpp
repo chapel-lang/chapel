@@ -470,8 +470,10 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   fn->setMethod(true);
 
   Type* thisType = ct;
-  if (chapelClass && (typeMethod || typeOrParam))
-    thisType = ct->getDecoratedClass(ClassTypeDecorator::GENERIC);
+
+  // note that adjustTypeMethodsOnClasses should change
+  // thisType to generic class management for any param or type
+  // field accessors generated here.
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
 
   if (typeMethod) {
