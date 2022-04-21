@@ -22,7 +22,7 @@ extern {
     return t;
   }
   void struct_aligned16test_arg_c_____(struct aligned16test arg) {
-    printf("arg.x %li arg.a %li\n", arg.x, arg.a);
+    printf("arg.x %"PRIu64" arg.a %"PRIu64"\n", arg.x, arg.a);
   }
 }
 
