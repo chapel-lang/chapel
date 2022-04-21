@@ -2634,7 +2634,10 @@ struct Converter {
     if (isTypeVar) {
       if (node->linkage() == uast::Decl::EXTERN) {
         INT_ASSERT(!node->isConfig());
-        stmts = convertTypesToExtern(stmts);
+        INT_ASSERT(defExpr->sym && isVarSymbol(defExpr->sym));
+        auto varSym = toVarSymbol(defExpr->sym);
+        auto linkageName = node->linkageName() ? varSym->cname : nullptr;
+        stmts = convertTypesToExtern(stmts, linkageName);
       }
     }
 

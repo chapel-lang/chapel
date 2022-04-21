@@ -1450,10 +1450,19 @@ extern_export_decl_stmt:
   }
 | extern_export_decl_stmt_start opt_expr
   {
-    // This will be consumed when building the first variable in the list.
     context->storeVarDeclLinkageName($2);
   }
   var_decl_type var_decl_stmt_inner_ls TSEMI
+  {
+    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    context->resetDeclState();
+  }
+| extern_export_decl_stmt_start opt_expr TTYPE
+  {
+    context->storeVarDeclLinkageName($2);
+    context->noteVarDeclKind(Variable::TYPE);
+  }
+  type_alias_decl_stmt_inner_ls TSEMI
   {
     $$ = context->buildVarOrMultiDeclStmt(@$, $5);
     context->resetDeclState();
@@ -2558,6 +2567,7 @@ type_alias_decl_stmt:
   }
 ;
 
+// Extern types are handled in the 'extern_export_decl_stmt' above.
 type_alias_decl_stmt_start:
   TTYPE
   {
@@ -2567,11 +2577,6 @@ type_alias_decl_stmt_start:
   {
     $$ = context->noteVarDeclKind(Variable::TYPE);
     context->noteIsVarDeclConfig(true);
-  }
-| TEXTERN TTYPE
-  {
-    $$ = context->noteVarDeclKind(Variable::TYPE);
-    context->noteLinkage(Decl::EXTERN);
   }
 ;
 
