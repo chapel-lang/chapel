@@ -33,20 +33,26 @@ proc val(arg: R) {
 
 proc commonPrefixLength(const a1: [] R, const a2: [] R) {
   writeln("in commonPrefixLength");
-  const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
-  /* this alternative functions correctly:
-  const ref a;
-  const ref b;
-  if a1.size < a2.size {
-    a = a1;
-    b = a2;
-  } else {
-    a = a2;
-    b = a1;
-  }*/
 
-  for x in a {
-    writeln(x);
+  // The serial statement is only for deterministic output from the
+  // undesired copies.  Once the copies are eliminated and the future
+  // retired, the serial statement may be removed.
+  serial {
+    const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
+    /* this alternative functions correctly:
+       const ref a;
+       const ref b;
+       if a1.size < a2.size {
+       a = a1;
+       b = a2;
+     } else {
+       a = a2;
+       b = a1;
+     }*/
+
+    for x in a {
+      writeln(x);
+    }
   }
 
   writeln("end commonPrefixLength");
