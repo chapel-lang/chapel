@@ -194,9 +194,6 @@ module ChapelDistribution {
     }
 
     pragma "no doc" pragma "last resort"
-    proc parSafe                  { dnsError("parSafe"); }
-
-    pragma "no doc" pragma "last resort"
     proc dsiLow                   { dnsError("low"); }
 
     pragma "no doc" pragma "last resort"
