@@ -1012,7 +1012,7 @@ module String {
             chunkStart = i;
             inChunk = true;
             if i - 1 + nBytes > iEnd {
-              chunk = this[chunkStart..];
+              chunk = try! this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -1021,18 +1021,18 @@ module String {
             if cSpace {
               // last split under limit
               if limitSplits && splitCount >= maxsplit {
-                chunk = this[chunkStart..];
+                chunk = try! this[chunkStart..];
                 yieldChunk = true;
                 done = true;
               // no limit
               } else {
-                chunk = this[chunkStart..(i-1):byteIndex];
+                chunk = try! this[chunkStart..(i-1):byteIndex];
                 yieldChunk = true;
                 inChunk = false;
               }
             // out of chars
             } else if i - 1 + nBytes > iEnd {
-              chunk = this[chunkStart..];
+              chunk = try! this[chunkStart..];
               yieldChunk = true;
               done = true;
             }

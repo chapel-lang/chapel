@@ -390,12 +390,16 @@ module BytesStringCommon {
 
     if r.idxType == byteIndex {
       if checkMisaligned && t == string {
-        if r.hasLowBound()  && !isInitialByte(x.byte[r.low:int]) {
+        if r.hasLowBound() && 
+           x.byteIndices.boundsCheck(r.low:int) &&
+           !isInitialByte(x.byte[r.low:int]) {
           throw new MisalignedSliceError("The byte at low boundary " +
                                          r.low:string +
                                          " is not the first byte of a UTF-8 codepoint");
         }
-        if r.hasHighBound()  && !isInitialByte(x.byte[r.high:int]) {
+        if r.hasHighBound() && 
+           x.byteIndices.boundsCheck(r.high:int) &&
+           !isInitialByte(x.byte[r.high:int]) {
           throw new MisalignedSliceError("The byte at high boundary " +
                                          r.high:string +
                                          " is not the first byte of a UTF-8 codepoint");
@@ -570,10 +574,10 @@ module BytesStringCommon {
 
       if(end == -1) {
         // Separator not found
-        chunk = localx[start..];
+        chunk = try! localx[start..];
         done = true;
       } else {
-        chunk = localx[start..end-1];
+        chunk = try! localx[start..end-1];
       }
     }
 
@@ -907,7 +911,11 @@ module BytesStringCommon {
 
     const idx = x.find(sep);
     if idx != -1 {
-      return (x[..idx-1], sep, x[idx+sep.numBytes..]);
+      var prevIdx = idx-1;
+      while prevIdx > 0 && !isInitialByte(x.byte[prevIdx:int]) {
+        prevIdx -= 1;
+      }
+      return try! (x[..prevIdx], sep, x[idx+sep.numBytes..]);
     } else {
       return (x, "":t, "":t);
     }
