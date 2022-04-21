@@ -244,25 +244,69 @@ struct Converter {
   /// SimpleBlockLikes ///
 
   BlockStmt*
-  createBlockWithStmts(uast::AstListIteratorPair<uast::AstNode> stmts,
-                       bool flattenTopLevelScopelessBlocks=true) {
-    BlockStmt* block = new BlockStmt();
+  convertExplicitBlock(uast::AstListIteratorPair<uast::AstNode> stmts,
+                       bool flattenTopLevelScopelessBlocks) {
+    BlockStmt* ret = new BlockStmt();
+
     for (auto stmt: stmts) {
+      astlocMarker markAstLoc(stmt->id());
+
       Expr* e = convertAST(stmt);
+      if (!e) continue;
+
+      // Wrap in a scopeless block if not flattening.
+      if (!flattenTopLevelScopelessBlocks) e = buildChapelStmt(e);
+
       bool inserted = false;
-
-      if (e == nullptr) continue;
-
       if (flattenTopLevelScopelessBlocks) {
         if (auto childBlock = toBlockStmt(e)) {
-          block->appendChapelStmt(childBlock);
+          ret->appendChapelStmt(childBlock);
           inserted = true;
         }
       }
 
-      if (!inserted) block->insertAtTail(e);
+      if (!inserted) {
+        ret->insertAtTail(e);
+      }
     }
-    return block;
+
+    return ret;
+  }
+
+  BlockStmt*
+  convertImplicitBlock(uast::AstListIteratorPair<uast::AstNode> stmts) {
+    BlockStmt* ret = nullptr;
+
+    for (auto stmt: stmts) {
+      astlocMarker markAstLoc(stmt->id());
+      Expr* e = convertAST(stmt);
+      if (!e) continue;
+      if (ret) INT_FATAL("implicit block with multiple statements");
+      ret = buildChapelStmt(e);
+    }
+
+    return ret;
+  }
+
+  BlockStmt*
+  createBlockWithStmts(uast::AstListIteratorPair<uast::AstNode> stmts,
+                       uast::BlockStyle style,
+                       bool flattenTopLevelScopelessBlocks=true) {
+    BlockStmt* ret = nullptr;
+
+    switch (style) {
+      case uast::BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK:
+      case uast::BlockStyle::EXPLICIT:
+        ret = convertExplicitBlock(stmts, flattenTopLevelScopelessBlocks);
+        break;
+      case uast::BlockStyle::IMPLICIT:
+        ret = convertImplicitBlock(stmts);
+        break;
+    }
+
+    INT_ASSERT(ret);
+
+    return ret;
   }
 
   Expr*
@@ -280,24 +324,23 @@ struct Converter {
   }
 
   Expr* visit(const uast::Begin* node) {
-    CallExpr* byrefVars = convertWithClause(node->withClause(), node);
-    Expr* stmt = createBlockWithStmts(node->stmts());
-    INT_ASSERT(stmt);
+    auto byrefVars = convertWithClause(node->withClause(), node);
+    auto stmt = createBlockWithStmts(node->stmts(), node->blockStyle());
     return buildBeginStmt(byrefVars, stmt);
   }
 
   BlockStmt* visit(const uast::Block* node) {
-    return createBlockWithStmts(node->stmts());
+    return createBlockWithStmts(node->stmts(), node->blockStyle());
   }
 
   Expr* visit(const uast::Defer* node) {
-    auto stmts = createBlockWithStmts(node->stmts());
+    auto stmts = createBlockWithStmts(node->stmts(), node->blockStyle());
     return DeferStmt::build(stmts);
   }
 
   BlockStmt* visit(const uast::Local* node) {
-    BlockStmt* body = createBlockWithStmts(node->stmts());
-    Expr* condition = convertExprOrNull(node->condition());
+    auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
+    auto condition = convertExprOrNull(node->condition());
     if (condition) {
       return buildLocalStmt(condition, body);
     } else {
@@ -362,7 +405,7 @@ struct Converter {
       managers->insertAtTail(conv);
     }
 
-    auto block = createBlockWithStmts(node->stmts());
+    auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
 
     auto ret = buildManageStmt(managers, block);
     INT_ASSERT(ret);
@@ -371,14 +414,14 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::On* node) {
-    Expr* expr = toExpr(convertAST(node->destination()));
-    Expr* stmt = toExpr(createBlockWithStmts(node->stmts()));
+    Expr* expr = convertAST(node->destination());
+    Expr* stmt = createBlockWithStmts(node->stmts(), node->blockStyle());
     return buildOnStmt(expr, stmt);
   }
 
   BlockStmt* visit(const uast::Serial* node) {
-    BlockStmt* body = createBlockWithStmts(node->stmts());
-    Expr* condition = convertExprOrNull(node->condition());
+    auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
+    auto condition = convertExprOrNull(node->condition());
 
     if (condition) {
       return buildSerialStmt(condition, body);
@@ -395,7 +438,7 @@ struct Converter {
     }
 
     CallExpr* when = new CallExpr(PRIM_WHEN, args);
-    BlockStmt* block = createBlockWithStmts(node->stmts());
+    auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
 
     return new CondStmt(when, block);
   }
@@ -785,7 +828,8 @@ struct Converter {
 
   Expr* visit(const uast::Cobegin* node) {
     CallExpr* byrefVars = convertWithClause(node->withClause(), node);
-    BlockStmt* block = createBlockWithStmts(node->taskBodies());
+    auto style = uast::BlockStyle::EXPLICIT;
+    auto block = createBlockWithStmts(node->taskBodies(), style);
     return buildCobeginStmt(byrefVars, block);
   }
 
@@ -862,10 +906,11 @@ struct Converter {
       ret = new IfExpr(cond, thenExpr, elseExpr);
 
     } else {
-      auto thenBlock = createBlockWithStmts(node->thenStmts());
-      INT_ASSERT(thenBlock);
+      auto thenStyle = node->thenBlockStyle();
+      auto thenBlock = createBlockWithStmts(node->thenStmts(), thenStyle);
+      auto elseStyle = node->elseBlockStyle();
       auto elseBlock = node->hasElseBlock()
-            ? createBlockWithStmts(node->elseStmts())
+            ? createBlockWithStmts(node->elseStmts(), elseStyle)
             : nullptr;
 
       Expr* cond = nullptr;
@@ -930,7 +975,7 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Sync* node) {
-    BlockStmt* block = createBlockWithStmts(node->stmts());
+    auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
     return buildSyncStmt(block);
   }
 
@@ -955,7 +1000,8 @@ struct Converter {
 
     } else {
       bool tryBang = node->isTryBang();
-      BlockStmt* body = createBlockWithStmts(node->stmts());
+      auto style = uast::BlockStyle::EXPLICIT;
+      auto body = createBlockWithStmts(node->stmts(), style);
       BlockStmt* catches = new BlockStmt();
       bool isSyncTry = false; // TODO: When can this be true?
 
@@ -984,18 +1030,20 @@ struct Converter {
 
   BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
-    BlockStmt* body = createBlockWithStmts(node->stmts());
+    auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     return DoWhileStmt::build(condExpr, body);
   }
 
   BlockStmt* visit(const uast::While* node) {
     Expr* condExpr = nullptr;
     if (auto condVar = node->condition()->toVariable()) {
-      condExpr = buildIfVar(condVar->name().c_str(), toExpr(convertAST(condVar->initExpression())) ,condVar->kind() == chpl::uast::Variable::CONST);
+      condExpr = buildIfVar(condVar->name().c_str(),
+                            toExpr(convertAST(condVar->initExpression())),
+                            condVar->kind() == chpl::uast::Variable::CONST);
     } else {
       condExpr = toExpr(convertAST(node->condition()));
     }
-    BlockStmt* body = createBlockWithStmts(node->stmts());
+    auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     return WhileDoStmt::build(condExpr, body);
   }
 
@@ -1100,7 +1148,7 @@ struct Converter {
       Expr* indices = convertLoopIndexDecl(node->index());
       Expr* iterator = toExpr(convertAST(node->iterand()));
       CallExpr* intents = nullptr;
-      BlockStmt* body = createBlockWithStmts(node->stmts());
+      auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
       bool zippered = node->iterand()->isZip();
       bool serialOK = true;
 
@@ -1122,7 +1170,7 @@ struct Converter {
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iterator = toExpr(convertAST(node->iterand()));
     CallExpr* byref_vars = convertWithClause(node->withClause(), node);
-    BlockStmt* body = createBlockWithStmts(node->stmts());
+    auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
 
     return buildCoforallLoopStmt(indices, iterator, byref_vars, body,
@@ -1168,15 +1216,15 @@ struct Converter {
     } else if (node->isParam()) {
       INT_ASSERT(node->index() && node->index()->isVariable());
 
-      const char* indexStr = astr(node->index()->toVariable()->name().c_str());
-      body = createBlockWithStmts(node->stmts());
+      auto indexStr = astr(node->index()->toVariable()->name().c_str());
+      body = createBlockWithStmts(node->stmts(), node->blockStyle());
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
 
       ret = buildParamForLoopStmt(indexStr, iteratorExpr, block);
 
     } else {
-      body = createBlockWithStmts(node->stmts());
+      body = createBlockWithStmts(node->stmts(), node->blockStyle());
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
 
@@ -1232,7 +1280,7 @@ struct Converter {
       Expr* indices = convertLoopIndexDecl(node->index());
       Expr* iterator = toExpr(convertAST(node->iterand()));
       CallExpr* intents = convertWithClause(node->withClause(), node);
-      BlockStmt* body = createBlockWithStmts(node->stmts());
+      auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
       bool zippered = node->iterand()->isZip();
       bool serialOK = false;
 
@@ -1249,7 +1297,7 @@ struct Converter {
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
-    BlockStmt* body = createBlockWithStmts(node->stmts());
+    auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
 
@@ -2172,7 +2220,10 @@ struct Converter {
     BlockStmt* body = nullptr;
 
     if (node->body() && node->linkage() != uast::Decl::EXTERN) {
-      body = createBlockWithStmts(node->stmts());
+
+      // TODO: What about 'proc foo() return 0;'?
+      auto style = uast::BlockStyle::EXPLICIT;
+      body = createBlockWithStmts(node->stmts(), style);
     } else {
       if (node->numStmts()) {
         USR_FATAL_CONT("Extern functions cannot have a body");
@@ -2206,7 +2257,8 @@ struct Converter {
   Expr* visit(const uast::Interface* node) {
     const char* name = astr(node->name().c_str());
     CallExpr* formals = new CallExpr(PRIM_ACTUALS_LIST);
-    BlockStmt* body = createBlockWithStmts(node->stmts());
+    auto style = uast::BlockStyle::EXPLICIT;
+    BlockStmt* body = createBlockWithStmts(node->stmts(), style);
 
     if (node->isFormalListPresent()) {
       for (auto formal : node->formals()) {
@@ -2242,7 +2294,8 @@ struct Converter {
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||
                       node->kind() == uast::Module::IMPLICIT);
-    BlockStmt* body = createBlockWithStmts(node->stmts());
+    auto style = uast::BlockStyle::EXPLICIT;
+    auto body = createBlockWithStmts(node->stmts(), style);
 
     ModuleSymbol* mod = buildModule(name,
                                     tag,
@@ -2657,7 +2710,8 @@ struct Converter {
       inherit = convertExprOrNull(cls->parentClass());
     }
 
-    auto decls = createBlockWithStmts(node->declOrComments(), false);
+    auto style = uast::BlockStyle::EXPLICIT;
+    auto decls = createBlockWithStmts(node->declOrComments(), style, false);
     Flag externFlag = convertFlagForDeclLinkage(node);
     auto tag = convertAggregateDeclTag(node);
 
