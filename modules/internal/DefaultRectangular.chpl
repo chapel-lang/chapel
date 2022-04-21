@@ -585,6 +585,8 @@ module DefaultRectangular {
       // WANT: return * reduce (this(0..rank-1).size);
     }
 
+    proc parSafe param { dnsError("parSafe"); }
+
     override proc dsiLow {
       if rank == 1 {
         return ranges(0).lowBound;
@@ -607,7 +609,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiAlignedLow {
+    override proc dsiAlignedLow {
       if rank == 1 {
         return ranges(0).alignedLow;
       } else {
@@ -618,7 +620,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiAlignedHigh {
+    override proc dsiAlignedHigh {
       if rank == 1 {
         return ranges(0).alignedHigh;
       } else {

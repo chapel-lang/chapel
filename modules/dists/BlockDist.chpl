@@ -916,14 +916,17 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
 }
 
 // common redirects
-proc BlockDom.dsiLow           return whole.lowBound;
-proc BlockDom.dsiHigh          return whole.highBound;
-proc BlockDom.dsiAlignedLow    return whole.alignedLow;
-proc BlockDom.dsiAlignedHigh   return whole.alignedHigh;
-proc BlockDom.dsiFirst         return whole.first;
-proc BlockDom.dsiLast          return whole.last;
-proc BlockDom.dsiStride        return whole.stride;
-proc BlockDom.dsiAlignment     return whole.alignment;
+override proc BlockDom.parSafe param {
+  compilerError("this domain type does not support 'parSafe'");
+}
+override proc BlockDom.dsiLow           return whole.lowBound;
+override proc BlockDom.dsiHigh          return whole.highBound;
+override proc BlockDom.dsiAlignedLow    return whole.alignedLow;
+override proc BlockDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc BlockDom.dsiFirst         return whole.first;
+override proc BlockDom.dsiLast          return whole.last;
+override proc BlockDom.dsiStride        return whole.stride;
+override proc BlockDom.dsiAlignment     return whole.alignment;
 proc BlockDom.dsiNumIndices    return whole.sizeAs(uint);
 proc BlockDom.dsiDim(d)        return whole.dim(d);
 proc BlockDom.dsiDim(param d)  return whole.dim(d);

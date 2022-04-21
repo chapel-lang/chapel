@@ -149,13 +149,15 @@ module DefaultSparse {
       return found;
     }
 
-    proc dsiFirst {
+    proc parSafe param { dnsError("parSafe"); }
+
+    override proc dsiFirst {
       if boundsChecking && _indices.isEmpty() then
         halt("'first' is invoked on an empty sparse domain");
       return _indices[_indices.domain.first];
     }
 
-    proc dsiLast {
+    override proc dsiLast {
       if boundsChecking && _indices.isEmpty() then
         halt("'last' is invoked on an empty sparse domain");
       return _indices[_nnz-1];
