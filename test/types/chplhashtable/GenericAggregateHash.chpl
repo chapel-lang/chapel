@@ -4,8 +4,8 @@ class C1 {
 }
 
 class C2: C1 {
-  type T;
-  var y: T;
+  type TT;
+  var y: TT;
 }
 
 record r1 {
