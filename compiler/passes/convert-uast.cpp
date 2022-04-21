@@ -53,11 +53,12 @@ namespace {
 struct Converter {
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
-  ModTag modTag;
+  ModTag topLevelModTag;
+  std::vector<const char*> modNameStack;
 
-  Converter(chpl::Context* context, ModTag modTag)
+  Converter(chpl::Context* context, ModTag topLevelModTag)
     : context(context),
-      modTag(modTag) {}
+      topLevelModTag(topLevelModTag) {}
 
   Expr* convertAST(const uast::AstNode* node);
 
@@ -2280,19 +2281,28 @@ struct Converter {
   }
 
   DefExpr* visit(const uast::Module* node) {
-    chpl::UniqueString ustr = node->name();
-    const char* name = ustr.c_str();
+    const char* name = astr(node->name().c_str());
     const char* path = context->filePathForId(node->id()).c_str();
 
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
-    // See 'uASTAttemptToParseMod'. Eventually, it would be great if the
-    // new frontend could note if a module is standard/internal/user.
-    const ModTag tag = this->modTag;
+    // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
+    // could note if a module is standard/internal/user.
+    const ModTag tag = this->topLevelModTag;
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||
                       node->kind() == uast::Module::IMPLICIT);
     auto style = uast::BlockStyle::EXPLICIT;
+
+    // Push the current module name before descending into children.
+    this->modNameStack.push_back(name);
+
     auto body = createBlockWithStmts(node->stmts(), style);
+
+    // Pop the module name after converting children.
+    INT_ASSERT(modNameStack.size());
+    auto poppedName = this->modNameStack.back();
+    this->modNameStack.pop_back();
+    INT_ASSERT(poppedName == name);
 
     ModuleSymbol* mod = buildModule(name,
                                     tag,
@@ -2565,6 +2575,12 @@ struct Converter {
       varSym->addFlag(linkageFlag);
     }
 
+    // TODO (dlongnecke): Move to new parser (or post-parsing walk).
+    if (node->kind() == uast::Variable::PARAM &&
+        linkageFlag == FLAG_EXTERN) {
+      USR_FATAL(varSym, "external params are not supported");
+    }
+
     // TODO (dlongnecke): Should be sanitized by the new parser.
     if (useLinkageName) {
       if (auto linkageName = node->linkageName()) {
@@ -2606,11 +2622,19 @@ struct Converter {
     // in on the command-line, if necessary.
     if (node->isConfig()) {
 
+      // Set some global state for the current module name.
+      auto savedModuleName = currentModuleName;
+      INT_ASSERT(this->modNameStack.size());
+      currentModuleName = this->modNameStack.back();
+
       // TODO (dlongnecke): This call should be replaced by an equivalent
       // one from the new frontend.
       if (Expr* commandLineInit = lookupConfigVal(varSym)) {
         ret->init = commandLineInit;
       }
+
+      // Restore the state (janky, will be replaced by work from Ahmad).
+      currentModuleName = savedModuleName;
     }
 
     // If the init expression of this variable is a domain and this
