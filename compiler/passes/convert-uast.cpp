@@ -254,9 +254,6 @@ struct Converter {
       Expr* e = convertAST(stmt);
       if (!e) continue;
 
-      // Wrap in a scopeless block if not flattening.
-      if (!flattenTopLevelScopelessBlocks) e = buildChapelStmt(e);
-
       bool inserted = false;
       if (flattenTopLevelScopelessBlocks) {
         if (auto childBlock = toBlockStmt(e)) {
