@@ -695,7 +695,7 @@ The normal comparison operators are also available to compare types:
    :proc:`<= <Types.<=>`)
 
 It is possible to cast a type to a ``param`` string. This allows a type
-to be printed out.
+name to be printed out.
 
   *Example (type-to-string.chpl)*.
 

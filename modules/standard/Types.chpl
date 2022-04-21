@@ -19,8 +19,10 @@
  */
 
 /*
-Functions related to predefined types.
+This module contains functions that relate to predefined types.
 
+Further information about types and the operations that may be applied to them
+is available in :ref:`Chapter-Types`.
 */
 pragma "module included by default"
 module Types {
