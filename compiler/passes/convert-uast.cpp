@@ -48,6 +48,9 @@
 
 using namespace chpl;
 
+// TODO: Remove me after config changes.
+extern bool parsingPrivate;
+
 namespace {
 
 struct Converter {
@@ -2622,10 +2625,12 @@ struct Converter {
     // in on the command-line, if necessary.
     if (node->isConfig()) {
 
-      // Set some global state for the current module name.
+      // Set some global state for module name and privacy.
       auto savedModuleName = currentModuleName;
+      auto savedParsingPrivate = parsingPrivate;
       INT_ASSERT(this->modNameStack.size());
       currentModuleName = this->modNameStack.back();
+      parsingPrivate = node->visibility() == uast::Decl::PRIVATE;
 
       // TODO (dlongnecke): This call should be replaced by an equivalent
       // one from the new frontend.
@@ -2635,6 +2640,7 @@ struct Converter {
 
       // Restore the state (janky, will be replaced by work from Ahmad).
       currentModuleName = savedModuleName;
+      parsingPrivate = savedParsingPrivate;
     }
 
     // If the init expression of this variable is a domain and this
