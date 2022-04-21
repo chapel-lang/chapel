@@ -390,6 +390,8 @@ module BytesStringCommon {
 
     if r.idxType == byteIndex {
       if checkMisaligned && t == string {
+        // if the low bound of the range is within the byteIndices of the
+        // string, it must be the initial byte of a codepoint
         if r.hasLowBound() && 
            x.byteIndices.boundsCheck(r.low:int) &&
            !isInitialByte(x.byte[r.low:int]) {
@@ -397,9 +399,11 @@ module BytesStringCommon {
                                          r.low:string +
                                          " is not the first byte of a UTF-8 codepoint");
         }
+        // if the "high bound of the range plus one" is within the byteIndices
+        // of the string, that index must be the initial byte of a codepoint
         if r.hasHighBound() && 
-           x.byteIndices.boundsCheck(r.high:int) &&
-           !isInitialByte(x.byte[r.high:int]) {
+           x.byteIndices.boundsCheck(r.high:int+1) &&
+           !isInitialByte(x.byte[r.high:int+1]) {
           throw new MisalignedSliceError("The byte at high boundary " +
                                          r.high:string +
                                          " is not the first byte of a UTF-8 codepoint");
@@ -911,11 +915,7 @@ module BytesStringCommon {
 
     const idx = x.find(sep);
     if idx != -1 {
-      var prevIdx = idx-1;
-      while prevIdx > 0 && !isInitialByte(x.byte[prevIdx:int]) {
-        prevIdx -= 1;
-      }
-      return try! (x[..prevIdx], sep, x[idx+sep.numBytes..]);
+      return try! (x[..idx-1], sep, x[idx+sep.numBytes..]);
     } else {
       return (x, "":t, "":t);
     }
