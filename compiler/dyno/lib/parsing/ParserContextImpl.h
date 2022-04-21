@@ -1962,7 +1962,23 @@ AstNode* ParserContext::buildCustomReduce(YYLTYPE location,
                                           YYLTYPE locIdent,
                                           AstNode* lhs,
                                           AstNode* rhs) {
-  if (!lhs->isIdentifier()) {
+
+  if (lhs->isFnCall()) {
+    if (!lhs->toFnCall()->calledExpression()->isIdentifier()) {
+      const char* msg = "Expected identifier for reduction name";
+      return raiseError(locIdent, msg);
+    } else if (lhs->toFnCall()->numChildren() != 2 ) {
+      const char* msg = "for a reduce intent, the 'reduce' keyword must be preceded by the reduction operator or the name of the reduction class with the single optional argument indicating the type of the reduction input";
+      return raiseError(locIdent, msg);
+    }
+    UniqueString identifier = lhs->toFnCall()->calledExpression()->toIdentifier()->name();
+    UniqueString inputType = lhs->toFnCall()->actual(0)->toIdentifier()->name();
+    auto node = Reduce::build(builder, convertLocation(location),
+                              identifier,
+                                  inputType,
+                              toOwned(rhs));
+    return node.release();
+  } else if (!lhs->isIdentifier()) {
     const char* msg = "Expected identifier for reduction name";
     return raiseError(locIdent, msg);
   } else {

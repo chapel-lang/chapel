@@ -732,8 +732,14 @@ struct Converter {
       // Handle reductions in with clauses explicitly here.
       } else if (const uast::Reduce* rd = expr->toReduce()) {
         Expr* ovar = toExpr(convertAST(rd->actual(0)));
-        Expr* riExpr = convertScanReduceOp(rd->op());
-        svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
+        if (rd->inputType().isEmpty()) {
+          Expr* riExpr = convertScanReduceOp(rd->op());
+          svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
+        } else {
+          Expr* riExpr = convertScanReduceOp(rd->op());
+          CallExpr* callExpr = new CallExpr(riExpr, new UnresolvedSymExpr(rd->inputType().c_str()));
+          svs = ShadowVarSymbol::buildFromReduceIntent(ovar, callExpr);
+        }
       } else {
         INT_FATAL("Not handled!");
       }
@@ -1699,7 +1705,11 @@ struct Converter {
     INT_ASSERT(node->numActuals() == 1);
     Expr* opExpr = convertScanReduceOp(node->op());
     Expr* dataExpr = convertAST(node->actual(0));
-    bool zippered = node->actual(0)->isZip();;
+    bool zippered = node->actual(0)->isZip();
+    if (!node->inputType().isEmpty()){
+      CallExpr* callExpr = new CallExpr(opExpr, new UnresolvedSymExpr(node->inputType().c_str()));
+      return buildReduceExpr(callExpr, dataExpr, zippered);
+    }
     return buildReduceExpr(opExpr, dataExpr, zippered);
   }
 

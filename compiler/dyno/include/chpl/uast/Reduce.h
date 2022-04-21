@@ -33,12 +33,22 @@ namespace uast {
 */
 class Reduce final : public Call {
  private:
+
   Reduce(AstList children, UniqueString op)
     : Call(asttags::Reduce, std::move(children),
            /*hasCalledExpression*/ false),
       op_(op) {
     assert(numChildren() == 1);
     assert(!op_.isEmpty());
+  }
+
+  Reduce(AstList children, UniqueString op, UniqueString inputType)
+      : Call(asttags::Reduce, std::move(children),
+      /*hasCalledExpression*/ false),
+        op_(op) {
+    assert(numChildren() == 1);
+    assert(!op_.isEmpty());
+    inputType_ = inputType;
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -50,9 +60,13 @@ class Reduce final : public Call {
   void markUniqueStringsInner(Context* context) const override {
     callMarkUniqueStringsInner(context);
     op_.mark(context);
+    if (!inputType_.isEmpty()) {
+      inputType_.mark(context);
+    }
   }
 
   UniqueString op_;
+  UniqueString inputType_;
 
  public:
   ~Reduce() override = default;
@@ -65,12 +79,26 @@ class Reduce final : public Call {
                              UniqueString op,
                              owned<AstNode> expr);
 
+  static owned<Reduce> build(Builder* builder,
+                             Location loc,
+                             UniqueString op,
+                             UniqueString inputType,
+                             owned<AstNode> expr);
+
   /**
     Returns the reduction operator. It may be either a regular operator
     (e.g. '+', '-') or the name of a class.
   */
   UniqueString op() const {
     return op_;
+  }
+
+  /**
+   Returns the input type, which may be empty.
+   An input type is specified as int in `(minmax(int) reduce sum)`
+*/
+  UniqueString inputType() const {
+    return inputType_;
   }
 
 };

@@ -41,6 +41,22 @@ owned<Reduce> Reduce::build(Builder* builder,
   return toOwned(ret);
 }
 
+owned<Reduce> Reduce::build(Builder* builder,
+                            Location loc,
+                            UniqueString op,
+                            UniqueString inputType,
+                            owned<AstNode> expr) {
+  assert(expr.get() != nullptr);
+  assert(!op.isEmpty());
+
+  AstList lst;
+
+  lst.push_back(std::move(expr));
+
+  Reduce* ret = new Reduce(std::move(lst), op, inputType);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
+}
 
 } // namespace uast
 } // namespace chpl
