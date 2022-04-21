@@ -522,6 +522,8 @@ module DefaultAssociative {
     // Standard internal array interface
     //
 
+    proc rank param { return 1; }
+
     override proc dsiGetBaseDom() return dom;
 
 
