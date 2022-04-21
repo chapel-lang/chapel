@@ -640,6 +640,7 @@ static bool isOverrideableMethod(FnSymbol* fn) {
     INT_ASSERT(at->isClass());
 
     return fn->name != astrInit &&
+           fn->name != astrSuper &&
            !fn->hasFlag(FLAG_WRAPPER);
   }
 
