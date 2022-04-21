@@ -1,0 +1,8 @@
+receiver-type-mismatch.chpl:46: error: unresolved call 'S.bar(1)'
+receiver-type-mismatch.chpl:33: note: this candidate did not match: S.bar()
+receiver-type-mismatch.chpl:46: note: because call includes 1 argument
+receiver-type-mismatch.chpl:33: note: but function can only accept 0 arguments
+receiver-type-mismatch.chpl:46: note: other candidates are:
+receiver-type-mismatch.chpl:9: note:   C.bar(x: int)
+receiver-type-mismatch.chpl:17: note:   D.bar(x: real)
+note: and 2 other candidates, use --print-all-candidates to see them

@@ -80,6 +80,9 @@ typedef enum {
   // Named argument uses argument name not present
   RESOLUTION_CANDIDATE_NO_NAMED_ARGUMENT,
 
+  // The receiver types differ, although may be related
+  RESOLUTION_CANDIDATE_DIFFERENT_RECEIVER_TYPES,
+
   // expand if var args failure (shouldn't be user facing)
   // computeSubstitutions failure
   // failure to instantiate signature
