@@ -252,7 +252,7 @@ char* chpl_enc_codepoint_at_idx(const char* buf,
     // escaped byte, so the last argument is true
     if (chpl_enc_decode_char_buf_utf8(&cp, &nbytes, buf+offset,
                                       buflen-offset, true) != 0) {
-      return NULL;  // invalid : return EILSEQ
+      return NULL;
     }
     at_char += 1;
     if (at_char == idx) {
