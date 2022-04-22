@@ -135,7 +135,7 @@ static void collectMethods(FnSymbol*               pfn,
 
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
 
-static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn);
+static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn);
 
 static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn);
 
@@ -246,7 +246,7 @@ static void addToVirtualMaps(FnSymbol*      pfn,
 
   FnSymbol* fn = getInstantiatedFunction(pfn, ct, cfn);
 
-  resolveOverride(pfn, fn);
+  resolveOverrideAndAdjustMaps(pfn, fn);
 }
 
 // skips the first 2 formals (for method token and `this`)
@@ -443,7 +443,7 @@ static void printMismatchNote(FnSymbol* pfn, FnSymbol* cfn) {
 }
 
 
-static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
+static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
   resolveSignature(cfn);
 
   if (signaturesMatch(pfn, cfn) &&
@@ -656,13 +656,15 @@ static bool isVirtualizableMethod(FnSymbol *fn) {
 }
 
 static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn) {
-  cfn->addFlag(FLAG_VIRTUAL);
-  pfn->addFlag(FLAG_VIRTUAL);
+  if (isVirtualizableMethod(pfn)) {
+    cfn->addFlag(FLAG_VIRTUAL);
+    pfn->addFlag(FLAG_VIRTUAL);
 
-  // There is the potential for a data dependency between these
-  virtualDispatchUpdateChildren(pfn, cfn);
-  virtualDispatchUpdateParents(pfn, cfn);
-  virtualDispatchUpdateRoots(pfn, cfn);
+    // There is the potential for a data dependency between these
+    virtualDispatchUpdateChildren(pfn, cfn);
+    virtualDispatchUpdateParents(pfn, cfn);
+    virtualDispatchUpdateRoots(pfn, cfn);
+  }
 }
 
 static void virtualDispatchUpdateChildren(FnSymbol* pfn, FnSymbol* cfn) {
@@ -990,17 +992,21 @@ typedef std::map<const char*, std::vector<FnSymbol*> > NameToFns;
 typedef std::map<AggregateType*, NameToFns > TypeToNameToFns;
 
 static AggregateType* getReceiverClassType(FnSymbol* fn) {
-  if (fn->isMethod() && fn->_this != NULL) {
-    /*if (Type* cct = canonicalClassType(fn->_this->getValType())) */ {
-      if (AggregateType* at = toAggregateType(fn->_this->getValType())) {
-        if (at->isClass()) {
+  Type* thisType = fn->getReceiverType();
+  // ignore methods on e.g. 'owned C'
+  if (thisType && !thisType->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+    // ignore distinction between generic management,
+    // unmanaged, borrowed here
+    if (Type* cct = canonicalClassType(thisType)) {
+      if (AggregateType* at = toAggregateType(cct)) {
+        if (at->isClass() == true) {
           return at;
         }
       }
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static void findFunctionsProbablyMatching(TypeToNameToFns & map,
@@ -1043,12 +1049,12 @@ static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
   // OwnedObject code. Might be because we discard "owned" in places
   // we should not?
   //
-  /*if (fn->isTypeMethod()) {
+  if (fn->isTypeMethod()) {
     if (AggregateType* at = getReceiverClassType(ret)) {
       INT_ASSERT(at->isClass());
       return ret;
     }
-  } else */ {
+  } else {
     if (ret->_this)
       if (AggregateType* at = toAggregateType(ret->_this->getValType()))
         if (at->isClass())
