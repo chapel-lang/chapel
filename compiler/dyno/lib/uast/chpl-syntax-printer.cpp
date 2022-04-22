@@ -109,6 +109,20 @@ static const char* kindToString(VisibilityClause::LimitationKind kind) {
   }
 }
 
+static std::string pragmaFlagsToString(const Decl* node) {
+  std::string ret;
+  if (!node->attributes()) return ret;
+
+  // TODO: Add spaces after parsers are merged.
+  for (auto pragma : node->attributes()->pragmas()) {
+    ret += "pragma";
+    ret += "\"";
+    ret += pragmaTagToName(pragma);
+    ret += "\"";
+  }
+  return ret;
+}
+
 // TODO: Attributes
 // TODO: Nesting
 // TODO: Semicolons
@@ -572,6 +586,8 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Formal* node) {
+    if (node->attributes()) ss_ << pragmaFlagsToString(node);
+
     if (node->intent() != Formal::DEFAULT_INTENT) {
       ss_ << kindToString((IntentList) node->intent()) << " ";
     }
