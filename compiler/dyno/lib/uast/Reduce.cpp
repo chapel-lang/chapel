@@ -18,7 +18,6 @@
  */
 
 #include "chpl/uast/Reduce.h"
-
 #include "chpl/uast/Builder.h"
 
 namespace chpl {
@@ -27,36 +26,20 @@ namespace uast {
 
 owned<Reduce> Reduce::build(Builder* builder,
                             Location loc,
-                            UniqueString op,
+                            owned<AstNode> lhs,
                             owned<AstNode> expr) {
   assert(expr.get() != nullptr);
-  assert(!op.isEmpty());
+  assert(lhs->isIdentifier() || lhs->isFnCall());
 
   AstList lst;
-
   lst.push_back(std::move(expr));
+  lst.push_back(std::move(lhs));
 
-  Reduce* ret = new Reduce(std::move(lst), op);
+  Reduce* ret = new Reduce(std::move(lst));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
-owned<Reduce> Reduce::build(Builder* builder,
-                            Location loc,
-                            UniqueString op,
-                            UniqueString inputType,
-                            owned<AstNode> expr) {
-  assert(expr.get() != nullptr);
-  assert(!op.isEmpty());
-
-  AstList lst;
-
-  lst.push_back(std::move(expr));
-
-  Reduce* ret = new Reduce(std::move(lst), op, inputType);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
-}
 
 } // namespace uast
 } // namespace chpl

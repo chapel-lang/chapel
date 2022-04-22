@@ -2,9 +2,9 @@
 #define yychpl_HEADER_H 1
 #define yychpl_IN_HEADER 1
 
-#line 5 "flex-chpl-lib.h"
+#line 6 "flex-chpl-lib.h"
 
-#line 7 "flex-chpl-lib.h"
+#line 8 "flex-chpl-lib.h"
 
 #define  YY_INT_ALIGNED short int
 
@@ -730,6 +730,6 @@ extern int yylex \
 #line 329 "chpl.lex"
 
 
-#line 733 "flex-chpl-lib.h"
+#line 734 "flex-chpl-lib.h"
 #undef yychpl_IN_HEADER
 #endif /* yychpl_HEADER_H */

@@ -23,6 +23,8 @@
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/uast/Call.h"
+#include "chpl/uast/Identifier.h"
+#include "chpl/uast/FnCall.h"
 
 namespace chpl {
 namespace uast {
@@ -30,43 +32,57 @@ namespace uast {
 
 /**
   This class represents a reduction.
+
+  \rst
+  .. code-block:: chapel
+
+      // Example 1:
+      var eltAvg = (+ reduce A) / size**2;
+
+  \endrst
+
+  Where + is the op
+
+  Also supported are reduce intents
+
+  \rst
+  .. code-block:: chapel
+
+      // Example 2:
+      forall elm in A with (PlusReduceOp(int) reduce sum) {
+        sum reduce= elm;   // bools are implicitly coerced to 'int' input type
+        writeln(sum);      // accumulation state: int
+      }
+
+  \endrst
+
+  Where PlusReduceOp(int) is a FnCall with PlusReduceOp as the op and int is
+  the input type
+
+}
+
 */
 class Reduce final : public Call {
  private:
 
-  Reduce(AstList children, UniqueString op)
-    : Call(asttags::Reduce, std::move(children),
-           /*hasCalledExpression*/ false),
-      op_(op) {
-    assert(numChildren() == 1);
-    assert(!op_.isEmpty());
-  }
 
-  Reduce(AstList children, UniqueString op, UniqueString inputType)
+  Reduce(AstList children)
       : Call(asttags::Reduce, std::move(children),
-      /*hasCalledExpression*/ false),
-        op_(op) {
-    assert(numChildren() == 1);
-    assert(!op_.isEmpty());
-    inputType_ = inputType;
+      /*hasCalledExpression*/ false) {
+    assert(numChildren() == 2);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Reduce* rhs = other->toReduce();
-    return this->op_ == rhs->op_ &&
-      this->callContentsMatchInner(rhs);
+    return
+        this->opExpr() == rhs->opExpr() &&
+        this->callContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
     callMarkUniqueStringsInner(context);
-    op_.mark(context);
-    if (!inputType_.isEmpty()) {
-      inputType_.mark(context);
-    }
   }
 
-  UniqueString op_;
-  UniqueString inputType_;
 
  public:
   ~Reduce() override = default;
@@ -74,15 +90,10 @@ class Reduce final : public Call {
   /**
     Create and return a reduction.
   */
-  static owned<Reduce> build(Builder* builder,
-                             Location loc,
-                             UniqueString op,
-                             owned<AstNode> expr);
 
   static owned<Reduce> build(Builder* builder,
                              Location loc,
-                             UniqueString op,
-                             UniqueString inputType,
+                             owned<AstNode> lhs,
                              owned<AstNode> expr);
 
   /**
@@ -90,15 +101,22 @@ class Reduce final : public Call {
     (e.g. '+', '-') or the name of a class.
   */
   UniqueString op() const {
-    return op_;
+    if (this->child(1)->isIdentifier()) {
+      return this->child(1)->toIdentifier()->name();
+    } else {
+      return this->child(1)->toFnCall()->calledExpression()->toIdentifier()->name();
+    }
   }
 
   /**
-   Returns the input type, which may be empty.
-   An input type is specified as int in `(minmax(int) reduce sum)`
+   Returns the op expression, which may be an Identifier or a FnCall
+   A FnCall here should only have one actual, which is an Identifier specifying
+   the input type. However, some tests include multiple actuals here so we allow
+   it here as well.
+   An opExpr specified in `(minmax(int) reduce sum)` is `minmax(int)`
 */
-  UniqueString inputType() const {
-    return inputType_;
+  const AstNode* opExpr() const {
+    return this->child(1);
   }
 
 };

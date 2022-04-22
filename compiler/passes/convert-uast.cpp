@@ -732,13 +732,15 @@ struct Converter {
       // Handle reductions in with clauses explicitly here.
       } else if (const uast::Reduce* rd = expr->toReduce()) {
         Expr* ovar = toExpr(convertAST(rd->actual(0)));
-        if (rd->inputType().isEmpty()) {
-          Expr* riExpr = convertScanReduceOp(rd->op());
-          svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
-        } else {
-          Expr* riExpr = convertScanReduceOp(rd->op());
-          CallExpr* callExpr = new CallExpr(riExpr, new UnresolvedSymExpr(rd->inputType().c_str()));
+        Expr* riExpr = convertScanReduceOp(rd->op());
+        if (rd->opExpr()->isFnCall()) {
+          CallExpr* callExpr = new CallExpr(riExpr);
+          for (int i = 0; i < rd->opExpr()->toFnCall()->numActuals(); i++) {
+            callExpr->insertAtTail(convertAST(rd->opExpr()->toFnCall()->actual(i)));
+          }
           svs = ShadowVarSymbol::buildFromReduceIntent(ovar, callExpr);
+        } else {
+          svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
         }
       } else {
         INT_FATAL("Not handled!");
@@ -1702,12 +1704,15 @@ struct Converter {
   // Note that this conversion is for the reduce expression, and not for
   // the reduce intent (see conversion for 'WithClause').
   Expr* visit(const uast::Reduce* node) {
-    INT_ASSERT(node->numActuals() == 1);
+    INT_ASSERT(node->numActuals() == 2);
     Expr* opExpr = convertScanReduceOp(node->op());
     Expr* dataExpr = convertAST(node->actual(0));
     bool zippered = node->actual(0)->isZip();
-    if (!node->inputType().isEmpty()){
-      CallExpr* callExpr = new CallExpr(opExpr, new UnresolvedSymExpr(node->inputType().c_str()));
+    if (node->opExpr()->isFnCall()){
+      CallExpr* callExpr = new CallExpr(opExpr);
+      for (int i = 0; i < node->opExpr()->toFnCall()->numActuals(); i++) {
+        callExpr->insertAtTail(convertAST(node->opExpr()->toFnCall()->actual(i)));
+      }
       return buildReduceExpr(callExpr, dataExpr, zippered);
     }
     return buildReduceExpr(opExpr, dataExpr, zippered);
