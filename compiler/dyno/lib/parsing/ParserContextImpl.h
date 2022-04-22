@@ -2372,3 +2372,4 @@ ParserContext::buildImplementsConstraint(YYLTYPE location,
 
   return node.release();
 }
+

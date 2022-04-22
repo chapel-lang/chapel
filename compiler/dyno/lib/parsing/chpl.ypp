@@ -3117,20 +3117,20 @@ for_expr:
   }
 | TLSBR expr_ls TRSBR expr %prec TFOR
   {
-    // TODO: We have to handle the possibility of [1..2, 3..4] here.
-    if ($2->size() > 1) {
-      const char* msg = "Invalid iterand expression";
-      $$ = context->raiseError(@2, msg);
+    owned<AstNode> iterand = nullptr;
+    auto iterExprs = context->consumeList($2);
+    if (iterExprs.size() > 1) {
+      iterand = Domain::build(BUILDER, LOC(@2), std::move(iterExprs));
     } else {
-      auto iterand = context->consumeList($2)[0].release();
-      assert(iterand);
-      $$ = BracketLoop::build(BUILDER, LOC(@$), /*index*/ nullptr,
-                              toOwned(iterand),
-                              /*withClause*/ nullptr,
-                              BlockStyle::IMPLICIT,
-                              context->consumeToBlock(@4, $4),
-                              /*isExpressionLevel*/ true).release();
+      iterand = std::move(iterExprs[0]);
     }
+    assert(iterand);
+    $$ = BracketLoop::build(BUILDER, LOC(@$), /*index*/ nullptr,
+                            std::move(iterand),
+                            /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            context->consumeToBlock(@4, $4),
+                            /*isExpressionLevel*/ true).release();
   }
 | TLSBR expr_ls TIN expr TRSBR expr %prec TFOR
   {
