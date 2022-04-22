@@ -192,13 +192,26 @@ static int processTripleStringLiteral(yyscan_t scanner,
   return type;
 }
 
-static
-void noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg) {
+static void
+noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
+                bool moveLocToEnd=false) {
   ParserContext* context = yyget_extra(scanner);
   YYLTYPE* loc = yyget_lloc(scanner);
   YYLTYPE myloc = *loc;
   updateLocation(&myloc, nLines, nCols);
+  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
   context->noteError(myloc, msg);
+}
+
+static void
+noteNoteInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
+                bool moveLocToEnd=false) {
+  ParserContext* context = yyget_extra(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  YYLTYPE myloc = *loc;
+  updateLocation(&myloc, nLines, nCols);
+  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
+  context->noteNote(myloc, msg);
 }
 
 static
@@ -351,7 +364,9 @@ static std::string eatStringLiteral(yyscan_t scanner,
   } /* eat up string */
 
   if (c == 0) {
-    noteErrInString(scanner, nLines, nCols, "EOF in string");
+    const bool moveLocToEnd = true;
+    noteErrInString(scanner, nLines, nCols, "EOF in string",
+                    moveLocToEnd);
     isErroneousOut = true;
   }
 
@@ -716,11 +731,16 @@ static int processBlockComment(yyscan_t scanner) {
       nestedStartLine = nLines;
       nestedStartCol = nCols;
     } else if (c == 0) {
-      noteErrInString(scanner, nLines, nCols, "EOF in comment");
-      noteErrInString(scanner, startLine, startCol, "unterminated comment started here");
-      if( nestedStartLine >= 0 ) {
-        noteErrInString(scanner, nestedStartLine, nestedStartCol,
-                        "nested comment started here");
+      const bool moveLocToEnd = true;
+      noteErrInString(scanner, nLines, nCols,
+                      "EOF in comment",
+                      moveLocToEnd);
+      noteNoteInString(scanner, startLine, startCol,
+                       "unterminated comment started here");
+      if (nestedStartLine >= 0) {
+        noteNoteInString(scanner, nestedStartLine, nestedStartCol,
+                         "nested comment started here",
+                         moveLocToEnd);
       }
       break;
     }

@@ -910,13 +910,13 @@ static int processBlockComment(yyscan_t scanner) {
     } else if (c == 0) {
       ParserContext context(scanner);
 
-      fprintf(stderr, "%s:%d: unterminated comment started here\n",
+      yyerror(yyLloc, &context, "error: EOF in comment");
+      fprintf(stderr, "%s:%d: note: unterminated comment started here\n",
               startFilename, startLine);
       if( nestedStartLine >= 0 ) {
-        fprintf(stderr, "%s:%d: nested comment started here\n",
+        fprintf(stderr, "%s:%d: note: nested comment started here\n",
                 startFilename, nestedStartLine);
       }
-      yyerror(yyLloc, &context, "error: EOF in comment");
       break;
     }
   }
