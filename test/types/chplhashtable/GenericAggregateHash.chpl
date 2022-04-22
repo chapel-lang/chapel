@@ -66,7 +66,7 @@ proc test3() {
 test3();
 
 proc test4() {
-  var d: domain(shared C2(int));
+  var d: domain(shared C2(int, int));
   d += new shared C2(int, 0, int, 0);
   writeln(d);
 }
