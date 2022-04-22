@@ -570,7 +570,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
         INT_ASSERT(anyResolved->isMethod());
 
         // TODO: What about if receiver is a primitive type?
-        auto at = anyResolved->getReceiverType();
+        auto at = toAggregateType(anyResolved->getReceiverType());
         INT_ASSERT(at);
 
         USR_FATAL_CONT(lhs, "cannot determine storage for '%s' due to "
