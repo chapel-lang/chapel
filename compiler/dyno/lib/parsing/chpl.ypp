@@ -1027,32 +1027,32 @@ renames_ls:
 use_renames_ls:
   expr
   {
-    auto node = context->buildVisibilityClause(@$, toOwned($1));
+    auto node = context->buildVisibilityClause(@$, toOwned($1), false);
     $$ = context->makeList(node);
   }
 | expr TAS expr
   {
     auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
-    auto node = context->buildVisibilityClause(@$, toOwned(as));
+    auto node = context->buildVisibilityClause(@$, toOwned(as), false);
     $$ = context->makeList(node);
   }
 | expr TAS TUNDERSCORE
   {
     auto ident = toOwned(context->buildIdent(@3, $3));
     auto as = context->buildAsExpr(@1, @3, toOwned($1), std::move(ident));
-    auto node = context->buildVisibilityClause(@$, toOwned(as));
+    auto node = context->buildVisibilityClause(@$, toOwned(as), false);
     $$ = context->makeList(node);
   }
 | use_renames_ls TCOMMA expr
   {
-    auto node = context->buildVisibilityClause(@3, toOwned($3));
+    auto node = context->buildVisibilityClause(@3, toOwned($3), false);
     $$ = context->appendList($1, node);
   }
 | use_renames_ls TCOMMA expr TAS expr
   {
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
     auto locVisClause = context->makeSpannedLocation(@3, @5);
-    auto node = context->buildVisibilityClause(locVisClause, toOwned(as));
+    auto node = context->buildVisibilityClause(locVisClause, toOwned(as), false);
     $$ = context->appendList($1, node);
   }
 | use_renames_ls TCOMMA expr TAS TUNDERSCORE
@@ -1060,7 +1060,7 @@ use_renames_ls:
     auto ident = context->buildIdent(@5, $5);
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned(ident));
     auto locVisClause = context->makeSpannedLocation(@3, @5);
-    auto node = context->buildVisibilityClause(locVisClause, toOwned(as));
+    auto node = context->buildVisibilityClause(locVisClause, toOwned(as), false);
     $$ = context->appendList($1, node);
   }
 ;
@@ -1135,24 +1135,24 @@ import_stmt:
 import_expr:
   expr
   {
-    $$ = context->buildVisibilityClause(@$, toOwned($1));
+    $$ = context->buildVisibilityClause(@$, toOwned($1), true);
   }
 | expr TDOT all_op_name
   {
     auto dot = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release();
-    $$ = context->buildVisibilityClause(@$, toOwned(dot));
+    $$ = context->buildVisibilityClause(@$, toOwned(dot), true);
   }
 | expr TAS ident_use
   {
     auto ident = toOwned(context->buildIdent(@3, $3));
     auto as = context->buildAsExpr(@1, @3, toOwned($1), std::move(ident));
-    $$ = context->buildVisibilityClause(@$, toOwned(as));
+    $$ = context->buildVisibilityClause(@$, toOwned(as), true);
   }
 | expr TDOT TLCBR renames_ls TRCBR
   {
     $$ = context->buildVisibilityClause(@$, toOwned($1),
                                         VisibilityClause::BRACES,
-                                        context->consumeList($4));
+                                        context->consumeList($4), true);
   }
 ;
 

@@ -7120,7 +7120,7 @@ yyreduce:
   case 72: /* use_renames_ls: expr  */
 #line 1029 "chpl.ypp"
   {
-    auto node = context->buildVisibilityClause((yyloc), toOwned((yyvsp[0].expr)));
+    auto node = context->buildVisibilityClause((yyloc), toOwned((yyvsp[0].expr)), false);
     (yyval.exprList) = context->makeList(node);
   }
 #line 7127 "bison-chpl-lib.cpp"
@@ -7130,7 +7130,7 @@ yyreduce:
 #line 1034 "chpl.ypp"
   {
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), toOwned((yyvsp[0].expr)));
-    auto node = context->buildVisibilityClause((yyloc), toOwned(as));
+    auto node = context->buildVisibilityClause((yyloc), toOwned(as), false);
     (yyval.exprList) = context->makeList(node);
   }
 #line 7137 "bison-chpl-lib.cpp"
@@ -7141,7 +7141,7 @@ yyreduce:
   {
     auto ident = toOwned(context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)));
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), std::move(ident));
-    auto node = context->buildVisibilityClause((yyloc), toOwned(as));
+    auto node = context->buildVisibilityClause((yyloc), toOwned(as), false);
     (yyval.exprList) = context->makeList(node);
   }
 #line 7148 "bison-chpl-lib.cpp"
@@ -7150,7 +7150,7 @@ yyreduce:
   case 75: /* use_renames_ls: use_renames_ls TCOMMA expr  */
 #line 1047 "chpl.ypp"
   {
-    auto node = context->buildVisibilityClause((yylsp[0]), toOwned((yyvsp[0].expr)));
+    auto node = context->buildVisibilityClause((yylsp[0]), toOwned((yyvsp[0].expr)), false);
     (yyval.exprList) = context->appendList((yyvsp[-2].exprList), node);
   }
 #line 7157 "bison-chpl-lib.cpp"
@@ -7161,7 +7161,7 @@ yyreduce:
   {
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), toOwned((yyvsp[0].expr)));
     auto locVisClause = context->makeSpannedLocation((yylsp[-2]), (yylsp[0]));
-    auto node = context->buildVisibilityClause(locVisClause, toOwned(as));
+    auto node = context->buildVisibilityClause(locVisClause, toOwned(as), false);
     (yyval.exprList) = context->appendList((yyvsp[-4].exprList), node);
   }
 #line 7168 "bison-chpl-lib.cpp"
@@ -7173,7 +7173,7 @@ yyreduce:
     auto ident = context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr));
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), toOwned(ident));
     auto locVisClause = context->makeSpannedLocation((yylsp[-2]), (yylsp[0]));
-    auto node = context->buildVisibilityClause(locVisClause, toOwned(as));
+    auto node = context->buildVisibilityClause(locVisClause, toOwned(as), false);
     (yyval.exprList) = context->appendList((yyvsp[-4].exprList), node);
   }
 #line 7180 "bison-chpl-lib.cpp"
@@ -7282,7 +7282,7 @@ yyreduce:
   case 88: /* import_expr: expr  */
 #line 1137 "chpl.ypp"
   {
-    (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned((yyvsp[0].expr)));
+    (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned((yyvsp[0].expr)), true);
   }
 #line 7288 "bison-chpl-lib.cpp"
     break;
@@ -7291,7 +7291,7 @@ yyreduce:
 #line 1141 "chpl.ypp"
   {
     auto dot = Dot::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-2].expr)), (yyvsp[0].uniqueStr)).release();
-    (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned(dot));
+    (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned(dot), true);
   }
 #line 7297 "bison-chpl-lib.cpp"
     break;
@@ -7301,7 +7301,7 @@ yyreduce:
   {
     auto ident = toOwned(context->buildIdent((yylsp[0]), (yyvsp[0].uniqueStr)));
     auto as = context->buildAsExpr((yylsp[-2]), (yylsp[0]), toOwned((yyvsp[-2].expr)), std::move(ident));
-    (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned(as));
+    (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned(as), true);
   }
 #line 7307 "bison-chpl-lib.cpp"
     break;
@@ -7311,7 +7311,7 @@ yyreduce:
   {
     (yyval.expr) = context->buildVisibilityClause((yyloc), toOwned((yyvsp[-4].expr)),
                                         VisibilityClause::BRACES,
-                                        context->consumeList((yyvsp[-1].exprList)));
+                                        context->consumeList((yyvsp[-1].exprList)), true);
   }
 #line 7317 "bison-chpl-lib.cpp"
     break;
