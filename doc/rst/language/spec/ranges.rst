@@ -440,16 +440,24 @@ Iterating over Ranges
 ~~~~~~~~~~~~~~~~~~~~~
 
 A range can be used as an iterator expression in a loop. This is legal
-only if the range is iterable. In this case the loop iterates over the
-members of the range’s represented sequence, in the order defined by the
+only if the range is iterable. In this case, the loop iterates over the
+members of the range’s represented sequence in the order defined by the
 sequence. If the range is empty, no iterations are executed.
+
+Overflow of the index variable while iterating over an unbounded range
+leads to undefined behavior.
+
+In order for it to be possible to iterate over a range, it needs to be
+possible to add the stride to the range's last index without overflowng
+the index type. In other words, the last index plus the stride must be
+between the index type's minimum and maximum value (inclusive). If this
+property is not met, the program will have undefined behavior.
 
    *Implementation Notes*.
 
-   An attempt to iterate over a range causes an error if adding stride
-   to the range’s last index overflows its index type, i.e. if the sum
-   is greater than the index type’s maximum value, or smaller than its
-   minimum value.
+   When bounds checking is enabled, the case in the above paragraph is
+   checked at runtime and the program will halt if the range iteration is
+   invalid.
 
 .. _Iterating_over_Unbounded_Ranges_in_Zippered_Iterations:
 

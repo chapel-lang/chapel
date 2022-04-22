@@ -178,11 +178,11 @@ Integer literals such as `3` have type ``int``. However, such literals
 can implicitly convert to other numeric types that can losslessly store
 the value. See :ref:`Implicit_Compile_Time_Constant_Conversions`.
 
-It is possible for overflow to occur with binary operators on signed and
-unsigned integers. The result of overflow for each of these is different.
+It is possible for overflow to occur with binary operators on integers.
 For signed integers, overflow leads to undefined behavior. For unsigned
-integers, overflow leads to the wrapping according to two's complement
+integers, overflow leads to wrapping according to two's complement
 arithmetic.
+
 
 .. _Real_Types:
 
