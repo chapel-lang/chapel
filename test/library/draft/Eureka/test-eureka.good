@@ -1,0 +1,11 @@
+
+
+./Eureka.chpl:48                 1        48       48       EurekaImpl                       prediffed  
+./Eureka.chpl:48                 16       8        128      array elements                   prediffed  
+./Eureka.chpl:48                 8        8        64       array elements                   prediffed  
+================================================= Memory Leaks ==================================================
+=================================================================================================================
+=================================================================================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+testCoforall: got EurekaNotified
+testForall: got EurekaNotified

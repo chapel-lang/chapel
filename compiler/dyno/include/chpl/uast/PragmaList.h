@@ -175,6 +175,10 @@ PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
        "The default intent for this type is ref if modified const "
        "ref otherwise")
 
+PRAGMA(DEFAULT_TFI_IN, ypr,
+       "default task intent in",
+       "force the const/default task intent to [const] in")
+
 PRAGMA(COPY_INIT, npr, "copy initializer", ncm)
 PRAGMA(DESTRUCTOR, npr,
        "destructor",

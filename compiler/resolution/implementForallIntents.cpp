@@ -735,6 +735,9 @@ static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
       IntentTag argInt = (intent == TFI_DEFAULT) ? INTENT_BLANK : INTENT_CONST;
       intent = forallIntentForArgIntent(concreteIntent(argInt, valType));
 
+      if (valType->symbol->hasFlag(FLAG_DEFAULT_TFI_IN))
+        intent = argInt == INTENT_BLANK ? TFI_IN : TFI_CONST_IN;
+
       break;
     }
 

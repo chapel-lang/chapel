@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# follow the lead of test/memory/ferguson/test1.chpl
+# add sorting, for deterministic output
+
+sed -E "s/0x[0-9a-f]*/prediffed/" $2 | sort >$2.predifftmp
+mv $2.predifftmp $2
