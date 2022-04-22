@@ -1774,17 +1774,19 @@ CommentsAndStmt
 ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
                                        ParserExprList* vars) {
   int numDecls = 0;
+  Decl* firstDecl = nullptr;
   Decl* lastDecl = nullptr;
 
   for (auto elt : *vars) {
     if (Decl* d = elt->toDecl()) {
+      if (!firstDecl) firstDecl = d;
       lastDecl = d;
       numDecls++;
     }
   }
 
   assert(numDecls > 0);
-  assert(lastDecl);
+  assert(firstDecl && lastDecl);
 
   auto comments = gatherCommentsFromList(vars, locEverything);
   CommentsAndStmt cs = { .comments=comments, .stmt=nullptr };
@@ -1799,6 +1801,13 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
     delete vars;
 
   } else {
+
+    // TODO: Just embed and catch this in a tree-walk instead.
+    if (firstDecl->linkageName()) {
+      noteError(locEverything, "external symbol renaming can only be "
+                               "applied to one symbol at a time");
+    }
+
     auto attributes = buildAttributes(locEverything);
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
                                   std::move(attributes),

@@ -29,6 +29,7 @@
 
 #include "build.h"
 #include "CatchStmt.h"
+#include "config.h"
 #include "DeferStmt.h"
 #include "docsDriver.h"
 #include "DoWhileStmt.h"
@@ -1801,10 +1802,6 @@ struct Converter {
   Expr* visit(const uast::MultiDecl* node) {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
-    // Ignore linkage name, the new parser should have emitted an error
-    // because multi-decls cannot be renamed.
-    (void) node->linkageName();
-
     for (auto decl : node->decls()) {
       INT_ASSERT(decl->linkage() == node->linkage());
 
@@ -1856,6 +1853,7 @@ struct Converter {
       } else if (auto var = decl->toVariable()) {
         const bool useLinkageName = false;
         conv = convertVariable(var, useLinkageName);
+
       // It must be a tuple.
       } else {
         INT_ASSERT(decl->isTupleDecl());
@@ -2657,6 +2655,15 @@ struct Converter {
       // Restore the state (janky, will be replaced by work from Ahmad).
       currentModuleName = savedModuleName;
       parsingPrivate = savedParsingPrivate;
+
+      // Possibly emit a deprecation warning.
+      if (varSym->hasFlag(FLAG_DEPRECATED)) {
+        if (isUsedCmdLineConfig(varSym->name)) {
+          astlocMarker emptyAstLoc(0, nullptr);
+          USR_WARN("%s", varSym->getDeprecationMsg());
+          USR_PRINT("'%s' was set via a compiler flag", varSym->name);
+        }
+      }
     }
 
     // If the init expression of this variable is a domain and this
