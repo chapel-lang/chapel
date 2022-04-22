@@ -203,10 +203,20 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
     }
 
-    // secondary methods
-    if (node->isMethod() && !node->isPrimaryMethod()
-        && node->thisFormal()->child(0)->isIdentifier()) {
-      ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
+    // print out the receiver type for secondary methods
+    if (node->isMethod() && !node->isPrimaryMethod()) {
+      auto typeExpr = node->thisFormal()->typeExpression();
+      assert(typeExpr);
+
+      if (auto ident = typeExpr->toIdentifier()) {
+        ss_ << ident->name().str();
+      } else {
+        ss_ << "(";
+        typeExpr->dispatch<void>(*this);
+        ss_ << ")";
+      }
+
+      ss_ << ".";
     }
 
     if (node->kind() == Function::Kind::OPERATOR && node->name() == USTR("=")) {
