@@ -1815,8 +1815,16 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
 
     // TODO: Just embed and catch this in a tree-walk instead.
     if (firstDecl->linkageName()) {
-      noteError(locEverything, "external symbol renaming can only be "
-                               "applied to one symbol at a time");
+      bool isTypeVar = false;
+
+      if (auto typeVar = firstDecl->toVariable()) {
+        isTypeVar = typeVar->kind() == Variable::TYPE;
+      }
+
+      if (!isTypeVar) {
+        noteError(locEverything, "external symbol renaming can only be "
+                                 "applied to one symbol at a time");
+      }
     }
 
     auto attributes = buildAttributes(locEverything);
