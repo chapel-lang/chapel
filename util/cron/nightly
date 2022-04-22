@@ -307,7 +307,7 @@ if ($cronlogdir eq "") {
     if ($performance == 1) {
         $cronlogdir = "/cray/css/users/chapelu/NightlyPerformance/$perfConfigName";
     } else {
-        $cronlogdir = "/data/sea/chapel/Nightly";
+        $cronlogdir = "/cray/css/users/chapelu/Nightly";
     }
 }
 

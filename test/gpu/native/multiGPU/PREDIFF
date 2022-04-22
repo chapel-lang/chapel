@@ -5,12 +5,15 @@
 num_gpus=$(awk '/Number of sublocales.*/ {print $NF;}' < $2)
 num_gpus=$((num_gpus-1))
 
+# and number of launches expected by the test
+num_launches=$(cat $1.numlaunches)
+
 rm -f $1.good
 for i in $(seq 1 $num_gpus);
 do
-  echo "      4 Kernel launcher called. (subloc $i)" >> $1.good
+  echo "$num_launches Kernel launcher called. (subloc $i)" >> $1.good
 done
 
 # filter kernel launches and count them
-grep 'Kernel launch' $2 | sort | uniq -c > $2.new
+grep 'Kernel launch' $2 | sort | uniq -c | sed "s/^[[:space:]]*//" > $2.new
 mv $2.new $2

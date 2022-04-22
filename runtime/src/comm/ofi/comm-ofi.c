@@ -734,11 +734,6 @@ size_t bitmapSizeof(size_t len) {
 }
 
 static inline
-void bitmapZero(struct bitmap_t* b) {
-  memset(&b->map, 0, bitmapSizeofMap(b->len));
-}
-
-static inline
 bitmapBaseType_t bitmapElemBit(size_t i) {
   return ((bitmapBaseType_t) 1) << bitmapOff(i);
 }
