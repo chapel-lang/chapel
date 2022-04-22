@@ -1,4 +1,4 @@
 -suseItem=false -sdataType=string  # param-index-string.good
 -suseItem=true  -sdataType=string  # param-index-string.good
 -suseItem=false -sdataType=bytes   # param-index-bytes.good
--suseItem=true  -sdataType=bytes   # param-index-bytes.good
+-suseItem=true  -sdataType=bytes   # param-index-bytes-item.good
