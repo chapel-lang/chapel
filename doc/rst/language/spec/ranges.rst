@@ -447,8 +447,8 @@ sequence. If the range is empty, no iterations are executed.
 Overflow of the index variable while iterating over an unbounded range
 leads to undefined behavior.
 
-In order for it to be possible to iterate over a range with an upper
-bound, it needs to be possible to add the stride to the range's last
+In order for it to be possible to iterate over a range with a last
+index, it needs to be possible to add the stride to the range's last
 index without overflowng the index type. In other words, the last index
 plus the stride must be between the index type's minimum and maximum
 value (inclusive). If this property is not met, the program will have
