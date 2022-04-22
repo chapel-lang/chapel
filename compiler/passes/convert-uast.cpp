@@ -74,6 +74,15 @@ struct Converter {
     return ret;
   }
 
+  const char* convertLinkageNameAstr(const uast::Decl* node) {
+    if (auto linkageName = node->linkageName()) {
+      INT_ASSERT(linkageName->isStringLiteral());
+      return astr(linkageName->toStringLiteral()->str().c_str());
+    }
+
+    return nullptr;
+  }
+
   Flag convertFlagForDeclLinkage(const uast::AstNode* node) {
     if (auto decl = node->toDecl()) {
       switch (decl->linkage()) {
@@ -1885,7 +1894,7 @@ struct Converter {
 
     // get the definition of the temporary that was added
     DefExpr* tmpDef = toDefExpr(ret->body.first());
-    attachSymbolStorage((uast::IntentList)node->intentOrKind(), tmpDef->sym);
+    attachSymbolStorage(node->intentOrKind(), tmpDef->sym);
 
     // Move the block info around like in 'buildVarDecls'.
     if (auto info = ret->blockInfoGet()) {
@@ -2239,8 +2248,8 @@ struct Converter {
 
     if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
       Flag linkageFlag = convertFlagForDeclLinkage(node);
-      Expr* linkageName = convertExprOrNull(node->linkageName());
-      ret = buildExternExportFunctionDecl(linkageFlag, linkageName, ret);
+      Expr* linkageExpr = convertExprOrNull(node->linkageName());
+      ret = buildExternExportFunctionDecl(linkageFlag, linkageExpr, ret);
     }
 
     // For lambdas, return a DefExpr instead of a BlockStmt
@@ -2456,9 +2465,18 @@ struct Converter {
 
   const char* sanitizeVarName(const char* name) {
     if (inTupleDecl && name[0] == '_' && name[1] == '\0')
-      return "chpl__tuple_blank";
+      return astr("chpl__tuple_blank");
     else
-      return name;
+      return astr(name);
+  }
+
+  void attachSymbolStorage(const uast::Variable::Kind kind, Symbol* vs) {
+    return attachSymbolStorage((uast::IntentList) kind, vs);
+  }
+
+  void attachSymbolStorage(const uast::TupleDecl::IntentOrKind iok,
+                           Symbol* vs) {
+    return attachSymbolStorage((uast::IntentList) iok, vs);
   }
 
   void attachSymbolStorage(const uast::IntentList kind, Symbol* vs) {
@@ -2563,7 +2581,7 @@ struct Converter {
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
 
     // Adjust the variable according to its kind, e.g. 'const'/'type'.
-    attachSymbolStorage((uast::IntentList)node->kind(), varSym);
+    attachSymbolStorage(node->kind(), varSym);
 
     attachSymbolAttributes(node, varSym);
 
@@ -2588,9 +2606,7 @@ struct Converter {
     if (useLinkageName) {
       if (auto linkageName = node->linkageName()) {
         INT_ASSERT(linkageFlag != FLAG_UNKNOWN);
-        auto strLit = linkageName->toStringLiteral();
-        INT_ASSERT(strLit);
-        varSym->cname = astr(strLit->str().c_str());
+        varSym->cname = convertLinkageNameAstr(node);
       }
     }
 
@@ -2652,7 +2668,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Variable* node) {
-    const bool isTypeVar = node->kind() == uast::Variable::TYPE;
+    auto isTypeVar = node->kind() == uast::Variable::TYPE;
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
 
     auto defExpr = convertVariable(node, true);
@@ -2738,6 +2754,11 @@ struct Converter {
 
     if (auto cls = node->toClass()) {
       inherit = convertExprOrNull(cls->parentClass());
+    }
+
+    if (node->linkageName()) {
+      INT_ASSERT(node->linkage() != uast::Decl::DEFAULT_LINKAGE);
+      cname = convertLinkageNameAstr(node);
     }
 
     auto style = uast::BlockStyle::EXPLICIT;
