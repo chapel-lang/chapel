@@ -819,6 +819,17 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                              toOwned(fp.where),
                              this->consumeList(fp.lifetime),
                              std::move(body));
+
+    // If we are not a method then the receiver intent is discarded,
+    // because there is no receiver formal to store it in.
+    // So do the check now.
+    if (!f->isMethod() && fp.thisIntent != Formal::DEFAULT_INTENT) {
+      const char* msg = fp.thisIntent == Formal::TYPE
+          ? "Missing type for secondary type method"
+          : "'this' intents can only be applied to methods";
+      noteError(location, msg);
+    }
+
     cs.stmt = f.release();
   } else {
     cs.stmt = fp.errorExpr;
