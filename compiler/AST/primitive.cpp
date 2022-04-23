@@ -442,8 +442,11 @@ returnInfoCoerce(CallExpr* call) {
     // and return that type.
     SymExpr* actualOne = toSymExpr(call->get(1));
     SymExpr* actualTwo = toSymExpr(call->get(2));
-    t = getInstantiationType(call->get(1)->getValType(), actualOne->symbol(),
+    t = getInstantiationType(actualOne->getValType(), actualOne->symbol(),
                              t, actualTwo->symbol(), call);
+    if (t == nullptr)
+      USR_FATAL(call, "could not coerce a value of type '%s' to type '%s'",
+        actualOne->getValType()->symbol->name, actualTwo->symbol()->name);
   }
 
   return QualifiedType(t, QUAL_VAL);
