@@ -364,9 +364,7 @@ static std::string eatStringLiteral(yyscan_t scanner,
   } /* eat up string */
 
   if (c == 0) {
-    const bool moveLocToEnd = true;
-    noteErrInString(scanner, nLines, nCols, "EOF in string",
-                    moveLocToEnd);
+    noteErrInString(scanner, nLines, nCols, "EOF in string");
     isErroneousOut = true;
   }
 

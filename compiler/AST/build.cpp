@@ -1142,7 +1142,6 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
                                        bool bounded) {
 
   BlockStmt* taskBlk = new BlockStmt();
-  taskBlk->astloc = body->astloc;
   taskBlk->insertAtHead(body);
 
   VarSymbol* coforallCount = newTempConst("_coforallCount");
