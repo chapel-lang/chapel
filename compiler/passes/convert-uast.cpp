@@ -553,6 +553,7 @@ struct Converter {
       switch (vc->limitationKind()) {
         case uast::VisibilityClause::NONE: {
           INT_ASSERT(vc->numLimitations() == 0);
+
           // Handles case: 'import foo as bar'
           if (auto as = vc->symbol()->toAs()) {
             Expr* mod = convertAST(as->symbol());
@@ -703,7 +704,8 @@ struct Converter {
     // is empty.
     // old parser expects an empty potential rename to indicate something like
     // use A only;
-    if (vc->limitationKind() == uast::VisibilityClause::ONLY && vc->numLimitations()==0) {
+    if (vc->limitationKind() == uast::VisibilityClause::ONLY &&
+        vc->numLimitations()==0) {
       PotentialRename* ret = new PotentialRename();
       ret->tag = PotentialRename::SINGLE;
       ret->elem = new UnresolvedSymExpr("");
@@ -2361,20 +2363,27 @@ struct Converter {
     return INTENT_BLANK;
   }
 
+  Expr* convertTypeExpression(const uast::AstNode* typeExpression,
+                              bool isFormalType=false) {
+    if (!typeExpression) return nullptr;
+    Expr* ret = nullptr;
+
+    if (auto bkt = typeExpression->toBracketLoop()) {
+      ret = convertArrayType(bkt, isFormalType);
+    } else {
+      ret = convertAST(typeExpression);
+    }
+
+    INT_ASSERT(ret);
+
+    return ret;
+  }
+
   DefExpr* visit(const uast::Formal* node) {
     IntentTag intentTag = convertFormalIntent(node->intent());
 
-    Expr* typeExpr = nullptr;
+    Expr* typeExpr = convertTypeExpression(node->typeExpression(), true);
     Expr* initExpr = convertExprOrNull(node->initExpression());
-
-    if (auto te = node->typeExpression()) {
-      if (auto bkt = te->toBracketLoop()) {
-        const bool isFormalType = true;
-        typeExpr = convertArrayType(bkt, isFormalType);
-      } else {
-        typeExpr = convertAST(te);
-      }
-    }
 
     auto ret =  buildArgDefExpr(intentTag, node->name().c_str(),
                                 typeExpr,
@@ -2449,7 +2458,7 @@ struct Converter {
 
     ShadowVarPrefix prefix = convertTaskVarIntent(node);
     Expr* nameExp = new UnresolvedSymExpr(node->name().c_str());
-    Expr* type = convertExprOrNull(node->typeExpression());
+    Expr* type = convertTypeExpression(node->typeExpression());
     Expr* init = convertExprOrNull(node->initExpression());
 
     auto ret = ShadowVarSymbol::buildForPrefix(prefix, nameExp, type, init);
