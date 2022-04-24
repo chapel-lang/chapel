@@ -363,7 +363,7 @@ qioerr _append_char(char* restrict * restrict buf, size_t* restrict buf_len, siz
 
 qioerr read_entire_file(const int threadsafe,qio_channel_t* restrict ch,
                         const char* restrict* restrict out,
-                        int64_t* restrict len_out, ssize_t maxlen)
+                        int64_t* restrict len_out)
 {  
   qioerr err,err_reading_file=0;
   int64_t file_length,chunkSize=1024;
@@ -476,9 +476,10 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
   //if block moved before threadsafe
-  if(str_style==QIO_BINARY_STRING_STYLE_TOEOF)  
+  if(maxlen==-1)  
   {
-     err=read_entire_file(threadsafe,ch,out,len_out,maxlen);
+    
+     err=read_entire_file(threadsafe,ch,out,len_out);
     return err;
   }
   if( threadsafe ) {
@@ -514,7 +515,12 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
       // read until the end of the file.
       // Figure out how many bytes are available.
       // This case has already been handled above
+      err = _peek_until_len(ch, maxlen, &peek_amt);
+      num = peek_amt;
+      // Ignore EOF errors as long as we read something.
+      if( err && qio_err_to_int(err) == EEOF && num > 0 ) err = 0;
       break;
+      
       
     default:
       if( str_style >= 0 ) {
