@@ -455,7 +455,7 @@ int chpl_launch_using_exec(const char* command, char * const argv1[], const char
   execvp(command, argv1);
   {
     char msg[256];
-    sprintf(msg, "execvp() failed: %s", strerror(errno));
+    sprintf(msg, "execvp() failed for command %s: %s", command, strerror(errno));
     chpl_internal_error(msg);
   }
   return -1;
