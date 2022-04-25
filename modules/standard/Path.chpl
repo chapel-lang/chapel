@@ -837,7 +837,7 @@ proc splitExt(path:string): (string, string) {
     }
     else break;
   }
-  return (path[..(lastIdx - 1)], path[lastIdx..]);
+  return try! (path[..(lastIdx - 1)], path[lastIdx..]);
 }
 
 /* Split path into a tuple that is equivalent to (:proc:`dirname`,

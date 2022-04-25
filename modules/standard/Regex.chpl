@@ -586,7 +586,7 @@ inline proc regexMatch.chpl_cond_test_method() return this.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:regexMatch) {
-  if m.matched then return this[m.byteOffset..#m.numBytes];
+  if m.matched then return try! this[m.byteOffset..#m.numBytes];
   else return "";
 }
 
@@ -916,7 +916,7 @@ record regex {
       splits += 1;
 
       var splitstart:byteIndex = matches[0].offset;
-      yield text[last..<splitstart];
+      yield try! text[last..<splitstart];
       last = splitstart + matches[0].len;
 
       // Yield capture groups
@@ -934,7 +934,7 @@ record regex {
       if last >= text.numBytes {
         yield "":exprType;
       } else {
-        yield text[last..<endpos];
+        yield try! text[last..<endpos];
       }
     }
   }
