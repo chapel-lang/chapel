@@ -7,7 +7,7 @@
 
 
 // native qthreads version of thread-ring, based on Chapel's release version
-//   https://github.com/chapel-lang/chapel/blob/master/test/release/examples/benchmarks/shootout/threadring.chpl
+//   https://github.com/chapel-lang/chapel/blob/main/test/release/examples/benchmarks/shootout/threadring.chpl
 
 //static int n = 1000, ntasks = 503;
 static int n = 50000000, ntasks = 503;
