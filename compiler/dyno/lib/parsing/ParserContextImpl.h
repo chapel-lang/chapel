@@ -2381,3 +2381,30 @@ ParserContext::buildImplementsConstraint(YYLTYPE location,
   return node.release();
 }
 
+CommentsAndStmt
+ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
+                              CommentsAndStmt cs) {
+  if (cs.stmt && (cs.stmt->isFor() || cs.stmt->isWhile() ||
+                  cs.stmt->isDoWhile())) {
+    auto exprLst = makeList(cs);
+    auto comments = gatherCommentsFromList(exprLst, location);
+    auto astLst = consumeList(exprLst);
+    Loop* loop = nullptr;
+    for (auto& ast : astLst) {
+      if (ast->isLoop()) {
+        loop = ast.release()->toLoop();
+        break;
+      }
+    }
+    assert(loop);
+    auto node = Label::build(builder, convertLocation(location), name,
+                             toOwned(loop));
+    return { .comments=comments, .stmt=node.release() };
+  } else {
+    const char* msg = "can only label for-, while-do- "
+                      "and do-while-statements";
+    auto err = raiseError(location, msg);
+    return finishStmt(err);
+  }
+}
+

@@ -2365,15 +2365,17 @@ struct Converter {
     return INTENT_BLANK;
   }
 
-  Expr* convertTypeExpression(const uast::AstNode* typeExpression,
+  Expr* convertTypeExpression(const uast::AstNode* node,
                               bool isFormalType=false) {
-    if (!typeExpression) return nullptr;
+    if (!node) return nullptr;
     Expr* ret = nullptr;
 
-    if (auto bkt = typeExpression->toBracketLoop()) {
+    astlocMarker markAstLoc(node->id());
+
+    if (auto bkt = node->toBracketLoop()) {
       ret = convertArrayType(bkt, isFormalType);
     } else {
-      ret = convertAST(typeExpression);
+      ret = convertAST(node);
     }
 
     INT_ASSERT(ret);
@@ -2383,6 +2385,8 @@ struct Converter {
 
   DefExpr* visit(const uast::Formal* node) {
     IntentTag intentTag = convertFormalIntent(node->intent());
+
+    astlocMarker markAstLoc(node->id());
 
     Expr* typeExpr = convertTypeExpression(node->typeExpression(), true);
     Expr* initExpr = convertExprOrNull(node->initExpression());

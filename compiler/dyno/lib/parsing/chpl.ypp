@@ -674,26 +674,7 @@ stmt:
   }
 | TLABEL ident_def stmt
   {
-    if ($3.stmt && ($3.stmt->isFor() || $3.stmt->isWhile() || $3.stmt->isDoWhile())) {
-      auto exprLst = context->makeList($3);
-      auto comments = context->gatherCommentsFromList(exprLst, @1);
-      auto astLst = context->consumeList(exprLst);
-      Loop* loop = nullptr;
-      for (auto& ast : astLst) {
-        if (ast->isLoop()) {
-          loop = ast.release()->toLoop();
-          break;
-        }
-      }
-      assert(loop);
-      auto node = Label::build(BUILDER, LOC(@$), $2, toOwned(loop));
-      $$ = { .comments=comments, .stmt=node.release() };
-    } else {
-      const char* msg = "can only label for-, while-do- "
-                        "and do-while-statements";
-      auto err = context->raiseError(@$, msg);
-      $$ = context->finishStmt(err);
-    }
+    $$ = context->buildLabelStmt(@$, $2, $3);
   }
 | TYIELD expr TSEMI
   {
