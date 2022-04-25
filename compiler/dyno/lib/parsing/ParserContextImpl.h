@@ -171,17 +171,15 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
       msg += ret.c_str();
       msg += "\"";
       noteError(loc, msg.c_str());
-    } else {
-
-      // Initialize the pragma flags if needed.
-      auto& pragmas = attributeParts.pragmas;
-      if (pragmas == nullptr) {
-        pragmas = new std::set<PragmaTag>();
-      }
-
-      hasAttributeParts = true;
-      pragmas->insert(tag);
     }
+
+    // Initialize the pragma flags if needed.
+    auto& pragmas = attributeParts.pragmas;
+    if (pragmas == nullptr) pragmas = new std::set<PragmaTag>();
+    hasAttributeParts = true;
+
+    // Always insert, even if PRAGMA_UNKNOWN.
+    pragmas->insert(tag);
   }
 
   // Make sure to clean up the UAST node since it will be discarded.
@@ -211,7 +209,6 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
 
 void ParserContext::resetAttributePartsState() {
   if (hasAttributeParts) {
-    assert(numAttributesBuilt >= 1);
     auto& pragmas = attributeParts.pragmas;
     if (pragmas) delete pragmas;
     attributeParts = { nullptr, false, UniqueString() };
