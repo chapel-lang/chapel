@@ -50,62 +50,145 @@ module OS {
     //
     // sys/types.h
     //
+    /*
+       Explicit conversions between ``blkcnt_t`` and ``c_int`` are
+       also defined, to support usability.
+    */
     extern type blkcnt_t;
     pragma "no doc"
-    inline operator :(x:blkcnt_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:blkcnt_t, type t:c_int)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_int, type t:blkcnt_t)
+      return __primitive("cast", t, x);
 
+    /*
+       Explicit conversions between ``blksize_t`` and ``c_int`` are
+       also defined, to support usability.
+    */
     extern type blksize_t;
     pragma "no doc"
-    inline operator :(x:blksize_t, type t:int)
+    inline operator :(x:blksize_t, type t:c_int)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_int, type t:blksize_t)
       return __primitive("cast", t, x);
 
+    /*
+       Explicit conversions between ``dev_t`` and ``c_int`` are
+       also defined, to support usability.
+    */
     extern type dev_t;
     pragma "no doc"
-    inline operator :(x:dev_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:dev_t, type t:c_int)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_int, type t:dev_t)
+      return __primitive("cast", t, x);
 
+    /*
+       Explicit conversions between ``gid_t`` and ``c_int`` are
+       also defined, to support usability.
+    */
     extern type gid_t;
     pragma "no doc"
-    inline operator :(x:gid_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:gid_t, type t:c_int)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_int, type t:gid_t)
+      return __primitive("cast", t, x);
 
+    /*
+       Explicit conversions between ``ino_t`` and ``c_uint`` are
+       also defined, to support usability.
+    */
     extern type ino_t;
     pragma "no doc"
-    inline operator :(x:ino_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:ino_t, type t:c_uint)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_uint, type t:ino_t)
+      return __primitive("cast", t, x);
 
+    /*
+       Bitwise-AND and bitwise-OR operators are defined on ``mode_t``
+       operands, to support querying and constructing mode values.
+       Explicit conversions between ``mode_t`` and ``c_int`` are
+       also defined, to support usability.
+    */
     extern type mode_t;
     pragma "no doc"
-    inline operator :(x:mode_t, type t:int) return __primitive("cast", t, x);
+    inline operator &(a: mode_t, b: mode_t)
+      return (a:c_int & b:c_int):mode_t;
     pragma "no doc"
-    inline operator :(x:int, type t:mode_t) return __primitive("cast", t, x);
-    // Users definitely need |(mode_t, mode_t).  We may want others in
-    // the future.
+    inline operator |(a: mode_t, b: mode_t)
+      return (a:c_int | b:c_int):mode_t;
     pragma "no doc"
-    inline operator |(a: mode_t, b: mode_t) return (a:int | b:int):mode_t;
+    inline operator :(x:mode_t, type t:c_int)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_int, type t:mode_t)
+      return __primitive("cast", t, x);
 
+    /*
+       Explicit conversions between ``nlink_t`` and ``c_int`` are
+       also defined, to support usability.
+    */
     extern type nlink_t;
     pragma "no doc"
-    inline operator :(x:nlink_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:nlink_t, type t:c_int)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_int, type t:nlink_t)
+      return __primitive("cast", t, x);
 
+    /*
+       Explicit conversions between ``off_t`` and ``c_int`` are
+       also defined, to support usability.
+    */
     extern type off_t;
     pragma "no doc"
-    inline operator :(x:off_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:off_t, type t:c_int)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_int, type t:off_t)
+      return __primitive("cast", t, x);
 
+    /*
+       Explicit conversions between ``suseconds_t`` and ``c_int`` are
+       also defined, to support usability.
+    */
     extern type suseconds_t;
     pragma "no doc"
-    inline operator :(x:suseconds_t, type t:int)
+    inline operator :(x:suseconds_t, type t:c_int)
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:int, type t:suseconds_t)
+    inline operator :(x:c_int, type t:suseconds_t)
       return __primitive("cast", t, x);
 
+    /*
+       Explicit conversions between ``time_t`` and ``c_int`` are
+       also defined, to support usability.
+    */
     extern type time_t;
     pragma "no doc"
-    inline operator :(x:time_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:time_t, type t:c_int)
+      return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:int, type t:time_t) return __primitive("cast", t, x);
+    inline operator :(x:c_int, type t:time_t)
+      return __primitive("cast", t, x);
 
+    /*
+       Explicit conversions between ``uid_t`` and ``c_int`` are
+       also defined, to support usability.
+    */
     extern type uid_t;
     pragma "no doc"
-    inline operator :(x:uid_t, type t:int) return __primitive("cast", t, x);
+    inline operator :(x:uid_t, type t:c_int)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:c_int, type t:uid_t)
+      return __primitive("cast", t, x);
 
     //
     // time.h (pre-decl for struct_timespec, needed in sys/stat.h)

@@ -1,7 +1,7 @@
 use OS.POSIX;
 
-writeln(time(nil):int);
+writeln(time(nil):c_int);
 var tValRefd:time_t;
 var tVal = time(c_ptrTo(tValRefd));
-writeln(tVal:int);
-writeln(tVal:int == tValRefd:int);
+writeln(tVal:c_int);
+writeln(tVal:c_int == tValRefd:c_int);
