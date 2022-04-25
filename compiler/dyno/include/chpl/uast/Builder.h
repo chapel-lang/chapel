@@ -134,6 +134,9 @@ class Builder final {
   // Use this to flatten top level blocks within an AstList.
   AstList flattenTopLevelBlocks(AstList lst);
 
+  // Use this to get a temporary location while parsing.
+  Location getLocation(const AstNode* ast);
+
   /// \endcond
 };
 

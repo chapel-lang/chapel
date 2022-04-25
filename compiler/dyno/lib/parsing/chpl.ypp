@@ -161,7 +161,7 @@
     Function::Kind kind;
     Formal::Intent thisIntent;
     Formal* receiver;
-    PODUniqueString name;
+    Identifier* name;
     Function::ReturnIntent returnIntent;
     bool throws;
     ParserExprList* formals;
@@ -2154,7 +2154,7 @@ lambda_decl_expr:
   function_body_stmt
     {
       FunctionParts fp = $1;
-      fp.name = STR("lambda");
+      fp.name = context->buildIdent(@1, STR("lambda"));
       fp.formals = $2;
       fp.returnIntent = $3;
       fp.returnType = $4;
@@ -2196,7 +2196,7 @@ fn_decl_stmt:
     {
       context->clearComments();
       context->resetDeclState();
-      context->enterScope(asttags::Function, $1.name);
+      context->enterScope(asttags::Function, $1.name->name());
     }
   opt_function_body_stmt
     {
@@ -2211,7 +2211,7 @@ fn_decl_stmt:
       fp.where = wl.where;
 
       context->clearComments();
-      context->exitScope(asttags::Function, $1.name);
+      context->exitScope(asttags::Function, $1.name->name());
 
       $$ = fp;
     }
@@ -2222,7 +2222,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.name = $3;
+      fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
       $$ = fp;
     }
@@ -2230,7 +2230,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.name = $3;
+      fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
       $$ = fp;
     }
@@ -2241,7 +2241,7 @@ fn_decl_stmt_inner:
       fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
-      fp.name = $5;
+      fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
       $$ = fp;
     }
@@ -2252,7 +2252,7 @@ fn_decl_stmt_inner:
       fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
-      fp.name = $5;
+      fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
       $$ = fp;
     }

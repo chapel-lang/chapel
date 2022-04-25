@@ -304,6 +304,12 @@ AstList Builder::flattenTopLevelBlocks(AstList lst) {
   return ret;
 }
 
+Location Builder::getLocation(const AstNode* node) {
+  auto got = notedLocations_.find(node);
+  if (got != notedLocations_.end()) return got->second;
+  chpl::Location empty;
+  return empty;
+}
 
 } // namespace uast
 } // namespace chpl

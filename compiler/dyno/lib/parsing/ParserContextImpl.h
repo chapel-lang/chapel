@@ -749,7 +749,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       Function::PROC,
                       Formal::DEFAULT_INTENT,
                       nullptr,
-                      PODUniqueString::get(),
+                      nullptr,
                       Function::DEFAULT_RETURN_INTENT,
                       false,
                       nullptr, nullptr, nullptr, nullptr,
@@ -800,12 +800,22 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
       body = consumeToBlock(location, fp.body);
     }
 
-    auto f = Function::build(builder, this->convertLocation(location),
+    // Own the recorded identifier to clean it up, but grab its location.
+    owned<Identifier> identName = toOwned(fp.name);
+    assert(identName.get());
+    auto identNameLoc = builder->getLocation(identName.get());
+    assert(!identNameLoc.isEmpty());
+
+    // TODO: Right now this location is the start of the function, and
+    // it seems more natural for the location to be the symbol.
+    (void) location;
+
+    auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributes),
                              fp.visibility,
                              fp.linkage,
                              toOwned(fp.linkageNameExpr),
-                             fp.name,
+                             identName->name(),
                              fp.isInline,
                              fp.isOverride,
                              fp.kind,
@@ -850,12 +860,22 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
       body = consumeToBlock(location, fp.body);
     }
 
-    auto f = Function::build(builder, this->convertLocation(location),
+    // Own the recorded identifier to clean it up, but grab its location.
+    owned<Identifier> identName = toOwned(fp.name);
+    assert(identName.get());
+    auto identNameLoc = builder->getLocation(identName.get());
+    assert(!identNameLoc.isEmpty());
+
+    // TODO: Right now this location is the start of the function, and
+    // it seems more natural for the location to be the symbol.
+    (void) location;
+
+    auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributes),
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
                              /* linkageName */ nullptr,
-                             fp.name,
+                             identName->name(),
                              /* inline */ false,
                              /* override */ false,
                              Function::LAMBDA,
