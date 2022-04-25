@@ -411,7 +411,7 @@ module BytesStringCommon {
       }
       return simpleCaseHelper();
     }
-    else if t == string && x.isASCII() {
+    else if (t == bytes) || (t == string && x.isASCII()) {
       return simpleCaseHelper();
     }
     else {  // string with codepoint indexing
