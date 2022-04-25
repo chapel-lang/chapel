@@ -50,7 +50,7 @@
   iter foo() {
     yield try! bar();
   }
-  
+
   for i in foo() {
     writeln(i);
   }
