@@ -787,6 +787,8 @@ struct Converter {
 
       // Handle reductions in with clauses explicitly here.
       } else if (const uast::Reduce* rd = expr->toReduce()) {
+        astlocMarker markAstLoc(rd->id());
+
         Expr* ovar = toExpr(convertAST(rd->actual(0)));
         Expr* riExpr = convertScanReduceOp(rd->op());
         svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
