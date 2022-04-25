@@ -886,14 +886,17 @@ struct Converter {
       auto op = opCall->op();
       if (op == USTR("=")) {
         assignOp = true;
-        USR_FATAL_CONT(convertAST(opCall->actual(0)), "Assignment is illegal in a conditional");
-        USR_PRINT(convertAST(opCall->actual(0)), "Use == to check for equality in a conditional");
+        USR_FATAL_CONT(convertAST(opCall->actual(0)),
+                       "Assignment is illegal in a conditional");
+        USR_PRINT(convertAST(opCall->actual(0)),
+                  "Use == to check for equality in a conditional");
       } else if (op == USTR("+=") || op == USTR("-=") || op == USTR("*=")
                  || op == USTR("/=") || op == USTR("%=") || op == USTR("**=")
                  || op == USTR("&=") || op == USTR("|=") || op == USTR("^=")
                  || op == USTR(">>=")|| op == USTR("<<=")) {
         assignOp = true;
-        USR_FATAL_CONT(convertAST(opCall->actual(0)), "Assignment operation %s is illegal in a conditional",
+        USR_FATAL_CONT(convertAST(opCall->actual(0)),
+                       "Assignment operation %s is illegal in a conditional",
                        op.c_str());
       }
     }
@@ -922,11 +925,19 @@ struct Converter {
 
     } else {
       auto thenStyle = node->thenBlockStyle();
-      auto thenBlock = createBlockWithStmts(node->thenStmts(), thenStyle);
+      Expr* thenBlock = nullptr;
       auto elseStyle = node->elseBlockStyle();
-      auto elseBlock = node->hasElseBlock()
-            ? createBlockWithStmts(node->elseStmts(), elseStyle)
-            : nullptr;
+      Expr* elseBlock = nullptr;
+
+      {
+        astlocMarker markAstLoc(node->thenBlock()->id());
+        thenBlock = createBlockWithStmts(node->thenStmts(), thenStyle);
+      }
+
+      if (node->hasElseBlock()) {
+        astlocMarker markAstLoc(node->elseBlock()->id());
+        elseBlock = createBlockWithStmts(node->elseStmts(), elseStyle);
+      }
 
       Expr* cond = nullptr;
 
