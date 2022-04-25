@@ -78,8 +78,8 @@ void chpl_gpu_init() {
     CUcontext context;
 
     CUDA_CALL(cuDeviceGet(&device, i));
-    CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
     CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
+    CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
 
     chpl_gpu_primary_ctx[i] = context;
   }
