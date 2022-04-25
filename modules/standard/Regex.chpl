@@ -916,7 +916,9 @@ record regex {
       splits += 1;
 
       var splitstart:byteIndex = matches[0].offset;
-      yield try! text[last..<splitstart];
+      try! {
+        yield text[last..<splitstart];
+      }
       last = splitstart + matches[0].len;
 
       // Yield capture groups
@@ -934,7 +936,9 @@ record regex {
       if last >= text.numBytes {
         yield "":exprType;
       } else {
-        yield try! text[last..<endpos];
+        try! {
+          yield text[last..<endpos];
+        }
       }
     }
   }
