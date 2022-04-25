@@ -228,7 +228,7 @@ int chpl_enc_validate_buf(const char *buf, ssize_t buflen, int64_t *num_cp) {
   return 0;  // valid
 }
 
-/* 
+/*
  * Returns the codepoint at index, encoded in UTF-8. The returned buffer must be
  * freed by the caller, and can be used as a string buffer.
  *
@@ -240,8 +240,8 @@ int chpl_enc_validate_buf(const char *buf, ssize_t buflen, int64_t *num_cp) {
 static inline
 char* chpl_enc_codepoint_at_idx(const char* buf,
                                 ssize_t idx) {
-  int32_t cp;
-  int nbytes;
+  int32_t cp = 0;
+  int nbytes = 0;
 
   ssize_t buflen = strlen(buf);
   int offset = 0;
