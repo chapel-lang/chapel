@@ -392,7 +392,7 @@ module BytesStringCommon {
       if checkMisaligned && t == string {
         // if the low bound of the range is within the byteIndices of the
         // string, it must be the initial byte of a codepoint
-        if r.hasLowBound() && 
+        if r.hasLowBound() &&
            x.byteIndices.boundsCheck(r.low:int) &&
            !isInitialByte(x.byte[r.low:int]) {
           throw new MisalignedSliceError("The byte at low boundary " +
@@ -401,7 +401,7 @@ module BytesStringCommon {
         }
         // if the "high bound of the range plus one" is within the byteIndices
         // of the string, that index must be the initial byte of a codepoint
-        if r.hasHighBound() && 
+        if r.hasHighBound() &&
            x.byteIndices.boundsCheck(r.high:int+1) &&
            !isInitialByte(x.byte[r.high:int+1]) {
           throw new MisalignedSliceError("The byte at high boundary " +
