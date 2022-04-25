@@ -242,6 +242,10 @@ static void test1(Parser* parser) {
                forall myIterator() with (+ reduce x) {
                  x = 1;
                }
+               forall elm in A with (PlusReduceOp(int) reduce sum) {
+                 sum reduce= elm;   // bools are implicitly coerced to 'int' input type
+                 writeln(sum);      // accumulation state: int
+               }
                __primitive("=", x, y);
                let x = 0 in writeln(x);
                var x = if foo then bar else baz;

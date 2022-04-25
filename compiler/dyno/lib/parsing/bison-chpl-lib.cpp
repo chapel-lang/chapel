@@ -930,8 +930,8 @@ static const yytype_int16 yyrline[] =
     3590,  3594,  3598,  3607,  3612,  3621,  3622,  3623,  3624,  3625,
     3626,  3627,  3628,  3629,  3630,  3631,  3632,  3633,  3634,  3635,
     3636,  3637,  3638,  3639,  3640,  3641,  3642,  3643,  3647,  3648,
-    3649,  3650,  3651,  3652,  3655,  3659,  3663,  3667,  3671,  3678,
-    3682,  3686,  3690,  3698,  3699,  3700,  3701,  3702,  3703,  3704
+    3649,  3650,  3651,  3652,  3655,  3659,  3663,  3667,  3672,  3680,
+    3684,  3688,  3692,  3700,  3701,  3702,  3703,  3704,  3705,  3706
 };
 #endif
 
@@ -10592,8 +10592,8 @@ yyreduce:
 
   case 591: /* intent_expr: reduce_scan_op_expr TREDUCE ident_expr  */
 #line 3268 "chpl.ypp"
-  {
-    (yyval.expr) = Reduce::build(BUILDER, LOC((yyloc)), (yyvsp[-2].uniqueStr), toOwned((yyvsp[0].expr))).release();
+  { auto ident = Identifier::build(BUILDER, LOC((yylsp[-2])), (yyvsp[-2].uniqueStr));
+    (yyval.expr) = Reduce::build(BUILDER, LOC((yyloc)), std::move(ident), toOwned((yyvsp[0].expr))).release();
   }
 #line 10599 "bison-chpl-lib.cpp"
     break;
@@ -11315,53 +11315,55 @@ yyreduce:
   case 707: /* reduce_expr: reduce_scan_op_expr TREDUCE expr  */
 #line 3668 "chpl.ypp"
   {
-    (yyval.expr) = Reduce::build(BUILDER, LOC((yyloc)), (yyvsp[-2].uniqueStr), toOwned((yyvsp[0].expr))).release();
+    auto ident = Identifier::build(BUILDER, LOC((yylsp[-2])), (yyvsp[-2].uniqueStr));
+    (yyval.expr) = Reduce::build(BUILDER, LOC((yyloc)), std::move(ident), toOwned((yyvsp[0].expr))).release();
   }
-#line 11321 "bison-chpl-lib.cpp"
+#line 11322 "bison-chpl-lib.cpp"
     break;
 
   case 708: /* reduce_expr: reduce_scan_op_expr TREDUCE zippered_iterator  */
-#line 3672 "chpl.ypp"
+#line 3673 "chpl.ypp"
   {
-    (yyval.expr) = Reduce::build(BUILDER, LOC((yyloc)), (yyvsp[-2].uniqueStr), toOwned((yyvsp[0].expr))).release();
+    auto ident = Identifier::build(BUILDER, LOC((yylsp[-2])), (yyvsp[-2].uniqueStr));
+    (yyval.expr) = Reduce::build(BUILDER, LOC((yyloc)), std::move(ident), toOwned((yyvsp[0].expr))).release();
   }
-#line 11329 "bison-chpl-lib.cpp"
+#line 11331 "bison-chpl-lib.cpp"
     break;
 
   case 709: /* scan_expr: expr TSCAN expr  */
-#line 3679 "chpl.ypp"
+#line 3681 "chpl.ypp"
   {
     (yyval.expr) = context->buildCustomScan((yyloc), (yylsp[-2]), (yyvsp[-2].expr), (yyvsp[0].expr));
   }
-#line 11337 "bison-chpl-lib.cpp"
+#line 11339 "bison-chpl-lib.cpp"
     break;
 
   case 710: /* scan_expr: expr TSCAN zippered_iterator  */
-#line 3683 "chpl.ypp"
+#line 3685 "chpl.ypp"
   {
     (yyval.expr) = context->buildCustomScan((yyloc), (yylsp[-2]), (yyvsp[-2].expr), (yyvsp[0].expr));
   }
-#line 11345 "bison-chpl-lib.cpp"
+#line 11347 "bison-chpl-lib.cpp"
     break;
 
   case 711: /* scan_expr: reduce_scan_op_expr TSCAN expr  */
-#line 3687 "chpl.ypp"
+#line 3689 "chpl.ypp"
   {
     (yyval.expr) = Scan::build(BUILDER, LOC((yyloc)), (yyvsp[-2].uniqueStr), toOwned((yyvsp[0].expr))).release();
   }
-#line 11353 "bison-chpl-lib.cpp"
+#line 11355 "bison-chpl-lib.cpp"
     break;
 
   case 712: /* scan_expr: reduce_scan_op_expr TSCAN zippered_iterator  */
-#line 3691 "chpl.ypp"
+#line 3693 "chpl.ypp"
   {
     (yyval.expr) = Scan::build(BUILDER, LOC((yyloc)), (yyvsp[-2].uniqueStr), toOwned((yyvsp[0].expr))).release();
   }
-#line 11361 "bison-chpl-lib.cpp"
+#line 11363 "bison-chpl-lib.cpp"
     break;
 
 
-#line 11365 "bison-chpl-lib.cpp"
+#line 11367 "bison-chpl-lib.cpp"
 
       default: break;
     }
