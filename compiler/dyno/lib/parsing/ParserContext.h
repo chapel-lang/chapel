@@ -499,12 +499,12 @@ struct ParserContext {
                        owned<AstNode> rename);
 
   AstNode*
-  buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol);
+  buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol, bool isImport);
 
   AstNode*
   buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
                         VisibilityClause::LimitationKind limitationKind,
-                        AstList limitations);
+                        AstList limitations, bool isImport);
 
   CommentsAndStmt
   buildImportStmt(YYLTYPE locEverything, Decl::Visibility visibility,
