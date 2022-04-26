@@ -1244,6 +1244,7 @@ module BytesStringCommon {
   }
 
   iter theseBytes(const ref x: ?t) {
+    if x.isEmpty() then return;
     const localX = x.localize();
     foreach i in localX.byteIndices do
       yield localX.byte(i);
@@ -1268,6 +1269,7 @@ module BytesStringCommon {
   }
 
   iter theseAscii(const ref x: ?t) {
+    if x.isEmpty() then return;
     const localX = x.localize();
     foreach i in localX.byteIndices {
       var (newBuff, allocSize) = bufferCopyLocal(localX.buff+i, len=1);
@@ -1300,7 +1302,7 @@ module BytesStringCommon {
       if localX.type == string then
         yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
       else
-        yield createBytesWithOwnedBuffer(newBuff, 1, allocSize, 1);
+        yield createBytesWithOwnedBuffer(newBuff, 1, allocSize);
     }
   }
 
