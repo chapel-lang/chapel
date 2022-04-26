@@ -1284,7 +1284,7 @@ module BytesStringCommon {
       yield (rangeChunk, localX);
   }
 
-  iter theseAscii(param tag: iterKind, followThis)
+  iter theseAscii(param tag: iterKind, const ref x: ?t, followThis)
       where tag==iterKind.follower {
 
     const rangeChunk = followThis[0];
@@ -1300,7 +1300,8 @@ module BytesStringCommon {
   }
 
   iter theseUTF8(const ref x: ?t) {
-    compilerError("This is a TODO");
+    for c in x.items() do
+      yield c;
   }
 
   iter theseUTF8(param tag: iterKind, const ref x: ?t)
@@ -1313,32 +1314,33 @@ module BytesStringCommon {
     foreach i in theseBytes(tag, localX) do yield i;
   }
 
-  proc adjustRangeForCodepointBoundaries(r, buff, bufflen) {
-    // adjust the low bound
-    var low = r.low;
-    if low != 0 {
-      while !isInitialByte(buff[low]) {
-        low += 1;
-      }
-    }
 
-    // adjust the high bound
-    var high = r.high;
-    while high+1 != bufflen-1 && !isInitialByte(high+1) {
-      high += 1;
-    }
-
-    return low..high;
-  }
-
-  iter theseUTF8(param tag: iterKind, followThis)
+  iter theseUTF8(param tag: iterKind, const ref x: ?t, followThis)
       where tag==iterKind.follower {
+
+    proc adjustRangeForCodepointBoundaries(r, localX) {
+      // adjust the low bound
+      var low = r[0].low;
+      if low != 0 {
+        while !isInitialByte(localX.buff[low]) {
+          low += 1;
+        }
+      }
+
+      // adjust the high bound
+      var high = r[0].high;
+      while high+1 != localX.buffLen-1 && !isInitialByte(localX.buff[high+1]) {
+        high += 1;
+      }
+
+      return (low..high,);
+    }
 
     const rangeChunk = adjustRangeForCodepointBoundaries((...followThis));
     const localX = followThis[1];
 
     foreach i in localX.byteIndices.these(tag, rangeChunk) do
-      if isInitialByte(buff[i]) {
+      if isInitialByte(localX.buff[i]) {
         const (decodeRet, cp, nBytes) = decodeHelp(buff=localX.buff,
                                                    buffLen=localX.buffLen,
                                                    offset=i,
