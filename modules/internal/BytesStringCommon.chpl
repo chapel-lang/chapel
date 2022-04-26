@@ -1244,30 +1244,33 @@ module BytesStringCommon {
   }
 
   iter theseBytes(const ref x: ?t) {
-    foreach i in x.byteIndices do
-      yield x.byte(i);
+    const localX = x.localize();
+    foreach i in localX.byteIndices do
+      yield localX.byte(i);
   }
 
   iter theseBytes(param tag: iterKind, const ref x: ?t)
       where tag==iterKind.leader {
 
-    for rangeChunk in x.byteIndices.these(tag) do
-      yield (rangeChunk, x.buff, x.bufflen);
+    const localX = x.localize();
+    for rangeChunk in localX.byteIndices.these(tag) do
+      yield (rangeChunk, localX);
   }
 
-  iter theseBytes(param tag: iterKind, followThis)
+  iter theseBytes(param tag: iterKind, const ref x: ?t, followThis)
       where tag==iterKind.follower {
 
     const rangeChunk = followThis[0];
-    const buff = followThis[1];
+    const localX = followThis[1];
 
-    for i in x.byteIndices.these(tag, rangeChunk) do
-      yield buff[i];
+    for i in localX.byteIndices.these(tag, rangeChunk) do
+      yield localX.buff[i];
   }
 
   iter theseAscii(const ref x: ?t) {
-    foreach i in localThis.byteIndices {
-      var (newBuff, allocSize) = bufferCopyLocal(localThis.buff+i, len=1);
+    const localX = x.localize();
+    foreach i in localX.byteIndices {
+      var (newBuff, allocSize) = bufferCopyLocal(localX.buff+i, len=1);
       yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
     }
   }
@@ -1277,7 +1280,7 @@ module BytesStringCommon {
 
     const localX = x.localize();
 
-    for rangeChunk in x.byteIndices.these(tag) do
+    for rangeChunk in localX.byteIndices.these(tag) do
       yield (rangeChunk, localX);
   }
 
@@ -1287,7 +1290,7 @@ module BytesStringCommon {
     const rangeChunk = followThis[0];
     const localX = followThis[1];
 
-    for i in x.byteIndices.these(tag, rangeChunk) {
+    for i in localX.byteIndices.these(tag, rangeChunk) {
       var (newBuff, allocSize) = bufferCopyLocal(localX.buff+i, len=1);
       if localX.type == string then
         yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
@@ -1303,9 +1306,11 @@ module BytesStringCommon {
   iter theseUTF8(param tag: iterKind, const ref x: ?t)
       where tag==iterKind.leader {
 
+    const localX = x.localize();
+
     // leader chunks up blindly, follower will adjust for the codepoint
     // boundaries
-    for i in theseBytes(tag, x) do yield i;
+    foreach i in theseBytes(tag, localX) do yield i;
   }
 
   proc adjustRangeForCodepointBoundaries(r, buff, bufflen) {
@@ -1330,15 +1335,15 @@ module BytesStringCommon {
       where tag==iterKind.follower {
 
     const rangeChunk = adjustRangeForCodepointBoundaries((...followThis));
-    const buff = followThis[1];
+    const localX = followThis[1];
 
-    foreach i in x.byteIndices.these(tag, rangeChunk) do
+    foreach i in localX.byteIndices.these(tag, rangeChunk) do
       if isInitialByte(buff[i]) {
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=buff,
-                                                   buffLen=buffLen,
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localX.buff,
+                                                   buffLen=localX.buffLen,
                                                    offset=i,
                                                    allowEsc=true);
-        var (newBuf, newSize) = bufferCopyLocal(buff+i, nBytes);
+        var (newBuf, newSize) = bufferCopyLocal(localX.buff+i, nBytes);
         yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
 
       }

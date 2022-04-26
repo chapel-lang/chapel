@@ -209,7 +209,7 @@ module String {
   use ChapelStandard;
   use CTypes;
   use ByteBufferHelpers;
-  use BytesStringCommon;
+  public use BytesStringCommon;
   use SysBasic;
 
   use CString;
