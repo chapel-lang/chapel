@@ -1266,8 +1266,10 @@ module BytesStringCommon {
   }
 
   iter theseAscii(const ref x: ?t) {
-    foreach i in x.byteIndices do
-      yield x.item(i);
+    foreach i in localThis.byteIndices {
+      var (newBuff, allocSize) = bufferCopyLocal(localThis.buff+i, len=1);
+      yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
+    }
   }
 
   iter theseAscii(param tag: iterKind, const ref x: ?t)
@@ -1285,8 +1287,13 @@ module BytesStringCommon {
     const rangeChunk = followThis[0];
     const localX = followThis[1];
 
-    for i in x.byteIndices.these(tag, rangeChunk) do
-      yield localX.item(i);
+    for i in x.byteIndices.these(tag, rangeChunk) {
+      var (newBuff, allocSize) = bufferCopyLocal(localX.buff+i, len=1);
+      if localX.type == string then
+        yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
+      else
+        yield createBytesWithOwnedBuffer(newBuff, 1, allocSize, 1);
+    }
   }
 
   iter theseUTF8(const ref x: ?t) {
