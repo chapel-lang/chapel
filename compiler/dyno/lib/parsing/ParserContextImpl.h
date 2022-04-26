@@ -767,6 +767,19 @@ ParserContext::buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp) {
 
 CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
+  if (!fp.errorExpr) {
+    if (fp.formals) {
+      for (auto ast : *fp.formals) {
+        if (ast->isErroneousExpression()) {
+          auto loc = convertLocation(location);
+          auto errorExpr = ErroneousExpression::build(builder, loc);
+          fp.errorExpr = errorExpr.release();
+          break;
+        }
+      }
+    }
+  }
+
   CommentsAndStmt cs = {fp.comments, nullptr};
   if (fp.errorExpr == nullptr) {
     // detect parenless functions
