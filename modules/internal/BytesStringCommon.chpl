@@ -21,6 +21,7 @@
 module BytesStringCommon {
   private use ChapelStandard;
   private use CTypes;
+  private use ChapelDebugPrint;
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
 
@@ -1306,6 +1307,8 @@ module BytesStringCommon {
     }
   }
 
+  config param debugUTF8Iterator = false;
+
   iter theseUTF8(const ref x: ?t) {
     for c in x.items() do
       yield c;
@@ -1345,6 +1348,9 @@ module BytesStringCommon {
 
     const rangeChunk = adjustRangeForCodepointBoundaries((...followThis));
     const localX = followThis[1];
+
+    if debugUTF8Iterator then
+      chpl_debug_writeln("<UTF8 Iterator> Adjusted chunk: ", rangeChunk[0]);
 
     foreach i in localX.byteIndices.these(tag, rangeChunk) do
       if isInitialByte(localX.buff[i]) {
