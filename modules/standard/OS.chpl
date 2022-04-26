@@ -278,8 +278,10 @@ module OS {
     extern const EWOULDBLOCK:c_int;
     extern const EXDEV:c_int;
 
-    // POSIX says that errno is a "modifiable lvalue of type int", but
-    // for now we only support reading from it, not assigning to it.
+    /*
+       POSIX says that errno is a "modifiable lvalue of type int", but
+       for now we only support reading from it, not assigning to it.
+    */
     inline proc errno:c_int {
       extern proc chpl_os_posix_errno_val():c_int;
       return chpl_os_posix_errno_val();
