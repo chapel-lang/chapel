@@ -1396,8 +1396,17 @@ module String {
       d
    */
   iter string.these() : string {
-    for c in this.items() do
-      yield c;
+    for c in this.items() do yield c;
+  }
+
+  pragma "no doc"
+  iter string.these(param tag: iterKind) where tag==iterKind.leader {
+    for c in this.items(tag) do yield c;
+  }
+
+  pragma "no doc"
+  iter string.these(param tag: iterKind, followThis) where tag==iterKind.follower {
+    for c in this.items(tag, followThis) do yield c;
   }
 
   /*
@@ -1405,6 +1414,16 @@ module String {
   */
   iter string.chpl_bytes() : uint(8) {
     for i in theseBytes(this) do yield i;
+  }
+
+  pragma "no doc"
+  iter string.chpl_bytes(param tag: iterKind) where tag==iterKind.leader {
+    for i in theseBytes(tag, this) do yield i;
+  }
+
+  pragma "no doc"
+  iter string.chpl_bytes(param tag: iterKind, followThis) where tag==iterKind.follower {
+    for i in theseBytes(tag, this, followThis) do yield i;
   }
 
   /*
