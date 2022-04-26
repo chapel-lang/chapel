@@ -1271,7 +1271,12 @@ module BytesStringCommon {
     const localX = x.localize();
     foreach i in localX.byteIndices {
       var (newBuff, allocSize) = bufferCopyLocal(localX.buff+i, len=1);
-      yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
+      if localX.type == string {
+        yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
+      }
+      else {
+        yield createBytesWithOwnedBuffer(newBuff, 1, allocSize);
+      }
     }
   }
 
