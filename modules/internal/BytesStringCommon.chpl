@@ -1243,6 +1243,100 @@ module BytesStringCommon {
     return localX[start..end];
   }
 
+  iter theseBytes(const ref x: ?t) {
+    foreach i in x.byteIndices do
+      yield x.byte(i);
+  }
+
+  iter theseBytes(param tag: iterKind, const ref x: ?t)
+      where tag==iterKind.leader {
+
+    for rangeChunk in x.byteIndices.these(tag) do
+      yield (rangeChunk, x.buff, x.bufflen);
+  }
+
+  iter theseBytes(param tag: iterKind, followThis)
+      where tag==iterKind.follower {
+
+    const rangeChunk = followThis[0];
+    const buff = followThis[1];
+
+    for i in x.byteIndices.these(tag, rangeChunk) do
+      yield buff[i];
+  }
+
+  iter theseAscii(const ref x: ?t) {
+    foreach i in x.byteIndices do
+      yield x.item(i);
+  }
+
+  iter theseAscii(param tag: iterKind, const ref x: ?t)
+      where tag==iterKind.leader {
+
+    const localX = x.localize();
+
+    for rangeChunk in x.byteIndices.these(tag) do
+      yield (rangeChunk, localX);
+  }
+
+  iter theseAscii(param tag: iterKind, followThis)
+      where tag==iterKind.follower {
+
+    const rangeChunk = followThis[0];
+    const localX = followThis[1];
+
+    for i in x.byteIndices.these(tag, rangeChunk) do
+      yield localX.item(i);
+  }
+
+  iter theseUTF8(const ref x: ?t) {
+    compilerError("This is a TODO");
+  }
+
+  iter theseUTF8(param tag: iterKind, const ref x: ?t)
+      where tag==iterKind.leader {
+
+    // leader chunks up blindly, follower will adjust for the codepoint
+    // boundaries
+    for i in theseBytes(tag, x) do yield i;
+  }
+
+  proc adjustRangeForCodepointBoundaries(r, buff, bufflen) {
+    // adjust the low bound
+    var low = r.low;
+    if low != 0 {
+      while !isInitialByte(buff[low]) {
+        low += 1;
+      }
+    }
+
+    // adjust the high bound
+    var high = r.high;
+    while high+1 != bufflen-1 && !isInitialByte(high+1) {
+      high += 1;
+    }
+
+    return low..high;
+  }
+
+  iter theseUTF8(param tag: iterKind, followThis)
+      where tag==iterKind.follower {
+
+    const rangeChunk = adjustRangeForCodepointBoundaries((...followThis));
+    const buff = followThis[1];
+
+    foreach i in x.byteIndices.these(tag, rangeChunk) do
+      if isInitialByte(buff[i]) {
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=buff,
+                                                   buffLen=buffLen,
+                                                   offset=i,
+                                                   allowEsc=true);
+        var (newBuf, newSize) = bufferCopyLocal(buff+i, nBytes);
+        yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
+
+      }
+  }
+
   inline proc doEq(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
