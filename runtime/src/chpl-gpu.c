@@ -45,12 +45,12 @@ static void CHPL_GPU_LOG(const char *str, ...) {
 
 static void chpl_gpu_cuda_check(int err, const char* file, int line) {
   if(err != CUDA_SUCCESS) {
-    const int msg_len = 80;
+    const int msg_len = 256;
     char msg[msg_len];
 
     snprintf(msg, msg_len,
-             "%s:%d: Error calling CUDA function. (Code: %d)",
-             file, line, err);
+             "%s:%d: Error calling CUDA function: %s (Code: %d)",
+             file, line, cudaGetErrorString(err), err);
 
     chpl_internal_error(msg);
   }
@@ -78,8 +78,8 @@ void chpl_gpu_init() {
     CUcontext context;
 
     CUDA_CALL(cuDeviceGet(&device, i));
-    CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
     CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
+    CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
 
     chpl_gpu_primary_ctx[i] = context;
   }
