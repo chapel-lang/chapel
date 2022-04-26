@@ -2020,13 +2020,23 @@ AstNode* ParserContext::buildCustomReduce(YYLTYPE location,
                                           YYLTYPE locIdent,
                                           AstNode* lhs,
                                           AstNode* rhs) {
-  if (!lhs->isIdentifier()) {
+
+  if (lhs->isFnCall()) {
+    if (!lhs->toFnCall()->calledExpression()->isIdentifier()) {
+      const char* msg = "Expected identifier for reduction name";
+      return raiseError(locIdent, msg);
+    }
+    AstNode* inputType = (AstNode*) lhs->toFnCall();
+    auto node = Reduce::build(builder, convertLocation(location),
+                              toOwned(inputType),
+                              toOwned(rhs));
+    return node.release();
+  } else if (!lhs->isIdentifier()) {
     const char* msg = "Expected identifier for reduction name";
     return raiseError(locIdent, msg);
   } else {
-    auto identName = lhs->toIdentifier()->name();
     auto node = Reduce::build(builder, convertLocation(location),
-                              identName,
+                              toOwned(lhs->toIdentifier()),
                               toOwned(rhs));
     return node.release();
   }

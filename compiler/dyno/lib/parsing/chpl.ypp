@@ -3251,8 +3251,8 @@ intent_expr:
     }
   }
 | reduce_scan_op_expr TREDUCE ident_expr
-  {
-    $$ = Reduce::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+  { auto ident = Identifier::build(BUILDER, LOC(@1), $1);
+    $$ = Reduce::build(BUILDER, LOC(@$), std::move(ident), toOwned($3)).release();
   }
 | expr                TREDUCE ident_expr
   {
@@ -3652,11 +3652,13 @@ reduce_expr:
   }
 | reduce_scan_op_expr TREDUCE expr
   {
-    $$ = Reduce::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+    auto ident = Identifier::build(BUILDER, LOC(@1), $1);
+    $$ = Reduce::build(BUILDER, LOC(@$), std::move(ident), toOwned($3)).release();
   }
 | reduce_scan_op_expr TREDUCE zippered_iterator
   {
-    $$ = Reduce::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+    auto ident = Identifier::build(BUILDER, LOC(@1), $1);
+    $$ = Reduce::build(BUILDER, LOC(@$), std::move(ident), toOwned($3)).release();
   }
 ;
 

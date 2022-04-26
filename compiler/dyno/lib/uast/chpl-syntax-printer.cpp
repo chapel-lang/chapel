@@ -829,9 +829,14 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Reduce* node) {
-    ss_ << node->op() << " ";
+    if (node->opExpr()) {
+      printChapelSyntax(ss_, node->opExpr());
+    } else {
+      ss_ << node->op();
+    }
+    ss_ << " ";
     ss_ << "reduce ";
-    interpose(node->actuals(), ", ");
+    printChapelSyntax(ss_, node->actual(0));
   }
 
   void visit(const Require* node) {

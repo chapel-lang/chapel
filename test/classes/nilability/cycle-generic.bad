@@ -1,0 +1,2 @@
+cycle-generic.chpl:1: In module 'cycle':
+cycle-generic.chpl:3: error: initialization requires an argument for next
