@@ -385,22 +385,31 @@ static void test2(Parser* parser) {
 static void test3(Parser* parser) {
 
   TEST_USER_STRING("proc bar(x: int) {\n}\n", "bar(x: int)")
-  TEST_USER_STRING("proc foo(X: [?Dlocal] real) {\n}\n", "foo(X: [?Dlocal] real)")
+  TEST_USER_STRING("proc foo(X: [?Dlocal] real) {\n}\n",
+                   "foo(X: [?Dlocal] real)")
   TEST_USER_STRING("proc baz(A: borrowed C) {\n}\n", "baz(A: borrowed C)")
-  TEST_USER_STRING("proc test(const ref arg:unmanaged MyClass) {\n}\n", "test(const ref arg: unmanaged MyClass)")
-  TEST_USER_STRING("inline proc (borrowed object?).hash(): uint {\n}\n", "hash()")
+  TEST_USER_STRING("proc test(const ref arg:unmanaged MyClass) {\n}\n",
+                   "test(const ref arg: unmanaged MyClass)")
+  TEST_USER_STRING("inline proc (borrowed object?).hash(): uint {\n}\n",
+                   "(borrowed object?).hash()")
   TEST_USER_STRING("proc bark(c = new C()) {\n}\n", "bark(c = new C())")
-  TEST_USER_STRING("proc ref C.setClt2(rhs: borrowed C) {\n}\n", "ref C.setClt2(rhs: borrowed C)")
+  TEST_USER_STRING("proc ref C.setClt2(rhs: borrowed C) {\n}\n",
+                   "ref C.setClt2(rhs: borrowed C)")
   TEST_USER_STRING("proc main(args: [] string) {\n}", "main(args: [] string)")
-  TEST_USER_STRING("proc MYPROC(FORMAL: single int) { }", "MYPROC(FORMAL: single int)")
-  TEST_USER_STRING("inline operator ==(a: _nilType, b: _nilType) param return true;", "==(a: _nilType, b: _nilType)")
-  TEST_USER_STRING("private proc param R.prm2(arg) param : string { }", "private param R.prm2(arg)")
-  TEST_USER_STRING("proc procRefC(ref arg: borrowed C?) { }", "procRefC(ref arg: borrowed C?)")
+  TEST_USER_STRING("proc MYPROC(FORMAL: single int) { }",
+                   "MYPROC(FORMAL: single int)")
+  TEST_USER_STRING("inline operator ==(a: _nilType, b: _nilType) param return true;",
+                   "==(a: _nilType, b: _nilType)")
+  TEST_USER_STRING("private proc param R.prm2(arg) param : string { }",
+                   "private param R.prm2(arg)")
+  TEST_USER_STRING("proc procRefC(ref arg: borrowed C?) { }",
+                   "procRefC(ref arg: borrowed C?)")
   TEST_USER_STRING("operator =(ref r3:R, r4:R){}", " = (ref r3: R, r4: R)")
   TEST_USER_STRING("proc foo(x...) {}", "foo(x ...)")
   TEST_USER_STRING("proc bar(type x...) {}", "bar(type x ...)")
   TEST_USER_STRING("proc bar(type x...?k) {}", "bar(type x ...?k)")
-  TEST_USER_STRING("proc foo(x: borrowed C(t=?tt, r=?rr), y: borrowed C(tt, rr)) {}", "foo(x: borrowed C(t = ?tt, r = ?rr), y: borrowed C(tt, rr))")
+  TEST_USER_STRING("proc foo(x: borrowed C(t=?tt, r=?rr), y: borrowed C(tt, rr)) {}",
+                   "foo(x: borrowed C(t = ?tt, r = ?rr), y: borrowed C(tt, rr))")
 }
 
 static void test4(Parser* parser) {
