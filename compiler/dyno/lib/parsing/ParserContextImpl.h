@@ -1611,11 +1611,16 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
 AstNode* ParserContext::
 buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
                       VisibilityClause::LimitationKind limitationKind,
-                      AstList limitations) {
+                      AstList limitations, bool isImport) {
   if (!symbol->isAs() && !symbol->isIdentifier() && !symbol->isDot()) {
-    // auto msg = "Expected symbol in visibility clause";
-    // TODO: This error message isn't always correct here, might be an import statement that starts this builder
-    auto msg = "'use' statements must refer to module or enum symbols (e.g., 'use <module>[.<submodule>]*;')";
+    std::string msg;
+    if (isImport) {
+      msg = "'import' statement paths must start with at least one module "
+            "symbol (e.g., 'import <module>[.<submodule>]*;')";
+    } else {
+      msg = "'use' statements must refer to module or enum symbols (e.g., "
+            "'use <module>[.<submodule>]*;')";
+    }
     return raiseError(location, msg);
   }
 
@@ -1623,10 +1628,15 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
     if (expr->isAs() || expr->isIdentifier() || expr->isDot() ||
         expr->isComment()) {
       continue;
-    } else {
+    } else if (limitationKind==VisibilityClause::LimitationKind::EXCEPT ||
+               limitationKind==VisibilityClause::LimitationKind::ONLY) {
       std::string msg = "incorrect expression in '";
       msg += kindToString(limitationKind);
       msg += "' list, identifier expected";
+      return raiseError(location, msg);
+    } else if (limitationKind == VisibilityClause::LimitationKind::BRACES) {
+      std::string msg = "incorrect expression in 'import' for unqualified "
+                        "access, identifier expected";
       return raiseError(location, msg);
     }
   }
@@ -1640,10 +1650,10 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
 }
 
 AstNode* ParserContext::
-buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol) {
+buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol, bool isImport) {
   return buildVisibilityClause(location, std::move(symbol),
                                VisibilityClause::NONE,
-                               AstList());
+                               AstList(), isImport);
 }
 
 
@@ -1669,7 +1679,7 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
 
   auto visClause = buildVisibilityClause(location, std::move(expr),
                                          limitationKind,
-                                         std::move(limitationsList));
+                                         std::move(limitationsList), false);
 
   auto node = ForwardingDecl::build(builder, convertLocation(location),
                                     std::move(attributes),
@@ -1706,12 +1716,12 @@ AstNode* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
                                     owned<AstNode> name,
                                     owned<AstNode> rename) {
   if (!rename->isIdentifier()) {
-    const char* msg = "Rename in as expression must be identifier";
+    const char* msg = "Rename in 'as' expression must be identifier";
     return raiseError(locRename, msg);
   }
 
   if (!name->isDot() && !name->isIdentifier()) {
-    const char* msg = "Symbol in as expression must be dot or identifier";
+    const char* msg = "Symbol in 'as' expression must be dot or identifier";
     return raiseError(locName, msg);
   }
 
@@ -1788,7 +1798,7 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
   auto visClause = buildVisibilityClause(locVisibilityClause,
                                          std::move(name),
                                          limitationKind,
-                                         consumeList(limitationExprs));
+                                         consumeList(limitationExprs), false);
 
   if (visClause->isErroneousExpression()) {
     auto convLoc = convertLocation(locVisibilityClause);

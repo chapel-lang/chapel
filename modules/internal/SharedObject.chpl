@@ -604,6 +604,8 @@ module SharedObject {
   inline operator :(pragma "nil from arg" x:_nilType, type t:_shared)  {
     if isNonNilableClass(t.chpl_t) then
       compilerError("Illegal cast from nil to non-nilable shared type");
+    if isGenericType(t) then
+      compilerError("illegal cast from nil to a generic shared type");
 
     var tmp:t;
     return tmp;
