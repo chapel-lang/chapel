@@ -41,8 +41,7 @@ module OS {
 
      There is one unavoidable difference between POSIX and ``OS.POSIX``.
      POSIX defines a function named ``select()``, which ``OS.POSIX``
-     must define as ``select_posix()`` because ``select`` by itself is
-     a Chapel keyword.
+     could not use because ``select`` is itself a Chapel keyword.
   */
   module POSIX {
     public use CTypes;
