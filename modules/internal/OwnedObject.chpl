@@ -558,6 +558,8 @@ module OwnedObject {
   inline operator :(pragma "nil from arg" x:_nilType, type t:_owned)  {
     if isNonNilableClass(t.chpl_t) then
       compilerError("Illegal cast from nil to non-nilable owned type");
+    if isGenericType(t) then
+      compilerError("illegal cast from nil to a generic owned type");
 
     var tmp:t;
     return tmp;

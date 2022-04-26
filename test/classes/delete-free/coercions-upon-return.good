@@ -1,1 +1,2 @@
-coercions-upon-return.chpl:9: error: Could not coerce Gen(real(64)) to unmanaged Gen upon return
+coercions-upon-return.chpl:8: In function 'rets':
+coercions-upon-return.chpl:9: error: could not coerce a value of type 'Gen(real(64))' to type 'unmanaged Gen' upon return

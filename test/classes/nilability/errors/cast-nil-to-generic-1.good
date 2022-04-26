@@ -1,0 +1,2 @@
+cast-nil-to-generic-1.chpl:25: In method 'fetchone':
+cast-nil-to-generic-1.chpl:27: error: could not coerce a value of type 'nil' to type 'Row?'
