@@ -2,82 +2,92 @@
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Brad Chamberlain
-   based on the Chapel #3 version with some inspiration taken from the
-   C gcc #6 version by Jeremy Zerfas
+   based on the C gcc #6 version by Jeremy Zerfas
 */
 
-proc main(args: [] string) {
-  use IO;
-  const stdinBin = openfd(0).reader(iokind.native, locking=false,
-                                    hints = QIO_CH_ALWAYS_UNBUFFERED),
-        stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                     hints=QIO_CH_ALWAYS_UNBUFFERED);
+use IO;
 
+const stdinBin  = openfd(0).reader(iokind.native, locking=false,
+                                   hints = QIO_CH_ALWAYS_UNBUFFERED),
+      stdoutBin = openfd(1).writer(iokind.native, locking=false,
+                                   hints=QIO_CH_ALWAYS_UNBUFFERED);
+
+config var readSize = 16384, // how much to read at a time
+           n = 0;            // a dummy variable to support the CLBG framework
+
+proc main() {
   // read in the data using an incrementally growing buffer
-  var bufLen = 8 * 1024,
-      bufDom = {0..<bufLen},
+  var bufSize = readSize,
+      bufDom = {0..<bufSize},
       buf: [bufDom] uint(8),
-      end = 0;
+      seqStart, totRead = 0,
+      end = -1;  // TODO: Can this be made into a 0...
 
   do {
-    const more = stdinBin.read(buf[end..]);
+    const start = end + 1,  // TODO: ...to drop this + 1...
+          more = stdinBin.read(buf[start..#readSize]);
     if more {
-      end = bufLen;
-      bufLen += min(1024**2, bufLen);
-      bufDom = {0..<bufLen};
+      totRead += readSize;
+    } else {
+      readSize = stdinBin.offset() - totRead + 1;
+    }
+
+    do {
+      end += 1; // TODO: If we move this to the bottom of the loop?
+      if end != 0 && buf[end] == '>'.toByte() {  // TODO: and drop this !=?
+        revcomp(buf, seqStart, end);
+        seqStart = end;
+      }
+    } while end < start+readSize-1;
+
+    if more {
+      // if we processed one or more sequences, shift leftovers down
+      if seqStart != 0 {
+        for (s,d) in zip(seqStart..<start+readSize, 0..) do
+          buf[d] = buf[s];
+        end -= seqStart;
+        seqStart = 0;
+      }
+
+      // resize if necessary
+      if end + readSize >= bufSize {
+        bufSize *= 2;
+        bufDom = {0..<bufSize};
+      }
     }
   } while more;
-  end = stdinBin.offset()-1;
-
-  // process the buffer a sequence at a time, working from the end
-  var hi = end;
-  while (hi >= 0) {
-    // search for the '>' that marks the start of a sequence
-    var lo = hi;
-    while buf[lo] != '>'.toByte() do
-      lo -= 1;
-
-    // reverse and complement the sequence once we find it
-    revcomp(buf, lo, hi);
-
-    hi = lo - 1;
-  }
-
-  // write out the transformed buffer
-  stdoutBin.write(buf[..end]);
+  revcomp(buf, seqStart, end);
 }
 
-
-proc revcomp(buf, bufflo, hi) {
-  param eol = "\n".toByte(),  // end-of-line, as an integer
-        cols = 61,            // # of characters per full row (including '\n')
-        // A 'bytes' value that stores the complement of each base at its index
-        cmp = b"          \n                                                  "
+proc revcomp(buf, in lo, in hi) {
+  param eol  = '\n'.toByte(),      // end-of-line, as an integer
+        // a 'bytes' value that stores the complement of each base at its index
+        cmp = b"                                                             "
             + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
               //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
               //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-  var lo = bufflo;
+  if lo < hi {
+    ref seq = buf[lo..<hi];
 
-  // skip past header line
-  do {
-    lo += 1;
-  } while buf[lo-1] != eol;
-
-  // shift all of the linefeeds into the right places
-  const len = hi - lo + 1,
-        off = (len - 1) % cols,
-        shift = cols - off - 1;
-
-  if off {
-    forall m in lo+off..<hi by cols {
-      for i in m..#shift by -1 do
-        buf[i+1] = buf[i];
-      buf[m] = eol;
+    // skip past header line
+    while buf[lo] != eol {
+      lo += 1;
     }
-  }
 
-  // walk from both ends of the sequence, complementing and swapping
-  forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
-    (buf[i], buf[j]) = (cmp[buf[j]], cmp[buf[i]]);
+    while lo < hi {
+      do {
+        lo += 1;
+      } while buf[lo] == eol;
+
+      do {
+        hi -= 1;
+      } while buf[hi] == eol;
+
+      if lo < hi {
+        (buf[lo], buf[hi]) = (cmp(buf[hi]), cmp(buf[lo]));
+      }
+    }
+    stdoutBin.write(seq);
+  }
 }
