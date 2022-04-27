@@ -818,8 +818,6 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 
     // TODO: Right now this location is the start of the function, and
     // it seems more natural for the location to be the symbol.
-    (void) location;
-
     auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributes),
                              fp.visibility,
@@ -878,8 +876,6 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
 
     // TODO: Right now this location is the start of the function, and
     // it seems more natural for the location to be the symbol.
-    (void) location;
-
     auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributes),
                              Decl::DEFAULT_VISIBILITY,
