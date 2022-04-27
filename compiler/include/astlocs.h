@@ -43,7 +43,7 @@ public:
   astlocT(int linenoArg, const char* filenameArg)
     : filename_(filenameArg), lineno_(linenoArg), id_()
   {
-    if (filenameArg != nullptr)
+    if (filenameArg != nullptr && strlen(filenameArg) > 0)
       assert(astr(filename_) == filename_);
   }
 

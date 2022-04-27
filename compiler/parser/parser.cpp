@@ -1173,8 +1173,10 @@ ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
   std::string includeFile = noDot + "/" + name + ".chpl";
 
   const char* modNameFromFile = filenameToModulename(curPath.c_str());
-  if (0 != strcmp(modNameFromFile, currentModuleName))
-    USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
+  if (0 != strcmp(modNameFromFile, currentModuleName)) {
+    UnresolvedSymExpr* dummy = new UnresolvedSymExpr("module");
+    USR_FATAL(dummy, "Cannot include modules from a module whose name doesn't match its filename");
+  }
 
   ModuleSymbol* ret = nullptr;
   const bool namedOnCommandLine = false;
