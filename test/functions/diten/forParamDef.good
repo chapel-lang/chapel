@@ -1,4 +1,4 @@
-foo number 1 says a is: (0)
+foo number 1 says a is: (0,)
 foo number 2 says a is: (0, 0)
 foo number 3 says a is: (0, 0, 0)
 foo number 4 says a is: (0, 0, 0, 0)
