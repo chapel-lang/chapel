@@ -9,7 +9,12 @@ const charRange = 33..126;
 
 var buf = c_calloc(uint(8), charRange.size);
 for i in charRange do buf[i-charRange.low] = i:uint(8);
-var str = createStringWithOwnedBuffer(buf, charRange.size, charRange.size);
+
+var str;
+if dataType == string then
+  str = createStringWithOwnedBuffer(buf, charRange.size, charRange.size);
+else
+  str = createBytesWithOwnedBuffer(buf, charRange.size, charRange.size);
 
 var rng = charRange;
 var dom = {rng};
