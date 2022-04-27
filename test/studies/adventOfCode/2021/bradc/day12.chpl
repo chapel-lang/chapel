@@ -27,7 +27,7 @@ findAllPaths("start", Visited, path);
 writeln(numPaths.read());
 
 proc findAllPaths(room, in Visited, in path) {
-  if (room == "end") {
+  if room == "end" {
     writeln(path);
     numPaths.add(1);
   } else {

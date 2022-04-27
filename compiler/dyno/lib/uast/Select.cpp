@@ -26,11 +26,11 @@ namespace uast {
 
 
 owned<Select> Select::build(Builder* builder, Location loc,
-                            owned<Expression> expr,
-                            ASTList whenStmts) {
+                            owned<AstNode> expr,
+                            AstList whenStmts) {
   assert(expr.get() != nullptr);
 
-  ASTList lst;
+  AstList lst;
   const int numWhenStmts = whenStmts.size();
 
   lst.push_back(std::move(expr));

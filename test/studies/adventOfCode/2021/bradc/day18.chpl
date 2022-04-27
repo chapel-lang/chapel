@@ -182,7 +182,7 @@ proc lineToTree(line: string, ref pos): owned Node {
     var left = lineToTree(line, pos);
     pos += 1;  // skip past ","
     var right = lineToTree(line, pos);
-    pos += 1;  // skip pas "]"
+    pos += 1;  // skip past "]"
     return new Node(left, right);
   } else if ch >= "0" && ch <= "9" {
     pos += 1;

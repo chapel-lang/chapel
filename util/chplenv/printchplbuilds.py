@@ -106,7 +106,7 @@ def Parse(path):
         nextState = nextStates[state]
         j = i + 1
         if state == State.PREFIX and '-' in component:
-            fields = component.split('-')
+            fields = component.split('-', 1)
             (prefix, value) = fields[0:2]
             var = prefixes[prefix]
             config[var] = value

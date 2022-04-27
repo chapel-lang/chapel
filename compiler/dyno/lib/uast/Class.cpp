@@ -29,9 +29,9 @@ owned<Class> Class::build(Builder* builder, Location loc,
                           owned<Attributes> attributes,
                           Decl::Visibility vis,
                           UniqueString name,
-                          owned<Expression> parentClass,
-                          ASTList contents) {
-  ASTList lst;
+                          owned<AstNode> parentClass,
+                          AstList contents) {
+  AstList lst;
   int attributesChildNum = -1;
   int parentClassChildNum = -1;
   int elementsChildNum = -1;

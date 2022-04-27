@@ -46,9 +46,9 @@ iter readDots() {
   do {
     readline(line);
     var A = line.strip().split(",");
-    if (A.size == 2) then
+    if A.size == 2 then
       yield (A[0]:int, A[1]:int);
-  } while (A.size == 2);
+  } while A.size == 2;
 }
 
 iter readFolds() {
@@ -91,7 +91,7 @@ proc foldSheet(Sheet: [?Dold], step=0) {
   var foldplace = Folds[step][2..]:int;
   writeln("Folding at ", foldplace);
   var newy = oldy, newx = oldx;
-  if (horizontal) {
+  if horizontal {
     newy = foldplace;
 //    assert(foldplace == oldy / 2);
   } else {
@@ -112,7 +112,7 @@ proc foldSheet(Sheet: [?Dold], step=0) {
     else
       return false;
   }
-  if (horizontal) then
+  if horizontal then
     forall (y,x) in Dnew do
       FoldedSheet[y,x] = Sheet[y,x] || safeAccess(newy + (newy-y),x);
   else

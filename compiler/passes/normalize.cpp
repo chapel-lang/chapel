@@ -1909,6 +1909,29 @@ static bool hasGenericArrayReturn(FnSymbol* fn) {
   return false;
 }
 
+//
+// modifyPartiallyGenericArrayReturn() is about to clone 'retExpr'
+// for some checks. If it is a call, we do not want to clone it
+// because then the call will be executed more than once, see #19674.
+// Therefore we force insertCallTemps() and clone the temp symexpr.
+// We could use the RVV 'retval' instead of the temp, except the resolution
+// of retval's type is delayed, so its uses fail to resolve. See
+// moveSupportsUnresolvedFunctionReturn() in resolveMove().
+//
+static void prepareRetExpr(Expr*& retExpr, CallExpr* retCall) {
+  CallExpr* call = toCallExpr(retExpr);
+  if (call == nullptr) return;
+  // insertCallTemps() needs 'call' to be inTree()
+  BlockStmt* holder = new BlockStmt();
+  holder->insertAtTail(call);
+  retCall->insertBefore(holder);
+  Symbol* temp = insertCallTempsWithStmt(call, retCall);
+  SymExpr* tempSE = toSymExpr(holder->body.only()->remove());
+  INT_ASSERT(tempSE->symbol() == temp);
+  holder->remove();
+  retExpr = tempSE;
+}
+
 // Validates the declared domain, if it exists.
 static void insertDomainCheck(Expr* actualRet, CallExpr* retVar,
                               Expr* domExpr) {
@@ -1940,11 +1963,13 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
   bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
 
   if (!noDom) {
+    prepareRetExpr(retExpr, ret);
     // Add checks against the declared domain
     insertDomainCheck(retExpr, ret, domExpr);
   }
 
   if (retEltExpr != NULL) {
+    prepareRetExpr(retExpr, ret);
     insertElementTypeCheck(retEltExpr, retExpr, ret);
   }
 
@@ -4530,8 +4555,8 @@ static void updateInitMethod(FnSymbol* fn) {
     preNormalizeInitMethod(fn);
 
   } else if (thisType == dtUnknown) {
-    INT_FATAL(fn, "'this' argument has unknown type");
-
+    // we'll issue an error for this case downstream
+    return;
   } else {
     USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
   }

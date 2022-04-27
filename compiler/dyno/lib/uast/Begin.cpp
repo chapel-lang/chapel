@@ -29,8 +29,8 @@ owned<Begin> Begin::build(Builder* builder,
                           Location loc,
                           owned<WithClause> withClause,
                           BlockStyle blockStyle,
-                          ASTList stmts) {
-  ASTList lst;
+                          AstList stmts) {
+  AstList lst;
   int8_t withClauseChildNum = -1;
 
   if (withClause.get() != nullptr) {

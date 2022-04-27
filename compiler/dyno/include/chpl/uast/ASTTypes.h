@@ -43,7 +43,7 @@ namespace uast {
 #undef AST_DECL
 
 // forward declare other classes
-class ASTNode;
+class AstNode;
 class Builder;
 
 

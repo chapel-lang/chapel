@@ -34,7 +34,7 @@ get_version(char *v) {
   v += sprintf(v, "%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
   if (!officialRelease) {
     sprintf(v, " pre-release (%s)", BUILD_VERSION);
-  } else if (developer && strcmp(BUILD_VERSION, "0") != 0) {
+  } else if (developer || strcmp(BUILD_VERSION, "0") != 0) {
     sprintf(v, ".%s", BUILD_VERSION);
   }
 }

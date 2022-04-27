@@ -56,13 +56,13 @@ class FnCall : public Call {
   std::vector<UniqueString> actualNames_;
   bool callUsedSquareBrackets_;
 
-  FnCall(ASTList children, std::vector<UniqueString> actualNames,
+  FnCall(AstList children, std::vector<UniqueString> actualNames,
          bool callUsedSquareBrackets)
     : Call(asttags::FnCall, std::move(children), /* hasCalledExpression */ 1),
       actualNames_(std::move(actualNames)),
       callUsedSquareBrackets_(callUsedSquareBrackets) {
   }
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const FnCall* lhs = this;
     const FnCall* rhs = (const FnCall*) other;
 
@@ -92,18 +92,18 @@ class FnCall : public Call {
   ~FnCall() override = default;
   static owned<FnCall> build(Builder* builder,
                              Location loc,
-                             owned<Expression> calledExpression,
-                             ASTList actuals,
+                             owned<AstNode> calledExpression,
+                             AstList actuals,
                              std::vector<UniqueString> actualNames,
                              bool callUsedSquareBrackets);
   static owned<FnCall> build(Builder* builder,
                              Location loc,
-                             owned<Expression> calledExpression,
-                             ASTList actuals,
+                             owned<AstNode> calledExpression,
+                             AstList actuals,
                              bool callUsedSquareBrackets);
   static owned<FnCall> build(Builder* builder,
                              Location loc,
-                             owned<Expression> calledExpression,
+                             owned<AstNode> calledExpression,
                              bool callUsedSquareBrackets);
 
   /** Returns whether actual i is named as with 'f(a=3)'

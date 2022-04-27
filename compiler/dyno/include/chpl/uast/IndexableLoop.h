@@ -34,7 +34,7 @@ namespace uast {
  */
 class IndexableLoop : public Loop {
  protected:
-  IndexableLoop(ASTTag tag, ASTList children,
+  IndexableLoop(AstTag tag, AstList children,
                 int8_t indexChildNum,
                 int8_t iterandChildNum,
                 int8_t withClauseChildNum,
@@ -48,7 +48,6 @@ class IndexableLoop : public Loop {
       withClauseChildNum_(withClauseChildNum),
       isExpressionLevel_(isExpressionLevel) {
 
-    assert(isExpressionASTList(children_));
     assert(iterandChildNum >= 0);
   }
 
@@ -92,7 +91,7 @@ class IndexableLoop : public Loop {
   */
   const Decl* index() const {
     if (indexChildNum_ < 0) return nullptr;
-    const ASTNode* ast = child(indexChildNum_);
+    const AstNode* ast = child(indexChildNum_);
     assert(ast->isDecl());
     return (const Decl*) ast;
   }
@@ -100,11 +99,10 @@ class IndexableLoop : public Loop {
   /**
     Returns the iterand of this indexable loop.
   */
-  const Expression* iterand() const {
+  const AstNode* iterand() const {
     if (iterandChildNum_ < 0) return nullptr;
-    const ASTNode* ast = child(iterandChildNum_);
-    assert(ast->isExpression());
-    return (const Expression*) ast;
+    const AstNode* ast = child(iterandChildNum_);
+    return ast;
   }
 
   /**

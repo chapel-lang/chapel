@@ -187,7 +187,7 @@ static void test3() {
     assert(procfoo && procfoo->name() == "foo");
     const Variable* y = m->stmt(1)->toVariable();
     assert(y);
-    const Expression* rhs = y->initExpression();
+    const AstNode* rhs = y->initExpression();
     assert(rhs);
     const FnCall* fnc = rhs->toFnCall();
     assert(fnc);
@@ -215,7 +215,7 @@ static void test3() {
     assert(m);
     const Variable* y = m->stmt(0)->toVariable();
     assert(y);
-    const Expression* rhs = y->initExpression();
+    const AstNode* rhs = y->initExpression();
     assert(rhs);
     const FnCall* fnc = rhs->toFnCall();
     assert(fnc);

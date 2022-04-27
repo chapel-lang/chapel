@@ -29,7 +29,7 @@ namespace resolution {
   /**
     Returns true if this AST type can create a scope.
    */
-  bool createsScope(uast::ASTTag tag);
+  bool createsScope(uast::AstTag tag);
 
   /**
     Returns the Scope for an ID.
@@ -52,8 +52,8 @@ namespace resolution {
                                                         const Scope* scope);
 
   /**
-    Given an Expression and a Scope, return the things
-    that Expression might refer to.
+    Given an AstNode and a Scope, return the things
+    that AstNode might refer to.
 
     The config argument is a group of or-ed together bit flags
     that adjusts the behavior of the lookup:
@@ -71,12 +71,12 @@ namespace resolution {
    */
   std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                  const Scope* scope,
-                                                 const uast::Expression* expr,
+                                                 const uast::AstNode* expr,
                                                  LookupConfig config);
 
   /**
     Same as lookupInScope above but uses a name instead of an
-    Expression.
+    AstNode.
    */
   std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
                                                      const Scope* scope,
@@ -89,7 +89,7 @@ namespace resolution {
   std::vector<BorrowedIdsWithName>
   lookupInScopeWithSet(Context* context,
                        const Scope* scope,
-                       const uast::Expression* expr,
+                       const uast::AstNode* expr,
                        LookupConfig config,
                        std::unordered_set<const Scope*>& visited);
 

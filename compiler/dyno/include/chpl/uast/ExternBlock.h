@@ -21,7 +21,7 @@
 #define CHPL_UAST_EXTERNBLOCK_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -45,24 +45,22 @@ namespace uast {
   \endrst
 
  */
-class ExternBlock final : public Expression {
+class ExternBlock final : public AstNode {
  private:
   std::string code_;
 
   ExternBlock(std::string code)
-    : Expression(asttags::ExternBlock),
+    : AstNode(asttags::ExternBlock),
       code_(std::move(code)) {
     assert(numChildren() == 0);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
-    ExternBlock* rhs = (ExternBlock*)other;
-    return this->code_ == rhs->code_ &&
-        expressionContentsMatchInner(other->toExpression());
+  bool contentsMatchInner(const AstNode* other) const override {
+    const ExternBlock* rhs = (const ExternBlock*)other;
+    return this->code_ == rhs->code_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:

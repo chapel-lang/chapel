@@ -58,7 +58,7 @@ class TaskVar final : public VarLikeDecl {
   };
 
  private:
-  TaskVar(ASTList children, int attributesChildNum, UniqueString name,
+  TaskVar(AstList children, int attributesChildNum, UniqueString name,
           TaskVar::Intent intent,
           int8_t typeExpressionChildNum,
           int8_t initExpressionChildNum)
@@ -73,7 +73,7 @@ class TaskVar final : public VarLikeDecl {
                     initExpressionChildNum) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const TaskVar* lhs = this;
     const TaskVar* rhs = (const TaskVar*) other;
 
@@ -91,8 +91,8 @@ class TaskVar final : public VarLikeDecl {
                               owned<Attributes> attributes,
                               UniqueString name,
                               TaskVar::Intent intent,
-                              owned<Expression> typeExpression,
-                              owned<Expression> initExpression);
+                              owned<AstNode> typeExpression,
+                              owned<AstNode> initExpression);
 
   /**
     Returns the intent of this task variable.

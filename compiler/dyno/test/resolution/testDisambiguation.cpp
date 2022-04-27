@@ -40,8 +40,8 @@ struct GatherStuff {
   std::vector<const FnCall*> fnCalls;
 
   // traverse into everything
-  bool enter(const ASTNode* ast) { return true; }
-  void exit(const ASTNode* ast) { }
+  bool enter(const AstNode* ast) { return true; }
+  void exit(const AstNode* ast) { }
 
   bool enter(const Function* ast) {
     fns.push_back(ast);

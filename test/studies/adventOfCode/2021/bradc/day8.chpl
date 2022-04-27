@@ -1,27 +1,30 @@
 use IO;
 
-var line: string;
+config const debug = false;
 
 iter getOutputs() {
+  var line: string;
+
   while readline(line) {
-    //  writeln("Got: ", line);
+    if debug then
+      writeln("Got: ", line);
     var parts: [1..2] string = line.split(" | ");
-    //  writeln("Got: ", (parts[1], parts[2]));
+    if debug then
+      writeln("Got: ", (parts[1], parts[2]));
     var outdigits: [1..4] string = parts[2].strip().split(" ");
-    //    writeln("Got output digits: ", outdigits);
+    if debug then
+      writeln("Got output digits: ", outdigits);
+
     for digit in outdigits do
       yield digit;
   }
 }
 
 var Outputs = getOutputs();
-/*
-for output in Outputs {
-  const size = output.size;
-  if 
+
+if debug then
+  for output in Outputs do
     writeln(output, ": ", output.size);
-}
-*/
 
 proc uniqueDigit(str: string) {
   const size = str.size;
@@ -31,5 +34,5 @@ proc uniqueDigit(str: string) {
 const count = + reduce uniqueDigit(Outputs);
 writeln(count);
 
-
-//writeln(Outputs);s
+if debug then
+  writeln(Outputs);

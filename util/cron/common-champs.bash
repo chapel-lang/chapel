@@ -18,6 +18,10 @@ loadCSModule PrgEnv-cray
 loadCSModule intel
 loadCSModule cray-mvapich2_nogpu
 
+# CHAMPS dependencies were built with cce 13. Until we rebuild them,
+# pin that version
+module swap cce cce/13.0.2
+
 module list
 
 # Perf configuration

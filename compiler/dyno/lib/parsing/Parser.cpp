@@ -23,8 +23,8 @@
 #include "../util/filesystem_help.h"
 
 #include "chpl/queries/ErrorMessage.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/Expression.h"
 
 #include "./bison-chpl-lib.h"
 #include "./flex-chpl-lib.h"
@@ -54,7 +54,7 @@ static void updateParseResult(ParserContext* parserContext) {
 
   // Save the top-level exprs
   if (parserContext->topLevelStatements != nullptr) {
-    for (Expression* stmt : *parserContext->topLevelStatements) {
+    for (AstNode* stmt : *parserContext->topLevelStatements) {
       builder->addToplevelExpression(toOwned(stmt));
     }
     delete parserContext->topLevelStatements;

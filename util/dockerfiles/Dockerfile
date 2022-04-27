@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     g++ \
     libclang-11-dev \
+    libclang-cpp11-dev \
     libedit-dev \
     libgmp10 \
     libgmp-dev \
@@ -32,7 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHPL_VERSION 1.25.0
+ENV CHPL_VERSION 1.26.0
 ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
 ENV CHPL_GMP     system
 ENV CHPL_LLVM    system

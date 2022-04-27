@@ -19,11 +19,11 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/Context.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Break.h"
 #include "chpl/uast/Conditional.h"
 #include "chpl/uast/Continue.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Label.h"

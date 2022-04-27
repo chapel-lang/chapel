@@ -1174,7 +1174,7 @@ Predefined Functions and Methods on Tuples
 
 .. function:: proc tuple.indices
 
-   Returns the range ``1..this.size`` representing the indices that are
+   Returns the range ``0..<this.size`` representing the indices that are
    legal for indexing into the tuple.
 
 
@@ -1207,6 +1207,3 @@ Predefined Functions and Methods on Tuples
 
    Returns a tuple of type ``t`` with each component set to the minimum
    value that can be stored in its position.
-
-
-

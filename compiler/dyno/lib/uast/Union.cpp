@@ -29,10 +29,10 @@ owned<Union> Union::build(Builder* builder, Location loc,
                           owned<Attributes> attributes,
                           Decl::Visibility vis,
                           Decl::Linkage linkage,
-                          owned<Expression> linkageName,
+                          owned<AstNode> linkageName,
                           UniqueString name,
-                          ASTList contents) {
-  ASTList lst;
+                          AstList contents) {
+  AstList lst;
   int attributesChildNum = -1;
   int elementsChildNum = -1;
   int numElements = contents.size();

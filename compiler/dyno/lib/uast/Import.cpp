@@ -27,7 +27,7 @@ namespace uast {
 
 owned<Import> Import::build(Builder* builder, Location loc,
                             Decl::Visibility visibility,
-                            ASTList visibilityClauses) {
+                            AstList visibilityClauses) {
   Import* ret = new Import(std::move(visibilityClauses), visibility);
   builder->noteLocation(ret, loc);
   return toOwned(ret);

@@ -21,7 +21,7 @@
 #define CHPL_UAST_ATTRIBUTES_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Pragma.h"
 #include "chpl/util/iteration.h"
 #include <set>
@@ -36,7 +36,7 @@ namespace uast {
   Compiler pragmas and deprecation messages (both intended for internal
   use only) are both examples of attributes.
 */
-class Attributes final : public Expression {
+class Attributes final : public AstNode {
  private:
   std::set<PragmaTag> pragmas_;
   bool isDeprecated_;
@@ -46,7 +46,7 @@ class Attributes final : public Expression {
   // pragmas and deprecation messages?
   Attributes(std::set<PragmaTag> pragmas, bool isDeprecated,
              UniqueString deprecationMessage)
-    : Expression(asttags::Attributes),
+    : AstNode(asttags::Attributes),
       pragmas_(std::move(pragmas)),
       isDeprecated_(isDeprecated),
       deprecationMessage_(deprecationMessage) {
@@ -58,17 +58,15 @@ class Attributes final : public Expression {
     assert(pragmas_.size() <= NUM_KNOWN_PRAGMAS);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Attributes* rhs = (const Attributes*)other;
     return this->pragmas_ == rhs->pragmas_ &&
       this->isDeprecated_ == rhs->isDeprecated_ &&
-      this->deprecationMessage_ == rhs->deprecationMessage_ &&
-      expressionContentsMatchInner(other->toExpression());
+      this->deprecationMessage_ == rhs->deprecationMessage_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
     deprecationMessage_.mark(context);
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:

@@ -56,7 +56,7 @@ enum ParamTag {
 
 } // end namespace paramtags
 
-// Enable ASTTag to be used as chpl::types::ParamTag
+// Enable AstTag to be used as chpl::types::ParamTag
 using chpl::types::paramtags::ParamTag;
 
 } // end namespace types

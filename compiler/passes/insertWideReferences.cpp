@@ -732,9 +732,14 @@ static void convertNilToObject()
     if (se->symbol()->type == dtNil) {
       se->setSymbol(gNil);
       if (CallExpr* parent = toCallExpr(se->parentExpr))
+      {
         // Assignment to void should already have been flagged as an error.
-        if (parent->isPrimitive(PRIM_MOVE) && parent->get(1) == se)
+        if ((parent->isPrimitive(PRIM_MOVE)  ||
+             parent->isPrimitive(PRIM_ASSIGN) ) && parent->get(1) == se)
           parent->remove();
+        else if (parent->isPrimitive(PRIM_SET_MEMBER) && parent->get(2) == se)
+          parent->remove();
+      }
     }
   }
 }
@@ -2364,6 +2369,7 @@ insertWideReferences(void) {
   FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
 
   if (!requireWideReferences()) {
+    convertNilToObject();
     handleIsWidePointer();
     return;
   }

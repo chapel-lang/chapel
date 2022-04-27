@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -43,7 +43,7 @@ namespace uast {
 
   \endrst
  */
-class VisibilityClause final : public Expression {
+class VisibilityClause final : public AstNode {
  public:
 
   /**
@@ -65,9 +65,9 @@ class VisibilityClause final : public Expression {
   };
 
  private:
-  VisibilityClause(ASTList children,  LimitationKind limitationKind,
+  VisibilityClause(AstList children,  LimitationKind limitationKind,
                    int numLimitations)
-    : Expression(asttags::VisibilityClause, std::move(children)),
+    : AstNode(asttags::VisibilityClause, std::move(children)),
       limitationKind_(limitationKind),
       numLimitations_(numLimitations) {
 
@@ -80,15 +80,13 @@ class VisibilityClause final : public Expression {
   }
 
   // No need to check 'symbolChildNum_' or 'limitationChildNum_'.
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const VisibilityClause* rhs = other->toVisibilityClause();
     return this->limitationKind_ == rhs->limitationKind_ &&
-      this->numLimitations_ == rhs->numLimitations_ &&
-      this->expressionContentsMatchInner(rhs);
+      this->numLimitations_ == rhs->numLimitations_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   // These always exist and their position never changes.
@@ -105,24 +103,24 @@ class VisibilityClause final : public Expression {
     Create and return a visibility clause.
   */
   static owned<VisibilityClause> build(Builder* builder, Location loc,
-                                       owned<Expression> symbol);
+                                       owned<AstNode> symbol);
 
   /**
     Create and return a visibility clause.
   */
   static owned<VisibilityClause> build(Builder* builder, Location loc,
-                                       owned<Expression> symbol,
+                                       owned<AstNode> symbol,
                                        LimitationKind limitationKind,
-                                       ASTList limitations);
+                                       AstList limitations);
 
   /**
     Get the symbol of this visibility clause. It may be a Dot, As,
     or Identifier.
   */
-  const Expression* symbol() const {
+  const AstNode* symbol() const {
     auto ret = child(symbolChildNum_);
     assert(ret->isDot() || ret->isAs() || ret->isIdentifier());
-    return (const Expression*)ret;
+    return ret;
   }
 
   /**
@@ -135,12 +133,12 @@ class VisibilityClause final : public Expression {
   /**
     Return a way to iterate over the limitations of this visibility clause.
   */
-  ASTListIteratorPair<Expression> limitations() const {
+  AstListIteratorPair<AstNode> limitations() const {
     auto begin = (numLimitations() > 0)
         ? children_.begin() + limitationChildNum_
         : children_.end();
     auto end = begin + numLimitations_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -156,11 +154,10 @@ class VisibilityClause final : public Expression {
     limitation kind is 'ONLY' or 'BRACES', then the limitations may be
     Identifier or As expressions.
   */
-  const Expression* limitation(int i) const {
+  const AstNode* limitation(int i) const {
     assert(i >= 0 && i < numLimitations_);
-    const ASTNode* ast = this->child(limitationChildNum_+i);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+    const AstNode* ast = this->child(limitationChildNum_+i);
+    return ast;
   }
 
 };

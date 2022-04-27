@@ -30,7 +30,7 @@ namespace resolution {
 struct Resolver {
   // inputs to the resolution process
   Context* context = nullptr;
-  const uast::ASTNode* symbol = nullptr;
+  const uast::AstNode* symbol = nullptr;
   const PoiScope* poiScope = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
   bool useGenericFormalDefaults = false;
@@ -47,7 +47,7 @@ struct Resolver {
 
   // results of the resolution process
 
-  // the resolution results for the contained Expressions
+  // the resolution results for the contained AstNodes
   ResolutionResultByPostorderID& byPostorder;
   // the set of POI scopes from which POI functions were used --
   // these are gathered here during resolution in order to
@@ -63,7 +63,7 @@ struct Resolver {
 
  private:
   Resolver(Context* context,
-           const uast::ASTNode* symbol,
+           const uast::AstNode* symbol,
            ResolutionResultByPostorderID& byPostorder,
            const PoiScope* poiScope)
     : context(context), symbol(symbol), poiScope(poiScope),
@@ -131,7 +131,7 @@ struct Resolver {
   bool shouldUseUnknownTypeForGeneric(const ID& id);
 
   // helper for resolveTypeQueriesFromFormalType
-  void resolveTypeQueries(const uast::Expression* formalTypeExpr,
+  void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
                           const types::Type* actualType);
 
   /* When resolving a function with a TypeQuery, we need to
@@ -152,8 +152,8 @@ struct Resolver {
   // helper for getTypeForDecl -- checks the Kinds are compatible
   // if so, returns false.
   // if not, issues error(s) and returns true.
-  bool checkForKindError(const uast::ASTNode* typeForErr,
-                         const uast::ASTNode* initForErr,
+  bool checkForKindError(const uast::AstNode* typeForErr,
+                         const uast::AstNode* initForErr,
                          types::QualifiedType::Kind declKind,
                          types::QualifiedType declaredType,
                          types::QualifiedType initExprType);
@@ -162,9 +162,9 @@ struct Resolver {
   // that can have both a declared type and an init expression.
   // If both are provided, checks that they are compatible.
   // Returns the type to use for the declaration.
-  types::QualifiedType getTypeForDecl(const uast::ASTNode* declForErr,
-                                      const uast::ASTNode* typeForErr,
-                                      const uast::ASTNode* initForErr,
+  types::QualifiedType getTypeForDecl(const uast::AstNode* declForErr,
+                                      const uast::AstNode* typeForErr,
+                                      const uast::AstNode* initForErr,
                                       types::QualifiedType::Kind declKind,
                                       types::QualifiedType declaredType,
                                       types::QualifiedType initExprType);
@@ -175,7 +175,7 @@ struct Resolver {
                         const types::Type* useType);
 
   // issue ambiguity / no matching candidates / etc error
-  void issueErrorForFailedCallResolution(const uast::ASTNode* astForErr,
+  void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                          const CallInfo& ci,
                                          const CallResolutionResult& c);
 
@@ -195,6 +195,13 @@ struct Resolver {
   void resolveTupleDecl(const uast::TupleDecl* td,
                         const types::Type* useType);
 
+  // e.g. new shared C(a, 0)
+  // also resolves initializer call as a side effect
+  bool resolveSpecialNewCall(const uast::Call* call);
+
+  // resolve a special op call such as tuple unpack assign
+  bool resolveSpecialOpCall(const uast::Call* call);
+
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
   // if it is a regular call.
@@ -208,10 +215,27 @@ struct Resolver {
    */
   types::QualifiedType typeForId(const ID& id, bool localGenericToUnknown);
 
+  // prepare the CallInfoActuals by inspecting the actuals of a call
+  // includes special handling for operators and tuple literals
+  void prepareCallInfoActuals(const uast::Call* call,
+                              std::vector<CallInfoActual>& actuals,
+                              bool& hasQuestionArg);
+
+  // prepare a CallInfo by inspecting the called expression and actuals
+  CallInfo prepareCallInfoNormalCall(const uast::Call* call);
+
+  // resolve 'new R' for a given record type 'R'
+  void resolveNewForRecord(const uast::New* node,
+                           const types::RecordType* recordType);
+
+  // resolve 'new C' for a given class type 'C', including management
+  void resolveNewForClass(const uast::New* node,
+                          const types::ClassType* classType);
+
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */
-  void enterScope(const uast::ASTNode* ast);
-  void exitScope(const uast::ASTNode* ast);
+  void enterScope(const uast::AstNode* ast);
+  void exitScope(const uast::AstNode* ast);
 
   // the visitor methods
   bool enter(const uast::Literal* literal);
@@ -239,9 +263,12 @@ struct Resolver {
   bool enter(const uast::Dot* dot);
   void exit(const uast::Dot* dot);
 
+  bool enter(const uast::New* node);
+  void exit(const uast::New* node);
+
   // if none of the above is called, fall back on this one
-  bool enter(const uast::ASTNode* ast);
-  void exit(const uast::ASTNode* ast);
+  bool enter(const uast::AstNode* ast);
+  void exit(const uast::AstNode* ast);
 };
 
 

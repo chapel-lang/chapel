@@ -480,8 +480,8 @@ static void test10(Parser* parser) {
 
 static void test11(Parser* parser) {
   auto parseResult = parser->parseString("test11.chpl",
-        "extern record foo {};\n"
-        "extern \"struct bar\" record bar {};\n"
+        "extern record foo {}\n"
+        "extern \"struct bar\" record bar {}\n"
         "export record dog { var x = 0; }\n"
         "export \"meow\" record cat { var x = 0; }\n"
         "extern union baz {}\n"

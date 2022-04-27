@@ -30,14 +30,14 @@ Variable::build(Builder* builder, Location loc,
                 owned<Attributes> attributes,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
-                owned<Expression> linkageName,
+                owned<AstNode> linkageName,
                 UniqueString name,
                 Variable::Kind kind,
                 bool isConfig,
                 bool isField,
-                owned<Expression> typeExpression,
-                owned<Expression> initExpression) {
-  ASTList lst;
+                owned<AstNode> typeExpression,
+                owned<AstNode> initExpression) {
+  AstList lst;
   int attributesChildNum = -1;
   int linkageNameChildNum = -1;
   int8_t typeExpressionChildNum = -1;

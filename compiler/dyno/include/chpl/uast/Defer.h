@@ -21,7 +21,7 @@
 #define CHPL_UAST_DEFER_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -49,16 +49,15 @@ namespace uast {
  */
 class Defer final : public SimpleBlockLike {
  private:
-  Defer(ASTList stmts, BlockStyle blockStyle, int bodyChildNum,
+  Defer(AstList stmts, BlockStyle blockStyle, int bodyChildNum,
         int numBodyStmts)
     : SimpleBlockLike(asttags::Defer, std::move(stmts), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(isExpressionASTList(children_));
     assert(bodyChildNum_ >= 0);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
   }
 
@@ -74,7 +73,7 @@ class Defer final : public SimpleBlockLike {
    */
   static owned<Defer> build(Builder* builder, Location loc,
                             BlockStyle blockStyle,
-                            ASTList stmts);
+                            AstList stmts);
 
 };
 

@@ -168,6 +168,7 @@
 
     OPTIONS:
             -h, --help      Display this message and exit
+            --debug
             --optional <OPTIONAL>
 
 

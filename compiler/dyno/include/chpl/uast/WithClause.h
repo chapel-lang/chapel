@@ -21,7 +21,7 @@
 #define CHPL_UAST_WITHCLAUSE_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -43,19 +43,17 @@ namespace uast {
   Creates a forall loop that has a with clause which declares a single
   task variable named 'x'.
 */
-class WithClause final : public Expression {
+class WithClause final : public AstNode {
  private:
-  WithClause(ASTList exprs)
-    : Expression(asttags::WithClause, std::move(exprs)) {
-    assert(isExpressionASTList(children_));
+  WithClause(AstList exprs)
+    : AstNode(asttags::WithClause, std::move(exprs)) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
-    return expressionContentsMatchInner(other->toExpression());
+  bool contentsMatchInner(const AstNode* other) const override {
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -64,13 +62,13 @@ class WithClause final : public Expression {
     Create and return a with clause.
   */
   static owned<WithClause> build(Builder* builder, Location loc,
-                                 ASTList exprs);
+                                 AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this with clause.
   */
-  ASTListIteratorPair<Expression> exprs() const {
-    return ASTListIteratorPair<Expression>(children_.begin(),
+  AstListIteratorPair<AstNode> exprs() const {
+    return AstListIteratorPair<AstNode>(children_.begin(),
                                            children_.end());
   }
 
@@ -84,10 +82,9 @@ class WithClause final : public Expression {
   /**
     Return the i'th expression in this with clause.
   */
-  const Expression* expr(int i) const {
-    const ASTNode* ast = this->child(i);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+  const AstNode* expr(int i) const {
+    const AstNode* ast = this->child(i);
+    return ast;
   }
 };
 

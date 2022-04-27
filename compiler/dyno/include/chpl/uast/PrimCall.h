@@ -47,13 +47,13 @@ class PrimCall final : public Call {
   // which primitive
   PrimitiveTag prim_;
 
-  PrimCall(ASTList children, PrimitiveTag prim)
+  PrimCall(AstList children, PrimitiveTag prim)
     : Call(asttags::PrimCall, std::move(children),
            /* hasCalledExpression */ false),
       prim_(prim) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const PrimCall* lhs = this;
     const PrimCall* rhs = (const PrimCall*) other;
 
@@ -74,7 +74,7 @@ class PrimCall final : public Call {
   static owned<PrimCall> build(Builder* builder,
                                Location loc,
                                PrimitiveTag prim,
-                               ASTList actuals);
+                               AstList actuals);
 
   /** Returns the enum value of the primitive called */
   PrimitiveTag prim() const { return prim_; }

@@ -29,9 +29,9 @@ owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
                                         owned<Attributes> attributes,
                                         UniqueString name,
                                         Formal::Intent intent,
-                                        owned<Expression> typeExpression,
-                                        owned<Expression> count) {
-  ASTList lst;
+                                        owned<AstNode> typeExpression,
+                                        owned<AstNode> count) {
+  AstList lst;
   int attributesChildNum = -1;
   int8_t typeExpressionChildNum = -1;
   int8_t countChildNum = -1;

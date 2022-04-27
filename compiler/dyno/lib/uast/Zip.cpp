@@ -25,7 +25,7 @@ namespace chpl {
 namespace uast {
 
 
-owned<Zip> Zip::build(Builder* builder, Location loc, ASTList actuals) {
+owned<Zip> Zip::build(Builder* builder, Location loc, AstList actuals) {
   Zip* ret = new Zip(std::move(actuals));
   builder->noteLocation(ret, loc);
   return toOwned(ret);

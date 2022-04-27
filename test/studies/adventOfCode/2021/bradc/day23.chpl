@@ -314,7 +314,7 @@ record state {
   }
 
   proc addMonsterToLoc(loc, monster) {
-    if (loc < 0) then
+    if loc < 0 then
       hallway[-loc] = monster;
     else
       room[(loc-1)/slotsPerRoom][(loc-1)%slotsPerRoom] = monster;

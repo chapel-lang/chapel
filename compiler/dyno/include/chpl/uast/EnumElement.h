@@ -41,7 +41,7 @@ namespace uast {
  */
 class EnumElement final : public NamedDecl {
  private:
-  EnumElement(ASTList children, int attributesChildNum,
+  EnumElement(AstList children, int attributesChildNum,
               UniqueString name)
     : NamedDecl(asttags::EnumElement, std::move(children),
                 attributesChildNum,
@@ -51,10 +51,9 @@ class EnumElement final : public NamedDecl {
                 name) {
 
     assert(children_.size() <= 2);
-    assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const EnumElement* lhs = (const EnumElement*) this;
     const EnumElement* rhs = (const EnumElement*) other;
     return lhs->namedDeclContentsMatchInner(rhs);
@@ -65,6 +64,9 @@ class EnumElement final : public NamedDecl {
   }
 
   int initExpressionChildNum() const {
+    // if you blindly read this and try to access the underlying children_
+    // array, you can segfault in the case that there is an attribute
+    // but no init expression on this enum element.
     return this->attributesChildNum() + 1;
   }
 
@@ -74,7 +76,7 @@ class EnumElement final : public NamedDecl {
   static owned<EnumElement> build(Builder* builder, Location loc,
                                   owned<Attributes> attributes,
                                   UniqueString name,
-                                  owned<Expression> initExpression);
+                                  owned<AstNode> initExpression);
 
   static owned<EnumElement> build(Builder* builder, Location loc,
                                   owned<Attributes> attributes,
@@ -84,11 +86,18 @@ class EnumElement final : public NamedDecl {
     Returns the init expression for this EnumElement or nullptr if there was
     none.
    */
-  const Expression* initExpression() const {
+  const AstNode* initExpression() const {
+    // need to handle the case when an attribute exists but an initExpression does not
+    // in this case children_.size() is > 0, but initExpression should still be nullptr
+    if (initExpressionChildNum() >= (int) children_.size()) {
+      // either there are no children, or there's only an attribute
+      assert(children_.size() == 0 || this->child(0)->isAttributes());
+      return nullptr;
+    }
+
     if (children_.size() > 0) {
-      const ASTNode* ast = this->child(initExpressionChildNum());
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      const AstNode* ast = this->child(initExpressionChildNum());
+      return ast;
     } else {
       return nullptr;
     }

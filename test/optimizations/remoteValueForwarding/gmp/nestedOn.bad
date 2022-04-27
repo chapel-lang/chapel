@@ -1,0 +1,1 @@
+nestedOn.chpl:17: error: references to remote data cannot be passed to external routines like 'mpz_sizeinbase'

@@ -39,29 +39,25 @@ namespace uast {
 
   \endrst
 */
-class Continue : public Expression {
+class Continue : public AstNode {
  private:
-  Continue(ASTList children, int8_t targetChildNum)
-    : Expression(asttags::Continue, std::move(children)),
+  Continue(AstList children, int8_t targetChildNum)
+    : AstNode(asttags::Continue, std::move(children)),
       targetChildNum_(targetChildNum) {
     assert(numChildren() <= 1);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Continue* lhs = this;
     const Continue* rhs = other->toContinue();
 
     if (lhs->targetChildNum_ != rhs->targetChildNum_)
       return false;
 
-    if (!lhs->expressionContentsMatchInner(rhs))
-      return false;
-
     return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
   int8_t targetChildNum_;

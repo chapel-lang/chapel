@@ -25,7 +25,7 @@
 
 namespace chpl {
 namespace uast {
-  class ASTNode;
+  class AstNode;
 }
 namespace types {
   class QualifiedType;

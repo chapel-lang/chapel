@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -35,17 +35,16 @@ namespace uast {
  */
 class When final : public SimpleBlockLike {
  private:
-  When(ASTList children, int numCaseExprs, BlockStyle blockStyle,
+  When(AstList children, int numCaseExprs, BlockStyle blockStyle,
        int bodyChildNum,
        int numBodyStmts)
     : SimpleBlockLike(asttags::When, std::move(children), blockStyle,
                       bodyChildNum,
                       numBodyStmts),
       numCaseExprs_(numCaseExprs) {
-    assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const When* rhs = other->toWhen();
     return this->numCaseExprs_ == rhs->numCaseExprs_ &&
       this->simpleBlockLikeContentsMatchInner(rhs);
@@ -67,9 +66,9 @@ class When final : public SimpleBlockLike {
     'isOtherwise()' will evaluate to true.
   */
   static owned<When> build(Builder* builder, Location loc,
-                           ASTList caseExprs,
+                           AstList caseExprs,
                            BlockStyle blockStyle,
-                           ASTList stmts);
+                           AstList stmts);
 
   /**
     Returns the number of case expressions for this when statement.
@@ -81,21 +80,20 @@ class When final : public SimpleBlockLike {
   /**
     Returns the i'th case of this when statement.
   */
-  const Expression* caseExpr(int i) const {
+  const AstNode* caseExpr(int i) const {
     if (numCaseExprs_ <= 0) return nullptr;
     assert(i >= 0 && i < numCaseExprs_);
     auto ret = child(i);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
   /**
     Return a way to iterate over the cases of this when statement.
   */
-  ASTListIteratorPair<Expression> caseExprs() const {
+  AstListIteratorPair<AstNode> caseExprs() const {
     auto begin = (numCaseExprs_ >= 0) ? children_.begin() : children_.end();
     auto end = begin + numCaseExprs_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**

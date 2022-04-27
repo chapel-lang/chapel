@@ -28,7 +28,8 @@ proc shoot(in vel) {
   var maxheight = pos(Y);
   while (pos[X] <= Target.dim(X).high && pos[Y] >= Target.dim(Y).low) {
     if Target.contains(pos) {
-//      writeln("Hit at ", pos);
+      if debug then
+        writeln("Hit at ", pos);
       return true;
     }
     pos += vel;

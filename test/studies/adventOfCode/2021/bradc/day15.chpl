@@ -1,5 +1,7 @@
 use Heap, IO;
 
+config const debug = false;
+
 var rows, cols: int;
 
 var D: domain(2);
@@ -18,23 +20,29 @@ Dist(1,1) = 0;
 
 while !Q.isEmpty() {
   const (d,u) = minloc reduce [v in Q] (Dist[v], v);
-//  writeln("Processing ", u);
-//  writeln(Q);
+  if debug {
+    writeln("Processing ", u);
+    writeln(Q);
+  }
   Q -= u;
-//  writeln(Q);
-  if (u == (rows, cols)) {
+  if debug then
+    writeln(Q);
+  if u == (rows, cols) {
     writeln(Dist[u]);
     break;
   }
   for (i,j) in {-1..1, -1..1} {
-    if (abs(i+j) == 1) {
+    if abs(i+j) == 1 {
       var v = u+(i,j);
-//      writeln("Trying ", v);
+      if debug then
+        writeln("Trying ", v);
       if (D.contains(v) && Q.contains(v)) {
-//        writeln("It's still in play");
+        if debug then
+          writeln("It's still in play");
         const alt = Dist(u) + Risk[v];
-//        writeln("Distance is ", alt);
-        if (alt < Dist[v]) {
+        if debug then
+          writeln("Distance is ", alt);
+        if alt < Dist[v] {
           Dist[v] = alt;
           Prev[v] = u;
         }

@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -50,17 +50,16 @@ namespace uast {
  */
 class Serial final : public SimpleBlockLike {
  private:
-  Serial(ASTList children, int8_t condChildNum, BlockStyle blockStyle,
+  Serial(AstList children, int8_t condChildNum, BlockStyle blockStyle,
          int bodyChildNum,
          int numBodyStmts)
     : SimpleBlockLike(asttags::Serial, std::move(children), blockStyle,
                       bodyChildNum,
                       numBodyStmts),
       condChildNum_(condChildNum) {
-    assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Serial* lhs = this;
     const Serial* rhs = (const Serial*) other;
 
@@ -86,7 +85,7 @@ class Serial final : public SimpleBlockLike {
   */
   static owned<Serial> build(Builder* builder, Location loc,
                              BlockStyle blockStyle,
-                             ASTList stmts);
+                             AstList stmts);
 
 
   /**
@@ -94,17 +93,16 @@ class Serial final : public SimpleBlockLike {
     containing the passed statements.
   */
   static owned<Serial> build(Builder* builder, Location loc,
-                             owned<Expression> condition,
+                             owned<AstNode> condition,
                              BlockStyle blockStyle,
-                             ASTList stmts);
+                             AstList stmts);
 
   /**
     Returns the condition of this serial statement, or nullptr if there
     is none.
   */
-  const Expression* condition() const {
-    return condChildNum_ < 0 ? nullptr
-      : (const Expression*)child(condChildNum_);
+  const AstNode* condition() const {
+    return condChildNum_ < 0 ? nullptr : child(condChildNum_);
   }
 
 };

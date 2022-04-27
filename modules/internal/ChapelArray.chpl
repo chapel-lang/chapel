@@ -1361,10 +1361,10 @@ module ChapelArray {
     }
 
     /* Return the number of elements in the array */
-    proc size return _dom.size;
+    proc size: int return _dom.size;
 
     /* Return the number of elements in the array as the specified type. */
-    proc sizeAs(type t: integral) return _dom.sizeAs(t);
+    proc sizeAs(type t: integral): t return _dom.sizeAs(t);
 
     //
     // This routine determines whether an actual array argument
@@ -1728,8 +1728,22 @@ module ChapelArray {
 
    /* Return a tuple of integers describing the size of each dimension.
       For a sparse array, returns the shape of the parent domain.*/
-    proc shape {
+    proc shape: rank*int where this.isRectangular() || this.isSparse() {
       return this.domain.shape;
+    }
+
+    pragma "no doc"
+    /* Associative domains assumed to be 1-D. */
+    proc shape where this.isAssociative() {
+      var s: (size.type,);
+      s[0] = size;
+      return s;
+    }
+
+    pragma "no doc"
+    /* Unsupported case */
+    proc shape {
+      compilerError(".shape not supported on this array");
     }
 
     pragma "no doc"

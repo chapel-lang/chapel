@@ -57,7 +57,7 @@ class Formal final : public VarLikeDecl {
   };
 
  private:
-  Formal(ASTList children, int attributesChildNum, UniqueString name,
+  Formal(AstList children, int attributesChildNum, UniqueString name,
          Formal::Intent intent,
          int8_t typeExpressionChildNum,
          int8_t initExpressionChildNum)
@@ -72,7 +72,7 @@ class Formal final : public VarLikeDecl {
                   initExpressionChildNum) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Formal* lhs = this;
     const Formal* rhs = (const Formal*) other;
     return lhs->varLikeDeclContentsMatchInner(rhs);
@@ -89,8 +89,8 @@ class Formal final : public VarLikeDecl {
                              owned<Attributes> attributes,
                              UniqueString name,
                              Formal::Intent intent,
-                             owned<Expression> typeExpression,
-                             owned<Expression> initExpression);
+                             owned<AstNode> typeExpression,
+                             owned<AstNode> initExpression);
 
   /**
    Returns the intent of the formal, e.g. in `proc f(const ref y: int)`,

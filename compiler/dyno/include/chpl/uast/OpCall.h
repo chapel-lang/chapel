@@ -40,13 +40,13 @@ class OpCall final : public Call {
   // which operator
   UniqueString op_;
 
-  OpCall(ASTList children, UniqueString op)
+  OpCall(AstList children, UniqueString op)
     : Call(asttags::OpCall, std::move(children),
            /* hasCalledExpression */ false),
       op_(op) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const OpCall* lhs = this;
     const OpCall* rhs = (const OpCall*) other;
 
@@ -68,12 +68,12 @@ class OpCall final : public Call {
   static owned<OpCall> build(Builder* builder,
                              Location loc,
                              UniqueString op,
-                             owned<Expression> lhs,
-                             owned<Expression> rhs);
+                             owned<AstNode> lhs,
+                             owned<AstNode> rhs);
   static owned<OpCall> build(Builder* builder,
                              Location loc,
                              UniqueString op,
-                             owned<Expression> expr);
+                             owned<AstNode> expr);
 
   /** Returns the name of the operator called */
   UniqueString op() const { return op_; }

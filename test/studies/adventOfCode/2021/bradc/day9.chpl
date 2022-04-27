@@ -7,7 +7,6 @@ var rows, cols: int;
 var D: domain(2);
 var Height: [D] int;
 
-//readFirstLine();
 readHeights();
 Height[0, ..] = 9;
 Height[rows+1, ..] = 9;
@@ -19,18 +18,6 @@ proc stringToRow(str: string, row) {
   for (ch, c) in zip(str, 1..) do
     Height[row, c] = ch: int;
 }
-
-/*
-proc readFirstLine() {
-  var line: string;
-  readline(line);
-  line = line.strip();
-  rows = 1;
-  cols = line.size;
-  D = {0..rows+1, 0..cols+1};
-  stringToRow(line, 1);
-}
-*/
 
 proc readHeights() {
   var line: string;

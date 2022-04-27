@@ -42,12 +42,12 @@ class StringLikeLiteral : public Literal {
  protected:
   QuoteStyle quotes_;
 
-  StringLikeLiteral(ASTTag tag, const types::Param* value, QuoteStyle quotes)
+  StringLikeLiteral(AstTag tag, const types::Param* value, QuoteStyle quotes)
     : Literal(tag, value),
       quotes_(quotes)
   { }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const StringLikeLiteral* lhs = this;
     const StringLikeLiteral* rhs = (const StringLikeLiteral*) other;
     return lhs->literalContentsMatchInner(rhs) &&

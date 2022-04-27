@@ -215,6 +215,7 @@ static void printUnusedFunctions();
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal);
 
+static bool  obviousMismatch(CallExpr* call, FnSymbol* fn);
 static bool  moveIsAcceptable(CallExpr* call);
 static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call);
@@ -4250,8 +4251,15 @@ struct ExampleCandidateComparator {
   CallInfo& info;
 
   ExampleCandidateComparator(CallInfo& info) : info(info) { }
+
   bool operator() (FnSymbol* aFn, FnSymbol* bFn) {
     // Return true if aFn is better than bFn
+    bool aObv = obviousMismatch(info.call, aFn);
+    bool bObv = obviousMismatch(info.call, bFn);
+    if (!aObv && bObv) return true;
+    if (aObv && !bObv) return false;
+    // if aObv == bObv, continue
+
     bool ret = false;
     ResolutionCandidate* a = new ResolutionCandidate(aFn);
     ResolutionCandidate* b = new ResolutionCandidate(bFn);
@@ -4527,11 +4535,10 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     sortExampleCandidates(info, visibleFns);
 
     int nPrintDetails = 1;
-    int nPrint = fPrintAllCandidates ? INT_MAX : 3;
-
+    int nPrint = 3; // unused if fPrintAllCandidates
 
     Vec<FnSymbol*> filteredFns;
-    if (fPrintAllCandidates || visibleFns.n == 1) {
+    if (fPrintAllCandidates || visibleFns.n <= nPrint + 1) {
       // Don't do any filtering; we're going to print everything
       filteredFns = visibleFns;
     } else {
@@ -4555,7 +4562,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       // suggesting that there are no other candidates.
       //
       if (filteredFns.n == 0) {
-        for (int i = 0; i < std::min(nPrint, visibleFns.n); i++) {
+        for (int i = 0; i < nPrint; i++) {
           filteredFns.add(visibleFns.v[i]);
         }
       }

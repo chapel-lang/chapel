@@ -5,9 +5,8 @@ use direction;
 
 var horizontal = 0, depth = 0, aim = 0;
 
-do {
-  var dir: direction, distance: int;
-  const success = read(dir, distance);
+var dir: direction, distance: int;
+while read(dir, distance) {
   select dir {
     when forward {
       horizontal += distance;
@@ -22,5 +21,5 @@ do {
     when down do
       aim += distance;
   }
-} while (success);
+}
 writeln(horizontal*depth);

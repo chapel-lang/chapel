@@ -26,10 +26,10 @@ namespace uast {
 
 
 owned<Yield> Yield::build(Builder* builder, Location loc,
-                          owned<Expression> value) {
+                          owned<AstNode> value) {
   assert(value.get() != nullptr);
 
-  ASTList lst;
+  AstList lst;
 
   lst.push_back(std::move(value));
 

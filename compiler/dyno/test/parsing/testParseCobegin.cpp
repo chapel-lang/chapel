@@ -19,10 +19,10 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/Context.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Cobegin.h"
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/TaskVar.h"
@@ -74,7 +74,7 @@ static void test0(Parser* parser) {
   // Make sure the task bodies iterator works as expected.
   {
     // Include comments even if they have no meaning.
-    ASTTag taskBodyList[] = {
+    AstTag taskBodyList[] = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment

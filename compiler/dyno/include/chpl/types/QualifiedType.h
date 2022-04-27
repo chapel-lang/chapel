@@ -135,6 +135,10 @@ class QualifiedType final {
     return kind_ == UNKNOWN || !hasTypePtr() || type_->isUnknownType();
   }
 
+  bool isErroneousType() const {
+    return hasTypePtr() && type_->isErroneousType();
+  }
+
   bool isGenericOrUnknown() const {
     return isUnknown() || (genericity() != Type::CONCRETE);
   }

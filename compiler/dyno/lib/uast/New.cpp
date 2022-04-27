@@ -24,11 +24,25 @@ namespace chpl {
 namespace uast {
 
 
+const char* New::managementToString(New::Management management) {
+  switch (management) {
+    case DEFAULT_MANAGEMENT: return ""; // TODO: "default"?
+    case OWNED: return "owned";
+    case SHARED: return "shared";
+    case BORROWED: return "borrowed";
+    case UNMANAGED: return "unmanaged";
+    default: break;
+  }
+
+  assert(false && "Should not reach here");
+  return nullptr;
+}
+
 owned<New> New::build(Builder* builder,
                       Location loc,
-                      owned<Expression> typeExpression,
+                      owned<AstNode> typeExpression,
                       New::Management management) {
-  ASTList lst;
+  AstList lst;
 
   lst.push_back(std::move(typeExpression));
 

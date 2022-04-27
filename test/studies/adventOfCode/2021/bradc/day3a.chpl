@@ -3,12 +3,10 @@ use IO;
 config const debug = false;
 
 iter readBinaryStrings() {
-  do {
-    var i: int;
-    const success = readf("%bi\n", i);
-    if success then
-      yield i;
-  } while success;
+  var i: int;
+  while readf("%bi\n", i) {
+    yield i;
+  }
 }
 
 var A = readBinaryStrings();
@@ -34,7 +32,7 @@ proc O2filter(in mask, A, O2: bool): int {
   const   ones = + reduce ((A & mask) != 0);
   const zeroes = + reduce (((A & mask) ^ mask) != 0);
   var B = filter(A, mask, (ones >= zeroes) == O2);
-  if (B.size == 1) then
+  if B.size == 1 then
     return B[0];
   else
     return O2filter(mask >> 1, B, O2);

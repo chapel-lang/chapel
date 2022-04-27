@@ -105,23 +105,3 @@ iter getDigitsOutputs() {
 }
 
 writeln(+ reduce getDigitsOutputs());
-
-
-/*
-for output in Outputs {
-  const size = output.size;
-  if 
-    writeln(output, ": ", output.size);
-}
-*/
-/*
-proc uniqueDigit(str: string) {
-  const size = str.size;
-  return (size >=  2 && size <= 4) || size == 7;
-}
-
-const count = + reduce uniqueDigit(Outputs);
-writeln(count);
-*/
-
-//writeln(Outputs);s

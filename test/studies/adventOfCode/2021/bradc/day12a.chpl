@@ -27,14 +27,16 @@ findAllPaths("start", Visited, path, false);
 writeln(numPaths.read());
 
 proc findAllPaths(room, in Visited, in path, in visitedSmall: bool) {
-  if (room == "end") {
-//    writeln(path);
+  if room == "end" {
+    if debug then
+      writeln(path);
     numPaths.add(1);
   } else {
     path.append(room);
     Visited[room] = true;
     for/*all*/ adjRoom in Corridors[room] {
-//      writeln("Doing adjRoom: ", adjRoom);
+      if debug then
+        writeln("Doing adjRoom: ", adjRoom);
       var myVisitedSmall = visitedSmall;
       var proceed = true;
       if adjRoom.isLower() {
@@ -51,36 +53,13 @@ proc findAllPaths(room, in Visited, in path, in visitedSmall: bool) {
         }
       }
       if proceed then {
-//        writeln("Proceeding");
+        if debug then
+          writeln("Proceeding");
         findAllPaths(adjRoom, Visited, path, myVisitedSmall);
       } else {
-//        writeln("skipping");
+        if debug then
+          writeln("skipping");
       }
     }
-/*
-    for/*all*/ adjRoom in Corridors[room] {
-      var myVisitedSmall = visitedSmall;
-      var proceed = true;
-      if adjRoom.isLower() {
-        writeln("Doing adjRoom: ", adjRoom);
-        if myVisitedSmall || adjRoom == "start" {
-          writeln("In then");
-          if Visited[adjRoom] || adjRoom == "start" then {
-            proceed = false;
-            writeln("Not proceeding");
-          }
-        } else {
-          writeln("In else");
-          myVisitedSmall = true;
-          Visited[room] = false;
-        }
-      }
-      
-      if proceed then {
-        writeln("Proceeding from ", path, " to ", adjRoom);
-        findAllPaths(adjRoom, Visited, path, myVisitedSmall);
-      }
-    }
-*/
-    }
+  }
 }

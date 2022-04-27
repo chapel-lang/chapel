@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -44,15 +44,14 @@ namespace uast {
  */
 class On final : public SimpleBlockLike {
  private:
-  On(ASTList children, BlockStyle blockStyle, int bodyChildNum,
+  On(AstList children, BlockStyle blockStyle, int bodyChildNum,
      int numBodyStmts)
     : SimpleBlockLike(asttags::On, std::move(children), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
   }
 
@@ -68,17 +67,16 @@ class On final : public SimpleBlockLike {
     Create and return an on statement.
   */
   static owned<On> build(Builder* builder, Location loc,
-                         owned<Expression> destination,
+                         owned<AstNode> destination,
                          BlockStyle blockStyle,
-                         ASTList stmts);
+                         AstList stmts);
 
   /**
     Returns the destination of this on statement.
   */
-  const Expression* destination() const {
+  const AstNode* destination() const {
     auto ret = child(destChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
 };

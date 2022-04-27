@@ -27,9 +27,9 @@ namespace uast {
 
 owned<Dot> Dot::build(Builder* builder,
                       Location loc,
-                      owned<Expression> receiver,
+                      owned<AstNode> receiver,
                       UniqueString fieldName) {
-  ASTList list;
+  AstList list;
 
   list.push_back(std::move(receiver));
 

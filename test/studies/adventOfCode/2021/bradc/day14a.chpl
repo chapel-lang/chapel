@@ -31,7 +31,6 @@ forall ch in allChars with (ref allPairs) do
     allPairs.add(ch + ch2);
 
 writeln(polyTemplStr);
-//writeln(polyTempl);
 if debug {
   writeln(prodMap);
   writeln(allPairs);
@@ -49,7 +48,7 @@ if debug then
 processTemplate(counts, steps);
 
 proc processTemplate(in counts, stepsLeft) {
-  if (stepsLeft == 0) {
+  if stepsLeft == 0 {
     if debug then
       for (p,c) in zip(allPairs, counts) do
         writeln(p, ": ", c);
@@ -79,7 +78,7 @@ proc processTemplate(in counts, stepsLeft) {
 
 proc calcStats(counts) {
   // BUG/FEATURE REQUEST: maxloc over string domain -- currently requires max()
-  // on strings to break ties
+  // on strings to break ties.  See futures/day14-maxlocstringinds.chpl
   var largest = max reduce counts.read();
   var smallest = min reduce counts.read();
   writeln(largest-smallest);

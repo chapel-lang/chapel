@@ -37,19 +37,18 @@ const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
                                           bool isMethod,
-                                          bool idIsFunction,
-                                          bool idIsClass,
+                                          asttags::AstTag idTag,
                                           bool isTypeConstructor,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
-                                          const Expression* whereClause) {
+                                          const AstNode* whereClause) {
   QUERY_BEGIN(getUntypedFnSignature, context,
-              id, name, isMethod, idIsFunction, idIsClass, isTypeConstructor,
+              id, name, isMethod, idTag, isTypeConstructor,
               kind, formals, whereClause);
 
   owned<UntypedFnSignature> result =
     toOwned(new UntypedFnSignature(id, name, isMethod,
-                                   idIsFunction, idIsClass, isTypeConstructor,
+                                   idTag, isTypeConstructor,
                                    kind, std::move(formals), whereClause));
 
   return QUERY_END(result);
@@ -59,14 +58,13 @@ const UntypedFnSignature*
 UntypedFnSignature::get(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
-                        bool idIsFunction,
-                        bool idIsClass,
+                        asttags::AstTag idTag,
                         bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
-                        const uast::Expression* whereClause) {
+                        const uast::AstNode* whereClause) {
   return getUntypedFnSignature(context, id, name, isMethod,
-                               idIsFunction, idIsClass, isTypeConstructor, kind,
+                               idTag, isTypeConstructor, kind,
                                std::move(formals), whereClause).get();
 }
 
@@ -91,8 +89,7 @@ UntypedFnSignature::get(Context* context, const uast::Function* fn) {
     // find the unique-ified untyped signature
     result = get(context, fn->id(),
                  fn->name(), fn->isMethod(),
-                 /* idIsFunction */ true,
-                 /* idIsClass */ false,
+                 /* idTag */ asttags::Function,
                  /* isTypeConstructor */ false,
                  fn->kind(),
                  std::move(formals), fn->whereClause());
@@ -122,7 +119,7 @@ CallInfo::CallInfo(const uast::FnCall* call) {
       if (call->isNamedActual(i)) {
         byName = call->actualName(i);
         if (i == 0 && byName == USTR("this"))
-          isMethod_ = true;
+          isMethodCall_ = true;
       }
       actuals_.push_back(CallInfoActual(QualifiedType(), byName));
       i++;
@@ -130,7 +127,7 @@ CallInfo::CallInfo(const uast::FnCall* call) {
   }
 }
 
-void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {
+void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
   vec.resize(ast->id().numContainedChildren());
 
@@ -341,7 +338,7 @@ void CallInfo::stringify(std::ostream& ss,
     calledType_.stringify(ss, stringKind);
   }
   if (stringKind != StringifyKind::CHPL_SYNTAX) {
-    ss << " isMethod=" << isMethod_;
+    ss << " isMethodCall=" << isMethodCall_;
     ss << " hasQuestionArg=" << hasQuestionArg_;
     ss << " ";
   }

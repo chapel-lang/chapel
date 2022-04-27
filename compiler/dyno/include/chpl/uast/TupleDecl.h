@@ -77,7 +77,7 @@ class TupleDecl final : public Decl {
   int typeExpressionChildNum_;
   int initExpressionChildNum_;
 
-  TupleDecl(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  TupleDecl(AstList children, int attributesChildNum, Decl::Visibility vis,
             Decl::Linkage linkage,
             IntentOrKind intentOrKind,
             int numElements,
@@ -97,7 +97,7 @@ class TupleDecl final : public Decl {
 
   bool assertAcceptableTupleDecl();
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const TupleDecl* lhs = this;
     const TupleDecl* rhs = (const TupleDecl*) other;
     return lhs->declContentsMatchInner(rhs) &&
@@ -123,9 +123,9 @@ class TupleDecl final : public Decl {
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
                                 IntentOrKind intentOrKind,
-                                ASTList elements,
-                                owned<Expression> typeExpression,
-                                owned<Expression> initExpression);
+                                AstList elements,
+                                owned<AstNode> typeExpression,
+                                owned<AstNode> initExpression);
 
   /**
     Returns the intent or kind of the tuple (`var` / `in` / `param` etc).
@@ -136,12 +136,12 @@ class TupleDecl final : public Decl {
     Return a way to iterate over the contained Decls
     (which are each Variables or TupleDecls).
    */
-  ASTListIteratorPair<Decl> decls() const {
+  AstListIteratorPair<Decl> decls() const {
     auto begin = numDecls()
         ? children_.begin() + declChildNum()
         : children_.end();
     auto end = begin + numDecls();
-    return ASTListIteratorPair<Decl>(begin, end);
+    return AstListIteratorPair<Decl>(begin, end);
   }
 
   /**
@@ -155,7 +155,7 @@ class TupleDecl final : public Decl {
    */
   const Decl* decl(int i) const {
     assert(i >= 0 && i < numDecls());
-    const ASTNode* ast = this->child(i + declChildNum());
+    const AstNode* ast = this->child(i + declChildNum());
     assert(ast->isVariable() || ast->isTupleDecl());
     assert(ast->isDecl());
     return (const Decl*)ast;
@@ -165,11 +165,10 @@ class TupleDecl final : public Decl {
     Returns the type expression used in this TupleDecl's declaration, or
     nullptr if there wasn't one.
   */
-  const Expression* typeExpression() const {
+  const AstNode* typeExpression() const {
     if (typeExpressionChildNum_ >= 0) {
-      const ASTNode* ast = this->child(typeExpressionChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      const AstNode* ast = this->child(typeExpressionChildNum_);
+      return ast;
     } else {
       return nullptr;
     }
@@ -179,11 +178,10 @@ class TupleDecl final : public Decl {
     Returns the init expression used in this TupleDecl's declaration, or
     nullptr if there wasn't one.
   */
-  const Expression* initExpression() const {
+  const AstNode* initExpression() const {
     if (initExpressionChildNum_ >= 0) {
-      const ASTNode* ast = this->child(initExpressionChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      const AstNode* ast = this->child(initExpressionChildNum_);
+      return ast;
     } else {
       return nullptr;
     }

@@ -46,18 +46,17 @@ namespace uast {
  */
 class DoWhile final : public Loop {
  private:
-  DoWhile(ASTList children, BlockStyle blockStyle,
+  DoWhile(AstList children, BlockStyle blockStyle,
           int loopBodyChildNum,
           int conditionChildNum)
     : Loop(asttags::DoWhile, std::move(children),
            blockStyle,
            loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
-    assert(isExpressionASTList(children_));
     assert(condition());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const DoWhile* lhs = this;
     const DoWhile* rhs = (const DoWhile*) other;
 
@@ -85,16 +84,15 @@ class DoWhile final : public Loop {
   static owned<DoWhile> build(Builder* builder, Location loc,
                               BlockStyle blockStyle,
                               owned<Block> body,
-                              owned<Expression> condition);
+                              owned<AstNode> condition);
 
 
   /**
     Return the condition of this do-while loop.
   */
-  const Expression* condition() const {
+  const AstNode* condition() const {
     auto ret = child(conditionChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
 };

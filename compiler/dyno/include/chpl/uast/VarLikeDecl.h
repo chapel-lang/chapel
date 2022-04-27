@@ -38,7 +38,7 @@ class VarLikeDecl : public NamedDecl {
   int8_t typeExpressionChildNum_;
   int8_t initExpressionChildNum_;
 
-  VarLikeDecl(ASTTag tag, ASTList children, int attributesChildNum,
+  VarLikeDecl(AstTag tag, AstList children, int attributesChildNum,
               Decl::Visibility vis,
               Decl::Linkage linkage,
               int linkageNameChildNum,
@@ -58,15 +58,13 @@ class VarLikeDecl : public NamedDecl {
     assert(numChildren() <= 3);
     if (typeExpressionChildNum >= 0) {
       assert(typeExpressionChildNum <= 3);
-      assert(child(typeExpressionChildNum)->isExpression());
     }
     if (initExpressionChildNum >= 0) {
       assert(initExpressionChildNum <= 3);
-      assert(child(initExpressionChildNum)->isExpression());
     }
   }
 
-  bool varLikeDeclContentsMatchInner(const ASTNode* other) const {
+  bool varLikeDeclContentsMatchInner(const AstNode* other) const {
     const VarLikeDecl* lhs = this;
     const VarLikeDecl* rhs = (const VarLikeDecl*) other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
@@ -95,11 +93,10 @@ class VarLikeDecl : public NamedDecl {
     Returns the type expression used in this VarLikeDecl's declaration, or
     nullptr if there wasn't one.
   */
-  const Expression* typeExpression() const {
+  const AstNode* typeExpression() const {
     if (typeExpressionChildNum_ >= 0) {
-      const ASTNode* ast = this->child(typeExpressionChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      const AstNode* ast = this->child(typeExpressionChildNum_);
+      return ast;
     } else {
       return nullptr;
     }
@@ -109,11 +106,10 @@ class VarLikeDecl : public NamedDecl {
     Returns the init expression used in this VarLikeDecl's declaration, or
     nullptr if there wasn't one.
   */
-  const Expression* initExpression() const {
+  const AstNode* initExpression() const {
     if (initExpressionChildNum_ >= 0) {
-      const ASTNode* ast = this->child(initExpressionChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
+      const AstNode* ast = this->child(initExpressionChildNum_);
+      return ast;
     } else {
       return nullptr;
     }

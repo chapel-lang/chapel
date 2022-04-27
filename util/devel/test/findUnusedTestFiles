@@ -84,9 +84,10 @@ for f in $(find $CHPL_HOME/test                                               \
        continue
    fi
 
-   # Some .mason dirctories are created at runtime, so ignore e.g. the
-   # .mason.notest even when there's not a .mason dir.
-   if [ ${f#.mason} != $f ]; then
+   # mason testing creates a lot of directories at runtime, so
+   # there are lots of .notests that refer to directories that
+   # don't exist in git, so ignore all .notests in test/mason.
+   if [ "${d##$CHPL_HOME/test/mason}" != $d -a $NOTESTFILE == 1 ]; then
        continue
    fi
 
@@ -108,14 +109,15 @@ for f in $(find $CHPL_HOME/test                                               \
 
    # Handle some special cases that apply only to .good files.
    if [ $GOODFILE == 1 ]; then
-      # This dir uses a PREDIFF file to pick a specific .good file.  But
+      # These dirs uses a PREDIFF file to pick a specific .good file.  But
       # it just invokes "../../PREDIFF $0", so the later PREDIFF section
       # won't catch it.
 
-      # Keep the line testing this path under 80 columns.  Sigh.
-      DRAPM="$CHPL_HOME/test/distributions/robust"
-      DRAPM="${DRAPM}/arithmetic/performance/multilocale"
-      if [ $d == $DRAPM ]; then
+      DRA="$CHPL_HOME/test/distributions/robust/arithmetic"
+      DRAPM="${DRA}/performance/multilocale"
+      DRAS="${DRA}/slicing"
+      # apply this to DRAS and DRAPM+subdirs
+      if [ "${d##$DRAPM}" != $d -o $d == $DRAS ]; then
 	  base=${base%.cyclic}
 	  base=${base%.replicated}
 	  base=${base%.block}

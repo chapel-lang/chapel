@@ -409,6 +409,16 @@ static int processToken(yyscan_t scanner, int t) {
       captureString.push_back(' ');
     }
 
+    // this is here to remove extra space added between
+    // the end of a recognized keyword from the list below
+    // and a closing paren or dot.
+    // e.g print maxIndex(A: [?D]) instead of maxIndex(A: [?D] )
+    if (t == TRP || t == TDOT) {
+      if (captureString.length() > 1 && captureString.back() == ' ') {
+        captureString.pop_back();
+      }
+    }
+
     if (t != TLCBR && t != TRETURN) {
       captureString.append(yyget_text(scanner));
     }
@@ -429,7 +439,9 @@ static int processToken(yyscan_t scanner, int t) {
         t == TUNMANAGED ||
         t == TOWNED ||
         t == TSHARED ||
-        t == TNEW) {
+        t == TNEW ||
+        t == TSINGLE ||
+        t == TSYNC) {
       captureString.push_back(' ');
     }
   }

@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<Conditional> Conditional::build(Builder* builder, Location loc,
-                                      owned<Expression> condition,
+                                      owned<AstNode> condition,
                                       BlockStyle thenBlockStyle,
                                       owned<Block> thenBlock,
                                       BlockStyle elseBlockStyle,
@@ -34,7 +34,7 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       bool isExpressionLevel) {
   assert(condition.get() != nullptr);
 
-  ASTList lst;
+  AstList lst;
 
   lst.push_back(std::move(condition));
   lst.push_back(std::move(thenBlock));
@@ -52,12 +52,12 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
 }
 
 owned<Conditional> Conditional::build(Builder* builder, Location loc,
-                                      owned<Expression> condition,
+                                      owned<AstNode> condition,
                                       BlockStyle thenBlockStyle,
                                       owned<Block> thenBlock,
                                       bool isExpressionLevel) {
   assert(condition.get() != nullptr);
-  ASTList lst;
+  AstList lst;
 
   lst.push_back(std::move(condition));
   lst.push_back(std::move(thenBlock));

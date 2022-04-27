@@ -4,6 +4,8 @@ config const alpha = 10;
 
 config const writeArrays = true;
 
+writeln("Number of sublocales: ", here.getChildCount());
+
 for subloc in 1..here.getChildCount()-1 do on here.getChild(subloc) {
   var A: [1..n] int;
   var B: [1..n] int;

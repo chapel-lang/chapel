@@ -512,12 +512,12 @@ static void test5() {
 }
 
 static void checkPathAllChildren(Context* context,
-                                 const ASTNode* ast,
+                                 const AstNode* ast,
                                  UniqueString expectPath) {
   UniqueString gotPath = context->filePathForId(ast->id());
   assert(gotPath == expectPath);
 
-  for (const ASTNode* child : ast->children()) {
+  for (const AstNode* child : ast->children()) {
     checkPathAllChildren(context, child, expectPath);
   }
 }
@@ -550,10 +550,10 @@ static void test6() {
 }
 
 static void checkIdsAllChildren(Context* context,
-                                const ASTNode* ast,
-                                const ASTNode* parent) {
+                                const AstNode* ast,
+                                const AstNode* parent) {
   if (!ast->id().isEmpty()) {
-    const ASTNode* got = idToAst(context, ast->id());
+    const AstNode* got = idToAst(context, ast->id());
     assert(got == ast);
 
     ID gotParentId = idToParentId(context, ast->id());
@@ -565,7 +565,7 @@ static void checkIdsAllChildren(Context* context,
     }
   }
 
-  for (const ASTNode* child : ast->children()) {
+  for (const AstNode* child : ast->children()) {
     checkIdsAllChildren(context, child, ast);
   }
 }

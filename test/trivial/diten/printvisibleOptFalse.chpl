@@ -1,2 +1,3 @@
 var xyzSymbol = 1;
-__primitive(c"get visible symbols", ignoreInternalModules=false);
+// ignoreInternalModules=false, ignoreBuiltInModules=false
+__primitive(c"get visible symbols", false, false);

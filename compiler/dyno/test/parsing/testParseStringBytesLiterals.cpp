@@ -39,7 +39,7 @@ using namespace parsing;
 static uast::BuilderResult parseExprAsVarInit(Parser* parser,
                                               const std::string& testname,
                                               const std::string& init,
-                                              const Expression*& exprOut) {
+                                              const AstNode*& exprOut) {
   std::string toparse = "var x = ";
   toparse += init;
   toparse += ";\n";
@@ -59,7 +59,7 @@ static void testStringLiteral(Parser* parser,
                               const std::string& str,
                               StringLikeLiteral::QuoteStyle expectQuoteStyle,
                               const std::string& expectValue) {
-  const Expression* initExpr = nullptr;
+  const AstNode* initExpr = nullptr;
   auto parseResult = parseExprAsVarInit(parser, testname, str, initExpr);
   auto strLit = initExpr->toStringLiteral();
   assert(strLit);
@@ -71,7 +71,7 @@ static void testBytesLiteral(Parser* parser,
                              std::string str,
                              StringLikeLiteral::QuoteStyle expectQuoteStyle,
                              const std::string& expectValue) {
-  const Expression* initExpr = nullptr;
+  const AstNode* initExpr = nullptr;
   auto parseResult = parseExprAsVarInit(parser, testname, str, initExpr);
   auto bytesLit = initExpr->toBytesLiteral();
   assert(bytesLit);
@@ -83,7 +83,7 @@ static void testCStringLiteral(Parser* parser,
                                std::string str,
                                StringLiteral::QuoteStyle expectQuoteStyle,
                                const std::string& expectValue) {
-  const Expression* initExpr = nullptr;
+  const AstNode* initExpr = nullptr;
   auto parseResult = parseExprAsVarInit(parser, testname, str, initExpr);
   auto strLit = initExpr->toCStringLiteral();
   assert(strLit);

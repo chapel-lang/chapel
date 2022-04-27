@@ -25,13 +25,13 @@ namespace chpl {
 namespace uast {
 
 
-owned<Let> Let::build(Builder* builder, Location loc, ASTList decls,
-                      owned<Expression> expression) {
+owned<Let> Let::build(Builder* builder, Location loc, AstList decls,
+                      owned<AstNode> expression) {
   assert(decls.size() >= 1);
   assert(expression.get() != nullptr);
 
   const int numDecls = decls.size();
-  ASTList children = std::move(decls);
+  AstList children = std::move(decls);
 
   children.push_back(std::move(expression));
 

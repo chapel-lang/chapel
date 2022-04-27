@@ -26,14 +26,14 @@ namespace uast {
 
 
 owned<Manage> Manage::build(Builder* builder, Location loc,
-                            ASTList managers,
+                            AstList managers,
                             BlockStyle blockStyle,
-                            ASTList stmts) {
+                            AstList stmts) {
   int managerExprChildNum = -1;
   const int numManagerExprs = managers.size();
   int bodyChildNum = -1;
   const int numBodyStmts = stmts.size();
-  ASTList children;
+  AstList children;
 
   if (managers.size()) {
     managerExprChildNum = children.size();

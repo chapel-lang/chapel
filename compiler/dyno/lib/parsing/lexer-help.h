@@ -116,7 +116,7 @@ static int processStringLiteral(yyscan_t scanner,
   if (startChar && startChar[0] == '"')
     quotes = StringLiteral::DOUBLE;
 
-  Expression* lit = nullptr;
+  AstNode* lit = nullptr;
   if (erroneous) {
     lit = ErroneousExpression::build(context->builder,
                                      context->convertLocation(*loc)).release();
@@ -162,7 +162,7 @@ static int processTripleStringLiteral(yyscan_t scanner,
   if (startChar && startChar[0] == '"')
     quotes = StringLiteral::TRIPLE_DOUBLE;
 
-  Expression* lit = nullptr;
+  AstNode* lit = nullptr;
 
   if (erroneous) {
     lit = ErroneousExpression::build(context->builder,

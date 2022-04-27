@@ -29,8 +29,8 @@ owned<Enum> Enum::build(Builder* builder, Location loc,
                         owned<Attributes> attributes,
                         Decl::Visibility vis,
                         UniqueString name,
-                        ASTList stmts) {
-  ASTList lst;
+                        AstList stmts) {
+  AstList lst;
   int attributesChildNum = -1;
 
   if (attributes.get() != nullptr) {

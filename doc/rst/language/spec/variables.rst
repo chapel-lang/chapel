@@ -275,7 +275,7 @@ bytes       b""
 enums       first enum constant
 classes     nil
 records     default constructed record
-ranges      1..0 :math:`` :math:`` (empty sequence)
+ranges      1..0 (empty range)
 arrays      elements are default values
 tuples      components are default values
 sync/single base default value and *empty* status

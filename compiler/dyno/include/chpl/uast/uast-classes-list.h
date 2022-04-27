@@ -44,10 +44,6 @@
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
 
-// TODO: since everything inherits from Expression
-// should we just remove it? Or rename ASTNode to Expression?
-AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
-
   AST_NODE(As)                         //
   AST_NODE(Array)                      //
   AST_LEAF(Attributes)                 //
@@ -61,10 +57,11 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Delete)                     //
   AST_NODE(Domain)                     //
   AST_NODE(Dot)                        //
+  AST_LEAF(EmptyStmt)                  //
   AST_LEAF(ErroneousExpression)        //
   AST_LEAF(ExternBlock)                // old AST: ExternBlockStmt
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
-  //AST_NODE(Implements)               // old AST: ImplementsStmt
+  AST_NODE(Implements)                 // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(Include)
   AST_NODE(Label)                      //
@@ -145,7 +142,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_BEGIN_SUBCLASSES(NamedDecl)
       AST_NODE(EnumElement)                // old AST: EnumSymbol
       AST_NODE(Function)                   // old AST: FnSymbol
-      //AST_NODE(Interface)                  // old AST: InterfaceSymbol
+      AST_NODE(Interface)                  // old AST: InterfaceSymbol
       AST_NODE(Module)                     // old AST: ModuleSymbol
 
       AST_BEGIN_SUBCLASSES(VarLikeDecl)
@@ -169,8 +166,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_END_SUBCLASSES(NamedDecl)
 
   AST_END_SUBCLASSES(Decl)
-
-AST_END_SUBCLASSES(Expression)
 
 
 /// \endcond

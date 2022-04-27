@@ -40,6 +40,7 @@ static const char* kindToString(Function::Kind kind) {
     case Function::Kind::PROC: return "proc";
     case Function::Kind::ITER: return "iter";
     case Function::Kind::OPERATOR: return "operator";
+    case Function::Kind::LAMBDA: return "lambda";
   }
   assert(false);
   return "";
@@ -181,14 +182,16 @@ struct ChplSyntaxVisitor {
 
   /*
    * helper to check if the called expression is actually a
-   * management kind. Helps FnCalls not to print () in this case
+   * reserved word. Helps FnCalls not to print () in this case
   */
-  bool isCalleeManagementKind(const Expression* callee) {
+  bool isCalleeReservedWord(const AstNode* callee) {
     if (callee->isIdentifier() &&
-      (callee->toIdentifier()->name() == "borrowed"
-       || callee->toIdentifier()->name() == "owned"
-       || callee->toIdentifier()->name() == "unmanaged"
-       || callee->toIdentifier()->name() == "shared"))
+      (callee->toIdentifier()->name() == USTR("borrowed")
+       || callee->toIdentifier()->name() == USTR("owned")
+       || callee->toIdentifier()->name() == USTR("unmanaged")
+       || callee->toIdentifier()->name() == USTR("shared")
+       || callee->toIdentifier()->name() == USTR("sync")
+       || callee->toIdentifier()->name() == USTR("single")))
         return true;
       return false;
   }
@@ -206,8 +209,18 @@ struct ChplSyntaxVisitor {
       ss_ << node->thisFormal()->child(0)->toIdentifier()->name().str() << ".";
     }
 
-    // Function Name
-    ss_ << node->name().str();
+    if (node->kind() == Function::Kind::OPERATOR && node->name() == USTR("=")) {
+      // TODO: remove this once the old parser is out of the question
+      // TODO: this is only here to support tests from the old parser
+      // printing extra spaces around an assignment operator
+      ss_ << " ";
+      // Function Name
+      ss_ << node->name().str();
+      ss_ << " ";
+    } else {
+      // Function Name
+      ss_ << node->name().str();
+    }
 
     // Formals
     int numThisFormal = node->thisFormal() ? 1 : 0;
@@ -257,11 +270,11 @@ struct ChplSyntaxVisitor {
         printTupleContents(decl->toTupleDecl());
       } else {
         ss_ << decl->toVarLikeDecl()->name();
-        if (const Expression *te = decl->toVarLikeDecl()->typeExpression()) {
+        if (const AstNode *te = decl->toVarLikeDecl()->typeExpression()) {
           ss_ << ": ";
           printChapelSyntax(ss_, te);
         }
-        if (const Expression *ie = decl->toVarLikeDecl()->initExpression()) {
+        if (const AstNode *ie = decl->toVarLikeDecl()->initExpression()) {
           ss_ << " = ";
           printChapelSyntax(ss_, ie);
         }
@@ -271,7 +284,7 @@ struct ChplSyntaxVisitor {
     ss_ << ")";
   }
 
-  void visit(const uast::ASTNode* node) {
+  void visit(const uast::AstNode* node) {
     assert(false && "Unhandled uAST node");
   }
 
@@ -339,7 +352,7 @@ struct ChplSyntaxVisitor {
     if (node->error()) {
       if (node->hasParensAroundError()) ss_ << "(";
       ss_ << node->error()->name();
-      if (const Expression* te = node->error()->typeExpression()) {
+      if (const AstNode* te = node->error()->typeExpression()) {
         ss_ << " : ";
         printChapelSyntax(ss_, te);
       }
@@ -386,7 +399,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Comment* node) {
-    // TODO: create a way to filter comments using an adapted ASTListIterator
+    // TODO: create a way to filter comments using an adapted AstListIterator
     // TODO: how to control when we want comments on/off
 
     //    do nothing for now, can be enabled with code below
@@ -440,6 +453,10 @@ struct ChplSyntaxVisitor {
     printChapelSyntax(ss_, node->condition());
   }
 
+  void visit(const EmptyStmt* node) {
+    ss_ << ";";
+  }
+
   void visit(const Enum* node) {
     ss_ << "enum " << node->name() << " ";
     interpose(node->enumElements(), ", ", "{ ", " }");
@@ -447,7 +464,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const EnumElement* node) {
     ss_ << node->name();
-    if (const Expression* ie = node->initExpression()) {
+    if (const AstNode* ie = node->initExpression()) {
       ss_ <<  " = ";
       printChapelSyntax(ss_, ie);
     }
@@ -464,17 +481,40 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const FnCall* node) {
-    const Expression* callee = node->calledExpression();
+    const AstNode* callee = node->calledExpression();
     assert(callee);
     printChapelSyntax(ss_, callee);
-    if (isCalleeManagementKind(callee)) {
+    if (isCalleeReservedWord(callee)) {
       ss_ << " ";
-      printChapelSyntax(ss_, node->actual(0));
+      if (auto op = node->actual(0)->toOpCall()) {
+        assert(op->isUnaryOp() && op->op() == USTR("?"));
+        printChapelSyntax(ss_, op->actual(0));
+        ss_ << op->op();
+      } else {
+        printChapelSyntax(ss_, node->actual(0));
+      }
     } else {
       if (node->callUsedSquareBrackets()) {
-        interpose(node->actuals(), ", ", "[", "]");
+        ss_ << "[";
       } else {
-        interpose(node->actuals(), ", ", "(", ")");
+        ss_ << "(";
+      }
+      std::string sep;
+      for (int i = 0; i < node->numActuals(); i++) {
+        ss_ << sep;
+        if (node->isNamedActual(i)) {
+          ss_ << node->actualName(i);
+          // The spaces around = are just to satisfy old tests
+          // TODO: Remove spaces around `=` when removing old parser
+          ss_ << " = ";
+        }
+        printChapelSyntax(ss_, node->actual(i));
+        sep = ", ";
+      }
+      if (node->callUsedSquareBrackets()) {
+        ss_ << "]";
+      } else {
+        ss_ << ")";
       }
     }
   }
@@ -526,11 +566,11 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString((IntentList) node->intent()) << " ";
     }
     ss_ << node->name().str();
-    if (const Expression* te = node->typeExpression()) {
+    if (const AstNode* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
     }
-    if (const Expression* ie = node->initExpression()) {
+    if (const AstNode* ie = node->initExpression()) {
       ss_ << " = ";
       printChapelSyntax(ss_, ie);
     }
@@ -571,7 +611,7 @@ struct ChplSyntaxVisitor {
     }
 
     // Return type
-    if (const Expression* e = node->returnType()) {
+    if (const AstNode* e = node->returnType()) {
       ss_ << ": ";
       printChapelSyntax(ss_, e);
     }
@@ -634,11 +674,11 @@ struct ChplSyntaxVisitor {
     for (auto decl : node->decls()) {
       const Variable* var = decl->toVariable();
       ss_ << var->name();
-      if (const Expression *te = var->typeExpression()) {
+      if (const AstNode *te = var->typeExpression()) {
         ss_ << ": ";
         printChapelSyntax(ss_, te);
       }
-      if (const Expression *ie = var->initExpression()) {
+      if (const AstNode *ie = var->initExpression()) {
         ss_ << " = ";
         printChapelSyntax(ss_, ie);
       }
@@ -683,11 +723,11 @@ struct ChplSyntaxVisitor {
     for (auto decl : node->decls()) {
       ss_ << delimiter;
       ss_ << decl->toVariable()->name();
-      if (const Expression* te = decl->toVariable()->typeExpression()) {
+      if (const AstNode* te = decl->toVariable()->typeExpression()) {
         ss_ << ": ";
         printChapelSyntax(ss_, te);
       }
-      if (const Expression* ie = decl->toVariable()->initExpression()) {
+      if (const AstNode* ie = decl->toVariable()->initExpression()) {
         ss_ << " = ";
         printChapelSyntax(ss_, ie);
       }
@@ -763,9 +803,14 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Reduce* node) {
-    ss_ << node->op() << " ";
+    if (node->opExpr()) {
+      printChapelSyntax(ss_, node->opExpr());
+    } else {
+      ss_ << node->op();
+    }
+    ss_ << " ";
     ss_ << "reduce ";
-    interpose(node->actuals(), ", ");
+    printChapelSyntax(ss_, node->actual(0));
   }
 
   void visit(const Require* node) {
@@ -849,11 +894,11 @@ struct ChplSyntaxVisitor {
 
     printTupleContents(node);
 
-    if (const Expression* te = node->typeExpression()) {
+    if (const AstNode* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
     }
-    if (const Expression* ie = node->initExpression()) {
+    if (const AstNode* ie = node->initExpression()) {
       ss_ << " = ";
       printChapelSyntax(ss_, ie);
     }
@@ -882,6 +927,7 @@ struct ChplSyntaxVisitor {
   void visit(const Use* node) {
     if (node->visibility() != Decl::DEFAULT_VISIBILITY) {
       ss_ << kindToString(node->visibility());
+      ss_ << " ";
     }
     ss_ << "use ";
     interpose(node->visibilityClauses(), ", ");
@@ -893,17 +939,17 @@ struct ChplSyntaxVisitor {
     }
 
     ss_ << node->name();
-    if (const Expression* te = node->typeExpression()) {
+    if (const AstNode* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
     }
-    if (const Expression* ie = node->initExpression()) {
+    if (const AstNode* ie = node->initExpression()) {
       ss_ << " = ";
       printChapelSyntax(ss_, ie);
     }
 
-    if (const Expression* ce = node->count()) {
-      ss_ << " ...";
+    ss_ << " ...";
+    if (const AstNode* ce = node->count()) {
       if (const TypeQuery* tq = ce->toTypeQuery()) {
         printChapelSyntax(ss_, tq);
       } else {
@@ -923,11 +969,11 @@ struct ChplSyntaxVisitor {
       ss_ << kindToString((IntentList) node->kind()) << " ";
     }
     ss_ << node->name();
-    if (const Expression* te = node->typeExpression()) {
+    if (const AstNode* te = node->typeExpression()) {
       ss_ << ": ";
       printChapelSyntax(ss_, te);
     }
-    if (const Expression* ie = node->initExpression()) {
+    if (const AstNode* ie = node->initExpression()) {
       ss_ << " = ";
       printChapelSyntax(ss_, ie);
     }
@@ -939,6 +985,10 @@ struct ChplSyntaxVisitor {
     if (limit == VisibilityClause::LimitationKind::BRACES) {
       ss_ << ".";
       interpose(node->limitations(), ", ", "{","}");
+    } else if (limit == VisibilityClause::LimitationKind::NONE && node->numLimitations() == 1) {
+      assert(node->limitation(0)->isIdentifier());
+      ss_ << ".";
+      printChapelSyntax(ss_, node->limitation(0));
     } else {
       ss_ << " ";
       if (limit == VisibilityClause::LimitationKind::ONLY ||
@@ -987,7 +1037,7 @@ struct ChplSyntaxVisitor {
 
 namespace chpl {
   /* Generic printer calling the above functions */
-  void printChapelSyntax(std::ostream& os, const ASTNode* node) {
+  void printChapelSyntax(std::ostream& os, const AstNode* node) {
     auto visitor = ChplSyntaxVisitor{};
     node->dispatch<void>(visitor);
     // when using << with ss_.rdbuf(), if nothing gets added to os, then

@@ -27,7 +27,7 @@ namespace uast {
 
 owned<WithClause> WithClause::build(Builder* builder,
                                     Location loc,
-                                    ASTList exprs) {
+                                    AstList exprs) {
   WithClause* ret = new WithClause(std::move(exprs));
   builder->noteLocation(ret, loc);
   return toOwned(ret);

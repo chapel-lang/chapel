@@ -307,15 +307,6 @@ int main(int argc, char** argv)
   int file_hint, ch_hint;
 
   {
-    //for( file_hint = 0; file_hint < nhints; file_hint++ ) {
-    //  check_write_read_pat(1, 262144, 0, 0, file_hint, file_hint, 0);
-    //}
-
-    //check_write_read_pat(32,4096,0,3,QIO_METHOD_PREADPWRITE,0,1);
-    //check_write_read_pat(32,4096,0,3,0,0,1);
-    //exit(0);
-//check_write_read_pat(width=32, num=4096, pat=0, type=3, file_hints=default_type default, ch_hints=buffered default, reopen=1)
-
     // Run unit tests.
     for( offset = 0; offset < 63; offset++ ) {
       for( padding = 0; padding < 63; padding++ ) {
@@ -323,10 +314,8 @@ int main(int argc, char** argv)
       }
     }
 
-    maxlogn = 19;
-    if( valgrind ) maxlogn = 10;
-
-    for( logn = 0; logn < maxlogn; logn+=9 ) {
+    // do some small tests in a lot of configurations
+    for( logn = 0; logn < 4; logn+=3 ) {
       for( width = 1; width <= 64; width++ ) {
         for( file_hint = 0; file_hint < nhints; file_hint++ ) {
           ch_hint = file_hint;
@@ -334,6 +323,18 @@ int main(int argc, char** argv)
           check_write_read_pat(width,1 << logn,0,type,file_hint,ch_hint,0);
           check_write_read_pat(width,1 << logn,1,type,file_hint,ch_hint,1);
         }
+      }
+    }
+
+    // do a bigger run with more data and smaller size
+    if (!valgrind) {
+      int size = 1 << 25;
+      width = 61;  // totals to about 56 MB
+      for( file_hint = 0; file_hint < nhints; file_hint++ ) {
+        ch_hint = file_hint;
+        type = 0;
+        check_write_read_pat(width,1 << logn,0,type,file_hint,ch_hint,0);
+        check_write_read_pat(width,1 << logn,1,type,file_hint,ch_hint,1);
       }
     }
   }

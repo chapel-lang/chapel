@@ -46,7 +46,7 @@ class AggregateDecl : public TypeDecl {
   int elementsChildNum_;
   int numElements_;
 
-  static bool validAggregateChildren(ASTListIteratorPair<Expression> it);
+  static bool validAggregateChildren(AstListIteratorPair<AstNode> it);
 
  protected:
   bool aggregateDeclContentsMatchInner(const AggregateDecl* other) const {
@@ -62,7 +62,7 @@ class AggregateDecl : public TypeDecl {
   }
 
  public:
-  AggregateDecl(ASTTag tag, ASTList children, int attributesChildNum,
+  AggregateDecl(AstTag tag, AstList children, int attributesChildNum,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
                 int linkageNameChildNum,
@@ -83,11 +83,11 @@ class AggregateDecl : public TypeDecl {
   /**
     Return a way to iterate over the contained Decls and Comments.
    */
-  ASTListIteratorPair<Expression> declOrComments() const {
+  AstListIteratorPair<AstNode> declOrComments() const {
     if (elementsChildNum_ < 0)
-      return ASTListIteratorPair<Expression>(children_.end(), children_.end());
+      return AstListIteratorPair<AstNode>(children_.end(), children_.end());
 
-    return ASTListIteratorPair<Expression>(
+    return AstListIteratorPair<AstNode>(
               children_.begin() + elementsChildNum_,
               children_.begin() + elementsChildNum_ + numElements_);
   }
@@ -102,22 +102,21 @@ class AggregateDecl : public TypeDecl {
   /**
    Return the i'th Decl in this AggregateDecl.
    */
-  const Expression* declOrComment(int i) const {
+  const AstNode* declOrComment(int i) const {
     assert(0 <= i && i < numElements_);
-    const ASTNode* ast = this->child(elementsChildNum_ + i);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+    const AstNode* ast = this->child(elementsChildNum_ + i);
+    return ast;
   }
 
   /**
    Return a way to iterate over the contained Decls (ignoring Comments)
    */
-  ASTListNoCommentsIteratorPair<Decl> decls() const {
+  AstListNoCommentsIteratorPair<Decl> decls() const {
     if (elementsChildNum_ < 0)
-      return ASTListNoCommentsIteratorPair<Decl>(
+      return AstListNoCommentsIteratorPair<Decl>(
                 children_.end(), children_.end());
 
-    return ASTListNoCommentsIteratorPair<Decl>(
+    return AstListNoCommentsIteratorPair<Decl>(
               children_.begin() + elementsChildNum_,
               children_.begin() + elementsChildNum_ + numElements_);
   }

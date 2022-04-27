@@ -27,11 +27,11 @@ namespace uast {
 
 owned<Scan> Scan::build(Builder* builder, Location loc,
                         UniqueString op,
-                        owned<Expression> expr) {
+                        owned<AstNode> expr) {
   assert(expr.get() != nullptr);
   assert(!op.isEmpty());
 
-  ASTList lst;
+  AstList lst;
 
   lst.push_back(std::move(expr));
 

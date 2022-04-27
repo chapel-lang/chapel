@@ -1,0 +1,3 @@
+depReturnTypeOnly.chpl:14: In function 'main':
+depReturnTypeOnly.chpl:15: warning: foo returning 'int' is deprecated, please compile with '-sfooReturnsBool=true' to get the new return type
+In old foo

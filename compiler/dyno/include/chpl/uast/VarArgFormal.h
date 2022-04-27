@@ -47,7 +47,7 @@ class VarArgFormal final : public VarLikeDecl {
  private:
   int countChildNum_;
 
-  VarArgFormal(ASTList children, int attributesChildNum, UniqueString name,
+  VarArgFormal(AstList children, int attributesChildNum, UniqueString name,
                Formal::Intent intent,
                int8_t typeExpressionChildNum,
                int8_t countChildNum)
@@ -64,7 +64,7 @@ class VarArgFormal final : public VarLikeDecl {
       countChildNum_(countChildNum) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const VarArgFormal* lhs = this;
     const VarArgFormal* rhs = (const VarArgFormal*) other;
     return lhs->varLikeDeclContentsMatchInner(rhs) &&
@@ -82,8 +82,8 @@ class VarArgFormal final : public VarLikeDecl {
                                    owned<Attributes> attributes,
                                    UniqueString name,
                                    Formal::Intent intent,
-                                   owned<Expression> typeExpression,
-                                   owned<Expression> count);
+                                   owned<AstNode> typeExpression,
+                                   owned<AstNode> count);
 
   /**
     Returns the intent of the varargs formal, e.g. in
@@ -100,11 +100,10 @@ class VarArgFormal final : public VarLikeDecl {
 
     If the count expression does not exist then nullptr is returned.
   */
-  const Expression* count() const {
+  const AstNode* count() const {
     if (countChildNum_ < 0) return nullptr;
     auto ret = child(countChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return ret;
   }
 
 };

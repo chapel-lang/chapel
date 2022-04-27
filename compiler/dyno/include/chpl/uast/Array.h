@@ -21,7 +21,7 @@
 #define CHPL_UAST_ARRAY_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 
 namespace chpl {
 namespace uast {
@@ -40,20 +40,18 @@ namespace uast {
 
   An array expression will never contain comments.
  */
-class Array final : public Expression {
+class Array final : public AstNode {
  private:
   // TODO: Record if initializer list has trailing comma?
-  Array(ASTList children)
-    : Expression(asttags::Array, std::move(children)) {
-    assert(isExpressionASTList(children_));
+  Array(AstList children)
+    : AstNode(asttags::Array, std::move(children)) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
-    return expressionContentsMatchInner(other->toExpression());
+  bool contentsMatchInner(const AstNode* other) const override {
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -63,14 +61,14 @@ class Array final : public Expression {
    Create and return an Array expression.
    */
   static owned<Array> build(Builder* builder, Location loc,
-                            ASTList exprs);
+                            AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this array.
   */
-  ASTListIteratorPair<Expression> exprs() const {
-    return ASTListIteratorPair<Expression>(children_.begin(),
-                                           children_.end());
+  AstListIteratorPair<AstNode> exprs() const {
+    return AstListIteratorPair<AstNode>(children_.begin(),
+                                        children_.end());
   }
 
   /**
@@ -83,10 +81,9 @@ class Array final : public Expression {
   /**
     Return the i'th expression in this array.
   */
-  const Expression* expr(int i) const {
-    const ASTNode* ast = this->child(i);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+  const AstNode* expr(int i) const {
+    const AstNode* ast = this->child(i);
+    return ast;
   }
 
 };

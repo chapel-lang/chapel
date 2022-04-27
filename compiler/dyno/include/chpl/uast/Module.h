@@ -49,7 +49,7 @@ class Module final : public NamedDecl {
  private:
   Kind kind_;
 
-  Module(ASTList children, int attributesChildNum, Decl::Visibility vis,
+  Module(AstList children, int attributesChildNum, Decl::Visibility vis,
          UniqueString name,
          Kind kind)
     : NamedDecl(asttags::Module, std::move(children), attributesChildNum,
@@ -59,10 +59,9 @@ class Module final : public NamedDecl {
                 name),
                 kind_(kind) {
 
-    assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const Module* lhs = this;
     const Module* rhs = (const Module*) other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
@@ -85,7 +84,7 @@ class Module final : public NamedDecl {
                              Decl::Visibility vis,
                              UniqueString name,
                              Module::Kind kind,
-                             ASTList stmts);
+                             AstList stmts);
 
   /**
     Return the kind of this module (e.g. 'PROTOTYPE' or 'IMPLICIT');
@@ -95,12 +94,12 @@ class Module final : public NamedDecl {
   /**
     Iterate over the statements in this module.
   */
-  ASTListIteratorPair<Expression> stmts() const {
+  AstListIteratorPair<AstNode> stmts() const {
     auto begin = numStmts()
         ? children_.begin() + stmtChildNum()
         : children_.end();
     auto end = begin + numStmts();
-    return ASTListIteratorPair<Expression>(begin, end);
+    return AstListIteratorPair<AstNode>(begin, end);
   }
 
   /**
@@ -113,11 +112,10 @@ class Module final : public NamedDecl {
   /**
     Get the i'th statement in this module.
   */
-  const Expression* stmt(int i) const {
+  const AstNode* stmt(int i) const {
     assert(0 <= i && i < numStmts());
-    const ASTNode* ast = this->child(i + stmtChildNum());
-    assert(ast->isExpression());
-    return (Expression*) ast;
+    const AstNode* ast = this->child(i + stmtChildNum());
+    return ast;
   }
 };
 

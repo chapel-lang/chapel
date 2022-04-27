@@ -3,12 +3,10 @@ use IO;
 config const debug = false;
 
 iter readBinaryStrings() {
-  do {
-    var i: int;
-    const success = readf("%bi\n", i);
-    if success then
-      yield i;
-  } while success;
+  var i: int;
+  while readf("%bi\n", i) {
+    yield i;
+  }
 }
 
 var A = readBinaryStrings();

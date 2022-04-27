@@ -26,10 +26,10 @@ namespace uast {
 
 
 owned<When> When::build(Builder* builder, Location loc,
-                        ASTList caseExprs,
+                        AstList caseExprs,
                         BlockStyle blockStyle,
-                        ASTList stmts) {
-  ASTList lst;
+                        AstList stmts) {
+  AstList lst;
   const int numCaseExprs = caseExprs.size();
   const int numBodyStmts = stmts.size();
   int bodyChildNum = -1;

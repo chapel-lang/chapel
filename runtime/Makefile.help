@@ -54,13 +54,29 @@ printstuff:
 # include source subdirectories here
 #
 include src/Makefile.include
-include src/tasks/$(CHPL_MAKE_TASKS)/Makefile.include
-include src/threads/$(CHPL_MAKE_THREADS)/Makefile.include
-include src/timers/$(CHPL_MAKE_TIMERS)/Makefile.include
-include src/comm/$(CHPL_MAKE_COMM)/Makefile.include
-include src/launch/$(CHPL_MAKE_LAUNCHER)/Makefile.include
-include src/mem/$(CHPL_MAKE_MEM)/Makefile.include
-include src/topo/$(CHPL_MAKE_TOPO)/Makefile.include
+
+# find children of src/$1 excluding the Makefile. Result is comma-separated and quoted.
+COMMA :=,
+FIND_SUBDIRS = $(subst " ","$(COMMA) ",\
+	$(patsubst %,"%",$(sort $(strip $(filter-out Makefile,$(notdir $(wildcard src/$(1)/*)))))))
+
+# returns the makefile path if it exists, otherwise show error message with valid values
+# $1 - variable suffix, e.g. TASKS
+# $2 - corresponding subdir of src, e.g. tasks
+FIND_MAKEFILE =\
+    $(if $(wildcard src/$(2)/$(CHPL_MAKE_$(1))/Makefile.include),\
+		src/$(2)/$(CHPL_MAKE_$(1))/Makefile.include,\
+		$(error CHPL_$(1) = "$(CHPL_MAKE_$(1))" is invalid. \
+			Possible values are:$(call FIND_SUBDIRS,$(2))))
+
+include $(call FIND_MAKEFILE,TASKS,tasks)
+include $(call FIND_MAKEFILE,THREADS,threads)
+include $(call FIND_MAKEFILE,TIMERS,timers)
+include $(call FIND_MAKEFILE,COMM,comm)
+include $(call FIND_MAKEFILE,LAUNCHER,launch)
+include $(call FIND_MAKEFILE,MEM,mem)
+include $(call FIND_MAKEFILE,TOPO,topo)
+
 include src/qio/Makefile.include
 
 

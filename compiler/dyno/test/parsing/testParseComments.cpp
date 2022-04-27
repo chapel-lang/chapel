@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Defer.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/parsing/Parser.h"

@@ -24,16 +24,7 @@ def main():
     results.append( check_man_page(chpl, ['--no-devel']) )
 
     # Test chpldoc
-    # chpldoc requires Python version 3.6 or greater.  Don't check it otherwise
-    version_is_good = True
-    if sys.version_info[0] < 3:
-        version_is_good = False
-    else:
-        if sys.version_info[0] == 3 and sys.version_info[1] <= 5:
-            version_is_good = False
-
-    if version_is_good:
-        results.append( check_man_page(chpldoc) )
+    results.append( check_man_page(chpldoc) )
 
     # Exit clean if no errors.
     if not reduce(operator.and_, results):

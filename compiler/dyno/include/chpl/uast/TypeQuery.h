@@ -57,7 +57,7 @@ class TypeQuery final : public NamedDecl {
     assert(!name.isEmpty() && name.c_str()[0] != '?');
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const TypeQuery* lhs = this;
     const TypeQuery* rhs = (const TypeQuery*) other;
     return lhs->namedDeclContentsMatchInner(rhs);

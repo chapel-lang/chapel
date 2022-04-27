@@ -21,7 +21,7 @@
 #define CHPL_UAST_SYNC_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
@@ -52,16 +52,15 @@ namespace uast {
 
 class Sync final : public SimpleBlockLike {
  private:
-  Sync(ASTList stmts, BlockStyle blockStyle, int bodyChildNum,
+  Sync(AstList stmts, BlockStyle blockStyle, int bodyChildNum,
        int numBodyStmts)
     : SimpleBlockLike(asttags::Sync, std::move(stmts), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(isExpressionASTList(children_));
     assert(bodyChildNum_ >= 0);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
   }
 
@@ -77,7 +76,7 @@ class Sync final : public SimpleBlockLike {
    */
   static owned<Sync> build(Builder* builder, Location loc,
                            BlockStyle blockStyle,
-                           ASTList stmts);
+                           AstList stmts);
 };
 
 

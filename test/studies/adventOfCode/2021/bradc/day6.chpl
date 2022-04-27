@@ -8,14 +8,15 @@ class Fish {
 
 var school: set(owned Fish);
 
-do {
-  var age: int;
-  var success = read(age);
-  if success {
-    school.add(new Fish(age));
-    try { readf(","); } catch { success = false; }
+var age: int;
+while read(age) {
+  school.add(new Fish(age));
+  try {
+    readf(",");
+  } catch {
+    break;
   }
-} while success;
+}
 
 if debug then writeln(school);
 
@@ -31,6 +32,7 @@ for i in 1..days {
   }
   for i in 1..newfish.read() do
     school.add(new Fish(age=8));
-//  writeln("After ", i, " day(s), school is ", school);
+  if debug then
+    writeln("After ", i, " day(s), school is ", school);
   writeln("After ", i, " day(s), school size is ", school.size);
 }

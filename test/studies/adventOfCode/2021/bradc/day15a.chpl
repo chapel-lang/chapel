@@ -24,10 +24,6 @@ forall ij in D by (oldrows, oldcols) {
 forall r in Risk do
   while r > 9 do
     r -= 9;
-/*
-forall off in Dorig do
-    Risk[ij+off-(1,1)] = Risk[off];
-*/
 writeln(Risk);
 
 var Q: domain(2*int);
@@ -42,20 +38,20 @@ Dist(1,1) = 0;
 // priority queue?  I was too lazy, so just let it run for ~4 minutes
 // on my Mac instead for the full problem size
 while !Q.isEmpty() {
-  if (Q.size % 1000 == 0) then
+  if Q.size % 1000 == 0 then
     writeln(Q.size);
   const (d,u) = minloc reduce [v in Q] (Dist[v], v);
   Q -= u;
-  if (u == (rows, cols)) {
+  if u == (rows, cols) {
     writeln(Dist[u]);
     break;
   }
   for (i,j) in {-1..1, -1..1} {
-    if (abs(i+j) == 1) {
+    if abs(i+j) == 1 {
       var v = u+(i,j);
       if (D.contains(v) && Q.contains(v)) {
         const alt = Dist(u) + Risk[v];
-        if (alt < Dist[v]) {
+        if alt < Dist[v] {
           Dist[v] = alt;
           Prev[v] = u;
         }

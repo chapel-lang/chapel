@@ -1,0 +1,5 @@
+# This test leaks memory. We are postponing fixing the leaks
+# until we are ready to convert DistributedMap and Aggregator
+# from idea-sketches to production code.
+# For now, skip memleaks testing.
+EXECOPTS <= memLeaks

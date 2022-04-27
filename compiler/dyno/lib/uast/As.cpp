@@ -26,12 +26,12 @@ namespace uast {
 
 
 owned<As> As::build(Builder* builder, Location loc,
-                    owned<Expression> symbol,
-                    owned<Expression> rename) {
+                    owned<AstNode> symbol,
+                    owned<AstNode> rename) {
   assert(symbol.get() != nullptr);
   assert(rename.get() != nullptr);
 
-  ASTList lst;
+  AstList lst;
 
   lst.push_back(std::move(symbol));
   lst.push_back(std::move(rename));

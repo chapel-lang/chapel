@@ -31,7 +31,7 @@ owned<Catch> Catch::build(Builder* builder, Location loc,
                           bool hasParensAroundError) {
   assert(body.get() != nullptr);
 
-  ASTList lst;
+  AstList lst;
   int8_t errorChildNum = -1;
   int8_t bodyChildNum = -1;
 

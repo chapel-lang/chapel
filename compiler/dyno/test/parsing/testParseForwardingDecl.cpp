@@ -18,10 +18,10 @@
  */
 
 #include "chpl/parsing/Parser.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Begin.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/queries/Context.h"
@@ -96,7 +96,7 @@ static void test1(Parser* parser) {
   assert(record->child(2)->isForwardingDecl());
   const ForwardingDecl* fwd = record->child(2)->toForwardingDecl();
   assert(fwd);
-  const Expression* expr = fwd->expr()->toExpression();
+  const AstNode* expr = fwd->expr();
   assert(expr);
   assert(expr->isFnCall());
 }
@@ -126,7 +126,7 @@ static void test2(Parser* parser) {
 
   const ForwardingDecl* fwd = record->child(1)->toForwardingDecl();
   assert(fwd);
-  const Expression* expr = fwd->expr()->toExpression();
+  const AstNode* expr = fwd->expr();
   assert(expr);
 
   assert(expr->isVisibilityClause());
@@ -160,7 +160,7 @@ static void test3(Parser* parser) {
   assert(record->child(2)->isForwardingDecl());
   const ForwardingDecl* fwd = record->child(2)->toForwardingDecl();
   assert(fwd);
-  const Expression* expr = fwd->expr()->toExpression();
+  const AstNode* expr = fwd->expr();
   assert(expr);
   assert(expr->isVisibilityClause());
   const VisibilityClause* visClause = expr->toVisibilityClause();
@@ -193,7 +193,7 @@ static void test4(Parser* parser) {
   assert(record->child(2)->isForwardingDecl());
   const ForwardingDecl* fwd = record->child(2)->toForwardingDecl();
   assert(fwd);
-  const Expression* expr = fwd->expr()->toExpression();
+  const AstNode* expr = fwd->expr();
   assert(expr);
   assert(expr->isVariable());
   const Variable* var = expr->toVariable();
@@ -241,7 +241,7 @@ static void test5(Parser* parser) {
   assert(record->child(1)->isForwardingDecl());
   const ForwardingDecl* fwd = record->child(1)->toForwardingDecl();
   assert(fwd);
-  const Expression* expr = fwd->expr()->toExpression();
+  const AstNode* expr = fwd->expr();
   assert(expr);
   assert(expr->isVisibilityClause());
   const VisibilityClause* visClause = expr->toVisibilityClause();
