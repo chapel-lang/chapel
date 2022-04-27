@@ -1256,16 +1256,15 @@ module BytesStringCommon {
 
     const localX = x.localize();
     for rangeChunk in localX.byteIndices.these(tag) do
-      yield (rangeChunk, localX);
+      yield rangeChunk;
   }
 
   iter theseBytes(param tag: iterKind, const ref x: ?t, followThis)
       where tag==iterKind.follower {
 
-    const rangeChunk = followThis[0];
-    const localX = followThis[1];
+    const localX = x.localize();
 
-    for i in localX.byteIndices.these(tag, rangeChunk) do
+    for i in localX.byteIndices.these(tag, followThis) do
       yield localX.buff[i];
   }
 
@@ -1289,16 +1288,15 @@ module BytesStringCommon {
     const localX = x.localize();
 
     for rangeChunk in localX.byteIndices.these(tag) do
-      yield (rangeChunk, localX);
+      yield rangeChunk;
   }
 
   iter theseAscii(param tag: iterKind, const ref x: ?t, followThis)
       where tag==iterKind.follower {
 
-    const rangeChunk = followThis[0];
-    const localX = followThis[1];
+    const localX = x.localize();
 
-    for i in localX.byteIndices.these(tag, rangeChunk) {
+    for i in localX.byteIndices.these(tag, followThis) {
       var (newBuff, allocSize) = bufferCopyLocal(localX.buff+i, len=1);
       if localX.type == string then
         yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
@@ -1328,9 +1326,11 @@ module BytesStringCommon {
   iter theseUTF8(param tag: iterKind, const ref x: ?t, followThis)
       where tag==iterKind.follower {
 
-    proc adjustRangeForCodepointBoundaries(r, localX) {
+    const localX = x.localize();
+
+    proc adjustRangeForCodepointBoundaries(r) {
       // adjust the low bound
-      var low = r[0].low;
+      var low = r.low;
       if low != 0 {
         while !isInitialByte(localX.buff[low]) {
           low += 1;
@@ -1338,7 +1338,7 @@ module BytesStringCommon {
       }
 
       // adjust the high bound
-      var high = r[0].high;
+      var high = r.high;
       while high+1 != localX.buffLen-1 && !isInitialByte(localX.buff[high+1]) {
         high += 1;
       }
@@ -1347,7 +1347,6 @@ module BytesStringCommon {
     }
 
     const rangeChunk = adjustRangeForCodepointBoundaries((...followThis));
-    const localX = followThis[1];
 
     if debugUTF8Iterator then
       chpl_debug_writeln("<UTF8 Iterator> Adjusted chunk: ", rangeChunk[0]);
