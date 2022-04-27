@@ -607,7 +607,10 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
       // save the error location for printsSameLocationAsLastError
       last_error_loc = astlocT(linenum, filename);
     }
-    print_error("%s:%d: ", filename, linenum);
+    if (linenum > -1 && strlen(filename) > 0 )
+      print_error("%s:%d: ", filename, linenum);
+    else if (strlen(filename) > 0)
+      print_error("%s: ", filename);
   }
 
   if (err_print) {
