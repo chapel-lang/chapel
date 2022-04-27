@@ -2642,11 +2642,9 @@ struct Converter {
     }
 
     // TODO (dlongnecke): Should be sanitized by the new parser.
-    if (useLinkageName) {
-      if (auto linkageName = node->linkageName()) {
-        INT_ASSERT(linkageFlag != FLAG_UNKNOWN);
-        varSym->cname = convertLinkageNameAstr(node);
-      }
+    if (useLinkageName && node->linkageName()) {
+      INT_ASSERT(linkageFlag != FLAG_UNKNOWN);
+      varSym->cname = convertLinkageNameAstr(node);
     }
 
     Expr* typeExpr = nullptr;
