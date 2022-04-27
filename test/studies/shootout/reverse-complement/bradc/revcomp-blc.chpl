@@ -64,8 +64,8 @@ proc revcomp(buf, in lo, in hi) {
         // a 'bytes' value that stores the complement of each base at its index
         cmp = b"                                                             "
             + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
-              //     ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
-              //     ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
+              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
+              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
   if lo < hi {
     ref seq = buf[lo..<hi];
