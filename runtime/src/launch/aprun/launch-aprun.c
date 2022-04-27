@@ -68,8 +68,14 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 }
 
 
-void chpl_launch_print_help(void) {
-  fprintf(stdout, "LAUNCHER FLAGS:\n");
-  fprintf(stdout, "===============\n");
-  fprintf(stdout, "  %s keyword     : specify cpu assignment within a node: none (default), numa_node, cpu\n", CHPL_CC_ARG);
+const argDescTuple_t* chpl_launch_get_help(void) {
+  static const
+    argDescTuple_t args[] =
+    { { CHPL_CC_ARG " keyword",
+        "specify cpu assignment within a node:" },
+      { "",
+        "none (default), numa_node, cpu" },
+      { NULL, NULL },
+    };
+  return args;
 }

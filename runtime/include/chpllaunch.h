@@ -28,8 +28,21 @@ extern "C" {
 #endif
 
 //
-// Defined in main_launcher.c
+// A (command-line-arg, description) tuple.  Arrays of these are
+// terminated by an entry with the .arg member set to NULL.  The
+// other special case is that if .arg=="" then .desc is a second
+// or succeeding line of the description.  These are used in
+// support of "--help" output.
 //
+typedef struct {
+  const char* arg;
+  const char* desc;
+} argDescTuple_t;
+
+//
+// Defined in chpl-launcher-common.c
+//
+int chpl_doDryRun(void);
 void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
                           const char* arg);
 int chpl_run_utility1K(const char *command, char *const argv[],
@@ -61,7 +74,7 @@ int chpl_launcher_main(int argc, char* argv[]);
 int chpl_launch(int argc, char* argv[], int32_t numLocales);
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, int32_t filename);
-void chpl_launch_print_help(void);
+const argDescTuple_t* chpl_launch_get_help(void);
 
 #ifdef __cplusplus
 }

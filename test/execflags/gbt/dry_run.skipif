@@ -1,0 +1,6 @@
+#! /usr/bin/env python
+
+import os, dry_run_helper
+from dry_run_helper import sysLauncherName
+
+print(sysLauncherName(os.getenv('CHPL_LAUNCHER')) == None)

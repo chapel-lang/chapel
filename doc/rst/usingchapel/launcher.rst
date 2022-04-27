@@ -34,11 +34,25 @@ The goals of the launcher binary are:
 
 Executing a Chapel program using the verbose (``-v``) flag will typically
 print out the command(s) used to launch the program, along with any
-environment variables the launcher set on its behalf.
+environment variables the launcher set on its behalf.  It will also
+cause the program itself to print additional information about how it
+configured itself, though most of this will be of more interest to
+Chapel developers than regular users.
 
 Executing using the help (``-h``/``--help``) flag will typically print out
 any launcher-specific options in addition to the normal help message for
 the program itself.
+
+You can also execute the Chapel launcher with the ``--dry-run``) flag.
+This will not actually run or launch the user program, but instead simply
+print the same thing as ``-v``: the command(s) that would have been used
+to launch the program, along with any environment variables the launcher
+would have set on its behalf.  Note that ``--dry-run`` will also cause
+batch and other files created for the system launcher to be left behind
+so you can inspect and/or reuse them.  Normally these are removed by the
+Chapel launcher when the program finishes.  An example of such a file
+would be the ``sbatch`` file created when a Slurm-based launcher is used
+and ``CHPL_LAUNCHER_USE_SBATCH`` is set.
 
 Currently Supported Launchers
 +++++++++++++++++++++++++++++
@@ -112,9 +126,9 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
 * otherwise ``CHPL_LAUNCHER`` is set to none
 
 If the launcher binary does not work for your system (due to an
-installation-specific configuration, e.g.), you can often use the ``-v``
-flag to capture the commands that the launcher executes on your behalf
-and customize them for your needs.
+installation-specific configuration, e.g.), you can often use the
+``--dry-run`` flag to capture the commands that the launcher would have
+executed on your behalf and customize them for your needs.
 
 Forwarding Environment Variables
 ++++++++++++++++++++++++++++++++
