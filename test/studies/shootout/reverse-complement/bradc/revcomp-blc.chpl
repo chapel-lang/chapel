@@ -12,14 +12,8 @@ const stdinBin  = openfd(0).reader(iokind.native, locking=false,
       stdoutBin = openfd(1).writer(iokind.native, locking=false,
                                    hints=QIO_CH_ALWAYS_UNBUFFERED);
 
-// A 'bytes' value that stores the complement of a base at its given index
-param cmpl = b"                                                             " +
-             b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
-            //     ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
-            //     ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
-
 config var readSize = 16384, // how much to read at a time
-           n = 0;            // a dummy variable to match the CLBG framework
+           n = 0;            // a dummy variable to support the CLBG framework
 
 proc main() {
   // read in the data using an incrementally growing buffer
@@ -32,10 +26,11 @@ proc main() {
   do {
     const start = end + 1,  // TODO: ...to drop this + 1...
           more = stdinBin.read(buf[start..#readSize]);
-    if !more then
-      readSize = stdinBin.offset() - totRead + 1;
-    else
+    if more {
       totRead += readSize;
+    } else {
+      readSize = stdinBin.offset() - totRead + 1;
+    }
 
     do {
       end += 1; // TODO: If we move this to the bottom of the loop?
@@ -65,25 +60,34 @@ proc main() {
 }
 
 proc revcomp(buf, in lo, in hi) {
-  param eol  = '\n'.toByte();      // end-of-line, as an integer
+  param eol  = '\n'.toByte(),      // end-of-line, as an integer
+        // a 'bytes' value that stores the complement of each base at its index
+        cmp = b"                                                             "
+            + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
+              //     ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
+              //     ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-  if lo >= hi then return;
+  if lo < hi {
+    ref seq = buf[lo..<hi];
 
-  ref seq = buf[lo..<hi];
-
-  // skip past header line
-  while buf[lo] != eol do
-    lo += 1;
-
-  while lo < hi {
-    do {
+    // skip past header line
+    while buf[lo] != eol {
       lo += 1;
-    } while buf[lo] == eol;
-    do {
-      hi -= 1;
-    } while buf[hi] == eol;
-    if lo < hi then
-      (buf[lo], buf[hi]) = (cmpl(buf[hi]), cmpl(buf[lo]));
+    }
+
+    while lo < hi {
+      do {
+        lo += 1;
+      } while buf[lo] == eol;
+
+      do {
+        hi -= 1;
+      } while buf[hi] == eol;
+
+      if lo < hi {
+        (buf[lo], buf[hi]) = (cmp(buf[hi]), cmp(buf[lo]));
+      }
+    }
+    stdoutBin.write(seq);
   }
-  stdoutBin.write(seq);
 }
