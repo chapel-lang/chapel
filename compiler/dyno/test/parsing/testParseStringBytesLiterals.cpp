@@ -150,7 +150,6 @@ static void testSingleLiteral(Parser* parser,
 static void testBadLiteral(Parser* parser,
                            const char* testname,
                            const char* str) {
-  if (!strcmp(testname, "test32.chpl")) debuggerBreakHere();
   std::string toparse = "var x = ";
   toparse += str;
   toparse += ";\n";
