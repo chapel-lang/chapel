@@ -1,6 +1,6 @@
-#line 2 "flex-chapel.cpp"
+#line 1 "flex-chapel.cpp"
 
-#line 4 "flex-chapel.cpp"
+#line 3 "flex-chapel.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -886,10 +886,10 @@ static void processInvalidToken(yyscan_t scanner);
 
 static bool yy_has_state(yyscan_t scanner);
 
-#line 890 "flex-chapel.cpp"
+#line 889 "flex-chapel.cpp"
 /* hex float literals, have decimal exponents indicating the power of 2 */
 
-#line 893 "flex-chapel.cpp"
+#line 892 "flex-chapel.cpp"
 
 #define INITIAL 0
 #define externmode 1
@@ -1181,7 +1181,7 @@ YY_DECL
 #line 121 "chapel.lex"
 
 
-#line 1185 "flex-chapel.cpp"
+#line 1184 "flex-chapel.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -2186,7 +2186,7 @@ YY_RULE_SETUP
 #line 337 "chapel.lex"
 ECHO;
 	YY_BREAK
-#line 2190 "flex-chapel.cpp"
+#line 2189 "flex-chapel.cpp"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(externmode):
 	yyterminate();
@@ -3561,7 +3561,7 @@ static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
       ParserContext context(scanner);
 
       yyText[0] = '\0';
-      yyerror(yyLloc, &context, "end-of-line in a string literal without a preceding backslash");
+      yyerror(yyLloc, &context, "error: end-of-line in a string literal without a preceding backslash");
     } else {
       if (startCh == '\'' && c == '\"') {
         addCharEscapeNonprint('\\');
@@ -3582,11 +3582,11 @@ static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
         addCharEscapeNonprint('n');
       } else if (c == 'u' || c == 'U') {
         ParserContext context(scanner);
-        yyerror(yyLloc, &context, "universal character name not yet supported in string literal");
+        yyerror(yyLloc, &context, "error: universal character name not yet supported in string literal");
         addCharEscapeNonprint('t'); // add a valid escape to continue parsing
       } else if ('0' <= c && c <= '7' ) {
         ParserContext context(scanner);
-        yyerror(yyLloc, &context, "octal escape not supported in string literal");
+        yyerror(yyLloc, &context, "error: octal escape not supported in string literal");
         addCharEscapeNonprint('t'); // add a valid escape to continue parsing
       } else if (c == 0) {
         // we've reached EOF
@@ -3601,7 +3601,7 @@ static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
   if (c == 0) {
     ParserContext context(scanner);
 
-    yyerror(yyLloc, &context, "EOF in string");
+    yyerror(yyLloc, &context, "error: EOF in string");
   }
 
   return astr(stringBuffer);
@@ -3638,7 +3638,7 @@ static const char* eatMultilineStringLiteral(yyscan_t scanner,
   if (c == 0) {
     ParserContext context(scanner);
 
-    yyerror(yyLloc, &context, "EOF in string");
+    yyerror(yyLloc, &context, "error: EOF in string");
   }
   // Remove two escaped quotes from the end of the string that are
   // actually part of the string closing token.  If this is a single
@@ -3736,25 +3736,25 @@ static const char* eatExternCode(yyscan_t scanner) {
       switch (state) {
         case in_code:
           // there was no match to the {
-          yyerror(yyLloc, &context, "Missing } in extern block");
+          yyerror(yyLloc, &context, "error: Missing } in extern block");
           break;
 
         case in_single_quote:
         case in_single_quote_backslash:
-          yyerror(yyLloc, &context, "Runaway \'string\' in extern block");
+          yyerror(yyLloc, &context, "error: Runaway \'string\' in extern block");
           break;
 
         case in_double_quote:
         case in_double_quote_backslash:
-          yyerror(yyLloc, &context, "Runaway \"string\" in extern block");
+          yyerror(yyLloc, &context, "error: Runaway \"string\" in extern block");
           break;
 
         case in_single_line_comment:
-          yyerror(yyLloc, &context, "Missing newline after extern block // comment");
+          yyerror(yyLloc, &context, "error: Missing newline after extern block // comment");
           break;
 
         case in_multi_line_comment:
-          yyerror(yyLloc, &context, "Runaway /* comment */ in extern block");
+          yyerror(yyLloc, &context, "error: Runaway /* comment */ in extern block");
           break;
       }
       break;
@@ -3960,13 +3960,13 @@ static int processBlockComment(yyscan_t scanner) {
     } else if (c == 0) {
       ParserContext context(scanner);
 
-      fprintf(stderr, "%s:%d: unterminated comment started here\n",
+      yyerror(yyLloc, &context, "error: EOF in comment");
+      fprintf(stderr, "%s:%d: note: unterminated comment started here\n",
               startFilename, startLine);
       if( nestedStartLine >= 0 ) {
-        fprintf(stderr, "%s:%d: nested comment started here\n",
+        fprintf(stderr, "%s:%d: note: nested comment started here\n",
                 startFilename, nestedStartLine);
       }
-      yyerror(yyLloc, &context, "EOF in comment");
       break;
     }
   }
@@ -4003,7 +4003,7 @@ static int processBlockComment(yyscan_t scanner) {
       yyLval->pch = astr(wholeComment.c_str());
     else {
 
-      fprintf(stderr, "Warning:%d: chpldoc comment not closed, ignoring comment:%s\n",
+      fprintf(stderr, "warning:%d: chpldoc comment not closed, ignoring comment:%s\n",
               startLine, wholeComment.c_str());
       yyLval->pch = NULL;
     }

@@ -942,39 +942,39 @@ static const yytype_int16 yyrline[] =
     1606,  1607,  1608,  1609,  1613,  1614,  1615,  1616,  1617,  1618,
     1619,  1620,  1621,  1622,  1623,  1624,  1628,  1629,  1633,  1634,
     1638,  1642,  1643,  1647,  1648,  1652,  1654,  1656,  1658,  1660,
-    1662,  1667,  1668,  1672,  1673,  1674,  1675,  1676,  1677,  1678,
-    1679,  1680,  1684,  1685,  1686,  1687,  1688,  1689,  1693,  1694,
-    1695,  1699,  1700,  1701,  1702,  1703,  1704,  1708,  1709,  1712,
-    1713,  1717,  1718,  1722,  1726,  1727,  1728,  1736,  1737,  1739,
-    1741,  1743,  1748,  1750,  1755,  1756,  1757,  1758,  1759,  1760,
-    1761,  1765,  1767,  1772,  1774,  1776,  1778,  1783,  1796,  1813,
-    1814,  1816,  1821,  1822,  1823,  1824,  1825,  1829,  1835,  1843,
-    1844,  1852,  1854,  1859,  1861,  1863,  1868,  1870,  1872,  1879,
-    1880,  1881,  1886,  1888,  1890,  1894,  1898,  1900,  1904,  1912,
-    1913,  1914,  1915,  1916,  1921,  1922,  1923,  1924,  1925,  1945,
-    1949,  1953,  1961,  1968,  1969,  1970,  1974,  1976,  1982,  1984,
-    1986,  1991,  1992,  1993,  1994,  1995,  2001,  2002,  2003,  2004,
-    2008,  2009,  2013,  2014,  2015,  2019,  2020,  2024,  2025,  2029,
-    2030,  2034,  2035,  2036,  2037,  2041,  2042,  2053,  2055,  2057,
-    2063,  2064,  2065,  2066,  2067,  2068,  2070,  2072,  2074,  2076,
-    2078,  2080,  2083,  2085,  2087,  2089,  2091,  2093,  2095,  2097,
-    2100,  2102,  2107,  2109,  2111,  2113,  2115,  2117,  2119,  2121,
-    2123,  2125,  2127,  2129,  2131,  2138,  2144,  2150,  2156,  2165,
-    2175,  2183,  2184,  2185,  2186,  2187,  2188,  2189,  2190,  2195,
-    2196,  2200,  2204,  2205,  2209,  2213,  2214,  2218,  2222,  2226,
-    2233,  2234,  2235,  2236,  2237,  2238,  2242,  2243,  2248,  2250,
-    2254,  2258,  2262,  2270,  2275,  2281,  2287,  2294,  2304,  2312,
-    2313,  2314,  2315,  2316,  2317,  2318,  2319,  2320,  2321,  2323,
-    2325,  2327,  2342,  2344,  2346,  2348,  2353,  2354,  2358,  2359,
-    2360,  2364,  2365,  2366,  2367,  2376,  2377,  2378,  2379,  2380,
-    2384,  2385,  2386,  2390,  2391,  2392,  2393,  2394,  2402,  2403,
-    2404,  2405,  2409,  2410,  2414,  2415,  2419,  2420,  2421,  2422,
-    2423,  2424,  2425,  2426,  2428,  2430,  2431,  2432,  2436,  2444,
-    2445,  2449,  2450,  2451,  2452,  2453,  2454,  2455,  2456,  2457,
-    2458,  2459,  2460,  2461,  2462,  2463,  2464,  2465,  2466,  2467,
-    2468,  2469,  2470,  2471,  2476,  2477,  2478,  2479,  2480,  2481,
-    2482,  2486,  2487,  2488,  2489,  2493,  2494,  2495,  2496,  2501,
-    2502,  2503,  2504,  2505,  2506,  2507
+    1662,  1672,  1673,  1677,  1678,  1679,  1680,  1681,  1682,  1683,
+    1684,  1685,  1689,  1690,  1691,  1692,  1693,  1694,  1698,  1699,
+    1700,  1704,  1705,  1706,  1707,  1708,  1709,  1713,  1714,  1717,
+    1718,  1722,  1723,  1727,  1731,  1732,  1733,  1741,  1742,  1744,
+    1746,  1748,  1753,  1755,  1760,  1761,  1762,  1763,  1764,  1765,
+    1766,  1770,  1772,  1777,  1779,  1781,  1783,  1788,  1801,  1818,
+    1819,  1821,  1826,  1827,  1828,  1829,  1830,  1834,  1840,  1848,
+    1849,  1857,  1859,  1864,  1866,  1868,  1873,  1875,  1877,  1884,
+    1885,  1886,  1891,  1893,  1895,  1899,  1903,  1905,  1909,  1917,
+    1918,  1919,  1920,  1921,  1926,  1927,  1928,  1929,  1930,  1950,
+    1954,  1958,  1966,  1973,  1974,  1975,  1979,  1981,  1987,  1989,
+    1991,  1996,  1997,  1998,  1999,  2000,  2006,  2007,  2008,  2009,
+    2013,  2014,  2018,  2019,  2020,  2024,  2025,  2029,  2030,  2034,
+    2035,  2039,  2040,  2041,  2042,  2046,  2047,  2058,  2060,  2062,
+    2068,  2069,  2070,  2071,  2072,  2073,  2075,  2077,  2079,  2081,
+    2083,  2085,  2088,  2090,  2092,  2094,  2096,  2098,  2100,  2102,
+    2105,  2107,  2112,  2114,  2116,  2118,  2120,  2122,  2124,  2126,
+    2128,  2130,  2132,  2134,  2136,  2143,  2149,  2155,  2161,  2170,
+    2180,  2188,  2189,  2190,  2191,  2192,  2193,  2194,  2195,  2200,
+    2201,  2205,  2209,  2210,  2214,  2218,  2219,  2223,  2227,  2231,
+    2238,  2239,  2240,  2241,  2242,  2243,  2247,  2248,  2253,  2255,
+    2259,  2263,  2267,  2275,  2280,  2286,  2292,  2299,  2309,  2317,
+    2318,  2319,  2320,  2321,  2322,  2323,  2324,  2325,  2326,  2328,
+    2330,  2332,  2347,  2349,  2351,  2353,  2358,  2359,  2363,  2364,
+    2365,  2369,  2370,  2371,  2372,  2381,  2382,  2383,  2384,  2385,
+    2389,  2390,  2391,  2395,  2396,  2397,  2398,  2399,  2407,  2408,
+    2409,  2410,  2414,  2415,  2419,  2420,  2424,  2425,  2426,  2427,
+    2428,  2429,  2430,  2431,  2433,  2435,  2436,  2437,  2441,  2449,
+    2450,  2454,  2455,  2456,  2457,  2458,  2459,  2460,  2461,  2462,
+    2463,  2464,  2465,  2466,  2467,  2468,  2469,  2470,  2471,  2472,
+    2473,  2474,  2475,  2476,  2481,  2482,  2483,  2484,  2485,  2486,
+    2487,  2491,  2492,  2493,  2494,  2498,  2499,  2500,  2501,  2506,
+    2507,  2508,  2509,  2510,  2511,  2512
 };
 #endif
 
@@ -9064,340 +9064,345 @@ yyreduce:
 
   case 390: /* formal: opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr  */
 #line 1663 "chapel.ypp"
-    { USR_FATAL("variable-length argument may not be grouped in a tuple"); }
-#line 9069 "bison-chapel.cpp"
+    {
+      astlocMarker mark(chplLineno, yyfilename);
+      UnresolvedSymExpr* dummy = new UnresolvedSymExpr("varargs");
+      USR_FATAL(dummy, "variable-length argument may not be grouped "
+                       "in a tuple");
+    }
+#line 9074 "bison-chapel.cpp"
     break;
 
   case 391: /* opt_intent_tag: %empty  */
-#line 1667 "chapel.ypp"
+#line 1672 "chapel.ypp"
                       { (yyval.pt) = INTENT_BLANK; }
-#line 9075 "bison-chapel.cpp"
+#line 9080 "bison-chapel.cpp"
     break;
 
   case 392: /* opt_intent_tag: required_intent_tag  */
-#line 1668 "chapel.ypp"
+#line 1673 "chapel.ypp"
                       { (yyval.pt) = (yyvsp[0].pt); }
-#line 9081 "bison-chapel.cpp"
+#line 9086 "bison-chapel.cpp"
     break;
 
   case 393: /* required_intent_tag: TIN  */
-#line 1672 "chapel.ypp"
+#line 1677 "chapel.ypp"
           { (yyval.pt) = INTENT_IN; }
-#line 9087 "bison-chapel.cpp"
+#line 9092 "bison-chapel.cpp"
     break;
 
   case 394: /* required_intent_tag: TINOUT  */
-#line 1673 "chapel.ypp"
+#line 1678 "chapel.ypp"
           { (yyval.pt) = INTENT_INOUT; }
-#line 9093 "bison-chapel.cpp"
+#line 9098 "bison-chapel.cpp"
     break;
 
   case 395: /* required_intent_tag: TOUT  */
-#line 1674 "chapel.ypp"
+#line 1679 "chapel.ypp"
           { (yyval.pt) = INTENT_OUT; }
-#line 9099 "bison-chapel.cpp"
+#line 9104 "bison-chapel.cpp"
     break;
 
   case 396: /* required_intent_tag: TCONST  */
-#line 1675 "chapel.ypp"
+#line 1680 "chapel.ypp"
           { (yyval.pt) = INTENT_CONST; }
-#line 9105 "bison-chapel.cpp"
+#line 9110 "bison-chapel.cpp"
     break;
 
   case 397: /* required_intent_tag: TCONST TIN  */
-#line 1676 "chapel.ypp"
+#line 1681 "chapel.ypp"
              { (yyval.pt) = INTENT_CONST_IN; }
-#line 9111 "bison-chapel.cpp"
+#line 9116 "bison-chapel.cpp"
     break;
 
   case 398: /* required_intent_tag: TCONST TREF  */
-#line 1677 "chapel.ypp"
+#line 1682 "chapel.ypp"
               { (yyval.pt) = INTENT_CONST_REF; }
-#line 9117 "bison-chapel.cpp"
+#line 9122 "bison-chapel.cpp"
     break;
 
   case 399: /* required_intent_tag: TPARAM  */
-#line 1678 "chapel.ypp"
+#line 1683 "chapel.ypp"
           { (yyval.pt) = INTENT_PARAM; }
-#line 9123 "bison-chapel.cpp"
+#line 9128 "bison-chapel.cpp"
     break;
 
   case 400: /* required_intent_tag: TREF  */
-#line 1679 "chapel.ypp"
+#line 1684 "chapel.ypp"
           { (yyval.pt) = INTENT_REF; }
-#line 9129 "bison-chapel.cpp"
+#line 9134 "bison-chapel.cpp"
     break;
 
   case 401: /* required_intent_tag: TTYPE  */
-#line 1680 "chapel.ypp"
+#line 1685 "chapel.ypp"
           { (yyval.pt) = INTENT_TYPE; }
-#line 9135 "bison-chapel.cpp"
+#line 9140 "bison-chapel.cpp"
     break;
 
   case 402: /* opt_this_intent_tag: %empty  */
-#line 1684 "chapel.ypp"
+#line 1689 "chapel.ypp"
          { (yyval.pt) = INTENT_BLANK; }
-#line 9141 "bison-chapel.cpp"
+#line 9146 "bison-chapel.cpp"
     break;
 
   case 403: /* opt_this_intent_tag: TPARAM  */
-#line 1685 "chapel.ypp"
+#line 1690 "chapel.ypp"
          { (yyval.pt) = INTENT_PARAM; }
-#line 9147 "bison-chapel.cpp"
+#line 9152 "bison-chapel.cpp"
     break;
 
   case 404: /* opt_this_intent_tag: TREF  */
-#line 1686 "chapel.ypp"
+#line 1691 "chapel.ypp"
          { (yyval.pt) = INTENT_REF;   }
-#line 9153 "bison-chapel.cpp"
+#line 9158 "bison-chapel.cpp"
     break;
 
   case 405: /* opt_this_intent_tag: TCONST TREF  */
-#line 1687 "chapel.ypp"
+#line 1692 "chapel.ypp"
                 { (yyval.pt) = INTENT_CONST_REF;   }
-#line 9159 "bison-chapel.cpp"
+#line 9164 "bison-chapel.cpp"
     break;
 
   case 406: /* opt_this_intent_tag: TCONST  */
-#line 1688 "chapel.ypp"
+#line 1693 "chapel.ypp"
          { (yyval.pt) = INTENT_CONST;   }
-#line 9165 "bison-chapel.cpp"
+#line 9170 "bison-chapel.cpp"
     break;
 
   case 407: /* opt_this_intent_tag: TTYPE  */
-#line 1689 "chapel.ypp"
+#line 1694 "chapel.ypp"
          { (yyval.pt) = INTENT_TYPE;  }
-#line 9171 "bison-chapel.cpp"
+#line 9176 "bison-chapel.cpp"
     break;
 
   case 408: /* proc_iter_or_op: TPROC  */
-#line 1693 "chapel.ypp"
+#line 1698 "chapel.ypp"
          { (yyval.procIterOp) = ProcIterOp_PROC; }
-#line 9177 "bison-chapel.cpp"
+#line 9182 "bison-chapel.cpp"
     break;
 
   case 409: /* proc_iter_or_op: TITER  */
-#line 1694 "chapel.ypp"
+#line 1699 "chapel.ypp"
          { (yyval.procIterOp) = ProcIterOp_ITER; }
-#line 9183 "bison-chapel.cpp"
+#line 9188 "bison-chapel.cpp"
     break;
 
   case 410: /* proc_iter_or_op: TOPERATOR  */
-#line 1695 "chapel.ypp"
+#line 1700 "chapel.ypp"
             { (yyval.procIterOp) = ProcIterOp_OP; }
-#line 9189 "bison-chapel.cpp"
+#line 9194 "bison-chapel.cpp"
     break;
 
   case 411: /* opt_ret_tag: %empty  */
-#line 1699 "chapel.ypp"
+#line 1704 "chapel.ypp"
               { (yyval.retTag) = RET_VALUE; }
-#line 9195 "bison-chapel.cpp"
+#line 9200 "bison-chapel.cpp"
     break;
 
   case 412: /* opt_ret_tag: TCONST  */
-#line 1700 "chapel.ypp"
+#line 1705 "chapel.ypp"
               { (yyval.retTag) = RET_VALUE; }
-#line 9201 "bison-chapel.cpp"
+#line 9206 "bison-chapel.cpp"
     break;
 
   case 413: /* opt_ret_tag: TCONST TREF  */
-#line 1701 "chapel.ypp"
+#line 1706 "chapel.ypp"
               { (yyval.retTag) = RET_CONST_REF; }
-#line 9207 "bison-chapel.cpp"
+#line 9212 "bison-chapel.cpp"
     break;
 
   case 414: /* opt_ret_tag: TREF  */
-#line 1702 "chapel.ypp"
+#line 1707 "chapel.ypp"
               { (yyval.retTag) = RET_REF; }
-#line 9213 "bison-chapel.cpp"
+#line 9218 "bison-chapel.cpp"
     break;
 
   case 415: /* opt_ret_tag: TPARAM  */
-#line 1703 "chapel.ypp"
+#line 1708 "chapel.ypp"
               { (yyval.retTag) = RET_PARAM; }
-#line 9219 "bison-chapel.cpp"
+#line 9224 "bison-chapel.cpp"
     break;
 
   case 416: /* opt_ret_tag: TTYPE  */
-#line 1704 "chapel.ypp"
+#line 1709 "chapel.ypp"
               { (yyval.retTag) = RET_TYPE; }
-#line 9225 "bison-chapel.cpp"
+#line 9230 "bison-chapel.cpp"
     break;
 
   case 417: /* opt_throws_error: %empty  */
-#line 1708 "chapel.ypp"
+#line 1713 "chapel.ypp"
           { (yyval.b) = false; }
-#line 9231 "bison-chapel.cpp"
+#line 9236 "bison-chapel.cpp"
     break;
 
   case 418: /* opt_throws_error: TTHROWS  */
-#line 1709 "chapel.ypp"
+#line 1714 "chapel.ypp"
           { (yyval.b) = true;  }
-#line 9237 "bison-chapel.cpp"
+#line 9242 "bison-chapel.cpp"
     break;
 
   case 419: /* opt_function_body_stmt: TSEMI  */
-#line 1712 "chapel.ypp"
+#line 1717 "chapel.ypp"
             { (yyval.pblockstmt) = NULL; }
-#line 9243 "bison-chapel.cpp"
+#line 9248 "bison-chapel.cpp"
     break;
 
   case 422: /* function_body_stmt: return_stmt  */
-#line 1718 "chapel.ypp"
+#line 1723 "chapel.ypp"
                { (yyval.pblockstmt) = new BlockStmt((yyvsp[0].pblockstmt)); }
-#line 9249 "bison-chapel.cpp"
+#line 9254 "bison-chapel.cpp"
     break;
 
   case 423: /* query_expr: TQUERIEDIDENT  */
-#line 1722 "chapel.ypp"
+#line 1727 "chapel.ypp"
                       { (yyval.pexpr) = buildQueriedExpr((yyvsp[0].pch)); }
-#line 9255 "bison-chapel.cpp"
+#line 9260 "bison-chapel.cpp"
     break;
 
   case 424: /* var_arg_expr: TDOTDOTDOT  */
-#line 1726 "chapel.ypp"
+#line 1731 "chapel.ypp"
                          { (yyval.pexpr) = new SymExpr(gUninstantiated); }
-#line 9261 "bison-chapel.cpp"
+#line 9266 "bison-chapel.cpp"
     break;
 
   case 425: /* var_arg_expr: TDOTDOTDOT expr  */
-#line 1727 "chapel.ypp"
+#line 1732 "chapel.ypp"
                          { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9267 "bison-chapel.cpp"
+#line 9272 "bison-chapel.cpp"
     break;
 
   case 426: /* var_arg_expr: TDOTDOTDOT query_expr  */
-#line 1728 "chapel.ypp"
+#line 1733 "chapel.ypp"
                          { if (DefExpr* def = toDefExpr((yyvsp[0].pexpr))) {
                              def->sym->addFlag(FLAG_PARAM);
                            }
                            (yyval.pexpr) = (yyvsp[0].pexpr);
                          }
-#line 9277 "bison-chapel.cpp"
+#line 9282 "bison-chapel.cpp"
     break;
 
   case 427: /* opt_lifetime_where: %empty  */
-#line 1736 "chapel.ypp"
+#line 1741 "chapel.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(NULL, NULL); }
-#line 9283 "bison-chapel.cpp"
+#line 9288 "bison-chapel.cpp"
     break;
 
   case 428: /* opt_lifetime_where: TWHERE expr  */
-#line 1738 "chapel.ypp"
+#line 1743 "chapel.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[0].pexpr), NULL); }
-#line 9289 "bison-chapel.cpp"
+#line 9294 "bison-chapel.cpp"
     break;
 
   case 429: /* opt_lifetime_where: TLIFETIME lifetime_components_expr  */
-#line 1740 "chapel.ypp"
+#line 1745 "chapel.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(NULL, (yyvsp[0].pexpr)); }
-#line 9295 "bison-chapel.cpp"
+#line 9300 "bison-chapel.cpp"
     break;
 
   case 430: /* opt_lifetime_where: TWHERE expr TLIFETIME lifetime_components_expr  */
-#line 1742 "chapel.ypp"
+#line 1747 "chapel.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9301 "bison-chapel.cpp"
+#line 9306 "bison-chapel.cpp"
     break;
 
   case 431: /* opt_lifetime_where: TLIFETIME lifetime_components_expr TWHERE expr  */
-#line 1744 "chapel.ypp"
+#line 1749 "chapel.ypp"
   { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 9307 "bison-chapel.cpp"
+#line 9312 "bison-chapel.cpp"
     break;
 
   case 432: /* lifetime_components_expr: lifetime_expr  */
-#line 1749 "chapel.ypp"
+#line 1754 "chapel.ypp"
   { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9313 "bison-chapel.cpp"
+#line 9318 "bison-chapel.cpp"
     break;
 
   case 433: /* lifetime_components_expr: lifetime_components_expr TCOMMA lifetime_expr  */
-#line 1751 "chapel.ypp"
+#line 1756 "chapel.ypp"
   { (yyval.pexpr) = new CallExpr(",", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9319 "bison-chapel.cpp"
+#line 9324 "bison-chapel.cpp"
     break;
 
   case 434: /* lifetime_expr: lifetime_ident TASSIGN lifetime_ident  */
-#line 1755 "chapel.ypp"
+#line 1760 "chapel.ypp"
                                              {(yyval.pexpr) = new CallExpr("=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9325 "bison-chapel.cpp"
+#line 9330 "bison-chapel.cpp"
     break;
 
   case 435: /* lifetime_expr: lifetime_ident TLESS lifetime_ident  */
-#line 1756 "chapel.ypp"
+#line 1761 "chapel.ypp"
                                              {(yyval.pexpr) = new CallExpr("<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9331 "bison-chapel.cpp"
+#line 9336 "bison-chapel.cpp"
     break;
 
   case 436: /* lifetime_expr: lifetime_ident TLESSEQUAL lifetime_ident  */
-#line 1757 "chapel.ypp"
+#line 1762 "chapel.ypp"
                                              {(yyval.pexpr) = new CallExpr("<=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9337 "bison-chapel.cpp"
+#line 9342 "bison-chapel.cpp"
     break;
 
   case 437: /* lifetime_expr: lifetime_ident TEQUAL lifetime_ident  */
-#line 1758 "chapel.ypp"
+#line 1763 "chapel.ypp"
                                              {(yyval.pexpr) = new CallExpr("==", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9343 "bison-chapel.cpp"
+#line 9348 "bison-chapel.cpp"
     break;
 
   case 438: /* lifetime_expr: lifetime_ident TGREATER lifetime_ident  */
-#line 1759 "chapel.ypp"
+#line 1764 "chapel.ypp"
                                              {(yyval.pexpr) = new CallExpr(">", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9349 "bison-chapel.cpp"
+#line 9354 "bison-chapel.cpp"
     break;
 
   case 439: /* lifetime_expr: lifetime_ident TGREATEREQUAL lifetime_ident  */
-#line 1760 "chapel.ypp"
+#line 1765 "chapel.ypp"
                                               {(yyval.pexpr) = new CallExpr(">=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 9355 "bison-chapel.cpp"
+#line 9360 "bison-chapel.cpp"
     break;
 
   case 440: /* lifetime_expr: TRETURN lifetime_ident  */
-#line 1761 "chapel.ypp"
+#line 1766 "chapel.ypp"
                          { (yyval.pexpr) = new CallExpr(PRIM_RETURN, (yyvsp[0].pexpr)); }
-#line 9361 "bison-chapel.cpp"
+#line 9366 "bison-chapel.cpp"
     break;
 
   case 441: /* lifetime_ident: TIDENT  */
-#line 1766 "chapel.ypp"
+#line 1771 "chapel.ypp"
   { (yyval.pexpr) = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr((yyvsp[0].pch))); }
-#line 9367 "bison-chapel.cpp"
+#line 9372 "bison-chapel.cpp"
     break;
 
   case 442: /* lifetime_ident: TTHIS  */
-#line 1768 "chapel.ypp"
+#line 1773 "chapel.ypp"
   { (yyval.pexpr) = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr("this")); }
-#line 9373 "bison-chapel.cpp"
+#line 9378 "bison-chapel.cpp"
     break;
 
   case 443: /* type_alias_decl_stmt: TTYPE type_alias_decl_stmt_inner TSEMI  */
-#line 1773 "chapel.ypp"
+#line 1778 "chapel.ypp"
     { (yyval.pblockstmt) = (yyvsp[-1].pblockstmt); }
-#line 9379 "bison-chapel.cpp"
+#line 9384 "bison-chapel.cpp"
     break;
 
   case 444: /* type_alias_decl_stmt: TCONFIG TTYPE type_alias_decl_stmt_inner TSEMI  */
-#line 1775 "chapel.ypp"
+#line 1780 "chapel.ypp"
     { (yyval.pblockstmt) = handleConfigTypes((yyvsp[-1].pblockstmt)); }
-#line 9385 "bison-chapel.cpp"
+#line 9390 "bison-chapel.cpp"
     break;
 
   case 445: /* type_alias_decl_stmt: TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI  */
-#line 1777 "chapel.ypp"
+#line 1782 "chapel.ypp"
     { (yyval.pblockstmt) = convertTypesToExtern((yyvsp[-1].pblockstmt)); }
-#line 9391 "bison-chapel.cpp"
+#line 9396 "bison-chapel.cpp"
     break;
 
   case 446: /* type_alias_decl_stmt: TEXTERN STRINGLITERAL TTYPE type_alias_decl_stmt_inner TSEMI  */
-#line 1779 "chapel.ypp"
+#line 1784 "chapel.ypp"
     { (yyval.pblockstmt) = convertTypesToExtern((yyvsp[-1].pblockstmt), (yyvsp[-3].pch)); }
-#line 9397 "bison-chapel.cpp"
+#line 9402 "bison-chapel.cpp"
     break;
 
   case 447: /* type_alias_decl_stmt_inner: ident_def opt_init_type  */
-#line 1784 "chapel.ypp"
+#line 1789 "chapel.ypp"
     {
       VarSymbol* var = new VarSymbol((yyvsp[-1].pch));
 
@@ -9410,11 +9415,11 @@ yyreduce:
 
       (yyval.pblockstmt) = buildChapelStmt(def);
     }
-#line 9414 "bison-chapel.cpp"
+#line 9419 "bison-chapel.cpp"
     break;
 
   case 448: /* type_alias_decl_stmt_inner: ident_def opt_init_type TCOMMA type_alias_decl_stmt_inner  */
-#line 1797 "chapel.ypp"
+#line 1802 "chapel.ypp"
     {
       VarSymbol* var = new VarSymbol((yyvsp[-3].pch));
 
@@ -9428,279 +9433,279 @@ yyreduce:
       (yyvsp[0].pblockstmt)->insertAtHead(def);
       (yyval.pblockstmt) = buildChapelStmt((yyvsp[0].pblockstmt));
     }
-#line 9432 "bison-chapel.cpp"
+#line 9437 "bison-chapel.cpp"
     break;
 
   case 449: /* opt_init_type: %empty  */
-#line 1813 "chapel.ypp"
+#line 1818 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 9438 "bison-chapel.cpp"
+#line 9443 "bison-chapel.cpp"
     break;
 
   case 450: /* opt_init_type: TASSIGN type_level_expr  */
-#line 1815 "chapel.ypp"
+#line 1820 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9444 "bison-chapel.cpp"
+#line 9449 "bison-chapel.cpp"
     break;
 
   case 451: /* opt_init_type: TASSIGN array_type  */
-#line 1817 "chapel.ypp"
+#line 1822 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExprFromArrayType((yyvsp[0].pcallexpr)); }
-#line 9450 "bison-chapel.cpp"
+#line 9455 "bison-chapel.cpp"
     break;
 
   case 452: /* var_decl_type: TPARAM  */
-#line 1821 "chapel.ypp"
+#line 1826 "chapel.ypp"
               { (yyval.pflagset) = buildVarDeclFlags(FLAG_PARAM); }
-#line 9456 "bison-chapel.cpp"
+#line 9461 "bison-chapel.cpp"
     break;
 
   case 453: /* var_decl_type: TCONST  */
-#line 1822 "chapel.ypp"
+#line 1827 "chapel.ypp"
               { (yyval.pflagset) = buildVarDeclFlags(FLAG_CONST); }
-#line 9462 "bison-chapel.cpp"
+#line 9467 "bison-chapel.cpp"
     break;
 
   case 454: /* var_decl_type: TREF  */
-#line 1823 "chapel.ypp"
+#line 1828 "chapel.ypp"
               { (yyval.pflagset) = buildVarDeclFlags(FLAG_REF_VAR); }
-#line 9468 "bison-chapel.cpp"
+#line 9473 "bison-chapel.cpp"
     break;
 
   case 455: /* var_decl_type: TCONST TREF  */
-#line 1824 "chapel.ypp"
+#line 1829 "chapel.ypp"
               { (yyval.pflagset) = buildVarDeclFlags(FLAG_CONST, FLAG_REF_VAR); }
-#line 9474 "bison-chapel.cpp"
+#line 9479 "bison-chapel.cpp"
     break;
 
   case 456: /* var_decl_type: TVAR  */
-#line 1825 "chapel.ypp"
+#line 1830 "chapel.ypp"
               { (yyval.pflagset) = buildVarDeclFlags(); }
-#line 9480 "bison-chapel.cpp"
+#line 9485 "bison-chapel.cpp"
     break;
 
   case 457: /* var_decl_stmt: TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI  */
-#line 1830 "chapel.ypp"
+#line 1835 "chapel.ypp"
     {
       (yyvsp[-2].pflagset)->insert(FLAG_CONFIG);
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), context->latestComment, (yyvsp[-2].pflagset));
       context->latestComment = NULL;
     }
-#line 9490 "bison-chapel.cpp"
+#line 9495 "bison-chapel.cpp"
     break;
 
   case 458: /* var_decl_stmt: var_decl_type var_decl_stmt_inner_ls TSEMI  */
-#line 1836 "chapel.ypp"
+#line 1841 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), context->latestComment, (yyvsp[-2].pflagset));
       context->latestComment = NULL;
     }
-#line 9499 "bison-chapel.cpp"
+#line 9504 "bison-chapel.cpp"
     break;
 
   case 460: /* var_decl_stmt_inner_ls: var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner  */
-#line 1845 "chapel.ypp"
+#line 1850 "chapel.ypp"
     {
       for_alist(expr, (yyvsp[0].pblockstmt)->body)
         (yyvsp[-2].pblockstmt)->insertAtTail(expr->remove());
     }
-#line 9508 "bison-chapel.cpp"
+#line 9513 "bison-chapel.cpp"
     break;
 
   case 461: /* var_decl_stmt_inner: ident_def opt_type opt_init_expr  */
-#line 1853 "chapel.ypp"
+#line 1858 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt(new DefExpr(new VarSymbol((yyvsp[-2].pch)), (yyvsp[0].pexpr), (yyvsp[-1].pexpr))); }
-#line 9514 "bison-chapel.cpp"
+#line 9519 "bison-chapel.cpp"
     break;
 
   case 462: /* var_decl_stmt_inner: TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr  */
-#line 1855 "chapel.ypp"
+#line 1860 "chapel.ypp"
     { (yyval.pblockstmt) = buildTupleVarDeclStmt((yyvsp[-3].pblockstmt), (yyvsp[-1].pexpr), (yyvsp[0].pexpr)); }
-#line 9520 "bison-chapel.cpp"
+#line 9525 "bison-chapel.cpp"
     break;
 
   case 463: /* tuple_var_decl_component: TUNDERSCORE  */
-#line 1860 "chapel.ypp"
+#line 1865 "chapel.ypp"
     { (yyval.pexpr) = new DefExpr(new VarSymbol("chpl__tuple_blank")); }
-#line 9526 "bison-chapel.cpp"
+#line 9531 "bison-chapel.cpp"
     break;
 
   case 464: /* tuple_var_decl_component: ident_def  */
-#line 1862 "chapel.ypp"
+#line 1867 "chapel.ypp"
     { (yyval.pexpr) = new DefExpr(new VarSymbol((yyvsp[0].pch))); }
-#line 9532 "bison-chapel.cpp"
+#line 9537 "bison-chapel.cpp"
     break;
 
   case 465: /* tuple_var_decl_component: TLP tuple_var_decl_stmt_inner_ls TRP  */
-#line 1864 "chapel.ypp"
+#line 1869 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[-1].pblockstmt); }
-#line 9538 "bison-chapel.cpp"
+#line 9543 "bison-chapel.cpp"
     break;
 
   case 466: /* tuple_var_decl_stmt_inner_ls: tuple_var_decl_component  */
-#line 1869 "chapel.ypp"
+#line 1874 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt((yyvsp[0].pexpr)); }
-#line 9544 "bison-chapel.cpp"
+#line 9549 "bison-chapel.cpp"
     break;
 
   case 467: /* tuple_var_decl_stmt_inner_ls: tuple_var_decl_component TCOMMA  */
-#line 1871 "chapel.ypp"
+#line 1876 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt((yyvsp[-1].pexpr)); }
-#line 9550 "bison-chapel.cpp"
+#line 9555 "bison-chapel.cpp"
     break;
 
   case 468: /* tuple_var_decl_stmt_inner_ls: tuple_var_decl_component TCOMMA tuple_var_decl_stmt_inner_ls  */
-#line 1873 "chapel.ypp"
+#line 1878 "chapel.ypp"
     { (yyval.pblockstmt) = ((yyvsp[0].pblockstmt)->insertAtHead((yyvsp[-2].pexpr)), (yyvsp[0].pblockstmt)); }
-#line 9556 "bison-chapel.cpp"
+#line 9561 "bison-chapel.cpp"
     break;
 
   case 469: /* opt_init_expr: %empty  */
-#line 1879 "chapel.ypp"
+#line 1884 "chapel.ypp"
                         { (yyval.pexpr) = NULL; }
-#line 9562 "bison-chapel.cpp"
+#line 9567 "bison-chapel.cpp"
     break;
 
   case 470: /* opt_init_expr: TASSIGN TNOINIT  */
-#line 1880 "chapel.ypp"
+#line 1885 "chapel.ypp"
                         { (yyval.pexpr) = new SymExpr(gNoInit); }
-#line 9568 "bison-chapel.cpp"
+#line 9573 "bison-chapel.cpp"
     break;
 
   case 471: /* opt_init_expr: TASSIGN opt_try_expr  */
-#line 1881 "chapel.ypp"
+#line 1886 "chapel.ypp"
                         { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9574 "bison-chapel.cpp"
+#line 9579 "bison-chapel.cpp"
     break;
 
   case 472: /* ret_array_type: TLSBR TRSBR type_level_expr  */
-#line 1887 "chapel.ypp"
+#line 1892 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 9580 "bison-chapel.cpp"
+#line 9585 "bison-chapel.cpp"
     break;
 
   case 473: /* ret_array_type: TLSBR TRSBR  */
-#line 1889 "chapel.ypp"
+#line 1894 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, NULL); }
-#line 9586 "bison-chapel.cpp"
+#line 9591 "bison-chapel.cpp"
     break;
 
   case 474: /* ret_array_type: TLSBR expr_ls TRSBR type_level_expr  */
-#line 1891 "chapel.ypp"
+#line 1896 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr));
     }
-#line 9594 "bison-chapel.cpp"
+#line 9599 "bison-chapel.cpp"
     break;
 
   case 475: /* ret_array_type: TLSBR expr_ls TRSBR  */
-#line 1895 "chapel.ypp"
+#line 1900 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-1].pcallexpr)), NULL);
     }
-#line 9602 "bison-chapel.cpp"
+#line 9607 "bison-chapel.cpp"
     break;
 
   case 476: /* ret_array_type: TLSBR TRSBR ret_array_type  */
-#line 1899 "chapel.ypp"
+#line 1904 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 9608 "bison-chapel.cpp"
+#line 9613 "bison-chapel.cpp"
     break;
 
   case 477: /* ret_array_type: TLSBR expr_ls TRSBR ret_array_type  */
-#line 1901 "chapel.ypp"
+#line 1906 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr));
     }
-#line 9616 "bison-chapel.cpp"
+#line 9621 "bison-chapel.cpp"
     break;
 
   case 478: /* ret_array_type: TLSBR error TRSBR  */
-#line 1905 "chapel.ypp"
+#line 1910 "chapel.ypp"
     {
       (yyval.pexpr) = new CallExpr(PRIM_ERROR);
     }
-#line 9624 "bison-chapel.cpp"
+#line 9629 "bison-chapel.cpp"
     break;
 
   case 479: /* opt_ret_type: %empty  */
-#line 1912 "chapel.ypp"
+#line 1917 "chapel.ypp"
                           { (yyval.pexpr) = NULL; }
-#line 9630 "bison-chapel.cpp"
+#line 9635 "bison-chapel.cpp"
     break;
 
   case 480: /* opt_ret_type: TCOLON type_level_expr  */
-#line 1913 "chapel.ypp"
+#line 1918 "chapel.ypp"
                           { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9636 "bison-chapel.cpp"
+#line 9641 "bison-chapel.cpp"
     break;
 
   case 481: /* opt_ret_type: TCOLON ret_array_type  */
-#line 1914 "chapel.ypp"
+#line 1919 "chapel.ypp"
                           { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9642 "bison-chapel.cpp"
+#line 9647 "bison-chapel.cpp"
     break;
 
   case 482: /* opt_ret_type: TCOLON reserved_type_ident_use  */
-#line 1915 "chapel.ypp"
+#line 1920 "chapel.ypp"
                                  { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 9648 "bison-chapel.cpp"
+#line 9653 "bison-chapel.cpp"
     break;
 
   case 483: /* opt_ret_type: error  */
-#line 1916 "chapel.ypp"
+#line 1921 "chapel.ypp"
                           { (yyval.pexpr) = NULL; }
-#line 9654 "bison-chapel.cpp"
+#line 9659 "bison-chapel.cpp"
     break;
 
   case 484: /* opt_type: %empty  */
-#line 1921 "chapel.ypp"
+#line 1926 "chapel.ypp"
                           { (yyval.pexpr) = NULL; }
-#line 9660 "bison-chapel.cpp"
+#line 9665 "bison-chapel.cpp"
     break;
 
   case 485: /* opt_type: TCOLON type_level_expr  */
-#line 1922 "chapel.ypp"
+#line 1927 "chapel.ypp"
                           { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9666 "bison-chapel.cpp"
+#line 9671 "bison-chapel.cpp"
     break;
 
   case 486: /* opt_type: TCOLON array_type  */
-#line 1923 "chapel.ypp"
+#line 1928 "chapel.ypp"
                           { (yyval.pexpr) = (yyvsp[0].pcallexpr); }
-#line 9672 "bison-chapel.cpp"
+#line 9677 "bison-chapel.cpp"
     break;
 
   case 487: /* opt_type: TCOLON reserved_type_ident_use  */
-#line 1924 "chapel.ypp"
+#line 1929 "chapel.ypp"
                                  { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 9678 "bison-chapel.cpp"
+#line 9683 "bison-chapel.cpp"
     break;
 
   case 488: /* opt_type: error  */
-#line 1925 "chapel.ypp"
+#line 1930 "chapel.ypp"
                           { (yyval.pexpr) = NULL; }
-#line 9684 "bison-chapel.cpp"
+#line 9689 "bison-chapel.cpp"
     break;
 
   case 489: /* array_type: TLSBR expr_ls TRSBR type_level_expr  */
-#line 1946 "chapel.ypp"
+#line 1951 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr));
     }
-#line 9692 "bison-chapel.cpp"
+#line 9697 "bison-chapel.cpp"
     break;
 
   case 490: /* array_type: TLSBR expr_ls TRSBR array_type  */
-#line 1950 "chapel.ypp"
+#line 1955 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pcallexpr));
     }
-#line 9700 "bison-chapel.cpp"
+#line 9705 "bison-chapel.cpp"
     break;
 
   case 491: /* array_type: TLSBR expr_ls TIN expr TRSBR type_level_expr  */
-#line 1954 "chapel.ypp"
+#line 1959 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pexpr), "invalid index expression");
@@ -9708,1232 +9713,1232 @@ yyreduce:
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pexpr)), (yyvsp[0].pexpr), (yyvsp[-4].pcallexpr)->get(1)->remove(),
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pexpr)->copy()));
     }
-#line 9712 "bison-chapel.cpp"
+#line 9717 "bison-chapel.cpp"
     break;
 
   case 492: /* array_type: TLSBR error TRSBR  */
-#line 1962 "chapel.ypp"
+#line 1967 "chapel.ypp"
     {
       (yyval.pcallexpr) = new CallExpr(PRIM_ERROR);
     }
-#line 9720 "bison-chapel.cpp"
+#line 9725 "bison-chapel.cpp"
     break;
 
   case 493: /* opt_formal_array_elt_type: %empty  */
-#line 1968 "chapel.ypp"
+#line 1973 "chapel.ypp"
                         { (yyval.pexpr) = NULL; }
-#line 9726 "bison-chapel.cpp"
+#line 9731 "bison-chapel.cpp"
     break;
 
   case 494: /* opt_formal_array_elt_type: type_level_expr  */
-#line 1969 "chapel.ypp"
+#line 1974 "chapel.ypp"
                         { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9732 "bison-chapel.cpp"
+#line 9737 "bison-chapel.cpp"
     break;
 
   case 495: /* opt_formal_array_elt_type: query_expr  */
-#line 1970 "chapel.ypp"
+#line 1975 "chapel.ypp"
                         { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9738 "bison-chapel.cpp"
+#line 9743 "bison-chapel.cpp"
     break;
 
   case 496: /* formal_array_type: TLSBR TRSBR opt_formal_array_elt_type  */
-#line 1975 "chapel.ypp"
+#line 1980 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 9744 "bison-chapel.cpp"
+#line 9749 "bison-chapel.cpp"
     break;
 
   case 497: /* formal_array_type: TLSBR expr_ls TRSBR opt_formal_array_elt_type  */
-#line 1977 "chapel.ypp"
+#line 1982 "chapel.ypp"
     { (yyval.pexpr) = buildFormalArrayType((yyvsp[-2].pcallexpr), (yyvsp[0].pexpr)); }
-#line 9750 "bison-chapel.cpp"
+#line 9755 "bison-chapel.cpp"
     break;
 
   case 498: /* formal_array_type: TLSBR TRSBR formal_array_type  */
-#line 1983 "chapel.ypp"
+#line 1988 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 9756 "bison-chapel.cpp"
+#line 9761 "bison-chapel.cpp"
     break;
 
   case 499: /* formal_array_type: TLSBR expr_ls TRSBR formal_array_type  */
-#line 1985 "chapel.ypp"
+#line 1990 "chapel.ypp"
     { (yyval.pexpr) = buildFormalArrayType((yyvsp[-2].pcallexpr), (yyvsp[0].pexpr)); }
-#line 9762 "bison-chapel.cpp"
+#line 9767 "bison-chapel.cpp"
     break;
 
   case 500: /* formal_array_type: TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type  */
-#line 1987 "chapel.ypp"
+#line 1992 "chapel.ypp"
     { (yyval.pexpr) = buildFormalArrayType((yyvsp[-2].pexpr), (yyvsp[0].pexpr), (yyvsp[-4].pcallexpr)); }
-#line 9768 "bison-chapel.cpp"
+#line 9773 "bison-chapel.cpp"
     break;
 
   case 501: /* opt_formal_type: %empty  */
-#line 1991 "chapel.ypp"
+#line 1996 "chapel.ypp"
                             { (yyval.pexpr) = NULL; }
-#line 9774 "bison-chapel.cpp"
+#line 9779 "bison-chapel.cpp"
     break;
 
   case 502: /* opt_formal_type: TCOLON type_level_expr  */
-#line 1992 "chapel.ypp"
+#line 1997 "chapel.ypp"
                             { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9780 "bison-chapel.cpp"
+#line 9785 "bison-chapel.cpp"
     break;
 
   case 503: /* opt_formal_type: TCOLON query_expr  */
-#line 1993 "chapel.ypp"
+#line 1998 "chapel.ypp"
                             { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9786 "bison-chapel.cpp"
+#line 9791 "bison-chapel.cpp"
     break;
 
   case 504: /* opt_formal_type: TCOLON reserved_type_ident_use  */
-#line 1994 "chapel.ypp"
+#line 1999 "chapel.ypp"
                                  { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 9792 "bison-chapel.cpp"
+#line 9797 "bison-chapel.cpp"
     break;
 
   case 505: /* opt_formal_type: TCOLON formal_array_type  */
-#line 1995 "chapel.ypp"
+#line 2000 "chapel.ypp"
                             { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9798 "bison-chapel.cpp"
+#line 9803 "bison-chapel.cpp"
     break;
 
   case 506: /* expr_ls: expr  */
-#line 2001 "chapel.ypp"
+#line 2006 "chapel.ypp"
                              { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr)); }
-#line 9804 "bison-chapel.cpp"
+#line 9809 "bison-chapel.cpp"
     break;
 
   case 507: /* expr_ls: query_expr  */
-#line 2002 "chapel.ypp"
+#line 2007 "chapel.ypp"
                              { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr)); }
-#line 9810 "bison-chapel.cpp"
+#line 9815 "bison-chapel.cpp"
     break;
 
   case 508: /* expr_ls: expr_ls TCOMMA expr  */
-#line 2003 "chapel.ypp"
+#line 2008 "chapel.ypp"
                              { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9816 "bison-chapel.cpp"
+#line 9821 "bison-chapel.cpp"
     break;
 
   case 509: /* expr_ls: expr_ls TCOMMA query_expr  */
-#line 2004 "chapel.ypp"
+#line 2009 "chapel.ypp"
                              { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9822 "bison-chapel.cpp"
+#line 9827 "bison-chapel.cpp"
     break;
 
   case 510: /* simple_expr_ls: expr  */
-#line 2008 "chapel.ypp"
+#line 2013 "chapel.ypp"
                                    { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr));}
-#line 9828 "bison-chapel.cpp"
+#line 9833 "bison-chapel.cpp"
     break;
 
   case 511: /* simple_expr_ls: simple_expr_ls TCOMMA expr  */
-#line 2009 "chapel.ypp"
+#line 2014 "chapel.ypp"
                                    { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9834 "bison-chapel.cpp"
+#line 9839 "bison-chapel.cpp"
     break;
 
   case 512: /* tuple_component: TUNDERSCORE  */
-#line 2013 "chapel.ypp"
+#line 2018 "chapel.ypp"
                 { (yyval.pexpr) = new UnresolvedSymExpr("chpl__tuple_blank"); }
-#line 9840 "bison-chapel.cpp"
+#line 9845 "bison-chapel.cpp"
     break;
 
   case 513: /* tuple_component: opt_try_expr  */
-#line 2014 "chapel.ypp"
+#line 2019 "chapel.ypp"
                 { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9846 "bison-chapel.cpp"
+#line 9851 "bison-chapel.cpp"
     break;
 
   case 514: /* tuple_component: query_expr  */
-#line 2015 "chapel.ypp"
+#line 2020 "chapel.ypp"
                 { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9852 "bison-chapel.cpp"
+#line 9857 "bison-chapel.cpp"
     break;
 
   case 515: /* tuple_expr_ls: tuple_component TCOMMA tuple_component  */
-#line 2019 "chapel.ypp"
+#line 2024 "chapel.ypp"
                                          { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9858 "bison-chapel.cpp"
+#line 9863 "bison-chapel.cpp"
     break;
 
   case 516: /* tuple_expr_ls: tuple_expr_ls TCOMMA tuple_component  */
-#line 2020 "chapel.ypp"
+#line 2025 "chapel.ypp"
                                        { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9864 "bison-chapel.cpp"
+#line 9869 "bison-chapel.cpp"
     break;
 
   case 517: /* opt_actual_ls: %empty  */
-#line 2024 "chapel.ypp"
+#line 2029 "chapel.ypp"
              { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST); }
-#line 9870 "bison-chapel.cpp"
+#line 9875 "bison-chapel.cpp"
     break;
 
   case 519: /* actual_ls: actual_expr  */
-#line 2029 "chapel.ypp"
+#line 2034 "chapel.ypp"
                                 { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr)); }
-#line 9876 "bison-chapel.cpp"
+#line 9881 "bison-chapel.cpp"
     break;
 
   case 520: /* actual_ls: actual_ls TCOMMA actual_expr  */
-#line 2030 "chapel.ypp"
+#line 2035 "chapel.ypp"
                                 { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9882 "bison-chapel.cpp"
+#line 9887 "bison-chapel.cpp"
     break;
 
   case 521: /* actual_expr: ident_use TASSIGN query_expr  */
-#line 2034 "chapel.ypp"
+#line 2039 "chapel.ypp"
                                  { (yyval.pexpr) = buildNamedActual((yyvsp[-2].pch), (yyvsp[0].pexpr)); }
-#line 9888 "bison-chapel.cpp"
+#line 9893 "bison-chapel.cpp"
     break;
 
   case 522: /* actual_expr: ident_use TASSIGN opt_try_expr  */
-#line 2035 "chapel.ypp"
+#line 2040 "chapel.ypp"
                                  { (yyval.pexpr) = buildNamedActual((yyvsp[-2].pch), (yyvsp[0].pexpr)); }
-#line 9894 "bison-chapel.cpp"
+#line 9899 "bison-chapel.cpp"
     break;
 
   case 523: /* actual_expr: query_expr  */
-#line 2036 "chapel.ypp"
+#line 2041 "chapel.ypp"
                              { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9900 "bison-chapel.cpp"
+#line 9905 "bison-chapel.cpp"
     break;
 
   case 524: /* actual_expr: opt_try_expr  */
-#line 2037 "chapel.ypp"
+#line 2042 "chapel.ypp"
                              { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9906 "bison-chapel.cpp"
+#line 9911 "bison-chapel.cpp"
     break;
 
   case 525: /* ident_expr: ident_use  */
-#line 2041 "chapel.ypp"
+#line 2046 "chapel.ypp"
                  { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 9912 "bison-chapel.cpp"
+#line 9917 "bison-chapel.cpp"
     break;
 
   case 526: /* ident_expr: scalar_type  */
-#line 2042 "chapel.ypp"
+#line 2047 "chapel.ypp"
                  { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9918 "bison-chapel.cpp"
+#line 9923 "bison-chapel.cpp"
     break;
 
   case 527: /* type_level_expr: sub_type_level_expr  */
-#line 2054 "chapel.ypp"
+#line 2059 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9924 "bison-chapel.cpp"
+#line 9929 "bison-chapel.cpp"
     break;
 
   case 528: /* type_level_expr: sub_type_level_expr TQUESTION  */
-#line 2056 "chapel.ypp"
+#line 2061 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( PRIM_TO_NILABLE_CLASS_CHECKED, (yyvsp[-1].pexpr)); }
-#line 9930 "bison-chapel.cpp"
+#line 9935 "bison-chapel.cpp"
     break;
 
   case 529: /* type_level_expr: TQUESTION  */
-#line 2058 "chapel.ypp"
+#line 2063 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(gUninstantiated); }
-#line 9936 "bison-chapel.cpp"
+#line 9941 "bison-chapel.cpp"
     break;
 
   case 535: /* sub_type_level_expr: TSINGLE expr  */
-#line 2069 "chapel.ypp"
+#line 2074 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_singlevar", (yyvsp[0].pexpr)); }
-#line 9942 "bison-chapel.cpp"
+#line 9947 "bison-chapel.cpp"
     break;
 
   case 536: /* sub_type_level_expr: TINDEX TLP opt_actual_ls TRP  */
-#line 2071 "chapel.ypp"
+#line 2076 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildIndexType", (yyvsp[-1].pcallexpr)); }
-#line 9948 "bison-chapel.cpp"
+#line 9953 "bison-chapel.cpp"
     break;
 
   case 537: /* sub_type_level_expr: TDOMAIN TLP opt_actual_ls TRP  */
-#line 2073 "chapel.ypp"
+#line 2078 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), (yyvsp[-1].pcallexpr)); }
-#line 9954 "bison-chapel.cpp"
+#line 9959 "bison-chapel.cpp"
     break;
 
   case 538: /* sub_type_level_expr: TSUBDOMAIN TLP opt_actual_ls TRP  */
-#line 2075 "chapel.ypp"
+#line 2080 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildSubDomainType", (yyvsp[-1].pcallexpr)); }
-#line 9960 "bison-chapel.cpp"
+#line 9965 "bison-chapel.cpp"
     break;
 
   case 539: /* sub_type_level_expr: TSPARSE TSUBDOMAIN TLP actual_expr TRP  */
-#line 2077 "chapel.ypp"
+#line 2082 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildSparseDomainRuntimeTypeForParentDomain", (yyvsp[-1].pexpr)); }
-#line 9966 "bison-chapel.cpp"
+#line 9971 "bison-chapel.cpp"
     break;
 
   case 540: /* sub_type_level_expr: TATOMIC expr  */
-#line 2079 "chapel.ypp"
+#line 2084 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__atomicType", (yyvsp[0].pexpr)); }
-#line 9972 "bison-chapel.cpp"
+#line 9977 "bison-chapel.cpp"
     break;
 
   case 541: /* sub_type_level_expr: TSYNC expr  */
-#line 2081 "chapel.ypp"
+#line 2086 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_syncvar", (yyvsp[0].pexpr)); }
-#line 9978 "bison-chapel.cpp"
+#line 9983 "bison-chapel.cpp"
     break;
 
   case 542: /* sub_type_level_expr: TOWNED  */
-#line 2084 "chapel.ypp"
+#line 2089 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("_owned"); }
-#line 9984 "bison-chapel.cpp"
+#line 9989 "bison-chapel.cpp"
     break;
 
   case 543: /* sub_type_level_expr: TOWNED expr  */
-#line 2086 "chapel.ypp"
+#line 2091 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_owned", (yyvsp[0].pexpr)); }
-#line 9990 "bison-chapel.cpp"
+#line 9995 "bison-chapel.cpp"
     break;
 
   case 544: /* sub_type_level_expr: TUNMANAGED  */
-#line 2088 "chapel.ypp"
+#line 2093 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtUnmanaged->symbol); }
-#line 9996 "bison-chapel.cpp"
+#line 10001 "bison-chapel.cpp"
     break;
 
   case 545: /* sub_type_level_expr: TUNMANAGED expr  */
-#line 2090 "chapel.ypp"
+#line 2095 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( PRIM_TO_UNMANAGED_CLASS_CHECKED, (yyvsp[0].pexpr)); }
-#line 10002 "bison-chapel.cpp"
+#line 10007 "bison-chapel.cpp"
     break;
 
   case 546: /* sub_type_level_expr: TSHARED  */
-#line 2092 "chapel.ypp"
+#line 2097 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("_shared"); }
-#line 10008 "bison-chapel.cpp"
+#line 10013 "bison-chapel.cpp"
     break;
 
   case 547: /* sub_type_level_expr: TSHARED expr  */
-#line 2094 "chapel.ypp"
+#line 2099 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_shared", (yyvsp[0].pexpr)); }
-#line 10014 "bison-chapel.cpp"
+#line 10019 "bison-chapel.cpp"
     break;
 
   case 548: /* sub_type_level_expr: TBORROWED  */
-#line 2096 "chapel.ypp"
+#line 2101 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtBorrowed->symbol); }
-#line 10020 "bison-chapel.cpp"
+#line 10025 "bison-chapel.cpp"
     break;
 
   case 549: /* sub_type_level_expr: TBORROWED expr  */
-#line 2098 "chapel.ypp"
+#line 2103 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( PRIM_TO_BORROWED_CLASS_CHECKED, (yyvsp[0].pexpr)); }
-#line 10026 "bison-chapel.cpp"
+#line 10031 "bison-chapel.cpp"
     break;
 
   case 550: /* sub_type_level_expr: TCLASS  */
-#line 2101 "chapel.ypp"
+#line 2106 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtAnyManagementNonNilable->symbol); }
-#line 10032 "bison-chapel.cpp"
+#line 10037 "bison-chapel.cpp"
     break;
 
   case 551: /* sub_type_level_expr: TRECORD  */
-#line 2103 "chapel.ypp"
+#line 2108 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtAnyRecord->symbol); }
-#line 10038 "bison-chapel.cpp"
+#line 10043 "bison-chapel.cpp"
     break;
 
   case 552: /* for_expr: TFOR expr TIN expr TDO expr  */
-#line 2108 "chapel.ypp"
+#line 2113 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10044 "bison-chapel.cpp"
+#line 10049 "bison-chapel.cpp"
     break;
 
   case 553: /* for_expr: TFOR expr TIN zippered_iterator TDO expr  */
-#line 2110 "chapel.ypp"
+#line 2115 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), NULL, false, true); }
-#line 10050 "bison-chapel.cpp"
+#line 10055 "bison-chapel.cpp"
     break;
 
   case 554: /* for_expr: TFOR expr TDO expr  */
-#line 2112 "chapel.ypp"
+#line 2117 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr(NULL, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10056 "bison-chapel.cpp"
+#line 10061 "bison-chapel.cpp"
     break;
 
   case 555: /* for_expr: TFOR expr TIN expr TDO TIF expr TTHEN expr  */
-#line 2114 "chapel.ypp"
+#line 2119 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 10062 "bison-chapel.cpp"
+#line 10067 "bison-chapel.cpp"
     break;
 
   case 556: /* for_expr: TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr  */
-#line 2116 "chapel.ypp"
+#line 2121 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pcallexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr), false, true); }
-#line 10068 "bison-chapel.cpp"
+#line 10073 "bison-chapel.cpp"
     break;
 
   case 557: /* for_expr: TFOR expr TDO TIF expr TTHEN expr  */
-#line 2118 "chapel.ypp"
+#line 2123 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr(NULL, (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 10074 "bison-chapel.cpp"
+#line 10079 "bison-chapel.cpp"
     break;
 
   case 558: /* for_expr: TFORALL expr TIN expr TDO expr  */
-#line 2120 "chapel.ypp"
+#line 2125 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10080 "bison-chapel.cpp"
+#line 10085 "bison-chapel.cpp"
     break;
 
   case 559: /* for_expr: TFORALL expr TIN zippered_iterator TDO expr  */
-#line 2122 "chapel.ypp"
+#line 2127 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), NULL, false, true); }
-#line 10086 "bison-chapel.cpp"
+#line 10091 "bison-chapel.cpp"
     break;
 
   case 560: /* for_expr: TFORALL expr TDO expr  */
-#line 2124 "chapel.ypp"
+#line 2129 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr(NULL, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10092 "bison-chapel.cpp"
+#line 10097 "bison-chapel.cpp"
     break;
 
   case 561: /* for_expr: TFORALL expr TIN expr TDO TIF expr TTHEN expr  */
-#line 2126 "chapel.ypp"
+#line 2131 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 10098 "bison-chapel.cpp"
+#line 10103 "bison-chapel.cpp"
     break;
 
   case 562: /* for_expr: TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr  */
-#line 2128 "chapel.ypp"
+#line 2133 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pcallexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr), false, true); }
-#line 10104 "bison-chapel.cpp"
+#line 10109 "bison-chapel.cpp"
     break;
 
   case 563: /* for_expr: TFORALL expr TDO TIF expr TTHEN expr  */
-#line 2130 "chapel.ypp"
+#line 2135 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr(NULL, (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 10110 "bison-chapel.cpp"
+#line 10115 "bison-chapel.cpp"
     break;
 
   case 564: /* for_expr: TLSBR expr_ls TRSBR expr  */
-#line 2132 "chapel.ypp"
+#line 2137 "chapel.ypp"
     {
       if ((yyvsp[-2].pcallexpr)->argList.length > 1)
         (yyval.pexpr) = buildForallLoopExpr(NULL, new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr), NULL, true);
       else
         (yyval.pexpr) = buildForallLoopExpr(NULL, (yyvsp[-2].pcallexpr)->get(1)->remove(), (yyvsp[0].pexpr), NULL, true);
     }
-#line 10121 "bison-chapel.cpp"
+#line 10126 "bison-chapel.cpp"
     break;
 
   case 565: /* for_expr: TLSBR expr_ls TIN expr TRSBR expr  */
-#line 2139 "chapel.ypp"
+#line 2144 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pexpr), (yyvsp[0].pexpr), NULL, true);
     }
-#line 10131 "bison-chapel.cpp"
+#line 10136 "bison-chapel.cpp"
     break;
 
   case 566: /* for_expr: TLSBR expr_ls TIN zippered_iterator TRSBR expr  */
-#line 2145 "chapel.ypp"
+#line 2150 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pcallexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), NULL, false, true);
     }
-#line 10141 "bison-chapel.cpp"
+#line 10146 "bison-chapel.cpp"
     break;
 
   case 567: /* for_expr: TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr  */
-#line 2151 "chapel.ypp"
+#line 2156 "chapel.ypp"
     {
       if ((yyvsp[-7].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-5].pexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pcallexpr)->get(1)->remove(), (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr));
     }
-#line 10151 "bison-chapel.cpp"
+#line 10156 "bison-chapel.cpp"
     break;
 
   case 568: /* for_expr: TLSBR expr_ls TIN zippered_iterator TRSBR TIF expr TTHEN expr  */
-#line 2157 "chapel.ypp"
+#line 2162 "chapel.ypp"
     {
       if ((yyvsp[-7].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-5].pcallexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pcallexpr)->get(1)->remove(), (yyvsp[-5].pcallexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr), false, true);
     }
-#line 10161 "bison-chapel.cpp"
+#line 10166 "bison-chapel.cpp"
     break;
 
   case 569: /* cond_expr: TIF expr TTHEN expr TELSE expr  */
-#line 2166 "chapel.ypp"
+#line 2171 "chapel.ypp"
     { (yyval.pexpr) = new IfExpr((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10167 "bison-chapel.cpp"
+#line 10172 "bison-chapel.cpp"
     break;
 
   case 570: /* nil_expr: TNIL  */
-#line 2175 "chapel.ypp"
+#line 2180 "chapel.ypp"
             { (yyval.pexpr) = new SymExpr(gNil); }
-#line 10173 "bison-chapel.cpp"
+#line 10178 "bison-chapel.cpp"
     break;
 
   case 578: /* stmt_level_expr: io_expr TIO expr  */
-#line 2191 "chapel.ypp"
+#line 2196 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("<~>", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10179 "bison-chapel.cpp"
+#line 10184 "bison-chapel.cpp"
     break;
 
   case 579: /* opt_task_intent_ls: %empty  */
-#line 2195 "chapel.ypp"
+#line 2200 "chapel.ypp"
                                 { (yyval.pcallexpr) = NULL; }
-#line 10185 "bison-chapel.cpp"
+#line 10190 "bison-chapel.cpp"
     break;
 
   case 581: /* task_intent_clause: TWITH TLP task_intent_ls TRP  */
-#line 2200 "chapel.ypp"
+#line 2205 "chapel.ypp"
                                 { (yyval.pcallexpr) = (yyvsp[-1].pcallexpr); }
-#line 10191 "bison-chapel.cpp"
+#line 10196 "bison-chapel.cpp"
     break;
 
   case 582: /* task_intent_ls: intent_expr  */
-#line 2204 "chapel.ypp"
+#line 2209 "chapel.ypp"
               { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST); addTaskIntent((yyval.pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 10197 "bison-chapel.cpp"
+#line 10202 "bison-chapel.cpp"
     break;
 
   case 583: /* task_intent_ls: task_intent_ls TCOMMA intent_expr  */
-#line 2205 "chapel.ypp"
+#line 2210 "chapel.ypp"
                                                     { addTaskIntent((yyvsp[-2].pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 10203 "bison-chapel.cpp"
+#line 10208 "bison-chapel.cpp"
     break;
 
   case 584: /* forall_intent_clause: TWITH TLP forall_intent_ls TRP  */
-#line 2209 "chapel.ypp"
+#line 2214 "chapel.ypp"
                                   { (yyval.pcallexpr) = (yyvsp[-1].pcallexpr); }
-#line 10209 "bison-chapel.cpp"
+#line 10214 "bison-chapel.cpp"
     break;
 
   case 585: /* forall_intent_ls: intent_expr  */
-#line 2213 "chapel.ypp"
+#line 2218 "chapel.ypp"
               { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST); addForallIntent((yyval.pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 10215 "bison-chapel.cpp"
+#line 10220 "bison-chapel.cpp"
     break;
 
   case 586: /* forall_intent_ls: forall_intent_ls TCOMMA intent_expr  */
-#line 2214 "chapel.ypp"
+#line 2219 "chapel.ypp"
                                                     { addForallIntent((yyvsp[-2].pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 10221 "bison-chapel.cpp"
+#line 10226 "bison-chapel.cpp"
     break;
 
   case 587: /* intent_expr: shadow_var_prefix ident_expr opt_type opt_init_expr  */
-#line 2219 "chapel.ypp"
+#line 2224 "chapel.ypp"
     {
       (yyval.pShadowVar) = ShadowVarSymbol::buildForPrefix((yyvsp[-3].pShadowVarPref), (yyvsp[-2].pexpr), (yyvsp[-1].pexpr), (yyvsp[0].pexpr));
     }
-#line 10229 "bison-chapel.cpp"
+#line 10234 "bison-chapel.cpp"
     break;
 
   case 588: /* intent_expr: reduce_scan_op_expr TREDUCE ident_expr  */
-#line 2223 "chapel.ypp"
+#line 2228 "chapel.ypp"
     {
       (yyval.pShadowVar) = ShadowVarSymbol::buildFromReduceIntent((yyvsp[0].pexpr), (yyvsp[-2].pexpr));
     }
-#line 10237 "bison-chapel.cpp"
+#line 10242 "bison-chapel.cpp"
     break;
 
   case 589: /* intent_expr: expr TREDUCE ident_expr  */
-#line 2227 "chapel.ypp"
+#line 2232 "chapel.ypp"
     {
       (yyval.pShadowVar) = ShadowVarSymbol::buildFromReduceIntent((yyvsp[0].pexpr), (yyvsp[-2].pexpr));
     }
-#line 10245 "bison-chapel.cpp"
+#line 10250 "bison-chapel.cpp"
     break;
 
   case 590: /* shadow_var_prefix: TCONST  */
-#line 2233 "chapel.ypp"
+#line 2238 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_CONST;     }
-#line 10251 "bison-chapel.cpp"
+#line 10256 "bison-chapel.cpp"
     break;
 
   case 591: /* shadow_var_prefix: TIN  */
-#line 2234 "chapel.ypp"
+#line 2239 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_IN;        }
-#line 10257 "bison-chapel.cpp"
+#line 10262 "bison-chapel.cpp"
     break;
 
   case 592: /* shadow_var_prefix: TCONST TIN  */
-#line 2235 "chapel.ypp"
+#line 2240 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_CONST_IN;  }
-#line 10263 "bison-chapel.cpp"
+#line 10268 "bison-chapel.cpp"
     break;
 
   case 593: /* shadow_var_prefix: TREF  */
-#line 2236 "chapel.ypp"
+#line 2241 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_REF;       }
-#line 10269 "bison-chapel.cpp"
+#line 10274 "bison-chapel.cpp"
     break;
 
   case 594: /* shadow_var_prefix: TCONST TREF  */
-#line 2237 "chapel.ypp"
+#line 2242 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_CONST_REF; }
-#line 10275 "bison-chapel.cpp"
+#line 10280 "bison-chapel.cpp"
     break;
 
   case 595: /* shadow_var_prefix: TVAR  */
-#line 2238 "chapel.ypp"
+#line 2243 "chapel.ypp"
                { (yyval.pShadowVarPref) = SVP_VAR;       }
-#line 10281 "bison-chapel.cpp"
+#line 10286 "bison-chapel.cpp"
     break;
 
   case 597: /* io_expr: io_expr TIO expr  */
-#line 2244 "chapel.ypp"
+#line 2249 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("<~>", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10287 "bison-chapel.cpp"
+#line 10292 "bison-chapel.cpp"
     break;
 
   case 598: /* new_maybe_decorated: TNEW  */
-#line 2249 "chapel.ypp"
+#line 2254 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW); }
-#line 10293 "bison-chapel.cpp"
+#line 10298 "bison-chapel.cpp"
     break;
 
   case 599: /* new_maybe_decorated: TNEW TOWNED  */
-#line 2251 "chapel.ypp"
+#line 2256 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtOwned->symbol))); }
-#line 10301 "bison-chapel.cpp"
+#line 10306 "bison-chapel.cpp"
     break;
 
   case 600: /* new_maybe_decorated: TNEW TSHARED  */
-#line 2255 "chapel.ypp"
+#line 2260 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtShared->symbol))); }
-#line 10309 "bison-chapel.cpp"
+#line 10314 "bison-chapel.cpp"
     break;
 
   case 601: /* new_maybe_decorated: TNEW TUNMANAGED  */
-#line 2259 "chapel.ypp"
+#line 2264 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtUnmanaged->symbol))); }
-#line 10317 "bison-chapel.cpp"
+#line 10322 "bison-chapel.cpp"
     break;
 
   case 602: /* new_maybe_decorated: TNEW TBORROWED  */
-#line 2263 "chapel.ypp"
+#line 2268 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtBorrowed->symbol))); }
-#line 10325 "bison-chapel.cpp"
+#line 10330 "bison-chapel.cpp"
     break;
 
   case 603: /* new_expr: new_maybe_decorated expr  */
-#line 2271 "chapel.ypp"
+#line 2276 "chapel.ypp"
     { (yyvsp[-1].pcallexpr)->insertAtTail((yyvsp[0].pexpr));
       (yyval.pexpr) = (yyvsp[-1].pcallexpr); }
-#line 10332 "bison-chapel.cpp"
+#line 10337 "bison-chapel.cpp"
     break;
 
   case 604: /* new_expr: TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP  */
-#line 2276 "chapel.ypp"
+#line 2281 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtOwned->symbol)),
                         new CallExpr((yyvsp[-4].pexpr), (yyvsp[-1].pcallexpr)));
     }
-#line 10342 "bison-chapel.cpp"
+#line 10347 "bison-chapel.cpp"
     break;
 
   case 605: /* new_expr: TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP  */
-#line 2282 "chapel.ypp"
+#line 2287 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtShared->symbol)),
                         new CallExpr((yyvsp[-4].pexpr), (yyvsp[-1].pcallexpr)));
     }
-#line 10352 "bison-chapel.cpp"
+#line 10357 "bison-chapel.cpp"
     break;
 
   case 606: /* new_expr: TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION  */
-#line 2288 "chapel.ypp"
+#line 2293 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtOwned->symbol)),
                         new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
                                      new CallExpr((yyvsp[-5].pexpr), (yyvsp[-2].pcallexpr))));
     }
-#line 10363 "bison-chapel.cpp"
+#line 10368 "bison-chapel.cpp"
     break;
 
   case 607: /* new_expr: TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION  */
-#line 2295 "chapel.ypp"
+#line 2300 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtShared->symbol)),
                         new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
                                      new CallExpr((yyvsp[-5].pexpr), (yyvsp[-2].pcallexpr))));
     }
-#line 10374 "bison-chapel.cpp"
+#line 10379 "bison-chapel.cpp"
     break;
 
   case 608: /* let_expr: TLET var_decl_stmt_inner_ls TIN expr  */
-#line 2305 "chapel.ypp"
+#line 2310 "chapel.ypp"
     { (yyval.pexpr) = buildLetExpr((yyvsp[-2].pblockstmt), (yyvsp[0].pexpr)); }
-#line 10380 "bison-chapel.cpp"
+#line 10385 "bison-chapel.cpp"
     break;
 
   case 618: /* expr: TLP TDOTDOTDOT expr TRP  */
-#line 2322 "chapel.ypp"
+#line 2327 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_TUPLE_EXPAND, (yyvsp[-1].pexpr)); }
-#line 10386 "bison-chapel.cpp"
+#line 10391 "bison-chapel.cpp"
     break;
 
   case 619: /* expr: expr TCOLON expr  */
-#line 2324 "chapel.ypp"
+#line 2329 "chapel.ypp"
     { (yyval.pexpr) = createCast((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10392 "bison-chapel.cpp"
+#line 10397 "bison-chapel.cpp"
     break;
 
   case 620: /* expr: expr TDOTDOT expr  */
-#line 2326 "chapel.ypp"
+#line 2331 "chapel.ypp"
     { (yyval.pexpr) = buildBoundedRange((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10398 "bison-chapel.cpp"
+#line 10403 "bison-chapel.cpp"
     break;
 
   case 621: /* expr: expr TDOTDOTOPENHIGH expr  */
-#line 2328 "chapel.ypp"
+#line 2333 "chapel.ypp"
     { (yyval.pexpr) = buildBoundedRange((yyvsp[-2].pexpr), (yyvsp[0].pexpr), false, true); }
-#line 10404 "bison-chapel.cpp"
+#line 10409 "bison-chapel.cpp"
     break;
 
   case 622: /* expr: expr TDOTDOT  */
-#line 2343 "chapel.ypp"
+#line 2348 "chapel.ypp"
     { (yyval.pexpr) = buildLowBoundedRange((yyvsp[-1].pexpr)); }
-#line 10410 "bison-chapel.cpp"
+#line 10415 "bison-chapel.cpp"
     break;
 
   case 623: /* expr: TDOTDOT expr  */
-#line 2345 "chapel.ypp"
+#line 2350 "chapel.ypp"
     { (yyval.pexpr) = buildHighBoundedRange((yyvsp[0].pexpr)); }
-#line 10416 "bison-chapel.cpp"
+#line 10421 "bison-chapel.cpp"
     break;
 
   case 624: /* expr: TDOTDOTOPENHIGH expr  */
-#line 2347 "chapel.ypp"
+#line 2352 "chapel.ypp"
     { (yyval.pexpr) = buildHighBoundedRange((yyvsp[0].pexpr), true); }
-#line 10422 "bison-chapel.cpp"
+#line 10427 "bison-chapel.cpp"
     break;
 
   case 625: /* expr: TDOTDOT  */
-#line 2349 "chapel.ypp"
+#line 2354 "chapel.ypp"
     { (yyval.pexpr) = buildUnboundedRange(); }
-#line 10428 "bison-chapel.cpp"
+#line 10433 "bison-chapel.cpp"
     break;
 
   case 626: /* opt_expr: %empty  */
-#line 2353 "chapel.ypp"
+#line 2358 "chapel.ypp"
                   { (yyval.pexpr) = NULL; }
-#line 10434 "bison-chapel.cpp"
+#line 10439 "bison-chapel.cpp"
     break;
 
   case 627: /* opt_expr: expr  */
-#line 2354 "chapel.ypp"
+#line 2359 "chapel.ypp"
                   { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 10440 "bison-chapel.cpp"
+#line 10445 "bison-chapel.cpp"
     break;
 
   case 628: /* opt_try_expr: TTRY expr  */
-#line 2358 "chapel.ypp"
+#line 2363 "chapel.ypp"
                   { (yyval.pexpr) = tryExpr((yyvsp[0].pexpr)); }
-#line 10446 "bison-chapel.cpp"
+#line 10451 "bison-chapel.cpp"
     break;
 
   case 629: /* opt_try_expr: TTRYBANG expr  */
-#line 2359 "chapel.ypp"
+#line 2364 "chapel.ypp"
                   { (yyval.pexpr) = tryBangExpr((yyvsp[0].pexpr)); }
-#line 10452 "bison-chapel.cpp"
+#line 10457 "bison-chapel.cpp"
     break;
 
   case 630: /* opt_try_expr: expr  */
-#line 2360 "chapel.ypp"
+#line 2365 "chapel.ypp"
                   { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 10458 "bison-chapel.cpp"
+#line 10463 "bison-chapel.cpp"
     break;
 
   case 635: /* call_base_expr: lhs_expr  */
-#line 2376 "chapel.ypp"
+#line 2381 "chapel.ypp"
                      { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 10464 "bison-chapel.cpp"
+#line 10469 "bison-chapel.cpp"
     break;
 
   case 636: /* call_base_expr: expr TBANG  */
-#line 2377 "chapel.ypp"
+#line 2382 "chapel.ypp"
                      { (yyval.pexpr) = new CallExpr("postfix!", (yyvsp[-1].pexpr)); }
-#line 10470 "bison-chapel.cpp"
+#line 10475 "bison-chapel.cpp"
     break;
 
   case 637: /* call_base_expr: sub_type_level_expr TQUESTION  */
-#line 2378 "chapel.ypp"
+#line 2383 "chapel.ypp"
                                 {(yyval.pexpr) = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, (yyvsp[-1].pexpr));}
-#line 10476 "bison-chapel.cpp"
+#line 10481 "bison-chapel.cpp"
     break;
 
   case 638: /* call_base_expr: lambda_decl_expr  */
-#line 2379 "chapel.ypp"
+#line 2384 "chapel.ypp"
                      { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 10482 "bison-chapel.cpp"
+#line 10487 "bison-chapel.cpp"
     break;
 
   case 640: /* call_expr: call_base_expr TLP opt_actual_ls TRP  */
-#line 2384 "chapel.ypp"
+#line 2389 "chapel.ypp"
                                               { (yyval.pexpr) = new CallExpr((yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr)); }
-#line 10488 "bison-chapel.cpp"
+#line 10493 "bison-chapel.cpp"
     break;
 
   case 641: /* call_expr: call_base_expr TLSBR opt_actual_ls TRSBR  */
-#line 2385 "chapel.ypp"
+#line 2390 "chapel.ypp"
                                               { (yyval.pexpr) = buildSquareCallExpr((yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr)); }
-#line 10494 "bison-chapel.cpp"
+#line 10499 "bison-chapel.cpp"
     break;
 
   case 642: /* call_expr: TPRIMITIVE TLP opt_actual_ls TRP  */
-#line 2386 "chapel.ypp"
+#line 2391 "chapel.ypp"
                                         { (yyval.pexpr) = buildPrimitiveExpr((yyvsp[-1].pcallexpr)); }
-#line 10500 "bison-chapel.cpp"
+#line 10505 "bison-chapel.cpp"
     break;
 
   case 643: /* dot_expr: expr TDOT ident_use  */
-#line 2390 "chapel.ypp"
+#line 2395 "chapel.ypp"
                                { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), (yyvsp[0].pch)); }
-#line 10506 "bison-chapel.cpp"
+#line 10511 "bison-chapel.cpp"
     break;
 
   case 644: /* dot_expr: expr TDOT TTYPE  */
-#line 2391 "chapel.ypp"
+#line 2396 "chapel.ypp"
                                { (yyval.pexpr) = new CallExpr(PRIM_TYPEOF, (yyvsp[-2].pexpr)); }
-#line 10512 "bison-chapel.cpp"
+#line 10517 "bison-chapel.cpp"
     break;
 
   case 645: /* dot_expr: expr TDOT TDOMAIN  */
-#line 2392 "chapel.ypp"
+#line 2397 "chapel.ypp"
                                { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), "_dom"); }
-#line 10518 "bison-chapel.cpp"
+#line 10523 "bison-chapel.cpp"
     break;
 
   case 646: /* dot_expr: expr TDOT TLOCALE  */
-#line 2393 "chapel.ypp"
+#line 2398 "chapel.ypp"
                                { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), "locale"); }
-#line 10524 "bison-chapel.cpp"
+#line 10529 "bison-chapel.cpp"
     break;
 
   case 647: /* dot_expr: expr TDOT TBYTES TLP TRP  */
-#line 2394 "chapel.ypp"
+#line 2399 "chapel.ypp"
                                { (yyval.pexpr) = new CallExpr(buildDotExpr((yyvsp[-4].pexpr), "chpl_bytes")); }
-#line 10530 "bison-chapel.cpp"
+#line 10535 "bison-chapel.cpp"
     break;
 
   case 648: /* parenthesized_expr: TLP tuple_component TRP  */
-#line 2402 "chapel.ypp"
+#line 2407 "chapel.ypp"
                                     { (yyval.pexpr) = (yyvsp[-1].pexpr); }
-#line 10536 "bison-chapel.cpp"
+#line 10541 "bison-chapel.cpp"
     break;
 
   case 649: /* parenthesized_expr: TLP tuple_component TCOMMA TRP  */
-#line 2403 "chapel.ypp"
+#line 2408 "chapel.ypp"
                                     { (yyval.pexpr) = buildOneTuple((yyvsp[-2].pexpr)); }
-#line 10542 "bison-chapel.cpp"
+#line 10547 "bison-chapel.cpp"
     break;
 
   case 650: /* parenthesized_expr: TLP tuple_expr_ls TRP  */
-#line 2404 "chapel.ypp"
+#line 2409 "chapel.ypp"
                                     { (yyval.pexpr) = buildTuple((yyvsp[-1].pcallexpr)); }
-#line 10548 "bison-chapel.cpp"
+#line 10553 "bison-chapel.cpp"
     break;
 
   case 651: /* parenthesized_expr: TLP tuple_expr_ls TCOMMA TRP  */
-#line 2405 "chapel.ypp"
+#line 2410 "chapel.ypp"
                                     { (yyval.pexpr) = buildTuple((yyvsp[-2].pcallexpr)); }
-#line 10554 "bison-chapel.cpp"
+#line 10559 "bison-chapel.cpp"
     break;
 
   case 652: /* bool_literal: TFALSE  */
-#line 2409 "chapel.ypp"
+#line 2414 "chapel.ypp"
          { (yyval.pexpr) = new SymExpr(gFalse); }
-#line 10560 "bison-chapel.cpp"
+#line 10565 "bison-chapel.cpp"
     break;
 
   case 653: /* bool_literal: TTRUE  */
-#line 2410 "chapel.ypp"
+#line 2415 "chapel.ypp"
          { (yyval.pexpr) = new SymExpr(gTrue); }
-#line 10566 "bison-chapel.cpp"
+#line 10571 "bison-chapel.cpp"
     break;
 
   case 654: /* str_bytes_literal: STRINGLITERAL  */
-#line 2414 "chapel.ypp"
+#line 2419 "chapel.ypp"
                   { (yyval.pexpr) = buildStringLiteral((yyvsp[0].pch)); }
-#line 10572 "bison-chapel.cpp"
+#line 10577 "bison-chapel.cpp"
     break;
 
   case 655: /* str_bytes_literal: BYTESLITERAL  */
-#line 2415 "chapel.ypp"
+#line 2420 "chapel.ypp"
                   { (yyval.pexpr) = buildBytesLiteral((yyvsp[0].pch)); }
-#line 10578 "bison-chapel.cpp"
+#line 10583 "bison-chapel.cpp"
     break;
 
   case 658: /* literal_expr: INTLITERAL  */
-#line 2421 "chapel.ypp"
+#line 2426 "chapel.ypp"
                         { (yyval.pexpr) = buildIntLiteral((yyvsp[0].pch), yyfilename, chplLineno);    }
-#line 10584 "bison-chapel.cpp"
+#line 10589 "bison-chapel.cpp"
     break;
 
   case 659: /* literal_expr: REALLITERAL  */
-#line 2422 "chapel.ypp"
+#line 2427 "chapel.ypp"
                         { (yyval.pexpr) = buildRealLiteral((yyvsp[0].pch));   }
-#line 10590 "bison-chapel.cpp"
+#line 10595 "bison-chapel.cpp"
     break;
 
   case 660: /* literal_expr: IMAGLITERAL  */
-#line 2423 "chapel.ypp"
+#line 2428 "chapel.ypp"
                         { (yyval.pexpr) = buildImagLiteral((yyvsp[0].pch));   }
-#line 10596 "bison-chapel.cpp"
+#line 10601 "bison-chapel.cpp"
     break;
 
   case 661: /* literal_expr: CSTRINGLITERAL  */
-#line 2424 "chapel.ypp"
+#line 2429 "chapel.ypp"
                         { (yyval.pexpr) = buildCStringLiteral((yyvsp[0].pch)); }
-#line 10602 "bison-chapel.cpp"
+#line 10607 "bison-chapel.cpp"
     break;
 
   case 662: /* literal_expr: TNONE  */
-#line 2425 "chapel.ypp"
+#line 2430 "chapel.ypp"
                         { (yyval.pexpr) = new SymExpr(gNone); }
-#line 10608 "bison-chapel.cpp"
+#line 10613 "bison-chapel.cpp"
     break;
 
   case 663: /* literal_expr: TLCBR expr_ls TRCBR  */
-#line 2426 "chapel.ypp"
+#line 2431 "chapel.ypp"
                         { (yyval.pexpr) = new CallExpr("chpl__buildDomainExpr", (yyvsp[-1].pcallexpr),
                                             new SymExpr(gTrue)); }
-#line 10615 "bison-chapel.cpp"
+#line 10620 "bison-chapel.cpp"
     break;
 
   case 664: /* literal_expr: TLCBR expr_ls TCOMMA TRCBR  */
-#line 2428 "chapel.ypp"
+#line 2433 "chapel.ypp"
                                { (yyval.pexpr) = new CallExpr("chpl__buildDomainExpr", (yyvsp[-2].pcallexpr),
                                                    new SymExpr(gTrue)); }
-#line 10622 "bison-chapel.cpp"
+#line 10627 "bison-chapel.cpp"
     break;
 
   case 665: /* literal_expr: TLSBR expr_ls TRSBR  */
-#line 2430 "chapel.ypp"
+#line 2435 "chapel.ypp"
                         { (yyval.pexpr) = new CallExpr("chpl__buildArrayExpr",  (yyvsp[-1].pcallexpr)); }
-#line 10628 "bison-chapel.cpp"
+#line 10633 "bison-chapel.cpp"
     break;
 
   case 666: /* literal_expr: TLSBR expr_ls TCOMMA TRSBR  */
-#line 2431 "chapel.ypp"
+#line 2436 "chapel.ypp"
                                { (yyval.pexpr) = new CallExpr("chpl__buildArrayExpr",  (yyvsp[-2].pcallexpr)); }
-#line 10634 "bison-chapel.cpp"
+#line 10639 "bison-chapel.cpp"
     break;
 
   case 667: /* literal_expr: TLSBR assoc_expr_ls TRSBR  */
-#line 2433 "chapel.ypp"
+#line 2438 "chapel.ypp"
     {
       (yyval.pexpr) = new CallExpr("chpl__buildAssociativeArrayExpr", (yyvsp[-1].pcallexpr));
     }
-#line 10642 "bison-chapel.cpp"
+#line 10647 "bison-chapel.cpp"
     break;
 
   case 668: /* literal_expr: TLSBR assoc_expr_ls TCOMMA TRSBR  */
-#line 2437 "chapel.ypp"
+#line 2442 "chapel.ypp"
     {
       (yyval.pexpr) = new CallExpr("chpl__buildAssociativeArrayExpr", (yyvsp[-2].pcallexpr));
     }
-#line 10650 "bison-chapel.cpp"
+#line 10655 "bison-chapel.cpp"
     break;
 
   case 669: /* assoc_expr_ls: expr TALIAS expr  */
-#line 2444 "chapel.ypp"
+#line 2449 "chapel.ypp"
                                         { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10656 "bison-chapel.cpp"
+#line 10661 "bison-chapel.cpp"
     break;
 
   case 670: /* assoc_expr_ls: assoc_expr_ls TCOMMA expr TALIAS expr  */
-#line 2445 "chapel.ypp"
+#line 2450 "chapel.ypp"
                                         { (yyvsp[-4].pcallexpr)->insertAtTail((yyvsp[-2].pexpr)); (yyvsp[-4].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 10662 "bison-chapel.cpp"
+#line 10667 "bison-chapel.cpp"
     break;
 
   case 671: /* binary_op_expr: expr TPLUS expr  */
-#line 2449 "chapel.ypp"
+#line 2454 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("+", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10668 "bison-chapel.cpp"
+#line 10673 "bison-chapel.cpp"
     break;
 
   case 672: /* binary_op_expr: expr TMINUS expr  */
-#line 2450 "chapel.ypp"
+#line 2455 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("-", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10674 "bison-chapel.cpp"
+#line 10679 "bison-chapel.cpp"
     break;
 
   case 673: /* binary_op_expr: expr TSTAR expr  */
-#line 2451 "chapel.ypp"
+#line 2456 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("*", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10680 "bison-chapel.cpp"
+#line 10685 "bison-chapel.cpp"
     break;
 
   case 674: /* binary_op_expr: expr TDIVIDE expr  */
-#line 2452 "chapel.ypp"
+#line 2457 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("/", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10686 "bison-chapel.cpp"
+#line 10691 "bison-chapel.cpp"
     break;
 
   case 675: /* binary_op_expr: expr TSHIFTLEFT expr  */
-#line 2453 "chapel.ypp"
+#line 2458 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("<<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10692 "bison-chapel.cpp"
+#line 10697 "bison-chapel.cpp"
     break;
 
   case 676: /* binary_op_expr: expr TSHIFTRIGHT expr  */
-#line 2454 "chapel.ypp"
+#line 2459 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr(">>", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10698 "bison-chapel.cpp"
+#line 10703 "bison-chapel.cpp"
     break;
 
   case 677: /* binary_op_expr: expr TMOD expr  */
-#line 2455 "chapel.ypp"
+#line 2460 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("%", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10704 "bison-chapel.cpp"
+#line 10709 "bison-chapel.cpp"
     break;
 
   case 678: /* binary_op_expr: expr TEQUAL expr  */
-#line 2456 "chapel.ypp"
+#line 2461 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("==", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10710 "bison-chapel.cpp"
+#line 10715 "bison-chapel.cpp"
     break;
 
   case 679: /* binary_op_expr: expr TNOTEQUAL expr  */
-#line 2457 "chapel.ypp"
+#line 2462 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("!=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10716 "bison-chapel.cpp"
+#line 10721 "bison-chapel.cpp"
     break;
 
   case 680: /* binary_op_expr: expr TLESSEQUAL expr  */
-#line 2458 "chapel.ypp"
+#line 2463 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("<=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10722 "bison-chapel.cpp"
+#line 10727 "bison-chapel.cpp"
     break;
 
   case 681: /* binary_op_expr: expr TGREATEREQUAL expr  */
-#line 2459 "chapel.ypp"
+#line 2464 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr(">=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10728 "bison-chapel.cpp"
+#line 10733 "bison-chapel.cpp"
     break;
 
   case 682: /* binary_op_expr: expr TLESS expr  */
-#line 2460 "chapel.ypp"
+#line 2465 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10734 "bison-chapel.cpp"
+#line 10739 "bison-chapel.cpp"
     break;
 
   case 683: /* binary_op_expr: expr TGREATER expr  */
-#line 2461 "chapel.ypp"
+#line 2466 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr(">", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10740 "bison-chapel.cpp"
+#line 10745 "bison-chapel.cpp"
     break;
 
   case 684: /* binary_op_expr: expr TBAND expr  */
-#line 2462 "chapel.ypp"
+#line 2467 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("&", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10746 "bison-chapel.cpp"
+#line 10751 "bison-chapel.cpp"
     break;
 
   case 685: /* binary_op_expr: expr TBOR expr  */
-#line 2463 "chapel.ypp"
+#line 2468 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("|", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10752 "bison-chapel.cpp"
+#line 10757 "bison-chapel.cpp"
     break;
 
   case 686: /* binary_op_expr: expr TBXOR expr  */
-#line 2464 "chapel.ypp"
+#line 2469 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("^", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10758 "bison-chapel.cpp"
+#line 10763 "bison-chapel.cpp"
     break;
 
   case 687: /* binary_op_expr: expr TAND expr  */
-#line 2465 "chapel.ypp"
+#line 2470 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("&&", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10764 "bison-chapel.cpp"
+#line 10769 "bison-chapel.cpp"
     break;
 
   case 688: /* binary_op_expr: expr TOR expr  */
-#line 2466 "chapel.ypp"
+#line 2471 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("||", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10770 "bison-chapel.cpp"
+#line 10775 "bison-chapel.cpp"
     break;
 
   case 689: /* binary_op_expr: expr TEXP expr  */
-#line 2467 "chapel.ypp"
+#line 2472 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("**", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10776 "bison-chapel.cpp"
+#line 10781 "bison-chapel.cpp"
     break;
 
   case 690: /* binary_op_expr: expr TBY expr  */
-#line 2468 "chapel.ypp"
+#line 2473 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("chpl_by", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10782 "bison-chapel.cpp"
+#line 10787 "bison-chapel.cpp"
     break;
 
   case 691: /* binary_op_expr: expr TALIGN expr  */
-#line 2469 "chapel.ypp"
+#line 2474 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("chpl_align", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10788 "bison-chapel.cpp"
+#line 10793 "bison-chapel.cpp"
     break;
 
   case 692: /* binary_op_expr: expr THASH expr  */
-#line 2470 "chapel.ypp"
+#line 2475 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("#", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10794 "bison-chapel.cpp"
+#line 10799 "bison-chapel.cpp"
     break;
 
   case 693: /* binary_op_expr: expr TDMAPPED expr  */
-#line 2471 "chapel.ypp"
+#line 2476 "chapel.ypp"
                            { (yyval.pexpr) = new CallExpr("chpl__distributed", (yyvsp[0].pexpr), (yyvsp[-2].pexpr),
                                                new SymExpr(gTrue)); }
-#line 10801 "bison-chapel.cpp"
+#line 10806 "bison-chapel.cpp"
     break;
 
   case 694: /* unary_op_expr: TPLUS expr  */
-#line 2476 "chapel.ypp"
+#line 2481 "chapel.ypp"
                                   { (yyval.pexpr) = new CallExpr("+", (yyvsp[0].pexpr)); }
-#line 10807 "bison-chapel.cpp"
+#line 10812 "bison-chapel.cpp"
     break;
 
   case 695: /* unary_op_expr: TMINUS expr  */
-#line 2477 "chapel.ypp"
+#line 2482 "chapel.ypp"
                                   { (yyval.pexpr) = new CallExpr("-", (yyvsp[0].pexpr)); }
-#line 10813 "bison-chapel.cpp"
+#line 10818 "bison-chapel.cpp"
     break;
 
   case 696: /* unary_op_expr: TMINUSMINUS expr  */
-#line 2478 "chapel.ypp"
+#line 2483 "chapel.ypp"
                                   { (yyval.pexpr) = buildPreDecIncWarning((yyvsp[0].pexpr), '-'); }
-#line 10819 "bison-chapel.cpp"
+#line 10824 "bison-chapel.cpp"
     break;
 
   case 697: /* unary_op_expr: TPLUSPLUS expr  */
-#line 2479 "chapel.ypp"
+#line 2484 "chapel.ypp"
                                   { (yyval.pexpr) = buildPreDecIncWarning((yyvsp[0].pexpr), '+'); }
-#line 10825 "bison-chapel.cpp"
+#line 10830 "bison-chapel.cpp"
     break;
 
   case 698: /* unary_op_expr: TBANG expr  */
-#line 2480 "chapel.ypp"
+#line 2485 "chapel.ypp"
                                   { (yyval.pexpr) = new CallExpr("!", (yyvsp[0].pexpr)); }
-#line 10831 "bison-chapel.cpp"
+#line 10836 "bison-chapel.cpp"
     break;
 
   case 699: /* unary_op_expr: expr TBANG  */
-#line 2481 "chapel.ypp"
+#line 2486 "chapel.ypp"
                                   { (yyval.pexpr) = new CallExpr("postfix!", (yyvsp[-1].pexpr)); }
-#line 10837 "bison-chapel.cpp"
+#line 10842 "bison-chapel.cpp"
     break;
 
   case 700: /* unary_op_expr: TBNOT expr  */
-#line 2482 "chapel.ypp"
+#line 2487 "chapel.ypp"
                                   { (yyval.pexpr) = new CallExpr("~", (yyvsp[0].pexpr)); }
-#line 10843 "bison-chapel.cpp"
+#line 10848 "bison-chapel.cpp"
     break;
 
   case 701: /* reduce_expr: expr TREDUCE expr  */
-#line 2486 "chapel.ypp"
+#line 2491 "chapel.ypp"
                                                  { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10849 "bison-chapel.cpp"
+#line 10854 "bison-chapel.cpp"
     break;
 
   case 702: /* reduce_expr: expr TREDUCE zippered_iterator  */
-#line 2487 "chapel.ypp"
+#line 2492 "chapel.ypp"
                                                  { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10855 "bison-chapel.cpp"
+#line 10860 "bison-chapel.cpp"
     break;
 
   case 703: /* reduce_expr: reduce_scan_op_expr TREDUCE expr  */
-#line 2488 "chapel.ypp"
+#line 2493 "chapel.ypp"
                                                  { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10861 "bison-chapel.cpp"
+#line 10866 "bison-chapel.cpp"
     break;
 
   case 704: /* reduce_expr: reduce_scan_op_expr TREDUCE zippered_iterator  */
-#line 2489 "chapel.ypp"
+#line 2494 "chapel.ypp"
                                                  { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10867 "bison-chapel.cpp"
+#line 10872 "bison-chapel.cpp"
     break;
 
   case 705: /* scan_expr: expr TSCAN expr  */
-#line 2493 "chapel.ypp"
+#line 2498 "chapel.ypp"
                                                { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10873 "bison-chapel.cpp"
+#line 10878 "bison-chapel.cpp"
     break;
 
   case 706: /* scan_expr: expr TSCAN zippered_iterator  */
-#line 2494 "chapel.ypp"
+#line 2499 "chapel.ypp"
                                                { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10879 "bison-chapel.cpp"
+#line 10884 "bison-chapel.cpp"
     break;
 
   case 707: /* scan_expr: reduce_scan_op_expr TSCAN expr  */
-#line 2495 "chapel.ypp"
+#line 2500 "chapel.ypp"
                                                { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10885 "bison-chapel.cpp"
+#line 10890 "bison-chapel.cpp"
     break;
 
   case 708: /* scan_expr: reduce_scan_op_expr TSCAN zippered_iterator  */
-#line 2496 "chapel.ypp"
+#line 2501 "chapel.ypp"
                                                { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10891 "bison-chapel.cpp"
+#line 10896 "bison-chapel.cpp"
     break;
 
   case 709: /* reduce_scan_op_expr: TPLUS  */
-#line 2501 "chapel.ypp"
+#line 2506 "chapel.ypp"
          { (yyval.pexpr) = new UnresolvedSymExpr("SumReduceScanOp"); }
-#line 10897 "bison-chapel.cpp"
+#line 10902 "bison-chapel.cpp"
     break;
 
   case 710: /* reduce_scan_op_expr: TSTAR  */
-#line 2502 "chapel.ypp"
+#line 2507 "chapel.ypp"
          { (yyval.pexpr) = new UnresolvedSymExpr("ProductReduceScanOp"); }
-#line 10903 "bison-chapel.cpp"
+#line 10908 "bison-chapel.cpp"
     break;
 
   case 711: /* reduce_scan_op_expr: TAND  */
-#line 2503 "chapel.ypp"
+#line 2508 "chapel.ypp"
          { (yyval.pexpr) = new UnresolvedSymExpr("LogicalAndReduceScanOp"); }
-#line 10909 "bison-chapel.cpp"
+#line 10914 "bison-chapel.cpp"
     break;
 
   case 712: /* reduce_scan_op_expr: TOR  */
-#line 2504 "chapel.ypp"
+#line 2509 "chapel.ypp"
          { (yyval.pexpr) = new UnresolvedSymExpr("LogicalOrReduceScanOp"); }
-#line 10915 "bison-chapel.cpp"
+#line 10920 "bison-chapel.cpp"
     break;
 
   case 713: /* reduce_scan_op_expr: TBAND  */
-#line 2505 "chapel.ypp"
+#line 2510 "chapel.ypp"
          { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseAndReduceScanOp"); }
-#line 10921 "bison-chapel.cpp"
+#line 10926 "bison-chapel.cpp"
     break;
 
   case 714: /* reduce_scan_op_expr: TBOR  */
-#line 2506 "chapel.ypp"
+#line 2511 "chapel.ypp"
          { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseOrReduceScanOp"); }
-#line 10927 "bison-chapel.cpp"
+#line 10932 "bison-chapel.cpp"
     break;
 
   case 715: /* reduce_scan_op_expr: TBXOR  */
-#line 2507 "chapel.ypp"
+#line 2512 "chapel.ypp"
          { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseXorReduceScanOp"); }
-#line 10933 "bison-chapel.cpp"
+#line 10938 "bison-chapel.cpp"
     break;
 
 
-#line 10937 "bison-chapel.cpp"
+#line 10942 "bison-chapel.cpp"
 
       default: break;
     }
