@@ -769,7 +769,8 @@ buildLabelStmt(const char* name, Expr* stmt) {
         loop->userLabel = astr(name);
       }
     } else {
-      USR_FATAL(stmt, "can only label for-, while-do- and do-while-statements");
+      USR_FATAL_CONT(stmt, "can only label for-, while-do- and "
+                           "do-while-statements");
     }
 
   } else {

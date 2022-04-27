@@ -161,7 +161,7 @@
     Function::Kind kind;
     Formal::Intent thisIntent;
     Formal* receiver;
-    PODUniqueString name;
+    Identifier* name;
     Function::ReturnIntent returnIntent;
     bool throws;
     ParserExprList* formals;
@@ -674,26 +674,7 @@ stmt:
   }
 | TLABEL ident_def stmt
   {
-    if ($3.stmt && ($3.stmt->isFor() || $3.stmt->isWhile() || $3.stmt->isDoWhile())) {
-      auto exprLst = context->makeList($3);
-      auto comments = context->gatherCommentsFromList(exprLst, @1);
-      auto astLst = context->consumeList(exprLst);
-      Loop* loop = nullptr;
-      for (auto& ast : astLst) {
-        if (ast->isLoop()) {
-          loop = ast.release()->toLoop();
-          break;
-        }
-      }
-      assert(loop);
-      auto node = Label::build(BUILDER, LOC(@$), $2, toOwned(loop));
-      $$ = { .comments=comments, .stmt=node.release() };
-    } else {
-      const char* msg = "can only label for-, while-do- "
-                        "and do-while-statements";
-      auto err = context->raiseError(@$, msg);
-      $$ = context->finishStmt(err);
-    }
+    $$ = context->buildLabelStmt(@$, $2, $3);
   }
 | TYIELD expr TSEMI
   {
@@ -1450,10 +1431,19 @@ extern_export_decl_stmt:
   }
 | extern_export_decl_stmt_start opt_expr
   {
-    // This will be consumed when building the first variable in the list.
     context->storeVarDeclLinkageName($2);
   }
   var_decl_type var_decl_stmt_inner_ls TSEMI
+  {
+    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    context->resetDeclState();
+  }
+| extern_export_decl_stmt_start opt_expr TTYPE
+  {
+    context->storeVarDeclLinkageName($2);
+    context->noteVarDeclKind(Variable::TYPE);
+  }
+  type_alias_decl_stmt_inner_ls TSEMI
   {
     $$ = context->buildVarOrMultiDeclStmt(@$, $5);
     context->resetDeclState();
@@ -2164,7 +2154,7 @@ lambda_decl_expr:
   function_body_stmt
     {
       FunctionParts fp = $1;
-      fp.name = STR("lambda");
+      fp.name = context->buildIdent(@1, STR("lambda"));
       fp.formals = $2;
       fp.returnIntent = $3;
       fp.returnType = $4;
@@ -2206,7 +2196,7 @@ fn_decl_stmt:
     {
       context->clearComments();
       context->resetDeclState();
-      context->enterScope(asttags::Function, $1.name);
+      context->enterScope(asttags::Function, $1.name->name());
     }
   opt_function_body_stmt
     {
@@ -2221,7 +2211,7 @@ fn_decl_stmt:
       fp.where = wl.where;
 
       context->clearComments();
-      context->exitScope(asttags::Function, $1.name);
+      context->exitScope(asttags::Function, $1.name->name());
 
       $$ = fp;
     }
@@ -2232,7 +2222,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.name = $3;
+      fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
       $$ = fp;
     }
@@ -2240,7 +2230,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.name = $3;
+      fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
       $$ = fp;
     }
@@ -2251,7 +2241,7 @@ fn_decl_stmt_inner:
       fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
-      fp.name = $5;
+      fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
       $$ = fp;
     }
@@ -2262,7 +2252,7 @@ fn_decl_stmt_inner:
       fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
-      fp.name = $5;
+      fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
       $$ = fp;
     }
@@ -2558,6 +2548,7 @@ type_alias_decl_stmt:
   }
 ;
 
+// Extern types are handled in the 'extern_export_decl_stmt' above.
 type_alias_decl_stmt_start:
   TTYPE
   {
@@ -2567,11 +2558,6 @@ type_alias_decl_stmt_start:
   {
     $$ = context->noteVarDeclKind(Variable::TYPE);
     context->noteIsVarDeclConfig(true);
-  }
-| TEXTERN TTYPE
-  {
-    $$ = context->noteVarDeclKind(Variable::TYPE);
-    context->noteLinkage(Decl::EXTERN);
   }
 ;
 
@@ -3112,20 +3098,20 @@ for_expr:
   }
 | TLSBR expr_ls TRSBR expr %prec TFOR
   {
-    // TODO: We have to handle the possibility of [1..2, 3..4] here.
-    if ($2->size() > 1) {
-      const char* msg = "Invalid iterand expression";
-      $$ = context->raiseError(@2, msg);
+    owned<AstNode> iterand = nullptr;
+    auto iterExprs = context->consumeList($2);
+    if (iterExprs.size() > 1) {
+      iterand = Domain::build(BUILDER, LOC(@2), std::move(iterExprs));
     } else {
-      auto iterand = context->consumeList($2)[0].release();
-      assert(iterand);
-      $$ = BracketLoop::build(BUILDER, LOC(@$), /*index*/ nullptr,
-                              toOwned(iterand),
-                              /*withClause*/ nullptr,
-                              BlockStyle::IMPLICIT,
-                              context->consumeToBlock(@4, $4),
-                              /*isExpressionLevel*/ true).release();
+      iterand = std::move(iterExprs[0]);
     }
+    assert(iterand);
+    $$ = BracketLoop::build(BUILDER, LOC(@$), /*index*/ nullptr,
+                            std::move(iterand),
+                            /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            context->consumeToBlock(@4, $4),
+                            /*isExpressionLevel*/ true).release();
   }
 | TLSBR expr_ls TIN expr TRSBR expr %prec TFOR
   {

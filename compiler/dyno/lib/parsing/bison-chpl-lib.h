@@ -134,7 +134,7 @@ extern int yychpl_debug;
     Function::Kind kind;
     Formal::Intent thisIntent;
     Formal* receiver;
-    PODUniqueString name;
+    Identifier* name;
     Function::ReturnIntent returnIntent;
     bool throws;
     ParserExprList* formals;

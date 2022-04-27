@@ -430,7 +430,7 @@ Interpreted string literals are designated by the following syntax:
      \' \" \? \\ \a \b \f \n \r \t \v
 
    hexadecimal-escape-character:
-     '\x' hexadecimal-digits
+     '\x' hexadecimal-digit hexadecimal-digit[OPT]
 
 Uninterpreted string literals are designated by the following syntax:
 

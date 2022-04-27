@@ -171,17 +171,15 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
       msg += ret.c_str();
       msg += "\"";
       noteError(loc, msg.c_str());
-    } else {
-
-      // Initialize the pragma flags if needed.
-      auto& pragmas = attributeParts.pragmas;
-      if (pragmas == nullptr) {
-        pragmas = new std::set<PragmaTag>();
-      }
-
-      hasAttributeParts = true;
-      pragmas->insert(tag);
     }
+
+    // Initialize the pragma flags if needed.
+    auto& pragmas = attributeParts.pragmas;
+    if (pragmas == nullptr) pragmas = new std::set<PragmaTag>();
+    hasAttributeParts = true;
+
+    // Always insert, even if PRAGMA_UNKNOWN.
+    pragmas->insert(tag);
   }
 
   // Make sure to clean up the UAST node since it will be discarded.
@@ -211,7 +209,6 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
 
 void ParserContext::resetAttributePartsState() {
   if (hasAttributeParts) {
-    assert(numAttributesBuilt >= 1);
     auto& pragmas = attributeParts.pragmas;
     if (pragmas) delete pragmas;
     attributeParts = { nullptr, false, UniqueString() };
@@ -749,7 +746,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       Function::PROC,
                       Formal::DEFAULT_INTENT,
                       nullptr,
-                      PODUniqueString::get(),
+                      nullptr,
                       Function::DEFAULT_RETURN_INTENT,
                       false,
                       nullptr, nullptr, nullptr, nullptr,
@@ -770,6 +767,19 @@ ParserContext::buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp) {
 
 CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
+  if (!fp.errorExpr) {
+    if (fp.formals) {
+      for (auto ast : *fp.formals) {
+        if (ast->isErroneousExpression()) {
+          auto loc = convertLocation(location);
+          auto errorExpr = ErroneousExpression::build(builder, loc);
+          fp.errorExpr = errorExpr.release();
+          break;
+        }
+      }
+    }
+  }
+
   CommentsAndStmt cs = {fp.comments, nullptr};
   if (fp.errorExpr == nullptr) {
     // detect parenless functions
@@ -800,12 +810,20 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
       body = consumeToBlock(location, fp.body);
     }
 
-    auto f = Function::build(builder, this->convertLocation(location),
+    // Own the recorded identifier to clean it up, but grab its location.
+    owned<Identifier> identName = toOwned(fp.name);
+    assert(identName.get());
+    auto identNameLoc = builder->getLocation(identName.get());
+    assert(!identNameLoc.isEmpty());
+
+    // TODO: Right now this location is the start of the function, and
+    // it seems more natural for the location to be the symbol.
+    auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributes),
                              fp.visibility,
                              fp.linkage,
                              toOwned(fp.linkageNameExpr),
-                             fp.name,
+                             identName->name(),
                              fp.isInline,
                              fp.isOverride,
                              fp.kind,
@@ -819,6 +837,17 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                              toOwned(fp.where),
                              this->consumeList(fp.lifetime),
                              std::move(body));
+
+    // If we are not a method then the receiver intent is discarded,
+    // because there is no receiver formal to store it in.
+    // So do the check now.
+    if (!f->isMethod() && fp.thisIntent != Formal::DEFAULT_INTENT) {
+      const char* msg = fp.thisIntent == Formal::TYPE
+          ? "Missing type for secondary type method"
+          : "'this' intents can only be applied to methods";
+      noteError(location, msg);
+    }
+
     cs.stmt = f.release();
   } else {
     cs.stmt = fp.errorExpr;
@@ -839,12 +868,20 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
       body = consumeToBlock(location, fp.body);
     }
 
-    auto f = Function::build(builder, this->convertLocation(location),
+    // Own the recorded identifier to clean it up, but grab its location.
+    owned<Identifier> identName = toOwned(fp.name);
+    assert(identName.get());
+    auto identNameLoc = builder->getLocation(identName.get());
+    assert(!identNameLoc.isEmpty());
+
+    // TODO: Right now this location is the start of the function, and
+    // it seems more natural for the location to be the symbol.
+    auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributes),
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
                              /* linkageName */ nullptr,
-                             fp.name,
+                             identName->name(),
                              /* inline */ false,
                              /* override */ false,
                              Function::LAMBDA,
@@ -1784,17 +1821,19 @@ CommentsAndStmt
 ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
                                        ParserExprList* vars) {
   int numDecls = 0;
+  Decl* firstDecl = nullptr;
   Decl* lastDecl = nullptr;
 
   for (auto elt : *vars) {
     if (Decl* d = elt->toDecl()) {
+      if (!firstDecl) firstDecl = d;
       lastDecl = d;
       numDecls++;
     }
   }
 
   assert(numDecls > 0);
-  assert(lastDecl);
+  assert(firstDecl && lastDecl);
 
   auto comments = gatherCommentsFromList(vars, locEverything);
   CommentsAndStmt cs = { .comments=comments, .stmt=nullptr };
@@ -1809,6 +1848,21 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
     delete vars;
 
   } else {
+
+    // TODO: Just embed and catch this in a tree-walk instead.
+    if (firstDecl->linkageName()) {
+      bool isTypeVar = false;
+
+      if (auto typeVar = firstDecl->toVariable()) {
+        isTypeVar = typeVar->kind() == Variable::TYPE;
+      }
+
+      if (!isTypeVar) {
+        noteError(locEverything, "external symbol renaming can only be "
+                                 "applied to one symbol at a time");
+      }
+    }
+
     auto attributes = buildAttributes(locEverything);
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
                                   std::move(attributes),
@@ -2372,3 +2426,31 @@ ParserContext::buildImplementsConstraint(YYLTYPE location,
 
   return node.release();
 }
+
+CommentsAndStmt
+ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
+                              CommentsAndStmt cs) {
+  if (cs.stmt && (cs.stmt->isFor() || cs.stmt->isWhile() ||
+                  cs.stmt->isDoWhile())) {
+    auto exprLst = makeList(cs);
+    auto comments = gatherCommentsFromList(exprLst, location);
+    auto astLst = consumeList(exprLst);
+    Loop* loop = nullptr;
+    for (auto& ast : astLst) {
+      if (ast->isLoop()) {
+        loop = ast.release()->toLoop();
+        break;
+      }
+    }
+    assert(loop);
+    auto node = Label::build(builder, convertLocation(location), name,
+                             toOwned(loop));
+    return { .comments=comments, .stmt=node.release() };
+  } else {
+    const char* msg = "can only label for-, while-do- "
+                      "and do-while-statements";
+    auto err = raiseError(location, msg);
+    return finishStmt(err);
+  }
+}
+

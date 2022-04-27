@@ -633,4 +633,6 @@ struct ParserContext {
                                      PODUniqueString name,
                                      MaybeNamedActualList* formals);
 
+  CommentsAndStmt buildLabelStmt(YYLTYPE location, PODUniqueString name,
+                                 CommentsAndStmt cs);
 };

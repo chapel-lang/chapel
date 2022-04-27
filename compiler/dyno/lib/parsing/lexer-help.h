@@ -192,13 +192,26 @@ static int processTripleStringLiteral(yyscan_t scanner,
   return type;
 }
 
-static
-void noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg) {
+static void
+noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
+                bool moveLocToEnd=false) {
   ParserContext* context = yyget_extra(scanner);
   YYLTYPE* loc = yyget_lloc(scanner);
   YYLTYPE myloc = *loc;
   updateLocation(&myloc, nLines, nCols);
+  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
   context->noteError(myloc, msg);
+}
+
+static void
+noteNoteInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
+                bool moveLocToEnd=false) {
+  ParserContext* context = yyget_extra(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  YYLTYPE myloc = *loc;
+  updateLocation(&myloc, nLines, nCols);
+  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
+  context->noteNote(myloc, msg);
 }
 
 static
@@ -276,21 +289,20 @@ static std::string eatStringLiteral(yyscan_t scanner,
       if (esc != 0) {
         s += esc;
       } else if (c == 'x') {
-        // Read hexadecimal digits until we run out
+        // Read hexadecimal digits until we run out or we have
+        // reached 2 digits.
         char buf[3] = {'\0', '\0', '\0'};
         bool foundNonHex = false;
-        bool overflow = false;
-        for (int i = 0; c != 0; i++) {
+        bool foundHex = false;
+        for (int i = 0; i < 2 && c != 0; i++) {
           c = getNextYYChar(scanner);
           nCols++;
           // TODO the exact behavior here is not documented in the spec
           if (('0' <= c && c <= '9') ||
               ('A' <= c && c <= 'F') ||
               ('a' <= c && c <= 'f')) {
-            if (i < 2)
-              buf[i] = c;
-            else
-              overflow = true;
+            buf[i] = c;
+            foundHex = true;
           } else {
             foundNonHex = true;
             break;
@@ -299,20 +311,26 @@ static std::string eatStringLiteral(yyscan_t scanner,
 
         long hexChar = strtol(buf, NULL, 16);
 
-        if (hexChar == LONG_MIN) {
+        if (foundHex == false) {
+          noteErrInString(scanner, nLines, nCols,
+                          "non-hexadecimal character follows \\x");
+          isErroneousOut = true;
+        } else if (hexChar == LONG_MIN) {
           noteErrInString(scanner, nLines, nCols,
                           "underflow when reading \\x escape");
           isErroneousOut = true;
-        } else if (overflow || hexChar == LONG_MAX) {
+        } else if (hexChar == LONG_MAX) {
           noteErrInString(scanner, nLines, nCols,
                           "overflow when reading \\x escape");
           isErroneousOut = true;
-        }
-
-        if (0 <= hexChar && hexChar <= 255) {
+        } else if (0 <= hexChar && hexChar <= 255) {
           // append the character
           char cc = (char) hexChar;
           s += cc;
+        } else {
+          noteErrInString(scanner, nLines, nCols,
+                          "unknown problem when reading \\x escape");
+          isErroneousOut = true;
         }
 
         if (foundNonHex)
@@ -711,11 +729,16 @@ static int processBlockComment(yyscan_t scanner) {
       nestedStartLine = nLines;
       nestedStartCol = nCols;
     } else if (c == 0) {
-      noteErrInString(scanner, nLines, nCols, "EOF in comment");
-      noteErrInString(scanner, startLine, startCol, "unterminated comment started here");
-      if( nestedStartLine >= 0 ) {
-        noteErrInString(scanner, nestedStartLine, nestedStartCol,
-                        "nested comment started here");
+      const bool moveLocToEnd = true;
+      noteErrInString(scanner, nLines, nCols,
+                      "EOF in comment",
+                      moveLocToEnd);
+      noteNoteInString(scanner, startLine, startCol,
+                       "unterminated comment started here");
+      if (nestedStartLine >= 0) {
+        noteNoteInString(scanner, nestedStartLine, nestedStartCol,
+                         "nested comment started here",
+                         moveLocToEnd);
       }
       break;
     }

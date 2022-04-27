@@ -116,7 +116,8 @@ void Builder::createImplicitModuleIfNeeded() {
     // create a new module containing all of the statements
     AstList stmts;
     stmts.swap(topLevelExpressions_);
-    auto implicitModule = Module::build(this, Location(filepath_),
+    auto loc = Location(filepath_, 1, 1, 1, 1);
+    auto implicitModule = Module::build(this, std::move(loc),
                                         /*attributes*/ nullptr,
                                         Decl::DEFAULT_VISIBILITY,
                                         inferredModuleName,
@@ -303,6 +304,12 @@ AstList Builder::flattenTopLevelBlocks(AstList lst) {
   return ret;
 }
 
+Location Builder::getLocation(const AstNode* node) {
+  auto got = notedLocations_.find(node);
+  if (got != notedLocations_.end()) return got->second;
+  chpl::Location empty;
+  return empty;
+}
 
 } // namespace uast
 } // namespace chpl
