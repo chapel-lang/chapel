@@ -20,11 +20,10 @@ proc main() {
   var bufSize = readSize,
       bufDom = {0..<bufSize},
       buf: [bufDom] uint(8),
-      seqStart, totRead = 0,
-      end = -1;  // TODO: Can this be made into a 0...
+      seqStart, totRead, end = 0;
 
   do {
-    const start = end + 1,  // TODO: ...to drop this + 1...
+    const start = end,
           more = stdinBin.read(buf[start..#readSize]);
     if more {
       totRead += readSize;
@@ -33,12 +32,12 @@ proc main() {
     }
 
     do {
-      end += 1; // TODO: If we move this to the bottom of the loop?
-      if end != 0 && buf[end] == '>'.toByte() {  // TODO: and drop this !=?
+      if end != 0 && buf[end] == '>'.toByte() {
         revcomp(buf, seqStart, end);
         seqStart = end;
       }
-    } while end < start+readSize-1;
+      end += 1;
+    } while end < start+readSize;
 
     if more {
       // if we processed one or more sequences, shift leftovers down
@@ -50,13 +49,13 @@ proc main() {
       }
 
       // resize if necessary
-      if end + readSize >= bufSize {
+      if end + readSize > bufSize {
         bufSize *= 2;
         bufDom = {0..<bufSize};
       }
     }
   } while more;
-  revcomp(buf, seqStart, end);
+  revcomp(buf, seqStart, end-1);
 }
 
 proc revcomp(buf, in lo, in hi) {
