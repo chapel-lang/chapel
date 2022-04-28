@@ -1,0 +1,16 @@
+Case 1
+1
+Case 1
+1
+Case 2
+55
+Case 3
+110
+Case 2
+55
+Case 3
+110
+Case 4
+uncaught Error: test
+  try-in-yield.chpl:104: thrown here
+  try-in-yield.chpl:112: uncaught here
