@@ -341,6 +341,20 @@ bool functionWithIdHasWhere(Context* context, ID id) {
   return functionWithIdHasWhereQuery(context, id);
 }
 
+void setConfigSettings(Context* context, ConfigSettingsList keys) {
+  QUERY_STORE_INPUT_RESULT(configSettings, context, keys);
+}
+
+const
+ConfigSettingsList& configSettings(Context* context) {
+  QUERY_BEGIN_INPUT(configSettings, context);
+
+  // return empty configSettings if not already set using setConfigSettings
+  ConfigSettingsList result;
+
+  return QUERY_END(result);
+}
+
 
 } // end namespace parsing
 } // end namespace chpl

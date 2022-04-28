@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-#define EXTERN
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -49,6 +48,7 @@
 #include "visibleFunctions.h"
 
 #include "chpl/queries/Context.h"
+#include "chpl/parsing/parsing-queries.h"
 
 #include <inttypes.h>
 #include <string>
@@ -308,6 +308,7 @@ int fGPUBlockSize = 0;
 char fCUDAArch[16] = "sm_60";
 
 chpl::Context* gContext = nullptr;
+std::vector<std::pair<std::string, std::string>> gDynoParams;
 
 static bool compilerSetChplLLVM = false;
 
@@ -1806,7 +1807,12 @@ int main(int argc, char* argv[]) {
     process_args(&sArgState, argc, argv);
 
     setupChplGlobals(argv[0]);
-
+    if (fDynoCompilerLibrary) {
+      // set the config names/values we processed earlier
+      chpl::parsing::setConfigSettings(gContext, gDynoParams);
+      // this should not be used after this point!
+      gDynoParams.clear();
+    }
     postprocess_args();
 
     if (gContext != nullptr) {

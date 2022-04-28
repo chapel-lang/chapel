@@ -286,4 +286,6 @@ namespace chpl {
 
 extern chpl::Context* gContext;
 
+extern std::vector<std::pair<std::string, std::string>> gDynoParams;
+
 #endif

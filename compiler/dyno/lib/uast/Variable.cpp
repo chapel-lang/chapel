@@ -77,6 +77,22 @@ Variable::build(Builder* builder, Location loc,
   return toOwned(ret);
 }
 
+void Variable::setInitExprForConfig(owned<AstNode> ie) {
+  if (this->initExpressionChildNum_ > -1) {
+    // have an existing initExpr, swap it
+    this->children_[this->initExpressionChildNum_].swap(ie);
+  } else {
+    // no initExpr and no typeExpr nor attribute
+    initExpressionChildNum_ = children_.size();
+    children_.push_back(std::move(ie));
+    if (this->typeExpressionChildNum_ > -1 || this->attributesChildNum() > -1) {
+      assert(numChildren() > 1);
+    } else {
+      assert(numChildren() == 1);
+    }
+  }
+}
+
 
 } // namespace uast
 } // namespace chpl

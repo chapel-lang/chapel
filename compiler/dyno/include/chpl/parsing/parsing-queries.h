@@ -25,7 +25,7 @@
 #include "chpl/queries/ID.h"
 #include "chpl/queries/Location.h"
 #include "chpl/uast/AstNode.h"
-#include "chpl/uast/Builder.h"
+#include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Module.h"
 
@@ -34,6 +34,7 @@
 namespace chpl {
 namespace parsing {
 
+using ConfigSettingsList = std::vector<std::pair<std::string, std::string>>;
 
 /**
  This query returns the contents of a file as the string field in the
@@ -146,6 +147,17 @@ uast::Function::ReturnIntent idToFnReturnIntent(Context* context, ID id);
  and 'false' otherwise.
  */
 bool functionWithIdHasWhere(Context* context, ID id);
+
+/**
+ * Store config settings that were set from the command line using -s flags
+ */
+void setConfigSettings(Context* context, ConfigSettingsList keys);
+
+/**
+ * Get any config settings that were set from the command line and stored
+ */
+const
+ConfigSettingsList& configSettings(Context* context);
 
 
 } // end namespace parsing

@@ -26,6 +26,7 @@
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/BuilderResult.h"
+#include "chpl/uast/Variable.h"
 
 #include <vector>
 #include <unordered_map>
@@ -123,6 +124,11 @@ class Builder final {
     return ast->children_;
   }
 
+  void addOrReplaceInitExpr(Variable* var, owned<AstNode> ie) {
+    var->setInitExprForConfig(std::move(ie));
+  }
+
+
   // Use this to take the children of an AST node. The AST node is marked
   // as owned because it is consumed.
   AstList takeChildren(owned<AstNode> ast) {
@@ -137,7 +143,27 @@ class Builder final {
   // Use this to get a temporary location while parsing.
   Location getLocation(const AstNode* ast);
 
+  // check for the existence of new config values (from the command line) for this var
+  void lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::string& name, std::string& value);
+
+  // update the initExpr of a config with values passed from the command line
+  AstNode* updateConfig(Variable* var, std::string configName, std::string configVal);
+
+  // recursively note the location of a nodes children as the location of the parent
+  // used when updating a config with a new initExpr
+  void noteChildrenLocations(AstNode* ast, Location loc);
+
+  // used to check if a config assignment was used in a previous assignment
+  void checkConfigPreviouslyUsed(const Variable* var, std::string& configNameUsed);
+
+  // build a dummy input string and parse it, extracting the initExpr and returning it
+  owned <AstNode> parseDummyNodeForInitExpr(Variable* var, std::string value);
+
+  // check that all the configs passed from the command line were consumed
+  static bool checkAllConfigVarsAssigned(Context* context);
+
   /// \endcond
+
 };
 
 } // end namespace uast
