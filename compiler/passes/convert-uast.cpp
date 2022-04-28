@@ -514,7 +514,6 @@ struct Converter {
     auto& loc = chpl::parsing::locateAst(gContext, node);
     INT_ASSERT(!loc.isEmpty());
     auto path = astr(loc.path().c_str());
-
     ModuleSymbol* mod = parseIncludedSubmodule(name, path);
     INT_ASSERT(mod);
 
@@ -2335,7 +2334,7 @@ struct Converter {
 
     // Push the current module name before descending into children.
     this->modNameStack.push_back(name);
-
+    currentModuleName = this->modNameStack.back();
     auto body = createBlockWithStmts(node->stmts(), style);
 
     // Pop the module name after converting children.
