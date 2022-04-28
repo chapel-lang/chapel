@@ -799,10 +799,7 @@ void handleError(astlocT astloc, const char *fmt, ...) {
 }
 
 void handleError(chpl::Location loc, const char *fmt, ...) {
-  astlocT astloc = astlocT(0, nullptr);
-  if (!loc.isEmpty()) {
-    astloc = astlocT(loc.firstLine(), loc.path().c_str());
-  }
+  astlocT astloc(loc.firstLine(), loc.path().c_str());
 
   va_list args;
 
