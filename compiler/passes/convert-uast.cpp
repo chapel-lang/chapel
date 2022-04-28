@@ -514,20 +514,6 @@ struct Converter {
     auto& loc = chpl::parsing::locateAst(gContext, node);
     INT_ASSERT(!loc.isEmpty());
     auto path = astr(loc.path().c_str());
-    std::string curPath = path;
-
-    // check for module name mismatch as in old parser.cpp
-    // compute the path of the file to include
-    size_t lastDot = curPath.rfind(".");
-    INT_ASSERT(lastDot < curPath.size());
-    std::string noDot = curPath.substr(0, lastDot);
-    std::string includeFile = noDot + "/" + name + ".chpl";
-    if (0 != strcmp(name, currentModuleName)) {
-      // create this dummy node to hold the location information
-      // and avoid "This source location is a guess" messages
-      UnresolvedSymExpr* dummy = new UnresolvedSymExpr("module");
-      USR_FATAL(dummy,"Cannot include modules from a module whose name doesn't match its filename");
-    }
     ModuleSymbol* mod = parseIncludedSubmodule(name, path);
     INT_ASSERT(mod);
 
@@ -2348,7 +2334,7 @@ struct Converter {
 
     // Push the current module name before descending into children.
     this->modNameStack.push_back(name);
-
+    currentModuleName = this->modNameStack.back();
     auto body = createBlockWithStmts(node->stmts(), style);
 
     // Pop the module name after converting children.
