@@ -512,7 +512,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive("string item") == true) {
+  } else if (call->isPrimitive(PRIM_STRING_ITEM) == true) {
     INT_ASSERT(call->numActuals() == 2);
 
     size_t idx = 0;
@@ -525,7 +525,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive("bytes item") == true) {
+  } else if (call->isPrimitive(PRIM_BYTES_ITEM) == true) {
     INT_ASSERT(call->numActuals() == 2);
 
     size_t idx = 0;
