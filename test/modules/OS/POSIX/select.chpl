@@ -12,7 +12,7 @@ var fdsRead: [0..<numPipes] c_int;
 var fdsWrite: [0..<numPipes] c_int;
 
 for i in 0..<numPipes {
-  var fildes:2*c_int;
+  var fildes:c_array(c_int, 2);
   writeln(pipe(c_ptrTo(fildes)) == 0);
   fdsRead[i] = fildes(0);
   fdsWrite[i] = fildes(1);

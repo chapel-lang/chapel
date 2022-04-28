@@ -1,6 +1,6 @@
 use OS.POSIX;
 
-var fildes:2*c_int;
+var fildes:c_array(c_int, 2);
 const ret = pipe(c_ptrTo(fildes));
 writeln(ret == 0);
 if ret == 0 {
