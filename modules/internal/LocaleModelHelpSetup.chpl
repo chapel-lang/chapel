@@ -34,7 +34,7 @@ module LocaleModelHelpSetup {
   public use DefaultRectangular;
   public use ChapelNumLocales;
   use ChapelEnv;
-  use Sys;
+  use OS.POSIX;
   use CTypes;
 
   config param debugLocaleModel = false;
@@ -128,10 +128,11 @@ module LocaleModelHelpSetup {
   private inline proc localSpawn() {
     use ChplConfig;
     if CHPL_COMM == "gasnet" {
-      var spawnfn: c_string;
-      if (CHPL_COMM_SUBSTRATE == "udp" &&
-         sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 1 && spawnfn == c"L") {
-        return true;
+      if CHPL_COMM_SUBSTRATE == "udp" {
+        const spawnfn = getenv(c"GASNET_SPAWNFN");
+        if spawnfn != c_nil && spawnfn:c_string == c"L" {
+          return true;
+        }
       } else if (CHPL_COMM_SUBSTRATE == "smp") {
         return true;
       }

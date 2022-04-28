@@ -78,4 +78,8 @@
 #include "chpl-gpu-gen-includes.h"
 #endif
 
+#if defined(__linux__) || defined(__APPLE__)
+#include "os-module-support/posix.h"
+#endif
+
 #endif

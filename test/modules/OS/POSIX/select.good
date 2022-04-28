@@ -1,0 +1,39 @@
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+read 0 from fd N
+read 1 from fd N
+read 2 from fd N
+read 3 from fd N
+read 4 from fd N
+read 5 from fd N
+read 6 from fd N
+read 7 from fd N
+read 8 from fd N
+true
+true
+true
+write 0 to fd N
+write 1 to fd N
+write 2 to fd N
+write 3 to fd N
+write 4 to fd N
+write 5 to fd N
+write 6 to fd N
+write 7 to fd N
+write 8 to fd N

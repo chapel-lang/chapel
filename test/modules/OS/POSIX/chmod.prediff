@@ -1,0 +1,10 @@
+#! /usr/bin/env bash
+if [[ $(ls -l chmod.file-1 | cut -d' ' -f1) == '-r---w---x' ]] ; then
+  echo ok 1 >> $2
+fi
+rm -f chmod.file-1
+
+if [[ $(ls -l chmod.file-2 | cut -d' ' -f1) == '-rwxrwxrwx' ]] ; then
+  echo ok 2 >> $2
+fi
+rm -f chmod.file-2
