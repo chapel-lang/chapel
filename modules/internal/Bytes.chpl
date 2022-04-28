@@ -369,6 +369,18 @@ module Bytes {
       return this:c_string; // folded out in resolution
     }
 
+    inline proc param this(param i: int) param : int {
+      if i < 0 || i > this.size-1 then
+        compilerError("index " + i:string + " out of bounds for bytes with length " + this.numBytes:string);
+      return __primitive("ascii", this, i);
+    }
+
+    inline proc param item(param i: int) param : bytes {
+      if i < 0 || i > this.size-1 then
+        compilerError("index " + i:string + " out of bounds for bytes with length " + this.numBytes:string);
+      return __primitive("bytes item", this, i);
+    }
+
     // byteIndex overload provides a nicer interface for string/bytes
     // generic programming
     proc item(i: byteIndex): bytes {

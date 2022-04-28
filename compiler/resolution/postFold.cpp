@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include "encoding-support.h"
 #include "postFold.h"
 
 #include "astutil.h"
@@ -219,6 +220,32 @@ static Expr* postFoldNormal(CallExpr* call) {
 ************************************** | *************************************/
 
 static bool isSameTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
+
+static std::string getStringAndIndexFromPrim(CallExpr* call, size_t* idx) {
+  SymExpr* se = toSymExpr(call->get(1));
+
+  INT_ASSERT(se);
+  INT_ASSERT(se->symbol()->isParameter() == true);
+
+  const char*       str       = get_string(se);
+  const std::string unescaped = unescapeString(str, se);
+
+  if (call->numActuals() > 1) {
+    SymExpr* ie = toSymExpr(call->get(2));
+    int64_t val = 0;
+
+    INT_ASSERT(ie && ie->symbol()->isParameter());
+    bool found_int = get_int(ie, &val);
+    INT_ASSERT(found_int);
+
+    *idx = static_cast<size_t>(val);
+  }
+  else {
+    *idx = 0;
+  }
+
+  return unescaped;
+}
 
 static Expr* postFoldPrimop(CallExpr* call) {
   Expr* retval = call;
@@ -478,30 +505,38 @@ static Expr* postFoldPrimop(CallExpr* call) {
     //
     // After the deprecated cases are removed, this code should assert
     // that the first argument is a param instead of just testing.
-    SymExpr* se = toSymExpr(call->get(1));
+    size_t idx = 0;
+    std::string unescaped = getStringAndIndexFromPrim(call, &idx);
 
-    INT_ASSERT(se);
+    retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
 
-    if (se->symbol()->isParameter() == true) {
-      const char*       str       = get_string(se);
-      const std::string unescaped = unescapeString(str, se);
-      size_t            idx       = 0;
+    call->replace(retval);
 
-      if (call->numActuals() > 1) {
-        SymExpr* ie = toSymExpr(call->get(2));
-        int64_t val = 0;
+  } else if (call->isPrimitive(PRIM_STRING_ITEM) == true) {
+    INT_ASSERT(call->numActuals() == 2);
 
-        INT_ASSERT(ie && ie->symbol()->isParameter());
-        bool found_int = get_int(ie, &val);
-        INT_ASSERT(found_int);
+    size_t idx = 0;
+    std::string unescaped = getStringAndIndexFromPrim(call, &idx);
 
-        idx = static_cast<size_t>(val);
-      }
+    const char* retStr = chpl_enc_codepoint_at_idx(unescaped.c_str(), idx);
+    INT_ASSERT(retStr);
 
-      retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
+    retval = new SymExpr(new_StringSymbol(retStr));
 
-      call->replace(retval);
-    }
+    call->replace(retval);
+
+  } else if (call->isPrimitive(PRIM_BYTES_ITEM) == true) {
+    INT_ASSERT(call->numActuals() == 2);
+
+    size_t idx = 0;
+    std::string unescaped = getStringAndIndexFromPrim(call, &idx);
+
+    char* retStr = (char*)calloc(2, sizeof(unsigned char));
+    retStr[0] = (unsigned char)unescaped[idx];
+
+    retval = new SymExpr(new_BytesSymbol(retStr));
+
+    call->replace(retval);
 
   } else if (call->isPrimitive("string_contains") == true) {
     SymExpr* lhs = toSymExpr(call->get(1));

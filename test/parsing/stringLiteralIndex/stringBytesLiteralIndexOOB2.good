@@ -1,1 +1,1 @@
-stringBytesLiteralIndexOOB2.chpl:1: error: halt reached - index 10 out of bounds for bytes with length 9
+stringBytesLiteralIndexOOB2.chpl:1: error: index 10 out of bounds for bytes with length 9
