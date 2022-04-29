@@ -63,31 +63,6 @@ int chpl_os_posix_open(const char* path, int oflag, mode_t mode) {
 }
 
 //
-// fcntl.h
-//
-
-static inline int chpl_os_posix_O_ACCMODE(void) { return O_ACCMODE; }
-static inline int chpl_os_posix_O_APPEND(void) { return O_APPEND; }
-static inline int chpl_os_posix_O_CLOEXEC(void) { return O_CLOEXEC; }
-static inline int chpl_os_posix_O_CREAT(void) { return O_CREAT; }
-static inline int chpl_os_posix_O_DIRECTORY(void) { return O_DIRECTORY; }
-static inline int chpl_os_posix_O_DSYNC(void) { return O_DSYNC; }
-static inline int chpl_os_posix_O_EXCL(void) { return O_EXCL; }
-static inline int chpl_os_posix_O_NOCTTY(void) { return O_NOCTTY; }
-static inline int chpl_os_posix_O_NOFOLLOW(void) { return O_NOFOLLOW; }
-static inline int chpl_os_posix_O_NONBLOCK(void) { return O_NONBLOCK; }
-static inline int chpl_os_posix_O_RDONLY(void) { return O_RDONLY; }
-static inline int chpl_os_posix_O_RDWR(void) { return O_RDWR; }
-static inline int chpl_os_posix_O_SYNC(void) { return O_SYNC; }
-static inline int chpl_os_posix_O_TRUNC(void) { return O_TRUNC; }
-static inline int chpl_os_posix_O_WRONLY(void) { return O_WRONLY; }
-// Note: O_EXEC, O_SEARCH, O_TTY_INIT
-// are documented in POSIX but don't seem to exist on linux
-// Note: O_RSYNC
-// is documented in POSIX but doesn't seem to exist on Mac OS
-
-
-//
 // sys/select.h
 //
 static inline

@@ -297,66 +297,21 @@ module OS {
     //
     // fcntl.h
     //
-    inline proc O_ACCMODE:c_int {
-      extern proc chpl_os_posix_O_ACCMODE():c_int;
-      return chpl_os_posix_O_ACCMODE();
-    }
-    inline proc O_APPEND:c_int {
-      extern proc chpl_os_posix_O_APPEND():c_int;
-      return chpl_os_posix_O_APPEND();
-    }
-    inline proc O_CLOEXEC:c_int {
-      extern proc chpl_os_posix_O_CLOEXEC():c_int;
-      return chpl_os_posix_O_CLOEXEC();
-    }
-    inline proc O_CREAT:c_int {
-      extern proc chpl_os_posix_O_CREAT():c_int;
-      return chpl_os_posix_O_CREAT();
-    }
-    inline proc O_DIRECTORY:c_int {
-      extern proc chpl_os_posix_O_DIRECTORY():c_int;
-      return chpl_os_posix_O_DIRECTORY();
-    }
-    inline proc O_DSYNC:c_int {
-      extern proc chpl_os_posix_O_DSYNC():c_int;
-      return chpl_os_posix_O_DSYNC();
-    }
-    inline proc O_EXCL:c_int {
-      extern proc chpl_os_posix_O_EXCL():c_int;
-      return chpl_os_posix_O_EXCL();
-    }
-    inline proc O_NOCTTY:c_int {
-      extern proc chpl_os_posix_O_NOCTTY():c_int;
-      return chpl_os_posix_O_NOCTTY();
-    }
-    inline proc O_NOFOLLOW:c_int {
-      extern proc chpl_os_posix_O_NOFOLLOW():c_int;
-      return chpl_os_posix_O_NOFOLLOW();
-    }
-    inline proc O_NONBLOCK:c_int {
-      extern proc chpl_os_posix_O_NONBLOCK():c_int;
-      return chpl_os_posix_O_NONBLOCK();
-    }
-    inline proc O_RDONLY:c_int {
-      extern proc chpl_os_posix_O_RDONLY():c_int;
-      return chpl_os_posix_O_RDONLY();
-    }
-    inline proc O_RDWR:c_int {
-      extern proc chpl_os_posix_O_RDWR():c_int;
-      return chpl_os_posix_O_RDWR();
-    }
-    inline proc O_SYNC:c_int {
-      extern proc chpl_os_posix_O_SYNC():c_int;
-      return chpl_os_posix_O_SYNC();
-    }
-    inline proc O_TRUNC:c_int {
-      extern proc chpl_os_posix_O_TRUNC():c_int;
-      return chpl_os_posix_O_TRUNC();
-    }
-    inline proc O_WRONLY:c_int {
-      extern proc chpl_os_posix_O_WRONLY():c_int;
-      return chpl_os_posix_O_WRONLY();
-    }
+    extern const O_ACCMODE:c_int;
+    extern const O_APPEND:c_int;
+    extern const O_CLOEXEC:c_int;
+    extern const O_CREAT:c_int;
+    extern const O_DIRECTORY:c_int;
+    extern const O_DSYNC:c_int;
+    extern const O_EXCL:c_int;
+    extern const O_NOCTTY:c_int;
+    extern const O_NOFOLLOW:c_int;
+    extern const O_NONBLOCK:c_int;
+    extern const O_RDONLY:c_int;
+    extern const O_RDWR:c_int;
+    extern const O_SYNC:c_int;
+    extern const O_TRUNC:c_int;
+    extern const O_WRONLY:c_int;
     // Note: O_EXEC, O_SEARCH, O_TTY_INIT
     // are documented in POSIX but don't seem to exist on linux
     // Note: O_RSYNC
