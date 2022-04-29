@@ -41,6 +41,9 @@
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
 
+// Flip this to always parse with the new parser.
+#define ALWAYS_PARSE_WITH_DYNO 0
+
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
 #include "view.h"
 #endif
@@ -87,17 +90,15 @@ static ModuleSymbol* parseFile(const char* fileName,
                                bool        namedOnCommandLine,
                                bool        include);
 
-static ModuleSymbol* oldAstParseFile(const char* fileName,
-                                     ModTag      modTag,
-                                     bool        namedOnCommandLine,
-                                     bool        include);
+static ModuleSymbol* oldParserParseFile(const char* fileName,
+                                        ModTag      modTag,
+                                        bool        namedOnCommandLine,
+                                        bool        include);
 
 // Callback to configure the context error handler when converting to uAST.
-static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err);
+static void dynoParseFileErrorHandler(const chpl::ErrorMessage& err);
 
-
-
-static ModuleSymbol* uASTParseFile(const char* fileName,
+static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
                                    bool        namedOnCommandLine,
                                    bool        include);
@@ -687,14 +688,16 @@ static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
                                bool        namedOnCommandLine,
                                bool        include) {
-  if (fDynoCompilerLibrary) {
-    return uASTParseFile(path, modTag, namedOnCommandLine, include);
+  bool useDynoParser = (ALWAYS_PARSE_WITH_DYNO || fDynoCompilerLibrary);
+
+  if (useDynoParser) {
+    return dynoParseFile(path, modTag, namedOnCommandLine, include);
   } else {
-    return oldAstParseFile(path, modTag, namedOnCommandLine, include);
+    return oldParserParseFile(path, modTag, namedOnCommandLine, include);
   }
 }
 
-static ModuleSymbol* oldAstParseFile(const char* path,
+static ModuleSymbol* oldParserParseFile(const char* path,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine,
                                      bool        include) {
@@ -887,7 +890,7 @@ static void uASTDisplayError(const chpl::ErrorMessage& err) {
 }
 
 // TODO: Add helpers to convert locations without passing IDs.
-static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err) {
+static void dynoParseFileErrorHandler(const chpl::ErrorMessage& err) {
   uASTDisplayError(err);
 
   for (auto& detail : err.details()) {
@@ -895,7 +898,7 @@ static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err) {
   }
 }
 
-static ModuleSymbol* uASTParseFile(const char* fileName,
+static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
                                    bool        namedOnCommandLine,
                                    bool        include) {
@@ -906,7 +909,7 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   }
 
   // TODO: Move this to the point where we set up the context.
-  gContext->setErrorHandler(&uASTParseFileErrorHandler);
+  gContext->setErrorHandler(&dynoParseFileErrorHandler);
 
   // Do not parse if we've already done so.
   if (haveAlreadyParsed(fileName)) {
