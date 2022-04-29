@@ -142,8 +142,8 @@ module OS {
       return __primitive("cast", t, x);
 
     /*
-       Explicit conversions between ``off_t`` and ``c_int`` are
-       also defined, to support usability.
+       Explicit conversions between ``off_t`` and ``c_int`` and
+       ``off_t`` and integral types are also defined, to support usability.
     */
     extern type off_t;
     pragma "no doc"
@@ -152,6 +152,13 @@ module OS {
     pragma "no doc"
     inline operator :(x:c_int, type t:off_t)
       return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:off_t, type t:integral)
+      return __primitive("cast", t, x);
+    pragma "no doc"
+    inline operator :(x:integral, type t:off_t)
+      return __primitive("cast", t, x);
+
 
     /*
        Explicit conversions between ``suseconds_t`` and ``c_int`` are

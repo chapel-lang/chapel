@@ -15,7 +15,7 @@ proc getFileSize(path:c_string) : int {
   var buf: chpl_stat;
 
   if (stat(path, buf) == 0) {
-    return buf.st_size;
+    return buf.st_size : int;
   }
   return -1;
 }
