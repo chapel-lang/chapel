@@ -29,7 +29,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 GITHUB_USER=bmcdonald3
 GITHUB_BRANCH=threshold-change
 SHORT_NAME=threshold-change
-START_DATE=04/19/22
+START_DATE=04/29/22
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
