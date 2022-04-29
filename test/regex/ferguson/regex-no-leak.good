@@ -2,55 +2,41 @@ Compile/Delete
 Search 1
 (matched = true, byteOffset = 1, numBytes = 4)
 test
-(matched = true, byteOffset = 1, numBytes = 4)
-test
+1
 Search 2
 (matched = true, byteOffset = 1, numBytes = 4)
 t
 test
-(matched = true, byteOffset = 1, numBytes = 4)
-t
-test
+1
 Search 3
 (matched = true, byteOffset = 1, numBytes = 4)
 (matched = true, byteOffset = 1, numBytes = 1)
 test
-(matched = true, byteOffset = 1, numBytes = 4)
-(matched = true, byteOffset = 1, numBytes = 1)
-test
+1
 Search 4
 (matched = true, byteOffset = 1, numBytes = 4)
 (matched = true, byteOffset = 1, numBytes = 4)
 test
-(matched = true, byteOffset = 1, numBytes = 4)
-(matched = true, byteOffset = 1, numBytes = 4)
-test
+1
 Search 5
 (matched = true, byteOffset = 1, numBytes = 2)
 57
 57
-(matched = true, byteOffset = 1, numBytes = 2)
-57
-57
+1
 Match 1
 (matched = true, byteOffset = 0, numBytes = 4)
 test
-(matched = true, byteOffset = 0, numBytes = 4)
-test
+true
 Match 2
 (matched = true, byteOffset = 0, numBytes = 4)
 t
 test
-(matched = true, byteOffset = 0, numBytes = 4)
-t
-test
+true
 Match 3
 (matched = false, byteOffset = -1, numBytes = 0)
 
 
-(matched = false, byteOffset = -1, numBytes = 0)
-
-
+false
 Split 1
 Words
 words
@@ -111,26 +97,6 @@ words.
 Words
 words
 words.
-Matches 1
-Words
-words
-word
-Words
-words
-word
-Matches 2
-words
-w
-ords
-word
-w
-ord
-words
-w
-ords
-word
-w
-ord
 sub 1
 Words, w-ords, w-ord.
 sub 2
