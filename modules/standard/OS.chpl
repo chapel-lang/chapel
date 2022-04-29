@@ -373,24 +373,69 @@ module OS {
     //
     // sys/stat.h
     //
-    extern const S_IRWXU: mode_t;
-    extern const S_IRUSR: mode_t;
-    extern const S_IWUSR: mode_t;
-    extern const S_IXUSR: mode_t;
+    inline proc S_IRWXU:mode_t {
+      extern proc chpl_os_posix_S_IRWXU():mode_t;
+      return chpl_os_posix_S_IRWXU();
+    }
+    inline proc S_IRUSR:mode_t {
+      extern proc chpl_os_posix_S_IRUSR():mode_t;
+      return chpl_os_posix_S_IRUSR();
+    }
+    inline proc S_IWUSR:mode_t {
+      extern proc chpl_os_posix_S_IWUSR():mode_t;
+      return chpl_os_posix_S_IWUSR();
+    }
+    inline proc S_IXUSR:mode_t {
+      extern proc chpl_os_posix_S_IXUSR():mode_t;
+      return chpl_os_posix_S_IXUSR();
+    }
 
-    extern const S_IRWXG: mode_t;
-    extern const S_IRGRP: mode_t;
-    extern const S_IWGRP: mode_t;
-    extern const S_IXGRP: mode_t;
+    inline proc S_IRWXG:mode_t {
+      extern proc chpl_os_posix_S_IRWXG():mode_t;
+      return chpl_os_posix_S_IRWXG();
+    }
+    inline proc S_IRGRP:mode_t {
+      extern proc chpl_os_posix_S_IRGRP():mode_t;
+      return chpl_os_posix_S_IRGRP();
+    }
+    inline proc S_IWGRP:mode_t {
+      extern proc chpl_os_posix_S_IWGRP():mode_t;
+      return chpl_os_posix_S_IWGRP();
+    }
+    inline proc S_IXGRP:mode_t {
+      extern proc chpl_os_posix_S_IXGRP():mode_t;
+      return chpl_os_posix_S_IXGRP();
+    }
 
-    extern const S_IRWXO: mode_t;
-    extern const S_IROTH: mode_t;
-    extern const S_IWOTH: mode_t;
-    extern const S_IXOTH: mode_t;
+    inline proc S_IRWXO:mode_t {
+      extern proc chpl_os_posix_S_IRWXO():mode_t;
+      return chpl_os_posix_S_IRWXO();
+    }
+    inline proc S_IROTH:mode_t {
+      extern proc chpl_os_posix_S_IROTH():mode_t;
+      return chpl_os_posix_S_IROTH();
+    }
+    inline proc S_IWOTH:mode_t {
+      extern proc chpl_os_posix_S_IWOTH():mode_t;
+      return chpl_os_posix_S_IWOTH();
+    }
+    inline proc S_IXOTH:mode_t {
+      extern proc chpl_os_posix_S_IXOTH():mode_t;
+      return chpl_os_posix_S_IXOTH();
+    }
 
-    extern const S_ISUID: mode_t;
-    extern const S_ISGID: mode_t;
-    extern const S_ISVTX: mode_t;
+    inline proc S_ISUID:mode_t {
+      extern proc chpl_os_posix_S_ISUID():mode_t;
+      return chpl_os_posix_S_ISUID();
+    }
+    inline proc S_ISGID:mode_t {
+      extern proc chpl_os_posix_S_ISGID():mode_t;
+      return chpl_os_posix_S_ISGID();
+    }
+    inline proc S_ISVTX:mode_t {
+      extern proc chpl_os_posix_S_ISVTX():mode_t;
+      return chpl_os_posix_S_ISVTX();
+    }
 
     extern 'struct chpl_os_posix_struct_stat' record struct_stat {
       var st_dev:dev_t;            // Device.

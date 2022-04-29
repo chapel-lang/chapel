@@ -19,3 +19,27 @@ writeln('st_ctim %i.%09i'
         .format(buf.st_ctim.tv_sec:c_int, buf.st_ctim.tv_nsec:c_int));
 writeln('st_blksize ', buf.st_blksize:c_int);
 writeln('st_blocks ', buf.st_blocks:c_int);
+
+proc testconstant(arg) {
+  // doesn't actually do anything -- just check that
+  // we can compile uses of the constant
+}
+
+testconstant(S_IRWXU);
+testconstant(S_IRUSR);
+testconstant(S_IWUSR);
+testconstant(S_IXUSR);
+
+testconstant(S_IRWXG);
+testconstant(S_IRGRP);
+testconstant(S_IWGRP);
+testconstant(S_IXGRP);
+
+testconstant(S_IRWXO);
+testconstant(S_IROTH);
+testconstant(S_IWOTH);
+testconstant(S_IXOTH);
+
+testconstant(S_ISUID);
+testconstant(S_ISGID);
+testconstant(S_ISVTX);
