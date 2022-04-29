@@ -41,12 +41,6 @@
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
 
-// Turn this on to report which modules are parsed as uAST.
-#define REPORT_AST_KIND_WHEN_PARSING_MODULE 0
-
-// Only convert user module to uAST
-#define UAST_CONVERT_USER_MODULE_ONLY 0
-
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
 #include "view.h"
 #endif
@@ -82,11 +76,6 @@ static void          parseDependentModules(bool isInternal);
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
 
-static bool uASTAttemptToParseMod(const char* modName,
-                                  const char* path,
-                                  ModTag modTag,
-                                  ModuleSymbol*& outModSym);
-
 static void initializeGlobalParserState(const char* path, ModTag modTag,
                                         bool namedOnCommandLine,
                                         YYLTYPE* yylloc=nullptr);
@@ -98,8 +87,15 @@ static ModuleSymbol* parseFile(const char* fileName,
                                bool        namedOnCommandLine,
                                bool        include);
 
+static ModuleSymbol* oldAstParseFile(const char* fileName,
+                                     ModTag      modTag,
+                                     bool        namedOnCommandLine,
+                                     bool        include);
+
 // Callback to configure the context error handler when converting to uAST.
 static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err);
+
+
 
 static ModuleSymbol* uASTParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -293,7 +289,11 @@ static void countTokensInCmdLineFiles() {
 
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName) == true) {
-      parseFile(inputFileName, MOD_USER, true, false);
+      if (fDynoCompilerLibrary) {
+        INT_FATAL("Not supported yet!");
+      } else {
+        parseFile(inputFileName, MOD_USER, true, false);
+      }
     }
   }
 
@@ -373,11 +373,7 @@ static void parseChplSourceFile(const char* inputFileName) {
     USR_FATAL(errorMessage, baseName, maxFileName);
   }
 
-  if (fDynoCompilerLibrary == false) {
-    parseFile(inputFileName, MOD_USER, true, false);
-  } else {
-    uASTParseFile(inputFileName, MOD_USER, true, false);
-  }
+  parseFile(inputFileName, MOD_USER, true, false);
 }
 
 static void parseCommandLineFiles() {
@@ -589,21 +585,6 @@ static void parseDependentModules(bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool uASTAttemptToParseMod(const char* modName,
-                                  const char* path,
-                                  ModTag modTag,
-                                  ModuleSymbol*& outModSym) {
-  if (!fDynoCompilerLibrary) return false;
-
-  if (UAST_CONVERT_USER_MODULE_ONLY && modTag != MOD_USER) return false;
-  const bool namedOnCommandLine = false;
-  const bool include = false;
-
-  outModSym = uASTParseFile(path, modTag, namedOnCommandLine, include);
-
-  return true;
-}
-
 static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
   const char* path   = NULL;
   ModTag      modTag = MOD_INTERNAL;
@@ -624,22 +605,8 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
   // is not eligible (e.g. not internal). In that case, parse the file
   // into AST instead.
   if (path != nullptr) {
-    bool usedNewParser = uASTAttemptToParseMod(modName, path, modTag, ret);
-
-    if (!usedNewParser) {
-      INT_ASSERT(ret == nullptr);
-      ret = parseFile(path, modTag, false, false);
-    }
-
-#if REPORT_AST_KIND_WHEN_PARSING_MODULE
-    const char* modTagStr = ModuleSymbol::modTagToString(modTag);
-    const char* astKindStr = usedNewParser ? "uAST" : "AST";
-    printf("- Parsed %s module '%s' -> %s\n",
-           modTagStr,
-           modName,
-           astKindStr);
-    printf("@ %s\n", path);
-#endif
+    INT_ASSERT(ret == nullptr);
+    ret = parseFile(path, modTag, false, false);
   }
 
   return ret;
@@ -720,7 +687,22 @@ static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
                                bool        namedOnCommandLine,
                                bool        include) {
+  if (fDynoCompilerLibrary) {
+    return uASTParseFile(path, modTag, namedOnCommandLine, include);
+  } else {
+    return oldAstParseFile(path, modTag, namedOnCommandLine, include);
+  }
+}
+
+static ModuleSymbol* oldAstParseFile(const char* path,
+                                     ModTag      modTag,
+                                     bool        namedOnCommandLine,
+                                     bool        include) {
   ModuleSymbol* retval = NULL;
+
+  if (fDynoCompilerLibrary) {
+    INT_FATAL("Should not be possible!");
+  }
 
   // Make sure we haven't already parsed this file
   if (haveAlreadyParsed(path)) {
@@ -1182,16 +1164,9 @@ ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
   const bool namedOnCommandLine = false;
   const bool include = true;
 
-  if (fDynoCompilerLibrary) {
-    ret = uASTParseFile(astr(includeFile), currentModuleType,
-                        namedOnCommandLine,
-                        include);
-  } else {
-    ret = parseFile(astr(includeFile), currentModuleType,
-                    namedOnCommandLine,
-                    include);
-  }
-
+  ret = parseFile(astr(includeFile), currentModuleType,
+                  namedOnCommandLine,
+                  include);
   INT_ASSERT(ret);
 
   ret->addFlag(FLAG_INCLUDED_MODULE);
