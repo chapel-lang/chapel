@@ -1,0 +1,2 @@
+bug: unexpected implicit conversion from opaque type to int
+#19728 
