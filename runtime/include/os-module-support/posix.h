@@ -113,24 +113,24 @@ void chpl_os_posix_FD_ZERO(fd_set* fdset) {
 //
 // sys/stat.h
 //
-static inline mode_t chpl_os_posix_S_IRWXU() { return S_IRWXU; }
-static inline mode_t chpl_os_posix_S_IRUSR() { return S_IRUSR; }
-static inline mode_t chpl_os_posix_S_IWUSR() { return S_IWUSR; }
-static inline mode_t chpl_os_posix_S_IXUSR() { return S_IXUSR; }
+static inline mode_t chpl_os_posix_S_IRWXU(void) { return S_IRWXU; }
+static inline mode_t chpl_os_posix_S_IRUSR(void) { return S_IRUSR; }
+static inline mode_t chpl_os_posix_S_IWUSR(void) { return S_IWUSR; }
+static inline mode_t chpl_os_posix_S_IXUSR(void) { return S_IXUSR; }
 
-static inline mode_t chpl_os_posix_S_IRWXG() { return S_IRWXG; }
-static inline mode_t chpl_os_posix_S_IRGRP() { return S_IRGRP; }
-static inline mode_t chpl_os_posix_S_IWGRP() { return S_IWGRP; }
-static inline mode_t chpl_os_posix_S_IXGRP() { return S_IXGRP; }
+static inline mode_t chpl_os_posix_S_IRWXG(void) { return S_IRWXG; }
+static inline mode_t chpl_os_posix_S_IRGRP(void) { return S_IRGRP; }
+static inline mode_t chpl_os_posix_S_IWGRP(void) { return S_IWGRP; }
+static inline mode_t chpl_os_posix_S_IXGRP(void) { return S_IXGRP; }
 
-static inline mode_t chpl_os_posix_S_IRWXO() { return S_IRWXO; }
-static inline mode_t chpl_os_posix_S_IROTH() { return S_IROTH; }
-static inline mode_t chpl_os_posix_S_IWOTH() { return S_IWOTH; }
-static inline mode_t chpl_os_posix_S_IXOTH() { return S_IXOTH; }
+static inline mode_t chpl_os_posix_S_IRWXO(void) { return S_IRWXO; }
+static inline mode_t chpl_os_posix_S_IROTH(void) { return S_IROTH; }
+static inline mode_t chpl_os_posix_S_IWOTH(void) { return S_IWOTH; }
+static inline mode_t chpl_os_posix_S_IXOTH(void) { return S_IXOTH; }
 
-static inline mode_t chpl_os_posix_S_ISUID() { return S_ISUID; }
-static inline mode_t chpl_os_posix_S_ISGID() { return S_ISGID; }
-static inline mode_t chpl_os_posix_S_ISVTX() { return S_ISVTX; }
+static inline mode_t chpl_os_posix_S_ISUID(void) { return S_ISUID; }
+static inline mode_t chpl_os_posix_S_ISGID(void) { return S_ISGID; }
+static inline mode_t chpl_os_posix_S_ISVTX(void) { return S_ISVTX; }
 
 // The POSIX spec and Darwin disagree on the names of the timestamp
 // members with type struct timespec. Here we define a common type
