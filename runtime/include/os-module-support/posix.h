@@ -78,12 +78,13 @@ static inline int chpl_os_posix_O_NOFOLLOW(void) { return O_NOFOLLOW; }
 static inline int chpl_os_posix_O_NONBLOCK(void) { return O_NONBLOCK; }
 static inline int chpl_os_posix_O_RDONLY(void) { return O_RDONLY; }
 static inline int chpl_os_posix_O_RDWR(void) { return O_RDWR; }
-static inline int chpl_os_posix_O_RSYNC(void) { return O_RSYNC; }
 static inline int chpl_os_posix_O_SYNC(void) { return O_SYNC; }
 static inline int chpl_os_posix_O_TRUNC(void) { return O_TRUNC; }
 static inline int chpl_os_posix_O_WRONLY(void) { return O_WRONLY; }
 // Note: O_EXEC, O_SEARCH, O_TTY_INIT
 // are documented in POSIX but don't seem to exist on linux
+// Note: O_RSYNC
+// is documented in POSIX but doesn't seem to exist on Mac OS
 
 
 //

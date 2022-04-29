@@ -345,10 +345,6 @@ module OS {
       extern proc chpl_os_posix_O_RDWR():c_int;
       return chpl_os_posix_O_RDWR();
     }
-    inline proc O_RSYNC:c_int {
-      extern proc chpl_os_posix_O_RSYNC():c_int;
-      return chpl_os_posix_O_RSYNC();
-    }
     inline proc O_SYNC:c_int {
       extern proc chpl_os_posix_O_SYNC():c_int;
       return chpl_os_posix_O_SYNC();
@@ -363,6 +359,8 @@ module OS {
     }
     // Note: O_EXEC, O_SEARCH, O_TTY_INIT
     // are documented in POSIX but don't seem to exist on linux
+    // Note: O_RSYNC
+    // is documented in POSIX but doesn't seem to exist on Mac OS
 
     extern proc creat(path:c_string, mode:mode_t = 0):c_int;
     inline proc open(path:c_string, oflag:c_int, mode:mode_t = 0:mode_t)
