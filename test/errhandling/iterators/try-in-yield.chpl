@@ -1,6 +1,6 @@
 config const tryBang = true;
 {
-  writeln("Case 1");
+  writeln("Case 1 - try!");
   iter foo() {
     yield try! 1;
   }
@@ -11,7 +11,7 @@ config const tryBang = true;
 }
 
 {
-  writeln("Case 1");
+  writeln("Case 1 - try");
   iter foo() {
     yield try 1;
   }
@@ -36,7 +36,7 @@ config const tryBang = true;
     for i in r.these(tag, followThis) do yield try! i;
   }
 
-  writeln("Case 2");
+  writeln("Case 2 - try!");
   var sum = 0;
   forall i in foo() with (+ reduce sum){
     sum += i;
@@ -44,7 +44,7 @@ config const tryBang = true;
   writeln(sum);
   sum = 0;
 
-  writeln("Case 3");
+  writeln("Case 3 - try!");
   forall (i,j) in zip(foo(), 1..) with (+ reduce sum) {
     sum += i + j;
   }
@@ -66,7 +66,7 @@ config const tryBang = true;
     for i in r.these(tag, followThis) do yield try i;
   }
 
-  writeln("Case 2");
+  writeln("Case 2 - try");
   var sum = 0;
   forall i in foo() with (+ reduce sum){
     sum += i;
@@ -74,7 +74,7 @@ config const tryBang = true;
   writeln(sum);
   sum = 0;
 
-  writeln("Case 3");
+  writeln("Case 3 - try");
   forall (i,j) in zip(foo(), 1..) with (+ reduce sum) {
     sum += i + j;
   }
@@ -82,7 +82,7 @@ config const tryBang = true;
 }
 
 if tryBang {
-  writeln("Case 4");
+  writeln("Case 4 - try!");
 
   proc bar() throws {
     throw new Error("test");
@@ -98,7 +98,7 @@ if tryBang {
   }
 }
 else {
-  writeln("Case 4");
+  writeln("Case 4 - try");
 
   proc bar() throws {
     throw new Error("test");
